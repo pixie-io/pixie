@@ -139,6 +139,23 @@ func (d *Datastore) GetOrgByDomain(domainName string) (*OrgInfo, error) {
 	return nil, errors.New("failed org info from database")
 }
 
+// GetUserByEmail gets org information by domain.
+func (d *Datastore) GetUserByEmail(email string) (*UserInfo, error) {
+	query := `SELECT * from users WHERE email=$1`
+	rows, err := d.db.Queryx(query, email)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var userInfo UserInfo
+		err := rows.StructScan(&userInfo)
+		return &userInfo, err
+	}
+	return nil, errors.New("failed to get user info from database")
+}
+
 func (d *Datastore) createUserUsingTxn(txn *sqlx.Tx, userInfo *UserInfo) (uuid.UUID, error) {
 	query := `INSERT INTO users (org_id, username, first_name, last_name, email) VALUES (:org_id, :username, :first_name, :last_name, :email) RETURNING id`
 	row, err := txn.NamedQuery(query, userInfo)

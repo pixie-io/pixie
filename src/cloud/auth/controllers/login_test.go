@@ -698,7 +698,7 @@ func TestServer_Signup_ExistingOrg(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("userid")}).
+		GetUserByEmail(gomock.Any(), &profilepb.GetUserByEmailRequest{Email: "abc@gmail.com"}).
 		Return(nil, errors.New("user does not exist"))
 
 	fakeOrgInfo := &profilepb.OrgInfo{
@@ -780,7 +780,7 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("userid")}).
+		GetUserByEmail(gomock.Any(), &profilepb.GetUserByEmailRequest{Email: "abc@gmail.com"}).
 		Return(nil, errors.New("user does not exist"))
 
 	mockProfile.EXPECT().
@@ -826,7 +826,7 @@ func TestServer_Signup_CreateOrg(t *testing.T) {
 	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
-func TestServer_Login_CreateUserOrgFailed(t *testing.T) {
+func TestServer_Signup_CreateUserOrgFailed(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -846,7 +846,7 @@ func TestServer_Login_CreateUserOrgFailed(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("userid")}).
+		GetUserByEmail(gomock.Any(), &profilepb.GetUserByEmailRequest{Email: "abc@gmail.com"}).
 		Return(nil, errors.New("user does not exist"))
 
 	mockProfile.EXPECT().
@@ -899,7 +899,7 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
 
 	mockProfile.EXPECT().
-		GetUser(gomock.Any(), &uuidpb.UUID{Data: []byte("userid")}).
+		GetUserByEmail(gomock.Any(), &profilepb.GetUserByEmailRequest{Email: "abc@gmail.com"}).
 		Return(nil, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")

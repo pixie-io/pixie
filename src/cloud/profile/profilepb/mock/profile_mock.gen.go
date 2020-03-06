@@ -72,6 +72,24 @@ func (mr *MockProfileServiceClientMockRecorder) GetUser(ctx, in interface{}, opt
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockProfileServiceClient)(nil).GetUser), varargs...)
 }
 
+// GetUserByEmail mocks base method
+func (m *MockProfileServiceClient) GetUserByEmail(ctx context.Context, in *profilepb.GetUserByEmailRequest, opts ...grpc.CallOption) (*profilepb.UserInfo, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetUserByEmail", varargs...)
+	ret0, _ := ret[0].(*profilepb.UserInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserByEmail indicates an expected call of GetUserByEmail
+func (mr *MockProfileServiceClientMockRecorder) GetUserByEmail(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByEmail", reflect.TypeOf((*MockProfileServiceClient)(nil).GetUserByEmail), varargs...)
+}
+
 // CreateOrgAndUser mocks base method
 func (m *MockProfileServiceClient) CreateOrgAndUser(ctx context.Context, in *profilepb.CreateOrgAndUserRequest, opts ...grpc.CallOption) (*profilepb.CreateOrgAndUserResponse, error) {
 	varargs := []interface{}{ctx, in}
@@ -173,6 +191,19 @@ func (m *MockProfileServiceServer) GetUser(arg0 context.Context, arg1 *proto.UUI
 // GetUser indicates an expected call of GetUser
 func (mr *MockProfileServiceServerMockRecorder) GetUser(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUser", reflect.TypeOf((*MockProfileServiceServer)(nil).GetUser), arg0, arg1)
+}
+
+// GetUserByEmail mocks base method
+func (m *MockProfileServiceServer) GetUserByEmail(arg0 context.Context, arg1 *profilepb.GetUserByEmailRequest) (*profilepb.UserInfo, error) {
+	ret := m.ctrl.Call(m, "GetUserByEmail", arg0, arg1)
+	ret0, _ := ret[0].(*profilepb.UserInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUserByEmail indicates an expected call of GetUserByEmail
+func (mr *MockProfileServiceServerMockRecorder) GetUserByEmail(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByEmail", reflect.TypeOf((*MockProfileServiceServer)(nil).GetUserByEmail), arg0, arg1)
 }
 
 // CreateOrgAndUser mocks base method

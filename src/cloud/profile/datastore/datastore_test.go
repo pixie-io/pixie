@@ -173,4 +173,20 @@ func TestDatastore(t *testing.T) {
 		assert.Equal(t, orgID, uuid.Nil)
 		assert.Equal(t, userID, uuid.Nil)
 	})
+
+	t.Run("get user by email", func(t *testing.T) {
+		d := datastore.NewDatastore(db)
+		userInfo, err := d.GetUserByEmail("person@hulu.com")
+		require.Nil(t, err)
+		require.NotNil(t, userInfo)
+
+		assert.Equal(t, userInfo.Email, "person@hulu.com")
+	})
+
+	t.Run("get user by email for missing email should return nil", func(t *testing.T) {
+		d := datastore.NewDatastore(db)
+		userInfo, err := d.GetUserByEmail("noemail@gmail.com")
+		require.NotNil(t, err)
+		require.Nil(t, userInfo)
+	})
 }

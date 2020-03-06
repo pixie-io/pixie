@@ -12,11 +12,12 @@ option go_package = "pixielabs.ai/pixielabs/src/cloud/profile/proto;profile";
 service ProfileService {
     rpc CreateUser(CreateUserRequest) returns (pl.uuidpb.UUID) {}
     rpc GetUser(pl.uuidpb.UUID) returns (UserInfo) {}
+    rpc GetUserByEmail(GetUserByEmailRequest) returns (UserInfo) {}
 
     // Creates the initial organization with the specified user as the owner.
     rpc CreateOrgAndUser(CreateOrgAndUserRequest) returns (CreateOrgAndUserResponse) {}
     rpc GetOrg(pl.uuidpb.UUID) returns (OrgInfo) {}
-    rpc GetOrgByDomain(GetOrgByDomainRequest) returns(OrgInfo) {}
+    rpc GetOrgByDomain(GetOrgByDomainRequest) returns (OrgInfo) {}
 }
 
 
@@ -34,6 +35,10 @@ message UserInfo {
     string first_name = 4;
     string last_name = 5;
     string email = 6;
+}
+
+message GetUserByEmailRequest {
+    string email = 1;
 }
 
 // OrgInfo contains information about a company in our system.

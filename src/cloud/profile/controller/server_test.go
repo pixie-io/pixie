@@ -232,6 +232,60 @@ func TestServer_GetUser_MissingUser(t *testing.T) {
 	assert.Equal(t, status.Code(err), codes.NotFound)
 }
 
+func TestServer_GetUserByEmail(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockDatastore(ctrl)
+
+	userUUID := uuid.NewV4()
+	orgUUID := uuid.NewV4()
+	s := controller.NewServer(nil, d)
+
+	mockReply := &datastore.UserInfo{
+		ID:        userUUID,
+		OrgID:     orgUUID,
+		Username:  "foobar",
+		FirstName: "foo",
+		LastName:  "bar",
+		Email:     "foo@bar.com",
+	}
+
+	d.EXPECT().
+		GetUserByEmail("foo@bar.com").
+		Return(mockReply, nil)
+
+	resp, err := s.GetUserByEmail(
+		context.Background(),
+		&profile.GetUserByEmailRequest{Email: "foo@bar.com"})
+
+	require.Nil(t, err)
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(&userUUID))
+	assert.Equal(t, resp.Email, "foo@bar.com")
+	assert.Equal(t, resp.OrgID, utils.ProtoFromUUID(&orgUUID))
+}
+
+func TestServer_GetUserByEmail_MissingEmail(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockDatastore(ctrl)
+
+	s := controller.NewServer(nil, d)
+
+	d.EXPECT().
+		GetUserByEmail("foo@bar.com").
+		Return(nil, nil)
+
+	resp, err := s.GetUserByEmail(
+		context.Background(),
+		&profile.GetUserByEmailRequest{Email: "foo@bar.com"})
+
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+	assert.Equal(t, status.Code(err), codes.NotFound)
+}
+
 func TestServer_CreateOrgAndUser(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

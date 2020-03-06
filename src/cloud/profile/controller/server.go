@@ -27,6 +27,8 @@ type Datastore interface {
 	CreateUser(*datastore.UserInfo) (uuid.UUID, error)
 	// GetUser gets a user by ID.
 	GetUser(uuid.UUID) (*datastore.UserInfo, error)
+	// GetUserByEmail gets a user by email.
+	GetUserByEmail(string) (*datastore.UserInfo, error)
 
 	// CreateUserAndOrg creates a user and org for creating a new org with specified user as owner.
 	CreateUserAndOrg(*datastore.OrgInfo, *datastore.UserInfo) (orgID uuid.UUID, userID uuid.UUID, err error)
@@ -115,6 +117,18 @@ func (s *Server) CreateUser(ctx context.Context, req *profile.CreateUserRequest)
 func (s *Server) GetUser(ctx context.Context, req *uuidpb.UUID) (*profile.UserInfo, error) {
 	uid := utils.UUIDFromProtoOrNil(req)
 	userInfo, err := s.d.GetUser(uid)
+	if err != nil {
+		return nil, err
+	}
+	if userInfo == nil {
+		return nil, status.Error(codes.NotFound, "no such user")
+	}
+	return userInfoToProto(userInfo), nil
+}
+
+// GetUserByEmail is the GRPC method to get a user by email.
+func (s *Server) GetUserByEmail(ctx context.Context, req *profile.GetUserByEmailRequest) (*profile.UserInfo, error) {
+	userInfo, err := s.d.GetUserByEmail(req.Email)
 	if err != nil {
 		return nil, err
 	}
