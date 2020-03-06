@@ -341,6 +341,10 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		return LoadClusterSecrets(clientset, cloudAddr, clusterID.String(), namespace, devCloudNS)
 	})
 
+	clusterRoleJob := newTaskWrapper("Updating clusterroles", func() error {
+		return optionallyDeleteClusterrole()
+	})
+
 	var yamlMap map[string]string
 	yamlJob := newTaskWrapper("Downloading Vizier YAMLs", func() error {
 		versionString, err := cmd.Flags().GetString("use_version")
@@ -383,7 +387,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	})
 
 	setupJobs := []utils.Task{
-		namespaceJob, certJob, secretJob, yamlJob,
+		namespaceJob, certJob, secretJob, clusterRoleJob, yamlJob,
 	}
 	jr := utils.NewSerialTaskRunner(setupJobs)
 	err = jr.RunAndMonitor()
@@ -454,6 +458,21 @@ func optionallyCreateNamespace(clientset *kubernetes.Clientset, namespace string
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func optionallyDeleteClusterrole() error {
+	kcmd := exec.Command("kubectl", "delete", "clusterrole", "vizier-metadata")
+	var out bytes.Buffer
+	kcmd.Stdout = &out
+	kcmd.Stderr = os.Stderr
+	_ = kcmd.Run()
+
+	kcmd = exec.Command("kubectl", "delete", "clusterrolebinding", "vizier-metadata")
+	kcmd.Stdout = &out
+	kcmd.Stderr = os.Stderr
+	_ = kcmd.Run()
+
 	return nil
 }
 
