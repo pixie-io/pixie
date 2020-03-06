@@ -52,6 +52,7 @@ var LoginCmd = &cobra.Command{
 				})
 			}
 		}
+		log.Info("Authentication Successful")
 	},
 }
 
