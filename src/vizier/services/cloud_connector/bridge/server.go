@@ -7,6 +7,7 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
@@ -94,6 +95,25 @@ func New(vizierID uuid.UUID, jwtSigningKey string, sessionID int64, vzClient vzc
 	}
 }
 
+// WatchDog watches and make sure the bridge is functioning. If not commits suicide to try to self-heal.
+func (s *Bridge) WatchDog() {
+	defer s.wg.Done()
+	t := time.NewTimer(30 * time.Second)
+
+	for {
+		lastHbSeq := atomic.LoadInt64(&s.hbSeqNum)
+		select {
+		case <-s.quitCh:
+			return
+		case <-t.C:
+			currentHbSeqNum := atomic.LoadInt64(&s.hbSeqNum)
+			if currentHbSeqNum == lastHbSeq {
+				log.Fatal("Heartbeat messages failed, assuming stream is dead. Killing self to restart...")
+			}
+		}
+	}
+}
+
 // RunStream manages starting and restarting the stream to VZConn.
 func (s *Bridge) RunStream() {
 	natsTopic := messagebus.V2CTopic("*")
@@ -105,6 +125,10 @@ func (s *Bridge) RunStream() {
 	defer natsSub.Unsubscribe()
 	// Set large limits on message size and count.
 	natsSub.SetPendingLimits(1e7, 1e7)
+
+	s.wg.Add(1)
+	go s.WatchDog()
+
 	for {
 		s.registered = false
 		select {
@@ -430,11 +454,11 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 				hbCh <- &cvmsgspb.VizierHeartbeat{
 					VizierID:       utils.ProtoFromUUID(&s.vizierID),
 					Time:           time.Now().UnixNano(),
-					SequenceNumber: s.hbSeqNum,
+					SequenceNumber: atomic.LoadInt64(&s.hbSeqNum),
 					Address:        addr,
 					Port:           port,
 				}
-				s.hbSeqNum++
+				atomic.AddInt64(&s.hbSeqNum, 1)
 			}
 		}
 	}()
