@@ -26,7 +26,7 @@ export const DeployInstructions = () => {
           </div>
           <p />
           <CodeSnippet showCopy={true} language='bash'>
-            {'curl -fsSL ' + window.location.href + 'install.sh | bash'}
+            {'curl -fsSL ' + window.location.origin + '/install.sh | bash'}
           </CodeSnippet>
           <CodeSnippet showCopy={true} language='bash'>
             {'px deploy'}

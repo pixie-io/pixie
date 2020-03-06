@@ -16,7 +16,7 @@ export class DialogBox extends React.Component<DialogBoxProps, {}> {
     return (
       <div className='dialog-box' style={style}>
         <div className='dialog-box--header'>
-          <img src={infoImage} />
+          <img src={infoImage} style={{ width: '55px' }}/>
         </div>
         <div className='dialog-box--content'>
           {this.props.children}
