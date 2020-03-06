@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/segmentio/analytics-go.v3"
 
@@ -30,15 +29,6 @@ func main() {
 		UserId: pxconfig.Cfg().UniqueClientID,
 		Event:  "Exec Complete",
 	})
-
-	pixie := `
-  ___  _       _
- | _ \(_)__ __(_) ___
- |  _/| |\ \ /| |/ -_)
- |_|  |_|/_\_\|_|\___|
-`
-	c := color.New(color.FgHiGreen)
-	c.Fprintln(os.Stderr, pixie)
 
 	log.SetOutput(os.Stderr)
 	log.Info("Pixie CLI")

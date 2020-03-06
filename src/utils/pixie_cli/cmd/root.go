@@ -23,6 +23,9 @@ func init() {
 	RootCmd.PersistentFlags().BoolP("y", "y", false, "Whether to accept all user input")
 	viper.BindPFlag("y", RootCmd.PersistentFlags().Lookup("y"))
 
+	RootCmd.PersistentFlags().BoolP("quiet", "q", false, "quiet mode")
+	viper.BindPFlag("quiet", RootCmd.PersistentFlags().Lookup("quiet"))
+
 	RootCmd.AddCommand(VersionCmd)
 	RootCmd.AddCommand(AuthCmd)
 	RootCmd.AddCommand(CollectLogsCmd)
@@ -39,6 +42,17 @@ func init() {
 	RootCmd.PersistentFlags().MarkHidden("cloud_addr")
 }
 
+func printPixie() {
+	pixie := `
+  ___  _       _
+ | _ \(_)__ __(_) ___
+ |  _/| |\ \ /| |/ -_)
+ |_|  |_|/_\_\|_|\___|
+`
+	c := color.New(color.FgHiGreen)
+	c.Fprintln(os.Stderr, pixie)
+}
+
 // RootCmd is the base command for Cobra.
 var RootCmd = &cobra.Command{
 	Use:   "px",
@@ -46,6 +60,11 @@ var RootCmd = &cobra.Command{
 	// TODO(zasgar): Add description and update this.
 	Long: `The Pixie command line interface.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		quiet, _ := cmd.Flags().GetBool("quiet")
+		if !quiet {
+			printPixie()
+		}
+
 		p := cmd
 
 		if p != nil {
