@@ -112,7 +112,7 @@ execute() {
 wait_for_user() {
   local c
   echo
-  read -s -r -n 1 -p "Continue (Y/n): " c
+  read -r -p "Continue (Y/n): " c
   # We test for \r and \n because some stuff does \r instead.
   if ! [[ "$c" == '' || "$c" == $'\r' || "$c" == $'\n' || "$c" == 'Y' || "$c" == 'y' ]]; then
     exit 1
