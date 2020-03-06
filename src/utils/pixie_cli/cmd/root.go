@@ -85,11 +85,16 @@ var RootCmd = &cobra.Command{
 		}
 		versionStr := update.UpdatesAvailable(viper.GetString("cloud_addr"))
 		if versionStr != "" {
+			cmdName := "<NONE>"
+			if p != nil {
+				cmdName = p.Name()
+			}
+
 			_ = pxanalytics.Client().Enqueue(&analytics.Track{
 				UserId: pxconfig.Cfg().UniqueClientID,
 				Event:  "Update Available",
 				Properties: analytics.NewProperties().
-					Set("cmd", p.Name()),
+					Set("cmd", cmdName),
 			})
 			c := color.New(color.Bold, color.FgGreen)
 			_, _ = c.Fprintf(os.Stderr, "Update to version \"%s\" available. Run \"px update cli\" to update.\n", versionStr)
