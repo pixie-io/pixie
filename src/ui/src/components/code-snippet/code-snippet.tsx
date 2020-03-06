@@ -79,7 +79,7 @@ export class CodeSnippet extends React.Component<CodeSnippetProps, CodeSnippetSt
       <div className='code-snippet'>
         <div className='code-snippet--content'>
           {this.props.language !== '' ?
-            <Highlight language={this.props.language}>
+            <Highlight className={this.props.language}>
               {this.props.children}
             </Highlight> :
             <pre>

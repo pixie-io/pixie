@@ -159,10 +159,7 @@ export class Vizier extends React.Component<{}, VizierState> {
                   return <ClusterInstructions message={clusterStarting} />;
                 } else {
                   return (
-                    <DeployInstructions
-                      sitename={window.location.hostname.split('.')[0]}
-                      clusterID={data.cluster.id}
-                    />
+                    <DeployInstructions/>
                   );
                 }
               }

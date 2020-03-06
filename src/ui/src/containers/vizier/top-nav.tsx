@@ -3,7 +3,7 @@ import './top-nav.scss';
 // @ts-ignore : TS does not like image files.
 import * as userImage from 'images/icons/user.svg';
 // @ts-ignore : TS does not like image files.
-import * as logoImage from 'images/pixieLogo-light.svg';
+import * as logoImage from 'images/new-logo.svg';
 import * as React from 'react';
 import {Dropdown, Nav, Navbar, NavDropdown} from 'react-bootstrap';
 import {Link, NavLink} from 'react-router-dom';

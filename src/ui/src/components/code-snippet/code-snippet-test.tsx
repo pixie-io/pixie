@@ -44,7 +44,6 @@ describe.skip('<CodeSnippet/> test', () => {
       {'Here is some text.'}
     </CodeSnippet>);
     expect(wrapper.find(Highlight)).toHaveLength(1);
-    expect(wrapper.find(Highlight).prop('language')).toEqual('python');
   });
 
   it('should not use highlighted syntax ', () => {
