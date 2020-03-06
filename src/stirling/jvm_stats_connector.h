@@ -35,8 +35,8 @@ class JVMStatsConnector : public SourceConnector {
   static constexpr auto kTables = MakeArray(kJVMStatsTable);
   static constexpr int kTableNum = SourceConnector::TableNum(kTables, kJVMStatsTable);
 
-  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{5000};
-  static constexpr std::chrono::milliseconds kDefaultPushPeriod{5000};
+  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{1000};
+  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new JVMStatsConnector(name));
