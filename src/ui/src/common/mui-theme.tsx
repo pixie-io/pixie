@@ -1,4 +1,4 @@
-import {createMuiTheme} from '@material-ui/core/styles';
+import {createMuiTheme, Theme} from '@material-ui/core/styles';
 
 declare module '@material-ui/core/styles/createPalette' {
   interface TypeBackground {
@@ -28,6 +28,24 @@ declare module '@material-ui/core/styles/createPalette' {
     };
   }
 }
+
+export const scrollbarStyles = (theme: Theme) => {
+  const commonStyle = (color) => ({
+    borderRadius: theme.spacing(1.5),
+    border: [['solid', theme.spacing(0.5), 'transparent']],
+    backgroundColor: 'transparent',
+    boxShadow: [['inset', 0, 0, theme.spacing(1), theme.spacing(1), color]],
+  });
+  return {
+    '& ::-webkit-scrollbar': {
+      width: theme.spacing(2),
+      height: theme.spacing(2),
+    },
+    '& ::-webkit-scrollbar-track': commonStyle(theme.palette.background.one),
+    '& ::-webkit-scrollbar-thumb': commonStyle(theme.palette.foreground.one),
+
+  };
+};
 
 export const DARK_THEME = createMuiTheme({
   palette: {

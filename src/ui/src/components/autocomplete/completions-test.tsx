@@ -12,13 +12,13 @@ describe('<Completions/> test', () => {
       <Completions
         inputValue='script'
         items={[
-          { header: 'Recently used' },
-          { title: 'px/script1', id: 'px-0', highlights: [[3, 5]] },
-          { title: 'px/script2', id: 'px-1', highlights: [[3, 5]] },
-          { title: 'px/script3', id: 'px-2', highlights: [[3, 5]] },
-          { header: 'Org scripts' },
-          { title: 'hulu/script1', id: 'hulu-4' },
-          { title: 'hulu/script2', id: 'hulu-5' },
+          { type: 'header', header: 'Recently used' },
+          { type: 'item', title: 'px/script1', id: 'px-0', highlights: [[3, 5]] },
+          { type: 'item', title: 'px/script2', id: 'px-1', highlights: [[3, 5]] },
+          { type: 'item', title: 'px/script3', id: 'px-2', highlights: [[3, 5]] },
+          { type: 'header', header: 'Org scripts' },
+          { type: 'item', title: 'hulu/script1', id: 'hulu-4' },
+          { type: 'item', title: 'hulu/script2', id: 'hulu-5' },
         ]}
         onActiveChange={noop}
         activeItem='px-1'

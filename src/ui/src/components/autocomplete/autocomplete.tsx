@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import {scrollbarStyles} from 'common/mui-theme';
 import * as React from 'react';
 
 import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
@@ -16,6 +17,8 @@ const useStyles = makeStyles((theme: Theme) => {
       cursor: 'text',
       display: 'flex',
       flexDirection: 'column',
+      // TODO(malthus): remove this once the scrollbar theme is set at global level.
+      ...scrollbarStyles(theme),
     },
     input: {
       backgroundColor: theme.palette.background.two,
@@ -38,6 +41,9 @@ interface AutoCompleteProps {
 type ItemsMap = Map<CompletionId, { title: CompletionTitle, index: number }>;
 
 function findNextItem(activeItem: CompletionId, itemsMap: ItemsMap, completions: CompletionItems): CompletionId {
+  if (!activeItem || completions.length === 0) {
+    return '';
+  }
   const { index } = itemsMap.get(activeItem);
   for (let i = 1; i < completions.length; i++) {
     const nextIndex = (index + i) % completions.length;
