@@ -547,13 +547,11 @@ func waitForProxy(clientset *kubernetes.Clientset, namespace string) error {
 				{
 					// TODO(zasgar): NodePorts get ready right away, we need to make sure
 					// that the service is actually healthy.
-					fmt.Printf("Setup complete.\n")
 					watcher.Stop()
 				}
 			case v1.ServiceTypeLoadBalancer:
 				{
 					if len(service.Status.LoadBalancer.Ingress) > 0 && service.Status.LoadBalancer.Ingress[0].IP != "" {
-						fmt.Printf("Setup complete.\n")
 						watcher.Stop()
 					}
 				}
@@ -593,6 +591,8 @@ var empty struct{}
 
 // waitForPems waits for the Vizier's Proxy service to be ready with an external IP.
 func waitForPems(clientset *kubernetes.Clientset, namespace string, expectedPods int) error {
+	fmt.Printf("Waiting for PEMs to deploy ...\n")
+
 	// Watch for pod updates.
 	watcher, err := k8s.WatchK8sResource(clientset, "pods", namespace)
 	if err != nil {
