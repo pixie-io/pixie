@@ -250,8 +250,7 @@ TEST_F(AgentMetadataStateTest, pid_created) {
   EXPECT_CALL(sysconfig, PageSize()).WillRepeatedly(Return(4096));
   EXPECT_CALL(sysconfig, KernelTicksPerSecond()).WillRepeatedly(Return(10000000));
   EXPECT_CALL(sysconfig, proc_path())
-      .WillRepeatedly(
-          Return(TestEnvironment::PathToTestDataFile("src/shared/metadata/testdata/proc")));
+      .WillRepeatedly(Return(testing::TestFilePath("src/shared/metadata/testdata/proc")));
   system::ProcParser proc_parser(sysconfig);
   EXPECT_OK(AgentMetadataStateManager::ProcessPIDUpdates(1000, proc_parser, &metadata_state_,
                                                          &md_reader, &events));

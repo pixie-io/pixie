@@ -23,6 +23,7 @@ namespace stirling {
 
 using ::pl::stirling::testing::FindRecordIdxMatchesPid;
 using ::pl::stirling::testing::SocketTraceBPFTest;
+using ::pl::testing::TestFilePath;
 using ::pl::types::ColumnWrapper;
 using ::pl::types::ColumnWrapperRecordBatch;
 
@@ -49,8 +50,7 @@ class MySQLContainer : public ContainerRunner {
 class MySQLTraceTest : public SocketTraceBPFTest {
  protected:
   MySQLTraceTest() {
-    std::string script_path =
-        TestEnvironment::PathToTestDataFile("src/stirling/mysql/testing/script.sql");
+    std::string script_path = TestFilePath("src/stirling/mysql/testing/script.sql");
     LOG(INFO) << script_path;
 
     // Run the MySQL server.
@@ -156,8 +156,7 @@ mysql::Record kRecord3 = {
 //-----------------------------------------------------------------------------
 
 TEST_F(MySQLTraceTest, mysql_capture) {
-  std::string script_path =
-      TestEnvironment::PathToTestDataFile("src/stirling/mysql/testing/script.sql");
+  std::string script_path = TestFilePath("src/stirling/mysql/testing/script.sql");
   ASSERT_OK_AND_ASSIGN(std::string script_content, pl::ReadFileToString(script_path));
 
   // Run mysql as a way of generating traffic.

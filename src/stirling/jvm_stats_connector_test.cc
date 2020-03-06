@@ -16,12 +16,13 @@ namespace stirling {
 
 using ::pl::stirling::testing::ColWrapperSizeIs;
 using ::pl::stirling::testing::FindRecordIdxMatchesPid;
+using ::pl::testing::TestFilePath;
 using ::testing::Each;
 using ::testing::SizeIs;
 
 struct JavaHelloWorld : SubProcess {
   inline static const std::string kClassPath =
-      TestEnvironment::PathToTestDataFile("src/stirling/testing/java/HelloWorld.jar");
+      TestFilePath("src/stirling/testing/java/HelloWorld.jar");
 
   ~JavaHelloWorld() {
     Kill();

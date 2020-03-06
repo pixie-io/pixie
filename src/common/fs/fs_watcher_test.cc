@@ -12,50 +12,39 @@
 
 namespace pl {
 
-using std::string;
+using ::pl::testing::TempDir;
+using ::pl::testing::TestFilePath;
 
 constexpr char kTestDataBasePathFS[] = "src/common/fs";
 
 namespace {
-string GetPathToTestDataFile(const string& fname) {
-  return TestEnvironment::PathToTestDataFile(std::string(kTestDataBasePathFS) + "/" + fname);
+std::string GetPathToTestDataFile(std::string_view fname) {
+  return testing::TestFilePath(kTestDataBasePathFS) / fname;
 }
 }  // namespace
 
 class FSWatcherTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    std::string prefix = "fs_watcher_test";
-    char dir_template[] = "/tmp/fs_watcher_test_XXXXXX";
-    char* dir_name = mkdtemp(dir_template);
-    CHECK(dir_name != nullptr);
-    tmp_dir_ = dir_name;
-    Test::SetUp();
-
-    std::filesystem::copy(GetPathToTestDataFile("testdata/fs_watcher"), tmp_dir_,
+    std::filesystem::copy(GetPathToTestDataFile("testdata/fs_watcher"), tmp_dir_.path(),
                           std::filesystem::copy_options::recursive);
     fs_watcher_ = FSWatcher::Create();
   }
 
-  void TearDown() override {
-    fs_watcher_.reset();
-    std::filesystem::remove_all(tmp_dir_);
-  }
-
-  std::unique_ptr<FSWatcher> fs_watcher_ = nullptr;
-  std::string tmp_dir_;
+  TempDir tmp_dir_;
+  std::unique_ptr<FSWatcher> fs_watcher_;
 };
 
 TEST_F(FSWatcherTest, fs_watcher_addwatch_removewatch) {
-  std::filesystem::path dir1 = tmp_dir_ + "/dir1";
+  std::filesystem::path dir1 = tmp_dir_.path() / "dir1";
   EXPECT_OK(fs_watcher_->AddWatch(dir1));
   EXPECT_EQ(1, fs_watcher_->NumWatchers());
 
-  std::filesystem::path dir2 = tmp_dir_ + "/dir2";
+  std::filesystem::path dir2 = tmp_dir_.path() / "dir2";
   EXPECT_OK(fs_watcher_->AddWatch(dir2));
   EXPECT_EQ(2, fs_watcher_->NumWatchers());
 
-  std::filesystem::path file1 = tmp_dir_ + "/dir1/file1.txt";
+  std::filesystem::path file1 = tmp_dir_.path() / "dir1/file1.txt";
   EXPECT_OK(fs_watcher_->AddWatch(file1));
   EXPECT_EQ(3, fs_watcher_->NumWatchers());
 
@@ -67,20 +56,20 @@ TEST_F(FSWatcherTest, fs_watcher_addwatch_removewatch) {
 }
 
 TEST_F(FSWatcherTest, fs_watcher_read_inotify_event) {
-  std::filesystem::path file1 = tmp_dir_ + "/dir1/file1.txt";
+  std::filesystem::path file1 = tmp_dir_.path() / "dir1/file1.txt";
   EXPECT_OK(fs_watcher_->AddWatch(file1));
 
-  std::filesystem::path dir2 = tmp_dir_ + "/dir2";
+  std::filesystem::path dir2 = tmp_dir_.path() / "dir2";
   EXPECT_OK(fs_watcher_->AddWatch(dir2));
 
   EXPECT_FALSE(fs_watcher_->HasEvents());
 
   // Modify file1.
-  std::filesystem::copy(tmp_dir_ + "/dir2/file2.txt", tmp_dir_ + "/dir1/file1.txt",
+  std::filesystem::copy(tmp_dir_.path() / "dir2/file2.txt", tmp_dir_.path() / "dir1/file1.txt",
                         std::filesystem::copy_options::overwrite_existing);
 
   // Create new dir3 in dir2.
-  std::filesystem::create_directory(tmp_dir_ + "/dir2/dir3");
+  std::filesystem::create_directory(tmp_dir_.path() / "dir2/dir3");
 
   EXPECT_EQ(0, fs_watcher_->NumEvents());
   EXPECT_OK(fs_watcher_->ReadInotifyUpdates());

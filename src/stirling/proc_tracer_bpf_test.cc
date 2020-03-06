@@ -12,14 +12,14 @@ namespace pl {
 namespace stirling {
 
 using ::pl::Exec;
-using ::pl::TestEnvironment;
+using ::pl::testing::TestFilePath;
 using ::testing::SizeIs;
 using ::testing::UnorderedElementsAre;
 
 TEST(ProcTracerTest, CapturesVforkAndClone) {
   ProcTracer proc_tracer;
   ASSERT_OK(proc_tracer.Init());
-  std::string path = TestEnvironment::PathToTestDataFile("src/stirling/testing/forker");
+  std::string path = TestFilePath("src/stirling/testing/forker");
   ASSERT_OK_AND_ASSIGN(std::string output, Exec(path));
 
   std::vector<std::string_view> pids = absl::StrSplit(output, " ");

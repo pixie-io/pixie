@@ -2,6 +2,8 @@
 
 #include <gmock/gmock.h>
 
+#include "src/common/base/statusor.h"
+
 namespace pl {
 namespace testing {
 namespace status {

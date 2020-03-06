@@ -1,17 +1,16 @@
 #include "src/common/protobufs/recordio.h"
 
-#include <gtest/gtest.h>
 #include <fstream>
 #include <sstream>
 
-#include "src/common/testing/protobuf.h"
-#include "src/common/testing/test_environment.h"
+#include "src/common/testing/testing.h"
 #include "src/stirling/http2/testing/proto/greet.pb.h"
 
 namespace pl {
 namespace rio {
 
 using ::pl::stirling::http2::testing::HelloRequest;
+using ::pl::testing::TempDir;
 using ::pl::testing::proto::EqualsProto;
 
 TEST(RecordIOTest, WriteAndRead) {
@@ -52,7 +51,11 @@ TEST(RecordIOTest, ReadInvalidData) {
 }
 
 TEST(RecordIOTest, WriteAndReadFile) {
-  std::ofstream ofs(TestEnvironment::TestRunDir() + "/test");
+  TempDir temp_dir;
+
+  std::filesystem::path test_file_path = temp_dir.path() / "test";
+
+  std::ofstream ofs(test_file_path);
   HelloRequest req;
   req.set_name("foo");
   EXPECT_TRUE(SerializeToStream(req, &ofs));
@@ -60,7 +63,7 @@ TEST(RecordIOTest, WriteAndReadFile) {
   EXPECT_TRUE(SerializeToStream(req, &ofs));
   ofs.close();
 
-  std::ifstream ifs(TestEnvironment::TestRunDir() + "/test");
+  std::ifstream ifs(test_file_path);
   Reader reader(&ifs);
   HelloRequest req_copy;
 

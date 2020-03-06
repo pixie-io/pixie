@@ -15,14 +15,13 @@ namespace pl {
 namespace stirling {
 namespace hsperf {
 
-using ::pl::TestEnvironment;
+using ::pl::testing::TestFilePath;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
 TEST(PerfDataHeaderTest, ReadFromBytes) {
-  ASSERT_OK_AND_ASSIGN(
-      const std::string content,
-      ReadFileToString(TestEnvironment::PathToTestDataFile("src/stirling/utils/test_hsperfdata")));
+  ASSERT_OK_AND_ASSIGN(const std::string content,
+                       ReadFileToString(TestFilePath("src/stirling/utils/test_hsperfdata")));
 
   HsperfData data;
   EXPECT_OK(ParseHsperfData(std::move(content), &data));

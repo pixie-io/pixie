@@ -19,7 +19,7 @@ TEST(ElfReaderTest, NonExistentPath) {
 }
 
 TEST(ElfReaderTest, ListSymbolsAnyMatch) {
-  const std::string path = pl::TestEnvironment::PathToTestDataFile(kBinary);
+  const std::string path = pl::testing::TestFilePath(kBinary);
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
@@ -32,7 +32,7 @@ TEST(ElfReaderTest, ListSymbolsAnyMatch) {
 }
 
 TEST(ElfReaderTest, ListSymbolsExactMatch) {
-  const std::string path = pl::TestEnvironment::PathToTestDataFile(kBinary);
+  const std::string path = pl::testing::TestFilePath(kBinary);
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
@@ -43,7 +43,7 @@ TEST(ElfReaderTest, ListSymbolsExactMatch) {
 }
 
 TEST(ElfReaderTest, ListSymbolsSuffixMatch) {
-  const std::string path = pl::TestEnvironment::PathToTestDataFile(kBinary);
+  const std::string path = pl::testing::TestFilePath(kBinary);
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
@@ -56,7 +56,7 @@ TEST(ElfReaderTest, ListSymbolsSuffixMatch) {
 
 #ifdef __linux__
 TEST(ElfReaderTest, SymbolAddress) {
-  const std::string path = pl::TestEnvironment::PathToTestDataFile(kBinary);
+  const std::string path = pl::testing::TestFilePath(kBinary);
   const std::string_view symbol = "CanYouFindThis";
 
   // Extract the address from nm as the gold standard.

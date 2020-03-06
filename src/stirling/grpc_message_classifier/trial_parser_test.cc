@@ -245,7 +245,7 @@ TEST_F(ParseAsTest, NonUTFStrings) {
 TEST(ParseAsStress, BytesVsString) {
   // Get a captured AgentQueryResultRequest message.
   std::string message_filename =
-      TestEnvironment::PathToTestDataFile("src/stirling/grpc_message_classifier/testdata/message");
+      testing::TestFilePath("src/stirling/grpc_message_classifier/testdata/message");
   std::string message_ascii = pl::FileContentsOrDie(message_filename);
   auto status_or_bytes = AsciiHexToBytes<std::string>(message_ascii, {':'});
   ASSERT_OK(status_or_bytes);
@@ -263,8 +263,8 @@ TEST(ParseAsStress, BytesVsString) {
   // Version with string parses correctly.
   {
     // This FDS uses string as the StringColumn representation.
-    std::string fds_filename = TestEnvironment::PathToTestDataFile(
-        "src/stirling/grpc_message_classifier/testdata/pixie-string.fds");
+    std::string fds_filename =
+        testing::TestFilePath("src/stirling/grpc_message_classifier/testdata/pixie-string.fds");
 
     // TODO(oazizi): Replace lines below with changes from https://phab.pixielabs.ai/D1780.
     std::ifstream fds_file(fds_filename);
@@ -281,8 +281,8 @@ TEST(ParseAsStress, BytesVsString) {
   // Version with bytes parses correctly.
   {
     // This FDS uses string as the StringColumn representation.
-    std::string fds_filename = TestEnvironment::PathToTestDataFile(
-        "src/stirling/grpc_message_classifier/testdata/pixie-bytes.fds");
+    std::string fds_filename =
+        testing::TestFilePath("src/stirling/grpc_message_classifier/testdata/pixie-bytes.fds");
 
     // TODO(oazizi): Replace lines below with changes from https://phab.pixielabs.ai/D1780.
     std::ifstream fds_file(fds_filename);

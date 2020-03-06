@@ -21,7 +21,7 @@ constexpr char kTestDataBasePath[] = "src/common/system";
 
 namespace {
 std::string GetPathToTestDataFile(const std::string& fname) {
-  return TestEnvironment::PathToTestDataFile(std::string(kTestDataBasePath) + "/" + fname);
+  return testing::TestFilePath(std::string(kTestDataBasePath) + "/" + fname);
 }
 }  // namespace
 

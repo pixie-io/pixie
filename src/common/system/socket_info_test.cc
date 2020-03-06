@@ -18,6 +18,7 @@
 namespace pl {
 namespace system {
 
+using ::pl::testing::TestFilePath;
 using ::testing::Contains;
 using ::testing::Not;
 using ::testing::Pair;
@@ -204,8 +205,7 @@ TEST(NetlinkSocketProberTest, ClosedInetConnection) {
 class NetNamespaceTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    std::filesystem::path testdata_path =
-        TestEnvironment::PathToTestDataFile("src/common/system/testdata");
+    std::filesystem::path testdata_path = TestFilePath("src/common/system/testdata");
 
     // Bazel doesn't copy symlink testdata as symlinks, so we create the missing symlink testdata
     // here.
@@ -213,7 +213,7 @@ class NetNamespaceTest : public ::testing::Test {
     ASSERT_OK(fs::CreateSymlinkIfNotExists("net:[10002]", testdata_path / "proc/456/ns/net"));
     ASSERT_OK(fs::CreateSymlinkIfNotExists("net:[10002]", testdata_path / "proc/789/ns/net"));
 
-    proc_path_ = TestEnvironment::PathToTestDataFile("src/common/system/testdata/proc");
+    proc_path_ = TestFilePath("src/common/system/testdata/proc");
   }
 
   std::string proc_path_;
