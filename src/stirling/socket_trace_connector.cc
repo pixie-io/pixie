@@ -182,7 +182,6 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
   LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
 
-  // TODO(yzhao): Factor this block into a helper function.
   // TODO(oazizi/yzhao): Should uprobe uses different set of perf buffers than the kprobes?
   // That allows the BPF code and companion user-space code for uprobe & kprobe be separated
   // cleanly. For example, right now, enabling uprobe & kprobe simultaneously can crash Stirling,
@@ -301,45 +300,16 @@ Status SocketTraceConnector::DisableSelfTracing() {
 }
 
 std::map<std::string, std::vector<int32_t>> SocketTraceConnector::FindNewPIDs() {
-  absl::flat_hash_map<md::UPID, std::filesystem::path> new_upid_paths;
   std::filesystem::path proc_path = system::Config::GetInstance().proc_path();
 
-  absl::flat_hash_set<md::UPID> mds_upids = get_mds_upids();
+  absl::flat_hash_map<md::UPID, std::filesystem::path> upid_proc_path_map =
+      ProcTracker::Cleanse(proc_path, get_mds_upids());
 
-  if (mds_upids.empty()) {
-    // Fall back to scanning proc filesystem.
-    for (const auto& [pid, pid_path] : system::ListProcPidPaths(proc_path)) {
-      const md::UPID upid(/*asid*/ 0, pid, system::GetPIDStartTimeTicks(pid_path));
-      if (prev_scanned_upids_.contains(upid)) {
-        continue;
-      }
-      new_upid_paths[upid] = pid_path;
-    }
-  } else {
-    for (const auto& upid : mds_upids) {
-      const md::UPID upid_cpy(/*asid*/ 0, upid.pid(), upid.start_ts());
-      if (prev_scanned_upids_.contains(upid_cpy)) {
-        continue;
-      }
-      new_upid_paths[upid_cpy] = proc_path / std::to_string(upid.pid());
-    }
+  if (upid_proc_path_map.empty()) {
+    upid_proc_path_map = ProcTracker::ListUPIDs(proc_path);
   }
-  for (const auto& [upid, pid_path] : new_upid_paths) {
-    prev_scanned_upids_.insert(upid);
-  }
-
-  // TODO(yzhao): We ignore the terminated UPIDs, as the kernel will automatically cleanup the
-  // uprobes for a stopped process. In the future, we still want to manually detach uprobes
-  // if no process is running with a particular executable file, so to cleanup the resources inside
-  // BPF object.
-  //
-  // They should not cause problems for symbol addresses and uprobes:
-  // 1. If the terminated PIDs are reused with the same executable, then the existing symbol
-  // addresses and uprobes continue to work correctly.
-  // 2. If the terminated PIDs are reused with a different executable, then the symbol addresses
-  // and uprobes will be updated.
-  // 3. If the terminated PIDs are not reused, then there will not be BPF probes invoked,
-  // therefore the existing symbol addresses and uprobes won't be used.
+  absl::flat_hash_map<md::UPID, std::filesystem::path> new_upid_paths =
+      proc_tracker_.TakeSnapshotAndDiff(std::move(upid_proc_path_map));
 
   std::filesystem::path host_path = system::Config::GetInstance().host_path();
   std::map<std::string, std::vector<int32_t>> new_pids;

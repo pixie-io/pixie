@@ -17,6 +17,7 @@ pl_cc_library(
         "//src/common/system:cc_library",
         "@com_github_tencent_rapidjson//:rapidjson",
         "//src/stirling/common:cc_library",
+        "//src/shared/metadata:cc_library",
     ],
 )
 
@@ -46,4 +47,11 @@ pl_cc_test(
         ":cc_library",
         "//src/common/exec:cc_library",
     ],
+)
+
+pl_cc_test(
+    name = "proc_tracker_test",
+    srcs = ["proc_tracker_test.cc"],
+    data = ["//src/common/system/testdata:proc_fs"],
+    deps = [":cc_library"],
 )

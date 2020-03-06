@@ -233,6 +233,12 @@ TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
   const size_t idx = target_record_indices.front();
   const std::string scheme_text = GetParam() ? R"(":scheme":"https")" : R"(":scheme":"http")";
 
+  md::UPID upid(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(idx).val);
+  std::filesystem::path proc_pid_path =
+      std::filesystem::path("/proc") / std::to_string(s_.child_pid());
+  md::UPID expected_upid(1, s_.child_pid(), system::GetPIDStartTimeTicks(proc_pid_path));
+  EXPECT_EQ(upid, expected_upid);
+
   EXPECT_THAT(
       std::string(record_batch[kHTTPReqHeadersIdx]->Get<types::StringValue>(idx)),
       AllOf(HasSubstr(absl::Substitute(R"(":authority":"localhost:$0")", s_port_)),

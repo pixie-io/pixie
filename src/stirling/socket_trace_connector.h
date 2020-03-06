@@ -38,6 +38,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/stirling/http_table.h"
 #include "src/stirling/mysql_table.h"
 #include "src/stirling/source_connector.h"
+#include "src/stirling/utils/proc_tracker.h"
 
 DECLARE_string(http_response_header_filters);
 DECLARE_bool(stirling_enable_parsing_protobufs);
@@ -291,8 +292,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   absl::Mutex mds_upids_lock_;
   absl::flat_hash_set<md::UPID> mds_upids_ GUARDED_BY(mds_upids_lock_);
 
-  // Used to avoid duplicate scanning on the same processes.
-  absl::flat_hash_set<md::UPID> prev_scanned_upids_;
+  ProcTracker proc_tracker_;
+
+  // Records the binaries that have been attached uprobes.
   absl::flat_hash_set<std::string> prev_scanned_binaries_;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);

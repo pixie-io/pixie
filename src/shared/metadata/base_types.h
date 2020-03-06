@@ -82,5 +82,11 @@ class UPID {
   absl::uint128 value_ = 0;
 };
 
+// Needed for gtest to print UPID.
+inline std::ostream& operator<<(std::ostream& os, const md::UPID& upid) {
+  os << upid.String();
+  return os;
+}
+
 }  // namespace md
 }  // namespace pl

@@ -14,36 +14,34 @@
 #include "src/stirling/obj_tools/proc_path_tools.h"
 #include "src/stirling/utils/hsperfdata.h"
 #include "src/stirling/utils/java.h"
+#include "src/stirling/utils/proc_tracker.h"
 
 namespace pl {
 namespace stirling {
 
 using ::pl::fs::Exists;
 using ::pl::stirling::obj_tools::ResolveProcessPath;
-using ::pl::system::ListProcPidPaths;
 using ::pl::utils::LEndianBytesToInt;
 
-absl::flat_hash_set<md::UPID> JVMStatsConnector::FindNewUPIDs(const ConnectorContext& ctx) {
-  absl::flat_hash_set<md::UPID> new_upids;
-
+absl::flat_hash_set<md::UPID> JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
   std::filesystem::path proc_path = system::Config::GetInstance().proc_path();
-  const uint32_t asid = ctx.GetASID();
 
-  absl::flat_hash_set<md::UPID> upids = ctx.GetMdsUpids();
-  if (upids.empty()) {
-    // Fall back to scanning proc filesystem.
-    for (const auto& [pid, pid_path] : system::ListProcPidPaths(proc_path)) {
-      upids.emplace(asid, pid, system::GetPIDStartTimeTicks(pid_path));
-    }
+  absl::flat_hash_map<md::UPID, std::filesystem::path> upid_proc_path_map =
+      ProcTracker::Cleanse(proc_path, ctx.GetMdsUpids());
+
+  if (upid_proc_path_map.empty()) {
+    upid_proc_path_map = ProcTracker::ListUPIDs(proc_path);
   }
-  for (const auto& upid : upids) {
-    if (prev_scanned_upids_.contains(upid)) {
-      continue;
-    }
-    new_upids.insert(upid);
-    prev_scanned_upids_.insert(upid);
+
+  absl::flat_hash_map<md::UPID, std::filesystem::path> new_upid_proc_path_map =
+      proc_tracker_.TakeSnapshotAndDiff(std::move(upid_proc_path_map));
+
+  absl::flat_hash_set<md::UPID> java_upids = prev_scanned_java_upids_;
+  for (const auto& [upid, proc_pid_path] : new_upid_proc_path_map) {
+    java_upids.insert(upid);
   }
-  return new_upids;
+
+  return java_upids;
 }
 
 namespace {
@@ -93,18 +91,13 @@ void JVMStatsConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_n
 
   absl::flat_hash_set<md::UPID> scanned_java_upids;
 
-  // First scan the previously-scanned JVM processes.
-  for (const md::UPID& upid : prev_scanned_java_upids_) {
-    if (ExportStats(upid, data_table).ok()) {
+  for (const md::UPID& upid : FindJavaUPIDs(*ctx)) {
+    md::UPID upid_with_asid(ctx->GetASID(), upid.pid(), upid.start_ts());
+    if (ExportStats(upid_with_asid, data_table).ok()) {
       scanned_java_upids.insert(upid);
     }
   }
-  for (const md::UPID& upid : FindNewUPIDs(*ctx)) {
-    if (ExportStats(upid, data_table).ok()) {
-      scanned_java_upids.insert(upid);
-    }
-  }
-  prev_scanned_java_upids_ = std::move(scanned_java_upids);
+  prev_scanned_java_upids_.swap(scanned_java_upids);
 }
 
 }  // namespace stirling

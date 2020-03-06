@@ -214,10 +214,5 @@ class ProcParser {
 
 int64_t GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_path);
 
-/**
- * Returns a map of <pid>:<proc/pid path>. Ignores non-numeric entries.
- */
-std::map<int, std::filesystem::path> ListProcPidPaths(const std::filesystem::path& proc);
-
 }  // namespace system
 }  // namespace pl

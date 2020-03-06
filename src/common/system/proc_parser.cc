@@ -522,17 +522,5 @@ int64_t GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_path) {
   return start_time_ticks;
 }
 
-std::map<int, std::filesystem::path> ListProcPidPaths(const std::filesystem::path& proc) {
-  std::map<int, std::filesystem::path> res;
-  for (const auto& p : std::filesystem::directory_iterator(proc)) {
-    int pid = 0;
-    if (!absl::SimpleAtoi(p.path().filename().string(), &pid)) {
-      continue;
-    }
-    res[pid] = p.path();
-  }
-  return res;
-}
-
 }  // namespace system
 }  // namespace pl

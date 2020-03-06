@@ -25,6 +25,7 @@ DUMMY_SOURCE_CONNECTOR(JVMStatsConnector);
 #include "src/stirling/jvm_stats_table.h"
 #include "src/stirling/source_connector.h"
 #include "src/stirling/utils/java.h"
+#include "src/stirling/utils/proc_tracker.h"
 
 namespace pl {
 namespace stirling {
@@ -49,13 +50,15 @@ class JVMStatsConnector : public SourceConnector {
   explicit JVMStatsConnector(std::string_view source_name)
       : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {}
 
-  // Returns UPIDs that has not been scanned in the previous iteration of transferring data.
-  // TODO(yzhao): Merge with SocketTraceConnector::FindNewUPIDs().
-  absl::flat_hash_set<md::UPID> FindNewUPIDs(const ConnectorContext& ctx);
+  // Returns UPIDs of potentially newly-created Java processes that should be scanned for
+  // JVM stats.
+  absl::flat_hash_set<md::UPID> FindJavaUPIDs(const ConnectorContext& ctx);
+
   Status ExportStats(const md::UPID& upid, DataTable* data_table) const;
 
+  ProcTracker proc_tracker_;
+
   // Records the UPIDs that have been scanned in the previous iteration of transferring data.
-  absl::flat_hash_set<md::UPID> prev_scanned_upids_;
   absl::flat_hash_set<md::UPID> prev_scanned_java_upids_;
 };
 
