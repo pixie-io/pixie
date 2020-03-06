@@ -1,0 +1,174 @@
+script = """
+ns = 'sock-shop'
+service = 'sock-shop/front-end'
+df = px.DataFrame(table='http_events', start_time='-2m', select=['time_', 'upid', 'remote_addr', 'remote_port', 'http_resp_status', 'http_req_path', 'http_resp_message', 'http_resp_latency_ns'])
+bytes_per_mb = 1024.0 * 1024.0
+df.http_resp_latency_ms = df.http_resp_latency_ns / 1.0E6
+df = df[df['http_resp_latency_ms'] < 1000.0]
+df.failure = df.http_resp_status >= 400
+num_seconds = 2
+df.timestamp = px.bin(df.time_, px.seconds(num_seconds))
+k8s_object = 'pod'
+df[k8s_object] = df.ctx[k8s_object]
+
+filter_pods = px.contains(df[k8s_object], service) or px.contains(df[k8s_object], ns)
+filter_out_health = px.contains(df.http_req_path, '/health') != 1
+
+filter_out_server_side_tracing = px.contains(df.remote_addr, '10.36') != 1
+df = df[filter_pods and (filter_out_health and filter_out_server_side_tracing)]
+
+quantiles_agg = df.groupby([k8s_object, 'timestamp']).agg(
+    latency_quantiles=('http_resp_latency_ms', px.quantiles),
+    error_rate=('failure', px.mean),
+    throughput_total=('http_resp_status', px.count),
+)
+quantiles_agg.latency_p50 = px.pluck_float64(
+    quantiles_agg.latency_quantiles, 'p50')
+quantiles_agg.latency_p90 = px.pluck_float64(
+    quantiles_agg.latency_quantiles, 'p90')
+quantiles_agg.latency_p99 = px.pluck_float64(
+    quantiles_agg.latency_quantiles, 'p99')
+quantiles_agg['time_'] = quantiles_agg['timestamp']
+quantiles_table = quantiles_agg[['time_', k8s_object, 'latency_p50',
+                                 'latency_p90', 'latency_p99', 'error_rate', 'throughput_total']]
+quantiles_table.num_errors = quantiles_table.error_rate * \
+    quantiles_table.throughput_total / num_seconds
+quantiles_table.throughput_total = quantiles_table.throughput_total / num_seconds
+px.display(quantiles_table, 'test')
+"""
+
+vega = """
+{
+  \"p50\": {
+    \"mark\": \"line\",
+    \"data\": {
+      \"name\": \"test\"
+    },
+    \"encoding\": {
+      \"color\": {
+        \"field\": \"pod\",
+        \"type\": \"nominal\"
+      },
+      \"x\": {
+        \"field\": \"time_\",
+        \"type\": \"temporal\",
+        \"axis\": {
+          \"titleFontSize\": 15
+        }
+      },
+      \"y\": {
+        \"field\": \"latency_p50\",
+        \"type\": \"quantitative\",
+        \"axis\": {
+          \"titleFontSize\": 15
+        }
+      }
+    },
+    \"config\": {
+      \"line\": {
+        \"point\": true
+      },
+      \"scale\": {
+        \"useUnaggregatedDomain\": true
+      }
+    }
+  },
+  \"p90\": {
+    \"mark\": \"line\",
+    \"data\": {
+      \"name\": \"test\"
+    },
+    \"encoding\": {
+      \"color\": {
+        \"field\": \"pod\",
+        \"type\": \"nominal\"
+      },
+      \"x\": {
+        \"field\": \"time_\",
+        \"type\": \"temporal\",
+        \"axis\": {
+          \"titleFontSize\": 15
+        }
+      },
+      \"y\": {
+        \"field\": \"latency_p90\",
+        \"type\": \"quantitative\",
+        \"axis\": {
+          \"titleFontSize\": 15
+        }
+      }
+    },
+    \"config\": {
+      \"line\": {
+        \"point\": true
+      },
+      \"scale\": {
+        \"useUnaggregatedDomain\": true
+      }
+    }
+  },
+  \"p99\": {
+    \"mark\": \"line\",
+    \"data\": {
+      \"name\": \"test\"
+    },
+    \"encoding\": {
+      \"color\": {
+        \"field\": \"pod\",
+        \"type\": \"nominal\"
+      },
+      \"x\": {
+        \"field\": \"time_\",
+        \"type\": \"temporal\",
+        \"axis\": {
+          \"titleFontSize\": 15
+        }
+      },
+      \"y\": {
+        \"field\": \"latency_p90\",
+        \"type\": \"quantitative\",
+        \"axis\": {
+          \"titleFontSize\": 15
+        }
+      }
+    },
+    \"config\": {
+      \"line\": {
+        \"point\": true
+      },
+      \"scale\": {
+        \"useUnaggregatedDomain\": true
+      }
+    }
+  }
+}
+"""
+
+placement = """
+{
+  "p50": {
+    "position": {
+      "x": 0,
+      "y": 0,
+      "w": 12,
+      "h": 2
+    }
+  },
+  "p90": {
+    "position": {
+      "x": 0,
+      "y": 5,
+      "w": 12,
+      "h": 3
+    }
+  },
+  "p99": {
+    "position": {
+      "x": 0,
+      "y": 2,
+      "w": 12,
+      "h": 3
+    }
+  }
+}
+"""

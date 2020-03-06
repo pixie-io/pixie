@@ -3,11 +3,12 @@ import {CodeEditor} from 'components/code-editor';
 import LazyPanel from 'components/lazy-panel';
 import {parseSpecs} from 'components/vega/spec';
 import * as React from 'react';
-import {isSetAccessorDeclaration} from 'typescript';
 
+import IconButton from '@material-ui/core/IconButton';
 import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
+import ReplayIcon from '@material-ui/icons/Replay';
 
 import {LiveContext, PlacementContext, ScriptContext, VegaContext} from './context';
 import {parsePlacement} from './layout';
@@ -114,6 +115,7 @@ const LiveViewEditor = () => {
         <Tab value='pixie' label='Pixie Script' />
         <Tab value='vega' label='Vega Spec' />
         <Tab value='placement' label='Placement' />
+        <ResetScriptsButton />
       </Tabs>
       <LazyPanel className={classes.panel} show={tab === 'pixie'}>
         <ScriptEditor />
@@ -125,6 +127,15 @@ const LiveViewEditor = () => {
         <PlacementEditor />
       </LazyPanel>
     </div>
+  );
+};
+
+const ResetScriptsButton = () => {
+  const { resetScripts } = React.useContext(LiveContext);
+  return (
+    <IconButton onClick={resetScripts} style={{ marginLeft: 'auto' }}>
+      <ReplayIcon />
+    </IconButton>
   );
 };
 

@@ -14,7 +14,7 @@ import ToggleButton from '@material-ui/lab/ToggleButton';
 
 import Canvas from './canvas';
 import CommandInput from './command-input';
-import LiveContextProvider from './context';
+import LiveContextProvider, {LiveContext} from './context';
 import Editor from './editor';
 import ExecuteScript from './execute';
 
@@ -63,6 +63,7 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     editor: {
       flex: 1,
+      minWidth: 0,
       borderRightStyle: 'solid',
       borderRightColor: theme.palette.background.three,
       borderRightWidth: theme.spacing(0.25),
@@ -103,7 +104,7 @@ const LiveView = () => {
       <div className={classes.root}>
         <GlobalHotKeys handlers={hotkeyHandlers} keyMap={COMMAND_KEYMAP} />
         <div className={classes.topBar}>
-          <IconButton  disabled={true} onClick={toggleDrawer}>
+          <IconButton disabled={true} onClick={toggleDrawer}>
             <MenuIcon />
           </IconButton>
           <div className={classes.title}></div>
