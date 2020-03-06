@@ -9,13 +9,11 @@ import {Dropdown, Nav, Navbar, NavDropdown} from 'react-bootstrap';
 import {Link, NavLink} from 'react-router-dom';
 import {getRedirectPath} from 'utils/redirect-utils';
 
-const LOGOUT_URL = getRedirectPath('/logout', {});
-
 export function VizierTopNav() {
   return (
     <Navbar style={{ height: '48px' }} variant='dark' bg='primary'>
       <Navbar.Brand as={Link} to='/'>
-        <img src={logoImage} />
+        <img src={logoImage} style={{ width: '60px' }}/>
       </Navbar.Brand>
       <Nav style={{ marginRight: 'auto' }}>
         <Nav.Link as={NavLink} to='/console' activeClassName='pixie-nav-link-active'>Console</Nav.Link>
@@ -24,7 +22,7 @@ export function VizierTopNav() {
         <NavDropdown.Item as={NavLink} to='/agents'>Admin</NavDropdown.Item>
         <NavDropdown.Item href='/docs/getting-started' target='_blank'>Docs</NavDropdown.Item>
         <Dropdown.Divider />
-        <NavDropdown.Item href={LOGOUT_URL}>Logout</NavDropdown.Item>
+        <NavDropdown.Item href={'/logout'}>Logout</NavDropdown.Item>
       </NavDropdown>
     </Navbar>
   );
