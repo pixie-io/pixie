@@ -20,7 +20,7 @@ class SubProcess {
    *
    * @return OK if succeed, otherwise an error status.
    */
-  Status Start(const std::vector<std::string>& args);
+  Status Start(const std::vector<std::string>& args, bool stderr_to_stdout = false);
 
   /**
    * @brief Send a signal to the process.

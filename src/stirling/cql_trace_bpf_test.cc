@@ -34,14 +34,15 @@ using ::testing::SizeIs;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
-constexpr std::string_view kCassandraImage = "datastax/dse-server:6.7.7";
-constexpr std::string_view kCassandraInstanceNamePrefix = "dse_server";
-constexpr std::string_view kCassandraReadyMessage = "DSE startup complete.";
-
 class CassandraContainer : public ContainerRunner {
  public:
   CassandraContainer()
       : ContainerRunner(kCassandraImage, kCassandraInstanceNamePrefix, kCassandraReadyMessage) {}
+
+ private:
+  static constexpr std::string_view kCassandraImage = "datastax/dse-server:6.7.7";
+  static constexpr std::string_view kCassandraInstanceNamePrefix = "dse_server";
+  static constexpr std::string_view kCassandraReadyMessage = "DSE startup complete.";
 };
 
 class CQLTraceTest : public SocketTraceBPFTest {

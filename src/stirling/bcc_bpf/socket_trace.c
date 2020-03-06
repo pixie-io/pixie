@@ -301,10 +301,11 @@ static __inline enum MessageType infer_http_message(const char* buf, size_t coun
 //      +----------------------------------------
 // TODO(oazizi/yzhao): This produces too many false positives. Add stronger protocol detection.
 static __inline enum MessageType infer_mysql_message(const uint8_t* buf, size_t count) {
+  static const uint8_t kComQuery = 0x03;
+  static const uint8_t kComConnect = 0x0b;
   static const uint8_t kComStmtPrepare = 0x16;
   static const uint8_t kComStmtExecute = 0x17;
   static const uint8_t kComStmtClose = 0x19;
-  static const uint8_t kComQuery = 0x03;
 
   // MySQL packets start with a 3-byte packet length and a 1-byte packet number.
   // The 5th byte on a request contains a command that tells the type.
@@ -339,8 +340,8 @@ static __inline enum MessageType infer_mysql_message(const uint8_t* buf, size_t 
 
   // TODO(oazizi): Consider adding more commands (0x00 to 0x1f).
   // Be careful, though: trade-off is higher rates of false positives.
-  if (com == kComStmtPrepare || com == kComStmtExecute || com == kComStmtClose ||
-      com == kComQuery) {
+  if (com == kComConnect || com == kComQuery || com == kComStmtPrepare || com == kComStmtExecute ||
+      com == kComStmtClose) {
     return kRequest;
   }
   return kUnknown;

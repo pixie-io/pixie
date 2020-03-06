@@ -5,7 +5,7 @@
 
 namespace pl {
 
-Status ContainerRunner::Run(int timeout, const std::vector<std::string>& options) {
+StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::string>& options) {
   // First pull the image.
   // Do this separately from running the container, so we can timeout on the true runtime.
   PL_ASSIGN_OR_RETURN(std::string out, pl::Exec("docker pull " + image_));
@@ -30,7 +30,7 @@ Status ContainerRunner::Run(int timeout, const std::vector<std::string>& options
   docker_run_cmd.push_back(container_name_);
   docker_run_cmd.push_back(image_);
 
-  PL_RETURN_IF_ERROR(container_.Start(docker_run_cmd));
+  PL_RETURN_IF_ERROR(container_.Start(docker_run_cmd, /* stderr_to_stdout */ true));
 
   // It may take some time for the container to come up, so we keep polling.
   // But keep count of the attempts, because we don't want to poll infinitely.
@@ -80,7 +80,7 @@ Status ContainerRunner::Run(int timeout, const std::vector<std::string>& options
   }
 
   LOG(INFO) << absl::Substitute("Container $0 is ready.", container_name_);
-  return Status::OK();
+  return container_out;
 }
 
 /**
@@ -88,7 +88,7 @@ Status ContainerRunner::Run(int timeout, const std::vector<std::string>& options
  */
 void ContainerRunner::Stop() {
   // Clean-up the container.
-  container_.Signal(SIGINT);
+  container_.Signal(SIGTERM);
   container_.Wait();
 }
 

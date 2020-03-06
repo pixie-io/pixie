@@ -14,6 +14,7 @@
 #include "src/stirling/data_table.h"
 #include "src/stirling/mysql/test_data.h"
 #include "src/stirling/mysql/test_utils.h"
+#include "src/stirling/mysql_table.h"
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/event_generator.h"
 #include "src/stirling/testing/http2_stream_generator.h"

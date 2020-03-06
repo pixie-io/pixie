@@ -10,7 +10,7 @@
 
 namespace pl {
 
-Status SubProcess::Start(const std::vector<std::string>& args) {
+Status SubProcess::Start(const std::vector<std::string>& args, bool stderr_to_stdout) {
   std::vector<char*> exec_args;
   exec_args.reserve(args.size() + 1);
   for (const std::string& arg : args) {
@@ -33,6 +33,11 @@ Status SubProcess::Start(const std::vector<std::string>& args) {
     // Redirect STDOUT to pipe
     if (dup2(pipefd_[kWrite], STDOUT_FILENO) == -1) {
       return error::Internal("Could not redirect STDOUT to pipe");
+    }
+    if (stderr_to_stdout) {
+      if (dup2(pipefd_[kWrite], STDERR_FILENO) == -1) {
+        return error::Internal("Could not redirect STDERR to pipe");
+      }
     }
 
     close(pipefd_[kRead]);   // Close read end, as read is done by parent.

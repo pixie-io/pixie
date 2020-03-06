@@ -28,6 +28,10 @@ static constexpr DataElement kMySQLElements[] = {
 static constexpr auto kMySQLTable = DataTableSchema("mysql_events", kMySQLElements);
 
 constexpr int kMySQLUPIDIdx = kMySQLTable.ColIndex("upid");
+constexpr int kMySQLReqCmdIdx = kMySQLTable.ColIndex("req_cmd");
+constexpr int kMySQLReqBodyIdx = kMySQLTable.ColIndex("req_body");
+constexpr int kMySQLRespStatusIdx = kMySQLTable.ColIndex("resp_status");
+constexpr int kMySQLRespBodyIdx = kMySQLTable.ColIndex("resp_body");
 
 }  // namespace stirling
 }  // namespace pl

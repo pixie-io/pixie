@@ -221,6 +221,19 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "mysql_container_bpf_test",
+    timeout = "moderate",
+    srcs = ["mysql_container_bpf_test.cc"],
+    data = ["//src/stirling/mysql/testing:scripts"],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "cql_trace_bpf_test",
     timeout = "moderate",
     srcs = ["cql_trace_bpf_test.cc"],

@@ -37,8 +37,6 @@ testing::SendRecvScript GetQueryScript() {
   return script;
 }
 
-constexpr uint32_t kMySQLReqBodyIdx = kMySQLTable.ColIndex("req_body");
-
 TEST_F(SocketTraceBPFTest, MySQLStmtPrepareExecuteClose) {
   ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleClient);
   testing::ClientServerSystem system;
