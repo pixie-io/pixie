@@ -103,12 +103,12 @@ const LiveView = () => {
       <div className={classes.root}>
         <GlobalHotKeys handlers={hotkeyHandlers} keyMap={COMMAND_KEYMAP} />
         <div className={classes.topBar}>
-          <IconButton onClick={toggleDrawer}>
+          <IconButton  disabled={true} onClick={toggleDrawer}>
             <MenuIcon />
           </IconButton>
-          <div className={classes.title}>title goes here</div>
+          <div className={classes.title}></div>
           <ExecuteScript />
-          <IconButton>
+          <IconButton disabled={true}>
             <ShareIcon />
           </IconButton>
           <ToggleButton
@@ -119,7 +119,7 @@ const LiveView = () => {
           >
             <EditIcon />
           </ToggleButton>
-          <IconButton onClick={toggleCommandOpen}>
+          <IconButton disabled={true} onClick={toggleCommandOpen}>
             <MagicIcon />
           </IconButton>
         </div>
