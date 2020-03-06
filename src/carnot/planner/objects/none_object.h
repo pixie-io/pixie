@@ -30,8 +30,8 @@ class NoneObject : public QLObject {
    *
    * @param ast the ast ptr for the
    */
-  explicit NoneObject(pypa::AstPtr ast) : QLObject(NoneType, ast) {}
-  NoneObject() : QLObject(NoneType) {}
+  NoneObject(pypa::AstPtr ast, ASTVisitor* ast_visitor) : QLObject(NoneType, ast, ast_visitor) {}
+  explicit NoneObject(ASTVisitor* ast_visitor) : QLObject(NoneType, ast_visitor) {}
   bool CanAssignAttribute(std::string_view /*attr_name*/) const override { return false; }
 };
 

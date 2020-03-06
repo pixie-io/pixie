@@ -24,8 +24,8 @@ class Dataframe : public QLObject {
       /* name */ "DataFrame",
       /* type */ QLObjectType::kDataframe,
   };
-  static StatusOr<std::shared_ptr<Dataframe>> Create(OperatorIR* op);
-  static StatusOr<std::shared_ptr<Dataframe>> Create(IR* graph);
+  static StatusOr<std::shared_ptr<Dataframe>> Create(OperatorIR* op, ASTVisitor* visitor);
+  static StatusOr<std::shared_ptr<Dataframe>> Create(IR* graph, ASTVisitor* visitor);
 
   /**
    * @brief Get the operator that this dataframe represents.
@@ -58,8 +58,8 @@ class Dataframe : public QLObject {
                                                             ColumnIR* column, ExpressionIR* expr);
 
  protected:
-  explicit Dataframe(OperatorIR* op, IR* graph)
-      : QLObject(DataframeType, op), op_(op), graph_(graph) {}
+  explicit Dataframe(OperatorIR* op, IR* graph, ASTVisitor* visitor)
+      : QLObject(DataframeType, op, visitor), op_(op), graph_(graph) {}
   StatusOr<std::shared_ptr<QLObject>> GetAttributeImpl(const pypa::AstPtr& ast,
                                                        std::string_view name) const override;
 
@@ -78,7 +78,7 @@ class Dataframe : public QLObject {
 class JoinHandler {
  public:
   static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                    const ParsedArgs& args);
+                                    const ParsedArgs& args, ASTVisitor* visitor);
 
  private:
   /**
@@ -109,7 +109,7 @@ class AggHandler {
    * @return StatusOr<QLObjectPtr>
    */
   static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                    const ParsedArgs& args);
+                                    const ParsedArgs& args, ASTVisitor* visitor);
 
  private:
   static StatusOr<FuncIR*> ParseNameTuple(IR* ir, TupleIR* tuple);
@@ -130,7 +130,7 @@ class DropHandler {
    * @return StatusOr<QLObjectPtr>
    */
   static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                    const ParsedArgs& args);
+                                    const ParsedArgs& args, ASTVisitor* visitor);
 };
 
 /**
@@ -149,7 +149,7 @@ class LimitHandler {
    */
 
   static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                    const ParsedArgs& args);
+                                    const ParsedArgs& args, ASTVisitor* visitor);
 };
 
 class SubscriptHandler {
@@ -163,15 +163,15 @@ class SubscriptHandler {
    * @return StatusOr<QLObjectPtr>
    */
   static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                    const ParsedArgs& args);
+                                    const ParsedArgs& args, ASTVisitor* visitor);
 
  private:
   static StatusOr<QLObjectPtr> EvalFilter(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                          ExpressionIR* expr);
+                                          ExpressionIR* expr, ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> EvalKeep(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                        ListIR* cols);
+                                        ListIR* cols, ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> EvalColumn(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                          StringIR* cols);
+                                          StringIR* cols, ASTVisitor* visitor);
 };
 
 /**
@@ -189,7 +189,7 @@ class GroupByHandler {
    * @return StatusOr<QLObjectPtr>
    */
   static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                    const ParsedArgs& args);
+                                    const ParsedArgs& args, ASTVisitor* visitor);
 
  private:
   static StatusOr<std::vector<ColumnIR*>> ParseByFunction(IRNode* by);
@@ -210,7 +210,7 @@ class UnionHandler {
    * @return StatusOr<QLObjectPtr>
    */
   static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                    const ParsedArgs& args);
+                                    const ParsedArgs& args, ASTVisitor* visitor);
 };
 
 /**
@@ -227,7 +227,7 @@ class RollingHandler {
    * @return StatusOr<QLObjectPtr>
    */
   static StatusOr<QLObjectPtr> Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                    const ParsedArgs& args);
+                                    const ParsedArgs& args, ASTVisitor* visitor);
 };
 
 /**
@@ -236,7 +236,8 @@ class RollingHandler {
  */
 class DataFrameHandler {
  public:
-  static StatusOr<QLObjectPtr> Eval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args);
+  static StatusOr<QLObjectPtr> Eval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
+                                    ASTVisitor* visitor);
 };
 
 }  // namespace compiler

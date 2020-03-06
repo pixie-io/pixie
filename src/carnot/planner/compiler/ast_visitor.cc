@@ -47,16 +47,17 @@ std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChild() {
 }
 
 Status ASTVisitorImpl::InitGlobals(const FlagValues& flag_values) {
-  PL_ASSIGN_OR_RETURN(pixie_module_, PixieModule::Create(ir_graph_, compiler_state_, flag_values));
+  PL_ASSIGN_OR_RETURN(pixie_module_,
+                      PixieModule::Create(ir_graph_, compiler_state_, flag_values, this));
   // TODO(philkuz) verify this is done before hand in a parent var table if one exists.
   var_table_->Add(PixieModule::kPixieModuleObjName, pixie_module_);
   // Populate the type objects
-  PL_ASSIGN_OR_RETURN(auto string_type_object, TypeObject::Create(IRNodeType::kString));
+  PL_ASSIGN_OR_RETURN(auto string_type_object, TypeObject::Create(IRNodeType::kString, this));
   var_table_->Add(ASTVisitorImpl::kStringTypeName, string_type_object);
-  PL_ASSIGN_OR_RETURN(auto int_type_object, TypeObject::Create(IRNodeType::kInt));
+  PL_ASSIGN_OR_RETURN(auto int_type_object, TypeObject::Create(IRNodeType::kInt, this));
   var_table_->Add(ASTVisitorImpl::kIntTypeName, int_type_object);
   // Populate other reserved words
-  var_table_->Add(ASTVisitorImpl::kNoneName, std::make_shared<NoneObject>());
+  var_table_->Add(ASTVisitorImpl::kNoneName, std::make_shared<NoneObject>(this));
 
   return Status::OK();
 }
@@ -74,8 +75,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::CallFunc(const pypa::AstPtr& ast, QLObject
     return CreateAstError(ast, "does not return a usable value");
   }
 
-  PL_ASSIGN_OR_RETURN(ql_object,
-                      std::static_pointer_cast<FuncObject>(ql_object)->Call({}, ast, this));
+  PL_ASSIGN_OR_RETURN(ql_object, std::static_pointer_cast<FuncObject>(ql_object)->Call({}, ast));
   if (!ql_object->HasNode()) {
     return CreateAstError(ast, "does not return a usable value");
   }
@@ -160,7 +160,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
     }
   }
   // If we reach the end of the stmt list before hitting a return, return a NoneObject.
-  return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(body));
+  return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(body, this));
 }
 
 // Assignment by subscript is more restrictive than assignment by attribute.
@@ -418,7 +418,8 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
                       FuncObject::Create(function_name, parsed_arg_names, {}, false, false,
                                          std::bind(&ASTVisitorImpl::FuncDefHandler, this,
                                                    parsed_arg_names, arg_annotations, body,
-                                                   std::placeholders::_1, std::placeholders::_2)));
+                                                   std::placeholders::_1, std::placeholders::_2),
+                                         this));
   var_table_->Add(function_name, defined_func);
   return Status::OK();
 }
@@ -471,7 +472,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSubscriptCall(const pypa::AstSubscr
   PL_ASSIGN_OR_RETURN(QLObjectPtr arg, Process(PYPA_PTR_CAST(Index, slice)->value, new_op_context));
   ArgMap args;
   args.args.push_back(arg);
-  return func_object->Call(args, node, this);
+  return func_object->Call(args, node);
 }
 
 StatusOr<std::string> ASTVisitorImpl::GetFuncName(const pypa::AstCallPtr& node) {
@@ -572,13 +573,13 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessCallNode(const pypa::AstCallPtr& no
     func_object = std::static_pointer_cast<FuncObject>(pyobject);
   }
   PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, op_context));
-  return func_object->Call(args, node, this);
+  return func_object->Call(args, node);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessStr(const pypa::AstStrPtr& ast) {
   PL_ASSIGN_OR_RETURN(auto str_value, GetStrAstValue(ast));
   PL_ASSIGN_OR_RETURN(StringIR * node, ir_graph_->CreateNode<StringIR>(ast, str_value));
-  return ExprObject::Create(node);
+  return ExprObject::Create(node, this);
 }
 
 StatusOr<std::vector<IRNode*>> ASTVisitorImpl::ProcessCollectionChildren(
@@ -596,7 +597,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessList(const pypa::AstListPtr& ast,
   PL_ASSIGN_OR_RETURN(std::vector<IRNode*> expr_vec,
                       ProcessCollectionChildren(ast->elements, op_context));
   PL_ASSIGN_OR_RETURN(ListIR * node, ir_graph_->CreateNode<ListIR>(ast, expr_vec));
-  return CollectionObject::Create(node);
+  return CollectionObject::Create(node, this);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessTuple(const pypa::AstTuplePtr& ast,
@@ -604,19 +605,19 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessTuple(const pypa::AstTuplePtr& ast,
   PL_ASSIGN_OR_RETURN(std::vector<IRNode*> expr_vec,
                       ProcessCollectionChildren(ast->elements, op_context));
   PL_ASSIGN_OR_RETURN(TupleIR * node, ir_graph_->CreateNode<TupleIR>(ast, expr_vec));
-  return CollectionObject::Create(node);
+  return CollectionObject::Create(node, this);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessNumber(const pypa::AstNumberPtr& node) {
   switch (node->num_type) {
     case pypa::AstNumber::Type::Float: {
       PL_ASSIGN_OR_RETURN(FloatIR * ir_node, ir_graph_->CreateNode<FloatIR>(node, node->floating));
-      return ExprObject::Create(ir_node);
+      return ExprObject::Create(ir_node, this);
     }
     case pypa::AstNumber::Type::Integer:
     case pypa::AstNumber::Type::Long: {
       PL_ASSIGN_OR_RETURN(IntIR * ir_node, ir_graph_->CreateNode<IntIR>(node, node->integer));
-      return ExprObject::Create(ir_node);
+      return ExprObject::Create(ir_node, this);
     }
     default:
       return CreateAstError(node, "Couldn't find number type $0", node->num_type);
@@ -648,7 +649,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataBinOp(const pypa::AstBinOpPtr& 
   std::vector<ExpressionIR*> expressions = {static_cast<ExpressionIR*>(left),
                                             static_cast<ExpressionIR*>(right)};
   PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, expressions));
-  return ExprObject::Create(ir_node);
+  return ExprObject::Create(ir_node, this);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataBoolOp(const pypa::AstBoolOpPtr& node,
@@ -679,7 +680,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataBoolOp(const pypa::AstBoolOpPtr
   std::vector<ExpressionIR*> expressions = {static_cast<ExpressionIR*>(left),
                                             static_cast<ExpressionIR*>(right)};
   PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, expressions));
-  return ExprObject::Create(ir_node);
+  return ExprObject::Create(ir_node, this);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataCompare(const pypa::AstComparePtr& node,
@@ -710,7 +711,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataCompare(const pypa::AstCompareP
 
   PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
   PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, expressions));
-  return ExprObject::Create(ir_node);
+  return ExprObject::Create(ir_node, this);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataUnaryOp(const pypa::AstUnaryOpPtr& node,
@@ -724,11 +725,11 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataUnaryOp(const pypa::AstUnaryOpP
   std::string op_str = pypa::to_string(node->op);
   PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetUnaryOp(op_str, node));
   if (op.op_code == FuncIR::Opcode::non_op) {
-    return ExprObject::Create(static_cast<ExpressionIR*>(operand));
+    return ExprObject::Create(static_cast<ExpressionIR*>(operand), this);
   }
   std::vector<ExpressionIR*> args = {static_cast<ExpressionIR*>(operand)};
   PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
-  return ExprObject::Create(ir_node);
+  return ExprObject::Create(ir_node, this);
 }
 
 StatusOr<IRNode*> ASTVisitorImpl::ProcessData(const pypa::AstPtr& ast,
@@ -745,7 +746,7 @@ StatusOr<IRNode*> ASTVisitorImpl::ProcessData(const pypa::AstPtr& ast,
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessFuncDefReturn(const pypa::AstReturnPtr& ret) {
   if (ret->value == nullptr) {
-    return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(ret));
+    return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(ret, this));
   }
 
   return Process(ret->value, {{}, "", {}});

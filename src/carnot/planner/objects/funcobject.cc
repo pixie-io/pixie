@@ -9,15 +9,16 @@ namespace compiler {
 StatusOr<std::shared_ptr<FuncObject>> FuncObject::Create(
     std::string_view name, const std::vector<std::string>& arguments,
     const absl::flat_hash_map<std::string, DefaultType>& defaults, bool has_variable_len_args,
-    bool has_variable_len_kwargs, FunctionType impl) {
+    bool has_variable_len_kwargs, FunctionType impl, ASTVisitor* ast_visitor) {
   return std::make_shared<FuncObject>(name, arguments, defaults, has_variable_len_args,
-                                      has_variable_len_kwargs, impl);
+                                      has_variable_len_kwargs, impl, ast_visitor);
 }
 
 FuncObject::FuncObject(std::string_view name, const std::vector<std::string>& arguments,
                        const absl::flat_hash_map<std::string, DefaultType>& defaults,
-                       bool has_variable_len_args, bool has_variable_len_kwargs, FunctionType impl)
-    : QLObject(FuncType),
+                       bool has_variable_len_args, bool has_variable_len_kwargs, FunctionType impl,
+                       ASTVisitor* ast_visitor)
+    : QLObject(FuncType, ast_visitor),
       name_(name),
       arguments_(arguments),
       defaults_(defaults),
@@ -32,14 +33,12 @@ FuncObject::FuncObject(std::string_view name, const std::vector<std::string>& ar
 #endif
 }
 
-StatusOr<QLObjectPtr> FuncObject::Call(const ArgMap& args, const pypa::AstPtr& ast,
-                                       ASTVisitor* ast_visitor) {
-  PL_ASSIGN_OR_RETURN(ParsedArgs parsed_args, PrepareArgs(args, ast, ast_visitor));
-  return impl_(ast, parsed_args);
+StatusOr<QLObjectPtr> FuncObject::Call(const ArgMap& args, const pypa::AstPtr& ast) {
+  PL_ASSIGN_OR_RETURN(ParsedArgs parsed_args, PrepareArgs(args, ast));
+  return impl_(ast, parsed_args, ast_visitor());
 }
 
-StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast,
-                                             ASTVisitor* ast_visitor) {
+StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast) {
   // Iterate through the arguments and place them in.
   ParsedArgs parsed_args;
 
@@ -95,7 +94,7 @@ StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::Ast
       missing_pos_args.emplace(arg);
       continue;
     }
-    PL_ASSIGN_OR_RETURN(auto default_node, GetDefault(arg, ast_visitor));
+    PL_ASSIGN_OR_RETURN(auto default_node, GetDefault(arg));
     parsed_args.SubDefaultArg(arg, default_node);
   }
 
@@ -111,12 +110,12 @@ StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::Ast
 
 bool FuncObject::HasDefault(std::string_view arg) { return defaults_.find(arg) != defaults_.end(); }
 
-StatusOr<QLObjectPtr> FuncObject::GetDefault(std::string_view arg, ASTVisitor* ast_visitor) {
+StatusOr<QLObjectPtr> FuncObject::GetDefault(std::string_view arg) {
   //  Check if the argument exists among the defaults.
   if (!defaults_.contains(arg)) {
     return error::InvalidArgument("");
   }
-  return ast_visitor->ParseAndProcessSingleExpression(defaults_.find(arg)->second);
+  return ast_visitor()->ParseAndProcessSingleExpression(defaults_.find(arg)->second);
 }
 
 std::string FuncObject::FormatArguments(const absl::flat_hash_set<std::string> args) {

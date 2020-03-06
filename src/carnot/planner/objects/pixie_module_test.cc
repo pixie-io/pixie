@@ -113,7 +113,8 @@ class PixieModuleTest : public QLObjectTest {
     flag.set_flag_name("foo");
     EXPECT_OK(MakeString("non-default")->ToProto(flag.mutable_flag_value()));
 
-    module_ = PixieModule::Create(graph.get(), compiler_state_.get(), {flag}).ConsumeValueOrDie();
+    module_ = PixieModule::Create(graph.get(), compiler_state_.get(), {flag}, ast_visitor.get())
+                  .ConsumeValueOrDie();
   }
 
   std::unique_ptr<CompilerState> compiler_state_;
@@ -130,8 +131,7 @@ TEST_F(PixieModuleTest, ModuleFindAttributeFromRegistryInfo) {
 
   ASSERT_FALSE(attr_object->HasNode());
   ASSERT_TRUE(attr_object->type_descriptor().type() == QLObjectType::kFunction);
-  auto result_or_s =
-      std::static_pointer_cast<FuncObject>(attr_object)->Call({}, ast, ast_visitor.get());
+  auto result_or_s = std::static_pointer_cast<FuncObject>(attr_object)->Call({}, ast);
   ASSERT_OK(result_or_s);
   auto ql_object = result_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(Match(ql_object->node(), Func()));
@@ -160,7 +160,7 @@ TEST_F(PixieModuleTest, GetUDTFMethod) {
 
   ASSERT_TRUE(method_object->type_descriptor().type() == QLObjectType::kFunction);
   auto result_or_s = std::static_pointer_cast<FuncObject>(method_object)
-                         ->Call(MakeArgMap({{"upid", upid_str}}, {}), ast, ast_visitor.get());
+                         ->Call(MakeArgMap({{"upid", upid_str}}, {}), ast);
   ASSERT_OK(result_or_s);
   auto ql_object = result_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
@@ -184,8 +184,7 @@ TEST_F(PixieModuleTest, UDTFDefaultValueTest) {
 
   ASSERT_TRUE(method_object->type_descriptor().type() == QLObjectType::kFunction);
   // No values.
-  auto result_or_s =
-      std::static_pointer_cast<FuncObject>(method_object)->Call({}, ast, ast_visitor.get());
+  auto result_or_s = std::static_pointer_cast<FuncObject>(method_object)->Call({}, ast);
   ASSERT_OK(result_or_s);
   auto ql_object = result_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
@@ -208,8 +207,7 @@ TEST_F(PixieModuleTest, GetUDTFMethodBadArguements) {
   QLObjectPtr method_object = method_or_s.ConsumeValueOrDie();
 
   ASSERT_TRUE(method_object->type_descriptor().type() == QLObjectType::kFunction);
-  auto result_or_s =
-      std::static_pointer_cast<FuncObject>(method_object)->Call({}, ast, ast_visitor.get());
+  auto result_or_s = std::static_pointer_cast<FuncObject>(method_object)->Call({}, ast);
   ASSERT_NOT_OK(result_or_s);
   EXPECT_THAT(result_or_s.status(),
               HasCompilerError("missing 1 required positional arguments 'upid'"));
@@ -227,9 +225,8 @@ TEST_F(PixieModuleTest, uuint128_conversion) {
   QLObjectPtr method_object = method_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(method_object->type_descriptor().type() == QLObjectType::kFunction);
 
-  auto result_or_s =
-      std::static_pointer_cast<FuncObject>(method_object)
-          ->Call(MakeArgMap({{"uuid", MakeString(uuint128_str)}}, {}), ast, ast_visitor.get());
+  auto result_or_s = std::static_pointer_cast<FuncObject>(method_object)
+                         ->Call(MakeArgMap({{"uuid", MakeString(uuint128_str)}}, {}), ast);
   ASSERT_OK(result_or_s);
   QLObjectPtr uuint128_str_object = result_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(uuint128_str_object->type_descriptor().type() == QLObjectType::kExpr);
@@ -248,9 +245,8 @@ TEST_F(PixieModuleTest, uuint128_conversion_fails_on_invalid_string) {
   QLObjectPtr method_object = method_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(method_object->type_descriptor().type() == QLObjectType::kFunction);
 
-  auto result_or_s =
-      std::static_pointer_cast<FuncObject>(method_object)
-          ->Call(MakeArgMap({{"uuid", MakeString(upid_str)}}, {}), ast, ast_visitor.get());
+  auto result_or_s = std::static_pointer_cast<FuncObject>(method_object)
+                         ->Call(MakeArgMap({{"uuid", MakeString(upid_str)}}, {}), ast);
   ASSERT_NOT_OK(result_or_s);
   EXPECT_THAT(result_or_s.status(), HasCompilerError(".* is not a valid UUID"));
 }
@@ -272,20 +268,22 @@ TEST_F(PixieModuleTest, flags_object_receives_values) {
 
   // Register foo flag
   std::vector<QLObjectPtr> args;
-  args.push_back(QLObject::FromIRNode(MakeString("foo")).ConsumeValueOrDie());
+  args.push_back(ToQLObject(MakeString("foo")));
   std::vector<NameToNode> kwargs;
-  kwargs.push_back({"type", std::static_pointer_cast<QLObject>(
-                                TypeObject::Create(IRNodeType::kString).ConsumeValueOrDie())});
-  kwargs.push_back({"description", QLObject::FromIRNode(MakeString("bar")).ConsumeValueOrDie()});
-  kwargs.push_back({"default", QLObject::FromIRNode(MakeString("default")).ConsumeValueOrDie()});
+  kwargs.push_back(
+      {"type",
+       std::static_pointer_cast<QLObject>(
+           TypeObject::Create(IRNodeType::kString, ast_visitor.get()).ConsumeValueOrDie())});
+  kwargs.push_back({"description", ToQLObject(MakeString("bar"))});
+  kwargs.push_back({"default", ToQLObject(MakeString("default"))});
   ArgMap argmap{kwargs, args};
 
   auto register_method = flags_obj->GetCallMethod().ConsumeValueOrDie();
-  ASSERT_OK(register_method->Call(argmap, ast, ast_visitor.get()));
+  ASSERT_OK(register_method->Call(argmap, ast));
 
   // Parse flags
   auto parse_method = flags_obj->GetMethod("parse").ConsumeValueOrDie();
-  ASSERT_OK(parse_method->Call(ArgMap{}, ast, ast_visitor.get()));
+  ASSERT_OK(parse_method->Call(ArgMap{}, ast));
 
   // Get foo flag
   auto ql_object = flags_obj->GetAttribute(ast, "foo").ConsumeValueOrDie();

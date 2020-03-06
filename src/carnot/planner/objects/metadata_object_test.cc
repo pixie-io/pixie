@@ -14,15 +14,14 @@ using MetadataObjectTest = QLObjectTest;
 
 TEST_F(MetadataObjectTest, SubscriptWithString) {
   MemorySourceIR* src = MakeMemSource();
-  auto metadata_or_s = MetadataObject::Create(src);
+  auto metadata_or_s = MetadataObject::Create(src, ast_visitor.get());
   ASSERT_OK(metadata_or_s);
   auto metadata = metadata_or_s.ConsumeValueOrDie();
 
   ASSERT_TRUE(metadata->HasSubscriptMethod());
   std::shared_ptr<FuncObject> func = metadata->GetSubscriptMethod().ConsumeValueOrDie();
 
-  auto func_result_or_s =
-      func->Call(MakeArgMap({}, {MakeString("service")}), ast, ast_visitor.get());
+  auto func_result_or_s = func->Call(MakeArgMap({}, {MakeString("service")}), ast);
   ASSERT_OK(func_result_or_s);
 
   auto func_result = func_result_or_s.ConsumeValueOrDie();
@@ -36,15 +35,14 @@ TEST_F(MetadataObjectTest, SubscriptWithString) {
 
 TEST_F(MetadataObjectTest, ErrorsOnSubscriptWithNonString) {
   MemorySourceIR* src = MakeMemSource();
-  auto metadata_or_s = MetadataObject::Create(src);
+  auto metadata_or_s = MetadataObject::Create(src, ast_visitor.get());
   ASSERT_OK(metadata_or_s);
   auto metadata = metadata_or_s.ConsumeValueOrDie();
 
   ASSERT_TRUE(metadata->HasSubscriptMethod());
   std::shared_ptr<FuncObject> func = metadata->GetSubscriptMethod().ConsumeValueOrDie();
 
-  auto func_result_or_s =
-      func->Call(MakeArgMap({}, {MakeList(MakeString("service"))}), ast, ast_visitor.get());
+  auto func_result_or_s = func->Call(MakeArgMap({}, {MakeList(MakeString("service"))}), ast);
   ASSERT_NOT_OK(func_result_or_s);
   EXPECT_THAT(func_result_or_s.status(),
               HasCompilerError("Could not get key as type 'String', received 'List"));

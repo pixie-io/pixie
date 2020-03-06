@@ -15,15 +15,16 @@ namespace compiler {
 constexpr const char* const PixieModule::kTimeFuncs[];
 
 StatusOr<std::shared_ptr<PixieModule>> PixieModule::Create(IR* graph, CompilerState* compiler_state,
-                                                           const FlagValues& flag_values) {
-  auto module = std::shared_ptr<PixieModule>(new PixieModule(graph, compiler_state));
+                                                           const FlagValues& flag_values,
+                                                           ASTVisitor* ast_visitor) {
+  auto module = std::shared_ptr<PixieModule>(new PixieModule(graph, compiler_state, ast_visitor));
 
   PL_RETURN_IF_ERROR(module->Init(flag_values));
   return module;
 }
 
 Status PixieModule::RegisterFlags(const FlagValues& flag_values) {
-  PL_ASSIGN_OR_RETURN(flags_object_, FlagsObject::Create(graph_, flag_values));
+  PL_ASSIGN_OR_RETURN(flags_object_, FlagsObject::Create(graph_, flag_values, ast_visitor()));
   return AssignAttribute(kFlagsOpId, flags_object_);
 }
 
@@ -32,13 +33,14 @@ Status PixieModule::RegisterUDFFuncs() {
   for (const auto& name : compiler_state_->registry_info()->func_names()) {
     // attributes_.emplace(stripped_name);
 
-    PL_ASSIGN_OR_RETURN(
-        std::shared_ptr<FuncObject> fn_obj,
-        FuncObject::Create(name, {}, {},
-                           /* has_variable_len_args */ true,
-                           /* has_variable_len_kwargs */ false,
-                           std::bind(&UDFHandler::Eval, graph_, std::string(name),
-                                     std::placeholders::_1, std::placeholders::_2)));
+    PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> fn_obj,
+                        FuncObject::Create(name, {}, {},
+                                           /* has_variable_len_args */ true,
+                                           /* has_variable_len_kwargs */ false,
+                                           std::bind(&UDFHandler::Eval, graph_, std::string(name),
+                                                     std::placeholders::_1, std::placeholders::_2,
+                                                     std::placeholders::_3),
+                                           ast_visitor()));
 
     AddMethod(std::string(name), fn_obj);
   }
@@ -97,7 +99,8 @@ Status PixieModule::RegisterUDTFs() {
                            /* has_variable_len_args */ false,
                            /* has_variable_len_kwargs */ false,
                            std::bind(&UDTFSourceHandler::Eval, graph_, udtf, std::placeholders::_1,
-                                     std::placeholders::_2)));
+                                     std::placeholders::_2, std::placeholders::_3),
+                           ast_visitor()));
 
     AddMethod(udtf.name(), fn_obj);
   }
@@ -110,7 +113,8 @@ Status PixieModule::RegisterCompileTimeFuncs() {
       FuncObject::Create(kNowOpId, {}, {},
                          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
                          std::bind(&CompileTimeFuncHandler::NowEval, graph_, std::placeholders::_1,
-                                   std::placeholders::_2)));
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
   AddMethod(kNowOpId, now_fn);
   for (const auto& time : kTimeFuncs) {
     PL_RETURN_IF_ERROR(RegisterCompileTimeUnitFunction(time));
@@ -118,10 +122,12 @@ Status PixieModule::RegisterCompileTimeFuncs() {
 
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> uuid_str_fn,
-      FuncObject::Create(kUInt128ConversionId, {"uuid"}, {},
-                         /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
-                         std::bind(&CompileTimeFuncHandler::UInt128Conversion, graph_,
-                                   std::placeholders::_1, std::placeholders::_2)));
+      FuncObject::Create(
+          kUInt128ConversionId, {"uuid"}, {},
+          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
+          std::bind(&CompileTimeFuncHandler::UInt128Conversion, graph_, std::placeholders::_1,
+                    std::placeholders::_2, std::placeholders::_3),
+          ast_visitor()));
   AddMethod(kUInt128ConversionId, uuid_str_fn);
   return Status::OK();
 }
@@ -129,10 +135,12 @@ Status PixieModule::RegisterCompileTimeFuncs() {
 Status PixieModule::RegisterCompileTimeUnitFunction(std::string name) {
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> now_fn,
-      FuncObject::Create(name, {"unit"}, {},
-                         /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
-                         std::bind(&CompileTimeFuncHandler::TimeEval, graph_, name,
-                                   std::placeholders::_1, std::placeholders::_2)));
+      FuncObject::Create(
+          name, {"unit"}, {},
+          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
+          std::bind(&CompileTimeFuncHandler::TimeEval, graph_, name, std::placeholders::_1,
+                    std::placeholders::_2, std::placeholders::_3),
+          ast_visitor()));
   AddMethod(name.data(), now_fn);
   return Status::OK();
 }
@@ -146,20 +154,22 @@ Status PixieModule::Init(const FlagValues& flag_values) {
   // Setup methods.
   PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> display_fn,
-      FuncObject::Create(
-          kDisplayOpId, {"out", "name", "cols"}, {{"name", "'output'"}, {"cols", "[]"}},
-          /* has_variable_len_args */ false,
-          /* has_variable_len_kwargs */ false,
-          std::bind(&DisplayHandler::Eval, graph_, std::placeholders::_1, std::placeholders::_2)));
+      FuncObject::Create(kDisplayOpId, {"out", "name", "cols"},
+                         {{"name", "'output'"}, {"cols", "[]"}},
+                         /* has_variable_len_args */ false,
+                         /* has_variable_len_kwargs */ false,
+                         std::bind(&DisplayHandler::Eval, graph_, std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
 
   AddMethod(kDisplayOpId, display_fn);
-  PL_ASSIGN_OR_RETURN(auto base_df, Dataframe::Create(graph_));
+  PL_ASSIGN_OR_RETURN(auto base_df, Dataframe::Create(graph_, ast_visitor()));
   PL_RETURN_IF_ERROR(AssignAttribute(kDataframeOpId, base_df));
   return Status::OK();
 }
 
 StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,
-                                           const ParsedArgs& args) {
+                                           const ParsedArgs& args, ASTVisitor* visitor) {
   PL_ASSIGN_OR_RETURN(OperatorIR * out_op, GetArgAs<OperatorIR>(args, "out"));
   PL_ASSIGN_OR_RETURN(StringIR * name, GetArgAs<StringIR>(args, "name"));
 
@@ -175,32 +185,34 @@ StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,
   //                     ParseStringsFromCollection(static_cast<ListIR*>(cols)));
 
   PL_RETURN_IF_ERROR(graph->CreateNode<MemorySinkIR>(ast, out_op, out_name, columns));
-  return StatusOr(std::make_shared<NoneObject>());
+  return StatusOr(std::make_shared<NoneObject>(visitor));
 }
 
 StatusOr<QLObjectPtr> CompileTimeFuncHandler::NowEval(IR* graph, const pypa::AstPtr& ast,
-                                                      const ParsedArgs&) {
+                                                      const ParsedArgs&, ASTVisitor* visitor) {
   // TODO(philkuz/nserrino) maybe just convert this into an Integer because we have the info here.
   FuncIR::Op op{FuncIR::Opcode::non_op, "", PixieModule::kNowOpId};
   PL_ASSIGN_OR_RETURN(FuncIR * node,
                       graph->CreateNode<FuncIR>(ast, op, std::vector<ExpressionIR*>{}));
-  return ExprObject::Create(node);
+  return ExprObject::Create(node, visitor);
 }
 
 StatusOr<QLObjectPtr> CompileTimeFuncHandler::TimeEval(IR* graph, std::string time_name,
                                                        const pypa::AstPtr& ast,
-                                                       const ParsedArgs& args) {
+                                                       const ParsedArgs& args,
+                                                       ASTVisitor* visitor) {
   // TODO(philkuz/nserrino) maybe just convert this into an Integer because we have the info here.
   std::vector<ExpressionIR*> expr_args;
   PL_ASSIGN_OR_RETURN(ExpressionIR * unit, GetArgAs<ExpressionIR>(args, "unit"));
   expr_args.push_back(unit);
   FuncIR::Op op{FuncIR::Opcode::non_op, "", time_name};
   PL_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, expr_args));
-  return ExprObject::Create(node);
+  return ExprObject::Create(node, visitor);
 }
 
 StatusOr<QLObjectPtr> CompileTimeFuncHandler::UInt128Conversion(IR* graph, const pypa::AstPtr& ast,
-                                                                const ParsedArgs& args) {
+                                                                const ParsedArgs& args,
+                                                                ASTVisitor* visitor) {
   PL_ASSIGN_OR_RETURN(StringIR * uuid_str, GetArgAs<StringIR>(args, "uuid"));
   auto upid_or_s = md::UPID::ParseFromUUIDString(static_cast<StringIR*>(uuid_str)->str());
   if (!upid_or_s.ok()) {
@@ -209,11 +221,11 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::UInt128Conversion(IR* graph, const
   PL_ASSIGN_OR_RETURN(UInt128IR * uint128_ir,
                       graph->CreateNode<UInt128IR>(ast, upid_or_s.ConsumeValueOrDie().value()));
 
-  return ExprObject::Create(uint128_ir);
+  return ExprObject::Create(uint128_ir, visitor);
 }
 
 StatusOr<QLObjectPtr> UDFHandler::Eval(IR* graph, std::string name, const pypa::AstPtr& ast,
-                                       const ParsedArgs& args) {
+                                       const ParsedArgs& args, ASTVisitor* visitor) {
   std::vector<ExpressionIR*> expr_args;
   for (const auto& arg : args.variable_args()) {
     if (!arg->HasNode()) {
@@ -228,7 +240,7 @@ StatusOr<QLObjectPtr> UDFHandler::Eval(IR* graph, std::string name, const pypa::
   }
   FuncIR::Op op{FuncIR::Opcode::non_op, "", name};
   PL_ASSIGN_OR_RETURN(FuncIR * node, graph->CreateNode<FuncIR>(ast, op, expr_args));
-  return ExprObject::Create(node);
+  return ExprObject::Create(node, visitor);
 }
 
 StatusOr<ExpressionIR*> UDTFSourceHandler::EvaluateExpression(
@@ -279,7 +291,8 @@ StatusOr<ExpressionIR*> UDTFSourceHandler::EvaluateExpression(
 
 StatusOr<QLObjectPtr> UDTFSourceHandler::Eval(IR* graph,
                                               const udfspb::UDTFSourceSpec& udtf_source_spec,
-                                              const pypa::AstPtr& ast, const ParsedArgs& args) {
+                                              const pypa::AstPtr& ast, const ParsedArgs& args,
+                                              ASTVisitor* visitor) {
   absl::flat_hash_map<std::string, ExpressionIR*> arg_map;
   for (const auto& arg : udtf_source_spec.args()) {
     DCHECK(args.args().contains(arg.name()));
@@ -289,7 +302,7 @@ StatusOr<QLObjectPtr> UDTFSourceHandler::Eval(IR* graph,
   PL_ASSIGN_OR_RETURN(
       UDTFSourceIR * udtf_source,
       graph->CreateNode<UDTFSourceIR>(ast, udtf_source_spec.name(), arg_map, udtf_source_spec));
-  return Dataframe::Create(udtf_source);
+  return Dataframe::Create(udtf_source, visitor);
 }
 
 }  // namespace compiler

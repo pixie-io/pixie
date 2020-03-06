@@ -20,12 +20,14 @@ class CollectionObject : public QLObject {
       /* type */ QLObjectType::kCollection,
   };
 
-  static StatusOr<std::shared_ptr<CollectionObject>> Create(CollectionIR* collection) {
-    return std::shared_ptr<CollectionObject>(new CollectionObject(collection));
+  static StatusOr<std::shared_ptr<CollectionObject>> Create(CollectionIR* collection,
+                                                            ASTVisitor* visitor) {
+    return std::shared_ptr<CollectionObject>(new CollectionObject(collection, visitor));
   }
 
  protected:
-  explicit CollectionObject(CollectionIR* collection) : QLObject(CollectionType, collection) {}
+  CollectionObject(CollectionIR* collection, ASTVisitor* visitor)
+      : QLObject(CollectionType, collection, visitor) {}
 };
 
 }  // namespace compiler

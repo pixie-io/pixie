@@ -32,19 +32,22 @@ Status FlagsObject::Init(const FlagValues& flag_values) {
   std::shared_ptr<FuncObject> subscript_fn(new FuncObject(
       kSubscriptMethodName, {"key"}, {}, /* has_variable_len_args */ false,
       /* has_variable_len_kwargs */ false,
-      std::bind(&FlagsObject::GetFlagHandler, this, std::placeholders::_1, std::placeholders::_2)));
+      std::bind(&FlagsObject::GetFlagHandler, this, std::placeholders::_1, std::placeholders::_2),
+      ast_visitor()));
 
   std::shared_ptr<FuncObject> register_flag_fn(new FuncObject(
       kCallMethodName, {"name", "type", "description", "default"}, {{"default", "None"}},
       /* has_variable_len_args */ false,
       /* has_variable_len_kwargs */ false,
       std::bind(&FlagsObject::DefineFlagHandler, this, std::placeholders::_1,
-                std::placeholders::_2)));
+                std::placeholders::_2),
+      ast_visitor()));
 
   std::shared_ptr<FuncObject> parse_flags_fn(
       new FuncObject(kParseMethodName, {}, {}, false, false,
                      std::bind(&FlagsObject::ParseFlagsHandler, this, std::placeholders::_1,
-                               std::placeholders::_2)));
+                               std::placeholders::_2),
+                     ast_visitor()));
 
   AddSubscriptMethod(subscript_fn);
   AddCallMethod(register_flag_fn);
@@ -116,7 +119,7 @@ StatusOr<QLObjectPtr> FlagsObject::DefineFlagHandler(const pypa::AstPtr& ast,
   }
   flag_types_[flag_name] = type;
   flag_descriptions_[flag_name] = description;
-  return StatusOr(std::make_shared<NoneObject>());
+  return StatusOr(std::make_shared<NoneObject>(ast_visitor()));
 }
 
 bool FlagsObject::HasNonMethodAttribute(std::string_view name) const { return HasFlag(name); }
@@ -165,12 +168,12 @@ StatusOr<QLObjectPtr> FlagsObject::ParseFlagsHandler(const pypa::AstPtr& ast,
                             IRNode::TypeString(flag_types_.at(flag_name)->ir_node_type()));
     }
 
-    PL_ASSIGN_OR_RETURN(auto obj, ExprObject::Create(assign_value));
+    PL_ASSIGN_OR_RETURN(auto obj, ExprObject::Create(assign_value, ast_visitor()));
     PL_RETURN_IF_ERROR(AssignAttribute(flag_name, obj));
   }
 
   parsed_flags_ = true;
-  return StatusOr(std::make_shared<NoneObject>());
+  return StatusOr(std::make_shared<NoneObject>(ast_visitor()));
 }
 
 StatusOr<plannerpb::QueryFlagsSpec> FlagsObject::GetAvailableFlags(const pypa::AstPtr& ast) const {

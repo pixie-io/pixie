@@ -3,17 +3,17 @@
 
 #include <absl/container/flat_hash_map.h>
 
-#include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/objects/none_object.h"
+#include "src/carnot/planner/objects/test_utils.h"
 
 namespace pl {
 namespace carnot {
 namespace planner {
 namespace compiler {
 using ::testing::ElementsAre;
-class NoneObjectTest : public OperatorTests {};
+class NoneObjectTest : public QLObjectTest {};
 TEST_F(NoneObjectTest, TestNoMethodsWork) {
-  std::shared_ptr<NoneObject> none = std::make_shared<NoneObject>();
+  std::shared_ptr<NoneObject> none = std::make_shared<NoneObject>(ast_visitor.get());
   auto status = none->GetMethod("agg");
   ASSERT_NOT_OK(status);
   EXPECT_EQ("'None' object has no attribute 'agg'", status.status().msg());

@@ -74,6 +74,7 @@ pl_cc_test(
     srcs = ["var_table_test.cc"],
     deps = [
         ":cc_library",
+        "//src/carnot/planner/objects:test_utils",
         ":test_utils",
     ],
 )

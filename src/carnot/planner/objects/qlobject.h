@@ -6,6 +6,7 @@
 #include <absl/container/flat_hash_set.h>
 #include <pypa/ast/ast.hh>
 
+#include "src/carnot/planner/ast/ast_visitor.h"
 #include "src/carnot/planner/ir/ast_utils.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/ir/pattern_match.h"
@@ -52,7 +53,7 @@ class QLObject {
  public:
   virtual ~QLObject() = default;
 
-  static StatusOr<QLObjectPtr> FromIRNode(IRNode* node);
+  static StatusOr<QLObjectPtr> FromIRNode(IRNode* node, ASTVisitor* ast_visitor);
 
   /**
    * @brief Gets the Method with specified name.
@@ -183,17 +184,18 @@ class QLObject {
    * @param node the node to store in the QLObject. Can be null if not necessary for the
    * implementation of the QLObject.
    */
-  QLObject(const TypeDescriptor& type_descriptor, IRNode* node, pypa::AstPtr ast)
-      : type_descriptor_(type_descriptor), node_(node), ast_(ast) {}
+  QLObject(const TypeDescriptor& type_descriptor, IRNode* node, pypa::AstPtr ast,
+           ASTVisitor* ast_visitor)
+      : type_descriptor_(type_descriptor), node_(node), ast_(ast), ast_visitor_(ast_visitor) {}
 
-  explicit QLObject(const TypeDescriptor& type_descriptor)
-      : QLObject(type_descriptor, nullptr, nullptr) {}
+  QLObject(const TypeDescriptor& type_descriptor, ASTVisitor* ast_visitor)
+      : QLObject(type_descriptor, nullptr, nullptr, ast_visitor) {}
 
-  QLObject(const TypeDescriptor& type_descriptor, IRNode* node)
-      : QLObject(type_descriptor, node, nullptr) {}
+  QLObject(const TypeDescriptor& type_descriptor, IRNode* node, ASTVisitor* ast_visitor)
+      : QLObject(type_descriptor, node, nullptr, ast_visitor) {}
 
-  QLObject(const TypeDescriptor& type_descriptor, pypa::AstPtr ast)
-      : QLObject(type_descriptor, nullptr, ast) {}
+  QLObject(const TypeDescriptor& type_descriptor, pypa::AstPtr ast, ASTVisitor* ast_visitor)
+      : QLObject(type_descriptor, nullptr, ast, ast_visitor) {}
 
   /**
    * @brief Adds a method to the object. Used by QLObject derived classes to define methods.
@@ -236,6 +238,7 @@ class QLObject {
   // Reserved keyword for call.
   inline static constexpr char kCallMethodName[] = "__call__";
   inline static constexpr char kSubscriptMethodName[] = "__getitem__";
+  ASTVisitor* ast_visitor() const { return ast_visitor_; }
 
  private:
   absl::flat_hash_map<std::string, std::shared_ptr<FuncObject>> methods_;
@@ -244,6 +247,7 @@ class QLObject {
   TypeDescriptor type_descriptor_;
   IRNode* node_ = nullptr;
   pypa::AstPtr ast_ = nullptr;
+  ASTVisitor* ast_visitor_ = nullptr;
 };
 
 }  // namespace compiler

@@ -44,12 +44,6 @@ class ParsedArgs {
     args_[arg_name] = node;
   }
 
-  Status AddArg(std::string_view arg_name, IRNode* node) {
-    PL_ASSIGN_OR_RETURN(auto obj, QLObject::FromIRNode(node));
-    AddArg(arg_name, obj);
-    return Status::OK();
-  }
-
   void SubDefaultArg(std::string_view arg_name, QLObjectPtr node) {
     default_subbed_args_.emplace(arg_name);
     AddArg(arg_name, node);
@@ -65,12 +59,6 @@ class ParsedArgs {
   void AddKwarg(std::string_view arg_name, QLObjectPtr node) {
     DCHECK(!HasArgOrKwarg(arg_name));
     kwargs_.emplace_back(arg_name, node);
-  }
-
-  Status AddKwarg(std::string_view arg_name, IRNode* node) {
-    PL_ASSIGN_OR_RETURN(auto obj, QLObject::FromIRNode(node));
-    AddKwarg(arg_name, obj);
-    return Status::OK();
   }
 
   void AddVariableArg(QLObjectPtr node) { variable_args_.push_back(node); }
@@ -103,7 +91,8 @@ class ParsedArgs {
   absl::flat_hash_set<std::string> default_subbed_args_;
 };
 
-using FunctionType = std::function<StatusOr<QLObjectPtr>(const pypa::AstPtr&, const ParsedArgs&)>;
+using FunctionType =
+    std::function<StatusOr<QLObjectPtr>(const pypa::AstPtr&, const ParsedArgs&, ASTVisitor*)>;
 
 class FuncObject : public QLObject {
  public:
@@ -117,7 +106,7 @@ class FuncObject : public QLObject {
   static StatusOr<std::shared_ptr<FuncObject>> Create(
       std::string_view name, const std::vector<std::string>& arguments,
       const absl::flat_hash_map<std::string, DefaultType>& defaults, bool has_variable_len_args,
-      bool has_variable_len_kwargs, FunctionType impl);
+      bool has_variable_len_kwargs, FunctionType impl, ASTVisitor* visitor);
 
   /**
    * @brief Construct a new Python Function.
@@ -129,10 +118,12 @@ class FuncObject : public QLObject {
    * @param has_variable_len_args whether or not this supports generic positional arguments.
    * @param has_variable_len_kwargs whether or not this supports generic keyword arguments.
    * @param impl the implementation of the function.
+   * @param ast_visitor the ASTVisitor
    */
   FuncObject(std::string_view name, const std::vector<std::string>& arguments,
              const absl::flat_hash_map<std::string, DefaultType>& defaults,
-             bool has_variable_len_args, bool has_variable_len_kwargs, FunctionType impl);
+             bool has_variable_len_args, bool has_variable_len_kwargs, FunctionType impl,
+             ASTVisitor* visitor);
 
   /**
    * @brief Call this function with the args.
@@ -142,7 +133,7 @@ class FuncObject : public QLObject {
    * @return The return type of the object or an error if something goes wrong during function
    * processing.
    */
-  StatusOr<QLObjectPtr> Call(const ArgMap& args, const pypa::AstPtr& ast, ASTVisitor* ast_visitor);
+  StatusOr<QLObjectPtr> Call(const ArgMap& args, const pypa::AstPtr& ast);
   const std::string& name() const { return name_; }
 
   const std::vector<std::string>& arguments() const { return arguments_; }
@@ -151,10 +142,9 @@ class FuncObject : public QLObject {
   const absl::flat_hash_map<std::string, DefaultType>& defaults() const { return defaults_; }
 
  private:
-  StatusOr<ParsedArgs> PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast,
-                                   ASTVisitor* ast_visitor);
+  StatusOr<ParsedArgs> PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast);
 
-  StatusOr<QLObjectPtr> GetDefault(std::string_view arg, ASTVisitor* ast_visitor);
+  StatusOr<QLObjectPtr> GetDefault(std::string_view arg);
   bool HasDefault(std::string_view arg);
 
   std::string FormatArguments(const absl::flat_hash_set<std::string> args);

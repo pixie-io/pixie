@@ -16,10 +16,11 @@ class MetadataObject : public QLObject {
       /* name */ "metadata",
       /* type */ QLObjectType::kMetadata,
   };
-  static StatusOr<std::shared_ptr<MetadataObject>> Create(OperatorIR* op);
+  static StatusOr<std::shared_ptr<MetadataObject>> Create(OperatorIR* op, ASTVisitor* ast_visitor);
 
  protected:
-  explicit MetadataObject(OperatorIR* op) : QLObject(MetadataTypeDescriptor), op_(op) {}
+  explicit MetadataObject(OperatorIR* op, ASTVisitor* ast_visitor)
+      : QLObject(MetadataTypeDescriptor, ast_visitor), op_(op) {}
   Status Init();
 
   StatusOr<QLObjectPtr> SubscriptHandler(const pypa::AstPtr& ast, const ParsedArgs& args);

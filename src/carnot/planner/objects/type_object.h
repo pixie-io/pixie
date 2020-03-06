@@ -26,8 +26,9 @@ class TypeObject : public QLObject {
       /* type */ QLObjectType::kType,
   };
 
-  static StatusOr<std::shared_ptr<TypeObject>> Create(IRNodeType node_type) {
-    return std::shared_ptr<TypeObject>(new TypeObject(node_type));
+  static StatusOr<std::shared_ptr<TypeObject>> Create(IRNodeType node_type,
+                                                      ASTVisitor* ast_visitor) {
+    return std::shared_ptr<TypeObject>(new TypeObject(node_type, ast_visitor));
   }
 
   Status NodeMatches(IRNode* node) {
@@ -47,7 +48,8 @@ class TypeObject : public QLObject {
    *
    * @param ast the ast ptr for the
    */
-  explicit TypeObject(IRNodeType node_type) : QLObject(TypeObjectType), node_type_(node_type) {}
+  TypeObject(IRNodeType node_type, ASTVisitor* ast_visitor)
+      : QLObject(TypeObjectType, ast_visitor), node_type_(node_type) {}
 
  private:
   IRNodeType node_type_;

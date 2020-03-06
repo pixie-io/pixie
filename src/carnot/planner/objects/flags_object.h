@@ -26,16 +26,18 @@ class FlagsObject : public QLObject {
 
   inline static constexpr char kParseMethodName[] = "parse";
 
-  static StatusOr<std::shared_ptr<FlagsObject>> Create(IR* ir_graph, const FlagValues& values) {
-    auto obj =
-        std::shared_ptr<FlagsObject>(new FlagsObject(ir_graph, /*default_zero_values*/ false));
+  static StatusOr<std::shared_ptr<FlagsObject>> Create(IR* ir_graph, const FlagValues& values,
+                                                       ASTVisitor* ast_visitor) {
+    auto obj = std::shared_ptr<FlagsObject>(
+        new FlagsObject(ir_graph, /*default_zero_values*/ false, ast_visitor));
     PL_RETURN_IF_ERROR(obj->Init(values));
     return obj;
   }
 
-  static StatusOr<std::shared_ptr<FlagsObject>> CreateParseOnly(IR* ir_graph) {
-    auto obj =
-        std::shared_ptr<FlagsObject>(new FlagsObject(ir_graph, /*default_zero_values*/ true));
+  static StatusOr<std::shared_ptr<FlagsObject>> CreateParseOnly(IR* ir_graph,
+                                                                ASTVisitor* ast_visitor) {
+    auto obj = std::shared_ptr<FlagsObject>(
+        new FlagsObject(ir_graph, /*default_zero_values*/ true, ast_visitor));
     PL_RETURN_IF_ERROR(obj->Init(/*flag_values*/ {}));
     return obj;
   }
@@ -43,8 +45,8 @@ class FlagsObject : public QLObject {
   StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(const pypa::AstPtr& ast) const;
 
  protected:
-  explicit FlagsObject(IR* ir_graph, bool default_zero_values)
-      : QLObject(FlagsTypeDescriptor),
+  explicit FlagsObject(IR* ir_graph, bool default_zero_values, ASTVisitor* ast_visitor)
+      : QLObject(FlagsTypeDescriptor, ast_visitor),
         ir_graph_(ir_graph),
         default_zero_values_(default_zero_values) {}
 

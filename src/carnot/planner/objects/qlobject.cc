@@ -36,13 +36,13 @@ Status QLObject::AssignAttribute(std::string_view attr_name, QLObjectPtr object)
   return Status::OK();
 }
 
-StatusOr<QLObjectPtr> QLObject::FromIRNode(IRNode* node) {
+StatusOr<QLObjectPtr> QLObject::FromIRNode(IRNode* node, ASTVisitor* ast_visitor) {
   if (Match(node, Operator())) {
-    return Dataframe::Create(static_cast<OperatorIR*>(node));
+    return Dataframe::Create(static_cast<OperatorIR*>(node), ast_visitor);
   } else if (Match(node, Collection())) {
-    return CollectionObject::Create(static_cast<CollectionIR*>(node));
+    return CollectionObject::Create(static_cast<CollectionIR*>(node), ast_visitor);
   } else if (Match(node, Expression())) {
-    return ExprObject::Create(static_cast<ExpressionIR*>(node));
+    return ExprObject::Create(static_cast<ExpressionIR*>(node), ast_visitor);
   } else {
     return node->CreateIRNodeError("Could not create QL object from IRNode of type $0",
                                    node->type_string());

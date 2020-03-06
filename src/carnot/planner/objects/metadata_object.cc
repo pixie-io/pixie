@@ -9,8 +9,9 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 
-StatusOr<std::shared_ptr<MetadataObject>> MetadataObject::Create(OperatorIR* op) {
-  auto object = std::shared_ptr<MetadataObject>(new MetadataObject(op));
+StatusOr<std::shared_ptr<MetadataObject>> MetadataObject::Create(OperatorIR* op,
+                                                                 ASTVisitor* ast_visitor) {
+  auto object = std::shared_ptr<MetadataObject>(new MetadataObject(op, ast_visitor));
   PL_RETURN_IF_ERROR(object->Init());
   return object;
 }
@@ -20,7 +21,8 @@ Status MetadataObject::Init() {
       new FuncObject(kSubscriptMethodName, {"key"}, {}, /* has_variable_len_args */ false,
                      /* has_variable_len_kwargs */ false,
                      std::bind(&MetadataObject::SubscriptHandler, this, std::placeholders::_1,
-                               std::placeholders::_2)));
+                               std::placeholders::_2),
+                     ast_visitor()));
   AddSubscriptMethod(subscript_fn);
   return Status::OK();
 }
@@ -38,7 +40,7 @@ StatusOr<QLObjectPtr> MetadataObject::SubscriptHandler(const pypa::AstPtr& ast,
   // analyzer rule that rewires to point to parent_op_idx instead and runs before everything else.
   PL_ASSIGN_OR_RETURN(MetadataIR * md_node,
                       ir_graph->CreateNode<MetadataIR>(ast, key_value, /*parent_op_idx*/ 0));
-  return ExprObject::Create(md_node);
+  return ExprObject::Create(md_node, ast_visitor());
 }
 
 }  // namespace compiler

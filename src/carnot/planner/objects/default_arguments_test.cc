@@ -51,10 +51,11 @@ class DefaultArgumentsTest : public OperatorTests {
     OperatorTests::SetUp();
     info_ = SetUpRegistryInfo();
     compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
-    module_ = PixieModule::Create(graph.get(), compiler_state_.get(), /*flag values*/ {})
-                  .ConsumeValueOrDie();
     ast_visitor_ = ASTVisitorImpl::Create(graph.get(), compiler_state_.get(), /*flag values*/ {})
                        .ConsumeValueOrDie();
+    module_ = PixieModule::Create(graph.get(), compiler_state_.get(), /*flag values*/ {},
+                                  ast_visitor_.get())
+                  .ConsumeValueOrDie();
   }
 
   void TestFunctionDefaults(std::shared_ptr<FuncObject> func_object, std::string_view function_str,
@@ -95,7 +96,8 @@ class DefaultArgumentsTest : public OperatorTests {
 // This test is the unit to make sure we can get all of the defaults of any method for any object
 // we choose to test.
 TEST_F(DefaultArgumentsTest, PLModule) {
-  auto module_or_s = PixieModule::Create(graph.get(), compiler_state_.get(), /*flag values*/ {});
+  auto module_or_s = PixieModule::Create(graph.get(), compiler_state_.get(), /*flag values*/ {},
+                                         ast_visitor_.get());
   ASSERT_OK(module_or_s);
   QLObjectPtr module = module_or_s.ConsumeValueOrDie();
   {
@@ -105,7 +107,7 @@ TEST_F(DefaultArgumentsTest, PLModule) {
 }
 
 TEST_F(DefaultArgumentsTest, Dataframe) {
-  auto dataframe_or_s = Dataframe::Create(MakeMemSource());
+  auto dataframe_or_s = Dataframe::Create(MakeMemSource(), ast_visitor_.get());
   ASSERT_OK(dataframe_or_s);
   QLObjectPtr obj = dataframe_or_s.ConsumeValueOrDie();
   {
@@ -115,7 +117,7 @@ TEST_F(DefaultArgumentsTest, Dataframe) {
 }
 
 TEST_F(DefaultArgumentsTest, Metadata) {
-  auto metadata_or_s = MetadataObject::Create(MakeMemSource());
+  auto metadata_or_s = MetadataObject::Create(MakeMemSource(), ast_visitor_.get());
   ASSERT_OK(metadata_or_s);
   QLObjectPtr metadata = metadata_or_s.ConsumeValueOrDie();
   {
@@ -125,7 +127,7 @@ TEST_F(DefaultArgumentsTest, Metadata) {
 }
 
 TEST_F(DefaultArgumentsTest, Expr) {
-  auto expr_or_s = ExprObject::Create(MakeInt(10));
+  auto expr_or_s = ExprObject::Create(MakeInt(10), ast_visitor_.get());
   ASSERT_OK(expr_or_s);
   QLObjectPtr expr = expr_or_s.ConsumeValueOrDie();
   {
@@ -146,22 +148,23 @@ class TestQLObject : public QLObject {
       /* type */ QLObjectType::kMisc,
   };
 
-  explicit TestQLObject(bool has_attr) : QLObject(TestQLObjectType) {
+  TestQLObject(bool has_attr, ASTVisitor* visitor) : QLObject(TestQLObjectType, visitor) {
     std::shared_ptr<FuncObject> func_obj =
         FuncObject::Create("default_func", {"arg"}, {{"arg", "d("}},
                            /* has_variable_len_args */ false,
                            /* has_variable_len_kwargs */ false,
                            std::bind(&TestQLObject::SimpleFunc, this, std::placeholders::_1,
-                                     std::placeholders::_2))
+                                     std::placeholders::_2, std::placeholders::_3),
+                           visitor)
             .ConsumeValueOrDie();
     AddMethod("default_func", func_obj);
     if (has_attr) {
-      PL_CHECK_OK(AssignAttribute(kSpecialAttr, std::make_shared<NoneObject>()));
+      PL_CHECK_OK(AssignAttribute(kSpecialAttr, std::make_shared<NoneObject>(visitor)));
     }
   }
 
-  StatusOr<QLObjectPtr> SimpleFunc(const pypa::AstPtr&, const ParsedArgs&) {
-    auto out_obj = std::make_shared<TestQLObject>(false);
+  StatusOr<QLObjectPtr> SimpleFunc(const pypa::AstPtr&, const ParsedArgs&, ASTVisitor* visitor) {
+    auto out_obj = std::make_shared<TestQLObject>(false, visitor);
     return StatusOr<QLObjectPtr>(out_obj);
   }
 
@@ -169,7 +172,7 @@ class TestQLObject : public QLObject {
                                          std::string_view name) const override {
     DCHECK(HasNonMethodAttribute(name));
     // Set to false so our test doesn't recurse forever.
-    auto out_obj = std::make_shared<TestQLObject>(false);
+    auto out_obj = std::make_shared<TestQLObject>(false, ast_visitor());
     out_obj->SetName(std::string(name));
     return StatusOr<QLObjectPtr>(out_obj);
   }
@@ -184,7 +187,7 @@ class TestQLObject : public QLObject {
 };
 
 TEST_F(DefaultArgumentsTest, TestQLObject) {
-  QLObjectPtr qlobject = std::make_shared<TestQLObject>(true);
+  QLObjectPtr qlobject = std::make_shared<TestQLObject>(true, ast_visitor_.get());
   {
     SCOPED_TRACE("TestQLObject");
     VerifyObjectDefaults(qlobject, "TestQLObject", /* should_fail */ true);

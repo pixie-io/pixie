@@ -38,12 +38,17 @@ class QLObjectTest : public OperatorTests {
     std::vector<NameToNode> converted_kwargs;
     std::vector<QLObjectPtr> converted_args;
     for (const auto& p : kwargs) {
-      converted_kwargs.push_back({p.first, QLObject::FromIRNode(p.second).ConsumeValueOrDie()});
+      converted_kwargs.push_back(
+          {p.first, QLObject::FromIRNode(p.second, ast_visitor.get()).ConsumeValueOrDie()});
     }
     for (IRNode* node : args) {
-      converted_args.push_back(QLObject::FromIRNode(node).ConsumeValueOrDie());
+      converted_args.push_back(QLObject::FromIRNode(node, ast_visitor.get()).ConsumeValueOrDie());
     }
     return ArgMap{converted_kwargs, converted_args};
+  }
+
+  QLObjectPtr ToQLObject(IRNode* node) {
+    return QLObject::FromIRNode(node, ast_visitor.get()).ConsumeValueOrDie();
   }
 
   std::shared_ptr<ASTVisitor> ast_visitor;

@@ -24,14 +24,14 @@ class FlagsObjectTest : public QLObjectTest {
     FlagValue flag;
     flag.set_flag_name("foo");
     EXPECT_OK(MakeString("non-default")->ToProto(flag.mutable_flag_value()));
-    flags_obj_ = FlagsObject::Create(graph.get(), {flag}).ConsumeValueOrDie();
+    flags_obj_ = FlagsObject::Create(graph.get(), {flag}, ast_visitor.get()).ConsumeValueOrDie();
   }
 
   StatusOr<std::shared_ptr<ExprObject>> GetFlagSubscript(const std::string& flag_name) {
     ArgMap args = MakeArgMap({}, {MakeString(flag_name)});
 
     PL_ASSIGN_OR_RETURN(auto get_method, flags_obj_->GetSubscriptMethod());
-    PL_ASSIGN_OR_RETURN(auto ql_object, get_method->Call(args, ast, ast_visitor.get()));
+    PL_ASSIGN_OR_RETURN(auto ql_object, get_method->Call(args, ast));
     EXPECT_TRUE(QLObjectType::kExpr == ql_object->type_descriptor().type());
     return std::static_pointer_cast<ExprObject>(ql_object);
   }
@@ -45,7 +45,7 @@ class FlagsObjectTest : public QLObjectTest {
   Status CallParseFlags() {
     ArgMap args;
     PL_ASSIGN_OR_RETURN(auto parse_method, flags_obj_->GetMethod("parse"));
-    PL_ASSIGN_OR_RETURN(auto ql_object, parse_method->Call(args, ast, ast_visitor.get()));
+    PL_ASSIGN_OR_RETURN(auto ql_object, parse_method->Call(args, ast));
     EXPECT_TRUE(QLObjectType::kNone == ql_object->type_descriptor().type());
     EXPECT_FALSE(ql_object->HasNode());
     return Status::OK();
@@ -54,18 +54,19 @@ class FlagsObjectTest : public QLObjectTest {
   Status CallRegisterFlag(const std::string& name, IRNodeType type, const std::string& descr,
                           ExpressionIR* defaultval = nullptr) {
     std::vector<QLObjectPtr> args;
-    args.push_back(QLObject::FromIRNode(MakeString(name)).ConsumeValueOrDie());
+    args.push_back(ToQLObject(MakeString(name)));
     std::vector<NameToNode> kwargs;
     kwargs.push_back(
-        {"type", std::static_pointer_cast<QLObject>(TypeObject::Create(type).ConsumeValueOrDie())});
-    kwargs.push_back({"description", QLObject::FromIRNode(MakeString(descr)).ConsumeValueOrDie()});
+        {"type", std::static_pointer_cast<QLObject>(
+                     TypeObject::Create(type, ast_visitor.get()).ConsumeValueOrDie())});
+    kwargs.push_back({"description", ToQLObject(MakeString(descr))});
     if (defaultval) {
-      kwargs.push_back({"default", QLObject::FromIRNode(defaultval).ConsumeValueOrDie()});
+      kwargs.push_back({"default", ToQLObject(defaultval)});
     }
     ArgMap argmap{kwargs, args};
 
     PL_ASSIGN_OR_RETURN(auto register_method, flags_obj_->GetCallMethod());
-    PL_ASSIGN_OR_RETURN(auto ql_object, register_method->Call(argmap, ast, ast_visitor.get()));
+    PL_ASSIGN_OR_RETURN(auto ql_object, register_method->Call(argmap, ast));
     EXPECT_TRUE(QLObjectType::kNone == ql_object->type_descriptor().type());
     EXPECT_FALSE(ql_object->HasNode());
     return Status::OK();
@@ -78,7 +79,7 @@ class FlagsObjectGetAvailableFlagsTest : public FlagsObjectTest {
  protected:
   void SetUp() override {
     QLObjectTest::SetUp();
-    flags_obj_ = FlagsObject::CreateParseOnly(graph.get()).ConsumeValueOrDie();
+    flags_obj_ = FlagsObject::CreateParseOnly(graph.get(), ast_visitor.get()).ConsumeValueOrDie();
   }
 };
 

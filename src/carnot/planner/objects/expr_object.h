@@ -22,12 +22,12 @@ class ExprObject : public QLObject {
       /* type */ QLObjectType::kExpr,
   };
 
-  static StatusOr<std::shared_ptr<ExprObject>> Create(ExpressionIR* expr) {
-    return std::shared_ptr<ExprObject>(new ExprObject(expr));
+  static StatusOr<std::shared_ptr<ExprObject>> Create(ExpressionIR* expr, ASTVisitor* visitor) {
+    return std::shared_ptr<ExprObject>(new ExprObject(expr, visitor));
   }
 
  protected:
-  explicit ExprObject(ExpressionIR* expr) : QLObject(ExprType, expr) {}
+  ExprObject(ExpressionIR* expr, ASTVisitor* visitor) : QLObject(ExprType, expr, visitor) {}
 };
 
 }  // namespace compiler

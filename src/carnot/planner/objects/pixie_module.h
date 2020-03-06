@@ -20,7 +20,8 @@ class PixieModule : public QLObject {
       /* type */ QLObjectType::kPLModule,
   };
   static StatusOr<std::shared_ptr<PixieModule>> Create(IR* graph, CompilerState* compiler_state,
-                                                       const FlagValues& flag_values);
+                                                       const FlagValues& flag_values,
+                                                       ASTVisitor* ast_visitor);
 
   // Constant for the modules.
   inline static constexpr char kPixieModuleObjName[] = "px";
@@ -37,8 +38,8 @@ class PixieModule : public QLObject {
   std::shared_ptr<FlagsObject> flags_object() { return flags_object_; }
 
  protected:
-  explicit PixieModule(IR* graph, CompilerState* compiler_state)
-      : QLObject(PixieModuleType), graph_(graph), compiler_state_(compiler_state) {}
+  explicit PixieModule(IR* graph, CompilerState* compiler_state, ASTVisitor* ast_visitor)
+      : QLObject(PixieModuleType, ast_visitor), graph_(graph), compiler_state_(compiler_state) {}
   Status Init(const FlagValues& flag_values);
   Status RegisterFlags(const FlagValues& flag_values);
   Status RegisterUDFFuncs();
@@ -60,7 +61,8 @@ class PixieModule : public QLObject {
  */
 class DisplayHandler {
  public:
-  static StatusOr<QLObjectPtr> Eval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args);
+  static StatusOr<QLObjectPtr> Eval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
+                                    ASTVisitor* visitor);
 };
 
 /**
@@ -69,11 +71,12 @@ class DisplayHandler {
  */
 class CompileTimeFuncHandler {
  public:
-  static StatusOr<QLObjectPtr> NowEval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args);
+  static StatusOr<QLObjectPtr> NowEval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
+                                       ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> TimeEval(IR* graph, std::string name, const pypa::AstPtr& ast,
-                                        const ParsedArgs& args);
+                                        const ParsedArgs& args, ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> UInt128Conversion(IR* graph, const pypa::AstPtr& ast,
-                                                 const ParsedArgs& args);
+                                                 const ParsedArgs& args, ASTVisitor* visitor);
 };
 
 /**
@@ -83,7 +86,7 @@ class CompileTimeFuncHandler {
 class UDFHandler {
  public:
   static StatusOr<QLObjectPtr> Eval(IR* graph, std::string name, const pypa::AstPtr& ast,
-                                    const ParsedArgs& args);
+                                    const ParsedArgs& args, ASTVisitor* visitor);
 };
 
 /**
@@ -93,7 +96,8 @@ class UDFHandler {
 class UDTFSourceHandler {
  public:
   static StatusOr<QLObjectPtr> Eval(IR* graph, const udfspb::UDTFSourceSpec& udtf_source_spec,
-                                    const pypa::AstPtr& ast, const ParsedArgs& args);
+                                    const pypa::AstPtr& ast, const ParsedArgs& args,
+                                    ASTVisitor* visitor);
 
  private:
   static StatusOr<ExpressionIR*> EvaluateExpression(IR* graph, IRNode* arg_node,
