@@ -579,12 +579,29 @@ func podUnschedulableMessage(podStatus *v1.PodStatus) string {
 	return ""
 }
 
+func pemCanScheduleWithTaint(t *v1.Taint) bool {
+	// For now an effect of NoSchedule should be sufficient, we don't have tolerations in the Daemonset spec.
+	if t.Effect == "NoSchedule" {
+		return false
+	}
+	return true
+}
+
 func getNumNodes(clientset *kubernetes.Clientset) (int, error) {
 	nodes, err := k8s.ListNodes(clientset)
 	if err != nil {
 		return 0, err
 	}
-	return len(nodes.Items), nil
+	unscheduleableNodes := 0
+	for _, n := range nodes.Items {
+		for _, t := range n.Spec.Taints {
+			if !pemCanScheduleWithTaint(&t) {
+				unscheduleableNodes++
+				break
+			}
+		}
+	}
+	return len(nodes.Items) - unscheduleableNodes, nil
 }
 
 var empty struct{}
@@ -621,6 +638,7 @@ func waitForPems(clientset *kubernetes.Clientset, namespace string, expectedPods
 
 		case "Running":
 			successfulPods[pod.Name] = empty
+			fmt.Printf("Node %d/%d instrumented\n", len(successfulPods), expectedPods)
 		default:
 			// TODO(philkuz/zasgar) should we make this a print line instead?
 			return fmt.Errorf("unexpected status for PEM '%s': '%v'", pod.Name, pod.Status.Phase)
