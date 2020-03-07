@@ -29,7 +29,7 @@ Installing Pixie is easy. Visit [product page](https://withpixie.ai/) and follow
 
 **Demo of Pixie CLI**
 
-[![asciicast](https://asciinema.org/a/syG1lbSvkdcQOYAhFzYbCyGun.svg)](https://asciinema.org/a/syG1lbSvkdcQOYAhFzYbCyGun)
+![CLI Demo](./cli_demo.svg)
 
 ### Filling Issues
 
