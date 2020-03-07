@@ -87,11 +87,47 @@ TEST_F(JoinHandlerTest, MergeTest) {
   EXPECT_THAT(join->parents(), ElementsAre(left, right));
   EXPECT_EQ(join->join_type(), JoinIR::JoinType::kInner);
 
+  EXPECT_EQ(2, join->left_on_columns().size());
   EXPECT_TRUE(Match(join->left_on_columns()[0], ColumnNode("a", 0)));
   EXPECT_TRUE(Match(join->left_on_columns()[1], ColumnNode("b", 0)));
 
+  EXPECT_EQ(2, join->right_on_columns().size());
   EXPECT_TRUE(Match(join->right_on_columns()[0], ColumnNode("b", 1)));
   EXPECT_TRUE(Match(join->right_on_columns()[1], ColumnNode("c", 1)));
+
+  EXPECT_THAT(join->suffix_strs(), ElementsAre("_x", "_y"));
+}
+
+TEST_F(JoinHandlerTest, NonListKeysMergeTest) {
+  MemorySourceIR* left = MakeMemSource();
+  MemorySourceIR* right = MakeMemSource();
+
+  ParsedArgs args;
+  args.AddArg("suffixes", MakeListObj(MakeString("_x"), MakeString("_y")));
+  args.AddArg("right", ToQLObject(right));
+  args.AddArg("how", ToQLObject(MakeString("inner")));
+  args.AddArg("left_on", ToQLObject(MakeString("a")));
+  args.AddArg("right_on", ToQLObject(MakeString("b")));
+
+  auto status = JoinHandler::Eval(graph.get(), left, ast, args, ast_visitor.get());
+  ASSERT_OK(status);
+  std::shared_ptr<QLObject> obj = status.ConsumeValueOrDie();
+  // Add compartor for type() and Dataframe.
+  ASSERT_TRUE(obj->type_descriptor().type() == QLObjectType::kDataframe);
+  auto df_obj = static_cast<Dataframe*>(obj.get());
+
+  // Check to make sure that the output is a Join operator.
+  OperatorIR* op = df_obj->op();
+  ASSERT_TRUE(Match(op, Join()));
+  JoinIR* join = static_cast<JoinIR*>(op);
+  // Verify that the operator does what we expect it to.
+  EXPECT_THAT(join->parents(), ElementsAre(left, right));
+  EXPECT_EQ(join->join_type(), JoinIR::JoinType::kInner);
+
+  EXPECT_EQ(1, join->left_on_columns().size());
+  EXPECT_EQ(1, join->right_on_columns().size());
+  EXPECT_TRUE(Match(join->left_on_columns()[0], ColumnNode("a", 0)));
+  EXPECT_TRUE(Match(join->right_on_columns()[0], ColumnNode("b", 1)));
 
   EXPECT_THAT(join->suffix_strs(), ElementsAre("_x", "_y"));
 }
