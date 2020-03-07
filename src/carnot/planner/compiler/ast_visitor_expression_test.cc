@@ -94,9 +94,9 @@ TEST_F(ASTExpressionTest, PLModule) {
   ASSERT_OK(visitor_result);
 
   auto obj = visitor_result.ConsumeValueOrDie();
-  ASSERT_TRUE(obj->HasNode());
-  ASSERT_TRUE(Match(obj->node(), Func()));
-  EXPECT_EQ(static_cast<FuncIR*>(obj->node())->carnot_op_name(), "mean");
+  ASSERT_FALSE(obj->HasNode());
+  EXPECT_EQ(QLObjectType::kFunction, obj->type());
+  EXPECT_EQ(std::static_pointer_cast<FuncObject>(obj)->name(), "mean");
 }
 
 TEST_F(ASTExpressionTest, PLModuleWrongName) {

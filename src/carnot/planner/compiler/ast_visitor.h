@@ -271,10 +271,10 @@ class ASTVisitorImpl : public ASTVisitor {
    *
    * @param elements elements of the input collection
    * @param op_context: The context of the operator which this is contained within.
-   * @return StatusOr<std::vector<IRNode*>> the IR representation of the list.
+   * @return StatusOr<std::vector<QLObjectPtr>> the QLObject representation of the list.
    */
-  StatusOr<std::vector<IRNode*>> ProcessCollectionChildren(const pypa::AstExprList& elements,
-                                                           const OperatorContext& op_context);
+  StatusOr<std::vector<QLObjectPtr>> ProcessCollectionChildren(const pypa::AstExprList& elements,
+                                                               const OperatorContext& op_context);
 
   /**
    * @brief Processes a list ptr into an IR node.
@@ -432,9 +432,6 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return StatusOr<QLObjectPtr> the ql object ptr meant by the return statement.
    */
   StatusOr<QLObjectPtr> ProcessFuncDefReturn(const pypa::AstReturnPtr& ret);
-
-  // Calls a FuncObject. TODO(nserrino): Remove when PL-1431 is done.
-  StatusOr<QLObjectPtr> CallFunc(const pypa::AstPtr& ast, QLObjectPtr ql_object);
 
   IR* ir_graph_;
   CompilerState* compiler_state_;

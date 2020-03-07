@@ -67,21 +67,6 @@ Status ASTVisitorImpl::ProcessExprStmtNode(const pypa::AstExpressionStatementPtr
   return Process(e->expr, op_context).status();
 }
 
-StatusOr<QLObjectPtr> ASTVisitorImpl::CallFunc(const pypa::AstPtr& ast, QLObjectPtr ql_object) {
-  // TODO(philkuz) refactor ArgMap/ParsedArgs to push the function calls to the handler instead
-  // of this hack that only works for pl modules.
-  QLObjectType attr_object_type = ql_object->type_descriptor().type();
-  if (attr_object_type != QLObjectType::kFunction) {
-    return CreateAstError(ast, "does not return a usable value");
-  }
-
-  PL_ASSIGN_OR_RETURN(ql_object, std::static_pointer_cast<FuncObject>(ql_object)->Call({}, ast));
-  if (!ql_object->HasNode()) {
-    return CreateAstError(ast, "does not return a usable value");
-  }
-  return ql_object;
-}
-
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSingleExpressionModule(
     const pypa::AstModulePtr& module) {
   OperatorContext op_context({}, "");
@@ -93,13 +78,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSingleExpressionModule(
   const pypa::AstStmt& stmt = items_list[0];
   switch (stmt->type) {
     case pypa::AstType::ExpressionStatement: {
-      // TODO(nserrino): Replace with Process() when PL-1431 happens.
-      PL_ASSIGN_OR_RETURN(auto ql_object,
-                          Process(PYPA_PTR_CAST(ExpressionStatement, stmt)->expr, op_context));
-      if (ql_object->type() == QLObjectType::kFunction && !ql_object->HasNode()) {
-        return CallFunc(stmt, ql_object);
-      }
-      return ql_object;
+      return Process(PYPA_PTR_CAST(ExpressionStatement, stmt)->expr, op_context);
     }
     default: {
       return CreateAstError(module, "Want expression, got $0", GetAstTypeName(stmt->type));
@@ -582,11 +561,11 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessStr(const pypa::AstStrPtr& ast) {
   return ExprObject::Create(node, this);
 }
 
-StatusOr<std::vector<IRNode*>> ASTVisitorImpl::ProcessCollectionChildren(
+StatusOr<std::vector<QLObjectPtr>> ASTVisitorImpl::ProcessCollectionChildren(
     const pypa::AstExprList& elements, const OperatorContext& op_context) {
-  std::vector<IRNode*> children;
+  std::vector<QLObjectPtr> children;
   for (auto& child : elements) {
-    PL_ASSIGN_OR_RETURN(IRNode * child_node, ProcessData(child, op_context));
+    PL_ASSIGN_OR_RETURN(QLObjectPtr child_node, Process(child, op_context));
     children.push_back(child_node);
   }
   return children;
@@ -594,18 +573,16 @@ StatusOr<std::vector<IRNode*>> ASTVisitorImpl::ProcessCollectionChildren(
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessList(const pypa::AstListPtr& ast,
                                                   const OperatorContext& op_context) {
-  PL_ASSIGN_OR_RETURN(std::vector<IRNode*> expr_vec,
+  PL_ASSIGN_OR_RETURN(std::vector<QLObjectPtr> expr_vec,
                       ProcessCollectionChildren(ast->elements, op_context));
-  PL_ASSIGN_OR_RETURN(ListIR * node, ir_graph_->CreateNode<ListIR>(ast, expr_vec));
-  return CollectionObject::Create(node, this);
+  return ListObject::Create(expr_vec, this);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessTuple(const pypa::AstTuplePtr& ast,
                                                    const OperatorContext& op_context) {
-  PL_ASSIGN_OR_RETURN(std::vector<IRNode*> expr_vec,
+  PL_ASSIGN_OR_RETURN(std::vector<QLObjectPtr> expr_vec,
                       ProcessCollectionChildren(ast->elements, op_context));
-  PL_ASSIGN_OR_RETURN(TupleIR * node, ir_graph_->CreateNode<TupleIR>(ast, expr_vec));
-  return CollectionObject::Create(node, this);
+  return TupleObject::Create(expr_vec, this);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessNumber(const pypa::AstNumberPtr& node) {
@@ -735,11 +712,6 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataUnaryOp(const pypa::AstUnaryOpP
 StatusOr<IRNode*> ASTVisitorImpl::ProcessData(const pypa::AstPtr& ast,
                                               const OperatorContext& op_context) {
   PL_ASSIGN_OR_RETURN(QLObjectPtr ql_object, Process(PYPA_PTR_CAST(Call, ast), op_context));
-
-  // TODO(nserrino) : Remove this hack once PL-1431 is done.
-  if (!ql_object->HasNode()) {
-    PL_ASSIGN_OR_RETURN(ql_object, CallFunc(ast, ql_object));
-  }
   DCHECK(ql_object->HasNode());
   return ql_object->node();
 }

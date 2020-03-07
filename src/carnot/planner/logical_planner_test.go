@@ -127,8 +127,8 @@ func TestPlanner_Simple(t *testing.T) {
 		t.FailNow()
 	}
 
-	assert.Equal(t, agent1MemSrc1.Tablet, "2")
-	assert.Equal(t, agent1MemSrc2.Tablet, "1")
+	assert.Equal(t, agent1MemSrc1.Tablet, "1")
+	assert.Equal(t, agent1MemSrc2.Tablet, "2")
 
 	agent2Plan := planPB.QbAddressToPlan["agent2"]
 	agent2MemSrc1 := agent2Plan.Nodes[0].Nodes[0].Op.GetMemSourceOp()
@@ -139,20 +139,20 @@ func TestPlanner_Simple(t *testing.T) {
 	if !assert.NotNil(t, agent2MemSrc2) {
 		t.FailNow()
 	}
-	assert.Equal(t, agent2MemSrc1.Tablet, "4")
-	assert.Equal(t, agent2MemSrc2.Tablet, "3")
+	assert.Equal(t, agent2MemSrc1.Tablet, "3")
+	assert.Equal(t, agent2MemSrc2.Tablet, "4")
 	agent1GRPCSink := agent1Plan.Nodes[0].Nodes[len(agent1Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
 	if !assert.NotNil(t, agent1GRPCSink) {
 		t.FailNow()
 	}
 	assert.Equal(t, agent1GRPCSink.Address, "1111")
-	assert.Equal(t, agent1GRPCSink.DestinationId, kelvinGRPCSourceParentNode1.Id)
+	assert.Equal(t, agent1GRPCSink.DestinationId, kelvinGRPCSourceParentNode2.Id)
 	agent2GRPCSink := agent2Plan.Nodes[0].Nodes[len(agent2Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
 	if !assert.NotNil(t, agent2GRPCSink) {
 		t.FailNow()
 	}
 	assert.Equal(t, agent2GRPCSink.Address, "1111")
-	assert.Equal(t, agent2GRPCSink.DestinationId, kelvinGRPCSourceParentNode2.Id)
+	assert.Equal(t, agent2GRPCSink.DestinationId, kelvinGRPCSourceParentNode1.Id)
 }
 
 func TestPlanner_MissingTable(t *testing.T) {

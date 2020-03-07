@@ -39,8 +39,6 @@ Status QLObject::AssignAttribute(std::string_view attr_name, QLObjectPtr object)
 StatusOr<QLObjectPtr> QLObject::FromIRNode(IRNode* node, ASTVisitor* ast_visitor) {
   if (Match(node, Operator())) {
     return Dataframe::Create(static_cast<OperatorIR*>(node), ast_visitor);
-  } else if (Match(node, Collection())) {
-    return CollectionObject::Create(static_cast<CollectionIR*>(node), ast_visitor);
   } else if (Match(node, Expression())) {
     return ExprObject::Create(static_cast<ExpressionIR*>(node), ast_visitor);
   } else {

@@ -51,6 +51,24 @@ class QLObjectTest : public OperatorTests {
     return QLObject::FromIRNode(node, ast_visitor.get()).ConsumeValueOrDie();
   }
 
+  template <typename... Args>
+  std::shared_ptr<ListObject> MakeListObj(Args... nodes) {
+    std::vector<QLObjectPtr> objs;
+    for (const auto node : std::vector<IRNode*>{nodes...}) {
+      objs.push_back(ToQLObject(node));
+    }
+    return ListObject::Create(objs, ast_visitor.get()).ConsumeValueOrDie();
+  }
+
+  template <typename... Args>
+  std::shared_ptr<TupleObject> MakeTupleObj(Args... nodes) {
+    std::vector<QLObjectPtr> objs;
+    for (const auto node : std::vector<IRNode*>{nodes...}) {
+      objs.push_back(ToQLObject(node));
+    }
+    return TupleObject::Create(objs, ast_visitor.get()).ConsumeValueOrDie();
+  }
+
   std::shared_ptr<ASTVisitor> ast_visitor;
 };
 

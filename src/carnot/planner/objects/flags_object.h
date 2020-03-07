@@ -27,9 +27,9 @@ class FlagsObject : public QLObject {
   inline static constexpr char kParseMethodName[] = "parse";
 
   static StatusOr<std::shared_ptr<FlagsObject>> Create(IR* ir_graph, const FlagValues& values,
-                                                       ASTVisitor* ast_visitor) {
+                                                       ASTVisitor* visitor) {
     auto obj = std::shared_ptr<FlagsObject>(
-        new FlagsObject(ir_graph, /*default_zero_values*/ false, ast_visitor));
+        new FlagsObject(ir_graph, /*default_zero_values*/ false, visitor));
     PL_RETURN_IF_ERROR(obj->Init(values));
     return obj;
   }

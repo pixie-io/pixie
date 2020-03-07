@@ -542,26 +542,45 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 11
-          sorted_children: 12
+          id: 8
+          sorted_children: 10
+        }
+        nodes {
+          id: 9
+          sorted_children: 10
         }
         nodes {
           id: 10
-          sorted_children: 12
+          sorted_children: 6
+          sorted_parents: 8
+          sorted_parents: 9
         }
         nodes {
-          id: 12
-          sorted_children: 8
+          id: 6
           sorted_parents: 10
-          sorted_parents: 11
-        }
-        nodes {
-          id: 8
-          sorted_parents: 12
         }
       }
       nodes {
-        id: 11
+        id: 8
+        op {
+          op_type: MEMORY_SOURCE_OPERATOR
+          mem_source_op {
+            name: "table1"
+            column_idxs: 0
+            column_idxs: 1
+            column_idxs: 2
+            column_names: "time_"
+            column_names: "cpu_cycles"
+            column_names: "upid"
+            column_types: TIME64NS
+            column_types: INT64
+            column_types: UINT128
+            tablet: "1"
+          }
+        }
+      }
+      nodes {
+        id: 9
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -582,25 +601,6 @@ qb_address_to_plan {
       nodes {
         id: 10
         op {
-          op_type: MEMORY_SOURCE_OPERATOR
-          mem_source_op {
-            name: "table1"
-            column_idxs: 0
-            column_idxs: 1
-            column_idxs: 2
-            column_names: "time_"
-            column_names: "cpu_cycles"
-            column_names: "upid"
-            column_types: TIME64NS
-            column_types: INT64
-            column_types: UINT128
-            tablet: "1"
-          }
-        }
-      }
-      nodes {
-        id: 12
-        op {
           op_type: UNION_OPERATOR
           union_op {
             column_names: "time_"
@@ -620,12 +620,12 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 8
+        id: 6
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
             address: "1111"
-            destination_id: 11
+            destination_id: 9
           }
         }
       }
@@ -646,26 +646,45 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 11
-          sorted_children: 12
+          id: 8
+          sorted_children: 10
+        }
+        nodes {
+          id: 9
+          sorted_children: 10
         }
         nodes {
           id: 10
-          sorted_children: 12
+          sorted_children: 6
+          sorted_parents: 8
+          sorted_parents: 9
         }
         nodes {
-          id: 12
-          sorted_children: 8
+          id: 6
           sorted_parents: 10
-          sorted_parents: 11
-        }
-        nodes {
-          id: 8
-          sorted_parents: 12
         }
       }
       nodes {
-        id: 11
+        id: 8
+        op {
+          op_type: MEMORY_SOURCE_OPERATOR
+          mem_source_op {
+            name: "table1"
+            column_idxs: 0
+            column_idxs: 1
+            column_idxs: 2
+            column_names: "time_"
+            column_names: "cpu_cycles"
+            column_names: "upid"
+            column_types: TIME64NS
+            column_types: INT64
+            column_types: UINT128
+            tablet: "3"
+          }
+        }
+      }
+      nodes {
+        id: 9
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -686,25 +705,6 @@ qb_address_to_plan {
       nodes {
         id: 10
         op {
-          op_type: MEMORY_SOURCE_OPERATOR
-          mem_source_op {
-            name: "table1"
-            column_idxs: 0
-            column_idxs: 1
-            column_idxs: 2
-            column_names: "time_"
-            column_names: "cpu_cycles"
-            column_names: "upid"
-            column_types: TIME64NS
-            column_types: INT64
-            column_types: UINT128
-            tablet: "3"
-          }
-        }
-      }
-      nodes {
-        id: 12
-        op {
           op_type: UNION_OPERATOR
           union_op {
             column_names: "time_"
@@ -724,12 +724,12 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 8
+        id: 6
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
             address: "1111"
-            destination_id: 10
+            destination_id: 8
           }
         }
       }
@@ -750,26 +750,40 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 11
-          sorted_children: 12
+          id: 8
+          sorted_children: 10
+        }
+        nodes {
+          id: 9
+          sorted_children: 10
         }
         nodes {
           id: 10
-          sorted_children: 12
+          sorted_children: 5
+          sorted_parents: 8
+          sorted_parents: 9
         }
         nodes {
-          id: 12
-          sorted_children: 7
+          id: 5
           sorted_parents: 10
-          sorted_parents: 11
-        }
-        nodes {
-          id: 7
-          sorted_parents: 12
         }
       }
       nodes {
-        id: 11
+        id: 8
+        op {
+          op_type: GRPC_SOURCE_OPERATOR
+          grpc_source_op {
+            column_types: TIME64NS
+            column_types: INT64
+            column_types: UINT128
+            column_names: "time_"
+            column_names: "cpu_cycles"
+            column_names: "upid"
+          }
+        }
+      }
+      nodes {
+        id: 9
         op {
           op_type: GRPC_SOURCE_OPERATOR
           grpc_source_op {
@@ -784,20 +798,6 @@ qb_address_to_plan {
       }
       nodes {
         id: 10
-        op {
-          op_type: GRPC_SOURCE_OPERATOR
-          grpc_source_op {
-            column_types: TIME64NS
-            column_types: INT64
-            column_types: UINT128
-            column_names: "time_"
-            column_names: "cpu_cycles"
-            column_names: "upid"
-          }
-        }
-      }
-      nodes {
-        id: 12
         op {
           op_type: UNION_OPERATOR
           union_op {
@@ -818,7 +818,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 7
+        id: 5
         op {
           op_type: MEMORY_SINK_OPERATOR
           mem_sink_op {

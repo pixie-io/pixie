@@ -7,6 +7,7 @@
 #include <absl/container/flat_hash_set.h>
 #include <pypa/ast/ast.hh>
 
+#include "src/carnot/planner/objects/collection_object.h"
 #include "src/carnot/planner/objects/funcobject.h"
 
 namespace pl {
@@ -84,12 +85,15 @@ class JoinHandler {
   /**
    * @brief Converts column references (as list of strings or a string) into a vector of Columns.
    *
-   * @param node the column reference node.
+   * @param graph the IR graph
+   * @param ast the AST node
+   * @param obj the column reference obj.
    * @param arg_name the name of the argument we are parsing. Used for error formatting.
    * @param parent_index the parent that these columns reference.
    * @return the columns refernced in the node or an error if processing something unexpected.
    */
-  static StatusOr<std::vector<ColumnIR*>> ProcessCols(IRNode* node, std::string arg_name,
+  static StatusOr<std::vector<ColumnIR*>> ProcessCols(IR* graph, const pypa::AstPtr& ast,
+                                                      QLObjectPtr obj, std::string arg_name,
                                                       int64_t parent_index);
 };
 
@@ -112,7 +116,8 @@ class AggHandler {
                                     const ParsedArgs& args, ASTVisitor* visitor);
 
  private:
-  static StatusOr<FuncIR*> ParseNameTuple(IR* ir, TupleIR* tuple);
+  static StatusOr<FuncIR*> ParseNameTuple(IR* ir, const pypa::AstPtr& ast,
+                                          std::shared_ptr<TupleObject> tuple);
 };
 
 /**
@@ -169,7 +174,8 @@ class SubscriptHandler {
   static StatusOr<QLObjectPtr> EvalFilter(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                           ExpressionIR* expr, ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> EvalKeep(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                        ListIR* cols, ASTVisitor* visitor);
+                                        std::shared_ptr<CollectionObject> cols,
+                                        ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> EvalColumn(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                           StringIR* cols, ASTVisitor* visitor);
 };

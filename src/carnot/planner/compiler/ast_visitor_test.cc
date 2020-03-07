@@ -287,7 +287,9 @@ TEST_F(AggTest, not_allowed_agg_fn) {
       "\n");
   auto status = CompileGraph(single_col_bad_agg_fn);
   ASSERT_NOT_OK(status);
-  EXPECT_THAT(status.status(), HasCompilerError("Unexpected aggregate function"));
+  EXPECT_THAT(
+      status.status(),
+      HasCompilerError("Expected second tuple argument to be type Func, received expression"));
   std::string single_col_dict_by_not_pl = absl::StrJoin(
       {
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'],start_time=0, end_time=10)",
@@ -502,7 +504,8 @@ TEST_F(AggTest, not_allowed_by_arguments) {
   VLOG(1) << ir_graph_status.ToString();
   ASSERT_NOT_OK(ir_graph_status);
 
-  EXPECT_THAT(ir_graph_status.status(), HasCompilerError("expected string or list of strings"));
+  EXPECT_THAT(ir_graph_status.status(),
+              HasCompilerError("Could not get by as type 'String', received 'Func'"));
 }
 
 constexpr char kInnerJoinQuery[] = R"query(

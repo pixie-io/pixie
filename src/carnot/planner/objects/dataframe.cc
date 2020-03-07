@@ -1,5 +1,6 @@
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/ir/ast_utils.h"
+#include "src/carnot/planner/objects/collection_object.h"
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planner/objects/metadata_object.h"
@@ -10,6 +11,7 @@ namespace pl {
 namespace carnot {
 namespace planner {
 namespace compiler {
+
 StatusOr<std::shared_ptr<Dataframe>> Dataframe::Create(OperatorIR* op, ASTVisitor* visitor) {
   std::shared_ptr<Dataframe> df(new Dataframe(op, op->graph_ptr(), visitor));
   PL_RETURN_IF_ERROR(df->Init());
@@ -20,6 +22,41 @@ StatusOr<std::shared_ptr<Dataframe>> Dataframe::Create(IR* graph, ASTVisitor* vi
   std::shared_ptr<Dataframe> df(new Dataframe(nullptr, graph, visitor));
   PL_RETURN_IF_ERROR(df->Init());
   return df;
+}
+
+// Parses elements of type TIRNodeType, either a single one or a collection, as a vector of
+// TIRNodeType. Used for dataframe methods that take either a list or single item, like drop.
+// drop('foo') and drop(['foo', 'bar']) for example.
+template <typename TIRNodeType>
+StatusOr<std::vector<TIRNodeType*>> ParseAsListOf(QLObjectPtr obj, std::string_view arg_name) {
+  std::vector<TIRNodeType*> result;
+  std::vector<QLObjectPtr> items;
+  bool with_index = CollectionObject::IsCollection(obj);
+  if (CollectionObject::IsCollection(obj)) {
+    items = std::static_pointer_cast<CollectionObject>(obj)->items();
+  } else {
+    items.push_back(obj);
+  }
+  for (const auto& [idx, item] : Enumerate(items)) {
+    std::string name = std::string(arg_name);
+    if (with_index) {
+      name = absl::Substitute("$0 (index $1)", arg_name, idx);
+    }
+    PL_ASSIGN_OR_RETURN(auto casted, GetArgAs<TIRNodeType>(item, name));
+    result.push_back(casted);
+  }
+  return result;
+}
+
+StatusOr<std::vector<std::string>> ParseAsListOfStrings(QLObjectPtr obj,
+                                                        std::string_view arg_name) {
+  PL_ASSIGN_OR_RETURN(auto string_irs, ParseAsListOf<StringIR>(obj, arg_name));
+  std::vector<std::string> strs;
+  strs.reserve(string_irs.size());
+  for (StringIR* str : string_irs) {
+    strs.push_back(str->str());
+  }
+  return strs;
 }
 
 Status Dataframe::Init() {
@@ -190,27 +227,26 @@ StatusOr<QLObjectPtr> JoinHandler::Eval(IR* graph, OperatorIR* op, const pypa::A
   // to check again.
   PL_ASSIGN_OR_RETURN(OperatorIR * right, GetArgAs<OperatorIR>(args, "right"));
   PL_ASSIGN_OR_RETURN(StringIR * how, GetArgAs<StringIR>(args, "how"));
-  PL_ASSIGN_OR_RETURN(IRNode * left_on_node, GetArgAs<IRNode>(args, "left_on"));
-  PL_ASSIGN_OR_RETURN(IRNode * right_on_node, GetArgAs<IRNode>(args, "right_on"));
-  PL_ASSIGN_OR_RETURN(ListIR * suffixes_node, GetArgAs<ListIR>(args, "suffixes"));
+  QLObjectPtr suffixes_node = args.GetArg("suffixes");
   std::string how_type = how->str();
 
-  PL_ASSIGN_OR_RETURN(std::vector<ColumnIR*> left_on_cols, ProcessCols(left_on_node, "left_on", 0));
+  PL_ASSIGN_OR_RETURN(std::vector<ColumnIR*> left_on_cols,
+                      ProcessCols(graph, ast, args.GetArg("left_on"), "left_on", 0));
   PL_ASSIGN_OR_RETURN(std::vector<ColumnIR*> right_on_cols,
-                      ProcessCols(right_on_node, "right_on", 1));
+                      ProcessCols(graph, ast, args.GetArg("right_on"), "right_on", 1));
 
   // TODO(philkuz) consider using a struct instead of a vector because it's a fixed size.
-  if (!Match(suffixes_node, CollectionWithChildren(String()))) {
-    return suffixes_node->CreateIRNodeError(
+  if (!CollectionObject::IsCollection(suffixes_node)) {
+    return suffixes_node->CreateError(
         "'suffixes' must be a list with 2 strings for the left and right suffixes. Received $0",
-        suffixes_node->type_string());
+        suffixes_node->name());
   }
 
   PL_ASSIGN_OR_RETURN(std::vector<std::string> suffix_strs,
-                      ParseStringsFromCollection(suffixes_node));
+                      ParseAsListOfStrings(suffixes_node, "suffixes"));
   if (suffix_strs.size() != 2) {
-    return suffixes_node->CreateIRNodeError(
-        "'suffixes' must be a list with 2 elements. Received $0", suffix_strs.size());
+    return suffixes_node->CreateError("'suffixes' must be a list with 2 elements. Received $0",
+                                      suffix_strs.size());
   }
 
   PL_ASSIGN_OR_RETURN(JoinIR * join_op,
@@ -219,27 +255,19 @@ StatusOr<QLObjectPtr> JoinHandler::Eval(IR* graph, OperatorIR* op, const pypa::A
   return Dataframe::Create(join_op, visitor);
 }
 
-StatusOr<std::vector<ColumnIR*>> JoinHandler::ProcessCols(IRNode* node, std::string arg_name,
+StatusOr<std::vector<ColumnIR*>> JoinHandler::ProcessCols(IR* graph, const pypa::AstPtr& ast,
+                                                          QLObjectPtr obj, std::string arg_name,
                                                           int64_t parent_index) {
-  DCHECK(node != nullptr);
-  IR* graph = node->graph_ptr();
-  if (Match(node, ListWithChildren(String()))) {
-    auto list = static_cast<ListIR*>(node);
-    std::vector<ColumnIR*> columns(list->children().size());
-    for (const auto& [idx, node] : Enumerate(list->children())) {
-      StringIR* str = static_cast<StringIR*>(node);
-      PL_ASSIGN_OR_RETURN(ColumnIR * col,
-                          graph->CreateNode<ColumnIR>(str->ast_node(), str->str(), parent_index));
-      columns[idx] = col;
-    }
-    return columns;
-  } else if (!Match(node, String())) {
-    return node->CreateIRNodeError("'$0' must be a label or a list of labels", arg_name);
+  DCHECK(obj != nullptr);
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> column_names, ParseAsListOfStrings(obj, arg_name));
+  std::vector<ColumnIR*> columns;
+  columns.reserve(column_names.size());
+
+  for (const auto& col_name : column_names) {
+    PL_ASSIGN_OR_RETURN(ColumnIR * col, graph->CreateNode<ColumnIR>(ast, col_name, parent_index));
+    columns.push_back(col);
   }
-  StringIR* str = static_cast<StringIR*>(node);
-  PL_ASSIGN_OR_RETURN(ColumnIR * col,
-                      graph->CreateNode<ColumnIR>(str->ast_node(), str->str(), parent_index));
-  return std::vector<ColumnIR*>{col};
+  return columns;
 }
 
 StatusOr<QLObjectPtr> AggHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
@@ -247,8 +275,13 @@ StatusOr<QLObjectPtr> AggHandler::Eval(IR* graph, OperatorIR* op, const pypa::As
   // converts the mapping of args.kwargs into ColExpressionvector
   ColExpressionVector aggregate_expressions;
   for (const auto& [name, expr_obj] : args.kwargs()) {
-    PL_ASSIGN_OR_RETURN(auto tuple, GetArgAs<TupleIR>(expr_obj, name));
-    PL_ASSIGN_OR_RETURN(FuncIR * parsed_expr, ParseNameTuple(graph, tuple));
+    if (expr_obj->type() != QLObjectType::kTuple) {
+      return expr_obj->CreateError("Expected tuple for value at kwarg $0 but received $1", name,
+                                   expr_obj->name());
+    }
+    PL_ASSIGN_OR_RETURN(
+        FuncIR * parsed_expr,
+        ParseNameTuple(graph, ast, std::static_pointer_cast<TupleObject>(expr_obj)));
     aggregate_expressions.push_back({name, parsed_expr});
   }
 
@@ -258,43 +291,39 @@ StatusOr<QLObjectPtr> AggHandler::Eval(IR* graph, OperatorIR* op, const pypa::As
   return Dataframe::Create(agg_op, visitor);
 }
 
-StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, TupleIR* tuple) {
-  DCHECK_EQ(tuple->children().size(), 2UL);
+StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, const pypa::AstPtr& ast,
+                                             std::shared_ptr<TupleObject> tuple) {
+  DCHECK_EQ(tuple->items().size(), 2UL);
   PL_ASSIGN_OR_RETURN(StringIR * name,
-                      AsNodeType<StringIR>(tuple->children()[0], "first tuple argument"));
-  PL_ASSIGN_OR_RETURN(FuncIR * func,
-                      AsNodeType<FuncIR>(tuple->children()[1], "second tuple argument"));
+                      GetArgAs<StringIR>(tuple->items()[0], "first tuple argument"));
+
+  auto func = tuple->items()[1];
+  if (func->type() != QLObjectType::kFunction) {
+    return func->CreateError("Expected second tuple argument to be type Func, received $0",
+                             func->name());
+  }
+  PL_ASSIGN_OR_RETURN(auto called, std::static_pointer_cast<FuncObject>(func)->Call({}, ast));
+
+  PL_ASSIGN_OR_RETURN(FuncIR * func_ir, GetArgAs<FuncIR>(called, "second tuple argument"));
 
   // The function should be specified as a single function by itself.
   // This could change in the future.
-  if (func->args().size() != 0) {
-    return func->CreateIRNodeError("Unexpected aggregate function");
+  if (func_ir->args().size() != 0) {
+    return func_ir->CreateIRNodeError("Unexpected aggregate function");
   }
+
   // parent_op_idx is 0 because we only have one parent for an aggregate.
   PL_ASSIGN_OR_RETURN(ColumnIR * argcol, ir->CreateNode<ColumnIR>(name->ast_node(), name->str(),
                                                                   /* parent_op_idx */ 0));
-  PL_RETURN_IF_ERROR(func->AddArg(argcol));
-
-  // Delete tuple id.
-  PL_RETURN_IF_ERROR(ir->DeleteNode(tuple->id()));
-  return func;
+  PL_RETURN_IF_ERROR(func_ir->AddArg(argcol));
+  return func_ir;
 }
 
 StatusOr<QLObjectPtr> DropHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                         const ParsedArgs& args, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(IRNode * columns_arg, GetArgAs<IRNode>(args, "columns"));
-  std::vector<std::string> columns;
-  if (Match(columns_arg, String())) {
-    columns.push_back(static_cast<StringIR*>(columns_arg)->str());
-  } else if (Match(columns_arg, List())) {
-    ListIR* columns_list = static_cast<ListIR*>(columns_arg);
-    PL_ASSIGN_OR_RETURN(columns, ParseStringsFromCollection(columns_list));
-  } else {
-    return columns_arg->CreateIRNodeError(
-        "Expected '$0' kwarg argument 'columns' to be a list or a string, not $1",
-        Dataframe::kDropOpId, columns_arg->type_string());
-  }
-
+  QLObjectPtr columns_arg = args.GetArg("columns");
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
+                      ParseAsListOfStrings(args.GetArg("columns"), "columns"));
   PL_ASSIGN_OR_RETURN(DropIR * drop_op, graph->CreateNode<DropIR>(ast, op, columns));
   return Dataframe::Create(drop_op, visitor);
 }
@@ -313,19 +342,19 @@ StatusOr<QLObjectPtr> LimitHandler::Eval(IR* graph, OperatorIR* op, const pypa::
 
 StatusOr<QLObjectPtr> SubscriptHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                              const ParsedArgs& args, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(IRNode * key, GetArgAs<IRNode>(args, "key"));
-  if (Match(key, String())) {
-    return EvalColumn(graph, op, ast, static_cast<StringIR*>(key), visitor);
+  QLObjectPtr key = args.GetArg("key");
+  if (key->HasNode() && Match(key->node(), String())) {
+    return EvalColumn(graph, op, ast, static_cast<StringIR*>(key->node()), visitor);
   }
-  if (Match(key, ListWithChildren(String()))) {
-    return EvalKeep(graph, op, ast, static_cast<ListIR*>(key), visitor);
+  if (CollectionObject::IsCollection(key)) {
+    return EvalKeep(graph, op, ast, std::static_pointer_cast<CollectionObject>(key), visitor);
   }
-  if (key->IsExpression()) {
-    return EvalFilter(graph, op, ast, static_cast<ExpressionIR*>(key), visitor);
+  if (key->HasNode() && key->node()->IsExpression()) {
+    return EvalFilter(graph, op, ast, static_cast<ExpressionIR*>(key->node()), visitor);
   }
-  return key->CreateIRNodeError(
+  return key->CreateError(
       "subscript argument must have a list of strings or expression. '$0' not allowed",
-      key->type_string());
+      key->name());
 }
 
 StatusOr<QLObjectPtr> SubscriptHandler::EvalFilter(IR* graph, OperatorIR* op,
@@ -343,8 +372,9 @@ StatusOr<QLObjectPtr> SubscriptHandler::EvalColumn(IR* graph, OperatorIR*, const
 }
 
 StatusOr<QLObjectPtr> SubscriptHandler::EvalKeep(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
-                                                 ListIR* key, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> keep_column_names, ParseStringsFromCollection(key));
+                                                 std::shared_ptr<CollectionObject> key,
+                                                 ASTVisitor* visitor) {
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> keep_column_names, ParseAsListOfStrings(key, "key"));
 
   ColExpressionVector keep_exprs;
   for (const auto& col_name : keep_column_names) {
@@ -361,51 +391,26 @@ StatusOr<QLObjectPtr> SubscriptHandler::EvalKeep(IR* graph, OperatorIR* op, cons
 
 StatusOr<QLObjectPtr> GroupByHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                            const ParsedArgs& args, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(IRNode * by, GetArgAs<IRNode>(args, "by"));
-  PL_ASSIGN_OR_RETURN(std::vector<ColumnIR*> groups, ParseByFunction(by));
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> group_names,
+                      ParseAsListOfStrings(args.GetArg("by"), "by"));
+  std::vector<ColumnIR*> groups;
+  groups.reserve(group_names.size());
+  for (const auto& group : group_names) {
+    PL_ASSIGN_OR_RETURN(ColumnIR * col,
+                        graph->CreateNode<ColumnIR>(ast, group, /* parent_idx */ 0));
+    groups.push_back(col);
+  }
+
   PL_ASSIGN_OR_RETURN(GroupByIR * group_by_op, graph->CreateNode<GroupByIR>(ast, op, groups));
   return Dataframe::Create(group_by_op, visitor);
 }
 
-StatusOr<std::vector<ColumnIR*>> GroupByHandler::ParseByFunction(IRNode* by) {
-  if (!Match(by, ListWithChildren(String())) && !Match(by, String())) {
-    return by->CreateIRNodeError("'by' expected string or list of strings");
-  } else if (Match(by, String())) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * col,
-                        by->graph_ptr()->CreateNode<ColumnIR>(
-                            by->ast_node(), static_cast<StringIR*>(by)->str(), /* parent_idx */ 0));
-    return std::vector<ColumnIR*>{col};
-  }
-
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> column_names,
-                      ParseStringsFromCollection(static_cast<ListIR*>(by)));
-  std::vector<ColumnIR*> columns;
-  for (const auto& col_name : column_names) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * col,
-                        by->graph_ptr()->CreateNode<ColumnIR>(by->ast_node(), col_name,
-                                                              /* parent_idx */ 0));
-    columns.push_back(col);
-  }
-  return columns;
-}
-
 StatusOr<QLObjectPtr> UnionHandler::Eval(IR* graph, OperatorIR* op, const pypa::AstPtr& ast,
                                          const ParsedArgs& args, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(IRNode * objs_arg, GetArgAs<IRNode>(args, "objs"));
-
   std::vector<OperatorIR*> parents{op};
-  if (Match(objs_arg, Operator())) {
-    parents.push_back(static_cast<OperatorIR*>(objs_arg));
-  } else if (Match(objs_arg, ListWithChildren(Operator()))) {
-    for (auto child : static_cast<ListIR*>(objs_arg)->children()) {
-      parents.push_back(static_cast<OperatorIR*>(child));
-    }
-  } else {
-    return objs_arg->CreateIRNodeError(
-        "Expected '$0' kwarg argument 'objs' to be a dataframe or a list of dataframes, not $1",
-        Dataframe::kUnionOpId, objs_arg->type_string());
-  }
-
+  PL_ASSIGN_OR_RETURN(std::vector<OperatorIR*> list_of_ops,
+                      ParseAsListOf<OperatorIR>(args.GetArg("objs"), "objs"));
+  parents.insert(parents.end(), list_of_ops.begin(), list_of_ops.end());
   PL_ASSIGN_OR_RETURN(UnionIR * union_op, graph->CreateNode<UnionIR>(ast, parents));
   return Dataframe::Create(union_op, visitor);
 }
@@ -431,17 +436,12 @@ StatusOr<QLObjectPtr> RollingHandler::Eval(IR* graph, OperatorIR* op, const pypa
 StatusOr<QLObjectPtr> DataFrameHandler::Eval(IR* graph, const pypa::AstPtr& ast,
                                              const ParsedArgs& args, ASTVisitor* visitor) {
   PL_ASSIGN_OR_RETURN(StringIR * table, GetArgAs<StringIR>(args, "table"));
-  PL_ASSIGN_OR_RETURN(ListIR * select, GetArgAs<ListIR>(args, "select"));
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
+                      ParseAsListOfStrings(args.GetArg("select"), "select"));
   PL_ASSIGN_OR_RETURN(ExpressionIR * start_time, GetArgAs<ExpressionIR>(args, "start_time"));
   PL_ASSIGN_OR_RETURN(ExpressionIR * end_time, GetArgAs<ExpressionIR>(args, "end_time"));
 
-  if (!Match(select, ListWithChildren(String()))) {
-    return select->CreateIRNodeError("'select' must be a list of strings.");
-  }
-
   std::string table_name = table->str();
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> columns,
-                      ParseStringsFromCollection(static_cast<ListIR*>(select)));
   PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_op,
                       graph->CreateNode<MemorySourceIR>(ast, table_name, columns));
   // If both start_time and end_time are default arguments, then we don't substitute them.
@@ -449,7 +449,6 @@ StatusOr<QLObjectPtr> DataFrameHandler::Eval(IR* graph, const pypa::AstPtr& ast,
         args.default_subbed_args().contains("end_time"))) {
     PL_RETURN_IF_ERROR(mem_source_op->SetTimeExpressions(start_time, end_time));
   }
-
   return Dataframe::Create(mem_source_op, visitor);
 }
 

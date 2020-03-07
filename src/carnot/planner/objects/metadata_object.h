@@ -21,6 +21,7 @@ class MetadataObject : public QLObject {
  protected:
   explicit MetadataObject(OperatorIR* op, ASTVisitor* ast_visitor)
       : QLObject(MetadataTypeDescriptor, ast_visitor), op_(op) {}
+
   Status Init();
 
   StatusOr<QLObjectPtr> SubscriptHandler(const pypa::AstPtr& ast, const ParsedArgs& args);
