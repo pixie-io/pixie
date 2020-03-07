@@ -24,9 +24,11 @@ Installing Pixie is easy. Visit [product page](https://withpixie.ai/) and follow
 
 
 **Walkthrough of install**
+
 [![Pixie Deploy Overview](https://img.youtube.com/vi/KYjBKiJWQbw/0.jpg)](https://www.youtube.com/watch?v=KYjBKiJWQbw)
 
 **Demo of Pixie CLI**
+
 [![asciicast](https://asciinema.org/a/syG1lbSvkdcQOYAhFzYbCyGun.svg)](https://asciinema.org/a/syG1lbSvkdcQOYAhFzYbCyGun)
 
 ### Filling Issues
