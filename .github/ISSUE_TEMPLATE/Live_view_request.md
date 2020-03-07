@@ -19,9 +19,9 @@ Output Widgets
 
 **Desired collaboration scheme**
 
-- Would you share this view with your team (yes/no)?
-- Would you want to persist this view in your team's git repo (yes/no)?
-- Would you want to persist this view in pixie-community's git repo (yes/no)?
+- Do you want to share this view with your team (yes/no)?
+- Do you want to persist this view in your team's git repo (yes/no)?
+- Do you want to persist this view in pixie-community's git repo (yes/no)?
 
 
 **Additional requirements**
