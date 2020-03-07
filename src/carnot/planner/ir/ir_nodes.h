@@ -68,7 +68,6 @@ class IRNode {
   virtual std::string DebugString() const;
   virtual bool IsOperator() const = 0;
   virtual bool IsExpression() const = 0;
-  virtual bool IsCollection() const = 0;
 
   IRNodeType type() const { return type_; }
   std::string type_string() const { return TypeString(type()); }
@@ -330,7 +329,6 @@ class OperatorIR : public IRNode {
   OperatorIR() = delete;
   bool IsOperator() const override { return true; }
   bool IsExpression() const override { return false; }
-  bool IsCollection() const override { return false; }
   table_store::schema::Relation relation() const { return relation_; }
   Status SetRelation(table_store::schema::Relation relation) {
     relation_init_ = true;
@@ -433,7 +431,6 @@ class ExpressionIR : public IRNode {
 
   bool IsOperator() const override { return false; }
   bool IsExpression() const override { return true; }
-  bool IsCollection() const override { return false; }
   virtual types::DataType EvaluatedDataType() const = 0;
   virtual bool IsDataTypeEvaluated() const = 0;
   virtual bool IsColumn() const { return false; }
@@ -823,55 +820,6 @@ class UInt128IR : public DataIR {
 
  private:
   absl::uint128 val_;
-};
-
-/**
- * @brief CollectionIR wraps around collections (lists, tuples). Will maintain a
- * vector of pointers to the contained nodes in the collection.
- *
- */
-class CollectionIR : public IRNode {
- public:
-  CollectionIR() = delete;
-  CollectionIR(int64_t id, IRNodeType type) : IRNode(id, type) {}
-  Status Init(const std::vector<IRNode*>& children);
-
-  std::vector<IRNode*> children() const { return children_; }
-  Status CopyFromNodeImpl(const IRNode* node,
-                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override =
-      0;
-
-  bool IsOperator() const override { return false; }
-  bool IsExpression() const override { return false; }
-  bool IsCollection() const override { return true; }
-
- protected:
-  Status CopyFromCollection(const CollectionIR* source,
-                            absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map);
-  Status SetChildren(const std::vector<IRNode*>& children);
-
- private:
-  std::vector<IRNode*> children_;
-};
-
-class ListIR : public CollectionIR {
- public:
-  ListIR() = delete;
-  explicit ListIR(int64_t id) : CollectionIR(id, IRNodeType::kList) {}
-  Status CopyFromNodeImpl(const IRNode* node,
-                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
-  static bool NodeMatches(IRNode* input);
-  static std::string class_type_string() { return TypeString(IRNodeType::kList); }
-};
-
-class TupleIR : public CollectionIR {
- public:
-  TupleIR() = delete;
-  explicit TupleIR(int64_t id) : CollectionIR(id, IRNodeType::kTuple) {}
-  Status CopyFromNodeImpl(const IRNode* node,
-                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
-  static bool NodeMatches(IRNode* input);
-  static std::string class_type_string() { return TypeString(IRNodeType::kTuple); }
 };
 
 struct ColumnExpression {

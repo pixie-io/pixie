@@ -605,20 +605,6 @@ class OperatorTests : public ::testing::Test {
     return MakeUDTFSource(udtf_spec, arg_value_map);
   }
 
-  template <typename... Args>
-  ListIR* MakeList(Args... args) {
-    ListIR* list =
-        graph->CreateNode<ListIR>(ast, std::vector<IRNode*>{args...}).ConsumeValueOrDie();
-    return list;
-  }
-
-  template <typename... Args>
-  TupleIR* MakeTuple(Args... args) {
-    TupleIR* tuple =
-        graph->CreateNode<TupleIR>(ast, std::vector<IRNode*>{args...}).ConsumeValueOrDie();
-    return tuple;
-  }
-
   TimeIR* MakeTime(int64_t t) { return graph->CreateNode<TimeIR>(ast, t).ConsumeValueOrDie(); }
 
   pypa::AstPtr ast;

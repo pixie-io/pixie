@@ -119,23 +119,6 @@ TEST(IRTest, MapSharedNodes) {
   CompareClone(map->col_exprs()[0].node, map->col_exprs()[1].node, "Map column expression");
 }
 
-TEST(IRTest, CollectionSharedNodes) {
-  auto ast = MakeTestAstPtr();
-  auto ig = std::make_shared<IR>();
-  auto expr = ig->CreateNode<IntIR>(ast, 10).ValueOrDie();
-  std::vector<IRNode*> children{expr, expr};
-
-  auto list = ig->CreateNode<ListIR>(ast, children).ValueOrDie();
-  ASSERT_EQ(2, list->children().size());
-  EXPECT_NE(list->children()[0]->id(), list->children()[1]->id());
-  CompareClone(list->children()[0], list->children()[1], "List expression");
-
-  auto tuple = ig->CreateNode<TupleIR>(ast, children).ValueOrDie();
-  ASSERT_EQ(2, tuple->children().size());
-  EXPECT_NE(tuple->children()[0]->id(), tuple->children()[1]->id());
-  CompareClone(tuple->children()[0], tuple->children()[1], "Tuple expression");
-}
-
 constexpr char kExpectedMemSrcPb[] = R"(
   op_type: MEMORY_SOURCE_OPERATOR
   mem_source_op {

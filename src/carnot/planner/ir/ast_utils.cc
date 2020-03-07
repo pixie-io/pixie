@@ -4,20 +4,6 @@ namespace pl {
 namespace carnot {
 namespace planner {
 
-StatusOr<std::vector<std::string>> ParseStringsFromCollection(const CollectionIR* list_ir) {
-  std::vector<std::string> out_vector;
-  for (size_t idx = 0; idx < list_ir->children().size(); ++idx) {
-    IRNode* child_ir = list_ir->children()[idx];
-    if (!Match(child_ir, String())) {
-      return child_ir->CreateIRNodeError("The elements of the list must be Strings, not '$0'.",
-                                         child_ir->type_string());
-    }
-    StringIR* string_node = static_cast<StringIR*>(child_ir);
-    out_vector.push_back(string_node->str());
-  }
-  return out_vector;
-}
-
 std::string GetAstTypeName(pypa::AstType type) {
   std::vector<std::string> type_names = {
 #undef PYPA_AST_TYPE

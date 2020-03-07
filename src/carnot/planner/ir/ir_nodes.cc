@@ -851,20 +851,6 @@ Status UInt128IR::CopyFromNodeImpl(const IRNode* source,
   return Status::OK();
 }
 
-Status CollectionIR::Init(const std::vector<IRNode*>& children) { return SetChildren(children); }
-
-Status CollectionIR::SetChildren(const std::vector<IRNode*>& children) {
-  if (!children_.empty()) {
-    return CreateIRNodeError(
-        "CollectionIR already has children and likely has been created already.");
-  }
-  children_ = children;
-  for (size_t i = 0; i < children_.size(); ++i) {
-    PL_ASSIGN_OR_RETURN(children_[i], graph_ptr()->OptionallyCloneWithEdge(this, children_[i]));
-  }
-  return Status::OK();
-}
-
 std::unordered_map<std::string, FuncIR::Op> FuncIR::op_map{
     {"*", {FuncIR::Opcode::mult, "*", "multiply"}},
     {"+", {FuncIR::Opcode::add, "+", "add"}},
@@ -1085,26 +1071,6 @@ Status StringIR::CopyFromNodeImpl(const IRNode* source,
   const StringIR* input = static_cast<const StringIR*>(source);
   str_ = input->str_;
   return Status::OK();
-}
-
-Status CollectionIR::CopyFromCollection(
-    const CollectionIR* source, absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
-  std::vector<IRNode*> new_children;
-  for (const IRNode* child : source->children()) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_child, graph_ptr()->CopyNode(child, copied_nodes_map));
-    new_children.push_back(new_child);
-  }
-  return SetChildren(new_children);
-}
-
-Status ListIR::CopyFromNodeImpl(const IRNode* source,
-                                absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
-  return CopyFromCollection(static_cast<const ListIR*>(source), copied_nodes_map);
-}
-
-Status TupleIR::CopyFromNodeImpl(const IRNode* source,
-                                 absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
-  return CopyFromCollection(static_cast<const TupleIR*>(source), copied_nodes_map);
 }
 
 Status FuncIR::CopyFromNodeImpl(const IRNode* node,
@@ -1762,7 +1728,6 @@ Status UDTFSourceIR::ToProto(planpb::Operator* op) const {
 Status UDTFSourceIR::SetArgValues(const std::vector<ExpressionIR*>& arg_values) {
   arg_values_.resize(arg_values.size());
   for (const auto& [idx, value] : Enumerate(arg_values)) {
-    DCHECK(!Match(value, Collection())) << "Collections not supported in UDTF";
     if (!value->IsData()) {
       return CreateIRNodeError("expected scalar value, received '$0'", value->type_string());
     }
@@ -1807,8 +1772,6 @@ Status UDTFSourceIR::CopyFromNodeImpl(
 bool OperatorIR::NodeMatches(IRNode* node) { return Match(node, Operator()); }
 bool StringIR::NodeMatches(IRNode* node) { return Match(node, String()); }
 bool IntIR::NodeMatches(IRNode* node) { return Match(node, Int()); }
-bool ListIR::NodeMatches(IRNode* node) { return Match(node, List()); }
-bool TupleIR::NodeMatches(IRNode* node) { return Match(node, Tuple()); }
 bool FuncIR::NodeMatches(IRNode* node) { return Match(node, Func()); }
 bool ExpressionIR::NodeMatches(IRNode* node) { return Match(node, Expression()); }
 

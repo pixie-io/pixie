@@ -140,8 +140,6 @@ inline ClassMatch<IRNodeType::kTabletSourceGroup> TabletSourceGroup() {
   return ClassMatch<IRNodeType::kTabletSourceGroup>();
 }
 
-inline ClassMatch<IRNodeType::kList> List() { return ClassMatch<IRNodeType::kList>(); }
-inline ClassMatch<IRNodeType::kTuple> Tuple() { return ClassMatch<IRNodeType::kTuple>(); }
 inline ClassMatch<IRNodeType::kGroupBy> GroupBy() { return ClassMatch<IRNodeType::kGroupBy>(); }
 inline ClassMatch<IRNodeType::kRolling> Rolling() { return ClassMatch<IRNodeType::kRolling>(); }
 inline ClassMatch<IRNodeType::kUDTFSource> UDTFSource() {
@@ -777,13 +775,6 @@ struct ColumnMatch : public ParentMatch {
 
 inline ColumnMatch ColumnNode() { return ColumnMatch(); }
 
-struct CollectionMatch : public ParentMatch {
-  CollectionMatch() : ParentMatch(IRNodeType::kAny) {}
-  bool Match(const IRNode* node) const override { return node->IsCollection(); }
-};
-
-inline CollectionMatch Collection() { return CollectionMatch(); }
-
 template <bool MatchName, bool MatchIdx>
 struct ColumnPropMatch : public ParentMatch {
   explicit ColumnPropMatch(const std::string& name, int64_t idx)
@@ -873,70 +864,6 @@ struct JoinMatch : public ParentMatch {
 
 inline JoinMatch<JoinIR::JoinType::kRight> RightJoin() {
   return JoinMatch<JoinIR::JoinType::kRight>();
-}
-
-template <typename ChildType>
-struct ListChildMatch : public ParentMatch {
-  explicit ListChildMatch(ChildType child_matcher)
-      : ParentMatch(IRNodeType::kList), child_matcher_(child_matcher) {}
-  bool Match(const IRNode* node) const override {
-    if (!List().Match(node)) {
-      return false;
-    }
-    auto list = static_cast<const ListIR*>(node);
-    for (const IRNode* child : list->children()) {
-      if (!child_matcher_.Match(child)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  ChildType child_matcher_;
-};
-
-/**
- * @brief Matches a list where all elements satisfy the passed in matcher.
- *
- * @tparam ChildType
- * @param child_matcher: the matching function
- * @return matcher to find lists with elements that satisfy the matcher argument.
- */
-template <typename ChildType>
-inline ListChildMatch<ChildType> ListWithChildren(ChildType child_matcher) {
-  return ListChildMatch<ChildType>(child_matcher);
-}
-
-template <typename ChildType>
-struct CollectionChildMatch : public ParentMatch {
-  explicit CollectionChildMatch(ChildType child_matcher)
-      : ParentMatch(IRNodeType::kAny), child_matcher_(child_matcher) {}
-  bool Match(const IRNode* node) const override {
-    if (!Collection().Match(node)) {
-      return false;
-    }
-    auto list = static_cast<const CollectionIR*>(node);
-    for (const IRNode* child : list->children()) {
-      if (!child_matcher_.Match(child)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  ChildType child_matcher_;
-};
-
-/**
- * @brief Matches a collection (list or tuple) where all elements satisfy the passed in matcher.
- *
- * @tparam ChildType
- * @param child_matcher: the matching function
- * @return matcher to find lists with elements that satisfy the matcher argument.
- */
-template <typename ChildType>
-inline CollectionChildMatch<ChildType> CollectionWithChildren(ChildType child_matcher) {
-  return CollectionChildMatch<ChildType>(child_matcher);
 }
 
 template <typename OpType, typename ParentType>
