@@ -12,21 +12,24 @@ If you are interested in tinkering, you can [sign-up](https://withpixie.ai/) and
 
 ## About Pixie
 
-
 ### Installing Pixie
 
-Visit our [product page](https://withpixie.ai/) and follow these steps:
+Installing Pixie is easy. Visit [product page](https://withpixie.ai/) and follow these steps:
 
-1. Claim your site
+1. Sign-up with your google account
 
-2. Sign-up with your google account
+2. `curl -fsSL https://withpixie.ai/install.sh | bash`
 
-3. Download our CLI
+3. `px deploy`
 
-4. Copy and run the deploy command in the instructions
 
-5. If your K8s cluster is on a separate network, run `./px proxy` to create a proxy connection between the UI and Pixie's back-end.
+**Walkthrough of install**
 
+[![Pixie Deploy Overview](https://img.youtube.com/vi/KYjBKiJWQbw/0.jpg)](https://www.youtube.com/watch?v=KYjBKiJWQbw)
+
+**Demo of Pixie CLI**
+
+![CLI Demo](./cli_demo.svg)
 
 ### Filling Issues
 
