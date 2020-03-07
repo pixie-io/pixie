@@ -30,7 +30,6 @@ pl_cc_library(
         "//src/vizier/funcs/context:cc_library",
         "//src/vizier/services/agent/manager:cc_headers",
         "//src/vizier/services/metadata/metadatapb:service_pl_cc_proto",
-        "@com_github_arun11299_cpp_jwt//:cpp_jwt",
         "@com_github_grpc_grpc//:grpc++",
     ],
 )

@@ -13,7 +13,8 @@
 
 #include "src/vizier/services/query_broker/querybrokerpb/service.grpc.pb.h"
 
-DECLARE_string(jwt_signing_key);
+DEFINE_string(jwt_signing_key, gflags::StringFromEnv("PL_JWT_SIGNING_KEY", ""),
+              "The JWT signing key for outgoing requests");
 
 namespace pl {
 namespace vizier {
