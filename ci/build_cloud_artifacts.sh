@@ -13,6 +13,13 @@ export PL_BUILD_TYPE
 export PL_IMAGE_TAG
 export GIT_COMMIT
 
+# Build Kustomize.
+kustomize build k8s/cloud/staging > staging.yaml
+kustomize build k8s/cloud/prod > prod.yaml
+output_path="gs://pl-infra-dev-artifacts/kustomize/${BUILD_NUMBER}"
+gsutil cp staging.yaml "${output_path}/staging.yaml"
+gsutil cp prod.yaml "${output_path}/prod.yaml"
+
 skaffold build -q -o '{{json .}}' -f skaffold/skaffold_cloud.yaml > manifest_internal.json
 
 cat manifest_internal.json | \
