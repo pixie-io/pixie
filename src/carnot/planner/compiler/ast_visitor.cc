@@ -146,8 +146,8 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
 // Subscript assignment is currently only valid for creating map expressions such as the following:
 // df['foo'] = 1+2
 Status ASTVisitorImpl::ProcessSubscriptAssignment(const pypa::AstSubscriptPtr& subscript,
-                                                  const pypa::AstPtr& expr_node) {
-  PL_ASSIGN_OR_RETURN(auto processed_node, ProcessData(subscript, {{}, "", {}}));
+                                                  const pypa::AstExpr& expr_node) {
+  PL_ASSIGN_OR_RETURN(auto processed_node, Process(subscript, {{}, "", {}}));
   PL_ASSIGN_OR_RETURN(auto processed_target_table, Process(subscript->value, {{}, "", {}}));
 
   if (processed_target_table->type() != QLObjectType::kDataframe) {
@@ -163,7 +163,7 @@ Status ASTVisitorImpl::ProcessSubscriptAssignment(const pypa::AstSubscriptPtr& s
 // Assignment by attribute supports all of the cases that subscript assignment does,
 // in addition to assigning to
 Status ASTVisitorImpl::ProcessAttributeAssignment(const pypa::AstAttributePtr& attr,
-                                                  const pypa::AstPtr& expr_node) {
+                                                  const pypa::AstExpr& expr_node) {
   PL_ASSIGN_OR_RETURN(auto processed_target, Process(attr->value, {{}, "", {}}));
 
   if (processed_target->type() != QLObjectType::kDataframe) {
@@ -176,25 +176,23 @@ Status ASTVisitorImpl::ProcessAttributeAssignment(const pypa::AstAttributePtr& a
   // If the target is a Dataframe, we are doing a Subscript map assignment like "df.foo = 2".
   // We need to do special handling here as opposed to the above logic in order to produce a new
   // dataframe.
-  PL_ASSIGN_OR_RETURN(auto processed_node, ProcessData(attr, {{}, "", {}}));
+  PL_ASSIGN_OR_RETURN(auto processed_node, Process(attr, {{}, "", {}}));
   return ProcessMapAssignment(attr->value, std::static_pointer_cast<Dataframe>(processed_target),
                               processed_node, expr_node);
 }
 
 Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstPtr& assign_target,
-                                            std::shared_ptr<Dataframe> parent_df, IRNode* target,
-                                            const pypa::AstPtr& expr_node) {
+                                            std::shared_ptr<Dataframe> parent_df,
+                                            QLObjectPtr target_node,
+                                            const pypa::AstExpr& expr_node) {
   if (assign_target->type != AstType::Name) {
     return CreateAstError(assign_target,
                           "Can only assign to Dataframe by subscript from Name, received $0",
                           GetAstTypeName(assign_target->type));
   }
   auto assign_name_string = GetNameAsString(assign_target);
-
-  if (!Match(target, ColumnNode())) {
-    return CreateAstError(assign_target, "Can't assign to node of type $0", target->type_string());
-  }
-  auto target_column = static_cast<ColumnIR*>(target);
+  PL_ASSIGN_OR_RETURN(ColumnIR * target_column,
+                      GetArgAs<ColumnIR>(target_node, "assignment value"));
 
   if (!parent_df->op()) {
     return CreateAstError(assign_target,
@@ -204,15 +202,12 @@ Status ASTVisitorImpl::ProcessMapAssignment(const pypa::AstPtr& assign_target,
   // Maps can only assign to the same table as the input table when of the form:
   // df['foo'] = df['bar'] + 2
   OperatorContext op_context{{parent_df->op()}, Dataframe::kMapOpId, {assign_name_string}};
-  PL_ASSIGN_OR_RETURN(auto result, ProcessData(expr_node, op_context));
-  if (!result->IsExpression()) {
-    return CreateAstError(
-        expr_node, "Expected to receive expression as map subscript assignment value, received $0.",
-        result->type_string());
-  }
+  PL_ASSIGN_OR_RETURN(auto expr_obj, Process(expr_node, op_context));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * expr_val,
+                      GetArgAs<ExpressionIR>(expr_obj, "assignment value"));
+
   PL_ASSIGN_OR_RETURN(auto dataframe,
-                      parent_df->FromColumnAssignment(expr_node, target_column,
-                                                      static_cast<ExpressionIR*>(result)));
+                      parent_df->FromColumnAssignment(expr_node, target_column, expr_val));
   var_table_->Add(assign_name_string, dataframe);
 
   return ir_graph_->DeleteNode(target_column->id());
@@ -605,27 +600,16 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataBinOp(const pypa::AstBinOpPtr& 
                                                        const OperatorContext& op_context) {
   std::string op_str = pypa::to_string(node->op);
 
-  PL_ASSIGN_OR_RETURN(IRNode * left, ProcessData(node->left, op_context));
-  PL_ASSIGN_OR_RETURN(IRNode * right, ProcessData(node->right, op_context));
-  if (!left->IsExpression()) {
-    return CreateAstError(
-        node,
-        "Expected left side of operation to be an expression, but got $0, which is not an "
-        "expression..",
-        left->type_string());
-  }
-  if (!right->IsExpression()) {
-    return CreateAstError(
-        node,
-        "Expected right side of operation to be an expression, but got $0, which is not an "
-        "expression.",
-        right->type_string());
-  }
+  PL_ASSIGN_OR_RETURN(auto left_obj, Process(node->left, op_context));
+  PL_ASSIGN_OR_RETURN(auto right_obj, Process(node->right, op_context));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * left,
+                      GetArgAs<ExpressionIR>(left_obj, "left side of operation"));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * right,
+                      GetArgAs<ExpressionIR>(right_obj, "right side of operation"));
 
   PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
-  std::vector<ExpressionIR*> expressions = {static_cast<ExpressionIR*>(left),
-                                            static_cast<ExpressionIR*>(right)};
-  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, expressions));
+  std::vector<ExpressionIR*> args = {left, right};
+  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
   return ExprObject::Create(ir_node, this);
 }
 
@@ -636,27 +620,16 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataBoolOp(const pypa::AstBoolOpPtr
     return CreateAstError(node, "Expected two arguments to '$0'.", op_str);
   }
 
-  PL_ASSIGN_OR_RETURN(IRNode * left, ProcessData(node->values[0], op_context));
-  PL_ASSIGN_OR_RETURN(IRNode * right, ProcessData(node->values[1], op_context));
-  if (!left->IsExpression()) {
-    return CreateAstError(
-        node,
-        "Expected left side of operation to be an expression, but got $0, which is not an "
-        "expression..",
-        left->type_string());
-  }
-  if (!right->IsExpression()) {
-    return CreateAstError(
-        node,
-        "Expected right side of operation to be an expression, but got $0, which is not an "
-        "expression.",
-        right->type_string());
-  }
+  PL_ASSIGN_OR_RETURN(auto left_obj, Process(node->values[0], op_context));
+  PL_ASSIGN_OR_RETURN(auto right_obj, Process(node->values[1], op_context));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * left,
+                      GetArgAs<ExpressionIR>(left_obj, "left side of operation"));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * right,
+                      GetArgAs<ExpressionIR>(right_obj, "right side of operation"));
 
   PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
-  std::vector<ExpressionIR*> expressions = {static_cast<ExpressionIR*>(left),
-                                            static_cast<ExpressionIR*>(right)};
-  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, expressions));
+  std::vector<ExpressionIR*> args{left, right};
+  PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
   return ExprObject::Create(ir_node, this);
 }
 
@@ -667,23 +640,16 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataCompare(const pypa::AstCompareP
   if (node->comparators.size() != 1) {
     return CreateAstError(node, "Only expected one argument to the right of '$0'.", op_str);
   }
-  PL_ASSIGN_OR_RETURN(IRNode * left, ProcessData(node->left, op_context));
-  if (!left->IsExpression()) {
-    return CreateAstError(
-        node,
-        "Expected left side of operation to be an expression, but got $0, which is not an "
-        "expression..",
-        left->type_string());
-  }
-  std::vector<ExpressionIR*> expressions = {static_cast<ExpressionIR*>(left)};
+
+  PL_ASSIGN_OR_RETURN(auto left_obj, Process(node->left, op_context));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * left,
+                      GetArgAs<ExpressionIR>(left_obj, "left side of operation"));
+  std::vector<ExpressionIR*> expressions{left};
 
   for (const auto& comp : node->comparators) {
-    PL_ASSIGN_OR_RETURN(IRNode * expr, ProcessData(comp, op_context));
-    if (!expr->IsExpression()) {
-      return CreateAstError(comp, "Expected expression, but got $0, which is not an expression.",
-                            expr->type_string());
-    }
-    expressions.push_back(static_cast<ExpressionIR*>(expr));
+    PL_ASSIGN_OR_RETURN(auto obj, Process(comp, op_context));
+    PL_ASSIGN_OR_RETURN(ExpressionIR * expr, GetArgAs<ExpressionIR>(obj, "argument to operation"));
+    expressions.push_back(expr);
   }
 
   PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
@@ -693,27 +659,18 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataCompare(const pypa::AstCompareP
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataUnaryOp(const pypa::AstUnaryOpPtr& node,
                                                          const OperatorContext& op_context) {
-  PL_ASSIGN_OR_RETURN(IRNode * operand, ProcessData(node->operand, op_context));
-  if (!operand->IsExpression()) {
-    return CreateAstError(node, "Expected operand of unary op to be expression, but got $0",
-                          operand->type_string());
-  }
+  PL_ASSIGN_OR_RETURN(auto operand_obj, Process(node->operand, op_context));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * operand,
+                      GetArgAs<ExpressionIR>(operand_obj, "operand of unary op"));
 
   std::string op_str = pypa::to_string(node->op);
   PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetUnaryOp(op_str, node));
   if (op.op_code == FuncIR::Opcode::non_op) {
-    return ExprObject::Create(static_cast<ExpressionIR*>(operand), this);
+    return ExprObject::Create(operand, this);
   }
-  std::vector<ExpressionIR*> args = {static_cast<ExpressionIR*>(operand)};
+  std::vector<ExpressionIR*> args{operand};
   PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, args));
   return ExprObject::Create(ir_node, this);
-}
-
-StatusOr<IRNode*> ASTVisitorImpl::ProcessData(const pypa::AstPtr& ast,
-                                              const OperatorContext& op_context) {
-  PL_ASSIGN_OR_RETURN(QLObjectPtr ql_object, Process(PYPA_PTR_CAST(Call, ast), op_context));
-  DCHECK(ql_object->HasNode());
-  return ql_object->node();
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessFuncDefReturn(const pypa::AstReturnPtr& ret) {

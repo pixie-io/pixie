@@ -173,12 +173,12 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return Status whether the assignment worked or not.
    */
   Status ProcessSubscriptAssignment(const pypa::AstSubscriptPtr& assign_node,
-                                    const pypa::AstPtr& expr_node);
+                                    const pypa::AstExpr& expr_node);
   Status ProcessAttributeAssignment(const pypa::AstAttributePtr& assign_node,
-                                    const pypa::AstPtr& expr_node);
+                                    const pypa::AstExpr& expr_node);
   Status ProcessMapAssignment(const pypa::AstPtr& assign_target,
-                              std::shared_ptr<Dataframe> parent_df, IRNode* target,
-                              const pypa::AstPtr& expr_node);
+                              std::shared_ptr<Dataframe> parent_df, QLObjectPtr value_obj,
+                              const pypa::AstExpr& expr_node);
   /**
    * @brief ProcessAssignNode handles lines where an expression is assigned to a value.
    * ie in the following lines
@@ -310,19 +310,6 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return StatusOr<ExpressionIR*> the ir representation of the string.
    */
   StatusOr<QLObjectPtr> ProcessStr(const pypa::AstStrPtr& ast);
-
-  /**
-   * @brief ProcessData takes in what are typically function arguments and returns the
-   * approriate data representation.
-   *
-   * Ie it might take in an AST tree that represents a list of strings, and convert that into a
-   * ListIR node.
-   *
-   * @param ast
-   * @param op_context: The context of the operator which this is contained within.
-   * @return StatusOr<IRNode*>
-   */
-  StatusOr<IRNode*> ProcessData(const pypa::AstPtr& ast, const OperatorContext& op_context);
 
   /**
    * @brief Gets the name string contained within the Name ast node and returns the IRNode
