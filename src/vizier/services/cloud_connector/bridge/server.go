@@ -373,7 +373,7 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 
 			log.WithField("topic", topic).
 				WithField("msg", natsMsg.String()).
-				Info("Publishing to NATS")
+				Trace("Publishing to NATS")
 			err = s.nc.Publish(topic, b)
 			if err != nil {
 				log.WithError(err).Error("Failed to publish")

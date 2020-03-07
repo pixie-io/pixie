@@ -2,5 +2,5 @@ package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "proc_fs",
-    srcs = glob(include=["proc/**/*"]),
+    srcs = glob(include = ["proc/**/*"]),
 )
