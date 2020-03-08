@@ -8,19 +8,52 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/jsonpb"
+	"github.com/olekukonko/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"gopkg.in/segmentio/analytics-go.v3"
+	analytics "gopkg.in/segmentio/analytics-go.v3"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/scripts"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 )
+
+const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle.json"
 
 func init() {
 	RunCmd.Flags().StringP("output", "o", "", "Output format: one of: json|proto")
 	RunCmd.Flags().StringP("file", "f", "", "Script file, specify - for STDIN")
+	RunCmd.Flags().BoolP("list", "l", false, "List available scripts")
+	RunCmd.Flags().StringP("bundle", "b", "", "Path/URL to bundle file")
+}
+
+func listBundleScripts(bundleFile string) {
+	r, err := scripts.NewBundleReader(bundleFile)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to read bundle")
+	}
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Name", "Description"})
+	for _, script := range r.GetScriptMetadata() {
+		table.Append([]string{script.ScriptName, script.ShortDoc})
+	}
+	table.SetBorder(false)
+
+	fmt.Printf("\n\n")
+	table.Render()
+	fmt.Printf("\n\n")
+
+}
+
+func getScriptFromBundle(bundleFile, scriptName string) (string, error) {
+	r, err := scripts.NewBundleReader(bundleFile)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to read bundle")
+	}
+	return r.GetScript(scriptName)
 }
 
 // RunCmd is the "query" command.
@@ -32,10 +65,42 @@ var RunCmd = &cobra.Command{
 		format, _ := cmd.Flags().GetString("output")
 		format = strings.ToLower(format)
 
+		listScripts, _ := cmd.Flags().GetBool("list")
+		bundleFile, _ := cmd.Flags().GetString("bundle")
+		if bundleFile == "" {
+			bundleFile = defaultBundleFile
+		}
+		if listScripts {
+			listBundleScripts(bundleFile)
+			return
+		}
+
+		var script string
+		var err error
+
 		scriptFile, _ := cmd.Flags().GetString("file")
-		q, err := getScriptString(scriptFile)
-		if err != nil {
-			log.WithError(err).Fatal("Failed to get query string")
+		if scriptFile == "" {
+			if len(args) != 1 {
+				log.Fatal("Expected a single arg, script_name")
+			}
+			scriptName := args[0]
+
+			_ = pxanalytics.Client().Enqueue(&analytics.Track{
+				UserId: pxconfig.Cfg().UniqueClientID,
+				Event:  "Script Load Preset",
+				Properties: analytics.NewProperties().
+					Set("scriptName", scriptName),
+			})
+
+			script, err = getScriptFromBundle(bundleFile, scriptName)
+			if err != nil {
+				log.WithError(err).Fatal("Failed to load script")
+			}
+		} else {
+			script, err = getScriptString(scriptFile)
+			if err != nil {
+				log.WithError(err).Fatal("Failed to get query string")
+			}
 		}
 
 		// TODO(zasgar): Refactor this when we change to the new API to make analytics cleaner.
@@ -43,26 +108,27 @@ var RunCmd = &cobra.Command{
 			UserId: pxconfig.Cfg().UniqueClientID,
 			Event:  "Script Execution Started",
 			Properties: analytics.NewProperties().
-				Set("scriptString", q),
+				Set("scriptString", script),
 		})
 
 		v := mustConnectDefaultVizier(cloudAddr)
 
-		res, err := v.ExecuteScript(q)
+		res, err := v.ExecuteScript(script)
 		if err != nil {
 			_ = pxanalytics.Client().Enqueue(&analytics.Track{
 				UserId: pxconfig.Cfg().UniqueClientID,
 				Event:  "Script Execution Failed",
 				Properties: analytics.NewProperties().
-					Set("scriptString", q),
+					Set("scriptString", script),
 			})
 			log.WithError(err).Fatal("Failed to execute query")
 		}
+
 		_ = pxanalytics.Client().Enqueue(&analytics.Track{
 			UserId: pxconfig.Cfg().UniqueClientID,
 			Event:  "Script Execution Success",
 			Properties: analytics.NewProperties().
-				Set("scriptString", q),
+				Set("scriptString", script),
 		})
 		mustFormatQueryResults(res, format)
 	},

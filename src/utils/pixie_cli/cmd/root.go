@@ -8,8 +8,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"gopkg.in/segmentio/analytics-go.v3"
 
+	analytics "gopkg.in/segmentio/analytics-go.v3"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/update"
@@ -37,6 +37,8 @@ func init() {
 	RootCmd.AddCommand(ProxyCmd)
 	RootCmd.AddCommand(RunCmd)
 	RootCmd.AddCommand(GetCmd)
+
+	RootCmd.AddCommand(CreateBundle)
 
 	// Super secret flags for Pixies.
 	RootCmd.PersistentFlags().MarkHidden("cloud_addr")

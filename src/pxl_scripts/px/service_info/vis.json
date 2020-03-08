@@ -1,0 +1,104 @@
+{
+  "p50": {
+    "mark": "line",
+    "data": {
+      "name": "test"
+    },
+    "encoding": {
+      "color": {
+        "field": "pod",
+        "type": "nominal"
+      },
+      "x": {
+        "field": "time_",
+        "type": "temporal",
+        "axis": {
+          "titleFontSize": 15
+        }
+      },
+      "y": {
+        "field": "latency_p50",
+        "type": "quantitative",
+        "axis": {
+          "titleFontSize": 15
+        }
+      }
+    },
+    "config": {
+      "line": {
+        "point": true
+      },
+      "scale": {
+        "useUnaggregatedDomain": true
+      }
+    }
+  },
+  "p90": {
+    "mark": "line",
+    "data": {
+      "name": "test"
+    },
+    "encoding": {
+      "color": {
+        "field": "pod",
+        "type": "nominal"
+      },
+      "x": {
+        "field": "time_",
+        "type": "temporal",
+        "axis": {
+          "titleFontSize": 15
+        }
+      },
+      "y": {
+        "field": "latency_p90",
+        "type": "quantitative",
+        "axis": {
+          "titleFontSize": 15
+        }
+      }
+    },
+    "config": {
+      "line": {
+        "point": true
+      },
+      "scale": {
+        "useUnaggregatedDomain": true
+      }
+    }
+  },
+  "p99": {
+    "mark": "line",
+    "data": {
+      "name": "test"
+    },
+    "encoding": {
+      "color": {
+        "field": "pod",
+        "type": "nominal"
+      },
+      "x": {
+        "field": "time_",
+        "type": "temporal",
+        "axis": {
+          "titleFontSize": 15
+        }
+      },
+      "y": {
+        "field": "latency_p90",
+        "type": "quantitative",
+        "axis": {
+          "titleFontSize": 15
+        }
+      }
+    },
+    "config": {
+      "line": {
+        "point": true
+      },
+      "scale": {
+        "useUnaggregatedDomain": true
+      }
+    }
+  }
+}

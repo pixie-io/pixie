@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "bundle.go",
+        "bundle_reader.go",
+        "bundle_writer.go",
+    ],
+    importpath = "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/scripts",
+    visibility = ["//visibility:public"],
+    deps = [
+        "@com_github_bmatcuk_doublestar//:go_default_library",
+        "@in_gopkg_yaml_v2//:go_default_library",
+    ],
+)
