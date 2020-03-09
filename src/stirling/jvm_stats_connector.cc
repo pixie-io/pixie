@@ -49,20 +49,29 @@ namespace {
 StatusOr<std::string> ReadHsperfData(pid_t pid) {
   PL_ASSIGN_OR_RETURN(const std::filesystem::path hsperf_data_path, HsperfdataPath(pid));
 
-  std::filesystem::path proc_pid_path =
-      std::filesystem::path(system::Config::GetInstance().proc_path()) / std::to_string(pid);
-  PL_ASSIGN_OR_RETURN(const std::filesystem::path hsperf_data_container_path,
+  const std::filesystem::path proc_pid_path =
+      system::Config::GetInstance().proc_path() / std::to_string(pid);
+  PL_ASSIGN_OR_RETURN(std::filesystem::path hsperf_data_container_path,
                       ResolveProcessPath(proc_pid_path, hsperf_data_path));
-  // TODO(yzhao): Combine with ResolveProcessPath() to get path inside container.
+
+  const std::filesystem::path host_path = system::Config::GetInstance().host_path();
+  hsperf_data_container_path = fs::JoinPath({&host_path, &hsperf_data_container_path});
+
   PL_RETURN_IF_ERROR(Exists(hsperf_data_container_path));
-  PL_ASSIGN_OR_RETURN(std::string hsperf_data_str, ReadFileToString(hsperf_data_container_path));
-  return hsperf_data_str;
+
+  return ReadFileToString(hsperf_data_container_path);
 }
 
 }  // namespace
 
 Status JVMStatsConnector::ExportStats(const md::UPID& upid, DataTable* data_table) const {
   PL_ASSIGN_OR_RETURN(std::string hsperf_data_str, ReadHsperfData(upid.pid()));
+
+  if (hsperf_data_str.empty()) {
+    // Assumes only file reading failed, and is transient.
+    return Status::OK();
+  }
+
   Stats stats(std::move(hsperf_data_str));
   if (!stats.Parse().ok()) {
     // Assumes this is a transient failure.
@@ -73,8 +82,6 @@ Status JVMStatsConnector::ExportStats(const md::UPID& upid, DataTable* data_tabl
                          std::chrono::steady_clock::now().time_since_epoch())
                          .count() +
                      ClockRealTimeOffset());
-  // TODO(yzhao): Figure out how to get the start time of the pid.
-  system::ProcParser proc_parser(system::Config::GetInstance());
   r.Append<kUPIDIdx>(upid.value());
   r.Append<kYoungGCTimeIdx>(stats.YoungGCTimeNanos());
   r.Append<kFullGCTimeIdx>(stats.FullGCTimeNanos());
