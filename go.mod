@@ -28,6 +28,7 @@ require (
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/fatih/color v1.7.0
 	github.com/fogleman/gg v1.3.0 // indirect
+	github.com/getsentry/sentry-go v0.5.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang/mock v1.3.1
@@ -48,7 +49,6 @@ require (
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/lib/pq v1.3.0
-	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/nats-io/nats-server/v2 v2.1.4
@@ -57,7 +57,6 @@ require (
 	github.com/nats-io/stan.go v0.6.0
 	github.com/olekukonko/tablewriter v0.0.1
 	github.com/olivere/elastic/v7 v7.0.12
-	github.com/onsi/gomega v0.0.0-20190113212917-5533ce8a0da3 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v1.0.0-rc8 // indirect
@@ -93,7 +92,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/segmentio/analytics-go.v3 v3.1.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
-	gopkg.in/yaml.v2 v2.2.2
+	gopkg.in/yaml.v2 v2.2.4
 	gotest.tools v2.2.0+incompatible // indirect
 	k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
 	k8s.io/apimachinery v0.0.0-20190404173353-6a84e37a896d

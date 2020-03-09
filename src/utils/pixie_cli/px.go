@@ -5,17 +5,44 @@ package main
 
 import (
 	"os"
+	"runtime"
 	"strings"
+	"time"
 
+	sentry "github.com/getsentry/sentry-go"
 	log "github.com/sirupsen/logrus"
-	"gopkg.in/segmentio/analytics-go.v3"
-
+	analytics "gopkg.in/segmentio/analytics-go.v3"
+	"pixielabs.ai/pixielabs/src/shared/version"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/sentryhook"
 )
 
+const sentryDSN = "https://ef3a781b5e7b42e282706fc541077f3a@sentry.io/4090453"
+
 func main() {
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn:              sentryDSN,
+		AttachStacktrace: true,
+		Debug:            true,
+		Release:          version.GetVersion().ToString(),
+		Environment:      runtime.GOOS,
+		MaxBreadcrumbs:   10,
+	})
+	if err != nil {
+		log.WithError(err).Trace("Cannot initialize sentry")
+	} else {
+		tags := map[string]string{
+			"version":  version.GetVersion().ToString(),
+			"clientID": pxconfig.Cfg().UniqueClientID,
+		}
+		hook := sentryhook.New([]log.Level{
+			log.ErrorLevel, log.PanicLevel, log.FatalLevel,
+		}, sentryhook.WithTags(tags))
+		log.AddHook(hook)
+	}
+	defer sentry.Flush(2 * time.Second)
 	defer pxanalytics.Client().Close()
 
 	pxanalytics.Client().Enqueue(&analytics.Track{
