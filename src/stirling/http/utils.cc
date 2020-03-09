@@ -6,7 +6,7 @@ namespace pl {
 namespace stirling {
 namespace http {
 
-bool MatchesHTTPTHeaders(const HeadersMap& http_headers, const HTTPHeaderFilter& filter) {
+bool MatchesHTTPHeaders(const HeadersMap& http_headers, const HTTPHeaderFilter& filter) {
   if (!filter.inclusions.empty()) {
     bool included = false;
     // cpplint lags behind C++17, and only consider '[]' as an operator, therefore insists that no

@@ -26,34 +26,34 @@ TEST(ParseHTTPHeaderFiltersAndMatchTest, FiltersAreAsExpectedAndMatchesWork) {
     HeadersMap http_headers = {
         {"Content-Type", "application/json; charset=utf-8"},
     };
-    EXPECT_TRUE(MatchesHTTPTHeaders(http_headers, filter));
+    EXPECT_TRUE(MatchesHTTPHeaders(http_headers, filter));
     http_headers.insert({"Content-Encoding", "gzip"});
-    EXPECT_FALSE(MatchesHTTPTHeaders(http_headers, filter)) << "gzip should be filtered out";
+    EXPECT_FALSE(MatchesHTTPHeaders(http_headers, filter)) << "gzip should be filtered out";
   }
   {
     HeadersMap http_headers = {
         {"Transfer-Encoding", "chunked"},
     };
-    EXPECT_TRUE(MatchesHTTPTHeaders(http_headers, filter));
+    EXPECT_TRUE(MatchesHTTPHeaders(http_headers, filter));
     http_headers.insert({"Content-Encoding", "binary"});
-    EXPECT_FALSE(MatchesHTTPTHeaders(http_headers, filter)) << "binary should be filtered out";
+    EXPECT_FALSE(MatchesHTTPHeaders(http_headers, filter)) << "binary should be filtered out";
   }
   {
     HeadersMap http_headers;
-    EXPECT_FALSE(MatchesHTTPTHeaders(http_headers, filter));
+    EXPECT_FALSE(MatchesHTTPHeaders(http_headers, filter));
 
     const HTTPHeaderFilter empty_filter;
-    EXPECT_TRUE(MatchesHTTPTHeaders(http_headers, empty_filter))
+    EXPECT_TRUE(MatchesHTTPHeaders(http_headers, empty_filter))
         << "Empty filter matches any HTTP headers";
     http_headers.insert({"Content-Type", "non-matching-type"});
-    EXPECT_TRUE(MatchesHTTPTHeaders(http_headers, empty_filter))
+    EXPECT_TRUE(MatchesHTTPHeaders(http_headers, empty_filter))
         << "Empty filter matches any HTTP headers";
   }
   {
     const HeadersMap http_headers = {
         {"Content-Type", "non-matching-type"},
     };
-    EXPECT_FALSE(MatchesHTTPTHeaders(http_headers, filter));
+    EXPECT_FALSE(MatchesHTTPHeaders(http_headers, filter));
   }
 }
 

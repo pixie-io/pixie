@@ -40,7 +40,6 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/stirling/source_connector.h"
 #include "src/stirling/utils/proc_tracker.h"
 
-DECLARE_string(http_response_header_filters);
 DECLARE_bool(stirling_enable_parsing_protobufs);
 DECLARE_uint32(stirling_socket_trace_sampling_period_millis);
 DECLARE_string(perf_buffer_events_output_path);
@@ -105,10 +104,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
    * @return Pointer to the ConnectionTracker, or nullptr if it does not exist.
    */
   const ConnectionTracker* GetConnectionTracker(struct conn_id_t connid) const;
-
-  static void TestOnlySetHTTPResponseHeaderFilter(http::HTTPHeaderFilter filter) {
-    http_response_header_filter_ = std::move(filter);
-  }
 
  private:
   // ReadPerfBuffers poll callback functions (must be static).
@@ -186,7 +181,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {"go_grpc_data_events", HandleHTTP2Data, HandleHTTP2DataLoss},
   });
 
-  inline static http::HTTPHeaderFilter http_response_header_filter_;
   // TODO(yzhao): We will remove this once finalized the mechanism of lazy protobuf parse.
   inline static ::pl::grpc::ServiceDescriptorDatabase grpc_desc_db_{
       demos::hipster_shop::GetFileDescriptorSet()};
@@ -222,9 +216,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   template <typename TRecordType>
   static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
                             TRecordType record, DataTable* data_table);
-
-  // HTTP-specific helper function.
-  static bool SelectMessage(const http::Record& record);
 
   absl::flat_hash_set<md::UPID> get_mds_upids() {
     absl::MutexLock lock(&mds_upids_lock_);
@@ -299,7 +290,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);
-  FRIEND_TEST(SocketTraceConnectorTest, End2End);
+  FRIEND_TEST(SocketTraceConnectorTest, HTTPStandardFilter);
+  FRIEND_TEST(SocketTraceConnectorTest, HTTPFilter);
   FRIEND_TEST(SocketTraceConnectorTest, UPIDCheck);
   FRIEND_TEST(SocketTraceConnectorTest, RequestResponseMatching);
   FRIEND_TEST(SocketTraceConnectorTest, MissingEventInStream);

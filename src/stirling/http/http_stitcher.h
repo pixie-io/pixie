@@ -9,6 +9,8 @@
 #include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/http/types.h"
 
+DECLARE_string(http_response_header_filters);
+
 namespace pl {
 namespace stirling {
 namespace http {

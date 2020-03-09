@@ -33,14 +33,6 @@
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/utils/linux_headers.h"
 
-// TODO(yzhao): Consider simplify the semantic by filtering entirely on content type.
-DEFINE_string(http_response_header_filters, "Content-Type:json",
-              "Comma-separated strings to specify the substrings should be included for a header. "
-              "The format looks like <header-1>:<substr-1>,...,<header-n>:<substr-n>. "
-              "The substrings cannot include comma(s). The filters are conjunctive, "
-              "therefore the headers can be duplicate. For example, "
-              "'Content-Type:json,Content-Type:text' will select a HTTP response "
-              "with a Content-Type header whose value contains 'json' *or* 'text'.");
 DEFINE_bool(stirling_enable_parsing_protobufs, false,
             "If true, parses binary protobufs captured in gRPC messages. "
             "As of 2019-07, the parser can only handle protobufs defined in Hipster Shop.");
@@ -121,7 +113,6 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
                       std::chrono::milliseconds(FLAGS_stirling_socket_trace_sampling_period_millis),
                       kDefaultPushPeriod),
       bpf_tools::BCCWrapper() {
-  http_response_header_filter_ = http::ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
 
   EndpointRole role_to_trace = ParseEndpointRoleFlag(FLAGS_stirling_role_to_trace).ValueOrDie();
@@ -585,44 +576,18 @@ int64_t CalculateLatency(int64_t req_timestamp_ns, int64_t resp_timestamp_ns) {
 
 }  // namespace
 
-bool SocketTraceConnector::SelectMessage(const http::Record& record) {
-  const http::Message& message = record.resp;
-
-  // Rule: Exclude anything that doesn't specify its Content-Type.
-  auto content_type_iter = message.http_headers.find(http::kContentType);
-  if (content_type_iter == message.http_headers.end()) {
-    return false;
-  }
-
-  // Rule: Exclude anything that doesn't match the filter, if filter is active.
-  if (message.type == MessageType::kResponse &&
-      (!http_response_header_filter_.inclusions.empty() ||
-       !http_response_header_filter_.exclusions.empty())) {
-    if (!MatchesHTTPTHeaders(message.http_headers, http_response_header_filter_)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          const ConnectionTracker& conn_tracker, http::Record record,
                                          DataTable* data_table) {
-  // Only allow certain records to be transferred upstream.
-  if (!SelectMessage(record)) {
-    return;
-  }
-
-  // Currently decompresses gzip content, but could handle other transformations too.
-  // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
-  http::PreProcessMessage(&record.resp);
-
   DCHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
   http::Message& req_message = record.req;
   http::Message& resp_message = record.resp;
+
+  // Currently decompresses gzip content, but could handle other transformations too.
+  // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
+  http::PreProcessMessage(&resp_message);
 
   md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
                 conn_tracker.pid_start_time_ticks());

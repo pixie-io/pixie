@@ -38,7 +38,7 @@ HTTPHeaderFilter ParseHTTPHeaderFilters(std::string_view filters);
  * @param filters The filter on HTTP headers. The key is the header names, and the value is a
  * substring that the header value should contain.
  */
-bool MatchesHTTPTHeaders(const HeadersMap& http_headers, const HTTPHeaderFilter& filter);
+bool MatchesHTTPHeaders(const HeadersMap& http_headers, const HTTPHeaderFilter& filter);
 
 }  // namespace http
 }  // namespace stirling

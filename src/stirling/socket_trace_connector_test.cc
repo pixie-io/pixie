@@ -187,7 +187,7 @@ auto ToIntVector(const types::SharedColumnWrapper& col) {
   return result;
 }
 
-TEST_F(SocketTraceConnectorTest, End2End) {
+TEST_F(SocketTraceConnectorTest, HTTPFilter) {
   testing::EventGenerator event_gen(&mock_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
   std::unique_ptr<SocketDataEvent> event0_json = event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
@@ -220,46 +220,31 @@ TEST_F(SocketTraceConnectorTest, End2End) {
   // and the data in the internal buffer is being processed and filtered.
   source_->AcceptDataEvent(std::move(event0_json));
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  for (const auto& column : record_batch) {
-    EXPECT_EQ(1, column->Size())
-        << "event_json Content-Type does have 'json', and will be selected by the default filter";
-  }
+  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)))
+      << "event_json Content-Type does have 'json', and will be selected by the default filter";
 
   source_->AcceptDataEvent(std::move(event1_text));
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  for (const auto& column : record_batch) {
-    EXPECT_EQ(1, column->Size())
-        << "event_text Content-Type has no 'json', and won't be selected by the default filter";
-  }
+  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(2)))
+      << "event_text Content-Type has no 'json', and won't be selected by the default filter";
 
-  SocketTraceConnector::TestOnlySetHTTPResponseHeaderFilter({
-      {{"Content-Type", "text/plain"}},
-      {{"Content-Encoding", "gzip"}},
-  });
   source_->AcceptDataEvent(std::move(event2_text));
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  for (const auto& column : record_batch) {
-    EXPECT_EQ(2, column->Size())
-        << "The filter is changed to require 'text/plain' in Content-Type header, "
-           "and event_json Content-Type does not match, and won't be selected";
-  }
+  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(3)))
+      << "The filter is changed to require 'text/plain' in Content-Type header, "
+         "and event_json Content-Type does not match, and won't be selected";
 
-  SocketTraceConnector::TestOnlySetHTTPResponseHeaderFilter({
-      {{"Content-Type", "application/json"}},
-      {{"Content-Encoding", "gzip"}},
-  });
   source_->AcceptDataEvent(std::move(event3_json));
   source_->AcceptControlEvent(close_event);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  for (const auto& column : record_batch) {
-    EXPECT_EQ(3, column->Size())
-        << "The filter is changed to require 'application/json' in Content-Type header, "
-           "and event_json Content-Type matches, and is selected";
-  }
-  EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo", "bar", "foo"));
+  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(4)))
+      << "The filter is changed to require 'application/json' in Content-Type header, "
+         "and event_json Content-Type matches, and is selected";
+  EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]),
+              ElementsAre("foo", "<removed>", "<removed>", "foo"));
   EXPECT_THAT(ToIntVector<types::Time64NSValue>(record_batch[kHTTPTimeIdx]),
-              ElementsAre(2 + source_->ClockRealTimeOffset(), 4 + source_->ClockRealTimeOffset(),
-                          5 + source_->ClockRealTimeOffset()));
+              ElementsAre(2 + source_->ClockRealTimeOffset(), 3 + source_->ClockRealTimeOffset(),
+                          4 + source_->ClockRealTimeOffset(), 5 + source_->ClockRealTimeOffset()));
 }
 
 TEST_F(SocketTraceConnectorTest, UPIDCheck) {
