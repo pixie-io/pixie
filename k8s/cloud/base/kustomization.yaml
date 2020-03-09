@@ -31,3 +31,5 @@ resources:
 - artifact_tracker_service.yaml
 - artifact_config.yaml
 - indexer_deployment.yaml
+- log_collector_deployment.yaml
+- log_collector_service.yaml
