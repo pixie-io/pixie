@@ -25,7 +25,6 @@ func main() {
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              sentryDSN,
 		AttachStacktrace: true,
-		Debug:            true,
 		Release:          version.GetVersion().ToString(),
 		Environment:      runtime.GOOS,
 		MaxBreadcrumbs:   10,
