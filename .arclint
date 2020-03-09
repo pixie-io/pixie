@@ -122,6 +122,15 @@
         "(migrations/versions/.*\\.py$)"
       ]
     },
+    "flake8-pxl": {
+      "type": "flake8",
+      "flags": [
+        "--config=.pxl.flake8rc"
+      ],
+      "include": [
+        "(\\.pxl$)"
+      ]
+    },
     "spelling": {
       "type": "spelling",
       "exclude": [
