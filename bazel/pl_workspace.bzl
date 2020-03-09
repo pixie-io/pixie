@@ -34,6 +34,9 @@ def _package_manager_setup():
             "liblzma5",
             "libtinfo5",
             "zlib1g",
+            "libsasl2-2",
+            "libssl1.1",
+            "libgcc1",
         ],
         sources = ["@debian_buster//file:Packages.json"],
     )

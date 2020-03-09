@@ -188,4 +188,10 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "cpp-jwt-1.1.1",
         urls = ["https://github.com/arun11299/cpp-jwt/archive/v1.1.1.tar.gz"],
     ),
+    # March 5, 2020.
+    com_github_fluent_fluentbit = dict(
+        sha256 = "95dff0e536c6bdca0ae339f0570dccbb1094719446454aad81d906d335f111ec",
+        strip_prefix = "fluent-bit-1.3.9",
+        urls = ["https://github.com/fluent/fluent-bit/archive/v1.3.9.tar.gz"],
+    ),
 )

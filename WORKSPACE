@@ -74,6 +74,15 @@ apple_support_dependencies()
 
 gazelle_dependencies()
 
+go_repository(
+    name = "com_github_fluent_fluent_bit_go",
+    importpath = "github.com/fluent/fluent-bit-go",
+    patch_args = ["-p1"],
+    patches = ["//third_party:fluent-bit-go.patch"],
+    sum = "h1:ni2Qs4+h7Ps6bRPYJe7sF3MVQU1d8IXUTZBXFIegE7g=",
+    version = "v0.0.0-20200304012558-215d6804159a",
+)
+
 # gazelle:repo bazel_gazelle
 ##########################################################
 # Auto-generated GO dependencies (DO NOT EDIT).
@@ -81,8 +90,8 @@ gazelle_dependencies()
 go_repository(
     name = "com_github_golang_protobuf",
     importpath = "github.com/golang/protobuf",
-    sum = "h1:6nsPYzhq5kReh6QImI3k5qWzO4PEbvbIW2cwSfR/6xs=",
-    version = "v1.3.2",
+    sum = "h1:87PNWwrRvUSnqS4dlcBU/ftvOIBep4sYuBLlh6rX2wk=",
+    version = "v1.3.4",
 )
 
 go_repository(
@@ -102,8 +111,8 @@ go_repository(
 go_repository(
     name = "org_golang_x_net",
     importpath = "golang.org/x/net",
-    sum = "h1:CCH4IOTTfewWjGOlSp+zGcjutRKlBEZQ6wTn8ozI/nI=",
-    version = "v0.0.0-20200202094626-16171245cfb2",
+    sum = "h1:GuSPYbZzB5/dcLNCwLQLsg3obCJtX9IJhpXkvY7kzk0=",
+    version = "v0.0.0-20200301022130-244492dfa37a",
 )
 
 go_repository(
@@ -833,8 +842,8 @@ go_repository(
 go_repository(
     name = "org_golang_google_appengine",
     importpath = "google.golang.org/appengine",
-    sum = "h1:QzqyMA1tlu6CgqCDUtU9V+ZKhLFT2dkJuANu5QaxI3I=",
-    version = "v1.6.1",
+    sum = "h1:tycE03LOZYQNhDpS27tcQdAzLCVMaj7QT2SXxebnpCM=",
+    version = "v1.6.5",
 )
 
 go_repository(
@@ -2667,4 +2676,18 @@ go_repository(
     importpath = "gopkg.in/mgo.v2",
     sum = "h1:xcEWjVhvbDy+nHP67nPDDpbYrY+ILlfndk4bRioVHaU=",
     version = "v2.0.0-20180705113604-9856a29383ce",
+)
+
+go_repository(
+    name = "com_github_vmihailenco_msgpack_v4",
+    importpath = "github.com/vmihailenco/msgpack/v4",
+    sum = "h1:+xItGS88KRuaFXAnUJ641+sILYBvTiU/Fdr9JPTy/rA=",
+    version = "v4.3.8",
+)
+
+go_repository(
+    name = "com_github_vmihailenco_tagparser",
+    importpath = "github.com/vmihailenco/tagparser",
+    sum = "h1:quXMXlA39OCbd2wAdTsGDlK9RkOk6Wuw+x37wVyIuWY=",
+    version = "v0.1.1",
 )
