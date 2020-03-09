@@ -14,7 +14,7 @@ import {ApolloProvider, useMutation, useQuery} from '@apollo/react-hooks';
 
 import {Drawer} from '../../components/drawer/drawer';
 import {saveCodeToStorage} from './code-utils';
-import {EditorDrawerMenu, Script} from './drawer-menu';
+import {EditorDrawerMenu} from './drawer-menu';
 import {ConsoleTab} from './tab';
 
 const NEW_TAB = 'new-tab';

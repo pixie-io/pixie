@@ -2,30 +2,26 @@ import {SCRIPT_HISTORY} from 'common/local-gql';
 import {Accordion, AccordionList} from 'components/accordion';
 import * as React from 'react';
 import * as toml from 'toml';
+import {GetPxScripts, Script} from 'utils/script-bundle';
 
 import {useQuery} from '@apollo/react-hooks';
 
-// @ts-ignore : TS does not seem to like this import.
-import * as PresetQueriesTOML from '../vizier/preset-queries.toml';
 import {HistoryList, ScriptHistory} from './script-history';
 
 interface EditorDrawerMenuProps {
   onSelect: (script: Script) => void;
 }
 
-export interface Script {
-  id?: string;
-  title: string;
-  code: string;
-}
-
-const PRESET_QUERIES: Script[] = toml.parse(PresetQueriesTOML).queries.map(
-  (query) => ({ title: query[0], code: query[1] }));
-
 export const EditorDrawerMenu = (props: EditorDrawerMenuProps) => {
+  const [exampleScripts, setExampleScripts] = React.useState<Script[]>([]);
+
+  React.useEffect(() => {
+    GetPxScripts(setExampleScripts);
+  }, []);
+
   const { data: historyData } = useQuery<{ scriptHistory: ScriptHistory[] }>(SCRIPT_HISTORY);
   const accordionItem = React.useMemo(() => {
-    const presetQueries = PRESET_QUERIES.map((s) => ({
+    const presetQueries = exampleScripts.map((s) => ({
       title: s.title,
       onClick: () => {
         if (props.onSelect) {
@@ -46,7 +42,7 @@ export const EditorDrawerMenu = (props: EditorDrawerMenuProps) => {
         content: <HistoryList history={historyEntries} onClick={props.onSelect} />,
       },
     ];
-  }, [historyData]);
+  }, [historyData, exampleScripts]);
 
   return (<Accordion items={accordionItem} />);
 };
