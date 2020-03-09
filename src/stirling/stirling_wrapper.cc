@@ -91,7 +91,7 @@ void PrintRecordBatch(std::string_view prefix, const ArrayView<DataElement>& sch
           std::cout << "[" << absl::Substitute("{$0,$1}", val.High64(), val.Low64()) << "]";
         } break;
         case DataType::DURATION64NS: {
-          const auto secs = std::chrono::duration_cast<std::chrono::seconds>(
+          const auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(
               std::chrono::nanoseconds(col->Get<Duration64NSValue>(i).val));
           std::cout << absl::Substitute("[$0 seconds]", secs.count());
         } break;
