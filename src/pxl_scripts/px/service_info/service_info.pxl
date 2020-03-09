@@ -22,7 +22,8 @@ df.timestamp = px.bin(df.time_, px.seconds(num_seconds))
 k8s_object = 'pod'
 df[k8s_object] = df.ctx[k8s_object]
 
-filter_pods = px.contains(df[k8s_object], service) or px.contains(df[k8s_object], ns)
+filter_pods = px.contains(
+    df[k8s_object], service) or px.contains(df[k8s_object], ns)
 filter_out_health = px.contains(df.http_req_path, '/health') != 1
 
 filter_out_server_side_tracing = px.contains(df.remote_addr, '10.36') != 1
@@ -42,6 +43,7 @@ quantiles_agg.latency_p99 = px.pluck_float64(
 quantiles_agg['time_'] = quantiles_agg['timestamp']
 quantiles_table = quantiles_agg[['time_', k8s_object, 'latency_p50',
                                  'latency_p90', 'latency_p99', 'error_rate', 'throughput_total']]
-quantiles_table.num_errors = quantiles_table.error_rate * quantiles_table.throughput_total / num_seconds
+quantiles_table.num_errors = quantiles_table.error_rate * \
+    quantiles_table.throughput_total / num_seconds
 quantiles_table.throughput_total = quantiles_table.throughput_total / num_seconds
 px.display(quantiles_table, 'test')

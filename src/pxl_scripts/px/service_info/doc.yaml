@@ -1,3 +1,4 @@
+---
 short: Basic service SLAs.
 long: >
   Gets service latency, error rate and throughput.

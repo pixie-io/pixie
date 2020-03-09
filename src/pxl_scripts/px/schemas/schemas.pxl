@@ -1,0 +1,4 @@
+#
+# Get the schema for all the tables available in the system.
+#
+px.display(px.GetSchemas())

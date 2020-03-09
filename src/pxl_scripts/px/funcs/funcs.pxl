@@ -1,0 +1,6 @@
+# Regular functions.
+px.display(px.GetUDFList())
+# Aggregate functions.
+px.display(px.GetUDAList())
+# Table generationg functions.
+px.display(px.GetUDTFList())

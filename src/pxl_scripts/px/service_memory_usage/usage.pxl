@@ -1,0 +1,36 @@
+#
+# Get the Virtual memory usage and average memory for all services in the k8s cluster.
+#
+t1 = px.DataFrame(table='process_stats', start_time='-1m')
+bytes_per_mb = 1024.0 * 1024.0
+t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
+t1.rss_bytes_mb = t1.rss_bytes / bytes_per_mb
+t1.timestamp = px.bin(t1.time_, px.seconds(10))
+t1.service = t1.ctx['service']
+
+# uncomment and replace service_name to filter on a specific service.
+# t1 = t1[px.contains(t1.service, 'service_name')]
+
+upid_aggop = t1.groupby(['upid', 'service', 'timestamp']).agg(
+    vsize_mb=('vsize_mb', px.mean),
+    rss_bytes_mb=('rss_bytes_mb', px.mean),
+)
+
+# For this aggregate, we sum up the values as we've already calculated the average/usage
+# for the upids already, just need to do it for the entire service.
+aggop = upid_aggop.groupby(['service', 'timestamp']).agg(
+    vsize_mb=('vsize_mb', px.sum),
+    rss_bytes_mb=('rss_bytes_mb', px.sum),
+)
+
+# Format column names.
+aggop['Virtual Memory (mb)'] = aggop.vsize_mb
+aggop['Average Memory (mb)'] = aggop.rss_bytes_mb
+keep_columns = aggop[[
+    'service',
+    'timestamp',
+    'Virtual Memory (mb)',
+    'Average Memory (mb)'
+]]
+
+px.display(keep_columns)
