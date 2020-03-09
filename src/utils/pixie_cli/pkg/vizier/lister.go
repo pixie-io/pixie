@@ -2,13 +2,54 @@ package vizier
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
+	"fmt"
+	"net/http"
 	"net/url"
+	"time"
 
 	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
+	"gopkg.in/segmentio/analytics-go.v3"
+
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/utils"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 )
+
+const proxyIPAddr = "https://127.0.0.1:31068"
+
+func selectVizierOrProxy(vizierAddr string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	selectedAddr := make(chan string)
+
+	checkAddr := func(addr string) {
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		client := &http.Client{Transport: tr}
+		res, _ := client.Get(fmt.Sprintf("%s/%s", addr, "healthz"))
+		if res != nil && res.StatusCode == http.StatusOK {
+			selectedAddr <- addr
+		}
+	}
+	go checkAddr(proxyIPAddr)
+	go checkAddr(vizierAddr)
+
+	select {
+	case <-ctx.Done():
+		return "", errors.New("Cannot contact vizier")
+	case a := <-selectedAddr:
+		cancel()
+		return a, nil
+
+	}
+	return "", errors.New("Cannot contact vizier")
+}
 
 // Lister allows fetching information about Viziers from the cloud.
 type Lister struct {
@@ -65,7 +106,20 @@ func (l *Lister) GetVizierConnection(id uuid.UUID) (*ConnectionInfo, error) {
 
 	var u *url.URL
 	if len(ci.IPAddress) > 0 {
-		u, err = url.Parse(ci.IPAddress)
+		addr, err := selectVizierOrProxy(ci.IPAddress)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to contact Vizier")
+		}
+
+		log.WithField("addr", addr).Info("Selected Vizier address")
+		_ = pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Selected Vizier Address",
+			Properties: analytics.NewProperties().
+				Set("addr", addr),
+		})
+
+		u, err = url.Parse(addr)
 		if err != nil {
 			return nil, err
 		}

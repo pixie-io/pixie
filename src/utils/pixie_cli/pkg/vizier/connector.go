@@ -66,6 +66,10 @@ func (c *Connector) connect() error {
 	isInternal := strings.ContainsAny(addr, "cluster.local")
 
 	dialOpts, err := services.GetGRPCClientDialOptsServerSideTLS(isInternal)
+	if err != nil {
+		return err
+	}
+
 	dialOpts = append(dialOpts, grpc.WithBlock())
 	// Try to dial with a time out (ctrl-c can be used to cancel)
 	conn, err := grpc.DialContext(ctx, addr, dialOpts...)
