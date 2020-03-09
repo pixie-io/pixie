@@ -3,6 +3,7 @@
 
 #include <string>
 
+#include <absl/strings/str_replace.h>
 #include <magic_enum.hpp>
 
 #include "src/common/base/base.h"
@@ -65,6 +66,33 @@ class MySQLTraceTest : public SocketTraceBPFTest {
   }
   ~MySQLTraceTest() { container_.Stop(); }
 
+  StatusOr<int32_t> RunSQLScript(std::string_view script_path) {
+    std::string absl_script_path = TestFilePath(script_path);
+    PL_ASSIGN_OR_RETURN(std::string script_content, pl::ReadFileToString(absl_script_path));
+
+    // Since script content will be passed through bash, escape any single quotes in the script.
+    script_content = absl::StrReplaceAll(script_content, {{"'", "'\\''"}});
+
+    // Run mysql as a way of generating traffic.
+    // Run it through bash, and return the PID, so we can use it to filter captured results.
+    std::string cmd =
+        absl::StrFormat("docker exec %s bash -c 'echo \"%s\" | mysql -uroot & echo $! && wait'",
+                        container_.container_name(), script_content);
+    PL_ASSIGN_OR_RETURN(std::string out, pl::Exec(cmd));
+
+    std::vector<std::string_view> lines = absl::StrSplit(out, "\n");
+    if (lines.empty()) {
+      return error::Internal("Exected output (pid) from command.");
+    }
+
+    int32_t client_pid;
+    if (!absl::SimpleAtoi(lines[0], &client_pid)) {
+      return error::Internal("Could not extract PID.");
+    }
+
+    return client_pid;
+  }
+
   MySQLContainer container_;
 };
 
@@ -109,97 +137,243 @@ auto EqMySQLRecord(const mysql::Record& x) {
 //-----------------------------------------------------------------------------
 
 // clang-format off
-mysql::Record kRecord1 = {
+mysql::Record kRecordInit = {
   .req = {
-          .cmd = mysql::MySQLEventType::kQuery,
-          .msg = R"(select @@version_comment limit 1)",
-          .timestamp_ns = 0,
+    .cmd = mysql::MySQLEventType::kQuery,
+    .msg = R"(select @@version_comment limit 1)",
+    .timestamp_ns = 0,
   },
   .resp = {
-          .status = mysql::MySQLRespStatus::kOK,
-          .msg = R"(Resultset rows = 1)",
-          .timestamp_ns = 0,
+    .status = mysql::MySQLRespStatus::kOK,
+    .msg = R"(Resultset rows = 1)",
+    .timestamp_ns = 0,
   }
 };
 
-mysql::Record kRecord2 = {
+mysql::Record kRecordScript1Cmd1 = {
   .req = {
-          .cmd = mysql::MySQLEventType::kQuery,
-          .msg = R"(select table_schema as database_name, table_name from information_schema.tables)",
-          .timestamp_ns = 0,
+    .cmd = mysql::MySQLEventType::kQuery,
+    .msg = R"(select table_schema as database_name, table_name from information_schema.tables)",
+    .timestamp_ns = 0,
   },
   .resp = {
-          .status = mysql::MySQLRespStatus::kOK,
-          .msg = R"(Resultset rows = 301)",
-          .timestamp_ns = 0,
+    .status = mysql::MySQLRespStatus::kOK,
+    .msg = R"(Resultset rows = 301)",
+    .timestamp_ns = 0,
   }
 };
 
-mysql::Record kRecord3 = {
+mysql::Record kRecordScript1Cmd2 = {
   .req = {
-      .cmd = mysql::MySQLEventType::kQuery,
-      .msg = R"(quit)",
-      .timestamp_ns = 0,
+    .cmd = mysql::MySQLEventType::kQuery,
+    .msg = "SHOW DATABASES",
+    .timestamp_ns = 0,
   },
   .resp = {
-      .status = mysql::MySQLRespStatus::kErr,
-      .msg = R"(You have an error in your SQL syntax;"
-" check the manual that corresponds to your MySQL server version"
-" for the right syntax to use near 'quit' at line 1)",
+    .status = mysql::MySQLRespStatus::kOK,
+    .msg = "Resultset rows = 4",
+    .timestamp_ns = 0,
+  }
+};
+
+mysql::Record kRecordScript1Cmd3 = {
+  .req = {
+    .cmd = mysql::MySQLEventType::kQuery,
+    .msg = "SELECT DATABASE()",
+    .timestamp_ns = 0,
+  },
+  .resp = {
+    .status = mysql::MySQLRespStatus::kOK,
+    .msg = "Resultset rows = 1",
+    .timestamp_ns = 0,
+  }
+};
+
+mysql::Record kRecordScript1Cmd4 = {
+  .req = {
+    .cmd = mysql::MySQLEventType::kInitDB,
+    .msg = "mysql",
+    .timestamp_ns = 0,
+  },
+  .resp = {
+    .status = mysql::MySQLRespStatus::kOK,
+    .msg = "",
+    .timestamp_ns = 0,
+  }
+};
+
+mysql::Record kRecordScript1Cmd5 = {
+  .req = {
+    .cmd = mysql::MySQLEventType::kQuery,
+    .msg = "SELECT user, host FROM user",
+    .timestamp_ns = 0,
+  },
+  .resp = {
+    .status = mysql::MySQLRespStatus::kOK,
+    .msg = "Resultset rows = 5",
+    .timestamp_ns = 0,
+  }
+};
+
+mysql::Record kRecordScript2Cmd1 = {
+  .req = {
+    .cmd = mysql::MySQLEventType::kQuery,
+    .msg = R"(PREPARE pstmt FROM 'select table_schema as database_name, table_name
+from information_schema.tables
+where table_type = ? and table_schema = ?
+order by database_name, table_name')",
+    .timestamp_ns = 0,
+  },
+  .resp = {
+      .status = mysql::MySQLRespStatus::kOK,
+      .msg = "",
       .timestamp_ns = 0,
   }
 };
+
+mysql::Record kRecordScript2Cmd2 = {
+  .req = {
+    .cmd = mysql::MySQLEventType::kQuery,
+    .msg = "SET @tableType = 'BASE TABLE'",
+    .timestamp_ns = 0,
+  },
+  .resp = {
+    .status = mysql::MySQLRespStatus::kOK,
+    .msg = "",
+    .timestamp_ns = 0,
+  }
+};
+
+mysql::Record kRecordScript2Cmd3 = {
+  .req = {
+    .cmd = mysql::MySQLEventType::kQuery,
+    .msg = "SET @tableSchema = 'mysql'",
+    .timestamp_ns = 0,
+  },
+  .resp = {
+    .status = mysql::MySQLRespStatus::kOK,
+    .msg = "",
+    .timestamp_ns = 0,
+  }
+};
+
+mysql::Record kRecordScript2Cmd4 = {
+  .req = {
+    .cmd = mysql::MySQLEventType::kQuery,
+    .msg = "EXECUTE pstmt USING @tableType, @tableSchema",
+    .timestamp_ns = 0,
+  },
+  .resp = {
+    .status = mysql::MySQLRespStatus::kOK,
+    .msg = "Resultset rows = 33",
+    .timestamp_ns = 0,
+  }
+};
+
+mysql::Record kRecordScript2Cmd5 = {
+  .req = {
+    .cmd = mysql::MySQLEventType::kQuery,
+    .msg = "SET @tableSchema = 'bogus'",
+    .timestamp_ns = 0,
+  },
+  .resp = {
+    .status = mysql::MySQLRespStatus::kOK,
+    .msg = "",
+    .timestamp_ns = 0,
+  }
+};
+
+mysql::Record kRecordScript2Cmd6 = {
+  .req = {
+    .cmd = mysql::MySQLEventType::kQuery,
+    .msg = "EXECUTE pstmt USING @tableType, @tableSchema",
+    .timestamp_ns = 0,
+  },
+  .resp = {
+    .status = mysql::MySQLRespStatus::kUnknown,
+    .msg = "",
+    .timestamp_ns = 0,
+  }
+};
+
+mysql::Record kRecordScript2Cmd7 = {
+  .req = {
+    .cmd = mysql::MySQLEventType::kQuery,
+    .msg = "DEALLOCATE PREPARE pstmt",
+    .timestamp_ns = 0,
+  },
+  .resp = {
+    .status = mysql::MySQLRespStatus::kOK,
+    .msg = "",
+    .timestamp_ns = 0,
+  }
+};
+
 // clang-format on
 
 //-----------------------------------------------------------------------------
 // Test Scenarios
 //-----------------------------------------------------------------------------
 
+std::vector<mysql::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch& record_batch,
+                                            int32_t client_pid) {
+  std::vector<size_t> target_record_indices =
+      FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, client_pid);
+  return ToRecordVector(record_batch, target_record_indices);
+}
+
 TEST_F(MySQLTraceTest, mysql_capture) {
-  std::string script_path = TestFilePath("src/stirling/mysql/testing/script.sql");
-  ASSERT_OK_AND_ASSIGN(std::string script_content, pl::ReadFileToString(script_path));
-
-  // Run mysql as a way of generating traffic.
-  // Run it through bash, and return the PID, so we can use it to filter captured results.
-  std::string cmd =
-      absl::StrFormat("docker exec %s bash -c 'echo \"%s\" | mysql -uroot & echo $! && wait'",
-                      container_.container_name(), script_content);
-  LOG(INFO) << cmd;
-  ASSERT_OK_AND_ASSIGN(std::string out, pl::Exec(cmd));
-
-  std::vector<std::string_view> lines = absl::StrSplit(out, "\n");
-  ASSERT_FALSE(lines.empty());
-
-  int32_t client_pid;
-  ASSERT_TRUE(absl::SimpleAtoi(lines[0], &client_pid));
-
-  // Sleep a little more, just to be safe.
-  sleep(1);
-
-  // Grab the data from Stirling.
-  DataTable data_table(kMySQLTable);
-  source_->TransferData(ctx_.get(), SocketTraceConnector::kMySQLTableNum, &data_table);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-
-  // Check client-side tracing results.
   {
-    const std::vector<size_t> target_record_indices =
-        FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, client_pid);
+    ASSERT_OK_AND_ASSIGN(int32_t client_pid, RunSQLScript("src/stirling/mysql/testing/script.sql"));
 
-    // For Debug:
-    for (const auto& idx : target_record_indices) {
-      uint32_t pid = record_batch[kMySQLUPIDIdx]->Get<types::UInt128Value>(idx).High64();
-      std::string req_body = record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx);
-      std::string resp_body = record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx);
-      LOG(INFO) << absl::Substitute("$0 $1 $2", pid, req_body, resp_body);
+    // Sleep a little more, just to be safe.
+    sleep(1);
+
+    // Grab the data from Stirling.
+    DataTable data_table(kMySQLTable);
+    source_->TransferData(ctx_.get(), SocketTraceConnector::kMySQLTableNum, &data_table);
+    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+
+    // Check client-side tracing results.
+    {
+      std::vector<mysql::Record> records = GetTargetRecords(record_batch, client_pid);
+
+      EXPECT_THAT(records,
+                  UnorderedElementsAre(
+                      EqMySQLRecord(kRecordInit), EqMySQLRecord(kRecordScript1Cmd1),
+                      EqMySQLRecord(kRecordScript1Cmd2), EqMySQLRecord(kRecordScript1Cmd3),
+                      EqMySQLRecord(kRecordScript1Cmd4), EqMySQLRecord(kRecordScript1Cmd5)));
     }
 
-    std::vector<mysql::Record> records = ToRecordVector(record_batch, target_record_indices);
-
-    EXPECT_THAT(records, UnorderedElementsAre(EqMySQLRecord(kRecord1), EqMySQLRecord(kRecord2)));
+    // TODO(oazizi): Check server-side tracing results.
   }
 
-  // TODO(oazizi): Check server-side tracing results.
+  {
+    ASSERT_OK_AND_ASSIGN(int32_t client_pid,
+                         RunSQLScript("src/stirling/mysql/testing/prepare_execute.sql"));
+
+    // Sleep a little more, just to be safe.
+    sleep(1);
+
+    // Grab the data from Stirling.
+    DataTable data_table(kMySQLTable);
+    source_->TransferData(ctx_.get(), SocketTraceConnector::kMySQLTableNum, &data_table);
+    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+
+    // Check client-side tracing results.
+    {
+      std::vector<mysql::Record> records = GetTargetRecords(record_batch, client_pid);
+
+      EXPECT_THAT(records,
+                  UnorderedElementsAre(
+                      EqMySQLRecord(kRecordInit), EqMySQLRecord(kRecordScript2Cmd1),
+                      EqMySQLRecord(kRecordScript2Cmd2), EqMySQLRecord(kRecordScript2Cmd3),
+                      EqMySQLRecord(kRecordScript2Cmd4), EqMySQLRecord(kRecordScript2Cmd5),
+                      EqMySQLRecord(kRecordScript2Cmd6), EqMySQLRecord(kRecordScript2Cmd7)));
+    }
+
+    // TODO(oazizi): Check server-side tracing results.
+  }
 }
 
 }  // namespace stirling
