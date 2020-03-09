@@ -346,7 +346,7 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
 }
 
 template <typename TFrameType>
-Status ConnectionTracker::ExtractReqResp() {
+void ConnectionTracker::DataStreamsToFrames() {
   DataStream* resp_data_ptr = resp_data();
   DCHECK(resp_data_ptr != nullptr);
   resp_data_ptr->template ProcessBytesToFrames<TFrameType>(MessageType::kResponse);
@@ -354,8 +354,6 @@ Status ConnectionTracker::ExtractReqResp() {
   DataStream* req_data_ptr = req_data();
   DCHECK(req_data_ptr != nullptr);
   req_data_ptr->template ProcessBytesToFrames<TFrameType>(MessageType::kRequest);
-
-  return Status::OK();
 }
 
 template <typename TProtocolTraits>
@@ -364,11 +362,7 @@ std::vector<typename TProtocolTraits::record_type> ConnectionTracker::ProcessToR
   using TFrameType = typename TProtocolTraits::frame_type;
   using TStateType = typename TProtocolTraits::state_type;
 
-  Status s = ExtractReqResp<TFrameType>();
-  if (!s.ok()) {
-    LOG(ERROR) << s.msg();
-    return {};
-  }
+  DataStreamsToFrames<TFrameType>();
 
   InitProtocolState<TStateType>();
 

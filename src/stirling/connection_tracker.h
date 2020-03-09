@@ -443,14 +443,15 @@ class ConnectionTracker {
   void AddConnOpenEvent(const conn_event_t& conn_info);
   void AddConnCloseEvent(const close_event_t& close_event);
 
-  template <typename TFrameType>
-  Status ExtractReqResp();
   void SetConnID(struct conn_id_t conn_id);
   void SetTrafficClass(struct traffic_class_t traffic_class);
   void UpdateTimestamps(uint64_t bpf_timestamp);
   void CheckTracker();
   void HandleInactivity();
   void UpdateState(const std::vector<CIDRBlock>& cluster_cidrs);
+
+  template <typename TFrameType>
+  void DataStreamsToFrames();
 
   // Used to identify the remove endpoint in case the accept/connect was not traced.
   std::unique_ptr<SocketResolver> conn_resolver_ = nullptr;
