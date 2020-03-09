@@ -164,7 +164,8 @@
         "(src/ui/assets/images/.*)",
         "(\\.toml$)",
         "(.*\\.md)",
-        "(.*\\.svg)"
+        "(.*\\.svg)",
+        "(k8s/vizier/base/fluentbit/configmap.yaml)"
       ]
     },
     "tslint-ui": {

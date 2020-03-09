@@ -47,6 +47,12 @@ build:
       target: //src/vizier/services/certmgr:certmgr_server_image.tar
       args:
       - --compilation_mode=dbg
+  - image: gcr.io/pl-dev-infra/vizier/fluent-bit-image
+    context: .
+    bazel:
+      target: //src/vizier/utils/fluent_bit_nats_plugin:fluentbit_nats_plugin_image.tar
+      args:
+      - --compilation_mode=dbg
   tagPolicy:
     dateTime: {}
   local:

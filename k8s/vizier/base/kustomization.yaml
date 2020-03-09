@@ -7,6 +7,7 @@ kind: Kustomization
 namespace: pl
 patchesStrategicMerge:
 - patch_pem_daemonset.yaml
+- patch_logging_pem_daemonset.yaml
 resources:
 - pem
 - proxy_envoy.yaml
@@ -28,3 +29,4 @@ resources:
 - query_broker_deployment.yaml
 - query_broker_service.yaml
 - tls_config.yaml
+- fluentbit
