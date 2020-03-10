@@ -615,19 +615,13 @@ std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, nghttp2_hd_infl
 
   std::vector<http2::Record> records = MatchGRPCReqResp(std::move(reqs), std::move(resps));
 
-  std::vector<http2::Record> trace_records;
   for (auto& r : records) {
     r.req.MarkFramesConsumed();
     r.resp.MarkFramesConsumed();
-    http2::Record tmp{std::move(r.req), std::move(r.resp)};
-    trace_records.push_back(tmp);
   }
 
   http2::EraseConsumedFrames(req_frames);
   http2::EraseConsumedFrames(resp_frames);
-
-  PL_UNUSED(req_stitch_state);
-  PL_UNUSED(resp_stitch_state);
 
   // Reset streams, if necessary, after erasing the consumed frames. Otherwise, frames will be
   // deleted twice.
@@ -647,7 +641,7 @@ std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, nghttp2_hd_infl
     resp_frames->clear();
   }
 
-  return trace_records;
+  return records;
 }
 
 }  // namespace http2
