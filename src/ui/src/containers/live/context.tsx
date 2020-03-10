@@ -2,7 +2,6 @@ import * as ls from 'common/localstorage';
 import ClientContext from 'common/vizier-grpc-client-context';
 import {parseSpecs, VisualizationSpecMap} from 'components/vega/spec';
 import * as React from 'react';
-import {debounce} from 'utils/debounce';
 import {dataFromProto} from 'utils/result-data-utils';
 import {GetPxScripts, Script} from 'utils/script-bundle';
 
@@ -42,32 +41,24 @@ const LiveContextProvider = (props) => {
 
   const [vegaSpec, setVegaSpec] = React.useState<VisualizationSpecMap>(
     parseSpecs(ls.getLiveViewVegaSpec()) || {});
-  const setVegaSpecDebounced = React.useCallback(debounce(setVegaSpec, 2000), []);
-  React.useEffect(() => {
-    ls.setLiveViewVegaSpec(JSON.stringify(vegaSpec, null, 2));
-  }, [vegaSpec]);
 
   const [placement, setPlacement] = React.useState<Placement>(
     parsePlacement(ls.getLiveViewPlacementSpec()) || {});
-  const setPlacementDebounced = React.useCallback(debounce(setPlacement, 2000), []);
-  React.useEffect(() => {
-    ls.setLiveViewPlacementSpec(JSON.stringify(placement, null, 2));
-  }, [placement]);
 
   const [tables, setTables] = React.useState<Tables>({});
 
   const setScripts = React.useCallback((newScript, newVega, newPlacement) => {
     setScript(newScript);
-    setVegaSpec(parseSpecs(newVega));
-    setPlacementDebounced(parsePlacement(newPlacement));
+    setVegaSpec(parseSpecs(newVega) || {});
+    setPlacement(parsePlacement(newPlacement) || {});
   }, []);
 
   const client = React.useContext(ClientContext);
 
   const liveViewContext = React.useMemo(() => ({
     updateScript: setScript,
-    updateVegaSpec: setVegaSpecDebounced,
-    updatePlacement: setPlacementDebounced,
+    updateVegaSpec: setVegaSpec,
+    updatePlacement: setPlacement,
     vizierReady: !!client,
     setScripts,
     exampleScripts,

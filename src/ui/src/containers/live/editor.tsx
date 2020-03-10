@@ -3,16 +3,15 @@ import {CodeEditor} from 'components/code-editor';
 import LazyPanel from 'components/lazy-panel';
 import {parseSpecs} from 'components/vega/spec';
 import * as React from 'react';
+import {debounce} from 'utils/debounce';
 
 import FormControl from '@material-ui/core/FormControl';
-import IconButton from '@material-ui/core/IconButton';
 import InputLabel from '@material-ui/core/InputLabel';
 import MenuItem from '@material-ui/core/MenuItem';
 import Select from '@material-ui/core/Select';
 import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
-import ReplayIcon from '@material-ui/icons/Replay';
 
 import {LiveContext, PlacementContext, ScriptContext, VegaContext} from './context';
 import {parsePlacement} from './layout';
@@ -47,11 +46,12 @@ const VegaSpecEditor = () => {
   const { updateVegaSpec } = React.useContext(LiveContext);
   const spec = React.useContext(VegaContext);
   const [code, setCode] = React.useState('');
+  const updateVegaSpecDebounce = React.useMemo(() => debounce(updateVegaSpec, 2000), []);
 
   React.useEffect(() => {
     const specs = parseSpecs(code);
     if (specs) {
-      updateVegaSpec(specs);
+      updateVegaSpecDebounce(specs);
     }
   }, [code]);
 
@@ -87,12 +87,13 @@ const PlacementEditor = () => {
   const { updatePlacement } = React.useContext(LiveContext);
   const placement = React.useContext(PlacementContext);
   const [code, setCode] = React.useState('');
+  const updatePlacementDebounce = React.useMemo(() => debounce(updatePlacement, 2000), []);
 
   React.useEffect(() => {
     ls.setLiveViewPlacementSpec(code);
     const newPlacement = parsePlacement(code);
     if (newPlacement) {
-      updatePlacement(placement);
+      updatePlacementDebounce(newPlacement);
     }
   }, [code]);
 
@@ -147,7 +148,7 @@ const LiveViewEditor = () => {
           labelId='preset-script'
           onChange={selectScript}
           value={''}
-          >
+        >
           {
             liveScripts.map((s) => {
               return <MenuItem value={s.title} key={s.title}>{s.title}</MenuItem>;
