@@ -296,6 +296,54 @@ TEST_F(PixieModuleTest, flags_object_receives_values) {
   EXPECT_EQ("non-default", static_cast<StringIR*>(expr->node())->str());
 }
 
+TEST_F(PixieModuleTest, abs_time_test_with_tz) {
+  auto abs_time_or_s = module_->GetMethod(PixieModule::kAbsTimeOpId);
+  ASSERT_OK(abs_time_or_s);
+
+  std::shared_ptr<FuncObject> fn = abs_time_or_s.ConsumeValueOrDie();
+  // Testing with a timezone that we probably won't encounter to make sure the time zone parsing
+  // works.
+  auto result_or_s = fn->Call({{},
+                               {ToQLObject(MakeString("2020-03-12 19:39:59 -0200")),
+                                ToQLObject(MakeString("%Y-%m-%d %H:%M:%S %z"))}},
+                              ast);
+  ASSERT_OK(result_or_s);
+  QLObjectPtr result = result_or_s.ConsumeValueOrDie();
+  ASSERT_EQ(result->type(), QLObjectType::kExpr);
+  ASSERT_EQ(result->node()->type(), IRNodeType::kInt);
+  // True value grabbed from online reference.
+  EXPECT_EQ(static_cast<IntIR*>(result->node())->val(), 1584049199000000000);
+}
+
+TEST_F(PixieModuleTest, abs_time_test_expected_time_zone) {
+  auto abs_time_or_s = module_->GetMethod(PixieModule::kAbsTimeOpId);
+  ASSERT_OK(abs_time_or_s);
+
+  std::shared_ptr<FuncObject> fn = abs_time_or_s.ConsumeValueOrDie();
+  // Test to show that our time zone is UTC.
+  auto result1_or_s = fn->Call({{},
+                                {ToQLObject(MakeString("2020-03-12 19:39:59 -0000")),
+                                 ToQLObject(MakeString("%Y-%m-%d %H:%M:%S %z"))}},
+                               ast);
+
+  auto result2_or_s = fn->Call({{},
+                                {ToQLObject(MakeString("2020-03-12 19:39:59")),
+                                 ToQLObject(MakeString("%Y-%m-%d %H:%M:%S"))}},
+                               ast);
+
+  ASSERT_OK(result1_or_s);
+  ASSERT_OK(result2_or_s);
+  QLObjectPtr result1 = result1_or_s.ConsumeValueOrDie();
+  QLObjectPtr result2 = result2_or_s.ConsumeValueOrDie();
+  ASSERT_EQ(result1->type(), QLObjectType::kExpr);
+  ASSERT_EQ(result1->node()->type(), IRNodeType::kInt);
+  ASSERT_EQ(result2->type(), QLObjectType::kExpr);
+  ASSERT_EQ(result2->node()->type(), IRNodeType::kInt);
+  // True value grabbed from online reference.
+  EXPECT_EQ(static_cast<IntIR*>(result1->node())->val(),
+            static_cast<IntIR*>(result2->node())->val());
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

@@ -131,6 +131,15 @@ Status PixieModule::RegisterCompileTimeFuncs() {
                     std::placeholders::_2, std::placeholders::_3),
           ast_visitor()));
   AddMethod(kUInt128ConversionId, uuid_str_fn);
+
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> abs_time_fn,
+      FuncObject::Create(kAbsTimeOpId, {"date_string", "format"}, {},
+                         /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
+                         std::bind(&CompileTimeFuncHandler::AbsTime, graph_, std::placeholders::_1,
+                                   std::placeholders::_2, std::placeholders::_3),
+                         ast_visitor()));
+  AddMethod(kAbsTimeOpId, abs_time_fn);
   return Status::OK();
 }
 
@@ -226,6 +235,22 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::UInt128Conversion(IR* graph, const
                       graph->CreateNode<UInt128IR>(ast, upid_or_s.ConsumeValueOrDie().value()));
 
   return ExprObject::Create(uint128_ir, visitor);
+}
+
+StatusOr<QLObjectPtr> CompileTimeFuncHandler::AbsTime(IR* graph, const pypa::AstPtr& ast,
+                                                      const ParsedArgs& args, ASTVisitor* visitor) {
+  PL_ASSIGN_OR_RETURN(StringIR * date_str_ir, GetArgAs<StringIR>(args, "date_string"));
+  PL_ASSIGN_OR_RETURN(StringIR * format_str_ir, GetArgAs<StringIR>(args, "format"));
+  std::string date_str = date_str_ir->str();
+  std::string format_str = format_str_ir->str();
+  absl::Time tm;
+  std::string err_str;
+  if (!absl::ParseTime(format_str, date_str, &tm, &err_str)) {
+    return CreateAstError(ast, "Failed to parse with error '$0'", err_str);
+  }
+  int64_t time_ns = absl::ToUnixNanos(tm);
+  PL_ASSIGN_OR_RETURN(IntIR * time_count, graph->CreateNode<IntIR>(ast, time_ns));
+  return StatusOr<QLObjectPtr>(ExprObject::Create(time_count, visitor));
 }
 
 StatusOr<QLObjectPtr> UDFHandler::Eval(IR* graph, std::string name, const pypa::AstPtr& ast,

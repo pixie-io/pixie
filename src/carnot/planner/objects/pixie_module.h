@@ -34,6 +34,7 @@ class PixieModule : public QLObject {
   inline static constexpr char kNowOpId[] = "now";
   inline static constexpr char kVisAttrId[] = "viz";
   inline static constexpr char kUInt128ConversionId[] = "uint128";
+  inline static constexpr char kAbsTimeOpId[] = "strptime";
   static const constexpr char* const kTimeFuncs[] = {"minutes", "hours",        "seconds",
                                                      "days",    "microseconds", "milliseconds"};
   std::shared_ptr<FlagsObject> flags_object() { return flags_object_; }
@@ -78,6 +79,9 @@ class CompileTimeFuncHandler {
                                         const ParsedArgs& args, ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> UInt128Conversion(IR* graph, const pypa::AstPtr& ast,
                                                  const ParsedArgs& args, ASTVisitor* visitor);
+
+  static StatusOr<QLObjectPtr> AbsTime(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
+                                       ASTVisitor* visitor);
 };
 
 /**
