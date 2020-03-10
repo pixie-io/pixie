@@ -133,7 +133,7 @@ TEST(StitcherTest, ProcessRequestWithBasicResponse) {
   EXPECT_EQ(expected_entry, entry);
 }
 
-TEST(SyncTest, OldResponses) {
+TEST(ProcessMySQLPacketsTest, OldResponses) {
   uint64_t t = 0;
 
   // First two packets are dangling, and pre-date the request below.
@@ -162,6 +162,49 @@ TEST(SyncTest, OldResponses) {
   std::deque<Packet> requests = {req};
   std::vector<Record> entries = ProcessMySQLPackets(&requests, &responses, &state);
   EXPECT_EQ(entries.size(), 1);
+  EXPECT_EQ(requests.size(), 0);
+  EXPECT_EQ(responses.size(), 0);
+}
+
+TEST(ProcessMySQLPacketsTest, NonMySQLTraffic1) {
+  Packet p0;
+  p0.sequence_id = 0;
+  p0.msg = "\x03this is wrongly classified as a mysql COM_QUERY because of the first byte";
+  p0.timestamp_ns = 0;
+
+  Packet p1;
+  p1.sequence_id = 0;
+  p1.msg = "Not a valid mysql response. Has the wrong sequence ID, even.";
+  p1.timestamp_ns = 1;
+
+  std::deque<Packet> requests = {p0};
+  std::deque<Packet> responses = {p1};
+  State state{std::map<int, PreparedStatement>()};
+
+  std::vector<Record> entries = ProcessMySQLPackets(&requests, &responses, &state);
+  EXPECT_EQ(entries.size(), 0);
+  EXPECT_EQ(requests.size(), 0);
+  EXPECT_EQ(responses.size(), 1);
+  // Note that the response is not consumed because of its unexpected sequence ID.
+}
+
+TEST(ProcessMySQLPacketsTest, NonMySQLTraffic2) {
+  Packet p0;
+  p0.sequence_id = 0;
+  p0.msg = "\x03this is wrongly classified as a mysql COM_QUERY because of the first byte";
+  p0.timestamp_ns = 0;
+
+  Packet p1;
+  p1.sequence_id = 1;
+  p1.msg = "Not a valid mysql response. But has the right sequence ID.";
+  p1.timestamp_ns = 1;
+
+  std::deque<Packet> requests = {p0};
+  std::deque<Packet> responses = {p1};
+  State state{std::map<int, PreparedStatement>()};
+
+  std::vector<Record> entries = ProcessMySQLPackets(&requests, &responses, &state);
+  EXPECT_EQ(entries.size(), 0);
   EXPECT_EQ(requests.size(), 0);
   EXPECT_EQ(responses.size(), 0);
 }

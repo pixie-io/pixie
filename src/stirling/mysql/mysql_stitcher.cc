@@ -2,6 +2,7 @@
 
 #include <deque>
 #include <string>
+#include <utility>
 
 #include "src/stirling/mysql/mysql_handler.h"
 #include "src/stirling/mysql/packet_utils.h"
@@ -22,13 +23,8 @@ namespace mysql {
 // TODO(oazizi): Should also consider sequence IDs in this function.
 void SyncRespQueue(const Packet& req_packet, std::deque<Packet>* resp_packets) {
   // This handles the case where there are responses that pre-date a request.
-  while (!resp_packets->empty()) {
+  while (!resp_packets->empty() && resp_packets->front().timestamp_ns < req_packet.timestamp_ns) {
     Packet& resp_packet = resp_packets->front();
-
-    if (resp_packet.timestamp_ns > req_packet.timestamp_ns) {
-      break;
-    }
-
     LOG(WARNING) << absl::Substitute(
         "Dropping response packet that pre-dates request. Size=$0 [OK=$1 ERR=$2 EOF=$3]",
         resp_packet.msg.size(), IsOKPacket(resp_packet), IsErrPacket(resp_packet),
@@ -91,9 +87,10 @@ std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
     Packet& req_packet = req_packets->front();
 
     // Command is the first byte.
-    char command = req_packet.msg[0];
+    char command_byte = req_packet.msg[0];
+    MySQLEventType command = DecodeCommand(command_byte);
 
-    VLOG(2) << absl::StrFormat("command=%x msg=%s", command, req_packet.msg.substr(1));
+    VLOG(2) << absl::StrFormat("command=%x msg=%s", command_byte, req_packet.msg.substr(1));
 
     // For safety, make sure we have no stale response packets.
     SyncRespQueue(req_packet, resp_packets);
@@ -108,10 +105,9 @@ std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
     // (i.e. dropped responses).
 
     StatusOr<ParseState> s;
-    entries.emplace_back();
-    Record& entry = entries.back();
+    Record entry;
 
-    switch (DecodeCommand(command)) {
+    switch (command) {
       // Internal commands with response: ERR_Packet.
       case MySQLEventType::kConnect:
       case MySQLEventType::kConnectOut:
@@ -204,11 +200,11 @@ std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
       case MySQLEventType::kTableDump:       // a table dump or ERR_Packet
       case MySQLEventType::kStatistics:      // string.EOF
         // Rely on recovery to re-sync responses based on timestamps.
-        s = error::Internal("Unimplemented command $0.", command);
+        s = error::Internal("Unimplemented command $0.", magic_enum::enum_name(command));
         break;
 
       default:
-        s = error::Internal("Unknown command $0.", command);
+        s = error::Internal("Unknown command $0.", command_byte);
     }
 
     if (!s.ok()) {
@@ -223,13 +219,15 @@ std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
         if (is_last_req && resp_looks_healthy) {
           VLOG(3) << "Appears to be an incomplete message. Waiting for more data";
           // More response data will probably be captured in next iteration, so stop.
-          // Also, undo the entry we started.
-          entries.pop_back();
           break;
         }
-        LOG(ERROR)
-            << "Didn't have enough response packets, but doesn't appear to be partial either.";
+        LOG(ERROR) << absl::Substitute(
+            "Didn't have enough response packets, but doesn't appear to be partial either. "
+            "[cmd=$0, resp_packets=$1]",
+            magic_enum::enum_name(command), resp_packets_view.size());
         // Continue on, since waiting for more packets likely won't help.
+      } else {
+        entries.push_back(std::move(entry));
       }
     }
 
@@ -239,13 +237,12 @@ std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
   return entries;
 }
 
-#define PL_RETURN_IF_NOT_SUCCESS(stmt) \
-  {                                    \
-    ParseState s;                      \
-    s = stmt;                          \
-    if (s != ParseState::kSuccess) {   \
-      return s;                        \
-    }                                  \
+#define PL_RETURN_IF_NOT_SUCCESS(stmt)       \
+  {                                          \
+    PL_ASSIGN_OR_RETURN(ParseState s, stmt); \
+    if (s != ParseState::kSuccess) {         \
+      return s;                              \
+    }                                        \
   }
 
 // Process a COM_STMT_PREPARE request and response, and populate details into a record entry.

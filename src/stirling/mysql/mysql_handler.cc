@@ -14,8 +14,9 @@ namespace stirling {
 namespace mysql {
 
 // Rules for return values:
-//  kInvalid - The packet is invalid (mal-formed body) and cannot be parsed.
+//  error - The packet is invalid (mal-formed body) and cannot be parsed.
 //  kNeedsMoreData - Additional packets are required.
+//  kSuccess - Everything looks good.
 
 #define RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets) \
   if (iter == resp_packets.end()) {                       \
@@ -23,25 +24,25 @@ namespace mysql {
     return ParseState::kNeedsMoreData;                    \
   }
 
-ParseState HandleErrMessage(DequeView<Packet> resp_packets, Record* entry) {
+StatusOr<ParseState> HandleErrMessage(DequeView<Packet> resp_packets, Record* entry) {
   DCHECK(!resp_packets.empty());
   const Packet& packet = resp_packets.front();
 
   // TODO(chengruizhe): Assuming CLIENT_PROTOCOL_41 here. Make it more robust.
-  // Format of ERR message:
+  // Format of ERR packet:
   //   1  header: 0xff
   //   2  error_code
   //   1  sql_state_marker
   //   5  sql_state
   //   x  error_message
   // https://dev.mysql.com/doc/internals/en/packet-ERR_Packet.html
-  constexpr int kMinErrMessageSize = 9;
+  constexpr int kMinErrPacketSize = 9;
   constexpr int kErrorCodePos = 1;
   constexpr int kErrorCodeSize = 2;
   constexpr int kErrorMessagePos = 9;
 
-  if (packet.msg.size() < kMinErrMessageSize) {
-    return ParseState::kInvalid;
+  if (packet.msg.size() < kMinErrPacketSize) {
+    return error::Internal("Insufficient number of bytes for an error packet.");
   }
 
   entry->resp.msg = packet.msg.substr(kErrorMessagePos);
@@ -56,16 +57,16 @@ ParseState HandleErrMessage(DequeView<Packet> resp_packets, Record* entry) {
   return ParseState::kSuccess;
 }
 
-ParseState HandleOKMessage(DequeView<Packet> resp_packets, Record* entry) {
+StatusOr<ParseState> HandleOKMessage(DequeView<Packet> resp_packets, Record* entry) {
   DCHECK(!resp_packets.empty());
   const Packet& packet = resp_packets.front();
 
-  // Format of OK message:
+  // Format of OK packet:
   // https://dev.mysql.com/doc/internals/en/packet-OK_Packet.html
-  constexpr int kMinOKMessageSize = 7;
+  constexpr int kMinOKPacketSize = 7;
 
-  if (packet.msg.size() < kMinOKMessageSize) {
-    return ParseState::kInvalid;
+  if (packet.msg.size() < kMinOKPacketSize) {
+    return error::Internal("Insufficient number of bytes for an OK packet.");
   }
 
   entry->resp.status = MySQLRespStatus::kOK;
@@ -74,8 +75,8 @@ ParseState HandleOKMessage(DequeView<Packet> resp_packets, Record* entry) {
   return ParseState::kSuccess;
 }
 
-ParseState HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry,
-                                   bool multi_resultset) {
+StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry,
+                                             bool multi_resultset) {
   auto iter = resp_packets.begin();
 
   VLOG(3) << absl::Substitute("HandleResultsetResponse with $0 packets", resp_packets.size());
@@ -95,19 +96,13 @@ ParseState HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry
   // Process header packet.
   if (!IsLengthEncodedIntPacket(first_resp_packet)) {
     entry->resp.status = MySQLRespStatus::kUnknown;
-    VLOG(2) << "First packet should be length-encoded integer.";
-    return ParseState::kInvalid;
+    return error::Internal("First packet should be length-encoded integer.");
   }
 
   size_t param_offset = 0;
-  StatusOr<int> num_col_status = ProcessLengthEncodedInt(first_resp_packet.msg, &param_offset);
-  if (!num_col_status.ok()) {
-    return ParseState::kInvalid;
-  }
-  int num_col = num_col_status.ValueOrDie();
+  PL_ASSIGN_OR_RETURN(int num_col, ProcessLengthEncodedInt(first_resp_packet.msg, &param_offset));
   if (num_col == 0) {
-    VLOG(2) << "HandleResultsetResponse(): num columns should never be 0.";
-    return ParseState::kInvalid;
+    return error::Internal("HandleResultsetResponse(): num columns should never be 0.");
   }
 
   VLOG(3) << absl::Substitute("num_columns=$0", num_col);
@@ -133,8 +128,7 @@ ParseState HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry
 
     if (!IsColumnDefPacket(*iter)) {
       entry->resp.status = MySQLRespStatus::kUnknown;
-      VLOG(2) << "Expected column definition packet";
-      return ParseState::kInvalid;
+      return error::Internal("Expected column definition packet");
     }
 
     const Packet& col_def_packet = *iter;
@@ -162,11 +156,10 @@ ParseState HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry
     const Packet& row_packet = *iter;
     if (!IsResultsetRowPacket(row_packet, client_deprecate_eof)) {
       entry->resp.status = MySQLRespStatus::kUnknown;
-      VLOG(2) << absl::Substitute(
+      return error::Internal(
           "Expected resultset row packet [OK=$0 ERR=$1 EOF=$2 client_deprecate_eof=$3]",
           IsOKPacket(row_packet), IsErrPacket(row_packet), IsEOFPacket(row_packet),
           client_deprecate_eof);
-      return ParseState::kInvalid;
     }
     ResultsetRow row{row_packet.msg};
     results.emplace_back(std::move(row));
@@ -203,16 +196,15 @@ ParseState HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry
   return ParseState::kSuccess;
 }
 
-ParseState HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets, State* state,
-                                       Record* entry) {
+StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets, State* state,
+                                                 Record* entry) {
   auto iter = resp_packets.begin();
 
   RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
   const Packet& first_resp_packet = *iter;
   if (!IsStmtPrepareOKPacket(first_resp_packet)) {
     entry->resp.status = MySQLRespStatus::kUnknown;
-    VLOG(2) << "Expected StmtPrepareOK packet";
-    return ParseState::kInvalid;
+    return error::Internal("Expected StmtPrepareOK packet");
   }
 
   int stmt_id = utils::LEndianBytesToInt<int, 4>(first_resp_packet.msg.substr(1));
@@ -293,9 +285,9 @@ ParseState HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets, State* st
   return ParseState::kSuccess;
 }
 
-ParseState HandleStringRequest(const Packet& req_packet, Record* entry) {
+StatusOr<ParseState> HandleStringRequest(const Packet& req_packet, Record* entry) {
   if (req_packet.msg.empty()) {
-    return ParseState::kInvalid;
+    return error::Internal("A request cannot have an empty payload.");
   }
   entry->req.cmd = DecodeCommand(req_packet.msg[0]);
   entry->req.msg = req_packet.msg.substr(1);
@@ -304,9 +296,9 @@ ParseState HandleStringRequest(const Packet& req_packet, Record* entry) {
   return ParseState::kSuccess;
 }
 
-ParseState HandleNonStringRequest(const Packet& req_packet, Record* entry) {
+StatusOr<ParseState> HandleNonStringRequest(const Packet& req_packet, Record* entry) {
   if (req_packet.msg.empty()) {
-    return ParseState::kInvalid;
+    return error::Internal("A request cannot have an empty payload.");
   }
   entry->req.cmd = DecodeCommand(req_packet.msg[0]);
   entry->req.msg.clear();
@@ -405,10 +397,11 @@ Status ProcessStmtExecuteParam(std::string_view msg, size_t* type_offset, size_t
 
 }  // namespace
 
-ParseState HandleStmtExecuteRequest(const Packet& req_packet,
-                                    std::map<int, PreparedStatement>* prepare_map, Record* entry) {
+StatusOr<ParseState> HandleStmtExecuteRequest(const Packet& req_packet,
+                                              std::map<int, PreparedStatement>* prepare_map,
+                                              Record* entry) {
   if (req_packet.msg.size() < 1 + kStmtIDBytes) {
-    return ParseState::kInvalid;
+    return error::Internal("Insufficient number of bytes for STMT_EXECUTE");
   }
 
   entry->req.cmd = DecodeCommand(req_packet.msg[0]);
@@ -434,8 +427,7 @@ ParseState HandleStmtExecuteRequest(const Packet& req_packet,
   size_t offset = kStmtIDStartOffset + kStmtIDBytes + kFlagsBytes + kIterationCountBytes;
 
   if (req_packet.msg.size() < offset + 1) {
-    VLOG(2) << "Not a valid StmtExecuteRequest";
-    return ParseState::kInvalid;
+    return error::Internal("Not a valid StmtExecuteRequest");
   }
 
   // This is copied directly from the MySQL spec.
@@ -453,11 +445,8 @@ ParseState HandleStmtExecuteRequest(const Packet& req_packet,
 
     for (int i = 0; i < num_params; ++i) {
       StmtExecuteParam param;
-      Status s =
-          ProcessStmtExecuteParam(req_packet.msg, &param_type_offset, &param_val_offset, &param);
-      if (!s.ok()) {
-        return ParseState::kInvalid;
-      }
+      PL_RETURN_IF_ERROR(
+          ProcessStmtExecuteParam(req_packet.msg, &param_type_offset, &param_val_offset, &param));
       params.emplace_back(param);
     }
   }
@@ -468,10 +457,11 @@ ParseState HandleStmtExecuteRequest(const Packet& req_packet,
   return ParseState::kSuccess;
 }
 
-ParseState HandleStmtCloseRequest(const Packet& req_packet,
-                                  std::map<int, PreparedStatement>* prepare_map, Record* entry) {
+StatusOr<ParseState> HandleStmtCloseRequest(const Packet& req_packet,
+                                            std::map<int, PreparedStatement>* prepare_map,
+                                            Record* entry) {
   if (req_packet.msg.size() < 1 + kStmtIDBytes) {
-    return ParseState::kInvalid;
+    return error::Internal("Insufficient number of bytes for STMT_CLOSE");
   }
 
   entry->req.cmd = DecodeCommand(req_packet.msg[0]);

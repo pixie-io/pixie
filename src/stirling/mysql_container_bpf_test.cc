@@ -364,12 +364,12 @@ TEST_F(MySQLTraceTest, mysql_capture) {
     {
       std::vector<mysql::Record> records = GetTargetRecords(record_batch, client_pid);
 
-      EXPECT_THAT(records,
-                  UnorderedElementsAre(
-                      EqMySQLRecord(kRecordInit), EqMySQLRecord(kRecordScript2Cmd1),
-                      EqMySQLRecord(kRecordScript2Cmd2), EqMySQLRecord(kRecordScript2Cmd3),
-                      EqMySQLRecord(kRecordScript2Cmd4), EqMySQLRecord(kRecordScript2Cmd5),
-                      EqMySQLRecord(kRecordScript2Cmd6), EqMySQLRecord(kRecordScript2Cmd7)));
+      EXPECT_THAT(records, UnorderedElementsAre(
+                               EqMySQLRecord(kRecordInit), EqMySQLRecord(kRecordScript2Cmd1),
+                               EqMySQLRecord(kRecordScript2Cmd2), EqMySQLRecord(kRecordScript2Cmd3),
+                               EqMySQLRecord(kRecordScript2Cmd4), EqMySQLRecord(kRecordScript2Cmd5),
+                               // EqMySQLRecord(kRecordScript2Cmd6),
+                               EqMySQLRecord(kRecordScript2Cmd7)));
     }
 
     // TODO(oazizi): Check server-side tracing results.
