@@ -31,6 +31,8 @@ spec:
         envFrom:
         - configMapRef:
             name: pl-tls-config
+        - configMapRef:
+            name: pl-service-config
         env:
         - name: PL_JWT_SIGNING_KEY
           valueFrom:
@@ -44,8 +46,6 @@ spec:
             secretKeyRef:
               name: pl-elastic-es-elastic-user
               key: elastic
-        - name: PL_ELASTIC_SERVICE
-          value: https://pl-elastic-es-http.plc-dev:9200
         - name: PL_ELASTIC_CA_CERT
           value: /elastic-certs-pub/tls.crt
         volumeMounts:
