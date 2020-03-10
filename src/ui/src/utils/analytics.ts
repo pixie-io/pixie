@@ -24,8 +24,8 @@ class Analytics {
         window.analytics.load(SEGMENT_UI_WRITE_KEY);
     }
 
-    page = () => {
-        window.analytics.page();
+    page = (page: string, properties?: any, options?: any) => {
+        window.analytics.page(page, properties, options);
     }
 
     track = (name: string, properties?: any) => {

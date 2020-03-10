@@ -17,7 +17,14 @@ var localStorageMock = (() => {
   };
 })();
 
+var analyticsMock = (() => {
+  return {
+    page: () => { return; },
+  };
+})();
+
 Object.defineProperty(window, 'localStorage', {value: localStorageMock});
+Object.defineProperty(window, 'analytics', {value: analyticsMock});
 
 // This is a hack to get clsx to actually work in the test.
 // The main issue is that in our actual code clsx is imported as an es module:
