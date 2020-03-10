@@ -8,7 +8,7 @@ const showIntercom = (location) => {
 };
 
 const sendPageEvent = (location) => {
-  analytics.page(location.pathname, {},  {Intercom: {hideDefaultLauncher: showIntercom(window.location.pathname)}});
+  analytics.page(location.pathname, {},  {Intercom: {hideDefaultLauncher: !showIntercom(window.location.pathname)}});
 };
 
 // Emit a page event for the first loaded page.
