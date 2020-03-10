@@ -5,6 +5,7 @@ import * as React from 'react';
 import * as toml from 'toml';
 import {debounce} from 'utils/debounce';
 import {dataFromProto} from 'utils/result-data-utils';
+import {GetPxScripts, Script} from 'utils/script-bundle';
 
 import {parsePlacement, Placement} from './layout';
 // @ts-ignore : TS does not seem to like this import.
@@ -17,6 +18,7 @@ interface LiveContextProps {
   vizierReady: boolean;
   executeScript: () => void;
   resetScripts: () => void;
+  exampleScripts: Script[];
 }
 
 interface Tables {
@@ -32,6 +34,12 @@ export const LiveContext = React.createContext<LiveContextProps>(null);
 const preset = toml.parse(Preset);
 
 const LiveContextProvider = (props) => {
+  const [exampleScripts, setExampleScripts] = React.useState<Script[]>([]);
+
+  React.useEffect(() => {
+    GetPxScripts(setExampleScripts);
+  }, []);
+
   const [script, setScript] = React.useState<string>(ls.getLiveViewPixieScript());
   React.useEffect(() => {
     ls.setLiveViewPixieScript(script);
@@ -67,6 +75,7 @@ const LiveContextProvider = (props) => {
     updatePlacement: setPlacementDebounced,
     vizierReady: !!client,
     resetScripts,
+    exampleScripts,
     executeScript: () => {
       if (!client) {
         return;
