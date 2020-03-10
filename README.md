@@ -18,7 +18,7 @@ Installing Pixie is easy. Visit [product page](https://withpixie.ai/) and follow
 
 1. Sign-up with your google account
 
-2. `curl -fsSL https://withpixie.ai/install.sh | bash`
+2. `bash -c "$(curl -fsSL https://withpixie.ai/install.sh)"`
 
 3. `px deploy`
 
