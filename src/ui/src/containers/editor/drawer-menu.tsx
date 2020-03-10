@@ -1,7 +1,6 @@
 import {SCRIPT_HISTORY} from 'common/local-gql';
 import {Accordion, AccordionList} from 'components/accordion';
 import * as React from 'react';
-import * as toml from 'toml';
 import {GetPxScripts, Script} from 'utils/script-bundle';
 
 import {useQuery} from '@apollo/react-hooks';

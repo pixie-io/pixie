@@ -11055,7 +11055,6 @@ react-dom@^16.12.0, react-dom@^16.8.3:
 react-draggable@^4.0.0:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/react-draggable/-/react-draggable-4.2.0.tgz#40cc5209082ca7d613104bf6daf31372cc0e1114"
-  integrity sha512-5wFq//gEoeTYprnd4ze8GrFc+Rbnx+9RkOMR3vk4EbWxj02U6L6T3yrlKeiw4X5CtjD2ma2+b3WujghcXNRzkw==
   dependencies:
     classnames "^2.2.5"
     prop-types "^15.6.0"
@@ -11097,7 +11096,6 @@ react-focus-lock@^2.1.0:
 react-grid-layout@^0.18.2:
   version "0.18.2"
   resolved "https://registry.yarnpkg.com/react-grid-layout/-/react-grid-layout-0.18.2.tgz#91a8740d473d256071c56a558b3449c57224689d"
-  integrity sha512-PF4LfGoJ2SbuCJtQ3wPapC4ZuZcqKKNWv36m/QnxbfEw8C48HcGB8162wPkIUc9mfKPLE/MBlHjRSaPQ3VlwYw==
   dependencies:
     classnames "2.x"
     lodash.isequal "^4.0.0"
@@ -11239,7 +11237,6 @@ react-redux@^5.0.2:
 react-resizable@^1.9.0:
   version "1.10.1"
   resolved "https://registry.yarnpkg.com/react-resizable/-/react-resizable-1.10.1.tgz#f0c2cf1d83b3470b87676ce6d6b02bbe3f4d8cd4"
-  integrity sha512-Jd/bKOKx6+19NwC4/aMLRu/J9/krfxlDnElP41Oc+oLiUWs/zwV1S9yBfBZRnqAwQb6vQ/HRSk3bsSWGSgVbpw==
   dependencies:
     prop-types "15.x"
     react-draggable "^4.0.3"
@@ -13173,10 +13170,6 @@ toggle-selection@^1.0.6:
 toidentifier@1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/toidentifier/-/toidentifier-1.0.0.tgz#7e1be3470f1e77948bc43d94a3c8f4d7752ba553"
-
-toml@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/toml/-/toml-3.0.0.tgz#342160f1af1904ec9d204d03a5d61222d762c5ee"
 
 topojson-client@3, topojson-client@^3.0.0, topojson-client@^3.0.1:
   version "3.1.0"

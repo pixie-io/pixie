@@ -112,7 +112,7 @@ const PlacementEditor = () => {
 const LiveViewEditor = () => {
   const classes = useStyles();
 
-  const { exampleScripts, updatePlacement, updateScript, updateVegaSpec } = React.useContext(LiveContext);
+  const { exampleScripts, setScripts } = React.useContext(LiveContext);
   const liveScripts = [];
   const liveScriptMap = {};
   exampleScripts.forEach((s) => {
@@ -123,9 +123,8 @@ const LiveViewEditor = () => {
   });
   const selectScript = (e) => {
     const s = liveScriptMap[e.target.value];
-    updateScript(s.code);
-    updateVegaSpec(parseSpecs(s.vis));
-    updatePlacement(parsePlacement(s.placement));
+
+    setScripts(s.code, s.vis, s.placement);
   };
 
   const [tab, setTab] = React.useState('pixie');
@@ -141,7 +140,6 @@ const LiveViewEditor = () => {
         <Tab value='pixie' label='Pixie Script' />
         <Tab value='vega' label='Vega Spec' />
         <Tab value='placement' label='Placement' />
-        <ResetScriptsButton />
       </Tabs>
       <FormControl className={classes.form}>
         <InputLabel className={classes.formLabel} id='preset-script'>Example Scripts</InputLabel>
@@ -167,15 +165,6 @@ const LiveViewEditor = () => {
         <PlacementEditor />
       </LazyPanel>
     </div>
-  );
-};
-
-const ResetScriptsButton = () => {
-  const { resetScripts } = React.useContext(LiveContext);
-  return (
-    <IconButton onClick={resetScripts} style={{ marginLeft: 'auto' }}>
-      <ReplayIcon />
-    </IconButton>
   );
 };
 

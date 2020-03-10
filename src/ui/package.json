@@ -121,7 +121,6 @@
     "react-vega": "^7.1.1",
     "react-virtualized": "^9.21.0",
     "react-vis": "^1.11.7",
-    "toml": "^3.0.0",
     "unfetch": "^4.0.1",
     "uuid": "^3.3.3",
     "vega": "^5.9.1",

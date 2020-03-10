@@ -2,14 +2,11 @@ import * as ls from 'common/localstorage';
 import ClientContext from 'common/vizier-grpc-client-context';
 import {parseSpecs, VisualizationSpecMap} from 'components/vega/spec';
 import * as React from 'react';
-import * as toml from 'toml';
 import {debounce} from 'utils/debounce';
 import {dataFromProto} from 'utils/result-data-utils';
 import {GetPxScripts, Script} from 'utils/script-bundle';
 
 import {parsePlacement, Placement} from './layout';
-// @ts-ignore : TS does not seem to like this import.
-import * as Preset from './preset.toml';
 
 interface LiveContextProps {
   updateScript: (code: string) => void;
@@ -17,7 +14,7 @@ interface LiveContextProps {
   updatePlacement: (placement: Placement) => void;
   vizierReady: boolean;
   executeScript: () => void;
-  resetScripts: () => void;
+  setScripts: (script: string, vega: string, placement: string) => void;
   exampleScripts: Script[];
 }
 
@@ -30,8 +27,6 @@ export const VegaContext = React.createContext<VisualizationSpecMap>(null);
 export const PlacementContext = React.createContext<Placement>(null);
 export const ResultsContext = React.createContext<Tables>(null);
 export const LiveContext = React.createContext<LiveContextProps>(null);
-
-const preset = toml.parse(Preset);
 
 const LiveContextProvider = (props) => {
   const [exampleScripts, setExampleScripts] = React.useState<Script[]>([]);
@@ -61,10 +56,10 @@ const LiveContextProvider = (props) => {
 
   const [tables, setTables] = React.useState<Tables>({});
 
-  const resetScripts = React.useCallback(() => {
-    setScript(preset.script);
-    setVegaSpec(parseSpecs(preset.vega));
-    setPlacementDebounced(parsePlacement(preset.placement));
+  const setScripts = React.useCallback((newScript, newVega, newPlacement) => {
+    setScript(newScript);
+    setVegaSpec(parseSpecs(newVega));
+    setPlacementDebounced(parsePlacement(newPlacement));
   }, []);
 
   const client = React.useContext(ClientContext);
@@ -74,7 +69,7 @@ const LiveContextProvider = (props) => {
     updateVegaSpec: setVegaSpecDebounced,
     updatePlacement: setPlacementDebounced,
     vizierReady: !!client,
-    resetScripts,
+    setScripts,
     exampleScripts,
     executeScript: () => {
       if (!client) {
