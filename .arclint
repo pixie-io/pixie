@@ -23,7 +23,9 @@
     "(go\\.mod$)",
     "(go\\.sum$)",
     "(.*\\.patch$)",
-    "(src/ui/src/types/generated/.*)"
+    "(src/ui/src/types/generated/.*)",
+    "(spinnaker/hal/.*)",
+    "(credentials/dev_infra/.*)"
   ],
   "linters": {
     "build-linter": {
