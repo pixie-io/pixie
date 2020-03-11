@@ -32,6 +32,106 @@ using testing::kPIDStartTimeTicks;
 
 using RecordBatch = types::ColumnWrapperRecordBatch;
 
+//-----------------------------------------------------------------------------
+// Test data
+//-----------------------------------------------------------------------------
+
+const std::string_view kReq0 =
+    "GET /index.html HTTP/1.1\r\n"
+    "Host: www.pixielabs.ai\r\n"
+    "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
+    "\r\n";
+
+const std::string_view kReq1 =
+    "GET /data.html HTTP/1.1\r\n"
+    "Host: www.pixielabs.ai\r\n"
+    "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
+    "\r\n";
+
+const std::string_view kReq2 =
+    "GET /logs.html HTTP/1.1\r\n"
+    "Host: www.pixielabs.ai\r\n"
+    "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
+    "\r\n";
+
+const std::string_view kJSONResp =
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: application/json; charset=utf-8\r\n"
+    "Content-Length: 3\r\n"
+    "\r\n"
+    "foo";
+
+const std::string_view kTextResp =
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: text/plain; charset=utf-8\r\n"
+    "Content-Length: 3\r\n"
+    "\r\n"
+    "bar";
+
+const std::string_view kResp0 =
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: json\r\n"
+    "Content-Length: 3\r\n"
+    "\r\n"
+    "foo";
+
+const std::string_view kResp1 =
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: json\r\n"
+    "Content-Length: 3\r\n"
+    "\r\n"
+    "bar";
+
+const std::string_view kResp2 =
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: json\r\n"
+    "Content-Length: 3\r\n"
+    "\r\n"
+    "doe";
+
+std::vector<std::string> PacketsToRaw(const std::deque<mysql::Packet>& packets) {
+  std::vector<std::string> res;
+  for (const auto& p : packets) {
+    res.push_back(mysql::testutils::GenRawPacket(p));
+  }
+  return res;
+}
+
+// NOLINTNEXTLINE : runtime/string.
+const std::string kMySQLStmtPrepareReq =
+    mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
+        mysql::testdata::kStmtPrepareRequest, mysql::MySQLEventType::kStmtPrepare));
+
+const std::vector<std::string> kMySQLStmtPrepareResp =
+    PacketsToRaw(mysql::testutils::GenStmtPrepareOKResponse(mysql::testdata::kStmtPrepareResponse));
+
+// NOLINTNEXTLINE : runtime/string.
+const std::string kMySQLStmtExecuteReq = mysql::testutils::GenRawPacket(
+    mysql::testutils::GenStmtExecuteRequest(mysql::testdata::kStmtExecuteRequest));
+
+const std::vector<std::string> kMySQLStmtExecuteResp =
+    PacketsToRaw(mysql::testutils::GenResultset(mysql::testdata::kStmtExecuteResultset));
+
+// NOLINTNEXTLINE : runtime/string.
+const std::string kMySQLStmtCloseReq = mysql::testutils::GenRawPacket(
+    mysql::testutils::GenStmtCloseRequest(mysql::testdata::kStmtCloseRequest));
+
+// NOLINTNEXTLINE : runtime/string.
+const std::string kMySQLErrResp = mysql::testutils::GenRawPacket(mysql::testutils::GenErr(
+    1, mysql::ErrResponse{.error_code = 1096, .error_message = "This is an error."}));
+
+// NOLINTNEXTLINE : runtime/string.
+const std::string kMySQLQueryReq =
+    mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
+        mysql::testdata::kQueryRequest, mysql::MySQLEventType::kQuery));
+
+const std::vector<std::string> kMySQLQueryResp =
+    PacketsToRaw(mysql::testutils::GenResultset(mysql::testdata::kQueryResultset));
+
+//-----------------------------------------------------------------------------
+// Test data
+//-----------------------------------------------------------------------------
+
 class SocketTraceConnectorTest : public ::testing::Test {
  protected:
   static constexpr uint32_t kASID = 1;
@@ -54,10 +154,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
 
     // Because some tests change the inactivity duration, make sure to reset it here for each test.
     ConnectionTracker::SetInactivityDuration(ConnectionTracker::kDefaultInactivityDuration);
-    InitMySQLData();
   }
-
-  static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
 
   std::unique_ptr<SourceConnector> connector_;
   SocketTraceConnector* source_ = nullptr;
@@ -65,109 +162,8 @@ class SocketTraceConnectorTest : public ::testing::Test {
   testing::MockClock mock_clock_;
   testing::RealClock real_clock_;
 
-  const std::string kReq0 =
-      "GET /index.html HTTP/1.1\r\n"
-      "Host: www.pixielabs.ai\r\n"
-      "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
-      "\r\n";
-
-  const std::string kReq1 =
-      "GET /data.html HTTP/1.1\r\n"
-      "Host: www.pixielabs.ai\r\n"
-      "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
-      "\r\n";
-
-  const std::string kReq2 =
-      "GET /logs.html HTTP/1.1\r\n"
-      "Host: www.pixielabs.ai\r\n"
-      "User-Agent: Mozilla/5.0 (X11; Linux x86_64)\r\n"
-      "\r\n";
-
-  const std::string kJSONResp =
-      "HTTP/1.1 200 OK\r\n"
-      "Content-Type: application/json; charset=utf-8\r\n"
-      "Content-Length: 3\r\n"
-      "\r\n"
-      "foo";
-
-  const std::string kTextResp =
-      "HTTP/1.1 200 OK\r\n"
-      "Content-Type: text/plain; charset=utf-8\r\n"
-      "Content-Length: 3\r\n"
-      "\r\n"
-      "bar";
-
-  const std::string_view kResp0 =
-      "HTTP/1.1 200 OK\r\n"
-      "Content-Type: json\r\n"
-      "Content-Length: 3\r\n"
-      "\r\n"
-      "foo";
-
-  const std::string_view kResp1 =
-      "HTTP/1.1 200 OK\r\n"
-      "Content-Type: json\r\n"
-      "Content-Length: 3\r\n"
-      "\r\n"
-      "bar";
-
-  const std::string_view kResp2 =
-      "HTTP/1.1 200 OK\r\n"
-      "Content-Type: json\r\n"
-      "Content-Length: 3\r\n"
-      "\r\n"
-      "doe";
-
-  // MySQL test inputs
+  static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
-  static constexpr int kMySQLReqBodyIdx = kMySQLTable.ColIndex("req_body");
-  static constexpr int kMySQLReqCmdIdx = kMySQLTable.ColIndex("req_cmd");
-  static constexpr int kMySQLRespBodyIdx = kMySQLTable.ColIndex("resp_body");
-  static constexpr int kMySQLLatencyIdx = kMySQLTable.ColIndex("latency_ns");
-
-  std::string mysql_stmt_prepare_req;
-  std::vector<std::string> mysql_stmt_prepare_resp;
-  std::string mysql_stmt_execute_req;
-  std::vector<std::string> mysql_stmt_execute_resp;
-  std::string mysql_stmt_close_req;
-  std::string mysql_err_resp;
-
-  std::string mysql_query_req;
-  std::vector<std::string> mysql_query_resp;
-
-  void InitMySQLData() {
-    mysql_stmt_prepare_req = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
-        mysql::testdata::kStmtPrepareRequest, mysql::MySQLEventType::kStmtPrepare));
-
-    std::deque<mysql::Packet> prepare_packets =
-        mysql::testutils::GenStmtPrepareOKResponse(mysql::testdata::kStmtPrepareResponse);
-    for (const auto& prepare_packet : prepare_packets) {
-      mysql_stmt_prepare_resp.push_back(mysql::testutils::GenRawPacket(prepare_packet));
-    }
-
-    mysql_stmt_execute_req = mysql::testutils::GenRawPacket(
-        mysql::testutils::GenStmtExecuteRequest(mysql::testdata::kStmtExecuteRequest));
-
-    std::deque<mysql::Packet> execute_packets =
-        mysql::testutils::GenResultset(mysql::testdata::kStmtExecuteResultset);
-    for (const auto& execute_packet : execute_packets) {
-      mysql_stmt_execute_resp.push_back(mysql::testutils::GenRawPacket(execute_packet));
-    }
-
-    mysql::ErrResponse err_resp = {.error_code = 1096, .error_message = "This is an error."};
-    mysql_err_resp = mysql::testutils::GenRawPacket(mysql::testutils::GenErr(1, err_resp));
-
-    mysql_stmt_close_req = mysql::testutils::GenRawPacket(
-        mysql::testutils::GenStmtCloseRequest(mysql::testdata::kStmtCloseRequest));
-
-    mysql_query_req = mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
-        mysql::testdata::kQueryRequest, mysql::MySQLEventType::kQuery));
-    std::deque<mysql::Packet> query_packets =
-        mysql::testutils::GenResultset(mysql::testdata::kQueryResultset);
-    for (const auto& query_packet : query_packets) {
-      mysql_query_resp.push_back(mysql::testutils::GenRawPacket(query_packet));
-    }
-  }
 };
 
 auto ToStringVector(const types::SharedColumnWrapper& col) {
@@ -707,16 +703,16 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   testing::EventGenerator event_gen(&mock_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolMySQL>();
   std::unique_ptr<SocketDataEvent> prepare_req_event =
-      event_gen.InitSendEvent<kProtocolMySQL>(mysql_stmt_prepare_req);
+      event_gen.InitSendEvent<kProtocolMySQL>(kMySQLStmtPrepareReq);
   std::vector<std::unique_ptr<SocketDataEvent>> prepare_resp_events;
-  for (std::string resp_packet : mysql_stmt_prepare_resp) {
+  for (std::string resp_packet : kMySQLStmtPrepareResp) {
     prepare_resp_events.push_back(event_gen.InitRecvEvent<kProtocolMySQL>(resp_packet));
   }
 
   std::unique_ptr<SocketDataEvent> execute_req_event =
-      event_gen.InitSendEvent<kProtocolMySQL>(mysql_stmt_execute_req);
+      event_gen.InitSendEvent<kProtocolMySQL>(kMySQLStmtExecuteReq);
   std::vector<std::unique_ptr<SocketDataEvent>> execute_resp_events;
-  for (std::string resp_packet : mysql_stmt_execute_resp) {
+  for (std::string resp_packet : kMySQLStmtExecuteResp) {
     execute_resp_events.push_back(event_gen.InitRecvEvent<kProtocolMySQL>(resp_packet));
   }
 
@@ -759,11 +755,11 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
 
   // Test execute fail after close. It should create an entry with the Error.
   std::unique_ptr<SocketDataEvent> close_req_event =
-      event_gen.InitSendEvent<kProtocolMySQL>(mysql_stmt_close_req);
+      event_gen.InitSendEvent<kProtocolMySQL>(kMySQLStmtCloseReq);
   std::unique_ptr<SocketDataEvent> execute_req_event2 =
-      event_gen.InitSendEvent<kProtocolMySQL>(mysql_stmt_execute_req);
+      event_gen.InitSendEvent<kProtocolMySQL>(kMySQLStmtExecuteReq);
   std::unique_ptr<SocketDataEvent> execute_resp_event2 =
-      event_gen.InitRecvEvent<kProtocolMySQL>(mysql_err_resp);
+      event_gen.InitRecvEvent<kProtocolMySQL>(kMySQLErrResp);
 
   source_->AcceptDataEvent(std::move(close_req_event));
   source_->AcceptDataEvent(std::move(execute_req_event2));
@@ -791,9 +787,9 @@ TEST_F(SocketTraceConnectorTest, MySQLQuery) {
 
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolMySQL>();
   std::unique_ptr<SocketDataEvent> query_req_event =
-      event_gen.InitSendEvent<kProtocolMySQL>(mysql_query_req);
+      event_gen.InitSendEvent<kProtocolMySQL>(kMySQLQueryReq);
   std::vector<std::unique_ptr<SocketDataEvent>> query_resp_events;
-  for (std::string resp_packet : mysql_query_resp) {
+  for (std::string resp_packet : kMySQLQueryResp) {
     query_resp_events.push_back(event_gen.InitRecvEvent<kProtocolMySQL>(resp_packet));
   }
 

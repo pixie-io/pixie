@@ -32,6 +32,7 @@ constexpr int kMySQLReqCmdIdx = kMySQLTable.ColIndex("req_cmd");
 constexpr int kMySQLReqBodyIdx = kMySQLTable.ColIndex("req_body");
 constexpr int kMySQLRespStatusIdx = kMySQLTable.ColIndex("resp_status");
 constexpr int kMySQLRespBodyIdx = kMySQLTable.ColIndex("resp_body");
+constexpr int kMySQLLatencyIdx = kMySQLTable.ColIndex("latency_ns");
 
 }  // namespace stirling
 }  // namespace pl
