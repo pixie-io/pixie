@@ -32,6 +32,7 @@ class PixieModule : public QLObject {
   inline static constexpr char kDisplayOpId[] = "display";
   inline static constexpr char kFlagsOpId[] = "flags";
   inline static constexpr char kNowOpId[] = "now";
+  inline static constexpr char kVisAttrId[] = "viz";
   inline static constexpr char kUInt128ConversionId[] = "uint128";
   static const constexpr char* const kTimeFuncs[] = {"minutes", "hours",        "seconds",
                                                      "days",    "microseconds", "milliseconds"};

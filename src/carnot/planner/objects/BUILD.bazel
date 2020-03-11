@@ -116,3 +116,12 @@ pl_cc_test(
         ":test_utils",
     ],
 )
+
+pl_cc_test(
+    name = "viz_object_test",
+    srcs = ["viz_object_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)

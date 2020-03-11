@@ -125,6 +125,11 @@ std::string FuncObject::FormatArguments(const absl::flat_hash_set<std::string> a
   });
 }
 
+Status FuncObject::AddVizSpec(const VizSpec& viz_spec) {
+  viz_spec_ = viz_spec;
+  return Status::OK();
+}
+
 StatusOr<std::shared_ptr<FuncObject>> GetCallMethod(const pypa::AstPtr& ast, QLObjectPtr pyobject) {
   std::shared_ptr<FuncObject> func_object;
   if (pyobject->type_descriptor().type() == QLObjectType::kFunction) {

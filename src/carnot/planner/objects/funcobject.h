@@ -17,6 +17,13 @@ namespace planner {
 namespace compiler {
 
 /**
+ * @brief VizSpec contains the information about the visualizaton.
+ */
+struct VizSpec {
+  std::string vega_spec;
+};
+
+/**
  * @brief NameToNode is a struct to store string, node pairs. This enables Arg data structures to
  * preserve input order of these arguments which is probably expected by the user and gives
  * deterministic guarantees that hashmaps can't.
@@ -141,6 +148,18 @@ class FuncObject : public QLObject {
   // Exposing this publicly to enable testing of default arguments.
   const absl::flat_hash_map<std::string, DefaultType>& defaults() const { return defaults_; }
 
+  /**
+   * @brief Sets the vega spec for the function.
+   *
+   * @param spec
+   * @return Status
+   */
+  Status AddVizSpec(const VizSpec& viz_spec);
+
+  bool HasVizSpec() { return viz_spec_.vega_spec != ""; }
+
+  const VizSpec& viz_spec() const { return viz_spec_; }
+
  private:
   StatusOr<ParsedArgs> PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast);
 
@@ -153,6 +172,9 @@ class FuncObject : public QLObject {
   int64_t NumPositionalArgs() const { return NumArgs() - defaults_.size(); }
 
   std::string name_;
+  // The visualization spec of this function if it has one.
+  VizSpec viz_spec_;
+
   std::vector<std::string> arguments_;
   absl::flat_hash_map<std::string, DefaultType> defaults_;
   FunctionType impl_;

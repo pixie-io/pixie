@@ -30,6 +30,7 @@ enum class QLObjectType {
   kNone,
   kPLModule,
   kMetadata,
+  kVisualization,
   kType,
   kFlags,
 };

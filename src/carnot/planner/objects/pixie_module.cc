@@ -6,6 +6,7 @@
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/none_object.h"
+#include "src/carnot/planner/objects/viz_object.h"
 #include "src/shared/metadata/base_types.h"
 
 namespace pl {
@@ -31,7 +32,6 @@ Status PixieModule::RegisterFlags(const FlagValues& flag_values) {
 Status PixieModule::RegisterUDFFuncs() {
   // TODO(philkuz) (PL-1189) remove this when the udf names no longer have the 'pl.' prefix.
   auto func_names = compiler_state_->registry_info()->func_names();
-  LOG(ERROR) << "SFDLKJFD";
   for (const auto& name : func_names) {
     // attributes_.emplace(stripped_name);
 
@@ -165,9 +165,11 @@ Status PixieModule::Init(const FlagValues& flag_values) {
                          ast_visitor()));
 
   AddMethod(kDisplayOpId, display_fn);
+
   PL_ASSIGN_OR_RETURN(auto base_df, Dataframe::Create(graph_, ast_visitor()));
   PL_RETURN_IF_ERROR(AssignAttribute(kDataframeOpId, base_df));
-  return Status::OK();
+  PL_ASSIGN_OR_RETURN(auto viz, VisualizationObject::Create(ast_visitor()));
+  return AssignAttribute(kVisAttrId, viz);
 }
 
 StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,
