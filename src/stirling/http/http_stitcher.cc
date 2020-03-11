@@ -23,10 +23,11 @@ namespace pl {
 namespace stirling {
 namespace http {
 
-std::vector<Record> ProcessMessages(std::deque<Message>* req_messages,
-                                    std::deque<Message>* resp_messages) {
+RecordsWithErrorCount<Record> ProcessMessages(std::deque<Message>* req_messages,
+                                              std::deque<Message>* resp_messages) {
+  std::vector<http::Record> records;
+
   // Match request response pairs.
-  std::vector<http::Record> trace_records;
   for (auto req_iter = req_messages->begin(), resp_iter = resp_messages->begin();
        req_iter != req_messages->end() && resp_iter != resp_messages->end();) {
     Message& req = *req_iter;
@@ -38,7 +39,7 @@ std::vector<Record> ProcessMessages(std::deque<Message>* req_messages,
       // Push without request.
       Record record{Message(), std::move(resp)};
       resp_messages->pop_front();
-      trace_records.push_back(std::move(record));
+      records.push_back(std::move(record));
       ++resp_iter;
     } else {
       // Found a response. It must be the match assuming:
@@ -49,7 +50,7 @@ std::vector<Record> ProcessMessages(std::deque<Message>* req_messages,
       Record record{std::move(req), std::move(resp)};
       req_messages->pop_front();
       resp_messages->pop_front();
-      trace_records.push_back(std::move(record));
+      records.push_back(std::move(record));
       ++resp_iter;
       ++req_iter;
     }
@@ -59,7 +60,7 @@ std::vector<Record> ProcessMessages(std::deque<Message>* req_messages,
   for (auto resp_iter = resp_messages->begin(); resp_iter != resp_messages->end(); ++resp_iter) {
     Message& resp = *resp_iter;
     Record record{Message(), std::move(resp)};
-    trace_records.push_back(std::move(record));
+    records.push_back(std::move(record));
   }
   resp_messages->clear();
 
@@ -68,7 +69,7 @@ std::vector<Record> ProcessMessages(std::deque<Message>* req_messages,
   // TODO(oazizi): If we have seen the close event, then can assume the response is lost.
   //               We should push the event out in such cases.
 
-  return trace_records;
+  return {records, 0};
 }
 
 void PreProcessMessage(Message* message) {

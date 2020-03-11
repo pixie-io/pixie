@@ -18,14 +18,11 @@ namespace mysql {
 //  - previous unhandled case resulting in a bad state.
 // Currently handles the case where an apparently missing request has left dangling responses,
 // in which case those requests are popped off.
-// TODO(oazizi): Also handle cases where responses should match to a later request (in which case
-// requests should be popped off).
-// TODO(oazizi): Should also consider sequence IDs in this function.
 void SyncRespQueue(const Packet& req_packet, std::deque<Packet>* resp_packets) {
   // This handles the case where there are responses that pre-date a request.
   while (!resp_packets->empty() && resp_packets->front().timestamp_ns < req_packet.timestamp_ns) {
     Packet& resp_packet = resp_packets->front();
-    LOG(WARNING) << absl::Substitute(
+    VLOG(1) << absl::Substitute(
         "Dropping response packet that pre-dates request. Size=$0 [OK=$1 ERR=$2 EOF=$3]",
         resp_packet.msg.size(), IsOKPacket(resp_packet), IsErrPacket(resp_packet),
         IsEOFPacket(resp_packet));
@@ -59,7 +56,7 @@ DequeView<Packet> GetRespView(const std::deque<Packet>& req_packets,
 
     uint8_t expected_seq_id = count + 1;
     if (resp_packet.sequence_id != expected_seq_id) {
-      LOG(WARNING) << absl::Substitute(
+      VLOG(1) << absl::Substitute(
           "Found packet with unexpected sequence ID [expected=$0 actual=$1]", expected_seq_id,
           resp_packet.sequence_id);
       break;
@@ -70,9 +67,10 @@ DequeView<Packet> GetRespView(const std::deque<Packet>& req_packets,
   return DequeView<Packet>(resp_packets, 0, count);
 }
 
-std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
-                                        std::deque<Packet>* resp_packets, State* state) {
+RecordsWithErrorCount<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
+                                                  std::deque<Packet>* resp_packets, State* state) {
   std::vector<Record> entries;
+  int error_count = 0;
 
   // Process one request per loop iteration. Each request may consume 0, 1 or 2+ response packets.
   // The actual work is forked off to a helper function depending on the command type.
@@ -208,7 +206,8 @@ std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
     }
 
     if (!s.ok()) {
-      LOG(ERROR) << absl::Substitute("MySQL packet processing error: msg=$0", s.msg());
+      VLOG(1) << absl::Substitute("MySQL packet processing error: msg=$0", s.msg());
+      ++error_count;
     } else {
       ParseState result = s.ValueOrDie();
       DCHECK(result == ParseState::kSuccess || result == ParseState::kNeedsMoreData);
@@ -221,10 +220,11 @@ std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
           // More response data will probably be captured in next iteration, so stop.
           break;
         }
-        LOG(ERROR) << absl::Substitute(
+        VLOG(1) << absl::Substitute(
             "Didn't have enough response packets, but doesn't appear to be partial either. "
             "[cmd=$0, cmd_msg=$1 resp_packets=$2]",
             magic_enum::enum_name(command), req_packet.msg.substr(1), resp_packets_view.size());
+        ++error_count;
         // Continue on, since waiting for more packets likely won't help.
       } else {
         entries.push_back(std::move(entry));
@@ -234,7 +234,8 @@ std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
     req_packets->pop_front();
     resp_packets->erase(resp_packets->begin(), resp_packets->begin() + resp_packets_view.size());
   }
-  return entries;
+
+  return {entries, error_count};
 }
 
 #define PL_RETURN_IF_NOT_SUCCESS(stmt)       \

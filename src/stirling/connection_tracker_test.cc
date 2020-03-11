@@ -133,19 +133,18 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
   tracker.AddDataEvent(std::move(resp2));
   tracker.AddControlEvent(close_event);
 
-  std::vector<http::Record> req_resp_pairs;
-  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
+  std::vector<http::Record> records = tracker.ProcessToRecords<http::ProtocolTraits>();
 
-  ASSERT_EQ(3, req_resp_pairs.size());
+  ASSERT_EQ(3, records.size());
 
-  EXPECT_EQ(req_resp_pairs[0].req.http_req_path, "/index.html");
-  EXPECT_EQ(req_resp_pairs[0].resp.http_msg_body, "pixie");
+  EXPECT_EQ(records[0].req.http_req_path, "/index.html");
+  EXPECT_EQ(records[0].resp.http_msg_body, "pixie");
 
-  EXPECT_EQ(req_resp_pairs[1].req.http_req_path, "/foo.html");
-  EXPECT_EQ(req_resp_pairs[1].resp.http_msg_body, "foo");
+  EXPECT_EQ(records[1].req.http_req_path, "/foo.html");
+  EXPECT_EQ(records[1].resp.http_msg_body, "foo");
 
-  EXPECT_EQ(req_resp_pairs[2].req.http_req_path, "/bar.html");
-  EXPECT_EQ(req_resp_pairs[2].resp.http_msg_body, "bar");
+  EXPECT_EQ(records[2].req.http_req_path, "/bar.html");
+  EXPECT_EQ(records[2].resp.http_msg_body, "bar");
 }
 
 TEST_F(ConnectionTrackerTest, ReqRespMatchingPipelined) {
@@ -169,19 +168,18 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingPipelined) {
   tracker.AddDataEvent(std::move(resp2));
   tracker.AddControlEvent(close_event);
 
-  std::vector<http::Record> req_resp_pairs;
-  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
+  std::vector<http::Record> records = tracker.ProcessToRecords<http::ProtocolTraits>();
 
-  ASSERT_EQ(3, req_resp_pairs.size());
+  ASSERT_EQ(3, records.size());
 
-  EXPECT_EQ(req_resp_pairs[0].req.http_req_path, "/index.html");
-  EXPECT_EQ(req_resp_pairs[0].resp.http_msg_body, "pixie");
+  EXPECT_EQ(records[0].req.http_req_path, "/index.html");
+  EXPECT_EQ(records[0].resp.http_msg_body, "pixie");
 
-  EXPECT_EQ(req_resp_pairs[1].req.http_req_path, "/foo.html");
-  EXPECT_EQ(req_resp_pairs[1].resp.http_msg_body, "foo");
+  EXPECT_EQ(records[1].req.http_req_path, "/foo.html");
+  EXPECT_EQ(records[1].resp.http_msg_body, "foo");
 
-  EXPECT_EQ(req_resp_pairs[2].req.http_req_path, "/bar.html");
-  EXPECT_EQ(req_resp_pairs[2].resp.http_msg_body, "bar");
+  EXPECT_EQ(records[2].req.http_req_path, "/bar.html");
+  EXPECT_EQ(records[2].resp.http_msg_body, "bar");
 }
 
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
@@ -205,19 +203,18 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
   tracker.AddDataEvent(std::move(resp2));
   tracker.AddControlEvent(close_event);
 
-  std::vector<http::Record> req_resp_pairs;
-  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
+  std::vector<http::Record> records = tracker.ProcessToRecords<http::ProtocolTraits>();
 
-  ASSERT_EQ(3, req_resp_pairs.size());
+  ASSERT_EQ(3, records.size());
 
-  EXPECT_EQ(req_resp_pairs[0].req.http_req_path, "/index.html");
-  EXPECT_EQ(req_resp_pairs[0].resp.http_msg_body, "pixie");
+  EXPECT_EQ(records[0].req.http_req_path, "/index.html");
+  EXPECT_EQ(records[0].resp.http_msg_body, "pixie");
 
-  EXPECT_EQ(req_resp_pairs[1].req.http_req_path, "-");
-  EXPECT_EQ(req_resp_pairs[1].resp.http_msg_body, "foo");
+  EXPECT_EQ(records[1].req.http_req_path, "-");
+  EXPECT_EQ(records[1].resp.http_msg_body, "foo");
 
-  EXPECT_EQ(req_resp_pairs[2].req.http_req_path, "/bar.html");
-  EXPECT_EQ(req_resp_pairs[2].resp.http_msg_body, "bar");
+  EXPECT_EQ(records[2].req.http_req_path, "/bar.html");
+  EXPECT_EQ(records[2].resp.http_msg_body, "bar");
 }
 
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
@@ -241,18 +238,16 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
   tracker.AddDataEvent(std::move(resp2));
   tracker.AddControlEvent(close_event);
 
-  std::vector<http::Record> req_resp_pairs;
+  std::vector<http::Record> records = tracker.ProcessToRecords<http::ProtocolTraits>();
 
-  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
+  ASSERT_EQ(2, records.size());
 
-  ASSERT_EQ(2, req_resp_pairs.size());
-
-  EXPECT_EQ(req_resp_pairs[0].req.http_req_path, "/index.html");
-  EXPECT_EQ(req_resp_pairs[0].resp.http_msg_body, "pixie");
+  EXPECT_EQ(records[0].req.http_req_path, "/index.html");
+  EXPECT_EQ(records[0].resp.http_msg_body, "pixie");
 
   // Oops - expecting a mismatch? Yes! What else can we do?
-  EXPECT_EQ(req_resp_pairs[1].req.http_req_path, "/foo.html");
-  EXPECT_EQ(req_resp_pairs[1].resp.http_msg_body, "bar");
+  EXPECT_EQ(records[1].req.http_req_path, "/foo.html");
+  EXPECT_EQ(records[1].resp.http_msg_body, "bar");
 
   // Final request sticks around waiting for a partner - who will never come!
   // TODO(oazizi): The close should be an indicator that the partner will never come.
@@ -274,7 +269,7 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   ConnectionTracker tracker;
-  std::vector<http::Record> req_resp_pairs;
+  std::vector<http::Record> records;
 
   tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
@@ -282,9 +277,9 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
   tracker.AddDataEvent(std::move(req1));
   tracker.AddDataEvent(std::move(resp1));
 
-  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
+  records = tracker.ProcessToRecords<http::ProtocolTraits>();
 
-  ASSERT_EQ(2, req_resp_pairs.size());
+  ASSERT_EQ(2, records.size());
   ASSERT_FALSE(tracker.IsZombie());
 
   // Say this connection is not interesting to follow anymore.
@@ -294,18 +289,18 @@ TEST_F(ConnectionTrackerTest, TrackerDisable) {
   tracker.AddDataEvent(std::move(req2));
   tracker.AddDataEvent(std::move(resp2));
 
-  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
+  records = tracker.ProcessToRecords<http::ProtocolTraits>();
 
-  ASSERT_EQ(0, req_resp_pairs.size());
+  ASSERT_EQ(0, records.size());
   ASSERT_FALSE(tracker.IsZombie());
 
   tracker.AddDataEvent(std::move(req3));
   tracker.AddDataEvent(std::move(resp3));
   tracker.AddControlEvent(close_event);
 
-  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
+  records = tracker.ProcessToRecords<http::ProtocolTraits>();
 
-  ASSERT_EQ(0, req_resp_pairs.size());
+  ASSERT_EQ(0, records.size());
   ASSERT_TRUE(tracker.IsZombie());
 }
 
@@ -324,7 +319,7 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   ConnectionTracker tracker;
-  std::vector<http::Record> req_resp_pairs;
+  std::vector<http::Record> records;
 
   tracker.AddControlEvent(conn);
   tracker.AddDataEvent(std::move(req0));
@@ -332,10 +327,10 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   tracker.AddDataEvent(std::move(req1));
   tracker.AddDataEvent(std::move(resp1));
 
-  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
+  records = tracker.ProcessToRecords<http::ProtocolTraits>();
   tracker.IterationPostTick();
 
-  ASSERT_EQ(2, req_resp_pairs.size());
+  ASSERT_EQ(2, records.size());
   ASSERT_FALSE(tracker.IsZombie());
 
   // More events arrive after the connection Upgrade.
@@ -351,10 +346,10 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
   // run on a stream at EOS.
   // However, the test still passes, so we'll leave the test for now.
 
-  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
+  records = tracker.ProcessToRecords<http::ProtocolTraits>();
   tracker.IterationPostTick();
 
-  ASSERT_EQ(0, req_resp_pairs.size());
+  ASSERT_EQ(0, records.size());
   ASSERT_FALSE(tracker.IsZombie());
 
   tracker.AddDataEvent(std::move(req3));
@@ -363,10 +358,10 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
 
   // The tracker should, however, still process the close event.
 
-  req_resp_pairs = tracker.ProcessToRecords<http::ProtocolTraits>();
+  records = tracker.ProcessToRecords<http::ProtocolTraits>();
   tracker.IterationPostTick();
 
-  ASSERT_EQ(0, req_resp_pairs.size());
+  ASSERT_EQ(0, records.size());
   ASSERT_TRUE(tracker.IsZombie());
 }
 
@@ -415,9 +410,9 @@ TEST_F(ConnectionTrackerTest, HTTP2ResetAfterStitchFailure) {
   // Add a call to make sure things do not go haywire after resetting stream.
   tracker.AddDataEvent(std::move(frame4));
   tracker.AddDataEvent(std::move(frame5));
-  auto req_resp_pairs = tracker.ProcessToRecords<http2::ProtocolTraits>();
+  auto records = tracker.ProcessToRecords<http2::ProtocolTraits>();
   // These 2 messages forms a matching req & resp.
-  EXPECT_THAT(req_resp_pairs, SizeIs(1));
+  EXPECT_THAT(records, SizeIs(1));
 }
 
 // TODO(yzhao): Add the same test for HTTPMessage.
@@ -455,9 +450,9 @@ TEST_F(ConnectionTrackerTest, HTTP2FramesCleanedUpAfterBreachingSizeLimit) {
   // Add a call to make sure things do not go haywire after resetting stream.
   tracker.AddDataEvent(std::move(frame2));
   tracker.AddDataEvent(std::move(frame3));
-  auto req_resp_pairs = tracker.ProcessToRecords<http2::ProtocolTraits>();
+  auto records = tracker.ProcessToRecords<http2::ProtocolTraits>();
   // These 2 messages forms a matching req & resp.
-  EXPECT_THAT(req_resp_pairs, SizeIs(1));
+  EXPECT_THAT(records, SizeIs(1));
 }
 
 TEST_F(ConnectionTrackerTest, HTTP2FramesErasedAfterExpiration) {
@@ -495,9 +490,9 @@ TEST_F(ConnectionTrackerTest, HTTP2FramesErasedAfterExpiration) {
   // Add a call to make sure things do not go haywire after resetting stream.
   tracker.AddDataEvent(std::move(frame2));
   tracker.AddDataEvent(std::move(frame3));
-  auto req_resp_pairs = tracker.ProcessToRecords<http2::ProtocolTraits>();
+  auto records = tracker.ProcessToRecords<http2::ProtocolTraits>();
   // These 2 messages forms a matching req & resp.
-  EXPECT_THAT(req_resp_pairs, SizeIs(1));
+  EXPECT_THAT(records, SizeIs(1));
 }
 
 TEST_F(ConnectionTrackerTest, HTTPStuckEventsAreRemoved) {

@@ -23,6 +23,7 @@ extern "C" {
 #include "src/stirling/common/event_parser.h"
 #include "src/stirling/common/parse_state.h"
 #include "src/stirling/common/protocol_traits.h"
+#include "src/stirling/common/stitcher.h"
 #include "src/stirling/http2/frame.h"
 #include "src/stirling/http2/message.h"
 #include "src/stirling/utils/req_resp_pair.h"
@@ -187,15 +188,16 @@ inline std::string_view GetLiteralNameAsStringView(const HeaderField& field) {
  */
 ParseState ParseHeaderBlock(u8string_view* buf, std::vector<HeaderField>* res);
 
-std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, nghttp2_hd_inflater* req_inflater,
-                                  std::deque<Frame>* resp_frames,
-                                  nghttp2_hd_inflater* resp_inflater);
+RecordsWithErrorCount<Record> ProcessFrames(std::deque<Frame>* req_frames,
+                                            nghttp2_hd_inflater* req_inflater,
+                                            std::deque<Frame>* resp_frames,
+                                            nghttp2_hd_inflater* resp_inflater);
 
 }  // namespace http2
 
-inline std::vector<http2::Record> ProcessFrames(std::deque<http2::Frame>* req_frames,
-                                                std::deque<http2::Frame>* resp_frames,
-                                                http2::State* state) {
+inline RecordsWithErrorCount<http2::Record> ProcessFrames(std::deque<http2::Frame>* req_frames,
+                                                          std::deque<http2::Frame>* resp_frames,
+                                                          http2::State* state) {
   return ProcessFrames(req_frames, state->send.inflater(), resp_frames, state->recv.inflater());
 }
 

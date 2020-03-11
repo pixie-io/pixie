@@ -600,9 +600,10 @@ ParseState ParseHeaderBlock(u8string_view* buf, std::vector<HeaderField>* res) {
   return ParseState::kSuccess;
 }
 
-std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, nghttp2_hd_inflater* req_inflater,
-                                  std::deque<Frame>* resp_frames,
-                                  nghttp2_hd_inflater* resp_inflater) {
+RecordsWithErrorCount<Record> ProcessFrames(std::deque<Frame>* req_frames,
+                                            nghttp2_hd_inflater* req_inflater,
+                                            std::deque<Frame>* resp_frames,
+                                            nghttp2_hd_inflater* resp_inflater) {
   StitchAndInflateHeaderBlocks(req_inflater, req_frames);
   StitchAndInflateHeaderBlocks(resp_inflater, resp_frames);
 
@@ -641,7 +642,7 @@ std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, nghttp2_hd_infl
     resp_frames->clear();
   }
 
-  return records;
+  return {records, 0};
 }
 
 }  // namespace http2

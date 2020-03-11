@@ -7,6 +7,7 @@
 
 #include "src/stirling/common/parse_state.h"
 #include "src/stirling/common/protocol_traits.h"
+#include "src/stirling/common/stitcher.h"
 #include "src/stirling/http/types.h"
 
 DECLARE_string(http_response_header_filters);
@@ -23,16 +24,16 @@ namespace http {
  * @param resp_messages: deque of all response messages.
  * @return A vector of entries to be appended to table store.
  */
-std::vector<Record> ProcessMessages(std::deque<Message>* req_messages,
-                                    std::deque<Message>* resp_messages);
+RecordsWithErrorCount<Record> ProcessMessages(std::deque<Message>* req_messages,
+                                              std::deque<Message>* resp_messages);
 
 void PreProcessMessage(Message* message);
 
 }  // namespace http
 
-inline std::vector<http::Record> ProcessFrames(std::deque<http::Message>* req_messages,
-                                               std::deque<http::Message>* resp_messages,
-                                               NoState* /* state */) {
+inline RecordsWithErrorCount<http::Record> ProcessFrames(std::deque<http::Message>* req_messages,
+                                                         std::deque<http::Message>* resp_messages,
+                                                         NoState* /* state */) {
   return http::ProcessMessages(req_messages, resp_messages);
 }
 

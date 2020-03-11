@@ -370,11 +370,11 @@ std::vector<typename TProtocolTraits::record_type> ConnectionTracker::ProcessToR
   auto& resp_frames = resp_data()->Frames<TFrameType>();
   auto state_ptr = protocol_state<TStateType>();
 
-  std::vector<TRecordType> result = ProcessFrames(&req_frames, &resp_frames, state_ptr);
+  RecordsWithErrorCount<TRecordType> result = ProcessFrames(&req_frames, &resp_frames, state_ptr);
 
   Cleanup<TProtocolTraits>();
 
-  return result;
+  return result.records;
 }
 
 template std::vector<typename http::ProtocolTraits::record_type>
@@ -390,16 +390,16 @@ template <>
 std::vector<http2u::Record> ConnectionTracker::ProcessToRecords<http2u::ProtocolTraits>() {
   // TODO(oazizi): ECHECK that raw events are empty.
 
-  std::vector<http2u::Record> trace_records;
+  std::vector<http2u::Record> records;
 
   http2u::ProcessHTTP2Streams(&client_streams_.http2_streams(), &oldest_active_client_stream_id_,
-                              &trace_records);
+                              &records);
   http2u::ProcessHTTP2Streams(&server_streams_.http2_streams(), &oldest_active_server_stream_id_,
-                              &trace_records);
+                              &records);
 
   Cleanup<http2u::ProtocolTraits>();
 
-  return trace_records;
+  return records;
 }
 
 void ConnectionTracker::Reset() {

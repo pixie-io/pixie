@@ -864,8 +864,8 @@ void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnectionTrack
     // table store. But those messages are not cached inside ConnectionTracker.
     //
     // TODO(yzhao): Consider caching produced messages if they are not transferred.
-    auto messages = tracker->ProcessToRecords<TProtocolTraits>();
-    for (auto& msg : messages) {
+    auto result = tracker->ProcessToRecords<TProtocolTraits>();
+    for (auto& msg : result) {
       AppendMessage(ctx, *tracker, msg, data_table);
     }
   }

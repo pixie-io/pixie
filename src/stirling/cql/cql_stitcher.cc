@@ -352,8 +352,10 @@ StatusOr<Record> ProcessSolitaryResp(Frame* resp_frame) {
 //  - Request and response deques are likely (confirm?) to be mostly ordered.
 //  - Stream values can be re-used, so sorting would have to consider times too.
 //  - Stream values need not be in any sequential order.
-std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, std::deque<Frame>* resp_frames) {
+RecordsWithErrorCount<Record> ProcessFrames(std::deque<Frame>* req_frames,
+                                            std::deque<Frame>* resp_frames) {
   std::vector<Record> entries;
+  int error_count = 0;
 
   for (auto& resp_frame : *resp_frames) {
     bool found_match = false;
@@ -364,7 +366,8 @@ std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, std::deque<Fram
       if (record_status.ok()) {
         entries.push_back(record_status.ConsumeValueOrDie());
       } else {
-        LOG(ERROR) << record_status.msg();
+        VLOG(1) << record_status.msg();
+        ++error_count;
       }
       resp_frames->pop_front();
       continue;
@@ -380,7 +383,8 @@ std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, std::deque<Fram
         if (record_status.ok()) {
           entries.push_back(record_status.ConsumeValueOrDie());
         } else {
-          LOG(ERROR) << record_status.ToString();
+          VLOG(1) << record_status.ToString();
+          ++error_count;
         }
 
         // Found a match, so remove both request and response.
@@ -396,8 +400,11 @@ std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, std::deque<Fram
       }
     }
 
-    LOG_IF(ERROR, !found_match) << absl::Substitute(
-        "Did not find a request matching the response. Stream = $0", resp_frame.hdr.stream);
+    if (!found_match) {
+      VLOG(1) << absl::Substitute("Did not find a request matching the response. Stream = $0",
+                                  resp_frame.hdr.stream);
+      ++error_count;
+    }
 
     // Clean-up consumed frames at the head.
     // Do this inside the resp loop to aggressively clean-out req_frames whenever a frame consumed.
@@ -414,7 +421,7 @@ std::vector<Record> ProcessFrames(std::deque<Frame>* req_frames, std::deque<Fram
     // tracker clean-up mechanisms kick in.
   }
 
-  return entries;
+  return {entries, error_count};
 }
 
 }  // namespace cass

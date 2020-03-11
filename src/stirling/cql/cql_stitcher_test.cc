@@ -188,7 +188,7 @@ Frame CreateFrame(uint16_t stream, Opcode opcode, const uint8_t (&msg)[N], uint6
 TEST(CassStitcherTest, OutOfOrderMatching) {
   std::deque<Frame> req_frames;
   std::deque<Frame> resp_frames;
-  std::vector<Record> records;
+  RecordsWithErrorCount<Record> result;
 
   int t = 0;
 
@@ -199,60 +199,90 @@ TEST(CassStitcherTest, OutOfOrderMatching) {
   Frame req2_frame = CreateFrame(2, Opcode::kQuery, kBadQueryReq, ++t);
   Frame resp2_frame = CreateFrame(2, Opcode::kError, kBadQueryErrorResp, ++t);
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
-  EXPECT_EQ(records.size(), 0);
+  EXPECT_EQ(result.error_count, 0);
+  EXPECT_EQ(result.records.size(), 0);
 
   req_frames.push_back(req0_frame);
   req_frames.push_back(req1_frame);
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 2);
-  EXPECT_EQ(records.size(), 0);
+  EXPECT_EQ(result.error_count, 0);
+  EXPECT_EQ(result.records.size(), 0);
 
   resp_frames.push_back(resp1_frame);
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 2);
-  EXPECT_EQ(records.size(), 1);
+  EXPECT_EQ(result.error_count, 0);
+  EXPECT_EQ(result.records.size(), 1);
 
   req_frames.push_back(req2_frame);
   resp_frames.push_back(resp0_frame);
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 1);
-  EXPECT_EQ(records.size(), 1);
+  EXPECT_EQ(result.error_count, 0);
+  EXPECT_EQ(result.records.size(), 1);
 
   resp_frames.push_back(resp2_frame);
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(resp_frames.size(), 0);
-  EXPECT_EQ(records.size(), 1);
+  EXPECT_EQ(result.error_count, 0);
+  EXPECT_EQ(result.records.size(), 1);
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(resp_frames.size(), 0);
-  EXPECT_EQ(records.size(), 0);
+  EXPECT_EQ(result.error_count, 0);
+  EXPECT_EQ(result.records.size(), 0);
+}
+
+// To test that mis-classified frames are caught by stitcher.
+TEST(CassStitcherTest, NonCQLFrames) {
+  std::deque<Frame> req_frames;
+  std::deque<Frame> resp_frames;
+  RecordsWithErrorCount<Record> result;
+
+  int t = 0;
+
+  Frame req0_frame = CreateFrame(0, Opcode::kQuery, {0x00, 0x00}, ++t);
+  Frame resp0_frame = CreateFrame(0, Opcode::kError, {0x00, 0x00, 0x00}, ++t);
+  Frame req1_frame = CreateFrame(0, Opcode::kQuery, {0x23, 0xa8, 0xf3}, ++t);
+  Frame resp1_frame = CreateFrame(0, Opcode::kError, {0x35, 0x9e, 0x1b, 0x77}, ++t);
+
+  req_frames = {req0_frame, req1_frame};
+  resp_frames = {resp0_frame, resp1_frame};
+
+  result = ProcessFrames(&req_frames, &resp_frames);
+  EXPECT_TRUE(resp_frames.empty());
+  EXPECT_EQ(req_frames.size(), 0);
+  EXPECT_EQ(result.error_count, 2);
+  EXPECT_EQ(result.records.size(), 0);
 }
 
 TEST(CassStitcherTest, OpEvent) {
   std::deque<Frame> req_frames;
   std::deque<Frame> resp_frames;
-  std::vector<Record> records;
+  RecordsWithErrorCount<Record> result;
 
   resp_frames.push_back(CreateFrame(-1, Opcode::kEvent, kEventResp, 3));
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
-  ASSERT_EQ(records.size(), 1);
+  EXPECT_EQ(result.error_count, 0);
+  ASSERT_EQ(result.records.size(), 1);
 
-  Record& record = records.front();
+  Record& record = result.records.front();
 
   EXPECT_EQ(record.req.op, ReqOp::kRegister);
   EXPECT_EQ(record.resp.op, RespOp::kEvent);
@@ -267,17 +297,18 @@ TEST(CassStitcherTest, OpEvent) {
 TEST(CassStitcherTest, StartupReady) {
   std::deque<Frame> req_frames;
   std::deque<Frame> resp_frames;
-  std::vector<Record> records;
+  RecordsWithErrorCount<Record> result;
 
   req_frames.push_back(CreateFrame(0, Opcode::kStartup, kStartupReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kReady, 2));
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
-  ASSERT_EQ(records.size(), 1);
+  EXPECT_EQ(result.error_count, 0);
+  ASSERT_EQ(result.records.size(), 1);
 
-  Record& record = records.front();
+  Record& record = result.records.front();
 
   EXPECT_EQ(record.req.op, ReqOp::kStartup);
   EXPECT_EQ(record.resp.op, RespOp::kReady);
@@ -289,17 +320,18 @@ TEST(CassStitcherTest, StartupReady) {
 TEST(CassStitcherTest, RegisterReady) {
   std::deque<Frame> req_frames;
   std::deque<Frame> resp_frames;
-  std::vector<Record> records;
+  RecordsWithErrorCount<Record> result;
 
   req_frames.push_back(CreateFrame(0, Opcode::kRegister, kRegisterReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kReady, 2));
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
-  ASSERT_EQ(records.size(), 1);
+  EXPECT_EQ(result.error_count, 0);
+  ASSERT_EQ(result.records.size(), 1);
 
-  Record& record = records.front();
+  Record& record = result.records.front();
 
   EXPECT_EQ(record.req.op, ReqOp::kRegister);
   EXPECT_EQ(record.resp.op, RespOp::kReady);
@@ -311,17 +343,18 @@ TEST(CassStitcherTest, RegisterReady) {
 TEST(CassStitcherTest, OptionsSupported) {
   std::deque<Frame> req_frames;
   std::deque<Frame> resp_frames;
-  std::vector<Record> records;
+  RecordsWithErrorCount<Record> result;
 
   req_frames.push_back(CreateFrame(0, Opcode::kOptions, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kSupported, kSupportedResp, 2));
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
-  ASSERT_EQ(records.size(), 1);
+  EXPECT_EQ(result.error_count, 0);
+  ASSERT_EQ(result.records.size(), 1);
 
-  Record& record = records.front();
+  Record& record = result.records.front();
 
   EXPECT_EQ(record.req.op, ReqOp::kOptions);
   EXPECT_EQ(record.resp.op, RespOp::kSupported);
@@ -335,17 +368,18 @@ TEST(CassStitcherTest, OptionsSupported) {
 TEST(CassStitcherTest, QueryResult) {
   std::deque<Frame> req_frames;
   std::deque<Frame> resp_frames;
-  std::vector<Record> records;
+  RecordsWithErrorCount<Record> result;
 
   req_frames.push_back(CreateFrame(0, Opcode::kQuery, kQueryReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kResult, kResultResp, 2));
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
-  ASSERT_EQ(records.size(), 1);
+  EXPECT_EQ(result.error_count, 0);
+  ASSERT_EQ(result.records.size(), 1);
 
-  Record& record = records.front();
+  Record& record = result.records.front();
 
   EXPECT_EQ(record.req.op, ReqOp::kQuery);
   EXPECT_EQ(record.resp.op, RespOp::kResult);
@@ -363,22 +397,24 @@ TEST(CassStitcherTest, QueryResult) {
 TEST(CassStitcherTest, QueryError) {
   std::deque<Frame> req_frames;
   std::deque<Frame> resp_frames;
-  std::vector<Record> records;
+  RecordsWithErrorCount<Record> result;
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
-  EXPECT_EQ(records.size(), 0);
+  EXPECT_EQ(result.error_count, 0);
+  EXPECT_EQ(result.records.size(), 0);
 
   req_frames.push_back(CreateFrame(0, Opcode::kQuery, kBadQueryReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kError, kBadQueryErrorResp, 2));
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
-  ASSERT_EQ(records.size(), 1);
+  EXPECT_EQ(result.error_count, 0);
+  ASSERT_EQ(result.records.size(), 1);
 
-  Record& record = records.front();
+  Record& record = result.records.front();
 
   EXPECT_EQ(record.req.op, ReqOp::kQuery);
   EXPECT_EQ(record.resp.op, RespOp::kError);
@@ -390,17 +426,18 @@ TEST(CassStitcherTest, QueryError) {
 TEST(CassStitcherTest, PrepareResult) {
   std::deque<Frame> req_frames;
   std::deque<Frame> resp_frames;
-  std::vector<Record> records;
+  RecordsWithErrorCount<Record> result;
 
   req_frames.push_back(CreateFrame(0, Opcode::kPrepare, kPrepareReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kResult, kPrepareResultResp, 2));
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
-  ASSERT_EQ(records.size(), 1);
+  EXPECT_EQ(result.error_count, 0);
+  ASSERT_EQ(result.records.size(), 1);
 
-  Record& record = records.front();
+  Record& record = result.records.front();
 
   EXPECT_EQ(record.req.op, ReqOp::kPrepare);
   EXPECT_EQ(record.resp.op, RespOp::kResult);
@@ -415,17 +452,18 @@ TEST(CassStitcherTest, PrepareResult) {
 TEST(CassStitcherTest, ExecuteResult) {
   std::deque<Frame> req_frames;
   std::deque<Frame> resp_frames;
-  std::vector<Record> records;
+  RecordsWithErrorCount<Record> result;
 
   req_frames.push_back(CreateFrame(0, Opcode::kExecute, kExecuteReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kResult, kExecuteResultResp, 2));
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
-  ASSERT_EQ(records.size(), 1);
+  EXPECT_EQ(result.error_count, 0);
+  ASSERT_EQ(result.records.size(), 1);
 
-  Record& record = records.front();
+  Record& record = result.records.front();
 
   EXPECT_EQ(record.req.op, ReqOp::kExecute);
   EXPECT_EQ(record.resp.op, RespOp::kResult);
@@ -443,17 +481,18 @@ TEST(CassStitcherTest, ExecuteResult) {
 TEST(CassStitcherTest, StartupAuthenticate) {
   std::deque<Frame> req_frames;
   std::deque<Frame> resp_frames;
-  std::vector<Record> records;
+  RecordsWithErrorCount<Record> result;
 
   req_frames.push_back(CreateFrame(0, Opcode::kStartup, kStartupReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kAuthenticate, kAuthenticateResp, 2));
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
-  ASSERT_EQ(records.size(), 1);
+  EXPECT_EQ(result.error_count, 0);
+  ASSERT_EQ(result.records.size(), 1);
 
-  Record& record = records.front();
+  Record& record = result.records.front();
 
   EXPECT_EQ(record.req.op, ReqOp::kStartup);
   EXPECT_EQ(record.resp.op, RespOp::kAuthenticate);
@@ -465,17 +504,18 @@ TEST(CassStitcherTest, StartupAuthenticate) {
 TEST(CassStitcherTest, AuthResponseAuthSuccess) {
   std::deque<Frame> req_frames;
   std::deque<Frame> resp_frames;
-  std::vector<Record> records;
+  RecordsWithErrorCount<Record> result;
 
   req_frames.push_back(CreateFrame(0, Opcode::kAuthResponse, kAuthResponseReq, 1));
   resp_frames.push_back(CreateFrame(0, Opcode::kAuthSuccess, kAuthSuccessResp, 2));
 
-  records = ProcessFrames(&req_frames, &resp_frames);
+  result = ProcessFrames(&req_frames, &resp_frames);
   EXPECT_TRUE(resp_frames.empty());
   EXPECT_EQ(req_frames.size(), 0);
-  ASSERT_EQ(records.size(), 1);
+  EXPECT_EQ(result.error_count, 0);
+  ASSERT_EQ(result.records.size(), 1);
 
-  Record& record = records.front();
+  Record& record = result.records.front();
 
   EXPECT_EQ(record.req.op, ReqOp::kAuthResponse);
   EXPECT_EQ(record.resp.op, RespOp::kAuthSuccess);

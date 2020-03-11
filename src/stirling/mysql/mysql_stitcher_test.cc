@@ -160,8 +160,9 @@ TEST(ProcessMySQLPacketsTest, OldResponses) {
   state.prepared_statements.emplace(testdata::kStmtID, testdata::kPreparedStatement);
 
   std::deque<Packet> requests = {req};
-  std::vector<Record> entries = ProcessMySQLPackets(&requests, &responses, &state);
-  EXPECT_EQ(entries.size(), 1);
+  RecordsWithErrorCount<Record> result = ProcessMySQLPackets(&requests, &responses, &state);
+  EXPECT_EQ(result.records.size(), 1);
+  EXPECT_EQ(result.error_count, 0);
   EXPECT_EQ(requests.size(), 0);
   EXPECT_EQ(responses.size(), 0);
 }
@@ -181,8 +182,9 @@ TEST(ProcessMySQLPacketsTest, NonMySQLTraffic1) {
   std::deque<Packet> responses = {p1};
   State state{std::map<int, PreparedStatement>()};
 
-  std::vector<Record> entries = ProcessMySQLPackets(&requests, &responses, &state);
-  EXPECT_EQ(entries.size(), 0);
+  RecordsWithErrorCount<Record> result = ProcessMySQLPackets(&requests, &responses, &state);
+  EXPECT_EQ(result.records.size(), 0);
+  EXPECT_EQ(result.error_count, 1);
   EXPECT_EQ(requests.size(), 0);
   EXPECT_EQ(responses.size(), 1);
   // Note that the response is not consumed because of its unexpected sequence ID.
@@ -203,8 +205,9 @@ TEST(ProcessMySQLPacketsTest, NonMySQLTraffic2) {
   std::deque<Packet> responses = {p1};
   State state{std::map<int, PreparedStatement>()};
 
-  std::vector<Record> entries = ProcessMySQLPackets(&requests, &responses, &state);
-  EXPECT_EQ(entries.size(), 0);
+  RecordsWithErrorCount<Record> result = ProcessMySQLPackets(&requests, &responses, &state);
+  EXPECT_EQ(result.records.size(), 0);
+  EXPECT_EQ(result.error_count, 1);
   EXPECT_EQ(requests.size(), 0);
   EXPECT_EQ(responses.size(), 0);
 }

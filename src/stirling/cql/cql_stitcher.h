@@ -7,6 +7,7 @@
 
 #include "src/stirling/common/parse_state.h"
 #include "src/stirling/common/protocol_traits.h"
+#include "src/stirling/common/stitcher.h"
 #include "src/stirling/cql/types.h"
 
 namespace pl {
@@ -21,13 +22,14 @@ namespace cass {
  * @param resp_packets: deque of all response frames.
  * @return A vector of entries to be appended to table store.
  */
-std::vector<Record> ProcessFrames(std::deque<Frame>* req_packets, std::deque<Frame>* resp_packets);
+RecordsWithErrorCount<Record> ProcessFrames(std::deque<Frame>* req_packets,
+                                            std::deque<Frame>* resp_packets);
 
 }  // namespace cass
 
-inline std::vector<cass::Record> ProcessFrames(std::deque<cass::Frame>* req_packets,
-                                               std::deque<cass::Frame>* resp_packets,
-                                               NoState* /* state */) {
+inline RecordsWithErrorCount<cass::Record> ProcessFrames(std::deque<cass::Frame>* req_packets,
+                                                         std::deque<cass::Frame>* resp_packets,
+                                                         NoState* /* state */) {
   return cass::ProcessFrames(req_packets, resp_packets);
 }
 

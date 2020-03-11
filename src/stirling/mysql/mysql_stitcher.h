@@ -1,12 +1,14 @@
 #pragma once
+
 #include <deque>
 #include <map>
 #include <string>
 #include <vector>
 
-#include "src/common/base/status.h"
+#include "src/common/base/base.h"
 #include "src/stirling/common/parse_state.h"
 #include "src/stirling/common/protocol_traits.h"
+#include "src/stirling/common/stitcher.h"
 #include "src/stirling/mysql/types.h"
 
 namespace pl {
@@ -24,8 +26,9 @@ namespace mysql {
  * @param state: MySQL state from previous requests (particularly state from prepared statements).
  * @return A vector of entries to be appended to table store.
  */
-std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
-                                        std::deque<Packet>* resp_packets, mysql::State* state);
+RecordsWithErrorCount<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
+                                                  std::deque<Packet>* resp_packets,
+                                                  mysql::State* state);
 
 /**
  * The following process functions are helper functions that each processes a type of req_packet.
@@ -75,9 +78,9 @@ StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, b
 
 }  // namespace mysql
 
-inline std::vector<mysql::Record> ProcessFrames(std::deque<mysql::Packet>* req_packets,
-                                                std::deque<mysql::Packet>* resp_packets,
-                                                mysql::StateWrapper* state) {
+inline RecordsWithErrorCount<mysql::Record> ProcessFrames(std::deque<mysql::Packet>* req_packets,
+                                                          std::deque<mysql::Packet>* resp_packets,
+                                                          mysql::StateWrapper* state) {
   return mysql::ProcessMySQLPackets(req_packets, resp_packets, &state->global);
 }
 
