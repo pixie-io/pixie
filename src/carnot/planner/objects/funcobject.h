@@ -176,6 +176,17 @@ StatusOr<TIRNode*> GetArgAs(const ParsedArgs& args, std::string_view arg_name) {
   return GetArgAs<TIRNode>(args.GetArg(arg_name), arg_name);
 }
 
+/**
+ * @brief Get the Call Method object for a QLObject if it exists. This wraps the edge case that
+ * the object is a function, in which case you need to convert instead. This can't be included
+ * into the FunctionObject because the object won't have access to its own shared pointer.
+ *
+ * @param ast
+ * @param pyobject
+ * @return StatusOr<std::shared_ptr<FuncObject>>
+ */
+StatusOr<std::shared_ptr<FuncObject>> GetCallMethod(const pypa::AstPtr& ast, QLObjectPtr pyobject);
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

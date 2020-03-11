@@ -616,11 +616,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessCallNode(const pypa::AstCallPtr& no
     return CreateAstError(node, "expression object is not callable");
   }
 
-  if (pyobject->type_descriptor().type() != QLObjectType::kFunction) {
-    PL_ASSIGN_OR_RETURN(func_object, pyobject->GetCallMethod());
-  } else {
-    func_object = std::static_pointer_cast<FuncObject>(pyobject);
-  }
+  PL_ASSIGN_OR_RETURN(func_object, GetCallMethod(node, pyobject));
   PL_ASSIGN_OR_RETURN(ArgMap args, ProcessArgs(node, op_context));
   return func_object->Call(args, node);
 }

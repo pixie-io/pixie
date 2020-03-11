@@ -125,6 +125,18 @@ std::string FuncObject::FormatArguments(const absl::flat_hash_set<std::string> a
   });
 }
 
+StatusOr<std::shared_ptr<FuncObject>> GetCallMethod(const pypa::AstPtr& ast, QLObjectPtr pyobject) {
+  std::shared_ptr<FuncObject> func_object;
+  if (pyobject->type_descriptor().type() == QLObjectType::kFunction) {
+    return std::static_pointer_cast<FuncObject>(pyobject);
+  }
+  auto func_object_or_s = pyobject->GetCallMethod();
+  if (!func_object_or_s.ok()) {
+    return WrapAstError(ast, func_object_or_s.status());
+  }
+  return func_object_or_s.ConsumeValueOrDie();
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

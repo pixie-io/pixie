@@ -25,7 +25,14 @@ StatusOr<std::string> GetStrAstValue(const pypa::AstPtr& ast) {
   return PYPA_PTR_CAST(Str, ast)->value;
 }
 
-}  // namespace planner
+Status WrapAstError(const pypa::AstPtr& ast, Status status) {
+  if (status.has_context()) {
+    return status;
+  }
 
+  return CreateAstError(ast, status.msg());
+}
+
+}  // namespace planner
 }  // namespace carnot
 }  // namespace pl

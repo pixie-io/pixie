@@ -66,6 +66,17 @@ std::string GetNameAsString(const pypa::AstPtr& node);
  */
 StatusOr<std::string> GetStrAstValue(const pypa::AstPtr& ast);
 
+/**
+ * @brief Wraps a status with a line, col error with the line,col in the ast. If there is a context
+ * in the status, it doesn't wrap it because we assume there's already a line,col error for the
+ * status.
+ *
+ * @param ast
+ * @param status
+ * @return Status
+ */
+Status WrapAstError(const pypa::AstPtr& ast, Status status);
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl
