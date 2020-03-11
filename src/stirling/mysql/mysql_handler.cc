@@ -110,10 +110,10 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
   //  1             column_count packet (*already accounted for*)
   //  column_count  column definition packets
   //  0 or 1        EOF packet (if CLIENT_DEPRECATE_EOF is false)
-  //  1+            ResultsetRow packets
+  //  0+            ResultsetRow packets (Spec says 1+, but have seen 0 in practice).
   //  1             OK or EOF packet
-  // Must have at least the minimum number of packets in a response.
-  if (resp_packets.size() < static_cast<size_t>(num_col + 2)) {
+  // Must have at least the minimum number of remaining packets in a response.
+  if (resp_packets.size() < static_cast<size_t>(num_col + 1)) {
     entry->resp.status = MySQLRespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
   }

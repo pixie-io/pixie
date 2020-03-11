@@ -223,8 +223,8 @@ std::vector<Record> ProcessMySQLPackets(std::deque<Packet>* req_packets,
         }
         LOG(ERROR) << absl::Substitute(
             "Didn't have enough response packets, but doesn't appear to be partial either. "
-            "[cmd=$0, resp_packets=$1]",
-            magic_enum::enum_name(command), resp_packets_view.size());
+            "[cmd=$0, cmd_msg=$1 resp_packets=$2]",
+            magic_enum::enum_name(command), req_packet.msg.substr(1), resp_packets_view.size());
         // Continue on, since waiting for more packets likely won't help.
       } else {
         entries.push_back(std::move(entry));
@@ -527,8 +527,7 @@ StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, b
   }
 
   if (IsErrPacket(resp_packet)) {
-    HandleErrMessage(resp_packets, entry);
-    return ParseState::kSuccess;
+    return HandleErrMessage(resp_packets, entry);
   }
 
   entry->resp.status = MySQLRespStatus::kUnknown;
