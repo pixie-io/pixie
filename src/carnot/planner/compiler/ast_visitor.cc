@@ -36,21 +36,19 @@ StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* graph,
                                                                  CompilerState* compiler_state,
                                                                  const FlagValues& flag_values) {
   std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(
-      new ASTVisitorImpl(graph, compiler_state, VarTable::Create()));
-  PL_RETURN_IF_ERROR(ast_visitor->InitGlobals(flag_values));
+      new ASTVisitorImpl(graph, compiler_state, VarTable::Create(), flag_values));
+  PL_RETURN_IF_ERROR(ast_visitor->InitGlobals());
   return ast_visitor;
 }
 
 std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChild() {
+  // The flag values should come from the parent var table, not be copied here.
+  FlagValues empty;
   return std::shared_ptr<ASTVisitorImpl>(
-      new ASTVisitorImpl(ir_graph_, compiler_state_, var_table_->CreateChild()));
+      new ASTVisitorImpl(ir_graph_, compiler_state_, var_table_->CreateChild(), empty));
 }
 
-Status ASTVisitorImpl::InitGlobals(const FlagValues& flag_values) {
-  PL_ASSIGN_OR_RETURN(pixie_module_,
-                      PixieModule::Create(ir_graph_, compiler_state_, flag_values, this));
-  // TODO(philkuz) verify this is done before hand in a parent var table if one exists.
-  var_table_->Add(PixieModule::kPixieModuleObjName, pixie_module_);
+Status ASTVisitorImpl::InitGlobals() {
   // Populate the type objects
   PL_ASSIGN_OR_RETURN(auto string_type_object, TypeObject::Create(IRNodeType::kString, this));
   var_table_->Add(ASTVisitorImpl::kStringTypeName, string_type_object);
@@ -87,9 +85,17 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSingleExpressionModule(
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ParseAndProcessSingleExpression(
-    std::string_view single_expr_str) {
+    std::string_view single_expr_str, bool import_px) {
   Parser parser;
   PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(single_expr_str.data()));
+  if (import_px) {
+    auto child_visitor = CreateChild();
+    // Use a child of this ASTVisitor so that we can add px to its child var_table without affecting
+    // top-level visitor state.
+    PL_RETURN_IF_ERROR(child_visitor->AddPixieModule());
+    return child_visitor->ProcessSingleExpressionModule(ast);
+  }
+
   return ProcessSingleExpressionModule(ast);
 }
 
@@ -99,8 +105,11 @@ Status ASTVisitorImpl::ProcessModuleNode(const pypa::AstModulePtr& m) {
 
 StatusOr<plannerpb::QueryFlagsSpec> ASTVisitorImpl::GetAvailableFlags(const pypa::AstModulePtr& m) {
   PL_RETURN_IF_ERROR(ProcessModuleNode(m));
-  auto flags = pixie_module_->flags_object();
-  return flags->GetAvailableFlags(m);
+  if (flags_ == nullptr) {
+    plannerpb::QueryFlagsSpec empty;
+    return empty;
+  }
+  return flags_->GetAvailableFlags(m);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& body,
@@ -112,6 +121,14 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
   // iterate through all the items on this list.
   for (pypa::AstStmt stmt : items_list) {
     switch (stmt->type) {
+      case pypa::AstType::Import: {
+        PL_RETURN_IF_ERROR(ProcessImport(PYPA_PTR_CAST(Import, stmt)));
+        break;
+      }
+      case pypa::AstType::ImportFrom: {
+        PL_RETURN_IF_ERROR(ProcessImportFrom(PYPA_PTR_CAST(ImportFrom, stmt)));
+        break;
+      }
       case pypa::AstType::ExpressionStatement: {
         PL_RETURN_IF_ERROR(ProcessExprStmtNode(PYPA_PTR_CAST(ExpressionStatement, stmt)));
         break;
@@ -140,6 +157,71 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
   }
   // If we reach the end of the stmt list before hitting a return, return a NoneObject.
   return std::static_pointer_cast<QLObject>(std::make_shared<NoneObject>(body, this));
+}
+
+Status ASTVisitorImpl::AddPixieModule(std::string_view as_name) {
+  PL_ASSIGN_OR_RETURN(auto px, PixieModule::Create(ir_graph_, compiler_state_, flag_values_, this));
+  // TODO(philkuz) verify this is done before hand in a parent var table if one exists.
+  var_table_->Add(as_name, px);
+  flags_ = px->flags_object();
+  return Status::OK();
+}
+
+std::string AsNameFromAlias(const pypa::AstAliasPtr& alias) {
+  std::string name = PYPA_PTR_CAST(Name, alias->name)->id;
+
+  if (alias->as_name == nullptr) {
+    return name;
+  }
+  return PYPA_PTR_CAST(Name, alias->as_name)->id;
+}
+
+Status ASTVisitorImpl::ProcessImport(const pypa::AstImportPtr& import) {
+  auto alias = PYPA_PTR_CAST(Alias, import->names);
+  std::string name = PYPA_PTR_CAST(Name, alias->name)->id;
+  std::string as_name = AsNameFromAlias(alias);
+
+  if (name != PixieModule::kPixieModuleObjName) {
+    return error::Unimplemented(
+        "Imports of package other than '$0' are not yet supported, received $1",
+        PixieModule::kPixieModuleObjName, name);
+  }
+
+  return AddPixieModule(as_name);
+}
+
+Status ASTVisitorImpl::ProcessImportFrom(const pypa::AstImportFromPtr& from) {
+  if (from->level != 0) {
+    return error::Unimplemented("Unexpected import level $0, expected 0", from->level);
+  }
+  std::string module = PYPA_PTR_CAST(Name, from->module)->id;
+
+  if (module != PixieModule::kPixieModuleObjName) {
+    return error::Unimplemented(
+        "Imports of package other than '$0' are not yet supported, received $1",
+        PixieModule::kPixieModuleObjName, module);
+  }
+
+  PL_ASSIGN_OR_RETURN(auto px, PixieModule::Create(ir_graph_, compiler_state_, flag_values_, this));
+
+  auto tup = PYPA_PTR_CAST(Tuple, from->names);
+  for (const auto& el : tup->elements) {
+    auto alias = PYPA_PTR_CAST(Alias, el);
+    std::string name = PYPA_PTR_CAST(Name, alias->name)->id;
+    std::string as_name = AsNameFromAlias(alias);
+
+    if (!px->HasAttribute(name)) {
+      return CreateAstError(from, "'$0' module has no attribute '$1'",
+                            PixieModule::kPixieModuleObjName, name);
+    }
+    PL_ASSIGN_OR_RETURN(auto attr, px->GetAttribute(from, name));
+    var_table_->Add(as_name, attr);
+    if (name == PixieModule::kFlagsOpId) {
+      flags_ = px->flags_object();
+    }
+  }
+
+  return Status::OK();
 }
 
 // Assignment by subscript is more restrictive than assignment by attribute.
@@ -274,13 +356,6 @@ Status ASTVisitorImpl::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   }
 
   std::string assign_name = GetNameAsString(target_node);
-  if (assign_name == PixieModule::kPixieModuleObjName) {
-    // TODO(nserrino, philkuz): Allow reassignment of the pixie module.
-    // It doesn't work right now because default values like "px.now()" are hard-coded
-    // into funcs, so if px goes away they can't be processed correctly.
-    return CreateAstError(node, "Cannot reassign Pixie Module $0", assign_name);
-  }
-
   OperatorContext op_context({}, "", {});
   PL_ASSIGN_OR_RETURN(auto processed_node, Process(node->value, op_context));
   var_table_->Add(assign_name, processed_node);

@@ -30,7 +30,9 @@ Status PixieModule::RegisterFlags(const FlagValues& flag_values) {
 
 Status PixieModule::RegisterUDFFuncs() {
   // TODO(philkuz) (PL-1189) remove this when the udf names no longer have the 'pl.' prefix.
-  for (const auto& name : compiler_state_->registry_info()->func_names()) {
+  auto func_names = compiler_state_->registry_info()->func_names();
+  LOG(ERROR) << "SFDLKJFD";
+  for (const auto& name : func_names) {
     // attributes_.emplace(stripped_name);
 
     PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> fn_obj,

@@ -47,7 +47,7 @@ TEST_F(AnalyzerTest, test_utils) {
 TEST_F(AnalyzerTest, no_special_relation) {
   std::string from_expr =
       "df = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])\npx.display(df, 'cpu')";
-  auto ir_graph_status = CompileGraph(from_expr);
+  auto ir_graph_status = CompileGraph("import px\n" + from_expr);
   ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   auto handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
@@ -57,7 +57,7 @@ TEST_F(AnalyzerTest, no_special_relation) {
   // check the connection of ig
   std::string from_range_expr =
       "df px.DataFrame(table='cpu', select=['cpu0'], start_time=0, end_time=10)\npx.display(df)";
-  ir_graph_status = CompileGraph(from_expr);
+  ir_graph_status = CompileGraph("import px\n" + from_expr);
   ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
@@ -66,10 +66,10 @@ TEST_F(AnalyzerTest, no_special_relation) {
 }
 
 TEST_F(AnalyzerTest, assign_functionality) {
-  std::string assign_and_use =
-      absl::StrJoin({"queryDF = px.DataFrame(table = 'cpu', select = [ 'cpu0', 'cpu1' ])",
-                     "px.display(queryDF, 'cpu_out')"},
-                    "\n");
+  std::string assign_and_use = absl::StrJoin(
+      {"import px", "queryDF = px.DataFrame(table = 'cpu', select = [ 'cpu0', 'cpu1' ])",
+       "px.display(queryDF, 'cpu_out')"},
+      "\n");
 
   auto ir_graph_status = CompileGraph(assign_and_use);
   ASSERT_OK(ir_graph_status);
@@ -82,7 +82,8 @@ TEST_F(AnalyzerTest, assign_functionality) {
 // Map Tests
 TEST_F(AnalyzerTest, single_col_map) {
   std::string single_col_map_sum = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']", "df = queryDF[['sum']]",
        "px.display(df, 'cpu_out')"},
       "\n");
@@ -94,7 +95,8 @@ TEST_F(AnalyzerTest, single_col_map) {
   VLOG(1) << handle_status.status().ToString();
 
   std::string single_col_div_map_query = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "queryDF['div'] = queryDF['cpu0'] / queryDF['cpu1']", "df = queryDF[['div']]",
        "px.display(df, 'cpu_out')"},
       "\n");
@@ -109,6 +111,7 @@ TEST_F(AnalyzerTest, single_col_map) {
 TEST_F(AnalyzerTest, multi_col_map) {
   std::string multi_col = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', "
           "'cpu2'], start_time=0, end_time=10)",
           "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
@@ -127,7 +130,8 @@ TEST_F(AnalyzerTest, multi_col_map) {
 
 TEST_F(AnalyzerTest, bin_op_test) {
   std::string single_col_map_sum = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']", "df = queryDF[['sum']]",
        "px.display(df, 'cpu_out')"},
       "\n");
@@ -139,7 +143,8 @@ TEST_F(AnalyzerTest, bin_op_test) {
   VLOG(1) << handle_status.status().ToString();
 
   std::string single_col_map_sub = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "queryDF['sub'] = queryDF['cpu0'] - queryDF['cpu1']", "df = queryDF[['sub']]",
        "px.display(df, 'cpu_out')"},
       "\n");
@@ -151,7 +156,8 @@ TEST_F(AnalyzerTest, bin_op_test) {
   VLOG(1) << handle_status.status().ToString();
 
   std::string single_col_map_product = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "queryDF['product'] = queryDF['cpu0'] * queryDF['cpu1']", "df = queryDF[['product']]",
        "px.display(df, 'cpu_out')"},
       "\n");
@@ -163,7 +169,8 @@ TEST_F(AnalyzerTest, bin_op_test) {
   VLOG(1) << handle_status.status().ToString();
 
   std::string single_col_map_quotient = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "queryDF['quotient'] = queryDF['cpu0'] / queryDF['cpu1']", "df = queryDF[['quotient']]",
        "px.display(df, 'cpu_out')"},
       "\n");
@@ -177,7 +184,8 @@ TEST_F(AnalyzerTest, bin_op_test) {
 
 TEST_F(AnalyzerTest, single_col_agg) {
   std::string single_col_agg = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "df = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', px.count))",
        "px.display(df, 'cpu_out')"},
       "\n");
@@ -188,7 +196,8 @@ TEST_F(AnalyzerTest, single_col_agg) {
   EXPECT_OK(handle_status);
 
   std::string multi_output_col_agg = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0','cpu1'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0','cpu1'], start_time=0, end_time=10)",
        "df = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', px.count),",
        "cpu_mean=('cpu1', px.mean))", "px.display(df)"},
       "\n");
@@ -203,7 +212,8 @@ TEST_F(AnalyzerTest, single_col_agg) {
 TEST_F(AnalyzerTest, test_relation_results) {
   // operators don't use generated columns, are just chained.
   std::string chain_operators = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['upid', 'cpu0', 'cpu1', "
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['upid', 'cpu0', 'cpu1', "
        "'cpu2', 'agent_id'], start_time=0, end_time=10)",
        "px.display(queryDF)", "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
        "groupDF = queryDF[['cpu0', 'cpu1', 'cpu_sum']].groupby('cpu0')",
@@ -249,7 +259,8 @@ TEST_F(AnalyzerTest, test_relation_results) {
 TEST_F(AnalyzerTest, test_relation_fails) {
   // operators don't use generated columns, are just chained.
   std::string chain_operators = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], start_time=0, "
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], start_time=0, "
        "end_time=10)",
        "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']", "queryDF = queryDF[['cpu_sum']]",
        "df = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', px.count),",
@@ -275,7 +286,8 @@ TEST_F(AnalyzerTest, test_relation_fails) {
 
 TEST_F(AnalyzerTest, test_relation_multi_col_agg) {
   std::string chain_operators =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
+      absl::StrJoin({"import px",
+                     "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
                      "start_time=0, end_time=10)",
                      "aggDF = queryDF.groupby(['cpu0', 'cpu2']).agg(cpu_count=('cpu1', px.count),",
                      "cpu_mean=('cpu1', px.mean))", "px.display(aggDF)"},
@@ -306,7 +318,7 @@ TEST_F(AnalyzerTest, test_from_select) {
   table_store::schema::Relation test_relation;
   test_relation.AddColumn(types::FLOAT64, "cpu0");
   test_relation.AddColumn(types::FLOAT64, "cpu2");
-  auto ir_graph_status = CompileGraph(chain_operators);
+  auto ir_graph_status = CompileGraph("import px\n" + chain_operators);
   ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);
@@ -319,7 +331,8 @@ TEST_F(AnalyzerTest, test_from_select) {
 TEST_F(AnalyzerTest, nonexistent_cols) {
   // Test for columns used in map function that don't exist in relation.
   std::string wrong_column_map_func = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "queryDF['cpu_sum'] = px.sum(queryDF['cpu0'], queryDF['cpu100'])",
        "df = queryDF[['cpu_sum']]", "px.display(df, 'cpu_out')"},
       "\n");
@@ -334,7 +347,8 @@ TEST_F(AnalyzerTest, nonexistent_cols) {
 
   // Test for columns used in group_by arg of Agg that don't exist.
   std::string wrong_column_agg_by = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "aggDF = queryDF.groupby('cpu101').agg(cpu_count=('cpu1', "
        "px.count))",
        "px.display(aggDF)"},
@@ -349,7 +363,8 @@ TEST_F(AnalyzerTest, nonexistent_cols) {
 
   // Test for column not selected in From.
   std::string not_selected_col = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu2'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu2'], start_time=0, end_time=10)",
        "aggDF = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', px.count))", "px.display(aggDF)"},
       "\n");
   ir_graph_status = CompileGraph(not_selected_col);
@@ -364,7 +379,8 @@ TEST_F(AnalyzerTest, nonexistent_cols) {
 // Use results of created columns in later parts of the pipeline.
 TEST_F(AnalyzerTest, created_columns) {
   std::string agg_use_map_col_fn =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
+      absl::StrJoin({"import px",
+                     "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
                      "start_time=0, end_time=10)",
                      "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
                      "aggDF = queryDF.groupby('cpu2').agg(", "cpu_count=('cpu_sum', px.count))",
@@ -377,7 +393,8 @@ TEST_F(AnalyzerTest, created_columns) {
   EXPECT_OK(handle_status);
 
   std::string agg_use_map_col_by =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
+      absl::StrJoin({"import px",
+                     "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
                      "start_time=0, end_time=10)",
                      "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
                      "aggDF = queryDF.groupby('cpu_sum').agg(", "cpu_count=('cpu2', px.count))",
@@ -390,7 +407,8 @@ TEST_F(AnalyzerTest, created_columns) {
   EXPECT_OK(handle_status);
 
   std::string map_use_agg_col = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', "
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', "
        "'cpu2'], start_time=0, end_time=10)",
        "aggDF = queryDF.groupby('cpu1').agg(cpu0_mean=('cpu0', px.mean),",
        "cpu1_mean=('cpu1', px.mean))", "aggDF['cpu_sum'] = aggDF['cpu1_mean'] + aggDF['cpu1_mean']",
@@ -403,7 +421,8 @@ TEST_F(AnalyzerTest, created_columns) {
   EXPECT_OK(handle_status);
 
   std::string map_use_map_col =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
+      absl::StrJoin({"import px",
+                     "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
                      "start_time=0, end_time=10)",
                      "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
                      "queryDF['cpu_sum2'] = queryDF['cpu2'] + queryDF['cpu_sum']",
@@ -416,7 +435,8 @@ TEST_F(AnalyzerTest, created_columns) {
   EXPECT_OK(handle_status);
 
   std::string agg_use_agg_col =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
+      absl::StrJoin({"import px",
+                     "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
                      "start_time=0, end_time=10)",
                      "aggDF = queryDF.groupby('cpu1').agg(cpu0_mean=('cpu0', px.mean),",
                      "cpu1_mean=('cpu1', px.mean))", "agg2DF = aggDF.groupby('cpu1_mean').agg(",
@@ -432,6 +452,7 @@ TEST_F(AnalyzerTest, created_columns) {
 TEST_F(AnalyzerTest, non_float_columns) {
   std::string agg_fn_count_all = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='non_float_table', select=['float_col', 'int_col', "
           "'bool_col', "
           "'string_col'], start_time=0, end_time=10)",
@@ -450,7 +471,8 @@ TEST_F(AnalyzerTest, non_float_columns) {
   EXPECT_OK(handle_status);
 
   std::string by_fn_count_all = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='non_float_table', select=['float_col', 'int_col', "
+      {"import px",
+       "queryDF = px.DataFrame(table='non_float_table', select=['float_col', 'int_col', "
        "'bool_col', "
        "'string_col'], start_time=0, end_time=10)",
        "aggDF = queryDF.groupby('int_col').agg(", "float_count=('float_col', px.count),",
@@ -466,7 +488,8 @@ TEST_F(AnalyzerTest, non_float_columns) {
 
 TEST_F(AnalyzerTest, assign_udf_func_ids_consolidated_maps) {
   std::string chain_operators = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
        "start_time=0, end_time=10)",
        "queryDF['cpu_sub'] = queryDF['cpu0'] - queryDF['cpu1']",
        "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
@@ -489,7 +512,8 @@ TEST_F(AnalyzerTest, assign_udf_func_ids_consolidated_maps) {
 
 TEST_F(AnalyzerTest, assign_uda_func_ids) {
   std::string chain_operators =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
+      absl::StrJoin({"import px",
+                     "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
                      "start_time=0, end_time=10)",
                      "aggDF = queryDF.groupby('cpu0').agg(cnt=('cpu1', px.count), mean=('cpu2', "
                      "px.mean))",
@@ -514,7 +538,7 @@ TEST_F(AnalyzerTest, assign_uda_func_ids) {
 
 TEST_F(AnalyzerTest, select_all) {
   std::string select_all = "df = px.DataFrame(table='cpu')\npx.display(df, 'cpu_out')";
-  auto ir_graph_status = CompileGraph(select_all);
+  auto ir_graph_status = CompileGraph("import px\n" + select_all);
   ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   ASSERT_OK(HandleRelation(ir_graph));
@@ -533,8 +557,8 @@ TEST_F(AnalyzerTest, select_all) {
 class MetadataSingleOps : public AnalyzerTest, public ::testing::WithParamInterface<std::string> {};
 TEST_P(MetadataSingleOps, valid_metadata_calls) {
   std::string op_call = GetParam();
-  std::string valid_query =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu') ", "$0", "px.display(df, 'out')"}, "\n");
+  std::string valid_query = absl::StrJoin(
+      {"import px", "queryDF = px.DataFrame(table='cpu') ", "$0", "px.display(df, 'out')"}, "\n");
   valid_query = absl::Substitute(valid_query, op_call);
   VLOG(1) << valid_query;
   auto ir_graph_status = CompileGraph(valid_query);
@@ -563,7 +587,7 @@ INSTANTIATE_TEST_SUITE_P(MetadataAttributesSuite, MetadataSingleOps,
 
 TEST_F(AnalyzerTest, valid_metadata_call) {
   std::string valid_query =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu') ",
+      absl::StrJoin({"import px", "queryDF = px.DataFrame(table='cpu') ",
                      "queryDF['service'] = queryDF.ctx['service']", "px.display(queryDF, 'out')"},
                     "\n");
   VLOG(1) << valid_query;
@@ -575,7 +599,7 @@ TEST_F(AnalyzerTest, valid_metadata_call) {
 
 TEST_F(AnalyzerTest, metadata_fails_no_upid) {
   std::string valid_query =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0']) ",
+      absl::StrJoin({"import px", "queryDF = px.DataFrame(table='cpu', select=['cpu0']) ",
                      "queryDF['service'] = queryDF.ctx['service']", "px.display(queryDF, 'out')"},
                     "\n");
   VLOG(1) << valid_query;
@@ -589,7 +613,7 @@ TEST_F(AnalyzerTest, metadata_fails_no_upid) {
 
 TEST_F(AnalyzerTest, define_column_metadata) {
   std::string valid_query = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0']) ",
+      {"import px", "queryDF = px.DataFrame(table='cpu', select=['cpu0']) ",
        "queryDF['$0service'] = px.add(queryDF['cpu0'], 1)", "px.display(queryDF, 'out')"},
       "\n");
   valid_query = absl::Substitute(valid_query, MetadataProperty::kMetadataColumnPrefix);
@@ -605,7 +629,8 @@ TEST_F(AnalyzerTest, define_column_metadata) {
 // Test to make sure that copying the metadata key column still works.
 TEST_F(AnalyzerTest, copy_metadata_key_and_og_column) {
   std::string valid_query = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu')", "queryDF['service'] = queryDF.ctx['service']",
+      {"import px", "queryDF = px.DataFrame(table='cpu')",
+       "queryDF['service'] = queryDF.ctx['service']",
        "opDF = queryDF.groupby(['$0', 'service']).agg(mean_cpu =('cpu0', px.mean))",
        "opDF = opDF[opDF.ctx['service']=='pl/service-name']", "px.display(opDF, 'out')"},
       "\n");
@@ -617,6 +642,7 @@ TEST_F(AnalyzerTest, copy_metadata_key_and_og_column) {
 }
 
 constexpr char kInnerJoinQuery[] = R"query(
+import px
 src1 = px.DataFrame(table='cpu', select=['upid', 'cpu0','cpu1'])
 src2 = px.DataFrame(table='network', select=['bytes_in', 'upid', 'bytes_out'])
 join = src1.merge(src2, how='inner', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
@@ -665,6 +691,7 @@ TEST_F(AnalyzerTest, join_test) {
 }
 
 constexpr char kInnerJoinFollowedByMapQuery[] = R"query(
+import px
 src1 = px.DataFrame(table='cpu', select=['upid', 'cpu0','cpu1'])
 src2 = px.DataFrame(table='network', select=['upid', 'bytes_in', 'bytes_out'])
 join = src1.merge(src2, how='inner', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
@@ -682,6 +709,7 @@ TEST_F(AnalyzerTest, use_join_col_test) {
 }
 
 constexpr char kDropColumn[] = R"query(
+import px
 src1 = px.DataFrame(table='cpu', select=['upid', 'cpu0']).drop(columns=['upid'])
 px.display(src1, 'dropped')
 )query";
@@ -704,6 +732,7 @@ TEST_F(AnalyzerTest, drop_to_map_test) {
 }
 
 constexpr char kDropNonexistentColumn[] = R"query(
+import px
 src1 = px.DataFrame(table='cpu', select=['upid', 'cpu0']).drop(columns=['thiscoldoesnotexist'])
 px.display(src1, 'dropped')
 )query";
@@ -718,6 +747,7 @@ TEST_F(AnalyzerTest, drop_to_map_nonexistent_test) {
               HasCompilerError("Column 'thiscoldoesnotexist' not found in parent dataframe"));
 }
 constexpr char kTwoWindowQuery[] = R"query(
+import px
 t1 = px.DataFrame(table='http_events', start_time='-300s')
 t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
@@ -756,10 +786,12 @@ TEST_F(AnalyzerTest, eval_compile_time_function) {
 
 // TODO(nserrino, philkuz): PL-1264 Add a  test case like start_time=a+a when that issue is fixed.
 constexpr char kCompileTimeStringFunc1[] = R"pxl(
+import px
 t1 = px.DataFrame(table='http_events', start_time='-5m' + '-1h')
 px.display(t1)
 )pxl";
 constexpr char kCompileTimeStringFunc2[] = R"pxl(
+import px
 a = '-5m'
 t1 = px.DataFrame(table='http_events', start_time=a+'-10m')
 t2 = px.DataFrame(table='http_events', start_time='-1h', end_time=a+'-15m')
@@ -783,6 +815,7 @@ TEST_F(AnalyzerTest, eval_compile_time_function_string_time_repeat_arg_two_ops) 
 }
 
 constexpr char kMultiDisplays[] = R"pxl(
+import px
 t1 = px.DataFrame(table='http_events', start_time='-5m')
 px.display(t1)
 px.display(t1)
@@ -855,6 +888,7 @@ TEST_F(AnalyzerTest, prune_unused_columns) {
 }
 
 constexpr char kReassignedColname[] = R"pxl(
+import px
 t1 = px.DataFrame(table='http_events', start_time='-5s')
 t1.foo = t1.time_
 t1.foo = px.bin(t1.time_, px.hours(1))
@@ -870,6 +904,7 @@ TEST_F(AnalyzerTest, reassigned_map_colname) {
 }
 
 constexpr char kAddLimit[] = R"query(
+import px
 src1 = px.DataFrame(table='cpu', select=['upid', 'cpu0'])
 px.display(src1, '1')
 src1 = px.DataFrame(table='cpu', select=['upid'])

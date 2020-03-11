@@ -59,6 +59,16 @@ class ASTVisitorImpl : public ASTVisitor {
                                                           const FlagValues& flag_values);
 
   /**
+   * @brief Creates a child AST Visitor from the top-level AST Visitor, sharing the graph,
+   * compiler_state, and creating a child var table.
+   *
+   * @return std::shared_ptr<ASTVisitorImpl>
+   */
+  std::shared_ptr<ASTVisitorImpl> CreateChild();
+
+  Status AddPixieModule() { return AddPixieModule(PixieModule::kPixieModuleObjName); }
+
+  /**
    * @brief The entry point into traversal as the root AST is a module.
    *
    * @param node: the ptr to the ast node.
@@ -81,10 +91,13 @@ class ASTVisitorImpl : public ASTVisitor {
    * @brief Parses and processes out a single expression in the form of an IRNode.
    *
    * @param str the input string
+   * @param import_px whether or not to import the pixie module before parsing the expression.
+   * @param ParseAndProcessSingleExpression
    * @return StatusOr<QLObjectPtr> the QL object of the expression or an error if something fails
    * during processing.
    */
-  StatusOr<QLObjectPtr> ParseAndProcessSingleExpression(std::string_view str) override;
+  StatusOr<QLObjectPtr> ParseAndProcessSingleExpression(std::string_view str,
+                                                        bool import_px) override;
 
   StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(const pypa::AstModulePtr&) override;
 
@@ -104,18 +117,14 @@ class ASTVisitorImpl : public ASTVisitor {
    *
    * @param ir_graph
    */
-  ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table)
-      : ir_graph_(ir_graph), compiler_state_(compiler_state), var_table_(var_table) {}
+  ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table,
+                 const FlagValues& flag_values)
+      : ir_graph_(ir_graph),
+        compiler_state_(compiler_state),
+        var_table_(var_table),
+        flag_values_(flag_values) {}
 
-  /**
-   * @brief Creates a child AST Visitor from the top-level AST Visitor, sharing the graph,
-   * compiler_state, and creating a child var table.
-   *
-   * @return std::shared_ptr<ASTVisitorImpl>
-   */
-  std::shared_ptr<ASTVisitorImpl> CreateChild();
-
-  Status InitGlobals(const FlagValues& flag_values);
+  Status InitGlobals();
 
   /**
    * @brief Process statements list passed in as an argument.
@@ -205,6 +214,30 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return Status of whether creation the function definition worked or not.
    */
   Status ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& node);
+
+  /**
+   * @brief ProcessImport handles imports definitions in the query language.
+   * Only supports px right now. TODO(nserrino) add more import capabilities.
+   * ```
+   * import px
+   * ```
+   *
+   * @param node
+   * @return Status of whether creation the import worked or not.
+   */
+  Status ProcessImport(const pypa::AstImportPtr& node);
+
+  /**
+   * @brief ProcessImportFrom handles from imports definitions in the query language.
+   * Only supports px right now. TODO(nserrino) add more import capabilities.
+   * ```
+   * from px import now
+   * ```
+   *
+   * @param node
+   * @return Status of whether creation the import worked or not.
+   */
+  Status ProcessImportFrom(const pypa::AstImportFromPtr& node);
 
   /**
    * @brief Gets the function name out of the call node into a string.
@@ -420,11 +453,15 @@ class ASTVisitorImpl : public ASTVisitor {
    */
   StatusOr<QLObjectPtr> ProcessFuncDefReturn(const pypa::AstReturnPtr& ret);
 
+  Status AddPixieModule(std::string_view module_name);
+
   IR* ir_graph_;
   CompilerState* compiler_state_;
   std::shared_ptr<VarTable> var_table_;
-  // Keep a handle on the global pixie module in case px gets reassigned.
-  std::shared_ptr<PixieModule> pixie_module_;
+  // Flag values passed in during ASTVisitor creation.
+  const FlagValues flag_values_;
+  // Keep a handle on the flags object in case px or flags get reassigned.
+  std::shared_ptr<FlagsObject> flags_;
 };
 
 }  // namespace compiler

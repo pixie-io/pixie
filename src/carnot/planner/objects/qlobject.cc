@@ -18,14 +18,14 @@ void QLObject::AddSubscriptMethod(std::shared_ptr<FuncObject> func_object) {
 }
 
 StatusOr<std::shared_ptr<QLObject>> QLObject::GetAttribute(const pypa::AstPtr& ast,
-                                                           std::string_view name) const {
-  if (HasMethod(name)) {
-    return GetMethod(name);
+                                                           std::string_view attr) const {
+  if (HasMethod(attr)) {
+    return GetMethod(attr);
   }
-  if (!HasNonMethodAttribute(name)) {
-    return CreateAstError(ast, "'$0' object has no attribute '$1'", type_descriptor_.name(), name);
+  if (!HasNonMethodAttribute(attr)) {
+    return CreateAstError(ast, "'$0' object has no attribute '$1'", name(), attr);
   }
-  return GetAttributeImpl(ast, name);
+  return GetAttributeImpl(ast, attr);
 }
 
 Status QLObject::AssignAttribute(std::string_view attr_name, QLObjectPtr object) {

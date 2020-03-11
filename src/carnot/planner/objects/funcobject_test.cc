@@ -203,7 +203,8 @@ TEST_F(PyFuncTest, TestDefaultArgsCanBeAccessed) {
 
   ASSERT_TRUE(func_obj->defaults().contains("simple"));
   auto default_str_repr = func_obj->defaults().find("simple")->second;
-  auto expr_or_s = ast_visitor->ParseAndProcessSingleExpression(default_str_repr);
+  auto expr_or_s =
+      ast_visitor->ParseAndProcessSingleExpression(default_str_repr, /*import_px*/ true);
   ASSERT_OK(expr_or_s);
   auto expr = expr_or_s.ConsumeValueOrDie();
   EXPECT_TRUE(expr->HasNode());

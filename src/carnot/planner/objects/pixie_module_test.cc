@@ -77,20 +77,10 @@ relation {
 
 class PixieModuleTest : public QLObjectTest {
  protected:
-  std::unique_ptr<planner::RegistryInfo> SetUpRegistryInfo() {
-    udfspb::UDFInfo udf_proto;
-    CHECK(google::protobuf::TextFormat::MergeFromString(kRegInfoProto, &udf_proto));
+  // std::unique_ptr<planner::RegistryInfo> SetUpRegistryInfo() {
 
-    auto info = std::make_unique<planner::RegistryInfo>();
-    PL_CHECK_OK(info->Init(udf_proto));
-    udfspb::UDTFSourceSpec spec;
-    google::protobuf::TextFormat::MergeFromString(kUDTFSourcePb, &spec);
-    info->AddUDTF(spec);
-    udfspb::UDTFSourceSpec spec2;
-    google::protobuf::TextFormat::MergeFromString(kUDTFDefaultValueTestPb, &spec2);
-    info->AddUDTF(spec2);
-    return info;
-  }
+  //   return info;
+  // }
 
   std::unique_ptr<RelationMap> SetUpRelMap() {
     auto rel_map = std::make_unique<RelationMap>();
@@ -106,7 +96,19 @@ class PixieModuleTest : public QLObjectTest {
 
   void SetUp() override {
     QLObjectTest::SetUp();
-    info_ = SetUpRegistryInfo();
+
+    udfspb::UDFInfo udf_proto;
+    CHECK(google::protobuf::TextFormat::MergeFromString(kRegInfoProto, &udf_proto));
+
+    info_ = std::make_unique<planner::RegistryInfo>();
+    PL_CHECK_OK(info_->Init(udf_proto));
+    udfspb::UDTFSourceSpec spec;
+    google::protobuf::TextFormat::MergeFromString(kUDTFSourcePb, &spec);
+    info_->AddUDTF(spec);
+    udfspb::UDTFSourceSpec spec2;
+    google::protobuf::TextFormat::MergeFromString(kUDTFDefaultValueTestPb, &spec2);
+    info_->AddUDTF(spec2);
+
     compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
 
     FlagValue flag;

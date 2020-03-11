@@ -53,10 +53,12 @@ class ASTVisitor {
    * @brief Parses and processes out a single expression in the form of an IRNode.
    *
    * @param str the input string
+   * @param import_px whether or not to import the pixie module first.
    * @return StatusOr<QLObjectPtr> the QL object representation of the expression or an error if
    * something fails during processing.
    */
-  virtual StatusOr<QLObjectPtr> ParseAndProcessSingleExpression(std::string_view str) = 0;
+  virtual StatusOr<QLObjectPtr> ParseAndProcessSingleExpression(std::string_view str,
+                                                                bool import_px) = 0;
 
   /**
    * @brief Parses the AST for the available flags (default, description, etc).

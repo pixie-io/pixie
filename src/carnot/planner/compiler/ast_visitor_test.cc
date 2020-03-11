@@ -21,19 +21,20 @@ using ::testing::UnorderedElementsAre;
 
 // Checks whether we can actually compile into a graph.
 TEST_F(ASTVisitorTest, compilation_test) {
-  std::string from_expr = "px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])";
+  std::string from_expr = "import px\npx.DataFrame(table='cpu', select=['cpu0', 'cpu1'])";
   auto ig_status = CompileGraph(from_expr);
   EXPECT_OK(ig_status);
   // check the connection of ig
   std::string from_range_expr =
-      "px.DataFrame(table='cpu', select=['cpu0'], start_time=0, end_time=10)";
+      "import px\npx.DataFrame(table='cpu', select=['cpu0'], start_time=0, end_time=10)";
   EXPECT_OK(CompileGraph(from_range_expr));
 }
 
 // Checks whether the IR graph constructor can identify bads args.
 TEST_F(ASTVisitorTest, extra_arguments) {
   std::string extra_from_args =
-      "px.DataFrame(table='cpu', select=['cpu0'], fakeArg='hahaha'start_time=0, end_time=10)";
+      "import px\npx.DataFrame(table='cpu', select=['cpu0'], fakeArg='hahaha'start_time=0, "
+      "end_time=10)";
   Status s1 = CompileGraph(extra_from_args).status();
   compilerpb::CompilerErrorGroup error_group;
   EXPECT_NOT_OK(s1);
@@ -44,13 +45,14 @@ TEST_F(ASTVisitorTest, extra_arguments) {
   ASSERT_TRUE(s1.context()->UnpackTo(&error_group));
   int64_t s1_num_errors = error_group.errors_size();
   ASSERT_EQ(s1_num_errors, 1);
-  EXPECT_EQ(error_group.errors(0).line_col_error().line(), 1);
+  EXPECT_EQ(error_group.errors(0).line_col_error().line(), 2);
   EXPECT_EQ(error_group.errors(0).line_col_error().column(), 13);
   EXPECT_THAT(s1, HasCompilerError("DataFrame.* got an unexpected keyword argument 'fakeArg'"));
 }
 
 TEST_F(ASTVisitorTest, missing_one_argument) {
-  std::string missing_from_args = "px.DataFrame(select=['cpu'], start_time=0, end_time=10)";
+  std::string missing_from_args =
+      "import px\npx.DataFrame(select=['cpu'], start_time=0, end_time=10)";
   Status s2 = CompileGraph(missing_from_args).status();
   compilerpb::CompilerErrorGroup error_group;
   EXPECT_NOT_OK(s2);
@@ -61,19 +63,19 @@ TEST_F(ASTVisitorTest, missing_one_argument) {
   ASSERT_TRUE(s2.context()->UnpackTo(&error_group));
   int64_t s2_num_errors = error_group.errors_size();
   ASSERT_EQ(s2_num_errors, 1);
-  EXPECT_EQ(error_group.errors(0).line_col_error().line(), 1);
+  EXPECT_EQ(error_group.errors(0).line_col_error().line(), 2);
   EXPECT_EQ(error_group.errors(0).line_col_error().column(), 13);
   EXPECT_THAT(s2,
               HasCompilerError("DataFrame.* missing 1 required positional argument.*? 'table'"));
 }
 
 TEST_F(ASTVisitorTest, from_select_default_arg) {
-  std::string no_select_arg = "df = px.DataFrame(table='cpu')\npx.display(df)";
+  std::string no_select_arg = "import px\ndf = px.DataFrame(table='cpu')\npx.display(df)";
   EXPECT_OK(CompileGraph(no_select_arg));
 }
 
 TEST_F(ASTVisitorTest, positional_args) {
-  std::string positional_arg = "df = px.DataFrame('cpu')\npx.display(df,'out')";
+  std::string positional_arg = "import px\ndf = px.DataFrame('cpu')\npx.display(df,'out')";
   EXPECT_OK(CompileGraph(positional_arg));
 }
 
@@ -91,23 +93,24 @@ TEST_F(ASTVisitorTest, nonexistant_operator_names) {
   EXPECT_THAT(graph_or_s.status(), HasCompilerError("name 'notdataframe' is not defined"));
 
   std::string wrong_range_op_name =
-      "px.DataFrame(table='cpu', select=['cpu0']).brange(start=0,stop=10)";
+      "import px\npx.DataFrame(table='cpu', select=['cpu0']).brange(start=0,stop=10)";
   graph_or_s = CompileGraph(wrong_range_op_name);
   ASSERT_NOT_OK(graph_or_s);
   EXPECT_THAT(graph_or_s.status(), HasCompilerError("dataframe has no method 'brange'"));
 }
 
 TEST_F(ASTVisitorTest, assign_functionality) {
-  std::string simple_assign = "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])";
+  std::string simple_assign =
+      "import px\nqueryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])";
   EXPECT_OK(CompileGraph(simple_assign));
   std::string assign_and_use =
-      "queryDF = px.DataFrame('cpu', ['cpu0','cpu1'], start_time=0, end_time=10)";
+      "import px\nqueryDF = px.DataFrame('cpu', ['cpu0','cpu1'], start_time=0, end_time=10)";
   EXPECT_OK(CompileGraph(assign_and_use));
 }
 
 TEST_F(ASTVisitorTest, assign_error_checking) {
   std::string bad_assign_mult_values =
-      "queryDF,haha = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])";
+      "import px\nqueryDF,haha = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])";
   auto graph_or_s = CompileGraph(bad_assign_mult_values);
   ASSERT_NOT_OK(graph_or_s);
   EXPECT_THAT(graph_or_s.status(),
@@ -119,6 +122,7 @@ using MapTest = ASTVisitorTest;
 TEST_F(MapTest, single_col_map) {
   std::string single_col_map_sum = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
           "rangeDF = queryDF[['sum']]",
@@ -127,6 +131,7 @@ TEST_F(MapTest, single_col_map) {
   EXPECT_OK(CompileGraph(single_col_map_sum));
   std::string single_col_div_map_query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['div'] = px.divide(queryDF['cpu0'], queryDF['cpu1'])",
           "rangeDF = queryDF[['div']]",
@@ -138,6 +143,7 @@ TEST_F(MapTest, single_col_map) {
 TEST_F(MapTest, single_col_map_subscript_attribute) {
   std::string single_col_map = absl::StrJoin(
       {
+          "import px",
           "s = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "s['cpu2'] = s['cpu0'] + s['cpu1']",
 
@@ -169,6 +175,7 @@ TEST_F(MapTest, single_col_map_subscript_attribute) {
 TEST_F(MapTest, multi_col_map) {
   std::string multi_col = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
           "queryDF['copy'] = queryDF['cpu2']",
@@ -180,6 +187,7 @@ TEST_F(MapTest, multi_col_map) {
 TEST_F(MapTest, bin_op_test) {
   std::string single_col_map_sum = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']",
       },
@@ -187,6 +195,7 @@ TEST_F(MapTest, bin_op_test) {
   EXPECT_OK(CompileGraph(single_col_map_sum));
   std::string single_col_map_sub = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['sub'] = queryDF['cpu0'] - queryDF['cpu1']",
       },
@@ -194,6 +203,7 @@ TEST_F(MapTest, bin_op_test) {
   EXPECT_OK(CompileGraph(single_col_map_sub));
   std::string single_col_map_product = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['product'] = queryDF['cpu0'] * queryDF['cpu1']",
       },
@@ -201,6 +211,7 @@ TEST_F(MapTest, bin_op_test) {
   EXPECT_OK(CompileGraph(single_col_map_product));
   std::string single_col_map_quotient = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['quotient'] = queryDF['cpu0'] / queryDF['cpu1']",
       },
@@ -211,6 +222,7 @@ TEST_F(MapTest, bin_op_test) {
 TEST_F(MapTest, nested_expr_map) {
   std::string nested_expr = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1'] + queryDF['cpu2']",
       },
@@ -218,6 +230,7 @@ TEST_F(MapTest, nested_expr_map) {
   EXPECT_OK(CompileGraph(nested_expr));
   std::string nested_fn = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['div'] = px.divide(queryDF['cpu0'] + queryDF['cpu1'], queryDF['cpu2'])",
       },
@@ -228,6 +241,7 @@ TEST_F(MapTest, nested_expr_map) {
 TEST_F(MapTest, wrong_df_name) {
   std::string wrong_df = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "wrong = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['sum'] = wrong['cpu0'] + wrong['cpu1'] + wrong['cpu2']",
@@ -243,6 +257,7 @@ TEST_F(MapTest, wrong_df_name) {
 TEST_F(MapTest, missing_df) {
   std::string wrong_df = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "queryDF['sum'] = dne['cpu0'] + dne['cpu1'] + dne['cpu2']",
       },
@@ -258,6 +273,7 @@ using AggTest = ASTVisitorTest;
 TEST_F(AggTest, single_col_agg) {
   std::string single_col_agg = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', "
           "'cpu1'], start_time=0, end_time=10)",
           "rangeDF = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', px.count))",
@@ -265,13 +281,15 @@ TEST_F(AggTest, single_col_agg) {
       "\n");
   EXPECT_OK(CompileGraph(single_col_agg));
   std::string multi_output_col_agg = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "rangeDF = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', px.count), cpu_mean=('cpu1', "
        "px.mean))"},
       "\n");
   EXPECT_OK(CompileGraph(multi_output_col_agg));
   std::string multi_input_col_agg = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "rangeDF = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', px.count), cpu2_mean=('cpu2', "
        "px.mean))"},
       "\n");
@@ -281,6 +299,7 @@ TEST_F(AggTest, single_col_agg) {
 TEST_F(AggTest, not_allowed_agg_fn) {
   std::string single_col_bad_agg_fn = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'],start_time=0, end_time=10)",
           "rangeDF = queryDF.agg(outcol=('cpu0', 1+2))",
       },
@@ -292,6 +311,7 @@ TEST_F(AggTest, not_allowed_agg_fn) {
       HasCompilerError("Expected second tuple argument to be type Func, received expression"));
   std::string single_col_dict_by_not_pl = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'],start_time=0, end_time=10)",
           "rangeDF = queryDF.agg(outcol=('cpu0', notpx.sum))",
       },
@@ -305,7 +325,8 @@ TEST_F(AggTest, not_allowed_agg_fn) {
 using ResultTest = ASTVisitorTest;
 TEST_F(ResultTest, basic) {
   std::string single_col_map_sub = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "queryDF['sub'] = queryDF['cpu0'] - queryDF['cpu1']", "df = queryDF[['sub']]",
        "px.display(df)"},
       "\n");
@@ -315,7 +336,7 @@ TEST_F(ResultTest, basic) {
 using OptionalArgs = ASTVisitorTest;
 TEST_F(OptionalArgs, group_by_all) {
   std::string agg_query =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
+      absl::StrJoin({"import px", "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
                      "df = queryDF.agg(sum = ('cpu0', px.sum))", "px.display(df, 'agg')"},
                     "\n");
   EXPECT_OK(CompileGraph(agg_query));
@@ -323,7 +344,7 @@ TEST_F(OptionalArgs, group_by_all) {
 
 TEST_F(OptionalArgs, map_copy_relation) {
   std::string map_query = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
+      {"import px", "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
        "queryDF['sum'] = queryDF['cpu0'] + queryDF['cpu1']", "px.display(queryDF, 'map')"},
       "\n");
   auto graph_or_s = CompileGraph(map_query);
@@ -338,14 +359,16 @@ TEST_F(OptionalArgs, map_copy_relation) {
 using RangeValueTests = ASTVisitorTest;
 TEST_F(RangeValueTests, time_range_compilation) {
   // now doesn't accept args.
-  std::string stop_expr = absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', "
+  std::string stop_expr = absl::StrJoin({"import px",
+                                         "queryDF = px.DataFrame(table='cpu', select=['cpu0', "
                                          "'cpu1'], start_time=0, end_time=px.now()-px.seconds(2))",
                                          "px.display(queryDF, 'mapped')"},
                                         "\n");
   EXPECT_OK(CompileGraph(stop_expr));
 
   std::string start_and_stop_expr = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', "
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', "
        "'cpu1'], start_time=px.now() - px.minutes(2), end_time=px.now()-px.seconds(2))",
        "px.display(queryDF, 'mapped')"},
       "\n");
@@ -354,7 +377,8 @@ TEST_F(RangeValueTests, time_range_compilation) {
 
 TEST_F(RangeValueTests, implied_stop_params) {
   std::string start_expr_only =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', "
+      absl::StrJoin({"import px",
+                     "queryDF = px.DataFrame(table='cpu', select=['cpu0', "
                      "'cpu1'], start_time=px.now() - px.minutes(2))",
                      "px.display(queryDF, 'mapped')"},
                     "\n");
@@ -363,7 +387,8 @@ TEST_F(RangeValueTests, implied_stop_params) {
 
 TEST_F(RangeValueTests, string_start_param) {
   std::string start_expr_only =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', "
+      absl::StrJoin({"import px",
+                     "queryDF = px.DataFrame(table='cpu', select=['cpu0', "
                      "'cpu1'], start_time='-2m')",
                      "px.display(queryDF, 'mapped')"},
                     "\n");
@@ -377,7 +402,7 @@ class FilterTestParam : public ::testing::TestWithParam<std::string> {
     // values.
     compare_op_ = GetParam();
     query = absl::StrJoin(
-        {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
+        {"import px", "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
          "queryDF = queryDF[queryDF['cpu0'] $0 0.5]", "px.display(queryDF, 'filtered')"},
         "\n");
     query = absl::Substitute(query, compare_op_);
@@ -398,21 +423,21 @@ using FilterExprTest = ASTVisitorTest;
 TEST_F(FilterExprTest, basic) {
   // Test for and
   std::string simple_and =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
+      absl::StrJoin({"import px", "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
                      "queryDF = queryDF[queryDF['cpu0'] == 0.5 and queryDF['cpu1'] >= 0.2]",
                      "px.display(queryDF, 'filtered')"},
                     "\n");
   EXPECT_OK(CompileGraph(simple_and));
   // Test for or
   std::string simple_or =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
+      absl::StrJoin({"import px", "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
                      "queryDF = queryDF[queryDF['cpu0'] == 0.5 or queryDF['cpu1'] >= 0.2]",
                      "px.display(queryDF, 'filtered')"},
                     "\n");
   EXPECT_OK(CompileGraph(simple_or));
   // Test for nested and/or clauses
   std::string and_or_query =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
+      absl::StrJoin({"import px", "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
                      "queryDF = queryDF[queryDF['cpu0'] == 0.5 and queryDF['cpu1'] >= 0.2 or "
                      "queryDF['cpu0'] >= 5 and queryDF['cpu1'] == 0.2]",
                      "px.display(queryDF, 'filtered')"},
@@ -424,14 +449,16 @@ TEST_F(FilterExprTest, basic) {
 
 using LimitTest = ASTVisitorTest;
 TEST_F(LimitTest, basic) {
-  std::string limit = absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', "
+  std::string limit = absl::StrJoin({"import px",
+                                     "queryDF = px.DataFrame(table='cpu', select=['cpu0', "
                                      "'cpu1']).head(100)",
                                      "px.display(queryDF, 'limited')"},
                                     "\n");
   EXPECT_OK(CompileGraph(limit));
 
   // No arg should work.
-  std::string no_arg = absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', "
+  std::string no_arg = absl::StrJoin({"import px",
+                                      "queryDF = px.DataFrame(table='cpu', select=['cpu0', "
                                       "'cpu1']).head()",
                                       "px.display(queryDF, 'limited')"},
                                      "\n");
@@ -439,14 +466,16 @@ TEST_F(LimitTest, basic) {
 }
 
 TEST_F(LimitTest, limit_invalid_queries) {
-  std::string string_arg = absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', "
+  std::string string_arg = absl::StrJoin({"import px",
+                                          "queryDF = px.DataFrame(table='cpu', select=['cpu0', "
                                           "'cpu1']).head('arg')",
                                           "px.display(queryDF, 'limited')"},
                                          "\n");
   // String as an arg should not work.
   EXPECT_NOT_OK(CompileGraph(string_arg));
 
-  std::string float_arg = absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', "
+  std::string float_arg = absl::StrJoin({"import px",
+                                         "queryDF = px.DataFrame(table='cpu', select=['cpu0', "
                                          "'cpu1']).head(1.2)",
                                          "px.display(queryDF, 'limited')"},
                                         "\n");
@@ -458,7 +487,7 @@ using NegationTest = ASTVisitorTest;
 // TODO(philkuz) (PL-524) this change requires modifications to the actual parser.
 TEST_F(NegationTest, DISABLED_bang_negation) {
   std::string bang_negation = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['bool_col']) ",
+      {"import px", "queryDF = px.DataFrame(table='cpu', select=['bool_col']) ",
        "filterDF = queryDF[!queryDF['bool_col']]", "px.display(filterDF, 'filtered')"},
       "\n");
   EXPECT_OK(CompileGraph(bang_negation));
@@ -466,7 +495,7 @@ TEST_F(NegationTest, DISABLED_bang_negation) {
 
 TEST_F(NegationTest, pythonic_negation) {
   std::string pythonic_negation = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['bool_col']) ",
+      {"import px", "queryDF = px.DataFrame(table='cpu', select=['bool_col']) ",
        "filterDF = queryDF[not queryDF['bool_col']]", "px.display(filterDF, 'filtered')"},
       "\n");
   EXPECT_OK(CompileGraph(pythonic_negation));
@@ -474,14 +503,14 @@ TEST_F(NegationTest, pythonic_negation) {
 class OpsAsAttributes : public ::testing::TestWithParam<std::string> {};
 TEST_P(OpsAsAttributes, valid_attributes) {
   std::string op_call = GetParam();
-  std::string invalid_query =
-      absl::StrJoin({"invalid_queryDF = px.DataFrame(table='cpu', select=['bool_col']) ",
-                     "opDF = $0", "px.display(opDF, 'out')"},
-                    "\n");
+  std::string invalid_query = absl::StrJoin(
+      {"import px", "invalid_queryDF = px.DataFrame(table='cpu', select=['bool_col']) ",
+       "opDF = $0", "px.display(opDF, 'out')"},
+      "\n");
   invalid_query = absl::Substitute(invalid_query, op_call);
   EXPECT_NOT_OK(ParseQuery(invalid_query));
   std::string valid_query =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['bool_col']) ",
+      absl::StrJoin({"import px", "queryDF = px.DataFrame(table='cpu', select=['bool_col']) ",
                      "opDF = queryDF.$0", "px.display(opDF, 'out')"},
                     "\n");
   valid_query = absl::Substitute(valid_query, op_call);
@@ -495,6 +524,7 @@ INSTANTIATE_TEST_SUITE_P(OpsAsAttributesSuite, OpsAsAttributes, ::testing::Value
 TEST_F(AggTest, not_allowed_by_arguments) {
   std::string single_col_bad_by_fn_expr = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "rangeDF = queryDF.groupby(1+2).agg(cpu_count=('cpu0', px.count))",
           "px.display(rangeDF)",
@@ -509,6 +539,7 @@ TEST_F(AggTest, not_allowed_by_arguments) {
 }
 
 constexpr char kInnerJoinQuery[] = R"query(
+import px
 src1 = px.DataFrame(table='cpu', select=['upid', 'cpu0','cpu1'])
 src2 = px.DataFrame(table='network', select=['bytes_in', 'upid', 'bytes_out'])
 join = src1.merge(src2, how='inner', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
@@ -559,6 +590,7 @@ TEST_F(JoinTest, test_inner_join) {
 }
 
 constexpr char kJoinUnequalLeftOnRightOnColumns[] = R"query(
+import px
 src1 = px.DataFrame(table='cpu', select=['upid', 'cpu0'])
 src2 = px.DataFrame(table='network', select=['upid', 'bytes_in'])
 join = src1.merge(src2, how='inner', left_on=['upid', 'cpu0'], right_on=['upid'])
@@ -574,6 +606,7 @@ TEST_F(JoinTest, JoinConditionsWithUnequalLengths) {
 }
 
 constexpr char kNewFilterQuery[] = R"query(
+import px
 df = px.DataFrame("bar")
 df = df[df["service"] == "foo"]
 px.display(df, 'ld')
@@ -615,6 +648,7 @@ TEST_F(FilterTest, TestNewFilter) {
 }
 
 constexpr char kFilterChainedQuery[] = R"query(
+import px
 df = px.DataFrame("bar")
 df = df[df["service"] == "foo"]
 px.display(df, 'ld')
@@ -655,6 +689,7 @@ TEST_F(FilterTest, ChainedFilterQuery) {
 }
 
 constexpr char kInvalidFilterChainQuery[] = R"query(
+import px
 df = px.DataFrame("bar")[df["service"] == "foo"]
 px.display(df, 'ld')
 )query";
@@ -667,6 +702,7 @@ TEST_F(FilterTest, InvalidChainedFilterQuery) {
 }
 
 constexpr char kFilterWithNewMetadataQuery[] = R"query(
+import px
 df = px.DataFrame("bar")
 df = df[df.ctx["service"] == "foo"]
 px.display(df, 'ld')
@@ -707,7 +743,7 @@ TEST_F(FilterTest, ChainedFilterWithNewMetadataQuery) {
 }
 
 TEST_F(ASTVisitorTest, MemorySourceStartAndDefaultStop) {
-  std::string query("df = px.DataFrame('bar', start_time='-1m')\npx.display(df)");
+  std::string query("import px\ndf = px.DataFrame('bar', start_time='-1m')\npx.display(df)");
   auto ir_graph_or_s = CompileGraph(query);
   ASSERT_OK(ir_graph_or_s);
   auto graph = ir_graph_or_s.ConsumeValueOrDie();
@@ -724,7 +760,7 @@ TEST_F(ASTVisitorTest, MemorySourceStartAndDefaultStop) {
 }
 
 TEST_F(ASTVisitorTest, MemorySourceDefaultStartAndStop) {
-  std::string query("df = px.DataFrame('bar')\npx.display(df)");
+  std::string query("import px\ndf = px.DataFrame('bar')\npx.display(df)");
   auto ir_graph_or_s = CompileGraph(query);
   ASSERT_OK(ir_graph_or_s);
   auto graph = ir_graph_or_s.ConsumeValueOrDie();
@@ -736,7 +772,8 @@ TEST_F(ASTVisitorTest, MemorySourceDefaultStartAndStop) {
 }
 
 TEST_F(ASTVisitorTest, MemorySourceStartAndStop) {
-  std::string query("df = px.DataFrame('bar', start_time=12, end_time=100)\npx.display(df)");
+  std::string query(
+      "import px\ndf = px.DataFrame('bar', start_time=12, end_time=100)\npx.display(df)");
   auto ir_graph_or_s = CompileGraph(query);
   ASSERT_OK(ir_graph_or_s);
   auto graph = ir_graph_or_s.ConsumeValueOrDie();
@@ -752,7 +789,7 @@ TEST_F(ASTVisitorTest, MemorySourceStartAndStop) {
 }
 
 TEST_F(ASTVisitorTest, DisplayTest) {
-  std::string query = "df = px.DataFrame('bar')\npx.display(df)";
+  std::string query = "import px\ndf = px.DataFrame('bar')\npx.display(df)";
   auto ir_graph_or_s = CompileGraph(query);
   ASSERT_OK(ir_graph_or_s);
   auto graph = ir_graph_or_s.ConsumeValueOrDie();
@@ -770,7 +807,7 @@ TEST_F(ASTVisitorTest, DisplayTest) {
 }
 
 TEST_F(ASTVisitorTest, DisplayArgumentsTest) {
-  std::string query("df = px.DataFrame('bar')\npx.display(df, name='foo')");
+  std::string query("import px\ndf = px.DataFrame('bar')\npx.display(df, name='foo')");
   auto ir_graph_or_s = CompileGraph(query);
   ASSERT_OK(ir_graph_or_s);
   auto graph = ir_graph_or_s.ConsumeValueOrDie();
@@ -788,25 +825,26 @@ TEST_F(ASTVisitorTest, DisplayArgumentsTest) {
 
 // Tests whether we can evaluate operators in the argument.
 TEST_F(ASTVisitorTest, DisplayWithSetupDataframe) {
-  std::string query("px.display(px.DataFrame('bar'))");
+  std::string query("import px\npx.display(px.DataFrame('bar'))");
   ASSERT_OK(CompileGraph(query));
 }
 
 // Tests whether we can evaluate operators in the argument.
 TEST_F(ASTVisitorTest, AssignStringValueAndUseArgument) {
-  std::string query("a='bar'\npx.DataFrame(table=a)");
+  std::string query("import px\na='bar'\npx.DataFrame(table=a)");
   ASSERT_OK(CompileGraph(query));
 }
 
 // Tests whether we can evaluate operators in the argument.
 TEST_F(ASTVisitorTest, AssignListAndUseArgument) {
-  std::string query("columns=['foo', 'bar', 'baz']\npx.DataFrame('cpu', columns)");
+  std::string query("import px\ncolumns=['foo', 'bar', 'baz']\npx.DataFrame('cpu', columns)");
   ASSERT_OK(CompileGraph(query));
 }
 
 TEST_F(ASTVisitorTest, NonExistantUDFs) {
   std::string missing_udf = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "queryDF['cpu_sum'] = px.sus(queryDF['cpu0'], queryDF['cpu1'])", "df = queryDF[['cpu_sum']]",
        "px.display(df, 'cpu_out')"},
       "\n");
@@ -815,7 +853,8 @@ TEST_F(ASTVisitorTest, NonExistantUDFs) {
   EXPECT_THAT(ir_graph_status.status(), HasCompilerError("object has no attribute 'sus'"));
 
   std::string missing_uda = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
        "aggDF = queryDF.groupby('cpu0').agg(cpu_count=('cpu1', px.punt))", "px.display(aggDF)"},
       "\n");
 
@@ -825,7 +864,7 @@ TEST_F(ASTVisitorTest, NonExistantUDFs) {
 
 TEST_F(ASTVisitorTest, CantCopyColumnsBetweenDataframes) {
   std::string query = absl::StrJoin(
-      {"df1 = px.DataFrame(table='http_events').drop(['upid'])",
+      {"import px", "df1 = px.DataFrame(table='http_events').drop(['upid'])",
        "df2 = px.DataFrame(table='http_events')", "df1['upid'] = df2['upid']", "px.display(df1)"},
       "\n");
   auto ir_graph_status = CompileGraph(query);
@@ -835,10 +874,10 @@ TEST_F(ASTVisitorTest, CantCopyColumnsBetweenDataframes) {
 }
 
 TEST_F(ASTVisitorTest, CantCopyMetadataBetweenDataframes) {
-  std::string query = absl::StrJoin(
-      {"df1 = px.DataFrame(table='http_events')", "df2 = px.DataFrame(table='http_events')",
-       "df1['service'] = df2.ctx['service']", "px.display(df1)"},
-      "\n");
+  std::string query = absl::StrJoin({"import px", "df1 = px.DataFrame(table='http_events')",
+                                     "df2 = px.DataFrame(table='http_events')",
+                                     "df1['service'] = df2.ctx['service']", "px.display(df1)"},
+                                    "\n");
   auto ir_graph_status = CompileGraph(query);
   ASSERT_NOT_OK(ir_graph_status);
   EXPECT_THAT(ir_graph_status.status(),
@@ -846,6 +885,7 @@ TEST_F(ASTVisitorTest, CantCopyMetadataBetweenDataframes) {
 }
 
 constexpr char kRepeatedExprs[] = R"query(
+import px
 a = 10
 df = px.DataFrame("bar", start_time=a+a)
 b = 20 * 20
@@ -894,15 +934,17 @@ TEST_F(ASTVisitorTest, test_repeated_exprs) {
 }
 
 TEST_F(ASTVisitorTest, CanAccessUDTF) {
-  std::string query =
-      absl::StrJoin({"df1 = px.OpenNetworkConnections('11285cdd-1de9-4ab1-ae6a-0ba08c8c676c')",
-                     "px.display(df1)"},
-                    "\n");
+  std::string query = absl::StrJoin(
+      {"import px", "df1 = px.OpenNetworkConnections('11285cdd-1de9-4ab1-ae6a-0ba08c8c676c')",
+       "px.display(df1)"},
+      "\n");
   auto ir_graph_status = CompileGraph(query);
   ASSERT_OK(ir_graph_status);
 }
 
 constexpr char kDefineFuncQuery[] = R"query(
+import px
+
 def func(abc):
     df = px.DataFrame(abc)
     px.display(df)
@@ -923,6 +965,8 @@ TEST_F(ASTVisitorTest, define_func_query) {
 }
 
 constexpr char kLocalStateQuery[] = R"query(
+import px
+
 a = 'foo'
 def func():
     a = 'bar'
@@ -952,6 +996,8 @@ TEST_F(ASTVisitorTest, func_context_does_not_affect_global_context) {
 }
 
 constexpr char kNestedFuncsIndependentState[] = R"query(
+import px
+
 a = 'foo'
 def func1():
     a = 'bar'
@@ -984,6 +1030,8 @@ TEST_F(ASTVisitorTest, nested_func_calls) {
 }
 
 constexpr char kFuncDefWithType[] = R"query(
+import px
+
 def func(a : str):
     df = px.DataFrame(a)
     px.display(df)
@@ -1008,6 +1056,8 @@ TEST_F(ASTVisitorTest, func_def_with_type) {
 }
 
 constexpr char kFuncDefWithDataframe[] = R"query(
+import px
+
 def func(df : px.DataFrame):
     px.display(df)
 
@@ -1033,6 +1083,8 @@ TEST_F(ASTVisitorTest, func_def_with_dataframe_type) {
 }
 
 constexpr char kFuncDefWithVarKwargs[] = R"query(
+import px
+
 def func(**kwargs):
     df = pd.DataFrame('http_events')
     px.display(df)
@@ -1049,6 +1101,8 @@ TEST_F(ASTVisitorTest, func_def_with_kwargs_fails) {
 }
 
 constexpr char kFuncDefWithVarArgs[] = R"query(
+import px
+
 def func(*args):
     df = pd.DataFrame('http_events')
     px.display(df)
@@ -1065,6 +1119,8 @@ TEST_F(ASTVisitorTest, func_def_with_args_fails) {
 }
 
 constexpr char kFuncDefWithDefaultArgs[] = R"query(
+import px
+
 def func(a = 'http_events'):
     df = px.DataFrame(a)
     px.display(df)
@@ -1081,6 +1137,8 @@ TEST_F(ASTVisitorTest, func_def_with_default_args_fails) {
 }
 
 constexpr char kFuncDefWithReturn[] = R"query(
+import px
+
 def func(a):
     df = px.DataFrame(a)
     return df
@@ -1103,6 +1161,7 @@ TEST_F(ASTVisitorTest, func_can_return_object) {
 }
 
 constexpr char kRawReturnNoFuncDef[] = R"query(
+import px
 df = px.DataFrame('http_events')
 return px.display(df)
 )query";
@@ -1119,6 +1178,7 @@ using UnionTest = ASTVisitorTest;
 TEST_F(UnionTest, basic) {
   std::string union_single = absl::StrJoin(
       {
+          "import px",
           "df1 = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "df2 = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=10, end_time=20)",
           "both = df1.append(df2)",
@@ -1127,6 +1187,7 @@ TEST_F(UnionTest, basic) {
   EXPECT_OK(CompileGraph(union_single));
   std::string union_array = absl::StrJoin(
       {
+          "import px",
           "df1 = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=0, end_time=10)",
           "df2 = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=10, end_time=20)",
           "df3 = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'], start_time=20, end_time=30)",
@@ -1138,6 +1199,8 @@ TEST_F(UnionTest, basic) {
 }
 
 constexpr char kFuncDefWithEmptyReturn[] = R"query(
+import px
+
 def func(a):
     df = px.DataFrame(a)
     px.display(df)
@@ -1161,6 +1224,8 @@ TEST_F(ASTVisitorTest, func_with_empty_return) {
 }
 
 constexpr char kFuncDefDoesntDupGlobals[] = R"pxl(
+import px
+
 int = '123'
 string = 'abc'
 def func():
@@ -1202,6 +1267,7 @@ TEST_F(ASTVisitorTest, func_def_doesnt_make_new_globals) {
 using FlagsTest = ASTVisitorTest;
 
 constexpr char kFlagValueQuery[] = R"pxl(
+import px
 px.flags('foo', type=str, description='a random param', default='default')
 px.flags.parse()
 queryDF = px.DataFrame(table='cpu', select=['cpu0'])
@@ -1261,6 +1327,7 @@ TEST_F(FlagsTest, get_available_flags) {
 }
 
 constexpr char kRenameFlagsQuery[] = R"pxl(
+import px
 px.flags('foo', type=str, description='a random param', default='default')
 pflags = px.flags
 px.flags = 1
@@ -1304,7 +1371,25 @@ TEST_F(FlagsTest, get_available_flags_reassign) {
   EXPECT_THAT(flags, testing::proto::EqualsProto(kRenameFlagsAvailable));
 }
 
+constexpr char kRenameFlagsNoPxQuery[] = R"pxl(
+from px import flags, DataFrame, display
+flags('foo', type=str, description='a random param', default='default')
+flags.parse()
+queryDF = DataFrame(table='cpu', select=['cpu0'])
+display(queryDF, 'map')
+)pxl";
+
+TEST_F(ASTVisitorTest, get_available_flags_no_px) {
+  auto flags_or_s = GetAvailableFlags(kRenameFlagsNoPxQuery);
+  ASSERT_OK(flags_or_s);
+  auto flags = flags_or_s.ConsumeValueOrDie();
+
+  EXPECT_THAT(flags, testing::proto::EqualsProto(kRenameFlagsAvailable));
+}
+
 constexpr char kFlagInFuncQuery[] = R"pxl(
+import px
+
 def make_an_int_flag(flag_name, description, defval):
   px.flags(flag_name, type=int, description=description, default=defval)
 
@@ -1392,6 +1477,7 @@ TEST_F(FlagsTest, get_available_flags_in_func) {
 }
 
 constexpr char kReassignPixieMethodsQuery[] = R"pxl(
+import px
 pixie = px
 make_a_df = pixie.DataFrame
 px.my_new_attr = 'cpu0'
@@ -1414,18 +1500,28 @@ TEST_F(ASTVisitorTest, reassign_px_attrs) {
   EXPECT_THAT(sink->parents(), ElementsAre(src));
 }
 
-constexpr char kReassignPixieQuery[] = R"pxl(
-pixie = px
-make_a_df = pixie.DataFrame
-px = 'cpu0'
-queryDF = make_a_df(table='cpu', select=[px])
-pixie.display(queryDF, 'map')
-)pxl";
+constexpr char kImportAsQuery[] = R"query(
+import px as pixie
+df = pixie.DataFrame("bar")
+df = df[df["service"] == "foo"]
+pixie.display(df, 'ld')
+)query";
 
-TEST_F(ASTVisitorTest, reassign_px_error) {
-  auto graph_or_s = CompileGraph(kReassignPixieQuery);
-  ASSERT_NOT_OK(graph_or_s);
-  EXPECT_THAT(graph_or_s.status(), HasCompilerError("Cannot reassign Pixie Module px"));
+TEST_F(ASTVisitorTest, import_as) {
+  auto graph_or_s = CompileGraph(kImportAsQuery);
+  ASSERT_OK(graph_or_s);
+}
+
+constexpr char kImportFromQuery[] = R"query(
+from px import DataFrame as DFrame, display
+df = DFrame("bar")
+df = df[df["service"] == "foo"]
+display(df, 'ld')
+)query";
+
+TEST_F(ASTVisitorTest, from_import) {
+  auto graph_or_s = CompileGraph(kImportFromQuery);
+  ASSERT_OK(graph_or_s);
 }
 
 }  // namespace compiler

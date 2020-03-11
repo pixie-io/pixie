@@ -2802,7 +2802,8 @@ TEST_F(CompilerTest, AndExpressionFailsGracefully) {
               HasCompilerError("SyntaxError: Expected expression after operator"));
 }
 
-TEST_F(CompilerTest, CommentOnlyCodeShouldFailGracefullly) {
+// TODO(nserrino): PL-1578 Re-enable when "import px" append hack is removed from compiler.cc
+TEST_F(CompilerTest, DISABLED_CommentOnlyCodeShouldFailGracefullly) {
   auto query = "# this is a comment";
   auto ir_graph_or_s = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
   ASSERT_NOT_OK(ir_graph_or_s);

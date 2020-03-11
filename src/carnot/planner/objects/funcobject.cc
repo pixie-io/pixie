@@ -87,7 +87,6 @@ StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::Ast
     }
   }
 
-  // Substitute defaults for missing args. Anything else is a missing positional argument.
   absl::flat_hash_set<std::string> missing_pos_args;
   for (const std::string& arg : missing_args) {
     if (!HasDefault(arg)) {
@@ -115,7 +114,8 @@ StatusOr<QLObjectPtr> FuncObject::GetDefault(std::string_view arg) {
   if (!defaults_.contains(arg)) {
     return error::InvalidArgument("");
   }
-  return ast_visitor()->ParseAndProcessSingleExpression(defaults_.find(arg)->second);
+  return ast_visitor()->ParseAndProcessSingleExpression(defaults_.find(arg)->second,
+                                                        /*import_px*/ true);
 }
 
 std::string FuncObject::FormatArguments(const absl::flat_hash_set<std::string> args) {

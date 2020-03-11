@@ -62,7 +62,8 @@ class DefaultArgumentsTest : public OperatorTests {
                             bool should_fail = false) {
     SCOPED_TRACE(function_str);
     for (const auto& [default_arg_name, default_arg_value] : func_object->defaults()) {
-      auto expr_or_s = ast_visitor_->ParseAndProcessSingleExpression(default_arg_value);
+      auto expr_or_s =
+          ast_visitor_->ParseAndProcessSingleExpression(default_arg_value, /*import px*/ true);
       if (should_fail) {
         EXPECT_NOT_OK(expr_or_s);
       } else {

@@ -23,10 +23,10 @@ class QLObjectTest : public OperatorTests {
   void SetUp() override {
     OperatorTests::SetUp();
 
-    auto info = std::make_shared<RegistryInfo>();
+    info = std::make_shared<RegistryInfo>();
     udfspb::UDFInfo info_pb;
     PL_CHECK_OK(info->Init(info_pb));
-    auto compiler_state =
+    compiler_state =
         std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
     // Graph is set in OperatorTests.
     ast_visitor = ASTVisitorImpl::Create(graph.get(), compiler_state.get(), /*flag values*/ {})
@@ -69,7 +69,9 @@ class QLObjectTest : public OperatorTests {
     return TupleObject::Create(objs, ast_visitor.get()).ConsumeValueOrDie();
   }
 
-  std::shared_ptr<ASTVisitor> ast_visitor;
+  std::shared_ptr<CompilerState> compiler_state = nullptr;
+  std::shared_ptr<RegistryInfo> info = nullptr;
+  std::shared_ptr<ASTVisitor> ast_visitor = nullptr;
 };
 
 }  // namespace compiler
