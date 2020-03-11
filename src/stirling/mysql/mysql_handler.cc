@@ -18,10 +18,10 @@ namespace mysql {
 //  kNeedsMoreData - Additional packets are required.
 //  kSuccess - Everything looks good.
 
-#define RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets) \
-  if (iter == resp_packets.end()) {                       \
-    entry->resp.status = MySQLRespStatus::kUnknown;       \
-    return ParseState::kNeedsMoreData;                    \
+#define RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets) \
+  if (resp_packets.empty()) {                         \
+    entry->resp.status = MySQLRespStatus::kUnknown;   \
+    return ParseState::kNeedsMoreData;                \
   }
 
 StatusOr<ParseState> HandleErrMessage(DequeView<Packet> resp_packets, Record* entry) {
@@ -77,12 +77,11 @@ StatusOr<ParseState> HandleOKMessage(DequeView<Packet> resp_packets, Record* ent
 
 StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry,
                                              bool multi_resultset) {
-  auto iter = resp_packets.begin();
-
   VLOG(3) << absl::Substitute("HandleResultsetResponse with $0 packets", resp_packets.size());
 
-  RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
-  const Packet& first_resp_packet = *iter;
+  RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets);
+  const Packet& first_resp_packet = resp_packets.front();
+  resp_packets.pop_front();
 
   // The last resultset of a multi-resultset is just an OK packet.
   if (multi_resultset && IsOKPacket(first_resp_packet)) {
@@ -108,41 +107,38 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
   VLOG(3) << absl::Substitute("num_columns=$0", num_col);
 
   // A resultset has:
-  //  1             column_count packet
+  //  1             column_count packet (*already accounted for*)
   //  column_count  column definition packets
   //  0 or 1        EOF packet (if CLIENT_DEPRECATE_EOF is false)
   //  1+            ResultsetRow packets
   //  1             OK or EOF packet
   // Must have at least the minimum number of packets in a response.
-  if (resp_packets.size() < static_cast<size_t>(3 + num_col)) {
+  if (resp_packets.size() < static_cast<size_t>(num_col + 2)) {
     entry->resp.status = MySQLRespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
   }
 
-  // Go to next packet.
-  ++iter;
-
   std::vector<ColDefinition> col_defs;
   for (int i = 0; i < num_col; ++i) {
-    RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
+    RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets);
+    const Packet& packet = resp_packets.front();
+    resp_packets.pop_front();
 
-    if (!IsColumnDefPacket(*iter)) {
+    if (!IsColumnDefPacket(packet)) {
       entry->resp.status = MySQLRespStatus::kUnknown;
       return error::Internal("Expected column definition packet");
     }
 
-    const Packet& col_def_packet = *iter;
-    ColDefinition col_def{col_def_packet.msg};
+    ColDefinition col_def{packet.msg};
     col_defs.push_back(std::move(col_def));
-    ++iter;
   }
 
   // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
   bool client_deprecate_eof = true;
-  RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
-  if (IsEOFPacket(*iter)) {
+  RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets);
+  if (IsEOFPacket(resp_packets.front())) {
+    resp_packets.pop_front();
     client_deprecate_eof = false;
-    ++iter;
   }
 
   std::vector<ResultsetRow> results;
@@ -152,8 +148,9 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
     return IsErrPacket(p) || (client_deprecate_eof ? IsOKPacket(p) : IsEOFPacket(p));
   };
 
-  while (iter != resp_packets.end() && !isLastPacket(*iter)) {
-    const Packet& row_packet = *iter;
+  while (!resp_packets.empty() && !isLastPacket(resp_packets.front())) {
+    const Packet& row_packet = resp_packets.front();
+    resp_packets.pop_front();
     if (!IsResultsetRowPacket(row_packet, client_deprecate_eof)) {
       entry->resp.status = MySQLRespStatus::kUnknown;
       return error::Internal(
@@ -163,17 +160,17 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
     }
     ResultsetRow row{row_packet.msg};
     results.emplace_back(std::move(row));
-    ++iter;
   }
 
-  RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
+  RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets);
+  const Packet& last_packet = resp_packets.front();
 
-  const Packet& last_packet = *iter;
-  DCHECK(isLastPacket(last_packet));
-  if (IsErrPacket(last_packet)) {
-    // TODO(chengruizhe/oazizi): If it ends with err packet, propagate up error_message.
-    PL_UNUSED(last_packet);
+  DCHECK(isLastPacket(resp_packets.front()));
+  if (IsErrPacket(resp_packets.front())) {
+    return HandleErrMessage(resp_packets, entry);
   }
+
+  resp_packets.pop_front();
 
   if (multi_resultset) {
     absl::StrAppend(&entry->resp.msg, ", ");
@@ -182,14 +179,11 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
 
   // Check for another resultset in case this is a multi-resultset.
   if (MoreResultsExists(last_packet)) {
-    DequeView<Packet> remaining_packets(resp_packets);
-    remaining_packets.pop_front(iter - resp_packets.begin() + 1);
-    return HandleResultsetResponse(remaining_packets, entry, true);
+    return HandleResultsetResponse(resp_packets, entry, true);
   }
 
-  ++iter;
-  LOG_IF(ERROR, iter != resp_packets.end())
-      << absl::Substitute("Found $0 extra packets", std::distance(iter, resp_packets.end()));
+  LOG_IF(ERROR, !resp_packets.empty())
+      << absl::Substitute("Found $0 extra packets", resp_packets.size());
 
   entry->resp.status = MySQLRespStatus::kOK;
   entry->resp.timestamp_ns = last_packet.timestamp_ns;
@@ -198,10 +192,9 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
 
 StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets, State* state,
                                                  Record* entry) {
-  auto iter = resp_packets.begin();
-
-  RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
-  const Packet& first_resp_packet = *iter;
+  RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets);
+  const Packet& first_resp_packet = resp_packets.front();
+  resp_packets.pop_front();
   if (!IsStmtPrepareOKPacket(first_resp_packet)) {
     entry->resp.status = MySQLRespStatus::kUnknown;
     return error::Internal("Expected StmtPrepareOK packet");
@@ -215,7 +208,7 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
   // TODO(chengruizhe): Handle missing packets more robustly. Assuming no missing packet.
   // If num_col or num_param is non-zero, they will be followed by EOF.
   // Reference: https://dev.mysql.com/doc/internals/en/com-stmt-prepare-response.html.
-  size_t expected_num_packets = 1 + num_col + num_param + (num_col != 0) + (num_param != 0);
+  size_t expected_num_packets = num_col + num_param + (num_col != 0) + (num_param != 0);
   if (expected_num_packets > resp_packets.size()) {
     entry->resp.status = MySQLRespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
@@ -223,49 +216,53 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
 
   StmtPrepareRespHeader resp_header{stmt_id, num_col, num_param, warning_count};
 
-  ++iter;
-
   // Params come before columns
   std::vector<ColDefinition> param_defs;
   for (size_t i = 0; i < num_param; ++i) {
-    RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
+    RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets);
+    const Packet& param_def_packet = resp_packets.front();
+    resp_packets.pop_front();
 
-    const Packet& param_def_packet = *iter;
     ColDefinition param_def{param_def_packet.msg};
     param_defs.push_back(std::move(param_def));
-    ++iter;
   }
 
   bool client_deprecate_eof = true;
   if (num_param != 0) {
-    RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
+    RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets);
     // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
-    if (IsEOFPacket(*iter)) {
-      ++iter;
+    if (IsEOFPacket(resp_packets.front())) {
+      resp_packets.pop_front();
       client_deprecate_eof = false;
     }
   }
 
   std::vector<ColDefinition> col_defs;
   for (size_t i = 0; i < num_col; ++i) {
-    RETURN_NEEDS_MORE_DATA_IF_END(iter, resp_packets);
+    RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets);
+    const Packet& col_def_packet = resp_packets.front();
+    resp_packets.pop_front();
 
-    const Packet& col_def_packet = *iter;
     ColDefinition col_def{col_def_packet.msg};
     col_defs.push_back(std::move(col_def));
-    ++iter;
+    // Update timestamp, in case this turns out to be the last packet.
+    entry->resp.timestamp_ns = col_def_packet.timestamp_ns;
   }
 
   // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
   if (!client_deprecate_eof && num_col != 0) {
-    if (iter == resp_packets.end()) {
+    if (resp_packets.empty()) {
       LOG(ERROR) << "Ignoring EOF packet that is expected, but appears to be missing.";
-    } else if (IsEOFPacket(*iter)) {
-      ++iter;
+    } else {
+      const Packet& eof_packet = resp_packets.front();
+      if (IsEOFPacket(eof_packet)) {
+        resp_packets.pop_front();
+        entry->resp.timestamp_ns = eof_packet.timestamp_ns;
+      }
     }
   }
 
-  if (iter != resp_packets.end()) {
+  if (!resp_packets.empty()) {
     LOG(ERROR) << "Extra packets";
   }
 
@@ -277,11 +274,7 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
                                                           .col_defs = std::move(col_defs),
                                                           .param_defs = std::move(param_defs)}});
 
-  // Go back one to get last packet.
-  const Packet& last_packet = *(--iter);
-
   entry->resp.status = MySQLRespStatus::kOK;
-  entry->resp.timestamp_ns = last_packet.timestamp_ns;
   return ParseState::kSuccess;
 }
 
