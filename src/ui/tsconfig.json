@@ -4,7 +4,7 @@
     "outDir": "./dist/",
     "sourceMap": true,
     "noImplicitAny": false,
-    "module": "commonjs",
+    "module": "esnext",
     "moduleResolution": "node",
     "target": "es6",
     "jsx": "react",

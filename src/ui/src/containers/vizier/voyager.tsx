@@ -2,7 +2,6 @@ import 'datavoyager/build/style.css';
 import './vizier.scss';
 
 import {tablesFromResults} from 'components/chart/data';
-import * as libVoyager from 'datavoyager';
 import {ExecuteQueryResult} from 'gql-types';
 import * as React from 'react';
 import {Button, Dropdown, DropdownButton} from 'react-bootstrap';
@@ -30,18 +29,22 @@ function parseData(data: string) {
 export class Voyager extends React.PureComponent<VoyagerProps> {
   private el = React.createRef<HTMLDivElement>();
   private voyagerInstance: any;
-
+  private createVoyagerInstance: any;
 
   componentDidMount = () => {
-    this.voyagerInstance = libVoyager.CreateVoyager(this.el.current, {
-      hideHeader: true,
-    }, parseData(this.props.data));
+    this.createVoyagerInstance = import(/* webpackChunkName: "datavoyager" */ 'datavoyager').then((module) => {
+      this.voyagerInstance = module.CreateVoyager(this.el.current, {
+        hideHeader: true,
+      }, parseData(this.props.data));
+    });
   }
 
   componentDidUpdate = (prevProps) => {
-    if (prevProps.data !== this.props.data) {
-      this.voyagerInstance.updateData(parseData(this.props.data));
-    }
+    this.createVoyagerInstance.then(() => {
+      if (prevProps.data !== this.props.data) {
+        this.voyagerInstance.updateData(parseData(this.props.data));
+      }
+    });
   }
 
   render() {
