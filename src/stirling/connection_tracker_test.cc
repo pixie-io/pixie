@@ -605,9 +605,8 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForClientSideTracingWithNoCIDR) {
   EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
 }
 
-// TODO(oazizi): Re-enable this test once the SockAddr work is complete.
 // Tests that tracker state is kDisabled if the remote address is Unix domain socket.
-TEST_F(ConnectionTrackerTest, DISABLED_TrackerDisabledForUnixDomainSocket) {
+TEST_F(ConnectionTrackerTest, TrackerDisabledForUnixDomainSocket) {
   testing::EventGenerator event_gen(&real_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
   conn.open.traffic_class.role = EndpointRole::kRoleServer;
