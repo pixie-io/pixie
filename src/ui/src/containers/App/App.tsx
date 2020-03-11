@@ -1,7 +1,7 @@
 import './App.scss';
 
 import Axios from 'axios';
-import {getCloudGQLClient} from 'common/cloud-gql-client';
+import {CloudClient} from 'common/cloud-gql-client';
 import {DARK_THEME} from 'common/mui-theme';
 import {VersionInfo} from 'components/version-info/version-info';
 import {AuthComplete} from 'containers/login/auth-complete';
@@ -15,9 +15,12 @@ import history from 'utils/pl-history';
 
 import {ThemeProvider} from '@material-ui/core/styles';
 
+import {CloudClientContext} from './context';
+
 export class App extends React.Component {
   state = {
-    client: null,
+    cloudClient: new CloudClient(),
+    gqlClient: null,
     authenticated: false,
     loaded: false,
   };
@@ -31,39 +34,41 @@ export class App extends React.Component {
         this.setState({ authenticated: true, loaded: true });
       }
     }).catch((error) => {
-        this.setState({ authenticated: false, loaded: true });
+      this.setState({ authenticated: false, loaded: true });
     });
 
-    getCloudGQLClient().then((client) => {
-        this.setState({ client });
+    this.state.cloudClient.getGraphQLPersist().then((gqlClient) => {
+      this.setState({ gqlClient });
     });
   }
 
   render() {
-    const { client, authenticated, loaded } = this.state;
-    return !client || !loaded ?
+    const { gqlClient, authenticated, loaded, cloudClient } = this.state;
+    return !gqlClient || !loaded ?
       null :
       (
-        <ThemeProvider theme={DARK_THEME}>
-          <Router history={history}>
-            <ApolloProvider client={client}>
-              <div className='pixie-main-app center-content'>
-                <Switch>
-                  <Route exact path='/auth-complete' component={AuthComplete} />
-                  <Route exact path='/login' component={Login} />
-                  <Route exact path='/logout' component={Login} />
-                  <Route exact path='/signup' component={Login} />
+        <CloudClientContext.Provider value={cloudClient}>
+          <ThemeProvider theme={DARK_THEME}>
+            <Router history={history}>
+              <ApolloProvider client={gqlClient}>
+                <div className='pixie-main-app center-content'>
+                  <Switch>
+                    <Route exact path='/auth-complete' component={AuthComplete} />
+                    <Route exact path='/login' component={Login} />
+                    <Route exact path='/logout' component={Login} />
+                    <Route exact path='/signup' component={Login} />
                     {
                       authenticated ? <Route component={Vizier} /> :
                         <Redirect from='/*' to='/signup' />
                     }
-                  <Route component={Vizier} />
-                </Switch>
-              </div>
-            </ApolloProvider>
-          </Router>
-          {!isProd() ? <VersionInfo /> : null}
-        </ThemeProvider>
+                    <Route component={Vizier} />
+                  </Switch>
+                </div>
+              </ApolloProvider>
+            </Router>
+            {!isProd() ? <VersionInfo /> : null}
+          </ThemeProvider>
+        </CloudClientContext.Provider>
       );
   }
 }

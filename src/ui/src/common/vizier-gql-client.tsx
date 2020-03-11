@@ -1,12 +1,11 @@
-import {InMemoryCache} from 'apollo-cache-inmemory';
+import {InMemoryCache, NormalizedCacheObject} from 'apollo-cache-inmemory';
 import {ApolloClient} from 'apollo-client';
 import {ApolloLink, fromPromise} from 'apollo-link';
 import {setContext} from 'apollo-link-context';
 import {onError} from 'apollo-link-error';
 import {createHttpLink} from 'apollo-link-http';
+import * as React from 'react';
 import fetchWithTimeout from 'utils/fetch-timeout';
-
-import {getClusterConnection} from './cloud-gql-client';
 
 const TIMEOUT_MS = 5000; // Timeout after 5 seconds.
 const LOCALHOST_ADDR = 'http://127.0.0.1:31067';
@@ -14,26 +13,33 @@ const LOCALHOST_ADDR = 'http://127.0.0.1:31067';
 const VIZIER_AUTH_KEY = 'vizierAuth';
 const VIZIER_MODE_KEY = 'vizierMode';
 
-const gqlCache = new InMemoryCache();
-
 interface VizierAuth {
   token: string;
   ipAddress: string;
 }
 
+export interface CloudClientInterface {
+  getClusterConnection: (noCache?: boolean) => Promise<VizierAuth>;
+}
+
 type VizierMode = 'vizier' | 'proxy' | '';
 
-class VizierAuthLink {
+export class VizierGQLClient {
+  gqlClient: ApolloClient<NormalizedCacheObject>;
   private vizierMode: VizierMode = 'vizier';
 
-  constructor() {
+  constructor(private cloudClient: CloudClientInterface) {
+    this.gqlClient = new ApolloClient({
+      cache: new InMemoryCache(),
+      link: this.getLink(),
+    });
     const mode = localStorage.getItem(VIZIER_MODE_KEY);
     if (mode === 'vizier' || mode === 'proxy') {
       this.vizierMode = mode;
     }
   }
 
-  getLink(): ApolloLink {
+  private getLink(): ApolloLink {
     return ApolloLink.from([
       this.withAuthLink,
       this.retryVizierModeLink,
@@ -118,7 +124,7 @@ class VizierAuthLink {
   }
 
   private getAuth(noCache?: boolean): Promise<VizierAuth> {
-    return getClusterConnection(noCache);
+    return this.cloudClient.getClusterConnection(noCache);
   }
 
   private set mode(mode: VizierMode) {
@@ -127,7 +133,4 @@ class VizierAuthLink {
   }
 }
 
-export const vizierGQLClient = new ApolloClient({
-  cache: gqlCache,
-  link: new VizierAuthLink().getLink(),
-});
+export const VizierGQLClientContext = React.createContext<VizierGQLClient>(null);

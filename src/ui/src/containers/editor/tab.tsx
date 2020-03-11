@@ -1,18 +1,15 @@
 import './tab.scss';
 
 import {APPEND_HISTORY} from 'common/local-gql';
-import {vizierGQLClient} from 'common/vizier-gql-client';
-import {LineChart} from 'components/chart/line-chart';
-import {ScatterPlot} from 'components/chart/scatter';
+import {VizierGQLClient, VizierGQLClientContext} from 'common/vizier-gql-client';
 import {CodeEditor} from 'components/code-editor';
-import {Spinner} from 'components/spinner/spinner';
 import {EXECUTE_QUERY, ExecuteQueryResult} from 'gql-types';
 import * as React from 'react';
 import {Button, Nav, Tab} from 'react-bootstrap';
 import Split from 'react-split';
 import analytics from 'utils/analytics';
 
-import {useMutation, useQuery} from '@apollo/react-hooks';
+import {useMutation} from '@apollo/react-hooks';
 
 import {getCodeFromStorage, saveCodeToStorage} from './code-utils';
 import {EditorTabInfo} from './editor';
@@ -24,9 +21,10 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
   const initialCode = getCodeFromStorage(props.id) || DEFAULT_CODE;
   const [code, setCode] = React.useState<string>(initialCode);
   const [error, setError] = React.useState('');
+  const vizierClient = React.useContext(VizierGQLClientContext);
 
   const [runQuery, { data, loading }] = useMutation<ExecuteQueryResult>(EXECUTE_QUERY, {
-    client: vizierGQLClient,
+    client: vizierClient.gqlClient,
     onError: (e) => {
       setError('Request failed! Please try again later.');
     },

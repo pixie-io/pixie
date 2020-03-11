@@ -1,15 +1,20 @@
 import './vizier.scss';
 
-import {vizierGQLClient} from 'common/vizier-gql-client';
+import {
+    CloudClientInterface, VizierGQLClient, VizierGQLClientContext,
+} from 'common/vizier-gql-client';
 import {VizierGRPCClientProvider} from 'common/vizier-grpc-client-context';
 import {DialogBox} from 'components/dialog-box/dialog-box';
 import {Spinner} from 'components/spinner/spinner';
+import {CloudClientContext} from 'containers/App/context';
 import {Editor} from 'containers/editor';
 import LiveView from 'containers/live/live';
 import gql from 'graphql-tag';
 import * as React from 'react';
 import {ApolloConsumer, Query, withApollo} from 'react-apollo';
 import {Redirect, Route, Switch} from 'react-router-dom';
+
+import {useQuery} from '@apollo/react-hooks';
 
 import {AgentDisplay} from './agent-display';
 import {DeployInstructions} from './deploy-instructions';
@@ -46,10 +51,6 @@ const PATH_TO_HEADER_TITLE = {
   '/vizier/query': 'Query',
 };
 
-interface VizierState {
-  creatingCluster: boolean;
-}
-
 interface ClusterInstructionsProps {
   message: string;
 }
@@ -75,41 +76,37 @@ const ClusterInstructions = (props: ClusterInstructionsProps) => (
 const EditorWithApollo = withApollo(Editor);
 const LiveViewWithApollo = withApollo(LiveView);
 
-export class VizierMain extends React.Component<{}, { loaded: boolean }> {
-  constructor(props) {
-    super(props);
-    this.state = { loaded: false };
-  }
+interface VizierMainProps {
+  cloudClient: CloudClientInterface;
+}
 
-  render() {
+export const VizierMain = (props: VizierMainProps) => {
+  const [loaded, setLoaded] = React.useState(false);
+  const vizierClient = React.useMemo(() => new VizierGQLClient(props.cloudClient), []);
+  const { loading, error } = useQuery(CHECK_VIZIER, { client: vizierClient.gqlClient, pollInterval: 2500 });
+  if (loaded) {
     return (
-      <Query client={vizierGQLClient} query={CHECK_VIZIER} pollInterval={2500}>
-        {({ loading, error }) => {
-          const loaded = this.state.loaded || (!loading && !error) || (error && !error.networkError);
-          if (!loaded) {
-            // TODO(michelle): Make a separate HTTP request to Vizier so we can get a better error message
-            // for Vizier's status.
-            const dnsMsg = 'Setting up DNS records for cluster...';
-            return <ClusterInstructions message={dnsMsg} />;
-          }
-          if (!this.state.loaded) {
-            this.setState({ loaded });
-          }
-
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%'}}>
-              <VizierTopNav />
-              <Switch>
-                <Route path='/agents' component={AgentDisplay} />
-                <Route path='/console' component={EditorWithApollo} />
-                <Redirect from='/*' to='/console' />
-              </Switch>
-            </div>
-          );
-        }}
-      </Query >
+      <VizierGQLClientContext.Provider value={vizierClient}>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+          <VizierTopNav />
+          <Switch>
+            <Route path='/agents' component={AgentDisplay} />
+            <Route path='/console' component={EditorWithApollo} />
+            <Redirect from='/*' to='/console' />
+          </Switch>
+        </div>
+      </VizierGQLClientContext.Provider>
     );
   }
+  if (loading || error) {
+    const dnsMsg = 'Setting up DNS records for cluster...';
+    return <ClusterInstructions message={dnsMsg} />;
+  }
+  setLoaded(true);
+};
+
+interface VizierState {
+  creatingCluster: boolean;
 }
 
 export class Vizier extends React.Component<{}, VizierState> {
@@ -123,51 +120,55 @@ export class Vizier extends React.Component<{}, VizierState> {
 
   render() {
     return (
-      <ApolloConsumer>{(client) => {
-        return (
-          <Query query={GET_CLUSTER} pollInterval={2500}>
-            {
-              ({ loading, error, data }) => {
-                if (loading) { return 'Loading...'; }
-                if (error) {
-                  // TODO(michelle): Figure out how to add status codes to GQL errors.
-                  if (error.message.includes('no clusters')) {
-                    // If no cluster exists, and is not already being created, create it.
-                    if (!this.state.creatingCluster) {
-                      this.setState({ creatingCluster: true });
-                      client.mutate({
-                        mutation: CREATE_CLUSTER,
-                      });
+      <CloudClientContext.Consumer>
+        {(cloudClient) => (
+          <ApolloConsumer>{(client) => {
+            return (
+              <Query query={GET_CLUSTER} pollInterval={2500}>
+                {
+                  ({ loading, error, data }) => {
+                    if (loading) { return 'Loading...'; }
+                    if (error) {
+                      // TODO(michelle): Figure out how to add status codes to GQL errors.
+                      if (error.message.includes('no clusters')) {
+                        // If no cluster exists, and is not already being created, create it.
+                        if (!this.state.creatingCluster) {
+                          this.setState({ creatingCluster: true });
+                          client.mutate({
+                            mutation: CREATE_CLUSTER,
+                          });
+                        }
+
+                        return <ClusterInstructions message='Initializing...' />;
+                      }
+                      return `Error! ${error.message}`;
                     }
 
-                    return <ClusterInstructions message='Initializing...' />;
+                    if (data.cluster.status === 'VZ_ST_HEALTHY') {
+                      return (
+                        <VizierGRPCClientProvider cloudClient={cloudClient}>
+                          <Switch>
+                            <Route path='/live' component={LiveViewWithApollo} />
+                            <Route render={(props) => <VizierMain {...props} cloudClient={cloudClient} />} />
+                          </Switch>
+                        </VizierGRPCClientProvider>
+                      );
+                    } else if (data.cluster.status === 'VZ_ST_UNHEALTHY') {
+                      const clusterStarting = 'Cluster found. Waiting for pods and services to become ready...';
+                      return <ClusterInstructions message={clusterStarting} />;
+                    } else {
+                      return (
+                        <DeployInstructions />
+                      );
+                    }
                   }
-                  return `Error! ${error.message}`;
                 }
-
-                if (data.cluster.status === 'VZ_ST_HEALTHY') {
-                  return (
-                    <VizierGRPCClientProvider>
-                      <Switch>
-                        <Route path='/live' component={LiveViewWithApollo} />
-                        <Route component={VizierMain} />
-                      </Switch>
-                    </VizierGRPCClientProvider>
-                  );
-                } else if (data.cluster.status === 'VZ_ST_UNHEALTHY') {
-                  const clusterStarting = 'Cluster found. Waiting for pods and services to become ready...';
-                  return <ClusterInstructions message={clusterStarting} />;
-                } else {
-                  return (
-                    <DeployInstructions/>
-                  );
-                }
-              }
-            }
-          </Query>
-        );
-      }}
-      </ApolloConsumer>
+              </Query>
+            );
+          }}
+          </ApolloConsumer>
+        )}
+      </CloudClientContext.Consumer>
     );
   }
 }

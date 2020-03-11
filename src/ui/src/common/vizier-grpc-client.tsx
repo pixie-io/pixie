@@ -1,5 +1,5 @@
 import {
-    ExecuteScriptRequest, QueryExecutionStats, QueryMetadata, Relation, RowBatchData, Status,
+    ExecuteScriptRequest, QueryExecutionStats, Relation, RowBatchData, Status,
 } from 'types/generated/vizier_pb';
 import {VizierServiceClient} from 'types/generated/VizierServiceClientPb';
 

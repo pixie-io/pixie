@@ -1,22 +1,28 @@
 import * as React from 'react';
 
-import {getClusterConnection} from './cloud-gql-client';
+import {CloudClient} from './cloud-gql-client';
 import {VizierGRPCClient} from './vizier-grpc-client';
 
 const VizierGRPCClientContext = React.createContext<VizierGRPCClient>(null);
 
-export const VizierGRPCClientProvider: React.FC = (props) => {
+interface Props {
+  cloudClient: CloudClient;
+  children: React.ReactNode;
+}
+
+export const VizierGRPCClientProvider = (props: Props) => {
+  const { cloudClient, children } = props;
   const [client, setClient] = React.useState(null);
 
   React.useEffect(() => {
-    getClusterConnection(true).then(({ ipAddress, token }) => {
+    cloudClient.getClusterConnection(true).then(({ ipAddress, token }) => {
       setClient(new VizierGRPCClient(ipAddress, token));
     });
   }, []);
 
   return (
     <VizierGRPCClientContext.Provider value={client}>
-      {props.children}
+      {children}
     </VizierGRPCClientContext.Provider>
   );
 };

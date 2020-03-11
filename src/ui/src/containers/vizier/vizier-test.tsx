@@ -16,13 +16,16 @@ jest.mock('react-codemirror', () => () => <div id='mock-codemirror'></div>);
 jest.mock('common/vizier-gql-client', () => ({}));
 // Mock DataVoyager component because it does not mount properly in Jest.
 // (See: https://github.com/vega/voyager/issues/812)
-jest.mock('datavoyager', () => ({ CreateVoyager: () => ({updateData: () => { return; } }) }));
+jest.mock('datavoyager', () => ({ CreateVoyager: () => ({ updateData: () => { return; } }) }));
 const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
+const mockCloudClient = {
+  getClusterConnection: jest.fn(),
+};
 
 describe.skip('<VizierMain/> test', () => {
   it('should have sidebar if Vizier is connected', async () => {
     const mocks = [
-    {
+      {
         request: {
           query: CHECK_VIZIER,
           variables: {},
@@ -38,7 +41,7 @@ describe.skip('<VizierMain/> test', () => {
     const app = mount(
       <Router>
         <MockedProvider mocks={mocks} addTypename={false}>
-          <VizierMain />
+          <VizierMain cloudClient={mockCloudClient} />
         </MockedProvider>
       </Router>);
 
@@ -64,7 +67,7 @@ describe.skip('<VizierMain/> test', () => {
     const app = mount(
       <Router>
         <MockedProvider mocks={mocks} addTypename={false}>
-          <VizierMain />
+          <VizierMain cloudClient={mockCloudClient} />
         </MockedProvider>
       </Router>);
 
