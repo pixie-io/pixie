@@ -469,6 +469,16 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
                                                    parsed_arg_names, arg_annotations, body,
                                                    std::placeholders::_1, std::placeholders::_2),
                                          this));
+  DCHECK_LE(node->decorators.size(), 1);
+  for (const auto& d : node->decorators) {
+    // Each decorator should be a function that takes in the defined_func as an argument.
+    PL_ASSIGN_OR_RETURN(auto dec_fn, Process(d, OperatorContext{{}, ""}));
+    PL_ASSIGN_OR_RETURN(auto fn_object, GetCallMethod(d, dec_fn));
+    ArgMap map{{}, {defined_func}};
+    PL_ASSIGN_OR_RETURN(auto object_fn, fn_object->Call(map, d));
+    PL_ASSIGN_OR_RETURN(defined_func, GetCallMethod(d, object_fn));
+  }
+
   var_table_->Add(function_name, defined_func);
   return Status::OK();
 }

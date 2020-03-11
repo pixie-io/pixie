@@ -1524,6 +1524,46 @@ TEST_F(ASTVisitorTest, from_import) {
   ASSERT_OK(graph_or_s);
 }
 
+constexpr char kDecoratorParsing[] = R"pxl(
+import px
+@px.viz.vega("""
+abcd
+""")
+def plot_latency():
+    return pd.DataFrame('http_events')
+)pxl";
+
+TEST_F(ASTVisitorTest, decorator_parsed) {
+  Parser parser;
+  pypa::AstModulePtr ast = parser.Parse(kDecoratorParsing).ConsumeValueOrDie();
+  std::shared_ptr<IR> ir = std::make_shared<IR>();
+  auto ast_walker =
+      compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get(), {}).ConsumeValueOrDie();
+
+  ASSERT_OK(ast_walker->ProcessModuleNode(ast));
+
+  ASSERT_TRUE(ast_walker->var_table()->HasVariable("plot_latency"));
+  auto plot_latency = ast_walker->var_table()->Lookup("plot_latency");
+  ASSERT_TRUE(plot_latency->type() == QLObjectType::kFunction);
+
+  auto func_object = std::static_pointer_cast<FuncObject>(plot_latency);
+  ASSERT_TRUE(func_object->HasVizSpec());
+  EXPECT_EQ(func_object->viz_spec().vega_spec, "\nabcd\n");
+}
+
+constexpr char kProblemDecoratorParsing[] = R"pxl(
+import px
+@px.viz
+def plot_latency():
+    return pd.DataFrame('http_events')
+)pxl";
+
+TEST_F(ASTVisitorTest, problem_decorator_parsed) {
+  auto graph_or_s = CompileGraph(kProblemDecoratorParsing);
+  ASSERT_NOT_OK(graph_or_s);
+  EXPECT_THAT(graph_or_s.status(), HasCompilerError("'viz' object is not callable"));
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

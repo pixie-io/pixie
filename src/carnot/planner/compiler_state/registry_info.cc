@@ -66,13 +66,10 @@ StatusOr<UDFType> RegistryInfo::GetUDFType(std::string_view name) {
 }
 
 absl::flat_hash_set<std::string> RegistryInfo::func_names() const {
-  LOG(ERROR) << "BEGIN";
-  LOG(ERROR) << funcs_.size();
   absl::flat_hash_set<std::string> func_names;
   for (const auto& pair : funcs_) {
     func_names.insert(pair.first);
   }
-  LOG(ERROR) << "END";
   return func_names;
 }
 
