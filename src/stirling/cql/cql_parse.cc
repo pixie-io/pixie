@@ -23,7 +23,7 @@ namespace cass {
 ParseState ParseFrame(MessageType type, std::string_view* buf, Frame* result) {
   DCHECK(type == MessageType::kRequest || type == MessageType::kResponse);
 
-  if (buf->size() <= kFrameHeaderLength) {
+  if (buf->size() < kFrameHeaderLength) {
     return ParseState::kNeedsMoreData;
   }
 

@@ -19,8 +19,8 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result) {
     return ParseState::kInvalid;
   }
 
-  if (buf->size() <= kPacketHeaderLength) {
-    return ParseState::kInvalid;
+  if (buf->size() < kPacketHeaderLength) {
+    return ParseState::kNeedsMoreData;
   }
 
   result->sequence_id = static_cast<uint8_t>((*buf)[3]);
