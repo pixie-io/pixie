@@ -1,9 +1,9 @@
-#include <cpptoml.h>
 #include <gmock/gmock.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/message_differencer.h>
 #include <gtest/gtest.h>
 
+#include <filesystem>
 #include <map>
 #include <tuple>
 #include <unordered_map>
@@ -67,16 +67,14 @@ class PresetQueriesTest : public ::testing::Test {
   }
 
   void ParsePresetQueries() {
-    std::shared_ptr<cpptoml::table> tomls = cpptoml::parse_file(tomlpath_);
-    EXPECT_TRUE(tomls != nullptr);
-    EXPECT_TRUE(tomls->contains("queries"));
-
-    auto querypairs = tomls->get_array_of<cpptoml::array>("queries");
-    for (size_t i = 0; i < querypairs->size(); ++i) {
-      auto querypair = (*querypairs)[i]->get_array_of<std::string>();
-      EXPECT_EQ(2, querypair->size());
-      preset_queries_.emplace((*querypair)[0], (*querypair)[1]);
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(scripts_dir_)) {
+      std::string strpath = entry.path().string();
+      if (!absl::EndsWith(strpath, ".pxl")) {
+        continue;
+      }
+      PL_ASSIGN_OR_EXIT(preset_queries_[strpath], ReadFileToString(entry.path()));
     }
+    ASSERT_GT(preset_queries_.size(), 0);
   }
 
   // Using map so that test order is deterministic.
@@ -87,7 +85,7 @@ class PresetQueriesTest : public ::testing::Test {
   compiler::Compiler compiler_;
   table_store::schemapb::Schema schema_;
   Relation cgroups_relation_;
-  const std::string tomlpath_ = "src/ui/src/containers/vizier/preset-queries.toml";
+  const std::string scripts_dir_ = "src/pxl_scripts/px";
   udfspb::UDFInfo udf_info_;
 };
 
