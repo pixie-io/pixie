@@ -59,9 +59,8 @@ export class App extends React.Component {
                     <Route exact path='/signup' component={Login} />
                     {
                       authenticated ? <Route component={Vizier} /> :
-                        <Redirect from='/*' to='/signup' />
+                        <Redirect from='/*' to='/login' />
                     }
-                    <Route component={Vizier} />
                   </Switch>
                 </div>
               </ApolloProvider>

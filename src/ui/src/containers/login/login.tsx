@@ -13,7 +13,7 @@ export const Login = () => {
       <Switch>
         <Route exact path='/login' component={UserLogin} />
         <Route exact path='/logout' component={Logout} />
-        <Route component={UserCreate} />
+        <Route exact path='/signup' component={UserCreate} />
       </Switch>
     </Router>
   </div>

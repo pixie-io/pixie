@@ -1,18 +1,8 @@
-import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
-
 import Auth0Lock from 'auth0-lock';
 import Axios from 'axios';
 import {CodeSnippet} from 'components/code-snippet/code-snippet';
 import {DialogBox} from 'components/dialog-box/dialog-box';
 import {AUTH0_CLIENT_ID, AUTH0_DOMAIN, DOMAIN_NAME} from 'containers/constants';
-import * as QueryString from 'query-string';
-import * as React from 'react';
-import {ApolloConsumer} from 'react-apollo';
-import {Link} from 'react-router-dom';
-import {Button} from 'react-bootstrap';
-import analytics from 'utils/analytics';
-import * as RedirectUtils from 'utils/redirect-utils';
-
 // @ts-ignore : TS does not like image files.
 import * as check from 'images/icons/check.svg';
 // @ts-ignore : TS does not like image files.
@@ -23,6 +13,15 @@ import * as backgroundBottom from 'images/login-background-bottom.svg';
 import * as backgroundTop from 'images/login-background-top.svg';
 // @ts-ignore : TS does not like image files.
 import * as logo from 'images/new-logo.svg';
+import * as QueryString from 'query-string';
+import * as React from 'react';
+import {ApolloConsumer} from 'react-apollo';
+import {Button} from 'react-bootstrap';
+import {Link} from 'react-router-dom';
+import analytics from 'utils/analytics';
+import * as RedirectUtils from 'utils/redirect-utils';
+
+import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -123,30 +122,30 @@ const CompanyInfo = () => {
   return (
     <div className={classes.container}>
       <div className={classes.background}>
-        <div className={classes.backgroundTop}/>
-        <div className={classes.backgroundBottom}/>
+        <div className={classes.backgroundTop} />
+        <div className={classes.backgroundBottom} />
       </div>
       <img className={classes.logo} src={logo} />
       <div className={classes.contents}>
         <div className={classes.header}>Pixie Community</div>
         <div className={classes.subheader}>Private Beta</div>
-          <div className={classes.text}>
-            Engineers use Pixie's auto-telemetry to debug distributed environments in real-time
+        <div className={classes.text}>
+          Engineers use Pixie's auto-telemetry to debug distributed environments in real-time
           </div>
-          <ul className={classes.list}>
-            <li className={classes.bullet}>
-              Unlimited early access to core features
+        <ul className={classes.list}>
+          <li className={classes.bullet}>
+            Unlimited early access to core features
             </li>
-            <li className={classes.bullet}>
-              Support via community Slack & Github
+          <li className={classes.bullet}>
+            Support via community Slack & Github
             </li>
-            <li className={classes.bullet}>
-              No credit card needed
+          <li className={classes.bullet}>
+            No credit card needed
             </li>
-          </ul>
+        </ul>
       </div>
       <div className={classes.footer}>
-         <span>&#169;</span> 2020, Pixie Labs Inc.
+        <span>&#169;</span> 2020, Pixie Labs Inc.
       </div>
     </div>
   );
@@ -197,6 +196,12 @@ interface LoginState {
 }
 
 function onLoginAuthenticated(authResult, profile, error) {
+  const traits = {
+    email: profile.email,
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+  };
+  analytics.identify('', traits);
   if (this.cliAuthMode === 'manual') {
     this.setState({
       token: authResult.accessToken,
@@ -213,7 +218,7 @@ function onLoginAuthenticated(authResult, profile, error) {
     },
   }).then((response) => {
     // Associate anonymous use with actual user ID.
-    analytics.identify(response.data.userInfo.userID, {});
+    analytics.identify(response.data.userInfo.userID, traits);
     if (response.data.userCreated) {
       analytics.track('User created');
     }
@@ -229,6 +234,12 @@ function onLoginAuthenticated(authResult, profile, error) {
 }
 
 function onCreateAuthenticated(authResult, profile, error) {
+  const traits = {
+    email: profile.email,
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+  };
+  analytics.identify('', traits);
   return Axios({
     method: 'post',
     url: '/api/auth/signup',
@@ -238,12 +249,12 @@ function onCreateAuthenticated(authResult, profile, error) {
     },
   }).then((response) => {
     // Associate anonymous use with actual user ID.
-    analytics.identify(response.data.userInfo.userID, {});
-    analytics.track('Login success');
+    analytics.identify(response.data.userInfo.userID, traits);
+    analytics.track('User signed up');
   }).then((results) => {
     RedirectUtils.redirect(this.redirectPath || '/', {});
   }).catch((err) => {
-    analytics.track('Site create failed', { error: err.response.data });
+    analytics.track('User signup failed', { error: err.response.data });
     this.setState({
       error: err.response.data,
     });
@@ -306,14 +317,14 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
     let loginBody = (
       <>
         {this.authenticating ? null : <div className='login-header'>{this.props.headerText}</div>}
-          <Auth0Login
-            redirectPath={this.auth0Redirect}
-            allowSignUp={this.props.signUp}
-            allowLogin={!this.props.signUp}
-            responseMode={this.responseMode}
-            onAuthenticated={this.props.signUp ?
-              onCreateAuthenticated.bind(this) : onLoginAuthenticated.bind(this)}
-          />
+        <Auth0Login
+          redirectPath={this.auth0Redirect}
+          allowSignUp={this.props.signUp}
+          allowLogin={!this.props.signUp}
+          responseMode={this.responseMode}
+          onAuthenticated={this.props.signUp ?
+            onCreateAuthenticated.bind(this) : onLoginAuthenticated.bind(this)}
+        />
         {this.authenticating ? null :
           <span className='login-footer'>{this.props.footerText + ' '}
             <Link to={this.props.footerLink}>{this.props.footerLinkText}</Link>
