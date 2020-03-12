@@ -17,16 +17,23 @@ spec:
     spec:
       initContainers:
       - name: nats-wait
-        image: alpine:3.6
+        image: byrnedo/alpine-curl:0.1.8
         # yamllint disable
-        command: ['sh', '-c', 'set -x;  apk add --no-cache curl;
-          until timeout -t 2 curl -f "http://${NATS_ADDR}"; do
-            echo "waiting for http://${NATS_ADDR}";
+        command: ['sh', '-c', 'set -xe;
+          URL="${PROTOCOL}://${SERVICE_NAME}:${SERVICE_PORT}${HEALTH_PATH}";
+          until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
+            echo "waiting for ${URL}";
             sleep 2;
           done;']
         env:
-        - name: NATS_ADDR
-          value: "pl-nats-mgmt:8222"
+        - name: SERVICE_NAME
+          value: "pl-nats-mgmt"
+        - name: SERVICE_PORT
+          value: "8222"
+        - name: HEALTH_PATH
+          value: ""
+        - name: PROTOCOL
+          value: "http"
       containers:
       - name: vizier-metadata
         image: gcr.io/pl-dev-infra/vizier/metadata_server_image:latest

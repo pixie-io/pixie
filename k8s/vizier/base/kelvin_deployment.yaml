@@ -18,10 +18,9 @@ spec:
       - name: pl-image-secret
       initContainers:
       - name: qb-wait
-        image: alpine:3.6
+        image: byrnedo/alpine-curl:0.1.8
         # yamllint disable
         command: ['sh', '-c', 'set -x;
-          apk add --no-cache curl;
           URL="https://${SERVICE_NAME}:${SERVICE_PORT}/healthz";
           until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
             echo "waiting for ${URL}"
