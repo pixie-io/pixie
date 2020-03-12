@@ -651,5 +651,138 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
   }
 }
 
+TEST_F(ConnectionTrackerTest, DisabledDueToParsingFailureRate) {
+  using mysql::testutils::GenErr;
+  using mysql::testutils::GenRawPacket;
+
+  testing::EventGenerator event_gen(&real_clock_);
+  auto req_frame0 = event_gen.InitSendEvent<kProtocolMySQL>(
+      GenRawPacket(0, "\x44 0x44 is not a valid MySQL command"));
+  auto resp_frame0 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
+  auto req_frame1 = event_gen.InitSendEvent<kProtocolMySQL>(
+      GenRawPacket(0, "\x55 0x55 is not a valid MySQL command"));
+  auto resp_frame1 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
+  auto req_frame2 = event_gen.InitSendEvent<kProtocolMySQL>(
+      GenRawPacket(0, "\x66 0x66 is not a valid MySQL command"));
+  auto resp_frame2 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
+  auto req_frame3 = event_gen.InitSendEvent<kProtocolMySQL>(
+      GenRawPacket(0, "\x77 0x77 is not a valid MySQL command"));
+  auto resp_frame3 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
+  auto req_frame4 = event_gen.InitSendEvent<kProtocolMySQL>(
+      GenRawPacket(0, "\x88 0x88 is not a valid MySQL command"));
+  auto resp_frame4 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
+  auto req_frame5 = event_gen.InitSendEvent<kProtocolMySQL>(
+      GenRawPacket(0, "\x99 0x99 is not a valid MySQL command"));
+  auto resp_frame5 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
+  auto req_frame6 = event_gen.InitSendEvent<kProtocolMySQL>(
+      GenRawPacket(0, "\xaa 0xaa is not a valid MySQL command"));
+  auto resp_frame6 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
+
+  ConnectionTracker tracker;
+  std::vector<mysql::Record> records;
+
+  tracker.AddDataEvent(std::move(req_frame0));
+  tracker.AddDataEvent(std::move(resp_frame0));
+
+  records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
+  tracker.IterationPostTick();
+
+  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kCollecting);
+  EXPECT_EQ(records.size(), 0);
+
+  tracker.AddDataEvent(std::move(req_frame1));
+  tracker.AddDataEvent(std::move(resp_frame1));
+  records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
+  tracker.IterationPostTick();
+
+  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kCollecting);
+  EXPECT_EQ(records.size(), 0);
+
+  tracker.AddDataEvent(std::move(req_frame2));
+  tracker.AddDataEvent(std::move(resp_frame2));
+  records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
+  tracker.IterationPostTick();
+
+  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kCollecting);
+  EXPECT_EQ(records.size(), 0);
+
+  tracker.AddDataEvent(std::move(req_frame3));
+  tracker.AddDataEvent(std::move(resp_frame3));
+  records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
+  tracker.IterationPostTick();
+
+  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kCollecting);
+  EXPECT_EQ(records.size(), 0);
+
+  tracker.AddDataEvent(std::move(req_frame4));
+  tracker.AddDataEvent(std::move(resp_frame4));
+  records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
+  tracker.IterationPostTick();
+
+  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kCollecting);
+  EXPECT_EQ(records.size(), 0);
+
+  // This request should push the error rate above the brink.
+  tracker.AddDataEvent(std::move(req_frame5));
+  tracker.AddDataEvent(std::move(resp_frame5));
+  records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
+  tracker.IterationPostTick();
+
+  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kDisabled);
+  EXPECT_EQ(records.size(), 0);
+}
+
+TEST_F(ConnectionTrackerTest, DisabledDueToStitchingFailureRate) {
+  using mysql::testutils::GenErr;
+  using mysql::testutils::GenRawPacket;
+
+  testing::EventGenerator event_gen(&real_clock_);
+  auto req_frame0 = event_gen.InitSendEvent<kProtocolMySQL>(GenRawPacket(0, "\x03 A"));
+  auto resp_frame0 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
+  auto req_frame1 = event_gen.InitSendEvent<kProtocolMySQL>(GenRawPacket(0, "\x03 B"));
+  auto resp_frame1 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
+  auto req_frame2 = event_gen.InitSendEvent<kProtocolMySQL>(GenRawPacket(0, "\x03 C"));
+  auto resp_frame2 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
+  auto req_frame3 = event_gen.InitSendEvent<kProtocolMySQL>(GenRawPacket(0, "\x03 D"));
+  auto resp_frame3 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
+  auto req_frame4 = event_gen.InitSendEvent<kProtocolMySQL>(GenRawPacket(0, "\x03 E"));
+  auto resp_frame4 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
+  auto req_frame5 = event_gen.InitSendEvent<kProtocolMySQL>(GenRawPacket(0, "\x03 F"));
+  auto resp_frame5 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
+  auto req_frame6 = event_gen.InitSendEvent<kProtocolMySQL>(GenRawPacket(0, "\x03 G"));
+  auto resp_frame6 = event_gen.InitRecvEvent<kProtocolMySQL>(GenRawPacket(1, ""));
+
+  ConnectionTracker tracker;
+  std::vector<mysql::Record> records;
+
+  tracker.AddDataEvent(std::move(req_frame0));
+  tracker.AddDataEvent(std::move(resp_frame0));
+  tracker.AddDataEvent(std::move(req_frame1));
+  tracker.AddDataEvent(std::move(resp_frame1));
+  tracker.AddDataEvent(std::move(req_frame2));
+  tracker.AddDataEvent(std::move(resp_frame2));
+  tracker.AddDataEvent(std::move(req_frame3));
+  tracker.AddDataEvent(std::move(resp_frame3));
+  tracker.AddDataEvent(std::move(req_frame4));
+  tracker.AddDataEvent(std::move(resp_frame4));
+
+  records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
+  tracker.IterationPostTick();
+
+  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kCollecting);
+  EXPECT_EQ(records.size(), 0);
+
+  // This request should push the error rate above the brink.
+  tracker.AddDataEvent(std::move(req_frame5));
+  tracker.AddDataEvent(std::move(resp_frame5));
+  records = tracker.ProcessToRecords<mysql::ProtocolTraits>();
+  tracker.IterationPostTick();
+
+  EXPECT_EQ(tracker.state(), ConnectionTracker::State::kDisabled);
+  EXPECT_EQ(tracker.disable_reason(),
+            "Connection does not appear to produce valid records of protocol kProtocolMySQL");
+  EXPECT_EQ(records.size(), 0);
+}
+
 }  // namespace stirling
 }  // namespace pl

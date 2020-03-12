@@ -112,7 +112,7 @@ class DataStream {
   int stat_raw_data_gaps() const { return stat_raw_data_gaps_; }
 
   /**
-   * Percentage of frame parsing attempts that resulted in an invalid frame.
+   * Fraction of frame parsing attempts that resulted in an invalid frame.
    *
    * Frame parsing attempts is defined as number of frames extracted,
    * not as number of calls to ParseFrames().

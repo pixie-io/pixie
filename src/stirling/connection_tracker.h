@@ -264,6 +264,11 @@ class ConnectionTracker {
   void Disable(std::string_view reason = "");
 
   /**
+   * If disabled, returns the reason the tracker was disabled.
+   */
+  std::string_view disable_reason() const { return std::string_view(disable_reason_); }
+
+  /**
    * Returns a state that determine the operations performed on the traffic traced on the
    * connection.
    */
@@ -342,6 +347,11 @@ class ConnectionTracker {
    * inactive.
    */
   static std::chrono::seconds InactivityDuration() { return inactivity_duration_; }
+
+  /**
+   * Fraction of frame stitching attempts that resulted in an invalid record.
+   */
+  double StitchFailureRate() const;
 
   enum class CountStats {
     kDataEvent = 0,
@@ -505,10 +515,16 @@ class ConnectionTracker {
 
   State state_ = State::kCollecting;
 
+  std::string disable_reason_;
+
   inline static std::chrono::seconds inactivity_duration_ = kDefaultInactivityDuration;
 
   // Iterations before the tracker can be killed.
   int32_t death_countdown_ = -1;
+
+  // Keep some stats on ProcessFrames() calls.
+  int stat_invalid_records_ = 0;
+  int stat_valid_records_ = 0;
 
   std::vector<int64_t> stats_ = std::vector<int64_t>(static_cast<int>(CountStats::kNumCountStats));
 

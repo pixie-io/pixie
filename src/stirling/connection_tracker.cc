@@ -32,11 +32,12 @@ DEFINE_uint32(stirling_http2_stream_id_gap_threshold, 100,
               "If a stream ID jumps by this many spots or more, an error is assumed and the entire "
               "connection info is cleared.");
 
-// Parse failure rate threshold, after which a connection tracker will be disabled.
-constexpr double kParseFailureRateThreshold = 0.4;
-
 namespace pl {
 namespace stirling {
+
+// Parse failure rate threshold, after which a connection tracker will be disabled.
+constexpr double kParseFailureRateThreshold = 0.4;
+constexpr double kStitchFailureRateThreshold = 0.5;
 
 namespace {
 std::string ToString(const conn_id_t& conn_id) {
@@ -371,6 +372,8 @@ std::vector<typename TProtocolTraits::record_type> ConnectionTracker::ProcessToR
   auto state_ptr = protocol_state<TStateType>();
 
   RecordsWithErrorCount<TRecordType> result = ProcessFrames(&req_frames, &resp_frames, state_ptr);
+  stat_invalid_records_ += result.error_count;
+  stat_valid_records_ += result.records.size();
 
   Cleanup<TProtocolTraits>();
 
@@ -414,9 +417,8 @@ void ConnectionTracker::Disable(std::string_view reason) {
       << absl::Substitute("Disabling connection=$0 dest=$1:$2, reason=$3", ToString(conn_id_),
                           open_info_.remote_addr.AddrStr(), open_info_.remote_addr.port, reason);
 
-  // TODO(oazizi/yzhao): Consider storing the reason field.
-
   state_ = State::kDisabled;
+  disable_reason_ = reason;
 
   Reset();
 
@@ -636,6 +638,11 @@ void ConnectionTracker::IterationPostTick() {
     Disable(absl::Substitute("Connection does not appear parseable as protocol $0",
                              magic_enum::enum_name(protocol())));
   }
+
+  if (StitchFailureRate() > kStitchFailureRateThreshold) {
+    Disable(absl::Substitute("Connection does not appear to produce valid records of protocol $0",
+                             magic_enum::enum_name(protocol())));
+  }
 }
 
 void ConnectionTracker::HandleInactivity() {
@@ -651,6 +658,19 @@ void ConnectionTracker::HandleInactivity() {
     // It is unlikely any new data is a continuation of existing data in in any meaningful way.
     Reset();
   }
+}
+
+double ConnectionTracker::StitchFailureRate() const {
+  int total_attempts = stat_invalid_records_ + stat_valid_records_;
+
+  // Don't report rates until there some meaningful amount of events.
+  // - Avoids division by zero.
+  // - Avoids caller making decisions based on too little data.
+  if (total_attempts <= 5) {
+    return 0.0;
+  }
+
+  return 1.0 * stat_invalid_records_ / total_attempts;
 }
 
 namespace {
