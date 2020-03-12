@@ -752,8 +752,8 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   if (!socket_info_status.ok()) {
     conn_resolver_ = nullptr;
     conn_resolution_failed_ = true;
-    LOG(WARNING) << absl::Substitute("Could not map inode to a connection. Message = $0",
-                                     socket_info_status.msg());
+    VLOG(1) << absl::Substitute("$0 Could not map inode to a connection. Message = $1",
+                                ToString(conn_id_), socket_info_status.msg());
     return;
   }
   const system::SocketInfo* socket_info = socket_info_status.ValueOrDie();
