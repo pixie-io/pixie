@@ -51,27 +51,19 @@ data:
         Keep_Log            Off
 
     [FILTER]
-        Name         nest
-        Match        *
-        Operation    lift
-        Nested_under kubernetes
-        Prefix_with  k8s_
-
+        Name grep
+        Match *
+        Regex kubernetes namespace_name pl$
+    
     [FILTER]
-        Name    grep
-        Match   *
-        Regex k8s_namespace_name pl$
+        Name grep
+        Match *
+        Exclude kubernetes container_name fluent-bit
 
     [FILTER]
         Name grep
         Match *
-        Exclude k8s_container_name fluent-bit
-
-    [FILTER]
-        Name grep
-        Match *
-        # We have to exclude nats-watcher otherwise we get exponential explosion of logs
-        Exclude k8s_container_name nats-watcher
+        Exclude kubernetes container_name nats-watcher
 
     # NOTE(james): these two filters are necessary because query-broker uses both glog and logfmt formats
     # so we have to explicitly try to parse the lines that aren't logfmt in that case.
@@ -89,6 +81,11 @@ data:
         Wildcard glog_*
         Nest_under log_processed
         Remove_prefix glog_
+
+    [FILTER]
+        Name grep
+        Match *
+        Exclude log_processed req_path /healthz
 
   output-stdout.conf: |
     [OUTPUT]
