@@ -298,13 +298,16 @@ StatusOr<ParseState> ProcessStmtSendLongData(const Packet& req_packet,
   // Response
   //----------------
 
-  // COM_STMT_CLOSE doesn't use any response packets.
+  // COM_STMT_SEND_LONG_DATA doesn't use any response packets.
   if (!resp_packets.empty()) {
     LOG(ERROR) << absl::Substitute(
         "Did not expect any response packets [cmd=$0]. All response packets will be ignored.",
         static_cast<uint8_t>(req_packet.msg[0]));
   }
 
+  // COM_STMT_SEND_LONG_DATA has no response.
+  entry->resp.status = MySQLRespStatus::kNone;
+  entry->resp.timestamp_ns = 0;
   return ParseState::kSuccess;
 }
 
@@ -381,9 +384,9 @@ StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, DequeView<Packet
         static_cast<uint8_t>(req_packet.msg[0]), resp_packets.size());
   }
 
-  entry->resp.status = MySQLRespStatus::kOK;
-  // Use request as the timestamp because a close has no response. Latency is 0.
-  entry->resp.timestamp_ns = req_packet.timestamp_ns;
+  // COM_STMT_CLOSE has no response.
+  entry->resp.status = MySQLRespStatus::kNone;
+  entry->resp.timestamp_ns = 0;
   return ParseState::kSuccess;
 }
 

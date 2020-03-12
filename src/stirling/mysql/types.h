@@ -339,7 +339,7 @@ struct StateWrapper {
 // Table Store Entry Level Structs
 //-----------------------------------------------------------------------------
 
-enum class MySQLRespStatus { kUnknown, kOK, kErr };
+enum class MySQLRespStatus { kUnknown, kNone, kOK, kErr };
 
 struct MySQLRequest {
   // MySQL command. See MySQLEventType.

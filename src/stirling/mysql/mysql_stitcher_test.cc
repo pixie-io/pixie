@@ -83,6 +83,25 @@ TEST(StitcherTest, TestProcessStmtExecute) {
   EXPECT_EQ(expected_resultset_entry, entry);
 }
 
+TEST(StitcherTest, TestProcessStmtSendLongData) {
+  // Test setup.
+  // TODO(oazizi): Not a real COM_STMT_SEND_LONG_DATA. Need to replace with a real capture.
+  Packet req = testutils::GenStringRequest(StringRequest{""}, MySQLEventType::kStmtSendLongData);
+  std::deque<Packet> resp_packets = {};
+  State state{std::map<int, PreparedStatement>()};
+  state.prepared_statements.emplace(testdata::kStmtID, testdata::kPreparedStatement);
+
+  // Run function-under-test.
+  Record entry;
+  EXPECT_OK_AND_EQ(ProcessStmtSendLongData(req, resp_packets, &state, &entry),
+                   ParseState::kSuccess);
+
+  // Check the resulting entries and state.
+  Record expected_entry{.req = {MySQLEventType::kStmtSendLongData, "", 0},
+                        .resp = {MySQLRespStatus::kNone, "", 0}};
+  EXPECT_EQ(expected_entry, entry);
+}
+
 TEST(StitcherTest, TestProcessStmtClose) {
   // Test setup.
   Packet req = testutils::GenStmtCloseRequest(testdata::kStmtCloseRequest);
@@ -96,7 +115,7 @@ TEST(StitcherTest, TestProcessStmtClose) {
 
   // Check the resulting entries and state.
   Record expected_entry{.req = {MySQLEventType::kStmtClose, "", 0},
-                        .resp = {MySQLRespStatus::kOK, "", 0}};
+                        .resp = {MySQLRespStatus::kNone, "", 0}};
   EXPECT_EQ(expected_entry, entry);
 }
 
