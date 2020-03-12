@@ -23,21 +23,23 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, Packet* result) {
     return ParseState::kNeedsMoreData;
   }
 
-  result->sequence_id = static_cast<uint8_t>((*buf)[3]);
-
   // TODO(oazizi): Is pre-checking requests here a good idea? Somewhat out of place.
-  // Better fit for stitcher (process of converting packets to events).
+  // Better fit for stitcher (when analyzing structure of packet bodies).
   if (type == MessageType::kRequest) {
+    if (buf->size() < kPacketHeaderLength + 1) {
+      return ParseState::kInvalid;
+    }
     uint8_t command = (*buf)[kPacketHeaderLength];
     if (!IsValidCommand(command)) {
       return ParseState::kInvalid;
     }
   }
 
+  result->sequence_id = static_cast<uint8_t>((*buf)[3]);
+
   int packet_length = utils::LEndianBytesToInt<int, kPayloadLengthLength>(*buf);
   ssize_t buffer_length = buf->length();
 
-  // 3 bytes of packet length and 1 byte of packet number.
   if (buffer_length < kPacketHeaderLength + packet_length) {
     return ParseState::kNeedsMoreData;
   }

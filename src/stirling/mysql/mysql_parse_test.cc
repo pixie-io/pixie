@@ -23,11 +23,6 @@ struct MySQLReqResp {
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 
-class MySQLParserTest : public ::testing::Test {
- protected:
-  EventParser<Packet> parser_;
-};
-
 bool operator==(const Packet& lhs, const Packet& rhs) {
   if (lhs.msg.compare(rhs.msg) != 0) {
     return false;
@@ -37,6 +32,31 @@ bool operator==(const Packet& lhs, const Packet& rhs) {
   }
   return true;
 }
+
+TEST(MySQLParseFrame, Basics) {
+  Packet packet;
+  ParseState parse_state;
+
+  const std::string kEmptyReq = testutils::GenRawPacket(0, "");
+  const std::string kQueryReq = testutils::GenRawPacket(0, "\x03 SELECT * FROM foo;");
+
+  std::string_view empty_req_view(kEmptyReq);
+  parse_state = ParseFrame(MessageType::kRequest, &empty_req_view, &packet);
+  EXPECT_EQ(parse_state, ParseState::kInvalid);
+
+  std::string_view short_req_view(kEmptyReq.substr(0, kPacketHeaderLength - 1));
+  parse_state = ParseFrame(MessageType::kRequest, &short_req_view, &packet);
+  EXPECT_EQ(parse_state, ParseState::kNeedsMoreData);
+
+  std::string_view query_req_view(kQueryReq);
+  parse_state = ParseFrame(MessageType::kRequest, &query_req_view, &packet);
+  EXPECT_EQ(parse_state, ParseState::kSuccess);
+}
+
+class MySQLParserTest : public ::testing::Test {
+ protected:
+  EventParser<Packet> parser_;
+};
 
 TEST_F(MySQLParserTest, ParseRaw) {
   const std::string buf = absl::StrCat(testutils::GenRawPacket(0, "\x03SELECT foo"),
