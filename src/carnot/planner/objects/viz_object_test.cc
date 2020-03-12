@@ -13,15 +13,11 @@ namespace compiler {
 
 using VizObjectTest = QLObjectTest;
 
-StatusOr<QLObjectPtr> SimpleFunc(const pypa::AstPtr&, const ParsedArgs&, ASTVisitor* visitor) {
-  return StatusOr<QLObjectPtr>(std::make_shared<NoneObject>(visitor));
-}
-
 TEST_F(VizObjectTest, SubscriptWithString) {
   std::shared_ptr<FuncObject> func_obj =
-      FuncObject::Create("func", {"fn"}, {}, /* has_variable_len_args */ false,
+      FuncObject::Create("func", {}, {}, /* has_variable_len_args */ false,
                          /* has_variable_len_kwargs */ false,
-                         std::bind(&SimpleFunc, std::placeholders::_1, std::placeholders::_2,
+                         std::bind(&NoneObjectFunc, std::placeholders::_1, std::placeholders::_2,
                                    std::placeholders::_3),
                          ast_visitor.get())
           .ConsumeValueOrDie();
@@ -46,7 +42,7 @@ TEST_F(VizObjectTest, SubscriptWithString) {
 
   auto call = call_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(call->HasVizSpec());
-  EXPECT_EQ(call->viz_spec().vega_spec, "abcd");
+  EXPECT_EQ(call->viz_spec()->vega_spec, "abcd");
 }
 
 }  // namespace compiler

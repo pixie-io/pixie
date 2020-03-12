@@ -154,11 +154,11 @@ class FuncObject : public QLObject {
    * @param spec
    * @return Status
    */
-  Status AddVizSpec(const VizSpec& viz_spec);
+  Status AddVizSpec(std::unique_ptr<VizSpec> viz_spec);
 
-  bool HasVizSpec() { return viz_spec_.vega_spec != ""; }
+  bool HasVizSpec() { return viz_spec_ != nullptr; }
 
-  const VizSpec& viz_spec() const { return viz_spec_; }
+  VizSpec* viz_spec() const { return viz_spec_.get(); }
 
   Status AddDocString(QLObjectPtr doc_string);
 
@@ -177,7 +177,7 @@ class FuncObject : public QLObject {
 
   std::string name_;
   // The visualization spec of this function if it has one.
-  VizSpec viz_spec_;
+  std::unique_ptr<VizSpec> viz_spec_ = nullptr;
 
   // The doc string of this function.
   std::string doc_string_;

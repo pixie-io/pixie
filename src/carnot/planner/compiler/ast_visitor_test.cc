@@ -1556,7 +1556,7 @@ TEST_F(ASTVisitorTest, decorator_parsed) {
 
   auto func_object = std::static_pointer_cast<FuncObject>(plot_latency);
   ASSERT_TRUE(func_object->HasVizSpec());
-  EXPECT_EQ(func_object->viz_spec().vega_spec, "\nabcd\n");
+  EXPECT_EQ(func_object->viz_spec()->vega_spec, "\nabcd\n");
 }
 
 constexpr char kProblemDecoratorParsing[] = R"pxl(

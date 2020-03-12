@@ -12,6 +12,7 @@
 #include "src/carnot/planner/objects/collection_object.h"
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/objects/expr_object.h"
+#include "src/carnot/planner/objects/none_object.h"
 
 namespace pl {
 namespace carnot {
@@ -73,6 +74,10 @@ class QLObjectTest : public OperatorTests {
   std::shared_ptr<RegistryInfo> info = nullptr;
   std::shared_ptr<ASTVisitor> ast_visitor = nullptr;
 };
+
+StatusOr<QLObjectPtr> NoneObjectFunc(const pypa::AstPtr&, const ParsedArgs&, ASTVisitor* visitor) {
+  return StatusOr<QLObjectPtr>(std::make_shared<NoneObject>(visitor));
+}
 
 }  // namespace compiler
 }  // namespace planner

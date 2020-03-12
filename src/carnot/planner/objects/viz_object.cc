@@ -1,4 +1,6 @@
 #include "src/carnot/planner/objects/viz_object.h"
+
+#include <utility>
 #include "src/carnot/planner/objects/expr_object.h"
 
 namespace pl {
@@ -44,7 +46,9 @@ StatusOr<QLObjectPtr> VegaHandler::NestedFn(std::string spec, const pypa::AstPtr
   auto fn = args.GetArg("fn");
   PL_ASSIGN_OR_RETURN(auto func, GetCallMethod(ast, fn));
 
-  PL_RETURN_IF_ERROR(func->AddVizSpec({spec}));
+  auto viz_spec = std::make_unique<VizSpec>();
+  viz_spec->vega_spec = spec;
+  PL_RETURN_IF_ERROR(func->AddVizSpec(std::move(viz_spec)));
   return std::static_pointer_cast<QLObject>(func);
 }
 

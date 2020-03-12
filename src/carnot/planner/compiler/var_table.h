@@ -11,9 +11,8 @@ namespace planner {
 namespace compiler {
 /**
  * @brief VarTable contains variables that are generated during processing.
- *
+ * enable_shared_from_this allows you to make shared_ptrs of this object safely.
  */
-// enable_shared_from_this allows you to make shared_ptrs of this object safely.
 class VarTable : public std::enable_shared_from_this<VarTable> {
  public:
   /**
@@ -63,6 +62,13 @@ class VarTable : public std::enable_shared_from_this<VarTable> {
    * @return std::shared_ptr<VarTable> The child Vartable.
    */
   std::shared_ptr<VarTable> CreateChild();
+
+  /**
+   * @brief Get the Functions that describe visualizations.
+   *
+   * @return std::shared_ptr<FuncObject>
+   */
+  absl::flat_hash_map<std::string, std::shared_ptr<FuncObject>> GetVizFuncs();
 
   std::shared_ptr<VarTable> parent_scope() { return parent_scope_; }
 

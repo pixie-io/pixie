@@ -1,4 +1,7 @@
 #include "src/carnot/planner/objects/funcobject.h"
+
+#include <memory>
+#include <utility>
 #include "src/carnot/planner/parser/parser.h"
 
 namespace pl {
@@ -125,8 +128,8 @@ std::string FuncObject::FormatArguments(const absl::flat_hash_set<std::string> a
   });
 }
 
-Status FuncObject::AddVizSpec(const VizSpec& viz_spec) {
-  viz_spec_ = viz_spec;
+Status FuncObject::AddVizSpec(std::unique_ptr<VizSpec> viz_spec) {
+  viz_spec_ = std::move(viz_spec);
   return Status::OK();
 }
 

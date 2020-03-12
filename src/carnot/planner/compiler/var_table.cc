@@ -1,4 +1,5 @@
 #include "src/carnot/planner/compiler/var_table.h"
+#include "src/carnot/planner/objects/funcobject.h"
 
 namespace pl {
 namespace carnot {
@@ -30,6 +31,23 @@ bool VarTable::HasVariable(std::string_view name) { return Lookup(name) != nullp
 void VarTable::Add(std::string_view name, QLObjectPtr ql_object) { scope_table_[name] = ql_object; }
 
 std::shared_ptr<VarTable> VarTable::CreateChild() { return VarTable::Create(shared_from_this()); }
+
+absl::flat_hash_map<std::string, std::shared_ptr<FuncObject>> VarTable::GetVizFuncs() {
+  DCHECK_EQ(parent_scope_, nullptr);
+  absl::flat_hash_map<std::string, std::shared_ptr<FuncObject>> viz_funcs;
+  for (const auto& [name, object] : scope_table_) {
+    if (object->type() != QLObjectType::kFunction) {
+      continue;
+    }
+    std::shared_ptr<FuncObject> func_object = std::static_pointer_cast<FuncObject>(object);
+    // Only keep the func objects that have a visualization spec.
+    if (!func_object->HasVizSpec()) {
+      continue;
+    }
+    viz_funcs[name] = func_object;
+  }
+  return viz_funcs;
+}
 
 }  // namespace compiler
 }  // namespace planner
