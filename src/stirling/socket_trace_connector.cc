@@ -564,9 +564,8 @@ HTTPContentType DetectContentType(const http::Message& message) {
 
 int64_t CalculateLatency(int64_t req_timestamp_ns, int64_t resp_timestamp_ns) {
   int64_t latency_ns = 0;
-  if (req_timestamp_ns > 0) {
+  if (req_timestamp_ns > 0 && resp_timestamp_ns > 0) {
     latency_ns = resp_timestamp_ns - req_timestamp_ns;
-    // TODO(oazizi): Change to DFATAL once req-resp matching algorithms are stable and tested.
     LOG_IF(WARNING, latency_ns < 0)
         << absl::Substitute("Negative latency implies req resp mismatch [t_req=$0, t_resp=$1].",
                             req_timestamp_ns, resp_timestamp_ns);
