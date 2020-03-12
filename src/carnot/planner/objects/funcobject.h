@@ -160,6 +160,10 @@ class FuncObject : public QLObject {
 
   const VizSpec& viz_spec() const { return viz_spec_; }
 
+  Status AddDocString(QLObjectPtr doc_string);
+
+  const std::string& doc_string() const { return doc_string_; }
+
  private:
   StatusOr<ParsedArgs> PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast);
 
@@ -174,6 +178,9 @@ class FuncObject : public QLObject {
   std::string name_;
   // The visualization spec of this function if it has one.
   VizSpec viz_spec_;
+
+  // The doc string of this function.
+  std::string doc_string_;
 
   std::vector<std::string> arguments_;
   absl::flat_hash_map<std::string, DefaultType> defaults_;

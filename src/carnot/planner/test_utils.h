@@ -542,26 +542,26 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 8
-          sorted_children: 10
-        }
-        nodes {
           id: 9
-          sorted_children: 10
+          sorted_children: 11
         }
         nodes {
           id: 10
-          sorted_children: 6
-          sorted_parents: 8
-          sorted_parents: 9
+          sorted_children: 11
         }
         nodes {
-          id: 6
+          id: 11
+          sorted_children: 7
+          sorted_parents: 9
           sorted_parents: 10
+        }
+        nodes {
+          id: 7
+          sorted_parents: 11
         }
       }
       nodes {
-        id: 8
+        id: 9
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -580,7 +580,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 9
+        id: 10
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -599,7 +599,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 10
+        id: 11
         op {
           op_type: UNION_OPERATOR
           union_op {
@@ -620,12 +620,12 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 6
+        id: 7
         op {
           op_type: GRPC_SINK_OPERATOR
           grpc_sink_op {
             address: "1111"
-            destination_id: 9
+            destination_id: 10
           }
         }
       }
@@ -646,26 +646,26 @@ qb_address_to_plan {
       id: 1
       dag {
         nodes {
-          id: 8
-          sorted_children: 10
-        }
-        nodes {
           id: 9
-          sorted_children: 10
+          sorted_children: 11
         }
         nodes {
           id: 10
-          sorted_children: 6
-          sorted_parents: 8
-          sorted_parents: 9
+          sorted_children: 11
         }
         nodes {
-          id: 6
+          id: 11
+          sorted_children: 7
+          sorted_parents: 9
           sorted_parents: 10
+        }
+        nodes {
+          id: 7
+          sorted_parents: 11
         }
       }
       nodes {
-        id: 8
+        id: 9
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -684,7 +684,7 @@ qb_address_to_plan {
         }
       }
       nodes {
-        id: 9
+        id: 10
         op {
           op_type: MEMORY_SOURCE_OPERATOR
           mem_source_op {
@@ -703,7 +703,101 @@ qb_address_to_plan {
         }
       }
       nodes {
+        id: 11
+        op {
+          op_type: UNION_OPERATOR
+          union_op {
+            column_names: "time_"
+            column_names: "cpu_cycles"
+            column_names: "upid"
+            column_mappings {
+              column_indexes: 0
+              column_indexes: 1
+              column_indexes: 2
+            }
+            column_mappings {
+              column_indexes: 0
+              column_indexes: 1
+              column_indexes: 2
+            }
+          }
+        }
+      }
+      nodes {
+        id: 7
+        op {
+          op_type: GRPC_SINK_OPERATOR
+          grpc_sink_op {
+            address: "1111"
+            destination_id: 9
+          }
+        }
+      }
+    }
+    plan_options {
+    }
+  }
+}
+qb_address_to_plan {
+  key: "kelvin"
+  value {
+    dag {
+      nodes {
+        id: 1
+      }
+    }
+    nodes {
+      id: 1
+      dag {
+        nodes {
+          id: 9
+          sorted_children: 11
+        }
+        nodes {
+          id: 10
+          sorted_children: 11
+        }
+        nodes {
+          id: 11
+          sorted_children: 6
+          sorted_parents: 9
+          sorted_parents: 10
+        }
+        nodes {
+          id: 6
+          sorted_parents: 11
+        }
+      }
+      nodes {
+        id: 9
+        op {
+          op_type: GRPC_SOURCE_OPERATOR
+          grpc_source_op {
+            column_types: TIME64NS
+            column_types: INT64
+            column_types: UINT128
+            column_names: "time_"
+            column_names: "cpu_cycles"
+            column_names: "upid"
+          }
+        }
+      }
+      nodes {
         id: 10
+        op {
+          op_type: GRPC_SOURCE_OPERATOR
+          grpc_source_op {
+            column_types: TIME64NS
+            column_types: INT64
+            column_types: UINT128
+            column_names: "time_"
+            column_names: "cpu_cycles"
+            column_names: "upid"
+          }
+        }
+      }
+      nodes {
+        id: 11
         op {
           op_type: UNION_OPERATOR
           union_op {
@@ -725,100 +819,6 @@ qb_address_to_plan {
       }
       nodes {
         id: 6
-        op {
-          op_type: GRPC_SINK_OPERATOR
-          grpc_sink_op {
-            address: "1111"
-            destination_id: 8
-          }
-        }
-      }
-    }
-    plan_options {
-    }
-  }
-}
-qb_address_to_plan {
-  key: "kelvin"
-  value {
-    dag {
-      nodes {
-        id: 1
-      }
-    }
-    nodes {
-      id: 1
-      dag {
-        nodes {
-          id: 8
-          sorted_children: 10
-        }
-        nodes {
-          id: 9
-          sorted_children: 10
-        }
-        nodes {
-          id: 10
-          sorted_children: 5
-          sorted_parents: 8
-          sorted_parents: 9
-        }
-        nodes {
-          id: 5
-          sorted_parents: 10
-        }
-      }
-      nodes {
-        id: 8
-        op {
-          op_type: GRPC_SOURCE_OPERATOR
-          grpc_source_op {
-            column_types: TIME64NS
-            column_types: INT64
-            column_types: UINT128
-            column_names: "time_"
-            column_names: "cpu_cycles"
-            column_names: "upid"
-          }
-        }
-      }
-      nodes {
-        id: 9
-        op {
-          op_type: GRPC_SOURCE_OPERATOR
-          grpc_source_op {
-            column_types: TIME64NS
-            column_types: INT64
-            column_types: UINT128
-            column_names: "time_"
-            column_names: "cpu_cycles"
-            column_names: "upid"
-          }
-        }
-      }
-      nodes {
-        id: 10
-        op {
-          op_type: UNION_OPERATOR
-          union_op {
-            column_names: "time_"
-            column_names: "cpu_cycles"
-            column_names: "upid"
-            column_mappings {
-              column_indexes: 0
-              column_indexes: 1
-              column_indexes: 2
-            }
-            column_mappings {
-              column_indexes: 0
-              column_indexes: 1
-              column_indexes: 2
-            }
-          }
-        }
-      }
-      nodes {
-        id: 5
         op {
           op_type: MEMORY_SINK_OPERATOR
           mem_sink_op {

@@ -454,6 +454,22 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<QLObjectPtr> ProcessFuncDefReturn(const pypa::AstReturnPtr& ret);
 
   Status AddPixieModule(std::string_view module_name);
+  /**
+   * @brief Processes any doc string within a function.
+   *
+   * @param body the ast node of the body of the function
+   * @return StatusOr<QLObjectPtr> the ql object ptr representing the doc string (either a string or
+   * None)
+   */
+  StatusOr<QLObjectPtr> ProcessFuncDefDocString(const pypa::AstSuitePtr& body);
+
+  /**
+   * @brief Processes a doc string pypa node.
+   *
+   * @param doc_string the ast node of the doc string.
+   * @return StatusOr<QLObjectPtr> the ql object ptr representing the doc string.
+   */
+  StatusOr<QLObjectPtr> ProcessDocString(const pypa::AstDocStringPtr& doc_string);
 
   IR* ir_graph_;
   CompilerState* compiler_state_;

@@ -87,7 +87,8 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSingleExpressionModule(
 StatusOr<QLObjectPtr> ASTVisitorImpl::ParseAndProcessSingleExpression(
     std::string_view single_expr_str, bool import_px) {
   Parser parser;
-  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(single_expr_str.data()));
+  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast,
+                      parser.Parse(single_expr_str.data(), /* parse_doc_strings */ false));
   if (import_px) {
     auto child_visitor = CreateChild();
     // Use a child of this ASTVisitor so that we can add px to its child var_table without affecting
@@ -118,6 +119,22 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
   if (items_list.size() == 0) {
     return CreateAstError(body, "No runnable code found");
   }
+  if (items_list[0]->type == pypa::AstType::DocString) {
+    if (!is_function_definition_body) {
+      PL_ASSIGN_OR_RETURN(auto doc_string,
+                          ProcessDocString(PYPA_PTR_CAST(DocString, items_list[0])));
+      var_table_->Add("__doc__", doc_string);
+    }
+    // NOTE(james): If this is a function definition body we can still erase, since we handle
+    // function docstrings at function definition time.
+    items_list.erase(items_list.begin());
+  } else {
+    if (!is_function_definition_body) {
+      PL_ASSIGN_OR_RETURN(auto ir_node, ir_graph_->CreateNode<StringIR>(body, ""));
+      PL_ASSIGN_OR_RETURN(auto doc_string, ExprObject::Create(ir_node, this));
+      var_table_->Add("__doc__", doc_string);
+    }
+  }
   // iterate through all the items on this list.
   for (pypa::AstStmt stmt : items_list) {
     switch (stmt->type) {
@@ -140,6 +157,10 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
       case pypa::AstType::FunctionDef: {
         PL_RETURN_IF_ERROR(ProcessFunctionDefNode(PYPA_PTR_CAST(FunctionDef, stmt)));
         break;
+      }
+      case pypa::AstType::DocString: {
+        return CreateAstError(stmt,
+                              "Doc strings are only allowed at the start of a module or function.");
       }
       case pypa::AstType::Return: {
         // If we are not parsing a function definition's body then we must error.
@@ -479,6 +500,9 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
     PL_ASSIGN_OR_RETURN(defined_func, GetCallMethod(d, object_fn));
   }
 
+  PL_ASSIGN_OR_RETURN(auto doc_string, ProcessFuncDefDocString(body));
+  PL_RETURN_IF_ERROR(defined_func->AddDocString(doc_string));
+
   var_table_->Add(function_name, defined_func);
   return Status::OK();
 }
@@ -760,6 +784,21 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessFuncDefReturn(const pypa::AstReturn
   }
 
   return Process(ret->value, {{}, "", {}});
+}
+
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDocString(const pypa::AstDocStringPtr& doc_string) {
+  PL_ASSIGN_OR_RETURN(StringIR * ir_node,
+                      ir_graph_->CreateNode<StringIR>(doc_string, doc_string->doc));
+  return ExprObject::Create(ir_node, this);
+}
+
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessFuncDefDocString(const pypa::AstSuitePtr& body) {
+  pypa::AstStmtList items_list = body->items;
+  if (items_list.size() == 0 || items_list[0]->type != pypa::AstType::DocString) {
+    PL_ASSIGN_OR_RETURN(StringIR * ir_node, ir_graph_->CreateNode<StringIR>(body, ""));
+    return ExprObject::Create(ir_node, this);
+  }
+  return ProcessDocString(PYPA_PTR_CAST(DocString, items_list[0]));
 }
 
 }  // namespace compiler

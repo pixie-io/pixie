@@ -65,7 +65,7 @@ class ASTExpressionTest : public ::testing::Test {
 };
 
 TEST_F(ASTExpressionTest, String) {
-  auto parse_result = parser.Parse("'value'");
+  auto parse_result = parser.Parse("'value'", /* parse_doc_strings */ false);
   auto visitor_result =
       ast_visitor->ProcessSingleExpressionModule(parse_result.ConsumeValueOrDie());
   ASSERT_OK(visitor_result);
@@ -77,7 +77,7 @@ TEST_F(ASTExpressionTest, String) {
 }
 
 TEST_F(ASTExpressionTest, Integer) {
-  auto parse_result = parser.Parse("1");
+  auto parse_result = parser.Parse("1", /* parse_doc_strings */ false);
   auto visitor_result =
       ast_visitor->ProcessSingleExpressionModule(parse_result.ConsumeValueOrDie());
 
@@ -90,7 +90,7 @@ TEST_F(ASTExpressionTest, Integer) {
 }
 
 TEST_F(ASTExpressionTest, PLModule) {
-  auto parse_result = parser.Parse("px.mean");
+  auto parse_result = parser.Parse("px.mean", /* parse_doc_strings */ false);
   auto visitor_result =
       ast_visitor->ProcessSingleExpressionModule(parse_result.ConsumeValueOrDie());
 
@@ -103,7 +103,7 @@ TEST_F(ASTExpressionTest, PLModule) {
 }
 
 TEST_F(ASTExpressionTest, PLModuleWrongName) {
-  auto parse_result = parser.Parse("px.blah");
+  auto parse_result = parser.Parse("px.blah", /* parse_doc_strings */ false);
   auto visitor_result =
       ast_visitor->ProcessSingleExpressionModule(parse_result.ConsumeValueOrDie());
 

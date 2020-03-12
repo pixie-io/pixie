@@ -60,7 +60,7 @@ class PypaErrorHandler {
   std::vector<pypa::Error> errs_;
 };
 
-StatusOr<pypa::AstModulePtr> Parser::Parse(std::string_view query) {
+StatusOr<pypa::AstModulePtr> Parser::Parse(std::string_view query, bool parse_doc_strings) {
   if (query.empty()) {
     return error::InvalidArgument("Query should not be empty.");
   }
@@ -70,7 +70,7 @@ StatusOr<pypa::AstModulePtr> Parser::Parse(std::string_view query) {
   pypa::SymbolTablePtr symbols;
   pypa::ParserOptions options;
 
-  options.docstrings = false;
+  options.docstrings = parse_doc_strings;
   options.printerrors = false;
   options.error_handler =
       std::bind(&PypaErrorHandler::HandlerFunc, &pypa_error_handler, std::placeholders::_1);

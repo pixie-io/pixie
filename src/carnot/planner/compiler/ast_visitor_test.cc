@@ -988,11 +988,14 @@ TEST_F(ASTVisitorTest, func_context_does_not_affect_global_context) {
   ASSERT_EQ(mem_src->Children().size(), 1);
   ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
   std::vector<IRNode*> strings = ir_graph->FindNodesOfType(IRNodeType::kString);
-  ASSERT_EQ(strings.size(), 3);
-  std::vector<std::string> expected_strings{"foo", "bar", "out_table"};
+  ASSERT_EQ(strings.size(), 5);
+  // Note(james): __doc__ is set to the empty string for both the function and the whole module.
+  std::vector<std::string> expected_strings{"", "", "foo", "bar", "out_table"};
   EXPECT_THAT(expected_strings, UnorderedElementsAre(static_cast<StringIR*>(strings[0])->str(),
                                                      static_cast<StringIR*>(strings[1])->str(),
-                                                     static_cast<StringIR*>(strings[2])->str()));
+                                                     static_cast<StringIR*>(strings[2])->str(),
+                                                     static_cast<StringIR*>(strings[3])->str(),
+                                                     static_cast<StringIR*>(strings[4])->str()));
 }
 
 constexpr char kNestedFuncsIndependentState[] = R"query(
@@ -1022,11 +1025,16 @@ TEST_F(ASTVisitorTest, nested_func_calls) {
   ASSERT_EQ(mem_src->Children().size(), 1);
   ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
   std::vector<IRNode*> strings = ir_graph->FindNodesOfType(IRNodeType::kString);
-  ASSERT_EQ(strings.size(), 3);
-  std::vector<std::string> expected_strings{"foo", "bar", "out_table"};
+  ASSERT_EQ(strings.size(), 6);
+  // Note(james): before optimization there is an empty string representing __doc__ for each of
+  // func1, func2 and the whole module
+  std::vector<std::string> expected_strings{"", "", "", "foo", "bar", "out_table"};
   EXPECT_THAT(expected_strings, UnorderedElementsAre(static_cast<StringIR*>(strings[0])->str(),
                                                      static_cast<StringIR*>(strings[1])->str(),
-                                                     static_cast<StringIR*>(strings[2])->str()));
+                                                     static_cast<StringIR*>(strings[2])->str(),
+                                                     static_cast<StringIR*>(strings[3])->str(),
+                                                     static_cast<StringIR*>(strings[4])->str(),
+                                                     static_cast<StringIR*>(strings[5])->str()));
 }
 
 constexpr char kFuncDefWithType[] = R"query(
@@ -1562,6 +1570,59 @@ TEST_F(ASTVisitorTest, problem_decorator_parsed) {
   auto graph_or_s = CompileGraph(kProblemDecoratorParsing);
   ASSERT_NOT_OK(graph_or_s);
   EXPECT_THAT(graph_or_s.status(), HasCompilerError("'viz' object is not callable"));
+}
+
+constexpr char kGlobalDocStringQuery[] = R"pxl(
+"""This is a global doc string."""
+import px
+df = px.DataFrame(table='cpu', select=['cpu0'])
+px.display(df, __doc__)
+)pxl";
+
+TEST_F(ASTVisitorTest, global_doc_string) {
+  auto graph_or_s = CompileGraph(kGlobalDocStringQuery);
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  ASSERT_EQ(sink_nodes.size(), 1);
+  MemorySinkIR* sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  EXPECT_EQ("This is a global doc string.", sink->name());
+}
+
+constexpr char kFuncDocStringQuery[] = R"pxl(
+import px
+def f():
+  """This is a function doc string."""
+  return 1
+df = px.DataFrame(table='cpu', select=['cpu0'])
+px.display(df, f.__doc__)
+)pxl";
+
+TEST_F(ASTVisitorTest, func_doc_string) {
+  auto graph_or_s = CompileGraph(kFuncDocStringQuery);
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  ASSERT_EQ(sink_nodes.size(), 1);
+  MemorySinkIR* sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  EXPECT_EQ("This is a function doc string.", sink->name());
+}
+
+constexpr char kNoDocStringQuery[] = R"pxl(
+import px
+df = px.DataFrame(table='cpu', select=['cpu0'])
+a = __doc__
+px.display(df, a)
+)pxl";
+
+TEST_F(ASTVisitorTest, no_doc_string) {
+  auto graph_or_s = CompileGraph(kNoDocStringQuery);
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  ASSERT_EQ(sink_nodes.size(), 1);
+  MemorySinkIR* sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  EXPECT_EQ("", sink->name());
 }
 
 }  // namespace compiler
