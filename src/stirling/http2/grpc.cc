@@ -4,7 +4,7 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
 
-#include "src/common/base/error.h"
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace stirling {
@@ -55,7 +55,9 @@ std::string ParsePB(std::string_view str, Message* pb) {
     pb = &empty;
   }
   s = PBWireToText(str, PBTextFormat::kText, pb, &text);
-  return s.ok() ? text : s.ToString();
+  return s.ok() ? text
+                : absl::Substitute("$0; original data in hex format: $1", s.ToString(),
+                                   BytesToString<PrintStyle::kHexCompact>(str));
 }
 
 }  // namespace grpc

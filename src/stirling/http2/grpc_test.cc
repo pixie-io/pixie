@@ -8,6 +8,7 @@ namespace stirling {
 namespace grpc {
 
 using ::pl::stirling::http2::testing::HelloRequest;
+using ::testing::HasSubstr;
 using ::testing::StrEq;
 
 TEST(ParseProtobufTest, VariousErrors) {
@@ -57,6 +58,12 @@ TEST(ParsePB, Nullptr) {
 
   HelloRequest pb;
   EXPECT_EQ(ParsePB(s, nullptr), "1 {\n  14: 105\n  15: 105\n  12: 0x7362616c\n}\n");
+}
+
+TEST(ParsePB, ErrorMessage) {
+  HelloRequest req;
+  std::string text(kGRPCMessageHeaderSizeInBytes + 1, 0x0A);
+  EXPECT_THAT(ParsePB(text, &req), HasSubstr("original data in hex format: 0A0A0A0A0A0A"));
 }
 
 }  // namespace grpc

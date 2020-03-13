@@ -77,16 +77,12 @@ BCC_SRC_STRVIEW(socket_trace_bcc_script, socket_trace);
 namespace pl {
 namespace stirling {
 
-using ::google::protobuf::Empty;
-using ::google::protobuf::Message;
 using ::google::protobuf::TextFormat;
 using ::pl::grpc::MethodInputOutput;
 using ::pl::stirling::kCQLTable;
 using ::pl::stirling::kHTTPTable;
 using ::pl::stirling::kMySQLTable;
 using ::pl::stirling::grpc::ParsePB;
-using ::pl::stirling::grpc::PBTextFormat;
-using ::pl::stirling::grpc::PBWireToText;
 using ::pl::stirling::http2::HTTP2Message;
 using ::pl::stirling::obj_tools::GetActiveBinary;
 using ::pl::stirling::obj_tools::GetSymAddrs;
