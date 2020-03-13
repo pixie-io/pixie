@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+import "src/shared/types/proto/types.proto";
+import "src/common/base/proto/status.proto";
+
+package pl.shared.scriptspb;
+
+option go_package = "pixielabs.ai/pixielabs/src/shared/scriptspb;scriptspb";
+
+// FuncArgsSpec specifies the flags that are defined within a query.
+message FuncArgsSpec {
+  message Arg {
+    // The data type that this arg accepts
+    types.DataType data_type = 1;
+    // The semantic type that this arg accepts
+    types.SemanticType semantic_type = 2;
+    // The name of this arg.
+    string name = 3;
+    // The optional default value assigned to this arg.
+    string default_value = 5;
+  }
+  repeated Arg args = 1;
+}
+
+// VizSpec provides information to specify the vizualization of a function.
+message VizSpec {
+  string vega_spec = 1;
+}
+
+// VizFuncsInfo contains info about each px.viz annotated function.
+message VizFuncsInfo {
+  // Map from function name to doc string for that function.
+  map<string, string> doc_string_map = 1;
+  // Map from function name to VizSpec for the function.
+  map<string, VizSpec> viz_spec_map = 2;
+  // Mapping from function name to arguments.
+  map<string, FuncArgsSpec> fn_args_map = 3;
+}
+
+message VizFuncsInfoResult {
+  pl.statuspb.Status status = 1;
+  VizFuncsInfo info = 2;
+}
