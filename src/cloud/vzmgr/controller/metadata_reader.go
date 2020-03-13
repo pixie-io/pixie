@@ -2,7 +2,6 @@ package controller
 
 import (
 	"errors"
-	"fmt"
 	"sync"
 	"time"
 
@@ -260,7 +259,7 @@ func (m *MetadataReader) getMissingUpdates(from string, to string, vzState *Vizi
 	sub, err := m.nc.ChanSubscribe(vzshard.V2CTopic(metadataResponseTopic, vzState.id), subCh)
 	defer sub.Unsubscribe()
 
-	pubTopic := fmt.Sprintf("c2v.%s.%s", vzState.id.String(), metadataRequestTopic)
+	pubTopic := vzshard.C2VTopic(metadataRequestTopic, vzState.id)
 	err = m.nc.Publish(pubTopic, reqBytes)
 	if err != nil {
 		return nil, err

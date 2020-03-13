@@ -24,6 +24,7 @@ import (
 	dnsmgr "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
 	messagespb "pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
+	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
@@ -115,7 +116,7 @@ func (s *Server) sendNATSMessage(topic string, msg *types.Any, vizierID uuid.UUI
 		log.WithError(err).Error("Could not marshal message to bytes")
 		return
 	}
-	topic = fmt.Sprintf("%s.%s.%s", "c2v", vizierID.String(), topic)
+	topic = vzshard.C2VTopic(topic, vizierID)
 	log.WithField("topic", topic).Info("Sending message")
 	err = s.nc.Publish(topic, b)
 

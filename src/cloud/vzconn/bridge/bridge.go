@@ -78,7 +78,7 @@ func (s *NATSBridgeController) Run() error {
 	defer s.wg.Wait()
 	// We need to connect to the appropriate queues based on the clusterID.
 	log.WithField("ClusterID:", s.clusterID).Info("Subscribing to cluster IDs")
-	topics := fmt.Sprintf("c2v.%s.*", s.clusterID.String())
+	topics := vzshard.C2VTopic("*", s.clusterID)
 	natsSub, err := s.nc.ChanQueueSubscribe(topics, "vzconn", s.subCh)
 	if err != nil {
 		log.WithError(err).Error("error with ChanQueueSubscribe")

@@ -1,7 +1,6 @@
 package controller_test
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -130,7 +129,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			defer indexerSub.Unsubscribe()
 
 			if test.expectMetadataRequest {
-				mdSub, err := nc.Subscribe(fmt.Sprintf("c2v.%s.MetadataRequest", vzID.String()), func(msg *nats.Msg) {
+				mdSub, err := nc.Subscribe(vzshard.C2VTopic("MetadataRequest", vzID), func(msg *nats.Msg) {
 					c2vMsg := &cvmsgspb.C2VMessage{}
 					err := proto.Unmarshal(msg.Data, c2vMsg)
 					assert.Nil(t, err)

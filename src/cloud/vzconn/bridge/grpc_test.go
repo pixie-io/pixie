@@ -277,11 +277,6 @@ func registerVizier(ts *testState, vizierID uuid.UUID, stream vzconnpb.VZConnSer
 	assert.Equal(ts.t, cvmsgspb.ST_OK, ack.Status)
 }
 
-func c2vTopic(vizierID uuid.UUID, topic string) string {
-	// TODO(zasgar): Fix hardcoded shard ID.
-	return fmt.Sprintf("c2v.000.%s.%s", vizierID.String(), topic)
-}
-
 func TestNATSGRPCBridge_BridgingTest(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	ts, cleanup := createTestState(t, ctrl)
