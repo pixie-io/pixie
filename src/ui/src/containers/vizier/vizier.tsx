@@ -143,7 +143,6 @@ export class Vizier extends React.Component<{}, VizierState> {
                       }
                       return `Error! ${error.message}`;
                     }
-
                     if (data.cluster.status === 'VZ_ST_HEALTHY') {
                       return (
                         <VizierGRPCClientProvider cloudClient={cloudClient}>

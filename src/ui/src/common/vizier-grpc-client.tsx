@@ -1,5 +1,6 @@
+import {Observable} from 'rxjs';
 import {
-    ExecuteScriptRequest, QueryExecutionStats, Relation, RowBatchData, Status,
+    ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation, RowBatchData, Status,
 } from 'types/generated/vizier_pb';
 import {VizierServiceClient} from 'types/generated/VizierServiceClientPb';
 
@@ -21,6 +22,22 @@ export class VizierGRPCClient {
 
   constructor(addr: string, private token: string) {
     this.client = new VizierServiceClient(addr);
+  }
+
+  health(): Observable<Status> {
+    return Observable.create((observer) => {
+      const req = new HealthCheckRequest();
+      const call = this.client.healthCheck(req);
+      call.on('data', (resp) => {
+        observer.next(resp.getStatus());
+      });
+      call.on('error', (error) => {
+        observer.error(error);
+      });
+      call.on('end', () => {
+        observer.complete();
+      });
+    });
   }
 
   executeScript(script: string, args?: {}): Promise<VizierQueryResult> {
