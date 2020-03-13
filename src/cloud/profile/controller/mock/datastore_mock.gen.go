@@ -112,3 +112,15 @@ func (m *MockDatastore) GetOrgByDomain(arg0 string) (*datastore.OrgInfo, error) 
 func (mr *MockDatastoreMockRecorder) GetOrgByDomain(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgByDomain", reflect.TypeOf((*MockDatastore)(nil).GetOrgByDomain), arg0)
 }
+
+// DeleteOrgAndUsers mocks base method
+func (m *MockDatastore) DeleteOrgAndUsers(arg0 go_uuid.UUID) error {
+	ret := m.ctrl.Call(m, "DeleteOrgAndUsers", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteOrgAndUsers indicates an expected call of DeleteOrgAndUsers
+func (mr *MockDatastoreMockRecorder) DeleteOrgAndUsers(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrgAndUsers", reflect.TypeOf((*MockDatastore)(nil).DeleteOrgAndUsers), arg0)
+}

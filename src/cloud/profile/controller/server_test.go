@@ -582,3 +582,43 @@ func TestServer_GetOrgByDomain_MissingOrg(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, status.Code(err), codes.NotFound)
 }
+
+func TestServer_DeleteOrgAndUsers(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockDatastore(ctrl)
+
+	s := controller.NewServer(nil, d)
+
+	orgUUID := uuid.NewV4()
+
+	mockReply := &datastore.OrgInfo{
+		ID:         orgUUID,
+		DomainName: "hulu.com",
+		OrgName:    "hulu",
+	}
+	d.EXPECT().GetOrg(orgUUID).Return(mockReply, nil)
+	d.EXPECT().DeleteOrgAndUsers(orgUUID).Return(nil)
+
+	err := s.DeleteOrgAndUsers(context.Background(), utils.ProtoFromUUID(&orgUUID))
+	assert.Nil(t, err)
+}
+
+func TestServer_DeleteOrgAndUsers_MissingOrg(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockDatastore(ctrl)
+
+	s := controller.NewServer(nil, d)
+
+	orgUUID := uuid.NewV4()
+	d.EXPECT().
+		GetOrg(orgUUID).
+		Return(nil, nil)
+
+	err := s.DeleteOrgAndUsers(context.Background(), utils.ProtoFromUUID(&orgUUID))
+	assert.NotNil(t, err)
+	assert.Equal(t, status.Code(err), codes.NotFound)
+}

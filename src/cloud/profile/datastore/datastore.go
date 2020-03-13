@@ -156,6 +156,27 @@ func (d *Datastore) GetUserByEmail(email string) (*UserInfo, error) {
 	return nil, errors.New("failed to get user info from database")
 }
 
+// DeleteOrgAndUsers deletes the org and users with a given org ID.
+func (d *Datastore) DeleteOrgAndUsers(orgID uuid.UUID) error {
+	txn, err := d.db.Beginx()
+	if err != nil {
+		return err
+	}
+	defer txn.Rollback()
+
+	deleteUsersQuery := `DELETE FROM users WHERE org_id=$1`
+	deleteOrgQuery := `DELETE FROM orgs WHERE id=$1`
+	_, err = txn.Exec(deleteUsersQuery, orgID)
+	if err != nil {
+		return err
+	}
+	_, err = txn.Exec(deleteOrgQuery, orgID)
+	if err != nil {
+		return err
+	}
+	return txn.Commit()
+}
+
 func (d *Datastore) createUserUsingTxn(txn *sqlx.Tx, userInfo *UserInfo) (uuid.UUID, error) {
 	query := `INSERT INTO users (org_id, username, first_name, last_name, email) VALUES (:org_id, :username, :first_name, :last_name, :email) RETURNING id`
 	row, err := txn.NamedQuery(query, userInfo)

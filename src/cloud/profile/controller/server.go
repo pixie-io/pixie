@@ -36,6 +36,8 @@ type Datastore interface {
 	GetOrg(uuid.UUID) (*datastore.OrgInfo, error)
 	// GetOrgByDomain gets an org by domain name.
 	GetOrgByDomain(string) (*datastore.OrgInfo, error)
+	// Delete Org and all of its users
+	DeleteOrgAndUsers(uuid.UUID) error
 }
 
 // Server is an implementation of GRPC server for profile service.
@@ -203,4 +205,13 @@ func (s *Server) GetOrgByDomain(ctx context.Context, req *profile.GetOrgByDomain
 		return nil, status.Error(codes.NotFound, "no such org")
 	}
 	return orgInfoToProto(orgInfo), nil
+}
+
+// DeleteOrgAndUsers deletes an org and all of its users.
+func (s *Server) DeleteOrgAndUsers(ctx context.Context, req *uuidpb.UUID) error {
+	_, err := s.GetOrg(ctx, req)
+	if err != nil {
+		return err
+	}
+	return s.d.DeleteOrgAndUsers(utils.UUIDFromProtoOrNil(req))
 }

@@ -189,4 +189,41 @@ func TestDatastore(t *testing.T) {
 		require.NotNil(t, err)
 		require.Nil(t, userInfo)
 	})
+
+	t.Run("delete org and its users", func(t *testing.T) {
+		db, teardown := pgtest.SetupTestDB(t, s)
+		defer teardown()
+
+		loadTestData(t, db)
+
+		orgID := "223e4567-e89b-12d3-a456-426655440009"
+		userID := "223e4567-e89b-12d3-a456-426655440001"
+
+		// Add in data to be deleted
+		insertOrgQuery := `INSERT INTO orgs (id, org_name, domain_name) VALUES ($1, $2, $3)`
+		db.MustExec(insertOrgQuery, orgID, "not-hulu", "not-hulu.com")
+		insertUserQuery := `INSERT INTO users (id, org_id, username, first_name, last_name, email) VALUES ($1, $2, $3, $4, $5, $6)`
+		db.MustExec(insertUserQuery, userID, orgID, "person@not-hulu.com", "first", "last", "person@not-hulu.com")
+
+		d := datastore.NewDatastore(db)
+
+		// Should show up before the deletion
+		userInfo, err := d.GetUser(uuid.FromStringOrNil(userID))
+		require.Nil(t, err)
+		require.NotNil(t, userInfo)
+		orgInfo, err := d.GetOrg(uuid.FromStringOrNil(orgID))
+		require.Nil(t, err)
+		require.NotNil(t, orgInfo)
+
+		err = d.DeleteOrgAndUsers(uuid.FromStringOrNil(orgID))
+		require.Nil(t, err)
+
+		// Should not show up before the deletion
+		userInfo, err = d.GetUser(uuid.FromStringOrNil(userID))
+		require.NotNil(t, err)
+		require.Nil(t, userInfo)
+		orgInfo, err = d.GetOrg(uuid.FromStringOrNil(orgID))
+		require.NotNil(t, err)
+		require.Nil(t, orgInfo)
+	})
 }
