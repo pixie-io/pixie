@@ -10,6 +10,7 @@
 #include "src/carnot/planner/ast/ast_visitor.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/objects/qlobject.h"
+#include "src/shared/scriptspb/scripts.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -176,11 +177,13 @@ class FuncObject : public QLObject {
   // Note that this check is only called for functions decorated with px.viz.*
   Status CheckAllArgsHaveTypes(const pypa::AstPtr& ast) const;
 
+  pl::shared::scriptspb::FuncArgsSpec CreateFuncArgsSpec() const;
+
  private:
   StatusOr<ParsedArgs> PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast);
 
   StatusOr<QLObjectPtr> GetDefault(std::string_view arg);
-  bool HasDefault(std::string_view arg);
+  bool HasDefault(std::string_view arg) const;
 
   bool HasArgType(std::string_view arg);
 

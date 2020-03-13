@@ -15,6 +15,7 @@
 #include "src/carnot/planner/objects/pixie_module.h"
 #include "src/carnot/planner/parser/parser.h"
 #include "src/carnot/planpb/plan.pb.h"
+#include "src/shared/scriptspb/scripts.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -75,6 +76,22 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
 
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   return ir;
+}
+
+StatusOr<pl::shared::scriptspb::VizFuncsInfo> Compiler::GetVizFuncsInfo(
+    const std::string& query, CompilerState* compiler_state) {
+  // TODO(nserrino): PL-1578 remove this after UI queries are updated.
+  // This should be ok because calling "import px" multiple times in the same script is ok,
+  // both in our system and in Python.
+  auto with_import_px = "import px\n" + query;
+
+  Parser parser;
+  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(with_import_px));
+
+  std::shared_ptr<IR> ir = std::make_shared<IR>();
+  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state, {}));
+  PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+  return ast_walker->GetVizFuncsInfo();
 }
 
 Status Compiler::VerifyGraphHasMemorySink(IR* ir) {

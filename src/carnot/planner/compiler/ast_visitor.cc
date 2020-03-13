@@ -13,6 +13,7 @@ namespace pl {
 namespace carnot {
 namespace planner {
 namespace compiler {
+using pl::shared::scriptspb::VizFuncsInfo;
 using pypa::AstType;
 
 StatusOr<FuncIR::Op> ASTVisitorImpl::GetOp(const std::string& python_op, const pypa::AstPtr node) {
@@ -810,6 +811,22 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessFuncDefDocString(const pypa::AstSui
     return ExprObject::Create(ir_node, this);
   }
   return ProcessDocString(PYPA_PTR_CAST(DocString, items_list[0]));
+}
+
+StatusOr<VizFuncsInfo> ASTVisitorImpl::GetVizFuncsInfo() {
+  VizFuncsInfo info;
+  auto doc_string_map = info.mutable_doc_string_map();
+  auto viz_spec_map = info.mutable_viz_spec_map();
+  auto fn_args_map = info.mutable_fn_args_map();
+  for (const auto& [name, func] : var_table_->GetVizFuncs()) {
+    doc_string_map->insert({name, func->doc_string()});
+    auto viz_spec = func->viz_spec();
+    pl::shared::scriptspb::VizSpec viz_spec_pb;
+    viz_spec_pb.set_vega_spec(viz_spec->vega_spec);
+    viz_spec_map->insert({name, viz_spec_pb});
+    fn_args_map->insert({name, func->CreateFuncArgsSpec()});
+  }
+  return info;
 }
 
 }  // namespace compiler

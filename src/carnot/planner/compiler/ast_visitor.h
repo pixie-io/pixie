@@ -19,6 +19,7 @@
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/objects/pixie_module.h"
+#include "src/shared/scriptspb/scripts.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -100,6 +101,7 @@ class ASTVisitorImpl : public ASTVisitor {
                                                         bool import_px) override;
 
   StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(const pypa::AstModulePtr&) override;
+  StatusOr<pl::shared::scriptspb::VizFuncsInfo> GetVizFuncsInfo() override;
 
   IR* ir_graph() const { return ir_graph_; }
   std::shared_ptr<VarTable> var_table() const { return var_table_; }

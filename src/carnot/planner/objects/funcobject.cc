@@ -10,6 +10,8 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 
+using pl::shared::scriptspb::FuncArgsSpec;
+
 StatusOr<std::shared_ptr<FuncObject>> FuncObject::Create(
     std::string_view name, const std::vector<std::string>& arguments,
     const absl::flat_hash_map<std::string, DefaultType>& defaults, bool has_variable_len_args,
@@ -111,7 +113,9 @@ StatusOr<ParsedArgs> FuncObject::PrepareArgs(const ArgMap& args, const pypa::Ast
   return parsed_args;
 }
 
-bool FuncObject::HasDefault(std::string_view arg) { return defaults_.find(arg) != defaults_.end(); }
+bool FuncObject::HasDefault(std::string_view arg) const {
+  return defaults_.find(arg) != defaults_.end();
+}
 
 StatusOr<QLObjectPtr> FuncObject::GetDefault(std::string_view arg) {
   //  Check if the argument exists among the defaults.
@@ -184,6 +188,19 @@ Status FuncObject::CheckAllArgsHaveTypes(const pypa::AstPtr& ast) const {
     }
   }
   return Status::OK();
+}
+
+FuncArgsSpec FuncObject::CreateFuncArgsSpec() const {
+  FuncArgsSpec spec;
+  for (const auto& arg_name : arguments_) {
+    auto arg = spec.add_args();
+    arg->set_name(arg_name);
+    arg->set_data_type(arg_types_.find(arg_name)->second);
+    if (HasDefault(arg_name)) {
+      arg->set_default_value(defaults_.find(arg_name)->second);
+    }
+  }
+  return spec;
 }
 
 }  // namespace compiler

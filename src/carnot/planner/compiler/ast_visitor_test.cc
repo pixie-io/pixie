@@ -8,6 +8,7 @@
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/common/base/base.h"
 #include "src/common/testing/testing.h"
+#include "src/shared/scriptspb/scripts.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -1664,6 +1665,82 @@ TEST_F(ASTVisitorTest, viz_without_annotations_errors) {
   EXPECT_THAT(graph_or_s.status(),
               HasCompilerError("Arguments of px.viz.* decorated functions must be annotated with "
                                "types. Arg: 'c' was not annotated."));
+}
+
+constexpr char kVizFuncsQuerry[] = R"pxl(
+import px
+@px.viz.vega("vega spec for f")
+def f(start_time: px.Time, end_time: px.Time, svc: str):
+  """Doc string for f"""
+  return 1
+
+@px.viz.vega("vega spec for g")
+def g(a: int, b: float):
+  """Doc string for g"""
+  return 1
+)pxl";
+
+constexpr char kExpectedFArgsProto[] = R"pxl(
+args {
+  data_type: TIME64NS
+  name: "start_time"
+}
+args {
+  data_type: TIME64NS
+  name: "end_time"
+}
+args {
+  data_type: STRING
+  name: "svc"
+}
+)pxl";
+constexpr char kExpectedGArgsProto[] = R"pxl(
+args {
+  data_type: INT64
+  name: "a"
+}
+args {
+  data_type: FLOAT64
+  name: "b"
+}
+)pxl";
+
+TEST_F(ASTVisitorTest, get_viz_funcs_info) {
+  auto viz_funcs_or_s = GetVizFuncsInfo(kVizFuncsQuerry);
+  ASSERT_OK(viz_funcs_or_s);
+  auto viz_funcs = viz_funcs_or_s.ConsumeValueOrDie();
+  absl::flat_hash_map<std::string, std::string> doc_string_map(viz_funcs.doc_string_map().begin(),
+                                                               viz_funcs.doc_string_map().end());
+  absl::flat_hash_map<std::string, std::string> expected_doc_strings({
+      {"f", "Doc string for f"},
+      {"g", "Doc string for g"},
+  });
+  EXPECT_EQ(doc_string_map, expected_doc_strings);
+
+  absl::flat_hash_map<std::string, std::string> viz_spec_map;
+  for (const auto& [name, viz_spec] : viz_funcs.viz_spec_map()) {
+    viz_spec_map[name] = viz_spec.vega_spec();
+  }
+  absl::flat_hash_map<std::string, std::string> expected_viz_specs({
+      {"f", "vega spec for f"},
+      {"g", "vega spec for g"},
+  });
+  EXPECT_EQ(viz_spec_map, expected_viz_specs);
+
+  absl::flat_hash_map<std::string, pl::shared::scriptspb::FuncArgsSpec> fn_args_map(
+      viz_funcs.fn_args_map().begin(), viz_funcs.fn_args_map().end());
+  absl::flat_hash_map<std::string, std::string> expected_fn_args({
+      {"f", kExpectedFArgsProto},
+      {"g", kExpectedGArgsProto},
+  });
+
+  ASSERT_EQ(expected_fn_args.size(), fn_args_map.size());
+  for (auto const& [name, expected_pb] : expected_fn_args) {
+    auto args = fn_args_map.find(name);
+    ASSERT_NE(args, fn_args_map.end());
+    EXPECT_THAT(args->second, Partially(testing::proto::EqualsProto(expected_pb)))
+        << absl::Substitute("Actual proto for arg $0: $1", name, args->second.DebugString());
+  }
 }
 
 }  // namespace compiler

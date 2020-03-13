@@ -15,6 +15,7 @@
 
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/plannerpb/query_flags.pb.h"
+#include "src/shared/scriptspb/scripts.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -68,6 +69,8 @@ class ASTVisitor {
    *
    */
   virtual StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(const pypa::AstModulePtr& m) = 0;
+
+  virtual StatusOr<pl::shared::scriptspb::VizFuncsInfo> GetVizFuncsInfo() = 0;
 };
 
 }  // namespace compiler
