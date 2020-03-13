@@ -63,7 +63,6 @@ docker run -it --init --rm \
  -v /sys:/sys \
  --env PL_HOST_PATH=/host \
  --privileged \
- --pid=host \
  $flags \
  "$image_name" "$@"
 
