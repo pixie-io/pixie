@@ -270,13 +270,6 @@ StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Pack
   if (IsErrPacket(first_resp_packet)) {
     PL_RETURN_IF_NOT_SUCCESS(HandleErrMessage(resp_packets, entry));
 
-    if (resp_packets.size() > 1) {
-      LOG(ERROR) << absl::Substitute(
-          "Did not expect packets after error packet [cmd=$0]. Remaining $1 response packets will "
-          "be ignored.",
-          static_cast<uint8_t>(req_packet.msg[0]), resp_packets.size() - 1);
-    }
-
     return ParseState::kSuccess;
   }
 
@@ -298,16 +291,8 @@ StatusOr<ParseState> ProcessStmtSendLongData(const Packet& req_packet,
   // Response
   //----------------
 
-  // COM_STMT_SEND_LONG_DATA doesn't use any response packets.
-  if (!resp_packets.empty()) {
-    LOG(ERROR) << absl::Substitute(
-        "Did not expect any response packets [cmd=$0]. All response packets will be ignored.",
-        static_cast<uint8_t>(req_packet.msg[0]));
-  }
+  PL_RETURN_IF_NOT_SUCCESS(HandleNoResponse(resp_packets, entry));
 
-  // COM_STMT_SEND_LONG_DATA has no response.
-  entry->resp.status = MySQLRespStatus::kNone;
-  entry->resp.timestamp_ns = 0;
   return ParseState::kSuccess;
 }
 
@@ -336,25 +321,11 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
   if (IsErrPacket(first_resp_packet)) {
     PL_RETURN_IF_NOT_SUCCESS(HandleErrMessage(resp_packets, entry));
 
-    if (resp_packets.size() > 1) {
-      LOG(ERROR) << absl::Substitute(
-          "Did not expect packets after error packet [cmd=$0]. Remaining $1 response packets will "
-          "be ignored.",
-          static_cast<uint8_t>(req_packet.msg[0]), resp_packets.size() - 1);
-    }
-
     return ParseState::kSuccess;
   }
 
   if (IsOKPacket(first_resp_packet)) {
     PL_RETURN_IF_NOT_SUCCESS(HandleOKMessage(resp_packets, entry));
-
-    if (resp_packets.size() > 1) {
-      LOG(ERROR) << absl::Substitute(
-          "Did not expect more than one response packet [cmd=$0]. Remaining $1 response packets "
-          "will be ignored.",
-          static_cast<uint8_t>(req_packet.msg[0]), resp_packets.size() - 1);
-    }
 
     return ParseState::kSuccess;
   }
@@ -376,17 +347,7 @@ StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, DequeView<Packet
   // Response
   //----------------
 
-  // COM_STMT_CLOSE doesn't use any response packets.
-  if (!resp_packets.empty()) {
-    LOG(ERROR) << absl::Substitute(
-        "Did not expect any response packets [cmd=$0]. Remaining $1 response packets will be "
-        "ignored.",
-        static_cast<uint8_t>(req_packet.msg[0]), resp_packets.size());
-  }
-
-  // COM_STMT_CLOSE has no response.
-  entry->resp.status = MySQLRespStatus::kNone;
-  entry->resp.timestamp_ns = 0;
+  PL_RETURN_IF_NOT_SUCCESS(HandleNoResponse(resp_packets, entry));
   return ParseState::kSuccess;
 }
 
@@ -443,25 +404,11 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
   if (IsErrPacket(first_resp_packet)) {
     PL_RETURN_IF_NOT_SUCCESS(HandleErrMessage(resp_packets, entry));
 
-    if (resp_packets.size() > 1) {
-      LOG(ERROR) << absl::Substitute(
-          "Did not expect packets after error packet [cmd=$0]. Remaining $1 response packets will "
-          "be ignored.",
-          static_cast<uint8_t>(req_packet.msg[0]), resp_packets.size() - 1);
-    }
-
     return ParseState::kSuccess;
   }
 
   if (IsOKPacket(first_resp_packet)) {
     PL_RETURN_IF_NOT_SUCCESS(HandleOKMessage(resp_packets, entry));
-
-    if (resp_packets.size() > 1) {
-      LOG(ERROR) << absl::Substitute(
-          "Did not expect more than one response packet [cmd=$0]. Remaining $1 response packets "
-          "will be ignored.",
-          static_cast<uint8_t>(req_packet.msg[0]), resp_packets.size() - 1);
-    }
 
     return ParseState::kSuccess;
   }
@@ -516,9 +463,8 @@ StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, b
   }
 
   if (resp_packets.size() > 1) {
-    LOG(ERROR) << absl::Substitute(
-        "Did not expect more than one response packet [cmd=$0]. Remaining $1 response packets will "
-        "be ignored.",
+    return error::Internal(
+        "Did not expect more than one response packet [cmd=$0, num_extra_packets=$1].",
         static_cast<uint8_t>(req_packet.msg[0]), resp_packets.size() - 1);
   }
 

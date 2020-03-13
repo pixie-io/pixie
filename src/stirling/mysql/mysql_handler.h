@@ -16,6 +16,8 @@ namespace mysql {
  * MySQL Response can have one or more packets, so the functions pop off packets from the
  * deque as it parses the first packet.
  */
+StatusOr<ParseState> HandleNoResponse(DequeView<Packet> resp_packets, Record* entry);
+
 StatusOr<ParseState> HandleErrMessage(DequeView<Packet> resp_packets, Record* entry);
 
 StatusOr<ParseState> HandleOKMessage(DequeView<Packet> resp_packets, Record* entry);

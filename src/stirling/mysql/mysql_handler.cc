@@ -24,6 +24,18 @@ namespace mysql {
     return ParseState::kNeedsMoreData;                \
   }
 
+StatusOr<ParseState> HandleNoResponse(DequeView<Packet> resp_packets, Record* entry) {
+  if (!resp_packets.empty()) {
+    return error::Internal("Did not expect any response packets [num_extra_packets=$1].",
+                           resp_packets.size());
+  }
+
+  entry->resp.status = MySQLRespStatus::kNone;
+  entry->resp.timestamp_ns = 0;
+
+  return ParseState::kSuccess;
+}
+
 StatusOr<ParseState> HandleErrMessage(DequeView<Packet> resp_packets, Record* entry) {
   DCHECK(!resp_packets.empty());
   const Packet& packet = resp_packets.front();
@@ -54,6 +66,12 @@ StatusOr<ParseState> HandleErrMessage(DequeView<Packet> resp_packets, Record* en
   entry->resp.status = MySQLRespStatus::kErr;
   entry->resp.timestamp_ns = packet.timestamp_ns;
 
+  if (resp_packets.size() > 1) {
+    return error::Internal(
+        "Did not expect additional packets after error packet [num_extra_packets=$1].",
+        resp_packets.size() - 1);
+  }
+
   return ParseState::kSuccess;
 }
 
@@ -71,6 +89,12 @@ StatusOr<ParseState> HandleOKMessage(DequeView<Packet> resp_packets, Record* ent
 
   entry->resp.status = MySQLRespStatus::kOK;
   entry->resp.timestamp_ns = resp_packets.front().timestamp_ns;
+
+  if (resp_packets.size() > 1) {
+    return error::Internal(
+        "Did not expect additional packets after OK packet [num_extra_packets=$1].",
+        resp_packets.size() - 1);
+  }
 
   return ParseState::kSuccess;
 }
