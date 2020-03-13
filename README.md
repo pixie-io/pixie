@@ -12,7 +12,7 @@
 
 Pixie is being built to give engineers access to no-instrumentation, streaming & unsampled auto-telemetry to debug performance issues in real-time. 
 
-The magical Pixie developer experience is enabled by The Pixie Platform's three key design attributes:
+Pixie's magical developer experience is enabled by three key design attributes:
 
 1. **No Instrumentation Collection:** Full-body network requests (via eBPF), metrics, logs & events collected without the need for code-changes and at less than 5% overhead. 
 2. **Edge Compute:**  Data storage and computation isolated within the customer's kubernetes cluster without the need to persist data outside the customer's environment.
