@@ -1,5 +1,4 @@
 import * as React from 'react';
-import {VegaLite} from 'react-vega';
 import {VisualizationSpec} from 'vega-embed';
 
 import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
@@ -19,6 +18,7 @@ interface VegaProps {
   data: Array<{}>;
   spec: VisualizationSpec;
   tableName: string;
+  vegaModule: any;
 }
 
 const Vega = React.memo((props: VegaProps) => {
@@ -29,7 +29,7 @@ const Vega = React.memo((props: VegaProps) => {
   const data = React.useMemo(() => ({ [tableName]: inputData }), [tableName, inputData]);
 
   return (
-    <VegaLite
+    <props.vegaModule.VegaLite
       className={classes.vega}
       spec={spec}
       data={data}
