@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <utility>
+#include "src/carnot/planner/objects/type_object.h"
 #include "src/carnot/planner/parser/parser.h"
 
 namespace pl {
@@ -150,6 +151,38 @@ Status FuncObject::AddDocString(QLObjectPtr doc_string) {
   DCHECK(doc_string->HasNode());
   DCHECK_EQ(doc_string->node()->type(), IRNodeType::kString);
   doc_string_ = static_cast<StringIR*>(doc_string->node())->str();
+  return Status::OK();
+}
+
+Status FuncObject::ResolveArgAnnotationsToConcreteTypes(
+    const pypa::AstPtr& ast,
+    const absl::flat_hash_map<std::string, QLObjectPtr> arg_annotation_objs) {
+  for (const auto& [name, obj] : arg_annotation_objs) {
+    if (obj->type() != QLObjectType::kType) {
+      return CreateAstError(ast,
+                            "Arg annotation, '$1' for '$0' is not supported. Type must eval to "
+                            "primitive (str, int, px.Time, etc)",
+                            name, obj->name());
+    }
+    auto type_obj = std::static_pointer_cast<TypeObject>(obj);
+    auto type_or_s = IRNodeTypeToDataType(type_obj->ir_node_type());
+    if (!type_or_s.ok()) {
+      return CreateAstError(ast, type_or_s.msg());
+    }
+    arg_types_.insert({name, type_or_s.ConsumeValueOrDie()});
+  }
+  return Status::OK();
+}
+
+Status FuncObject::CheckAllArgsHaveTypes(const pypa::AstPtr& ast) const {
+  for (const auto& name : arguments_) {
+    if (arg_types_.find(name) == arg_types_.end()) {
+      return CreateAstError(ast,
+                            "Arguments of px.viz.* decorated functions must be annotated with "
+                            "types. Arg: '$0' was not annotated.",
+                            name);
+    }
+  }
   return Status::OK();
 }
 

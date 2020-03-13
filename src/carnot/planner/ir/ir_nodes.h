@@ -46,6 +46,8 @@ static constexpr const char* kIRNodeStrings[] = {
 #undef PL_IR_NODE
 };
 
+StatusOr<pl::types::DataType> IRNodeTypeToDataType(IRNodeType type);
+
 inline std::ostream& operator<<(std::ostream& out, IRNodeType node_type) {
   return out << kIRNodeStrings[static_cast<int64_t>(node_type)];
 }

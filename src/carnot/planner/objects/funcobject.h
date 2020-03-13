@@ -164,11 +164,25 @@ class FuncObject : public QLObject {
 
   const std::string& doc_string() const { return doc_string_; }
 
+  // Note that types only get resolved for functions decorated with px.viz.*
+  Status ResolveArgAnnotationsToConcreteTypes(
+      const pypa::AstPtr& ast,
+      const absl::flat_hash_map<std::string, QLObjectPtr> arg_annotation_objs);
+
+  const absl::flat_hash_map<std::string, pl::types::DataType>& arg_types() const {
+    return arg_types_;
+  }
+
+  // Note that this check is only called for functions decorated with px.viz.*
+  Status CheckAllArgsHaveTypes(const pypa::AstPtr& ast) const;
+
  private:
   StatusOr<ParsedArgs> PrepareArgs(const ArgMap& args, const pypa::AstPtr& ast);
 
   StatusOr<QLObjectPtr> GetDefault(std::string_view arg);
   bool HasDefault(std::string_view arg);
+
+  bool HasArgType(std::string_view arg);
 
   std::string FormatArguments(const absl::flat_hash_set<std::string> args);
 
@@ -185,6 +199,8 @@ class FuncObject : public QLObject {
   std::vector<std::string> arguments_;
   absl::flat_hash_map<std::string, DefaultType> defaults_;
   FunctionType impl_;
+
+  absl::flat_hash_map<std::string, pl::types::DataType> arg_types_;
 
   // Whether the function takes **kwargs as an argument.
   bool has_variable_len_kwargs_;

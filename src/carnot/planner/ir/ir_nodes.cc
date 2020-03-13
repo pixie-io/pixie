@@ -1836,6 +1836,34 @@ StatusOr<absl::flat_hash_set<std::string>> RollingIR::PruneOutputColumnsToImpl(
   return error::Unimplemented("Rolling operator doesn't support PruneOutputColumntTo.");
 }
 
+StatusOr<pl::types::DataType> IRNodeTypeToDataType(IRNodeType type) {
+  switch (type) {
+    case IRNodeType::kString: {
+      return pl::types::DataType::STRING;
+    }
+    case IRNodeType::kInt: {
+      return pl::types::DataType::INT64;
+    }
+    case IRNodeType::kUInt128: {
+      return pl::types::DataType::UINT128;
+    }
+    case IRNodeType::kBool: {
+      return pl::types::DataType::BOOLEAN;
+    }
+    case IRNodeType::kFloat: {
+      return pl::types::DataType::FLOAT64;
+    }
+    case IRNodeType::kTime: {
+      return pl::types::DataType::TIME64NS;
+    }
+    default: {
+      return Status(statuspb::Code::INVALID_ARGUMENT,
+                    absl::Substitute("IRNode type: $0 cannot be converted into literal type.",
+                                     kIRNodeStrings[static_cast<int64_t>(type)]));
+    }
+  }
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl

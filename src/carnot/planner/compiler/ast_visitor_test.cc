@@ -1625,6 +1625,47 @@ TEST_F(ASTVisitorTest, no_doc_string) {
   EXPECT_EQ("", sink->name());
 }
 
+constexpr char kArgAnnotationsQuery[] = R"pxl(
+import px
+@px.viz.vega("vega")
+def f(a: int, b: str, c: float, d: bool, e: px.Time):
+  return 1
+)pxl";
+
+TEST_F(ASTVisitorTest, arg_annotations) {
+  auto ast_walker_or_s = CompileInspectAST(kArgAnnotationsQuery);
+  ASSERT_OK(ast_walker_or_s);
+  auto ast_walker = ast_walker_or_s.ConsumeValueOrDie();
+  auto qlobjptr = ast_walker->var_table()->Lookup("f");
+  ASSERT_EQ(qlobjptr->type(), QLObjectType::kFunction);
+  auto func_obj = std::static_pointer_cast<FuncObject>(qlobjptr);
+  auto arg_types = func_obj->arg_types();
+  absl::flat_hash_map<std::string, pl::types::DataType> expected_types({
+      {"a", pl::types::DataType::INT64},
+      {"b", pl::types::DataType::STRING},
+      {"c", pl::types::DataType::FLOAT64},
+      {"d", pl::types::DataType::BOOLEAN},
+      {"e", pl::types::DataType::TIME64NS},
+  });
+  ASSERT_EQ(arg_types, expected_types);
+}
+
+constexpr char kVizWithoutArgAnnotationsQuery[] = R"pxl(
+import px
+@px.viz.vega("vega")
+def f(a: int, b: str, c):
+  return 1
+)pxl";
+
+TEST_F(ASTVisitorTest, viz_without_annotations_errors) {
+  auto graph_or_s = CompileGraph(kVizWithoutArgAnnotationsQuery);
+  ASSERT_NOT_OK(graph_or_s);
+
+  EXPECT_THAT(graph_or_s.status(),
+              HasCompilerError("Arguments of px.viz.* decorated functions must be annotated with "
+                               "types. Arg: 'c' was not annotated."));
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

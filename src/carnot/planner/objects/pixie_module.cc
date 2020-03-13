@@ -156,11 +156,18 @@ Status PixieModule::RegisterCompileTimeUnitFunction(std::string name) {
   return Status::OK();
 }
 
+Status PixieModule::RegisterTypeObjs() {
+  PL_ASSIGN_OR_RETURN(auto time_type_object, TypeObject::Create(IRNodeType::kTime, ast_visitor()));
+  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kTimeTypeName, time_type_object));
+  return Status::OK();
+}
+
 Status PixieModule::Init(const FlagValues& flag_values) {
   PL_RETURN_IF_ERROR(RegisterFlags(flag_values));
   PL_RETURN_IF_ERROR(RegisterUDFFuncs());
   PL_RETURN_IF_ERROR(RegisterCompileTimeFuncs());
   PL_RETURN_IF_ERROR(RegisterUDTFs());
+  PL_RETURN_IF_ERROR(RegisterTypeObjs());
 
   // Setup methods.
   PL_ASSIGN_OR_RETURN(

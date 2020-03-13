@@ -108,6 +108,8 @@ class ASTVisitorImpl : public ASTVisitor {
   inline static constexpr char kTimeConstantColumnName[] = "time_";
   inline static constexpr char kStringTypeName[] = "str";
   inline static constexpr char kIntTypeName[] = "int";
+  inline static constexpr char kFloatTypeName[] = "float";
+  inline static constexpr char kBoolTypeName[] = "bool";
   inline static constexpr char kNoneName[] = "None";
 
  private:
@@ -433,7 +435,7 @@ class ASTVisitorImpl : public ASTVisitor {
    */
   StatusOr<QLObjectPtr> FuncDefHandler(
       const std::vector<std::string>& arg_names,
-      const absl::flat_hash_map<std::string, pypa::AstExpr>& arg_annotations,
+      const absl::flat_hash_map<std::string, QLObjectPtr>& arg_annotation_objs,
       const pypa::AstSuitePtr& body, const pypa::AstPtr& ast, const ParsedArgs& args);
 
   /**
@@ -443,7 +445,7 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param annotation
    * @return Status
    */
-  Status DoesArgMatchAnnotation(QLObjectPtr arg, const pypa::AstExpr& annotation);
+  Status DoesArgMatchAnnotation(QLObjectPtr arg, QLObjectPtr annotation_obj);
 
   /**
    * @brief Handles the return statements of function definitions.

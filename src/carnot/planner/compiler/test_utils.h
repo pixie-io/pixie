@@ -808,6 +808,17 @@ class ASTVisitorTest : public OperatorTests {
     return ir;
   }
 
+  StatusOr<std::shared_ptr<compiler::ASTVisitorImpl>> CompileInspectAST(
+      const std::string& query, const compiler::FlagValues& flag_values = {}) {
+    Parser parser;
+    PL_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
+    std::shared_ptr<IR> ir = std::make_shared<IR>();
+    PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
+                                             ir.get(), compiler_state_.get(), flag_values));
+    PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+    return ast_walker;
+  }
+
   StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(const std::string& query) {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));

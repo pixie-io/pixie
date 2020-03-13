@@ -54,6 +54,10 @@ Status ASTVisitorImpl::InitGlobals() {
   var_table_->Add(ASTVisitorImpl::kStringTypeName, string_type_object);
   PL_ASSIGN_OR_RETURN(auto int_type_object, TypeObject::Create(IRNodeType::kInt, this));
   var_table_->Add(ASTVisitorImpl::kIntTypeName, int_type_object);
+  PL_ASSIGN_OR_RETURN(auto float_type_object, TypeObject::Create(IRNodeType::kFloat, this));
+  var_table_->Add(ASTVisitorImpl::kFloatTypeName, float_type_object);
+  PL_ASSIGN_OR_RETURN(auto bool_type_object, TypeObject::Create(IRNodeType::kBool, this));
+  var_table_->Add(ASTVisitorImpl::kBoolTypeName, bool_type_object);
   // Populate other reserved words
   var_table_->Add(ASTVisitorImpl::kNoneName, std::make_shared<NoneObject>(this));
 
@@ -383,30 +387,29 @@ Status ASTVisitorImpl::ProcessAssignNode(const pypa::AstAssignPtr& node) {
   return Status::OK();
 }
 
-Status ASTVisitorImpl::DoesArgMatchAnnotation(QLObjectPtr ql_arg, const pypa::AstExpr& annotation) {
-  DCHECK(annotation);
+Status ASTVisitorImpl::DoesArgMatchAnnotation(QLObjectPtr ql_arg, QLObjectPtr annotation_obj) {
+  DCHECK(annotation_obj);
   DCHECK(ql_arg->HasNode());
   auto arg = ql_arg->node();
-  PL_ASSIGN_OR_RETURN(auto annotation_object, Process(annotation, {{}, "", {}}));
-  if (annotation_object->type() == QLObjectType::kDataframe) {
+  if (annotation_obj->type() == QLObjectType::kDataframe) {
     if (!arg->IsOperator()) {
       return arg->CreateIRNodeError("Expected '$0', received '$1'", Dataframe::DataframeType.name(),
                                     arg->type_string());
     }
     return Status::OK();
-  } else if (annotation_object->type() == QLObjectType::kType) {
-    auto type_object = std::static_pointer_cast<TypeObject>(annotation_object);
+  } else if (annotation_obj->type() == QLObjectType::kType) {
+    auto type_object = std::static_pointer_cast<TypeObject>(annotation_obj);
     PL_RETURN_IF_ERROR(type_object->NodeMatches(arg));
     return Status::OK();
   } else {
     return error::Unimplemented("'$0' unhandled annotation",
-                                magic_enum::enum_name(annotation_object->type()));
+                                magic_enum::enum_name(annotation_obj->type()));
   }
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::FuncDefHandler(
     const std::vector<std::string>& arg_names,
-    const absl::flat_hash_map<std::string, pypa::AstExpr>& arg_annotations,
+    const absl::flat_hash_map<std::string, QLObjectPtr>& arg_annotation_objs,
     const pypa::AstSuitePtr& body, const pypa::AstPtr& ast, const ParsedArgs& args) {
   // TODO(philkuz) (PL-1365) figure out how to wrap the internal errors with the ast that's passed
   // in.
@@ -416,9 +419,9 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::FuncDefHandler(
   for (const std::string& arg_name : arg_names) {
     QLObjectPtr arg_object = args.GetArg(arg_name);
 
-    if (arg_annotations.contains(arg_name)) {
+    if (arg_annotation_objs.contains(arg_name)) {
       PL_RETURN_IF_ERROR(
-          DoesArgMatchAnnotation(arg_object, arg_annotations.find(arg_name)->second));
+          DoesArgMatchAnnotation(arg_object, arg_annotation_objs.find(arg_name)->second));
     }
     func_visitor->var_table()->Add(arg_name, arg_object);
   }
@@ -434,7 +437,7 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
   // Parse the args to create the necessary
   auto function_name_node = node->name;
   std::vector<std::string> parsed_arg_names;
-  absl::flat_hash_map<std::string, pypa::AstExpr> arg_annotations;
+  absl::flat_hash_map<std::string, QLObjectPtr> arg_annotations_objs;
   for (const auto& arg : node->args.arguments) {
     if (arg->type != AstType::Arg) {
       return CreateAstError(arg, "function parameter must be an argument, not a $0",
@@ -443,7 +446,8 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
     auto arg_ptr = PYPA_PTR_CAST(Arg, arg);
     parsed_arg_names.push_back(arg_ptr->arg);
     if (arg_ptr->annotation) {
-      arg_annotations[arg_ptr->arg] = arg_ptr->annotation;
+      PL_ASSIGN_OR_RETURN(auto annotation_obj, Process(arg_ptr->annotation, {{}, "", {}}));
+      arg_annotations_objs[arg_ptr->arg] = annotation_obj;
     }
   }
   // TODO(philkuz) delete keywords from the function definition.
@@ -487,7 +491,7 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
   PL_ASSIGN_OR_RETURN(auto defined_func,
                       FuncObject::Create(function_name, parsed_arg_names, {}, false, false,
                                          std::bind(&ASTVisitorImpl::FuncDefHandler, this,
-                                                   parsed_arg_names, arg_annotations, body,
+                                                   parsed_arg_names, arg_annotations_objs, body,
                                                    std::placeholders::_1, std::placeholders::_2),
                                          this));
   DCHECK_LE(node->decorators.size(), 1);
@@ -502,6 +506,13 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
 
   PL_ASSIGN_OR_RETURN(auto doc_string, ProcessFuncDefDocString(body));
   PL_RETURN_IF_ERROR(defined_func->AddDocString(doc_string));
+
+  // TODO(PL-1603): once we have semantic types we can do this for all functions.
+  if (defined_func->HasVizSpec()) {
+    PL_RETURN_IF_ERROR(
+        defined_func->ResolveArgAnnotationsToConcreteTypes(node, arg_annotations_objs));
+    PL_RETURN_IF_ERROR(defined_func->CheckAllArgsHaveTypes(node));
+  }
 
   var_table_->Add(function_name, defined_func);
   return Status::OK();
