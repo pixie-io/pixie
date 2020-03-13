@@ -1,6 +1,7 @@
 import * as React from 'react';
 import noop from 'utils/noop';
 
+import {createStyles, makeStyles, Theme} from '@material-ui/core';
 import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import Snackbar from '@material-ui/core/Snackbar';
@@ -22,7 +23,17 @@ type SnackbarState = {
   opened: boolean,
 } & Required<ShowArgs>;
 
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    snackbar: {
+      backgroundColor: theme.palette.background.three,
+      color: theme.palette.text.secondary,
+    },
+  }),
+);
+
 export const SnackbarProvider: React.FC = (props) => {
+  const classes = useStyles();
   const [state, setState] = React.useState<SnackbarState>({
     opened: false,
     message: '',
@@ -87,6 +98,7 @@ export const SnackbarProvider: React.FC = (props) => {
         {props.children}
       </SnackbarContext.Provider>
       <Snackbar
+        ContentProps={{ className: classes.snackbar }}
         open={state.opened}
         onClose={hideSnackbar}
         message={state.message}

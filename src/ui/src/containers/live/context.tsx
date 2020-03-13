@@ -1,7 +1,9 @@
 import * as ls from 'common/localstorage';
 import ClientContext from 'common/vizier-grpc-client-context';
+import {useSnackbar} from 'components/snackbar/snackbar';
 import {parseSpecs, VisualizationSpecMap} from 'components/vega/spec';
 import * as React from 'react';
+import {resolveTypeReferenceDirective} from 'typescript';
 import {dataFromProto} from 'utils/result-data-utils';
 import {GetPxScripts, Script} from 'utils/script-bundle';
 
@@ -55,6 +57,28 @@ const LiveContextProvider = (props) => {
 
   const client = React.useContext(ClientContext);
 
+  const showSnackbar = useSnackbar();
+
+  const executeScript = React.useCallback(() => {
+    if (!client) {
+      return;
+    }
+    client.executeScript(script).then((results) => {
+      const newTables = {};
+      for (const table of results.tables) {
+        newTables[table.name] = dataFromProto(table.relation, table.data);
+      }
+      setTables(newTables);
+    }).catch(() => {
+      showSnackbar({
+        message: 'Failed to execute script',
+        action: executeScript,
+        actionTitle: 'retry',
+        autoHideDuration: 5000,
+      });
+    });
+  }, [client, script]);
+
   const liveViewContext = React.useMemo(() => ({
     updateScript: setScript,
     updateVegaSpec: setVegaSpec,
@@ -62,19 +86,8 @@ const LiveContextProvider = (props) => {
     vizierReady: !!client,
     setScripts,
     exampleScripts,
-    executeScript: () => {
-      if (!client) {
-        return;
-      }
-      client.executeScript(script).then((results) => {
-        const newTables = {};
-        for (const table of results.tables) {
-          newTables[table.name] = dataFromProto(table.relation, table.data);
-        }
-        setTables(newTables);
-      });
-    },
-  }), [client, script]);
+    executeScript,
+  }), [executeScript, client]);
 
   return (
     <LiveContext.Provider value={liveViewContext}>

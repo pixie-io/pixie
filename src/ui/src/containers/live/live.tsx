@@ -1,6 +1,7 @@
 import {getLiveViewEditorOpened, setLiveViewEditorOpened} from 'common/localstorage';
 import MagicIcon from 'components/icons/magic';
 import LazyPanel from 'components/lazy-panel';
+import {SnackbarProvider} from 'components/snackbar/snackbar';
 import * as React from 'react';
 import {GlobalHotKeys} from 'react-hotkeys';
 
@@ -100,44 +101,46 @@ const LiveView = () => {
   }), []);
 
   return (
-    <LiveContextProvider>
-      <div className={classes.root}>
-        <GlobalHotKeys handlers={hotkeyHandlers} keyMap={COMMAND_KEYMAP} />
-        <div className={classes.topBar}>
-          <IconButton disabled={true} onClick={toggleDrawer}>
-            <MenuIcon />
-          </IconButton>
-          <div className={classes.title}></div>
-          <ExecuteScript />
-          <IconButton disabled={true}>
-            <ShareIcon />
-          </IconButton>
-          <ToggleButton
-            className={classes.editorToggle}
-            selected={editorOpen}
-            onChange={toggleEditor}
-            value='editorOpened'
-          >
-            <EditIcon />
-          </ToggleButton>
-          <IconButton disabled={true} onClick={toggleCommandOpen}>
-            <MagicIcon />
-          </IconButton>
-        </div>
-        <div className={classes.main}>
-          <LazyPanel className={classes.editor} show={editorOpen}>
-            <Editor />
-          </LazyPanel>
-          <div className={classes.canvas}>
-            <Canvas />
+    <SnackbarProvider>
+      <LiveContextProvider>
+        <div className={classes.root}>
+          <GlobalHotKeys handlers={hotkeyHandlers} keyMap={COMMAND_KEYMAP} />
+          <div className={classes.topBar}>
+            <IconButton disabled={true} onClick={toggleDrawer}>
+              <MenuIcon />
+            </IconButton>
+            <div className={classes.title}></div>
+            <ExecuteScript />
+            <IconButton disabled={true}>
+              <ShareIcon />
+            </IconButton>
+            <ToggleButton
+              className={classes.editorToggle}
+              selected={editorOpen}
+              onChange={toggleEditor}
+              value='editorOpened'
+            >
+              <EditIcon />
+            </ToggleButton>
+            <IconButton disabled={true} onClick={toggleCommandOpen}>
+              <MagicIcon />
+            </IconButton>
           </div>
-        </div>
-        <Drawer open={drawerOpen} onClose={toggleDrawer}>
-          <div>drawer content</div>
-        </Drawer>
-        <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
-      </div >
-    </LiveContextProvider >
+          <div className={classes.main}>
+            <LazyPanel className={classes.editor} show={editorOpen}>
+              <Editor />
+            </LazyPanel>
+            <div className={classes.canvas}>
+              <Canvas />
+            </div>
+          </div>
+          <Drawer open={drawerOpen} onClose={toggleDrawer}>
+            <div>drawer content</div>
+          </Drawer>
+          <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
+        </div >
+      </LiveContextProvider >
+    </SnackbarProvider>
   );
 };
 
