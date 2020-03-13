@@ -198,6 +198,10 @@ func (v *VizierClusterInfoServer) GetClusterInfo(ctx context.Context, request *c
 			ID:              id,
 			Status:          s,
 			LastHeartbeatNs: vzInfo.LastHeartbeatNs,
+			// TODO(zasgar/nserrino): PL-1595 fill this in with actual logic.
+			Config: &cloudapipb.VizierConfig{
+				PassthroughEnabled: true,
+			},
 		})
 	}
 	return resp, nil
@@ -224,6 +228,12 @@ func (v *VizierClusterInfoServer) GetClusterConnectionInfo(ctx context.Context, 
 		IPAddress: ci.IPAddress,
 		Token:     ci.Token,
 	}, nil
+}
+
+// UpdateClusterVizierConfig supports updates of VizierConfig for a cluster
+func (v *VizierClusterInfoServer) UpdateClusterVizierConfig(ctx context.Context, request *cloudapipb.UpdateClusterVizierConfigRequest) (*cloudapipb.UpdateClusterVizierConfigResponse, error) {
+	// TODO(zasgar, nserrino): PL-1595 Fill in
+	return nil, status.Error(codes.Internal, "UpdateClusterVizierConfig is unimplemented")
 }
 
 func vzStatusToClusterStatus(s cvmsgspb.VizierInfo_Status) cloudapipb.ClusterStatus {

@@ -31,12 +31,17 @@ export interface GQLClusterInfo {
   id: string;
   status: GQLClusterStatus;
   lastHeartbeatMs: number;
+  vizierConfig: GQLVizierConfig;
 }
 
 export const enum GQLClusterStatus {
   VZ_ST_UNKNOWN = 'VZ_ST_UNKNOWN',
   VZ_ST_HEALTHY = 'VZ_ST_HEALTHY',
   VZ_ST_DISCONNECTED = 'VZ_ST_DISCONNECTED'
+}
+
+export interface GQLVizierConfig {
+  passthroughEnabled?: boolean;
 }
 
 export interface GQLClusterConnectionInfo {
@@ -69,6 +74,7 @@ export interface GQLArtifact {
 
 export interface GQLMutation {
   CreateCluster?: GQLClusterInfo;
+  UpdateVizierConfig: boolean;
 }
 
 /*********************************
@@ -85,6 +91,7 @@ export interface GQLResolver {
   Query?: GQLQueryTypeResolver;
   UserInfo?: GQLUserInfoTypeResolver;
   ClusterInfo?: GQLClusterInfoTypeResolver;
+  VizierConfig?: GQLVizierConfigTypeResolver;
   ClusterConnectionInfo?: GQLClusterConnectionInfoTypeResolver;
   CLIArtifact?: GQLCLIArtifactTypeResolver;
   ArtifactsInfo?: GQLArtifactsInfoTypeResolver;
@@ -152,6 +159,7 @@ export interface GQLClusterInfoTypeResolver<TParent = any> {
   id?: ClusterInfoToIdResolver<TParent>;
   status?: ClusterInfoToStatusResolver<TParent>;
   lastHeartbeatMs?: ClusterInfoToLastHeartbeatMsResolver<TParent>;
+  vizierConfig?: ClusterInfoToVizierConfigResolver<TParent>;
 }
 
 export interface ClusterInfoToIdResolver<TParent = any, TResult = any> {
@@ -163,6 +171,18 @@ export interface ClusterInfoToStatusResolver<TParent = any, TResult = any> {
 }
 
 export interface ClusterInfoToLastHeartbeatMsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ClusterInfoToVizierConfigResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLVizierConfigTypeResolver<TParent = any> {
+  passthroughEnabled?: VizierConfigToPassthroughEnabledResolver<TParent>;
+}
+
+export interface VizierConfigToPassthroughEnabledResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
@@ -220,8 +240,17 @@ export interface ArtifactToTimestampMsResolver<TParent = any, TResult = any> {
 
 export interface GQLMutationTypeResolver<TParent = any> {
   CreateCluster?: MutationToCreateClusterResolver<TParent>;
+  UpdateVizierConfig?: MutationToUpdateVizierConfigResolver<TParent>;
 }
 
 export interface MutationToCreateClusterResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface MutationToUpdateVizierConfigArgs {
+  clusterID?: string;
+  passthroughEnabled?: boolean;
+}
+export interface MutationToUpdateVizierConfigResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: MutationToUpdateVizierConfigArgs, context: any, info: GraphQLResolveInfo): TResult;
 }

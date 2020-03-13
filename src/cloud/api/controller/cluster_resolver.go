@@ -70,9 +70,32 @@ func (q *QueryResolver) Cluster(ctx context.Context) (*ClusterInfoResolver, erro
 		return nil, err
 	}
 
+	t := true
 	return &ClusterInfoResolver{
-		clusterID, info.Status, float64(info.LastHeartbeatNs),
+		// TODO(zasgar, nserrino): PL-1595 Fill in VizierConfigResolver with real info.
+		clusterID, info.Status, float64(info.LastHeartbeatNs), &VizierConfigResolver{passthroughEnabled: &t},
 	}, nil
+}
+
+// VizierConfigResolver is the resolver responsible for config belonging to the given cluster.
+type VizierConfigResolver struct {
+	passthroughEnabled *bool
+}
+
+// PassthroughEnabled returns whether passthrough mode is enabled on the cluster
+func (v *VizierConfigResolver) PassthroughEnabled() *bool {
+	return v.passthroughEnabled
+}
+
+type updateVizierConfigArgs struct {
+	ClusterID          *graphql.ID
+	PassthroughEnabled *bool
+}
+
+// UpdateVizierConfig updates the Vizier config of the input cluster
+func (q *QueryResolver) UpdateVizierConfig(ctx context.Context, args *updateVizierConfigArgs) (bool, error) {
+	// TODO(zasgar, nserrino): PL-1595 Fill this in.
+	return false, nil
 }
 
 // ClusterInfoResolver is the resolver responsible for cluster info.
@@ -80,6 +103,7 @@ type ClusterInfoResolver struct {
 	clusterID       uuid.UUID
 	status          cvmsgspb.VizierInfo_Status
 	lastHeartbeatNs float64
+	vizierConfig    *VizierConfigResolver
 }
 
 // ID returns cluster ID.
@@ -95,6 +119,11 @@ func (c *ClusterInfoResolver) Status() string {
 // LastHeartbeatMs returns the heartbeat.
 func (c *ClusterInfoResolver) LastHeartbeatMs() float64 {
 	return float64(c.lastHeartbeatNs / 1e6)
+}
+
+// VizierConfig returns the config for the Vizier.
+func (c *ClusterInfoResolver) VizierConfig() *VizierConfigResolver {
+	return c.vizierConfig
 }
 
 // ClusterConnection resolves cluster connection information.

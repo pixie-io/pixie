@@ -121,6 +121,11 @@ message GetDownloadLinkResponse {
 service VizierClusterInfo {
     rpc GetClusterInfo(GetClusterInfoRequest) returns(GetClusterInfoResponse) {}
     rpc GetClusterConnectionInfo(GetClusterConnectionInfoRequest) returns(GetClusterConnectionInfoResponse) {}
+    rpc UpdateClusterVizierConfig(UpdateClusterVizierConfigRequest) returns(UpdateClusterVizierConfigResponse) {}
+}
+
+message VizierConfig {
+    bool passthrough_enabled = 1;
 }
 
 message GetClusterInfoRequest {}
@@ -138,6 +143,7 @@ message ClusterInfo {
                           ];
     ClusterStatus status = 2;
     int64 lastHeartbeatNs = 3;
+    VizierConfig config = 4;
 }
 
 message GetClusterInfoResponse {
@@ -156,3 +162,12 @@ message GetClusterConnectionInfoResponse {
                          ];
     string token = 2;
 }
+
+message UpdateClusterVizierConfigRequest {
+    pl.uuidpb.UUID id = 1 [
+                           (gogoproto.customname) = "ID"
+                           ];
+    VizierConfig config_update = 2;
+}
+
+message UpdateClusterVizierConfigResponse {}

@@ -111,6 +111,9 @@ func TestClusterInfo(t *testing.T) {
 						id
 						status
 						lastHeartbeatMs
+						vizierConfig {
+							passthroughEnabled
+						}
 					}
 				}
 			`,
@@ -119,7 +122,10 @@ func TestClusterInfo(t *testing.T) {
 					"cluster": {
 						"id":"7ba7b810-9dad-11d1-80b4-00c04fd430c8",
 						"status": "VZ_ST_HEALTHY",
-						"lastHeartbeatMs": 4
+						"lastHeartbeatMs": 4,
+						"vizierConfig": {
+							"passthroughEnabled": true
+						}
 					}
 				}
 			`,
@@ -172,6 +178,33 @@ func TestClusterConnectionInfo(t *testing.T) {
 						"ipAddress": "127.0.0.1",
 						"token": "this-is-a-token"
 					}
+				}
+			`,
+		},
+	})
+}
+
+func TestUpdateClusterVizierConfig(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	apiEnv, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	gqlSchema := LoadSchema(apiEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				mutation {
+					UpdateVizierConfig(clusterID: "7ba7b810-9dad-11d1-80b4-00c04fd430c8", passthroughEnabled: true)
+				}
+			`,
+			ExpectedResult: `
+				{
+					"UpdateVizierConfig": false
 				}
 			`,
 		},

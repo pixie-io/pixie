@@ -45,10 +45,15 @@ enum ClusterStatus {
   VZ_ST_DISCONNECTED
 }
 
+type VizierConfig {
+  passthroughEnabled: Boolean
+}
+
 type ClusterInfo {
   id: ID!
   status: ClusterStatus!
   lastHeartbeatMs: Float!
+  vizierConfig: VizierConfig!
 }
 
 type ClusterConnectionInfo {
@@ -58,6 +63,7 @@ type ClusterConnectionInfo {
 
 type Mutation {
   CreateCluster: ClusterInfo
+  UpdateVizierConfig(clusterID: ID, passthroughEnabled: Boolean): Boolean!
 }
 
 type CLIArtifact {
