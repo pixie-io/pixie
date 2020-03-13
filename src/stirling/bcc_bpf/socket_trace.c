@@ -158,6 +158,7 @@ static __inline struct conn_info_t* get_conn_info(u32 tgid, u32 fd) {
   u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
   struct conn_info_t new_conn_info;
   memset(&new_conn_info, 0, sizeof(struct conn_info_t));
+  new_conn_info.addr_valid = false;
   struct conn_info_t* conn_info = conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
   // Use TGID zero to detect that a new conn_info needs to be initialized.
   if (conn_info->conn_id.upid.tgid == 0) {
@@ -507,6 +508,7 @@ static __inline void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd,
                                      struct sockaddr_in6 addr) {
   struct conn_info_t conn_info;
   memset(&conn_info, 0, sizeof(struct conn_info_t));
+  conn_info.addr_valid = true;
   conn_info.addr = addr;
   init_conn_info(tgid, fd, &conn_info);
 
@@ -801,6 +803,9 @@ static __inline void probe_entry_write_send(struct pt_regs* ctx, u64 id, int fd,
     return;
   }
 
+  // Note: From this point on, if exiting early, and conn_info->addr_valid == 0,
+  // then call conn_info_map.delete(&tgid_fd) to avoid a BPF map leak.
+
   struct data_info_t write_info;
   memset(&write_info, 0, sizeof(struct data_info_t));
   write_info.timestamp_ns = bpf_ktime_get_ns();
@@ -822,6 +827,10 @@ static __inline void probe_entry_write_send(struct pt_regs* ctx, u64 id, int fd,
 
   // Filter for request or response based on control flags and protocol type.
   if (!should_trace_conn(conn_info)) {
+    u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
+    if (!conn_info->addr_valid) {
+      conn_info_map.delete(&tgid_fd);
+    }
     return;
   }
 
@@ -904,6 +913,9 @@ static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
     return;
   }
 
+  // Note: From this point on, if exiting early, and conn_info->addr_valid == 0,
+  // then call conn_info_map.delete(&tgid_fd) to avoid a BPF map leak.
+
   // TODO(yzhao): Same TODO for split the interface.
   if (buf != NULL) {
     update_traffic_class(conn_info, kIngress, buf, bytes_read);
@@ -915,13 +927,21 @@ static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
     update_traffic_class(conn_info, kIngress, iov_cpy.iov_base, buf_size);
   }
 
+  u64 tgid_fd = ((u64)tgid << 32) | (u32)read_info->fd;
+
   // Filter for request or response based on control flags and protocol type.
   if (!should_trace_conn(conn_info)) {
+    if (!conn_info->addr_valid) {
+      conn_info_map.delete(&tgid_fd);
+    }
     return;
   }
 
   struct socket_data_event_t* event = fill_event(kIngress, read_info, conn_info);
   if (event == NULL) {
+    if (!conn_info->addr_valid) {
+      conn_info_map.delete(&tgid_fd);
+    }
     return;
   }
 
