@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
+	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/bridge"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"
@@ -276,11 +277,6 @@ func registerVizier(ts *testState, vizierID uuid.UUID, stream vzconnpb.VZConnSer
 	assert.Equal(ts.t, cvmsgspb.ST_OK, ack.Status)
 }
 
-func v2cTopic(vizierID uuid.UUID, topic string) string {
-	// TODO(zasgar): Fix hardcoded shard ID.
-	return fmt.Sprintf("v2c.000.%s.%s", vizierID.String(), topic)
-}
-
 func c2vTopic(vizierID uuid.UUID, topic string) string {
 	// TODO(zasgar): Fix hardcoded shard ID.
 	return fmt.Sprintf("c2v.000.%s.%s", vizierID.String(), topic)
@@ -304,11 +300,12 @@ func TestNATSGRPCBridge_BridgingTest(t *testing.T) {
 	registerVizier(ts, vizierID, stream, readCh)
 
 	t1Ch := make(chan *nats.Msg, 10)
-	sub, err := ts.nc.ChanSubscribe(v2cTopic(vizierID, "t1"), t1Ch)
+	topic := vzshard.V2CTopic("t1", vizierID)
+	sub, err := ts.nc.ChanSubscribe(topic, t1Ch)
 	assert.Nil(t, err)
 	defer sub.Unsubscribe()
 
-	fmt.Printf("Listing to topic: %s\n", v2cTopic(vizierID, "t1"))
+	fmt.Printf("Listing to topic: %s\n", topic)
 	// Send a message on t1 and expect it show up on t1Ch
 	err = stream.Send(&vzconnpb.V2CBridgeMessage{
 		Topic:     "t1",

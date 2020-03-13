@@ -21,6 +21,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 )
@@ -201,8 +202,7 @@ func (s *NATSBridgeController) sendMessageToMessageBus(msg *vzconnpb.V2CBridgeMe
 	if err != nil {
 		return err
 	}
-	shardID := "000"
-	topic := fmt.Sprintf("v2c.%s.%s.%s", shardID, s.clusterID.String(), msg.Topic)
+	topic := vzshard.V2CTopic(msg.Topic, s.clusterID)
 	s.l.
 		WithField("Message", natsMsg.String()).
 		WithField("topic", topic).

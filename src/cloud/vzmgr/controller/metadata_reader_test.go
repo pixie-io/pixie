@@ -148,7 +148,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 					}
 					b, err := v2cMsg.Marshal()
 					assert.Nil(t, err)
-					nc.Publish(fmt.Sprintf("v2c.%s.%s.MetadataResponse", vzshard.VizierIDToShard(vzID), vzID.String()), b)
+					nc.Publish(vzshard.V2CTopic("MetadataResponse", vzID), b)
 				})
 				assert.Nil(t, err)
 				defer mdSub.Unsubscribe()
@@ -173,7 +173,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			b, err := v2cMsg.Marshal()
 			assert.Nil(t, err)
 
-			sc.Publish(fmt.Sprintf("v2c.%s.%s.DurableMetadataUpdates", vzshard.VizierIDToShard(vzID), vzID.String()), b)
+			sc.Publish(vzshard.V2CTopic("DurableMetadataUpdates", vzID), b)
 
 			if len(test.expectedMetadataUpdates) > 0 {
 				numUpdates := 0

@@ -10,6 +10,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/cloud/vzconn/bridge",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/cloud/shared/vzshard:go_default_library",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
@@ -32,6 +33,7 @@ go_test(
     srcs = ["grpc_test.go"],
     embed = [":go_default_library"],
     deps = [
+        "//src/cloud/shared/vzshard:go_default_library",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb/mock:go_default_library",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",

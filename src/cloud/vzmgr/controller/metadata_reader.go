@@ -95,7 +95,7 @@ func (m *MetadataReader) StartVizierUpdates(id uuid.UUID, rv string) error {
 	}
 
 	// Subscribe to STAN topic for streaming updates.
-	topic := fmt.Sprintf("v2c.%s.%s.%s", vzshard.VizierIDToShard(id), id.String(), streamingMetadataTopic)
+	topic := vzshard.V2CTopic(streamingMetadataTopic, id)
 	log.WithField("topic", topic).Info("Subscribing to STAN")
 	liveSub, err := m.sc.Subscribe(topic, func(msg *stan.Msg) {
 		vzState.liveCh <- msg
@@ -257,7 +257,7 @@ func (m *MetadataReader) getMissingUpdates(from string, to string, vzState *Vizi
 
 	// Subscribe to topic that the response will be sent on.
 	subCh := make(chan *nats.Msg)
-	sub, err := m.nc.ChanSubscribe(fmt.Sprintf("v2c.%s.%s.%s", vzshard.VizierIDToShard(vzState.id), vzState.id.String(), metadataResponseTopic), subCh)
+	sub, err := m.nc.ChanSubscribe(vzshard.V2CTopic(metadataResponseTopic, vzState.id), subCh)
 	defer sub.Unsubscribe()
 
 	pubTopic := fmt.Sprintf("c2v.%s.%s", vzState.id.String(), metadataRequestTopic)
