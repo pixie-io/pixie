@@ -34,8 +34,7 @@ void DataStream::AddData(std::unique_ptr<SocketDataEvent> event) {
     std::unique_ptr<SocketDataEvent>& orig_event = res.first->second;
     LOG(ERROR) << absl::Substitute("Clobbering data event [seq_num=$0 pid=$1 fd=$2 gen=$3].",
                                    seq_num, orig_event->attr.conn_id.upid.pid,
-                                   orig_event->attr.conn_id.fd,
-                                   orig_event->attr.conn_id.generation);
+                                   orig_event->attr.conn_id.fd, orig_event->attr.conn_id.tsid);
   }
   has_new_events_ = true;
 }

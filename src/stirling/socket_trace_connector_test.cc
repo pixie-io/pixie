@@ -206,7 +206,7 @@ TEST_F(SocketTraceConnectorTest, HTTPFilter) {
   search_conn_id.upid.pid = kPID;
   search_conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
   search_conn_id.fd = kFD;
-  search_conn_id.generation = 1;
+  search_conn_id.tsid = 1;
   const ConnectionTracker* tracker = source_->GetConnectionTracker(search_conn_id);
   ASSERT_NE(nullptr, tracker);
   EXPECT_EQ(1 + source_->ClockRealTimeOffset(), tracker->conn().timestamp_ns);
@@ -674,7 +674,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   conn_id_t search_conn_id;
   search_conn_id.upid.pid = real_pid;
   search_conn_id.fd = real_fd;
-  search_conn_id.generation = 1;
+  search_conn_id.tsid = 1;
   const ConnectionTracker* tracker = source_->GetConnectionTracker(search_conn_id);
   ASSERT_NE(nullptr, tracker);
 

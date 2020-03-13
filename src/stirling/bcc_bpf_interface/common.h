@@ -59,8 +59,8 @@ struct conn_id_t {
   struct upid_t upid;
   // The file descriptor to the opened network connection.
   uint32_t fd;
-  // Generation number of the FD (increments on each FD reuse in the TGID).
-  uint32_t generation;
+  // Unique id of the conn_id (timestamp).
+  uint64_t tsid;
 };
 
 // Specifies the corresponding indexes of the entries of a per-cpu array.

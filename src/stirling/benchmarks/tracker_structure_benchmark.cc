@@ -36,7 +36,7 @@ uint32_t kGenerations = 5;
 class ConnectionTrackerCompare {
  public:
   bool operator()(const ConnectionTracker& a, const ConnectionTracker& b) const {
-    return a.generation() > b.generation();
+    return a.tsid() > b.tsid();
   }
 };
 
@@ -82,7 +82,7 @@ void AddConnectionTrackers(Tcontainer* connection_trackers, const std::vector<ui
     uint32_t gen_num = global_gen_num++;
     auto& container = (*connection_trackers)[conn_id];
     auto tracker = ConnectionTracker();
-    conn_event.open.conn_id.generation = gen_num;
+    conn_event.open.conn_id.tsid = gen_num;
     tracker.AddControlEvent(conn_event);
 #if defined(INNER_MAP)
     container.emplace(gen_num, std::move(tracker));
@@ -100,7 +100,7 @@ void PruneConnectionTrackers(Tcontainer* connection_trackers) {
 #ifdef MOVE
     auto& last_tracker = tracker_set.rbegin()->second;
     auto new_tracker_set = InnerContainer();
-    new_tracker_set.emplace(last_tracker.generation(), std::move(last_tracker));
+    new_tracker_set.emplace(last_tracker.tsid(), std::move(last_tracker));
     tracker_set = std::move(new_tracker_set);
 #else
     auto gen_it = tracker_set.begin();

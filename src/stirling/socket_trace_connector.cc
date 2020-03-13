@@ -405,11 +405,10 @@ void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, i
   auto event = std::make_unique<HTTP2HeaderEvent>(data);
 
   VLOG(3) << absl::Substitute(
-      "t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 end_stream=$6 name=$7 value=$8",
+      "t=$0 pid=$1 type=$2 fd=$3 tsid=$4 stream_id=$5 end_stream=$6 name=$7 value=$8",
       event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
-      magic_enum::enum_name(event->attr.type), event->attr.conn_id.fd,
-      event->attr.conn_id.generation, event->attr.stream_id, event->attr.end_stream, event->name,
-      event->value);
+      magic_enum::enum_name(event->attr.type), event->attr.conn_id.fd, event->attr.conn_id.tsid,
+      event->attr.stream_id, event->attr.end_stream, event->name, event->value);
   connector->AcceptHTTP2Header(std::move(event));
 }
 
@@ -426,11 +425,10 @@ void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*da
   auto event = std::make_unique<HTTP2DataEvent>(data);
 
   VLOG(3) << absl::Substitute(
-      "t=$0 pid=$1 type=$2 fd=$3 generation=$4 stream_id=$5 end_stream=$6 data=$7",
+      "t=$0 pid=$1 type=$2 fd=$3 tsid=$4 stream_id=$5 end_stream=$6 data=$7",
       event->attr.timestamp_ns, event->attr.conn_id.upid.pid,
-      magic_enum::enum_name(event->attr.type), event->attr.conn_id.fd,
-      event->attr.conn_id.generation, event->attr.stream_id, event->attr.end_stream,
-      event->payload);
+      magic_enum::enum_name(event->attr.type), event->attr.conn_id.fd, event->attr.conn_id.tsid,
+      event->attr.stream_id, event->attr.end_stream, event->payload);
   connector->AcceptHTTP2Data(std::move(event));
 }
 
@@ -455,7 +453,7 @@ void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEv
   pb->mutable_attr()->mutable_conn_id()->set_start_time_ns(
       event.attr.conn_id.upid.start_time_ticks);
   pb->mutable_attr()->mutable_conn_id()->set_fd(event.attr.conn_id.fd);
-  pb->mutable_attr()->mutable_conn_id()->set_generation(event.attr.conn_id.generation);
+  pb->mutable_attr()->mutable_conn_id()->set_generation(event.attr.conn_id.tsid);
   pb->mutable_attr()->mutable_traffic_class()->set_protocol(event.attr.traffic_class.protocol);
   pb->mutable_attr()->mutable_traffic_class()->set_role(event.attr.traffic_class.role);
   pb->mutable_attr()->set_direction(event.attr.direction);
@@ -497,7 +495,7 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
       << absl::Substitute("AcceptDataEvent received event with unknown protocol: $0",
                           magic_enum::enum_name(event->attr.traffic_class.protocol));
 
-  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.generation];
+  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.tsid];
   tracker.AddDataEvent(std::move(event));
 }
 
@@ -507,7 +505,7 @@ void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
   // conn_id is a common field of open & close.
   const uint64_t conn_map_key = GetConnMapKey(event.open.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event.open.conn_id.generation];
+  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event.open.conn_id.tsid];
   tracker.AddControlEvent(event);
 }
 
@@ -515,7 +513,7 @@ void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> e
   event->attr.timestamp_ns += ClockRealTimeOffset();
   const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.generation];
+  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.tsid];
   tracker.AddHTTP2Header(std::move(event));
 }
 
@@ -523,7 +521,7 @@ void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event
   event->attr.timestamp_ns += ClockRealTimeOffset();
   const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.generation];
+  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.tsid];
   tracker.AddHTTP2Data(std::move(event));
 }
 
@@ -537,7 +535,7 @@ const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(
   }
 
   const auto& tracker_generations = tracker_set_it->second;
-  auto tracker_it = tracker_generations.find(conn_id.generation);
+  auto tracker_it = tracker_generations.find(conn_id.tsid);
   if (tracker_it == tracker_generations.end()) {
     return nullptr;
   }
@@ -814,8 +812,8 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
     while (generation_it != tracker_generations.end()) {
       auto& tracker = generation_it->second;
 
-      VLOG(2) << absl::Substitute("Connection pid=$0 fd=$1 generation=$2 protocol=$3\n",
-                                  tracker.pid(), tracker.fd(), tracker.generation(),
+      VLOG(2) << absl::Substitute("Connection pid=$0 fd=$1 tsid=$2 protocol=$3\n", tracker.pid(),
+                                  tracker.fd(), tracker.tsid(),
                                   magic_enum::enum_name(tracker.protocol()));
 
       DCHECK(protocol_transfer_specs_.find(tracker.protocol()) != protocol_transfer_specs_.end())

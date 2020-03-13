@@ -113,10 +113,6 @@ BPF_HASH(active_read_info_map, u64, struct data_info_t);
 // Key is {tgid, pid}.
 BPF_HASH(active_close_info_map, u64, struct close_info_t);
 
-// Map from TGID, FD pair to a unique identifier (generation) of that pair.
-// Key is {tgid, fd}.
-BPF_HASH(proc_conn_map, u64, u32);
-
 // BPF programs are limited to a 512-byte stack. We store this value per CPU
 // and use it as a heap allocated value.
 BPF_PERCPU_ARRAY(data_buffer_heap, struct socket_data_event_t, 1);
@@ -128,12 +124,6 @@ BPF_PERCPU_ARRAY(control_values, s64, kNumControlValues);
 /***********************************************************
  * General helper functions
  ***********************************************************/
-
-static __inline uint32_t get_tgid_fd_generation(u64 tgid_fd) {
-  u32 init_tgid_fd_generation = 0;
-  u32* tgid_fd_generation = proc_conn_map.lookup_or_init(&tgid_fd, &init_tgid_fd_generation);
-  return (*tgid_fd_generation)++;
-}
 
 static __inline void set_open_file(u64 id, int fd) {
   u32 tgid = id >> 32;
@@ -160,12 +150,8 @@ static __inline void init_conn_info(u32 tgid, u32 fd, struct conn_info_t* conn_i
   conn_info->conn_id.upid.tgid = tgid;
   conn_info->conn_id.upid.start_time_ticks = get_tgid_start_time();
   conn_info->conn_id.fd = fd;
-  // Note that many calls to this function are not for socket descriptors,
-  // so we are actually "wasting" generations numbers.
-  // But this is still the most straightforward thing to do, and
-  // using one generation number per second should still provide 136 years of coverage.
   u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
-  conn_info->conn_id.generation = get_tgid_fd_generation(tgid_fd);
+  conn_info->conn_id.tsid = bpf_ktime_get_ns();
 }
 
 static __inline struct conn_info_t* get_conn_info(u32 tgid, u32 fd) {

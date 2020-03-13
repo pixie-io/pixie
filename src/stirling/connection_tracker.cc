@@ -42,7 +42,7 @@ constexpr double kStitchFailureRateThreshold = 0.5;
 namespace {
 std::string ToString(const conn_id_t& conn_id) {
   return absl::Substitute("[pid=$0 start_time_ticks=$1 fd=$2 gen=$3]", conn_id.upid.pid,
-                          conn_id.upid.start_time_ticks, conn_id.fd, conn_id.generation);
+                          conn_id.upid.start_time_ticks, conn_id.fd, conn_id.tsid);
 }
 }  // namespace
 
@@ -435,7 +435,7 @@ void ConnectionTracker::SetConnID(struct conn_id_t conn_id) {
       "Mismatched conn info: tracker=$0 event=$1", ToString(conn_id_), ToString(conn_id));
   DCHECK(conn_id_.fd == 0 || conn_id_.fd == conn_id.fd) << absl::Substitute(
       "Mismatched conn info: tracker=$0 event=$1", ToString(conn_id_), ToString(conn_id));
-  DCHECK(conn_id_.generation == 0 || conn_id_.generation == conn_id.generation) << absl::Substitute(
+  DCHECK(conn_id_.tsid == 0 || conn_id_.tsid == conn_id.tsid) << absl::Substitute(
       "Mismatched conn info: tracker=$0 event=$1", ToString(conn_id_), ToString(conn_id));
   DCHECK(conn_id_.upid.start_time_ticks == 0 ||
          conn_id_.upid.start_time_ticks == conn_id.upid.start_time_ticks)
@@ -707,12 +707,12 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
     VLOG(2) << absl::Substitute(
         "Skipping connection inference (previous inference attempt failed, and won't try again) "
         "pid=$0 fd=$1 gen=$2",
-        conn_id_.upid.pid, conn_id_.fd, conn_id_.generation);
+        conn_id_.upid.pid, conn_id_.fd, conn_id_.tsid);
     return;
   }
 
   VLOG(2) << absl::Substitute("Attempting connection inference pid=$0 fd=$1 gen=$2",
-                              conn_id_.upid.pid, conn_id_.fd, conn_id_.generation);
+                              conn_id_.upid.pid, conn_id_.fd, conn_id_.tsid);
 
   if (conn_resolver_ == nullptr) {
     conn_resolver_ = std::make_unique<SocketResolver>(proc_parser, conn_id_.upid.pid, conn_id_.fd);
@@ -770,7 +770,7 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   }
 
   LOG(INFO) << absl::Substitute("Inferred connection pid=$0 fd=$1 gen=$2 dest=$3:$4", pid(), fd(),
-                                generation(), open_info_.remote_addr.AddrStr(),
+                                tsid(), open_info_.remote_addr.AddrStr(),
                                 open_info_.remote_addr.port);
 
   // No need for the resolver anymore, so free its memory.
@@ -782,7 +782,7 @@ std::string DebugString(const ConnectionTracker& c, std::string_view prefix) {
   using TFrameType = typename TProtocolTraits::frame_type;
 
   std::string info;
-  info += absl::Substitute("$0pid=$1 fd=$2 gen=$3\n", prefix, c.pid(), c.fd(), c.generation());
+  info += absl::Substitute("$0pid=$1 fd=$2 gen=$3\n", prefix, c.pid(), c.fd(), c.tsid());
   info += absl::Substitute("state=$0\n", magic_enum::enum_name(c.state()));
   info += absl::Substitute("$0remote_addr=$1:$2\n", prefix, c.remote_endpoint().AddrStr(),
                            c.remote_endpoint().port);

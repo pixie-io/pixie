@@ -27,7 +27,7 @@ class EventGenerator {
     conn_event.open.timestamp_ns = clock_->now();
     conn_event.open.conn_id.upid.pid = kPID;
     conn_event.open.conn_id.fd = kFD;
-    conn_event.open.conn_id.generation = ++generation_;
+    conn_event.open.conn_id.tsid = ++tsid_;
     conn_event.open.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     conn_event.open.addr.sin6_family = AF_INET;
     conn_event.open.traffic_class.protocol = TProtocol;
@@ -56,7 +56,7 @@ class EventGenerator {
     event.attr.return_timestamp_ns = clock_->now();
     event.attr.conn_id.upid.pid = kPID;
     event.attr.conn_id.fd = kFD;
-    event.attr.conn_id.generation = generation_;
+    event.attr.conn_id.tsid = tsid_;
     event.attr.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     event.attr.seq_num = seq_num;
     event.attr.msg_size = msg.size();
@@ -70,7 +70,7 @@ class EventGenerator {
     close_event.close.timestamp_ns = clock_->now();
     close_event.close.conn_id.upid.pid = kPID;
     close_event.close.conn_id.fd = kFD;
-    close_event.close.conn_id.generation = generation_;
+    close_event.close.conn_id.tsid = tsid_;
     close_event.close.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     close_event.close.rd_seq_num = recv_seq_num_;
     close_event.close.wr_seq_num = send_seq_num_;
@@ -79,7 +79,7 @@ class EventGenerator {
 
  private:
   Clock* clock_;
-  uint32_t generation_ = 0;
+  uint64_t tsid_ = 0;
   uint64_t send_seq_num_ = 0;
   uint64_t recv_seq_num_ = 0;
 };

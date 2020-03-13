@@ -232,7 +232,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Note that the inner map cannot be a vector, because there is no guaranteed order
   // in which events are read from perf buffers.
   // Inner map could be a priority_queue, but benchmarks showed better performance with a std::map.
-  // Key is {PID, FD} for outer map (see GetStreamId()), and generation for inner map.
+  // Key is {PID, FD} for outer map (see GetStreamId()), and tsid for inner map.
   std::unordered_map<uint64_t, std::map<uint64_t, ConnectionTracker> > connection_trackers_;
 
   struct TransferSpec {

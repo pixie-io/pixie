@@ -23,7 +23,7 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicData) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
@@ -45,7 +45,7 @@ TEST_F(ConnectionTrackerHTTP2Test, BasicHeader) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2HeaderEvent> header_event;
@@ -73,7 +73,7 @@ TEST_F(ConnectionTrackerHTTP2Test, MultipleDataFrames) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
@@ -101,7 +101,7 @@ TEST_F(ConnectionTrackerHTTP2Test, MixedHeadersAndData) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
@@ -150,7 +150,7 @@ TEST_F(ConnectionTrackerHTTP2Test, MidStreamCapture) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
@@ -193,7 +193,7 @@ TEST_F(ConnectionTrackerHTTP2Test, ZeroFD) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 0, .generation = 3};
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 0, .tsid = 3};
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   std::unique_ptr<HTTP2DataEvent> data_frame;
@@ -235,7 +235,7 @@ TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterBreachingSizeLimit)
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   auto header_event1 = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
@@ -261,7 +261,7 @@ TEST_F(ConnectionTrackerHTTP2Test, HTTP2StreamsCleanedUpAfterExpiration) {
   ConnectionTracker tracker;
 
   const conn_id_t kConnID = {
-      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .generation = 0};
+      .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 5, .tsid = 0};
   const int kStreamID = 7;
   auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
   auto header_event1 = frame_generator.GenHeader<kHeaderEventWrite>(":method", "post");
@@ -290,7 +290,7 @@ TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpAhead) {
   // The first stream is ordinary.
   {
     const conn_id_t kConnID = {
-        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .generation = 21};
+        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .tsid = 21};
     const uint32_t kStreamID = 7;
     auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
 
@@ -324,7 +324,7 @@ TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpAhead) {
   // This stream ID has to have the same even/oddness.
   {
     const conn_id_t kConnID = {
-        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .generation = 21};
+        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .tsid = 21};
     const uint32_t kStreamID = 100007;
     auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
 
@@ -371,7 +371,7 @@ TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpBack) {
   // The first stream is ordinary.
   {
     const conn_id_t kConnID = {
-        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .generation = 21};
+        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .tsid = 21};
     const uint32_t kStreamID = 100007;
     auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
 
@@ -405,7 +405,7 @@ TEST_F(ConnectionTrackerHTTP2Test, StreamIDJumpBack) {
   // This stream ID has to have the same even/oddness.
   {
     const conn_id_t kConnID = {
-        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .generation = 21};
+        .upid = {{.pid = 123}, .start_time_ticks = 11000000}, .fd = 3, .tsid = 21};
     const uint32_t kStreamID = 7;
     auto frame_generator = testing::StreamEventGenerator(&real_clock_, kConnID, kStreamID);
 

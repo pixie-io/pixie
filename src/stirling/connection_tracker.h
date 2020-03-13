@@ -188,11 +188,11 @@ class ConnectionTracker {
   uint64_t fd() const { return conn_id_.fd; }
 
   /**
-   * Get generation of the connection.
+   * Get timestamp id (unique id, assigned from monotonically growing counter) of the connection.
    *
-   * @return generation.
+   * @return timestamp id.
    */
-  uint32_t generation() const { return conn_id_.generation; }
+  uint64_t tsid() const { return conn_id_.tsid; }
 
   /**
    * Get remote IP endpoint of the connection.
