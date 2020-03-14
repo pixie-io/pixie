@@ -60,8 +60,12 @@ std::unordered_map<uint64_t, std::string> table_id_to_name_map;
 std::vector<std::string_view> table_print_enables = {kHTTPTable.name(), kMySQLTable.name(),
                                                      kCQLTable.name()};
 
+absl::TimeZone tz;
+
 void PrintRecordBatch(std::string_view prefix, const ArrayView<DataElement>& schema,
                       size_t num_records, const ColumnWrapperRecordBatch& record_batch) {
+  constexpr char kTimeFormat[] = "%Y-%m-%d %X";
+
   for (size_t i = 0; i < num_records; ++i) {
     std::cout << "[" << prefix << "]";
 
@@ -72,7 +76,8 @@ void PrintRecordBatch(std::string_view prefix, const ArrayView<DataElement>& sch
         case DataType::TIME64NS: {
           const auto val = col->Get<Time64NSValue>(i).val;
           std::time_t time = val / 1000000000UL;
-          std::cout << "[" << std::put_time(std::localtime(&time), "%Y-%m-%d %X") << "]";
+          absl::Time t = absl::FromTimeT(time);
+          std::cout << "[" << absl::FormatTime(kTimeFormat, t, tz) << "]";
         } break;
         case DataType::INT64: {
           const auto val = col->Get<Int64Value>(i).val;
@@ -210,8 +215,10 @@ int main(int argc, char** argv) {
 
   // Set a dummy callback function (normally this would be in the agent).
   stirling->RegisterCallback(StirlingWrapperCallback);
-
   stirling->RegisterAgentMetadataCallback(AgentMetadataCallback);
+
+  // Timezone used by the callback function to print timestamps.
+  CHECK(absl::LoadTimeZone("America/Los_Angeles", &tz));
 
   if (FLAGS_init_only) {
     LOG(INFO) << "Exiting after init.";
