@@ -26,7 +26,7 @@ spec:
         backend:
           serviceName: cloud-proxy-service
           servicePort: 5555
-      - path: /pl.api.*
+      - path: /pl.api.vizierpb.VizierService/*
         backend:
           serviceName: cloud-proxy-service
           servicePort: 4444
