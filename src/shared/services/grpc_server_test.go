@@ -31,10 +31,21 @@ func (s *server) Ping(ctx context.Context, in *ping.PingRequest) (*ping.PingRepl
 	return &ping.PingReply{Reply: "test reply"}, nil
 }
 
-func startTestGRPCServer(t *testing.T) (int, func()) {
+func (s *server) PingStream(in *ping.PingRequest, srv ping.PingService_PingStreamServer) error {
+	srv.Send(&ping.PingReply{Reply: "test reply"})
+	return nil
+}
+
+func startTestGRPCServer(t *testing.T, opts *services.GRPCServerOptions) (int, func()) {
 	viper.Set("jwt_signing_key", "abc")
 	env := env2.New()
-	s := services.CreateGRPCServer(env)
+	var s *grpc.Server
+	if opts == nil {
+		opts = &services.GRPCServerOptions{}
+	}
+
+	s = services.CreateGRPCServer(env, opts)
+
 	ping.RegisterPingServiceServer(s, &server{})
 	lis, err := net.Listen("tcp", ":0")
 
@@ -64,44 +75,110 @@ func makeTestRequest(ctx context.Context, t *testing.T, port int) (*ping.PingRep
 	return c.Ping(ctx, &ping.PingRequest{Req: "hello"})
 }
 
-func TestCreateGRPCServer(t *testing.T) {
-	port, cleanup := startTestGRPCServer(t)
-	defer cleanup()
+func makeTestStreamRequest(ctx context.Context, t *testing.T, port int) (*ping.PingReply, error) {
+	addr := fmt.Sprintf("localhost:%d", port)
+	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	if err != nil {
+		t.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+	c := ping.NewPingServiceClient(conn)
 
-	token := testingutils.GenerateTestJWTToken(t, "abc")
-	ctx := metadata.AppendToOutgoingContext(context.Background(),
-		"Authorization", "bearer "+token)
-	resp, err := makeTestRequest(ctx, t, port)
+	stream, err := c.PingStream(ctx, &ping.PingRequest{Req: "hello"})
+	if err != nil {
+		t.Fatalf("Could not create stream")
+	}
 
-	assert.Nil(t, err)
-	assert.Equal(t, "test reply", resp.Reply)
+	return stream.Recv()
 }
 
-func TestCreateGRPCServer_BadToken(t *testing.T) {
-	port, cleanup := startTestGRPCServer(t)
-	defer cleanup()
+func TestGrpcServerUnary(t *testing.T) {
+	tests := []struct {
+		name        string
+		token       string
+		stream      bool
+		expectError bool
+		serverOpts  *services.GRPCServerOptions
+	}{
+		{
+			name:        "success - unary",
+			token:       "abc",
+			expectError: false,
+		},
+		{
+			name:        "bad token - unary",
+			token:       "bad.jwt.token",
+			expectError: true,
+		},
+		{
+			name:        "unauthenticated - unary",
+			token:       "",
+			expectError: true,
+		},
+		{
+			name:        "success - stream",
+			token:       "abc",
+			expectError: false,
+			stream:      true,
+		},
+		{
+			name:        "bad token - stream",
+			token:       "bad.jwt.token",
+			expectError: true,
+			stream:      true,
+		},
+		{
+			name:        "unauthenticated - stream",
+			token:       "",
+			expectError: true,
+			stream:      true,
+		},
+		{
+			name:        "disable auth - unary",
+			token:       "",
+			expectError: false,
+			stream:      false,
+			serverOpts: &services.GRPCServerOptions{
+				DisableAuth: map[string]bool{
+					"/pl.common.PingService/Ping": true,
+				},
+			},
+		},
+	}
 
-	token := "bad.jwt.token"
-	ctx := metadata.AppendToOutgoingContext(context.Background(),
-		"Authorization", "bearer "+token)
-	resp, err := makeTestRequest(ctx, t, port)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			port, cleanup := startTestGRPCServer(t, test.serverOpts)
+			defer cleanup()
 
-	assert.NotNil(t, err)
-	stat, ok := status.FromError(err)
-	assert.True(t, ok)
-	assert.Equal(t, codes.Unauthenticated, stat.Code())
-	assert.Nil(t, resp)
-}
+			var ctx context.Context
+			if test.token != "" {
+				token := testingutils.GenerateTestJWTToken(t, test.token)
+				ctx = metadata.AppendToOutgoingContext(context.Background(),
+					"Authorization", "bearer "+token)
+			} else {
+				ctx = context.Background()
+			}
 
-func TestCreateGRPCServer_MissingAuth(t *testing.T) {
-	port, cleanup := startTestGRPCServer(t)
-	defer cleanup()
+			var resp *ping.PingReply
+			var err error
 
-	resp, err := makeTestRequest(context.Background(), t, port)
+			if test.stream {
+				resp, err = makeTestStreamRequest(ctx, t, port)
+			} else {
+				resp, err = makeTestRequest(ctx, t, port)
+			}
 
-	assert.NotNil(t, err)
-	stat, ok := status.FromError(err)
-	assert.True(t, ok)
-	assert.Equal(t, codes.Unauthenticated, stat.Code())
-	assert.Nil(t, resp)
+			if test.expectError {
+				assert.NotNil(t, err)
+				stat, ok := status.FromError(err)
+				assert.True(t, ok)
+				assert.Equal(t, codes.Unauthenticated, stat.Code())
+				assert.Nil(t, resp)
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, "test reply", resp.Reply)
+			}
+		})
+	}
 }

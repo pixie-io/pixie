@@ -63,7 +63,14 @@ func main() {
 	// VZConn is the backend for a GCLB and that health checks on "/" instead of the regular health check endpoint.
 	healthz.InstallPathHandler(mux, "/")
 
-	s := services.NewPLServer(env.New(), mux)
+	// Communication from Vizier to VZConn is not auth'd via GRPC auth.
+	serverOpts := &services.GRPCServerOptions{
+		DisableAuth: map[string]bool{
+			"/pl.services.VZConnService/NATSBridge": true,
+		},
+	}
+
+	s := services.NewPLServerWithOptions(env.New(), mux, serverOpts)
 	nc, sc, err := createStanNatsConnection(uuid.NewV4().String())
 	if err != nil {
 		log.WithError(err).Error("Could not connect to Nats/Stan")

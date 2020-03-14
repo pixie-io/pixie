@@ -17,6 +17,7 @@ type authContextKey struct{}
 type AuthContext struct {
 	AuthToken string
 	Claims    *jwt2.JWTClaims
+	Path      string
 }
 
 // New creates a new sesion context.

@@ -44,10 +44,16 @@ type PLServer struct {
 
 // NewPLServer creates a new PLServer.
 func NewPLServer(env env.Env, httpHandler http.Handler) *PLServer {
+	opts := &GRPCServerOptions{}
+	return NewPLServerWithOptions(env, httpHandler, opts)
+}
+
+// NewPLServerWithOptions creates a new PLServer.
+func NewPLServerWithOptions(env env.Env, httpHandler http.Handler, opts *GRPCServerOptions) *PLServer {
 	s := &PLServer{
 		ch:          make(chan bool),
 		wg:          &sync.WaitGroup{},
-		grpcServer:  CreateGRPCServer(env),
+		grpcServer:  CreateGRPCServer(env, opts),
 		httpHandler: httpHandler,
 	}
 	return s
