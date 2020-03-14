@@ -245,6 +245,81 @@ TEST_F(LogicalPlannerTest, GetAvailableFlagsSyntaxError) {
   ASSERT_NOT_OK(flags_or_s);
   EXPECT_THAT(flags_or_s.status(), HasCompilerError("SyntaxError: Expected `\\)`"));
 }
+
+constexpr char kVizFuncsQuery[] = R"pxl(
+import px
+@px.viz.vega("vega spec for f")
+def f(start_time: px.Time, end_time: px.Time, svc: str):
+  """Doc string for f"""
+  return 1
+
+@px.viz.vega("vega spec for g")
+def g(a: int, b: float):
+  """Doc string for g"""
+  return 1
+)pxl";
+
+constexpr char kExpectedVizFuncsInfoPb[] = R"(
+doc_string_map {
+  key: "f"
+  value: "Doc string for f"
+}
+doc_string_map {
+  key: "g"
+  value: "Doc string for g"
+}
+viz_spec_map {
+  key: "f"
+  value {
+    vega_spec: "vega spec for f"
+  }
+}
+viz_spec_map {
+  key: "g"
+  value {
+    vega_spec: "vega spec for g"
+  }
+}
+fn_args_map {
+  key: "f"
+  value {
+    args {
+      data_type: TIME64NS
+      name: "start_time"
+    }
+    args {
+      data_type: TIME64NS
+      name: "end_time"
+    }
+    args {
+      data_type: STRING
+      name: "svc"
+    }
+  }
+}
+fn_args_map {
+  key: "g"
+  value {
+    args {
+      data_type: INT64
+      name: "a"
+    }
+    args {
+      data_type: FLOAT64
+      name: "b"
+    }
+  }
+})";
+
+TEST_F(LogicalPlannerTest, GetVizFuncsInfo) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  auto viz_funcs_or_s = planner->GetVizFuncsInfo(kVizFuncsQuery);
+  ASSERT_OK(viz_funcs_or_s);
+  auto viz_funcs = viz_funcs_or_s.ConsumeValueOrDie();
+
+  EXPECT_THAT(viz_funcs, testing::proto::EqualsProto(kExpectedVizFuncsInfoPb));
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl

@@ -20,6 +20,15 @@ package logicalplanner
 //   											 resultLen);
 // }
 //
+// char* PlannerVizFuncsInfoGoStr(PlannerPtr planner_ptr,
+//														_GoString_ script,
+//														int* resultLen) {
+// 	return PlannerVizFuncsInfo(planner_ptr,
+//															_GoStringPtr(script),
+//															_GoStringLen(script),
+//															resultLen);
+// }
+//
 // char* PlannerGetAvailableFlagsGoStr(PlannerPtr planner_ptr,
 // 																			_GoString_ queryRequest, int* resultLen) {
 // 	return PlannerGetAvailableFlags(planner_ptr,
@@ -32,6 +41,8 @@ import (
 	"errors"
 	"fmt"
 	"unsafe"
+
+	"pixielabs.ai/pixielabs/src/shared/scriptspb"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -93,6 +104,25 @@ func (cm GoPlanner) GetAvailableFlags(queryRequest *plannerpb.QueryRequest) (*pl
 	}
 
 	return resultPB, nil
+}
+
+// ParseScriptForVizFuncsInfo parses a script for misc info such as func args, vega specs, and docstrings.
+func (cm GoPlanner) ParseScriptForVizFuncsInfo(script string) (*scriptspb.VizFuncsInfoResult, error) {
+	var resultLen C.int
+	res := C.PlannerVizFuncsInfoGoStr(cm.planner, script, &resultLen)
+	defer C.StrFree(res)
+
+	resultBytes := C.GoBytes(unsafe.Pointer(res), resultLen)
+	if resultLen == 0 {
+		return nil, errors.New("no result returned")
+	}
+
+	vizFuncsPb := &scriptspb.VizFuncsInfoResult{}
+	if err := proto.Unmarshal(resultBytes, vizFuncsPb); err != nil {
+		return vizFuncsPb, fmt.Errorf("error: '%s'; string: '%s'", err, string(resultBytes))
+	}
+
+	return vizFuncsPb, nil
 }
 
 // Free the memory used by the planner.

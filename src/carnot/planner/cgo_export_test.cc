@@ -82,6 +82,19 @@ StatusOr<std::string> PlannerGetAvailableFlagsGoStr(PlannerPtr planner_ptr,
   return flags_spec_str;
 }
 
+StatusOr<std::string> PlannerVizFuncsInfoGoStr(PlannerPtr planner_ptr, std::string query,
+                                               int* resultLen) {
+  char* result = PlannerVizFuncsInfo(planner_ptr, query.c_str(), query.length(), resultLen);
+
+  if (*resultLen == 0) {
+    return error::InvalidArgument("VizFuncsInfo failed to return");
+  }
+
+  std::string result_str(result, result + *resultLen);
+  delete[] result;
+  return result_str;
+}
+
 // TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
 TEST_F(PlannerExportTest, DISABLED_one_agent_one_kelvin_query_test) {
   planner_ = MakePlanner();
@@ -194,6 +207,84 @@ TEST_F(PlannerExportTest, get_available_flags_empty_flags) {
   ASSERT_TRUE(get_flags_result.ParseFromString(interface_result.ConsumeValueOrDie()));
   EXPECT_OK(get_flags_result.status());
   EXPECT_THAT(get_flags_result.query_flags(), EqualsProto(kAvailableFlags));
+}
+
+constexpr char kVizFuncsQuery[] = R"pxl(
+import px
+@px.viz.vega("vega spec for f")
+def f(start_time: px.Time, end_time: px.Time, svc: str):
+  """Doc string for f"""
+  return 1
+
+@px.viz.vega("vega spec for g")
+def g(a: int, b: float):
+  """Doc string for g"""
+  return 1
+)pxl";
+
+constexpr char kExpectedVizFuncsInfoPb[] = R"(
+doc_string_map {
+  key: "f"
+  value: "Doc string for f"
+}
+doc_string_map {
+  key: "g"
+  value: "Doc string for g"
+}
+viz_spec_map {
+  key: "f"
+  value {
+    vega_spec: "vega spec for f"
+  }
+}
+viz_spec_map {
+  key: "g"
+  value {
+    vega_spec: "vega spec for g"
+  }
+}
+fn_args_map {
+  key: "f"
+  value {
+    args {
+      data_type: TIME64NS
+      name: "start_time"
+    }
+    args {
+      data_type: TIME64NS
+      name: "end_time"
+    }
+    args {
+      data_type: STRING
+      name: "svc"
+    }
+  }
+}
+fn_args_map {
+  key: "g"
+  value {
+    args {
+      data_type: INT64
+      name: "a"
+    }
+    args {
+      data_type: FLOAT64
+      name: "b"
+    }
+  }
+})";
+
+// Tests whether we can get viz funcs info for a given query.
+TEST_F(PlannerExportTest, get_viz_funcs_info) {
+  planner_ = MakePlanner();
+  int result_len;
+  auto interface_result = PlannerVizFuncsInfoGoStr(planner_, kVizFuncsQuery, &result_len);
+
+  ASSERT_OK(interface_result);
+  pl::shared::scriptspb::VizFuncsInfoResult viz_funcs_result;
+  ASSERT_TRUE(viz_funcs_result.ParseFromString(interface_result.ConsumeValueOrDie()));
+  EXPECT_OK(viz_funcs_result.status());
+  EXPECT_THAT(viz_funcs_result.info(), EqualsProto(kExpectedVizFuncsInfoPb));
 }
 
 }  // namespace planner

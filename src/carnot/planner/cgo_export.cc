@@ -15,11 +15,13 @@
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 #include "src/common/base/time.h"
+#include "src/shared/scriptspb/scripts.pb.h"
 #include "src/table_store/proto/schema.pb.h"
 #include "src/table_store/schema/relation.h"
 
 using pl::carnot::planner::distributedpb::LogicalPlannerResult;
 using pl::carnot::planner::plannerpb::GetAvailableFlagsResult;
+using pl::shared::scriptspb::VizFuncsInfoResult;
 
 PlannerPtr PlannerNew(const char* udf_info_data, int udf_info_len) {
   std::string udf_info_str(udf_info_data, udf_info_data + udf_info_len);
@@ -129,6 +131,25 @@ char* PlannerGetAvailableFlags(PlannerPtr planner_ptr, const char* query_request
   *(flags_response_pb.mutable_query_flags()) = query_flags_spec_status.ConsumeValueOrDie();
 
   return PrepareResult(&flags_response_pb, resultLen);
+}
+
+char* PlannerVizFuncsInfo(PlannerPtr planner_ptr, const char* script_str_c, int script_str_len,
+                          int* resultLen) {
+  DCHECK(script_str_c != nullptr);
+  std::string script_str(script_str_c, script_str_c + script_str_len);
+
+  auto planner = reinterpret_cast<pl::carnot::planner::LogicalPlanner*>(planner_ptr);
+
+  auto viz_funcs_info_or_s = planner->GetVizFuncsInfo(script_str);
+  if (!viz_funcs_info_or_s.ok()) {
+    return ExitEarly<VizFuncsInfoResult>(viz_funcs_info_or_s.status(), resultLen);
+  }
+
+  VizFuncsInfoResult viz_funcs_pb;
+  WrapStatus(&viz_funcs_pb, viz_funcs_info_or_s.status());
+  *(viz_funcs_pb.mutable_info()) = viz_funcs_info_or_s.ConsumeValueOrDie();
+
+  return PrepareResult(&viz_funcs_pb, resultLen);
 }
 
 void PlannerFree(PlannerPtr planner_ptr) {

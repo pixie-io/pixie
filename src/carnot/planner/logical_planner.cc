@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "src/carnot/udf_exporter/udf_exporter.h"
+#include "src/shared/scriptspb/scripts.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -77,6 +78,15 @@ StatusOr<plannerpb::QueryFlagsSpec> LogicalPlanner::GetAvailableFlags(
                       CreateCompilerState({}, registry_info.get(), 0));
 
   return compiler_.GetAvailableFlags(query_request.query_str(), compiler_state.get());
+}
+
+StatusOr<pl::shared::scriptspb::VizFuncsInfo> LogicalPlanner::GetVizFuncsInfo(
+    const std::string& script_str) {
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
+                      CreateCompilerState({}, registry_info.get(), 0));
+
+  return compiler_.GetVizFuncsInfo(script_str, compiler_state.get());
 }
 
 }  // namespace planner

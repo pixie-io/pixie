@@ -5,6 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"pixielabs.ai/pixielabs/src/shared/scriptspb"
+
 	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 
 	"github.com/gogo/protobuf/proto"
@@ -282,4 +284,94 @@ func TestPlanner_GetAvailableFlags_BadQuery(t *testing.T) {
 	}
 	assert.Regexp(t, "SyntaxError: Expected `\\)`", lineColError.Message)
 
+}
+
+const vizFuncsQuery = `
+import px
+@px.viz.vega("vega spec for f")
+def f(start_time: px.Time, end_time: px.Time, svc: str):
+  """Doc string for f"""
+  return 1
+
+@px.viz.vega("vega spec for g")
+def g(a: int, b: float):
+  """Doc string for g"""
+  return 1
+`
+
+const expectedVizFuncsInfoPBStr = `
+doc_string_map {
+  key: "f"
+  value: "Doc string for f"
+}
+doc_string_map {
+  key: "g"
+  value: "Doc string for g"
+}
+viz_spec_map {
+  key: "f"
+  value {
+    vega_spec: "vega spec for f"
+  }
+}
+viz_spec_map {
+  key: "g"
+  value {
+    vega_spec: "vega spec for g"
+  }
+}
+fn_args_map {
+  key: "f"
+  value {
+    args {
+      data_type: TIME64NS
+      name: "start_time"
+    }
+    args {
+      data_type: TIME64NS
+      name: "end_time"
+    }
+    args {
+      data_type: STRING
+      name: "svc"
+    }
+  }
+}
+fn_args_map {
+  key: "g"
+  value {
+    args {
+      data_type: INT64
+      name: "a"
+    }
+    args {
+      data_type: FLOAT64
+      name: "b"
+    }
+  }
+}
+`
+
+func TestPlanner_ParseScriptForVizFuncsInfo(t *testing.T) {
+	c := logicalplanner.New(&udfspb.UDFInfo{})
+	defer c.Free()
+
+	vizFuncsResult, err := c.ParseScriptForVizFuncsInfo(vizFuncsQuery)
+
+	if err != nil {
+		log.Fatalln("Failed to get viz funcs info: ", err)
+		t.FailNow()
+	}
+
+	status := vizFuncsResult.Status
+	assert.Equal(t, status.ErrCode, statuspb.OK)
+
+	var expectedVizFuncsInfoPb scriptspb.VizFuncsInfo
+
+	if err = proto.UnmarshalText(expectedVizFuncsInfoPBStr, &expectedVizFuncsInfoPb); err != nil {
+		log.Fatalf("Failed to unmarshal expected proto", err)
+		t.FailNow()
+	}
+
+	assert.Equal(t, &expectedVizFuncsInfoPb, vizFuncsResult.Info)
 }

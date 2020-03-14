@@ -9,6 +9,7 @@
 #include "src/carnot/planner/distributed/distributed_planner.h"
 #include "src/carnot/planner/distributed/tablet_rules.h"
 #include "src/carnot/planner/plannerpb/query_flags.pb.h"
+#include "src/shared/scriptspb/scripts.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -49,6 +50,14 @@ class LogicalPlanner : public NotCopyable {
    */
   StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(
       const plannerpb::QueryRequest& query_request);
+
+  /**
+   * @brief Takes in a script string and outputs information about viz funcs for that script.
+   *
+   * @param script: the string of the script.
+   * @return VizFuncsInfo or error if one occurs during compilation.
+   */
+  StatusOr<pl::shared::scriptspb::VizFuncsInfo> GetVizFuncsInfo(const std::string& script_str);
 
   Status Init(std::unique_ptr<planner::RegistryInfo> registry_info);
   Status Init(const udfspb::UDFInfo& udf_info);

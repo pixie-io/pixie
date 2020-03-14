@@ -41,6 +41,18 @@ char* PlannerGetAvailableFlags(PlannerPtr planner_ptr, const char* query_request
                                int query_request_str_len, int* resultLen);
 
 /**
+ * @brief Takes in the planner object and the script string, uses this to determine information
+ * about the Viz Funcs.
+ *
+ * @param planner Pointer to the Planner
+ * @param script_str_c The string of the script to be parsed.
+ * @param script_str_len  The length of the script string.
+ * @param requestLen A pointer to an int that stores the length of the result.
+ * @return char* The VizFuncsInfo, serialized as a string.
+ */
+char* PlannerVizFuncsInfo(PlannerPtr planner_ptr, const char* script_str_c, int script_str_len,
+                          int* resultLen);
+/**
  * @brief Frees up the memory handled by the planner.
  *
  * @param planner_ptr - pointer to the planner ptr.
