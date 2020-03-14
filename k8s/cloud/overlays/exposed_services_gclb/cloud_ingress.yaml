@@ -26,6 +26,10 @@ spec:
         backend:
           serviceName: cloud-proxy-service
           servicePort: 5555
+      - path: /pl.api/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 4444
       - path: /*
         backend:
           serviceName: cloud-proxy-service

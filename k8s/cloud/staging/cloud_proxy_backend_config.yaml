@@ -1,3 +1,4 @@
+---
 apiVersion: cloud.google.com/v1beta1
 kind: BackendConfig
 metadata:
@@ -9,9 +10,9 @@ spec:
   connectionDraining:
     drainingTimeoutSec: 60
   cdn:
-    # TODO(zasgar): enable CDN (it currently does not work with cloud armor).
-    enabled: false
-    cachePolicy:
-      includeHost: true
-      includeProtocol: true
-      includeQueryString: true
+  # TODO(zasgar): enable CDN (it currently does not work with cloud armor).
+  enabled: false
+  cachePolicy:
+    includeHost: true
+    includeProtocol: true
+    includeQueryString: true

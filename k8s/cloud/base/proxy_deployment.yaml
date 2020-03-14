@@ -60,7 +60,32 @@ spec:
         volumeMounts:
         - name: certs
           mountPath: /certs
+      - name: envoy
+        image: envoyproxy/envoy:v1.12.2
+        command: ["envoy"]
+        args: ["-c", "/etc/envoy.yaml", "--service-cluster", "$(POD_NAME)"]
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        ports:
+        - containerPort: 56004
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+        - name: envoy-yaml
+          mountPath: /etc/envoy.yaml
+          subPath: envoy.yaml
+        - mountPath: /service-certs
+          name: service-certs
       volumes:
+      - name: service-certs
+        secret:
+          secretName: service-tls-certs
+      - name: envoy-yaml
+        configMap:
+          name: proxy-envoy-config
       - name: certs
         secret:
           secretName: cloud-proxy-tls-certs

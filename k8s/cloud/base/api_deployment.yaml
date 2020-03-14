@@ -89,3 +89,6 @@ spec:
       - name: vizier-image-secret
         secret:
           secretName: vizier-image-secret
+      - name: envoy-yaml
+        configMap:
+          name: proxy-envoy-config
