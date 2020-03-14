@@ -248,7 +248,7 @@ export interface MutationToCreateClusterResolver<TParent = any, TResult = any> {
 }
 
 export interface MutationToUpdateVizierConfigArgs {
-  clusterID?: string;
+  clusterID: string;
   passthroughEnabled?: boolean;
 }
 export interface MutationToUpdateVizierConfigResolver<TParent = any, TResult = any> {

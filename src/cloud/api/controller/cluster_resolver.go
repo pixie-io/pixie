@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	types "github.com/gogo/protobuf/types"
 	"github.com/graph-gophers/graphql-go"
 	uuid "github.com/satori/go.uuid"
 
@@ -70,10 +71,10 @@ func (q *QueryResolver) Cluster(ctx context.Context) (*ClusterInfoResolver, erro
 		return nil, err
 	}
 
-	t := true
 	return &ClusterInfoResolver{
-		// TODO(zasgar, nserrino): PL-1595 Fill in VizierConfigResolver with real info.
-		clusterID, info.Status, float64(info.LastHeartbeatNs), &VizierConfigResolver{passthroughEnabled: &t},
+		clusterID, info.Status, float64(info.LastHeartbeatNs), &VizierConfigResolver{
+			passthroughEnabled: &info.Config.PassthroughEnabled,
+		},
 	}, nil
 }
 
@@ -88,14 +89,28 @@ func (v *VizierConfigResolver) PassthroughEnabled() *bool {
 }
 
 type updateVizierConfigArgs struct {
-	ClusterID          *graphql.ID
+	ClusterID          graphql.ID
 	PassthroughEnabled *bool
 }
 
 // UpdateVizierConfig updates the Vizier config of the input cluster
 func (q *QueryResolver) UpdateVizierConfig(ctx context.Context, args *updateVizierConfigArgs) (bool, error) {
-	// TODO(zasgar, nserrino): PL-1595 Fill this in.
-	return false, nil
+	req := &cvmsgspb.UpdateVizierConfigRequest{
+		VizierID:     utils.ProtoFromUUIDStrOrNil(string(args.ClusterID)),
+		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{},
+	}
+
+	if args.PassthroughEnabled != nil {
+		req.ConfigUpdate = &cvmsgspb.VizierConfigUpdate{
+			PassthroughEnabled: &types.BoolValue{Value: *args.PassthroughEnabled},
+		}
+	}
+
+	_, err := q.Env.VZMgrClient().UpdateVizierConfig(ctx, req)
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 // ClusterInfoResolver is the resolver responsible for cluster info.

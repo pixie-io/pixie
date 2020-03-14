@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	types "github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 
@@ -11,7 +12,11 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
+	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	pbutils "pixielabs.ai/pixielabs/src/utils"
 )
 
 func TestArtifactTracker_GetArtifactList(t *testing.T) {
@@ -82,4 +87,79 @@ func TestArtifactTracker_GetDownloadLink(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "http://localhost", resp.Url)
 	assert.Equal(t, "sha", resp.SHA256)
+}
+
+func TestVizierClusterInfoServer_GetClusterInfo(t *testing.T) {
+	orgID := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	assert.NotNil(t, clusterID)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockVzMgr.EXPECT().GetViziersByOrg(gomock.Any(), orgID).Return(&vzmgrpb.GetViziersByOrgResponse{
+		VizierIDs: []*uuidpb.UUID{clusterID},
+	}, nil)
+
+	mockVzMgr.EXPECT().GetVizierInfo(gomock.Any(), clusterID).Return(&cvmsgspb.VizierInfo{
+		VizierID:        clusterID,
+		Status:          cvmsgspb.VZ_ST_HEALTHY,
+		LastHeartbeatNs: int64(1305646598000000000),
+		Config: &cvmsgspb.VizierConfig{
+			PassthroughEnabled: false,
+		},
+	}, nil)
+
+	vzClusterInfoServer := &controller.VizierClusterInfoServer{
+		VzMgr: mockVzMgr,
+	}
+
+	resp, err := vzClusterInfoServer.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
+
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(resp.Clusters))
+	cluster := resp.Clusters[0]
+	assert.Equal(t, cluster.ID, clusterID)
+	assert.Equal(t, cluster.Status, cloudapipb.CS_HEALTHY)
+	assert.Equal(t, cluster.LastHeartbeatNs, int64(1305646598000000000))
+	assert.Equal(t, cluster.Config.PassthroughEnabled, false)
+}
+
+func TestVizierClusterInfoServer_UpdateClusterVizierConfig(t *testing.T) {
+	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	assert.NotNil(t, clusterID)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	updateReq := &cvmsgspb.UpdateVizierConfigRequest{
+		VizierID: clusterID,
+		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
+			PassthroughEnabled: &types.BoolValue{Value: true},
+		},
+	}
+
+	mockVzMgr.EXPECT().UpdateVizierConfig(gomock.Any(), updateReq).Return(&cvmsgspb.UpdateVizierConfigResponse{}, nil)
+
+	vzClusterInfoServer := &controller.VizierClusterInfoServer{
+		VzMgr: mockVzMgr,
+	}
+
+	resp, err := vzClusterInfoServer.UpdateClusterVizierConfig(ctx, &cloudapipb.UpdateClusterVizierConfigRequest{
+		ID: clusterID,
+		ConfigUpdate: &cloudapipb.VizierConfigUpdate{
+			PassthroughEnabled: &types.BoolValue{Value: true},
+		},
+	})
+
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
 }

@@ -12,6 +12,8 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/common/uuid/proto/uuid.proto";
 import "google/protobuf/timestamp.proto";
 
+import "google/protobuf/wrappers.proto";
+
 option go_package = "pixielabs.ai/pixielabs/src/cloud/cloudapipb;cloudapipb";
 
 service AuthService {
@@ -128,6 +130,10 @@ message VizierConfig {
     bool passthrough_enabled = 1;
 }
 
+message VizierConfigUpdate {
+    google.protobuf.BoolValue passthrough_enabled = 1;
+}
+
 message GetClusterInfoRequest {}
 
 enum ClusterStatus {
@@ -167,7 +173,7 @@ message UpdateClusterVizierConfigRequest {
     pl.uuidpb.UUID id = 1 [
                            (gogoproto.customname) = "ID"
                            ];
-    VizierConfig config_update = 2;
+    VizierConfigUpdate config_update = 2;
 }
 
 message UpdateClusterVizierConfigResponse {}

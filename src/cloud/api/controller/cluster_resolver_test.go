@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	types "github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
@@ -17,12 +18,13 @@ import (
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	"pixielabs.ai/pixielabs/src/shared/services/utils"
+	svcutils "pixielabs.ai/pixielabs/src/shared/services/utils"
+	"pixielabs.ai/pixielabs/src/utils"
 )
 
 func CreateTestContext() context.Context {
 	sCtx := authcontext.New()
-	sCtx.Claims = utils.GenerateJWTForUser("abcdef", "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "test@test.com", time.Now())
+	sCtx.Claims = svcutils.GenerateJWTForUser("abcdef", "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "test@test.com", time.Now())
 	return authcontext.NewContext(context.Background(), sCtx)
 }
 
@@ -96,6 +98,9 @@ func TestClusterInfo(t *testing.T) {
 		VizierID:        &uuidpb.UUID{Data: []byte(clusterID)},
 		Status:          1,
 		LastHeartbeatNs: 4000000,
+		Config: &cvmsgspb.VizierConfig{
+			PassthroughEnabled: false,
+		},
 	}
 	mockVzMgr.EXPECT().GetVizierInfo(gomock.Any(), &uuidpb.UUID{Data: []byte(clusterID)}).
 		Return(vzrInfoResp, nil)
@@ -124,7 +129,7 @@ func TestClusterInfo(t *testing.T) {
 						"status": "VZ_ST_HEALTHY",
 						"lastHeartbeatMs": 4,
 						"vizierConfig": {
-							"passthroughEnabled": true
+							"passthroughEnabled": false
 						}
 					}
 				}
@@ -188,9 +193,16 @@ func TestUpdateClusterVizierConfig(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	apiEnv, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	apiEnv, _, _, vzmgr, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
+
+	vzmgr.EXPECT().UpdateVizierConfig(gomock.Any(), &cvmsgspb.UpdateVizierConfigRequest{
+		VizierID: utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
+			PassthroughEnabled: &types.BoolValue{Value: true},
+		},
+	}).Return(&cvmsgspb.UpdateVizierConfigResponse{}, nil)
 
 	gqlSchema := LoadSchema(apiEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
@@ -204,7 +216,39 @@ func TestUpdateClusterVizierConfig(t *testing.T) {
 			`,
 			ExpectedResult: `
 				{
-					"UpdateVizierConfig": false
+					"UpdateVizierConfig": true
+				}
+			`,
+		},
+	})
+}
+
+func TestUpdateClusterVizierConfigNoUpdates(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	apiEnv, _, _, vzmgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	vzmgr.EXPECT().UpdateVizierConfig(gomock.Any(), &cvmsgspb.UpdateVizierConfigRequest{
+		VizierID:     utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{},
+	}).Return(&cvmsgspb.UpdateVizierConfigResponse{}, nil)
+
+	gqlSchema := LoadSchema(apiEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				mutation {
+					UpdateVizierConfig(clusterID: "7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+				}
+			`,
+			ExpectedResult: `
+				{
+					"UpdateVizierConfig": true
 				}
 			`,
 		},

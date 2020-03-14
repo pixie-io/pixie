@@ -27,7 +27,9 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
+	jwtutils "pixielabs.ai/pixielabs/src/shared/services/utils"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
@@ -45,25 +47,34 @@ func setupTestDB(t *testing.T) (*sqlx.DB, func()) {
 	}
 }
 
+var testAuthOrgID = "223e4567-e89b-12d3-a456-426655440000"
+var testNonAuthOrgID = "223e4567-e89b-12d3-a456-426655440001"
+
 func loadTestData(t *testing.T, db *sqlx.DB) {
 	insertVizierClusterQuery := `INSERT INTO vizier_cluster(org_id, id) VALUES ($1, $2)`
-	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440000", "123e4567-e89b-12d3-a456-426655440000")
-	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440000", "123e4567-e89b-12d3-a456-426655440001")
-	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440000", "123e4567-e89b-12d3-a456-426655440002")
-	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440000", "123e4567-e89b-12d3-a456-426655440003")
-	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440001", "223e4567-e89b-12d3-a456-426655440003")
-	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440001", "323e4567-e89b-12d3-a456-426655440003")
+	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440000")
+	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440001")
+	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440002")
+	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440003")
+	db.MustExec(insertVizierClusterQuery, testNonAuthOrgID, "223e4567-e89b-12d3-a456-426655440003")
+	db.MustExec(insertVizierClusterQuery, testNonAuthOrgID, "323e4567-e89b-12d3-a456-426655440003")
 
-	insertVizierClusterInfoQuery := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat) VALUES($1, $2, $3, $4, $5)`
-	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN", "addr0", "key0", "2011-05-16 15:36:38")
-	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY", "addr1", "\\xc30d04070302c5374a5098262b6d7bd23f01822f741dbebaa680b922b55fd16eb985aeb09505f8fc4a36f0e11ebb8e18f01f684146c761e2234a81e50c21bca2907ea37736f2d9a5834997f4dd9e288c", "2011-05-17 15:36:38")
-	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440002", "UNHEALTHY", "addr2", "key2", "2011-05-18 15:36:38")
-	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440003", "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38")
-	db.MustExec(insertVizierClusterInfoQuery, "223e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38")
-	db.MustExec(insertVizierClusterInfoQuery, "323e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38")
+	insertVizierClusterInfoQuery := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat, passthrough_enabled) VALUES($1, $2, $3, $4, $5, $6)`
+	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN", "addr0", "key0", "2011-05-16 15:36:38", true)
+	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY", "addr1", "\\xc30d04070302c5374a5098262b6d7bd23f01822f741dbebaa680b922b55fd16eb985aeb09505f8fc4a36f0e11ebb8e18f01f684146c761e2234a81e50c21bca2907ea37736f2d9a5834997f4dd9e288c", "2011-05-17 15:36:38", false)
+	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440002", "UNHEALTHY", "addr2", "key2", "2011-05-18 15:36:38", true)
+	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440003", "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38", false)
+	db.MustExec(insertVizierClusterInfoQuery, "223e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38", true)
+	db.MustExec(insertVizierClusterInfoQuery, "323e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38", false)
 
 	insertVizierIndexQuery := `INSERT INTO vizier_index_state(cluster_id, resource_version) VALUES($1, $2)`
 	db.MustExec(insertVizierIndexQuery, "123e4567-e89b-12d3-a456-426655440001", "1234")
+}
+
+func CreateTestContext() context.Context {
+	sCtx := authcontext.New()
+	sCtx.Claims = jwtutils.GenerateJWTForUser("abcdef", testAuthOrgID, "test@test.com", time.Now())
+	return authcontext.NewContext(context.Background(), sCtx)
 }
 
 func TestServer_CreateVizierCluster(t *testing.T) {
@@ -76,7 +87,6 @@ func TestServer_CreateVizierCluster(t *testing.T) {
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	s := controller.New(db, "test", mockDNSClient, nil)
-	orgID := uuid.NewV4()
 
 	tests := []struct {
 		name string
@@ -99,14 +109,20 @@ func TestServer_CreateVizierCluster(t *testing.T) {
 		},
 		{
 			name:     "valid request",
-			org:      utils.ProtoFromUUID(&orgID),
+			org:      utils.ProtoFromUUIDStrOrNil(testAuthOrgID),
 			hasError: false,
+		},
+		{
+			name:     "unauthenticated org id",
+			org:      utils.ProtoFromUUIDStrOrNil(testNonAuthOrgID),
+			hasError: true,
+			errCode:  codes.PermissionDenied,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			resp, err := s.CreateVizierCluster(context.Background(), &vzmgrpb.CreateVizierClusterRequest{OrgID: tc.org})
+			resp, err := s.CreateVizierCluster(CreateTestContext(), &vzmgrpb.CreateVizierClusterRequest{OrgID: tc.org})
 			if tc.hasError {
 				assert.NotNil(t, err)
 				assert.Nil(t, resp)
@@ -163,7 +179,7 @@ func TestServer_GetViziersByOrg(t *testing.T) {
 
 	t.Run("valid", func(t *testing.T) {
 		// Fetch the test data that was inserted earlier.
-		resp, err := s.GetViziersByOrg(context.Background(), utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440000"))
+		resp, err := s.GetViziersByOrg(CreateTestContext(), utils.ProtoFromUUIDStrOrNil(testAuthOrgID))
 		require.Nil(t, err)
 		require.NotNil(t, resp)
 
@@ -186,24 +202,31 @@ func TestServer_GetViziersByOrg(t *testing.T) {
 	})
 
 	t.Run("No such org id", func(t *testing.T) {
-		resp, err := s.GetViziersByOrg(context.Background(), utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"))
-		require.Nil(t, err)
-		require.NotNil(t, resp)
-		assert.Equal(t, len(resp.VizierIDs), 0)
+		resp, err := s.GetViziersByOrg(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("323e4567-e89b-12d3-a456-426655440000"))
+		require.NotNil(t, err)
+		assert.Nil(t, resp)
+		assert.Equal(t, status.Code(err), codes.PermissionDenied)
 	})
 
 	t.Run("bad input org id", func(t *testing.T) {
-		resp, err := s.GetViziersByOrg(context.Background(), utils.ProtoFromUUIDStrOrNil("3e4567-e89b-12d3-a456-426655440000"))
+		resp, err := s.GetViziersByOrg(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("3e4567-e89b-12d3-a456-426655440000"))
 		require.NotNil(t, err)
 		assert.Nil(t, resp)
 		assert.Equal(t, status.Code(err), codes.InvalidArgument)
 	})
 
 	t.Run("missing input org id", func(t *testing.T) {
-		resp, err := s.GetViziersByOrg(context.Background(), nil)
+		resp, err := s.GetViziersByOrg(CreateTestContext(), nil)
 		require.NotNil(t, err)
 		assert.Nil(t, resp)
 		assert.Equal(t, status.Code(err), codes.InvalidArgument)
+	})
+
+	t.Run("mismatched input org id", func(t *testing.T) {
+		resp, err := s.GetViziersByOrg(CreateTestContext(), utils.ProtoFromUUIDStrOrNil(testNonAuthOrgID))
+		require.NotNil(t, err)
+		assert.Nil(t, resp)
+		assert.Equal(t, status.Code(err), codes.PermissionDenied)
 	})
 }
 
@@ -217,11 +240,85 @@ func TestServer_GetVizierInfo(t *testing.T) {
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	s := controller.New(db, "test", mockDNSClient, nil)
-	resp, err := s.GetVizierInfo(context.Background(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
+	resp, err := s.GetVizierInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 
-	// TODO(zasgar): write more tests here.
+	assert.Equal(t, resp.VizierID, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
+	assert.Equal(t, resp.Status, cvmsgspb.VZ_ST_HEALTHY)
+	assert.Equal(t, resp.LastHeartbeatNs, int64(1305646598000000000))
+	assert.Equal(t, resp.Config.PassthroughEnabled, false)
+}
+
+func TestServer_UpdateVizierConfig(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
+
+	s := controller.New(db, "test", mockDNSClient, nil)
+	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
+		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
+			PassthroughEnabled: &types.BoolValue{Value: true},
+		},
+	})
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+
+	// Check that the value was actually updated.
+	infoResp, err := s.GetVizierInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
+	require.Nil(t, err)
+	require.NotNil(t, infoResp)
+	assert.Equal(t, infoResp.Config.PassthroughEnabled, true)
+}
+
+func TestServer_UpdateVizierConfig_WrongOrg(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
+
+	s := controller.New(db, "test", mockDNSClient, nil)
+	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
+		VizierID: utils.ProtoFromUUIDStrOrNil("223e4567-e89b-12d3-a456-426655440003"),
+		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
+			PassthroughEnabled: &types.BoolValue{Value: true},
+		},
+	})
+	require.Nil(t, resp)
+	require.NotNil(t, err)
+	assert.Equal(t, status.Code(err), codes.NotFound)
+}
+
+func TestServer_UpdateVizierConfig_NoUpdates(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
+
+	s := controller.New(db, "test", mockDNSClient, nil)
+	resp, err := s.UpdateVizierConfig(CreateTestContext(), &cvmsgspb.UpdateVizierConfigRequest{
+		VizierID:     utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
+		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{},
+	})
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+
+	// Check that the value was not updated.
+	infoResp, err := s.GetVizierInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
+	require.Nil(t, err)
+	require.NotNil(t, infoResp)
+	assert.Equal(t, infoResp.Config.PassthroughEnabled, false)
 }
 
 func TestServer_GetVizierConnectionInfo(t *testing.T) {
@@ -234,7 +331,7 @@ func TestServer_GetVizierConnectionInfo(t *testing.T) {
 	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
 
 	s := controller.New(db, "test", mockDNSClient, nil)
-	resp, err := s.GetVizierConnectionInfo(context.Background(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
+	resp, err := s.GetVizierConnectionInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 

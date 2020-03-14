@@ -16,6 +16,7 @@ service VZMgrService {
   rpc GetVizierConnectionInfo(uuidpb.UUID) returns (cvmsgspb.VizierConnectionInfo) {}
   // Call to acknowledge connection of a vizier.
   rpc VizierConnected(cvmsgspb.RegisterVizierRequest) returns (cvmsgspb.RegisterVizierAck) {}
+  rpc UpdateVizierConfig(cvmsgspb.UpdateVizierConfigRequest) returns (cvmsgspb.UpdateVizierConfigResponse) {}
 }
 
 message CreateVizierClusterRequest {

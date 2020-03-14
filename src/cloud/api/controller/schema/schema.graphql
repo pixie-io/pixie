@@ -63,7 +63,7 @@ type ClusterConnectionInfo {
 
 type Mutation {
   CreateCluster: ClusterInfo
-  UpdateVizierConfig(clusterID: ID, passthroughEnabled: Boolean): Boolean!
+  UpdateVizierConfig(clusterID: ID!, passthroughEnabled: Boolean): Boolean!
 }
 
 type CLIArtifact {

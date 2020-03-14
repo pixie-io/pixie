@@ -145,6 +145,24 @@ func (mr *MockVZMgrServiceClientMockRecorder) VizierConnected(ctx, in interface{
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VizierConnected", reflect.TypeOf((*MockVZMgrServiceClient)(nil).VizierConnected), varargs...)
 }
 
+// UpdateVizierConfig mocks base method
+func (m *MockVZMgrServiceClient) UpdateVizierConfig(ctx context.Context, in *cvmsgspb.UpdateVizierConfigRequest, opts ...grpc.CallOption) (*cvmsgspb.UpdateVizierConfigResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateVizierConfig", varargs...)
+	ret0, _ := ret[0].(*cvmsgspb.UpdateVizierConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateVizierConfig indicates an expected call of UpdateVizierConfig
+func (mr *MockVZMgrServiceClientMockRecorder) UpdateVizierConfig(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVizierConfig", reflect.TypeOf((*MockVZMgrServiceClient)(nil).UpdateVizierConfig), varargs...)
+}
+
 // MockVZMgrServiceServer is a mock of VZMgrServiceServer interface
 type MockVZMgrServiceServer struct {
 	ctrl     *gomock.Controller
@@ -244,4 +262,17 @@ func (m *MockVZMgrServiceServer) VizierConnected(arg0 context.Context, arg1 *cvm
 // VizierConnected indicates an expected call of VizierConnected
 func (mr *MockVZMgrServiceServerMockRecorder) VizierConnected(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VizierConnected", reflect.TypeOf((*MockVZMgrServiceServer)(nil).VizierConnected), arg0, arg1)
+}
+
+// UpdateVizierConfig mocks base method
+func (m *MockVZMgrServiceServer) UpdateVizierConfig(arg0 context.Context, arg1 *cvmsgspb.UpdateVizierConfigRequest) (*cvmsgspb.UpdateVizierConfigResponse, error) {
+	ret := m.ctrl.Call(m, "UpdateVizierConfig", arg0, arg1)
+	ret0, _ := ret[0].(*cvmsgspb.UpdateVizierConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateVizierConfig indicates an expected call of UpdateVizierConfig
+func (mr *MockVZMgrServiceServerMockRecorder) UpdateVizierConfig(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateVizierConfig", reflect.TypeOf((*MockVZMgrServiceServer)(nil).UpdateVizierConfig), arg0, arg1)
 }

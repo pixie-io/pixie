@@ -198,9 +198,8 @@ func (v *VizierClusterInfoServer) GetClusterInfo(ctx context.Context, request *c
 			ID:              id,
 			Status:          s,
 			LastHeartbeatNs: vzInfo.LastHeartbeatNs,
-			// TODO(zasgar/nserrino): PL-1595 fill this in with actual logic.
 			Config: &cloudapipb.VizierConfig{
-				PassthroughEnabled: true,
+				PassthroughEnabled: vzInfo.Config.PassthroughEnabled,
 			},
 		})
 	}
@@ -231,9 +230,25 @@ func (v *VizierClusterInfoServer) GetClusterConnectionInfo(ctx context.Context, 
 }
 
 // UpdateClusterVizierConfig supports updates of VizierConfig for a cluster
-func (v *VizierClusterInfoServer) UpdateClusterVizierConfig(ctx context.Context, request *cloudapipb.UpdateClusterVizierConfigRequest) (*cloudapipb.UpdateClusterVizierConfigResponse, error) {
-	// TODO(zasgar, nserrino): PL-1595 Fill in
-	return nil, status.Error(codes.Internal, "UpdateClusterVizierConfig is unimplemented")
+func (v *VizierClusterInfoServer) UpdateClusterVizierConfig(ctx context.Context, req *cloudapipb.UpdateClusterVizierConfigRequest) (*cloudapipb.UpdateClusterVizierConfigResponse, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
+
+	_, err = v.VzMgr.UpdateVizierConfig(ctx, &cvmsgspb.UpdateVizierConfigRequest{
+		VizierID: req.ID,
+		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
+			PassthroughEnabled: req.ConfigUpdate.PassthroughEnabled,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudapipb.UpdateClusterVizierConfigResponse{}, nil
 }
 
 func vzStatusToClusterStatus(s cvmsgspb.VizierInfo_Status) cloudapipb.ClusterStatus {

@@ -17,6 +17,8 @@ import "src/shared/k8s/metadatapb/metadata.proto";
 import "src/vizier/vizierpb/vizier.proto";
 import "src/common/uuid/proto/uuid.proto";
 
+import "google/protobuf/wrappers.proto";
+
 option go_package = "pixielabs.ai/pixielabs/src/shared/cvmsgspb/messagespb;cvmsgspb";
 
 // MetadataUpdate carries streaming updates from Vizier to cloud.
@@ -78,6 +80,14 @@ message VizierHeartbeatAck {
     string error_message = 4;
 }
 
+message VizierConfig {
+    bool passthrough_enabled = 1;
+}
+
+message VizierConfigUpdate {
+    google.protobuf.BoolValue passthrough_enabled = 1;
+}
+
 message VizierInfo {
     enum Status {
         VZ_ST_UNKNOWN = 0;
@@ -95,7 +105,18 @@ message VizierInfo {
     int64 last_heartbeat_ns = 3 [
                                 (gogoproto.moretags) = "db:last_heartbeat"
                                 ];
+    VizierConfig config = 4;
 }
+
+message UpdateVizierConfigRequest {
+    uuidpb.UUID vizier_id = 1 [
+                              (gogoproto.customname) = "VizierID",
+                              (gogoproto.moretags) = "db:vizier_id"
+                              ];
+    VizierConfigUpdate config_update = 2;
+}
+
+message UpdateVizierConfigResponse {}
 
 // Information require to connect to a vizier cluster.
 message VizierConnectionInfo {

@@ -28,6 +28,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	jwtutils "pixielabs.ai/pixielabs/src/shared/services/utils"
 	"pixielabs.ai/pixielabs/src/utils"
 )
@@ -179,13 +180,57 @@ func (s vizierStatus) ToProto() cvmsgspb.VizierInfo_Status {
 	return cvmsgspb.VizierInfo_Status(s)
 }
 
+func validateOrgID(ctx context.Context, providedOrgIDPB *uuidpb.UUID) error {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+	claimsOrgIDstr := sCtx.Claims.GetUserClaims().OrgID
+
+	providedOrgID := utils.UUIDFromProtoOrNil(providedOrgIDPB)
+	if providedOrgID == uuid.Nil {
+		return status.Errorf(codes.InvalidArgument, "invalid org id")
+	}
+	if providedOrgID.String() != claimsOrgIDstr {
+		return status.Errorf(codes.PermissionDenied, "org ids don't match")
+	}
+	return nil
+}
+
+func (s *Server) validateOrgOwnsCluster(ctx context.Context, clusterID *uuidpb.UUID) error {
+	sCtx, err := authcontext.FromContext(ctx)
+	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
+
+	query := `SELECT org_id from vizier_cluster WHERE id=$1`
+	parsedID := utils.UUIDFromProtoOrNil(clusterID)
+
+	if parsedID == uuid.Nil {
+		return status.Error(codes.InvalidArgument, "invalid cluster id")
+	}
+
+	// Say not found for clusters that this user doesn't have permission for.
+	retError := status.Error(codes.NotFound, "invalid cluster ID for org")
+
+	var actualIDStr string
+	err = s.db.QueryRowx(query, parsedID).Scan(&actualIDStr)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return retError
+		}
+		return status.Errorf(codes.Internal, "failed to fetch viziers by ID: %s", err.Error())
+	}
+	if orgIDstr != actualIDStr {
+		return retError
+	}
+	return nil
+}
+
 // CreateVizierCluster creates a new tracked vizier cluster.
 func (s *Server) CreateVizierCluster(ctx context.Context, req *vzmgrpb.CreateVizierClusterRequest) (*uuidpb.UUID, error) {
-	// TODO(zasgar): AUTH, reject requests without permission for current ORG.
-	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
-	if orgID == uuid.Nil {
-		return nil, status.Errorf(codes.InvalidArgument, "invalid org id")
+	if err := validateOrgID(ctx, req.OrgID); err != nil {
+		return nil, err
 	}
+	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
 
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -233,6 +278,9 @@ func (s *Server) CreateVizierCluster(ctx context.Context, req *vzmgrpb.CreateViz
 
 // GetViziersByOrg gets a list of viziers by organization.
 func (s *Server) GetViziersByOrg(ctx context.Context, orgID *uuidpb.UUID) (*vzmgrpb.GetViziersByOrgResponse, error) {
+	if err := validateOrgID(ctx, orgID); err != nil {
+		return nil, err
+	}
 	query := `SELECT id from vizier_cluster WHERE org_id=$1`
 	parsedID := utils.UUIDFromProtoOrNil(orgID)
 	if parsedID == uuid.Nil {
@@ -261,11 +309,16 @@ func (s *Server) GetViziersByOrg(ctx context.Context, orgID *uuidpb.UUID) (*vzmg
 
 // GetVizierInfo returns info for the specified Vizier.
 func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb.VizierInfo, error) {
-	query := `SELECT vizier_cluster_id, status, last_heartbeat from vizier_cluster_info WHERE vizier_cluster_id=$1`
+	if err := s.validateOrgOwnsCluster(ctx, req); err != nil {
+		return nil, err
+	}
+
+	query := `SELECT vizier_cluster_id, status, last_heartbeat, passthrough_enabled from vizier_cluster_info WHERE vizier_cluster_id=$1`
 	var val struct {
-		ID            uuid.UUID    `db:"vizier_cluster_id"`
-		Status        vizierStatus `db:"status"`
-		LastHeartbeat *time.Time   `db:"last_heartbeat"`
+		ID                 uuid.UUID    `db:"vizier_cluster_id"`
+		Status             vizierStatus `db:"status"`
+		LastHeartbeat      *time.Time   `db:"last_heartbeat"`
+		PassthroughEnabled bool         `db:"passthrough_enabled"`
 	}
 	clusterID, err := utils.UUIDFromProto(req)
 	if err != nil {
@@ -291,13 +344,48 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 			VizierID:        utils.ProtoFromUUID(&val.ID),
 			Status:          val.Status.ToProto(),
 			LastHeartbeatNs: lastHearbeat,
+			Config: &cvmsgspb.VizierConfig{
+				PassthroughEnabled: val.PassthroughEnabled,
+			},
 		}, nil
 	}
 	return nil, status.Error(codes.NotFound, "vizier not found")
 }
 
+// UpdateVizierConfig supports updating of the Vizier config.
+func (s *Server) UpdateVizierConfig(ctx context.Context, req *cvmsgspb.UpdateVizierConfigRequest) (*cvmsgspb.UpdateVizierConfigResponse, error) {
+	if err := s.validateOrgOwnsCluster(ctx, req.VizierID); err != nil {
+		return nil, err
+	}
+
+	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
+
+	if req.ConfigUpdate == nil || req.ConfigUpdate.PassthroughEnabled == nil {
+		return &cvmsgspb.UpdateVizierConfigResponse{}, nil
+	}
+	passthroughEnabled := req.ConfigUpdate.PassthroughEnabled.Value
+
+	query := `
+    UPDATE vizier_cluster_info
+    SET passthrough_enabled = $1
+    WHERE vizier_cluster_id = $2`
+
+	res, err := s.db.Exec(query, passthroughEnabled, vizierID)
+	if err != nil {
+		return nil, err
+	}
+	if count, _ := res.RowsAffected(); count == 0 {
+		return nil, status.Error(codes.NotFound, "no such cluster")
+	}
+	return &cvmsgspb.UpdateVizierConfigResponse{}, nil
+}
+
 // GetVizierConnectionInfo gets a viziers connection info,
 func (s *Server) GetVizierConnectionInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb.VizierConnectionInfo, error) {
+	if err := s.validateOrgOwnsCluster(ctx, req); err != nil {
+		return nil, err
+	}
+
 	clusterID := utils.UUIDFromProtoOrNil(req)
 	if clusterID == uuid.Nil {
 		return nil, status.Error(codes.InvalidArgument, "failed to parse cluster id")
