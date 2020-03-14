@@ -125,23 +125,25 @@ BPF_PERCPU_ARRAY(control_values, s64, kNumControlValues);
  * General helper functions
  ***********************************************************/
 
+static __inline u64 gen_tgid_fd(u32 tgid, int fd) { return ((u64)tgid << 32) | (u32)fd; }
+
 static __inline void set_open_file(u64 id, int fd) {
   u32 tgid = id >> 32;
-  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
+  u64 tgid_fd = gen_tgid_fd(tgid, fd);
   bool kTrue = 1;
   open_file_map.insert(&tgid_fd, &kTrue);
 }
 
 static __inline bool is_open_file(u64 id, int fd) {
   u32 tgid = id >> 32;
-  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
+  u64 tgid_fd = gen_tgid_fd(tgid, fd);
   bool* open_file = open_file_map.lookup(&tgid_fd);
   return (open_file != NULL);
 }
 
 static __inline void clear_open_file(u64 id, int fd) {
   u32 tgid = id >> 32;
-  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
+  u64 tgid_fd = gen_tgid_fd(tgid, fd);
   open_file_map.delete(&tgid_fd);
 }
 
@@ -150,12 +152,11 @@ static __inline void init_conn_info(u32 tgid, u32 fd, struct conn_info_t* conn_i
   conn_info->conn_id.upid.tgid = tgid;
   conn_info->conn_id.upid.start_time_ticks = get_tgid_start_time();
   conn_info->conn_id.fd = fd;
-  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
   conn_info->conn_id.tsid = bpf_ktime_get_ns();
 }
 
 static __inline struct conn_info_t* get_conn_info(u32 tgid, u32 fd) {
-  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
+  u64 tgid_fd = gen_tgid_fd(tgid, fd);
   struct conn_info_t new_conn_info;
   memset(&new_conn_info, 0, sizeof(struct conn_info_t));
   new_conn_info.addr_valid = false;
@@ -512,7 +513,7 @@ static __inline void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd,
   conn_info.addr = addr;
   init_conn_info(tgid, fd, &conn_info);
 
-  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
+  u64 tgid_fd = gen_tgid_fd(tgid, fd);
   conn_info_map.update(&tgid_fd, &conn_info);
 
   struct socket_control_event_t conn_event;
@@ -827,7 +828,7 @@ static __inline void probe_entry_write_send(struct pt_regs* ctx, u64 id, int fd,
 
   // Filter for request or response based on control flags and protocol type.
   if (!should_trace_conn(conn_info)) {
-    u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
+    u64 tgid_fd = gen_tgid_fd(tgid, fd);
     if (!conn_info->addr_valid) {
       conn_info_map.delete(&tgid_fd);
     }
@@ -849,7 +850,8 @@ static __inline void probe_ret_write_send(struct pt_regs* ctx, u64 id) {
     return;
   }
 
-  u64 tgid_fd = ((id >> 32) << 32) | write_info->fd;
+  u32 tgid = id >> 32;
+  u64 tgid_fd = gen_tgid_fd(tgid, write_info->fd);
   struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
   if (conn_info == NULL) {
     return;
@@ -927,7 +929,7 @@ static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
     update_traffic_class(conn_info, kIngress, iov_cpy.iov_base, buf_size);
   }
 
-  u64 tgid_fd = ((u64)tgid << 32) | (u32)read_info->fd;
+  u64 tgid_fd = gen_tgid_fd(tgid, read_info->fd);
 
   // Filter for request or response based on control flags and protocol type.
   if (!should_trace_conn(conn_info)) {
@@ -969,7 +971,7 @@ static __inline void probe_entry_close(struct pt_regs* ctx, u64 id, int fd) {
     return;
   }
 
-  u64 tgid_fd = ((u64)tgid << 32) | (u32)fd;
+  u64 tgid_fd = gen_tgid_fd(tgid, fd);
   struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
   if (conn_info == NULL) {
     return;
@@ -994,7 +996,8 @@ static __inline void probe_ret_close(struct pt_regs* ctx, u64 id) {
     return;
   }
 
-  u64 tgid_fd = ((id >> 32) << 32) | close_info->fd;
+  u32 tgid = id >> 32;
+  u64 tgid_fd = gen_tgid_fd(tgid, close_info->fd);
   struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
   if (conn_info == NULL) {
     return;
