@@ -414,6 +414,9 @@ export class ExecuteScriptRequest extends jspb.Message {
   clearFlagValuesList(): void;
   addFlagValues(value?: ExecuteScriptRequest.FlagValue, index?: number): ExecuteScriptRequest.FlagValue;
 
+  getClusterId(): string;
+  setClusterId(value: string): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ExecuteScriptRequest.AsObject;
   static toObject(includeInstance: boolean, msg: ExecuteScriptRequest): ExecuteScriptRequest.AsObject;
@@ -426,6 +429,7 @@ export namespace ExecuteScriptRequest {
   export type AsObject = {
     queryStr: string,
     flagValuesList: Array<ExecuteScriptRequest.FlagValue.AsObject>,
+    clusterId: string,
   }
 
   export class FlagValue extends jspb.Message {
@@ -603,6 +607,9 @@ export namespace ExecuteScriptResponse {
 }
 
 export class HealthCheckRequest extends jspb.Message {
+  getClusterId(): string;
+  setClusterId(value: string): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): HealthCheckRequest.AsObject;
   static toObject(includeInstance: boolean, msg: HealthCheckRequest): HealthCheckRequest.AsObject;
@@ -613,6 +620,7 @@ export class HealthCheckRequest extends jspb.Message {
 
 export namespace HealthCheckRequest {
   export type AsObject = {
+    clusterId: string,
   }
 }
 

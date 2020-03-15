@@ -126,6 +126,9 @@ message ExecuteScriptRequest {
     ScalarValue flag_value = 2;
   }
   repeated FlagValue flag_values = 2;
+
+  // The UUID of the cluster encoded as a string with dashes.
+  string cluster_id = 3 [ (gogoproto.customname) = "ClusterID" ];;
 }
 // Tracks information about query execution time.
 message QueryTimingInfo {
@@ -168,7 +171,10 @@ message ExecuteScriptResponse {
   }
 }
 
-message HealthCheckRequest {}
+message HealthCheckRequest {
+  // The UUID of the cluster encoded as a string with dashes.
+  string cluster_id = 1 [ (gogoproto.customname) = "ClusterID" ];;
+}
 
 message HealthCheckResponse {
   Status status = 1;

@@ -3659,7 +3659,8 @@ proto.pl.api.vizierpb.ExecuteScriptRequest.toObject = function(includeInstance, 
   var f, obj = {
     queryStr: jspb.Message.getFieldWithDefault(msg, 1, ""),
     flagValuesList: jspb.Message.toObjectList(msg.getFlagValuesList(),
-    proto.pl.api.vizierpb.ExecuteScriptRequest.FlagValue.toObject, includeInstance)
+    proto.pl.api.vizierpb.ExecuteScriptRequest.FlagValue.toObject, includeInstance),
+    clusterId: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -3705,6 +3706,10 @@ proto.pl.api.vizierpb.ExecuteScriptRequest.deserializeBinaryFromReader = functio
       reader.readMessage(value,proto.pl.api.vizierpb.ExecuteScriptRequest.FlagValue.deserializeBinaryFromReader);
       msg.addFlagValues(value);
       break;
+    case 3:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setClusterId(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -3747,6 +3752,13 @@ proto.pl.api.vizierpb.ExecuteScriptRequest.serializeBinaryToWriter = function(me
       2,
       f,
       proto.pl.api.vizierpb.ExecuteScriptRequest.FlagValue.serializeBinaryToWriter
+    );
+  }
+  f = message.getClusterId();
+  if (f.length > 0) {
+    writer.writeString(
+      3,
+      f
     );
   }
 };
@@ -3986,6 +3998,24 @@ proto.pl.api.vizierpb.ExecuteScriptRequest.prototype.addFlagValues = function(op
  */
 proto.pl.api.vizierpb.ExecuteScriptRequest.prototype.clearFlagValuesList = function() {
   return this.setFlagValuesList([]);
+};
+
+
+/**
+ * optional string cluster_id = 3;
+ * @return {string}
+ */
+proto.pl.api.vizierpb.ExecuteScriptRequest.prototype.getClusterId = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 3, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.pl.api.vizierpb.ExecuteScriptRequest} returns this
+ */
+proto.pl.api.vizierpb.ExecuteScriptRequest.prototype.setClusterId = function(value) {
+  return jspb.Message.setProto3StringField(this, 3, value);
 };
 
 
@@ -5114,7 +5144,7 @@ proto.pl.api.vizierpb.HealthCheckRequest.prototype.toObject = function(opt_inclu
  */
 proto.pl.api.vizierpb.HealthCheckRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
-
+    clusterId: jspb.Message.getFieldWithDefault(msg, 1, "")
   };
 
   if (includeInstance) {
@@ -5151,6 +5181,10 @@ proto.pl.api.vizierpb.HealthCheckRequest.deserializeBinaryFromReader = function(
     }
     var field = reader.getFieldNumber();
     switch (field) {
+    case 1:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setClusterId(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -5180,6 +5214,31 @@ proto.pl.api.vizierpb.HealthCheckRequest.prototype.serializeBinary = function() 
  */
 proto.pl.api.vizierpb.HealthCheckRequest.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
+  f = message.getClusterId();
+  if (f.length > 0) {
+    writer.writeString(
+      1,
+      f
+    );
+  }
+};
+
+
+/**
+ * optional string cluster_id = 1;
+ * @return {string}
+ */
+proto.pl.api.vizierpb.HealthCheckRequest.prototype.getClusterId = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 1, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.pl.api.vizierpb.HealthCheckRequest} returns this
+ */
+proto.pl.api.vizierpb.HealthCheckRequest.prototype.setClusterId = function(value) {
+  return jspb.Message.setProto3StringField(this, 1, value);
 };
 
 

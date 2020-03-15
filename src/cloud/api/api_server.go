@@ -4,10 +4,17 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/nats-io/nats.go"
+	"github.com/spf13/viper"
+
+	"pixielabs.ai/pixielabs/src/cloud/api/ptproxy"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
+	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
+
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/shared/services"
@@ -17,6 +24,7 @@ import (
 
 func init() {
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
+	pflag.String("nats_url", "pl-nats", "The URL of NATS")
 }
 
 func main() {
@@ -24,6 +32,7 @@ func main() {
 
 	services.SetupService("api-service", 51200)
 	services.SetupSSLClientFlags()
+	vzshard.SetupFlags()
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()
 	services.CheckSSLClientFlags()
@@ -57,6 +66,17 @@ func main() {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}
 
+	// Connect to NATS.
+	nc, err := nats.Connect(viper.GetString("nats_url"),
+		nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
+		nats.RootCAs(viper.GetString("tls_ca_cert")))
+	if err != nil {
+		log.WithError(err).Fatal("Could not connect to NATS")
+	}
+
+	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, e error) {
+		log.WithError(e).Error("Got NATS error")
+	})
 	mux := http.NewServeMux()
 	mux.Handle("/api/auth/signup", handler.New(env, controller.AuthSignupHandler))
 	mux.Handle("/api/auth/login", handler.New(env, controller.AuthLoginHandler))
@@ -84,6 +104,8 @@ func main() {
 	cis := &controller.VizierClusterInfoServer{VzMgr: vc}
 	cloudapipb.RegisterVizierClusterInfoServer(s.GRPCServer(), cis)
 
+	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc)
+	pl_api_vizierpb.RegisterVizierServiceServer(s.GRPCServer(), vpt)
 	s.Start()
 	s.StopOnInterrupt()
 }
