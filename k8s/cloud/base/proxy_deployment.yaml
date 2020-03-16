@@ -69,6 +69,16 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        readinessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 56004
+        livenessProbe:
+          httpGet:
+            scheme: HTTPS
+            path: /healthz
+            port: 56004
         ports:
         - containerPort: 56004
         volumeMounts:
