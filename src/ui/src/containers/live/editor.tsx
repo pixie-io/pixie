@@ -49,6 +49,7 @@ const VegaSpecEditor = () => {
   const updateVegaSpecDebounce = React.useMemo(() => debounce(updateVegaSpec, 2000), []);
 
   React.useEffect(() => {
+    ls.setLiveViewVegaSpec(code);
     const specs = parseSpecs(code);
     if (specs) {
       updateVegaSpecDebounce(specs);

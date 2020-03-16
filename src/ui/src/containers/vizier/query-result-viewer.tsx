@@ -1,5 +1,6 @@
 import './query-result-viewer.scss';
 
+import clsx from 'clsx';
 import {Table} from 'common/vizier-grpc-client';
 import {
     AutoSizedScrollableTable, AutoSizedScrollableTableProps, TableColumnInfo,
@@ -205,12 +206,13 @@ function parseTable(table: Table): AutoSizedScrollableTableProps {
 
 export interface QueryResultTableProps {
   data: Table;
+  className?: string;
 }
 
-export const QueryResultTable = React.memo<QueryResultTableProps>(({ data }) => {
+export const QueryResultTable = React.memo<QueryResultTableProps>(({ data, className }) => {
   const tableData = parseTable(data);
   return (
-    <div className='query-results'>
+    <div className={clsx('query-results', className)}>
       <AutoSizedScrollableTable
         {...tableData}
       />

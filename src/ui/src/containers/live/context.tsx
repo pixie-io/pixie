@@ -1,10 +1,10 @@
 import * as ls from 'common/localstorage';
+import {Table} from 'common/vizier-grpc-client';
 import ClientContext from 'common/vizier-grpc-client-context';
 import {useSnackbar} from 'components/snackbar/snackbar';
 import {parseSpecs, VisualizationSpecMap} from 'components/vega/spec';
 import * as React from 'react';
 import {resolveTypeReferenceDirective} from 'typescript';
-import {dataFromProto} from 'utils/result-data-utils';
 import {GetPxScripts, Script} from 'utils/script-bundle';
 
 import {parsePlacement, Placement} from './layout';
@@ -20,7 +20,7 @@ interface LiveContextProps {
 }
 
 interface Tables {
-  [name: string]: Array<{}>;
+  [name: string]: Table;
 }
 
 export const ScriptContext = React.createContext<string>('');
@@ -66,7 +66,7 @@ const LiveContextProvider = (props) => {
     client.executeScript(script).then((results) => {
       const newTables = {};
       for (const table of results.tables) {
-        newTables[table.name] = dataFromProto(table.relation, table.data);
+        newTables[table.name] = table;
       }
       setTables(newTables);
     }).catch(() => {
