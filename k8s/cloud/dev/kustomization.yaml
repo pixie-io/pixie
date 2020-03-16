@@ -17,6 +17,8 @@ replicas:
   count: 1
 - name: vzmgr-server
   count: 1
+- name: scriptmgr-server
+  count: 1
 resources:
 - ../base
 - ../overlays/exposed_services_ilb

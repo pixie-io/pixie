@@ -50,6 +50,10 @@ build:
     context: .
     bazel:
       target: //src/cloud/log_collector:log_collector_server_image.tar
+  - image: gcr.io/pl-dev-infra/cloud/scriptmgr_server_image
+    context: .
+    bazel:
+      target: //src/cloud/scriptmgr:scriptmgr_server_image.tar
   tagPolicy:
     dateTime: {}
   local:

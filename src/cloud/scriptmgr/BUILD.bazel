@@ -1,4 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+load("@io_bazel_rules_docker//cc:image.bzl", "cc_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 go_library(
     name = "go_default_library",
@@ -21,4 +23,20 @@ go_binary(
     name = "scriptmgr",
     embed = [":go_default_library"],
     visibility = ["//visibility:public"],
+)
+
+cc_image(
+    name = "scriptmgr_server_image",
+    base = "//:pl_cc_base_image",
+    binary = ":scriptmgr",
+    visibility = ["//visibility:public"],
+)
+
+container_push(
+    name = "push_scriptmgr_server_image",
+    format = "Docker",
+    image = ":scriptmgr_server_image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/cloud/scriptmgr_server_image",
+    tag = "{STABLE_BUILD_TAG}",
 )

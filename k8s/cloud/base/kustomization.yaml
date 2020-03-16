@@ -34,3 +34,5 @@ resources:
 - indexer_deployment.yaml
 - log_collector_deployment.yaml
 - log_collector_service.yaml
+- scriptmgr_deployment.yaml
+- scriptmgr_service.yaml

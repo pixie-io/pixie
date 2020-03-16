@@ -17,6 +17,8 @@ replicas:
   count: 3
 - name: vzmgr-server
   count: 3
+- name: scriptmgr-server
+  count: 3
 resources:
 - cloud_proxy_backend_config.yaml
 - vzconn_backend_config.yaml

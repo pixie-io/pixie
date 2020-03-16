@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: scriptmgr-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 52000
+    protocol: TCP
+    targetPort: 52000
+    name: tcp-http2
+  selector:
+    name: scriptmgr-server
