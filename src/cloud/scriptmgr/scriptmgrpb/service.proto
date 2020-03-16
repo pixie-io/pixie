@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package pl.services;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/shared/scriptspb/scripts.proto";
+
+option go_package = "pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb;scriptmgrpb";
+
+// ScriptMgrService service handles ingestion and access to scripts.
+service ScriptMgrService {
+  // ExtractVizFuncsInfo is the endpoint for parsing non-persisted scripts for
+  // info about funcs decorated with px.viz.*.
+  // Once we have persistence, this endpoint will only be used by the CLI.
+  rpc ExtractVizFuncsInfo(ExtractVizFuncsInfoRequest) returns (pl.shared.scriptspb.VizFuncsInfo) {}
+}
+
+message ExtractVizFuncsInfoRequest {
+  // Script content.
+  string script = 1;
+  // Optional function names to return info for.
+  repeated string func_names = 2;
+}
