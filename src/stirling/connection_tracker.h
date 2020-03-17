@@ -18,6 +18,7 @@
 #include "src/stirling/data_stream.h"
 #include "src/stirling/mysql/mysql_parse.h"
 #include "src/stirling/socket_resolver.h"
+#include "src/stirling/socket_trace_bpf_tables.h"
 
 DECLARE_bool(enable_unix_domain_sockets);
 
@@ -64,6 +65,10 @@ class ConnectionTracker {
     // It will, however, still track open and close events.
     kDisabled,
   };
+
+  ConnectionTracker() = default;
+  ~ConnectionTracker();
+  ConnectionTracker(ConnectionTracker&& other) = default;
 
   /**
    * @brief Registers a BPF connection control event into the tracker.
@@ -185,7 +190,7 @@ class ConnectionTracker {
    *
    * @return FD.
    */
-  uint64_t fd() const { return conn_id_.fd; }
+  uint32_t fd() const { return conn_id_.fd; }
 
   /**
    * Get timestamp id (unique id, assigned from monotonically growing counter) of the connection.
@@ -449,6 +454,11 @@ class ConnectionTracker {
     // different protocols.
   }
 
+  static void SetBPFTableManager(
+      const std::shared_ptr<SocketTraceBPFTableManager>& bpf_table_info) {
+    bpf_table_info_ = bpf_table_info;
+  }
+
  private:
   void AddConnOpenEvent(const conn_event_t& conn_info);
   void AddConnCloseEvent(const close_event_t& close_event);
@@ -459,6 +469,11 @@ class ConnectionTracker {
   void CheckTracker();
   void HandleInactivity();
   void UpdateState(const std::vector<CIDRBlock>& cluster_cidrs);
+
+  // bpf_table_info_ is used to release BPF map resources when a ConnectionTracker is destroyed.
+  // It is a safety net, since BPF should release the resources as long as the close() syscall is
+  // made. Note that since there is only one global BPF map, this is a static/global structure.
+  static inline std::shared_ptr<SocketTraceBPFTableManager> bpf_table_info_;
 
   template <typename TFrameType>
   void DataStreamsToFrames();

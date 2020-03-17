@@ -37,6 +37,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/stirling/http/utils.h"
 #include "src/stirling/http_table.h"
 #include "src/stirling/mysql_table.h"
+#include "src/stirling/socket_trace_bpf_tables.h"
 #include "src/stirling/source_connector.h"
 #include "src/stirling/utils/proc_tracker.h"
 
@@ -287,6 +288,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   // Records the binaries that have been attached uprobes.
   absl::flat_hash_set<std::string> prev_scanned_binaries_;
+
+  std::shared_ptr<SocketTraceBPFTableManager> bpf_table_info_;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);

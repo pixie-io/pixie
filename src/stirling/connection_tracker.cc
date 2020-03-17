@@ -39,16 +39,15 @@ namespace stirling {
 constexpr double kParseFailureRateThreshold = 0.4;
 constexpr double kStitchFailureRateThreshold = 0.5;
 
-namespace {
-std::string ToString(const conn_id_t& conn_id) {
-  return absl::Substitute("[pid=$0 start_time_ticks=$1 fd=$2 gen=$3]", conn_id.upid.pid,
-                          conn_id.upid.start_time_ticks, conn_id.fd, conn_id.tsid);
-}
-}  // namespace
-
 //--------------------------------------------------------------
 // ConnectionTracker
 //--------------------------------------------------------------
+
+ConnectionTracker::~ConnectionTracker() {
+  if (bpf_table_info_ != nullptr) {
+    bpf_table_info_->ReleaseResources(conn_id_);
+  }
+}
 
 void ConnectionTracker::AddControlEvent(const socket_control_event_t& event) {
   switch (event.type) {

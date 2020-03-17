@@ -219,6 +219,9 @@ Status SocketTraceConnector::InitImpl() {
 
   attach_uprobes_thread_ = std::thread([this]() { AttachHTTP2UProbesLoop(); });
 
+  bpf_table_info_ = std::make_shared<SocketTraceBPFTableManager>(&bpf());
+  ConnectionTracker::SetBPFTableManager(bpf_table_info_);
+
   return Status::OK();
 }
 

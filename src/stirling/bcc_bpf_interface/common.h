@@ -1,5 +1,10 @@
 #pragma once
 
+#ifdef __cplusplus
+#include <absl/strings/substitute.h>
+#include <string>
+#endif
+
 // This file contains definitions that are shared between various kprobes and uprobes.
 
 enum MessageType { kUnknown, kRequest, kResponse };
@@ -62,6 +67,13 @@ struct conn_id_t {
   // Unique id of the conn_id (timestamp).
   uint64_t tsid;
 };
+
+#ifdef __cplusplus
+inline std::string ToString(const conn_id_t& conn_id) {
+  return absl::Substitute("[pid=$0 start_time_ticks=$1 fd=$2 gen=$3]", conn_id.upid.pid,
+                          conn_id.upid.start_time_ticks, conn_id.fd, conn_id.tsid);
+}
+#endif
 
 // Specifies the corresponding indexes of the entries of a per-cpu array.
 enum ControlValueIndex {
