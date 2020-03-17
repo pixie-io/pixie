@@ -166,31 +166,31 @@ func (mr *MockVizierImageAuthorizationServerMockRecorder) GetImageCredentials(ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageCredentials", reflect.TypeOf((*MockVizierImageAuthorizationServer)(nil).GetImageCredentials), arg0, arg1)
 }
 
-// MockArtifactTrackerClient is a mock of ArtifactTrackerClient interface
-type MockArtifactTrackerClient struct {
+// MockArtifactTrackerServiceClient is a mock of ArtifactTrackerServiceClient interface
+type MockArtifactTrackerServiceClient struct {
 	ctrl     *gomock.Controller
-	recorder *MockArtifactTrackerClientMockRecorder
+	recorder *MockArtifactTrackerServiceClientMockRecorder
 }
 
-// MockArtifactTrackerClientMockRecorder is the mock recorder for MockArtifactTrackerClient
-type MockArtifactTrackerClientMockRecorder struct {
-	mock *MockArtifactTrackerClient
+// MockArtifactTrackerServiceClientMockRecorder is the mock recorder for MockArtifactTrackerServiceClient
+type MockArtifactTrackerServiceClientMockRecorder struct {
+	mock *MockArtifactTrackerServiceClient
 }
 
-// NewMockArtifactTrackerClient creates a new mock instance
-func NewMockArtifactTrackerClient(ctrl *gomock.Controller) *MockArtifactTrackerClient {
-	mock := &MockArtifactTrackerClient{ctrl: ctrl}
-	mock.recorder = &MockArtifactTrackerClientMockRecorder{mock}
+// NewMockArtifactTrackerServiceClient creates a new mock instance
+func NewMockArtifactTrackerServiceClient(ctrl *gomock.Controller) *MockArtifactTrackerServiceClient {
+	mock := &MockArtifactTrackerServiceClient{ctrl: ctrl}
+	mock.recorder = &MockArtifactTrackerServiceClientMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockArtifactTrackerClient) EXPECT() *MockArtifactTrackerClientMockRecorder {
+func (m *MockArtifactTrackerServiceClient) EXPECT() *MockArtifactTrackerServiceClientMockRecorder {
 	return m.recorder
 }
 
 // GetArtifactList mocks base method
-func (m *MockArtifactTrackerClient) GetArtifactList(ctx context.Context, in *cloudapipb.GetArtifactListRequest, opts ...grpc.CallOption) (*cloudapipb.ArtifactSet, error) {
+func (m *MockArtifactTrackerServiceClient) GetArtifactList(ctx context.Context, in *cloudapipb.GetArtifactListRequest, opts ...grpc.CallOption) (*cloudapipb.ArtifactSet, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -202,13 +202,13 @@ func (m *MockArtifactTrackerClient) GetArtifactList(ctx context.Context, in *clo
 }
 
 // GetArtifactList indicates an expected call of GetArtifactList
-func (mr *MockArtifactTrackerClientMockRecorder) GetArtifactList(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockArtifactTrackerServiceClientMockRecorder) GetArtifactList(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArtifactList", reflect.TypeOf((*MockArtifactTrackerClient)(nil).GetArtifactList), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArtifactList", reflect.TypeOf((*MockArtifactTrackerServiceClient)(nil).GetArtifactList), varargs...)
 }
 
 // GetDownloadLink mocks base method
-func (m *MockArtifactTrackerClient) GetDownloadLink(ctx context.Context, in *cloudapipb.GetDownloadLinkRequest, opts ...grpc.CallOption) (*cloudapipb.GetDownloadLinkResponse, error) {
+func (m *MockArtifactTrackerServiceClient) GetDownloadLink(ctx context.Context, in *cloudapipb.GetDownloadLinkRequest, opts ...grpc.CallOption) (*cloudapipb.GetDownloadLinkResponse, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -220,36 +220,36 @@ func (m *MockArtifactTrackerClient) GetDownloadLink(ctx context.Context, in *clo
 }
 
 // GetDownloadLink indicates an expected call of GetDownloadLink
-func (mr *MockArtifactTrackerClientMockRecorder) GetDownloadLink(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockArtifactTrackerServiceClientMockRecorder) GetDownloadLink(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDownloadLink", reflect.TypeOf((*MockArtifactTrackerClient)(nil).GetDownloadLink), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDownloadLink", reflect.TypeOf((*MockArtifactTrackerServiceClient)(nil).GetDownloadLink), varargs...)
 }
 
-// MockArtifactTrackerServer is a mock of ArtifactTrackerServer interface
-type MockArtifactTrackerServer struct {
+// MockArtifactTrackerServiceServer is a mock of ArtifactTrackerServiceServer interface
+type MockArtifactTrackerServiceServer struct {
 	ctrl     *gomock.Controller
-	recorder *MockArtifactTrackerServerMockRecorder
+	recorder *MockArtifactTrackerServiceServerMockRecorder
 }
 
-// MockArtifactTrackerServerMockRecorder is the mock recorder for MockArtifactTrackerServer
-type MockArtifactTrackerServerMockRecorder struct {
-	mock *MockArtifactTrackerServer
+// MockArtifactTrackerServiceServerMockRecorder is the mock recorder for MockArtifactTrackerServiceServer
+type MockArtifactTrackerServiceServerMockRecorder struct {
+	mock *MockArtifactTrackerServiceServer
 }
 
-// NewMockArtifactTrackerServer creates a new mock instance
-func NewMockArtifactTrackerServer(ctrl *gomock.Controller) *MockArtifactTrackerServer {
-	mock := &MockArtifactTrackerServer{ctrl: ctrl}
-	mock.recorder = &MockArtifactTrackerServerMockRecorder{mock}
+// NewMockArtifactTrackerServiceServer creates a new mock instance
+func NewMockArtifactTrackerServiceServer(ctrl *gomock.Controller) *MockArtifactTrackerServiceServer {
+	mock := &MockArtifactTrackerServiceServer{ctrl: ctrl}
+	mock.recorder = &MockArtifactTrackerServiceServerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockArtifactTrackerServer) EXPECT() *MockArtifactTrackerServerMockRecorder {
+func (m *MockArtifactTrackerServiceServer) EXPECT() *MockArtifactTrackerServiceServerMockRecorder {
 	return m.recorder
 }
 
 // GetArtifactList mocks base method
-func (m *MockArtifactTrackerServer) GetArtifactList(arg0 context.Context, arg1 *cloudapipb.GetArtifactListRequest) (*cloudapipb.ArtifactSet, error) {
+func (m *MockArtifactTrackerServiceServer) GetArtifactList(arg0 context.Context, arg1 *cloudapipb.GetArtifactListRequest) (*cloudapipb.ArtifactSet, error) {
 	ret := m.ctrl.Call(m, "GetArtifactList", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.ArtifactSet)
 	ret1, _ := ret[1].(error)
@@ -257,12 +257,12 @@ func (m *MockArtifactTrackerServer) GetArtifactList(arg0 context.Context, arg1 *
 }
 
 // GetArtifactList indicates an expected call of GetArtifactList
-func (mr *MockArtifactTrackerServerMockRecorder) GetArtifactList(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArtifactList", reflect.TypeOf((*MockArtifactTrackerServer)(nil).GetArtifactList), arg0, arg1)
+func (mr *MockArtifactTrackerServiceServerMockRecorder) GetArtifactList(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArtifactList", reflect.TypeOf((*MockArtifactTrackerServiceServer)(nil).GetArtifactList), arg0, arg1)
 }
 
 // GetDownloadLink mocks base method
-func (m *MockArtifactTrackerServer) GetDownloadLink(arg0 context.Context, arg1 *cloudapipb.GetDownloadLinkRequest) (*cloudapipb.GetDownloadLinkResponse, error) {
+func (m *MockArtifactTrackerServiceServer) GetDownloadLink(arg0 context.Context, arg1 *cloudapipb.GetDownloadLinkRequest) (*cloudapipb.GetDownloadLinkResponse, error) {
 	ret := m.ctrl.Call(m, "GetDownloadLink", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetDownloadLinkResponse)
 	ret1, _ := ret[1].(error)
@@ -270,8 +270,8 @@ func (m *MockArtifactTrackerServer) GetDownloadLink(arg0 context.Context, arg1 *
 }
 
 // GetDownloadLink indicates an expected call of GetDownloadLink
-func (mr *MockArtifactTrackerServerMockRecorder) GetDownloadLink(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDownloadLink", reflect.TypeOf((*MockArtifactTrackerServer)(nil).GetDownloadLink), arg0, arg1)
+func (mr *MockArtifactTrackerServiceServerMockRecorder) GetDownloadLink(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDownloadLink", reflect.TypeOf((*MockArtifactTrackerServiceServer)(nil).GetDownloadLink), arg0, arg1)
 }
 
 // MockVizierClusterServiceClient is a mock of VizierClusterServiceClient interface

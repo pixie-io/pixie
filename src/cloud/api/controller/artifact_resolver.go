@@ -2,10 +2,9 @@ package controller
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
-	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 )
 
 // CLIArtifactResolver is the resolver responsible for resolving the CLI artifact.
@@ -18,47 +17,52 @@ type cliArtifactArgs struct {
 	ArtifactType *string
 }
 
-func artifactTypeToProto(a *string) versionspb.ArtifactType {
+func artifactTypeToProto(a *string) cloudapipb.ArtifactType {
 	switch *a {
 	case "AT_LINUX_AMD64":
-		return versionspb.AT_LINUX_AMD64
+		return cloudapipb.AT_LINUX_AMD64
 	case "AT_DARWIN_AMD64":
-		return versionspb.AT_DARWIN_AMD64
+		return cloudapipb.AT_DARWIN_AMD64
 	case "AT_CONTAINER_SET_YAMLS":
-		return versionspb.AT_CONTAINER_SET_YAMLS
+		return cloudapipb.AT_CONTAINER_SET_YAMLS
 	case "AT_CONTAINER_SET_LINUX_AMD64":
-		return versionspb.AT_CONTAINER_SET_LINUX_AMD64
+		return cloudapipb.AT_CONTAINER_SET_LINUX_AMD64
 	default:
-		return versionspb.AT_UNKNOWN
+		return cloudapipb.AT_UNKNOWN
 	}
 }
 
 // CLIArtifact resolves CLI information.
 func (q *QueryResolver) CLIArtifact(ctx context.Context, args *cliArtifactArgs) (*CLIArtifactResolver, error) {
+	grpcAPI := q.Env.ArtifactTrackerServer
+
 	artifactTypePb := artifactTypeToProto(args.ArtifactType)
 
-	artifactReq := &artifacttrackerpb.GetArtifactListRequest{
+	artifactReq := &cloudapipb.GetArtifactListRequest{
 		ArtifactType: artifactTypePb,
 		ArtifactName: "cli",
 		Limit:        1,
 	}
 
-	cliInfo, err := q.Env.ArtifactTrackerClient().GetArtifactList(ctx, artifactReq)
+	cliInfo, err := grpcAPI.GetArtifactList(ctx, artifactReq)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(cliInfo.Artifact) != 1 {
-		return nil, errors.New("No artifact exists")
+	if len(cliInfo.Artifact) == 0 {
+		return nil, fmt.Errorf("No artifact exists")
+	}
+	if len(cliInfo.Artifact) > 1 {
+		return nil, fmt.Errorf("Got unexpected number of artifacts: %d", len(cliInfo.Artifact))
 	}
 
-	linkReq := &artifacttrackerpb.GetDownloadLinkRequest{
+	linkReq := &cloudapipb.GetDownloadLinkRequest{
 		ArtifactName: "cli",
 		ArtifactType: artifactTypePb,
 		VersionStr:   cliInfo.Artifact[0].VersionStr,
 	}
 
-	linkResp, err := q.Env.ArtifactTrackerClient().GetDownloadLink(ctx, linkReq)
+	linkResp, err := grpcAPI.GetDownloadLink(ctx, linkReq)
 	if err != nil {
 		return nil, err
 	}
@@ -86,17 +90,19 @@ type ArtifactsInfoResolver struct {
 
 // Artifacts is the resolver responsible for fetching all artifacts.
 func (q *QueryResolver) Artifacts(ctx context.Context, args *artifactsArgs) (*ArtifactsInfoResolver, error) {
-	artifactType := versionspb.AT_LINUX_AMD64
+	grpcAPI := q.Env.ArtifactTrackerServer
+
+	artifactType := cloudapipb.AT_LINUX_AMD64
 	if *args.ArtifactName == "vizier" {
-		artifactType = versionspb.AT_CONTAINER_SET_LINUX_AMD64
+		artifactType = cloudapipb.AT_CONTAINER_SET_LINUX_AMD64
 	}
 
-	artifactReq := &artifacttrackerpb.GetArtifactListRequest{
+	artifactReq := &cloudapipb.GetArtifactListRequest{
 		ArtifactType: artifactType,
 		ArtifactName: *args.ArtifactName,
 	}
 
-	resp, err := q.Env.ArtifactTrackerClient().GetArtifactList(ctx, artifactReq)
+	resp, err := grpcAPI.GetArtifactList(ctx, artifactReq)
 	if err != nil {
 		return nil, err
 	}

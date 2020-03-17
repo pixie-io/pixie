@@ -15,16 +15,18 @@ import (
 )
 
 // CreateTestGraphQLEnv creates a test graphql environment and mock clients.
-func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *mock_cloudapipb.MockVizierClusterServiceServer, func()) {
+func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *mock_cloudapipb.MockArtifactTrackerServiceServer, *mock_cloudapipb.MockVizierClusterServiceServer, func()) {
 	ctrl := gomock.NewController(t)
+	ats := mock_cloudapipb.NewMockArtifactTrackerServiceServer(ctrl)
 	vcs := mock_cloudapipb.NewMockVizierClusterServiceServer(ctrl)
 	gqlEnv := controller.GraphQLEnv{
-		VizierClusterServer: vcs,
+		ArtifactTrackerServer: ats,
+		VizierClusterServer:   vcs,
 	}
 	cleanup := func() {
 		ctrl.Finish()
 	}
-	return gqlEnv, vcs, cleanup
+	return gqlEnv, ats, vcs, cleanup
 }
 
 // CreateTestAPIEnv creates a test environment and mock clients.

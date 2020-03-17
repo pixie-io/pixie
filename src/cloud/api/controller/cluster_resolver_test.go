@@ -10,7 +10,6 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 
-	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/schema"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
@@ -26,19 +25,10 @@ func CreateTestContext() context.Context {
 	return authcontext.NewContext(context.Background(), sCtx)
 }
 
-// TODO(nserrino): Remove and replace with LoadSchemaNew when other GQL handlers are moved over to using GRPC API.
-func LoadSchema(env apienv.APIEnv) *graphql.Schema {
+func LoadSchema(gqlEnv controller.GraphQLEnv) *graphql.Schema {
 	schemaData := schema.MustLoadSchema()
 	opts := []graphql.SchemaOpt{graphql.UseFieldResolvers(), graphql.MaxParallelism(20)}
-	qr := &controller.QueryResolver{Env: env}
-	gqlSchema := graphql.MustParseSchema(schemaData, qr, opts...)
-	return gqlSchema
-}
-
-func LoadSchemaNew(gqlEnv controller.GraphQLEnv) *graphql.Schema {
-	schemaData := schema.MustLoadSchema()
-	opts := []graphql.SchemaOpt{graphql.UseFieldResolvers(), graphql.MaxParallelism(20)}
-	qr := &controller.QueryResolver{GQLEnv: gqlEnv}
+	qr := &controller.QueryResolver{gqlEnv}
 	gqlSchema := graphql.MustParseSchema(schemaData, qr, opts...)
 	return gqlSchema
 }
@@ -46,10 +36,7 @@ func LoadSchemaNew(gqlEnv controller.GraphQLEnv) *graphql.Schema {
 func TestCreateCluster(t *testing.T) {
 	clusterID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	gqlEnv, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, _, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -58,7 +45,7 @@ func TestCreateCluster(t *testing.T) {
 			ClusterID: utils.ProtoFromUUIDStrOrNil(clusterID),
 		}, nil)
 
-	gqlSchema := LoadSchemaNew(gqlEnv)
+	gqlSchema := LoadSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Schema:  gqlSchema,
@@ -82,10 +69,7 @@ func TestCreateCluster(t *testing.T) {
 }
 
 func TestClusterInfo(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	gqlEnv, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, _, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -103,7 +87,7 @@ func TestClusterInfo(t *testing.T) {
 			Clusters: []*cloudapipb.ClusterInfo{clusterInfo},
 		}, nil)
 
-	gqlSchema := LoadSchemaNew(gqlEnv)
+	gqlSchema := LoadSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Schema:  gqlSchema,
@@ -137,10 +121,7 @@ func TestClusterInfo(t *testing.T) {
 }
 
 func TestClusterConnectionInfo(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	gqlEnv, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, _, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -168,7 +149,7 @@ func TestClusterConnectionInfo(t *testing.T) {
 			Token:     "this-is-a-token",
 		}, nil)
 
-	gqlSchema := LoadSchemaNew(gqlEnv)
+	gqlSchema := LoadSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Schema:  gqlSchema,
@@ -194,10 +175,7 @@ func TestClusterConnectionInfo(t *testing.T) {
 }
 
 func TestUpdateClusterVizierConfig(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	gqlEnv, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, _, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -209,7 +187,7 @@ func TestUpdateClusterVizierConfig(t *testing.T) {
 	}).
 		Return(&cloudapipb.UpdateClusterVizierConfigResponse{}, nil)
 
-	gqlSchema := LoadSchemaNew(gqlEnv)
+	gqlSchema := LoadSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Schema:  gqlSchema,
@@ -229,10 +207,7 @@ func TestUpdateClusterVizierConfig(t *testing.T) {
 }
 
 func TestUpdateClusterVizierConfigNoUpdates(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	gqlEnv, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, _, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -242,7 +217,7 @@ func TestUpdateClusterVizierConfigNoUpdates(t *testing.T) {
 	}).
 		Return(&cloudapipb.UpdateClusterVizierConfigResponse{}, nil)
 
-	gqlSchema := LoadSchemaNew(gqlEnv)
+	gqlSchema := LoadSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Schema:  gqlSchema,

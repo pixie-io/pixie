@@ -65,7 +65,7 @@ type ConnectionInfo struct {
 
 // NewLister returns a Lister.
 func NewLister(cloudAddr string) (*Lister, error) {
-	vc, err := newVizierInfoClient(cloudAddr)
+	vc, err := newVizierClusterServiceClient(cloudAddr)
 	if err != nil {
 		return nil, err
 	}

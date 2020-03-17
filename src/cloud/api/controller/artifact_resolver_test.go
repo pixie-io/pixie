@@ -9,41 +9,37 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
-	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
-	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 )
 
 func TestCLIArtifact(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	apiEnv, _, _, _, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
+	gqlEnv, mockArt, _, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 
-	mockArtifactClient.EXPECT().GetArtifactList(gomock.Any(),
-		&artifacttrackerpb.GetArtifactListRequest{
+	mockArt.EXPECT().GetArtifactList(gomock.Any(),
+		&cloudapipb.GetArtifactListRequest{
 			ArtifactName: "cli",
 			Limit:        1,
-			ArtifactType: versionspb.AT_LINUX_AMD64,
+			ArtifactType: cloudapipb.AT_LINUX_AMD64,
 		}).
-		Return(&versionspb.ArtifactSet{
+		Return(&cloudapipb.ArtifactSet{
 			Name: "cli",
-			Artifact: []*versionspb.Artifact{&versionspb.Artifact{
+			Artifact: []*cloudapipb.Artifact{&cloudapipb.Artifact{
 				VersionStr: "test",
 			}},
 		}, nil)
 
-	mockArtifactClient.EXPECT().GetDownloadLink(gomock.Any(), &artifacttrackerpb.GetDownloadLinkRequest{
-		ArtifactType: versionspb.AT_LINUX_AMD64,
+	mockArt.EXPECT().GetDownloadLink(gomock.Any(), &cloudapipb.GetDownloadLinkRequest{
+		ArtifactType: cloudapipb.AT_LINUX_AMD64,
 		VersionStr:   "test",
 		ArtifactName: "cli",
-	}).Return(&artifacttrackerpb.GetDownloadLinkResponse{
+	}).Return(&cloudapipb.GetDownloadLinkResponse{
 		Url:    "http://pixie.com/cli_url",
 		SHA256: "http://pixie.com/sha256",
 	}, nil)
 
-	gqlSchema := LoadSchema(apiEnv)
+	gqlSchema := LoadSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Schema:  gqlSchema,
@@ -69,32 +65,29 @@ func TestCLIArtifact(t *testing.T) {
 }
 
 func TestArtifacts_CLI(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	apiEnv, _, _, _, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
+	gqlEnv, mockArt, _, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 
-	mockArtifactClient.EXPECT().GetArtifactList(gomock.Any(),
-		&artifacttrackerpb.GetArtifactListRequest{
+	mockArt.EXPECT().GetArtifactList(gomock.Any(),
+		&cloudapipb.GetArtifactListRequest{
 			ArtifactName: "cli",
-			ArtifactType: versionspb.AT_LINUX_AMD64,
+			ArtifactType: cloudapipb.AT_LINUX_AMD64,
 		}).
-		Return(&versionspb.ArtifactSet{
+		Return(&cloudapipb.ArtifactSet{
 			Name: "cli",
-			Artifact: []*versionspb.Artifact{&versionspb.Artifact{
+			Artifact: []*cloudapipb.Artifact{&cloudapipb.Artifact{
 				VersionStr: "1.2.3",
 				Changelog:  "a changelog",
 				Timestamp:  &types.Timestamp{Seconds: 10},
-			}, &versionspb.Artifact{
+			}, &cloudapipb.Artifact{
 				VersionStr: "1.2.2",
 				Changelog:  "some changes go here",
 				Timestamp:  &types.Timestamp{Seconds: 5},
 			}},
 		}, nil)
 
-	gqlSchema := LoadSchema(apiEnv)
+	gqlSchema := LoadSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Schema:  gqlSchema,
@@ -133,32 +126,29 @@ func TestArtifacts_CLI(t *testing.T) {
 }
 
 func TestArtifacts_Vizier(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	apiEnv, _, _, _, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
+	gqlEnv, mockArt, _, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 
-	mockArtifactClient.EXPECT().GetArtifactList(gomock.Any(),
-		&artifacttrackerpb.GetArtifactListRequest{
+	mockArt.EXPECT().GetArtifactList(gomock.Any(),
+		&cloudapipb.GetArtifactListRequest{
 			ArtifactName: "vizier",
-			ArtifactType: versionspb.AT_CONTAINER_SET_LINUX_AMD64,
+			ArtifactType: cloudapipb.AT_CONTAINER_SET_LINUX_AMD64,
 		}).
-		Return(&versionspb.ArtifactSet{
+		Return(&cloudapipb.ArtifactSet{
 			Name: "vizier",
-			Artifact: []*versionspb.Artifact{&versionspb.Artifact{
+			Artifact: []*cloudapipb.Artifact{&cloudapipb.Artifact{
 				VersionStr: "1.2.3",
 				Changelog:  "a changelog",
 				Timestamp:  &types.Timestamp{Seconds: 10},
-			}, &versionspb.Artifact{
+			}, &cloudapipb.Artifact{
 				VersionStr: "1.2.2",
 				Changelog:  "some changes go here",
 				Timestamp:  &types.Timestamp{Seconds: 5},
 			}},
 		}, nil)
 
-	gqlSchema := LoadSchema(apiEnv)
+	gqlSchema := LoadSchema(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Schema:  gqlSchema,

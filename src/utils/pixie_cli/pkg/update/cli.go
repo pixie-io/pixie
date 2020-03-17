@@ -26,7 +26,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
 )
 
-func newATClient(cloudAddr string) (cloudapipb.ArtifactTrackerClient, error) {
+func newATClient(cloudAddr string) (cloudapipb.ArtifactTrackerServiceClient, error) {
 	isInternal := strings.ContainsAny(cloudAddr, "cluster.local")
 
 	dialOpts, err := services.GetGRPCClientDialOptsServerSideTLS(isInternal)
@@ -39,7 +39,7 @@ func newATClient(cloudAddr string) (cloudapipb.ArtifactTrackerClient, error) {
 		return nil, err
 	}
 
-	return cloudapipb.NewArtifactTrackerClient(c), nil
+	return cloudapipb.NewArtifactTrackerServiceClient(c), nil
 }
 
 func getArtifactTypes() cloudapipb.ArtifactType {
