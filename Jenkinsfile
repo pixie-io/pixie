@@ -74,7 +74,7 @@ class PhabConnector {
 
 // NOTE: We use these without a def/type because that way Groovy will treat these as
 // global variables.
-phabConnector = PhabConnector.newInstance(this, 'https://phab.c.pixielabs.ai' /*url*/,
+phabConnector = PhabConnector.newInstance(this, 'https://phab.corp.pixielabs.ai' /*url*/,
                                           'PLM' /*repository*/, params.API_TOKEN, params.PHID)
 
 // Restrict build to source code, since otherwise bazel seems to build all our deps.
