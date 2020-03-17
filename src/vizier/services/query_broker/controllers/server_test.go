@@ -14,6 +14,7 @@ import (
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
+	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	mock_metadatapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb/mock"
@@ -344,7 +345,7 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 
 	mds.
 		EXPECT().
-		GetAgentInfo(context.Background(), &metadatapb.AgentInfoRequest{}).
+		GetAgentInfo(gomock.Any(), &metadatapb.AgentInfoRequest{}).
 		Return(getAgentsPB, nil)
 
 	getSchemaPB := new(metadatapb.SchemaResponse)
@@ -354,7 +355,7 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 
 	mds.
 		EXPECT().
-		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
+		GetSchemas(gomock.Any(), &metadatapb.SchemaRequest{}).
 		Return(getSchemaPB, nil)
 
 		// Set up server.
@@ -501,7 +502,7 @@ func TestGetAgentInfo(t *testing.T) {
 
 	mds.
 		EXPECT().
-		GetAgentInfo(context.Background(), &metadatapb.AgentInfoRequest{}).
+		GetAgentInfo(gomock.Any(), &metadatapb.AgentInfoRequest{}).
 		Return(getAgentsPB, nil)
 
 		// Set up server.
@@ -521,7 +522,10 @@ func TestGetAgentInfo(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	resp, err := s.GetAgentInfo(context.Background(), &querybrokerpb.AgentInfoRequest{})
+	aCtx := authcontext.New()
+	ctx := authcontext.NewContext(context.Background(), aCtx)
+
+	resp, err := s.GetAgentInfo(ctx, &querybrokerpb.AgentInfoRequest{})
 	assert.Equal(t, getAgentsRespPB, resp)
 }
 
@@ -547,7 +551,7 @@ func TestGetMultipleAgentInfo(t *testing.T) {
 
 	mds.
 		EXPECT().
-		GetAgentInfo(context.Background(), &metadatapb.AgentInfoRequest{}).
+		GetAgentInfo(gomock.Any(), &metadatapb.AgentInfoRequest{}).
 		Return(getAgentsPB, nil)
 
 		// Set up server.
@@ -567,7 +571,10 @@ func TestGetMultipleAgentInfo(t *testing.T) {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	resp, err := s.GetAgentInfo(context.Background(), &querybrokerpb.AgentInfoRequest{})
+	aCtx := authcontext.New()
+	ctx := authcontext.NewContext(context.Background(), aCtx)
+
+	resp, err := s.GetAgentInfo(ctx, &querybrokerpb.AgentInfoRequest{})
 	assert.Equal(t, getAgentsRespPB, resp)
 }
 
@@ -595,7 +602,7 @@ func TestPlannerErrorResult(t *testing.T) {
 
 	mds.
 		EXPECT().
-		GetAgentInfo(context.Background(), &metadatapb.AgentInfoRequest{}).
+		GetAgentInfo(gomock.Any(), &metadatapb.AgentInfoRequest{}).
 		Return(getAgentsPB, nil)
 
 	getSchemaPB := new(metadatapb.SchemaResponse)
@@ -605,7 +612,7 @@ func TestPlannerErrorResult(t *testing.T) {
 
 	mds.
 		EXPECT().
-		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
+		GetSchemas(gomock.Any(), &metadatapb.SchemaRequest{}).
 		Return(getSchemaPB, nil)
 
 	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
@@ -681,7 +688,7 @@ func TestErrorInStatusResult(t *testing.T) {
 
 	mds.
 		EXPECT().
-		GetAgentInfo(context.Background(), &metadatapb.AgentInfoRequest{}).
+		GetAgentInfo(gomock.Any(), &metadatapb.AgentInfoRequest{}).
 		Return(getAgentsPB, nil)
 
 	getSchemaPB := new(metadatapb.SchemaResponse)
@@ -691,7 +698,7 @@ func TestErrorInStatusResult(t *testing.T) {
 
 	mds.
 		EXPECT().
-		GetSchemas(context.Background(), &metadatapb.SchemaRequest{}).
+		GetSchemas(gomock.Any(), &metadatapb.SchemaRequest{}).
 		Return(getSchemaPB, nil)
 
 	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {

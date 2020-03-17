@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
@@ -22,6 +24,7 @@ import (
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
+	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/export"
@@ -286,6 +289,14 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *plannerpb.QueryRequest) 
 	}
 	planner := logicalplanner.New(&udfInfo)
 	defer planner.Free()
+
+	aCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", aCtx.AuthToken))
+
 	qr, status, err := s.ExecuteQueryWithPlanner(ctx, req, queryID, planner, planOpts)
 	if err != nil {
 		return nil, err
@@ -307,6 +318,14 @@ func (s *Server) GetSchemas(ctx context.Context, req *querybrokerpb.SchemaReques
 
 // GetAgentInfo returns information about registered agents.
 func (s *Server) GetAgentInfo(ctx context.Context, req *querybrokerpb.AgentInfoRequest) (*querybrokerpb.AgentInfoResponse, error) {
+	aCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		log.Info("FAILED ERROR!")
+		return nil, err
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", aCtx.AuthToken))
+
 	mdsReq := &metadatapb.AgentInfoRequest{}
 	mdsResp, err := s.mdsClient.GetAgentInfo(ctx, mdsReq)
 	if err != nil {
