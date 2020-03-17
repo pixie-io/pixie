@@ -287,9 +287,8 @@ TEST_F(AggHandlerTest, NonTupleKwarg) {
   args.AddKwarg("outcol1", ToQLObject(MakeString("fail")));
   auto status = AggHandler::Eval(graph.get(), src, ast, args, ast_visitor.get());
   ASSERT_NOT_OK(status);
-  EXPECT_THAT(
-      status.status(),
-      HasCompilerError("Expected tuple for value at kwarg outcol1 but received expression"));
+  EXPECT_THAT(status.status(),
+              HasCompilerError("Expected tuple for value at kwarg outcol1 but received String"));
 }
 
 TEST_F(AggHandlerTest, NonStrFirstTupleArg) {
@@ -315,9 +314,8 @@ TEST_F(AggHandlerTest, NonFuncSecondTupleArg) {
   args.AddKwarg("outcol1", MakeTupleObj(MakeString("ll"), MakeString("dd")));
   auto status = AggHandler::Eval(graph.get(), src, ast, args, ast_visitor.get());
   ASSERT_NOT_OK(status);
-  EXPECT_THAT(
-      status.status(),
-      HasCompilerError("Expected second tuple argument to be type Func, received expression"));
+  EXPECT_THAT(status.status(),
+              HasCompilerError("Expected second tuple argument to be type Func, received String"));
 }
 
 using LimitTest = DataframeTest;

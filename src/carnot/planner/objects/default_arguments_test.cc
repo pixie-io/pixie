@@ -178,13 +178,13 @@ class TestQLObject : public QLObject {
     return StatusOr<QLObjectPtr>(out_obj);
   }
 
-  void SetName(const std::string& name) { name_ = name; }
-  const std::string& name() const { return name_; }
+  void SetName(const std::string& name) { internal_name_ = name; }
+  const std::string& internal_name() const { return internal_name_; }
 
   inline static constexpr char kSpecialAttr[] = "foobar";
 
  private:
-  std::string name_;
+  std::string internal_name_;
 };
 
 TEST_F(DefaultArgumentsTest, TestQLObject) {

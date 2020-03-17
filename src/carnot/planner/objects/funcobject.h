@@ -144,7 +144,7 @@ class FuncObject : public QLObject {
    * processing.
    */
   StatusOr<QLObjectPtr> Call(const ArgMap& args, const pypa::AstPtr& ast);
-  const std::string& name() const { return name_; }
+  std::string name() const override { return name_; }
 
   const std::vector<std::string>& arguments() const { return arguments_; }
 

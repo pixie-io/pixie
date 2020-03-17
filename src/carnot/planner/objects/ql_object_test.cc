@@ -151,13 +151,13 @@ class TestQLObject2 : public QLObject {
     return StatusOr<QLObjectPtr>(out_obj);
   }
 
-  void SetName(const std::string& name) { name_ = name; }
-  const std::string& name() const { return name_; }
+  void SetName(const std::string& name) { internal_name_ = name; }
+  const std::string& internal_name() const { return internal_name_; }
 
   inline static constexpr char kSpecialAttr[] = "foobar";
 
  private:
-  std::string name_;
+  std::string internal_name_;
 };
 
 TEST_F(QLObjectTest, GetSubscriptMethod) {
@@ -205,7 +205,7 @@ TEST_F(QLObjectTest, GetAttribute) {
 
   auto object = static_cast<TestQLObject2*>(attr_result.get());
   // Just verify that the attribute method works as expected.
-  EXPECT_EQ(object->name(), attr);
+  EXPECT_EQ(object->internal_name(), attr);
 }
 
 }  // namespace compiler

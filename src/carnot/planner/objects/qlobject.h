@@ -141,7 +141,7 @@ class QLObject {
   }
 
   const TypeDescriptor& type_descriptor() const { return type_descriptor_; }
-  std::string_view name() const { return type_descriptor_.name(); }
+  virtual std::string name() const { return std::string(type_descriptor_.name()); }
   QLObjectType type() const { return type_descriptor_.type(); }
 
   IRNode* node() const { return node_; }
@@ -205,7 +205,7 @@ class QLObject {
    * @param name name to reference for the method.
    * @param func_object the function object that represents the Method.
    */
-  void AddMethod(std::string_view name, std::shared_ptr<FuncObject> func_object) {
+  void AddMethod(const std::string& name, std::shared_ptr<FuncObject> func_object) {
     DCHECK(!HasMethod(name)) << "already exists.";
     methods_[name] = func_object;
   }

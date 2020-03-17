@@ -309,7 +309,7 @@ TEST_F(AggTest, not_allowed_agg_fn) {
   ASSERT_NOT_OK(status);
   EXPECT_THAT(
       status.status(),
-      HasCompilerError("Expected second tuple argument to be type Func, received expression"));
+      HasCompilerError("Expected second tuple argument to be type Func, received FuncCall"));
   std::string single_col_dict_by_not_pl = absl::StrJoin(
       {
           "import px",
@@ -1088,8 +1088,7 @@ TEST_F(ASTVisitorTest, func_def_with_dataframe_type) {
   // Check whether non-Dataframes cause a failure.
   ir_graph_or_s = CompileGraph(absl::Substitute(kFuncDefWithDataframe, "func(1)"));
   ASSERT_NOT_OK(ir_graph_or_s);
-  EXPECT_THAT(ir_graph_or_s.status(),
-              HasCompilerError("Expected 'DataFrame', received 'expression'"));
+  EXPECT_THAT(ir_graph_or_s.status(), HasCompilerError("Expected 'DataFrame', received 'Int'"));
 }
 
 constexpr char kFuncDefWithVarKwargs[] = R"query(

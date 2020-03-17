@@ -18,12 +18,19 @@ namespace compiler {
 class ExprObject : public QLObject {
  public:
   static constexpr TypeDescriptor ExprType = {
-      /* name */ "expression",
+      /* name */ "Expression",
       /* type */ QLObjectType::kExpr,
   };
 
   static StatusOr<std::shared_ptr<ExprObject>> Create(ExpressionIR* expr, ASTVisitor* visitor) {
     return std::shared_ptr<ExprObject>(new ExprObject(expr, visitor));
+  }
+
+  std::string name() const override {
+    if (node()->type() != IRNodeType::kFunc) {
+      return node()->type_string();
+    }
+    return "FuncCall";
   }
 
  protected:
