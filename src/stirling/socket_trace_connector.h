@@ -104,7 +104,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
    * @param connid The connection to get.
    * @return Pointer to the ConnectionTracker, or nullptr if it does not exist.
    */
-  const ConnectionTracker* GetConnectionTracker(struct conn_id_t connid) const;
+  const ConnectionTracker* GetConnectionTracker(struct conn_id_t conn_id) const;
 
  private:
   // ReadPerfBuffers poll callback functions (must be static).
