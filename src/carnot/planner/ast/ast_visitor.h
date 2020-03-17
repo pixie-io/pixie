@@ -70,7 +70,19 @@ class ASTVisitor {
    */
   virtual StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(const pypa::AstModulePtr& m) = 0;
 
-  virtual StatusOr<pl::shared::scriptspb::VizFuncsInfo> GetVizFuncsInfo() = 0;
+  /**
+   * @brief Get the Viz Funcs Info spec from functions decorated with the viz decorator.
+   *
+   * @return StatusOr<pl::shared::scriptspb::VizFuncsInfo> the
+   */
+  virtual StatusOr<pl::shared::scriptspb::VizFuncsInfo> GetVizFuncsInfo() const = 0;
+
+  /**
+   * @brief Get the Main Func Args Spec.
+   *
+   * @return StatusOr<shared::scriptspb::FuncArgsSpec> spec or error.
+   */
+  virtual StatusOr<shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec() const = 0;
 };
 
 }  // namespace compiler

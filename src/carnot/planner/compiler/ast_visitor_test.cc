@@ -1747,6 +1747,43 @@ TEST_F(ASTVisitorTest, get_viz_funcs_info) {
   }
 }
 
+constexpr char kMainFuncArgsSpec[] = R"pxl(
+import px
+@px.viz.vega("")
+def http_events(svc: px.Service, start_time: px.Time):
+    df = pd.DataFrame('http_events', start_time=start_time)
+    df.svc = df.ctx['svc']
+    df = df[df.svc == svc]
+    return df[['svc', 'http_resp_latency_ns']]
+
+def main(svc: px.Service, start_time: px.Time):
+    df = http_events(svc, start_time)
+    px.display(df, 'http_events')
+# main('pl/vizier-query-broker', px.now())
+)pxl";
+
+TEST_F(ASTVisitorTest, get_main_func_arg_spec_info) {
+  auto main_func_args_or_s = GetMainFuncArgsSpec(kMainFuncArgsSpec);
+  ASSERT_OK(main_func_args_or_s);
+  auto main_func_args = main_func_args_or_s.ConsumeValueOrDie();
+  ASSERT_EQ(main_func_args.args().size(), 2);
+
+  // First arg is service arg.
+  auto svc_arg = main_func_args.args().Get(0);
+  // Second arg is start time.
+  auto start_time_arg = main_func_args.args().Get(1);
+
+  EXPECT_EQ(svc_arg.name(), "svc");
+  EXPECT_EQ(svc_arg.data_type(), types::STRING);
+  EXPECT_EQ(svc_arg.semantic_type(), types::SemanticType::ST_SERVICE_NAME);
+  // EXPECT_FALSE(svc_arg.has_default_value());
+
+  EXPECT_EQ(start_time_arg.name(), "start_time");
+  EXPECT_EQ(start_time_arg.data_type(), types::TIME64NS);
+  EXPECT_EQ(start_time_arg.semantic_type(), types::SemanticType::ST_NONE);
+  // EXPECT_FALSE(start_time_arg.has_default_value());
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

@@ -109,6 +109,20 @@ Status ASTVisitorImpl::ProcessModuleNode(const pypa::AstModulePtr& m) {
   return ProcessASTSuite(m->body, /*is_function_definition_body*/ false).status();
 }
 
+StatusOr<shared::scriptspb::FuncArgsSpec> ASTVisitorImpl::GetMainFuncArgsSpec() const {
+  QLObjectPtr mainfn = var_table_->Lookup(kMainFuncId);
+  if (mainfn == nullptr) {
+    return error::InvalidArgument("Could not find '$0' fn", kMainFuncId);
+  }
+
+  if (mainfn->type() != QLObjectType::kFunction) {
+    return error::InvalidArgument("'$0' is not a function", kMainFuncId);
+  }
+
+  auto func_object = std::static_pointer_cast<FuncObject>(mainfn);
+  return func_object->CreateFuncArgsSpec();
+}
+
 StatusOr<plannerpb::QueryFlagsSpec> ASTVisitorImpl::GetAvailableFlags(const pypa::AstModulePtr& m) {
   PL_RETURN_IF_ERROR(ProcessModuleNode(m));
   if (flags_ == nullptr) {
@@ -507,12 +521,12 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
   PL_RETURN_IF_ERROR(defined_func->AddDocString(doc_string));
 
   // TODO(PL-1603): once we have semantic types we can do this for all functions.
-  if (defined_func->HasVizSpec()) {
+  if (defined_func->HasVizSpec() || function_name == kMainFuncId) {
     PL_RETURN_IF_ERROR(
         defined_func->ResolveArgAnnotationsToConcreteTypes(node, arg_annotations_objs));
+
     PL_RETURN_IF_ERROR(defined_func->CheckAllArgsHaveTypes(node));
   }
-
   var_table_->Add(function_name, defined_func);
   return Status::OK();
 }
@@ -811,7 +825,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessFuncDefDocString(const pypa::AstSui
   return ProcessDocString(PYPA_PTR_CAST(DocString, items_list[0]));
 }
 
-StatusOr<VizFuncsInfo> ASTVisitorImpl::GetVizFuncsInfo() {
+StatusOr<VizFuncsInfo> ASTVisitorImpl::GetVizFuncsInfo() const {
   VizFuncsInfo info;
   auto doc_string_map = info.mutable_doc_string_map();
   auto viz_spec_map = info.mutable_viz_spec_map();

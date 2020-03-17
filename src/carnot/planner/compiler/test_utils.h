@@ -842,6 +842,18 @@ class ASTVisitorTest : public OperatorTests {
     return ast_walker->GetVizFuncsInfo();
   }
 
+  StatusOr<pl::shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec(const std::string& query) {
+    Parser parser;
+    PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
+    std::shared_ptr<IR> ir = std::make_shared<IR>();
+    PL_ASSIGN_OR_RETURN(auto ast_walker,
+                        compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get(),
+                                                         /*query_flags*/ {}));
+
+    PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+    return ast_walker->GetMainFuncArgsSpec();
+  }
+
   std::shared_ptr<RegistryInfo> registry_info_;
   std::unique_ptr<RelationMap> relation_map_;
   std::unique_ptr<CompilerState> compiler_state_;

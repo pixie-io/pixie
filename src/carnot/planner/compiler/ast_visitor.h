@@ -101,7 +101,8 @@ class ASTVisitorImpl : public ASTVisitor {
                                                         bool import_px) override;
 
   StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(const pypa::AstModulePtr&) override;
-  StatusOr<pl::shared::scriptspb::VizFuncsInfo> GetVizFuncsInfo() override;
+  StatusOr<shared::scriptspb::VizFuncsInfo> GetVizFuncsInfo() const override;
+  StatusOr<shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec() const override;
 
   IR* ir_graph() const { return ir_graph_; }
   std::shared_ptr<VarTable> var_table() const { return var_table_; }
@@ -113,6 +114,8 @@ class ASTVisitorImpl : public ASTVisitor {
   inline static constexpr char kFloatTypeName[] = "float";
   inline static constexpr char kBoolTypeName[] = "bool";
   inline static constexpr char kNoneName[] = "None";
+
+  inline static constexpr char kMainFuncId[] = "main";
 
  private:
   /**
