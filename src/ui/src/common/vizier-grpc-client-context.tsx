@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {debounce} from 'utils/debounce';
 
 import {CloudClient} from './cloud-gql-client';
 import {VizierGRPCClient} from './vizier-grpc-client';
@@ -22,13 +23,8 @@ export const VizierGRPCClientProvider = (props: Props) => {
   const [client, setClient] = React.useState<VizierGRPCClient>(null);
   const [connectionStatus, setConnectionStatus] = React.useState<VizierConnectionStatus>('disconnected');
 
-  const reconnect = () => newVizierClient(cloudClient).then(setClient);
-
-  React.useEffect(() => {
-    if (!client) {
-      reconnect();
-      return;
-    }
+  const newClient = () => newVizierClient(cloudClient).then(setClient);
+  const reconnect = () => {
     client.health().subscribe({
       next: (status) => {
         if (status.getCode() === 0) {
@@ -37,12 +33,20 @@ export const VizierGRPCClientProvider = (props: Props) => {
           setConnectionStatus('unhealthy');
         }
       },
-      complete: reconnect,
+      complete: debounce(reconnect, 2000),
       error: () => {
         setConnectionStatus('disconnected');
-        reconnect();
+        newClient();
       },
     });
+  };
+
+  React.useEffect(() => {
+    if (!client) {
+      newClient();
+      return;
+    }
+    reconnect();
   }, [client]);
 
   return (
