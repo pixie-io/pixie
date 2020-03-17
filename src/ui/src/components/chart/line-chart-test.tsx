@@ -1,167 +1,61 @@
 import {mount} from 'enzyme';
 import * as React from 'react';
 import {LineSeries} from 'react-vis';
+import {DataType, Relation, RowBatchData} from 'types/generated/vizier_pb';
 
-import {GQLDataTable} from '../../../../vizier/services/api/controller/schema/schema';
 import {LineChart, parseData} from './line-chart';
 
 describe('parseData', () => {
   it('returns a list of lines if the table has a time column', () => {
-    const table = {
-      relation: {
-        colNames: [
-          'time_',
-          'http_resp_latency_ms',
-        ],
-        colTypes: [
-          'TIME64NS',
-          'FLOAT64',
-        ],
-        __typename: 'DataTableRelation',
-      },
-      data: `{
-        "relation":{
-          "columns":[
-            {
-              "columnName":"time_",
-              "columnType":"TIME64NS"
-            },
-            {
-              "columnName":"http_resp_latency_ms",
-              "columnType":"FLOAT64"
-            }
-          ]
-        },
-        "rowBatches":[
-          {
-            "cols":[
-              {
-                "time64nsData":{
-                  "data":[
-                    "1579117035911671407",
-                    "1579117039197491529"
-                  ]
-                }
-              },
-              {
-                "float64Data":{
-                  "data":[
-                    3.216794,
-                    600024.201942
-                  ]
-                }
-              }
-            ],
-            "numRows":"2",
-            "eow":true,
-            "eos":true
-          }
-        ],
-        "name":"output"
-      }`,
-      name: 'output',
-      __typename: 'DataTable',
-    } as GQLDataTable;
+    const relationCols = [
+      new Relation.ColumnInfo(),
+      new Relation.ColumnInfo(),
+      new Relation.ColumnInfo(),
+    ];
+    relationCols[0].setColumnName('time');
+    relationCols[0].setColumnType(DataType.TIME64NS);
+    relationCols[1].setColumnName('float64');
+    relationCols[1].setColumnType(DataType.FLOAT64);
+    relationCols[2].setColumnName('int64');
+    relationCols[2].setColumnType(DataType.INT64);
+    const relation = new Relation();
+    relation.setColumnsList(relationCols);
 
-    expect(parseData(table)).toHaveLength(1);
+    const data = [
+      new RowBatchData(),
+    ];
+    const table = {
+      relation,
+      data,
+      name: 'test table',
+      id: 'id1',
+    };
+
+    expect(parseData(table)).toHaveLength(2);
   });
 
   it('returns an empty array of the table does not have a time column', () => {
+    const relationCols = [
+      new Relation.ColumnInfo(),
+      new Relation.ColumnInfo(),
+      new Relation.ColumnInfo(),
+    ];
+    relationCols[1].setColumnName('float64');
+    relationCols[1].setColumnType(DataType.FLOAT64);
+    relationCols[2].setColumnName('int64');
+    relationCols[2].setColumnType(DataType.INT64);
+    const relation = new Relation();
+    relation.setColumnsList(relationCols);
+
+    const data = [
+      new RowBatchData(),
+    ];
     const table = {
-      relation: {
-        colNames: [
-          'table_name',
-          'column_name',
-          'column_type',
-          'column_desc',
-        ],
-        colTypes: [
-          'STRING',
-          'STRING',
-          'STRING',
-          'STRING',
-        ],
-        __typename: 'DataTableRelation',
-      },
-      data: `{
-        "relation":{
-          "columns":[
-            {
-              "columnName":"table_name",
-              "columnType":"STRING"
-            },
-            {
-              "columnName":"column_name",
-              "columnType":"STRING"
-            },
-            {
-              "columnName":"column_type",
-              "columnType":"STRING"
-            },
-            {
-              "columnName":"column_desc",
-              "columnType":"STRING"
-            }
-          ]
-        },
-        "rowBatches":[
-          {
-            "cols":[
-              {
-                "stringData":{
-                  "data":[
-                    "process_stats",
-                    "process_stats",
-                    "process_stats",
-                    "process_stats",
-                    "process_stats"
-                  ]
-                }
-              },
-              {
-                "stringData":{
-                  "data":[
-                    "time_",
-                    "upid",
-                    "major_faults",
-                    "minor_faults",
-                    "cpu_utime_ns"
-                  ]
-                }
-              },
-              {
-                "stringData":{
-                  "data":[
-                    "TIME64NS",
-                    "UINT128",
-                    "INT64",
-                    "INT64",
-                    "INT64"
-                  ]
-                }
-              },
-              {
-                "stringData":{
-                  "data":[
-                    "Timestamp when the data record was collected.",
-                    "An opaque numeric ID that globally identify a running process inside the cluster.",
-                    "Number of major page faults",
-                    "Number of minor page faults",
-                    "Time spent on user space by the process"
-                  ]
-                }
-              }
-            ],
-            "numRows":"5",
-            "eow":true,
-            "eos":true
-          }
-        ],
-        "name":"output"
-      }`,
-      name: 'output',
-      __typename: 'DataTable',
-    } as GQLDataTable;
+      relation,
+      data,
+      name: 'test table',
+      id: 'id1',
+    };
 
     expect(parseData(table)).toHaveLength(0);
   });

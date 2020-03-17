@@ -1,7 +1,6 @@
-import {specifiedDirectives} from 'graphql';
+import {Table} from 'common/vizier-grpc-client';
 import * as React from 'react';
 
-import {GQLDataTable} from '../../../../vizier/services/api/controller/schema/schema';
 import * as LineChart from './line-chart';
 import * as ScatterPlot from './scatter';
 
@@ -52,12 +51,12 @@ interface Chart {
   title?: string;
 }
 
-export function chartsFromSpec(tables: GQLDataTable[], code: string): Chart[] {
+export function chartsFromSpec(tables: Table[], code: string): Chart[] {
   const specs = extractChartSpecFromCode(code);
   return specs.map((spec) => fromSpec(tables, spec));
 }
 
-function fromSpec(tables: GQLDataTable[], spec: ChartSpec): Chart {
+function fromSpec(tables: Table[], spec: ChartSpec): Chart {
   let chart: React.ReactNode = null;
   switch (spec.type) {
     case 'line':
@@ -73,7 +72,7 @@ function fromSpec(tables: GQLDataTable[], spec: ChartSpec): Chart {
   };
 }
 
-function tableFromSpec(tables: GQLDataTable[], spec: BaseChartSpec): GQLDataTable | null {
+function tableFromSpec(tables: Table[], spec: BaseChartSpec): Table | null {
   switch (typeof spec.table) {
     case 'number':
       return tables[spec.table] || null;
@@ -84,7 +83,7 @@ function tableFromSpec(tables: GQLDataTable[], spec: BaseChartSpec): GQLDataTabl
   }
 }
 
-function toLineChart(tables: GQLDataTable[], spec: ChartSpec): React.ReactNode {
+function toLineChart(tables: Table[], spec: ChartSpec): React.ReactNode {
   const table = tableFromSpec(tables, spec);
   if (!table) {
     return null;
@@ -93,7 +92,7 @@ function toLineChart(tables: GQLDataTable[], spec: ChartSpec): React.ReactNode {
   return <LineChart.LineChart lines={lines} />;
 }
 
-function toScatterPlot(tables: GQLDataTable[], spec: ChartSpec): React.ReactNode {
+function toScatterPlot(tables: Table[], spec: ChartSpec): React.ReactNode {
   const scatterTable = tableFromSpec(tables, spec);
   if (!scatterTable) {
     return null;

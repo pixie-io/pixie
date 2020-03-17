@@ -4,7 +4,7 @@ import {
 } from 'types/generated/vizier_pb';
 import {VizierServiceClient} from 'types/generated/VizierServiceClientPb';
 
-interface Table {
+export interface Table {
   relation: Relation;
   data: RowBatchData[];
   name: string;
@@ -12,6 +12,7 @@ interface Table {
 }
 
 export interface VizierQueryResult {
+  queryId?: string;
   tables: Table[];
   status?: Status;
   executionStats?: QueryExecutionStats;
@@ -50,6 +51,10 @@ export class VizierGRPCClient {
       const results: VizierQueryResult = { tables: [] };
 
       call.on('data', (resp) => {
+        if (!results.queryId) {
+          results.queryId = resp.getQueryId();
+        }
+
         if (resp.hasStatus()) {
           results.status = resp.getStatus();
           resolve(results);

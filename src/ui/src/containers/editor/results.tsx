@@ -1,6 +1,6 @@
 import './results.scss';
 
-import {extractData, tablesFromResults} from 'components/chart/data';
+import {VizierQueryResult} from 'common/vizier-grpc-client';
 import * as Graph from 'components/chart/graph';
 import * as LineChart from 'components/chart/line-chart';
 import * as Scatter from 'components/chart/scatter';
@@ -8,16 +8,16 @@ import {chartsFromSpec} from 'components/chart/spec';
 import {Spinner} from 'components/spinner/spinner';
 import {QueryResultErrors, QueryResultTable} from 'containers/vizier/query-result-viewer';
 import {VoyagerTrigger} from 'containers/vizier/voyager';
-import {ExecuteQueryResult} from 'gql-types';
 // @ts-ignore : TS does not like image files.
 import * as gridViewIcon from 'images/icons/grid-view.svg';
 import * as React from 'react';
 import {Button, Modal, Nav, Tab} from 'react-bootstrap';
+import {columnFromProto} from 'utils/result-data-utils';
 
 interface ConsoleResultsProps {
   loading?: boolean;
   error?: string;
-  data?: ExecuteQueryResult;
+  data?: VizierQueryResult;
   code?: string;
 }
 
@@ -37,15 +37,14 @@ export const ConsoleResults = React.memo<ConsoleResultsProps>(
     }
 
     const tabs = React.useMemo<ResultsTab[]>(() => {
-      if (!data || !data.ExecuteQuery) {
+      if (!data) {
         return [];
       }
-      if (data.ExecuteQuery.error.compilerError) {
-        return [{ title: 'Errors', content: <QueryResultErrors errors={data.ExecuteQuery.error} /> }];
+      if (data.status) {
+        return [{ title: 'Errors', content: <QueryResultErrors errors={{ errors: null }} /> }];
       }
 
-      const tables = tablesFromResults(data.ExecuteQuery);
-
+      const tables = data.tables || [];
       const charts = chartsFromSpec(tables, code);
       if (charts.length > 0) {
         return charts.map((chart) => ({
@@ -79,11 +78,11 @@ export const ConsoleResults = React.memo<ConsoleResultsProps>(
       const graphs = [];
       for (const table of tables) {
         if (table.name === '__query_plan__') {
-          const parsedTable = JSON.parse(table.data);
-          if (parsedTable.rowBatches.length < 1) {
+          const rowBatches = table.data;
+          if (rowBatches.length < 1) {
             continue;
           }
-          const dotSpec = extractData(table.relation.colTypes[0], parsedTable.rowBatches[0].cols[0])[0];
+          const dotSpec = columnFromProto(rowBatches[0].getColsList()[0])[0];
           graphs.push({
             title: 'Query Plan',
             content: <Graph.Graph dot={dotSpec} />,
@@ -125,7 +124,7 @@ export const ConsoleResults = React.memo<ConsoleResultsProps>(
               >
                 <img src={gridViewIcon} />
               </Button>
-              <VoyagerTrigger data={data} />
+              <VoyagerTrigger data={data.tables} />
             </Nav>
             <Tab.Content>
               {tabs.map((tab, i) => (

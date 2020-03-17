@@ -1,21 +1,15 @@
 import './query-result-viewer.scss';
 
+import {Table} from 'common/vizier-grpc-client';
 import {
     AutoSizedScrollableTable, AutoSizedScrollableTableProps, TableColumnInfo,
 } from 'components/table/scrollable-table';
 import * as numeral from 'numeral';
 import * as React from 'react';
+import {Column, DataType, Relation} from 'types/generated/vizier_pb';
 import * as FormatData from 'utils/format-data';
 import {ParseCompilerErrors} from 'utils/parse-compiler-errors';
-
-// TODO(zasgar/michelle): Figure out how to import schema properly
-import {
-    GQLCompilerErrors, GQLDataColTypes, GQLDataTable, GQLDataTableRelation, GQLQuery,
-    GQLQueryErrors, GQLQueryResult,
-} from '../../../../vizier/services/api/controller/schema/schema';
-
-// TODO(zasgar/michelle): remove when we upgrade to TS 3.2.
-declare function BigInt(string): any;
+import {dataFromProto} from 'utils/result-data-utils';
 
 // Converts UInt128 to UUID formatted string.
 function formatUInt128(high: string, low: string): string {
@@ -46,6 +40,28 @@ function formatInt64Data(val: string): string {
   return numeral(val).format('0,0');
 }
 
+// Function to get the enum name of the column, this is a temporary solution to make
+// the results view compatible with the new proto format.
+function getColumnTypeName(type: DataType): string {
+  switch (type) {
+    case DataType.STRING:
+      return 'STRING';
+    case DataType.TIME64NS:
+      return 'TIME64NS';
+    case DataType.BOOLEAN:
+      return 'BOOLEAN';
+    case DataType.DURATION64NS:
+      return 'DURATION64NS';
+    case DataType.FLOAT64:
+      return 'FLOAT64';
+    case DataType.INT64:
+      return 'INT64';
+    case DataType.UINT128:
+      return 'UINT128';
+    default:
+      return 'UNKNOWN';
+  }
+}
 
 function extractData(colType: string, col: any, rowIdx): string {
   // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
@@ -73,42 +89,20 @@ function extractData(colType: string, col: any, rowIdx): string {
   }
 }
 
-// This function translates the incoming table into a array of object,
-// where each key of the object is the column name according to the relation.
-function parseDataTable(relation: GQLDataTableRelation, tableData): any {
-  if (!tableData || !Array.isArray(tableData.rowBatches)) {
-    // No row batches available.
-    return [];
-  }
-
-  // The data is stored in columnar format, this converts it to rows.
-  const outputData = [];
-  tableData.rowBatches.forEach((rowBatch) => {
-    const numRows = rowBatch.numRows;
-    for (let rowIdx = 0; rowIdx < numRows; rowIdx++) {
-      const row = {};
-      for (let colIdx = 0; colIdx < rowBatch.cols.length; colIdx++) {
-        const colName = relation.colNames[colIdx];
-        row[colName] = extractData(relation.colTypes[colIdx], rowBatch.cols[colIdx], rowIdx);
-      }
-      outputData.push(row);
-    }
-  });
-  return outputData;
-}
-
-function computeColumnWidthRatios(relation: GQLDataTableRelation, parsedTable: any): any {
+function computeColumnWidthRatios(relation: Relation, parsedTable: any): any {
   // Compute the average data width of a column (by name).
   const aveColWidth = {};
   let totalWidth = 0;
-  relation.colNames.forEach((colName) => {
+  relation.getColumnsList().forEach((col) => {
+    const colName = col.getColumnName();
     aveColWidth[colName] = parsedTable.reduce((acc, val) => (
       acc + (val[colName].length / parsedTable.length)), 0);
     totalWidth += aveColWidth[colName];
   });
 
   const colWidthRatio = {};
-  relation.colNames.forEach((colName) => {
+  relation.getColumnsList().forEach((col) => {
+    const colName = col.getColumnName();
     colWidthRatio[colName] = aveColWidth[colName] / totalWidth;
   });
 
@@ -144,7 +138,7 @@ function ExpandedRowRenderer(rowData) {
   />;
 }
 
-export const QueryResultErrors: React.FC<{ errors: GQLQueryErrors }> = ({ errors }) => {
+export const QueryResultErrors: React.FC<{ errors: any }> = ({ errors }) => {
   const parsedErrors = ParseCompilerErrors(errors.compilerError);
   const colInfo: TableColumnInfo[] = [
     {
@@ -181,22 +175,20 @@ export const QueryResultErrors: React.FC<{ errors: GQLQueryErrors }> = ({ errors
     </div>);
 };
 
-function parseTable(table: GQLDataTable): AutoSizedScrollableTableProps {
-  // TODO(malthus): Figure out how to handle multiple tables. Render only the first table for now.
-  const relation = table.relation;
-  const tableData = JSON.parse(table.data);
-  const parsedTable = parseDataTable(relation, tableData);
-  const colWidthRatio = computeColumnWidthRatios(relation, parsedTable);
+function parseTable(table: Table): AutoSizedScrollableTableProps {
+  const parsedTable = dataFromProto(table.relation, table.data);
+  const colWidthRatio = computeColumnWidthRatios(table.relation, parsedTable);
 
   // TODO(zasgar/michelle): Clean this up and make sure it's consistent with the
   // CSS.
   const colWidth = 600;
   const minColWidth = 200;
-  const columnInfo: TableColumnInfo[] = relation.colNames.map((colName, idx) => {
+  const columnInfo: TableColumnInfo[] = table.relation.getColumnsList().map((col, idx) => {
+    const colName = col.getColumnName();
     return {
       dataKey: colName,
       label: colName,
-      type: relation.colTypes[idx],
+      type: getColumnTypeName(col.getColumnType()),
       flexGrow: 8,
       width: Math.max(minColWidth, colWidthRatio[colName] * colWidth),
     };
@@ -212,11 +204,11 @@ function parseTable(table: GQLDataTable): AutoSizedScrollableTableProps {
 }
 
 export interface QueryResultTableProps {
-  data: GQLDataTable;
+  data: Table;
 }
 
 export const QueryResultTable = React.memo<QueryResultTableProps>(({ data }) => {
-  const tableData = React.useMemo(() => parseTable(data), [data]);
+  const tableData = parseTable(data);
   return (
     <div className='query-results'>
       <AutoSizedScrollableTable

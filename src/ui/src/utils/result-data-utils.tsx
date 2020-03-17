@@ -1,7 +1,7 @@
+import {extractData} from 'components/chart/data';
 import * as _ from 'lodash';
 import {Column, Relation, RowBatchData} from 'types/generated/vizier_pb';
 
-import {extractData} from '../components/chart/data';
 import {formatUInt128} from './format-data';
 import {nanoToMilliSeconds} from './time';
 
@@ -63,7 +63,7 @@ export function ResultsToJSON(results) {
   return resValues;
 }
 
-function columnFromProto(column: Column): Array<{}> {
+export function columnFromProto(column: Column): any[] {
   if (column.hasBooleanData()) {
     return column.getBooleanData().getDataList();
   } else if (column.hasInt64Data()) {

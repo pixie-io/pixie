@@ -1,9 +1,10 @@
+import {Table} from 'common/vizier-grpc-client';
 import * as React from 'react';
 import {DiscreteColorLegend, LineSeries, XAxis, XYPlot} from 'react-vis';
+import {DataType} from 'types/generated/vizier_pb';
+import {columnFromProto} from 'utils/result-data-utils';
 
-import {GQLDataTable} from '../../../../vizier/services/api/controller/schema/schema';
 import {LineSeriesLegends, paletteColorByIndex, TimeValueAxis, withAutoSizer} from './chart';
-import {extractData} from './data';
 
 interface Point {
   x: number | Date;
@@ -15,19 +16,20 @@ interface LineSeries {
   data: Point[];
 }
 
-const SUPPORTED_TYPES = new Set(['INT64', 'FLOAT64', 'TIME64NS']);
+const SUPPORTED_TYPES = new Set<DataType>([DataType.INT64, DataType.FLOAT64, DataType.TIME64NS]);
 
-export function parseData(table: GQLDataTable): LineSeries[] {
+export function parseData(table: Table): LineSeries[] {
   try {
     let timeColName = '';
-    const relation = table.relation;
+    const relation = table.relation.getColumnsList();
     const columns = new Map<string, any[]>();
-    relation.colNames.forEach((name, i) => {
-      const type = relation.colTypes[i];
+    relation.forEach((col, i) => {
+      const type = col.getColumnType();
+      const name = col.getColumnName();
       if (!SUPPORTED_TYPES.has(type)) {
         return;
       }
-      if (type === 'TIME64NS') {
+      if (type === DataType.TIME64NS) {
         timeColName = name;
       }
       columns.set(name, []);
@@ -35,15 +37,15 @@ export function parseData(table: GQLDataTable): LineSeries[] {
     if (!timeColName) {
       return [];
     }
-    const { rowBatches } = JSON.parse(table.data);
+    const rowBatches = table.data;
     for (const batch of rowBatches) {
-      batch.cols.forEach((col, i) => {
-        const name = relation.colNames[i];
+      const cols = batch.getColsList();
+      cols.forEach((col, i) => {
+        const name = relation[i].getColumnName();
         if (!columns.has(name)) {
           return;
         }
-        const type = relation.colTypes[i];
-        columns.get(name).push(...extractData(type, col));
+        columns.get(name).push(...columnFromProto(col));
       });
     }
     const timestamps = columns.get(timeColName);

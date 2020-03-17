@@ -1,165 +1,107 @@
 import {mount} from 'enzyme';
 import * as React from 'react';
 import {LineSeries, MarkSeries} from 'react-vis';
+import {
+    Column, DataType, Float64Column, Relation, RowBatchData, Time64NSColumn,
+} from 'types/generated/vizier_pb';
 
-import {GQLDataTable} from '../../../../vizier/services/api/controller/schema/schema';
 import {parseData, ScatterPlot} from './scatter';
 
 describe('parseData', () => {
   it('returns scatter plot data if the tables conforms to it', () => {
-    const tables = [{
-      relation: {
-        colNames: [
-          'time_',
-          'http_resp_latency_ms',
-        ],
-        colTypes: [
-          'TIME64NS',
-          'FLOAT64',
-        ],
-      },
-      data: `{
-        "relation":{
-          "columns":[
-            {
-              "columnName":"time_",
-              "columnType":"TIME64NS"
-            },
-            {
-              "columnName":"http_resp_latency_ms",
-              "columnType":"FLOAT64"
-            }
-          ]
-        },
-        "rowBatches":[
-          {
-            "cols":[
-              {
-                "time64nsData":{
-                  "data":[
-                    "1579117035911671407",
-                    "1579117039197491529"
-                  ]
-                }
-              },
-              {
-                "float64Data":{
-                  "data":[
-                    3.216794,
-                    600024.201942
-                  ]
-                }
-              }
-            ],
-            "numRows":"2",
-            "eow":true,
-            "eos":true
-          }
-        ],
-        "name":"output"
-      }`,
-      name: 'output',
-    }] as GQLDataTable[];
+    const relationCols = [
+      new Relation.ColumnInfo(),
+      new Relation.ColumnInfo(),
+    ];
+    relationCols[0].setColumnName('time');
+    relationCols[0].setColumnType(DataType.TIME64NS);
+    relationCols[1].setColumnName('float64');
+    relationCols[1].setColumnType(DataType.FLOAT64);
+    const relation = new Relation();
+    relation.setColumnsList(relationCols);
+    const rowBatch = new RowBatchData();
+    const timeColumn = new Column();
+    const timeData = new Time64NSColumn();
+    timeData.setDataList([123456767]);
+    timeColumn.setTime64nsData(timeData);
+    const floatColumn = new Column();
+    const floatData = new Float64Column();
+    floatData.setDataList([123.456]);
+    floatColumn.setFloat64Data(floatData);
+    rowBatch.setColsList([timeColumn, floatColumn]);
 
-    expect(parseData(tables)).not.toBeNull();
+    const data = [rowBatch];
+    const table1 = {
+      relation,
+      data,
+      name: 'table1',
+      id: 'id1',
+    };
+
+    const relationCols2 = [
+      new Relation.ColumnInfo(),
+      new Relation.ColumnInfo(),
+    ];
+    relationCols2[0].setColumnName('time');
+    relationCols2[0].setColumnType(DataType.TIME64NS);
+    relationCols2[1].setColumnName('float64');
+    relationCols2[1].setColumnType(DataType.FLOAT64);
+    const relation2 = new Relation();
+    relation.setColumnsList(relationCols2);
+
+    const data2 = [rowBatch];
+    const table2 = {
+      relation: relation2,
+      data: data2,
+      name: 'table2',
+      id: 'id2',
+    };
+    expect(parseData([table1, table2])).not.toBeNull();
   });
 
   it('returns null if no scatter plot data', () => {
-    const tables = [{
-      relation: {
-        colNames: [
-          'table_name',
-          'column_name',
-          'column_type',
-          'column_desc',
-        ],
-        colTypes: [
-          'STRING',
-          'STRING',
-          'STRING',
-          'STRING',
-        ],
-      },
-      data: `{
-        "relation":{
-          "columns":[
-            {
-              "columnName":"table_name",
-              "columnType":"STRING"
-            },
-            {
-              "columnName":"column_name",
-              "columnType":"STRING"
-            },
-            {
-              "columnName":"column_type",
-              "columnType":"STRING"
-            },
-            {
-              "columnName":"column_desc",
-              "columnType":"STRING"
-            }
-          ]
-        },
-        "rowBatches":[
-          {
-            "cols":[
-              {
-                "stringData":{
-                  "data":[
-                    "process_stats",
-                    "process_stats",
-                    "process_stats",
-                    "process_stats",
-                    "process_stats"
-                  ]
-                }
-              },
-              {
-                "stringData":{
-                  "data":[
-                    "time_",
-                    "upid",
-                    "major_faults",
-                    "minor_faults",
-                    "cpu_utime_ns"
-                  ]
-                }
-              },
-              {
-                "stringData":{
-                  "data":[
-                    "TIME64NS",
-                    "UINT128",
-                    "INT64",
-                    "INT64",
-                    "INT64"
-                  ]
-                }
-              },
-              {
-                "stringData":{
-                  "data":[
-                    "Timestamp when the data record was collected.",
-                    "An opaque numeric ID that globally identify a running process inside the cluster.",
-                    "Number of major page faults",
-                    "Number of minor page faults",
-                    "Time spent on user space by the process"
-                  ]
-                }
-              }
-            ],
-            "numRows":"5",
-            "eow":true,
-            "eos":true
-          }
-        ],
-        "name":"output"
-      }`,
-      name: 'output',
-    }] as GQLDataTable[];
+    const relationCols = [
+      new Relation.ColumnInfo(),
+      new Relation.ColumnInfo(),
+    ];
+    relationCols[0].setColumnName('time');
+    relationCols[0].setColumnType(DataType.TIME64NS);
+    relationCols[1].setColumnName('float64');
+    relationCols[1].setColumnType(DataType.FLOAT64);
+    const relation = new Relation();
+    relation.setColumnsList(relationCols);
 
-    expect(parseData(tables)).toBeNull();
+    const data = [
+      new RowBatchData(),
+    ];
+    const table1 = {
+      relation,
+      data,
+      name: 'table1',
+      id: 'id1',
+    };
+
+    const relationCols2 = [
+      new Relation.ColumnInfo(),
+      new Relation.ColumnInfo(),
+    ];
+    relationCols2[0].setColumnName('time');
+    relationCols2[0].setColumnType(DataType.TIME64NS);
+    relationCols2[1].setColumnName('float64');
+    relationCols2[1].setColumnType(DataType.FLOAT64);
+    const relation2 = new Relation();
+    relation.setColumnsList(relationCols2);
+
+    const data2 = [
+      new RowBatchData(),
+    ];
+    const table2 = {
+      relation: relation2,
+      data: data2,
+      name: 'table2',
+      id: 'id2',
+    };
+    expect(parseData([table1, table2])).toBeNull();
   });
 });
 

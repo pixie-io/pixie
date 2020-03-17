@@ -1,17 +1,17 @@
 import 'datavoyager/build/style.css';
 import './vizier.scss';
 
-import {tablesFromResults} from 'components/chart/data';
-import {ExecuteQueryResult} from 'gql-types';
+import {Table} from 'common/vizier-grpc-client';
 import * as React from 'react';
 import {Button, Dropdown, DropdownButton} from 'react-bootstrap';
+import {dataFromProto} from 'utils/result-data-utils';
 
 import Modal from '@material-ui/core/Modal';
 
 import {ResultsToJSON} from '../../utils/result-data-utils';
 
 interface VoyagerProps {
-  data: string;
+  data: any[];
 }
 
 export function voyagerEnabled(): boolean {
@@ -35,14 +35,14 @@ export class Voyager extends React.PureComponent<VoyagerProps> {
     this.createVoyagerInstance = import(/* webpackChunkName: "datavoyager" */ 'datavoyager').then((module) => {
       this.voyagerInstance = module.CreateVoyager(this.el.current, {
         hideHeader: true,
-      }, parseData(this.props.data));
+      }, { values: this.props.data });
     });
   }
 
   componentDidUpdate = (prevProps) => {
     this.createVoyagerInstance.then(() => {
       if (prevProps.data !== this.props.data) {
-        this.voyagerInstance.updateData(parseData(this.props.data));
+        this.voyagerInstance.updateData({ values: this.props.data });
       }
     });
   }
@@ -53,23 +53,22 @@ export class Voyager extends React.PureComponent<VoyagerProps> {
 }
 
 interface VoyagerTriggerProps {
-  data?: ExecuteQueryResult;
+  data?: Table[];
 }
 
 export const VoyagerTrigger = React.memo<VoyagerTriggerProps>(({ data }) => {
   if (!voyagerEnabled() || !data) {
     return null;
   }
-  const tables = tablesFromResults(data.ExecuteQuery);
-  if (tables.length < 1) {
+  if (data.length < 1) {
     return null;
   }
 
-  const [voyagerData, setVoyagerData] = React.useState('');
+  const [voyagerData, setVoyagerData] = React.useState([]);
   const [voyagerOpened, setVoyagerOpened] = React.useState(false);
   const openVoyager = (table) => {
     return () => {
-      setVoyagerData(table.data);
+      setVoyagerData(dataFromProto(table.relation, table.data));
       setVoyagerOpened(true);
     };
   };
@@ -78,11 +77,11 @@ export const VoyagerTrigger = React.memo<VoyagerTriggerProps>(({ data }) => {
   return (
     <>
       {
-        tables.length === 1 ?
-          <Button onClick={openVoyager(tables[0])}>Voyager</Button> :
+        data.length === 1 ?
+          <Button onClick={openVoyager(data[0])}>Voyager</Button> :
           <DropdownButton title='voyager' id='voyager'>
             {
-              tablesFromResults(data.ExecuteQuery).map((table, i) => (
+              data.map((table, i) => (
                 <Dropdown.Item
                   onClick={openVoyager(table)}
                   key={`table-${table.name}-${i}`}

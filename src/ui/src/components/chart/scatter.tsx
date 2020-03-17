@@ -1,13 +1,12 @@
+import {Table} from 'common/vizier-grpc-client';
 import * as React from 'react';
 import {Highlight, Hint, LineSeries, MarkSeries, XYPlot} from 'react-vis';
+import {DataType} from 'types/generated/vizier_pb';
+import {columnFromProto} from 'utils/result-data-utils';
 
-import {
-    GQLDataTable, GQLQueryResult,
-} from '../../../../vizier/services/api/controller/schema/schema';
 import {
     LineSeriesData, LineSeriesLegends, paletteColorByIndex, TimeValueAxis, withAutoSizer,
 } from './chart';
-import {extractData} from './data';
 import {parseData as parseLineData} from './line-chart';
 
 interface Point {
@@ -21,7 +20,7 @@ interface ScatterPlotData {
   lines?: LineSeriesData[];
 }
 
-export function parseData(tables: GQLDataTable[]): ScatterPlotData | null {
+export function parseData(tables: Table[]): ScatterPlotData | null {
   try {
     let lines = [];
     if (tables.length < 1) {
@@ -40,27 +39,25 @@ export function parseData(tables: GQLDataTable[]): ScatterPlotData | null {
   }
 }
 
-function getScatterPoints(table: GQLDataTable): Point[] {
+function getScatterPoints(table: Table): Point[] {
   const relation = table.relation;
-  if (relation.colNames.length < 2) {
+  if (relation.getColumnsList().length < 2) {
     // There should be at least 2 columns.
     return [];
   }
-  if (relation.colTypes[0] !== 'TIME64NS' ||
-    (relation.colTypes[1] !== 'INT64' && relation.colTypes[1] !== 'FLOAT64')) {
+  if (relation.getColumnsList()[0].getColumnType() !== DataType.TIME64NS ||
+    (relation.getColumnsList()[1].getColumnType() !== DataType.INT64 &&
+      relation.getColumnsList()[1].getColumnType() !== DataType.FLOAT64)) {
     return [];
   }
-  const { rowBatches } = JSON.parse(table.data);
+  const rowBatches = table.data;
   const out: Point[] = [];
   for (const batch of rowBatches) {
-    const cols = batch.cols.map((col, i) => {
-      const type = relation.colTypes[i];
-      return extractData(type, col);
-    });
+    const cols = batch.getColsList().map(columnFromProto);
     for (let r = 0; r < cols[0].length; r++) {
       const row = { x: cols[0][r], y: cols[1][r] };
       for (let c = 2; c < cols.length; c++) {
-        const name = relation.colNames[c];
+        const name = relation.getColumnsList()[c].getColumnName();
         row[name] = cols[c][r];
       }
       out.push(row);

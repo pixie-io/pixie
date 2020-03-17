@@ -1,9 +1,9 @@
 import './tab.scss';
 
 import {APPEND_HISTORY} from 'common/local-gql';
-import {VizierGQLClient, VizierGQLClientContext} from 'common/vizier-gql-client';
+import {VizierQueryResult} from 'common/vizier-grpc-client';
+import VizierGRPCClientContext from 'common/vizier-grpc-client-context';
 import {CodeEditor} from 'components/code-editor';
-import {EXECUTE_QUERY, ExecuteQueryResult} from 'gql-types';
 import * as React from 'react';
 import {Button, Nav, Tab} from 'react-bootstrap';
 import Split from 'react-split';
@@ -21,44 +21,32 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
   const initialCode = getCodeFromStorage(props.id) || DEFAULT_CODE;
   const [code, setCode] = React.useState<string>(initialCode);
   const [error, setError] = React.useState('');
-  const vizierClient = React.useContext(VizierGQLClientContext);
-
-  const [runQuery, { data, loading }] = useMutation<ExecuteQueryResult>(EXECUTE_QUERY, {
-    client: vizierClient.gqlClient,
-    onError: (e) => {
-      setError('Request failed! Please try again later.');
-    },
-    onCompleted: () => {
-      setError('');
-    },
-  });
+  const [data, setData] = React.useState<VizierQueryResult>(null);
+  const [loading, setLoading] = React.useState(false);
+  const client = React.useContext(VizierGRPCClientContext);
 
   const [saveHistory] = useMutation(APPEND_HISTORY);
 
   const executeQuery = React.useCallback(() => {
+    if (!client) {
+      return;
+    }
     const time = new Date();
-    runQuery({
-      variables: {
-        queryStr: code,
-      },
-    }).then((results) => {
-      let err = '';
-      if (!results) {
-        err = 'unknown error';
-      } else if (results.errors) {
-        err = results.errors.join(', ');
-      } else if (
-        // TODO(malthus): Remove this once we switch to eslint.
-        // tslint:disable-next-line:whitespace
-        results.data?.ExecuteQuery?.error?.compilerError) {
-        err = 'compiler error';
-      }
+    let queryId;
+    let err;
+    setLoading(true);
+    client.executeScript(code).then((results) => {
+      queryId = results.queryId;
+      setData(results);
+    }).catch((errMsg) => {
+      err = errMsg;
+      setError(errMsg);
+    }).finally(() => {
+      setLoading(false);
       analytics.track('Query Execution', {
-        status: !err ? 'success' : 'failed',
+        status: err ? 'success' : 'failed',
         query: code,
-        // TODO(malthus): Remove this once we switch to eslint.
-        // tslint:disable-next-line:whitespace
-        queryID: results?.data?.ExecuteQuery?.id,
+        queryID: queryId,
         error: err,
       });
       saveHistory({
@@ -67,12 +55,12 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
             time,
             code,
             title: props.title,
-            status: !err ? 'SUCCESS' : 'FAILED',
+            status: err ? 'success' : 'failed',
           },
         },
       });
     });
-  }, [code]);
+  }, [client, code]);
 
   React.useEffect(() => {
     saveCodeToStorage(props.id, code);
@@ -90,7 +78,7 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
         <Button
           size='sm'
           variant='secondary'
-          disabled={loading}
+          disabled={loading || !client}
           onClick={executeQuery}>
           Execute
         </Button>
