@@ -14,7 +14,7 @@
 #include <pypa/ast/tree_walker.hh>
 
 #include "src/carnot/planner/ir/ir_nodes.h"
-#include "src/carnot/planner/plannerpb/query_flags.pb.h"
+#include "src/carnot/planner/plannerpb/func_args.pb.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
 namespace pl {

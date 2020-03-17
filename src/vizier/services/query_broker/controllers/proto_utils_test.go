@@ -23,20 +23,38 @@ data_type: BOOLEAN
 bool_value: false
 `
 
+var queryReqPb = `
+query_str: "abcd this is a test"
+arg_values {
+	name: "arg1"
+	value {
+		data_type: BOOLEAN
+		bool_value: false
+	}
+}
+arg_values {
+	name: "intarg"
+	value {
+		data_type: INT64
+		int64_value: 1234
+	}
+}
+`
+
 var executeScriptReqPb = `
 query_str: "abcd this is a test"
 flag_values {
-	flag_name: "flag1"
+	flag_name: "arg1"
 	flag_value {
 		data_type: BOOLEAN
-		bool_value: false		
+		bool_value: false
 	}
 }
 flag_values {
-	flag_name: "intflag"
+	flag_name: "intarg"
 	flag_value {
 		data_type: INT64
-		int64_value: 1234		
+		int64_value: 1234
 	}
 }
 `
@@ -95,14 +113,14 @@ var rowBatchPb = `
 	num_rows: 10
 	cols {
 		boolean_data {
-			data: true 
+			data: true
 			data: false
 			data: true
 		}
 	}
 	cols {
 		string_data {
-			data: "abcd" 
+			data: "abcd"
 			data: "efgh"
 			data: "ijkl"
 		}
@@ -132,8 +150,8 @@ func TestVizierQueryRequestToPlannerQueryRequest(t *testing.T) {
 	}
 
 	expectedQr := new(plannerpb.QueryRequest)
-	if err := proto.UnmarshalText(executeScriptReqPb, expectedQr); err != nil {
-		t.Fatalf("Cannot unmarshal proto")
+	if err := proto.UnmarshalText(queryReqPb, expectedQr); err != nil {
+		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
 	qr, err := controllers.VizierQueryRequestToPlannerQueryRequest(sv)
@@ -144,7 +162,7 @@ func TestVizierQueryRequestToPlannerQueryRequest(t *testing.T) {
 func TestStatusToVizierStatus(t *testing.T) {
 	sv := new(statuspb.Status)
 	if err := proto.UnmarshalText(unauthenticatedStatusPb, sv); err != nil {
-		t.Fatalf("Cannot unmarshal proto")
+		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
 	s, err := controllers.StatusToVizierStatus(sv)
@@ -196,12 +214,12 @@ func TestCompilerErrorStatusToVizierStatus(t *testing.T) {
 func TestRelationFromTable(t *testing.T) {
 	sv := new(schemapb.Table)
 	if err := proto.UnmarshalText(tablePb, sv); err != nil {
-		t.Fatalf("Cannot unmarshal proto")
+		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
 	expectedQm := new(vizierpb.QueryMetadata)
 	if err := proto.UnmarshalText(tablePb, expectedQm); err != nil {
-		t.Fatalf("Cannot unmarshal proto")
+		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
 	qm, err := controllers.RelationFromTable(sv)
@@ -212,12 +230,12 @@ func TestRelationFromTable(t *testing.T) {
 func TestQueryResultStatsToVizierStats(t *testing.T) {
 	sv := new(queryresultspb.QueryResult)
 	if err := proto.UnmarshalText(timingStatsPb, sv); err != nil {
-		t.Fatalf("Cannot unmarshal proto")
+		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
 	expectedQd := new(vizierpb.QueryData)
 	if err := proto.UnmarshalText(vizierTimingStatsPb, expectedQd); err != nil {
-		t.Fatalf("Cannot unmarshal proto")
+		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
 	qm, err := controllers.QueryResultStatsToVizierStats(sv)
@@ -228,12 +246,12 @@ func TestQueryResultStatsToVizierStats(t *testing.T) {
 func TestUInt128ToVizierUInt128(t *testing.T) {
 	sv := new(typespb.UInt128)
 	if err := proto.UnmarshalText(uint128Pb, sv); err != nil {
-		t.Fatalf("Cannot unmarshal proto")
+		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
 	expectedQd := new(vizierpb.UInt128)
 	if err := proto.UnmarshalText(uint128Pb, expectedQd); err != nil {
-		t.Fatalf("Cannot unmarshal proto")
+		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
 	qm := controllers.UInt128ToVizierUInt128(sv)
@@ -243,12 +261,12 @@ func TestUInt128ToVizierUInt128(t *testing.T) {
 func TestRowBatchToVizierRowBatch(t *testing.T) {
 	sv := new(schemapb.RowBatchData)
 	if err := proto.UnmarshalText(rowBatchPb, sv); err != nil {
-		t.Fatalf("Cannot unmarshal proto")
+		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
 	expectedQd := new(vizierpb.RowBatchData)
 	if err := proto.UnmarshalText(rowBatchPb, expectedQd); err != nil {
-		t.Fatalf("Cannot unmarshal proto")
+		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 
 	qm, err := controllers.RowBatchToVizierRowBatch(sv)

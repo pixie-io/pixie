@@ -6,7 +6,6 @@
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/objects/flags_object.h"
 #include "src/carnot/planner/objects/funcobject.h"
-#include "src/carnot/planner/plannerpb/query_flags.pb.h"
 
 namespace pl {
 namespace carnot {
@@ -30,6 +29,7 @@ class PixieModule : public QLObject {
   // Constants for operators in the query language.
   inline static constexpr char kDataframeOpId[] = "DataFrame";
   inline static constexpr char kDisplayOpId[] = "display";
+  // TODO(philkuz) delete this.
   inline static constexpr char kFlagsOpId[] = "flags";
   inline static constexpr char kNowOpId[] = "now";
   inline static constexpr char kVisAttrId[] = "viz";

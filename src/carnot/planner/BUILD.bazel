@@ -85,7 +85,7 @@ pl_cgo_library(
     deps = [
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
-        "//src/carnot/planner/plannerpb:query_flags_pl_go_proto",
+        "//src/carnot/planner/plannerpb:func_args_pl_go_proto",
         "//src/carnot/udfspb:udfs_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
         "//src/shared/scriptspb:scripts_pl_go_proto",
@@ -102,7 +102,7 @@ go_test(
         ":go_default_library",
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
-        "//src/carnot/planner/plannerpb:query_flags_pl_go_proto",
+        "//src/carnot/planner/plannerpb:func_args_pl_go_proto",
         "//src/carnot/planpb:plan_pl_go_proto",
         "//src/carnot/udfspb:udfs_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",

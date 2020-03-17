@@ -207,7 +207,7 @@ TEST_F(LogicalPlannerTest, AppendSelfTest) {
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());
 }
-constexpr char kFlagValueQuery[] = R"pxl(
+constexpr char kArgValueQuery[] = R"pxl(
 px.flags('foo', type=str, description='a random param', default='default')
 px.flags.parse()
 queryDF = px.DataFrame(table='cpu', select=['cpu0'])
@@ -230,7 +230,7 @@ flags {
 
 TEST_F(LogicalPlannerTest, GetAvailableFlags) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  auto flags_or_s = planner->GetAvailableFlags(MakeQueryRequest(kFlagValueQuery));
+  auto flags_or_s = planner->GetAvailableFlags(MakeQueryRequest(kArgValueQuery));
   ASSERT_OK(flags_or_s);
   auto flags = flags_or_s.ConsumeValueOrDie();
 

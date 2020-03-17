@@ -1273,218 +1273,6 @@ TEST_F(ASTVisitorTest, func_def_doesnt_make_new_globals) {
   ASSERT_EQ(static_cast<StringIR*>(func2_return_obj->node())->str(), "abc");
 }
 
-using FlagsTest = ASTVisitorTest;
-
-constexpr char kFlagValueQuery[] = R"pxl(
-import px
-px.flags('foo', type=str, description='a random param', default='default')
-px.flags.parse()
-queryDF = px.DataFrame(table='cpu', select=['cpu0'])
-queryDF['foo_flag'] = px.flags.foo
-px.display(queryDF, 'map')
-)pxl";
-
-TEST_F(FlagsTest, use_default_value) {
-  auto graph_or_s = CompileGraph(kFlagValueQuery);
-  ASSERT_OK(graph_or_s);
-  auto graph = graph_or_s.ConsumeValueOrDie();
-  std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
-  ASSERT_EQ(map_nodes.size(), 1);
-  MapIR* map = static_cast<MapIR*>(map_nodes[0]);
-  EXPECT_EQ(1, map->col_exprs().size());
-  auto expr = map->col_exprs()[0].node;
-  EXPECT_EQ(IRNodeType::kString, expr->type());
-  EXPECT_EQ("default", static_cast<StringIR*>(expr)->str());
-}
-
-TEST_F(FlagsTest, use_non_default_value) {
-  FlagValue flag;
-  flag.set_flag_name("foo");
-  EXPECT_OK(MakeString("non-default")->ToProto(flag.mutable_flag_value()));
-
-  auto graph_or_s = CompileGraph(kFlagValueQuery, {flag});
-  ASSERT_OK(graph_or_s);
-  auto graph = graph_or_s.ConsumeValueOrDie();
-  std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
-  ASSERT_EQ(map_nodes.size(), 1);
-  MapIR* map = static_cast<MapIR*>(map_nodes[0]);
-  EXPECT_EQ(1, map->col_exprs().size());
-  auto expr = map->col_exprs()[0].node;
-  EXPECT_EQ(IRNodeType::kString, expr->type());
-  EXPECT_EQ("non-default", static_cast<StringIR*>(expr)->str());
-}
-
-constexpr char kAvailableFlags[] = R"(
-flags {
-  data_type: STRING
-  semantic_type: ST_NONE
-  name: "foo"
-  description: "a random param"
-  default_value: {
-    data_type: STRING
-    string_value: "default"
-  }
-}
-)";
-
-TEST_F(FlagsTest, get_available_flags) {
-  auto flags_or_s = GetAvailableFlags(kFlagValueQuery);
-  ASSERT_OK(flags_or_s);
-  auto flags = flags_or_s.ConsumeValueOrDie();
-
-  EXPECT_THAT(flags, testing::proto::EqualsProto(kAvailableFlags));
-}
-
-constexpr char kRenameFlagsQuery[] = R"pxl(
-import px
-px.flags('foo', type=str, description='a random param', default='default')
-pflags = px.flags
-px.flags = 1
-pflags.parse()
-queryDF = px.DataFrame(table='cpu', select=['cpu0'])
-queryDF['foo'] = px.flags
-px.display(queryDF, 'map')
-)pxl";
-
-TEST_F(FlagsTest, reassign_px_flags) {
-  auto graph_or_s = CompileGraph(kRenameFlagsQuery);
-  ASSERT_OK(graph_or_s);
-  auto graph = graph_or_s.ConsumeValueOrDie();
-  std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
-  ASSERT_EQ(map_nodes.size(), 1);
-  MapIR* map = static_cast<MapIR*>(map_nodes[0]);
-  EXPECT_EQ(1, map->col_exprs().size());
-  auto expr = map->col_exprs()[0].node;
-  EXPECT_EQ(IRNodeType::kInt, expr->type());
-  EXPECT_EQ(1, static_cast<IntIR*>(expr)->val());
-}
-
-constexpr char kRenameFlagsAvailable[] = R"(
-flags {
-  data_type: STRING
-  semantic_type: ST_NONE
-  name: "foo"
-  description: "a random param"
-  default_value: {
-    data_type: STRING
-    string_value: "default"
-  }
-}
-)";
-
-TEST_F(FlagsTest, get_available_flags_reassign) {
-  auto flags_or_s = GetAvailableFlags(kRenameFlagsQuery);
-  ASSERT_OK(flags_or_s);
-  auto flags = flags_or_s.ConsumeValueOrDie();
-
-  EXPECT_THAT(flags, testing::proto::EqualsProto(kRenameFlagsAvailable));
-}
-
-constexpr char kRenameFlagsNoPxQuery[] = R"pxl(
-from px import flags, DataFrame, display
-flags('foo', type=str, description='a random param', default='default')
-flags.parse()
-queryDF = DataFrame(table='cpu', select=['cpu0'])
-display(queryDF, 'map')
-)pxl";
-
-TEST_F(ASTVisitorTest, get_available_flags_no_px) {
-  auto flags_or_s = GetAvailableFlags(kRenameFlagsNoPxQuery);
-  ASSERT_OK(flags_or_s);
-  auto flags = flags_or_s.ConsumeValueOrDie();
-
-  EXPECT_THAT(flags, testing::proto::EqualsProto(kRenameFlagsAvailable));
-}
-
-constexpr char kFlagInFuncQuery[] = R"pxl(
-import px
-
-def make_an_int_flag(flag_name, description, defval):
-  px.flags(flag_name, type=int, description=description, default=defval)
-
-make_an_int_flag('abc', 'an int flag', 123)
-px.flags('foo', type=str, description='a random param', default='default')
-make_an_int_flag('xyz', 'another int flag', 456)
-px.flags.parse()
-queryDF = px.DataFrame(table='cpu', select=['cpu0'])
-queryDF.foo = px.flags.foo
-queryDF.abc = px.flags.abc
-queryDF.xyz = px.flags.xyz
-px.display(queryDF, 'map')
-)pxl";
-
-TEST_F(FlagsTest, flags_in_func) {
-  FlagValue flag;
-  flag.set_flag_name("xyz");
-  EXPECT_OK(MakeInt(789)->ToProto(flag.mutable_flag_value()));
-
-  auto graph_or_s = CompileGraph(kFlagInFuncQuery, {flag});
-  ASSERT_OK(graph_or_s);
-  auto graph = graph_or_s.ConsumeValueOrDie();
-  std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
-  ASSERT_EQ(map_nodes.size(), 3);
-
-  MapIR* map = static_cast<MapIR*>(map_nodes[0]);
-  EXPECT_EQ(1, map->col_exprs().size());
-  auto expr = map->col_exprs()[0].node;
-  EXPECT_EQ(IRNodeType::kString, expr->type());
-  EXPECT_EQ("default", static_cast<StringIR*>(expr)->str());
-
-  map = static_cast<MapIR*>(map_nodes[1]);
-  EXPECT_EQ(1, map->col_exprs().size());
-  expr = map->col_exprs()[0].node;
-  EXPECT_EQ(IRNodeType::kInt, expr->type());
-  EXPECT_EQ(123, static_cast<IntIR*>(expr)->val());
-
-  // Override default value
-  map = static_cast<MapIR*>(map_nodes[2]);
-  EXPECT_EQ(1, map->col_exprs().size());
-  expr = map->col_exprs()[0].node;
-  EXPECT_EQ(IRNodeType::kInt, expr->type());
-  EXPECT_EQ(789, static_cast<IntIR*>(expr)->val());
-}
-
-constexpr char kAvailableFlagsFunc[] = R"(
-flags {
-  data_type: INT64
-  semantic_type: ST_NONE
-  name: "abc"
-  description: "an int flag"
-  default_value: {
-    data_type: INT64
-    int64_value: 123
-  }
-}
-flags {
-  data_type: STRING
-  semantic_type: ST_NONE
-  name: "foo"
-  description: "a random param"
-  default_value: {
-    data_type: STRING
-    string_value: "default"
-  }
-}
-flags {
-  data_type: INT64
-  semantic_type: ST_NONE
-  name: "xyz"
-  description: "another int flag"
-  default_value: {
-    data_type: INT64
-    int64_value: 456
-  }
-}
-)";
-
-TEST_F(FlagsTest, get_available_flags_in_func) {
-  auto flags_or_s = GetAvailableFlags(kFlagInFuncQuery);
-  ASSERT_OK(flags_or_s);
-  auto flags = flags_or_s.ConsumeValueOrDie();
-
-  EXPECT_THAT(flags, testing::proto::EqualsProto(kAvailableFlagsFunc));
-}
-
 constexpr char kReassignPixieMethodsQuery[] = R"pxl(
 import px
 pixie = px
@@ -1785,13 +1573,13 @@ TEST_F(ASTVisitorTest, get_main_func_arg_spec_info) {
 }
 
 TEST_F(ASTVisitorTest, pass_arg_values_into_main) {
-  FlagValue flag1;
-  flag1.set_flag_name("svc");
-  EXPECT_OK(MakeString("sock-shop/front-end")->ToProto(flag1.mutable_flag_value()));
+  ArgValue flag1;
+  flag1.set_name("svc");
+  EXPECT_OK(MakeString("sock-shop/front-end")->ToProto(flag1.mutable_value()));
 
-  FlagValue flag2;
-  flag2.set_flag_name("start_time");
-  EXPECT_OK(MakeTime(123)->ToProto(flag2.mutable_flag_value()));
+  ArgValue flag2;
+  flag2.set_name("start_time");
+  EXPECT_OK(MakeTime(123)->ToProto(flag2.mutable_value()));
 
   auto ir_graph_or_s = CompileGraph(kMainFuncArgsSpec, {flag1, flag2});
   ASSERT_OK(ir_graph_or_s);
@@ -1809,9 +1597,9 @@ TEST_F(ASTVisitorTest, pass_arg_values_into_main) {
 }
 
 TEST_F(ASTVisitorTest, wrong_arg_values_into_main) {
-  FlagValue flag1;
-  flag1.set_flag_name("svc");
-  EXPECT_OK(MakeString("sock-shop/front-end")->ToProto(flag1.mutable_flag_value()));
+  ArgValue flag1;
+  flag1.set_name("svc");
+  EXPECT_OK(MakeString("sock-shop/front-end")->ToProto(flag1.mutable_value()));
 
   auto ir_graph_or_s = CompileGraph(kMainFuncArgsSpec, {flag1});
   ASSERT_NOT_OK(ir_graph_or_s);

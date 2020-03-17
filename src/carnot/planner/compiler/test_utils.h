@@ -797,7 +797,7 @@ class ASTVisitorTest : public OperatorTests {
   }
 
   StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query,
-                                             const compiler::FlagValues& flag_values = {}) {
+                                             const compiler::ArgValues& flag_values = {}) {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
@@ -809,7 +809,7 @@ class ASTVisitorTest : public OperatorTests {
   }
 
   StatusOr<std::shared_ptr<compiler::ASTVisitorImpl>> CompileInspectAST(
-      const std::string& query, const compiler::FlagValues& flag_values = {}) {
+      const std::string& query, const compiler::ArgValues& flag_values = {}) {
     Parser parser;
     PL_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();

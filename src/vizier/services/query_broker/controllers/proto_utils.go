@@ -96,20 +96,20 @@ func VizierScalarValueToPlanScalarValue(vpb *vizierpb.ScalarValue) (*planpb.Scal
 
 // VizierQueryRequestToPlannerQueryRequest converts a externally-facing query request to an internal representation.
 func VizierQueryRequestToPlannerQueryRequest(vpb *vizierpb.ExecuteScriptRequest) (*plannerpb.QueryRequest, error) {
-	flags := make([]*plannerpb.QueryRequest_FlagValue, len(vpb.FlagValues))
+	args := make([]*plannerpb.QueryRequest_ArgValue, len(vpb.FlagValues))
 	for i, f := range vpb.FlagValues {
 		cFlag, err := VizierScalarValueToPlanScalarValue(f.FlagValue)
 		if err != nil {
 			return nil, err
 		}
-		flags[i] = &plannerpb.QueryRequest_FlagValue{
-			FlagName:  f.FlagName,
-			FlagValue: cFlag,
+		args[i] = &plannerpb.QueryRequest_ArgValue{
+			Name:  f.FlagName,
+			Value: cFlag,
 		}
 	}
 	return &plannerpb.QueryRequest{
-		QueryStr:   vpb.QueryStr,
-		FlagValues: flags,
+		QueryStr:  vpb.QueryStr,
+		ArgValues: args,
 	}, nil
 }
 

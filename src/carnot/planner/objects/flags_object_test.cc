@@ -22,8 +22,8 @@ class FlagsObjectTest : public QLObjectTest {
   void SetUp() override {
     QLObjectTest::SetUp();
     FlagValue flag;
-    flag.set_flag_name("foo");
-    EXPECT_OK(MakeString("non-default")->ToProto(flag.mutable_flag_value()));
+    flag.set_name("foo");
+    EXPECT_OK(MakeString("non-default")->ToProto(flag.mutable_value()));
     flags_obj_ = FlagsObject::Create(graph.get(), {flag}, ast_visitor.get()).ConsumeValueOrDie();
   }
 

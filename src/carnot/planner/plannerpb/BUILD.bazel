@@ -3,8 +3,8 @@ load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", 
 load("//bazel:pl_build_system.bzl", "pl_cc_test_library")
 
 pl_proto_library(
-    name = "query_flags_pl_proto",
-    srcs = ["query_flags.proto"],
+    name = "func_args_pl_proto",
+    srcs = ["func_args.proto"],
     visibility = ["//visibility:public"],
     deps = [
         "//src/carnot/planpb:plan_pl_proto",
@@ -15,8 +15,8 @@ pl_proto_library(
 )
 
 pl_cc_proto_library(
-    name = "query_flags_pl_cc_proto",
-    proto = ":query_flags_pl_proto",
+    name = "func_args_pl_cc_proto",
+    proto = ":func_args_pl_proto",
     visibility = ["//visibility:public"],
     deps = [
         "//src/carnot/planpb:plan_pl_cc_proto",
@@ -27,9 +27,9 @@ pl_cc_proto_library(
 )
 
 pl_go_proto_library(
-    name = "query_flags_pl_go_proto",
+    name = "func_args_pl_go_proto",
     importpath = "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb",
-    proto = ":query_flags_pl_proto",
+    proto = ":func_args_pl_proto",
     visibility = ["//visibility:public"],
     deps = [
         "//src/carnot/planpb:plan_pl_go_proto",

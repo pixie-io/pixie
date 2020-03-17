@@ -19,12 +19,16 @@
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/objects/pixie_module.h"
+#include "src/carnot/planner/plannerpb/func_args.pb.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
 namespace pl {
 namespace carnot {
 namespace planner {
 namespace compiler {
+
+using ArgValue = plannerpb::QueryRequest::ArgValue;
+using ArgValues = std::vector<ArgValue>;
 
 #define PYPA_PTR_CAST(TYPE, VAL) \
   std::static_pointer_cast<typename pypa::AstTypeByID<pypa::AstType::TYPE>::Type>(VAL)
@@ -53,11 +57,11 @@ class ASTVisitorImpl : public ASTVisitor {
    *
    * @param graph
    * @param compiler_state
-   * @param flag_values
+   * @param arg_values
    * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
    */
   static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(IR* graph, CompilerState* compiler_state,
-                                                          const FlagValues& flag_values);
+                                                          const ArgValues& arg_values);
 
   /**
    * @brief Creates a child AST Visitor from the top-level AST Visitor, sharing the graph,
@@ -125,11 +129,11 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param ir_graph
    */
   ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table,
-                 const FlagValues& flag_values)
+                 const ArgValues& arg_values)
       : ir_graph_(ir_graph),
         compiler_state_(compiler_state),
         var_table_(var_table),
-        flag_values_(flag_values) {}
+        arg_values_(arg_values) {}
 
   Status InitGlobals();
 
@@ -480,16 +484,16 @@ class ASTVisitorImpl : public ASTVisitor {
   /**
    * @brief Calls the main function with the passed in flag values.
    *
-   * @param flag_values
+   * @param arg_values
    * @return Status
    */
-  Status CallMainFn(const pypa::AstPtr& m, const FlagValues& flag_values);
+  Status CallMainFn(const pypa::AstPtr& m, const ArgValues& arg_values);
 
   IR* ir_graph_;
   CompilerState* compiler_state_;
   std::shared_ptr<VarTable> var_table_;
-  // Flag values passed in during ASTVisitor creation.
-  const FlagValues flag_values_;
+  // Arg values passed in during ASTVisitor creation.
+  const ArgValues arg_values_;
   // Keep a handle on the flags object in case px or flags get reassigned.
   std::shared_ptr<FlagsObject> flags_;
 };

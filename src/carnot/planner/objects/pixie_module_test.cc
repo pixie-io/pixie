@@ -112,8 +112,8 @@ class PixieModuleTest : public QLObjectTest {
     compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
 
     FlagValue flag;
-    flag.set_flag_name("foo");
-    EXPECT_OK(MakeString("non-default")->ToProto(flag.mutable_flag_value()));
+    flag.set_name("foo");
+    EXPECT_OK(MakeString("non-default")->ToProto(flag.mutable_value()));
 
     module_ = PixieModule::Create(graph.get(), compiler_state_.get(), {flag}, ast_visitor.get())
                   .ConsumeValueOrDie();

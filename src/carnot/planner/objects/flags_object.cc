@@ -16,12 +16,12 @@ StatusOr<absl::flat_hash_map<std::string, DataIR*>> ParseFlagValues(IR* ir,
                                                                     const FlagValues& flag_values) {
   absl::flat_hash_map<std::string, DataIR*> map;
   for (const auto& flag : flag_values) {
-    auto name = absl::Substitute("flag $0", flag.flag_name());
-    PL_ASSIGN_OR_RETURN(auto parsed_value, DataIR::FromProto(ir, name, flag.flag_value()));
-    if (map.contains(flag.flag_name())) {
+    auto name = absl::Substitute("arg $0", flag.name());
+    PL_ASSIGN_OR_RETURN(auto parsed_value, DataIR::FromProto(ir, name, flag.value()));
+    if (map.contains(flag.name())) {
       return error::InvalidArgument("Received duplicate values for $0", name);
     }
-    map[flag.flag_name()] = parsed_value;
+    map[flag.name()] = parsed_value;
   }
   return map;
 }

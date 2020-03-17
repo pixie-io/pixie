@@ -9,7 +9,7 @@
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/compilerpb/compiler_status.pb.h"
 #include "src/carnot/planner/distributedpb/distributed_plan.pb.h"
-#include "src/carnot/planner/plannerpb/query_flags.pb.h"
+#include "src/carnot/planner/plannerpb/func_args.pb.h"
 #include "src/carnot/planner/test_utils.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
@@ -173,7 +173,7 @@ TEST_F(PlannerExportTest, pass_query_string_instead_of_req_should_fail) {
               ::testing::ContainsRegex("Failed to process the query request.*"));
 }
 
-constexpr char kFlagValueQuery[] = R"pxl(
+constexpr char kArgValueQuery[] = R"pxl(
 px.flags('foo', type=str, description='a random param', default='default')
 px.flags.parse()
 queryDF = px.DataFrame(table='cpu', select=['cpu0'])
@@ -198,7 +198,7 @@ flags {
 TEST_F(PlannerExportTest, get_available_flags_empty_flags) {
   planner_ = MakePlanner();
   int result_len;
-  auto query_request = MakeQueryRequest(kFlagValueQuery);
+  auto query_request = MakeQueryRequest(kArgValueQuery);
   auto interface_result =
       PlannerGetAvailableFlagsGoStr(planner_, query_request.DebugString(), &result_len);
 

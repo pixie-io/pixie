@@ -8,7 +8,7 @@
 #include "src/carnot/planner/distributed/distributed_plan.h"
 #include "src/carnot/planner/distributed/distributed_planner.h"
 #include "src/carnot/planner/distributed/tablet_rules.h"
-#include "src/carnot/planner/plannerpb/query_flags.pb.h"
+#include "src/carnot/planner/plannerpb/func_args.pb.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
 namespace pl {

@@ -7,7 +7,7 @@ go_library(
     visibility = ["//visibility:public"],
     deps = [
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
-        "//src/carnot/planner/plannerpb:query_flags_pl_go_proto",
+        "//src/carnot/planner/plannerpb:func_args_pl_go_proto",
         "//src/carnot/planpb:plan_pl_go_proto",
         "//src/carnot/queryresultspb:query_results_pl_go_proto",
         "//src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto",

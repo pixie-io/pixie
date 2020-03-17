@@ -15,7 +15,7 @@
 #include "src/carnot/planner/compiler/compiler.h"
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/logical_planner.h"
-#include "src/carnot/planner/plannerpb/query_flags.pb.h"
+#include "src/carnot/planner/plannerpb/func_args.pb.h"
 #include "src/carnot/planner/test_utils.h"
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"

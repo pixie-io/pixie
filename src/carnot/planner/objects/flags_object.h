@@ -7,14 +7,14 @@
 #include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planner/objects/qlobject.h"
 #include "src/carnot/planner/objects/type_object.h"
-#include "src/carnot/planner/plannerpb/query_flags.pb.h"
+#include "src/carnot/planner/plannerpb/func_args.pb.h"
 
 namespace pl {
 namespace carnot {
 namespace planner {
 namespace compiler {
 
-using FlagValue = plannerpb::QueryRequest::FlagValue;
+using FlagValue = plannerpb::QueryRequest::ArgValue;
 using FlagValues = std::vector<FlagValue>;
 
 class FlagsObject : public QLObject {

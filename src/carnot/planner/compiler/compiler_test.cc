@@ -2878,21 +2878,20 @@ TEST_F(CompilerTest, UnusedOperatorsRemoved) {
   EXPECT_EQ(mem_sink->relation(), expected_relation);
 }
 
-constexpr char kFlagValueQuery[] = R"pxl(
-px.flags('foo', type=int, description='a random param', default=2)
-px.flags.parse()
-queryDF = px.DataFrame(table='cpu', select=['upid'])
-queryDF['foo_flag'] = px.flags.foo
-px.display(queryDF, 'map')
+constexpr char kArgValueQuery[] = R"pxl(
+def main(foo: int):
+  queryDF = px.DataFrame(table='cpu', select=['upid'])
+  queryDF['foo_arg'] = foo
+  px.display(queryDF, 'map')
 )pxl";
 
-TEST_F(CompilerTest, FlagValueQuery) {
-  FlagValue flag;
-  flag.set_flag_name("foo");
-  flag.mutable_flag_value()->set_data_type(types::DataType::INT64);
-  flag.mutable_flag_value()->set_int64_value(100);
+TEST_F(CompilerTest, ArgValueQuery) {
+  ArgValue arg;
+  arg.set_name("foo");
+  arg.mutable_value()->set_data_type(types::DataType::INT64);
+  arg.mutable_value()->set_int64_value(100);
 
-  auto graph_or_s = compiler_.CompileToIR(kFlagValueQuery, compiler_state_.get(), {flag});
+  auto graph_or_s = compiler_.CompileToIR(kArgValueQuery, compiler_state_.get(), {arg});
   ASSERT_OK(graph_or_s);
 
   auto graph = graph_or_s.ConsumeValueOrDie();
@@ -2909,7 +2908,7 @@ TEST_F(CompilerTest, FlagValueQuery) {
   MemorySinkIR* mem_sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
 
   // ensure service_name is in relation but _attr_service_name is not
-  Relation expected_relation({types::UINT128, types::INT64}, {"upid", "foo_flag"});
+  Relation expected_relation({types::UINT128, types::INT64}, {"upid", "foo_arg"});
   ASSERT_EQ(mem_sink->relation(), expected_relation);
 }
 

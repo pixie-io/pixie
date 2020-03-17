@@ -8,6 +8,18 @@ package pl.carnot.planner.plannerpb;
 
 option go_package = "plannerpb";
 
+// QueryRequest is the body of the request made to the planner.
+message QueryRequest {
+  string query_str = 1;
+  message ArgValue {
+    string name = 1;
+    pl.carnot.planpb.ScalarValue value = 2;
+    types.SemanticType semantic_type = 3;
+  }
+  repeated ArgValue arg_values = 2;
+  // TODO(zasgar): Add proto query.
+}
+
 // QueryFlagsSpec specifies the flags that are defined within a query.
 message QueryFlagsSpec {
   message Flag {
@@ -23,17 +35,6 @@ message QueryFlagsSpec {
     pl.carnot.planpb.ScalarValue default_value = 5;
   }
   repeated Flag flags = 1;
-}
-
-// QueryRequest is the body of the request made to the planner.
-message QueryRequest {
-  string query_str = 1;
-  message FlagValue {
-    string flag_name = 1;
-    pl.carnot.planpb.ScalarValue flag_value = 2;
-  }
-  repeated FlagValue flag_values = 2;
-  // TODO(zasgar): Add proto query.
 }
 
 message GetAvailableFlagsResult {
