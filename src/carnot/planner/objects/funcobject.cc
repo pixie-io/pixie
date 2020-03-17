@@ -169,11 +169,7 @@ Status FuncObject::ResolveArgAnnotationsToConcreteTypes(
                             name, obj->name());
     }
     auto type_obj = std::static_pointer_cast<TypeObject>(obj);
-    auto type_or_s = IRNodeTypeToDataType(type_obj->ir_node_type());
-    if (!type_or_s.ok()) {
-      return CreateAstError(ast, type_or_s.msg());
-    }
-    arg_types_.insert({name, type_or_s.ConsumeValueOrDie()});
+    arg_types_.insert({name, type_obj});
   }
   return Status::OK();
 }
@@ -195,7 +191,13 @@ FuncArgsSpec FuncObject::CreateFuncArgsSpec() const {
   for (const auto& arg_name : arguments_) {
     auto arg = spec.add_args();
     arg->set_name(arg_name);
-    arg->set_data_type(arg_types_.find(arg_name)->second);
+    if (!arg_types_.contains(arg_name)) {
+      LOG(INFO) << absl::Substitute("Can't find '$0' type in function", arg_name);
+    } else {
+      auto type_object = arg_types_.find(arg_name)->second;
+      arg->set_data_type(type_object->data_type());
+      arg->set_semantic_type(type_object->semantic_type());
+    }
     if (HasDefault(arg_name)) {
       arg->set_default_value(defaults_.find(arg_name)->second);
     }

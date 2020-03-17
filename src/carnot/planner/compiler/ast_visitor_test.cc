@@ -1061,7 +1061,7 @@ TEST_F(ASTVisitorTest, func_def_with_type) {
   // Check what would happen if the wrong type is passed in.
   ir_graph_or_s = CompileGraph(absl::Substitute(kFuncDefWithType, "func(1)"));
   ASSERT_NOT_OK(ir_graph_or_s);
-  EXPECT_THAT(ir_graph_or_s.status(), HasCompilerError("Expected 'String', received 'Int'"));
+  EXPECT_THAT(ir_graph_or_s.status(), HasCompilerError("Expected 'string', received 'int64'"));
 }
 
 constexpr char kFuncDefWithDataframe[] = R"query(
@@ -1088,7 +1088,8 @@ TEST_F(ASTVisitorTest, func_def_with_dataframe_type) {
   // Check whether non-Dataframes cause a failure.
   ir_graph_or_s = CompileGraph(absl::Substitute(kFuncDefWithDataframe, "func(1)"));
   ASSERT_NOT_OK(ir_graph_or_s);
-  EXPECT_THAT(ir_graph_or_s.status(), HasCompilerError("Expected 'DataFrame', received 'Int'"));
+  EXPECT_THAT(ir_graph_or_s.status(),
+              HasCompilerError("Expected 'DataFrame', received 'expression'"));
 }
 
 constexpr char kFuncDefWithVarKwargs[] = R"query(
@@ -1640,7 +1641,11 @@ TEST_F(ASTVisitorTest, arg_annotations) {
   auto qlobjptr = ast_walker->var_table()->Lookup("f");
   ASSERT_EQ(qlobjptr->type(), QLObjectType::kFunction);
   auto func_obj = std::static_pointer_cast<FuncObject>(qlobjptr);
-  auto arg_types = func_obj->arg_types();
+  auto arg_type_objs = func_obj->arg_types();
+  absl::flat_hash_map<std::string, pl::types::DataType> arg_types;
+  for (const auto& [name, type_obj] : arg_type_objs) {
+    arg_types[name] = type_obj->data_type();
+  }
   absl::flat_hash_map<std::string, pl::types::DataType> expected_types({
       {"a", pl::types::DataType::INT64},
       {"b", pl::types::DataType::STRING},

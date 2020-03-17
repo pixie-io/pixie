@@ -161,7 +161,7 @@ TEST_F(FlagsObjectTest, TestErrorOnMissingFlagValue) {
 
   ASSERT_NOT_OK(s);
   EXPECT_THAT(s.status(),
-              HasCompilerError("Did not receive a value for required flag bar \\(type String\\)"));
+              HasCompilerError("Did not receive a value for required flag 'bar', type 'string'"));
 }
 
 TEST_F(FlagsObjectTest, TestErrorOnMismatchedType) {
@@ -169,7 +169,8 @@ TEST_F(FlagsObjectTest, TestErrorOnMismatchedType) {
   ASSERT_NOT_OK(s);
   EXPECT_THAT(
       s.status(),
-      HasCompilerError("For default value of flag foo expected type Int but received type String"));
+      HasCompilerError(
+          "For default value of flag foo expected type 'int64' but received type 'String'"));
 }
 
 // TODO(nserrino): Support compile time expressions

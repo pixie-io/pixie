@@ -247,14 +247,17 @@ fn_args_map {
   key: "f"
   value {
     args {
+      semantic_type: ST_NONE
       data_type: TIME64NS
       name: "start_time"
     }
     args {
+      semantic_type: ST_NONE
       data_type: TIME64NS
       name: "end_time"
     }
     args {
+      semantic_type: ST_NONE
       data_type: STRING
       name: "svc"
     }
@@ -265,10 +268,12 @@ fn_args_map {
   value {
     args {
       data_type: INT64
+      semantic_type: ST_NONE
       name: "a"
     }
     args {
       data_type: FLOAT64
+      semantic_type: ST_NONE
       name: "b"
     }
   }

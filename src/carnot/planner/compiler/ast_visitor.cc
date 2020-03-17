@@ -392,20 +392,18 @@ Status ASTVisitorImpl::DoesArgMatchAnnotation(QLObjectPtr ql_arg, QLObjectPtr an
   DCHECK(annotation_obj);
   DCHECK(ql_arg->HasNode());
   auto arg = ql_arg->node();
-  if (annotation_obj->type() == QLObjectType::kDataframe) {
-    if (!arg->IsOperator()) {
-      return arg->CreateIRNodeError("Expected '$0', received '$1'", Dataframe::DataframeType.name(),
+  if (annotation_obj->type() == QLObjectType::kType) {
+    auto type_object = std::static_pointer_cast<TypeObject>(annotation_obj);
+    if (!arg->IsExpression()) {
+      return arg->CreateIRNodeError("Expected '$0', received '$1'", type_object->TypeString(),
                                     arg->type_string());
     }
-    return Status::OK();
-  } else if (annotation_obj->type() == QLObjectType::kType) {
-    auto type_object = std::static_pointer_cast<TypeObject>(annotation_obj);
-    PL_RETURN_IF_ERROR(type_object->NodeMatches(arg));
-    return Status::OK();
-  } else {
-    return error::Unimplemented("'$0' unhandled annotation",
-                                magic_enum::enum_name(annotation_obj->type()));
+    return type_object->NodeMatches(static_cast<ExpressionIR*>(arg));
+  } else if (annotation_obj->type() != ql_arg->type()) {
+    return arg->CreateIRNodeError("Expected '$0', received '$1'", annotation_obj->name(),
+                                  ql_arg->name());
   }
+  return Status::OK();
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::FuncDefHandler(

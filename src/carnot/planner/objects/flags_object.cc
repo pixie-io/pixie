@@ -88,17 +88,18 @@ StatusOr<QLObjectPtr> FlagsObject::DefineFlagHandler(const pypa::AstPtr& ast,
   DataIR* default_val = nullptr;
   if (default_obj->type() == QLObjectType::kExpr) {
     // Verify types
-    if (!Match(default_obj->node(), DataNode())) {
-      return default_obj->node()->CreateIRNodeError(
+    auto expr_node = static_cast<ExpressionIR*>(default_obj->node());
+    if (!Match(expr_node, DataNode())) {
+      return expr_node->CreateIRNodeError(
           "Value for 'default' in px.flags must be a constant literal, received $0",
-          default_obj->node()->type_string());
+          expr_node->type_string());
     }
-    if (!type->NodeMatches(default_obj->node()).ok()) {
+    if (!type->NodeMatches(expr_node).ok()) {
       return CreateAstError(
-          ast, "For default value of flag $0 expected type $1 but received type $2", flag_name,
-          IRNode::TypeString(type->ir_node_type()), default_obj->node()->type_string());
+          ast, "For default value of flag $0 expected type '$1' but received type '$2'", flag_name,
+          type->TypeString(), expr_node->type_string());
     }
-    default_val = static_cast<DataIR*>(default_obj->node());
+    default_val = static_cast<DataIR*>(expr_node);
   } else if (default_obj->type() == QLObjectType::kNone) {
     // Ok, passthrough
   } else {
@@ -109,7 +110,7 @@ StatusOr<QLObjectPtr> FlagsObject::DefineFlagHandler(const pypa::AstPtr& ast,
   if (input_flag_values_.contains(flag_name) &&
       !type->NodeMatches(input_flag_values_[flag_name]).ok()) {
     return CreateAstError(ast, "For input value of flag $0 expected type $1 but received type $2",
-                          flag_name, IRNode::TypeString(type->ir_node_type()),
+                          flag_name, type->TypeString(),
                           input_flag_values_[flag_name]->type_string());
   }
 
@@ -161,11 +162,10 @@ StatusOr<QLObjectPtr> FlagsObject::ParseFlagsHandler(const pypa::AstPtr& ast,
       assign_value = default_flag_values_.at(flag_name);
     } else if (default_zero_values_) {
       PL_ASSIGN_OR_RETURN(assign_value, DataIR::ZeroValueForType(
-                                            ir_graph_, flag_types_.at(flag_name)->ir_node_type()));
+                                            ir_graph_, flag_types_.at(flag_name)->data_type()));
     } else {
-      return CreateAstError(ast, "Did not receive a value for required flag $0 (type $1)",
-                            flag_name,
-                            IRNode::TypeString(flag_types_.at(flag_name)->ir_node_type()));
+      return CreateAstError(ast, "Did not receive a value for required flag '$0', type '$1'",
+                            flag_name, flag_types_.at(flag_name)->TypeString());
     }
 
     PL_ASSIGN_OR_RETURN(auto obj, ExprObject::Create(assign_value, ast_visitor()));
@@ -189,7 +189,7 @@ StatusOr<plannerpb::QueryFlagsSpec> FlagsObject::GetAvailableFlags(const pypa::A
     auto flag = flags.add_flags();
     flag->set_name(flag_name);
     flag->set_description(flag_descriptions_.at(flag_name));
-    flag->set_data_type(DataIR::DataType(type->ir_node_type()));
+    flag->set_data_type(type->data_type());
     // TODO(philkuz, nserrino): Change this once semantic types are added to QL.
     flag->set_semantic_type(types::SemanticType::ST_NONE);
 

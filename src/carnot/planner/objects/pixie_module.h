@@ -36,6 +36,7 @@ class PixieModule : public QLObject {
   inline static constexpr char kUInt128ConversionId[] = "uint128";
   inline static constexpr char kAbsTimeOpId[] = "strptime";
   inline static constexpr char kTimeTypeName[] = "Time";
+  inline static constexpr char kServiceTypeName[] = "Service";
   static const constexpr char* const kTimeFuncs[] = {"minutes", "hours",        "seconds",
                                                      "days",    "microseconds", "milliseconds"};
   std::shared_ptr<FlagsObject> flags_object() { return flags_object_; }

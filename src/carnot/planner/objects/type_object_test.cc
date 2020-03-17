@@ -18,7 +18,7 @@ TEST_F(TypeObjectTest, NodeMatches) {
   EXPECT_OK(type->NodeMatches(MakeString("blah")));
   auto match = type->NodeMatches(MakeInt(123));
   EXPECT_NOT_OK(match);
-  EXPECT_THAT(match.status(), HasCompilerError("Expected 'String', received 'Int'"));
+  EXPECT_THAT(match.status(), HasCompilerError("Expected 'string', received 'int64'"));
 }
 
 }  // namespace compiler

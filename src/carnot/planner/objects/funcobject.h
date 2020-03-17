@@ -10,6 +10,8 @@
 #include "src/carnot/planner/ast/ast_visitor.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/objects/qlobject.h"
+#include "src/carnot/planner/objects/type_object.h"
+
 #include "src/shared/scriptspb/scripts.pb.h"
 
 namespace pl {
@@ -170,7 +172,7 @@ class FuncObject : public QLObject {
       const pypa::AstPtr& ast,
       const absl::flat_hash_map<std::string, QLObjectPtr> arg_annotation_objs);
 
-  const absl::flat_hash_map<std::string, pl::types::DataType>& arg_types() const {
+  const absl::flat_hash_map<std::string, std::shared_ptr<TypeObject>>& arg_types() const {
     return arg_types_;
   }
 
@@ -203,7 +205,7 @@ class FuncObject : public QLObject {
   absl::flat_hash_map<std::string, DefaultType> defaults_;
   FunctionType impl_;
 
-  absl::flat_hash_map<std::string, pl::types::DataType> arg_types_;
+  absl::flat_hash_map<std::string, std::shared_ptr<TypeObject>> arg_types_;
 
   // Whether the function takes **kwargs as an argument.
   bool has_variable_len_kwargs_;

@@ -28,19 +28,41 @@ class TypeObject : public QLObject {
 
   static StatusOr<std::shared_ptr<TypeObject>> Create(IRNodeType node_type,
                                                       ASTVisitor* ast_visitor) {
-    return std::shared_ptr<TypeObject>(new TypeObject(node_type, ast_visitor));
+    PL_ASSIGN_OR_RETURN(types::DataType data_type, IRNodeTypeToDataType(node_type));
+    return Create(data_type, ast_visitor);
   }
 
-  Status NodeMatches(IRNode* node) {
+  static StatusOr<std::shared_ptr<TypeObject>> Create(types::DataType data_type,
+                                                      ASTVisitor* ast_visitor) {
+    return Create(data_type, types::ST_NONE, ast_visitor);
+  }
+
+  static StatusOr<std::shared_ptr<TypeObject>> Create(types::DataType data_type,
+                                                      types::SemanticType semantic_type,
+                                                      ASTVisitor* ast_visitor) {
+    return std::shared_ptr<TypeObject>(new TypeObject(data_type, semantic_type, ast_visitor));
+  }
+
+  Status NodeMatches(ExpressionIR* node) {
     // TODO(philkuz) make this nvi and expand it more.
-    if (node->type() == node_type_) {
-      return Status::OK();
+    // TODO(philkuz) need to consider how semantic args should work in this case. Might need to add
+    // specification to make args semantic args somehow.
+    if (node->EvaluatedDataType() != data_type_) {
+      return node->CreateIRNodeError(
+          "Expected '$0', received '$1'", absl::AsciiStrToLower(magic_enum::enum_name(data_type_)),
+          absl::AsciiStrToLower(magic_enum::enum_name(node->EvaluatedDataType())));
     }
-    return node->CreateIRNodeError("Expected '$0', received '$1'", IRNode::TypeString(node_type_),
-                                   node->type_string());
+    return Status::OK();
   }
 
-  IRNodeType ir_node_type() { return node_type_; }
+  types::DataType data_type() { return data_type_; }
+  types::SemanticType semantic_type() { return semantic_type_; }
+  std::string TypeString() {
+    if (semantic_type_ == types::ST_NONE) {
+      return absl::AsciiStrToLower(magic_enum::enum_name(data_type_));
+    }
+    return absl::AsciiStrToLower(magic_enum::enum_name(semantic_type_));
+  }
 
  protected:
   /**
@@ -48,11 +70,14 @@ class TypeObject : public QLObject {
    *
    * @param ast the ast ptr for the
    */
-  TypeObject(IRNodeType node_type, ASTVisitor* ast_visitor)
-      : QLObject(TypeObjectType, ast_visitor), node_type_(node_type) {}
+  TypeObject(types::DataType data_type, types::SemanticType semantic_type, ASTVisitor* ast_visitor)
+      : QLObject(TypeObjectType, ast_visitor),
+        data_type_(data_type),
+        semantic_type_(semantic_type) {}
 
  private:
-  IRNodeType node_type_;
+  types::DataType data_type_;
+  types::SemanticType semantic_type_;
 };
 
 }  // namespace compiler
