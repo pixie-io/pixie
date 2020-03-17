@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/pflag"
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
 )
@@ -180,13 +181,23 @@ func (v *VizierClusterInfoServer) GetClusterInfo(ctx context.Context, request *c
 	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
 		fmt.Sprintf("bearer %s", sCtx.AuthToken))
 
-	viziers, err := v.VzMgr.GetViziersByOrg(ctx, pbutils.ProtoFromUUID(&orgID))
-	if err != nil {
-		return nil, err
+	vzIDs := make([]*uuidpb.UUID, 0)
+	if request.ID != nil {
+		vzIDs = append(vzIDs, request.ID)
+	} else {
+		viziers, err := v.VzMgr.GetViziersByOrg(ctx, pbutils.ProtoFromUUID(&orgID))
+		if err != nil {
+			return nil, err
+		}
+		vzIDs = viziers.VizierIDs
 	}
 
+	return v.getClusterInfoForViziers(ctx, vzIDs)
+}
+
+func (v *VizierClusterInfoServer) getClusterInfoForViziers(ctx context.Context, ids []*uuidpb.UUID) (*cloudapipb.GetClusterInfoResponse, error) {
 	resp := &cloudapipb.GetClusterInfoResponse{}
-	for _, id := range viziers.VizierIDs {
+	for _, id := range ids {
 		// TODO(zasgar/michelle): Make these requests parallel
 		vzInfo, err := v.VzMgr.GetVizierInfo(ctx, id)
 		if err != nil {

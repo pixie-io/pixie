@@ -22,6 +22,7 @@ go_library(
         "//src/cloud/auth/proto:auth_go_proto",
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
+        "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/artifacts/versionspb:versions_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/services:go_default_library",

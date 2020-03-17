@@ -129,6 +129,43 @@ func TestVizierClusterInfoServer_GetClusterInfo(t *testing.T) {
 	assert.Equal(t, cluster.Config.PassthroughEnabled, false)
 }
 
+func TestVizierClusterInfoServer_GetClusterInfoWithID(t *testing.T) {
+	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	assert.NotNil(t, clusterID)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockVzMgr.EXPECT().GetVizierInfo(gomock.Any(), clusterID).Return(&cvmsgspb.VizierInfo{
+		VizierID:        clusterID,
+		Status:          cvmsgspb.VZ_ST_HEALTHY,
+		LastHeartbeatNs: int64(1305646598000000000),
+		Config: &cvmsgspb.VizierConfig{
+			PassthroughEnabled: false,
+		},
+	}, nil)
+
+	vzClusterInfoServer := &controller.VizierClusterInfoServer{
+		VzMgr: mockVzMgr,
+	}
+
+	resp, err := vzClusterInfoServer.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{
+		ID: clusterID,
+	})
+
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(resp.Clusters))
+	cluster := resp.Clusters[0]
+	assert.Equal(t, cluster.ID, clusterID)
+	assert.Equal(t, cluster.Status, cloudapipb.CS_HEALTHY)
+	assert.Equal(t, cluster.LastHeartbeatNs, int64(1305646598000000000))
+	assert.Equal(t, cluster.Config.PassthroughEnabled, false)
+}
+
 func TestVizierClusterInfoServer_UpdateClusterVizierConfig(t *testing.T) {
 	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	assert.NotNil(t, clusterID)

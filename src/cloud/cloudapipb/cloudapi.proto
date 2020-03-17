@@ -134,7 +134,12 @@ message VizierConfigUpdate {
     google.protobuf.BoolValue passthrough_enabled = 1;
 }
 
-message GetClusterInfoRequest {}
+message GetClusterInfoRequest {
+    // Optional. If specified, get cluster info only for the specified cluster.
+    pl.uuidpb.UUID id = 1 [
+                          (gogoproto.customname) = "ID"
+                          ];
+}
 
 enum ClusterStatus {
     CS_UNKNOWN = 0;
