@@ -47,6 +47,7 @@ static constexpr const char* kIRNodeStrings[] = {
 };
 
 StatusOr<pl::types::DataType> IRNodeTypeToDataType(IRNodeType type);
+StatusOr<IRNodeType> DataTypeToIRNodeType(types::DataType type);
 
 inline std::ostream& operator<<(std::ostream& out, IRNodeType node_type) {
   return out << kIRNodeStrings[static_cast<int64_t>(node_type)];
@@ -434,6 +435,7 @@ class ExpressionIR : public IRNode {
   bool IsOperator() const override { return false; }
   bool IsExpression() const override { return true; }
   virtual types::DataType EvaluatedDataType() const = 0;
+  virtual types::SemanticType semantic_type() const { return types::ST_NONE; }
   virtual bool IsDataTypeEvaluated() const = 0;
   virtual bool IsColumn() const { return false; }
   virtual bool IsData() const { return false; }
@@ -572,22 +574,7 @@ class MetadataProperty : public NotCopyable {
 class DataIR : public ExpressionIR {
  public:
   static types::DataType DataType(IRNodeType type) {
-    switch (type) {
-      case IRNodeType::kBool:
-        return types::DataType::BOOLEAN;
-      case IRNodeType::kFloat:
-        return types::DataType::FLOAT64;
-      case IRNodeType::kInt:
-        return types::DataType::INT64;
-      case IRNodeType::kString:
-        return types::DataType::STRING;
-      case IRNodeType::kTime:
-        return types::DataType::TIME64NS;
-      case IRNodeType::kUInt128:
-        return types::DataType::UINT128;
-      default:
-        CHECK(false) << absl::Substitute("Invalid IRNodeType for DataIR: $0", TypeString(type));
-    }
+    return IRNodeTypeToDataType(type).ConsumeValueOrDie();
   }
 
   types::DataType EvaluatedDataType() const override { return evaluated_data_type_; }
@@ -624,6 +611,7 @@ class DataIR : public ExpressionIR {
   virtual Status ToProtoImpl(planpb::ScalarValue* value) const = 0;
 
   static StatusOr<DataIR*> ZeroValueForType(IR* ir, IRNodeType type);
+  static StatusOr<DataIR*> ZeroValueForType(IR* ir, types::DataType type);
 
  protected:
   DataIR(int64_t id, IRNodeType type)

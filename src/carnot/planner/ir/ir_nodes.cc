@@ -695,6 +695,11 @@ StatusOr<DataIR*> DataIR::FromProto(IR* ir, std::string_view name,
   }
 }
 
+StatusOr<DataIR*> DataIR::ZeroValueForType(IR* ir, types::DataType type) {
+  PL_ASSIGN_OR_RETURN(auto ir_type, DataTypeToIRNodeType(type));
+  return ZeroValueForType(ir, ir_type);
+}
+
 StatusOr<DataIR*> DataIR::ZeroValueForType(IR* ir, IRNodeType type) {
   switch (type) {
     case IRNodeType::kBool:
@@ -1857,9 +1862,35 @@ StatusOr<pl::types::DataType> IRNodeTypeToDataType(IRNodeType type) {
       return pl::types::DataType::TIME64NS;
     }
     default: {
-      return Status(statuspb::Code::INVALID_ARGUMENT,
-                    absl::Substitute("IRNode type: $0 cannot be converted into literal type.",
-                                     kIRNodeStrings[static_cast<int64_t>(type)]));
+      return error::InvalidArgument("IRNode type: $0 cannot be converted into literal type.",
+                                    magic_enum::enum_name(type));
+    }
+  }
+}
+
+StatusOr<IRNodeType> DataTypeToIRNodeType(types::DataType type) {
+  switch (type) {
+    case pl::types::DataType::STRING: {
+      return IRNodeType::kString;
+    }
+    case pl::types::DataType::INT64: {
+      return IRNodeType::kInt;
+    }
+    case pl::types::DataType::UINT128: {
+      return IRNodeType::kUInt128;
+    }
+    case pl::types::DataType::BOOLEAN: {
+      return IRNodeType::kBool;
+    }
+    case pl::types::DataType::FLOAT64: {
+      return IRNodeType::kFloat;
+    }
+    case pl::types::DataType::TIME64NS: {
+      return IRNodeType::kTime;
+    }
+    default: {
+      return error::InvalidArgument("data type: '$0' cannot be converted into an IRNodeType",
+                                    magic_enum::enum_name(type));
     }
   }
 }
