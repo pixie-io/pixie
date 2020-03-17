@@ -3,9 +3,7 @@
 #include <utility>
 #include <vector>
 
-extern "C" {
 #include "src/stirling/bcc_bpf_interface/proc_trace.h"
-}
 #include "src/stirling/utils/linux_headers.h"
 
 BCC_SRC_STRVIEW(proc_trace_bcc_script, proc_trace);

@@ -7,9 +7,7 @@
 #include <string>
 #include <utility>
 
-extern "C" {
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
-}
 
 // This header defines the C++ counterparts of the BPF data structures.
 // The file name is kept identical to its BPF counterpart as well.

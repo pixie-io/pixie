@@ -12,9 +12,7 @@
 #include <utility>
 #include <vector>
 
-extern "C" {
 #include "src/stirling/bcc_bpf_interface/log_event.h"
-}
 
 #include "src/common/base/base.h"
 #include "src/stirling/obj_tools/elf_tools.h"

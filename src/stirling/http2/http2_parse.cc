@@ -3,9 +3,7 @@
 #include <utility>
 #include <vector>
 
-extern "C" {
 #include "src/stirling/bcc_bpf_interface/grpc.h"
-}
 
 namespace pl {
 namespace stirling {

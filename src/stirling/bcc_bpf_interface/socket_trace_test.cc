@@ -4,9 +4,7 @@
 // We cannot include stdint.h inside socket_trace.h, as that conflicts with BCC's headers.
 #include <cstdint>
 
-extern "C" {
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
-}
 
 // Inside BPF, socket_data_event_t object is submitted as a bytes array, with a size calculated as
 // sizeof(socket_data_event_t::attr_t) + <submitted msg size>
