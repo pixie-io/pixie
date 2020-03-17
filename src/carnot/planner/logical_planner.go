@@ -10,13 +10,13 @@ package logicalplanner
 //
 // char* PlannerPlanGoStr(PlannerPtr planner_ptr,
 // 													 _GoString_ planner_state,
-// 													 _GoString_ query,
+// 													 _GoString_ query_request,
 // 													 int* resultLen) {
 //   return PlannerPlan(planner_ptr,
 //   											 _GoStringPtr(planner_state),
 //   											 _GoStringLen(planner_state),
-//   											 _GoStringPtr(query),
-//   											 _GoStringLen(query),
+//   											 _GoStringPtr(query_request),
+//   											 _GoStringLen(query_request),
 //   											 resultLen);
 // }
 //

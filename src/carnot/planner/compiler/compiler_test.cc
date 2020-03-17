@@ -2886,7 +2886,7 @@ queryDF['foo_flag'] = px.flags.foo
 px.display(queryDF, 'map')
 )pxl";
 
-TEST_F(CompilerTest, FlagValueQUery) {
+TEST_F(CompilerTest, FlagValueQuery) {
   FlagValue flag;
   flag.set_flag_name("foo");
   flag.mutable_flag_value()->set_data_type(types::DataType::INT64);

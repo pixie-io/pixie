@@ -1751,7 +1751,7 @@ constexpr char kMainFuncArgsSpec[] = R"pxl(
 import px
 @px.viz.vega("")
 def http_events(svc: px.Service, start_time: px.Time):
-    df = pd.DataFrame('http_events', start_time=start_time)
+    df = px.DataFrame('http_events', start_time=start_time)
     df.svc = df.ctx['svc']
     df = df[df.svc == svc]
     return df[['svc', 'http_resp_latency_ns']]
@@ -1782,6 +1782,41 @@ TEST_F(ASTVisitorTest, get_main_func_arg_spec_info) {
   EXPECT_EQ(start_time_arg.data_type(), types::TIME64NS);
   EXPECT_EQ(start_time_arg.semantic_type(), types::SemanticType::ST_NONE);
   // EXPECT_FALSE(start_time_arg.has_default_value());
+}
+
+TEST_F(ASTVisitorTest, pass_arg_values_into_main) {
+  FlagValue flag1;
+  flag1.set_flag_name("svc");
+  EXPECT_OK(MakeString("sock-shop/front-end")->ToProto(flag1.mutable_flag_value()));
+
+  FlagValue flag2;
+  flag2.set_flag_name("start_time");
+  EXPECT_OK(MakeTime(123)->ToProto(flag2.mutable_flag_value()));
+
+  auto ir_graph_or_s = CompileGraph(kMainFuncArgsSpec, {flag1, flag2});
+  ASSERT_OK(ir_graph_or_s);
+  auto graph = ir_graph_or_s.ConsumeValueOrDie();
+  // Verify that the graph created is what we expect.
+  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  ASSERT_EQ(sink_nodes.size(), 1);
+  MemorySinkIR* sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  EXPECT_EQ("http_events", sink->name());
+  ASSERT_EQ(sink->parents().size(), 1);
+  ASSERT_EQ(sink->parents()[0]->type(), IRNodeType::kMap);
+  auto map = static_cast<MapIR*>(sink->parents()[0]);
+  EXPECT_EQ(map->col_exprs().size(), 2);
+  EXPECT_FALSE(map->keep_input_columns());
+}
+
+TEST_F(ASTVisitorTest, wrong_arg_values_into_main) {
+  FlagValue flag1;
+  flag1.set_flag_name("svc");
+  EXPECT_OK(MakeString("sock-shop/front-end")->ToProto(flag1.mutable_flag_value()));
+
+  auto ir_graph_or_s = CompileGraph(kMainFuncArgsSpec, {flag1});
+  ASSERT_NOT_OK(ir_graph_or_s);
+  EXPECT_THAT(ir_graph_or_s.status(),
+              HasCompilerError("main.* missing 1 required positional arguments 'start_time'"));
 }
 
 }  // namespace compiler

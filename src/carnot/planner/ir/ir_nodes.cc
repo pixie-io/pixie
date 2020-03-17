@@ -688,6 +688,9 @@ StatusOr<DataIR*> DataIR::FromProto(IR* ir, std::string_view name,
           sole::rebuild(value.uint128_value().high(), value.uint128_value().low()).str();
       return ir->CreateNode<UInt128IR>(/*ast*/ nullptr, upid_str);
     }
+    case types::TIME64NS: {
+      return ir->CreateNode<TimeIR>(/*ast*/ nullptr, value.time64_ns_value());
+    }
     default: {
       return error::InvalidArgument("Error processing $0: $1 not handled as a default data type.",
                                     name, magic_enum::enum_name(value.data_type()));

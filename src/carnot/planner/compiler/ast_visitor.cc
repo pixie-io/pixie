@@ -105,8 +105,29 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ParseAndProcessSingleExpression(
   return ProcessSingleExpressionModule(ast);
 }
 
+Status ASTVisitorImpl::CallMainFn(const pypa::AstPtr& m, const FlagValues& flag_values) {
+  auto main_fn_obj = var_table_->Lookup(kMainFuncId);
+  if (main_fn_obj == nullptr) {
+    return CreateAstError(m, "Script arguments passed in but no main function found.");
+  }
+  PL_ASSIGN_OR_RETURN(auto main_fn, GetCallMethod(m, main_fn_obj));
+  ArgMap args;
+  for (const auto& script_arg : flag_values) {
+    PL_ASSIGN_OR_RETURN(auto parsed_value, DataIR::FromProto(ir_graph_, "script_arg.flag_name",
+                                                             script_arg.flag_value()));
+    PL_ASSIGN_OR_RETURN(auto value, ExprObject::Create(parsed_value, this));
+    args.kwargs.push_back({script_arg.flag_name(), value});
+  }
+  return main_fn->Call(args, m).status();
+}
+
 Status ASTVisitorImpl::ProcessModuleNode(const pypa::AstModulePtr& m) {
-  return ProcessASTSuite(m->body, /*is_function_definition_body*/ false).status();
+  PL_RETURN_IF_ERROR(ProcessASTSuite(m->body, /*is_function_definition_body*/ false));
+  // TODO(philkuz) deprecate flags and remove the lookup check here.
+  if (flag_values_.size() > 0 && var_table_->Lookup(kMainFuncId) != nullptr) {
+    return CallMainFn(m, flag_values_);
+  }
+  return Status::OK();
 }
 
 StatusOr<shared::scriptspb::FuncArgsSpec> ASTVisitorImpl::GetMainFuncArgsSpec() const {
@@ -265,8 +286,8 @@ Status ASTVisitorImpl::ProcessImportFrom(const pypa::AstImportFromPtr& from) {
 }
 
 // Assignment by subscript is more restrictive than assignment by attribute.
-// Subscript assignment is currently only valid for creating map expressions such as the following:
-// df['foo'] = 1+2
+// Subscript assignment is currently only valid for creating map expressions such as the
+// following: df['foo'] = 1+2
 Status ASTVisitorImpl::ProcessSubscriptAssignment(const pypa::AstSubscriptPtr& subscript,
                                                   const pypa::AstExpr& expr_node) {
   PL_ASSIGN_OR_RETURN(auto processed_node, Process(subscript, {{}, "", {}}));
@@ -467,8 +488,8 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
   // For some reason this is kept around, not clear why, making sure that it's 0 for now.
   DCHECK_EQ(node->args.keywords.size(), 0UL);
 
-  // The default values for args. Should be the same length as args. For now we should consider not
-  // processing these.
+  // The default values for args. Should be the same length as args. For now we should consider
+  // not processing these.
   DCHECK_EQ(node->args.defaults.size(), node->args.arguments.size());
   for (const auto& default_value : node->args.defaults) {
     // TODO(philkuz) support default.
