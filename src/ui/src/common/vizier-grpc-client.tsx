@@ -27,7 +27,7 @@ export class VizierGRPCClient {
   health(): Observable<Status> {
     return Observable.create((observer) => {
       const req = new HealthCheckRequest();
-      const call = this.client.healthCheck(req);
+      const call = this.client.healthCheck(req,  { Authorization: `BEARER ${this.token}` });
       call.on('data', (resp) => {
         observer.next(resp.getStatus());
       });
