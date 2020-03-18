@@ -47,15 +47,6 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "flags_object_test",
-    srcs = ["flags_object_test.cc"],
-    deps = [
-        ":cc_library",
-        ":test_utils",
-    ],
-)
-
-pl_cc_test(
     name = "funcobject_test",
     srcs = ["funcobject_test.cc"],
     deps = [

@@ -51,10 +51,9 @@ class DefaultArgumentsTest : public OperatorTests {
     OperatorTests::SetUp();
     info_ = SetUpRegistryInfo();
     compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
-    ast_visitor_ = ASTVisitorImpl::Create(graph.get(), compiler_state_.get(), /*flag values*/ {})
+    ast_visitor_ = ASTVisitorImpl::Create(graph.get(), compiler_state_.get(), /*flag_values*/ {})
                        .ConsumeValueOrDie();
-    module_ = PixieModule::Create(graph.get(), compiler_state_.get(), /*flag values*/ {},
-                                  ast_visitor_.get())
+    module_ = PixieModule::Create(graph.get(), compiler_state_.get(), ast_visitor_.get())
                   .ConsumeValueOrDie();
   }
 
@@ -97,8 +96,7 @@ class DefaultArgumentsTest : public OperatorTests {
 // This test is the unit to make sure we can get all of the defaults of any method for any object
 // we choose to test.
 TEST_F(DefaultArgumentsTest, PLModule) {
-  auto module_or_s = PixieModule::Create(graph.get(), compiler_state_.get(), /*flag values*/ {},
-                                         ast_visitor_.get());
+  auto module_or_s = PixieModule::Create(graph.get(), compiler_state_.get(), ast_visitor_.get());
   ASSERT_OK(module_or_s);
   QLObjectPtr module = module_or_s.ConsumeValueOrDie();
   {

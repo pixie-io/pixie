@@ -111,11 +111,7 @@ class PixieModuleTest : public QLObjectTest {
 
     compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
 
-    FlagValue flag;
-    flag.set_name("foo");
-    EXPECT_OK(MakeString("non-default")->ToProto(flag.mutable_value()));
-
-    module_ = PixieModule::Create(graph.get(), compiler_state_.get(), {flag}, ast_visitor.get())
+    module_ = PixieModule::Create(graph.get(), compiler_state_.get(), ast_visitor.get())
                   .ConsumeValueOrDie();
   }
 
@@ -259,41 +255,6 @@ TEST_F(PixieModuleTest, dataframe_as_attribute) {
 
   QLObjectPtr attr_object = attr_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(attr_object->type_descriptor().type() == QLObjectType::kDataframe);
-}
-
-TEST_F(PixieModuleTest, flags_object_receives_values) {
-  auto attr_or_s = module_->GetAttribute(ast, PixieModule::kFlagsOpId);
-  ASSERT_OK(attr_or_s);
-
-  QLObjectPtr flags_obj = attr_or_s.ConsumeValueOrDie();
-  ASSERT_TRUE(flags_obj->type_descriptor().type() == QLObjectType::kFlags);
-
-  // Register foo flag
-  std::vector<QLObjectPtr> args;
-  args.push_back(ToQLObject(MakeString("foo")));
-  std::vector<NameToNode> kwargs;
-  kwargs.push_back(
-      {"type",
-       std::static_pointer_cast<QLObject>(
-           TypeObject::Create(IRNodeType::kString, ast_visitor.get()).ConsumeValueOrDie())});
-  kwargs.push_back({"description", ToQLObject(MakeString("bar"))});
-  kwargs.push_back({"default", ToQLObject(MakeString("default"))});
-  ArgMap argmap{kwargs, args};
-
-  auto register_method = flags_obj->GetCallMethod().ConsumeValueOrDie();
-  ASSERT_OK(register_method->Call(argmap, ast));
-
-  // Parse flags
-  auto parse_method = flags_obj->GetMethod("parse").ConsumeValueOrDie();
-  ASSERT_OK(parse_method->Call(ArgMap{}, ast));
-
-  // Get foo flag
-  auto ql_object = flags_obj->GetAttribute(ast, "foo").ConsumeValueOrDie();
-  EXPECT_TRUE(QLObjectType::kExpr == ql_object->type_descriptor().type());
-  auto expr = std::static_pointer_cast<ExprObject>(ql_object);
-  ASSERT_TRUE(expr->HasNode());
-  EXPECT_TRUE(expr->node()->type() == IRNodeType::kString);
-  EXPECT_EQ("non-default", static_cast<StringIR*>(expr->node())->str());
 }
 
 TEST_F(PixieModuleTest, abs_time_test_with_tz) {

@@ -212,10 +212,9 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
 }
 
 Status ASTVisitorImpl::AddPixieModule(std::string_view as_name) {
-  PL_ASSIGN_OR_RETURN(auto px, PixieModule::Create(ir_graph_, compiler_state_, arg_values_, this));
+  PL_ASSIGN_OR_RETURN(auto px, PixieModule::Create(ir_graph_, compiler_state_, this));
   // TODO(philkuz) verify this is done before hand in a parent var table if one exists.
   var_table_->Add(as_name, px);
-  flags_ = px->flags_object();
   return Status::OK();
 }
 
@@ -254,7 +253,7 @@ Status ASTVisitorImpl::ProcessImportFrom(const pypa::AstImportFromPtr& from) {
         PixieModule::kPixieModuleObjName, module);
   }
 
-  PL_ASSIGN_OR_RETURN(auto px, PixieModule::Create(ir_graph_, compiler_state_, arg_values_, this));
+  PL_ASSIGN_OR_RETURN(auto px, PixieModule::Create(ir_graph_, compiler_state_, this));
 
   auto tup = PYPA_PTR_CAST(Tuple, from->names);
   for (const auto& el : tup->elements) {
@@ -268,9 +267,6 @@ Status ASTVisitorImpl::ProcessImportFrom(const pypa::AstImportFromPtr& from) {
     }
     PL_ASSIGN_OR_RETURN(auto attr, px->GetAttribute(from, name));
     var_table_->Add(as_name, attr);
-    if (name == PixieModule::kFlagsOpId) {
-      flags_ = px->flags_object();
-    }
   }
 
   return Status::OK();

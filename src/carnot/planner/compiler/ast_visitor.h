@@ -493,8 +493,6 @@ class ASTVisitorImpl : public ASTVisitor {
   std::shared_ptr<VarTable> var_table_;
   // Arg values passed in during ASTVisitor creation.
   const ArgValues arg_values_;
-  // Keep a handle on the flags object in case px or flags get reassigned.
-  std::shared_ptr<FlagsObject> flags_;
 };
 
 }  // namespace compiler

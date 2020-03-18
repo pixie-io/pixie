@@ -16,17 +16,12 @@ namespace compiler {
 constexpr const char* const PixieModule::kTimeFuncs[];
 
 StatusOr<std::shared_ptr<PixieModule>> PixieModule::Create(IR* graph, CompilerState* compiler_state,
-                                                           const FlagValues& flag_values,
                                                            ASTVisitor* ast_visitor) {
-  auto module = std::shared_ptr<PixieModule>(new PixieModule(graph, compiler_state, ast_visitor));
+  auto pixie_module =
+      std::shared_ptr<PixieModule>(new PixieModule(graph, compiler_state, ast_visitor));
 
-  PL_RETURN_IF_ERROR(module->Init(flag_values));
-  return module;
-}
-
-Status PixieModule::RegisterFlags(const FlagValues& flag_values) {
-  PL_ASSIGN_OR_RETURN(flags_object_, FlagsObject::Create(graph_, flag_values, ast_visitor()));
-  return AssignAttribute(kFlagsOpId, flags_object_);
+  PL_RETURN_IF_ERROR(pixie_module->Init());
+  return pixie_module;
 }
 
 Status PixieModule::RegisterUDFFuncs() {
@@ -166,8 +161,7 @@ Status PixieModule::RegisterTypeObjs() {
   return Status::OK();
 }
 
-Status PixieModule::Init(const FlagValues& flag_values) {
-  PL_RETURN_IF_ERROR(RegisterFlags(flag_values));
+Status PixieModule::Init() {
   PL_RETURN_IF_ERROR(RegisterUDFFuncs());
   PL_RETURN_IF_ERROR(RegisterCompileTimeFuncs());
   PL_RETURN_IF_ERROR(RegisterUDTFs());
