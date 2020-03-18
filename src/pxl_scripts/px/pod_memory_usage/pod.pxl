@@ -1,33 +1,45 @@
-#
-# Get the Virtual memory usage and average memory for all processes in the k8s cluster.
-#
-t1 = px.DataFrame(table='process_stats', start_time='-30s')
+###############################################################
+# The following can be edited to k8s object and name to match.
+###############################################################
+# The Kubernetes object to filter on.
+#    Options are ['pod', 'service']
+k8s_object = 'pod'
 
+# If you want to filter the object by name, enter the partial
+# or full name here.
+match_name = ''
+###############################################################
+
+#
+# Get the virtual and real memory usage for each pod/service
+# in the cluster.
+#
+t1 = px.DataFrame(table='process_stats', start_time='-1m')
 bytes_per_mb = 1024.0 * 1024.0
 t1.vsize_mb = t1.vsize_bytes / bytes_per_mb
 t1.rss_bytes_mb = t1.rss_bytes / bytes_per_mb
 t1.timestamp = px.bin(t1.time_, px.seconds(10))
-t1.cmdline = px.upid_to_cmdline(t1.upid)
+t1[k8s_object] = t1.ctx[k8s_object]
 
-aggop = t1.groupby(['upid', 'timestamp', 'cmdline']).agg(
+t1 = t1[px.contains(t1[k8s_object], match_name)]
+
+upid_aggop = t1.groupby(['upid', k8s_object, 'timestamp']).agg(
     vsize_mb=('vsize_mb', px.mean),
     rss_bytes_mb=('rss_bytes_mb', px.mean),
 )
 
+# For this aggregate, we sum up the values as we've already calculated the average/usage
+# for the upids already, just need to do it for the entire service.
+aggop = upid_aggop.groupby([k8s_object, 'timestamp']).agg(
+    vsize_mb=('vsize_mb', px.sum),
+    rss_bytes_mb=('rss_bytes_mb', px.sum),
+)
+
 # Format column names.
-aggop.pid = px.upid_to_pid(aggop.upid)
-aggop.asid = px.upid_to_asid(aggop.upid)
-aggop['Process Name'] = aggop.cmdline
-
-# Uncomment and replace number to filter on a specific pid.
-# aggop = aggop[aggop.pid == 4862]
-
 aggop['Virtual Memory (mb)'] = aggop.vsize_mb
 aggop['Average Memory (mb)'] = aggop.rss_bytes_mb
 keep_columns = aggop[[
-    'pid',
-    'Process Name',
-    'asid',
+    k8s_object,
     'timestamp',
     'Virtual Memory (mb)',
     'Average Memory (mb)'

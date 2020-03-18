@@ -1,6 +1,6 @@
 # Regular functions.
-px.display(px.GetUDFList())
+px.display(px.GetUDFList(), "map funcs")
 # Aggregate functions.
-px.display(px.GetUDAList())
+px.display(px.GetUDAList(), "agg funcs")
 # Table generationg functions.
-px.display(px.GetUDTFList())
+px.display(px.GetUDTFList(), "table_funcs")
