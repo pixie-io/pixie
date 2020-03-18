@@ -12,25 +12,29 @@
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/socket_trace_bpf_test_fixture.h"
 
-DEFINE_string(server_path, "", "The path to the leaky HTTP server.");
-
 namespace pl {
 namespace stirling {
 
 using ::pl::stirling::testing::SocketTraceBPFTest;
+using ::pl::testing::BazelBinTestFilePath;
 using ::pl::testing::TestFilePath;
 
 using ::testing::Contains;
 using ::testing::Key;
 using ::testing::Not;
 
+constexpr std::string_view kServerPath =
+    "src/stirling/http/testing/leaky_cpp_http_server/leaky_http_server";
+
 TEST_F(SocketTraceBPFTest, unclosed_connection) {
   const int kInactivitySeconds = 10;
   ConnectionTracker::SetInactivityDuration(std::chrono::seconds(kInactivitySeconds));
 
   // Create and run the server with a leaky FD.
+  std::filesystem::path server_path = BazelBinTestFilePath(kServerPath);
+  ASSERT_OK(fs::Exists(server_path));
+
   SubProcess server;
-  std::string server_path = TestFilePath(FLAGS_server_path);
   ASSERT_OK(server.Start({server_path}));
 
   uint64_t pid = server.child_pid();

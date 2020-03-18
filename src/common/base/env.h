@@ -18,4 +18,6 @@ class EnvironmentGuard {
 // Returns the value of the env var. Or nullopt if it's not set.
 std::optional<std::string> GetEnv(const std::string& env_var);
 
+void ChDirPixieRoot();
+
 }  // namespace pl

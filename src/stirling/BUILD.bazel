@@ -237,9 +237,6 @@ pl_cc_test(
     name = "bpf_map_leak_test",
     timeout = "moderate",
     srcs = ["bpf_map_leak_test.cc"],
-    args = [
-        "--server_path=$(location //src/stirling/http/testing/leaky_cpp_http_server:leaky_http_server)",
-    ],
     data = ["//src/stirling/http/testing/leaky_cpp_http_server:leaky_http_server"],
     tags = ["requires_bpf"],
     deps = [
