@@ -21,8 +21,7 @@ export const DeployInstructions = () => {
       <div className='deploy-instructions--content'>
         <h3>Deployment Instructions</h3>
         <div className='deploy-instructions--instructions' style={{ width: '100%' }}>
-          <div><span className='deploy-instructions--step'>Step 1:
-            </span> Copy and execute the following commands in your K8s cluster terminal:
+          <div>Copy and execute the following commands in your K8s cluster terminal:
           </div>
           <p />
           <CodeSnippet showCopy={true} language='bash'>
@@ -30,14 +29,6 @@ export const DeployInstructions = () => {
           </CodeSnippet>
           <CodeSnippet showCopy={true} language='bash'>
             {'px deploy'}
-          </CodeSnippet>
-          <br />
-          <div><span className='deploy-instructions--step'>Step 2:
-            </span> If your K8s cluster is on a separate network, create a proxy to Pixie's Vizier:
-          </div>
-          <p />
-          <CodeSnippet showCopy={true} language='bash'>
-            {'px proxy'}
           </CodeSnippet>
         </div>
         <div className='deploy-instructions--footer' style={{ width: '100%' }}>

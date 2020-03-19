@@ -14,6 +14,6 @@ describe('<DeployInstructionsContent/> test', () => {
     const wrapper = shallow(
       <DeployInstructions/>);
 
-    expect(wrapper.find(CodeSnippet)).toHaveLength(3);
+    expect(wrapper.find(CodeSnippet)).toHaveLength(2);
   });
 });
