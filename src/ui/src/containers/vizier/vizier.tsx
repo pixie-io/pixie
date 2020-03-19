@@ -14,8 +14,6 @@ import * as React from 'react';
 import {ApolloConsumer, Query, withApollo} from 'react-apollo';
 import {Redirect, Route, Switch} from 'react-router-dom';
 
-import {useQuery} from '@apollo/react-hooks';
-
 import {AgentDisplay} from './agent-display';
 import {DeployInstructions} from './deploy-instructions';
 import {VizierTopNav} from './top-nav';
@@ -84,28 +82,16 @@ interface VizierMainProps {
 }
 
 export const VizierMain = (props: VizierMainProps) => {
-  const [loaded, setLoaded] = React.useState(false);
-  const vizierClient = React.useMemo(() => new VizierGQLClient(props.cloudClient), []);
-  const { loading, error } = useQuery(CHECK_VIZIER, { client: vizierClient.gqlClient, pollInterval: 2500 });
-  if (loaded) {
-    return (
-      <VizierGQLClientContext.Provider value={vizierClient}>
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-          <VizierTopNav />
-          <Switch>
-            <Route path='/agents' component={AgentDisplay} />
-            <Route path='/console' component={EditorWithApollo} />
-            <Redirect from='/*' to='/console' />
-          </Switch>
-        </div>
-      </VizierGQLClientContext.Provider>
-    );
-  }
-  if (loading || error) {
-    const dnsMsg = 'Setting up DNS records for cluster...';
-    return <ClusterInstructions message={dnsMsg} />;
-  }
-  setLoaded(true);
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
+      <VizierTopNav />
+      <Switch>
+        <Route path='/agents' component={AgentDisplay} />
+        <Route path='/console' component={EditorWithApollo} />
+        <Redirect from='/*' to='/console' />
+      </Switch>
+    </div>
+  );
 };
 
 interface VizierState {
@@ -152,6 +138,7 @@ export class Vizier extends React.Component<{}, VizierState> {
                           cloudClient={cloudClient}
                           clusterID={data.cluster.id}
                           passthroughEnabled={data.cluster.vizierConfig.passthroughEnabled}
+                          loadingScreen={<ClusterInstructions message='Connecting to cluster...' />}
                         >
                           <Switch>
                             <Route path='/live' component={LiveViewWithApollo} />

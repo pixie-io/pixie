@@ -1,7 +1,7 @@
 import * as React from 'react';
 import {debounce} from 'utils/debounce';
-
 import {isDev} from 'utils/env';
+
 import {CloudClient} from './cloud-gql-client';
 import {VizierGRPCClient} from './vizier-grpc-client';
 
@@ -12,6 +12,7 @@ interface Props {
   passthroughEnabled: boolean;
   children: React.ReactNode;
   clusterID: string;
+  loadingScreen: React.ReactNode;
 }
 
 export type VizierConnectionStatus = 'healthy' | 'unhealthy' | 'disconnected';
@@ -28,9 +29,10 @@ async function newVizierClient(cloudClient: CloudClient, clusterID: string, pass
 }
 
 export const VizierGRPCClientProvider = (props: Props) => {
-  const { cloudClient, children, passthroughEnabled, clusterID} = props;
+  const { cloudClient, children, passthroughEnabled, clusterID } = props;
   const [client, setClient] = React.useState<VizierGRPCClient>(null);
   const [connectionStatus, setConnectionStatus] = React.useState<VizierConnectionStatus>('disconnected');
+  const [loaded, setLoaded] = React.useState(false);
 
   const newClient = () => newVizierClient(cloudClient, clusterID, passthroughEnabled).then(setClient);
   const reconnect = () => {
@@ -38,6 +40,7 @@ export const VizierGRPCClientProvider = (props: Props) => {
       next: (status) => {
         if (status.getCode() === 0) {
           setConnectionStatus('healthy');
+          setLoaded(true);
         } else {
           setConnectionStatus('unhealthy');
         }
@@ -60,7 +63,7 @@ export const VizierGRPCClientProvider = (props: Props) => {
 
   return (
     <VizierGRPCClientContext.Provider value={connectionStatus === 'disconnected' ? null : client}>
-      {children}
+      {!loaded ? props.loadingScreen : children}
     </VizierGRPCClientContext.Provider>
   );
 };
