@@ -6,6 +6,7 @@ load(
     container_repositories = "repositories",
 )
 load("@io_bazel_rules_docker//go:image.bzl", _go_image_repos = "repositories")
+load("@io_bazel_rules_docker//java:image.bzl", _java_image_repos = "repositories")
 load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_file")
 load("@distroless//package_manager:package_manager.bzl", "package_manager_repositories")
@@ -43,6 +44,7 @@ def _package_manager_setup():
 
 def _docker_images_setup():
     _go_image_repos()
+    _java_image_repos()
 
     # Import NGINX repo.
     container_pull(

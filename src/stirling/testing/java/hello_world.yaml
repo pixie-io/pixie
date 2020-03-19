@@ -1,0 +1,28 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java-hello-world
+  namespace: stirling-testing
+  labels:
+    name: java-hello-world
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: java-hello-world
+  template:
+    metadata:
+      labels:
+        name: java-hello-world
+    spec:
+      containers:
+      - name: java-hello-world
+        image: gcr.io/pl-dev-infra/java_hello_world:latest
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 512Mi

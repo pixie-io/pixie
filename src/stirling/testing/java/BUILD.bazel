@@ -1,7 +1,25 @@
 package(default_visibility = ["//visibility:public"])
 
+load("@io_bazel_rules_docker//java:image.bzl", "java_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+
 java_binary(
     name = "HelloWorld",
     srcs = ["HelloWorld.java"],
     main_class = "HelloWorld",
+)
+
+java_image(
+    name = "hello_world_image",
+    srcs = ["HelloWorld.java"],
+    main_class = "HelloWorld",
+)
+
+container_push(
+    name = "push_hello_world_image",
+    format = "Docker",
+    image = ":hello_world_image",
+    registry = "gcr.io",
+    repository = "pl-dev-infra/java_hello_world",
+    tag = "latest",
 )
