@@ -17,11 +17,8 @@ import (
 )
 
 const (
-	dialTimeout    = 5 * time.Second
-	requestTimeout = 1 * time.Second
+	dialTimeout = 5 * time.Second
 )
-
-// Contains interface to a running Vizier.
 
 // Connector is an interface to Vizier.
 type Connector struct {
@@ -131,13 +128,4 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, q string) (chan *Vi
 
 	}()
 	return results, nil
-}
-
-// GetAgentInfo returns the agent information.
-func (c *Connector) GetAgentInfo() (*querybrokerpb.AgentInfoResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	ctx = ctxWithTokenCreds(ctx, c.vzToken)
-	defer cancel()
-
-	return c.qb.GetAgentInfo(ctx, &querybrokerpb.AgentInfoRequest{})
 }
