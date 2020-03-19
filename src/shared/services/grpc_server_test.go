@@ -144,6 +144,17 @@ func TestGrpcServerUnary(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:        "authmiddleware",
+			token:       "",
+			expectError: false,
+			stream:      false,
+			serverOpts: &services.GRPCServerOptions{
+				AuthMiddleware: func(context.Context, env2.Env) (string, error) {
+					return testingutils.GenerateTestJWTToken(t, "abc"), nil
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {

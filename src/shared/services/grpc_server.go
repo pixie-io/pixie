@@ -19,7 +19,8 @@ import (
 
 // GRPCServerOptions are configuration options that are passed to the GRPC server.
 type GRPCServerOptions struct {
-	DisableAuth map[string]bool
+	DisableAuth    map[string]bool
+	AuthMiddleware func(context.Context, env.Env) (string, error) // Currently only used by cloud api-server.
 }
 
 func grpcUnaryInjectSession() grpc.UnaryServerInterceptor {
@@ -42,6 +43,9 @@ func grpcStreamInjectSession() grpc.StreamServerInterceptor {
 
 func createGRPCAuthFunc(env env.Env, opts *GRPCServerOptions) func(context.Context) (context.Context, error) {
 	return func(ctx context.Context) (context.Context, error) {
+		var err error
+		var token string
+
 		sCtx, err := authcontext.FromContext(ctx)
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "missing session context: %v", err)
@@ -51,9 +55,16 @@ func createGRPCAuthFunc(env env.Env, opts *GRPCServerOptions) func(context.Conte
 			return ctx, nil
 		}
 
-		token, err := grpc_auth.AuthFromMD(ctx, "bearer")
-		if err != nil {
-			return nil, err
+		if opts.AuthMiddleware != nil {
+			token, err = opts.AuthMiddleware(ctx, env)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "Auth middleware failed: %v", err)
+			}
+		} else {
+			token, err = grpc_auth.AuthFromMD(ctx, "bearer")
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		err = sCtx.UseJWTAuth(env.JWTSigningKey(), token)

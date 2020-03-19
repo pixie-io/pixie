@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -11,6 +13,17 @@ import (
 	authpb "pixielabs.ai/pixielabs/src/cloud/auth/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
+)
+
+var (
+	// ErrGetAuthTokenFailed occurs when we are unable to get a token from the cookie or bearer.
+	ErrGetAuthTokenFailed = errors.New("failed to get auth token: either a bearer auth or valid cookie session must exist")
+	// ErrFetchAugmentedTokenFailedInternal occurs when making a request for the augmented auth results in an internal error.
+	ErrFetchAugmentedTokenFailedInternal = errors.New("failed to fetch token - internal")
+	// ErrFetchAugmentedTokenFailedUnauthenticated occurs when making a request for the augmented token results in an authentication error.
+	ErrFetchAugmentedTokenFailedUnauthenticated = errors.New("failed to fetch token - unauthenticated")
+	// ErrParseAuthToken occurs when we are unable to parse the augmented token with the signing key.
+	ErrParseAuthToken = errors.New("Failed to parse token")
 )
 
 // GetTokenFromSession gets a token from the session store using cookies.
@@ -33,52 +46,83 @@ func GetTokenFromSession(env apienv.APIEnv, r *http.Request) (string, bool) {
 func WithAugmentedAuthMiddleware(env apienv.APIEnv, next http.Handler) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
 
-		// Steps:
-		// 1. Try to get the token out of session.
-		// 2. If not try to get the session out bearer
-		// 3. Generate augmented auth.
-
-		token, ok := GetTokenFromSession(env, r)
-		if !ok {
-			// Try to get it from bearer.
-			token, ok = httpmiddleware.GetTokenFromBearer(r)
-			if !ok {
-				http.Error(w, "failed to get auth token: either a bearer auth or valid cookie session must exist", http.StatusUnauthorized)
-				return
-			}
-		}
-
-		// Make a request to the Auth service to get an augmented token.
-		// We don't need to check the token validity since the Auth service will just reject bad tokens.
-		req := &authpb.GetAugmentedAuthTokenRequest{
-			Token: token,
-		}
-
-		ctxWithCreds := metadata.AppendToOutgoingContext(r.Context(), "authorization",
-			fmt.Sprintf("bearer %s", token))
-
-		resp, err := env.AuthClient().GetAugmentedToken(ctxWithCreds, req)
+		ctx, err := getAugmentedAuthHTTP(env, r)
 		if err != nil {
-			grpcCode := status.Code(err)
-			httpRetStatus := http.StatusInternalServerError
-			if grpcCode == codes.Unauthenticated {
-				httpRetStatus = http.StatusUnauthorized
+			if err == ErrFetchAugmentedTokenFailedUnauthenticated || err == ErrGetAuthTokenFailed {
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+			} else {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
 			}
-			http.Error(w, "failed to fetch token", httpRetStatus)
 			return
 		}
-
-		aCtx := authcontext.New()
-		err = aCtx.UseJWTAuth(env.JWTSigningKey(), resp.Token)
-		if err != nil {
-			http.Error(w, "Failed to parse token", http.StatusInternalServerError)
-			return
-		}
-
-		newCtx := authcontext.NewContext(r.Context(), aCtx)
-		ctxWithAugmentedAuth := metadata.AppendToOutgoingContext(newCtx, "authorization",
-			fmt.Sprintf("bearer %s", resp.Token))
-		next.ServeHTTP(w, r.WithContext(ctxWithAugmentedAuth))
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(f)
+}
+
+func getAugmentedToken(env apienv.APIEnv, r *http.Request) (string, error) {
+	// Steps:
+	// 1. Try to get the token out of session.
+	// 2. If not try to get the session out bearer
+	// 3. Generate augmented auth.
+
+	token, ok := GetTokenFromSession(env, r)
+	if !ok {
+		// Try to get it from bearer.
+		token, ok = httpmiddleware.GetTokenFromBearer(r)
+		if !ok {
+			return "", ErrGetAuthTokenFailed
+		}
+	}
+
+	// Make a request to the Auth service to get an augmented token.
+	// We don't need to check the token validity since the Auth service will just reject bad tokens.
+	req := &authpb.GetAugmentedAuthTokenRequest{
+		Token: token,
+	}
+
+	ctxWithCreds := metadata.AppendToOutgoingContext(r.Context(), "authorization",
+		fmt.Sprintf("bearer %s", token))
+
+	resp, err := env.AuthClient().GetAugmentedToken(ctxWithCreds, req)
+	if err != nil {
+		grpcCode := status.Code(err)
+		if grpcCode == codes.Unauthenticated {
+			return "", ErrFetchAugmentedTokenFailedUnauthenticated
+		}
+		return "", ErrFetchAugmentedTokenFailedInternal
+	}
+	return resp.Token, nil
+}
+
+func getAugmentedAuthHTTP(env apienv.APIEnv, r *http.Request) (context.Context, error) {
+	token, err := getAugmentedToken(env, r)
+	if err != nil {
+		return nil, err
+	}
+	aCtx := authcontext.New()
+	err = aCtx.UseJWTAuth(env.JWTSigningKey(), token)
+	if err != nil {
+		return nil, ErrParseAuthToken
+	}
+
+	newCtx := authcontext.NewContext(r.Context(), aCtx)
+	ctxWithAugmentedAuth := metadata.AppendToOutgoingContext(newCtx, "authorization",
+		fmt.Sprintf("bearer %s", token))
+	return ctxWithAugmentedAuth, nil
+}
+
+// GetAugmentedTokenGRPC gets the augmented token for a grpc context.
+func GetAugmentedTokenGRPC(ctx context.Context, env apienv.APIEnv) (string, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return "", errors.New("Could not get metadata from incoming md")
+	}
+	r := &http.Request{Header: http.Header{}}
+	for k, v := range md {
+		for _, val := range v {
+			r.Header.Add(k, val)
+		}
+	}
+	return getAugmentedToken(env, r)
 }
