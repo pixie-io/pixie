@@ -1,11 +1,14 @@
 package cmd
 
 import (
+	"context"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
 )
 
 func init() {
@@ -29,10 +32,15 @@ var GetCmd = &cobra.Command{
 		v := mustConnectDefaultVizier(cloudAddr)
 		q := `px.display(px.GetAgentStatus())`
 
-		res, err := v.ExecuteScript(q)
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		resp, err := v.ExecuteScriptStream(ctx, q)
 		if err != nil {
 			log.WithError(err).Fatal("Failed to execute query")
 		}
-		mustFormatQueryResults(res, format)
+
+		tw := vizier.NewVizierStreamOutputAdapter(ctx, resp, format)
+		tw.Finish()
 	},
 }
