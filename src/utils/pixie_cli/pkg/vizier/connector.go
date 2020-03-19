@@ -10,9 +10,11 @@ import (
 	"time"
 
 	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/shared/services"
-	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
+	"pixielabs.ai/pixielabs/src/utils"
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
@@ -23,38 +25,46 @@ const (
 // Connector is an interface to Vizier.
 type Connector struct {
 	// The ID of the vizier.
-	id      uuid.UUID
-	conn    *grpc.ClientConn
-	qb      querybrokerpb.QueryBrokerServiceClient
-	vz      pl_api_vizierpb.VizierServiceClient
-	vzIP    string
-	vzToken string
+	id                 uuid.UUID
+	conn               *grpc.ClientConn
+	vz                 pl_api_vizierpb.VizierServiceClient
+	vzToken            string
+	passthroughEnabled bool
 }
 
 // NewConnector returns a new connector.
-func NewConnector(info *ConnectionInfo) (*Connector, error) {
-	if info.URL == nil {
-		return nil, errors.New("missing Vizier URL, likely still initializing")
-	}
+func NewConnector(cloudAddr string, vzInfo *cloudapipb.ClusterInfo, conn *ConnectionInfo) (*Connector, error) {
 	c := &Connector{
-		id:      info.ID,
-		vzIP:    info.URL.Host,
-		vzToken: info.Token,
+		id: utils.UUIDFromProtoOrNil(vzInfo.ID),
 	}
 
-	err := c.connect()
+	if vzInfo.Config != nil {
+		c.passthroughEnabled = vzInfo.Config.PassthroughEnabled
+	}
+
+	var err error
+	if !c.passthroughEnabled {
+		// We need to store the token to talk to Vizier directly.
+		c.vzToken = conn.Token
+		if conn.URL == nil {
+			return nil, errors.New("missing Vizier URL, likely still initializing")
+		}
+		err = c.connect(conn.URL.Host)
+	} else {
+		err = c.connect(cloudAddr)
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
-	c.qb = querybrokerpb.NewQueryBrokerServiceClient(c.conn)
 	c.vz = pl_api_vizierpb.NewVizierServiceClient(c.conn)
+
 	return c, nil
 }
 
 // Connect connects to Vizier (blocking)
-func (c *Connector) connect() error {
-	addr := c.vzIP
+func (c *Connector) connect(addr string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), dialTimeout)
 	defer cancel()
 
@@ -87,6 +97,11 @@ func (*Connector) nextQueryID() uuid.UUID {
 	return uuid.NewV4()
 }
 
+// PassthroughMode returns true if passthrough mode is enabled.
+func (c *Connector) PassthroughMode() bool {
+	return c.passthroughEnabled
+}
+
 // ExecuteScriptStream execute a vizier query as a stream.
 func (c *Connector) ExecuteScriptStream(ctx context.Context, q string) (chan *VizierExecData, error) {
 	q = strings.TrimSpace(q)
@@ -102,7 +117,16 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, q string) (chan *Vi
 		ClusterID:  c.id.String(),
 	}
 
-	ctx = ctxWithTokenCreds(ctx, c.vzToken)
+	if c.passthroughEnabled {
+		var err error
+		ctx, err = ctxWithCreds(ctx)
+		if err != nil {
+			log.WithError(err).Fatalln("Failed to get credentials")
+		}
+	} else {
+		ctx = ctxWithTokenCreds(ctx, c.vzToken)
+	}
+
 	resp, err := c.vz.ExecuteScript(ctx, reqPB)
 	if err != nil {
 		return nil, err

@@ -114,6 +114,12 @@ var RunCmd = &cobra.Command{
 
 		v := mustConnectDefaultVizier(cloudAddr)
 
+		if v.PassthroughMode() {
+			fmt.Fprint(os.Stderr, "Connection Mode: passthrough\n")
+		} else {
+			fmt.Fprintf(os.Stderr, "Connection Mode: secure-direct\n")
+		}
+
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
@@ -124,7 +130,8 @@ var RunCmd = &cobra.Command{
 				UserId: pxconfig.Cfg().UniqueClientID,
 				Event:  "Script Execution Failed",
 				Properties: analytics.NewProperties().
-					Set("scriptString", script),
+					Set("scriptString", script).
+					Set("passthrough", v.PassthroughMode()),
 			})
 			log.WithError(err).Fatal("Failed to execute script")
 		}
@@ -134,7 +141,8 @@ var RunCmd = &cobra.Command{
 			Event:  "Script Execution Success",
 			Properties: analytics.NewProperties().
 				Set("scriptString", script).
-				Set("outputFormat", format),
+				Set("outputFormat", format).
+				Set("passthrough", v.PassthroughMode()),
 		})
 
 		tw := vizier.NewVizierStreamOutputAdapter(ctx, resp, format)

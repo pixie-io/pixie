@@ -21,14 +21,24 @@ func mustConnectDefaultVizier(cloudAddr string) *vizier.Connector {
 		log.WithError(err).Fatal("No Viziers available")
 	}
 
-	u := utils.UUIDFromProtoOrNil(vzInfo[0].ID)
+	passthrough := false
+	selectedVzInfo := vzInfo[0]
 
-	vzConn, err := l.GetVizierConnection(u)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to create Vizier connection")
+	if selectedVzInfo.Config != nil {
+		passthrough = selectedVzInfo.Config.PassthroughEnabled
 	}
 
-	v, err := vizier.NewConnector(vzConn)
+	u := utils.UUIDFromProtoOrNil(selectedVzInfo.ID)
+
+	var vzConn *vizier.ConnectionInfo
+	if !passthrough {
+		vzConn, err = l.GetVizierConnection(u)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to create Vizier connection")
+		}
+	}
+
+	v, err := vizier.NewConnector(cloudAddr, selectedVzInfo, vzConn)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to Vizier")
 	}
