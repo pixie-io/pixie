@@ -166,7 +166,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 	mdsSchemaReq := &metadatapb.SchemaRequest{}
 	mdsSchemaResp, err := s.mdsClient.GetSchemas(ctx, mdsSchemaReq)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to get schemas.")
+		log.WithError(err).Error("Failed to get schemas.")
 		return nil, nil, err
 	}
 	schema := mdsSchemaResp.Schema
@@ -320,7 +320,6 @@ func (s *Server) GetSchemas(ctx context.Context, req *querybrokerpb.SchemaReques
 func (s *Server) GetAgentInfo(ctx context.Context, req *querybrokerpb.AgentInfoRequest) (*querybrokerpb.AgentInfoResponse, error) {
 	aCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
-		log.Info("FAILED ERROR!")
 		return nil, err
 	}
 
@@ -399,17 +398,23 @@ func (s *Server) GetAvailableFlags(ctx context.Context, req *plannerpb.QueryRequ
 // HealthCheck continually responds with the current health of Vizier.
 func (s *Server) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.VizierService_HealthCheckServer) error {
 	// For now, just report itself as healthy.
-	for range time.Tick(5 * time.Second) {
+	for c := time.Tick(5 * time.Second); ; {
 		err := srv.Send(&vizierpb.HealthCheckResponse{
 			Status: &vizierpb.Status{
 				Code: int32(codes.OK),
 			},
 		})
 		if err != nil {
+			log.WithError(err).Error("Error sending on stream, ending health check")
 			return err
 		}
+		select {
+		case <-srv.Context().Done():
+			return nil
+		case <-c:
+			continue
+		}
 	}
-	return nil
 }
 
 // ExecuteScript executes the script and sends results through the gRPC stream.
@@ -442,6 +447,15 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 	}
 	planner := logicalplanner.New(&udfInfo)
 	defer planner.Free()
+
+	ctx := srv.Context()
+	aCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return err
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", aCtx.AuthToken))
+
 	qr, status, err := s.ExecuteQueryWithPlanner(context.Background(), convertedReq, queryID, planner, planOpts)
 	if err != nil {
 		return err

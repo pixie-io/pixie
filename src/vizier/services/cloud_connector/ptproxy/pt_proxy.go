@@ -155,7 +155,7 @@ func (s *PassThroughProxy) runRequest(reqState *RequestState, msg *cvmsgspb.C2VA
 	case *cvmsgspb.C2VAPIStreamRequest_ExecReq:
 		stream = NewExecuteScriptStream(s.vzClient)
 	case *cvmsgspb.C2VAPIStreamRequest_HcReq:
-		stream = NewExecuteScriptStream(s.vzClient)
+		stream = NewHealthCheckStream(s.vzClient)
 	default:
 		log.Error("Unhandled message type")
 		return
