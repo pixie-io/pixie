@@ -17,7 +17,6 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	utils2 "pixielabs.ai/pixielabs/src/shared/services/utils"
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
@@ -59,7 +58,7 @@ func newRequestProxyer(vzmgr vzmgrClient, nc *nats.Conn, r ClusterIDer, s grpcSt
 	// and get the key to generate the token.
 	requestID := uuid.NewV4()
 	ctx := s.Context()
-	token, claims, err := getCredsFromCtx(ctx)
+	token, _, err := getCredsFromCtx(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -74,18 +73,12 @@ func newRequestProxyer(vzmgr vzmgrClient, nc *nats.Conn, r ClusterIDer, s grpcSt
 	}
 	p.clusterID = clusterID
 
-	signingKey, err := p.validateRequestAndFetchCreds(ctx, vzmgr)
+	signedToken, err := p.validateRequestAndFetchCreds(ctx, vzmgr)
 	if err != nil {
 		if err == ErrNotAvailable {
 			return nil, err
 		}
 		return nil, ErrCredentialFetch
-	}
-
-	// Re-sign the claims using the cluster key.
-	signedToken, err := utils2.SignJWTClaims(claims, signingKey)
-	if err != nil {
-		return nil, ErrCredentialGenerate
 	}
 
 	// Now that everything is setup, we are ready to make the request and wait for the replies.
