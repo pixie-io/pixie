@@ -1,3 +1,4 @@
+import {DOMAIN_NAME} from 'containers/constants';
 import * as moment from 'moment';
 
 const BUILD_ENV = process.env.BUILD_ENV;
@@ -25,4 +26,8 @@ export const PIXIE_CLOUD_VERSION = `${dateStr}+${parts.join('.')}`;
 
 export function isProd(): boolean {
   return (BUILD_ENV || '').toLowerCase() === 'prod';
+}
+
+export function isDev(): boolean {
+  return DOMAIN_NAME.startsWith('dev');
 }

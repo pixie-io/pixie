@@ -34,6 +34,9 @@ export const GET_CLUSTER = gql`
     id
     status
     lastHeartbeatMs
+    vizierConfig {
+      passthroughEnabled
+    }
   }
 }`;
 
@@ -145,7 +148,11 @@ export class Vizier extends React.Component<{}, VizierState> {
                     }
                     if (data.cluster.status === 'VZ_ST_HEALTHY') {
                       return (
-                        <VizierGRPCClientProvider cloudClient={cloudClient}>
+                        <VizierGRPCClientProvider
+                          cloudClient={cloudClient}
+                          clusterID={data.cluster.id}
+                          passthroughEnabled={data.cluster.vizierConfig.passthroughEnabled}
+                        >
                           <Switch>
                             <Route path='/live' component={LiveViewWithApollo} />
                             <Route render={(props) => <VizierMain {...props} cloudClient={cloudClient} />} />

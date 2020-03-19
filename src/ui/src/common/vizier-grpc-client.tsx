@@ -21,14 +21,16 @@ export interface VizierQueryResult {
 export class VizierGRPCClient {
   private client: VizierServiceClient;
 
-  constructor(addr: string, private token: string) {
-    this.client = new VizierServiceClient(addr);
+  constructor(addr: string, private token: string, private clusterID: string, private attachCreds: boolean) {
+    this.client = new VizierServiceClient(addr, null, attachCreds ? {
+      withCredentials: 'true'} : {});
   }
 
   health(): Observable<Status> {
     return Observable.create((observer) => {
       const req = new HealthCheckRequest();
-      const call = this.client.healthCheck(req,  { Authorization: `BEARER ${this.token}` });
+      req.setClusterId(this.clusterID);
+      const call = this.client.healthCheck(req, this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` });
       call.on('data', (resp) => {
         observer.next(resp.getStatus());
       });
@@ -43,10 +45,11 @@ export class VizierGRPCClient {
 
   executeScript(script: string, args?: {}): Promise<VizierQueryResult> {
     const req = new ExecuteScriptRequest();
+    req.setClusterId(this.clusterID);
     req.setQueryStr(script);
 
     return new Promise((resolve, reject) => {
-      const call = this.client.executeScript(req, { Authorization: `BEARER ${this.token}` });
+      const call = this.client.executeScript(req, this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` });
       const tablesMap = new Map<string, Table>();
       const results: VizierQueryResult = { tables: [] };
 
