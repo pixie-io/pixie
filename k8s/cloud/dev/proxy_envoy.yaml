@@ -6,6 +6,13 @@ metadata:
 data:
 # yamllint disable
 # The embedded YAML file is messing up yaml-lint.
+# This envoy.yaml is almost an exact copy of cloud/base/proxy_envoy.yaml, minus
+# the alpn_protocols in common_tls_context. This is because GCP health check only
+# supports alpn h2, making the alpn field is required in our prod cloud instances.
+# plc-dev makes a direct call to Envoy, since the proxy is not behind a GCLB.
+# Unfortunately, the browser does not support HTTP2, so plc-dev cannot
+# make a direct call to Envoy with alpn h2 enabled. This requires us to remove
+# alpn h2 in only dev's proxy_envoy.
   envoy.yaml: >
     static_resources:
       listeners:
@@ -54,7 +61,6 @@ data:
               - name: envoy.router
           tls_context:
             common_tls_context:
-              alpn_protocols: "h2,http/1.1"
               tls_certificates:
                 - certificate_chain:
                     filename: "/certs/tls.crt"
