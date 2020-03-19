@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"regexp"
 	"strings"
@@ -27,6 +28,11 @@ type TableInfo struct {
 	timeColIdx  int
 	latencyCols map[int]bool
 	alertCols   map[int]bool
+}
+
+type VizierExecData struct {
+	resp *pl_api_vizierpb.ExecuteScriptResponse
+	err  error
 }
 
 // VizierStreamOutputAdapter adapts the vizier output to the StreamWriters.
@@ -52,7 +58,7 @@ var (
 )
 
 // NewVizierStreamOutputAdapter creates a new vizier output adapter.
-func NewVizierStreamOutputAdapter(ctx context.Context, stream chan *pl_api_vizierpb.ExecuteScriptResponse, format string) *VizierStreamOutputAdapter {
+func NewVizierStreamOutputAdapter(ctx context.Context, stream chan *VizierExecData, format string) *VizierStreamOutputAdapter {
 	enableFormat := format != "json"
 
 	factoryFunc := func(md *pl_api_vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter {
@@ -84,7 +90,7 @@ func (v *VizierStreamOutputAdapter) Finish() {
 	}
 }
 
-func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream chan *pl_api_vizierpb.ExecuteScriptResponse) {
+func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream chan *VizierExecData) {
 	defer v.wg.Done()
 	for {
 		select {
@@ -94,8 +100,14 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 			if msg == nil {
 				return
 			}
+			if msg.err != nil {
+				if msg.err == io.EOF {
+					return
+				}
+				log.WithError(msg.err).Fatalln("Failed to get data from Vizier")
+			}
 			var err error
-			switch res := msg.Result.(type) {
+			switch res := msg.resp.Result.(type) {
 			case *pl_api_vizierpb.ExecuteScriptResponse_MetaData:
 				err = v.handleMetadata(ctx, res)
 			case *pl_api_vizierpb.ExecuteScriptResponse_Data:

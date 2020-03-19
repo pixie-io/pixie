@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
-	"pixielabs.ai/pixielabs/src/vizier/vizierpb"
+	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 const (
@@ -36,6 +36,9 @@ type Connector struct {
 
 // NewConnector returns a new connector.
 func NewConnector(info *ConnectionInfo) (*Connector, error) {
+	if info.URL == nil {
+		return nil, errors.New("missing Vizier URL, likely still initializing")
+	}
 	c := &Connector{
 		id:      info.ID,
 		vzIP:    info.URL.Host,
@@ -88,7 +91,7 @@ func (*Connector) nextQueryID() uuid.UUID {
 }
 
 // ExecuteScriptStream execute a vizier query as a stream.
-func (c *Connector) ExecuteScriptStream(ctx context.Context, q string) (chan *pl_api_vizierpb.ExecuteScriptResponse, error) {
+func (c *Connector) ExecuteScriptStream(ctx context.Context, q string) (chan *VizierExecData, error) {
 	q = strings.TrimSpace(q)
 	if len(q) == 0 {
 		return nil, errors.New("input query is empty")
@@ -102,13 +105,13 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, q string) (chan *pl
 		ClusterID:  c.id.String(),
 	}
 
-	ctx, _ = ctxWithCreds(ctx)
+	ctx = ctxWithTokenCreds(ctx, c.vzToken)
 	resp, err := c.vz.ExecuteScript(ctx, reqPB)
 	if err != nil {
 		return nil, err
 	}
 
-	results := make(chan *pl_api_vizierpb.ExecuteScriptResponse)
+	results := make(chan *VizierExecData)
 	go func() {
 		for {
 			select {
@@ -118,11 +121,11 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, q string) (chan *pl
 				return
 			default:
 				msg, err := resp.Recv()
+				results <- &VizierExecData{resp: msg, err: err}
 				if err != nil || msg == nil {
 					close(results)
 					return
 				}
-				results <- msg
 			}
 		}
 

@@ -118,6 +118,7 @@ var RunCmd = &cobra.Command{
 		defer cancel()
 
 		resp, err := v.ExecuteScriptStream(ctx, script)
+
 		if err != nil {
 			_ = pxanalytics.Client().Enqueue(&analytics.Track{
 				UserId: pxconfig.Cfg().UniqueClientID,
