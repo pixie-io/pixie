@@ -316,6 +316,59 @@ export namespace Relation {
 
 }
 
+export class CompilerError extends jspb.Message {
+  getLine(): number;
+  setLine(value: number): void;
+
+  getColumn(): number;
+  setColumn(value: number): void;
+
+  getMessage(): string;
+  setMessage(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): CompilerError.AsObject;
+  static toObject(includeInstance: boolean, msg: CompilerError): CompilerError.AsObject;
+  static serializeBinaryToWriter(message: CompilerError, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): CompilerError;
+  static deserializeBinaryFromReader(message: CompilerError, reader: jspb.BinaryReader): CompilerError;
+}
+
+export namespace CompilerError {
+  export type AsObject = {
+    line: number,
+    column: number,
+    message: string,
+  }
+}
+
+export class ErrorDetails extends jspb.Message {
+  getCompilerError(): CompilerError | undefined;
+  setCompilerError(value?: CompilerError): void;
+  hasCompilerError(): boolean;
+  clearCompilerError(): void;
+
+  getErrorCase(): ErrorDetails.ErrorCase;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): ErrorDetails.AsObject;
+  static toObject(includeInstance: boolean, msg: ErrorDetails): ErrorDetails.AsObject;
+  static serializeBinaryToWriter(message: ErrorDetails, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): ErrorDetails;
+  static deserializeBinaryFromReader(message: ErrorDetails, reader: jspb.BinaryReader): ErrorDetails;
+}
+
+export namespace ErrorDetails {
+  export type AsObject = {
+    compilerError?: CompilerError.AsObject,
+  }
+
+  export enum ErrorCase { 
+    ERROR_NOT_SET = 0,
+    COMPILER_ERROR = 1,
+  }
+}
+
 export class Status extends jspb.Message {
   getCode(): number;
   setCode(value: number): void;
@@ -323,10 +376,10 @@ export class Status extends jspb.Message {
   getMessage(): string;
   setMessage(value: string): void;
 
-  getDetailsList(): Array<google_protobuf_any_pb.Any>;
-  setDetailsList(value: Array<google_protobuf_any_pb.Any>): void;
-  clearDetailsList(): void;
-  addDetails(value?: google_protobuf_any_pb.Any, index?: number): google_protobuf_any_pb.Any;
+  getErrorDetailsList(): Array<ErrorDetails>;
+  setErrorDetailsList(value: Array<ErrorDetails>): void;
+  clearErrorDetailsList(): void;
+  addErrorDetails(value?: ErrorDetails, index?: number): ErrorDetails;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Status.AsObject;
@@ -340,7 +393,7 @@ export namespace Status {
   export type AsObject = {
     code: number,
     message: string,
-    detailsList: Array<google_protobuf_any_pb.Any.AsObject>,
+    errorDetailsList: Array<ErrorDetails.AsObject>,
   }
 }
 

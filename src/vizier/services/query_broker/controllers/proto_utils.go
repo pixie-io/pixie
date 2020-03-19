@@ -3,7 +3,6 @@ package controllers
 import (
 	"errors"
 
-	gogotypes "github.com/gogo/protobuf/types"
 	"google.golang.org/grpc/codes"
 
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
@@ -117,7 +116,6 @@ func StatusToVizierStatus(s *statuspb.Status) (*vizierpb.Status, error) {
 	return &vizierpb.Status{
 		Code:    int32(statusCodeToGRPCCode[s.ErrCode]),
 		Message: s.Msg,
-		Details: []*gogotypes.Any{s.Context},
 	}, nil
 }
 

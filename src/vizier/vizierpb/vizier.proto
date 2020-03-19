@@ -88,6 +88,17 @@ message Relation {
   repeated ColumnInfo columns = 1;
 }
 
+message CompilerError {
+  uint64 line = 1;
+  uint64 column = 2;
+  string message = 3;
+}
+
+message ErrorDetails {
+  oneof error {
+    CompilerError compiler_error = 1;
+  }
+}
 
 message Status {
   // The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
@@ -98,9 +109,10 @@ message Status {
   // [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
   string message = 2;
 
-  // A list of messages that carry the error details.  There is a common set of
-  // message types for APIs to use.
-  repeated google.protobuf.Any details = 3;
+  // Reserved for deprecated Details.
+  reserved 3;
+
+  repeated ErrorDetails error_details = 4;
 }
 
 // ScalarValues reference a single constant value.
