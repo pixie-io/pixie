@@ -5,7 +5,7 @@ metadata:
 spec:
   securityPolicy:
     name: pixie-cloud-ingress-policy
-  timeoutSec: 30
+  timeoutSec: 3600
   connectionDraining:
     drainingTimeoutSec: 60
   cdn:
