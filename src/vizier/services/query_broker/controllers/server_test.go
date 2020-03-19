@@ -384,11 +384,15 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 
 	s, err := NewServer(env, mds, nc)
 	queryID := uuid.NewV4()
-	queryResult, _, err := s.ExecuteQueryWithPlanner(context.Background(), queryRequest, queryID, planner, &planpb.PlanOptions{Analyze: true})
-	if err != nil {
+
+	auth := authcontext.New()
+	ctx := authcontext.NewContext(context.Background(), auth)
+
+	queryResult, _, err := s.ExecuteQueryWithPlanner(ctx, queryRequest, queryID, planner, &planpb.PlanOptions{Analyze: true})
+	if !assert.Nil(t, queryResult) {
 		t.Fatal("Failed to return results from ExecuteQuery.")
 	}
-	assert.Nil(t, queryResult)
+
 }
 
 func TestExecuteQueryInvalidFlags(t *testing.T) {
@@ -651,7 +655,9 @@ func TestPlannerErrorResult(t *testing.T) {
 
 	s, err := newServer(env, mds, nc, createExecutorMock)
 	queryID := uuid.NewV4()
-	_, status, err := s.ExecuteQueryWithPlanner(context.Background(), queryRequest,
+	auth := authcontext.New()
+	ctx := authcontext.NewContext(context.Background(), auth)
+	_, status, err := s.ExecuteQueryWithPlanner(ctx, queryRequest,
 		queryID, planner, &planpb.PlanOptions{Analyze: true})
 
 	if !assert.Nil(t, err) {
@@ -739,7 +745,9 @@ func TestErrorInStatusResult(t *testing.T) {
 	s, err := newServer(env, mds, nc, createExecutorMock)
 
 	queryID := uuid.NewV4()
-	_, status, err := s.ExecuteQueryWithPlanner(context.Background(), queryRequest, queryID, planner, &planpb.PlanOptions{Analyze: true})
+	auth := authcontext.New()
+	ctx := authcontext.NewContext(context.Background(), auth)
+	_, status, err := s.ExecuteQueryWithPlanner(ctx, queryRequest, queryID, planner, &planpb.PlanOptions{Analyze: true})
 
 	if !assert.Nil(t, err) {
 		t.Fatal("Error while executing query.")
@@ -772,7 +780,9 @@ func TestGetAvailableFlags(t *testing.T) {
 	planner := mock_controllers.NewMockPlanner(ctrl)
 	planner.EXPECT().GetAvailableFlags(queryRequest).Return(getFlagsResultPB, nil)
 
-	resp, err := s.GetAvailableFlagsWithPlanner(context.Background(), queryRequest, planner)
+	auth := authcontext.New()
+	ctx := authcontext.NewContext(context.Background(), auth)
+	resp, err := s.GetAvailableFlagsWithPlanner(ctx, queryRequest, planner)
 	assert.Equal(t, getFlagsResultPB, resp)
 
 	assert.Nil(t, err)

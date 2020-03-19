@@ -24,6 +24,14 @@ namespace vizier {
 namespace funcs {
 namespace md {
 
+std::string GenerateServiceToken();
+
+// TODO(zasgar/michelle): We need to figure out a way to restrict access based on user.
+inline void ContextWithServiceAuth(grpc::ClientContext* context) {
+  std::string token = GenerateServiceToken();
+  context->AddMetadata("authorization", absl::Substitute("bearer $0", token));
+}
+
 template <typename TUDTF>
 class UDTFWithMDFactory : public carnot::udf::UDTFFactory {
  public:
@@ -80,6 +88,7 @@ class GetTableSchemas final : public carnot::udf::UDTF<GetTableSchemas> {
     pl::vizier::services::metadata::SchemaResponse resp;
 
     grpc::ClientContext ctx;
+    ContextWithServiceAuth(&ctx);
     auto s = stub_->GetSchemas(&ctx, req, &resp);
     if (!s.ok()) {
       return error::Internal("Failed to make RPC call to metadata service");
@@ -162,6 +171,7 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
     resp_ = std::make_unique<pl::vizier::services::metadata::AgentInfoResponse>();
 
     grpc::ClientContext ctx;
+    ContextWithServiceAuth(&ctx);
     auto s = stub_->GetAgentInfo(&ctx, req, resp_.get());
     if (!s.ok()) {
       return error::Internal("Failed to make RPC call to GetAgentInfo");
@@ -200,7 +210,7 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
 };
 
 namespace internal {
-rapidjson::GenericStringRef<char> StringRef(std::string_view s) {
+inline rapidjson::GenericStringRef<char> StringRef(std::string_view s) {
   return rapidjson::GenericStringRef<char>(s.data(), s.size());
 }
 

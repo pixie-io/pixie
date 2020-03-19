@@ -14,17 +14,18 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
+	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 
 	logicalplanner "pixielabs.ai/pixielabs/src/carnot/planner"
-	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
-	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
+	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/export"
@@ -162,6 +163,12 @@ func makePlannerState(pemInfo []*agentpb.Agent, kelvinList []*agentpb.Agent, sch
 
 // ExecuteQueryWithPlanner executes a query with the provided planner.
 func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.QueryRequest, queryID uuid.UUID, planner Planner, planOpts *planpb.PlanOptions) (*queryresultspb.QueryResult, *statuspb.Status, error) {
+	aCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", aCtx.AuthToken))
+
 	// Get the table schema that is presumably shared across agents.
 	mdsSchemaReq := &metadatapb.SchemaRequest{}
 	mdsSchemaResp, err := s.mdsClient.GetSchemas(ctx, mdsSchemaReq)
@@ -170,7 +177,6 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 		return nil, nil, err
 	}
 	schema := mdsSchemaResp.Schema
-
 	// Get all available agents for now.
 	mdsReq := &metadatapb.AgentInfoRequest{}
 	mdsResp, err := s.mdsClient.GetAgentInfo(ctx, mdsReq)
@@ -289,14 +295,6 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *plannerpb.QueryRequest) 
 	}
 	planner := logicalplanner.New(&udfInfo)
 	defer planner.Free()
-
-	aCtx, err := authcontext.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", aCtx.AuthToken))
-
 	qr, status, err := s.ExecuteQueryWithPlanner(ctx, req, queryID, planner, planOpts)
 	if err != nil {
 		return nil, err
@@ -318,14 +316,13 @@ func (s *Server) GetSchemas(ctx context.Context, req *querybrokerpb.SchemaReques
 
 // GetAgentInfo returns information about registered agents.
 func (s *Server) GetAgentInfo(ctx context.Context, req *querybrokerpb.AgentInfoRequest) (*querybrokerpb.AgentInfoResponse, error) {
+	mdsReq := &metadatapb.AgentInfoRequest{}
 	aCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-
 	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", aCtx.AuthToken))
 
-	mdsReq := &metadatapb.AgentInfoRequest{}
 	mdsResp, err := s.mdsClient.GetAgentInfo(ctx, mdsReq)
 	if err != nil {
 		return nil, err
@@ -415,6 +412,7 @@ func (s *Server) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.Vizi
 			continue
 		}
 	}
+	return nil
 }
 
 // ExecuteScript executes the script and sends results through the gRPC stream.
