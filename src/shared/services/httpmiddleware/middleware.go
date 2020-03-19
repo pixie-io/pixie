@@ -15,9 +15,13 @@ func GetTokenFromBearer(r *http.Request) (string, bool) {
 	// Try to get creds from the request.
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
-		// Must have auth header.
 		return "", false
 	}
+
+	if !strings.HasPrefix(authHeader, bearerSchema) {
+		bearerSchema = "bearer " // GRPC includes bearer in header with lowercase.
+	}
+
 	if !strings.HasPrefix(authHeader, bearerSchema) {
 		// Must have Bearer in authorization.
 		return "", false

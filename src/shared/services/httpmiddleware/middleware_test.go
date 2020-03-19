@@ -39,6 +39,15 @@ func TestWithBearerAuthMiddleware(t *testing.T) {
 			ExpectHandlerUserID:    testingutils.TestUserID,
 		},
 		{
+			Name:          "Auth Success With Bearer",
+			Authorization: "bearer " + testingutils.GenerateTestJWTToken(t, "jwt-key"),
+			Path:          "/api/users",
+
+			ExpectAuthSuccess:      true,
+			ExpectHandlerAuthError: false,
+			ExpectHandlerUserID:    testingutils.TestUserID,
+		},
+		{
 			Name: "/healthz auth bypass",
 			Path: "/healthz",
 
