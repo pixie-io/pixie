@@ -2,6 +2,7 @@ package controller_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,7 +16,10 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/profile/controller"
 	mock_controller "pixielabs.ai/pixielabs/src/cloud/profile/controller/mock"
 	"pixielabs.ai/pixielabs/src/cloud/profile/datastore"
+	"pixielabs.ai/pixielabs/src/cloud/profile/profileenv"
 	profile "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
+	"pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb"
+	mock_projectmanager "pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb/mock"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 )
@@ -286,7 +290,7 @@ func TestServer_GetUserByEmail_MissingEmail(t *testing.T) {
 	assert.Equal(t, status.Code(err), codes.NotFound)
 }
 
-func TestServer_CreateOrgAndUser(t *testing.T) {
+func TestServer_CreateOrgAndUser_SuccessCases(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -295,17 +299,12 @@ func TestServer_CreateOrgAndUser(t *testing.T) {
 	testOrgUUID := uuid.NewV4()
 	testUUID := uuid.NewV4()
 	createOrgUserTest := []struct {
-		name      string
-		makesCall bool
-
-		req        *profile.CreateOrgAndUserRequest
-		expectErr  bool
-		expectCode codes.Code
-		resp       *profile.CreateOrgAndUserResponse
+		name string
+		req  *profile.CreateOrgAndUserRequest
+		resp *profile.CreateOrgAndUserResponse
 	}{
 		{
-			name:      "valid request",
-			makesCall: true,
+			name: "valid request",
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
 					OrgName:    "hulu",
@@ -318,123 +317,12 @@ func TestServer_CreateOrgAndUser(t *testing.T) {
 					Email:     "foo@bar.com",
 				},
 			},
-			expectErr: false,
 			resp: &profile.CreateOrgAndUserResponse{
 				OrgID:  utils.ProtoFromUUID(&testOrgUUID),
 				UserID: utils.ProtoFromUUID(&testUUID),
 			},
-		},
-		{
-			name:      "invalid org name",
-			makesCall: false,
-			req: &profile.CreateOrgAndUserRequest{
-				Org: &profile.CreateOrgAndUserRequest_Org{
-					OrgName:    "",
-					DomainName: "hulu.com",
-				},
-				User: &profile.CreateOrgAndUserRequest_User{
-					Username:  "foobar",
-					FirstName: "foo",
-					LastName:  "bar",
-					Email:     "foo@bar.com",
-				},
-			},
-			expectErr:  true,
-			expectCode: codes.InvalidArgument,
-		},
-		{
-			name:      "invalid domain name",
-			makesCall: false,
-			req: &profile.CreateOrgAndUserRequest{
-				Org: &profile.CreateOrgAndUserRequest_Org{
-					OrgName:    "hulu",
-					DomainName: "",
-				},
-				User: &profile.CreateOrgAndUserRequest_User{
-					Username:  "foobar",
-					FirstName: "foo",
-					LastName:  "bar",
-					Email:     "foo@bar.com",
-				},
-			},
-			expectErr:  true,
-			expectCode: codes.InvalidArgument,
-		},
-		{
-			name:      "invalid username",
-			makesCall: false,
-			req: &profile.CreateOrgAndUserRequest{
-				Org: &profile.CreateOrgAndUserRequest_Org{
-					OrgName:    "hulu",
-					DomainName: "hulu.com",
-				},
-				User: &profile.CreateOrgAndUserRequest_User{
-					Username:  "",
-					FirstName: "foo",
-					LastName:  "bar",
-					Email:     "foo@bar.com",
-				},
-			},
-			expectErr:  true,
-			expectCode: codes.InvalidArgument,
-		},
-		{
-			name:      "invalid first name",
-			makesCall: false,
-			req: &profile.CreateOrgAndUserRequest{
-				Org: &profile.CreateOrgAndUserRequest_Org{
-					OrgName:    "hulu",
-					DomainName: "hulu.com",
-				},
-				User: &profile.CreateOrgAndUserRequest_User{
-					Username:  "foobar",
-					FirstName: "",
-					LastName:  "bar",
-					Email:     "foo@bar.com",
-				},
-			},
-			expectErr:  true,
-			expectCode: codes.InvalidArgument,
-		},
-		{
-			name:      "missing email",
-			makesCall: false,
-			req: &profile.CreateOrgAndUserRequest{
-				Org: &profile.CreateOrgAndUserRequest_Org{
-					OrgName:    "hulu",
-					DomainName: "hulu.com",
-				},
-				User: &profile.CreateOrgAndUserRequest_User{
-					Username:  "foobar",
-					FirstName: "foo",
-					LastName:  "bar",
-					Email:     "",
-				},
-			},
-			expectErr:  true,
-			expectCode: codes.InvalidArgument,
-		},
-		{
-			name:      "banned email",
-			makesCall: false,
-			req: &profile.CreateOrgAndUserRequest{
-				Org: &profile.CreateOrgAndUserRequest_Org{
-					OrgName:    "hulu",
-					DomainName: "hulu.com",
-				},
-				User: &profile.CreateOrgAndUserRequest_User{
-					Username:  "foobar",
-					FirstName: "foo",
-					LastName:  "bar",
-					Email:     "foo@blacklist.com",
-				},
-			},
-			expectErr:  true,
-			expectCode: codes.InvalidArgument,
-		},
-		{
-			name:      "allowed email",
-			makesCall: true,
+		}, {
+			name: "allowed email",
 			req: &profile.CreateOrgAndUserRequest{
 				Org: &profile.CreateOrgAndUserRequest_Org{
 					OrgName:    "hulu",
@@ -447,7 +335,6 @@ func TestServer_CreateOrgAndUser(t *testing.T) {
 					Email:     "foo@gmail.com",
 				},
 			},
-			expectErr: false,
 			resp: &profile.CreateOrgAndUserResponse{
 				OrgID:  utils.ProtoFromUUID(&testOrgUUID),
 				UserID: utils.ProtoFromUUID(&testUUID),
@@ -457,34 +344,209 @@ func TestServer_CreateOrgAndUser(t *testing.T) {
 
 	for _, tc := range createOrgUserTest {
 		t.Run(tc.name, func(t *testing.T) {
-			s := controller.NewServer(nil, d)
-			if tc.makesCall {
-				exUserInfo := &datastore.UserInfo{
-					Username:  tc.req.User.Username,
-					FirstName: tc.req.User.FirstName,
-					LastName:  tc.req.User.LastName,
-					Email:     tc.req.User.Email,
-				}
-				exOrg := &datastore.OrgInfo{
-					DomainName: tc.req.Org.DomainName,
-					OrgName:    tc.req.Org.OrgName,
-				}
-				d.EXPECT().
-					CreateUserAndOrg(exOrg, exUserInfo).
-					Return(testOrgUUID, testUUID, nil)
+			pm := mock_projectmanager.NewMockProjectManagerServiceClient(ctrl)
+			req := &projectmanagerpb.RegisterProjectRequest{
+				ProjectName: controller.DefaultProjectName,
+				OrgID:       utils.ProtoFromUUID(&testOrgUUID),
 			}
-			resp, err := s.CreateOrgAndUser(context.Background(), tc.req)
-
-			if tc.expectErr {
-				assert.NotNil(t, err)
-				c := status.Code(err)
-				assert.Equal(t, c, tc.expectCode)
-				return
+			resp := &projectmanagerpb.RegisterProjectResponse{
+				ProjectRegistered: true,
 			}
+			pm.EXPECT().RegisterProject(gomock.Any(), req).Return(resp, nil)
 
-			assert.Equal(t, resp, tc.resp)
+			env := profileenv.New(pm)
+
+			s := controller.NewServer(env, d)
+			exUserInfo := &datastore.UserInfo{
+				Username:  tc.req.User.Username,
+				FirstName: tc.req.User.FirstName,
+				LastName:  tc.req.User.LastName,
+				Email:     tc.req.User.Email,
+			}
+			exOrg := &datastore.OrgInfo{
+				DomainName: tc.req.Org.DomainName,
+				OrgName:    tc.req.Org.OrgName,
+			}
+			d.EXPECT().
+				CreateUserAndOrg(exOrg, exUserInfo).
+				Return(testOrgUUID, testUUID, nil)
+			orgResp, err := s.CreateOrgAndUser(context.Background(), tc.req)
+			assert.Nil(t, err)
+			assert.Equal(t, orgResp, tc.resp)
 		})
 	}
+}
+
+func TestServer_CreateOrgAndUser_InvalidArgumentCases(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockDatastore(ctrl)
+
+	createOrgUserTest := []struct {
+		name string
+		req  *profile.CreateOrgAndUserRequest
+	}{
+		{
+			name: "invalid org name",
+			req: &profile.CreateOrgAndUserRequest{
+				Org: &profile.CreateOrgAndUserRequest_Org{
+					OrgName:    "",
+					DomainName: "hulu.com",
+				},
+				User: &profile.CreateOrgAndUserRequest_User{
+					Username:  "foobar",
+					FirstName: "foo",
+					LastName:  "bar",
+					Email:     "foo@bar.com",
+				},
+			},
+		},
+		{
+			name: "invalid domain name",
+			req: &profile.CreateOrgAndUserRequest{
+				Org: &profile.CreateOrgAndUserRequest_Org{
+					OrgName:    "hulu",
+					DomainName: "",
+				},
+				User: &profile.CreateOrgAndUserRequest_User{
+					Username:  "foobar",
+					FirstName: "foo",
+					LastName:  "bar",
+					Email:     "foo@bar.com",
+				},
+			},
+		},
+		{
+			name: "invalid username",
+			req: &profile.CreateOrgAndUserRequest{
+				Org: &profile.CreateOrgAndUserRequest_Org{
+					OrgName:    "hulu",
+					DomainName: "hulu.com",
+				},
+				User: &profile.CreateOrgAndUserRequest_User{
+					Username:  "",
+					FirstName: "foo",
+					LastName:  "bar",
+					Email:     "foo@bar.com",
+				},
+			},
+		},
+		{
+			name: "invalid first name",
+			req: &profile.CreateOrgAndUserRequest{
+				Org: &profile.CreateOrgAndUserRequest_Org{
+					OrgName:    "hulu",
+					DomainName: "hulu.com",
+				},
+				User: &profile.CreateOrgAndUserRequest_User{
+					Username:  "foobar",
+					FirstName: "",
+					LastName:  "bar",
+					Email:     "foo@bar.com",
+				},
+			},
+		},
+		{
+			name: "missing email",
+			req: &profile.CreateOrgAndUserRequest{
+				Org: &profile.CreateOrgAndUserRequest_Org{
+					OrgName:    "hulu",
+					DomainName: "hulu.com",
+				},
+				User: &profile.CreateOrgAndUserRequest_User{
+					Username:  "foobar",
+					FirstName: "foo",
+					LastName:  "bar",
+					Email:     "",
+				},
+			},
+		},
+		{
+			name: "banned email",
+			req: &profile.CreateOrgAndUserRequest{
+				Org: &profile.CreateOrgAndUserRequest_Org{
+					OrgName:    "hulu",
+					DomainName: "hulu.com",
+				},
+				User: &profile.CreateOrgAndUserRequest_User{
+					Username:  "foobar",
+					FirstName: "foo",
+					LastName:  "bar",
+					Email:     "foo@blacklist.com",
+				},
+			},
+		},
+	}
+
+	for _, tc := range createOrgUserTest {
+		t.Run(tc.name, func(t *testing.T) {
+			pm := mock_projectmanager.NewMockProjectManagerServiceClient(ctrl)
+			env := profileenv.New(pm)
+			s := controller.NewServer(env, d)
+			resp, err := s.CreateOrgAndUser(context.Background(), tc.req)
+			assert.NotNil(t, err)
+			assert.Nil(t, resp)
+			c := status.Code(err)
+			assert.Equal(t, c, codes.InvalidArgument)
+		})
+	}
+}
+
+func TestServer_CreateOrgAndUser_CreateProjectFailed(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockDatastore(ctrl)
+
+	testOrgUUID := uuid.NewV4()
+	testUUID := uuid.NewV4()
+
+	pm := mock_projectmanager.NewMockProjectManagerServiceClient(ctrl)
+	projectReq := &projectmanagerpb.RegisterProjectRequest{
+		ProjectName: controller.DefaultProjectName,
+		OrgID:       utils.ProtoFromUUID(&testOrgUUID),
+	}
+
+	pm.EXPECT().RegisterProject(gomock.Any(), projectReq).Return(nil, fmt.Errorf("an error"))
+
+	env := profileenv.New(pm)
+
+	req := &profile.CreateOrgAndUserRequest{
+		Org: &profile.CreateOrgAndUserRequest_Org{
+			OrgName:    "hulu",
+			DomainName: "hulu.com",
+		},
+		User: &profile.CreateOrgAndUserRequest_User{
+			Username:  "foobar",
+			FirstName: "foo",
+			LastName:  "bar",
+			Email:     "foo@bar.com",
+		},
+	}
+
+	s := controller.NewServer(env, d)
+	exUserInfo := &datastore.UserInfo{
+		Username:  req.User.Username,
+		FirstName: req.User.FirstName,
+		LastName:  req.User.LastName,
+		Email:     req.User.Email,
+	}
+	exOrg := &datastore.OrgInfo{
+		DomainName: req.Org.DomainName,
+		OrgName:    req.Org.OrgName,
+	}
+	d.EXPECT().
+		CreateUserAndOrg(exOrg, exUserInfo).
+		Return(testOrgUUID, testUUID, nil)
+
+	d.EXPECT().
+		DeleteOrgAndUsers(testOrgUUID).
+		Return(nil)
+
+	resp, err := s.CreateOrgAndUser(context.Background(), req)
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
 }
 
 func TestServer_GetOrg(t *testing.T) {

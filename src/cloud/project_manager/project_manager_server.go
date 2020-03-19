@@ -9,19 +9,19 @@ import (
 	"github.com/golang-migrate/migrate/database/postgres"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	log "github.com/sirupsen/logrus"
-	controllers "pixielabs.ai/pixielabs/src/cloud/site_manager/controller"
-	"pixielabs.ai/pixielabs/src/cloud/site_manager/datastore"
-	"pixielabs.ai/pixielabs/src/cloud/site_manager/schema"
-	"pixielabs.ai/pixielabs/src/cloud/site_manager/sitemanagerpb"
+	controllers "pixielabs.ai/pixielabs/src/cloud/project_manager/controller"
+	"pixielabs.ai/pixielabs/src/cloud/project_manager/datastore"
+	"pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb"
+	"pixielabs.ai/pixielabs/src/cloud/project_manager/schema"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/pg"
 )
 
 func main() {
-	log.WithField("service", "site-manager-service").Info("Starting service")
+	log.WithField("service", "project-manager-service").Info("Starting service")
 
-	services.SetupService("site-manager-service", 50300)
+	services.SetupService("project-manager-service", 50300)
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()
 	services.SetupServiceLogging()
@@ -55,7 +55,7 @@ func main() {
 
 	server := controllers.NewServer(datastore)
 	s := services.NewPLServer(env.New(), mux)
-	sitemanagerpb.RegisterSiteManagerServiceServer(s.GRPCServer(), server)
+	projectmanagerpb.RegisterProjectManagerServiceServer(s.GRPCServer(), server)
 
 	s.Start()
 	s.StopOnInterrupt()

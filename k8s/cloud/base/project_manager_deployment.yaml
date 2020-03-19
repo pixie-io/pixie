@@ -2,21 +2,21 @@
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
-  name: site-manager-server
+  name: project-manager-server
   labels:
     db: pgsql
 spec:
   selector:
     matchLabels:
-      name: site-manager-server
+      name: project-manager-server
   template:
     metadata:
       labels:
-        name: site-manager-server
+        name: project-manager-server
     spec:
       containers:
-      - name: site-manager-server
-        image: gcr.io/pl-dev-infra/cloud/site_manager_server_image
+      - name: project-manager-server
+        image: gcr.io/pl-dev-infra/cloud/project_manager_server_image
         ports:
         - containerPort: 50300
         readinessProbe:

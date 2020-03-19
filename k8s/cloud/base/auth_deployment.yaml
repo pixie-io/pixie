@@ -51,11 +51,11 @@ spec:
             configMapKeyRef:
               name: pl-service-config
               key: PL_PROFILE_SERVICE
-        - name: PL_SITE_MANAGER_SERVICE
+        - name: PL_PROJECT_MANAGER_SERVICE
           valueFrom:
             configMapKeyRef:
               name: pl-service-config
-              key: PL_SITE_MANAGER_SERVICE
+              key: PL_PROJECT_MANAGER_SERVICE
         volumeMounts:
         - name: certs
           mountPath: /certs

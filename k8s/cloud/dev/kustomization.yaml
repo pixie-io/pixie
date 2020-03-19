@@ -13,7 +13,7 @@ replicas:
   count: 1
 - name: cloud-proxy
   count: 1
-- name: site-manager-server
+- name: project-manager-server
   count: 1
 - name: vzmgr-server
   count: 1

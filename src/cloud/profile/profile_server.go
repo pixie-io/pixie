@@ -52,7 +52,10 @@ func main() {
 
 	datastore := datastore.NewDatastore(db)
 
-	env := profileenv.New()
+	env, err := profileenv.NewWithDefaults()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to set up profileenv")
+	}
 	server := controller.NewServer(env, datastore)
 
 	s := services.NewPLServer(env, mux)

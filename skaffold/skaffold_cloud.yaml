@@ -18,10 +18,10 @@ build:
     context: .
     bazel:
       target: //src/cloud/proxy:proxy_prod_server_image.tar
-  - image: gcr.io/pl-dev-infra/cloud/site_manager_server_image
+  - image: gcr.io/pl-dev-infra/cloud/project_manager_server_image
     context: .
     bazel:
-      target: //src/cloud/site_manager:site_manager_server_image.tar
+      target: //src/cloud/project_manager:project_manager_server_image.tar
   - image: gcr.io/pl-dev-infra/cloud/vzconn_server_image
     context: .
     bazel:

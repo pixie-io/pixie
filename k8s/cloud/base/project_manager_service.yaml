@@ -1,0 +1,15 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: project-manager-service
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - port: 50300
+    protocol: TCP
+    targetPort: 50300
+    name: tcp-http2
+  selector:
+    name: project-manager-server

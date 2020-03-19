@@ -5,5 +5,12 @@ go_library(
     srcs = ["env.go"],
     importpath = "pixielabs.ai/pixielabs/src/cloud/profile/profileenv",
     visibility = ["//visibility:public"],
-    deps = ["//src/shared/services/env:go_default_library"],
+    deps = [
+        "//src/cloud/project_manager/projectmanagerpb:service_go_proto",
+        "//src/shared/services:go_default_library",
+        "//src/shared/services/env:go_default_library",
+        "@com_github_spf13_pflag//:go_default_library",
+        "@com_github_spf13_viper//:go_default_library",
+        "@org_golang_google_grpc//:go_default_library",
+    ],
 )

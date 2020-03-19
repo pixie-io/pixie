@@ -8,7 +8,7 @@ data:
   PL_API_SERVICE_HTTP: api-service.plc-staging.svc.cluster.local:51200
   PL_DOCS_SERVICE_HTTP: docs-service.plc-staging.svc.cluster.local:59000
   PL_PROFILE_SERVICE: kubernetes:///profile-service.plc-staging:51500
-  PL_SITE_MANAGER_SERVICE: kubernetes:///site-manager-service.plc-staging:50300
+  PL_PROJECT_MANAGER_SERVICE: kubernetes:///project-manager-service.plc-staging:50300
   PL_VZMGR_SERVICE: kubernetes:///vzmgr-service.plc-staging:51800
   PL_DNSMGR_SERVICE: kubernetes:///dnsmgr-service.plc-staging:51900
   PL_ARTIFACT_TRACKER_SERVICE: kubernetes:///artifact-tracker-service.plc-staging:50750

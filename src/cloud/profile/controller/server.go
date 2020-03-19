@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/badoux/checkmail"
@@ -13,6 +14,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/profile/datastore"
 	"pixielabs.ai/pixielabs/src/cloud/profile/profileenv"
 	profile "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
+	"pixielabs.ai/pixielabs/src/cloud/project_manager/projectmanagerpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 )
@@ -20,6 +22,9 @@ import (
 var emailDomainBlacklist = map[string]bool{
 	"blacklist.com": true,
 }
+
+// DefaultProjectName is the name of the default project we automatically assign to every org.
+const DefaultProjectName string = "default"
 
 // Datastore is the interface used to the backing store for profile information.
 type Datastore interface {
@@ -172,6 +177,23 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profile.CreateOrgAnd
 	orgID, userID, err := s.d.CreateUserAndOrg(orgInfo, userInfo)
 	if err != nil {
 		return nil, err
+	}
+
+	projectResp, err := s.env.ProjectManagerClient().RegisterProject(ctx, &projectmanagerpb.RegisterProjectRequest{
+		OrgID:       utils.ProtoFromUUID(&orgID),
+		ProjectName: DefaultProjectName,
+	})
+
+	if err != nil {
+		deleteErr := s.d.DeleteOrgAndUsers(orgID)
+		if deleteErr != nil {
+			return nil, status.Error(codes.Internal,
+				fmt.Sprintf("Could not delete org and users after create default project failed: %s", err.Error()))
+		}
+		return nil, err
+	}
+	if !projectResp.ProjectRegistered {
+		return nil, status.Error(codes.Internal, fmt.Sprintf("Could not register project %s", DefaultProjectName))
 	}
 
 	resp := &profile.CreateOrgAndUserResponse{
