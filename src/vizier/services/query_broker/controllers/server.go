@@ -456,7 +456,7 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 
 	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", aCtx.AuthToken))
 
-	qr, status, err := s.ExecuteQueryWithPlanner(context.Background(), convertedReq, queryID, planner, planOpts)
+	qr, status, err := s.ExecuteQueryWithPlanner(ctx, convertedReq, queryID, planner, planOpts)
 	if err != nil {
 		return err
 	}
