@@ -292,7 +292,7 @@ pl_cc_test(
     srcs = ["socket_resolver_test.cc"],
     deps = [
         ":cc_library",
-        "//src/common/system/testing:cc_library",
+        "//src/common/system:cc_library",
     ],
 )
 

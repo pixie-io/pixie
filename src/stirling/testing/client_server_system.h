@@ -1,21 +1,22 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <thread>
 #include <vector>
 
-#include "src/common/system/testing/tcp_socket.h"
+#include "src/common/system/tcp_socket.h"
 
 namespace pl {
 namespace stirling {
 namespace testing {
 
 using SendRecvScript = std::vector<std::vector<std::string_view>>;
-using TCPSocket = pl::system::testing::TCPSocket;
+using TCPSocket = pl::system::TCPSocket;
 
 class ClientServerSystem {
  public:
-  ClientServerSystem() { server_.Bind(); }
+  ClientServerSystem() { server_.BindAndListen(); }
 
   /**
    * Create and run a client-server system with the provided send-recv script.
@@ -185,8 +186,8 @@ class ClientServerSystem {
             ssize_t (TCPSocket::*TSendFn)(std::string_view) const>
   void SpawnServer(const SendRecvScript& script) {
     server_thread_ = std::thread([this, script]() {
-      server_.Accept();
-      Run<TRecvFn, TSendFn>(script, server_, false);
+      std::unique_ptr<TCPSocket> conn = server_.Accept();
+      Run<TRecvFn, TSendFn>(script, *conn, false);
       server_.Close();
     });
   }
@@ -196,8 +197,8 @@ class ClientServerSystem {
   template <ssize_t (TCPSocket::*TSendFn)(const std::vector<std::string_view>&) const>
   void SpawnMsgServer(const std::vector<std::vector<std::string_view>>& write_data) {
     server_thread_ = std::thread([this, write_data]() {
-      server_.Accept();
-      SendData<TSendFn>(server_, write_data);
+      std::unique_ptr<TCPSocket> conn = server_.Accept();
+      SendData<TSendFn>(*conn, write_data);
       server_.Close();
     });
   }

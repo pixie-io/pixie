@@ -41,6 +41,12 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "tcp_socket_test",
+    srcs = ["tcp_socket_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "socket_info_test",
     srcs = ["socket_info_test.cc"],
     data = ["//src/common/system/testdata:proc_fs"],
@@ -49,7 +55,6 @@ pl_cc_test(
     tags = ["exclusive"],
     deps = [
         ":cc_library",
-        "//src/common/system/testing:cc_library",
     ],
 )
 
@@ -70,7 +75,6 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/exec:cc_library",
-        "//src/common/system/testing:cc_library",
         "//src/common/testing/test_utils:cc_library",
     ],
 )

@@ -10,7 +10,7 @@ pl_cc_library(
     ),
     hdrs = glob(["*.h"]),
     deps = [
-        "//src/common/system/testing:cc_library",
+        "//src/common/system:cc_library",
         "//src/stirling/http2/testing/proto:greet_pl_cc_proto",
         "@com_github_grpc_grpc//:grpc++",
     ],

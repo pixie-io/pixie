@@ -5,7 +5,7 @@
 #include <chrono>
 
 #include "src/common/base/types.h"
-#include "src/common/system/testing/tcp_socket.h"
+#include "src/common/system/tcp_socket.h"
 #include "src/stirling/socket_resolver.h"
 
 namespace pl {
@@ -21,7 +21,7 @@ class SocketResolverTest : public ::testing::Test {
 };
 
 TEST_F(SocketResolverTest, CaptureLongLivedSocket) {
-  system::testing::TCPSocket socket;
+  system::TCPSocket socket;
   int pid = getpid();
   int fd = socket.sockfd();
 
@@ -59,7 +59,7 @@ TEST_F(SocketResolverTest, CaptureLongLivedSocket) {
 }
 
 TEST_F(SocketResolverTest, MissShortLivedSocketNoWindow) {
-  system::testing::TCPSocket socket;
+  system::TCPSocket socket;
   int pid = getpid();
   int fd = socket.sockfd();
 
@@ -85,7 +85,7 @@ TEST_F(SocketResolverTest, MissShortLivedSocketNoWindow) {
 }
 
 TEST_F(SocketResolverTest, MissShortLivedSocketNoSetup) {
-  system::testing::TCPSocket socket;
+  system::TCPSocket socket;
   int pid = getpid();
   int fd = socket.sockfd();
   // Some activity at time t, between socket creation and close.
@@ -99,7 +99,7 @@ TEST_F(SocketResolverTest, MissShortLivedSocketNoSetup) {
 }
 
 TEST_F(SocketResolverTest, NewSocketSameFD) {
-  system::testing::TCPSocket socket;
+  system::TCPSocket socket;
   int pid = getpid();
   int fd = socket.sockfd();
 
@@ -115,7 +115,7 @@ TEST_F(SocketResolverTest, NewSocketSameFD) {
   auto t1 = std::chrono::steady_clock::now();
   socket.Close();
 
-  system::testing::TCPSocket socket2;
+  system::TCPSocket socket2;
   int fd2 = socket2.sockfd();
   ASSERT_EQ(fd, fd2);
   auto t2 = std::chrono::steady_clock::now();

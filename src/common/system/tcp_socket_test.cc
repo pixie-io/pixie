@@ -8,15 +8,14 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/common/system/testing/tcp_socket.h"
+#include "src/common/system/tcp_socket.h"
 
 namespace pl {
 namespace system {
-namespace testing {
 
 TEST(TCPSocketTest, DataIsWrittenAndReceivedCorrectly) {
   TCPSocket server;
-  server.Bind();
+  server.BindAndListen();
 
   std::vector<std::string> received_data;
   TCPSocket client;
@@ -27,11 +26,12 @@ TEST(TCPSocketTest, DataIsWrittenAndReceivedCorrectly) {
       received_data.push_back(data);
     }
   });
-  server.Accept();
-  EXPECT_EQ(2, server.Write("a,"));
-  EXPECT_EQ(3, server.Send("bc,"));
-  EXPECT_EQ(4, server.Send("END,"));
-  EXPECT_EQ(7, server.SendMsg({"send", "msg"}));
+  std::unique_ptr<TCPSocket> conn = server.Accept();
+  EXPECT_EQ(2, conn->Write("a,"));
+  EXPECT_EQ(3, conn->Send("bc,"));
+  EXPECT_EQ(4, conn->Send("END,"));
+  EXPECT_EQ(7, conn->SendMsg({"send", "msg"}));
+  conn->Close();
 
   server.Close();
   client_thread.join();
@@ -42,7 +42,7 @@ TEST(TCPSocketTest, DataIsWrittenAndReceivedCorrectly) {
 
 TEST(TCPSocketTest, SendMsgAndRecvMsg) {
   TCPSocket server;
-  server.Bind();
+  server.BindAndListen();
 
   std::vector<std::string> received_data;
   TCPSocket client;
@@ -51,8 +51,9 @@ TEST(TCPSocketTest, SendMsgAndRecvMsg) {
     while (client.RecvMsg(&received_data) > 0) {
     }
   });
-  server.Accept();
-  EXPECT_EQ(14, server.SendMsg({"sendmsg", "recvmsg"}));
+  std::unique_ptr<TCPSocket> conn = server.Accept();
+  EXPECT_EQ(14, conn->SendMsg({"sendmsg", "recvmsg"}));
+  conn->Close();
 
   server.Close();
   client_thread.join();
@@ -62,7 +63,7 @@ TEST(TCPSocketTest, SendMsgAndRecvMsg) {
 
 TEST(TCPSocketTest, WriteVandReadV) {
   TCPSocket server;
-  server.Bind();
+  server.BindAndListen();
 
   std::vector<std::string> received_data;
   TCPSocket client;
@@ -73,8 +74,9 @@ TEST(TCPSocketTest, WriteVandReadV) {
       received_data.emplace_back(std::move(buf));
     }
   });
-  server.Accept();
-  EXPECT_EQ(11, server.WriteV({"writev", "readv"}));
+  std::unique_ptr<TCPSocket> conn = server.Accept();
+  EXPECT_EQ(11, conn->WriteV({"writev", "readv"}));
+  conn->Close();
 
   server.Close();
   client_thread.join();
@@ -90,7 +92,7 @@ TEST(TCPSocketTest, ServerAddrAndPort) {
   {
     // Only a bind is required for port to be assigned,
     // and for client to be able to successfully connect.
-    server.Bind();
+    server.BindAndListen();
 
     std::string server_addr;
     server_addr.resize(INET_ADDRSTRLEN);
@@ -128,7 +130,7 @@ TEST(TCPSocketTest, ServerAddrAndPort) {
 TEST(TCPSocketTest, MultipleSequencialConnectsFailed) {
   {
     TCPSocket server;
-    server.Bind();
+    server.BindAndListen();
 
     TCPSocket client;
     client.Connect(server);
@@ -136,7 +138,7 @@ TEST(TCPSocketTest, MultipleSequencialConnectsFailed) {
   }
   {
     TCPSocket server;
-    server.Bind();
+    server.BindAndListen();
 
     TCPSocket client;
     int flags = fcntl(client.sockfd(), F_GETFL);
@@ -149,6 +151,5 @@ TEST(TCPSocketTest, MultipleSequencialConnectsFailed) {
   }
 }
 
-}  // namespace testing
 }  // namespace system
 }  // namespace pl

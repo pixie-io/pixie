@@ -1,4 +1,4 @@
-#include "src/common/system/testing/tcp_socket.h"
+#include "src/common/system/tcp_socket.h"
 
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -14,11 +14,10 @@
 
 namespace pl {
 namespace system {
-namespace testing {
 
-TCPSocket::TCPSocket() {
-  memset(&addr_, 0, sizeof(struct sockaddr_in));
-  addr_.sin_family = AF_INET;
+// NOTE: Must convert CHECKs to Status if this code is ever used outside test code.
+
+TCPSocket::TCPSocket() : TCPSocket(0) {
   // TODO(yzhao): For reference, we think AF_INET & AF_INET6 is largely independent to our code
   // base. So here we only uses AF_INET, i.e. IPv4. Later, if needed, we can add TCPSocketV6 as a
   // subclass to this, which uses AF_INET6.
@@ -26,9 +25,18 @@ TCPSocket::TCPSocket() {
   CHECK(sockfd_ > 0) << "Failed to create socket, error message: " << strerror(errno);
 }
 
+TCPSocket::TCPSocket(int internal) {
+  memset(&addr_, 0, sizeof(struct sockaddr_in));
+  // Required to differentiate the private vs public TCPSocket constructor.
+  PL_UNUSED(internal);
+}
+
 TCPSocket::~TCPSocket() { Close(); }
 
-void TCPSocket::Bind() {
+void TCPSocket::BindAndListen(int port) {
+  addr_.sin_family = AF_INET;
+  addr_.sin_addr.s_addr = INADDR_ANY;
+  addr_.sin_port = htons(port);
   CHECK(bind(sockfd_, reinterpret_cast<const struct sockaddr*>(&addr_),
              sizeof(struct sockaddr_in)) == 0)
       << "Failed to bind socket, error message: " << strerror(errno);
@@ -42,24 +50,35 @@ void TCPSocket::Bind() {
       << "Failed to listen socket, error message: " << strerror(errno);
 }
 
-void TCPSocket::Accept() {
-  struct sockaddr_in remote_addr;
+std::unique_ptr<TCPSocket> TCPSocket::Accept() {
+  auto new_conn = std::unique_ptr<TCPSocket>(new TCPSocket(0));
+
   socklen_t remote_addr_len = sizeof(struct sockaddr_in);
-  memset(&remote_addr, 0, remote_addr_len);
-  int prev_sockfd = sockfd_;
-  sockfd_ = accept4(sockfd_, reinterpret_cast<struct sockaddr*>(&remote_addr), &remote_addr_len,
-                    /*flags*/ 0);
-  CHECK(sockfd_ >= 0) << "Failed to accept, error message: " << strerror(errno);
+  new_conn->sockfd_ =
+      accept4(sockfd_, reinterpret_cast<struct sockaddr*>(&new_conn->addr_), &remote_addr_len,
+              /*flags*/ 0);
+  CHECK(new_conn->sockfd_ >= 0) << "Failed to accept, error message: " << strerror(errno);
   CHECK(remote_addr_len == sizeof(struct sockaddr_in))
       << "Address length is wrong, " << remote_addr_len << " vs. " << sizeof(struct sockaddr_in);
+  return new_conn;
+}
 
-  CHECK(close(prev_sockfd) == 0) << "Fail to close the previous sockfd";
+void TCPSocket::Connect(const TCPSocket& addr) {
+  const int retval = connect(sockfd_, reinterpret_cast<const struct sockaddr*>(&addr.addr_),
+                             sizeof(struct sockaddr_in));
+  CHECK(retval == 0) << "Failed to connect, error message: " << strerror(errno);
+
+  socklen_t addr_len = sizeof(struct sockaddr_in);
+  CHECK(getsockname(sockfd_, reinterpret_cast<struct sockaddr*>(&addr_), &addr_len) == 0)
+      << "Failed to get socket name, error message: " << strerror(errno);
+  CHECK(addr_len == sizeof(struct sockaddr_in)) << "Address size is incorrect";
 }
 
 void TCPSocket::Close() {
-  if (!closed) {
+  LOG(INFO) << absl::Substitute("Closing $0", sockfd_);
+  if (sockfd_ > 0) {
     CHECK(close(sockfd_) == 0) << "Failed to close socket, error message: " << strerror(errno);
-    closed = true;
+    sockfd_ = 0;
   }
 }
 
@@ -133,17 +152,6 @@ ssize_t TCPSocket::ReadV(std::string* data) const {
   return size;
 }
 
-void TCPSocket::Connect(const TCPSocket& addr) {
-  const int retval = connect(sockfd_, reinterpret_cast<const struct sockaddr*>(&addr.addr_),
-                             sizeof(struct sockaddr_in));
-  CHECK(retval == 0) << "Failed to connect, error message: " << strerror(errno);
-
-  socklen_t addr_len = sizeof(struct sockaddr_in);
-  CHECK(getsockname(sockfd_, reinterpret_cast<struct sockaddr*>(&addr_), &addr_len) == 0)
-      << "Failed to get socket name, error message: " << strerror(errno);
-  CHECK(addr_len == sizeof(struct sockaddr_in)) << "Address size is incorrect";
-}
-
 bool TCPSocket::Read(std::string* data) const {
   char buf[kBufSize];
   ssize_t size = read(sockfd_, static_cast<void*>(buf), sizeof(buf));
@@ -164,6 +172,5 @@ bool TCPSocket::Recv(std::string* data) const {
   return true;
 }
 
-}  // namespace testing
 }  // namespace system
 }  // namespace pl

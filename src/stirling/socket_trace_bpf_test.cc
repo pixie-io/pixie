@@ -5,7 +5,7 @@
 #include <string_view>
 #include <thread>
 
-#include "src/common/system/testing/tcp_socket.h"
+#include "src/common/system/tcp_socket.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/types.h"
@@ -21,7 +21,7 @@ namespace stirling {
 
 using ::pl::stirling::testing::FindRecordIdxMatchesPid;
 using ::pl::stirling::testing::SocketTraceBPFTest;
-using ::pl::stirling::testing::TCPSocket;
+using ::pl::system::TCPSocket;
 using ::pl::types::ColumnWrapper;
 using ::pl::types::ColumnWrapperRecordBatch;
 using ::testing::HasSubstr;

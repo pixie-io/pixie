@@ -12,7 +12,7 @@
 #include "src/common/base/base.h"
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/socket_info.h"
-#include "src/common/system/testing/tcp_socket.h"
+#include "src/common/system/tcp_socket.h"
 #include "src/common/testing/testing.h"
 
 namespace pl {
@@ -70,11 +70,11 @@ MATCHER_P(HasLocalUnixEndpoint, endpoint, "") {
 }
 
 TEST(NetlinkSocketProberTest, EstablishedInetConnection) {
-  testing::TCPSocket client;
-  testing::TCPSocket server;
+  TCPSocket client;
+  TCPSocket server;
 
   // A bind and connect is sufficient to establish a connection.
-  server.Bind();
+  server.BindAndListen();
   client.Connect(server);
 
   std::string client_endpoint = AddrPortStr(client.addr(), client.port());
@@ -143,10 +143,10 @@ TEST(NetlinkSocketProberTest, EstablishedUnixConnection) {
 }
 
 TEST(NetlinkSocketProberTest, ListeningInetConnection) {
-  testing::TCPSocket server;
+  TCPSocket server;
 
   // A bind and connect is sufficient to establish a connection.
-  server.Bind();
+  server.BindAndListen();
 
   std::string server_endpoint = AddrPortStr(server.addr(), server.port());
 
@@ -182,11 +182,11 @@ TEST(NetlinkSocketProberTest, ListeningInetConnection) {
 }
 
 TEST(NetlinkSocketProberTest, ClosedInetConnection) {
-  testing::TCPSocket client;
-  testing::TCPSocket server;
+  TCPSocket client;
+  TCPSocket server;
 
   // A bind and connect is sufficient to establish a connection.
-  server.Bind();
+  server.BindAndListen();
   client.Connect(server);
 
   std::string client_endpoint = AddrPortStr(client.addr(), client.port());
