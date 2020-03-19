@@ -1,6 +1,7 @@
 package testutils
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -15,18 +16,23 @@ import (
 )
 
 // CreateTestGraphQLEnv creates a test graphql environment and mock clients.
-func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *mock_cloudapipb.MockArtifactTrackerServer, *mock_cloudapipb.MockVizierClusterInfoServer, func()) {
+func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *mock_cloudapipb.MockArtifactTrackerServer, *mock_cloudapipb.MockVizierClusterInfoServer, *mock_cloudapipb.MockScriptMgrServer, func()) {
 	ctrl := gomock.NewController(t)
 	ats := mock_cloudapipb.NewMockArtifactTrackerServer(ctrl)
 	vcs := mock_cloudapipb.NewMockVizierClusterInfoServer(ctrl)
+	sms := mock_cloudapipb.NewMockScriptMgrServer(ctrl)
 	gqlEnv := controller.GraphQLEnv{
 		ArtifactTrackerServer: ats,
 		VizierClusterInfo:     vcs,
+		ScriptMgrServer:       sms,
 	}
 	cleanup := func() {
+		if r := recover(); r != nil {
+			fmt.Println("Panicked with error: ", r)
+		}
 		ctrl.Finish()
 	}
-	return gqlEnv, ats, vcs, cleanup
+	return gqlEnv, ats, vcs, sms, cleanup
 }
 
 // CreateTestAPIEnv creates a test environment and mock clients.
@@ -45,6 +51,9 @@ func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *mock_auth.MockAuthServiceCl
 		t.Fatal("failed to init api env")
 	}
 	cleanup := func() {
+		if r := recover(); r != nil {
+			fmt.Println("Panicked with error: ", r)
+		}
 		ctrl.Finish()
 	}
 

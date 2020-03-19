@@ -119,9 +119,17 @@ func main() {
 	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc)
 	pl_api_vizierpb.RegisterVizierServiceServer(s.GRPCServer(), vpt)
 
+	sm, err := apienv.NewScriptMgrServiceClient()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to init scriptmgr client.")
+	}
+	sms := &controller.ScriptMgrServer{ScriptMgr: sm}
+	cloudapipb.RegisterScriptMgrServer(s.GRPCServer(), sms)
+
 	gqlEnv := controller.GraphQLEnv{
 		ArtifactTrackerServer: artifactTrackerServer,
 		VizierClusterInfo:     cis,
+		ScriptMgrServer:       sms,
 	}
 
 	mux.Handle("/api/graphql", controller.WithAugmentedAuthMiddleware(env, controller.NewGraphQLHandler(gqlEnv)))

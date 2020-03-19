@@ -15,6 +15,7 @@ import (
 type GraphQLEnv struct {
 	ArtifactTrackerServer cloudapipb.ArtifactTrackerServer
 	VizierClusterInfo     cloudapipb.VizierClusterInfoServer
+	ScriptMgrServer       cloudapipb.ScriptMgrServer
 }
 
 // QueryResolver resolves queries for GQL.

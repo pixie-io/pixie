@@ -6,6 +6,11 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"pixielabs.ai/pixielabs/src/shared/scriptspb"
+	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
+
+	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
+
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
@@ -287,4 +292,74 @@ func vzStatusToClusterStatus(s cvmsgspb.VizierInfo_Status) cloudapipb.ClusterSta
 	default:
 		return cloudapipb.CS_UNKNOWN
 	}
+}
+
+// ScriptMgrServer is the server that implements the ScriptMgr gRPC service.
+type ScriptMgrServer struct {
+	ScriptMgr scriptmgrpb.ScriptMgrServiceClient
+}
+
+// ExtractVizFuncsInfo returns information about the px.viz decorated functions in the provided script.
+func (s *ScriptMgrServer) ExtractVizFuncsInfo(ctx context.Context, req *cloudapipb.ExtractVizFuncsInfoRequest) (*cloudapipb.ExtractVizFuncsInfoResponse, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
+
+	resp, err := s.ScriptMgr.ExtractVizFuncsInfo(ctx, &scriptmgrpb.ExtractVizFuncsInfoRequest{
+		Script:    req.Script,
+		FuncNames: req.FuncNames,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudapipb.ExtractVizFuncsInfoResponse{
+		DocStringMap: resp.DocStringMap,
+		VizSpecMap:   convertVizSpecMapToCloudAPI(resp.VizSpecMap),
+		FnArgsMap:    convertFnArgsMapToCloudAPI(resp.FnArgsMap),
+	}, nil
+}
+
+func convertVizSpecMapToCloudAPI(vizSpecMap map[string]*scriptspb.VizSpec) map[string]*cloudapipb.VizSpec {
+	cloudMap := make(map[string]*cloudapipb.VizSpec, len(vizSpecMap))
+	for k, v := range vizSpecMap {
+		cloudMap[k] = &cloudapipb.VizSpec{
+			VegaSpec: v.VegaSpec,
+		}
+	}
+	return cloudMap
+}
+
+func convertFnArgsMapToCloudAPI(fnArgsMap map[string]*scriptspb.FuncArgsSpec) map[string]*cloudapipb.FuncArgsSpec {
+	cloudMap := make(map[string]*cloudapipb.FuncArgsSpec, len(fnArgsMap))
+	for k, v := range fnArgsMap {
+		cloudMap[k] = &cloudapipb.FuncArgsSpec{
+			Args: convertFnArgsToCloudAPI(v.Args),
+		}
+	}
+	return cloudMap
+}
+
+func convertFnArgsToCloudAPI(fnArgs []*scriptspb.FuncArgsSpec_Arg) []*cloudapipb.FuncArgsSpec_Arg {
+	cloudArgs := make([]*cloudapipb.FuncArgsSpec_Arg, len(fnArgs))
+	for i, arg := range fnArgs {
+		cloudArgs[i] = &cloudapipb.FuncArgsSpec_Arg{
+			Name:         arg.Name,
+			DataType:     convertDataTypeToCloudAPI(arg.DataType),
+			SemanticType: convertSemanticTypeToCloudAPI(arg.SemanticType),
+			DefaultValue: arg.DefaultValue,
+		}
+	}
+	return cloudArgs
+}
+
+func convertDataTypeToCloudAPI(t typespb.DataType) cloudapipb.DataType {
+	return cloudapipb.DataType(t)
+}
+
+func convertSemanticTypeToCloudAPI(t typespb.SemanticType) cloudapipb.SemanticType {
+	return cloudapipb.SemanticType(t)
 }

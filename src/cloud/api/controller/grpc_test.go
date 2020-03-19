@@ -4,6 +4,12 @@ import (
 	"context"
 	"testing"
 
+	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
+
+	"pixielabs.ai/pixielabs/src/shared/scriptspb"
+
+	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
+
 	types "github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -12,6 +18,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	mock_scriptmgr "pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb/mock"
 	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
@@ -226,4 +233,77 @@ func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
+}
+
+func TestScriptMgrServer_ExtractVizFuncsInfo(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockScriptMgr := mock_scriptmgr.NewMockScriptMgrServiceClient(ctrl)
+	ctx := CreateTestContext()
+
+	extractReq := &scriptmgrpb.ExtractVizFuncsInfoRequest{
+		Script:    "mock script",
+		FuncNames: []string{"f"},
+	}
+	docStringMap := make(map[string]string, 1)
+	docStringMap["f"] = "docstring"
+
+	vizSpecMap := make(map[string]*scriptspb.VizSpec, 1)
+	vizSpecMap["f"] = &scriptspb.VizSpec{
+		VegaSpec: "vegaspec",
+	}
+	expectedVizSpecMap := make(map[string]*cloudapipb.VizSpec, 1)
+	expectedVizSpecMap["f"] = &cloudapipb.VizSpec{
+		VegaSpec: "vegaspec",
+	}
+
+	fnArgsMap := make(map[string]*scriptspb.FuncArgsSpec, 1)
+	fnArgsMap["f"] = &scriptspb.FuncArgsSpec{
+		Args: []*scriptspb.FuncArgsSpec_Arg{
+			&scriptspb.FuncArgsSpec_Arg{
+				Name:         "a",
+				DataType:     typespb.STRING,
+				SemanticType: typespb.ST_NONE,
+				DefaultValue: "",
+			},
+		},
+	}
+	expectedFnArgsMap := make(map[string]*cloudapipb.FuncArgsSpec, 1)
+	expectedFnArgsMap["f"] = &cloudapipb.FuncArgsSpec{
+		Args: []*cloudapipb.FuncArgsSpec_Arg{
+			&cloudapipb.FuncArgsSpec_Arg{
+				Name:         "a",
+				DataType:     cloudapipb.STRING,
+				SemanticType: cloudapipb.ST_NONE,
+				DefaultValue: "",
+			},
+		},
+	}
+
+	extractResp := &scriptspb.VizFuncsInfo{
+		DocStringMap: docStringMap,
+		VizSpecMap:   vizSpecMap,
+		FnArgsMap:    fnArgsMap,
+	}
+
+	mockScriptMgr.EXPECT().ExtractVizFuncsInfo(gomock.Any(), extractReq).Return(extractResp, nil)
+
+	scriptMgrServer := &controller.ScriptMgrServer{
+		ScriptMgr: mockScriptMgr,
+	}
+
+	resp, err := scriptMgrServer.ExtractVizFuncsInfo(ctx, &cloudapipb.ExtractVizFuncsInfoRequest{
+		Script:    extractReq.Script,
+		FuncNames: extractReq.FuncNames,
+	})
+	assert.Nil(t, err)
+
+	expectedResp := &cloudapipb.ExtractVizFuncsInfoResponse{
+		DocStringMap: docStringMap,
+		VizSpecMap:   expectedVizSpecMap,
+		FnArgsMap:    expectedFnArgsMap,
+	}
+	assert.Equal(t, expectedResp, resp)
+
 }

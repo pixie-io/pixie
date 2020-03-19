@@ -13,7 +13,7 @@ import (
 )
 
 func TestCLIArtifact(t *testing.T) {
-	gqlEnv, mockArt, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockArt, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 
@@ -65,7 +65,7 @@ func TestCLIArtifact(t *testing.T) {
 }
 
 func TestArtifacts_CLI(t *testing.T) {
-	gqlEnv, mockArt, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockArt, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 
@@ -126,7 +126,7 @@ func TestArtifacts_CLI(t *testing.T) {
 }
 
 func TestArtifacts_Vizier(t *testing.T) {
-	gqlEnv, mockArt, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockArt, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 

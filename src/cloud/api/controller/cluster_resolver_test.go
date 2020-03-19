@@ -36,7 +36,7 @@ func LoadSchema(gqlEnv controller.GraphQLEnv) *graphql.Schema {
 func TestCreateCluster(t *testing.T) {
 	clusterID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
-	gqlEnv, _, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, _, mockVzSvc, _, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -69,7 +69,7 @@ func TestCreateCluster(t *testing.T) {
 }
 
 func TestClusterInfo(t *testing.T) {
-	gqlEnv, _, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, _, mockVzSvc, _, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -121,7 +121,7 @@ func TestClusterInfo(t *testing.T) {
 }
 
 func TestClusterConnectionInfo(t *testing.T) {
-	gqlEnv, _, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, _, mockVzSvc, _, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -175,7 +175,7 @@ func TestClusterConnectionInfo(t *testing.T) {
 }
 
 func TestUpdateClusterVizierConfig(t *testing.T) {
-	gqlEnv, _, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, _, mockVzSvc, _, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -207,7 +207,7 @@ func TestUpdateClusterVizierConfig(t *testing.T) {
 }
 
 func TestUpdateClusterVizierConfigNoUpdates(t *testing.T) {
-	gqlEnv, _, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, _, mockVzSvc, _, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 

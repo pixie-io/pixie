@@ -8,6 +8,7 @@ import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	github_com_gogo_protobuf_sortkeys "github.com/gogo/protobuf/sortkeys"
 	types "github.com/gogo/protobuf/types"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
@@ -87,6 +88,75 @@ var ClusterStatus_value = map[string]int32{
 
 func (ClusterStatus) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_c309ce7890afda1a, []int{1}
+}
+
+type SemanticType int32
+
+const (
+	ST_UNSPECIFIED  SemanticType = 0
+	ST_NONE         SemanticType = 1
+	ST_AGENT_UID    SemanticType = 100
+	ST_UPID         SemanticType = 200
+	ST_SERVICE_NAME SemanticType = 300
+)
+
+var SemanticType_name = map[int32]string{
+	0:   "ST_UNSPECIFIED",
+	1:   "ST_NONE",
+	100: "ST_AGENT_UID",
+	200: "ST_UPID",
+	300: "ST_SERVICE_NAME",
+}
+
+var SemanticType_value = map[string]int32{
+	"ST_UNSPECIFIED":  0,
+	"ST_NONE":         1,
+	"ST_AGENT_UID":    100,
+	"ST_UPID":         200,
+	"ST_SERVICE_NAME": 300,
+}
+
+func (SemanticType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{2}
+}
+
+type DataType int32
+
+const (
+	DATA_TYPE_UNKNOWN DataType = 0
+	BOOLEAN           DataType = 1
+	INT64             DataType = 2
+	UINT128           DataType = 3
+	FLOAT64           DataType = 4
+	STRING            DataType = 5
+	TIME64NS          DataType = 6
+	DURATION64NS      DataType = 7
+)
+
+var DataType_name = map[int32]string{
+	0: "DATA_TYPE_UNKNOWN",
+	1: "BOOLEAN",
+	2: "INT64",
+	3: "UINT128",
+	4: "FLOAT64",
+	5: "STRING",
+	6: "TIME64NS",
+	7: "DURATION64NS",
+}
+
+var DataType_value = map[string]int32{
+	"DATA_TYPE_UNKNOWN": 0,
+	"BOOLEAN":           1,
+	"INT64":             2,
+	"UINT128":           3,
+	"FLOAT64":           4,
+	"STRING":            5,
+	"TIME64NS":          6,
+	"DURATION64NS":      7,
+}
+
+func (DataType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{3}
 }
 
 type LoginRequest struct {
@@ -1061,9 +1131,274 @@ func (m *UpdateClusterVizierConfigResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_UpdateClusterVizierConfigResponse proto.InternalMessageInfo
 
+type ExtractVizFuncsInfoRequest struct {
+	Script    string   `protobuf:"bytes,1,opt,name=script,proto3" json:"script,omitempty"`
+	FuncNames []string `protobuf:"bytes,2,rep,name=func_names,json=funcNames,proto3" json:"func_names,omitempty"`
+}
+
+func (m *ExtractVizFuncsInfoRequest) Reset()      { *m = ExtractVizFuncsInfoRequest{} }
+func (*ExtractVizFuncsInfoRequest) ProtoMessage() {}
+func (*ExtractVizFuncsInfoRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{20}
+}
+func (m *ExtractVizFuncsInfoRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ExtractVizFuncsInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ExtractVizFuncsInfoRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ExtractVizFuncsInfoRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExtractVizFuncsInfoRequest.Merge(m, src)
+}
+func (m *ExtractVizFuncsInfoRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *ExtractVizFuncsInfoRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ExtractVizFuncsInfoRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ExtractVizFuncsInfoRequest proto.InternalMessageInfo
+
+func (m *ExtractVizFuncsInfoRequest) GetScript() string {
+	if m != nil {
+		return m.Script
+	}
+	return ""
+}
+
+func (m *ExtractVizFuncsInfoRequest) GetFuncNames() []string {
+	if m != nil {
+		return m.FuncNames
+	}
+	return nil
+}
+
+type FuncArgsSpec struct {
+	Args []*FuncArgsSpec_Arg `protobuf:"bytes,1,rep,name=args,proto3" json:"args,omitempty"`
+}
+
+func (m *FuncArgsSpec) Reset()      { *m = FuncArgsSpec{} }
+func (*FuncArgsSpec) ProtoMessage() {}
+func (*FuncArgsSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{21}
+}
+func (m *FuncArgsSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *FuncArgsSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_FuncArgsSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *FuncArgsSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FuncArgsSpec.Merge(m, src)
+}
+func (m *FuncArgsSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *FuncArgsSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_FuncArgsSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FuncArgsSpec proto.InternalMessageInfo
+
+func (m *FuncArgsSpec) GetArgs() []*FuncArgsSpec_Arg {
+	if m != nil {
+		return m.Args
+	}
+	return nil
+}
+
+type FuncArgsSpec_Arg struct {
+	DataType     DataType     `protobuf:"varint,1,opt,name=data_type,json=dataType,proto3,enum=pl.cloudapi.DataType" json:"data_type,omitempty"`
+	SemanticType SemanticType `protobuf:"varint,2,opt,name=semantic_type,json=semanticType,proto3,enum=pl.cloudapi.SemanticType" json:"semantic_type,omitempty"`
+	Name         string       `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	DefaultValue string       `protobuf:"bytes,5,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`
+}
+
+func (m *FuncArgsSpec_Arg) Reset()      { *m = FuncArgsSpec_Arg{} }
+func (*FuncArgsSpec_Arg) ProtoMessage() {}
+func (*FuncArgsSpec_Arg) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{21, 0}
+}
+func (m *FuncArgsSpec_Arg) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *FuncArgsSpec_Arg) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_FuncArgsSpec_Arg.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *FuncArgsSpec_Arg) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FuncArgsSpec_Arg.Merge(m, src)
+}
+func (m *FuncArgsSpec_Arg) XXX_Size() int {
+	return m.Size()
+}
+func (m *FuncArgsSpec_Arg) XXX_DiscardUnknown() {
+	xxx_messageInfo_FuncArgsSpec_Arg.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FuncArgsSpec_Arg proto.InternalMessageInfo
+
+func (m *FuncArgsSpec_Arg) GetDataType() DataType {
+	if m != nil {
+		return m.DataType
+	}
+	return DATA_TYPE_UNKNOWN
+}
+
+func (m *FuncArgsSpec_Arg) GetSemanticType() SemanticType {
+	if m != nil {
+		return m.SemanticType
+	}
+	return ST_UNSPECIFIED
+}
+
+func (m *FuncArgsSpec_Arg) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *FuncArgsSpec_Arg) GetDefaultValue() string {
+	if m != nil {
+		return m.DefaultValue
+	}
+	return ""
+}
+
+type VizSpec struct {
+	VegaSpec string `protobuf:"bytes,1,opt,name=vega_spec,json=vegaSpec,proto3" json:"vega_spec,omitempty"`
+}
+
+func (m *VizSpec) Reset()      { *m = VizSpec{} }
+func (*VizSpec) ProtoMessage() {}
+func (*VizSpec) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{22}
+}
+func (m *VizSpec) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *VizSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_VizSpec.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *VizSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VizSpec.Merge(m, src)
+}
+func (m *VizSpec) XXX_Size() int {
+	return m.Size()
+}
+func (m *VizSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_VizSpec.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_VizSpec proto.InternalMessageInfo
+
+func (m *VizSpec) GetVegaSpec() string {
+	if m != nil {
+		return m.VegaSpec
+	}
+	return ""
+}
+
+type ExtractVizFuncsInfoResponse struct {
+	DocStringMap map[string]string        `protobuf:"bytes,1,rep,name=doc_string_map,json=docStringMap,proto3" json:"doc_string_map,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	VizSpecMap   map[string]*VizSpec      `protobuf:"bytes,2,rep,name=viz_spec_map,json=vizSpecMap,proto3" json:"viz_spec_map,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	FnArgsMap    map[string]*FuncArgsSpec `protobuf:"bytes,3,rep,name=fn_args_map,json=fnArgsMap,proto3" json:"fn_args_map,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+}
+
+func (m *ExtractVizFuncsInfoResponse) Reset()      { *m = ExtractVizFuncsInfoResponse{} }
+func (*ExtractVizFuncsInfoResponse) ProtoMessage() {}
+func (*ExtractVizFuncsInfoResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{23}
+}
+func (m *ExtractVizFuncsInfoResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ExtractVizFuncsInfoResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ExtractVizFuncsInfoResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ExtractVizFuncsInfoResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExtractVizFuncsInfoResponse.Merge(m, src)
+}
+func (m *ExtractVizFuncsInfoResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *ExtractVizFuncsInfoResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ExtractVizFuncsInfoResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ExtractVizFuncsInfoResponse proto.InternalMessageInfo
+
+func (m *ExtractVizFuncsInfoResponse) GetDocStringMap() map[string]string {
+	if m != nil {
+		return m.DocStringMap
+	}
+	return nil
+}
+
+func (m *ExtractVizFuncsInfoResponse) GetVizSpecMap() map[string]*VizSpec {
+	if m != nil {
+		return m.VizSpecMap
+	}
+	return nil
+}
+
+func (m *ExtractVizFuncsInfoResponse) GetFnArgsMap() map[string]*FuncArgsSpec {
+	if m != nil {
+		return m.FnArgsMap
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterEnum("pl.cloudapi.ArtifactType", ArtifactType_name, ArtifactType_value)
 	proto.RegisterEnum("pl.cloudapi.ClusterStatus", ClusterStatus_name, ClusterStatus_value)
+	proto.RegisterEnum("pl.cloudapi.SemanticType", SemanticType_name, SemanticType_value)
+	proto.RegisterEnum("pl.cloudapi.DataType", DataType_name, DataType_value)
 	proto.RegisterType((*LoginRequest)(nil), "pl.cloudapi.LoginRequest")
 	proto.RegisterType((*LoginReply)(nil), "pl.cloudapi.LoginReply")
 	proto.RegisterType((*GetImageCredentialsRequest)(nil), "pl.cloudapi.GetImageCredentialsRequest")
@@ -1084,6 +1419,14 @@ func init() {
 	proto.RegisterType((*GetClusterConnectionInfoResponse)(nil), "pl.cloudapi.GetClusterConnectionInfoResponse")
 	proto.RegisterType((*UpdateClusterVizierConfigRequest)(nil), "pl.cloudapi.UpdateClusterVizierConfigRequest")
 	proto.RegisterType((*UpdateClusterVizierConfigResponse)(nil), "pl.cloudapi.UpdateClusterVizierConfigResponse")
+	proto.RegisterType((*ExtractVizFuncsInfoRequest)(nil), "pl.cloudapi.ExtractVizFuncsInfoRequest")
+	proto.RegisterType((*FuncArgsSpec)(nil), "pl.cloudapi.FuncArgsSpec")
+	proto.RegisterType((*FuncArgsSpec_Arg)(nil), "pl.cloudapi.FuncArgsSpec.Arg")
+	proto.RegisterType((*VizSpec)(nil), "pl.cloudapi.VizSpec")
+	proto.RegisterType((*ExtractVizFuncsInfoResponse)(nil), "pl.cloudapi.ExtractVizFuncsInfoResponse")
+	proto.RegisterMapType((map[string]string)(nil), "pl.cloudapi.ExtractVizFuncsInfoResponse.DocStringMapEntry")
+	proto.RegisterMapType((map[string]*FuncArgsSpec)(nil), "pl.cloudapi.ExtractVizFuncsInfoResponse.FnArgsMapEntry")
+	proto.RegisterMapType((map[string]*VizSpec)(nil), "pl.cloudapi.ExtractVizFuncsInfoResponse.VizSpecMapEntry")
 }
 
 func init() {
@@ -1091,91 +1434,124 @@ func init() {
 }
 
 var fileDescriptor_c309ce7890afda1a = []byte{
-	// 1338 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x57, 0xcd, 0x6f, 0xdb, 0xc6,
-	0x12, 0x17, 0xa5, 0xc4, 0xb0, 0x46, 0xfe, 0x7a, 0xeb, 0x7c, 0x28, 0x7c, 0x79, 0x94, 0x42, 0x3f,
-	0x20, 0x46, 0xde, 0x8b, 0x84, 0x28, 0x89, 0x51, 0x20, 0xe8, 0x07, 0x2d, 0x19, 0xb1, 0x12, 0x45,
-	0x29, 0x28, 0xd9, 0x49, 0x5a, 0xa0, 0xc4, 0x8a, 0x5a, 0x4b, 0xdb, 0x50, 0x24, 0xcb, 0x5d, 0x3a,
-	0x71, 0xd0, 0x43, 0x2f, 0xed, 0xa9, 0x87, 0x16, 0xbd, 0xf7, 0xdc, 0xff, 0xa3, 0x28, 0xda, 0x63,
-	0x8e, 0x39, 0x05, 0x8d, 0x72, 0xe9, 0x31, 0x7f, 0x42, 0x41, 0x72, 0x29, 0x51, 0xb2, 0xe4, 0x24,
-	0xbd, 0x08, 0xbb, 0x33, 0xbf, 0x99, 0xf9, 0xed, 0xec, 0x70, 0x66, 0x05, 0x1b, 0xcc, 0x33, 0xcb,
-	0xa6, 0xe5, 0xf8, 0xdd, 0xe8, 0x17, 0xbb, 0xd4, 0xed, 0x8c, 0x96, 0x25, 0xd7, 0x73, 0xb8, 0x83,
-	0x72, 0xae, 0x55, 0x8a, 0x45, 0xf2, 0xd5, 0x1e, 0xe5, 0x7d, 0xbf, 0x53, 0x32, 0x9d, 0x41, 0xb9,
-	0xe7, 0xf4, 0x9c, 0x72, 0x88, 0xe9, 0xf8, 0x07, 0xe1, 0x2e, 0xdc, 0x84, 0xab, 0xc8, 0x56, 0x2e,
-	0x86, 0x01, 0x9c, 0xc1, 0xc0, 0xb1, 0xcb, 0xbe, 0x4f, 0xbb, 0x11, 0x3c, 0x5c, 0x0a, 0x44, 0xa1,
-	0xe7, 0x38, 0x3d, 0x8b, 0x8c, 0xfd, 0x70, 0x3a, 0x20, 0x8c, 0xe3, 0x81, 0x2b, 0x00, 0xca, 0x34,
-	0xe0, 0x89, 0x87, 0x5d, 0x97, 0x78, 0x2c, 0xd2, 0xab, 0xd7, 0x60, 0xa9, 0xe1, 0xf4, 0xa8, 0xad,
-	0x93, 0xaf, 0x7c, 0xc2, 0x38, 0xba, 0x04, 0x4b, 0xd8, 0x34, 0x09, 0x63, 0x06, 0x77, 0x1e, 0x13,
-	0x3b, 0x2f, 0x15, 0xa5, 0xcd, 0xac, 0x9e, 0x8b, 0x64, 0xed, 0x40, 0xa4, 0x6a, 0x00, 0xc2, 0xc4,
-	0xb5, 0x8e, 0xd0, 0x19, 0x38, 0x9d, 0x44, 0x46, 0x1b, 0xf4, 0x1f, 0x00, 0xf2, 0xd4, 0xa5, 0x1e,
-	0x61, 0x06, 0xe6, 0xf9, 0x74, 0x51, 0xda, 0xcc, 0xe8, 0x59, 0x21, 0xd1, 0xb8, 0x7a, 0x11, 0xe4,
-	0xdb, 0x84, 0xd7, 0x07, 0xb8, 0x47, 0xaa, 0x1e, 0xe9, 0x12, 0x9b, 0x53, 0x6c, 0x31, 0xc1, 0x41,
-	0xbd, 0x0e, 0xff, 0x9e, 0xa9, 0x65, 0xae, 0x63, 0x33, 0x12, 0x44, 0x34, 0x3d, 0xd2, 0x65, 0x71,
-	0xc4, 0x70, 0xa3, 0xb6, 0x21, 0xa7, 0x79, 0x9c, 0x1e, 0x60, 0x93, 0xb7, 0x08, 0x47, 0x08, 0x4e,
-	0xd9, 0x78, 0x40, 0x04, 0x26, 0x5c, 0xa3, 0x6b, 0xb0, 0x88, 0x05, 0x24, 0x9f, 0x2e, 0x66, 0x36,
-	0x73, 0x95, 0xb3, 0xa5, 0xc4, 0xed, 0x94, 0x62, 0x7b, 0x7d, 0x04, 0x53, 0xdf, 0x48, 0xb0, 0x18,
-	0x8b, 0xd1, 0x07, 0x90, 0x1d, 0xa5, 0x37, 0x74, 0x9c, 0xab, 0xc8, 0xa5, 0x28, 0xbf, 0xa5, 0x38,
-	0xbf, 0xa5, 0x76, 0x8c, 0xd0, 0xc7, 0x60, 0x54, 0x80, 0x5c, 0x70, 0x8d, 0x94, 0x1b, 0x7d, 0xcc,
-	0xfa, 0x61, 0x3e, 0xb2, 0x3a, 0x44, 0xa2, 0x5d, 0xcc, 0xfa, 0x01, 0xe0, 0x90, 0x78, 0x8c, 0x3a,
-	0xb6, 0xc1, 0xb8, 0x97, 0xcf, 0x44, 0x00, 0x21, 0x6a, 0x71, 0x0f, 0xdd, 0x81, 0x75, 0x7c, 0x88,
-	0xa9, 0x85, 0x3b, 0x16, 0x31, 0x62, 0x7a, 0x2c, 0x7f, 0xaa, 0x98, 0xd9, 0x5c, 0xa9, 0x5c, 0x98,
-	0x79, 0x8c, 0xf6, 0x91, 0x4b, 0x74, 0x34, 0xb2, 0x8a, 0xc5, 0x0c, 0x5d, 0x84, 0xac, 0xd9, 0xc7,
-	0x76, 0x8f, 0x58, 0x4e, 0x2f, 0x7f, 0x3a, 0x0c, 0x35, 0x16, 0xa8, 0x3f, 0x49, 0x70, 0xee, 0x36,
-	0xe1, 0x31, 0xbc, 0x41, 0x19, 0x8f, 0x8b, 0x63, 0x03, 0x96, 0xe3, 0xd0, 0x46, 0x22, 0xbb, 0x4b,
-	0xb1, 0xb0, 0x19, 0x64, 0xf9, 0xa3, 0x04, 0x88, 0x1f, 0xb9, 0x24, 0x3c, 0xed, 0x89, 0x1c, 0x47,
-	0xf6, 0xc1, 0x2e, 0xb8, 0x5e, 0x8b, 0x0e, 0x28, 0x0f, 0x93, 0x90, 0xd1, 0xa3, 0x8d, 0xfa, 0x73,
-	0xc4, 0xaa, 0xe6, 0x3c, 0xb1, 0x2d, 0x07, 0x77, 0x1b, 0xd4, 0x7e, 0xfc, 0x5e, 0xac, 0xa6, 0x12,
-	0x9c, 0x3e, 0x96, 0xe0, 0x63, 0xb4, 0x33, 0xef, 0x45, 0x5b, 0xfd, 0x5e, 0x82, 0xf3, 0xc7, 0x08,
-	0x8a, 0x8a, 0x5d, 0x83, 0x8c, 0xef, 0x59, 0x82, 0x57, 0xb0, 0x44, 0x2a, 0x2c, 0xb0, 0x3e, 0xae,
-	0xdc, 0xdc, 0x8a, 0x98, 0x6c, 0xc3, 0xf0, 0x65, 0x61, 0xa1, 0xb5, 0xab, 0x55, 0x6e, 0x6e, 0xe9,
-	0x42, 0x83, 0x6e, 0x41, 0xee, 0x10, 0x5b, 0xb4, 0x6b, 0xf8, 0x36, 0xa7, 0x56, 0xc8, 0xe7, 0xe4,
-	0x82, 0x83, 0x10, 0xbe, 0x17, 0xa0, 0xd5, 0x73, 0x70, 0xa6, 0xea, 0x11, 0xcc, 0x49, 0xd5, 0xf2,
-	0x19, 0x27, 0x5e, 0xfc, 0x6d, 0xed, 0xc3, 0xd9, 0x29, 0xb9, 0xe0, 0xf8, 0x21, 0x80, 0x19, 0x89,
-	0x0c, 0xda, 0x15, 0xd5, 0xbd, 0x1a, 0x1c, 0x3e, 0xe8, 0x36, 0x6e, 0xa7, 0xb4, 0xb7, 0x57, 0xaf,
-	0x6d, 0x2f, 0x0f, 0x5f, 0x16, 0xb2, 0xc2, 0xb2, 0x5e, 0xd3, 0xb3, 0xc2, 0xa2, 0xde, 0x55, 0x3f,
-	0x86, 0xa5, 0x7d, 0xfa, 0x8c, 0x12, 0xaf, 0xea, 0xd8, 0x07, 0xb4, 0x87, 0xca, 0xb0, 0xee, 0x62,
-	0xc6, 0x78, 0xdf, 0x73, 0xfc, 0x5e, 0xdf, 0x20, 0x76, 0x50, 0x82, 0x91, 0xdf, 0x45, 0x1d, 0x25,
-	0x54, 0x3b, 0x91, 0x46, 0xc5, 0x80, 0x92, 0x0e, 0xf6, 0xdc, 0x2e, 0xe6, 0x04, 0xdd, 0x9d, 0xef,
-	0x66, 0x56, 0x2e, 0xb6, 0x1d, 0xc7, 0xda, 0xc7, 0x96, 0x4f, 0x66, 0x86, 0xf8, 0x04, 0xce, 0xde,
-	0x26, 0x3c, 0xa6, 0x6f, 0x1f, 0x38, 0x71, 0x05, 0x5d, 0x86, 0xf4, 0xfc, 0x33, 0x2f, 0x0c, 0x5f,
-	0x16, 0xd2, 0xf5, 0x9a, 0x9e, 0xa6, 0x5d, 0xf5, 0x77, 0x09, 0x72, 0x09, 0xfb, 0x77, 0x36, 0x44,
-	0x15, 0x58, 0x60, 0x1c, 0x73, 0x9f, 0x89, 0xaf, 0x41, 0x9e, 0x28, 0x2b, 0xe1, 0xb2, 0x15, 0x22,
-	0x74, 0x81, 0x44, 0x9b, 0xb0, 0x6a, 0x61, 0xc6, 0x77, 0x09, 0xf6, 0x78, 0x87, 0x60, 0xde, 0x64,
-	0xe2, 0x93, 0x98, 0x16, 0xa3, 0x6b, 0xb0, 0x60, 0x86, 0x59, 0xcb, 0x9f, 0x0a, 0xa9, 0x4c, 0x16,
-	0x6d, 0x32, 0xad, 0xba, 0x00, 0xaa, 0xcd, 0xf0, 0x73, 0x9a, 0xc8, 0x85, 0x28, 0x84, 0x1b, 0xb0,
-	0x28, 0xae, 0x35, 0xe8, 0xb0, 0x41, 0x97, 0xcc, 0xcf, 0x22, 0x1b, 0xda, 0x8c, 0x90, 0xea, 0x1d,
-	0x28, 0x8c, 0xfd, 0x55, 0x1d, 0xdb, 0x26, 0x26, 0xa7, 0x8e, 0xfd, 0x8f, 0xb2, 0x4c, 0xa0, 0x38,
-	0xdf, 0x97, 0x60, 0xf9, 0x3f, 0xc8, 0x52, 0x57, 0xeb, 0x76, 0x3d, 0xc2, 0xc4, 0x20, 0x88, 0x8a,
-	0xb3, 0xfe, 0xa9, 0x10, 0xea, 0x63, 0xfd, 0x78, 0x46, 0xa5, 0x13, 0x33, 0x4a, 0xfd, 0x51, 0x82,
-	0x62, 0x54, 0x66, 0x22, 0xd4, 0x44, 0xa2, 0xde, 0x93, 0x34, 0xaa, 0xc1, 0x72, 0x94, 0x5a, 0xc3,
-	0x0f, 0x7d, 0x86, 0xb1, 0x72, 0x95, 0xc2, 0xdc, 0xab, 0x88, 0x42, 0xeb, 0x4b, 0x66, 0x62, 0xa7,
-	0x6e, 0xc0, 0xa5, 0x13, 0x28, 0x45, 0x67, 0xbf, 0xf2, 0xad, 0x04, 0x4b, 0xc9, 0x4e, 0x84, 0x56,
-	0x00, 0xb4, 0xb6, 0xb1, 0xd7, 0xbc, 0xdb, 0xbc, 0xff, 0xa0, 0xb9, 0x96, 0x42, 0x08, 0x56, 0xb4,
-	0xb6, 0xd1, 0xa8, 0x37, 0xf7, 0x1e, 0x1a, 0xda, 0xbd, 0xda, 0xd6, 0x8d, 0x35, 0x09, 0xad, 0xc3,
-	0xaa, 0xd6, 0x36, 0x6a, 0x9a, 0xfe, 0xa0, 0xde, 0x14, 0xc2, 0x34, 0x92, 0xe1, 0x9c, 0xd6, 0x36,
-	0xaa, 0xf7, 0x9b, 0x6d, 0xad, 0xde, 0xdc, 0xd1, 0x8d, 0xd6, 0x4e, 0xdb, 0x78, 0xa4, 0xdd, 0x6b,
-	0xb4, 0xd6, 0x2a, 0xa8, 0x08, 0x17, 0x8f, 0xe9, 0x92, 0x2e, 0xbb, 0x57, 0xf6, 0x61, 0x79, 0xa2,
-	0x72, 0x03, 0x1e, 0xd5, 0x56, 0x82, 0x47, 0xb4, 0xdf, 0xdd, 0xd1, 0x1a, 0xed, 0xdd, 0x47, 0x6b,
-	0x12, 0x5a, 0x83, 0xa5, 0x50, 0x1f, 0x4b, 0xd2, 0x01, 0xab, 0x6a, 0xcb, 0xa8, 0xd5, 0x5b, 0xd5,
-	0xfb, 0xcd, 0xe6, 0x4e, 0xb5, 0xbd, 0x53, 0x5b, 0xcb, 0x54, 0x1a, 0x90, 0xd3, 0x7c, 0xde, 0x6f,
-	0x11, 0xef, 0x90, 0x9a, 0x41, 0x67, 0x3a, 0x1d, 0xbe, 0x37, 0xd0, 0x64, 0x59, 0x27, 0x9f, 0x2d,
-	0xf2, 0xf9, 0x59, 0x2a, 0xd7, 0x3a, 0x52, 0x53, 0x95, 0xef, 0x24, 0xc8, 0x47, 0x69, 0x0c, 0x5f,
-	0x14, 0x81, 0x67, 0xc7, 0xa3, 0xcf, 0x70, 0x50, 0x52, 0xe8, 0x4b, 0x58, 0x9f, 0xf1, 0xd4, 0x40,
-	0x97, 0x27, 0xdc, 0xcd, 0x7f, 0xaa, 0xc8, 0x9b, 0x6f, 0x07, 0x46, 0x97, 0xa6, 0xa6, 0x2a, 0xbf,
-	0x49, 0xb0, 0x3a, 0xba, 0x36, 0x0f, 0x9b, 0x8f, 0x89, 0x87, 0x74, 0x58, 0x9d, 0x9a, 0xb5, 0x68,
-	0x63, 0xda, 0xe5, 0x8c, 0x49, 0x2c, 0xe7, 0x67, 0x8e, 0xa5, 0x16, 0xe1, 0x6a, 0x0a, 0x7d, 0x11,
-	0xfa, 0x4c, 0x0e, 0xa2, 0xe3, 0x3e, 0x67, 0xcc, 0x51, 0xf9, 0xbf, 0x27, 0x83, 0x46, 0xe7, 0xf8,
-	0x35, 0x03, 0xff, 0x12, 0x75, 0x99, 0x68, 0x85, 0x0f, 0x61, 0x79, 0x62, 0xb0, 0xa0, 0x4b, 0x93,
-	0x5d, 0x63, 0xc6, 0x30, 0x92, 0xd5, 0x93, 0x20, 0x71, 0x3c, 0xf4, 0x39, 0xac, 0x4c, 0xb6, 0x2a,
-	0xa4, 0x4e, 0x33, 0x3d, 0xde, 0xd3, 0xe5, 0x8d, 0x13, 0x31, 0x23, 0xe7, 0x47, 0x90, 0x9f, 0xd7,
-	0x6b, 0xd0, 0xff, 0xe7, 0xb8, 0x98, 0xd9, 0xde, 0xe4, 0xab, 0xef, 0x88, 0x1e, 0x85, 0xfe, 0x1a,
-	0x2e, 0xcc, 0xfd, 0xd6, 0xd1, 0xa4, 0xb7, 0xb7, 0xb5, 0x29, 0xb9, 0xf4, 0xae, 0xf0, 0x38, 0xfa,
-	0xb6, 0xf5, 0xfc, 0x95, 0x92, 0x7a, 0xf1, 0x4a, 0x49, 0xbd, 0x79, 0xa5, 0x48, 0xdf, 0x0c, 0x15,
-	0xe9, 0x97, 0xa1, 0x22, 0xfd, 0x31, 0x54, 0xa4, 0xe7, 0x43, 0x45, 0xfa, 0x73, 0xa8, 0x48, 0x7f,
-	0x0d, 0x95, 0xd4, 0x9b, 0xa1, 0x22, 0xfd, 0xf0, 0x5a, 0x49, 0x3d, 0x7f, 0xad, 0xa4, 0x5e, 0xbc,
-	0x56, 0x52, 0x9f, 0x6d, 0xb9, 0xf4, 0x29, 0x25, 0x16, 0xee, 0xb0, 0x12, 0xa6, 0xe5, 0xd1, 0xa6,
-	0x3c, 0xeb, 0x9f, 0xd0, 0xad, 0xf1, 0xb2, 0xb3, 0x10, 0x8e, 0xe8, 0xeb, 0x7f, 0x07, 0x00, 0x00,
-	0xff, 0xff, 0x35, 0xad, 0x55, 0x37, 0x33, 0x0d, 0x00, 0x00,
+	// 1871 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x58, 0xcd, 0x73, 0xdb, 0xc6,
+	0x15, 0x27, 0x48, 0x7d, 0xf1, 0x91, 0x92, 0xe8, 0xf5, 0x47, 0x68, 0xda, 0xa1, 0x64, 0xa8, 0xd3,
+	0x68, 0xd4, 0x86, 0x1a, 0x31, 0x8e, 0xea, 0x49, 0xa6, 0x4d, 0x21, 0x92, 0x96, 0x90, 0x48, 0x90,
+	0x07, 0x00, 0xe5, 0x38, 0x9d, 0x29, 0xba, 0x02, 0x56, 0x14, 0x2a, 0x10, 0x40, 0x81, 0xa5, 0x6c,
+	0x69, 0x3a, 0xd3, 0x5e, 0xda, 0x53, 0x0f, 0xed, 0xf4, 0xde, 0x4b, 0x2f, 0x3d, 0xf4, 0xd4, 0x7f,
+	0xa1, 0xd3, 0x69, 0x8e, 0x3e, 0xe6, 0xe4, 0xa9, 0xe9, 0x4b, 0x8f, 0x3e, 0xf5, 0xdc, 0xc1, 0x62,
+	0x41, 0x81, 0x14, 0xa9, 0xc8, 0xb9, 0x70, 0xb0, 0x6f, 0x7f, 0xef, 0xb7, 0x6f, 0xdf, 0xbe, 0x7d,
+	0xef, 0x2d, 0x61, 0x25, 0x0c, 0xcc, 0x75, 0xd3, 0xf1, 0x7a, 0x56, 0xfc, 0x8b, 0x7d, 0xdb, 0x3f,
+	0x1c, 0x7c, 0xd6, 0xfc, 0xc0, 0xa3, 0x1e, 0x2a, 0xf8, 0x4e, 0x2d, 0x11, 0x55, 0x3e, 0xec, 0xd8,
+	0xf4, 0xb8, 0x77, 0x58, 0x33, 0xbd, 0xee, 0x7a, 0xc7, 0xeb, 0x78, 0xeb, 0x0c, 0x73, 0xd8, 0x3b,
+	0x62, 0x23, 0x36, 0x60, 0x5f, 0xb1, 0x6e, 0x65, 0x99, 0x2d, 0xe0, 0x75, 0xbb, 0x9e, 0xbb, 0xde,
+	0xeb, 0xd9, 0x56, 0x0c, 0x67, 0x9f, 0x1c, 0xb1, 0xd4, 0xf1, 0xbc, 0x8e, 0x43, 0x2e, 0x78, 0xa8,
+	0xdd, 0x25, 0x21, 0xc5, 0x5d, 0x9f, 0x03, 0xaa, 0xa3, 0x80, 0xe7, 0x01, 0xf6, 0x7d, 0x12, 0x84,
+	0xf1, 0xbc, 0xb8, 0x01, 0xc5, 0x5d, 0xaf, 0x63, 0xbb, 0x2a, 0xf9, 0x55, 0x8f, 0x84, 0x14, 0x3d,
+	0x80, 0x22, 0x36, 0x4d, 0x12, 0x86, 0x06, 0xf5, 0x4e, 0x88, 0x5b, 0x16, 0x96, 0x85, 0xd5, 0xbc,
+	0x5a, 0x88, 0x65, 0x7a, 0x24, 0x12, 0x25, 0x00, 0xae, 0xe2, 0x3b, 0x67, 0xe8, 0x16, 0x4c, 0xa7,
+	0x91, 0xf1, 0x00, 0xbd, 0x0f, 0x40, 0x5e, 0xf8, 0x76, 0x40, 0x42, 0x03, 0xd3, 0x72, 0x76, 0x59,
+	0x58, 0xcd, 0xa9, 0x79, 0x2e, 0x91, 0xa8, 0x78, 0x1f, 0x2a, 0xdb, 0x84, 0xca, 0x5d, 0xdc, 0x21,
+	0x8d, 0x80, 0x58, 0xc4, 0xa5, 0x36, 0x76, 0x42, 0x6e, 0x83, 0xf8, 0x11, 0xdc, 0x1b, 0x3b, 0x1b,
+	0xfa, 0x9e, 0x1b, 0x92, 0x68, 0x45, 0x33, 0x20, 0x56, 0x98, 0xac, 0xc8, 0x06, 0xa2, 0x0e, 0x05,
+	0x29, 0xa0, 0xf6, 0x11, 0x36, 0xa9, 0x46, 0x28, 0x42, 0x30, 0xe5, 0xe2, 0x2e, 0xe1, 0x18, 0xf6,
+	0x8d, 0x36, 0x60, 0x0e, 0x73, 0x48, 0x39, 0xbb, 0x9c, 0x5b, 0x2d, 0xd4, 0x6f, 0xd7, 0x52, 0xa7,
+	0x53, 0x4b, 0xf4, 0xd5, 0x01, 0x4c, 0x7c, 0x2b, 0xc0, 0x5c, 0x22, 0x46, 0x8f, 0x20, 0x3f, 0x70,
+	0x2f, 0x23, 0x2e, 0xd4, 0x2b, 0xb5, 0xd8, 0xbf, 0xb5, 0xc4, 0xbf, 0x35, 0x3d, 0x41, 0xa8, 0x17,
+	0x60, 0xb4, 0x04, 0x85, 0xe8, 0x18, 0x6d, 0x6a, 0x1c, 0xe3, 0xf0, 0x98, 0xf9, 0x23, 0xaf, 0x42,
+	0x2c, 0xda, 0xc1, 0xe1, 0x71, 0x04, 0x38, 0x25, 0x41, 0x68, 0x7b, 0xae, 0x11, 0xd2, 0xa0, 0x9c,
+	0x8b, 0x01, 0x5c, 0xa4, 0xd1, 0x00, 0x7d, 0x0e, 0x37, 0xf1, 0x29, 0xb6, 0x1d, 0x7c, 0xe8, 0x10,
+	0x23, 0x31, 0x2f, 0x2c, 0x4f, 0x2d, 0xe7, 0x56, 0x17, 0xea, 0x77, 0xc7, 0x6e, 0x43, 0x3f, 0xf3,
+	0x89, 0x8a, 0x06, 0x5a, 0x89, 0x38, 0x44, 0xf7, 0x21, 0x6f, 0x1e, 0x63, 0xb7, 0x43, 0x1c, 0xaf,
+	0x53, 0x9e, 0x66, 0x4b, 0x5d, 0x08, 0xc4, 0x3f, 0x0b, 0x70, 0x67, 0x9b, 0xd0, 0x04, 0xbe, 0x6b,
+	0x87, 0x34, 0x09, 0x8e, 0x15, 0x98, 0x4f, 0x96, 0x36, 0x52, 0xde, 0x2d, 0x26, 0x42, 0x25, 0xf2,
+	0xf2, 0x4f, 0x52, 0x20, 0x7a, 0xe6, 0x13, 0xb6, 0xdb, 0x2b, 0x6d, 0x1c, 0xe8, 0x47, 0xa3, 0xe8,
+	0x78, 0x1d, 0xbb, 0x6b, 0x53, 0xe6, 0x84, 0x9c, 0x1a, 0x0f, 0xc4, 0xbf, 0xc4, 0x56, 0x35, 0xbd,
+	0xe7, 0xae, 0xe3, 0x61, 0x6b, 0xd7, 0x76, 0x4f, 0xde, 0xc9, 0xaa, 0x11, 0x07, 0x67, 0x2f, 0x39,
+	0xf8, 0x92, 0xd9, 0xb9, 0x77, 0x32, 0x5b, 0xfc, 0x83, 0x00, 0xef, 0x5d, 0x32, 0x90, 0x47, 0x6c,
+	0x09, 0x72, 0xbd, 0xc0, 0xe1, 0x76, 0x45, 0x9f, 0x48, 0x84, 0x99, 0xf0, 0x18, 0xd7, 0x3f, 0xde,
+	0x8c, 0x2d, 0xd9, 0x82, 0xfe, 0xab, 0xa5, 0x19, 0x6d, 0x47, 0xaa, 0x7f, 0xbc, 0xa9, 0xf2, 0x19,
+	0xf4, 0x29, 0x14, 0x4e, 0xb1, 0x63, 0x5b, 0x46, 0xcf, 0xa5, 0xb6, 0xc3, 0xec, 0xb9, 0x3a, 0xe0,
+	0x80, 0xc1, 0xdb, 0x11, 0x5a, 0xbc, 0x03, 0xb7, 0x1a, 0x01, 0xc1, 0x94, 0x34, 0x9c, 0x5e, 0x48,
+	0x49, 0x90, 0xdc, 0xad, 0x03, 0xb8, 0x3d, 0x22, 0xe7, 0x36, 0xfe, 0x18, 0xc0, 0x8c, 0x45, 0x86,
+	0x6d, 0xf1, 0xe8, 0x5e, 0x8c, 0x36, 0x1f, 0x65, 0x1b, 0xff, 0xb0, 0xd6, 0x6e, 0xcb, 0xcd, 0xad,
+	0xf9, 0xfe, 0xab, 0xa5, 0x3c, 0xd7, 0x94, 0x9b, 0x6a, 0x9e, 0x6b, 0xc8, 0x96, 0xf8, 0x19, 0x14,
+	0x0f, 0xec, 0x73, 0x9b, 0x04, 0x0d, 0xcf, 0x3d, 0xb2, 0x3b, 0x68, 0x1d, 0x6e, 0xfa, 0x38, 0x0c,
+	0xe9, 0x71, 0xe0, 0xf5, 0x3a, 0xc7, 0x06, 0x71, 0xa3, 0x10, 0x8c, 0x79, 0xe7, 0x54, 0x94, 0x9a,
+	0x6a, 0xc5, 0x33, 0x22, 0x06, 0x94, 0x26, 0x68, 0xfb, 0x16, 0xa6, 0x04, 0x7d, 0x31, 0x99, 0x66,
+	0x9c, 0x2f, 0xb6, 0x3c, 0xcf, 0x39, 0xc0, 0x4e, 0x8f, 0x8c, 0x5d, 0xe2, 0xa7, 0x70, 0x7b, 0x9b,
+	0xd0, 0xc4, 0x7c, 0xf7, 0xc8, 0x4b, 0x22, 0xe8, 0x03, 0xc8, 0x4e, 0xde, 0xf3, 0x4c, 0xff, 0xd5,
+	0x52, 0x56, 0x6e, 0xaa, 0x59, 0xdb, 0x12, 0xff, 0x2d, 0x40, 0x21, 0xa5, 0x7f, 0x6d, 0x45, 0x54,
+	0x87, 0x99, 0x90, 0x62, 0xda, 0x0b, 0xf9, 0x6d, 0xa8, 0x0c, 0x85, 0x15, 0xa7, 0xd4, 0x18, 0x42,
+	0xe5, 0x48, 0xb4, 0x0a, 0x8b, 0x0e, 0x0e, 0xe9, 0x0e, 0xc1, 0x01, 0x3d, 0x24, 0x98, 0x2a, 0x21,
+	0xbf, 0x12, 0xa3, 0x62, 0xb4, 0x01, 0x33, 0x26, 0xf3, 0x5a, 0x79, 0x8a, 0x99, 0x32, 0x1c, 0xb4,
+	0x69, 0xb7, 0xaa, 0x1c, 0x28, 0x2a, 0xec, 0x3a, 0x0d, 0xf9, 0x82, 0x07, 0xc2, 0x43, 0x98, 0xe3,
+	0xc7, 0x1a, 0x65, 0xd8, 0x28, 0x4b, 0x96, 0xc7, 0x19, 0xcb, 0x74, 0x06, 0x48, 0xf1, 0x73, 0x58,
+	0xba, 0xe0, 0x6b, 0x78, 0xae, 0x4b, 0x4c, 0x6a, 0x7b, 0xee, 0x77, 0xf2, 0x32, 0x81, 0xe5, 0xc9,
+	0x5c, 0xdc, 0xca, 0x1f, 0x40, 0xde, 0xf6, 0x25, 0xcb, 0x0a, 0x48, 0xc8, 0x0b, 0x41, 0x1c, 0x9c,
+	0xf2, 0x13, 0x2e, 0x54, 0x2f, 0xe6, 0x2f, 0x6a, 0x54, 0x36, 0x55, 0xa3, 0xc4, 0x3f, 0x09, 0xb0,
+	0x1c, 0x87, 0x19, 0x5f, 0x6a, 0xc8, 0x51, 0xef, 0x68, 0x34, 0x6a, 0xc2, 0x7c, 0xec, 0x5a, 0xa3,
+	0xc7, 0x38, 0xd9, 0x5a, 0x85, 0xfa, 0xd2, 0xc4, 0xa3, 0x88, 0x97, 0x56, 0x8b, 0x66, 0x6a, 0x24,
+	0xae, 0xc0, 0x83, 0x2b, 0x4c, 0x8a, 0xf7, 0x2e, 0x6a, 0x50, 0x69, 0xbd, 0xa0, 0x01, 0x36, 0xe9,
+	0x81, 0x7d, 0xfe, 0xb8, 0xe7, 0x9a, 0x61, 0xda, 0xcd, 0x77, 0x60, 0x26, 0x34, 0x03, 0xdb, 0xa7,
+	0x3c, 0xdf, 0xf0, 0x51, 0x54, 0x92, 0x8f, 0x7a, 0xae, 0xc9, 0x52, 0x64, 0xc8, 0xea, 0x5f, 0x5e,
+	0xcd, 0x47, 0x92, 0x28, 0x3f, 0x86, 0xe2, 0xff, 0x04, 0x28, 0x46, 0x5c, 0x52, 0xd0, 0x09, 0x35,
+	0x9f, 0x98, 0x68, 0x03, 0xa6, 0x70, 0xd0, 0x49, 0x62, 0xe0, 0xfd, 0xa1, 0x7d, 0xa4, 0x81, 0x35,
+	0x29, 0xe8, 0xa8, 0x0c, 0x5a, 0xf9, 0x87, 0x00, 0x39, 0x29, 0xe8, 0xa0, 0x3a, 0xe4, 0x2d, 0x4c,
+	0x71, 0x9c, 0x47, 0x05, 0x16, 0xf0, 0xc3, 0x95, 0xb6, 0x89, 0x29, 0x66, 0x39, 0x74, 0xce, 0xe2,
+	0x5f, 0x51, 0xfe, 0x0d, 0x49, 0x17, 0xbb, 0xd4, 0x36, 0x27, 0x97, 0x0d, 0x8d, 0x23, 0xe2, 0xfc,
+	0x1b, 0xa6, 0x46, 0x83, 0x82, 0x9f, 0x4b, 0x15, 0xfc, 0x15, 0x98, 0xb7, 0xc8, 0x11, 0xee, 0x39,
+	0xd4, 0x38, 0x8d, 0xb2, 0x02, 0x2f, 0x76, 0x45, 0x2e, 0x64, 0x99, 0x42, 0xfc, 0x3e, 0xcc, 0x1e,
+	0xd8, 0xe7, 0x6c, 0xcb, 0xf7, 0x20, 0x7f, 0x4a, 0x3a, 0xd8, 0x08, 0x7d, 0x62, 0x72, 0xef, 0xcd,
+	0x45, 0x82, 0x68, 0x52, 0xfc, 0xeb, 0x14, 0xdc, 0x1b, 0xeb, 0x76, 0x1e, 0x91, 0xbf, 0x80, 0x05,
+	0xcb, 0x33, 0xa3, 0xea, 0x62, 0xbb, 0x1d, 0xa3, 0x8b, 0x7d, 0xee, 0xb9, 0x4f, 0x86, 0x76, 0x70,
+	0x05, 0x43, 0xad, 0xe9, 0x99, 0x1a, 0xd3, 0xde, 0xc3, 0x7e, 0xcb, 0xa5, 0xc1, 0x99, 0x5a, 0xb4,
+	0x52, 0x22, 0xf4, 0x15, 0x14, 0x4f, 0xed, 0x73, 0x66, 0x1d, 0xe3, 0x8f, 0x7b, 0x98, 0x47, 0xd7,
+	0xe6, 0xe7, 0xdb, 0x1c, 0xb0, 0xc3, 0xe9, 0x40, 0x80, 0x9e, 0x42, 0xe1, 0xc8, 0x35, 0xa2, 0x53,
+	0x64, 0xd4, 0x39, 0x46, 0xfd, 0xa3, 0x6b, 0x53, 0x3f, 0x76, 0xa3, 0x70, 0x18, 0x30, 0xe7, 0x8f,
+	0x92, 0x71, 0xe5, 0x33, 0xb8, 0x71, 0x69, 0x5f, 0x51, 0x41, 0x3c, 0x21, 0x67, 0x49, 0x41, 0x3c,
+	0x21, 0xac, 0x8d, 0x8c, 0x8f, 0x88, 0x5f, 0x51, 0x36, 0xf8, 0x24, 0xfb, 0x48, 0xa8, 0x68, 0xb0,
+	0x38, 0x62, 0xf8, 0x18, 0xf5, 0xb5, 0xb4, 0x7a, 0xa1, 0x7e, 0x6b, 0xf4, 0xd6, 0x45, 0xea, 0x69,
+	0xd2, 0xa7, 0xb0, 0x30, 0x6c, 0xf2, 0x18, 0xce, 0xf5, 0x61, 0xce, 0xbb, 0x13, 0x6f, 0x40, 0x8a,
+	0x78, 0xed, 0x77, 0x02, 0x14, 0xd3, 0x5d, 0x02, 0x5a, 0x00, 0x90, 0x74, 0xa3, 0xad, 0x7c, 0xa1,
+	0xec, 0x3f, 0x55, 0x4a, 0x19, 0x84, 0x60, 0x41, 0xd2, 0x8d, 0x5d, 0x59, 0x69, 0x7f, 0x69, 0x48,
+	0x7b, 0xcd, 0xcd, 0x87, 0x25, 0x01, 0xdd, 0x84, 0x45, 0x49, 0x37, 0x9a, 0x92, 0xfa, 0x54, 0x56,
+	0xb8, 0x30, 0x8b, 0x2a, 0x70, 0x47, 0xd2, 0x8d, 0xc6, 0xbe, 0xa2, 0x4b, 0xb2, 0xd2, 0x52, 0x0d,
+	0xad, 0xa5, 0x1b, 0xcf, 0xa4, 0xbd, 0x5d, 0xad, 0x54, 0x47, 0xcb, 0x70, 0xff, 0xd2, 0x5c, 0x9a,
+	0xd2, 0x5a, 0x3b, 0x80, 0xf9, 0xa1, 0xaa, 0x12, 0xd9, 0xd1, 0xd0, 0x52, 0x76, 0xc4, 0xe3, 0x9d,
+	0x96, 0xb4, 0xab, 0xef, 0x3c, 0x2b, 0x09, 0xa8, 0x04, 0x45, 0x36, 0x9f, 0x48, 0xb2, 0x91, 0x55,
+	0x0d, 0xcd, 0x68, 0xca, 0x5a, 0x63, 0x5f, 0x51, 0x5a, 0x0d, 0xbd, 0xd5, 0x2c, 0xe5, 0xd6, 0x08,
+	0x14, 0xb5, 0xe1, 0x6b, 0xb7, 0xa0, 0x45, 0xdb, 0xd3, 0x9e, 0xb4, 0x1a, 0xf2, 0x63, 0xb9, 0xd5,
+	0x2c, 0x65, 0x50, 0x01, 0x66, 0x35, 0xdd, 0x50, 0xf6, 0x95, 0x56, 0xcc, 0xab, 0xe9, 0x86, 0xb4,
+	0xdd, 0x52, 0x74, 0xa3, 0x2d, 0x37, 0x4b, 0x16, 0x2a, 0xb2, 0xe9, 0xf6, 0x13, 0xb9, 0x59, 0xfa,
+	0x5a, 0x40, 0xb7, 0x60, 0x51, 0xd3, 0x0d, 0xad, 0xa5, 0x1e, 0xc8, 0x8d, 0x96, 0xa1, 0x48, 0x7b,
+	0xad, 0xd2, 0xdf, 0xb3, 0x6b, 0xbf, 0x81, 0xb9, 0x24, 0x47, 0xa0, 0xdb, 0x70, 0xa3, 0x29, 0xe9,
+	0x92, 0xa1, 0x3f, 0x7b, 0xd2, 0x4a, 0x6d, 0xa0, 0x00, 0xb3, 0x5b, 0xfb, 0xfb, 0xbb, 0x2d, 0x49,
+	0x29, 0x09, 0x28, 0x0f, 0xd3, 0xb2, 0xa2, 0x33, 0xbf, 0x15, 0x60, 0xb6, 0x2d, 0x2b, 0xfa, 0x46,
+	0xfd, 0x51, 0x29, 0x17, 0x0d, 0x1e, 0xef, 0xee, 0x4b, 0xd1, 0xcc, 0x14, 0x02, 0x98, 0xd1, 0x74,
+	0x55, 0x56, 0xb6, 0x4b, 0xd3, 0xa8, 0x08, 0x73, 0xba, 0xbc, 0xd7, 0xda, 0x7c, 0xa8, 0x68, 0xa5,
+	0x99, 0xc8, 0xc8, 0x66, 0x5b, 0x95, 0x74, 0x79, 0x5f, 0x61, 0x92, 0xd9, 0xfa, 0x2e, 0x14, 0xa4,
+	0x1e, 0x3d, 0xd6, 0x48, 0x70, 0x6a, 0x9b, 0x51, 0x77, 0x34, 0xcd, 0xde, 0x3c, 0x68, 0x38, 0x0a,
+	0xd2, 0x4f, 0xa7, 0xca, 0x7b, 0xe3, 0xa6, 0x7c, 0xe7, 0x4c, 0xcc, 0xd4, 0x7f, 0x2f, 0x40, 0x39,
+	0x4e, 0xe5, 0xec, 0x55, 0x13, 0x31, 0x7b, 0x81, 0x7d, 0x8e, 0xa3, 0xb2, 0x86, 0x7e, 0x09, 0x37,
+	0xc7, 0x3c, 0x77, 0xd0, 0x07, 0x43, 0x74, 0x93, 0x9f, 0x4b, 0x95, 0xd5, 0x6f, 0x07, 0xf2, 0xc2,
+	0x91, 0xa9, 0xff, 0x4b, 0x80, 0xc5, 0x41, 0x78, 0x06, 0xd8, 0x3c, 0x21, 0x01, 0x52, 0x61, 0x71,
+	0xa4, 0xdf, 0x47, 0x2b, 0xa3, 0x94, 0x63, 0x5e, 0x03, 0x95, 0xf2, 0xd8, 0xd6, 0x58, 0x23, 0x54,
+	0xcc, 0xa0, 0x9f, 0x33, 0xce, 0x74, 0x33, 0x7c, 0x99, 0x73, 0x4c, 0x2f, 0x5f, 0xf9, 0xde, 0xd5,
+	0xa0, 0xc1, 0x3e, 0xfe, 0x99, 0x83, 0x1b, 0xbc, 0x36, 0xa6, 0xda, 0xb1, 0x2f, 0x61, 0x7e, 0xa8,
+	0xb9, 0x45, 0x0f, 0x86, 0x3b, 0x97, 0x31, 0x0d, 0x71, 0x45, 0xbc, 0x0a, 0x92, 0xac, 0x87, 0x7e,
+	0x06, 0x0b, 0xc3, 0xed, 0x12, 0x12, 0x47, 0x2d, 0xbd, 0xdc, 0x57, 0x56, 0x56, 0xae, 0xc4, 0x0c,
+	0xc8, 0xcf, 0xa0, 0x3c, 0xa9, 0xdf, 0x41, 0x3f, 0x9c, 0x40, 0x31, 0xb6, 0xc5, 0xaa, 0x7c, 0x78,
+	0x4d, 0xf4, 0x60, 0xe9, 0x5f, 0xc3, 0xdd, 0x89, 0xfd, 0x06, 0x1a, 0x66, 0xfb, 0xb6, 0x56, 0xa9,
+	0x52, 0xbb, 0x2e, 0x7c, 0x70, 0x8a, 0xcf, 0x21, 0xaf, 0xb1, 0xe6, 0x64, 0xaf, 0x13, 0x44, 0xd7,
+	0x60, 0x4c, 0x85, 0x19, 0xb9, 0x06, 0x93, 0xfb, 0x9e, 0x91, 0x6b, 0x70, 0x45, 0xb1, 0x12, 0x33,
+	0x5b, 0xce, 0xcb, 0xd7, 0xd5, 0xcc, 0x37, 0xaf, 0xab, 0x99, 0xb7, 0xaf, 0xab, 0xc2, 0x6f, 0xfb,
+	0x55, 0xe1, 0x6f, 0xfd, 0xaa, 0xf0, 0x75, 0xbf, 0x2a, 0xbc, 0xec, 0x57, 0x85, 0xff, 0xf4, 0xab,
+	0xc2, 0x7f, 0xfb, 0xd5, 0xcc, 0xdb, 0x7e, 0x55, 0xf8, 0xe3, 0x9b, 0x6a, 0xe6, 0xe5, 0x9b, 0x6a,
+	0xe6, 0x9b, 0x37, 0xd5, 0xcc, 0x57, 0x9b, 0xbe, 0xfd, 0xc2, 0x26, 0x0e, 0x3e, 0x0c, 0x6b, 0xd8,
+	0x5e, 0x1f, 0x0c, 0xd6, 0xc7, 0xfd, 0x0d, 0xf4, 0xe9, 0xc5, 0xe7, 0xe1, 0x0c, 0x7b, 0x9f, 0x7c,
+	0xf4, 0xff, 0x00, 0x00, 0x00, 0xff, 0xff, 0x02, 0xc9, 0x17, 0xee, 0x30, 0x12, 0x00, 0x00,
 }
 
 func (x ArtifactType) String() string {
@@ -1187,6 +1563,20 @@ func (x ArtifactType) String() string {
 }
 func (x ClusterStatus) String() string {
 	s, ok := ClusterStatus_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x SemanticType) String() string {
+	s, ok := SemanticType_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (x DataType) String() string {
+	s, ok := DataType_name[int32(x)]
 	if ok {
 		return s
 	}
@@ -1729,6 +2119,169 @@ func (this *UpdateClusterVizierConfigResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *ExtractVizFuncsInfoRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ExtractVizFuncsInfoRequest)
+	if !ok {
+		that2, ok := that.(ExtractVizFuncsInfoRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Script != that1.Script {
+		return false
+	}
+	if len(this.FuncNames) != len(that1.FuncNames) {
+		return false
+	}
+	for i := range this.FuncNames {
+		if this.FuncNames[i] != that1.FuncNames[i] {
+			return false
+		}
+	}
+	return true
+}
+func (this *FuncArgsSpec) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*FuncArgsSpec)
+	if !ok {
+		that2, ok := that.(FuncArgsSpec)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Args) != len(that1.Args) {
+		return false
+	}
+	for i := range this.Args {
+		if !this.Args[i].Equal(that1.Args[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *FuncArgsSpec_Arg) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*FuncArgsSpec_Arg)
+	if !ok {
+		that2, ok := that.(FuncArgsSpec_Arg)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.DataType != that1.DataType {
+		return false
+	}
+	if this.SemanticType != that1.SemanticType {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.DefaultValue != that1.DefaultValue {
+		return false
+	}
+	return true
+}
+func (this *VizSpec) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*VizSpec)
+	if !ok {
+		that2, ok := that.(VizSpec)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.VegaSpec != that1.VegaSpec {
+		return false
+	}
+	return true
+}
+func (this *ExtractVizFuncsInfoResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ExtractVizFuncsInfoResponse)
+	if !ok {
+		that2, ok := that.(ExtractVizFuncsInfoResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.DocStringMap) != len(that1.DocStringMap) {
+		return false
+	}
+	for i := range this.DocStringMap {
+		if this.DocStringMap[i] != that1.DocStringMap[i] {
+			return false
+		}
+	}
+	if len(this.VizSpecMap) != len(that1.VizSpecMap) {
+		return false
+	}
+	for i := range this.VizSpecMap {
+		if !this.VizSpecMap[i].Equal(that1.VizSpecMap[i]) {
+			return false
+		}
+	}
+	if len(this.FnArgsMap) != len(that1.FnArgsMap) {
+		return false
+	}
+	for i := range this.FnArgsMap {
+		if !this.FnArgsMap[i].Equal(that1.FnArgsMap[i]) {
+			return false
+		}
+	}
+	return true
+}
 func (this *LoginRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -1964,6 +2517,100 @@ func (this *UpdateClusterVizierConfigResponse) GoString() string {
 	}
 	s := make([]string, 0, 4)
 	s = append(s, "&cloudapipb.UpdateClusterVizierConfigResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ExtractVizFuncsInfoRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&cloudapipb.ExtractVizFuncsInfoRequest{")
+	s = append(s, "Script: "+fmt.Sprintf("%#v", this.Script)+",\n")
+	s = append(s, "FuncNames: "+fmt.Sprintf("%#v", this.FuncNames)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *FuncArgsSpec) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cloudapipb.FuncArgsSpec{")
+	if this.Args != nil {
+		s = append(s, "Args: "+fmt.Sprintf("%#v", this.Args)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *FuncArgsSpec_Arg) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&cloudapipb.FuncArgsSpec_Arg{")
+	s = append(s, "DataType: "+fmt.Sprintf("%#v", this.DataType)+",\n")
+	s = append(s, "SemanticType: "+fmt.Sprintf("%#v", this.SemanticType)+",\n")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "DefaultValue: "+fmt.Sprintf("%#v", this.DefaultValue)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *VizSpec) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cloudapipb.VizSpec{")
+	s = append(s, "VegaSpec: "+fmt.Sprintf("%#v", this.VegaSpec)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ExtractVizFuncsInfoResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&cloudapipb.ExtractVizFuncsInfoResponse{")
+	keysForDocStringMap := make([]string, 0, len(this.DocStringMap))
+	for k, _ := range this.DocStringMap {
+		keysForDocStringMap = append(keysForDocStringMap, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForDocStringMap)
+	mapStringForDocStringMap := "map[string]string{"
+	for _, k := range keysForDocStringMap {
+		mapStringForDocStringMap += fmt.Sprintf("%#v: %#v,", k, this.DocStringMap[k])
+	}
+	mapStringForDocStringMap += "}"
+	if this.DocStringMap != nil {
+		s = append(s, "DocStringMap: "+mapStringForDocStringMap+",\n")
+	}
+	keysForVizSpecMap := make([]string, 0, len(this.VizSpecMap))
+	for k, _ := range this.VizSpecMap {
+		keysForVizSpecMap = append(keysForVizSpecMap, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForVizSpecMap)
+	mapStringForVizSpecMap := "map[string]*VizSpec{"
+	for _, k := range keysForVizSpecMap {
+		mapStringForVizSpecMap += fmt.Sprintf("%#v: %#v,", k, this.VizSpecMap[k])
+	}
+	mapStringForVizSpecMap += "}"
+	if this.VizSpecMap != nil {
+		s = append(s, "VizSpecMap: "+mapStringForVizSpecMap+",\n")
+	}
+	keysForFnArgsMap := make([]string, 0, len(this.FnArgsMap))
+	for k, _ := range this.FnArgsMap {
+		keysForFnArgsMap = append(keysForFnArgsMap, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForFnArgsMap)
+	mapStringForFnArgsMap := "map[string]*FuncArgsSpec{"
+	for _, k := range keysForFnArgsMap {
+		mapStringForFnArgsMap += fmt.Sprintf("%#v: %#v,", k, this.FnArgsMap[k])
+	}
+	mapStringForFnArgsMap += "}"
+	if this.FnArgsMap != nil {
+		s = append(s, "FnArgsMap: "+mapStringForFnArgsMap+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2410,6 +3057,78 @@ var _VizierClusterInfo_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateClusterVizierConfig",
 			Handler:    _VizierClusterInfo_UpdateClusterVizierConfig_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "src/cloud/cloudapipb/cloudapi.proto",
+}
+
+// ScriptMgrClient is the client API for ScriptMgr service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type ScriptMgrClient interface {
+	ExtractVizFuncsInfo(ctx context.Context, in *ExtractVizFuncsInfoRequest, opts ...grpc.CallOption) (*ExtractVizFuncsInfoResponse, error)
+}
+
+type scriptMgrClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewScriptMgrClient(cc *grpc.ClientConn) ScriptMgrClient {
+	return &scriptMgrClient{cc}
+}
+
+func (c *scriptMgrClient) ExtractVizFuncsInfo(ctx context.Context, in *ExtractVizFuncsInfoRequest, opts ...grpc.CallOption) (*ExtractVizFuncsInfoResponse, error) {
+	out := new(ExtractVizFuncsInfoResponse)
+	err := c.cc.Invoke(ctx, "/pl.cloudapi.ScriptMgr/ExtractVizFuncsInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ScriptMgrServer is the server API for ScriptMgr service.
+type ScriptMgrServer interface {
+	ExtractVizFuncsInfo(context.Context, *ExtractVizFuncsInfoRequest) (*ExtractVizFuncsInfoResponse, error)
+}
+
+// UnimplementedScriptMgrServer can be embedded to have forward compatible implementations.
+type UnimplementedScriptMgrServer struct {
+}
+
+func (*UnimplementedScriptMgrServer) ExtractVizFuncsInfo(ctx context.Context, req *ExtractVizFuncsInfoRequest) (*ExtractVizFuncsInfoResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExtractVizFuncsInfo not implemented")
+}
+
+func RegisterScriptMgrServer(s *grpc.Server, srv ScriptMgrServer) {
+	s.RegisterService(&_ScriptMgr_serviceDesc, srv)
+}
+
+func _ScriptMgr_ExtractVizFuncsInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExtractVizFuncsInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ScriptMgrServer).ExtractVizFuncsInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.cloudapi.ScriptMgr/ExtractVizFuncsInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ScriptMgrServer).ExtractVizFuncsInfo(ctx, req.(*ExtractVizFuncsInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _ScriptMgr_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "pl.cloudapi.ScriptMgr",
+	HandlerType: (*ScriptMgrServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ExtractVizFuncsInfo",
+			Handler:    _ScriptMgr_ExtractVizFuncsInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -3180,6 +3899,253 @@ func (m *UpdateClusterVizierConfigResponse) MarshalToSizedBuffer(dAtA []byte) (i
 	return len(dAtA) - i, nil
 }
 
+func (m *ExtractVizFuncsInfoRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ExtractVizFuncsInfoRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ExtractVizFuncsInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.FuncNames) > 0 {
+		for iNdEx := len(m.FuncNames) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.FuncNames[iNdEx])
+			copy(dAtA[i:], m.FuncNames[iNdEx])
+			i = encodeVarintCloudapi(dAtA, i, uint64(len(m.FuncNames[iNdEx])))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Script) > 0 {
+		i -= len(m.Script)
+		copy(dAtA[i:], m.Script)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.Script)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *FuncArgsSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *FuncArgsSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *FuncArgsSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Args) > 0 {
+		for iNdEx := len(m.Args) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Args[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintCloudapi(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *FuncArgsSpec_Arg) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *FuncArgsSpec_Arg) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *FuncArgsSpec_Arg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.DefaultValue) > 0 {
+		i -= len(m.DefaultValue)
+		copy(dAtA[i:], m.DefaultValue)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.DefaultValue)))
+		i--
+		dAtA[i] = 0x2a
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.SemanticType != 0 {
+		i = encodeVarintCloudapi(dAtA, i, uint64(m.SemanticType))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.DataType != 0 {
+		i = encodeVarintCloudapi(dAtA, i, uint64(m.DataType))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *VizSpec) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *VizSpec) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VizSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.VegaSpec) > 0 {
+		i -= len(m.VegaSpec)
+		copy(dAtA[i:], m.VegaSpec)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.VegaSpec)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ExtractVizFuncsInfoResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ExtractVizFuncsInfoResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ExtractVizFuncsInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.FnArgsMap) > 0 {
+		for k := range m.FnArgsMap {
+			v := m.FnArgsMap[k]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintCloudapi(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintCloudapi(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintCloudapi(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if len(m.VizSpecMap) > 0 {
+		for k := range m.VizSpecMap {
+			v := m.VizSpecMap[k]
+			baseI := i
+			if v != nil {
+				{
+					size, err := v.MarshalToSizedBuffer(dAtA[:i])
+					if err != nil {
+						return 0, err
+					}
+					i -= size
+					i = encodeVarintCloudapi(dAtA, i, uint64(size))
+				}
+				i--
+				dAtA[i] = 0x12
+			}
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintCloudapi(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintCloudapi(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.DocStringMap) > 0 {
+		for k := range m.DocStringMap {
+			v := m.DocStringMap[k]
+			baseI := i
+			i -= len(v)
+			copy(dAtA[i:], v)
+			i = encodeVarintCloudapi(dAtA, i, uint64(len(v)))
+			i--
+			dAtA[i] = 0x12
+			i -= len(k)
+			copy(dAtA[i:], k)
+			i = encodeVarintCloudapi(dAtA, i, uint64(len(k)))
+			i--
+			dAtA[i] = 0xa
+			i = encodeVarintCloudapi(dAtA, i, uint64(baseI-i))
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintCloudapi(dAtA []byte, offset int, v uint64) int {
 	offset -= sovCloudapi(v)
 	base := offset
@@ -3507,6 +4473,119 @@ func (m *UpdateClusterVizierConfigResponse) Size() (n int) {
 	return n
 }
 
+func (m *ExtractVizFuncsInfoRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Script)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	if len(m.FuncNames) > 0 {
+		for _, s := range m.FuncNames {
+			l = len(s)
+			n += 1 + l + sovCloudapi(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *FuncArgsSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Args) > 0 {
+		for _, e := range m.Args {
+			l = e.Size()
+			n += 1 + l + sovCloudapi(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *FuncArgsSpec_Arg) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.DataType != 0 {
+		n += 1 + sovCloudapi(uint64(m.DataType))
+	}
+	if m.SemanticType != 0 {
+		n += 1 + sovCloudapi(uint64(m.SemanticType))
+	}
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	l = len(m.DefaultValue)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	return n
+}
+
+func (m *VizSpec) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.VegaSpec)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	return n
+}
+
+func (m *ExtractVizFuncsInfoResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.DocStringMap) > 0 {
+		for k, v := range m.DocStringMap {
+			_ = k
+			_ = v
+			mapEntrySize := 1 + len(k) + sovCloudapi(uint64(len(k))) + 1 + len(v) + sovCloudapi(uint64(len(v)))
+			n += mapEntrySize + 1 + sovCloudapi(uint64(mapEntrySize))
+		}
+	}
+	if len(m.VizSpecMap) > 0 {
+		for k, v := range m.VizSpecMap {
+			_ = k
+			_ = v
+			l = 0
+			if v != nil {
+				l = v.Size()
+				l += 1 + sovCloudapi(uint64(l))
+			}
+			mapEntrySize := 1 + len(k) + sovCloudapi(uint64(len(k))) + l
+			n += mapEntrySize + 1 + sovCloudapi(uint64(mapEntrySize))
+		}
+	}
+	if len(m.FnArgsMap) > 0 {
+		for k, v := range m.FnArgsMap {
+			_ = k
+			_ = v
+			l = 0
+			if v != nil {
+				l = v.Size()
+				l += 1 + sovCloudapi(uint64(l))
+			}
+			mapEntrySize := 1 + len(k) + sovCloudapi(uint64(len(k))) + l
+			n += mapEntrySize + 1 + sovCloudapi(uint64(mapEntrySize))
+		}
+	}
+	return n
+}
+
 func sovCloudapi(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -3733,6 +4812,97 @@ func (this *UpdateClusterVizierConfigResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&UpdateClusterVizierConfigResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ExtractVizFuncsInfoRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ExtractVizFuncsInfoRequest{`,
+		`Script:` + fmt.Sprintf("%v", this.Script) + `,`,
+		`FuncNames:` + fmt.Sprintf("%v", this.FuncNames) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *FuncArgsSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForArgs := "[]*FuncArgsSpec_Arg{"
+	for _, f := range this.Args {
+		repeatedStringForArgs += strings.Replace(fmt.Sprintf("%v", f), "FuncArgsSpec_Arg", "FuncArgsSpec_Arg", 1) + ","
+	}
+	repeatedStringForArgs += "}"
+	s := strings.Join([]string{`&FuncArgsSpec{`,
+		`Args:` + repeatedStringForArgs + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *FuncArgsSpec_Arg) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&FuncArgsSpec_Arg{`,
+		`DataType:` + fmt.Sprintf("%v", this.DataType) + `,`,
+		`SemanticType:` + fmt.Sprintf("%v", this.SemanticType) + `,`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`DefaultValue:` + fmt.Sprintf("%v", this.DefaultValue) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VizSpec) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VizSpec{`,
+		`VegaSpec:` + fmt.Sprintf("%v", this.VegaSpec) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ExtractVizFuncsInfoResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	keysForDocStringMap := make([]string, 0, len(this.DocStringMap))
+	for k, _ := range this.DocStringMap {
+		keysForDocStringMap = append(keysForDocStringMap, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForDocStringMap)
+	mapStringForDocStringMap := "map[string]string{"
+	for _, k := range keysForDocStringMap {
+		mapStringForDocStringMap += fmt.Sprintf("%v: %v,", k, this.DocStringMap[k])
+	}
+	mapStringForDocStringMap += "}"
+	keysForVizSpecMap := make([]string, 0, len(this.VizSpecMap))
+	for k, _ := range this.VizSpecMap {
+		keysForVizSpecMap = append(keysForVizSpecMap, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForVizSpecMap)
+	mapStringForVizSpecMap := "map[string]*VizSpec{"
+	for _, k := range keysForVizSpecMap {
+		mapStringForVizSpecMap += fmt.Sprintf("%v: %v,", k, this.VizSpecMap[k])
+	}
+	mapStringForVizSpecMap += "}"
+	keysForFnArgsMap := make([]string, 0, len(this.FnArgsMap))
+	for k, _ := range this.FnArgsMap {
+		keysForFnArgsMap = append(keysForFnArgsMap, k)
+	}
+	github_com_gogo_protobuf_sortkeys.Strings(keysForFnArgsMap)
+	mapStringForFnArgsMap := "map[string]*FuncArgsSpec{"
+	for _, k := range keysForFnArgsMap {
+		mapStringForFnArgsMap += fmt.Sprintf("%v: %v,", k, this.FnArgsMap[k])
+	}
+	mapStringForFnArgsMap += "}"
+	s := strings.Join([]string{`&ExtractVizFuncsInfoResponse{`,
+		`DocStringMap:` + mapStringForDocStringMap + `,`,
+		`VizSpecMap:` + mapStringForVizSpecMap + `,`,
+		`FnArgsMap:` + mapStringForFnArgsMap + `,`,
 		`}`,
 	}, "")
 	return s
@@ -5860,6 +7030,888 @@ func (m *UpdateClusterVizierConfigResponse) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: UpdateClusterVizierConfigResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ExtractVizFuncsInfoRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExtractVizFuncsInfoRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExtractVizFuncsInfoRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Script", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Script = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FuncNames", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.FuncNames = append(m.FuncNames, string(dAtA[iNdEx:postIndex]))
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *FuncArgsSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: FuncArgsSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: FuncArgsSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Args", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Args = append(m.Args, &FuncArgsSpec_Arg{})
+			if err := m.Args[len(m.Args)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *FuncArgsSpec_Arg) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Arg: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Arg: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DataType", wireType)
+			}
+			m.DataType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.DataType |= DataType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SemanticType", wireType)
+			}
+			m.SemanticType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SemanticType |= SemanticType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 5:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DefaultValue", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.DefaultValue = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *VizSpec) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: VizSpec: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: VizSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VegaSpec", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.VegaSpec = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ExtractVizFuncsInfoResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ExtractVizFuncsInfoResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ExtractVizFuncsInfoResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DocStringMap", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DocStringMap == nil {
+				m.DocStringMap = make(map[string]string)
+			}
+			var mapkey string
+			var mapvalue string
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowCloudapi
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowCloudapi
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthCloudapi
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthCloudapi
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var stringLenmapvalue uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowCloudapi
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapvalue |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapvalue := int(stringLenmapvalue)
+					if intStringLenmapvalue < 0 {
+						return ErrInvalidLengthCloudapi
+					}
+					postStringIndexmapvalue := iNdEx + intStringLenmapvalue
+					if postStringIndexmapvalue < 0 {
+						return ErrInvalidLengthCloudapi
+					}
+					if postStringIndexmapvalue > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = string(dAtA[iNdEx:postStringIndexmapvalue])
+					iNdEx = postStringIndexmapvalue
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipCloudapi(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if skippy < 0 {
+						return ErrInvalidLengthCloudapi
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.DocStringMap[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VizSpecMap", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.VizSpecMap == nil {
+				m.VizSpecMap = make(map[string]*VizSpec)
+			}
+			var mapkey string
+			var mapvalue *VizSpec
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowCloudapi
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowCloudapi
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthCloudapi
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthCloudapi
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var mapmsglen int
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowCloudapi
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						mapmsglen |= int(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					if mapmsglen < 0 {
+						return ErrInvalidLengthCloudapi
+					}
+					postmsgIndex := iNdEx + mapmsglen
+					if postmsgIndex < 0 {
+						return ErrInvalidLengthCloudapi
+					}
+					if postmsgIndex > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = &VizSpec{}
+					if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
+						return err
+					}
+					iNdEx = postmsgIndex
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipCloudapi(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if skippy < 0 {
+						return ErrInvalidLengthCloudapi
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.VizSpecMap[mapkey] = mapvalue
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field FnArgsMap", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.FnArgsMap == nil {
+				m.FnArgsMap = make(map[string]*FuncArgsSpec)
+			}
+			var mapkey string
+			var mapvalue *FuncArgsSpec
+			for iNdEx < postIndex {
+				entryPreIndex := iNdEx
+				var wire uint64
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowCloudapi
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					wire |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
+				}
+				fieldNum := int32(wire >> 3)
+				if fieldNum == 1 {
+					var stringLenmapkey uint64
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowCloudapi
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						stringLenmapkey |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					intStringLenmapkey := int(stringLenmapkey)
+					if intStringLenmapkey < 0 {
+						return ErrInvalidLengthCloudapi
+					}
+					postStringIndexmapkey := iNdEx + intStringLenmapkey
+					if postStringIndexmapkey < 0 {
+						return ErrInvalidLengthCloudapi
+					}
+					if postStringIndexmapkey > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapkey = string(dAtA[iNdEx:postStringIndexmapkey])
+					iNdEx = postStringIndexmapkey
+				} else if fieldNum == 2 {
+					var mapmsglen int
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowCloudapi
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						mapmsglen |= int(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
+					}
+					if mapmsglen < 0 {
+						return ErrInvalidLengthCloudapi
+					}
+					postmsgIndex := iNdEx + mapmsglen
+					if postmsgIndex < 0 {
+						return ErrInvalidLengthCloudapi
+					}
+					if postmsgIndex > l {
+						return io.ErrUnexpectedEOF
+					}
+					mapvalue = &FuncArgsSpec{}
+					if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
+						return err
+					}
+					iNdEx = postmsgIndex
+				} else {
+					iNdEx = entryPreIndex
+					skippy, err := skipCloudapi(dAtA[iNdEx:])
+					if err != nil {
+						return err
+					}
+					if skippy < 0 {
+						return ErrInvalidLengthCloudapi
+					}
+					if (iNdEx + skippy) > postIndex {
+						return io.ErrUnexpectedEOF
+					}
+					iNdEx += skippy
+				}
+			}
+			m.FnArgsMap[mapkey] = mapvalue
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipCloudapi(dAtA[iNdEx:])
