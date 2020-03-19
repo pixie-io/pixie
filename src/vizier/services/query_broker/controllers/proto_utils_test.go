@@ -4,8 +4,10 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	"github.com/stretchr/testify/assert"
 
+	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
@@ -149,6 +151,46 @@ func TestStatusToVizierStatus(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "this is a message", s.Message)
 	assert.Equal(t, int32(16), s.Code)
+}
+
+func TestCompilerErrorStatusToVizierStatus(t *testing.T) {
+	errs := make([]*compilerpb.CompilerError, 2)
+	errs[0] = &compilerpb.CompilerError{
+		Error: &compilerpb.CompilerError_LineColError{
+			LineColError: &compilerpb.LineColError{
+				Line:    1,
+				Column:  2,
+				Message: "compilation error here",
+			},
+		},
+	}
+	errs[1] = &compilerpb.CompilerError{
+		Error: &compilerpb.CompilerError_LineColError{
+			LineColError: &compilerpb.LineColError{
+				Line:    101,
+				Column:  200,
+				Message: "another compilation error here",
+			},
+		},
+	}
+	compilerEG := &compilerpb.CompilerErrorGroup{
+		Errors: errs,
+	}
+	compilerEGAny, err := types.MarshalAny(compilerEG)
+	assert.Nil(t, err)
+	sv := &statuspb.Status{
+		Context: compilerEGAny,
+	}
+
+	s, err := controllers.StatusToVizierStatus(sv)
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(s.ErrorDetails))
+	assert.Equal(t, uint64(1), s.ErrorDetails[0].GetCompilerError().Line)
+	assert.Equal(t, uint64(2), s.ErrorDetails[0].GetCompilerError().Column)
+	assert.Equal(t, "compilation error here", s.ErrorDetails[0].GetCompilerError().Message)
+	assert.Equal(t, uint64(101), s.ErrorDetails[1].GetCompilerError().Line)
+	assert.Equal(t, uint64(200), s.ErrorDetails[1].GetCompilerError().Column)
+	assert.Equal(t, "another compilation error here", s.ErrorDetails[1].GetCompilerError().Message)
 }
 
 func TestRelationFromTable(t *testing.T) {

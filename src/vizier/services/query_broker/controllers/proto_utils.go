@@ -3,8 +3,10 @@ package controllers
 import (
 	"errors"
 
+	gogotypes "github.com/gogo/protobuf/types"
 	"google.golang.org/grpc/codes"
 
+	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
@@ -114,9 +116,36 @@ func VizierQueryRequestToPlannerQueryRequest(vpb *vizierpb.ExecuteScriptRequest)
 // StatusToVizierStatus converts an internal status to an externally-facing Vizier status.
 func StatusToVizierStatus(s *statuspb.Status) (*vizierpb.Status, error) {
 	return &vizierpb.Status{
-		Code:    int32(statusCodeToGRPCCode[s.ErrCode]),
-		Message: s.Msg,
+		Code:         int32(statusCodeToGRPCCode[s.ErrCode]),
+		Message:      s.Msg,
+		ErrorDetails: getErrorsFromStatusContext(s.Context),
 	}, nil
+}
+
+func getErrorsFromStatusContext(ctx *gogotypes.Any) []*vizierpb.ErrorDetails {
+	errorPB := &compilerpb.CompilerErrorGroup{}
+	if !gogotypes.Is(ctx, errorPB) {
+		return nil
+	}
+	err := gogotypes.UnmarshalAny(ctx, errorPB)
+	if err != nil {
+		return nil
+	}
+
+	errors := make([]*vizierpb.ErrorDetails, len(errorPB.Errors))
+	for i, e := range errorPB.Errors {
+		lcErr := e.GetLineColError()
+		errors[i] = &vizierpb.ErrorDetails{
+			Error: &vizierpb.ErrorDetails_CompilerError{
+				CompilerError: &vizierpb.CompilerError{
+					Line:    lcErr.Line,
+					Column:  lcErr.Column,
+					Message: lcErr.Message,
+				},
+			},
+		}
+	}
+	return errors
 }
 
 // RelationFromTable gets the relation from the table.
