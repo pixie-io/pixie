@@ -1,40 +1,41 @@
-// TODO(zasgar/michelle): Figure out how to import schema properly
-import {
-  GQLCompilerErrors,
-} from '../../../vizier/services/api/controller/schema/schema';
+import {Status} from 'types/generated/vizier_pb';
 
-export function ParseCompilerErrors(error: GQLCompilerErrors): any {
-  if (!error) {
-    // No errors available.
-    return [];
-  }
+interface CompilerError {
+  line: number;
+  column: number;
+  message: string;
+}
 
-  // The data is stored in columnar format, this converts it to rows.
-  const outputData = [];
-  // Three columns: 1. line#, 2. col#, 3. msg
-  if (error.msg && error.msg.trim() !== '') {
-    const row = {
+export function ParseCompilerErrors(status: Status): CompilerError[] {
+  const out = [];
+  const msg = status.getMessage();
+  if (msg) {
+    out.push({
       line: 0,
-      col: 0,
-      msg: error.msg,
-    };
-    outputData.push(row);
+      column: 0,
+      message: msg,
+    });
   }
-
-  if (!(error.lineColErrors && error.lineColErrors.length > 0)) {
-    return outputData;
-  }
-
-  // function used to sort first by lines then by cols.
-  function compare(err1, err2) {
-    const lineDiff = err1.line - err2.line;
-    if (lineDiff !== 0) {
-      return lineDiff;
+  const errors = status.getErrorDetailsList();
+  for (const error of errors) {
+    if (!error.hasCompilerError()) {
+      continue;
     }
-    return err1.col - err2.col;
+    const cErr = error.getCompilerError();
+    out.push({
+      line: cErr.getLine(),
+      column: cErr.getColumn(),
+      message: cErr.getMessage(),
+    });
   }
+  out.sort(compare);
+  return out;
+}
 
-  error.lineColErrors.sort(compare);
-
-  return outputData.concat(error.lineColErrors);
+function compare(err1: CompilerError, err2: CompilerError) {
+  const lineDiff = err1.line - err2.line;
+  if (lineDiff !== 0) {
+    return lineDiff;
+  }
+  return err1.column - err2.column;
 }

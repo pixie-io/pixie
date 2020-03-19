@@ -7,7 +7,9 @@ import {
 } from 'components/table/scrollable-table';
 import * as numeral from 'numeral';
 import * as React from 'react';
-import {Column, DataType, Relation} from 'types/generated/vizier_pb';
+import {
+    Column, CompilerError, DataType, ErrorDetails, Relation, Status,
+} from 'types/generated/vizier_pb';
 import * as FormatData from 'utils/format-data';
 import {ParseCompilerErrors} from 'utils/parse-compiler-errors';
 import {dataFromProto} from 'utils/result-data-utils';
@@ -139,8 +141,8 @@ function ExpandedRowRenderer(rowData) {
   />;
 }
 
-export const QueryResultErrors: React.FC<{ errors: any }> = ({ errors }) => {
-  const parsedErrors = ParseCompilerErrors(errors.compilerError);
+export const QueryResultErrors: React.FC<{ status: Status }> = ({ status }) => {
+  const parsedErrors = ParseCompilerErrors(status);
   const colInfo: TableColumnInfo[] = [
     {
       dataKey: 'line',
@@ -149,13 +151,13 @@ export const QueryResultErrors: React.FC<{ errors: any }> = ({ errors }) => {
       flexGrow: 8,
       width: 10,
     }, {
-      dataKey: 'col',
+      dataKey: 'column',
       label: 'Column',
       type: 'INT64',
       flexGrow: 8,
       width: 10,
     }, {
-      dataKey: 'msg',
+      dataKey: 'message',
       label: 'Message',
       type: 'STRING',
       flexGrow: 8,

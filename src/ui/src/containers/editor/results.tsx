@@ -41,7 +41,7 @@ export const ConsoleResults = React.memo<ConsoleResultsProps>(
         return [];
       }
       if (data.status) {
-        return [{ title: 'Errors', content: <QueryResultErrors errors={{ errors: null }} /> }];
+        return [{ title: 'Errors', content: <QueryResultErrors status={data.status} /> }];
       }
 
       const tables = data.tables || [];
