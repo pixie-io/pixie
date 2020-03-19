@@ -86,6 +86,21 @@ func (l *Lister) GetViziersInfo() ([]*cloudapipb.ClusterInfo, error) {
 	return c.Clusters, nil
 }
 
+// GetVizierInfo returns information about a connected vizier.
+func (l *Lister) GetVizierInfo(id uuid.UUID) ([]*cloudapipb.ClusterInfo, error) {
+	ctx, err := ctxWithCreds(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	clusterIDPb := utils.ProtoFromUUID(&id)
+
+	c, err := l.vc.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{ID: clusterIDPb})
+	if err != nil {
+		return nil, err
+	}
+	return c.Clusters, nil
+}
+
 // GetVizierConnection gets connection information for the specified Vizier.
 func (l *Lister) GetVizierConnection(id uuid.UUID) (*ConnectionInfo, error) {
 	ctx, err := ctxWithCreds(context.Background())
@@ -130,4 +145,19 @@ func (l *Lister) GetVizierConnection(id uuid.UUID) (*ConnectionInfo, error) {
 		URL:   u,
 		Token: ci.Token,
 	}, nil
+}
+
+// UpdateVizierConfig updates the config for the given Vizier.
+func (l *Lister) UpdateVizierConfig(req *cloudapipb.UpdateClusterVizierConfigRequest) error {
+	ctx, err := ctxWithCreds(context.Background())
+	if err != nil {
+		return err
+	}
+
+	_, err = l.vc.UpdateClusterVizierConfig(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -37,6 +37,7 @@ func init() {
 	RootCmd.AddCommand(ProxyCmd)
 	RootCmd.AddCommand(RunCmd)
 	RootCmd.AddCommand(GetCmd)
+	RootCmd.AddCommand(ConfigCmd)
 
 	RootCmd.AddCommand(CreateBundle)
 
