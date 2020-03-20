@@ -80,7 +80,7 @@ void PreProcessMessage(Message* message) {
   // Rule: Exclude anything that doesn't specify its Content-Type.
   auto content_type_iter = message->http_headers.find(http::kContentType);
   if (content_type_iter == message->http_headers.end()) {
-    message->http_msg_body = "<removed>";
+    message->http_msg_body = "<removed: unsupported content-type>";
     return;
   }
 
@@ -88,7 +88,7 @@ void PreProcessMessage(Message* message) {
   if (message->type == MessageType::kResponse && (!kHTTPResponseHeaderFilter.inclusions.empty() ||
                                                   !kHTTPResponseHeaderFilter.exclusions.empty())) {
     if (!MatchesHTTPHeaders(message->http_headers, kHTTPResponseHeaderFilter)) {
-      message->http_msg_body = "<removed>";
+      message->http_msg_body = "<removed: unsupported content-type>";
       return;
     }
   }
@@ -101,7 +101,7 @@ void PreProcessMessage(Message* message) {
     auto bodyOrErr = pl::zlib::Inflate(body_strview);
     if (!bodyOrErr.ok()) {
       LOG(WARNING) << "Unable to gunzip HTTP body.";
-      message->http_msg_body = "<Stirling failed to gunzip body>";
+      message->http_msg_body = "<Failed to gunzip body>";
     } else {
       message->http_msg_body = bodyOrErr.ValueOrDie();
     }

@@ -237,7 +237,8 @@ TEST_F(SocketTraceConnectorTest, HTTPFilter) {
       << "The filter is changed to require 'application/json' in Content-Type header, "
          "and event_json Content-Type matches, and is selected";
   EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]),
-              ElementsAre("foo", "<removed>", "<removed>", "foo"));
+              ElementsAre("foo", "<removed: unsupported content-type>",
+                          "<removed: unsupported content-type>", "foo"));
   EXPECT_THAT(ToIntVector<types::Time64NSValue>(record_batch[kHTTPTimeIdx]),
               ElementsAre(2 + source_->ClockRealTimeOffset(), 3 + source_->ClockRealTimeOffset(),
                           4 + source_->ClockRealTimeOffset(), 5 + source_->ClockRealTimeOffset()));

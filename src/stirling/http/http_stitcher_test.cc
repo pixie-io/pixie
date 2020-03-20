@@ -32,7 +32,7 @@ TEST(PreProcessRecordTest, ContentHeaderIsNotAdded) {
   message.http_msg_body = "test";
   message.http_headers.insert({kContentType, "text"});
   PreProcessMessage(&message);
-  EXPECT_EQ("<removed>", message.http_msg_body);
+  EXPECT_EQ("<removed: unsupported content-type>", message.http_msg_body);
   EXPECT_THAT(message.http_headers, Contains(Pair(kContentType, "text")));
 }
 
