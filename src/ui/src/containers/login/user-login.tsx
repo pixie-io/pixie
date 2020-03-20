@@ -371,6 +371,10 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
   }
 }
 
+const TERMS_OF_USE_LINK = '<a target="_blank" href="https://pixielabs.ai/terms">Terms of Use</a>';
+const PRIVACY_POLICY_LINK = '<a target="_blank" href="https://pixielabs.ai/privacy">Privacy Policy</a>';
+const COOKIE_POLICY_LINK = '<a target="_blank" href="https://pixielabs.ai/cookies">Cookie Policy</a>';
+
 interface Auth0LoginProps {
   containerID?: string;
   redirectPath: string; // Path that auth0 should redirect to after authentication.
@@ -402,7 +406,8 @@ class Auth0Login extends React.Component<Auth0LoginProps, {}>  {
       container: this.props.containerID,
       initialScreen: 'login',
       languageDictionary: {
-        signUpTerms: 'By signing up, I agree to the Terms of Services and Privacy Policy',
+        signUpTerms:
+          `By signing up, you agree to the ${TERMS_OF_USE_LINK}, ${PRIVACY_POLICY_LINK}, and ${COOKIE_POLICY_LINK}.`,
       },
       allowedConnections: ['google-oauth2'],
     });
