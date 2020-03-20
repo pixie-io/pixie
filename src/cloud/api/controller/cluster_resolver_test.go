@@ -14,9 +14,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/schema"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
-	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	svcutils "pixielabs.ai/pixielabs/src/shared/services/utils"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -28,31 +26,39 @@ func CreateTestContext() context.Context {
 	return authcontext.NewContext(context.Background(), sCtx)
 }
 
+// TODO(nserrino): Remove and replace with LoadSchemaNew when other GQL handlers are moved over to using GRPC API.
 func LoadSchema(env apienv.APIEnv) *graphql.Schema {
 	schemaData := schema.MustLoadSchema()
 	opts := []graphql.SchemaOpt{graphql.UseFieldResolvers(), graphql.MaxParallelism(20)}
-	gqlSchema := graphql.MustParseSchema(schemaData, &controller.QueryResolver{Env: env}, opts...)
+	qr := &controller.QueryResolver{Env: env}
+	gqlSchema := graphql.MustParseSchema(schemaData, qr, opts...)
+	return gqlSchema
+}
+
+func LoadSchemaNew(gqlEnv controller.GraphQLEnv) *graphql.Schema {
+	schemaData := schema.MustLoadSchema()
+	opts := []graphql.SchemaOpt{graphql.UseFieldResolvers(), graphql.MaxParallelism(20)}
+	qr := &controller.QueryResolver{GQLEnv: gqlEnv}
+	gqlSchema := graphql.MustParseSchema(schemaData, qr, opts...)
 	return gqlSchema
 }
 
 func TestCreateCluster(t *testing.T) {
-	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 	clusterID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	apiEnv, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	gqlEnv, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	expectedVZMgrReq := &vzmgrpb.CreateVizierClusterRequest{
-		OrgID: &uuidpb.UUID{Data: []byte(orgID)},
-	}
-	mockVzMgr.EXPECT().CreateVizierCluster(gomock.Any(), expectedVZMgrReq).
-		Return(&uuidpb.UUID{Data: []byte(clusterID)}, nil)
+	mockVzSvc.EXPECT().CreateCluster(gomock.Any(), &cloudapipb.CreateClusterRequest{}).
+		Return(&cloudapipb.CreateClusterResponse{
+			ClusterID: utils.ProtoFromUUIDStrOrNil(clusterID),
+		}, nil)
 
-	gqlSchema := LoadSchema(apiEnv)
+	gqlSchema := LoadSchemaNew(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Schema:  gqlSchema,
@@ -76,36 +82,28 @@ func TestCreateCluster(t *testing.T) {
 }
 
 func TestClusterInfo(t *testing.T) {
-	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	clusterID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
-
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	apiEnv, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	gqlEnv, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	vzrIDs := make([]*uuidpb.UUID, 1)
-	vzrIDs[0] = &uuidpb.UUID{Data: []byte(clusterID)}
-	vzrResp := &vzmgrpb.GetViziersByOrgResponse{
-		VizierIDs: vzrIDs,
-	}
-	mockVzMgr.EXPECT().GetViziersByOrg(gomock.Any(), &uuidpb.UUID{Data: []byte(orgID)}).
-		Return(vzrResp, nil)
-
-	vzrInfoResp := &cvmsgspb.VizierInfo{
-		VizierID:        &uuidpb.UUID{Data: []byte(clusterID)},
-		Status:          1,
-		LastHeartbeatNs: 4000000,
-		Config: &cvmsgspb.VizierConfig{
+	clusterInfo := &cloudapipb.ClusterInfo{
+		ID:              utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		Status:          cloudapipb.CS_HEALTHY,
+		LastHeartbeatNs: 4 * 1000 * 1000,
+		Config: &cloudapipb.VizierConfig{
 			PassthroughEnabled: false,
 		},
 	}
-	mockVzMgr.EXPECT().GetVizierInfo(gomock.Any(), &uuidpb.UUID{Data: []byte(clusterID)}).
-		Return(vzrInfoResp, nil)
 
-	gqlSchema := LoadSchema(apiEnv)
+	mockVzSvc.EXPECT().GetClusterInfo(gomock.Any(), &cloudapipb.GetClusterInfoRequest{}).
+		Return(&cloudapipb.GetClusterInfoResponse{
+			Clusters: []*cloudapipb.ClusterInfo{clusterInfo},
+		}, nil)
+
+	gqlSchema := LoadSchemaNew(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Schema:  gqlSchema,
@@ -126,7 +124,7 @@ func TestClusterInfo(t *testing.T) {
 				{
 					"cluster": {
 						"id":"7ba7b810-9dad-11d1-80b4-00c04fd430c8",
-						"status": "VZ_ST_HEALTHY",
+						"status": "CS_HEALTHY",
 						"lastHeartbeatMs": 4,
 						"vizierConfig": {
 							"passthroughEnabled": false
@@ -139,32 +137,38 @@ func TestClusterInfo(t *testing.T) {
 }
 
 func TestClusterConnectionInfo(t *testing.T) {
-	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
-	clusterID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
-
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	apiEnv, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	gqlEnv, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	vzrIDs := make([]*uuidpb.UUID, 1)
-	vzrIDs[0] = &uuidpb.UUID{Data: []byte(clusterID)}
-	vzrResp := &vzmgrpb.GetViziersByOrgResponse{
-		VizierIDs: vzrIDs,
-	}
-	mockVzMgr.EXPECT().GetViziersByOrg(gomock.Any(), &uuidpb.UUID{Data: []byte(orgID)}).
-		Return(vzrResp, nil)
+	clusterID := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
-	vzrInfoResp := &cvmsgspb.VizierConnectionInfo{
-		IPAddress: "127.0.0.1",
-		Token:     "this-is-a-token",
+	clusterInfo := &cloudapipb.ClusterInfo{
+		ID:              clusterID,
+		Status:          cloudapipb.CS_HEALTHY,
+		LastHeartbeatNs: 4 * 1000 * 1000,
+		Config: &cloudapipb.VizierConfig{
+			PassthroughEnabled: false,
+		},
 	}
-	mockVzMgr.EXPECT().GetVizierConnectionInfo(gomock.Any(), &uuidpb.UUID{Data: []byte(clusterID)}).
-		Return(vzrInfoResp, nil)
 
-	gqlSchema := LoadSchema(apiEnv)
+	mockVzSvc.EXPECT().GetClusterInfo(gomock.Any(), &cloudapipb.GetClusterInfoRequest{}).
+		Return(&cloudapipb.GetClusterInfoResponse{
+			Clusters: []*cloudapipb.ClusterInfo{clusterInfo},
+		}, nil)
+
+	mockVzSvc.EXPECT().GetClusterConnectionInfo(gomock.Any(), &cloudapipb.GetClusterConnectionInfoRequest{
+		ID: clusterID,
+	}).
+		Return(&cloudapipb.GetClusterConnectionInfoResponse{
+			IPAddress: "127.0.0.1",
+			Token:     "this-is-a-token",
+		}, nil)
+
+	gqlSchema := LoadSchemaNew(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Schema:  gqlSchema,
@@ -193,18 +197,19 @@ func TestUpdateClusterVizierConfig(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	apiEnv, _, _, vzmgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	gqlEnv, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	vzmgr.EXPECT().UpdateVizierConfig(gomock.Any(), &cvmsgspb.UpdateVizierConfigRequest{
-		VizierID: utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
-		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{
+	mockVzSvc.EXPECT().UpdateClusterVizierConfig(gomock.Any(), &cloudapipb.UpdateClusterVizierConfigRequest{
+		ID: utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		ConfigUpdate: &cloudapipb.VizierConfigUpdate{
 			PassthroughEnabled: &types.BoolValue{Value: true},
 		},
-	}).Return(&cvmsgspb.UpdateVizierConfigResponse{}, nil)
+	}).
+		Return(&cloudapipb.UpdateClusterVizierConfigResponse{}, nil)
 
-	gqlSchema := LoadSchema(apiEnv)
+	gqlSchema := LoadSchemaNew(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Schema:  gqlSchema,
@@ -227,16 +232,17 @@ func TestUpdateClusterVizierConfigNoUpdates(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	apiEnv, _, _, vzmgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	gqlEnv, mockVzSvc, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	vzmgr.EXPECT().UpdateVizierConfig(gomock.Any(), &cvmsgspb.UpdateVizierConfigRequest{
-		VizierID:     utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
-		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{},
-	}).Return(&cvmsgspb.UpdateVizierConfigResponse{}, nil)
+	mockVzSvc.EXPECT().UpdateClusterVizierConfig(gomock.Any(), &cloudapipb.UpdateClusterVizierConfigRequest{
+		ID:           utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		ConfigUpdate: &cloudapipb.VizierConfigUpdate{},
+	}).
+		Return(&cloudapipb.UpdateClusterVizierConfigResponse{}, nil)
 
-	gqlSchema := LoadSchema(apiEnv)
+	gqlSchema := LoadSchemaNew(gqlEnv)
 	gqltesting.RunTests(t, []*gqltesting.Test{
 		{
 			Schema:  gqlSchema,

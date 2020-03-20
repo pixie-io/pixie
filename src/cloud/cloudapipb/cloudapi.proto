@@ -120,7 +120,16 @@ message GetDownloadLinkResponse {
     google.protobuf.Timestamp valid_until = 3;
 }
 
-service VizierClusterInfo {
+message CreateClusterRequest {}
+
+message CreateClusterResponse {
+    pl.uuidpb.UUID cluster_id = 1 [
+                          (gogoproto.customname) = "ClusterID"
+                          ];
+}
+
+service VizierClusterService {
+    rpc CreateCluster(CreateClusterRequest) returns(CreateClusterResponse) {}
     rpc GetClusterInfo(GetClusterInfoRequest) returns(GetClusterInfoResponse) {}
     rpc GetClusterConnectionInfo(GetClusterConnectionInfoRequest) returns(GetClusterConnectionInfoResponse) {}
     rpc UpdateClusterVizierConfig(UpdateClusterVizierConfigRequest) returns(UpdateClusterVizierConfigResponse) {}

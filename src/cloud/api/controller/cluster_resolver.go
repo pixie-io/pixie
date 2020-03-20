@@ -8,31 +8,20 @@ import (
 	"github.com/graph-gophers/graphql-go"
 	uuid "github.com/satori/go.uuid"
 
-	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
 // CreateCluster creates a new cluster.
 func (q *QueryResolver) CreateCluster(ctx context.Context) (*ClusterInfoResolver, error) {
-	apiEnv := q.Env
-
-	sCtx, err := authcontext.FromContext(ctx)
-	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
-
-	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
-
-	clusterReq := &vzmgrpb.CreateVizierClusterRequest{
-		OrgID: orgID,
-	}
-
-	id, err := apiEnv.VZMgrClient().CreateVizierCluster(ctx, clusterReq)
+	grpcAPI := q.GQLEnv.VizierClusterServer
+	res, err := grpcAPI.CreateCluster(ctx, &cloudapipb.CreateClusterRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	u, err := utils.UUIDFromProto(id)
+	u, err := utils.UUIDFromProto(res.ClusterID)
 	if err != nil {
 		return nil, err
 	}
@@ -47,33 +36,24 @@ type ClusterResolver struct {
 
 // Cluster resolves cluster information.
 func (q *QueryResolver) Cluster(ctx context.Context) (*ClusterInfoResolver, error) {
-	sCtx, err := authcontext.FromContext(ctx)
-	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
-
-	orgID := utils.ProtoFromUUIDStrOrNil(orgIDstr)
-
-	viziers, err := q.Env.VZMgrClient().GetViziersByOrg(ctx, orgID)
+	grpcAPI := q.GQLEnv.VizierClusterServer
+	res, err := grpcAPI.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
 	if err != nil {
 		return nil, err
 	}
-
-	if len(viziers.VizierIDs) == 0 {
+	if len(res.Clusters) == 0 {
 		return nil, errors.New("org has no clusters")
 	}
-	// Take first ID for now.
-	info, err := q.Env.VZMgrClient().GetVizierInfo(ctx, viziers.VizierIDs[0])
-	if err != nil {
-		return nil, err
-	}
-
-	clusterID, err := utils.UUIDFromProto(info.VizierID)
+	// Take first cluster for now.
+	cluster := res.Clusters[0]
+	clusterID, err := utils.UUIDFromProto(cluster.ID)
 	if err != nil {
 		return nil, err
 	}
 
 	return &ClusterInfoResolver{
-		clusterID, info.Status, float64(info.LastHeartbeatNs), &VizierConfigResolver{
-			passthroughEnabled: &info.Config.PassthroughEnabled,
+		clusterID, cluster.Status, float64(cluster.LastHeartbeatNs), &VizierConfigResolver{
+			passthroughEnabled: &cluster.Config.PassthroughEnabled,
 		},
 	}, nil
 }
@@ -95,18 +75,18 @@ type updateVizierConfigArgs struct {
 
 // UpdateVizierConfig updates the Vizier config of the input cluster
 func (q *QueryResolver) UpdateVizierConfig(ctx context.Context, args *updateVizierConfigArgs) (bool, error) {
-	req := &cvmsgspb.UpdateVizierConfigRequest{
-		VizierID:     utils.ProtoFromUUIDStrOrNil(string(args.ClusterID)),
-		ConfigUpdate: &cvmsgspb.VizierConfigUpdate{},
+	grpcAPI := q.GQLEnv.VizierClusterServer
+
+	req := &cloudapipb.UpdateClusterVizierConfigRequest{
+		ID:           utils.ProtoFromUUIDStrOrNil(string(args.ClusterID)),
+		ConfigUpdate: &cloudapipb.VizierConfigUpdate{},
 	}
 
 	if args.PassthroughEnabled != nil {
-		req.ConfigUpdate = &cvmsgspb.VizierConfigUpdate{
-			PassthroughEnabled: &types.BoolValue{Value: *args.PassthroughEnabled},
-		}
+		req.ConfigUpdate.PassthroughEnabled = &types.BoolValue{Value: *args.PassthroughEnabled}
 	}
 
-	_, err := q.Env.VZMgrClient().UpdateVizierConfig(ctx, req)
+	_, err := grpcAPI.UpdateClusterVizierConfig(ctx, req)
 	if err != nil {
 		return false, err
 	}
@@ -116,7 +96,7 @@ func (q *QueryResolver) UpdateVizierConfig(ctx context.Context, args *updateVizi
 // ClusterInfoResolver is the resolver responsible for cluster info.
 type ClusterInfoResolver struct {
 	clusterID       uuid.UUID
-	status          cvmsgspb.VizierInfo_Status
+	status          cloudapipb.ClusterStatus
 	lastHeartbeatNs float64
 	vizierConfig    *VizierConfigResolver
 }
@@ -142,29 +122,29 @@ func (c *ClusterInfoResolver) VizierConfig() *VizierConfigResolver {
 }
 
 // ClusterConnection resolves cluster connection information.
+// TODO(nserrino): When we have multiple clusters per customer, we will need to change this API to take
+// a cluster ID argument to match the GRPC one.
 func (q *QueryResolver) ClusterConnection(ctx context.Context) (*ClusterConnectionInfoResolver, error) {
-	sCtx, err := authcontext.FromContext(ctx)
-	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
+	grpcAPI := q.GQLEnv.VizierClusterServer
 
-	orgID, err := uuid.FromString(orgIDstr)
+	resp, err := grpcAPI.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	viziers, err := q.Env.VZMgrClient().GetViziersByOrg(ctx, utils.ProtoFromUUID(&orgID))
-	if err != nil {
-		return nil, err
-	}
-
-	if len(viziers.VizierIDs) == 0 {
+	if len(resp.Clusters) == 0 {
 		return nil, errors.New("org has no clusters")
 	}
+
 	// Take first ID for now.
-	info, err := q.Env.VZMgrClient().GetVizierConnectionInfo(ctx, viziers.VizierIDs[0])
+	cluster := resp.Clusters[0]
+
+	info, err := grpcAPI.GetClusterConnectionInfo(ctx, &cloudapipb.GetClusterConnectionInfoRequest{
+		ID: cluster.ID,
+	})
 	if err != nil {
 		return nil, err
 	}
-
 	return &ClusterConnectionInfoResolver{
 		info.IPAddress,
 		info.Token,

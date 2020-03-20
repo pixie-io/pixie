@@ -132,7 +132,7 @@ export class Vizier extends React.Component<{}, VizierState> {
                       }
                       return `Error! ${error.message}`;
                     }
-                    if (data.cluster.status === 'VZ_ST_HEALTHY') {
+                    if (data.cluster.status === 'CS_HEALTHY') {
                       return (
                         <VizierGRPCClientProvider
                           cloudClient={cloudClient}
@@ -146,7 +146,7 @@ export class Vizier extends React.Component<{}, VizierState> {
                           </Switch>
                         </VizierGRPCClientProvider>
                       );
-                    } else if (data.cluster.status === 'VZ_ST_UNHEALTHY') {
+                    } else if (data.cluster.status === 'CS_UNHEALTHY') {
                       const clusterStarting = 'Cluster found. Waiting for pods and services to become ready...';
                       return <ClusterInstructions message={clusterStarting} />;
                     } else {

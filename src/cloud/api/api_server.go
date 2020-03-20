@@ -90,9 +90,6 @@ func main() {
 	mux.Handle("/api/authorized", controller.WithAugmentedAuthMiddleware(env, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "OK")
 	})))
-	mux.Handle("/api/graphql",
-		controller.WithAugmentedAuthMiddleware(env,
-			controller.NewGraphQLHandler(env)))
 
 	healthz.RegisterDefaultChecks(mux)
 
@@ -108,7 +105,7 @@ func main() {
 	}
 	s := services.NewPLServerWithOptions(env, mux, serverOpts)
 
-	imageAuthServer := &controller.VizierImageAuthSever{}
+	imageAuthServer := &controller.VizierImageAuthServer{}
 	cloudapipb.RegisterVizierImageAuthorizationServer(s.GRPCServer(), imageAuthServer)
 
 	artifactTrackerServer := controller.ArtifactTrackerServer{
@@ -116,11 +113,18 @@ func main() {
 	}
 	cloudapipb.RegisterArtifactTrackerServer(s.GRPCServer(), artifactTrackerServer)
 
-	cis := &controller.VizierClusterInfoServer{VzMgr: vc}
-	cloudapipb.RegisterVizierClusterInfoServer(s.GRPCServer(), cis)
+	cis := &controller.VizierClusterServer{VzMgr: vc}
+	cloudapipb.RegisterVizierClusterServiceServer(s.GRPCServer(), cis)
 
 	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc)
 	pl_api_vizierpb.RegisterVizierServiceServer(s.GRPCServer(), vpt)
+
+	gqlEnv := controller.GraphQLEnv{
+		VizierClusterServer: cis,
+	}
+
+	mux.Handle("/api/graphql", controller.WithAugmentedAuthMiddleware(env, controller.NewGraphQLHandler(env, gqlEnv)))
+
 	s.Start()
 	s.StopOnInterrupt()
 }

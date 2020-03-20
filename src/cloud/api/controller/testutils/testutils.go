@@ -6,11 +6,26 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/spf13/viper"
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
+	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	mock_artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb/mock"
 	mock_auth "pixielabs.ai/pixielabs/src/cloud/auth/proto/mock"
+	mock_cloudapipb "pixielabs.ai/pixielabs/src/cloud/cloudapipb/mock"
 	mock_profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb/mock"
 	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"
 )
+
+// CreateTestGraphQLEnv creates a test graphql environment and mock clients.
+func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *mock_cloudapipb.MockVizierClusterServiceServer, func()) {
+	ctrl := gomock.NewController(t)
+	vcs := mock_cloudapipb.NewMockVizierClusterServiceServer(ctrl)
+	gqlEnv := controller.GraphQLEnv{
+		VizierClusterServer: vcs,
+	}
+	cleanup := func() {
+		ctrl.Finish()
+	}
+	return gqlEnv, vcs, cleanup
+}
 
 // CreateTestAPIEnv creates a test environment and mock clients.
 func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *mock_auth.MockAuthServiceClient, *mock_profilepb.MockProfileServiceClient, *mock_vzmgrpb.MockVZMgrServiceClient, *mock_artifacttrackerpb.MockArtifactTrackerClient, func()) {

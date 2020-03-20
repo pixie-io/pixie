@@ -28,7 +28,7 @@ func ctxWithCreds(ctx context.Context) (context.Context, error) {
 	return ctxWithCreds, nil
 }
 
-func newVizierInfoClient(cloudAddr string) (cloudapipb.VizierClusterInfoClient, error) {
+func newVizierInfoClient(cloudAddr string) (cloudapipb.VizierClusterServiceClient, error) {
 	isInternal := strings.ContainsAny(cloudAddr, "cluster.local")
 
 	dialOpts, err := services.GetGRPCClientDialOptsServerSideTLS(isInternal)
@@ -41,5 +41,5 @@ func newVizierInfoClient(cloudAddr string) (cloudapipb.VizierClusterInfoClient, 
 		return nil, err
 	}
 
-	return cloudapipb.NewVizierClusterInfoClient(c), nil
+	return cloudapipb.NewVizierClusterServiceClient(c), nil
 }
