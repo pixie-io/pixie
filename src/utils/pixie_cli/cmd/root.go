@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"regexp"
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
@@ -102,6 +103,12 @@ var RootCmd = &cobra.Command{
 			c := color.New(color.Bold, color.FgGreen)
 			_, _ = c.Fprintf(os.Stderr, "Update to version \"%s\" available. Run \"px update cli\" to update.\n", versionStr)
 		}
+
+		cloudAddr := viper.GetString("cloud_addr")
+		if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {
+			viper.Set("cloudAddr", cloudAddr+":443")
+		}
+
 	},
 }
 

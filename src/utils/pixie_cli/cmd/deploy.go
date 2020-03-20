@@ -11,7 +11,6 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"regexp"
 	"strings"
 	"time"
 
@@ -271,10 +270,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		Properties: analytics.NewProperties().
 			Set("cloud_addr", cloudAddr),
 	})
-	// Validate arguments:
-	if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {
-		cloudAddr = cloudAddr + ":443"
-	}
 
 	status, clusterID, err := getClusterID(cloudAddr)
 	if err != nil {
