@@ -312,7 +312,7 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 		return nil, err
 	}
 
-	query := `SELECT vizier_cluster_id, status, (EXTRACT(EPOCH FROM age(now(), last_heartbeat))*1E6)::bigint as last_heartbeat, 
+	query := `SELECT vizier_cluster_id, status, (EXTRACT(EPOCH FROM age(now(), last_heartbeat))*1E9)::bigint as last_heartbeat,
               passthrough_enabled from vizier_cluster_info WHERE vizier_cluster_id=$1`
 	var val struct {
 		ID                 uuid.UUID    `db:"vizier_cluster_id"`
@@ -336,7 +336,7 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 		if err != nil {
 			return nil, err
 		}
-		lastHearbeat := int64(0)
+		lastHearbeat := int64(-1)
 		if val.LastHeartbeat != nil {
 			lastHearbeat = *val.LastHeartbeat
 		}
