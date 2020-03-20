@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -313,11 +312,12 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 		return nil, err
 	}
 
-	query := `SELECT vizier_cluster_id, status, last_heartbeat, passthrough_enabled from vizier_cluster_info WHERE vizier_cluster_id=$1`
+	query := `SELECT vizier_cluster_id, status, (EXTRACT(EPOCH FROM age(now(), last_heartbeat))*1E6)::bigint as last_heartbeat, 
+              passthrough_enabled from vizier_cluster_info WHERE vizier_cluster_id=$1`
 	var val struct {
 		ID                 uuid.UUID    `db:"vizier_cluster_id"`
 		Status             vizierStatus `db:"status"`
-		LastHeartbeat      *time.Time   `db:"last_heartbeat"`
+		LastHeartbeat      *int64       `db:"last_heartbeat"`
 		PassthroughEnabled bool         `db:"passthrough_enabled"`
 	}
 	clusterID, err := utils.UUIDFromProto(req)
@@ -338,7 +338,7 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 		}
 		lastHearbeat := int64(0)
 		if val.LastHeartbeat != nil {
-			lastHearbeat = val.LastHeartbeat.UnixNano()
+			lastHearbeat = *val.LastHeartbeat
 		}
 		return &cvmsgspb.VizierInfo{
 			VizierID:        utils.ProtoFromUUID(&val.ID),

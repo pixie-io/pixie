@@ -246,7 +246,7 @@ func TestServer_GetVizierInfo(t *testing.T) {
 
 	assert.Equal(t, resp.VizierID, utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"))
 	assert.Equal(t, resp.Status, cvmsgspb.VZ_ST_HEALTHY)
-	assert.Equal(t, resp.LastHeartbeatNs, int64(1305646598000000000))
+	assert.Greater(t, resp.LastHeartbeatNs, int64(0))
 	assert.Equal(t, resp.Config.PassthroughEnabled, false)
 }
 
