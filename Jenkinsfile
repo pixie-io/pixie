@@ -89,10 +89,10 @@ SRC_STASH_NAME = 'src'
 DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image'
 DEV_DOCKER_IMAGE_EXTRAS = 'pl-dev-infra/dev_image_with_extras'
 
-K8S_STAGING_CLUSTER='https://pixie-cloud-prod-cluster.internal.pixielabs.ai'
+K8S_STAGING_CLUSTER='https://pixie-cloud-prod-cluster.internal.corp.pixielabs.ai'
 K8S_STAGING_CREDS='pixie-cloud-staging'
 
-K8S_PROD_CLUSTER='https://pixie-cloud-prod-cluster.internal.pixielabs.ai'
+K8S_PROD_CLUSTER='https://pixie-cloud-prod-cluster.internal.corp.pixielabs.ai'
 K8S_PROD_CREDS='pixie-cloud-prod'
 
 // Sometimes docker fetches fail, so we just do a retry. This can be optimized to just
