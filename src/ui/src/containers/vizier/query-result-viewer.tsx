@@ -115,6 +115,10 @@ function computeColumnWidthRatios(relation: Relation, parsedTable: any): any {
 function ResultCellRenderer(cellData: any, columnInfo: TableColumnInfo) {
   const colType = columnInfo.type;
   const colName = columnInfo.label;
+  if (colType === 'TIME64NS') {
+    return new Date(cellData).toLocaleString();
+  }
+
   if (FormatData.looksLikeLatencyCol(colName, colType)) {
     return FormatData.LatencyData(cellData);
   }
