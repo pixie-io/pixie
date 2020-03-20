@@ -81,17 +81,17 @@ class TestExecutor : public RuleExecutor<IR> {
 
 TEST(StrategyTest, fail_on_max) {
   int64_t num_iterations = 10;
-  auto s = std::make_unique<FailOnMax>(num_iterations);
+  auto s = std::make_unique<FailOnMax>("test", num_iterations);
   Strategy* s_down_cast = s.get();
   EXPECT_EQ(s_down_cast->max_iterations(), num_iterations);
   Status status = s_down_cast->MaxIterationsHandler();
   EXPECT_NOT_OK(status);
-  EXPECT_EQ(status.msg(), "Reached max iterations for rule executor - 10");
+  EXPECT_EQ(status.msg(), "Reached max iterations (10) for rule batch 'test'");
 }
 
 TEST(StrategyTest, try_until_max) {
   int64_t num_iterations = 10;
-  auto s = std::make_unique<TryUntilMax>(num_iterations);
+  auto s = std::make_unique<TryUntilMax>("", num_iterations);
   Strategy* s_down_cast = s.get();
   EXPECT_EQ(s_down_cast->max_iterations(), num_iterations);
   Status status = s_down_cast->MaxIterationsHandler();
@@ -99,7 +99,7 @@ TEST(StrategyTest, try_until_max) {
 }
 
 TEST(StrategyTest, do_once) {
-  auto s = std::make_unique<DoOnce>();
+  auto s = std::make_unique<DoOnce>("");
   Strategy* s_down_cast = s.get();
   EXPECT_EQ(s_down_cast->max_iterations(), 1);
   Status status = s_down_cast->MaxIterationsHandler();

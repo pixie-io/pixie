@@ -20,10 +20,14 @@ namespace planner {
 class Strategy {
  public:
   virtual ~Strategy() = default;
-  explicit Strategy(int64_t max_iterations) : max_iterations_(max_iterations) {}
+  explicit Strategy(const std::string& name, int64_t max_iterations)
+      : name_(name), max_iterations_(max_iterations) {}
 
   virtual Status MaxIterationsHandler() = 0;
   int64_t max_iterations() { return max_iterations_; }
+
+ protected:
+  std::string name_;
 
  private:
   int64_t max_iterations_;
@@ -35,10 +39,10 @@ class Strategy {
  */
 class FailOnMax : public Strategy {
  public:
-  explicit FailOnMax(int64_t max_iterations) : Strategy(max_iterations) {}
+  FailOnMax(const std::string& name, int64_t max_iterations) : Strategy(name, max_iterations) {}
   Status MaxIterationsHandler() override {
-    return error::DeadlineExceeded("Reached max iterations for rule executor - $0",
-                                   max_iterations());
+    return error::DeadlineExceeded("Reached max iterations ($0) for rule batch '$1'",
+                                   max_iterations(), name_);
   }
 };
 
@@ -47,9 +51,10 @@ class FailOnMax : public Strategy {
  */
 class TryUntilMax : public Strategy {
  public:
-  explicit TryUntilMax(int64_t max_iterations) : Strategy(max_iterations) {}
+  TryUntilMax(const std::string& name, int64_t max_iterations) : Strategy(name, max_iterations) {}
   Status MaxIterationsHandler() override {
-    LOG(WARNING) << "Max iterations reached. Continuing.";
+    LOG(WARNING) << absl::Substitute("Max iterations reached for rule batch $0. Continuing.",
+                                     name_);
     return Status::OK();
   }
 };
@@ -59,7 +64,7 @@ class TryUntilMax : public Strategy {
  */
 class DoOnce : public Strategy {
  public:
-  DoOnce() : Strategy(1) {}
+  explicit DoOnce(const std::string& name) : Strategy(name, 1) {}
   Status MaxIterationsHandler() override { return Status::OK(); }
 };
 
@@ -132,7 +137,7 @@ class RuleExecutor {
   }
   template <typename S, typename... Args>
   TRuleBatch* CreateRuleBatch(std::string name, Args... args) {
-    std::unique_ptr<TRuleBatch> rb(new TRuleBatch(name, std::make_unique<S>(args...)));
+    std::unique_ptr<TRuleBatch> rb(new TRuleBatch(name, std::make_unique<S>(name, args...)));
     TRuleBatch* out_ptr = rb.get();
     rule_batches.push_back(std::move(rb));
     return out_ptr;
