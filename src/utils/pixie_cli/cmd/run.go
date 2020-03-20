@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/olekukonko/tablewriter"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/segmentio/analytics-go.v3"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
@@ -30,23 +30,18 @@ func init() {
 	RunCmd.Flags().StringP("bundle", "b", "", "Path/URL to bundle file")
 }
 
-func listBundleScripts(bundleFile string) {
+func listBundleScripts(bundleFile string, format string) {
 	r, err := scripts.NewBundleReader(bundleFile)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to read bundle")
 	}
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Name", "Description"})
+	w := components.CreateStreamWriter(format, os.Stdout)
+	defer w.Finish()
+	w.SetHeader("script_list", []string{"Name", "Description"})
 	for _, script := range r.GetScriptMetadata() {
-		table.Append([]string{script.ScriptName, script.ShortDoc})
+		w.Write([]interface{}{script.ScriptName, script.ShortDoc})
 	}
-	table.SetBorder(false)
-
-	fmt.Printf("\n\n")
-	table.Render()
-	fmt.Printf("\n\n")
-
 }
 
 func getScriptFromBundle(bundleFile, scriptName string) (string, error) {
@@ -72,7 +67,7 @@ var RunCmd = &cobra.Command{
 			bundleFile = defaultBundleFile
 		}
 		if listScripts {
-			listBundleScripts(bundleFile)
+			listBundleScripts(bundleFile, format)
 			return
 		}
 
