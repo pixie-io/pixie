@@ -39,6 +39,7 @@ go_library(
         "//src/utils/pixie_cli/pkg/utils:go_default_library",
         "//src/utils/pixie_cli/pkg/vizier:go_default_library",
         "@com_github_dgrijalva_jwt_go//:go_default_library",
+        "@com_github_dustin_go_humanize//:go_default_library",
         "@com_github_fatih_color//:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
         "@com_github_satori_go_uuid//:go_default_library",

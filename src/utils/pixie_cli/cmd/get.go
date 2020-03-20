@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -73,7 +74,16 @@ var GetViziersCmd = &cobra.Command{
 			if vz.Config != nil {
 				passthrough = vz.Config.PassthroughEnabled
 			}
-			_ = w.Write([]interface{}{utils.UUIDFromProtoOrNil(vz.ID), vz.Status, vz.LastHeartbeatNs, passthrough})
+			var lastHeartbeat interface{}
+			lastHeartbeat = vz.LastHeartbeatNs
+			if format == "" || format == "table" {
+				if vz.LastHeartbeatNs >= 0 {
+					lastHeartbeat = humanize.Time(
+						time.Unix(0,
+							time.Now().Sub(time.Unix(0, vz.LastHeartbeatNs)).Nanoseconds()))
+				}
+			}
+			_ = w.Write([]interface{}{utils.UUIDFromProtoOrNil(vz.ID), vz.Status, lastHeartbeat, passthrough})
 		}
 	},
 }
