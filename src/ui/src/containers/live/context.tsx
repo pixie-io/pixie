@@ -5,7 +5,6 @@ import {useSnackbar} from 'components/snackbar/snackbar';
 import {parseSpecs, VisualizationSpecMap} from 'components/vega/spec';
 import * as React from 'react';
 import {resolveTypeReferenceDirective} from 'typescript';
-import {GetPxScripts, Script} from 'utils/script-bundle';
 
 import {parsePlacement, Placement} from './layout';
 
@@ -16,7 +15,6 @@ interface LiveContextProps {
   vizierReady: boolean;
   executeScript: () => void;
   setScripts: (script: string, vega: string, placement: string) => void;
-  exampleScripts: Script[];
 }
 
 interface Tables {
@@ -30,12 +28,6 @@ export const ResultsContext = React.createContext<Tables>(null);
 export const LiveContext = React.createContext<LiveContextProps>(null);
 
 const LiveContextProvider = (props) => {
-  const [exampleScripts, setExampleScripts] = React.useState<Script[]>([]);
-
-  React.useEffect(() => {
-    GetPxScripts(setExampleScripts);
-  }, []);
-
   const [script, setScript] = React.useState<string>(ls.getLiveViewPixieScript());
   React.useEffect(() => {
     ls.setLiveViewPixieScript(script);
@@ -85,7 +77,6 @@ const LiveContextProvider = (props) => {
     updatePlacement: setPlacement,
     vizierReady: !!client,
     setScripts,
-    exampleScripts,
     executeScript,
   }), [executeScript, client]);
 

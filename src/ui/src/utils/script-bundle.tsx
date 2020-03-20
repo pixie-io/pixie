@@ -12,12 +12,12 @@ export interface Script {
   placement?: string;
 }
 
-export const GetPxScripts = (callback) => {
-  Axios({
+export const GetPxScripts = (): Promise<Script[]> => {
+  return Axios({
     method: 'get',
     url: isProd() ? PROD_SCRIPTS : STAGING_SCRIPTS,
   }).then((response) => {
-    const scripts = Object.keys(response.data.scripts).map((k) => {
+    return Object.keys(response.data.scripts).map((k) => {
       const s = response.data.scripts[k];
       return {
         title: k,
@@ -26,6 +26,5 @@ export const GetPxScripts = (callback) => {
         placement: s.placement,
       };
     });
-    callback(scripts);
   });
 };

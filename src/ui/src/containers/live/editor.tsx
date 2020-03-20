@@ -5,15 +5,12 @@ import {parseSpecs} from 'components/vega/spec';
 import * as React from 'react';
 import {debounce} from 'utils/debounce';
 
-import FormControl from '@material-ui/core/FormControl';
-import InputLabel from '@material-ui/core/InputLabel';
-import MenuItem from '@material-ui/core/MenuItem';
-import Select from '@material-ui/core/Select';
 import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 
 import {LiveContext, PlacementContext, ScriptContext, VegaContext} from './context';
+import ExampleScripts from './example-scripts';
 import {parsePlacement} from './layout';
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -32,12 +29,6 @@ const useStyles = makeStyles((theme: Theme) =>
       '&.pl-code-editor .CodeMirror, & .CodeMirror-scrollbar-filler': {
         backgroundColor: theme.palette.background.default,
       },
-    },
-    form: {
-      margin: theme.spacing(1),
-    },
-    formLabel: {
-      marginLeft: theme.spacing(1),
     },
   }));
 
@@ -114,21 +105,6 @@ const PlacementEditor = () => {
 const LiveViewEditor = () => {
   const classes = useStyles();
 
-  const { exampleScripts, setScripts } = React.useContext(LiveContext);
-  const liveScripts = [];
-  const liveScriptMap = {};
-  exampleScripts.forEach((s) => {
-    if (s.vis && s.placement) {
-      liveScripts.push(s);
-      liveScriptMap[s.title] = s;
-    }
-  });
-  const selectScript = (e) => {
-    const s = liveScriptMap[e.target.value];
-
-    setScripts(s.code, s.vis, s.placement);
-  };
-
   const [tab, setTab] = React.useState('pixie');
 
   return (
@@ -143,20 +119,7 @@ const LiveViewEditor = () => {
         <Tab value='vega' label='Vega Spec' />
         <Tab value='placement' label='Placement' />
       </Tabs>
-      <FormControl className={classes.form}>
-        <InputLabel className={classes.formLabel} id='preset-script'>Example Scripts</InputLabel>
-        <Select
-          labelId='preset-script'
-          onChange={selectScript}
-          value={''}
-        >
-          {
-            liveScripts.map((s) => {
-              return <MenuItem value={s.title} key={s.title}>{s.title}</MenuItem>;
-            })
-          }
-        </Select>
-      </FormControl>
+      <ExampleScripts />
       <LazyPanel className={classes.panel} show={tab === 'pixie'}>
         <ScriptEditor />
       </LazyPanel>
