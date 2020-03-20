@@ -117,6 +117,9 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 				UserId:     pxconfig.Cfg().UniqueClientID,
 				PreviousId: userID,
 			})
+			_ = pxanalytics.Client().Enqueue(&analytics.Identify{
+				UserId: userID,
+			})
 		}
 	}
 
