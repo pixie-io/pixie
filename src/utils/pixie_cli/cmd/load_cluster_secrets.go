@@ -18,11 +18,11 @@ var LoadClusterSecretsCmd = &cobra.Command{
 	Use:   "load-cluster-secrets",
 	Short: "Loads the cluster secrets on the current K8s cluster",
 	Run: func(cmd *cobra.Command, args []string) {
-		cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
 		clusterID, _ := cmd.Flags().GetString("cluster_id")
 		namespace, _ := cmd.Flags().GetString("namespace")
 		devCloudNamespace, _ := cmd.Flags().GetString("dev_cloud_namespace")
 
+		cloudAddr := viper.GetString("cloud_addr")
 		kubeConfig := k8s.GetConfig()
 		clientset := k8s.GetClientset(kubeConfig)
 

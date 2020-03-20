@@ -261,8 +261,9 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	}
 	namespace, _ := cmd.Flags().GetString("namespace")
 	credsFile, _ := cmd.Flags().GetString("credentials_file")
-	cloudAddr, _ := cmd.Flags().GetString("cloud_addr")
 	devCloudNS, _ := cmd.Flags().GetString("dev_cloud_namespace")
+
+	cloudAddr := viper.GetString("cloud_addr")
 
 	_ = pxanalytics.Client().Enqueue(&analytics.Track{
 		UserId: pxconfig.Cfg().UniqueClientID,
