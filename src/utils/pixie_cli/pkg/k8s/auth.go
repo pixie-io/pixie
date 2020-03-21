@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -21,11 +22,29 @@ import (
 
 var kubeconfig *string
 
+// fileExists checks if a file exists and is not a directory before we
+// try using it to prevent further errors.
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
+
 func init() {
 	defaultKubeConfig := ""
 	optionalStr := "(optional) "
 	if k := os.Getenv("KUBECONFIG"); k != "" {
-		defaultKubeConfig = k
+		for _, config := range strings.Split(k, ":") {
+			if fileExists(config) {
+				defaultKubeConfig = config
+				break
+			}
+		}
+		if defaultKubeConfig == "" {
+			log.Fatalln("Failed to find valid config in KUBECONFIG env. Is it formatted correctly?")
+		}
 	} else if home := homeDir(); home != "" {
 		defaultKubeConfig = filepath.Join(home, ".kube", "config")
 	} else {
