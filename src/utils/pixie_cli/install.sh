@@ -6,7 +6,7 @@
 set -u
 
 CLOUD_ADDR="withpixie.ai"
-INSTALL_PATH=/usr/local/bin
+DEFAULT_INSTALL_PATH=/usr/local/bin
 ARTIFACT_BASE_PATH="https://storage.googleapis.com/pixie-prod-artifacts/cli"
 ARTIFACT_NAME=cli_darwin_amd64
 USE_VERSION=latest
@@ -125,21 +125,23 @@ exists_but_not_writable() {
 }
 
 
-if exists_but_not_writable "${INSTALL_PATH}"; then
-    if exists_but_not_writable "${USER_INSTALL_PATH}"; then
-        abort "Neither ${INSTALL_PATH} or ${USER_INSTALL_PATH} are writable."
-    fi
-    echo "${tty_yellow}PATH: ${INSTALL_PATH} is not writable, will"\
-         "install in user install path: ${USER_INSTALL_PATH}${tty_reset}"
-    INSTALL_PATH="${USER_INSTALL_PATH}"
+if exists_but_not_writable "${DEFAULT_INSTALL_PATH}"; then
+    DEFAULT_INSTALL_PATH=${USER_INSTALL_PATH}
 fi
 
-emph "INSTALL INFO:"
-cat << EOS
-The PX CLI will be installed to:
-- ${tty_bold}Install PATH:${tty_reset} ${INSTALL_PATH}
-EOS
-wait_for_user
+emph "Installing PX CLI:"
+read -r -p "Install Path [${DEFAULT_INSTALL_PATH}]: " INSTALL_PATH
+INSTALL_PATH=${INSTALL_PATH:-${DEFAULT_INSTALL_PATH}}
+
+if exists_but_not_writable "${INSTALL_PATH}"; then
+    abort "${INSTALL_PATH} is not writable or does not exist."
+fi
+
+if [[ ! -e "${INSTALL_PATH}" ]]; then
+    if ! mkdir -p "${INSTALL_PATH}"; then
+        abort "Failed to create directory: ${INSTALL_PATH}"
+    fi
+fi
 
 # TODO(zasgar): Check to make sure PX does not already exist, and if it does if it's actually pixie.
 # TODO(zasgar): Check the sha256.
