@@ -89,7 +89,7 @@ func TestArtifactTracker_GetDownloadLink(t *testing.T) {
 	assert.Equal(t, "sha", resp.SHA256)
 }
 
-func TestVizierClusterServer_CreateCluster(t *testing.T) {
+func TestVizierClusterInfo_CreateCluster(t *testing.T) {
 	orgID := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	assert.NotNil(t, clusterID)
@@ -106,7 +106,7 @@ func TestVizierClusterServer_CreateCluster(t *testing.T) {
 	}
 	mockVzMgr.EXPECT().CreateVizierCluster(gomock.Any(), ccReq).Return(clusterID, nil)
 
-	vzClusterInfoServer := &controller.VizierClusterServer{
+	vzClusterInfoServer := &controller.VizierClusterInfo{
 		VzMgr: mockVzMgr,
 	}
 
@@ -116,7 +116,7 @@ func TestVizierClusterServer_CreateCluster(t *testing.T) {
 	assert.Equal(t, resp.ClusterID, clusterID)
 }
 
-func TestVizierClusterServer_GetClusterInfo(t *testing.T) {
+func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 	orgID := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	assert.NotNil(t, clusterID)
@@ -141,7 +141,7 @@ func TestVizierClusterServer_GetClusterInfo(t *testing.T) {
 		},
 	}, nil)
 
-	vzClusterInfoServer := &controller.VizierClusterServer{
+	vzClusterInfoServer := &controller.VizierClusterInfo{
 		VzMgr: mockVzMgr,
 	}
 
@@ -156,7 +156,7 @@ func TestVizierClusterServer_GetClusterInfo(t *testing.T) {
 	assert.Equal(t, cluster.Config.PassthroughEnabled, false)
 }
 
-func TestVizierClusterServer_GetClusterInfoWithID(t *testing.T) {
+func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	assert.NotNil(t, clusterID)
 
@@ -176,7 +176,7 @@ func TestVizierClusterServer_GetClusterInfoWithID(t *testing.T) {
 		},
 	}, nil)
 
-	vzClusterInfoServer := &controller.VizierClusterServer{
+	vzClusterInfoServer := &controller.VizierClusterInfo{
 		VzMgr: mockVzMgr,
 	}
 
@@ -193,7 +193,7 @@ func TestVizierClusterServer_GetClusterInfoWithID(t *testing.T) {
 	assert.Equal(t, cluster.Config.PassthroughEnabled, false)
 }
 
-func TestVizierClusterServer_UpdateClusterVizierConfig(t *testing.T) {
+func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
 	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	assert.NotNil(t, clusterID)
 
@@ -213,7 +213,7 @@ func TestVizierClusterServer_UpdateClusterVizierConfig(t *testing.T) {
 
 	mockVzMgr.EXPECT().UpdateVizierConfig(gomock.Any(), updateReq).Return(&cvmsgspb.UpdateVizierConfigResponse{}, nil)
 
-	vzClusterInfoServer := &controller.VizierClusterServer{
+	vzClusterInfoServer := &controller.VizierClusterInfo{
 		VzMgr: mockVzMgr,
 	}
 

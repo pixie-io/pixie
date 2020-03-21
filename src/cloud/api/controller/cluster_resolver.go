@@ -15,7 +15,7 @@ import (
 
 // CreateCluster creates a new cluster.
 func (q *QueryResolver) CreateCluster(ctx context.Context) (*ClusterInfoResolver, error) {
-	grpcAPI := q.Env.VizierClusterServer
+	grpcAPI := q.Env.VizierClusterInfo
 	res, err := grpcAPI.CreateCluster(ctx, &cloudapipb.CreateClusterRequest{})
 	if err != nil {
 		return nil, err
@@ -36,7 +36,7 @@ type ClusterResolver struct {
 
 // Cluster resolves cluster information.
 func (q *QueryResolver) Cluster(ctx context.Context) (*ClusterInfoResolver, error) {
-	grpcAPI := q.Env.VizierClusterServer
+	grpcAPI := q.Env.VizierClusterInfo
 	res, err := grpcAPI.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ type updateVizierConfigArgs struct {
 
 // UpdateVizierConfig updates the Vizier config of the input cluster
 func (q *QueryResolver) UpdateVizierConfig(ctx context.Context, args *updateVizierConfigArgs) (bool, error) {
-	grpcAPI := q.Env.VizierClusterServer
+	grpcAPI := q.Env.VizierClusterInfo
 
 	req := &cloudapipb.UpdateClusterVizierConfigRequest{
 		ID:           utils.ProtoFromUUIDStrOrNil(string(args.ClusterID)),
@@ -125,7 +125,7 @@ func (c *ClusterInfoResolver) VizierConfig() *VizierConfigResolver {
 // TODO(nserrino): When we have multiple clusters per customer, we will need to change this API to take
 // a cluster ID argument to match the GRPC one.
 func (q *QueryResolver) ClusterConnection(ctx context.Context) (*ClusterConnectionInfoResolver, error) {
-	grpcAPI := q.Env.VizierClusterServer
+	grpcAPI := q.Env.VizierClusterInfo
 
 	resp, err := grpcAPI.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
 	if err != nil {

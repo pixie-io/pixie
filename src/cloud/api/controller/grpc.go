@@ -161,13 +161,13 @@ func (a ArtifactTrackerServer) GetDownloadLink(ctx context.Context, req *cloudap
 	}, nil
 }
 
-// VizierClusterServer is the server that implements the VizierClusterService gRPC service.
-type VizierClusterServer struct {
+// VizierClusterInfo is the server that implements the VizierClusterInfo gRPC service.
+type VizierClusterInfo struct {
 	VzMgr vzmgrpb.VZMgrServiceClient
 }
 
 // CreateCluster creates a cluster for the current org.
-func (v *VizierClusterServer) CreateCluster(ctx context.Context, request *cloudapipb.CreateClusterRequest) (*cloudapipb.CreateClusterResponse, error) {
+func (v *VizierClusterInfo) CreateCluster(ctx context.Context, request *cloudapipb.CreateClusterRequest) (*cloudapipb.CreateClusterResponse, error) {
 	sCtx, err := authcontext.FromContext(ctx)
 	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 
@@ -181,7 +181,7 @@ func (v *VizierClusterServer) CreateCluster(ctx context.Context, request *clouda
 }
 
 // GetClusterInfo returns information about Vizier clusters.
-func (v *VizierClusterServer) GetClusterInfo(ctx context.Context, request *cloudapipb.GetClusterInfoRequest) (*cloudapipb.GetClusterInfoResponse, error) {
+func (v *VizierClusterInfo) GetClusterInfo(ctx context.Context, request *cloudapipb.GetClusterInfoRequest) (*cloudapipb.GetClusterInfoResponse, error) {
 	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -209,7 +209,7 @@ func (v *VizierClusterServer) GetClusterInfo(ctx context.Context, request *cloud
 	return v.getClusterInfoForViziers(ctx, vzIDs)
 }
 
-func (v *VizierClusterServer) getClusterInfoForViziers(ctx context.Context, ids []*uuidpb.UUID) (*cloudapipb.GetClusterInfoResponse, error) {
+func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []*uuidpb.UUID) (*cloudapipb.GetClusterInfoResponse, error) {
 	resp := &cloudapipb.GetClusterInfoResponse{}
 	for _, id := range ids {
 		// TODO(zasgar/michelle): Make these requests parallel
@@ -232,7 +232,7 @@ func (v *VizierClusterServer) getClusterInfoForViziers(ctx context.Context, ids 
 }
 
 // GetClusterConnectionInfo returns information about connections to Vizier cluster.
-func (v *VizierClusterServer) GetClusterConnectionInfo(ctx context.Context, request *cloudapipb.GetClusterConnectionInfoRequest) (*cloudapipb.GetClusterConnectionInfoResponse, error) {
+func (v *VizierClusterInfo) GetClusterConnectionInfo(ctx context.Context, request *cloudapipb.GetClusterConnectionInfoRequest) (*cloudapipb.GetClusterConnectionInfoResponse, error) {
 	id := request.ID
 
 	sCtx, err := authcontext.FromContext(ctx)
@@ -255,7 +255,7 @@ func (v *VizierClusterServer) GetClusterConnectionInfo(ctx context.Context, requ
 }
 
 // UpdateClusterVizierConfig supports updates of VizierConfig for a cluster
-func (v *VizierClusterServer) UpdateClusterVizierConfig(ctx context.Context, req *cloudapipb.UpdateClusterVizierConfigRequest) (*cloudapipb.UpdateClusterVizierConfigResponse, error) {
+func (v *VizierClusterInfo) UpdateClusterVizierConfig(ctx context.Context, req *cloudapipb.UpdateClusterVizierConfigRequest) (*cloudapipb.UpdateClusterVizierConfigResponse, error) {
 	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return nil, err

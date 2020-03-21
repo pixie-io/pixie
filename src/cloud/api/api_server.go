@@ -113,15 +113,15 @@ func main() {
 	}
 	cloudapipb.RegisterArtifactTrackerServiceServer(s.GRPCServer(), artifactTrackerServer)
 
-	cis := &controller.VizierClusterServer{VzMgr: vc}
-	cloudapipb.RegisterVizierClusterServiceServer(s.GRPCServer(), cis)
+	cis := &controller.VizierClusterInfo{VzMgr: vc}
+	cloudapipb.RegisterVizierClusterInfoServer(s.GRPCServer(), cis)
 
 	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc)
 	pl_api_vizierpb.RegisterVizierServiceServer(s.GRPCServer(), vpt)
 
 	gqlEnv := controller.GraphQLEnv{
 		ArtifactTrackerServer: artifactTrackerServer,
-		VizierClusterServer:   cis,
+		VizierClusterInfo:     cis,
 	}
 
 	mux.Handle("/api/graphql", controller.WithAugmentedAuthMiddleware(env, controller.NewGraphQLHandler(gqlEnv)))

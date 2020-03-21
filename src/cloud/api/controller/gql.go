@@ -14,7 +14,7 @@ import (
 // GraphQLEnv holds the GRPC API servers so the GraphQL server can call out to them.
 type GraphQLEnv struct {
 	ArtifactTrackerServer cloudapipb.ArtifactTrackerServiceServer
-	VizierClusterServer   cloudapipb.VizierClusterServiceServer
+	VizierClusterInfo     cloudapipb.VizierClusterInfoServer
 }
 
 // QueryResolver resolves queries for GQL.

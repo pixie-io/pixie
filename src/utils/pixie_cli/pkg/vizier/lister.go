@@ -53,7 +53,7 @@ func selectVizierOrProxy(vizierAddr string) (string, error) {
 
 // Lister allows fetching information about Viziers from the cloud.
 type Lister struct {
-	vc cloudapipb.VizierClusterServiceClient
+	vc cloudapipb.VizierClusterInfoClient
 }
 
 // ConnectionInfo has connection info about a Vizier.
@@ -65,7 +65,7 @@ type ConnectionInfo struct {
 
 // NewLister returns a Lister.
 func NewLister(cloudAddr string) (*Lister, error) {
-	vc, err := newVizierClusterServiceClient(cloudAddr)
+	vc, err := newVizierClusterInfoClient(cloudAddr)
 	if err != nil {
 		return nil, err
 	}

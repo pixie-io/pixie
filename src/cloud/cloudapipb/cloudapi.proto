@@ -128,7 +128,7 @@ message CreateClusterResponse {
                           ];
 }
 
-service VizierClusterService {
+service VizierClusterInfo {
     rpc CreateCluster(CreateClusterRequest) returns(CreateClusterResponse) {}
     rpc GetClusterInfo(GetClusterInfoRequest) returns(GetClusterInfoResponse) {}
     rpc GetClusterConnectionInfo(GetClusterConnectionInfoRequest) returns(GetClusterConnectionInfoResponse) {}

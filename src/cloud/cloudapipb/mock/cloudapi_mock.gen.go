@@ -274,31 +274,31 @@ func (mr *MockArtifactTrackerServiceServerMockRecorder) GetDownloadLink(arg0, ar
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDownloadLink", reflect.TypeOf((*MockArtifactTrackerServiceServer)(nil).GetDownloadLink), arg0, arg1)
 }
 
-// MockVizierClusterServiceClient is a mock of VizierClusterServiceClient interface
-type MockVizierClusterServiceClient struct {
+// MockVizierClusterInfoClient is a mock of VizierClusterInfoClient interface
+type MockVizierClusterInfoClient struct {
 	ctrl     *gomock.Controller
-	recorder *MockVizierClusterServiceClientMockRecorder
+	recorder *MockVizierClusterInfoClientMockRecorder
 }
 
-// MockVizierClusterServiceClientMockRecorder is the mock recorder for MockVizierClusterServiceClient
-type MockVizierClusterServiceClientMockRecorder struct {
-	mock *MockVizierClusterServiceClient
+// MockVizierClusterInfoClientMockRecorder is the mock recorder for MockVizierClusterInfoClient
+type MockVizierClusterInfoClientMockRecorder struct {
+	mock *MockVizierClusterInfoClient
 }
 
-// NewMockVizierClusterServiceClient creates a new mock instance
-func NewMockVizierClusterServiceClient(ctrl *gomock.Controller) *MockVizierClusterServiceClient {
-	mock := &MockVizierClusterServiceClient{ctrl: ctrl}
-	mock.recorder = &MockVizierClusterServiceClientMockRecorder{mock}
+// NewMockVizierClusterInfoClient creates a new mock instance
+func NewMockVizierClusterInfoClient(ctrl *gomock.Controller) *MockVizierClusterInfoClient {
+	mock := &MockVizierClusterInfoClient{ctrl: ctrl}
+	mock.recorder = &MockVizierClusterInfoClientMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockVizierClusterServiceClient) EXPECT() *MockVizierClusterServiceClientMockRecorder {
+func (m *MockVizierClusterInfoClient) EXPECT() *MockVizierClusterInfoClientMockRecorder {
 	return m.recorder
 }
 
 // CreateCluster mocks base method
-func (m *MockVizierClusterServiceClient) CreateCluster(ctx context.Context, in *cloudapipb.CreateClusterRequest, opts ...grpc.CallOption) (*cloudapipb.CreateClusterResponse, error) {
+func (m *MockVizierClusterInfoClient) CreateCluster(ctx context.Context, in *cloudapipb.CreateClusterRequest, opts ...grpc.CallOption) (*cloudapipb.CreateClusterResponse, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -310,13 +310,13 @@ func (m *MockVizierClusterServiceClient) CreateCluster(ctx context.Context, in *
 }
 
 // CreateCluster indicates an expected call of CreateCluster
-func (mr *MockVizierClusterServiceClientMockRecorder) CreateCluster(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockVizierClusterInfoClientMockRecorder) CreateCluster(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCluster", reflect.TypeOf((*MockVizierClusterServiceClient)(nil).CreateCluster), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCluster", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).CreateCluster), varargs...)
 }
 
 // GetClusterInfo mocks base method
-func (m *MockVizierClusterServiceClient) GetClusterInfo(ctx context.Context, in *cloudapipb.GetClusterInfoRequest, opts ...grpc.CallOption) (*cloudapipb.GetClusterInfoResponse, error) {
+func (m *MockVizierClusterInfoClient) GetClusterInfo(ctx context.Context, in *cloudapipb.GetClusterInfoRequest, opts ...grpc.CallOption) (*cloudapipb.GetClusterInfoResponse, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -328,13 +328,13 @@ func (m *MockVizierClusterServiceClient) GetClusterInfo(ctx context.Context, in 
 }
 
 // GetClusterInfo indicates an expected call of GetClusterInfo
-func (mr *MockVizierClusterServiceClientMockRecorder) GetClusterInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockVizierClusterInfoClientMockRecorder) GetClusterInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterInfo", reflect.TypeOf((*MockVizierClusterServiceClient)(nil).GetClusterInfo), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterInfo", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).GetClusterInfo), varargs...)
 }
 
 // GetClusterConnectionInfo mocks base method
-func (m *MockVizierClusterServiceClient) GetClusterConnectionInfo(ctx context.Context, in *cloudapipb.GetClusterConnectionInfoRequest, opts ...grpc.CallOption) (*cloudapipb.GetClusterConnectionInfoResponse, error) {
+func (m *MockVizierClusterInfoClient) GetClusterConnectionInfo(ctx context.Context, in *cloudapipb.GetClusterConnectionInfoRequest, opts ...grpc.CallOption) (*cloudapipb.GetClusterConnectionInfoResponse, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -346,13 +346,13 @@ func (m *MockVizierClusterServiceClient) GetClusterConnectionInfo(ctx context.Co
 }
 
 // GetClusterConnectionInfo indicates an expected call of GetClusterConnectionInfo
-func (mr *MockVizierClusterServiceClientMockRecorder) GetClusterConnectionInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockVizierClusterInfoClientMockRecorder) GetClusterConnectionInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterConnectionInfo", reflect.TypeOf((*MockVizierClusterServiceClient)(nil).GetClusterConnectionInfo), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterConnectionInfo", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).GetClusterConnectionInfo), varargs...)
 }
 
 // UpdateClusterVizierConfig mocks base method
-func (m *MockVizierClusterServiceClient) UpdateClusterVizierConfig(ctx context.Context, in *cloudapipb.UpdateClusterVizierConfigRequest, opts ...grpc.CallOption) (*cloudapipb.UpdateClusterVizierConfigResponse, error) {
+func (m *MockVizierClusterInfoClient) UpdateClusterVizierConfig(ctx context.Context, in *cloudapipb.UpdateClusterVizierConfigRequest, opts ...grpc.CallOption) (*cloudapipb.UpdateClusterVizierConfigResponse, error) {
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -364,36 +364,36 @@ func (m *MockVizierClusterServiceClient) UpdateClusterVizierConfig(ctx context.C
 }
 
 // UpdateClusterVizierConfig indicates an expected call of UpdateClusterVizierConfig
-func (mr *MockVizierClusterServiceClientMockRecorder) UpdateClusterVizierConfig(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+func (mr *MockVizierClusterInfoClientMockRecorder) UpdateClusterVizierConfig(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateClusterVizierConfig", reflect.TypeOf((*MockVizierClusterServiceClient)(nil).UpdateClusterVizierConfig), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateClusterVizierConfig", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).UpdateClusterVizierConfig), varargs...)
 }
 
-// MockVizierClusterServiceServer is a mock of VizierClusterServiceServer interface
-type MockVizierClusterServiceServer struct {
+// MockVizierClusterInfoServer is a mock of VizierClusterInfoServer interface
+type MockVizierClusterInfoServer struct {
 	ctrl     *gomock.Controller
-	recorder *MockVizierClusterServiceServerMockRecorder
+	recorder *MockVizierClusterInfoServerMockRecorder
 }
 
-// MockVizierClusterServiceServerMockRecorder is the mock recorder for MockVizierClusterServiceServer
-type MockVizierClusterServiceServerMockRecorder struct {
-	mock *MockVizierClusterServiceServer
+// MockVizierClusterInfoServerMockRecorder is the mock recorder for MockVizierClusterInfoServer
+type MockVizierClusterInfoServerMockRecorder struct {
+	mock *MockVizierClusterInfoServer
 }
 
-// NewMockVizierClusterServiceServer creates a new mock instance
-func NewMockVizierClusterServiceServer(ctrl *gomock.Controller) *MockVizierClusterServiceServer {
-	mock := &MockVizierClusterServiceServer{ctrl: ctrl}
-	mock.recorder = &MockVizierClusterServiceServerMockRecorder{mock}
+// NewMockVizierClusterInfoServer creates a new mock instance
+func NewMockVizierClusterInfoServer(ctrl *gomock.Controller) *MockVizierClusterInfoServer {
+	mock := &MockVizierClusterInfoServer{ctrl: ctrl}
+	mock.recorder = &MockVizierClusterInfoServerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use
-func (m *MockVizierClusterServiceServer) EXPECT() *MockVizierClusterServiceServerMockRecorder {
+func (m *MockVizierClusterInfoServer) EXPECT() *MockVizierClusterInfoServerMockRecorder {
 	return m.recorder
 }
 
 // CreateCluster mocks base method
-func (m *MockVizierClusterServiceServer) CreateCluster(arg0 context.Context, arg1 *cloudapipb.CreateClusterRequest) (*cloudapipb.CreateClusterResponse, error) {
+func (m *MockVizierClusterInfoServer) CreateCluster(arg0 context.Context, arg1 *cloudapipb.CreateClusterRequest) (*cloudapipb.CreateClusterResponse, error) {
 	ret := m.ctrl.Call(m, "CreateCluster", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.CreateClusterResponse)
 	ret1, _ := ret[1].(error)
@@ -401,12 +401,12 @@ func (m *MockVizierClusterServiceServer) CreateCluster(arg0 context.Context, arg
 }
 
 // CreateCluster indicates an expected call of CreateCluster
-func (mr *MockVizierClusterServiceServerMockRecorder) CreateCluster(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCluster", reflect.TypeOf((*MockVizierClusterServiceServer)(nil).CreateCluster), arg0, arg1)
+func (mr *MockVizierClusterInfoServerMockRecorder) CreateCluster(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCluster", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).CreateCluster), arg0, arg1)
 }
 
 // GetClusterInfo mocks base method
-func (m *MockVizierClusterServiceServer) GetClusterInfo(arg0 context.Context, arg1 *cloudapipb.GetClusterInfoRequest) (*cloudapipb.GetClusterInfoResponse, error) {
+func (m *MockVizierClusterInfoServer) GetClusterInfo(arg0 context.Context, arg1 *cloudapipb.GetClusterInfoRequest) (*cloudapipb.GetClusterInfoResponse, error) {
 	ret := m.ctrl.Call(m, "GetClusterInfo", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetClusterInfoResponse)
 	ret1, _ := ret[1].(error)
@@ -414,12 +414,12 @@ func (m *MockVizierClusterServiceServer) GetClusterInfo(arg0 context.Context, ar
 }
 
 // GetClusterInfo indicates an expected call of GetClusterInfo
-func (mr *MockVizierClusterServiceServerMockRecorder) GetClusterInfo(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterInfo", reflect.TypeOf((*MockVizierClusterServiceServer)(nil).GetClusterInfo), arg0, arg1)
+func (mr *MockVizierClusterInfoServerMockRecorder) GetClusterInfo(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterInfo", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).GetClusterInfo), arg0, arg1)
 }
 
 // GetClusterConnectionInfo mocks base method
-func (m *MockVizierClusterServiceServer) GetClusterConnectionInfo(arg0 context.Context, arg1 *cloudapipb.GetClusterConnectionInfoRequest) (*cloudapipb.GetClusterConnectionInfoResponse, error) {
+func (m *MockVizierClusterInfoServer) GetClusterConnectionInfo(arg0 context.Context, arg1 *cloudapipb.GetClusterConnectionInfoRequest) (*cloudapipb.GetClusterConnectionInfoResponse, error) {
 	ret := m.ctrl.Call(m, "GetClusterConnectionInfo", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetClusterConnectionInfoResponse)
 	ret1, _ := ret[1].(error)
@@ -427,12 +427,12 @@ func (m *MockVizierClusterServiceServer) GetClusterConnectionInfo(arg0 context.C
 }
 
 // GetClusterConnectionInfo indicates an expected call of GetClusterConnectionInfo
-func (mr *MockVizierClusterServiceServerMockRecorder) GetClusterConnectionInfo(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterConnectionInfo", reflect.TypeOf((*MockVizierClusterServiceServer)(nil).GetClusterConnectionInfo), arg0, arg1)
+func (mr *MockVizierClusterInfoServerMockRecorder) GetClusterConnectionInfo(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterConnectionInfo", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).GetClusterConnectionInfo), arg0, arg1)
 }
 
 // UpdateClusterVizierConfig mocks base method
-func (m *MockVizierClusterServiceServer) UpdateClusterVizierConfig(arg0 context.Context, arg1 *cloudapipb.UpdateClusterVizierConfigRequest) (*cloudapipb.UpdateClusterVizierConfigResponse, error) {
+func (m *MockVizierClusterInfoServer) UpdateClusterVizierConfig(arg0 context.Context, arg1 *cloudapipb.UpdateClusterVizierConfigRequest) (*cloudapipb.UpdateClusterVizierConfigResponse, error) {
 	ret := m.ctrl.Call(m, "UpdateClusterVizierConfig", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.UpdateClusterVizierConfigResponse)
 	ret1, _ := ret[1].(error)
@@ -440,6 +440,6 @@ func (m *MockVizierClusterServiceServer) UpdateClusterVizierConfig(arg0 context.
 }
 
 // UpdateClusterVizierConfig indicates an expected call of UpdateClusterVizierConfig
-func (mr *MockVizierClusterServiceServerMockRecorder) UpdateClusterVizierConfig(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateClusterVizierConfig", reflect.TypeOf((*MockVizierClusterServiceServer)(nil).UpdateClusterVizierConfig), arg0, arg1)
+func (mr *MockVizierClusterInfoServerMockRecorder) UpdateClusterVizierConfig(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateClusterVizierConfig", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).UpdateClusterVizierConfig), arg0, arg1)
 }

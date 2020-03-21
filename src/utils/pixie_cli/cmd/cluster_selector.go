@@ -23,7 +23,7 @@ func getClusterID(cloudAddr string) (*cloudapipb.ClusterStatus, *uuid.UUID, erro
 		return nil, nil, err
 	}
 
-	client := cloudapipb.NewVizierClusterServiceClient(conn)
+	client := cloudapipb.NewVizierClusterInfoClient(conn)
 
 	creds, err := auth.LoadDefaultCredentials()
 	if err != nil {
