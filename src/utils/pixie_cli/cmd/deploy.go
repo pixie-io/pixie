@@ -276,7 +276,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Deploying to Pixe Cluster ID: %s.\n", clusterID.String())
+	fmt.Printf("Deploying to Pixie Cluster ID: %s.\n", clusterID.String())
 
 	if *status != cloudapipb.CS_UNKNOWN && *status != cloudapipb.CS_DISCONNECTED {
 		log.Fatal("Cluster must be disconnected to deploy, please delete the install if you want to re-deploy")
