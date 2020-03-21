@@ -189,10 +189,12 @@ def createBazelStash(String stashName) {
   */
 def WithSourceCode(String stashName = SRC_STASH_NAME, Closure body) {
   warnError('Script failed') {
-    node {
-      deleteDir()
-      unstash stashName
-      body()
+    timeout(time: 60, unit: 'MINUTES') {
+      node {
+        deleteDir()
+        unstash stashName
+        body()
+      }
     }
   }
 }
