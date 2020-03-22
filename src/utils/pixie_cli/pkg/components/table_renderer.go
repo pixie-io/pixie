@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/olekukonko/tablewriter"
 )
@@ -68,6 +69,8 @@ func (t *TableStreamWriter) stringifyRow(row []interface{}) []string {
 
 	for i, val := range row {
 		switch u := val.(type) {
+		case time.Time:
+			s[i] = u.Format(time.RFC3339)
 		case stringer:
 			s[i] = u.String()
 		case float64:
@@ -83,9 +86,21 @@ func (t *TableStreamWriter) stringifyRow(row []interface{}) []string {
 func (t *TableStreamWriter) Finish() {
 	fmt.Printf("Table ID: %s\n", t.id)
 	table := tablewriter.NewWriter(t.w)
-	table.SetColWidth(100)
-	table.SetAutoWrapText(false)
 	table.SetHeader(t.headerValues)
+
+	table.SetAutoFormatHeaders(true)
+	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.SetColWidth(30)
+	table.SetReflowDuringAutoWrap(true)
+	table.SetCenterSeparator("")
+	table.SetColumnSeparator("")
+	table.SetRowSeparator("")
+	table.SetHeaderLine(false)
+	table.SetBorder(false)
+	table.SetTablePadding("\t")
+	table.SetNoWhiteSpace(false)
+
 	for _, row := range t.data {
 		table.Append(t.stringifyRow(row))
 	}

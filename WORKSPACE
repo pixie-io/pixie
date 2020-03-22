@@ -439,15 +439,15 @@ go_repository(
 go_repository(
     name = "com_github_mattn_go_runewidth",
     importpath = "github.com/mattn/go-runewidth",
-    sum = "h1:2BvfKmzob6Bmd4YsL0zygOqfdFnK7GR4QL06Do4/p7Y=",
-    version = "v0.0.4",
+    sum = "h1:Ei8KR0497xHyKJPAv59M1dkC+rOZCMBJ+t3fZ+twI54=",
+    version = "v0.0.7",
 )
 
 go_repository(
     name = "com_github_olekukonko_tablewriter",
     importpath = "github.com/olekukonko/tablewriter",
-    sum = "h1:b3iUnf1v+ppJiOfNX4yxxqfWKMQPZR5yoh8urCTFX88=",
-    version = "v0.0.1",
+    sum = "h1:vHD/YYe1Wolo78koG299f7V/VAS08c6IpCLn+Ejf/w8=",
+    version = "v0.0.4",
 )
 
 go_repository(
