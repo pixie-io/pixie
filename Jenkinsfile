@@ -729,7 +729,31 @@ def  buildScriptForCLIRelease = {
         WithSourceCodeFatalError {
           dockerStep('', devDockerImageExtrasWithTag) {
             sh './ci/cli_build_release.sh'
+            stash name: 'ci_scripts_signing', includes: 'ci/**'
+            sh 'ls bazel-bin/src/utils/pixie_cli/darwin_amd64_pure_stripped/px_darwin'
             stash name: "versions", includes: "src/utils/artifacts/artifact_db_updater/VERSIONS.json"
+
+          }
+        }
+      }
+      stage('Sign Mac Binary') {
+        node('macos') {
+          deleteDir()
+          unstash "ci_scripts_signing"
+          withCredentials([string(credentialsId: 'pl_ac_passwd', variable: 'AC_PASSWD'),
+            string(credentialsId: 'jenkins_keychain_pw', variable: 'JENKINSKEY')]) {
+            sh './ci/cli_sign.sh'
+          }
+          stash name: 'cli_darwin_amd64_signed', includes: 'cli_darwin_amd64*'
+        }
+      }
+      stage('Upload Signed Binary') {
+        node('macos') {
+          WithSourceCodeFatalError {
+            dockerStep('', devDockerImageExtrasWithTag) {
+              unstash 'cli_darwin_amd64_signed'
+              sh './ci/cli_upload_signed.sh'
+            }
           }
         }
       }

@@ -2,11 +2,14 @@
 
 set -ex
 
+repo_path=$(bazel info workspace)
+# shellcheck source=ci/gcs_utils.sh
+. "${repo_path}/ci/gcs_utils.sh"
+
 printenv
 
-repo_path=$(pwd)
 release_tag=${TAG_NAME##*/v}
-versions_file="$(pwd)/src/utils/artifacts/artifact_db_updater/VERSIONS.json"
+versions_file="${repo_path}/src/utils/artifacts/artifact_db_updater/VERSIONS.json"
 
 echo "The release tag is: ${release_tag}"
 
@@ -17,24 +20,11 @@ bazel build -c opt --stamp //src/utils/pixie_cli:px_darwin
 
 bazel build -c opt --stamp //src/utils/pixie_cli:px
 
-copy_artifact_to_gcs() {
-    output_path="$1"
-    binary_path="$2"
-    name="$3"
-
-    sha256sum "${binary_path}" | awk '{print $1}' > sha
-    gsutil -h 'Content-Disposition:filename=px' cp "${binary_path}" "${output_path}/${name}"
-    gsutil cp sha "${output_path}/${name}.sha256"
-    gsutil acl ch -u allUsers:READER "${output_path}/${name}"
-    gsutil acl ch -u allUsers:READER "${output_path}/${name}.sha256"
-
-}
-
 write_artifacts_to_gcs() {
     output_path=$1
     mac_binary=bazel-bin/src/utils/pixie_cli/darwin_amd64_pure_stripped/px_darwin
     linux_binary=bazel-bin/src/utils/pixie_cli/linux_amd64_stripped/px
-    copy_artifact_to_gcs "$output_path" "$mac_binary" "cli_darwin_amd64"
+    copy_artifact_to_gcs "$output_path" "$mac_binary" "cli_darwin_amd64_unsigned"
     copy_artifact_to_gcs "$output_path" "$linux_binary" "cli_linux_amd64"
 }
 
