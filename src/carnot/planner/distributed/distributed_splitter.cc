@@ -88,7 +88,9 @@ BlockingSplitNodeIDGroups DistributedSplitter::GetBlockingSplitGroupsFromIR(cons
 BlockingSplitNodeIDGroups DistributedSplitter::GetSplitGroups(
     const IR* graph, const absl::flat_hash_map<int64_t, bool>& on_kelvin) {
   BlockingSplitNodeIDGroups node_groups;
-  auto independent_node_ids = graph->dag().IndependentGraphs();
+  auto independent_node_ids = graph->IndependentGraphs();
+  // Here we see which node_sets belong to which side. Each node set will reside on the same
+  // side of the execution.
   for (auto& node_set : independent_node_ids) {
     bool is_after_blocking = false;
     for (auto node : node_set) {
@@ -107,8 +109,6 @@ BlockingSplitNodeIDGroups DistributedSplitter::GetSplitGroups(
       node_groups.before_blocking_nodes.merge(node_set);
     }
   }
-  DCHECK_EQ(node_groups.before_blocking_nodes.size() + node_groups.after_blocking_nodes.size(),
-            graph->dag().nodes().size());
   return node_groups;
 }
 

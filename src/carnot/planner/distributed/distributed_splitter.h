@@ -144,6 +144,18 @@ class DistributedSplitter : public NotCopyable {
  private:
   static StatusOr<std::unique_ptr<IR>> ApplyGRPCBridgeRule(const IR* logical_plan);
   static BlockingSplitNodeIDGroups GetBlockingSplitGroupsFromIR(const IR* graph);
+
+  /**
+   * @brief Returns the list of operator ids from the graph that occur before the blocking node and
+   * after the blocking node.
+   *
+   * Note: this does not include non Operator IDs. IR::Keep() with either set of ids
+   * will not produce a working graph.
+   *
+   * @param logical_plan
+   * @param on_kelvin
+   * @return BlockingSplitNodeIDGroups
+   */
   static BlockingSplitNodeIDGroups GetSplitGroups(
       const IR* logical_plan, const absl::flat_hash_map<int64_t, bool>& on_kelvin);
 

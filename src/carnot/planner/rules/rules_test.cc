@@ -661,15 +661,14 @@ TEST_F(UnionRelationTest, union_relations_disagree) {
   OperatorRelationRule op_rel_rule(compiler_state_.get());
   auto result = op_rel_rule.Execute(graph.get());
   ASSERT_NOT_OK(result);
-  EXPECT_THAT(
-      result.status(),
-      HasCompilerError(
-          "Table schema disagreement between parent ops MemorySource\\(id=[0-9]*\\) and "
-          "MemorySource\\(id=[0-9]*\\) "
-          "of Union\\(id=[0-9]*\\). MemorySource\\(id=[0-9]*\\): \\[count:INT64, cpu0:FLOAT64, "
-          "cpu1:FLOAT64, "
-          "cpu2:FLOAT64\\] vs MemorySource\\(id=[0-9]*\\): \\[count:INT64, cpu0:FLOAT64\\]. "
-          "Column count wrong."));
+  auto memory_src_regex = "MemorySource\\([0-9A-z,=\\s]*\\)";
+  EXPECT_THAT(result.status(),
+              HasCompilerError("Table schema disagreement between parent ops $0 and "
+                               "$0 of Union\\(id=[0-9]*\\). $0: \\[count:INT64, "
+                               "cpu0:FLOAT64, cpu1:FLOAT64, "
+                               "cpu2:FLOAT64\\] vs $0: \\[count:INT64, "
+                               "cpu0:FLOAT64\\]. Column count wrong.",
+                               memory_src_regex));
 
   skip_check_stray_nodes_ = true;
 }

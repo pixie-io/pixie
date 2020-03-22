@@ -325,6 +325,81 @@ TEST_F(LogicalPlannerTest, GetVizFuncsInfo) {
   EXPECT_THAT(viz_funcs, testing::proto::EqualsProto(kExpectedVizFuncsInfoPb));
 }
 
+constexpr char kPlannerQueryError[] = R"pxl(
+False = 0 == 1
+True = 1 == 1
+###############################################################
+# Edit the following variables to change the visualization.
+###############################################################
+# Pods/services are formatted as <namespace>/<name>.
+# If you want to match a namespace, only keep the namespace portion
+match_name = 'sock-shop/order'
+k8s_object = 'service'
+requestor_filter = ''  # 'front-end'
+# Visualization Variables - Dont change unless you know what you are doing
+num_seconds = 2
+filter_dash = True
+filter_health = True
+filter_readyz = True
+filter_empty_k8s = True
+src_name = 'requestor'
+dest_name = 'responder'
+ip = 'remote_addr'
+###############################################################
+df = px.DataFrame(table='http_events', start_time='-2m')
+df.http_resp_latency_ms = df.http_resp_latency_ns / 1.0E6
+df = df[df['http_resp_latency_ms'] < 1000.0]
+df.failure = df.http_resp_status >= 400
+df.timestamp = px.bin(df.time_, px.seconds(num_seconds))
+df[k8s_object] = df.ctx[k8s_object]
+filter_pods = px.contains(df[k8s_object], match_name)
+filter_out_conds = ((df.http_req_path != '/health' or not filter_health) and (
+    df.http_req_path != '/readyz' or not filter_readyz)) and (
+    df[ip] != '-' or not filter_dash)
+
+filt_df = df[filter_out_conds]
+qa = filt_df[filter_pods]
+qa = qa.groupby([k8s_object, 'timestamp']).agg(
+    latency_quantiles=('http_resp_latency_ms', px.quantiles),
+    error_rate_per_window=('failure', px.mean),
+    throughput_total=('http_resp_status', px.count),
+)
+qa.latency_p50 = px.pluck_float64(qa.latency_quantiles, 'p50')
+qa.latency_p90 = px.pluck_float64(qa.latency_quantiles, 'p90')
+qa.latency_p99 = px.pluck_float64(qa.latency_quantiles, 'p99')
+qa['time_'] = qa['timestamp']
+qa.error_rate = qa.error_rate_per_window * qa.throughput_total / num_seconds
+qa.rps = qa.throughput_total / num_seconds
+qa['k8s'] = qa[k8s_object]
+px.display(qa['time_', 'k8s', 'latency_p50',
+              'latency_p90', 'latency_p99', 'error_rate', 'rps'], 'test')
+
+##### Map which services this talks to.
+df = filt_df.groupby([k8s_object, ip]).agg(count=(ip, px.count))
+df['pod_id'] = px.ip_to_pod_id(df[ip])
+# # Enable if you want pod name
+# df[src_name] = px.pod_id_to_pod_name(df.pod_id)
+df[src_name] = px.pod_id_to_service_name(df.pod_id)
+df[dest_name] = df[k8s_object]
+
+res = df[px.contains(df[dest_name], match_name)]
+res = res.groupby([src_name, dest_name]).agg(count=(src_name, px.count))
+px.display(res[[src_name, dest_name]], 'receives_from')
+
+rcv = df[px.contains(df[src_name], match_name)]
+rcv = rcv.groupby([src_name, dest_name]).agg(count=(src_name, px.count))
+px.display(rcv[[src_name, dest_name]], 'talks_to')
+)pxl";
+
+TEST_F(LogicalPlannerTest, BrokenQueryTest) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  auto plan_or_s =
+      planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+                    MakeQueryRequest(kPlannerQueryError));
+  ASSERT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_OK(plan->ToProto());
+}
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl

@@ -98,6 +98,60 @@ std::vector<OperatorIR*> IR::GetSources() const {
   return operators;
 }
 
+std::vector<absl::flat_hash_set<int64_t>> IR::IndependentGraphs() const {
+  auto sources = FindNodesThatMatch(SourceOperator());
+  CHECK(!sources.empty()) << "no source operators found";
+
+  std::unordered_map<int64_t, int64_t> set_parents;
+  // The map that keeps track of the actual sets.
+  std::unordered_map<int64_t, absl::flat_hash_set<int64_t>> out_map;
+  for (auto s : sources) {
+    auto source_op = static_cast<OperatorIR*>(s);
+
+    int64_t current_set_parent = s->id();
+    set_parents[current_set_parent] = current_set_parent;
+    // The queue of children to iterate through.
+    std::queue<OperatorIR*> q;
+    q.push(source_op);
+
+    absl::flat_hash_set<int64_t> current_set({current_set_parent});
+    // Iterate through the children.
+    while (!q.empty()) {
+      OperatorIR* cur_parent = q.front();
+      auto children = cur_parent->Children();
+      q.pop();
+      for (OperatorIR* child : children) {
+        if (set_parents.find(child->id()) != set_parents.end()) {
+          // If the child has already been visited, then it already belongs to another set.
+          // Point to that set, and merge the existing set.
+          int64_t new_set_parent = set_parents[child->id()];
+          set_parents[current_set_parent] = new_set_parent;
+          current_set_parent = new_set_parent;
+          out_map[new_set_parent].merge(current_set);
+          current_set = out_map[new_set_parent];
+
+        } else {
+          // If the child has been visited, its children have already been visited.
+          q.push(child);
+        }
+        current_set.insert(child->id());
+        set_parents[child->id()] = current_set_parent;
+      }
+    }
+    out_map[current_set_parent] = current_set;
+  }
+
+  std::vector<absl::flat_hash_set<int64_t>> out_vec;
+  for (const auto& [out_map_id, set] : out_map) {
+    if (set_parents[out_map_id] != out_map_id) {
+      continue;
+    }
+    out_vec.push_back(set);
+  }
+
+  return out_vec;
+}
+
 Status IRNode::CopyFromNode(const IRNode* node,
                             absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   line_ = node->line_;
@@ -206,7 +260,15 @@ std::string OperatorIR::ParentsDebugString() {
     absl::StrAppend(out, in->DebugString());
   });
 }
+std::string OperatorIR::ChildrenDebugString() {
+  return absl::StrJoin(Children(), ",", [](std::string* out, IRNode* in) {
+    absl::StrAppend(out, in->DebugString());
+  });
+}
 
+std::string MemorySourceIR::DebugString() const {
+  return absl::Substitute("$0(id=$1, table=$2)", type_string(), id(), table_name_);
+}
 Status MemorySourceIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_mem_source_op();
   op->set_op_type(planpb::MEMORY_SOURCE_OPERATOR);
@@ -787,6 +849,9 @@ std::string ColumnIR::DebugString() const {
 }
 std::string MetadataIR::DebugString() const {
   return absl::Substitute("$0(id=$1, name=$2)", type_string(), id(), name());
+}
+std::string StringIR::DebugString() const {
+  return absl::Substitute("$0(id=$1, val=$2)", type_string(), id(), str());
 }
 
 void ColumnIR::SetContainingOperatorParentIdx(int64_t container_op_parent_idx) {
@@ -1390,6 +1455,17 @@ Status IR::Prune(const absl::flat_hash_set<int64_t>& ids_to_prune) {
     PL_RETURN_IF_ERROR(DeleteNode(node));
   }
   return Status::OK();
+}
+
+Status IR::Keep(const absl::flat_hash_set<int64_t>& ids_to_keep) {
+  absl::flat_hash_set<int64_t> ids_to_prune;
+  for (int64_t n : dag().nodes()) {
+    if (ids_to_keep.contains(n)) {
+      continue;
+    }
+    ids_to_prune.insert(n);
+  }
+  return Prune(ids_to_prune);
 }
 
 std::vector<IRNode*> IR::FindNodesOfType(IRNodeType type) const {

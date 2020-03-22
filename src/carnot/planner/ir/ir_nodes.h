@@ -221,6 +221,7 @@ class IR {
     }
     // Use the source's ID if we are copying in to a different graph.
     auto new_node_id = this == source->graph_ptr() ? id_node_counter : source->id();
+    DCHECK(!HasNode(new_node_id)) << source->DebugString();
     PL_ASSIGN_OR_RETURN(IRNode * new_node, MakeNodeWithType(source->type(), new_node_id));
     PL_RETURN_IF_ERROR(new_node->CopyFromNode(source, copied_nodes_map));
     copied_nodes_map->emplace(source, new_node);
@@ -294,6 +295,22 @@ class IR {
    */
   Status Prune(const absl::flat_hash_set<int64_t>& ids_to_prune);
 
+  /**
+   * @brief Keeps only the specified nodes.
+   *
+   * @param ids_to_keep
+   * @return Status
+   */
+  Status Keep(const absl::flat_hash_set<int64_t>& ids_to_keep);
+
+  /**
+   * @brief IndependentGraphs returns the sets of OperatorIR ids from this graph that are uniquely
+   * connected.
+   *
+   * @return std::vector<absl::flat_hash_set<int64_t>>
+   */
+  std::vector<absl::flat_hash_set<int64_t>> IndependentGraphs() const;
+
   std::vector<IRNode*> FindNodesOfType(IRNodeType type) const;
 
   template <typename Matcher>
@@ -360,6 +377,7 @@ class OperatorIR : public IRNode {
   virtual Status ToProto(planpb::Operator*) const = 0;
 
   std::string ParentsDebugString();
+  std::string ChildrenDebugString();
   Status CopyParentsFrom(const OperatorIR* og_op);
 
   /**
@@ -776,6 +794,7 @@ class StringIR : public DataIR {
   Status ToProtoImpl(planpb::ScalarValue* value) const override;
   static bool NodeMatches(IRNode* input);
   static std::string class_type_string() { return TypeString(IRNodeType::kString); }
+  std::string DebugString() const override;
 
  private:
   std::string str_;
@@ -858,8 +877,7 @@ class FuncIR : public ExpressionIR {
   explicit FuncIR(int64_t id) : ExpressionIR(id, IRNodeType::kFunc) {}
   Status Init(Op op, const std::vector<ExpressionIR*>& args);
 
-  // NOLINTNEXTLINE(readability/inheritance)
-  virtual std::string DebugString() const override {
+  std::string DebugString() const override {
     return absl::Substitute("$0(id=$1, $2)", func_name(), id(),
                             absl::StrJoin(args_, ",", [](std::string* out, IRNode* in) {
                               absl::StrAppend(out, in->DebugString());
@@ -1067,6 +1085,8 @@ class MemorySourceIR : public OperatorIR {
     time_set_ = true;
   }
   bool IsTimeSet() const { return time_set_; }
+
+  std::string DebugString() const override;
 
   int64_t time_start_ns() const { return time_start_ns_; }
   int64_t time_stop_ns() const { return time_stop_ns_; }

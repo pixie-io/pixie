@@ -294,7 +294,6 @@ StatusOr<std::unique_ptr<DistributedPlan>> CoordinatorImpl::CoordinateImpl(const
                       DistributedSplitter::SplitKelvinAndAgents(logical_plan));
   auto physical_plan = std::make_unique<DistributedPlan>();
   int64_t remote_node_id = physical_plan->AddCarnot(GetRemoteProcessor());
-
   // TODO(philkuz) Need to update the Blocking Split Plan to better represent what we expect.
   // TODO(philkuz) (PL-1469) Future support for grabbing data from multiple Kelvin nodes.
   PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> remote_plan, split_plan->original_plan->Clone());
