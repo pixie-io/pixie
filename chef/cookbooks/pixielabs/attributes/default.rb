@@ -22,9 +22,9 @@ default['shellcheck']                = {}
 
 if node[:platform] == 'ubuntu'
   default['bazel']['download_path'] =
-    'https://github.com/bazelbuild/bazel/releases/download/2.1.1/bazel-2.1.1-linux-x86_64'
+    'https://github.com/bazelbuild/bazel/releases/download/2.2.0/bazel-2.2.0-linux-x86_64'
   default['bazel']['sha256'] =
-    '8684b902537b83ef37481b238bea8c5c323f1db6ba344b17398dff23a8f3563b'
+    'b2f002ea0e6194a181af6ac84cd94bd8dc797722eb2354690bebac92dda233ff'
 
   default['golang']['download_path'] =
     'https://dl.google.com/go/go1.13.8.linux-amd64.tar.gz'
@@ -67,9 +67,9 @@ if node[:platform] == 'ubuntu'
     '39c501aaca6aae3f3c7fc125b3c3af779ddbe4e67e4ebdc44c2ae5cba76c847f'
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
-    'https://github.com/bazelbuild/bazel/releases/download/2.1.1/bazel-2.1.1-darwin-x86_64'
+    'https://github.com/bazelbuild/bazel/releases/download/2.2.0/bazel-2.2.0-darwin-x86_64'
   default['bazel']['sha256'] =
-    '66dcbf562ce264e7f80dd20c82e2b3708a6e71c0bbd4368adccc40a8d1126cb3'
+    '6c786ab4ebc72afe1ba49341b3c8b2dbee7baa31a1d8b9a546b98b1307d220ab'
 
   default['golang']['download_path'] =
     'https://dl.google.com/go/go1.13.8.darwin-amd64.tar.gz'
