@@ -112,8 +112,8 @@ func newVizAuthClient(conn *grpc.ClientConn) cloudapipb.VizierImageAuthorization
 	return cloudapipb.NewVizierImageAuthorizationClient(conn)
 }
 
-func newArtifactTrackerServiceClient(conn *grpc.ClientConn) cloudapipb.ArtifactTrackerServiceClient {
-	return cloudapipb.NewArtifactTrackerServiceClient(conn)
+func newArtifactTrackerClient(conn *grpc.ClientConn) cloudapipb.ArtifactTrackerClient {
+	return cloudapipb.NewArtifactTrackerClient(conn)
 }
 
 func getCloudClientConnection(cloudAddr string) (*grpc.ClientConn, error) {
@@ -168,7 +168,7 @@ func downloadFile(url string) (io.ReadCloser, error) {
 }
 
 func downloadVizierYAMLs(conn *grpc.ClientConn, version string) (io.ReadCloser, error) {
-	client := newArtifactTrackerServiceClient(conn)
+	client := newArtifactTrackerClient(conn)
 
 	creds, err := auth.LoadDefaultCredentials()
 	if err != nil {
@@ -211,7 +211,7 @@ func writeToFile(filepath string, filename string, reader io.ReadCloser) error {
 }
 
 func getLatestVizierVersion(conn *grpc.ClientConn) (string, error) {
-	client := newArtifactTrackerServiceClient(conn)
+	client := newArtifactTrackerClient(conn)
 
 	creds, err := auth.LoadDefaultCredentials()
 	if err != nil {

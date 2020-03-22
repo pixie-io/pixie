@@ -86,7 +86,7 @@ message Artifact {
 
 
 // ArtifactTracker tracks versions of released artifacts.
-service ArtifactTrackerService {
+service ArtifactTracker {
     // GetArtifactList is used to request a list of artifacts.
     rpc GetArtifactList(GetArtifactListRequest) returns(ArtifactSet) {}
     // GetDownloadLink is used to request a signed URL.

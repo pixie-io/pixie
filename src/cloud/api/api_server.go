@@ -111,7 +111,7 @@ func main() {
 	artifactTrackerServer := controller.ArtifactTrackerServer{
 		ArtifactTrackerClient: at,
 	}
-	cloudapipb.RegisterArtifactTrackerServiceServer(s.GRPCServer(), artifactTrackerServer)
+	cloudapipb.RegisterArtifactTrackerServer(s.GRPCServer(), artifactTrackerServer)
 
 	cis := &controller.VizierClusterInfo{VzMgr: vc}
 	cloudapipb.RegisterVizierClusterInfoServer(s.GRPCServer(), cis)
