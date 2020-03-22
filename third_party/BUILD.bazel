@@ -134,11 +134,11 @@ pl_cc_library(
 )
 
 pl_cc_binary(
-    name="libpypa_parser_test",
-    srcs=[
+    name = "libpypa_parser_test",
+    srcs = [
         "libpypa/src/pypa/parser/test.cc",
     ],
-    deps=[":libpypa"],
+    deps = [":libpypa"],
 )
 
 pl_cc_library(
@@ -148,6 +148,13 @@ pl_cc_library(
     copts = [
         "-Wno-unused-function",
     ],
+    visibility = ["//visibility:public"],
+)
+
+pl_cc_library(
+    name = "elfio",
+    hdrs = glob(["ELFIO/elfio/*.hpp"]),
+    includes = ["ELFIO"],
     visibility = ["//visibility:public"],
 )
 

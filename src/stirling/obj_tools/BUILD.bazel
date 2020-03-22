@@ -21,7 +21,7 @@ pl_cc_library(
         "//src/stirling/bcc_bpf_interface:cc_library",
         "//src/stirling/common:cc_library",
         "//src/stirling/utils:cc_library",
-        "@com_github_serge1_elfio//:elfio",
+        "//third_party:elfio",
     ],
 )
 

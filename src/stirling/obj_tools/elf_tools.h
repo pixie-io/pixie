@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <elfio/elfio.hpp>
+#include "third_party/ELFIO/elfio/elfio.hpp"
 
 #include "src/common/base/base.h"
 

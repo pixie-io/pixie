@@ -91,7 +91,6 @@ def _cc_deps():
     _repo_impl("com_github_tencent_rapidjson", build_file = "//third_party:rapidjson.BUILD")
     _repo_impl("com_github_ariafallah_csv_parser", build_file = "//third_party:csv_parser.BUILD")
     _repo_impl("com_github_cameron314_concurrentqueue", build_file = "//third_party:concurrentqueue.BUILD")
-    _repo_impl("com_github_serge1_elfio", build_file = "//third_party:elfio.BUILD")
     _repo_impl("com_github_skystrife_cpptoml", build_file = "//third_party:cpptoml.BUILD")
     _repo_impl("com_github_neargye_magic_enum", build_file = "//third_party:magic_enum.BUILD")
     _repo_impl("com_github_neargye_magic_enum", build_file = "//third_party:magic_enum.BUILD")

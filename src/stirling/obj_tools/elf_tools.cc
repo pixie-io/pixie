@@ -12,7 +12,7 @@ namespace elf_tools {
 StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(const std::string& binary_path) {
   auto elf_reader = std::unique_ptr<ElfReader>(new ElfReader);
 
-  if (!elf_reader->elf_reader_.load(binary_path)) {
+  if (!elf_reader->elf_reader_.load(binary_path, /* skip_segments */ true)) {
     return error::Internal("Can't find or process ELF file $0", binary_path);
   }
 
