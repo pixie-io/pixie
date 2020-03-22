@@ -9,6 +9,7 @@ import (
 	"github.com/badoux/checkmail"
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"pixielabs.ai/pixielabs/src/cloud/profile/datastore"
@@ -92,6 +93,15 @@ func checkValidEmail(email string) error {
 	return nil
 }
 
+func toExternalError(err error) error {
+	if err == datastore.ErrOrgNotFound {
+		return status.Error(codes.NotFound, "no such org")
+	} else if err == datastore.ErrUserNotFound {
+		return status.Error(codes.NotFound, "no such user")
+	}
+	return err
+}
+
 // CreateUser is the GRPC method to create  new user.
 func (s *Server) CreateUser(ctx context.Context, req *profile.CreateUserRequest) (*uuidpb.UUID, error) {
 	userInfo := &datastore.UserInfo{
@@ -137,10 +147,7 @@ func (s *Server) GetUser(ctx context.Context, req *uuidpb.UUID) (*profile.UserIn
 func (s *Server) GetUserByEmail(ctx context.Context, req *profile.GetUserByEmailRequest) (*profile.UserInfo, error) {
 	userInfo, err := s.d.GetUserByEmail(req.Email)
 	if err != nil {
-		return nil, err
-	}
-	if userInfo == nil {
-		return nil, status.Error(codes.NotFound, "no such user")
+		return nil, toExternalError(err)
 	}
 	return userInfoToProto(userInfo), nil
 }
@@ -178,6 +185,9 @@ func (s *Server) CreateOrgAndUser(ctx context.Context, req *profile.CreateOrgAnd
 	if err != nil {
 		return nil, err
 	}
+
+	md, _ := metadata.FromIncomingContext(ctx)
+	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	projectResp, err := s.env.ProjectManagerClient().RegisterProject(ctx, &projectmanagerpb.RegisterProjectRequest{
 		OrgID:       utils.ProtoFromUUID(&orgID),
@@ -221,10 +231,7 @@ func (s *Server) GetOrg(ctx context.Context, req *uuidpb.UUID) (*profile.OrgInfo
 func (s *Server) GetOrgByDomain(ctx context.Context, req *profile.GetOrgByDomainRequest) (*profile.OrgInfo, error) {
 	orgInfo, err := s.d.GetOrgByDomain(req.DomainName)
 	if err != nil {
-		return nil, err
-	}
-	if orgInfo == nil {
-		return nil, status.Error(codes.NotFound, "no such org")
+		return nil, toExternalError(err)
 	}
 	return orgInfoToProto(orgInfo), nil
 }

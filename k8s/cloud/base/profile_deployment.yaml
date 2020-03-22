@@ -50,6 +50,11 @@ spec:
             secretKeyRef:
               name: pl-db-secrets
               key: PL_POSTGRES_PASSWORD
+        - name: PL_PROJECT_MANAGER_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_PROJECT_MANAGER_SERVICE
         volumeMounts:
         - name: certs
           mountPath: /certs

@@ -37,9 +37,7 @@ func NewServer(datastore ProjectDatastore) *Server {
 	}
 }
 
-var projectNameBlacklist = map[string]bool{
-	"default": true,
-}
+var projectNameBlacklist = map[string]bool{}
 
 func validProject(s string) bool {
 	return projectRegex.MatchString(s)
@@ -76,10 +74,6 @@ func (s *Server) IsProjectAvailable(ctx context.Context, req *projectmanagerpb.I
 func (s *Server) RegisterProject(ctx context.Context, req *projectmanagerpb.RegisterProjectRequest) (*projectmanagerpb.RegisterProjectResponse, error) {
 	resp := &projectmanagerpb.RegisterProjectResponse{}
 	pn := strings.ToLower(req.ProjectName)
-
-	if _, exists := projectNameBlacklist[pn]; exists {
-		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("cannot register project with name: %s", pn))
-	}
 
 	if !validProject(pn) {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("project name must consist of only a-z and 0-9"))

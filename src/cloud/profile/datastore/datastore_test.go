@@ -106,10 +106,11 @@ func TestDatastore(t *testing.T) {
 		assert.Equal(t, orgInfo.DomainName, "hulu.com")
 	})
 
-	t.Run("get org by domain for missing domain should return nil", func(t *testing.T) {
+	t.Run("get org by domain for missing domain should a specific error", func(t *testing.T) {
 		d := datastore.NewDatastore(db)
 		orgInfo, err := d.GetOrgByDomain("goo.com")
 		require.NotNil(t, err)
+		require.Equal(t, err, datastore.ErrOrgNotFound)
 		require.Nil(t, orgInfo)
 	})
 
@@ -183,10 +184,11 @@ func TestDatastore(t *testing.T) {
 		assert.Equal(t, userInfo.Email, "person@hulu.com")
 	})
 
-	t.Run("get user by email for missing email should return nil", func(t *testing.T) {
+	t.Run("get user by email for missing email should return specific error", func(t *testing.T) {
 		d := datastore.NewDatastore(db)
 		userInfo, err := d.GetUserByEmail("noemail@gmail.com")
 		require.NotNil(t, err)
+		require.Equal(t, err, datastore.ErrUserNotFound)
 		require.Nil(t, userInfo)
 	})
 

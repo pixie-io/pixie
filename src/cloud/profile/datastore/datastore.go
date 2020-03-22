@@ -2,6 +2,7 @@ package datastore
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	uuid "github.com/satori/go.uuid"
@@ -35,6 +36,13 @@ type Datastore struct {
 func NewDatastore(db *sqlx.DB) *Datastore {
 	return &Datastore{db: db}
 }
+
+var (
+	// ErrUserNotFound is used when a user is not found when looking up by a filter condition.
+	ErrUserNotFound = fmt.Errorf("user not found")
+	// ErrOrgNotFound is used when the org is not found when looking up by a filter condition.
+	ErrOrgNotFound = fmt.Errorf("org not found")
+)
 
 // CreateUser creates a new user.
 func (d *Datastore) CreateUser(userInfo *UserInfo) (uuid.UUID, error) {
@@ -136,7 +144,7 @@ func (d *Datastore) GetOrgByDomain(domainName string) (*OrgInfo, error) {
 		err := rows.StructScan(&orgInfo)
 		return &orgInfo, err
 	}
-	return nil, errors.New("failed org info from database")
+	return nil, ErrOrgNotFound
 }
 
 // GetUserByEmail gets org information by domain.
@@ -153,7 +161,7 @@ func (d *Datastore) GetUserByEmail(email string) (*UserInfo, error) {
 		err := rows.StructScan(&userInfo)
 		return &userInfo, err
 	}
-	return nil, errors.New("failed to get user info from database")
+	return nil, ErrUserNotFound
 }
 
 // DeleteOrgAndUsers deletes the org and users with a given org ID.

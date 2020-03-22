@@ -279,7 +279,7 @@ func TestServer_GetUserByEmail_MissingEmail(t *testing.T) {
 
 	d.EXPECT().
 		GetUserByEmail("foo@bar.com").
-		Return(nil, nil)
+		Return(nil, datastore.ErrUserNotFound)
 
 	resp, err := s.GetUserByEmail(
 		context.Background(),
@@ -634,7 +634,7 @@ func TestServer_GetOrgByDomain_MissingOrg(t *testing.T) {
 
 	d.EXPECT().
 		GetOrgByDomain("hulu.com").
-		Return(nil, nil)
+		Return(nil, datastore.ErrOrgNotFound)
 
 	resp, err := s.GetOrgByDomain(
 		context.Background(),

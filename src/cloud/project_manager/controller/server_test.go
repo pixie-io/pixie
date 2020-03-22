@@ -108,19 +108,19 @@ func TestServer_IsProjectAvailable(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "invalid domain name should be an error",
+			name:        "invalid project name should be an error",
 			projectName: "-abc",
 			isAvailable: false,
 			expectError: true,
 		},
 		{
-			name:        "invalid domain name should be an error",
+			name:        "invalid project name should be an error",
 			projectName: "A--abc",
 			isAvailable: false,
 			expectError: true,
 		},
 		{
-			name:        "invalid domain name should be an error",
+			name:        "invalid project name should be an error",
 			projectName: "a_b",
 			isAvailable: false,
 			expectError: true,
@@ -144,17 +144,18 @@ func TestServer_IsProjectAvailable(t *testing.T) {
 	}
 }
 
-func TestServer_RegisterProjectBlacklist(t *testing.T) {
-	server := SetupServerTest(t)
+// TODO(nserrino): Re-enable when we have a project name in the blacklist.
+// func TestServer_RegisterProjectBlacklist(t *testing.T) {
+// 	server := SetupServerTest(t)
 
-	req := &projectmanagerpb.RegisterProjectRequest{
-		ProjectName: "default",
-	}
-	resp, err := server.RegisterProject(context.Background(), req)
+// 	req := &projectmanagerpb.RegisterProjectRequest{
+// 		ProjectName: "default",
+// 	}
+// 	resp, err := server.RegisterProject(context.Background(), req)
 
-	assert.NotNil(t, err)
-	assert.Nil(t, resp)
-}
+// 	assert.NotNil(t, err)
+// 	assert.Nil(t, resp)
+// }
 
 func TestServer_GetProjectByName(t *testing.T) {
 	server := SetupServerTest(t)
