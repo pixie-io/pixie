@@ -265,7 +265,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	}
 	namespace, _ := cmd.Flags().GetString("namespace")
 	credsFile, _ := cmd.Flags().GetString("credentials_file")
-	devCloudNS, _ := cmd.Flags().GetString("dev_cloud_namespace")
+	devCloudNS := viper.GetString("dev_cloud_namespace")
 
 	cloudAddr := viper.GetString("cloud_addr")
 
