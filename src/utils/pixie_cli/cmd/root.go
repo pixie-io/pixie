@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	analytics "gopkg.in/segmentio/analytics-go.v3"
+	"gopkg.in/segmentio/analytics-go.v3"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/update"
@@ -57,6 +57,17 @@ func printPixie() {
 	c.Fprintln(os.Stderr, pixie)
 }
 
+func printTestingBanner() {
+	r := color.New(color.Bold, color.FgRed).Fprintf
+	r(os.Stderr, "*******************************\n")
+	r(os.Stderr, "* IN TESTING MODE\n")
+	r(os.Stderr, "* \t PL_TESTING_ENV=%s\n", os.Getenv("PL_TESTING_ENV"))
+	r(os.Stderr, "* \t PL_VIZIER_VERSION=%s\n", os.Getenv("PL_VIZIER_VERSION"))
+	r(os.Stderr, "* \t PL_CLI_VERSION=%s\n", os.Getenv("PL_CLI_VERSION"))
+	r(os.Stderr, "* \t PL_CLOUD_ADDR=%s\n", os.Getenv("PL_CLOUD_ADDR"))
+	r(os.Stderr, "*******************************\n")
+}
+
 // RootCmd is the base command for Cobra.
 var RootCmd = &cobra.Command{
 	Use:   "px",
@@ -64,6 +75,21 @@ var RootCmd = &cobra.Command{
 	// TODO(zasgar): Add description and update this.
 	Long: `The Pixie command line interface.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		cloudAddr := viper.GetString("cloud_addr")
+		if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {
+			viper.Set("cloud_addr", cloudAddr+":443")
+		}
+
+		if e, has := os.LookupEnv("PL_TESTING_ENV"); has {
+			printTestingBanner()
+			if e == "dev" {
+				// Setting this to the most likely default if not already set.
+				if viper.GetString("dev_cloud_namespace") == "" {
+					viper.Set("dev_cloud_namespace", "plc-dev")
+				}
+			}
+		}
+
 		quiet, _ := cmd.Flags().GetBool("quiet")
 		if !quiet {
 			printPixie()
@@ -103,12 +129,6 @@ var RootCmd = &cobra.Command{
 			c := color.New(color.Bold, color.FgGreen)
 			_, _ = c.Fprintf(os.Stderr, "Update to version \"%s\" available. Run \"px update cli\" to update.\n", versionStr)
 		}
-
-		cloudAddr := viper.GetString("cloud_addr")
-		if matched, err := regexp.MatchString(".+:[0-9]+$", cloudAddr); !matched && err == nil {
-			viper.Set("cloudAddr", cloudAddr+":443")
-		}
-
 	},
 }
 

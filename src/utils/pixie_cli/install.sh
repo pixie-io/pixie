@@ -5,11 +5,11 @@
 ################################################################
 set -u
 
-CLOUD_ADDR="withpixie.ai"
+CLOUD_ADDR=${PL_CLOUD_ADDR:-"work.withpixie.ai"}
 DEFAULT_INSTALL_PATH=/usr/local/bin
 ARTIFACT_BASE_PATH="https://storage.googleapis.com/pixie-prod-artifacts/cli"
 ARTIFACT_NAME=cli_darwin_amd64
-USE_VERSION=latest
+USE_VERSION=${PL_CLI_VERSION:-latest}
 USER_INSTALL_PATH="$HOME/bin"
 
 # First check if the OS is Linux.
@@ -46,7 +46,7 @@ function ctrl_c() {
 usage() {
     cat << EOS
 
-${tty_bold}Usage:${tty_reset} $0 [-v <version>]
+${tty_bold}Usage:${tty_reset} $0
 
 EOS
     exit 1
@@ -54,12 +54,6 @@ EOS
 
 while getopts ":v:c:h" o; do
     case "${o}" in
-        v)
-            USE_VERSION=${OPTARG}
-            ;;
-        c)
-            CLOUD_ADDR=${OPTARG}
-            ;;
         h)
             usage
             ;;
@@ -70,6 +64,13 @@ while getopts ":v:c:h" o; do
 done
 shift $((OPTIND-1))
 
+print_dev_message() {
+  if [[ -n "${PL_TESTING_ENV:-}" ]]; then
+    emph_red "${tty_red}IN DEVELOPMENT MODE: PL_TESTING_ENV=${PL_TESTING_ENV},"\
+              "PL_CLI_VERSION=${PL_CLI_VERSION:-}, PL_VIZIER_VERSION=${PL_VIZER_VERSION:-}"\
+              "PL_CLOUD_ADDR=${PL_CLOUD_ADDR:-}${tty_reset}"
+  fi
+}
 
 artifact_url() {
   echo "${ARTIFACT_BASE_PATH}/${USE_VERSION}/${ARTIFACT_NAME}"
@@ -92,6 +93,10 @@ shell_join() {
     printf " "
     printf "%s" "${arg// /\ }"
   done
+}
+
+emph_red() {
+  printf "${tty_red}==>${tty_bold} %s${tty_reset}\n" "$(shell_join "$@")"
 }
 
 emph() {
@@ -124,6 +129,7 @@ exists_but_not_writable() {
   [[ -e "$1" ]] && ! [[ -r "$1" && -w "$1" && -x "$1" ]]
 }
 
+print_dev_message
 
 if exists_but_not_writable "${DEFAULT_INSTALL_PATH}"; then
     DEFAULT_INSTALL_PATH=${USER_INSTALL_PATH}
@@ -152,7 +158,7 @@ echo
 emph "Authenticating with Pixie Cloud:"
 
 
-if ! "${INSTALL_PATH}"/px auth login --cloud_addr "${CLOUD_ADDR}" -q; then
+if ! "${INSTALL_PATH}"/px auth login -q; then
 cat << EOS
 
 ${tty_red}FAILED to authenticate with Pixie cloud. ${tty_reset}

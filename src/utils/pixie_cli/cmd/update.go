@@ -34,8 +34,14 @@ var UpdateCmd = &cobra.Command{
 var CLIUpdateCmd = &cobra.Command{
 	Use:   "cli",
 	Short: "Run updates of CLI/Pixie",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		if e, has := os.LookupEnv("PL_CLI_VERSION"); has {
+			viper.Set("use_version", e)
+		}
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		selectedVersion := viper.GetString("use_version")
+
 		updater := update.NewCLIUpdater(viper.GetString("cloud_addr"))
 		if len(selectedVersion) == 0 {
 			// Not specified try to get available.

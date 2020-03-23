@@ -54,7 +54,12 @@ const (
 var DeployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Deploys Pixie on the current K8s cluster",
-	Run:   runDeployCmd,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		if e, has := os.LookupEnv("PL_VIZIER_VERSION"); has {
+			viper.Set("use_version", e)
+		}
+	},
+	Run: runDeployCmd,
 }
 
 type taskWrapper struct {
