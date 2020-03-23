@@ -15,12 +15,20 @@
       "h": 3
     }
   },
-  "neighbors": {
+  "talks_to": {
     "position": {
       "x": 0,
       "y": 6,
       "w": 12,
-      "h": 2
+      "h": 1
+    }
+  },
+  "receives_from": {
+    "position": {
+      "x": 0,
+      "y": 7,
+      "w": 12,
+      "h": 1
     }
   },
   "error_rate": {

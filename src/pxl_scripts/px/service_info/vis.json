@@ -7,7 +7,7 @@
     },
     "encoding": {
       "color": {
-        "field": "pod",
+        "field": "k8s",
         "type": "nominal"
       },
       "x": {
@@ -47,7 +47,7 @@
     },
     "encoding": {
       "color": {
-        "field": "pod",
+        "field": "k8s",
         "type": "nominal"
       },
       "x": {
@@ -79,10 +79,16 @@
       }
     }
   },
-  "neighbors": {
+  "talks_to": {
     "mark": "table",
     "data": {
-      "name": "neighbors"
+      "name": "talks_to"
+    }
+  },
+  "receives_from": {
+    "mark": "table",
+    "data": {
+      "name": "receives_from"
     }
   },
   "error_rate": {
@@ -93,7 +99,7 @@
     },
     "encoding": {
       "color": {
-        "field": "pod",
+        "field": "k8s",
         "type": "nominal"
       },
       "x": {
