@@ -20,6 +20,7 @@ apt_pkg_list = [
   'python3-pip',
   'python3.6',
   'python3.6-dev',
+  'systemd',
   'unzip',
   'virtualenvwrapper',
   'zlib1g-dev',
@@ -40,7 +41,7 @@ apt_package apt_pkg_list do
 end
 
 execute 'enable docker' do
-  command 'update-rc.d docker enable'
+  command 'systemctl enable docker'
   action :run
 end
 

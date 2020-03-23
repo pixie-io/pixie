@@ -129,6 +129,7 @@
     "whatwg-fetch": "^3.0.0",
     "yaml": "^1.6.0"
   },
+  "engines" : { "node" : ">=10.0.0" },
   "scripts": {
     "build_dev": "./node_modules/.bin/webpack",
     "build_prod": "./node_modules/.bin/webpack -p --progress --verbose",

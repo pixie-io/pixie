@@ -45,8 +45,8 @@ if node[:platform] == 'ubuntu'
   default['minikube']['sha256']        =
     'a315869f81aae782ecc6ff2a6de4d0ab3a17ca1840d1d8e6eea050a8dd05907f'
 
-  default['nodejs']['download_path'] = 'https://nodejs.org/dist/v10.13.0/node-v10.13.0-linux-x64.tar.gz'
-  default['nodejs']['sha256']        = 'b4b5d8f73148dcf277df413bb16827be476f4fa117cbbec2aaabc8cc0a8588e1'
+  default['nodejs']['download_path'] = 'https://nodejs.org/dist/v12.16.1/node-v12.16.1-linux-x64.tar.gz'
+  default['nodejs']['sha256']        = 'b2d9787da97d6c0d5cbf24c69fdbbf376b19089f921432c5a61aa323bc070bea'
 
   default['packer']['download_path'] = 'https://releases.hashicorp.com/packer/1.3.2/packer_1.3.2_linux_amd64.zip'
   default['packer']['sha256']        = '5e51808299135fee7a2e664b09f401b5712b5ef18bd4bad5bc50f4dcd8b149a1'
@@ -88,8 +88,8 @@ elsif node[:platform] == 'mac_os_x'
     'https://storage.googleapis.com/minikube/releases/v1.0.0/minikube-darwin-amd64'
   default['minikube']['sha256']        = '865bd3a13c1ad3b7732b2bea35b26fef150f2b3cbfc257c5d1835527d1b331e9'
 
-  default['nodejs']['download_path'] = 'https://nodejs.org/dist/v10.13.0/node-v10.13.0-darwin-x64.tar.gz'
-  default['nodejs']['sha256']        = '815a5d18516934a3963ace9f0574f7d41f0c0ce9186a19be3d89e039e57598c5'
+  default['nodejs']['download_path'] = 'https://nodejs.org/dist/v12.16.1/node-v12.16.1-darwin-x64.tar.gz'
+  default['nodejs']['sha256']        = '34895bce210ca4b3cf19cd480e6563588880dd7f5d798f3782e3650580d35920'
 
   default['packer']['download_path'] = 'https://releases.hashicorp.com/packer/1.3.2/packer_1.3.2_darwin_amd64.zip'
   default['packer']['sha256']        = '1c2433239d801b017def8e66bbff4be3e7700b70248261b0abff2cd9c980bf5b'
