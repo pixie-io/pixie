@@ -66,10 +66,10 @@ pl_cc_test(
     name = "cgo_export_test",
     srcs = ["cgo_export_test.cc"],
     deps = [
-        "//src/carnot/udf_exporter:cc_library",
         ":cgo_export",
         ":test_utils",
         "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
     ],
 )
 
@@ -83,13 +83,13 @@ pl_cgo_library(
     cgo = True,
     importpath = "pixielabs.ai/pixielabs/src/carnot/planner",
     deps = [
-        "//src/carnot/planner/plannerpb:query_flags_pl_go_proto",
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
+        "//src/carnot/planner/plannerpb:query_flags_pl_go_proto",
         "//src/carnot/udfspb:udfs_pl_go_proto",
         "//src/common/base/proto:status_pl_go_proto",
-        "//src/table_store/proto:schema_pl_go_proto",
         "//src/shared/scriptspb:scripts_pl_go_proto",
+        "//src/table_store/proto:schema_pl_go_proto",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
     ],
@@ -100,17 +100,17 @@ go_test(
     srcs = ["logical_planner_test.go"],
     deps = [
         ":go_default_library",
-        "//src/carnot/planner/plannerpb:query_flags_pl_go_proto",
         "//src/carnot/planner/compilerpb:compiler_status_pl_go_proto",
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
+        "//src/carnot/planner/plannerpb:query_flags_pl_go_proto",
         "//src/carnot/planpb:plan_pl_go_proto",
-        "//src/common/base/proto:status_pl_go_proto",
-        "//src/table_store/proto:schema_pl_go_proto",
         "//src/carnot/udfspb:udfs_pl_go_proto",
+        "//src/common/base/proto:status_pl_go_proto",
+        "//src/shared/scriptspb:scripts_pl_go_proto",
+        "//src/table_store/proto:schema_pl_go_proto",
+        "//src/vizier/funcs/export:go_default_library",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_stretchr_testify//assert:go_default_library",
-        "//src/vizier/funcs/export:go_default_library",
-        "//src/shared/scriptspb:scripts_pl_go_proto",
     ],
 )
 
@@ -129,6 +129,7 @@ pl_cc_binary(
 # Jenkins will run this test as root, but to run it locally, build it and then execute the bazel-bin file with sudo.
 pl_cc_test(
     name = "preset_queries_test",
+    timeout = "moderate",
     srcs = ["preset_queries_test.cc"],
     data = ["//src/pxl_scripts:preset_queries"],
     tags = ["requires_bpf"],
