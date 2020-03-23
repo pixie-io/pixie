@@ -400,29 +400,93 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	depsOnly, _ := cmd.Flags().GetBool("deps_only")
 
 	deploy(clientset, kubeConfig, yamlMap, namespace, depsOnly)
-
-	err = waitForProxy(clientset, namespace)
-	if err != nil {
-		_ = pxanalytics.Client().Enqueue(&analytics.Track{
-			UserId: pxconfig.Cfg().UniqueClientID,
-			Event:  "Proxy Wait Error",
-			Properties: analytics.NewProperties().
-				Set("err", err.Error()),
-		})
-		fmt.Println(err.Error())
-	}
-	err = waitForPems(clientset, namespace, numNodes)
-	if err != nil {
-		_ = pxanalytics.Client().Enqueue(&analytics.Track{
-			UserId: pxconfig.Cfg().UniqueClientID,
-			Event:  "PEM Wait Error",
-			Properties: analytics.NewProperties().
-				Set("err", err.Error()),
-		})
-		fmt.Println(err.Error())
-	}
+	waitForHealthCheck(cloudAddr, clientset, namespace, numNodes)
 }
 
+func waitForHealthCheck(cloudAddr string, clientset *kubernetes.Clientset, namespace string, numNodes int) {
+	runSimpleScript := func() error {
+		v := mustConnectDefaultVizier(cloudAddr)
+		q := `px.display(px.GetAgentStatus())`
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		resp, err := v.ExecuteScriptStream(ctx, q)
+		if err != nil {
+			return err
+		}
+
+		// TODO(zasgar): Make this use the Null output. We can't right now
+		// because of fatal message on vizier failure.
+		errCh := make(chan error)
+		// Eat all responses.
+		go func() {
+			for {
+				select {
+				case <-ctx.Done():
+					errCh <- nil
+					return
+				case msg := <-resp:
+					if msg == nil {
+						errCh <- nil
+					}
+					if msg.Err != nil {
+						if msg.Err == io.EOF {
+							errCh <- nil
+							return
+						}
+						errCh <- msg.Err
+						return
+					}
+					// Eat messages.
+				}
+			}
+		}()
+
+		err = <-errCh
+		return err
+	}
+
+	fmt.Printf("Waiting for Pixie to pass healthcheck\n")
+
+	healthCheckJobs := []utils.Task{
+		newTaskWrapper("Wait for PEMs/Kelvin", func() error {
+			return waitForPems(clientset, namespace, numNodes)
+		}),
+		newTaskWrapper("Wait for healthcheck", func() error {
+			timeout := time.NewTimer(2 * time.Minute)
+			defer timeout.Stop()
+			for {
+				select {
+				case <-timeout.C:
+					return errors.New("timeout waiting for healthcheck")
+				default:
+					err := runSimpleScript()
+					if err == nil {
+						return nil
+					}
+					time.Sleep(5 * time.Second)
+				}
+			}
+		}),
+	}
+
+	hc := utils.NewSerialTaskRunner(healthCheckJobs)
+	err := hc.RunAndMonitor()
+	if err != nil {
+		_ = pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Deploy Healthcheck Failed",
+			Properties: analytics.NewProperties().
+				Set("err", err.Error()),
+		})
+		log.WithError(err).Fatal("Failed Pixie healthcheck")
+	}
+	_ = pxanalytics.Client().Enqueue(&analytics.Track{
+		UserId: pxconfig.Cfg().UniqueClientID,
+		Event:  "Deploy Healthcheck Passed",
+	})
+}
 func getCurrentCluster() string {
 	kcmd := exec.Command("kubectl", "config", "current-context")
 	var out bytes.Buffer
@@ -526,37 +590,6 @@ func retryDeploy(clientset *kubernetes.Clientset, config *rest.Config, namespace
 	return nil
 }
 
-// waitForProxy waits for the Vizier's Proxy service to be ready with an external IP.
-func waitForProxy(clientset *kubernetes.Clientset, namespace string) error {
-	fmt.Printf("Waiting for services and pods to start...\n")
-
-	// Watch for service updates.
-	watcher, err := k8s.WatchK8sResource(clientset, "services", namespace)
-	if err != nil {
-		return err
-	}
-	for c := range watcher.ResultChan() {
-		service := c.Object.(*v1.Service)
-		if service.ObjectMeta.Name == "vizier-proxy-service" {
-			switch service.Spec.Type {
-			case v1.ServiceTypeNodePort:
-				{
-					// TODO(zasgar): NodePorts get ready right away, we need to make sure
-					// that the service is actually healthy.
-					watcher.Stop()
-				}
-			case v1.ServiceTypeLoadBalancer:
-				{
-					if len(service.Status.LoadBalancer.Ingress) > 0 && service.Status.LoadBalancer.Ingress[0].IP != "" {
-						watcher.Stop()
-					}
-				}
-			}
-		}
-	}
-	return nil
-}
-
 func isPodUnschedulable(podStatus *v1.PodStatus) bool {
 	for _, cond := range podStatus.Conditions {
 		if cond.Reason == "Unschedulable" {
@@ -604,8 +637,6 @@ var empty struct{}
 
 // waitForPems waits for the Vizier's Proxy service to be ready with an external IP.
 func waitForPems(clientset *kubernetes.Clientset, namespace string, expectedPods int) error {
-	fmt.Printf("Waiting for PEMs to deploy ...\n")
-
 	// Watch for pod updates.
 	watcher, err := k8s.WatchK8sResource(clientset, "pods", namespace)
 	if err != nil {
@@ -634,7 +665,6 @@ func waitForPems(clientset *kubernetes.Clientset, namespace string, expectedPods
 
 		case "Running":
 			successfulPods[pod.Name] = empty
-			fmt.Printf("Node %d/%d instrumented\n", len(successfulPods), expectedPods)
 		default:
 			// TODO(philkuz/zasgar) should we make this a print line instead?
 			return fmt.Errorf("unexpected status for PEM '%s': '%v'", pod.Name, pod.Status.Phase)

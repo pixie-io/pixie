@@ -31,8 +31,8 @@ type TableInfo struct {
 }
 
 type VizierExecData struct {
-	resp *pl_api_vizierpb.ExecuteScriptResponse
-	err  error
+	Resp *pl_api_vizierpb.ExecuteScriptResponse
+	Err  error
 }
 
 // VizierStreamOutputAdapter adapts the vizier output to the StreamWriters.
@@ -100,14 +100,14 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 			if msg == nil {
 				return
 			}
-			if msg.err != nil {
-				if msg.err == io.EOF {
+			if msg.Err != nil {
+				if msg.Err == io.EOF {
 					return
 				}
-				log.WithError(msg.err).Fatalln("Failed to get data from Vizier")
+				return
 			}
 			var err error
-			switch res := msg.resp.Result.(type) {
+			switch res := msg.Resp.Result.(type) {
 			case *pl_api_vizierpb.ExecuteScriptResponse_MetaData:
 				err = v.handleMetadata(ctx, res)
 			case *pl_api_vizierpb.ExecuteScriptResponse_Data:

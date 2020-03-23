@@ -3,7 +3,6 @@ package vizier
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"os/signal"
 	"strings"
@@ -93,10 +92,6 @@ func (c *Connector) connect(addr string) error {
 	return nil
 }
 
-func (*Connector) nextQueryID() uuid.UUID {
-	return uuid.NewV4()
-}
-
 // PassthroughMode returns true if passthrough mode is enabled.
 func (c *Connector) PassthroughMode() bool {
 	return c.passthroughEnabled
@@ -108,8 +103,6 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, q string) (chan *Vi
 	if len(q) == 0 {
 		return nil, errors.New("input query is empty")
 	}
-	queryID := c.nextQueryID()
-	fmt.Fprintln(os.Stderr, "Executing Script Stream: ", queryID.String())
 
 	reqPB := &pl_api_vizierpb.ExecuteScriptRequest{
 		QueryStr:   q,
@@ -142,7 +135,7 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, q string) (chan *Vi
 				return
 			default:
 				msg, err := resp.Recv()
-				results <- &VizierExecData{resp: msg, err: err}
+				results <- &VizierExecData{Resp: msg, Err: err}
 				if err != nil || msg == nil {
 					close(results)
 					return

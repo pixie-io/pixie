@@ -25,6 +25,8 @@ func CreateStreamWriter(format string, w io.Writer) OutputStreamWriter {
 		return NewJSONStreamWriter(w)
 	case "table":
 		return NewTableStreamWriter(w)
+	case "null":
+		return &NullStreamWriter{}
 	default:
 		return NewTableStreamWriter(w)
 	}
@@ -178,3 +180,15 @@ func (j *JSONStreamWriter) Write(data []interface{}) error {
 func (j *JSONStreamWriter) Finish() {
 	// Since JSON writer outputs records right away there is nothing to do here.
 }
+
+// NullStreamWriter reads the data but does not output it.
+type NullStreamWriter struct{}
+
+// SetHeader is called to set the key values for each of the data values. Must be called before Write is.
+func (*NullStreamWriter) SetHeader(id string, headerValues []string) {}
+
+// Write is called for each record of data.
+func (*NullStreamWriter) Write(data []interface{}) error { return nil }
+
+// Finish is called to flush all the data.
+func (*NullStreamWriter) Finish() {}
