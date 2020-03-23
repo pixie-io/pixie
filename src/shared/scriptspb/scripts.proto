@@ -41,3 +41,8 @@ message VizFuncsInfoResult {
   pl.statuspb.Status status = 1;
   VizFuncsInfo info = 2;
 }
+
+message MainFuncSpecResult {
+  pl.statuspb.Status status = 1;
+  FuncArgsSpec main_func_spec = 2;
+}

@@ -36,6 +36,14 @@ package logicalplanner
 // 																	_GoStringLen(queryRequest),
 // 																	resultLen);
 // }
+//
+// char* PlannerGetMainFuncArgsSpecGoStr(PlannerPtr planner_ptr,
+// 																			_GoString_ queryRequest, int* resultLen) {
+// 	return PlannerGetMainFuncArgsSpec(planner_ptr,
+// 																	_GoStringPtr(queryRequest),
+// 																	_GoStringLen(queryRequest),
+// 																	resultLen);
+// }
 import "C"
 import (
 	"errors"
@@ -99,6 +107,25 @@ func (cm GoPlanner) GetAvailableFlags(queryRequest *plannerpb.QueryRequest) (*pl
 	}
 
 	resultPB := &plannerpb.GetAvailableFlagsResult{}
+	if err := proto.Unmarshal(resultBytes, resultPB); err != nil {
+		return resultPB, fmt.Errorf("error: '%s'; string: '%s'", err, string(resultBytes))
+	}
+
+	return resultPB, nil
+}
+
+// GetMainFuncArgsSpec returns the FuncArgSpec of the main function if it exists, otherwise throws a Compiler Error.
+func (cm GoPlanner) GetMainFuncArgsSpec(queryRequest *plannerpb.QueryRequest) (*scriptspb.MainFuncSpecResult, error) {
+	var resultLen C.int
+	queryRequestStr := proto.MarshalTextString(queryRequest)
+	res := C.PlannerGetMainFuncArgsSpecGoStr(cm.planner, queryRequestStr, &resultLen)
+	defer C.StrFree(res)
+	resultBytes := C.GoBytes(unsafe.Pointer(res), resultLen)
+	if resultLen == 0 {
+		return nil, errors.New("no result returned")
+	}
+
+	resultPB := &scriptspb.MainFuncSpecResult{}
 	if err := proto.Unmarshal(resultBytes, resultPB); err != nil {
 		return resultPB, fmt.Errorf("error: '%s'; string: '%s'", err, string(resultBytes))
 	}

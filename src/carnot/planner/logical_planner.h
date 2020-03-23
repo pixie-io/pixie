@@ -52,6 +52,16 @@ class LogicalPlanner : public NotCopyable {
       const plannerpb::QueryRequest& query_request);
 
   /**
+   * @brief Get the Main Func Args Spec for a query. Must have a main function in the query or the
+   * method will return an error.
+   *
+   * @param query_request
+   * @return StatusOr<shared::scriptspb::FuncArgsSpec>
+   */
+  StatusOr<shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec(
+      const plannerpb::QueryRequest& query_request);
+
+  /**
    * @brief Takes in a script string and outputs information about viz funcs for that script.
    *
    * @param script: the string of the script.

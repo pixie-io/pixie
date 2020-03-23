@@ -41,6 +41,19 @@ char* PlannerGetAvailableFlags(PlannerPtr planner_ptr, const char* query_request
                                int query_request_str_len, int* resultLen);
 
 /**
+ * @brief Returns the Main Function argument's Specification. Fails if the main function doesn't
+ * exist in the query argument.
+ *
+ * @param planner_ptr
+ * @param query_request_str_c
+ * @param query_request_str_len
+ * @param resultLen
+ * @return char*
+ */
+char* PlannerGetMainFuncArgsSpec(PlannerPtr planner_ptr, const char* query_request_str_c,
+                                 int query_request_str_len, int* resultLen);
+
+/**
  * @brief Takes in the planner object and the script string, uses this to determine information
  * about the Viz Funcs.
  *

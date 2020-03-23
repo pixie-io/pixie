@@ -82,6 +82,20 @@ StatusOr<std::string> PlannerGetAvailableFlagsGoStr(PlannerPtr planner_ptr,
   return flags_spec_str;
 }
 
+StatusOr<std::string> PlannerGetMainFuncArgsSpecGoStr(PlannerPtr planner_ptr,
+                                                      std::string query_request, int* resultLen) {
+  char* result = PlannerGetMainFuncArgsSpec(planner_ptr, query_request.c_str(),
+                                            query_request.length(), resultLen);
+
+  if (*resultLen == 0) {
+    return error::InvalidArgument("GetMainFuncArgsSpec failed to return");
+  }
+
+  std::string flags_spec_str(result, result + *resultLen);
+  delete[] result;
+  return flags_spec_str;
+}
+
 StatusOr<std::string> PlannerVizFuncsInfoGoStr(PlannerPtr planner_ptr, std::string query,
                                                int* resultLen) {
   char* result = PlannerVizFuncsInfo(planner_ptr, query.c_str(), query.length(), resultLen);
@@ -207,6 +221,35 @@ TEST_F(PlannerExportTest, get_available_flags_empty_flags) {
   ASSERT_TRUE(get_flags_result.ParseFromString(interface_result.ConsumeValueOrDie()));
   EXPECT_OK(get_flags_result.status());
   EXPECT_THAT(get_flags_result.query_flags(), EqualsProto(kAvailableFlags));
+}
+
+constexpr char kMainFuncArgsQuery[] = R"pxl(
+def main(foo : str):
+    queryDF = px.DataFrame(table='cpu', select=['cpu0'])
+    queryDF['foo_flag'] = foo
+    px.display(queryDF, 'map')
+)pxl";
+
+constexpr char kMainFuncArgs[] = R"(
+args {
+  data_type: STRING
+  semantic_type: ST_NONE
+  name: "foo"
+}
+)";
+
+TEST_F(PlannerExportTest, GetMainFuncArgsSpec) {
+  planner_ = MakePlanner();
+  int result_len;
+  auto query_request = MakeQueryRequest(kMainFuncArgsQuery);
+  auto interface_result =
+      PlannerGetMainFuncArgsSpecGoStr(planner_, query_request.DebugString(), &result_len);
+
+  ASSERT_OK(interface_result);
+  pl::shared::scriptspb::MainFuncSpecResult main_funcs_info_result;
+  ASSERT_TRUE(main_funcs_info_result.ParseFromString(interface_result.ConsumeValueOrDie()));
+  EXPECT_OK(main_funcs_info_result.status());
+  EXPECT_THAT(main_funcs_info_result.main_func_spec(), EqualsProto(kMainFuncArgs));
 }
 
 constexpr char kVizFuncsQuery[] = R"pxl(

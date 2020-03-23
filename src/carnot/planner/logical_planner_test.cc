@@ -237,6 +237,30 @@ TEST_F(LogicalPlannerTest, GetAvailableFlags) {
   EXPECT_THAT(flags, testing::proto::EqualsProto(kAvailableFlags));
 }
 
+constexpr char kMainFuncArgsQuery[] = R"pxl(
+def main(foo : str):
+    queryDF = px.DataFrame(table='cpu', select=['cpu0'])
+    queryDF['foo_flag'] = foo
+    px.display(queryDF, 'map')
+)pxl";
+
+constexpr char kMainFuncArgs[] = R"(
+args {
+  data_type: STRING
+  semantic_type: ST_NONE
+  name: "foo"
+}
+)";
+
+TEST_F(LogicalPlannerTest, GetMainFuncArgsSpec) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  auto args_or_s = planner->GetMainFuncArgsSpec(MakeQueryRequest(kMainFuncArgsQuery));
+  ASSERT_OK(args_or_s);
+  auto args = args_or_s.ConsumeValueOrDie();
+
+  EXPECT_THAT(args, testing::proto::EqualsProto(kMainFuncArgs));
+}
+
 // Test to make sure compiler errors can propogate properly.
 TEST_F(LogicalPlannerTest, GetAvailableFlagsSyntaxError) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();

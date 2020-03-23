@@ -21,6 +21,7 @@
 
 using pl::carnot::planner::distributedpb::LogicalPlannerResult;
 using pl::carnot::planner::plannerpb::GetAvailableFlagsResult;
+using pl::shared::scriptspb::MainFuncSpecResult;
 using pl::shared::scriptspb::VizFuncsInfoResult;
 
 PlannerPtr PlannerNew(const char* udf_info_data, int udf_info_len) {
@@ -131,6 +132,36 @@ char* PlannerGetAvailableFlags(PlannerPtr planner_ptr, const char* query_request
   *(flags_response_pb.mutable_query_flags()) = query_flags_spec_status.ConsumeValueOrDie();
 
   return PrepareResult(&flags_response_pb, resultLen);
+}
+
+char* PlannerGetMainFuncArgsSpec(PlannerPtr planner_ptr, const char* query_request_str_c,
+                                 int query_request_str_len, int* resultLen) {
+  DCHECK(query_request_str_c != nullptr);
+  std::string query_request_pb_str(query_request_str_c,
+                                   query_request_str_c + query_request_str_len);
+  pl::carnot::planner::plannerpb::QueryRequest query_request_pb;
+  bool query_request_merge_success =
+      google::protobuf::TextFormat::MergeFromString(query_request_pb_str, &query_request_pb);
+  if (!query_request_merge_success) {
+    std::string err =
+        absl::Substitute("Failed to process the query request: $0.", query_request_pb_str);
+    LOG(ERROR) << err;
+    return ExitEarly<MainFuncSpecResult>(err, resultLen);
+  }
+
+  auto planner = reinterpret_cast<pl::carnot::planner::LogicalPlanner*>(planner_ptr);
+
+  auto main_args_spec_status = planner->GetMainFuncArgsSpec(query_request_pb);
+  if (!main_args_spec_status.ok()) {
+    return ExitEarly<MainFuncSpecResult>(main_args_spec_status.status(), resultLen);
+  }
+
+  MainFuncSpecResult main_func_spec_response_pb;
+  WrapStatus(&main_func_spec_response_pb, main_args_spec_status.status());
+  *(main_func_spec_response_pb.mutable_main_func_spec()) =
+      main_args_spec_status.ConsumeValueOrDie();
+
+  return PrepareResult(&main_func_spec_response_pb, resultLen);
 }
 
 char* PlannerVizFuncsInfo(PlannerPtr planner_ptr, const char* script_str_c, int script_str_len,

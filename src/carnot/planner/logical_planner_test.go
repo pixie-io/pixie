@@ -246,6 +246,56 @@ func TestPlanner_GetAvailableFlags(t *testing.T) {
 	assert.Equal(t, &expectedFlagsPB, getFlagsResultPB.QueryFlags)
 }
 
+const mainFuncArgsQuery = `
+def main(foo : str):
+		queryDF = px.DataFrame(table='cpu', select=['cpu0'])
+		queryDF['foo_flag'] = foo
+		px.display(queryDF, 'map')
+`
+const mainFuncArgsPBStr = `
+	args {
+		data_type: STRING
+		semantic_type: ST_NONE
+		name: "foo"
+	}
+`
+
+func TestPlanner_GetMainFuncArgsSpec(t *testing.T) {
+	// Create the planner.
+	c := logicalplanner.New(&udfspb.UDFInfo{})
+	defer c.Free()
+	// Note that the string can't be empty since the cgo interface treats an empty string
+	// as an error
+	queryRequestPB := &plannerpb.QueryRequest{
+		QueryStr: mainFuncArgsQuery,
+	}
+	getMainFuncArgsResultPB, err := c.GetMainFuncArgsSpec(queryRequestPB)
+
+	if err != nil {
+		log.Fatalln("Failed to get flags: ", err)
+		t.FailNow()
+	}
+
+	status := getMainFuncArgsResultPB.Status
+	if !assert.Equal(t, status.ErrCode, statuspb.OK) {
+		var errorPB compilerpb.CompilerErrorGroup
+		err = logicalplanner.GetCompilerErrorContext(status, &errorPB)
+		if err != nil {
+			t.Fatalf("error while getting compiler err context, %s", err)
+		}
+		t.Fatalf("Parsing caused error %s", errorPB)
+	}
+
+	var expectedMainFuncArgsPB scriptspb.FuncArgsSpec
+
+	if err = proto.UnmarshalText(mainFuncArgsPBStr, &expectedMainFuncArgsPB); err != nil {
+		log.Fatalf("Failed to unmarshal expected proto", err)
+		t.FailNow()
+	}
+
+	assert.Equal(t, &expectedMainFuncArgsPB, getMainFuncArgsResultPB.MainFuncSpec)
+}
+
 func TestPlanner_GetAvailableFlags_BadQuery(t *testing.T) {
 	// Create the compiler.
 	c := logicalplanner.New(&udfspb.UDFInfo{})
