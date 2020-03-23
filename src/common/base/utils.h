@@ -43,71 +43,59 @@ constexpr auto Enumerate(T&& iterable) {
 }
 
 /**
- * PrintStyle and PrintStyleSpecs allow you to quickly define new formats for  BytesToString().
- * For example, say want a octal output, or you want a seaprator between characters, then all you
- * have to do is define a new PrintStyle and set PrintStyleSpecs::kCharFormat appropriately.
+ * bytes_format structs allow you to quickly define new formats for BytesToString().
+ * For example, say want a octal output, or you want a separator between characters,
+ * then all you have to do is define a new struct and set kCharFormat appropriately.
+ * Some commonly used styles are included in the print_style namespace;
+ * others can be defined externally.
  */
+namespace bytes_format {
 
-enum class PrintStyle {
-  // \x64\x65\xE9\x01
-  kHex,
-
-  // 6465E901
-  kHexCompact,
-
-  // hi\xE0\x01
-  kHexAsciiMix,
-
-  // \b11001000\b11001011\b11010010\b0000001
-  kBin,
-};
-
-template <PrintStyle T>
-struct PrintStyleSpecs;
-
-template <>
-struct PrintStyleSpecs<PrintStyle::kHex> {
+// \x64\x65\xE9\x01
+struct Hex {
   static inline constexpr std::string_view kCharFormat = "\\x%02X";
   static inline constexpr int kSizePerByte = 4;
   static inline constexpr bool kKeepPrintableChars = false;
 };
 
-template <>
-struct PrintStyleSpecs<PrintStyle::kHexAsciiMix> {
+// hi\xE0\x01
+struct HexAsciiMix {
   static inline constexpr std::string_view kCharFormat = "\\x%02X";
   static inline constexpr int kSizePerByte = 4;
   static inline constexpr bool kKeepPrintableChars = true;
 };
 
-template <>
-struct PrintStyleSpecs<PrintStyle::kHexCompact> {
+// 6465E901
+struct HexCompact {
   static inline constexpr std::string_view kCharFormat = "%02X";
   static inline constexpr int kSizePerByte = 2;
   static inline constexpr bool kKeepPrintableChars = false;
 };
 
-template <>
-struct PrintStyleSpecs<PrintStyle::kBin> {
+// \b11001000\b11001011\b11010010\b0000001
+struct Bin {
   // No kCharFormat, because we use template specialization for this case.
   static inline constexpr int kSizePerByte = 10;
   static inline constexpr bool kKeepPrintableChars = false;
 };
 
-template <PrintStyle TPrintStyle = PrintStyle::kHexAsciiMix>
+}  // namespace bytes_format
+
+template <typename TPrintStyle>
 inline std::string BytesToString(std::string_view buf) {
   std::string res;
 
-  res.reserve(buf.size() * PrintStyleSpecs<TPrintStyle>::kSizePerByte);
+  res.reserve(buf.size() * TPrintStyle::kSizePerByte);
 
   for (char c : buf) {
-    if (PrintStyleSpecs<TPrintStyle>::kKeepPrintableChars && std::isprint(c)) {
+    if (TPrintStyle::kKeepPrintableChars && std::isprint(c)) {
       res.append(1, c);
     } else {
-      res.append(absl::StrFormat(PrintStyleSpecs<TPrintStyle>::kCharFormat, c));
+      res.append(absl::StrFormat(TPrintStyle::kCharFormat, c));
     }
   }
 
-  if (PrintStyleSpecs<TPrintStyle>::kKeepPrintableChars) {
+  if (TPrintStyle::kKeepPrintableChars) {
     res.shrink_to_fit();
   }
 
@@ -115,12 +103,12 @@ inline std::string BytesToString(std::string_view buf) {
 }
 
 template <>
-inline std::string BytesToString<PrintStyle::kBin>(std::string_view buf) {
-  static_assert(!PrintStyleSpecs<PrintStyle::kBin>::kKeepPrintableChars, "Not implemented");
+inline std::string BytesToString<bytes_format::Bin>(std::string_view buf) {
+  static_assert(!bytes_format::Bin::kKeepPrintableChars, "Not implemented");
 
   std::string res;
 
-  res.reserve(buf.size() * PrintStyleSpecs<PrintStyle::kBin>::kSizePerByte);
+  res.reserve(buf.size() * bytes_format::Bin::kSizePerByte);
 
   for (char c : buf) {
     res.append("\\b");

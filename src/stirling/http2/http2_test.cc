@@ -97,7 +97,7 @@ std::string_view ToChar(u8string_view buf) {
 
 void PrintTo(const Frame& frame, std::ostream* os) {
   *os << "frame type: " << static_cast<int>(frame.frame.hd.type);
-  *os << " payload: " << BytesToString<PrintStyle::kHex>(ToChar(frame.u8payload));
+  *os << " payload: " << BytesToString<bytes_format::Hex>(ToChar(frame.u8payload));
 }
 
 MATCHER_P2(MatchesTypePayload, t, p,

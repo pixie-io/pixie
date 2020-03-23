@@ -15,7 +15,7 @@ namespace cass {
 
 namespace {
 std::string BytesToString(std::basic_string_view<uint8_t> x) {
-  return pl::BytesToString<PrintStyle::kHexCompact>(CreateStringView<char>(x));
+  return pl::BytesToString<bytes_format::HexCompact>(CreateStringView<char>(x));
 }
 }  // namespace
 
