@@ -75,7 +75,6 @@ void TCPSocket::Connect(const TCPSocket& addr) {
 }
 
 void TCPSocket::Close() {
-  LOG(INFO) << absl::Substitute("Closing $0", sockfd_);
   if (sockfd_ > 0) {
     CHECK(close(sockfd_) == 0) << "Failed to close socket, error message: " << strerror(errno);
     sockfd_ = 0;
