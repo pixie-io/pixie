@@ -327,7 +327,7 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
         />
         {this.authenticating ? null :
           <span className='login-footer'>{this.props.footerText + ' '}
-            <Link to={this.props.footerLink}>{this.props.footerLinkText}</Link>
+            <Link style={{ textDecoration: 'underline' }} to={this.props.footerLink}>{this.props.footerLinkText}</Link>
           </span>}
       </>
     );
@@ -371,10 +371,6 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
   }
 }
 
-const TERMS_OF_USE_LINK = '<a target="_blank" href="https://pixielabs.ai/terms">Terms of Use</a>';
-const PRIVACY_POLICY_LINK = '<a target="_blank" href="https://pixielabs.ai/privacy">Privacy Policy</a>';
-const COOKIE_POLICY_LINK = '<a target="_blank" href="https://pixielabs.ai/cookies">Cookie Policy</a>';
-
 interface Auth0LoginProps {
   containerID?: string;
   redirectPath: string; // Path that auth0 should redirect to after authentication.
@@ -384,7 +380,15 @@ interface Auth0LoginProps {
   responseMode: '' | 'form_post';
 }
 
-class Auth0Login extends React.Component<Auth0LoginProps, {}>  {
+function makeStyledLink(href: string, title: string): string {
+  return `<a target="_blank" style="color: #409aff; text-decoration: underline" href=${href}>${title}</a>`;
+}
+
+const TERMS_OF_USE_LINK = makeStyledLink('https://pixielabs.ai/terms', 'Terms of Use');
+const PRIVACY_POLICY_LINK = makeStyledLink('https://pixielabs.ai/privacy', 'Privacy Policy');
+const COOKIE_POLICY_LINK = makeStyledLink('https://pixielabs.ai/cookies', 'Cookie Policy');
+
+class Auth0Login extends React.Component<Auth0LoginProps>  {
   public static defaultProps: Partial<Auth0LoginProps> = {
     containerID: 'pl-auth0-lock-container',
   };
