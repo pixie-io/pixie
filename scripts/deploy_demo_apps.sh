@@ -44,7 +44,7 @@ if [ "$TARGET" = "sockshop" ]; then
   kubectl apply -f "$workspace"/demos/applications/sockshop/kubernetes_manifests/sock-shop-ns.yaml && sleep 5
   kubectl apply -f "$workspace"/demos/applications/sockshop/kubernetes_manifests
   if [ "$DEPLOY_LOAD_GEN" = true ]; then
-    kubectl apply -f "$workspace"/demos/applications/sockshop/load_generation
+    kubectl apply -f "$workspace"/demos/applications/sockshop/kubernetes_manifests/load_generation
   fi
 elif [ "$TARGET" = "hipster-shop" ]; then
   kubectl apply -f "$workspace"/demos/applications/hipster_shop/kubernetes_manifests/0000_namespace.yaml && sleep 5

@@ -59,10 +59,6 @@ linters/.phutil_module-cache
 # Ignore Skaffold Build Directory
 skaffold_build/
 
-# Ignore generated locust files.
-demos/load_generation/locustfile.py
-demos/load_generation/load_generation
-
 # Hide generated .deb files
 *.deb
 

@@ -1,0 +1,9 @@
+{
+    "px-sock-shop": {
+        "instructions": [
+            "Run 'watch kubectl -n px-sock-shop get svc load-test' to get the external IP of the load tester.",
+            "This may take a few minutes to show up. Visit the URL to set the load testing parameters.",
+            "It may also take a few minutes for the load tester requests to succeed."
+        ]
+    }
+}
