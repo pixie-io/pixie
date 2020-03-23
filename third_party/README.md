@@ -9,7 +9,7 @@ copy the diff.
 
 *   Create a **private** fork of the original repo, under our github username `pixie-labs`.
     See reference [1] for detailed steps.
-*   Create a new branch called `pixie-head` tracking the desired commit.
+*   Create a new branch called `pixie` tracking the desired commit.
 *   Add this new repo as the submodule:
     ```
     git submodule add --force git@github.com:pixie-labs/<repo>.git third_party/<repo>
@@ -21,12 +21,12 @@ copy the diff.
 
 There are 2 steps:
 
-*   First update the `pixie-head` branch on the private fork.
+*   First update the `pixie` branch on the private fork.
 *   Then update the submodule reference in our repo.
 
 To update the private fork:
 
-*   Clone the private fork on your host. Checkout the `pixie-head` branch
+*   Clone the private fork on your host. Checkout the `pixie` branch
 *   Make changes.
 *   Utilize the normal github pull request process to do the review and landing.
 *   Submit the change through `git push`.
@@ -34,8 +34,8 @@ To update the private fork:
 To update the submodule reference in our repo:
 
 *   In our repo, `cd third_party/<repo>`.
-*   Check out and pull from `pixie-head` branch: `git checkout pixie-head && git pull`.
-*   Create a diff which updates the submodule to the head of `pixie-head` branch.
+*   Check out and pull from `pixie` branch: `git checkout pixie && git pull`.
+*   Create a diff which updates the submodule to the head of `pixie` branch.
 *   Review and land the diff through the Phabricator process.
 *   Send a notice to `eng` channel to ask people update their submodules.
 
