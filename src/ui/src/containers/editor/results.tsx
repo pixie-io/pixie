@@ -7,7 +7,6 @@ import * as Scatter from 'components/chart/scatter';
 import {chartsFromSpec} from 'components/chart/spec';
 import {Spinner} from 'components/spinner/spinner';
 import {QueryResultErrors, QueryResultTable} from 'containers/vizier/query-result-viewer';
-import {VoyagerTrigger} from 'containers/vizier/voyager';
 // @ts-ignore : TS does not like image files.
 import * as gridViewIcon from 'images/icons/grid-view.svg';
 import * as React from 'react';
@@ -124,7 +123,6 @@ export const ConsoleResults = React.memo<ConsoleResultsProps>(
               >
                 <img src={gridViewIcon} />
               </Button>
-              <VoyagerTrigger data={data.tables} />
             </Nav>
             <Tab.Content>
               {tabs.map((tab, i) => (

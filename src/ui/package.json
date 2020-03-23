@@ -90,7 +90,6 @@
     "copy-webpack-plugin": "^5.0.5",
     "dagre": "^0.8.5",
     "dagre-d3": "^0.6.4",
-    "datavoyager": "^2.0.0-alpha.24",
     "date-fns": "^1.30.1",
     "fetch": "^1.1.0",
     "google-protobuf": "^3.11.4",
@@ -129,7 +128,9 @@
     "whatwg-fetch": "^3.0.0",
     "yaml": "^1.6.0"
   },
-  "engines" : { "node" : ">=10.0.0" },
+  "engines": {
+    "node": ">=10.0.0"
+  },
   "scripts": {
     "build_dev": "./node_modules/.bin/webpack",
     "build_prod": "./node_modules/.bin/webpack -p --progress --verbose",

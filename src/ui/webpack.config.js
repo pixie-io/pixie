@@ -200,7 +200,7 @@ module.exports = (env) => {
   }
 
   webpackConfig.devServer.proxy.push({
-    context: ['/api'],
+    context: ['/api', '/pl.api.vizierpb.VizierService/'],
     target: gatewayPath,
     secure: false,
   });
