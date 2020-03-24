@@ -23,6 +23,7 @@ message CreateVizierClusterRequest {
   uuidpb.UUID org_id = 1 [
                           (gogoproto.customname) = "OrgID"
                          ];
+  string project_name = 2;
 }
 
 message GetViziersByOrgResponse {

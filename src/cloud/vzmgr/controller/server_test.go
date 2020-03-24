@@ -49,15 +49,16 @@ func setupTestDB(t *testing.T) (*sqlx.DB, func()) {
 
 var testAuthOrgID = "223e4567-e89b-12d3-a456-426655440000"
 var testNonAuthOrgID = "223e4567-e89b-12d3-a456-426655440001"
+var testProjectName = "foo"
 
 func loadTestData(t *testing.T, db *sqlx.DB) {
-	insertVizierClusterQuery := `INSERT INTO vizier_cluster(org_id, id) VALUES ($1, $2)`
-	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440000")
-	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440001")
-	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440002")
-	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440003")
-	db.MustExec(insertVizierClusterQuery, testNonAuthOrgID, "223e4567-e89b-12d3-a456-426655440003")
-	db.MustExec(insertVizierClusterQuery, testNonAuthOrgID, "323e4567-e89b-12d3-a456-426655440003")
+	insertVizierClusterQuery := `INSERT INTO vizier_cluster(org_id, id, project_name) VALUES ($1, $2, $3)`
+	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440000", testProjectName)
+	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", testProjectName)
+	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440002", testProjectName)
+	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440003", testProjectName)
+	db.MustExec(insertVizierClusterQuery, testNonAuthOrgID, "223e4567-e89b-12d3-a456-426655440003", testProjectName)
+	db.MustExec(insertVizierClusterQuery, testNonAuthOrgID, "323e4567-e89b-12d3-a456-426655440003", testProjectName)
 
 	insertVizierClusterInfoQuery := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat, passthrough_enabled) VALUES($1, $2, $3, $4, $5, $6)`
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN", "addr0", "key0", "2011-05-16 15:36:38", true)
@@ -89,40 +90,57 @@ func TestServer_CreateVizierCluster(t *testing.T) {
 	s := controller.New(db, "test", mockDNSClient, nil)
 
 	tests := []struct {
-		name string
-		org  *uuidpb.UUID
+		name        string
+		org         *uuidpb.UUID
+		projectName string
 		// Expectations
-		hasError bool
-		errCode  codes.Code
+		hasError            bool
+		errCode             codes.Code
+		expectedProjectName string
 	}{
 		{
-			name:     "invalid input org id",
-			org:      nil,
-			hasError: true,
-			errCode:  codes.InvalidArgument,
+			name:                "valid request",
+			org:                 utils.ProtoFromUUIDStrOrNil(testAuthOrgID),
+			projectName:         "foo",
+			hasError:            false,
+			expectedProjectName: "foo",
 		},
 		{
-			name:     "nil input org id",
-			org:      utils.ProtoFromUUIDStrOrNil("abc"),
-			hasError: true,
-			errCode:  codes.InvalidArgument,
+			name:                "valid request (without project name)",
+			org:                 utils.ProtoFromUUIDStrOrNil(testAuthOrgID),
+			hasError:            false,
+			expectedProjectName: controller.DefaultProjectName,
 		},
 		{
-			name:     "valid request",
-			org:      utils.ProtoFromUUIDStrOrNil(testAuthOrgID),
-			hasError: false,
+			name:        "invalid input org id",
+			org:         nil,
+			projectName: "foo",
+			hasError:    true,
+			errCode:     codes.InvalidArgument,
 		},
 		{
-			name:     "unauthenticated org id",
-			org:      utils.ProtoFromUUIDStrOrNil(testNonAuthOrgID),
-			hasError: true,
-			errCode:  codes.PermissionDenied,
+			name:        "nil input org id",
+			org:         utils.ProtoFromUUIDStrOrNil("abc"),
+			projectName: "foo",
+			hasError:    true,
+			errCode:     codes.InvalidArgument,
+		},
+		{
+			name:        "unauthenticated org id",
+			org:         utils.ProtoFromUUIDStrOrNil(testNonAuthOrgID),
+			projectName: "foo",
+			hasError:    true,
+			errCode:     codes.PermissionDenied,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			resp, err := s.CreateVizierCluster(CreateTestContext(), &vzmgrpb.CreateVizierClusterRequest{OrgID: tc.org})
+			req := &vzmgrpb.CreateVizierClusterRequest{OrgID: tc.org}
+			if tc.projectName != "" {
+				req.ProjectName = tc.projectName
+			}
+			resp, err := s.CreateVizierCluster(CreateTestContext(), req)
 			if tc.hasError {
 				assert.NotNil(t, err)
 				assert.Nil(t, resp)
@@ -133,15 +151,17 @@ func TestServer_CreateVizierCluster(t *testing.T) {
 				assert.NotEqual(t, utils.UUIDFromProtoOrNil(resp), uuid.Nil)
 
 				// Check to make sure DB insert is correct.
-				query := `SELECT id, org_id from vizier_cluster WHERE id=$1`
+				query := `SELECT id, org_id, project_name from vizier_cluster WHERE id=$1`
 				var info struct {
-					ID    uuid.UUID `db:"id"`
-					OrgID uuid.UUID `db:"org_id"`
+					ID          uuid.UUID `db:"id"`
+					OrgID       uuid.UUID `db:"org_id"`
+					ProjectName string    `db:"project_name"`
 				}
 				err := db.Get(&info, query, utils.UUIDFromProtoOrNil(resp))
 				require.Nil(t, err)
 				assert.Equal(t, info.OrgID, utils.UUIDFromProtoOrNil(tc.org))
 				assert.Equal(t, info.ID, utils.UUIDFromProtoOrNil(resp))
+				assert.Equal(t, info.ProjectName, tc.expectedProjectName)
 
 				// Check to make sure DB insert for ClusterInfo is correct.
 				connQuery := `SELECT vizier_cluster_id, status from vizier_cluster_info WHERE vizier_cluster_id=$1`

@@ -35,6 +35,9 @@ import (
 // SaltLength is the length of the salt used when encrypting the jwt signing key.
 const SaltLength int = 10
 
+// DefaultProjectName is the default project name to use for a vizier cluster that is created if none if provided.
+const DefaultProjectName = "default"
+
 // HandleNATSMessageFunc is the signature for a NATS message handler.
 type HandleNATSMessageFunc func(*cvmsgspb.V2CMessage)
 
@@ -230,6 +233,10 @@ func (s *Server) CreateVizierCluster(ctx context.Context, req *vzmgrpb.CreateViz
 		return nil, err
 	}
 	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
+	projectName := req.ProjectName
+	if req.ProjectName == "" {
+		projectName = DefaultProjectName
+	}
 
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -237,12 +244,17 @@ func (s *Server) CreateVizierCluster(ctx context.Context, req *vzmgrpb.CreateViz
 	}
 	defer tx.Rollback()
 
+	// Note that we don't check whether the project name exists in the project table.
+	// This was to avoid a dependency from the vzmgr service on the project manager service.
+	// It is expected that the caller of CreateVizierCluster will first validate the project
+	// name before invoking this API.
+
 	query := `
     	WITH ins AS (
-      		INSERT INTO vizier_cluster (org_id) VALUES($1) RETURNING id
+      		INSERT INTO vizier_cluster (org_id, project_name) VALUES($1, $2) RETURNING id
 		)
 		INSERT INTO vizier_cluster_info(vizier_cluster_id, status) SELECT id, 'DISCONNECTED'  FROM ins RETURNING vizier_cluster_id`
-	row, err := s.db.Queryx(query, orgID)
+	row, err := s.db.Queryx(query, orgID, projectName)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
