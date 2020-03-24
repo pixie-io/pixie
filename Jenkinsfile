@@ -414,7 +414,9 @@ builders['Clang-tidy'] = {
     dockerStep {
       def stashName = 'build-clang-tidy-logs'
       if (isMasterRun) {
-        sh 'scripts/run_clang_tidy.sh'
+        // For master builds we run clang tidy on changes files in the past 10 revisions,
+        // this gives us a good balance of speed and coverage.
+        sh 'scripts/run_clang_tidy.sh -f diff_head_cc'
       } else {
         // For code review builds only run on diff.
         sh 'scripts/run_clang_tidy.sh -f diff_origin_master_cc'
