@@ -31,7 +31,7 @@ import (
 )
 
 var dnsEntriesByServiceCfg = map[string][]string{
-	"cloud-proxy-service": []string{"", "id", "pl", "pixie", "work"},
+	"cloud-proxy-service": []string{"", "work", "segment"},
 	"vzconn-service":      []string{"cloud"},
 }
 
