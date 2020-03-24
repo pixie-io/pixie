@@ -529,18 +529,22 @@ TEST_F(CarnotTest, empty_range_test) {
   ASSERT_OK(s);
 
   auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
-  EXPECT_EQ(0, output_table->NumBatches());
+  EXPECT_EQ(1, output_table->NumBatches());
+  auto rb =
+      output_table->GetRowBatch(0, std::vector<int64_t>({0, 1, 2}), arrow::default_memory_pool())
+          .ConsumeValueOrDie();
+  EXPECT_EQ(0, rb->num_rows());
 }
 
 class CarnotRangeTest
     : public CarnotTest,
-      public ::testing::WithParamInterface<std::tuple<types::Int64Value, size_t, bool>> {
+      public ::testing::WithParamInterface<std::tuple<types::Int64Value, size_t, size_t, bool>> {
  protected:
   void SetUp() {
     CarnotTest::SetUp();
     bool start_at_now;
     types::Int64Value sub_time;
-    std::tie(sub_time, num_batches, start_at_now) = GetParam();
+    std::tie(sub_time, num_batches, num_rows, start_at_now) = GetParam();
     query =
         "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2'], start_time=$0, "
         "end_time=$1)\npx.display(queryDF, 'range_output')";
@@ -554,15 +558,17 @@ class CarnotRangeTest
     now_time_ = max_time.val + 1;
   }
   size_t num_batches;
+  size_t num_rows;
   std::string query;
   int64_t now_time_;
 };
 
-std::vector<std::tuple<types::Int64Value, size_t, bool>> range_test_vals = {
+std::vector<std::tuple<types::Int64Value, size_t, size_t, bool>> range_test_vals = {
     {CarnotTestUtils::big_test_col1[CarnotTestUtils::big_test_col1.size() - 1] /*sub_time*/,
-     0 /*num_batches*/, true /*start_at_now*/},
+     1 /*num_batches*/, 0 /*num_rows*/, true /*start_at_now*/},
     {CarnotTestUtils::big_test_col1[CarnotTestUtils::split_idx[1].first].val /*sub_time*/,
-     CarnotTestUtils::split_idx.size() - 1 /*num_batches*/, false /*start_at_now*/}};
+     CarnotTestUtils::split_idx.size() - 1 /*num_batches*/, 5 /*num_rows*/,
+     false /*start_at_now*/}};
 
 TEST_P(CarnotRangeTest, range_now_keyword_test) {
   auto query_uuid = sole::uuid4();
@@ -572,6 +578,14 @@ TEST_P(CarnotRangeTest, range_now_keyword_test) {
   auto output_table = table_store_->GetTable(GetTableName(query_uuid, 0));
   EXPECT_EQ(num_batches, output_table->NumBatches());
   EXPECT_EQ(2, output_table->NumColumns());
+
+  auto actual_num_rows = 0;
+  for (size_t i = 0; i < num_batches; ++i) {
+    auto rb =
+        output_table->GetRowBatch(i, {0, 1}, arrow::default_memory_pool()).ConsumeValueOrDie();
+    actual_num_rows += rb->num_rows();
+  }
+  EXPECT_EQ(num_rows, actual_num_rows);
 }
 
 INSTANTIATE_TEST_SUITE_P(CarnotRangeVariants, CarnotRangeTest,
@@ -906,7 +920,7 @@ TEST_P(CarnotFilterTest, int_filter) {
       }
     }
     // If the filter filters out the entire batch, skip this batch
-    if (time_out.size() > 0) {
+    if (time_out.size() > 0 || i == CarnotTestUtils::split_idx.size() - 1) {
       auto rb =
           output_table
               ->GetRowBatch(output_batch_idx, column_selector_vec, arrow::default_memory_pool())

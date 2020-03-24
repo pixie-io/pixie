@@ -91,7 +91,7 @@ TEST_F(MemorySinkNodeTest, basic) {
       col2_rb2_arrow));
 }
 
-TEST_F(MemorySinkNodeTest, zero_row_row_batch) {
+TEST_F(MemorySinkNodeTest, zero_row_row_batch_not_eos) {
   RowDescriptor input_rd({types::DataType::INT64, types::DataType::BOOLEAN});
   RowDescriptor output_rd({});
 
@@ -131,6 +131,39 @@ TEST_F(MemorySinkNodeTest, zero_row_row_batch) {
   EXPECT_TRUE(exec_state_->table_store()->GetTable("cpu_15s")->GetColumn(1)->batch(0)->Equals(
       col2_rb2_arrow));
 }
+
+TEST_F(MemorySinkNodeTest, zero_row_row_batch_eos) {
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::BOOLEAN});
+  RowDescriptor output_rd({});
+
+  std::vector<types::Int64Value> col1_rb1 = {1, 2};
+  std::vector<types::BoolValue> col2_rb1 = {true, false};
+  auto col1_rb1_arrow = types::ToArrow(col1_rb1, arrow::default_memory_pool());
+  auto col2_rb1_arrow = types::ToArrow(col2_rb1, arrow::default_memory_pool());
+
+  std::vector<types::Int64Value> col1_rb2 = {3, 4};
+  std::vector<types::BoolValue> col2_rb2 = {false, true};
+  auto col1_rb2_arrow = types::ToArrow(col1_rb2, arrow::default_memory_pool());
+  auto col2_rb2_arrow = types::ToArrow(col2_rb2, arrow::default_memory_pool());
+
+  auto tester = exec::ExecNodeTester<MemorySinkNode, plan::MemorySinkOperator>(
+      *plan_node_, output_rd, {input_rd}, exec_state_.get());
+
+  tester.ConsumeNext(RowBatchBuilder(input_rd, 0, /*eow*/ true, /*eos*/ true)
+                         .AddColumn<types::Int64Value>({})
+                         .AddColumn<types::BoolValue>({})
+                         .get(),
+                     false, 0);
+
+  // Tests that a 0-row rb does get written to the output table
+  EXPECT_EQ(1, exec_state_->table_store()->GetTable("cpu_15s")->NumBatches());
+  auto rb_or_s = exec_state_->table_store()->GetTable("cpu_15s")->GetRowBatch(
+      0, std::vector<int64_t>{0, 1}, arrow::default_memory_pool());
+  EXPECT_OK(rb_or_s);
+  auto rb = rb_or_s.ConsumeValueOrDie();
+  EXPECT_EQ(0, rb->num_rows());
+}
+
 }  // namespace exec
 }  // namespace carnot
 }  // namespace pl
