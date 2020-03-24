@@ -226,6 +226,7 @@ module.exports = (env) => {
     new ReplacePlugin({
       include: [
         'containers/constants.tsx',
+        'segment.js',
       ],
       values: {
         __CONFIG_AUTH0_DOMAIN__: 'pixie-labs.auth0.com',
