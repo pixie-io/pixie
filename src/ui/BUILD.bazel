@@ -15,7 +15,7 @@ UI_SRCS = glob([
     "stories/**",
     "src/**",
     "assets/**",
-]) + ["//src/vizier/services/api/controller/schema:schema"]
+])
 
 UI_SCRIPT_START = """
       export BASE_PATH=$$(pwd)

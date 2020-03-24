@@ -11,7 +11,6 @@ VIZIER_IMAGE_MAP = {
     "gcr.io/pl-dev-infra/vizier/cloud_connector_server_image": "//src/vizier/services/cloud_connector:cloud_connector_server_image",
     "gcr.io/pl-dev-infra/vizier/metadata_server_image": "//src/vizier/services/metadata:metadata_server_image",
     "gcr.io/pl-dev-infra/vizier/query_broker_server_image": "//src/vizier/services/query_broker:query_broker_server_image",
-    "gcr.io/pl-dev-infra/vizier/api_server_image": "//src/vizier/services/api:api_server_image",
     "gcr.io/pl-dev-infra/vizier/certmgr_server_image": "//src/vizier/services/certmgr:certmgr_server_image",
     "gcr.io/pl-dev-infra/vizier/fluent-bit-image": "//src/vizier/utils/fluent_bit_nats_plugin:fluentbit_nats_plugin_image",
 }

@@ -38,13 +38,9 @@ data:
                       cluster: query_broker_service
                       timeout: 3600s
                   - match:
-                      prefix: "/graphql"
-                    route:
-                      cluster: api_service
-                  - match:
                       prefix: "/healthz"
                     route:
-                      cluster: api_service
+                      cluster: query_broker_service
                   cors:
                     allow_origin_string_match:
                     - prefix: "*"

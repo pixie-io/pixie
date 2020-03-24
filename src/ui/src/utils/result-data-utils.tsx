@@ -1,4 +1,3 @@
-import {extractData} from 'components/chart/data';
 import * as _ from 'lodash';
 import {Column, Relation, RowBatchData} from 'types/generated/vizier_pb';
 
@@ -32,35 +31,6 @@ export function ResultsToCsv(results) {
   });
 
   return csvStr;
-}
-
-export function ResultsToJSON(results) {
-  let resValues = [];
-
-  if (!results.rowBatches) {
-    return resValues;
-  }
-
-  for (const batch of results.rowBatches) {
-    const formattedBatch = [];
-    for (let i = 0; i < parseInt(batch.numRows, 10); i++) {
-      formattedBatch.push({});
-    }
-
-    batch.cols.forEach((col, i) => {
-      const type = results.relation.columns[i].columnType;
-      const name = results.relation.columns[i].columnName;
-
-      const extractedData = extractData(type, col);
-
-      extractedData.forEach((d, j) => {
-        formattedBatch[j][name] = d;
-      });
-    });
-    resValues = resValues.concat(formattedBatch);
-  }
-
-  return resValues;
 }
 
 export function columnFromProto(column: Column): any[] {

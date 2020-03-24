@@ -11,8 +11,6 @@ patchesStrategicMerge:
 resources:
 - pem
 - proxy_envoy.yaml
-- api_deployment.yaml
-- api_service.yaml
 - certmgr_role.yaml
 - certmgr_deployment.yaml
 - certmgr_service.yaml
