@@ -18,6 +18,7 @@ import CommandInput from './command-input';
 import LiveContextProvider, {LiveContext} from './context';
 import Editor from './editor';
 import ExecuteScript from './execute';
+import LiveViewTitle from './title';
 
 const useStyles = makeStyles((theme: Theme) => {
   const scrollbarStyles = (color: string) => ({
@@ -109,7 +110,7 @@ const LiveView = () => {
             <IconButton disabled={true} onClick={toggleDrawer}>
               <MenuIcon />
             </IconButton>
-            <div className={classes.title}></div>
+            <LiveViewTitle className={classes.title} />
             <ExecuteScript />
             <IconButton disabled={true}>
               <ShareIcon />

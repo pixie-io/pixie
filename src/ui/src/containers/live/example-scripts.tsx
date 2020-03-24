@@ -44,11 +44,12 @@ const ExampleScripts = () => {
     });
   }, []);
 
-  const { setScripts } = React.useContext(LiveContext);
+  const { setScripts, setTitle } = React.useContext(LiveContext);
 
   const selectScript = (e) => {
     const s = liveScriptMap[e.target.value];
 
+    setTitle(s.title);
     setScripts(s.code, s.vis, s.placement);
   };
 

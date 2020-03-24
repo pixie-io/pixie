@@ -14,6 +14,7 @@ interface LiveContextProps {
   updatePlacement: (placement: Placement) => void;
   vizierReady: boolean;
   executeScript: () => void;
+  setTitle: (title: string) => void;
   setScripts: (script: string, vega: string, placement: string) => void;
 }
 
@@ -26,6 +27,7 @@ export const VegaContext = React.createContext<VisualizationSpecMap>(null);
 export const PlacementContext = React.createContext<Placement>(null);
 export const ResultsContext = React.createContext<Tables>(null);
 export const LiveContext = React.createContext<LiveContextProps>(null);
+export const TitleContext = React.createContext<string>('');
 
 const LiveContextProvider = (props) => {
   const [script, setScript] = React.useState<string>(ls.getLiveViewPixieScript());
@@ -46,6 +48,11 @@ const LiveContextProvider = (props) => {
     setVegaSpec(parseSpecs(newVega) || {});
     setPlacement(parsePlacement(newPlacement) || {});
   }, []);
+
+  const [title, setTitle] = React.useState<string>(ls.getLiveViewTitle());
+  React.useEffect(() => {
+    ls.setLiveViewTitle(title);
+  }, [title]);
 
   const client = React.useContext(ClientContext);
 
@@ -78,10 +85,10 @@ const LiveContextProvider = (props) => {
         query: script,
         queryID: queryId,
         error: err,
-        title: 'live view', // TODO(malthus): Add script title to live view.
+        title,
       });
     });
-  }, [client, script]);
+  }, [client, script, title]);
 
   const liveViewContext = React.useMemo(() => ({
     updateScript: setScript,
@@ -90,19 +97,22 @@ const LiveContextProvider = (props) => {
     vizierReady: !!client,
     setScripts,
     executeScript,
+    setTitle,
   }), [executeScript, client]);
 
   return (
     <LiveContext.Provider value={liveViewContext}>
-      <ScriptContext.Provider value={script}>
-        <VegaContext.Provider value={vegaSpec}>
-          <PlacementContext.Provider value={placement}>
-            <ResultsContext.Provider value={tables}>
-              {props.children}
-            </ResultsContext.Provider>
-          </PlacementContext.Provider>
-        </VegaContext.Provider>
-      </ScriptContext.Provider>
+      <TitleContext.Provider value={title}>
+        <ScriptContext.Provider value={script}>
+          <VegaContext.Provider value={vegaSpec}>
+            <PlacementContext.Provider value={placement}>
+              <ResultsContext.Provider value={tables}>
+                {props.children}
+              </ResultsContext.Provider>
+            </PlacementContext.Provider>
+          </VegaContext.Provider>
+        </ScriptContext.Provider>
+      </TitleContext.Provider>
     </LiveContext.Provider>
   );
 };
