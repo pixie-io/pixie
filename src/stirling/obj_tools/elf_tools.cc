@@ -169,9 +169,9 @@ std::vector<std::string> ElfReader::ListSymbols(std::string_view search_symbol,
       if (symbol_addrs.find(addr) != symbol_addrs.end()) {
         continue;
       }
+      symbol_addrs.insert(addr);
 
       symbol_names.push_back(std::move(name));
-      symbol_addrs.insert(addr);
     }
   }
   return symbol_names;

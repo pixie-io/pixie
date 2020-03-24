@@ -8,6 +8,7 @@ pl_cc_library(
         ["*.cc"],
         exclude = [
             "**/*_test.cc",
+            "**/*_tool.cc",
         ],
     ),
     hdrs = glob(
@@ -62,5 +63,13 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",
+    ],
+)
+
+pl_cc_binary(
+    name = "elf_reader_tool",
+    srcs = ["elf_reader_tool.cc"],
+    deps = [
+        ":cc_library",
     ],
 )
