@@ -73,6 +73,29 @@ export const JSONData = React.memo<JSONDataProps>((props) => {
     cls = 'null';
   }
 
+  if (Array.isArray(data)) {
+    return (
+      <span className={clsx('formatted_data--json', props.className)}>
+        {'[ '}
+        {props.multiline ? <br /> : null}
+        {
+          data.map((val, idx) => {
+            return (
+              <span
+                key={idx + '-' + indentation}
+                style={{ marginLeft: props.multiline ? (indentation + 1) * JSON_INDENT_PX : 0 }}
+              >
+                <JSONData data={val} multiline={props.multiline} indentation={indentation + 1} />
+                {idx !== Object.keys(data).length - 1 ? ', ' : ''}
+                {props.multiline ? <br /> : null}
+              </span>
+            );
+          })
+        }
+        <span style={{ marginLeft: props.multiline ? indentation * JSON_INDENT_PX : 0 }}>{' ]'}</span>
+      </span>);
+  }
+
   if (typeof data === 'object' && data !== null) {
     return (
       <span className={clsx('formatted_data--json', props.className)}>

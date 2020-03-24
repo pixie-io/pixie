@@ -70,7 +70,7 @@ describe('<AlertData/> test', () => {
   });
 });
 
-describe.skip('<JSONData/> test', () => {
+describe('<JSONData/> test', () => {
   it('should render correctly for single line', () => {
     const wrapper = mount(<FormatData.JSONData
       data={{
@@ -126,6 +126,28 @@ describe.skip('<JSONData/> test', () => {
 
     expect(wrapper.find(FormatData.JSONData).at(1).props().multiline).toEqual(true);
     expect(wrapper.find(FormatData.JSONData).at(1).props().indentation).toEqual(1);
+  });
+
+  it('should render array correctly for single line', () => {
+    const wrapper = mount(<FormatData.JSONData
+      data={['some text', 'some other text']}
+    />);
+
+    expect(wrapper.text()).toEqual('[ some text, some other text ]');
+    expect(wrapper.find('br')).toHaveLength(0);
+  });
+
+  it('should render array correctly for multiline', () => {
+    const wrapper = mount(<FormatData.JSONData
+      data={[
+        { a: 1, b: { c: 'foo' } },
+        { a: 3, b: null },
+      ]}
+      multiline={true}
+    />);
+
+    expect(wrapper.text()).toEqual('[ { a: 1, b: { c: foo } }, { a: 3, b: null } ]');
+    expect(wrapper.find('br')).toHaveLength(11);
   });
 });
 
