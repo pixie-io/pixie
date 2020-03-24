@@ -31,8 +31,6 @@ class Compiler {
                                  const ArgValues& arg_values);
   StatusOr<std::shared_ptr<IR>> CompileToIR(const std::string& query, CompilerState* compiler_state,
                                             const ArgValues& arg_values);
-  StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(const std::string& query,
-                                                        CompilerState* compiler_state);
   StatusOr<shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec(const std::string& query,
                                                                 CompilerState* compiler_state);
   StatusOr<pl::shared::scriptspb::VizFuncsInfo> GetVizFuncsInfo(const std::string& query,

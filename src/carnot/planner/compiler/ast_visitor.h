@@ -104,7 +104,6 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<QLObjectPtr> ParseAndProcessSingleExpression(std::string_view str,
                                                         bool import_px) override;
 
-  StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(const pypa::AstModulePtr&) override;
   StatusOr<shared::scriptspb::VizFuncsInfo> GetVizFuncsInfo() const override;
   StatusOr<shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec() const override;
 

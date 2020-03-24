@@ -68,20 +68,6 @@ StatusOr<std::string> PlannerPlanGoStr(PlannerPtr planner_ptr, std::string plann
   return lp_str;
 }
 
-StatusOr<std::string> PlannerGetAvailableFlagsGoStr(PlannerPtr planner_ptr,
-                                                    std::string query_request, int* resultLen) {
-  char* result = PlannerGetAvailableFlags(planner_ptr, query_request.c_str(),
-                                          query_request.length(), resultLen);
-
-  if (*resultLen == 0) {
-    return error::InvalidArgument("GetAvailableFlags failed to return");
-  }
-
-  std::string flags_spec_str(result, result + *resultLen);
-  delete[] result;
-  return flags_spec_str;
-}
-
 StatusOr<std::string> PlannerGetMainFuncArgsSpecGoStr(PlannerPtr planner_ptr,
                                                       std::string query_request, int* resultLen) {
   char* result = PlannerGetMainFuncArgsSpec(planner_ptr, query_request.c_str(),
@@ -185,42 +171,6 @@ TEST_F(PlannerExportTest, pass_query_string_instead_of_req_should_fail) {
   ASSERT_NOT_OK(planner_result_pb.status());
   EXPECT_THAT(planner_result_pb.status().msg(),
               ::testing::ContainsRegex("Failed to process the query request.*"));
-}
-
-constexpr char kArgValueQuery[] = R"pxl(
-px.flags('foo', type=str, description='a random param', default='default')
-px.flags.parse()
-queryDF = px.DataFrame(table='cpu', select=['cpu0'])
-queryDF['foo_flag'] = px.flags.foo
-px.display(queryDF, 'map')
-)pxl";
-
-constexpr char kAvailableFlags[] = R"(
-flags {
-  data_type: STRING
-  semantic_type: ST_NONE
-  name: "foo"
-  description: "a random param"
-  default_value: {
-    data_type: STRING
-    string_value: "default"
-  }
-}
-)";
-
-// Tests whether we can successfully send a query and get back the available flags schema.
-TEST_F(PlannerExportTest, get_available_flags_empty_flags) {
-  planner_ = MakePlanner();
-  int result_len;
-  auto query_request = MakeQueryRequest(kArgValueQuery);
-  auto interface_result =
-      PlannerGetAvailableFlagsGoStr(planner_, query_request.DebugString(), &result_len);
-
-  ASSERT_OK(interface_result);
-  pl::carnot::planner::plannerpb::GetAvailableFlagsResult get_flags_result;
-  ASSERT_TRUE(get_flags_result.ParseFromString(interface_result.ConsumeValueOrDie()));
-  EXPECT_OK(get_flags_result.status());
-  EXPECT_THAT(get_flags_result.query_flags(), EqualsProto(kAvailableFlags));
 }
 
 constexpr char kMainFuncArgsQuery[] = R"pxl(

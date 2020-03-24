@@ -195,57 +195,6 @@ func TestPlanner_MissingTable(t *testing.T) {
 
 }
 
-const flagsQuery = `
-px.flags('foo', type=str, description='a random param', default='default')
-px.flags.parse()
-queryDF = px.DataFrame(table='cpu', select=['cpu0'])
-queryDF['foo_flag'] = px.flags.foo
-px.display(queryDF, 'map')
-`
-
-const expectedFlagsPBStr = `
-	flags {
-		data_type: STRING
-		semantic_type: ST_NONE
-		name: "foo"
-		description: "a random param"
-		default_value: {
-			data_type: STRING
-			string_value: "default"
-		}
-	}`
-
-// TestPlanner_GetAvailableFlags makes sure that we can call GetAvailableFlags
-// and we receive a status ok, as well as the correct flags.
-func TestPlanner_GetAvailableFlags(t *testing.T) {
-	// Create the planner.
-	c := logicalplanner.New(&udfspb.UDFInfo{})
-	defer c.Free()
-	// Note that the string can't be empty since the cgo interface treats an empty string
-	// as an error
-	queryRequestPB := &plannerpb.QueryRequest{
-		QueryStr: flagsQuery,
-	}
-	getFlagsResultPB, err := c.GetAvailableFlags(queryRequestPB)
-
-	if err != nil {
-		log.Fatalln("Failed to get flags: ", err)
-		t.FailNow()
-	}
-
-	status := getFlagsResultPB.Status
-	assert.Equal(t, status.ErrCode, statuspb.OK)
-
-	var expectedFlagsPB plannerpb.QueryFlagsSpec
-
-	if err = proto.UnmarshalText(expectedFlagsPBStr, &expectedFlagsPB); err != nil {
-		log.Fatalf("Failed to unmarshal expected proto", err)
-		t.FailNow()
-	}
-
-	assert.Equal(t, &expectedFlagsPB, getFlagsResultPB.QueryFlags)
-}
-
 const mainFuncArgsQuery = `
 def main(foo : str):
 		queryDF = px.DataFrame(table='cpu', select=['cpu0'])
@@ -296,43 +245,24 @@ func TestPlanner_GetMainFuncArgsSpec(t *testing.T) {
 	assert.Equal(t, &expectedMainFuncArgsPB, getMainFuncArgsResultPB.MainFuncSpec)
 }
 
-func TestPlanner_GetAvailableFlags_BadQuery(t *testing.T) {
+func TestPlanner_GetMainFuncArgsSpec_BadQuery(t *testing.T) {
 	// Create the compiler.
 	c := logicalplanner.New(&udfspb.UDFInfo{})
 	defer c.Free()
-	// query causes a syntax error.
-	query := "px.flags("
-	plannerStatePB := new(distributedpb.LogicalPlannerState)
-	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
+	// query doesn't have a main function so should throw error.
+	query := "px.display(px.DataFrame('http_events'))"
 	queryRequestPB := &plannerpb.QueryRequest{
 		QueryStr: query,
 	}
-	plannerResultPB, err := c.Plan(plannerStatePB, queryRequestPB)
+	plannerResultPB, err := c.GetMainFuncArgsSpec(queryRequestPB)
 
 	if err != nil {
-		log.Fatalln("Failed to plan:", err)
-		t.FailNow()
+		t.Fatal("Failed to plan:", err)
 	}
 
 	status := plannerResultPB.Status
 	assert.NotEqual(t, status.ErrCode, statuspb.OK)
-	var errorPB compilerpb.CompilerErrorGroup
-	err = logicalplanner.GetCompilerErrorContext(status, &errorPB)
-
-	if !assert.NoError(t, err) {
-		t.FailNow()
-	}
-
-	// This error creates 3 errors.
-	if !assert.Equal(t, 3, len(errorPB.Errors)) {
-		t.FailNow()
-	}
-	compilerError := errorPB.Errors[0]
-	lineColError := compilerError.GetLineColError()
-	if !assert.NotNil(t, lineColError) {
-		t.FailNow()
-	}
-	assert.Regexp(t, "SyntaxError: Expected `\\)`", lineColError.Message)
+	assert.Regexp(t, "Could not find 'main' fn", status.Msg)
 
 }
 

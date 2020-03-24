@@ -13,7 +13,6 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
-	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
@@ -753,37 +752,4 @@ func TestErrorInStatusResult(t *testing.T) {
 		t.Fatal("Error while executing query.")
 	}
 	assert.Equal(t, status, badPlannerResultPB.Status)
-}
-
-func TestGetAvailableFlags(t *testing.T) {
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	s, err := NewServer(nil, nil, nil)
-
-	if err != nil {
-		t.Fatal("Creating server failed.")
-	}
-
-	queryRequest := &plannerpb.QueryRequest{
-		QueryStr: " ",
-	}
-
-	statusOkPB := &statuspb.Status{ErrCode: statuspb.OK}
-
-	getFlagsResultPB := &plannerpb.GetAvailableFlagsResult{
-		QueryFlags: &plannerpb.QueryFlagsSpec{},
-		Status:     statusOkPB,
-	}
-
-	planner := mock_controllers.NewMockPlanner(ctrl)
-	planner.EXPECT().GetAvailableFlags(queryRequest).Return(getFlagsResultPB, nil)
-
-	auth := authcontext.New()
-	ctx := authcontext.NewContext(context.Background(), auth)
-	resp, err := s.GetAvailableFlagsWithPlanner(ctx, queryRequest, planner)
-	assert.Equal(t, getFlagsResultPB, resp)
-
-	assert.Nil(t, err)
 }

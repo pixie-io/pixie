@@ -71,15 +71,6 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
                                     single_node_plan.get());
 }
 
-StatusOr<plannerpb::QueryFlagsSpec> LogicalPlanner::GetAvailableFlags(
-    const plannerpb::QueryRequest& query_request) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
-                      CreateCompilerState({}, registry_info.get(), 0));
-
-  return compiler_.GetAvailableFlags(query_request.query_str(), compiler_state.get());
-}
-
 StatusOr<shared::scriptspb::FuncArgsSpec> LogicalPlanner::GetMainFuncArgsSpec(
     const plannerpb::QueryRequest& query_request) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());

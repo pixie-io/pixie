@@ -26,7 +26,7 @@ void BM_Query(benchmark::State& state) {
 }
 
 // NOLINTNEXTLINE : runtime/references.
-void BM_GetAvailFlags(benchmark::State& state) {
+void BM_GetMainFuncArgs(benchmark::State& state) {
   auto info = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb();
   auto planner = LogicalPlanner::Create(info).ConsumeValueOrDie();
   auto planner_state =
@@ -34,13 +34,14 @@ void BM_GetAvailFlags(benchmark::State& state) {
   plannerpb::QueryRequest query_request;
   query_request.set_query_str(testutils::kHttpRequestStats);
   for (auto _ : state) {
-    auto plan_or_s = planner->GetAvailableFlags(query_request);
+    auto plan_or_s = planner->GetMainFuncArgsSpec(query_request);
     EXPECT_OK(plan_or_s);
   }
 }
 
 BENCHMARK(BM_Query);
-BENCHMARK(BM_GetAvailFlags);
+// TODO(philkuz) need new query because Main doesn't exist in http request stats.
+// BENCHMARK(BM_GetAvailFlags);
 
 }  // namespace logical_planner
 }  // namespace planner

@@ -819,17 +819,6 @@ class ASTVisitorTest : public OperatorTests {
     return ast_walker;
   }
 
-  StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(const std::string& query) {
-    Parser parser;
-    PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
-    std::shared_ptr<IR> ir = std::make_shared<IR>();
-    PL_ASSIGN_OR_RETURN(auto ast_walker,
-                        compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get(),
-                                                         /*query_flags*/ {}));
-
-    return ast_walker->GetAvailableFlags(ast);
-  }
-
   StatusOr<pl::shared::scriptspb::VizFuncsInfo> GetVizFuncsInfo(const std::string& query) {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));

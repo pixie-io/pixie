@@ -38,7 +38,6 @@ func (m *MockQueryBrokerServiceClient) EXPECT() *MockQueryBrokerServiceClientMoc
 
 // GetAgentInfo mocks base method
 func (m *MockQueryBrokerServiceClient) GetAgentInfo(ctx context.Context, in *querybrokerpb.AgentInfoRequest, opts ...grpc.CallOption) (*querybrokerpb.AgentInfoResponse, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -51,14 +50,12 @@ func (m *MockQueryBrokerServiceClient) GetAgentInfo(ctx context.Context, in *que
 
 // GetAgentInfo indicates an expected call of GetAgentInfo
 func (mr *MockQueryBrokerServiceClientMockRecorder) GetAgentInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentInfo", reflect.TypeOf((*MockQueryBrokerServiceClient)(nil).GetAgentInfo), varargs...)
 }
 
 // ExecuteQuery mocks base method
 func (m *MockQueryBrokerServiceClient) ExecuteQuery(ctx context.Context, in *plannerpb.QueryRequest, opts ...grpc.CallOption) (*querybrokerpb.VizierQueryResponse, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -71,14 +68,12 @@ func (m *MockQueryBrokerServiceClient) ExecuteQuery(ctx context.Context, in *pla
 
 // ExecuteQuery indicates an expected call of ExecuteQuery
 func (mr *MockQueryBrokerServiceClientMockRecorder) ExecuteQuery(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteQuery", reflect.TypeOf((*MockQueryBrokerServiceClient)(nil).ExecuteQuery), varargs...)
 }
 
 // GetSchemas mocks base method
 func (m *MockQueryBrokerServiceClient) GetSchemas(ctx context.Context, in *querybrokerpb.SchemaRequest, opts ...grpc.CallOption) (*querybrokerpb.SchemaResponse, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -91,14 +86,12 @@ func (m *MockQueryBrokerServiceClient) GetSchemas(ctx context.Context, in *query
 
 // GetSchemas indicates an expected call of GetSchemas
 func (mr *MockQueryBrokerServiceClientMockRecorder) GetSchemas(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchemas", reflect.TypeOf((*MockQueryBrokerServiceClient)(nil).GetSchemas), varargs...)
 }
 
 // ReceiveAgentQueryResult mocks base method
 func (m *MockQueryBrokerServiceClient) ReceiveAgentQueryResult(ctx context.Context, in *querybrokerpb.AgentQueryResultRequest, opts ...grpc.CallOption) (*querybrokerpb.AgentQueryResultResponse, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -111,29 +104,8 @@ func (m *MockQueryBrokerServiceClient) ReceiveAgentQueryResult(ctx context.Conte
 
 // ReceiveAgentQueryResult indicates an expected call of ReceiveAgentQueryResult
 func (mr *MockQueryBrokerServiceClientMockRecorder) ReceiveAgentQueryResult(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReceiveAgentQueryResult", reflect.TypeOf((*MockQueryBrokerServiceClient)(nil).ReceiveAgentQueryResult), varargs...)
-}
-
-// GetAvailableFlags mocks base method
-func (m *MockQueryBrokerServiceClient) GetAvailableFlags(ctx context.Context, in *plannerpb.QueryRequest, opts ...grpc.CallOption) (*plannerpb.GetAvailableFlagsResult, error) {
-	m.ctrl.T.Helper()
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetAvailableFlags", varargs...)
-	ret0, _ := ret[0].(*plannerpb.GetAvailableFlagsResult)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAvailableFlags indicates an expected call of GetAvailableFlags
-func (mr *MockQueryBrokerServiceClientMockRecorder) GetAvailableFlags(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAvailableFlags", reflect.TypeOf((*MockQueryBrokerServiceClient)(nil).GetAvailableFlags), varargs...)
 }
 
 // MockQueryBrokerServiceServer is a mock of QueryBrokerServiceServer interface
@@ -161,7 +133,6 @@ func (m *MockQueryBrokerServiceServer) EXPECT() *MockQueryBrokerServiceServerMoc
 
 // GetAgentInfo mocks base method
 func (m *MockQueryBrokerServiceServer) GetAgentInfo(arg0 context.Context, arg1 *querybrokerpb.AgentInfoRequest) (*querybrokerpb.AgentInfoResponse, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAgentInfo", arg0, arg1)
 	ret0, _ := ret[0].(*querybrokerpb.AgentInfoResponse)
 	ret1, _ := ret[1].(error)
@@ -170,13 +141,11 @@ func (m *MockQueryBrokerServiceServer) GetAgentInfo(arg0 context.Context, arg1 *
 
 // GetAgentInfo indicates an expected call of GetAgentInfo
 func (mr *MockQueryBrokerServiceServerMockRecorder) GetAgentInfo(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentInfo", reflect.TypeOf((*MockQueryBrokerServiceServer)(nil).GetAgentInfo), arg0, arg1)
 }
 
 // ExecuteQuery mocks base method
 func (m *MockQueryBrokerServiceServer) ExecuteQuery(arg0 context.Context, arg1 *plannerpb.QueryRequest) (*querybrokerpb.VizierQueryResponse, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExecuteQuery", arg0, arg1)
 	ret0, _ := ret[0].(*querybrokerpb.VizierQueryResponse)
 	ret1, _ := ret[1].(error)
@@ -185,13 +154,11 @@ func (m *MockQueryBrokerServiceServer) ExecuteQuery(arg0 context.Context, arg1 *
 
 // ExecuteQuery indicates an expected call of ExecuteQuery
 func (mr *MockQueryBrokerServiceServerMockRecorder) ExecuteQuery(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteQuery", reflect.TypeOf((*MockQueryBrokerServiceServer)(nil).ExecuteQuery), arg0, arg1)
 }
 
 // GetSchemas mocks base method
 func (m *MockQueryBrokerServiceServer) GetSchemas(arg0 context.Context, arg1 *querybrokerpb.SchemaRequest) (*querybrokerpb.SchemaResponse, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetSchemas", arg0, arg1)
 	ret0, _ := ret[0].(*querybrokerpb.SchemaResponse)
 	ret1, _ := ret[1].(error)
@@ -200,13 +167,11 @@ func (m *MockQueryBrokerServiceServer) GetSchemas(arg0 context.Context, arg1 *qu
 
 // GetSchemas indicates an expected call of GetSchemas
 func (mr *MockQueryBrokerServiceServerMockRecorder) GetSchemas(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSchemas", reflect.TypeOf((*MockQueryBrokerServiceServer)(nil).GetSchemas), arg0, arg1)
 }
 
 // ReceiveAgentQueryResult mocks base method
 func (m *MockQueryBrokerServiceServer) ReceiveAgentQueryResult(arg0 context.Context, arg1 *querybrokerpb.AgentQueryResultRequest) (*querybrokerpb.AgentQueryResultResponse, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ReceiveAgentQueryResult", arg0, arg1)
 	ret0, _ := ret[0].(*querybrokerpb.AgentQueryResultResponse)
 	ret1, _ := ret[1].(error)
@@ -215,21 +180,5 @@ func (m *MockQueryBrokerServiceServer) ReceiveAgentQueryResult(arg0 context.Cont
 
 // ReceiveAgentQueryResult indicates an expected call of ReceiveAgentQueryResult
 func (mr *MockQueryBrokerServiceServerMockRecorder) ReceiveAgentQueryResult(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReceiveAgentQueryResult", reflect.TypeOf((*MockQueryBrokerServiceServer)(nil).ReceiveAgentQueryResult), arg0, arg1)
-}
-
-// GetAvailableFlags mocks base method
-func (m *MockQueryBrokerServiceServer) GetAvailableFlags(arg0 context.Context, arg1 *plannerpb.QueryRequest) (*plannerpb.GetAvailableFlagsResult, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetAvailableFlags", arg0, arg1)
-	ret0, _ := ret[0].(*plannerpb.GetAvailableFlagsResult)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetAvailableFlags indicates an expected call of GetAvailableFlags
-func (mr *MockQueryBrokerServiceServerMockRecorder) GetAvailableFlags(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAvailableFlags", reflect.TypeOf((*MockQueryBrokerServiceServer)(nil).GetAvailableFlags), arg0, arg1)
 }

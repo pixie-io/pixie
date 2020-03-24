@@ -59,21 +59,6 @@ StatusOr<shared::scriptspb::FuncArgsSpec> Compiler::GetMainFuncArgsSpec(
   return ast_walker->GetMainFuncArgsSpec();
 }
 
-StatusOr<plannerpb::QueryFlagsSpec> Compiler::GetAvailableFlags(const std::string& query,
-                                                                CompilerState* compiler_state) {
-  // TODO(nserrino): PL-1578 remove this after UI queries are updated.
-  // This should be ok because calling "import px" multiple times in the same script is ok,
-  // both in our system and in Python.
-  auto with_import_px = "import px\n" + query;
-  Parser parser;
-  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(with_import_px));
-
-  std::shared_ptr<IR> ir = std::make_shared<IR>();
-  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state, {}));
-
-  return ast_walker->GetAvailableFlags(ast);
-}
-
 StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
                                                   CompilerState* compiler_state,
                                                   const ArgValues& arg_values) {

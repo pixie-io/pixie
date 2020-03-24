@@ -144,15 +144,6 @@ StatusOr<shared::scriptspb::FuncArgsSpec> ASTVisitorImpl::GetMainFuncArgsSpec() 
   return func_object->CreateFuncArgsSpec();
 }
 
-StatusOr<plannerpb::QueryFlagsSpec> ASTVisitorImpl::GetAvailableFlags(const pypa::AstModulePtr& m) {
-  PL_RETURN_IF_ERROR(ProcessModuleNode(m));
-  if (flags_ == nullptr) {
-    plannerpb::QueryFlagsSpec empty;
-    return empty;
-  }
-  return flags_->GetAvailableFlags(m);
-}
-
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& body,
                                                       bool is_function_definition_body) {
   pypa::AstStmtList items_list = body->items;

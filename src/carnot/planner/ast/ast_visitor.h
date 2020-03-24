@@ -62,15 +62,6 @@ class ASTVisitor {
                                                                 bool import_px) = 0;
 
   /**
-   * @brief Parses the AST for the available flags (default, description, etc).
-   *
-   * @param m the ptr to the ast node
-   * @return StatusOr<plannerpb::QueryFlagsSpec> the available flags
-   *
-   */
-  virtual StatusOr<plannerpb::QueryFlagsSpec> GetAvailableFlags(const pypa::AstModulePtr& m) = 0;
-
-  /**
    * @brief Get the Viz Funcs Info spec from functions decorated with the viz decorator.
    *
    * @return StatusOr<pl::shared::scriptspb::VizFuncsInfo> the
