@@ -1,11 +1,47 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library")
-
-pl_cc_binary(
+cc_binary(
     name = "dummy_exe",
     srcs = ["dummy_exe.cc"],
     # This binary is only meant to be used to search for symbols,
     # So turn off all optimizations when building it.
     copts = ["-O0"],
+    # This tells the linker to include a build-id, which is useful for locating external debug symbols.
+    linkopts = [
+        "-Wl,--build-id",
+    ],
 )
+
+filegroup(
+    name = "stripped_exe",
+    srcs = [
+        "stripped_dummy_exe",
+        "usr/lib/debug/.build-id/7d/eb0e3f89deba61.debug",
+    ],
+)
+
+#------------------------------------------------------------------------------
+
+# While the following rules are included for documentation purposes,
+# the output of these command are directly checked into the repo.
+# This is because we need a consistent build-id for testing purposes.
+
+#genrule(
+#    name = "dummy_exe_stripped",
+#    srcs = [":dummy_exe"],
+#    outs = [
+#        "stripped_dummy_exe",
+#    ],
+#    cmd = "objcopy -S \"$<\" \"$@\"",
+#)
+#
+#genrule(
+#    name = "dummy_exe_debug",
+#    srcs = [":dummy_exe"],
+#    outs = [
+#        "dummy_exe.debug",
+#    ],
+#    cmd = "objcopy --only-keep-debug \"$<\" \"$@\"",
+#)
+
+#------------------------------------------------------------------------------

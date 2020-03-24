@@ -29,9 +29,11 @@ class ElfReader {
    * Load a new binary for analysis.
    *
    * @param binary_path Path to the binary to read.
+   * @param debug_file_dir Location of external debug files.
    * @return error if could not setup elf reader.
    */
-  static StatusOr<std::unique_ptr<ElfReader>> Create(const std::string& binary_path);
+  static StatusOr<std::unique_ptr<ElfReader>> Create(
+      const std::string& binary_path, std::string_view debug_file_dir = "/usr/lib/debug");
 
   /**
    * Returns a list of symbol names that meets the search criteria.

@@ -89,3 +89,16 @@ TEST(ElfReaderTest, SymbolAddress) {
   }
 }
 #endif
+
+TEST(ElfReaderTest, ExternalDebugSymbols) {
+  const std::string stripped_bin =
+      pl::testing::TestFilePath("src/stirling/obj_tools/testdata/stripped_dummy_exe");
+  const std::string debug_dir =
+      pl::testing::TestFilePath("src/stirling/obj_tools/testdata/usr/lib/debug");
+
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
+                       ElfReader::Create(stripped_bin, debug_dir));
+
+  EXPECT_THAT(elf_reader->ListSymbols("CanYouFindThis", SymbolMatchType::kExact),
+              ElementsAre("CanYouFindThis"));
+}
