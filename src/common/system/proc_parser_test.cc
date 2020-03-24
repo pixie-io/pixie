@@ -178,5 +178,17 @@ TEST_F(ProcParserTest, ReadNSPid) {
   EXPECT_THAT(ns_pids, ElementsAre("2578", "24", "25"));
 }
 
+bool operator==(const ProcParser::MountInfo& lhs, const ProcParser::MountInfo& rhs) {
+  return lhs.dev == rhs.dev && lhs.root == rhs.root && lhs.mount_point == rhs.mount_point;
+}
+
+TEST_F(ProcParserTest, ReadMountInfos) {
+  std::vector<ProcParser::MountInfo> mount_infos;
+  EXPECT_OK(parser_->ReadMountInfos(123, &mount_infos));
+  EXPECT_THAT(mount_infos, ElementsAre(ProcParser::MountInfo{"0:21", "/", "/sys"},
+                                       ProcParser::MountInfo{"0:4", "/", "/proc"},
+                                       ProcParser::MountInfo{"0:6", "/", "/dev"}));
+}
+
 }  // namespace system
 }  // namespace pl

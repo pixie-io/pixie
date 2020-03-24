@@ -15,6 +15,9 @@
 namespace pl {
 namespace system {
 
+// Separators of the fields in the various files in the proc filesystem.
+constexpr char kFieldSeparators[] = "\t ";
+
 /**
  * These constants are used to ignore virtual and local network interfaces.
  */
@@ -66,6 +69,10 @@ constexpr int kProcStatStartTimeField = 21;
 
 constexpr int kProcStatVSizeField = 22;
 constexpr int kProcStatRSSField = 23;
+
+std::filesystem::path ProcParser::ProcPidPath(pid_t pid) const {
+  return std::filesystem::path(proc_base_path_) / std::to_string(pid);
+}
 
 ProcParser::ProcParser(const system::Config& cfg) {
   CHECK(cfg.HasConfig()) << "System config is required for the ProcParser";
@@ -453,7 +460,7 @@ Status ProcParser::ReadUIDs(int32_t pid, ProcUIDs* uids) const {
   constexpr std::string_view kUIDPrefix = "Uid:";
   std::string_view uid_line = LineWithPrefix(content, kUIDPrefix);
   std::vector<std::string_view> fields =
-      absl::StrSplit(uid_line, absl::ByAnyChar("\t "), absl::SkipEmpty());
+      absl::StrSplit(uid_line, absl::ByAnyChar(kFieldSeparators), absl::SkipEmpty());
   constexpr size_t kFieldCount = 5;
   if (fields.size() != kFieldCount) {
     return error::Internal("Proc path '$0' returns incorrect result '$1'",
@@ -484,7 +491,7 @@ Status ProcParser::ReadNSPid(pid_t pid, std::vector<std::string>* ns_pids) const
   constexpr std::string_view kNSPidPrefix = "NStgid:";
   std::string_view ns_pid_line = LineWithPrefix(content, kNSPidPrefix);
   std::vector<std::string_view> fields =
-      absl::StrSplit(ns_pid_line, absl::ByAnyChar("\t "), absl::SkipEmpty());
+      absl::StrSplit(ns_pid_line, absl::ByAnyChar(kFieldSeparators), absl::SkipEmpty());
   if (fields.size() < 2) {
     return error::InvalidArgument("NSpid line in '$0' is invalid: '$1'",
                                   proc_pid_status_path.string(), ns_pid_line);
@@ -520,6 +527,36 @@ int64_t GetPIDStartTimeTicks(const std::filesystem::path& proc_pid_path) {
   }
 
   return start_time_ticks;
+}
+
+namespace {
+
+Status ParseMountInfo(std::string_view str, ProcParser::MountInfo* mount_info) {
+  std::vector<std::string_view> fields =
+      absl::StrSplit(str, absl::ByAnyChar(kFieldSeparators), absl::SkipWhitespace());
+  if (fields.size() < 10) {
+    return error::InvalidArgument("Mountinfo record should have at least 10 fields, got: $0",
+                                  fields.size());
+  }
+  mount_info->dev = fields[2];
+  mount_info->root = fields[3];
+  mount_info->mount_point = fields[4];
+  return Status::OK();
+}
+
+}  // namespace
+
+Status ProcParser::ReadMountInfos(pid_t pid,
+                                  std::vector<ProcParser::MountInfo>* mount_infos) const {
+  const std::filesystem::path proc_pid_mount_info_path = ProcPidPath(pid) / "mountinfo";
+  PL_ASSIGN_OR_RETURN(std::string content, pl::ReadFileToString(proc_pid_mount_info_path));
+  std::vector<std::string_view> lines = absl::StrSplit(content, "\n", absl::SkipWhitespace());
+  for (const auto line : lines) {
+    ProcParser::MountInfo mount_info = {};
+    PL_RETURN_IF_ERROR(ParseMountInfo(line, &mount_info));
+    mount_infos->push_back(std::move(mount_info));
+  }
+  return Status::OK();
 }
 
 }  // namespace system

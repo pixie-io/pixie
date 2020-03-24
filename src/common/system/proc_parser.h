@@ -198,6 +198,23 @@ class ProcParser {
    */
   Status ReadNSPid(pid_t pid, std::vector<std::string>* ns_pids) const;
 
+  /**
+   * Represents a record of the proc mountinfo file, like /proc/[pid]/mountinfo.
+   * See http://man7.org/linux/man-pages/man5/proc.5.html for more details.
+   *
+   * Only includes the ones are used by PEM.
+   */
+  struct MountInfo {
+    // The value of st_dev for files on this filesystem.
+    std::string dev;
+    // The pathname of the directory in the filesystem which forms the root of this mount.
+    std::string root;
+    // The pathname of the mount point relative to the process's root directory.
+    std::string mount_point;
+  };
+
+  Status ReadMountInfos(pid_t pid, std::vector<MountInfo>* mount_infos) const;
+
  private:
   static Status ParseNetworkStatAccumulateIFaceData(
       const std::vector<std::string_view>& dev_stat_record, NetworkStats* out);
@@ -206,6 +223,9 @@ class ProcParser {
       const std::string& fpath,
       const absl::flat_hash_map<std::string_view, size_t>& field_name_to_value_map,
       uint8_t* out_base, int64_t field_value_multiplier);
+
+  std::filesystem::path ProcPidPath(pid_t pid) const;
+
   int64_t ns_per_kernel_tick_;
   int32_t bytes_per_page_;
   int64_t clock_realtime_offset_;
