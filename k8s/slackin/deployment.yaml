@@ -1,0 +1,43 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: slackin-server
+spec:
+  selector:
+    matchLabels:
+      name: slackin-server
+  template:
+    metadata:
+      labels:
+        name: slackin-server
+    spec:
+      containers:
+      - name: slackin-server
+        image: gcr.io/pl-dev-infra/slackin/slackin-server:202003232314
+        ports:
+        - containerPort: 58000
+        readinessProbe:
+          httpGet:
+            scheme: HTTP
+            path: /healthz
+            port: 58000
+        livenessProbe:
+          httpGet:
+            scheme: HTTP
+            path: /healthz
+            port: 58000
+        envFrom:
+        - configMapRef:
+            name: slackin-config
+        env:
+        - name: RECAPTCHA_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: slackin-secrets
+              key: RECAPTCHA_SECRET
+        - name: SLACK_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: slackin-secrets
+              key: SLACK_API_TOKEN

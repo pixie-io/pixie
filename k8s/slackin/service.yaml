@@ -1,0 +1,14 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: slackin
+spec:
+  type: ClusterIP
+  ports:
+  - port: 58000
+    protocol: TCP
+    targetPort: 58000
+    name: http
+  selector:
+    name: slackin-server
