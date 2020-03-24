@@ -291,9 +291,9 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
     this.redirectPath = locationParam;
 
     // Default redirect URL.
-    this.auth0Redirect = window.location.origin + (this.props.signUp ? '/signup' : '/login') + locationParam;
+    this.auth0Redirect = window.location.origin + (this.props.signUp ? '/signup' : '/login');
     if (locationParam !== '') {
-      this.auth0Redirect = this.auth0Redirect + '&location=' + locationParam;
+      this.auth0Redirect = this.auth0Redirect + '?location=' + locationParam;
     }
     this.responseMode = '';
 
