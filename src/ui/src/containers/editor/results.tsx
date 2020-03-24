@@ -1,5 +1,6 @@
 import './results.scss';
 
+import clsx from 'clsx';
 import {VizierQueryResult} from 'common/vizier-grpc-client';
 import * as Graph from 'components/chart/graph';
 import * as LineChart from 'components/chart/line-chart';
@@ -129,7 +130,7 @@ export const ConsoleResults = React.memo<ConsoleResultsProps>(
                 <Tab.Pane
                   eventKey={i}
                   key={`tab-pane-${i}`}
-                  className={tab.className || ''}
+                  className={clsx('fs-exclude', tab.className)}
                 >
                   {tab.content}
                 </Tab.Pane>
@@ -137,7 +138,7 @@ export const ConsoleResults = React.memo<ConsoleResultsProps>(
             </Tab.Content>
           </Tab.Container>
         )}
-        <Modal show={showGridView} onHide={closeGridView} className='pixie-console-modal'>
+        <Modal show={showGridView} onHide={closeGridView} className='pixie-console-modal fs-exclude'>
           <ResultsGridView content={gridViewContent} />
         </Modal>
       </div>

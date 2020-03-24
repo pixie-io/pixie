@@ -80,14 +80,14 @@ const Canvas = () => {
       }
       if ((spec as { mark: string }).mark === 'table') {
         return (
-          <div key={chartName}>
+          <div key={chartName} className='fs-exclude'>
             <QueryResultTable className={classes.table} data={table} />
           </div>
         );
       }
       const data = dataFromProto(table.relation, table.data);
       return (
-        <div key={chartName}>
+        <div key={chartName} className='fs-exclude'>
           <Vega data={data} spec={spec} tableName={tableName} vegaModule={vegaModule} />;
         </div>
       );

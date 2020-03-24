@@ -48,6 +48,7 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
         query: code,
         queryID: queryId,
         error: err,
+        title: props.title,
       });
       saveHistory({
         variables: {

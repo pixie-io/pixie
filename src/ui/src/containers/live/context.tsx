@@ -55,18 +55,30 @@ const LiveContextProvider = (props) => {
     if (!client) {
       return;
     }
+    let err;
+    let queryId;
     client.executeScript(script).then((results) => {
       const newTables = {};
+      queryId = results.queryId;
       for (const table of results.tables) {
         newTables[table.name] = table;
       }
       setTables(newTables);
-    }).catch(() => {
+    }).catch((errMsg) => {
+      err = errMsg;
       showSnackbar({
         message: 'Failed to execute script',
         action: executeScript,
         actionTitle: 'retry',
         autoHideDuration: 5000,
+      });
+    }).finally(() => {
+      analytics.track('Query Execution', {
+        status: err ? 'success' : 'failed',
+        query: script,
+        queryID: queryId,
+        error: err,
+        title: 'live view', // TODO(malthus): Add script title to live view.
       });
     });
   }, [client, script]);
