@@ -20,7 +20,7 @@ Pixie's magical developer experience is enabled by three key design attributes:
 
 We're building up Pixie for broad use by the end of 2020 with an initial focus on Kubernetes workloads. 
 
-_If you are interesting in tinkering with our beta,  feel free to [sign-up](https://withpixie.ai/) and join our [community on slack](https://join.slack.com/t/pixie-community/shared_invite/enQtODY3NjU5MTc4OTY0LTFhYjc3MWY1NDBkZTc5YTdjNzM0OGYxZmNmODU2MDE5NzYyN2Q1NmIxMmEyN2YwNmM5MjU4NGY2NDBjOWFjY2E). If you want to learn more about use check out our [company overview deck](https://docsend.com/view/kj38d76)._
+_If you are interesting in tinkering with our beta,  feel free to [sign-up](https://withpixie.ai/) and join our [community on slack](https://slackin.withpixie.ai/). If you want to learn more about use check out our [company overview deck](https://docsend.com/view/kj38d76)._
 
 
 <details>
@@ -55,7 +55,7 @@ _If you are interesting in tinkering with our beta,  feel free to [sign-up](http
 
     Start using the CLI by running `px help` in your termina or view your preconfigured view in the Live UI at `https://work.withpixie.ai/`
 
-_For detailed information on compatibility & requirements check out our [docs](https://work.withpixie.ai/docs/getting-started/compatibility-requirements) or  ping us on [slack](https://join.slack.com/t/pixie-community/shared_invite/enQtODY3NjU5MTc4OTY0LTFhYjc3MWY1NDBkZTc5YTdjNzM0OGYxZmNmODU2MDE5NzYyN2Q1NmIxMmEyN2YwNmM5MjU4NGY2NDBjOWFjY2E)_
+_For detailed information on compatibility & requirements check out our [docs](https://work.withpixie.ai/docs/getting-started/compatibility-requirements) or  ping us on [slack](https://slackin.withpixie.ai/)_
 
 
 ## Demos
@@ -84,7 +84,7 @@ _For more demos, check out our  [youtube](https://www.youtube.com/channel/UCOMCD
 ## Resources
 
 - [Documentation](https://work.withpixie.ai/docs)
-- [Community Slack](https://join.slack.com/t/pixie-community/shared_invite/enQtODY3NjU5MTc4OTY0LTFhYjc3MWY1NDBkZTc5YTdjNzM0OGYxZmNmODU2MDE5NzYyN2Q1NmIxMmEyN2YwNmM5MjU4NGY2NDBjOWFjY2E)
+- [Community Slack](https://slackin.withpixie.ai/)
 - [Issue Tracker](https://github.com/pixie-labs/pixie/issues)
 - [Youtube](https://www.youtube.com/channel/UCOMCDRvBVNIS0lCyOmst7eg/videos)
 - [Overview Slide Deck](https://docsend.com/view/kj38d76)

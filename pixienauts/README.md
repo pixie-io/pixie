@@ -47,7 +47,7 @@ We host bi-weekly video calls attended by Pixienauts, Pixie team members and inv
 
 ## Resources
 
-- [Community Slack](https://join.slack.com/t/pixie-community/shared_invite/enQtODY3NjU5MTc4OTY0LTFhYjc3MWY1NDBkZTc5YTdjNzM0OGYxZmNmODU2MDE5NzYyN2Q1NmIxMmEyN2YwNmM5MjU4NGY2NDBjOWFjY2E)
+- [Community Slack](https://slackin.withpixie.ai/)
 - [Mailing List](mailto:pixienauts@pixielabs.ai)
 - [Pixie Docs](https://work.withpixie.ai/docs)
 - [Shared GDrive Folder](https://drive.google.com/drive/folders/0AMBzBO92FQaUUk9PVA)
