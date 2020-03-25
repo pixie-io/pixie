@@ -61,10 +61,14 @@ TEST_F(FSWrapperTest, ReadSymlink) {
 }
 
 TEST_F(FSWrapperTest, JoinPath) {
+  const std::filesystem::path kRoot = "/";
   const std::filesystem::path kAbsPathA = "/path/to/a";
   const std::filesystem::path kAbsPathB = "/path/to/b";
   const std::filesystem::path kRelPathA = "relpath/to/a";
   const std::filesystem::path kRelPathB = "relpath/to/b";
+
+  EXPECT_EQ(JoinPath({&kRoot, &kAbsPathA}), "/path/to/a");
+  EXPECT_EQ(JoinPath({&kRoot, &kRelPathA}), "/relpath/to/a");
 
   EXPECT_EQ(JoinPath({&kAbsPathA, &kRelPathA}), "/path/to/a/relpath/to/a");
   EXPECT_EQ(JoinPath({&kAbsPathA, &kRelPathA, &kRelPathB}), "/path/to/a/relpath/to/a/relpath/to/b");

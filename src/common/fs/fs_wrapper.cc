@@ -44,10 +44,11 @@ pl::StatusOr<std::filesystem::path> ReadSymlink(std::filesystem::path symlink) {
 std::filesystem::path JoinPath(const std::vector<const std::filesystem::path*>& paths) {
   std::filesystem::path res;
   for (const auto& p : paths) {
-    if (!res.empty() && p->is_relative()) {
-      res += std::filesystem::path::preferred_separator;
+    if (res.empty()) {
+      res = *p;
+    } else {
+      res /= p->relative_path();
     }
-    res += *p;
   }
   return res;
 }
