@@ -48,6 +48,10 @@ pl::StatusOr<std::filesystem::path> ResolveProcessRootDir(std::filesystem::path 
   if (mount_point != "/" || type != "overlay") {
     return std::filesystem::path{};
   }
+  return GetOverlayMergedDir(mount_options);
+}
+
+pl::StatusOr<std::filesystem::path> GetOverlayMergedDir(std::string_view mount_options) {
   constexpr std::string_view kUpperDir = "upperdir=";
   constexpr std::string_view kDiffSuffix = "/diff";
   constexpr std::string_view kMerged = "merged";
@@ -62,7 +66,7 @@ pl::StatusOr<std::filesystem::path> ResolveProcessRootDir(std::filesystem::path 
     s.remove_suffix(kDiffSuffix.size());
     return std::filesystem::path(s) / kMerged;
   }
-  return error::Internal("Failed to resolve overlay path for $0", proc_pid.string());
+  return error::Internal("Failed to resolve overlay path");
 }
 
 // Example #1: regular process not in container

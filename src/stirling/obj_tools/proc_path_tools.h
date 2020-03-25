@@ -85,6 +85,14 @@ pl::StatusOr<std::filesystem::path> ResolveProcessPath(std::filesystem::path pro
  */
 pl::StatusOr<std::filesystem::path> ResolveProcExe(std::filesystem::path proc_pid);
 
+/**
+ * Returns the OverlayFS' merged base directory.
+ *
+ * @param mount_options The options part of a mount entry, which is read from /proc/[pid]/mounts or
+ * /proc/[pid]/mountinfo.
+ */
+pl::StatusOr<std::filesystem::path> GetOverlayMergedDir(std::string_view mount_options);
+
 }  // namespace obj_tools
 }  // namespace stirling
 }  // namespace pl
