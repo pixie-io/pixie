@@ -45,7 +45,7 @@ BPF_PERF_OUTPUT(socket_control_events);
  ***********************************************************/
 
 struct connect_info_t {
-  struct sockaddr_in6 addr;
+  const struct sockaddr* addr;
   // TODO(PL-693): Use bpf_getsockopt() to detect socket type and address family. So we can unify
   // the entry probes of accept() & connect().
   u32 fd;
@@ -53,8 +53,6 @@ struct connect_info_t {
 
 struct accept_info_t {
   struct sockaddr* addr;
-  // TODO(yzhao): This is not used, remove.
-  size_t* addrlen;
 } __attribute__((__packed__, aligned(8)));
 
 struct data_info_t {
@@ -716,8 +714,7 @@ static __inline void probe_entry_connect_impl(struct pt_regs* ctx, u64 id, int s
   struct connect_info_t connect_info;
   memset(&connect_info, 0, sizeof(struct connect_info_t));
   connect_info.fd = sockfd;
-  bpf_probe_read(&connect_info.addr, sizeof(struct sockaddr_in6), (const void*)addr);
-
+  connect_info.addr = addr;
   active_connect_info_map.update(&id, &connect_info);
 }
 
@@ -727,7 +724,7 @@ static __inline void probe_ret_connect_impl(struct pt_regs* ctx, u64 id) {
   // handshake.
   //
   // In case connect() eventually fails, any write or read on the fd would fail nonetheless, and we
-  // wont's see spurious events.
+  // won't see spurious events.
   //
   // In case a separate connect() is called concurrently in another thread, and succeeds
   // immediately, any write or read on the fd would be attributed to the new connection, which would
@@ -743,7 +740,7 @@ static __inline void probe_ret_connect_impl(struct pt_regs* ctx, u64 id) {
   }
 
   u32 tgid = id >> 32;
-  submit_new_conn(ctx, tgid, (u32)connect_info->fd, connect_info->addr);
+  submit_new_conn(ctx, tgid, (u32)connect_info->fd, *((struct sockaddr_in6*)connect_info->addr));
 }
 
 // This function stores the address to the sockaddr struct in the active_accept_info_map map.
@@ -762,7 +759,6 @@ static __inline void probe_entry_accept_impl(struct pt_regs* ctx, u64 id, int so
   struct accept_info_t accept_info;
   memset(&accept_info, 0, sizeof(struct accept_info_t));
   accept_info.addr = addr;
-  accept_info.addrlen = addrlen;
   active_accept_info_map.update(&id, &accept_info);
 }
 
