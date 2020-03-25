@@ -19,6 +19,7 @@ default['bazel']                     = {}
 default['golang']                    = {}
 default['sops']                      = {}
 default['shellcheck']                = {}
+default['sentry']                    = {}
 
 if node[:platform] == 'ubuntu'
   default['bazel']['download_path'] =
@@ -65,6 +66,11 @@ if node[:platform] == 'ubuntu'
     'https://storage.googleapis.com/shellcheck/shellcheck-v0.7.0.linux.x86_64.tar.xz'
   default['shellcheck']['sha256']        =
     '39c501aaca6aae3f3c7fc125b3c3af779ddbe4e67e4ebdc44c2ae5cba76c847f'
+
+  default['sentry']['download_path'] =
+    'https://github.com/getsentry/sentry-cli/releases/download/1.52.0/sentry-cli-Linux-x86_64'
+  default['sentry']['sha256']        =
+    'd6aeb45efbcdd3ec780f714b5082046ea1db31ff60ed0fc39916bbc8b6d708be'
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
     'https://github.com/bazelbuild/bazel/releases/download/2.2.0/bazel-2.2.0-darwin-x86_64'
@@ -108,4 +114,9 @@ elsif node[:platform] == 'mac_os_x'
     'https://storage.googleapis.com/shellcheck/shellcheck-v0.7.0.darwin.x86_64.tar.xz'
   default['shellcheck']['sha256']        =
     'c4edf1f04e53a35c39a7ef83598f2c50d36772e4cc942fb08a1114f9d48e5380'
+
+  default['sentry']['download_path'] =
+    'https://github.com/getsentry/sentry-cli/releases/download/1.52.0/sentry-cli-Darwin-x86_64'
+  default['sentry']['sha256']        =
+    '97c9bafbcf87bd7dea4f1069fe18f8e8265de6f7eab20c62ca9299e0fa8c2af6'
 end
