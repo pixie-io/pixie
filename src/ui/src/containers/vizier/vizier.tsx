@@ -86,7 +86,7 @@ export const VizierMain = (props: VizierMainProps) => {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       <VizierTopNav />
       <Switch>
-        <Route path='/agents' component={AgentDisplay} />
+        <Route path='/admin' component={AgentDisplay} />
         <Route path='/console' component={EditorWithApollo} />
         <Redirect from='/*' to='/console' />
       </Switch>

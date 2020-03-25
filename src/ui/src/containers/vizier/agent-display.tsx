@@ -74,6 +74,7 @@ export const AgentDisplay = () => {
           if (results.status) {
             setState({ ...state, error: results.status.getMessage() });
           }
+          return;
         }
         const data = dataFromProto(results.tables[0].relation, results.tables[0].data);
         setState({ data });
