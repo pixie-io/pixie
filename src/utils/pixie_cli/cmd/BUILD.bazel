@@ -11,6 +11,7 @@ go_library(
         "config.go",
         "create_bundle.go",
         "delete_pixie.go",
+        "demo.go",
         "deploy.go",
         "get.go",
         "load_cluster_secrets.go",

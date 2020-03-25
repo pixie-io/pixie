@@ -31,6 +31,7 @@ func init() {
 	RootCmd.AddCommand(AuthCmd)
 	RootCmd.AddCommand(CollectLogsCmd)
 	RootCmd.AddCommand(InstallCertsCmd)
+	RootCmd.AddCommand(DemoCmd)
 	RootCmd.AddCommand(DeployCmd)
 	RootCmd.AddCommand(DeleteCmd)
 	RootCmd.AddCommand(LoadClusterSecretsCmd)
