@@ -20,8 +20,8 @@ using ::testing::Return;
 constexpr char kTestDataBasePath[] = "src/common/system";
 
 namespace {
-std::string GetPathToTestDataFile(const std::string& fname) {
-  return testing::TestFilePath(std::string(kTestDataBasePath) + "/" + fname);
+std::string GetPathToTestDataFile(std::string_view fname) {
+  return testing::TestFilePath(std::filesystem::path(kTestDataBasePath) / fname);
 }
 }  // namespace
 
