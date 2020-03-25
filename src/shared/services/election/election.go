@@ -7,9 +7,8 @@ package election
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -27,19 +26,30 @@ type K8sLeaderElectionMgr struct {
 	name string
 	// The namespace to run the election in.
 	namespace string
-	// Wait time in seconds.
-	waitTime float64
 	// Kube config to use.
 	kubeConfig string
+	// Duration in ms that a lease on a lock lasts.
+	leaseDuration time.Duration
+	// Duration in ms before a campaign renews their lease.
+	renewDeadline time.Duration
+	// Duration in ms before attempting to retry acquiring the lease.
+	retryPeriod time.Duration
 }
 
 // NewK8sLeaderElectionMgr creates a K8sLeaderElectionMgr.
-func NewK8sLeaderElectionMgr(electionNamespace string, leaderElectionWaitS float64) (*K8sLeaderElectionMgr, error) {
+func NewK8sLeaderElectionMgr(electionNamespace string, expectedMaxSkewMS, renewDeadlineMS time.Duration) (*K8sLeaderElectionMgr, error) {
 	if electionNamespace == "" {
 		return nil, errors.New("namespace must be specified for leader election")
 	}
 	// Might add more complex logic that necessitates errors, but for now not included.
-	return &K8sLeaderElectionMgr{namespace: electionNamespace, name: "cloud-conn-election", waitTime: leaderElectionWaitS, kubeConfig: ""}, nil
+	return &K8sLeaderElectionMgr{
+		namespace:     electionNamespace,
+		name:          "cloud-conn-election",
+		leaseDuration: expectedMaxSkewMS + renewDeadlineMS,
+		renewDeadline: renewDeadlineMS,
+		retryPeriod:   renewDeadlineMS / 4,
+		kubeConfig:    "",
+	}, nil
 }
 
 func buildConfig(kubeconfig string) (*rest.Config, error) {
@@ -59,7 +69,7 @@ func buildConfig(kubeconfig string) (*rest.Config, error) {
 }
 
 // runElection manages the election.
-func (le *K8sLeaderElectionMgr) runElection(id string, callback func(string)) {
+func (le *K8sLeaderElectionMgr) runElection(ctx context.Context, callback func(string), id string) {
 
 	// leader election uses the Kubernetes API by writing to a
 	// lock object, which can be a LeaseLock object (preferred),
@@ -72,24 +82,7 @@ func (le *K8sLeaderElectionMgr) runElection(id string, callback func(string)) {
 	}
 	client := clientset.NewForConfigOrDie(config)
 
-	// use a Go context so we can tell the leaderelection code when we
-	// want to step down
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	// listen for interrupts or the Linux SIGTERM signal and cancel
-	// our context, which the leader election code will observe and
-	// step down
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-ch
-		log.Info("Received termination, signaling shutdown")
-		cancel()
-	}()
-
-	// we use the Lease lock type since edits to Leases are less common
-	// and fewer objects in the cluster watch "all Leases".
+	// We use the EndpointsLock to remain compatible with older versions of K8s, rather than the LeaseLock (k8s >=v1.14) as suggested.
 	lock := &resourcelock.EndpointsLock{
 		EndpointsMeta: metav1.ObjectMeta{
 			Name:      le.name,
@@ -111,9 +104,9 @@ func (le *K8sLeaderElectionMgr) runElection(id string, callback func(string)) {
 		// get elected before your background loop finished, violating
 		// the stated goal of the lease.
 		ReleaseOnCancel: true,
-		LeaseDuration:   60 * time.Second,
-		RenewDeadline:   15 * time.Second,
-		RetryPeriod:     5 * time.Second,
+		LeaseDuration:   le.leaseDuration * time.Millisecond,
+		RenewDeadline:   le.renewDeadline * time.Millisecond,
+		RetryPeriod:     le.retryPeriod * time.Millisecond,
 		Callbacks: leaderelection.LeaderCallbacks{
 			OnStartedLeading: func(ctx context.Context) {
 				// we're notified when we start - this is where you would
@@ -121,22 +114,19 @@ func (le *K8sLeaderElectionMgr) runElection(id string, callback func(string)) {
 			},
 			OnStoppedLeading: func() {
 				// we can do cleanup here
-				log.Infof("leader lost: %s", id)
+				log.Errorf("leadership lost: %s", id)
+				panic(fmt.Errorf("leadership lost"))
 			},
 			OnNewLeader: callback,
 		},
 	})
 }
 
-type leader struct {
-	Name string `json:"name"`
-}
-
-// WaitForElection blocks until this node is the leader.
-func (le *K8sLeaderElectionMgr) WaitForElection() error {
-	l := &leader{}
+// Campaign blocks until this node is the leader.
+func (le *K8sLeaderElectionMgr) Campaign(ctx context.Context) error {
+	ch := make(chan string)
 	fn := func(str string) {
-		l.Name = str
+		ch <- str
 	}
 
 	// Get the hostname of this pod.
@@ -145,19 +135,16 @@ func (le *K8sLeaderElectionMgr) WaitForElection() error {
 		return err
 	}
 
-	go le.runElection(podHostname, fn)
+	go le.runElection(ctx, fn, podHostname)
 
 	// Loop until we are elected.
-	for {
+	for newName := range ch {
 		// If the leader is the pod then we exit the loop.
-		if l.Name == podHostname {
+		if newName == podHostname {
 			log.Infof("Pod '%s' is now leader.", podHostname)
 			return nil
 		}
-		if l.Name != "" {
-			// If this pod is not the leader then continue to wait.
-			log.Infof("Pod '%s' not yet elected leader. Current leader is '%s'.", podHostname, l.Name)
-		}
-		time.Sleep(time.Duration(le.waitTime) * time.Second)
+		log.Infof("Pod '%s' not yet elected leader. Current leader is '%s'.", podHostname, newName)
 	}
+	return fmt.Errorf("Channel closed before '%s' elected leader", podHostname)
 }

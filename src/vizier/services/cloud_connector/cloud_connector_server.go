@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -25,7 +26,8 @@ func init() {
 	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
 	pflag.String("certmgr_service", "vizier-certmgr.pl.svc:50900", "The cert manager service url (load balancer/list is ok)")
 	pflag.String("nats_url", "pl-nats", "The URL of NATS")
-	pflag.Float64("leader_election_retry_wait", 5, "Time in seconds to wait betweeen leader election checks")
+	pflag.Duration("max_expected_clock_skew", 750, "Duration in ms of expected maximum clock skew in a cluster")
+	pflag.Duration("renew_period", 500, "Duration in ms of the time to wait to renew lease")
 	pflag.String("pod_namespace", "pl", "The namespace this pod runs in. Used for leader elections")
 	pflag.String("qb_service", "vizier-query-broker.pl.svc:50300", "The querybroker service url (load balancer/list is ok)")
 }
@@ -118,10 +120,28 @@ func main() {
 			Error("Error with NATS handler")
 	})
 
-	leaderMgr, err := election.NewK8sLeaderElectionMgr(viper.GetString("pod_namespace"), viper.GetFloat64("leader_election_retry_wait"))
+	leaderMgr, err := election.NewK8sLeaderElectionMgr(
+		viper.GetString("pod_namespace"),
+		viper.GetDuration("max_expected_clock_skew"),
+		viper.GetDuration("renew_period"),
+	)
+
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to leader election manager.")
 	}
+	// Cancel callback causes leader to resign.
+	leaderCtx, cancel := context.WithCancel(context.Background())
+	err = leaderMgr.Campaign(leaderCtx)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to become leader")
+	}
+
+	resign := func() {
+		log.Info("Resigning leadership")
+		cancel()
+	}
+	// Resign leadership after the server stops.
+	defer resign()
 
 	// Start passthrough proxy.
 	ptProxy, err := ptproxy.NewPassThroughProxy(nc, vzServiceClient)
@@ -134,7 +154,7 @@ func main() {
 	// We just use the current time in nanoseconds to mark the session ID. This will let the cloud side know that
 	// the cloud connector restarted. Clock skew might make this incorrect, but we mostly want this for debugging.
 	sessionID := time.Now().UnixNano()
-	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), sessionID, vzClient, certMgrClient, vzInfo, leaderMgr, nc)
+	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), sessionID, vzClient, certMgrClient, vzInfo, nc)
 	go server.RunStream()
 	defer server.Stop()
 
