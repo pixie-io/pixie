@@ -49,11 +49,11 @@ struct connect_info_t {
   // TODO(PL-693): Use bpf_getsockopt() to detect socket type and address family. So we can unify
   // the entry probes of accept() & connect().
   u32 fd;
-} __attribute__((__packed__, aligned(8)));
+};
 
 struct accept_info_t {
   struct sockaddr* addr;
-} __attribute__((__packed__, aligned(8)));
+};
 
 struct data_info_t {
   // The timestamp of the read/write syscall entry.
@@ -63,11 +63,11 @@ struct data_info_t {
   // For sendmsg()/recvmsg()/writev()/readv().
   const struct iovec* iov;
   size_t iovlen;
-} __attribute__((__packed__, aligned(8)));
+};
 
 struct close_info_t {
   u32 fd;
-} __attribute__((__packed__, aligned(8)));
+};
 
 // This control_map is a bit-mask that controls which endpoints are traced in a connection.
 // The bits are defined in EndpointRole enum, kRoleClient or kRoleServer. kRoleUnknown is not
