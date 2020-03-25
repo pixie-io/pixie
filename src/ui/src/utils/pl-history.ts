@@ -1,21 +1,30 @@
-import { createBrowserHistory } from 'history';
+import {createBrowserHistory} from 'history';
 import analytics from 'utils/analytics';
 
 const history = createBrowserHistory();
 
-const showIntercom = (location) => {
-  return location === '/login' || location === '/signup';
-};
+function showIntercom(path: string): boolean {
+  return path === '/login' || path === '/signup';
+}
 
-const sendPageEvent = (location) => {
-  analytics.page(location.pathname, {},  {Intercom: {hideDefaultLauncher: !showIntercom(window.location.pathname)}});
-};
+function sendPageEvent(path: string) {
+  analytics.page(
+    '',   // category
+    path, // name
+    {},   // properties
+    {
+      integrations: {
+        Intercom: { hideDefaultLauncher: !showIntercom(path) },
+      },
+    },    // options
+  );
+}
 
 // Emit a page event for the first loaded page.
-sendPageEvent(window.location);
+sendPageEvent(window.location.pathname);
 
-history.listen((location, action) => {
-  sendPageEvent(location);
+history.listen((location) => {
+  sendPageEvent(location.pathname);
 });
 
 export default history;

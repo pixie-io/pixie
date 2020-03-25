@@ -284,8 +284,12 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
     const locationParam = typeof queryParams.location === 'string' ? queryParams.location : '';
     const localMode = typeof queryParams.local_mode === 'string' ? queryParams.local_mode : '';
     const localModeRedirect = typeof queryParams.redirect_uri === 'string' ? queryParams.redirect_uri : '';
-    const authenticatingParam = typeof queryParams.authenticating === 'string' ? queryParams.authenticating : '';
     this.authenticating = window.location.hash.search('access_token') !== -1;
+
+    const segmentId = typeof queryParams.tid === 'string' ? queryParams.tid : '';
+    if (segmentId) {
+      analytics.alias(segmentId);
+    }
 
     this.noCache = typeof queryParams.no_cache === 'string' && queryParams.no_cache === 'true';
     this.redirectPath = locationParam;

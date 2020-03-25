@@ -20,20 +20,24 @@ class Analytics {
         }
     }
 
-    load = () => {
+    load() {
         window.analytics.load(SEGMENT_UI_WRITE_KEY);
     }
 
-    page = (page: string, properties?: any, options?: any) => {
-        window.analytics.page(page, properties, options);
+    get page() {
+        return window.analytics.page;
     }
 
-    track = (name: string, properties?: any) => {
-        window.analytics.track(name, properties);
+    get track() {
+        return window.analytics.track;
     }
 
-    identify = (userid: string, traits: any) => {
-        window.analytics.identify(userid, traits);
+    get identify() {
+        return window.analytics.identify;
+    }
+
+    get alias() {
+        return window.analytics.alias;
     }
 }
 

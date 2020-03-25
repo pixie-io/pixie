@@ -5,7 +5,6 @@ const webpack = require('webpack');
 const {CheckerPlugin} = require('awesome-typescript-loader');
 const ArchivePlugin = require('webpack-archive-plugin');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
-const CopyPlugin = require('copy-webpack-plugin');
 const HtmlWebpackHarddiskPlugin = require('html-webpack-harddisk-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const utils = require('./webpack-utils');
@@ -28,9 +27,6 @@ let plugins = [
     template: 'index.html',
     filename: 'index.html',
   }),
-  new CopyPlugin([
-    {from: 'segment.js', to: 'assets/segment.js'},
-  ]),
   new HtmlWebpackHarddiskPlugin(),
   new webpack.EnvironmentPlugin([
     'BUILD_ENV',
@@ -40,7 +36,6 @@ let plugins = [
     'BUILD_TIMESTAMP',
   ]),
 ];
-
 
 if (isDevServer) {
   // enable HMR globally
@@ -86,6 +81,7 @@ var webpackConfig = {
         loader: require.resolve('babel-loader'),
         options: {
           cacheDirectory: true,
+          ignore: ['segment.js'],
         },
       },
       {
