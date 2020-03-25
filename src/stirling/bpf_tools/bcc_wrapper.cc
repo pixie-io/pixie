@@ -93,9 +93,9 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program,
 }
 
 Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
-  VLOG(1) << absl::StrFormat("Deploying kprobe:\n   type=%s\n   kernel_fn=%s\n   trace_fn=%s",
-                             magic_enum::enum_name(probe.attach_type), probe.kernel_fn,
-                             probe.probe_fn);
+  VLOG(1) << absl::Substitute("Deploying kprobe:\n   type=$0\n   kernel_fn=$1\n   trace_fn=$2",
+                              magic_enum::enum_name(probe.attach_type), probe.kernel_fn,
+                              probe.probe_fn);
   ebpf::StatusTuple attach_status = bpf_.attach_kprobe(
       bpf_.get_syscall_fnname(std::string(probe.kernel_fn)), std::string(probe.probe_fn),
       0 /* offset */, probe.attach_type, kKprobeMaxActive);
@@ -112,9 +112,10 @@ Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
 constexpr uint64_t kIgnoredSymbolAddr = 0;
 
 Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
-  VLOG(1) << absl::StrFormat(
-      "Deploying uprobe:\n   type=%s\n   binary=%s\n   symbol=%s\n   trace_fn=%s",
-      magic_enum::enum_name(probe.attach_type), probe.binary_path, probe.symbol, probe.probe_fn);
+  VLOG(1) << absl::Substitute(
+      "Deploying uprobe:\n   type=$0\n   binary=$1\n   symbol=$2\n   trace_fn=$3",
+      magic_enum::enum_name(probe.attach_type), probe.binary_path.string(), probe.symbol,
+      probe.probe_fn);
   ebpf::StatusTuple attach_status =
       bpf().attach_uprobe(probe.binary_path, std::string(probe.symbol), std::string(probe.probe_fn),
                           kIgnoredSymbolAddr, probe.attach_type);
