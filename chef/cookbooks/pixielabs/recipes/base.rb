@@ -78,3 +78,9 @@ ark 'shellcheck' do
   has_binaries ['shellcheck']
   checksum node['shellcheck']['sha256']
 end
+
+remote_file '/opt/pixielabs/bin/prototool' do
+  source node['prototool']['download_path']
+  mode 0755
+  checksum node['prototool']['sha256']
+end

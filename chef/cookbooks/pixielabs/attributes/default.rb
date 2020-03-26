@@ -20,6 +20,7 @@ default['golang']                    = {}
 default['sops']                      = {}
 default['shellcheck']                = {}
 default['sentry']                    = {}
+default['prototool']                 = {}
 
 if node[:platform] == 'ubuntu'
   default['bazel']['download_path'] =
@@ -67,10 +68,17 @@ if node[:platform] == 'ubuntu'
   default['shellcheck']['sha256']        =
     '39c501aaca6aae3f3c7fc125b3c3af779ddbe4e67e4ebdc44c2ae5cba76c847f'
 
+
   default['sentry']['download_path'] =
     'https://github.com/getsentry/sentry-cli/releases/download/1.52.0/sentry-cli-Linux-x86_64'
   default['sentry']['sha256']        =
     'd6aeb45efbcdd3ec780f714b5082046ea1db31ff60ed0fc39916bbc8b6d708be'
+
+  default['prototool']['download_path'] =
+    'https://github.com/uber/prototool/releases/download/v1.8.0/prototool-Linux-x86_64'
+  default['prototool']['sha256']        =
+    '7ffbe2c6355241e2115d028ed4a38113ccbea93944ac2ad08bec5770917e12e1'
+
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
     'https://github.com/bazelbuild/bazel/releases/download/2.2.0/bazel-2.2.0-darwin-x86_64'
@@ -119,4 +127,9 @@ elsif node[:platform] == 'mac_os_x'
     'https://github.com/getsentry/sentry-cli/releases/download/1.52.0/sentry-cli-Darwin-x86_64'
   default['sentry']['sha256']        =
     '97c9bafbcf87bd7dea4f1069fe18f8e8265de6f7eab20c62ca9299e0fa8c2af6'
+
+  default['prototool']['download_path'] =
+    'https://github.com/uber/prototool/releases/download/v1.8.0/prototool-Darwin-x86_64'
+  default['prototool']['sha256']        =
+    'fa5aec63bfc1461f3291948b7aede460d7eda216ba68b618704fd70c8a34b3b0'
 end
