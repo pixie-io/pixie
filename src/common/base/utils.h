@@ -298,4 +298,11 @@ StatusOr<TEnum> EnumCast(TIn x) {
   return enum_cast_var.value();
 }
 
+/**
+ * Returns lines split from the input content.
+ */
+inline std::vector<std::string_view> GetLines(std::string_view content) {
+  return absl::StrSplit(content, "\n", absl::SkipWhitespace());
+}
+
 }  // namespace pl

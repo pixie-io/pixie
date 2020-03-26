@@ -6,6 +6,7 @@
 #include <system_error>
 
 #include "src/common/base/error.h"
+#include "src/common/base/utils.h"
 
 namespace pl {
 
@@ -30,6 +31,24 @@ StatusOr<std::string> NameForUID(uid_t uid) {
     return error::NotFound("UID '$0' is not found", uid);
   }
   return std::string(pwd.pw_name);
+}
+
+std::map<uid_t, std::string> ParsePasswd(std::string_view passwd_content) {
+  std::map<uid_t, std::string> res;
+  std::vector<std::string_view> lines = GetLines(passwd_content);
+  for (auto line : lines) {
+    std::vector<std::string_view> fields = absl::StrSplit(line, ":");
+    constexpr int kPasswdEntryFieldCount = 7;
+    if (fields.size() < kPasswdEntryFieldCount) {
+      continue;
+    }
+    uid_t uid = 0;
+    if (!absl::SimpleAtoi(fields[3], &uid)) {
+      continue;
+    }
+    res[uid] = fields[0];
+  }
+  return res;
 }
 
 }  // namespace pl
