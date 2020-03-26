@@ -36,6 +36,7 @@ func getSegmentKey() string {
 func Client() analytics.Client {
 	once.Do(func() {
 		client, _ = analytics.NewWithConfig(getSegmentKey(), analytics.Config{
+			Endpoint: "https://segment.withpixie.ai",
 			DefaultContext: &analytics.Context{
 				App: analytics.AppInfo{
 					Name:    "PX CLI",
