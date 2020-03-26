@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,6 +13,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -214,7 +216,7 @@ func deployCmd(cmd *cobra.Command, args []string) {
 	}
 	instructions := strings.Join(appSpec.Instructions, "\n")
 
-	yamls, err := downloadDemoAppYAMLsTask(appName, viper.GetString("artifacts"))
+	yamls, err := downloadDemoAppYAMLs(appName, viper.GetString("artifacts"))
 	if err != nil {
 		log.WithError(err).Fatal("Could not download demo yaml apps for app '%s'", appName)
 	}
@@ -229,12 +231,18 @@ func deployCmd(cmd *cobra.Command, args []string) {
 
 	err = setupDemoApp(appName, yamls)
 	if err != nil {
-		log.WithError(err).Fatalf("Did not successfully apply all %d yamls.", len(yamls))
+		log.WithError(err).Fatalf("Failed to deploy demo application.")
 
 	}
 
-	log.Infof("Successfully deployed demo app %s to cluster %s", args[0], currentCluster)
-	log.Infof(instructions)
+	fmt.Fprintf(os.Stderr, "Successfully deployed demo app %s to cluster %s.\n", args[0], currentCluster)
+
+	p := func(s string, a ...interface{}) {
+		fmt.Fprintf(os.Stderr, s, a...)
+	}
+	b := color.New(color.Bold)
+	p(color.CyanString("==> ") + b.Sprint("Next Steps:\n\n"))
+	p(instructions)
 }
 
 type manifestAppSpec struct {
@@ -277,22 +285,6 @@ func deleteDemoApp(appName string) error {
 	}
 	tr := utils.NewSerialTaskRunner(deleteDemo)
 	return tr.RunAndMonitor()
-}
-
-func downloadDemoAppYAMLsTask(appName, artifacts string) (map[string][]byte, error) {
-	var yamls map[string][]byte
-	var err error
-	downloadDemoApp := []utils.Task{
-		newTaskWrapper(fmt.Sprintf("Downloading demo app %s", appName), func() error {
-			yamls, err = downloadDemoAppYAMLs(appName, artifacts)
-			return err
-		}),
-	}
-	tr := utils.NewSerialTaskRunner(downloadDemoApp)
-	if err = tr.RunAndMonitor(); err != nil {
-		return nil, err
-	}
-	return yamls, nil
 }
 
 func downloadDemoAppYAMLs(appName, artifacts string) (map[string][]byte, error) {
@@ -348,12 +340,14 @@ func createNamespace(namespace string) error {
 func setupDemoApp(appName string, yamls map[string][]byte) error {
 	kubeConfig := k8s.GetConfig()
 	clientset := k8s.GetClientset(kubeConfig)
+	if namespaceExists(appName) {
+		fmt.Printf("%s: namespace %s already exists. If created with px, run %s to remove\n",
+			color.RedString("Error"), color.RedString(appName), color.GreenString((fmt.Sprintf("px demo delete %s", appName))))
+		return errors.New("namespace already exists")
+	}
 
 	tasks := []utils.Task{
 		newTaskWrapper(fmt.Sprintf("Creating namespace %s", appName), func() error {
-			if namespaceExists(appName) {
-				return fmt.Errorf("namespace '%s' already exists. If created with px, run px demo delete %s to remove", appName, appName)
-			}
 			return createNamespace(appName)
 		}),
 		newTaskWrapper(fmt.Sprintf("Deploying %s YAMLs", appName), func() error {
