@@ -15,11 +15,14 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	analytics "gopkg.in/segmentio/analytics-go.v3"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
@@ -40,6 +43,18 @@ var listDemoCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List available demo apps",
 	Run:   listCmd,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Demo List Apps",
+		})
+	},
+	PostRun: func(cmd *cobra.Command, args []string) {
+		pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Demo List Apps Complete",
+		})
+	},
 }
 
 var deleteDemoCmd = &cobra.Command{
@@ -47,6 +62,22 @@ var deleteDemoCmd = &cobra.Command{
 	Short: "Delete demo app",
 	Args:  cobra.ExactArgs(1),
 	Run:   deleteCmd,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Demo Delete App",
+			Properties: analytics.NewProperties().
+				Set("app", args[0]),
+		})
+	},
+	PostRun: func(cmd *cobra.Command, args []string) {
+		pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Demo Delete App Complete",
+			Properties: analytics.NewProperties().
+				Set("app", args[0]),
+		})
+	},
 }
 
 var deployDemoCmd = &cobra.Command{
@@ -54,6 +85,22 @@ var deployDemoCmd = &cobra.Command{
 	Short: "Deploy demo app",
 	Args:  cobra.ExactArgs(1),
 	Run:   deployCmd,
+	PreRun: func(cmd *cobra.Command, args []string) {
+		pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Demo Deploy App",
+			Properties: analytics.NewProperties().
+				Set("app", args[0]),
+		})
+	},
+	PostRun: func(cmd *cobra.Command, args []string) {
+		defer pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Demo Deploy App Complete",
+			Properties: analytics.NewProperties().
+				Set("app", args[0]),
+		})
+	},
 }
 
 func init() {
@@ -66,6 +113,19 @@ func init() {
 }
 
 func listCmd(cmd *cobra.Command, args []string) {
+	var err error
+	defer func() {
+		if err == nil {
+			return
+		}
+		pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Demo List Apps Error",
+			Properties: analytics.NewProperties().
+				Set("error", err.Error()),
+		})
+	}()
+
 	manifest, err := downloadManifest(viper.GetString("artifacts"))
 	if err != nil {
 		log.WithError(err).Fatal("Could not download manifest file")
@@ -84,6 +144,21 @@ func listCmd(cmd *cobra.Command, args []string) {
 
 func deleteCmd(cmd *cobra.Command, args []string) {
 	appName := args[0]
+
+	var err error
+	defer func() {
+		if err == nil {
+			return
+		}
+		pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Demo Delete App Error",
+			Properties: analytics.NewProperties().
+				Set("app", appName).
+				Set("error", err.Error()),
+		})
+	}()
+
 	manifest, err := downloadManifest(viper.GetString("artifacts"))
 	if err != nil {
 		log.WithError(err).Fatal("Could not download manifest file")
@@ -103,7 +178,7 @@ func deleteCmd(cmd *cobra.Command, args []string) {
 		log.Fatalf("Namespace %s does not exist on cluster %s", appName, currentCluster)
 	}
 
-	if err := deleteDemoApp(appName); err != nil {
+	if err = deleteDemoApp(appName); err != nil {
 		log.WithError(err).Fatalf("Error deleting demo app %s from cluster %s", appName, currentCluster)
 	} else {
 		log.Infof("Successfully deleted demo app %s from cluster %s", appName, currentCluster)
@@ -112,6 +187,20 @@ func deleteCmd(cmd *cobra.Command, args []string) {
 
 func deployCmd(cmd *cobra.Command, args []string) {
 	appName := args[0]
+
+	var err error
+	defer func() {
+		if err == nil {
+			return
+		}
+		pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Demo Deploy App Error",
+			Properties: analytics.NewProperties().
+				Set("app", appName).
+				Set("error", err.Error()),
+		})
+	}()
 
 	manifest, err := downloadManifest(viper.GetString("artifacts"))
 	if err != nil {
