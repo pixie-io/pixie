@@ -754,19 +754,29 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, u64 id,
   submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)accept_args->addr));
 }
 
-static __inline void probe_entry_write_send(struct pt_regs* ctx, u64 id, int fd, char* buf,
-                                            size_t count, const struct iovec* iov, size_t iovlen) {
-  if (fd < 0) {
+static __inline void process_syscall_write_send(struct pt_regs* ctx, u64 id,
+                                                const struct data_args_t* write_args) {
+  u32 tgid = id >> 32;
+  ssize_t bytes_written = PT_REGS_RC(ctx);
+
+  if (write_args->fd < 0) {
     return;
   }
 
-  u32 tgid = id >> 32;
+  if (bytes_written <= 0) {
+    // This write() call failed, or has nothing to write.
+    return;
+  }
+
+  if (is_open_file(id, write_args->fd)) {
+    return;
+  }
 
   if (!should_trace_tgid(tgid)) {
     return;
   }
 
-  struct conn_info_t* conn_info = get_conn_info(tgid, fd);
+  struct conn_info_t* conn_info = get_conn_info(tgid, write_args->fd);
   if (conn_info == NULL) {
     return;
   }
@@ -774,52 +784,23 @@ static __inline void probe_entry_write_send(struct pt_regs* ctx, u64 id, int fd,
   // Note: From this point on, if exiting early, and conn_info->addr_valid == 0,
   // then call conn_info_map.delete(&tgid_fd) to avoid a BPF map leak.
 
-  struct data_args_t write_args;
-  memset(&write_args, 0, sizeof(struct data_args_t));
-  write_args.fd = fd;
-  write_args.buf = buf;
-  write_args.iov = iov;
-  write_args.iovlen = iovlen;
-
   // TODO(yzhao): Split the interface such that the singular buf case and multiple bufs in msghdr
   // are handled separately without mixed interface. The plan is to factor out helper functions for
   // lower-level functionalities, and call them separately for each case.
-  if (buf != NULL) {
-    update_traffic_class(conn_info, kEgress, buf, count);
-  } else if (write_args.iov != NULL && write_args.iovlen > 0) {
+  if (write_args->buf != NULL) {
+    update_traffic_class(conn_info, kEgress, write_args->buf, bytes_written);
+  } else if (write_args->iov != NULL && write_args->iovlen > 0) {
     struct iovec iov_cpy;
-    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &write_args.iov[0]);
+    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &write_args->iov[0]);
     update_traffic_class(conn_info, kEgress, iov_cpy.iov_base, iov_cpy.iov_len);
   }
 
   // Filter for request or response based on control flags and protocol type.
   if (!should_trace_conn(conn_info)) {
-    u64 tgid_fd = gen_tgid_fd(tgid, fd);
+    u64 tgid_fd = gen_tgid_fd(tgid, write_args->fd);
     if (!conn_info->addr_valid) {
       conn_info_map.delete(&tgid_fd);
     }
-    return;
-  }
-
-  active_write_args_map.update(&id, &write_args);
-}
-
-static __inline void probe_ret_write_send(struct pt_regs* ctx, u64 id) {
-  ssize_t bytes_written = PT_REGS_RC(ctx);
-  if (bytes_written <= 0) {
-    // This write() call failed, or has nothing to write.
-    return;
-  }
-
-  const struct data_args_t* write_args = active_write_args_map.lookup(&id);
-  if (write_args == NULL) {
-    return;
-  }
-
-  u32 tgid = id >> 32;
-  u64 tgid_fd = gen_tgid_fd(tgid, write_args->fd);
-  struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
-  if (conn_info == NULL) {
     return;
   }
 
@@ -837,44 +818,28 @@ static __inline void probe_ret_write_send(struct pt_regs* ctx, u64 id) {
   }
 }
 
-static __inline void probe_entry_read_recv(struct pt_regs* ctx, u64 id, int fd, char* buf,
-                                           size_t count, const struct iovec* iov, size_t iovlen) {
-  if (fd < 0) {
-    return;
-  }
-
+static __inline void process_syscall_read_recv(struct pt_regs* ctx, u64 id,
+                                               const struct data_args_t* read_args) {
   u32 tgid = id >> 32;
+  ssize_t bytes_read = PT_REGS_RC(ctx);
 
-  if (!should_trace_tgid(tgid)) {
+  if (read_args->fd < 0) {
     return;
   }
-
-  struct data_args_t read_args;
-  memset(&read_args, 0, sizeof(struct data_args_t));
-  read_args.fd = fd;
-  read_args.buf = buf;
-  read_args.iov = iov;
-  read_args.iovlen = iovlen;
-
-  active_read_args_map.update(&id, &read_args);
-}
-
-static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
-  ssize_t bytes_read = PT_REGS_RC(ctx);
 
   if (bytes_read <= 0) {
     // This read() call failed, or read nothing.
     return;
   }
 
-  const struct data_args_t* read_args = active_read_args_map.lookup(&id);
-  if (read_args == NULL) {
+  if (is_open_file(id, read_args->fd)) {
     return;
   }
 
-  const char* buf = read_args->buf;
+  if (!should_trace_tgid(tgid)) {
+    return;
+  }
 
-  u32 tgid = id >> 32;
   struct conn_info_t* conn_info = get_conn_info(tgid, read_args->fd);
   if (conn_info == NULL) {
     return;
@@ -884,8 +849,8 @@ static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
   // then call conn_info_map.delete(&tgid_fd) to avoid a BPF map leak.
 
   // TODO(yzhao): Same TODO for split the interface.
-  if (buf != NULL) {
-    update_traffic_class(conn_info, kIngress, buf, bytes_read);
+  if (read_args->buf != NULL) {
+    update_traffic_class(conn_info, kIngress, read_args->buf, bytes_read);
   } else if (read_args->iov != NULL && read_args->iovlen > 0) {
     struct iovec iov_cpy;
     bpf_probe_read(&iov_cpy, sizeof(struct iovec), &read_args->iov[0]);
@@ -979,6 +944,7 @@ static __inline void process_syscall_close(struct pt_regs* ctx, u64 id,
 int syscall__probe_ret_open(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
 
+  // No arguments were stashed; non-existent entry probe.
   process_syscall_open(ctx, id);
 
   return 0;
@@ -1043,6 +1009,7 @@ int syscall__probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockadd
   struct accept_args_t accept_args;
   accept_args.addr = addr;
   active_accept_args_map.update(&id, &accept_args);
+
   return 0;
 }
 
@@ -1062,30 +1029,49 @@ int syscall__probe_ret_accept4(struct pt_regs* ctx) {
 int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   u64 id = bpf_get_current_pid_tgid();
 
-  if (is_open_file(id, fd)) {
-    return 0;
-  }
+  // Stash arguments.
+  struct data_args_t write_args = {};
+  write_args.fd = fd;
+  write_args.buf = buf;
+  active_write_args_map.update(&id, &write_args);
 
-  probe_entry_write_send(ctx, id, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
   return 0;
 }
 
 int syscall__probe_ret_write(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_ret_write_send(ctx, id);
+
+  // Unstash arguments, and process syscall.
+  struct data_args_t* write_args = active_write_args_map.lookup(&id);
+  if (write_args != NULL) {
+    process_syscall_write_send(ctx, id, write_args);
+  }
+
   active_write_args_map.delete(&id);
   return 0;
 }
 
 int syscall__probe_entry_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_entry_write_send(ctx, id, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+
+  // Stash arguments.
+  struct data_args_t write_args = {};
+  write_args.fd = fd;
+  write_args.buf = buf;
+  active_write_args_map.update(&id, &write_args);
+
   return 0;
 }
 
 int syscall__probe_ret_send(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_ret_write_send(ctx, id);
+
+  // Unstash arguments, and process syscall.
+  struct data_args_t* write_args = active_write_args_map.lookup(&id);
+  if (write_args != NULL) {
+    process_syscall_write_send(ctx, id, write_args);
+  }
+
   active_write_args_map.delete(&id);
   return 0;
 }
@@ -1093,43 +1079,74 @@ int syscall__probe_ret_send(struct pt_regs* ctx) {
 int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   u64 id = bpf_get_current_pid_tgid();
 
-  if (is_open_file(id, fd)) {
-    return 0;
-  }
+  // Stash arguments.
+  struct data_args_t read_args = {};
+  read_args.fd = fd;
+  read_args.buf = buf;
+  active_read_args_map.update(&id, &read_args);
 
-  probe_entry_read_recv(ctx, id, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
   return 0;
 }
 
 int syscall__probe_ret_read(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_ret_read_recv(ctx, id);
+
+  // Unstash arguments, and process syscall.
+  struct data_args_t* read_args = active_read_args_map.lookup(&id);
+  if (read_args != NULL) {
+    process_syscall_read_recv(ctx, id, read_args);
+  }
+
   active_read_args_map.delete(&id);
   return 0;
 }
 
 int syscall__probe_entry_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_entry_read_recv(ctx, id, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+
+  // Stash arguments.
+  struct data_args_t read_args = {};
+  read_args.fd = fd;
+  read_args.buf = buf;
+  active_read_args_map.update(&id, &read_args);
+
   return 0;
 }
 
 int syscall__probe_ret_recv(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_ret_read_recv(ctx, id);
+
+  // Unstash arguments, and process syscall.
+  struct data_args_t* read_args = active_read_args_map.lookup(&id);
+  if (read_args != NULL) {
+    process_syscall_read_recv(ctx, id, read_args);
+  }
+
   active_read_args_map.delete(&id);
   return 0;
 }
 
 int syscall__probe_entry_sendto(struct pt_regs* ctx, int fd, char* buf, size_t count) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_entry_write_send(ctx, id, fd, buf, count, /*iov*/ NULL, /*iovlen*/ 0);
+
+  // Stash arguments.
+  struct data_args_t write_args = {};
+  write_args.fd = fd;
+  write_args.buf = buf;
+  active_write_args_map.update(&id, &write_args);
+
   return 0;
 }
 
 int syscall__probe_ret_sendto(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_ret_write_send(ctx, id);
+
+  // Unstash arguments, and process syscall.
+  struct data_args_t* write_args = active_write_args_map.lookup(&id);
+  if (write_args != NULL) {
+    process_syscall_write_send(ctx, id, write_args);
+  }
+
   active_write_args_map.delete(&id);
   return 0;
 }
@@ -1138,74 +1155,106 @@ int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int fd, const struct user_
   u64 id = bpf_get_current_pid_tgid();
 
   if (msghdr != NULL) {
-    probe_entry_write_send(ctx, id, fd, /*buf*/ NULL, /*count*/ 0, msghdr->msg_iov,
-                           msghdr->msg_iovlen);
+    // Stash arguments.
+    struct data_args_t write_args = {};
+    write_args.fd = fd;
+    write_args.iov = msghdr->msg_iov;
+    write_args.iovlen = msghdr->msg_iovlen;
+    active_write_args_map.update(&id, &write_args);
   }
+
   return 0;
 }
 
 int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_ret_write_send(ctx, id);
+
+  // Unstash arguments, and process syscall.
+  struct data_args_t* write_args = active_write_args_map.lookup(&id);
+  if (write_args != NULL) {
+    process_syscall_write_send(ctx, id, write_args);
+  }
+
   active_write_args_map.delete(&id);
   return 0;
 }
 
 int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int fd, struct user_msghdr* msghdr) {
   u64 id = bpf_get_current_pid_tgid();
+
   if (msghdr != NULL) {
-    probe_entry_read_recv(ctx, id, fd, /*buf*/ NULL, /*count*/ 0, msghdr->msg_iov,
-                          msghdr->msg_iovlen);
+    // Stash arguments.
+    struct data_args_t read_args = {};
+    read_args.fd = fd;
+    read_args.iov = msghdr->msg_iov;
+    read_args.iovlen = msghdr->msg_iovlen;
+    active_read_args_map.update(&id, &read_args);
   }
+
   return 0;
 }
 
 int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_ret_read_recv(ctx, id);
+
+  // Unstash arguments, and process syscall.
+  struct data_args_t* read_args = active_read_args_map.lookup(&id);
+  if (read_args != NULL) {
+    process_syscall_read_recv(ctx, id, read_args);
+  }
+
   active_read_args_map.delete(&id);
   return 0;
 }
 
 int syscall__probe_entry_writev(struct pt_regs* ctx, int fd, const struct iovec* iov, int iovlen) {
-  if (iov == NULL && iovlen <= 0) {
-    return 0;
-  }
-
   u64 id = bpf_get_current_pid_tgid();
 
-  if (is_open_file(id, fd)) {
-    return 0;
-  }
+  // Stash arguments.
+  struct data_args_t write_args = {};
+  write_args.fd = fd;
+  write_args.iov = iov;
+  write_args.iovlen = iovlen;
+  active_write_args_map.update(&id, &write_args);
 
-  probe_entry_write_send(ctx, id, fd, /*buf*/ NULL, /*count*/ 0, iov, iovlen);
   return 0;
 }
 
 int syscall__probe_ret_writev(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_ret_write_send(ctx, id);
+
+  // Unstash arguments, and process syscall.
+  struct data_args_t* write_args = active_write_args_map.lookup(&id);
+  if (write_args != NULL) {
+    process_syscall_write_send(ctx, id, write_args);
+  }
+
   active_write_args_map.delete(&id);
   return 0;
 }
 
 int syscall__probe_entry_readv(struct pt_regs* ctx, int fd, struct iovec* iov, int iovlen) {
-  if (iov == NULL && iovlen <= 0) {
-    return 0;
-  }
-
   u64 id = bpf_get_current_pid_tgid();
-  if (is_open_file(id, fd)) {
-    return 0;
-  }
 
-  probe_entry_read_recv(ctx, id, fd, /*buf*/ NULL, /*count*/ 0, iov, iovlen);
+  // Stash arguments.
+  struct data_args_t read_args = {};
+  read_args.fd = fd;
+  read_args.iov = iov;
+  read_args.iovlen = iovlen;
+  active_read_args_map.update(&id, &read_args);
+
   return 0;
 }
 
 int syscall__probe_ret_readv(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_ret_read_recv(ctx, id);
+
+  // Unstash arguments, and process syscall.
+  struct data_args_t* read_args = active_read_args_map.lookup(&id);
+  if (read_args != NULL) {
+    process_syscall_read_recv(ctx, id, read_args);
+  }
+
   active_read_args_map.delete(&id);
   return 0;
 }
