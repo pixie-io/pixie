@@ -44,20 +44,17 @@ BPF_PERF_OUTPUT(socket_control_events);
  * Internal structs and definitions
  ***********************************************************/
 
-struct connect_info_t {
+struct connect_args_t {
   const struct sockaddr* addr;
-  // TODO(PL-693): Use bpf_getsockopt() to detect socket type and address family. So we can unify
-  // the entry probes of accept() & connect().
   u32 fd;
 };
 
-struct accept_info_t {
+struct accept_args_t {
   struct sockaddr* addr;
 };
 
-struct data_info_t {
-  // The timestamp of the read/write syscall entry.
-  uint64_t timestamp_ns;
+struct data_args_t {
+  // For send()/recv()/write()/read().
   u32 fd;
   const char* buf;
   // For sendmsg()/recvmsg()/writev()/readv().
@@ -65,7 +62,7 @@ struct data_info_t {
   size_t iovlen;
 };
 
-struct close_info_t {
+struct close_args_t {
   u32 fd;
 };
 
@@ -89,27 +86,27 @@ BPF_HASH(open_file_map, u64, bool);
 // Map from thread to its ongoing accept() syscall's input argument.
 // Tracks accept() call from entry -> exit.
 // Key is {tgid, pid}.
-BPF_HASH(active_accept_info_map, u64, struct accept_info_t);
+BPF_HASH(active_accept_args_map, u64, struct accept_args_t);
 
 // Map from thread to its ongoing connect() syscall's input argument.
 // Tracks connect() call from entry -> exit.
 // Key is {tgid, pid}.
-BPF_HASH(active_connect_info_map, u64, struct connect_info_t);
+BPF_HASH(active_connect_args_map, u64, struct connect_args_t);
 
 // Map from thread to its ongoing write() syscall's input argument.
 // Tracks write() call from entry -> exit.
 // Key is {tgid, pid}.
-BPF_HASH(active_write_info_map, u64, struct data_info_t);
+BPF_HASH(active_write_args_map, u64, struct data_args_t);
 
 // Map from thread to its ongoing read() syscall's input argument.
 // Tracks read() call from entry -> exit.
 // Key is {tgid, pid}.
-BPF_HASH(active_read_info_map, u64, struct data_info_t);
+BPF_HASH(active_read_args_map, u64, struct data_args_t);
 
 // Map from thread to its ongoing close() syscall's input argument.
 // Tracks close() call from entry -> exit.
 // Key is {tgid, pid}.
-BPF_HASH(active_close_info_map, u64, struct close_info_t);
+BPF_HASH(active_close_args_map, u64, struct close_args_t);
 
 // BPF programs are limited to a 512-byte stack. We store this value per CPU
 // and use it as a heap allocated value.
@@ -233,14 +230,12 @@ static __inline bool should_trace_tgid(const u32 tgid) {
 }
 
 static __inline struct socket_data_event_t* fill_event(enum TrafficDirection direction,
-                                                       const struct data_info_t* data_info,
                                                        const struct conn_info_t* conn_info) {
   u32 kZero = 0;
   struct socket_data_event_t* event = data_buffer_heap.lookup(&kZero);
   if (event == NULL) {
     return NULL;
   }
-  event->attr.entry_timestamp_ns = data_info->timestamp_ns;
   event->attr.return_timestamp_ns = bpf_ktime_get_ns();
   event->attr.direction = direction;
   event->attr.conn_id = conn_info->conn_id;
@@ -711,11 +706,11 @@ static __inline void probe_entry_connect_impl(struct pt_regs* ctx, u64 id, int s
     return;
   }
 
-  struct connect_info_t connect_info;
-  memset(&connect_info, 0, sizeof(struct connect_info_t));
-  connect_info.fd = sockfd;
-  connect_info.addr = addr;
-  active_connect_info_map.update(&id, &connect_info);
+  struct connect_args_t connect_args;
+  memset(&connect_args, 0, sizeof(struct connect_args_t));
+  connect_args.fd = sockfd;
+  connect_args.addr = addr;
+  active_connect_args_map.update(&id, &connect_args);
 }
 
 static __inline void probe_ret_connect_impl(struct pt_regs* ctx, u64 id) {
@@ -734,16 +729,16 @@ static __inline void probe_ret_connect_impl(struct pt_regs* ctx, u64 id) {
     return;
   }
 
-  const struct connect_info_t* connect_info = active_connect_info_map.lookup(&id);
-  if (connect_info == NULL) {
+  const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
+  if (connect_args == NULL) {
     return;
   }
 
   u32 tgid = id >> 32;
-  submit_new_conn(ctx, tgid, (u32)connect_info->fd, *((struct sockaddr_in6*)connect_info->addr));
+  submit_new_conn(ctx, tgid, (u32)connect_args->fd, *((struct sockaddr_in6*)connect_args->addr));
 }
 
-// This function stores the address to the sockaddr struct in the active_accept_info_map map.
+// This function stores the address to the sockaddr struct in the active_accept_args_map map.
 // The key is the current pid/tgid.
 //
 // TODO(yzhao): We are not able to trace the source address/port yet. We might need to probe the
@@ -756,10 +751,10 @@ static __inline void probe_entry_accept_impl(struct pt_regs* ctx, u64 id, int so
     return;
   }
 
-  struct accept_info_t accept_info;
-  memset(&accept_info, 0, sizeof(struct accept_info_t));
-  accept_info.addr = addr;
-  active_accept_info_map.update(&id, &accept_info);
+  struct accept_args_t accept_args;
+  memset(&accept_args, 0, sizeof(struct accept_args_t));
+  accept_args.addr = addr;
+  active_accept_args_map.update(&id, &accept_args);
 }
 
 // Read the sockaddr values and write to the output buffer.
@@ -769,18 +764,18 @@ static __inline void probe_ret_accept_impl(struct pt_regs* ctx, u64 id) {
     return;
   }
 
-  struct accept_info_t* accept_info = active_accept_info_map.lookup(&id);
-  if (accept_info == NULL) {
+  struct accept_args_t* accept_args = active_accept_args_map.lookup(&id);
+  if (accept_args == NULL) {
     return;
   }
 
   // Only record IP (IPV4 and IPV6) connections.
-  if (!(accept_info->addr->sa_family == AF_INET || accept_info->addr->sa_family == AF_INET6)) {
+  if (!(accept_args->addr->sa_family == AF_INET || accept_args->addr->sa_family == AF_INET6)) {
     return;
   }
 
   u32 tgid = id >> 32;
-  submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)accept_info->addr));
+  submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)accept_args->addr));
 }
 
 static __inline void probe_entry_write_send(struct pt_regs* ctx, u64 id, int fd, char* buf,
@@ -803,22 +798,21 @@ static __inline void probe_entry_write_send(struct pt_regs* ctx, u64 id, int fd,
   // Note: From this point on, if exiting early, and conn_info->addr_valid == 0,
   // then call conn_info_map.delete(&tgid_fd) to avoid a BPF map leak.
 
-  struct data_info_t write_info;
-  memset(&write_info, 0, sizeof(struct data_info_t));
-  write_info.timestamp_ns = bpf_ktime_get_ns();
-  write_info.fd = fd;
-  write_info.buf = buf;
-  write_info.iov = iov;
-  write_info.iovlen = iovlen;
+  struct data_args_t write_args;
+  memset(&write_args, 0, sizeof(struct data_args_t));
+  write_args.fd = fd;
+  write_args.buf = buf;
+  write_args.iov = iov;
+  write_args.iovlen = iovlen;
 
   // TODO(yzhao): Split the interface such that the singular buf case and multiple bufs in msghdr
   // are handled separately without mixed interface. The plan is to factor out helper functions for
   // lower-level functionalities, and call them separately for each case.
   if (buf != NULL) {
     update_traffic_class(conn_info, kEgress, buf, count);
-  } else if (write_info.iov != NULL && write_info.iovlen > 0) {
+  } else if (write_args.iov != NULL && write_args.iovlen > 0) {
     struct iovec iov_cpy;
-    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &write_info.iov[0]);
+    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &write_args.iov[0]);
     update_traffic_class(conn_info, kEgress, iov_cpy.iov_base, iov_cpy.iov_len);
   }
 
@@ -831,7 +825,7 @@ static __inline void probe_entry_write_send(struct pt_regs* ctx, u64 id, int fd,
     return;
   }
 
-  active_write_info_map.update(&id, &write_info);
+  active_write_args_map.update(&id, &write_args);
 }
 
 static __inline void probe_ret_write_send(struct pt_regs* ctx, u64 id) {
@@ -841,28 +835,28 @@ static __inline void probe_ret_write_send(struct pt_regs* ctx, u64 id) {
     return;
   }
 
-  const struct data_info_t* write_info = active_write_info_map.lookup(&id);
-  if (write_info == NULL) {
+  const struct data_args_t* write_args = active_write_args_map.lookup(&id);
+  if (write_args == NULL) {
     return;
   }
 
   u32 tgid = id >> 32;
-  u64 tgid_fd = gen_tgid_fd(tgid, write_info->fd);
+  u64 tgid_fd = gen_tgid_fd(tgid, write_args->fd);
   struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
   if (conn_info == NULL) {
     return;
   }
 
-  struct socket_data_event_t* event = fill_event(kEgress, write_info, conn_info);
+  struct socket_data_event_t* event = fill_event(kEgress, conn_info);
   if (event == NULL) {
     return;
   }
 
   // TODO(yzhao): Same TODO for split the interface.
-  if (write_info->buf != NULL) {
-    perf_submit_wrapper(ctx, kEgress, write_info->buf, bytes_written, conn_info, event);
-  } else if (write_info->iov != NULL && write_info->iovlen > 0) {
-    perf_submit_iovecs(ctx, kEgress, write_info->iov, write_info->iovlen, bytes_written, conn_info,
+  if (write_args->buf != NULL) {
+    perf_submit_wrapper(ctx, kEgress, write_args->buf, bytes_written, conn_info, event);
+  } else if (write_args->iov != NULL && write_args->iovlen > 0) {
+    perf_submit_iovecs(ctx, kEgress, write_args->iov, write_args->iovlen, bytes_written, conn_info,
                        event);
   }
 }
@@ -879,15 +873,14 @@ static __inline void probe_entry_read_recv(struct pt_regs* ctx, u64 id, int fd, 
     return;
   }
 
-  struct data_info_t read_info;
-  memset(&read_info, 0, sizeof(struct data_info_t));
-  read_info.timestamp_ns = bpf_ktime_get_ns();
-  read_info.fd = fd;
-  read_info.buf = buf;
-  read_info.iov = iov;
-  read_info.iovlen = iovlen;
+  struct data_args_t read_args;
+  memset(&read_args, 0, sizeof(struct data_args_t));
+  read_args.fd = fd;
+  read_args.buf = buf;
+  read_args.iov = iov;
+  read_args.iovlen = iovlen;
 
-  active_read_info_map.update(&id, &read_info);
+  active_read_args_map.update(&id, &read_args);
 }
 
 static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
@@ -898,15 +891,15 @@ static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
     return;
   }
 
-  const struct data_info_t* read_info = active_read_info_map.lookup(&id);
-  if (read_info == NULL) {
+  const struct data_args_t* read_args = active_read_args_map.lookup(&id);
+  if (read_args == NULL) {
     return;
   }
 
-  const char* buf = read_info->buf;
+  const char* buf = read_args->buf;
 
   u32 tgid = id >> 32;
-  struct conn_info_t* conn_info = get_conn_info(tgid, read_info->fd);
+  struct conn_info_t* conn_info = get_conn_info(tgid, read_args->fd);
   if (conn_info == NULL) {
     return;
   }
@@ -917,15 +910,15 @@ static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
   // TODO(yzhao): Same TODO for split the interface.
   if (buf != NULL) {
     update_traffic_class(conn_info, kIngress, buf, bytes_read);
-  } else if (read_info->iov != NULL && read_info->iovlen > 0) {
+  } else if (read_args->iov != NULL && read_args->iovlen > 0) {
     struct iovec iov_cpy;
-    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &read_info->iov[0]);
+    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &read_args->iov[0]);
     // Ensure we are not reading beyond the available data.
     const size_t buf_size = iov_cpy.iov_len < bytes_read ? iov_cpy.iov_len : bytes_read;
     update_traffic_class(conn_info, kIngress, iov_cpy.iov_base, buf_size);
   }
 
-  u64 tgid_fd = gen_tgid_fd(tgid, read_info->fd);
+  u64 tgid_fd = gen_tgid_fd(tgid, read_args->fd);
 
   // Filter for request or response based on control flags and protocol type.
   if (!should_trace_conn(conn_info)) {
@@ -935,7 +928,7 @@ static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
     return;
   }
 
-  struct socket_data_event_t* event = fill_event(kIngress, read_info, conn_info);
+  struct socket_data_event_t* event = fill_event(kIngress, conn_info);
   if (event == NULL) {
     if (!conn_info->addr_valid) {
       conn_info_map.delete(&tgid_fd);
@@ -944,13 +937,13 @@ static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
   }
 
   // TODO(yzhao): Same TODO for split the interface.
-  if (read_info->buf != NULL) {
-    perf_submit_wrapper(ctx, kIngress, read_info->buf, bytes_read, conn_info, event);
-  } else if (read_info->iov != NULL && read_info->iovlen > 0) {
+  if (read_args->buf != NULL) {
+    perf_submit_wrapper(ctx, kIngress, read_args->buf, bytes_read, conn_info, event);
+  } else if (read_args->iov != NULL && read_args->iovlen > 0) {
     // TODO(yzhao): iov[0] is copied twice, once in calling update_traffic_class(), and here.
     // This happens to the write probes as well, but the calls are placed in the entry and return
     // probes respectively. Consider remove one copy.
-    perf_submit_iovecs(ctx, kIngress, read_info->iov, read_info->iovlen, bytes_read, conn_info,
+    perf_submit_iovecs(ctx, kIngress, read_args->iov, read_args->iovlen, bytes_read, conn_info,
                        event);
   }
   return;
@@ -973,11 +966,11 @@ static __inline void probe_entry_close(struct pt_regs* ctx, u64 id, int fd) {
     return;
   }
 
-  struct close_info_t close_info;
-  memset(&close_info, 0, sizeof(struct close_info_t));
-  close_info.fd = fd;
+  struct close_args_t close_args;
+  memset(&close_args, 0, sizeof(struct close_args_t));
+  close_args.fd = fd;
 
-  active_close_info_map.update(&id, &close_info);
+  active_close_args_map.update(&id, &close_args);
 }
 
 static __inline void probe_ret_close(struct pt_regs* ctx, u64 id) {
@@ -987,13 +980,13 @@ static __inline void probe_ret_close(struct pt_regs* ctx, u64 id) {
     return;
   }
 
-  const struct close_info_t* close_info = active_close_info_map.lookup(&id);
-  if (close_info == NULL) {
+  const struct close_args_t* close_args = active_close_args_map.lookup(&id);
+  if (close_args == NULL) {
     return;
   }
 
   u32 tgid = id >> 32;
-  u64 tgid_fd = gen_tgid_fd(tgid, close_info->fd);
+  u64 tgid_fd = gen_tgid_fd(tgid, close_args->fd);
   struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
   if (conn_info == NULL) {
     return;
@@ -1032,7 +1025,7 @@ int syscall__probe_entry_connect(struct pt_regs* ctx, int sockfd, struct sockadd
 int syscall__probe_ret_connect(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   probe_ret_connect_impl(ctx, id);
-  active_connect_info_map.delete(&id);
+  active_connect_args_map.delete(&id);
   return 0;
 }
 
@@ -1046,7 +1039,7 @@ int syscall__probe_entry_accept(struct pt_regs* ctx, int sockfd, struct sockaddr
 int syscall__probe_ret_accept(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   probe_ret_accept_impl(ctx, id);
-  active_accept_info_map.delete(&id);
+  active_accept_args_map.delete(&id);
   return 0;
 }
 
@@ -1060,7 +1053,7 @@ int syscall__probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockadd
 int syscall__probe_ret_accept4(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   probe_ret_accept_impl(ctx, id);
-  active_accept_info_map.delete(&id);
+  active_accept_args_map.delete(&id);
   return 0;
 }
 
@@ -1078,7 +1071,7 @@ int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t co
 int syscall__probe_ret_write(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   probe_ret_write_send(ctx, id);
-  active_write_info_map.delete(&id);
+  active_write_args_map.delete(&id);
   return 0;
 }
 
@@ -1091,7 +1084,7 @@ int syscall__probe_entry_send(struct pt_regs* ctx, int fd, char* buf, size_t cou
 int syscall__probe_ret_send(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   probe_ret_write_send(ctx, id);
-  active_write_info_map.delete(&id);
+  active_write_args_map.delete(&id);
   return 0;
 }
 
@@ -1109,7 +1102,7 @@ int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t cou
 int syscall__probe_ret_read(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   probe_ret_read_recv(ctx, id);
-  active_read_info_map.delete(&id);
+  active_read_args_map.delete(&id);
   return 0;
 }
 
@@ -1122,7 +1115,7 @@ int syscall__probe_entry_recv(struct pt_regs* ctx, int fd, char* buf, size_t cou
 int syscall__probe_ret_recv(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   probe_ret_read_recv(ctx, id);
-  active_read_info_map.delete(&id);
+  active_read_args_map.delete(&id);
   return 0;
 }
 
@@ -1135,7 +1128,7 @@ int syscall__probe_entry_sendto(struct pt_regs* ctx, int fd, char* buf, size_t c
 int syscall__probe_ret_sendto(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   probe_ret_write_send(ctx, id);
-  active_write_info_map.delete(&id);
+  active_write_args_map.delete(&id);
   return 0;
 }
 
@@ -1152,7 +1145,7 @@ int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int fd, const struct user_
 int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   probe_ret_write_send(ctx, id);
-  active_write_info_map.delete(&id);
+  active_write_args_map.delete(&id);
   return 0;
 }
 
@@ -1168,7 +1161,7 @@ int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int fd, struct user_msghdr
 int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   probe_ret_read_recv(ctx, id);
-  active_read_info_map.delete(&id);
+  active_read_args_map.delete(&id);
   return 0;
 }
 
@@ -1190,7 +1183,7 @@ int syscall__probe_entry_writev(struct pt_regs* ctx, int fd, const struct iovec*
 int syscall__probe_ret_writev(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   probe_ret_write_send(ctx, id);
-  active_write_info_map.delete(&id);
+  active_write_args_map.delete(&id);
   return 0;
 }
 
@@ -1211,7 +1204,7 @@ int syscall__probe_entry_readv(struct pt_regs* ctx, int fd, struct iovec* iov, i
 int syscall__probe_ret_readv(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   probe_ret_read_recv(ctx, id);
-  active_read_info_map.delete(&id);
+  active_read_args_map.delete(&id);
   return 0;
 }
 
@@ -1225,7 +1218,7 @@ int syscall__probe_entry_close(struct pt_regs* ctx, unsigned int fd) {
 int syscall__probe_ret_close(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   probe_ret_close(ctx, id);
-  active_close_info_map.delete(&id);
+  active_close_args_map.delete(&id);
   return 0;
 }
 
