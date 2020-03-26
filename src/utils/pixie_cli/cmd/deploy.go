@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/segmentio/analytics-go.v3"
 
@@ -58,6 +59,23 @@ var DeployCmd = &cobra.Command{
 		if e, has := os.LookupEnv("PL_VIZIER_VERSION"); has {
 			viper.Set("use_version", e)
 		}
+	},
+	PostRun: func(cmd *cobra.Command, args []string) {
+		p := func(s string, a ...interface{}) {
+			fmt.Fprintf(os.Stderr, s, a...)
+		}
+		u := color.New(color.Underline).Sprintf
+		b := color.New(color.Bold)
+		g := color.GreenString
+
+		fmt.Fprint(os.Stderr, "\n")
+		p(color.CyanString("==> ") + b.Sprint("Next Steps:\n"))
+		p("\nVisit : %s to use Pixie's UI.\n", u("https://work.withpixie.ai"))
+		p("\nRun some scripts using the %s cli. For example: \n", g("px"))
+		p("- %s : to show pre-installed scripts.\n", g("px script list"))
+		p("- %s : to run service info for sock-shop demo application (service selection coming soon!).\n",
+			g("px run px/service_info"))
+		p("\nCheck out our docs: %s.\n", u("https://work.withpixie.ai/docs"))
 	},
 	Run: runDeployCmd,
 }
