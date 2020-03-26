@@ -689,31 +689,23 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficD
  * BPF syscall probe functions
  ***********************************************************/
 
-static __inline void probe_entry_connect_impl(struct pt_regs* ctx, u64 id, int sockfd,
-                                              const struct sockaddr* addr, size_t addrlen) {
-  if (sockfd < 0) {
-    return;
-  }
-
+static __inline void process_syscall_connect(struct pt_regs* ctx, u64 id,
+                                             const struct connect_args_t* connect_args) {
   u32 tgid = id >> 32;
 
   if (!should_trace_tgid(tgid)) {
     return;
   }
 
-  // Only record IP (IPV4 and IPV6) connections.
-  if (!(addr->sa_family == AF_INET || addr->sa_family == AF_INET6)) {
+  if (connect_args->fd < 0) {
     return;
   }
 
-  struct connect_args_t connect_args;
-  memset(&connect_args, 0, sizeof(struct connect_args_t));
-  connect_args.fd = sockfd;
-  connect_args.addr = addr;
-  active_connect_args_map.update(&id, &connect_args);
-}
+  // Only record IP (IPV4 and IPV6) connections.
+  if (!(connect_args->addr->sa_family == AF_INET || connect_args->addr->sa_family == AF_INET6)) {
+    return;
+  }
 
-static __inline void probe_ret_connect_impl(struct pt_regs* ctx, u64 id) {
   int ret_val = PT_REGS_RC(ctx);
   // We allow EINPROGRESS to go through, which indicates that a NON_BLOCK socket is undergoing
   // handshake.
@@ -729,43 +721,19 @@ static __inline void probe_ret_connect_impl(struct pt_regs* ctx, u64 id) {
     return;
   }
 
-  const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
-  if (connect_args == NULL) {
-    return;
-  }
-
-  u32 tgid = id >> 32;
   submit_new_conn(ctx, tgid, (u32)connect_args->fd, *((struct sockaddr_in6*)connect_args->addr));
 }
 
-// This function stores the address to the sockaddr struct in the active_accept_args_map map.
-// The key is the current pid/tgid.
-//
-// TODO(yzhao): We are not able to trace the source address/port yet. We might need to probe the
-// socket() syscall.
-static __inline void probe_entry_accept_impl(struct pt_regs* ctx, u64 id, int sockfd,
-                                             struct sockaddr* addr, size_t* addrlen) {
+static __inline void process_syscall_accept(struct pt_regs* ctx, u64 id,
+                                            const struct accept_args_t* accept_args) {
   u32 tgid = id >> 32;
 
   if (!should_trace_tgid(tgid)) {
     return;
   }
 
-  struct accept_args_t accept_args;
-  memset(&accept_args, 0, sizeof(struct accept_args_t));
-  accept_args.addr = addr;
-  active_accept_args_map.update(&id, &accept_args);
-}
-
-// Read the sockaddr values and write to the output buffer.
-static __inline void probe_ret_accept_impl(struct pt_regs* ctx, u64 id) {
   int ret_fd = PT_REGS_RC(ctx);
   if (ret_fd < 0) {
-    return;
-  }
-
-  struct accept_args_t* accept_args = active_accept_args_map.lookup(&id);
-  if (accept_args == NULL) {
     return;
   }
 
@@ -774,7 +742,6 @@ static __inline void probe_ret_accept_impl(struct pt_regs* ctx, u64 id) {
     return;
   }
 
-  u32 tgid = id >> 32;
   submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)accept_args->addr));
 }
 
@@ -1006,6 +973,17 @@ static __inline void probe_ret_close(struct pt_regs* ctx, u64 id) {
  * BPF syscall probe function entry-points
  ***********************************************************/
 
+// The following functions are the tracing function entry points.
+// There is an entry probe and a return probe for each syscall.
+// Information from both the entry and return probes are required
+// before a syscall can be processed.
+//
+// General structure:
+//    Entry probe: responsible for recording arguments.
+//    Return probe: responsible for retrieving recorded arguments,
+//                  extracting the return value,
+//                  and processing the syscall with the combined context.
+
 int syscall__probe_ret_open(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
   int ret_fd = PT_REGS_RC(ctx);
@@ -1015,16 +993,28 @@ int syscall__probe_ret_open(struct pt_regs* ctx) {
   return 0;
 }
 
-int syscall__probe_entry_connect(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
+int syscall__probe_entry_connect(struct pt_regs* ctx, int sockfd, const struct sockaddr* addr,
                                  size_t addrlen) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_entry_connect_impl(ctx, id, sockfd, addr, addrlen);
+
+  // Stash arguments.
+  struct connect_args_t connect_args = {};
+  connect_args.fd = sockfd;
+  connect_args.addr = addr;
+  active_connect_args_map.update(&id, &connect_args);
+
   return 0;
 }
 
 int syscall__probe_ret_connect(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_ret_connect_impl(ctx, id);
+
+  // Unstash arguments, and process syscall.
+  const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
+  if (connect_args != NULL) {
+    process_syscall_connect(ctx, id, connect_args);
+  }
+
   active_connect_args_map.delete(&id);
   return 0;
 }
@@ -1032,13 +1022,24 @@ int syscall__probe_ret_connect(struct pt_regs* ctx) {
 int syscall__probe_entry_accept(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
                                 size_t* addrlen) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_entry_accept_impl(ctx, id, sockfd, addr, addrlen);
+
+  // Stash arguments.
+  struct accept_args_t accept_args;
+  accept_args.addr = addr;
+  active_accept_args_map.update(&id, &accept_args);
+
   return 0;
 }
 
 int syscall__probe_ret_accept(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_ret_accept_impl(ctx, id);
+
+  // Unstash arguments, and process syscall.
+  struct accept_args_t* accept_args = active_accept_args_map.lookup(&id);
+  if (accept_args != NULL) {
+    process_syscall_accept(ctx, id, accept_args);
+  }
+
   active_accept_args_map.delete(&id);
   return 0;
 }
@@ -1046,13 +1047,23 @@ int syscall__probe_ret_accept(struct pt_regs* ctx) {
 int syscall__probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
                                  size_t* addrlen) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_entry_accept_impl(ctx, id, sockfd, addr, addrlen);
+
+  // Stash arguments.
+  struct accept_args_t accept_args;
+  accept_args.addr = addr;
+  active_accept_args_map.update(&id, &accept_args);
   return 0;
 }
 
 int syscall__probe_ret_accept4(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_ret_accept_impl(ctx, id);
+
+  // Unstash arguments, and process syscall.
+  struct accept_args_t* accept_args = active_accept_args_map.lookup(&id);
+  if (accept_args != NULL) {
+    process_syscall_accept(ctx, id, accept_args);
+  }
+
   active_accept_args_map.delete(&id);
   return 0;
 }
