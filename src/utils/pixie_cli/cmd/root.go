@@ -40,6 +40,7 @@ func init() {
 	RootCmd.AddCommand(RunCmd)
 	RootCmd.AddCommand(GetCmd)
 	RootCmd.AddCommand(ConfigCmd)
+	RootCmd.AddCommand(ScriptCmd)
 
 	RootCmd.AddCommand(CreateBundle)
 

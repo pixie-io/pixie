@@ -18,6 +18,7 @@ go_library(
         "proxy.go",
         "root.go",
         "run.go",
+        "scripts.go",
         "update.go",
         "utils.go",
         "version.go",
