@@ -1,3 +1,3 @@
-22 29 0:21 / /sys rw,nosuid,nodev,noexec,relatime shared:7 - sysfs sysfs rw
-23 29 0:4 / /proc rw,nosuid,nodev,noexec,relatime shared:14 - proc proc rw
-24 29 0:6 / /dev rw,nosuid,relatime shared:2 - devtmpfs udev rw,size=16251748k,nr_inodes=4062937,mode=755
+24 29 260:3 / / rw,nosuid,relatime shared:2 - devtmpfs udev rw,size=16251748k,nr_inodes=4062937,mode=755
+29 0 259:3 /test_foo /foo rw,relatime shared:1 - ext4 /dev/nvme0n1p3 rw,errors=remount-ro,data=ordered
+29 0 260:3 /test_bar /bar rw,relatime shared:1 - ext4 /dev/nvme0n1p3 rw,errors=remount-ro,data=ordered

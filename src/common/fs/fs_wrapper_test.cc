@@ -7,6 +7,7 @@
 namespace pl {
 namespace fs {
 
+using ::testing::ElementsAre;
 using ::testing::HasSubstr;
 
 class FSWrapperTest : public ::testing::Test {
@@ -61,12 +62,14 @@ TEST_F(FSWrapperTest, ReadSymlink) {
 }
 
 TEST_F(FSWrapperTest, JoinPath) {
+  const std::filesystem::path kEmpty;
   const std::filesystem::path kRoot = "/";
   const std::filesystem::path kAbsPathA = "/path/to/a";
   const std::filesystem::path kAbsPathB = "/path/to/b";
   const std::filesystem::path kRelPathA = "relpath/to/a";
   const std::filesystem::path kRelPathB = "relpath/to/b";
 
+  EXPECT_EQ(JoinPath({&kEmpty, &kAbsPathA}), "/path/to/a");
   EXPECT_EQ(JoinPath({&kRoot, &kAbsPathA}), "/path/to/a");
   EXPECT_EQ(JoinPath({&kRoot, &kRelPathA}), "/relpath/to/a");
 
@@ -77,6 +80,54 @@ TEST_F(FSWrapperTest, JoinPath) {
 
 TEST_F(FSWrapperTest, ExistsReturnsErrorForNonExistentFile) {
   EXPECT_EQ("Does not exist", Exists(tmp_dir_.path() / "dummy").msg());
+}
+
+TEST_F(FSWrapperTest, GetChildRelPath) {
+  EXPECT_OK_AND_EQ(GetChildRelPath("/a/b", "/a/b"), "");
+  EXPECT_OK_AND_EQ(GetChildRelPath("a/b", "a/b"), "");
+  EXPECT_OK_AND_EQ(GetChildRelPath("/", "/"), "");
+
+  EXPECT_OK_AND_EQ(GetChildRelPath("/a/b/c", "/a/b"), "c");
+  EXPECT_OK_AND_EQ(GetChildRelPath("/a/b/c", "/a"), "b/c");
+  EXPECT_OK_AND_EQ(GetChildRelPath("/a/b/c", "/"), "a/b/c");
+
+  EXPECT_OK_AND_EQ(GetChildRelPath("/a/b/c/", "/a/b"), "c/");
+  EXPECT_OK_AND_EQ(GetChildRelPath("/a/b/c/", "/a"), "b/c/");
+  EXPECT_OK_AND_EQ(GetChildRelPath("/a/b/c/", "/"), "a/b/c/");
+
+  EXPECT_OK_AND_EQ(GetChildRelPath("a/b/c", "a/b"), "c");
+  EXPECT_OK_AND_EQ(GetChildRelPath("a/b/c", "a"), "b/c");
+  EXPECT_OK_AND_EQ(GetChildRelPath("a/b/c/", "a/b"), "c/");
+  EXPECT_OK_AND_EQ(GetChildRelPath("a/b/c/", "a"), "b/c/");
+
+  EXPECT_NOT_OK(GetChildRelPath("/aaa/b", "/a"));
+  EXPECT_NOT_OK(GetChildRelPath("aaa/b", "a"));
+
+  EXPECT_NOT_OK(GetChildRelPath("a/b", "/a/b"));
+  EXPECT_NOT_OK(GetChildRelPath("/a/b", "a/b"));
+
+  // Paths with trailing slash are not working.
+  EXPECT_NOT_OK(GetChildRelPath("/a/b", "/a/"));
+  EXPECT_NOT_OK(GetChildRelPath("a/b", "a/"));
+
+  // The following behaviors might be confusing.
+  // But it's not an issue for our use cases.
+  EXPECT_NOT_OK(GetChildRelPath("", "a/b/c"));
+  EXPECT_NOT_OK(GetChildRelPath("/a/b/c", ""));
+  EXPECT_NOT_OK(GetChildRelPath(".", "a/b/c"));
+}
+
+bool operator==(const PathSplit& lhs, const PathSplit& rhs) {
+  return lhs.parent == rhs.parent && lhs.child == rhs.child;
+}
+
+TEST_F(FSWrapperTest, EnumerateParentPaths) {
+  EXPECT_THAT(
+      EnumerateParentPaths("a/b/c/d"),
+      ElementsAre(PathSplit{"a/b/c", "d"}, PathSplit{"a/b", "c/d"}, PathSplit{"a", "b/c/d"}));
+  EXPECT_THAT(EnumerateParentPaths("/a/b/c/d"),
+              ElementsAre(PathSplit{"/a/b/c", "d"}, PathSplit{"/a/b", "c/d"},
+                          PathSplit{"/a", "b/c/d"}, PathSplit{"/", "a/b/c/d"}));
 }
 
 }  // namespace fs

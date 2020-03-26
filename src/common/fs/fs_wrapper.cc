@@ -81,6 +81,66 @@ Status Exists(std::filesystem::path path) {
   return error::InvalidArgument("Does not exist");
 }
 
+StatusOr<std::filesystem::path> Relative(const std::filesystem::path& path,
+                                         const std::filesystem::path& base) {
+  std::error_code ec;
+  auto res = std::filesystem::relative(path, base, ec);
+  if (ec) {
+    return error::System(ec.message());
+  }
+  return res;
+}
+
+namespace {
+
+bool IsParent(const std::filesystem::path& child, const std::filesystem::path& parent) {
+  auto c_iter = child.begin();
+  auto p_iter = parent.begin();
+  for (; c_iter != child.end() && p_iter != parent.end(); ++c_iter, ++p_iter) {
+    if (*c_iter != *p_iter) {
+      break;
+    }
+  }
+  return p_iter == parent.end();
+}
+
+}  // namespace
+
+StatusOr<std::filesystem::path> GetChildRelPath(std::filesystem::path child,
+                                                std::filesystem::path parent) {
+  if (child.empty() || parent.empty()) {
+    return error::InvalidArgument("Both paths must not be empty, child=$0, parent=$1",
+                                  child.string(), parent.string());
+  }
+  // Relative() returns ".." when child is a sibling of parent. IsParent() rules out such cases.
+  if (!IsParent(child, parent)) {
+    return error::InvalidArgument("Path=$0 is not parent of child=$1", parent.string(),
+                                  child.string());
+  }
+  PL_ASSIGN_OR_RETURN(std::filesystem::path res, Relative(child, parent));
+  // Relative() returns "." when child and parent are the same. "." complicates the path joining.
+  if (res == ".") {
+    res.clear();
+  }
+  return res;
+}
+
+std::vector<PathSplit> EnumerateParentPaths(std::filesystem::path path) {
+  std::vector<PathSplit> res;
+
+  std::filesystem::path child = path.filename();
+  std::filesystem::path parent = path.parent_path();
+  while (parent != parent.parent_path()) {
+    res.push_back(PathSplit{parent, child});
+    child = parent.filename() / child;
+    parent = parent.parent_path();
+  }
+  if (path.is_absolute()) {
+    res.push_back(PathSplit{"/", path.relative_path()});
+  }
+  return res;
+}
+
 }  // namespace fs
 }  // namespace pl
 

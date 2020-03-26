@@ -183,11 +183,23 @@ bool operator==(const ProcParser::MountInfo& lhs, const ProcParser::MountInfo& r
 }
 
 TEST_F(ProcParserTest, ReadMountInfos) {
-  std::vector<ProcParser::MountInfo> mount_infos;
-  EXPECT_OK(parser_->ReadMountInfos(123, &mount_infos));
-  EXPECT_THAT(mount_infos, ElementsAre(ProcParser::MountInfo{"0:21", "/", "/sys"},
-                                       ProcParser::MountInfo{"0:4", "/", "/proc"},
-                                       ProcParser::MountInfo{"0:6", "/", "/dev"}));
+  {
+    std::vector<ProcParser::MountInfo> mount_infos;
+    EXPECT_OK(parser_->ReadMountInfos(123, &mount_infos));
+    EXPECT_THAT(mount_infos, ElementsAre(ProcParser::MountInfo{"260:3", "/", "/"},
+                                         ProcParser::MountInfo{"259:3", "/test_foo", "/foo"},
+                                         ProcParser::MountInfo{"260:3", "/test_bar", "/bar"}));
+  }
+  {
+    std::vector<ProcParser::MountInfo> mount_infos;
+    EXPECT_OK(parser_->ReadMountInfos(1, &mount_infos));
+    EXPECT_THAT(mount_infos, ElementsAre(ProcParser::MountInfo{"259:3", "/", "/tmp"}));
+  }
+}
+
+TEST_F(ProcParserTest, ResolveMountPoint) {
+  ASSERT_OK_AND_EQ(parser_->ResolveMountPoint(123, "/foo"), "/tmp/test_foo");
+  EXPECT_NOT_OK(parser_->ResolveMountPoint(123, "/bar"));
 }
 
 }  // namespace system

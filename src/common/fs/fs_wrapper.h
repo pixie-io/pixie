@@ -41,6 +41,29 @@ Status CreateSymlinkIfNotExists(std::filesystem::path target, std::filesystem::p
  */
 Status Exists(std::filesystem::path path);
 
+StatusOr<std::filesystem::path> Relative(const std::filesystem::path& path,
+                                         const std::filesystem::path& base);
+
+/**
+ * Returns the relative path of the child relative to the parent, if parent is indeed a parent of
+ * child.
+ *
+ * Returns error if parent isn't a parent of child.
+ */
+StatusOr<std::filesystem::path> GetChildRelPath(std::filesystem::path parent,
+                                                std::filesystem::path child);
+
+struct PathSplit {
+  std::filesystem::path parent;
+  std::filesystem::path child;
+};
+
+/**
+ * Returns a list of pairs of paths, such that parent / child == path.
+ * They are ordered from longest to shorted parents.
+ */
+std::vector<PathSplit> EnumerateParentPaths(std::filesystem::path path);
+
 }  // namespace fs
 }  // namespace pl
 

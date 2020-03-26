@@ -215,6 +215,14 @@ class ProcParser {
 
   Status ReadMountInfos(pid_t pid, std::vector<MountInfo>* mount_infos) const;
 
+  /**
+   * Returns a path to an existent file (or directory) that is mounted to the input mount point
+   * of the process specified by the pid. The process could belong to a different mount namespace
+   * than the caller.
+   */
+  StatusOr<std::filesystem::path> ResolveMountPoint(pid_t pid,
+                                                    std::filesystem::path mount_point) const;
+
  private:
   static Status ParseNetworkStatAccumulateIFaceData(
       const std::vector<std::string_view>& dev_stat_record, NetworkStats* out);
@@ -229,6 +237,7 @@ class ProcParser {
   int64_t ns_per_kernel_tick_;
   int32_t bytes_per_page_;
   int64_t clock_realtime_offset_;
+
   std::string proc_base_path_;
 };
 

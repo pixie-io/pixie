@@ -19,6 +19,7 @@ TEST(ProcTrackerListPIDsTest, ListUPIDs) {
   absl::flat_hash_map<md::UPID, std::filesystem::path> pids = ProcTracker::ListUPIDs(proc_path);
   EXPECT_THAT(ProcTracker::ListUPIDs(proc_path),
               UnorderedElementsAre(Pair(md::UPID{0, 123, 14329}, proc_path / "123"),
+                                   Pair(md::UPID{0, 1, 0}, proc_path / "1"),
                                    Pair(md::UPID{0, 456, 17594622}, proc_path / "456"),
                                    Pair(md::UPID{0, 789, 46120203}, proc_path / "789")));
 }

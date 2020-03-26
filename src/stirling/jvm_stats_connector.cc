@@ -46,7 +46,7 @@ absl::flat_hash_set<md::UPID> JVMStatsConnector::FindJavaUPIDs(const ConnectorCo
 
 namespace {
 
-StatusOr<std::string> ReadHsperfData(pid_t pid) {
+StatusOr<std::string> ReadHsperfDataOverlayFS(pid_t pid) {
   PL_ASSIGN_OR_RETURN(const std::filesystem::path hsperf_data_path, HsperfdataPath(pid));
 
   const std::filesystem::path proc_pid_path =
@@ -62,10 +62,37 @@ StatusOr<std::string> ReadHsperfData(pid_t pid) {
   return ReadFileToString(hsperf_data_container_path);
 }
 
+StatusOr<std::string> ReadHsperfDataMountInfo(pid_t pid) {
+  PL_ASSIGN_OR_RETURN(const std::filesystem::path hsperf_data_path, HsperfdataPath(pid));
+
+  const auto& config = system::Config::GetInstance();
+
+  system::ProcParser proc_parser(config);
+
+  // Find the longest parent path that is accessible of the hsperfdata file, by resolving mount
+  // point starting from the immediate parent through the root.
+  for (const fs::PathSplit& path_split : fs::EnumerateParentPaths(hsperf_data_path)) {
+    auto resolved_mount_path_or = proc_parser.ResolveMountPoint(pid, path_split.parent);
+    if (resolved_mount_path_or.ok()) {
+      const std::filesystem::path host_path = system::Config::GetInstance().host_path();
+      auto tmp =
+          fs::JoinPath({&host_path, &resolved_mount_path_or.ValueOrDie(), &path_split.child});
+      return ReadFileToString(tmp);
+    }
+  }
+  return error::Internal("Could not resolve hsperfdata file for pid=$0", pid);
+}
+
 }  // namespace
 
 Status JVMStatsConnector::ExportStats(const md::UPID& upid, DataTable* data_table) const {
-  PL_ASSIGN_OR_RETURN(std::string hsperf_data_str, ReadHsperfData(upid.pid()));
+  // TODO(yzhao): Read everything from /proc/[pid]/mountinfo. So that we do not need to read two
+  // proc files.
+  auto hsperf_data_str_or = ReadHsperfDataOverlayFS(upid.pid());
+  if (!hsperf_data_str_or.ok()) {
+    hsperf_data_str_or = ReadHsperfDataMountInfo(upid.pid());
+  }
+  PL_ASSIGN_OR_RETURN(std::string hsperf_data_str, hsperf_data_str_or);
 
   if (hsperf_data_str.empty()) {
     // Assumes only file reading failed, and is transient.
