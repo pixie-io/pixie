@@ -600,7 +600,7 @@ func deploy(clientset *kubernetes.Clientset, config *rest.Config, yamlMap map[st
 }
 
 func retryDeploy(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlContents string) error {
-	tries := 5
+	tries := 12
 	var err error
 	for tries > 0 {
 		err = k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents))
