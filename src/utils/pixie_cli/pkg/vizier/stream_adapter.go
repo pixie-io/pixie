@@ -106,6 +106,11 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 				}
 				return
 			}
+
+			if msg.Resp.Status != nil && msg.Resp.Status.Code != 0 {
+				// Try to parse the error and return it up stream.
+				v.printErrorAndDie(ctx, msg.Resp.Status)
+			}
 			var err error
 			switch res := msg.Resp.Result.(type) {
 			case *pl_api_vizierpb.ExecuteScriptResponse_MetaData:
@@ -174,6 +179,34 @@ func (v *VizierStreamOutputAdapter) getNativeTypedValue(tableInfo *TableInfo, ro
 		log.WithField("value", u).Fatalln("unknown data type")
 	}
 	return nil
+}
+func (v *VizierStreamOutputAdapter) printErrorAndDie(ctx context.Context, s *pl_api_vizierpb.Status) {
+	if s.Message != "" {
+		fmt.Fprint(os.Stderr, "\nError: %s\n", s.Message)
+	}
+
+	var compilerErrors []string
+	if s.ErrorDetails != nil {
+		for _, ed := range s.ErrorDetails {
+			switch e := ed.Error.(type) {
+			case *pl_api_vizierpb.ErrorDetails_CompilerError:
+				compilerErrors = append(compilerErrors,
+					fmt.Sprintf("L%d : C%d  %s\n",
+						e.CompilerError.Line, e.CompilerError.Column,
+						e.CompilerError.Message))
+			}
+		}
+	}
+
+	if len(compilerErrors) > 0 {
+		fmt.Fprintf(os.Stderr, "\nScript compilation failed: \n")
+		for _, s := range compilerErrors {
+			fmt.Fprintf(os.Stderr, s)
+		}
+	}
+
+	fmt.Fprint(os.Stderr, "\n")
+	log.Fatal("Script execution error")
 }
 
 func (v *VizierStreamOutputAdapter) getFormattedValue(tableInfo *TableInfo, colIdx int, val interface{}) interface{} {
