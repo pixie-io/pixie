@@ -349,29 +349,25 @@ func setupDemoApp(appName string, yamls map[string][]byte) error {
 	kubeConfig := k8s.GetConfig()
 	clientset := k8s.GetClientset(kubeConfig)
 
-	createNamespace := []utils.Task{
+	tasks := []utils.Task{
 		newTaskWrapper(fmt.Sprintf("Creating namespace %s", appName), func() error {
 			if namespaceExists(appName) {
 				return fmt.Errorf("namespace '%s' already exists. If created with px, run px demo delete %s to remove", appName, appName)
 			}
 			return createNamespace(appName)
 		}),
+		newTaskWrapper(fmt.Sprintf("Deploying %s YAMLs", appName), func() error {
+			for _, yamlBytes := range yamls {
+				yamlBytes := yamlBytes
+				err := k8s.ApplyYAML(clientset, kubeConfig, appName, bytes.NewReader(yamlBytes))
+				if err != nil {
+					return err
+				}
+			}
+			return nil
+		}),
 	}
 
-	cnJr := utils.NewSerialTaskRunner(createNamespace)
-	if err := cnJr.RunAndMonitor(); err != nil {
-		return err
-	}
-
-	var tasks []utils.Task
-
-	for yamlName, yamlBytes := range yamls {
-		yamlBytes := yamlBytes
-		tasks = append(tasks, newTaskWrapper(fmt.Sprintf("Applying %s", yamlName), func() error {
-			return k8s.ApplyYAML(clientset, kubeConfig, appName, bytes.NewReader(yamlBytes))
-		}))
-	}
-
-	yamlJr := utils.NewParallelTaskRunner(tasks)
-	return yamlJr.RunAndMonitor()
+	tr := utils.NewSerialTaskRunner(tasks)
+	return tr.RunAndMonitor()
 }
