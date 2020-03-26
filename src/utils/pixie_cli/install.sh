@@ -12,6 +12,13 @@ ARTIFACT_NAME=cli_darwin_amd64
 USE_VERSION=${PL_CLI_VERSION:-latest}
 USER_INSTALL_PATH="$HOME/bin"
 
+PIXIE_BANNER="
+  ___  _       _
+ | _ \(_)__ __(_) ___
+ |  _/| |\ \ /| |/ -_)
+ |_|  |_|/_\_\|_|\___|
+"
+
 # First check if the OS is Linux.
 if [[ "$(uname)" = "Linux" ]]; then
     ARTIFACT_NAME=cli_linux_amd64
@@ -134,6 +141,8 @@ print_dev_message
 if exists_but_not_writable "${DEFAULT_INSTALL_PATH}"; then
     DEFAULT_INSTALL_PATH=${USER_INSTALL_PATH}
 fi
+
+echo "${tty_green}${PIXIE_BANNER}${tty_reset}"
 
 emph "Info:"
 cat << EOS

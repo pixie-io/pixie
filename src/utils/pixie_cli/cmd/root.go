@@ -48,17 +48,6 @@ func init() {
 	RootCmd.PersistentFlags().MarkHidden("cloud_addr")
 }
 
-func printPixie() {
-	pixie := `
-  ___  _       _
- | _ \(_)__ __(_) ___
- |  _/| |\ \ /| |/ -_)
- |_|  |_|/_\_\|_|\___|
-`
-	c := color.New(color.FgHiGreen)
-	c.Fprintln(os.Stderr, pixie)
-}
-
 func printTestingBanner() {
 	r := color.New(color.Bold, color.FgRed).Fprintf
 	r(os.Stderr, "*******************************\n")
@@ -90,11 +79,6 @@ var RootCmd = &cobra.Command{
 					viper.Set("dev_cloud_namespace", "plc-dev")
 				}
 			}
-		}
-
-		quiet, _ := cmd.Flags().GetBool("quiet")
-		if !quiet {
-			printPixie()
 		}
 
 		p := cmd
