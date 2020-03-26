@@ -32,7 +32,7 @@ type Query {
   clusterConnection: ClusterConnectionInfo!
   cliArtifact(artifactType: ArtifactType): CLIArtifact!
   artifacts(artifactName: String): ArtifactsInfo!
-  extractVizFuncsInfo(script: String!, funcNames: [String!]): VizFuncsInfo!
+  extractVisFuncsInfo(script: String!, funcNames: [String!]): VisFuncsInfo!
 }
 
 enum ClusterStatus {
@@ -87,13 +87,13 @@ type DocStringMapEntry {
   docString: String!
 }
 
-type VizSpec {
+type VisSpec {
   vegaSpec: String!
 }
 
-type VizSpecMapEntry {
+type VisSpecMapEntry {
   funcName: String!
-  vizSpec: VizSpec
+  visSpec: VisSpec
 }
 
 
@@ -132,8 +132,8 @@ type FnArgsMapEntry {
   fnArgSpec: FnArgsSpec!
 }
 
-type VizFuncsInfo {
+type VisFuncsInfo {
   docStringMap: [DocStringMapEntry!]!
-  vizSpecMap: [VizSpecMapEntry!]!
+  visSpecMap: [VisSpecMapEntry!]!
   fnArgsMap: [FnArgsMapEntry!]!
 }

@@ -137,21 +137,21 @@ func (m *FuncArgsSpec_Arg) GetDefaultValue() string {
 	return ""
 }
 
-type VizSpec struct {
+type VisSpec struct {
 	VegaSpec string `protobuf:"bytes,1,opt,name=vega_spec,json=vegaSpec,proto3" json:"vega_spec,omitempty"`
 }
 
-func (m *VizSpec) Reset()      { *m = VizSpec{} }
-func (*VizSpec) ProtoMessage() {}
-func (*VizSpec) Descriptor() ([]byte, []int) {
+func (m *VisSpec) Reset()      { *m = VisSpec{} }
+func (*VisSpec) ProtoMessage() {}
+func (*VisSpec) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4aa89baec43fda2f, []int{1}
 }
-func (m *VizSpec) XXX_Unmarshal(b []byte) error {
+func (m *VisSpec) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *VizSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *VisSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_VizSpec.Marshal(b, m, deterministic)
+		return xxx_messageInfo_VisSpec.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -161,42 +161,42 @@ func (m *VizSpec) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *VizSpec) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_VizSpec.Merge(m, src)
+func (m *VisSpec) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VisSpec.Merge(m, src)
 }
-func (m *VizSpec) XXX_Size() int {
+func (m *VisSpec) XXX_Size() int {
 	return m.Size()
 }
-func (m *VizSpec) XXX_DiscardUnknown() {
-	xxx_messageInfo_VizSpec.DiscardUnknown(m)
+func (m *VisSpec) XXX_DiscardUnknown() {
+	xxx_messageInfo_VisSpec.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_VizSpec proto.InternalMessageInfo
+var xxx_messageInfo_VisSpec proto.InternalMessageInfo
 
-func (m *VizSpec) GetVegaSpec() string {
+func (m *VisSpec) GetVegaSpec() string {
 	if m != nil {
 		return m.VegaSpec
 	}
 	return ""
 }
 
-type VizFuncsInfo struct {
+type VisFuncsInfo struct {
 	DocStringMap map[string]string        `protobuf:"bytes,1,rep,name=doc_string_map,json=docStringMap,proto3" json:"doc_string_map,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	VizSpecMap   map[string]*VizSpec      `protobuf:"bytes,2,rep,name=viz_spec_map,json=vizSpecMap,proto3" json:"viz_spec_map,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	VisSpecMap   map[string]*VisSpec      `protobuf:"bytes,2,rep,name=vis_spec_map,json=visSpecMap,proto3" json:"vis_spec_map,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	FnArgsMap    map[string]*FuncArgsSpec `protobuf:"bytes,3,rep,name=fn_args_map,json=fnArgsMap,proto3" json:"fn_args_map,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
-func (m *VizFuncsInfo) Reset()      { *m = VizFuncsInfo{} }
-func (*VizFuncsInfo) ProtoMessage() {}
-func (*VizFuncsInfo) Descriptor() ([]byte, []int) {
+func (m *VisFuncsInfo) Reset()      { *m = VisFuncsInfo{} }
+func (*VisFuncsInfo) ProtoMessage() {}
+func (*VisFuncsInfo) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4aa89baec43fda2f, []int{2}
 }
-func (m *VizFuncsInfo) XXX_Unmarshal(b []byte) error {
+func (m *VisFuncsInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *VizFuncsInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *VisFuncsInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_VizFuncsInfo.Marshal(b, m, deterministic)
+		return xxx_messageInfo_VisFuncsInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -206,55 +206,55 @@ func (m *VizFuncsInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return b[:n], nil
 	}
 }
-func (m *VizFuncsInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_VizFuncsInfo.Merge(m, src)
+func (m *VisFuncsInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VisFuncsInfo.Merge(m, src)
 }
-func (m *VizFuncsInfo) XXX_Size() int {
+func (m *VisFuncsInfo) XXX_Size() int {
 	return m.Size()
 }
-func (m *VizFuncsInfo) XXX_DiscardUnknown() {
-	xxx_messageInfo_VizFuncsInfo.DiscardUnknown(m)
+func (m *VisFuncsInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_VisFuncsInfo.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_VizFuncsInfo proto.InternalMessageInfo
+var xxx_messageInfo_VisFuncsInfo proto.InternalMessageInfo
 
-func (m *VizFuncsInfo) GetDocStringMap() map[string]string {
+func (m *VisFuncsInfo) GetDocStringMap() map[string]string {
 	if m != nil {
 		return m.DocStringMap
 	}
 	return nil
 }
 
-func (m *VizFuncsInfo) GetVizSpecMap() map[string]*VizSpec {
+func (m *VisFuncsInfo) GetVisSpecMap() map[string]*VisSpec {
 	if m != nil {
-		return m.VizSpecMap
+		return m.VisSpecMap
 	}
 	return nil
 }
 
-func (m *VizFuncsInfo) GetFnArgsMap() map[string]*FuncArgsSpec {
+func (m *VisFuncsInfo) GetFnArgsMap() map[string]*FuncArgsSpec {
 	if m != nil {
 		return m.FnArgsMap
 	}
 	return nil
 }
 
-type VizFuncsInfoResult struct {
+type VisFuncsInfoResult struct {
 	Status *proto2.Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
-	Info   *VizFuncsInfo  `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
+	Info   *VisFuncsInfo  `protobuf:"bytes,2,opt,name=info,proto3" json:"info,omitempty"`
 }
 
-func (m *VizFuncsInfoResult) Reset()      { *m = VizFuncsInfoResult{} }
-func (*VizFuncsInfoResult) ProtoMessage() {}
-func (*VizFuncsInfoResult) Descriptor() ([]byte, []int) {
+func (m *VisFuncsInfoResult) Reset()      { *m = VisFuncsInfoResult{} }
+func (*VisFuncsInfoResult) ProtoMessage() {}
+func (*VisFuncsInfoResult) Descriptor() ([]byte, []int) {
 	return fileDescriptor_4aa89baec43fda2f, []int{3}
 }
-func (m *VizFuncsInfoResult) XXX_Unmarshal(b []byte) error {
+func (m *VisFuncsInfoResult) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *VizFuncsInfoResult) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *VisFuncsInfoResult) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_VizFuncsInfoResult.Marshal(b, m, deterministic)
+		return xxx_messageInfo_VisFuncsInfoResult.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -264,26 +264,26 @@ func (m *VizFuncsInfoResult) XXX_Marshal(b []byte, deterministic bool) ([]byte, 
 		return b[:n], nil
 	}
 }
-func (m *VizFuncsInfoResult) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_VizFuncsInfoResult.Merge(m, src)
+func (m *VisFuncsInfoResult) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VisFuncsInfoResult.Merge(m, src)
 }
-func (m *VizFuncsInfoResult) XXX_Size() int {
+func (m *VisFuncsInfoResult) XXX_Size() int {
 	return m.Size()
 }
-func (m *VizFuncsInfoResult) XXX_DiscardUnknown() {
-	xxx_messageInfo_VizFuncsInfoResult.DiscardUnknown(m)
+func (m *VisFuncsInfoResult) XXX_DiscardUnknown() {
+	xxx_messageInfo_VisFuncsInfoResult.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_VizFuncsInfoResult proto.InternalMessageInfo
+var xxx_messageInfo_VisFuncsInfoResult proto.InternalMessageInfo
 
-func (m *VizFuncsInfoResult) GetStatus() *proto2.Status {
+func (m *VisFuncsInfoResult) GetStatus() *proto2.Status {
 	if m != nil {
 		return m.Status
 	}
 	return nil
 }
 
-func (m *VizFuncsInfoResult) GetInfo() *VizFuncsInfo {
+func (m *VisFuncsInfoResult) GetInfo() *VisFuncsInfo {
 	if m != nil {
 		return m.Info
 	}
@@ -344,58 +344,58 @@ func (m *MainFuncSpecResult) GetMainFuncSpec() *FuncArgsSpec {
 func init() {
 	proto.RegisterType((*FuncArgsSpec)(nil), "pl.shared.scriptspb.FuncArgsSpec")
 	proto.RegisterType((*FuncArgsSpec_Arg)(nil), "pl.shared.scriptspb.FuncArgsSpec.Arg")
-	proto.RegisterType((*VizSpec)(nil), "pl.shared.scriptspb.VizSpec")
-	proto.RegisterType((*VizFuncsInfo)(nil), "pl.shared.scriptspb.VizFuncsInfo")
-	proto.RegisterMapType((map[string]string)(nil), "pl.shared.scriptspb.VizFuncsInfo.DocStringMapEntry")
-	proto.RegisterMapType((map[string]*FuncArgsSpec)(nil), "pl.shared.scriptspb.VizFuncsInfo.FnArgsMapEntry")
-	proto.RegisterMapType((map[string]*VizSpec)(nil), "pl.shared.scriptspb.VizFuncsInfo.VizSpecMapEntry")
-	proto.RegisterType((*VizFuncsInfoResult)(nil), "pl.shared.scriptspb.VizFuncsInfoResult")
+	proto.RegisterType((*VisSpec)(nil), "pl.shared.scriptspb.VisSpec")
+	proto.RegisterType((*VisFuncsInfo)(nil), "pl.shared.scriptspb.VisFuncsInfo")
+	proto.RegisterMapType((map[string]string)(nil), "pl.shared.scriptspb.VisFuncsInfo.DocStringMapEntry")
+	proto.RegisterMapType((map[string]*FuncArgsSpec)(nil), "pl.shared.scriptspb.VisFuncsInfo.FnArgsMapEntry")
+	proto.RegisterMapType((map[string]*VisSpec)(nil), "pl.shared.scriptspb.VisFuncsInfo.VisSpecMapEntry")
+	proto.RegisterType((*VisFuncsInfoResult)(nil), "pl.shared.scriptspb.VisFuncsInfoResult")
 	proto.RegisterType((*MainFuncSpecResult)(nil), "pl.shared.scriptspb.MainFuncSpecResult")
 }
 
 func init() { proto.RegisterFile("src/shared/scriptspb/scripts.proto", fileDescriptor_4aa89baec43fda2f) }
 
 var fileDescriptor_4aa89baec43fda2f = []byte{
-	// 619 bytes of a gzipped FileDescriptorProto
+	// 617 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x54, 0xbf, 0x6f, 0xd3, 0x40,
 	0x14, 0xce, 0x25, 0x69, 0x69, 0x5e, 0xdc, 0x00, 0x57, 0x84, 0xa2, 0x80, 0x4e, 0x25, 0x08, 0x54,
 	0x09, 0xc9, 0x86, 0x54, 0x15, 0x3f, 0x3a, 0xa0, 0xa2, 0x52, 0xc4, 0x50, 0x09, 0x39, 0xa8, 0x12,
-	0x30, 0x58, 0x17, 0xe7, 0x12, 0x4e, 0x8d, 0xcf, 0x27, 0xdf, 0x25, 0x6a, 0x3a, 0x31, 0xb3, 0xc0,
-	0x9f, 0xc1, 0xc0, 0x1f, 0xc2, 0xd8, 0xb1, 0x23, 0x75, 0x17, 0xc6, 0x8e, 0x8c, 0xc8, 0x67, 0xd7,
-	0xb8, 0x10, 0x28, 0x62, 0x7b, 0xf7, 0xdd, 0xf7, 0x7d, 0xef, 0x7b, 0xcf, 0x3f, 0xa0, 0xad, 0x22,
-	0xdf, 0x51, 0x6f, 0x69, 0xc4, 0xfa, 0x8e, 0xf2, 0x23, 0x2e, 0xb5, 0x92, 0xbd, 0xd3, 0xca, 0x96,
-	0x51, 0xa8, 0x43, 0xbc, 0x24, 0x47, 0x76, 0x4a, 0xb1, 0x73, 0x4a, 0xab, 0x28, 0xd4, 0x53, 0xc9,
-	0x94, 0x63, 0xc8, 0x69, 0x9d, 0x0a, 0x53, 0x8e, 0x1f, 0x06, 0x41, 0x28, 0x9c, 0x1e, 0x55, 0x2c,
-	0xa3, 0x28, 0x4d, 0xf5, 0x38, 0xe3, 0xb4, 0xbf, 0x23, 0xb0, 0xb6, 0xc6, 0xc2, 0xdf, 0x88, 0x86,
-	0xaa, 0x2b, 0x99, 0x8f, 0x1f, 0x42, 0x95, 0x46, 0x43, 0xd5, 0x44, 0xcb, 0x95, 0x95, 0x7a, 0xe7,
-	0x96, 0x3d, 0xa3, 0xb9, 0x5d, 0x14, 0xd8, 0x1b, 0xd1, 0xd0, 0x35, 0x92, 0xd6, 0x67, 0x04, 0x95,
-	0x8d, 0x68, 0x88, 0x1d, 0xa8, 0xf5, 0xa9, 0xa6, 0x5e, 0x92, 0xa5, 0x89, 0x96, 0xd1, 0x4a, 0xa3,
-	0x83, 0x13, 0x9f, 0x34, 0xdb, 0x26, 0xd5, 0xf4, 0xe5, 0x54, 0x32, 0x77, 0xa1, 0x9f, 0x55, 0x78,
-	0x1d, 0x16, 0x15, 0x0b, 0xa8, 0xd0, 0xdc, 0x4f, 0x45, 0x65, 0x23, 0xba, 0xfa, 0x53, 0xd4, 0xcd,
-	0xae, 0x8d, 0xd0, 0x52, 0x85, 0x13, 0xc6, 0x50, 0x15, 0x34, 0x60, 0xcd, 0xca, 0x32, 0x5a, 0xa9,
-	0xb9, 0xa6, 0xc6, 0x37, 0x61, 0xb1, 0xcf, 0x06, 0x74, 0x3c, 0xd2, 0xde, 0x84, 0x8e, 0xc6, 0xac,
-	0x39, 0x67, 0x2e, 0xad, 0x0c, 0xdc, 0x49, 0xb0, 0xf6, 0x6d, 0xb8, 0xb0, 0xc3, 0xf7, 0xcd, 0xd0,
-	0xd7, 0xa0, 0x36, 0x61, 0x43, 0xea, 0x29, 0xc9, 0x7c, 0x93, 0xb8, 0xe6, 0x2e, 0x24, 0x40, 0x72,
-	0xd9, 0xfe, 0x50, 0x05, 0x6b, 0x87, 0xef, 0x27, 0x43, 0xab, 0xe7, 0x62, 0x10, 0xe2, 0x57, 0xd0,
-	0xe8, 0x87, 0xbe, 0xa7, 0x74, 0xc4, 0xc5, 0xd0, 0x0b, 0xa8, 0xcc, 0x96, 0xb5, 0x3a, 0x73, 0x59,
-	0x45, 0xa9, 0xbd, 0x19, 0xfa, 0x5d, 0x23, 0xdb, 0xa6, 0xf2, 0xa9, 0xd0, 0xd1, 0xd4, 0xb5, 0xfa,
-	0x05, 0x08, 0x77, 0xc1, 0x9a, 0xf0, 0x7d, 0x93, 0xc3, 0x18, 0x97, 0x8d, 0xf1, 0xbd, 0xf3, 0x8d,
-	0xb3, 0x49, 0x72, 0x5b, 0x98, 0xe4, 0x00, 0x7e, 0x01, 0xf5, 0x81, 0xf0, 0x92, 0x47, 0x64, 0x3c,
-	0x2b, 0xc6, 0xf3, 0xee, 0xf9, 0x9e, 0x5b, 0x22, 0x79, 0xc8, 0xb9, 0x65, 0x6d, 0x70, 0x7a, 0x6e,
-	0x3d, 0x86, 0xcb, 0xbf, 0x4d, 0x82, 0x2f, 0x41, 0x65, 0x97, 0x4d, 0xb3, 0xf5, 0x25, 0x25, 0xbe,
-	0x02, 0x73, 0xe9, 0xfa, 0xcb, 0x06, 0x4b, 0x0f, 0x8f, 0xca, 0x0f, 0x50, 0xeb, 0x0d, 0x5c, 0xfc,
-	0x25, 0xf1, 0x0c, 0x79, 0xa7, 0x28, 0xaf, 0x77, 0xae, 0xff, 0x29, 0x71, 0x62, 0x53, 0x34, 0xf7,
-	0xa0, 0x71, 0x36, 0xfa, 0x0c, 0xef, 0xfb, 0x67, 0xbd, 0x6f, 0x9c, 0xfb, 0x9e, 0x17, 0x1a, 0xb4,
-	0xf7, 0x00, 0x17, 0x17, 0xe5, 0x32, 0x35, 0x1e, 0x69, 0x7c, 0x07, 0xe6, 0xd3, 0x4f, 0xcb, 0xf4,
-	0xa9, 0x77, 0x96, 0x8c, 0xa7, 0x41, 0x64, 0xcf, 0xee, 0x9a, 0xc2, 0xcd, 0x28, 0x78, 0x0d, 0xaa,
-	0x5c, 0x0c, 0xc2, 0xbf, 0xb6, 0x3f, 0xd3, 0xc3, 0xd0, 0xdb, 0xef, 0x11, 0xe0, 0x6d, 0xca, 0x45,
-	0x82, 0x9b, 0x54, 0xff, 0xd1, 0xfa, 0x19, 0x34, 0x02, 0xca, 0x85, 0x37, 0x18, 0x0b, 0x3f, 0x7d,
-	0xe3, 0xff, 0x79, 0x07, 0x56, 0x50, 0xe8, 0xfd, 0x64, 0xf7, 0xe0, 0x88, 0x94, 0x0e, 0x8f, 0x48,
-	0xe9, 0xe4, 0x88, 0xa0, 0x77, 0x31, 0x41, 0x9f, 0x62, 0x82, 0xbe, 0xc4, 0x04, 0x1d, 0xc4, 0x04,
-	0x7d, 0x8d, 0x09, 0xfa, 0x16, 0x93, 0xd2, 0x49, 0x4c, 0xd0, 0xc7, 0x63, 0x52, 0x3a, 0x38, 0x26,
-	0xa5, 0xc3, 0x63, 0x52, 0x7a, 0xbd, 0x26, 0xf9, 0x1e, 0x67, 0x23, 0xda, 0x53, 0x36, 0xe5, 0x4e,
-	0x7e, 0x70, 0x66, 0xfd, 0x09, 0xd7, 0xf3, 0xaa, 0x37, 0x6f, 0xfe, 0x57, 0xab, 0x3f, 0x02, 0x00,
-	0x00, 0xff, 0xff, 0x48, 0x7a, 0x69, 0x07, 0x32, 0x05, 0x00, 0x00,
+	0x30, 0x58, 0x17, 0xe7, 0x12, 0x4e, 0x8d, 0xcf, 0x27, 0xdf, 0x25, 0x6a, 0x36, 0x66, 0x16, 0xf8,
+	0x33, 0x18, 0xf8, 0x43, 0x18, 0x3b, 0x76, 0xa4, 0xee, 0xc2, 0xd8, 0x91, 0x11, 0xf9, 0xec, 0x1a,
+	0x17, 0x02, 0x41, 0x6c, 0xef, 0xbe, 0xfb, 0xbe, 0xef, 0x7d, 0xef, 0xf9, 0x07, 0xb4, 0x55, 0xe4,
+	0x3b, 0xea, 0x2d, 0x8d, 0x58, 0xdf, 0x51, 0x7e, 0xc4, 0xa5, 0x56, 0xb2, 0x77, 0x56, 0xd9, 0x32,
+	0x0a, 0x75, 0x88, 0x57, 0xe4, 0xc8, 0x4e, 0x29, 0x76, 0x4e, 0x69, 0x15, 0x85, 0x7a, 0x2a, 0x99,
+	0x72, 0x0c, 0x39, 0xad, 0x53, 0x61, 0xca, 0xf1, 0xc3, 0x20, 0x08, 0x85, 0xd3, 0xa3, 0x8a, 0x65,
+	0x14, 0xa5, 0xa9, 0x1e, 0x67, 0x9c, 0xf6, 0x77, 0x04, 0xd6, 0xce, 0x58, 0xf8, 0x5b, 0xd1, 0x50,
+	0x75, 0x25, 0xf3, 0xf1, 0x43, 0xa8, 0xd2, 0x68, 0xa8, 0x9a, 0x68, 0xb5, 0xb2, 0x56, 0xef, 0xdc,
+	0xb2, 0x67, 0x34, 0xb7, 0x8b, 0x02, 0x7b, 0x2b, 0x1a, 0xba, 0x46, 0xd2, 0xfa, 0x8c, 0xa0, 0xb2,
+	0x15, 0x0d, 0xb1, 0x03, 0xb5, 0x3e, 0xd5, 0xd4, 0x4b, 0xb2, 0x34, 0xd1, 0x2a, 0x5a, 0x6b, 0x74,
+	0x70, 0xe2, 0x93, 0x66, 0xdb, 0xa6, 0x9a, 0xbe, 0x9c, 0x4a, 0xe6, 0x2e, 0xf5, 0xb3, 0x0a, 0x6f,
+	0xc2, 0xb2, 0x62, 0x01, 0x15, 0x9a, 0xfb, 0xa9, 0xa8, 0x6c, 0x44, 0x57, 0x7f, 0x8a, 0xba, 0xd9,
+	0xb5, 0x11, 0x5a, 0xaa, 0x70, 0xc2, 0x18, 0xaa, 0x82, 0x06, 0xac, 0x59, 0x59, 0x45, 0x6b, 0x35,
+	0xd7, 0xd4, 0xf8, 0x26, 0x2c, 0xf7, 0xd9, 0x80, 0x8e, 0x47, 0xda, 0x9b, 0xd0, 0xd1, 0x98, 0x35,
+	0x17, 0xcc, 0xa5, 0x95, 0x81, 0x7b, 0x09, 0xd6, 0xbe, 0x0d, 0x17, 0xf6, 0x78, 0x3a, 0xf4, 0x35,
+	0xa8, 0x4d, 0xd8, 0x90, 0x7a, 0x4a, 0x32, 0xdf, 0x24, 0xae, 0xb9, 0x4b, 0x09, 0x90, 0x5c, 0xb6,
+	0x3f, 0x54, 0xc1, 0xda, 0xe3, 0x2a, 0x19, 0x5a, 0x3d, 0x17, 0x83, 0x10, 0xbf, 0x82, 0x46, 0x3f,
+	0xf4, 0x3d, 0xa5, 0x23, 0x2e, 0x86, 0x5e, 0x40, 0x65, 0xb6, 0xac, 0xf5, 0x99, 0xcb, 0x2a, 0x4a,
+	0xed, 0xed, 0xd0, 0xef, 0x1a, 0xd9, 0x2e, 0x95, 0x4f, 0x85, 0x8e, 0xa6, 0xae, 0xd5, 0x2f, 0x40,
+	0xb8, 0x0b, 0xd6, 0x84, 0x2b, 0x93, 0xc3, 0x18, 0x97, 0x8d, 0xf1, 0xbd, 0xf9, 0xc6, 0xd9, 0x24,
+	0xb9, 0x2d, 0x4c, 0x72, 0x00, 0xbf, 0x80, 0xfa, 0x40, 0x78, 0xc9, 0x23, 0x32, 0x9e, 0x15, 0xe3,
+	0x79, 0x77, 0xbe, 0xe7, 0x8e, 0x48, 0x1e, 0x72, 0x6e, 0x59, 0x1b, 0x9c, 0x9d, 0x5b, 0x8f, 0xe1,
+	0xf2, 0x6f, 0x93, 0xe0, 0x4b, 0x50, 0xd9, 0x67, 0xd3, 0x6c, 0x7d, 0x49, 0x89, 0xaf, 0xc0, 0x42,
+	0xba, 0xfe, 0xb2, 0xc1, 0xd2, 0xc3, 0xa3, 0xf2, 0x03, 0xd4, 0x7a, 0x03, 0x17, 0x7f, 0x49, 0x3c,
+	0x43, 0xde, 0x29, 0xca, 0xeb, 0x9d, 0xeb, 0x7f, 0x4a, 0x9c, 0xd8, 0x14, 0xcd, 0x3d, 0x68, 0x9c,
+	0x8f, 0x3e, 0xc3, 0xfb, 0xfe, 0x79, 0xef, 0x1b, 0x73, 0xdf, 0xf3, 0x42, 0x83, 0xf6, 0x01, 0xe0,
+	0xe2, 0xa2, 0x5c, 0xa6, 0xc6, 0x23, 0x8d, 0xef, 0xc0, 0x62, 0xfa, 0x69, 0x99, 0x3e, 0xf5, 0xce,
+	0x8a, 0xf1, 0x34, 0x88, 0xec, 0xd9, 0x5d, 0x53, 0xb8, 0x19, 0x05, 0x6f, 0x40, 0x95, 0x8b, 0x41,
+	0xf8, 0xd7, 0xf6, 0xe7, 0x7a, 0x18, 0x7a, 0xfb, 0x3d, 0x02, 0xbc, 0x4b, 0xb9, 0x48, 0x70, 0x93,
+	0xea, 0x3f, 0x5a, 0x3f, 0x83, 0x46, 0x40, 0xb9, 0xf0, 0x06, 0x63, 0xe1, 0xa7, 0x6f, 0xfc, 0x3f,
+	0xef, 0xc0, 0x0a, 0x0a, 0xbd, 0x9f, 0xec, 0x1f, 0x1e, 0x93, 0xd2, 0xd1, 0x31, 0x29, 0x9d, 0x1e,
+	0x13, 0xf4, 0x2e, 0x26, 0xe8, 0x53, 0x4c, 0xd0, 0x97, 0x98, 0xa0, 0xc3, 0x98, 0xa0, 0xaf, 0x31,
+	0x41, 0xdf, 0x62, 0x52, 0x3a, 0x8d, 0x09, 0xfa, 0x78, 0x42, 0x4a, 0x87, 0x27, 0xa4, 0x74, 0x74,
+	0x42, 0x4a, 0xaf, 0x37, 0x24, 0x3f, 0xe0, 0x6c, 0x44, 0x7b, 0xca, 0xa6, 0xdc, 0xc9, 0x0f, 0xce,
+	0xac, 0x3f, 0xe1, 0x66, 0x5e, 0xf5, 0x16, 0xcd, 0xff, 0x6a, 0xfd, 0x47, 0x00, 0x00, 0x00, 0xff,
+	0xff, 0xcb, 0xa5, 0x92, 0x61, 0x32, 0x05, 0x00, 0x00,
 }
 
 func (this *FuncArgsSpec) Equal(that interface{}) bool {
@@ -460,14 +460,14 @@ func (this *FuncArgsSpec_Arg) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *VizSpec) Equal(that interface{}) bool {
+func (this *VisSpec) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*VizSpec)
+	that1, ok := that.(*VisSpec)
 	if !ok {
-		that2, ok := that.(VizSpec)
+		that2, ok := that.(VisSpec)
 		if ok {
 			that1 = &that2
 		} else {
@@ -484,14 +484,14 @@ func (this *VizSpec) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *VizFuncsInfo) Equal(that interface{}) bool {
+func (this *VisFuncsInfo) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*VizFuncsInfo)
+	that1, ok := that.(*VisFuncsInfo)
 	if !ok {
-		that2, ok := that.(VizFuncsInfo)
+		that2, ok := that.(VisFuncsInfo)
 		if ok {
 			that1 = &that2
 		} else {
@@ -511,11 +511,11 @@ func (this *VizFuncsInfo) Equal(that interface{}) bool {
 			return false
 		}
 	}
-	if len(this.VizSpecMap) != len(that1.VizSpecMap) {
+	if len(this.VisSpecMap) != len(that1.VisSpecMap) {
 		return false
 	}
-	for i := range this.VizSpecMap {
-		if !this.VizSpecMap[i].Equal(that1.VizSpecMap[i]) {
+	for i := range this.VisSpecMap {
+		if !this.VisSpecMap[i].Equal(that1.VisSpecMap[i]) {
 			return false
 		}
 	}
@@ -529,14 +529,14 @@ func (this *VizFuncsInfo) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *VizFuncsInfoResult) Equal(that interface{}) bool {
+func (this *VisFuncsInfoResult) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*VizFuncsInfoResult)
+	that1, ok := that.(*VisFuncsInfoResult)
 	if !ok {
-		that2, ok := that.(VizFuncsInfoResult)
+		that2, ok := that.(VisFuncsInfoResult)
 		if ok {
 			that1 = &that2
 		} else {
@@ -608,22 +608,22 @@ func (this *FuncArgsSpec_Arg) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *VizSpec) GoString() string {
+func (this *VisSpec) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 5)
-	s = append(s, "&scriptspb.VizSpec{")
+	s = append(s, "&scriptspb.VisSpec{")
 	s = append(s, "VegaSpec: "+fmt.Sprintf("%#v", this.VegaSpec)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *VizFuncsInfo) GoString() string {
+func (this *VisFuncsInfo) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 7)
-	s = append(s, "&scriptspb.VizFuncsInfo{")
+	s = append(s, "&scriptspb.VisFuncsInfo{")
 	keysForDocStringMap := make([]string, 0, len(this.DocStringMap))
 	for k, _ := range this.DocStringMap {
 		keysForDocStringMap = append(keysForDocStringMap, k)
@@ -637,18 +637,18 @@ func (this *VizFuncsInfo) GoString() string {
 	if this.DocStringMap != nil {
 		s = append(s, "DocStringMap: "+mapStringForDocStringMap+",\n")
 	}
-	keysForVizSpecMap := make([]string, 0, len(this.VizSpecMap))
-	for k, _ := range this.VizSpecMap {
-		keysForVizSpecMap = append(keysForVizSpecMap, k)
+	keysForVisSpecMap := make([]string, 0, len(this.VisSpecMap))
+	for k, _ := range this.VisSpecMap {
+		keysForVisSpecMap = append(keysForVisSpecMap, k)
 	}
-	github_com_gogo_protobuf_sortkeys.Strings(keysForVizSpecMap)
-	mapStringForVizSpecMap := "map[string]*VizSpec{"
-	for _, k := range keysForVizSpecMap {
-		mapStringForVizSpecMap += fmt.Sprintf("%#v: %#v,", k, this.VizSpecMap[k])
+	github_com_gogo_protobuf_sortkeys.Strings(keysForVisSpecMap)
+	mapStringForVisSpecMap := "map[string]*VisSpec{"
+	for _, k := range keysForVisSpecMap {
+		mapStringForVisSpecMap += fmt.Sprintf("%#v: %#v,", k, this.VisSpecMap[k])
 	}
-	mapStringForVizSpecMap += "}"
-	if this.VizSpecMap != nil {
-		s = append(s, "VizSpecMap: "+mapStringForVizSpecMap+",\n")
+	mapStringForVisSpecMap += "}"
+	if this.VisSpecMap != nil {
+		s = append(s, "VisSpecMap: "+mapStringForVisSpecMap+",\n")
 	}
 	keysForFnArgsMap := make([]string, 0, len(this.FnArgsMap))
 	for k, _ := range this.FnArgsMap {
@@ -666,12 +666,12 @@ func (this *VizFuncsInfo) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *VizFuncsInfoResult) GoString() string {
+func (this *VisFuncsInfoResult) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 6)
-	s = append(s, "&scriptspb.VizFuncsInfoResult{")
+	s = append(s, "&scriptspb.VisFuncsInfoResult{")
 	if this.Status != nil {
 		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
 	}
@@ -788,7 +788,7 @@ func (m *FuncArgsSpec_Arg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *VizSpec) Marshal() (dAtA []byte, err error) {
+func (m *VisSpec) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -798,12 +798,12 @@ func (m *VizSpec) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *VizSpec) MarshalTo(dAtA []byte) (int, error) {
+func (m *VisSpec) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *VizSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *VisSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -818,7 +818,7 @@ func (m *VizSpec) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *VizFuncsInfo) Marshal() (dAtA []byte, err error) {
+func (m *VisFuncsInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -828,12 +828,12 @@ func (m *VizFuncsInfo) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *VizFuncsInfo) MarshalTo(dAtA []byte) (int, error) {
+func (m *VisFuncsInfo) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *VizFuncsInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *VisFuncsInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -864,9 +864,9 @@ func (m *VizFuncsInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			dAtA[i] = 0x1a
 		}
 	}
-	if len(m.VizSpecMap) > 0 {
-		for k := range m.VizSpecMap {
-			v := m.VizSpecMap[k]
+	if len(m.VisSpecMap) > 0 {
+		for k := range m.VisSpecMap {
+			v := m.VisSpecMap[k]
 			baseI := i
 			if v != nil {
 				{
@@ -912,7 +912,7 @@ func (m *VizFuncsInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *VizFuncsInfoResult) Marshal() (dAtA []byte, err error) {
+func (m *VisFuncsInfoResult) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -922,12 +922,12 @@ func (m *VizFuncsInfoResult) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *VizFuncsInfoResult) MarshalTo(dAtA []byte) (int, error) {
+func (m *VisFuncsInfoResult) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *VizFuncsInfoResult) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *VisFuncsInfoResult) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1055,7 +1055,7 @@ func (m *FuncArgsSpec_Arg) Size() (n int) {
 	return n
 }
 
-func (m *VizSpec) Size() (n int) {
+func (m *VisSpec) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1068,7 +1068,7 @@ func (m *VizSpec) Size() (n int) {
 	return n
 }
 
-func (m *VizFuncsInfo) Size() (n int) {
+func (m *VisFuncsInfo) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1082,8 +1082,8 @@ func (m *VizFuncsInfo) Size() (n int) {
 			n += mapEntrySize + 1 + sovScripts(uint64(mapEntrySize))
 		}
 	}
-	if len(m.VizSpecMap) > 0 {
-		for k, v := range m.VizSpecMap {
+	if len(m.VisSpecMap) > 0 {
+		for k, v := range m.VisSpecMap {
 			_ = k
 			_ = v
 			l = 0
@@ -1111,7 +1111,7 @@ func (m *VizFuncsInfo) Size() (n int) {
 	return n
 }
 
-func (m *VizFuncsInfoResult) Size() (n int) {
+func (m *VisFuncsInfoResult) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -1179,17 +1179,17 @@ func (this *FuncArgsSpec_Arg) String() string {
 	}, "")
 	return s
 }
-func (this *VizSpec) String() string {
+func (this *VisSpec) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&VizSpec{`,
+	s := strings.Join([]string{`&VisSpec{`,
 		`VegaSpec:` + fmt.Sprintf("%v", this.VegaSpec) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *VizFuncsInfo) String() string {
+func (this *VisFuncsInfo) String() string {
 	if this == nil {
 		return "nil"
 	}
@@ -1203,16 +1203,16 @@ func (this *VizFuncsInfo) String() string {
 		mapStringForDocStringMap += fmt.Sprintf("%v: %v,", k, this.DocStringMap[k])
 	}
 	mapStringForDocStringMap += "}"
-	keysForVizSpecMap := make([]string, 0, len(this.VizSpecMap))
-	for k, _ := range this.VizSpecMap {
-		keysForVizSpecMap = append(keysForVizSpecMap, k)
+	keysForVisSpecMap := make([]string, 0, len(this.VisSpecMap))
+	for k, _ := range this.VisSpecMap {
+		keysForVisSpecMap = append(keysForVisSpecMap, k)
 	}
-	github_com_gogo_protobuf_sortkeys.Strings(keysForVizSpecMap)
-	mapStringForVizSpecMap := "map[string]*VizSpec{"
-	for _, k := range keysForVizSpecMap {
-		mapStringForVizSpecMap += fmt.Sprintf("%v: %v,", k, this.VizSpecMap[k])
+	github_com_gogo_protobuf_sortkeys.Strings(keysForVisSpecMap)
+	mapStringForVisSpecMap := "map[string]*VisSpec{"
+	for _, k := range keysForVisSpecMap {
+		mapStringForVisSpecMap += fmt.Sprintf("%v: %v,", k, this.VisSpecMap[k])
 	}
-	mapStringForVizSpecMap += "}"
+	mapStringForVisSpecMap += "}"
 	keysForFnArgsMap := make([]string, 0, len(this.FnArgsMap))
 	for k, _ := range this.FnArgsMap {
 		keysForFnArgsMap = append(keysForFnArgsMap, k)
@@ -1223,21 +1223,21 @@ func (this *VizFuncsInfo) String() string {
 		mapStringForFnArgsMap += fmt.Sprintf("%v: %v,", k, this.FnArgsMap[k])
 	}
 	mapStringForFnArgsMap += "}"
-	s := strings.Join([]string{`&VizFuncsInfo{`,
+	s := strings.Join([]string{`&VisFuncsInfo{`,
 		`DocStringMap:` + mapStringForDocStringMap + `,`,
-		`VizSpecMap:` + mapStringForVizSpecMap + `,`,
+		`VisSpecMap:` + mapStringForVisSpecMap + `,`,
 		`FnArgsMap:` + mapStringForFnArgsMap + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *VizFuncsInfoResult) String() string {
+func (this *VisFuncsInfoResult) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&VizFuncsInfoResult{`,
+	s := strings.Join([]string{`&VisFuncsInfoResult{`,
 		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto2.Status", 1) + `,`,
-		`Info:` + strings.Replace(this.Info.String(), "VizFuncsInfo", "VizFuncsInfo", 1) + `,`,
+		`Info:` + strings.Replace(this.Info.String(), "VisFuncsInfo", "VisFuncsInfo", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1503,7 +1503,7 @@ func (m *FuncArgsSpec_Arg) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *VizSpec) Unmarshal(dAtA []byte) error {
+func (m *VisSpec) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1526,10 +1526,10 @@ func (m *VizSpec) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: VizSpec: wiretype end group for non-group")
+			return fmt.Errorf("proto: VisSpec: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: VizSpec: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: VisSpec: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1588,7 +1588,7 @@ func (m *VizSpec) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *VizFuncsInfo) Unmarshal(dAtA []byte) error {
+func (m *VisFuncsInfo) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -1611,10 +1611,10 @@ func (m *VizFuncsInfo) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: VizFuncsInfo: wiretype end group for non-group")
+			return fmt.Errorf("proto: VisFuncsInfo: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: VizFuncsInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: VisFuncsInfo: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -1746,7 +1746,7 @@ func (m *VizFuncsInfo) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field VizSpecMap", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field VisSpecMap", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1773,11 +1773,11 @@ func (m *VizFuncsInfo) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.VizSpecMap == nil {
-				m.VizSpecMap = make(map[string]*VizSpec)
+			if m.VisSpecMap == nil {
+				m.VisSpecMap = make(map[string]*VisSpec)
 			}
 			var mapkey string
-			var mapvalue *VizSpec
+			var mapvalue *VisSpec
 			for iNdEx < postIndex {
 				entryPreIndex := iNdEx
 				var wire uint64
@@ -1851,7 +1851,7 @@ func (m *VizFuncsInfo) Unmarshal(dAtA []byte) error {
 					if postmsgIndex > l {
 						return io.ErrUnexpectedEOF
 					}
-					mapvalue = &VizSpec{}
+					mapvalue = &VisSpec{}
 					if err := mapvalue.Unmarshal(dAtA[iNdEx:postmsgIndex]); err != nil {
 						return err
 					}
@@ -1871,7 +1871,7 @@ func (m *VizFuncsInfo) Unmarshal(dAtA []byte) error {
 					iNdEx += skippy
 				}
 			}
-			m.VizSpecMap[mapkey] = mapvalue
+			m.VisSpecMap[mapkey] = mapvalue
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
@@ -2026,7 +2026,7 @@ func (m *VizFuncsInfo) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *VizFuncsInfoResult) Unmarshal(dAtA []byte) error {
+func (m *VisFuncsInfoResult) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -2049,10 +2049,10 @@ func (m *VizFuncsInfoResult) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: VizFuncsInfoResult: wiretype end group for non-group")
+			return fmt.Errorf("proto: VisFuncsInfoResult: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: VizFuncsInfoResult: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: VisFuncsInfoResult: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -2121,7 +2121,7 @@ func (m *VizFuncsInfoResult) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Info == nil {
-				m.Info = &VizFuncsInfo{}
+				m.Info = &VisFuncsInfo{}
 			}
 			if err := m.Info.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err

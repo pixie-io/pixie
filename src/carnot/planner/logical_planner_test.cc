@@ -232,20 +232,20 @@ TEST_F(LogicalPlannerTest, GetMainFuncArgsSpec) {
   EXPECT_THAT(args, testing::proto::EqualsProto(kMainFuncArgs));
 }
 
-constexpr char kVizFuncsQuery[] = R"pxl(
+constexpr char kVisFuncsQuery[] = R"pxl(
 import px
-@px.viz.vega("vega spec for f")
+@px.vis.vega("vega spec for f")
 def f(start_time: px.Time, end_time: px.Time, svc: str):
   """Doc string for f"""
   return 1
 
-@px.viz.vega("vega spec for g")
+@px.vis.vega("vega spec for g")
 def g(a: int, b: float):
   """Doc string for g"""
   return 1
 )pxl";
 
-constexpr char kExpectedVizFuncsInfoPb[] = R"(
+constexpr char kExpectedVisFuncsInfoPb[] = R"(
 doc_string_map {
   key: "f"
   value: "Doc string for f"
@@ -254,13 +254,13 @@ doc_string_map {
   key: "g"
   value: "Doc string for g"
 }
-viz_spec_map {
+vis_spec_map {
   key: "f"
   value {
     vega_spec: "vega spec for f"
   }
 }
-viz_spec_map {
+vis_spec_map {
   key: "g"
   value {
     vega_spec: "vega spec for g"
@@ -302,13 +302,13 @@ fn_args_map {
   }
 })";
 
-TEST_F(LogicalPlannerTest, GetVizFuncsInfo) {
+TEST_F(LogicalPlannerTest, GetVisFuncsInfo) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  auto viz_funcs_or_s = planner->GetVizFuncsInfo(kVizFuncsQuery);
-  ASSERT_OK(viz_funcs_or_s);
-  auto viz_funcs = viz_funcs_or_s.ConsumeValueOrDie();
+  auto vis_funcs_or_s = planner->GetVisFuncsInfo(kVisFuncsQuery);
+  ASSERT_OK(vis_funcs_or_s);
+  auto vis_funcs = vis_funcs_or_s.ConsumeValueOrDie();
 
-  EXPECT_THAT(viz_funcs, testing::proto::EqualsProto(kExpectedVizFuncsInfoPb));
+  EXPECT_THAT(vis_funcs, testing::proto::EqualsProto(kExpectedVisFuncsInfoPb));
 }
 
 constexpr char kPlannerQueryError[] = R"pxl(

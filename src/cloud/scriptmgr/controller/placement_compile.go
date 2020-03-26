@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// vizSpecObj represents a call to a visualization spec function.
-type vizSpecObj struct {
+// visSpecObj represents a call to a visualization spec function.
+type visSpecObj struct {
 	Function string                 `json:"func"`
 	Args     map[string]interface{} `json:"args"`
 }
@@ -18,7 +18,7 @@ type vizSpecObj struct {
 type placementObj struct {
 	Name       string                `json:"name"`
 	GlobalArgs map[string]string     `json:"args"`
-	Tables     map[string]vizSpecObj `json:"tables"`
+	Tables     map[string]visSpecObj `json:"tables"`
 }
 
 // Object to hold the context of the compiler to simplify function calls.
@@ -58,8 +58,8 @@ func (pc *PlacementCompiler) lookupVarOrStrLiteral(state *compilerState, s strin
 	return fmt.Sprintf("%s", s[1:]), nil
 }
 
-// prepareVizFuncArg interprets one argumment to a function that is called in the placement spec.
-func (pc *PlacementCompiler) prepareVizFuncArg(state *compilerState, argName string, argVal interface{}) (string, error) {
+// prepareVisFuncArg interprets one argumment to a function that is called in the placement spec.
+func (pc *PlacementCompiler) prepareVisFuncArg(state *compilerState, argName string, argVal interface{}) (string, error) {
 	if s, ok := argVal.(string); ok {
 		return pc.lookupVarOrStrLiteral(state, s)
 	} else if i, ok := argVal.(int); ok {
@@ -70,15 +70,15 @@ func (pc *PlacementCompiler) prepareVizFuncArg(state *compilerState, argName str
 	return "", fmt.Errorf("%T type not found", argVal)
 }
 
-// createVizSpecCalls creates the vizier spec call.
-func (pc *PlacementCompiler) createVizSpecCalls(state *compilerState, tableName string, table *vizSpecObj) ([]string, error) {
+// createVisSpecCalls creates the vizier spec call.
+func (pc *PlacementCompiler) createVisSpecCalls(state *compilerState, tableName string, table *visSpecObj) ([]string, error) {
 	argVals := make([]string, len(table.Args))
 	i := 0
 	for argName, argVal := range table.Args {
 		if err := pc.validArgNameOrError(argName); err != nil {
 			return nil, err
 		}
-		a, err := pc.prepareVizFuncArg(state, argName, argVal)
+		a, err := pc.prepareVisFuncArg(state, argName, argVal)
 		if err != nil {
 			return nil, err
 		}
@@ -169,7 +169,7 @@ func (pc *PlacementCompiler) placementToPxl(state *compilerState, jsonStr string
 	lines = append(lines, signature)
 	for tableName, tableObj := range placement.Tables {
 		// Create the calls to the functions backing the visualization specs.
-		curLines, err := pc.createVizSpecCalls(state, tableName, &tableObj)
+		curLines, err := pc.createVisSpecCalls(state, tableName, &tableObj)
 		if err != nil {
 			return "", err
 		}

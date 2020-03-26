@@ -266,20 +266,20 @@ func TestPlanner_GetMainFuncArgsSpec_BadQuery(t *testing.T) {
 
 }
 
-const vizFuncsQuery = `
+const visFuncsQuery = `
 import px
-@px.viz.vega("vega spec for f")
+@px.vis.vega("vega spec for f")
 def f(start_time: px.Time, end_time: px.Time, svc: str):
   """Doc string for f"""
   return 1
 
-@px.viz.vega("vega spec for g")
+@px.vis.vega("vega spec for g")
 def g(a: int, b: float):
   """Doc string for g"""
   return 1
 `
 
-const expectedVizFuncsInfoPBStr = `
+const expectedVisFuncsInfoPBStr = `
 doc_string_map {
   key: "f"
   value: "Doc string for f"
@@ -288,13 +288,13 @@ doc_string_map {
   key: "g"
   value: "Doc string for g"
 }
-viz_spec_map {
+vis_spec_map {
   key: "f"
   value {
     vega_spec: "vega spec for f"
   }
 }
-viz_spec_map {
+vis_spec_map {
   key: "g"
   value {
     vega_spec: "vega spec for g"
@@ -337,26 +337,26 @@ fn_args_map {
 }
 `
 
-func TestPlanner_ParseScriptForVizFuncsInfo(t *testing.T) {
+func TestPlanner_ExtractVisFuncsInfo(t *testing.T) {
 	c := logicalplanner.New(&udfspb.UDFInfo{})
 	defer c.Free()
 
-	vizFuncsResult, err := c.ParseScriptForVizFuncsInfo(vizFuncsQuery)
+	visFuncsResult, err := c.ExtractVisFuncsInfo(visFuncsQuery)
 
 	if err != nil {
-		log.Fatalln("Failed to get viz funcs info: ", err)
+		log.Fatalln("Failed to get vis funcs info: ", err)
 		t.FailNow()
 	}
 
-	status := vizFuncsResult.Status
+	status := visFuncsResult.Status
 	assert.Equal(t, status.ErrCode, statuspb.OK)
 
-	var expectedVizFuncsInfoPb scriptspb.VizFuncsInfo
+	var expectedVisFuncsInfoPb scriptspb.VisFuncsInfo
 
-	if err = proto.UnmarshalText(expectedVizFuncsInfoPBStr, &expectedVizFuncsInfoPb); err != nil {
+	if err = proto.UnmarshalText(expectedVisFuncsInfoPBStr, &expectedVisFuncsInfoPb); err != nil {
 		log.Fatalf("Failed to unmarshal expected proto", err)
 		t.FailNow()
 	}
 
-	assert.Equal(t, &expectedVizFuncsInfoPb, vizFuncsResult.Info)
+	assert.Equal(t, &expectedVisFuncsInfoPb, visFuncsResult.Info)
 }

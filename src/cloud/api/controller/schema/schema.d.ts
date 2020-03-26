@@ -18,7 +18,7 @@ export interface GQLQuery {
   clusterConnection: GQLClusterConnectionInfo;
   cliArtifact: GQLCLIArtifact;
   artifacts: GQLArtifactsInfo;
-  extractVizFuncsInfo: GQLVizFuncsInfo;
+  extractVisFuncsInfo: GQLVisFuncsInfo;
 }
 
 export interface GQLUserInfo {
@@ -73,9 +73,9 @@ export interface GQLArtifact {
   timestampMs: number;
 }
 
-export interface GQLVizFuncsInfo {
+export interface GQLVisFuncsInfo {
   docStringMap: Array<GQLDocStringMapEntry>;
-  vizSpecMap: Array<GQLVizSpecMapEntry>;
+  visSpecMap: Array<GQLVisSpecMapEntry>;
   fnArgsMap: Array<GQLFnArgsMapEntry>;
 }
 
@@ -84,12 +84,12 @@ export interface GQLDocStringMapEntry {
   docString: string;
 }
 
-export interface GQLVizSpecMapEntry {
+export interface GQLVisSpecMapEntry {
   funcName: string;
-  vizSpec?: GQLVizSpec;
+  visSpec?: GQLVisSpec;
 }
 
-export interface GQLVizSpec {
+export interface GQLVisSpec {
   vegaSpec: string;
 }
 
@@ -152,10 +152,10 @@ export interface GQLResolver {
   CLIArtifact?: GQLCLIArtifactTypeResolver;
   ArtifactsInfo?: GQLArtifactsInfoTypeResolver;
   Artifact?: GQLArtifactTypeResolver;
-  VizFuncsInfo?: GQLVizFuncsInfoTypeResolver;
+  VisFuncsInfo?: GQLVisFuncsInfoTypeResolver;
   DocStringMapEntry?: GQLDocStringMapEntryTypeResolver;
-  VizSpecMapEntry?: GQLVizSpecMapEntryTypeResolver;
-  VizSpec?: GQLVizSpecTypeResolver;
+  VisSpecMapEntry?: GQLVisSpecMapEntryTypeResolver;
+  VisSpec?: GQLVisSpecTypeResolver;
   FnArgsMapEntry?: GQLFnArgsMapEntryTypeResolver;
   FnArgsSpec?: GQLFnArgsSpecTypeResolver;
   FnArgsSpecArg?: GQLFnArgsSpecArgTypeResolver;
@@ -167,7 +167,7 @@ export interface GQLQueryTypeResolver<TParent = any> {
   clusterConnection?: QueryToClusterConnectionResolver<TParent>;
   cliArtifact?: QueryToCliArtifactResolver<TParent>;
   artifacts?: QueryToArtifactsResolver<TParent>;
-  extractVizFuncsInfo?: QueryToExtractVizFuncsInfoResolver<TParent>;
+  extractVisFuncsInfo?: QueryToExtractVisFuncsInfoResolver<TParent>;
 }
 
 export interface QueryToUserResolver<TParent = any, TResult = any> {
@@ -196,12 +196,12 @@ export interface QueryToArtifactsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToArtifactsArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface QueryToExtractVizFuncsInfoArgs {
+export interface QueryToExtractVisFuncsInfoArgs {
   script: string;
   funcNames?: Array<string>;
 }
-export interface QueryToExtractVizFuncsInfoResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToExtractVizFuncsInfoArgs, context: any, info: GraphQLResolveInfo): TResult;
+export interface QueryToExtractVisFuncsInfoResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToExtractVisFuncsInfoArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface GQLUserInfoTypeResolver<TParent = any> {
@@ -310,21 +310,21 @@ export interface ArtifactToTimestampMsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface GQLVizFuncsInfoTypeResolver<TParent = any> {
-  docStringMap?: VizFuncsInfoToDocStringMapResolver<TParent>;
-  vizSpecMap?: VizFuncsInfoToVizSpecMapResolver<TParent>;
-  fnArgsMap?: VizFuncsInfoToFnArgsMapResolver<TParent>;
+export interface GQLVisFuncsInfoTypeResolver<TParent = any> {
+  docStringMap?: VisFuncsInfoToDocStringMapResolver<TParent>;
+  visSpecMap?: VisFuncsInfoToVisSpecMapResolver<TParent>;
+  fnArgsMap?: VisFuncsInfoToFnArgsMapResolver<TParent>;
 }
 
-export interface VizFuncsInfoToDocStringMapResolver<TParent = any, TResult = any> {
+export interface VisFuncsInfoToDocStringMapResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface VizFuncsInfoToVizSpecMapResolver<TParent = any, TResult = any> {
+export interface VisFuncsInfoToVisSpecMapResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface VizFuncsInfoToFnArgsMapResolver<TParent = any, TResult = any> {
+export interface VisFuncsInfoToFnArgsMapResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
@@ -341,24 +341,24 @@ export interface DocStringMapEntryToDocStringResolver<TParent = any, TResult = a
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface GQLVizSpecMapEntryTypeResolver<TParent = any> {
-  funcName?: VizSpecMapEntryToFuncNameResolver<TParent>;
-  vizSpec?: VizSpecMapEntryToVizSpecResolver<TParent>;
+export interface GQLVisSpecMapEntryTypeResolver<TParent = any> {
+  funcName?: VisSpecMapEntryToFuncNameResolver<TParent>;
+  visSpec?: VisSpecMapEntryToVisSpecResolver<TParent>;
 }
 
-export interface VizSpecMapEntryToFuncNameResolver<TParent = any, TResult = any> {
+export interface VisSpecMapEntryToFuncNameResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface VizSpecMapEntryToVizSpecResolver<TParent = any, TResult = any> {
+export interface VisSpecMapEntryToVisSpecResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
-export interface GQLVizSpecTypeResolver<TParent = any> {
-  vegaSpec?: VizSpecToVegaSpecResolver<TParent>;
+export interface GQLVisSpecTypeResolver<TParent = any> {
+  vegaSpec?: VisSpecToVegaSpecResolver<TParent>;
 }
 
-export interface VizSpecToVegaSpecResolver<TParent = any, TResult = any> {
+export interface VisSpecToVegaSpecResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

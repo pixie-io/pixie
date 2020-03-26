@@ -499,24 +499,24 @@ func (m *MockScriptMgrClient) EXPECT() *MockScriptMgrClientMockRecorder {
 	return m.recorder
 }
 
-// ExtractVizFuncsInfo mocks base method
-func (m *MockScriptMgrClient) ExtractVizFuncsInfo(ctx context.Context, in *cloudapipb.ExtractVizFuncsInfoRequest, opts ...grpc.CallOption) (*cloudapipb.ExtractVizFuncsInfoResponse, error) {
+// ExtractVisFuncsInfo mocks base method
+func (m *MockScriptMgrClient) ExtractVisFuncsInfo(ctx context.Context, in *cloudapipb.ExtractVisFuncsInfoRequest, opts ...grpc.CallOption) (*cloudapipb.ExtractVisFuncsInfoResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
 	}
-	ret := m.ctrl.Call(m, "ExtractVizFuncsInfo", varargs...)
-	ret0, _ := ret[0].(*cloudapipb.ExtractVizFuncsInfoResponse)
+	ret := m.ctrl.Call(m, "ExtractVisFuncsInfo", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.ExtractVisFuncsInfoResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ExtractVizFuncsInfo indicates an expected call of ExtractVizFuncsInfo
-func (mr *MockScriptMgrClientMockRecorder) ExtractVizFuncsInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+// ExtractVisFuncsInfo indicates an expected call of ExtractVisFuncsInfo
+func (mr *MockScriptMgrClientMockRecorder) ExtractVisFuncsInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtractVizFuncsInfo", reflect.TypeOf((*MockScriptMgrClient)(nil).ExtractVizFuncsInfo), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtractVisFuncsInfo", reflect.TypeOf((*MockScriptMgrClient)(nil).ExtractVisFuncsInfo), varargs...)
 }
 
 // MockScriptMgrServer is a mock of ScriptMgrServer interface
@@ -542,17 +542,17 @@ func (m *MockScriptMgrServer) EXPECT() *MockScriptMgrServerMockRecorder {
 	return m.recorder
 }
 
-// ExtractVizFuncsInfo mocks base method
-func (m *MockScriptMgrServer) ExtractVizFuncsInfo(arg0 context.Context, arg1 *cloudapipb.ExtractVizFuncsInfoRequest) (*cloudapipb.ExtractVizFuncsInfoResponse, error) {
+// ExtractVisFuncsInfo mocks base method
+func (m *MockScriptMgrServer) ExtractVisFuncsInfo(arg0 context.Context, arg1 *cloudapipb.ExtractVisFuncsInfoRequest) (*cloudapipb.ExtractVisFuncsInfoResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ExtractVizFuncsInfo", arg0, arg1)
-	ret0, _ := ret[0].(*cloudapipb.ExtractVizFuncsInfoResponse)
+	ret := m.ctrl.Call(m, "ExtractVisFuncsInfo", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.ExtractVisFuncsInfoResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ExtractVizFuncsInfo indicates an expected call of ExtractVizFuncsInfo
-func (mr *MockScriptMgrServerMockRecorder) ExtractVizFuncsInfo(arg0, arg1 interface{}) *gomock.Call {
+// ExtractVisFuncsInfo indicates an expected call of ExtractVisFuncsInfo
+func (mr *MockScriptMgrServerMockRecorder) ExtractVisFuncsInfo(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtractVizFuncsInfo", reflect.TypeOf((*MockScriptMgrServer)(nil).ExtractVizFuncsInfo), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtractVisFuncsInfo", reflect.TypeOf((*MockScriptMgrServer)(nil).ExtractVisFuncsInfo), arg0, arg1)
 }

@@ -133,8 +133,8 @@ std::string FuncObject::FormatArguments(const absl::flat_hash_set<std::string> a
   });
 }
 
-Status FuncObject::AddVizSpec(std::unique_ptr<VizSpec> viz_spec) {
-  viz_spec_ = std::move(viz_spec);
+Status FuncObject::AddVisSpec(std::unique_ptr<VisSpec> vis_spec) {
+  vis_spec_ = std::move(vis_spec);
   return Status::OK();
 }
 
@@ -178,7 +178,7 @@ Status FuncObject::CheckAllArgsHaveTypes(const pypa::AstPtr& ast) const {
   for (const auto& name : arguments_) {
     if (arg_types_.find(name) == arg_types_.end()) {
       return CreateAstError(ast,
-                            "Arguments of px.viz.* decorated functions must be annotated with "
+                            "Arguments of px.vis.* decorated functions must be annotated with "
                             "types. Arg: '$0' was not annotated.",
                             name);
     }

@@ -51,12 +51,12 @@ class LogicalPlanner : public NotCopyable {
       const plannerpb::QueryRequest& query_request);
 
   /**
-   * @brief Takes in a script string and outputs information about viz funcs for that script.
+   * @brief Takes in a script string and outputs information about vis funcs for that script.
    *
    * @param script: the string of the script.
-   * @return VizFuncsInfo or error if one occurs during compilation.
+   * @return VisFuncsInfo or error if one occurs during compilation.
    */
-  StatusOr<pl::shared::scriptspb::VizFuncsInfo> GetVizFuncsInfo(const std::string& script_str);
+  StatusOr<pl::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo(const std::string& script_str);
 
   Status Init(std::unique_ptr<planner::RegistryInfo> registry_info);
   Status Init(const udfspb::UDFInfo& udf_info);

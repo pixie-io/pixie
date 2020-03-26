@@ -13,13 +13,13 @@ type docStringMapEntryResolver struct {
 	DocString string
 }
 
-type vizSpecResolver struct {
+type visSpecResolver struct {
 	VegaSpec string
 }
 
-type vizSpecMapEntryResolver struct {
+type visSpecMapEntryResolver struct {
 	FuncName string
-	VizSpec  *vizSpecResolver
+	VisSpec  *visSpecResolver
 }
 
 type fnArgsSpecArgResolver struct {
@@ -38,14 +38,14 @@ type fnArgsMapEntryResolver struct {
 	FnArgSpec fnArgsSpecResolver
 }
 
-// VizFuncsInfoResolver is the resolver responsible for resolving the info about px.viz funcs
-type VizFuncsInfoResolver struct {
+// VisFuncsInfoResolver is the resolver responsible for resolving the info about px.vis funcs
+type VisFuncsInfoResolver struct {
 	DocStringMap []docStringMapEntryResolver
-	VizSpecMap   []vizSpecMapEntryResolver
+	VisSpecMap   []visSpecMapEntryResolver
 	FnArgsMap    []fnArgsMapEntryResolver
 }
 
-type parseScriptForVizFuncsArgs struct {
+type parseScriptForVisFuncsArgs struct {
 	Script    string
 	FuncNames *[]string
 }
@@ -79,16 +79,16 @@ func convertFnArgsMapToGQL(goMap map[string]*cloudapipb.FuncArgsSpec, fnArgsMap 
 	}
 }
 
-func convertVizSpecMapToGQL(goMap map[string]*cloudapipb.VizSpec, vizSpecMap *[]vizSpecMapEntryResolver) {
+func convertVisSpecMapToGQL(goMap map[string]*cloudapipb.VisSpec, visSpecMap *[]visSpecMapEntryResolver) {
 	i := 0
 	for name, vizspec := range goMap {
-		entry := vizSpecMapEntryResolver{
+		entry := visSpecMapEntryResolver{
 			FuncName: name,
-			VizSpec: &vizSpecResolver{
+			VisSpec: &visSpecResolver{
 				VegaSpec: vizspec.VegaSpec,
 			},
 		}
-		(*vizSpecMap)[i] = entry
+		(*visSpecMap)[i] = entry
 		i++
 	}
 }
@@ -105,38 +105,38 @@ func convertDocStringMapToGQL(goMap map[string]string, docStringMap *[]docString
 	}
 }
 
-// ExtractVizFuncsInfo resolves info about the px.viz decorated functions in the passed in script.
-func (q *QueryResolver) ExtractVizFuncsInfo(ctx context.Context, args *parseScriptForVizFuncsArgs) (VizFuncsInfoResolver, error) {
+// ExtractVisFuncsInfo resolves info about the px.vis decorated functions in the passed in script.
+func (q *QueryResolver) ExtractVisFuncsInfo(ctx context.Context, args *parseScriptForVisFuncsArgs) (VisFuncsInfoResolver, error) {
 	funcNames := []string{}
 	if args.FuncNames != nil {
 		funcNames = *args.FuncNames
 	}
-	req := &cloudapipb.ExtractVizFuncsInfoRequest{
+	req := &cloudapipb.ExtractVisFuncsInfoRequest{
 		Script:    args.Script,
 		FuncNames: funcNames,
 	}
 
-	vizFuncsInfo, err := q.Env.ScriptMgrServer.ExtractVizFuncsInfo(ctx, req)
+	visFuncsInfo, err := q.Env.ScriptMgrServer.ExtractVisFuncsInfo(ctx, req)
 	if err != nil {
-		return VizFuncsInfoResolver{}, err
+		return VisFuncsInfoResolver{}, err
 	}
 
-	resolver := VizFuncsInfoResolver{
-		DocStringMap: make([]docStringMapEntryResolver, len(vizFuncsInfo.DocStringMap)),
-		VizSpecMap:   make([]vizSpecMapEntryResolver, len(vizFuncsInfo.VizSpecMap)),
-		FnArgsMap:    make([]fnArgsMapEntryResolver, len(vizFuncsInfo.FnArgsMap)),
+	resolver := VisFuncsInfoResolver{
+		DocStringMap: make([]docStringMapEntryResolver, len(visFuncsInfo.DocStringMap)),
+		VisSpecMap:   make([]visSpecMapEntryResolver, len(visFuncsInfo.VisSpecMap)),
+		FnArgsMap:    make([]fnArgsMapEntryResolver, len(visFuncsInfo.FnArgsMap)),
 	}
 
-	convertDocStringMapToGQL(vizFuncsInfo.DocStringMap, &resolver.DocStringMap)
-	convertVizSpecMapToGQL(vizFuncsInfo.VizSpecMap, &resolver.VizSpecMap)
-	convertFnArgsMapToGQL(vizFuncsInfo.FnArgsMap, &resolver.FnArgsMap)
+	convertDocStringMapToGQL(visFuncsInfo.DocStringMap, &resolver.DocStringMap)
+	convertVisSpecMapToGQL(visFuncsInfo.VisSpecMap, &resolver.VisSpecMap)
+	convertFnArgsMapToGQL(visFuncsInfo.FnArgsMap, &resolver.FnArgsMap)
 
 	// Sort by function name to ensure consistent output.
 	sort.Slice(resolver.DocStringMap, func(i, j int) bool {
 		return resolver.DocStringMap[i].FuncName < resolver.DocStringMap[j].FuncName
 	})
-	sort.Slice(resolver.VizSpecMap, func(i, j int) bool {
-		return resolver.VizSpecMap[i].FuncName < resolver.VizSpecMap[j].FuncName
+	sort.Slice(resolver.VisSpecMap, func(i, j int) bool {
+		return resolver.VisSpecMap[i].FuncName < resolver.VisSpecMap[j].FuncName
 	})
 	sort.Slice(resolver.FnArgsMap, func(i, j int) bool {
 		return resolver.FnArgsMap[i].FuncName < resolver.FnArgsMap[j].FuncName

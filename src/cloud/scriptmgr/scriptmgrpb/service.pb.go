@@ -30,22 +30,22 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type ExtractVizFuncsInfoRequest struct {
+type ExtractVisFuncsInfoRequest struct {
 	Script    string   `protobuf:"bytes,1,opt,name=script,proto3" json:"script,omitempty"`
 	FuncNames []string `protobuf:"bytes,2,rep,name=func_names,json=funcNames,proto3" json:"func_names,omitempty"`
 }
 
-func (m *ExtractVizFuncsInfoRequest) Reset()      { *m = ExtractVizFuncsInfoRequest{} }
-func (*ExtractVizFuncsInfoRequest) ProtoMessage() {}
-func (*ExtractVizFuncsInfoRequest) Descriptor() ([]byte, []int) {
+func (m *ExtractVisFuncsInfoRequest) Reset()      { *m = ExtractVisFuncsInfoRequest{} }
+func (*ExtractVisFuncsInfoRequest) ProtoMessage() {}
+func (*ExtractVisFuncsInfoRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e19e341d77057158, []int{0}
 }
-func (m *ExtractVizFuncsInfoRequest) XXX_Unmarshal(b []byte) error {
+func (m *ExtractVisFuncsInfoRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ExtractVizFuncsInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *ExtractVisFuncsInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ExtractVizFuncsInfoRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_ExtractVisFuncsInfoRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -55,26 +55,26 @@ func (m *ExtractVizFuncsInfoRequest) XXX_Marshal(b []byte, deterministic bool) (
 		return b[:n], nil
 	}
 }
-func (m *ExtractVizFuncsInfoRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExtractVizFuncsInfoRequest.Merge(m, src)
+func (m *ExtractVisFuncsInfoRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ExtractVisFuncsInfoRequest.Merge(m, src)
 }
-func (m *ExtractVizFuncsInfoRequest) XXX_Size() int {
+func (m *ExtractVisFuncsInfoRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *ExtractVizFuncsInfoRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ExtractVizFuncsInfoRequest.DiscardUnknown(m)
+func (m *ExtractVisFuncsInfoRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ExtractVisFuncsInfoRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ExtractVizFuncsInfoRequest proto.InternalMessageInfo
+var xxx_messageInfo_ExtractVisFuncsInfoRequest proto.InternalMessageInfo
 
-func (m *ExtractVizFuncsInfoRequest) GetScript() string {
+func (m *ExtractVisFuncsInfoRequest) GetScript() string {
 	if m != nil {
 		return m.Script
 	}
 	return ""
 }
 
-func (m *ExtractVizFuncsInfoRequest) GetFuncNames() []string {
+func (m *ExtractVisFuncsInfoRequest) GetFuncNames() []string {
 	if m != nil {
 		return m.FuncNames
 	}
@@ -82,7 +82,7 @@ func (m *ExtractVizFuncsInfoRequest) GetFuncNames() []string {
 }
 
 func init() {
-	proto.RegisterType((*ExtractVizFuncsInfoRequest)(nil), "pl.services.ExtractVizFuncsInfoRequest")
+	proto.RegisterType((*ExtractVisFuncsInfoRequest)(nil), "pl.services.ExtractVisFuncsInfoRequest")
 }
 
 func init() {
@@ -90,37 +90,37 @@ func init() {
 }
 
 var fileDescriptor_e19e341d77057158 = []byte{
-	// 318 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x91, 0x3f, 0x4b, 0x3b, 0x31,
-	0x1c, 0xc6, 0x93, 0xdf, 0x0f, 0x0a, 0x8d, 0x8b, 0x9c, 0x20, 0xe5, 0xc0, 0x2f, 0xb5, 0x8b, 0x5d,
-	0x9a, 0x80, 0x8e, 0x6e, 0x05, 0x05, 0x07, 0x1d, 0x5a, 0x70, 0x70, 0x91, 0xbb, 0x98, 0x5e, 0x03,
-	0xed, 0xe5, 0xcc, 0x1f, 0x2d, 0x4e, 0xbe, 0x04, 0x5f, 0x86, 0x2f, 0xc5, 0xb1, 0x63, 0x47, 0x9b,
-	0x2e, 0x8e, 0x7d, 0x09, 0x72, 0xb9, 0x5a, 0x6f, 0x50, 0xdc, 0x9e, 0xe7, 0xcb, 0x27, 0x79, 0xbe,
-	0x4f, 0x42, 0x7a, 0x46, 0x73, 0xc6, 0x27, 0xca, 0xdd, 0x31, 0xc3, 0xb5, 0x2c, 0xec, 0x34, 0xd3,
-	0xdf, 0xaa, 0x48, 0x99, 0x11, 0xfa, 0x41, 0x72, 0x41, 0x0b, 0xad, 0xac, 0x8a, 0x76, 0x8a, 0x09,
-	0xdd, 0x4c, 0x4c, 0xdc, 0xcb, 0xa4, 0x1d, 0xbb, 0x94, 0x72, 0x35, 0x65, 0x99, 0xca, 0x14, 0x0b,
-	0x4c, 0xea, 0x46, 0xc1, 0x05, 0x13, 0x54, 0x75, 0x36, 0xee, 0x94, 0x51, 0x66, 0x9c, 0x68, 0xf1,
-	0x95, 0x65, 0xca, 0xfb, 0x2b, 0x55, 0x31, 0x9d, 0x21, 0x89, 0xcf, 0x66, 0x56, 0x27, 0xdc, 0x5e,
-	0xcb, 0xa7, 0x73, 0x97, 0x73, 0x73, 0x91, 0x8f, 0xd4, 0x40, 0xdc, 0x3b, 0x61, 0x6c, 0xb4, 0x4f,
-	0x1a, 0x15, 0xde, 0xc2, 0x6d, 0xdc, 0x6d, 0x0e, 0x36, 0x2e, 0x3a, 0x20, 0x64, 0xe4, 0x72, 0x7e,
-	0x9b, 0x27, 0x53, 0x61, 0x5a, 0xff, 0xda, 0xff, 0xbb, 0xcd, 0x41, 0xb3, 0x9c, 0x5c, 0x95, 0x83,
-	0xe3, 0x47, 0xb2, 0x3b, 0x0c, 0xe0, 0x65, 0xa6, 0x87, 0xd5, 0xf2, 0x11, 0x27, 0x7b, 0x3f, 0x04,
-	0x45, 0x47, 0xb4, 0x56, 0x90, 0xfe, 0xbe, 0x4a, 0x7c, 0x18, 0xc0, 0x50, 0x86, 0x6e, 0xcb, 0xd0,
-	0x3a, 0xd9, 0x41, 0xfd, 0xd9, 0x7c, 0x09, 0x68, 0xb1, 0x04, 0xb4, 0x5e, 0x02, 0x7e, 0xf6, 0x80,
-	0x5f, 0x3d, 0xe0, 0x37, 0x0f, 0x78, 0xee, 0x01, 0xbf, 0x7b, 0xc0, 0x1f, 0x1e, 0xd0, 0xda, 0x03,
-	0x7e, 0x59, 0x01, 0x9a, 0xaf, 0x00, 0x2d, 0x56, 0x80, 0x6e, 0xfa, 0x85, 0x9c, 0x49, 0x31, 0x49,
-	0x52, 0x43, 0x13, 0xc9, 0xb6, 0x86, 0xfd, 0xf1, 0x53, 0xa7, 0x35, 0x9d, 0x36, 0xc2, 0x73, 0x9e,
-	0x7c, 0x06, 0x00, 0x00, 0xff, 0xff, 0xc3, 0x66, 0xd4, 0x79, 0xdf, 0x01, 0x00, 0x00,
+	// 315 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x91, 0x3f, 0x4b, 0x03, 0x31,
+	0x18, 0xc6, 0x13, 0x85, 0x42, 0xe3, 0x22, 0x27, 0x48, 0x39, 0xf0, 0xa5, 0x76, 0xb1, 0x4b, 0x13,
+	0xd0, 0xd1, 0xad, 0xa0, 0xe0, 0xa0, 0x43, 0x0b, 0x0e, 0x2e, 0x72, 0x17, 0xd3, 0x6b, 0xa0, 0xbd,
+	0x9c, 0xf9, 0xa3, 0x1d, 0xfd, 0x08, 0x7e, 0x0c, 0x3f, 0x8a, 0x63, 0xc7, 0x8e, 0x36, 0x5d, 0x1c,
+	0xfb, 0x11, 0xe4, 0x72, 0xb5, 0xde, 0xa0, 0xb8, 0x3d, 0xcf, 0xcb, 0x2f, 0x79, 0xde, 0x27, 0x21,
+	0x3d, 0xa3, 0x39, 0xe3, 0x13, 0xe5, 0x1e, 0x98, 0xe1, 0x5a, 0x16, 0x76, 0x9a, 0xe9, 0x1f, 0x55,
+	0xa4, 0xcc, 0x08, 0xfd, 0x24, 0xb9, 0xa0, 0x85, 0x56, 0x56, 0x45, 0x7b, 0xc5, 0x84, 0x6e, 0x26,
+	0x26, 0xee, 0x65, 0xd2, 0x8e, 0x5d, 0x4a, 0xb9, 0x9a, 0xb2, 0x4c, 0x65, 0x8a, 0x05, 0x26, 0x75,
+	0xa3, 0xe0, 0x82, 0x09, 0xaa, 0x3a, 0x1b, 0x77, 0xca, 0x28, 0x33, 0x4e, 0xb4, 0xf8, 0xce, 0x32,
+	0xe5, 0xfd, 0x95, 0xaa, 0x98, 0xce, 0x90, 0xc4, 0x17, 0x33, 0xab, 0x13, 0x6e, 0x6f, 0xa5, 0xb9,
+	0x74, 0x39, 0x37, 0x57, 0xf9, 0x48, 0x0d, 0xc4, 0xa3, 0x13, 0xc6, 0x46, 0x87, 0xa4, 0x51, 0xe1,
+	0x2d, 0xdc, 0xc6, 0xdd, 0xe6, 0x60, 0xe3, 0xa2, 0x23, 0x42, 0x46, 0x2e, 0xe7, 0xf7, 0x79, 0x32,
+	0x15, 0xa6, 0xb5, 0xd3, 0xde, 0xed, 0x36, 0x07, 0xcd, 0x72, 0x72, 0x53, 0x0e, 0x4e, 0x9f, 0xc9,
+	0xfe, 0x30, 0x80, 0xd7, 0x99, 0x1e, 0x56, 0xcb, 0x47, 0x9c, 0x1c, 0xfc, 0x12, 0x14, 0x9d, 0xd0,
+	0x5a, 0x41, 0xfa, 0xf7, 0x2a, 0xf1, 0x71, 0x00, 0x43, 0x19, 0xba, 0x2d, 0x43, 0xeb, 0x64, 0x07,
+	0xf5, 0x67, 0xf3, 0x25, 0xa0, 0xc5, 0x12, 0xd0, 0x7a, 0x09, 0xf8, 0xc5, 0x03, 0x7e, 0xf3, 0x80,
+	0xdf, 0x3d, 0xe0, 0xb9, 0x07, 0xfc, 0xe1, 0x01, 0x7f, 0x7a, 0x40, 0x6b, 0x0f, 0xf8, 0x75, 0x05,
+	0x68, 0xbe, 0x02, 0xb4, 0x58, 0x01, 0xba, 0xeb, 0x17, 0x72, 0x26, 0xc5, 0x24, 0x49, 0x0d, 0x4d,
+	0x24, 0xdb, 0x1a, 0xf6, 0xcf, 0x4f, 0x9d, 0xd7, 0x74, 0xda, 0x08, 0xcf, 0x79, 0xf6, 0x15, 0x00,
+	0x00, 0xff, 0xff, 0x95, 0xe2, 0x0b, 0x2a, 0xdf, 0x01, 0x00, 0x00,
 }
 
-func (this *ExtractVizFuncsInfoRequest) Equal(that interface{}) bool {
+func (this *ExtractVisFuncsInfoRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*ExtractVizFuncsInfoRequest)
+	that1, ok := that.(*ExtractVisFuncsInfoRequest)
 	if !ok {
-		that2, ok := that.(ExtractVizFuncsInfoRequest)
+		that2, ok := that.(ExtractVisFuncsInfoRequest)
 		if ok {
 			that1 = &that2
 		} else {
@@ -145,12 +145,12 @@ func (this *ExtractVizFuncsInfoRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *ExtractVizFuncsInfoRequest) GoString() string {
+func (this *ExtractVisFuncsInfoRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 6)
-	s = append(s, "&scriptmgrpb.ExtractVizFuncsInfoRequest{")
+	s = append(s, "&scriptmgrpb.ExtractVisFuncsInfoRequest{")
 	s = append(s, "Script: "+fmt.Sprintf("%#v", this.Script)+",\n")
 	s = append(s, "FuncNames: "+fmt.Sprintf("%#v", this.FuncNames)+",\n")
 	s = append(s, "}")
@@ -177,7 +177,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ScriptMgrServiceClient interface {
-	ExtractVizFuncsInfo(ctx context.Context, in *ExtractVizFuncsInfoRequest, opts ...grpc.CallOption) (*scriptspb.VizFuncsInfo, error)
+	ExtractVisFuncsInfo(ctx context.Context, in *ExtractVisFuncsInfoRequest, opts ...grpc.CallOption) (*scriptspb.VisFuncsInfo, error)
 }
 
 type scriptMgrServiceClient struct {
@@ -188,9 +188,9 @@ func NewScriptMgrServiceClient(cc *grpc.ClientConn) ScriptMgrServiceClient {
 	return &scriptMgrServiceClient{cc}
 }
 
-func (c *scriptMgrServiceClient) ExtractVizFuncsInfo(ctx context.Context, in *ExtractVizFuncsInfoRequest, opts ...grpc.CallOption) (*scriptspb.VizFuncsInfo, error) {
-	out := new(scriptspb.VizFuncsInfo)
-	err := c.cc.Invoke(ctx, "/pl.services.ScriptMgrService/ExtractVizFuncsInfo", in, out, opts...)
+func (c *scriptMgrServiceClient) ExtractVisFuncsInfo(ctx context.Context, in *ExtractVisFuncsInfoRequest, opts ...grpc.CallOption) (*scriptspb.VisFuncsInfo, error) {
+	out := new(scriptspb.VisFuncsInfo)
+	err := c.cc.Invoke(ctx, "/pl.services.ScriptMgrService/ExtractVisFuncsInfo", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -199,35 +199,35 @@ func (c *scriptMgrServiceClient) ExtractVizFuncsInfo(ctx context.Context, in *Ex
 
 // ScriptMgrServiceServer is the server API for ScriptMgrService service.
 type ScriptMgrServiceServer interface {
-	ExtractVizFuncsInfo(context.Context, *ExtractVizFuncsInfoRequest) (*scriptspb.VizFuncsInfo, error)
+	ExtractVisFuncsInfo(context.Context, *ExtractVisFuncsInfoRequest) (*scriptspb.VisFuncsInfo, error)
 }
 
 // UnimplementedScriptMgrServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedScriptMgrServiceServer struct {
 }
 
-func (*UnimplementedScriptMgrServiceServer) ExtractVizFuncsInfo(ctx context.Context, req *ExtractVizFuncsInfoRequest) (*scriptspb.VizFuncsInfo, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ExtractVizFuncsInfo not implemented")
+func (*UnimplementedScriptMgrServiceServer) ExtractVisFuncsInfo(ctx context.Context, req *ExtractVisFuncsInfoRequest) (*scriptspb.VisFuncsInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ExtractVisFuncsInfo not implemented")
 }
 
 func RegisterScriptMgrServiceServer(s *grpc.Server, srv ScriptMgrServiceServer) {
 	s.RegisterService(&_ScriptMgrService_serviceDesc, srv)
 }
 
-func _ScriptMgrService_ExtractVizFuncsInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ExtractVizFuncsInfoRequest)
+func _ScriptMgrService_ExtractVisFuncsInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExtractVisFuncsInfoRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ScriptMgrServiceServer).ExtractVizFuncsInfo(ctx, in)
+		return srv.(ScriptMgrServiceServer).ExtractVisFuncsInfo(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/pl.services.ScriptMgrService/ExtractVizFuncsInfo",
+		FullMethod: "/pl.services.ScriptMgrService/ExtractVisFuncsInfo",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ScriptMgrServiceServer).ExtractVizFuncsInfo(ctx, req.(*ExtractVizFuncsInfoRequest))
+		return srv.(ScriptMgrServiceServer).ExtractVisFuncsInfo(ctx, req.(*ExtractVisFuncsInfoRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -237,15 +237,15 @@ var _ScriptMgrService_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*ScriptMgrServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ExtractVizFuncsInfo",
-			Handler:    _ScriptMgrService_ExtractVizFuncsInfo_Handler,
+			MethodName: "ExtractVisFuncsInfo",
+			Handler:    _ScriptMgrService_ExtractVisFuncsInfo_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "src/cloud/scriptmgr/scriptmgrpb/service.proto",
 }
 
-func (m *ExtractVizFuncsInfoRequest) Marshal() (dAtA []byte, err error) {
+func (m *ExtractVisFuncsInfoRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -255,12 +255,12 @@ func (m *ExtractVizFuncsInfoRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ExtractVizFuncsInfoRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *ExtractVisFuncsInfoRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ExtractVizFuncsInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *ExtractVisFuncsInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -295,7 +295,7 @@ func encodeVarintService(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *ExtractVizFuncsInfoRequest) Size() (n int) {
+func (m *ExtractVisFuncsInfoRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -320,11 +320,11 @@ func sovService(x uint64) (n int) {
 func sozService(x uint64) (n int) {
 	return sovService(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (this *ExtractVizFuncsInfoRequest) String() string {
+func (this *ExtractVisFuncsInfoRequest) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&ExtractVizFuncsInfoRequest{`,
+	s := strings.Join([]string{`&ExtractVisFuncsInfoRequest{`,
 		`Script:` + fmt.Sprintf("%v", this.Script) + `,`,
 		`FuncNames:` + fmt.Sprintf("%v", this.FuncNames) + `,`,
 		`}`,
@@ -339,7 +339,7 @@ func valueToStringService(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *ExtractVizFuncsInfoRequest) Unmarshal(dAtA []byte) error {
+func (m *ExtractVisFuncsInfoRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -362,10 +362,10 @@ func (m *ExtractVizFuncsInfoRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ExtractVizFuncsInfoRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: ExtractVisFuncsInfoRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ExtractVizFuncsInfoRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: ExtractVisFuncsInfoRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

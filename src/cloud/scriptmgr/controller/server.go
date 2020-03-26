@@ -12,7 +12,7 @@ import (
 
 // Planner is the interface to the cc planner via cgo.
 type Planner interface {
-	ParseScriptForVizFuncsInfo(script string) (*scriptspb.VizFuncsInfoResult, error)
+	ExtractVisFuncsInfo(script string) (*scriptspb.VisFuncsInfoResult, error)
 	Free()
 }
 
@@ -26,9 +26,9 @@ func NewServer(planner Planner) *Server {
 	return &Server{planner}
 }
 
-// ExtractVizFuncsInfo parses a non-persisted script and returns info such as docstrings, vega spec, and func args.
-func (s *Server) ExtractVizFuncsInfo(ctx context.Context, req *scriptmgrpb.ExtractVizFuncsInfoRequest) (*scriptspb.VizFuncsInfo, error) {
-	plannerResultPB, err := s.planner.ParseScriptForVizFuncsInfo(req.Script)
+// ExtractVisFuncsInfo parses a non-persisted script and returns info such as docstrings, vega spec, and func args.
+func (s *Server) ExtractVisFuncsInfo(ctx context.Context, req *scriptmgrpb.ExtractVisFuncsInfoRequest) (*scriptspb.VisFuncsInfo, error) {
+	plannerResultPB, err := s.planner.ExtractVisFuncsInfo(req.Script)
 	if err != nil {
 		return nil, err
 	}
@@ -39,15 +39,15 @@ func (s *Server) ExtractVizFuncsInfo(ctx context.Context, req *scriptmgrpb.Extra
 	}
 
 	if len(req.FuncNames) > 0 {
-		return filterVizFuncInfoByFuncNames(plannerResultPB.Info, req.FuncNames)
+		return filterVisFuncInfoByFuncNames(plannerResultPB.Info, req.FuncNames)
 	}
 	return plannerResultPB.Info, nil
 }
 
-func filterVizFuncInfoByFuncNames(info *scriptspb.VizFuncsInfo, funcNames []string) (*scriptspb.VizFuncsInfo, error) {
-	newInfo := &scriptspb.VizFuncsInfo{
+func filterVisFuncInfoByFuncNames(info *scriptspb.VisFuncsInfo, funcNames []string) (*scriptspb.VisFuncsInfo, error) {
+	newInfo := &scriptspb.VisFuncsInfo{
 		DocStringMap: make(map[string]string, len(funcNames)),
-		VizSpecMap:   make(map[string]*scriptspb.VizSpec, len(funcNames)),
+		VisSpecMap:   make(map[string]*scriptspb.VisSpec, len(funcNames)),
 		FnArgsMap:    make(map[string]*scriptspb.FuncArgsSpec, len(funcNames)),
 	}
 
@@ -58,7 +58,7 @@ func filterVizFuncInfoByFuncNames(info *scriptspb.VizFuncsInfo, funcNames []stri
 		if !ok {
 			return nil, errmsg(f)
 		}
-		vizspec, ok := info.VizSpecMap[f]
+		vizspec, ok := info.VisSpecMap[f]
 		if !ok {
 			return nil, errmsg(f)
 		}
@@ -67,7 +67,7 @@ func filterVizFuncInfoByFuncNames(info *scriptspb.VizFuncsInfo, funcNames []stri
 			return nil, errmsg(f)
 		}
 		newInfo.DocStringMap[f] = docstring
-		newInfo.VizSpecMap[f] = vizspec
+		newInfo.VisSpecMap[f] = vizspec
 		newInfo.FnArgsMap[f] = fnargs
 	}
 	return newInfo, nil

@@ -68,7 +68,7 @@ class VarTable : public std::enable_shared_from_this<VarTable> {
    *
    * @return std::shared_ptr<FuncObject>
    */
-  absl::flat_hash_map<std::string, std::shared_ptr<FuncObject>> GetVizFuncs();
+  absl::flat_hash_map<std::string, std::shared_ptr<FuncObject>> GetVisFuncs();
 
   std::shared_ptr<VarTable> parent_scope() { return parent_scope_; }
 

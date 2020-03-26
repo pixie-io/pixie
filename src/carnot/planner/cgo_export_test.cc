@@ -82,12 +82,12 @@ StatusOr<std::string> PlannerGetMainFuncArgsSpecGoStr(PlannerPtr planner_ptr,
   return flags_spec_str;
 }
 
-StatusOr<std::string> PlannerVizFuncsInfoGoStr(PlannerPtr planner_ptr, std::string query,
+StatusOr<std::string> PlannerVisFuncsInfoGoStr(PlannerPtr planner_ptr, std::string query,
                                                int* resultLen) {
-  char* result = PlannerVizFuncsInfo(planner_ptr, query.c_str(), query.length(), resultLen);
+  char* result = PlannerVisFuncsInfo(planner_ptr, query.c_str(), query.length(), resultLen);
 
   if (*resultLen == 0) {
-    return error::InvalidArgument("VizFuncsInfo failed to return");
+    return error::InvalidArgument("VisFuncsInfo failed to return");
   }
 
   std::string result_str(result, result + *resultLen);
@@ -202,20 +202,20 @@ TEST_F(PlannerExportTest, GetMainFuncArgsSpec) {
   EXPECT_THAT(main_funcs_info_result.main_func_spec(), EqualsProto(kMainFuncArgs));
 }
 
-constexpr char kVizFuncsQuery[] = R"pxl(
+constexpr char kVisFuncsQuery[] = R"pxl(
 import px
-@px.viz.vega("vega spec for f")
+@px.vis.vega("vega spec for f")
 def f(start_time: px.Time, end_time: px.Time, svc: str):
   """Doc string for f"""
   return 1
 
-@px.viz.vega("vega spec for g")
+@px.vis.vega("vega spec for g")
 def g(a: int, b: float):
   """Doc string for g"""
   return 1
 )pxl";
 
-constexpr char kExpectedVizFuncsInfoPb[] = R"(
+constexpr char kExpectedVisFuncsInfoPb[] = R"(
 doc_string_map {
   key: "f"
   value: "Doc string for f"
@@ -224,13 +224,13 @@ doc_string_map {
   key: "g"
   value: "Doc string for g"
 }
-viz_spec_map {
+vis_spec_map {
   key: "f"
   value {
     vega_spec: "vega spec for f"
   }
 }
-viz_spec_map {
+vis_spec_map {
   key: "g"
   value {
     vega_spec: "vega spec for g"
@@ -272,17 +272,17 @@ fn_args_map {
   }
 })";
 
-// Tests whether we can get viz funcs info for a given query.
-TEST_F(PlannerExportTest, get_viz_funcs_info) {
+// Tests whether we can get vis funcs info for a given query.
+TEST_F(PlannerExportTest, get_vis_funcs_info) {
   planner_ = MakePlanner();
   int result_len;
-  auto interface_result = PlannerVizFuncsInfoGoStr(planner_, kVizFuncsQuery, &result_len);
+  auto interface_result = PlannerVisFuncsInfoGoStr(planner_, kVisFuncsQuery, &result_len);
 
   ASSERT_OK(interface_result);
-  pl::shared::scriptspb::VizFuncsInfoResult viz_funcs_result;
-  ASSERT_TRUE(viz_funcs_result.ParseFromString(interface_result.ConsumeValueOrDie()));
-  EXPECT_OK(viz_funcs_result.status());
-  EXPECT_THAT(viz_funcs_result.info(), EqualsProto(kExpectedVizFuncsInfoPb));
+  pl::shared::scriptspb::VisFuncsInfoResult vis_funcs_result;
+  ASSERT_TRUE(vis_funcs_result.ParseFromString(interface_result.ConsumeValueOrDie()));
+  EXPECT_OK(vis_funcs_result.status());
+  EXPECT_THAT(vis_funcs_result.info(), EqualsProto(kExpectedVisFuncsInfoPb));
 }
 
 }  // namespace planner

@@ -1323,7 +1323,7 @@ TEST_F(ASTVisitorTest, from_import) {
 
 constexpr char kDecoratorParsing[] = R"pxl(
 import px
-@px.viz.vega("""
+@px.vis.vega("""
 abcd
 """)
 def plot_latency():
@@ -1344,13 +1344,13 @@ TEST_F(ASTVisitorTest, decorator_parsed) {
   ASSERT_TRUE(plot_latency->type() == QLObjectType::kFunction);
 
   auto func_object = std::static_pointer_cast<FuncObject>(plot_latency);
-  ASSERT_TRUE(func_object->HasVizSpec());
-  EXPECT_EQ(func_object->viz_spec()->vega_spec, "\nabcd\n");
+  ASSERT_TRUE(func_object->HasVisSpec());
+  EXPECT_EQ(func_object->vis_spec()->vega_spec, "\nabcd\n");
 }
 
 constexpr char kProblemDecoratorParsing[] = R"pxl(
 import px
-@px.viz
+@px.vis
 def plot_latency():
     return pd.DataFrame('http_events')
 )pxl";
@@ -1358,7 +1358,7 @@ def plot_latency():
 TEST_F(ASTVisitorTest, problem_decorator_parsed) {
   auto graph_or_s = CompileGraph(kProblemDecoratorParsing);
   ASSERT_NOT_OK(graph_or_s);
-  EXPECT_THAT(graph_or_s.status(), HasCompilerError("'viz' object is not callable"));
+  EXPECT_THAT(graph_or_s.status(), HasCompilerError("'vis' object is not callable"));
 }
 
 constexpr char kGlobalDocStringQuery[] = R"pxl(
@@ -1416,7 +1416,7 @@ TEST_F(ASTVisitorTest, no_doc_string) {
 
 constexpr char kArgAnnotationsQuery[] = R"pxl(
 import px
-@px.viz.vega("vega")
+@px.vis.vega("vega")
 def f(a: int, b: str, c: float, d: bool, e: px.Time):
   return 1
 )pxl";
@@ -1445,7 +1445,7 @@ TEST_F(ASTVisitorTest, arg_annotations) {
 
 constexpr char kVizWithoutArgAnnotationsQuery[] = R"pxl(
 import px
-@px.viz.vega("vega")
+@px.vis.vega("vega")
 def f(a: int, b: str, c):
   return 1
 )pxl";
@@ -1455,18 +1455,18 @@ TEST_F(ASTVisitorTest, viz_without_annotations_errors) {
   ASSERT_NOT_OK(graph_or_s);
 
   EXPECT_THAT(graph_or_s.status(),
-              HasCompilerError("Arguments of px.viz.* decorated functions must be annotated with "
+              HasCompilerError("Arguments of px.vis.* decorated functions must be annotated with "
                                "types. Arg: 'c' was not annotated."));
 }
 
-constexpr char kVizFuncsQuerry[] = R"pxl(
+constexpr char kVisFuncsQuerry[] = R"pxl(
 import px
-@px.viz.vega("vega spec for f")
+@px.vis.vega("vega spec for f")
 def f(start_time: px.Time, end_time: px.Time, svc: str):
   """Doc string for f"""
   return 1
 
-@px.viz.vega("vega spec for g")
+@px.vis.vega("vega spec for g")
 def g(a: int, b: float):
   """Doc string for g"""
   return 1
@@ -1497,30 +1497,30 @@ args {
 }
 )pxl";
 
-TEST_F(ASTVisitorTest, get_viz_funcs_info) {
-  auto viz_funcs_or_s = GetVizFuncsInfo(kVizFuncsQuerry);
-  ASSERT_OK(viz_funcs_or_s);
-  auto viz_funcs = viz_funcs_or_s.ConsumeValueOrDie();
-  absl::flat_hash_map<std::string, std::string> doc_string_map(viz_funcs.doc_string_map().begin(),
-                                                               viz_funcs.doc_string_map().end());
+TEST_F(ASTVisitorTest, get_vis_funcs_info) {
+  auto vis_funcs_or_s = GetVisFuncsInfo(kVisFuncsQuerry);
+  ASSERT_OK(vis_funcs_or_s);
+  auto vis_funcs = vis_funcs_or_s.ConsumeValueOrDie();
+  absl::flat_hash_map<std::string, std::string> doc_string_map(vis_funcs.doc_string_map().begin(),
+                                                               vis_funcs.doc_string_map().end());
   absl::flat_hash_map<std::string, std::string> expected_doc_strings({
       {"f", "Doc string for f"},
       {"g", "Doc string for g"},
   });
   EXPECT_EQ(doc_string_map, expected_doc_strings);
 
-  absl::flat_hash_map<std::string, std::string> viz_spec_map;
-  for (const auto& [name, viz_spec] : viz_funcs.viz_spec_map()) {
-    viz_spec_map[name] = viz_spec.vega_spec();
+  absl::flat_hash_map<std::string, std::string> vis_spec_map;
+  for (const auto& [name, vis_spec] : vis_funcs.vis_spec_map()) {
+    vis_spec_map[name] = vis_spec.vega_spec();
   }
-  absl::flat_hash_map<std::string, std::string> expected_viz_specs({
+  absl::flat_hash_map<std::string, std::string> expected_vis_specs({
       {"f", "vega spec for f"},
       {"g", "vega spec for g"},
   });
-  EXPECT_EQ(viz_spec_map, expected_viz_specs);
+  EXPECT_EQ(vis_spec_map, expected_vis_specs);
 
   absl::flat_hash_map<std::string, pl::shared::scriptspb::FuncArgsSpec> fn_args_map(
-      viz_funcs.fn_args_map().begin(), viz_funcs.fn_args_map().end());
+      vis_funcs.fn_args_map().begin(), vis_funcs.fn_args_map().end());
   absl::flat_hash_map<std::string, std::string> expected_fn_args({
       {"f", kExpectedFArgsProto},
       {"g", kExpectedGArgsProto},
@@ -1537,7 +1537,7 @@ TEST_F(ASTVisitorTest, get_viz_funcs_info) {
 
 constexpr char kMainFuncArgsSpec[] = R"pxl(
 import px
-@px.viz.vega("")
+@px.vis.vega("")
 def http_events(svc: px.Service, start_time: px.Time):
     df = px.DataFrame('http_events', start_time=start_time)
     df.svc = df.ctx['svc']

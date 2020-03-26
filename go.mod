@@ -31,6 +31,7 @@ require (
 	github.com/fluent/fluent-bit-go v0.0.0-20200304012558-215d6804159a
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/getsentry/sentry-go v0.5.1
+	github.com/go-bindata/go-bindata v3.1.2+incompatible // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang/mock v1.3.1

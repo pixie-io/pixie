@@ -33,7 +33,7 @@ class Compiler {
                                             const ArgValues& arg_values);
   StatusOr<shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec(const std::string& query,
                                                                 CompilerState* compiler_state);
-  StatusOr<pl::shared::scriptspb::VizFuncsInfo> GetVizFuncsInfo(const std::string& query,
+  StatusOr<pl::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo(const std::string& query,
                                                                 CompilerState* compiler_state);
 
  private:

@@ -78,7 +78,7 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
   return ir;
 }
 
-StatusOr<pl::shared::scriptspb::VizFuncsInfo> Compiler::GetVizFuncsInfo(
+StatusOr<pl::shared::scriptspb::VisFuncsInfo> Compiler::GetVisFuncsInfo(
     const std::string& query, CompilerState* compiler_state) {
   // TODO(nserrino): PL-1578 remove this after UI queries are updated.
   // This should be ok because calling "import px" multiple times in the same script is ok,
@@ -91,7 +91,7 @@ StatusOr<pl::shared::scriptspb::VizFuncsInfo> Compiler::GetVizFuncsInfo(
   std::shared_ptr<IR> ir = std::make_shared<IR>();
   PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state, {}));
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
-  return ast_walker->GetVizFuncsInfo();
+  return ast_walker->GetVisFuncsInfo();
 }
 
 Status Compiler::VerifyGraphHasMemorySink(IR* ir) {

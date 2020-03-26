@@ -41,8 +41,8 @@ TEST_F(VizObjectTest, SubscriptWithString) {
   ASSERT_OK(call_or_s);
 
   auto call = call_or_s.ConsumeValueOrDie();
-  ASSERT_TRUE(call->HasVizSpec());
-  EXPECT_EQ(call->viz_spec()->vega_spec, "abcd");
+  ASSERT_TRUE(call->HasVisSpec());
+  EXPECT_EQ(call->vis_spec()->vega_spec, "abcd");
 }
 
 }  // namespace compiler

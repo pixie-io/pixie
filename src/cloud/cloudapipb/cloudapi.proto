@@ -193,13 +193,13 @@ message UpdateClusterVizierConfigRequest {
 message UpdateClusterVizierConfigResponse {}
 
 service ScriptMgr {
-    // ExtractVizFuncsInfo extracts information about px.viz annotated functions
+    // ExtractVisFuncsInfo extracts information about px.vis annotated functions
     // from the provided script. In the short term, it's intended to be used for
     // all scripts. In the long term, it will only be used for unpersisted scripts.
-    rpc ExtractVizFuncsInfo(ExtractVizFuncsInfoRequest) returns (ExtractVizFuncsInfoResponse) {}
+    rpc ExtractVisFuncsInfo(ExtractVisFuncsInfoRequest) returns (ExtractVisFuncsInfoResponse) {}
 }
 
-message ExtractVizFuncsInfoRequest {
+message ExtractVisFuncsInfoRequest {
     string script = 1;
     repeated string func_names = 2;
 }
@@ -240,17 +240,17 @@ message FuncArgsSpec {
   repeated Arg args = 1;
 }
 
-// VizSpec provides information to specify the vizualization of a function.
-message VizSpec {
+// VisSpec provides information to specify the vizualization of a function.
+message VisSpec {
   string vega_spec = 1;
 }
 
-// ExtractVizFuncsInfoResponse contains info about each px.viz annotated function.
-message ExtractVizFuncsInfoResponse {
+// ExtractVisFuncsInfoResponse contains info about each px.vis annotated function.
+message ExtractVisFuncsInfoResponse {
   // Map from function name to doc string for that function.
   map<string, string> doc_string_map = 1;
-  // Map from function name to VizSpec for the function.
-  map<string, VizSpec> viz_spec_map = 2;
+  // Map from function name to VisSpec for the function.
+  map<string, VisSpec> vis_spec_map = 2;
   // Mapping from function name to arguments.
   map<string, FuncArgsSpec> fn_args_map = 3;
 }

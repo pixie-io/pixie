@@ -33,19 +33,19 @@ func (m *MockPlanner) EXPECT() *MockPlannerMockRecorder {
 	return m.recorder
 }
 
-// ParseScriptForVizFuncsInfo mocks base method
-func (m *MockPlanner) ParseScriptForVizFuncsInfo(script string) (*scriptspb.VizFuncsInfoResult, error) {
+// ExtractVisFuncsInfo mocks base method
+func (m *MockPlanner) ExtractVisFuncsInfo(script string) (*scriptspb.VisFuncsInfoResult, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ParseScriptForVizFuncsInfo", script)
-	ret0, _ := ret[0].(*scriptspb.VizFuncsInfoResult)
+	ret := m.ctrl.Call(m, "ExtractVisFuncsInfo", script)
+	ret0, _ := ret[0].(*scriptspb.VisFuncsInfoResult)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ParseScriptForVizFuncsInfo indicates an expected call of ParseScriptForVizFuncsInfo
-func (mr *MockPlannerMockRecorder) ParseScriptForVizFuncsInfo(script interface{}) *gomock.Call {
+// ExtractVisFuncsInfo indicates an expected call of ExtractVisFuncsInfo
+func (mr *MockPlannerMockRecorder) ExtractVisFuncsInfo(script interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseScriptForVizFuncsInfo", reflect.TypeOf((*MockPlanner)(nil).ParseScriptForVizFuncsInfo), script)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExtractVisFuncsInfo", reflect.TypeOf((*MockPlanner)(nil).ExtractVisFuncsInfo), script)
 }
 
 // Free mocks base method

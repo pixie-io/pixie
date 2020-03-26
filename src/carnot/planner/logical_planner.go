@@ -20,10 +20,10 @@ package logicalplanner
 //   											 resultLen);
 // }
 //
-// char* PlannerVizFuncsInfoGoStr(PlannerPtr planner_ptr,
+// char* PlannerVisFuncsInfoGoStr(PlannerPtr planner_ptr,
 //														_GoString_ script,
 //														int* resultLen) {
-// 	return PlannerVizFuncsInfo(planner_ptr,
+// 	return PlannerVisFuncsInfo(planner_ptr,
 //															_GoStringPtr(script),
 //															_GoStringLen(script),
 //															resultLen);
@@ -106,10 +106,10 @@ func (cm GoPlanner) GetMainFuncArgsSpec(queryRequest *plannerpb.QueryRequest) (*
 	return resultPB, nil
 }
 
-// ParseScriptForVizFuncsInfo parses a script for misc info such as func args, vega specs, and docstrings.
-func (cm GoPlanner) ParseScriptForVizFuncsInfo(script string) (*scriptspb.VizFuncsInfoResult, error) {
+// ExtractVisFuncsInfo parses a script for misc info such as func args, vega specs, and docstrings.
+func (cm GoPlanner) ExtractVisFuncsInfo(script string) (*scriptspb.VisFuncsInfoResult, error) {
 	var resultLen C.int
-	res := C.PlannerVizFuncsInfoGoStr(cm.planner, script, &resultLen)
+	res := C.PlannerVisFuncsInfoGoStr(cm.planner, script, &resultLen)
 	defer C.StrFree(res)
 
 	resultBytes := C.GoBytes(unsafe.Pointer(res), resultLen)
@@ -117,12 +117,12 @@ func (cm GoPlanner) ParseScriptForVizFuncsInfo(script string) (*scriptspb.VizFun
 		return nil, errors.New("no result returned")
 	}
 
-	vizFuncsPb := &scriptspb.VizFuncsInfoResult{}
-	if err := proto.Unmarshal(resultBytes, vizFuncsPb); err != nil {
-		return vizFuncsPb, fmt.Errorf("error: '%s'; string: '%s'", err, string(resultBytes))
+	visFuncsPb := &scriptspb.VisFuncsInfoResult{}
+	if err := proto.Unmarshal(resultBytes, visFuncsPb); err != nil {
+		return visFuncsPb, fmt.Errorf("error: '%s'; string: '%s'", err, string(resultBytes))
 	}
 
-	return vizFuncsPb, nil
+	return visFuncsPb, nil
 }
 
 // Free the memory used by the planner.

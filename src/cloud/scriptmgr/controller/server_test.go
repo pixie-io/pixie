@@ -17,24 +17,24 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const vizFuncsQuery = `
+const visFuncsQuery = `
 import px
-@px.viz.vega("vega spec for f")
+@px.vis.vega("vega spec for f")
 def f(start_time: px.Time, end_time: px.Time, svc: str):
   """Doc string for f"""
   return 1
 
-@px.viz.vega("vega spec for g")
+@px.vis.vega("vega spec for g")
 def g(a: int, b: float):
   """Doc string for g"""
 	return 1
-@px.viz.vega("vega spec for h")
+@px.vis.vega("vega spec for h")
 def h(a: int, b: float):
 	"""Doc string for h"""
 	return 1
 `
 
-const vizFuncsInfoPBStr = `
+const visFuncsInfoPBStr = `
 doc_string_map {
   key: "f"
   value: "Doc string for f"
@@ -47,19 +47,19 @@ doc_string_map {
   key: "h"
   value: "Doc string for h"
 }
-viz_spec_map {
+vis_spec_map {
   key: "f"
   value {
     vega_spec: "vega spec for f"
   }
 }
-viz_spec_map {
+vis_spec_map {
   key: "g"
   value {
     vega_spec: "vega spec for g"
   }
 }
-viz_spec_map {
+vis_spec_map {
   key: "h"
   value {
     vega_spec: "vega spec for h"
@@ -110,12 +110,12 @@ fn_args_map {
 }
 `
 
-const expectedVizFuncsInfoSingleFilter = `
+const expectedVisFuncsInfoSingleFilter = `
 doc_string_map {
   key: "f"
   value: "Doc string for f"
 }
-viz_spec_map {
+vis_spec_map {
   key: "f"
   value {
     vega_spec: "vega spec for f"
@@ -140,7 +140,7 @@ fn_args_map {
 }
 `
 
-const expectedVizFuncsInfoMultiFilter = `
+const expectedVisFuncsInfoMultiFilter = `
 doc_string_map {
   key: "f"
   value: "Doc string for f"
@@ -149,13 +149,13 @@ doc_string_map {
   key: "g"
   value: "Doc string for g"
 }
-viz_spec_map {
+vis_spec_map {
   key: "f"
   value {
     vega_spec: "vega spec for f"
   }
 }
-viz_spec_map {
+vis_spec_map {
   key: "g"
   value {
     vega_spec: "vega spec for g"
@@ -193,7 +193,7 @@ fn_args_map {
 }
 `
 
-func TestServerExtractVizFuncsInfo_NoFuncFilter(t *testing.T) {
+func TestServerExtractVisFuncsInfo_NoFuncFilter(t *testing.T) {
 
 	// Set up mocks.
 	ctrl := gomock.NewController(t)
@@ -201,35 +201,35 @@ func TestServerExtractVizFuncsInfo_NoFuncFilter(t *testing.T) {
 
 	planner := mock_controller.NewMockPlanner(ctrl)
 
-	vizFuncsInfo := &scriptspb.VizFuncsInfo{}
-	if err := proto.UnmarshalText(vizFuncsInfoPBStr, vizFuncsInfo); err != nil {
-		t.Fatalf("Failed to unmarshal vizfuncsinfo, err: %s", err)
+	visFuncsInfo := &scriptspb.VisFuncsInfo{}
+	if err := proto.UnmarshalText(visFuncsInfoPBStr, visFuncsInfo); err != nil {
+		t.Fatalf("Failed to unmarshal visfuncsinfo, err: %s", err)
 	}
-	expected := &scriptspb.VizFuncsInfo{}
-	if err := proto.UnmarshalText(vizFuncsInfoPBStr, expected); err != nil {
-		t.Fatalf("Failed to unmarshal expected vizfuncsinfo, err: %s", err)
+	expected := &scriptspb.VisFuncsInfo{}
+	if err := proto.UnmarshalText(visFuncsInfoPBStr, expected); err != nil {
+		t.Fatalf("Failed to unmarshal expected visfuncsinfo, err: %s", err)
 	}
 
 	planner.
 		EXPECT().
-		ParseScriptForVizFuncsInfo(vizFuncsQuery).
-		Return(&scriptspb.VizFuncsInfoResult{
-			Info:   vizFuncsInfo,
+		ExtractVisFuncsInfo(visFuncsQuery).
+		Return(&scriptspb.VisFuncsInfoResult{
+			Info:   visFuncsInfo,
 			Status: &statuspb.Status{ErrCode: statuspb.OK},
 		}, nil)
 
-	req := &scriptmgrpb.ExtractVizFuncsInfoRequest{
-		Script:    vizFuncsQuery,
+	req := &scriptmgrpb.ExtractVisFuncsInfoRequest{
+		Script:    visFuncsQuery,
 		FuncNames: []string{},
 	}
 
 	s := NewServer(planner)
-	resultPB, err := s.ExtractVizFuncsInfo(context.Background(), req)
+	resultPB, err := s.ExtractVisFuncsInfo(context.Background(), req)
 	require.Nil(t, err)
 	assert.Equal(t, expected, resultPB)
 }
 
-func TestServerExtractVizFuncsInfo_FuncFilter(t *testing.T) {
+func TestServerExtractVisFuncsInfo_FuncFilter(t *testing.T) {
 
 	// Set up mocks.
 	ctrl := gomock.NewController(t)
@@ -237,35 +237,35 @@ func TestServerExtractVizFuncsInfo_FuncFilter(t *testing.T) {
 
 	planner := mock_controller.NewMockPlanner(ctrl)
 
-	vizFuncsInfo := &scriptspb.VizFuncsInfo{}
-	if err := proto.UnmarshalText(vizFuncsInfoPBStr, vizFuncsInfo); err != nil {
-		t.Fatalf("Failed to unmarshal expected vizfuncsinfo, err: %s", err)
+	visFuncsInfo := &scriptspb.VisFuncsInfo{}
+	if err := proto.UnmarshalText(visFuncsInfoPBStr, visFuncsInfo); err != nil {
+		t.Fatalf("Failed to unmarshal expected visfuncsinfo, err: %s", err)
 	}
-	expected := &scriptspb.VizFuncsInfo{}
-	if err := proto.UnmarshalText(expectedVizFuncsInfoSingleFilter, expected); err != nil {
-		t.Fatalf("Failed to unmarshal expected vizfuncsinfo, err: %s", err)
+	expected := &scriptspb.VisFuncsInfo{}
+	if err := proto.UnmarshalText(expectedVisFuncsInfoSingleFilter, expected); err != nil {
+		t.Fatalf("Failed to unmarshal expected visfuncsinfo, err: %s", err)
 	}
 
 	planner.
 		EXPECT().
-		ParseScriptForVizFuncsInfo(vizFuncsQuery).
-		Return(&scriptspb.VizFuncsInfoResult{
-			Info:   vizFuncsInfo,
+		ExtractVisFuncsInfo(visFuncsQuery).
+		Return(&scriptspb.VisFuncsInfoResult{
+			Info:   visFuncsInfo,
 			Status: &statuspb.Status{ErrCode: statuspb.OK},
 		}, nil)
 
-	req := &scriptmgrpb.ExtractVizFuncsInfoRequest{
-		Script:    vizFuncsQuery,
+	req := &scriptmgrpb.ExtractVisFuncsInfoRequest{
+		Script:    visFuncsQuery,
 		FuncNames: []string{"f"},
 	}
 
 	s := NewServer(planner)
-	resultPB, err := s.ExtractVizFuncsInfo(context.Background(), req)
+	resultPB, err := s.ExtractVisFuncsInfo(context.Background(), req)
 	require.Nil(t, err)
 	assert.Equal(t, expected, resultPB)
 }
 
-func TestServerExtractVizFuncsInfo_FuncFilter_Multiple(t *testing.T) {
+func TestServerExtractVisFuncsInfo_FuncFilter_Multiple(t *testing.T) {
 
 	// Set up mocks.
 	ctrl := gomock.NewController(t)
@@ -273,67 +273,67 @@ func TestServerExtractVizFuncsInfo_FuncFilter_Multiple(t *testing.T) {
 
 	planner := mock_controller.NewMockPlanner(ctrl)
 
-	vizFuncsInfo := &scriptspb.VizFuncsInfo{}
-	if err := proto.UnmarshalText(vizFuncsInfoPBStr, vizFuncsInfo); err != nil {
-		t.Fatalf("Failed to unmarshal expected vizfuncsinfo, err: %s", err)
+	visFuncsInfo := &scriptspb.VisFuncsInfo{}
+	if err := proto.UnmarshalText(visFuncsInfoPBStr, visFuncsInfo); err != nil {
+		t.Fatalf("Failed to unmarshal expected visfuncsinfo, err: %s", err)
 	}
-	expected := &scriptspb.VizFuncsInfo{}
-	if err := proto.UnmarshalText(expectedVizFuncsInfoMultiFilter, expected); err != nil {
-		t.Fatalf("Failed to unmarshal expected vizfuncsinfo, err: %s", err)
+	expected := &scriptspb.VisFuncsInfo{}
+	if err := proto.UnmarshalText(expectedVisFuncsInfoMultiFilter, expected); err != nil {
+		t.Fatalf("Failed to unmarshal expected visfuncsinfo, err: %s", err)
 	}
 
 	planner.
 		EXPECT().
-		ParseScriptForVizFuncsInfo(vizFuncsQuery).
-		Return(&scriptspb.VizFuncsInfoResult{
-			Info:   vizFuncsInfo,
+		ExtractVisFuncsInfo(visFuncsQuery).
+		Return(&scriptspb.VisFuncsInfoResult{
+			Info:   visFuncsInfo,
 			Status: &statuspb.Status{ErrCode: statuspb.OK},
 		}, nil)
 
-	req := &scriptmgrpb.ExtractVizFuncsInfoRequest{
-		Script:    vizFuncsQuery,
+	req := &scriptmgrpb.ExtractVisFuncsInfoRequest{
+		Script:    visFuncsQuery,
 		FuncNames: []string{"f", "g"},
 	}
 
 	s := NewServer(planner)
-	resultPB, err := s.ExtractVizFuncsInfo(context.Background(), req)
+	resultPB, err := s.ExtractVisFuncsInfo(context.Background(), req)
 	require.Nil(t, err)
 	assert.Equal(t, expected, resultPB)
 }
 
-func TestServerExtractVizFuncsInfo_FuncFilter_InvalidFuncName(t *testing.T) {
+func TestServerExtractVisFuncsInfo_FuncFilter_InvalidFuncName(t *testing.T) {
 	// Set up mocks.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	planner := mock_controller.NewMockPlanner(ctrl)
 
-	vizFuncsInfo := &scriptspb.VizFuncsInfo{}
-	if err := proto.UnmarshalText(vizFuncsInfoPBStr, vizFuncsInfo); err != nil {
-		t.Fatalf("Failed to unmarshal expected vizfuncsinfo, err: %s", err)
+	visFuncsInfo := &scriptspb.VisFuncsInfo{}
+	if err := proto.UnmarshalText(visFuncsInfoPBStr, visFuncsInfo); err != nil {
+		t.Fatalf("Failed to unmarshal expected visfuncsinfo, err: %s", err)
 	}
 
 	planner.
 		EXPECT().
-		ParseScriptForVizFuncsInfo(vizFuncsQuery).
-		Return(&scriptspb.VizFuncsInfoResult{
-			Info:   vizFuncsInfo,
+		ExtractVisFuncsInfo(visFuncsQuery).
+		Return(&scriptspb.VisFuncsInfoResult{
+			Info:   visFuncsInfo,
 			Status: &statuspb.Status{ErrCode: statuspb.OK},
 		}, nil)
 
 	funcName := "this function doesn't exist"
-	req := &scriptmgrpb.ExtractVizFuncsInfoRequest{
-		Script:    vizFuncsQuery,
+	req := &scriptmgrpb.ExtractVisFuncsInfoRequest{
+		Script:    visFuncsQuery,
 		FuncNames: []string{funcName},
 	}
 
 	s := NewServer(planner)
-	_, err := s.ExtractVizFuncsInfo(context.Background(), req)
+	_, err := s.ExtractVisFuncsInfo(context.Background(), req)
 	require.NotNil(t, err)
 	assert.Equal(t, fmt.Sprintf("function '%s' was not found in script", funcName), err.Error())
 }
 
-func TestServerExtractVizFuncsInfo_CompilerError(t *testing.T) {
+func TestServerExtractVisFuncsInfo_CompilerError(t *testing.T) {
 	// Set up mocks.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -343,8 +343,8 @@ func TestServerExtractVizFuncsInfo_CompilerError(t *testing.T) {
 	fakeErrMsg := "compiler error"
 	planner.
 		EXPECT().
-		ParseScriptForVizFuncsInfo(query).
-		Return(&scriptspb.VizFuncsInfoResult{
+		ExtractVisFuncsInfo(query).
+		Return(&scriptspb.VisFuncsInfoResult{
 			Info: nil,
 			Status: &statuspb.Status{
 				ErrCode: statuspb.INVALID_ARGUMENT,
@@ -352,13 +352,13 @@ func TestServerExtractVizFuncsInfo_CompilerError(t *testing.T) {
 			},
 		}, nil)
 
-	req := &scriptmgrpb.ExtractVizFuncsInfoRequest{
+	req := &scriptmgrpb.ExtractVisFuncsInfoRequest{
 		Script:    query,
 		FuncNames: []string{},
 	}
 
 	s := NewServer(planner)
-	_, err := s.ExtractVizFuncsInfo(context.Background(), req)
+	_, err := s.ExtractVisFuncsInfo(context.Background(), req)
 	require.NotNil(t, err)
 	assert.Equal(t, fakeErrMsg, err.Error())
 }

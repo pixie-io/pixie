@@ -9,13 +9,13 @@ option go_package = "pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb;scri
 
 // ScriptMgrService service handles ingestion and access to scripts.
 service ScriptMgrService {
-  // ExtractVizFuncsInfo is the endpoint for parsing non-persisted scripts for
-  // info about funcs decorated with px.viz.*.
+  // ExtractVisFuncsInfo is the endpoint for parsing non-persisted scripts for
+  // info about funcs decorated with px.vis.*.
   // Once we have persistence, this endpoint will only be used by the CLI.
-  rpc ExtractVizFuncsInfo(ExtractVizFuncsInfoRequest) returns (pl.shared.scriptspb.VizFuncsInfo) {}
+  rpc ExtractVisFuncsInfo(ExtractVisFuncsInfoRequest) returns (pl.shared.scriptspb.VisFuncsInfo) {}
 }
 
-message ExtractVizFuncsInfoRequest {
+message ExtractVisFuncsInfoRequest {
   // Script content.
   string script = 1;
   // Optional function names to return info for.

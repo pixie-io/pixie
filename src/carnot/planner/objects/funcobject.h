@@ -20,9 +20,9 @@ namespace planner {
 namespace compiler {
 
 /**
- * @brief VizSpec contains the information about the visualizaton.
+ * @brief VisSpec contains the information about the visualizaton.
  */
-struct VizSpec {
+struct VisSpec {
   std::string vega_spec;
 };
 
@@ -157,17 +157,17 @@ class FuncObject : public QLObject {
    * @param spec
    * @return Status
    */
-  Status AddVizSpec(std::unique_ptr<VizSpec> viz_spec);
+  Status AddVisSpec(std::unique_ptr<VisSpec> vis_spec);
 
-  bool HasVizSpec() { return viz_spec_ != nullptr; }
+  bool HasVisSpec() { return vis_spec_ != nullptr; }
 
-  VizSpec* viz_spec() const { return viz_spec_.get(); }
+  VisSpec* vis_spec() const { return vis_spec_.get(); }
 
   Status AddDocString(QLObjectPtr doc_string);
 
   const std::string& doc_string() const { return doc_string_; }
 
-  // Note that types only get resolved for functions decorated with px.viz.*
+  // Note that types only get resolved for functions decorated with px.vis.*
   Status ResolveArgAnnotationsToConcreteTypes(
       const pypa::AstPtr& ast,
       const absl::flat_hash_map<std::string, QLObjectPtr> arg_annotation_objs);
@@ -176,7 +176,7 @@ class FuncObject : public QLObject {
     return arg_types_;
   }
 
-  // Note that this check is only called for functions decorated with px.viz.*
+  // Note that this check is only called for functions decorated with px.vis.*
   Status CheckAllArgsHaveTypes(const pypa::AstPtr& ast) const;
 
   pl::shared::scriptspb::FuncArgsSpec CreateFuncArgsSpec() const;
@@ -196,7 +196,7 @@ class FuncObject : public QLObject {
 
   std::string name_;
   // The visualization spec of this function if it has one.
-  std::unique_ptr<VizSpec> viz_spec_ = nullptr;
+  std::unique_ptr<VisSpec> vis_spec_ = nullptr;
 
   // The doc string of this function.
   std::string doc_string_;

@@ -819,7 +819,7 @@ class ASTVisitorTest : public OperatorTests {
     return ast_walker;
   }
 
-  StatusOr<pl::shared::scriptspb::VizFuncsInfo> GetVizFuncsInfo(const std::string& query) {
+  StatusOr<pl::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo(const std::string& query) {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
@@ -828,7 +828,7 @@ class ASTVisitorTest : public OperatorTests {
                                                          /*query_flags*/ {}));
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
-    return ast_walker->GetVizFuncsInfo();
+    return ast_walker->GetVisFuncsInfo();
   }
 
   StatusOr<pl::shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec(const std::string& query) {

@@ -62,11 +62,11 @@ class ASTVisitor {
                                                                 bool import_px) = 0;
 
   /**
-   * @brief Get the Viz Funcs Info spec from functions decorated with the viz decorator.
+   * @brief Get the Vis Funcs Info spec from functions decorated with the vis decorator.
    *
-   * @return StatusOr<pl::shared::scriptspb::VizFuncsInfo> the
+   * @return StatusOr<pl::shared::scriptspb::VisFuncsInfo> the
    */
-  virtual StatusOr<pl::shared::scriptspb::VizFuncsInfo> GetVizFuncsInfo() const = 0;
+  virtual StatusOr<pl::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo() const = 0;
 
   /**
    * @brief Get the Main Func Args Spec.

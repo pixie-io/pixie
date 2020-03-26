@@ -12,20 +12,20 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 )
 
-const vizFuncsQuery = `
+const visFuncsQuery = `
 import px
-@px.viz.vega("vega spec for f")
+@px.vis.vega("vega spec for f")
 def f(start_time: px.Time, end_time: px.Time, svc: str):
   """Doc string for f"""
   return 1
 
-@px.viz.vega("vega spec for g")
+@px.vis.vega("vega spec for g")
 def g(a: int, b: float):
   """Doc string for g"""
   return 1
 `
 
-const expectedVizFuncsInfoPBStr = `
+const expectedVisFuncsInfoPBStr = `
 doc_string_map {
   key: "f"
   value: "Doc string for f"
@@ -34,13 +34,13 @@ doc_string_map {
   key: "g"
   value: "Doc string for g"
 }
-viz_spec_map {
+vis_spec_map {
   key: "f"
   value {
     vega_spec: "vega spec for f"
   }
 }
-viz_spec_map {
+vis_spec_map {
   key: "g"
   value {
     vega_spec: "vega spec for g"
@@ -78,19 +78,19 @@ fn_args_map {
 }
 `
 
-func TestExtractVizFuncsInfo(t *testing.T) {
+func TestExtractVisFuncsInfo(t *testing.T) {
 	gqlEnv, _, _, mockScriptMgrSvr, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	expectedRespPb := &cloudapipb.ExtractVizFuncsInfoResponse{}
-	if err := proto.UnmarshalText(expectedVizFuncsInfoPBStr, expectedRespPb); err != nil {
-		t.Fatal("Failed to unmarshal expected viz funcs info")
+	expectedRespPb := &cloudapipb.ExtractVisFuncsInfoResponse{}
+	if err := proto.UnmarshalText(expectedVisFuncsInfoPBStr, expectedRespPb); err != nil {
+		t.Fatal("Failed to unmarshal expected vis funcs info")
 	}
 
-	mockScriptMgrSvr.EXPECT().ExtractVizFuncsInfo(gomock.Any(),
-		&cloudapipb.ExtractVizFuncsInfoRequest{
-			Script:    vizFuncsQuery,
+	mockScriptMgrSvr.EXPECT().ExtractVisFuncsInfo(gomock.Any(),
+		&cloudapipb.ExtractVisFuncsInfoRequest{
+			Script:    visFuncsQuery,
 			FuncNames: []string{},
 		}).
 		Return(expectedRespPb, nil)
@@ -102,14 +102,14 @@ func TestExtractVizFuncsInfo(t *testing.T) {
 			Context: ctx,
 			Query: `
 				query ($script: String!) {
-					extractVizFuncsInfo(script: $script) {
+					extractVisFuncsInfo(script: $script) {
 						docStringMap {
 							funcName,
 							docString	
 						},
-						vizSpecMap {
+						visSpecMap {
 							funcName,
-							vizSpec { vegaSpec }
+							visSpec { vegaSpec }
 						},
 						fnArgsMap {
 							funcName,
@@ -124,11 +124,11 @@ func TestExtractVizFuncsInfo(t *testing.T) {
 				}
 			`,
 			Variables: map[string]interface{}{
-				"script": vizFuncsQuery,
+				"script": visFuncsQuery,
 			},
 			ExpectedResult: `
 			{
-				"extractVizFuncsInfo": {
+				"extractVisFuncsInfo": {
 					"docStringMap": [
 						{
 							"docString": "Doc string for f",
@@ -139,16 +139,16 @@ func TestExtractVizFuncsInfo(t *testing.T) {
 							"funcName": "g"
 						}
 					],
-					"vizSpecMap": [
+					"visSpecMap": [
 						{
 							"funcName": "f",
-							"vizSpec": {
+							"visSpec": {
 								"vegaSpec": "vega spec for f"
 							}
 						},
 						{
 							"funcName": "g",
-							"vizSpec": {
+							"visSpec": {
 								"vegaSpec": "vega spec for g"
 							}
 						}
@@ -206,12 +206,12 @@ func TestExtractVizFuncsInfo(t *testing.T) {
 	})
 }
 
-const expectedVizFuncsInfoNoGPBStr = `
+const expectedVisFuncsInfoNoGPBStr = `
 doc_string_map {
   key: "f"
   value: "Doc string for f"
 }
-viz_spec_map {
+vis_spec_map {
   key: "f"
   value {
     vega_spec: "vega spec for f"
@@ -236,19 +236,19 @@ fn_args_map {
 }
 `
 
-func TestExtractVizFuncsInfo_FilterFuncs(t *testing.T) {
+func TestExtractVisFuncsInfo_FilterFuncs(t *testing.T) {
 	gqlEnv, _, _, mockScriptMgrSvr, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	expectedRespPb := &cloudapipb.ExtractVizFuncsInfoResponse{}
-	if err := proto.UnmarshalText(expectedVizFuncsInfoNoGPBStr, expectedRespPb); err != nil {
-		t.Fatal("Failed to unmarshal expected viz funcs info")
+	expectedRespPb := &cloudapipb.ExtractVisFuncsInfoResponse{}
+	if err := proto.UnmarshalText(expectedVisFuncsInfoNoGPBStr, expectedRespPb); err != nil {
+		t.Fatal("Failed to unmarshal expected vis funcs info")
 	}
 
-	mockScriptMgrSvr.EXPECT().ExtractVizFuncsInfo(gomock.Any(),
-		&cloudapipb.ExtractVizFuncsInfoRequest{
-			Script:    vizFuncsQuery,
+	mockScriptMgrSvr.EXPECT().ExtractVisFuncsInfo(gomock.Any(),
+		&cloudapipb.ExtractVisFuncsInfoRequest{
+			Script:    visFuncsQuery,
 			FuncNames: []string{"f"},
 		}).
 		Return(expectedRespPb, nil)
@@ -260,14 +260,14 @@ func TestExtractVizFuncsInfo_FilterFuncs(t *testing.T) {
 			Context: ctx,
 			Query: `
 				query ($script: String!) {
-					extractVizFuncsInfo(script: $script, funcNames: ["f"]) {
+					extractVisFuncsInfo(script: $script, funcNames: ["f"]) {
 						docStringMap {
 							funcName,
 							docString	
 						},
-						vizSpecMap {
+						visSpecMap {
 							funcName,
-							vizSpec { vegaSpec }
+							visSpec { vegaSpec }
 						},
 						fnArgsMap {
 							funcName,
@@ -282,21 +282,21 @@ func TestExtractVizFuncsInfo_FilterFuncs(t *testing.T) {
 				}
 			`,
 			Variables: map[string]interface{}{
-				"script": vizFuncsQuery,
+				"script": visFuncsQuery,
 			},
 			ExpectedResult: `
 			{
-				"extractVizFuncsInfo": {
+				"extractVisFuncsInfo": {
 					"docStringMap": [
 						{
 							"docString": "Doc string for f",
 							"funcName": "f"
 						}
 					],
-					"vizSpecMap": [
+					"visSpecMap": [
 						{
 							"funcName": "f",
-							"vizSpec": {
+							"visSpec": {
 								"vegaSpec": "vega spec for f"
 							}
 						}

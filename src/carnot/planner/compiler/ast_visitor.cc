@@ -13,7 +13,7 @@ namespace pl {
 namespace carnot {
 namespace planner {
 namespace compiler {
-using pl::shared::scriptspb::VizFuncsInfo;
+using pl::shared::scriptspb::VisFuncsInfo;
 using pypa::AstType;
 
 StatusOr<FuncIR::Op> ASTVisitorImpl::GetOp(const std::string& python_op, const pypa::AstPtr node) {
@@ -529,7 +529,7 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
   PL_RETURN_IF_ERROR(defined_func->AddDocString(doc_string));
 
   // TODO(PL-1603): once we have semantic types we can do this for all functions.
-  if (defined_func->HasVizSpec() || function_name == kMainFuncId) {
+  if (defined_func->HasVisSpec() || function_name == kMainFuncId) {
     PL_RETURN_IF_ERROR(
         defined_func->ResolveArgAnnotationsToConcreteTypes(node, arg_annotations_objs));
 
@@ -833,17 +833,17 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessFuncDefDocString(const pypa::AstSui
   return ProcessDocString(PYPA_PTR_CAST(DocString, items_list[0]));
 }
 
-StatusOr<VizFuncsInfo> ASTVisitorImpl::GetVizFuncsInfo() const {
-  VizFuncsInfo info;
+StatusOr<VisFuncsInfo> ASTVisitorImpl::GetVisFuncsInfo() const {
+  VisFuncsInfo info;
   auto doc_string_map = info.mutable_doc_string_map();
-  auto viz_spec_map = info.mutable_viz_spec_map();
+  auto vis_spec_map = info.mutable_vis_spec_map();
   auto fn_args_map = info.mutable_fn_args_map();
-  for (const auto& [name, func] : var_table_->GetVizFuncs()) {
+  for (const auto& [name, func] : var_table_->GetVisFuncs()) {
     doc_string_map->insert({name, func->doc_string()});
-    auto viz_spec = func->viz_spec();
-    pl::shared::scriptspb::VizSpec viz_spec_pb;
-    viz_spec_pb.set_vega_spec(viz_spec->vega_spec);
-    viz_spec_map->insert({name, viz_spec_pb});
+    auto vis_spec = func->vis_spec();
+    pl::shared::scriptspb::VisSpec vis_spec_pb;
+    vis_spec_pb.set_vega_spec(vis_spec->vega_spec);
+    vis_spec_map->insert({name, vis_spec_pb});
     fn_args_map->insert({name, func->CreateFuncArgsSpec()});
   }
   return info;

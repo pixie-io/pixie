@@ -299,8 +299,8 @@ type ScriptMgrServer struct {
 	ScriptMgr scriptmgrpb.ScriptMgrServiceClient
 }
 
-// ExtractVizFuncsInfo returns information about the px.viz decorated functions in the provided script.
-func (s *ScriptMgrServer) ExtractVizFuncsInfo(ctx context.Context, req *cloudapipb.ExtractVizFuncsInfoRequest) (*cloudapipb.ExtractVizFuncsInfoResponse, error) {
+// ExtractVisFuncsInfo returns information about the px.vis decorated functions in the provided script.
+func (s *ScriptMgrServer) ExtractVisFuncsInfo(ctx context.Context, req *cloudapipb.ExtractVisFuncsInfoRequest) (*cloudapipb.ExtractVisFuncsInfoResponse, error) {
 	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return nil, err
@@ -308,7 +308,7 @@ func (s *ScriptMgrServer) ExtractVizFuncsInfo(ctx context.Context, req *cloudapi
 
 	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
 
-	resp, err := s.ScriptMgr.ExtractVizFuncsInfo(ctx, &scriptmgrpb.ExtractVizFuncsInfoRequest{
+	resp, err := s.ScriptMgr.ExtractVisFuncsInfo(ctx, &scriptmgrpb.ExtractVisFuncsInfoRequest{
 		Script:    req.Script,
 		FuncNames: req.FuncNames,
 	})
@@ -316,17 +316,17 @@ func (s *ScriptMgrServer) ExtractVizFuncsInfo(ctx context.Context, req *cloudapi
 		return nil, err
 	}
 
-	return &cloudapipb.ExtractVizFuncsInfoResponse{
+	return &cloudapipb.ExtractVisFuncsInfoResponse{
 		DocStringMap: resp.DocStringMap,
-		VizSpecMap:   convertVizSpecMapToCloudAPI(resp.VizSpecMap),
+		VisSpecMap:   convertVisSpecMapToCloudAPI(resp.VisSpecMap),
 		FnArgsMap:    convertFnArgsMapToCloudAPI(resp.FnArgsMap),
 	}, nil
 }
 
-func convertVizSpecMapToCloudAPI(vizSpecMap map[string]*scriptspb.VizSpec) map[string]*cloudapipb.VizSpec {
-	cloudMap := make(map[string]*cloudapipb.VizSpec, len(vizSpecMap))
-	for k, v := range vizSpecMap {
-		cloudMap[k] = &cloudapipb.VizSpec{
+func convertVisSpecMapToCloudAPI(visSpecMap map[string]*scriptspb.VisSpec) map[string]*cloudapipb.VisSpec {
+	cloudMap := make(map[string]*cloudapipb.VisSpec, len(visSpecMap))
+	for k, v := range visSpecMap {
+		cloudMap[k] = &cloudapipb.VisSpec{
 			VegaSpec: v.VegaSpec,
 		}
 	}

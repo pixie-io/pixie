@@ -13,7 +13,7 @@ namespace compiler {
 class VisualizationObject : public QLObject {
  public:
   static constexpr TypeDescriptor VisualizationTypeDescriptor = {
-      /* name */ "viz",
+      /* name */ "vis",
       /* type */ QLObjectType::kVisualization,
   };
   static StatusOr<std::shared_ptr<VisualizationObject>> Create(ASTVisitor* ast_visitor);

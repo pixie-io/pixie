@@ -46,9 +46,9 @@ StatusOr<QLObjectPtr> VegaHandler::NestedFn(std::string spec, const pypa::AstPtr
   auto fn = args.GetArg("fn");
   PL_ASSIGN_OR_RETURN(auto func, GetCallMethod(ast, fn));
 
-  auto viz_spec = std::make_unique<VizSpec>();
-  viz_spec->vega_spec = spec;
-  PL_RETURN_IF_ERROR(func->AddVizSpec(std::move(viz_spec)));
+  auto vis_spec = std::make_unique<VisSpec>();
+  vis_spec->vega_spec = spec;
+  PL_RETURN_IF_ERROR(func->AddVisSpec(std::move(vis_spec)));
   return std::static_pointer_cast<QLObject>(func);
 }
 

@@ -21,7 +21,7 @@
 
 using pl::carnot::planner::distributedpb::LogicalPlannerResult;
 using pl::shared::scriptspb::MainFuncSpecResult;
-using pl::shared::scriptspb::VizFuncsInfoResult;
+using pl::shared::scriptspb::VisFuncsInfoResult;
 
 PlannerPtr PlannerNew(const char* udf_info_data, int udf_info_len) {
   std::string udf_info_str(udf_info_data, udf_info_data + udf_info_len);
@@ -134,23 +134,23 @@ char* PlannerGetMainFuncArgsSpec(PlannerPtr planner_ptr, const char* query_reque
   return PrepareResult(&main_func_spec_response_pb, resultLen);
 }
 
-char* PlannerVizFuncsInfo(PlannerPtr planner_ptr, const char* script_str_c, int script_str_len,
+char* PlannerVisFuncsInfo(PlannerPtr planner_ptr, const char* script_str_c, int script_str_len,
                           int* resultLen) {
   DCHECK(script_str_c != nullptr);
   std::string script_str(script_str_c, script_str_c + script_str_len);
 
   auto planner = reinterpret_cast<pl::carnot::planner::LogicalPlanner*>(planner_ptr);
 
-  auto viz_funcs_info_or_s = planner->GetVizFuncsInfo(script_str);
-  if (!viz_funcs_info_or_s.ok()) {
-    return ExitEarly<VizFuncsInfoResult>(viz_funcs_info_or_s.status(), resultLen);
+  auto vis_funcs_info_or_s = planner->GetVisFuncsInfo(script_str);
+  if (!vis_funcs_info_or_s.ok()) {
+    return ExitEarly<VisFuncsInfoResult>(vis_funcs_info_or_s.status(), resultLen);
   }
 
-  VizFuncsInfoResult viz_funcs_pb;
-  WrapStatus(&viz_funcs_pb, viz_funcs_info_or_s.status());
-  *(viz_funcs_pb.mutable_info()) = viz_funcs_info_or_s.ConsumeValueOrDie();
+  VisFuncsInfoResult vis_funcs_pb;
+  WrapStatus(&vis_funcs_pb, vis_funcs_info_or_s.status());
+  *(vis_funcs_pb.mutable_info()) = vis_funcs_info_or_s.ConsumeValueOrDie();
 
-  return PrepareResult(&viz_funcs_pb, resultLen);
+  return PrepareResult(&vis_funcs_pb, resultLen);
 }
 
 void PlannerFree(PlannerPtr planner_ptr) {

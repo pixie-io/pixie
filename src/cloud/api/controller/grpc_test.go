@@ -235,26 +235,26 @@ func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
 	assert.NotNil(t, resp)
 }
 
-func TestScriptMgrServer_ExtractVizFuncsInfo(t *testing.T) {
+func TestScriptMgrServer_ExtractVisFuncsInfo(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockScriptMgr := mock_scriptmgr.NewMockScriptMgrServiceClient(ctrl)
 	ctx := CreateTestContext()
 
-	extractReq := &scriptmgrpb.ExtractVizFuncsInfoRequest{
+	extractReq := &scriptmgrpb.ExtractVisFuncsInfoRequest{
 		Script:    "mock script",
 		FuncNames: []string{"f"},
 	}
 	docStringMap := make(map[string]string, 1)
 	docStringMap["f"] = "docstring"
 
-	vizSpecMap := make(map[string]*scriptspb.VizSpec, 1)
-	vizSpecMap["f"] = &scriptspb.VizSpec{
+	visSpecMap := make(map[string]*scriptspb.VisSpec, 1)
+	visSpecMap["f"] = &scriptspb.VisSpec{
 		VegaSpec: "vegaspec",
 	}
-	expectedVizSpecMap := make(map[string]*cloudapipb.VizSpec, 1)
-	expectedVizSpecMap["f"] = &cloudapipb.VizSpec{
+	expectedVisSpecMap := make(map[string]*cloudapipb.VisSpec, 1)
+	expectedVisSpecMap["f"] = &cloudapipb.VisSpec{
 		VegaSpec: "vegaspec",
 	}
 
@@ -281,27 +281,27 @@ func TestScriptMgrServer_ExtractVizFuncsInfo(t *testing.T) {
 		},
 	}
 
-	extractResp := &scriptspb.VizFuncsInfo{
+	extractResp := &scriptspb.VisFuncsInfo{
 		DocStringMap: docStringMap,
-		VizSpecMap:   vizSpecMap,
+		VisSpecMap:   visSpecMap,
 		FnArgsMap:    fnArgsMap,
 	}
 
-	mockScriptMgr.EXPECT().ExtractVizFuncsInfo(gomock.Any(), extractReq).Return(extractResp, nil)
+	mockScriptMgr.EXPECT().ExtractVisFuncsInfo(gomock.Any(), extractReq).Return(extractResp, nil)
 
 	scriptMgrServer := &controller.ScriptMgrServer{
 		ScriptMgr: mockScriptMgr,
 	}
 
-	resp, err := scriptMgrServer.ExtractVizFuncsInfo(ctx, &cloudapipb.ExtractVizFuncsInfoRequest{
+	resp, err := scriptMgrServer.ExtractVisFuncsInfo(ctx, &cloudapipb.ExtractVisFuncsInfoRequest{
 		Script:    extractReq.Script,
 		FuncNames: extractReq.FuncNames,
 	})
 	assert.Nil(t, err)
 
-	expectedResp := &cloudapipb.ExtractVizFuncsInfoResponse{
+	expectedResp := &cloudapipb.ExtractVisFuncsInfoResponse{
 		DocStringMap: docStringMap,
-		VizSpecMap:   expectedVizSpecMap,
+		VisSpecMap:   expectedVisSpecMap,
 		FnArgsMap:    expectedFnArgsMap,
 	}
 	assert.Equal(t, expectedResp, resp)

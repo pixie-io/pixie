@@ -104,7 +104,7 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<QLObjectPtr> ParseAndProcessSingleExpression(std::string_view str,
                                                         bool import_px) override;
 
-  StatusOr<shared::scriptspb::VizFuncsInfo> GetVizFuncsInfo() const override;
+  StatusOr<shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo() const override;
   StatusOr<shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec() const override;
 
   IR* ir_graph() const { return ir_graph_; }

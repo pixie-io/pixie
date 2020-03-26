@@ -28,7 +28,7 @@ class PixieModule : public QLObject {
   inline static constexpr char kDataframeOpId[] = "DataFrame";
   inline static constexpr char kDisplayOpId[] = "display";
   inline static constexpr char kNowOpId[] = "now";
-  inline static constexpr char kVisAttrId[] = "viz";
+  inline static constexpr char kVisAttrId[] = "vis";
   inline static constexpr char kUInt128ConversionId[] = "uint128";
   inline static constexpr char kAbsTimeOpId[] = "strptime";
   inline static constexpr char kTimeTypeName[] = "Time";
