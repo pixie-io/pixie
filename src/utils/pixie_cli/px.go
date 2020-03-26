@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	sentry "github.com/getsentry/sentry-go"
+	"github.com/getsentry/sentry-go"
 	log "github.com/sirupsen/logrus"
-	analytics "gopkg.in/segmentio/analytics-go.v3"
+	"gopkg.in/segmentio/analytics-go.v3"
 	"pixielabs.ai/pixielabs/src/shared/version"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
@@ -22,8 +22,14 @@ import (
 const sentryDSN = "https://ef3a781b5e7b42e282706fc541077f3a@sentry.io/4090453"
 
 func main() {
+	// Disable Sentry in dev mode.
+	selectedDSN := sentryDSN
+	if version.GetVersion().IsDev() {
+		selectedDSN = ""
+	}
+
 	err := sentry.Init(sentry.ClientOptions{
-		Dsn:              sentryDSN,
+		Dsn:              selectedDSN,
 		AttachStacktrace: true,
 		Release:          version.GetVersion().ToString(),
 		Environment:      runtime.GOOS,

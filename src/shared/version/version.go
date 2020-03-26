@@ -25,6 +25,7 @@ type Version struct {
 	buildSCMStatus   string
 	buildSemver      semver.Version
 	buildTimeStamp   time.Time
+	isDev            bool
 }
 
 func init() {
@@ -82,6 +83,12 @@ func (v *Version) ToString() string {
 // Semver returns the semantic version.
 func (v *Version) Semver() semver.Version {
 	return v.buildSemver
+}
+
+// IsDev returns true if dev build.
+func (v *Version) IsDev() bool {
+	s := v.buildSemver
+	return s.Major == 0 && s.Minor == 0 && s.Patch == 0
 }
 
 // GetVersion returns the current version instance.
