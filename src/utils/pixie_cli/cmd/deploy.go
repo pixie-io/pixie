@@ -428,7 +428,10 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 func waitForHealthCheck(cloudAddr string, clientset *kubernetes.Clientset, namespace string, numNodes int) {
 	runSimpleScript := func() error {
-		v := mustConnectDefaultVizier(cloudAddr)
+		v, err := connectDefaultVizier(cloudAddr)
+		if err != nil {
+			return err
+		}
 		q := `px.display(px.GetAgentStatus())`
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

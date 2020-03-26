@@ -1,24 +1,34 @@
 package cmd
 
 import (
+	"errors"
+
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
 )
 
 func mustConnectDefaultVizier(cloudAddr string) *vizier.Connector {
+	c, err := connectDefaultVizier(cloudAddr)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to connect to vizier")
+	}
+	return c
+}
+
+func connectDefaultVizier(cloudAddr string) (*vizier.Connector, error) {
 	l, err := vizier.NewLister(cloudAddr)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to create Vizier lister")
+		return nil, err
 	}
 
 	vzInfo, err := l.GetViziersInfo()
 	if err != nil {
-		log.WithError(err).Fatal("Failed to get Vizier info")
+		return nil, err
 	}
 
 	if len(vzInfo) == 0 {
-		log.WithError(err).Fatal("No Viziers available")
+		return nil, errors.New("no Viziers available")
 	}
 
 	passthrough := false
@@ -34,13 +44,13 @@ func mustConnectDefaultVizier(cloudAddr string) *vizier.Connector {
 	if !passthrough {
 		vzConn, err = l.GetVizierConnection(u)
 		if err != nil {
-			log.WithError(err).Fatal("Failed to create Vizier connection")
+			return nil, err
 		}
 	}
 
 	v, err := vizier.NewConnector(cloudAddr, selectedVzInfo, vzConn)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to connect to Vizier")
+		return nil, err
 	}
-	return v
+	return v, nil
 }
