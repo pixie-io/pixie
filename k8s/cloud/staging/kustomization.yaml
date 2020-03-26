@@ -14,7 +14,7 @@ replicas:
 - name: project-manager-server
   count: 3
 - name: vzmgr-server
-  count: 3
+  count: 1
 - name: scriptmgr-server
   count: 3
 resources:
