@@ -55,7 +55,7 @@ type Server struct {
 // New creates a new server.
 func New(db *sqlx.DB, dbKey string, dnsMgrClient dnsmgr.DNSMgrServiceClient, nc *nats.Conn) *Server {
 	natsSubs := make([]*nats.Subscription, 0)
-	natsCh := make(chan *nats.Msg)
+	natsCh := make(chan *nats.Msg, 1024)
 	msgHandlerMap := make(map[string]HandleNATSMessageFunc)
 	s := &Server{db, dbKey, dnsMgrClient, nc, natsCh, natsSubs, msgHandlerMap}
 

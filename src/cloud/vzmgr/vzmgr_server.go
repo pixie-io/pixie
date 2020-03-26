@@ -97,6 +97,13 @@ func main() {
 		log.WithError(err).Fatal("Could not connect to NATS")
 	}
 
+	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
+		if err != nil {
+			log.WithError(err).
+				WithField("Subject", subscription.Subject).
+				Error("Got NATS error")
+		}
+	})
 	c := controller.New(db, dbKey, dnsMgrClient, nc)
 	sm := controller.NewStatusMonitor(db)
 	defer sm.Stop()

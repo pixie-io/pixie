@@ -391,6 +391,7 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 				return err
 			}
 		case hbMsg := <-hbChan:
+			log.WithField("heartbeat", hbMsg.GoString()).Trace("Sending heartbeat")
 			err := s.publishProtoToBridgeCh(HeartbeatTopic, hbMsg)
 			if err != nil {
 				return err
@@ -451,28 +452,36 @@ func (s *Bridge) publishBridgeSync(stream vzconnpb.VZConnService_NATSBridgeClien
 func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.VizierHeartbeat) {
 	hbCh = make(chan *cvmsgspb.VizierHeartbeat)
 	s.wg.Add(1)
+	sendHeartbeat := func() {
+		addr, port, err := s.vzInfo.GetAddress()
+		if err != nil {
+			log.WithError(err).Error("Failed to get vizier address")
+		}
+		hbCh <- &cvmsgspb.VizierHeartbeat{
+			VizierID:       utils.ProtoFromUUID(&s.vizierID),
+			Time:           time.Now().UnixNano(),
+			SequenceNumber: atomic.LoadInt64(&s.hbSeqNum),
+			Address:        addr,
+			Port:           port,
+		}
+		atomic.AddInt64(&s.hbSeqNum, 1)
+	}
+
 	go func() {
 		defer s.wg.Done()
 		ticker := time.NewTicker(heartbeatIntervalS)
 		defer ticker.Stop()
+
+		// Send first heartbeat.
+		sendHeartbeat()
+
 		for {
 			select {
 			case <-done:
 				log.Info("Stopping heartbeat routine")
 				return
 			case <-ticker.C:
-				addr, port, err := s.vzInfo.GetAddress()
-				if err != nil {
-					log.WithError(err).Error("Failed to get vizier address")
-				}
-				hbCh <- &cvmsgspb.VizierHeartbeat{
-					VizierID:       utils.ProtoFromUUID(&s.vizierID),
-					Time:           time.Now().UnixNano(),
-					SequenceNumber: atomic.LoadInt64(&s.hbSeqNum),
-					Address:        addr,
-					Port:           port,
-				}
-				atomic.AddInt64(&s.hbSeqNum, 1)
+				sendHeartbeat()
 			}
 		}
 	}()
