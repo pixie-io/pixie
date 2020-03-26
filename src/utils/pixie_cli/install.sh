@@ -135,6 +135,23 @@ if exists_but_not_writable "${DEFAULT_INSTALL_PATH}"; then
     DEFAULT_INSTALL_PATH=${USER_INSTALL_PATH}
 fi
 
+emph "Info:"
+cat << EOS
+Pixie gives engineers access to no-instrumentation, streaming &
+unsampled auto-telemetry to debug performance issues in real-time,
+More information at: ${tty_underline}https://www.pixielabs.ai${tty_reset}.
+
+This command will install the Pixie CLI (px) in a location selected
+by you, and performs authentication with Pixie's cloud hosted control
+plane. After installation of the CLI you can easily manage Pixie
+installations on your K8s clusters and execute scripts to collect
+telemetry from your clusters using Pixie.
+
+More Info:
+  ${tty_underline}https://${CLOUD_ADDR}/docs${tty_reset}
+EOS
+
+printf "\n\n"
 emph "Installing PX CLI:"
 read -r -p "Install Path [${DEFAULT_INSTALL_PATH}]: " INSTALL_PATH
 INSTALL_PATH=${INSTALL_PATH:-${DEFAULT_INSTALL_PATH}}
