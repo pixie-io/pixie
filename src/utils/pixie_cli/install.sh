@@ -74,7 +74,7 @@ shift $((OPTIND-1))
 print_dev_message() {
   if [[ -n "${PL_TESTING_ENV:-}" ]]; then
     emph_red "${tty_red}IN DEVELOPMENT MODE: PL_TESTING_ENV=${PL_TESTING_ENV},"\
-              "PL_CLI_VERSION=${PL_CLI_VERSION:-}, PL_VIZIER_VERSION=${PL_VIZER_VERSION:-}"\
+              "PL_CLI_VERSION=${PL_CLI_VERSION:-}, PL_VIZIER_VERSION=${PL_VIZIER_VERSION:-}"\
               "PL_CLOUD_ADDR=${PL_CLOUD_ADDR:-}${tty_reset}"
   fi
 }
