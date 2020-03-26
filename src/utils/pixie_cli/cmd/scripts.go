@@ -11,6 +11,8 @@ import (
 func init() {
 	ScriptCmd.AddCommand(ScriptListCmd)
 	ScriptCmd.AddCommand(ScriptShowCmd)
+	// Allow run as an alias to keep scripts self contained.
+	ScriptCmd.AddCommand(RunCmd)
 
 	ScriptCmd.PersistentFlags().StringP("bundle", "b", "", "Path/URL to bundle file")
 	viper.BindPFlag("bundle", ScriptCmd.PersistentFlags().Lookup("bundle"))
