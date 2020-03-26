@@ -25,18 +25,17 @@ func NewSerialTaskRunner(tasks []Task) *SerialTaskRunner {
 
 // RunAndMonitor runs tasks and shows output in a table.
 func (s *SerialTaskRunner) RunAndMonitor() error {
-	var finalErr error
 	st := components.NewSpinnerTable()
+	defer st.Wait()
 	for _, t := range s.tasks {
 		ti := st.AddTask(t.Name())
 		err := t.Run()
 		ti.Complete(err)
-		if err != nil && finalErr == nil {
-			finalErr = err
+		if err != nil {
+			return err
 		}
 	}
-	st.Wait()
-	return finalErr
+	return nil
 }
 
 // ParallelTaskRunner runs tasks in paralell and displays them in a table.
