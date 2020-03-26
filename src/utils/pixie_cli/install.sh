@@ -177,8 +177,10 @@ fi
 
 # TODO(zasgar): Check to make sure PX does not already exist, and if it does if it's actually pixie.
 # TODO(zasgar): Check the sha256.
-execute curl -fsSL "$(artifact_url)" -o "${INSTALL_PATH}"/px
-execute chmod +x "${INSTALL_PATH}"/px
+# Note: we need this download, mv step to make sure macos does not mark this binary as bad.
+execute curl -fsSL "$(artifact_url)" -o "${INSTALL_PATH}"/px_new
+execute chmod +x "${INSTALL_PATH}"/px_new
+execute mv "${INSTALL_PATH}"/px_new "${INSTALL_PATH}"/px
 
 echo
 emph "Authenticating with Pixie Cloud:"
