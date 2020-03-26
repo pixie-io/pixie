@@ -160,7 +160,7 @@ genrule(
       cp $@ $${OUTPUT_PATH}
 
       popd &> /dev/null
-      python "$(location :tools/licenses/npm_license_extractor.py)" "$@" "$@" --override_license "$(location :tools/licenses/override_license.json)" &> build.log
+      python3 "$(location :tools/licenses/npm_license_extractor.py)" "$@" "$@" --override_license "$(location :tools/licenses/override_license.json)" &> build.log
       rm -rf $${TMPPATH}
     """,
     output_to_bindir = 1,  # We treat "outputs" as binaries.

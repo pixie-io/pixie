@@ -11,7 +11,7 @@ genrule(
         ":manual_license_map.json",
     ],
     outs = ["MANUAL_CPP_LICENSES"],
-    cmd = "python $(location :assemble_manual_licenses.py) $@ $(SRCS)",
+    cmd = "python3 $(location :assemble_manual_licenses.py) $@ $(SRCS)",
     tools = [":assemble_manual_licenses.py"],
 )
 
@@ -35,7 +35,7 @@ genrule(
         "@boringssl//:LICENSE",
     ],
     outs = ["CPP_LICENSES"],
-    cmd = "python $(location :combine_bazel_licenses.py) $@ $(SRCS)",
+    cmd = "python3 $(location :combine_bazel_licenses.py) $@ $(SRCS)",
     tools = [":combine_bazel_licenses.py"],
 )
 
@@ -48,6 +48,6 @@ genrule(
         ":go_licenses.json",
     ],
     outs = ["CREDITS.md"],
-    cmd = "python $(location :render_licenses_as_markdown.py) $@ $(SRCS)",
+    cmd = "python3 $(location :render_licenses_as_markdown.py) $@ $(SRCS)",
     tools = [":render_licenses_as_markdown.py"],
 )

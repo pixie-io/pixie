@@ -6,7 +6,7 @@ import json
 
 
 def read_file(fname):
-    with open(fname) as f:
+    with open(fname, encoding='utf-8') as f:
         return f.read()
 
 
@@ -42,12 +42,12 @@ def main():
     license_mapping = OrderedDict()
     for license_fname in args.json_files:
         print("Running", license_fname)
-        with open(license_fname) as f:
+        with open(license_fname, encoding='utf-8') as f:
             license_mapping.update(json.load(f, object_pairs_hook=OrderedDict))
 
     failed_licenses = []
     seen_names = set()
-    with open(args.out_fname, 'w') as f:
+    with open(args.out_fname, 'w', encoding='utf-8') as f:
         for license_name, license_contents in license_mapping.items():
             try:
                 f.write(format_markdown(license_contents, seen_names))

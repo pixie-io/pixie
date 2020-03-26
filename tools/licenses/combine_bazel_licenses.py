@@ -3,17 +3,17 @@
 import argparse
 from collections import OrderedDict
 import json
-import urllib2
+import urllib.request
+import urllib.error
 
 
 def read_file(fname):
-    with open(fname) as f:
+    with open(fname, encoding='utf-8') as f:
         return f.read()
 
 
 def get_package_name(license_fname):
     directory_name = license_fname.split('/')[1]
-    split_underscores = directory_name.split('_')
     # If no underscores, this is the full name.
     if '_' not in directory_name:
         return directory_name
@@ -30,15 +30,14 @@ def get_package_name(license_fname):
 
 def does404(url):
     try:
-        r = urllib2.urlopen(url)
-    except urllib2.HTTPError, e:
+        _ = urllib.request.urlopen(url)
+    except urllib.error.HTTPError as e:
         return e.code == 404
     return False
 
 
 def get_package_url(license_fname):
     directory_name = license_fname.split('/')[1]
-    split_underscores = directory_name.split('_')
 
     # If no underscores, then we cannot resolve the url.
     if '_' not in directory_name:

@@ -4,7 +4,7 @@
 import argparse
 from collections import OrderedDict
 import json
-import urllib2
+import urllib.request
 import re
 import os
 import prepared_licenses
@@ -16,12 +16,12 @@ LICENSES_KEYS = 'licenses'
 
 
 def get_file_at_url(url):
-    r = urllib2.urlopen(url)
+    r = urllib.request.urlopen(url)
     return r.read()
 
 
 def read_file(fname):
-    with open(fname) as f:
+    with open(fname, encoding='utf-8') as f:
         return f.read()
 
 
@@ -162,12 +162,12 @@ def main():
                         help="The name of the pl ui package to ignore")
     args = parser.parse_args()
 
-    with open(args.npm_json_file) as f:
+    with open(args.npm_json_file, encoding='utf-8') as f:
         npm_license_map = json.load(f, object_pairs_hook=OrderedDict)
 
     override_license = {}
     if args.override_license:
-        with open(args.override_license) as f:
+        with open(args.override_license, encoding='utf-8') as f:
             override_license = json.load(f)
 
     license_contents = OrderedDict({})

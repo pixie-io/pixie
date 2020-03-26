@@ -3,15 +3,15 @@
 import argparse
 from collections import OrderedDict
 import json
-import urllib2
-
-import re
+import urllib.request
+import urllib.error
+import urllib.parse
 
 
 def get_file_at_url(url):
     try:
-        r = urllib2.urlopen(url)
-    except urllib2.HTTPError, e:
+        r = urllib.request.urlopen(url)
+    except urllib.error.HTTPError as e:
         print(url)
         raise e
     return r.read()
@@ -23,7 +23,7 @@ def read_file(fname):
 
 
 def github_username_and_project(license_url):
-    res = urllib2.urlparse.urlparse(license_url)
+    res = urllib.parse.urlparse(license_url)
     matches = res.path[1:].split('/')
     assert len(matches) >= 2, "should be 2 or greater matches not {}".format(
         len(matches))
@@ -43,6 +43,9 @@ def package_license(package_name, license_url, override_license_contents):
         contents = get_file_at_url(license_url)
     else:
         contents = override_license_contents[package_name]
+
+    if isinstance(contents, bytes):
+        contents = contents.decode('utf-8')
 
     username, project = github_username_and_project(license_url)
     return {
