@@ -77,9 +77,15 @@ _For more demos, check out our  [youtube](https://www.youtube.com/channel/UCOMCD
 - **Bugs:** Something not working as expected? [Send a bug report](https://github.com/pixie-labs/pixie/issues/new?template=Bug_report.md).
 - **Features:** Need new Pixie capabilities? [Send a feature request](https://github.com/pixie-labs/pixie/issues/new?template=Feature_request.md).
 - **Views & Scripts:** Need help building a live views or pxl scripts? [Send a live view request](https://github.com/pixie-labs/pixie/issues/new?template=Live_view_request.md).
-- **Development:**  Pixie is a SaaS product and not open-core. We do plan to open-source sub-components but we're not there yet as we're heads down building. In the interim, if you are interested in contributing, [Email us](mailto:community@pixielabs.ai).
 - **Community:** Interested in becoming a Pixienaut and in helping shape our community? [Email us](mailto:community@pixielabs.ai).
 
+
+## Open Source
+
+Along with building Pixie as a freemium SaaS product, contributing open and accessable projects to the broader developer community is integral to our roadmap. We currently contribute in two ways:
+
+- **Open Sourced Pixie Platform Primitives:** We plan to open-source components of the Pixie Platform which can be independently useful to developers after our Beta. These include our Community Pxl Scripts, Pixie CLI, eBPF Collectors etc. If you are interested in contributing during our Beta, [email us](mailto:community@pixielabs.ai).
+- **Unlimited Pixie Community Access:** Our [Pixie Community](https://work.withpixie.ai/) product is a completely free offering with all core features of the Pixie developer experience. We will invest in this offering for the long term to give developers across the world an easy and zero cost way to use Pixie.
 
 ## Resources
 
