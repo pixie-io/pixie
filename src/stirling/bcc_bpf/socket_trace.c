@@ -689,6 +689,15 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficD
  * BPF syscall probe functions
  ***********************************************************/
 
+static __inline void process_syscall_open(struct pt_regs* ctx, u64 id) {
+  int ret_fd = PT_REGS_RC(ctx);
+  if (ret_fd < 0) {
+    return;
+  }
+
+  set_open_file(id, ret_fd);
+}
+
 static __inline void process_syscall_connect(struct pt_regs* ctx, u64 id,
                                              const struct connect_args_t* connect_args) {
   u32 tgid = id >> 32;
@@ -916,10 +925,13 @@ static __inline void probe_ret_read_recv(struct pt_regs* ctx, u64 id) {
   return;
 }
 
-static __inline void probe_entry_close(struct pt_regs* ctx, u64 id, int fd) {
-  if (fd < 0) {
+static __inline void process_syscall_close(struct pt_regs* ctx, u64 id,
+                                           const struct close_args_t* close_args) {
+  if (close_args->fd < 0) {
     return;
   }
+
+  clear_open_file(id, close_args->fd);
 
   u32 tgid = id >> 32;
 
@@ -927,32 +939,12 @@ static __inline void probe_entry_close(struct pt_regs* ctx, u64 id, int fd) {
     return;
   }
 
-  u64 tgid_fd = gen_tgid_fd(tgid, fd);
-  struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
-  if (conn_info == NULL) {
-    return;
-  }
-
-  struct close_args_t close_args;
-  memset(&close_args, 0, sizeof(struct close_args_t));
-  close_args.fd = fd;
-
-  active_close_args_map.update(&id, &close_args);
-}
-
-static __inline void probe_ret_close(struct pt_regs* ctx, u64 id) {
   int ret_val = PT_REGS_RC(ctx);
   if (ret_val < 0) {
     // This close() call failed.
     return;
   }
 
-  const struct close_args_t* close_args = active_close_args_map.lookup(&id);
-  if (close_args == NULL) {
-    return;
-  }
-
-  u32 tgid = id >> 32;
   u64 tgid_fd = gen_tgid_fd(tgid, close_args->fd);
   struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
   if (conn_info == NULL) {
@@ -986,10 +978,9 @@ static __inline void probe_ret_close(struct pt_regs* ctx, u64 id) {
 
 int syscall__probe_ret_open(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
-  int ret_fd = PT_REGS_RC(ctx);
-  if (ret_fd > 0) {
-    set_open_file(id, ret_fd);
-  }
+
+  process_syscall_open(ctx, id);
+
   return 0;
 }
 
@@ -1221,14 +1212,24 @@ int syscall__probe_ret_readv(struct pt_regs* ctx) {
 
 int syscall__probe_entry_close(struct pt_regs* ctx, unsigned int fd) {
   u64 id = bpf_get_current_pid_tgid();
-  clear_open_file(id, fd);
-  probe_entry_close(ctx, id, fd);
+
+  // Stash arguments.
+  struct close_args_t close_args;
+  close_args.fd = fd;
+  active_close_args_map.update(&id, &close_args);
+
   return 0;
 }
 
 int syscall__probe_ret_close(struct pt_regs* ctx) {
   u64 id = bpf_get_current_pid_tgid();
-  probe_ret_close(ctx, id);
+
+  // Unstash arguments, and process syscall.
+  const struct close_args_t* close_args = active_close_args_map.lookup(&id);
+  if (close_args != NULL) {
+    process_syscall_close(ctx, id, close_args);
+  }
+
   active_close_args_map.delete(&id);
   return 0;
 }
