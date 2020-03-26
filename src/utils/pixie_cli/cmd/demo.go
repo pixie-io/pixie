@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
@@ -21,6 +22,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
@@ -280,7 +282,33 @@ func deleteDemoApp(appName string) error {
 		newTaskWrapper(fmt.Sprintf("Deleting demo app %s", appName), func() error {
 			kubeConfig := k8s.GetConfig()
 			clientset := k8s.GetClientset(kubeConfig)
-			return clientset.CoreV1().Namespaces().Delete(appName, &metav1.DeleteOptions{})
+
+			err := clientset.CoreV1().Namespaces().Delete(appName, &metav1.DeleteOptions{})
+			if err != nil {
+				return err
+			}
+			t := time.NewTimer(180 * time.Second)
+			defer t.Stop()
+
+			s := time.NewTicker(5 * time.Second)
+			defer s.Stop()
+
+			for {
+				select {
+				case <-t.C:
+					return errors.New("timeout waiting for namespace deletion")
+				default:
+					_, err := clientset.CoreV1().Namespaces().Get(appName, metav1.GetOptions{})
+					if k8s_errors.IsNotFound(err) {
+						return nil
+					}
+					if err != nil {
+						return err
+					}
+					<-s.C
+				}
+
+			}
 		}),
 	}
 	tr := utils.NewSerialTaskRunner(deleteDemo)
