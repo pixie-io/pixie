@@ -8,7 +8,7 @@ import MenuItem from '@material-ui/core/MenuItem';
 import Select from '@material-ui/core/Select';
 import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 
-import {LiveContext} from './context';
+import {LiveContext, ScriptContext} from './context';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -24,10 +24,8 @@ interface ScriptMap {
   [title: string]: Script;
 }
 
-const ExampleScripts = () => {
+export const ExampleScripts = () => {
   const classes = useStyles();
-
-  const { executeScript } = React.useContext(LiveContext);
 
   const [liveScriptMap, setLiveScriptMap] = React.useState<ScriptMap>({});
   const [liveScripts, setLiveScripts] = React.useState<Script[]>([]);
@@ -44,16 +42,6 @@ const ExampleScripts = () => {
       }
       setLiveScriptMap(map);
       setLiveScripts(scripts);
-
-      // Set the script provided in query string.
-      const queryParams = QueryString.parse(window.location.search);
-      const scriptParam = typeof queryParams.script === 'string' ? queryParams.script : '';
-      const s = map[scriptParam];
-      if (s) {
-        setTitle(s.title);
-        setScripts(s.code, s.vis, s.placement);
-        executeScript();
-      }
     });
   }, []);
 
@@ -84,4 +72,49 @@ const ExampleScripts = () => {
   );
 };
 
-export default ExampleScripts;
+export const ScriptLoader = () => {
+  const { executeScript } = React.useContext(LiveContext);
+
+  const [liveScriptMap, setLiveScriptMap] = React.useState<ScriptMap>({});
+  const [liveScripts, setLiveScripts] = React.useState<Script[]>([]);
+  const { setScripts, setTitle } = React.useContext(LiveContext);
+  const code = React.useContext(ScriptContext);
+  const [shouldExecute, setShouldExecute] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    GetPxScripts().then((examples) => {
+      const scripts = [];
+      const map = {};
+      for (const s of examples) {
+        if (s.vis && s.placement) {
+          scripts.push(s);
+          map[s.title] = s;
+        }
+      }
+      setLiveScriptMap(map);
+      setLiveScripts(scripts);
+
+      // Set the script provided in query string.
+      const queryParams = QueryString.parse(window.location.search);
+      const scriptParam = typeof queryParams.script === 'string' ? queryParams.script : '';
+      const sc = map[scriptParam];
+      if (sc) {
+        setTitle(sc.title);
+        setScripts(sc.code, sc.vis, sc.placement);
+        // We can't call executeScript directly from here because React.useState is
+        // asynchronous. This would just call executeScript with an empty script.
+        // We should only call executeScript once the new script is actually loaded.
+        setShouldExecute(true);
+      }
+    });
+  }, []);
+
+  React.useEffect(() => {
+    if (shouldExecute) {
+      executeScript();
+      setShouldExecute(false);
+    }
+  }, [code, shouldExecute]);
+
+  return null;
+};

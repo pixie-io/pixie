@@ -17,6 +17,7 @@ import Canvas from './canvas';
 import CommandInput from './command-input';
 import LiveContextProvider, {LiveContext} from './context';
 import Editor from './editor';
+import {ScriptLoader} from './example-scripts';
 import ExecuteScript from './execute';
 import LiveViewTitle from './title';
 
@@ -107,6 +108,7 @@ const LiveView = () => {
         <div className={classes.root}>
           <GlobalHotKeys handlers={hotkeyHandlers} keyMap={COMMAND_KEYMAP} />
           <div className={classes.topBar}>
+            <ScriptLoader />
             <IconButton disabled={true} onClick={toggleDrawer}>
               <MenuIcon />
             </IconButton>
