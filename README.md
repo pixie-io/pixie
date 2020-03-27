@@ -74,6 +74,7 @@ Once installed, you can access data in seconds.
 
     View many more: `px scripts list`
 
+    More examples [here](pxl_scripts).
 
 4. **Integrate and Visualize Results**
 
@@ -98,7 +99,7 @@ _To see more script examples and learn how to write your own, check out our [doc
 [![Pixie Deploy Overview](https://img.youtube.com/vi/iMh2f8abTYU/0.jpg)](https://www.youtube.com/watch?v=iMh2f8abTYU)
 
 
-**Use `px` to list/run scripts and consuming results with tools like [jq](https://stedolan.github.io/jq/).**
+**Use `px` to list/run scripts and consuming results with tools like [jq](https://stedolan.github.io/jq/). More examples [here](pxl_scripts).**
 
 ![CLI Demo](./cli_demo.svg)
 
