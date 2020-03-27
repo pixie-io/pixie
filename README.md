@@ -98,10 +98,10 @@ Once installed, you can access data in seconds.
 
     `https://work.withpixie.ai/live`
 
-    Our Live UI is super raw and will be usable by April-end
+    Our Live UI is under active development and will be usable by end of April.
 
 
-_To see more script examples and learn hot to write your own, check out our [docs](https://work.withpixie.ai/docs) for more guides_
+_To see more script examples and learn how to write your own, check out our [docs](https://work.withpixie.ai/docs) for more guides_
 
 ## Demos
 
@@ -127,7 +127,7 @@ _For more demos, check out our  [youtube](https://www.youtube.com/channel/UCOMCD
 
 ## Open Source
 
-Along with building Pixie as a freemium SaaS product, contributing open and accessible projects to the broader developer community is integral to our roadmap. We currently contribute in two ways:
+Along with building Pixie as a freemium SaaS product, contributing open and accessible projects to the broader developer community is integral to our roadmap. We plan to contribute in two ways:
 
 - **Open Sourced Pixie Platform Primitives:** We plan to open-source components of the Pixie Platform which can be independently useful to developers after our Beta. These include our Community Pxl Scripts, Pixie CLI, eBPF Collectors etc. If you are interested in contributing during our Beta, [email us](mailto:community@pixielabs.ai).
 - **Unlimited Pixie Community Access:** Our [Pixie Community](https://work.withpixie.ai/) product is a completely free offering with all core features of the Pixie developer experience. We will invest in this offering for the long term to give developers across the world an easy and zero cost way to use Pixie.
@@ -140,7 +140,7 @@ Three fundamental innovations enable Pixie's magical developer experience:
 
 **In-Cluster  Edge Compute:** The Pixie Command Module is deployed in your K8s cluster to isolate data storage and computation  within your environment for  drastically better intelligence, performance & security.
 
-**Command Driven Interfaces:** Programmatically access data via the Pixie CLI and Pixie UI which are designed ground-up to allow you to run analyses & debug scenarios faster than any other developer tool.
+**Command Driven Interfaces:** Programmatically access data via the Pixie CLI and Pixie UI which are designed ground-up to allow you to run analysis & debug scenarios faster than any other developer tool.
 
 _For more information on Pixie Platform's architecture, check out our [docs](https://work.withpixie.ai/docs) or [overview deck](https://docsend.com/view/kj38d76)_
 
