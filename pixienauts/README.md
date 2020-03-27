@@ -4,10 +4,6 @@
 
 </p>
 
----
-
-## Pixienaut Community
-
 [Pixienauts](https://pixielabs.ai/community) are early adopters who help shape Pixie's product and community for broad use by the end of 2020.  
 
 **What are their backgrounds?** 
