@@ -228,6 +228,7 @@ module.exports = (env) => {
         __CONFIG_AUTH0_DOMAIN__: 'pixie-labs.auth0.com',
         __CONFIG_AUTH0_CLIENT_ID__: auth0YAML.data.PL_AUTH0_CLIENT_ID,
         __CONFIG_DOMAIN_NAME__: domainYAML.data.PL_DOMAIN_NAME,
+        __SEGMENT_ANALYTICS_JS_DOMAIN__: `segment.${domainYAML.data.PL_DOMAIN_NAME}`,
       },
     }));
 
