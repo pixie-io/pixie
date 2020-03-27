@@ -1,0 +1,112 @@
+###############################################################
+# The following can be edited to k8s object and name to match.
+###############################################################
+# The Kubernetes object to filter on.
+#    Options are ['pod', 'service']
+k8s_object = 'pod'
+
+# If you want to filter the object by name, enter the partial
+# or full name here.
+match_name = 'sock-shop'
+node_name = ''  # 'dev-cluster-abcd'
+
+# Visualization Variables - Dont change unless you know what you are doing.
+window_length_s = 10
+node_col = 'node_name'
+start_time = '-5m'
+###############################################################
+
+#
+# Get the virtual and real memory usage for each pod/service
+# in the cluster.
+#
+df = px.DataFrame(table='process_stats', start_time=start_time)
+bytes_per_mb = 1024.0 * 1024.0
+df[node_col] = df.ctx[node_col]
+df = df[px.contains(df[node_col], node_name)]
+nodes = df.groupby(node_col).agg(cc=(node_col, px.count))
+px.display(nodes.drop('cc'), 'nodes')
+df.vsize_mb = df.vsize_bytes / bytes_per_mb
+df.rss_bytes_mb = df.rss_bytes / bytes_per_mb
+df.timestamp = px.bin(df.time_, px.seconds(window_length_s))
+df[k8s_object] = df.ctx[k8s_object]
+df.cpu_utime_ms = df.cpu_ktime_ns / 1.0E6
+df.cpu_ktime_ms = df.cpu_ktime_ns / 1.0E6
+
+df = df[px.contains(df[k8s_object], match_name)]
+
+cpu_by_upid = df.groupby(['upid', k8s_object, 'timestamp']).agg(
+    cpu_utime_ms_max=('cpu_utime_ms', px.max),
+    cpu_utime_ms_min=('cpu_utime_ms', px.min),
+    cpu_ktime_ms_max=('cpu_ktime_ms', px.max),
+    cpu_ktime_ms_min=('cpu_ktime_ms', px.min),
+)
+
+cpu_by_upid.cpu_utime_ms = cpu_by_upid.cpu_utime_ms_max - cpu_by_upid.cpu_utime_ms_min
+cpu_by_upid.cpu_ktime_ms = cpu_by_upid.cpu_ktime_ms_max - cpu_by_upid.cpu_ktime_ms_min
+
+cpu_per_k8s = cpu_by_upid.groupby([k8s_object, 'timestamp']).agg(
+    cpu_ktime_ms=('cpu_ktime_ms', px.sum),
+    cpu_utime_ms=('cpu_utime_ms', px.sum),
+)
+cpu_per_k8s.cpu_ms = (cpu_per_k8s.cpu_ktime_ms + cpu_per_k8s.cpu_utime_ms) / \
+    (window_length_s * 1.0E3) * 100
+cpu_per_k8s['k8s'] = cpu_per_k8s[k8s_object]
+px.display(cpu_per_k8s, 'cpu')
+
+
+###############################################################
+# Net stats
+###############################################################
+def other_agg(df, groupby_cols, window_time):
+    df = df.groupby(groupby_cols).agg(
+        rx_mb_end=('rx_mb', px.max),
+        rx_mb_start=('rx_mb', px.min),
+        tx_mb_end=('tx_mb', px.max),
+        tx_mb_start=('tx_mb', px.min),
+        tx_errors_end=('tx_errors', px.max),
+        tx_errors_start=('tx_errors', px.min),
+        rx_errors_end=('rx_errors', px.max),
+        rx_errors_start=('rx_errors', px.min),
+        tx_drops_end=('tx_drops', px.max),
+        tx_drops_start=('tx_drops', px.min),
+        rx_drops_end=('rx_drops', px.max),
+        rx_drops_start=('rx_drops', px.min),
+    )
+    df.rx_mb = (df.rx_mb_end - df.rx_mb_start) / window_time
+    df.tx_mb = (df.tx_mb_end - df.tx_mb_start) / window_time
+    df.rx_drops = (df.rx_drops_end - df.rx_drops_start)
+    df.tx_drops = (df.tx_drops_end - df.tx_drops_start)
+    df.rx_errors = (df.rx_errors_end - df.rx_errors_start)
+    df.tx_errors = (df.tx_errors_end - df.tx_errors_start)
+
+    return df.drop([
+        'rx_mb_end',
+        'rx_mb_start',
+        'tx_mb_end',
+        'tx_mb_start',
+        'rx_drops_end',
+        'rx_drops_start',
+        'tx_drops_end',
+        'tx_drops_start',
+        'rx_errors_end',
+        'rx_errors_start',
+        'tx_errors_end',
+        'tx_errors_start'
+    ])
+
+
+df = px.DataFrame(table='network_stats', start_time=start_time)
+df[node_col] = px.pod_id_to_node_name(df.pod_id)
+df[k8s_object] = px.pod_id_to_pod_name(df.pod_id)
+df = df[px.contains(df[node_col], node_name)]
+
+df.rx_mb = df.rx_bytes / bytes_per_mb
+df.tx_mb = df.tx_bytes / bytes_per_mb
+df.timestamp = px.bin(df.time_, px.seconds(window_length_s))
+df = df[px.contains(df[k8s_object], match_name)]
+
+
+df = other_agg(df, [k8s_object, 'timestamp'], window_length_s)
+df['k8s'] = df[k8s_object]
+px.display(df.drop([k8s_object, 'rx_drops', 'tx_drops', 'rx_errors', 'tx_errors']), 'net')

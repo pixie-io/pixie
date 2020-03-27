@@ -1,0 +1,128 @@
+{
+  "cpu": {
+    "padding": 50,
+    "mark": "line",
+    "data": {
+      "name": "cpu"
+    },
+    "encoding": {
+      "color": {
+        "field": "k8s",
+        "type": "nominal"
+      },
+      "x": {
+        "field": "timestamp",
+        "type": "temporal",
+        "axis": {
+          "titleFontSize": 15,
+          "grid": false
+        },
+        "title": null
+      },
+      "y": {
+        "field": "cpu_ms",
+        "type": "quantitative",
+        "axis": {
+          "titleFontSize": 15,
+          "gridOpacity": 0.1,
+          "gridColor": "#a6a8ae"
+        },
+        "title": "CPU usage (%)"
+      }
+    },
+    "config": {
+      "line": {
+        "point": true
+      },
+      "scale": {
+        "useUnaggregatedDomain": true
+      }
+    }
+  },
+  "received_data": {
+    "padding": 50,
+    "mark": "line",
+    "data": {
+      "name": "net"
+    },
+    "encoding": {
+      "color": {
+        "field": "k8s",
+        "type": "nominal"
+      },
+      "x": {
+        "field": "timestamp",
+        "type": "temporal",
+        "axis": {
+          "titleFontSize": 15,
+          "grid": false
+        },
+        "title": null
+      },
+      "y": {
+        "field": "rx_mb",
+        "type": "quantitative",
+        "axis": {
+          "titleFontSize": 15,
+          "gridOpacity": 0.1,
+          "gridColor": "#a6a8ae"
+        },
+        "title": "Received Data (Mb)"
+      }
+    },
+    "config": {
+      "line": {
+        "point": true
+      },
+      "scale": {
+        "useUnaggregatedDomain": true
+      }
+    }
+  },
+  "sent_data": {
+    "padding": 50,
+    "mark": "line",
+    "data": {
+      "name": "net"
+    },
+    "encoding": {
+      "color": {
+        "field": "k8s",
+        "type": "nominal"
+      },
+      "x": {
+        "field": "timestamp",
+        "type": "temporal",
+        "axis": {
+          "titleFontSize": 15,
+          "grid": false
+        },
+        "title": null
+      },
+      "y": {
+        "field": "tx_mb",
+        "type": "quantitative",
+        "axis": {
+          "titleFontSize": 15,
+          "gridOpacity": 0.1,
+          "gridColor": "#a6a8ae"
+        },
+        "title": "Sent Data (Mb)"
+      }
+    },
+    "config": {
+      "line": {
+        "point": true
+      },
+      "scale": {
+        "useUnaggregatedDomain": true
+      }
+    }
+  },
+  "nodes": {
+    "mark": "table",
+    "data": {
+      "name": "nodes"
+    }
+  }
+}

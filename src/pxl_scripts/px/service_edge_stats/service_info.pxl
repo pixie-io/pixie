@@ -5,9 +5,10 @@ True = 1 == 1
 ###############################################################
 # Pods/services are formatted as <namespace>/<name>.
 # If you want to match a namespace, only keep the namespace portion
-match_name = 'px-sock-shop'
+requestor_filter = 'px-sock-shop/orders'
+responder_filter = 'px-sock-shop/carts'
 k8s_object = 'service'
-requestor_filter = ''  # 'front-end'
+
 # Visualization Variables - Dont change unless you know what you are doing
 num_seconds = 2
 filter_dash = True
@@ -24,46 +25,30 @@ df = df[df['http_resp_latency_ms'] < 1000.0]
 df.failure = df.http_resp_status >= 400
 df.timestamp = px.bin(df.time_, px.seconds(num_seconds))
 df[k8s_object] = df.ctx[k8s_object]
-filter_pods = px.contains(df[k8s_object], match_name)
+filter_pods = px.contains(df[k8s_object], responder_filter)
 filter_out_conds = ((df.http_req_path != '/health' or not filter_health) and (
     df.http_req_path != '/readyz' or not filter_readyz)) and (
     df[ip] != '-' or not filter_dash)
 
 filt_df = df[filter_out_conds]
 qa = filt_df[filter_pods]
-qa = qa.groupby([k8s_object, 'timestamp']).agg(
+qa = qa.groupby([k8s_object, 'timestamp', ip]).agg(
     latency_quantiles=('http_resp_latency_ms', px.quantiles),
     error_rate_per_window=('failure', px.mean),
     throughput_total=('http_resp_status', px.count),
 )
+qa['pod_id'] = px.ip_to_pod_id(qa[ip])
+# # Enable if you want pod name
+# qa[src_name] = px.pod_id_to_pod_name(df.pod_id)
+qa[src_name] = px.pod_id_to_service_name(qa.pod_id)
 qa.latency_p50 = px.pluck_float64(qa.latency_quantiles, 'p50')
 qa.latency_p90 = px.pluck_float64(qa.latency_quantiles, 'p90')
 qa.latency_p99 = px.pluck_float64(qa.latency_quantiles, 'p99')
 qa['time_'] = qa['timestamp']
 qa.error_rate = qa.error_rate_per_window * qa.throughput_total / num_seconds
 qa.rps = qa.throughput_total / num_seconds
-qa['k8s'] = qa[k8s_object]
-px.display(qa['time_', 'k8s', 'latency_p50',
+pod_name = 'k8s'
+qa[pod_name] = qa[k8s_object]
+qa = qa[px.contains(qa[src_name], requestor_filter)]
+px.display(qa['time_', src_name, pod_name, 'latency_p50',
               'latency_p90', 'latency_p99', 'error_rate', 'rps'], 'test')
-
-###############################################################
-# The services that this service receives requests from.
-###############################################################
-
-df = filt_df.groupby([k8s_object, ip]).agg(count=(ip, px.count))
-df['pod_id'] = px.ip_to_pod_id(df[ip])
-# # Enable if you want pod name
-# df[src_name] = px.pod_id_to_pod_name(df.pod_id)
-df[src_name] = px.pod_id_to_service_name(df.pod_id)
-df[dest_name] = df[k8s_object]
-res = df[px.contains(df[dest_name], match_name)]
-res = res.groupby([src_name, dest_name]).agg(count=(src_name, px.count))
-px.display(res[[src_name, dest_name]], 'receives_from')
-
-###############################################################
-# The services that this service sends requests to.
-###############################################################
-
-rcv = df[px.contains(df[src_name], match_name)]
-rcv = rcv.groupby([src_name, dest_name]).agg(count=(src_name, px.count))
-px.display(rcv[[src_name, dest_name]], 'talks_to')
