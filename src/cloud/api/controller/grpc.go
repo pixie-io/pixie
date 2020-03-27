@@ -176,6 +176,9 @@ func (v *VizierClusterInfo) CreateCluster(ctx context.Context, request *cloudapi
 	sCtx, err := authcontext.FromContext(ctx)
 	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
+		fmt.Sprintf("bearer %s", sCtx.AuthToken))
+
 	clusterID, err := v.VzMgr.CreateVizierCluster(ctx, &vzmgrpb.CreateVizierClusterRequest{
 		OrgID: pbutils.ProtoFromUUIDStrOrNil(orgIDstr),
 	})
