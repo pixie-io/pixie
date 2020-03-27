@@ -125,14 +125,18 @@ StatusOr<std::filesystem::path> GetChildRelPath(std::filesystem::path child,
   return res;
 }
 
-std::vector<PathSplit> EnumerateParentPaths(std::filesystem::path path) {
+std::vector<PathSplit> EnumerateParentPaths(const std::filesystem::path& path) {
   std::vector<PathSplit> res;
 
-  std::filesystem::path child = path.filename();
-  std::filesystem::path parent = path.parent_path();
+  std::filesystem::path child;
+  std::filesystem::path parent = path;
   while (parent != parent.parent_path()) {
     res.push_back(PathSplit{parent, child});
-    child = parent.filename() / child;
+    if (child.empty()) {
+      child = parent.filename();
+    } else {
+      child = parent.filename() / child;
+    }
     parent = parent.parent_path();
   }
   if (path.is_absolute()) {

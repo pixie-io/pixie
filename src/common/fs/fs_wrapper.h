@@ -62,7 +62,7 @@ struct PathSplit {
  * Returns a list of pairs of paths, such that parent / child == path.
  * They are ordered from longest to shorted parents.
  */
-std::vector<PathSplit> EnumerateParentPaths(std::filesystem::path path);
+std::vector<PathSplit> EnumerateParentPaths(const std::filesystem::path& path);
 
 }  // namespace fs
 }  // namespace pl

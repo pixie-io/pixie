@@ -122,12 +122,13 @@ bool operator==(const PathSplit& lhs, const PathSplit& rhs) {
 }
 
 TEST_F(FSWrapperTest, EnumerateParentPaths) {
+  EXPECT_THAT(EnumerateParentPaths("a/b/c/d"),
+              ElementsAre(PathSplit{"a/b/c/d", ""}, PathSplit{"a/b/c", "d"},
+                          PathSplit{"a/b", "c/d"}, PathSplit{"a", "b/c/d"}));
   EXPECT_THAT(
-      EnumerateParentPaths("a/b/c/d"),
-      ElementsAre(PathSplit{"a/b/c", "d"}, PathSplit{"a/b", "c/d"}, PathSplit{"a", "b/c/d"}));
-  EXPECT_THAT(EnumerateParentPaths("/a/b/c/d"),
-              ElementsAre(PathSplit{"/a/b/c", "d"}, PathSplit{"/a/b", "c/d"},
-                          PathSplit{"/a", "b/c/d"}, PathSplit{"/", "a/b/c/d"}));
+      EnumerateParentPaths("/a/b/c/d"),
+      ElementsAre(PathSplit{"/a/b/c/d", ""}, PathSplit{"/a/b/c", "d"}, PathSplit{"/a/b", "c/d"},
+                  PathSplit{"/a", "b/c/d"}, PathSplit{"/", "a/b/c/d"}));
 }
 
 }  // namespace fs
