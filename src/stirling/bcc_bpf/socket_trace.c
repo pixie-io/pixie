@@ -686,36 +686,40 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficD
 }
 
 /***********************************************************
- * BPF syscall probe functions
+ * BPF syscall processing functions
  ***********************************************************/
 
+// TODO(oazizi): For consistency, may want to pull reading the return value out
+//               to the outer layer, just like the args.
+
 static __inline void process_syscall_open(struct pt_regs* ctx, u64 id) {
-  int ret_fd = PT_REGS_RC(ctx);
-  if (ret_fd < 0) {
+  int fd = PT_REGS_RC(ctx);
+
+  if (fd < 0) {
     return;
   }
 
-  set_open_file(id, ret_fd);
+  set_open_file(id, fd);
 }
 
 static __inline void process_syscall_connect(struct pt_regs* ctx, u64 id,
-                                             const struct connect_args_t* connect_args) {
+                                             const struct connect_args_t* args) {
   u32 tgid = id >> 32;
+  int ret_val = PT_REGS_RC(ctx);
 
   if (!should_trace_tgid(tgid)) {
     return;
   }
 
-  if (connect_args->fd < 0) {
+  if (args->fd < 0) {
     return;
   }
 
   // Only record IP (IPV4 and IPV6) connections.
-  if (!(connect_args->addr->sa_family == AF_INET || connect_args->addr->sa_family == AF_INET6)) {
+  if (!(args->addr->sa_family == AF_INET || args->addr->sa_family == AF_INET6)) {
     return;
   }
 
-  int ret_val = PT_REGS_RC(ctx);
   // We allow EINPROGRESS to go through, which indicates that a NON_BLOCK socket is undergoing
   // handshake.
   //
@@ -723,43 +727,41 @@ static __inline void process_syscall_connect(struct pt_regs* ctx, u64 id,
   // won't see spurious events.
   //
   // In case a separate connect() is called concurrently in another thread, and succeeds
-  // immediately, any write or read on the fd would be attributed to the new connection, which would
-  // have a new generation number. That is harmless, and only result into inflated generation
-  // numbers.
+  // immediately, any write or read on the fd would be attributed to the new connection.
   if (ret_val < 0 && ret_val != -EINPROGRESS) {
     return;
   }
 
-  submit_new_conn(ctx, tgid, (u32)connect_args->fd, *((struct sockaddr_in6*)connect_args->addr));
+  submit_new_conn(ctx, tgid, (u32)args->fd, *((struct sockaddr_in6*)args->addr));
 }
 
 static __inline void process_syscall_accept(struct pt_regs* ctx, u64 id,
-                                            const struct accept_args_t* accept_args) {
+                                            const struct accept_args_t* args) {
   u32 tgid = id >> 32;
+  int ret_fd = PT_REGS_RC(ctx);
 
   if (!should_trace_tgid(tgid)) {
     return;
   }
 
-  int ret_fd = PT_REGS_RC(ctx);
   if (ret_fd < 0) {
     return;
   }
 
   // Only record IP (IPV4 and IPV6) connections.
-  if (!(accept_args->addr->sa_family == AF_INET || accept_args->addr->sa_family == AF_INET6)) {
+  if (!(args->addr->sa_family == AF_INET || args->addr->sa_family == AF_INET6)) {
     return;
   }
 
-  submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)accept_args->addr));
+  submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)args->addr));
 }
 
 static __inline void process_syscall_write_send(struct pt_regs* ctx, u64 id,
-                                                const struct data_args_t* write_args) {
+                                                const struct data_args_t* args) {
   u32 tgid = id >> 32;
   ssize_t bytes_written = PT_REGS_RC(ctx);
 
-  if (write_args->fd < 0) {
+  if (args->fd < 0) {
     return;
   }
 
@@ -768,7 +770,7 @@ static __inline void process_syscall_write_send(struct pt_regs* ctx, u64 id,
     return;
   }
 
-  if (is_open_file(id, write_args->fd)) {
+  if (is_open_file(id, args->fd)) {
     return;
   }
 
@@ -776,7 +778,7 @@ static __inline void process_syscall_write_send(struct pt_regs* ctx, u64 id,
     return;
   }
 
-  struct conn_info_t* conn_info = get_conn_info(tgid, write_args->fd);
+  struct conn_info_t* conn_info = get_conn_info(tgid, args->fd);
   if (conn_info == NULL) {
     return;
   }
@@ -787,17 +789,17 @@ static __inline void process_syscall_write_send(struct pt_regs* ctx, u64 id,
   // TODO(yzhao): Split the interface such that the singular buf case and multiple bufs in msghdr
   // are handled separately without mixed interface. The plan is to factor out helper functions for
   // lower-level functionalities, and call them separately for each case.
-  if (write_args->buf != NULL) {
-    update_traffic_class(conn_info, kEgress, write_args->buf, bytes_written);
-  } else if (write_args->iov != NULL && write_args->iovlen > 0) {
+  if (args->buf != NULL) {
+    update_traffic_class(conn_info, kEgress, args->buf, bytes_written);
+  } else if (args->iov != NULL && args->iovlen > 0) {
     struct iovec iov_cpy;
-    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &write_args->iov[0]);
+    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &args->iov[0]);
     update_traffic_class(conn_info, kEgress, iov_cpy.iov_base, iov_cpy.iov_len);
   }
 
   // Filter for request or response based on control flags and protocol type.
   if (!should_trace_conn(conn_info)) {
-    u64 tgid_fd = gen_tgid_fd(tgid, write_args->fd);
+    u64 tgid_fd = gen_tgid_fd(tgid, args->fd);
     if (!conn_info->addr_valid) {
       conn_info_map.delete(&tgid_fd);
     }
@@ -810,20 +812,19 @@ static __inline void process_syscall_write_send(struct pt_regs* ctx, u64 id,
   }
 
   // TODO(yzhao): Same TODO for split the interface.
-  if (write_args->buf != NULL) {
-    perf_submit_wrapper(ctx, kEgress, write_args->buf, bytes_written, conn_info, event);
-  } else if (write_args->iov != NULL && write_args->iovlen > 0) {
-    perf_submit_iovecs(ctx, kEgress, write_args->iov, write_args->iovlen, bytes_written, conn_info,
-                       event);
+  if (args->buf != NULL) {
+    perf_submit_wrapper(ctx, kEgress, args->buf, bytes_written, conn_info, event);
+  } else if (args->iov != NULL && args->iovlen > 0) {
+    perf_submit_iovecs(ctx, kEgress, args->iov, args->iovlen, bytes_written, conn_info, event);
   }
 }
 
 static __inline void process_syscall_read_recv(struct pt_regs* ctx, u64 id,
-                                               const struct data_args_t* read_args) {
+                                               const struct data_args_t* args) {
   u32 tgid = id >> 32;
   ssize_t bytes_read = PT_REGS_RC(ctx);
 
-  if (read_args->fd < 0) {
+  if (args->fd < 0) {
     return;
   }
 
@@ -832,7 +833,7 @@ static __inline void process_syscall_read_recv(struct pt_regs* ctx, u64 id,
     return;
   }
 
-  if (is_open_file(id, read_args->fd)) {
+  if (is_open_file(id, args->fd)) {
     return;
   }
 
@@ -840,7 +841,7 @@ static __inline void process_syscall_read_recv(struct pt_regs* ctx, u64 id,
     return;
   }
 
-  struct conn_info_t* conn_info = get_conn_info(tgid, read_args->fd);
+  struct conn_info_t* conn_info = get_conn_info(tgid, args->fd);
   if (conn_info == NULL) {
     return;
   }
@@ -849,17 +850,17 @@ static __inline void process_syscall_read_recv(struct pt_regs* ctx, u64 id,
   // then call conn_info_map.delete(&tgid_fd) to avoid a BPF map leak.
 
   // TODO(yzhao): Same TODO for split the interface.
-  if (read_args->buf != NULL) {
-    update_traffic_class(conn_info, kIngress, read_args->buf, bytes_read);
-  } else if (read_args->iov != NULL && read_args->iovlen > 0) {
+  if (args->buf != NULL) {
+    update_traffic_class(conn_info, kIngress, args->buf, bytes_read);
+  } else if (args->iov != NULL && args->iovlen > 0) {
     struct iovec iov_cpy;
-    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &read_args->iov[0]);
+    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &args->iov[0]);
     // Ensure we are not reading beyond the available data.
     const size_t buf_size = iov_cpy.iov_len < bytes_read ? iov_cpy.iov_len : bytes_read;
     update_traffic_class(conn_info, kIngress, iov_cpy.iov_base, buf_size);
   }
 
-  u64 tgid_fd = gen_tgid_fd(tgid, read_args->fd);
+  u64 tgid_fd = gen_tgid_fd(tgid, args->fd);
 
   // Filter for request or response based on control flags and protocol type.
   if (!should_trace_conn(conn_info)) {
@@ -878,35 +879,34 @@ static __inline void process_syscall_read_recv(struct pt_regs* ctx, u64 id,
   }
 
   // TODO(yzhao): Same TODO for split the interface.
-  if (read_args->buf != NULL) {
-    perf_submit_wrapper(ctx, kIngress, read_args->buf, bytes_read, conn_info, event);
-  } else if (read_args->iov != NULL && read_args->iovlen > 0) {
+  if (args->buf != NULL) {
+    perf_submit_wrapper(ctx, kIngress, args->buf, bytes_read, conn_info, event);
+  } else if (args->iov != NULL && args->iovlen > 0) {
     // TODO(yzhao): iov[0] is copied twice, once in calling update_traffic_class(), and here.
     // This happens to the write probes as well, but the calls are placed in the entry and return
     // probes respectively. Consider remove one copy.
-    perf_submit_iovecs(ctx, kIngress, read_args->iov, read_args->iovlen, bytes_read, conn_info,
-                       event);
+    perf_submit_iovecs(ctx, kIngress, args->iov, args->iovlen, bytes_read, conn_info, event);
   }
   return;
 }
 
 static __inline void process_syscall_close(struct pt_regs* ctx, u64 id,
                                            const struct close_args_t* close_args) {
+  u32 tgid = id >> 32;
+  int ret_val = PT_REGS_RC(ctx);
+
   if (close_args->fd < 0) {
     return;
   }
 
   clear_open_file(id, close_args->fd);
 
-  u32 tgid = id >> 32;
-
-  if (!should_trace_tgid(tgid)) {
+  if (ret_val < 0) {
+    // This close() call failed.
     return;
   }
 
-  int ret_val = PT_REGS_RC(ctx);
-  if (ret_val < 0) {
-    // This close() call failed.
+  if (!should_trace_tgid(tgid)) {
     return;
   }
 
