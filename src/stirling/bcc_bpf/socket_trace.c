@@ -17,10 +17,9 @@
 
 // This keeps instruction count below BPF's limit of 4096 per probe.
 // TODO(yzhao): Investigate using tail call to reuse stack space to support loop.
-// TODO(yzhao): Optimize the code to remove unneeded code, and increase the loop count.
 // TODO(PL-914): 4.13 and older kernel versions need smaller number, 10 is tested to work.
 // See the referenced Jira issue for more details.
-#define LOOP_LIMIT 35
+#define LOOP_LIMIT 50
 
 // Determines what percentage of events must be inferred as a certain type for us to consider the
 // connection to be of that type. Encoded as a numerator/denominator. Currently set to 20%. While
