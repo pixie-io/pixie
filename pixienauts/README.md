@@ -1,12 +1,12 @@
 <p align="center">
 
-  ![Pixie!](pixienaut_banner.png)
+  ![Pixie!](pixienaut_banner_v2.png)
 
 </p>
 
 ---
 
-## Pixienaut Community
+**Who are Pixienauts?** 
 
 [Pixienauts](https://pixielabs.ai/community) are early adopters who help shape Pixie's product and community for broad use by the end of 2020.  
 
@@ -31,7 +31,7 @@ We host bi-weekly video calls attended by Pixienauts, Pixie team members and inv
 
 **When:** [Bi-weekly call](https://calendar.google.com/calendar?cid=cGl4aWVsYWJzLmFpXzFvODd2anQ3OG1yNnFhbThnYTNwaHYxZGU0QGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20) on Friday at 10:30am PT / 5:30PM UTC
 
-**Format:** [Zoom call](https://zoom.us/j/610031572?pwd=WEMwUlgzWmtWa1cxTVhZcVR6c0Mxdz09)
+**Format:** [Zoom call](https://zoom.us/j/6604264204)
 
 **Agenda:** Each office hours has the following three sections with ad-hoc additions as necessary: 
 - Feedback from Pixienauts on ways to improve Pixie.
