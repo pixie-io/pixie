@@ -26,7 +26,7 @@ px run <script_name> -o json | jq -r .
 
 PXL has support for building visualizations, which can be viewed in Pixie's live UI. More details coming soon!
 
-We plan to open source our PXL scripts, open it up for contribution and back them using this git repository before launch.
+We plan to open source our PXL scripts, open it up for contribution and back them using this git repository before launch later this year.
 The rest of this page contains examples of the sample scripts.
 
 <details>
