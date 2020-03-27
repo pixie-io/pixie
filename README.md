@@ -10,25 +10,19 @@
 
 ---
 
-Pixie is being built to give engineers access to no-instrumentation, streaming & unsampled auto-telemetry to debug performance issues in real-time. 
+Pixie gives engineers access to no-instrumentation, streaming & unsampled auto-telemetry to debug performance issues in real-time. 
 
-Pixie's magical developer experience is enabled by three key design attributes:
-
-1. **No Instrumentation Collection:** Full-body network requests (via eBPF), metrics, logs & events collected without the need for code-changes and at less than 5% overhead. 
-2. **Edge Compute:**  Data storage and computation isolated within the customer's kubernetes cluster without the need to persist data outside the customer's environment.
-3. **Command Driven Consumption:** Data and signals programmatically accessed via the Pixie UI or Pixie CLI which are powered by an expressive API. 
-
-We're building up Pixie for broad use by the end of 2020 with an initial focus on Kubernetes workloads. 
-
-_If you are interesting in tinkering with our beta,  feel free to [sign-up](https://withpixie.ai/) and join our [community on slack](https://slackin.withpixie.ai/). If you want to learn more about use check out our [company overview deck](https://docsend.com/view/kj38d76)._
-
+We're building up Pixie for broad use by the end of 2020 with an initial focus on Kubernetes workloads. If you are interested, feel free to [try our beta](https://withpixie.ai/) and join our [community on slack](https://slackin.withpixie.ai/).
 
 <details>
   <summary><strong>Table of contents</strong></summary>
 
 - [Quick Start](#quick-start)
+- [Run Scripts](#run-scripts)
 - [Demos](#Demos)
 - [Contributing](#contributing)
+- [Open Source](#open-source)
+- [Under the Hood](#under-the-hood)
 - [About Us](#about-us)
 </details>
 
@@ -53,14 +47,65 @@ _If you are interesting in tinkering with our beta,  feel free to [sign-up](http
 
 4. **Lift off! 🚀**
 
-    Start using the CLI by running `px help` in your termina or view your preconfigured view in the Live UI at `https://work.withpixie.ai/`
+    Start using the CLI by running `px help` in your terminal or view your preconfigured view in the Live UI at `https://work.withpixie.ai/`
 
 _For detailed information on compatibility & requirements check out our [docs](https://work.withpixie.ai/docs/getting-started/compatibility-requirements) or  ping us on [slack](https://slackin.withpixie.ai/)_
 
 
+## Run Scripts
+
+Once installed, you can access data in seconds. 
+
+1. **Deploy a Demo App**
+
+    Run this to deploy [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by [Weaveworks](https://www.weave.works/):
+    
+    `px demo deploy px-sock-shop`
+
+    Skip this step, if you have pre-existing workloads running that you want to monitor.
+
+
+2. **List Scripts**
+
+    View pre-built scrips you can run:
+
+    `px scripts list`
+
+3. **Run Scripts**
+
+    Full body network requests:
+
+    `px run px/service_info`
+
+    Service level metrics:
+
+    `px run px/service_info`
+
+    Infra metrics:
+
+    `px/pod_memory_usage`
+
+    And many more....
+
+
+4. **Integrate and Visualize Results**
+
+    You can transform and pipe your script output into any other system or workflow:
+
+    `px run px/pod_memory_usage  -o json| jq -r .`
+
+    Or, visualize it in our Live UI: 
+
+    `https://work.withpixie.ai/live`
+
+    Our Live UI is super raw and will be usable by April-end
+
+
+_To see more script examples and learn hot to write your own, check out our [docs](https://work.withpixie.ai/docs) for more guides_
+
 ## Demos
 
-**Install walkthrough**
+**How to install**
 
 [![Pixie Deploy Overview](https://img.youtube.com/vi/KYjBKiJWQbw/0.jpg)](https://www.youtube.com/watch?v=KYjBKiJWQbw)
 
@@ -82,10 +127,22 @@ _For more demos, check out our  [youtube](https://www.youtube.com/channel/UCOMCD
 
 ## Open Source
 
-Along with building Pixie as a freemium SaaS product, contributing open and accessable projects to the broader developer community is integral to our roadmap. We currently contribute in two ways:
+Along with building Pixie as a freemium SaaS product, contributing open and accessible projects to the broader developer community is integral to our roadmap. We currently contribute in two ways:
 
 - **Open Sourced Pixie Platform Primitives:** We plan to open-source components of the Pixie Platform which can be independently useful to developers after our Beta. These include our Community Pxl Scripts, Pixie CLI, eBPF Collectors etc. If you are interested in contributing during our Beta, [email us](mailto:community@pixielabs.ai).
 - **Unlimited Pixie Community Access:** Our [Pixie Community](https://work.withpixie.ai/) product is a completely free offering with all core features of the Pixie developer experience. We will invest in this offering for the long term to give developers across the world an easy and zero cost way to use Pixie.
+
+## Under the Hood
+
+Three fundamental innovations enable Pixie's magical developer experience: 
+
+**Progressive Instrumentation:**  Pixie Edge Modules (“PEMs”) collect full body request traces (via eBPF), system metrics & K8s events without the need for code-changes and at less than 5% overhead. Custom metrics, traces & logs can be integrated into the Pixie Command Module. 
+
+**In-Cluster  Edge Compute:** The Pixie Command Module is deployed in your K8s cluster to isolate data storage and computation  within your environment for  drastically better intelligence, performance & security.
+
+**Command Driven Interfaces:** Programmatically access data via the Pixie CLI and Pixie UI which are designed ground-up to allow you to run analyses & debug scenarios faster than any other developer tool.
+
+_For more information on Pixie Platform's architecture, check out our [docs](https://work.withpixie.ai/docs) or [overview deck](https://docsend.com/view/kj38d76)_
 
 ## Resources
 
