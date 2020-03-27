@@ -113,7 +113,7 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 
   CheckTracker();
-  UpdateTimestamps(event->attr.return_timestamp_ns);
+  UpdateTimestamps(event->attr.timestamp_ns);
 
   switch (event->attr.direction) {
     case TrafficDirection::kEgress: {

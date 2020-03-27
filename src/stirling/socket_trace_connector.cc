@@ -446,8 +446,7 @@ uint64_t GetConnMapKey(struct conn_id_t conn_id) {
 }
 
 void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEvent* pb) {
-  pb->mutable_attr()->set_entry_timestamp_ns(event.attr.entry_timestamp_ns);
-  pb->mutable_attr()->set_return_timestamp_ns(event.attr.return_timestamp_ns);
+  pb->mutable_attr()->set_timestamp_ns(event.attr.timestamp_ns);
   pb->mutable_attr()->mutable_conn_id()->set_pid(event.attr.conn_id.upid.pid);
   pb->mutable_attr()->mutable_conn_id()->set_start_time_ns(
       event.attr.conn_id.upid.start_time_ticks);
@@ -464,8 +463,7 @@ void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEv
 }  // namespace
 
 void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> event) {
-  event->attr.entry_timestamp_ns += ClockRealTimeOffset();
-  event->attr.return_timestamp_ns += ClockRealTimeOffset();
+  event->attr.timestamp_ns += ClockRealTimeOffset();
   if (perf_buffer_events_output_stream_ != nullptr) {
     sockeventpb::SocketDataEvent pb;
     SocketDataEventToPB(*event, &pb);

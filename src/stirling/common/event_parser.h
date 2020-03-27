@@ -147,7 +147,7 @@ class EventParser {
    */
   void Append(const SocketDataEvent& event) {
     msgs_.push_back(event.msg);
-    ts_nses_.push_back(event.attr.return_timestamp_ns);
+    ts_nses_.push_back(event.attr.timestamp_ns);
     msgs_size_ += event.msg.size();
   }
 

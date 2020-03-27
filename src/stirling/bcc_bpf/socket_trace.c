@@ -235,7 +235,7 @@ static __inline struct socket_data_event_t* fill_event(enum TrafficDirection dir
   if (event == NULL) {
     return NULL;
   }
-  event->attr.return_timestamp_ns = bpf_ktime_get_ns();
+  event->attr.timestamp_ns = bpf_ktime_get_ns();
   event->attr.direction = direction;
   event->attr.conn_id = conn_info->conn_id;
   event->attr.traffic_class = conn_info->traffic_class;

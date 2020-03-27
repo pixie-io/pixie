@@ -102,10 +102,8 @@ struct socket_data_event_t {
   // TODO(yzhao): When adding http2_frame_offset, use a union, so that it allows adding similar data
   // for other protocols.
   struct attr_t {
-    // The time stamp when syscall entry probe was triggered.
-    uint64_t entry_timestamp_ns;
-    // The time stamp when syscall return probe was triggered.
-    uint64_t return_timestamp_ns;
+    // The timestamp when syscall completed (return probe was triggered).
+    uint64_t timestamp_ns;
     // Connection identifier (PID, FD, etc.).
     struct conn_id_t conn_id;
     // The protocol on the connection (HTTP, MySQL, etc.), and the server-client role.

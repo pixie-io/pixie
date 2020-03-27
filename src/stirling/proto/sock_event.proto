@@ -21,8 +21,7 @@ message ConnID {
 
 message SocketDataEvent {
   message Attribute {
-    uint64 entry_timestamp_ns = 7;
-    uint64 return_timestamp_ns = 1;
+    uint64 timestamp_ns = 1;
     ConnID  conn_id = 2;
     TrafficClass traffic_class = 3;
     uint32 direction = 4;

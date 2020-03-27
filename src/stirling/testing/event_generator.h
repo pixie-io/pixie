@@ -53,7 +53,7 @@ class EventGenerator {
     event.attr.direction = direction;
     event.attr.traffic_class.protocol = TProtocol;
     event.attr.traffic_class.role = kRoleClient;
-    event.attr.return_timestamp_ns = clock_->now();
+    event.attr.timestamp_ns = clock_->now();
     event.attr.conn_id.upid.pid = kPID;
     event.attr.conn_id.fd = kFD;
     event.attr.conn_id.tsid = tsid_;
@@ -143,7 +143,7 @@ static constexpr std::string_view kHTTP2EndStreamDataFrame =
 
 SocketDataEvent DataEventWithTimestamp(std::string_view msg, uint64_t timestamp) {
   SocketDataEvent event;
-  event.attr.return_timestamp_ns = timestamp;
+  event.attr.timestamp_ns = timestamp;
   event.attr.msg_size = msg.size();
   event.msg = msg;
   return event;
