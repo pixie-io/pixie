@@ -64,28 +64,15 @@ Once installed, you can access data in seconds.
 
     Skip this step, if you have pre-existing workloads running that you want to monitor.
 
-
-2. **List Scripts**
-
-    View pre-built scrips you can run:
-
-    `px scripts list`
-
 3. **Run Scripts**
 
-    Full body network requests:
+    Full body network requests: `px run px/service_info`
 
-    `px run px/service_info`
+    Service level metrics: `px run px/service_info`
 
-    Service level metrics:
+    Infra metrics: `px/pod_memory_usage`
 
-    `px run px/service_info`
-
-    Infra metrics:
-
-    `px/pod_memory_usage`
-
-    And many more....
+    View many more: `px scripts list`
 
 
 4. **Integrate and Visualize Results**
@@ -94,6 +81,7 @@ Once installed, you can access data in seconds.
 
     `px run px/pod_memory_usage  -o json| jq -r .`
 
+    
     Or, visualize it in our Live UI: 
 
     `https://work.withpixie.ai/live`

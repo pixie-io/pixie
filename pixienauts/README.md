@@ -51,3 +51,4 @@ We host bi-weekly video calls attended by Pixienauts, Pixie team members and inv
 - [Mailing List](mailto:pixienauts@pixielabs.ai)
 - [Pixie Docs](https://work.withpixie.ai/docs)
 - [Shared GDrive Folder](https://drive.google.com/drive/folders/0AMBzBO92FQaUUk9PVA)
+- [Meeting Notes](https://drive.google.com/drive/folders/1FPX1yi9o87KGVK1icvDpnoLHicvHhuyk)
