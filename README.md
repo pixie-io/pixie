@@ -10,7 +10,7 @@
 
 ---
 
-Pixie gives engineers access to no-instrumentation, streaming & unsampled auto-telemetry to debug performance issues in real-time. 
+Pixie gives engineers access to no-instrumentation, streaming & unsampled auto-telemetry to debug performance issues in real-time.
 
 We're building up Pixie for broad use by the end of 2020 with an initial focus on Kubernetes workloads. If you are interested, feel free to [try our beta](https://withpixie.ai/) and join our [community on slack](https://slackin.withpixie.ai/).
 
@@ -31,7 +31,7 @@ We're building up Pixie for broad use by the end of 2020 with an initial focus o
 
 1. **Create account**
 
-    Visit our [product page](https://work.withpixie.ai/) and signup with your google account. 
+    Visit our [product page](https://work.withpixie.ai/) and signup with your google account.
 
 2. **Install**
 
@@ -54,12 +54,12 @@ _For detailed information on compatibility & requirements check out our [docs](h
 
 ## Run Scripts
 
-Once installed, you can access data in seconds. 
+Once installed, you can access data in seconds.
 
 1. **Deploy a Demo App**
 
     Run this to deploy [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by [Weaveworks](https://www.weave.works/):
-    
+
     `px demo deploy px-sock-shop`
 
     Skip this step, if you have pre-existing workloads running that you want to monitor.
@@ -81,8 +81,8 @@ Once installed, you can access data in seconds.
 
     `px run px/pod_memory_usage  -o json| jq -r .`
 
-    
-    Or, visualize it in our Live UI: 
+
+    Or, visualize it in our Live UI:
 
     `https://work.withpixie.ai/live`
 
@@ -98,12 +98,12 @@ _To see more script examples and learn how to write your own, check out our [doc
 [![Pixie Deploy Overview](https://img.youtube.com/vi/iMh2f8abTYU/0.jpg)](https://www.youtube.com/watch?v=iMh2f8abTYU)
 
 
-**Use `px` to run scripts**
+**Use `px` to list/run scripts and consuming results with tools like [jq](https://stedolan.github.io/jq/).**
 
 ![CLI Demo](./cli_demo.svg)
 
 
-_For more demos, check out our  [youtube](https://www.youtube.com/channel/UCOMCDRvBVNIS0lCyOmst7eg/videos)._ 
+_For more demos, check out our  [youtube](https://www.youtube.com/channel/UCOMCDRvBVNIS0lCyOmst7eg/videos)._
 
 ## Contributing
 
@@ -122,9 +122,9 @@ Along with building Pixie as a freemium SaaS product, contributing open and acce
 
 ## Under the Hood
 
-Three fundamental innovations enable Pixie's magical developer experience: 
+Three fundamental innovations enable Pixie's magical developer experience:
 
-**Progressive Instrumentation:**  Pixie Edge Modules (“PEMs”) collect full body request traces (via eBPF), system metrics & K8s events without the need for code-changes and at less than 5% overhead. Custom metrics, traces & logs can be integrated into the Pixie Command Module. 
+**Progressive Instrumentation:**  Pixie Edge Modules (“PEMs”) collect full body request traces (via eBPF), system metrics & K8s events without the need for code-changes and at less than 5% overhead. Custom metrics, traces & logs can be integrated into the Pixie Command Module.
 
 **In-Cluster  Edge Compute:** The Pixie Command Module is deployed in your K8s cluster to isolate data storage and computation  within your environment for  drastically better intelligence, performance & security.
 
