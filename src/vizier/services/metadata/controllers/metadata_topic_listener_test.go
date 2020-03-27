@@ -109,7 +109,16 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 	mockMdStore.
 		EXPECT().
 		GetSubscriberResourceVersion("cloud").
-		Return("0", nil)
+		Return("", nil)
+	mockMdStore.
+		EXPECT().
+		GetMetadataUpdatesForHostname("", "", "1_0").
+		Return([]*metadatapb.ResourceUpdate{
+			&metadatapb.ResourceUpdate{
+				ResourceVersion:     "0",
+				PrevResourceVersion: "",
+			},
+		}, nil)
 	mockMdStore.
 		EXPECT().
 		UpdateSubscriberResourceVersion("cloud", "1_0")

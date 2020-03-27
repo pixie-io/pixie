@@ -95,6 +95,17 @@ func (m *MetadataTopicListener) HandleUpdate(update *UpdateMessage) {
 		return
 	}
 
+	if prevRV == "" { // This should only happen on the first update we ever send from Vizier->Cloud.
+		updates, err := m.mds.GetMetadataUpdatesForHostname("", "", update.Message.ResourceVersion)
+		if err != nil {
+			log.WithError(err).Error("Could not fetch previous updates to get PrevResourceVersion")
+			return
+		}
+		if len(updates) > 0 {
+			prevRV = updates[len(updates)-1].ResourceVersion
+		}
+	}
+
 	// We don't want to modify the prevRV in the update message for any other subscribers.
 	copiedUpdate := *(update.Message)
 	copiedUpdate.PrevResourceVersion = prevRV
