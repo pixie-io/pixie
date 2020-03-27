@@ -389,3 +389,25 @@ sh_test(
     ],
     deps = ["//src/stirling/scripts:sh_library"],
 )
+
+sh_test(
+    name = "stirling_wrapper_jvm_stats_test",
+    srcs = ["stirling_wrapper_jvm_stats_test.sh"],
+    args = [
+        "$(location :stirling_wrapper_image.tar)",
+        "$(location //src/stirling/testing/java:hello_world_image.tar)",
+        "$(location //src/stirling/testing/java:HelloWorld)",
+    ],
+    data = [
+        ":stirling_wrapper_image.tar",
+        "//src/stirling/testing/java:hello_world_image.tar",
+        "//src/stirling/testing/java:HelloWorld",
+    ],
+    tags = [
+        "requires_bpf",
+        # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
+        # which will emit warnings, that will then be considered a test failure.
+        "exclusive",
+    ],
+    deps = ["//src/stirling/scripts:sh_library"],
+)

@@ -31,3 +31,14 @@ function bazel_build() {
   # ...
   echo "$bazel_out" | grep -A1 "^Target" | tail -1 | sed -e 's/^[[:space:]]*//'
 }
+
+function docker_stop() {
+  container_name=$1
+  echo "Stopping container $container_name ..."
+  docker container stop "$container_name"
+}
+
+function docker_load() {
+  image=$1
+  docker load -i "$image" | awk '/Loaded image/ {print $NF}'
+}
