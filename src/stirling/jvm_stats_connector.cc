@@ -38,6 +38,11 @@ absl::flat_hash_set<md::UPID> JVMStatsConnector::FindJavaUPIDs(const ConnectorCo
 
   absl::flat_hash_set<md::UPID> java_upids = prev_scanned_java_upids_;
   for (const auto& [upid, proc_pid_path] : new_upid_proc_path_map) {
+    // The host PID 1 is not a Java app. But ProcParser::ResolveMountPoint() is confused.
+    // TODO(yzhao): Look for more robust mechanism.
+    if (upid.pid() == 1) {
+      continue;
+    }
     java_upids.insert(upid);
   }
 
@@ -46,23 +51,7 @@ absl::flat_hash_set<md::UPID> JVMStatsConnector::FindJavaUPIDs(const ConnectorCo
 
 namespace {
 
-StatusOr<std::string> ReadHsperfDataOverlayFS(pid_t pid) {
-  PL_ASSIGN_OR_RETURN(const std::filesystem::path hsperf_data_path, HsperfdataPath(pid));
-
-  const std::filesystem::path proc_pid_path =
-      system::Config::GetInstance().proc_path() / std::to_string(pid);
-  PL_ASSIGN_OR_RETURN(std::filesystem::path hsperf_data_container_path,
-                      ResolveProcessPath(proc_pid_path, hsperf_data_path));
-
-  const std::filesystem::path host_path = system::Config::GetInstance().host_path();
-  hsperf_data_container_path = fs::JoinPath({&host_path, &hsperf_data_container_path});
-
-  PL_RETURN_IF_ERROR(Exists(hsperf_data_container_path));
-
-  return ReadFileToString(hsperf_data_container_path);
-}
-
-StatusOr<std::string> ReadHsperfDataMountInfo(pid_t pid) {
+StatusOr<std::string> ReadHsperfData(pid_t pid) {
   PL_ASSIGN_OR_RETURN(const std::filesystem::path hsperf_data_path, HsperfdataPath(pid));
 
   const auto& config = system::Config::GetInstance();
@@ -86,13 +75,7 @@ StatusOr<std::string> ReadHsperfDataMountInfo(pid_t pid) {
 }  // namespace
 
 Status JVMStatsConnector::ExportStats(const md::UPID& upid, DataTable* data_table) const {
-  // TODO(yzhao): Read everything from /proc/[pid]/mountinfo. So that we do not need to read two
-  // proc files.
-  auto hsperf_data_str_or = ReadHsperfDataOverlayFS(upid.pid());
-  if (!hsperf_data_str_or.ok()) {
-    hsperf_data_str_or = ReadHsperfDataMountInfo(upid.pid());
-  }
-  PL_ASSIGN_OR_RETURN(std::string hsperf_data_str, hsperf_data_str_or);
+  PL_ASSIGN_OR_RETURN(std::string hsperf_data_str, ReadHsperfData(upid.pid()));
 
   if (hsperf_data_str.empty()) {
     // Assumes only file reading failed, and is transient.

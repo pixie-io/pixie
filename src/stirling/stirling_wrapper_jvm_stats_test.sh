@@ -60,7 +60,7 @@ docker run --init --rm --detach --privileged --detach --name $stirling_wrapper_c
 
 sleep 20
 
-stirling_wrapper_output=$(docker container logs $stirling_wrapper_container_name 2>/dev/null)
+stirling_wrapper_output=$(docker container logs $stirling_wrapper_container_name 2>&1)
 java_pid=$(docker container inspect -f '{{.State.Pid}}' $java_container_name)
 java_tmp_mount_pid=$(docker container inspect -f '{{.State.Pid}}' $java_tmp_mount_container_name)
 
