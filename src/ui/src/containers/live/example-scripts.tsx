@@ -1,3 +1,4 @@
+import * as QueryString from 'query-string';
 import * as React from 'react';
 import {GetPxScripts, Script} from 'utils/script-bundle';
 
@@ -26,6 +27,8 @@ interface ScriptMap {
 const ExampleScripts = () => {
   const classes = useStyles();
 
+  const { executeScript } = React.useContext(LiveContext);
+
   const [liveScriptMap, setLiveScriptMap] = React.useState<ScriptMap>({});
   const [liveScripts, setLiveScripts] = React.useState<Script[]>([]);
 
@@ -41,6 +44,16 @@ const ExampleScripts = () => {
       }
       setLiveScriptMap(map);
       setLiveScripts(scripts);
+
+      // Set the script provided in query string.
+      const queryParams = QueryString.parse(window.location.search);
+      const scriptParam = typeof queryParams.script === 'string' ? queryParams.script : '';
+      const s = map[scriptParam];
+      if (s) {
+        setTitle(s.title);
+        setScripts(s.code, s.vis, s.placement);
+        executeScript();
+      }
     });
   }, []);
 
