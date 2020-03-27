@@ -756,17 +756,18 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, u64 id,
   submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)args->addr));
 }
 
-static __inline void process_syscall_write_send(struct pt_regs* ctx, u64 id,
-                                                const struct data_args_t* args) {
+static __inline void process_syscall_data(struct pt_regs* ctx, u64 id,
+                                          const enum TrafficDirection direction,
+                                          const struct data_args_t* args) {
   u32 tgid = id >> 32;
-  ssize_t bytes_written = PT_REGS_RC(ctx);
+  ssize_t bytes_count = PT_REGS_RC(ctx);
 
   if (args->fd < 0) {
     return;
   }
 
-  if (bytes_written <= 0) {
-    // This write() call failed, or has nothing to write.
+  if (bytes_count <= 0) {
+    // This read()/write() call failed, or processed nothing.
     return;
   }
 
@@ -790,74 +791,13 @@ static __inline void process_syscall_write_send(struct pt_regs* ctx, u64 id,
   // are handled separately without mixed interface. The plan is to factor out helper functions for
   // lower-level functionalities, and call them separately for each case.
   if (args->buf != NULL) {
-    update_traffic_class(conn_info, kEgress, args->buf, bytes_written);
-  } else if (args->iov != NULL && args->iovlen > 0) {
-    struct iovec iov_cpy;
-    bpf_probe_read(&iov_cpy, sizeof(struct iovec), &args->iov[0]);
-    update_traffic_class(conn_info, kEgress, iov_cpy.iov_base, iov_cpy.iov_len);
-  }
-
-  // Filter for request or response based on control flags and protocol type.
-  if (!should_trace_conn(conn_info)) {
-    u64 tgid_fd = gen_tgid_fd(tgid, args->fd);
-    if (!conn_info->addr_valid) {
-      conn_info_map.delete(&tgid_fd);
-    }
-    return;
-  }
-
-  struct socket_data_event_t* event = fill_event(kEgress, conn_info);
-  if (event == NULL) {
-    return;
-  }
-
-  // TODO(yzhao): Same TODO for split the interface.
-  if (args->buf != NULL) {
-    perf_submit_wrapper(ctx, kEgress, args->buf, bytes_written, conn_info, event);
-  } else if (args->iov != NULL && args->iovlen > 0) {
-    perf_submit_iovecs(ctx, kEgress, args->iov, args->iovlen, bytes_written, conn_info, event);
-  }
-}
-
-static __inline void process_syscall_read_recv(struct pt_regs* ctx, u64 id,
-                                               const struct data_args_t* args) {
-  u32 tgid = id >> 32;
-  ssize_t bytes_read = PT_REGS_RC(ctx);
-
-  if (args->fd < 0) {
-    return;
-  }
-
-  if (bytes_read <= 0) {
-    // This read() call failed, or read nothing.
-    return;
-  }
-
-  if (is_open_file(id, args->fd)) {
-    return;
-  }
-
-  if (!should_trace_tgid(tgid)) {
-    return;
-  }
-
-  struct conn_info_t* conn_info = get_conn_info(tgid, args->fd);
-  if (conn_info == NULL) {
-    return;
-  }
-
-  // Note: From this point on, if exiting early, and conn_info->addr_valid == 0,
-  // then call conn_info_map.delete(&tgid_fd) to avoid a BPF map leak.
-
-  // TODO(yzhao): Same TODO for split the interface.
-  if (args->buf != NULL) {
-    update_traffic_class(conn_info, kIngress, args->buf, bytes_read);
+    update_traffic_class(conn_info, direction, args->buf, bytes_count);
   } else if (args->iov != NULL && args->iovlen > 0) {
     struct iovec iov_cpy;
     bpf_probe_read(&iov_cpy, sizeof(struct iovec), &args->iov[0]);
     // Ensure we are not reading beyond the available data.
-    const size_t buf_size = iov_cpy.iov_len < bytes_read ? iov_cpy.iov_len : bytes_read;
-    update_traffic_class(conn_info, kIngress, iov_cpy.iov_base, buf_size);
+    const size_t buf_size = iov_cpy.iov_len < bytes_count ? iov_cpy.iov_len : bytes_count;
+    update_traffic_class(conn_info, direction, iov_cpy.iov_base, buf_size);
   }
 
   u64 tgid_fd = gen_tgid_fd(tgid, args->fd);
@@ -870,7 +810,7 @@ static __inline void process_syscall_read_recv(struct pt_regs* ctx, u64 id,
     return;
   }
 
-  struct socket_data_event_t* event = fill_event(kIngress, conn_info);
+  struct socket_data_event_t* event = fill_event(direction, conn_info);
   if (event == NULL) {
     if (!conn_info->addr_valid) {
       conn_info_map.delete(&tgid_fd);
@@ -880,12 +820,12 @@ static __inline void process_syscall_read_recv(struct pt_regs* ctx, u64 id,
 
   // TODO(yzhao): Same TODO for split the interface.
   if (args->buf != NULL) {
-    perf_submit_wrapper(ctx, kIngress, args->buf, bytes_read, conn_info, event);
+    perf_submit_wrapper(ctx, direction, args->buf, bytes_count, conn_info, event);
   } else if (args->iov != NULL && args->iovlen > 0) {
     // TODO(yzhao): iov[0] is copied twice, once in calling update_traffic_class(), and here.
     // This happens to the write probes as well, but the calls are placed in the entry and return
     // probes respectively. Consider remove one copy.
-    perf_submit_iovecs(ctx, kIngress, args->iov, args->iovlen, bytes_read, conn_info, event);
+    perf_submit_iovecs(ctx, direction, args->iov, args->iovlen, bytes_count, conn_info, event);
   }
   return;
 }
@@ -1044,7 +984,7 @@ int syscall__probe_ret_write(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
   if (write_args != NULL) {
-    process_syscall_write_send(ctx, id, write_args);
+    process_syscall_data(ctx, id, kEgress, write_args);
   }
 
   active_write_args_map.delete(&id);
@@ -1069,7 +1009,7 @@ int syscall__probe_ret_send(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
   if (write_args != NULL) {
-    process_syscall_write_send(ctx, id, write_args);
+    process_syscall_data(ctx, id, kEgress, write_args);
   }
 
   active_write_args_map.delete(&id);
@@ -1094,7 +1034,7 @@ int syscall__probe_ret_read(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
   if (read_args != NULL) {
-    process_syscall_read_recv(ctx, id, read_args);
+    process_syscall_data(ctx, id, kIngress, read_args);
   }
 
   active_read_args_map.delete(&id);
@@ -1119,7 +1059,7 @@ int syscall__probe_ret_recv(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
   if (read_args != NULL) {
-    process_syscall_read_recv(ctx, id, read_args);
+    process_syscall_data(ctx, id, kIngress, read_args);
   }
 
   active_read_args_map.delete(&id);
@@ -1144,7 +1084,7 @@ int syscall__probe_ret_sendto(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
   if (write_args != NULL) {
-    process_syscall_write_send(ctx, id, write_args);
+    process_syscall_data(ctx, id, kEgress, write_args);
   }
 
   active_write_args_map.delete(&id);
@@ -1172,7 +1112,7 @@ int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
   if (write_args != NULL) {
-    process_syscall_write_send(ctx, id, write_args);
+    process_syscall_data(ctx, id, kEgress, write_args);
   }
 
   active_write_args_map.delete(&id);
@@ -1200,7 +1140,7 @@ int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
   if (read_args != NULL) {
-    process_syscall_read_recv(ctx, id, read_args);
+    process_syscall_data(ctx, id, kIngress, read_args);
   }
 
   active_read_args_map.delete(&id);
@@ -1226,7 +1166,7 @@ int syscall__probe_ret_writev(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
   if (write_args != NULL) {
-    process_syscall_write_send(ctx, id, write_args);
+    process_syscall_data(ctx, id, kEgress, write_args);
   }
 
   active_write_args_map.delete(&id);
@@ -1252,7 +1192,7 @@ int syscall__probe_ret_readv(struct pt_regs* ctx) {
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
   if (read_args != NULL) {
-    process_syscall_read_recv(ctx, id, read_args);
+    process_syscall_data(ctx, id, kIngress, read_args);
   }
 
   active_read_args_map.delete(&id);
