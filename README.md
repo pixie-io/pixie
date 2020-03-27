@@ -95,7 +95,7 @@ _To see more script examples and learn how to write your own, check out our [doc
 
 **How to install**
 
-[![Pixie Deploy Overview](https://img.youtube.com/vi/KYjBKiJWQbw/0.jpg)](https://www.youtube.com/watch?v=KYjBKiJWQbw)
+[![Pixie Deploy Overview](https://img.youtube.com/vi/iMh2f8abTYU/0.jpg)](https://www.youtube.com/watch?v=iMh2f8abTYU)
 
 
 **Use `px` to run scripts**
