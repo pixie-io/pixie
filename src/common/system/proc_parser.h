@@ -211,6 +211,10 @@ class ProcParser {
     std::string root;
     // The pathname of the mount point relative to the process's root directory.
     std::string mount_point;
+    // The filesystem type in the form "type[.subtype]".
+    std::string fs_type;
+    // Per-superblock options (see mount(2)).
+    std::string options;
   };
 
   Status ReadMountInfos(pid_t pid, std::vector<MountInfo>* mount_infos) const;
