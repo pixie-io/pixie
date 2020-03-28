@@ -902,10 +902,10 @@ func (mds *KVMetadataStore) GetMetadataUpdates(hostname string) ([]*metadatapb.R
 // GetMetadataUpdatesForHostname get the metadata updates that should be sent to the hostname in the given range.
 func (mds *KVMetadataStore) GetMetadataUpdatesForHostname(hostname string, from string, to string) ([]*metadatapb.ResourceUpdate, error) {
 	// To/From can be of the format <resource_version>_<number> for pods/container updates. We want to parse the from into just <resource_version>.
-	from = strings.Split(from, "_")[0]
+	fromFormatted := strings.Split(from, "_")[0]
 
 	// Get all updates within range.
-	_, vals, err := mds.cache.GetWithRange(getResourceVersionMapKey(from), getResourceVersionMapKey(to))
+	_, vals, err := mds.cache.GetWithRange(getResourceVersionMapKey(fromFormatted), getResourceVersionMapKey(to))
 	if err != nil {
 		return nil, err
 	}
@@ -940,7 +940,23 @@ func (mds *KVMetadataStore) GetMetadataUpdatesForHostname(hostname string, from 
 		}
 	}
 
-	return updatePbs, nil
+	// Set prevRVs for updates.
+	allUpdates := make([]*metadatapb.ResourceUpdate, 0)
+	prevRV := ""
+	for i, u := range updatePbs {
+		// Since a single resourceUpdate entry in etcd can be equivalent to multiple updates
+		// (for example, a resourcePodUpdate actually maps to a pod update + container updates), updatesPb
+		// may contain updates that aren't within the requested range. We need to
+		// filter those out here.
+		if u.ResourceVersion >= from && u.ResourceVersion < to {
+			upb := updatePbs[i]
+			upb.PrevResourceVersion = prevRV
+			prevRV = upb.ResourceVersion
+			allUpdates = append(allUpdates, upb)
+		}
+	}
+
+	return allUpdates, nil
 }
 
 /* =============== Resource Versions ============== */

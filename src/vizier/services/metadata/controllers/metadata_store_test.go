@@ -1407,6 +1407,11 @@ func TestKVMetadataStore_GetMetadataUpdatesForHostname(t *testing.T) {
 		GetWithRange("/resourceVersionUpdate", "/resourceVersionUpdate/6").
 		Return(nil, nil, nil).
 		AnyTimes()
+	mockDs.
+		EXPECT().
+		GetWithRange("/resourceVersionUpdate", "/resourceVersionUpdate/5_1").
+		Return(nil, nil, nil).
+		AnyTimes()
 
 	clock := testingutils.NewTestClock(time.Unix(2, 0))
 	c := kvstore.NewCacheWithClock(mockDs, clock)
@@ -1462,7 +1467,15 @@ func TestKVMetadataStore_GetMetadataUpdatesForHostname(t *testing.T) {
 	assert.Equal(t, 3, len(updates))
 	assert.Equal(t, "1", updates[0].ResourceVersion)
 	assert.Equal(t, "5_0", updates[1].ResourceVersion)
+	assert.Equal(t, "1", updates[1].PrevResourceVersion)
 	assert.Equal(t, "5_1", updates[2].ResourceVersion)
+	assert.Equal(t, "5_0", updates[2].PrevResourceVersion)
+
+	updates, err = mds.GetMetadataUpdatesForHostname("", "", "5_1")
+	assert.Equal(t, 2, len(updates))
+	assert.Equal(t, "1", updates[0].ResourceVersion)
+	assert.Equal(t, "5_0", updates[1].ResourceVersion)
+	assert.Equal(t, "1", updates[1].PrevResourceVersion)
 
 	updates, err = mds.GetMetadataUpdatesForHostname("host", "", "6")
 	assert.Equal(t, 1, len(updates))
