@@ -13,10 +13,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 
-	// protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
+	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )
 
 func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
@@ -157,14 +157,15 @@ func TestMetadataTopicListener_HandleMessage(t *testing.T) {
 	updates := make([][]byte, 0)
 	// Create Metadata Service controller.
 	mdl, err := controllers.NewMetadataTopicListener(mockMdStore, mdh, func(topic string, b []byte) error {
-		assert.Equal(t, controllers.MetadataRequestPublishTopic, topic)
+		assert.Equal(t, messagebus.V2CTopic("1234"), topic)
 		updates = append(updates, b)
 		return nil
 	})
 
 	req := cvmsgspb.MetadataRequest{
-		From: "",
-		To:   "5",
+		From:  "",
+		To:    "5",
+		Topic: "1234",
 	}
 	reqAnyMsg, err := types.MarshalAny(&req)
 	assert.Nil(t, err)

@@ -146,6 +146,8 @@ message MetadataRequest {
 
     // The last resource version to get. This value is not inclusive and should not be left blank.
     string to = 2;
+    // The channel which the response should be sent on.
+    string topic = 3;
 }
 
 // MetadataResponse happens in response to a MetadataRequest and is used by Vizier to respond to metadata

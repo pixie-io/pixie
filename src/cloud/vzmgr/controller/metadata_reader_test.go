@@ -147,7 +147,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 					}
 					b, err := v2cMsg.Marshal()
 					assert.Nil(t, err)
-					nc.Publish(vzshard.V2CTopic("MetadataResponse", vzID), b)
+					nc.Publish(vzshard.V2CTopic(req.Topic, vzID), b)
 				})
 				assert.Nil(t, err)
 				defer mdSub.Unsubscribe()

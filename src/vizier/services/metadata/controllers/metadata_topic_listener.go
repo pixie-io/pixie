@@ -12,8 +12,6 @@ import (
 var (
 	// MetadataRequestSubscribeTopic is the channel which the listener is subscribed to for metadata requests.
 	MetadataRequestSubscribeTopic = messagebus.C2VTopic("MetadataRequest")
-	// MetadataRequestPublishTopic is the channel which the listener publishes metadata responses to.
-	MetadataRequestPublishTopic = messagebus.V2CTopic("MetadataResponse")
 	// MetadataUpdatesTopic is the channel which the listener publishes metadata updates to.
 	MetadataUpdatesTopic = messagebus.V2CTopic("DurableMetadataUpdates")
 )
@@ -79,7 +77,7 @@ func (m *MetadataTopicListener) HandleMessage(msg *nats.Msg) error {
 		return err
 	}
 
-	return m.sendMessage(MetadataRequestPublishTopic, b)
+	return m.sendMessage(messagebus.V2CTopic(pb.Topic), b)
 }
 
 // HandleUpdate sends the metadata update over the message bus.

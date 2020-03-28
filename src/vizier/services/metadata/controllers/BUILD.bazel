@@ -78,6 +78,7 @@ go_test(
         "//src/vizier/services/metadata/metadataenv:go_default_library",
         "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "//src/vizier/services/shared/agentpb:agent_pl_go_proto",
+        "//src/vizier/utils/messagebus:go_default_library",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
         "@com_github_golang_mock//gomock:go_default_library",

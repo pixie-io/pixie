@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -245,9 +246,14 @@ func (m *MetadataReader) processVizierUpdate(msg *stan.Msg, vzState *VizierState
 
 func (m *MetadataReader) getMissingUpdates(from string, to string, vzState *VizierState) (*nats.Msg, error) {
 	log.WithField("vizier", vzState.id.String()).WithField("from", from).WithField("to", to).Info("Making request for missing metadata updates")
+
+	topicID := uuid.NewV4()
+	topic := fmt.Sprintf("%s_%s", metadataResponseTopic, topicID.String())
+
 	mdReq := &cvmsgspb.MetadataRequest{
-		From: from,
-		To:   to,
+		From:  from,
+		To:    to,
+		Topic: topic,
 	}
 	reqBytes, err := wrapMetadataRequest(vzState.id, mdReq)
 	if err != nil {
@@ -256,7 +262,7 @@ func (m *MetadataReader) getMissingUpdates(from string, to string, vzState *Vizi
 
 	// Subscribe to topic that the response will be sent on.
 	subCh := make(chan *nats.Msg)
-	sub, err := m.nc.ChanSubscribe(vzshard.V2CTopic(metadataResponseTopic, vzState.id), subCh)
+	sub, err := m.nc.ChanSubscribe(vzshard.V2CTopic(topic, vzState.id), subCh)
 	defer sub.Unsubscribe()
 
 	pubTopic := vzshard.C2VTopic(metadataRequestTopic, vzState.id)
