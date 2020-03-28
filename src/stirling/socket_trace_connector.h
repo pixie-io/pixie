@@ -56,13 +56,6 @@ DECLARE_string(stirling_cluster_cidr);
 namespace pl {
 namespace stirling {
 
-enum class HTTPContentType {
-  kUnknown = 0,
-  kJSON = 1,
-  // We use gRPC instead of PB to be consistent with the wording used in gRPC.
-  kGRPC = 2,
-};
-
 class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
   // Used in ReadPerfBuffers to drain the relevant perf buffers.

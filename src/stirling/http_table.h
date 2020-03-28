@@ -44,6 +44,13 @@ constexpr DataElement kHTTPElements[] = {
 };
 // clang-format on
 
+enum class HTTPContentType {
+  kUnknown = 0,
+  kJSON = 1,
+  // We use gRPC instead of PB to be consistent with the wording used in gRPC.
+  kGRPC = 2,
+};
+
 constexpr auto kHTTPTable = DataTableSchema("http_events", kHTTPElements);
 
 constexpr int kHTTPTimeIdx = kHTTPTable.ColIndex("time_");

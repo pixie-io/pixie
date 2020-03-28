@@ -40,6 +40,11 @@ HTTPHeaderFilter ParseHTTPHeaderFilters(std::string_view filters);
  */
 bool MatchesHTTPHeaders(const HeadersMap& http_headers, const HTTPHeaderFilter& filter);
 
+/**
+ * Detects the content-type of an HTTP message. Currently only checks for JSON.
+ */
+bool IsJSONContent(const Message& message);
+
 }  // namespace http
 }  // namespace stirling
 }  // namespace pl

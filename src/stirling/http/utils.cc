@@ -62,6 +62,17 @@ HTTPHeaderFilter ParseHTTPHeaderFilters(std::string_view filters) {
   return result;
 }
 
+bool IsJSONContent(const Message& message) {
+  auto content_type_iter = message.http_headers.find(kContentType);
+  if (content_type_iter == message.http_headers.end()) {
+    return false;
+  }
+  if (absl::StrContains(content_type_iter->second, "json")) {
+    return true;
+  }
+  return false;
+}
+
 }  // namespace http
 }  // namespace stirling
 }  // namespace pl

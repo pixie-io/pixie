@@ -546,17 +546,6 @@ const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(
 
 namespace {
 
-HTTPContentType DetectContentType(const http::Message& message) {
-  auto content_type_iter = message.http_headers.find(http::kContentType);
-  if (content_type_iter == message.http_headers.end()) {
-    return HTTPContentType::kUnknown;
-  }
-  if (absl::StrContains(content_type_iter->second, "json")) {
-    return HTTPContentType::kJSON;
-  }
-  return HTTPContentType::kUnknown;
-}
-
 int64_t CalculateLatency(int64_t req_timestamp_ns, int64_t resp_timestamp_ns) {
   int64_t latency_ns = 0;
   if (req_timestamp_ns > 0 && resp_timestamp_ns > 0) {
@@ -586,6 +575,11 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
                 conn_tracker.pid_start_time_ticks());
 
+  HTTPContentType content_type = HTTPContentType::kUnknown;
+  if (http::IsJSONContent(resp_message)) {
+    content_type = HTTPContentType::kJSON;
+  }
+
   RecordBuilder<&kHTTPTable> r(data_table);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
@@ -595,7 +589,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
   r.Append<r.ColIndex("http_major_version")>(1);
   r.Append<r.ColIndex("http_minor_version")>(resp_message.http_minor_version);
-  r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(DetectContentType(resp_message)));
+  r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(content_type));
   r.Append<r.ColIndex("http_req_headers")>(ToJSONString(req_message.http_headers));
   r.Append<r.ColIndex("http_req_method")>(std::move(req_message.http_req_method));
   r.Append<r.ColIndex("http_req_path")>(std::move(req_message.http_req_path));
