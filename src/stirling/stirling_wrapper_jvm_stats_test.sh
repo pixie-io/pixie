@@ -75,7 +75,7 @@ kill $java_app_pid
 function check_pid() {
   local output="$1"
   local pid="$2"
-  success_msg=$(echo "$output" | grep -E -e "\[JVMStats\].+$pid" || true)
+  success_msg=$(echo "$output" | grep -cE -e "\[JVMStats\].+$pid" || true)
   if [[ "$success_msg" == "0" ]]; then
     echo "Could not find Java PID $pid in stirling_wrapper output"
     echo "Test FAILED"

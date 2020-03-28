@@ -1,11 +1,13 @@
 #include "src/stirling/utils/java.h"
 
 #include <absl/strings/match.h>
+#include <map>
 #include <string>
 #include <vector>
 
 #include "src/common/base/byte_utils.h"
 #include "src/common/base/statusor.h"
+#include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/proc_parser.h"
 #include "src/common/system/uid.h"
 #include "src/stirling/utils/hsperfdata.h"
@@ -81,6 +83,7 @@ uint64_t Stats::SumStatsForSuffixes(const std::vector<std::string_view>& suffixe
 
 StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
   ProcParser parser(system::Config::GetInstance());
+
   ProcParser::ProcUIDs uids;
   PL_RETURN_IF_ERROR(parser.ReadUIDs(pid, &uids));
 
@@ -88,11 +91,32 @@ StatusOr<std::filesystem::path> HsperfdataPath(pid_t pid) {
   if (!absl::SimpleAtoi(uids.effective, &effective_uid)) {
     return error::InvalidArgument("Invalid uid: '$0'", uids.effective);
   }
-  PL_ASSIGN_OR_RETURN(std::string effective_user, NameForUID(effective_uid));
+
+  const std::filesystem::path etc_passwd_path("/etc/passwd");
+  std::filesystem::path passwd_path;
+  for (const fs::PathSplit& path_split : fs::EnumerateParentPaths(etc_passwd_path)) {
+    auto passwd_path_or = parser.ResolveMountPoint(pid, path_split.parent);
+    if (passwd_path_or.ok()) {
+      const std::filesystem::path host_path = system::Config::GetInstance().host_path();
+      passwd_path = fs::JoinPath({&host_path, &passwd_path_or.ValueOrDie(), &path_split.child});
+      break;
+    }
+  }
+  if (passwd_path.empty()) {
+    return error::InvalidArgument("Could not find mount point of /etc/passwd for pid=$0", pid);
+  }
+
+  PL_ASSIGN_OR_RETURN(const std::string passwd_content, ReadFileToString(passwd_path));
+  std::map<uid_t, std::string> uid_user_map = ParsePasswd(passwd_content);
+  auto iter = uid_user_map.find(effective_uid);
+  if (iter == uid_user_map.end()) {
+    return error::InvalidArgument("PID=$0 effective_uid=$1 cannot be found in $2", pid,
+                                  effective_uid, passwd_path.string());
+  }
+  const std::string& effective_user = iter->second;
 
   std::vector<std::string> ns_pids;
   PL_RETURN_IF_ERROR(parser.ReadNSPid(pid, &ns_pids));
-  // TODO(yzhao): We need to combine with ResolveProcessPath() in proc_path_tools.h.
   const char kHspefdataPrefix[] = "hsperfdata_";
   return std::filesystem::path("/tmp") / absl::StrCat(kHspefdataPrefix, effective_user) /
          // The right-most pid is the PID of the same process inside the most-nested namespace.

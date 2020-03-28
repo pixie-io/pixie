@@ -70,6 +70,12 @@ TEST_F(FSWrapperTest, JoinPath) {
   const std::filesystem::path kRelPathB = "relpath/to/b";
 
   EXPECT_EQ(JoinPath({&kEmpty, &kAbsPathA}), "/path/to/a");
+  EXPECT_EQ(JoinPath({&kEmpty, &kRelPathA}), "relpath/to/a");
+  EXPECT_EQ(JoinPath({&kRoot, &kEmpty, &kAbsPathA}), "/path/to/a");
+  EXPECT_EQ(JoinPath({&kRoot, &kEmpty, &kRelPathA}), "/relpath/to/a");
+  EXPECT_EQ(JoinPath({&kAbsPathA, &kEmpty}), "/path/to/a");
+  EXPECT_EQ(JoinPath({&kRelPathA, &kEmpty}), "relpath/to/a");
+
   EXPECT_EQ(JoinPath({&kRoot, &kAbsPathA}), "/path/to/a");
   EXPECT_EQ(JoinPath({&kRoot, &kRelPathA}), "/relpath/to/a");
 
