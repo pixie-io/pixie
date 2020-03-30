@@ -14,9 +14,12 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
+	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
+	messagespb "pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/utils"
 )
 
 // The topic on which to make metadata requests.
@@ -68,9 +71,43 @@ func NewMetadataReader(db *sqlx.DB, sc stan.Conn, nc *nats.Conn) (*MetadataReade
 	return m, nil
 }
 
+// listenForViziers listens for any newly connected Viziers and subscribes to their update channel.
+func (m *MetadataReader) listenForViziers() {
+	ch := make(chan *nats.Msg)
+	sub, err := m.nc.ChanSubscribe(messages.VizierConnectedChannel, ch)
+	if err != nil {
+		log.WithError(err).Error("Failed to listen for connected viziers")
+		return
+	}
+
+	defer sub.Unsubscribe()
+	defer close(ch)
+	for {
+		select {
+		case <-m.quitCh:
+			log.Info("Quit signaled")
+			return
+		case msg := <-ch:
+			vcMsg := &messagespb.VizierConnected{}
+			err := proto.Unmarshal(msg.Data, vcMsg)
+			if err != nil {
+				log.WithError(err).Error("Could not unmarshal VizierConnected msg")
+			}
+			vzID := utils.UUIDFromProtoOrNil(vcMsg.VizierID)
+			log.WithField("VizierID", vzID.String()).Info("Listening to metadata updates for Vizier")
+
+			err = m.StartVizierUpdates(vzID, vcMsg.ResourceVersion)
+			if err != nil {
+				log.WithError(err).WithField("VizierID", vzID.String()).Error("Could not start listening to updates from Vizier")
+			}
+		}
+	}
+}
+
 func (m *MetadataReader) loadState() error {
 	// TOOD(michelle): This should get all currently running Viziers and run StartVizierUpdates() for each of them.
 	// This will come in a followup diff.
+	go m.listenForViziers()
 
 	return nil
 }

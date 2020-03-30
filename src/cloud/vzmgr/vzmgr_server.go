@@ -7,6 +7,7 @@ import (
 	"github.com/golang-migrate/migrate/database/postgres"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/nats-io/nats.go"
+	"github.com/satori/go.uuid"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -14,9 +15,9 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/schema"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	"pixielabs.ai/pixielabs/src/shared/services/pg"
-
 	"pixielabs.ai/pixielabs/src/shared/services/env"
+	"pixielabs.ai/pixielabs/src/shared/services/msgbus"
+	"pixielabs.ai/pixielabs/src/shared/services/pg"
 
 	log "github.com/sirupsen/logrus"
 	"pixielabs.ai/pixielabs/src/shared/services"
@@ -26,7 +27,6 @@ import (
 func init() {
 	pflag.String("database_key", "", "The encryption key to use for the database")
 	pflag.String("dnsmgr_service", "dnsmgr-service.plc.svc.cluster.local:51900", "The dns manager service url (load balancer/list is ok)")
-	pflag.String("nats_url", "pl-nats", "The URL of NATS")
 }
 
 // NewDNSMgrServiceClient creates a new profile RPC client stub.
@@ -90,12 +90,8 @@ func main() {
 	}
 
 	// Connect to NATS.
-	nc, err := nats.Connect(viper.GetString("nats_url"),
-		nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
-		nats.RootCAs(viper.GetString("tls_ca_cert")))
-	if err != nil {
-		log.WithError(err).Fatal("Could not connect to NATS")
-	}
+	nc := msgbus.MustConnectNATS()
+	stc := msgbus.MustConnectSTAN(nc, uuid.NewV4().String())
 
 	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
 		if err != nil {
@@ -108,6 +104,11 @@ func main() {
 	sm := controller.NewStatusMonitor(db)
 	defer sm.Stop()
 	vzmgrpb.RegisterVZMgrServiceServer(s.GRPCServer(), c)
+
+	_, err = controller.NewMetadataReader(db, stc, nc)
+	if err != nil {
+		log.WithError(err).Fatal("Could not start metadata listener")
+	}
 
 	s.Start()
 	s.StopOnInterrupt()
