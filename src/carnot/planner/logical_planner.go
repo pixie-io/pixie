@@ -42,8 +42,6 @@ import (
 	"fmt"
 	"unsafe"
 
-	"pixielabs.ai/pixielabs/src/shared/scriptspb"
-
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
@@ -51,6 +49,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
+	"pixielabs.ai/pixielabs/src/shared/scriptspb"
 )
 
 // GoPlanner wraps the C Planner.

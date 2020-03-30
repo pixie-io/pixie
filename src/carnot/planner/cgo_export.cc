@@ -46,7 +46,6 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
                   int planner_state_str_len, const char* query_request_str_c,
                   int query_request_str_len, int* resultLen) {
   DCHECK(planner_state_str_c != nullptr);
-  DCHECK(query_request_str_c != nullptr);
   std::string planner_state_pb_str(planner_state_str_c,
                                    planner_state_str_c + planner_state_str_len);
   std::string query_request_pb_str(query_request_str_c,

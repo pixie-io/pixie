@@ -195,6 +195,29 @@ func TestPlanner_MissingTable(t *testing.T) {
 
 }
 
+// This test makes sure the logicalplanner actually works if an empty string is passed in.
+func TestPlanner_EmptyString(t *testing.T) {
+	// Create the compiler.
+	c := logicalplanner.New(&udfspb.UDFInfo{})
+	defer c.Free()
+	// Empty string should yield a status error not a CHECK failure in cgo_export.
+	query := ""
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
+	queryRequestPB := &plannerpb.QueryRequest{
+		QueryStr: query,
+	}
+	plannerResultPB, err := c.Plan(plannerStatePB, queryRequestPB)
+
+	if err != nil {
+		t.Fatal("Failed to plan:", err)
+	}
+
+	status := plannerResultPB.Status
+	assert.NotEqual(t, status.ErrCode, statuspb.OK)
+	assert.Regexp(t, "query does not output a result", status.Msg)
+}
+
 const mainFuncArgsQuery = `
 def main(foo : str):
 		queryDF = px.DataFrame(table='cpu', select=['cpu0'])
