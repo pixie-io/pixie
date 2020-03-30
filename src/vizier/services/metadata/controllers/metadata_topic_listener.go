@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"math"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
@@ -17,6 +19,7 @@ var (
 )
 
 const subscriberName = "cloud"
+const batchSize = 24
 
 // MetadataTopicListener is responsible for listening to and handling messages on the metadata update topic.
 type MetadataTopicListener struct {
@@ -61,23 +64,34 @@ func (m *MetadataTopicListener) HandleMessage(msg *nats.Msg) error {
 		return err
 	}
 
-	resp := cvmsgspb.MetadataResponse{
-		Updates: updates,
-	}
-	reqAnyMsg, err := types.MarshalAny(&resp)
-	if err != nil {
-		return err
+	// Send updates in batches.
+	batch := 0
+	for batch*batchSize < len(updates) {
+		batchSlice := updates[batch*batchSize : int(math.Min(float64((batch+1)*batchSize), float64(len(updates))))]
+
+		resp := cvmsgspb.MetadataResponse{
+			Updates: batchSlice,
+		}
+		reqAnyMsg, err := types.MarshalAny(&resp)
+		if err != nil {
+			return err
+		}
+
+		v2cMsg := cvmsgspb.V2CMessage{
+			Msg: reqAnyMsg,
+		}
+		b, err := v2cMsg.Marshal()
+		if err != nil {
+			return err
+		}
+		err = m.sendMessage(messagebus.V2CTopic(pb.Topic), b)
+		if err != nil {
+			return err
+		}
+		batch++
 	}
 
-	v2cMsg := cvmsgspb.V2CMessage{
-		Msg: reqAnyMsg,
-	}
-	b, err := v2cMsg.Marshal()
-	if err != nil {
-		return err
-	}
-
-	return m.sendMessage(messagebus.V2CTopic(pb.Topic), b)
+	return nil
 }
 
 // HandleUpdate sends the metadata update over the message bus.

@@ -18,6 +18,12 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
+type MetadataRequest struct {
+	from      string
+	to        string
+	responses []*cvmsgspb.MetadataResponse
+}
+
 func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 	tests := []struct {
 		name                    string                       // Name of the test
@@ -25,9 +31,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 		updatePrevRV            string                       // The prevResourceVersion of the update the metadata reader will receive.
 		updateRV                string                       // The resourceVersion of the update the metadata reader will receive.
 		expectMetadataRequest   bool                         // Whether to expect a request for missing metadata.
-		metadataRequestFrom     string                       // The "from" value of the metadata req.
-		metadataRequestTo       string                       // The "to" value of the metadata req.
-		metadataResponse        *cvmsgspb.MetadataResponse   // The metadata response to send.
+		metadataRequests        []*MetadataRequest           // The expected metadata request and responses.
 		expectedMetadataUpdates []*metadatapb.ResourceUpdate // The updates that should be sent to the indexer.
 		endingRV                string                       // The new resource version after the update.
 	}{
@@ -48,14 +52,65 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			updatePrevRV:          "16",
 			updateRV:              "17",
 			expectMetadataRequest: true,
-			metadataRequestFrom:   "12",
-			metadataRequestTo:     "17",
-			metadataResponse: &cvmsgspb.MetadataResponse{
-				Updates: []*metadatapb.ResourceUpdate{
-					&metadatapb.ResourceUpdate{ResourceVersion: "12", PrevResourceVersion: "11"},
-					&metadatapb.ResourceUpdate{ResourceVersion: "13", PrevResourceVersion: "12"},
-					&metadatapb.ResourceUpdate{ResourceVersion: "15", PrevResourceVersion: "13"},
-					&metadatapb.ResourceUpdate{ResourceVersion: "16", PrevResourceVersion: "15"},
+			metadataRequests: []*MetadataRequest{
+				&MetadataRequest{
+					from: "12",
+					to:   "17",
+					responses: []*cvmsgspb.MetadataResponse{
+						&cvmsgspb.MetadataResponse{
+							Updates: []*metadatapb.ResourceUpdate{
+								&metadatapb.ResourceUpdate{ResourceVersion: "12", PrevResourceVersion: "11"},
+								&metadatapb.ResourceUpdate{ResourceVersion: "13", PrevResourceVersion: "12"},
+								&metadatapb.ResourceUpdate{ResourceVersion: "15", PrevResourceVersion: "13"},
+								&metadatapb.ResourceUpdate{ResourceVersion: "16", PrevResourceVersion: "15"},
+							},
+						},
+					},
+				},
+			},
+			expectedMetadataUpdates: []*metadatapb.ResourceUpdate{
+				&metadatapb.ResourceUpdate{ResourceVersion: "13", PrevResourceVersion: "12"},
+				&metadatapb.ResourceUpdate{ResourceVersion: "15", PrevResourceVersion: "13"},
+				&metadatapb.ResourceUpdate{ResourceVersion: "16", PrevResourceVersion: "15"},
+				&metadatapb.ResourceUpdate{ResourceVersion: "17", PrevResourceVersion: "16"},
+			},
+			endingRV: "17",
+		},
+		{
+			name:                  "multiple out-of-order update",
+			startingRV:            "12",
+			updatePrevRV:          "16",
+			updateRV:              "17",
+			expectMetadataRequest: true,
+			metadataRequests: []*MetadataRequest{
+				&MetadataRequest{
+					from: "12",
+					to:   "17",
+					responses: []*cvmsgspb.MetadataResponse{
+						&cvmsgspb.MetadataResponse{
+							Updates: []*metadatapb.ResourceUpdate{
+								&metadatapb.ResourceUpdate{ResourceVersion: "12", PrevResourceVersion: "11"},
+								&metadatapb.ResourceUpdate{ResourceVersion: "13", PrevResourceVersion: "12"},
+							},
+						},
+						&cvmsgspb.MetadataResponse{
+							Updates: []*metadatapb.ResourceUpdate{
+								&metadatapb.ResourceUpdate{ResourceVersion: "16", PrevResourceVersion: "15"},
+							},
+						},
+					},
+				},
+				&MetadataRequest{
+					from: "13",
+					to:   "17",
+					responses: []*cvmsgspb.MetadataResponse{
+						&cvmsgspb.MetadataResponse{
+							Updates: []*metadatapb.ResourceUpdate{
+								&metadatapb.ResourceUpdate{ResourceVersion: "15", PrevResourceVersion: "13"},
+								&metadatapb.ResourceUpdate{ResourceVersion: "16", PrevResourceVersion: "15"},
+							},
+						},
+					},
 				},
 			},
 			expectedMetadataUpdates: []*metadatapb.ResourceUpdate{
@@ -74,30 +129,6 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			expectMetadataRequest:   false,
 			expectedMetadataUpdates: []*metadatapb.ResourceUpdate{},
 			endingRV:                "12",
-		},
-		{
-			name:                  "beginningUpdate",
-			startingRV:            "12",
-			updatePrevRV:          "",
-			updateRV:              "17",
-			expectMetadataRequest: true,
-			metadataRequestFrom:   "12",
-			metadataRequestTo:     "17",
-			metadataResponse: &cvmsgspb.MetadataResponse{
-				Updates: []*metadatapb.ResourceUpdate{
-					&metadatapb.ResourceUpdate{ResourceVersion: "12", PrevResourceVersion: "11"},
-					&metadatapb.ResourceUpdate{ResourceVersion: "13", PrevResourceVersion: "12"},
-					&metadatapb.ResourceUpdate{ResourceVersion: "15", PrevResourceVersion: "13"},
-					&metadatapb.ResourceUpdate{ResourceVersion: "16", PrevResourceVersion: "15"},
-				},
-			},
-			expectedMetadataUpdates: []*metadatapb.ResourceUpdate{
-				&metadatapb.ResourceUpdate{ResourceVersion: "13", PrevResourceVersion: "12"},
-				&metadatapb.ResourceUpdate{ResourceVersion: "15", PrevResourceVersion: "13"},
-				&metadatapb.ResourceUpdate{ResourceVersion: "16", PrevResourceVersion: "15"},
-				&metadatapb.ResourceUpdate{ResourceVersion: "17", PrevResourceVersion: ""},
-			},
-			endingRV: "17",
 		},
 	}
 
@@ -128,6 +159,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			})
 			defer indexerSub.Unsubscribe()
 
+			batch := 0
 			if test.expectMetadataRequest {
 				mdSub, err := nc.Subscribe(vzshard.C2VTopic("MetadataRequest", vzID), func(msg *nats.Msg) {
 					c2vMsg := &cvmsgspb.C2VMessage{}
@@ -136,18 +168,22 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 					req := &cvmsgspb.MetadataRequest{}
 					err = types.UnmarshalAny(c2vMsg.Msg, req)
 					assert.Nil(t, err)
-					assert.Equal(t, test.metadataRequestTo, req.To)
-					assert.Equal(t, test.metadataRequestFrom, req.From)
+					assert.Equal(t, test.metadataRequests[batch].to, req.To)
+					assert.Equal(t, test.metadataRequests[batch].from, req.From)
 
 					// Send response.
-					anyUpdates, err := types.MarshalAny(test.metadataResponse)
-					assert.Nil(t, err)
-					v2cMsg := cvmsgspb.V2CMessage{
-						Msg: anyUpdates,
+					for _, r := range test.metadataRequests[batch].responses {
+						anyUpdates, err := types.MarshalAny(r)
+						assert.Nil(t, err)
+						v2cMsg := cvmsgspb.V2CMessage{
+							Msg: anyUpdates,
+						}
+						b, err := v2cMsg.Marshal()
+						assert.Nil(t, err)
+						nc.Publish(vzshard.V2CTopic(req.Topic, vzID), b)
 					}
-					b, err := v2cMsg.Marshal()
-					assert.Nil(t, err)
-					nc.Publish(vzshard.V2CTopic(req.Topic, vzID), b)
+
+					batch++
 				})
 				assert.Nil(t, err)
 				defer mdSub.Unsubscribe()

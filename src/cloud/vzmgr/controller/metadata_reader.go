@@ -71,6 +71,7 @@ func NewMetadataReader(db *sqlx.DB, sc stan.Conn, nc *nats.Conn) (*MetadataReade
 func (m *MetadataReader) loadState() error {
 	// TOOD(michelle): This should get all currently running Viziers and run StartVizierUpdates() for each of them.
 	// This will come in a followup diff.
+
 	return nil
 }
 
@@ -210,27 +211,14 @@ func (m *MetadataReader) processVizierUpdate(msg *stan.Msg, vzState *VizierState
 	}
 	update := updateMsg.Update
 
-	if update.PrevResourceVersion == "" || update.PrevResourceVersion > vzState.resourceVersion {
-		// If update.PrevResourceVersion == "", we just received an update from a vizier which has just
-		// started up. We will need to fetch all updates from vzState.resourceVersion to the update's resourceVersion.
-		// We received an update later than we one we need next. Send out a request for the missing updates.
-		updatesMsg, err := m.getMissingUpdates(vzState.resourceVersion, update.ResourceVersion, vzState)
+	for update.PrevResourceVersion > vzState.resourceVersion {
+		err = m.getMissingUpdates(vzState.resourceVersion, update.ResourceVersion, update.PrevResourceVersion, vzState)
 		if err != nil {
 			return err
 		}
+	}
 
-		reqUpdates, err := readMetadataResponse(updatesMsg.Data)
-		if err != nil {
-			return err
-		}
-
-		allUpdates := append(reqUpdates.Updates, update)
-		err = m.applyMetadataUpdates(vzState, allUpdates)
-		if err != nil {
-			return err
-		}
-	} else if update.PrevResourceVersion == vzState.resourceVersion {
-		// Update is in correct order, so send off the update.
+	if update.PrevResourceVersion == vzState.resourceVersion {
 		err := m.applyMetadataUpdates(vzState, []*metadatapb.ResourceUpdate{update})
 		if err != nil {
 			return err
@@ -244,12 +232,10 @@ func (m *MetadataReader) processVizierUpdate(msg *stan.Msg, vzState *VizierState
 	return nil
 }
 
-func (m *MetadataReader) getMissingUpdates(from string, to string, vzState *VizierState) (*nats.Msg, error) {
-	log.WithField("vizier", vzState.id.String()).WithField("from", from).WithField("to", to).Info("Making request for missing metadata updates")
-
+func (m *MetadataReader) getMissingUpdates(from string, to string, expectedRV string, vzState *VizierState) error {
+	log.WithField("vizier", vzState.id.String()).WithField("from", from).WithField("to", to).WithField("expected", expectedRV).Info("Making request for missing metadata updates")
 	topicID := uuid.NewV4()
 	topic := fmt.Sprintf("%s_%s", metadataResponseTopic, topicID.String())
-
 	mdReq := &cvmsgspb.MetadataRequest{
 		From:  from,
 		To:    to,
@@ -257,36 +243,54 @@ func (m *MetadataReader) getMissingUpdates(from string, to string, vzState *Vizi
 	}
 	reqBytes, err := wrapMetadataRequest(vzState.id, mdReq)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Subscribe to topic that the response will be sent on.
-	subCh := make(chan *nats.Msg)
+	subCh := make(chan *nats.Msg, 1024)
 	sub, err := m.nc.ChanSubscribe(vzshard.V2CTopic(topic, vzState.id), subCh)
 	defer sub.Unsubscribe()
 
 	pubTopic := vzshard.C2VTopic(metadataRequestTopic, vzState.id)
 	err = m.nc.Publish(pubTopic, reqBytes)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for {
 		select {
 		case <-m.quitCh:
-			return nil, errors.New("Quit signaled")
+			return errors.New("Quit signaled")
 		case <-vzState.quitCh:
-			return nil, errors.New("Vizier removed")
+			return errors.New("Vizier removed")
 		case msg := <-subCh:
-			return msg, nil
+			reqUpdates, err := readMetadataResponse(msg.Data)
+			if err != nil {
+				return err
+			}
+
+			updates := reqUpdates.Updates
+			if len(updates) == 0 {
+				return nil
+			}
+			if updates[0].PrevResourceVersion > vzState.resourceVersion {
+				// Received out of order update. Need to rerequest metadata.
+				log.WithField("prevRV", updates[0].PrevResourceVersion).WithField("RV", vzState.resourceVersion).Info("Received out of order update")
+				return nil
+			}
+
+			err = m.applyMetadataUpdates(vzState, updates)
+			if err != nil {
+				return err
+			}
+
+			if vzState.resourceVersion >= expectedRV {
+				return nil
+			}
 		case <-time.After(20 * time.Minute):
 			// Our previous request shouldn't have gotten lost on NATS, so if there is a subscriber for the metadata
 			// requests we shouldn't actually need to resend the request.
-			log.WithField("vizier", vzState.id.String()).Info("Retrying missing metadata request")
-			err = m.nc.Publish(pubTopic, reqBytes)
-			if err != nil {
-				return nil, err
-			}
+			return nil
 		}
 	}
 }

@@ -190,3 +190,98 @@ func TestMetadataTopicListener_HandleMessage(t *testing.T) {
 		assert.Equal(t, fmt.Sprintf("%d", i+1), u.ResourceVersion)
 	}
 }
+
+func TestMetadataTopicListener_HandleMessageBatch(t *testing.T) {
+	tests := []struct {
+		name               string
+		numUpdates         int
+		expectedNumBatches int
+	}{
+		{
+			name:               "single update",
+			numUpdates:         1,
+			expectedNumBatches: 1,
+		},
+		{
+			name:               "batch sized update",
+			numUpdates:         24,
+			expectedNumBatches: 1,
+		},
+		{
+			name:               "greater than one batch update",
+			numUpdates:         25,
+			expectedNumBatches: 2,
+		},
+		{
+			name:               "multiple batches",
+			numUpdates:         80,
+			expectedNumBatches: 4,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Set up mock.
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+
+			retUpdates := make([]*metadatapb.ResourceUpdate, test.numUpdates)
+			for i := 0; i < test.numUpdates; i++ {
+				retUpdates[i] = &metadatapb.ResourceUpdate{ResourceVersion: fmt.Sprintf("%d", i)}
+			}
+
+			mockMdStore.
+				EXPECT().
+				GetMetadataUpdatesForHostname("", "", fmt.Sprintf("%d", test.numUpdates+1)).
+				Return(retUpdates, nil)
+
+			mockMdStore.
+				EXPECT().
+				UpdateSubscriberResourceVersion("cloud", "")
+
+			isLeader := true
+			mdh, _ := controllers.NewMetadataHandler(mockMdStore, &isLeader)
+			updates := make([]*metadatapb.ResourceUpdate, 0)
+			// Create Metadata Service controller.
+			numBatches := 0
+			mdl, err := controllers.NewMetadataTopicListener(mockMdStore, mdh, func(topic string, b []byte) error {
+				assert.Equal(t, messagebus.V2CTopic("1234"), topic)
+				// updates = append(updates, b)
+				wrapperPb := &cvmsgspb.V2CMessage{}
+				proto.Unmarshal(b, wrapperPb)
+				updatePb := &cvmsgspb.MetadataResponse{}
+				err := types.UnmarshalAny(wrapperPb.Msg, updatePb)
+				assert.Nil(t, err)
+				updates = append(updates, updatePb.Updates...)
+
+				numBatches++
+				return nil
+			})
+
+			req := cvmsgspb.MetadataRequest{
+				From:  "",
+				To:    fmt.Sprintf("%d", test.numUpdates+1),
+				Topic: "1234",
+			}
+			reqAnyMsg, err := types.MarshalAny(&req)
+			assert.Nil(t, err)
+			wrappedReq := cvmsgspb.C2VMessage{
+				Msg: reqAnyMsg,
+			}
+			b, err := wrappedReq.Marshal()
+			assert.Nil(t, err)
+
+			msg := nats.Msg{}
+			msg.Data = b
+			err = mdl.HandleMessage(&msg)
+			assert.Nil(t, err)
+			assert.Equal(t, numBatches, test.expectedNumBatches)
+
+			assert.Equal(t, test.numUpdates, len(updates))
+			for i, u := range updates {
+				assert.Equal(t, fmt.Sprintf("%d", i), u.ResourceVersion)
+			}
+		})
+	}
+}
