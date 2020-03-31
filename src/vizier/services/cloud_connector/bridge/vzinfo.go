@@ -103,3 +103,12 @@ func (v *K8sVizierInfo) GetAddress() (string, int32, error) {
 
 	return externalAddr, port, nil
 }
+
+// GetClusterUID gets UID for the cluster, represented by the kube-system namespace UID.
+func (v *K8sVizierInfo) GetClusterUID() (string, error) {
+	ksNS, err := v.clientset.CoreV1().Namespaces().Get("kube-system", metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	return string(ksNS.UID), nil
+}
