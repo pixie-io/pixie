@@ -42,8 +42,9 @@ std::map<uid_t, std::string> ParsePasswd(std::string_view passwd_content) {
     if (fields.size() < kPasswdEntryFieldCount) {
       continue;
     }
+    constexpr int kUidFieldIdx = 2;
     uid_t uid = 0;
-    if (!absl::SimpleAtoi(fields[3], &uid)) {
+    if (!absl::SimpleAtoi(fields[kUidFieldIdx], &uid)) {
       continue;
     }
     res[uid] = fields[0];

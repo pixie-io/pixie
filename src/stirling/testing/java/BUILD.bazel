@@ -1,7 +1,11 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@io_bazel_rules_docker//java:image.bzl", "java_image")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
+load("@io_bazel_rules_docker//contrib:passwd.bzl", "passwd_entry")
+load("@io_bazel_rules_docker//contrib:passwd.bzl", "passwd_file")
+load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
 
 java_binary(
     name = "HelloWorld",
@@ -9,10 +13,37 @@ java_binary(
     main_class = "HelloWorld",
 )
 
+passwd_entry(
+    name = "custom_user",
+    username = "java_hello_world_test_user",
+    info = "java_hello_world_test_user",
+    uid = 12345,
+)
+
+passwd_file(
+    name = "passwd",
+    entries = [":custom_user"],
+)
+
+pkg_tar(
+    name = "passwd_tar",
+    srcs = [":passwd"],
+    mode = "0o644",
+    package_dir = "etc",
+)
+
+container_image(
+    name = "passwd_image",
+    base = "@java_image_base//image",
+    tars = [":passwd_tar"],
+    user = "java_hello_world_test_user",
+)
+
 java_image(
     name = "hello_world_image",
     srcs = ["HelloWorld.java"],
     main_class = "HelloWorld",
+    base = ":passwd_image",
 )
 
 container_push(
