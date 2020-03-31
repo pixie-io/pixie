@@ -66,6 +66,8 @@ class UPID {
 
   bool operator!=(const UPID& rhs) const { return !(*this == rhs); }
 
+  bool operator<(const UPID& other) const { return value_ < other.value_; }
+
   template <typename H>
   friend H AbslHashValue(H h, const UPID& c) {
     return H::combine(std::move(h), c.value_);

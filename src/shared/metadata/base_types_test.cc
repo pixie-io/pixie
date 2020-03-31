@@ -1,12 +1,15 @@
-#include <gtest/gtest.h>
-
 #include <absl/hash/hash_testing.h>
+#include <gtest/gtest.h>
+#include <set>
+
 #include "src/common/base/test_utils.h"
 #include "src/shared/metadata/base_types.h"
 
 namespace pl {
 namespace md {
+
 using ::testing::ContainsRegex;
+using ::testing::ElementsAre;
 
 TEST(UPID, check_upid_components) {
   auto upid = UPID(123, 456, 3420030816657ULL);
@@ -57,6 +60,11 @@ TEST(UPID, parse_from_uuid_fails_on_bad_uuid) {
   auto upid_or_s = UPID::ParseFromUUIDString("9999");
   ASSERT_NOT_OK(upid_or_s);
   EXPECT_THAT(upid_or_s.status().msg(), ContainsRegex("'9999' is not a valid UUID"));
+}
+
+TEST(UPID, comparison) {
+  std::set<UPID> upids{UPID(1, 2, 3), UPID(0, 2, 3), UPID(0, 1, 3), UPID(0, 1, 2)};
+  EXPECT_THAT(upids, ElementsAre(UPID(0, 1, 2), UPID(0, 1, 3), UPID(0, 2, 3), UPID(1, 2, 3)));
 }
 
 }  // namespace md
