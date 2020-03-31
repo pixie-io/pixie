@@ -1,5 +1,5 @@
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: load-test
@@ -7,6 +7,9 @@ metadata:
     name: load-test
   namespace: sock-shop
 spec:
+  selector:
+    matchLabels:
+      name: load-test
   replicas: 1
   template:
     metadata:
