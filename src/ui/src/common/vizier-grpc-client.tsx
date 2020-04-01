@@ -22,8 +22,7 @@ export class VizierGRPCClient {
   private client: VizierServiceClient;
 
   constructor(addr: string, private token: string, private clusterID: string, private attachCreds: boolean) {
-    this.client = new VizierServiceClient(addr, null, attachCreds ? {
-      withCredentials: 'true'} : {});
+    this.client = new VizierServiceClient(addr, null, attachCreds ? { withCredentials: 'true' } : {});
   }
 
   health(): Observable<Status> {

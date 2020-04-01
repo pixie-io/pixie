@@ -5,14 +5,14 @@ import IconButton from '@material-ui/core/IconButton';
 
 import {LiveContext} from './context';
 
-const ExecuteScript = () => {
+const ExecuteScriptButton = () => {
   const { vizierReady, executeScript } = React.useContext(LiveContext);
 
   return (
-    <IconButton disabled={!vizierReady} onClick={executeScript}>
+    <IconButton disabled={!vizierReady} onClick={() => executeScript()}>
       <PlayIcon />
     </IconButton>
   );
 };
 
-export default ExecuteScript;
+export default ExecuteScriptButton;

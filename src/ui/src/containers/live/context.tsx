@@ -1,10 +1,9 @@
 import * as ls from 'common/localstorage';
 import {Table} from 'common/vizier-grpc-client';
 import ClientContext from 'common/vizier-grpc-client-context';
-import {useSnackbar} from 'components/snackbar/snackbar';
+import {SnackbarProvider, useSnackbar} from 'components/snackbar/snackbar';
 import {parseSpecs, VisualizationSpecMap} from 'components/vega/spec';
 import * as React from 'react';
-import {resolveTypeReferenceDirective} from 'typescript';
 
 import {parsePlacement, Placement} from './layout';
 
@@ -13,9 +12,8 @@ interface LiveContextProps {
   updateVegaSpec: (spec: VisualizationSpecMap) => void;
   updatePlacement: (placement: Placement) => void;
   vizierReady: boolean;
-  executeScript: () => void;
-  setTitle: (title: string) => void;
-  setScripts: (script: string, vega: string, placement: string) => void;
+  executeScript: (script?: string) => void;
+  setScripts: (script: string, vega: string, placement: string, title: string) => void;
 }
 
 interface Tables {
@@ -35,16 +33,15 @@ const LiveContextProvider = (props) => {
     ls.setLiveViewPixieScript(script);
   }, [script]);
 
-  const [vegaSpec, setVegaSpec] = React.useState<VisualizationSpecMap>(
-    parseSpecs(ls.getLiveViewVegaSpec()) || {});
+  const [vegaSpec, setVegaSpec] = React.useState<VisualizationSpecMap>(parseSpecs(ls.getLiveViewVegaSpec()) || {});
 
-  const [placement, setPlacement] = React.useState<Placement>(
-    parsePlacement(ls.getLiveViewPlacementSpec()) || {});
+  const [placement, setPlacement] = React.useState<Placement>(parsePlacement(ls.getLiveViewPlacementSpec()) || {});
 
   const [tables, setTables] = React.useState<Tables>({});
 
-  const setScripts = React.useCallback((newScript, newVega, newPlacement) => {
+  const setScripts = React.useCallback((newScript, newVega, newPlacement, newTitle) => {
     setScript(newScript);
+    setTitle(newTitle);
     setVegaSpec(parseSpecs(newVega) || {});
     setPlacement(parsePlacement(newPlacement) || {});
   }, []);
@@ -58,13 +55,13 @@ const LiveContextProvider = (props) => {
 
   const showSnackbar = useSnackbar();
 
-  const executeScript = React.useCallback(() => {
+  const executeScript = React.useCallback((inputScript?: string) => {
     if (!client) {
       return;
     }
     let err;
     let queryId;
-    client.executeScript(script).then((results) => {
+    client.executeScript(inputScript || script).then((results) => {
       const newTables = {};
       queryId = results.queryId;
       for (const table of results.tables) {
@@ -75,7 +72,7 @@ const LiveContextProvider = (props) => {
       err = errMsg;
       showSnackbar({
         message: 'Failed to execute script',
-        action: executeScript,
+        action: () => executeScript(inputScript),
         actionTitle: 'retry',
         autoHideDuration: 5000,
       });
@@ -97,7 +94,6 @@ const LiveContextProvider = (props) => {
     vizierReady: !!client,
     setScripts,
     executeScript,
-    setTitle,
   }), [executeScript, client]);
 
   return (
@@ -117,4 +113,12 @@ const LiveContextProvider = (props) => {
   );
 };
 
-export default LiveContextProvider;
+export function withLiveContextProvider(WrappedComponent) {
+  return () => (
+    <SnackbarProvider>
+      <LiveContextProvider>
+        <WrappedComponent />
+      </LiveContextProvider>
+    </SnackbarProvider>
+  );
+}

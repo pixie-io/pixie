@@ -15,10 +15,10 @@ import ToggleButton from '@material-ui/lab/ToggleButton';
 
 import Canvas from './canvas';
 import CommandInput from './command-input';
-import LiveContextProvider, {LiveContext} from './context';
+import {LiveContext, withLiveContextProvider} from './context';
 import Editor from './editor';
-import {ScriptLoader} from './example-scripts';
-import ExecuteScript from './execute';
+import ExecuteScriptButton from './execute-button';
+import {useInitScriptLoader} from './script-loader';
 import LiveViewTitle from './title';
 
 const useStyles = makeStyles((theme: Theme) => {
@@ -102,49 +102,46 @@ const LiveView = () => {
     PIXIE_COMMAND: toggleCommandOpen,
   }), []);
 
+  useInitScriptLoader();
+
   return (
-    <SnackbarProvider>
-      <LiveContextProvider>
-        <div className={classes.root}>
-          <GlobalHotKeys handlers={hotkeyHandlers} keyMap={COMMAND_KEYMAP} />
-          <div className={classes.topBar}>
-            <ScriptLoader />
-            <IconButton disabled={true} onClick={toggleDrawer}>
-              <MenuIcon />
-            </IconButton>
-            <LiveViewTitle className={classes.title} />
-            <ExecuteScript />
-            <IconButton disabled={true}>
-              <ShareIcon />
-            </IconButton>
-            <ToggleButton
-              className={classes.editorToggle}
-              selected={editorOpen}
-              onChange={toggleEditor}
-              value='editorOpened'
-            >
-              <EditIcon />
-            </ToggleButton>
-            <IconButton disabled={true} onClick={toggleCommandOpen}>
-              <MagicIcon />
-            </IconButton>
-          </div>
-          <div className={classes.main}>
-            <LazyPanel className={classes.editor} show={editorOpen}>
-              <Editor />
-            </LazyPanel>
-            <div className={classes.canvas}>
-              <Canvas />
-            </div>
-          </div>
-          <Drawer open={drawerOpen} onClose={toggleDrawer}>
-            <div>drawer content</div>
-          </Drawer>
-          <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
-        </div >
-      </LiveContextProvider >
-    </SnackbarProvider>
+    <div className={classes.root}>
+      <GlobalHotKeys handlers={hotkeyHandlers} keyMap={COMMAND_KEYMAP} />
+      <div className={classes.topBar}>
+        <IconButton disabled={true} onClick={toggleDrawer}>
+          <MenuIcon />
+        </IconButton>
+        <LiveViewTitle className={classes.title} />
+        <ExecuteScriptButton />
+        <IconButton disabled={true}>
+          <ShareIcon />
+        </IconButton>
+        <ToggleButton
+          className={classes.editorToggle}
+          selected={editorOpen}
+          onChange={toggleEditor}
+          value='editorOpened'
+        >
+          <EditIcon />
+        </ToggleButton>
+        <IconButton disabled={true} onClick={toggleCommandOpen}>
+          <MagicIcon />
+        </IconButton>
+      </div>
+      <div className={classes.main}>
+        <LazyPanel className={classes.editor} show={editorOpen}>
+          <Editor />
+        </LazyPanel>
+        <div className={classes.canvas}>
+          <Canvas />
+        </div>
+      </div>
+      <Drawer open={drawerOpen} onClose={toggleDrawer}>
+        <div>drawer content</div>
+      </Drawer>
+      <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
+    </div >
   );
 };
 
-export default LiveView;
+export default withLiveContextProvider(LiveView);
