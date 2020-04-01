@@ -54,6 +54,10 @@ build:
     context: .
     bazel:
       target: //src/cloud/scriptmgr:scriptmgr_server_image.tar
+  - image: gcr.io/pl-dev-infra/cloud/autocomplete_server_image
+    context: .
+    bazel:
+      target: //src/cloud/autocomplete:autocomplete_server_image.tar
   tagPolicy:
     dateTime: {}
   local:
