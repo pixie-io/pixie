@@ -77,7 +77,6 @@ std::filesystem::path ProcParser::ProcPidPath(pid_t pid) const {
 ProcParser::ProcParser(const system::Config& cfg) {
   CHECK(cfg.HasConfig()) << "System config is required for the ProcParser";
   ns_per_kernel_tick_ = static_cast<int64_t>(1E9 / cfg.KernelTicksPerSecond());
-  clock_realtime_offset_ = cfg.ClockRealTimeOffset();
   bytes_per_page_ = cfg.PageSize();
   proc_base_path_ = cfg.proc_path();
 }

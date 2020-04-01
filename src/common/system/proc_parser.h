@@ -240,7 +240,6 @@ class ProcParser {
 
   int64_t ns_per_kernel_tick_;
   int32_t bytes_per_page_;
-  int64_t clock_realtime_offset_;
 
   std::string proc_base_path_;
 };
