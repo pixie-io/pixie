@@ -118,5 +118,11 @@
         "useUnaggregatedDomain": true
       }
     }
+  },
+  "edges": {
+    "mark": "table",
+    "data": {
+      "name": "edges"
+    }
   }
 }
