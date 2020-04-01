@@ -14,7 +14,8 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	scriptspb "pixielabs.ai/pixielabs/src/shared/scriptspb"
+	_ "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
+	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	reflect "reflect"
 	strings "strings"
 )
@@ -30,22 +31,20 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type ExtractVisFuncsInfoRequest struct {
-	Script    string   `protobuf:"bytes,1,opt,name=script,proto3" json:"script,omitempty"`
-	FuncNames []string `protobuf:"bytes,2,rep,name=func_names,json=funcNames,proto3" json:"func_names,omitempty"`
+type GetLiveViewsReq struct {
 }
 
-func (m *ExtractVisFuncsInfoRequest) Reset()      { *m = ExtractVisFuncsInfoRequest{} }
-func (*ExtractVisFuncsInfoRequest) ProtoMessage() {}
-func (*ExtractVisFuncsInfoRequest) Descriptor() ([]byte, []int) {
+func (m *GetLiveViewsReq) Reset()      { *m = GetLiveViewsReq{} }
+func (*GetLiveViewsReq) ProtoMessage() {}
+func (*GetLiveViewsReq) Descriptor() ([]byte, []int) {
 	return fileDescriptor_e19e341d77057158, []int{0}
 }
-func (m *ExtractVisFuncsInfoRequest) XXX_Unmarshal(b []byte) error {
+func (m *GetLiveViewsReq) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ExtractVisFuncsInfoRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *GetLiveViewsReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ExtractVisFuncsInfoRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_GetLiveViewsReq.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -55,34 +54,464 @@ func (m *ExtractVisFuncsInfoRequest) XXX_Marshal(b []byte, deterministic bool) (
 		return b[:n], nil
 	}
 }
-func (m *ExtractVisFuncsInfoRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ExtractVisFuncsInfoRequest.Merge(m, src)
+func (m *GetLiveViewsReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetLiveViewsReq.Merge(m, src)
 }
-func (m *ExtractVisFuncsInfoRequest) XXX_Size() int {
+func (m *GetLiveViewsReq) XXX_Size() int {
 	return m.Size()
 }
-func (m *ExtractVisFuncsInfoRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_ExtractVisFuncsInfoRequest.DiscardUnknown(m)
+func (m *GetLiveViewsReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetLiveViewsReq.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ExtractVisFuncsInfoRequest proto.InternalMessageInfo
+var xxx_messageInfo_GetLiveViewsReq proto.InternalMessageInfo
 
-func (m *ExtractVisFuncsInfoRequest) GetScript() string {
-	if m != nil {
-		return m.Script
+type LiveViewMetadata struct {
+	ID   *proto1.UUID `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Desc string       `protobuf:"bytes,2,opt,name=desc,proto3" json:"desc,omitempty"`
+	Name string       `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (m *LiveViewMetadata) Reset()      { *m = LiveViewMetadata{} }
+func (*LiveViewMetadata) ProtoMessage() {}
+func (*LiveViewMetadata) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e19e341d77057158, []int{1}
+}
+func (m *LiveViewMetadata) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *LiveViewMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_LiveViewMetadata.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
 	}
-	return ""
+}
+func (m *LiveViewMetadata) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LiveViewMetadata.Merge(m, src)
+}
+func (m *LiveViewMetadata) XXX_Size() int {
+	return m.Size()
+}
+func (m *LiveViewMetadata) XXX_DiscardUnknown() {
+	xxx_messageInfo_LiveViewMetadata.DiscardUnknown(m)
 }
 
-func (m *ExtractVisFuncsInfoRequest) GetFuncNames() []string {
+var xxx_messageInfo_LiveViewMetadata proto.InternalMessageInfo
+
+func (m *LiveViewMetadata) GetID() *proto1.UUID {
 	if m != nil {
-		return m.FuncNames
+		return m.ID
 	}
 	return nil
 }
 
+func (m *LiveViewMetadata) GetDesc() string {
+	if m != nil {
+		return m.Desc
+	}
+	return ""
+}
+
+func (m *LiveViewMetadata) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+type GetLiveViewsResp struct {
+	LiveViews []*LiveViewMetadata `protobuf:"bytes,1,rep,name=live_views,json=liveViews,proto3" json:"live_views,omitempty"`
+}
+
+func (m *GetLiveViewsResp) Reset()      { *m = GetLiveViewsResp{} }
+func (*GetLiveViewsResp) ProtoMessage() {}
+func (*GetLiveViewsResp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e19e341d77057158, []int{2}
+}
+func (m *GetLiveViewsResp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetLiveViewsResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetLiveViewsResp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetLiveViewsResp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetLiveViewsResp.Merge(m, src)
+}
+func (m *GetLiveViewsResp) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetLiveViewsResp) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetLiveViewsResp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetLiveViewsResp proto.InternalMessageInfo
+
+func (m *GetLiveViewsResp) GetLiveViews() []*LiveViewMetadata {
+	if m != nil {
+		return m.LiveViews
+	}
+	return nil
+}
+
+type GetLiveViewContentsReq struct {
+	LiveViewID *proto1.UUID `protobuf:"bytes,1,opt,name=live_view_id,json=liveViewId,proto3" json:"live_view_id,omitempty"`
+}
+
+func (m *GetLiveViewContentsReq) Reset()      { *m = GetLiveViewContentsReq{} }
+func (*GetLiveViewContentsReq) ProtoMessage() {}
+func (*GetLiveViewContentsReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e19e341d77057158, []int{3}
+}
+func (m *GetLiveViewContentsReq) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetLiveViewContentsReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetLiveViewContentsReq.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetLiveViewContentsReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetLiveViewContentsReq.Merge(m, src)
+}
+func (m *GetLiveViewContentsReq) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetLiveViewContentsReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetLiveViewContentsReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetLiveViewContentsReq proto.InternalMessageInfo
+
+func (m *GetLiveViewContentsReq) GetLiveViewID() *proto1.UUID {
+	if m != nil {
+		return m.LiveViewID
+	}
+	return nil
+}
+
+type GetLiveViewContentsResp struct {
+	Metadata    *LiveViewMetadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	PxlContents string            `protobuf:"bytes,2,opt,name=pxl_contents,json=pxlContents,proto3" json:"pxl_contents,omitempty"`
+}
+
+func (m *GetLiveViewContentsResp) Reset()      { *m = GetLiveViewContentsResp{} }
+func (*GetLiveViewContentsResp) ProtoMessage() {}
+func (*GetLiveViewContentsResp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e19e341d77057158, []int{4}
+}
+func (m *GetLiveViewContentsResp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetLiveViewContentsResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetLiveViewContentsResp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetLiveViewContentsResp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetLiveViewContentsResp.Merge(m, src)
+}
+func (m *GetLiveViewContentsResp) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetLiveViewContentsResp) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetLiveViewContentsResp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetLiveViewContentsResp proto.InternalMessageInfo
+
+func (m *GetLiveViewContentsResp) GetMetadata() *LiveViewMetadata {
+	if m != nil {
+		return m.Metadata
+	}
+	return nil
+}
+
+func (m *GetLiveViewContentsResp) GetPxlContents() string {
+	if m != nil {
+		return m.PxlContents
+	}
+	return ""
+}
+
+type GetScriptsReq struct {
+}
+
+func (m *GetScriptsReq) Reset()      { *m = GetScriptsReq{} }
+func (*GetScriptsReq) ProtoMessage() {}
+func (*GetScriptsReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e19e341d77057158, []int{5}
+}
+func (m *GetScriptsReq) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetScriptsReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetScriptsReq.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetScriptsReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetScriptsReq.Merge(m, src)
+}
+func (m *GetScriptsReq) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetScriptsReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetScriptsReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetScriptsReq proto.InternalMessageInfo
+
+type ScriptMetadata struct {
+	ID          *proto1.UUID `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Desc        string       `protobuf:"bytes,2,opt,name=desc,proto3" json:"desc,omitempty"`
+	Name        string       `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	HasLiveView bool         `protobuf:"varint,4,opt,name=has_live_view,json=hasLiveView,proto3" json:"has_live_view,omitempty"`
+}
+
+func (m *ScriptMetadata) Reset()      { *m = ScriptMetadata{} }
+func (*ScriptMetadata) ProtoMessage() {}
+func (*ScriptMetadata) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e19e341d77057158, []int{6}
+}
+func (m *ScriptMetadata) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ScriptMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ScriptMetadata.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ScriptMetadata) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ScriptMetadata.Merge(m, src)
+}
+func (m *ScriptMetadata) XXX_Size() int {
+	return m.Size()
+}
+func (m *ScriptMetadata) XXX_DiscardUnknown() {
+	xxx_messageInfo_ScriptMetadata.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ScriptMetadata proto.InternalMessageInfo
+
+func (m *ScriptMetadata) GetID() *proto1.UUID {
+	if m != nil {
+		return m.ID
+	}
+	return nil
+}
+
+func (m *ScriptMetadata) GetDesc() string {
+	if m != nil {
+		return m.Desc
+	}
+	return ""
+}
+
+func (m *ScriptMetadata) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ScriptMetadata) GetHasLiveView() bool {
+	if m != nil {
+		return m.HasLiveView
+	}
+	return false
+}
+
+type GetScriptsResp struct {
+	Scripts []*ScriptMetadata `protobuf:"bytes,1,rep,name=scripts,proto3" json:"scripts,omitempty"`
+}
+
+func (m *GetScriptsResp) Reset()      { *m = GetScriptsResp{} }
+func (*GetScriptsResp) ProtoMessage() {}
+func (*GetScriptsResp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e19e341d77057158, []int{7}
+}
+func (m *GetScriptsResp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetScriptsResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetScriptsResp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetScriptsResp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetScriptsResp.Merge(m, src)
+}
+func (m *GetScriptsResp) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetScriptsResp) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetScriptsResp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetScriptsResp proto.InternalMessageInfo
+
+func (m *GetScriptsResp) GetScripts() []*ScriptMetadata {
+	if m != nil {
+		return m.Scripts
+	}
+	return nil
+}
+
+type GetScriptContentsReq struct {
+	ScriptID *proto1.UUID `protobuf:"bytes,1,opt,name=script_id,json=scriptId,proto3" json:"script_id,omitempty"`
+}
+
+func (m *GetScriptContentsReq) Reset()      { *m = GetScriptContentsReq{} }
+func (*GetScriptContentsReq) ProtoMessage() {}
+func (*GetScriptContentsReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e19e341d77057158, []int{8}
+}
+func (m *GetScriptContentsReq) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetScriptContentsReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetScriptContentsReq.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetScriptContentsReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetScriptContentsReq.Merge(m, src)
+}
+func (m *GetScriptContentsReq) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetScriptContentsReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetScriptContentsReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetScriptContentsReq proto.InternalMessageInfo
+
+func (m *GetScriptContentsReq) GetScriptID() *proto1.UUID {
+	if m != nil {
+		return m.ScriptID
+	}
+	return nil
+}
+
+type GetScriptContentsResp struct {
+	Metadata *ScriptMetadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Contents string          `protobuf:"bytes,2,opt,name=contents,proto3" json:"contents,omitempty"`
+}
+
+func (m *GetScriptContentsResp) Reset()      { *m = GetScriptContentsResp{} }
+func (*GetScriptContentsResp) ProtoMessage() {}
+func (*GetScriptContentsResp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e19e341d77057158, []int{9}
+}
+func (m *GetScriptContentsResp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetScriptContentsResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetScriptContentsResp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetScriptContentsResp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetScriptContentsResp.Merge(m, src)
+}
+func (m *GetScriptContentsResp) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetScriptContentsResp) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetScriptContentsResp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetScriptContentsResp proto.InternalMessageInfo
+
+func (m *GetScriptContentsResp) GetMetadata() *ScriptMetadata {
+	if m != nil {
+		return m.Metadata
+	}
+	return nil
+}
+
+func (m *GetScriptContentsResp) GetContents() string {
+	if m != nil {
+		return m.Contents
+	}
+	return ""
+}
+
 func init() {
-	proto.RegisterType((*ExtractVisFuncsInfoRequest)(nil), "pl.services.ExtractVisFuncsInfoRequest")
+	proto.RegisterType((*GetLiveViewsReq)(nil), "pl.services.GetLiveViewsReq")
+	proto.RegisterType((*LiveViewMetadata)(nil), "pl.services.LiveViewMetadata")
+	proto.RegisterType((*GetLiveViewsResp)(nil), "pl.services.GetLiveViewsResp")
+	proto.RegisterType((*GetLiveViewContentsReq)(nil), "pl.services.GetLiveViewContentsReq")
+	proto.RegisterType((*GetLiveViewContentsResp)(nil), "pl.services.GetLiveViewContentsResp")
+	proto.RegisterType((*GetScriptsReq)(nil), "pl.services.GetScriptsReq")
+	proto.RegisterType((*ScriptMetadata)(nil), "pl.services.ScriptMetadata")
+	proto.RegisterType((*GetScriptsResp)(nil), "pl.services.GetScriptsResp")
+	proto.RegisterType((*GetScriptContentsReq)(nil), "pl.services.GetScriptContentsReq")
+	proto.RegisterType((*GetScriptContentsResp)(nil), "pl.services.GetScriptContentsResp")
 }
 
 func init() {
@@ -90,37 +519,58 @@ func init() {
 }
 
 var fileDescriptor_e19e341d77057158 = []byte{
-	// 315 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x91, 0x3f, 0x4b, 0x03, 0x31,
-	0x18, 0xc6, 0x13, 0x85, 0x42, 0xe3, 0x22, 0x27, 0x48, 0x39, 0xf0, 0xa5, 0x76, 0xb1, 0x4b, 0x13,
-	0xd0, 0xd1, 0xad, 0xa0, 0xe0, 0xa0, 0x43, 0x0b, 0x0e, 0x2e, 0x72, 0x17, 0xd3, 0x6b, 0xa0, 0xbd,
-	0x9c, 0xf9, 0xa3, 0x1d, 0xfd, 0x08, 0x7e, 0x0c, 0x3f, 0x8a, 0x63, 0xc7, 0x8e, 0x36, 0x5d, 0x1c,
-	0xfb, 0x11, 0xe4, 0x72, 0xb5, 0xde, 0xa0, 0xb8, 0x3d, 0xcf, 0xcb, 0x2f, 0x79, 0xde, 0x27, 0x21,
-	0x3d, 0xa3, 0x39, 0xe3, 0x13, 0xe5, 0x1e, 0x98, 0xe1, 0x5a, 0x16, 0x76, 0x9a, 0xe9, 0x1f, 0x55,
-	0xa4, 0xcc, 0x08, 0xfd, 0x24, 0xb9, 0xa0, 0x85, 0x56, 0x56, 0x45, 0x7b, 0xc5, 0x84, 0x6e, 0x26,
-	0x26, 0xee, 0x65, 0xd2, 0x8e, 0x5d, 0x4a, 0xb9, 0x9a, 0xb2, 0x4c, 0x65, 0x8a, 0x05, 0x26, 0x75,
-	0xa3, 0xe0, 0x82, 0x09, 0xaa, 0x3a, 0x1b, 0x77, 0xca, 0x28, 0x33, 0x4e, 0xb4, 0xf8, 0xce, 0x32,
-	0xe5, 0xfd, 0x95, 0xaa, 0x98, 0xce, 0x90, 0xc4, 0x17, 0x33, 0xab, 0x13, 0x6e, 0x6f, 0xa5, 0xb9,
-	0x74, 0x39, 0x37, 0x57, 0xf9, 0x48, 0x0d, 0xc4, 0xa3, 0x13, 0xc6, 0x46, 0x87, 0xa4, 0x51, 0xe1,
-	0x2d, 0xdc, 0xc6, 0xdd, 0xe6, 0x60, 0xe3, 0xa2, 0x23, 0x42, 0x46, 0x2e, 0xe7, 0xf7, 0x79, 0x32,
-	0x15, 0xa6, 0xb5, 0xd3, 0xde, 0xed, 0x36, 0x07, 0xcd, 0x72, 0x72, 0x53, 0x0e, 0x4e, 0x9f, 0xc9,
-	0xfe, 0x30, 0x80, 0xd7, 0x99, 0x1e, 0x56, 0xcb, 0x47, 0x9c, 0x1c, 0xfc, 0x12, 0x14, 0x9d, 0xd0,
-	0x5a, 0x41, 0xfa, 0xf7, 0x2a, 0xf1, 0x71, 0x00, 0x43, 0x19, 0xba, 0x2d, 0x43, 0xeb, 0x64, 0x07,
-	0xf5, 0x67, 0xf3, 0x25, 0xa0, 0xc5, 0x12, 0xd0, 0x7a, 0x09, 0xf8, 0xc5, 0x03, 0x7e, 0xf3, 0x80,
-	0xdf, 0x3d, 0xe0, 0xb9, 0x07, 0xfc, 0xe1, 0x01, 0x7f, 0x7a, 0x40, 0x6b, 0x0f, 0xf8, 0x75, 0x05,
-	0x68, 0xbe, 0x02, 0xb4, 0x58, 0x01, 0xba, 0xeb, 0x17, 0x72, 0x26, 0xc5, 0x24, 0x49, 0x0d, 0x4d,
-	0x24, 0xdb, 0x1a, 0xf6, 0xcf, 0x4f, 0x9d, 0xd7, 0x74, 0xda, 0x08, 0xcf, 0x79, 0xf6, 0x15, 0x00,
-	0x00, 0xff, 0xff, 0x95, 0xe2, 0x0b, 0x2a, 0xdf, 0x01, 0x00, 0x00,
+	// 645 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x54, 0x4d, 0x6f, 0xd3, 0x4c,
+	0x10, 0xf6, 0xa6, 0x55, 0xdf, 0x74, 0x92, 0x7e, 0xed, 0xcb, 0x47, 0xe4, 0xd2, 0x6d, 0x6a, 0x90,
+	0xc8, 0x81, 0xda, 0x52, 0x11, 0x42, 0x7c, 0x5c, 0x28, 0x91, 0xa2, 0x48, 0x54, 0x42, 0xae, 0xca,
+	0x01, 0x90, 0x22, 0x7f, 0x6c, 0xd3, 0x95, 0x1c, 0x7b, 0xf1, 0x3a, 0x69, 0x8e, 0x5c, 0xb8, 0xf3,
+	0x33, 0xf8, 0x29, 0x1c, 0x7b, 0xec, 0xa9, 0xa2, 0xee, 0x85, 0x03, 0x87, 0xfe, 0x04, 0x94, 0xb5,
+	0x9d, 0x38, 0x69, 0x9a, 0x9c, 0x38, 0x79, 0x66, 0xf6, 0x99, 0x67, 0x66, 0xe7, 0x19, 0x2f, 0xec,
+	0x8a, 0xd0, 0x31, 0x1c, 0x2f, 0xe8, 0xba, 0x86, 0x70, 0x42, 0xc6, 0xa3, 0x4e, 0x3b, 0x1c, 0x59,
+	0xdc, 0x36, 0x04, 0x0d, 0x7b, 0xcc, 0xa1, 0x3a, 0x0f, 0x83, 0x28, 0xc0, 0x25, 0xee, 0xe9, 0x69,
+	0x44, 0xa8, 0xbb, 0x6d, 0x16, 0x9d, 0x74, 0x6d, 0xdd, 0x09, 0x3a, 0x46, 0x3b, 0x68, 0x07, 0x86,
+	0xc4, 0xd8, 0xdd, 0x63, 0xe9, 0x49, 0x47, 0x5a, 0x49, 0xae, 0x5a, 0x95, 0xa5, 0x82, 0x4e, 0x27,
+	0xf0, 0x8d, 0x6e, 0x97, 0xb9, 0x09, 0x5c, 0x9a, 0x29, 0xe2, 0x89, 0x44, 0x58, 0xa1, 0x1f, 0x44,
+	0x06, 0xf7, 0x2c, 0xdf, 0xa7, 0x61, 0xf6, 0xe5, 0xb6, 0x71, 0xdc, 0xf5, 0x9d, 0x96, 0x15, 0xb6,
+	0x45, 0x82, 0xd6, 0x36, 0x60, 0xad, 0x41, 0xa3, 0x77, 0xac, 0x47, 0x3f, 0x30, 0x7a, 0x2a, 0x4c,
+	0xfa, 0x45, 0x73, 0x60, 0x3d, 0xf3, 0x0f, 0x68, 0x64, 0xb9, 0x56, 0x64, 0xe1, 0xc7, 0x50, 0x60,
+	0x6e, 0x05, 0x55, 0x51, 0xad, 0xb4, 0xb7, 0xa6, 0x73, 0x4f, 0x1f, 0x14, 0xe4, 0xb6, 0x7e, 0x74,
+	0xd4, 0xac, 0xef, 0x2f, 0xc5, 0x17, 0xdb, 0x85, 0x66, 0xdd, 0x2c, 0x30, 0x17, 0x63, 0x58, 0x74,
+	0xa9, 0x70, 0x2a, 0x85, 0x2a, 0xaa, 0x2d, 0x9b, 0xd2, 0x1e, 0xc4, 0x7c, 0xab, 0x43, 0x2b, 0x0b,
+	0x49, 0x6c, 0x60, 0x6b, 0xef, 0x61, 0x7d, 0xbc, 0xae, 0xe0, 0xf8, 0x35, 0x80, 0xc7, 0x7a, 0xb4,
+	0xd5, 0x1b, 0x44, 0x2a, 0xa8, 0xba, 0x50, 0x2b, 0xed, 0x6d, 0xe9, 0xb9, 0x61, 0xe9, 0x93, 0x7d,
+	0x99, 0xcb, 0x5e, 0xc6, 0xa0, 0x7d, 0x82, 0x7b, 0x39, 0xc6, 0xb7, 0x81, 0x1f, 0x51, 0x3f, 0x1a,
+	0x5c, 0x08, 0xbf, 0x81, 0xf2, 0x90, 0xb7, 0x75, 0xfb, 0x35, 0x56, 0xe3, 0x8b, 0x6d, 0xc8, 0xf2,
+	0x9b, 0x75, 0x13, 0x32, 0xee, 0xa6, 0xab, 0x9d, 0xc2, 0xfd, 0xa9, 0xe4, 0x82, 0xe3, 0x17, 0x50,
+	0xec, 0xa4, 0xed, 0xa4, 0xcc, 0x73, 0x7a, 0x1e, 0xc2, 0xf1, 0x0e, 0x94, 0x79, 0xdf, 0x6b, 0x39,
+	0x29, 0x5d, 0x3a, 0xb4, 0x12, 0xef, 0x7b, 0x59, 0x05, 0x6d, 0x0d, 0x56, 0x1a, 0x34, 0x3a, 0x94,
+	0xbb, 0x24, 0xd5, 0xf9, 0x86, 0x60, 0x35, 0x71, 0xff, 0x99, 0x38, 0x58, 0x83, 0x95, 0x13, 0x4b,
+	0xb4, 0x86, 0x43, 0xab, 0x2c, 0x56, 0x51, 0xad, 0x68, 0x96, 0x4e, 0x2c, 0x91, 0xdd, 0x46, 0x6b,
+	0xc0, 0x6a, 0xbe, 0x31, 0xc1, 0xf1, 0x33, 0xf8, 0x2f, 0xd9, 0xf9, 0x4c, 0xbb, 0xcd, 0xb1, 0x39,
+	0x8c, 0x37, 0x6d, 0x66, 0x58, 0xcd, 0x84, 0x3b, 0x43, 0xa2, 0xbc, 0x6a, 0x2f, 0x61, 0x39, 0x81,
+	0xcc, 0x90, 0xac, 0x1c, 0x5f, 0x6c, 0x17, 0x93, 0xd4, 0x66, 0xdd, 0x2c, 0x26, 0xf8, 0xa6, 0xab,
+	0x79, 0x70, 0x77, 0x0a, 0xa7, 0xe0, 0xf8, 0xf9, 0x0d, 0xb1, 0x66, 0x36, 0x39, 0x92, 0x4a, 0x85,
+	0xe2, 0x84, 0x4c, 0x43, 0x7f, 0xef, 0x4f, 0x01, 0xd6, 0xd3, 0xc4, 0x76, 0x78, 0x98, 0x50, 0xe1,
+	0x03, 0x28, 0xe7, 0x17, 0x1c, 0x3f, 0x18, 0xab, 0x33, 0xf1, 0xcf, 0xa9, 0x5b, 0x33, 0x4e, 0x05,
+	0xd7, 0x14, 0x6c, 0xc3, 0xff, 0x53, 0x16, 0x10, 0x3f, 0xbc, 0x2d, 0x2f, 0x37, 0x49, 0xf5, 0xd1,
+	0x7c, 0x90, 0xac, 0xd1, 0x00, 0x18, 0x49, 0x8a, 0xd5, 0xc9, 0xac, 0xd1, 0x12, 0xaa, 0x9b, 0xb7,
+	0x9e, 0x49, 0xa2, 0xcf, 0xb0, 0x71, 0x63, 0xfc, 0x78, 0x67, 0x7a, 0x4e, 0xbe, 0x51, 0x6d, 0x1e,
+	0x64, 0xc0, 0xbe, 0xdf, 0x3f, 0xbb, 0x24, 0xca, 0xf9, 0x25, 0x51, 0xae, 0x2f, 0x09, 0xfa, 0x1a,
+	0x13, 0xf4, 0x23, 0x26, 0xe8, 0x67, 0x4c, 0xd0, 0x59, 0x4c, 0xd0, 0xaf, 0x98, 0xa0, 0xdf, 0x31,
+	0x51, 0xae, 0x63, 0x82, 0xbe, 0x5f, 0x11, 0xe5, 0xec, 0x8a, 0x28, 0xe7, 0x57, 0x44, 0xf9, 0xb8,
+	0xcf, 0x59, 0x9f, 0x51, 0xcf, 0xb2, 0x85, 0x6e, 0x31, 0x63, 0xe8, 0x18, 0x73, 0x9e, 0xee, 0x57,
+	0x39, 0xdb, 0x5e, 0x92, 0x6f, 0xe6, 0xd3, 0xbf, 0x01, 0x00, 0x00, 0xff, 0xff, 0xb1, 0x44, 0x8d,
+	0x05, 0xf0, 0x05, 0x00, 0x00,
 }
 
-func (this *ExtractVisFuncsInfoRequest) Equal(that interface{}) bool {
+func (this *GetLiveViewsReq) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*ExtractVisFuncsInfoRequest)
+	that1, ok := that.(*GetLiveViewsReq)
 	if !ok {
-		that2, ok := that.(ExtractVisFuncsInfoRequest)
+		that2, ok := that.(GetLiveViewsReq)
 		if ok {
 			that1 = &that2
 		} else {
@@ -132,27 +582,370 @@ func (this *ExtractVisFuncsInfoRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Script != that1.Script {
+	return true
+}
+func (this *LiveViewMetadata) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*LiveViewMetadata)
+	if !ok {
+		that2, ok := that.(LiveViewMetadata)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
 		return false
 	}
-	if len(this.FuncNames) != len(that1.FuncNames) {
+	if !this.ID.Equal(that1.ID) {
 		return false
 	}
-	for i := range this.FuncNames {
-		if this.FuncNames[i] != that1.FuncNames[i] {
+	if this.Desc != that1.Desc {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	return true
+}
+func (this *GetLiveViewsResp) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetLiveViewsResp)
+	if !ok {
+		that2, ok := that.(GetLiveViewsResp)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.LiveViews) != len(that1.LiveViews) {
+		return false
+	}
+	for i := range this.LiveViews {
+		if !this.LiveViews[i].Equal(that1.LiveViews[i]) {
 			return false
 		}
 	}
 	return true
 }
-func (this *ExtractVisFuncsInfoRequest) GoString() string {
+func (this *GetLiveViewContentsReq) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetLiveViewContentsReq)
+	if !ok {
+		that2, ok := that.(GetLiveViewContentsReq)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.LiveViewID.Equal(that1.LiveViewID) {
+		return false
+	}
+	return true
+}
+func (this *GetLiveViewContentsResp) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetLiveViewContentsResp)
+	if !ok {
+		that2, ok := that.(GetLiveViewContentsResp)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Metadata.Equal(that1.Metadata) {
+		return false
+	}
+	if this.PxlContents != that1.PxlContents {
+		return false
+	}
+	return true
+}
+func (this *GetScriptsReq) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetScriptsReq)
+	if !ok {
+		that2, ok := that.(GetScriptsReq)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *ScriptMetadata) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ScriptMetadata)
+	if !ok {
+		that2, ok := that.(ScriptMetadata)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ID.Equal(that1.ID) {
+		return false
+	}
+	if this.Desc != that1.Desc {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.HasLiveView != that1.HasLiveView {
+		return false
+	}
+	return true
+}
+func (this *GetScriptsResp) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetScriptsResp)
+	if !ok {
+		that2, ok := that.(GetScriptsResp)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Scripts) != len(that1.Scripts) {
+		return false
+	}
+	for i := range this.Scripts {
+		if !this.Scripts[i].Equal(that1.Scripts[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *GetScriptContentsReq) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetScriptContentsReq)
+	if !ok {
+		that2, ok := that.(GetScriptContentsReq)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ScriptID.Equal(that1.ScriptID) {
+		return false
+	}
+	return true
+}
+func (this *GetScriptContentsResp) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetScriptContentsResp)
+	if !ok {
+		that2, ok := that.(GetScriptContentsResp)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Metadata.Equal(that1.Metadata) {
+		return false
+	}
+	if this.Contents != that1.Contents {
+		return false
+	}
+	return true
+}
+func (this *GetLiveViewsReq) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&scriptmgrpb.GetLiveViewsReq{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *LiveViewMetadata) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&scriptmgrpb.LiveViewMetadata{")
+	if this.ID != nil {
+		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	}
+	s = append(s, "Desc: "+fmt.Sprintf("%#v", this.Desc)+",\n")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetLiveViewsResp) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&scriptmgrpb.GetLiveViewsResp{")
+	if this.LiveViews != nil {
+		s = append(s, "LiveViews: "+fmt.Sprintf("%#v", this.LiveViews)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetLiveViewContentsReq) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&scriptmgrpb.GetLiveViewContentsReq{")
+	if this.LiveViewID != nil {
+		s = append(s, "LiveViewID: "+fmt.Sprintf("%#v", this.LiveViewID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetLiveViewContentsResp) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 6)
-	s = append(s, "&scriptmgrpb.ExtractVisFuncsInfoRequest{")
-	s = append(s, "Script: "+fmt.Sprintf("%#v", this.Script)+",\n")
-	s = append(s, "FuncNames: "+fmt.Sprintf("%#v", this.FuncNames)+",\n")
+	s = append(s, "&scriptmgrpb.GetLiveViewContentsResp{")
+	if this.Metadata != nil {
+		s = append(s, "Metadata: "+fmt.Sprintf("%#v", this.Metadata)+",\n")
+	}
+	s = append(s, "PxlContents: "+fmt.Sprintf("%#v", this.PxlContents)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetScriptsReq) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&scriptmgrpb.GetScriptsReq{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ScriptMetadata) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&scriptmgrpb.ScriptMetadata{")
+	if this.ID != nil {
+		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	}
+	s = append(s, "Desc: "+fmt.Sprintf("%#v", this.Desc)+",\n")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "HasLiveView: "+fmt.Sprintf("%#v", this.HasLiveView)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetScriptsResp) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&scriptmgrpb.GetScriptsResp{")
+	if this.Scripts != nil {
+		s = append(s, "Scripts: "+fmt.Sprintf("%#v", this.Scripts)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetScriptContentsReq) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&scriptmgrpb.GetScriptContentsReq{")
+	if this.ScriptID != nil {
+		s = append(s, "ScriptID: "+fmt.Sprintf("%#v", this.ScriptID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetScriptContentsResp) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&scriptmgrpb.GetScriptContentsResp{")
+	if this.Metadata != nil {
+		s = append(s, "Metadata: "+fmt.Sprintf("%#v", this.Metadata)+",\n")
+	}
+	s = append(s, "Contents: "+fmt.Sprintf("%#v", this.Contents)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -177,7 +970,10 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ScriptMgrServiceClient interface {
-	ExtractVisFuncsInfo(ctx context.Context, in *ExtractVisFuncsInfoRequest, opts ...grpc.CallOption) (*scriptspb.VisFuncsInfo, error)
+	GetLiveViews(ctx context.Context, in *GetLiveViewsReq, opts ...grpc.CallOption) (*GetLiveViewsResp, error)
+	GetLiveViewContents(ctx context.Context, in *GetLiveViewContentsReq, opts ...grpc.CallOption) (*GetLiveViewContentsResp, error)
+	GetScripts(ctx context.Context, in *GetScriptsReq, opts ...grpc.CallOption) (*GetScriptsResp, error)
+	GetScriptContents(ctx context.Context, in *GetScriptContentsReq, opts ...grpc.CallOption) (*GetScriptContentsResp, error)
 }
 
 type scriptMgrServiceClient struct {
@@ -188,9 +984,36 @@ func NewScriptMgrServiceClient(cc *grpc.ClientConn) ScriptMgrServiceClient {
 	return &scriptMgrServiceClient{cc}
 }
 
-func (c *scriptMgrServiceClient) ExtractVisFuncsInfo(ctx context.Context, in *ExtractVisFuncsInfoRequest, opts ...grpc.CallOption) (*scriptspb.VisFuncsInfo, error) {
-	out := new(scriptspb.VisFuncsInfo)
-	err := c.cc.Invoke(ctx, "/pl.services.ScriptMgrService/ExtractVisFuncsInfo", in, out, opts...)
+func (c *scriptMgrServiceClient) GetLiveViews(ctx context.Context, in *GetLiveViewsReq, opts ...grpc.CallOption) (*GetLiveViewsResp, error) {
+	out := new(GetLiveViewsResp)
+	err := c.cc.Invoke(ctx, "/pl.services.ScriptMgrService/GetLiveViews", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *scriptMgrServiceClient) GetLiveViewContents(ctx context.Context, in *GetLiveViewContentsReq, opts ...grpc.CallOption) (*GetLiveViewContentsResp, error) {
+	out := new(GetLiveViewContentsResp)
+	err := c.cc.Invoke(ctx, "/pl.services.ScriptMgrService/GetLiveViewContents", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *scriptMgrServiceClient) GetScripts(ctx context.Context, in *GetScriptsReq, opts ...grpc.CallOption) (*GetScriptsResp, error) {
+	out := new(GetScriptsResp)
+	err := c.cc.Invoke(ctx, "/pl.services.ScriptMgrService/GetScripts", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *scriptMgrServiceClient) GetScriptContents(ctx context.Context, in *GetScriptContentsReq, opts ...grpc.CallOption) (*GetScriptContentsResp, error) {
+	out := new(GetScriptContentsResp)
+	err := c.cc.Invoke(ctx, "/pl.services.ScriptMgrService/GetScriptContents", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -199,35 +1022,101 @@ func (c *scriptMgrServiceClient) ExtractVisFuncsInfo(ctx context.Context, in *Ex
 
 // ScriptMgrServiceServer is the server API for ScriptMgrService service.
 type ScriptMgrServiceServer interface {
-	ExtractVisFuncsInfo(context.Context, *ExtractVisFuncsInfoRequest) (*scriptspb.VisFuncsInfo, error)
+	GetLiveViews(context.Context, *GetLiveViewsReq) (*GetLiveViewsResp, error)
+	GetLiveViewContents(context.Context, *GetLiveViewContentsReq) (*GetLiveViewContentsResp, error)
+	GetScripts(context.Context, *GetScriptsReq) (*GetScriptsResp, error)
+	GetScriptContents(context.Context, *GetScriptContentsReq) (*GetScriptContentsResp, error)
 }
 
 // UnimplementedScriptMgrServiceServer can be embedded to have forward compatible implementations.
 type UnimplementedScriptMgrServiceServer struct {
 }
 
-func (*UnimplementedScriptMgrServiceServer) ExtractVisFuncsInfo(ctx context.Context, req *ExtractVisFuncsInfoRequest) (*scriptspb.VisFuncsInfo, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ExtractVisFuncsInfo not implemented")
+func (*UnimplementedScriptMgrServiceServer) GetLiveViews(ctx context.Context, req *GetLiveViewsReq) (*GetLiveViewsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLiveViews not implemented")
+}
+func (*UnimplementedScriptMgrServiceServer) GetLiveViewContents(ctx context.Context, req *GetLiveViewContentsReq) (*GetLiveViewContentsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLiveViewContents not implemented")
+}
+func (*UnimplementedScriptMgrServiceServer) GetScripts(ctx context.Context, req *GetScriptsReq) (*GetScriptsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetScripts not implemented")
+}
+func (*UnimplementedScriptMgrServiceServer) GetScriptContents(ctx context.Context, req *GetScriptContentsReq) (*GetScriptContentsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetScriptContents not implemented")
 }
 
 func RegisterScriptMgrServiceServer(s *grpc.Server, srv ScriptMgrServiceServer) {
 	s.RegisterService(&_ScriptMgrService_serviceDesc, srv)
 }
 
-func _ScriptMgrService_ExtractVisFuncsInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ExtractVisFuncsInfoRequest)
+func _ScriptMgrService_GetLiveViews_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLiveViewsReq)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ScriptMgrServiceServer).ExtractVisFuncsInfo(ctx, in)
+		return srv.(ScriptMgrServiceServer).GetLiveViews(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/pl.services.ScriptMgrService/ExtractVisFuncsInfo",
+		FullMethod: "/pl.services.ScriptMgrService/GetLiveViews",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ScriptMgrServiceServer).ExtractVisFuncsInfo(ctx, req.(*ExtractVisFuncsInfoRequest))
+		return srv.(ScriptMgrServiceServer).GetLiveViews(ctx, req.(*GetLiveViewsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ScriptMgrService_GetLiveViewContents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLiveViewContentsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ScriptMgrServiceServer).GetLiveViewContents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.ScriptMgrService/GetLiveViewContents",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ScriptMgrServiceServer).GetLiveViewContents(ctx, req.(*GetLiveViewContentsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ScriptMgrService_GetScripts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetScriptsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ScriptMgrServiceServer).GetScripts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.ScriptMgrService/GetScripts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ScriptMgrServiceServer).GetScripts(ctx, req.(*GetScriptsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ScriptMgrService_GetScriptContents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetScriptContentsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ScriptMgrServiceServer).GetScriptContents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.ScriptMgrService/GetScriptContents",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ScriptMgrServiceServer).GetScriptContents(ctx, req.(*GetScriptContentsReq))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -237,15 +1126,27 @@ var _ScriptMgrService_serviceDesc = grpc.ServiceDesc{
 	HandlerType: (*ScriptMgrServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ExtractVisFuncsInfo",
-			Handler:    _ScriptMgrService_ExtractVisFuncsInfo_Handler,
+			MethodName: "GetLiveViews",
+			Handler:    _ScriptMgrService_GetLiveViews_Handler,
+		},
+		{
+			MethodName: "GetLiveViewContents",
+			Handler:    _ScriptMgrService_GetLiveViewContents_Handler,
+		},
+		{
+			MethodName: "GetScripts",
+			Handler:    _ScriptMgrService_GetScripts_Handler,
+		},
+		{
+			MethodName: "GetScriptContents",
+			Handler:    _ScriptMgrService_GetScriptContents_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "src/cloud/scriptmgr/scriptmgrpb/service.proto",
 }
 
-func (m *ExtractVisFuncsInfoRequest) Marshal() (dAtA []byte, err error) {
+func (m *GetLiveViewsReq) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -255,29 +1156,372 @@ func (m *ExtractVisFuncsInfoRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ExtractVisFuncsInfoRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *GetLiveViewsReq) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ExtractVisFuncsInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *GetLiveViewsReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.FuncNames) > 0 {
-		for iNdEx := len(m.FuncNames) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.FuncNames[iNdEx])
-			copy(dAtA[i:], m.FuncNames[iNdEx])
-			i = encodeVarintService(dAtA, i, uint64(len(m.FuncNames[iNdEx])))
+	return len(dAtA) - i, nil
+}
+
+func (m *LiveViewMetadata) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *LiveViewMetadata) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *LiveViewMetadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Desc) > 0 {
+		i -= len(m.Desc)
+		copy(dAtA[i:], m.Desc)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Desc)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ID != nil {
+		{
+			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetLiveViewsResp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetLiveViewsResp) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetLiveViewsResp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.LiveViews) > 0 {
+		for iNdEx := len(m.LiveViews) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.LiveViews[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintService(dAtA, i, uint64(size))
+			}
 			i--
-			dAtA[i] = 0x12
+			dAtA[i] = 0xa
 		}
 	}
-	if len(m.Script) > 0 {
-		i -= len(m.Script)
-		copy(dAtA[i:], m.Script)
-		i = encodeVarintService(dAtA, i, uint64(len(m.Script)))
+	return len(dAtA) - i, nil
+}
+
+func (m *GetLiveViewContentsReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetLiveViewContentsReq) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetLiveViewContentsReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.LiveViewID != nil {
+		{
+			size, err := m.LiveViewID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetLiveViewContentsResp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetLiveViewContentsResp) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetLiveViewContentsResp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.PxlContents) > 0 {
+		i -= len(m.PxlContents)
+		copy(dAtA[i:], m.PxlContents)
+		i = encodeVarintService(dAtA, i, uint64(len(m.PxlContents)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Metadata != nil {
+		{
+			size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetScriptsReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetScriptsReq) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetScriptsReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *ScriptMetadata) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ScriptMetadata) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ScriptMetadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.HasLiveView {
+		i--
+		if m.HasLiveView {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Desc) > 0 {
+		i -= len(m.Desc)
+		copy(dAtA[i:], m.Desc)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Desc)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ID != nil {
+		{
+			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetScriptsResp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetScriptsResp) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetScriptsResp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Scripts) > 0 {
+		for iNdEx := len(m.Scripts) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Scripts[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintService(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetScriptContentsReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetScriptContentsReq) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetScriptContentsReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ScriptID != nil {
+		{
+			size, err := m.ScriptID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetScriptContentsResp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetScriptContentsResp) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetScriptContentsResp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Contents) > 0 {
+		i -= len(m.Contents)
+		copy(dAtA[i:], m.Contents)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Contents)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Metadata != nil {
+		{
+			size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
 		i--
 		dAtA[i] = 0xa
 	}
@@ -295,21 +1539,155 @@ func encodeVarintService(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *ExtractVisFuncsInfoRequest) Size() (n int) {
+func (m *GetLiveViewsReq) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.Script)
+	return n
+}
+
+func (m *LiveViewMetadata) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ID != nil {
+		l = m.ID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	l = len(m.Desc)
 	if l > 0 {
 		n += 1 + l + sovService(uint64(l))
 	}
-	if len(m.FuncNames) > 0 {
-		for _, s := range m.FuncNames {
-			l = len(s)
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *GetLiveViewsResp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.LiveViews) > 0 {
+		for _, e := range m.LiveViews {
+			l = e.Size()
 			n += 1 + l + sovService(uint64(l))
 		}
+	}
+	return n
+}
+
+func (m *GetLiveViewContentsReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.LiveViewID != nil {
+		l = m.LiveViewID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *GetLiveViewContentsResp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Metadata != nil {
+		l = m.Metadata.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	l = len(m.PxlContents)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *GetScriptsReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *ScriptMetadata) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ID != nil {
+		l = m.ID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	l = len(m.Desc)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.HasLiveView {
+		n += 2
+	}
+	return n
+}
+
+func (m *GetScriptsResp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Scripts) > 0 {
+		for _, e := range m.Scripts {
+			l = e.Size()
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *GetScriptContentsReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ScriptID != nil {
+		l = m.ScriptID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *GetScriptContentsResp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Metadata != nil {
+		l = m.Metadata.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	l = len(m.Contents)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
 	}
 	return n
 }
@@ -320,13 +1698,117 @@ func sovService(x uint64) (n int) {
 func sozService(x uint64) (n int) {
 	return sovService(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (this *ExtractVisFuncsInfoRequest) String() string {
+func (this *GetLiveViewsReq) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&ExtractVisFuncsInfoRequest{`,
-		`Script:` + fmt.Sprintf("%v", this.Script) + `,`,
-		`FuncNames:` + fmt.Sprintf("%v", this.FuncNames) + `,`,
+	s := strings.Join([]string{`&GetLiveViewsReq{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LiveViewMetadata) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LiveViewMetadata{`,
+		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "proto1.UUID", 1) + `,`,
+		`Desc:` + fmt.Sprintf("%v", this.Desc) + `,`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetLiveViewsResp) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForLiveViews := "[]*LiveViewMetadata{"
+	for _, f := range this.LiveViews {
+		repeatedStringForLiveViews += strings.Replace(f.String(), "LiveViewMetadata", "LiveViewMetadata", 1) + ","
+	}
+	repeatedStringForLiveViews += "}"
+	s := strings.Join([]string{`&GetLiveViewsResp{`,
+		`LiveViews:` + repeatedStringForLiveViews + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetLiveViewContentsReq) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetLiveViewContentsReq{`,
+		`LiveViewID:` + strings.Replace(fmt.Sprintf("%v", this.LiveViewID), "UUID", "proto1.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetLiveViewContentsResp) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetLiveViewContentsResp{`,
+		`Metadata:` + strings.Replace(this.Metadata.String(), "LiveViewMetadata", "LiveViewMetadata", 1) + `,`,
+		`PxlContents:` + fmt.Sprintf("%v", this.PxlContents) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetScriptsReq) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetScriptsReq{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ScriptMetadata) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ScriptMetadata{`,
+		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "proto1.UUID", 1) + `,`,
+		`Desc:` + fmt.Sprintf("%v", this.Desc) + `,`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`HasLiveView:` + fmt.Sprintf("%v", this.HasLiveView) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetScriptsResp) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForScripts := "[]*ScriptMetadata{"
+	for _, f := range this.Scripts {
+		repeatedStringForScripts += strings.Replace(f.String(), "ScriptMetadata", "ScriptMetadata", 1) + ","
+	}
+	repeatedStringForScripts += "}"
+	s := strings.Join([]string{`&GetScriptsResp{`,
+		`Scripts:` + repeatedStringForScripts + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetScriptContentsReq) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetScriptContentsReq{`,
+		`ScriptID:` + strings.Replace(fmt.Sprintf("%v", this.ScriptID), "UUID", "proto1.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetScriptContentsResp) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetScriptContentsResp{`,
+		`Metadata:` + strings.Replace(this.Metadata.String(), "ScriptMetadata", "ScriptMetadata", 1) + `,`,
+		`Contents:` + fmt.Sprintf("%v", this.Contents) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -339,7 +1821,7 @@ func valueToStringService(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *ExtractVisFuncsInfoRequest) Unmarshal(dAtA []byte) error {
+func (m *GetLiveViewsReq) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -362,17 +1844,70 @@ func (m *ExtractVisFuncsInfoRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ExtractVisFuncsInfoRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: GetLiveViewsReq: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ExtractVisFuncsInfoRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: GetLiveViewsReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LiveViewMetadata) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LiveViewMetadata: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LiveViewMetadata: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Script", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
 			}
-			var stringLen uint64
+			var msglen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowService
@@ -382,27 +1917,31 @@ func (m *ExtractVisFuncsInfoRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				msglen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
+			if msglen < 0 {
 				return ErrInvalidLengthService
 			}
-			postIndex := iNdEx + intStringLen
+			postIndex := iNdEx + msglen
 			if postIndex < 0 {
 				return ErrInvalidLengthService
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Script = string(dAtA[iNdEx:postIndex])
+			if m.ID == nil {
+				m.ID = &proto1.UUID{}
+			}
+			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FuncNames", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field Desc", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -430,7 +1969,859 @@ func (m *ExtractVisFuncsInfoRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.FuncNames = append(m.FuncNames, string(dAtA[iNdEx:postIndex]))
+			m.Desc = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetLiveViewsResp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetLiveViewsResp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetLiveViewsResp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LiveViews", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LiveViews = append(m.LiveViews, &LiveViewMetadata{})
+			if err := m.LiveViews[len(m.LiveViews)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetLiveViewContentsReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetLiveViewContentsReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetLiveViewContentsReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LiveViewID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.LiveViewID == nil {
+				m.LiveViewID = &proto1.UUID{}
+			}
+			if err := m.LiveViewID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetLiveViewContentsResp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetLiveViewContentsResp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetLiveViewContentsResp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Metadata == nil {
+				m.Metadata = &LiveViewMetadata{}
+			}
+			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PxlContents", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PxlContents = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetScriptsReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetScriptsReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetScriptsReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ScriptMetadata) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ScriptMetadata: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ScriptMetadata: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ID == nil {
+				m.ID = &proto1.UUID{}
+			}
+			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Desc", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Desc = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HasLiveView", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.HasLiveView = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetScriptsResp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetScriptsResp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetScriptsResp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scripts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Scripts = append(m.Scripts, &ScriptMetadata{})
+			if err := m.Scripts[len(m.Scripts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetScriptContentsReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetScriptContentsReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetScriptContentsReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScriptID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ScriptID == nil {
+				m.ScriptID = &proto1.UUID{}
+			}
+			if err := m.ScriptID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetScriptContentsResp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetScriptContentsResp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetScriptContentsResp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Metadata == nil {
+				m.Metadata = &ScriptMetadata{}
+			}
+			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Contents", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Contents = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

@@ -1,0 +1,8 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pl-scriptmgr-config
+data:
+  PL_BUNDLE_BUCKET: pixie-prod-artifacts
+  PL_BUNDLE_PATH: script-bundles/bundle.json

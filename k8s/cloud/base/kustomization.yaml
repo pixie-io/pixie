@@ -35,3 +35,4 @@ resources:
 - log_collector_service.yaml
 - scriptmgr_deployment.yaml
 - scriptmgr_service.yaml
+- scriptmgr_config.yaml

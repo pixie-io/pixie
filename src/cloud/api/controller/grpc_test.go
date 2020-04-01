@@ -4,12 +4,6 @@ import (
 	"context"
 	"testing"
 
-	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
-
-	"pixielabs.ai/pixielabs/src/shared/scriptspb"
-
-	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
-
 	types "github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
@@ -19,9 +13,8 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
-	"pixielabs.ai/pixielabs/src/cloud/autocomplete/mock"
+	mock_autocomplete "pixielabs.ai/pixielabs/src/cloud/autocomplete/mock"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	mock_scriptmgr "pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb/mock"
 	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
@@ -236,79 +229,6 @@ func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-}
-
-func TestScriptMgrServer_ExtractVisFuncsInfo(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockScriptMgr := mock_scriptmgr.NewMockScriptMgrServiceClient(ctrl)
-	ctx := CreateTestContext()
-
-	extractReq := &scriptmgrpb.ExtractVisFuncsInfoRequest{
-		Script:    "mock script",
-		FuncNames: []string{"f"},
-	}
-	docStringMap := make(map[string]string, 1)
-	docStringMap["f"] = "docstring"
-
-	visSpecMap := make(map[string]*scriptspb.VisSpec, 1)
-	visSpecMap["f"] = &scriptspb.VisSpec{
-		VegaSpec: "vegaspec",
-	}
-	expectedVisSpecMap := make(map[string]*cloudapipb.VisSpec, 1)
-	expectedVisSpecMap["f"] = &cloudapipb.VisSpec{
-		VegaSpec: "vegaspec",
-	}
-
-	fnArgsMap := make(map[string]*scriptspb.FuncArgsSpec, 1)
-	fnArgsMap["f"] = &scriptspb.FuncArgsSpec{
-		Args: []*scriptspb.FuncArgsSpec_Arg{
-			&scriptspb.FuncArgsSpec_Arg{
-				Name:         "a",
-				DataType:     typespb.STRING,
-				SemanticType: typespb.ST_NONE,
-				DefaultValue: "",
-			},
-		},
-	}
-	expectedFnArgsMap := make(map[string]*cloudapipb.FuncArgsSpec, 1)
-	expectedFnArgsMap["f"] = &cloudapipb.FuncArgsSpec{
-		Args: []*cloudapipb.FuncArgsSpec_Arg{
-			&cloudapipb.FuncArgsSpec_Arg{
-				Name:         "a",
-				DataType:     cloudapipb.STRING,
-				SemanticType: cloudapipb.ST_NONE,
-				DefaultValue: "",
-			},
-		},
-	}
-
-	extractResp := &scriptspb.VisFuncsInfo{
-		DocStringMap: docStringMap,
-		VisSpecMap:   visSpecMap,
-		FnArgsMap:    fnArgsMap,
-	}
-
-	mockScriptMgr.EXPECT().ExtractVisFuncsInfo(gomock.Any(), extractReq).Return(extractResp, nil)
-
-	scriptMgrServer := &controller.ScriptMgrServer{
-		ScriptMgr: mockScriptMgr,
-	}
-
-	resp, err := scriptMgrServer.ExtractVisFuncsInfo(ctx, &cloudapipb.ExtractVisFuncsInfoRequest{
-		Script:    extractReq.Script,
-		FuncNames: extractReq.FuncNames,
-	})
-	assert.Nil(t, err)
-
-	expectedResp := &cloudapipb.ExtractVisFuncsInfoResponse{
-		DocStringMap: docStringMap,
-		VisSpecMap:   expectedVisSpecMap,
-		FnArgsMap:    expectedFnArgsMap,
-	}
-	assert.Equal(t, expectedResp, resp)
-
 }
 
 type SuggestionRequest struct {

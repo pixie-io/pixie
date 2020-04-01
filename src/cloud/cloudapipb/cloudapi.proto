@@ -193,66 +193,6 @@ message UpdateClusterVizierConfigRequest {
 message UpdateClusterVizierConfigResponse {}
 
 service ScriptMgr {
-    // ExtractVisFuncsInfo extracts information about px.vis annotated functions
-    // from the provided script. In the short term, it's intended to be used for
-    // all scripts. In the long term, it will only be used for unpersisted scripts.
-    rpc ExtractVisFuncsInfo(ExtractVisFuncsInfoRequest) returns (ExtractVisFuncsInfoResponse) {}
-}
-
-message ExtractVisFuncsInfoRequest {
-    string script = 1;
-    repeated string func_names = 2;
-}
-
-// Semantic types can specify that a generic value has a specific context in Pixie.
-enum SemanticType {
-  ST_UNSPECIFIED = 0;
-  ST_NONE = 1;
-  ST_AGENT_UID = 100;
-  ST_UPID = 200;
-  ST_SERVICE_NAME = 300;
-}
-
-// The list of data types supported by our execution engine.
-enum DataType {
-  DATA_TYPE_UNKNOWN = 0;
-  BOOLEAN = 1;
-  INT64 = 2;
-  UINT128 = 3;
-  FLOAT64 = 4;
-  STRING = 5;
-  TIME64NS = 6;
-  DURATION64NS = 7;
-}
-
-// FuncArgsSpec specifies the flags that are defined within a query.
-message FuncArgsSpec {
-  message Arg {
-    // The data type that this arg accepts
-    DataType data_type = 1;
-    // The semantic type that this arg accepts
-    SemanticType semantic_type = 2;
-    // The name of this arg.
-    string name = 3;
-    // The optional default value assigned to this arg.
-    string default_value = 5;
-  }
-  repeated Arg args = 1;
-}
-
-// VisSpec provides information to specify the vizualization of a function.
-message VisSpec {
-  string vega_spec = 1;
-}
-
-// ExtractVisFuncsInfoResponse contains info about each px.vis annotated function.
-message ExtractVisFuncsInfoResponse {
-  // Map from function name to doc string for that function.
-  map<string, string> doc_string_map = 1;
-  // Map from function name to VisSpec for the function.
-  map<string, VisSpec> vis_spec_map = 2;
-  // Mapping from function name to arguments.
-  map<string, FuncArgsSpec> fn_args_map = 3;
 }
 
 // AutocompleteService responds to autocomplete requests.

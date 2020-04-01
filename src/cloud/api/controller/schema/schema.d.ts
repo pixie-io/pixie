@@ -18,7 +18,6 @@ export interface GQLQuery {
   clusterConnection: GQLClusterConnectionInfo;
   cliArtifact: GQLCLIArtifact;
   artifacts: GQLArtifactsInfo;
-  extractVisFuncsInfo: GQLVisFuncsInfo;
   autocomplete: GQLAutocompleteResult;
 }
 
@@ -73,61 +72,6 @@ export interface GQLArtifact {
   version: string;
   changelog: string;
   timestampMs: number;
-}
-
-export interface GQLVisFuncsInfo {
-  docStringMap: Array<GQLDocStringMapEntry>;
-  visSpecMap: Array<GQLVisSpecMapEntry>;
-  fnArgsMap: Array<GQLFnArgsMapEntry>;
-}
-
-export interface GQLDocStringMapEntry {
-  funcName: string;
-  docString: string;
-}
-
-export interface GQLVisSpecMapEntry {
-  funcName: string;
-  visSpec?: GQLVisSpec;
-}
-
-export interface GQLVisSpec {
-  vegaSpec: string;
-}
-
-export interface GQLFnArgsMapEntry {
-  funcName: string;
-  fnArgSpec: GQLFnArgsSpec;
-}
-
-export interface GQLFnArgsSpec {
-  args: Array<GQLFnArgsSpecArg>;
-}
-
-export interface GQLFnArgsSpecArg {
-  name: string;
-  dataType: GQLDataType;
-  semanticType: GQLSemanticType;
-  defaultValue: string;
-}
-
-export const enum GQLDataType {
-  DATA_TYPE_UNKNOWN = 'DATA_TYPE_UNKNOWN',
-  BOOLEAN = 'BOOLEAN',
-  INT64 = 'INT64',
-  UINT128 = 'UINT128',
-  FLOAT64 = 'FLOAT64',
-  STRING = 'STRING',
-  TIME64NS = 'TIME64NS',
-  DURATION64NS = 'DURATION64NS'
-}
-
-export const enum GQLSemanticType {
-  ST_UNSPECIFIED = 'ST_UNSPECIFIED',
-  ST_NONE = 'ST_NONE',
-  ST_AGENT_UID = 'ST_AGENT_UID',
-  ST_UPID = 'ST_UPID',
-  ST_SERVICE_NAME = 'ST_SERVICE_NAME'
 }
 
 export const enum GQLAutocompleteActionType {
@@ -186,13 +130,6 @@ export interface GQLResolver {
   CLIArtifact?: GQLCLIArtifactTypeResolver;
   ArtifactsInfo?: GQLArtifactsInfoTypeResolver;
   Artifact?: GQLArtifactTypeResolver;
-  VisFuncsInfo?: GQLVisFuncsInfoTypeResolver;
-  DocStringMapEntry?: GQLDocStringMapEntryTypeResolver;
-  VisSpecMapEntry?: GQLVisSpecMapEntryTypeResolver;
-  VisSpec?: GQLVisSpecTypeResolver;
-  FnArgsMapEntry?: GQLFnArgsMapEntryTypeResolver;
-  FnArgsSpec?: GQLFnArgsSpecTypeResolver;
-  FnArgsSpecArg?: GQLFnArgsSpecArgTypeResolver;
   AutocompleteResult?: GQLAutocompleteResultTypeResolver;
   TabSuggestion?: GQLTabSuggestionTypeResolver;
   AutocompleteSuggestion?: GQLAutocompleteSuggestionTypeResolver;
@@ -204,7 +141,6 @@ export interface GQLQueryTypeResolver<TParent = any> {
   clusterConnection?: QueryToClusterConnectionResolver<TParent>;
   cliArtifact?: QueryToCliArtifactResolver<TParent>;
   artifacts?: QueryToArtifactsResolver<TParent>;
-  extractVisFuncsInfo?: QueryToExtractVisFuncsInfoResolver<TParent>;
   autocomplete?: QueryToAutocompleteResolver<TParent>;
 }
 
@@ -232,14 +168,6 @@ export interface QueryToArtifactsArgs {
 }
 export interface QueryToArtifactsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToArtifactsArgs, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface QueryToExtractVisFuncsInfoArgs {
-  script: string;
-  funcNames?: Array<string>;
-}
-export interface QueryToExtractVisFuncsInfoResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: QueryToExtractVisFuncsInfoArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface QueryToAutocompleteArgs {
@@ -359,102 +287,6 @@ export interface ArtifactToChangelogResolver<TParent = any, TResult = any> {
 }
 
 export interface ArtifactToTimestampMsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface GQLVisFuncsInfoTypeResolver<TParent = any> {
-  docStringMap?: VisFuncsInfoToDocStringMapResolver<TParent>;
-  visSpecMap?: VisFuncsInfoToVisSpecMapResolver<TParent>;
-  fnArgsMap?: VisFuncsInfoToFnArgsMapResolver<TParent>;
-}
-
-export interface VisFuncsInfoToDocStringMapResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface VisFuncsInfoToVisSpecMapResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface VisFuncsInfoToFnArgsMapResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface GQLDocStringMapEntryTypeResolver<TParent = any> {
-  funcName?: DocStringMapEntryToFuncNameResolver<TParent>;
-  docString?: DocStringMapEntryToDocStringResolver<TParent>;
-}
-
-export interface DocStringMapEntryToFuncNameResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface DocStringMapEntryToDocStringResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface GQLVisSpecMapEntryTypeResolver<TParent = any> {
-  funcName?: VisSpecMapEntryToFuncNameResolver<TParent>;
-  visSpec?: VisSpecMapEntryToVisSpecResolver<TParent>;
-}
-
-export interface VisSpecMapEntryToFuncNameResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface VisSpecMapEntryToVisSpecResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface GQLVisSpecTypeResolver<TParent = any> {
-  vegaSpec?: VisSpecToVegaSpecResolver<TParent>;
-}
-
-export interface VisSpecToVegaSpecResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface GQLFnArgsMapEntryTypeResolver<TParent = any> {
-  funcName?: FnArgsMapEntryToFuncNameResolver<TParent>;
-  fnArgSpec?: FnArgsMapEntryToFnArgSpecResolver<TParent>;
-}
-
-export interface FnArgsMapEntryToFuncNameResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface FnArgsMapEntryToFnArgSpecResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface GQLFnArgsSpecTypeResolver<TParent = any> {
-  args?: FnArgsSpecToArgsResolver<TParent>;
-}
-
-export interface FnArgsSpecToArgsResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface GQLFnArgsSpecArgTypeResolver<TParent = any> {
-  name?: FnArgsSpecArgToNameResolver<TParent>;
-  dataType?: FnArgsSpecArgToDataTypeResolver<TParent>;
-  semanticType?: FnArgsSpecArgToSemanticTypeResolver<TParent>;
-  defaultValue?: FnArgsSpecArgToDefaultValueResolver<TParent>;
-}
-
-export interface FnArgsSpecArgToNameResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface FnArgsSpecArgToDataTypeResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface FnArgsSpecArgToSemanticTypeResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
-}
-
-export interface FnArgsSpecArgToDefaultValueResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

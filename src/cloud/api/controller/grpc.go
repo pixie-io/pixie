@@ -6,9 +6,6 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"pixielabs.ai/pixielabs/src/shared/scriptspb"
-	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
-
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
 
 	uuid "github.com/satori/go.uuid"
@@ -301,71 +298,6 @@ func vzStatusToClusterStatus(s cvmsgspb.VizierInfo_Status) cloudapipb.ClusterSta
 // ScriptMgrServer is the server that implements the ScriptMgr gRPC service.
 type ScriptMgrServer struct {
 	ScriptMgr scriptmgrpb.ScriptMgrServiceClient
-}
-
-// ExtractVisFuncsInfo returns information about the px.vis decorated functions in the provided script.
-func (s *ScriptMgrServer) ExtractVisFuncsInfo(ctx context.Context, req *cloudapipb.ExtractVisFuncsInfoRequest) (*cloudapipb.ExtractVisFuncsInfoResponse, error) {
-	sCtx, err := authcontext.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
-
-	resp, err := s.ScriptMgr.ExtractVisFuncsInfo(ctx, &scriptmgrpb.ExtractVisFuncsInfoRequest{
-		Script:    req.Script,
-		FuncNames: req.FuncNames,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &cloudapipb.ExtractVisFuncsInfoResponse{
-		DocStringMap: resp.DocStringMap,
-		VisSpecMap:   convertVisSpecMapToCloudAPI(resp.VisSpecMap),
-		FnArgsMap:    convertFnArgsMapToCloudAPI(resp.FnArgsMap),
-	}, nil
-}
-
-func convertVisSpecMapToCloudAPI(visSpecMap map[string]*scriptspb.VisSpec) map[string]*cloudapipb.VisSpec {
-	cloudMap := make(map[string]*cloudapipb.VisSpec, len(visSpecMap))
-	for k, v := range visSpecMap {
-		cloudMap[k] = &cloudapipb.VisSpec{
-			VegaSpec: v.VegaSpec,
-		}
-	}
-	return cloudMap
-}
-
-func convertFnArgsMapToCloudAPI(fnArgsMap map[string]*scriptspb.FuncArgsSpec) map[string]*cloudapipb.FuncArgsSpec {
-	cloudMap := make(map[string]*cloudapipb.FuncArgsSpec, len(fnArgsMap))
-	for k, v := range fnArgsMap {
-		cloudMap[k] = &cloudapipb.FuncArgsSpec{
-			Args: convertFnArgsToCloudAPI(v.Args),
-		}
-	}
-	return cloudMap
-}
-
-func convertFnArgsToCloudAPI(fnArgs []*scriptspb.FuncArgsSpec_Arg) []*cloudapipb.FuncArgsSpec_Arg {
-	cloudArgs := make([]*cloudapipb.FuncArgsSpec_Arg, len(fnArgs))
-	for i, arg := range fnArgs {
-		cloudArgs[i] = &cloudapipb.FuncArgsSpec_Arg{
-			Name:         arg.Name,
-			DataType:     convertDataTypeToCloudAPI(arg.DataType),
-			SemanticType: convertSemanticTypeToCloudAPI(arg.SemanticType),
-			DefaultValue: arg.DefaultValue,
-		}
-	}
-	return cloudArgs
-}
-
-func convertDataTypeToCloudAPI(t typespb.DataType) cloudapipb.DataType {
-	return cloudapipb.DataType(t)
-}
-
-func convertSemanticTypeToCloudAPI(t typespb.SemanticType) cloudapipb.SemanticType {
-	return cloudapipb.SemanticType(t)
 }
 
 // AutocompleteServer is the server that implements the Autocomplete gRPC service.

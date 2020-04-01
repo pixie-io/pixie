@@ -1,364 +1,286 @@
-package controller
+package controller_test
 
 import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
-	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
+	"google.golang.org/grpc/codes"
 
-	mock_controller "pixielabs.ai/pixielabs/src/cloud/scriptmgr/controller/mock"
-	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	"pixielabs.ai/pixielabs/src/shared/scriptspb"
-
-	"github.com/gogo/protobuf/proto"
-	"github.com/golang/mock/gomock"
+	"cloud.google.com/go/storage"
+	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
+	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/status"
+
+	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/controller"
+	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
+	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
-const visFuncsQuery = `
-import px
-@px.vis.vega("vega spec for f")
-def f(start_time: px.Time, end_time: px.Time, svc: str):
-  """Doc string for f"""
-  return 1
+const bundleBucket = "test-bucket"
+const bundlePath = "bundle.json"
 
-@px.vis.vega("vega spec for g")
-def g(a: int, b: float):
-  """Doc string for g"""
-	return 1
-@px.vis.vega("vega spec for h")
-def h(a: int, b: float):
-	"""Doc string for h"""
-	return 1
-`
-
-const visFuncsInfoPBStr = `
-doc_string_map {
-  key: "f"
-  value: "Doc string for f"
-}
-doc_string_map {
-  key: "g"
-  value: "Doc string for g"
-}
-doc_string_map {
-  key: "h"
-  value: "Doc string for h"
-}
-vis_spec_map {
-  key: "f"
-  value {
-    vega_spec: "vega spec for f"
-  }
-}
-vis_spec_map {
-  key: "g"
-  value {
-    vega_spec: "vega spec for g"
-  }
-}
-vis_spec_map {
-  key: "h"
-  value {
-    vega_spec: "vega spec for h"
-  }
-}
-fn_args_map {
-  key: "f"
-  value {
-    args {
-      data_type: TIME64NS
-      name: "start_time"
-    }
-    args {
-      data_type: TIME64NS
-      name: "end_time"
-    }
-    args {
-      data_type: STRING
-      name: "svc"
-    }
-  }
-}
-fn_args_map {
-  key: "g"
-  value {
-    args {
-      data_type: INT64
-      name: "a"
-    }
-    args {
-      data_type: FLOAT64
-      name: "b"
-    }
-  }
-}
-fn_args_map {
-  key: "h"
-  value {
-    args {
-      data_type: INT64
-      name: "a"
-    }
-    args {
-      data_type: FLOAT64
-      name: "b"
-    }
-  }
+const testBundle = `
+{
+	"scripts": {
+	  "script1": {
+	  	"pxl": "script1 pxl",
+	  	"vis": "",
+	  	"placement": "",
+	  	"ShortDoc": "script1 desc",
+	  	"LongDoc": ""
+	  },
+	  "liveview1": {
+	  	"pxl": "liveview1 pxl",
+	  	"vis": "this is a fake vis spec",
+	  	"placement": "",
+	  	"ShortDoc": "liveview1 desc",
+	  	"LongDoc": ""
+	  },
+	  "script2": {
+	  	"pxl": "script2 pxl",
+	  	"vis": "",
+	  	"placement": "",
+      "ShortDoc": "script2 desc",
+	  	"LongDoc": ""
+	  }
+	}
 }
 `
 
-const expectedVisFuncsInfoSingleFilter = `
-doc_string_map {
-  key: "f"
-  value: "Doc string for f"
-}
-vis_spec_map {
-  key: "f"
-  value {
-    vega_spec: "vega spec for f"
-  }
-}
-fn_args_map {
-  key: "f"
-  value {
-    args {
-      data_type: TIME64NS
-      name: "start_time"
-    }
-    args {
-      data_type: TIME64NS
-      name: "end_time"
-    }
-    args {
-      data_type: STRING
-      name: "svc"
-    }
-  }
-}
-`
-
-const expectedVisFuncsInfoMultiFilter = `
-doc_string_map {
-  key: "f"
-  value: "Doc string for f"
-}
-doc_string_map {
-  key: "g"
-  value: "Doc string for g"
-}
-vis_spec_map {
-  key: "f"
-  value {
-    vega_spec: "vega spec for f"
-  }
-}
-vis_spec_map {
-  key: "g"
-  value {
-    vega_spec: "vega spec for g"
-  }
-}
-fn_args_map {
-  key: "f"
-  value {
-    args {
-      data_type: TIME64NS
-      name: "start_time"
-    }
-    args {
-      data_type: TIME64NS
-      name: "end_time"
-    }
-    args {
-      data_type: STRING
-      name: "svc"
-    }
-  }
-}
-fn_args_map {
-  key: "g"
-  value {
-    args {
-      data_type: INT64
-      name: "a"
-    }
-    args {
-      data_type: FLOAT64
-      name: "b"
-    }
-  }
-}
-`
-
-func TestServerExtractVisFuncsInfo_NoFuncFilter(t *testing.T) {
-
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	planner := mock_controller.NewMockPlanner(ctrl)
-
-	visFuncsInfo := &scriptspb.VisFuncsInfo{}
-	if err := proto.UnmarshalText(visFuncsInfoPBStr, visFuncsInfo); err != nil {
-		t.Fatalf("Failed to unmarshal visfuncsinfo, err: %s", err)
-	}
-	expected := &scriptspb.VisFuncsInfo{}
-	if err := proto.UnmarshalText(visFuncsInfoPBStr, expected); err != nil {
-		t.Fatalf("Failed to unmarshal expected visfuncsinfo, err: %s", err)
-	}
-
-	planner.
-		EXPECT().
-		ExtractVisFuncsInfo(visFuncsQuery).
-		Return(&scriptspb.VisFuncsInfoResult{
-			Info:   visFuncsInfo,
-			Status: &statuspb.Status{ErrCode: statuspb.OK},
-		}, nil)
-
-	req := &scriptmgrpb.ExtractVisFuncsInfoRequest{
-		Script:    visFuncsQuery,
-		FuncNames: []string{},
-	}
-
-	s := NewServer(planner)
-	resultPB, err := s.ExtractVisFuncsInfo(context.Background(), req)
-	require.Nil(t, err)
-	assert.Equal(t, expected, resultPB)
-}
-
-func TestServerExtractVisFuncsInfo_FuncFilter(t *testing.T) {
-
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	planner := mock_controller.NewMockPlanner(ctrl)
-
-	visFuncsInfo := &scriptspb.VisFuncsInfo{}
-	if err := proto.UnmarshalText(visFuncsInfoPBStr, visFuncsInfo); err != nil {
-		t.Fatalf("Failed to unmarshal expected visfuncsinfo, err: %s", err)
-	}
-	expected := &scriptspb.VisFuncsInfo{}
-	if err := proto.UnmarshalText(expectedVisFuncsInfoSingleFilter, expected); err != nil {
-		t.Fatalf("Failed to unmarshal expected visfuncsinfo, err: %s", err)
-	}
-
-	planner.
-		EXPECT().
-		ExtractVisFuncsInfo(visFuncsQuery).
-		Return(&scriptspb.VisFuncsInfoResult{
-			Info:   visFuncsInfo,
-			Status: &statuspb.Status{ErrCode: statuspb.OK},
-		}, nil)
-
-	req := &scriptmgrpb.ExtractVisFuncsInfoRequest{
-		Script:    visFuncsQuery,
-		FuncNames: []string{"f"},
-	}
-
-	s := NewServer(planner)
-	resultPB, err := s.ExtractVisFuncsInfo(context.Background(), req)
-	require.Nil(t, err)
-	assert.Equal(t, expected, resultPB)
-}
-
-func TestServerExtractVisFuncsInfo_FuncFilter_Multiple(t *testing.T) {
-
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	planner := mock_controller.NewMockPlanner(ctrl)
-
-	visFuncsInfo := &scriptspb.VisFuncsInfo{}
-	if err := proto.UnmarshalText(visFuncsInfoPBStr, visFuncsInfo); err != nil {
-		t.Fatalf("Failed to unmarshal expected visfuncsinfo, err: %s", err)
-	}
-	expected := &scriptspb.VisFuncsInfo{}
-	if err := proto.UnmarshalText(expectedVisFuncsInfoMultiFilter, expected); err != nil {
-		t.Fatalf("Failed to unmarshal expected visfuncsinfo, err: %s", err)
-	}
-
-	planner.
-		EXPECT().
-		ExtractVisFuncsInfo(visFuncsQuery).
-		Return(&scriptspb.VisFuncsInfoResult{
-			Info:   visFuncsInfo,
-			Status: &statuspb.Status{ErrCode: statuspb.OK},
-		}, nil)
-
-	req := &scriptmgrpb.ExtractVisFuncsInfoRequest{
-		Script:    visFuncsQuery,
-		FuncNames: []string{"f", "g"},
-	}
-
-	s := NewServer(planner)
-	resultPB, err := s.ExtractVisFuncsInfo(context.Background(), req)
-	require.Nil(t, err)
-	assert.Equal(t, expected, resultPB)
-}
-
-func TestServerExtractVisFuncsInfo_FuncFilter_InvalidFuncName(t *testing.T) {
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	planner := mock_controller.NewMockPlanner(ctrl)
-
-	visFuncsInfo := &scriptspb.VisFuncsInfo{}
-	if err := proto.UnmarshalText(visFuncsInfoPBStr, visFuncsInfo); err != nil {
-		t.Fatalf("Failed to unmarshal expected visfuncsinfo, err: %s", err)
-	}
-
-	planner.
-		EXPECT().
-		ExtractVisFuncsInfo(visFuncsQuery).
-		Return(&scriptspb.VisFuncsInfoResult{
-			Info:   visFuncsInfo,
-			Status: &statuspb.Status{ErrCode: statuspb.OK},
-		}, nil)
-
-	funcName := "this function doesn't exist"
-	req := &scriptmgrpb.ExtractVisFuncsInfoRequest{
-		Script:    visFuncsQuery,
-		FuncNames: []string{funcName},
-	}
-
-	s := NewServer(planner)
-	_, err := s.ExtractVisFuncsInfo(context.Background(), req)
-	require.NotNil(t, err)
-	assert.Equal(t, fmt.Sprintf("function '%s' was not found in script", funcName), err.Error())
-}
-
-func TestServerExtractVisFuncsInfo_CompilerError(t *testing.T) {
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	planner := mock_controller.NewMockPlanner(ctrl)
-	query := "this is an invalid query"
-	fakeErrMsg := "compiler error"
-	planner.
-		EXPECT().
-		ExtractVisFuncsInfo(query).
-		Return(&scriptspb.VisFuncsInfoResult{
-			Info: nil,
-			Status: &statuspb.Status{
-				ErrCode: statuspb.INVALID_ARGUMENT,
-				Msg:     fakeErrMsg,
+func mustSetupFakeBucket(bundleJSON []byte) stiface.Client {
+	return testingutils.NewMockGCSClient(map[string]*testingutils.MockGCSBucket{
+		bundleBucket: testingutils.NewMockGCSBucket(
+			map[string]*testingutils.MockGCSObject{
+				bundlePath: testingutils.NewMockGCSObject(
+					bundleJSON,
+					&storage.ObjectAttrs{
+						Updated: time.Now(),
+					},
+				),
 			},
-		}, nil)
+			nil,
+		),
+	})
+}
 
-	req := &scriptmgrpb.ExtractVisFuncsInfoRequest{
-		Script:    query,
-		FuncNames: []string{},
+func TestScriptMgr_GetLiveViews(t *testing.T) {
+
+	testCases := []struct {
+		name         string
+		expectedResp *scriptmgrpb.GetLiveViewsResp
+		expectErr    bool
+	}{
+		{
+			name: "Empty live view request returns all live views.",
+			expectedResp: &scriptmgrpb.GetLiveViewsResp{
+				LiveViews: []*scriptmgrpb.LiveViewMetadata{
+					&scriptmgrpb.LiveViewMetadata{
+						ID:   nil,
+						Name: "liveview1",
+						Desc: "liveview1 desc",
+					},
+				},
+			},
+			expectErr: false,
+		},
 	}
 
-	s := NewServer(planner)
-	_, err := s.ExtractVisFuncsInfo(context.Background(), req)
-	require.NotNil(t, err)
-	assert.Equal(t, fakeErrMsg, err.Error())
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := mustSetupFakeBucket([]byte(testBundle))
+			s := controller.NewServer(bundleBucket, bundlePath, c)
+			ctx := context.Background()
+
+			req := &scriptmgrpb.GetLiveViewsReq{}
+			resp, err := s.GetLiveViews(ctx, req)
+			if tc.expectErr {
+				require.NotNil(t, err)
+			} else {
+				require.Nil(t, err)
+				// Ignore UUID in equality check.
+				for _, liveView := range resp.LiveViews {
+					liveView.ID = nil
+				}
+				assert.ElementsMatch(t, tc.expectedResp.LiveViews, resp.LiveViews)
+			}
+		})
+	}
+}
+
+func TestScriptMgr_GetLiveViewContents(t *testing.T) {
+	testCases := []struct {
+		name         string
+		liveViewName string
+		expectErr    bool
+		errCode      codes.Code
+	}{
+		{
+			name:         "Valid UUID should return live view.",
+			liveViewName: "liveview1",
+			expectErr:    false,
+			errCode:      codes.OK,
+		},
+		{
+			name:         "UUID not in bundle should return error.",
+			liveViewName: "not-a-real-live-view",
+			expectErr:    true,
+			errCode:      codes.InvalidArgument,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := mustSetupFakeBucket([]byte(testBundle))
+			s := controller.NewServer(bundleBucket, bundlePath, c)
+			ctx := context.Background()
+
+			ID := uuid.NewV5(s.SeedUUID, tc.liveViewName)
+			req := &scriptmgrpb.GetLiveViewContentsReq{
+				LiveViewID: &uuidpb.UUID{
+					Data: ID.Bytes(),
+				},
+			}
+
+			expectedResp := &scriptmgrpb.GetLiveViewContentsResp{
+				Metadata: &scriptmgrpb.LiveViewMetadata{
+					ID: &uuidpb.UUID{
+						Data: ID.Bytes(),
+					},
+					Name: tc.liveViewName,
+					Desc: fmt.Sprintf("%s desc", tc.liveViewName),
+				},
+				PxlContents: fmt.Sprintf("%s pxl", tc.liveViewName),
+			}
+
+			resp, err := s.GetLiveViewContents(ctx, req)
+			if tc.expectErr {
+				require.NotNil(t, err)
+				status, ok := status.FromError(err)
+				require.True(t, ok)
+				assert.Equal(t, tc.errCode, status.Code())
+			} else {
+				require.Nil(t, err)
+				assert.Equal(t, expectedResp, resp)
+			}
+		})
+	}
+}
+
+func TestScriptMgr_GetScripts(t *testing.T) {
+	testCases := []struct {
+		name         string
+		expectedResp *scriptmgrpb.GetScriptsResp
+		expectErr    bool
+	}{
+		{
+			name: "Empty request returns all scripts, including scripts with live views.",
+			expectedResp: &scriptmgrpb.GetScriptsResp{
+				Scripts: []*scriptmgrpb.ScriptMetadata{
+					&scriptmgrpb.ScriptMetadata{
+						ID:          nil,
+						Name:        "script1",
+						Desc:        "script1 desc",
+						HasLiveView: false,
+					},
+					&scriptmgrpb.ScriptMetadata{
+						ID:          nil,
+						Name:        "script2",
+						Desc:        "script2 desc",
+						HasLiveView: false,
+					},
+					&scriptmgrpb.ScriptMetadata{
+						ID:          nil,
+						Name:        "liveview1",
+						Desc:        "liveview1 desc",
+						HasLiveView: true,
+					},
+				},
+			},
+			expectErr: false,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := mustSetupFakeBucket([]byte(testBundle))
+			s := controller.NewServer(bundleBucket, bundlePath, c)
+			ctx := context.Background()
+
+			req := &scriptmgrpb.GetScriptsReq{}
+			resp, err := s.GetScripts(ctx, req)
+			if tc.expectErr {
+				require.NotNil(t, err)
+			} else {
+				require.Nil(t, err)
+				// Ignore UUID in equality check.
+				for _, script := range resp.Scripts {
+					script.ID = nil
+				}
+				assert.ElementsMatch(t, tc.expectedResp.Scripts, resp.Scripts)
+			}
+		})
+	}
+}
+
+func TestScriptMgr_GetScriptContents(t *testing.T) {
+	testCases := []struct {
+		name       string
+		scriptName string
+		expectErr  bool
+		errCode    codes.Code
+	}{
+		{
+			name:       "Valid UUID should return script.",
+			scriptName: "script2",
+			expectErr:  false,
+			errCode:    codes.OK,
+		},
+		{
+			name:       "UUID not in bundle returns error.",
+			scriptName: "not-a-real-script",
+			expectErr:  true,
+			errCode:    codes.InvalidArgument,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := mustSetupFakeBucket([]byte(testBundle))
+			s := controller.NewServer(bundleBucket, bundlePath, c)
+			ctx := context.Background()
+			ID := uuid.NewV5(s.SeedUUID, tc.scriptName)
+			req := &scriptmgrpb.GetScriptContentsReq{
+				ScriptID: &uuidpb.UUID{
+					Data: ID.Bytes(),
+				},
+			}
+			expectedResp := &scriptmgrpb.GetScriptContentsResp{
+				Metadata: &scriptmgrpb.ScriptMetadata{
+					ID: &uuidpb.UUID{
+						Data: ID.Bytes(),
+					},
+					Name:        tc.scriptName,
+					Desc:        fmt.Sprintf("%s desc", tc.scriptName),
+					HasLiveView: false,
+				},
+				Contents: fmt.Sprintf("%s pxl", tc.scriptName),
+			}
+			resp, err := s.GetScriptContents(ctx, req)
+			if tc.expectErr {
+				require.NotNil(t, err)
+				status, ok := status.FromError(err)
+				require.True(t, ok)
+				assert.Equal(t, tc.errCode, status.Code())
+			} else {
+				require.Nil(t, err)
+				assert.Equal(t, expectedResp, resp)
+			}
+		})
+	}
+
 }

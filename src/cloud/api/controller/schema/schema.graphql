@@ -51,7 +51,6 @@ type Query {
   clusterConnection: ClusterConnectionInfo!
   cliArtifact(artifactType: ArtifactType): CLIArtifact!
   artifacts(artifactName: String): ArtifactsInfo!
-  extractVisFuncsInfo(script: String!, funcNames: [String!]): VisFuncsInfo!
   autocomplete(input: String, cursorPos: Int, action: AutocompleteActionType): AutocompleteResult!
 }
 
@@ -124,60 +123,4 @@ type Artifact {
   version: String!
   changelog: String!
   timestampMs: Float!
-}
-
-type DocStringMapEntry {
-  funcName: String!
-  docString: String!
-}
-
-type VisSpec {
-  vegaSpec: String!
-}
-
-type VisSpecMapEntry {
-  funcName: String!
-  visSpec: VisSpec
-}
-
-
-enum DataType {
-  DATA_TYPE_UNKNOWN
-  BOOLEAN
-  INT64
-  UINT128
-  FLOAT64
-  STRING
-  TIME64NS
-  DURATION64NS
-}
-
-enum SemanticType {
-  ST_UNSPECIFIED
-  ST_NONE
-  ST_AGENT_UID
-  ST_UPID
-  ST_SERVICE_NAME
-}
-
-type FnArgsSpecArg {
-  name: String!
-  dataType: DataType!
-  semanticType: SemanticType!
-  defaultValue: String!
-}
-
-type FnArgsSpec {
-  args: [FnArgsSpecArg!]!
-}
-
-type FnArgsMapEntry {
-  funcName: String!
-  fnArgSpec: FnArgsSpec!
-}
-
-type VisFuncsInfo {
-  docStringMap: [DocStringMapEntry!]!
-  visSpecMap: [VisSpecMapEntry!]!
-  fnArgsMap: [FnArgsMapEntry!]!
 }

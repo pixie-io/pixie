@@ -2,73 +2,214 @@ package controller
 
 import (
 	"context"
-	"errors"
-	"fmt"
+	"time"
+
+	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
+	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
-	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	"pixielabs.ai/pixielabs/src/shared/scriptspb"
+	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 )
 
-// Planner is the interface to the cc planner via cgo.
-type Planner interface {
-	ExtractVisFuncsInfo(script string) (*scriptspb.VisFuncsInfoResult, error)
-	Free()
+type scriptModel struct {
+	name        string
+	desc        string
+	pxl         string
+	hasLiveView bool
+}
+
+type liveViewModel struct {
+	name        string
+	desc        string
+	pxlContents string
+	// This will likely not be a string soon, but its a string in the bundle.json
+	// so for now I will leave it that way.
+	vis string
+}
+
+// TODO(james): Eventually this will be a DB.
+type scriptStore struct {
+	Scripts   map[uuid.UUID]*scriptModel
+	LiveViews map[uuid.UUID]*liveViewModel
 }
 
 // Server implements the GRPC Server for the scriptmgr service.
 type Server struct {
-	planner Planner
+	bundleBucket    string
+	bundlePath      string
+	sc              stiface.Client
+	store           *scriptStore
+	storeLastUpdate time.Time
+	SeedUUID        uuid.UUID
 }
 
 // NewServer creates a new GRPC scriptmgr server.
-func NewServer(planner Planner) *Server {
-	return &Server{planner}
-}
-
-// ExtractVisFuncsInfo parses a non-persisted script and returns info such as docstrings, vega spec, and func args.
-func (s *Server) ExtractVisFuncsInfo(ctx context.Context, req *scriptmgrpb.ExtractVisFuncsInfoRequest) (*scriptspb.VisFuncsInfo, error) {
-	plannerResultPB, err := s.planner.ExtractVisFuncsInfo(req.Script)
+func NewServer(bundleBucket string, bundlePath string, sc stiface.Client) *Server {
+	s := &Server{
+		bundleBucket: bundleBucket,
+		bundlePath:   bundlePath,
+		sc:           sc,
+		store: &scriptStore{
+			Scripts:   make(map[uuid.UUID]*scriptModel),
+			LiveViews: make(map[uuid.UUID]*liveViewModel),
+		},
+		storeLastUpdate: time.Unix(0, 0),
+		SeedUUID:        uuid.NewV4(),
+	}
+	err := s.updateStore()
 	if err != nil {
-		return nil, err
+		log.WithError(err).
+			WithField("bucket", s.bundleBucket).
+			WithField("path", s.bundlePath).
+			Error("Failed to update store using bundle.json from gcs.")
 	}
-
-	// When the status is not OK, this means it's a compilation error on the query passed in.
-	if plannerResultPB.Status.ErrCode != statuspb.OK {
-		return nil, errors.New(plannerResultPB.Status.Msg)
-	}
-
-	if len(req.FuncNames) > 0 {
-		return filterVisFuncInfoByFuncNames(plannerResultPB.Info, req.FuncNames)
-	}
-	return plannerResultPB.Info, nil
+	return s
 }
 
-func filterVisFuncInfoByFuncNames(info *scriptspb.VisFuncsInfo, funcNames []string) (*scriptspb.VisFuncsInfo, error) {
-	newInfo := &scriptspb.VisFuncsInfo{
-		DocStringMap: make(map[string]string, len(funcNames)),
-		VisSpecMap:   make(map[string]*scriptspb.VisSpec, len(funcNames)),
-		FnArgsMap:    make(map[string]*scriptspb.FuncArgsSpec, len(funcNames)),
+func (s *Server) addLiveView(name string, bundleScript *pixieScript) {
+	ID := uuid.NewV5(s.SeedUUID, name)
+	s.store.LiveViews[ID] = &liveViewModel{
+		name:        name,
+		desc:        bundleScript.ShortDoc,
+		vis:         bundleScript.Vis,
+		pxlContents: bundleScript.Pxl,
+	}
+}
+
+func (s *Server) addScript(name string, bundleScript *pixieScript, hasLiveView bool) {
+	ID := uuid.NewV5(s.SeedUUID, name)
+	s.store.Scripts[ID] = &scriptModel{
+		name:        name,
+		desc:        bundleScript.ShortDoc,
+		pxl:         bundleScript.Pxl,
+		hasLiveView: hasLiveView,
+	}
+}
+
+func (s *Server) updateStore() error {
+	b, err := getBundle(s.sc, s.bundleBucket, s.bundlePath)
+	if err != nil {
+		return err
+	}
+	for name, bundleScript := range b.Scripts {
+		hasLiveView := bundleScript.Vis != ""
+		s.addScript(name, bundleScript, hasLiveView)
+		if hasLiveView {
+			s.addLiveView(name, bundleScript)
+		}
+	}
+	return nil
+}
+
+func (s *Server) storeUpdater() {
+	t := time.NewTicker(time.Minute)
+	ctx := context.Background()
+	for range t.C {
+		log.Trace("Checking if bundle needs updating...")
+		attrs, err := s.sc.Bucket(s.bundleBucket).Object(s.bundlePath).Attrs(ctx)
+		if err != nil {
+			log.WithError(err).
+				WithField("bucket", s.bundleBucket).
+				WithField("path", s.bundlePath).
+				Error("Failed to get attrs of bundle.json")
+		}
+		if attrs.Updated.After(s.storeLastUpdate) {
+			log.Trace("Update to bundle required. Updating...")
+			err := s.updateStore()
+			if err != nil {
+				log.WithError(err).
+					WithField("bucket", s.bundleBucket).
+					WithField("path", s.bundlePath).
+					Error("Failed to update bundle.json from gcs.")
+			}
+			log.
+				WithField("scripts", s.store.Scripts).
+				WithField("live views", s.store.LiveViews).
+				Trace("Finished updating bundle.")
+			s.storeLastUpdate = attrs.Updated
+		}
+	}
+}
+
+func uuidToPb(u uuid.UUID) *uuidpb.UUID {
+	return &uuidpb.UUID{
+		Data: u.Bytes(),
+	}
+}
+
+// Start starts the store updater goroutine which checks for updates to the bundle.json.
+func (s *Server) Start() {
+	go s.storeUpdater()
+}
+
+// GetLiveViews returns a list of all available live views.
+func (s *Server) GetLiveViews(ctx context.Context, req *scriptmgrpb.GetLiveViewsReq) (*scriptmgrpb.GetLiveViewsResp, error) {
+	resp := &scriptmgrpb.GetLiveViewsResp{}
+	for ID, liveView := range s.store.LiveViews {
+		resp.LiveViews = append(resp.LiveViews, &scriptmgrpb.LiveViewMetadata{
+			Name: liveView.name,
+			Desc: liveView.desc,
+			ID:   uuidToPb(ID),
+		})
+	}
+	return resp, nil
+}
+
+// GetLiveViewContents returns the pxl script, vis info, and metdata for a live view.
+func (s *Server) GetLiveViewContents(ctx context.Context, req *scriptmgrpb.GetLiveViewContentsReq) (*scriptmgrpb.GetLiveViewContentsResp, error) {
+	ID := uuid.FromBytesOrNil(req.LiveViewID.Data)
+	if ID == uuid.Nil {
+		return nil, status.Error(codes.InvalidArgument, "Invalid LiveViewID, bytes couldn't be parsed as UUID.")
+	}
+	liveView, ok := s.store.LiveViews[ID]
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "LiveViewID: %s, not found.", ID.String())
 	}
 
-	errmsg := func(f string) error { return fmt.Errorf("function '%s' was not found in script", f) }
+	return &scriptmgrpb.GetLiveViewContentsResp{
+		Metadata: &scriptmgrpb.LiveViewMetadata{
+			ID:   uuidToPb(ID),
+			Name: liveView.name,
+			Desc: liveView.desc,
+		},
+		PxlContents: liveView.pxlContents,
+	}, nil
+}
 
-	for _, f := range funcNames {
-		docstring, ok := info.DocStringMap[f]
-		if !ok {
-			return nil, errmsg(f)
-		}
-		vizspec, ok := info.VisSpecMap[f]
-		if !ok {
-			return nil, errmsg(f)
-		}
-		fnargs, ok := info.FnArgsMap[f]
-		if !ok {
-			return nil, errmsg(f)
-		}
-		newInfo.DocStringMap[f] = docstring
-		newInfo.VisSpecMap[f] = vizspec
-		newInfo.FnArgsMap[f] = fnargs
+// GetScripts returns a list of all available scripts.
+func (s *Server) GetScripts(ctx context.Context, req *scriptmgrpb.GetScriptsReq) (*scriptmgrpb.GetScriptsResp, error) {
+	resp := &scriptmgrpb.GetScriptsResp{}
+	for ID, script := range s.store.Scripts {
+		resp.Scripts = append(resp.Scripts, &scriptmgrpb.ScriptMetadata{
+			ID:          uuidToPb(ID),
+			Name:        script.name,
+			Desc:        script.desc,
+			HasLiveView: script.hasLiveView,
+		})
 	}
-	return newInfo, nil
+	return resp, nil
+}
+
+// GetScriptContents returns the pxl string of the script.
+func (s *Server) GetScriptContents(ctx context.Context, req *scriptmgrpb.GetScriptContentsReq) (*scriptmgrpb.GetScriptContentsResp, error) {
+	ID := uuid.FromBytesOrNil(req.ScriptID.Data)
+	if ID == uuid.Nil {
+		return nil, status.Error(codes.InvalidArgument, "Invalid ScriptID, bytes couldn't be parsed as UUID.")
+	}
+	script, ok := s.store.Scripts[ID]
+	if !ok {
+		return nil, status.Errorf(codes.InvalidArgument, "ScriptID: %s, not found.", ID.String())
+	}
+	return &scriptmgrpb.GetScriptContentsResp{
+		Metadata: &scriptmgrpb.ScriptMetadata{
+			ID:          uuidToPb(ID),
+			Name:        script.name,
+			Desc:        script.desc,
+			HasLiveView: script.hasLiveView,
+		},
+		Contents: script.pxl,
+	}, nil
 }
