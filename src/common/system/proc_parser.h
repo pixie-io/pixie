@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
 
@@ -226,6 +227,24 @@ class ProcParser {
    */
   StatusOr<std::filesystem::path> ResolveMountPoint(pid_t pid,
                                                     std::filesystem::path mount_point) const;
+
+  /**
+   * Returns all mapped paths found in /proc/<pid>/maps.
+   *
+   * For example, given /proc/<pid>/maps:
+   * 56507a582000-56507a5e5000 rw-p 00000000 00:00 0           [heap]
+   * ...
+   * 7f0be519b000-7f0be51b8000 r--p 00000000 103:02 27147807 /usr/lib/x86_64-linux-gnu/libssl.so.1.1
+   *
+   * This function would return /usr/lib/x86_64-linux-gnu/libssl.so.1.1 and [heap].
+   *
+   * Currently, this function is intended for finding .so files used by the the process.
+   * It is used by the uprobe deployment on shared libraries, like libssl.so.
+   *
+   * @param pid Process for which to get mapped paths.
+   * @return All map paths, including entries that are not filesystem paths (e.g. [heap]).
+   */
+  StatusOr<absl::flat_hash_set<std::string>> GetMapPaths(pid_t pid);
 
  private:
   static Status ParseNetworkStatAccumulateIFaceData(

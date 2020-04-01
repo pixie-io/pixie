@@ -8,6 +8,7 @@
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/config_mock.h"
 #include "src/common/system/proc_parser.h"
+#include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
 
 namespace pl {
@@ -16,6 +17,7 @@ namespace system {
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::testing::Return;
+using ::testing::UnorderedElementsAre;
 
 constexpr char kTestDataBasePath[] = "src/common/system";
 
@@ -206,6 +208,18 @@ TEST_F(ProcParserTest, ReadMountInfos) {
 TEST_F(ProcParserTest, ResolveMountPoint) {
   ASSERT_OK_AND_EQ(parser_->ResolveMountPoint(123, "/foo"), "/tmp/test_foo");
   EXPECT_NOT_OK(parser_->ResolveMountPoint(123, "/bar"));
+}
+
+TEST_F(ProcParserTest, GetMapPaths) {
+  {
+    EXPECT_OK_AND_THAT(
+        parser_->GetMapPaths(123),
+        UnorderedElementsAre(
+            "/dev/zero (deleted)", "/lib/x86_64-linux-gnu/libc-2.28.so",
+            "/lib/x86_64-linux-gnu/libdl-2.28.so", "/usr/lib/x86_64-linux-gnu/libcrypto.so.1.1",
+            "/usr/lib/x86_64-linux-gnu/libssl.so.1.1", "/usr/sbin/nginx", "/[aio] (deleted)",
+            "[heap]", "[stack]", "[uprobes]", "[vdso]", "[vsyscall]", "[vvar]"));
+  }
 }
 
 }  // namespace system

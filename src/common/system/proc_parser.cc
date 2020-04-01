@@ -621,5 +621,25 @@ StatusOr<std::filesystem::path> ProcParser::ResolveMountPoint(
                                 device_number, device_root);
 }
 
+StatusOr<absl::flat_hash_set<std::string>> ProcParser::GetMapPaths(pid_t pid) {
+  static constexpr int kProcMapNumFields = 6;
+  absl::flat_hash_set<std::string> map_paths;
+
+  const std::filesystem::path proc_pid_maps_path = ProcPidPath(pid) / "maps";
+  PL_ASSIGN_OR_RETURN(std::string content, pl::ReadFileToString(proc_pid_maps_path));
+  std::vector<std::string_view> lines = absl::StrSplit(content, "\n", absl::SkipWhitespace());
+  for (const auto line : lines) {
+    std::vector<std::string_view> fields =
+        absl::StrSplit(line, absl::MaxSplits(' ', kProcMapNumFields), absl::SkipWhitespace());
+
+    if (fields.size() == kProcMapNumFields) {
+      std::string pathname(fields[kProcMapNumFields - 1]);
+      absl::StripAsciiWhitespace(&pathname);
+      map_paths.insert(std::move(pathname));
+    }
+  }
+  return map_paths;
+}
+
 }  // namespace system
 }  // namespace pl
