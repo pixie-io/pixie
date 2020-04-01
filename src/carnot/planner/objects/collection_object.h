@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "src/carnot/planner/compiler_state/compiler_state.h"
+#include "src/carnot/planner/objects/funcobject.h"
 #include "src/carnot/planner/objects/qlobject.h"
 
 namespace pl {
@@ -13,7 +14,7 @@ namespace compiler {
 
 class CollectionObject : public QLObject {
  public:
-  const std::vector<QLObjectPtr>& items() const { return items_; }
+  const std::vector<QLObjectPtr>& items() const { return *items_; }
   static bool IsCollection(QLObjectPtr obj) {
     return obj->type() == QLObjectType::kList || obj->type() == QLObjectType::kTuple;
   }
@@ -21,8 +22,21 @@ class CollectionObject : public QLObject {
  protected:
   CollectionObject(const std::vector<QLObjectPtr>& items, const TypeDescriptor& td,
                    ASTVisitor* visitor)
-      : QLObject(td, visitor), items_(items) {}
-  std::vector<QLObjectPtr> items_;
+      : QLObject(td, visitor) {
+    items_ = std::make_shared<std::vector<QLObjectPtr>>(items);
+  }
+
+  virtual Status Init();
+
+  /**
+   * @brief Handles the GetItem calls of Collection objects.
+   */
+  static StatusOr<QLObjectPtr> SubscriptHandler(const std::string& name,
+                                                std::shared_ptr<std::vector<QLObjectPtr>> items,
+                                                const pypa::AstPtr& ast, const ParsedArgs& args,
+                                                ASTVisitor* visitor);
+
+  std::shared_ptr<std::vector<QLObjectPtr>> items_;
 };
 
 /**
@@ -37,7 +51,9 @@ class TupleObject : public CollectionObject {
 
   static StatusOr<std::shared_ptr<TupleObject>> Create(const std::vector<QLObjectPtr>& items,
                                                        ASTVisitor* visitor) {
-    return std::shared_ptr<TupleObject>(new TupleObject(items, visitor));
+    auto tuple = std::shared_ptr<TupleObject>(new TupleObject(items, visitor));
+    PL_RETURN_IF_ERROR(tuple->Init());
+    return tuple;
   }
 
  protected:
@@ -57,7 +73,9 @@ class ListObject : public CollectionObject {
 
   static StatusOr<std::shared_ptr<ListObject>> Create(const std::vector<QLObjectPtr>& items,
                                                       ASTVisitor* visitor) {
-    return std::shared_ptr<ListObject>(new ListObject(items, visitor));
+    auto list = std::shared_ptr<ListObject>(new ListObject(items, visitor));
+    PL_RETURN_IF_ERROR(list->Init());
+    return list;
   }
 
  protected:
