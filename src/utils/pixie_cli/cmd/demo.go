@@ -233,8 +233,12 @@ func deployCmd(cmd *cobra.Command, args []string) {
 
 	err = setupDemoApp(appName, yamls)
 	if err != nil {
-		log.WithError(err).Fatalf("Failed to deploy demo application.")
-
+		log.WithError(err).Errorf("Error deploying demo application, deleting namespace %s", appName)
+		// Note: If you can specify the namespace for the demo app in the future, we shouldn't delete the namespace.
+		if err = deleteDemoApp(appName); err != nil {
+			log.WithError(err).Errorf("Error deleting namespace %s", appName)
+		}
+		log.Fatalf("Failed to deploy demo application.")
 	}
 
 	fmt.Fprintf(os.Stderr, "Successfully deployed demo app %s to cluster %s.\n", args[0], currentCluster)
