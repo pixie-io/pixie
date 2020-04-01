@@ -25,7 +25,8 @@
     "(.*\\.patch$)",
     "(src/ui/src/types/generated/.*)",
     "(spinnaker/hal/.*)",
-    "(credentials/dev_infra/.*)"
+    "(credentials/dev_infra/.*)",
+    "(src/ui/pixie-components/dist/)"
   ],
   "linters": {
     "build-linter": {
@@ -178,6 +179,22 @@
         "(src/ui/.*\\.(tsx)$)",
         "(src/ui/.*\\.(ts)$)",
         "(src/ui/.*\\.(js)$)"
+      ],
+      "exclude": [
+        "(^src/ui/pixie-components/)"
+      ]
+    },
+    "tslint-ui-pixie-components": {
+      "type": "tslint",
+      "tslint.config": "./src/ui/tslint.json",
+      "tslint.project": "./src/ui/pixie-components/tsconfig.json",
+      "include": [
+        "(src/ui/pixie-components/src/.*\\.(tsx)$)",
+        "(src/ui/pixie-components/src/.*\\.(ts)$)",
+        "(src/ui/pixie-components/src/.*\\.(js)$)"
+      ],
+      "exclude": [
+        "(^src/ui/pixie-components/dist/)"
       ]
     },
     "yaml": {

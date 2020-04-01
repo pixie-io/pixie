@@ -6,15 +6,16 @@ UI_DEP_PACKAGES = [
     ".yarnrc",
 ] + glob([
     "offline_package_cache/**",
+    "pixie-components/**",
 ])
 
 UI_SRCS = glob([
     "*.js",
     "*.json",
     ".storybook/**",
-    "stories/**",
-    "src/**",
     "assets/**",
+    "src/**",
+    "stories/**",
 ])
 
 UI_SCRIPT_START = """

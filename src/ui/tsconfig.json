@@ -13,7 +13,11 @@
       "node_modules/@types"
     ],
     "skipLibCheck": true,
-    "lib": ["es2015", "es2017", "dom"],
+    "lib": [
+      "es2015",
+      "es2017",
+      "dom"
+    ],
     "experimentalDecorators": true,
     "resolveJsonModule": true
   },
