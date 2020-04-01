@@ -35,11 +35,10 @@ namespace bpf_tools {
 
 using ::pl::stirling::elf_tools::ElfReader;
 
-StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(
-    const std::map<std::string, std::vector<int>>& binaries, const ArrayView<UProbeTmpl>& tmpls) {
+StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(const std::set<std::string>& binaries,
+                                                     const ArrayView<UProbeTmpl>& tmpls) {
   std::vector<UProbeSpec> specs;
-  for (const auto& [binary, pid_vec] : binaries) {
-    PL_UNUSED(pid_vec);
+  for (const auto& binary : binaries) {
     VLOG(1) << absl::Substitute("Resolving uprobe templates for $0", binary);
 
     StatusOr<std::unique_ptr<ElfReader>> elf_reader_status = ElfReader::Create(binary);

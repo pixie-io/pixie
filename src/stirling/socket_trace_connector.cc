@@ -5,6 +5,7 @@
 
 #include <deque>
 #include <filesystem>
+#include <set>
 #include <utility>
 
 #include <absl/strings/match.h>
@@ -327,12 +328,13 @@ Status SocketTraceConnector::AttachHTTP2UProbes() {
     symaddrs_map.update_value(pid, symaddrs);
   }
 
-  std::map<std::string, std::vector<int32_t>> new_binaries;
+  std::set<std::string> new_binaries;
   for (const auto& [binary, pids] : new_pids) {
+    PL_UNUSED(pids);
     if (prev_scanned_binaries_.contains(binary)) {
       continue;
     }
-    new_binaries[binary] = pids;
+    new_binaries.insert(binary);
     prev_scanned_binaries_.insert(binary);
   }
 
