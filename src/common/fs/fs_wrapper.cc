@@ -84,6 +84,15 @@ Status Exists(std::filesystem::path path) {
   return error::InvalidArgument("Does not exist");
 }
 
+StatusOr<std::filesystem::path> Absolute(const std::filesystem::path& path) {
+  std::error_code ec;
+  std::filesystem::path abs_path = std::filesystem::absolute(path, ec);
+  if (ec) {
+    return error::System(ec.message());
+  }
+  return abs_path;
+}
+
 StatusOr<std::filesystem::path> Relative(const std::filesystem::path& path,
                                          const std::filesystem::path& base) {
   std::error_code ec;

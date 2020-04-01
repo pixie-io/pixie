@@ -41,6 +41,8 @@ Status CreateSymlinkIfNotExists(std::filesystem::path target, std::filesystem::p
  */
 Status Exists(std::filesystem::path path);
 
+StatusOr<std::filesystem::path> Absolute(const std::filesystem::path& path);
+
 StatusOr<std::filesystem::path> Relative(const std::filesystem::path& path,
                                          const std::filesystem::path& base);
 
