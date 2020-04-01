@@ -20,6 +20,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include <fstream>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -181,9 +182,18 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   explicit SocketTraceConnector(std::string_view source_name);
 
-  // Computes the new binaries to which uprobes should be attached.
-  // And new pids for existing binaries.
+  // Helper functions for dynamically deploying uprobes:
+
+  // Find new PIDs since the last call, grouped into a map by the binary path.
+  // The new PIDs may require the symaddrs_map BPF map to be updated (even if the binary is already
+  // being traced).
   std::map<std::string, std::vector<int32_t> > FindNewPIDs();
+
+  // Takes the result of FindNewPIDs() and further refines the information
+  // to include only those binaries that don't have uprobes attached.
+  std::set<std::string> FindNewBinaries(
+      const std::map<std::string, std::vector<int32_t> >& binary_instances);
+
   Status AttachHTTP2UProbes();
   // Wraps AttachHTTP2UProbes() in a loop. Stops when this SocketTraceConnector is stopped.
   // Used for creating a background thread to attach uprobes for newly-created processes.

@@ -313,13 +313,31 @@ std::map<std::string, std::vector<int32_t>> SocketTraceConnector::FindNewPIDs() 
     std::filesystem::path host_exe = host_exe_or.ConsumeValueOrDie();
     new_pids[host_exe.string()].push_back(upid.pid());
   }
+
+  LOG_FIRST_N(INFO, 1) << absl::Substitute("New PIDs count = $0", new_pids.size());
+
   return new_pids;
+}
+
+std::set<std::string> SocketTraceConnector::FindNewBinaries(
+    const std::map<std::string, std::vector<int32_t>>& binary_instances) {
+  // Filter out binaries we've seen before.
+  std::set<std::string> new_binaries;
+  for (const auto& [binary, pids] : binary_instances) {
+    if (prev_scanned_binaries_.contains(binary)) {
+      continue;
+    }
+    new_binaries.insert(binary);
+    prev_scanned_binaries_.insert(binary);
+  }
+
+  LOG_FIRST_N(INFO, 1) << absl::Substitute("New binaries count = $0", new_binaries.size());
+
+  return new_binaries;
 }
 
 Status SocketTraceConnector::AttachHTTP2UProbes() {
   std::map<std::string, std::vector<int32_t>> new_pids = FindNewPIDs();
-
-  LOG_FIRST_N(INFO, 1) << absl::Substitute("New binaries count = $0", new_pids.size());
 
   ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> symaddrs_map =
       bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("symaddrs_map");
@@ -328,15 +346,7 @@ Status SocketTraceConnector::AttachHTTP2UProbes() {
     symaddrs_map.update_value(pid, symaddrs);
   }
 
-  std::set<std::string> new_binaries;
-  for (const auto& [binary, pids] : new_pids) {
-    PL_UNUSED(pids);
-    if (prev_scanned_binaries_.contains(binary)) {
-      continue;
-    }
-    new_binaries.insert(binary);
-    prev_scanned_binaries_.insert(binary);
-  }
+  std::set<std::string> new_binaries = FindNewBinaries(new_pids);
 
   PL_ASSIGN_OR_RETURN(const std::vector<bpf_tools::UProbeSpec> specs,
                       ResolveUProbeTmpls(new_binaries, kUProbeTmpls));
