@@ -1,3 +1,5 @@
+import px
+
 t1 = px.DataFrame(table='http_events', start_time='-30s')
 
 t1.service = t1.ctx['service']

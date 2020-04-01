@@ -1,3 +1,5 @@
+import px
+
 t1 = px.DataFrame(table='mysql_events', select=['time_', 'remote_addr', 'remote_port',
                                                 'req_cmd', 'req_body', 'resp_status',
                                                 'resp_body', 'latency_ns'], start_time='-30s')

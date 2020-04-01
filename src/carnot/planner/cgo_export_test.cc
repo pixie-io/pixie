@@ -99,7 +99,7 @@ StatusOr<std::string> PlannerVisFuncsInfoGoStr(PlannerPtr planner_ptr, std::stri
 TEST_F(PlannerExportTest, DISABLED_one_agent_one_kelvin_query_test) {
   planner_ = MakePlanner();
   int result_len;
-  std::string query = "df = px.DataFrame(table='table1')\npx.display(df, 'out')";
+  std::string query = "import px\ndf = px.DataFrame(table='table1')\npx.display(df, 'out')";
   auto query_request = MakeQueryRequest(query);
 
   auto logical_planner_state = testutils::CreateTwoAgentsOneKelvinPlannerState();
@@ -121,6 +121,7 @@ TEST_F(PlannerExportTest, bad_queries) {
   int result_len;
   // Bad table name query that should yield a compiler error.
   std::string bad_table_query =
+      "import px\n"
       "df = px.DataFrame(table='bad_table_name')\n"
       "px.display(df, 'out')";
   auto logical_planner_state = testutils::CreateTwoAgentsPlannerState();
@@ -136,6 +137,7 @@ TEST_F(PlannerExportTest, bad_queries) {
 }
 
 constexpr char kUDFQuery[] = R"query(
+import px
 t1 = px.DataFrame(table='table1', start_time='-30s')
 t1 = t1[t1['cpu_cycles'] >= 0]
 px.display(t1)
@@ -174,6 +176,8 @@ TEST_F(PlannerExportTest, pass_query_string_instead_of_req_should_fail) {
 }
 
 constexpr char kMainFuncArgsQuery[] = R"pxl(
+import px
+
 def main(foo : str):
     queryDF = px.DataFrame(table='cpu', select=['cpu0'])
     queryDF['foo_flag'] = foo

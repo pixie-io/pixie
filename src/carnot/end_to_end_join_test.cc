@@ -37,6 +37,7 @@ class JoinTest : public ::testing::Test {
 
 TEST_F(JoinTest, basic) {
   std::string queryString =
+      "import px\n"
       "src1 = px.DataFrame(table='left_table', select=['col1', 'col2'])\n"
       "src2 = px.DataFrame(table='right_table', select=['col1', 'col2'])\n"
       "join = src1.merge(src2, how='inner', left_on=['col1', 'col2'], right_on=['col1', 'col2'], "
@@ -77,6 +78,7 @@ TEST_F(JoinTest, basic) {
 
 TEST_F(JoinTest, self_join) {
   std::string queryString =
+      "import px\n"
       "src1 = px.DataFrame(table='left_table', select=['col1', 'col2'])\n"
       "join = src1.merge(src1, how='inner', left_on=['col1'], right_on=['col1'], "
       "suffixes=['', '_x'])\n"

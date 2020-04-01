@@ -53,6 +53,7 @@ TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
 }
 
 constexpr char kSimpleQueryDefaultLimit[] = R"pxl(
+import px
 t1 = px.DataFrame(table='http_events', start_time='-120s', select=['time_'])
 px.display(t1)
 )pxl";
@@ -76,6 +77,8 @@ TEST_F(LogicalPlannerTest, max_output_rows) {
 }
 
 constexpr char kCompileTimeQuery[] = R"pxl(
+import px
+
 t1 = px.DataFrame(table='http_events', start_time='-120s')
 
 t1['service'] = t1.ctx['service']
@@ -138,6 +141,8 @@ TEST_F(LogicalPlannerTest, duplicate_int) {
 }
 
 constexpr char kTwoWindowQuery[] = R"query(
+import px
+
 t1 = px.DataFrame(table='http_events', start_time='-300s')
 t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
@@ -177,6 +182,8 @@ TEST_F(LogicalPlannerTest, NestedCompileTime) {
 }
 
 constexpr char kAppendQuery[] = R"pxl(
+import px
+
 df1 = px.DataFrame(table='http_events', start_time='-2m', select=['time_', 'upid'])
 df2 = px.DataFrame(table='http_events', start_time='-3m', select=['time_', 'upid'])
 px.display(df1.append(df2))
@@ -193,6 +200,8 @@ TEST_F(LogicalPlannerTest, AppendTest) {
 }
 
 constexpr char kAppendSelfQuery[] = R"pxl(
+import px
+
 df1 = px.DataFrame(table='http_events', start_time='-5m', select=['time_', 'upid'])
 df2 = df1[2==2]
 px.display(df1.append(df2))
@@ -209,6 +218,8 @@ TEST_F(LogicalPlannerTest, AppendSelfTest) {
 }
 
 constexpr char kMainFuncArgsQuery[] = R"pxl(
+import px
+
 def main(foo : str):
     queryDF = px.DataFrame(table='cpu', select=['cpu0'])
     queryDF['foo_flag'] = foo
@@ -312,6 +323,8 @@ TEST_F(LogicalPlannerTest, GetVisFuncsInfo) {
 }
 
 constexpr char kPlannerQueryError[] = R"pxl(
+import px
+
 False = 0 == 1
 True = 1 == 1
 ###############################################################

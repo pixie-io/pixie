@@ -275,7 +275,7 @@ TEST_F(StitcherTest, three_pems_one_kelvin) {
 TEST_F(StitcherTest, stitch_self_together_with_udtf) {
   auto ps = LoadDistributedStatePb(kOneAgentOneKelvinDistributedState);
   // px.ServiceUpTime() is a Kelvin-Only UDTF, so it should only run on Kelvin.
-  auto physical_plan = PlanQuery("px.display(px.ServiceUpTime())", ps);
+  auto physical_plan = PlanQuery("import px\npx.display(px.ServiceUpTime())", ps);
 
   EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(1, 0));
   CarnotInstance* kelvin = physical_plan->Get(0);
@@ -320,7 +320,7 @@ TEST_F(StitcherTest, stitch_self_together_with_udtf) {
 TEST_F(StitcherTest, stitch_all_togther_with_udtf) {
   auto ps = LoadDistributedStatePb(kOneAgentOneKelvinDistributedState);
   // px._Test_MDState() is an all agent so it should run on every pem and kelvin.
-  auto physical_plan = PlanQuery("px.display(px._Test_MD_State())", ps);
+  auto physical_plan = PlanQuery("import px\npx.display(px._Test_MD_State())", ps);
 
   EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(1, 0));
   CarnotInstance* kelvin = physical_plan->Get(0);

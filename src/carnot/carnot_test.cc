@@ -55,6 +55,7 @@ TEST_F(CarnotTest, basic) {
 
   auto query = absl::StrJoin(
       {
+          "import px",
           "df = px.DataFrame(table='test_table', select=['col1','col2'])",
           "px.display(df, 'test_output')",
       },
@@ -90,6 +91,7 @@ TEST_F(CarnotTest, basic_duration_test) {
 
   auto query = absl::StrJoin(
       {
+          "import px",
           "df = px.DataFrame(table='duration_table', select=['col1'])",
           "df.col1 = df.col1 + df.col1",
           "px.display(df, 'test_output')",
@@ -123,6 +125,7 @@ TEST_F(CarnotTest, register_metadata) {
 
   auto query = absl::StrJoin(
       {
+          "import px",
           "df = px.DataFrame(table='test_table', select=['col1', 'col2'])",
           "px.display(df, 'test_output')",
       },
@@ -138,6 +141,7 @@ TEST_F(CarnotTest, register_metadata) {
 TEST_F(CarnotTest, literal_only) {
   auto query = absl::StrJoin(
       {
+          "import px",
           "df = px.DataFrame(table='test_table')",
           "df = df.agg(count=('col1', px.mean))",
           "df.col2 = 1",
@@ -162,10 +166,11 @@ TEST_F(CarnotTest, map_test) {
   std::vector<types::Float64Value> col1_in1 = {1.5, 3.2, 8.3};
   std::vector<types::Float64Value> col1_in2 = {5.1, 11.1};
 
-  auto query = absl::StrJoin({"queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
-                              "queryDF.res = px.add(queryDF.col1, queryDF['col2'])",
-                              "df = queryDF[['res']]", "px.display(df, 'test_output')"},
-                             "\n");
+  auto query = absl::StrJoin(
+      {"import px", "queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
+       "queryDF.res = px.add(queryDF.col1, queryDF['col2'])", "df = queryDF[['res']]",
+       "px.display(df, 'test_output')"},
+      "\n");
 
   // No time column, doesn't use a time parameter.
   auto uuid = sole::uuid4();
@@ -189,7 +194,7 @@ TEST_F(CarnotTest, subscript_map_test) {
   std::vector<types::Float64Value> col1_in2 = {5.1, 11.1};
 
   auto query = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
+      {"import px", "queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
        "queryDF['res'] = queryDF.col1 + queryDF.col2", "px.display(queryDF, 'test_output')"},
       "\n");
 
@@ -215,7 +220,7 @@ TEST_F(CarnotTest, subscript_map_test) {
 // Test whether the compiler will handle issues nicely
 TEST_F(CarnotTest, bad_syntax) {
   // Missing paranethesis
-  auto bad_syntax = "queryDF = px.DataFrame(";
+  auto bad_syntax = "import px\nqueryDF = px.DataFrame(";
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
   auto bad_syntax_status = carnot_->ExecuteQuery(bad_syntax, query_uuid, 0);
@@ -226,7 +231,7 @@ TEST_F(CarnotTest, bad_syntax) {
 TEST_F(CarnotTest, wrong_args) {
   // select -> sel (wrong arg for Form).
   auto wrong_arg_names =
-      absl::StrJoin({"df = px.DataFrame(table='test_table', sel=['col2', 'col2'])",
+      absl::StrJoin({"import px", "df = px.DataFrame(table='test_table', sel=['col2', 'col2'])",
                      "px.display(df, 'test_output')"},
                     "\n");
   // No time column, doesn't use a time parameter.
@@ -239,7 +244,7 @@ TEST_F(CarnotTest, wrong_args) {
 TEST_F(CarnotTest, wrong_columns) {
   // Adding extra column that doesn't exist in the schema.
   auto wrong_columns = absl::StrJoin(
-      {"df = px.DataFrame(table='test_table', select=['col1', 'col2', 'bunk_column'])",
+      {"import px", "df = px.DataFrame(table='test_table', select=['col1', 'col2', 'bunk_column'])",
        "px.display(df, 'test_output')"},
       "\n");
   // No time column, doesn't use a time parameter.
@@ -252,7 +257,7 @@ TEST_F(CarnotTest, wrong_columns) {
 // See whether executor is tolerant to receiving the wrong table name.
 TEST_F(CarnotTest, wrong_table_name) {
   auto wrong_table_name =
-      absl::StrJoin({"df = px.DataFrame(table='bunk_table', select=['col1', 'col2'])",
+      absl::StrJoin({"import px", "df = px.DataFrame(table='bunk_table', select=['col1', 'col2'])",
                      "px.display(df, 'test_output')"},
                     "\n");
   // No time column, doesn't use a time parameter.
@@ -266,7 +271,7 @@ TEST_F(CarnotTest, wrong_table_name) {
 // Select no columns which should be acceptable.
 TEST_F(CarnotTest, no_columns) {
   auto no_columns_name =
-      "df = px.DataFrame(table='test_table', select=[])\npx.display(df, 'test_output')";
+      "import px\ndf = px.DataFrame(table='test_table', select=[])\npx.display(df, 'test_output')";
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
   auto no_columns_status = carnot_->ExecuteQuery(no_columns_name, query_uuid, 0);
@@ -282,44 +287,44 @@ TEST_F(CarnotTest, empty_query_test) {
 }
 
 TEST_F(CarnotTest, map_op_udf_add) {
-  auto add_query =
-      absl::StrJoin({"queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
-                     "queryDF.sum = queryDF.col1 + queryDF.col2", "df = queryDF[['sum']]",
-                     "px.display(df, 'test_output')"},
-                    "\n");
+  auto add_query = absl::StrJoin(
+      {"import px", "queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
+       "queryDF.sum = queryDF.col1 + queryDF.col2", "df = queryDF[['sum']]",
+       "px.display(df, 'test_output')"},
+      "\n");
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
   EXPECT_OK(carnot_->ExecuteQuery(add_query, query_uuid, 0));
 }
 
 TEST_F(CarnotTest, map_op_udf_mult) {
-  auto mult_query =
-      absl::StrJoin({"queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
-                     "queryDF['mult'] = queryDF['col1'] * queryDF['col2']",
-                     "df = queryDF[['mult']]", "px.display(df, 'test_output')"},
-                    "\n");
+  auto mult_query = absl::StrJoin(
+      {"import px", "queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
+       "queryDF['mult'] = queryDF['col1'] * queryDF['col2']", "df = queryDF[['mult']]",
+       "px.display(df, 'test_output')"},
+      "\n");
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
   EXPECT_OK(carnot_->ExecuteQuery(mult_query, query_uuid, 0));
 }
 
 TEST_F(CarnotTest, map_op_udf_sub) {
-  auto sub_query =
-      absl::StrJoin({"queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
-                     "queryDF['sub'] = queryDF['col1'] - queryDF['col2']", "df = queryDF[['sub']]",
-                     "px.display(df, 'test_output')"},
-                    "\n");
+  auto sub_query = absl::StrJoin(
+      {"import px", "queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
+       "queryDF['sub'] = queryDF['col1'] - queryDF['col2']", "df = queryDF[['sub']]",
+       "px.display(df, 'test_output')"},
+      "\n");
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
   EXPECT_OK(carnot_->ExecuteQuery(sub_query, query_uuid, 0));
 }
 
 TEST_F(CarnotTest, map_op_udf_div) {
-  auto div_query =
-      absl::StrJoin({"queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
-                     "queryDF['div'] = queryDF['col1'] / queryDF['col2']", "df = queryDF[['div']]",
-                     "px.display(df, 'test_output')"},
-                    "\n");
+  auto div_query = absl::StrJoin(
+      {"import px", "queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
+       "queryDF['div'] = queryDF['col1'] / queryDF['col2']", "df = queryDF[['div']]",
+       "px.display(df, 'test_output')"},
+      "\n");
   // No time column, doesn't use a time parameter.
   auto query_uuid = sole::uuid4();
   EXPECT_OK(carnot_->ExecuteQuery(div_query, query_uuid, 0));
@@ -327,7 +332,8 @@ TEST_F(CarnotTest, map_op_udf_div) {
 
 TEST_F(CarnotTest, order_test) {
   auto query = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', 'col3'])",
+      {"import px",
+       "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', 'col3'])",
        "queryDF['res'] = px.add(queryDF['col3'], queryDF['col2'])", "queryDF['a'] = 1",
        "queryDF['b'] = 2", "df = queryDF[['res', 'a', 'b']]", "px.display(df, 'test_output')"},
       "\n");
@@ -365,7 +371,8 @@ TEST_F(CarnotTest, order_test) {
 
 TEST_F(CarnotTest, reused_expr) {
   auto query = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', 'col3'])",
+      {"import px",
+       "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', 'col3'])",
        "queryDF['res'] = px.add(queryDF['col3'], queryDF['col2'])", "a = 1 + 1",
        "queryDF['a'] = a - 1", "queryDF['b'] = a + 0", "df = queryDF[['res', 'a', 'b']]",
        "px.display(df, 'test_output')"},
@@ -407,6 +414,7 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
   int64_t stop_time = 12;
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', "
           "'col3'], start_time=$0, end_time=$1)",
           "px.display(queryDF, 'range_output')",
@@ -469,6 +477,7 @@ TEST_F(CarnotTest, range_test_multiple_rbs) {
 TEST_F(CarnotTest, range_test_single_rb) {
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', "
           "'col3'], start_time=$0, end_time=$1)",
           "px.display(queryDF, 'range_output')",
@@ -511,6 +520,7 @@ TEST_F(CarnotTest, empty_range_test) {
   // rowbatches to the output table.
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', "
           "'col3'], start_time=$0, end_time=$1)",
           "px.display(queryDF, 'range_output')",
@@ -546,7 +556,8 @@ class CarnotRangeTest
     types::Int64Value sub_time;
     std::tie(sub_time, num_batches, num_rows, start_at_now) = GetParam();
     query =
-        "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2'], start_time=$0, "
+        "import px\nqueryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2'], "
+        "start_time=$0, "
         "end_time=$1)\npx.display(queryDF, 'range_output')";
     if (start_at_now) {
       query = absl::Substitute(query, "px.now()", sub_time.val);
@@ -598,6 +609,7 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
                     ",");
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', 'col3'])",
           "aggDF = queryDF.agg($0)",
           "px.display(aggDF, 'test_output')",
@@ -665,6 +677,7 @@ TEST_F(CarnotTest, group_by_all_agg_test) {
 TEST_F(CarnotTest, group_by_col_agg_test) {
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col3', 'num_groups'])",
           "aggDF = queryDF.groupby('num_groups').agg(sum=('col3', px.sum))",
           "px.display(aggDF, 'test_output')",
@@ -702,6 +715,7 @@ TEST_F(CarnotTest, group_by_col_agg_test) {
 TEST_F(CarnotTest, multiple_group_by_test) {
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col3', 'num_groups', "
           "'string_groups'])",
           "aggDF = queryDF.groupby(['num_groups', 'string_groups']).agg(sum=('col3', px.sum))",
@@ -756,6 +770,7 @@ TEST_F(CarnotTest, multiple_group_by_test) {
 TEST_F(CarnotTest, comparison_tests) {
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col3', 'num_groups', "
           "'string_groups'])",
           "queryDF['lt'] = queryDF['col3'] < $0",
@@ -795,6 +810,7 @@ TEST_F(CarnotTest, comparison_tests) {
 TEST_F(CarnotTest, comparison_to_agg_tests) {
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col3', 'num_groups', "
           "'string_groups'])",
           "queryDF['is_large'] = queryDF['col3'] > $0",
@@ -874,6 +890,7 @@ std::vector<std::tuple<std::string, std::function<bool(const double&, const doub
 TEST_P(CarnotFilterTest, int_filter) {
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', 'col3', "
           "'num_groups', "
           "'string_groups'])",
@@ -947,6 +964,7 @@ INSTANTIATE_TEST_SUITE_P(CarnotFilterTestSuite, CarnotFilterTest,
 TEST_F(CarnotTest, string_filter) {
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2', 'col3', "
           "'num_groups', "
           "'string_groups'])",
@@ -1011,6 +1029,7 @@ class CarnotLimitTest : public CarnotTest,
 TEST_P(CarnotLimitTest, limit) {
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col2'])",
           "mapDF = queryDF.head(n=$0)",
           "px.display(mapDF, 'test_output')",
@@ -1060,6 +1079,7 @@ INSTANTIATE_TEST_SUITE_P(CarnotLimitTestSuite, CarnotLimitTest,
 TEST_F(CarnotTest, reused_result) {
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col3', 'num_groups', "
           "'string_groups'])",
           "mapDF = queryDF[['col3', 'num_groups']]",
@@ -1097,6 +1117,7 @@ TEST_F(CarnotTest, reused_result) {
 TEST_F(CarnotTest, multiple_result_calls) {
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='big_test_table', select=['time_', 'col3', 'num_groups', "
           "'string_groups'])",
           "mapDF = queryDF[['col3', 'num_groups']]",
@@ -1176,6 +1197,7 @@ TEST_F(CarnotTest, multiple_result_calls) {
 TEST_F(CarnotTest, pass_logical_plan) {
   std::string query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='test_table', select=['col1', 'col2'])",
           "queryDF['res'] = px.add(queryDF['col1'], queryDF['col2'])",
           "df = queryDF[['res']]",
@@ -1237,6 +1259,7 @@ TEST_F(CarnotTest, DISABLED_metadata_logical_plan_filter) {
   // This test does not actually test to make sure that the AgentMetadataState works properly.
   std::string query = absl::StrJoin(
       {
+          "import px",
           "df = px.DataFrame(table='big_test_table', select=['string_groups', '_attr_pod_id'])",
           "df['pod_name'] = df.ctx['pod_name']",
           "bdf = df[df['pod_name'] == 'pl/name']",
@@ -1280,7 +1303,7 @@ TEST_F(CarnotTest, DISABLED_metadata_logical_plan_filter) {
 TEST_F(CarnotTest, empty_table_yields_empty_results) {
   // Test to make sure that metadata can actually compile and work in the executor.
   // This test does not actually test to make sure that the AgentMetadataState works properly.
-  std::string query = "px.display(px.DataFrame('empty_table'))";
+  std::string query = "import px\npx.display(px.DataFrame('empty_table'))";
 
   Compiler compiler;
   int64_t current_time = 0;

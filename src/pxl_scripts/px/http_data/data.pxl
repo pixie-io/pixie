@@ -1,3 +1,5 @@
+import px
+
 t1 = px.DataFrame(table='http_events', select=['time_', 'remote_addr', 'remote_port',
                                                'http_req_method', 'http_req_path',
                                                'http_resp_status', 'http_resp_message',

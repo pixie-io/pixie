@@ -390,7 +390,7 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsFilterOutNonMatchingAgent
 
 using DistributedPruneUnavailableSourcesRuleTest = DistributedRulesTest;
 TEST_F(DistributedPruneUnavailableSourcesRuleTest, AllAgentsUDTFFiltersNoOne) {
-  auto plan = PlanQuery("px.display(px._Test_MD_State())");
+  auto plan = PlanQuery("import px\npx.display(px._Test_MD_State())");
   // id = 1 && id = 2 should be agents.
   auto agent1_instance = plan->Get(1);
   ASSERT_TRUE(IsPEM(agent1_instance->carnot_info()));
@@ -424,7 +424,7 @@ TEST_F(DistributedPruneUnavailableSourcesRuleTest, AllAgentsUDTFFiltersNoOne) {
 }
 
 TEST_F(DistributedPruneUnavailableSourcesRuleTest, OneKelvinUDTFFiltersOutPEMsUDTF) {
-  auto plan = PlanQuery("px.display(px.ServiceUpTime())");
+  auto plan = PlanQuery("import px\npx.display(px.ServiceUpTime())");
   // id = 1 && id = 2 should be agents.
   auto agent1_instance = plan->Get(1);
   ASSERT_TRUE(IsPEM(agent1_instance->carnot_info()));

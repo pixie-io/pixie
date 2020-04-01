@@ -179,9 +179,12 @@ constexpr char kTabletValueTpl[] = R"proto(
 tablets: "$0"
 )proto";
 
-constexpr char kQueryForTwoAgents[] = "df = px.DataFrame(table = 'table1')\npx.display(df, 'out')";
+constexpr char kQueryForTwoAgents[] =
+    "import px\ndf = px.DataFrame(table = 'table1')\npx.display(df, 'out')";
 
 constexpr char kHttpRequestStats[] = R"pxl(
+import px
+
 t1 = px.DataFrame(table='http_events', start_time='-30s')
 
 t1['service'] = t1.ctx['service']

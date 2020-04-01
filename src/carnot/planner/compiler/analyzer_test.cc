@@ -46,8 +46,8 @@ TEST_F(AnalyzerTest, test_utils) {
 
 TEST_F(AnalyzerTest, no_special_relation) {
   std::string from_expr =
-      "df = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])\npx.display(df, 'cpu')";
-  auto ir_graph_status = CompileGraph("import px\n" + from_expr);
+      "import px\ndf = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])\npx.display(df, 'cpu')";
+  auto ir_graph_status = CompileGraph(from_expr);
   ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   auto handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
@@ -56,8 +56,9 @@ TEST_F(AnalyzerTest, no_special_relation) {
 
   // check the connection of ig
   std::string from_range_expr =
-      "df px.DataFrame(table='cpu', select=['cpu0'], start_time=0, end_time=10)\npx.display(df)";
-  ir_graph_status = CompileGraph("import px\n" + from_expr);
+      "import px\ndf px.DataFrame(table='cpu', select=['cpu0'], start_time=0, "
+      "end_time=10)\npx.display(df)";
+  ir_graph_status = CompileGraph(from_expr);
   ASSERT_OK(ir_graph_status);
   // now pass into the relation handler.
   handle_status = HandleRelation(ir_graph_status.ConsumeValueOrDie());
@@ -313,12 +314,12 @@ TEST_F(AnalyzerTest, test_relation_multi_col_agg) {
 TEST_F(AnalyzerTest, test_from_select) {
   // operators don't use generated columns, are just chained.
   std::string chain_operators =
-      "queryDF = px.DataFrame(table='cpu', select=['cpu0', "
+      "import px\nqueryDF = px.DataFrame(table='cpu', select=['cpu0', "
       "'cpu2'], start_time=0, end_time=10)\npx.display(queryDF)";
   table_store::schema::Relation test_relation;
   test_relation.AddColumn(types::FLOAT64, "cpu0");
   test_relation.AddColumn(types::FLOAT64, "cpu2");
-  auto ir_graph_status = CompileGraph("import px\n" + chain_operators);
+  auto ir_graph_status = CompileGraph(chain_operators);
   ASSERT_OK(ir_graph_status);
   auto ir_graph = ir_graph_status.ConsumeValueOrDie();
   auto handle_status = HandleRelation(ir_graph);

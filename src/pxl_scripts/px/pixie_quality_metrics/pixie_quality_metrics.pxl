@@ -1,3 +1,6 @@
+import px
+
+
 def events(t1, latency_col):
     t1.latency_ms = t1[latency_col] / 1.0E6
     t1.latency_huge = t1.latency_ms > 10.0

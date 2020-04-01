@@ -247,6 +247,7 @@ nodes {
 TEST_F(CompilerTest, test_general_compilation) {
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
           "queryDF['quotient'] = queryDF['cpu1'] / queryDF['cpu0']",
           "aggDF = queryDF.groupby(['cpu0']).agg(",
@@ -302,6 +303,7 @@ nodes {
 TEST_F(CompilerTest, select_order_test) {
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu2', 'count', 'cpu1'])",
           "px.display(queryDF, 'cpu_out')",
       },
@@ -354,6 +356,7 @@ nodes {
 TEST_F(CompilerTest, range_now_test) {
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='sequences', select=['time_', 'xmod10'], start_time=0, "
           "end_time=px.now())",
           "px.display(queryDF,'range_table')",
@@ -413,7 +416,8 @@ class CompilerTimeFnTest
   void SetUp() {
     CompilerTest::SetUp();
     std::tie(time_function, chrono_ns) = GetParam();
-    query = absl::StrJoin({"queryDF = px.DataFrame(table='sequences', select=['time_', "
+    query = absl::StrJoin({"import px",
+                           "queryDF = px.DataFrame(table='sequences', select=['time_', "
                            "'xmod10'], start_time=px.now() - $1, end_time=px.now())",
                            "px.display(queryDF, '$0')"},
                           "\n");
@@ -501,6 +505,7 @@ nodes {
 TEST_F(CompilerTest, group_by_all) {
   auto query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='cpu', select=['cpu1', 'cpu0'])",
           "aggDF = queryDF.agg(mean=('cpu0', px.mean))",
           "px.display(aggDF, 'cpu_out')",
@@ -516,7 +521,8 @@ TEST_F(CompilerTest, group_by_all) {
 
 TEST_F(CompilerTest, multiple_group_by_agg_test) {
   std::string query =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
+      absl::StrJoin({"import px",
+                     "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
                      "start_time=0, end_time=10)",
                      "aggDF = queryDF.groupby(['cpu0', 'cpu2']).agg(cpu_count=('cpu1', px.count),",
                      "cpu_mean=('cpu1', px.mean))", "px.display(aggDF, 'cpu_out')"},
@@ -529,7 +535,8 @@ TEST_F(CompilerTest, multiple_group_by_agg_test) {
 
 TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
   std::string query =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
+      absl::StrJoin({"import px",
+                     "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
                      "start_time=0, end_time=10)",
                      "queryDF.cpu_sum = queryDF.cpu1 + queryDF['cpu2']",
                      "aggDF = queryDF.groupby(['cpu0', 'cpu2']).agg(cpu_count=('cpu1', px.count),",
@@ -542,13 +549,13 @@ TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
 }
 
 TEST_F(CompilerTest, rename_then_group_by_test) {
-  auto query =
-      absl::StrJoin({"queryDF = px.DataFrame(table='sequences', select=['time_', 'xmod10', 'PIx'])",
-                     "queryDF['res'] = queryDF.PIx", "queryDF.c1 = queryDF['xmod10']",
-                     "map_out = queryDF[['res', 'c1']]",
-                     "agg_out = map_out.groupby(['res', 'c1']).agg(count=('c1', px.count))",
-                     "px.display(agg_out, 't15')"},
-                    "\n");
+  auto query = absl::StrJoin(
+      {"import px", "queryDF = px.DataFrame(table='sequences', select=['time_', 'xmod10', 'PIx'])",
+       "queryDF['res'] = queryDF.PIx", "queryDF.c1 = queryDF['xmod10']",
+       "map_out = queryDF[['res', 'c1']]",
+       "agg_out = map_out.groupby(['res', 'c1']).agg(count=('c1', px.count))",
+       "px.display(agg_out, 't15')"},
+      "\n");
 
   auto plan = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
   VLOG(2) << plan.ToString();
@@ -558,7 +565,7 @@ TEST_F(CompilerTest, rename_then_group_by_test) {
 // Test to see whether comparisons work.
 TEST_F(CompilerTest, comparison_test) {
   auto query = absl::StrJoin(
-      {"queryDF = px.DataFrame(table='sequences', select=['time_', 'xmod10', 'PIx'])",
+      {"import px", "queryDF = px.DataFrame(table='sequences', select=['time_', 'xmod10', 'PIx'])",
        "queryDF['res'] = queryDF['PIx']", "queryDF['c1'] = queryDF['xmod10']",
        "queryDF['gt'] = queryDF['xmod10'] > 10.0", "queryDF['lt'] = queryDF['xmod10'] < 10.0",
        "queryDF['gte'] = queryDF['PIx'] >= 1.0", "queryDF['lte'] = queryDF['PIx'] <= 1.0",
@@ -573,6 +580,7 @@ TEST_F(CompilerTest, comparison_test) {
 }
 
 constexpr char kAppendQuery[] = R"pxl(
+import px
 t1 = px.DataFrame(table='cpu', select=['cpu0'])
 t2 = px.DataFrame(table='cpu', select=['cpu0'])
 px.display(t1.append(t2))
@@ -585,6 +593,7 @@ TEST_F(CompilerTest, append_test) {
 }
 
 constexpr char kAppendSelfQuery[] = R"pxl(
+import px
 t1 = px.DataFrame(table='cpu', select=['cpu0'])
 t2 = t1[t1.cpu0 > 0.0]
 px.display(t1.append(t2))
@@ -663,7 +672,8 @@ class FilterTest : public CompilerTest,
     CompilerTest::SetUp();
     std::tie(compare_op_, compare_op_proto_) = GetParam();
     query =
-        absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', "
+        absl::StrJoin({"import px",
+                       "queryDF = px.DataFrame(table='cpu', select=['cpu0', "
                        "'cpu1'])",
                        "queryDF = queryDF[queryDF['cpu0'] $0 0.5]", "px.display(queryDF, '$1')"},
                       "\n");
@@ -697,13 +707,13 @@ INSTANTIATE_TEST_SUITE_P(FilterTestSuite, FilterTest, ::testing::ValuesIn(compar
 // TODO(nserrino/phlkuz) create expectations for filter errors.
 TEST_F(CompilerTest, filter_errors) {
   std::string non_bool_filter =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
+      absl::StrJoin({"import px", "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
                      "queryDF = queryDF[queryDF['cpu0'] + 0.5]", "px.display(queryDF, 'blah')"},
                     "\n");
   EXPECT_NOT_OK(compiler_.Compile(non_bool_filter, compiler_state_.get(), /*query_flags*/ {}));
 
   std::string int_val =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
+      absl::StrJoin({"import px", "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
                      "d = queryDF[1]", "px.display(d, 'filtered')"},
                     "\n");
   EXPECT_NOT_OK(compiler_.Compile(int_val, compiler_state_.get(), /*query_flags*/ {}));
@@ -775,7 +785,8 @@ nodes {
 )";
 
 TEST_F(CompilerTest, limit_test) {
-  std::string query = absl::StrJoin({"queryDF = px.DataFrame(table='cpu', select=['cpu0', "
+  std::string query = absl::StrJoin({"import px",
+                                     "queryDF = px.DataFrame(table='cpu', select=['cpu0', "
                                      "'cpu1']).head(n=1000)",
                                      "px.display(queryDF, 'out_table')"},
                                     "\n");
@@ -788,6 +799,7 @@ TEST_F(CompilerTest, limit_test) {
 TEST_F(CompilerTest, reused_result) {
   std::string query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='http_table', select=['time_', 'upid', 'http_resp_status', "
           "'http_resp_latency_ns'], start_time='-1m')",
           "x = queryDF[queryDF['http_resp_latency_ns'] < 1000000]",
@@ -821,6 +833,7 @@ TEST_F(CompilerTest, reused_result) {
 TEST_F(CompilerTest, multiple_result_sinks) {
   std::string query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='http_table', select=['time_', 'upid', 'http_resp_status', "
           "'http_resp_latency_ns'], start_time='-1m')",
           "x = queryDF[queryDF['http_resp_latency_ns'] < "
@@ -894,7 +907,7 @@ nodes {
 }
 )proto";
 TEST_F(CompilerTest, from_select_default_arg) {
-  std::string no_select_arg = "df = px.DataFrame(table='cpu')\npx.display(df, 'out')";
+  std::string no_select_arg = "import px\ndf = px.DataFrame(table='cpu')\npx.display(df, 'out')";
   auto plan_status = compiler_.Compile(no_select_arg, compiler_state_.get(), /*query_flags*/ {});
   ASSERT_OK(plan_status);
   auto plan = plan_status.ValueOrDie();
@@ -2141,8 +2154,8 @@ TEST_P(MetadataSingleOps, valid_filter_metadata_proto) {
   auto expected_pb_iter = metadata_name_to_plan_map.find(expected_pb_name);
   ASSERT_TRUE(expected_pb_iter != metadata_name_to_plan_map.end()) << expected_pb_name;
   std::string expected_pb = expected_pb_iter->second;
-  std::string valid_query =
-      absl::StrJoin({"df = px.DataFrame(table='cpu') ", "$0", "px.display(df, 'out')"}, "\n");
+  std::string valid_query = absl::StrJoin(
+      {"import px", "df = px.DataFrame(table='cpu') ", "$0", "px.display(df, 'out')"}, "\n");
   valid_query = absl::Substitute(valid_query, op_call);
 
   auto plan_status = compiler_.Compile(valid_query, compiler_state_.get(), /*query_flags*/ {});
@@ -2174,7 +2187,7 @@ INSTANTIATE_TEST_SUITE_P(MetadataAttributesSuite, MetadataSingleOps,
 
 TEST_F(CompilerTest, cgroups_pod_id) {
   std::string query =
-      absl::StrJoin({"queryDF = px.DataFrame(table='cgroups')",
+      absl::StrJoin({"import px", "queryDF = px.DataFrame(table='cgroups')",
                      "range_out = queryDF[queryDF.ctx['pod_name'] == 'pl/pl-nats-1']",
                      "px.display(range_out, 'out')"},
                     "\n");
@@ -2348,6 +2361,7 @@ nodes {
 )proto";
 
 constexpr char kJoinQueryTypeTpl[] = R"query(
+import px
 src1 = px.DataFrame(table='cpu', select=['cpu0', 'upid', 'cpu1'])
 src2 = px.DataFrame(table='http_table', select=['http_resp_status', 'upid',  'http_resp_latency_ns'])
 join = src1.merge(src2, how='$0', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
@@ -2678,6 +2692,7 @@ nodes {
 )proto";
 
 constexpr char kSelfJoinQuery[] = R"query(
+import px
 src1 = px.DataFrame(table='cpu', select=['cpu0', 'upid', 'cpu1'])
 join = src1.merge(src1, how='inner', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
 px.display(join, 'joined')
@@ -2692,7 +2707,7 @@ TEST_F(CompilerTest, self_join) {
 
 // Test to make sure syntax errors are properly parsed.
 TEST_F(CompilerTest, syntax_error_test) {
-  auto syntax_error_query = "px.DataFrame(";
+  auto syntax_error_query = "import px\npx.DataFrame(";
   auto plan_status =
       compiler_.Compile(syntax_error_query, compiler_state_.get(), /*query_flags*/ {});
   ASSERT_NOT_OK(plan_status);
@@ -2700,8 +2715,8 @@ TEST_F(CompilerTest, syntax_error_test) {
 }
 
 TEST_F(CompilerTest, indentation_error_test) {
-  auto indent_error_query =
-      absl::StrJoin({"t = px.DataFrame(table='blah')", "    px.display(t, 'blah')"}, "\n");
+  auto indent_error_query = absl::StrJoin(
+      {"import px", "t = px.DataFrame(table='blah')", "    px.display(t, 'blah')"}, "\n");
   auto plan_status =
       compiler_.Compile(indent_error_query, compiler_state_.get(), /*query_flags*/ {});
   ASSERT_NOT_OK(plan_status);
@@ -2710,7 +2725,8 @@ TEST_F(CompilerTest, indentation_error_test) {
 
 TEST_F(CompilerTest, missing_result) {
   // Missing the result call at the end of the query.
-  auto missing_result_call = "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])";
+  auto missing_result_call =
+      "import px\nqueryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])";
   auto missing_result_status =
       compiler_.Compile(missing_result_call, compiler_state_.get(), /*query_flags*/ {});
   ASSERT_NOT_OK(missing_result_status);
@@ -2720,6 +2736,7 @@ TEST_F(CompilerTest, missing_result) {
 }
 
 constexpr char kBadDropQuery[] = R"pxl(
+import px
 t1 = px.DataFrame(table='http_events', start_time='-300s')
 t1['service'] = t1.ctx['service']
 t1['http_resp_latency_ms'] = t1['http_resp_latency_ns'] / 1.0E6
@@ -2765,6 +2782,7 @@ TEST_F(CompilerTest, BadDropQuery) {
 }
 
 constexpr char kDropWithoutListQuery[] = R"pxl(
+import px
 t1 = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])
 t1 = t1.drop('cpu0')
 px.display(t1)
@@ -2792,8 +2810,8 @@ TEST_F(CompilerTest, DropWithoutListQuery) {
 
 TEST_F(CompilerTest, AndExpressionFailsGracefully) {
   auto query =
-      absl::StrJoin({"df = px.DataFrame('bar')", "df[df['service'] != '' && px.asid() != 10]",
-                     "px.display(df, 'out')"},
+      absl::StrJoin({"import px", "df = px.DataFrame('bar')",
+                     "df[df['service'] != '' && px.asid() != 10]", "px.display(df, 'out')"},
                     "\n");
   auto ir_graph_or_s = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
   ASSERT_NOT_OK(ir_graph_or_s);
@@ -2812,6 +2830,7 @@ TEST_F(CompilerTest, DISABLED_CommentOnlyCodeShouldFailGracefullly) {
 }
 
 constexpr char kMetadataNoDuplicatesQuery[] = R"pxl(
+import px
 t1 = px.DataFrame(table='cpu', start_time='-5s', select=['upid'])
 t1.service_name = t1.ctx['service_name']
 px.display(t1)
@@ -2841,6 +2860,7 @@ TEST_F(CompilerTest, MetadataNoDuplicateColumnsQuery) {
 TEST_F(CompilerTest, UnusedOperatorsRemoved) {
   std::string query = absl::StrJoin(
       {
+          "import px",
           "queryDF = px.DataFrame(table='http_table', select=['time_', 'upid', 'http_resp_status', "
           "'http_resp_latency_ns'], start_time='-1m')",
           "filter = queryDF[queryDF['http_resp_latency_ns'] < 1000000]",
@@ -2879,6 +2899,8 @@ TEST_F(CompilerTest, UnusedOperatorsRemoved) {
 }
 
 constexpr char kArgValueQuery[] = R"pxl(
+import px
+
 def main(foo: int):
   queryDF = px.DataFrame(table='cpu', select=['upid'])
   queryDF['foo_arg'] = foo
@@ -2913,6 +2935,7 @@ TEST_F(CompilerTest, ArgValueQuery) {
 }
 
 constexpr char kUndefinedFuncError[] = R"pxl(
+import px
 queryDF = px.DataFrame(table='cpu', select=['upid'])
 queryDF.foo = queryDF.bar(queryDF.upid)
 px.display(queryDF, 'map')
@@ -2928,6 +2951,7 @@ TEST_F(CompilerTest, UndefinedFuncError) {
 TEST_F(CompilerTest, TestUnaryOperators) {
   std::string query = absl::StrJoin(
       {
+          "import px",
           "df = px.DataFrame(table='cpu', select=['cpu0'])",
           "df.foo = 1",
           "df.foo2 = ~df.foo",
@@ -2946,6 +2970,7 @@ TEST_F(CompilerTest, TestUnaryOperators) {
 
 // ENABLE and modify these tests once we know where rolling is getting merged into
 constexpr char kRollingTimeStringQuery[] = R"pxl(
+import px
 t1 = px.DataFrame(table='http_events', select=['time_', 'remote_port'])
 t1 = t1.rolling('3s')
 px.display(t1)
@@ -2971,6 +2996,7 @@ TEST_F(CompilerTest, DISABLED_RollingTimeStringQuery) {
 }
 
 constexpr char kRollingIntQuery[] = R"pxl(
+import px
 t1 = px.DataFrame(table='http_events', select=['time_', 'remote_port'])
 t1 = t1.rolling(3000)
 px.display(t1)
@@ -2995,6 +3021,7 @@ TEST_F(CompilerTest, DISABLED_RollingIntQuery) {
 }
 
 constexpr char kRollingCompileTimeExprEvalQuery[] = R"pxl(
+import px
 t1 = px.DataFrame(table='http_events', select=['time_', 'remote_port'])
 t1 = t1.rolling(1 + px.now())
 px.display(t1)
@@ -3020,6 +3047,7 @@ TEST_F(CompilerTest, DISABLED_RollingCompileTimeExprEvalQuery) {
 }
 
 constexpr char kRollingNonTimeColumn[] = R"pxl(
+import px
 t1 = px.DataFrame(table='cpu', select=['cpu0'])
 t1 = t1.rolling(1, on='cpu0')
 px.display(t1)

@@ -33,8 +33,8 @@ TEST_F(DistributedAnalyzerTest, UDTFOnlyOnPEMsDoesntRunOnKelvin) {
   md::UPID upid(asid, 456, 3420030816657ULL);
   std::string upid_str =
       sole::rebuild(absl::Uint128High64(upid.value()), absl::Uint128Low64(upid.value())).str();
-  auto physical_plan =
-      PlanQuery(absl::Substitute("px.display(px.OpenNetworkConnections('$0'))", upid_str));
+  auto physical_plan = PlanQuery(
+      absl::Substitute("import px\npx.display(px.OpenNetworkConnections('$0'))", upid_str));
   // The plan starts with 3 agents -> 2 pems and 1 kelvin
   ASSERT_EQ(physical_plan->dag().nodes().size(), 3UL);
   // Find the appropriate agents.
@@ -98,7 +98,7 @@ TEST_F(DistributedAnalyzerTest, UDTFOnlyOnPEMsDoesntRunOnKelvin) {
 }
 
 TEST_F(DistributedAnalyzerTest, UDTFOnKelvinOnlyOnKelvin) {
-  auto physical_plan = PlanQuery("px.display(px.ServiceUpTime())");
+  auto physical_plan = PlanQuery("import px\npx.display(px.ServiceUpTime())");
   // The plan starts with 3 agents -> 2 pems and 1 kelvin
   ASSERT_EQ(physical_plan->dag().nodes().size(), 3UL);
   // Find the appropriate agents.
@@ -162,6 +162,8 @@ TEST_F(DistributedAnalyzerTest, UDTFOnKelvinOnlyOnKelvin) {
 }
 
 constexpr char kQueryJoinKelvinOnlyUDTFWithPEMOnlyUDTF[] = R"pxl(
+import px
+
 kelvin_df = px.ServiceUpTime()
 pem_df =  px.OpenNetworkConnections('$0')
 pem_df.service = 'blah_service'

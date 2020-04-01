@@ -88,7 +88,7 @@ func TestPlanner_Simple(t *testing.T) {
 	c := logicalplanner.New(&udfInfoPb)
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
-	query := "df = px.DataFrame(table='table1')\npx.display(df, 'out')"
+	query := "import px\ndf = px.DataFrame(table='table1')\npx.display(df, 'out')"
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
 	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
 	queryRequestPB := &plannerpb.QueryRequest{
@@ -162,7 +162,7 @@ func TestPlanner_MissingTable(t *testing.T) {
 	c := logicalplanner.New(&udfspb.UDFInfo{})
 	defer c.Free()
 	// Pass the relation proto, table and query to the compilation.
-	query := "df = px.DataFrame(table='bad_table')\npx.display(df, 'out')"
+	query := "import px\ndf = px.DataFrame(table='bad_table')\npx.display(df, 'out')"
 	plannerStatePB := new(distributedpb.LogicalPlannerState)
 	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
 	queryRequestPB := &plannerpb.QueryRequest{
@@ -215,10 +215,12 @@ func TestPlanner_EmptyString(t *testing.T) {
 
 	status := plannerResultPB.Status
 	assert.NotEqual(t, status.ErrCode, statuspb.OK)
-	assert.Regexp(t, "query does not output a result", status.Msg)
+	assert.Regexp(t, "Query should not be empty", status.Msg)
 }
 
 const mainFuncArgsQuery = `
+import px
+
 def main(foo : str):
 		queryDF = px.DataFrame(table='cpu', select=['cpu0'])
 		queryDF['foo_flag'] = foo
@@ -273,7 +275,7 @@ func TestPlanner_GetMainFuncArgsSpec_BadQuery(t *testing.T) {
 	c := logicalplanner.New(&udfspb.UDFInfo{})
 	defer c.Free()
 	// query doesn't have a main function so should throw error.
-	query := "px.display(px.DataFrame('http_events'))"
+	query := "import px\npx.display(px.DataFrame('http_events'))"
 	queryRequestPB := &plannerpb.QueryRequest{
 		QueryStr: query,
 	}
