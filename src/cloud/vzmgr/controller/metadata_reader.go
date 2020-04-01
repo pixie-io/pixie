@@ -105,9 +105,41 @@ func (m *MetadataReader) listenForViziers() {
 }
 
 func (m *MetadataReader) loadState() error {
-	// TOOD(michelle): This should get all currently running Viziers and run StartVizierUpdates() for each of them.
-	// This will come in a followup diff.
+	// Start listening for any newly connected Viziers.
 	go m.listenForViziers()
+
+	// Start listening to updates for any Viziers that are already connected to Cloud.
+	err := m.listenToConnectedViziers()
+	if err != nil {
+		log.WithError(err).Info("Failed to load state")
+		return err
+	}
+
+	return nil
+}
+
+func (m *MetadataReader) listenToConnectedViziers() error {
+	query := `SELECT vizier_cluster_id, resource_version from vizier_cluster_info AS c INNER JOIN vizier_index_state AS i ON c.vizier_cluster_id = i.cluster_id WHERE c.status != 'UNKNOWN' AND c.status != 'DISCONNECTED'`
+	var val struct {
+		ID              uuid.UUID `db:"vizier_cluster_id"`
+		ResourceVersion string    `db:"resource_version"`
+	}
+
+	rows, err := m.db.Queryx(query)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err := rows.StructScan(&val)
+		if err != nil {
+			return err
+		}
+		err = m.StartVizierUpdates(val.ID, val.ResourceVersion)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

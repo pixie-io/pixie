@@ -34,6 +34,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 		metadataRequests        []*MetadataRequest           // The expected metadata request and responses.
 		expectedMetadataUpdates []*metadatapb.ResourceUpdate // The updates that should be sent to the indexer.
 		endingRV                string                       // The new resource version after the update.
+		vizierStatus            string
 	}{
 		{
 			name:                  "In-order update",
@@ -44,7 +45,8 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			expectedMetadataUpdates: []*metadatapb.ResourceUpdate{
 				&metadatapb.ResourceUpdate{ResourceVersion: "1235", PrevResourceVersion: "1234"},
 			},
-			endingRV: "1235",
+			endingRV:     "1235",
+			vizierStatus: "HEALTHY",
 		},
 		{
 			name:                  "out-of-order update",
@@ -74,7 +76,8 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 				&metadatapb.ResourceUpdate{ResourceVersion: "16", PrevResourceVersion: "15"},
 				&metadatapb.ResourceUpdate{ResourceVersion: "17", PrevResourceVersion: "16"},
 			},
-			endingRV: "17",
+			endingRV:     "17",
+			vizierStatus: "UNHEALTHY",
 		},
 		{
 			name:                  "multiple out-of-order update",
@@ -119,7 +122,18 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 				&metadatapb.ResourceUpdate{ResourceVersion: "16", PrevResourceVersion: "15"},
 				&metadatapb.ResourceUpdate{ResourceVersion: "17", PrevResourceVersion: "16"},
 			},
-			endingRV: "17",
+			endingRV:     "17",
+			vizierStatus: "HEALTHY",
+		},
+		{
+			name:                    "disconnected vizier",
+			startingRV:              "12",
+			updatePrevRV:            "1",
+			updateRV:                "2",
+			expectMetadataRequest:   false,
+			expectedMetadataUpdates: []*metadatapb.ResourceUpdate{},
+			endingRV:                "12",
+			vizierStatus:            "DISCONNECTED",
 		},
 		{
 			name:                    "duplicateUpdate",
@@ -129,12 +143,14 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			expectMetadataRequest:   false,
 			expectedMetadataUpdates: []*metadatapb.ResourceUpdate{},
 			endingRV:                "12",
+			vizierStatus:            "HEALTHY",
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			vzID := uuid.NewV4()
+			orgID := uuid.NewV4()
 
 			db, teardown := setupTestDB(t)
 			defer teardown()
@@ -142,6 +158,10 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 			// Set up initial DB state.
 			insertIdxStateQuery := `INSERT INTO vizier_index_state(cluster_id, resource_version) VALUES ($1, $2)`
 			db.MustExec(insertIdxStateQuery, vzID, test.startingRV)
+			insertClusterQuery := `INSERT INTO vizier_cluster(id, org_id) VALUES ($1, $2)`
+			db.MustExec(insertClusterQuery, vzID, orgID)
+			insertClusterInfoQuery := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status) VALUES ($1, $2)`
+			db.MustExec(insertClusterInfoQuery, vzID, test.vizierStatus)
 
 			natsPort, natsCleanup := testingutils.StartNATS(t)
 			nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
@@ -189,9 +209,7 @@ func TestMetadataReader_ProcessVizierUpdate(t *testing.T) {
 				defer mdSub.Unsubscribe()
 			}
 
-			mr, err := controller.NewMetadataReader(db, sc, nc)
-			mr.StartVizierUpdates(vzID, test.startingRV)
-			defer mr.StopVizierUpdates(vzID)
+			_, err = controller.NewMetadataReader(db, sc, nc)
 
 			// Publish update to STAN channel.
 			initialUpdate := &cvmsgspb.MetadataUpdate{
