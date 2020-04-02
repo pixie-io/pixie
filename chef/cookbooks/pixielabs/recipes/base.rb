@@ -84,3 +84,9 @@ remote_file '/opt/pixielabs/bin/prototool' do
   mode 0755
   checksum node['prototool']['sha256']
 end
+
+remote_file '/opt/pixielabs/bin/yql' do
+  source node['yq']['download_path']
+  mode 0755
+  checksum node['yq']['sha256']
+end

@@ -21,6 +21,7 @@ default['sops']                      = {}
 default['shellcheck']                = {}
 default['sentry']                    = {}
 default['prototool']                 = {}
+default['yq']                        = {}
 
 if node[:platform] == 'ubuntu'
   default['bazel']['download_path'] =
@@ -79,6 +80,11 @@ if node[:platform] == 'ubuntu'
   default['prototool']['sha256']        =
     '7ffbe2c6355241e2115d028ed4a38113ccbea93944ac2ad08bec5770917e12e1'
 
+  default['yq']['download_path'] =
+    'https://github.com/mikefarah/yq/releases/download/3.2.1/yq_linux_amd64'
+  default['yq']['sha256']        =
+    '11a830ffb72aad0eaa7640ef69637068f36469be4f68a93da822fbe454e998f8'
+
 elsif node[:platform] == 'mac_os_x'
   default['bazel']['download_path'] =
     'https://github.com/bazelbuild/bazel/releases/download/2.2.0/bazel-2.2.0-darwin-x86_64'
@@ -132,4 +138,9 @@ elsif node[:platform] == 'mac_os_x'
     'https://github.com/uber/prototool/releases/download/v1.8.0/prototool-Darwin-x86_64'
   default['prototool']['sha256']        =
     'fa5aec63bfc1461f3291948b7aede460d7eda216ba68b618704fd70c8a34b3b0'
+
+  default['yq']['download_path'] =
+    'https://github.com/mikefarah/yq/releases/download/3.2.1/yq_darwin_amd64'
+  default['yq']['sha256']        =
+    '116f74a384d0b4fa31a58dd01cfcdeffa6fcd21c066de223cbb0ebc042a8bc28'
 end
