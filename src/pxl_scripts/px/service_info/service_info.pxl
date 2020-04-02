@@ -1,75 +1,253 @@
+''' Service stats LET and local service map
+
+This live view calculates the latency, error rate, and throughput
+of a Service and also summarizes the incoming and outgoing traffic
+for a service.
+
+Notes:
+* Setting service_name is not exclusive matching at the moment. IE
+  if you have two services 'a' and 'a-db', setting `service_name = 'a'`
+  will still match `a-db`
+'''
 import px
 
 False = 0 == 1
 True = 1 == 1
-###############################################################
-# Edit the following variables to change the visualization.
-###############################################################
-# Pods/services are formatted as <namespace>/<name>.
-# If you want to match a namespace, only keep the namespace portion
+# ----------------------------------------------------------------
+# The following variables can be edited to specify time window and
+# service(s) to monitor.
+# ----------------------------------------------------------------
 
-service_name = 'px-sock-shop'
+# Service name specifies the partial name to filter services by.
+# Format is '<namespace>/<name>'.
+#   '' specifies all services.
+#   '<namespace>/' specifies all services in <namespace>.
+service_name = 'px-sock-shop/'
+
+# The time of the first data point to show. Must be a string of the
+# format "-<int><time_str>" where time_str is one of:
+#   "m" (minutes), "s" (seconds), "h" (hours), "d" (days).
+start_time = '-2m'
+# ----------------------------------------------------------------
+# Visualization Variables - No need to edit for basic configuration.
+# ----------------------------------------------------------------
+# K8s object is the abstraction to group on.
+# Options are ['pod', 'service'].
 k8s_object = 'service'
+# Window in seconds within which to aggregate metrics.
+window_s = 2
+# Flag to filter out requests that come from an unresolvable IP.
+filter_unresolved_inbound = True
+# Flag to filter out health checks from the data.
+filter_health_checks = True
+# Flag to filter out ready checks from the data.
+filter_ready_checks = True
+# Flag to filter out non_k8s_traffic from the data.
+filter_non_k8s_traffic = True
+# The name of the incoming traffic column in the edge graphs.
+src_col = 'requestor'
+# The name of the outgoing traffic column in the edge graphs.
+dest_col = 'responder'
+# Column naem used to split data into separate time series.
+# k8s_object column is renamed to this and is used in
+# visualization spec.
+split_series_name = 'k8s'
+# ----------------------------------------------------------------
 
-# Visualization Variables - Dont change unless you know what you are doing
-num_seconds = 2
-filter_dash = True
-filter_health = True
-filter_readyz = True
-filter_empty_k8s = True
-src_name = 'requestor'
-dest_name = 'responder'
-ip = 'remote_addr'
-###############################################################
+
+def service_info():
+    """Top level service info function.
+
+    For service level information we compute the latency, error rate, and throughout
+    along with first degree connections (local service map).
+    """
+    # The data necessary to compute HTTP level service information is located in the
+    # http_events table. We filter and aggregate data from this table to compute the
+    # required metrics.
+    df = px.DataFrame(table='http_events', start_time=start_time)
+    df = format_http_table(df, filter_health_checks,
+                           filter_ready_checks, filter_unresolved_inbound)
+
+    # Calculate LET of service(s) (k8s_object) over the time window ('timestamp')
+    # after filtering for matching services.
+    matching_df = df[px.contains(df[k8s_object], service_name)]
+    let_df = calc_http_LET(matching_df, [k8s_object, 'timestamp'])
+
+    # Format and organize resulting columns.
+    let_df[split_series_name] = let_df[k8s_object]
+    let_df = let_df[['time_', split_series_name, 'latency_p50',
+                     'latency_p90', 'latency_p99', 'error_rate', 'rps', 'bytes_per_s']]
+    px.display(let_df, 'test')
+
+    # Calculate LET for each service edge in the service graph over each time window.
+    # Each edge starts at a requester ('remote_addr') and ends at a
+    # responder (k8s_object).
+    edge_let_df = calc_http_LET(df, ['remote_addr', k8s_object, 'timestamp'])
+    # Convert 'remote_addr' IP into a service name.
+    edge_let_df = ip_to_svc_name(edge_let_df, 'remote_addr', src_col)
+    # Rename k8s_object to dest_col.
+    edge_let_df[dest_col] = edge_let_df[k8s_object]
+
+    # Filter for traffic that starts at this service.
+    outgoing_let_df = edge_let_df[px.contains(
+        edge_let_df[src_col], service_name)]
+
+    # Group outgoing traffic by (src, dest) to get all outgoing edges.
+    outgoing_edges_df = summarize_LET(outgoing_let_df, [src_col, dest_col])
+    px.display(outgoing_edges_df, 'outgoing_traffic')
+
+    # Filter traffic that ends at this service.
+    incoming_let_df = edge_let_df[px.contains(
+        edge_let_df[dest_col], service_name)]
+
+    # Group incoming traffic by (src, dest) to get all incoming edges.
+    incoming_edges_df = summarize_LET(incoming_let_df, [src_col, dest_col])
+    px.display(incoming_edges_df, 'incoming_traffic')
 
 
-def prepare_columns(df, latency_ns_col):
+# ----------------------------------------------------------------
+# Utility functions:
+#
+# These are shared functions. We plan to support imports in v0.3,
+# which will allow these functions to be shared across multiple
+# scripts.
+# ----------------------------------------------------------------
+def format_events_table(df, latency_ns_col):
+    """ Format data and add semantic columns in event tables
+
+    Unifies latency column to 'latency_ms', adds a binned
+    timestamp field to aggregate on, and adds the service
+    (k8s_object) as a semantic column.
+
+    Works on "mysql_events" and "http_events"
+
+    Args:
+    @df: the input events table
+    @latency_ns_col: the name of the latency column in @df.
+
+    Returns: formatted events DataFrame
+    """
     df.latency_ms = df[latency_ns_col] / 1.0E6
-    df = df[df['latency_ms'] < 1000.0]
-    df.timestamp = px.bin(df.time_, px.seconds(num_seconds))
+    df = df[df['latency_ms'] < 10000.0]
+    df.timestamp = px.bin(df.time_, px.seconds(window_s))
     df[k8s_object] = df.ctx[k8s_object]
     return df
 
 
-def prepare_http_columns(df, filter_health, filter_readyz, filter_dash):
-    df = prepare_columns(df, 'http_resp_latency_ns')
+def format_http_table(df, filter_health_checks, filter_ready_checks,
+                      filter_unresolved_inbound):
+    """ Formats HTTP events tables
+
+    Runs events table universal formatting, adds a response_size,
+    creates a failure field marking which requests receive an error
+    status code, and optionally filters out system monitoring requests
+    and partial data points.
+
+    Args:
+    @df: the input http_events table.
+    @filter_health_checks: flag to filter health checks.
+    @filter_ready_checks: flag to filter health checks.
+    @filter_unresolved_inbound: flag to filter unresolved inbound
+        requests.
+
+    Returns: formatted HTTP events DataFrame.
+    """
+    df = format_events_table(df, 'http_resp_latency_ns')
     df.resp_size = px.length(df.http_resp_body)
     df.failure = df.http_resp_status >= 400
-    filter_out_conds = ((df.http_req_path != '/health' or not filter_health) and (
-        df.http_req_path != '/readyz' or not filter_readyz)) and (
-        df[ip] != '-' or not filter_dash)
+    filter_out_conds = ((df.http_req_path != '/health' or not filter_health_checks) and (
+        df.http_req_path != '/readyz' or not filter_ready_checks)) and (
+        df['remote_addr'] != '-' or not filter_unresolved_inbound)
 
     df = df[filter_out_conds]
     return df
 
 
-def calc_LET(df, groups):
-    df = df.groupby(groups).agg(
-        latency_quantiles=('latency_ms', px.quantiles),
-        error_rate_per_window=('failure', px.mean),
-        throughput_total=('http_resp_status', px.count),
-        bytes_total=('resp_size', px.sum)
-    )
+def format_LET_aggs(df):
+    """ Converts the result of LET windowed aggregates into expected metrics.
 
+    Converts the result of aggregates on windows into well-formatted metrics that
+    can be visualized. Latency quantile values need to be extracted from the
+    quantiles struct, and then error_rate, rps, and bytes_per_s are calculated as
+    a function of window size.
+
+
+    This function represents logic shared by LET calculators for MySQL and
+    HTTP events.
+
+    Args:
+    @df: the input events table grouped into windows with aggregated
+        columns 'throughput_total', 'error_rate_per_window', and 'rps'
+
+    Returns: DataFrame with formatted LET metrics.
+    """
     df.latency_p50 = px.pluck_float64(df.latency_quantiles, 'p50')
     df.latency_p90 = px.pluck_float64(df.latency_quantiles, 'p90')
     df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
     df['time_'] = df['timestamp']
-    df.error_rate = df.error_rate_per_window * df.throughput_total / num_seconds
-    df.rps = df.throughput_total / num_seconds
-    df.bytes_per_s = df.bytes_total / num_seconds
+    df.error_rate = df.error_rate_per_window * df.throughput_total / window_s
+    df.rps = df.throughput_total / window_s
+    df.bytes_per_s = df.bytes_total / window_s
+    return df
+
+
+def calc_http_LET(df, groups):
+    """ Calculates Latency, Error Rate, and Throughput on HTTP events.
+
+    Calculates latency, error rate, and throughput aggregated over
+    @groups. Throughput is represented by two values: rps, and bytes_per_s.
+
+    Args:
+    @df: the input http_events table.
+    @groups: the list of columns to group on. 'timestamp' must be a a group
+        or this will fail.
+
+    Returns: The LET DataFrame.
+    """
+    # Aggregate values over the window.
+    df = df.groupby(groups).agg(
+        latency_quantiles=('latency_ms', px.quantiles),
+        error_rate_per_window=('failure', px.mean),
+        throughput_total=('latency_ms', px.count),
+        bytes_total=('resp_size', px.sum)
+    )
+
+    # Format the result of LET aggregates into proper scalar formats and
+    # time series.
+    df = format_LET_aggs(df)
     return df
 
 
 def ip_to_svc_name(df, ip_col, svc_col_name):
+    """ Map IP to service name.
+
+    Maps IP values stored in @ip_col into service names to store into
+    @svc_col_name.
+
+    Args:
+    @df: the input dataframe.
+    @ip_col: the IP column to map from.
+    @svc_col_name: the column name to assign the new service values.
+
+    Returns: DataFrame with the svc_col added.
+    """
     pod_id = 'pod_id'
     df[pod_id] = px.ip_to_pod_id(df[ip_col])
     df[svc_col_name] = px.pod_id_to_service_name(df[pod_id])
     return df.drop(pod_id)
 
 
-def edge_agg(filtered_df, groups):
-    df = filtered_df.groupby(groups).agg(
+def summarize_LET(let_df, groups):
+    """ Aggregate LET values across all windows.
+
+    Args:
+    @let_df: the DataFrame with LET values.
+    @groups: the columns to group over.
+
+    Returns: The summary DF.
+    """
+
+    df = let_df.groupby(groups).agg(
         rps=('rps', px.mean),
         bytes_per_s=('bytes_per_s', px.mean),
         error_rate=('error_rate', px.mean),
@@ -77,20 +255,10 @@ def edge_agg(filtered_df, groups):
     return df
 
 
-df = px.DataFrame(table='http_events', start_time='-2m')
-df = prepare_http_columns(df, filter_health, filter_readyz, filter_dash)
-qa = calc_LET(df[px.contains(df[k8s_object], service_name)], [k8s_object, 'timestamp'])
-
-split_series_name = 'k8s'
-qa[split_series_name] = qa[k8s_object]
-qa[dest_name] = qa[k8s_object]
-px.display(qa['time_', split_series_name, 'latency_p50',
-              'latency_p90', 'latency_p99', 'error_rate', 'rps', 'bytes_per_s'], 'test')
-edges = calc_LET(df, [k8s_object, 'timestamp', ip])
-edges = ip_to_svc_name(edges, ip, src_name)
-edges[dest_name] = edges[k8s_object]
-
-px.display(edge_agg(edges[px.contains(edges[src_name], service_name)], [src_name, dest_name]),
-           'talks_to')
-px.display(edge_agg(edges[px.contains(edges[dest_name], service_name)], [src_name, dest_name]),
-           'receives_from')
+# ----------------------------------------------------------------
+# Script needs to manually invoke top level function.
+#
+# In v0.2 we will support a new visualization spec that will
+# auto-execute the top-level function.
+# ----------------------------------------------------------------
+service_info()

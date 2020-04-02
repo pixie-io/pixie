@@ -15,7 +15,7 @@
       "h": 3
     }
   },
-  "talks_to": {
+  "outgoing_traffic": {
     "position": {
       "x": 0,
       "y": 6,
@@ -23,7 +23,7 @@
       "h": 1
     }
   },
-  "receives_from": {
+  "incoming_traffic": {
     "position": {
       "x": 0,
       "y": 7,

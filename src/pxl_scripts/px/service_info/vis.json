@@ -79,16 +79,16 @@
       }
     }
   },
-  "talks_to": {
+  "outgoing_traffic": {
     "mark": "table",
     "data": {
-      "name": "talks_to"
+      "name": "outgoing_traffic"
     }
   },
-  "receives_from": {
+  "incoming_traffic": {
     "mark": "table",
     "data": {
-      "name": "receives_from"
+      "name": "incoming_traffic"
     }
   },
   "error_rate": {
