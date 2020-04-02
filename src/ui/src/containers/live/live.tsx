@@ -1,21 +1,20 @@
 import {getLiveViewEditorOpened, setLiveViewEditorOpened} from 'common/localstorage';
+import EditIcon from 'components/icons/edit';
 import MagicIcon from 'components/icons/magic';
 import LazyPanel from 'components/lazy-panel';
-import {SnackbarProvider} from 'components/snackbar/snackbar';
 import * as React from 'react';
 import {GlobalHotKeys} from 'react-hotkeys';
 
 import Drawer from '@material-ui/core/Drawer';
 import IconButton from '@material-ui/core/IconButton';
 import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
-import EditIcon from '@material-ui/icons/Edit';
 import MenuIcon from '@material-ui/icons/Menu';
 import ShareIcon from '@material-ui/icons/Share';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 
 import Canvas from './canvas';
 import CommandInput from './command-input';
-import {LiveContext, withLiveContextProvider} from './context';
+import {withLiveContextProvider} from './context';
 import Editor from './editor';
 import ExecuteScriptButton from './execute-button';
 import {useInitScriptLoader} from './script-loader';
@@ -44,7 +43,7 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     topBar: {
       display: 'flex',
-      margin: theme.spacing(2),
+      margin: theme.spacing(1),
       alignItems: 'center',
     },
     title: {
@@ -108,14 +107,14 @@ const LiveView = () => {
     <div className={classes.root}>
       <GlobalHotKeys handlers={hotkeyHandlers} keyMap={COMMAND_KEYMAP} />
       <div className={classes.topBar}>
-        <IconButton disabled={true} onClick={toggleDrawer}>
+        {/* <IconButton disabled={true} onClick={toggleDrawer}>
           <MenuIcon />
-        </IconButton>
+        </IconButton> */}
         <LiveViewTitle className={classes.title} />
         <ExecuteScriptButton />
-        <IconButton disabled={true}>
+        {/* <IconButton disabled={true}>
           <ShareIcon />
-        </IconButton>
+        </IconButton> */}
         <ToggleButton
           className={classes.editorToggle}
           selected={editorOpen}

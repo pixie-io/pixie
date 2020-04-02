@@ -10,9 +10,10 @@ export interface Script {
   code: string;
   vis?: string;
   placement?: string;
+  description?: string;
 }
 
-export const GetPxScripts = (): Promise<Script[]> => {
+export function GetPxScripts(): Promise<Script[]> {
   return Axios({
     method: 'get',
     url: isProd() ? PROD_SCRIPTS : STAGING_SCRIPTS,
@@ -20,11 +21,13 @@ export const GetPxScripts = (): Promise<Script[]> => {
     return Object.keys(response.data.scripts).map((k) => {
       const s = response.data.scripts[k];
       return {
-        title: k,
+        id: k,
+        title: s.ShortDoc,
         code: s.pxl,
         vis: s.vis,
         placement: s.placement,
+        description: s.LongDoc,
       };
     });
   });
-};
+}

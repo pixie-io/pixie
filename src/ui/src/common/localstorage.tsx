@@ -56,10 +56,20 @@ export function setLiveViewPlacementSpec(spec: string) {
   localStorage.setItem(LIVE_VIEW_PLACEMENT_SPEC_KEY, spec);
 }
 
-export function getLiveViewTitle(): string {
-  return localStorage.getItem(LIVE_VIEW_TITLE_KEY) || '';
+export function getLiveViewTitle(): { title: string, id: string } {
+  const stored = localStorage.getItem(LIVE_VIEW_TITLE_KEY);
+  let parsed;
+  try {
+    parsed = JSON.parse(stored);
+  } catch (e) {
+    //
+  }
+  if (!stored || !parsed || typeof parsed !== 'object' || !parsed.title || !parsed.id) {
+    return { title: 'untitled', id: 'unknown' };
+  }
+  return parsed;
 }
 
-export function setLiveViewTitle(title: string) {
-  localStorage.setItem(LIVE_VIEW_TITLE_KEY, title);
+export function setLiveViewTitle(title: { title: string, id: string }) {
+  localStorage.setItem(LIVE_VIEW_TITLE_KEY, JSON.stringify(title));
 }

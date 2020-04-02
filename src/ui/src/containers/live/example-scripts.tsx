@@ -51,7 +51,7 @@ export const ExampleScripts = () => {
 
   const selectScript = (e) => {
     const s = liveScriptMap[e.target.value];
-    setScripts(s.code, s.vis, s.placement, s.title);
+    setScripts(s.code, s.vis, s.placement, { title: s.title, id: s.id });
     executeScript(s.code);
   };
 

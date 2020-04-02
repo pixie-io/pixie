@@ -13,11 +13,16 @@ interface LiveContextProps {
   updatePlacement: (placement: Placement) => void;
   vizierReady: boolean;
   executeScript: (script?: string) => void;
-  setScripts: (script: string, vega: string, placement: string, title: string) => void;
+  setScripts: (script: string, vega: string, placement: string, title: Title) => void;
 }
 
 interface Tables {
   [name: string]: Table;
+}
+
+interface Title {
+  title: string;
+  id: string;
 }
 
 export const ScriptContext = React.createContext<string>('');
@@ -25,7 +30,7 @@ export const VegaContext = React.createContext<VisualizationSpecMap>(null);
 export const PlacementContext = React.createContext<Placement>(null);
 export const ResultsContext = React.createContext<Tables>(null);
 export const LiveContext = React.createContext<LiveContextProps>(null);
-export const TitleContext = React.createContext<string>('');
+export const TitleContext = React.createContext<Title>(null);
 
 const LiveContextProvider = (props) => {
   const [script, setScript] = React.useState<string>(ls.getLiveViewPixieScript());
@@ -46,7 +51,7 @@ const LiveContextProvider = (props) => {
     setPlacement(parsePlacement(newPlacement) || {});
   }, []);
 
-  const [title, setTitle] = React.useState<string>(ls.getLiveViewTitle());
+  const [title, setTitle] = React.useState<Title>(ls.getLiveViewTitle());
   React.useEffect(() => {
     ls.setLiveViewTitle(title);
   }, [title]);

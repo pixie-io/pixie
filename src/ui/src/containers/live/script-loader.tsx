@@ -31,9 +31,9 @@ export function useInitScriptLoader() {
       return;
     }
     GetPxScripts().then((examples) => {
-      for (const { title, vis, placement, code } of examples) {
-        if (title === scriptParam && vis && placement && code) {
-          setScripts(code, vis, placement, title);
+      for (const { title, vis, placement, code, id } of examples) {
+        if (id === scriptParam && vis && placement && code) {
+          setScripts(code, vis, placement, { title, id });
           executeScript(code);
           return;
         }
