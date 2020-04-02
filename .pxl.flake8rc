@@ -4,7 +4,7 @@ max-line-length = 100
 # N802: Function names have to be lower case. This is for GRPC service.
 # E999: Mistaken error see https://github.com/PyCQA/pycodestyle/issues/584
 # F821: Undefined name 'px'. We should fix this in pxl lang.
-ignore = N802,E999,F821
+ignore = N802,E999,F821,W503
 
 [mypy]
 python_version=3.6

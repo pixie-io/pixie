@@ -9,13 +9,13 @@ k8s_object = 'pod'
 
 # If you want to filter the object by name, enter the partial
 # or full name here.
-match_name = 'sock-shop'
+match_name = 'sock-shop/catalogue-'
 node_name = ''  # 'dev-cluster-abcd'
 
 # Visualization Variables - Dont change unless you know what you are doing.
 window_length_s = 10
 node_col = 'node_name'
-start_time = '-5m'
+start_time = '-1m'
 ###############################################################
 
 #
@@ -26,17 +26,20 @@ df = px.DataFrame(table='process_stats', start_time=start_time)
 bytes_per_mb = 1024.0 * 1024.0
 df[node_col] = df.ctx[node_col]
 df = df[px.contains(df[node_col], node_name)]
+df[k8s_object] = df.ctx[k8s_object]
 nodes = df.groupby(node_col).agg(cc=(node_col, px.count))
 px.display(nodes.drop('cc'), 'nodes')
+
 df.vsize_mb = df.vsize_bytes / bytes_per_mb
 df.rss_bytes_mb = df.rss_bytes / bytes_per_mb
 df.timestamp = px.bin(df.time_, px.seconds(window_length_s))
-df[k8s_object] = df.ctx[k8s_object]
+
 df.cpu_utime_ms = df.cpu_ktime_ns / 1.0E6
 df.cpu_ktime_ms = df.cpu_ktime_ns / 1.0E6
 
 df = df[px.contains(df[k8s_object], match_name)]
-
+k8s = df.groupby(k8s_object).agg(cc=(node_col, px.count))
+px.display(k8s.drop('cc'), 'k8s')
 cpu_by_upid = df.groupby(['upid', k8s_object, 'timestamp']).agg(
     cpu_utime_ms_max=('cpu_utime_ms', px.max),
     cpu_utime_ms_min=('cpu_utime_ms', px.min),

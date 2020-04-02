@@ -1,5 +1,5 @@
 {
-  "cpu": {
+  "p50": {
     "position": {
       "x": 0,
       "y": 0,
@@ -7,7 +7,7 @@
       "h": 3
     }
   },
-  "received_data": {
+  "throughput": {
     "position": {
       "x": 0,
       "y": 3,
@@ -15,7 +15,7 @@
       "h": 3
     }
   },
-  "sent_data": {
+  "error_rate": {
     "position": {
       "x": 6,
       "y": 3,
@@ -23,19 +23,11 @@
       "h": 3
     }
   },
-  "nodes": {
+  "summary": {
     "position": {
       "x": 0,
       "y": 6,
-      "w": 6,
-      "h": 3
-    }
-  },
-  "k8s": {
-    "position": {
-      "x": 6,
-      "y": 6,
-      "w": 6,
+      "w": 12,
       "h": 3
     }
   }
