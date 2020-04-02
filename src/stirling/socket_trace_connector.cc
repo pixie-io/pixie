@@ -293,15 +293,21 @@ Status SocketTraceConnector::DisableSelfTracing() {
 std::map<std::string, std::vector<int32_t>> SocketTraceConnector::FindNewPIDs() {
   std::filesystem::path proc_path = system::Config::GetInstance().proc_path();
 
+  // Get a list of all PIDs of interest: either from MDS,
+  // or list all PIDs on the system if MDS is not present.
+  // TODO(oazizi/yzhao): Technically the if statement is not checking for the presence of the MDS.
+  // There could be a subtle bug lurking.
   absl::flat_hash_map<md::UPID, std::filesystem::path> upid_proc_path_map =
       ProcTracker::Cleanse(proc_path, get_mds_upids());
-
   if (upid_proc_path_map.empty()) {
     upid_proc_path_map = ProcTracker::ListUPIDs(proc_path);
   }
+
+  // Consider new UPIDs only.
   absl::flat_hash_map<md::UPID, std::filesystem::path> new_upid_paths =
       proc_tracker_.TakeSnapshotAndDiff(std::move(upid_proc_path_map));
 
+  // Convert to a map of binaries, with the upids that are instances of that binary.
   std::filesystem::path host_path = system::Config::GetInstance().host_path();
   std::map<std::string, std::vector<int32_t>> new_pids;
 
@@ -324,11 +330,14 @@ std::set<std::string> SocketTraceConnector::FindNewBinaries(
   // Filter out binaries we've seen before.
   std::set<std::string> new_binaries;
   for (const auto& [binary, pids] : binary_instances) {
-    if (prev_scanned_binaries_.contains(binary)) {
-      continue;
+    auto result = prev_scanned_binaries_.insert(binary);
+    if (result.second) {
+      // Entry did not exist, so this is a new binary.
+      auto r = new_binaries.insert(*result.first);
+      // Since the binary was not in prev_scanned_binaries_,
+      // this insertion should result in a new entry in new_binaries.
+      DCHECK(r.second);
     }
-    new_binaries.insert(binary);
-    prev_scanned_binaries_.insert(binary);
   }
 
   LOG_FIRST_N(INFO, 1) << absl::Substitute("New binaries count = $0", new_binaries.size());
