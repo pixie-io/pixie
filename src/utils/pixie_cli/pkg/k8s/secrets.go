@@ -70,6 +70,25 @@ func CreateGenericSecretFromLiterals(clientset *kubernetes.Clientset, namespace,
 	return nil
 }
 
+// CreateConfigMapFromLiterals creates a configmap in kubernetes using literals.
+func CreateConfigMapFromLiterals(clientset *kubernetes.Clientset, namespace, name string, fromLiterals map[string]string) error {
+	cm := &v1.ConfigMap{}
+	cm.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("ConfigMap"))
+
+	cm.Name = name
+	cm.Data = map[string]string{}
+
+	for k, v := range fromLiterals {
+		cm.Data[k] = v
+	}
+
+	_, err := clientset.CoreV1().ConfigMaps(namespace).Create(cm)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // CreateTLSSecret creates a TLS secret in kubernetes.
 func CreateTLSSecret(clientset *kubernetes.Clientset, namespace, name string, key string, cert string) error {
 	tlsCrt, err := readFile(cert)

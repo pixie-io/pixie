@@ -11,6 +11,10 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s"
+
+	// Blank import necessary for kubeConfig to work.
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/client-go/rest"
 )
 
 // LoadClusterSecretsCmd loads cluster secretss
@@ -26,7 +30,7 @@ var LoadClusterSecretsCmd = &cobra.Command{
 		kubeConfig := k8s.GetConfig()
 		clientset := k8s.GetClientset(kubeConfig)
 
-		err := LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace, devCloudNamespace)
+		err := LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace, devCloudNamespace, kubeConfig)
 		if err != nil {
 			log.WithError(err).Fatal("Could not load cluster secrets")
 		}
@@ -45,12 +49,12 @@ func init() {
 }
 
 // LoadClusterSecrets loads Vizier's secrets and configmap to the given namespace.
-func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, clusterID string, namespace string, devCloudNamespace string) error {
+func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, clusterID string, namespace string, devCloudNamespace string, kubeConfig *rest.Config) error {
 	if clusterID == "" {
 		return errors.New("cluster_id is required")
 	}
 
-	err := createCloudConfig(cloudAddr, namespace, devCloudNamespace)
+	err := createCloudConfig(clientset, cloudAddr, namespace, devCloudNamespace, kubeConfig)
 	if err != nil {
 		return err
 	}
@@ -64,7 +68,16 @@ func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, clust
 
 }
 
-func createCloudConfig(cloudAddr string, namespace string, devCloudNamespace string) error {
+func getK8sVersion(kubeConfig *rest.Config) (string, error) {
+	discoveryClient := k8s.GetDiscoveryClient(kubeConfig)
+	version, err := discoveryClient.ServerVersion()
+	if err != nil {
+		return "", err
+	}
+	return version.GitVersion, nil
+}
+
+func createCloudConfig(clientset *kubernetes.Clientset, cloudAddr string, namespace string, devCloudNamespace string, kubeConfig *rest.Config) error {
 	// Attempt to delete an existing pl-cloud-config configmap.
 	delCmd := exec.Command("kubectl", "delete", "configmap", "pl-cloud-config", "-n", namespace)
 	_ = delCmd.Run()
@@ -73,10 +86,21 @@ func createCloudConfig(cloudAddr string, namespace string, devCloudNamespace str
 	if devCloudNamespace != "" {
 		cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNamespace)
 	}
-	// Create a new pl-cloud-config configmap.
-	cloudAddrConf := fmt.Sprintf("--from-literal=PL_CLOUD_ADDR=%s", cloudAddr)
-	createCmd := exec.Command("kubectl", "create", "configmap", "pl-cloud-config", cloudAddrConf, "-n", namespace)
-	return createCmd.Run()
+
+	clusterName := getCurrentCluster()
+
+	clusterVersion, err := getK8sVersion(kubeConfig)
+	if err != nil {
+		return errors.New("Could not get cluster version")
+	}
+
+	err = k8s.CreateConfigMapFromLiterals(clientset, namespace, "pl-cloud-config", map[string]string{
+		"PL_CLOUD_ADDR":      cloudAddr,
+		"PL_CLUSTER_NAME":    clusterName,
+		"PL_CLUSTER_VERSION": clusterVersion,
+	})
+
+	return err
 }
 
 func createClusterSecrets(clientset *kubernetes.Clientset, clusterID string, namespace string) error {

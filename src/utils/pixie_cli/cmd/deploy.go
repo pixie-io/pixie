@@ -366,7 +366,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		if err != nil {
 			return err
 		}
-		return LoadClusterSecrets(clientset, cloudAddr, clusterID.String(), namespace, devCloudNS)
+		return LoadClusterSecrets(clientset, cloudAddr, clusterID.String(), namespace, devCloudNS, kubeConfig)
 	})
 
 	clusterRoleJob := newTaskWrapper("Updating clusterroles", func() error {
