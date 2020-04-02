@@ -50,16 +50,22 @@ class JVMStatsConnector : public SourceConnector {
   explicit JVMStatsConnector(std::string_view source_name)
       : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {}
 
-  // Returns UPIDs of potentially newly-created Java processes that should be scanned for
-  // JVM stats.
-  absl::flat_hash_set<md::UPID> FindJavaUPIDs(const ConnectorContext& ctx);
+  // Adds UPIDs of newly-created processes to java_procs_.
+  void FindJavaUPIDs(const ConnectorContext& ctx);
 
-  Status ExportStats(const md::UPID& upid, DataTable* data_table) const;
+  Status ExportStats(const md::UPID& upid, const std::filesystem::path& hsperf_data_path,
+                     DataTable* data_table) const;
 
   ProcTracker proc_tracker_;
 
-  // Records the UPIDs that have been scanned in the previous iteration of transferring data.
-  absl::flat_hash_set<md::UPID> prev_scanned_java_upids_;
+  // Records the PIDs of previously scanned Java processes, and their hsperfdata file path.
+  struct JavaProcInfo {
+    // How many times we have failed to export stats for this process. Once this reaches a limit,
+    // the process will no longer be monitored.
+    int export_failure_count = 0;
+    std::filesystem::path hsperf_data_path;
+  };
+  absl::flat_hash_map<md::UPID, JavaProcInfo> java_procs_;
 };
 
 }  // namespace stirling

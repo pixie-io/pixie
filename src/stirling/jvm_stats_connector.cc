@@ -16,6 +16,10 @@
 #include "src/stirling/utils/java.h"
 #include "src/stirling/utils/proc_tracker.h"
 
+DEFINE_int32(
+    stirling_java_process_monitoring_attempts, 3,
+    "The number of attempts to monitor a potential Java process for collecting JVM stats.");
+
 namespace pl {
 namespace stirling {
 
@@ -23,35 +27,9 @@ using ::pl::fs::Exists;
 using ::pl::stirling::obj_tools::ResolveProcessPath;
 using ::pl::utils::LEndianBytesToInt;
 
-absl::flat_hash_set<md::UPID> JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
-  std::filesystem::path proc_path = system::Config::GetInstance().proc_path();
-
-  absl::flat_hash_map<md::UPID, std::filesystem::path> upid_proc_path_map =
-      ProcTracker::Cleanse(proc_path, ctx.GetMdsUpids());
-
-  if (upid_proc_path_map.empty()) {
-    upid_proc_path_map = ProcTracker::ListUPIDs(proc_path);
-  }
-
-  absl::flat_hash_map<md::UPID, std::filesystem::path> new_upid_proc_path_map =
-      proc_tracker_.TakeSnapshotAndDiff(std::move(upid_proc_path_map));
-
-  absl::flat_hash_set<md::UPID> java_upids = prev_scanned_java_upids_;
-  for (const auto& [upid, proc_pid_path] : new_upid_proc_path_map) {
-    // The host PID 1 is not a Java app. But ProcParser::ResolveMountPoint() is confused.
-    // TODO(yzhao): Look for more robust mechanism.
-    if (upid.pid() == 1) {
-      continue;
-    }
-    java_upids.insert(upid);
-  }
-
-  return java_upids;
-}
-
 namespace {
 
-StatusOr<std::string> ReadHsperfData(pid_t pid) {
+StatusOr<std::filesystem::path> ResolveHsperfDataPath(pid_t pid) {
   PL_ASSIGN_OR_RETURN(const std::filesystem::path hsperf_data_path, HsperfdataPath(pid));
 
   const auto& config = system::Config::GetInstance();
@@ -64,18 +42,45 @@ StatusOr<std::string> ReadHsperfData(pid_t pid) {
     auto resolved_mount_path_or = proc_parser.ResolveMountPoint(pid, path_split.parent);
     if (resolved_mount_path_or.ok()) {
       const std::filesystem::path host_path = system::Config::GetInstance().host_path();
-      auto tmp =
-          fs::JoinPath({&host_path, &resolved_mount_path_or.ValueOrDie(), &path_split.child});
-      return ReadFileToString(tmp);
+      return fs::JoinPath({&host_path, &resolved_mount_path_or.ValueOrDie(), &path_split.child});
     }
   }
-  return error::Internal("Could not resolve hsperfdata file for pid=$0", pid);
+  return error::Internal("Could not resolve hsperfdata path for pid=$0", pid);
 }
 
 }  // namespace
 
-Status JVMStatsConnector::ExportStats(const md::UPID& upid, DataTable* data_table) const {
-  PL_ASSIGN_OR_RETURN(std::string hsperf_data_str, ReadHsperfData(upid.pid()));
+void JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
+  std::filesystem::path proc_path = system::Config::GetInstance().proc_path();
+
+  absl::flat_hash_map<md::UPID, std::filesystem::path> upid_proc_path_map =
+      ProcTracker::Cleanse(proc_path, ctx.GetMdsUpids());
+
+  if (upid_proc_path_map.empty()) {
+    upid_proc_path_map = ProcTracker::ListUPIDs(proc_path);
+  }
+
+  absl::flat_hash_map<md::UPID, std::filesystem::path> new_upid_proc_path_map =
+      proc_tracker_.TakeSnapshotAndDiff(std::move(upid_proc_path_map));
+
+  for (const auto& [upid, proc_pid_path] : new_upid_proc_path_map) {
+    // The host PID 1 is not a Java app. But ProcParser::ResolveMountPoint() is confused.
+    // TODO(yzhao): Look for more robust mechanism.
+    if (upid.pid() == 1) {
+      continue;
+    }
+    auto hsperf_data_path_or = ResolveHsperfDataPath(upid.pid());
+    if (!hsperf_data_path_or.ok()) {
+      continue;
+    }
+    java_procs_[upid].hsperf_data_path = hsperf_data_path_or.ConsumeValueOrDie();
+  }
+}
+
+Status JVMStatsConnector::ExportStats(const md::UPID& upid,
+                                      const std::filesystem::path& hsperf_data_path,
+                                      DataTable* data_table) const {
+  PL_ASSIGN_OR_RETURN(std::string hsperf_data_str, ReadFileToString(hsperf_data_path));
 
   if (hsperf_data_str.empty()) {
     // Assumes only file reading failed, and is transient.
@@ -106,15 +111,23 @@ void JVMStatsConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t table_n
   DCHECK_LT(table_num, num_tables())
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
 
-  absl::flat_hash_set<md::UPID> scanned_java_upids;
+  FindJavaUPIDs(*ctx);
 
-  for (const md::UPID& upid : FindJavaUPIDs(*ctx)) {
+  for (auto iter = java_procs_.begin(); iter != java_procs_.end();) {
+    const md::UPID& upid = iter->first;
+    JavaProcInfo& java_proc = iter->second;
+
     md::UPID upid_with_asid(ctx->GetASID(), upid.pid(), upid.start_ts());
-    if (ExportStats(upid_with_asid, data_table).ok()) {
-      scanned_java_upids.insert(upid);
+    auto status = ExportStats(upid_with_asid, java_proc.hsperf_data_path, data_table);
+    if (!status.ok()) {
+      ++java_proc.export_failure_count;
+    }
+    if (java_proc.export_failure_count >= FLAGS_stirling_java_process_monitoring_attempts) {
+      java_procs_.erase(iter++);
+    } else {
+      ++iter;
     }
   }
-  prev_scanned_java_upids_.swap(scanned_java_upids);
 }
 
 }  // namespace stirling
