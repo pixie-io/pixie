@@ -5,7 +5,7 @@ import {parseSpecs} from 'components/vega/spec';
 import * as React from 'react';
 import {debounce} from 'utils/debounce';
 
-import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
+import {createStyles, makeStyles, Theme, withStyles} from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 
@@ -19,6 +19,7 @@ const useStyles = makeStyles((theme: Theme) =>
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
+      color: theme.palette.foreground.one,
     },
     panel: {
       flex: 1,
@@ -28,6 +29,9 @@ const useStyles = makeStyles((theme: Theme) =>
       height: '100%',
       '&.pl-code-editor .CodeMirror, & .CodeMirror-scrollbar-filler': {
         backgroundColor: theme.palette.background.default,
+      },
+      '&.pl-code-editor .CodeMirror .CodeMirror-linenumber': {
+        paddingRight: theme.spacing(1.5),
       },
     },
   }));
@@ -102,6 +106,25 @@ const PlacementEditor = () => {
   );
 };
 
+const StyledTabs = withStyles((theme: Theme) =>
+  createStyles({
+    indicator: {
+      backgroundColor: theme.palette.foreground.one,
+    },
+  }),
+)(Tabs);
+
+const StyledTab = withStyles((theme: Theme) =>
+  createStyles({
+    root: {
+      textTransform: 'none',
+      '&:focus': {
+        color: theme.palette.foreground.two,
+      },
+    },
+  }),
+)(Tab);
+
 const LiveViewEditor = () => {
   const classes = useStyles();
 
@@ -109,16 +132,14 @@ const LiveViewEditor = () => {
 
   return (
     <div className={classes.root}>
-      <Tabs
+      <StyledTabs
         value={tab}
-        indicatorColor='primary'
-        textColor='primary'
         onChange={(event, newTab) => setTab(newTab)}
       >
-        <Tab value='pixie' label='Pixie Script' />
-        <Tab value='vega' label='Vega Spec' />
-        <Tab value='placement' label='Placement' />
-      </Tabs>
+        <StyledTab value='pixie' label='PXL Script' />
+        <StyledTab value='vega' label='Viz Spec' />
+        <StyledTab value='placement' label='Placement' />
+      </StyledTabs>
       <ExampleScripts />
       <LazyPanel className={classes.panel} show={tab === 'pixie'}>
         <ScriptEditor />

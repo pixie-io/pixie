@@ -64,14 +64,14 @@ const useStyles = makeStyles((theme: Theme) => {
       color: theme.palette.action.active,
     },
     editor: {
-      flex: 1,
+      flex: 2,
       minWidth: 0,
       borderRightStyle: 'solid',
       borderRightColor: theme.palette.background.three,
       borderRightWidth: theme.spacing(0.25),
     },
     canvas: {
-      flex: 1,
+      flex: 3,
       minWidth: 0,
       margin: theme.spacing(1),
     },
