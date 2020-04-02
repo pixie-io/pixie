@@ -1,1 +1,1 @@
-export type Key = 'TAB' | 'ENTER';
+export type Key = 'TAB' | 'ENTER' | 'UP' | 'DOWN';

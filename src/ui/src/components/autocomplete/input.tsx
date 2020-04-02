@@ -80,6 +80,12 @@ const Input: React.FC<InputProps> = ({
       case 'Enter':
         onKey('ENTER');
         break;
+      case 'ArrowUp':
+        onKey('UP');
+        break;
+      case 'ArrowDown':
+        onKey('DOWN');
+        break;
       default:
       // noop
     }

@@ -10,7 +10,6 @@ import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 
 import {LiveContext, PlacementContext, ScriptContext, VegaContext} from './context';
-import {ExampleScripts} from './example-scripts';
 import {parsePlacement} from './layout';
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -140,7 +139,6 @@ const LiveViewEditor = () => {
         <StyledTab value='vega' label='Viz Spec' />
         <StyledTab value='placement' label='Placement' />
       </StyledTabs>
-      <ExampleScripts />
       <LazyPanel className={classes.panel} show={tab === 'pixie'}>
         <ScriptEditor />
       </LazyPanel>

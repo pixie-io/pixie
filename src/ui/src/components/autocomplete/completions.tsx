@@ -52,6 +52,7 @@ const useStyles = makeStyles((theme: Theme) => {
       borderLeftColor: theme.palette.divider,
       paddingLeft: theme.spacing(3),
       paddingRight: theme.spacing(3),
+      paddingBottom: theme.spacing(3),
       overflow: 'hidden',
     },
     header: {

@@ -123,7 +123,7 @@ const LiveView = () => {
         >
           <EditIcon />
         </ToggleButton>
-        <IconButton disabled={true} onClick={toggleCommandOpen}>
+        <IconButton onClick={toggleCommandOpen}>
           <MagicIcon />
         </IconButton>
       </div>

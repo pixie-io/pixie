@@ -40,13 +40,15 @@ interface AutoCompleteProps {
 
 type ItemsMap = Map<CompletionId, { title: CompletionTitle, index: number }>;
 
-function findNextItem(activeItem: CompletionId, itemsMap: ItemsMap, completions: CompletionItems): CompletionId {
+function findNextItem(activeItem: CompletionId, itemsMap: ItemsMap, completions: CompletionItems, direction = 1):
+  CompletionId {
+
   if (!activeItem || completions.length === 0) {
     return '';
   }
   const { index } = itemsMap.get(activeItem);
   for (let i = 1; i < completions.length; i++) {
-    const nextIndex = (index + i) % completions.length;
+    const nextIndex = (index + (i * direction)) % completions.length;
     const next = completions[nextIndex] as CompletionItem;
     if (next.title && next.id) {
       return next.id;
@@ -96,7 +98,10 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
 
   const handleKey = (key: Key) => {
     switch (key) {
-      case 'TAB':
+      case 'UP':
+        setActiveItem(findNextItem(activeItem, itemsMap, completions, -1));
+        break;
+      case 'DOWN':
         setActiveItem(findNextItem(activeItem, itemsMap, completions));
         break;
       case 'ENTER':

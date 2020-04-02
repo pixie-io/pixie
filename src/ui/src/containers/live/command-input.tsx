@@ -1,13 +1,14 @@
 import Autocomplete from 'components/autocomplete/autocomplete';
-import {
-    CompletionHeader, CompletionItem, CompletionItems,
-} from 'components/autocomplete/completions';
+import {CompletionHeader, CompletionItem} from 'components/autocomplete/completions';
 import MagicIcon from 'components/icons/magic';
 import * as React from 'react';
+import {GetPxScripts, Script} from 'utils/script-bundle';
 
 import {createStyles, makeStyles, Theme} from '@material-ui/core';
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
+
+import {LiveContext} from './context';
 
 interface CommandInputProps {
   open: boolean;
@@ -56,6 +57,39 @@ const DESCRIPTION = `
 const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
   const classes = useStyles();
 
+  const [scriptsMap, setScriptsMap] = React.useState<Map<string, Script>>(null);
+  const [completions, setCompletions] = React.useState<CompletionItem[]>([]);
+
+  React.useEffect(() => {
+    GetPxScripts().then((examples) => {
+      setCompletions(examples.map((s) => ({
+        type: 'item',
+        id: s.id,
+        title: s.id,
+        description: s.description,
+      })));
+      setScriptsMap(new Map(examples.map((s) => [s.id, s])));
+    });
+  }, []);
+
+  const { setScripts, executeScript } = React.useContext(LiveContext);
+
+  const getCompletions = React.useCallback((input) => {
+    if (!input) {
+      return Promise.resolve([{ type: 'header', header: 'Example Scripts' } as CompletionHeader, ...completions]);
+    }
+    return Promise.resolve(completions.filter((completion) => completion.title.includes(input)));
+  }, [completions]);
+
+  const selectScript = React.useCallback((id) => {
+    const script = scriptsMap.get(id);
+    if (script) {
+      setScripts(script.code, script.vis, script.placement, { title: script.title, id: script.id });
+      executeScript(script.code);
+    }
+    onClose();
+  }, [scriptsMap]);
+
   return (
     <Modal open={open} onClose={onClose} BackdropProps={{}}>
       <Card className={classes.card}>
@@ -63,27 +97,8 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
           className={classes.input}
           placeholder='Pixie Command'
           prefix={<MagicIcon />}
-          onSelection={(id) => {
-            onClose();
-          }}
-          getCompletions={(input) => {
-            if (!input) {
-              return Promise.resolve([]);
-            }
-            return new Promise((resolve) => {
-              setTimeout(() => {
-                const completions: CompletionItems = MOCK_COMMANDS.map((cmd, i) => ({
-                  type: 'item',
-                  title: `${cmd} ${input}`,
-                  id: String(i),
-                  description: `${cmd} ${DESCRIPTION}`,
-                }));
-                completions.splice(0, 0, { type: 'header', header: 'Most Recent' });
-                completions.splice(4, 0, { type: 'header', header: 'Recently Used' });
-                resolve(completions);
-              }, 50);
-            });
-          }}
+          onSelection={selectScript}
+          getCompletions={getCompletions}
         />
       </Card>
     </Modal>
