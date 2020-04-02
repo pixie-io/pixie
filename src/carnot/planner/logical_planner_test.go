@@ -129,8 +129,7 @@ func TestPlanner_Simple(t *testing.T) {
 		t.FailNow()
 	}
 
-	assert.Equal(t, agent1MemSrc1.Tablet, "1")
-	assert.Equal(t, agent1MemSrc2.Tablet, "2")
+	assert.ElementsMatch(t, []string{agent1MemSrc1.Tablet, agent1MemSrc2.Tablet}, []string{"1", "2"})
 
 	agent2Plan := planPB.QbAddressToPlan["agent2"]
 	agent2MemSrc1 := agent2Plan.Nodes[0].Nodes[0].Op.GetMemSourceOp()
@@ -141,8 +140,7 @@ func TestPlanner_Simple(t *testing.T) {
 	if !assert.NotNil(t, agent2MemSrc2) {
 		t.FailNow()
 	}
-	assert.Equal(t, agent2MemSrc1.Tablet, "3")
-	assert.Equal(t, agent2MemSrc2.Tablet, "4")
+	assert.ElementsMatch(t, []string{agent2MemSrc1.Tablet, agent2MemSrc2.Tablet}, []string{"3", "4"})
 	agent1GRPCSink := agent1Plan.Nodes[0].Nodes[len(agent1Plan.Nodes[0].Nodes)-1].Op.GetGRPCSinkOp()
 	if !assert.NotNil(t, agent1GRPCSink) {
 		t.FailNow()

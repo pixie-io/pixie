@@ -1607,6 +1607,14 @@ TEST_F(ASTVisitorTest, wrong_arg_values_into_main) {
               HasCompilerError("main.* missing 1 required positional arguments 'start_time'"));
 }
 
+TEST_F(ASTVisitorTest, true_false_test) {
+  std::string bool_use_and_reuse_test =
+      absl::StrJoin({"import px", "df = px.DataFrame('cpu')", "df = df[False]", "df = df[True]",
+                     "df = df[False]", "px.display(df, 'mapped')"},
+                    "\n");
+  EXPECT_OK(CompileGraph(bool_use_and_reuse_test));
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

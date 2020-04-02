@@ -117,6 +117,8 @@ class ASTVisitorImpl : public ASTVisitor {
   inline static constexpr char kFloatTypeName[] = "float";
   inline static constexpr char kBoolTypeName[] = "bool";
   inline static constexpr char kNoneName[] = "None";
+  inline static constexpr char kTrueName[] = "True";
+  inline static constexpr char kFalseName[] = "False";
 
   inline static constexpr char kMainFuncId[] = "main";
 
@@ -135,6 +137,7 @@ class ASTVisitorImpl : public ASTVisitor {
         arg_values_(arg_values) {}
 
   Status InitGlobals();
+  Status CreateBoolLiterals();
 
   /**
    * @brief Process statements list passed in as an argument.

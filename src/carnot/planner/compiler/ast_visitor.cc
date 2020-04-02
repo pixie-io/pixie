@@ -62,6 +62,19 @@ Status ASTVisitorImpl::InitGlobals() {
   // Populate other reserved words
   var_table_->Add(ASTVisitorImpl::kNoneName, std::make_shared<NoneObject>(this));
 
+  return CreateBoolLiterals();
+}
+
+Status ASTVisitorImpl::CreateBoolLiterals() {
+  auto bool_ast = std::make_shared<pypa::Ast>(pypa::AstType::Bool);
+  bool_ast->line = 0;
+  bool_ast->column = 0;
+  PL_ASSIGN_OR_RETURN(auto true_ir, ir_graph_->CreateNode<BoolIR>(bool_ast, true));
+  PL_ASSIGN_OR_RETURN(auto false_ir, ir_graph_->CreateNode<BoolIR>(bool_ast, false));
+  PL_ASSIGN_OR_RETURN(auto true_object, ExprObject::Create(true_ir, this));
+  var_table_->Add(ASTVisitorImpl::kFalseName, true_object);
+  PL_ASSIGN_OR_RETURN(auto false_object, ExprObject::Create(false_ir, this));
+  var_table_->Add(ASTVisitorImpl::kTrueName, false_object);
   return Status::OK();
 }
 

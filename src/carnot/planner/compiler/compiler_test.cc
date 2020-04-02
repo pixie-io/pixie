@@ -27,6 +27,7 @@ using ::pl::testing::proto::EqualsProto;
 using planpb::testutils::CompareLogicalPlans;
 using ::testing::_;
 using ::testing::ContainsRegex;
+using ::testing::ElementsAre;
 
 constexpr char kExtraScalarUDFs[] = R"proto(
 scalar_udfs {
@@ -109,141 +110,6 @@ class CompilerTest : public ::testing::Test {
   Relation cgroups_relation_;
 };
 
-constexpr char kExpectedLogicalPlan[] = R"(
-dag {
-  nodes {
-    id: 1
-  }
-}
-nodes {
-  id: 1
-  dag {
-    nodes {
-      id: 6
-      sorted_children: 14
-    }
-    nodes {
-      id: 14
-      sorted_children: 24
-      sorted_parents: 6
-    }
-    nodes {
-      id: 24
-      sorted_children: 26
-      sorted_parents: 14
-    }
-    nodes {
-      id: 26
-      sorted_parents: 24
-    }
-  }
-  nodes {
-    id: 6
-    op {
-      op_type: MEMORY_SOURCE_OPERATOR
-      mem_source_op {
-        name: "cpu"
-        column_idxs: 1
-        column_idxs: 2
-        column_names: "cpu0"
-        column_names: "cpu1"
-        column_types: FLOAT64
-        column_types: FLOAT64
-      }
-    }
-  }
-  nodes {
-    id: 14
-    op {
-      op_type: MAP_OPERATOR
-      map_op {
-        expressions {
-          column {
-            node: 6
-          }
-        }
-        expressions {
-          column {
-            node: 6
-            index: 1
-          }
-        }
-        expressions {
-          func {
-            name: "divide"
-            args {
-              column {
-                node: 6
-                index: 1
-              }
-            }
-            args {
-              column {
-                node: 6
-              }
-            }
-            args_data_types: FLOAT64
-            args_data_types: FLOAT64
-          }
-        }
-        column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "quotient"
-      }
-    }
-  }
-  nodes {
-    id: 24
-    op {
-      op_type: AGGREGATE_OPERATOR
-      agg_op {
-        values {
-          name: "mean"
-          args {
-            column {
-              node: 14
-              index: 2
-            }
-          }
-          args_data_types: FLOAT64
-        }
-        values {
-          name: "mean"
-          args {
-            column {
-              node: 14
-              index: 1
-            }
-          }
-          args_data_types: FLOAT64
-        }
-        groups {
-          node: 14
-        }
-        group_names: "cpu0"
-        value_names: "quotient_mean"
-        value_names: "cpu1_mean"
-      }
-    }
-  }
-  nodes {
-    id: 26
-    op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "cpu2"
-        column_types: FLOAT64
-        column_types: FLOAT64
-        column_types: FLOAT64
-        column_names: "cpu0"
-        column_names: "quotient_mean"
-        column_names: "cpu1_mean"
-      }
-    }
-  }
-}
-)";
-
 TEST_F(CompilerTest, test_general_compilation) {
   auto query = absl::StrJoin(
       {
@@ -256,12 +122,41 @@ TEST_F(CompilerTest, test_general_compilation) {
           "px.display(aggDF, 'cpu2')",
       },
       "\n");
-  auto plan_status = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan_status = compiler_.CompileToIR(query, compiler_state_.get(), /*query_flags*/ {});
   ASSERT_OK(plan_status);
 
-  planpb::Plan logical_plan = plan_status.ValueOrDie();
+  auto ir = plan_status.ConsumeValueOrDie();
+  auto operators = ir->FindNodesThatMatch(Operator());
+  // figure out size.
+  EXPECT_EQ(operators.size(), 4);
 
-  EXPECT_THAT(logical_plan, EqualsProto(kExpectedLogicalPlan)) << logical_plan.DebugString();
+  auto srcs = ir->FindNodesThatMatch(MemorySource());
+  EXPECT_EQ(srcs.size(), 1);
+  auto mem_src = static_cast<MemorySourceIR*>(srcs[0]);
+  EXPECT_EQ(mem_src->table_name(), "cpu");
+  EXPECT_THAT(mem_src->column_names(), ElementsAre("cpu0", "cpu1"));
+
+  auto child = mem_src->Children()[0];
+  EXPECT_EQ(child->type(), IRNodeType::kMap);
+  auto map = static_cast<MapIR*>(child);
+  EXPECT_EQ(map->col_exprs().size(), 3);
+  EXPECT_EQ(map->col_exprs()[0].name, "cpu0");
+  EXPECT_EQ(map->col_exprs()[1].name, "cpu1");
+  EXPECT_EQ(map->col_exprs()[2].name, "quotient");
+
+  child = map->Children()[0];
+  EXPECT_EQ(child->type(), IRNodeType::kBlockingAgg);
+
+  auto agg = static_cast<BlockingAggIR*>(child);
+  EXPECT_EQ(agg->groups().size(), 1);
+  EXPECT_EQ(agg->groups()[0]->col_name(), "cpu0");
+  EXPECT_EQ(agg->aggregate_expressions().size(), 2);
+  EXPECT_EQ(agg->aggregate_expressions()[0].name, "quotient_mean");
+  EXPECT_EQ(agg->aggregate_expressions()[1].name, "cpu1_mean");
+  child = agg->Children()[0];
+  EXPECT_EQ(child->type(), IRNodeType::kMemorySink);
+  auto sink = static_cast<MemorySinkIR*>(child);
+  EXPECT_EQ(sink->name(), "cpu2");
 }
 
 // Test for select order that is different than the schema.
@@ -719,83 +614,6 @@ TEST_F(CompilerTest, filter_errors) {
   EXPECT_NOT_OK(compiler_.Compile(int_val, compiler_state_.get(), /*query_flags*/ {}));
 }
 
-constexpr char kExpectedLimitPlan[] = R"(
-nodes {
-  id: 1
-  dag {
-    nodes {
-      id: 6
-      sorted_children: 8
-    }
-    nodes {
-      id: 8
-      sorted_children: 10
-      sorted_parents: 6
-    }
-    nodes {
-      id: 10
-      sorted_parents: 8
-    }
-  }
-  nodes {
-    id: 6
-    op {
-      op_type: MEMORY_SOURCE_OPERATOR
-      mem_source_op {
-        name: "cpu"
-        column_idxs: 1
-        column_idxs: 2
-        column_names: "cpu0"
-        column_names: "cpu1"
-        column_types: FLOAT64
-        column_types: FLOAT64
-      }
-    }
-  }
-  nodes {
-    id: 8
-    op {
-      op_type: LIMIT_OPERATOR
-      limit_op {
-        limit: 1000
-        columns {
-          node: 6
-        }
-        columns {
-          node: 6
-          index: 1
-        }
-      }
-    }
-  }
-  nodes {
-    id: 10
-    op {
-      op_type: MEMORY_SINK_OPERATOR
-      mem_sink_op {
-        name: "out_table"
-        column_types: FLOAT64
-        column_types: FLOAT64
-        column_names: "cpu0"
-        column_names: "cpu1"
-      }
-    }
-  }
-}
-)";
-
-TEST_F(CompilerTest, limit_test) {
-  std::string query = absl::StrJoin({"import px",
-                                     "queryDF = px.DataFrame(table='cpu', select=['cpu0', "
-                                     "'cpu1']).head(n=1000)",
-                                     "px.display(queryDF, 'out_table')"},
-                                    "\n");
-  auto plan_or_s = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
-  ASSERT_OK(plan_or_s);
-  auto plan = plan_or_s.ConsumeValueOrDie();
-  EXPECT_THAT(plan, Partially(EqualsProto(kExpectedLimitPlan))) << plan.DebugString();
-}
-
 TEST_F(CompilerTest, reused_result) {
   std::string query = absl::StrJoin(
       {
@@ -930,26 +748,26 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 4
-      sorted_children: 21
+      id: 6
+      sorted_children: 23
     }
     nodes {
-      id: 21
-      sorted_children: 9
-      sorted_parents: 4
-    }
-    nodes {
-      id: 9
+      id: 23
       sorted_children: 11
-      sorted_parents: 21
+      sorted_parents: 6
     }
     nodes {
       id: 11
-      sorted_parents: 9
+      sorted_children: 13
+      sorted_parents: 23
+    }
+    nodes {
+      id: 13
+      sorted_parents: 11
     }
   }
   nodes {
-    id: 4
+    id: 6
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -973,36 +791,36 @@ nodes {
     }
   }
   nodes {
-    id: 21
+    id: 23
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 4
+            node: 6
           }
         }
         expressions {
           column {
-            node: 4
+            node: 6
             index: 1
           }
         }
         expressions {
           column {
-            node: 4
+            node: 6
             index: 2
           }
         }
         expressions {
           column {
-            node: 4
+            node: 6
             index: 3
           }
         }
         expressions {
           column {
-            node: 4
+            node: 6
             index: 4
           }
         }
@@ -1011,7 +829,7 @@ nodes {
             name: "upid_to_service_name"
             args {
               column {
-                node: 4
+                node: 6
                 index: 4
               }
             }
@@ -1029,7 +847,7 @@ nodes {
     }
   }
   nodes {
-    id: 9
+    id: 11
     op {
       op_type: FILTER_OPERATOR
       filter_op {
@@ -1038,7 +856,7 @@ nodes {
             name: "equal"
             args {
               column {
-                node: 21
+                node: 23
                 index: 5
               }
             }
@@ -1053,29 +871,29 @@ nodes {
           }
         }
         columns {
-          node: 21
+          node: 23
         }
         columns {
-          node: 21
+          node: 23
           index: 1
         }
         columns {
-          node: 21
+          node: 23
           index: 2
         }
         columns {
-          node: 21
+          node: 23
           index: 3
         }
         columns {
-          node: 21
+          node: 23
           index: 4
         }
       }
     }
   }
   nodes {
-    id: 11
+    id: 13
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1097,7 +915,7 @@ nodes {
 )proto";
 
 constexpr char kExpectedMapMetadataPlan[] = R"proto(
-dag {
+   dag {
   nodes {
     id: 1
   }
@@ -1106,31 +924,31 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 4
-      sorted_children: 29
+      id: 6
+      sorted_children: 31
     }
     nodes {
-      id: 29
-      sorted_children: 9
-      sorted_parents: 4
+      id: 31
+      sorted_children: 11
+      sorted_parents: 6
     }
     nodes {
-      id: 9
-      sorted_children: 12
-      sorted_parents: 29
-    }
-    nodes {
-      id: 12
+      id: 11
       sorted_children: 14
-      sorted_parents: 9
+      sorted_parents: 31
     }
     nodes {
       id: 14
-      sorted_parents: 12
+      sorted_children: 16
+      sorted_parents: 11
+    }
+    nodes {
+      id: 16
+      sorted_parents: 14
     }
   }
   nodes {
-    id: 4
+    id: 6
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1142,7 +960,7 @@ nodes {
     }
   }
   nodes {
-    id: 29
+    id: 31
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1151,7 +969,7 @@ nodes {
             name: "upid_to_service_name"
             args {
               column {
-                node: 4
+                node: 6
               }
             }
             args_data_types: UINT128
@@ -1162,27 +980,13 @@ nodes {
     }
   }
   nodes {
-    id: 9
+    id: 11
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 29
-          }
-        }
-        column_names: "service"
-      }
-    }
-  }
-  nodes {
-    id: 12
-    op {
-      op_type: MAP_OPERATOR
-      map_op {
-        expressions {
-          column {
-            node: 9
+            node: 31
           }
         }
         column_names: "service"
@@ -1191,6 +995,20 @@ nodes {
   }
   nodes {
     id: 14
+    op {
+      op_type: MAP_OPERATOR
+      map_op {
+        expressions {
+          column {
+            node: 11
+          }
+        }
+        column_names: "service"
+      }
+    }
+  }
+  nodes {
+    id: 16
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1204,7 +1022,7 @@ nodes {
 )proto";
 
 constexpr char kExpectedAgg1MetadataPlan[] = R"proto(
-dag {
+  dag {
   nodes {
     id: 1
   }
@@ -1213,31 +1031,31 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 4
-      sorted_children: 34
+      id: 6
+      sorted_children: 36
     }
     nodes {
-      id: 34
-      sorted_children: 9
-      sorted_parents: 4
+      id: 36
+      sorted_children: 11
+      sorted_parents: 6
     }
     nodes {
-      id: 9
-      sorted_children: 16
-      sorted_parents: 34
-    }
-    nodes {
-      id: 16
+      id: 11
       sorted_children: 18
-      sorted_parents: 9
+      sorted_parents: 36
     }
     nodes {
       id: 18
-      sorted_parents: 16
+      sorted_children: 20
+      sorted_parents: 11
+    }
+    nodes {
+      id: 20
+      sorted_parents: 18
     }
   }
   nodes {
-    id: 4
+    id: 6
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1252,13 +1070,13 @@ nodes {
     }
   }
   nodes {
-    id: 34
+    id: 36
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 4
+            node: 6
           }
         }
         expressions {
@@ -1266,7 +1084,7 @@ nodes {
             name: "upid_to_service_name"
             args {
               column {
-                node: 4
+                node: 6
                 index: 1
               }
             }
@@ -1279,18 +1097,18 @@ nodes {
     }
   }
   nodes {
-    id: 9
+    id: 11
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 34
+            node: 36
           }
         }
         expressions {
           column {
-            node: 34
+            node: 36
             index: 1
           }
         }
@@ -1300,7 +1118,7 @@ nodes {
     }
   }
   nodes {
-    id: 16
+    id: 18
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -1308,13 +1126,13 @@ nodes {
           name: "mean"
           args {
             column {
-              node: 9
+              node: 11
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 9
+          node: 11
           index: 1
         }
         group_names: "service"
@@ -1323,7 +1141,7 @@ nodes {
     }
   }
   nodes {
-    id: 18
+    id: 20
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1336,10 +1154,11 @@ nodes {
     }
   }
 }
+
 )proto";
 
 constexpr char kExpectedAgg2MetadataPlan[] = R"proto(
-dag {
+ dag {
   nodes {
     id: 1
   }
@@ -1348,31 +1167,31 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 4
-      sorted_children: 37
+      id: 6
+      sorted_children: 39
     }
     nodes {
-      id: 37
-      sorted_children: 9
-      sorted_parents: 4
+      id: 39
+      sorted_children: 11
+      sorted_parents: 6
     }
     nodes {
-      id: 9
-      sorted_children: 18
-      sorted_parents: 37
-    }
-    nodes {
-      id: 18
+      id: 11
       sorted_children: 20
-      sorted_parents: 9
+      sorted_parents: 39
     }
     nodes {
       id: 20
-      sorted_parents: 18
+      sorted_children: 22
+      sorted_parents: 11
+    }
+    nodes {
+      id: 22
+      sorted_parents: 20
     }
   }
   nodes {
-    id: 4
+    id: 6
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1387,13 +1206,13 @@ nodes {
     }
   }
   nodes {
-    id: 37
+    id: 39
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 4
+            node: 6
           }
         }
         expressions {
@@ -1401,7 +1220,7 @@ nodes {
             name: "upid_to_service_name"
             args {
               column {
-                node: 4
+                node: 6
                 index: 1
               }
             }
@@ -1414,18 +1233,18 @@ nodes {
     }
   }
   nodes {
-    id: 9
+    id: 11
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 37
+            node: 39
           }
         }
         expressions {
           column {
-            node: 37
+            node: 39
             index: 1
           }
         }
@@ -1435,7 +1254,7 @@ nodes {
     }
   }
   nodes {
-    id: 18
+    id: 20
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -1443,16 +1262,16 @@ nodes {
           name: "mean"
           args {
             column {
-              node: 9
+              node: 11
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 9
+          node: 11
         }
         groups {
-          node: 9
+          node: 11
           index: 1
         }
         group_names: "cpu0"
@@ -1462,7 +1281,7 @@ nodes {
     }
   }
   nodes {
-    id: 20
+    id: 22
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -1480,7 +1299,7 @@ nodes {
 )proto";
 
 constexpr char kExpectedAggFilter1MetadataPlan[] = R"proto(
-dag {
+  dag {
   nodes {
     id: 1
   }
@@ -1489,41 +1308,41 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 4
-      sorted_children: 44
+      id: 6
+      sorted_children: 46
     }
     nodes {
-      id: 44
-      sorted_children: 9
-      sorted_parents: 4
+      id: 46
+      sorted_children: 11
+      sorted_parents: 6
     }
     nodes {
-      id: 9
-      sorted_children: 18
-      sorted_parents: 44
+      id: 11
+      sorted_children: 20
+      sorted_parents: 46
     }
     nodes {
-      id: 18
-      sorted_children: 50
-      sorted_parents: 9
+      id: 20
+      sorted_children: 52
+      sorted_parents: 11
     }
     nodes {
-      id: 50
-      sorted_children: 23
-      sorted_parents: 18
-    }
-    nodes {
-      id: 23
+      id: 52
       sorted_children: 25
-      sorted_parents: 50
+      sorted_parents: 20
     }
     nodes {
       id: 25
-      sorted_parents: 23
+      sorted_children: 27
+      sorted_parents: 52
+    }
+    nodes {
+      id: 27
+      sorted_parents: 25
     }
   }
   nodes {
-    id: 4
+    id: 6
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -1538,18 +1357,18 @@ nodes {
     }
   }
   nodes {
-    id: 44
+    id: 46
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 4
+            node: 6
           }
         }
         expressions {
           column {
-            node: 4
+            node: 6
             index: 1
           }
         }
@@ -1558,7 +1377,7 @@ nodes {
             name: "upid_to_service_name"
             args {
               column {
-                node: 4
+                node: 6
                 index: 1
               }
             }
@@ -1573,24 +1392,24 @@ nodes {
     }
   }
   nodes {
-    id: 9
+    id: 11
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 44
+            node: 46
           }
         }
         expressions {
           column {
-            node: 44
+            node: 46
             index: 1
           }
         }
         expressions {
           column {
-            node: 44
+            node: 46
             index: 2
           }
         }
@@ -1601,7 +1420,7 @@ nodes {
     }
   }
   nodes {
-    id: 18
+    id: 20
     op {
       op_type: AGGREGATE_OPERATOR
       agg_op {
@@ -1609,17 +1428,17 @@ nodes {
           name: "mean"
           args {
             column {
-              node: 9
+              node: 11
             }
           }
           args_data_types: FLOAT64
         }
         groups {
-          node: 9
+          node: 11
           index: 1
         }
         groups {
-          node: 9
+          node: 11
           index: 2
         }
         group_names: "upid"
@@ -1629,24 +1448,24 @@ nodes {
     }
   }
   nodes {
-    id: 50
+    id: 52
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 18
+            node: 20
           }
         }
         expressions {
           column {
-            node: 18
+            node: 20
             index: 1
           }
         }
         expressions {
           column {
-            node: 18
+            node: 20
             index: 2
           }
         }
@@ -1655,7 +1474,7 @@ nodes {
             name: "upid_to_service_name"
             args {
               column {
-                node: 18
+                node: 20
               }
             }
             id: 1
@@ -1670,7 +1489,7 @@ nodes {
     }
   }
   nodes {
-    id: 23
+    id: 25
     op {
       op_type: FILTER_OPERATOR
       filter_op {
@@ -1679,7 +1498,7 @@ nodes {
             name: "equal"
             args {
               column {
-                node: 50
+                node: 52
                 index: 3
               }
             }
@@ -1694,21 +1513,21 @@ nodes {
           }
         }
         columns {
-          node: 50
+          node: 52
         }
         columns {
-          node: 50
+          node: 52
           index: 1
         }
         columns {
-          node: 50
+          node: 52
           index: 2
         }
       }
     }
   }
   nodes {
-    id: 25
+    id: 27
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -2196,7 +2015,7 @@ TEST_F(CompilerTest, cgroups_pod_id) {
 }
 
 constexpr char kJoinInnerQueryPlan[] = R"proto(
-dag {
+  dag {
   nodes {
     id: 1
   }
@@ -2205,31 +2024,31 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 7
-      sorted_children: 22
+      id: 9
+      sorted_children: 24
     }
     nodes {
-      id: 14
-      sorted_children: 22
+      id: 16
+      sorted_children: 24
     }
     nodes {
-      id: 22
-      sorted_children: 33
-      sorted_parents: 7
-      sorted_parents: 14
-    }
-    nodes {
-      id: 33
+      id: 24
       sorted_children: 35
-      sorted_parents: 22
+      sorted_parents: 9
+      sorted_parents: 16
     }
     nodes {
       id: 35
-      sorted_parents: 33
+      sorted_children: 37
+      sorted_parents: 24
+    }
+    nodes {
+      id: 37
+      sorted_parents: 35
     }
   }
   nodes {
-    id: 7
+    id: 9
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -2247,7 +2066,7 @@ nodes {
     }
   }
   nodes {
-    id: 14
+    id: 16
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -2265,7 +2084,7 @@ nodes {
     }
   }
   nodes {
-    id: 22
+    id: 24
     op {
       op_type: JOIN_OPERATOR
       join_op {
@@ -2297,36 +2116,36 @@ nodes {
     }
   }
   nodes {
-    id: 33
+    id: 35
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 22
+            node: 24
             index: 1
           }
         }
         expressions {
           column {
-            node: 22
+            node: 24
             index: 3
           }
         }
         expressions {
           column {
-            node: 22
+            node: 24
             index: 4
           }
         }
         expressions {
           column {
-            node: 22
+            node: 24
           }
         }
         expressions {
           column {
-            node: 22
+            node: 24
             index: 2
           }
         }
@@ -2339,7 +2158,7 @@ nodes {
     }
   }
   nodes {
-    id: 35
+    id: 37
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -2369,7 +2188,6 @@ output = join[["upid", "http_resp_status", "http_resp_latency_ns", "cpu0", "cpu1
 px.display(output, 'joined')
 )query";
 
-// TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
 TEST_F(CompilerTest, inner_join) {
   auto plan_status = compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "inner"),
                                        compiler_state_.get(), /*query_flags*/ {});
@@ -2379,7 +2197,7 @@ TEST_F(CompilerTest, inner_join) {
 }
 
 constexpr char kJoinRightQueryPlan[] = R"proto(
-dag {
+  dag {
   nodes {
     id: 1
   }
@@ -2388,31 +2206,31 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 7
-      sorted_children: 22
+      id: 9
+      sorted_children: 24
     }
     nodes {
-      id: 14
-      sorted_children: 22
+      id: 16
+      sorted_children: 24
     }
     nodes {
-      id: 22
-      sorted_children: 33
-      sorted_parents: 14
-      sorted_parents: 7
-    }
-    nodes {
-      id: 33
+      id: 24
       sorted_children: 35
-      sorted_parents: 22
+      sorted_parents: 16
+      sorted_parents: 9
     }
     nodes {
       id: 35
-      sorted_parents: 33
+      sorted_children: 37
+      sorted_parents: 24
+    }
+    nodes {
+      id: 37
+      sorted_parents: 35
     }
   }
   nodes {
-    id: 7
+    id: 9
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -2430,7 +2248,7 @@ nodes {
     }
   }
   nodes {
-    id: 14
+    id: 16
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -2448,7 +2266,7 @@ nodes {
     }
   }
   nodes {
-    id: 22
+    id: 24
     op {
       op_type: JOIN_OPERATOR
       join_op {
@@ -2482,36 +2300,36 @@ nodes {
     }
   }
   nodes {
-    id: 33
+    id: 35
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 22
+            node: 24
             index: 1
           }
         }
         expressions {
           column {
-            node: 22
+            node: 24
             index: 3
           }
         }
         expressions {
           column {
-            node: 22
+            node: 24
             index: 4
           }
         }
         expressions {
           column {
-            node: 22
+            node: 24
           }
         }
         expressions {
           column {
-            node: 22
+            node: 24
             index: 2
           }
         }
@@ -2524,7 +2342,7 @@ nodes {
     }
   }
   nodes {
-    id: 35
+    id: 37
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -2555,7 +2373,7 @@ TEST_F(CompilerTest, right_join) {
 }
 
 constexpr char kSelfJoinQueryPlan[] = R"proto(
-dag {
+  dag {
   nodes {
     id: 1
   }
@@ -2564,28 +2382,28 @@ nodes {
   id: 1
   dag {
     nodes {
-      id: 7
-      sorted_children: 16
-      sorted_children: 15
-    }
-    nodes {
-      id: 16
-      sorted_children: 15
-      sorted_parents: 7
-    }
-    nodes {
-      id: 15
+      id: 9
       sorted_children: 18
-      sorted_parents: 7
-      sorted_parents: 16
+      sorted_children: 17
     }
     nodes {
       id: 18
-      sorted_parents: 15
+      sorted_children: 17
+      sorted_parents: 9
+    }
+    nodes {
+      id: 17
+      sorted_children: 20
+      sorted_parents: 9
+      sorted_parents: 18
+    }
+    nodes {
+      id: 20
+      sorted_parents: 17
     }
   }
   nodes {
-    id: 7
+    id: 9
     op {
       op_type: MEMORY_SOURCE_OPERATOR
       mem_source_op {
@@ -2603,24 +2421,24 @@ nodes {
     }
   }
   nodes {
-    id: 16
+    id: 18
     op {
       op_type: MAP_OPERATOR
       map_op {
         expressions {
           column {
-            node: 7
+            node: 9
           }
         }
         expressions {
           column {
-            node: 7
+            node: 9
             index: 1
           }
         }
         expressions {
           column {
-            node: 7
+            node: 9
             index: 2
           }
         }
@@ -2631,7 +2449,7 @@ nodes {
     }
   }
   nodes {
-    id: 15
+    id: 17
     op {
       op_type: JOIN_OPERATOR
       join_op {
@@ -2668,7 +2486,7 @@ nodes {
     }
   }
   nodes {
-    id: 18
+    id: 20
     op {
       op_type: MEMORY_SINK_OPERATOR
       mem_sink_op {
@@ -2689,6 +2507,7 @@ nodes {
     }
   }
 }
+
 )proto";
 
 constexpr char kSelfJoinQuery[] = R"query(
