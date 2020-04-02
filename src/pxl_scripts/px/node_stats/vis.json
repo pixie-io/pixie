@@ -20,7 +20,7 @@
         "title": null
       },
       "y": {
-        "field": "cpu_ms",
+        "field": "cpu_pct",
         "type": "quantitative",
         "axis": {
           "titleFontSize": 15,
@@ -60,14 +60,14 @@
         "title": null
       },
       "y": {
-        "field": "rx_mb",
+        "field": "rx_mb_per_s",
         "type": "quantitative",
         "axis": {
           "titleFontSize": 15,
           "gridOpacity": 0.1,
           "gridColor": "#a6a8ae"
         },
-        "title": "Received Data (Mb)"
+        "title": "Received Data (Mb/s)"
       }
     },
     "config": {
@@ -100,14 +100,14 @@
         "title": null
       },
       "y": {
-        "field": "tx_mb",
+        "field": "tx_mb_per_s",
         "type": "quantitative",
         "axis": {
           "titleFontSize": 15,
           "gridOpacity": 0.1,
           "gridColor": "#a6a8ae"
         },
-        "title": "Sent Data (Mb)"
+        "title": "Sent Data (Mb/s)"
       }
     },
     "config": {
