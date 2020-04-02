@@ -194,10 +194,14 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   std::set<std::string> FindNewBinaries(
       const std::map<std::string, std::vector<int32_t> >& binary_instances);
 
-  Status AttachHTTP2UProbes();
-  // Wraps AttachHTTP2UProbes() in a loop. Stops when this SocketTraceConnector is stopped.
+  Status AttachHTTP2UProbes(const std::map<std::string, std::vector<int32_t> >& pids);
+
+  // Scans binaries and deploys uprobes for all purposes (HTTP2, OpenSSL, etc.) on new processes.
+  void DeployUProbes();
+
+  // Wraps DeployUProbes() in a loop. Stops when this SocketTraceConnector is stopped.
   // Used for creating a background thread to attach uprobes for newly-created processes.
-  void AttachHTTP2UProbesLoop();
+  void AttachUProbesLoop();
 
   // This function causes the perf buffer to be read, and triggers callbacks per message.
   void ReadPerfBuffers();

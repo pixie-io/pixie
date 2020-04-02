@@ -5,7 +5,6 @@
 
 #include <deque>
 #include <filesystem>
-#include <set>
 #include <utility>
 
 #include <absl/strings/match.h>
@@ -170,13 +169,10 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
   LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
 
-  // TODO(oazizi/yzhao): Should uprobe uses different set of perf buffers than the kprobes?
-  // That allows the BPF code and companion user-space code for uprobe & kprobe be separated
-  // cleanly. For example, right now, enabling uprobe & kprobe simultaneously can crash Stirling,
-  // because of the mixed & duplicate data events from these 2 sources.
-  if (protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled) {
-    PL_RETURN_IF_ERROR(AttachHTTP2UProbes());
-  }
+  // Although we spawn off a uprobe attachment thread, call DeployUProbes() once before doing so.
+  // Why? Some tests rely on UProbes being attached before returning from InitImpl().
+  DeployUProbes();
+  attach_uprobes_thread_ = std::thread([this]() { AttachUProbesLoop(); });
 
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   LOG(INFO) << absl::Substitute("Number of perf buffers opened = $0", kPerfBufferSpecs.size());
@@ -217,8 +213,6 @@ Status SocketTraceConnector::InitImpl() {
     }
     LOG(INFO) << absl::Substitute("Writing output to: $0 in $1 format.", abs_path.string(), format);
   }
-
-  attach_uprobes_thread_ = std::thread([this]() { AttachHTTP2UProbesLoop(); });
 
   bpf_table_info_ = std::make_shared<SocketTraceBPFTableManager>(&bpf());
   ConnectionTracker::SetBPFTableManager(bpf_table_info_);
@@ -349,36 +343,52 @@ std::set<std::string> SocketTraceConnector::FindNewBinaries(
   return new_binaries;
 }
 
-Status SocketTraceConnector::AttachHTTP2UProbes() {
-  std::map<std::string, std::vector<int32_t>> new_pids = FindNewPIDs();
-
+// TODO(oazizi/yzhao): Should uprobe uses different set of perf buffers than the kprobes?
+// That allows the BPF code and companion user-space code for uprobe & kprobe be separated
+// cleanly. For example, right now, enabling uprobe & kprobe simultaneously can crash Stirling,
+// because of the mixed & duplicate data events from these 2 sources.
+Status SocketTraceConnector::AttachHTTP2UProbes(
+    const std::map<std::string, std::vector<int32_t>>& pids) {
   ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> symaddrs_map =
       bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("symaddrs_map");
-
-  for (const auto& [pid, symaddrs] : GetSymAddrs(new_pids)) {
+  for (const auto& [pid, symaddrs] : GetSymAddrs(pids)) {
     symaddrs_map.update_value(pid, symaddrs);
   }
 
-  std::set<std::string> new_binaries = FindNewBinaries(new_pids);
+  std::set<std::string> new_binaries = FindNewBinaries(pids);
 
   PL_ASSIGN_OR_RETURN(const std::vector<bpf_tools::UProbeSpec> specs,
                       ResolveUProbeTmpls(new_binaries, kUProbeTmpls));
   PL_RETURN_IF_ERROR(AttachUProbes(ToArrayView(specs)));
-  LOG_FIRST_N(INFO, 1) << absl::Substitute("Number of uprobes deployed = $0", specs.size());
+  LOG_FIRST_N(INFO, 1) << absl::Substitute("Number of HTTP2 uprobes deployed = $0", specs.size());
   return Status::OK();
 }
 
-void SocketTraceConnector::AttachHTTP2UProbesLoop() {
-  auto next_update_time_point = std::chrono::steady_clock::now() + std::chrono::seconds(5);
+void SocketTraceConnector::DeployUProbes() {
+  std::map<std::string, std::vector<int32_t>> new_pids = FindNewPIDs();
+
+  if (protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled) {
+    Status s = AttachHTTP2UProbes(new_pids);
+    LOG_IF(WARNING, !s.ok()) << "AttachHTTP2UProbes() failed: " << s.ToString();
+  }
+
+  // Add other uprobes here (e.g. OpenSSL).
+}
+
+void SocketTraceConnector::AttachUProbesLoop() {
+  constexpr std::chrono::seconds kLoopIterationSeconds = std::chrono::seconds(5);
+
+  auto next_update_time_point = std::chrono::steady_clock::now() + kLoopIterationSeconds;
   while (state() != State::kStopped) {
     // Check more often than the actual attachment cycle, so that we can exit the loop faster.
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     if (std::chrono::steady_clock::now() < next_update_time_point) {
       continue;
     }
-    auto status = AttachHTTP2UProbes();
-    next_update_time_point = std::chrono::steady_clock::now() + std::chrono::seconds(5);
-    VLOG(1) << "AttachHTTP2UProbes() status: " << status.ToString();
+
+    DeployUProbes();
+
+    next_update_time_point = std::chrono::steady_clock::now() + kLoopIterationSeconds;
   }
 }
 
