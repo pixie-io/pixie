@@ -192,7 +192,10 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   StatusOr<int> AttachUProbeTmpl(const ArrayView<bpf_tools::UProbeTmpl>& probe_tmpls,
                                  const std::string& binary, elf_tools::ElfReader* elf_reader);
 
-  Status AttachHTTP2UProbes(const std::map<std::string, std::vector<int32_t> >& pids);
+  StatusOr<int> AttachHTTP2UProbes(const std::string& binary, elf_tools::ElfReader* elf_reader,
+                                   const std::vector<int32_t>& new_pids);
+
+  StatusOr<int> AttachOpenSSLUProbes();
 
   // Scans binaries and deploys uprobes for all purposes (HTTP2, OpenSSL, etc.) on new processes.
   void DeployUProbes();

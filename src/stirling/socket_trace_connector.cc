@@ -324,7 +324,7 @@ std::map<std::string, std::vector<int32_t>> SocketTraceConnector::FindNewPIDs() 
 }
 
 namespace {
-struct conn_symaddrs_t GetHTTPSymAddrs(ElfReader* elf_reader) {
+struct conn_symaddrs_t GetHTTP2SymAddrs(ElfReader* elf_reader) {
   struct conn_symaddrs_t symaddrs;
   symaddrs.syscall_conn =
       elf_reader
@@ -337,21 +337,22 @@ struct conn_symaddrs_t GetHTTPSymAddrs(ElfReader* elf_reader) {
   return symaddrs;
 }
 
-Status UpdateHTTP2SymAddrs(ElfReader* elf_reader, const std::vector<int32_t>& pids,
-                           ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* symaddrs_map) {
-  struct conn_symaddrs_t symaddrs = GetHTTPSymAddrs(elf_reader);
+bool UpdateHTTP2SymAddrs(ElfReader* elf_reader, const std::vector<int32_t>& pids,
+                         ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* symaddrs_map) {
+  struct conn_symaddrs_t symaddrs = GetHTTP2SymAddrs(elf_reader);
 
   // TCPConn is mandatory by the HTTP2 uprobes probe, so bail if it is not found (-1).
   // It should be the last layer of nested interface, and contains the FD.
   // The other conns can be invalid, and will simply be ignored.
   if (symaddrs.tcp_conn == -1) {
-    return error::Internal("Could not find address of TCPConn");
+    return false;
   }
 
   for (auto& pid : pids) {
     symaddrs_map->update_value(pid, symaddrs);
   }
-  return Status::OK();
+
+  return true;
 }
 }  // namespace
 
@@ -376,15 +377,42 @@ StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(
 // That allows the BPF code and companion user-space code for uprobe & kprobe be separated
 // cleanly. For example, right now, enabling uprobe & kprobe simultaneously can crash Stirling,
 // because of the mixed & duplicate data events from these 2 sources.
-Status SocketTraceConnector::AttachHTTP2UProbes(
-    const std::map<std::string, std::vector<int32_t>>& pids) {
-  int uprobe_count = 0;
-
+StatusOr<int> SocketTraceConnector::AttachHTTP2UProbes(const std::string& binary,
+                                                       elf_tools::ElfReader* elf_reader,
+                                                       const std::vector<int32_t>& new_pids) {
+  // TODO(oazizi): Expensive call. Pull out and cache.
   ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> symaddrs_map =
       bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("symaddrs_map");
 
-  for (auto& [binary, pid_vec] : pids) {
-    // Step 1: Read binary's symbols.
+  // Step 1: Update BPF symbols_map on all new PIDs.
+  bool found_symbols = UpdateHTTP2SymAddrs(elf_reader, new_pids, &symaddrs_map);
+  if (!found_symbols) {
+    // Doesn't appear to be a binary with a TCPConn.
+    // Might not even be a golang binary.
+    // Either way, not of interest to probe.
+    return 0;
+  }
+
+  // Step 2: Deploy uprobes on all new binaries.
+  auto result = probed_binaries_.insert(binary);
+  if (!result.second) {
+    // This is not a new binary, so nothing more to do.
+    return 0;
+  }
+  return AttachUProbeTmpl(kHTTP2UProbeTmpls, binary, elf_reader);
+}
+
+StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes() {
+  // Placeholder
+  return 0;
+}
+
+void SocketTraceConnector::DeployUProbes() {
+  std::map<std::string, std::vector<int32_t>> new_pids = FindNewPIDs();
+
+  int uprobe_count = 0;
+  for (auto& [binary, pid_vec] : new_pids) {
+    // Read binary's symbols.
     StatusOr<std::unique_ptr<ElfReader>> elf_reader_status = ElfReader::Create(binary);
     if (!elf_reader_status.ok()) {
       LOG(WARNING) << absl::Substitute(
@@ -396,38 +424,32 @@ Status SocketTraceConnector::AttachHTTP2UProbes(
     }
     std::unique_ptr<ElfReader> elf_reader = elf_reader_status.ConsumeValueOrDie();
 
-    // Step 2: Update BPF symbols_map on all new PIDs.
-    Status s = UpdateHTTP2SymAddrs(elf_reader.get(), pid_vec, &symaddrs_map);
-    if (!s.ok()) {
-      continue;
+    // OpenSSL Probes.
+    {
+      StatusOr<int> attach_status = AttachOpenSSLUProbes();
+      if (!attach_status.ok()) {
+        LOG(WARNING) << absl::Substitute("Failed to attach SSL Uprobes to $0: $1", binary,
+                                         attach_status.ToString());
+      } else {
+        uprobe_count += attach_status.ValueOrDie();
+      }
     }
 
-    // Step 3: Deploy uprobes on all new binaries.
-
-    auto result = probed_binaries_.insert(binary);
-    if (!result.second) {
-      // This is not a new binary, so nothing more to do.
-      continue;
+    // HTTP2 Probes.
+    if (protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled) {
+      StatusOr<int> attach_status = AttachHTTP2UProbes(binary, elf_reader.get(), pid_vec);
+      if (!attach_status.ok()) {
+        LOG(WARNING) << absl::Substitute("Failed to attach HTTP2 Uprobes to $0: $1", binary,
+                                         attach_status.ToString());
+      } else {
+        uprobe_count += attach_status.ValueOrDie();
+      }
     }
 
-    PL_ASSIGN_OR_RETURN(int uprobes_attached,
-                        AttachUProbeTmpl(kHTTP2UProbeTmpls, binary, elf_reader.get()));
-    uprobe_count += uprobes_attached;
+    // Add other uprobes here.
   }
 
-  LOG_FIRST_N(INFO, 1) << absl::Substitute("Number of HTTP2 uprobes deployed = $0", uprobe_count);
-  return Status::OK();
-}
-
-void SocketTraceConnector::DeployUProbes() {
-  std::map<std::string, std::vector<int32_t>> new_pids = FindNewPIDs();
-
-  if (protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled) {
-    Status s = AttachHTTP2UProbes(new_pids);
-    LOG_IF(WARNING, !s.ok()) << "AttachHTTP2UProbes() failed: " << s.ToString();
-  }
-
-  // Add other uprobes here (e.g. OpenSSL).
+  LOG_FIRST_N(INFO, 1) << absl::Substitute("Number of uprobes deployed = $0", uprobe_count);
 }
 
 void SocketTraceConnector::AttachUProbesLoop() {
