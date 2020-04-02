@@ -7,7 +7,6 @@ import Vega from 'components/vega/vega';
 import {QueryResultTable} from 'containers/vizier/query-result-viewer';
 import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
-import {AutoSizer} from 'react-virtualized';
 import {dataFromProto} from 'utils/result-data-utils';
 
 import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
@@ -40,6 +39,8 @@ const useStyles = makeStyles((theme: Theme) => {
     },
   });
 });
+
+const Grid = GridLayout.WidthProvider(GridLayout);
 
 const Canvas = () => {
   const classes = useStyles();
@@ -88,7 +89,7 @@ const Canvas = () => {
       const data = dataFromProto(table.relation, table.data);
       return (
         <div key={chartName} className='fs-exclude'>
-          <Vega data={data} spec={spec} tableName={tableName} vegaModule={vegaModule} />;
+          <Vega data={data} spec={spec} tableName={tableName} vegaModule={vegaModule} />
         </div>
       );
     });
@@ -112,18 +113,9 @@ const Canvas = () => {
   }
 
   return (
-    <AutoSizer onResize={resize}>
-      {({ height, width }) => (
-        <GridLayout
-          style={{ width, height }}
-          width={width}
-          layout={layout}
-          onLayoutChange={handleLayoutChange}
-        >
-          {charts}
-        </GridLayout>
-      )}
-    </AutoSizer >
+    <Grid layout={layout} onLayoutChange={handleLayoutChange}>
+      {charts}
+    </Grid>
   );
 };
 

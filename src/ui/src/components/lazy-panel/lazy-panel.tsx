@@ -25,6 +25,10 @@ const LazyPanel = (props: LazyPanelProps) => {
   const [rendered, setRendered] = React.useState(false);
   const classes = useStyles();
 
+  React.useEffect(() => {
+    setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
+  }, [show]);
+
   if (!show && !rendered) {
     return null;
   }
