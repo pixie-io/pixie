@@ -227,13 +227,17 @@ Status SocketTraceConnector::InitImpl() {
 }
 
 Status SocketTraceConnector::StopImpl() {
-  bpf_tools::BCCWrapper::Stop();
   if (perf_buffer_events_output_stream_ != nullptr) {
     perf_buffer_events_output_stream_->close();
   }
   if (attach_uprobes_thread_.joinable()) {
     attach_uprobes_thread_.join();
   }
+
+  // Must call Stop() after attach_uprobes_thread_ has joined,
+  // otherwise the two threads will cause concurrent accesses to BCC,
+  // that will cause races and undefined behavior.
+  bpf_tools::BCCWrapper::Stop();
   return Status::OK();
 }
 
