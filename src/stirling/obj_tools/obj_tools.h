@@ -30,13 +30,6 @@ std::map<std::string, std::vector<int>> GetActiveBinaries(
     const std::map<int32_t, std::filesystem::path>& pid_paths,
     const std::filesystem::path& host_path = {});
 
-/**
- * Looks up specific symbols of the binaries, and returns a map from PIDs that execute the
- * binaries to the symbol addresses.
- */
-std::map<uint32_t, struct conn_symaddrs_t> GetSymAddrs(
-    const std::map<std::string, std::vector<int>>& binaries);
-
 }  // namespace obj_tools
 }  // namespace stirling
 }  // namespace pl

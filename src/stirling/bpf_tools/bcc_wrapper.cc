@@ -17,7 +17,6 @@
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
 #include "src/stirling/obj_tools/elf_tools.h"
-#include "src/stirling/obj_tools/obj_tools.h"
 
 // TODO(yzhao): Do we need make this flag able to specify size for individual perf buffers?
 // At least, we should have different values for ones used for transferring data, and metadata.
@@ -32,40 +31,6 @@ DEFINE_uint32(stirling_bpf_perf_buffer_page_count, 256,
 
 namespace pl {
 namespace bpf_tools {
-
-using ::pl::stirling::elf_tools::ElfReader;
-
-StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(const std::set<std::string>& binaries,
-                                                     const ArrayView<UProbeTmpl>& tmpls) {
-  std::vector<UProbeSpec> specs;
-  for (const auto& binary : binaries) {
-    VLOG(1) << absl::Substitute("Resolving uprobe templates for $0", binary);
-
-    StatusOr<std::unique_ptr<ElfReader>> elf_reader_status = ElfReader::Create(binary);
-    if (!elf_reader_status.ok()) {
-      LOG(WARNING) << absl::Substitute(
-          "Cannot analyze binary $0 for uprobe deployment. "
-          "If file is under /var/lib/docker, container may have terminated. "
-          "Message = $1",
-          binary, elf_reader_status.msg());
-      continue;
-    }
-    std::unique_ptr<ElfReader> elf_reader = elf_reader_status.ConsumeValueOrDie();
-
-    for (const auto& tmpl : tmpls) {
-      // Non-trivial designated initializers not supported, as we need to do
-      // .probe_fn = std::string(tmpl.probe_fn).
-      bpf_tools::UProbeSpec spec = {binary, {}, tmpl.attach_type, std::string(tmpl.probe_fn)};
-      const std::vector<std::string> symbol_names =
-          elf_reader->ListSymbols(tmpl.symbol, tmpl.match_type);
-      for (auto& symbol : symbol_names) {
-        spec.symbol = symbol;
-        specs.push_back(spec);
-      }
-    }
-  }
-  return specs;
-}
 
 // TODO(yzhao): Read CPU count during runtime and set maxactive to Multiplier * N_CPU. That way, we
 // can be relatively more secure against increase of CPU count. Note the default multiplier is 2,

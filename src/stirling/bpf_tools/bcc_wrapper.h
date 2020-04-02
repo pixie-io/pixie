@@ -77,14 +77,6 @@ struct UProbeTmpl {
 };
 
 /**
- * Looks up binaries under /proc, search for symbols matching the templates, and return
- * fully-resolved specs.
- */
-// TODO(yzhao): The input data structures are too specific, consider using with more generic types.
-StatusOr<std::vector<UProbeSpec>> ResolveUProbeTmpls(const std::set<std::string>& binaries,
-                                                     const ArrayView<UProbeTmpl>& tmpls);
-
-/**
  * Describes a BPF perf buffer, through which data is returned to user-space.
  */
 struct PerfBufferSpec {

@@ -146,7 +146,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {"close", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_close"},
   });
 
-  inline static constexpr auto kUProbeTmpls = MakeArray<bpf_tools::UProbeTmpl>({
+  inline static constexpr auto kHTTP2UProbeTmpls = MakeArray<bpf_tools::UProbeTmpl>({
       {"google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders",
        elf_tools::SymbolMatchType::kSuffix, "probe_http2_client_operate_headers",
        bpf_probe_attach_type::BPF_PROBE_ENTRY},
@@ -189,10 +189,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // being traced).
   std::map<std::string, std::vector<int32_t> > FindNewPIDs();
 
-  // Takes the result of FindNewPIDs() and further refines the information
-  // to include only those binaries that don't have uprobes attached.
-  std::set<std::string> FindNewBinaries(
-      const std::map<std::string, std::vector<int32_t> >& binary_instances);
+  StatusOr<int> AttachUProbeTmpl(const ArrayView<bpf_tools::UProbeTmpl>& probe_tmpls,
+                                 const std::string& binary, elf_tools::ElfReader* elf_reader);
 
   Status AttachHTTP2UProbes(const std::map<std::string, std::vector<int32_t> >& pids);
 
@@ -294,7 +292,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   ProcTracker proc_tracker_;
 
   // Records the binaries that have been attached uprobes.
-  absl::flat_hash_set<std::string> prev_scanned_binaries_;
+  absl::flat_hash_set<std::string> probed_binaries_;
 
   std::shared_ptr<SocketTraceBPFTableManager> bpf_table_info_;
 

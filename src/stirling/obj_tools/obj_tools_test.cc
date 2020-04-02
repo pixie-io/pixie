@@ -33,13 +33,13 @@ TEST(GetActiveBinaryTest, CaptureTestBinary) {
   EXPECT_OK_AND_THAT(binary_or, EndsWith("src/stirling/obj_tools/obj_tools_test"));
 }
 
-TEST(GetSymAddrsTest, SymbolAddress) {
-  CHECK(!FLAGS_go_grpc_client_path.empty())
-      << "--go_grpc_client_path cannot be empty. You should run this test with bazel.";
-  std::map<std::string, std::vector<int>> binaries;
-  binaries[FLAGS_go_grpc_client_path] = {1, 2, 3};
-  EXPECT_THAT(GetSymAddrs(binaries), ElementsAre(Pair(1, _), Pair(2, _), Pair(3, _)));
-}
+// TEST(GetSymAddrsTest, SymbolAddress) {
+//  CHECK(!FLAGS_go_grpc_client_path.empty())
+//      << "--go_grpc_client_path cannot be empty. You should run this test with bazel.";
+//  std::map<std::string, std::vector<int>> binaries;
+//  binaries[FLAGS_go_grpc_client_path] = {1, 2, 3};
+//  EXPECT_THAT(GetSymAddrs(binaries), ElementsAre(Pair(1, _), Pair(2, _), Pair(3, _)));
+//}
 
 }  // namespace obj_tools
 }  // namespace stirling
