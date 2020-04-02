@@ -29,6 +29,7 @@ go_test(
         "//src/cloud/artifact_tracker/schema:go_default_library",
         "//src/shared/artifacts/versionspb:versions_pl_go_proto",
         "//src/shared/services/pgtest:go_default_library",
+        "//src/utils/testingutils:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
         "@com_github_golang_migrate_migrate//source/go_bindata:go_default_library",
         "@com_github_googleapis_google_cloud_go_testing//storage/stiface:go_default_library",

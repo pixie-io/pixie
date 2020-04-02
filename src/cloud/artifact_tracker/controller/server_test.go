@@ -1,11 +1,11 @@
 package controller_test
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"testing"
 	"time"
+
+	"pixielabs.ai/pixielabs/src/utils/testingutils"
 
 	"golang.org/x/oauth2/jwt"
 
@@ -27,75 +27,15 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
 )
 
-type fakeClient struct {
-	stiface.Client
-	buckets map[string]*fakeBucket
-}
-
-type fakeBucket struct {
-	attrs   *storage.BucketAttrs
-	objects map[string][]byte
-}
-
-func newFakeClient() stiface.Client {
-	return &fakeClient{buckets: map[string]*fakeBucket{}}
-}
-
-func (c *fakeClient) Bucket(name string) stiface.BucketHandle {
-	return fakeBucketHandle{c: c, name: name}
-}
-
-type fakeBucketHandle struct {
-	stiface.BucketHandle
-	c    *fakeClient
-	name string
-}
-
-func (b fakeBucketHandle) Object(name string) stiface.ObjectHandle {
-	return fakeObjectHandle{c: b.c, bucketName: b.name, name: name}
-}
-
-type fakeObjectHandle struct {
-	stiface.ObjectHandle
-	c          *fakeClient
-	bucketName string
-	name       string
-}
-
-func (o fakeObjectHandle) NewReader(context.Context) (stiface.Reader, error) {
-	bkt, ok := o.c.buckets[o.bucketName]
-	if !ok {
-		return nil, fmt.Errorf("bucket %q not found", o.bucketName)
-	}
-	contents, ok := bkt.objects[o.name]
-	if !ok {
-		return nil, fmt.Errorf("object %q not found in bucket %q", o.name, o.bucketName)
-	}
-	return fakeReader{r: bytes.NewReader(contents)}, nil
-}
-
-type fakeReader struct {
-	stiface.Reader
-	r *bytes.Reader
-}
-
-func (r fakeReader) Read(buf []byte) (int, error) {
-	return r.r.Read(buf)
-}
-
-func (r fakeReader) Close() error {
-	return nil
-}
-
 func mustSetupFakeBucket(t *testing.T) stiface.Client {
-	return &fakeClient{buckets: map[string]*fakeBucket{
-		"test-bucket": &fakeBucket{
-			attrs: nil,
-			objects: map[string][]byte{
-				"cli/1.2.1-pre.3/cli_linux_amd64.sha256": []byte("the-sha256"),
+	return testingutils.NewMockGCSClient(map[string]*testingutils.MockGCSBucket{
+		"test-bucket": testingutils.NewMockGCSBucket(
+			map[string]*testingutils.MockGCSObject{
+				"cli/1.2.1-pre.3/cli_linux_amd64.sha256": testingutils.NewMockGCSObject([]byte("the-sha256"), nil),
 			},
-		},
-	}}
+			nil,
+		),
+	})
 }
 
 func mustLoadTestData(t *testing.T, db *sqlx.DB) {
