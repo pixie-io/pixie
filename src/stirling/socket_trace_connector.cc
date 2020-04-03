@@ -338,7 +338,7 @@ struct conn_symaddrs_t GetHTTP2SymAddrs(ElfReader* elf_reader) {
 }
 
 bool UpdateHTTP2SymAddrs(ElfReader* elf_reader, const std::vector<int32_t>& pids,
-                         ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* symaddrs_map) {
+                         ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map) {
   struct conn_symaddrs_t symaddrs = GetHTTP2SymAddrs(elf_reader);
 
   // TCPConn is mandatory by the HTTP2 uprobes probe, so bail if it is not found (-1).
@@ -349,7 +349,7 @@ bool UpdateHTTP2SymAddrs(ElfReader* elf_reader, const std::vector<int32_t>& pids
   }
 
   for (auto& pid : pids) {
-    symaddrs_map->update_value(pid, symaddrs);
+    http2_symaddrs_map->update_value(pid, symaddrs);
   }
 
   return true;
@@ -381,11 +381,11 @@ StatusOr<int> SocketTraceConnector::AttachHTTP2UProbes(const std::string& binary
                                                        elf_tools::ElfReader* elf_reader,
                                                        const std::vector<int32_t>& new_pids) {
   // TODO(oazizi): Expensive call. Pull out and cache.
-  ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> symaddrs_map =
-      bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("symaddrs_map");
+  ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> http2_symaddrs_map =
+      bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("http2_symaddrs_map");
 
   // Step 1: Update BPF symbols_map on all new PIDs.
-  bool found_symbols = UpdateHTTP2SymAddrs(elf_reader, new_pids, &symaddrs_map);
+  bool found_symbols = UpdateHTTP2SymAddrs(elf_reader, new_pids, &http2_symaddrs_map);
   if (!found_symbols) {
     // Doesn't appear to be a binary with a TCPConn.
     // Might not even be a golang binary.

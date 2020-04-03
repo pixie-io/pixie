@@ -17,7 +17,7 @@ static __inline struct go_grpc_data_event_t* get_data_event() {
 
 // Key: TGID
 // Value: Symbol addresses for the binary with that TGID.
-BPF_HASH(symaddrs_map, uint32_t, struct conn_symaddrs_t);
+BPF_HASH(http2_symaddrs_map, uint32_t, struct conn_symaddrs_t);
 
 // From golang source:
 // //A HeaderField is a name-value pair. Both the name and value are
@@ -110,7 +110,7 @@ struct DataFrame {
 static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf) {
   uint64_t current_pid_tgid = bpf_get_current_pid_tgid();
   uint32_t tgid = current_pid_tgid >> 32;
-  struct conn_symaddrs_t* symaddrs = symaddrs_map.lookup(&tgid);
+  struct conn_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
     return 0;
   }

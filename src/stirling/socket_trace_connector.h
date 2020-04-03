@@ -185,8 +185,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Helper functions for dynamically deploying uprobes:
 
   // Find new PIDs since the last call, grouped into a map by the binary path.
-  // The new PIDs may require the symaddrs_map BPF map to be updated (even if the binary is already
-  // being traced).
+  // The new PIDs may require the http2_symaddrs_map BPF map to be updated (even if the binary is
+  // already being traced).
   std::map<std::string, std::vector<int32_t> > FindNewPIDs();
 
   StatusOr<int> AttachUProbeTmpl(const ArrayView<bpf_tools::UProbeTmpl>& probe_tmpls,
