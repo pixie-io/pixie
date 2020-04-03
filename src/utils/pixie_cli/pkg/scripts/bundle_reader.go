@@ -78,10 +78,10 @@ func (b BundleReader) GetScriptMetadata() []ScriptMetadata {
 }
 
 // GetScript returns the script by name.
-func (b BundleReader) GetScript(scriptName string) (string, error) {
+func (b BundleReader) GetScript(scriptName string) (string, bool, error) {
 	script, ok := b.scripts[scriptName]
 	if !ok {
-		return "", fmt.Errorf("script '%s' not found", scriptName)
+		return "", false, fmt.Errorf("script '%s' not found", scriptName)
 	}
-	return script.Pxl, nil
+	return script.Pxl, script.Vis != "", nil
 }

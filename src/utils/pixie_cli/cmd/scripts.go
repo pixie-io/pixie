@@ -54,7 +54,7 @@ var ScriptShowCmd = &cobra.Command{
 			bundle = defaultBundleFile
 		}
 		scriptName := args[0]
-		script, err := getScriptFromBundle(bundle, scriptName)
+		script, _, err := getScriptFromBundle(bundle, scriptName)
 		if err != nil {
 			log.WithError(err).Fatal("Failed to get script information")
 		}

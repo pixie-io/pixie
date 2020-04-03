@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -44,7 +45,7 @@ func listBundleScripts(bundleFile string, format string) {
 	}
 }
 
-func getScriptFromBundle(bundleFile, scriptName string) (string, error) {
+func getScriptFromBundle(bundleFile, scriptName string) (string, bool, error) {
 	r, err := scripts.NewBundleReader(bundleFile)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to read bundle")
@@ -71,15 +72,16 @@ var RunCmd = &cobra.Command{
 			return
 		}
 
+		var scriptName string
 		var script string
 		var err error
-
+		var hasVis bool
 		scriptFile, _ := cmd.Flags().GetString("file")
 		if scriptFile == "" {
 			if len(args) != 1 {
 				log.Fatal("Expected a single arg, script_name")
 			}
-			scriptName := args[0]
+			scriptName = args[0]
 
 			_ = pxanalytics.Client().Enqueue(&analytics.Track{
 				UserId: pxconfig.Cfg().UniqueClientID,
@@ -88,7 +90,7 @@ var RunCmd = &cobra.Command{
 					Set("scriptName", scriptName),
 			})
 
-			script, err = getScriptFromBundle(bundleFile, scriptName)
+			script, hasVis, err = getScriptFromBundle(bundleFile, scriptName)
 			if err != nil {
 				log.WithError(err).Fatal("Failed to load script")
 			}
@@ -142,6 +144,17 @@ var RunCmd = &cobra.Command{
 
 		tw := vizier.NewVizierStreamOutputAdapter(ctx, resp, format)
 		tw.Finish()
+
+		if hasVis {
+			p := func(s string, a ...interface{}) {
+				fmt.Fprintf(os.Stderr, s, a...)
+			}
+			b := color.New(color.Bold).Sprint
+			u := color.New(color.Underline).Sprintf
+			p("\n%s %s: %s.\n", color.CyanString("\n==> "),
+				b("Live UI"), u("https://%s/live?script=%s", cloudAddr, scriptName))
+		}
+
 	},
 }
 
