@@ -5,9 +5,11 @@ import {parseSpecs} from 'components/vega/spec';
 import * as React from 'react';
 import {debounce} from 'utils/debounce';
 
+import IconButton from '@material-ui/core/IconButton';
 import {createStyles, makeStyles, Theme, withStyles} from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
+import CloseIcon from '@material-ui/icons/Close';
 
 import {LiveContext, PlacementContext, ScriptContext, VegaContext} from './context';
 import {parsePlacement} from './layout';
@@ -19,6 +21,11 @@ const useStyles = makeStyles((theme: Theme) =>
       display: 'flex',
       flexDirection: 'column',
       color: theme.palette.foreground.one,
+    },
+    tabs: {
+      display: 'flex',
+      flexDirection: 'row',
+      backgroundColor: theme.palette.background.three,
     },
     panel: {
       flex: 1,
@@ -107,6 +114,9 @@ const PlacementEditor = () => {
 
 const StyledTabs = withStyles((theme: Theme) =>
   createStyles({
+    root: {
+      flex: 1,
+    },
     indicator: {
       backgroundColor: theme.palette.foreground.one,
     },
@@ -124,21 +134,30 @@ const StyledTab = withStyles((theme: Theme) =>
   }),
 )(Tab);
 
-const LiveViewEditor = () => {
+interface LiveViewEditorProps {
+  onClose: () => void;
+}
+
+const LiveViewEditor = (props: LiveViewEditorProps) => {
   const classes = useStyles();
 
   const [tab, setTab] = React.useState('pixie');
 
   return (
     <div className={classes.root}>
-      <StyledTabs
-        value={tab}
-        onChange={(event, newTab) => setTab(newTab)}
-      >
-        <StyledTab value='pixie' label='PXL Script' />
-        <StyledTab value='vega' label='Viz Spec' />
-        <StyledTab value='placement' label='Placement' />
-      </StyledTabs>
+      <div className={classes.tabs}>
+        <StyledTabs
+          value={tab}
+          onChange={(event, newTab) => setTab(newTab)}
+        >
+          <StyledTab value='pixie' label='PXL Script' />
+          <StyledTab value='vega' label='Viz Spec' />
+          <StyledTab value='placement' label='Placement' />
+        </StyledTabs>
+        <IconButton onClick={props.onClose}>
+          <CloseIcon />
+        </IconButton>
+      </div>
       <LazyPanel className={classes.panel} show={tab === 'pixie'}>
         <ScriptEditor />
       </LazyPanel>

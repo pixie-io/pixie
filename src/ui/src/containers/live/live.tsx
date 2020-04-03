@@ -130,7 +130,7 @@ const LiveView = () => {
       </div>
       <div className={classes.main}>
         <LazyPanel className={classes.editor} show={editorOpen}>
-          <Editor />
+          <Editor onClose={toggleEditor} />
         </LazyPanel>
         <div className={classes.canvas}>
           <Canvas />
