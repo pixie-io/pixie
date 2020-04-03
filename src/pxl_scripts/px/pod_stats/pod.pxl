@@ -1,0 +1,178 @@
+"""Pod list and stats for monitored workloads
+
+Quick overview of all pods being monitored with
+instructions to learn how to write pxl scripts
+
+Notes:
+* Pod-level infra metrics and charts will be
+added soon
+
+"""
+
+# ----------------------------------------------------------------
+# The following variables can be edited to select
+# k8s object you can group of filter by
+# ----------------------------------------------------------------
+import px
+
+# K8s objects to filter by:
+# (either full or partial name)
+object_name_filter = ''
+
+# Start time of data outputs. Must be a string of the
+# format "-<int><time_str>" where time_str is one of:
+# "m" (minutes), "s" (seconds), "h" (hours), "d" (days).
+start_time = '-2m'
+
+# ----------------------------------------------------------------
+# Visualization Variables - No need to edit for basic configuration.
+# ----------------------------------------------------------------
+
+# You can use this view to switch to other K8s objects
+# (options: 'pod', 'service')
+k8s_object = 'pod'
+# Window in seconds within which to aggregate metrics.
+window_s = 2
+# k8s_object column is assigned to this and is used in vis spec.
+split_series_name = 'k8s'
+# ----------------------------------------------------------------
+
+
+# ----------------------------------------------------------------
+# Implementation: No need to edit for basic configuration.
+# ----------------------------------------------------------------
+def pod_stats():
+    """Top level pod stats function.
+
+    For each pod we compute latency, error-rate, throughput over
+    time and also present a summary table. These metrics are
+    computed from network requests ("spans") traced by Pixie
+    and collected in the http_events table.
+
+    Notes:
+    * Pod-level infra metrics and charts will be added soon.
+    * Summary table may misreport latency for low-rps
+    pods if a time-window has zero transactions
+    """
+
+    # Query spans in target window
+    spans_df = px.DataFrame(table='http_events', start_time=start_time)
+    # Format spans
+    spans_df = format_http_table(spans_df)
+    # Filter down to specified objects
+    spans_df = spans_df[px.contains(spans_df[k8s_object], object_name_filter)]
+    # Calculate latency, error-rate, throughput
+    let_df = calc_LET(spans_df, [k8s_object, 'timestamp'])
+    # Group metrics by K8s object
+    let_df[split_series_name] = let_df[k8s_object]
+    let_df = let_df[['time_', split_series_name, 'latency_p50', 'latency_p90',
+                    'latency_p99', 'error_rate', 'rps', 'bytes_per_s']]
+    px.display(let_df, 'test')
+
+    # Summarize data into overview table
+    summary_df = summarize_LET(let_df, [split_series_name])
+    px.display(let_df, 'test')
+    px.display(summary_df, 'summary_table')
+
+
+# ----------------------------------------------------------------
+# Utility functions:
+#
+# These are shared functions. We plan to support imports in v0.3,
+# which will allow these functions to be shared across multiple
+# scripts.
+# ----------------------------------------------------------------
+def format_events_table(spans_df, latency_ns_col):
+    """ Format data and add semantic columns in event tables
+
+    Unifies latency column to 'latency_ms', adds a binned
+    timestamp field to aggregate on, and adds the service
+    (k8s_object) as a semantic column.
+
+    Works on "mysql_events" and "http_events"
+
+    Args:
+    @df: the input events table
+    @latency_ns_col: the name of the latency column in @df.
+
+    Returns: formatted events DataFrame
+    """
+    spans_df.latency_ms = spans_df[latency_ns_col] / 1.0E6
+    spans_df = spans_df[spans_df['latency_ms'] < 10000.0]
+    spans_df.timestamp = px.bin(spans_df.time_, px.seconds(window_s))
+    spans_df[k8s_object] = spans_df.ctx[k8s_object]
+    return spans_df
+
+
+def format_http_table(spans_df):
+    """ Formats HTTP events tables
+
+    Unifies latency column to 'latency_ms', adds a binned
+    timestamp field to aggregate on, and adds the service
+    (k8s_object) as a semantic column.
+
+    Works on "mysql_events" and "http_events".
+
+    Args:
+    @spans_df: the input http_events table.
+
+    Returns: formatted HTTP events DataFrame.
+    """
+    spans_df = format_events_table(spans_df, 'http_resp_latency_ns')
+    spans_df.resp_size = px.length(spans_df.http_resp_body)
+    spans_df.failure = spans_df.http_resp_status >= 400
+
+    return spans_df
+
+
+def calc_LET(spans_df, groups):
+    # Aggregate values over the window.
+    spans_df = spans_df.groupby(groups).agg(
+        latency_quantiles=('latency_ms', px.quantiles),
+        error_rate_per_window=('failure', px.mean),
+        throughput_total=('latency_ms', px.count),
+        bytes_total=('resp_size', px.sum)
+    )
+
+    # Convert the aggregated values into rates.
+    spans_df.error_rate = spans_df.error_rate_per_window * spans_df.throughput_total / window_s
+    spans_df.rps = spans_df.throughput_total / window_s
+    spans_df.bytes_per_s = spans_df.bytes_total / window_s
+
+    # Rename timestamp to time_.
+    spans_df['time_'] = spans_df['timestamp']
+    # Extract the latency percentile values from the aggregate result.
+    spans_df.latency_p50 = px.pluck_float64(spans_df.latency_quantiles, 'p50')
+    spans_df.latency_p90 = px.pluck_float64(spans_df.latency_quantiles, 'p90')
+    spans_df.latency_p99 = px.pluck_float64(spans_df.latency_quantiles, 'p99')
+    return spans_df
+
+
+def summarize_LET(let_df, groups):
+    """ Aggregate LET values across all windows.
+
+    Args:
+    @let_df: the DataFrame with LET values.
+    @groups: the columns to group over.
+
+    Returns: The summary DF.
+    """
+
+    sum_df = let_df.groupby(groups).agg(
+        latency_p50=('latency_p50', px.mean),
+        latency_p90=('latency_p90', px.mean),
+        latency_p99=('latency_p99', px.mean),
+        rps=('rps', px.mean),
+        bytes_per_s=('bytes_per_s', px.mean),
+        error_rate=('error_rate', px.mean),
+    )
+    return sum_df
+
+
+# ----------------------------------------------------------------
+# Script needs to manually invoke top level function.
+#
+# In v0.2 we will support a new visualization spec that will
+# auto-execute the top-level function.
+# ----------------------------------------------------------------
+pod_stats()

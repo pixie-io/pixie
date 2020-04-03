@@ -1,0 +1,4 @@
+---
+short: Pod level latency, error-rate & rps.
+long: >-
+  List of Pods monitored by Pixie with their high level application metrics.

@@ -1,0 +1,168 @@
+{
+  "p50": {
+    "padding": 50,
+    "mark": "line",
+    "data": {
+      "name": "test"
+    },
+    "encoding": {
+      "color": {
+        "field": "k8s",
+        "type": "nominal"
+      },
+      "x": {
+        "field": "time_",
+        "type": "temporal",
+        "axis": {
+          "titleFontSize": 15,
+          "grid": false
+        },
+        "title": null
+      },
+      "y": {
+        "field": "latency_p50",
+        "type": "quantitative",
+        "axis": {
+          "titleFontSize": 15,
+          "gridOpacity": 0.1,
+          "gridColor": "#a6a8ae"
+        },
+        "title": "Latency (p50)"
+      }
+    },
+    "config": {
+      "line": {
+        "point": true
+      },
+      "scale": {
+        "useUnaggregatedDomain": true
+      }
+    }
+  },
+  "p99": {
+    "padding": 50,
+    "mark": "line",
+    "data": {
+      "name": "test"
+    },
+    "encoding": {
+      "color": {
+        "field": "k8s",
+        "type": "nominal"
+      },
+      "x": {
+        "field": "time_",
+        "type": "temporal",
+        "axis": {
+          "titleFontSize": 15,
+          "grid": false
+        },
+        "title": null
+      },
+      "y": {
+        "field": "latency_p99",
+        "type": "quantitative",
+        "axis": {
+          "titleFontSize": 15,
+          "gridOpacity": 0.1,
+          "gridColor": "#a6a8ae"
+        },
+        "title": "Latency (p99)"
+      }
+    },
+    "config": {
+      "line": {
+        "point": true
+      },
+      "scale": {
+        "useUnaggregatedDomain": true
+      }
+    }
+  },
+  "throughput": {
+    "padding": 50,
+    "mark": "line",
+    "data": {
+      "name": "test"
+    },
+    "encoding": {
+      "color": {
+        "field": "k8s",
+        "type": "nominal"
+      },
+      "x": {
+        "field": "time_",
+        "type": "temporal",
+        "axis": {
+          "titleFontSize": 15,
+          "grid": false
+        },
+        "title": null
+      },
+      "y": {
+        "field": "rps",
+        "type": "quantitative",
+        "axis": {
+          "titleFontSize": 15,
+          "gridOpacity": 0.1,
+          "gridColor": "#a6a8ae"
+        },
+        "title": "RPS"
+      }
+    },
+    "config": {
+      "line": {
+        "point": true
+      },
+      "scale": {
+        "useUnaggregatedDomain": true
+      }
+    }
+  },
+  "error_rate": {
+    "padding": 50,
+    "mark": "line",
+    "data": {
+      "name": "test"
+    },
+    "encoding": {
+      "color": {
+        "field": "k8s",
+        "type": "nominal"
+      },
+      "x": {
+        "field": "time_",
+        "type": "temporal",
+        "axis": {
+          "titleFontSize": 15,
+          "grid": false
+        },
+        "title": null
+      },
+      "y": {
+        "field": "error_rate",
+        "type": "quantitative",
+        "axis": {
+          "titleFontSize": 15,
+          "gridOpacity": 0.1,
+          "gridColor": "#a6a8ae"
+        },
+        "title": "Error Rate (%)"
+      }
+    },
+    "config": {
+      "line": {
+        "point": true
+      },
+      "scale": {
+        "useUnaggregatedDomain": true
+      }
+    }
+  },
+  "object_list": {
+    "mark": "table",
+    "data": {
+      "name": "summary_table"
+    }
+  }
+}
