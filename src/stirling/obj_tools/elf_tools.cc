@@ -1,5 +1,6 @@
 #include "src/stirling/obj_tools/elf_tools.h"
 
+#include <absl/container/flat_hash_set.h>
 #include <set>
 #include <utility>
 
@@ -24,6 +25,8 @@ struct LowercaseHex {
 StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(const std::string& binary_path,
                                                        std::string_view debug_file_dir) {
   auto elf_reader = std::unique_ptr<ElfReader>(new ElfReader);
+
+  elf_reader->binary_path_ = binary_path;
 
   if (!elf_reader->elf_reader_.load(binary_path, /* skip_segments */ true)) {
     return error::Internal("Can't find or process ELF file $0", binary_path);
@@ -115,92 +118,88 @@ StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(const std::string& binary
   return elf_reader;
 }
 
-std::vector<std::string> ElfReader::ListSymbols(std::string_view search_symbol,
-                                                SymbolMatchType match_type) {
-  std::vector<std::string> symbol_names;
-  std::set<ELFIO::Elf64_Addr> symbol_addrs;
-
-  // Scan all sections to find the symbol table (SHT_SYMTAB)
-  ELFIO::Elf_Half sec_num = elf_reader_.sections.size();
-  for (int i = 0; i < sec_num; ++i) {
+StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
+    std::string_view search_symbol, SymbolMatchType match_type, int symbol_type) {
+  ELFIO::section* symtab_section = nullptr;
+  for (int i = 0; i < elf_reader_.sections.size(); ++i) {
     ELFIO::section* psec = elf_reader_.sections[i];
-    if (psec->get_type() != SHT_SYMTAB) {
+    if (psec->get_type() == SHT_SYMTAB) {
+      symtab_section = psec;
+      break;
+    }
+  }
+  if (symtab_section == nullptr) {
+    return error::NotFound("Could not find symtab section in binary=$0", binary_path_);
+  }
+
+  std::vector<SymbolInfo> symbol_infos;
+
+  // Scan all symbols inside the symbol table.
+  const ELFIO::symbol_section_accessor symbols(elf_reader_, symtab_section);
+  for (unsigned int j = 0; j < symbols.get_symbols_num(); ++j) {
+    std::string name;
+    ELFIO::Elf64_Addr addr = 0;
+    ELFIO::Elf_Xword size = 0;
+    unsigned char bind = 0;
+    unsigned char type = STT_NOTYPE;
+    ELFIO::Elf_Half section_index;
+    unsigned char other;
+    symbols.get_symbol(j, name, addr, size, bind, type, section_index, other);
+
+    if (symbol_type != -1 && type != symbol_type) {
       continue;
     }
 
-    // Scan all symbols inside the symbol table.
-    const ELFIO::symbol_section_accessor symbols(elf_reader_, psec);
-    for (unsigned int j = 0; j < symbols.get_symbols_num(); ++j) {
-      std::string name;
-      ELFIO::Elf64_Addr addr;
-      ELFIO::Elf_Xword size;
-      unsigned char bind;
-      unsigned char type = STT_NOTYPE;
-      ELFIO::Elf_Half section_index;
-      unsigned char other;
-      symbols.get_symbol(j, name, addr, size, bind, type, section_index, other);
+    // Check for symbol match.
+    bool match = false;
+    switch (match_type) {
+      case SymbolMatchType::kExact:
+        match = (name == search_symbol);
+        break;
+      case SymbolMatchType::kSuffix:
+        match = absl::EndsWith(name, search_symbol);
+        break;
+      case SymbolMatchType::kSubstr:
+        match = (name.find(search_symbol) != std::string::npos);
+        break;
+    }
+    if (!match) {
+      continue;
+    }
+    symbol_infos.push_back({std::move(name), type, addr, size});
+  }
+  return symbol_infos;
+}
 
-      // Only consider function symbols.
-      if (type != STT_FUNC) {
-        continue;
-      }
+std::vector<std::string> ElfReader::ListSymbols(std::string_view search_symbol,
+                                                SymbolMatchType match_type) {
+  auto symbol_infos_or = SearchSymbols(search_symbol, match_type, STT_FUNC);
+  if (!symbol_infos_or.ok()) {
+    return {};
+  }
 
-      // Check for symbol match.
-      bool match = false;
-      switch (match_type) {
-        case SymbolMatchType::kExact:
-          match = (name == search_symbol);
-          break;
-        case SymbolMatchType::kSuffix:
-          match = absl::EndsWith(name, search_symbol);
-          break;
-        case SymbolMatchType::kSubstr:
-          match = (name.find(search_symbol) != std::string::npos);
-          break;
-      }
+  std::vector<std::string> symbol_names;
+  absl::flat_hash_set<uint64_t> symbol_addrs;
 
-      if (!match) {
-        continue;
-      }
-
-      // Symbol address has already been seen.
-      // Note that multiple symbols can point to the same address.
-      // But symbol names cannot be duplicate.
-      if (symbol_addrs.find(addr) != symbol_addrs.end()) {
-        continue;
-      }
-      symbol_addrs.insert(addr);
-
-      symbol_names.push_back(std::move(name));
+  auto symbol_infos = symbol_infos_or.ConsumeValueOrDie();
+  for (auto& symbol_info : symbol_infos) {
+    // Symbol address has already been seen.
+    // Note that multiple symbols can point to the same address.
+    // But symbol names cannot be duplicate.
+    if (symbol_addrs.insert(symbol_info.address).second) {
+      symbol_names.push_back(std::move(symbol_info.name));
     }
   }
   return symbol_names;
 }
 
 std::optional<int64_t> ElfReader::SymbolAddress(std::string_view symbol) {
-  // Scan all sections to find the symbol table (SHT_SYMTAB)
-  ELFIO::Elf_Half sec_num = elf_reader_.sections.size();
-  for (int i = 0; i < sec_num; ++i) {
-    ELFIO::section* psec = elf_reader_.sections[i];
-    if (psec->get_type() != SHT_SYMTAB) {
-      continue;
-    }
-
-    // Scan all symbols inside the symbol table.
-    const ELFIO::symbol_section_accessor symbols(elf_reader_, psec);
-    for (unsigned int j = 0; j < symbols.get_symbols_num(); ++j) {
-      std::string name;
-      ELFIO::Elf64_Addr addr = 0;
-      ELFIO::Elf_Xword size;
-      unsigned char bind;
-      unsigned char type;
-      ELFIO::Elf_Half section_index;
-      unsigned char other;
-      symbols.get_symbol(j, name, addr, size, bind, type, section_index, other);
-
-      if (symbol == name) {
-        return addr;
-      }
+  auto symbol_infos_or = SearchSymbols(symbol, SymbolMatchType::kExact);
+  if (symbol_infos_or.ok()) {
+    const auto& symbol_infos = symbol_infos_or.ValueOrDie();
+    if (!symbol_infos.empty()) {
+      DCHECK_EQ(symbol_infos.size(), 1);
+      return symbol_infos.front().address;
     }
   }
   return {};

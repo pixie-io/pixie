@@ -53,7 +53,23 @@ class ElfReader {
   std::optional<int64_t> SymbolAddress(std::string_view symbol);
 
  private:
+  struct SymbolInfo {
+    std::string name;
+    int type = -1;
+    uint64_t address = -1;
+    uint64_t size = -1;
+  };
+
   ElfReader() = default;
+
+  /**
+   * Returns a list of symbol names that meets the search criteria.
+   * Use -1 for symbol_type to search all symbol types.
+   */
+  StatusOr<std::vector<SymbolInfo>> SearchSymbols(std::string_view pattern,
+                                                  SymbolMatchType match_type, int symbol_type = -1);
+
+  std::string binary_path_;
 
   // Set up an elf reader, so we can extract debug symbols.
   ELFIO::elfio elf_reader_;
