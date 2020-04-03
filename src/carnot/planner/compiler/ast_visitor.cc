@@ -70,11 +70,11 @@ Status ASTVisitorImpl::CreateBoolLiterals() {
   bool_ast->line = 0;
   bool_ast->column = 0;
   PL_ASSIGN_OR_RETURN(auto true_ir, ir_graph_->CreateNode<BoolIR>(bool_ast, true));
-  PL_ASSIGN_OR_RETURN(auto false_ir, ir_graph_->CreateNode<BoolIR>(bool_ast, false));
   PL_ASSIGN_OR_RETURN(auto true_object, ExprObject::Create(true_ir, this));
-  var_table_->Add(ASTVisitorImpl::kFalseName, true_object);
+  var_table_->Add(ASTVisitorImpl::kTrueName, true_object);
+  PL_ASSIGN_OR_RETURN(auto false_ir, ir_graph_->CreateNode<BoolIR>(bool_ast, false));
   PL_ASSIGN_OR_RETURN(auto false_object, ExprObject::Create(false_ir, this));
-  var_table_->Add(ASTVisitorImpl::kTrueName, false_object);
+  var_table_->Add(ASTVisitorImpl::kFalseName, false_object);
   return Status::OK();
 }
 
@@ -582,7 +582,7 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessSubscriptCall(const pypa::AstSubscr
   PL_RETURN_IF_ERROR(ValidateSubscriptValue(node->value, op_context));
   PL_ASSIGN_OR_RETURN(QLObjectPtr pyobject, Process(node->value, op_context));
   if (!pyobject->HasSubscriptMethod()) {
-    return pyobject->CreateError("object is not subscriptable");
+    return pyobject->CreateError("$0 is not subscriptable", pyobject->name());
   }
   PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> func_object, pyobject->GetSubscriptMethod());
 
