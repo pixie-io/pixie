@@ -20,24 +20,26 @@ export interface Placement {
   [key: string]: Chart;
 }
 
-export const GRID_WIDTH = 10;
+export const GRID_WIDTH = 12;
+export const DEFAULT_HEIGHT = 3;
 
 // Tiles a grid with the VegaSpec keys.
 function layoutDefaultGrid(vegaSpec: VisualizationSpecMap): Placement {
   const placement = {};
   let curX: number = 0;
   let curY: number = 0;
+  const elemWidth = GRID_WIDTH / 2;
   Object.keys(vegaSpec).forEach((key) => {
     // If we exceed the current width, move to the next row.
     if (curX >= GRID_WIDTH) {
       curX = 0;
-      ++curY;
+      curY += DEFAULT_HEIGHT;
     }
-    const pos: ChartPosition = { x: curX, y: curY, w: 1, h: 1 };
+    const pos: ChartPosition = { x: curX, y: curY, w: elemWidth, h: DEFAULT_HEIGHT };
     // Create a chart with the default description.
     placement[key] = { description: '', position: pos };
     // Move the next position to the right.
-    ++curX;
+    curX += elemWidth;
   });
   return placement;
 }
