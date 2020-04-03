@@ -107,7 +107,7 @@ func init() {
 	DeployCmd.Flags().StringP("use_version", "v", "", "Pixie version to deploy")
 	viper.BindPFlag("use_version", DeployCmd.Flags().Lookup("use_version"))
 
-	DeployCmd.Flags().BoolP("check", "c", false, "Check whether the cluster can run Pixie")
+	DeployCmd.Flags().BoolP("check", "c", true, "Check whether the cluster can run Pixie")
 	viper.BindPFlag("check", DeployCmd.Flags().Lookup("check"))
 
 	DeployCmd.Flags().StringP("credentials_file", "f", "", "Location of the Pixie credentials file")
@@ -277,9 +277,8 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 				Properties: analytics.NewProperties().
 					Set("error", err.Error()),
 			})
-			log.Fatalln(err)
+			log.WithError(err).Fatalln("Check pre-check has failed. To by pass pass in --check=false.")
 		}
-		return
 	}
 	namespace, _ := cmd.Flags().GetString("namespace")
 	credsFile, _ := cmd.Flags().GetString("credentials_file")
