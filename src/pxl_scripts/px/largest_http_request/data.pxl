@@ -1,7 +1,5 @@
 import px
 
-False = 0 == 1
-True = 1 == 1
 ###############################################################
 # Script filters the largest response from the filter you pass in.
 ###############################################################

@@ -11,8 +11,6 @@ Notes:
 '''
 import px
 
-False = 0 == 1
-True = 1 == 1
 # ----------------------------------------------------------------
 # The following variables can be edited to specify time window and
 # service(s) to monitor.

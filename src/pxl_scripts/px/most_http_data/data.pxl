@@ -1,7 +1,5 @@
 import px
 
-False = 0 == 1
-True = 1 == 1
 ###############################################################
 # Script returns the (pod, request_path) pair that has the most data
 # flowing from it.
