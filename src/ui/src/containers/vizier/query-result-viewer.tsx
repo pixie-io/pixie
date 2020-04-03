@@ -66,27 +66,23 @@ function getColumnTypeName(type: DataType): string {
   }
 }
 
-function extractData(colType: string, col: any, rowIdx): string {
+function formatData(colType: string, data): string {
   // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
   switch (colType) {
     case 'STRING':
-      return col.stringData.data[rowIdx];
+      return data;
     case 'TIME64NS':
-      // Time is stored as a float b/c proto JSON
-      // so we can easily just divide by 1000 and convert to time.
-      const data = col.time64nsData.data[rowIdx];
-      return new Date(parseFloat(data) / 1000000).toLocaleString();
+      return new Date(data).toLocaleString();
     case 'DURATION64NS':
-      return formatInt64Data(col.duration64nsData.data[rowIdx]);
+      return formatInt64Data(data);
     case 'INT64':
-      return formatInt64Data(col.int64Data.data[rowIdx]);
+      return formatInt64Data(data);
     case 'UINT128':
-      const v = col.uint128Data.data[rowIdx];
-      return formatUInt128(v.high, v.low);
+      return data;
     case 'FLOAT64':
-      return FormatData.formatFloat64Data(col.float64Data.data[rowIdx]);
+      return FormatData.formatFloat64Data(data);
     case 'BOOLEAN':
-      return col.booleanData.data[rowIdx] ? 'true' : 'false';
+      return data ? 'true' : 'false';
     default:
       throw (new Error('Unknown data type: ' + colType));
   }
@@ -115,16 +111,18 @@ function computeColumnWidthRatios(relation: Relation, parsedTable: any): any {
 function ResultCellRenderer(cellData: any, columnInfo: TableColumnInfo) {
   const colType = columnInfo.type;
   const colName = columnInfo.label;
-  if (colType === 'TIME64NS') {
-    return new Date(cellData).toLocaleString();
-  }
+  const data = formatData(colType, cellData);
 
   if (FormatData.looksLikeLatencyCol(colName, colType)) {
-    return FormatData.LatencyData(cellData);
+    return FormatData.LatencyData(data);
   }
 
   if (FormatData.looksLikeAlertCol(colName, colType)) {
-    return FormatData.AlertData(cellData);
+    return FormatData.AlertData(data);
+  }
+
+  if (colType !== 'STRING') {
+    return data;
   }
 
   try {
@@ -133,7 +131,7 @@ function ResultCellRenderer(cellData: any, columnInfo: TableColumnInfo) {
       data={jsonObj}
     />;
   } catch {
-    return cellData;
+    return data;
   }
 }
 

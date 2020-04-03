@@ -33,7 +33,7 @@ export interface ScrollableTableProps {
   expandable?: boolean;
   resizableCols?: boolean;
   expandRenderer?: (rowData: any) => JSX.Element;
-  cellRenderer?: (cellData: any, columnInfo: TableColumnInfo) => JSX.Element;
+  cellRenderer?: (cellData: any, columnInfo: TableColumnInfo) => React.ReactNode;
   width: number;
   height: number;
 }
