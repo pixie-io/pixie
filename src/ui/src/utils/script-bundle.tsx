@@ -14,9 +14,13 @@ export interface Script {
 }
 
 export function GetPxScripts(): Promise<Script[]> {
+  // Temporary workaround to get bundle path from localstorage. This is
+  // needed to easily test changes until we have script persistence.
+  const bundlePath = localStorage.getItem('px-custom-bundle-path') ||
+    (isProd() ? PROD_SCRIPTS : STAGING_SCRIPTS);
   return Axios({
     method: 'get',
-    url: isProd() ? PROD_SCRIPTS : STAGING_SCRIPTS,
+    url: bundlePath,
   }).then((response) => {
     return Object.keys(response.data.scripts).map((k) => {
       const s = response.data.scripts[k];
