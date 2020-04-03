@@ -62,13 +62,14 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
 
   React.useEffect(() => {
     GetPxScripts().then((examples) => {
-      setCompletions(examples.map((s) => ({
+      const valid = examples.filter((s) => s.code && s.vis && s.placement);
+      setCompletions(valid.map((s) => ({
         type: 'item',
         id: s.id,
         title: s.id,
         description: s.description,
       })));
-      setScriptsMap(new Map(examples.map((s) => [s.id, s])));
+      setScriptsMap(new Map(valid.map((s) => [s.id, s])));
     });
   }, []);
 
