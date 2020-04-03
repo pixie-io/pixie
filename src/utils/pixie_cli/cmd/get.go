@@ -32,7 +32,7 @@ var GetPEMsCmd = &cobra.Command{
 		format, _ := cmd.Flags().GetString("output")
 		format = strings.ToLower(format)
 		v := mustConnectDefaultVizier(cloudAddr)
-		q := `px.display(px.GetAgentStatus())`
+		q := "import px\npx.display(px.GetAgentStatus())"
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
