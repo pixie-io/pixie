@@ -499,6 +499,86 @@ func (m *MockScriptMgrClient) EXPECT() *MockScriptMgrClientMockRecorder {
 	return m.recorder
 }
 
+// GetLiveViews mocks base method
+func (m *MockScriptMgrClient) GetLiveViews(ctx context.Context, in *cloudapipb.GetLiveViewsReq, opts ...grpc.CallOption) (*cloudapipb.GetLiveViewsResp, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetLiveViews", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.GetLiveViewsResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLiveViews indicates an expected call of GetLiveViews
+func (mr *MockScriptMgrClientMockRecorder) GetLiveViews(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViews", reflect.TypeOf((*MockScriptMgrClient)(nil).GetLiveViews), varargs...)
+}
+
+// GetLiveViewContents mocks base method
+func (m *MockScriptMgrClient) GetLiveViewContents(ctx context.Context, in *cloudapipb.GetLiveViewContentsReq, opts ...grpc.CallOption) (*cloudapipb.GetLiveViewContentsResp, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetLiveViewContents", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.GetLiveViewContentsResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLiveViewContents indicates an expected call of GetLiveViewContents
+func (mr *MockScriptMgrClientMockRecorder) GetLiveViewContents(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViewContents", reflect.TypeOf((*MockScriptMgrClient)(nil).GetLiveViewContents), varargs...)
+}
+
+// GetScripts mocks base method
+func (m *MockScriptMgrClient) GetScripts(ctx context.Context, in *cloudapipb.GetScriptsReq, opts ...grpc.CallOption) (*cloudapipb.GetScriptsResp, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetScripts", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.GetScriptsResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetScripts indicates an expected call of GetScripts
+func (mr *MockScriptMgrClientMockRecorder) GetScripts(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScripts", reflect.TypeOf((*MockScriptMgrClient)(nil).GetScripts), varargs...)
+}
+
+// GetScriptContents mocks base method
+func (m *MockScriptMgrClient) GetScriptContents(ctx context.Context, in *cloudapipb.GetScriptContentsReq, opts ...grpc.CallOption) (*cloudapipb.GetScriptContentsResp, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetScriptContents", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.GetScriptContentsResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetScriptContents indicates an expected call of GetScriptContents
+func (mr *MockScriptMgrClientMockRecorder) GetScriptContents(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScriptContents", reflect.TypeOf((*MockScriptMgrClient)(nil).GetScriptContents), varargs...)
+}
+
 // MockScriptMgrServer is a mock of ScriptMgrServer interface
 type MockScriptMgrServer struct {
 	ctrl     *gomock.Controller
@@ -520,6 +600,66 @@ func NewMockScriptMgrServer(ctrl *gomock.Controller) *MockScriptMgrServer {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockScriptMgrServer) EXPECT() *MockScriptMgrServerMockRecorder {
 	return m.recorder
+}
+
+// GetLiveViews mocks base method
+func (m *MockScriptMgrServer) GetLiveViews(arg0 context.Context, arg1 *cloudapipb.GetLiveViewsReq) (*cloudapipb.GetLiveViewsResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLiveViews", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.GetLiveViewsResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLiveViews indicates an expected call of GetLiveViews
+func (mr *MockScriptMgrServerMockRecorder) GetLiveViews(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViews", reflect.TypeOf((*MockScriptMgrServer)(nil).GetLiveViews), arg0, arg1)
+}
+
+// GetLiveViewContents mocks base method
+func (m *MockScriptMgrServer) GetLiveViewContents(arg0 context.Context, arg1 *cloudapipb.GetLiveViewContentsReq) (*cloudapipb.GetLiveViewContentsResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLiveViewContents", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.GetLiveViewContentsResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLiveViewContents indicates an expected call of GetLiveViewContents
+func (mr *MockScriptMgrServerMockRecorder) GetLiveViewContents(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViewContents", reflect.TypeOf((*MockScriptMgrServer)(nil).GetLiveViewContents), arg0, arg1)
+}
+
+// GetScripts mocks base method
+func (m *MockScriptMgrServer) GetScripts(arg0 context.Context, arg1 *cloudapipb.GetScriptsReq) (*cloudapipb.GetScriptsResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetScripts", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.GetScriptsResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetScripts indicates an expected call of GetScripts
+func (mr *MockScriptMgrServerMockRecorder) GetScripts(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScripts", reflect.TypeOf((*MockScriptMgrServer)(nil).GetScripts), arg0, arg1)
+}
+
+// GetScriptContents mocks base method
+func (m *MockScriptMgrServer) GetScriptContents(arg0 context.Context, arg1 *cloudapipb.GetScriptContentsReq) (*cloudapipb.GetScriptContentsResp, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetScriptContents", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.GetScriptContentsResp)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetScriptContents indicates an expected call of GetScriptContents
+func (mr *MockScriptMgrServerMockRecorder) GetScriptContents(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScriptContents", reflect.TypeOf((*MockScriptMgrServer)(nil).GetScriptContents), arg0, arg1)
 }
 
 // MockAutocompleteServiceClient is a mock of AutocompleteServiceClient interface

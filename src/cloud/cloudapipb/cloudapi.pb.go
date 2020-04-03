@@ -1115,6 +1115,476 @@ func (m *UpdateClusterVizierConfigResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_UpdateClusterVizierConfigResponse proto.InternalMessageInfo
 
+type GetLiveViewsReq struct {
+}
+
+func (m *GetLiveViewsReq) Reset()      { *m = GetLiveViewsReq{} }
+func (*GetLiveViewsReq) ProtoMessage() {}
+func (*GetLiveViewsReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{20}
+}
+func (m *GetLiveViewsReq) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetLiveViewsReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetLiveViewsReq.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetLiveViewsReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetLiveViewsReq.Merge(m, src)
+}
+func (m *GetLiveViewsReq) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetLiveViewsReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetLiveViewsReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetLiveViewsReq proto.InternalMessageInfo
+
+type LiveViewMetadata struct {
+	ID   string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Desc string `protobuf:"bytes,2,opt,name=desc,proto3" json:"desc,omitempty"`
+	Name string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (m *LiveViewMetadata) Reset()      { *m = LiveViewMetadata{} }
+func (*LiveViewMetadata) ProtoMessage() {}
+func (*LiveViewMetadata) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{21}
+}
+func (m *LiveViewMetadata) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *LiveViewMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_LiveViewMetadata.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *LiveViewMetadata) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_LiveViewMetadata.Merge(m, src)
+}
+func (m *LiveViewMetadata) XXX_Size() int {
+	return m.Size()
+}
+func (m *LiveViewMetadata) XXX_DiscardUnknown() {
+	xxx_messageInfo_LiveViewMetadata.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_LiveViewMetadata proto.InternalMessageInfo
+
+func (m *LiveViewMetadata) GetID() string {
+	if m != nil {
+		return m.ID
+	}
+	return ""
+}
+
+func (m *LiveViewMetadata) GetDesc() string {
+	if m != nil {
+		return m.Desc
+	}
+	return ""
+}
+
+func (m *LiveViewMetadata) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+type GetLiveViewsResp struct {
+	LiveViews []*LiveViewMetadata `protobuf:"bytes,1,rep,name=live_views,json=liveViews,proto3" json:"live_views,omitempty"`
+}
+
+func (m *GetLiveViewsResp) Reset()      { *m = GetLiveViewsResp{} }
+func (*GetLiveViewsResp) ProtoMessage() {}
+func (*GetLiveViewsResp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{22}
+}
+func (m *GetLiveViewsResp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetLiveViewsResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetLiveViewsResp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetLiveViewsResp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetLiveViewsResp.Merge(m, src)
+}
+func (m *GetLiveViewsResp) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetLiveViewsResp) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetLiveViewsResp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetLiveViewsResp proto.InternalMessageInfo
+
+func (m *GetLiveViewsResp) GetLiveViews() []*LiveViewMetadata {
+	if m != nil {
+		return m.LiveViews
+	}
+	return nil
+}
+
+type GetLiveViewContentsReq struct {
+	LiveViewID string `protobuf:"bytes,1,opt,name=live_view_id,json=liveViewId,proto3" json:"live_view_id,omitempty"`
+}
+
+func (m *GetLiveViewContentsReq) Reset()      { *m = GetLiveViewContentsReq{} }
+func (*GetLiveViewContentsReq) ProtoMessage() {}
+func (*GetLiveViewContentsReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{23}
+}
+func (m *GetLiveViewContentsReq) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetLiveViewContentsReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetLiveViewContentsReq.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetLiveViewContentsReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetLiveViewContentsReq.Merge(m, src)
+}
+func (m *GetLiveViewContentsReq) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetLiveViewContentsReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetLiveViewContentsReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetLiveViewContentsReq proto.InternalMessageInfo
+
+func (m *GetLiveViewContentsReq) GetLiveViewID() string {
+	if m != nil {
+		return m.LiveViewID
+	}
+	return ""
+}
+
+type GetLiveViewContentsResp struct {
+	Metadata    *LiveViewMetadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	PxlContents string            `protobuf:"bytes,2,opt,name=pxl_contents,json=pxlContents,proto3" json:"pxl_contents,omitempty"`
+}
+
+func (m *GetLiveViewContentsResp) Reset()      { *m = GetLiveViewContentsResp{} }
+func (*GetLiveViewContentsResp) ProtoMessage() {}
+func (*GetLiveViewContentsResp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{24}
+}
+func (m *GetLiveViewContentsResp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetLiveViewContentsResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetLiveViewContentsResp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetLiveViewContentsResp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetLiveViewContentsResp.Merge(m, src)
+}
+func (m *GetLiveViewContentsResp) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetLiveViewContentsResp) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetLiveViewContentsResp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetLiveViewContentsResp proto.InternalMessageInfo
+
+func (m *GetLiveViewContentsResp) GetMetadata() *LiveViewMetadata {
+	if m != nil {
+		return m.Metadata
+	}
+	return nil
+}
+
+func (m *GetLiveViewContentsResp) GetPxlContents() string {
+	if m != nil {
+		return m.PxlContents
+	}
+	return ""
+}
+
+type GetScriptsReq struct {
+}
+
+func (m *GetScriptsReq) Reset()      { *m = GetScriptsReq{} }
+func (*GetScriptsReq) ProtoMessage() {}
+func (*GetScriptsReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{25}
+}
+func (m *GetScriptsReq) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetScriptsReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetScriptsReq.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetScriptsReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetScriptsReq.Merge(m, src)
+}
+func (m *GetScriptsReq) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetScriptsReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetScriptsReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetScriptsReq proto.InternalMessageInfo
+
+type ScriptMetadata struct {
+	ID          string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Desc        string `protobuf:"bytes,2,opt,name=desc,proto3" json:"desc,omitempty"`
+	Name        string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	HasLiveView bool   `protobuf:"varint,4,opt,name=has_live_view,json=hasLiveView,proto3" json:"has_live_view,omitempty"`
+}
+
+func (m *ScriptMetadata) Reset()      { *m = ScriptMetadata{} }
+func (*ScriptMetadata) ProtoMessage() {}
+func (*ScriptMetadata) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{26}
+}
+func (m *ScriptMetadata) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ScriptMetadata) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ScriptMetadata.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ScriptMetadata) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ScriptMetadata.Merge(m, src)
+}
+func (m *ScriptMetadata) XXX_Size() int {
+	return m.Size()
+}
+func (m *ScriptMetadata) XXX_DiscardUnknown() {
+	xxx_messageInfo_ScriptMetadata.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ScriptMetadata proto.InternalMessageInfo
+
+func (m *ScriptMetadata) GetID() string {
+	if m != nil {
+		return m.ID
+	}
+	return ""
+}
+
+func (m *ScriptMetadata) GetDesc() string {
+	if m != nil {
+		return m.Desc
+	}
+	return ""
+}
+
+func (m *ScriptMetadata) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *ScriptMetadata) GetHasLiveView() bool {
+	if m != nil {
+		return m.HasLiveView
+	}
+	return false
+}
+
+type GetScriptsResp struct {
+	Scripts []*ScriptMetadata `protobuf:"bytes,1,rep,name=scripts,proto3" json:"scripts,omitempty"`
+}
+
+func (m *GetScriptsResp) Reset()      { *m = GetScriptsResp{} }
+func (*GetScriptsResp) ProtoMessage() {}
+func (*GetScriptsResp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{27}
+}
+func (m *GetScriptsResp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetScriptsResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetScriptsResp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetScriptsResp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetScriptsResp.Merge(m, src)
+}
+func (m *GetScriptsResp) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetScriptsResp) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetScriptsResp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetScriptsResp proto.InternalMessageInfo
+
+func (m *GetScriptsResp) GetScripts() []*ScriptMetadata {
+	if m != nil {
+		return m.Scripts
+	}
+	return nil
+}
+
+type GetScriptContentsReq struct {
+	ScriptID string `protobuf:"bytes,1,opt,name=script_id,json=scriptId,proto3" json:"script_id,omitempty"`
+}
+
+func (m *GetScriptContentsReq) Reset()      { *m = GetScriptContentsReq{} }
+func (*GetScriptContentsReq) ProtoMessage() {}
+func (*GetScriptContentsReq) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{28}
+}
+func (m *GetScriptContentsReq) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetScriptContentsReq) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetScriptContentsReq.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetScriptContentsReq) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetScriptContentsReq.Merge(m, src)
+}
+func (m *GetScriptContentsReq) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetScriptContentsReq) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetScriptContentsReq.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetScriptContentsReq proto.InternalMessageInfo
+
+func (m *GetScriptContentsReq) GetScriptID() string {
+	if m != nil {
+		return m.ScriptID
+	}
+	return ""
+}
+
+type GetScriptContentsResp struct {
+	Metadata *ScriptMetadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Contents string          `protobuf:"bytes,2,opt,name=contents,proto3" json:"contents,omitempty"`
+}
+
+func (m *GetScriptContentsResp) Reset()      { *m = GetScriptContentsResp{} }
+func (*GetScriptContentsResp) ProtoMessage() {}
+func (*GetScriptContentsResp) Descriptor() ([]byte, []int) {
+	return fileDescriptor_c309ce7890afda1a, []int{29}
+}
+func (m *GetScriptContentsResp) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetScriptContentsResp) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetScriptContentsResp.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetScriptContentsResp) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetScriptContentsResp.Merge(m, src)
+}
+func (m *GetScriptContentsResp) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetScriptContentsResp) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetScriptContentsResp.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetScriptContentsResp proto.InternalMessageInfo
+
+func (m *GetScriptContentsResp) GetMetadata() *ScriptMetadata {
+	if m != nil {
+		return m.Metadata
+	}
+	return nil
+}
+
+func (m *GetScriptContentsResp) GetContents() string {
+	if m != nil {
+		return m.Contents
+	}
+	return ""
+}
+
 type AutocompleteRequest struct {
 	Input     string                 `protobuf:"bytes,1,opt,name=input,proto3" json:"input,omitempty"`
 	CursorPos int64                  `protobuf:"varint,2,opt,name=cursor_pos,json=cursorPos,proto3" json:"cursor_pos,omitempty"`
@@ -1124,7 +1594,7 @@ type AutocompleteRequest struct {
 func (m *AutocompleteRequest) Reset()      { *m = AutocompleteRequest{} }
 func (*AutocompleteRequest) ProtoMessage() {}
 func (*AutocompleteRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c309ce7890afda1a, []int{20}
+	return fileDescriptor_c309ce7890afda1a, []int{30}
 }
 func (m *AutocompleteRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1183,7 +1653,7 @@ type TabSuggestion struct {
 func (m *TabSuggestion) Reset()      { *m = TabSuggestion{} }
 func (*TabSuggestion) ProtoMessage() {}
 func (*TabSuggestion) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c309ce7890afda1a, []int{21}
+	return fileDescriptor_c309ce7890afda1a, []int{31}
 }
 func (m *TabSuggestion) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1242,7 +1712,7 @@ type AutocompleteSuggestion struct {
 func (m *AutocompleteSuggestion) Reset()      { *m = AutocompleteSuggestion{} }
 func (*AutocompleteSuggestion) ProtoMessage() {}
 func (*AutocompleteSuggestion) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c309ce7890afda1a, []int{22}
+	return fileDescriptor_c309ce7890afda1a, []int{32}
 }
 func (m *AutocompleteSuggestion) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1301,7 +1771,7 @@ type AutocompleteResponse struct {
 func (m *AutocompleteResponse) Reset()      { *m = AutocompleteResponse{} }
 func (*AutocompleteResponse) ProtoMessage() {}
 func (*AutocompleteResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_c309ce7890afda1a, []int{23}
+	return fileDescriptor_c309ce7890afda1a, []int{33}
 }
 func (m *AutocompleteResponse) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -1376,6 +1846,16 @@ func init() {
 	proto.RegisterType((*GetClusterConnectionInfoResponse)(nil), "pl.cloudapi.GetClusterConnectionInfoResponse")
 	proto.RegisterType((*UpdateClusterVizierConfigRequest)(nil), "pl.cloudapi.UpdateClusterVizierConfigRequest")
 	proto.RegisterType((*UpdateClusterVizierConfigResponse)(nil), "pl.cloudapi.UpdateClusterVizierConfigResponse")
+	proto.RegisterType((*GetLiveViewsReq)(nil), "pl.cloudapi.GetLiveViewsReq")
+	proto.RegisterType((*LiveViewMetadata)(nil), "pl.cloudapi.LiveViewMetadata")
+	proto.RegisterType((*GetLiveViewsResp)(nil), "pl.cloudapi.GetLiveViewsResp")
+	proto.RegisterType((*GetLiveViewContentsReq)(nil), "pl.cloudapi.GetLiveViewContentsReq")
+	proto.RegisterType((*GetLiveViewContentsResp)(nil), "pl.cloudapi.GetLiveViewContentsResp")
+	proto.RegisterType((*GetScriptsReq)(nil), "pl.cloudapi.GetScriptsReq")
+	proto.RegisterType((*ScriptMetadata)(nil), "pl.cloudapi.ScriptMetadata")
+	proto.RegisterType((*GetScriptsResp)(nil), "pl.cloudapi.GetScriptsResp")
+	proto.RegisterType((*GetScriptContentsReq)(nil), "pl.cloudapi.GetScriptContentsReq")
+	proto.RegisterType((*GetScriptContentsResp)(nil), "pl.cloudapi.GetScriptContentsResp")
 	proto.RegisterType((*AutocompleteRequest)(nil), "pl.cloudapi.AutocompleteRequest")
 	proto.RegisterType((*TabSuggestion)(nil), "pl.cloudapi.TabSuggestion")
 	proto.RegisterType((*AutocompleteSuggestion)(nil), "pl.cloudapi.AutocompleteSuggestion")
@@ -1387,114 +1867,134 @@ func init() {
 }
 
 var fileDescriptor_c309ce7890afda1a = []byte{
-	// 1701 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x58, 0xcd, 0x6f, 0xdb, 0xd8,
-	0x11, 0x17, 0x25, 0xc7, 0xb5, 0x46, 0xb2, 0xad, 0x7d, 0xce, 0x87, 0x56, 0x9b, 0xca, 0x0a, 0x5d,
-	0x20, 0x46, 0xda, 0x95, 0x11, 0xed, 0xae, 0x5b, 0x20, 0xe8, 0x07, 0x2d, 0x09, 0xb1, 0x36, 0x8e,
-	0x62, 0x90, 0xb4, 0x77, 0xb7, 0x05, 0x4a, 0x3c, 0x91, 0xcf, 0xd2, 0x6b, 0x28, 0x92, 0xe5, 0x7b,
-	0xcc, 0xc6, 0x8b, 0x1e, 0x7a, 0x69, 0x7b, 0xe9, 0xa1, 0x45, 0xef, 0x3d, 0x2f, 0xd0, 0x3f, 0xa3,
-	0x28, 0xda, 0x63, 0x8e, 0x7b, 0x0a, 0x1a, 0xe5, 0xd2, 0x63, 0xfe, 0x84, 0x82, 0x8f, 0x1f, 0x22,
-	0x6d, 0xc9, 0x9b, 0xec, 0x45, 0xe0, 0xcc, 0xfb, 0xcd, 0xcc, 0x8f, 0xf3, 0x86, 0x33, 0x03, 0xc1,
-	0x0e, 0xf3, 0xcd, 0x3d, 0xd3, 0x76, 0x03, 0x2b, 0xfa, 0xc5, 0x1e, 0xf5, 0x46, 0xe9, 0x63, 0xdb,
-	0xf3, 0x5d, 0xee, 0xa2, 0x8a, 0x67, 0xb7, 0x13, 0x55, 0xe3, 0xc3, 0x31, 0xe5, 0x93, 0x60, 0xd4,
-	0x36, 0xdd, 0xe9, 0xde, 0xd8, 0x1d, 0xbb, 0x7b, 0x02, 0x33, 0x0a, 0xce, 0x84, 0x24, 0x04, 0xf1,
-	0x14, 0xd9, 0x36, 0x5a, 0x22, 0x80, 0x3b, 0x9d, 0xba, 0xce, 0x5e, 0x10, 0x50, 0x2b, 0x82, 0x8b,
-	0xc7, 0x18, 0xb1, 0x3d, 0x76, 0xdd, 0xb1, 0x4d, 0xe6, 0x7e, 0x38, 0x9d, 0x12, 0xc6, 0xf1, 0xd4,
-	0x8b, 0x01, 0xcd, 0x8b, 0x80, 0x2f, 0x7d, 0xec, 0x79, 0xc4, 0x67, 0xd1, 0xb9, 0x7c, 0x1f, 0xaa,
-	0x47, 0xee, 0x98, 0x3a, 0x2a, 0xf9, 0x6d, 0x40, 0x18, 0x47, 0x77, 0xa0, 0x8a, 0x4d, 0x93, 0x30,
-	0x66, 0x70, 0xf7, 0x29, 0x71, 0xea, 0x52, 0x4b, 0xda, 0x2d, 0xab, 0x95, 0x48, 0xa7, 0x87, 0x2a,
-	0x59, 0x01, 0x88, 0x4d, 0x3c, 0xfb, 0x1c, 0x5d, 0x87, 0x6b, 0x59, 0x64, 0x24, 0xa0, 0xef, 0x03,
-	0x90, 0xe7, 0x1e, 0xf5, 0x09, 0x33, 0x30, 0xaf, 0x17, 0x5b, 0xd2, 0x6e, 0x49, 0x2d, 0xc7, 0x1a,
-	0x85, 0xcb, 0xb7, 0xa1, 0xf1, 0x90, 0xf0, 0xc1, 0x14, 0x8f, 0x49, 0xd7, 0x27, 0x16, 0x71, 0x38,
-	0xc5, 0x36, 0x8b, 0x39, 0xc8, 0x1f, 0xc1, 0x07, 0x0b, 0x4f, 0x99, 0xe7, 0x3a, 0x8c, 0x84, 0x11,
-	0x4d, 0x9f, 0x58, 0x2c, 0x89, 0x28, 0x04, 0x59, 0x87, 0x8a, 0xe2, 0x73, 0x7a, 0x86, 0x4d, 0xae,
-	0x11, 0x8e, 0x10, 0xac, 0x38, 0x78, 0x4a, 0x62, 0x8c, 0x78, 0x46, 0xf7, 0x61, 0x0d, 0xc7, 0x90,
-	0x7a, 0xb1, 0x55, 0xda, 0xad, 0x74, 0x6e, 0xb4, 0x33, 0xb7, 0xd3, 0x4e, 0xec, 0xd5, 0x14, 0x26,
-	0xbf, 0x91, 0x60, 0x2d, 0x51, 0xa3, 0x9f, 0x40, 0x39, 0x4d, 0xaf, 0x70, 0x5c, 0xe9, 0x34, 0xda,
-	0x51, 0x7e, 0xdb, 0x49, 0x7e, 0xdb, 0x7a, 0x82, 0x50, 0xe7, 0x60, 0xb4, 0x0d, 0x95, 0xf0, 0x1a,
-	0x29, 0x37, 0x26, 0x98, 0x4d, 0x44, 0x3e, 0xca, 0x2a, 0x44, 0xaa, 0x43, 0xcc, 0x26, 0x21, 0xe0,
-	0x19, 0xf1, 0x19, 0x75, 0x1d, 0x83, 0x71, 0xbf, 0x5e, 0x8a, 0x00, 0xb1, 0x4a, 0xe3, 0x3e, 0xfa,
-	0x14, 0xb6, 0xf0, 0x33, 0x4c, 0x6d, 0x3c, 0xb2, 0x89, 0x91, 0xd0, 0x63, 0xf5, 0x95, 0x56, 0x69,
-	0x77, 0xa3, 0xf3, 0xfe, 0xc2, 0xd7, 0xd0, 0xcf, 0x3d, 0xa2, 0xa2, 0xd4, 0x2a, 0x51, 0x33, 0x74,
-	0x1b, 0xca, 0xe6, 0x04, 0x3b, 0x63, 0x62, 0xbb, 0xe3, 0xfa, 0x35, 0x11, 0x6a, 0xae, 0x90, 0xff,
-	0x26, 0xc1, 0xcd, 0x87, 0x84, 0x27, 0xf0, 0x23, 0xca, 0x78, 0x52, 0x1c, 0x3b, 0xb0, 0x9e, 0x84,
-	0x36, 0x32, 0xd9, 0xad, 0x26, 0xca, 0x61, 0x98, 0xe5, 0x9f, 0x65, 0x40, 0xfc, 0xdc, 0x23, 0xe2,
-	0x6d, 0xaf, 0xe4, 0x98, 0xda, 0x87, 0x52, 0x78, 0xbd, 0x36, 0x9d, 0x52, 0x2e, 0x92, 0x50, 0x52,
-	0x23, 0x41, 0xfe, 0x7b, 0xc4, 0xaa, 0xe7, 0x7e, 0xe9, 0xd8, 0x2e, 0xb6, 0x8e, 0xa8, 0xf3, 0xf4,
-	0x9d, 0x58, 0x5d, 0x48, 0x70, 0xf1, 0x52, 0x82, 0x2f, 0xd1, 0x2e, 0xbd, 0x13, 0x6d, 0xf9, 0xcf,
-	0x12, 0xdc, 0xba, 0x44, 0x30, 0xae, 0xd8, 0x1a, 0x94, 0x02, 0xdf, 0x8e, 0x79, 0x85, 0x8f, 0x48,
-	0x86, 0x55, 0x36, 0xc1, 0x9d, 0x4f, 0xf6, 0x23, 0x26, 0x07, 0x30, 0x7b, 0xb9, 0xbd, 0xaa, 0x1d,
-	0x2a, 0x9d, 0x4f, 0xf6, 0xd5, 0xf8, 0x04, 0x3d, 0x80, 0xca, 0x33, 0x6c, 0x53, 0xcb, 0x08, 0x1c,
-	0x4e, 0x6d, 0xc1, 0xe7, 0xea, 0x82, 0x03, 0x01, 0x3f, 0x09, 0xd1, 0xf2, 0x4d, 0xb8, 0xde, 0xf5,
-	0x09, 0xe6, 0xa4, 0x6b, 0x07, 0x8c, 0x13, 0x3f, 0xf9, 0xb6, 0x4e, 0xe1, 0xc6, 0x05, 0x7d, 0xcc,
-	0xf1, 0xa7, 0x00, 0x66, 0xa4, 0x32, 0xa8, 0x15, 0x57, 0xf7, 0x66, 0xf8, 0xf2, 0x61, 0xb7, 0xf1,
-	0x46, 0xed, 0x93, 0x93, 0x41, 0xef, 0x60, 0x7d, 0xf6, 0x72, 0xbb, 0x1c, 0x5b, 0x0e, 0x7a, 0x6a,
-	0x39, 0xb6, 0x18, 0x58, 0xf2, 0xcf, 0xa1, 0x7a, 0x4a, 0xbf, 0xa2, 0xc4, 0xef, 0xba, 0xce, 0x19,
-	0x1d, 0xa3, 0x3d, 0xd8, 0xf2, 0x30, 0x63, 0x7c, 0xe2, 0xbb, 0xc1, 0x78, 0x62, 0x10, 0x27, 0x2c,
-	0xc1, 0xc8, 0xef, 0x9a, 0x8a, 0x32, 0x47, 0xfd, 0xe8, 0x44, 0xc6, 0x80, 0xb2, 0x0e, 0x4e, 0x3c,
-	0x0b, 0x73, 0x82, 0x1e, 0x2d, 0x77, 0xb3, 0x28, 0x17, 0x07, 0xae, 0x6b, 0x9f, 0x62, 0x3b, 0x20,
-	0x0b, 0x43, 0xfc, 0x02, 0x6e, 0x3c, 0x24, 0x3c, 0xa1, 0xef, 0x9c, 0xb9, 0x49, 0x05, 0xdd, 0x85,
-	0xe2, 0xf2, 0x77, 0x5e, 0x9d, 0xbd, 0xdc, 0x2e, 0x0e, 0x7a, 0x6a, 0x91, 0x5a, 0xf2, 0xbf, 0x25,
-	0xa8, 0x64, 0xec, 0xdf, 0xda, 0x10, 0x75, 0x60, 0x95, 0x71, 0xcc, 0x03, 0x16, 0x7f, 0x0d, 0x8d,
-	0x5c, 0x59, 0xc5, 0x2e, 0x35, 0x81, 0x50, 0x63, 0x24, 0xda, 0x85, 0x4d, 0x1b, 0x33, 0x7e, 0x48,
-	0xb0, 0xcf, 0x47, 0x04, 0xf3, 0x21, 0x8b, 0x3f, 0x89, 0x8b, 0x6a, 0x74, 0x1f, 0x56, 0x4d, 0x91,
-	0xb5, 0xfa, 0x8a, 0xa0, 0x92, 0x2f, 0xda, 0x6c, 0x5a, 0xd5, 0x18, 0x28, 0x0f, 0xc5, 0xe7, 0x94,
-	0xcb, 0x45, 0x5c, 0x08, 0x1f, 0xc3, 0x5a, 0x7c, 0xad, 0x61, 0x87, 0x0d, 0xbb, 0x64, 0x7d, 0x11,
-	0x59, 0x61, 0x93, 0x22, 0xe5, 0x4f, 0x61, 0x7b, 0xee, 0xaf, 0xeb, 0x3a, 0x0e, 0x31, 0x39, 0x75,
-	0x9d, 0xef, 0x94, 0x65, 0x02, 0xad, 0xe5, 0xbe, 0x62, 0x96, 0x3f, 0x84, 0x32, 0xf5, 0x14, 0xcb,
-	0xf2, 0x09, 0x8b, 0x07, 0x41, 0x54, 0x9c, 0x83, 0xe3, 0x58, 0xa9, 0xce, 0xcf, 0xe7, 0x33, 0xaa,
-	0x98, 0x99, 0x51, 0xf2, 0x5f, 0x25, 0x68, 0x45, 0x65, 0x16, 0x87, 0xca, 0x25, 0xea, 0x1d, 0x49,
-	0xa3, 0x1e, 0xac, 0x47, 0xa9, 0x35, 0x02, 0xe1, 0x53, 0xc4, 0xaa, 0x74, 0xb6, 0x97, 0x5e, 0x45,
-	0x14, 0x5a, 0xad, 0x9a, 0x19, 0x49, 0xde, 0x81, 0x3b, 0x57, 0x50, 0x8a, 0xde, 0x5d, 0xfe, 0x93,
-	0x04, 0x5b, 0x4a, 0xc0, 0x5d, 0xd3, 0x9d, 0x7a, 0x36, 0xe1, 0x24, 0xe1, 0x7a, 0x1d, 0xae, 0x51,
-	0xc7, 0x0b, 0x78, 0x32, 0x18, 0x85, 0x10, 0x8e, 0x62, 0x33, 0xf0, 0x99, 0xeb, 0x1b, 0x9e, 0xcb,
-	0x92, 0x51, 0x1c, 0x69, 0x8e, 0x5d, 0x86, 0x1e, 0xc0, 0x2a, 0x16, 0xe9, 0x8d, 0x1b, 0xde, 0x4e,
-	0xbe, 0xe1, 0x65, 0xc2, 0x28, 0x02, 0x26, 0x5a, 0x5f, 0x6c, 0x22, 0xff, 0x43, 0x82, 0x75, 0x1d,
-	0x8f, 0xb4, 0x60, 0x3c, 0x26, 0x2c, 0xd4, 0xa0, 0x0f, 0xa0, 0xcc, 0xf1, 0xc8, 0xa0, 0x8e, 0x45,
-	0x9e, 0x0b, 0x1e, 0x25, 0x75, 0x8d, 0xe3, 0xd1, 0x20, 0x94, 0xd1, 0x3e, 0xdc, 0x22, 0xcf, 0x89,
-	0x19, 0xf0, 0x68, 0x8a, 0x9d, 0x85, 0xcd, 0x86, 0x11, 0x9b, 0x98, 0xd1, 0x8a, 0xb0, 0xa6, 0xde,
-	0x98, 0x1f, 0x2b, 0xe1, 0xa9, 0x26, 0x0e, 0x51, 0x1f, 0x2a, 0x2c, 0x0d, 0x11, 0x7e, 0x05, 0x61,
-	0x55, 0x2e, 0x27, 0x3a, 0xa7, 0xa3, 0x66, 0xed, 0xc2, 0xbc, 0xdd, 0x5c, 0x8c, 0x43, 0x3f, 0x86,
-	0x95, 0xa7, 0xd4, 0x89, 0x2e, 0xfa, 0xaa, 0x1c, 0xf4, 0x1d, 0x4e, 0xf9, 0xf9, 0x23, 0xea, 0x58,
-	0xaa, 0x30, 0x48, 0xf7, 0x8c, 0x62, 0x66, 0xcf, 0x68, 0x41, 0xc5, 0x22, 0xcc, 0xf4, 0xa9, 0x97,
-	0xe6, 0xb5, 0xac, 0x66, 0x55, 0xf2, 0xd7, 0x12, 0x5c, 0xcf, 0xdf, 0x60, 0x5c, 0xd6, 0x77, 0x61,
-	0xf3, 0xcc, 0xf5, 0xa7, 0x98, 0x73, 0x62, 0x19, 0xd9, 0xcb, 0xdc, 0x48, 0xd5, 0x03, 0x71, 0xab,
-	0x3b, 0xb0, 0x4e, 0x99, 0x31, 0x4f, 0x57, 0x9c, 0xc0, 0x2a, 0x65, 0xfd, 0x54, 0x87, 0x0e, 0x60,
-	0x83, 0x67, 0x6f, 0x27, 0x49, 0x5d, 0xbe, 0xfb, 0xe4, 0x2e, 0x50, 0xbd, 0x60, 0x71, 0xef, 0x0f,
-	0x12, 0x54, 0xb3, 0x63, 0x0f, 0x6d, 0x00, 0x28, 0xba, 0x71, 0x32, 0x7c, 0x34, 0x7c, 0xf2, 0xd9,
-	0xb0, 0x56, 0x40, 0x08, 0x36, 0x14, 0xdd, 0x38, 0x1a, 0x0c, 0x4f, 0x3e, 0x37, 0x94, 0xc7, 0xbd,
-	0xfd, 0x8f, 0x6b, 0x12, 0xda, 0x82, 0x4d, 0x45, 0x37, 0x7a, 0x8a, 0xfa, 0xd9, 0x60, 0x18, 0x2b,
-	0x8b, 0xa8, 0x01, 0x37, 0x15, 0xdd, 0xe8, 0x3e, 0x19, 0xea, 0xca, 0x60, 0xd8, 0x57, 0x0d, 0xad,
-	0xaf, 0x1b, 0x5f, 0x28, 0x8f, 0x8f, 0xb4, 0x5a, 0x07, 0xb5, 0xe0, 0xf6, 0xa5, 0xb3, 0xac, 0x4b,
-	0xeb, 0xde, 0x29, 0xac, 0xe7, 0xda, 0x64, 0xc8, 0xa3, 0xab, 0x65, 0x78, 0x44, 0xf2, 0x61, 0x5f,
-	0x39, 0xd2, 0x0f, 0xbf, 0xa8, 0x49, 0xa8, 0x06, 0x55, 0x71, 0x9e, 0x68, 0x8a, 0x21, 0xab, 0xae,
-	0x66, 0xf4, 0x06, 0x5a, 0xf7, 0xc9, 0x70, 0xd8, 0xef, 0xea, 0xfd, 0x5e, 0xad, 0x74, 0xef, 0x61,
-	0xbe, 0x26, 0xe6, 0x45, 0x8e, 0x36, 0xa1, 0xa2, 0xe4, 0xde, 0xb4, 0x0a, 0x6b, 0xa1, 0xa2, 0xdf,
-	0x1b, 0xe8, 0x35, 0x49, 0xe4, 0x41, 0xd1, 0x0d, 0xad, 0x7f, 0xd4, 0xef, 0xea, 0xb5, 0xe2, 0xbd,
-	0xb3, 0xbc, 0xa3, 0x79, 0xa5, 0x08, 0x47, 0xfd, 0x47, 0x19, 0x47, 0x15, 0xf8, 0x5e, 0xa8, 0x38,
-	0x7e, 0xd2, 0xab, 0x49, 0x89, 0xa0, 0x9d, 0x76, 0x6b, 0x45, 0xe1, 0x34, 0x14, 0xba, 0xea, 0xe0,
-	0x58, 0xaf, 0x95, 0xd0, 0x7b, 0xb0, 0x1e, 0xca, 0x43, 0xe5, 0x71, 0x5f, 0x3b, 0x56, 0xba, 0xfd,
-	0xda, 0x4a, 0xe7, 0x08, 0x2a, 0x4a, 0xc0, 0x27, 0x1a, 0xf1, 0x9f, 0x51, 0x33, 0x9c, 0xdb, 0xd7,
-	0xc4, 0x36, 0x8e, 0xf2, 0x4d, 0x3f, 0xbb, 0xd4, 0x37, 0x6e, 0x2d, 0x3a, 0xf2, 0xec, 0x73, 0xb9,
-	0xd0, 0xf9, 0xa3, 0x04, 0xf5, 0xa8, 0xc9, 0x88, 0x7d, 0x3b, 0xf4, 0xec, 0xfa, 0xf4, 0x2b, 0x2c,
-	0xbe, 0x8a, 0xdf, 0xc0, 0xd6, 0x82, 0x45, 0x1c, 0xdd, 0xcd, 0xb9, 0x5b, 0xbe, 0xc8, 0x37, 0x76,
-	0xbf, 0x1d, 0x18, 0xb7, 0xb4, 0x42, 0xe7, 0x5f, 0x12, 0x6c, 0xa6, 0x75, 0xe6, 0x63, 0xf3, 0x29,
-	0xf1, 0x91, 0x0a, 0x9b, 0x17, 0x36, 0x51, 0xb4, 0x73, 0xd1, 0xe5, 0x82, 0x3d, 0xb5, 0x51, 0x5f,
-	0xb8, 0xb4, 0x69, 0x84, 0xcb, 0x05, 0xf4, 0x6b, 0xe1, 0x33, 0xbb, 0xa6, 0x5d, 0xf6, 0xb9, 0x60,
-	0xcb, 0x6c, 0xfc, 0xe0, 0x6a, 0x50, 0xfa, 0x1e, 0xff, 0x2c, 0xc1, 0x7b, 0x71, 0xd7, 0xce, 0x2c,
-	0x0a, 0x9f, 0xc3, 0x7a, 0x6e, 0xed, 0x42, 0x77, 0xf2, 0x33, 0x75, 0xc1, 0xaa, 0xd6, 0x90, 0xaf,
-	0x82, 0x24, 0xf1, 0xd0, 0xaf, 0x60, 0x23, 0x3f, 0xc8, 0x91, 0x7c, 0x91, 0xe9, 0xe5, 0x8d, 0xa7,
-	0xb1, 0x73, 0x25, 0x26, 0x75, 0x7e, 0x0e, 0xf5, 0x65, 0x93, 0x18, 0xfd, 0x68, 0x89, 0x8b, 0x85,
-	0xc3, 0xbf, 0xf1, 0xe1, 0x5b, 0xa2, 0xd3, 0xd0, 0xbf, 0x83, 0xf7, 0x97, 0x4e, 0x42, 0x94, 0xf7,
-	0xf6, 0x6d, 0x43, 0xbc, 0xd1, 0x7e, 0x5b, 0x78, 0x7a, 0x8b, 0x15, 0x28, 0x6b, 0xa2, 0x5b, 0x3f,
-	0x1e, 0xfb, 0x1d, 0x3b, 0x3f, 0x6e, 0x93, 0x2f, 0xef, 0x04, 0xaa, 0x59, 0x35, 0x6a, 0x2d, 0x9d,
-	0x1a, 0x09, 0x8f, 0x3b, 0x57, 0x20, 0x92, 0xd0, 0x07, 0xf6, 0x8b, 0x57, 0xcd, 0xc2, 0x37, 0xaf,
-	0x9a, 0x85, 0x37, 0xaf, 0x9a, 0xd2, 0xef, 0x67, 0x4d, 0xe9, 0xeb, 0x59, 0x53, 0xfa, 0xcf, 0xac,
-	0x29, 0xbd, 0x98, 0x35, 0xa5, 0xff, 0xce, 0x9a, 0xd2, 0xff, 0x66, 0xcd, 0xc2, 0x9b, 0x59, 0x53,
-	0xfa, 0xcb, 0xeb, 0x66, 0xe1, 0xc5, 0xeb, 0x66, 0xe1, 0x9b, 0xd7, 0xcd, 0xc2, 0x2f, 0xf7, 0x3d,
-	0xfa, 0x9c, 0x12, 0x1b, 0x8f, 0x58, 0x1b, 0xd3, 0xbd, 0x54, 0xd8, 0x5b, 0xf4, 0x17, 0xc5, 0x83,
-	0xf9, 0xe3, 0x68, 0x55, 0xec, 0xce, 0x1f, 0xfd, 0x3f, 0x00, 0x00, 0xff, 0xff, 0x39, 0xf2, 0x47,
-	0xef, 0xcc, 0x10, 0x00, 0x00,
+	// 2030 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x58, 0xcd, 0x6f, 0xdb, 0xc8,
+	0x15, 0x17, 0x25, 0xc7, 0x2b, 0x3d, 0xc9, 0xb6, 0x32, 0xf9, 0xd2, 0x2a, 0x89, 0xec, 0xd0, 0x05,
+	0xe2, 0xa6, 0x5d, 0xb9, 0xd1, 0x6e, 0xb2, 0x2d, 0xd2, 0x2f, 0x46, 0x12, 0x1c, 0x25, 0x8e, 0x62,
+	0x50, 0xb2, 0x77, 0xb7, 0x2d, 0x4a, 0x8c, 0xc8, 0xb1, 0xc4, 0x86, 0x22, 0x59, 0xce, 0xc8, 0xb1,
+	0x17, 0x3d, 0xf4, 0xd2, 0xf6, 0xd2, 0x43, 0x8b, 0xde, 0x7b, 0x5e, 0xa0, 0x7f, 0x46, 0x51, 0xb4,
+	0xc7, 0x1c, 0xf7, 0x64, 0x34, 0x0a, 0x0a, 0xf4, 0x98, 0x3f, 0xa1, 0xe0, 0x70, 0x48, 0x91, 0xfa,
+	0x4a, 0x52, 0xec, 0x45, 0xe0, 0x7b, 0xf3, 0x9b, 0xf7, 0x7e, 0xf3, 0xde, 0x23, 0xdf, 0x1b, 0xc1,
+	0x36, 0xf5, 0xf4, 0x5d, 0xdd, 0x72, 0x46, 0x46, 0xf0, 0x8b, 0x5d, 0xd3, 0xed, 0x45, 0x8f, 0x55,
+	0xd7, 0x73, 0x98, 0x83, 0xf2, 0xae, 0x55, 0x0d, 0x55, 0xe5, 0x8f, 0xfa, 0x26, 0x1b, 0x8c, 0x7a,
+	0x55, 0xdd, 0x19, 0xee, 0xf6, 0x9d, 0xbe, 0xb3, 0xcb, 0x31, 0xbd, 0xd1, 0x31, 0x97, 0xb8, 0xc0,
+	0x9f, 0x82, 0xbd, 0xe5, 0x2d, 0xee, 0xc0, 0x19, 0x0e, 0x1d, 0x7b, 0x77, 0x34, 0x32, 0x8d, 0x00,
+	0xce, 0x1f, 0x05, 0x62, 0xb3, 0xef, 0x38, 0x7d, 0x8b, 0x4c, 0xec, 0x30, 0x73, 0x48, 0x28, 0xc3,
+	0x43, 0x57, 0x00, 0x2a, 0xd3, 0x80, 0x17, 0x1e, 0x76, 0x5d, 0xe2, 0xd1, 0x60, 0x5d, 0xbe, 0x0b,
+	0x85, 0x7d, 0xa7, 0x6f, 0xda, 0x2a, 0xf9, 0xf5, 0x88, 0x50, 0x86, 0x6e, 0x41, 0x01, 0xeb, 0x3a,
+	0xa1, 0x54, 0x63, 0xce, 0x73, 0x62, 0x97, 0xa4, 0x2d, 0x69, 0x27, 0xa7, 0xe6, 0x03, 0x5d, 0xd7,
+	0x57, 0xc9, 0x0a, 0x80, 0xd8, 0xe2, 0x5a, 0x67, 0xe8, 0x32, 0x5c, 0x88, 0x23, 0x03, 0x01, 0xdd,
+	0x04, 0x20, 0xa7, 0xae, 0xe9, 0x11, 0xaa, 0x61, 0x56, 0x4a, 0x6f, 0x49, 0x3b, 0x19, 0x35, 0x27,
+	0x34, 0x0a, 0x93, 0x6f, 0x40, 0x79, 0x8f, 0xb0, 0xd6, 0x10, 0xf7, 0x49, 0xdd, 0x23, 0x06, 0xb1,
+	0x99, 0x89, 0x2d, 0x2a, 0x38, 0xc8, 0x1f, 0xc3, 0xf5, 0xb9, 0xab, 0xd4, 0x75, 0x6c, 0x4a, 0x7c,
+	0x8f, 0xba, 0x47, 0x0c, 0x1a, 0x7a, 0xe4, 0x82, 0xdc, 0x85, 0xbc, 0xe2, 0x31, 0xf3, 0x18, 0xeb,
+	0xac, 0x43, 0x18, 0x42, 0xb0, 0x62, 0xe3, 0x21, 0x11, 0x18, 0xfe, 0x8c, 0xee, 0x42, 0x16, 0x0b,
+	0x48, 0x29, 0xbd, 0x95, 0xd9, 0xc9, 0xd7, 0xae, 0x54, 0x63, 0xd9, 0xa9, 0x86, 0xfb, 0xd5, 0x08,
+	0x26, 0xbf, 0x91, 0x20, 0x1b, 0xaa, 0xd1, 0xf7, 0x21, 0x17, 0x85, 0x97, 0x1b, 0xce, 0xd7, 0xca,
+	0xd5, 0x20, 0xbe, 0xd5, 0x30, 0xbe, 0xd5, 0x6e, 0x88, 0x50, 0x27, 0x60, 0xb4, 0x09, 0x79, 0x3f,
+	0x8d, 0x26, 0xd3, 0x06, 0x98, 0x0e, 0x78, 0x3c, 0x72, 0x2a, 0x04, 0xaa, 0x47, 0x98, 0x0e, 0x7c,
+	0xc0, 0x09, 0xf1, 0xa8, 0xe9, 0xd8, 0x1a, 0x65, 0x5e, 0x29, 0x13, 0x00, 0x84, 0xaa, 0xc3, 0x3c,
+	0xf4, 0x18, 0x2e, 0xe1, 0x13, 0x6c, 0x5a, 0xb8, 0x67, 0x11, 0x2d, 0xa4, 0x47, 0x4b, 0x2b, 0x5b,
+	0x99, 0x9d, 0xf5, 0xda, 0x87, 0x73, 0x8f, 0xd1, 0x3d, 0x73, 0x89, 0x8a, 0xa2, 0x5d, 0xa1, 0x9a,
+	0xa2, 0x1b, 0x90, 0xd3, 0x07, 0xd8, 0xee, 0x13, 0xcb, 0xe9, 0x97, 0x2e, 0x70, 0x57, 0x13, 0x85,
+	0xfc, 0x17, 0x09, 0xae, 0xee, 0x11, 0x16, 0xc2, 0xf7, 0x4d, 0xca, 0xc2, 0xe2, 0xd8, 0x86, 0xb5,
+	0xd0, 0xb5, 0x16, 0x8b, 0x6e, 0x21, 0x54, 0xb6, 0xfd, 0x28, 0xff, 0x38, 0x06, 0x62, 0x67, 0x2e,
+	0xe1, 0xa7, 0x5d, 0xca, 0x31, 0xda, 0xef, 0x4b, 0x7e, 0x7a, 0x2d, 0x73, 0x68, 0x32, 0x1e, 0x84,
+	0x8c, 0x1a, 0x08, 0xf2, 0x5f, 0x03, 0x56, 0x0d, 0xe7, 0x85, 0x6d, 0x39, 0xd8, 0xd8, 0x37, 0xed,
+	0xe7, 0xef, 0xc5, 0x6a, 0x2a, 0xc0, 0xe9, 0x99, 0x00, 0xcf, 0xd0, 0xce, 0xbc, 0x17, 0x6d, 0xf9,
+	0x8f, 0x12, 0x5c, 0x9b, 0x21, 0x28, 0x2a, 0xb6, 0x08, 0x99, 0x91, 0x67, 0x09, 0x5e, 0xfe, 0x23,
+	0x92, 0x61, 0x95, 0x0e, 0x70, 0xed, 0xde, 0xfd, 0x80, 0xc9, 0x43, 0x18, 0x9f, 0x6f, 0xae, 0x76,
+	0x1e, 0x29, 0xb5, 0x7b, 0xf7, 0x55, 0xb1, 0x82, 0x1e, 0x40, 0xfe, 0x04, 0x5b, 0xa6, 0xa1, 0x8d,
+	0x6c, 0x66, 0x5a, 0x9c, 0xcf, 0xf2, 0x82, 0x03, 0x0e, 0x3f, 0xf4, 0xd1, 0xf2, 0x55, 0xb8, 0x5c,
+	0xf7, 0x08, 0x66, 0xa4, 0x6e, 0x8d, 0x28, 0x23, 0x5e, 0xf8, 0x6e, 0x1d, 0xc1, 0x95, 0x29, 0xbd,
+	0xe0, 0xf8, 0x23, 0x00, 0x3d, 0x50, 0x69, 0xa6, 0x21, 0xaa, 0x7b, 0xc3, 0x3f, 0xbc, 0xff, 0xb5,
+	0x71, 0x7b, 0xd5, 0xc3, 0xc3, 0x56, 0xe3, 0xe1, 0xda, 0xf8, 0x7c, 0x33, 0x27, 0x76, 0xb6, 0x1a,
+	0x6a, 0x4e, 0xec, 0x68, 0x19, 0xf2, 0x4f, 0xa0, 0x70, 0x64, 0x7e, 0x69, 0x12, 0xaf, 0xee, 0xd8,
+	0xc7, 0x66, 0x1f, 0xed, 0xc2, 0x25, 0x17, 0x53, 0xca, 0x06, 0x9e, 0x33, 0xea, 0x0f, 0x34, 0x62,
+	0xfb, 0x25, 0x18, 0xd8, 0xcd, 0xaa, 0x28, 0xb6, 0xd4, 0x0c, 0x56, 0x64, 0x0c, 0x28, 0x6e, 0xe0,
+	0xd0, 0x35, 0x30, 0x23, 0xe8, 0xc9, 0x62, 0x33, 0xf3, 0x62, 0xf1, 0xd0, 0x71, 0xac, 0x23, 0x6c,
+	0x8d, 0xc8, 0x5c, 0x17, 0x3f, 0x85, 0x2b, 0x7b, 0x84, 0x85, 0xf4, 0xed, 0x63, 0x27, 0xac, 0xa0,
+	0xdb, 0x90, 0x5e, 0x7c, 0xe6, 0xd5, 0xf1, 0xf9, 0x66, 0xba, 0xd5, 0x50, 0xd3, 0xa6, 0x21, 0xff,
+	0x53, 0x82, 0x7c, 0x6c, 0xff, 0x3b, 0x6f, 0x44, 0x35, 0x58, 0xa5, 0x0c, 0xb3, 0x11, 0x15, 0x6f,
+	0x43, 0x39, 0x51, 0x56, 0xc2, 0x64, 0x87, 0x23, 0x54, 0x81, 0x44, 0x3b, 0xb0, 0x61, 0x61, 0xca,
+	0x1e, 0x11, 0xec, 0xb1, 0x1e, 0xc1, 0xac, 0x4d, 0xc5, 0x2b, 0x31, 0xad, 0x46, 0x77, 0x61, 0x55,
+	0xe7, 0x51, 0x2b, 0xad, 0x70, 0x2a, 0xc9, 0xa2, 0x8d, 0x87, 0x55, 0x15, 0x40, 0xb9, 0xcd, 0x5f,
+	0xa7, 0x44, 0x2c, 0x44, 0x21, 0x7c, 0x02, 0x59, 0x91, 0x56, 0xff, 0x0b, 0xeb, 0x7f, 0x25, 0x4b,
+	0xf3, 0xc8, 0xf2, 0x3d, 0x11, 0x52, 0x7e, 0x0c, 0x9b, 0x13, 0x7b, 0x75, 0xc7, 0xb6, 0x89, 0xce,
+	0x4c, 0xc7, 0xfe, 0xbf, 0xa2, 0x4c, 0x60, 0x6b, 0xb1, 0x2d, 0xc1, 0xf2, 0x3b, 0x90, 0x33, 0x5d,
+	0xc5, 0x30, 0x3c, 0x42, 0x45, 0x23, 0x08, 0x8a, 0xb3, 0x75, 0x20, 0x94, 0xea, 0x64, 0x7d, 0xd2,
+	0xa3, 0xd2, 0xb1, 0x1e, 0x25, 0xff, 0x59, 0x82, 0xad, 0xa0, 0xcc, 0x84, 0xab, 0x44, 0xa0, 0xde,
+	0x93, 0x34, 0x6a, 0xc0, 0x5a, 0x10, 0x5a, 0x6d, 0xc4, 0x6d, 0x72, 0x5f, 0xf9, 0xda, 0xe6, 0xc2,
+	0x54, 0x04, 0xae, 0xd5, 0x82, 0x1e, 0x93, 0xe4, 0x6d, 0xb8, 0xb5, 0x84, 0x52, 0x70, 0x76, 0xf9,
+	0x22, 0x6c, 0xec, 0x11, 0xb6, 0x6f, 0x9e, 0x90, 0x23, 0x93, 0xbc, 0xf0, 0xdb, 0xa6, 0xac, 0x42,
+	0x31, 0x94, 0x9f, 0x12, 0x86, 0x0d, 0xcc, 0x30, 0xba, 0x1a, 0x51, 0xcf, 0x25, 0x98, 0x22, 0x58,
+	0x31, 0x08, 0xd5, 0x45, 0x30, 0xf8, 0x73, 0xd4, 0x2e, 0x33, 0x93, 0x76, 0x29, 0x1f, 0x40, 0x31,
+	0xe9, 0x86, 0xba, 0xe8, 0x87, 0x00, 0x96, 0x79, 0x42, 0xb4, 0x13, 0x5f, 0x23, 0xca, 0xe3, 0x66,
+	0xe2, 0x88, 0xd3, 0x34, 0xd4, 0x9c, 0x15, 0x5a, 0x90, 0x1f, 0xf3, 0xa2, 0x0b, 0x11, 0x75, 0xc7,
+	0x66, 0xc4, 0x66, 0x3e, 0x7f, 0xf4, 0x3d, 0x28, 0x44, 0x76, 0xb5, 0x88, 0xf5, 0xfa, 0xf8, 0x7c,
+	0x13, 0x42, 0x78, 0xab, 0xa1, 0x42, 0x68, 0xaa, 0x65, 0xc8, 0x2f, 0xf8, 0xe7, 0x76, 0xd6, 0x16,
+	0x75, 0xd1, 0x0f, 0x20, 0x3b, 0x14, 0xde, 0x45, 0xe6, 0xde, 0x42, 0x31, 0x82, 0xfb, 0xe3, 0x8f,
+	0x7b, 0x6a, 0x69, 0xba, 0x30, 0x27, 0x62, 0x94, 0x77, 0x4f, 0xad, 0xd0, 0x83, 0xbc, 0x01, 0x6b,
+	0x7b, 0x84, 0x75, 0x74, 0xcf, 0x74, 0x39, 0x77, 0x99, 0xc1, 0x7a, 0x20, 0x7d, 0x53, 0x91, 0x47,
+	0x32, 0xac, 0x0d, 0x30, 0xd5, 0xa2, 0x88, 0xf0, 0xd7, 0x3a, 0xab, 0xe6, 0x07, 0x98, 0x86, 0xdc,
+	0xe5, 0x3d, 0x58, 0x8f, 0xd3, 0xa0, 0x2e, 0xba, 0x07, 0x1f, 0xd0, 0x40, 0x14, 0x89, 0xb9, 0x9e,
+	0x38, 0x75, 0x92, 0xa3, 0x1a, 0x62, 0x65, 0x05, 0x2e, 0x47, 0x86, 0xe2, 0x29, 0xf9, 0x36, 0xe4,
+	0x02, 0xc8, 0x24, 0x1f, 0x85, 0xf1, 0xf9, 0x66, 0x36, 0x40, 0xb6, 0x1a, 0x6a, 0x36, 0x58, 0x6e,
+	0x19, 0xb2, 0xc5, 0x3f, 0xac, 0xd3, 0x26, 0xa8, 0x8b, 0x3e, 0x9d, 0xc9, 0xc4, 0x52, 0x4e, 0x93,
+	0x3c, 0x94, 0x21, 0x3b, 0x95, 0x83, 0x48, 0x96, 0xff, 0x20, 0xc1, 0x25, 0x65, 0xc4, 0x1c, 0xdd,
+	0x19, 0xba, 0x16, 0x61, 0x24, 0x7c, 0x55, 0x2f, 0xc3, 0x05, 0xd3, 0x76, 0x47, 0x2c, 0x9c, 0x0b,
+	0xb9, 0xe0, 0x4f, 0xa2, 0xfa, 0xc8, 0xa3, 0x8e, 0xa7, 0xb9, 0x0e, 0x0d, 0x27, 0xd1, 0x40, 0x73,
+	0xe0, 0x50, 0xf4, 0x00, 0x56, 0x31, 0xff, 0xba, 0x88, 0x7e, 0xbf, 0x9d, 0xec, 0xf7, 0x31, 0x37,
+	0x0a, 0x87, 0xf1, 0xce, 0x2f, 0xb6, 0xc8, 0x7f, 0x93, 0x60, 0xad, 0x8b, 0x7b, 0x9d, 0x51, 0xbf,
+	0x4f, 0xa8, 0xaf, 0x41, 0xd7, 0x21, 0xc7, 0x70, 0x4f, 0x33, 0x6d, 0x83, 0x9c, 0x72, 0x1e, 0x19,
+	0x35, 0xcb, 0x70, 0xaf, 0xe5, 0xcb, 0xe8, 0x3e, 0x5c, 0x23, 0xa7, 0x44, 0x1f, 0xb1, 0x60, 0x88,
+	0x3b, 0xf6, 0x7b, 0x2d, 0x25, 0x16, 0xd1, 0x83, 0x09, 0x39, 0xab, 0x5e, 0x99, 0x2c, 0x2b, 0xfe,
+	0x6a, 0x87, 0x2f, 0xa2, 0x26, 0xe4, 0x69, 0xe4, 0xc2, 0x6f, 0x02, 0x7e, 0x72, 0x17, 0x13, 0x9d,
+	0xd0, 0x51, 0xe3, 0xfb, 0xfc, 0xb8, 0x5d, 0x9d, 0x8f, 0x43, 0x9f, 0xc2, 0xca, 0x73, 0xd3, 0x0e,
+	0xd2, 0xbc, 0x2c, 0x06, 0x4d, 0x9b, 0x99, 0xec, 0xec, 0x89, 0x69, 0x1b, 0x2a, 0xdf, 0x10, 0x55,
+	0x6f, 0x3a, 0x56, 0xbd, 0x5b, 0x90, 0xf7, 0x2b, 0xdb, 0xcf, 0x6c, 0x18, 0xd7, 0x9c, 0x1a, 0x57,
+	0xc9, 0x5f, 0x49, 0x70, 0x39, 0x99, 0x41, 0xf1, 0x55, 0xbf, 0x0d, 0x1b, 0xc7, 0x8e, 0x37, 0xc4,
+	0x8c, 0x11, 0x43, 0x8b, 0x27, 0x73, 0x3d, 0x52, 0xb7, 0x78, 0x56, 0xb7, 0x61, 0xcd, 0xa4, 0xda,
+	0x24, 0x5c, 0x22, 0x80, 0x05, 0x93, 0x36, 0x23, 0x1d, 0x7a, 0x08, 0xeb, 0x2c, 0x9e, 0x9d, 0x30,
+	0x74, 0xc9, 0xe6, 0x9b, 0x48, 0xa0, 0x3a, 0xb5, 0xe3, 0xce, 0xef, 0x24, 0x28, 0xc4, 0xa7, 0x3e,
+	0xb4, 0x0e, 0xa0, 0x74, 0xb5, 0xc3, 0xf6, 0x93, 0xf6, 0xb3, 0xcf, 0xda, 0xc5, 0x14, 0x42, 0xb0,
+	0xae, 0x74, 0xb5, 0xfd, 0x56, 0xfb, 0xf0, 0x73, 0x4d, 0x79, 0xda, 0xb8, 0xff, 0x49, 0x51, 0x42,
+	0x97, 0x60, 0x43, 0xe9, 0x6a, 0x0d, 0x45, 0xfd, 0xac, 0xd5, 0x16, 0xca, 0x34, 0x2a, 0xc3, 0x55,
+	0xa5, 0xab, 0xd5, 0x9f, 0xb5, 0xbb, 0x4a, 0xab, 0xdd, 0x54, 0xb5, 0x4e, 0xb3, 0xab, 0x7d, 0xa1,
+	0x3c, 0xdd, 0xef, 0x14, 0x6b, 0x68, 0x0b, 0x6e, 0xcc, 0xac, 0xc5, 0x4d, 0x1a, 0x77, 0x8e, 0x60,
+	0x2d, 0x31, 0x25, 0xf8, 0x3c, 0xea, 0x9d, 0x18, 0x8f, 0x40, 0x7e, 0xd4, 0x54, 0xf6, 0xbb, 0x8f,
+	0xbe, 0x28, 0x4a, 0xa8, 0x08, 0x05, 0xbe, 0x1e, 0x6a, 0xd2, 0x3e, 0xab, 0x7a, 0x47, 0x6b, 0xb4,
+	0x3a, 0xf5, 0x67, 0xed, 0x76, 0xb3, 0xde, 0x6d, 0x36, 0x8a, 0x99, 0x3b, 0x7b, 0xc9, 0x9a, 0x98,
+	0x14, 0x39, 0xda, 0x80, 0xbc, 0x92, 0x38, 0x69, 0x01, 0xb2, 0xbe, 0xa2, 0xd9, 0x68, 0x75, 0x8b,
+	0x12, 0x8f, 0x83, 0xd2, 0xd5, 0x3a, 0xcd, 0xfd, 0x66, 0xbd, 0x5b, 0x4c, 0xdf, 0x39, 0x4e, 0x1a,
+	0x9a, 0x54, 0x0a, 0x37, 0xd4, 0x7c, 0x12, 0x33, 0x94, 0x87, 0x0f, 0x7c, 0xc5, 0xc1, 0xb3, 0x46,
+	0x51, 0x0a, 0x85, 0xce, 0x51, 0xbd, 0x98, 0xe6, 0x46, 0x7d, 0xa1, 0xae, 0xb6, 0x0e, 0xba, 0xc5,
+	0x0c, 0xba, 0x08, 0x6b, 0xbe, 0xdc, 0x56, 0x9e, 0x36, 0x3b, 0x07, 0x4a, 0xbd, 0x59, 0x5c, 0xa9,
+	0xed, 0x43, 0x5e, 0x19, 0xb1, 0x41, 0x87, 0x78, 0x27, 0xa6, 0xee, 0x8f, 0xad, 0x17, 0xf8, 0x65,
+	0x14, 0x25, 0x67, 0x9e, 0xf8, 0x9d, 0xb6, 0x7c, 0x6d, 0xde, 0x92, 0x6b, 0x9d, 0xc9, 0xa9, 0xda,
+	0xef, 0x25, 0x28, 0x05, 0x3d, 0x96, 0x5f, 0x37, 0x7d, 0xcb, 0x8e, 0x67, 0x7e, 0x89, 0xf9, 0x5b,
+	0xf1, 0x2b, 0xb8, 0x34, 0xe7, 0x1e, 0x8a, 0x6e, 0x27, 0xcc, 0x2d, 0xbe, 0xc7, 0x96, 0x77, 0xde,
+	0x0e, 0x14, 0x1d, 0x3d, 0x55, 0xfb, 0x87, 0x04, 0x1b, 0x51, 0x9d, 0x79, 0x58, 0x7f, 0x4e, 0x3c,
+	0xa4, 0xf2, 0x3e, 0x1f, 0xbf, 0x88, 0xa1, 0xed, 0x69, 0x93, 0x73, 0xae, 0x69, 0xe5, 0xd2, 0xdc,
+	0x3b, 0x4b, 0x87, 0x30, 0x39, 0x85, 0x7e, 0xc9, 0x6d, 0xc6, 0x6f, 0x29, 0xb3, 0x36, 0xe7, 0x5c,
+	0xb2, 0xca, 0xdf, 0x5a, 0x0e, 0x8a, 0xce, 0xf1, 0xf7, 0x0c, 0x5c, 0x14, 0x43, 0x4b, 0x6c, 0x4e,
+	0xfe, 0x1c, 0xd6, 0x12, 0xb7, 0x0e, 0x74, 0x2b, 0x39, 0x52, 0xce, 0xb9, 0xa9, 0x94, 0xe5, 0x65,
+	0x90, 0xd0, 0x1f, 0xfa, 0x39, 0x6f, 0x83, 0x71, 0x5f, 0xf2, 0x34, 0xd3, 0xd9, 0x81, 0xbf, 0xbc,
+	0xbd, 0x14, 0x13, 0x19, 0x3f, 0x83, 0xd2, 0xa2, 0x41, 0x14, 0x7d, 0x77, 0x81, 0x89, 0xb9, 0xb3,
+	0x6f, 0xf9, 0xa3, 0x77, 0x44, 0x47, 0xae, 0x7f, 0x03, 0x1f, 0x2e, 0x1c, 0x04, 0x51, 0xd2, 0xda,
+	0xdb, 0x66, 0xd8, 0x72, 0xf5, 0x5d, 0xe1, 0x51, 0x16, 0xff, 0x93, 0x86, 0x9c, 0xe8, 0xcd, 0x7d,
+	0x0f, 0x3d, 0x85, 0x42, 0x7c, 0x10, 0x44, 0x37, 0xa6, 0x0f, 0x13, 0x1f, 0x45, 0xcb, 0x37, 0x97,
+	0xac, 0x52, 0x57, 0x4e, 0xa1, 0x1e, 0x7f, 0xad, 0xa6, 0x27, 0xb7, 0xd9, 0x32, 0x9c, 0x33, 0x27,
+	0xce, 0x96, 0xe1, 0xbc, 0x01, 0x50, 0x4e, 0xa1, 0x3d, 0x80, 0xc9, 0x74, 0x84, 0xca, 0xd3, 0xbb,
+	0x26, 0xd3, 0x5b, 0xf9, 0xfa, 0xc2, 0x35, 0x6e, 0xe8, 0x17, 0x70, 0x71, 0x66, 0xb4, 0x99, 0xaa,
+	0xde, 0x79, 0xd3, 0x53, 0x59, 0x7e, 0x1b, 0xc4, 0xb7, 0x5e, 0xb3, 0x92, 0x93, 0x4c, 0xf8, 0x51,
+	0x3b, 0x84, 0x42, 0x5c, 0x8d, 0xb6, 0x16, 0x36, 0xe4, 0x30, 0xc5, 0xb7, 0x96, 0x20, 0xc2, 0xac,
+	0x3e, 0xb4, 0x5e, 0xbe, 0xaa, 0xa4, 0xbe, 0x7e, 0x55, 0x49, 0xbd, 0x79, 0x55, 0x91, 0x7e, 0x3b,
+	0xae, 0x48, 0x5f, 0x8d, 0x2b, 0xd2, 0xbf, 0xc6, 0x15, 0xe9, 0xe5, 0xb8, 0x22, 0xfd, 0x7b, 0x5c,
+	0x91, 0xfe, 0x3b, 0xae, 0xa4, 0xde, 0x8c, 0x2b, 0xd2, 0x9f, 0x5e, 0x57, 0x52, 0x2f, 0x5f, 0x57,
+	0x52, 0x5f, 0xbf, 0xae, 0xa4, 0x7e, 0x76, 0xdf, 0x35, 0x4f, 0x4d, 0x62, 0xe1, 0x1e, 0xad, 0x62,
+	0x73, 0x37, 0x12, 0x76, 0xe7, 0xfd, 0xf9, 0xf9, 0x60, 0xf2, 0xd8, 0x5b, 0xe5, 0xb7, 0xf2, 0x8f,
+	0xff, 0x17, 0x00, 0x00, 0xff, 0xff, 0x40, 0x49, 0x4e, 0x3c, 0x26, 0x15, 0x00, 0x00,
 }
 
 func (x ArtifactType) String() string {
@@ -2062,6 +2562,271 @@ func (this *UpdateClusterVizierConfigResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *GetLiveViewsReq) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetLiveViewsReq)
+	if !ok {
+		that2, ok := that.(GetLiveViewsReq)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *LiveViewMetadata) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*LiveViewMetadata)
+	if !ok {
+		that2, ok := that.(LiveViewMetadata)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.ID != that1.ID {
+		return false
+	}
+	if this.Desc != that1.Desc {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	return true
+}
+func (this *GetLiveViewsResp) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetLiveViewsResp)
+	if !ok {
+		that2, ok := that.(GetLiveViewsResp)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.LiveViews) != len(that1.LiveViews) {
+		return false
+	}
+	for i := range this.LiveViews {
+		if !this.LiveViews[i].Equal(that1.LiveViews[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *GetLiveViewContentsReq) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetLiveViewContentsReq)
+	if !ok {
+		that2, ok := that.(GetLiveViewContentsReq)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.LiveViewID != that1.LiveViewID {
+		return false
+	}
+	return true
+}
+func (this *GetLiveViewContentsResp) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetLiveViewContentsResp)
+	if !ok {
+		that2, ok := that.(GetLiveViewContentsResp)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Metadata.Equal(that1.Metadata) {
+		return false
+	}
+	if this.PxlContents != that1.PxlContents {
+		return false
+	}
+	return true
+}
+func (this *GetScriptsReq) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetScriptsReq)
+	if !ok {
+		that2, ok := that.(GetScriptsReq)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *ScriptMetadata) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ScriptMetadata)
+	if !ok {
+		that2, ok := that.(ScriptMetadata)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.ID != that1.ID {
+		return false
+	}
+	if this.Desc != that1.Desc {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.HasLiveView != that1.HasLiveView {
+		return false
+	}
+	return true
+}
+func (this *GetScriptsResp) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetScriptsResp)
+	if !ok {
+		that2, ok := that.(GetScriptsResp)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Scripts) != len(that1.Scripts) {
+		return false
+	}
+	for i := range this.Scripts {
+		if !this.Scripts[i].Equal(that1.Scripts[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *GetScriptContentsReq) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetScriptContentsReq)
+	if !ok {
+		that2, ok := that.(GetScriptContentsReq)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.ScriptID != that1.ScriptID {
+		return false
+	}
+	return true
+}
+func (this *GetScriptContentsResp) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetScriptContentsResp)
+	if !ok {
+		that2, ok := that.(GetScriptContentsResp)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Metadata.Equal(that1.Metadata) {
+		return false
+	}
+	if this.Contents != that1.Contents {
+		return false
+	}
+	return true
+}
 func (this *AutocompleteRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -2427,6 +3192,119 @@ func (this *UpdateClusterVizierConfigResponse) GoString() string {
 	}
 	s := make([]string, 0, 4)
 	s = append(s, "&cloudapipb.UpdateClusterVizierConfigResponse{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetLiveViewsReq) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&cloudapipb.GetLiveViewsReq{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *LiveViewMetadata) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&cloudapipb.LiveViewMetadata{")
+	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	s = append(s, "Desc: "+fmt.Sprintf("%#v", this.Desc)+",\n")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetLiveViewsResp) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cloudapipb.GetLiveViewsResp{")
+	if this.LiveViews != nil {
+		s = append(s, "LiveViews: "+fmt.Sprintf("%#v", this.LiveViews)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetLiveViewContentsReq) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cloudapipb.GetLiveViewContentsReq{")
+	s = append(s, "LiveViewID: "+fmt.Sprintf("%#v", this.LiveViewID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetLiveViewContentsResp) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&cloudapipb.GetLiveViewContentsResp{")
+	if this.Metadata != nil {
+		s = append(s, "Metadata: "+fmt.Sprintf("%#v", this.Metadata)+",\n")
+	}
+	s = append(s, "PxlContents: "+fmt.Sprintf("%#v", this.PxlContents)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetScriptsReq) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&cloudapipb.GetScriptsReq{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ScriptMetadata) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&cloudapipb.ScriptMetadata{")
+	s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	s = append(s, "Desc: "+fmt.Sprintf("%#v", this.Desc)+",\n")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "HasLiveView: "+fmt.Sprintf("%#v", this.HasLiveView)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetScriptsResp) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cloudapipb.GetScriptsResp{")
+	if this.Scripts != nil {
+		s = append(s, "Scripts: "+fmt.Sprintf("%#v", this.Scripts)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetScriptContentsReq) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&cloudapipb.GetScriptContentsReq{")
+	s = append(s, "ScriptID: "+fmt.Sprintf("%#v", this.ScriptID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetScriptContentsResp) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&cloudapipb.GetScriptContentsResp{")
+	if this.Metadata != nil {
+		s = append(s, "Metadata: "+fmt.Sprintf("%#v", this.Metadata)+",\n")
+	}
+	s = append(s, "Contents: "+fmt.Sprintf("%#v", this.Contents)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2935,6 +3813,10 @@ var _VizierClusterInfo_serviceDesc = grpc.ServiceDesc{
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type ScriptMgrClient interface {
+	GetLiveViews(ctx context.Context, in *GetLiveViewsReq, opts ...grpc.CallOption) (*GetLiveViewsResp, error)
+	GetLiveViewContents(ctx context.Context, in *GetLiveViewContentsReq, opts ...grpc.CallOption) (*GetLiveViewContentsResp, error)
+	GetScripts(ctx context.Context, in *GetScriptsReq, opts ...grpc.CallOption) (*GetScriptsResp, error)
+	GetScriptContents(ctx context.Context, in *GetScriptContentsReq, opts ...grpc.CallOption) (*GetScriptContentsResp, error)
 }
 
 type scriptMgrClient struct {
@@ -2945,24 +3827,166 @@ func NewScriptMgrClient(cc *grpc.ClientConn) ScriptMgrClient {
 	return &scriptMgrClient{cc}
 }
 
+func (c *scriptMgrClient) GetLiveViews(ctx context.Context, in *GetLiveViewsReq, opts ...grpc.CallOption) (*GetLiveViewsResp, error) {
+	out := new(GetLiveViewsResp)
+	err := c.cc.Invoke(ctx, "/pl.cloudapi.ScriptMgr/GetLiveViews", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *scriptMgrClient) GetLiveViewContents(ctx context.Context, in *GetLiveViewContentsReq, opts ...grpc.CallOption) (*GetLiveViewContentsResp, error) {
+	out := new(GetLiveViewContentsResp)
+	err := c.cc.Invoke(ctx, "/pl.cloudapi.ScriptMgr/GetLiveViewContents", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *scriptMgrClient) GetScripts(ctx context.Context, in *GetScriptsReq, opts ...grpc.CallOption) (*GetScriptsResp, error) {
+	out := new(GetScriptsResp)
+	err := c.cc.Invoke(ctx, "/pl.cloudapi.ScriptMgr/GetScripts", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *scriptMgrClient) GetScriptContents(ctx context.Context, in *GetScriptContentsReq, opts ...grpc.CallOption) (*GetScriptContentsResp, error) {
+	out := new(GetScriptContentsResp)
+	err := c.cc.Invoke(ctx, "/pl.cloudapi.ScriptMgr/GetScriptContents", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ScriptMgrServer is the server API for ScriptMgr service.
 type ScriptMgrServer interface {
+	GetLiveViews(context.Context, *GetLiveViewsReq) (*GetLiveViewsResp, error)
+	GetLiveViewContents(context.Context, *GetLiveViewContentsReq) (*GetLiveViewContentsResp, error)
+	GetScripts(context.Context, *GetScriptsReq) (*GetScriptsResp, error)
+	GetScriptContents(context.Context, *GetScriptContentsReq) (*GetScriptContentsResp, error)
 }
 
 // UnimplementedScriptMgrServer can be embedded to have forward compatible implementations.
 type UnimplementedScriptMgrServer struct {
 }
 
+func (*UnimplementedScriptMgrServer) GetLiveViews(ctx context.Context, req *GetLiveViewsReq) (*GetLiveViewsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLiveViews not implemented")
+}
+func (*UnimplementedScriptMgrServer) GetLiveViewContents(ctx context.Context, req *GetLiveViewContentsReq) (*GetLiveViewContentsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetLiveViewContents not implemented")
+}
+func (*UnimplementedScriptMgrServer) GetScripts(ctx context.Context, req *GetScriptsReq) (*GetScriptsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetScripts not implemented")
+}
+func (*UnimplementedScriptMgrServer) GetScriptContents(ctx context.Context, req *GetScriptContentsReq) (*GetScriptContentsResp, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetScriptContents not implemented")
+}
+
 func RegisterScriptMgrServer(s *grpc.Server, srv ScriptMgrServer) {
 	s.RegisterService(&_ScriptMgr_serviceDesc, srv)
+}
+
+func _ScriptMgr_GetLiveViews_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLiveViewsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ScriptMgrServer).GetLiveViews(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.cloudapi.ScriptMgr/GetLiveViews",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ScriptMgrServer).GetLiveViews(ctx, req.(*GetLiveViewsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ScriptMgr_GetLiveViewContents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetLiveViewContentsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ScriptMgrServer).GetLiveViewContents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.cloudapi.ScriptMgr/GetLiveViewContents",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ScriptMgrServer).GetLiveViewContents(ctx, req.(*GetLiveViewContentsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ScriptMgr_GetScripts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetScriptsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ScriptMgrServer).GetScripts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.cloudapi.ScriptMgr/GetScripts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ScriptMgrServer).GetScripts(ctx, req.(*GetScriptsReq))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ScriptMgr_GetScriptContents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetScriptContentsReq)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ScriptMgrServer).GetScriptContents(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.cloudapi.ScriptMgr/GetScriptContents",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ScriptMgrServer).GetScriptContents(ctx, req.(*GetScriptContentsReq))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 var _ScriptMgr_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "pl.cloudapi.ScriptMgr",
 	HandlerType: (*ScriptMgrServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams:     []grpc.StreamDesc{},
-	Metadata:    "src/cloud/cloudapipb/cloudapi.proto",
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetLiveViews",
+			Handler:    _ScriptMgr_GetLiveViews_Handler,
+		},
+		{
+			MethodName: "GetLiveViewContents",
+			Handler:    _ScriptMgr_GetLiveViewContents_Handler,
+		},
+		{
+			MethodName: "GetScripts",
+			Handler:    _ScriptMgr_GetScripts_Handler,
+		},
+		{
+			MethodName: "GetScriptContents",
+			Handler:    _ScriptMgr_GetScriptContents_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "src/cloud/cloudapipb/cloudapi.proto",
 }
 
 // AutocompleteServiceClient is the client API for AutocompleteService service.
@@ -3801,6 +4825,368 @@ func (m *UpdateClusterVizierConfigResponse) MarshalToSizedBuffer(dAtA []byte) (i
 	return len(dAtA) - i, nil
 }
 
+func (m *GetLiveViewsReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetLiveViewsReq) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetLiveViewsReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *LiveViewMetadata) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *LiveViewMetadata) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *LiveViewMetadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Desc) > 0 {
+		i -= len(m.Desc)
+		copy(dAtA[i:], m.Desc)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.Desc)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ID) > 0 {
+		i -= len(m.ID)
+		copy(dAtA[i:], m.ID)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.ID)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetLiveViewsResp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetLiveViewsResp) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetLiveViewsResp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.LiveViews) > 0 {
+		for iNdEx := len(m.LiveViews) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.LiveViews[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintCloudapi(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetLiveViewContentsReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetLiveViewContentsReq) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetLiveViewContentsReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.LiveViewID) > 0 {
+		i -= len(m.LiveViewID)
+		copy(dAtA[i:], m.LiveViewID)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.LiveViewID)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetLiveViewContentsResp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetLiveViewContentsResp) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetLiveViewContentsResp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.PxlContents) > 0 {
+		i -= len(m.PxlContents)
+		copy(dAtA[i:], m.PxlContents)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.PxlContents)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Metadata != nil {
+		{
+			size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCloudapi(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetScriptsReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetScriptsReq) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetScriptsReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *ScriptMetadata) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ScriptMetadata) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ScriptMetadata) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.HasLiveView {
+		i--
+		if m.HasLiveView {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x20
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Desc) > 0 {
+		i -= len(m.Desc)
+		copy(dAtA[i:], m.Desc)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.Desc)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.ID) > 0 {
+		i -= len(m.ID)
+		copy(dAtA[i:], m.ID)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.ID)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetScriptsResp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetScriptsResp) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetScriptsResp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Scripts) > 0 {
+		for iNdEx := len(m.Scripts) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Scripts[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintCloudapi(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetScriptContentsReq) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetScriptContentsReq) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetScriptContentsReq) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ScriptID) > 0 {
+		i -= len(m.ScriptID)
+		copy(dAtA[i:], m.ScriptID)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.ScriptID)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetScriptContentsResp) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetScriptContentsResp) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetScriptContentsResp) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Contents) > 0 {
+		i -= len(m.Contents)
+		copy(dAtA[i:], m.Contents)
+		i = encodeVarintCloudapi(dAtA, i, uint64(len(m.Contents)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Metadata != nil {
+		{
+			size, err := m.Metadata.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCloudapi(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *AutocompleteRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -4316,6 +5702,159 @@ func (m *UpdateClusterVizierConfigResponse) Size() (n int) {
 	return n
 }
 
+func (m *GetLiveViewsReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *LiveViewMetadata) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	l = len(m.Desc)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	return n
+}
+
+func (m *GetLiveViewsResp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.LiveViews) > 0 {
+		for _, e := range m.LiveViews {
+			l = e.Size()
+			n += 1 + l + sovCloudapi(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *GetLiveViewContentsReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.LiveViewID)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	return n
+}
+
+func (m *GetLiveViewContentsResp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Metadata != nil {
+		l = m.Metadata.Size()
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	l = len(m.PxlContents)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	return n
+}
+
+func (m *GetScriptsReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *ScriptMetadata) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ID)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	l = len(m.Desc)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	if m.HasLiveView {
+		n += 2
+	}
+	return n
+}
+
+func (m *GetScriptsResp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Scripts) > 0 {
+		for _, e := range m.Scripts {
+			l = e.Size()
+			n += 1 + l + sovCloudapi(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *GetScriptContentsReq) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ScriptID)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	return n
+}
+
+func (m *GetScriptContentsResp) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Metadata != nil {
+		l = m.Metadata.Size()
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	l = len(m.Contents)
+	if l > 0 {
+		n += 1 + l + sovCloudapi(uint64(l))
+	}
+	return n
+}
+
 func (m *AutocompleteRequest) Size() (n int) {
 	if m == nil {
 		return 0
@@ -4624,6 +6163,121 @@ func (this *UpdateClusterVizierConfigResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&UpdateClusterVizierConfigResponse{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetLiveViewsReq) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetLiveViewsReq{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *LiveViewMetadata) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&LiveViewMetadata{`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
+		`Desc:` + fmt.Sprintf("%v", this.Desc) + `,`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetLiveViewsResp) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForLiveViews := "[]*LiveViewMetadata{"
+	for _, f := range this.LiveViews {
+		repeatedStringForLiveViews += strings.Replace(f.String(), "LiveViewMetadata", "LiveViewMetadata", 1) + ","
+	}
+	repeatedStringForLiveViews += "}"
+	s := strings.Join([]string{`&GetLiveViewsResp{`,
+		`LiveViews:` + repeatedStringForLiveViews + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetLiveViewContentsReq) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetLiveViewContentsReq{`,
+		`LiveViewID:` + fmt.Sprintf("%v", this.LiveViewID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetLiveViewContentsResp) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetLiveViewContentsResp{`,
+		`Metadata:` + strings.Replace(this.Metadata.String(), "LiveViewMetadata", "LiveViewMetadata", 1) + `,`,
+		`PxlContents:` + fmt.Sprintf("%v", this.PxlContents) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetScriptsReq) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetScriptsReq{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ScriptMetadata) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ScriptMetadata{`,
+		`ID:` + fmt.Sprintf("%v", this.ID) + `,`,
+		`Desc:` + fmt.Sprintf("%v", this.Desc) + `,`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`HasLiveView:` + fmt.Sprintf("%v", this.HasLiveView) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetScriptsResp) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForScripts := "[]*ScriptMetadata{"
+	for _, f := range this.Scripts {
+		repeatedStringForScripts += strings.Replace(f.String(), "ScriptMetadata", "ScriptMetadata", 1) + ","
+	}
+	repeatedStringForScripts += "}"
+	s := strings.Join([]string{`&GetScriptsResp{`,
+		`Scripts:` + repeatedStringForScripts + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetScriptContentsReq) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetScriptContentsReq{`,
+		`ScriptID:` + fmt.Sprintf("%v", this.ScriptID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetScriptContentsResp) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetScriptContentsResp{`,
+		`Metadata:` + strings.Replace(this.Metadata.String(), "ScriptMetadata", "ScriptMetadata", 1) + `,`,
+		`Contents:` + fmt.Sprintf("%v", this.Contents) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -6809,6 +8463,1016 @@ func (m *UpdateClusterVizierConfigResponse) Unmarshal(dAtA []byte) error {
 			return fmt.Errorf("proto: UpdateClusterVizierConfigResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetLiveViewsReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetLiveViewsReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetLiveViewsReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *LiveViewMetadata) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: LiveViewMetadata: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: LiveViewMetadata: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Desc", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Desc = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetLiveViewsResp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetLiveViewsResp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetLiveViewsResp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LiveViews", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LiveViews = append(m.LiveViews, &LiveViewMetadata{})
+			if err := m.LiveViews[len(m.LiveViews)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetLiveViewContentsReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetLiveViewContentsReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetLiveViewContentsReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field LiveViewID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.LiveViewID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetLiveViewContentsResp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetLiveViewContentsResp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetLiveViewContentsResp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Metadata == nil {
+				m.Metadata = &LiveViewMetadata{}
+			}
+			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PxlContents", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.PxlContents = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetScriptsReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetScriptsReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetScriptsReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ScriptMetadata) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ScriptMetadata: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ScriptMetadata: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Desc", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Desc = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field HasLiveView", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.HasLiveView = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetScriptsResp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetScriptsResp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetScriptsResp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Scripts", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Scripts = append(m.Scripts, &ScriptMetadata{})
+			if err := m.Scripts[len(m.Scripts)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetScriptContentsReq) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetScriptContentsReq: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetScriptContentsReq: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ScriptID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ScriptID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCloudapi(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetScriptContentsResp) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCloudapi
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetScriptContentsResp: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetScriptContentsResp: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Metadata", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Metadata == nil {
+				m.Metadata = &ScriptMetadata{}
+			}
+			if err := m.Metadata.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Contents", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCloudapi
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCloudapi
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Contents = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipCloudapi(dAtA[iNdEx:])

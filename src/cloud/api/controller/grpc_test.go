@@ -2,8 +2,10 @@ package controller_test
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
+	"github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
@@ -15,6 +17,8 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	mock_autocomplete "pixielabs.ai/pixielabs/src/cloud/autocomplete/mock"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
+	mock_scriptmgr "pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb/mock"
 	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
@@ -313,4 +317,178 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 	assert.Equal(t, "${2:run} ${3:$0px/svc_info} ${1:pl/test}", resp.FormattedInput)
 	assert.False(t, resp.IsExecutable)
 	assert.Equal(t, 3, len(resp.TabSuggestions))
+}
+
+func TestScriptMgr(t *testing.T) {
+
+	ID1 := uuid.NewV4()
+	ID2 := uuid.NewV4()
+	testCases := []struct {
+		name         string
+		endpoint     string
+		smReq        proto.Message
+		smResp       proto.Message
+		req          proto.Message
+		expectedResp proto.Message
+	}{
+		{
+			name:     "GetLiveViews correctly translates from scriptmgrpb to cloudapipb.",
+			endpoint: "GetLiveViews",
+			smReq:    &scriptmgrpb.GetLiveViewsReq{},
+			smResp: &scriptmgrpb.GetLiveViewsResp{
+				LiveViews: []*scriptmgrpb.LiveViewMetadata{
+					&scriptmgrpb.LiveViewMetadata{
+						ID:   pbutils.ProtoFromUUID(&ID1),
+						Name: "liveview1",
+						Desc: "liveview1 desc",
+					},
+					&scriptmgrpb.LiveViewMetadata{
+						ID:   pbutils.ProtoFromUUID(&ID2),
+						Name: "liveview2",
+						Desc: "liveview2 desc",
+					},
+				},
+			},
+			req: &cloudapipb.GetLiveViewsReq{},
+			expectedResp: &cloudapipb.GetLiveViewsResp{
+				LiveViews: []*cloudapipb.LiveViewMetadata{
+					&cloudapipb.LiveViewMetadata{
+						ID:   ID1.String(),
+						Name: "liveview1",
+						Desc: "liveview1 desc",
+					},
+					&cloudapipb.LiveViewMetadata{
+						ID:   ID2.String(),
+						Name: "liveview2",
+						Desc: "liveview2 desc",
+					},
+				},
+			},
+		},
+		{
+			name:     "GetLiveViewContents correctly translates between scriptmgr and cloudapipb.",
+			endpoint: "GetLiveViewContents",
+			smReq: &scriptmgrpb.GetLiveViewContentsReq{
+				LiveViewID: pbutils.ProtoFromUUID(&ID1),
+			},
+			smResp: &scriptmgrpb.GetLiveViewContentsResp{
+				Metadata: &scriptmgrpb.LiveViewMetadata{
+					ID:   pbutils.ProtoFromUUID(&ID1),
+					Name: "liveview1",
+					Desc: "liveview1 desc",
+				},
+				PxlContents: "liveview1 pxl",
+			},
+			req: &cloudapipb.GetLiveViewContentsReq{
+				LiveViewID: ID1.String(),
+			},
+			expectedResp: &cloudapipb.GetLiveViewContentsResp{
+				Metadata: &cloudapipb.LiveViewMetadata{
+					ID:   ID1.String(),
+					Name: "liveview1",
+					Desc: "liveview1 desc",
+				},
+				PxlContents: "liveview1 pxl",
+			},
+		},
+		{
+			name:     "GetScripts correctly translates between scriptmgr and cloudapipb.",
+			endpoint: "GetScripts",
+			smReq:    &scriptmgrpb.GetScriptsReq{},
+			smResp: &scriptmgrpb.GetScriptsResp{
+				Scripts: []*scriptmgrpb.ScriptMetadata{
+					&scriptmgrpb.ScriptMetadata{
+						ID:          pbutils.ProtoFromUUID(&ID1),
+						Name:        "script1",
+						Desc:        "script1 desc",
+						HasLiveView: false,
+					},
+					&scriptmgrpb.ScriptMetadata{
+						ID:          pbutils.ProtoFromUUID(&ID2),
+						Name:        "liveview1",
+						Desc:        "liveview1 desc",
+						HasLiveView: true,
+					},
+				},
+			},
+			req: &cloudapipb.GetScriptsReq{},
+			expectedResp: &cloudapipb.GetScriptsResp{
+				Scripts: []*cloudapipb.ScriptMetadata{
+					&cloudapipb.ScriptMetadata{
+						ID:          ID1.String(),
+						Name:        "script1",
+						Desc:        "script1 desc",
+						HasLiveView: false,
+					},
+					&cloudapipb.ScriptMetadata{
+						ID:          ID2.String(),
+						Name:        "liveview1",
+						Desc:        "liveview1 desc",
+						HasLiveView: true,
+					},
+				},
+			},
+		},
+		{
+			name:     "GetScriptContents correctly translates between scriptmgr and cloudapipb.",
+			endpoint: "GetScriptContents",
+			smReq: &scriptmgrpb.GetScriptContentsReq{
+				ScriptID: pbutils.ProtoFromUUID(&ID1),
+			},
+			smResp: &scriptmgrpb.GetScriptContentsResp{
+				Metadata: &scriptmgrpb.ScriptMetadata{
+					ID:          pbutils.ProtoFromUUID(&ID1),
+					Name:        "Script1",
+					Desc:        "Script1 desc",
+					HasLiveView: false,
+				},
+				Contents: "Script1 pxl",
+			},
+			req: &cloudapipb.GetScriptContentsReq{
+				ScriptID: ID1.String(),
+			},
+			expectedResp: &cloudapipb.GetScriptContentsResp{
+				Metadata: &cloudapipb.ScriptMetadata{
+					ID:          ID1.String(),
+					Name:        "Script1",
+					Desc:        "Script1 desc",
+					HasLiveView: false,
+				},
+				Contents: "Script1 pxl",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			mockScriptMgr := mock_scriptmgr.NewMockScriptMgrServiceClient(ctrl)
+			ctx := CreateTestContext()
+
+			reflect.ValueOf(mockScriptMgr.EXPECT()).
+				MethodByName(tc.endpoint).
+				Call([]reflect.Value{
+					reflect.ValueOf(gomock.Any()),
+					reflect.ValueOf(tc.smReq),
+				})[0].Interface().(*gomock.Call).
+				Return(tc.smResp, nil)
+
+			scriptMgrServer := &controller.ScriptMgrServer{
+				ScriptMgr: mockScriptMgr,
+			}
+
+			returnVals := reflect.ValueOf(scriptMgrServer).
+				MethodByName(tc.endpoint).
+				Call([]reflect.Value{
+					reflect.ValueOf(ctx),
+					reflect.ValueOf(tc.req),
+				})
+			assert.Nil(t, returnVals[1].Interface())
+			resp := returnVals[0].Interface().(proto.Message)
+
+			assert.Equal(t, tc.expectedResp, resp)
+		})
+	}
 }

@@ -193,6 +193,113 @@ message UpdateClusterVizierConfigRequest {
 message UpdateClusterVizierConfigResponse {}
 
 service ScriptMgr {
+  // GetLiveViews returns a list of all available live views.
+  rpc GetLiveViews(GetLiveViewsReq) returns (GetLiveViewsResp) {}
+  // GetLiveViewContents returns the pxl script, vis info, and metdata for a live view.
+  rpc GetLiveViewContents(GetLiveViewContentsReq) returns (GetLiveViewContentsResp) {}
+
+  // GetScripts returns a list of all available scripts.
+  rpc GetScripts(GetScriptsReq) returns (GetScriptsResp) {}
+  // GetScriptContents returns the pxl string of the script.
+  rpc GetScriptContents(GetScriptContentsReq) returns (GetScriptContentsResp) {}
+}
+
+// GetLiveViewsReq is the request message for getting a list of all live views.
+// Currently, its empty but in the future it will contain org/repo info.
+message GetLiveViewsReq {
+}
+
+// LiveViewMetadata stores metadata information about a particular live view.
+// This message allows for GetLiveViews to return some information about the live views
+// without having to return the contents for each live view
+message LiveViewMetadata {
+  // Unique ID of the live view.
+  string id = 1 [(gogoproto.customname) = "ID"];
+  // Short description of what the live view does.
+  string desc = 2;
+  // Name of the live view, currently all live view names are of the form `px/*`.
+  string name = 3;
+}
+
+// GetLiveViewsResp contains a list of all available live views along with metadata about
+// those live views.
+// The UI would use this message to display a list of live views along with their descriptions.
+// Then when the user selects one of the live views, the UI can make a call to GetLiveViewContents
+// with the ID in the live view metadata of this message.
+message GetLiveViewsResp {
+  // List of all available live views, and their metadata.
+  // Currently, this returns all scripts in the bundle.json, that have a vis spec.
+  repeated LiveViewMetadata live_views = 1;
+}
+
+// GetLiveViewContentsReq allows the UI to request the contents of a live view by UUID.
+// This allows GetLiveViews to only return metadata and not content.
+message GetLiveViewContentsReq {
+  // Unique ID of the live view to get the contents for.
+  string live_view_id = 1 [(gogoproto.customname) = "LiveViewID"];
+}
+
+// GetLiveViewContentsResp returns the pxl script and vis contents of the live view specified
+// by the request.
+// This will be called by the UI once a user has selected a live view from the list returned by
+// GetLiveViews.
+message GetLiveViewContentsResp {
+  // Metadata of the requested live view.
+  LiveViewMetadata metadata = 1;
+  // string of the pxl script of the requested live view.
+  string pxl_contents = 2;
+  // TODO(james): add this once @nserrino merges the vis proto.
+  // pl.shared.vis.Vis vis = 3;
+}
+
+// GetScriptsReq is the request message for getting a list of all scripts.
+// Currently, its empty but in the future it will contain org/repo info.
+message GetScriptsReq {
+}
+
+// ScriptMetadata stores metadata information about a particular script.
+// This message allows for GetScripts to return some information about the scripts
+// without having to return the contents of each script.
+message ScriptMetadata {
+  // Unique ID of the script.
+  string id = 1 [(gogoproto.customname) = "ID"];
+  // Short description of what the script does.
+  string desc = 2;
+  // Name of the script, currently all script names are of the form `px/*`.
+  string name = 3;
+  // Whether or not this script can be used as a live view. Currently,
+  // this is determined by checking if the script has a vis spec.
+  bool has_live_view = 4;
+}
+
+// GetScriptsResp contains a list of all available scripts along with metadata about
+// those scripts.
+// The CLI would use this message for something like a `px scripts ls` command, to show the user
+// what scripts are available to run.
+message GetScriptsResp {
+  // List of all available scripts, and their metadata.
+  // Currently, this returns all scripts in the bundle.json.
+  repeated ScriptMetadata scripts = 1;
+}
+
+// GetScriptContentsReq allows the CLI to request the contents of a script by UUID.
+// This allows GetScripts to only return metadata and not content.
+message GetScriptContentsReq {
+  // Unique ID of the script to get the contents for.
+  string script_id = 1 [(gogoproto.customname) = "ScriptID"];
+}
+
+// GetScriptContentsResp returns the pxl script contents of the script specified
+// by the request.
+// The CLI will call GetScriptContents when a user runs `px run <script_name>`.
+// A future endpoint will allow for translation between script name and UUID.
+// Also, once there are imports, the UI will call GetScriptContents, if a user
+// wants to view the contents of an import.
+message GetScriptContentsResp {
+  // Metadata of the requested script.
+  ScriptMetadata metadata = 1;
+  // string of the pxl for the script.
+  string contents = 2;
 }
 
 // AutocompleteService responds to autocomplete requests.

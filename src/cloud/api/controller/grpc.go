@@ -6,26 +6,24 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
-
 	uuid "github.com/satori/go.uuid"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
-	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
-	pbutils "pixielabs.ai/pixielabs/src/utils"
-
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"github.com/spf13/pflag"
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/utils"
+	pbutils "pixielabs.ai/pixielabs/src/utils"
 )
 
 func init() {
@@ -295,11 +293,6 @@ func vzStatusToClusterStatus(s cvmsgspb.VizierInfo_Status) cloudapipb.ClusterSta
 	}
 }
 
-// ScriptMgrServer is the server that implements the ScriptMgr gRPC service.
-type ScriptMgrServer struct {
-	ScriptMgr scriptmgrpb.ScriptMgrServiceClient
-}
-
 // AutocompleteServer is the server that implements the Autocomplete gRPC service.
 type AutocompleteServer struct {
 	Suggester autocomplete.Suggester
@@ -326,5 +319,114 @@ func (a *AutocompleteServer) Autocomplete(ctx context.Context, req *cloudapipb.A
 		FormattedInput: fmtString,
 		IsExecutable:   executable,
 		TabSuggestions: suggestions,
+	}, nil
+}
+
+// ScriptMgrServer is the server that implements the ScriptMgr gRPC service.
+type ScriptMgrServer struct {
+	ScriptMgr scriptmgrpb.ScriptMgrServiceClient
+}
+
+// GetLiveViews returns a list of all available live views.
+func (s *ScriptMgrServer) GetLiveViews(ctx context.Context, req *cloudapipb.GetLiveViewsReq) (*cloudapipb.GetLiveViewsResp, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
+
+	smReq := &scriptmgrpb.GetLiveViewsReq{}
+	smResp, err := s.ScriptMgr.GetLiveViews(ctx, smReq)
+	if err != nil {
+		return nil, err
+	}
+	resp := &cloudapipb.GetLiveViewsResp{
+		LiveViews: make([]*cloudapipb.LiveViewMetadata, len(smResp.LiveViews)),
+	}
+	for i, liveView := range smResp.LiveViews {
+		resp.LiveViews[i] = &cloudapipb.LiveViewMetadata{
+			ID:   pbutils.UUIDFromProtoOrNil(liveView.ID).String(),
+			Name: liveView.Name,
+			Desc: liveView.Desc,
+		}
+	}
+	return resp, nil
+}
+
+// GetLiveViewContents returns the pxl script, vis info, and metdata for a live view.
+func (s *ScriptMgrServer) GetLiveViewContents(ctx context.Context, req *cloudapipb.GetLiveViewContentsReq) (*cloudapipb.GetLiveViewContentsResp, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
+
+	smReq := &scriptmgrpb.GetLiveViewContentsReq{
+		LiveViewID: pbutils.ProtoFromUUIDStrOrNil(req.LiveViewID),
+	}
+	smResp, err := s.ScriptMgr.GetLiveViewContents(ctx, smReq)
+	if err != nil {
+		return nil, err
+	}
+	return &cloudapipb.GetLiveViewContentsResp{
+		Metadata: &cloudapipb.LiveViewMetadata{
+			ID:   req.LiveViewID,
+			Name: smResp.Metadata.Name,
+			Desc: smResp.Metadata.Desc,
+		},
+		PxlContents: smResp.PxlContents,
+	}, nil
+}
+
+// GetScripts returns a list of all available scripts.
+func (s *ScriptMgrServer) GetScripts(ctx context.Context, req *cloudapipb.GetScriptsReq) (*cloudapipb.GetScriptsResp, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
+
+	smReq := &scriptmgrpb.GetScriptsReq{}
+	smResp, err := s.ScriptMgr.GetScripts(ctx, smReq)
+	if err != nil {
+		return nil, err
+	}
+	resp := &cloudapipb.GetScriptsResp{
+		Scripts: make([]*cloudapipb.ScriptMetadata, len(smResp.Scripts)),
+	}
+	for i, script := range smResp.Scripts {
+		resp.Scripts[i] = &cloudapipb.ScriptMetadata{
+			ID:          pbutils.UUIDFromProtoOrNil(script.ID).String(),
+			Name:        script.Name,
+			Desc:        script.Desc,
+			HasLiveView: script.HasLiveView,
+		}
+	}
+	return resp, nil
+}
+
+// GetScriptContents returns the pxl string of the script.
+func (s *ScriptMgrServer) GetScriptContents(ctx context.Context, req *cloudapipb.GetScriptContentsReq) (*cloudapipb.GetScriptContentsResp, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
+
+	smReq := &scriptmgrpb.GetScriptContentsReq{
+		ScriptID: pbutils.ProtoFromUUIDStrOrNil(req.ScriptID),
+	}
+	smResp, err := s.ScriptMgr.GetScriptContents(ctx, smReq)
+	if err != nil {
+		return nil, err
+	}
+	return &cloudapipb.GetScriptContentsResp{
+		Metadata: &cloudapipb.ScriptMetadata{
+			ID:          req.ScriptID,
+			Name:        smResp.Metadata.Name,
+			Desc:        smResp.Metadata.Desc,
+			HasLiveView: smResp.Metadata.HasLiveView,
+		},
+		Contents: smResp.Contents,
 	}, nil
 }
