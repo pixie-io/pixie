@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -152,7 +153,14 @@ func getNumRows(in *pl_api_vizierpb.Column) int {
 func (v *VizierStreamOutputAdapter) getNativeTypedValue(tableInfo *TableInfo, rowIdx int, colIdx int, data interface{}) interface{} {
 	switch u := data.(type) {
 	case *pl_api_vizierpb.Column_StringData:
-		return string(u.StringData.Data[rowIdx])
+		s := u.StringData.Data[rowIdx]
+		if f, err := strconv.ParseFloat(s, 64); err == nil {
+			return f
+		}
+		if i, err := strconv.ParseInt(s, 10, 64); err == nil {
+			return i
+		}
+		return u.StringData.Data[rowIdx]
 	case *pl_api_vizierpb.Column_Float64Data:
 		return u.Float64Data.Data[rowIdx]
 	case *pl_api_vizierpb.Column_Int64Data:
