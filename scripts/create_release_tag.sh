@@ -114,7 +114,7 @@ done
 
 # Get the latest release tag.
 tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/tags \
-    | grep "release/$ARTIFACT_TYPE" | grep -v "\-pre")
+    | grep "release/$ARTIFACT_TYPE" | grep -v "\-")
 
 # Get the most recent tag.
 prev_tag=$(echo "$tags" | head -1)
