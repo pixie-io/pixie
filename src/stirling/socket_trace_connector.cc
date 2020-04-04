@@ -29,6 +29,7 @@
 #include "src/stirling/http2/http2.h"
 #include "src/stirling/mysql/mysql_parse.h"
 #include "src/stirling/obj_tools/obj_tools.h"
+#include "src/stirling/obj_tools/proc_path_tools.h"
 #include "src/stirling/proto/sock_event.pb.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/utils/linux_headers.h"
@@ -86,6 +87,7 @@ using ::pl::stirling::elf_tools::ElfReader;
 using ::pl::stirling::grpc::ParsePB;
 using ::pl::stirling::http2::HTTP2Message;
 using ::pl::stirling::obj_tools::GetActiveBinary;
+using ::pl::stirling::obj_tools::ResolveProcessPath;
 using ::pl::stirling::utils::ToJSONString;
 
 namespace {
@@ -323,8 +325,9 @@ std::map<std::string, std::vector<int32_t>> SocketTraceConnector::FindNewPIDs() 
   return new_pids;
 }
 
-namespace {
-struct conn_symaddrs_t GetHTTP2SymAddrs(ElfReader* elf_reader) {
+bool SocketTraceConnector::UpdateHTTP2SymAddrs(
+    ElfReader* elf_reader, const std::vector<int32_t>& pids,
+    ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map) {
   struct conn_symaddrs_t symaddrs;
   symaddrs.syscall_conn =
       elf_reader
@@ -333,13 +336,6 @@ struct conn_symaddrs_t GetHTTP2SymAddrs(ElfReader* elf_reader) {
           .value_or(-1);
   symaddrs.tls_conn = elf_reader->SymbolAddress("go.itab.*crypto/tls.Conn,net.Conn").value_or(-1);
   symaddrs.tcp_conn = elf_reader->SymbolAddress("go.itab.*net.TCPConn,net.Conn").value_or(-1);
-
-  return symaddrs;
-}
-
-bool UpdateHTTP2SymAddrs(ElfReader* elf_reader, const std::vector<int32_t>& pids,
-                         ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map) {
-  struct conn_symaddrs_t symaddrs = GetHTTP2SymAddrs(elf_reader);
 
   // TCPConn is mandatory by the HTTP2 uprobes probe, so bail if it is not found (-1).
   // It should be the last layer of nested interface, and contains the FD.
@@ -354,7 +350,6 @@ bool UpdateHTTP2SymAddrs(ElfReader* elf_reader, const std::vector<int32_t>& pids
 
   return true;
 }
-}  // namespace
 
 StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(
     const ArrayView<bpf_tools::UProbeTmpl>& probe_tmpls, const std::string& binary,
@@ -373,19 +368,16 @@ StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(
   return uprobe_count;
 }
 
-// TODO(oazizi/yzhao): Should uprobe uses different set of perf buffers than the kprobes?
+// TODO(oazizi/yzhao): Should HTTP uprobes use a different set of perf buffers than the kprobes?
 // That allows the BPF code and companion user-space code for uprobe & kprobe be separated
 // cleanly. For example, right now, enabling uprobe & kprobe simultaneously can crash Stirling,
 // because of the mixed & duplicate data events from these 2 sources.
-StatusOr<int> SocketTraceConnector::AttachHTTP2UProbes(const std::string& binary,
-                                                       elf_tools::ElfReader* elf_reader,
-                                                       const std::vector<int32_t>& new_pids) {
-  // TODO(oazizi): Expensive call. Pull out and cache.
-  ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> http2_symaddrs_map =
-      bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("http2_symaddrs_map");
-
+StatusOr<int> SocketTraceConnector::AttachHTTP2UProbes(
+    const std::string& binary, elf_tools::ElfReader* elf_reader,
+    const std::vector<int32_t>& new_pids,
+    ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map) {
   // Step 1: Update BPF symbols_map on all new PIDs.
-  bool found_symbols = UpdateHTTP2SymAddrs(elf_reader, new_pids, &http2_symaddrs_map);
+  bool found_symbols = UpdateHTTP2SymAddrs(elf_reader, new_pids, http2_symaddrs_map);
   if (!found_symbols) {
     // Doesn't appear to be a binary with a TCPConn.
     // Might not even be a golang binary.
@@ -394,7 +386,7 @@ StatusOr<int> SocketTraceConnector::AttachHTTP2UProbes(const std::string& binary
   }
 
   // Step 2: Deploy uprobes on all new binaries.
-  auto result = probed_binaries_.insert(binary);
+  auto result = http2_probed_binaries_.insert(binary);
   if (!result.second) {
     // This is not a new binary, so nothing more to do.
     return 0;
@@ -402,13 +394,67 @@ StatusOr<int> SocketTraceConnector::AttachHTTP2UProbes(const std::string& binary
   return AttachUProbeTmpl(kHTTP2UProbeTmpls, binary, elf_reader);
 }
 
-StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes() {
-  // Placeholder
-  return 0;
+StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& binary,
+                                                         const std::vector<int32_t>& new_pids) {
+  constexpr std::string_view kLibSSL = "libssl.so.1.1";
+
+  // Only search for OpenSSL libraries on newly discovered binaries.
+  // TODO(oazizi): Will this prevent us from discovering dynamically loaded OpenSSL instances?
+  auto result = openssl_probed_binaries_.insert(binary);
+  if (!result.second) {
+    return 0;
+  }
+
+  std::filesystem::path container_lib;
+
+  // Find the path to libssl for this binary, which may be inside a container.
+  for (const auto& pid : new_pids) {
+    StatusOr<absl::flat_hash_set<std::string>> libs_status = proc_parser_->GetMapPaths(pid);
+    if (!libs_status.ok()) {
+      VLOG(1) << absl::Substitute("Unable to check for libssl.so for $0. Message: $1", binary,
+                                  libs_status.msg());
+      continue;
+    }
+    std::filesystem::path proc_pid_path = std::filesystem::path("/proc") / std::to_string(pid);
+    for (const auto& lib : libs_status.ValueOrDie()) {
+      if (absl::EndsWith(lib, kLibSSL)) {
+        StatusOr<std::filesystem::path> container_lib_status =
+            ResolveProcessPath(proc_pid_path, lib);
+        if (!container_lib_status.ok()) {
+          VLOG(1) << absl::Substitute("Unable to resolve libssl.so path for $0. Message: $1",
+                                      binary, container_lib_status.msg());
+          continue;
+        }
+        container_lib = container_lib_status.ValueOrDie();
+        break;
+      }
+    }
+  }
+
+  if (container_lib.empty()) {
+    // Looks like this binary doesn't use libssl (or we ran into an error).
+    return 0;
+  }
+
+  // Only try probing so files that we haven't already set probes on.
+  result = openssl_probed_binaries_.insert(container_lib);
+  if (!result.second) {
+    return 0;
+  }
+
+  for (auto spec : kOpenSSLUProbes) {
+    spec.binary_path = container_lib.string();
+    PL_RETURN_IF_ERROR(AttachUProbe(spec));
+  }
+  return kOpenSSLUProbes.size();
 }
 
 void SocketTraceConnector::DeployUProbes() {
   std::map<std::string, std::vector<int32_t>> new_pids = FindNewPIDs();
+
+  // Suspected to be an expensive call, so perform outside the for loop.
+  ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> http2_symaddrs_map =
+      bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("http2_symaddrs_map");
 
   int uprobe_count = 0;
   for (auto& [binary, pid_vec] : new_pids) {
@@ -426,7 +472,7 @@ void SocketTraceConnector::DeployUProbes() {
 
     // OpenSSL Probes.
     {
-      StatusOr<int> attach_status = AttachOpenSSLUProbes();
+      StatusOr<int> attach_status = AttachOpenSSLUProbes(binary, pid_vec);
       if (!attach_status.ok()) {
         LOG(WARNING) << absl::Substitute("Failed to attach SSL Uprobes to $0: $1", binary,
                                          attach_status.ToString());
@@ -437,7 +483,8 @@ void SocketTraceConnector::DeployUProbes() {
 
     // HTTP2 Probes.
     if (protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled) {
-      StatusOr<int> attach_status = AttachHTTP2UProbes(binary, elf_reader.get(), pid_vec);
+      StatusOr<int> attach_status =
+          AttachHTTP2UProbes(binary, elf_reader.get(), pid_vec, &http2_symaddrs_map);
       if (!attach_status.ok()) {
         LOG(WARNING) << absl::Substitute("Failed to attach HTTP2 Uprobes to $0: $1", binary,
                                          attach_status.ToString());

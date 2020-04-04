@@ -26,6 +26,9 @@ struct conn_info_t {
   // etc.).
   struct traffic_class_t traffic_class;
 
+  // Whether the connection uses SSL.
+  bool ssl;
+
   // TODO(yzhao): Following fields are only internal tracking only, and is not needed when
   // submitting a new connection. Consider separate these data with the above data that is pushed to
   // perf buffer.
@@ -111,6 +114,8 @@ struct socket_data_event_t {
     // The type of the actual data that the msg field encodes, which is used by the caller
     // to determine how to interpret the data.
     enum TrafficDirection direction;
+    // Whether the traffic was collected from an encrypted channel.
+    bool ssl;
     // A 0-based sequence number for this event on the connection.
     // Note that write/send have separate sequences than read/recv.
     uint64_t seq_num;

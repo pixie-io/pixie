@@ -53,8 +53,8 @@ struct accept_args_t {
 };
 
 struct data_args_t {
-  // For send()/recv()/write()/read().
   u32 fd;
+  // For send()/recv()/write()/read().
   const char* buf;
   // For sendmsg()/recvmsg()/writev()/readv().
   const struct iovec* iov;
@@ -236,6 +236,7 @@ static __inline struct socket_data_event_t* fill_event(enum TrafficDirection dir
     return NULL;
   }
   event->attr.timestamp_ns = bpf_ktime_get_ns();
+  event->attr.ssl = conn_info->ssl;
   event->attr.direction = direction;
   event->attr.conn_id = conn_info->conn_id;
   event->attr.traffic_class = conn_info->traffic_class;
@@ -668,9 +669,9 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficD
   // array order. That means they read or fill iov[0], then iov[1], and so on. They return the total
   // size of the written or read data. Therefore, when loop through the buffers, both the number of
   // buffers and the total size need to be checked. More details can be found on their man pages.
+  unsigned int bytes_copied = 0;
 #pragma unroll
-  for (unsigned int i = 0, bytes_copied = 0;
-       i < LOOP_LIMIT && i < iovlen && bytes_copied < total_size; ++i) {
+  for (unsigned int i = 0; i < LOOP_LIMIT && i < iovlen && bytes_copied < total_size; ++i) {
     struct iovec iov_cpy;
     bpf_probe_read(&iov_cpy, sizeof(struct iovec), &iov[i]);
 
@@ -755,9 +756,9 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, u64 id,
   submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)args->addr));
 }
 
-static __inline void process_syscall_data(struct pt_regs* ctx, u64 id,
-                                          const enum TrafficDirection direction,
-                                          const struct data_args_t* args) {
+static __inline void process_data(struct pt_regs* ctx, u64 id,
+                                  const enum TrafficDirection direction,
+                                  const struct data_args_t* args, bool ssl) {
   u32 tgid = id >> 32;
   ssize_t bytes_count = PT_REGS_RC(ctx);
 
@@ -781,6 +782,29 @@ static __inline void process_syscall_data(struct pt_regs* ctx, u64 id,
   struct conn_info_t* conn_info = get_conn_info(tgid, args->fd);
   if (conn_info == NULL) {
     return;
+  }
+
+  if (conn_info->ssl && !ssl) {
+    // This connection is tracking SSL now.
+    // Don't report encrypted data.
+    return;
+  }
+
+  // Convert Tracker to an SSL tracker.
+  if (!conn_info->ssl && ssl) {
+    conn_info->ssl = true;
+
+    // Update with new TSID.
+    // This will cause this connection to be handled by a new ConnectionTracker in Stirling.
+    conn_info->conn_id.tsid = bpf_ktime_get_ns();
+
+    // Reset all other fields (except for addr, which is still useful).
+    conn_info->rd_seq_num = 0;
+    conn_info->wr_seq_num = 0;
+    conn_info->protocol_match_count = 0;
+    conn_info->protocol_total_count = 0;
+    conn_info->traffic_class.role = kRoleUnknown;
+    conn_info->traffic_class.protocol = kProtocolUnknown;
   }
 
   // Note: From this point on, if exiting early, and conn_info->addr_valid == 0,
@@ -827,6 +851,12 @@ static __inline void process_syscall_data(struct pt_regs* ctx, u64 id,
     perf_submit_iovecs(ctx, direction, args->iov, args->iovlen, bytes_count, conn_info, event);
   }
   return;
+}
+
+static __inline void process_syscall_data(struct pt_regs* ctx, u64 id,
+                                          const enum TrafficDirection direction,
+                                          const struct data_args_t* args) {
+  process_data(ctx, id, direction, args, /* ssl */ false);
 }
 
 static __inline void process_syscall_close(struct pt_regs* ctx, u64 id,
@@ -1229,3 +1259,5 @@ int syscall__probe_ret_close(struct pt_regs* ctx) {
 
 // Includes HTTP2 tracing probes.
 #include "src/stirling/bcc_bpf/go_grpc.c"
+
+#include "src/stirling/bcc_bpf/openssl_trace.c"

@@ -401,7 +401,7 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
   ASSERT_TRUE(absl::SimpleAtoi(out, &client_pid));
 
   // Sleep a little more, just to be safe.
-  sleep(1);
+  sleep(2);
 
   // Grab the data from Stirling.
   DataTable data_table(kCQLTable);
@@ -416,8 +416,10 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
     // For Debug:
     for (const auto& idx : target_record_indices) {
       uint32_t pid = record_batch[kCQLUPIDIdx]->Get<types::UInt128Value>(idx).High64();
+      int64_t req_op = record_batch[kCQLReqOp]->Get<types::Int64Value>(idx).val;
+      std::string req_body = record_batch[kCQLReqBody]->Get<types::StringValue>(idx);
       std::string resp_body = record_batch[kCQLRespBody]->Get<types::StringValue>(idx);
-      VLOG(1) << absl::Substitute("$0 $1", pid, resp_body);
+      VLOG(1) << absl::Substitute("$0 $1 $2 $3", pid, req_op, req_body, resp_body);
     }
 
     std::vector<cass::Record> records = ToRecordVector(record_batch, target_record_indices);
@@ -436,6 +438,15 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
   {
     const std::vector<size_t> target_record_indices =
         FindRecordIdxMatchesPid(record_batch, kCQLUPIDIdx, container_.process_pid());
+
+    // For Debug:
+    for (const auto& idx : target_record_indices) {
+      uint32_t pid = record_batch[kCQLUPIDIdx]->Get<types::UInt128Value>(idx).High64();
+      int64_t req_op = record_batch[kCQLReqOp]->Get<types::Int64Value>(idx).val;
+      std::string req_body = record_batch[kCQLReqBody]->Get<types::StringValue>(idx);
+      std::string resp_body = record_batch[kCQLRespBody]->Get<types::StringValue>(idx);
+      VLOG(1) << absl::Substitute("$0 $1 $2 $3", pid, req_op, req_body, resp_body);
+    }
 
     std::vector<cass::Record> records = ToRecordVector(record_batch, target_record_indices);
 

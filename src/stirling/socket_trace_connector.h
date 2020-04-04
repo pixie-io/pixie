@@ -162,6 +162,39 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
        "probe_framer_check_frame_order", bpf_probe_attach_type::BPF_PROBE_ENTRY},
   });
 
+  inline static const auto kOpenSSLUProbes = MakeArray<bpf_tools::UProbeSpec>(
+      {// A probe on entry of SSL_write
+       bpf_tools::UProbeSpec{
+           .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+           .symbol = "SSL_write",
+           .attach_type = BPF_PROBE_ENTRY,
+           .probe_fn = "probe_entry_SSL_write",
+       },
+
+       // A probe on return of SSL_write
+       bpf_tools::UProbeSpec{
+           .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+           .symbol = "SSL_write",
+           .attach_type = BPF_PROBE_RETURN,
+           .probe_fn = "probe_ret_SSL_write",
+       },
+
+       // A probe on entry of SSL_read
+       bpf_tools::UProbeSpec{
+           .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+           .symbol = "SSL_read",
+           .attach_type = BPF_PROBE_ENTRY,
+           .probe_fn = "probe_entry_SSL_read",
+       },
+
+       // A probe on return of SSL_read
+       bpf_tools::UProbeSpec{
+           .binary_path = "/usr/lib/x86_64-linux-gnu/libssl.so.1.1",
+           .symbol = "SSL_read",
+           .attach_type = BPF_PROBE_RETURN,
+           .probe_fn = "probe_ret_SSL_read",
+       }});
+
   // TODO(oazizi): Remove send and recv probes once we are confident that they don't trace anything.
   //               Note that send/recv are not in the syscall table
   //               (https://filippo.io/linux-syscall-table/), but are defined as SYSCALL_DEFINE4 in
@@ -189,13 +222,20 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // already being traced).
   std::map<std::string, std::vector<int32_t> > FindNewPIDs();
 
+  bool UpdateHTTP2SymAddrs(
+      elf_tools::ElfReader* elf_reader, const std::vector<int32_t>& pids,
+      ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map);
+
   StatusOr<int> AttachUProbeTmpl(const ArrayView<bpf_tools::UProbeTmpl>& probe_tmpls,
                                  const std::string& binary, elf_tools::ElfReader* elf_reader);
 
-  StatusOr<int> AttachHTTP2UProbes(const std::string& binary, elf_tools::ElfReader* elf_reader,
-                                   const std::vector<int32_t>& new_pids);
+  StatusOr<int> AttachHTTP2UProbes(
+      const std::string& binary, elf_tools::ElfReader* elf_reader,
+      const std::vector<int32_t>& new_pids,
+      ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map);
 
-  StatusOr<int> AttachOpenSSLUProbes();
+  StatusOr<int> AttachOpenSSLUProbes(const std::string& binary,
+                                     const std::vector<int32_t>& new_pids);
 
   // Scans binaries and deploys uprobes for all purposes (HTTP2, OpenSSL, etc.) on new processes.
   void DeployUProbes();
@@ -295,7 +335,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   ProcTracker proc_tracker_;
 
   // Records the binaries that have been attached uprobes.
-  absl::flat_hash_set<std::string> probed_binaries_;
+  absl::flat_hash_set<std::string> http2_probed_binaries_;
+  absl::flat_hash_set<std::string> openssl_probed_binaries_;
 
   std::shared_ptr<SocketTraceBPFTableManager> bpf_table_info_;
 
