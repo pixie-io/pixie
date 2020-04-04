@@ -52,6 +52,12 @@ type Query {
   cliArtifact(artifactType: ArtifactType): CLIArtifact!
   artifacts(artifactName: String): ArtifactsInfo!
   autocomplete(input: String, cursorPos: Int, action: AutocompleteActionType): AutocompleteResult!
+
+  # Scriptmgr endpoints, refer to docs in cloudapi.proto
+  liveViews: [LiveViewMetadata!]!
+  liveViewContents(id: ID!): LiveViewContents!
+  scripts: [ScriptMetadata!]!
+  scriptContents(id: ID!): ScriptContents!
 }
 
 type AutocompleteResult {
@@ -123,4 +129,31 @@ type Artifact {
   version: String!
   changelog: String!
   timestampMs: Float!
+}
+
+# Refer to docs in cloudapi.proto
+type LiveViewMetadata {
+  id: ID!
+  name: String!
+  desc: String!
+}
+
+# Refer to docs in cloudapi.proto
+type LiveViewContents {
+  metadata: LiveViewMetadata!
+  pxlContents: String!
+}
+
+# Refer to docs in cloudapi.proto
+type ScriptMetadata {
+  id: ID!
+  name: String!
+  desc: String!
+  hasLiveView: Boolean!
+}
+
+# Refer to docs in cloudapi.proto
+type ScriptContents {
+  metadata: ScriptMetadata!
+  contents: String!
 }

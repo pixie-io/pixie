@@ -19,6 +19,10 @@ export interface GQLQuery {
   cliArtifact: GQLCLIArtifact;
   artifacts: GQLArtifactsInfo;
   autocomplete: GQLAutocompleteResult;
+  liveViews: Array<GQLLiveViewMetadata>;
+  liveViewContents: GQLLiveViewContents;
+  scripts: Array<GQLScriptMetadata>;
+  scriptContents: GQLScriptContents;
 }
 
 export interface GQLUserInfo {
@@ -106,6 +110,29 @@ export const enum GQLAutocompleteEntityKind {
   AEK_NAMESPACE = 'AEK_NAMESPACE'
 }
 
+export interface GQLLiveViewMetadata {
+  id: string;
+  name: string;
+  desc: string;
+}
+
+export interface GQLLiveViewContents {
+  metadata: GQLLiveViewMetadata;
+  pxlContents: string;
+}
+
+export interface GQLScriptMetadata {
+  id: string;
+  name: string;
+  desc: string;
+  hasLiveView: boolean;
+}
+
+export interface GQLScriptContents {
+  metadata: GQLScriptMetadata;
+  contents: string;
+}
+
 export interface GQLMutation {
   CreateCluster?: GQLClusterInfo;
   UpdateVizierConfig: boolean;
@@ -133,6 +160,10 @@ export interface GQLResolver {
   AutocompleteResult?: GQLAutocompleteResultTypeResolver;
   TabSuggestion?: GQLTabSuggestionTypeResolver;
   AutocompleteSuggestion?: GQLAutocompleteSuggestionTypeResolver;
+  LiveViewMetadata?: GQLLiveViewMetadataTypeResolver;
+  LiveViewContents?: GQLLiveViewContentsTypeResolver;
+  ScriptMetadata?: GQLScriptMetadataTypeResolver;
+  ScriptContents?: GQLScriptContentsTypeResolver;
   Mutation?: GQLMutationTypeResolver;
 }
 export interface GQLQueryTypeResolver<TParent = any> {
@@ -142,6 +173,10 @@ export interface GQLQueryTypeResolver<TParent = any> {
   cliArtifact?: QueryToCliArtifactResolver<TParent>;
   artifacts?: QueryToArtifactsResolver<TParent>;
   autocomplete?: QueryToAutocompleteResolver<TParent>;
+  liveViews?: QueryToLiveViewsResolver<TParent>;
+  liveViewContents?: QueryToLiveViewContentsResolver<TParent>;
+  scripts?: QueryToScriptsResolver<TParent>;
+  scriptContents?: QueryToScriptContentsResolver<TParent>;
 }
 
 export interface QueryToUserResolver<TParent = any, TResult = any> {
@@ -177,6 +212,28 @@ export interface QueryToAutocompleteArgs {
 }
 export interface QueryToAutocompleteResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToAutocompleteArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToLiveViewsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToLiveViewContentsArgs {
+  id: string;
+}
+export interface QueryToLiveViewContentsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToLiveViewContentsArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToScriptsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToScriptContentsArgs {
+  id: string;
+}
+export interface QueryToScriptContentsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToScriptContentsArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface GQLUserInfoTypeResolver<TParent = any> {
@@ -341,6 +398,73 @@ export interface AutocompleteSuggestionToNameResolver<TParent = any, TResult = a
 }
 
 export interface AutocompleteSuggestionToDescriptionResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLLiveViewMetadataTypeResolver<TParent = any> {
+  id?: LiveViewMetadataToIdResolver<TParent>;
+  name?: LiveViewMetadataToNameResolver<TParent>;
+  desc?: LiveViewMetadataToDescResolver<TParent>;
+}
+
+export interface LiveViewMetadataToIdResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface LiveViewMetadataToNameResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface LiveViewMetadataToDescResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLLiveViewContentsTypeResolver<TParent = any> {
+  metadata?: LiveViewContentsToMetadataResolver<TParent>;
+  pxlContents?: LiveViewContentsToPxlContentsResolver<TParent>;
+}
+
+export interface LiveViewContentsToMetadataResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface LiveViewContentsToPxlContentsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLScriptMetadataTypeResolver<TParent = any> {
+  id?: ScriptMetadataToIdResolver<TParent>;
+  name?: ScriptMetadataToNameResolver<TParent>;
+  desc?: ScriptMetadataToDescResolver<TParent>;
+  hasLiveView?: ScriptMetadataToHasLiveViewResolver<TParent>;
+}
+
+export interface ScriptMetadataToIdResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ScriptMetadataToNameResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ScriptMetadataToDescResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ScriptMetadataToHasLiveViewResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLScriptContentsTypeResolver<TParent = any> {
+  metadata?: ScriptContentsToMetadataResolver<TParent>;
+  contents?: ScriptContentsToContentsResolver<TParent>;
+}
+
+export interface ScriptContentsToMetadataResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ScriptContentsToContentsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
