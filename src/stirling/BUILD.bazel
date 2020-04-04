@@ -400,14 +400,19 @@ sh_test(
     ],
     data = [
         ":stirling_wrapper_image.tar",
-        "//src/stirling/testing/java:hello_world_image.tar",
         "//src/stirling/testing/java:HelloWorld",
+        "//src/stirling/testing/java:hello_world_image.tar",
     ],
+    flaky = True,
     tags = [
         "requires_bpf",
         # Run exclusive, otherwise BPF probe cleaner may conflict with open probes of other instances,
         # which will emit warnings, that will then be considered a test failure.
         "exclusive",
+        # TODO(PP-1742): Test is flaky, especially with ASAN, likely due to timing issues.
+        "manual",
+        "no_asan",
+        "no_tsan",
     ],
     deps = ["//src/stirling/scripts:sh_library"],
 )

@@ -58,9 +58,17 @@ docker run --init --rm --detach --privileged --detach --name $stirling_wrapper_c
   --env PL_HOST_PATH=/host \
  "$stirling_wrapper_image_name" --print_record_batches=jvm_stats
 
-sleep 20
+# Wait for stirling to initialize.
+for _ in {1..60}; do
+  sleep 1
+  stirling_wrapper_output=$(docker container logs $stirling_wrapper_container_name 2>&1)
+  if echo "$stirling_wrapper_output" | grep -q "Probes successfully deployed."; then
+    break
+  fi
+done
 
-stirling_wrapper_output=$(docker container logs $stirling_wrapper_container_name 2>&1)
+sleep 10
+
 java_pid=$(docker container inspect -f '{{.State.Pid}}' $java_container_name)
 java_tmp_mount_pid=$(docker container inspect -f '{{.State.Pid}}' $java_tmp_mount_container_name)
 
