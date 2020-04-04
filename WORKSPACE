@@ -2691,3 +2691,52 @@ go_repository(
     sum = "h1:quXMXlA39OCbd2wAdTsGDlK9RkOk6Wuw+x37wVyIuWY=",
     version = "v0.1.1",
 )
+
+go_repository(
+    name = "com_github_alecthomas_assert",
+    importpath = "github.com/alecthomas/assert",
+    sum = "h1:smF2tmSOzy2Mm+0dGI2AIUHY+w0BUc+4tn40djz7+6U=",
+    version = "v0.0.0-20170929043011-405dbfeb8e38",
+)
+
+go_repository(
+    name = "com_github_alecthomas_chroma",
+    importpath = "github.com/alecthomas/chroma",
+    sum = "h1:G1i02OhUbRi2nJxcNkwJaY/J1gHXj9tt72qN6ZouLFQ=",
+    version = "v0.7.1",
+)
+
+go_repository(
+    name = "com_github_alecthomas_colour",
+    importpath = "github.com/alecthomas/colour",
+    sum = "h1:JHZL0hZKJ1VENNfmXvHbgYlbUOvpzYzvy2aZU5gXVeo=",
+    version = "v0.0.0-20160524082231-60882d9e2721",
+)
+
+go_repository(
+    name = "com_github_alecthomas_kong",
+    importpath = "github.com/alecthomas/kong",
+    sum = "h1:C4Q9m+oXOxcSWwYk9XzzafY2xAVAaeubZbUHJkw3PlY=",
+    version = "v0.2.1-0.20190708041108-0548c6b1afae",
+)
+
+go_repository(
+    name = "com_github_alecthomas_repr",
+    importpath = "github.com/alecthomas/repr",
+    sum = "h1:p9Sln00KOTlrYkxI1zYWl1QLnEqAqEARBEYa8FQnQcY=",
+    version = "v0.0.0-20180818092828-117648cd9897",
+)
+
+go_repository(
+    name = "com_github_danwakefield_fnmatch",
+    importpath = "github.com/danwakefield/fnmatch",
+    sum = "h1:y5HC9v93H5EPKqaS1UYVg1uYah5Xf51mBfIoWehClUQ=",
+    version = "v0.0.0-20160403171240-cbb64ac3d964",
+)
+
+go_repository(
+    name = "com_github_dlclark_regexp2",
+    importpath = "github.com/dlclark/regexp2",
+    sum = "h1:CqB4MjHw0MFCDj+PHHjiESmHX+N7t0tJzKvC6M97BRg=",
+    version = "v1.1.6",
+)

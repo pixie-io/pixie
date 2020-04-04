@@ -1,8 +1,9 @@
 package cmd
 
 import (
-	"fmt"
+	"os"
 
+	"github.com/alecthomas/chroma/quick"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -58,6 +59,9 @@ var ScriptShowCmd = &cobra.Command{
 		if err != nil {
 			log.WithError(err).Fatal("Failed to get script information")
 		}
-		fmt.Print(script)
+		err = quick.Highlight(os.Stdout, script, "python3", "terminal16m", "monokai")
+		if err != nil {
+			panic(err)
+		}
 	},
 }
