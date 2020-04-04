@@ -191,6 +191,7 @@ def WithSourceCode(String stashName = SRC_STASH_NAME, Closure body) {
   warnError('Script failed') {
     timeout(time: 60, unit: 'MINUTES') {
       node {
+        sh 'hostname'
         deleteDir()
         unstash stashName
         body()
@@ -204,6 +205,7 @@ def WithSourceCode(String stashName = SRC_STASH_NAME, Closure body) {
   */
 def WithSourceCodeFatalError(String stashName = SRC_STASH_NAME, Closure body) {
   node {
+    sh 'hostname'
     deleteDir()
     unstash stashName
     body()
