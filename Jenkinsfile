@@ -274,6 +274,20 @@ def bazelCmd(String bazelCmd, String name) {
 }
 
 
+/**
+  * Runs bazel CI mode for master/phab builds.
+  *
+  * TODO(zasgar): This function will have build avoidance in phab builds.
+  */
+def bazelCICmd(String name, String targetConfig='clang', String targetCompilationMode='opt',
+             String targetFilter = "//...") {
+  warnError('Bazel command failed') {
+    sh "bazel test --config=${targetConfig} --compilation_mode=${targetCompilationMode} ${targetFilter}"
+  }
+  createBazelStash("${name}-testlogs")
+}
+
+
 def archiveBazelLogs(String logBase) {
   archiveArtifacts "${logBase}/**"
 }
@@ -406,7 +420,7 @@ def builders = [:]
 builders['Build & Test (dbg)'] = {
   WithSourceCode {
     dockerStep {
-      bazelCmd("bazel test --compilation_mode=dbg ${BAZEL_SRC_FILES_PATH}", 'build-dbg')
+      bazelCICmd('build-dbg', 'clang', 'dbg', BAZEL_SRC_FILES_PATH)
     }
   }
 }
@@ -432,10 +446,9 @@ builders['Clang-tidy'] = {
 builders['Build & Test (sanitizers)'] = {
   WithSourceCode {
     dockerStep('--cap-add=SYS_PTRACE', {
-      bazelCmd("bazel test --config=asan ${BAZEL_CC_QUERY}", 'build-asan')
-      bazelCmd("bazel test --config=tsan ${BAZEL_CC_QUERY}", 'build-tsan')
+      bazelCICmd('build-asan', 'asan', 'dbg', BAZEL_CC_QUERY)
+      bazelCICmd('build-tsan', 'tsan', 'dbg', BAZEL_CC_QUERY)
     })
-
   }
 }
 
@@ -444,7 +457,7 @@ builders['Build & Test All (opt + UI)'] = {
     dockerStep {
       // Intercept bazel failure to make sure we continue to archive files.
       warnError('Bazel test failed') {
-        sh("bazel test --compilation_mode=opt //...")
+        bazelCICmd('build-opt')
       }
 
       // Untar and save the UI artifacts.
@@ -468,23 +481,17 @@ builders['Build & Test All (opt + UI)'] = {
 builders['Build & Test (gcc:opt)'] = {
   WithSourceCode {
     dockerStep {
-      bazelCmd("bazel test --config=gcc --compilation_mode=opt ${BAZEL_SRC_FILES_PATH}", 'build-gcc-opt')
+      bazelCICmd('build-gcc-opt', 'gcc', 'opt', BAZEL_SRC_FILES_PATH)
     }
   }
 }
 
 def dockerArgsForBPFTest = '--privileged --pid=host -v /:/host -v /sys:/sys --env PL_HOST_PATH=/host'
 
-// TODO(PL-1297): With '--action_env=PL_HOST_PATH', the cited bug still happens. Fix the bug and add
-// it back.
-def bazelBaseArgsForBPFTest = 'bazel test --test_output=all --compilation_mode=opt'
-
 builders['Build & Test (bpf tests - opt)'] = {
   WithSourceCode {
     dockerStep(dockerArgsForBPFTest, {
-      bazelCmd(
-        bazelBaseArgsForBPFTest + " --config=bpf ${BAZEL_SRC_FILES_PATH}",
-        'build-bpf')
+      bazelCICmd('build-bpf', 'bpf', 'opt', BAZEL_SRC_FILES_PATH)
     })
   }
 }
@@ -493,9 +500,7 @@ builders['Build & Test (bpf tests - opt)'] = {
 builders['Build & Test (bpf tests - asan)'] = {
   WithSourceCode {
     dockerStep(dockerArgsForBPFTest, {
-      bazelCmd(
-        bazelBaseArgsForBPFTest + " --config=bpf_asan ${BAZEL_SRC_FILES_PATH}",
-        'build-bpf-asan')
+      bazelCICmd('build-bpf-asan', 'bpf_asan', 'dbg', BAZEL_SRC_FILES_PATH)
     })
   }
 }
@@ -505,9 +510,7 @@ if (runBPFWithTSAN) {
   builders['Build & Test (bpf tests - tsan)'] = {
     WithSourceCode {
       dockerStep(dockerArgsForBPFTest, {
-        bazelCmd(
-          bazelBaseArgsForBPFTest + " --config=bpf_tsan ${BAZEL_SRC_FILES_PATH}",
-          'build-bpf-tsan')
+        bazelCICmd('build-bpf-tsan', 'bpf_tsan', 'dbg', BAZEL_SRC_FILES_PATH)
       })
     }
   }
