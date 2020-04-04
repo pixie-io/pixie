@@ -36,8 +36,11 @@ done
 docker run --rm -it \
        --network host \
        -v ~/.config:/root/.config \
+       -v "$HOME/.ssh:/root/.ssh" \
        -v "$HOME/.minikube:/root/.minikube" \
        -v "$HOME/.kube:/root/.kube" \
+       -v "$HOME/.gitconfig:/root/.gitconfig" \
+       -v "$HOME/.arcrc:/root/.arcrc" \
        -v /var/run/docker.sock:/var/run/docker.sock \
        -v /var/lib/docker:/var/lib/docker \
        -v "$HOME/.minikube:$HOME/.minikube" \
