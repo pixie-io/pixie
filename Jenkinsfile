@@ -88,6 +88,9 @@ BAZEL_CC_QUERY = "`bazel query '${BAZEL_KIND_CLAUSE} except ${BAZEL_EXCEPT_CLAUS
 SRC_STASH_NAME = 'src'
 DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image'
 DEV_DOCKER_IMAGE_EXTRAS = 'pl-dev-infra/dev_image_with_extras'
+GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:287.0.0'
+GCS_STASH_BUCKET='px-jenkins-build-temp'
+
 
 K8S_STAGING_CLUSTER='https://pixie-cloud-prod-cluster.internal.corp.pixielabs.ai'
 K8S_STAGING_CREDS='pixie-cloud-staging'
@@ -120,6 +123,41 @@ runCoverageJob = false; // isMasterRun
 // The benefit of TSAN on such runs is marginal anyways, because the tests
 // are mostly single-threaded.
 runBPFWithTSAN = false;
+
+
+def gsutilCopy(String src, String dest) {
+  docker.image(GCLOUD_DOCKER_IMAGE).inside() {
+    sh """
+    gsutil cp ${src} ${dest}
+    """
+  }
+}
+
+def stashOnGCS(String name, String pattern, String excludes = '') {
+  def extraExcludes = ''
+  if (excludes.length() != 0) {
+    extraExcludes = '--exclude=${excludes}'
+  }
+
+  def destFile = "${name}.tar.gz"
+  sh """
+    mkdir -p .archive && tar --exclude=.archive ${extraExcludes} -czf .archive/${destFile} ${pattern}
+  """
+
+  gsutilCopy(".archive/${destFile}", "gs://${GCS_STASH_BUCKET}/${env.BUILD_TAG}/${destFile}")
+}
+
+def unstashFromGCS(String name) {
+  def srcFile = "${name}.tar.gz"
+  sh "mkdir -p .archive"
+
+  gsutilCopy("gs://${GCS_STASH_BUCKET}/${env.BUILD_TAG}/${srcFile}", ".archive/${srcFile}")
+
+  sh """
+    tar -zxf .archive/${srcFile}
+    rm -f .archive/${srcFile}
+  """
+}
 
 /**
   * @brief Add build info to harbormaster and badge to Jenkins.
@@ -179,8 +217,9 @@ def writeBazelRCFile() {
 }
 
 def createBazelStash(String stashName) {
+  sh 'rm -rf bazel-testlogs-archive'
   sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-  stash name: stashName, includes: 'bazel-testlogs-archive/**'
+  stashOnGCS(stashName, 'bazel-testlogs-archive/**')
   stashList.add(stashName)
 }
 
@@ -193,7 +232,7 @@ def WithSourceCode(String stashName = SRC_STASH_NAME, Closure body) {
       node {
         sh 'hostname'
         deleteDir()
-        unstash stashName
+        unstashFromGCS(stashName)
         body()
       }
     }
@@ -207,11 +246,10 @@ def WithSourceCodeFatalError(String stashName = SRC_STASH_NAME, Closure body) {
   node {
     sh 'hostname'
     deleteDir()
-    unstash stashName
+    unstashFromGCS(stashName)
     body()
   }
 }
-
 
 /**
   * Our default docker step :
@@ -288,10 +326,6 @@ def bazelCICmd(String name, String targetConfig='clang', String targetCompilatio
 }
 
 
-def archiveBazelLogs(String logBase) {
-  archiveArtifacts "${logBase}/**"
-}
-
 def processBazelLogs(String logBase) {
   step([
     $class: 'XUnitPublisher',
@@ -304,6 +338,7 @@ def processBazelLogs(String logBase) {
     tools: [
       [
         $class: 'GoogleTestType',
+        skipNoTestFiles: true,
         pattern: "${logBase}/bazel-testlogs-archive/**/*.xml"
       ]
     ]
@@ -399,8 +434,7 @@ def InitializeRepoState(String stashName = SRC_STASH_NAME) {
   devDockerImageWithTag = DEV_DOCKER_IMAGE + ":${properties.DOCKER_IMAGE_TAG}"
   devDockerImageExtrasWithTag = DEV_DOCKER_IMAGE_EXTRAS + ":${properties.DOCKER_IMAGE_TAG}"
 
-  // Excluding default excludes also stashes the .git folder which downstream steps need.
-  stash name: stashName, useDefaultExcludes: false
+  stashOnGCS(SRC_STASH_NAME, '.')
 }
 
 /**
@@ -437,7 +471,7 @@ builders['Clang-tidy'] = {
         // For code review builds only run on diff.
         sh 'scripts/run_clang_tidy.sh -f diff_origin_master_cc'
       }
-      stash name: stashName, includes: 'clang_tidy.log'
+      stashOnGCS(stashName, 'clang_tidy.log')
       stashList.add(stashName)
     }
   }
@@ -467,9 +501,9 @@ builders['Build & Test All (opt + UI)'] = {
       // Untar the customer docs.
       sh 'tar -zxf bazel-bin/docs/customer/bundle.tar.gz'
 
-      stash name: 'build-ui-storybook-static', includes: 'storybook_static/**'
-      stash name: 'build-ui-testlogs', includes: 'testlogs/**'
-      stash name: 'build-customer-docs', includes: 'public/**'
+      stashOnGCS('build-ui-storybook-static', 'storybook_static')
+      stashOnGCS('build-ui-testlogs', 'testlogs')
+      stashOnGCS('build-customer-docs', 'public/')
 
       stashList.add('build-ui-storybook-static')
       stashList.add('build-ui-testlogs')
@@ -543,9 +577,9 @@ builders['Lint & Docs'] = {
     def stashName = 'doxygen-docs'
     dockerStep {
       sh 'doxygen'
-      stash name: stashName, includes: 'docs/html/**'
-      stashList.add(stashName)
     }
+    stashOnGCS(stashName, 'docs/html')
+    stashList.add(stashName)
   }
 }
 
@@ -606,13 +640,11 @@ def buildScriptForCommits = {
 
       stage('Archive') {
         deleteDir()
-        // Unstash the build artifacts.
+         // Unstash the build artifacts.
         stashList.each({stashName ->
           dir(stashName) {
-            unstash stashName
+            unstashFromGCS(stashName)
           }
-          archiveBazelLogs(stashName)
-
         })
 
         publishStoryBook()
@@ -692,7 +724,7 @@ def buildScriptForNightlyTestRegression = {
         // Unstash and save the builds logs.
         stashList.each({stashName ->
           dir(stashName) {
-            unstash stashName
+            unstashFromGCS(stashName)
           }
           archiveBazelLogs(stashName);
         })
