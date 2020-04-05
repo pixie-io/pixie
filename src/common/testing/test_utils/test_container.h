@@ -12,9 +12,10 @@ class DummyTestContainer : public ContainerRunner {
   DummyTestContainer() : ContainerRunner(kImage, kInstanceNamePrefix, kReadyMessage) {}
 
  private:
-  inline static std::string kImage = "gcr.io/google-samples/microservices-demo/emailservice:v0.1.3";
-  inline static std::string kInstanceNamePrefix = "dummy_container";
-  inline static std::string kReadyMessage = "listening on port: 8080";
+  static constexpr std::string_view kImage =
+      "gcr.io/google-samples/microservices-demo/emailservice:v0.1.3";
+  static constexpr std::string_view kInstanceNamePrefix = "dummy_container";
+  static constexpr std::string_view kReadyMessage = "listening on port: 8080";
 };
 
 }  // namespace pl

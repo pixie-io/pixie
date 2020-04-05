@@ -5,13 +5,33 @@
 
 namespace pl {
 
-StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::string>& options) {
-  // First pull the image.
-  // Do this separately from running the container, so we can timeout on the true runtime.
-  PL_ASSIGN_OR_RETURN(std::string out, pl::Exec("docker pull " + image_));
+ContainerRunner::ContainerRunner(std::string_view image, std::string_view instance_name_prefix,
+                                 std::string_view ready_message)
+    : image_(image), instance_name_prefix_(instance_name_prefix), ready_message_(ready_message) {
+  std::string out = pl::Exec("docker pull " + image_).ConsumeValueOrDie();
+  LOG(INFO) << out;
+}
+
+ContainerRunner::ContainerRunner(std::filesystem::path image_tar,
+                                 std::string_view instance_name_prefix,
+                                 std::string_view ready_message)
+    : instance_name_prefix_(instance_name_prefix), ready_message_(ready_message) {
+  std::string out =
+      pl::Exec(absl::Substitute("docker load -i $0", image_tar.string())).ConsumeValueOrDie();
   LOG(INFO) << out;
 
-  // Now run the server.
+  // Extract the image name.
+  std::vector<std::string_view> lines = absl::StrSplit(out, "\n", absl::SkipWhitespace());
+  CHECK(!lines.empty());
+  std::string_view image_line = lines.back();
+  constexpr std::string_view kLoadedImagePrefix = "Loaded image: ";
+  CHECK(absl::StartsWith(image_line, kLoadedImagePrefix));
+  image_line.remove_prefix(kLoadedImagePrefix.length());
+  image_ = image_line;
+}
+
+StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::string>& options) {
+  // Now run the container.
   // Run with timeout, as a backup in case we don't clean things up properly.
   container_name_ = absl::StrCat(instance_name_prefix_, "_",
                                  std::chrono::steady_clock::now().time_since_epoch().count());
@@ -54,10 +74,14 @@ StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::s
     // Delay before trying again.
     LOG(INFO) << absl::Substitute(
         "Container not yet running, will try again ($0 attempts remaining).", attempts_remaining);
+
+    // TODO(oazizi): Check if container execution has failed, and abort early.
   }
 
   if (process_pid_ == -1) {
-    return error::Internal("Timeout. Container did not start.");
+    std::string container_out;
+    PL_RETURN_IF_ERROR(container_.Stdout(&container_out));
+    return error::Internal("Container failed to start. Container output:\n$0", container_out);
   }
   DCHECK_GT(attempts_remaining, 0);
 

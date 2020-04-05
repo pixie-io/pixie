@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -12,7 +13,7 @@ namespace pl {
 class ContainerRunner {
  public:
   /**
-   * Set-up a container runner.
+   * Set-up a container runner with image from docker registry.
    *
    * @param image Image to run.
    * @param instance_name_prefix The container instance name prefix. The instance name will
@@ -22,8 +23,20 @@ class ContainerRunner {
    * this feature.
    */
   ContainerRunner(std::string_view image, std::string_view instance_name_prefix,
-                  std::string_view ready_message)
-      : image_(image), instance_name_prefix_(instance_name_prefix), ready_message_(ready_message) {}
+                  std::string_view ready_message);
+
+  /**
+   * Set-up a container runner from local tarball image.
+   *
+   * @param image_tar Image tarball.
+   * @param instance_name_prefix The container instance name prefix. The instance name will
+   * automatically be suffixed with a timestamp.
+   * @param ready_message A pattern in the container logs that indicates that the container is
+   * ready. The Run() function will not return until this pattern is observed. Leave blank to skip
+   * this feature.
+   */
+  ContainerRunner(std::filesystem::path image_tar, std::string_view instance_name_prefix,
+                  std::string_view ready_message);
 
   ~ContainerRunner() { Stop(); }
 
@@ -53,7 +66,7 @@ class ContainerRunner {
 
  private:
   // Image to run.
-  const std::string image_;
+  std::string image_;
 
   // The instance of the container will have a name that starts with this prefix.
   // A timestamp is appended to the prefix to make it unique.
