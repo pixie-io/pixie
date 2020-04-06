@@ -1517,8 +1517,8 @@ go_repository(
 go_repository(
     name = "com_github_keighl_metabolize",
     importpath = "github.com/keighl/metabolize",
-    version = "v0.0.0-20150915210303-97ab655d4034",
     sum = "h1:1ijjWJbbN7za3tZ7eXUO5fVcC9ogGYShQh+zM6YiCYE=",
+    version = "v0.0.0-20150915210303-97ab655d4034",
 )
 
 go_repository(
@@ -2739,4 +2739,18 @@ go_repository(
     importpath = "github.com/dlclark/regexp2",
     sum = "h1:CqB4MjHw0MFCDj+PHHjiESmHX+N7t0tJzKvC6M97BRg=",
     version = "v1.1.6",
+)
+
+go_repository(
+    name = "com_github_boombuler_barcode",
+    importpath = "github.com/boombuler/barcode",
+    sum = "h1:s1TvRnXwL2xJRaccrdcBQMZxq6X7DvsMogtmJeHDdrc=",
+    version = "v1.0.0",
+)
+
+go_repository(
+    name = "com_github_ruudk_golang_pdf417",
+    importpath = "github.com/ruudk/golang-pdf417",
+    sum = "h1:nlG4Wa5+minh3S9LVFtNoY+GVRiudA2e3EVfcCi3RCA=",
+    version = "v0.0.0-20181029194003-1af4ab5afa58",
 )
