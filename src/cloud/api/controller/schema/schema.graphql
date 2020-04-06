@@ -26,6 +26,24 @@ enum ArtifactType {
     AT_CONTAINER_SET_LINUX_AMD64
 }
 
+enum AutocompleteActionType {
+  AAT_UNKNOWN
+  # An edit action occurs if a user has modified the input text by inserting or deleting characters.
+  # This includes typing on the keyboard and pasting commands.
+  AAT_EDIT
+  # A select action only occurs if a user has chosen an autocomplete suggestion. This indicates to
+  # the autocomplete that it should move the user's cursor to the next appropriate tab.
+  AAT_SELECT
+}
+
+enum AutocompleteEntityKind {
+  AEK_UNKNOWN
+  AEK_POD
+  AEK_SVC
+  AEK_SCRIPT
+  AEK_NAMESPACE
+}
+
 type Query {
   user: UserInfo!
   cluster: ClusterInfo!
@@ -33,6 +51,31 @@ type Query {
   cliArtifact(artifactType: ArtifactType): CLIArtifact!
   artifacts(artifactName: String): ArtifactsInfo!
   extractVisFuncsInfo(script: String!, funcNames: [String!]): VisFuncsInfo!
+  autocomplete(input: String, cursorPos: Int, action: AutocompleteActionType): AutocompleteResult!
+}
+
+type AutocompleteResult {
+  # The formatted input is the input string, which has been parsed by the autocomplete to indicate
+  # tabStop positions.
+  formattedInput: String
+  # Whether the input string is a valid, executable command.
+  isExecutable: Boolean
+  # All suggestions for each of the tabStops.
+  tabSuggestions: [TabSuggestion]
+}
+
+type TabSuggestion {
+  # The index of the tab that these suggestions are for.
+  tabIndex: Int
+  # Whether selecting a suggestion for this tab index will make the command executable.
+  executableAfterSelect: Boolean
+  suggestions: [AutocompleteSuggestion]
+}
+
+type AutocompleteSuggestion {
+  Kind: AutocompleteEntityKind
+  Name: String
+  Description: String
 }
 
 enum ClusterStatus {

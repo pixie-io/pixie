@@ -19,6 +19,7 @@ export interface GQLQuery {
   cliArtifact: GQLCLIArtifact;
   artifacts: GQLArtifactsInfo;
   extractVisFuncsInfo: GQLVisFuncsInfo;
+  autocomplete: GQLAutocompleteResult;
 }
 
 export interface GQLUserInfo {
@@ -128,6 +129,38 @@ export const enum GQLSemanticType {
   ST_SERVICE_NAME = 'ST_SERVICE_NAME'
 }
 
+export const enum GQLAutocompleteActionType {
+  AAT_UNKNOWN = 'AAT_UNKNOWN',
+  AAT_EDIT = 'AAT_EDIT',
+  AAT_SELECT = 'AAT_SELECT'
+}
+
+export interface GQLAutocompleteResult {
+  formattedInput?: string;
+  isExecutable?: boolean;
+  tabSuggestions?: Array<GQLTabSuggestion | null>;
+}
+
+export interface GQLTabSuggestion {
+  tabIndex?: number;
+  executableAfterSelect?: boolean;
+  suggestions?: Array<GQLAutocompleteSuggestion | null>;
+}
+
+export interface GQLAutocompleteSuggestion {
+  Kind?: GQLAutocompleteEntityKind;
+  Name?: string;
+  Description?: string;
+}
+
+export const enum GQLAutocompleteEntityKind {
+  AEK_UNKNOWN = 'AEK_UNKNOWN',
+  AEK_POD = 'AEK_POD',
+  AEK_SVC = 'AEK_SVC',
+  AEK_SCRIPT = 'AEK_SCRIPT',
+  AEK_NAMESPACE = 'AEK_NAMESPACE'
+}
+
 export interface GQLMutation {
   CreateCluster?: GQLClusterInfo;
   UpdateVizierConfig: boolean;
@@ -159,6 +192,9 @@ export interface GQLResolver {
   FnArgsMapEntry?: GQLFnArgsMapEntryTypeResolver;
   FnArgsSpec?: GQLFnArgsSpecTypeResolver;
   FnArgsSpecArg?: GQLFnArgsSpecArgTypeResolver;
+  AutocompleteResult?: GQLAutocompleteResultTypeResolver;
+  TabSuggestion?: GQLTabSuggestionTypeResolver;
+  AutocompleteSuggestion?: GQLAutocompleteSuggestionTypeResolver;
   Mutation?: GQLMutationTypeResolver;
 }
 export interface GQLQueryTypeResolver<TParent = any> {
@@ -168,6 +204,7 @@ export interface GQLQueryTypeResolver<TParent = any> {
   cliArtifact?: QueryToCliArtifactResolver<TParent>;
   artifacts?: QueryToArtifactsResolver<TParent>;
   extractVisFuncsInfo?: QueryToExtractVisFuncsInfoResolver<TParent>;
+  autocomplete?: QueryToAutocompleteResolver<TParent>;
 }
 
 export interface QueryToUserResolver<TParent = any, TResult = any> {
@@ -202,6 +239,15 @@ export interface QueryToExtractVisFuncsInfoArgs {
 }
 export interface QueryToExtractVisFuncsInfoResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToExtractVisFuncsInfoArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToAutocompleteArgs {
+  input?: string;
+  cursorPos?: number;
+  action?: GQLAutocompleteActionType;
+}
+export interface QueryToAutocompleteResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToAutocompleteArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface GQLUserInfoTypeResolver<TParent = any> {
@@ -403,6 +449,60 @@ export interface FnArgsSpecArgToSemanticTypeResolver<TParent = any, TResult = an
 }
 
 export interface FnArgsSpecArgToDefaultValueResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLAutocompleteResultTypeResolver<TParent = any> {
+  formattedInput?: AutocompleteResultToFormattedInputResolver<TParent>;
+  isExecutable?: AutocompleteResultToIsExecutableResolver<TParent>;
+  tabSuggestions?: AutocompleteResultToTabSuggestionsResolver<TParent>;
+}
+
+export interface AutocompleteResultToFormattedInputResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface AutocompleteResultToIsExecutableResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface AutocompleteResultToTabSuggestionsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLTabSuggestionTypeResolver<TParent = any> {
+  tabIndex?: TabSuggestionToTabIndexResolver<TParent>;
+  executableAfterSelect?: TabSuggestionToExecutableAfterSelectResolver<TParent>;
+  suggestions?: TabSuggestionToSuggestionsResolver<TParent>;
+}
+
+export interface TabSuggestionToTabIndexResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface TabSuggestionToExecutableAfterSelectResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface TabSuggestionToSuggestionsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface GQLAutocompleteSuggestionTypeResolver<TParent = any> {
+  Kind?: AutocompleteSuggestionToKindResolver<TParent>;
+  Name?: AutocompleteSuggestionToNameResolver<TParent>;
+  Description?: AutocompleteSuggestionToDescriptionResolver<TParent>;
+}
+
+export interface AutocompleteSuggestionToKindResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface AutocompleteSuggestionToNameResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface AutocompleteSuggestionToDescriptionResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

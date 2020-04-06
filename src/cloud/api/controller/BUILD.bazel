@@ -6,6 +6,7 @@ go_library(
         "artifact_resolver.go",
         "auth.go",
         "auth_client.go",
+        "autocomplete_resolver.go",
         "cluster_resolver.go",
         "gql.go",
         "grpc.go",

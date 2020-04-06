@@ -254,3 +254,71 @@ message ExtractVisFuncsInfoResponse {
   // Mapping from function name to arguments.
   map<string, FuncArgsSpec> fn_args_map = 3;
 }
+
+// AutocompleteService responds to autocomplete requests.
+service AutocompleteService {
+    rpc Autocomplete(AutocompleteRequest) returns(AutocompleteResponse) {}
+}
+
+enum AutocompleteActionType {
+  AAT_UNKNOWN = 0;
+  // An edit action indicates the user has made an edit to the input text,
+  // such as adding/deleting/pasting characters.
+  AAT_EDIT = 1;
+  // A select action occurs when the user has selected a suggestion. This
+  // indicates that the cursor should be moved to the next tabIndex that
+  // should be autocompleted.
+  AAT_SELECT = 2;
+}
+
+enum AutocompleteEntityKind {
+  AEK_UNKNOWN = 0;
+  AEK_POD = 1;
+  AEK_SVC = 2;
+  AEK_SCRIPT = 3;
+  AEK_NAMESPACE = 4;
+}
+
+message AutocompleteRequest {
+  // The input is the text that the user currently sees on the screen,
+  // unformatted: "script:px/svc_info svc:pl/front-end"
+  string input = 1;
+  // The cursor position is the index of the user's cursor in the input string.
+  // In the following examples, | indicates where the cursor is:
+  // CursorPos: 0, |script:px/svc_info
+  // CursorPos: 1, s|cript:px/svc_info
+  int64 cursor_pos = 2;
+  // The action is the user's action the user took to trigger the autocomplete request.
+  AutocompleteActionType action = 3;
+}
+
+message TabSuggestion {
+  // The TabIndex is the index for which these suggestions are for.
+  // For example, if the formattedInput is: ${1:run} ${2:test}, and the tabIndex is
+  // 2, this represents the suggestions for ${2:test}.
+  int64 tab_index = 1;
+  // Whether the command will be executable if the user makes a selection for this
+  // tab index.
+  bool executable_after_select = 2;
+  repeated AutocompleteSuggestion suggestions = 3;
+}
+
+message AutocompleteSuggestion {
+  // The kind of the suggestion.
+  AutocompleteEntityKind kind = 1;
+  // The name of the suggestion.
+  string name = 2;
+  // A description of the suggestion.
+  string description = 3;
+}
+
+message AutocompleteResponse {
+  // The formatted input is the user's input parsed and formatted with the correct
+  // tab index information. Ex: ${1:run} {$2:script:px/svc_info} {$3:svc:pl/front-end}$0
+  string formatted_input = 1;
+  // Whether the user provided input is executable without needing to make any
+  // further selections.
+  bool is_executable = 2;
+  // The suggestions available for each tab.
+  repeated TabSuggestion tabSuggestions = 3;
+}
