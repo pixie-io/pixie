@@ -92,8 +92,12 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
   }, [inputValue]);
 
   const handleSelection = React.useCallback((id) => {
+    const item = itemsMap.get(id);
+    if (!item) {
+      return;
+    }
     onSelection(id);
-    setInputValue(itemsMap.get(id).title);
+    setInputValue(item.title);
   }, [itemsMap, activeItem]);
 
   const handleKey = (key: Key) => {
