@@ -234,6 +234,19 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "openssl_bpf_test",
+    timeout = "moderate",
+    srcs = ["openssl_bpf_test.cc"],
+    data = ["//src/stirling/testing/ssl:nginx_ssl_image.tar"],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "bpf_map_leak_test",
     timeout = "moderate",
     srcs = ["bpf_map_leak_test.cc"],
