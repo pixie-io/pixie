@@ -52,6 +52,11 @@ class ElfReader {
    */
   std::optional<int64_t> SymbolAddress(std::string_view symbol);
 
+  /**
+   * Returns the byte code of the function specified by the symbol.
+   */
+  StatusOr<std::string> FuncByteCode(std::string_view symbol);
+
  private:
   struct SymbolInfo {
     std::string name;

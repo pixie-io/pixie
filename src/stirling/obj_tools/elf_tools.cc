@@ -205,6 +205,39 @@ std::optional<int64_t> ElfReader::SymbolAddress(std::string_view symbol) {
   return {};
 }
 
+StatusOr<std::string> ElfReader::FuncByteCode(std::string_view symbol) {
+  constexpr char kDotText[] = ".text";
+  ELFIO::section* text_section = nullptr;
+  for (int i = 0; i < elf_reader_.sections.size(); ++i) {
+    ELFIO::section* psec = elf_reader_.sections[i];
+    if (psec->get_name() == kDotText) {
+      text_section = psec;
+      break;
+    }
+  }
+  if (text_section == nullptr) {
+    return error::NotFound("Could not find section=$0 in binary=$1", kDotText, binary_path_);
+  }
+  PL_ASSIGN_OR_RETURN(auto symbol_infos, SearchSymbols(symbol, SymbolMatchType::kExact, STT_FUNC));
+  if (symbol_infos.empty()) {
+    return error::NotFound("Could not find symbol=$0 in binary=$1", symbol, binary_path_);
+  }
+  int offset =
+      symbol_infos.front().address - text_section->get_address() + text_section->get_offset();
+  int size = symbol_infos.front().size;
+
+  std::ifstream ifs(binary_path_, std::ios::binary);
+  if (!ifs.seekg(offset)) {
+    return error::Internal("Failed to seek position=$0 in binary=$1", offset, binary_path_);
+  }
+  std::string byte_code(size, '\0');
+  if (!ifs.read(byte_code.data(), size)) {
+    return error::Internal("Failed to read size=$0 bytes from offset=$1 in binary=$2", size, offset,
+                           binary_path_);
+  }
+  return byte_code;
+}
+
 }  // namespace elf_tools
 }  // namespace stirling
 }  // namespace pl

@@ -31,6 +31,7 @@ pl_cc_test(
     srcs = ["elf_tools_test.cc"],
     data = [
         "//src/stirling/obj_tools/testdata:dummy_exe",
+        "//src/stirling/obj_tools/testdata:prebuilt_exe",
         "//src/stirling/obj_tools/testdata:stripped_exe",
     ],
     deps = [

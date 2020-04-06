@@ -4,11 +4,16 @@
 
 #include "src/common/exec/exec.h"
 
+namespace pl {
+namespace stirling {
+namespace elf_tools {
+
 // Path to self, since this is the object file that contains the CanYouFindThis() function above.
 const std::string_view kBinary = "src/stirling/obj_tools/testdata/dummy_exe";
 
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
+using ::testing::Not;
 
 using pl::stirling::elf_tools::ElfReader;
 using pl::stirling::elf_tools::SymbolMatchType;
@@ -102,3 +107,29 @@ TEST(ElfReaderTest, ExternalDebugSymbols) {
   EXPECT_THAT(elf_reader->ListSymbols("CanYouFindThis", SymbolMatchType::kExact),
               ElementsAre("CanYouFindThis"));
 }
+
+TEST(ElfReaderTest, FuncByteCode) {
+  constexpr char kFuncByteCode[] =
+      "\x55\x48\x89\xe5\x89\x7d\xfc\x89\x75\xf8\x8b\x45\xfc\x03\x45\xf8\x5d\xc3";
+  {
+    const std::string path =
+        pl::testing::TestFilePath("src/stirling/obj_tools/testdata/prebuilt_dummy_exe");
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
+    // The byte code can be examined with:
+    // objdump -d src/stirling/obj_tools/testdata/prebuilt_dummy_exe | grep CanYouFindThis -A 20
+    ASSERT_OK_AND_EQ(elf_reader->FuncByteCode("CanYouFindThis"), kFuncByteCode);
+  }
+  {
+    const std::string stripped_bin =
+        pl::testing::TestFilePath("src/stirling/obj_tools/testdata/stripped_dummy_exe");
+    const std::string debug_dir =
+        pl::testing::TestFilePath("src/stirling/obj_tools/testdata/usr/lib/debug");
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
+                         ElfReader::Create(stripped_bin, debug_dir));
+    ASSERT_OK_AND_EQ(elf_reader->FuncByteCode("CanYouFindThis"), kFuncByteCode);
+  }
+}
+
+}  // namespace elf_tools
+}  // namespace stirling
+}  // namespace pl

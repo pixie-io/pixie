@@ -20,6 +20,11 @@ filegroup(
     ],
 )
 
+filegroup(
+    name = "prebuilt_exe",
+    srcs = ["prebuilt_dummy_exe"],
+)
+
 #------------------------------------------------------------------------------
 
 # While the following rules are included for documentation purposes,
