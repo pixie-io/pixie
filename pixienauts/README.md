@@ -29,7 +29,7 @@ Pixienauts share domain expertise & debugging knowledge via bi-weekly online mee
 
 We host bi-weekly video calls attended by Pixienauts, Pixie team members and invited guests.
 
-**When:** [Bi-weekly call](https://calendar.google.com/calendar?cid=cGl4aWVsYWJzLmFpXzFvODd2anQ3OG1yNnFhbThnYTNwaHYxZGU0QGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20) on Friday at 10:30am PT / 5:30PM UTC
+**When:** [Monthly call](https://calendar.google.com/calendar?cid=cGl4aWVsYWJzLmFpXzFvODd2anQ3OG1yNnFhbThnYTNwaHYxZGU0QGdyb3VwLmNhbGVuZGFyLmdvb2dsZS5jb20) on every fourth Thursday at 10:30am PT / 5:30PM UTC
 
 **Format:** [Zoom call](https://zoom.us/j/6604264204)
 
