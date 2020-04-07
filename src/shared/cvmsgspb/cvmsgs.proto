@@ -81,6 +81,20 @@ message VizierHeartbeat {
     string address = 4;
     // Port of the proxy service.
     int32 port = 5;
+    // Map of pod name to pod status.
+    // Ex: {
+    //   vizier-pem-z26d8: { name: vizier-pem-z26d8, status: RUNNING },
+    //   vizier-metadata-7b668797b9-bjsvd: { name: vizier-metadata-7b668797b9-bjsvd, status: FAILED }
+    // }
+    map<string, PodStatus> pod_statuses = 6;
+}
+
+// PodStatus represents a pod's status at a moment in time. Currently this message
+// only contains name and status, but could contain more information that could
+// help debug in the future.
+message PodStatus {
+    string name = 1; // The name of the pod. Ex: vizier-pem-z26d8
+    pl.shared.k8s.metadatapb.PodPhase status = 2; // The status of the pod.
 }
 
 message VizierHeartbeatAck {
