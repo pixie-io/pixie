@@ -1,4 +1,5 @@
 ---
-short: Pod level latency, error-rate & rps.
+short: Pod level application stats and resource usage.
 long: >-
-  List of Pods monitored by Pixie with their high level application metrics.
+  List of Pods monitored by Pixie with their high level application metrics (latency, error-rate & rps)
+  and resource usage (cpu, writes, reads).

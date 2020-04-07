@@ -3,10 +3,6 @@
 Quick overview of all pods being monitored with
 instructions to learn how to write pxl scripts
 
-Notes:
-* Pod-level infra metrics and charts will be
-added soon
-
 """
 
 # ----------------------------------------------------------------
@@ -67,12 +63,19 @@ def pod_stats():
     let_df[split_series_name] = let_df[k8s_object]
     let_df = let_df[['time_', split_series_name, 'latency_p50', 'latency_p90',
                     'latency_p99', 'error_rate', 'rps', 'bytes_per_s']]
-    px.display(let_df, 'test')
 
     # Summarize data into overview table
     summary_df = summarize_LET(let_df, [split_series_name])
-    px.display(let_df, 'test')
+    px.display(let_df, 'application_stats')
     px.display(summary_df, 'summary_table')
+
+    # Query process stats in target window
+    rsrc_df = px.DataFrame(table='process_stats', start_time=start_time)
+    rsrc_df = format_resource_table(rsrc_df)
+    # Filter down to specified objects
+    rsrc_df = rsrc_df[px.contains(rsrc_df[k8s_object], object_name_filter)]
+    rsrc_df = calc_resource(rsrc_df)
+    px.display(rsrc_df, 'resource_stats')
 
 
 # ----------------------------------------------------------------
@@ -167,6 +170,76 @@ def summarize_LET(let_df, groups):
         error_rate=('error_rate', px.mean),
     )
     return sum_df
+
+
+def format_resource_table(rsrc_df):
+    """ Formats process stats table
+
+    Converts nanoseconds to seconds, bytes to megabytes,
+    adds a binned timestamp field to aggregate on, and adds
+    the service (k8s_object) as a semantic column.
+
+    Args:
+    @rsrc_df: the input process_stats table.
+
+    Returns: formatted resource stats DataFrame.
+    """
+
+    bytes_per_mb = 1024.0 * 1024.0
+    rsrc_df.timestamp = px.bin(rsrc_df.time_, px.seconds(window_s))
+    rsrc_df.cpu_utime_s = rsrc_df.cpu_utime_ns / 1.0E9
+    rsrc_df.cpu_ktime_s = rsrc_df.cpu_ktime_ns / 1.0E9
+    rsrc_df.vsize_mb = rsrc_df.vsize_bytes / bytes_per_mb
+    rsrc_df.rss_bytes_mb = rsrc_df.rss_bytes / bytes_per_mb
+    rsrc_df.read_bytes_mb = rsrc_df.read_bytes / bytes_per_mb
+    rsrc_df.write_bytes_mb = rsrc_df.write_bytes / bytes_per_mb
+    rsrc_df.rchar_bytes_mb = rsrc_df.rchar_bytes / bytes_per_mb
+    rsrc_df.wchar_bytes_mb = rsrc_df.wchar_bytes / bytes_per_mb
+    rsrc_df[k8s_object] = rsrc_df.ctx[k8s_object]
+
+    return rsrc_df
+
+
+def calc_resource(rsrc_df):
+    """ Computes CPU % and reads/writes by the k8s_object type as a timeseries.
+
+    Args:
+    @rsrc_df: the input process_stats table post-formatting.
+
+    Returns: the metrics by k8s_object type as a timeseries.
+    """
+
+    upid_agg = rsrc_df.groupby(['upid', k8s_object, 'timestamp']).agg(
+        # The following columns are all counters, so we take the minimum and maximum values.
+        min_cpu_utime_s=('cpu_utime_s', px.min),
+        min_cpu_ktime_s=('cpu_ktime_s', px.min),
+        min_rchar_bytes_mb=('rchar_bytes_mb', px.min),
+        min_wchar_bytes_mb=('wchar_bytes_mb', px.min),
+        max_cpu_utime_s=('cpu_utime_s', px.max),
+        max_cpu_ktime_s=('cpu_ktime_s', px.max),
+        max_rchar_bytes_mb=('rchar_bytes_mb', px.max),
+        max_wchar_bytes_mb=('wchar_bytes_mb', px.max),
+    )
+
+    upid_agg.cpu_utime_s = (upid_agg.max_cpu_utime_s - upid_agg.min_cpu_utime_s) / window_s
+    upid_agg.cpu_ktime_s = (upid_agg.max_cpu_ktime_s - upid_agg.min_cpu_ktime_s) / window_s
+    upid_agg.rchar_bytes_mb = (upid_agg.max_rchar_bytes_mb - upid_agg.min_rchar_bytes_mb) / window_s
+    upid_agg.wchar_bytes_mb = (upid_agg.max_wchar_bytes_mb - upid_agg.min_wchar_bytes_mb) / window_s
+
+    # For this aggregate, we sum up the values as we've already calculated the average/usage
+    # for the upids already.
+    k8s_agg = upid_agg.groupby([k8s_object, 'timestamp']).agg(
+        cpu_utime_s=('cpu_utime_s', px.sum),
+        cpu_ktime_s=('cpu_ktime_s', px.sum),
+        rchar_bytes_mb=('rchar_bytes_mb', px.sum),
+        wchar_bytes_mb=('wchar_bytes_mb', px.sum),
+    )
+
+    k8s_agg.cpu_pct = (k8s_agg.cpu_utime_s + k8s_agg.cpu_ktime_s) * 100 / window_s
+
+    # Get the output columns we want to plot.
+    k8s_agg[split_series_name] = k8s_agg[k8s_object]
+    return k8s_agg[[split_series_name, 'timestamp', 'cpu_pct', 'rchar_bytes_mb', 'wchar_bytes_mb']]
 
 
 # ----------------------------------------------------------------

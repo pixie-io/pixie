@@ -3,7 +3,7 @@
     "padding": 50,
     "mark": "line",
     "data": {
-      "name": "test"
+      "name": "application_stats"
     },
     "encoding": {
       "color": {
@@ -43,7 +43,7 @@
     "padding": 50,
     "mark": "line",
     "data": {
-      "name": "test"
+      "name": "application_stats"
     },
     "encoding": {
       "color": {
@@ -83,7 +83,7 @@
     "padding": 50,
     "mark": "line",
     "data": {
-      "name": "test"
+      "name": "application_stats"
     },
     "encoding": {
       "color": {
@@ -123,7 +123,7 @@
     "padding": 50,
     "mark": "line",
     "data": {
-      "name": "test"
+      "name": "application_stats"
     },
     "encoding": {
       "color": {
@@ -163,6 +163,126 @@
     "mark": "table",
     "data": {
       "name": "summary_table"
+    }
+  },
+  "cpu": {
+    "padding": 50,
+    "mark": "line",
+    "data": {
+      "name": "resource_stats"
+    },
+    "encoding": {
+      "color": {
+        "field": "k8s",
+        "type": "nominal"
+      },
+      "x": {
+        "field": "timestamp",
+        "type": "temporal",
+        "axis": {
+          "titleFontSize": 15,
+          "grid": false
+        },
+        "title": null
+      },
+      "y": {
+        "field": "cpu_pct",
+        "type": "quantitative",
+        "axis": {
+          "titleFontSize": 15,
+          "gridOpacity": 0.1,
+          "gridColor": "#a6a8ae"
+        },
+        "title": "CPU Percentage"
+      }
+    },
+    "config": {
+      "line": {
+        "point": true
+      },
+      "scale": {
+        "useUnaggregatedDomain": true
+      }
+    }
+  },
+  "reads": {
+    "padding": 50,
+    "mark": "line",
+    "data": {
+      "name": "resource_stats"
+    },
+    "encoding": {
+      "color": {
+        "field": "k8s",
+        "type": "nominal"
+      },
+      "x": {
+        "field": "timestamp",
+        "type": "temporal",
+        "axis": {
+          "titleFontSize": 15,
+          "grid": false
+        },
+        "title": null
+      },
+      "y": {
+        "field": "rchar_bytes_mb",
+        "type": "quantitative",
+        "axis": {
+          "titleFontSize": 15,
+          "gridOpacity": 0.1,
+          "gridColor": "#a6a8ae"
+        },
+        "title": "Reads (MB)"
+      }
+    },
+    "config": {
+      "line": {
+        "point": true
+      },
+      "scale": {
+        "useUnaggregatedDomain": true
+      }
+    }
+  },
+  "writes": {
+    "padding": 50,
+    "mark": "line",
+    "data": {
+      "name": "resource_stats"
+    },
+    "encoding": {
+      "color": {
+        "field": "k8s",
+        "type": "nominal"
+      },
+      "x": {
+        "field": "timestamp",
+        "type": "temporal",
+        "axis": {
+          "titleFontSize": 15,
+          "grid": false
+        },
+        "title": null
+      },
+      "y": {
+        "field": "wchar_bytes_mb",
+        "type": "quantitative",
+        "axis": {
+          "titleFontSize": 15,
+          "gridOpacity": 0.1,
+          "gridColor": "#a6a8ae"
+        },
+        "title": "Writes (MB)"
+      }
+    },
+    "config": {
+      "line": {
+        "point": true
+      },
+      "scale": {
+        "useUnaggregatedDomain": true
+      }
     }
   }
 }
