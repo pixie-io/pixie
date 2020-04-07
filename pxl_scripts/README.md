@@ -1,3 +1,4 @@
+# PXL Scripts Overview
 
 Pixie can run PXL scripts. PXL is a DSL embedded into python based on the
 popular open source python library [Pandas](https://pandas.pydata.org/). All PXL scripts are 100%
@@ -31,6 +32,7 @@ The rest of this page contains examples of the sample scripts.
 
 <details>
   <summary><strong>Table of contents</strong></summary>
+
 - [Show Pixie Status](#show-pixie-status)
 - [Show HTTP Requests](#http-requests)
 - [Show MYSQL Requests](#mysql-requests)

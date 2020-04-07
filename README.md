@@ -47,9 +47,9 @@ We're building up Pixie for broad use by the end of 2020 with an initial focus o
 
 4. **Lift off! 🚀**
 
-    Start using the CLI by running `px help` in your terminal or view your preconfigured view in the Live UI at `https://work.withpixie.ai/`
+    Start using Pixie by running `px help` in your terminal or view your preconfigured dashboards in the [Live UI](https://work.withpixie.ai/)
 
-_For detailed information on compatibility & requirements check out our [docs](https://work.withpixie.ai/docs/getting-started/compatibility-requirements) or  ping us on [slack](https://slackin.withpixie.ai/)_
+_For detailed information on compatibility & requirements check out our [docs](https://work.withpixie.ai/docs/getting-started/compatibility-requirements) or ping us on [slack](https://slackin.withpixie.ai/)_
 
 
 ## Run Scripts
@@ -58,43 +58,41 @@ Once installed, you can access data in seconds.
 
 1. **Deploy a Demo App**
 
-    Run this to deploy [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by [Weaveworks](https://www.weave.works/):
+    Run this to deploy the [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by [Weaveworks](https://www.weave.works/):
 
     `px demo deploy px-sock-shop`
 
-    Skip this step, if you have pre-existing workloads running that you want to monitor.
+    _Note: Skip this step, if you have pre-existing workloads running that you want to monitor._
 
-3. **Run Scripts**
+2. **Run Scripts**
 
-    Full body network requests: `px run px/service_info`
+    Service SLA `px run px/service_stats`
 
-    Service level metrics: `px run px/service_info`
+    Node health: `px run px/node_stats`
 
-    Infra metrics: `px/pod_memory_usage`
+    MySQL metrics: `px run px/node_stats`
 
-    View many more: `px scripts list`
+    Explore more scripts by running `px scripts list` or by hitting cmd+k in the [Live UI](https://work.withpixie.ai/) 
+    
+    Check out our [pxl_scripts](pxl_scripts) repo for more examples.
 
-    More examples [here](pxl_scripts).
+3. **View and Itegrate Results**
 
-4. **Integrate and Visualize Results**
-
-    You can transform and pipe your script output into any other system or workflow:
-
-    `px run px/pod_memory_usage  -o json| jq -r .`
-
-
-    Or, visualize it in our Live UI:
+    Live UI visualizes thee results for you: 
 
     `https://work.withpixie.ai/live`
 
-    Our Live UI is under active development and will be usable by end of April.
+    
+    You can transform and pipe your script output into any other system or workflow:
+
+    `px run px/pod_memory_usage -o json| jq -r .`
 
 
 _To see more script examples and learn how to write your own, check out our [docs](https://work.withpixie.ai/docs) for more guides_
 
 ## Demos
 
-**How to install**
+**Install Pixie in seconds**
 
 [![Pixie Deploy Overview](https://img.youtube.com/vi/iMh2f8abTYU/0.jpg)](https://www.youtube.com/watch?v=iMh2f8abTYU)
 
@@ -104,7 +102,12 @@ _To see more script examples and learn how to write your own, check out our [doc
 ![CLI Demo](./cli_demo.svg)
 
 
-_For more demos, check out our  [youtube](https://www.youtube.com/channel/UCOMCDRvBVNIS0lCyOmst7eg/videos)._
+**Switch to live UI to visualize results and debug fast**
+
+![CLI Demo](./live_7apr20.gif)
+
+
+_For more demos, check out our [youtube](https://www.youtube.com/channel/UCOMCDRvBVNIS0lCyOmst7eg/videos)._
 
 ## Contributing
 
@@ -125,9 +128,9 @@ Along with building Pixie as a freemium SaaS product, contributing open and acce
 
 Three fundamental innovations enable Pixie's magical developer experience:
 
-**Progressive Instrumentation:**  Pixie Edge Modules (“PEMs”) collect full body request traces (via eBPF), system metrics & K8s events without the need for code-changes and at less than 5% overhead. Custom metrics, traces & logs can be integrated into the Pixie Command Module.
+**Progressive Instrumentation:** Pixie Edge Modules (“PEMs”) collect full body request traces (via eBPF), system metrics & K8s events without the need for code-changes and at less than 5% overhead. Custom metrics, traces & logs can be integrated into the Pixie Command Module.
 
-**In-Cluster  Edge Compute:** The Pixie Command Module is deployed in your K8s cluster to isolate data storage and computation  within your environment for  drastically better intelligence, performance & security.
+**In-Cluster Edge Compute:** The Pixie Command Module is deployed in your K8s cluster to isolate data storage and computation within your environment for drastically better intelligence, performance & security.
 
 **Command Driven Interfaces:** Programmatically access data via the Pixie CLI and Pixie UI which are designed ground-up to allow you to run analysis & debug scenarios faster than any other developer tool.
 
@@ -146,4 +149,4 @@ _For more information on Pixie Platform's architecture, check out our [docs](htt
 
 Founded in late 2018, we are a San Francisco based stealth machine intelligence startup. Our north star is to build a new generation of intelligent products which empower developers to engineer the future.
 
-We're heads down building Pixie and excited to share it broadly with the community later this year.  If you're interested in learning more about us or in our current job openings, we'd love to [hear from you](mailto:info@pixielabs.ai).
+We're heads down building Pixie and excited to share it broadly with the community later this year. If you're interested in learning more about us or in our current job openings, we'd love to [hear from you](mailto:info@pixielabs.ai).
