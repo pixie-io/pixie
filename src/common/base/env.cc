@@ -1,6 +1,7 @@
 #include "src/common/base/env.h"
 
 #include <absl/debugging/symbolize.h>
+#include <absl/strings/str_format.h>
 #include <absl/strings/substitute.h>
 #include <cstdlib>
 #include <filesystem>
@@ -43,6 +44,34 @@ void ShutdownEnvironmentOrDie() { std::call_once(shutdown_once, ShutdownEnvironm
 
 EnvironmentGuard::EnvironmentGuard(int* argc, char** argv) { InitEnvironmentOrDie(argc, argv); }
 EnvironmentGuard::~EnvironmentGuard() { ShutdownEnvironmentOrDie(); }
+
+void ProcessStatsMonitor::Reset() {
+  start_time_ = std::chrono::steady_clock::now();
+  getrusage(RUSAGE_SELF, &start_usage_);
+}
+
+namespace {
+double TimevalToNanoseconds(const struct timeval& x) { return x.tv_sec * 1e9 + x.tv_usec * 1e3; }
+}  // namespace
+
+void ProcessStatsMonitor::PrintCPUTime() {
+  std::chrono::time_point<std::chrono::steady_clock> stop_time = std::chrono::steady_clock::now();
+  std::chrono::nanoseconds run_time = stop_time - start_time_;
+
+  struct rusage usage;
+  getrusage(RUSAGE_SELF, &usage);
+  double end_utime_ns = TimevalToNanoseconds(usage.ru_utime);
+  double start_utime_ns = TimevalToNanoseconds(start_usage_.ru_utime);
+  double utime_ns = end_utime_ns - start_utime_ns;
+
+  double end_stime_ns = TimevalToNanoseconds(usage.ru_stime);
+  double start_stime_ns = TimevalToNanoseconds(start_usage_.ru_stime);
+  double stime_ns = end_stime_ns - start_stime_ns;
+
+  LOG(INFO) << absl::StrFormat("CPU usage: %0.1f%% user, %0.1f%% system, %0.1f%% total",
+                               100 * utime_ns / run_time.count(), 100 * stime_ns / run_time.count(),
+                               100 * (utime_ns + stime_ns) / run_time.count());
+}
 
 std::optional<std::string> GetEnv(const std::string& env_var) {
   const char* var = getenv(env_var.c_str());

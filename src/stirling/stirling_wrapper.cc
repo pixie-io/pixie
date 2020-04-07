@@ -159,12 +159,16 @@ AgentMetadataType AgentMetadataCallback() {
 
 // Put this in global space, so we can kill it in the signal handler.
 Stirling* g_stirling = nullptr;
+pl::ProcessStatsMonitor* g_process_stats_monitor = nullptr;
 
 void SignalHandler(int signum) {
   // Important to call Stop(), because it releases BPF resources,
   // which would otherwise leak.
   if (g_stirling != nullptr) {
     g_stirling->Stop();
+  }
+  if (g_process_stats_monitor != nullptr) {
+    g_process_stats_monitor->PrintCPUTime();
   }
   exit(signum);
 }
@@ -224,6 +228,10 @@ int main(int argc, char** argv) {
     LOG(INFO) << "Exiting after init.";
     return 0;
   }
+
+  // Start measuring process stats after init.
+  pl::ProcessStatsMonitor process_stats_monitor;
+  g_process_stats_monitor = &process_stats_monitor;
 
   // Run Data Collector.
   std::thread run_thread = std::thread(&Stirling::Run, stirling.get());
