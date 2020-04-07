@@ -647,6 +647,10 @@ def buildScriptForCommits = {
           }
         })
 
+        // Remove the tests attempts directory because it
+        // causes the test publisher to mark as failed.
+        sh 'find . -name test_attempts -type d -exec rm -rf {} +'
+
         publishStoryBook()
         publishCustomerDocs()
         publishDoxygenDocs()
