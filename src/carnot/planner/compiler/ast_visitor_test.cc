@@ -1572,41 +1572,6 @@ TEST_F(ASTVisitorTest, get_main_func_arg_spec_info) {
   // EXPECT_FALSE(start_time_arg.has_default_value());
 }
 
-TEST_F(ASTVisitorTest, pass_arg_values_into_main) {
-  ArgValue flag1;
-  flag1.set_name("svc");
-  EXPECT_OK(MakeString("sock-shop/front-end")->ToProto(flag1.mutable_value()));
-
-  ArgValue flag2;
-  flag2.set_name("start_time");
-  EXPECT_OK(MakeTime(123)->ToProto(flag2.mutable_value()));
-
-  auto ir_graph_or_s = CompileGraph(kMainFuncArgsSpec, {flag1, flag2});
-  ASSERT_OK(ir_graph_or_s);
-  auto graph = ir_graph_or_s.ConsumeValueOrDie();
-  // Verify that the graph created is what we expect.
-  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
-  ASSERT_EQ(sink_nodes.size(), 1);
-  MemorySinkIR* sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
-  EXPECT_EQ("http_events", sink->name());
-  ASSERT_EQ(sink->parents().size(), 1);
-  ASSERT_EQ(sink->parents()[0]->type(), IRNodeType::kMap);
-  auto map = static_cast<MapIR*>(sink->parents()[0]);
-  EXPECT_EQ(map->col_exprs().size(), 2);
-  EXPECT_FALSE(map->keep_input_columns());
-}
-
-TEST_F(ASTVisitorTest, wrong_arg_values_into_main) {
-  ArgValue flag1;
-  flag1.set_name("svc");
-  EXPECT_OK(MakeString("sock-shop/front-end")->ToProto(flag1.mutable_value()));
-
-  auto ir_graph_or_s = CompileGraph(kMainFuncArgsSpec, {flag1});
-  ASSERT_NOT_OK(ir_graph_or_s);
-  EXPECT_THAT(ir_graph_or_s.status(),
-              HasCompilerError("main.* missing 1 required positional arguments 'start_time'"));
-}
-
 TEST_F(ASTVisitorTest, true_false_test) {
   std::string bool_use_and_reuse_test =
       absl::StrJoin({"import px", "df = px.DataFrame('cpu')", "df = df[False]", "df = df[True]",

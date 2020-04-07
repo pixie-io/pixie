@@ -2717,42 +2717,6 @@ TEST_F(CompilerTest, UnusedOperatorsRemoved) {
   EXPECT_EQ(mem_sink->relation(), expected_relation);
 }
 
-constexpr char kArgValueQuery[] = R"pxl(
-import px
-
-def main(foo: int):
-  queryDF = px.DataFrame(table='cpu', select=['upid'])
-  queryDF['foo_arg'] = foo
-  px.display(queryDF, 'map')
-)pxl";
-
-TEST_F(CompilerTest, ArgValueQuery) {
-  ArgValue arg;
-  arg.set_name("foo");
-  arg.mutable_value()->set_data_type(types::DataType::INT64);
-  arg.mutable_value()->set_int64_value(100);
-
-  auto graph_or_s = compiler_.CompileToIR(kArgValueQuery, compiler_state_.get(), {arg});
-  ASSERT_OK(graph_or_s);
-
-  auto graph = graph_or_s.ConsumeValueOrDie();
-  std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
-  EXPECT_EQ(1, map_nodes.size());
-  auto map = static_cast<MapIR*>(map_nodes[0]);
-  EXPECT_EQ(2, map->col_exprs().size());
-  auto foo_expr = map->col_exprs()[1].node;
-  EXPECT_EQ(IRNodeType::kInt, foo_expr->type());
-
-  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
-
-  EXPECT_EQ(1, sink_nodes.size());
-  MemorySinkIR* mem_sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
-
-  // ensure service_name is in relation but _attr_service_name is not
-  Relation expected_relation({types::UINT128, types::INT64}, {"upid", "foo_arg"});
-  ASSERT_EQ(mem_sink->relation(), expected_relation);
-}
-
 constexpr char kUndefinedFuncError[] = R"pxl(
 import px
 queryDF = px.DataFrame(table='cpu', select=['upid'])

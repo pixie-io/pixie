@@ -483,13 +483,6 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return StatusOr<QLObjectPtr> the ql object ptr representing the doc string.
    */
   StatusOr<QLObjectPtr> ProcessDocString(const pypa::AstDocStringPtr& doc_string);
-  /**
-   * @brief Calls the main function with the passed in flag values.
-   *
-   * @param arg_values
-   * @return Status
-   */
-  Status CallMainFn(const pypa::AstPtr& m, const ArgValues& arg_values);
 
   IR* ir_graph_;
   CompilerState* compiler_state_;

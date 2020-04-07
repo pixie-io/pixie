@@ -118,28 +118,8 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ParseAndProcessSingleExpression(
   return ProcessSingleExpressionModule(ast);
 }
 
-Status ASTVisitorImpl::CallMainFn(const pypa::AstPtr& m, const ArgValues& arg_values) {
-  auto main_fn_obj = var_table_->Lookup(kMainFuncId);
-  if (main_fn_obj == nullptr) {
-    return CreateAstError(m, "Script arguments passed in but no main function found.");
-  }
-  PL_ASSIGN_OR_RETURN(auto main_fn, GetCallMethod(m, main_fn_obj));
-  ArgMap args;
-  for (const auto& script_arg : arg_values) {
-    PL_ASSIGN_OR_RETURN(auto parsed_value,
-                        DataIR::FromProto(ir_graph_, script_arg.name(), script_arg.value()));
-    PL_ASSIGN_OR_RETURN(auto value, ExprObject::Create(parsed_value, this));
-    args.kwargs.push_back({script_arg.name(), value});
-  }
-  return main_fn->Call(args, m).status();
-}
-
 Status ASTVisitorImpl::ProcessModuleNode(const pypa::AstModulePtr& m) {
   PL_RETURN_IF_ERROR(ProcessASTSuite(m->body, /*is_function_definition_body*/ false));
-  // TODO(philkuz) deprecate flags and remove the lookup check here.
-  if (arg_values_.size() > 0 && var_table_->Lookup(kMainFuncId) != nullptr) {
-    return CallMainFn(m, arg_values_);
-  }
   return Status::OK();
 }
 
