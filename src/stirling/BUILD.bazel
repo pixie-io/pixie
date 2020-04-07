@@ -213,6 +213,7 @@ pl_cc_test(
     name = "mysql_trace_bpf_test",
     timeout = "moderate",
     srcs = ["mysql_trace_bpf_test.cc"],
+    flaky = True,
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
@@ -225,6 +226,7 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["mysql_container_bpf_test.cc"],
     data = ["//src/stirling/mysql/testing:scripts"],
+    flaky = True,
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
@@ -238,6 +240,7 @@ pl_cc_test(
     timeout = "moderate",
     srcs = ["openssl_bpf_test.cc"],
     data = ["//src/stirling/testing/ssl:nginx_ssl_image.tar"],
+    flaky = True,
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
