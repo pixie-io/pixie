@@ -253,12 +253,19 @@ Status NetlinkSocketProber::RecvDiagResp(std::map<int, SocketInfo>* socket_info_
 Status NetlinkSocketProber::InetConnections(std::map<int, SocketInfo>* socket_info_entries,
                                             int conn_states) {
   struct inet_diag_req_v2 msg_req = {};
-  msg_req.sdiag_family = AF_INET;
   msg_req.sdiag_protocol = IPPROTO_TCP;
   msg_req.idiag_states = conn_states;
 
+  // Run once for IPv4.
+  msg_req.sdiag_family = AF_INET;
   PL_RETURN_IF_ERROR(SendDiagReq(msg_req));
   PL_RETURN_IF_ERROR(RecvDiagResp<struct inet_diag_msg>(socket_info_entries));
+
+  // Run again for IPv6.
+  msg_req.sdiag_family = AF_INET6;
+  PL_RETURN_IF_ERROR(SendDiagReq(msg_req));
+  PL_RETURN_IF_ERROR(RecvDiagResp<struct inet_diag_msg>(socket_info_entries));
+
   return Status::OK();
 }
 
