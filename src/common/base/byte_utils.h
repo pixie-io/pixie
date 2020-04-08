@@ -1,11 +1,15 @@
 #pragma once
+
 #include <string>
 #include <utility>
 
-#include "src/common/base/base.h"
+#include "src/common/base/logging.h"
 
 namespace pl {
 namespace utils {
+
+using u8string = std::basic_string<uint8_t>;
+using u8string_view = std::basic_string_view<uint8_t>;
 
 template <size_t N>
 void ReverseBytes(uint8_t* x, uint8_t* y) {

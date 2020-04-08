@@ -17,6 +17,7 @@ pl_cc_library(
         ],
     ),
     deps = [
+        "//:llvm",
         "//src/common/fs:cc_library",
         "//src/common/system:cc_library",
         "//src/stirling/bcc_bpf_interface:cc_library",

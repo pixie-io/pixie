@@ -74,6 +74,7 @@ cc_library(
         "lib/libLLVMBinaryFormat.a",
         "lib/libLLVMSupport.a",
         "lib/libLLVMDemangle.a",
+        "lib/libLLVMX86Disassembler.a",
 
         # WARNING HACK: This adds a stub so that we don't have to include all of
         # clang-tidy with the LLVM build. We don't need to use clang-tidy since we don't
@@ -88,6 +89,10 @@ cc_library(
         "include/**/*.inc",
     ]),
     includes = ["include"],
+    linkopts = [
+        # Terminal info for llvm
+        "-ltinfo",
+    ],
     linkstatic = 1,
     visibility = ["//visibility:public"],
     alwayslink = 1,

@@ -13,7 +13,6 @@ const std::string_view kBinary = "src/stirling/obj_tools/testdata/dummy_exe";
 
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
-using ::testing::Not;
 
 using pl::stirling::elf_tools::ElfReader;
 using pl::stirling::elf_tools::SymbolMatchType;
