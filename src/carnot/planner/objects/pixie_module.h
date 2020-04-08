@@ -18,7 +18,8 @@ class PixieModule : public QLObject {
       /* type */ QLObjectType::kPLModule,
   };
   static StatusOr<std::shared_ptr<PixieModule>> Create(IR* graph, CompilerState* compiler_state,
-                                                       ASTVisitor* ast_visitor);
+                                                       ASTVisitor* ast_visitor,
+                                                       bool func_based_exec = false);
 
   // Constant for the modules.
   inline static constexpr char kPixieModuleObjName[] = "px";
@@ -37,8 +38,12 @@ class PixieModule : public QLObject {
                                                      "days",    "microseconds", "milliseconds"};
 
  protected:
-  explicit PixieModule(IR* graph, CompilerState* compiler_state, ASTVisitor* ast_visitor)
-      : QLObject(PixieModuleType, ast_visitor), graph_(graph), compiler_state_(compiler_state) {}
+  explicit PixieModule(IR* graph, CompilerState* compiler_state, ASTVisitor* ast_visitor,
+                       bool func_based_exec)
+      : QLObject(PixieModuleType, ast_visitor),
+        graph_(graph),
+        compiler_state_(compiler_state),
+        func_based_exec_(func_based_exec) {}
   Status Init();
   Status RegisterUDFFuncs();
   Status RegisterUDTFs();
@@ -50,6 +55,7 @@ class PixieModule : public QLObject {
   IR* graph_;
   CompilerState* compiler_state_;
   absl::flat_hash_set<std::string> compiler_time_fns_;
+  const bool func_based_exec_;
 };
 
 /**
@@ -57,6 +63,15 @@ class PixieModule : public QLObject {
  *
  */
 class DisplayHandler {
+ public:
+  static StatusOr<QLObjectPtr> Eval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
+                                    ASTVisitor* visitor);
+};
+
+/**
+ * @brief Implements the px.display() logic, when doing function based execution.
+ */
+class NoopDisplayHandler {
  public:
   static StatusOr<QLObjectPtr> Eval(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                                     ASTVisitor* visitor);

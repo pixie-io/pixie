@@ -16,9 +16,10 @@ namespace compiler {
 constexpr const char* const PixieModule::kTimeFuncs[];
 
 StatusOr<std::shared_ptr<PixieModule>> PixieModule::Create(IR* graph, CompilerState* compiler_state,
-                                                           ASTVisitor* ast_visitor) {
-  auto pixie_module =
-      std::shared_ptr<PixieModule>(new PixieModule(graph, compiler_state, ast_visitor));
+                                                           ASTVisitor* ast_visitor,
+                                                           bool func_based_exec) {
+  auto pixie_module = std::shared_ptr<PixieModule>(
+      new PixieModule(graph, compiler_state, ast_visitor, func_based_exec));
 
   PL_RETURN_IF_ERROR(pixie_module->Init());
   return pixie_module;
@@ -167,16 +168,16 @@ Status PixieModule::Init() {
   PL_RETURN_IF_ERROR(RegisterUDTFs());
   PL_RETURN_IF_ERROR(RegisterTypeObjs());
 
+  auto display_handler = func_based_exec_ ? &NoopDisplayHandler::Eval : DisplayHandler::Eval;
   // Setup methods.
-  PL_ASSIGN_OR_RETURN(
-      std::shared_ptr<FuncObject> display_fn,
-      FuncObject::Create(kDisplayOpId, {"out", "name", "cols"},
-                         {{"name", "'output'"}, {"cols", "[]"}},
-                         /* has_variable_len_args */ false,
-                         /* has_variable_len_kwargs */ false,
-                         std::bind(&DisplayHandler::Eval, graph_, std::placeholders::_1,
-                                   std::placeholders::_2, std::placeholders::_3),
-                         ast_visitor()));
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<FuncObject> display_fn,
+                      FuncObject::Create(kDisplayOpId, {"out", "name", "cols"},
+                                         {{"name", "'output'"}, {"cols", "[]"}},
+                                         /* has_variable_len_args */ false,
+                                         /* has_variable_len_kwargs */ false,
+                                         std::bind(display_handler, graph_, std::placeholders::_1,
+                                                   std::placeholders::_2, std::placeholders::_3),
+                                         ast_visitor()));
 
   AddMethod(kDisplayOpId, display_fn);
 
@@ -203,6 +204,16 @@ StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,
   //                     ParseStringsFromCollection(static_cast<ListIR*>(cols)));
 
   PL_RETURN_IF_ERROR(graph->CreateNode<MemorySinkIR>(ast, out_op, out_name, columns));
+  return StatusOr(std::make_shared<NoneObject>(visitor));
+}
+
+StatusOr<QLObjectPtr> NoopDisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,
+                                               const ParsedArgs& args, ASTVisitor* visitor) {
+  PL_UNUSED(graph);
+  PL_UNUSED(ast);
+  PL_UNUSED(args);
+  // TODO(PP-1773): Surface a warning to the user when calling px.display in a function based
+  // execution regime. For now, we'll allow it and just have it do nothing.
   return StatusOr(std::make_shared<NoneObject>(visitor));
 }
 

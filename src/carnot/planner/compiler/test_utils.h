@@ -797,13 +797,24 @@ class ASTVisitorTest : public OperatorTests {
   }
 
   StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query) {
+    return CompileGraph(query, /* exec_funcs */ {});
+  }
+
+  StatusOr<std::shared_ptr<IR>> CompileGraph(
+      const std::string& query,
+      const std::vector<plannerpb::QueryRequest::FuncToExecute>& exec_funcs) {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
+
     std::shared_ptr<IR> ir = std::make_shared<IR>();
-    PL_ASSIGN_OR_RETURN(auto ast_walker,
-                        compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get()));
+    bool func_based_exec = exec_funcs.size() > 0;
+    PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
+                                             ir.get(), compiler_state_.get(), func_based_exec));
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+    if (func_based_exec) {
+      PL_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
+    }
     return ir;
   }
 

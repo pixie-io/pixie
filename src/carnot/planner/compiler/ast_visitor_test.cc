@@ -1442,22 +1442,6 @@ TEST_F(ASTVisitorTest, arg_annotations) {
   ASSERT_EQ(arg_types, expected_types);
 }
 
-constexpr char kVizWithoutArgAnnotationsQuery[] = R"pxl(
-import px
-@px.vis.vega("vega")
-def f(a: int, b: str, c):
-  return 1
-)pxl";
-
-TEST_F(ASTVisitorTest, viz_without_annotations_errors) {
-  auto graph_or_s = CompileGraph(kVizWithoutArgAnnotationsQuery);
-  ASSERT_NOT_OK(graph_or_s);
-
-  EXPECT_THAT(graph_or_s.status(),
-              HasCompilerError("Arguments of px.vis.* decorated functions must be annotated with "
-                               "types. Arg: 'c' was not annotated."));
-}
-
 constexpr char kVisFuncsQuerry[] = R"pxl(
 import px
 @px.vis.vega("vega spec for f")
@@ -1577,6 +1561,321 @@ TEST_F(ASTVisitorTest, true_false_test) {
                      "df = df[False]", "px.display(df, 'mapped')"},
                     "\n");
   EXPECT_OK(CompileGraph(bool_use_and_reuse_test));
+}
+
+constexpr char kExecFuncsQuery[] = R"pxl(
+import px
+def f(start_time: px.Time, name: str):
+  df = px.DataFrame('http_events', start_time=start_time)
+  df[name] = df.http_resp_latency_ns
+  return df
+
+)pxl";
+
+TEST_F(ASTVisitorTest, compile_with_exec_funcs) {
+  FuncToExecute f;
+  f.set_func_name("f");
+  f.set_output_table_prefix("test");
+  auto start_time = f.add_arg_values();
+  start_time->set_name("start_time");
+  start_time->set_value("1234");
+  auto name = f.add_arg_values();
+  name->set_name("name");
+  name->set_value("my column name");
+  ExecFuncs exec_funcs({f});
+
+  auto graph_or_s = CompileGraph(kExecFuncsQuery, exec_funcs);
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+
+  std::vector<IRNode*> source_nodes = graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(source_nodes.size(), 1);
+  MemorySourceIR* source = static_cast<MemorySourceIR*>(source_nodes[0]);
+  ExpressionIR* start_expr = source->start_time_expr();
+  ASSERT_EQ(start_expr->EvaluatedDataType(), types::DataType::TIME64NS);
+  TimeIR* start_time_ir = static_cast<TimeIR*>(start_expr);
+  ASSERT_EQ(start_time_ir->val(), 1234);
+
+  std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
+  ASSERT_EQ(map_nodes.size(), 1);
+  MapIR* map = static_cast<MapIR*>(map_nodes[0]);
+  ASSERT_EQ(map->col_exprs().size(), 1);
+  EXPECT_EQ(map->col_exprs()[0].name, "my column name");
+
+  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  ASSERT_EQ(sink_nodes.size(), 1);
+  MemorySinkIR* sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  EXPECT_EQ(sink->name(), "test");
+}
+
+constexpr char kExecFuncsWithDisplayQuery[] = R"pxl(
+import px
+def f():
+  return px.DataFrame('http_events')
+# this px.display should be ignored, but the source will still be created.
+px.display(px.DataFrame('http_events'))
+)pxl";
+
+TEST_F(ASTVisitorTest, compile_with_exec_funcs_and_display) {
+  FuncToExecute f;
+  f.set_func_name("f");
+  f.set_output_table_prefix("test");
+  ExecFuncs exec_funcs({f});
+
+  auto graph_or_s = CompileGraph(kExecFuncsWithDisplayQuery, exec_funcs);
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+
+  std::vector<IRNode*> source_nodes = graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(source_nodes.size(), 2);
+
+  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  ASSERT_EQ(sink_nodes.size(), 1);
+  MemorySinkIR* sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  EXPECT_EQ(sink->name(), "test");
+}
+
+constexpr char kExecFuncsWithGlobals[] = R"pxl(
+import px
+df = px.DataFrame('http_events', select=['http_resp_latency_ns'])
+def f():
+  df.http_resp_latency_ns = 2 * df.http_resp_latency_ns
+  return df
+
+def g():
+  df.http_resp_latency_ns = 3 * df.http_resp_latency_ns
+  return df
+)pxl";
+
+TEST_F(ASTVisitorTest, exec_funcs_with_globals) {
+  FuncToExecute f;
+  f.set_func_name("f");
+  f.set_output_table_prefix("f_out");
+  FuncToExecute g;
+  g.set_func_name("g");
+  g.set_output_table_prefix("g_out");
+  ExecFuncs exec_funcs({f, g});
+
+  auto graph_or_s = CompileGraph(kExecFuncsWithGlobals, exec_funcs);
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+
+  std::vector<IRNode*> source_nodes = graph->FindNodesOfType(IRNodeType::kMemorySource);
+  // f and g should use the same source.
+  ASSERT_EQ(source_nodes.size(), 1);
+
+  std::vector<IRNode*> map_nodes = graph->FindNodesOfType(IRNodeType::kMap);
+  EXPECT_EQ(map_nodes.size(), 2);
+  for (const auto& node : map_nodes) {
+    auto map = static_cast<MapIR*>(node);
+    // Maps for f and g, should have the source node as the parent.
+    // This tests that the global state is not shared between the function calls.
+    EXPECT_EQ(map->parents().size(), 1);
+    EXPECT_TRUE(map->IsChildOf(static_cast<OperatorIR*>(source_nodes[0])));
+  }
+
+  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  ASSERT_EQ(sink_nodes.size(), 2);
+}
+
+constexpr char kExecFuncsArgParsingQuery[] = R"pxl(
+import px
+df = px.DataFrame('http_events')
+
+def f(a: int, b:str, c: float, d: bool, e: bool):
+  df.a = d
+  df.b = e
+  return df
+)pxl";
+
+TEST_F(ASTVisitorTest, exec_funcs_arg_parsing) {
+  FuncToExecute f;
+  f.set_func_name("f");
+  f.set_output_table_prefix("f_out");
+  auto a = f.add_arg_values();
+  a->set_name("a");
+  a->set_value("1234");
+  auto b = f.add_arg_values();
+  b->set_name("b");
+  b->set_value("test string");
+  auto c = f.add_arg_values();
+  c->set_name("c");
+  c->set_value("1.234");
+  auto d = f.add_arg_values();
+  d->set_name("d");
+  d->set_value("true");
+  auto e = f.add_arg_values();
+  e->set_name("e");
+  e->set_value("True");
+  ExecFuncs exec_funcs({f});
+
+  auto graph_or_s = CompileGraph(kExecFuncsArgParsingQuery, exec_funcs);
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+
+  std::vector<IRNode*> str_nodes = graph->FindNodesOfType(IRNodeType::kString);
+  EXPECT_GE(str_nodes.size(), 2);
+  std::vector<std::string> str_vals;
+  for (const auto& node : str_nodes) {
+    auto str = static_cast<StringIR*>(node);
+    str_vals.push_back(str->str());
+  }
+  EXPECT_NE(std::find(str_vals.begin(), str_vals.end(), "test string"), str_vals.end());
+
+  std::vector<IRNode*> int_nodes = graph->FindNodesOfType(IRNodeType::kInt);
+  EXPECT_GE(int_nodes.size(), 1);
+  std::vector<int64_t> int_vals;
+  for (const auto& node : int_nodes) {
+    int_vals.push_back(static_cast<IntIR*>(node)->val());
+  }
+  EXPECT_NE(std::find(int_vals.begin(), int_vals.end(), 1234), int_vals.end());
+
+  std::vector<IRNode*> float_nodes = graph->FindNodesOfType(IRNodeType::kFloat);
+  EXPECT_GE(float_nodes.size(), 1);
+  std::vector<double> float_vals;
+  for (const auto& node : float_nodes) {
+    float_vals.push_back(static_cast<FloatIR*>(node)->val());
+  }
+  EXPECT_NE(std::find(float_vals.begin(), float_vals.end(), 1.234), float_vals.end());
+
+  std::vector<IRNode*> bool_nodes = graph->FindNodesOfType(IRNodeType::kBool);
+  EXPECT_GE(bool_nodes.size(), 2);
+  for (const auto& node : bool_nodes) {
+    auto parents = graph->dag().ParentsOf(node->id());
+    for (auto parent : parents) {
+      if (graph->Get(parent)->type() == IRNodeType::kMap) {
+        EXPECT_EQ(static_cast<BoolIR*>(node)->val(), true);
+      }
+    }
+  }
+}
+
+constexpr char kExecFuncsMultipleReturnsQuery[] = R"pxl(
+import px
+def f():
+  df1 = px.DataFrame('http_events')
+  df2 = px.DataFrame('http_events')
+  return df1, df2
+
+def g():
+  df1 = px.DataFrame('http_events')
+  df2 = px.DataFrame('http_events')
+  return [df1, df2]
+)pxl";
+
+TEST_F(ASTVisitorTest, exec_funcs_multiple_returns) {
+  FuncToExecute f;
+  f.set_func_name("f");
+  f.set_output_table_prefix("f_out");
+  FuncToExecute g;
+  g.set_func_name("g");
+  g.set_output_table_prefix("g_out");
+  ExecFuncs exec_funcs({f, g});
+
+  auto graph_or_s = CompileGraph(kExecFuncsMultipleReturnsQuery, exec_funcs);
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+
+  std::vector<IRNode*> sink_nodes = graph->FindNodesOfType(IRNodeType::kMemorySink);
+  EXPECT_EQ(sink_nodes.size(), 4);
+  std::vector<std::string> sink_names;
+  for (const auto& node : sink_nodes) {
+    sink_names.push_back(static_cast<MemorySinkIR*>(node)->name());
+  }
+  EXPECT_THAT(sink_names, UnorderedElementsAre("f_out[0]", "f_out[1]", "g_out[0]", "g_out[1]"));
+}
+
+constexpr char kExecFuncsReturnNotDf[] = R"pxl(
+import px
+def f():
+  return "abcd"
+)pxl";
+
+TEST_F(ASTVisitorTest, exec_funcs_return_not_df) {
+  FuncToExecute f;
+  f.set_func_name("f");
+  f.set_output_table_prefix("f_out");
+  ExecFuncs exec_funcs({f});
+
+  auto graph_or_s = CompileGraph(kExecFuncsReturnNotDf, exec_funcs);
+  ASSERT_NOT_OK(graph_or_s);
+  EXPECT_THAT(graph_or_s.status(),
+              HasCompilerError("Function 'f' returns 'String' but should return a DataFrame."));
+}
+
+constexpr char kExecFuncsMultipleReturnNotDf[] = R"pxl(
+import px
+def f():
+  return [px.DataFrame('http_events'), "abcd"]
+)pxl";
+
+TEST_F(ASTVisitorTest, exec_funcs_multiple_returns_not_df) {
+  FuncToExecute f;
+  f.set_func_name("f");
+  f.set_output_table_prefix("f_out");
+  ExecFuncs exec_funcs({f});
+
+  auto graph_or_s = CompileGraph(kExecFuncsMultipleReturnNotDf, exec_funcs);
+  ASSERT_NOT_OK(graph_or_s);
+  EXPECT_THAT(
+      graph_or_s.status(),
+      HasCompilerError(
+          "Function 'f' returns 'String' at index 1. All returned objects must be dataframes."));
+}
+
+constexpr char kExecFuncsMustSpecifyOutputPrefix[] = R"pxl(
+import px
+def f():
+  return px.DataFrame('http_events')
+)pxl";
+
+TEST_F(ASTVisitorTest, exec_funcs_must_specify_output_prefix) {
+  FuncToExecute f;
+  f.set_func_name("f");
+  ExecFuncs exec_funcs({f});
+
+  auto graph_or_s = CompileGraph(kExecFuncsMustSpecifyOutputPrefix, exec_funcs);
+  ASSERT_NOT_OK(graph_or_s);
+  EXPECT_THAT(graph_or_s.status(),
+              HasCompilerError("Output_table_prefix must be specified for function f."));
+}
+
+TEST_F(ASTVisitorTest, exec_funcs_must_specify_func_name) {
+  FuncToExecute f;
+  f.set_output_table_prefix("f_out");
+  ExecFuncs exec_funcs({f});
+
+  auto graph_or_s = CompileGraph(kExecFuncsMustSpecifyOutputPrefix, exec_funcs);
+  ASSERT_NOT_OK(graph_or_s);
+  EXPECT_THAT(graph_or_s.status(),
+              HasCompilerError("Must specify func_name for each FuncToExecute."));
+}
+
+TEST_F(ASTVisitorTest, exec_funcs_missing_func_name) {
+  FuncToExecute g;
+  g.set_func_name("g");
+  g.set_output_table_prefix("g_out");
+  ExecFuncs exec_funcs({g});
+
+  auto graph_or_s = CompileGraph(kExecFuncsMustSpecifyOutputPrefix, exec_funcs);
+  ASSERT_NOT_OK(graph_or_s);
+  EXPECT_THAT(graph_or_s.status(), HasCompilerError("Function to execute, 'g', not found."));
+}
+
+constexpr char kExecFuncsFuncNotFunc[] = R"pxl(
+import px
+f = px.DataFrame('http_events')
+)pxl";
+
+TEST_F(ASTVisitorTest, exec_funcs_func_not_a_function) {
+  FuncToExecute f;
+  f.set_func_name("f");
+  f.set_output_table_prefix("f_out");
+  ExecFuncs exec_funcs({f});
+
+  auto graph_or_s = CompileGraph(kExecFuncsFuncNotFunc, exec_funcs);
+  ASSERT_NOT_OK(graph_or_s);
+  EXPECT_THAT(graph_or_s.status(), HasCompilerError("'f' is a 'DataFrame' not a function."));
 }
 
 }  // namespace compiler

@@ -34,9 +34,10 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetUnaryOp(const std::string& python_op,
 }
 
 StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* graph,
-                                                                 CompilerState* compiler_state) {
+                                                                 CompilerState* compiler_state,
+                                                                 bool func_based_exec) {
   std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(
-      new ASTVisitorImpl(graph, compiler_state, VarTable::Create()));
+      new ASTVisitorImpl(graph, compiler_state, VarTable::Create(), func_based_exec));
   PL_RETURN_IF_ERROR(ast_visitor->InitGlobals());
   return ast_visitor;
 }
@@ -44,7 +45,7 @@ StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* graph,
 std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChild() {
   // The flag values should come from the parent var table, not be copied here.
   return std::shared_ptr<ASTVisitorImpl>(
-      new ASTVisitorImpl(ir_graph_, compiler_state_, var_table_->CreateChild()));
+      new ASTVisitorImpl(ir_graph_, compiler_state_, var_table_->CreateChild(), func_based_exec_));
 }
 
 Status ASTVisitorImpl::InitGlobals() {
@@ -118,6 +119,147 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ParseAndProcessSingleExpression(
 
 Status ASTVisitorImpl::ProcessModuleNode(const pypa::AstModulePtr& m) {
   PL_RETURN_IF_ERROR(ProcessASTSuite(m->body, /*is_function_definition_body*/ false));
+  return Status::OK();
+}
+
+StatusOr<QLObjectPtr> ASTVisitorImpl::ParseStringAsType(const pypa::AstPtr& ast,
+                                                        const std::string& value,
+                                                        std::shared_ptr<TypeObject> type) {
+  ExpressionIR* node;
+  switch (type->data_type()) {
+    case types::DataType::BOOLEAN: {
+      bool val;
+      if (!absl::SimpleAtob(value, &val)) {
+        return CreateAstError(ast, "Failed to parse arg with value '$0' as bool.", value);
+      }
+      PL_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<BoolIR>(ast, val));
+      break;
+    }
+    case types::DataType::STRING: {
+      PL_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<StringIR>(ast, value));
+      break;
+    }
+    case types::DataType::INT64: {
+      int64_t val;
+      if (!absl::SimpleAtoi(value, &val)) {
+        return CreateAstError(ast, "Failed to parse arg with value '$0' as int64.", value);
+      }
+      PL_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<IntIR>(ast, val));
+      break;
+    }
+    case types::DataType::FLOAT64: {
+      double val;
+      if (!absl::SimpleAtod(value, &val)) {
+        return CreateAstError(ast, "Failed to parse arg with value '$0' as float64.", value);
+      }
+      PL_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<FloatIR>(ast, val));
+      break;
+    }
+    case types::DataType::DURATION64NS:
+    case types::DataType::TIME64NS: {
+      int64_t val;
+      if (!absl::SimpleAtoi(value, &val)) {
+        return CreateAstError(ast, "Failed to parse arg with value '$0' as time.", value);
+      }
+      PL_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<TimeIR>(ast, val));
+      break;
+    }
+    case types::DataType::UINT128: {
+      // TODO(james): Implement this.
+      return CreateAstError(ast, "Passing arg of type UINT128 is currently unsupported.");
+      break;
+    }
+    default:
+      return CreateAstError(
+          ast, "All arguments to executed functions must have an underlying concrete type.");
+  }
+  return ExprObject::Create(node, this);
+}
+
+StatusOr<ArgMap> ASTVisitorImpl::ProcessExecFuncArgs(const pypa::AstPtr& ast,
+                                                     const std::shared_ptr<FuncObject>& func,
+                                                     const ArgValues& arg_values) {
+  ArgMap args;
+  for (const auto arg : arg_values) {
+    if (std::find(func->arguments().begin(), func->arguments().end(), arg.name()) ==
+        func->arguments().end()) {
+      return CreateAstError(ast, "Function '$0' does not have an argument called '$1'",
+                            func->name(), arg.name());
+    }
+    auto it = func->arg_types().find(arg.name());
+    if (it == func->arg_types().end()) {
+      return CreateAstError(ast, "Arg type annotation required. Function: '$0', arg: '$1'",
+                            func->name(), arg.name());
+    }
+    // TODO(james): Parse the string as an expression instead of adhoc parsing.
+    PL_ASSIGN_OR_RETURN(auto node, ParseStringAsType(ast, arg.value(), it->second));
+    // FuncObject::Call has logic to handle accepting normal args as kwargs,
+    // so its easiest to just pass everything as kwargs. In the future, if we want to support
+    // variadic args in exec funcs we will have to change this.
+    args.kwargs.emplace_back(arg.name(), node);
+  }
+  return args;
+}
+
+Status ASTVisitorImpl::ProcessExecFuncs(const ExecFuncs& exec_funcs) {
+  // TODO(James): handle errors here better. For now I have a fake ast ptr with -1 for line and col.
+  auto ast = std::make_shared<pypa::AstExpressionStatement>();
+  ast->line = -1;
+  ast->column = -1;
+  for (const auto& func : exec_funcs) {
+    if (func.func_name() == "") {
+      return CreateAstError(ast, "Must specify func_name for each FuncToExecute.");
+    }
+    if (func.output_table_prefix() == "") {
+      return CreateAstError(ast, "Output_table_prefix must be specified for function $0.",
+                            func.func_name());
+    }
+
+    // Get Function Object.
+    auto objptr = var_table_->Lookup(func.func_name());
+    if (objptr == nullptr) {
+      return CreateAstError(ast, "Function to execute, '$0', not found.", func.func_name());
+    }
+    if (objptr->type() != QLObjectType::kFunction) {
+      return CreateAstError(ast, "'$0' is a '$1' not a function.", func.func_name(),
+                            objptr->name());
+    }
+    auto func_obj = std::static_pointer_cast<FuncObject>(objptr);
+
+    // Process arguments.
+    ArgValues arg_values(func.arg_values().begin(), func.arg_values().end());
+    PL_ASSIGN_OR_RETURN(auto argmap, ProcessExecFuncArgs(ast, func_obj, arg_values));
+
+    // Call function.
+    PL_ASSIGN_OR_RETURN(auto return_obj, func_obj->Call(argmap, ast));
+
+    // Process returns.
+    if (!CollectionObject::IsCollection(return_obj)) {
+      if (return_obj->type() != QLObjectType::kDataframe) {
+        return CreateAstError(ast, "Function '$0' returns '$1' but should return a DataFrame.",
+                              func.func_name(), return_obj->name());
+      }
+      auto df = std::static_pointer_cast<Dataframe>(return_obj);
+      std::vector<std::string> out_columns;
+      PL_RETURN_IF_ERROR(ir_graph()->CreateNode<MemorySinkIR>(
+          nullptr, df->op(), func.output_table_prefix(), out_columns));
+      continue;
+    }
+
+    auto return_collection = std::static_pointer_cast<CollectionObject>(return_obj);
+    for (const auto& [i, obj] : Enumerate(return_collection->items())) {
+      if (obj->type() != QLObjectType::kDataframe) {
+        return CreateAstError(
+            ast, "Function '$0' returns '$1' at index $2. All returned objects must be dataframes.",
+            func.func_name(), obj->name(), i);
+      }
+      auto df = std::static_pointer_cast<Dataframe>(obj);
+      auto out_name = absl::Substitute("$0[$1]", func.output_table_prefix(), i);
+      std::vector<std::string> columns;
+      PL_RETURN_IF_ERROR(
+          ir_graph()->CreateNode<MemorySinkIR>(nullptr, df->op(), out_name, columns));
+    }
+  }
   return Status::OK();
 }
 
@@ -203,7 +345,8 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
 }
 
 Status ASTVisitorImpl::AddPixieModule(std::string_view as_name) {
-  PL_ASSIGN_OR_RETURN(auto px, PixieModule::Create(ir_graph_, compiler_state_, this));
+  PL_ASSIGN_OR_RETURN(auto px,
+                      PixieModule::Create(ir_graph_, compiler_state_, this, func_based_exec_));
   // TODO(philkuz) verify this is done before hand in a parent var table if one exists.
   var_table_->Add(as_name, px);
   return Status::OK();
@@ -519,13 +662,8 @@ Status ASTVisitorImpl::ProcessFunctionDefNode(const pypa::AstFunctionDefPtr& nod
   PL_ASSIGN_OR_RETURN(auto doc_string, ProcessFuncDefDocString(body));
   PL_RETURN_IF_ERROR(defined_func->AddDocString(doc_string));
 
-  // TODO(PL-1603): once we have semantic types we can do this for all functions.
-  if (defined_func->HasVisSpec() || function_name == kMainFuncId) {
-    PL_RETURN_IF_ERROR(
-        defined_func->ResolveArgAnnotationsToConcreteTypes(node, arg_annotations_objs));
+  PL_RETURN_IF_ERROR(defined_func->ResolveArgAnnotationsToTypes(arg_annotations_objs));
 
-    PL_RETURN_IF_ERROR(defined_func->CheckAllArgsHaveTypes(node));
-  }
   var_table_->Add(function_name, defined_func);
   return Status::OK();
 }

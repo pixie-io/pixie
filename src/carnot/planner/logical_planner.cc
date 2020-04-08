@@ -58,8 +58,11 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
   PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
                       CreateCompilerState(logical_state.schema(), registry_info.get(), ms));
 
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> single_node_plan,
-                      compiler_.CompileToIR(query_request.query_str(), compiler_state.get()));
+  std::vector<plannerpb::QueryRequest::FuncToExecute> exec_funcs(query_request.exec_funcs().begin(),
+                                                                 query_request.exec_funcs().end());
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<IR> single_node_plan,
+      compiler_.CompileToIR(query_request.query_str(), compiler_state.get(), exec_funcs));
   // Create the distributed plan.
   return distributed_planner_->Plan(logical_state.distributed_state(), compiler_state.get(),
                                     single_node_plan.get());

@@ -399,6 +399,29 @@ TEST_F(LogicalPlannerTest, BrokenQueryTest) {
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());
 }
+
+constexpr char kPlanExecFuncs[] = R"pxl(
+import px
+def f(a: int):
+  return px.DataFrame('http_events', start_time='-2m')
+)pxl";
+
+TEST_F(LogicalPlannerTest, PlanWithExecFuncs) {
+  auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
+  plannerpb::QueryRequest req;
+  req.set_query_str(kPlanExecFuncs);
+  auto f = req.add_exec_funcs();
+  f->set_func_name("f");
+  f->set_output_table_prefix("test");
+  auto a = f->add_arg_values();
+  a->set_name("a");
+  a->set_value("1");
+  auto plan_or_s = planner->Plan(
+      testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema), req);
+  ASSERT_OK(plan_or_s);
+  auto plan = plan_or_s.ConsumeValueOrDie();
+  EXPECT_OK(plan->ToProto());
+}
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl

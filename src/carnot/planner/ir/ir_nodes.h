@@ -987,7 +987,7 @@ class TimeIR : public DataIR {
   explicit TimeIR(int64_t id) : DataIR(id, IRNodeType::kTime) {}
   Status Init(int64_t val);
 
-  bool val() const { return val_ != 0; }
+  int64_t val() const { return val_; }
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
   Status ToProtoImpl(planpb::ScalarValue* value) const override;

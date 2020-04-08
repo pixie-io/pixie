@@ -158,29 +158,17 @@ Status FuncObject::AddDocString(QLObjectPtr doc_string) {
   return Status::OK();
 }
 
-Status FuncObject::ResolveArgAnnotationsToConcreteTypes(
-    const pypa::AstPtr& ast,
+Status FuncObject::ResolveArgAnnotationsToTypes(
     const absl::flat_hash_map<std::string, QLObjectPtr> arg_annotation_objs) {
   for (const auto& [name, obj] : arg_annotation_objs) {
     if (obj->type() != QLObjectType::kType) {
-      return CreateAstError(ast,
-                            "Arg annotation, '$1' for '$0' is not supported. Type must eval to "
-                            "primitive (str, int, px.Time, etc)",
-                            name, obj->name());
-    }
-    auto type_obj = std::static_pointer_cast<TypeObject>(obj);
-    arg_types_.insert({name, type_obj});
-  }
-  return Status::OK();
-}
-
-Status FuncObject::CheckAllArgsHaveTypes(const pypa::AstPtr& ast) const {
-  for (const auto& name : arguments_) {
-    if (arg_types_.find(name) == arg_types_.end()) {
-      return CreateAstError(ast,
-                            "Arguments of px.vis.* decorated functions must be annotated with "
-                            "types. Arg: '$0' was not annotated.",
-                            name);
+      PL_ASSIGN_OR_RETURN(auto type_obj,
+                          TypeObject::Create(types::DataType::DATA_TYPE_UNKNOWN,
+                                             types::SemanticType::ST_UNSPECIFIED, ast_visitor()));
+      arg_types_.insert({name, type_obj});
+    } else {
+      auto type_obj = std::static_pointer_cast<TypeObject>(obj);
+      arg_types_.insert({name, type_obj});
     }
   }
   return Status::OK();

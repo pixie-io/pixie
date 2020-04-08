@@ -74,6 +74,14 @@ class ASTVisitor {
    * @return StatusOr<shared::scriptspb::FuncArgsSpec> spec or error.
    */
   virtual StatusOr<shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec() const = 0;
+
+  /**
+   * @brief Process the functions to execute.
+   *
+   * @return Status
+   */
+  virtual Status ProcessExecFuncs(
+      const std::vector<plannerpb::QueryRequest::FuncToExecute>& exec_funcs) = 0;
 };
 
 }  // namespace compiler

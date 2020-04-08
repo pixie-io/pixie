@@ -167,17 +167,12 @@ class FuncObject : public QLObject {
 
   const std::string& doc_string() const { return doc_string_; }
 
-  // Note that types only get resolved for functions decorated with px.vis.*
-  Status ResolveArgAnnotationsToConcreteTypes(
-      const pypa::AstPtr& ast,
+  Status ResolveArgAnnotationsToTypes(
       const absl::flat_hash_map<std::string, QLObjectPtr> arg_annotation_objs);
 
   const absl::flat_hash_map<std::string, std::shared_ptr<TypeObject>>& arg_types() const {
     return arg_types_;
   }
-
-  // Note that this check is only called for functions decorated with px.vis.*
-  Status CheckAllArgsHaveTypes(const pypa::AstPtr& ast) const;
 
   pl::shared::scriptspb::FuncArgsSpec CreateFuncArgsSpec() const;
 

@@ -29,6 +29,7 @@ namespace compiler {
 
 using FuncToExecute = plannerpb::QueryRequest::FuncToExecute;
 using ExecFuncs = std::vector<FuncToExecute>;
+using ArgValues = std::vector<FuncToExecute::ArgValue>;
 
 #define PYPA_PTR_CAST(TYPE, VAL) \
   std::static_pointer_cast<typename pypa::AstTypeByID<pypa::AstType::TYPE>::Type>(VAL)
@@ -60,7 +61,8 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param arg_values
    * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
    */
-  static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(IR* graph, CompilerState* compiler_state);
+  static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(IR* graph, CompilerState* compiler_state,
+                                                          bool func_based_exec = false);
 
   /**
    * @brief Creates a child AST Visitor from the top-level AST Visitor, sharing the graph,
@@ -106,6 +108,15 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo() const override;
   StatusOr<shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec() const override;
 
+  /**
+   * @brief Process functions that are to be executed.
+   *
+   * @param exec_funcs list of specifications for functions to call.
+   *
+   * @return Status
+   */
+  Status ProcessExecFuncs(const ExecFuncs& exec_funcs) override;
+
   IR* ir_graph() const { return ir_graph_; }
   std::shared_ptr<VarTable> var_table() const { return var_table_; }
 
@@ -128,8 +139,12 @@ class ASTVisitorImpl : public ASTVisitor {
    *
    * @param ir_graph
    */
-  ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table)
-      : ir_graph_(ir_graph), compiler_state_(compiler_state), var_table_(var_table) {}
+  ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table,
+                 bool func_based_exec)
+      : ir_graph_(ir_graph),
+        compiler_state_(compiler_state),
+        var_table_(var_table),
+        func_based_exec_(func_based_exec) {}
 
   Status InitGlobals();
   Status CreateBoolLiterals();
@@ -479,9 +494,33 @@ class ASTVisitorImpl : public ASTVisitor {
    */
   StatusOr<QLObjectPtr> ProcessDocString(const pypa::AstDocStringPtr& doc_string);
 
+  /**
+   * @brief Processes FuncToExecute_ArgValues into an ArgMap
+   *
+   * @param func the function to check types againts.
+   * @param arg_values the list of FuncToExecute_ArgValues to process.
+   * @return StatusOr<ArgMap> the arg map after processing.
+   */
+  StatusOr<ArgMap> ProcessExecFuncArgs(const pypa::AstPtr& ast,
+                                       const std::shared_ptr<FuncObject>& func,
+                                       const ArgValues& arg_values);
+
+  /**
+   * @brief Parses a string as the given type. In the future, we will parse the string as an
+   * expression.
+   *
+   * @param ast ast pointer for error context.
+   * @param value string value to parse.
+   * @param type TypeObject ptr specifying the expected type.
+   * @return StatusOr<QLObjectPtr> the parsed expression object.
+   */
+  StatusOr<QLObjectPtr> ParseStringAsType(const pypa::AstPtr& ast, const std::string& value,
+                                          std::shared_ptr<TypeObject> type);
+
   IR* ir_graph_;
   CompilerState* compiler_state_;
   std::shared_ptr<VarTable> var_table_;
+  bool func_based_exec_;
 };
 
 }  // namespace compiler

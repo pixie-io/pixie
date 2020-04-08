@@ -67,14 +67,18 @@ StatusOr<shared::scriptspb::FuncArgsSpec> Compiler::GetMainFuncArgsSpec(
 StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
                                                   CompilerState* compiler_state,
                                                   const ExecFuncs& exec_funcs) {
-  PL_UNUSED(exec_funcs);
   Parser parser;
   PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
 
   std::shared_ptr<IR> ir = std::make_shared<IR>();
-  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state));
+  bool func_based_exec = exec_funcs.size() > 0;
+  PL_ASSIGN_OR_RETURN(auto ast_walker,
+                      ASTVisitorImpl::Create(ir.get(), compiler_state, func_based_exec));
 
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+  if (func_based_exec) {
+    PL_RETURN_IF_ERROR(ast_walker->ProcessExecFuncs(exec_funcs));
+  }
   return ir;
 }
 
