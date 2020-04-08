@@ -8,7 +8,6 @@ import (
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
-	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
@@ -43,73 +42,26 @@ var statusCodeToGRPCCode = map[statuspb.Code]codes.Code{
 	statuspb.SYSTEM:               codes.Internal,
 }
 
-// VizierScalarValueToPlanScalarValue converts an externally-facing scalar value to an internal representation of ScalarValue.
-func VizierScalarValueToPlanScalarValue(vpb *vizierpb.ScalarValue) (*planpb.ScalarValue, error) {
-	// PL_CARNOT_UPDATE_FOR_NEW_TYPES
-	switch d := vpb.DataType; d {
-	case vizierpb.BOOLEAN:
-		return &planpb.ScalarValue{
-			DataType: typespb.BOOLEAN,
-			Value: &planpb.ScalarValue_BoolValue{
-				BoolValue: vpb.GetBoolValue(),
-			},
-		}, nil
-	case vizierpb.INT64:
-		return &planpb.ScalarValue{
-			DataType: typespb.INT64,
-			Value: &planpb.ScalarValue_Int64Value{
-				Int64Value: vpb.GetInt64Value(),
-			},
-		}, nil
-	case vizierpb.FLOAT64:
-		return &planpb.ScalarValue{
-			DataType: typespb.FLOAT64,
-			Value: &planpb.ScalarValue_Float64Value{
-				Float64Value: vpb.GetFloat64Value(),
-			},
-		}, nil
-	case vizierpb.STRING:
-		return &planpb.ScalarValue{
-			DataType: typespb.STRING,
-			Value: &planpb.ScalarValue_StringValue{
-				StringValue: vpb.GetStringValue(),
-			},
-		}, nil
-	case vizierpb.TIME64NS:
-		return &planpb.ScalarValue{
-			DataType: typespb.TIME64NS,
-			Value: &planpb.ScalarValue_Time64NsValue{
-				Time64NsValue: vpb.GetTime64NsValue(),
-			},
-		}, nil
-	case vizierpb.DURATION64NS:
-		return &planpb.ScalarValue{
-			DataType: typespb.DURATION64NS,
-			Value: &planpb.ScalarValue_Duration64NsValue{
-				Duration64NsValue: vpb.GetDuration64NsValue(),
-			},
-		}, nil
-	default:
-		return nil, errors.New("Could not convert Vizierpb ScalarValue to Planpb ScalarValue")
-	}
-}
-
 // VizierQueryRequestToPlannerQueryRequest converts a externally-facing query request to an internal representation.
 func VizierQueryRequestToPlannerQueryRequest(vpb *vizierpb.ExecuteScriptRequest) (*plannerpb.QueryRequest, error) {
-	args := make([]*plannerpb.QueryRequest_ArgValue, len(vpb.FlagValues))
-	for i, f := range vpb.FlagValues {
-		cFlag, err := VizierScalarValueToPlanScalarValue(f.FlagValue)
-		if err != nil {
-			return nil, err
+	funcs := make([]*plannerpb.QueryRequest_FuncToExecute, len(vpb.ExecFuncs))
+	for i, f := range vpb.ExecFuncs {
+		args := make([]*plannerpb.QueryRequest_FuncToExecute_ArgValue, len(f.ArgValues))
+		for j, arg := range f.ArgValues {
+			args[j] = &plannerpb.QueryRequest_FuncToExecute_ArgValue{
+				Name:  arg.Name,
+				Value: arg.Value,
+			}
 		}
-		args[i] = &plannerpb.QueryRequest_ArgValue{
-			Name:  f.FlagName,
-			Value: cFlag,
+		funcs[i] = &plannerpb.QueryRequest_FuncToExecute{
+			FuncName:          f.FuncName,
+			ArgValues:         args,
+			OutputTablePrefix: f.OutputTablePrefix,
 		}
 	}
 	return &plannerpb.QueryRequest{
 		QueryStr:  vpb.QueryStr,
-		ArgValues: args,
+		ExecFuncs: funcs,
 	}, nil
 }
 

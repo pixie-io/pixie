@@ -105,9 +105,8 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, q string) (chan *Vi
 	}
 
 	reqPB := &pl_api_vizierpb.ExecuteScriptRequest{
-		QueryStr:   q,
-		FlagValues: nil,
-		ClusterID:  c.id.String(),
+		QueryStr:  q,
+		ClusterID: c.id.String(),
 	}
 
 	if c.passthroughEnabled {

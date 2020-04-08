@@ -9,7 +9,6 @@ import (
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
-	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
@@ -25,37 +24,49 @@ bool_value: false
 
 var queryReqPb = `
 query_str: "abcd this is a test"
-arg_values {
-	name: "arg1"
-	value {
-		data_type: BOOLEAN
-		bool_value: false
+exec_funcs {
+	func_name: "f"
+	arg_values {
+		name: "a"
+		value: "1"
 	}
+	output_table_prefix: "table1"
 }
-arg_values {
-	name: "intarg"
-	value {
-		data_type: INT64
-		int64_value: 1234
+exec_funcs {
+	func_name: "g"
+	arg_values {
+		name: "c"
+		value: "3"
 	}
+	arg_values {
+		name: "d"
+		value: "4"
+	}
+	output_table_prefix: "table2"
 }
 `
 
 var executeScriptReqPb = `
 query_str: "abcd this is a test"
-flag_values {
-	flag_name: "arg1"
-	flag_value {
-		data_type: BOOLEAN
-		bool_value: false
+exec_funcs {
+	func_name: "f"
+	arg_values {
+		name: "a"
+		value: "1"
 	}
+	output_table_prefix: "table1"
 }
-flag_values {
-	flag_name: "intarg"
-	flag_value {
-		data_type: INT64
-		int64_value: 1234
+exec_funcs {
+	func_name: "g"
+	arg_values {
+		name: "c"
+		value: "3"
 	}
+	arg_values {
+		name: "d"
+		value: "4"
+	}
+	output_table_prefix: "table2"
 }
 `
 
@@ -126,22 +137,6 @@ var rowBatchPb = `
 		}
 	}
 `
-
-func TestVizierScalarValueToPlanScalarValue(t *testing.T) {
-	sv := new(vizierpb.ScalarValue)
-	if err := proto.UnmarshalText(boolScalarValuePb, sv); err != nil {
-		t.Fatalf("Cannot unmarshal proto")
-	}
-
-	expectedSvPlan := new(planpb.ScalarValue)
-	if err := proto.UnmarshalText(boolScalarValuePb, expectedSvPlan); err != nil {
-		t.Fatalf("Cannot unmarshal proto")
-	}
-
-	svPlan, err := controllers.VizierScalarValueToPlanScalarValue(sv)
-	assert.Nil(t, err)
-	assert.Equal(t, expectedSvPlan, svPlan)
-}
 
 func TestVizierQueryRequestToPlannerQueryRequest(t *testing.T) {
 	sv := new(vizierpb.ExecuteScriptRequest)

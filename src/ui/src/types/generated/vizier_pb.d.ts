@@ -461,13 +461,13 @@ export class ExecuteScriptRequest extends jspb.Message {
   getQueryStr(): string;
   setQueryStr(value: string): void;
 
-  getFlagValuesList(): Array<ExecuteScriptRequest.FlagValue>;
-  setFlagValuesList(value: Array<ExecuteScriptRequest.FlagValue>): void;
-  clearFlagValuesList(): void;
-  addFlagValues(value?: ExecuteScriptRequest.FlagValue, index?: number): ExecuteScriptRequest.FlagValue;
-
   getClusterId(): string;
   setClusterId(value: string): void;
+
+  getExecFuncsList(): Array<ExecuteScriptRequest.FuncToExecute>;
+  setExecFuncsList(value: Array<ExecuteScriptRequest.FuncToExecute>): void;
+  clearExecFuncsList(): void;
+  addExecFuncs(value?: ExecuteScriptRequest.FuncToExecute, index?: number): ExecuteScriptRequest.FuncToExecute;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ExecuteScriptRequest.AsObject;
@@ -480,32 +480,59 @@ export class ExecuteScriptRequest extends jspb.Message {
 export namespace ExecuteScriptRequest {
   export type AsObject = {
     queryStr: string,
-    flagValuesList: Array<ExecuteScriptRequest.FlagValue.AsObject>,
     clusterId: string,
+    execFuncsList: Array<ExecuteScriptRequest.FuncToExecute.AsObject>,
   }
 
-  export class FlagValue extends jspb.Message {
-    getFlagName(): string;
-    setFlagName(value: string): void;
+  export class FuncToExecute extends jspb.Message {
+    getFuncName(): string;
+    setFuncName(value: string): void;
 
-    getFlagValue(): ScalarValue | undefined;
-    setFlagValue(value?: ScalarValue): void;
-    hasFlagValue(): boolean;
-    clearFlagValue(): void;
+    getArgValuesList(): Array<ExecuteScriptRequest.FuncToExecute.ArgValue>;
+    setArgValuesList(value: Array<ExecuteScriptRequest.FuncToExecute.ArgValue>): void;
+    clearArgValuesList(): void;
+    addArgValues(value?: ExecuteScriptRequest.FuncToExecute.ArgValue, index?: number): ExecuteScriptRequest.FuncToExecute.ArgValue;
+
+    getOutputTablePrefix(): string;
+    setOutputTablePrefix(value: string): void;
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): FlagValue.AsObject;
-    static toObject(includeInstance: boolean, msg: FlagValue): FlagValue.AsObject;
-    static serializeBinaryToWriter(message: FlagValue, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): FlagValue;
-    static deserializeBinaryFromReader(message: FlagValue, reader: jspb.BinaryReader): FlagValue;
+    toObject(includeInstance?: boolean): FuncToExecute.AsObject;
+    static toObject(includeInstance: boolean, msg: FuncToExecute): FuncToExecute.AsObject;
+    static serializeBinaryToWriter(message: FuncToExecute, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): FuncToExecute;
+    static deserializeBinaryFromReader(message: FuncToExecute, reader: jspb.BinaryReader): FuncToExecute;
   }
 
-  export namespace FlagValue {
+  export namespace FuncToExecute {
     export type AsObject = {
-      flagName: string,
-      flagValue?: ScalarValue.AsObject,
+      funcName: string,
+      argValuesList: Array<ExecuteScriptRequest.FuncToExecute.ArgValue.AsObject>,
+      outputTablePrefix: string,
     }
+
+    export class ArgValue extends jspb.Message {
+      getName(): string;
+      setName(value: string): void;
+
+      getValue(): string;
+      setValue(value: string): void;
+
+      serializeBinary(): Uint8Array;
+      toObject(includeInstance?: boolean): ArgValue.AsObject;
+      static toObject(includeInstance: boolean, msg: ArgValue): ArgValue.AsObject;
+      static serializeBinaryToWriter(message: ArgValue, writer: jspb.BinaryWriter): void;
+      static deserializeBinary(bytes: Uint8Array): ArgValue;
+      static deserializeBinaryFromReader(message: ArgValue, reader: jspb.BinaryReader): ArgValue;
+    }
+
+    export namespace ArgValue {
+      export type AsObject = {
+        name: string,
+        value: string,
+      }
+    }
+
   }
 
 }
