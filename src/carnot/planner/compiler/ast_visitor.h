@@ -27,6 +27,9 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 
+using FuncToExecute = plannerpb::QueryRequest::FuncToExecute;
+using ExecFuncs = std::vector<FuncToExecute>;
+
 #define PYPA_PTR_CAST(TYPE, VAL) \
   std::static_pointer_cast<typename pypa::AstTypeByID<pypa::AstType::TYPE>::Type>(VAL)
 

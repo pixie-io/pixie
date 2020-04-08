@@ -23,13 +23,24 @@ namespace planner {
 namespace compiler {
 
 StatusOr<planpb::Plan> Compiler::Compile(const std::string& query, CompilerState* compiler_state) {
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, CompileToIR(query, compiler_state));
+  return Compile(query, compiler_state, /* exec_funcs */ {});
+}
+
+StatusOr<planpb::Plan> Compiler::Compile(const std::string& query, CompilerState* compiler_state,
+                                         const ExecFuncs& exec_funcs) {
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, CompileToIR(query, compiler_state, exec_funcs));
   return ir->ToProto();
 }
 
 StatusOr<std::shared_ptr<IR>> Compiler::CompileToIR(const std::string& query,
                                                     CompilerState* compiler_state) {
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query, compiler_state));
+  return CompileToIR(query, compiler_state, /* exec_funcs */ {});
+}
+
+StatusOr<std::shared_ptr<IR>> Compiler::CompileToIR(const std::string& query,
+                                                    CompilerState* compiler_state,
+                                                    const ExecFuncs& exec_funcs) {
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query, compiler_state, exec_funcs));
   PL_RETURN_IF_ERROR(Analyze(ir.get(), compiler_state));
 
   PL_RETURN_IF_ERROR(VerifyGraphHasMemorySink(ir.get()));
@@ -54,7 +65,9 @@ StatusOr<shared::scriptspb::FuncArgsSpec> Compiler::GetMainFuncArgsSpec(
 }
 
 StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
-                                                  CompilerState* compiler_state) {
+                                                  CompilerState* compiler_state,
+                                                  const ExecFuncs& exec_funcs) {
+  PL_UNUSED(exec_funcs);
   Parser parser;
   PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
 
