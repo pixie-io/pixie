@@ -41,16 +41,12 @@ struct Message : public stirling::FrameBase {
 
   std::string http_msg_body = "-";
 
-  // TODO(yzhao): We should enforce that Message size does not change after certain point,
-  // so that we can cache this value.
+  // The number of bytes in the HTTP header, used in ByteSize(),
+  // as an approximation of the size of the non-body fields.
+  size_t headers_byte_size = 0;
+
   size_t ByteSize() const override {
-    size_t headers_size = 0;
-    for (const auto& [name, val] : http_headers) {
-      headers_size += name.size();
-      headers_size += val.size();
-    }
-    return sizeof(Message) + headers_size + http_req_method.size() + http_req_path.size() +
-           http_resp_message.size() + http_msg_body.size();
+    return sizeof(Message) + headers_byte_size + http_msg_body.size() + http_resp_message.size();
   }
 };
 

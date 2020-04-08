@@ -205,6 +205,7 @@ ParseState ParseRequest(std::string_view* buf, Message* result) {
     result->http_headers = GetHTTPHeadersMap(headers, num_headers);
     result->http_req_method = std::string(method, method_len);
     result->http_req_path = std::string(path, path_len);
+    result->headers_byte_size = retval;
 
     return ParseBody(buf, result);
   }
@@ -236,6 +237,7 @@ ParseState ParseResponse(std::string_view* buf, Message* result) {
     result->http_headers = GetHTTPHeadersMap(headers, num_headers);
     result->http_resp_status = status;
     result->http_resp_message = std::string(msg, msg_len);
+    result->headers_byte_size = retval;
 
     return ParseBody(buf, result);
   }
