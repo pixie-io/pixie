@@ -58,7 +58,8 @@ class MySQLTraceTest : public SocketTraceBPFTest {
     // The container runner will make sure it is in the ready state before unblocking.
     // Stirling will run after this unblocks, as part of SocketTraceBPFTest SetUp().
     // Note that this step will make an access to docker hub to download the MySQL image.
-    StatusOr<std::string> run_result = container_.Run(120, {"--env=MYSQL_ALLOW_EMPTY_PASSWORD=1"});
+    StatusOr<std::string> run_result = container_.Run(
+        90, {"--env=MYSQL_ALLOW_EMPTY_PASSWORD=1", "--env=MYSQL_ROOT_HOST=%", "-p=33060:3306"});
     PL_CHECK_OK(run_result);
 
     // Sleep an additional second, just to be safe.
@@ -78,6 +79,26 @@ class MySQLTraceTest : public SocketTraceBPFTest {
     std::string cmd =
         absl::StrFormat("docker exec %s bash -c 'echo \"%s\" | mysql -uroot & echo $! && wait'",
                         container_.container_name(), script_content);
+    PL_ASSIGN_OR_RETURN(std::string out, pl::Exec(cmd));
+
+    std::vector<std::string_view> lines = absl::StrSplit(out, "\n");
+    if (lines.empty()) {
+      return error::Internal("Exected output (pid) from command.");
+    }
+
+    int32_t client_pid;
+    if (!absl::SimpleAtoi(lines[0], &client_pid)) {
+      return error::Internal("Could not extract PID.");
+    }
+
+    return client_pid;
+  }
+
+  StatusOr<int32_t> RunPythonScript(std::string_view script_path) {
+    std::string absl_script_path = TestFilePath(script_path);
+
+    std::string cmd =
+        absl::StrFormat("pip3 install -q mysql-connector-python && python3 %s", absl_script_path);
     PL_ASSIGN_OR_RETURN(std::string out, pl::Exec(cmd));
 
     std::vector<std::string_view> lines = absl::StrSplit(out, "\n");
@@ -210,7 +231,7 @@ mysql::Record kRecordScript1Cmd5 = {
   },
   .resp = {
     .status = mysql::MySQLRespStatus::kOK,
-    .msg = "Resultset rows = 5",
+    .msg = "Resultset rows = 6",
     .timestamp_ns = 0,
   }
 };
@@ -374,6 +395,8 @@ TEST_F(MySQLTraceTest, mysql_capture) {
 
     // TODO(oazizi): Check server-side tracing results.
   }
+
+  // TODO(chengruizhe): Add Test for running Python script.
 }
 
 }  // namespace stirling
