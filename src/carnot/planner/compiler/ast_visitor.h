@@ -27,9 +27,6 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 
-using ArgValue = plannerpb::QueryRequest::ArgValue;
-using ArgValues = std::vector<ArgValue>;
-
 #define PYPA_PTR_CAST(TYPE, VAL) \
   std::static_pointer_cast<typename pypa::AstTypeByID<pypa::AstType::TYPE>::Type>(VAL)
 
@@ -60,8 +57,7 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param arg_values
    * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
    */
-  static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(IR* graph, CompilerState* compiler_state,
-                                                          const ArgValues& arg_values);
+  static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(IR* graph, CompilerState* compiler_state);
 
   /**
    * @brief Creates a child AST Visitor from the top-level AST Visitor, sharing the graph,
@@ -129,12 +125,8 @@ class ASTVisitorImpl : public ASTVisitor {
    *
    * @param ir_graph
    */
-  ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table,
-                 const ArgValues& arg_values)
-      : ir_graph_(ir_graph),
-        compiler_state_(compiler_state),
-        var_table_(var_table),
-        arg_values_(arg_values) {}
+  ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table)
+      : ir_graph_(ir_graph), compiler_state_(compiler_state), var_table_(var_table) {}
 
   Status InitGlobals();
   Status CreateBoolLiterals();
@@ -487,8 +479,6 @@ class ASTVisitorImpl : public ASTVisitor {
   IR* ir_graph_;
   CompilerState* compiler_state_;
   std::shared_ptr<VarTable> var_table_;
-  // Arg values passed in during ASTVisitor creation.
-  const ArgValues arg_values_;
 };
 
 }  // namespace compiler

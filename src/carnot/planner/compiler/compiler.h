@@ -27,18 +27,16 @@ class Compiler {
    * @param flag_values values for flags passed in with the query
    * @return the logical plan in the form of a plan protobuf message.
    */
-  StatusOr<planpb::Plan> Compile(const std::string& query, CompilerState* compiler_state,
-                                 const ArgValues& arg_values);
-  StatusOr<std::shared_ptr<IR>> CompileToIR(const std::string& query, CompilerState* compiler_state,
-                                            const ArgValues& arg_values);
+  StatusOr<planpb::Plan> Compile(const std::string& query, CompilerState* compiler_state);
+  StatusOr<std::shared_ptr<IR>> CompileToIR(const std::string& query,
+                                            CompilerState* compiler_state);
   StatusOr<shared::scriptspb::FuncArgsSpec> GetMainFuncArgsSpec(const std::string& query,
                                                                 CompilerState* compiler_state);
   StatusOr<pl::shared::scriptspb::VisFuncsInfo> GetVisFuncsInfo(const std::string& query,
                                                                 CompilerState* compiler_state);
 
  private:
-  StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query, CompilerState* compiler_state,
-                                          const ArgValues& arg_values);
+  StatusOr<std::shared_ptr<IR>> QueryToIR(const std::string& query, CompilerState* compiler_state);
 
   Status Analyze(IR* ir, CompilerState* compiler_state);
   Status VerifyGraphHasMemorySink(IR* ir);

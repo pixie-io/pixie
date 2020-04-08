@@ -30,8 +30,7 @@ class QLObjectTest : public OperatorTests {
     compiler_state =
         std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
     // Graph is set in OperatorTests.
-    ast_visitor = ASTVisitorImpl::Create(graph.get(), compiler_state.get(), /*flag values*/ {})
-                      .ConsumeValueOrDie();
+    ast_visitor = ASTVisitorImpl::Create(graph.get(), compiler_state.get()).ConsumeValueOrDie();
   }
 
   ArgMap MakeArgMap(const std::vector<std::pair<std::string, IRNode*>>& kwargs,

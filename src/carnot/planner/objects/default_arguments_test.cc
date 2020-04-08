@@ -51,8 +51,7 @@ class DefaultArgumentsTest : public OperatorTests {
     OperatorTests::SetUp();
     info_ = SetUpRegistryInfo();
     compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
-    ast_visitor_ = ASTVisitorImpl::Create(graph.get(), compiler_state_.get(), /*flag_values*/ {})
-                       .ConsumeValueOrDie();
+    ast_visitor_ = ASTVisitorImpl::Create(graph.get(), compiler_state_.get()).ConsumeValueOrDie();
     module_ = PixieModule::Create(graph.get(), compiler_state_.get(), ast_visitor_.get())
                   .ConsumeValueOrDie();
   }

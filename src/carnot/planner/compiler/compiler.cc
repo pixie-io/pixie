@@ -22,16 +22,14 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 
-StatusOr<planpb::Plan> Compiler::Compile(const std::string& query, CompilerState* compiler_state,
-                                         const ArgValues& arg_values) {
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, CompileToIR(query, compiler_state, arg_values));
+StatusOr<planpb::Plan> Compiler::Compile(const std::string& query, CompilerState* compiler_state) {
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, CompileToIR(query, compiler_state));
   return ir->ToProto();
 }
 
 StatusOr<std::shared_ptr<IR>> Compiler::CompileToIR(const std::string& query,
-                                                    CompilerState* compiler_state,
-                                                    const ArgValues& arg_values) {
-  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query, compiler_state, arg_values));
+                                                    CompilerState* compiler_state) {
+  PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query, compiler_state));
   PL_RETURN_IF_ERROR(Analyze(ir.get(), compiler_state));
 
   PL_RETURN_IF_ERROR(VerifyGraphHasMemorySink(ir.get()));
@@ -49,21 +47,19 @@ StatusOr<shared::scriptspb::FuncArgsSpec> Compiler::GetMainFuncArgsSpec(
   PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
 
   std::shared_ptr<IR> ir = std::make_shared<IR>();
-  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state, {}));
+  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state));
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
 
   return ast_walker->GetMainFuncArgsSpec();
 }
 
 StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
-                                                  CompilerState* compiler_state,
-                                                  const ArgValues& arg_values) {
+                                                  CompilerState* compiler_state) {
   Parser parser;
   PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
 
   std::shared_ptr<IR> ir = std::make_shared<IR>();
-  PL_ASSIGN_OR_RETURN(auto ast_walker,
-                      ASTVisitorImpl::Create(ir.get(), compiler_state, arg_values));
+  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state));
 
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   return ir;
@@ -75,7 +71,7 @@ StatusOr<pl::shared::scriptspb::VisFuncsInfo> Compiler::GetVisFuncsInfo(
   PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
 
   std::shared_ptr<IR> ir = std::make_shared<IR>();
-  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state, {}));
+  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state));
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   return ast_walker->GetVisFuncsInfo();
 }

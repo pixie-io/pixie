@@ -122,7 +122,7 @@ TEST_F(CompilerTest, test_general_compilation) {
           "px.display(aggDF, 'cpu2')",
       },
       "\n");
-  auto plan_status = compiler_.CompileToIR(query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan_status = compiler_.CompileToIR(query, compiler_state_.get());
   ASSERT_OK(plan_status);
 
   auto ir = plan_status.ConsumeValueOrDie();
@@ -204,7 +204,7 @@ TEST_F(CompilerTest, select_order_test) {
       },
       "\n");
 
-  auto plan = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   ASSERT_OK(plan);
 
   EXPECT_THAT(plan.ConsumeValueOrDie(), Partially(EqualsProto(kSelectOrderLogicalPlan)));
@@ -258,7 +258,7 @@ TEST_F(CompilerTest, range_now_test) {
       },
       "\n");
 
-  auto plan = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   ASSERT_OK(plan);
   int64_t start_time = 0;
   int64_t stop_time = compiler_state_->time_now().val;
@@ -343,7 +343,7 @@ std::vector<std::tuple<std::string, std::chrono::nanoseconds>> compiler_time_dat
     {"px.milliseconds(2)", std::chrono::milliseconds(2)}};
 
 TEST_P(CompilerTimeFnTest, range_now_keyword_test) {
-  auto plan = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   ASSERT_OK(plan);
   VLOG(2) << plan.ValueOrDie().DebugString();
 
@@ -407,7 +407,7 @@ TEST_F(CompilerTest, group_by_all) {
       },
       "\n");
 
-  auto plan_status = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan_status = compiler_.Compile(query, compiler_state_.get());
   ASSERT_OK(plan_status);
   auto logical_plan = plan_status.ConsumeValueOrDie();
   VLOG(2) << logical_plan.DebugString();
@@ -423,7 +423,7 @@ TEST_F(CompilerTest, multiple_group_by_agg_test) {
                      "cpu_mean=('cpu1', px.mean))", "px.display(aggDF, 'cpu_out')"},
                     "\n");
 
-  auto plan = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(2) << plan.ToString();
   ASSERT_OK(plan);
 }
@@ -438,7 +438,7 @@ TEST_F(CompilerTest, multiple_group_by_map_then_agg) {
                      "cpu_mean=('cpu1', px.mean))", "px.display(aggDF, 'cpu_out')"},
                     "\n");
 
-  auto plan = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(2) << plan.ToString();
   ASSERT_OK(plan);
 }
@@ -452,7 +452,7 @@ TEST_F(CompilerTest, rename_then_group_by_test) {
        "px.display(agg_out, 't15')"},
       "\n");
 
-  auto plan = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(2) << plan.ToString();
   ASSERT_OK(plan);
 }
@@ -469,7 +469,7 @@ TEST_F(CompilerTest, comparison_test) {
        "px.display(map_out, 't15')"},
       "\n");
 
-  auto plan = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   VLOG(2) << plan.ToString();
   ASSERT_OK(plan);
 }
@@ -482,7 +482,7 @@ px.display(t1.append(t2))
 )pxl";
 
 TEST_F(CompilerTest, append_test) {
-  auto plan = compiler_.Compile(kAppendQuery, compiler_state_.get(), /*query_flags*/ {});
+  auto plan = compiler_.Compile(kAppendQuery, compiler_state_.get());
   VLOG(2) << plan.ToString();
   ASSERT_OK(plan);
 }
@@ -495,7 +495,7 @@ px.display(t1.append(t2))
 )pxl";
 
 TEST_F(CompilerTest, append_self_test) {
-  auto plan = compiler_.Compile(kAppendSelfQuery, compiler_state_.get(), /*query_flags*/ {});
+  auto plan = compiler_.Compile(kAppendSelfQuery, compiler_state_.get());
   VLOG(2) << plan.ToString();
   ASSERT_OK(plan);
 }
@@ -590,7 +590,7 @@ std::vector<std::tuple<std::string, std::string>> comparison_fns = {
     {">=", "greaterThanEqual"}, {"<=", "lessThanEqual"}, {"!=", "notEqual"}};
 
 TEST_P(FilterTest, basic) {
-  auto plan = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan = compiler_.Compile(query, compiler_state_.get());
   ASSERT_OK(plan);
   VLOG(2) << plan.ValueOrDie().DebugString();
 
@@ -605,13 +605,13 @@ TEST_F(CompilerTest, filter_errors) {
       absl::StrJoin({"import px", "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
                      "queryDF = queryDF[queryDF['cpu0'] + 0.5]", "px.display(queryDF, 'blah')"},
                     "\n");
-  EXPECT_NOT_OK(compiler_.Compile(non_bool_filter, compiler_state_.get(), /*query_flags*/ {}));
+  EXPECT_NOT_OK(compiler_.Compile(non_bool_filter, compiler_state_.get()));
 
   std::string int_val =
       absl::StrJoin({"import px", "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])",
                      "d = queryDF[1]", "px.display(d, 'filtered')"},
                     "\n");
-  EXPECT_NOT_OK(compiler_.Compile(int_val, compiler_state_.get(), /*query_flags*/ {}));
+  EXPECT_NOT_OK(compiler_.Compile(int_val, compiler_state_.get()));
 }
 
 TEST_F(CompilerTest, reused_result) {
@@ -626,7 +626,7 @@ TEST_F(CompilerTest, reused_result) {
       },
 
       "\n");
-  auto plan_status = compiler_.CompileToIR(query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan_status = compiler_.CompileToIR(query, compiler_state_.get());
   VLOG(2) << plan_status.ToString();
   ASSERT_OK(plan_status);
   auto plan = plan_status.ConsumeValueOrDie();
@@ -660,7 +660,7 @@ TEST_F(CompilerTest, multiple_result_sinks) {
           "px.display(queryDF, 'result');",
       },
       "\n");
-  auto plan_status = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan_status = compiler_.Compile(query, compiler_state_.get());
   ASSERT_OK(plan_status);
 }
 
@@ -726,7 +726,7 @@ nodes {
 )proto";
 TEST_F(CompilerTest, from_select_default_arg) {
   std::string no_select_arg = "import px\ndf = px.DataFrame(table='cpu')\npx.display(df, 'out')";
-  auto plan_status = compiler_.Compile(no_select_arg, compiler_state_.get(), /*query_flags*/ {});
+  auto plan_status = compiler_.Compile(no_select_arg, compiler_state_.get());
   ASSERT_OK(plan_status);
   auto plan = plan_status.ValueOrDie();
   VLOG(2) << plan.DebugString();
@@ -1977,7 +1977,7 @@ TEST_P(MetadataSingleOps, valid_filter_metadata_proto) {
       {"import px", "df = px.DataFrame(table='cpu') ", "$0", "px.display(df, 'out')"}, "\n");
   valid_query = absl::Substitute(valid_query, op_call);
 
-  auto plan_status = compiler_.Compile(valid_query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan_status = compiler_.Compile(valid_query, compiler_state_.get());
   ASSERT_OK(plan_status) << valid_query;
 
   auto plan = plan_status.ConsumeValueOrDie();
@@ -2010,7 +2010,7 @@ TEST_F(CompilerTest, cgroups_pod_id) {
                      "range_out = queryDF[queryDF.ctx['pod_name'] == 'pl/pl-nats-1']",
                      "px.display(range_out, 'out')"},
                     "\n");
-  auto plan_status = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan_status = compiler_.Compile(query, compiler_state_.get());
   ASSERT_OK(plan_status);
 }
 
@@ -2189,8 +2189,8 @@ px.display(output, 'joined')
 )query";
 
 TEST_F(CompilerTest, inner_join) {
-  auto plan_status = compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "inner"),
-                                       compiler_state_.get(), /*query_flags*/ {});
+  auto plan_status =
+      compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "inner"), compiler_state_.get());
   ASSERT_OK(plan_status);
   auto plan = plan_status.ConsumeValueOrDie();
   EXPECT_THAT(plan, EqualsProto(kJoinInnerQueryPlan)) << plan.DebugString();
@@ -2365,8 +2365,8 @@ nodes {
 
 // TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
 TEST_F(CompilerTest, right_join) {
-  auto plan_status = compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "right"),
-                                       compiler_state_.get(), /*query_flags*/ {});
+  auto plan_status =
+      compiler_.Compile(absl::Substitute(kJoinQueryTypeTpl, "right"), compiler_state_.get());
   ASSERT_OK(plan_status);
   auto plan = plan_status.ConsumeValueOrDie();
   EXPECT_THAT(plan, EqualsProto(kJoinRightQueryPlan)) << plan.DebugString();
@@ -2518,7 +2518,7 @@ px.display(join, 'joined')
 )query";
 
 TEST_F(CompilerTest, self_join) {
-  auto plan_status = compiler_.Compile(kSelfJoinQuery, compiler_state_.get(), /*query_flags*/ {});
+  auto plan_status = compiler_.Compile(kSelfJoinQuery, compiler_state_.get());
   ASSERT_OK(plan_status);
   auto plan = plan_status.ConsumeValueOrDie();
   EXPECT_THAT(plan, EqualsProto(kSelfJoinQueryPlan)) << "ACTUAL PLAN: " << plan.DebugString();
@@ -2527,8 +2527,7 @@ TEST_F(CompilerTest, self_join) {
 // Test to make sure syntax errors are properly parsed.
 TEST_F(CompilerTest, syntax_error_test) {
   auto syntax_error_query = "import px\npx.DataFrame(";
-  auto plan_status =
-      compiler_.Compile(syntax_error_query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan_status = compiler_.Compile(syntax_error_query, compiler_state_.get());
   ASSERT_NOT_OK(plan_status);
   EXPECT_THAT(plan_status.status(), HasCompilerError("SyntaxError: Expected `\\)`"));
 }
@@ -2536,8 +2535,7 @@ TEST_F(CompilerTest, syntax_error_test) {
 TEST_F(CompilerTest, indentation_error_test) {
   auto indent_error_query = absl::StrJoin(
       {"import px", "t = px.DataFrame(table='blah')", "    px.display(t, 'blah')"}, "\n");
-  auto plan_status =
-      compiler_.Compile(indent_error_query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan_status = compiler_.Compile(indent_error_query, compiler_state_.get());
   ASSERT_NOT_OK(plan_status);
   EXPECT_THAT(plan_status.status(), HasCompilerError("SyntaxError: invalid syntax"));
 }
@@ -2546,8 +2544,7 @@ TEST_F(CompilerTest, missing_result) {
   // Missing the result call at the end of the query.
   auto missing_result_call =
       "import px\nqueryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1'])";
-  auto missing_result_status =
-      compiler_.Compile(missing_result_call, compiler_state_.get(), /*query_flags*/ {});
+  auto missing_result_status = compiler_.Compile(missing_result_call, compiler_state_.get());
   ASSERT_NOT_OK(missing_result_status);
 
   EXPECT_THAT(missing_result_status.status().msg(),
@@ -2576,7 +2573,7 @@ px.display(window)
 )pxl";
 
 TEST_F(CompilerTest, BadDropQuery) {
-  auto graph_or_s = compiler_.CompileToIR(kBadDropQuery, compiler_state_.get(), /*query_flags*/ {});
+  auto graph_or_s = compiler_.CompileToIR(kBadDropQuery, compiler_state_.get());
   ASSERT_OK(graph_or_s);
 
   MemorySinkIR* mem_sink;
@@ -2608,8 +2605,7 @@ px.display(t1)
 )pxl";
 
 TEST_F(CompilerTest, DropWithoutListQuery) {
-  auto graph_or_s =
-      compiler_.CompileToIR(kDropWithoutListQuery, compiler_state_.get(), /*query_flags*/ {});
+  auto graph_or_s = compiler_.CompileToIR(kDropWithoutListQuery, compiler_state_.get());
   ASSERT_OK(graph_or_s);
 
   MemorySinkIR* mem_sink;
@@ -2632,7 +2628,7 @@ TEST_F(CompilerTest, AndExpressionFailsGracefully) {
       absl::StrJoin({"import px", "df = px.DataFrame('bar')",
                      "df[df['service'] != '' && px.asid() != 10]", "px.display(df, 'out')"},
                     "\n");
-  auto ir_graph_or_s = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
+  auto ir_graph_or_s = compiler_.Compile(query, compiler_state_.get());
   ASSERT_NOT_OK(ir_graph_or_s);
 
   EXPECT_THAT(ir_graph_or_s.status(),
@@ -2642,7 +2638,7 @@ TEST_F(CompilerTest, AndExpressionFailsGracefully) {
 // TODO(nserrino): PL-1578 Re-enable when "import px" append hack is removed from compiler.cc
 TEST_F(CompilerTest, DISABLED_CommentOnlyCodeShouldFailGracefullly) {
   auto query = "# this is a comment";
-  auto ir_graph_or_s = compiler_.Compile(query, compiler_state_.get(), /*query_flags*/ {});
+  auto ir_graph_or_s = compiler_.Compile(query, compiler_state_.get());
   ASSERT_NOT_OK(ir_graph_or_s);
 
   EXPECT_THAT(ir_graph_or_s.status(), HasCompilerError("No runnable code found"));
@@ -2656,8 +2652,7 @@ px.display(t1)
 )pxl";
 
 TEST_F(CompilerTest, MetadataNoDuplicateColumnsQuery) {
-  auto graph_or_s =
-      compiler_.CompileToIR(kMetadataNoDuplicatesQuery, compiler_state_.get(), /*query_flags*/ {});
+  auto graph_or_s = compiler_.CompileToIR(kMetadataNoDuplicatesQuery, compiler_state_.get());
   ASSERT_OK(graph_or_s);
 
   MemorySinkIR* mem_sink;
@@ -2690,7 +2685,7 @@ TEST_F(CompilerTest, UnusedOperatorsRemoved) {
       },
 
       "\n");
-  auto plan_status = compiler_.CompileToIR(query, compiler_state_.get(), /*query_flags*/ {});
+  auto plan_status = compiler_.CompileToIR(query, compiler_state_.get());
   VLOG(2) << plan_status.ToString();
   ASSERT_OK(plan_status);
   auto plan = plan_status.ConsumeValueOrDie();
@@ -2725,7 +2720,7 @@ px.display(queryDF, 'map')
 )pxl";
 
 TEST_F(CompilerTest, UndefinedFuncError) {
-  auto graph_or_s = compiler_.CompileToIR(kUndefinedFuncError, compiler_state_.get(), {});
+  auto graph_or_s = compiler_.CompileToIR(kUndefinedFuncError, compiler_state_.get());
   ASSERT_NOT_OK(graph_or_s);
 
   EXPECT_THAT(graph_or_s.status(), HasCompilerError("dataframe has no method 'bar'"));
@@ -2747,7 +2742,7 @@ TEST_F(CompilerTest, TestUnaryOperators) {
       },
       "\n");
 
-  auto plan_status = compiler_.CompileToIR(query, compiler_state_.get(), {});
+  auto plan_status = compiler_.CompileToIR(query, compiler_state_.get());
   ASSERT_OK(plan_status);
 }
 
@@ -2759,7 +2754,7 @@ t1 = t1.rolling('3s')
 px.display(t1)
 )pxl";
 TEST_F(CompilerTest, DISABLED_RollingTimeStringQuery) {
-  auto graph_or_s = compiler_.CompileToIR(kRollingTimeStringQuery, compiler_state_.get(), {});
+  auto graph_or_s = compiler_.CompileToIR(kRollingTimeStringQuery, compiler_state_.get());
   ASSERT_OK(graph_or_s);
   auto graph = graph_or_s.ConsumeValueOrDie();
 
@@ -2785,7 +2780,7 @@ t1 = t1.rolling(3000)
 px.display(t1)
 )pxl";
 TEST_F(CompilerTest, DISABLED_RollingIntQuery) {
-  auto graph_or_s = compiler_.CompileToIR(kRollingIntQuery, compiler_state_.get(), {});
+  auto graph_or_s = compiler_.CompileToIR(kRollingIntQuery, compiler_state_.get());
   ASSERT_OK(graph_or_s);
   auto graph = graph_or_s.ConsumeValueOrDie();
 
@@ -2810,8 +2805,7 @@ t1 = t1.rolling(1 + px.now())
 px.display(t1)
 )pxl";
 TEST_F(CompilerTest, DISABLED_RollingCompileTimeExprEvalQuery) {
-  auto graph_or_s =
-      compiler_.CompileToIR(kRollingCompileTimeExprEvalQuery, compiler_state_.get(), {});
+  auto graph_or_s = compiler_.CompileToIR(kRollingCompileTimeExprEvalQuery, compiler_state_.get());
   ASSERT_OK(graph_or_s);
   auto graph = graph_or_s.ConsumeValueOrDie();
 
@@ -2836,7 +2830,7 @@ t1 = t1.rolling(1, on='cpu0')
 px.display(t1)
 )pxl";
 TEST_F(CompilerTest, RollingNonTimeUnsupported) {
-  auto graph_or_s = compiler_.CompileToIR(kRollingNonTimeColumn, compiler_state_.get(), {});
+  auto graph_or_s = compiler_.CompileToIR(kRollingNonTimeColumn, compiler_state_.get());
   ASSERT_NOT_OK(graph_or_s);
 
   EXPECT_THAT(graph_or_s.status(),

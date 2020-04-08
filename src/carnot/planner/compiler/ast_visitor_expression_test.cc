@@ -50,8 +50,7 @@ class ASTExpressionTest : public ::testing::Test {
         std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now_);
     graph = std::make_shared<IR>();
     auto ast_visitor_impl =
-        ASTVisitorImpl::Create(graph.get(), compiler_state_.get(), /*flag values*/ {})
-            .ConsumeValueOrDie();
+        ASTVisitorImpl::Create(graph.get(), compiler_state_.get()).ConsumeValueOrDie();
     PL_CHECK_OK(ast_visitor_impl->AddPixieModule());
     ast_visitor = ast_visitor_impl;
   }

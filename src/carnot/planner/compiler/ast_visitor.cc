@@ -34,19 +34,17 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetUnaryOp(const std::string& python_op,
 }
 
 StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* graph,
-                                                                 CompilerState* compiler_state,
-                                                                 const ArgValues& arg_values) {
+                                                                 CompilerState* compiler_state) {
   std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(
-      new ASTVisitorImpl(graph, compiler_state, VarTable::Create(), arg_values));
+      new ASTVisitorImpl(graph, compiler_state, VarTable::Create()));
   PL_RETURN_IF_ERROR(ast_visitor->InitGlobals());
   return ast_visitor;
 }
 
 std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChild() {
   // The flag values should come from the parent var table, not be copied here.
-  ArgValues empty;
   return std::shared_ptr<ASTVisitorImpl>(
-      new ASTVisitorImpl(ir_graph_, compiler_state_, var_table_->CreateChild(), empty));
+      new ASTVisitorImpl(ir_graph_, compiler_state_, var_table_->CreateChild()));
 }
 
 Status ASTVisitorImpl::InitGlobals() {

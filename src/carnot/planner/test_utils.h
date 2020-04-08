@@ -1001,7 +1001,7 @@ class DistributedRulesTest : public OperatorTests {
 
     compiler::Compiler compiler;
     std::shared_ptr<IR> single_node_plan =
-        compiler.CompileToIR(query, compiler_state_.get(), {}).ConsumeValueOrDie();
+        compiler.CompileToIR(query, compiler_state_.get()).ConsumeValueOrDie();
 
     std::unique_ptr<distributed::DistributedPlan> distributed_plan =
         coordinator->Coordinate(single_node_plan.get()).ConsumeValueOrDie();

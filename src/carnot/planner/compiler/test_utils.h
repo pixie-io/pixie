@@ -219,8 +219,8 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   PL_RETURN_IF_ERROR(info->Init(info_pb));
   auto compiler_state =
       std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
-  PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
-                                           ir.get(), compiler_state.get(), /*flag values*/ {}));
+  PL_ASSIGN_OR_RETURN(auto ast_walker,
+                      compiler::ASTVisitorImpl::Create(ir.get(), compiler_state.get()));
 
   pypa::AstModulePtr ast;
   pypa::SymbolTablePtr symbols;
@@ -796,25 +796,23 @@ class ASTVisitorTest : public OperatorTests {
         std::move(relation_map_), registry_info_.get(), time_now, max_output_rows_per_table);
   }
 
-  StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query,
-                                             const compiler::ArgValues& flag_values = {}) {
+  StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query) {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
-    PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
-                                             ir.get(), compiler_state_.get(), flag_values));
+    PL_ASSIGN_OR_RETURN(auto ast_walker,
+                        compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get()));
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     return ir;
   }
 
-  StatusOr<std::shared_ptr<compiler::ASTVisitorImpl>> CompileInspectAST(
-      const std::string& query, const compiler::ArgValues& flag_values = {}) {
+  StatusOr<std::shared_ptr<compiler::ASTVisitorImpl>> CompileInspectAST(const std::string& query) {
     Parser parser;
     PL_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
-    PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
-                                             ir.get(), compiler_state_.get(), flag_values));
+    PL_ASSIGN_OR_RETURN(auto ast_walker,
+                        compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get()));
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     return ast_walker;
   }
@@ -824,8 +822,7 @@ class ASTVisitorTest : public OperatorTests {
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
     PL_ASSIGN_OR_RETURN(auto ast_walker,
-                        compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get(),
-                                                         /*query_flags*/ {}));
+                        compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get()));
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     return ast_walker->GetVisFuncsInfo();
@@ -836,8 +833,7 @@ class ASTVisitorTest : public OperatorTests {
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
     PL_ASSIGN_OR_RETURN(auto ast_walker,
-                        compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get(),
-                                                         /*query_flags*/ {}));
+                        compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get()));
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     return ast_walker->GetMainFuncArgsSpec();
