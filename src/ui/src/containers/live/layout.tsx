@@ -66,7 +66,7 @@ export function toLayout(placement: Placement) {
   });
 }
 
-export function parsePlacement(json: string): Placement {
+export function parsePlacementOld(json: string): Placement {
   try {
     const parsed = JSON.parse(json);
     if (typeof parsed === 'object') {

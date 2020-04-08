@@ -47,11 +47,11 @@ export const ExampleScripts = () => {
     });
   }, []);
 
-  const { setScripts } = React.useContext(LiveContext);
+  const { setScriptsOld } = React.useContext(LiveContext);
 
   const selectScript = (e) => {
     const s = liveScriptMap[e.target.value];
-    setScripts(s.code, s.vis, s.placement, { title: s.title, id: s.id });
+    setScriptsOld(s.code, s.vis, s.placement, { title: s.title, id: s.id });
     executeScript(s.code);
   };
 

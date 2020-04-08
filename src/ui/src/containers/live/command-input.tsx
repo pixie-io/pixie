@@ -62,7 +62,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
 
   React.useEffect(() => {
     GetPxScripts().then((examples) => {
-      const valid = examples.filter((s) => s.code && s.vis && s.placement);
+      const valid = examples.filter((s) => s.code && s.vis);
       setCompletions(valid.map((s) => ({
         type: 'item',
         id: s.id,
@@ -73,7 +73,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
     });
   }, []);
 
-  const { setScripts, executeScript } = React.useContext(LiveContext);
+  const { setScriptsOld, executeScript } = React.useContext(LiveContext);
 
   const getCompletions = React.useCallback((input) => {
     if (!input) {
@@ -85,7 +85,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
   const selectScript = React.useCallback((id) => {
     const script = scriptsMap.get(id);
     if (script) {
-      setScripts(script.code, script.vis, script.placement, { title: script.title, id: script.id });
+      setScriptsOld(script.code, script.vis, script.placement, { title: script.title, id: script.id });
       executeScript(script.code);
     }
     onClose();

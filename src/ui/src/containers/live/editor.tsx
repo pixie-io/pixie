@@ -11,8 +11,8 @@ import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import CloseIcon from '@material-ui/icons/Close';
 
-import {LiveContext, PlacementContext, ScriptContext, VegaContext} from './context';
-import {parsePlacement} from './layout';
+import {LiveContext, PlacementContextOld, ScriptContext, VegaContextOld} from './context';
+import {parsePlacementOld} from './layout';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -44,13 +44,13 @@ const useStyles = makeStyles((theme: Theme) =>
 
 const VegaSpecEditor = () => {
   const classes = useStyles();
-  const { updateVegaSpec } = React.useContext(LiveContext);
-  const spec = React.useContext(VegaContext);
+  const { updateVegaSpecOld } = React.useContext(LiveContext);
+  const spec = React.useContext(VegaContextOld);
   const [code, setCode] = React.useState('');
-  const updateVegaSpecDebounce = React.useMemo(() => debounce(updateVegaSpec, 2000), []);
+  const updateVegaSpecDebounce = React.useMemo(() => debounce(updateVegaSpecOld, 2000), []);
 
   React.useEffect(() => {
-    ls.setLiveViewVegaSpec(code);
+    ls.setLiveViewVegaSpecOld(code);
     const specs = parseSpecs(code);
     if (specs) {
       updateVegaSpecDebounce(specs);
@@ -86,14 +86,14 @@ const ScriptEditor = () => {
 
 const PlacementEditor = () => {
   const classes = useStyles();
-  const { updatePlacement } = React.useContext(LiveContext);
-  const placement = React.useContext(PlacementContext);
+  const { updatePlacementOld } = React.useContext(LiveContext);
+  const placement = React.useContext(PlacementContextOld);
   const [code, setCode] = React.useState('');
-  const updatePlacementDebounce = React.useMemo(() => debounce(updatePlacement, 2000), []);
+  const updatePlacementDebounce = React.useMemo(() => debounce(updatePlacementOld, 2000), []);
 
   React.useEffect(() => {
-    ls.setLiveViewPlacementSpec(code);
-    const newPlacement = parsePlacement(code);
+    ls.setLiveViewPlacementSpecOld(code);
+    const newPlacement = parsePlacementOld(code);
     if (newPlacement) {
       updatePlacementDebounce(newPlacement);
     }

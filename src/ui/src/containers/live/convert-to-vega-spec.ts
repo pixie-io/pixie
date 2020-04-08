@@ -54,9 +54,9 @@ interface VegaDisplay {
   readonly spec: string;
 }
 
-export type WidgetDisplay = TimeseriesDisplay | BarDisplay | VegaDisplay;
+export type ChartDisplay = TimeseriesDisplay | BarDisplay | VegaDisplay;
 
-export function convertWidgetDisplayToVegaSpec(display: WidgetDisplay, source: string): VisualizationSpec {
+export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: string): VisualizationSpec {
   switch (display[TYPE_KEY]) {
     case BAR_CHART_TYPE:
       return convertToBarChart(display as BarDisplay, source);

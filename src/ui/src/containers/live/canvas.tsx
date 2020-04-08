@@ -11,7 +11,7 @@ import {dataFromProto} from 'utils/result-data-utils';
 
 import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
 
-import {LiveContext, PlacementContext, ResultsContext, VegaContext} from './context';
+import {LiveContext, PlacementContextOld, ResultsContext, VegaContextOld} from './context';
 import {buildLayout, toLayout, updatePositions} from './layout';
 
 const useStyles = makeStyles((theme: Theme) => {
@@ -44,10 +44,10 @@ const Grid = GridLayout.WidthProvider(GridLayout);
 
 const Canvas = () => {
   const classes = useStyles();
-  const specs = React.useContext(VegaContext);
+  const specs = React.useContext(VegaContextOld);
   const results = React.useContext(ResultsContext);
-  const placement = React.useContext(PlacementContext);
-  const { updatePlacement } = React.useContext(LiveContext);
+  const placement = React.useContext(PlacementContextOld);
+  const { updatePlacementOld } = React.useContext(LiveContext);
   const [vegaModule, setVegaModule] = React.useState(null);
 
   // Load vega.
@@ -60,7 +60,7 @@ const Canvas = () => {
   React.useEffect(() => {
     const newPlacement = buildLayout(specs, placement);
     if (newPlacement !== placement) {
-      updatePlacement(newPlacement);
+      updatePlacementOld(newPlacement);
     }
   }, [specs]);
 
@@ -102,7 +102,7 @@ const Canvas = () => {
   }, []);
 
   const handleLayoutChange = React.useCallback((newLayout) => {
-    updatePlacement(updatePositions(placement, newLayout));
+    updatePlacementOld(updatePositions(placement, newLayout));
     resize();
   }, []);
 

@@ -3,6 +3,7 @@ const LIVE_VIEW_EDITOR_SPLITS_KEY = 'px-live-editor-splits';
 const LIVE_VIEW_VEGA_SPEC_KEY = 'px-live-vega-spec';
 const LIVE_VIEW_PIXIE_SCRIPT_KEY = 'px-live-pixie-script';
 const LIVE_VIEW_PLACEMENT_SPEC_KEY = 'px-live-placement';
+const LIVE_VIEW_VIS_SPEC_KEY = 'px-live-vis';
 const LIVE_VIEW_TITLE_KEY = 'px-live-title';
 
 export function getLiveViewEditorOpened(): boolean {
@@ -32,11 +33,11 @@ export function setLiveViewEditorSplits(splits: [number, number]) {
   localStorage.setItem(LIVE_VIEW_EDITOR_SPLITS_KEY, JSON.stringify(splits));
 }
 
-export function getLiveViewVegaSpec(): string {
+export function getLiveViewVegaSpecOld(): string {
   return localStorage.getItem(LIVE_VIEW_VEGA_SPEC_KEY) || '';
 }
 
-export function setLiveViewVegaSpec(spec: string) {
+export function setLiveViewVegaSpecOld(spec: string) {
   localStorage.setItem(LIVE_VIEW_VEGA_SPEC_KEY, spec);
 }
 
@@ -48,12 +49,20 @@ export function setLiveViewPixieScript(script: string) {
   localStorage.setItem(LIVE_VIEW_PIXIE_SCRIPT_KEY, script);
 }
 
-export function getLiveViewPlacementSpec(): string {
+export function getLiveViewPlacementSpecOld(): string {
   return localStorage.getItem(LIVE_VIEW_PLACEMENT_SPEC_KEY) || '';
 }
 
-export function setLiveViewPlacementSpec(spec: string) {
+export function setLiveViewPlacementSpecOld(spec: string) {
   localStorage.setItem(LIVE_VIEW_PLACEMENT_SPEC_KEY, spec);
+}
+
+export function getLiveViewVisSpec(): string {
+  return localStorage.getItem(LIVE_VIEW_VIS_SPEC_KEY) || '';
+}
+
+export function setLiveViewVisSpec(spec: string) {
+  localStorage.setItem(LIVE_VIEW_VIS_SPEC_KEY, spec);
 }
 
 export function getLiveViewTitle(): { title: string, id: string } {

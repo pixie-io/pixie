@@ -2,14 +2,14 @@ import * as QueryString from 'query-string';
 import * as React from 'react';
 import {GetPxScripts} from 'utils/script-bundle';
 
-import {LiveContext, PlacementContext, ScriptContext, VegaContext} from './context';
+import {LiveContext, PlacementContextOld, ScriptContext, VegaContextOld} from './context';
 
 export function useInitScriptLoader() {
-  const { setScripts } = React.useContext(LiveContext);
-  const { executeScript } = React.useContext(LiveContext);
+  const { setScriptsOld } = React.useContext(LiveContext);
+  const { executeScriptOld } = React.useContext(LiveContext);
   const script = React.useContext(ScriptContext);
-  const vega = React.useContext(VegaContext);
-  const place = React.useContext(PlacementContext);
+  const vega = React.useContext(VegaContextOld);
+  const place = React.useContext(PlacementContextOld);
   const [loaded, setLoaded] = React.useState(false);
 
   const queryParams = QueryString.parse(window.location.search);
@@ -21,7 +21,7 @@ export function useInitScriptLoader() {
     if (loaded || scriptParam || !script || !vega || !place) {
       return;
     }
-    executeScript();
+    executeScriptOld();
     setLoaded(true);
   }, [loaded, script, vega, place]);
 
@@ -33,8 +33,8 @@ export function useInitScriptLoader() {
     GetPxScripts().then((examples) => {
       for (const { title, vis, placement, code, id } of examples) {
         if (id === scriptParam && vis && placement && code) {
-          setScripts(code, vis, placement, { title, id });
-          executeScript(code);
+          setScriptsOld(code, vis, placement, { title, id });
+          executeScriptOld(code);
           return;
         }
       }
