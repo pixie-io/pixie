@@ -55,6 +55,8 @@ DEFINE_string(print_record_batches, "",
               "Comma-separated list of tables to print. Defaults to tracers if not specified. Use "
               "'None' for none.");
 DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For testing.");
+DEFINE_int32(timeout_secs, 0,
+             "If greater than 0, only runs for the specified amount of time and exits.");
 
 std::unordered_map<uint64_t, std::string> table_id_to_name_map;
 std::vector<std::string_view> table_print_enables = {kHTTPTable.name(), kMySQLTable.name(),
@@ -236,8 +238,15 @@ int main(int argc, char** argv) {
   // Run Data Collector.
   std::thread run_thread = std::thread(&Stirling::Run, stirling.get());
 
-  // Wait for the thread to return. This should never happen in this example.
-  // But don't want the program to terminate.
+  if (FLAGS_timeout_secs > 0) {
+    // Run for the specified amount of time, then terminate.
+    LOG(INFO) << absl::Substitute("Running for $0 seconds.", FLAGS_timeout_secs);
+    sleep(FLAGS_timeout_secs);
+    stirling->Stop();
+  }
+
+  // Wait for the thread to return.
+  // This should never happen unless --timeout_secs is specified.
   run_thread.join();
 
   // Another model of how to run Stirling:

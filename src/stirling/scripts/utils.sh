@@ -22,7 +22,9 @@ run_prompt_sudo() {
 # This function builds the bazel target and returns the path to the output, relative to ToT.
 function bazel_build() {
   target=$1
-  bazel_out=$(bazel build "$target" 2>&1)
+  flags=$2
+  # shellcheck disable=SC2086
+  bazel_out=$(bazel build $flags "$target" 2>&1)
 
   # This funky command looks for and parses out the binary from a output like the following:
   # ...

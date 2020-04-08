@@ -408,6 +408,28 @@ sh_test(
 )
 
 sh_test(
+    name = "stirling_perf_test",
+    srcs = ["stirling_perf_test.sh"],
+    args = [
+        "$(location :stirling_wrapper)",
+    ],
+    data = [
+        ":stirling_wrapper",
+    ],
+    flaky = True,
+    tags = [
+        "requires_bpf",
+        # Run exclusive to get as little noise as possible while measuring performance.
+        "exclusive",
+        # Only intention is to run this with opt builds.
+        # Can still run it with -c dbg, but on Jenkins, we only run opt version.
+        "no_asan",
+        "no_tsan",
+    ],
+    deps = ["//src/stirling/scripts:sh_library"],
+)
+
+sh_test(
     name = "stirling_wrapper_jvm_stats_test",
     srcs = ["stirling_wrapper_jvm_stats_test.sh"],
     args = [
