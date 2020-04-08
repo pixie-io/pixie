@@ -68,6 +68,11 @@ spec:
             configMapKeyRef:
               name: pl-service-config
               key: PL_ARTIFACT_TRACKER_SERVICE
+        - name: PL_ELASTIC_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_ELASTIC_SERVICE
         - name: PL_SEGMENT_WRITE_KEY
           valueFrom:
             secretKeyRef:
@@ -77,11 +82,22 @@ spec:
           value: /vizier-image-secret
         - name: PL_VIZIER_IMAGE_SECRET_FILE
           value: vizier_image_secret.json
+        - name: PL_ELASTIC_USERNAME
+          value: elastic
+        - name: PL_ELASTIC_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: pl-elastic-es-elastic-user
+              key: elastic
+        - name: PL_ELASTIC_CA_CERT
+          value: /elastic-certs-pub/tls.crt
         volumeMounts:
         - name: certs
           mountPath: /certs
         - name: vizier-image-secret
           mountPath: /vizier-image-secret
+        - name: elastic-certs-pub
+          mountPath: /elastic-certs-pub
       volumes:
       - name: certs
         secret:
@@ -92,3 +108,6 @@ spec:
       - name: envoy-yaml
         configMap:
           name: proxy-envoy-config
+      - name: elastic-certs-pub
+        secret:
+          secretName: pl-elastic-es-http-certs-public

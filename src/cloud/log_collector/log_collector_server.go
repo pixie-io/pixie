@@ -2,20 +2,16 @@ package main
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/nats-io/nats.go"
 
-	"github.com/olivere/elastic/v7"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
 	log "github.com/sirupsen/logrus"
 	logmessagehandler "pixielabs.ai/pixielabs/src/cloud/log_collector/log_message_handler"
+	"pixielabs.ai/pixielabs/src/cloud/shared/esutils"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
@@ -54,50 +50,6 @@ func connectNATS(natsURL string) *nats.Conn {
 	return nc
 }
 
-func getHTTPSClient() (*http.Client, error) {
-	caFile := viper.GetString("elastic_ca_cert")
-
-	caCert, err := ioutil.ReadFile(caFile)
-	if err != nil {
-		return nil, err
-	}
-	caCertPool := x509.NewCertPool()
-	ok := caCertPool.AppendCertsFromPEM(caCert)
-	if !ok {
-		return nil, fmt.Errorf("failed to append caCert to pool")
-	}
-
-	tlsConfig := &tls.Config{
-		RootCAs: caCertPool,
-	}
-	tlsConfig.BuildNameToCertificate()
-	transport := &http.Transport{
-		TLSClientConfig: tlsConfig,
-	}
-
-	httpClient := &http.Client{
-		Transport: transport,
-	}
-	return httpClient, nil
-}
-
-func connectElastic(esURL string, esUser string, esPass string) *elastic.Client {
-	httpClient, err := getHTTPSClient()
-	if err != nil {
-		log.WithError(err).Fatal("Failed to create HTTPS client")
-	}
-
-	es, err := elastic.NewClient(elastic.SetURL(esURL),
-		elastic.SetHttpClient(httpClient),
-		elastic.SetBasicAuth(esUser, esPass),
-		// Sniffing seems to be broken with TLS, don't turn this on unless you want pain.
-		elastic.SetSniff(false))
-	if err != nil {
-		log.WithError(err).Fatalf("Failed to connect to elastic at url: %s", esURL)
-	}
-	return es
-}
-
 func main() {
 	log.WithField("service", "log-collector-service").Info("Starting service")
 
@@ -109,8 +61,16 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	es := connectElastic(viper.GetString("elastic_service"),
-		viper.GetString("elastic_username"), viper.GetString("elastic_password"))
+	esConfig := &esutils.Config{
+		URL:        []string{viper.GetString("elastic_service")},
+		User:       viper.GetString("elastic_username"),
+		Passwd:     viper.GetString("elastic_password"),
+		CaCertFile: viper.GetString("elastic_ca_cert"),
+	}
+	es, err := esutils.NewEsClient(esConfig)
+	if err != nil {
+		log.WithError(err).Fatal("Could not connect to elastic")
+	}
 	nc := connectNATS(viper.GetString("nats_url"))
 	h := logmessagehandler.NewLogMessageHandler(context.Background(), nc, es)
 	h.Start()

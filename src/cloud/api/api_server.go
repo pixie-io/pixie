@@ -19,6 +19,7 @@ import (
 
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
+	"pixielabs.ai/pixielabs/src/cloud/shared/esutils"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	svcEnv "pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
@@ -28,6 +29,12 @@ import (
 func init() {
 	pflag.String("domain_name", "dev.withpixie.dev", "The domain name of Pixie Cloud")
 	pflag.String("nats_url", "pl-nats", "The URL of NATS")
+	pflag.String("elastic_service", "https://pl-elastic-es-http.plc-dev.svc.cluster.local:9200", "The url of the elasticsearch cluster")
+	pflag.String("elastic_ca_cert", "/elastic-certs/ca.crt", "CA Cert for elastic cluster")
+	pflag.String("elastic_tls_cert", "/elastic-certs/tls.crt", "TLS Cert for elastic cluster")
+	pflag.String("elastic_tls_key", "/elastic-certs/tls.key", "TLS Key for elastic cluster")
+	pflag.String("elastic_username", "elastic", "Username for access to elastic cluster")
+	pflag.String("elastic_password", "", "Password for access to elastic")
 }
 
 func main() {
@@ -80,6 +87,18 @@ func main() {
 	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, e error) {
 		log.WithError(e).Error("Got NATS error")
 	})
+
+	esConfig := &esutils.Config{
+		URL:        []string{viper.GetString("elastic_service")},
+		User:       viper.GetString("elastic_username"),
+		Passwd:     viper.GetString("elastic_password"),
+		CaCertFile: viper.GetString("elastic_ca_cert"),
+	}
+	_, err = esutils.NewEsClient(esConfig)
+	if err != nil {
+		log.WithError(err).Fatal("Could not connect to elastic")
+	}
+
 	mux := http.NewServeMux()
 	mux.Handle("/api/auth/signup", handler.New(env, controller.AuthSignupHandler))
 	mux.Handle("/api/auth/login", handler.New(env, controller.AuthLoginHandler))
