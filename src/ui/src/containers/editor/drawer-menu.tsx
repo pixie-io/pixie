@@ -21,7 +21,7 @@ export const EditorDrawerMenu = (props: EditorDrawerMenuProps) => {
   const { data: historyData } = useQuery<{ scriptHistory: ScriptHistory[] }>(SCRIPT_HISTORY);
   const accordionItem = React.useMemo(() => {
     const presetQueries = exampleScripts.map((s) => ({
-      title: s.title,
+      title: s.id,
       onClick: () => {
         if (props.onSelect) {
           props.onSelect(s);
