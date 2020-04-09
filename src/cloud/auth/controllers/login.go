@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -22,6 +23,8 @@ const (
 	RefreshTokenValidDuration = 90 * 24 * time.Hour
 	// AugmentedTokenValidDuration is the duration that the augmented token is valid from the current time.
 	AugmentedTokenValidDuration = 30 * time.Minute
+	// SupportAccountDomain is the domain name of the Pixie support account which can access the org provided at login.
+	SupportAccountDomain = "pixie.support"
 )
 
 func (s *Server) getUserInfoFromToken(accessToken string) (string, *UserInfo, error) {
@@ -69,6 +72,18 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
+	domainName, err := GetDomainNameFromEmail(userInfo.Email)
+	if err != nil {
+		return nil, services.HTTPStatusFromError(err, "Failed to get domain from email")
+	}
+
+	// If account is a Pixie support account, we don't want to create a new user.
+	if domainName == SupportAccountDomain {
+		return s.loginSupportUser(ctx, in, userInfo)
+	} else if in.OrgName != "" {
+		return nil, status.Error(codes.InvalidArgument, "orgName param not permitted for non Pixie support accounts")
+	}
+
 	pc := s.env.ProfileClient()
 
 	// If user does not exist in Auth0, then create a new user if specified.
@@ -85,11 +100,6 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 	// If we can't find the user and aren't in auto create mode.
 	if newUser && !in.CreateUserIfNotExists {
 		return nil, status.Error(codes.PermissionDenied, "user not found, please register.")
-	}
-
-	domainName, err := GetDomainNameFromEmail(userInfo.Email)
-	if err != nil {
-		return nil, services.HTTPStatusFromError(err, "Failed to get domain from email")
 	}
 
 	orgInfo, err := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: domainName})
@@ -117,6 +127,41 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 		UserCreated: newUser,
 		UserInfo: &pb.UserInfo{
 			UserID:    pbutils.ProtoFromUUIDStrOrNil(userID),
+			FirstName: userInfo.FirstName,
+			LastName:  userInfo.LastName,
+			Email:     userInfo.Email,
+		},
+	}, nil
+}
+
+func (s *Server) loginSupportUser(ctx context.Context, in *pb.LoginRequest, userInfo *UserInfo) (*pb.LoginReply, error) {
+	if in.OrgName == "" {
+		return nil, status.Error(codes.InvalidArgument, "orgName is required for Pixie Support accounts")
+	}
+
+	pc := s.env.ProfileClient()
+
+	orgInfo, err := pc.GetOrgByDomain(ctx, &profilepb.GetOrgByDomainRequest{DomainName: in.OrgName})
+	if err != nil || orgInfo == nil {
+		return nil, status.Error(codes.InvalidArgument, "organization not found")
+	}
+
+	// Generate token for impersonated support account.
+	userID := uuid.FromStringOrNil("") // No account actually exists, so this should be a nil UUID.
+	orgID := pbutils.UUIDFromProtoOrNil(orgInfo.ID)
+	expiresAt := time.Now().Add(RefreshTokenValidDuration)
+	claims := utils.GenerateJWTForUser(userID.String(), orgID.String(), userInfo.Email, expiresAt)
+	token, err := utils.SignJWTClaims(claims, s.env.JWTSigningKey())
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate token")
+	}
+
+	return &pb.LoginReply{
+		Token:       token,
+		ExpiresAt:   expiresAt.Unix(),
+		UserCreated: false,
+		UserInfo: &pb.UserInfo{
+			UserID:    pbutils.ProtoFromUUID(&userID),
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
@@ -258,14 +303,21 @@ func (s *Server) GetAugmentedToken(
 		return nil, status.Error(codes.Unauthenticated, "Invalid auth/org")
 	}
 
-	userIDstr := aCtx.Claims.GetUserClaims().UserID
-	userInfo, err := pc.GetUser(ctx, pbutils.ProtoFromUUIDStrOrNil(userIDstr))
-	if err != nil || userInfo == nil {
-		return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
+	domainName, err := GetDomainNameFromEmail(aCtx.Claims.GetUserClaims().Email)
+	if err != nil {
+		return nil, status.Error(codes.Unauthenticated, "Invalid email")
 	}
 
-	if orgIDstr != pbutils.UUIDFromProtoOrNil(userInfo.OrgID).String() {
-		return nil, status.Error(codes.Unauthenticated, "Mismatched org")
+	if domainName != SupportAccountDomain {
+		userIDstr := aCtx.Claims.GetUserClaims().UserID
+		userInfo, err := pc.GetUser(ctx, pbutils.ProtoFromUUIDStrOrNil(userIDstr))
+		if err != nil || userInfo == nil {
+			return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
+		}
+
+		if orgIDstr != pbutils.UUIDFromProtoOrNil(userInfo.OrgID).String() {
+			return nil, status.Error(codes.Unauthenticated, "Mismatched org")
+		}
 	}
 
 	// TODO(zasgar): This step should be to generate a new token base on what we get from a database.

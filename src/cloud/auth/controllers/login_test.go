@@ -7,6 +7,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/golang/mock/gomock"
+	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
@@ -91,7 +92,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s)
+	resp, err := doLoginRequest(getTestContext(), t, s, "")
 	assert.Nil(t, err)
 
 	// Make sure expiry time is in the future.
@@ -136,6 +137,39 @@ func TestServer_LoginNewUser_NoAutoCreate(t *testing.T) {
 	assert.Nil(t, resp)
 }
 
+func TestServer_Login_OrgNameSpecified(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+
+	fakeUserInfo := &controllers.UserInfo{
+		AppMetadata: nil,
+		Email:       "abc@gmail.com",
+		FirstName:   "first",
+		LastName:    "last",
+	}
+
+	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New(mockProfile)
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	resp, err := doLoginRequest(getTestContext(), t, s, "testorg")
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+	stat, ok := status.FromError(err)
+	assert.True(t, ok)
+	assert.Equal(t, codes.InvalidArgument, stat.Code())
+}
+
 func TestServer_Login_MissingOrgError(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -165,7 +199,7 @@ func TestServer_Login_MissingOrgError(t *testing.T) {
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s)
+	resp, err := doLoginRequest(getTestContext(), t, s, "")
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
 }
@@ -195,9 +229,92 @@ func TestServer_LoginNewUser_InvalidEmail(t *testing.T) {
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s)
+	resp, err := doLoginRequest(getTestContext(), t, s, "")
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
+}
+
+func TestServer_LoginNewUser_SupportUserNoOrg(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+
+	fakeUserInfo := &controllers.UserInfo{
+		AppMetadata: nil,
+		Email:       "test@pixie.support",
+		FirstName:   "first",
+		LastName:    "last",
+	}
+
+	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New(mockProfile)
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	resp, err := doLoginRequest(getTestContext(), t, s, "")
+	assert.Nil(t, resp)
+	assert.NotNil(t, err)
+	stat, ok := status.FromError(err)
+	assert.True(t, ok)
+	assert.Equal(t, codes.InvalidArgument, stat.Code())
+}
+
+func TestServer_LoginNewUser_SupportUser(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	userID := uuid.FromStringOrNil("")
+	fakeOrgInfo := &profilepb.OrgInfo{
+		ID: &uuidpb.UUID{Data: []byte(orgID)},
+	}
+	// Setup expectations for the mocks.
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
+
+	fakeUserInfo := &controllers.UserInfo{
+		AppMetadata: nil,
+		Email:       "test@pixie.support",
+		FirstName:   "first",
+		LastName:    "last",
+	}
+
+	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+
+	mockProfile.EXPECT().
+		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "hulu.com"}).
+		Return(fakeOrgInfo, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New(mockProfile)
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	resp, err := doLoginRequest(getTestContext(), t, s, "hulu.com")
+	assert.NotNil(t, resp)
+	assert.Nil(t, err)
+
+	// Make sure expiry time is in the future.
+	currentTime := time.Now().Unix()
+	maxExpiryTime := time.Now().Add(120 * 24 * time.Hour).Unix()
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	assert.False(t, resp.UserCreated)
+	assert.Equal(t, pbutils.UUIDFromProtoOrNil(resp.UserInfo.UserID), userID)
+	assert.Equal(t, resp.UserInfo.FirstName, "first")
+	assert.Equal(t, resp.UserInfo.LastName, "last")
+	assert.Equal(t, resp.UserInfo.Email, "test@pixie.support")
+	verifyToken(t, resp.Token, userID.String(), orgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_LoginNewUser_InvalidOrg(t *testing.T) {
@@ -229,7 +346,7 @@ func TestServer_LoginNewUser_InvalidOrg(t *testing.T) {
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s)
+	resp, err := doLoginRequest(getTestContext(), t, s, "")
 	assert.NotNil(t, err)
 	assert.Nil(t, resp)
 }
@@ -278,7 +395,7 @@ func TestServer_LoginNewUser_CreateUserFailed(t *testing.T) {
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s)
+	resp, err := doLoginRequest(getTestContext(), t, s, "")
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
 }
@@ -298,7 +415,7 @@ func TestServer_Login_BadToken(t *testing.T) {
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s)
+	resp, err := doLoginRequest(getTestContext(), t, s, "")
 	assert.NotNil(t, err)
 	// Check the response data.
 	stat, ok := status.FromError(err)
@@ -348,7 +465,7 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s)
+	resp, err := doLoginRequest(getTestContext(), t, s, "")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 
@@ -431,7 +548,7 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 	s, err := controllers.NewServer(env, a)
 	assert.Nil(t, err)
 
-	resp, err := doLoginRequest(getTestContext(), t, s)
+	resp, err := doLoginRequest(getTestContext(), t, s, "")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 
@@ -656,6 +773,45 @@ func TestServer_GetAugmentedTokenBadToken(t *testing.T) {
 	e, ok := status.FromError(err)
 	assert.True(t, ok)
 	assert.Equal(t, e.Code(), codes.Unauthenticated)
+}
+
+func TestServer_GetAugmentedTokenSupportAccount(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	mockOrgInfo := &profilepb.OrgInfo{
+		ID: pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+	}
+	mockProfile.EXPECT().
+		GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
+		Return(mockOrgInfo, nil)
+
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New(mockProfile)
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	claims := testingutils.GenerateTestClaimsWithEmail(t, "test@pixie.support")
+	token := testingutils.SignPBClaims(t, claims, "jwtkey")
+	req := &pb.GetAugmentedAuthTokenRequest{
+		Token: token,
+	}
+	sCtx := authcontext.New()
+	sCtx.Claims = claims
+	resp, err := s.GetAugmentedToken(context.Background(), req)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+
+	// Make sure expiry time is in the future & > 0.
+	currentTime := time.Now().Unix()
+	maxExpiryTime := time.Now().Add(60 * time.Minute).Unix()
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	assert.True(t, resp.ExpiresAt > 0)
+
+	verifyToken(t, resp.Token, testingutils.TestUserID, testingutils.TestOrgID, resp.ExpiresAt, "jwtkey")
 }
 
 func TestServer_Signup_ExistingOrg(t *testing.T) {
@@ -954,10 +1110,11 @@ func verifyToken(t *testing.T, token, expectedUserID string, expectedOrgID strin
 	assert.Equal(t, expectedExpiry, int64(claims["exp"].(float64)))
 }
 
-func doLoginRequest(ctx context.Context, t *testing.T, server *controllers.Server) (*pb.LoginReply, error) {
+func doLoginRequest(ctx context.Context, t *testing.T, server *controllers.Server, orgName string) (*pb.LoginReply, error) {
 	req := &pb.LoginRequest{
 		AccessToken:           "tokenabc",
 		CreateUserIfNotExists: true,
+		OrgName:               orgName,
 	}
 	return server.Login(ctx, req)
 }

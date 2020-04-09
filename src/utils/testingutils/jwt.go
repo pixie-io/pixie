@@ -16,14 +16,19 @@ const TestOrgID string = "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
 const TestUserID string = "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
 // GenerateTestClaimsWithDuration generates valid test user claims for a specified duration.
-func GenerateTestClaimsWithDuration(t *testing.T, duration time.Duration) *pb.JWTClaims {
-	claims := utils.GenerateJWTForUser(TestUserID, TestOrgID, "test@test.com", time.Now().Add(duration))
+func GenerateTestClaimsWithDuration(t *testing.T, duration time.Duration, email string) *pb.JWTClaims {
+	claims := utils.GenerateJWTForUser(TestUserID, TestOrgID, email, time.Now().Add(duration))
 	return claims
 }
 
 // GenerateTestClaims generates valid test user claims valid for 60 minutes
 func GenerateTestClaims(t *testing.T) *pb.JWTClaims {
-	return GenerateTestClaimsWithDuration(t, time.Minute*60)
+	return GenerateTestClaimsWithDuration(t, time.Minute*60, "test@test.com")
+}
+
+// GenerateTestClaimsWithEmail generates valid test user claims for the given email.
+func GenerateTestClaimsWithEmail(t *testing.T, email string) *pb.JWTClaims {
+	return GenerateTestClaimsWithDuration(t, time.Minute*60, email)
 }
 
 // GenerateTestJWTToken generates valid tokens for testing.
@@ -33,7 +38,7 @@ func GenerateTestJWTToken(t *testing.T, signingKey string) string {
 
 // GenerateTestJWTTokenWithDuration generates valid tokens for testing with the specified duration.
 func GenerateTestJWTTokenWithDuration(t *testing.T, signingKey string, timeout time.Duration) string {
-	claims := GenerateTestClaimsWithDuration(t, timeout)
+	claims := GenerateTestClaimsWithDuration(t, timeout, "test@test.com")
 
 	return SignPBClaims(t, claims, signingKey)
 }
