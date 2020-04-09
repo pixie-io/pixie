@@ -215,6 +215,7 @@ function onLoginAuthenticated(authResult, profile, error) {
     data: {
       accessToken: authResult.accessToken,
       userEmail: profile.email,
+      orgName: this.orgName,
     },
   }).then((response) => {
     // Associate anonymous use with actual user ID.
@@ -268,6 +269,7 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
   private auth0Redirect: string;
   private redirectPath: string;
   private authenticating: boolean;
+  private orgName: string;
 
   constructor(props) {
     super(props);
@@ -284,6 +286,7 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
     const locationParam = typeof queryParams.location === 'string' ? queryParams.location : '';
     const localMode = typeof queryParams.local_mode === 'string' ? queryParams.local_mode : '';
     const localModeRedirect = typeof queryParams.redirect_uri === 'string' ? queryParams.redirect_uri : '';
+    this.orgName = typeof queryParams.org_name === 'string' ? queryParams.org_name : '';
     this.authenticating = window.location.hash.search('access_token') !== -1;
 
     const segmentId = typeof queryParams.tid === 'string' ? queryParams.tid : '';
@@ -309,6 +312,11 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
     } else if (localMode === 'true') {
       this.cliAuthMode = 'manual';
       this.auth0Redirect = this.auth0Redirect + '?local_mode=true';
+    }
+
+    if (this.orgName !== '') {
+      const queryStr = this.auth0Redirect.includes('?') ? '&' : '?';
+      this.auth0Redirect = this.auth0Redirect + queryStr + 'org_name=' + this.orgName;
     }
   }
 
