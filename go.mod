@@ -7,7 +7,6 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
-	github.com/TylerBrock/colorjson v0.0.0-20180527164720-95ec53f28296
 	github.com/ajstarks/svgo v0.0.0-20181006003313-6ce6a3bcf6cd // indirect
 	github.com/alecthomas/chroma v0.7.1
 	github.com/alecthomas/participle v0.4.1
@@ -33,7 +32,6 @@ require (
 	github.com/fluent/fluent-bit-go v0.0.0-20200304012558-215d6804159a
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/getsentry/sentry-go v0.5.1
-	github.com/go-bindata/go-bindata v3.1.2+incompatible // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang/mock v1.3.1
@@ -46,14 +44,12 @@ require (
 	github.com/gotestyourself/gotestyourself v2.2.0+incompatible // indirect
 	github.com/graph-gophers/graphql-go v0.0.0-20190225005345-3e8838d4614c
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
-	github.com/hokaccha/go-prettyjson v0.0.0-20190818114111-108c894c2c0e // indirect
 	github.com/imdario/mergo v0.3.7 // indirect
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgx v3.5.0+incompatible
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
-	github.com/keighl/metabolize v0.0.0-20150915210303-97ab655d4034 // indirect
 	github.com/lib/pq v1.3.0
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/nats-io/nats-server/v2 v2.1.4
@@ -67,7 +63,6 @@ require (
 	github.com/opencontainers/runc v1.0.0-rc8 // indirect
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/phayes/freeport v0.0.0-20171002181615-b8543db493a5
-	github.com/ruudk/golang-pdf417 v0.0.0-20181029194003-1af4ab5afa58 // indirect
 	github.com/satori/go.uuid v1.2.0
 	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c // indirect
 	github.com/sercand/kuberesolver v2.1.0+incompatible
