@@ -8,6 +8,7 @@ import (
 	"github.com/graph-gophers/graphql-go/relay"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/schema"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 )
 
@@ -16,6 +17,8 @@ type GraphQLEnv struct {
 	ArtifactTrackerServer cloudapipb.ArtifactTrackerServer
 	VizierClusterInfo     cloudapipb.VizierClusterInfoServer
 	ScriptMgrServer       cloudapipb.ScriptMgrServer
+
+	ProfileServiceClient profilepb.ProfileServiceClient
 }
 
 // QueryResolver resolves queries for GQL.
@@ -24,12 +27,12 @@ type QueryResolver struct {
 }
 
 // User resolves user information.
-func (*QueryResolver) User(ctx context.Context) (*UserInfoResolver, error) {
+func (q *QueryResolver) User(ctx context.Context) (*UserInfoResolver, error) {
 	sCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return &UserInfoResolver{sCtx}, nil
+	return &UserInfoResolver{sCtx, &q.Env, ctx}, nil
 }
 
 // NewGraphQLHandler is the hTTP handler used for handling GraphQL requests.

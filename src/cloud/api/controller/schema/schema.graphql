@@ -16,6 +16,7 @@ type UserInfo {
   name: String!
   email: String!
   picture: String!
+  orgName: String!
 }
 
 enum ArtifactType {

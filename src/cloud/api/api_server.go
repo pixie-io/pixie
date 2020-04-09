@@ -149,6 +149,8 @@ func main() {
 		ArtifactTrackerServer: artifactTrackerServer,
 		VizierClusterInfo:     cis,
 		ScriptMgrServer:       sms,
+
+		ProfileServiceClient: pc,
 	}
 
 	mux.Handle("/api/graphql", controller.WithAugmentedAuthMiddleware(env, controller.NewGraphQLHandler(gqlEnv)))
