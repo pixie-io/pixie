@@ -1,5 +1,6 @@
 import './vizier.scss';
 
+import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 import {
     CloudClientInterface, VizierGQLClient, VizierGQLClientContext,
 } from 'common/vizier-gql-client';
@@ -47,6 +48,15 @@ export const CHECK_VIZIER = gql`
   }
 }`;
 
+const GET_USER = gql`
+{
+  user {
+    email
+    orgName
+  }
+}
+`;
+
 const PATH_TO_HEADER_TITLE = {
   '/vizier/agents': 'Agents',
   '/vizier/query': 'Query',
@@ -55,6 +65,18 @@ const PATH_TO_HEADER_TITLE = {
 interface ClusterInstructionsProps {
   message: string;
 }
+
+const useStyles = makeStyles((theme: Theme) => {
+  return createStyles({
+    banner: {
+      position: 'absolute',
+      width: '100%',
+      textAlign: 'center',
+      top: 0,
+      background: 'white',
+    },
+  });
+});
 
 const ClusterInstructions = (props: ClusterInstructionsProps) => (
   <div className='cluster-instructions'>
@@ -98,6 +120,31 @@ interface VizierState {
   creatingCluster: boolean;
 }
 
+const ClusterBanner = () => {
+    const classes = useStyles();
+    return (<Query query={GET_USER} fetchPolicy={'network-only'}>
+      {
+        ({loading, error, data}) => {
+          if (loading || error) {
+            return null;
+          }
+
+          if (data.user.email.split('@')[1] === 'pixie.support') {
+            return (
+              <div className={classes.banner}>
+                {
+                  'You are viewing clusters for an external org: ' + data.user.orgName
+                }
+              </div>
+            );
+          }
+
+          return null;
+        }
+      }
+    </Query>);
+};
+
 export class Vizier extends React.Component<{}, VizierState> {
   constructor(props) {
     super(props);
@@ -113,50 +160,53 @@ export class Vizier extends React.Component<{}, VizierState> {
         {(cloudClient) => (
           <ApolloConsumer>{(client) => {
             return (
-              <Query query={GET_CLUSTER} pollInterval={2500}>
-                {
-                  ({ loading, error, data }) => {
-                    if (loading) { return 'Loading...'; }
-                    if (error) {
-                      // TODO(michelle): Figure out how to add status codes to GQL errors.
-                      if (error.message.includes('no clusters')) {
-                        // If no cluster exists, and is not already being created, create it.
-                        if (!this.state.creatingCluster) {
-                          this.setState({ creatingCluster: true });
-                          client.mutate({
-                            mutation: CREATE_CLUSTER,
-                          });
-                        }
+              <>
+                <ClusterBanner />
+                <Query query={GET_CLUSTER} pollInterval={2500}>
+                  {
+                    ({ loading, error, data }) => {
+                      if (loading) { return 'Loading...'; }
+                      if (error) {
+                        // TODO(michelle): Figure out how to add status codes to GQL errors.
+                        if (error.message.includes('no clusters')) {
+                          // If no cluster exists, and is not already being created, create it.
+                          if (!this.state.creatingCluster) {
+                            this.setState({ creatingCluster: true });
+                            client.mutate({
+                              mutation: CREATE_CLUSTER,
+                            });
+                          }
 
-                        return <ClusterInstructions message='Initializing...' />;
+                          return <ClusterInstructions message='Initializing...' />;
+                        }
+                        return `Error! ${error.message}`;
                       }
-                      return `Error! ${error.message}`;
-                    }
-                    if (data.cluster.status === 'CS_HEALTHY') {
-                      return (
-                        <VizierGRPCClientProvider
-                          cloudClient={cloudClient}
-                          clusterID={data.cluster.id}
-                          passthroughEnabled={data.cluster.vizierConfig.passthroughEnabled}
-                          loadingScreen={<ClusterInstructions message='Connecting to cluster...' />}
-                        >
-                          <Switch>
-                            <Route path='/live' component={LiveViewWithApollo} />
-                            <Route render={(props) => <VizierMain {...props} cloudClient={cloudClient} />} />
-                          </Switch>
-                        </VizierGRPCClientProvider>
-                      );
-                    } else if (data.cluster.status === 'CS_UNHEALTHY') {
-                      const clusterStarting = 'Cluster found. Waiting for pods and services to become ready...';
-                      return <ClusterInstructions message={clusterStarting} />;
-                    } else {
-                      return (
-                        <DeployInstructions />
-                      );
+                      if (data.cluster.status === 'CS_HEALTHY') {
+                        return (
+                          <VizierGRPCClientProvider
+                            cloudClient={cloudClient}
+                            clusterID={data.cluster.id}
+                            passthroughEnabled={data.cluster.vizierConfig.passthroughEnabled}
+                            loadingScreen={<ClusterInstructions message='Connecting to cluster...' />}
+                          >
+                            <Switch>
+                              <Route path='/live' component={LiveViewWithApollo} />
+                              <Route render={(props) => <VizierMain {...props} cloudClient={cloudClient} />} />
+                            </Switch>
+                          </VizierGRPCClientProvider>
+                        );
+                      } else if (data.cluster.status === 'CS_UNHEALTHY') {
+                        const clusterStarting = 'Cluster found. Waiting for pods and services to become ready...';
+                        return <ClusterInstructions message={clusterStarting} />;
+                      } else {
+                        return (
+                          <DeployInstructions />
+                        );
+                      }
                     }
                   }
-                }
-              </Query>
+                </Query>
+              </>
             );
           }}
           </ApolloConsumer>
