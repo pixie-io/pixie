@@ -54,13 +54,15 @@ std::map<std::string, std::vector<int>> GetActiveBinaries(
   return binaries;
 }
 
-LLVMDisasmContext::LLVMDisasmContext() {
+void InitLLVMDisasm() {
   // It's legal to call these multiple times.
   llvm::InitializeNativeTarget();
   llvm::InitializeNativeTargetAsmPrinter();
   llvm::InitializeNativeTargetAsmParser();
   llvm::InitializeNativeTargetDisassembler();
+}
 
+LLVMDisasmContext::LLVMDisasmContext() {
   // TripleName is ARCHITECTURE-VENDOR-OPERATING_SYSTEM.
   // See https://llvm.org/doxygen/Triple_8h_source.html
   // TODO(yzhao): Change to get TripleName from the system, instead of hard coding.

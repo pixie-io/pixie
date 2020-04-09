@@ -33,6 +33,12 @@ std::map<std::string, std::vector<int>> GetActiveBinaries(
     const std::filesystem::path& host_path = {});
 
 /**
+ * Initialize environment for LLVM disassembler APIs.
+ * Can be called multiple times.
+ */
+void InitLLVMDisasm();
+
+/**
  * RAII wrapper around LLVMDisasmContextRef.
  */
 class LLVMDisasmContext {

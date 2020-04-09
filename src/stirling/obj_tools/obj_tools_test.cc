@@ -48,6 +48,7 @@ TEST(ObjToolsTest, FindRetInsts) {
 
   utils::u8string_view byte_codes(reinterpret_cast<const uint8_t*>(kData));
 
+  InitLLVMDisasm();
   LLVMDisasmContext disasm_ctx;
 
   EXPECT_THAT(FindRetInsts(disasm_ctx, byte_codes), ElementsAre(1, 2, 3, 6, 9, 10));
