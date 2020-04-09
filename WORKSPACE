@@ -1048,15 +1048,15 @@ go_repository(
 go_repository(
     name = "com_github_alecthomas_template",
     importpath = "github.com/alecthomas/template",
-    sum = "h1:cAKDfWh5VpdgMhJosfJnn5/FoN2SRZ4p7fJNX58YPaU=",
-    version = "v0.0.0-20160405071501-a0175ee3bccc",
+    sum = "h1:JYp7IbQjafoB+tBA3gMyHYHrpOtNuDiK/uB5uXxq5wM=",
+    version = "v0.0.0-20190718012654-fb15b899a751",
 )
 
 go_repository(
     name = "com_github_alecthomas_units",
     importpath = "github.com/alecthomas/units",
-    sum = "h1:qet1QNfXsQxTZqLG4oE62mJzwPIB8+Tee4RNCL9ulrY=",
-    version = "v0.0.0-20151022065526-2efee857e7cf",
+    sum = "h1:UQZhZ2O0vMHr2cI+DC1Mbh0TJxzA3RcLoMsFw+aXw7E=",
+    version = "v0.0.0-20190924025748-f65c72e2690d",
 )
 
 go_repository(
@@ -2716,15 +2716,15 @@ go_repository(
 go_repository(
     name = "com_github_alecthomas_kong",
     importpath = "github.com/alecthomas/kong",
-    sum = "h1:C4Q9m+oXOxcSWwYk9XzzafY2xAVAaeubZbUHJkw3PlY=",
-    version = "v0.2.1-0.20190708041108-0548c6b1afae",
+    sum = "h1:V1tLBhyQBC4rsbXbcOvm3GBaytJSwRNX69fp1WJxbqQ=",
+    version = "v0.2.1",
 )
 
 go_repository(
     name = "com_github_alecthomas_repr",
     importpath = "github.com/alecthomas/repr",
-    sum = "h1:p9Sln00KOTlrYkxI1zYWl1QLnEqAqEARBEYa8FQnQcY=",
-    version = "v0.0.0-20180818092828-117648cd9897",
+    sum = "h1:GDQdwm/gAcJcLAKQQZGOJ4knlw+7rfEQQcmwTbt4p5E=",
+    version = "v0.0.0-20181024024818-d37bc2a10ba1",
 )
 
 go_repository(
@@ -2753,4 +2753,18 @@ go_repository(
     importpath = "github.com/ruudk/golang-pdf417",
     sum = "h1:nlG4Wa5+minh3S9LVFtNoY+GVRiudA2e3EVfcCi3RCA=",
     version = "v0.0.0-20181029194003-1af4ab5afa58",
+)
+
+go_repository(
+    name = "com_github_alecthomas_go_thrift",
+    importpath = "github.com/alecthomas/go-thrift",
+    sum = "h1:gKv6LPDhF/G3cNribA+kZtNPiPpKabZGLhcJuEtp3ig=",
+    version = "v0.0.0-20170109061633-7914173639b2",
+)
+
+go_repository(
+    name = "com_github_alecthomas_participle",
+    importpath = "github.com/alecthomas/participle",
+    sum = "h1:P2PJWzwrSpuCWXKnzqvw0b0phSfH1kJo4p2HvLynVsI=",
+    version = "v0.4.1",
 )
