@@ -9,6 +9,7 @@
 </p>
 
 ---
+[![Slack](https://slackin.withpixie.ai/badge.svg)](https://slackin.withpixie.ai)
 
 Pixie gives engineers access to no-instrumentation, streaming & unsampled auto-telemetry to debug performance issues in real-time.
 
