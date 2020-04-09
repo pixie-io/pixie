@@ -356,7 +356,7 @@ StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(
     elf_tools::ElfReader* elf_reader) {
   int uprobe_count = 0;
   for (const auto& tmpl : probe_tmpls) {
-    bpf_tools::UProbeSpec spec = {binary, {}, tmpl.attach_type, std::string(tmpl.probe_fn)};
+    bpf_tools::UProbeSpec spec = {binary, {}, 0, tmpl.attach_type, std::string(tmpl.probe_fn)};
     const std::vector<std::string> symbol_names =
         elf_reader->ListSymbols(tmpl.symbol, tmpl.match_type);
     for (auto& symbol : symbol_names) {

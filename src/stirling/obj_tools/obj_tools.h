@@ -55,7 +55,8 @@ class LLVMDisasmContext {
 /**
  * Returns offset of all return instructions in the input byte code.
  */
-std::vector<int> FindRetInsts(const LLVMDisasmContext& dcr, ::pl::utils::u8string_view byte_code);
+std::vector<int> FindRetInsts(const LLVMDisasmContext& llvm_disam_ctx,
+                              ::pl::utils::u8string_view byte_code);
 
 }  // namespace obj_tools
 }  // namespace stirling

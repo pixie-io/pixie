@@ -72,17 +72,17 @@ Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
   return Status::OK();
 }
 
-// We only provide symbol to BPF::attach_uprobe, which makes the symbol address always 0.
-constexpr uint64_t kIgnoredSymbolAddr = 0;
-
 Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
   VLOG(1) << absl::Substitute(
-      "Deploying uprobe:\n   type=$0\n   binary=$1\n   symbol=$2\n   trace_fn=$3",
+      "Deploying uprobe:\n   type=$0\n   binary=$1\n   symbol=$2\n   address=$3\n   trace_fn=$4",
       magic_enum::enum_name(probe.attach_type), probe.binary_path.string(), probe.symbol,
-      probe.probe_fn);
+      probe.address, probe.probe_fn);
+  DCHECK((probe.symbol.empty() && probe.address != 0) ||
+         (!probe.symbol.empty() && probe.address == 0))
+      << "Exactly one of 'symbol' and 'address' must be specified.";
   ebpf::StatusTuple attach_status =
-      bpf().attach_uprobe(probe.binary_path, std::string(probe.symbol), std::string(probe.probe_fn),
-                          kIgnoredSymbolAddr, probe.attach_type);
+      bpf().attach_uprobe(probe.binary_path, probe.symbol, std::string(probe.probe_fn),
+                          probe.address, probe.attach_type);
   if (attach_status.code() != 0) {
     return error::Internal("Failed to attach uprobe to binary $0 at symbol $1, error message: $2",
                            probe.binary_path.string(), probe.symbol, attach_status.msg());
@@ -122,10 +122,11 @@ Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
 }
 
 Status BCCWrapper::DetachUProbe(const UProbeSpec& probe) {
-  VLOG(1) << absl::Substitute("Detaching uprobe:\n   binary=$0\n   symbol=$1\n   trace_fn=$2",
-                              probe.binary_path.string(), probe.symbol, probe.probe_fn);
+  VLOG(1) << absl::Substitute(
+      "Detaching uprobe:\n   binary=$0\n   symbol=$1\n   address=$2   trace_fn=$3",
+      probe.binary_path.string(), probe.symbol, probe.address, probe.probe_fn);
   ebpf::StatusTuple detach_status =
-      bpf().detach_uprobe(probe.binary_path, probe.symbol, kIgnoredSymbolAddr, probe.attach_type);
+      bpf().detach_uprobe(probe.binary_path, probe.symbol, probe.address, probe.attach_type);
 
   if (detach_status.code() != 0) {
     return error::Internal("Failed to detach uprobe from binary $0 on symbol $1, error message: $2",

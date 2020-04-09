@@ -95,7 +95,8 @@ bool IsRetInst(uint8_t code) {
 
 }  // namespace
 
-std::vector<int> FindRetInsts(const LLVMDisasmContext& dcr, utils::u8string_view byte_code) {
+std::vector<int> FindRetInsts(const LLVMDisasmContext& llvm_disam_ctx,
+                              utils::u8string_view byte_code) {
   if (byte_code.empty()) {
     return {};
   }
@@ -120,7 +121,7 @@ std::vector<int> FindRetInsts(const LLVMDisasmContext& dcr, utils::u8string_view
     // TODO(yzhao): MCDisassembler::getInst() works better here, because it returns a MCInst, with
     // an opcode for examination. Unfortunately, MCDisassembler is difficult to create without
     // class LLVMDisasmContex, which is not exposed.
-    inst_size = LLVMDisasmInstruction(dcr.ref(), codes, codes_size, pc, buf, kBufSize);
+    inst_size = LLVMDisasmInstruction(llvm_disam_ctx.ref(), codes, codes_size, pc, buf, kBufSize);
 
     pc += inst_size;
     codes += inst_size;

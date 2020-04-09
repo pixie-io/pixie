@@ -55,7 +55,9 @@ struct KProbeSpec {
 struct UProbeSpec {
   // The canonical path to the binary to which this uprobe is attached.
   std::filesystem::path binary_path;
+  // Exact one of symbol and address must be specified.
   std::string symbol;
+  uint64_t address = 0;
   bpf_probe_attach_type attach_type;
   std::string probe_fn;
 };
