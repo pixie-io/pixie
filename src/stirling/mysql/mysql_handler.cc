@@ -26,7 +26,7 @@ namespace mysql {
 
 StatusOr<ParseState> HandleNoResponse(DequeView<Packet> resp_packets, Record* entry) {
   if (!resp_packets.empty()) {
-    return error::Internal("Did not expect any response packets [num_extra_packets=$1].",
+    return error::Internal("Did not expect any response packets [num_extra_packets=$0].",
                            resp_packets.size());
   }
 
@@ -68,7 +68,7 @@ StatusOr<ParseState> HandleErrMessage(DequeView<Packet> resp_packets, Record* en
 
   if (resp_packets.size() > 1) {
     return error::Internal(
-        "Did not expect additional packets after error packet [num_extra_packets=$1].",
+        "Did not expect additional packets after error packet [num_extra_packets=$0].",
         resp_packets.size() - 1);
   }
 
@@ -92,7 +92,7 @@ StatusOr<ParseState> HandleOKMessage(DequeView<Packet> resp_packets, Record* ent
 
   if (resp_packets.size() > 1) {
     return error::Internal(
-        "Did not expect additional packets after OK packet [num_extra_packets=$1].",
+        "Did not expect additional packets after OK packet [num_extra_packets=$0].",
         resp_packets.size() - 1);
   }
 
