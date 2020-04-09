@@ -66,7 +66,7 @@ Access data in seconds by running pre-built community scripts like:
 
 - Service SLA: `px run px/service_stats`
 - Node health: `px run px/node_stats`
-- MySQL metrics: `px run px/node_stats`
+- MySQL metrics: `px run px/mysql_stats`
 - Explore more scripts by running `px scripts list`
 - Check out our [pxl_scripts](pxl_scripts) repo for more examples.
 
