@@ -1,7 +1,7 @@
 <p align="center">
 
    [![Pixie!](./assets/pixie_banner.svg)](https://pixielabs.ai)
-   
+
   <p align="center">
     Live-debug distributed environments with <a href="https://work.withpixie.ai/">Pixie</a>
   </p>
@@ -32,13 +32,11 @@ We're building up Pixie for broad use by the end of 2020 with an initial focus o
 
 1. **Signup**: Visit our [product page](https://work.withpixie.ai/) and signup with your google account.
 
-2. **Install CLI:** Copy and run this command to install `px` in your environment
+2. **Install CLI:** Copy and run the command below to install Pixie's CLI.
 
     `bash -c "$(curl -fsSL https://withpixie.ai/install.sh)"`
 
-3. **Build your sandbox**  (if needed):
-
-    Set up a quick local sandbox if you don't already have a K8s setup or meaningful workloads to monitor.
+3. **Setup a sandbox**  You can easily build a local set-up to use Pixie if you don't already have a K8s setup or meaningful workloads to mintor set-up.
 
     - Set-up a local K8s environment:
         - [Install Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) and run `kind create cluster`
@@ -75,7 +73,7 @@ Access data in seconds by running pre-built community scripts like:
 
 **View results on machine generated Live dashboards**
 
-Pixie Platform auto-generates "Live View" dashboard to visualize script results. You can view them by clicking on the URLs prompted by `px` or by visiting: `https://work.withpixie.ai/live`
+The Pixie Platform auto-generates "Live View" dashboard to visualize script results. You can view them by clicking on the URLs prompted by `px` or by visiting: `https://work.withpixie.ai/live`
 
 ![CLI Demo](./assets/live_7apr20.gif)
 
