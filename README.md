@@ -77,7 +77,7 @@ The Pixie Platform auto-generates "Live View" dashboard to visualize script resu
 
 ![CLI Demo](./assets/live_7apr20.gif)
 
-**Pipe Pixie dust into any tool **
+**Pipe Pixie dust into any tool**
 
 You can transform and pipe your script results into any other system or workflow by consuming `px` results with tools like [jq](https://stedolan.github.io/jq/). 
 
