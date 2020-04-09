@@ -1,6 +1,10 @@
 <p align="center">
 
+<<<<<<< HEAD
   [![Pixie!](./assets/pixie_banner.svg)](https://pixielabs.ai)
+=======
+  [![Pixie!](pixie_banner_light.png)](https://pixielabs.ai)
+>>>>>>> origin/master
 
   <p align="center">
     Live-debug distributed environments with <a href="https://work.withpixie.ai/">Pixie</a>
@@ -9,6 +13,7 @@
 </p>
 
 ---
+[![Slack](https://slackin.withpixie.ai/badge.svg)](https://slackin.withpixie.ai)
 
 Pixie gives engineers access to no-instrumentation, streaming & unsampled auto-telemetry to debug performance issues in real-time.
 
