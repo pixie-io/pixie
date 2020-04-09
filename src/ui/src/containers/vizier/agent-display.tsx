@@ -67,7 +67,7 @@ export const AgentDisplay = () => {
     }
     let mounted = true;
     const fetchAgentStatus = () => {
-      client.executeScript(AGENT_STATUS_SCRIPT).then((results) => {
+      client.executeScriptOld(AGENT_STATUS_SCRIPT).then((results) => {
         if (!mounted) {
           return;
         }

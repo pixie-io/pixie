@@ -105,6 +105,7 @@ describe('BuildLayout old', () => {
 });
 
 const visSpec: Vis = {
+  variables: [],
   widgets: [
     {
       name: 'latency',

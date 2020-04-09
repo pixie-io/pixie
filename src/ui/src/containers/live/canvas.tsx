@@ -11,8 +11,10 @@ import {dataFromProto} from 'utils/result-data-utils';
 
 import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
 
-import {LiveContext, PlacementContextOld, ResultsContext, VegaContextOld} from './context';
-import {buildLayoutOld, toLayoutOld, updatePositionsOld} from './layout';
+import {LiveContext, PlacementContextOld, ResultsContext, VegaContextOld, VisContext} from './context';
+import {ChartDisplay, convertWidgetDisplayToVegaSpec} from './convert-to-vega-spec';
+import {addLayout, buildLayoutOld, toLayout, toLayoutOld, updatePositions, updatePositionsOld} from './layout';
+import {DISPLAY_TYPE_KEY, TABLE_DISPLAY_TYPE, widgetResultName} from './vis';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -47,8 +49,90 @@ const Canvas = () => {
   if (oldLiveViewMode) {
     return <OldCanvas/>;
   } else {
-    return <div>New Live View coming soon.</div>;
+    return <NewCanvas/>;
   }
+};
+
+const NewCanvas = () => {
+  const classes = useStyles();
+  const results = React.useContext(ResultsContext);
+  const vis = React.useContext(VisContext);
+  const { updateVis } = React.useContext(LiveContext);
+  const [vegaModule, setVegaModule] = React.useState(null);
+
+  // Load vega.
+  React.useEffect(() => {
+    import(/* webpackChunkName: "react-vega" webpackPreload: true */ 'react-vega').then((module) => {
+      setVegaModule(module);
+    });
+  }, []);
+
+  const layout = React.useMemo(() => {
+    const newVis = addLayout(vis);
+    if (newVis !== vis) {
+      updateVis(newVis);
+    }
+    return toLayout(newVis);
+  }, [vis]);
+
+  const charts = React.useMemo(() => {
+    if (!vegaModule) {
+      return [];
+    }
+    return vis.widgets.map((widget, i) => {
+      const display = widget.displaySpec;
+      // TODO(nserrino): Support multiple output tables when we have a Vega component that
+      // takes in multiple output tables.
+      const name = widgetResultName(widget, i);
+      const table = results[name];
+      if (!table) {
+        return <div key={name}>Table {name} not found.</div>;
+      }
+
+      if (display[DISPLAY_TYPE_KEY] === TABLE_DISPLAY_TYPE) {
+        return (
+          <div key={name} className='fs-exclude'>
+            <QueryResultTable className={classes.table} data={table} />
+          </div>
+        );
+      }
+      let spec;
+      try {
+        spec = convertWidgetDisplayToVegaSpec(display as ChartDisplay, name);
+      } catch (e) {
+        return <div key={name} className='fs-exclude'>Error in displaySpec: {e.message}</div>;
+      }
+      const data = dataFromProto(table.relation, table.data);
+      return (
+        <div key={name} className='fs-exclude'>
+          <Vega data={data} spec={spec} tableName={name} oldSpec={false} vegaModule={vegaModule} />
+        </div>
+      );
+    });
+  }, [results, vis, vegaModule]);
+
+  const resize = React.useCallback(() => {
+    // Dispatch a window resize event to signal the chart to redraw. As suggested in:
+    // https://vega.github.io/vega-lite/docs/size.html#specifying-responsive-width-and-height
+    window.dispatchEvent(new Event('resize'));
+  }, []);
+
+  const handleLayoutChange = React.useCallback((newLayout) => {
+    updateVis(updatePositions(vis, newLayout));
+    resize();
+  }, [vis]);
+
+  if (!vegaModule) {
+    return (
+      <div className='center-content'><Spinner /></div>
+    );
+  }
+
+  return (
+    <Grid layout={layout} onLayoutChange={handleLayoutChange}>
+      {charts}
+    </Grid>
+  );
 };
 
 const OldCanvas = () => {
@@ -98,7 +182,7 @@ const OldCanvas = () => {
       const data = dataFromProto(table.relation, table.data);
       return (
         <div key={chartName} className='fs-exclude'>
-          <Vega data={data} spec={spec} tableName={tableName} vegaModule={vegaModule} />
+          <Vega data={data} spec={spec} tableName={tableName} oldSpec={true} vegaModule={vegaModule} />
         </div>
       );
     });

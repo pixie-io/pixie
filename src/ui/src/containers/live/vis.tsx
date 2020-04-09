@@ -8,7 +8,8 @@ import {ChartPosition, DEFAULT_HEIGHT, GRID_WIDTH} from './layout';
 
 interface FuncArg {
   name: string;
-  value: string;
+  value?: string;
+  variable?: string;
 }
 
 interface Func {
@@ -30,7 +31,13 @@ interface Widget {
   displaySpec: WidgetDisplay;
 }
 
+interface Variable {
+  name: string;
+  type: string;
+}
+
 export interface Vis {
+  variables: Variable[];
   widgets: Widget[];
 }
 

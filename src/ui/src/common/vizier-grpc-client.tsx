@@ -54,7 +54,11 @@ export class VizierGRPCClient {
     });
   }
 
-  executeScript(script: string, funcs?: VizierQueryFunc[]): Promise<VizierQueryResult> {
+  executeScriptOld(script: string): Promise<VizierQueryResult> {
+    return this.executeScript(script, []);
+  }
+
+  executeScript(script: string, funcs: VizierQueryFunc[]): Promise<VizierQueryResult> {
     const req = new ExecuteScriptRequest();
     req.setClusterId(this.clusterID);
     req.setQueryStr(script);

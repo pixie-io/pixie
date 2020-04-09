@@ -207,7 +207,7 @@ describe('timeseries with series', () => {
           "value": "bytes_per_second",
           "mode": "MODE_LINE",
           "series": "service",
-          "stack_by_series": true
+          "stackBySeries": true
         }
       ],
     };
@@ -341,7 +341,7 @@ describe('bar', () => {
       "bar": {
         "label": "service",
         "value": "num_errors",
-        "stack_by": "endpoint"
+        "stackBy": "endpoint"
       }
     };
     expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
@@ -376,7 +376,7 @@ describe('grouped bar', () => {
       "bar": {
         "label": "service",
         "value": "num_errors",
-        "group_by": "cluster"
+        "groupBy": "cluster"
       }
     };
     expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
@@ -414,7 +414,7 @@ describe('grouped bar', () => {
       "bar": {
         "label": "service",
         "value": "num_errors",
-        "group_by": "cluster",
+        "groupBy": "cluster",
       },
       "title": "My custom title",
       "xAxis": {"label": "My custom x axis"},
@@ -460,8 +460,8 @@ describe('grouped bar', () => {
       "bar": {
         "label": "service",
         "value": "num_errors",
-        "group_by": "cluster",
-        "stack_by": "endpoint",
+        "groupBy": "cluster",
+        "stackBy": "endpoint",
       }
     };
     expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
@@ -504,8 +504,8 @@ describe('grouped bar', () => {
       "bar": {
         "label": "service",
         "value": "num_errors",
-        "stack_by": "endpoint",
-        "group_by": "cluster"
+        "stackBy": "endpoint",
+        "groupBy": "cluster"
       },
       "title": "My custom title",
       "xAxis": {"label": "My custom x axis"},

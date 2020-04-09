@@ -2,12 +2,20 @@ import {VisualizationSpec} from 'vega-embed';
 
 import {Theme} from '@material-ui/core/styles';
 
-export function hydrateSpec(input, theme: Theme, tableName: string = 'output'): VisualizationSpec {
+export function hydrateSpecOld(input, theme: Theme, tableName: string = 'output'): VisualizationSpec {
   return {
     ...specsFromTheme(theme),
     ...input,
     ...BASE_SPECS,
     data: { name: tableName },
+  };
+}
+
+export function hydrateSpec(input, theme: Theme): VisualizationSpec {
+  return {
+    ...specsFromTheme(theme),
+    ...input,
+    ...BASE_SPECS,
   };
 }
 

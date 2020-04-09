@@ -35,7 +35,7 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
     let queryId;
     let err;
     setLoading(true);
-    client.executeScript(code).then((results) => {
+    client.executeScriptOld(code).then((results) => {
       queryId = results.queryId;
       setData(results);
     }).catch((errMsg) => {

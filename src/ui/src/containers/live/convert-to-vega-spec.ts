@@ -25,7 +25,7 @@ interface Timeseries {
   readonly value: string;
   readonly mode?: string;
   readonly series?: string;
-  readonly stack_by_series?: boolean;
+  readonly stackBySeries?: boolean;
 }
 
 interface TimeseriesDisplay extends WidgetDisplay {
@@ -38,8 +38,8 @@ interface TimeseriesDisplay extends WidgetDisplay {
 interface Bar {
   readonly value: string;
   readonly label: string;
-  readonly stack_by?: string;
-  readonly group_by?: string;
+  readonly stackBy?: string;
+  readonly groupBy?: string;
 }
 
 interface BarDisplay extends WidgetDisplay {
@@ -171,9 +171,9 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
     spec = extendColorEncoding(spec, {field: timeseries.series, type: 'nominal'});
   }
 
-  if (timeseries.stack_by_series) {
+  if (timeseries.stackBySeries) {
     if (!timeseries.series) {
-      throw new Error('stack_by_series is invalid for TimeseriesChart when series is not specified');
+      throw new Error('stackBySeries is invalid for TimeseriesChart when series is not specified');
     }
     spec = extendYEncoding(spec, {aggregate: 'sum', stack: 'zero'});
   }
@@ -210,8 +210,8 @@ function convertToBarChart(display: BarDisplay, source: string): VisualizationSp
   spec = extendXEncoding(spec, {field: display.bar.label});
   spec = extendYEncoding(spec, {field: display.bar.value});
 
-  if (display.bar.stack_by) {
-    spec = extendColorEncoding(spec, {field: display.bar.stack_by, type: 'nominal'});
+  if (display.bar.stackBy) {
+    spec = extendColorEncoding(spec, {field: display.bar.stackBy, type: 'nominal'});
     spec = extendYEncoding(spec, {aggregate: 'sum'});
   }
 
@@ -220,7 +220,7 @@ function convertToBarChart(display: BarDisplay, source: string): VisualizationSp
   }
 
   // Grouped bar charts need different formatting in the x axis and title.
-  if (!display.bar.group_by) {
+  if (!display.bar.groupBy) {
     if (display.xAxis && display.xAxis.label) {
       spec = extendXEncoding(spec, {title: display.xAxis.label});
     }
@@ -234,7 +234,7 @@ function convertToBarChart(display: BarDisplay, source: string): VisualizationSp
     spec = {...spec, title: {text: display.title, anchor: 'middle'}};
   }
 
-  let xlabel = `${display.bar.group_by}, ${display.bar.label}`;
+  let xlabel = `${display.bar.groupBy}, ${display.bar.label}`;
   if (display.xAxis && display.xAxis.label) {
     xlabel = display.xAxis.label;
   }
@@ -242,7 +242,7 @@ function convertToBarChart(display: BarDisplay, source: string): VisualizationSp
 
   // Use the Column encoding header instead of an x axis title to avoid per-group repetition.
   spec = extendXEncoding(spec, {title: null});
-  spec = extendColumnEncoding(spec, {field: display.bar.group_by, type: 'nominal', header});
+  spec = extendColumnEncoding(spec, {field: display.bar.groupBy, type: 'nominal', header});
 
   return spec;
 }
