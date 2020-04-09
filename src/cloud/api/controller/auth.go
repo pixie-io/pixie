@@ -160,6 +160,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	var params struct {
 		AccessToken string
 		State       string
+		OrgName     string
 	}
 
 	defer r.Body.Close()
@@ -196,6 +197,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 	rpcReq := &authpb.LoginRequest{
 		AccessToken:           params.AccessToken,
 		CreateUserIfNotExists: true,
+		OrgName:               params.OrgName,
 	}
 
 	resp, err := env.(apienv.APIEnv).AuthClient().Login(ctxWithCreds, rpcReq)

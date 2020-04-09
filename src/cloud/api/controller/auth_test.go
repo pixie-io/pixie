@@ -162,6 +162,28 @@ func TestAuthLoginHandler(t *testing.T) {
 	assert.Equal(t, testReplyToken, sess.Values["_at"])
 }
 
+func TestAuthLoginHandler_WithOrgName(t *testing.T) {
+	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	req, err := http.NewRequest("POST", "/login",
+		strings.NewReader("{\"accessToken\": \"the-token\", \"orgName\": \"hulu\"}"))
+	assert.Nil(t, err)
+
+	expectedAuthServiceReq := &authpb.LoginRequest{
+		AccessToken:           "the-token",
+		CreateUserIfNotExists: true,
+		OrgName:               "hulu",
+	}
+
+	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
+		assert.Equal(t, "the-token", in.AccessToken)
+	}).Return(nil, nil)
+
+	rr := httptest.NewRecorder()
+	h := handler.New(env, controller.AuthLoginHandler)
+	h.ServeHTTP(rr, req)
+}
+
 func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
