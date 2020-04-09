@@ -61,7 +61,10 @@ const LiveContextProvider = (props) => {
 
   const [vis, setVis] = React.useState<Vis>(parseVis(ls.getLiveViewVisSpec()) || { widgets: []});
 
-  const [oldLiveViewMode, setOldLiveViewMode] = React.useState<boolean>(true);
+  const [oldLiveViewMode, setOldLiveViewMode] = React.useState<boolean>(ls.getOldLiveViewMode());
+  React.useEffect(() => {
+    ls.setOldLiveViewMode(oldLiveViewMode);
+  }, [oldLiveViewMode]);
 
   const setScriptsOld = React.useCallback((newScript, newVega, newPlacement, newTitle) => {
     setOldLiveViewMode(true);

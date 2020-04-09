@@ -1,5 +1,6 @@
 const LIVE_VIEW_EDITOR_OPENED_KEY = 'px-live-editor-opened';
 const LIVE_VIEW_EDITOR_SPLITS_KEY = 'px-live-editor-splits';
+const LIVE_VIEW_OLD_MODE_KEY = 'px-live-view-mode';
 const LIVE_VIEW_VEGA_SPEC_KEY = 'px-live-vega-spec';
 const LIVE_VIEW_PIXIE_SCRIPT_KEY = 'px-live-pixie-script';
 const LIVE_VIEW_PLACEMENT_SPEC_KEY = 'px-live-placement';
@@ -81,4 +82,13 @@ export function getLiveViewTitle(): { title: string, id: string } {
 
 export function setLiveViewTitle(title: { title: string, id: string }) {
   localStorage.setItem(LIVE_VIEW_TITLE_KEY, JSON.stringify(title));
+}
+
+export function getOldLiveViewMode(): boolean {
+  const stored = localStorage.getItem(LIVE_VIEW_OLD_MODE_KEY);
+  return stored ? stored === 'true' : true;
+}
+
+export function setOldLiveViewMode(newMode: boolean) {
+  localStorage.setItem(LIVE_VIEW_OLD_MODE_KEY, newMode.toString());
 }

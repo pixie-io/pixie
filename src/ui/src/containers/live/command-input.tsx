@@ -73,7 +73,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
     });
   }, []);
 
-  const { setScriptsOld, executeScript } = React.useContext(LiveContext);
+  const { setScripts, setScriptsOld, executeScript } = React.useContext(LiveContext);
 
   const getCompletions = React.useCallback((input) => {
     if (!input) {
@@ -84,8 +84,11 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
 
   const selectScript = React.useCallback((id) => {
     const script = scriptsMap.get(id);
-    if (script) {
+    if (script && script.placement) {
       setScriptsOld(script.code, script.vis, script.placement, { title: script.title, id: script.id });
+      executeScript(script.code);
+    } else if (script) {
+      setScripts(script.code, script.vis, { title: script.title, id: script.id });
       executeScript(script.code);
     }
     onClose();

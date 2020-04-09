@@ -11,8 +11,9 @@ import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import CloseIcon from '@material-ui/icons/Close';
 
-import {LiveContext, PlacementContextOld, ScriptContext, VegaContextOld} from './context';
+import {LiveContext, PlacementContextOld, ScriptContext, VegaContextOld, VisContext} from './context';
 import {parsePlacementOld} from './layout';
+import {parseVis} from './vis';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -60,6 +61,34 @@ const VegaSpecEditor = () => {
   React.useEffect(() => {
     setCode(JSON.stringify(spec, null, 2));
   }, [spec]);
+
+  return (
+    <CodeEditor
+      className={classes.editor}
+      code={code}
+      onChange={setCode}
+    />
+  );
+};
+
+const VisEditor = () => {
+  const classes = useStyles();
+  const { updateVis } = React.useContext(LiveContext);
+  const vis = React.useContext(VisContext);
+  const [code, setCode] = React.useState('');
+  const updateVisDebounce = React.useMemo(() => debounce(updateVis, 2000), []);
+
+  React.useEffect(() => {
+    ls.setLiveViewVisSpec(code);
+    const newVis = parseVis(code);
+    if (newVis) {
+      updateVisDebounce(newVis);
+    }
+  }, [code]);
+
+  React.useEffect(() => {
+    setCode(JSON.stringify(vis, null, 2));
+  }, [vis]);
 
   return (
     <CodeEditor
@@ -139,6 +168,39 @@ interface LiveViewEditorProps {
 }
 
 const LiveViewEditor = (props: LiveViewEditorProps) => {
+  const { oldLiveViewMode } = React.useContext(LiveContext);
+  if (oldLiveViewMode) {
+    return <LiveViewEditorOld {...props}/>;
+  }
+
+  const classes = useStyles();
+  const [tab, setTab] = React.useState('pixie');
+
+  return (
+    <div className={classes.root}>
+      <div className={classes.tabs}>
+        <StyledTabs
+          value={tab}
+          onChange={(event, newTab) => setTab(newTab)}
+        >
+          <StyledTab value='pixie' label='PXL Script' />
+          <StyledTab value='vis' label='Vis Spec' />
+        </StyledTabs>
+        <IconButton onClick={props.onClose}>
+          <CloseIcon />
+        </IconButton>
+      </div>
+      <LazyPanel className={classes.panel} show={tab === 'pixie'}>
+        <ScriptEditor />
+      </LazyPanel>
+      <LazyPanel className={classes.panel} show={tab === 'vis'}>
+        <VisEditor />
+      </LazyPanel>
+    </div>
+  );
+};
+
+const LiveViewEditorOld = (props: LiveViewEditorProps) => {
   const classes = useStyles();
 
   const [tab, setTab] = React.useState('pixie');

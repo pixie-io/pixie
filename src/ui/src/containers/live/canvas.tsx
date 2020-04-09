@@ -43,6 +43,15 @@ const useStyles = makeStyles((theme: Theme) => {
 const Grid = GridLayout.WidthProvider(GridLayout);
 
 const Canvas = () => {
+  const { oldLiveViewMode } = React.useContext(LiveContext);
+  if (oldLiveViewMode) {
+    return <OldCanvas/>;
+  } else {
+    return <div>New Live View coming soon.</div>;
+  }
+};
+
+const OldCanvas = () => {
   const classes = useStyles();
   const specs = React.useContext(VegaContextOld);
   const results = React.useContext(ResultsContext);
