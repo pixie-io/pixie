@@ -1,6 +1,6 @@
 <p align="center">
 
-  ![Pixie!](pixie_banner_light.png)
+  [![Pixie!](pixie_banner_light.png)](https://pixielabs.ai)
 
   <p align="center">
     Live-debug distributed environments with <a href="https://work.withpixie.ai/">Pixie</a>
