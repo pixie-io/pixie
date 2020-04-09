@@ -235,6 +235,10 @@ StatusOr<std::string> ElfReader::FuncByteCode(std::string_view symbol) {
     return error::Internal("Failed to read size=$0 bytes from offset=$1 in binary=$2", size, offset,
                            binary_path_);
   }
+  if (ifs.gcount() != size) {
+    return error::Internal("Only read size=$0 bytes from offset=$1 in binary=$2, expect $3 bytes",
+                           size, offset, binary_path_, ifs.gcount());
+  }
   return byte_code;
 }
 
