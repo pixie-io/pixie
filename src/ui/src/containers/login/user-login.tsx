@@ -128,7 +128,7 @@ const CompanyInfo = () => {
       <img className={classes.logo} src={logo} />
       <div className={classes.contents}>
         <div className={classes.header}>Pixie Community</div>
-        <div className={classes.subheader}>Private Beta</div>
+        <div className={classes.subheader}>Beta</div>
         <div className={classes.text}>
           Engineers use Pixie's auto-telemetry to debug distributed environments in real-time
           </div>
