@@ -77,14 +77,13 @@ class PhabConnector {
 phabConnector = PhabConnector.newInstance(this, 'https://phab.corp.pixielabs.ai' /*url*/,
                                           'PLM' /*repository*/, params.API_TOKEN, params.PHID)
 
-// Restrict build to source code, since otherwise bazel seems to build all our deps.
-BAZEL_SRC_FILES_PATH = "//src/..."
+BAZEL_SRC_FILES_PATH = "//..."
 // ASAN/TSAN only work for CC code. This will find all the CC code and exclude manual tags from the list.
 // TODO(zasgar): This query selects only cc binaries. After GO ASAN/TSAN works, we can update the ASAN/TSAN builds
 // to include all binaries.
 BAZEL_EXCEPT_CLAUSE='attr(\"tags\", \"manual\", //...)'
-BAZEL_KIND_CLAUSE='kind(\"cc_(binary|test) rule\", //... -//third_party/...)'
-BAZEL_CC_QUERY = "`bazel query '${BAZEL_KIND_CLAUSE} except ${BAZEL_EXCEPT_CLAUSE}'`"
+BAZEL_CC_KIND_CLAUSE='kind(\"cc_(binary|test) rule\", //... -//third_party/...)'
+BAZEL_CC_QUERY = "`bazel query '${BAZEL_CC_KIND_CLAUSE} except ${BAZEL_EXCEPT_CLAUSE}'`"
 SRC_STASH_NAME = 'src'
 DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image'
 DEV_DOCKER_IMAGE_EXTRAS = 'pl-dev-infra/dev_image_with_extras'
@@ -109,6 +108,7 @@ devDockerImageExtrasWithTag = ''
 stashList = [];
 
 // Flag controlling if coverage job is enabled.
+isMasterCodeReviewRun =  (env.JOB_NAME == "pixielabs-master-phab-test")
 isMasterRun =  (env.JOB_NAME == "pixielabs-master")
 isNightlyTestRegressionRun = (env.JOB_NAME == "pixielabs-master-nightly-test-regression")
 isCLIBuildRun =  env.JOB_NAME.startsWith("pixielabs-master-cli-release-build/")
@@ -217,10 +217,12 @@ def writeBazelRCFile() {
 }
 
 def createBazelStash(String stashName) {
-  sh 'rm -rf bazel-testlogs-archive'
-  sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
-  stashOnGCS(stashName, 'bazel-testlogs-archive/**')
-  stashList.add(stashName)
+  if (!isMasterCodeReviewRun || fileExists("bazel-testlogs-archive")) {
+    sh 'rm -rf bazel-testlogs-archive'
+    sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
+    stashOnGCS(stashName, 'bazel-testlogs-archive/**')
+    stashList.add(stashName)
+  }
 }
 
 /**
@@ -312,19 +314,36 @@ def bazelCmd(String bazelCmd, String name) {
 }
 
 
+def bazelCCCICmd(String name, String targetConfig='clang', String targetCompilationMode='opt') {
+    bazelCICmd(name, targetConfig, targetCompilationMode, BAZEL_CC_KIND_CLAUSE)
+}
+
 /**
   * Runs bazel CI mode for master/phab builds.
   *
-  * TODO(zasgar): This function will have build avoidance in phab builds.
+  * The targetFilter can either be a bazel filter clause, or bazel path (//..., etc.), but not a list of paths.
   */
 def bazelCICmd(String name, String targetConfig='clang', String targetCompilationMode='opt',
-             String targetFilter = "//...") {
+               String targetFilter=BAZEL_SRC_FILES_PATH) {
   warnError('Bazel command failed') {
-    sh "bazel test --config=${targetConfig} --compilation_mode=${targetCompilationMode} ${targetFilter}"
+    if (isMasterCodeReviewRun) {
+      def targetPattern = targetFilter
+      sh """
+        TARGET_PATTERN='${targetPattern}' CONFIG=${targetConfig} \
+        COMPILATION_MODE=${targetCompilationMode} ./ci/bazel_ci.sh
+      """
+    } else {
+      def targets = targetFilter
+      // The CI script needs a query, but we can pass that into bazel directly.
+      // This translates a non-path query into bazel query that returns paths.
+      if (!targets.startsWith('//')) {
+        targets = "`bazel query '${targetPattern} except ${BAZEL_EXCEPT_CLAUSE}'`"
+      }
+      sh "bazel test --config=${targetConfig} --compilation_mode=${targetCompilationMode} ${targets}"
+    }
   }
   createBazelStash("${name}-testlogs")
 }
-
 
 def processBazelLogs(String logBase) {
   step([
@@ -373,7 +392,7 @@ def archiveUILogs() {
 }
 
 def publishStoryBook() {
-  publishHTML([allowMissing: false,
+  publishHTML([allowMissing: true,
     alwaysLinkToLastBuild: true,
     keepAll: true,
     reportDir: 'build-ui-storybook-static/storybook_static',
@@ -384,7 +403,7 @@ def publishStoryBook() {
 
 
 def publishCustomerDocs() {
-  publishHTML([allowMissing: false,
+  publishHTML([allowMissing: true,
     alwaysLinkToLastBuild: true,
     keepAll: true,
     reportDir: 'build-customer-docs/public',
@@ -394,7 +413,7 @@ def publishCustomerDocs() {
 }
 
 def publishDoxygenDocs() {
-  publishHTML([allowMissing: false,
+  publishHTML([allowMissing: true,
     alwaysLinkToLastBuild: true,
     keepAll: true,
     reportDir: 'doxygen-docs/docs/html',
@@ -455,7 +474,7 @@ def builders = [:]
 builders['Build & Test (dbg)'] = {
   WithSourceCode {
     dockerStep {
-      bazelCICmd('build-dbg', 'clang', 'dbg', BAZEL_SRC_FILES_PATH)
+      bazelCCCICmd('build-dbg', 'clang', 'dbg')
     }
   }
 }
@@ -481,8 +500,8 @@ builders['Clang-tidy'] = {
 builders['Build & Test (sanitizers)'] = {
   WithSourceCode {
     dockerStep('--cap-add=SYS_PTRACE', {
-      bazelCICmd('build-asan', 'asan', 'dbg', BAZEL_CC_QUERY)
-      bazelCICmd('build-tsan', 'tsan', 'dbg', BAZEL_CC_QUERY)
+      bazelCCCICmd('build-asan', 'asan', 'dbg')
+      bazelCCCICmd('build-tsan', 'tsan', 'dbg')
     })
   }
 }
@@ -501,21 +520,25 @@ builders['Build & Test All (opt + UI)'] = {
       def uiTestResults = 'bazel-testlogs-archive/src/ui/ui-tests/test.outputs/outputs.zip'
       sh 'mkdir testlogs'
       if (fileExists(uiTestResults)) {
-          sh 'unzip ${uiTestResults} -d testlogs'
+          sh "unzip ${uiTestResults} -d testlogs"
+          stashOnGCS('build-ui-testlogs', 'testlogs')
+          stashList.add('build-ui-testlogs')
       }
 
-      sh 'tar -zxf bazel-bin/src/ui/ui-storybook-bundle.tar.gz'
+      def storybookBundle = 'bazel-bin/src/ui/ui-storybook-bundle.tar.gz'
+      if (fileExists(storybookBundle)) {
+        sh "tar -zxf ${storybookBundle}"
+        stashOnGCS('build-ui-storybook-static', 'storybook_static')
+        stashList.add('build-ui-storybook-static')
+      }
 
       // Untar the customer docs.
-      sh 'tar -zxf bazel-bin/docs/customer/bundle.tar.gz'
-
-      stashOnGCS('build-ui-storybook-static', 'storybook_static')
-      stashOnGCS('build-ui-testlogs', 'testlogs')
-      stashOnGCS('build-customer-docs', 'public/')
-
-      stashList.add('build-ui-storybook-static')
-      stashList.add('build-ui-testlogs')
-      stashList.add('build-customer-docs')
+      def customerBundle = 'bazel-bin/docs/customer/bundle.tar.gz'
+      if(fileExists(customerBundle)) {
+        sh "tar -zxf ${customerBundle}"
+        stashOnGCS('build-customer-docs', 'public/')
+        stashList.add('build-customer-docs')
+      }
     }
   }
 }
@@ -523,7 +546,7 @@ builders['Build & Test All (opt + UI)'] = {
 builders['Build & Test (gcc:opt)'] = {
   WithSourceCode {
     dockerStep {
-      bazelCICmd('build-gcc-opt', 'gcc', 'opt', BAZEL_SRC_FILES_PATH)
+      bazelCCCICmd('build-gcc-opt', 'gcc', 'opt')
     }
   }
 }
@@ -533,7 +556,7 @@ def dockerArgsForBPFTest = '--privileged --pid=host -v /:/host -v /sys:/sys --en
 builders['Build & Test (bpf tests - opt)'] = {
   WithSourceCode {
     dockerStep(dockerArgsForBPFTest, {
-      bazelCICmd('build-bpf', 'bpf', 'opt', BAZEL_SRC_FILES_PATH)
+      bazelCCCICmd('build-bpf', 'bpf', 'opt')
     })
   }
 }
@@ -542,7 +565,7 @@ builders['Build & Test (bpf tests - opt)'] = {
 builders['Build & Test (bpf tests - asan)'] = {
   WithSourceCode {
     dockerStep(dockerArgsForBPFTest, {
-      bazelCICmd('build-bpf-asan', 'bpf_asan', 'dbg', BAZEL_SRC_FILES_PATH)
+      bazelCCCICmd('build-bpf-asan', 'bpf_asan', 'dbg')
     })
   }
 }
@@ -552,7 +575,7 @@ if (runBPFWithTSAN) {
   builders['Build & Test (bpf tests - tsan)'] = {
     WithSourceCode {
       dockerStep(dockerArgsForBPFTest, {
-        bazelCICmd('build-bpf-tsan', 'bpf_tsan', 'dbg', BAZEL_SRC_FILES_PATH)
+         bazelCCCICmd('build-bpf-tsan', 'bpf_tsan', 'dbg')
       })
     }
   }
