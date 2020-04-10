@@ -40,7 +40,8 @@ def _generate_grpc_web_srcs(
         well_known_proto_files,
         well_known_proto_arguments,
         sources,
-        transitive_sources):
+        transitive_sources,
+        genGRPC):
     all_sources = [src for src in sources] + [src for src in transitive_sources.to_list()]
     proto_include_paths = [
         "-I%s" % p
@@ -76,11 +77,12 @@ def _generate_grpc_web_srcs(
                 "{}_pb.js".format(prefix),
             ),
         )
-        files.append(
-            actions.declare_file(
-                "{}ServiceClientPb.ts".format(capitalized),
-            ),
-        )
+        if genGRPC:
+            files.append(
+                actions.declare_file(
+                    "{}ServiceClientPb.ts".format(capitalized),
+                ),
+            )
 
         # All the files are written to the same directory. We just pick the first one
         # to find the output directory of the files.
@@ -145,6 +147,7 @@ def _grpc_web_library_impl(ctx):
         well_known_proto_arguments = arguments,
         sources = proto[ProtoInfo].direct_sources,
         transitive_sources = proto[ProtoInfo].transitive_imports,
+        genGRPC = ctx.attr.grpc,
     )
 
     return [DefaultInfo(files = depset(srcs))]
@@ -159,6 +162,10 @@ pl_grpc_web_library = rule(
         "mode": attr.string(
             default = "grpcwebtext",
             values = ["grpcwebtext", "grpcweb"],
+        ),
+        "grpc": attr.bool(
+            default = True,
+            doc = "Set to false if no GRPC protos are generated",
         ),
         "_protoc": attr.label(
             default = Label("//external:protocol_compiler"),
