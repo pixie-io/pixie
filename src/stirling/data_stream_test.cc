@@ -259,14 +259,11 @@ TEST_F(DataStreamTest, Stats) {
   stream.AddData(std::move(req6bad));
   stream.AddData(std::move(req7));
 
-  // Note that we don't expect req7 to be parsed, because an invalid frame means
-  // all subsequent data is purged.
-
   stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
-  EXPECT_EQ(stream.Frames<http::Message>().size(), 4);
+  EXPECT_EQ(stream.Frames<http::Message>().size(), 5);
   EXPECT_EQ(stream.stat_raw_data_gaps(), 1);
   EXPECT_EQ(stream.stat_invalid_frames(), 2);
-  EXPECT_EQ(stream.stat_valid_frames(), 4);
+  EXPECT_EQ(stream.stat_valid_frames(), 5);
 }
 
 TEST_F(DataStreamTest, CannotSwitchType) {

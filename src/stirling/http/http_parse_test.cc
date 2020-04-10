@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <random>
 #include <utility>
+#include <vector>
 
 #include "src/stirling/http/http_parse.h"
 
@@ -888,6 +889,9 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessage) {
   }
 }
 
+// Check that ParseFrames() can parse even when the data is not aligned to the start of a frame.
+// ParseFrames() should automatically sync to the next frame boundary, and produce results
+// for the complete frames.
 TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageNoSync) {
   const size_t offset = 4;
   std::string partial_http_get_req0(kHTTPGetReq0.substr(offset, kHTTPGetReq0.length()));
@@ -899,8 +903,9 @@ TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageNoSync) {
   ParseResult result =
       parser_.ParseFrames(MessageType::kRequest, &parsed_messages, /* resync */ false);
 
-  EXPECT_EQ(ParseState::kInvalid, result.state);
-  EXPECT_TRUE(parsed_messages.empty());
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages,
+              ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq0ExpectedMessage()));
 }
 
 TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageNoSync) {
@@ -913,36 +918,61 @@ TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageNoSync) {
   ParseResult result =
       parser_.ParseFrames(MessageType::kResponse, &parsed_messages, /* resync */ false);
 
-  EXPECT_EQ(ParseState::kInvalid, result.state);
-  EXPECT_TRUE(parsed_messages.empty());
+  EXPECT_EQ(ParseState::kSuccess, result.state);
+  EXPECT_THAT(parsed_messages, ElementsAre(HTTPResp1ExpectedMessage(), HTTPResp2ExpectedMessage()));
 }
 
+// The two tests below introduce a large, but incompletely traced request that
+// would induce a stuck condition (perpetual kNeedsMoreData).
+// However, we expect the parsing of the subsequent messages to succeed due to the resync flag.
+
 TEST_F(HTTPParserTest, ParseReqWithPartialFirstMessageWithSync) {
-  const size_t offset = 4;
-  std::string partial_http_get_req0(kHTTPGetReq0.substr(offset, kHTTPGetReq0.length()));
+  const std::string_view kStuckInducingReq =
+      "POST /test HTTP/1.1\r\n"
+      "host: pixielabs.ai\r\n"
+      "content-type: application/x-www-form-urlencoded\r\n"
+      "content-length: 100000000\r\n"
+      "\r\n"
+      "But the data is just not there.";
+
   std::vector<SocketDataEvent> events =
-      CreateEvents({partial_http_get_req0, kHTTPPostReq0, kHTTPGetReq1});
+      CreateEvents({kStuckInducingReq, kHTTPPostReq0, kHTTPGetReq1});
+
+  std::deque<Message> parsed_messages;
+  ParseResult<BufferPosition> result;
 
   ParserAppendEvents(events);
-  std::deque<Message> parsed_messages;
-  ParseResult result =
-      parser_.ParseFrames(MessageType::kRequest, &parsed_messages, /* resync */ true);
+  result = parser_.ParseFrames(MessageType::kRequest, &parsed_messages, /* resync */ false);
+  EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
+  EXPECT_EQ(0, parsed_messages.size());
 
+  ParserAppendEvents(events);
+  result = parser_.ParseFrames(MessageType::kRequest, &parsed_messages, /* resync */ true);
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages,
               ElementsAre(HTTPPostReq0ExpectedMessage(), HTTPGetReq0ExpectedMessage()));
 }
 
 TEST_F(HTTPParserTest, ParseRespWithPartialFirstMessageWithSync) {
-  size_t offset = 1;
-  std::string partial_http_resp0(kHTTPResp0.substr(offset, kHTTPResp0.length()));
-  std::vector<SocketDataEvent> events = CreateEvents({partial_http_resp0, kHTTPResp1, kHTTPResp2});
+  const std::string_view kStuckInducingResp =
+      "HTTP/1.1 200 OK\r\n"
+      "Content-Type: foo\r\n"
+      "Content-Length: 10000000\r\n"
+      "\r\n"
+      "pixielabs";
+
+  std::vector<SocketDataEvent> events = CreateEvents({kStuckInducingResp, kHTTPResp1, kHTTPResp2});
+
+  std::deque<Message> parsed_messages;
+  ParseResult<BufferPosition> result;
 
   ParserAppendEvents(events);
-  std::deque<Message> parsed_messages;
-  ParseResult result =
-      parser_.ParseFrames(MessageType::kResponse, &parsed_messages, /* resync */ true);
+  result = parser_.ParseFrames(MessageType::kResponse, &parsed_messages, /* resync */ false);
+  EXPECT_EQ(ParseState::kNeedsMoreData, result.state);
+  EXPECT_EQ(0, parsed_messages.size());
 
+  ParserAppendEvents(events);
+  result = parser_.ParseFrames(MessageType::kResponse, &parsed_messages, /* resync */ true);
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_THAT(parsed_messages, ElementsAre(HTTPResp1ExpectedMessage(), HTTPResp2ExpectedMessage()));
 }

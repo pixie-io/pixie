@@ -51,6 +51,8 @@ struct ParseResult {
   PositionType end_position;
   // State of the last attempted frame parse.
   ParseState state = ParseState::kInvalid;
+  // Number of invalid frames that were discarded.
+  int invalid_frames;
 };
 
 // NOTE: FindFrameBoundary() and ParseFrame() must be implemented per protocol.
@@ -192,7 +194,6 @@ class EventParser {
     std::string_view buf_view(buf);
     buf_view.remove_prefix(start_pos);
     ParseResult<size_t> result = ParseFramesLoop(type, buf_view, frames);
-    DCHECK(frames->size() >= prev_size);
 
     VLOG(3) << absl::Substitute("Parsed $0 new frames", frames->size() - prev_size);
 
@@ -218,7 +219,7 @@ class EventParser {
     ts_nses_.clear();
     msgs_size_ = 0;
 
-    return {std::move(positions), end_position, result.state};
+    return {std::move(positions), end_position, result.state, result.invalid_frames};
   }
 
   /**
@@ -241,6 +242,7 @@ class EventParser {
     const size_t buf_size = buf.size();
     ParseState s = ParseState::kSuccess;
     size_t bytes_processed = 0;
+    int invalid_count = 0;
 
     while (!buf.empty() && s != ParseState::kEOS) {
       TFrameType frame;
@@ -251,10 +253,24 @@ class EventParser {
       bool push = false;
       switch (s) {
         case ParseState::kNeedsMoreData:
-        case ParseState::kInvalid:
           // Can't process any more frames.
           stop = true;
           break;
+        case ParseState::kInvalid: {
+          // An invalid frame may occur when first parsing a connection, or after a lost event.
+          // Attempt to look for next valid frame boundary.
+          size_t pos = FindFrameBoundary<TFrameType>(type, buf, 1);
+          if (pos != std::string::npos) {
+            DCHECK_NE(pos, 0);
+            buf.remove_prefix(pos);
+            stop = false;
+            push = false;
+          } else {
+            stop = true;
+            push = false;
+          }
+          ++invalid_count;
+        } break;
         case ParseState::kIgnored:
           // Successful case, but do not record the result.
           stop = false;
@@ -280,7 +296,7 @@ class EventParser {
       }
       bytes_processed = (buf_size - buf.size());
     }
-    return ParseResult<size_t>{std::move(start_positions), bytes_processed, s};
+    return ParseResult<size_t>{std::move(start_positions), bytes_processed, s, invalid_count};
   }
 
  private:

@@ -72,7 +72,8 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, cass::Frame* resu
 template <>
 size_t FindFrameBoundary<cass::Frame>(MessageType /*type*/, std::string_view /*buf*/,
                                       size_t /*start_pos*/) {
-  return 0;
+  // Not implemented.
+  return std::string::npos;
 }
 
 }  // namespace stirling
