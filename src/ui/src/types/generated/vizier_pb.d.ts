@@ -1,6 +1,5 @@
 import * as jspb from "google-protobuf"
 
-import * as google_protobuf_any_pb from 'google-protobuf/google/protobuf/any_pb';
 
 export class UInt128 extends jspb.Message {
   getLow(): number;

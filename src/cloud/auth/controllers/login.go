@@ -125,7 +125,7 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 		Token:       token,
 		ExpiresAt:   expiresAt.Unix(),
 		UserCreated: newUser,
-		UserInfo: &pb.UserInfo{
+		UserInfo: &pb.AuthenticatedUserInfo{
 			UserID:    pbutils.ProtoFromUUIDStrOrNil(userID),
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
@@ -160,7 +160,7 @@ func (s *Server) loginSupportUser(ctx context.Context, in *pb.LoginRequest, user
 		Token:       token,
 		ExpiresAt:   expiresAt.Unix(),
 		UserCreated: false,
-		UserInfo: &pb.UserInfo{
+		UserInfo: &pb.AuthenticatedUserInfo{
 			UserID:    pbutils.ProtoFromUUID(&userID),
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
@@ -213,7 +213,7 @@ func (s *Server) Signup(ctx context.Context, in *pb.SignupRequest) (*pb.SignupRe
 		Token:      token,
 		ExpiresAt:  expiresAt.Unix(),
 		OrgCreated: newOrg,
-		UserInfo: &pb.UserInfo{
+		UserInfo: &pb.AuthenticatedUserInfo{
 			UserID:    pbutils.ProtoFromUUIDStrOrNil(userID),
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,

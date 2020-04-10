@@ -5,11 +5,10 @@
  */
 
 // GENERATED CODE -- DO NOT EDIT!
- 
+
 
 import * as grpcWeb from 'grpc-web';
 
-import * as google_protobuf_any_pb from 'google-protobuf/google/protobuf/any_pb';
 
 import {
   ExecuteScriptRequest,

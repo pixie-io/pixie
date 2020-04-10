@@ -55,7 +55,7 @@ func TestAuthSignupHandler(t *testing.T) {
 	signupReply := &authpb.SignupReply{
 		Token:     testReplyToken,
 		ExpiresAt: testTokenExpiry,
-		UserInfo: &authpb.UserInfo{
+		UserInfo: &authpb.AuthenticatedUserInfo{
 			UserID:    pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 			FirstName: "first",
 			LastName:  "last",
@@ -117,7 +117,7 @@ func TestAuthLoginHandler(t *testing.T) {
 	loginResp := &authpb.LoginReply{
 		Token:     testReplyToken,
 		ExpiresAt: testTokenExpiry,
-		UserInfo: &authpb.UserInfo{
+		UserInfo: &authpb.AuthenticatedUserInfo{
 			UserID:    pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 			FirstName: "first",
 			LastName:  "last",

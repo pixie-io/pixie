@@ -1,5 +1,4 @@
 syntax = "proto3";
-import "src/shared/types/proto/types.proto";
 import "src/table_store/proto/schema.proto";
 
 package pl.carnot.queryresultspb;

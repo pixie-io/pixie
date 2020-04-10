@@ -320,7 +320,7 @@ func setSessionCookie(session *sessions.Session, token string, expiresAt int64, 
 	session.Save(r, w)
 }
 
-func sendUserInfo(w http.ResponseWriter, userInfo *authpb.UserInfo, token string, expiresAt int64, userCreated bool) error {
+func sendUserInfo(w http.ResponseWriter, userInfo *authpb.AuthenticatedUserInfo, token string, expiresAt int64, userCreated bool) error {
 	var data struct {
 		Token     string `json:"token"`
 		ExpiresAt int64  `json:"expiresAt"`
@@ -347,7 +347,7 @@ func sendUserInfo(w http.ResponseWriter, userInfo *authpb.UserInfo, token string
 	return json.NewEncoder(w).Encode(&data)
 }
 
-func sendSignupUserInfo(w http.ResponseWriter, userInfo *authpb.UserInfo, token string, expiresAt int64, orgCreated bool) error {
+func sendSignupUserInfo(w http.ResponseWriter, userInfo *authpb.AuthenticatedUserInfo, token string, expiresAt int64, orgCreated bool) error {
 	var data struct {
 		Token     string `json:"token"`
 		ExpiresAt int64  `json:"expiresAt"`
