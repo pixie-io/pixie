@@ -1,6 +1,7 @@
 #include "src/stirling/http/http_stitcher.h"
 
 #include <deque>
+#include <limits>
 #include <string>
 #include <utility>
 
@@ -25,49 +26,51 @@ namespace http {
 
 RecordsWithErrorCount<Record> ProcessMessages(std::deque<Message>* req_messages,
                                               std::deque<Message>* resp_messages) {
+  // This function performs request response matching.
+  // NOTICE: Assume no HTTP pipelining to match requests and responses.
+  // Implementation consists of a merge-sort of the two deques.
+
   std::vector<http::Record> records;
 
-  // Match request response pairs.
-  for (auto req_iter = req_messages->begin(), resp_iter = resp_messages->begin();
-       req_iter != req_messages->end() && resp_iter != resp_messages->end();) {
-    Message& req = *req_iter;
-    Message& resp = *resp_iter;
+  Record record;
+  record.req.timestamp_ns = 0;
+  record.resp.timestamp_ns = 0;
 
-    if (resp.timestamp_ns < req.timestamp_ns) {
-      // Oldest message is a response.
-      // This means the corresponding request was not traced.
-      // Push without request.
-      Record record{Message(), std::move(resp)};
-      resp_messages->pop_front();
-      records.push_back(std::move(record));
-      ++resp_iter;
-    } else {
-      // Found a response. It must be the match assuming:
-      //  1) In-order messages (which is true for HTTP1).
-      //  2) No missing messages.
-      // With missing messages, there are no guarantees.
-      // With no missing messages and pipelining, it's even more complicated.
-      Record record{std::move(req), std::move(resp)};
-      req_messages->pop_front();
-      resp_messages->pop_front();
-      records.push_back(std::move(record));
-      ++resp_iter;
+  Message dummy_message;
+  dummy_message.timestamp_ns = std::numeric_limits<int64_t>::max();
+
+  // Each iteration, we pop off either a request or response message.
+  auto req_iter = req_messages->begin();
+  auto resp_iter = resp_messages->begin();
+  while (resp_iter != resp_messages->end()) {
+    Message& req = (req_iter == req_messages->end()) ? dummy_message : *req_iter;
+    Message& resp = (resp_iter == resp_messages->end()) ? dummy_message : *resp_iter;
+
+    // Process the oldest item, either a request or response.
+    if (req.timestamp_ns < resp.timestamp_ns) {
+      // Requests always go into the record (though not pushed yet).
+      // If the next oldest item is a request too, it will (correctly) clobber this one.
+      record.req = std::move(req);
       ++req_iter;
+    } else {
+      // Two cases for a response:
+      // 1) No older request was found: then we ignore the response.
+      // 2) An older request was found: then it is considered a match. Push the record, and reset.
+      if (record.req.timestamp_ns != 0) {
+        record.resp = std::move(resp);
+
+        records.push_back(std::move(record));
+
+        // Reset record after pushing.
+        record.req.timestamp_ns = 0;
+        record.resp.timestamp_ns = 0;
+      }
+      ++resp_iter;
     }
   }
 
-  // Any leftover responses must have lost their requests.
-  for (auto resp_iter = resp_messages->begin(); resp_iter != resp_messages->end(); ++resp_iter) {
-    Message& resp = *resp_iter;
-    Record record{Message(), std::move(resp)};
-    records.push_back(std::move(record));
-  }
-  resp_messages->clear();
-
-  // Any leftover requests are left around for the next iteration,
-  // since the response may not have been traced yet.
-  // TODO(oazizi): If we have seen the close event, then can assume the response is lost.
-  //               We should push the event out in such cases.
+  req_messages->erase(req_messages->begin(), req_iter);
+  resp_messages->erase(resp_messages->begin(), resp_iter);
 
   return {records, 0};
 }

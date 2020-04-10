@@ -183,13 +183,21 @@ auto ToIntVector(const types::SharedColumnWrapper& col) {
   return result;
 }
 
-TEST_F(SocketTraceConnectorTest, HTTPFilter) {
+TEST_F(SocketTraceConnectorTest, HTTPContentType) {
   testing::EventGenerator event_gen(&mock_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
-  std::unique_ptr<SocketDataEvent> event0_json = event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
-  std::unique_ptr<SocketDataEvent> event1_text = event_gen.InitRecvEvent<kProtocolHTTP>(kTextResp);
-  std::unique_ptr<SocketDataEvent> event2_text = event_gen.InitRecvEvent<kProtocolHTTP>(kTextResp);
-  std::unique_ptr<SocketDataEvent> event3_json = event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
+  std::unique_ptr<SocketDataEvent> event0_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> event0_resp_json =
+      event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
+  std::unique_ptr<SocketDataEvent> event1_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
+  std::unique_ptr<SocketDataEvent> event1_resp_text =
+      event_gen.InitRecvEvent<kProtocolHTTP>(kTextResp);
+  std::unique_ptr<SocketDataEvent> event2_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
+  std::unique_ptr<SocketDataEvent> event2_resp_text =
+      event_gen.InitRecvEvent<kProtocolHTTP>(kTextResp);
+  std::unique_ptr<SocketDataEvent> event3_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> event3_resp_json =
+      event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   DataTable data_table(kHTTPTable);
@@ -199,39 +207,16 @@ TEST_F(SocketTraceConnectorTest, HTTPFilter) {
 
   // Registers a new connection.
   source_->AcceptControlEvent(conn);
-
-  ASSERT_THAT(source_->NumActiveConnections(), 1);
-
-  conn_id_t search_conn_id;
-  search_conn_id.upid.pid = kPID;
-  search_conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
-  search_conn_id.fd = kFD;
-  search_conn_id.tsid = 1;
-  const ConnectionTracker* tracker = source_->GetConnectionTracker(search_conn_id);
-  ASSERT_NE(nullptr, tracker);
-  EXPECT_EQ(1 + source_->ClockRealTimeOffset(), tracker->conn().timestamp_ns);
-
-  // AcceptDataEvent(std::move() puts data into the internal buffer of SocketTraceConnector. And
-  // th)en TransferData() polls perf buffer, which is no-op because we did not initialize probes,
-  // and the data in the internal buffer is being processed and filtered.
-  source_->AcceptDataEvent(std::move(event0_json));
-  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)))
-      << "event_json Content-Type does have 'json', and will be selected by the default filter";
-
-  source_->AcceptDataEvent(std::move(event1_text));
-  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(2)))
-      << "event_text Content-Type has no 'json', and won't be selected by the default filter";
-
-  source_->AcceptDataEvent(std::move(event2_text));
-  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(3)))
-      << "The filter is changed to require 'text/plain' in Content-Type header, "
-         "and event_json Content-Type does not match, and won't be selected";
-
-  source_->AcceptDataEvent(std::move(event3_json));
+  source_->AcceptDataEvent(std::move(event0_req));
+  source_->AcceptDataEvent(std::move(event0_resp_json));
+  source_->AcceptDataEvent(std::move(event1_req));
+  source_->AcceptDataEvent(std::move(event1_resp_text));
+  source_->AcceptDataEvent(std::move(event2_req));
+  source_->AcceptDataEvent(std::move(event2_resp_text));
+  source_->AcceptDataEvent(std::move(event3_req));
+  source_->AcceptDataEvent(std::move(event3_resp_json));
   source_->AcceptControlEvent(close_event);
+
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(4)))
       << "The filter is changed to require 'application/json' in Content-Type header, "
@@ -240,15 +225,17 @@ TEST_F(SocketTraceConnectorTest, HTTPFilter) {
               ElementsAre("foo", "<removed: unsupported content-type>",
                           "<removed: unsupported content-type>", "foo"));
   EXPECT_THAT(ToIntVector<types::Time64NSValue>(record_batch[kHTTPTimeIdx]),
-              ElementsAre(2 + source_->ClockRealTimeOffset(), 3 + source_->ClockRealTimeOffset(),
-                          4 + source_->ClockRealTimeOffset(), 5 + source_->ClockRealTimeOffset()));
+              ElementsAre(3 + source_->ClockRealTimeOffset(), 5 + source_->ClockRealTimeOffset(),
+                          7 + source_->ClockRealTimeOffset(), 9 + source_->ClockRealTimeOffset()));
 }
 
 TEST_F(SocketTraceConnectorTest, UPIDCheck) {
   testing::EventGenerator event_gen(&mock_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
-  std::unique_ptr<SocketDataEvent> event0_json = event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
-  std::unique_ptr<SocketDataEvent> event1_json = event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
+  std::unique_ptr<SocketDataEvent> event0_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> event0_resp = event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
+  std::unique_ptr<SocketDataEvent> event1_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> event1_resp = event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   DataTable data_table(kHTTPTable);
@@ -256,8 +243,10 @@ TEST_F(SocketTraceConnectorTest, UPIDCheck) {
 
   // Registers a new connection.
   source_->AcceptControlEvent(conn);
-  source_->AcceptDataEvent(std::move(std::move(event0_json)));
-  source_->AcceptDataEvent(std::move(std::move(event1_json)));
+  source_->AcceptDataEvent(std::move(std::move(event0_req)));
+  source_->AcceptDataEvent(std::move(std::move(event0_resp)));
+  source_->AcceptDataEvent(std::move(std::move(event1_req)));
+  source_->AcceptDataEvent(std::move(std::move(event1_resp)));
   source_->AcceptControlEvent(close_event);
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
@@ -279,11 +268,15 @@ TEST_F(SocketTraceConnectorTest, UPIDCheck) {
 TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   testing::EventGenerator event_gen(&mock_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
-  std::unique_ptr<SocketDataEvent> event0 = event_gen.InitRecvEvent<kProtocolHTTP>(
-      absl::StrCat(kResp0, kResp1.substr(0, kResp1.length() / 2)));
-  std::unique_ptr<SocketDataEvent> event1 =
+  std::unique_ptr<SocketDataEvent> event0 = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> event1 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp0);
+  std::unique_ptr<SocketDataEvent> event2 = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
+  std::unique_ptr<SocketDataEvent> event3 =
+      event_gen.InitRecvEvent<kProtocolHTTP>(kResp1.substr(0, kResp1.length() / 2));
+  std::unique_ptr<SocketDataEvent> event4 =
       event_gen.InitRecvEvent<kProtocolHTTP>(kResp1.substr(kResp1.length() / 2));
-  std::unique_ptr<SocketDataEvent> event2 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp2);
+  std::unique_ptr<SocketDataEvent> event5 = event_gen.InitSendEvent<kProtocolHTTP>(kReq2);
+  std::unique_ptr<SocketDataEvent> event6 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp2);
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   DataTable data_table(kHTTPTable);
@@ -292,10 +285,15 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(event0));
   source_->AcceptDataEvent(std::move(event2));
+  source_->AcceptDataEvent(std::move(event5));
+  source_->AcceptDataEvent(std::move(event1));
+  source_->AcceptDataEvent(std::move(event4));
+  source_->AcceptDataEvent(std::move(event6));
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(2, record_batch[0]->Size());
 
-  source_->AcceptDataEvent(std::move(event1));
+  source_->AcceptDataEvent(std::move(event3));
   source_->AcceptControlEvent(close_event);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(2, record_batch[0]->Size()) << "Late events won't get processed.";
@@ -304,7 +302,8 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
 TEST_F(SocketTraceConnectorTest, NoEvents) {
   testing::EventGenerator event_gen(&mock_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
-  std::unique_ptr<SocketDataEvent> event0 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp0);
+  std::unique_ptr<SocketDataEvent> event0 = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
+  std::unique_ptr<SocketDataEvent> event1 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp0);
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   DataTable data_table(kHTTPTable);
@@ -318,6 +317,7 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
 
   // Check empty transfer following a successful transfer.
   source_->AcceptDataEvent(std::move(event0));
+  source_->AcceptDataEvent(std::move(event1));
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   EXPECT_EQ(1, record_batch[0]->Size());
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
@@ -332,10 +332,10 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
   testing::EventGenerator event_gen(&mock_clock_);
   struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
   std::unique_ptr<SocketDataEvent> req_event0 = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
-  std::unique_ptr<SocketDataEvent> req_event1 = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
-  std::unique_ptr<SocketDataEvent> req_event2 = event_gen.InitSendEvent<kProtocolHTTP>(kReq2);
   std::unique_ptr<SocketDataEvent> resp_event0 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp0);
+  std::unique_ptr<SocketDataEvent> req_event1 = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
   std::unique_ptr<SocketDataEvent> resp_event1 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp1);
+  std::unique_ptr<SocketDataEvent> req_event2 = event_gen.InitSendEvent<kProtocolHTTP>(kReq2);
   std::unique_ptr<SocketDataEvent> resp_event2 = event_gen.InitRecvEvent<kProtocolHTTP>(kResp2);
   struct socket_control_event_t close_event = event_gen.InitClose();
 
