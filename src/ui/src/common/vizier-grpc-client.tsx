@@ -1,6 +1,6 @@
 import {Observable} from 'rxjs';
 import {
-    ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation, RowBatchData, Status,
+    ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation, RowBatchData, Status,
 } from 'types/generated/vizier_pb';
 import {VizierServiceClient} from 'types/generated/VizierServiceClientPb';
 
@@ -58,7 +58,23 @@ export class VizierGRPCClient {
         }
 
         if (resp.hasStatus()) {
-          results.status = resp.getStatus();
+          const status = resp.getStatus();
+          if (!status.getErrorDetailsList() || status.getErrorDetailsList().length) {
+            const errors = status.getErrorDetailsList().map((error) => {
+              switch (error.getErrorCase()) {
+                case ErrorDetails.ErrorCase.COMPILER_ERROR: {
+                  const ce = error.getCompilerError();
+                  return `Compiler error on line ${ce.getLine()}, column ${ce.getColumn()}: ${ce.getMessage()}.`;
+                }
+                default:
+                  return `Unknown error type ${ErrorDetails.ErrorCase[error.getErrorCase()]}.`;
+              }
+            });
+            reject(`Script contains ${errors.length} error${errors.length === 1 ? '' : 's'}: ${errors.join('. ')}`);
+            return;
+          }
+
+          results.status = status;
           resolve(results);
           return;
         }
