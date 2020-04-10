@@ -80,7 +80,7 @@ buildables=$(bazel query \
 # Run the tests if there were results
 if [[ -n $buildables ]]; then
   echo "Building binaries"
-  bazel build ${BAZEL_RUN_EXTRA_ARGS} "$buildables"
+  bazel build ${BAZEL_RUN_EXTRA_ARGS} $buildables
 fi
 
 tests=$(bazel query \
@@ -91,7 +91,7 @@ tests=$(bazel query \
 # Run the tests if there were results
 if [[ -n $tests ]]; then
   echo "Running tests"
-  bazel test ${BAZEL_RUN_EXTRA_ARGS} "$tests"
+  bazel test ${BAZEL_RUN_EXTRA_ARGS} $tests
   rc=$?
   if [ $rc -eq 4 ]; then
     # Exit code 4 says no tests found, which can happen with filters.
