@@ -46,6 +46,7 @@
 # value for COMMIT_RANGE.
 # When running in Travis-CI, you can directly use the $TRAVIS_COMMIT_RANGE
 # environment variable.
+set -x
 
 COMMIT_RANGE=${COMMIT_RANGE:-$(git merge-base origin/master HEAD)".."}
 TARGET_PATTERN=${TARGET_PATTERN:-"//..."}
@@ -67,7 +68,6 @@ cd "$(git rev-parse --show-toplevel)" || exit
 files=()
 for file in $(git diff --name-only ${COMMIT_RANGE} ); do
   files+=($(bazel query ${BAZEL_QUERY_EXTRA_ARGS} --noshow_progress $file))
-  bazel query ${BAZEL_QUERY_EXTRA_ARGS} --noshow_progress $file
 done
 
 
