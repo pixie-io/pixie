@@ -2,10 +2,15 @@ package autocomplete
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete/ebnf"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 )
+
+// CursorMarker is the string that is used to denote the position of the cursor in the formatted output string.
+var CursorMarker = "$0"
 
 // Suggester is responsible for providing suggestions.
 type Suggester interface {
@@ -26,10 +31,11 @@ type Suggestion struct {
 
 // TabStop represents a tab stop in a command.
 type TabStop struct {
-	Value       string
-	Kind        cloudapipb.AutocompleteEntityKind
-	Valid       bool
-	Suggestions []*Suggestion
+	Value          string
+	Kind           cloudapipb.AutocompleteEntityKind
+	Valid          bool
+	Suggestions    []*Suggestion
+	ContainsCursor bool
 }
 
 // Command represents an executable command.
@@ -43,6 +49,26 @@ var kindLabelToProtoMap = map[string]cloudapipb.AutocompleteEntityKind{
 	"pod":    cloudapipb.AEK_POD,
 	"script": cloudapipb.AEK_SCRIPT,
 	"ns":     cloudapipb.AEK_NAMESPACE,
+}
+
+var protoToKindLabelMap = map[cloudapipb.AutocompleteEntityKind]string{
+	cloudapipb.AEK_SVC:       "svc",
+	cloudapipb.AEK_POD:       "pod",
+	cloudapipb.AEK_SCRIPT:    "script",
+	cloudapipb.AEK_NAMESPACE: "ns",
+}
+
+// Autocomplete returns a formatted string and suggestions for the given input.
+func Autocomplete(input string, cursorPos int, action cloudapipb.AutocompleteActionType, s Suggester) (string, bool, []*cloudapipb.TabSuggestion, error) {
+	inputWithCursor := input[:cursorPos] + "$0" + input[cursorPos:]
+	cmd, err := ParseIntoCommand(inputWithCursor, s)
+	if err != nil {
+		return "", false, nil, err
+	}
+
+	fmtOutput, suggestions := cmd.ToFormatString(action)
+
+	return fmtOutput, cmd.Executable, suggestions, nil
 }
 
 // ParseIntoCommand takes user input and attempts to parse it into a valid command with suggestions.
@@ -94,8 +120,13 @@ func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester) (int, 
 			if a.Name != nil {
 				input = *a.Name
 			}
+			containsCursor := strings.Contains(input, CursorMarker)
+			searchTerm := input
+			if containsCursor {
+				searchTerm = strings.Replace(searchTerm, CursorMarker, "", 1)
+			}
 
-			suggestions, exactMatch, err := s.GetSuggestions(input, []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT}, []cloudapipb.AutocompleteEntityKind{})
+			suggestions, exactMatch, err := s.GetSuggestions(searchTerm, []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT}, []cloudapipb.AutocompleteEntityKind{})
 			if err != nil {
 				return -1, nil, err
 			}
@@ -112,9 +143,10 @@ func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester) (int, 
 			}
 
 			cmd.TabStops = append(cmd.TabStops, &TabStop{
-				Value: input,
-				Kind:  cloudapipb.AEK_SCRIPT,
-				Valid: exactMatch,
+				Value:          input,
+				Kind:           cloudapipb.AEK_SCRIPT,
+				Valid:          exactMatch,
+				ContainsCursor: containsCursor,
 			})
 
 			scriptTabIndex = i
@@ -163,8 +195,9 @@ func parseRunArgs(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, scriptAr
 		}
 
 		args = append(args, &TabStop{
-			Value: value,
-			Kind:  entityType,
+			Value:          value,
+			Kind:           entityType,
+			ContainsCursor: strings.Contains(value, CursorMarker),
 		})
 	}
 	return args, specifiedEntities
@@ -228,7 +261,11 @@ func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester) error
 		if a.Kind != cloudapipb.AEK_UNKNOWN { // The kind is already specified in the input string.
 			ak = []cloudapipb.AutocompleteEntityKind{a.Kind}
 		}
-		suggestions, exactMatch, err := s.GetSuggestions(a.Value, ak, specifiedEntities)
+		searchTerm := a.Value
+		if a.ContainsCursor {
+			searchTerm = strings.Replace(searchTerm, CursorMarker, "", 1)
+		}
+		suggestions, exactMatch, err := s.GetSuggestions(searchTerm, ak, specifiedEntities)
 		if err != nil {
 			return err
 		}
@@ -244,6 +281,104 @@ func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester) error
 }
 
 // ToFormatString converts a command to a formatted string with tab indexes, such as: ${1:run} ${2: px/svc_info}
-func (c *Command) ToFormatString() (formattedInput string, suggestions []cloudapipb.TabSuggestion) {
-	return "", nil
+func (cmd *Command) ToFormatString(action cloudapipb.AutocompleteActionType) (formattedInput string, suggestions []*cloudapipb.TabSuggestion) {
+	curTabStop, nextInvalidTabStop, invalidTabs := cmd.processTabStops()
+
+	// Move the cursor according to the action that was taken.
+	switch action {
+	case cloudapipb.AAT_EDIT:
+		// If the action was an edit, the cursor should stay in the same position.
+		break
+	case cloudapipb.AAT_SELECT:
+		// If the action was a select, we should move the cursor to the next invalid tabstop.
+		// Remove cursor from current tab stop.
+		cmd.TabStops[curTabStop].Value = strings.Replace(cmd.TabStops[curTabStop].Value, CursorMarker, "", 1)
+		cmd.TabStops[nextInvalidTabStop].Value = cmd.TabStops[nextInvalidTabStop].Value + CursorMarker
+		curTabStop = nextInvalidTabStop
+		break
+	default:
+		break
+	}
+
+	// Construct the formatted string and tab suggestions.
+	fStr := ""
+	suggestions = make([]*cloudapipb.TabSuggestion, len(cmd.TabStops))
+	for i, t := range cmd.TabStops {
+		// The tab index of this tabstop is ((idx - (curTabStop + 1)) % numTabStops) + 1.
+		idx := (((i - (curTabStop + 1)) + len(cmd.TabStops)) % len(cmd.TabStops)) + 1
+
+		invalid, ok := invalidTabs[i]
+		executableAfterSelect := ok && invalid && len(invalidTabs) == 1
+
+		// Populate suggestions for the tab index.
+		acSugg := make([]*cloudapipb.AutocompleteSuggestion, len(t.Suggestions))
+		for j, s := range t.Suggestions {
+			acSugg[j] = &cloudapipb.AutocompleteSuggestion{
+				Kind:        s.Kind,
+				Name:        s.Name,
+				Description: s.Desc,
+			}
+		}
+
+		ts := &cloudapipb.TabSuggestion{
+			TabIndex:              int64(idx),
+			ExecutableAfterSelect: executableAfterSelect,
+			Suggestions:           acSugg,
+		}
+		suggestions[i] = ts
+
+		// Append to the formatted string.
+		if t.Value == "" && t.Kind == cloudapipb.AEK_UNKNOWN {
+			fStr += fmt.Sprintf("$%d", idx)
+		} else {
+			fStr += fmt.Sprintf("${%d:", idx)
+			if t.Kind != cloudapipb.AEK_UNKNOWN {
+				fStr += protoToKindLabelMap[t.Kind] + ":"
+			}
+			if t.Value != "" {
+				fStr += t.Value
+			}
+			fStr += "}"
+		}
+
+		if i != len(cmd.TabStops)-1 {
+			fStr += " "
+		}
+	}
+
+	return fStr, suggestions
+}
+
+// processTabStops iterates through the tabs to determine which is the current tab the cursor is on, which is the next invalid
+// tab stop that should be next if a selection is made, and finds all invalid tab stops.
+func (cmd *Command) processTabStops() (int, int, map[int]bool) {
+	// The tab stop contains the current cursor.
+	curTabStop := -1
+	// The next invalid tab stop in the command, that should be tabbed to if a selection is made.
+	nextInvalidTabStop := -1
+	// All tabs that are still invalid.
+	invalidTabs := make(map[int]bool)
+	for i, t := range cmd.TabStops {
+		if !t.Valid {
+			invalidTabs[i] = true
+
+			if nextInvalidTabStop == -1 || (curTabStop != -1 && nextInvalidTabStop < curTabStop) {
+				// If we haven't found an invalid tabstop, or if there is an invalid tabstop after the current tab stop, that should be the next tabstop.
+				nextInvalidTabStop = i
+			}
+		}
+
+		if t.ContainsCursor {
+			curTabStop = i
+		}
+	}
+
+	if curTabStop == -1 { // For some reason, if there is no cursor, we should put it at the very end.
+		curTabStop = len(cmd.TabStops) - 1
+		cmd.TabStops[curTabStop].Value = cmd.TabStops[curTabStop].Value + CursorMarker
+	}
+	if nextInvalidTabStop == -1 { // All tabstops are valid.
+		nextInvalidTabStop = len(cmd.TabStops) - 1
+	}
+	return curTabStop, nextInvalidTabStop, invalidTabs
 }
