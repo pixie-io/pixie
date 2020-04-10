@@ -337,7 +337,7 @@ def bazelCICmd(String name, String targetConfig='clang', String targetCompilatio
       // The CI script needs a query, but we can pass that into bazel directly.
       // This translates a non-path query into bazel query that returns paths.
       if (!targets.startsWith('//')) {
-        targets = "`bazel query '${targetPattern} except ${BAZEL_EXCEPT_CLAUSE}'`"
+        targets = "`bazel query '${targets} except ${BAZEL_EXCEPT_CLAUSE}'`"
       }
       sh "bazel test --config=${targetConfig} --compilation_mode=${targetCompilationMode} ${targets}"
     }
