@@ -20,6 +20,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
 	"gopkg.in/segmentio/analytics-go.v3"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
@@ -123,6 +124,9 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 		}
 	}
 
+	if token.SupportAccount {
+		components.RenderBureaucratDragon(token.OrgName)
+	}
 	// TODO(zasgar): Exchange refresh token for new token type.
 	return token, nil
 }
@@ -131,6 +135,8 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 type PixieCloudLogin struct {
 	ManualMode bool
 	CloudAddr  string
+	// OrgName: Selection is only valid for "pixie.support", will be removed when RBAC is supported.
+	OrgName string
 }
 
 // Run either launches the browser or prints out the URL for auth.
@@ -175,7 +181,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 		UserId: pxconfig.Cfg().UniqueClientID,
 		Event:  "Browser Auth",
 	})
-	authURL := getAuthURL(p.CloudAddr)
+	authURL := p.getAuthURL()
 	q := authURL.Query()
 	q.Set("redirect_uri", localServerRedirectURL)
 	authURL.RawQuery = q.Encode()
@@ -288,7 +294,7 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 }
 
 func (p *PixieCloudLogin) getAuthStringManually() (string, error) {
-	authURL := getAuthURL(p.CloudAddr)
+	authURL := p.getAuthURL()
 	fmt.Printf("\nPlease Visit: \n \t %s\n\n", authURL.String())
 	f := bufio.NewWriter(os.Stdout)
 	f.WriteString("Copy and paste token here: ")
@@ -301,14 +307,16 @@ func (p *PixieCloudLogin) getAuthStringManually() (string, error) {
 func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, error) {
 	params := struct {
 		AccessToken string `json:"accessToken"`
+		OrgName     string `json:"orgName,omitempty"`
 	}{
 		AccessToken: strings.Trim(accessToken, "\n"),
+		OrgName:     p.OrgName,
 	}
 	b, err := json.Marshal(params)
 	if err != nil {
 		return nil, err
 	}
-	authURL := getAuthAPIURL(p.CloudAddr)
+	authURL := p.getAuthAPIURL()
 	req, err := http.NewRequest("POST", authURL, bytes.NewBuffer(b))
 	req.Header.Set("content-type", "application/json")
 	if err != nil {
@@ -333,29 +341,38 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, er
 		return nil, err
 	}
 
+	refreshToken.SupportAccount = p.OrgName != ""
+	refreshToken.OrgName = p.OrgName
+
 	return refreshToken, nil
 }
 
 // RefreshToken is the format for the refresh token.
 type RefreshToken struct {
-	Token     string `json:"token"`
-	ExpiresAt int64  `json:"expiresAt"`
+	Token          string `json:"token"`
+	ExpiresAt      int64  `json:"expiresAt"`
+	SupportAccount bool   `json:"supportAccount,omitempty"`
+	// OrgName will usually be empty unless it's a support account.
+	OrgName string `json:"orgName,omitempty"`
 }
 
-func getAuthURL(cloudAddr string) *url.URL {
-	authURL, err := url.Parse(fmt.Sprintf("https://work.%s", cloudAddr))
+func (p *PixieCloudLogin) getAuthURL() *url.URL {
+	authURL, err := url.Parse(fmt.Sprintf("https://work.%s", p.CloudAddr))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to parse cloud addr.")
 	}
 	authURL.Path = "/login"
 	params := url.Values{}
 	params.Add("local_mode", "true")
+	if len(p.OrgName) > 0 {
+		params.Add("org_name", p.OrgName)
+	}
 	authURL.RawQuery = params.Encode()
 	return authURL
 }
 
-func getAuthAPIURL(cloudAddr string) string {
-	authURL, err := url.Parse(fmt.Sprintf("https://%s/api/auth/login", cloudAddr))
+func (p *PixieCloudLogin) getAuthAPIURL() string {
+	authURL, err := url.Parse(fmt.Sprintf("https://%s/api/auth/login", p.CloudAddr))
 	if err != nil {
 		log.WithError(err).Fatal("Failed to parse cloud addr.")
 	}

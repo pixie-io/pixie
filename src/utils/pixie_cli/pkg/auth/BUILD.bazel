@@ -6,6 +6,7 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/utils/pixie_cli/pkg/components:go_default_library",
         "//src/utils/pixie_cli/pkg/pxanalytics:go_default_library",
         "//src/utils/pixie_cli/pkg/pxconfig:go_default_library",
         "@com_github_dgrijalva_jwt_go//:go_default_library",
