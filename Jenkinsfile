@@ -365,7 +365,8 @@ def archiveUILogs() {
     tools: [
       [
         $class: 'JUnitType',
-        pattern: "build-ui-testlogs/testlogs/junit.xml"
+        skipNoTestFiles: true,
+        pattern: "build-ui-testlogs/junit.xml"
       ]
     ]
   ])
@@ -494,9 +495,16 @@ builders['Build & Test All (opt + UI)'] = {
         bazelCICmd('build-opt')
       }
 
-      // Untar and save the UI artifacts.
-      sh 'tar -zxf bazel-bin/src/ui/bundle_storybook.tar.gz'
-      sh 'mkdir testlogs && cp -a bazel-bin/src/ui/*.xml testlogs'
+      // File might not always exist because of test run caching.
+      // TODO(zasgar): Make sure this file is fetched for master run, otherwise we
+      // might have issues with coverage.
+      def uiTestResults = 'bazel-testlogs-archive/src/ui/ui-tests/test.outputs/outputs.zip'
+      sh 'mkdir testlogs'
+      if (fileExists(uiTestResults)) {
+          sh 'unzip ${uiTestResults} -d testlogs'
+      }
+
+      sh 'tar -zxf bazel-bin/src/ui/ui-storybook-bundle.tar.gz'
 
       // Untar the customer docs.
       sh 'tar -zxf bazel-bin/docs/customer/bundle.tar.gz'

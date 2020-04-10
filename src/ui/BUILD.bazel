@@ -1,5 +1,13 @@
 package(default_visibility = ["//visibility:public"])
 
+load(
+    "//bazel:ui.bzl",
+    "pl_storybook_binary",
+    "pl_ui_test",
+    "pl_webpack_binary",
+    "pl_webpack_deps",
+)
+
 UI_DEP_PACKAGES = [
     "yarn.lock",
     "package.json",
@@ -12,160 +20,40 @@ UI_DEP_PACKAGES = [
 UI_SRCS = glob([
     "*.js",
     "*.json",
-    ".storybook/**",
     "assets/**",
     "src/**",
+])
+
+STORYBOOK_SRCS = glob([
+    ".storybook/**",
     "stories/**",
 ])
 
-UI_SCRIPT_START = """
-      export BASE_PATH=$$(pwd)
-      export PATH=/usr/local/bin:/opt/node/bin:$$PATH;
-      export HOME=$$(mktemp -d) # This makes node-gyp happy.
-      export OUTPUT_PATH="$$(pwd)/$(RULEDIR)"
-      export TMPPATH=$$(mktemp -d)
-
-      # This is some truly shady stuff. The stamping on genrules just makes this file
-      # available, but does not apply it to the environment. We parse out the file
-      # and apply it to the environment here. Hopefully,
-      # no special characters/spaces/quotes in the results ...
-      if [ -f "bazel-out/volatile-status.txt" ]; then
-        $$(sed -E "s/^([A-Za-z_]+)\s*(.*)/export \\1=\\2/g" bazel-out/volatile-status.txt)
-      fi
-      cp -aL $${BASE_PATH}/* $${TMPPATH}
-
-      pushd $${TMPPATH}/src/ui &> /dev/null
-"""
-
-UI_SCRIPT_END = """
-      popd &> /dev/null
-      rm -rf $${TMPPATH}
-    """
-
-# This is a simple wrapper around webpack. Hopefully, when native Bazel webpack
-# builds become more stable we can use that.
-genrule(
+pl_webpack_deps(
     name = "ui-deps",
     srcs = UI_DEP_PACKAGES,
-    outs = [
-        "deps.tar",
-    ],
-    cmd = UI_SCRIPT_START + """
-      pushd $${TMPPATH}/src/ui &> /dev/null
-
-      trap 'cat build.log' ERR
-
-      yarn install --prefer_offline &> build.log
-
-      tar -czf $${OUTPUT_PATH}/deps.tar node_modules .
-      """ + UI_SCRIPT_END,
-    tags = [
-        "ui_build",
-    ],
+    uilib_base = "src/ui",
 )
 
-genrule(
-    name = "ui-tests",
-    srcs = [
-        ":ui-deps",
-    ] + UI_SRCS,
-    outs = [
-        "junit.xml",
-        "lcov.info",
-    ],
-    cmd = UI_SCRIPT_START + """
-      tar -xf $${BASE_PATH}/$(location //src/ui:ui-deps)
-
-      trap 'cat build.log' ERR
-
-      jest --coverage &> build.log
-
-      cp junit.xml $${OUTPUT_PATH}
-      cp coverage/lcov.info $${OUTPUT_PATH}
-   """ + UI_SCRIPT_END,
-    tags = [
-        "ui_build",
-    ],
-)
-
-genrule(
+pl_webpack_binary(
     name = "ui-bundle",
-    srcs = [
-        ":ui-deps",
-    ] + UI_SRCS,
-    outs = [
-        "bundle.tar.gz",
-    ],
-    cmd = UI_SCRIPT_START + """
-      tar -zxf $${BASE_PATH}/$(location //src/ui:ui-deps)
-
-      trap 'cat build.log' ERR
-
-      # Build the prod bundle.
-      yarn build_prod &> build.log;
-
-      # Write the outputs to the correct location so Bazel can find them.
-      cp dist/bundle.tar.gz $${OUTPUT_PATH}
-    """ + UI_SCRIPT_END,
-    output_to_bindir = 1,  # We treat "outputs" as binaries.
+    srcs = UI_SRCS,
+    deps = ":ui-deps",
     stamp = True,
-    tags = [
-        "ui_build",
-    ],
+    uilib_base = "src/ui",
 )
 
-genrule(
+pl_ui_test(
+    name = "ui-tests",
+    srcs = UI_SRCS,
+    deps = ":ui-deps",
+    uilib_base = "src/ui",
+)
+
+pl_storybook_binary(
     name = "ui-storybook-bundle",
-    srcs = [
-        ":ui-deps",
-    ] + UI_SRCS,
-    outs = [
-        "bundle_storybook.tar.gz",
-    ],
-    cmd = UI_SCRIPT_START + """
-      tar -xf $${BASE_PATH}/$(location //src/ui:ui-deps)
-
-      trap 'cat build.log' ERR
-
-      # Build the prod bundle.
-      yarn storybook_static &> build.log
-
-      # Write the outputs to the correct location so Bazel can find them.
-      tar -czf $${OUTPUT_PATH}/bundle_storybook.tar.gz storybook_static
-    """ + UI_SCRIPT_END,
-    output_to_bindir = 1,  # We treat "outputs" as binaries.
+    srcs = UI_SRCS + STORYBOOK_SRCS,
+    deps = ":ui-deps",
     stamp = True,
-    tags = [
-        "ui_build",
-    ],
-)
-
-genrule(
-    name = "ui-licenses",
-    srcs = [
-        ":ui-deps",
-    ],
-    outs = [
-        "NPM_LICENSES",
-    ],
-    tools = [
-        "tools/licenses/npm_license_extractor.py",
-        "tools/licenses/override_license.json",
-    ],
-    cmd = UI_SCRIPT_START + """
-      tar -xf $${BASE_PATH}/$(location //src/ui:ui-deps)
-
-      trap 'cat build.log' ERR
-      # License check
-      yarn license-checker --json --out $@ &> build.log
-      cp $@ $${OUTPUT_PATH}
-
-      popd &> /dev/null
-      python3 "$(location :tools/licenses/npm_license_extractor.py)" "$@" "$@" --override_license "$(location :tools/licenses/override_license.json)" &> build.log
-      rm -rf $${TMPPATH}
-    """,
-    output_to_bindir = 1,  # We treat "outputs" as binaries.
-    tags = [
-        "ui_build",
-    ],
+    uilib_base = "src/ui",
 )

@@ -44,7 +44,6 @@ genrule(
     srcs = [
         ":cpp_licenses",
         ":manual_cpp_licenses",
-        "//src/ui:ui-licenses",
         ":go_licenses.json",
     ],
     outs = ["CREDITS.md"],
