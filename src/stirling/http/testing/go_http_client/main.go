@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 type helloReply struct {
@@ -42,5 +43,6 @@ func main() {
 		}
 
 		fmt.Println(reply.Greeter)
+		time.Sleep(time.Second)
 	}
 }
