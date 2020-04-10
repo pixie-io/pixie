@@ -27,48 +27,30 @@ class ClientServerSystem {
    * &TCPSocket::Write).
    * @param script: script that client server use to send messages to each other.
    */
+#define RunClientServerImpl(script)      \
+  SpawnClient<TRecvFn, TSendFn>(script); \
+  SpawnServer<TRecvFn, TSendFn>(script); \
+  JoinThreads();
+
   template <bool (TCPSocket::*TRecvFn)(std::string*) const = &TCPSocket::Recv,
             ssize_t (TCPSocket::*TSendFn)(std::string_view) const = &TCPSocket::Send>
   void RunClientServer(const SendRecvScript& script) {
-    SpawnClient<TRecvFn, TSendFn>(script);
-    SpawnServer<TRecvFn, TSendFn>(script);
-    JoinThreads();
+    RunClientServerImpl(script)
   }
 
-  /**
-   * Create and run a client-server system with server writing data to client.
-   *
-   * @tparam TRecvFn: choose receive implementation from TCPSocket (&TCPSocket::Recv,
-   * &TCPSocket::Read).
-   * @tparam TSendFn: choose send implementation from TCPSocket (only &TCPSocket::ReadV is valid).
-   * @param write_data: data that server will send to client.
-   */
   template <ssize_t (TCPSocket::*TRecvFn)(std::string* data) const = &TCPSocket::ReadV,
             ssize_t (TCPSocket::*TSendFn)(const std::vector<std::string_view>&)
-                const = &TCPSocket::SendMsg>
-  void RunClientServer(const std::vector<std::vector<std::string_view>>& write_data) {
-    SpawnMsgClient<TRecvFn>();
-    SpawnMsgServer<TSendFn>(write_data);
-    JoinThreads();
+                const = &TCPSocket::WriteV>
+  void RunClientServer(const SendRecvScript& script) {
+    RunClientServerImpl(script)
   }
 
-  /**
-   * Create and run a client-server system with server writing data to client.
-   *
-   * @tparam TRecvFn: choose receive implementation from TCPSocket (&TCPSocket::Recv,
-   * &TCPSocket::Read).
-   * @tparam TSendFn: choose send implementation from TCPSocket (only &TCPSocket::ReadMsg is
-   * valid).
-   * @param write_data: data that server will send to client.
-   */
   template <ssize_t (TCPSocket::*TRecvFn)(std::vector<std::string>* data)
                 const = &TCPSocket::RecvMsg,
             ssize_t (TCPSocket::*TSendFn)(const std::vector<std::string_view>&)
                 const = &TCPSocket::SendMsg>
-  void RunClientServer(const std::vector<std::vector<std::string_view>>& write_data) {
-    SpawnMsgClient<TRecvFn>();
-    SpawnMsgServer<TSendFn>(write_data);
-    JoinThreads();
+  void RunClientServer(const SendRecvScript& script) {
+    RunClientServerImpl(script)
   }
 
  private:
@@ -91,9 +73,9 @@ class ClientServerSystem {
    */
   template <bool (TCPSocket::*TRecvFn)(std::string*) const>
   static void RecvData(const TCPSocket& socket, size_t expected_size) {
-    std::string msg;
     size_t s = 0;
     while (s < expected_size) {
+      std::string msg;
       (socket.*TRecvFn)(&msg);
       s += msg.size();
     }
@@ -105,12 +87,8 @@ class ClientServerSystem {
    * &TCPSocket::WriteV).
    */
   template <ssize_t (TCPSocket::*TSendFn)(const std::vector<std::string_view>&) const>
-  static void SendData(const TCPSocket& socket,
-                       const std::vector<std::vector<std::string_view>>& write_data) {
-    std::string msg;
-    for (const auto& data : write_data) {
-      (socket.*TSendFn)(data);
-    }
+  static void SendData(const TCPSocket& socket, const std::vector<std::string_view>& write_data) {
+    (socket.*TSendFn)(write_data);
   }
 
   /**
@@ -119,9 +97,12 @@ class ClientServerSystem {
    * valid).
    */
   template <ssize_t (TCPSocket::*TRecvFn)(std::string* data) const>
-  static void RecvData(const TCPSocket& socket) {
-    std::string msg;
-    while ((socket.*TRecvFn)(&msg) > 0) {
+  static void RecvData(const TCPSocket& socket, size_t expected_size) {
+    size_t s = 0;
+    while (s < expected_size) {
+      std::string msg;
+      (socket.*TRecvFn)(&msg);
+      s += msg.size();
     }
   }
 
@@ -131,9 +112,14 @@ class ClientServerSystem {
    * valid).
    */
   template <ssize_t (TCPSocket::*TRecvFn)(std::vector<std::string>* data) const>
-  static void RecvData(const TCPSocket& socket) {
-    std::vector<std::string> msgs;
-    while ((socket.*TRecvFn)(&msgs) > 0) {
+  static void RecvData(const TCPSocket& socket, size_t expected_size) {
+    size_t s = 0;
+    while (s < expected_size) {
+      std::vector<std::string> msgs;
+      (socket.*TRecvFn)(&msgs);
+      for (const auto& m : msgs) {
+        s += m.size();
+      }
     }
   }
 
@@ -147,78 +133,105 @@ class ClientServerSystem {
    * @param socket: client or server socket.
    * @param is_client: whether it's the client or server.
    */
+#define RunImpl(script, socket, is_client)                \
+  size_t phase = 0;                                       \
+  while (phase != script.size()) {                        \
+    /****************************************             \
+     * phase%2 == 0 |  client   | is_sender               \
+     *      1       |     1     |  1                      \
+     *      1       |     0     |  0                      \
+     *      0       |     0     |  1                      \
+     *      0       |     1     |  0                      \
+     ****************************************/            \
+    if (!((phase % 2 == 0) ^ is_client)) {                \
+      SendData<TSendFn>(socket, script[phase]);           \
+      phase++;                                            \
+    } else {                                              \
+      size_t expected_size = 0;                           \
+      for (size_t i = 0; i < script[phase].size(); ++i) { \
+        expected_size += script[phase][i].size();         \
+      }                                                   \
+      RecvData<TRecvFn>(socket, expected_size);           \
+      phase++;                                            \
+    }                                                     \
+  }
+
   template <bool (TCPSocket::*TRecvFn)(std::string*) const,
             ssize_t (TCPSocket::*TSendFn)(std::string_view) const>
   void Run(const SendRecvScript& script, const TCPSocket& socket, bool is_client) {
-    size_t phase = 0;
-
-    while (phase != script.size()) {
-      // phase%2 == 0 |  client   | is_sender
-      //      1       |     1     |  1
-      //      1       |     0     |  0
-      //      0       |     0     |  1
-      //      0       |     1     |  0
-      if (!((phase % 2 == 0) ^ is_client)) {
-        SendData<TSendFn>(socket, script[phase]);
-        phase++;
-      } else {
-        size_t expected_size = 0;
-        for (size_t i = 0; i < script[phase].size(); ++i) {
-          expected_size += script[phase][i].size();
-        }
-        RecvData<TRecvFn>(socket, expected_size);
-        phase++;
-      }
-    }
+    RunImpl(script, socket, is_client);
   }
+
+  template <ssize_t (TCPSocket::*TRecvFn)(std::string* data) const,
+            ssize_t (TCPSocket::*TSendFn)(const std::vector<std::string_view>&) const>
+  void Run(const SendRecvScript& script, const TCPSocket& socket, bool is_client) {
+    RunImpl(script, socket, is_client);
+  }
+
+  template <ssize_t (TCPSocket::*TRecvFn)(std::vector<std::string>* data) const,
+            ssize_t (TCPSocket::*TSendFn)(const std::vector<std::string_view>&) const>
+  void Run(const SendRecvScript& script, const TCPSocket& socket, bool is_client) {
+    RunImpl(script, socket, is_client);
+  }
+
+  /**
+   * Spawn a client with the provided script.
+   * On even-phases, it will send the script value.
+   * On odd-phases, it will expect to receive the script value.
+   */
+#define SpawnClientImpl(script)                   \
+  client_thread_ = std::thread([this, script]() { \
+    client_.Connect(server_);                     \
+    Run<TRecvFn, TSendFn>(script, client_, true); \
+    client_.Close();                              \
+  });
 
   template <bool (TCPSocket::*TRecvFn)(std::string*) const,
             ssize_t (TCPSocket::*TSendFn)(std::string_view) const>
   void SpawnClient(const SendRecvScript& script) {
-    client_thread_ = std::thread([this, script]() {
-      client_.Connect(server_);
-      Run<TRecvFn, TSendFn>(script, client_, true);
-      client_.Close();
-    });
+    SpawnClientImpl(script);
   }
+
+  template <ssize_t (TCPSocket::*TRecvFn)(std::string* data) const,
+            ssize_t (TCPSocket::*TSendFn)(const std::vector<std::string_view>&) const>
+  void SpawnClient(const SendRecvScript& script) {
+    SpawnClientImpl(script);
+  }
+
+  template <ssize_t (TCPSocket::*TRecvFn)(std::vector<std::string>* data) const,
+            ssize_t (TCPSocket::*TSendFn)(const std::vector<std::string_view>&) const>
+  void SpawnClient(const SendRecvScript& script) {
+    SpawnClientImpl(script);
+  }
+
+  /**
+   * Spawn a server with the provided script.
+   * On even-phases, it will expect to receive the script value.
+   * On odd-phases, it will send the script value.
+   */
+#define SpawnServerImpl(script)                         \
+  server_thread_ = std::thread([this, script]() {       \
+    std::unique_ptr<TCPSocket> conn = server_.Accept(); \
+    Run<TRecvFn, TSendFn>(script, *conn, false);        \
+    server_.Close();                                    \
+  });
 
   template <bool (TCPSocket::*TRecvFn)(std::string*) const,
             ssize_t (TCPSocket::*TSendFn)(std::string_view) const>
   void SpawnServer(const SendRecvScript& script) {
-    server_thread_ = std::thread([this, script]() {
-      std::unique_ptr<TCPSocket> conn = server_.Accept();
-      Run<TRecvFn, TSendFn>(script, *conn, false);
-      server_.Close();
-    });
+    SpawnServerImpl(script);
   }
 
-  // TODO(chengruizhe): Currently SendMsg/RecvMsg & WriteV/ReadV doesn't follow the script and
-  // multi-round communication model. Fix this.
-  template <ssize_t (TCPSocket::*TSendFn)(const std::vector<std::string_view>&) const>
-  void SpawnMsgServer(const std::vector<std::vector<std::string_view>>& write_data) {
-    server_thread_ = std::thread([this, write_data]() {
-      std::unique_ptr<TCPSocket> conn = server_.Accept();
-      SendData<TSendFn>(*conn, write_data);
-      server_.Close();
-    });
+  template <ssize_t (TCPSocket::*TRecvFn)(std::string* data) const,
+            ssize_t (TCPSocket::*TSendFn)(const std::vector<std::string_view>&) const>
+  void SpawnServer(const SendRecvScript& script) {
+    SpawnServerImpl(script);
   }
 
-  template <ssize_t (TCPSocket::*TRecvFn)(std::string* data) const>
-  void SpawnMsgClient() {
-    client_thread_ = std::thread([this]() {
-      client_.Connect(server_);
-      RecvData<TRecvFn>(client_);
-      client_.Close();
-    });
-  }
-
-  template <ssize_t (TCPSocket::*TRecvFn)(std::vector<std::string>* data) const>
-  void SpawnMsgClient() {
-    client_thread_ = std::thread([this]() {
-      client_.Connect(server_);
-      RecvData<TRecvFn>(client_);
-      client_.Close();
-    });
+  template <ssize_t (TCPSocket::*TRecvFn)(std::vector<std::string>* data) const,
+            ssize_t (TCPSocket::*TSendFn)(const std::vector<std::string_view>&) const>
+  void SpawnServer(const SendRecvScript& script) {
+    SpawnServerImpl(script);
   }
 
   void JoinThreads() {

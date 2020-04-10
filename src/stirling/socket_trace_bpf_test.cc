@@ -19,11 +19,13 @@
 namespace pl {
 namespace stirling {
 
+using ::pl::stirling::testing::ColWrapperSizeIs;
 using ::pl::stirling::testing::FindRecordIdxMatchesPid;
 using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::system::TCPSocket;
 using ::pl::types::ColumnWrapper;
 using ::pl::types::ColumnWrapperRecordBatch;
+using ::testing::Each;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::Pair;
@@ -74,9 +76,7 @@ TEST_F(SocketTraceBPFTest, Framework) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-  for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-    ASSERT_EQ(4, col->Size());
-  }
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
 }
 
 // TODO(chengruizhe): Add test targeted at checking IPs.
@@ -92,9 +92,7 @@ TEST_F(SocketTraceBPFTest, WriteRespCapture) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-      ASSERT_EQ(2, col->Size());
-    }
+    ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
     // These getpid() EXPECTs require docker container with --pid=host so that the container's PID
     // and the host machine are identical. See
@@ -140,9 +138,7 @@ TEST_F(SocketTraceBPFTest, SendRespCapture) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-      ASSERT_EQ(2, col->Size());
-    }
+    ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
     // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
     // host machine are identical.
@@ -179,9 +175,7 @@ TEST_F(SocketTraceBPFTest, ReadRespCapture) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-      ASSERT_EQ(2, col->Size());
-    }
+    ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
     // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
     // host machine are identical.
@@ -218,9 +212,7 @@ TEST_F(SocketTraceBPFTest, RecvRespCapture) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-      ASSERT_EQ(2, col->Size());
-    }
+    ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
     // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
     // host machine are identical.
@@ -290,9 +282,7 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-    for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-      ASSERT_EQ(2, col->Size());
-    }
+    ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
     std::vector<std::pair<int64_t, std::string>> results;
     for (int i = 0; i < 2; ++i) {
@@ -332,7 +322,7 @@ TEST_F(SocketTraceBPFTest, StartTime) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-  ASSERT_EQ(2, record_batch[0]->Size());
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
   md::UPID upid0(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val);
   EXPECT_EQ(getpid(), upid0.pid());
@@ -362,7 +352,9 @@ TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
   ConfigureCapture(kProtocolHTTP, kRoleAll);
   testing::ClientServerSystem system({});
   const std::vector<std::vector<std::string_view>> data = {
+      {""},
       {"HTTP/1.1 200 OK\r\n", "Content-Type: json\r\n", "Content-Length: 1\r\n\r\na"},
+      {""},
       {"HTTP/1.1 404 Not Found\r\n", "Content-Type: json\r\n", "Content-Length: 2\r\n\r\nbc"}};
   switch (GetParam()) {
     case SyscallPair::kSendRecvMsg:
@@ -377,10 +369,8 @@ TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-  for (const std::shared_ptr<ColumnWrapper>& col : record_batch) {
-    // 2 for sendmsg() and 2 for recvmsg().
-    ASSERT_EQ(4, col->Size());
-  }
+  // 2 for sendmsg() and 2 for recvmsg().
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
 
   for (int i : {0, 2}) {
     EXPECT_EQ(200, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(i).val);
