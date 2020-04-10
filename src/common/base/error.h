@@ -14,11 +14,11 @@ namespace error {
 // Declare convenience functions:
 // error::InvalidArgument(...)
 // error::IsInvalidArgument(stat)
-#define DECLARE_ERROR(FUNC, CONST)                                   \
-  template <typename... Args>                                        \
-  Status FUNC(Args... args) {                                        \
-    return Status(::pl::statuspb::CONST, absl::Substitute(args...)); \
-  }                                                                  \
+#define DECLARE_ERROR(FUNC, CONST)                                           \
+  template <typename... Args>                                                \
+  Status FUNC(std::string_view format, Args... args) {                       \
+    return Status(::pl::statuspb::CONST, absl::Substitute(format, args...)); \
+  }                                                                          \
   inline bool Is##FUNC(const Status& status) { return status.code() == ::pl::statuspb::CONST; }
 
 DECLARE_ERROR(Cancelled, CANCELLED)
