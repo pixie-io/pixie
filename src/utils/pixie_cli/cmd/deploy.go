@@ -706,7 +706,6 @@ func waitForPems(clientset *kubernetes.Clientset, namespace string, expectedPods
 		}
 
 		if len(successfulPods) == expectedPods {
-			fmt.Printf("PEMs successfully deployed\n")
 			return nil
 		}
 		if len(successfulPods)+len(failedSchedulingPods) == expectedPods {
