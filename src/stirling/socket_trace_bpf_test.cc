@@ -64,11 +64,10 @@ TEST_F(SocketTraceBPFTest, Framework) {
   ConfigureCapture(kProtocolHTTP, kRoleAll);
 
   testing::SendRecvScript script({
-      {kHTTPReqMsg1},
-      {kHTTPRespMsg1},
-      {kHTTPReqMsg2},
-      {kHTTPRespMsg2},
+      {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
+      {{kHTTPReqMsg2}, {kHTTPRespMsg2}},
   });
+
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script);
 
@@ -85,10 +84,8 @@ TEST_F(SocketTraceBPFTest, WriteRespCapture) {
   ConfigureCapture(kProtocolHTTP, kRoleServer);
 
   testing::SendRecvScript script({
-      {kHTTPReqMsg1},
-      {kHTTPRespMsg1},
-      {kHTTPReqMsg2},
-      {kHTTPRespMsg2},
+      {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
+      {{kHTTPReqMsg2}, {kHTTPRespMsg2}},
   });
 
   testing::ClientServerSystem system;
@@ -138,10 +135,8 @@ TEST_F(SocketTraceBPFTest, SendRespCapture) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleServer);
 
   testing::SendRecvScript script({
-      {kHTTPReqMsg1},
-      {kHTTPRespMsg1},
-      {kHTTPReqMsg2},
-      {kHTTPRespMsg2},
+      {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
+      {{kHTTPReqMsg2}, {kHTTPRespMsg2}},
   });
 
   testing::ClientServerSystem system;
@@ -182,10 +177,8 @@ TEST_F(SocketTraceBPFTest, ReadRespCapture) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
 
   testing::SendRecvScript script({
-      {kHTTPReqMsg1},
-      {kHTTPRespMsg1},
-      {kHTTPReqMsg2},
-      {kHTTPRespMsg2},
+      {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
+      {{kHTTPReqMsg2}, {kHTTPRespMsg2}},
   });
 
   testing::ClientServerSystem system;
@@ -226,10 +219,8 @@ TEST_F(SocketTraceBPFTest, RecvRespCapture) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
 
   testing::SendRecvScript script({
-      {kHTTPReqMsg1},
-      {kHTTPRespMsg1},
-      {kHTTPReqMsg2},
-      {kHTTPRespMsg2},
+      {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
+      {{kHTTPReqMsg2}, {kHTTPRespMsg2}},
   });
 
   testing::ClientServerSystem system;
@@ -271,10 +262,8 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
   ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleClient);
 
   testing::SendRecvScript script({
-      {kNoProtocolMsg},
-      {kNoProtocolMsg},
-      {kNoProtocolMsg},
-      {kNoProtocolMsg},
+      {{kNoProtocolMsg}, {kNoProtocolMsg}},
+      {{kNoProtocolMsg}, {kNoProtocolMsg}},
   });
 
   testing::ClientServerSystem system;
@@ -305,16 +294,15 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
 
   // Two separate connections.
+
   testing::SendRecvScript script1({
-      {kHTTPReqMsg1},
-      {kHTTPRespMsg1},
+      {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
   });
   testing::ClientServerSystem system1;
   system1.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script1);
 
   testing::SendRecvScript script2({
-      {kHTTPReqMsg2},
-      {kHTTPRespMsg2},
+      {{kHTTPReqMsg2}, {kHTTPRespMsg2}},
   });
   testing::ClientServerSystem system2;
   system2.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script2);
@@ -342,10 +330,8 @@ TEST_F(SocketTraceBPFTest, StartTime) {
   ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
 
   testing::SendRecvScript script({
-      {kHTTPReqMsg1},
-      {kHTTPRespMsg1},
-      {kHTTPReqMsg2},
-      {kHTTPRespMsg2},
+      {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
+      {{kHTTPReqMsg2}, {kHTTPRespMsg2}},
   });
 
   testing::ClientServerSystem system;
@@ -399,18 +385,21 @@ class SyscallPairBPFTest : public SocketTraceBPFTest,
 
 TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
   ConfigureCapture(kProtocolHTTP, kRoleAll);
+
+  testing::SendRecvScript script({
+      {{kHTTPReqMsg1},
+       {"HTTP/1.1 200 OK\r\n", "Content-Type: json\r\n", "Content-Length: 1\r\n\r\na"}},
+      {{kHTTPReqMsg2},
+       {"HTTP/1.1 404 Not Found\r\n", "Content-Type: json\r\n", "Content-Length: 2\r\n\r\nbc"}},
+  });
+
   testing::ClientServerSystem system;
-  const std::vector<std::vector<std::string_view>> data = {
-      {kHTTPReqMsg1},
-      {"HTTP/1.1 200 OK\r\n", "Content-Type: json\r\n", "Content-Length: 1\r\n\r\na"},
-      {kHTTPReqMsg2},
-      {"HTTP/1.1 404 Not Found\r\n", "Content-Type: json\r\n", "Content-Length: 2\r\n\r\nbc"}};
   switch (GetParam()) {
     case SyscallPair::kSendRecvMsg:
-      system.RunClientServer<&TCPSocket::RecvMsg, &TCPSocket::SendMsg>(data);
+      system.RunClientServer<&TCPSocket::RecvMsg, &TCPSocket::SendMsg>(script);
       break;
     case SyscallPair::kWriteReadv:
-      system.RunClientServer<&TCPSocket::ReadV, &TCPSocket::WriteV>(data);
+      system.RunClientServer<&TCPSocket::ReadV, &TCPSocket::WriteV>(script);
       break;
   }
 

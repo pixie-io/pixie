@@ -11,7 +11,13 @@ namespace pl {
 namespace stirling {
 namespace testing {
 
-using SendRecvScript = std::vector<std::vector<std::string_view>>;
+struct ReqAndResp {
+  // Request and response are vectors, for the sake of syscalls like RecvMsg/ReadV,
+  // which support a scatter-gather model.
+  std::vector<std::string_view> req;
+  std::vector<std::string_view> resp;
+};
+using SendRecvScript = std::vector<ReqAndResp>;
 using TCPSocket = pl::system::TCPSocket;
 
 class ClientServerSystem {
@@ -124,54 +130,81 @@ class ClientServerSystem {
   }
 
   /**
-   * Run the script in an alternating order, client sends and server receives during even phase,
-   * and vice versa.
+   * Run the script as a client.
    * @tparam TRecvFn: choose receive implementation from TCPSocket (&TCPSocket::Recv,
    * &TCPSocket::Read).
    * @tparam TSendFn: choose send implementation from TCPSocket (&TCPSocket::Send,
    * &TCPSocket::Write).
    * @param socket: client or server socket.
-   * @param is_client: whether it's the client or server.
    */
-#define RunImpl(script, socket, is_client)                \
-  size_t phase = 0;                                       \
-  while (phase != script.size()) {                        \
-    /****************************************             \
-     * phase%2 == 0 |  client   | is_sender               \
-     *      1       |     1     |  1                      \
-     *      1       |     0     |  0                      \
-     *      0       |     0     |  1                      \
-     *      0       |     1     |  0                      \
-     ****************************************/            \
-    if (!((phase % 2 == 0) ^ is_client)) {                \
-      SendData<TSendFn>(socket, script[phase]);           \
-      phase++;                                            \
-    } else {                                              \
-      size_t expected_size = 0;                           \
-      for (size_t i = 0; i < script[phase].size(); ++i) { \
-        expected_size += script[phase][i].size();         \
-      }                                                   \
-      RecvData<TRecvFn>(socket, expected_size);           \
-      phase++;                                            \
-    }                                                     \
+#define RunClientImpl(script, socket)         \
+  for (const auto& x : script) {              \
+    /* Send request. */                       \
+    SendData<TSendFn>(socket, x.req);         \
+                                              \
+    /* Receive reply */                       \
+    size_t expected_size = 0;                 \
+    for (const auto& resp : x.resp) {         \
+      expected_size += resp.size();           \
+    }                                         \
+    RecvData<TRecvFn>(socket, expected_size); \
   }
 
   template <bool (TCPSocket::*TRecvFn)(std::string*) const,
             ssize_t (TCPSocket::*TSendFn)(std::string_view) const>
-  void Run(const SendRecvScript& script, const TCPSocket& socket, bool is_client) {
-    RunImpl(script, socket, is_client);
+  void RunClient(const SendRecvScript& script, const TCPSocket& socket) {
+    RunClientImpl(script, socket);
   }
 
   template <ssize_t (TCPSocket::*TRecvFn)(std::string* data) const,
             ssize_t (TCPSocket::*TSendFn)(const std::vector<std::string_view>&) const>
-  void Run(const SendRecvScript& script, const TCPSocket& socket, bool is_client) {
-    RunImpl(script, socket, is_client);
+  void RunClient(const SendRecvScript& script, const TCPSocket& socket) {
+    RunClientImpl(script, socket);
   }
 
   template <ssize_t (TCPSocket::*TRecvFn)(std::vector<std::string>* data) const,
             ssize_t (TCPSocket::*TSendFn)(const std::vector<std::string_view>&) const>
-  void Run(const SendRecvScript& script, const TCPSocket& socket, bool is_client) {
-    RunImpl(script, socket, is_client);
+  void RunClient(const SendRecvScript& script, const TCPSocket& socket) {
+    RunClientImpl(script, socket);
+  }
+
+  /**
+   * Run the script as a server.
+   * @tparam TRecvFn: choose receive implementation from TCPSocket (&TCPSocket::Recv,
+   * &TCPSocket::Read).
+   * @tparam TSendFn: choose send implementation from TCPSocket (&TCPSocket::Send,
+   * &TCPSocket::Write).
+   * @param socket: client or server socket.
+   */
+#define RunServerImpl(script, socket)         \
+  for (const auto& x : script) {              \
+    /* Receive request */                     \
+    size_t expected_size = 0;                 \
+    for (const auto& req : x.req) {           \
+      expected_size += req.size();            \
+    }                                         \
+    RecvData<TRecvFn>(socket, expected_size); \
+                                              \
+    /* Send response. */                      \
+    SendData<TSendFn>(socket, x.resp);        \
+  }
+
+  template <bool (TCPSocket::*TRecvFn)(std::string*) const,
+            ssize_t (TCPSocket::*TSendFn)(std::string_view) const>
+  void RunServer(const SendRecvScript& script, const TCPSocket& socket) {
+    RunServerImpl(script, socket);
+  }
+
+  template <ssize_t (TCPSocket::*TRecvFn)(std::string* data) const,
+            ssize_t (TCPSocket::*TSendFn)(const std::vector<std::string_view>&) const>
+  void RunServer(const SendRecvScript& script, const TCPSocket& socket) {
+    RunServerImpl(script, socket);
+  }
+
+  template <ssize_t (TCPSocket::*TRecvFn)(std::vector<std::string>* data) const,
+            ssize_t (TCPSocket::*TSendFn)(const std::vector<std::string_view>&) const>
+  void RunServer(const SendRecvScript& script, const TCPSocket& socket) {
+    RunServerImpl(script, socket);
   }
 
   /**
@@ -182,7 +215,7 @@ class ClientServerSystem {
 #define SpawnClientImpl(script)                   \
   client_thread_ = std::thread([this, script]() { \
     client_.Connect(server_);                     \
-    Run<TRecvFn, TSendFn>(script, client_, true); \
+    RunClient<TRecvFn, TSendFn>(script, client_); \
     client_.Close();                              \
   });
 
@@ -212,7 +245,7 @@ class ClientServerSystem {
 #define SpawnServerImpl(script)                         \
   server_thread_ = std::thread([this, script]() {       \
     std::unique_ptr<TCPSocket> conn = server_.Accept(); \
-    Run<TRecvFn, TSendFn>(script, *conn, false);        \
+    RunServer<TRecvFn, TSendFn>(script, *conn);         \
     server_.Close();                                    \
   });
 
