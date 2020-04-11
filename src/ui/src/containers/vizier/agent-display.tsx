@@ -54,7 +54,8 @@ interface AgentDisplayState {
   data: Array<{}>;
 }
 
-const AGENT_STATUS_SCRIPT = 'px.display(px.GetAgentStatus())';
+const AGENT_STATUS_SCRIPT = `import px
+px.display(px.GetAgentStatus())`;
 
 export const AgentDisplay = () => {
   const client = React.useContext(ClientContext);
