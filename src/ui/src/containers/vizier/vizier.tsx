@@ -73,7 +73,9 @@ const useStyles = makeStyles((theme: Theme) => {
       width: '100%',
       textAlign: 'center',
       top: 0,
-      background: 'white',
+      zIndex: 1,
+      color: 'white',
+      background: 'rgba(220,0,0,0.5)',
     },
   });
 });
