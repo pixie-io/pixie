@@ -110,6 +110,9 @@ func init() {
 	DeployCmd.Flags().BoolP("check", "c", true, "Check whether the cluster can run Pixie")
 	viper.BindPFlag("check", DeployCmd.Flags().Lookup("check"))
 
+	DeployCmd.Flags().BoolP("check_only", "", true, "Only run check and exit.")
+	viper.BindPFlag("check_only", DeployCmd.Flags().Lookup("check_only"))
+
 	DeployCmd.Flags().StringP("credentials_file", "f", "", "Location of the Pixie credentials file")
 	viper.BindPFlag("credentials_file", DeployCmd.Flags().Lookup("credentials_file"))
 
@@ -263,7 +266,8 @@ func getLatestVizierVersion(conn *grpc.ClientConn) (string, error) {
 
 func runDeployCmd(cmd *cobra.Command, args []string) {
 	check, _ := cmd.Flags().GetBool("check")
-	if check {
+	checkOnly, _ := cmd.Flags().GetBool("check_only")
+	if check || checkOnly {
 		_ = pxanalytics.Client().Enqueue(&analytics.Track{
 			UserId: pxconfig.Cfg().UniqueClientID,
 			Event:  "Cluster Check Run",
@@ -279,7 +283,13 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			})
 			log.WithError(err).Fatalln("Check pre-check has failed. To by pass pass in --check=false.")
 		}
+
+		if checkOnly {
+			fmt.Print("\nAll Checks Passed!\n")
+			os.Exit(0)
+		}
 	}
+
 	namespace, _ := cmd.Flags().GetString("namespace")
 	credsFile, _ := cmd.Flags().GetString("credentials_file")
 	devCloudNS := viper.GetString("dev_cloud_namespace")
