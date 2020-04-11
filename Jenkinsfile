@@ -159,6 +159,12 @@ def unstashFromGCS(String name) {
   """
 }
 
+def shFileExists(String f) {
+  return sh(
+    script: "test -f ${f}",
+    returnStatus: true) == 0;
+}
+
 /**
   * @brief Add build info to harbormaster and badge to Jenkins.
   */
@@ -217,7 +223,7 @@ def writeBazelRCFile() {
 }
 
 def createBazelStash(String stashName) {
-  if (!isMasterCodeReviewRun || fileExists("bazel-testlogs-archive")) {
+  if (!isMasterCodeReviewRun || shFileExists("bazel-testlogs-archive")) {
     sh 'rm -rf bazel-testlogs-archive'
     sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
     stashOnGCS(stashName, 'bazel-testlogs-archive/**')
@@ -518,15 +524,14 @@ builders['Build & Test All (opt + UI)'] = {
       // TODO(zasgar): Make sure this file is fetched for master run, otherwise we
       // might have issues with coverage.
       def uiTestResults = 'bazel-testlogs-archive/src/ui/ui-tests/test.outputs/outputs.zip'
-      sh 'mkdir testlogs'
-      if (fileExists(uiTestResults)) {
+      if (shFileExists(uiTestResults)) {
           sh "unzip ${uiTestResults} -d testlogs"
           stashOnGCS('build-ui-testlogs', 'testlogs')
           stashList.add('build-ui-testlogs')
       }
 
       def storybookBundle = 'bazel-bin/src/ui/ui-storybook-bundle.tar.gz'
-      if (fileExists(storybookBundle)) {
+      if (shFileExists(storybookBundle)) {
         sh "tar -zxf ${storybookBundle}"
         stashOnGCS('build-ui-storybook-static', 'storybook_static')
         stashList.add('build-ui-storybook-static')
@@ -534,7 +539,7 @@ builders['Build & Test All (opt + UI)'] = {
 
       // Untar the customer docs.
       def customerBundle = 'bazel-bin/docs/customer/bundle.tar.gz'
-      if(fileExists(customerBundle)) {
+      if(shFileExists(customerBundle)) {
         sh "tar -zxf ${customerBundle}"
         stashOnGCS('build-customer-docs', 'public/')
         stashList.add('build-customer-docs')
