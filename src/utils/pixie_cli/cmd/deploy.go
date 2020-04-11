@@ -110,7 +110,7 @@ func init() {
 	DeployCmd.Flags().BoolP("check", "c", true, "Check whether the cluster can run Pixie")
 	viper.BindPFlag("check", DeployCmd.Flags().Lookup("check"))
 
-	DeployCmd.Flags().BoolP("check_only", "", true, "Only run check and exit.")
+	DeployCmd.Flags().BoolP("check_only", "", false, "Only run check and exit.")
 	viper.BindPFlag("check_only", DeployCmd.Flags().Lookup("check_only"))
 
 	DeployCmd.Flags().StringP("credentials_file", "f", "", "Location of the Pixie credentials file")
