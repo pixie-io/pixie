@@ -1,0 +1,8 @@
+---
+excludes:
+- vendor
+- third_party
+protoc:
+  version: 3.8.0
+  includes:
+  - /tmp/pixie/vendor
