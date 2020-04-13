@@ -25,12 +25,12 @@ int main(int argc, char** argv) {
   LOG(INFO) << absl::Substitute("Reading symbols in $0", FLAGS_binary);
 
   PL_ASSIGN_OR_EXIT(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(FLAGS_binary));
-  std::vector<std::string> symbols =
-      elf_reader->ListSymbols(FLAGS_filter, SymbolMatchType::kSubstr);
+  std::vector<ElfReader::SymbolInfo> symbol_infos =
+      elf_reader->ListFuncSymbols(FLAGS_filter, SymbolMatchType::kSubstr);
 
-  LOG(INFO) << absl::Substitute("Found $0 symbols", symbols.size());
+  LOG(INFO) << absl::Substitute("Found $0 symbols", symbol_infos.size());
 
-  for (auto& s : symbols) {
-    LOG(INFO) << s;
+  for (auto& s : symbol_infos) {
+    LOG(INFO) << s.name;
   }
 }

@@ -1,8 +1,8 @@
 #include "src/stirling/obj_tools/elf_tools.h"
-#include "src/common/testing/test_environment.h"
-#include "src/common/testing/testing.h"
 
 #include "src/common/exec/exec.h"
+#include "src/common/testing/test_environment.h"
+#include "src/common/testing/testing.h"
 
 namespace pl {
 namespace stirling {
@@ -11,28 +11,31 @@ namespace elf_tools {
 // Path to self, since this is the object file that contains the CanYouFindThis() function above.
 const std::string_view kBinary = "src/stirling/obj_tools/testdata/dummy_exe";
 
+using ::pl::stirling::elf_tools::ElfReader;
+using ::pl::stirling::elf_tools::SymbolMatchType;
 using ::testing::ElementsAre;
+using ::testing::Field;
 using ::testing::IsEmpty;
-
-using pl::stirling::elf_tools::ElfReader;
-using pl::stirling::elf_tools::SymbolMatchType;
+using ::testing::SizeIs;
 
 TEST(ElfReaderTest, NonExistentPath) {
   auto s = pl::stirling::elf_tools::ElfReader::Create("/bogus");
   ASSERT_NOT_OK(s);
 }
 
+auto SymbolNameIs(const std::string& n) { return Field(&ElfReader::SymbolInfo::name, n); }
+
 TEST(ElfReaderTest, ListSymbolsAnyMatch) {
   const std::string path = pl::testing::TestFilePath(kBinary);
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
-  EXPECT_THAT(elf_reader->ListSymbols("CanYouFindThis", SymbolMatchType::kSubstr),
-              ElementsAre("CanYouFindThis"));
-  EXPECT_THAT(elf_reader->ListSymbols("YouFind", SymbolMatchType::kSubstr),
-              ElementsAre("CanYouFindThis"));
-  EXPECT_THAT(elf_reader->ListSymbols("FindThis", SymbolMatchType::kSubstr),
-              ElementsAre("CanYouFindThis"));
+  EXPECT_THAT(elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kSubstr),
+              ElementsAre(SymbolNameIs("CanYouFindThis")));
+  EXPECT_THAT(elf_reader->ListFuncSymbols("YouFind", SymbolMatchType::kSubstr),
+              ElementsAre(SymbolNameIs("CanYouFindThis")));
+  EXPECT_THAT(elf_reader->ListFuncSymbols("FindThis", SymbolMatchType::kSubstr),
+              ElementsAre(SymbolNameIs("CanYouFindThis")));
 }
 
 TEST(ElfReaderTest, ListSymbolsExactMatch) {
@@ -40,10 +43,10 @@ TEST(ElfReaderTest, ListSymbolsExactMatch) {
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
-  EXPECT_THAT(elf_reader->ListSymbols("CanYouFindThis", SymbolMatchType::kExact),
-              ElementsAre("CanYouFindThis"));
-  EXPECT_THAT(elf_reader->ListSymbols("YouFind", SymbolMatchType::kExact), IsEmpty());
-  EXPECT_THAT(elf_reader->ListSymbols("FindThis", SymbolMatchType::kExact), IsEmpty());
+  EXPECT_THAT(elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kExact),
+              ElementsAre(SymbolNameIs("CanYouFindThis")));
+  EXPECT_THAT(elf_reader->ListFuncSymbols("YouFind", SymbolMatchType::kExact), IsEmpty());
+  EXPECT_THAT(elf_reader->ListFuncSymbols("FindThis", SymbolMatchType::kExact), IsEmpty());
 }
 
 TEST(ElfReaderTest, ListSymbolsSuffixMatch) {
@@ -51,11 +54,11 @@ TEST(ElfReaderTest, ListSymbolsSuffixMatch) {
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
-  EXPECT_THAT(elf_reader->ListSymbols("CanYouFindThis", SymbolMatchType::kSuffix),
-              ElementsAre("CanYouFindThis"));
-  EXPECT_THAT(elf_reader->ListSymbols("YouFind", SymbolMatchType::kSuffix), IsEmpty());
-  EXPECT_THAT(elf_reader->ListSymbols("FindThis", SymbolMatchType::kSuffix),
-              ElementsAre("CanYouFindThis"));
+  EXPECT_THAT(elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kSuffix),
+              ElementsAre(SymbolNameIs("CanYouFindThis")));
+  EXPECT_THAT(elf_reader->ListFuncSymbols("YouFind", SymbolMatchType::kSuffix), IsEmpty());
+  EXPECT_THAT(elf_reader->ListFuncSymbols("FindThis", SymbolMatchType::kSuffix),
+              ElementsAre(SymbolNameIs("CanYouFindThis")));
 }
 
 #ifdef __linux__
@@ -103,20 +106,24 @@ TEST(ElfReaderTest, ExternalDebugSymbols) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
                        ElfReader::Create(stripped_bin, debug_dir));
 
-  EXPECT_THAT(elf_reader->ListSymbols("CanYouFindThis", SymbolMatchType::kExact),
-              ElementsAre("CanYouFindThis"));
+  EXPECT_THAT(elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kExact),
+              ElementsAre(SymbolNameIs("CanYouFindThis")));
 }
 
 TEST(ElfReaderTest, FuncByteCode) {
-  constexpr char kFuncByteCode[] =
-      "\x55\x48\x89\xe5\x89\x7d\xfc\x89\x75\xf8\x8b\x45\xfc\x03\x45\xf8\x5d\xc3";
+  elf_tools::InitLLVMDisasm();
   {
     const std::string path =
         pl::testing::TestFilePath("src/stirling/obj_tools/testdata/prebuilt_dummy_exe");
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
+    const std::vector<ElfReader::SymbolInfo> symbol_infos =
+        elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kExact);
+    ASSERT_THAT(symbol_infos, SizeIs(1));
+    const auto& symbol_info = symbol_infos.front();
     // The byte code can be examined with:
     // objdump -d src/stirling/obj_tools/testdata/prebuilt_dummy_exe | grep CanYouFindThis -A 20
-    ASSERT_OK_AND_EQ(elf_reader->FuncByteCode("CanYouFindThis"), kFuncByteCode);
+    // 0x201101 is the address of the 'c3' opcode.
+    ASSERT_OK_AND_THAT(elf_reader->FuncRetInstAddrs(symbol_info), ElementsAre(0x201101));
   }
   {
     const std::string stripped_bin =
@@ -125,7 +132,11 @@ TEST(ElfReaderTest, FuncByteCode) {
         pl::testing::TestFilePath("src/stirling/obj_tools/testdata/usr/lib/debug");
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader,
                          ElfReader::Create(stripped_bin, debug_dir));
-    ASSERT_OK_AND_EQ(elf_reader->FuncByteCode("CanYouFindThis"), kFuncByteCode);
+    const std::vector<ElfReader::SymbolInfo> symbol_infos =
+        elf_reader->ListFuncSymbols("CanYouFindThis", SymbolMatchType::kExact);
+    ASSERT_THAT(symbol_infos, SizeIs(1));
+    const auto& symbol_info = symbol_infos.front();
+    ASSERT_OK_AND_THAT(elf_reader->FuncRetInstAddrs(symbol_info), ElementsAre(0x201101));
   }
 }
 

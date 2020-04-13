@@ -33,19 +33,6 @@ TEST(GetActiveBinaryTest, CaptureTestBinary) {
   EXPECT_OK_AND_THAT(binary_or, EndsWith("src/stirling/obj_tools/obj_tools_test"));
 }
 
-TEST(ObjToolsTest, FindRetInsts) {
-  // Note \xc2 \xca must be followed by 2 bytes, it cannot be arbitrary values. For example,
-  // \xc2\x00\x00 is rejected by disassembler.
-  constexpr char kData[] = "\x55\xc3\xcb\xc2\x01\x01\xca\x01\x01\xc3\xcb";
-
-  utils::u8string_view byte_codes(reinterpret_cast<const uint8_t*>(kData));
-
-  InitLLVMDisasm();
-  LLVMDisasmContext disasm_ctx;
-
-  EXPECT_THAT(FindRetInsts(disasm_ctx, byte_codes), ElementsAre(1, 2, 3, 6, 9, 10));
-}
-
 }  // namespace obj_tools
 }  // namespace stirling
 }  // namespace pl

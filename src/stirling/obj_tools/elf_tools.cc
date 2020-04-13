@@ -1,5 +1,9 @@
 #include "src/stirling/obj_tools/elf_tools.h"
 
+#include <llvm-c/Disassembler.h>
+#include <llvm/MC/MCDisassembler/MCDisassembler.h>
+#include <llvm/Support/TargetSelect.h>
+
 #include <absl/container/flat_hash_set.h>
 #include <set>
 #include <utility>
@@ -11,6 +15,14 @@
 namespace pl {
 namespace stirling {
 namespace elf_tools {
+
+void InitLLVMDisasm() {
+  // It's legal to call these multiple times.
+  llvm::InitializeNativeTarget();
+  llvm::InitializeNativeTargetAsmPrinter();
+  llvm::InitializeNativeTargetAsmParser();
+  llvm::InitializeNativeTargetDisassembler();
+}
 
 // See http://elfio.sourceforge.net/elfio.pdf for examples of how to use ELFIO.
 
@@ -170,27 +182,26 @@ StatusOr<std::vector<ElfReader::SymbolInfo>> ElfReader::SearchSymbols(
   }
   return symbol_infos;
 }
-
-std::vector<std::string> ElfReader::ListSymbols(std::string_view search_symbol,
-                                                SymbolMatchType match_type) {
+std::vector<ElfReader::SymbolInfo> ElfReader::ListFuncSymbols(std::string_view search_symbol,
+                                                              SymbolMatchType match_type) {
   auto symbol_infos_or = SearchSymbols(search_symbol, match_type, STT_FUNC);
   if (!symbol_infos_or.ok()) {
     return {};
   }
 
-  std::vector<std::string> symbol_names;
+  std::vector<ElfReader::SymbolInfo> symbol_infos = symbol_infos_or.ConsumeValueOrDie();
   absl::flat_hash_set<uint64_t> symbol_addrs;
 
-  auto symbol_infos = symbol_infos_or.ConsumeValueOrDie();
+  std::vector<ElfReader::SymbolInfo> res;
   for (auto& symbol_info : symbol_infos) {
     // Symbol address has already been seen.
     // Note that multiple symbols can point to the same address.
     // But symbol names cannot be duplicate.
     if (symbol_addrs.insert(symbol_info.address).second) {
-      symbol_names.push_back(std::move(symbol_info.name));
+      res.push_back(std::move(symbol_info));
     }
   }
-  return symbol_names;
+  return res;
 }
 
 std::optional<int64_t> ElfReader::SymbolAddress(std::string_view symbol) {
@@ -205,7 +216,99 @@ std::optional<int64_t> ElfReader::SymbolAddress(std::string_view symbol) {
   return {};
 }
 
-StatusOr<std::string> ElfReader::FuncByteCode(std::string_view symbol) {
+namespace {
+
+/**
+ * RAII wrapper around LLVMDisasmContextRef.
+ */
+class LLVMDisasmContext {
+ public:
+  LLVMDisasmContext() {
+    // TripleName is ARCHITECTURE-VENDOR-OPERATING_SYSTEM.
+    // See https://llvm.org/doxygen/Triple_8h_source.html
+    // TODO(yzhao): Change to get TripleName from the system, instead of hard coding.
+    ref_ = LLVMCreateDisasm(/*TripleName*/ "x86_64-pc-linux",
+                            /*DisInfo*/ nullptr, /*TagType*/ 0, /*LLVMOpInfoCallback*/ nullptr,
+                            /*LLVMSymbolLookupCallback*/ nullptr);
+  }
+
+  ~LLVMDisasmContext() { LLVMDisasmDispose(ref_); }
+
+  LLVMDisasmContextRef ref() const { return ref_; }
+
+ private:
+  LLVMDisasmContextRef ref_ = nullptr;
+};
+
+bool IsRetInst(uint8_t code) {
+  // https://c9x.me/x86/html/file_module_x86_id_280.html for full list.
+  //
+  // Near return to calling procedure.
+  constexpr uint8_t kRetn = '\xc3';
+
+  // Far return to calling procedure.
+  constexpr uint8_t kRetf = '\xcb';
+
+  // Near return to calling procedure and pop imm16 bytes from stack.
+  constexpr uint8_t kRetnImm = '\xc2';
+
+  // Far return to calling procedure and pop imm16 bytes from stack.
+  constexpr uint8_t kRetfImm = '\xca';
+
+  return code == kRetn || code == kRetf || code == kRetnImm || code == kRetfImm;
+}
+
+std::vector<int> FindRetInsts(utils::u8string_view byte_code) {
+  if (byte_code.empty()) {
+    return {};
+  }
+
+  // TODO(yzhao): This is a short-term quick way to avoid unnecessary overheads.
+  // We should create LLVMDisasmContext object inside SocketTraceConnector and pass it around.
+  static const LLVMDisasmContext kLLVMDisasmContext;
+
+  // Size of the buffer to hold disassembled assembly code. Since we do not really use the assembly
+  // code, we just provide a small buffer.
+  // (Unfortunately, nullptr and 0 crashes.)
+  constexpr int kBufSize = 32;
+  // Initialize array to zero. See more details at: https://stackoverflow.com/a/5591516.
+  char buf[kBufSize] = {};
+
+  int pc = 0;
+  auto* codes = const_cast<uint8_t*>(byte_code.data());
+  int codes_size = byte_code.size();
+  int inst_size = 0;
+
+  std::vector<int> res;
+  do {
+    if (IsRetInst(*codes)) {
+      res.push_back(pc);
+    }
+    // TODO(yzhao): MCDisassembler::getInst() works better here, because it returns a MCInst, with
+    // an opcode for examination. Unfortunately, MCDisassembler is difficult to create without
+    // class LLVMDisasmContex, which is not exposed.
+    inst_size =
+        LLVMDisasmInstruction(kLLVMDisasmContext.ref(), codes, codes_size, pc, buf, kBufSize);
+
+    pc += inst_size;
+    codes += inst_size;
+    codes_size -= inst_size;
+  } while (inst_size != 0);
+  return res;
+}
+
+}  // namespace
+
+StatusOr<std::vector<int>> ElfReader::FuncRetInstAddrs(const SymbolInfo& func_symbol) {
+  PL_ASSIGN_OR_RETURN(utils::u8string byte_code, FuncByteCode(func_symbol));
+  std::vector<int> addrs = FindRetInsts(byte_code);
+  for (auto& offset : addrs) {
+    offset += func_symbol.address;
+  }
+  return addrs;
+}
+
+StatusOr<utils::u8string> ElfReader::FuncByteCode(const SymbolInfo& func_symbol) {
   constexpr char kDotText[] = ".text";
   ELFIO::section* text_section = nullptr;
   for (int i = 0; i < elf_reader_.sections.size(); ++i) {
@@ -218,26 +321,21 @@ StatusOr<std::string> ElfReader::FuncByteCode(std::string_view symbol) {
   if (text_section == nullptr) {
     return error::NotFound("Could not find section=$0 in binary=$1", kDotText, binary_path_);
   }
-  PL_ASSIGN_OR_RETURN(auto symbol_infos, SearchSymbols(symbol, SymbolMatchType::kExact, STT_FUNC));
-  if (symbol_infos.empty()) {
-    return error::NotFound("Could not find symbol=$0 in binary=$1", symbol, binary_path_);
-  }
-  int offset =
-      symbol_infos.front().address - text_section->get_address() + text_section->get_offset();
-  int size = symbol_infos.front().size;
+  int offset = func_symbol.address - text_section->get_address() + text_section->get_offset();
 
   std::ifstream ifs(binary_path_, std::ios::binary);
   if (!ifs.seekg(offset)) {
     return error::Internal("Failed to seek position=$0 in binary=$1", offset, binary_path_);
   }
-  std::string byte_code(size, '\0');
-  if (!ifs.read(byte_code.data(), size)) {
-    return error::Internal("Failed to read size=$0 bytes from offset=$1 in binary=$2", size, offset,
-                           binary_path_);
+  utils::u8string byte_code(func_symbol.size, '\0');
+  auto* buf = reinterpret_cast<char*>(byte_code.data());
+  if (!ifs.read(buf, func_symbol.size)) {
+    return error::Internal("Failed to read size=$0 bytes from offset=$1 in binary=$2",
+                           func_symbol.size, offset, binary_path_);
   }
-  if (ifs.gcount() != size) {
+  if (ifs.gcount() != static_cast<int64_t>(func_symbol.size)) {
     return error::Internal("Only read size=$0 bytes from offset=$1 in binary=$2, expect $3 bytes",
-                           size, offset, binary_path_, ifs.gcount());
+                           func_symbol.size, offset, binary_path_, ifs.gcount());
   }
   return byte_code;
 }

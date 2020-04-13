@@ -1,7 +1,5 @@
 #pragma once
 
-#include <llvm-c/DisassemblerTypes.h>
-
 #include <filesystem>
 #include <map>
 #include <string>
@@ -31,32 +29,6 @@ pl::StatusOr<std::filesystem::path> GetActiveBinary(std::filesystem::path host_p
 std::map<std::string, std::vector<int>> GetActiveBinaries(
     const std::map<int32_t, std::filesystem::path>& pid_paths,
     const std::filesystem::path& host_path = {});
-
-/**
- * Initialize environment for LLVM disassembler APIs.
- * Can be called multiple times.
- */
-void InitLLVMDisasm();
-
-/**
- * RAII wrapper around LLVMDisasmContextRef.
- */
-class LLVMDisasmContext {
- public:
-  LLVMDisasmContext();
-  ~LLVMDisasmContext();
-
-  LLVMDisasmContextRef ref() const { return ref_; }
-
- private:
-  LLVMDisasmContextRef ref_ = nullptr;
-};
-
-/**
- * Returns offset of all return instructions in the input byte code.
- */
-std::vector<int> FindRetInsts(const LLVMDisasmContext& llvm_disam_ctx,
-                              ::pl::utils::u8string_view byte_code);
 
 }  // namespace obj_tools
 }  // namespace stirling
