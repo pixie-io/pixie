@@ -1,3 +1,4 @@
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -8,9 +9,9 @@ metadata:
 spec:
   type: NodePort
   ports:
-    - port: 59000
-      protocol: TCP
-      targetPort: 59000
-      name: tcp-https
+  - port: 59000
+    protocol: TCP
+    targetPort: 59000
+    name: tcp-https
   selector:
     name: customer-docs

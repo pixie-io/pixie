@@ -6,34 +6,50 @@ build:
     context: .
     bazel:
       target: //docs/customer:customer_docs_prod_image.tar
+  tagPolicy:
+    dateTime: {}
+  local:
+    push: true
 deploy:
   kustomize:
     paths:
-    - k8s/customer_docs_dev
+    - k8s/customer_docs/dev
 profiles:
-- name: dev
+- name: minikube
   patches:
   - op: replace
-    path: /build
+    path: /build/local
     value:
-      local:
-        push: false
+      push: false
+  activation:
+  - kubeContext: minikube
+- name: dev
   activation:
   - command: dev
-- name: nightly
+- name: staging
+  patches:
+  - op: replace
+    path: /deploy/kustomize
+    value:
+      path: k8s/customer_docs/staging
+  activation:
+  - env: PL_BUILD_TYPE=staging
+- name: prod
   patches:
   - op: add
     path: /build/artifacts/context=./bazel/args
     value:
+    - --stamp
     - --compilation_mode=opt
-  - op: add
-    path: /build/tagPolicy
-    value:
-      envTemplate:
-        template: '{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}'
   - op: replace
     path: /deploy/kustomize
     value:
-      path: k8s/customer_docs/nightly
+      path: k8s/customer_docs/prod
+  - op: add
+    path: /build/tagPolicy
+    value:
+      dateTime: null
+      envTemplate:
+        template: '{{.IMAGE_NAME}}:{{.PL_IMAGE_TAG}}'
   activation:
-  - env: PL_BUILD_TYPE=nightly
+  - env: PL_BUILD_TYPE=prod
