@@ -6,7 +6,7 @@ import {parseSpecs, VisualizationSpecMap} from 'components/vega/spec';
 import * as React from 'react';
 
 import {parsePlacementOld, Placement} from './layout';
-import {parseVis, Vis} from './vis';
+import {getQueryFuncs, parseVis, Vis} from './vis';
 
 interface LiveContextProps {
   // Old live view format functions.
@@ -128,7 +128,7 @@ const LiveContextProvider = (props) => {
     }
     let err;
     let queryId;
-    client.executeScript(inputScript || script, inputVis || vis).then((results) => {
+    client.executeScript(inputScript || script, getQueryFuncs(inputVis || vis)).then((results) => {
       const newTables = {};
       queryId = results.queryId;
       for (const table of results.tables) {

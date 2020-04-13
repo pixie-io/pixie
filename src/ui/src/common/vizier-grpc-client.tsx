@@ -18,6 +18,18 @@ export interface VizierQueryResult {
   executionStats?: QueryExecutionStats;
 }
 
+export interface VizierQueryArg {
+  name: string;
+  value?: string;
+  variable?: string;
+}
+
+export interface VizierQueryFunc {
+  name: string;
+  outputTablePrefix: string;
+  args: VizierQueryArg[];
+}
+
 export class VizierGRPCClient {
   private client: VizierServiceClient;
 
@@ -42,10 +54,26 @@ export class VizierGRPCClient {
     });
   }
 
-  executeScript(script: string, args?: {}): Promise<VizierQueryResult> {
+  executeScript(script: string, funcs?: VizierQueryFunc[]): Promise<VizierQueryResult> {
     const req = new ExecuteScriptRequest();
     req.setClusterId(this.clusterID);
     req.setQueryStr(script);
+
+    funcs.forEach((input: VizierQueryFunc) => {
+      const execFuncPb = new ExecuteScriptRequest.FuncToExecute();
+      execFuncPb.setFuncName(input.name);
+      execFuncPb.setOutputTablePrefix(input.outputTablePrefix);
+      input.args.forEach((arg: VizierQueryArg) => {
+        const argValPb = new ExecuteScriptRequest.FuncToExecute.ArgValue();
+        argValPb.setName(arg.name);
+        if (!arg.value) {
+          throw new Error('No value for arg ' + arg.name + '. Variables not currently supported.');
+        }
+        argValPb.setValue(arg.value);
+        execFuncPb.addArgValues(argValPb);
+      });
+      req.addExecFuncs(execFuncPb);
+    });
 
     return new Promise((resolve, reject) => {
       const call = this.client.executeScript(req, this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` });
