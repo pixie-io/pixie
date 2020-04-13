@@ -17,8 +17,8 @@ create_artifact() {
     printenv
 
     # Build cloud assets.
-    kustomize build k8s/cloud/staging > staging.yaml
-    kustomize build k8s/cloud/prod > prod.yaml
+    kustomize build "k8s/${artifact_name}/staging" > staging.yaml
+    kustomize build "k8s/${artifact_name}/prod" > prod.yaml
     output_path="gs://pl-infra-dev-artifacts/kustomize/${BUILD_NUMBER}/${artifact_name}"
     gsutil cp staging.yaml "${output_path}/staging.yaml"
     gsutil cp prod.yaml "${output_path}/prod.yaml"
