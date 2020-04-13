@@ -4,4 +4,4 @@
 . "$(dirname "$0")/artifact.sh"
 
 
-create_artifact "cloud" "skaffold/skaffold_cloud.yaml"
+create_artifact "customer_docs" "skaffold/skaffold_customer_docs.yaml"

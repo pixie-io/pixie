@@ -668,7 +668,9 @@ def buildScriptForCommits = {
           WithSourceCode {
             dockerStep('', devDockerImageExtrasWithTag) {
                 sh './ci/build_cloud_artifacts.sh'
-                archiveArtifacts "manifest.json"
+                archiveArtifacts 'manifest_cloud.json'
+                sh './ci/build_customer_docs_artifacts.sh'
+                archiveArtifacts 'manifest_customer_docs.json'
             }
           }
         }
