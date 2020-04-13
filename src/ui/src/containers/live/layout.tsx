@@ -1,5 +1,7 @@
 import {VisualizationSpecMap} from 'components/vega/spec';
 
+import {Vis} from './vis';
+
 export interface ChartPosition {
   x: number;
   y: number;
@@ -23,8 +25,61 @@ export interface Placement {
 export const GRID_WIDTH = 12;
 export const DEFAULT_HEIGHT = 3;
 
+// Tiles a grid with the vis spec widgets.
+function layoutDefaultGrid(visSpec: Vis): Vis {
+  const newVis = {
+    ...visSpec,
+    widgets: [],
+  };
+  let curX: number = 0;
+  let curY: number = 0;
+  const elemWidth = GRID_WIDTH / 2;
+
+  visSpec.widgets.forEach((widget) => {
+    // If we exceed the current width, move to the next row.
+    if (curX >= GRID_WIDTH) {
+      curX = 0;
+      curY += DEFAULT_HEIGHT;
+    }
+    newVis.widgets.push({
+      ...widget,
+      position: { x: curX, y: curY, w: elemWidth, h: DEFAULT_HEIGHT },
+    });
+    // Move the next position to the right.
+    curX += elemWidth;
+  });
+
+  return newVis;
+}
+
+export function addLayout(visSpec: Vis): Vis {
+  for (const widget of visSpec.widgets) {
+    if (!widget.position) {
+      return layoutDefaultGrid(visSpec);
+    }
+  }
+  return visSpec;
+}
+
+export function toLayout(visSpec: Vis) {
+  return visSpec.widgets.map((widget, i) => {
+    return widget.position;
+  });
+}
+
+export function updatePositions(visSpec: Vis, layouts: ChartPosition[]): Vis {
+  return {
+    widgets: layouts.map((layout, i) => {
+      return {
+        ...visSpec.widgets[i],
+        position: layout,
+      };
+    }),
+  };
+}
+
 // Tiles a grid with the VegaSpec keys.
-function layoutDefaultGrid(vegaSpec: VisualizationSpecMap): Placement {
+function layoutDefaultGridOld(vegaSpec: VisualizationSpecMap): Placement {
   const placement = {};
   let curX: number = 0;
   let curY: number = 0;
@@ -44,19 +99,19 @@ function layoutDefaultGrid(vegaSpec: VisualizationSpecMap): Placement {
   return placement;
 }
 
-// buildLayout compiles a layout given the inputs. If a placement isn't found for a vega spec,
+// buildLayoutOld compiles a layout given the inputs. If a placement isn't found for a vega spec,
 // generate a new set of placement.
-export const buildLayout = (vegaSpecMap: VisualizationSpecMap, placement: Placement): Placement => {
+export const buildLayoutOld = (vegaSpecMap: VisualizationSpecMap, placement: Placement): Placement => {
   for (const key of Object.keys(vegaSpecMap)) {
     if (key in placement) {
       continue;
     }
-    return layoutDefaultGrid(vegaSpecMap);
+    return layoutDefaultGridOld(vegaSpecMap);
   }
   return placement;
 };
 
-export function toLayout(placement: Placement) {
+export function toLayoutOld(placement: Placement) {
   return Object.keys(placement).map((key) => {
     const chart = placement[key];
     return {
@@ -78,7 +133,7 @@ export function parsePlacementOld(json: string): Placement {
   return null;
 }
 
-export function updatePositions(placement: Placement, layouts: Layout[]): Placement {
+export function updatePositionsOld(placement: Placement, layouts: Layout[]): Placement {
   const newPlacement = {};
   for (const { i, x, y, w, h } of layouts) {
     const old = placement[i];

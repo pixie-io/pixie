@@ -2,6 +2,8 @@ import {Spec as VgSpec} from 'vega';
 import {VisualizationSpec} from 'vega-embed';
 import {TopLevelSpec as VlSpec} from 'vega-lite';
 
+import {DISPLAY_TYPE_KEY, WidgetDisplay} from './vis';
+
 const BAR_CHART_TYPE = 'pixielabs.ai/pl.vispb.BarChart';
 const VEGA_CHART_TYPE = 'pixielabs.ai/pl.vispb.VegaChart';
 const VEGA_LITE_V4 = 'https://vega.github.io/schema/vega-lite/v4.json';
@@ -9,7 +11,7 @@ const VEGA_LITE_SCHEMA_SUBSTRING = 'vega.github.io/schema/vega-lite/';
 const VEGA_SCHEMA_SUBSTRING = 'vega.github.io/schema/vega/';
 const VEGA_SCHEMA = '$schema';
 const TIMESERIES_CHART_TYPE = 'pixielabs.ai/pl.vispb.TimeseriesChart';
-const TYPE_KEY = '@type';
+
 
 interface XAxis {
   readonly label: string;
@@ -26,8 +28,7 @@ interface Timeseries {
   readonly stack_by_series?: boolean;
 }
 
-interface TimeseriesDisplay {
-  readonly '@type': string;
+interface TimeseriesDisplay extends WidgetDisplay {
   readonly title?: string;
   readonly xAxis?: XAxis;
   readonly yAxis?: YAxis;
@@ -41,23 +42,21 @@ interface Bar {
   readonly group_by?: string;
 }
 
-interface BarDisplay {
-  readonly '@type': string;
+interface BarDisplay extends WidgetDisplay {
   readonly title?: string;
   readonly xAxis?: XAxis;
   readonly yAxis?: YAxis;
   readonly bar: Bar;
 }
 
-interface VegaDisplay {
-  readonly '@type': string;
+interface VegaDisplay extends WidgetDisplay {
   readonly spec: string;
 }
 
 export type ChartDisplay = TimeseriesDisplay | BarDisplay | VegaDisplay;
 
 export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: string): VisualizationSpec {
-  switch (display[TYPE_KEY]) {
+  switch (display[DISPLAY_TYPE_KEY]) {
     case BAR_CHART_TYPE:
       return convertToBarChart(display as BarDisplay, source);
     case TIMESERIES_CHART_TYPE:
@@ -65,7 +64,7 @@ export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: st
     case VEGA_CHART_TYPE:
       return convertToVegaChart(display as VegaDisplay, source);
     default:
-      throw new Error('Unsupported display type: ' + display[TYPE_KEY]);
+      throw new Error('Unsupported display type: ' + display[DISPLAY_TYPE_KEY]);
   }
 }
 

@@ -1,6 +1,7 @@
 import {VisualizationSpecMap} from 'components/vega/spec';
 
-import {buildLayout, Chart, ChartPosition} from './layout';
+import {addLayout, buildLayoutOld, Chart, ChartPosition} from './layout';
+import {TABLE_DISPLAY_TYPE, Vis} from './vis';
 
 const vegaSpecConfig: VisualizationSpecMap = {
   latency: {
@@ -80,14 +81,14 @@ const vegaSpecConfig: VisualizationSpecMap = {
   },
 };
 
-describe('BuildLayout', () => {
+describe('BuildLayout old', () => {
   it('BuildLayout tiles a grid', () => {
     const expectedPositions = {
       latency: { position: { x: 0, y: 0, w: 6, h: 3 }, description: '' },
       error_rate: { position: { x: 6, y: 0, w: 6, h: 3 }, description: '' },
       rps: { position: { x: 0, y: 3, w: 6, h: 3 }, description: '' },
     };
-    const layout = buildLayout(vegaSpecConfig, {});
+    const layout = buildLayoutOld(vegaSpecConfig, {});
     expect(layout).toEqual(expectedPositions);
   });
 
@@ -98,7 +99,83 @@ describe('BuildLayout', () => {
       error_rate: { position: { x: 1, y: 0, w: 1, h: 1 }, description: '' },
       rps: { position: { x: 0, y: 1, w: 1, h: 1 }, description: '' },
     };
-    const layout = buildLayout(vegaSpecConfig, chartLayout);
+    const layout = buildLayoutOld(vegaSpecConfig, chartLayout);
     expect(layout).toEqual(chartLayout);
+  });
+});
+
+const visSpec: Vis = {
+  widgets: [
+    {
+      name: 'latency',
+      func: {
+        name: 'get_latency',
+        args: [],
+      },
+      displaySpec: {
+        '@type': TABLE_DISPLAY_TYPE,
+      },
+    },
+    {
+      name: 'error_rate',
+      func: {
+        name: 'get_error_rate',
+        args: [],
+      },
+      displaySpec: {
+        '@type': TABLE_DISPLAY_TYPE,
+      },
+    },
+    {
+      name: 'rps',
+      func: {
+        name: 'get_error_rate',
+        args: [],
+      },
+      displaySpec: {
+        '@type': TABLE_DISPLAY_TYPE,
+      },
+    },
+  ],
+};
+
+describe('BuildLayout', () => {
+  it('tiles a grid', () => {
+    const expectedPositions = [
+      { x: 0, y: 0, w: 6, h: 3 },
+      { x: 6, y: 0, w: 6, h: 3 },
+      { x: 0, y: 3, w: 6, h: 3 },
+    ];
+
+    const newVis = addLayout(visSpec);
+    expect(newVis).toStrictEqual({
+      ...visSpec,
+      widgets: visSpec.widgets.map((widget, i) => {
+        return {
+          ...widget,
+          position: expectedPositions[i],
+        };
+      }),
+    });
+  });
+
+  it('keeps a grid when specified', () => {
+    const positions = [
+      { x: 0, y: 0, w: 6, h: 3 },
+      { x: 6, y: 0, w: 6, h: 3 },
+      { x: 0, y: 3, w: 6, h: 3 },
+    ];
+
+    const inputVis = {
+      ...visSpec,
+      widgets: visSpec.widgets.map((widget, i) => {
+        return {
+          ...widget,
+          position: positions[i],
+        };
+      }),
+    };
+    const newVis = addLayout(inputVis);
+    expect(newVis).toEqual(inputVis);
   });
 });

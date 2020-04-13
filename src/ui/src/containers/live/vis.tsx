@@ -1,5 +1,5 @@
 import {ChartDisplay} from './convert-to-vega-spec';
-import {ChartPosition} from './layout';
+import {ChartPosition, DEFAULT_HEIGHT, GRID_WIDTH} from './layout';
 
 // TODO(nserrino): Replace these with proto when the UI receives protobuf from the script manager
 // instead of json from the json bundle.
@@ -14,11 +14,18 @@ interface Func {
   args: FuncArg[];
 }
 
+export const DISPLAY_TYPE_KEY = '@type';
+export const TABLE_DISPLAY_TYPE = 'pixielabs.ai/pl.vispb.Table';
+
+export interface WidgetDisplay {
+  readonly '@type': string;
+}
+
 interface Widget {
   name?: string;
-  position: ChartPosition;
+  position?: ChartPosition;
   func: Func;
-  displaySpec: ChartDisplay | /* TableDisplay */ {};
+  displaySpec: WidgetDisplay;
 }
 
 export interface Vis {

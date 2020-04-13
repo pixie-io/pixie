@@ -12,7 +12,7 @@ import {dataFromProto} from 'utils/result-data-utils';
 import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
 
 import {LiveContext, PlacementContextOld, ResultsContext, VegaContextOld} from './context';
-import {buildLayout, toLayout, updatePositions} from './layout';
+import {buildLayoutOld, toLayoutOld, updatePositionsOld} from './layout';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -58,14 +58,14 @@ const Canvas = () => {
   }, []);
 
   React.useEffect(() => {
-    const newPlacement = buildLayout(specs, placement);
+    const newPlacement = buildLayoutOld(specs, placement);
     if (newPlacement !== placement) {
       updatePlacementOld(newPlacement);
     }
   }, [specs]);
 
   const layout = React.useMemo(() => {
-    return toLayout(placement);
+    return toLayoutOld(placement);
   }, [placement]);
 
   const charts = React.useMemo(() => {
@@ -102,9 +102,9 @@ const Canvas = () => {
   }, []);
 
   const handleLayoutChange = React.useCallback((newLayout) => {
-    updatePlacementOld(updatePositions(placement, newLayout));
+    updatePlacementOld(updatePositionsOld(placement, newLayout));
     resize();
-  }, []);
+  }, [placement]);
 
   if (!vegaModule) {
     return (
