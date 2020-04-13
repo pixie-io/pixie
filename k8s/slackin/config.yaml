@@ -9,3 +9,4 @@ data:
   SLACK_SUBDOMAIN: "pixie-community"
   SLACKIN_THEME: "pixie"
   SLACKIN_PORT: "58000"
+  SLACKIN_PROXY: "true"
