@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
@@ -327,6 +328,8 @@ func TestParseIntoCommand(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			orgID := uuid.NewV4()
+
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 			s := mock_autocomplete.NewMockSuggester(ctrl)
@@ -338,11 +341,11 @@ func TestParseIntoCommand(t *testing.T) {
 				}
 				s.
 					EXPECT().
-					GetSuggestions(k, v.requestKinds, v.requestArgs).
+					GetSuggestions(orgID, k, v.requestKinds, v.requestArgs).
 					Return(suggestions, exactMatch, nil)
 			}
 
-			cmd, err := autocomplete.ParseIntoCommand(test.input, s)
+			cmd, err := autocomplete.ParseIntoCommand(test.input, s, orgID)
 			assert.Nil(t, err)
 			assert.NotNil(t, cmd)
 

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	uuid "github.com/satori/go.uuid"
+
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete/ebnf"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 )
@@ -17,7 +19,7 @@ type Suggester interface {
 	// GetSuggestions does a fuzzy match on the given input.
 	// allowedKinds: The entity types we should be matching with.
 	// allowedArgs: If matching a script entity, these are the arg types the script should be able to take.
-	GetSuggestions(input string, allowedKinds []cloudapipb.AutocompleteEntityKind, allowedArgs []cloudapipb.AutocompleteEntityKind) ([]*Suggestion, bool, error)
+	GetSuggestions(orgID uuid.UUID, input string, allowedKinds []cloudapipb.AutocompleteEntityKind, allowedArgs []cloudapipb.AutocompleteEntityKind) ([]*Suggestion, bool, error)
 }
 
 // Suggestion is a suggestion for a token.
@@ -59,9 +61,9 @@ var protoToKindLabelMap = map[cloudapipb.AutocompleteEntityKind]string{
 }
 
 // Autocomplete returns a formatted string and suggestions for the given input.
-func Autocomplete(input string, cursorPos int, action cloudapipb.AutocompleteActionType, s Suggester) (string, bool, []*cloudapipb.TabSuggestion, error) {
+func Autocomplete(input string, cursorPos int, action cloudapipb.AutocompleteActionType, s Suggester, orgID uuid.UUID) (string, bool, []*cloudapipb.TabSuggestion, error) {
 	inputWithCursor := input[:cursorPos] + "$0" + input[cursorPos:]
-	cmd, err := ParseIntoCommand(inputWithCursor, s)
+	cmd, err := ParseIntoCommand(inputWithCursor, s, orgID)
 	if err != nil {
 		return "", false, nil, err
 	}
@@ -72,7 +74,7 @@ func Autocomplete(input string, cursorPos int, action cloudapipb.AutocompleteAct
 }
 
 // ParseIntoCommand takes user input and attempts to parse it into a valid command with suggestions.
-func ParseIntoCommand(input string, s Suggester) (*Command, error) {
+func ParseIntoCommand(input string, s Suggester, orgID uuid.UUID) (*Command, error) {
 	parsedCmd, err := ebnf.ParseInput(input)
 	if err != nil {
 		return nil, err
@@ -95,7 +97,7 @@ func ParseIntoCommand(input string, s Suggester) (*Command, error) {
 	if action == "go" {
 		err = parseGoCommand(parsedCmd, cmd, s)
 	} else {
-		err = parseRunCommand(parsedCmd, cmd, s)
+		err = parseRunCommand(parsedCmd, cmd, s, orgID)
 	}
 
 	if err != nil {
@@ -109,7 +111,7 @@ func parseGoCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester) error 
 	return errors.New("Not yet implemented")
 }
 
-func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester) (int, map[cloudapipb.AutocompleteEntityKind]int, error) {
+func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID uuid.UUID) (int, map[cloudapipb.AutocompleteEntityKind]int, error) {
 	// The TabStop after the action should be the script. Check if there are any scripts defined.
 	scriptArgs := make(map[cloudapipb.AutocompleteEntityKind]int)
 	scriptTabIndex := -1
@@ -126,7 +128,7 @@ func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester) (int, 
 				searchTerm = strings.Replace(searchTerm, CursorMarker, "", 1)
 			}
 
-			suggestions, exactMatch, err := s.GetSuggestions(searchTerm, []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT}, []cloudapipb.AutocompleteEntityKind{})
+			suggestions, exactMatch, err := s.GetSuggestions(orgID, searchTerm, []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT}, []cloudapipb.AutocompleteEntityKind{})
 			if err != nil {
 				return -1, nil, err
 			}
@@ -225,13 +227,13 @@ func validateCommand(scriptDefined bool, scriptArgs map[cloudapipb.AutocompleteE
 	}
 }
 
-func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester) error {
+func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID uuid.UUID) error {
 	if parsedCmd.Args == nil {
 		// TODO(michelle): Handle the case where there are no args.
 		return nil
 	}
 
-	scriptTabIndex, scriptArgs, err := parseRunScript(parsedCmd, cmd, s)
+	scriptTabIndex, scriptArgs, err := parseRunScript(parsedCmd, cmd, s, orgID)
 	if err != nil {
 		return err
 	}
@@ -256,7 +258,7 @@ func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester) error
 	}
 
 	// Get suggestions for each argument.
-	for i, a := range args { // TODO(michelle): Run this in parallel.
+	for i, a := range args { // TODO(michelle): Run this in parallel, or use multisearch to do a batch request.
 		ak := allowedKinds
 		if a.Kind != cloudapipb.AEK_UNKNOWN { // The kind is already specified in the input string.
 			ak = []cloudapipb.AutocompleteEntityKind{a.Kind}
@@ -265,7 +267,7 @@ func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester) error
 		if a.ContainsCursor {
 			searchTerm = strings.Replace(searchTerm, CursorMarker, "", 1)
 		}
-		suggestions, exactMatch, err := s.GetSuggestions(searchTerm, ak, specifiedEntities)
+		suggestions, exactMatch, err := s.GetSuggestions(orgID, searchTerm, ak, specifiedEntities)
 		if err != nil {
 			return err
 		}
