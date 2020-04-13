@@ -33,6 +33,10 @@ message Vis {
     // type is the type of the value that the variable belongs to. It can be a semantic type like PX_SERVICE,
     // which maps to the pxl type px.Service, or it can be a basic type like INT64.
     PXType type = 2;
+    // default_value is the default value for the variable if it isn't specified elsewhere.
+    // It is always represented as a string, but it will be parsed by the pxl script based on the type field.
+    // so for type=PX_STRING, default_value could be "foo", and for type=PX_INT64, default_value could be "123".
+    string default_value = 3;
   }
   // variables defines the set of input variables that Widgets in this Live View can bind to.
   repeated Variable variables = 1;
