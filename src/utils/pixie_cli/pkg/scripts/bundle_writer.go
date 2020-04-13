@@ -67,11 +67,9 @@ func (b BundleWriter) parseBundleScripts(basePath string) (*pixieScript, error) 
 
 	visFileExists := fileExists(visFile)
 	placementFileExists := fileExists(placementFile)
-	if visFileExists != placementFileExists {
-		if placementFileExists {
-			return nil, fmt.Errorf("if placement.json exists then vis.json needs to as well")
-		}
-		return nil, fmt.Errorf("if vis.json exists then placement.json needs to as well")
+	// Placement File requires a vis file but not vice versa.
+	if placementFileExists && !visFileExists {
+		return nil, fmt.Errorf("if placement.json exists then vis.json needs to as well")
 	}
 
 	if visFileExists {
@@ -80,7 +78,10 @@ func (b BundleWriter) parseBundleScripts(basePath string) (*pixieScript, error) 
 			return nil, err
 		}
 		ps.Vis = string(data)
+		ps.Placement = ""
+	}
 
+	if placementFileExists {
 		data, err = ioutil.ReadFile(placementFile)
 		if err != nil {
 			return nil, err
