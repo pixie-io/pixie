@@ -15,8 +15,12 @@
 #include "src/stirling/common/go_grpc_types.h"
 #include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/common/socket_trace.h"
+#include "src/stirling/cql/cql_stitcher.h"
 #include "src/stirling/data_stream.h"
+#include "src/stirling/http/http_stitcher.h"
+#include "src/stirling/http2u/stitcher.h"
 #include "src/stirling/mysql/mysql_parse.h"
+#include "src/stirling/mysql/mysql_stitcher.h"
 #include "src/stirling/socket_resolver.h"
 #include "src/stirling/socket_trace_bpf_tables.h"
 
@@ -120,7 +124,27 @@ class ConnectionTracker {
    * @return Vector of processed entries.
    */
   template <typename TProtocolTraits>
-  std::vector<typename TProtocolTraits::record_type> ProcessToRecords();
+  std::vector<typename TProtocolTraits::record_type> ProcessToRecords() {
+    using TRecordType = typename TProtocolTraits::record_type;
+    using TFrameType = typename TProtocolTraits::frame_type;
+    using TStateType = typename TProtocolTraits::state_type;
+
+    DataStreamsToFrames<TFrameType>();
+
+    InitProtocolState<TStateType>();
+
+    auto& req_frames = req_data()->Frames<TFrameType>();
+    auto& resp_frames = resp_data()->Frames<TFrameType>();
+    auto state_ptr = protocol_state<TStateType>();
+
+    RecordsWithErrorCount<TRecordType> result = ProcessFrames(&req_frames, &resp_frames, state_ptr);
+    stat_invalid_records_ += result.error_count;
+    stat_valid_records_ += result.records.size();
+
+    Cleanup<TProtocolTraits>();
+
+    return result.records;
+  }
 
   /**
    * @brief Returns reference to current set of unconsumed requests.
@@ -476,7 +500,15 @@ class ConnectionTracker {
   static inline std::shared_ptr<SocketTraceBPFTableManager> bpf_table_info_;
 
   template <typename TFrameType>
-  void DataStreamsToFrames();
+  void DataStreamsToFrames() {
+    DataStream* resp_data_ptr = resp_data();
+    DCHECK(resp_data_ptr != nullptr);
+    resp_data_ptr->template ProcessBytesToFrames<TFrameType>(MessageType::kResponse);
+
+    DataStream* req_data_ptr = req_data();
+    DCHECK(req_data_ptr != nullptr);
+    req_data_ptr->template ProcessBytesToFrames<TFrameType>(MessageType::kRequest);
+  }
 
   // Used to identify the remove endpoint in case the accept/connect was not traced.
   std::unique_ptr<SocketResolver> conn_resolver_ = nullptr;
@@ -562,6 +594,11 @@ class ConnectionTracker {
   template <typename TProtocolTraits>
   friend std::string DebugString(const ConnectionTracker& c, std::string_view prefix);
 };
+
+// Explicit template specialization must be declared in namespace scope.
+// See https://en.cppreference.com/w/cpp/language/member_template
+template <>
+std::vector<http2u::Record> ConnectionTracker::ProcessToRecords<http2u::ProtocolTraits>();
 
 template <typename TRecordType>
 std::string DebugString(const ConnectionTracker& c, std::string_view prefix);

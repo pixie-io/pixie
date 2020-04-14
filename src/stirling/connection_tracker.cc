@@ -345,49 +345,6 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   half_stream_ptr->UpdateTimestamp(data->attr.timestamp_ns);
 }
 
-template <typename TFrameType>
-void ConnectionTracker::DataStreamsToFrames() {
-  DataStream* resp_data_ptr = resp_data();
-  DCHECK(resp_data_ptr != nullptr);
-  resp_data_ptr->template ProcessBytesToFrames<TFrameType>(MessageType::kResponse);
-
-  DataStream* req_data_ptr = req_data();
-  DCHECK(req_data_ptr != nullptr);
-  req_data_ptr->template ProcessBytesToFrames<TFrameType>(MessageType::kRequest);
-}
-
-template <typename TProtocolTraits>
-std::vector<typename TProtocolTraits::record_type> ConnectionTracker::ProcessToRecords() {
-  using TRecordType = typename TProtocolTraits::record_type;
-  using TFrameType = typename TProtocolTraits::frame_type;
-  using TStateType = typename TProtocolTraits::state_type;
-
-  DataStreamsToFrames<TFrameType>();
-
-  InitProtocolState<TStateType>();
-
-  auto& req_frames = req_data()->Frames<TFrameType>();
-  auto& resp_frames = resp_data()->Frames<TFrameType>();
-  auto state_ptr = protocol_state<TStateType>();
-
-  RecordsWithErrorCount<TRecordType> result = ProcessFrames(&req_frames, &resp_frames, state_ptr);
-  stat_invalid_records_ += result.error_count;
-  stat_valid_records_ += result.records.size();
-
-  Cleanup<TProtocolTraits>();
-
-  return result.records;
-}
-
-template std::vector<typename http::ProtocolTraits::record_type>
-ConnectionTracker::ProcessToRecords<http::ProtocolTraits>();
-template std::vector<typename http2::ProtocolTraits::record_type>
-ConnectionTracker::ProcessToRecords<http2::ProtocolTraits>();
-template std::vector<typename mysql::ProtocolTraits::record_type>
-ConnectionTracker::ProcessToRecords<mysql::ProtocolTraits>();
-template std::vector<typename cass::ProtocolTraits::record_type>
-ConnectionTracker::ProcessToRecords<cass::ProtocolTraits>();
-
 template <>
 std::vector<http2u::Record> ConnectionTracker::ProcessToRecords<http2u::ProtocolTraits>() {
   // TODO(oazizi): ECHECK that raw events are empty.
