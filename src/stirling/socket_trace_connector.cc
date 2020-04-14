@@ -633,7 +633,7 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
         // to do that as this is for debugging.
         TextFormat::PrintToString(pb, &text);
         // TextFormat already output a \n, so no need to do it here.
-        *perf_buffer_events_output_stream_ << text;
+        *perf_buffer_events_output_stream_ << text << std::flush;
         break;
       case OutputFormat::kBin:
         rio::SerializeToStream(pb, perf_buffer_events_output_stream_.get());
