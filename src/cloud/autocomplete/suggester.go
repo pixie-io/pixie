@@ -56,38 +56,69 @@ func NewElasticSuggester(client *elastic.Client, mdIndex string, scriptIndex str
 	return &ElasticSuggester{client, mdIndex, scriptIndex}
 }
 
+// SuggestionRequest is a request for autocomplete suggestions.
+type SuggestionRequest struct {
+	OrgID        uuid.UUID
+	Input        string
+	AllowedKinds []cloudapipb.AutocompleteEntityKind
+	AllowedArgs  []cloudapipb.AutocompleteEntityKind
+}
+
+// SuggestionResult contains results for an autocomplete request.
+type SuggestionResult struct {
+	Suggestions []*Suggestion
+	ExactMatch  bool
+}
+
 // GetSuggestions get suggestions for the given input using Elastic.
-func (e *ElasticSuggester) GetSuggestions(orgID uuid.UUID, input string, allowedKinds []cloudapipb.AutocompleteEntityKind, allowedArgs []cloudapipb.AutocompleteEntityKind) ([]*Suggestion, bool, error) {
+func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*SuggestionResult, error) {
+
+	ms := e.client.MultiSearch()
+
+	for _, r := range reqs {
+		ms.Add(elastic.NewSearchRequest().
+			Query(e.getQueryForRequest(r.OrgID, r.Input, r.AllowedKinds, r.AllowedArgs)))
+	}
+
+	resp, err := ms.Do(context.Background())
+
+	if err != nil {
+		return nil, err
+	}
+
+	resps := make([]*SuggestionResult, len(reqs))
+	for i, r := range resp.Responses {
+		// Convert elastic entity into a suggestion object.
+		results := make([]*Suggestion, 0)
+		for _, h := range r.Hits.Hits {
+			res := &EsMDEntity{}
+			err = json.Unmarshal(h.Source, res)
+			if err != nil {
+				return nil, err
+			}
+			results = append(results, &Suggestion{
+				Name:  res.NS + "/" + res.Name,
+				Score: float64(*h.Score),
+				Kind:  elasticLabelToProtoMap[res.Kind],
+			})
+		}
+
+		exactMatch := len(results) > 0 && results[0].Name == reqs[i].Input
+		resps[i] = &SuggestionResult{
+			Suggestions: results,
+			ExactMatch:  exactMatch,
+		}
+	}
+	return resps, nil
+}
+
+func (e *ElasticSuggester) getQueryForRequest(orgID uuid.UUID, input string, allowedKinds []cloudapipb.AutocompleteEntityKind, allowedArgs []cloudapipb.AutocompleteEntityKind) *elastic.BoolQuery {
 	q := elastic.NewBoolQuery()
 
 	q.Should(e.getMDEntityQuery(orgID, input, allowedKinds))
+
 	// TODO(michelle): Add script query here once that is ready: q.Should(e.getScriptQuery(orgID, input, allowedArgs))
-	resp, err := e.client.Search().
-		Query(q).
-		Do(context.TODO())
-
-	if err != nil {
-		return nil, false, err
-	}
-
-	results := make([]*Suggestion, 0)
-
-	// Convert elastic entity into a suggestion object.
-	for _, h := range resp.Hits.Hits {
-		res := &EsMDEntity{}
-		err = json.Unmarshal(h.Source, res)
-		if err != nil {
-			return nil, false, err
-		}
-		results = append(results, &Suggestion{
-			Name:  res.NS + "/" + res.Name,
-			Score: float64(*h.Score),
-			Kind:  elasticLabelToProtoMap[res.Kind],
-		})
-	}
-
-	exactMatch := len(results) > 0 && results[0].Name == input
-	return results, exactMatch, nil
+	return q
 }
 
 func (e *ElasticSuggester) getMDEntityQuery(orgID uuid.UUID, input string, allowedKinds []cloudapipb.AutocompleteEntityKind) *elastic.BoolQuery {

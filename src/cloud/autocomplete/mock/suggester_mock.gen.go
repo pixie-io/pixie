@@ -6,9 +6,7 @@ package mock_autocomplete
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	go_uuid "github.com/satori/go.uuid"
 	autocomplete "pixielabs.ai/pixielabs/src/cloud/autocomplete"
-	cloudapipb "pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	reflect "reflect"
 )
 
@@ -36,15 +34,14 @@ func (m *MockSuggester) EXPECT() *MockSuggesterMockRecorder {
 }
 
 // GetSuggestions mocks base method
-func (m *MockSuggester) GetSuggestions(orgID go_uuid.UUID, input string, allowedKinds, allowedArgs []cloudapipb.AutocompleteEntityKind) ([]*autocomplete.Suggestion, bool, error) {
-	ret := m.ctrl.Call(m, "GetSuggestions", orgID, input, allowedKinds, allowedArgs)
-	ret0, _ := ret[0].([]*autocomplete.Suggestion)
-	ret1, _ := ret[1].(bool)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+func (m *MockSuggester) GetSuggestions(reqs []*autocomplete.SuggestionRequest) ([]*autocomplete.SuggestionResult, error) {
+	ret := m.ctrl.Call(m, "GetSuggestions", reqs)
+	ret0, _ := ret[0].([]*autocomplete.SuggestionResult)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // GetSuggestions indicates an expected call of GetSuggestions
-func (mr *MockSuggesterMockRecorder) GetSuggestions(orgID, input, allowedKinds, allowedArgs interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSuggestions", reflect.TypeOf((*MockSuggester)(nil).GetSuggestions), orgID, input, allowedKinds, allowedArgs)
+func (mr *MockSuggesterMockRecorder) GetSuggestions(reqs interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSuggestions", reflect.TypeOf((*MockSuggester)(nil).GetSuggestions), reqs)
 }

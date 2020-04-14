@@ -186,71 +186,137 @@ func insertIntoIndex(index string, id string, e autocomplete.EsMDEntity) error {
 
 func TestGetSuggestions(t *testing.T) {
 	tests := []struct {
-		name                string
-		input               string
-		orgID               uuid.UUID
-		allowedKinds        []cloudapipb.AutocompleteEntityKind
-		allowedArgs         []cloudapipb.AutocompleteEntityKind
-		expectedSuggestions []*autocomplete.Suggestion
-		expectExactMatch    bool
+		name            string
+		input           string
+		reqs            []*autocomplete.SuggestionRequest
+		expectedResults []*autocomplete.SuggestionResult
 	}{
 		{
-			name:  "no namespace",
-			input: "test",
-			orgID: org1,
-			allowedKinds: []cloudapipb.AutocompleteEntityKind{
-				cloudapipb.AEK_SVC,
-			},
-			allowedArgs:      []cloudapipb.AutocompleteEntityKind{},
-			expectExactMatch: false,
-			expectedSuggestions: []*autocomplete.Suggestion{
-				&autocomplete.Suggestion{
-					Name: "pl/testService",
-					Kind: cloudapipb.AEK_SVC,
-				},
-				&autocomplete.Suggestion{
-					Name: "anotherNS/testService",
-					Kind: cloudapipb.AEK_SVC,
+			name: "no namespace",
+			reqs: []*autocomplete.SuggestionRequest{
+				&autocomplete.SuggestionRequest{
+					Input: "test",
+					OrgID: org1,
+					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
+						cloudapipb.AEK_SVC,
+					},
+					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
 				},
 			},
-		},
-		{
-			name:  "namespace",
-			input: "pl/testService",
-			orgID: org1,
-			allowedKinds: []cloudapipb.AutocompleteEntityKind{
-				cloudapipb.AEK_SVC,
-			},
-			allowedArgs:      []cloudapipb.AutocompleteEntityKind{},
-			expectExactMatch: true,
-			expectedSuggestions: []*autocomplete.Suggestion{
-				&autocomplete.Suggestion{
-					Name: "pl/testService",
-					Kind: cloudapipb.AEK_SVC,
+			expectedResults: []*autocomplete.SuggestionResult{
+				&autocomplete.SuggestionResult{
+					ExactMatch: false,
+					Suggestions: []*autocomplete.Suggestion{
+						&autocomplete.Suggestion{
+							Name: "pl/testService",
+							Kind: cloudapipb.AEK_SVC,
+						},
+						&autocomplete.Suggestion{
+							Name: "anotherNS/testService",
+							Kind: cloudapipb.AEK_SVC,
+						},
+					},
 				},
 			},
 		},
 		{
-			name:  "multiple kinds",
-			input: "test",
-			orgID: org1,
-			allowedKinds: []cloudapipb.AutocompleteEntityKind{
-				cloudapipb.AEK_SVC, cloudapipb.AEK_POD,
+			name: "namespace",
+			reqs: []*autocomplete.SuggestionRequest{
+				&autocomplete.SuggestionRequest{
+					Input: "pl/testService",
+					OrgID: org1,
+					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
+						cloudapipb.AEK_SVC,
+					},
+					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+				},
 			},
-			allowedArgs:      []cloudapipb.AutocompleteEntityKind{},
-			expectExactMatch: false,
-			expectedSuggestions: []*autocomplete.Suggestion{
-				&autocomplete.Suggestion{
-					Name: "pl/testService",
-					Kind: cloudapipb.AEK_SVC,
+			expectedResults: []*autocomplete.SuggestionResult{
+				&autocomplete.SuggestionResult{
+					ExactMatch: true,
+					Suggestions: []*autocomplete.Suggestion{
+						&autocomplete.Suggestion{
+							Name: "pl/testService",
+							Kind: cloudapipb.AEK_SVC,
+						},
+					},
 				},
-				&autocomplete.Suggestion{
-					Name: "anotherNS/testService",
-					Kind: cloudapipb.AEK_SVC,
+			},
+		},
+		{
+			name: "multiple kinds",
+			reqs: []*autocomplete.SuggestionRequest{
+				&autocomplete.SuggestionRequest{
+					Input: "test",
+					OrgID: org1,
+					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
+						cloudapipb.AEK_SVC, cloudapipb.AEK_POD,
+					},
+					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
 				},
-				&autocomplete.Suggestion{
-					Name: "anotherNS/testPod",
-					Kind: cloudapipb.AEK_POD,
+			},
+			expectedResults: []*autocomplete.SuggestionResult{
+				&autocomplete.SuggestionResult{
+					ExactMatch: false,
+					Suggestions: []*autocomplete.Suggestion{
+						&autocomplete.Suggestion{
+							Name: "pl/testService",
+							Kind: cloudapipb.AEK_SVC,
+						},
+						&autocomplete.Suggestion{
+							Name: "anotherNS/testService",
+							Kind: cloudapipb.AEK_SVC,
+						},
+						&autocomplete.Suggestion{
+							Name: "anotherNS/testPod",
+							Kind: cloudapipb.AEK_POD,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple requests",
+			reqs: []*autocomplete.SuggestionRequest{
+				&autocomplete.SuggestionRequest{
+					Input: "pl/testService",
+					OrgID: org1,
+					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
+						cloudapipb.AEK_SVC,
+					},
+					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+				},
+				&autocomplete.SuggestionRequest{
+					Input: "test",
+					OrgID: org1,
+					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
+						cloudapipb.AEK_SVC,
+					},
+					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+				},
+			},
+			expectedResults: []*autocomplete.SuggestionResult{
+				&autocomplete.SuggestionResult{
+					ExactMatch: true,
+					Suggestions: []*autocomplete.Suggestion{
+						&autocomplete.Suggestion{
+							Name: "pl/testService",
+							Kind: cloudapipb.AEK_SVC,
+						},
+					},
+				},
+				&autocomplete.SuggestionResult{
+					ExactMatch: false,
+					Suggestions: []*autocomplete.Suggestion{
+						&autocomplete.Suggestion{
+							Name: "pl/testService",
+							Kind: cloudapipb.AEK_SVC,
+						},
+						&autocomplete.Suggestion{
+							Name: "anotherNS/testService",
+							Kind: cloudapipb.AEK_SVC,
+						},
+					},
 				},
 			},
 		},
@@ -258,15 +324,19 @@ func TestGetSuggestions(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			es := autocomplete.NewElasticSuggester(elasticClient, "md_entities", "scripts")
-			suggestions, exactMatch, err := es.GetSuggestions(test.orgID, test.input, test.allowedKinds, test.allowedArgs)
+			results, err := es.GetSuggestions(test.reqs)
 			assert.Nil(t, err)
-			assert.Equal(t, len(test.expectedSuggestions), len(suggestions))
-			// Remove the score so we can do a comparison.
-			for i := range suggestions {
-				suggestions[i].Score = 0
+			assert.NotNil(t, results)
+			assert.Equal(t, len(test.expectedResults), len(results))
+			for i, r := range results {
+				assert.Equal(t, len(test.expectedResults[i].Suggestions), len(r.Suggestions))
+				// Remove the score so we can do a comparison.
+				for j := range r.Suggestions {
+					r.Suggestions[j].Score = 0
+				}
+				assert.ElementsMatch(t, test.expectedResults[i].Suggestions, r.Suggestions)
+				assert.Equal(t, test.expectedResults[i].ExactMatch, r.ExactMatch)
 			}
-			assert.ElementsMatch(t, test.expectedSuggestions, suggestions)
-			assert.Equal(t, test.expectExactMatch, exactMatch)
 		})
 	}
 }

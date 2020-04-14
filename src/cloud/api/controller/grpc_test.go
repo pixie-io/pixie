@@ -327,40 +327,57 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 
 	s := mock_autocomplete.NewMockSuggester(ctrl)
 
-	expectedRequests := map[string]*SuggestionRequest{
-		"px/svc_info": &SuggestionRequest{
-			requestKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
-			requestArgs:  []cloudapipb.AutocompleteEntityKind{},
-			suggestions: []*autocomplete.Suggestion{
-				&autocomplete.Suggestion{
-					Name:  "px/svc_info",
-					Score: 1,
-					Args:  []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
-				},
+	requests := [][]*autocomplete.SuggestionRequest{
+		[]*autocomplete.SuggestionRequest{
+			&autocomplete.SuggestionRequest{
+				OrgID:        orgID,
+				Input:        "px/svc_info",
+				AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
+				AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 			},
-		},
-		"pl/test": &SuggestionRequest{
-			requestKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
-			requestArgs:  []cloudapipb.AutocompleteEntityKind{},
-			suggestions: []*autocomplete.Suggestion{
-				&autocomplete.Suggestion{
-					Name:  "pl/test",
-					Score: 1,
-				},
+			&autocomplete.SuggestionRequest{
+				OrgID:        orgID,
+				Input:        "pl/test",
+				AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
+				AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
 			},
 		},
 	}
-	for k, v := range expectedRequests {
-		suggestions := v.suggestions
-		exactMatch := false
-		if len(suggestions) > 0 {
-			exactMatch = suggestions[0].Score == 1
-		}
-		s.
-			EXPECT().
-			GetSuggestions(orgID, k, v.requestKinds, v.requestArgs).
-			Return(suggestions, exactMatch, nil)
+
+	responses := [][]*autocomplete.SuggestionResult{
+		[]*autocomplete.SuggestionResult{
+			&autocomplete.SuggestionResult{
+				Suggestions: []*autocomplete.Suggestion{
+					&autocomplete.Suggestion{
+						Name:  "px/svc_info",
+						Score: 1,
+						Args:  []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
+					},
+				},
+				ExactMatch: true,
+			},
+			&autocomplete.SuggestionResult{
+				Suggestions: []*autocomplete.Suggestion{
+					&autocomplete.Suggestion{
+						Name:  "px/test",
+						Score: 1,
+					},
+				},
+				ExactMatch: true,
+			},
+		},
 	}
+
+	suggestionCalls := 0
+	s.EXPECT().
+		GetSuggestions(gomock.Any()).
+		DoAndReturn(func(req []*autocomplete.SuggestionRequest) ([]*autocomplete.SuggestionResult, error) {
+			assert.ElementsMatch(t, requests[suggestionCalls], req)
+			resp := responses[suggestionCalls]
+			suggestionCalls++
+			return resp, nil
+		}).
+		Times(len(requests))
 
 	autocompleteServer := &controller.AutocompleteServer{
 		Suggester: s,

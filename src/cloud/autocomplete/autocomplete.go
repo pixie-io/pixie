@@ -17,9 +17,7 @@ var CursorMarker = "$0"
 // Suggester is responsible for providing suggestions.
 type Suggester interface {
 	// GetSuggestions does a fuzzy match on the given input.
-	// allowedKinds: The entity types we should be matching with.
-	// allowedArgs: If matching a script entity, these are the arg types the script should be able to take.
-	GetSuggestions(orgID uuid.UUID, input string, allowedKinds []cloudapipb.AutocompleteEntityKind, allowedArgs []cloudapipb.AutocompleteEntityKind) ([]*Suggestion, bool, error)
+	GetSuggestions(reqs []*SuggestionRequest) ([]*SuggestionResult, error)
 }
 
 // Suggestion is a suggestion for a token.
@@ -128,10 +126,13 @@ func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID 
 				searchTerm = strings.Replace(searchTerm, CursorMarker, "", 1)
 			}
 
-			suggestions, exactMatch, err := s.GetSuggestions(orgID, searchTerm, []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT}, []cloudapipb.AutocompleteEntityKind{})
+			res, err := s.GetSuggestions([]*SuggestionRequest{&SuggestionRequest{orgID, searchTerm, []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT}, []cloudapipb.AutocompleteEntityKind{}}})
 			if err != nil {
 				return -1, nil, err
 			}
+
+			suggestions := res[0].Suggestions
+			exactMatch := res[0].ExactMatch
 
 			if exactMatch {
 				// Create a mapping from argKind to count.
@@ -258,7 +259,8 @@ func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID
 	}
 
 	// Get suggestions for each argument.
-	for i, a := range args { // TODO(michelle): Run this in parallel, or use multisearch to do a batch request.
+	reqs := make([]*SuggestionRequest, 0)
+	for _, a := range args {
 		ak := allowedKinds
 		if a.Kind != cloudapipb.AEK_UNKNOWN { // The kind is already specified in the input string.
 			ak = []cloudapipb.AutocompleteEntityKind{a.Kind}
@@ -267,12 +269,18 @@ func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID
 		if a.ContainsCursor {
 			searchTerm = strings.Replace(searchTerm, CursorMarker, "", 1)
 		}
-		suggestions, exactMatch, err := s.GetSuggestions(orgID, searchTerm, ak, specifiedEntities)
-		if err != nil {
-			return err
-		}
-		args[i].Suggestions = suggestions
-		args[i].Valid = exactMatch && a.Kind != cloudapipb.AEK_UNKNOWN
+
+		reqs = append(reqs, &SuggestionRequest{orgID, searchTerm, ak, specifiedEntities})
+	}
+
+	res, err := s.GetSuggestions(reqs)
+	if err != nil {
+		return err
+	}
+
+	for i, a := range args {
+		args[i].Suggestions = res[i].Suggestions
+		args[i].Valid = res[i].ExactMatch && a.Kind != cloudapipb.AEK_UNKNOWN
 	}
 
 	cmd.TabStops = append(cmd.TabStops, args...)
