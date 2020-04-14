@@ -5,21 +5,7 @@ instructions to learn how to write pxl scripts
 
 """
 
-# ----------------------------------------------------------------
-# The following variables can be edited to select
-# k8s object you can group of filter by
-# ----------------------------------------------------------------
 import px
-
-# K8s objects to filter by:
-# (either full or partial name)
-object_name_filter = ''
-
-# Start time of data outputs. Must be a string of the
-# format "-<int><time_str>" where time_str is one of:
-# "m" (minutes), "s" (seconds), "h" (hours), "d" (days).
-start_time = '-2m'
-
 # ----------------------------------------------------------------
 # Visualization Variables - No need to edit for basic configuration.
 # ----------------------------------------------------------------
@@ -31,51 +17,72 @@ k8s_object = 'pod'
 window_s = 2
 # k8s_object column is assigned to this and is used in vis spec.
 split_series_name = 'k8s'
+px.Pod = str
 # ----------------------------------------------------------------
 
 
 # ----------------------------------------------------------------
-# Implementation: No need to edit for basic configuration.
+# Visualization functions:
+#
+# These functions are formatted and ready for use in
+# the visualization speciciation, vis.json.
 # ----------------------------------------------------------------
-def pod_stats():
-    """Top level pod stats function.
+def pod_let(start_time: str, pod_name: px.Pod):
+    """ Calculates LET time-series for pods that match pod_name.
+    Args:
+    @start_time: The timestamp of data to start at.
+    @pod_name: the partial/full-name of the pod to
+        calculate LET.
 
-    For each pod we compute latency, error-rate, throughput over
-    time and also present a summary table. These metrics are
-    computed from network requests ("spans") traced by Pixie
-    and collected in the http_events table.
-
-    Notes:
-    * Pod-level infra metrics and charts will be added soon.
-    * Summary table may misreport latency for low-rps
-    pods if a time-window has zero transactions
+    Returns: DataFrame of the LET stats for pods that
+        match @pod_name.
     """
+    df = make_http_table(start_time)
+    # Calculate LET of service(s) (k8s_object) over the time window ('timestamp')
+    # after filtering for matching services.
+    matching_df = df[px.contains(df[k8s_object], pod_name)]
+    let_df = calc_LET(matching_df, [k8s_object, 'timestamp'])
 
-    # Query spans in target window
-    spans_df = px.DataFrame(table='http_events', start_time=start_time)
-    # Format spans
-    spans_df = format_http_table(spans_df)
-    # Filter down to specified objects
-    spans_df = spans_df[px.contains(spans_df[k8s_object], object_name_filter)]
-    # Calculate latency, error-rate, throughput
-    let_df = calc_LET(spans_df, [k8s_object, 'timestamp'])
-    # Group metrics by K8s object
+    # Format and organize resulting columns.
     let_df[split_series_name] = let_df[k8s_object]
-    let_df = let_df[['time_', split_series_name, 'latency_p50', 'latency_p90',
-                    'latency_p99', 'error_rate', 'rps', 'bytes_per_s']]
+    let_df = let_df[['time_', split_series_name, 'latency_p50',
+                     'latency_p90', 'latency_p99', 'error_rate', 'rps', 'bytes_per_s']]
+    return let_df
 
-    # Summarize data into overview table
-    summary_df = summarize_LET(let_df, [split_series_name])
-    px.display(let_df, 'application_stats')
-    px.display(summary_df, 'summary_table')
 
+def summary_pod_let(start_time: str, pod_name: px.Pod):
+    """ Calculates LET summary for pods matching pod_name filter.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @pod_name: the partial/full-name of the pod to
+        calculate LET.
+
+    Returns: DataFrame of the LET summary for pods that
+        match @pod_name.
+    """
+    df = pod_let(start_time, pod_name)
+    summary_df = summarize_LET(df, [split_series_name])
+    return summary_df
+
+
+def resource_stats(start_time: str, pod_name: px.Pod):
+    """ Gets the resource usage of matching pods.
+
+    Args:
+    @start_time: Starting time of the data to examine.
+    @pod_name: The partial name of the pod(s) to display data for.
+
+    Returns: A DataFrame of resource usage per pod matched in the passed
+        in filters.
+    """
     # Query process stats in target window
     rsrc_df = px.DataFrame(table='process_stats', start_time=start_time)
     rsrc_df = format_resource_table(rsrc_df)
     # Filter down to specified objects
-    rsrc_df = rsrc_df[px.contains(rsrc_df[k8s_object], object_name_filter)]
+    rsrc_df = rsrc_df[px.contains(rsrc_df[k8s_object], pod_name)]
     rsrc_df = calc_resource(rsrc_df)
-    px.display(rsrc_df, 'resource_stats')
+    return rsrc_df
 
 
 # ----------------------------------------------------------------
@@ -85,6 +92,26 @@ def pod_stats():
 # which will allow these functions to be shared across multiple
 # scripts.
 # ----------------------------------------------------------------
+def make_http_table(start_time: str):
+    """ Makes the HTTP table given the passed in start_time.
+
+    The data necessary to compute HTTP level service information is located in the
+    http_events table. We filter and aggregate data from this table to compute the
+    required metrics.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+
+    Returns: DataFrame of HTTP events with formatted columns.
+    """
+    # The data necessary to compute HTTP level service information is located in the
+    # http_events table. We filter and aggregate data from this table to compute the
+    # required metrics.
+    df = px.DataFrame(table='http_events', start_time=start_time)
+    df = format_http_table(df)
+    return df
+
+
 def format_events_table(spans_df, latency_ns_col):
     """ Format data and add semantic columns in event tables
 
@@ -138,7 +165,8 @@ def calc_LET(spans_df, groups):
     )
 
     # Convert the aggregated values into rates.
-    spans_df.error_rate = spans_df.error_rate_per_window * spans_df.throughput_total / window_s
+    spans_df.error_rate = spans_df.error_rate_per_window * \
+        spans_df.throughput_total / window_s
     spans_df.rps = spans_df.throughput_total / window_s
     spans_df.bytes_per_s = spans_df.bytes_total / window_s
 
@@ -221,10 +249,14 @@ def calc_resource(rsrc_df):
         max_wchar_bytes_mb=('wchar_bytes_mb', px.max),
     )
 
-    upid_agg.cpu_utime_s = (upid_agg.max_cpu_utime_s - upid_agg.min_cpu_utime_s) / window_s
-    upid_agg.cpu_ktime_s = (upid_agg.max_cpu_ktime_s - upid_agg.min_cpu_ktime_s) / window_s
-    upid_agg.rchar_bytes_mb = (upid_agg.max_rchar_bytes_mb - upid_agg.min_rchar_bytes_mb) / window_s
-    upid_agg.wchar_bytes_mb = (upid_agg.max_wchar_bytes_mb - upid_agg.min_wchar_bytes_mb) / window_s
+    upid_agg.cpu_utime_s = (upid_agg.max_cpu_utime_s
+                            - upid_agg.min_cpu_utime_s) / window_s
+    upid_agg.cpu_ktime_s = (upid_agg.max_cpu_ktime_s
+                            - upid_agg.min_cpu_ktime_s) / window_s
+    upid_agg.rchar_bytes_mb = (
+        upid_agg.max_rchar_bytes_mb - upid_agg.min_rchar_bytes_mb) / window_s
+    upid_agg.wchar_bytes_mb = (
+        upid_agg.max_wchar_bytes_mb - upid_agg.min_wchar_bytes_mb) / window_s
 
     # For this aggregate, we sum up the values as we've already calculated the average/usage
     # for the upids already.
@@ -235,17 +267,10 @@ def calc_resource(rsrc_df):
         wchar_bytes_mb=('wchar_bytes_mb', px.sum),
     )
 
-    k8s_agg.cpu_pct = (k8s_agg.cpu_utime_s + k8s_agg.cpu_ktime_s) * 100 / window_s
+    k8s_agg.cpu_pct = (k8s_agg.cpu_utime_s
+                       + k8s_agg.cpu_ktime_s) * 100 / window_s
 
     # Get the output columns we want to plot.
     k8s_agg[split_series_name] = k8s_agg[k8s_object]
-    return k8s_agg[[split_series_name, 'timestamp', 'cpu_pct', 'rchar_bytes_mb', 'wchar_bytes_mb']]
-
-
-# ----------------------------------------------------------------
-# Script needs to manually invoke top level function.
-#
-# In v0.2 we will support a new visualization spec that will
-# auto-execute the top-level function.
-# ----------------------------------------------------------------
-pod_stats()
+    k8s_agg['time_'] = k8s_agg['timestamp']
+    return k8s_agg[[split_series_name, 'time_', 'cpu_pct', 'rchar_bytes_mb', 'wchar_bytes_mb']]

@@ -11,21 +11,6 @@ Notes:
 import px
 
 # ----------------------------------------------------------------
-# The following variables can be edited to specify time window and
-# service(s) to monitor.
-# ----------------------------------------------------------------
-
-# Service name specifies the partial name to filter services by.
-# Format is '<namespace>/<name>'.
-#   '' specifies all services.
-#   '<namespace>/' specifies all services in <namespace>.
-pod_name = 'px-sock-shop/'
-
-# The time of the first data point to show. Must be a string of the
-# format "-<int><time_str>" where time_str is one of:
-#   "m" (minutes), "s" (seconds), "h" (hours), "d" (days).
-start_time = '-5m'
-# ----------------------------------------------------------------
 # Visualization Variables - No need to edit for basic configuration.
 # ----------------------------------------------------------------
 # K8s object is the abstraction to group on.
@@ -43,14 +28,69 @@ filter_responses_with_none_code = True
 split_series_name = 'k8s'
 # This is the name of the column corresponding to the MySQL IP.
 ip_col_name = 'MySQL IP'
+# Temporary way to ensure px.Pod works as expected.
+px.Pod = str
 # ----------------------------------------------------------------
 
 
-def mysql_stats():
-    """ Top level MySQL stats function.
+# ----------------------------------------------------------------
+# Visualization functions:
+#
+# These functions are formatted and ready for use in
+# the visualization speciciation, vis.json.
+# ----------------------------------------------------------------
+def pod_mysql_let(start_time: str, pod_name: px.Pod):
+    """ Calculate LET time-series for MySQL traffic per Pod, database pair.
 
-    Calculate the latency, error rate, and throughput for MySQL connections
-    split by pod.
+    Calculates latency, error_rate, and throughput for each pod's
+    connection to MySQL databases.
+
+    @start_time: The timestamp of data to start at.
+    @pod_name: the partial/full-name of the pod to monitor MySQL LET.
+
+    Returns: Returns the DataFrame contiaining LET time-series for MySQL
+        traffic for each database Pods talk to.
+    """
+    df = mysql_let_per_pod(start_time, pod_name)
+    return df['time_', split_series_name, ip_col_name, 'latency_p50',
+              'latency_p90', 'latency_p99', 'error_rate', 'rps']
+
+
+def summary_mysql_let(start_time: str, pod_name: px.Pod):
+    """ Calculate LET summary for MySQL traffic per Pod, database pair.
+
+    Calculates latency, error_rate, and throughput for each pod's
+    connection to MySQL databases.
+
+    @start_time: The timestamp of data to start at.
+    @pod_name: the partial/full-name of the pod to monitor MySQL LET.
+
+    Returns: Returns the DataFrame contiaining LET time-series for MySQL
+        traffic for each database Pods talk to.
+    """
+    df = mysql_let_per_pod(start_time, pod_name)
+    summary_df = summarize_LET(df, [k8s_object, ip_col_name])
+    return summary_df[[k8s_object, ip_col_name, "rps", "error_rate", "latency", "total_requests"]]
+
+
+# ----------------------------------------------------------------
+# Utility functions:
+#
+# These are shared functions. We plan to support imports in v0.3,
+# which will allow these functions to be shared across multiple
+# scripts.
+# ----------------------------------------------------------------
+def mysql_let_per_pod(start_time: str, pod_name: px.Pod):
+    """ Calculate LET time-series for MySQL traffic per Pod, database pair.
+
+    Calculates latency, error_rate, and throughput for each pod's
+    connection to MySQL databases.
+
+    @start_time: The timestamp of data to start at.
+    @pod_name: the partial/full-name of the pod to monitor MySQL LET.
+
+    Returns: Returns the DataFrame contiaining LET time-series for MySQL
+        traffic for each database Pods talk to.
     """
     # The data necessary to compute MySQL LET information is located in the
     # mysql_events table. We filter and aggregate data from this table to compute the
@@ -65,24 +105,9 @@ def mysql_stats():
         matching_df, [k8s_object, 'timestamp', 'remote_addr'])
     let_df[split_series_name] = let_df[k8s_object]
     let_df[ip_col_name] = let_df.remote_addr
-    px.display(let_df['time_', split_series_name, ip_col_name, 'latency_p50',
-                      'latency_p90', 'latency_p99', 'error_rate', 'rps'], 'test')
-
-    # Group all traffic by (k8s_object, ip_col_name) to show all conversations between
-    # client and database.
-    summary_df = summarize_LET(let_df, [k8s_object, ip_col_name])
-    px.display(summary_df[
-        [k8s_object, ip_col_name, "rps", "error_rate", "latency", "total_requests"]
-    ], 'summary')
+    return let_df
 
 
-# ----------------------------------------------------------------
-# Utility functions:
-#
-# These are shared functions. We plan to support imports in v0.3,
-# which will allow these functions to be shared across multiple
-# scripts.
-# ----------------------------------------------------------------
 def format_events_table(df, latency_ns_col):
     """ Format data and add semantic columns in event tables
 
@@ -228,12 +253,3 @@ def summarize_LET(let_df, groups):
         latency=('latency_p50', px.mean),
     )
     return df
-
-
-# ----------------------------------------------------------------
-# Script needs to manually invoke top level function.
-#
-# In v0.2 we will support a new visualization spec that will
-# auto-execute the top-level function.
-# ----------------------------------------------------------------
-mysql_stats()

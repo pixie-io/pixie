@@ -12,28 +12,13 @@ Notes:
 import px
 
 # ----------------------------------------------------------------
-# The following variables can be edited to specify time window and
-# service(s) to monitor.
-# ----------------------------------------------------------------
-
-# Service name specifies the partial name to filter services by.
-# Format is '<namespace>/<name>'.
-#   '' specifies all services.
-#   '<namespace>/' specifies all services in <namespace>.
-service_name = 'px-sock-shop/'
-
-# The time of the first data point to show. Must be a string of the
-# format "-<int><time_str>" where time_str is one of:
-#   "m" (minutes), "s" (seconds), "h" (hours), "d" (days).
-start_time = '-2m'
-# ----------------------------------------------------------------
 # Visualization Variables - No need to edit for basic configuration.
 # ----------------------------------------------------------------
 # K8s object is the abstraction to group on.
 # Options are ['pod', 'service'].
 k8s_object = 'service'
 # Window in seconds within which to aggregate metrics.
-window_s = 2
+window_s = 10
 # Flag to filter out requests that come from an unresolvable IP.
 filter_unresolved_inbound = True
 # Flag to filter out health checks from the data.
@@ -53,19 +38,18 @@ split_series_name = 'k8s'
 # ----------------------------------------------------------------
 
 
-def service_info():
-    """Top level service info function.
+def service_let(start_time: str, service_name: px.Service):
+    """ Calculates LET filtered on the service_name
 
-    For service level information we compute the latency, error rate, and throughout
-    along with first degree connections (local service map).
+    Args:
+    @start_time: The timestamp of data to start at.
+    @service_name: the partial/full-name of the service to
+        calculate LET.
+
+    Returns: DataFrame of the LET stats for services that
+        match @service_name.
     """
-    # The data necessary to compute HTTP level service information is located in the
-    # http_events table. We filter and aggregate data from this table to compute the
-    # required metrics.
-    df = px.DataFrame(table='http_events', start_time=start_time)
-    df = format_http_table(df, filter_health_checks,
-                           filter_ready_checks, filter_unresolved_inbound)
-
+    df = make_http_table(start_time)
     # Calculate LET of service(s) (k8s_object) over the time window ('timestamp')
     # after filtering for matching services.
     matching_df = df[px.contains(df[k8s_object], service_name)]
@@ -75,32 +59,49 @@ def service_info():
     let_df[split_series_name] = let_df[k8s_object]
     let_df = let_df[['time_', split_series_name, 'latency_p50',
                      'latency_p90', 'latency_p99', 'error_rate', 'rps', 'bytes_per_s']]
-    px.display(let_df, 'test')
+    return let_df
 
-    # Calculate LET for each service edge in the service graph over each time window.
-    # Each edge starts at a requester ('remote_addr') and ends at a
-    # responder (k8s_object).
-    edge_let_df = calc_http_LET(df, ['remote_addr', k8s_object, 'timestamp'])
-    # Convert 'remote_addr' IP into a service name.
-    edge_let_df = ip_to_svc_name(edge_let_df, 'remote_addr', src_col)
-    # Rename k8s_object to dest_col.
-    edge_let_df[dest_col] = edge_let_df[k8s_object]
 
+def outgoing_edges(start_time: str, service_name: px.Service):
+    """ Determines the services that this service makes
+    requests to.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @service_name: the partial/full-name of the service to
+        get outgoing_edges.
+
+    Returns: DataFrame of the services this service talks to
+        and the LET summary of that communication.
+    """
+    df = let_per_edge(start_time)
     # Filter for traffic that starts at this service.
-    outgoing_let_df = edge_let_df[px.contains(
-        edge_let_df[src_col], service_name)]
+    outgoing_let_df = df[px.contains(
+        df[src_col], service_name)]
 
     # Group outgoing traffic by (src, dest) to get all outgoing edges.
-    outgoing_edges_df = summarize_LET(outgoing_let_df, [src_col, dest_col])
-    px.display(outgoing_edges_df, 'outgoing_traffic')
+    return summarize_LET(outgoing_let_df, [src_col, dest_col])
+
+
+def incoming_edges(start_time: str, service_name: px.Service):
+    """ Determines the services that make requests to this service.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @service_name: the partial/full-name of the service to
+        get incoming_edges.
+
+    Returns: DataFrame of the services that talk to this service
+        and the LET summary of that communication.
+    """
+    df = let_per_edge(start_time)
 
     # Filter traffic that ends at this service.
-    incoming_let_df = edge_let_df[px.contains(
-        edge_let_df[dest_col], service_name)]
+    incoming_let_df = df[px.contains(
+        df[dest_col], service_name)]
 
     # Group incoming traffic by (src, dest) to get all incoming edges.
-    incoming_edges_df = summarize_LET(incoming_let_df, [src_col, dest_col])
-    px.display(incoming_edges_df, 'incoming_traffic')
+    return summarize_LET(incoming_let_df, [src_col, dest_col])
 
 
 # ----------------------------------------------------------------
@@ -110,6 +111,45 @@ def service_info():
 # which will allow these functions to be shared across multiple
 # scripts.
 # ----------------------------------------------------------------
+def make_http_table(start_time: str):
+    """ Makes the HTTP table given the passed in start_time.
+
+    The data necessary to compute HTTP level service information is located in the
+    http_events table. We filter and aggregate data from this table to compute the
+    required metrics.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+
+    Returns: DataFrame of HTTP events with formatted columns.
+    """
+    df = px.DataFrame(table='http_events', start_time=start_time)
+    df = format_http_table(df, filter_health_checks,
+                           filter_ready_checks, filter_unresolved_inbound)
+    return df
+
+
+def let_per_edge(start_time: str):
+    """ Calculates the LET per edge of the service graph.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+
+    Returns: DataFrame of HTTP events with formatted columns.
+    """
+
+    df = make_http_table(start_time)
+    # Calculate LET for each service edge in the service graph over each time window.
+    # Each edge starts at a requester ('remote_addr') and ends at a
+    # responder (k8s_object).
+    edge_let_df = calc_http_LET(df, ['remote_addr', k8s_object, 'timestamp'])
+    # Convert 'remote_addr' IP into a service name.
+    edge_let_df = ip_to_svc_name(edge_let_df, 'remote_addr', src_col)
+    # Rename k8s_object to dest_col.
+    edge_let_df[dest_col] = edge_let_df[k8s_object]
+    return edge_let_df
+
+
 def format_events_table(df, latency_ns_col):
     """ Format data and add semantic columns in event tables
 
@@ -251,12 +291,3 @@ def summarize_LET(let_df, groups):
         error_rate=('error_rate', px.mean),
     )
     return df
-
-
-# ----------------------------------------------------------------
-# Script needs to manually invoke top level function.
-#
-# In v0.2 we will support a new visualization spec that will
-# auto-execute the top-level function.
-# ----------------------------------------------------------------
-service_info()

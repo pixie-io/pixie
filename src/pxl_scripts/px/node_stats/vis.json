@@ -1,134 +1,205 @@
 {
-  "cpu": {
-    "padding": 50,
-    "mark": "line",
-    "data": {
-      "name": "cpu"
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "defaultValue": "-3m"
     },
-    "encoding": {
-      "color": {
-        "field": "k8s",
-        "type": "nominal"
+    {
+      "name": "node_name",
+      "type": "PX_STRING",
+      "defaultValue": "gke"
+    },
+    {
+      "name": "pod_name",
+      "type": "PX_STRING",
+      "defaultValue": "/"
+    }
+  ],
+  "widgets": [
+    {
+      "name": "cpu",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 3
       },
-      "x": {
-        "field": "timestamp",
-        "type": "temporal",
-        "axis": {
-          "titleFontSize": 15,
-          "grid": false
-        },
-        "title": null
+      "func": {
+        "name": "cpu_stats",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "node_name",
+            "variable": "node_name"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
       },
-      "y": {
-        "field": "cpu_pct",
-        "type": "quantitative",
-        "axis": {
-          "titleFontSize": 15,
-          "gridOpacity": 0.1,
-          "gridColor": "#a6a8ae"
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "cpu_pct",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "CPU usage (%)"
         },
-        "title": "CPU usage (%)"
+        "xAxis": null
       }
     },
-    "config": {
-      "line": {
-        "point": true
+    {
+      "name": "sent_data",
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 6,
+        "h": 3
       },
-      "scale": {
-        "useUnaggregatedDomain": true
+      "func": {
+        "name": "net_stats",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "node_name",
+            "variable": "node_name"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "tx_mb_per_s",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Sent Data (Mb/s)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "received_data",
+      "position": {
+        "x": 6,
+        "y": 3,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "net_stats",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "node_name",
+            "variable": "node_name"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rx_mb_per_s",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Received Data (Mb/s)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "nodes",
+      "position": {
+        "x": 0,
+        "y": 6,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "node_table",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "node_name",
+            "variable": "node_name"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    },
+    {
+      "name": "pods",
+      "position": {
+        "x": 6,
+        "y": 6,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "pod_table",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "node_name",
+            "variable": "node_name"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
       }
     }
-  },
-  "received_data": {
-    "padding": 50,
-    "mark": "line",
-    "data": {
-      "name": "net"
-    },
-    "encoding": {
-      "color": {
-        "field": "k8s",
-        "type": "nominal"
-      },
-      "x": {
-        "field": "timestamp",
-        "type": "temporal",
-        "axis": {
-          "titleFontSize": 15,
-          "grid": false
-        },
-        "title": null
-      },
-      "y": {
-        "field": "rx_mb_per_s",
-        "type": "quantitative",
-        "axis": {
-          "titleFontSize": 15,
-          "gridOpacity": 0.1,
-          "gridColor": "#a6a8ae"
-        },
-        "title": "Received Data (Mb/s)"
-      }
-    },
-    "config": {
-      "line": {
-        "point": true
-      },
-      "scale": {
-        "useUnaggregatedDomain": true
-      }
-    }
-  },
-  "sent_data": {
-    "padding": 50,
-    "mark": "line",
-    "data": {
-      "name": "net"
-    },
-    "encoding": {
-      "color": {
-        "field": "k8s",
-        "type": "nominal"
-      },
-      "x": {
-        "field": "timestamp",
-        "type": "temporal",
-        "axis": {
-          "titleFontSize": 15,
-          "grid": false
-        },
-        "title": null
-      },
-      "y": {
-        "field": "tx_mb_per_s",
-        "type": "quantitative",
-        "axis": {
-          "titleFontSize": 15,
-          "gridOpacity": 0.1,
-          "gridColor": "#a6a8ae"
-        },
-        "title": "Sent Data (Mb/s)"
-      }
-    },
-    "config": {
-      "line": {
-        "point": true
-      },
-      "scale": {
-        "useUnaggregatedDomain": true
-      }
-    }
-  },
-  "nodes": {
-    "mark": "table",
-    "data": {
-      "name": "nodes"
-    }
-  },
-  "k8s": {
-    "mark": "table",
-    "data": {
-      "name": "k8s"
-    }
-  }
+  ]
 }

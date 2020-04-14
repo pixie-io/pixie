@@ -11,24 +11,6 @@ Notes:
 import px
 
 # ----------------------------------------------------------------
-# The following variables can be edited to specify time window and
-# service(s) to monitor.
-# ----------------------------------------------------------------
-
-# Pod name specifies the partial name to filter pods by.
-# Format is '<namespace>/<name>'.
-#   '' specifies all pods.
-#   '<namespace>/' specifies all pods in <namespace>.
-pod_name = 'px-sock-shop/'
-# Node name specifies the partial node name to filter data by.
-#   '' specifies all nodes.
-node_name = ''
-# The time of the first data point to show. Must be a string of the
-# format "-<int><time_str>" where time_str is one of:
-#   "m" (minutes), "s" (seconds), "h" (hours), "d" (days).
-start_time = '-1m'
-
-# ----------------------------------------------------------------
 # Visualization Variables - No need to edit for basic configuration.
 # ----------------------------------------------------------------
 # K8s object is the abstraction to group on.
@@ -43,49 +25,90 @@ node_col = 'node_name'
 bytes_per_mb = 1024.0 * 1024.0
 
 split_series_name = 'k8s'
+px.Node = str
+px.Pod = str
 # ----------------------------------------------------------------
 
 
-def node_stats(start_time, node_name, k8s_name):
-    """Top level node_stats function.
-
-    Get key network and cpu metrics split by k8s_object. Data is isolated
-    to nodes that match @node_name and k8s objets that match @k8s_name.
+# ----------------------------------------------------------------
+# Visualization functions:
+#
+# These functions are formatted and ready for use in
+# the visualization speciciation, vis.json.
+# ----------------------------------------------------------------
+def node_table(start_time: str, node_name: px.Node, pod_name: px.Pod):
+    """ Gets the nodes that are picked up by the node and pod filters.
 
     Args:
     @start_time: Starting time of the data to examine.
     @node_name: The partial name of the node(s) to display data for.
-    @k8s_name: The partial name of the k8s_object(s) to display data for.
+    @pod_name: The partial name of the pod(s) to display data for.
+
+    Returns: A DataFrame that displays all nodes matching the node
+        and pod filters.
     """
-    # Load and prepare the process_stats table to calculate CPU usage
-    # by k8s_object.
-    process_df = px.DataFrame(table='process_stats', start_time=start_time)
-    process_df = format_process_table(process_df, window_s)
-    process_df = filter_stats(process_df, node_name, k8s_name)
-
+    df = filtered_process_stats(start_time, node_name, pod_name)
     # Aggregate on nodes to get unique node values.
-    nodes = process_df.groupby(node_col).agg(cc=(node_col, px.count))
-    px.display(nodes.drop('cc'), 'nodes')
+    nodes = df.groupby(node_col).agg(cc=(node_col, px.count))
+    return nodes.drop('cc')
 
+
+def cpu_stats(start_time: str, node_name: px.Node, pod_name: px.Pod):
+    """ Gets the CPU usage of pods that run on the matched nodes
+    and that match the pod name.
+
+    Args:
+    @start_time: Starting time of the data to examine.
+    @node_name: The partial name of the node(s) to display data for.
+    @pod_name: The partial name of the pod(s) to display data for.
+
+    Returns: A DataFrame of cpu usage per pod matched in the passed
+        in filters.
+    """
+    df = filtered_process_stats(start_time, node_name, pod_name)
     # Calculate the CPU usage per window.
-    cpu_df = calculate_cpu(process_df, window_s)
+    cpu_df = calculate_cpu(df, window_s)
     cpu_df[split_series_name] = cpu_df[k8s_object]
-    px.display(cpu_df['timestamp', split_series_name, 'cpu_pct'], 'cpu')
+    return cpu_df['time_', split_series_name, 'cpu_pct']
 
-    # Aggregate on k8s to get unique k8s_object values.
-    k8s = cpu_df.groupby(k8s_object).agg(cc=(split_series_name, px.count))
-    px.display(k8s.drop('cc'), 'k8s')
 
-    # Load and prepare the process_stats table to calculate Network usage
+def pod_table(start_time: str, node_name: px.Node, pod_name: px.Pod):
+    """ Gets the pods that are picked up by the node and pod filters.
+
+    Args:
+    @start_time: Starting time of the data to examine.
+    @node_name: The partial name of the node(s) to display data for.
+    @pod_name: The partial name of the pod(s) to display data for.
+
+    Returns: A DataFrame that displays all pods matching the node
+        and pod filters.
+    """
+    df = cpu_stats(start_time, node_name, pod_name)
+    # Aggregate on nodes to get unique node values.
+    pods = df.groupby(split_series_name).agg(cc=(split_series_name, px.count))
+    return pods.drop('cc')
+
+
+def net_stats(start_time: str, node_name: px.Node, pod_name: px.Pod):
+    """ Get key network metrics split filtered by pod_name and
+    node_name.
+
+    Args:
+    @start_time: Starting time of the data to examine.
+    @node_name: The partial name of the node(s) to display data for.
+    @pod_name: The partial name of the pod(s) to display data for.
+
+    Returns: DataFrame with key network metrics.
+    """
+    # Load and prepare the network_stats table to calculate Network usage
     # by k8s_object.
     net_df = px.DataFrame(table='network_stats', start_time=start_time)
     net_df = format_network_table(net_df, window_s)
-    net_df = filter_stats(net_df, node_name, k8s_name)
+    net_df = filter_stats(net_df, node_name, pod_name)
 
     net_usage_df = calculate_network(net_df, window_s)
     net_usage_df['k8s'] = net_usage_df[k8s_object]
-    px.display(net_usage_df[['timestamp', split_series_name,
-                             'rx_mb_per_s', 'tx_mb_per_s']], 'net')
+    return net_usage_df[['time_', split_series_name, 'rx_mb_per_s', 'tx_mb_per_s']]
 
 
 # ----------------------------------------------------------------
@@ -95,6 +118,28 @@ def node_stats(start_time, node_name, k8s_name):
 # which will allow these functions to be shared across multiple
 # scripts.
 # ----------------------------------------------------------------
+def filtered_process_stats(start_time: str, node_name: px.Node, pod_name: px.Pod):
+    """ Helper function that filters the process_stats tabel for data that
+    matches the pod and node filters.
+
+    Args:
+    @start_time: Starting time of the data to examine.
+    @node_name: The partial name of the node(s) to display data for.
+    @pod_name: The partial name of the pod(s) to display data for.
+
+    Returns: A process_stats data formatted for other functions and
+       filtered by matching pods located on nodes that match @node_name.
+
+    """
+
+    # Load and prepare the process_stats table to calculate CPU usage
+    # by k8s_object.
+    process_df = px.DataFrame(table='process_stats', start_time=start_time)
+    process_df = format_process_table(process_df, window_s)
+    process_df = filter_stats(process_df, node_name, pod_name)
+    return process_df
+
+
 def format_stats_table(df, window_size):
     """ Format data and add semantic columns in stats tables.
 
@@ -226,6 +271,7 @@ def calculate_cpu(df, window_size):
     # Finally, calculate total (kernel + user time)  percentage used over window.
     cpu_per_k8s.cpu_pct = (cpu_per_k8s.cpu_ktime_ms
                            + cpu_per_k8s.cpu_utime_ms) / window_size_ms * 100
+    cpu_per_k8s['time_'] = cpu_per_k8s['timestamp']
     return cpu_per_k8s
 
 
@@ -286,13 +332,5 @@ def calculate_network(df, window_size):
         rx_errors_per_s=('rx_errors_per_s', px.sum),
         tx_errors_per_s=('tx_errors_per_s', px.sum),
     )
+    df['time_'] = df['timestamp']
     return df
-
-
-# ----------------------------------------------------------------
-# Script needs to manually invoke top level function.
-#
-# In v0.2 we will support a new visualization spec that will
-# auto-execute the top-level function.
-# ----------------------------------------------------------------
-node_stats(start_time, node_name, pod_name)
