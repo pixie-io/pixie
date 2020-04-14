@@ -154,6 +154,7 @@ func main() {
 		ArtifactTrackerServer: artifactTrackerServer,
 		VizierClusterInfo:     cis,
 		ScriptMgrServer:       sms,
+		AutocompleteServer:    as,
 
 		ProfileServiceClient: pc,
 	}

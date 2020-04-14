@@ -61,6 +61,7 @@ go_test(
     srcs = [
         "artifact_resolver_test.go",
         "auth_test.go",
+        "autocomplete_resolver_test.go",
         "cluster_resolver_test.go",
         "grpc_test.go",
         "scriptmgr_resolver_test.go",

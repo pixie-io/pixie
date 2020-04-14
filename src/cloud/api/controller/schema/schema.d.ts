@@ -149,9 +149,9 @@ export interface GQLTabSuggestion {
 }
 
 export interface GQLAutocompleteSuggestion {
-  Kind?: GQLAutocompleteEntityKind;
-  Name?: string;
-  Description?: string;
+  kind?: GQLAutocompleteEntityKind;
+  name?: string;
+  description?: string;
 }
 
 export const enum GQLAutocompleteEntityKind {
@@ -495,9 +495,9 @@ export interface TabSuggestionToSuggestionsResolver<TParent = any, TResult = any
 }
 
 export interface GQLAutocompleteSuggestionTypeResolver<TParent = any> {
-  Kind?: AutocompleteSuggestionToKindResolver<TParent>;
-  Name?: AutocompleteSuggestionToNameResolver<TParent>;
-  Description?: AutocompleteSuggestionToDescriptionResolver<TParent>;
+  kind?: AutocompleteSuggestionToKindResolver<TParent>;
+  name?: AutocompleteSuggestionToNameResolver<TParent>;
+  description?: AutocompleteSuggestionToDescriptionResolver<TParent>;
 }
 
 export interface AutocompleteSuggestionToKindResolver<TParent = any, TResult = any> {

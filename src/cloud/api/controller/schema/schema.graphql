@@ -74,9 +74,9 @@ type TabSuggestion {
 }
 
 type AutocompleteSuggestion {
-  Kind: AutocompleteEntityKind
-  Name: String
-  Description: String
+  kind: AutocompleteEntityKind
+  name: String
+  description: String
 }
 
 enum ClusterStatus {

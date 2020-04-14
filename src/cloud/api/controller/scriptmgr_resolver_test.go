@@ -79,7 +79,7 @@ fn_args_map {
 `
 
 func TestExtractVisFuncsInfo(t *testing.T) {
-	gqlEnv, _, _, mockScriptMgrSvr, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, _, _, mockScriptMgrSvr, _, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -237,7 +237,7 @@ fn_args_map {
 `
 
 func TestExtractVisFuncsInfo_FilterFuncs(t *testing.T) {
-	gqlEnv, _, _, mockScriptMgrSvr, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, _, _, mockScriptMgrSvr, _, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 

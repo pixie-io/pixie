@@ -17,6 +17,7 @@ type GraphQLEnv struct {
 	ArtifactTrackerServer cloudapipb.ArtifactTrackerServer
 	VizierClusterInfo     cloudapipb.VizierClusterInfoServer
 	ScriptMgrServer       cloudapipb.ScriptMgrServer
+	AutocompleteServer    cloudapipb.AutocompleteServiceServer
 
 	ProfileServiceClient profilepb.ProfileServiceClient
 }
