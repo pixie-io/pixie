@@ -1,0 +1,176 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "defaultValue": "-3m"
+    },
+    {
+      "name": "requesting_service",
+      "type": "PX_SERVICE",
+      "defaultValue": "/"
+    },
+    {
+      "name": "responding_service",
+      "type": "PX_SERVICE",
+      "defaultValue": "/"
+    }
+  ],
+  "widgets": [
+    {
+      "name": "latency_p50",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 3
+      },
+      "func": {
+        "name": "service_edge_let",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "requesting_service",
+            "variable": "requesting_service"
+          },
+          {
+            "name": "responding_service",
+            "variable": "responding_service"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p50",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "xAxis": {
+          "label": "Latency (p50)"
+        },
+        "yAxis": null
+      }
+    },
+    {
+      "name": "throughput",
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "service_edge_let",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "requesting_service",
+            "variable": "requesting_service"
+          },
+          {
+            "name": "responding_service",
+            "variable": "responding_service"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rps",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "xAxis": {
+          "label": "RPS"
+        },
+        "yAxis": null
+      }
+    },
+    {
+      "name": "errors",
+      "position": {
+        "x": 6,
+        "y": 3,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "service_edge_let",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "requesting_service",
+            "variable": "requesting_service"
+          },
+          {
+            "name": "responding_service",
+            "variable": "responding_service"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "error_rate",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "xAxis": {
+          "label": "Error Rate (%)"
+        },
+        "yAxis": null
+      }
+    },
+    {
+      "name": "summary",
+      "position": {
+        "x": 0,
+        "y": 6,
+        "w": 12,
+        "h": 3
+      },
+      "func": {
+        "name": "summary_edge_let",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "requesting_service",
+            "variable": "requesting_service"
+          },
+          {
+            "name": "responding_service",
+            "variable": "responding_service"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    }
+  ]
+}

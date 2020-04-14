@@ -1,0 +1,336 @@
+''' CPU and network Usage per Pod and filtered by Node.
+
+This live view summarizes the CPU percentage and network bytes
+received and transmitted per Pod. On top of that, you can
+isolate data to only a single node.
+
+Notes:
+* Setting node_name is not exclusive at the moment.
+* Setting pod_name is not exclusive at the moment.
+'''
+import px
+
+# ----------------------------------------------------------------
+# Visualization Variables - No need to edit for basic configuration.
+# ----------------------------------------------------------------
+# K8s object is the abstraction to group on.
+# Options are ['pod', 'service'].
+k8s_object = 'pod'
+# Window in seconds within which to aggregate metrics.
+window_s = 10
+# Name of the node column to display.
+node_col = 'node_name'
+# The number of bytes per megabyte. Saved as a variable to simplify
+# reuse.
+bytes_per_mb = 1024.0 * 1024.0
+
+split_series_name = 'k8s'
+px.Node = str
+px.Pod = str
+# ----------------------------------------------------------------
+
+
+# ----------------------------------------------------------------
+# Visualization functions:
+#
+# These functions are formatted and ready for use in
+# the visualization speciciation, vis.json.
+# ----------------------------------------------------------------
+def node_table(start_time: str, node_name: px.Node, pod_name: px.Pod):
+    """ Gets the nodes that are picked up by the node and pod filters.
+
+    Args:
+    @start_time: Starting time of the data to examine.
+    @node_name: The partial name of the node(s) to display data for.
+    @pod_name: The partial name of the pod(s) to display data for.
+
+    Returns: A DataFrame that displays all nodes matching the node
+        and pod filters.
+    """
+    df = filtered_process_stats(start_time, node_name, pod_name)
+    # Aggregate on nodes to get unique node values.
+    nodes = df.groupby(node_col).agg(cc=(node_col, px.count))
+    return nodes.drop('cc')
+
+
+def cpu_stats(start_time: str, node_name: px.Node, pod_name: px.Pod):
+    """ Gets the CPU usage of pods that run on the matched nodes
+    and that match the pod name.
+
+    Args:
+    @start_time: Starting time of the data to examine.
+    @node_name: The partial name of the node(s) to display data for.
+    @pod_name: The partial name of the pod(s) to display data for.
+
+    Returns: A DataFrame of cpu usage per pod matched in the passed
+        in filters.
+    """
+    df = filtered_process_stats(start_time, node_name, pod_name)
+    # Calculate the CPU usage per window.
+    cpu_df = calculate_cpu(df, window_s)
+    cpu_df[split_series_name] = cpu_df[k8s_object]
+    return cpu_df['time_', split_series_name, 'cpu_pct']
+
+
+def pod_table(start_time: str, node_name: px.Node, pod_name: px.Pod):
+    """ Gets the pods that are picked up by the node and pod filters.
+
+    Args:
+    @start_time: Starting time of the data to examine.
+    @node_name: The partial name of the node(s) to display data for.
+    @pod_name: The partial name of the pod(s) to display data for.
+
+    Returns: A DataFrame that displays all pods matching the node
+        and pod filters.
+    """
+    df = cpu_stats(start_time, node_name, pod_name)
+    # Aggregate on nodes to get unique node values.
+    pods = df.groupby(split_series_name).agg(cc=(split_series_name, px.count))
+    return pods.drop('cc')
+
+
+def net_stats(start_time: str, node_name: px.Node, pod_name: px.Pod):
+    """ Get key network metrics split filtered by pod_name and
+    node_name.
+
+    Args:
+    @start_time: Starting time of the data to examine.
+    @node_name: The partial name of the node(s) to display data for.
+    @pod_name: The partial name of the pod(s) to display data for.
+
+    Returns: DataFrame with key network metrics.
+    """
+    # Load and prepare the network_stats table to calculate Network usage
+    # by k8s_object.
+    net_df = px.DataFrame(table='network_stats', start_time=start_time)
+    net_df = format_network_table(net_df, window_s)
+    net_df = filter_stats(net_df, node_name, pod_name)
+
+    net_usage_df = calculate_network(net_df, window_s)
+    net_usage_df['k8s'] = net_usage_df[k8s_object]
+    return net_usage_df[['time_', split_series_name, 'rx_mb_per_s', 'tx_mb_per_s']]
+
+
+# ----------------------------------------------------------------
+# Utility functions:
+#
+# These are shared functions. We plan to support imports in v0.3,
+# which will allow these functions to be shared across multiple
+# scripts.
+# ----------------------------------------------------------------
+def filtered_process_stats(start_time: str, node_name: px.Node, pod_name: px.Pod):
+    """ Helper function that filters the process_stats tabel for data that
+    matches the pod and node filters.
+
+    Args:
+    @start_time: Starting time of the data to examine.
+    @node_name: The partial name of the node(s) to display data for.
+    @pod_name: The partial name of the pod(s) to display data for.
+
+    Returns: A process_stats data formatted for other functions and
+       filtered by matching pods located on nodes that match @node_name.
+
+    """
+
+    # Load and prepare the process_stats table to calculate CPU usage
+    # by k8s_object.
+    process_df = px.DataFrame(table='process_stats', start_time=start_time)
+    process_df = format_process_table(process_df, window_s)
+    process_df = filter_stats(process_df, node_name, pod_name)
+    return process_df
+
+
+def format_stats_table(df, window_size):
+    """ Format data and add semantic columns in stats tables.
+
+    Adds a binned timestamp field to aggregate on.
+    Works on "process_stats" and "net_stats"
+
+    Args:
+    @df: the input stats table.
+    @window_size: the size of the window in seconds to aggregate on.
+
+    Returns: formatted stats DataFrame.
+    """
+    df.timestamp = px.bin(df.time_, px.seconds(window_size))
+    return df
+
+
+def format_process_table(df, window_size):
+    """ Formats process_stats table.
+
+    Maps in a k8s_object column, node column and converts
+    process-related metrics (cpu and memory) into a more readable
+    format.
+
+    Args:
+    @df: the input process_stats table.
+    @window_size: the size of the window in seconds to aggregate on.
+
+    Returns: formatted process_stats DataFrame.
+    """
+    df = format_stats_table(df, window_size)
+    df[node_col] = df.ctx['node_name']
+    df[k8s_object] = df.ctx[k8s_object]
+
+    # Convert bytes to MB.
+    df.vsize_mb = df.vsize_bytes / bytes_per_mb
+    df.rss_bytes_mb = df.rss_bytes / bytes_per_mb
+
+    # Convert nanoseconds to milliseconds.
+    df.cpu_utime_ms = df.cpu_ktime_ns / 1.0E6
+    df.cpu_ktime_ms = df.cpu_ktime_ns / 1.0E6
+    return df
+
+
+def format_network_table(df, window_size):
+    """ Formats network_stats table.
+
+    Maps in a k8s_object column, node column and converts
+    network-related metrics (transmitted and received bytes) into
+    a more readable format.
+
+    Args:
+    @df: the input network_stats table.
+    @window_size: the size of the window in seconds to
+      aggregate on.
+
+    Returns: formatted network_stats DataFrame.
+    """
+    df = format_stats_table(df, window_size)
+    df[node_col] = px.pod_id_to_node_name(df.pod_id)
+    df[k8s_object] = px.pod_id_to_pod_name(df.pod_id)
+    df.rx_mb = df.rx_bytes / bytes_per_mb
+    df.tx_mb = df.tx_bytes / bytes_per_mb
+    return df
+
+
+def filter_stats(df, node_filter, k8s_filter):
+    """ Filter stats tables based that match the semantic values.
+
+    Keep data from nodes that match @node_filter and
+    k8s_objects that match @k8s_filter.
+
+    Args:
+    @df: the input process table.
+    @node_filter: the partial name of nodes to match.
+    @k8s_filter: the partial name of k8s_object to match.
+
+    Returns: filtered stats DataFrame.
+    """
+    df = df[px.contains(df[node_col], node_filter)]
+    df = df[px.contains(df[k8s_object], k8s_filter)]
+    return df
+
+
+def calculate_cpu(df, window_size):
+    """ Calculate CPU statistics per window per k8s_object.
+
+    Calculates the CPU usage by timestamp. CPU metrics are
+    monotonically increasing counters and to calculate window
+    usage you must subtract the amount at the beginning and end
+    of the window.
+
+    Because process_stats is shareded by UPID (Unique PID), you must
+    calculate this value by PID first, then sum up per k8s_object
+    to get accurate results.
+
+    Finally, CPU stats are usage by user and kernel time. We
+    combine these values and take their portion of @window_size
+    to get CPU percentage ('cpu_pct').
+
+    Args:
+    @df: the input process_stats table.
+    @window_size: the size of the window in seconds to
+      aggregate on.
+
+    Returns: Calculated CPU usage per window DataFrame.
+    """
+    # First calculate CPU usage by process (UPID) in each k8s_object
+    # over all windows.
+    cpu_by_upid = df.groupby(['upid', k8s_object, 'timestamp']).agg(
+        cpu_utime_ms_max=('cpu_utime_ms', px.max),
+        cpu_utime_ms_min=('cpu_utime_ms', px.min),
+        cpu_ktime_ms_max=('cpu_ktime_ms', px.max),
+        cpu_ktime_ms_min=('cpu_ktime_ms', px.min),
+    )
+
+    # Next calculate cpu usage per window.
+    cpu_by_upid.cpu_utime_ms = cpu_by_upid.cpu_utime_ms_max - cpu_by_upid.cpu_utime_ms_min
+    cpu_by_upid.cpu_ktime_ms = cpu_by_upid.cpu_ktime_ms_max - cpu_by_upid.cpu_ktime_ms_min
+
+    # Then aggregate process individual process metrics into the overall
+    # k8s_object.
+    cpu_per_k8s = cpu_by_upid.groupby([k8s_object, 'timestamp']).agg(
+        cpu_ktime_ms=('cpu_ktime_ms', px.sum),
+        cpu_utime_ms=('cpu_utime_ms', px.sum),
+    )
+
+    # Convert window_size into the same units as cpu time.
+    window_size_ms = window_size * 1.0E3
+    # Finally, calculate total (kernel + user time)  percentage used over window.
+    cpu_per_k8s.cpu_pct = (cpu_per_k8s.cpu_ktime_ms
+                           + cpu_per_k8s.cpu_utime_ms) / window_size_ms * 100
+    cpu_per_k8s['time_'] = cpu_per_k8s['timestamp']
+    return cpu_per_k8s
+
+
+def calculate_network(df, window_size):
+    """ Calculate network statistics per window per k8s_object.
+
+    Calculates the network usage in each time window. network metrics are
+    monotonically increasing counters and to calculate window
+    usage you must subtract the amount at the beginning and end
+    of the window.
+
+    Because network_stats is shareded by pods, you also must first calculate
+    this value for each pod_id individually then sum them up for each
+    k8s_object to get accurate results.
+
+    Args:
+    @df: the input network_stats table.
+    @window_size: the size of the window in seconds to
+      aggregate on.
+
+    Returns: Calculated CPU usage per window DataFrame.
+    """
+    # First calculate network usage by Pod (pod_id) in each k8s_object
+    # over all windows. Data is sharded by Pod in network_stats.
+    df = df.groupby(['timestamp', 'pod_id', k8s_object]).agg(
+        rx_mb_end=('rx_mb', px.max),
+        rx_mb_start=('rx_mb', px.min),
+        tx_mb_end=('tx_mb', px.max),
+        tx_mb_start=('tx_mb', px.min),
+        tx_errors_end=('tx_errors', px.max),
+        tx_errors_start=('tx_errors', px.min),
+        rx_errors_end=('rx_errors', px.max),
+        rx_errors_start=('rx_errors', px.min),
+        tx_drops_end=('tx_drops', px.max),
+        tx_drops_start=('tx_drops', px.min),
+        rx_drops_end=('rx_drops', px.max),
+        rx_drops_start=('rx_drops', px.min),
+    )
+
+    # Calculate the network statistics rate over the window.
+    # We subtract the counter value at the beginning ('_start')
+    # from the value at the end ('_end').
+    df.rx_mb_per_s = (df.rx_mb_end - df.rx_mb_start) / window_size
+    df.tx_mb_per_s = (df.tx_mb_end - df.tx_mb_start) / window_size
+    df.rx_drops_per_s = (df.rx_drops_end - df.rx_drops_start) / window_size
+    df.tx_drops_per_s = (df.tx_drops_end - df.tx_drops_start) / window_size
+    df.rx_errors_per_s = (df.rx_errors_end - df.rx_errors_start) / window_size
+    df.tx_errors_per_s = (df.tx_errors_end - df.tx_errors_start) / window_size
+
+    # Add up the Pod values per k8s_object. This supports k8s_objects
+    # that are composed of 1+ pods. When k8s_object == 'pod', this calculation
+    # does not change the result.
+    df = df.groupby(['timestamp', k8s_object]).agg(
+        rx_mb_per_s=('rx_mb_per_s', px.sum),
+        tx_mb_per_s=('tx_mb_per_s', px.sum),
+        rx_drop_per_s=('rx_drops_per_s', px.sum),
+        tx_drops_per_s=('tx_drops_per_s', px.sum),
+        rx_errors_per_s=('rx_errors_per_s', px.sum),
+        tx_errors_per_s=('tx_errors_per_s', px.sum),
+    )
+    df['time_'] = df['timestamp']
+    return df

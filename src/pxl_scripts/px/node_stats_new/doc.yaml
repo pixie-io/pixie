@@ -1,0 +1,5 @@
+---
+short: CPU and Network Usage per Pod
+long: >
+  Returns the CPU and Network Usage per Pod. You can filter the
+  results by node. Nodes displayed are shown in the bottom table.

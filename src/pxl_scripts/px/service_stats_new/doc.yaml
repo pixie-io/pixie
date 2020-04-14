@@ -1,0 +1,5 @@
+---
+short: Basic service SLAs.
+long: >
+  Gets service latency, error rate and throughput.
+  Visualize them in three separate time series charts.

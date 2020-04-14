@@ -1,0 +1,307 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "defaultValue": "-30s"
+    },
+    {
+      "name": "pod_name",
+      "type": "PX_STRING",
+      "defaultValue": "/"
+    }
+  ],
+  "widgets": [
+    {
+      "name": "latency_p50",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "pod_let",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p50",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "xAxis": {
+          "label": "P50 Latency (ms)"
+        },
+        "yAxis": null
+      }
+    },
+    {
+      "name": "latency_p90",
+      "position": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "pod_let",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p90",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "xAxis": {
+          "label": "P90 Latency (ms)"
+        },
+        "yAxis": null
+      }
+    },
+    {
+      "name": "throughput",
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "pod_let",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rps",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "xAxis": {
+          "label": "RPS"
+        },
+        "yAxis": null
+      }
+    },
+    {
+      "name": "errors",
+      "position": {
+        "x": 6,
+        "y": 3,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "pod_let",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "error_rate",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "xAxis": {
+          "label": "Error Rate (%)"
+        },
+        "yAxis": null
+      }
+    },
+    {
+      "name": "object_list",
+      "position": {
+        "x": 0,
+        "y": 6,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "summary_pod_let",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    },
+    {
+      "name": "cpu",
+      "position": {
+        "x": 6,
+        "y": 6,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "resource_stats",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "cpu_pct",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "xAxis": {
+          "label": "CPU (%)"
+        },
+        "yAxis": null
+      }
+    },
+    {
+      "name": "reads",
+      "position": {
+        "x": 0,
+        "y": 9,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "resource_stats",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rchar_bytes_mb",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "xAxis": {
+          "label": "Reads (MB)"
+        },
+        "yAxis": null
+      }
+    },
+    {
+      "name": "writes",
+      "position": {
+        "x": 6,
+        "y": 9,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "resource_stats",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "wchar_bytes_mb",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "xAxis": {
+          "label": "Writes (MB)"
+        },
+        "yAxis": null
+      }
+    }
+  ]
+}

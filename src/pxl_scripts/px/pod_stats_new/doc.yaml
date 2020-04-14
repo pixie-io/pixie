@@ -1,0 +1,5 @@
+---
+short: Pod level application stats and resource usage.
+long: >-
+  List of Pods monitored by Pixie with their high level application metrics (latency, error-rate & rps)
+  and resource usage (cpu, writes, reads).
