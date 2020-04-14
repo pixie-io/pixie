@@ -12,11 +12,14 @@ import (
 
 	types "github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
+	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
+	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
+	"pixielabs.ai/pixielabs/src/cloud/autocomplete/mock"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	mock_scriptmgr "pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb/mock"
 	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
@@ -306,4 +309,71 @@ func TestScriptMgrServer_ExtractVisFuncsInfo(t *testing.T) {
 	}
 	assert.Equal(t, expectedResp, resp)
 
+}
+
+type SuggestionRequest struct {
+	requestKinds []cloudapipb.AutocompleteEntityKind
+	requestArgs  []cloudapipb.AutocompleteEntityKind
+	suggestions  []*autocomplete.Suggestion
+}
+
+func TestAutocompleteService_Autocomplete(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID, err := uuid.FromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	assert.Nil(t, err)
+	ctx := CreateTestContext()
+
+	s := mock_autocomplete.NewMockSuggester(ctrl)
+
+	expectedRequests := map[string]*SuggestionRequest{
+		"px/svc_info": &SuggestionRequest{
+			requestKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
+			requestArgs:  []cloudapipb.AutocompleteEntityKind{},
+			suggestions: []*autocomplete.Suggestion{
+				&autocomplete.Suggestion{
+					Name:  "px/svc_info",
+					Score: 1,
+					Args:  []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
+				},
+			},
+		},
+		"pl/test": &SuggestionRequest{
+			requestKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE, cloudapipb.AEK_SCRIPT},
+			requestArgs:  []cloudapipb.AutocompleteEntityKind{},
+			suggestions: []*autocomplete.Suggestion{
+				&autocomplete.Suggestion{
+					Name:  "pl/test",
+					Score: 1,
+				},
+			},
+		},
+	}
+	for k, v := range expectedRequests {
+		suggestions := v.suggestions
+		exactMatch := false
+		if len(suggestions) > 0 {
+			exactMatch = suggestions[0].Score == 1
+		}
+		s.
+			EXPECT().
+			GetSuggestions(orgID, k, v.requestKinds, v.requestArgs).
+			Return(suggestions, exactMatch, nil)
+	}
+
+	autocompleteServer := &controller.AutocompleteServer{
+		Suggester: s,
+	}
+
+	resp, err := autocompleteServer.Autocomplete(ctx, &cloudapipb.AutocompleteRequest{
+		Input:     "px/svc_info pl/test",
+		CursorPos: 0,
+		Action:    cloudapipb.AAT_EDIT,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, "${2:run} ${3:$0px/svc_info} ${1:pl/test}", resp.FormattedInput)
+	assert.False(t, resp.IsExecutable)
+	assert.Equal(t, 3, len(resp.TabSuggestions))
 }

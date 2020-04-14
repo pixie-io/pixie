@@ -24,6 +24,7 @@ import (
 
 	"github.com/spf13/pflag"
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
+	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
@@ -365,4 +366,33 @@ func convertDataTypeToCloudAPI(t typespb.DataType) cloudapipb.DataType {
 
 func convertSemanticTypeToCloudAPI(t typespb.SemanticType) cloudapipb.SemanticType {
 	return cloudapipb.SemanticType(t)
+}
+
+// AutocompleteServer is the server that implements the Autocomplete gRPC service.
+type AutocompleteServer struct {
+	Suggester autocomplete.Suggester
+}
+
+// Autocomplete returns a formatted string and autocomplete suggestions.
+func (a *AutocompleteServer) Autocomplete(ctx context.Context, req *cloudapipb.AutocompleteRequest) (*cloudapipb.AutocompleteResponse, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
+	orgID, err := uuid.FromString(orgIDstr)
+	if err != nil {
+		return nil, err
+	}
+
+	fmtString, executable, suggestions, err := autocomplete.Autocomplete(req.Input, int(req.CursorPos), req.Action, a.Suggester, orgID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudapipb.AutocompleteResponse{
+		FormattedInput: fmtString,
+		IsExecutable:   executable,
+		TabSuggestions: suggestions,
+	}, nil
 }

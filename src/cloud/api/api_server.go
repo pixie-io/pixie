@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 
 	"pixielabs.ai/pixielabs/src/cloud/api/ptproxy"
+	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
@@ -94,7 +95,7 @@ func main() {
 		Passwd:     viper.GetString("elastic_password"),
 		CaCertFile: viper.GetString("elastic_ca_cert"),
 	}
-	_, err = esutils.NewEsClient(esConfig)
+	es, err := esutils.NewEsClient(esConfig)
 	if err != nil {
 		log.WithError(err).Fatal("Could not connect to elastic")
 	}
@@ -144,6 +145,10 @@ func main() {
 	}
 	sms := &controller.ScriptMgrServer{ScriptMgr: sm}
 	cloudapipb.RegisterScriptMgrServer(s.GRPCServer(), sms)
+
+	esSuggester := autocomplete.NewElasticSuggester(es, "md_entities", "scripts")
+	as := &controller.AutocompleteServer{Suggester: esSuggester}
+	cloudapipb.RegisterAutocompleteServiceServer(s.GRPCServer(), as)
 
 	gqlEnv := controller.GraphQLEnv{
 		ArtifactTrackerServer: artifactTrackerServer,
