@@ -1,11 +1,21 @@
+const LIVE_VIEW_DATA_DRAWER_OPENED_KEY = 'px-live-data-drawer-opened';
 const LIVE_VIEW_EDITOR_OPENED_KEY = 'px-live-editor-opened';
 const LIVE_VIEW_EDITOR_SPLITS_KEY = 'px-live-editor-splits';
 const LIVE_VIEW_OLD_MODE_KEY = 'px-live-view-mode';
-const LIVE_VIEW_VEGA_SPEC_KEY = 'px-live-vega-spec';
 const LIVE_VIEW_PIXIE_SCRIPT_KEY = 'px-live-pixie-script';
 const LIVE_VIEW_PLACEMENT_SPEC_KEY = 'px-live-placement';
-const LIVE_VIEW_VIS_SPEC_KEY = 'px-live-vis';
 const LIVE_VIEW_TITLE_KEY = 'px-live-title';
+const LIVE_VIEW_VEGA_SPEC_KEY = 'px-live-vega-spec';
+const LIVE_VIEW_VIS_SPEC_KEY = 'px-live-vis';
+
+export function getLiveViewDataDrawerOpened(): boolean {
+  const stored = localStorage.getItem(LIVE_VIEW_DATA_DRAWER_OPENED_KEY);
+  return stored && stored === 'true';
+}
+
+export function setLiveViewDataDrawerOpened(opened: boolean) {
+  localStorage.setItem(LIVE_VIEW_DATA_DRAWER_OPENED_KEY, String(opened));
+}
 
 export function getLiveViewEditorOpened(): boolean {
   const stored = localStorage.getItem(LIVE_VIEW_EDITOR_OPENED_KEY);

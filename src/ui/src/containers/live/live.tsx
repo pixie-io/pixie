@@ -1,4 +1,7 @@
-import {getLiveViewEditorOpened, setLiveViewEditorOpened} from 'common/localstorage';
+import {
+    getLiveViewDataDrawerOpened, getLiveViewEditorOpened, setLiveViewDataDrawerOpened,
+    setLiveViewEditorOpened,
+} from 'common/localstorage';
 import EditIcon from 'components/icons/edit';
 import MagicIcon from 'components/icons/magic';
 import LazyPanel from 'components/lazy-panel';
@@ -15,6 +18,8 @@ import ToggleButton from '@material-ui/lab/ToggleButton';
 import Canvas from './canvas';
 import CommandInput from './command-input';
 import {withLiveContextProvider} from './context';
+import DataDrawerToggle from './data-drawer-toggle';
+import DataViewer from './data-viewer';
 import Editor from './editor';
 import ExecuteScriptButton from './execute-button';
 import {useInitScriptLoader} from './script-loader';
@@ -54,9 +59,25 @@ const useStyles = makeStyles((theme: Theme) => {
       flex: 1,
       minHeight: 0,
       display: 'flex',
+      flexDirection: 'column',
       borderTopStyle: 'solid',
       borderTopColor: theme.palette.background.three,
       borderTopWidth: theme.spacing(0.25),
+    },
+    mainRow: {
+      display: 'flex',
+      flexDirection: 'row',
+      flex: 3,
+      minHeight: 0,
+    },
+    dataDrawer: {
+      flex: 2,
+      minHeight: 0,
+    },
+    drawerToggle: {
+      height: theme.spacing(4),
+      display: 'flex',
+      cursor: 'pointer',
     },
     editorToggle: {
       border: 'none',
@@ -96,6 +117,12 @@ const LiveView = () => {
   const [commandOpen, setCommandOpen] = React.useState<boolean>(false);
   const toggleCommandOpen = React.useCallback(() => setCommandOpen((opened) => !opened), []);
 
+  const [dataDrawerOpen, setDataDrawerOpen] = React.useState<boolean>(getLiveViewDataDrawerOpened());
+  const toggleDataDrawer = React.useCallback(() => setDataDrawerOpen((opened) => !opened), []);
+  React.useEffect(() => {
+    setLiveViewDataDrawerOpened(dataDrawerOpen);
+  }, [dataDrawerOpen]);
+
   const classes = useStyles();
 
   const hotkeyHandlers = React.useMemo(() => ({
@@ -129,12 +156,18 @@ const LiveView = () => {
         </IconButton>
       </div>
       <div className={classes.main}>
-        <LazyPanel className={classes.editor} show={editorOpen}>
-          <Editor onClose={toggleEditor} />
-        </LazyPanel>
-        <div className={classes.canvas}>
-          <Canvas />
+        <div className={classes.mainRow}>
+          <LazyPanel className={classes.editor} show={editorOpen}>
+            <Editor onClose={toggleEditor} />
+          </LazyPanel>
+          <div className={classes.canvas}>
+            <Canvas />
+          </div>
         </div>
+        <DataDrawerToggle opened={dataDrawerOpen} toggle={toggleDataDrawer} />
+        <LazyPanel className={classes.dataDrawer} show={dataDrawerOpen}>
+          <DataViewer />
+        </LazyPanel>
       </div>
       <Drawer open={drawerOpen} onClose={toggleDrawer}>
         <div>drawer content</div>
