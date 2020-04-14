@@ -1,9 +1,12 @@
 import * as React from 'react';
 import {VisualizationSpec} from 'vega-embed';
+import {View} from 'vega-typings';
 
 import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
 
-import {hydrateSpec, hydrateSpecOld} from './spec';
+import {addTooltipsToSpec, COLOR_SCALE, hydrateSpec, hydrateSpecOld} from './spec';
+import {ColoredTooltipHandler} from './tooltip';
+
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -19,6 +22,7 @@ interface VegaProps {
   spec: VisualizationSpec;
   tableName: string;
   vegaModule: any;
+  vegaLiteModule: any;
   oldSpec: boolean;
 }
 
@@ -35,12 +39,21 @@ const Vega = React.memo((props: VegaProps) => {
   }, [inputSpec, theme, tableName]);
   const data = React.useMemo(() => ({ [tableName]: inputData }), [tableName, inputData]);
 
+  let vegaSpec = props.vegaLiteModule.compile(spec).spec;
+  vegaSpec = addTooltipsToSpec(vegaSpec, spec);
+
+  const onNewView = (view: View) => {
+    const handler = new ColoredTooltipHandler(view);
+    view.tooltip(handler.call);
+  };
+
   return (
-    <props.vegaModule.VegaLite
+    <props.vegaModule.Vega
       className={classes.vega}
-      spec={spec}
+      spec={vegaSpec}
       data={data}
       actions={false}
+      onNewView={onNewView}
     />
   );
 });

@@ -38,6 +38,8 @@ function specsFromTheme(theme: Theme) {
   };
 }
 
+export const COLOR_SCALE = 'color';
+
 const BASE_SPECS = {
   $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
   width: 'container',
@@ -152,3 +154,46 @@ const BASE_SPECS = {
     },
   },
 };
+
+// This function is not ideal. But it will go away when we move convert-to-vega-spec.tsx to produce
+// an actual vega spec instead of a vega-lite spec. Once we do that, both this logic and addTooltipsToSpec
+// will move to convert-to-vega-spec.tsx
+function isStacked(vegaLiteSpec): boolean {
+  return vegaLiteSpec && vegaLiteSpec.layer && vegaLiteSpec.layer.some((layer) => {
+    return layer.encoding && layer.encoding.y && layer.encoding.y.stack;
+  });
+}
+
+/**
+ * Add the tooltip spec to a Vega spec (not vega-lite spec).
+ * Note that this currently will add a tooltip to every voronoi layer.
+ */
+export function addTooltipsToSpec(vegaSpec, vegaLiteSpec) {
+  const marks = vegaSpec.marks;
+  if (!marks) {
+    return vegaSpec;
+  }
+  vegaSpec.marks = marks.map((mark) => {
+    if (mark.type !== 'path'
+        || !mark.interactive
+        || !mark.encode
+        || !mark.encode.update
+        || !mark.encode.update.isVoronoi
+        || !mark.encode.update.isVoronoi.value) {
+      return mark;
+    }
+    return {
+      ...mark,
+      encode: {
+        ...mark.encode,
+        update: {
+          ...mark.encode.update,
+          tooltip: {
+            signal: `merge(datum.datum, {colorScale: "${COLOR_SCALE}", isStacked: ${isStacked(vegaLiteSpec)}})`,
+          },
+        },
+      },
+    };
+  });
+  return vegaSpec;
+}

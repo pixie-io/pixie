@@ -64,11 +64,19 @@ const NewCanvas = () => {
   const vis = React.useContext(VisContext);
   const { updateVis } = React.useContext(LiveContext);
   const [vegaModule, setVegaModule] = React.useState(null);
+  const [vegaLiteModule, setVegaLiteModule] = React.useState(null);
 
   // Load vega.
   React.useEffect(() => {
     import(/* webpackChunkName: "react-vega" webpackPreload: true */ 'react-vega').then((module) => {
       setVegaModule(module);
+    });
+  }, []);
+
+  // Load vega-lite.
+  React.useEffect(() => {
+    import(/* webpackChunkName: "vega-lite" webpackPreload: true */ 'vega-lite').then((module) => {
+      setVegaLiteModule(module);
     });
   }, []);
 
@@ -118,7 +126,14 @@ const NewCanvas = () => {
       const data = dataFromProto(table.relation, table.data);
       return (
         <div key={name} className='fs-exclude'>
-          <Vega data={data} spec={spec} tableName={name} oldSpec={false} vegaModule={vegaModule} />
+          <Vega
+            data={data}
+            spec={spec}
+            tableName={name}
+            oldSpec={false}
+            vegaModule={vegaModule}
+            vegaLiteModule={vegaLiteModule}
+          />
         </div>
       );
     });
@@ -155,11 +170,19 @@ const OldCanvas = () => {
   const placement = React.useContext(PlacementContextOld);
   const { updatePlacementOld } = React.useContext(LiveContext);
   const [vegaModule, setVegaModule] = React.useState(null);
+  const [vegaLiteModule, setVegaLiteModule] = React.useState(null);
 
   // Load vega.
   React.useEffect(() => {
     import(/* webpackChunkName: "react-vega" webpackPreload: true */ 'react-vega').then((module) => {
       setVegaModule(module);
+    });
+  }, []);
+
+  // Load vega-lite.
+  React.useEffect(() => {
+    import(/* webpackChunkName: "vega-lite" webpackPreload: true */ 'vega-lite').then((module) => {
+      setVegaLiteModule(module);
     });
   }, []);
 
@@ -195,7 +218,14 @@ const OldCanvas = () => {
       const data = dataFromProto(table.relation, table.data);
       return (
         <div key={chartName} className='fs-exclude'>
-          <Vega data={data} spec={spec} tableName={tableName} oldSpec={true} vegaModule={vegaModule} />
+          <Vega
+            data={data}
+            spec={spec}
+            tableName={tableName}
+            oldSpec={true}
+            vegaModule={vegaModule}
+            vegaLiteModule={vegaLiteModule}
+          />
         </div>
       );
     });

@@ -20,6 +20,19 @@ import {convertWidgetDisplayToVegaSpec} from './convert-to-vega-spec';
 //    {"time_": "4/2/2020, 9:42:43 PM", "service": "px-sock-shop/catalogue", "bytes_per_second": 58259}
 //  ]
 // }
+// replace all instances of colorFieldName with a string, and all instances of valueFieldName with another string.
+
+// When series is not provided to the Vis spec, we generate a random name for the series column
+// so we need to extract that random name using this function.
+function extractRandomFieldNamessFromSpec(spec): {colorFieldName: string, valueFieldName: string} {
+  if (!spec || !spec.transform || spec.transform.length === 0 || !spec.transform[0] || !spec.transform[0].as) {
+    return {colorFieldName: "", valueFieldName: ""};
+  }
+  return {
+    colorFieldName: spec.transform[0].as[0],
+    valueFieldName: spec.transform[0].as[1],
+  };
+}
 
 describe('simple timeseries', () => {
   it('produces the expected spec for a simple case', () => {
@@ -32,7 +45,11 @@ describe('simple timeseries', () => {
         }
       ],
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    const spec = convertWidgetDisplayToVegaSpec(input, "mysource");
+    const {colorFieldName, valueFieldName} = extractRandomFieldNamessFromSpec(spec);
+    expect(colorFieldName).toBeTruthy();
+    expect(valueFieldName).toBeTruthy();
+    expect(spec).toStrictEqual({
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
       "data": {
         "name": "mysource",
@@ -45,13 +62,58 @@ describe('simple timeseries', () => {
           "field": "time_",
           "title": null,
           "type": "temporal"
-        },
-        "y": {
-          "field": "bytes_per_second",
-          "type": "quantitative"
         }
       },
-      "mark": "line"
+      "layer": [
+        {
+          "encoding": {
+            "color": {
+              "field": colorFieldName,
+              "legend": null,
+              "type": "nominal"
+            },
+            "y": {
+              "field": "bytes_per_second",
+              "type": "quantitative"
+            }
+          },
+          "layer": [
+            {"mark": "line"}
+          ]
+        },
+        {
+          "encoding": {
+            "opacity": {
+              "condition": {"selection": "hover", "value": 0.3},
+              "value": 0,
+            }
+          },
+          "mark": "rule",
+          "selection": {
+            "hover": {
+              "clear": "mouseout",
+              "empty": "none",
+              "fields": ["time_"],
+              "nearest": true,
+              "on": "mouseover",
+              "type": "single"
+            }
+          },
+          "transform": [
+            {
+              "groupby": ["time_"],
+              "pivot": colorFieldName,
+              "value": "bytes_per_second",
+            }
+          ]
+        }
+      ],
+      "transform": [
+        {
+          "as": [colorFieldName, valueFieldName],
+          "fold": ["bytes_per_second"],
+        }
+      ]
     });
   });
 
@@ -68,7 +130,11 @@ describe('simple timeseries', () => {
       "xAxis": {"label": "My custom x axis title"},
       "yAxis": {"label": "My custom y axis title"}
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    const spec = convertWidgetDisplayToVegaSpec(input, "mysource");
+    const {colorFieldName, valueFieldName} = extractRandomFieldNamessFromSpec(spec);
+    expect(colorFieldName).toBeTruthy();
+    expect(valueFieldName).toBeTruthy();
+    expect(spec).toStrictEqual({
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
       "data": {
         "name": "mysource",
@@ -81,15 +147,60 @@ describe('simple timeseries', () => {
           "field": "time_",
           "title": "My custom x axis title",
           "type": "temporal"
-        },
-        "y": {
-          "field": "bytes_per_second",
-          "title": "My custom y axis title",
-          "type": "quantitative"
         }
       },
-      "mark": "line",
-      "title": "My custom title"
+      "title": "My custom title",
+      "layer": [
+        {
+          "encoding": {
+            "y": {
+              "field": "bytes_per_second",
+              "title": "My custom y axis title",
+              "type": "quantitative"
+            },
+            "color": {
+              "field": colorFieldName,
+              "legend": null,
+              "type": "nominal"
+            }
+          },
+          "layer": [
+            {"mark": "line"}
+          ]
+        },
+        {
+          "encoding": {
+            "opacity": {
+              "condition": {"selection": "hover", "value": 0.3},
+              "value": 0,
+            }
+          },
+          "mark": "rule",
+          "selection": {
+            "hover": {
+              "clear": "mouseout",
+              "empty": "none",
+              "fields": ["time_"],
+              "nearest": true,
+              "on": "mouseover",
+              "type": "single"
+            }
+          },
+          "transform": [
+            {
+              "groupby": ["time_"],
+              "pivot": colorFieldName,
+              "value": "bytes_per_second",
+            }
+          ]
+        }
+      ],
+      "transform": [
+        {
+          "as": [colorFieldName, valueFieldName],
+          "fold": ["bytes_per_second"],
+        }
+      ]
     });
   });
 
@@ -103,7 +214,11 @@ describe('simple timeseries', () => {
         }
       ],
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    const spec = convertWidgetDisplayToVegaSpec(input, "mysource");
+    const {colorFieldName, valueFieldName} = extractRandomFieldNamessFromSpec(spec);
+    expect(colorFieldName).toBeTruthy();
+    expect(valueFieldName).toBeTruthy();
+    expect(spec).toStrictEqual({
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
       "data": {
         "name": "mysource",
@@ -116,13 +231,58 @@ describe('simple timeseries', () => {
           "field": "time_",
           "title": null,
           "type": "temporal"
-        },
-        "y": {
-          "field": "bytes_per_second",
-          "type": "quantitative"
         }
       },
-      "mark": "bar"
+      "layer": [
+        {
+          "encoding": {
+            "y": {
+              "field": "bytes_per_second",
+              "type": "quantitative"
+            },
+            "color": {
+              "field": colorFieldName,
+              "legend": null,
+              "type": "nominal"
+            }
+          },
+          "layer": [
+            {"mark": "bar"}
+          ]
+        },
+        {
+          "encoding": {
+            "opacity": {
+              "condition": {"selection": "hover", "value": 0.3},
+              "value": 0,
+            }
+          },
+          "mark": "rule",
+          "selection": {
+            "hover": {
+              "clear": "mouseout",
+              "empty": "none",
+              "fields": ["time_"],
+              "nearest": true,
+              "on": "mouseover",
+              "type": "single"
+            }
+          },
+          "transform": [
+            {
+              "groupby": ["time_"],
+              "pivot": colorFieldName,
+              "value": "bytes_per_second",
+            }
+          ]
+        }
+      ],
+      "transform": [
+        {
+          "as": [colorFieldName, valueFieldName],
+          "fold": ["bytes_per_second"],
+        }
+      ]
     });
   });
 
@@ -136,7 +296,11 @@ describe('simple timeseries', () => {
         }
       ],
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    const spec = convertWidgetDisplayToVegaSpec(input, "mysource");
+    const {colorFieldName, valueFieldName} = extractRandomFieldNamessFromSpec(spec);
+    expect(colorFieldName).toBeTruthy();
+    expect(valueFieldName).toBeTruthy();
+    expect(spec).toStrictEqual({
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
       "data": {
         "name": "mysource",
@@ -149,13 +313,58 @@ describe('simple timeseries', () => {
           "field": "time_",
           "title": null,
           "type": "temporal"
-        },
-        "y": {
-          "field": "bytes_per_second",
-          "type": "quantitative"
         }
       },
-      "mark": "point"
+      "layer": [
+        {
+          "encoding": {
+            "y": {
+              "field": "bytes_per_second",
+              "type": "quantitative"
+            },
+            "color": {
+              "field": colorFieldName,
+              "legend": null,
+              "type": "nominal"
+            }
+          },
+          "layer": [
+            {"mark": "point"}
+          ]
+        },
+        {
+          "encoding": {
+            "opacity": {
+              "condition": {"selection": "hover", "value": 0.3},
+              "value": 0,
+            }
+          },
+          "mark": "rule",
+          "selection": {
+            "hover": {
+              "clear": "mouseout",
+              "empty": "none",
+              "fields": ["time_"],
+              "nearest": true,
+              "on": "mouseover",
+              "type": "single"
+            }
+          },
+          "transform": [
+            {
+              "groupby": ["time_"],
+              "pivot": colorFieldName,
+              "value": "bytes_per_second",
+            }
+          ]
+        }
+      ],
+      "transform": [
+        {
+          "as": [colorFieldName, valueFieldName],
+          "fold": ["bytes_per_second"],
+        }
+      ]
     });
   });
 });
@@ -185,17 +394,52 @@ describe('timeseries with series', () => {
           "field": "time_",
           "title": null,
           "type": "temporal"
-        },
-        "y": {
-          "field": "bytes_per_second",
-          "type": "quantitative"
-        },
-        "color": {
-          "field": "service",
-          "type": "nominal"
         }
       },
-      "mark": "line"
+      "layer": [
+        {
+          "encoding": {
+            "y": {
+              "field": "bytes_per_second",
+              "type": "quantitative"
+            },
+            "color": {
+              "field": "service",
+              "legend": null,
+              "type": "nominal"
+            }
+          },
+          "layer": [
+            {"mark": "line"}
+          ]
+        },
+        {
+          "encoding": {
+            "opacity": {
+              "condition": {"selection": "hover", "value": 0.3},
+              "value": 0,
+            }
+          },
+          "mark": "rule",
+          "selection": {
+            "hover": {
+              "clear": "mouseout",
+              "empty": "none",
+              "fields": ["time_"],
+              "nearest": true,
+              "on": "mouseover",
+              "type": "single"
+            }
+          },
+          "transform": [
+            {
+              "groupby": ["time_"],
+              "pivot": "service",
+              "value": "bytes_per_second",
+            }
+          ]
+        }
+      ]
     });
   });
 
@@ -224,19 +468,54 @@ describe('timeseries with series', () => {
           "field": "time_",
           "title": null,
           "type": "temporal"
-        },
-        "y": {
-          "field": "bytes_per_second",
-          "type": "quantitative",
-          "stack": "zero",
-          "aggregate": "sum"
-        },
-        "color": {
-          "field": "service",
-          "type": "nominal"
         }
       },
-      "mark": "line"
+      "layer": [
+        {
+          "encoding": {
+            "y": {
+              "field": "bytes_per_second",
+              "type": "quantitative",
+              "stack": "zero",
+              "aggregate": "sum"
+            },
+            "color": {
+              "field": "service",
+              "legend": null,
+              "type": "nominal"
+            }
+          },
+          "layer": [
+            {"mark": "line"}
+          ]
+        },
+        {
+          "encoding": {
+            "opacity": {
+              "condition": {"selection": "hover", "value": 0.3},
+              "value": 0,
+            }
+          },
+          "mark": "rule",
+          "selection": {
+            "hover": {
+              "clear": "mouseout",
+              "empty": "none",
+              "fields": ["time_"],
+              "nearest": true,
+              "on": "mouseover",
+              "type": "single"
+            }
+          },
+          "transform": [
+            {
+              "groupby": ["time_"],
+              "pivot": "service",
+              "value": "bytes_per_second",
+            }
+          ]
+        }
+      ],
     });
   });
 });

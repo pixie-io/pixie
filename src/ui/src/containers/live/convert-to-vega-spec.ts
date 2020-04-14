@@ -1,5 +1,7 @@
+import * as _ from 'lodash';
 import {Spec as VgSpec} from 'vega';
 import {VisualizationSpec} from 'vega-embed';
+import {EncodeEntry} from 'vega-typings';
 import {TopLevelSpec as VlSpec} from 'vega-lite';
 
 import {DISPLAY_TYPE_KEY, WidgetDisplay} from './vis';
@@ -93,11 +95,47 @@ const BASE_TIMESERIES_SPEC: VisualizationSpec = {
       },
       title: null,
     },
-    y: {
-      type: 'quantitative',
-    },
   },
+  layer: [],
 };
+
+function timeseriesDataLayer(yField: string, mark: string) {
+  return {
+    encoding: {
+      y: { field: yField, type: 'quantitative'},
+    },
+    layer: [
+      {mark},
+    ],
+  };
+};
+
+function timeseriesHoverLayer(colorField: string, yField: string, timeField: string) {
+  return {
+    transform: [{
+      pivot: colorField,
+      value: yField,
+      groupby: [timeField],
+    }],
+    mark: 'rule',
+    encoding: {
+      opacity: {
+        condition: {value: 0.3, selection: 'hover'},
+        value: 0,
+      },
+    },
+    selection: {
+      hover: {
+        type: 'single',
+        fields: [timeField],
+        nearest: true,
+        on: 'mouseover',
+        empty: 'none',
+        clear: 'mouseout',
+      },
+    },
+  };
+}
 
 function extendEncoding(spec, field, params) {
   return {
@@ -128,6 +166,26 @@ function extendColumnEncoding(spec, columnEncoding) {
   return extendEncoding(spec, 'column', columnEncoding);
 }
 
+function extendLayer(spec, layers) {
+  return {
+    ...spec,
+    layer: [...(spec.layer || []), ...layers],
+  };
+}
+
+function extendTransforms(spec, transforms) {
+  return  {
+    ...spec,
+    transform: [...(spec.transform || []), ...transforms],
+  };
+}
+
+function randStr(length: number): string {
+  // Radix is 36 since there are 26 alphabetic chars, and 10 numbers.
+  const radix = 36;
+  return _.range(length).map(() => _.random(radix).toString(radix)).join('');
+}
+
 function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): VisualizationSpec {
   let spec = BASE_TIMESERIES_SPEC;
 
@@ -136,9 +194,6 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
   }
   if (display.xAxis && display.xAxis.label) {
     spec = extendXEncoding(spec, {title: display.xAxis.label});
-  }
-  if (display.yAxis && display.yAxis.label) {
-    spec = extendYEncoding(spec, {title: display.yAxis.label});
   }
 
   if (!display.timeseries) {
@@ -150,33 +205,58 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
 
   const timeseries = display.timeseries[0];
 
+  let mark = '';
   switch (timeseries.mode) {
     case 'MODE_POINT':
-      spec = {...spec, mark: 'point'};
+      mark = 'point';
       break;
     case 'MODE_BAR':
-      spec = {...spec, mark: 'bar'};
+      mark = 'bar';
       break;
     case 'MODE_UNKNOWN':
     case 'MODE_LINE':
     default:
-      spec = {...spec, mark: 'line'};
+      mark = 'line';
   }
 
   if (!timeseries.value) {
     throw new Error('No value provided for TimeseriesChart timeseries');
   }
-  spec = extendYEncoding(spec, {field: timeseries.value});
-  if (timeseries.series ) {
-    spec = extendColorEncoding(spec, {field: timeseries.series, type: 'nominal'});
+
+  const layers = [];
+  layers.push(timeseriesDataLayer(timeseries.value, mark));
+  if (display.yAxis && display.yAxis.label) {
+    layers[0] = extendYEncoding(layers[0], {title: display.yAxis.label});
   }
+
+  let colorField: string;
+  if (timeseries.series ) {
+    colorField = timeseries.series;
+  } else {
+    // If there is no series provided, then we generate a series column,
+    // by using the fold transform.
+    // To avoid collisions, we generate a random name for the fields
+    // that the fold transform creates.
+
+    // create random alphanumeric strings of length 10.
+    colorField = randStr(10);
+    const valueField = randStr(10);
+    spec = extendTransforms(spec, [
+      {fold: [timeseries.value], as: [colorField, valueField]},
+    ]);
+  }
+  layers[0] = extendColorEncoding(layers[0], {field: colorField, type: 'nominal', legend: null});
+  // Add layer for voronoi and hover line.
+  layers.push(timeseriesHoverLayer(colorField, timeseries.value, TIMESERIES_TIME_COLUMN));
 
   if (timeseries.stackBySeries) {
     if (!timeseries.series) {
       throw new Error('stackBySeries is invalid for TimeseriesChart when series is not specified');
     }
-    spec = extendYEncoding(spec, {aggregate: 'sum', stack: 'zero'});
+    layers[0] = extendYEncoding(layers[0], {aggregate: 'sum', stack: 'zero'});
   }
+
+  spec = extendLayer(spec, layers);
 
   return addSources(spec, source);
 }
