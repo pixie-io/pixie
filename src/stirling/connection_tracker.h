@@ -71,8 +71,9 @@ class ConnectionTracker {
   };
 
   ConnectionTracker() = default;
-  ~ConnectionTracker();
   ConnectionTracker(ConnectionTracker&& other) = default;
+
+  ~ConnectionTracker();
 
   /**
    * @brief Registers a BPF connection control event into the tracker.
