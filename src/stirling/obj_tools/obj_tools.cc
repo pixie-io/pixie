@@ -1,8 +1,5 @@
 #include "src/stirling/obj_tools/obj_tools.h"
 
-#include <llvm-c/Disassembler.h>
-#include <llvm/Support/TargetSelect.h>
-
 #include <filesystem>
 #include <memory>
 
