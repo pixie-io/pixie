@@ -19,8 +19,6 @@ import (
 	"k8s.io/client-go/tools/watch"
 )
 
-//go:generate genny -in=k8s_metadata_utils.tmpl -out k8s_metadata_utils.gen.go gen "Resource=Pod,Service,Namespace,Endpoints"
-
 const kubeSystemNs = "kube-system"
 const kubeProxyPodPrefix = "kube-proxy"
 
