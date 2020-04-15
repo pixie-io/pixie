@@ -18,6 +18,13 @@ type OutputStreamWriter interface {
 	Finish()
 }
 
+// TableView is the interface the provides read access to underlying table data.
+type TableView interface {
+	Name() string
+	Header() []string
+	Data() [][]interface{}
+}
+
 // CreateStreamWriter creates a formatted writer with the default options.
 func CreateStreamWriter(format string, w io.Writer) OutputStreamWriter {
 	switch format {
@@ -27,6 +34,8 @@ func CreateStreamWriter(format string, w io.Writer) OutputStreamWriter {
 		return NewTableStreamWriter(w)
 	case "null":
 		return &NullStreamWriter{}
+	case "inmemory":
+		return NewTableAccumulator()
 	default:
 		return NewTableStreamWriter(w)
 	}
@@ -192,3 +201,51 @@ func (*NullStreamWriter) Write(data []interface{}) error { return nil }
 
 // Finish is called to flush all the data.
 func (*NullStreamWriter) Finish() {}
+
+// TableAccumulator accumulates all data from the table.
+type TableAccumulator struct {
+	id           string
+	headerValues []string
+	data         [][]interface{}
+}
+
+// NewTableAccumulator creates a table accumulator based on input stream.
+func NewTableAccumulator() *TableAccumulator {
+	return &TableAccumulator{
+		data: make([][]interface{}, 0),
+	}
+}
+
+// SetHeader is called to set the key values for each of the data values. Must be called before Write is.
+func (t *TableAccumulator) SetHeader(id string, headerValues []string) {
+	t.id = id
+	t.headerValues = headerValues
+}
+
+// Write is called for each record of data.
+func (t *TableAccumulator) Write(data []interface{}) error {
+	if len(data) != len(t.headerValues) {
+		return errors.New("header/data length mismatch")
+	}
+	t.data = append(t.data, data)
+	return nil
+}
+
+// Finish is called when all the data has been sent. For table accumulator it's a noop.
+func (t *TableAccumulator) Finish() {
+}
+
+// Name returns the table name.
+func (t *TableAccumulator) Name() string {
+	return t.id
+}
+
+// Header returns the header values as a string.
+func (t *TableAccumulator) Header() []string {
+	return t.headerValues
+}
+
+// Data returns the underlying data table as slice of slices.
+func (t *TableAccumulator) Data() [][]interface{} {
+	return t.data
+}

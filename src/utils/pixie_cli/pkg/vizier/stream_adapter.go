@@ -42,6 +42,7 @@ type VizierStreamOutputAdapter struct {
 	streamWriterFactory StreamWriterFactorFunc
 	wg                  sync.WaitGroup
 	enableFormat        bool
+	format              string
 
 	latencyYellowThresholdMS float64
 	latencyRedThresholdMS    float64
@@ -58,17 +59,17 @@ var (
 	ErrDuplicateMetadata = errors.New("duplicate table metadata received")
 )
 
-// NewVizierStreamOutputAdapter creates a new vizier output adapter.
-func NewVizierStreamOutputAdapter(ctx context.Context, stream chan *VizierExecData, format string) *VizierStreamOutputAdapter {
-	enableFormat := format != "json"
+const FormatInMemory string = "inmemory"
 
-	factoryFunc := func(md *pl_api_vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter {
-		return components.CreateStreamWriter(format, os.Stdout)
-	}
+// NewVizierStreamOutputAdapter creates a new vizier output adapter.
+func NewVizierStreamOutputAdapterWithFactory(ctx context.Context, stream chan *VizierExecData, format string,
+	factoryFunc func(*pl_api_vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter) *VizierStreamOutputAdapter {
+	enableFormat := format != "json"
 
 	adapter := &VizierStreamOutputAdapter{
 		tableNameToInfo:     make(map[string]*TableInfo),
 		streamWriterFactory: factoryFunc,
+		format:              format,
 		enableFormat:        enableFormat,
 
 		latencyYellowThresholdMS: 200,
@@ -81,14 +82,42 @@ func NewVizierStreamOutputAdapter(ctx context.Context, stream chan *VizierExecDa
 	go adapter.handleStream(ctx, stream)
 
 	return adapter
+
+}
+
+// NewVizierStreamOutputAdapter creates a new vizier output adapter.
+func NewVizierStreamOutputAdapter(ctx context.Context, stream chan *VizierExecData, format string) *VizierStreamOutputAdapter {
+	factoryFunc := func(md *pl_api_vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter {
+		return components.CreateStreamWriter(format, os.Stdout)
+	}
+	return NewVizierStreamOutputAdapterWithFactory(ctx, stream, format, factoryFunc)
 }
 
 // Finish must be called to wait for the output and flush all the data.
 func (v *VizierStreamOutputAdapter) Finish() {
 	v.wg.Wait()
+
 	for _, ti := range v.tableNameToInfo {
 		ti.w.Finish()
 	}
+}
+
+// Views gets all the accumulated views. This function is only valid with format = inmemory and after Finish.
+func (v *VizierStreamOutputAdapter) Views() []components.TableView {
+	// This function only works for in memory format.
+	if v.format != FormatInMemory {
+		return nil
+	}
+	views := make([]components.TableView, 0)
+	for _, ti := range v.tableNameToInfo {
+		var ok bool
+		vitv, ok := ti.w.(components.TableView)
+		if !ok {
+			log.Fatalln("Cannot convert to table view")
+		}
+		views = append(views, vitv)
+	}
+	return views
 }
 
 func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream chan *VizierExecData) {
