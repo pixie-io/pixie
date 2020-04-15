@@ -129,7 +129,7 @@ const LiveContextProvider = (props) => {
     let err;
     let queryId;
 
-    client.executeScript(inputScript || script, getQueryFuncs(inputVis || vis)).then((results) => {
+    client.executeScript(inputScript || script, getQueryFuncs.bind(null, inputVis || vis)).then((results) => {
       const newTables = {};
       queryId = results.queryId;
       for (const table of results.tables) {

@@ -55,14 +55,13 @@ export class VizierGRPCClient {
   }
 
   executeScriptOld(script: string): Promise<VizierQueryResult> {
-    return this.executeScript(script, []);
+    return this.executeScript(script, () => []);
   }
 
-  executeScript(script: string, funcs: VizierQueryFunc[]): Promise<VizierQueryResult> {
+  buildReq(script: string, funcs: VizierQueryFunc[]): ExecuteScriptRequest {
     const req = new ExecuteScriptRequest();
     req.setClusterId(this.clusterID);
     req.setQueryStr(script);
-
     funcs.forEach((input: VizierQueryFunc) => {
       const execFuncPb = new ExecuteScriptRequest.FuncToExecute();
       execFuncPb.setFuncName(input.name);
@@ -71,7 +70,7 @@ export class VizierGRPCClient {
         const argValPb = new ExecuteScriptRequest.FuncToExecute.ArgValue();
         argValPb.setName(arg.name);
         if (!arg.value) {
-          throw new Error('No value for arg ' + arg.name + '. Variables not currently supported.');
+          throw new Error(`No value provided for arg ${arg.name}.`);
         }
         argValPb.setValue(arg.value);
         execFuncPb.addArgValues(argValPb);
@@ -79,7 +78,21 @@ export class VizierGRPCClient {
       req.addExecFuncs(execFuncPb);
     });
 
+    return req;
+  }
+
+  // Use a generator to produce the VizierQueryFunc to remove the dependency on vis.tsx.
+  // funcsGenerator should correspond to getQueryFuncs in vis.tsx.
+  executeScript(script: string, funcsGenerator: () => VizierQueryFunc[]): Promise<VizierQueryResult> {
     return new Promise((resolve, reject) => {
+      let req;
+      try {
+        req = this.buildReq(script, funcsGenerator());
+      } catch (err) {
+        reject(err);
+        return;
+      }
+
       const call = this.client.executeScript(req, this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` });
       const tablesMap = new Map<string, Table>();
       const results: VizierQueryResult = { tables: [] };

@@ -1,4 +1,4 @@
-import {VizierQueryFunc} from 'common/vizier-grpc-client';
+import {VizierQueryArg, VizierQueryFunc} from 'common/vizier-grpc-client';
 
 import {ChartDisplay} from './convert-to-vega-spec';
 import {ChartPosition, DEFAULT_HEIGHT, GRID_WIDTH} from './layout';
@@ -34,6 +34,7 @@ interface Widget {
 interface Variable {
   name: string;
   type: string;
+  defaultValue?: string;
 }
 
 export interface Vis {
@@ -60,12 +61,54 @@ export function widgetResultName(widget: Widget, widgetIndex: number): string {
   return `widget_${widgetIndex}`;
 }
 
+class InvalidVisSpecError extends Error {
+  constructor(message) {
+    super(`Invalid Vis spec: ${message}`);
+    this.name = 'InvalidVisSpecError';
+  }
+}
+
+function getWidgetArgs(defaults: { [key: string]: string; }, widget: Widget): VizierQueryArg[] {
+  const args = [];
+  widget.func.args.forEach((arg: FuncArg) => {
+    if ((arg.value == null) === (arg.variable == null)) {
+      throw new InvalidVisSpecError(`Arg ${arg.name} must contain either a value or a reference to a variable`);
+    }
+
+    if (arg.value != null) {
+      args.push({
+        name: arg.name,
+        value: arg.value,
+      });
+    }
+    // For now, use the default value in the vis.json spec as the value to the function.
+    // TODO(nserrino): Support actual variables from the command prompt, or other UI inputs.
+    if (!(arg.variable in defaults)) {
+      throw new InvalidVisSpecError(`Variable ${arg.variable} does not contain a defaultValue.`);
+    }
+    args.push({
+      name: arg.name,
+      value: defaults[arg.variable],
+    });
+  });
+  return args;
+}
+
+// This should only be called by vizier grpc client, and it will reject the returned promise
+// when executeScript() is called with an invalid Vis spec.
 export function getQueryFuncs(vis: Vis): VizierQueryFunc[] {
+  const defaults = {};
+  vis.variables.forEach((v) => {
+    if (v.defaultValue) {
+      defaults[v.name] = v.defaultValue;
+    }
+  });
+
   return vis.widgets.map((widget, i) => {
     return {
       name: widget.func.name,
       outputTablePrefix: widgetResultName(widget, i),
-      args: widget.func.args,
+      args: getWidgetArgs(defaults, widget),
     };
   });
 }
