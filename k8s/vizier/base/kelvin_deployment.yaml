@@ -41,6 +41,10 @@ spec:
         env:
         - name: PL_HOST_PATH
           value: "/host"
+        - name: PL_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
         - name: PL_POD_IP
           valueFrom:
             fieldRef:

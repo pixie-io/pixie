@@ -25,6 +25,9 @@ DEFINE_string(pod_ip, gflags::StringFromEnv("PL_POD_IP", ""),
 
 DEFINE_int32(rpc_port, gflags::Int32FromEnv("PL_RPC_PORT", 59300), "The port of the RPC server");
 
+DEFINE_string(pod_name, gflags::StringFromEnv("PL_POD_NAME", ""),
+              "The name of the POD the PEM is running on");
+
 using ::pl::vizier::agent::KelvinManager;
 using ::pl::vizier::agent::Manager;
 
@@ -63,8 +66,8 @@ int main(int argc, char** argv) {
   }
   std::string addr = absl::Substitute("$0:$1", FLAGS_pod_ip, FLAGS_rpc_port);
 
-  auto manager = KelvinManager::Create(agent_id, addr, FLAGS_rpc_port, FLAGS_nats_url,
-                                       FLAGS_query_broker_addr, FLAGS_mds_addr)
+  auto manager = KelvinManager::Create(agent_id, FLAGS_pod_name, addr, FLAGS_rpc_port,
+                                       FLAGS_nats_url, FLAGS_query_broker_addr, FLAGS_mds_addr)
                      .ConsumeValueOrDie();
 
   err_handler.set_manager(manager.get());

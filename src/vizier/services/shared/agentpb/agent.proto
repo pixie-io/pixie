@@ -25,7 +25,12 @@ message AgentInfo {
 
 // HostInfo contains the details for the host (OS, kernel, CPU, etc).
 message HostInfo {
+    // The Hostname as reported by pod. This will be the machine hostname for Daemonsets and assigned hostname
+    // for regular pods (kelvin).
     string hostname = 1;
+    // The Hostname is not always unique. EKS autoscaling groups assign all nodes the same hostname so we use this
+    // to disambiguate the different PEMs.
+    string pod_name = 2;
 }
 
 // Agent contains information about a specific agent instance.

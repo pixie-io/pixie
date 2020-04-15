@@ -32,16 +32,17 @@ namespace vizier {
 namespace agent {
 using ::pl::event::Dispatcher;
 
-Manager::Manager(sole::uuid agent_id, int grpc_server_port,
+Manager::Manager(sole::uuid agent_id, std::string_view pod_name, int grpc_server_port,
                  services::shared::agent::AgentCapabilities capabilities, std::string_view nats_url,
                  std::string_view mds_url)
-    : Manager(agent_id, grpc_server_port, std::move(capabilities), mds_url,
+    : Manager(agent_id, pod_name, grpc_server_port, std::move(capabilities), mds_url,
               Manager::CreateDefaultNATSConnector(agent_id, nats_url)) {}
 
-Manager::Manager(sole::uuid agent_id, int grpc_server_port,
+Manager::Manager(sole::uuid agent_id, std::string_view pod_name, int grpc_server_port,
                  services::shared::agent::AgentCapabilities capabilities, std::string_view mds_url,
                  std::unique_ptr<VizierNATSConnector> nats_connector)
-    : grpc_channel_creds_(SSL::DefaultGRPCClientCreds()),
+    : pod_name_(std::string(pod_name)),
+      grpc_channel_creds_(SSL::DefaultGRPCClientCreds()),
       time_system_(std::make_unique<pl::event::RealTimeSystem>()),
       api_(std::make_unique<pl::event::APIImpl>(time_system_.get())),
       dispatcher_(api_->AllocateDispatcher("manager")),
@@ -82,6 +83,7 @@ Status Manager::RegisterAgent() {
   agent_info->set_ip_address(info_.address);
   auto host_info = agent_info->mutable_host_info();
   host_info->set_hostname(info_.hostname);
+  host_info->set_pod_name(pod_name_);
   *agent_info->mutable_capabilities() = info_.capabilities;
   PL_RETURN_IF_ERROR(nats_connector_->Publish(req));
   return Status::OK();
