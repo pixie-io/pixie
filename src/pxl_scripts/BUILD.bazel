@@ -3,6 +3,6 @@ package(default_visibility = ["//visibility:public"])
 
 filegroup(
     name = "preset_queries",
-    srcs = glob(["px/**/*.pxl"]),
+    srcs = glob(["px/**/*.pxl", "px/**/*.json"]),
     visibility = ["//visibility:public"],
 )

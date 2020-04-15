@@ -67,9 +67,24 @@ class PresetQueriesTest : public ::testing::Test {
   }
 
   void ParsePresetQueries() {
+    absl::flat_hash_set<std::string> ignore_directories;
+    // 1st pass: find directories to ignore.
     for (const auto& entry : std::filesystem::recursive_directory_iterator(scripts_dir_)) {
       std::string strpath = entry.path().string();
-      if (!absl::EndsWith(strpath, ".pxl")) {
+      // Ignore the live views for now, no guaranteee that the values will be correct.
+      if (absl::EndsWith(strpath, ".json")) {
+        std::filesystem::path p = strpath;
+        ignore_directories.insert(p.parent_path().string());
+      }
+    }
+
+    // 2nd pass: add queries to test
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(scripts_dir_)) {
+      std::string strpath = entry.path().string();
+      std::filesystem::path p = strpath;
+      if (!absl::EndsWith(strpath, ".pxl") ||
+          ignore_directories.contains(p.parent_path().string())) {
+        // Ignore the live views for now, no guaranteee that the values will be correct.
         continue;
       }
       PL_ASSIGN_OR_EXIT(preset_queries_[strpath], ReadFileToString(entry.path()));
