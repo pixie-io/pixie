@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -68,6 +69,15 @@ func (b BundleReader) GetScriptMetadata() []Metadata {
 		s[i].LongDoc = val.LongDoc
 		i++
 	}
+	return s
+}
+
+// GetOrderedScriptMetadata returns metadata about available scripts ordered by the name of the script.
+func (b BundleReader) GetOrderedScriptMetadata() []Metadata {
+	s := b.GetScriptMetadata()
+	sort.Slice(s, func(i, j int) bool {
+		return s[i].ScriptName < s[j].ScriptName
+	})
 	return s
 }
 
