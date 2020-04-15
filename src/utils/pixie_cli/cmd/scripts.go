@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/alecthomas/chroma/quick"
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -35,11 +34,8 @@ var ScriptListCmd = &cobra.Command{
 	Short:   "List pre-registered pxl scripts",
 	Aliases: []string{"scripts"},
 	Run: func(cmd *cobra.Command, args []string) {
-		bundle := viper.GetString("bundle")
-		if bundle == "" {
-			bundle = defaultBundleFile
-		}
-		listBundleScripts(bundle, viper.GetString("output_format"))
+		br := mustCreateBundleReader()
+		listBundleScripts(br, viper.GetString("output_format"))
 	},
 }
 
@@ -50,16 +46,10 @@ var ScriptShowCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Aliases: []string{"scripts"},
 	Run: func(cmd *cobra.Command, args []string) {
-		bundle := viper.GetString("bundle")
-		if bundle == "" {
-			bundle = defaultBundleFile
-		}
+		br := mustCreateBundleReader()
 		scriptName := args[0]
-		script, _, err := getScriptFromBundle(bundle, scriptName)
-		if err != nil {
-			log.WithError(err).Fatal("Failed to get script information")
-		}
-		err = quick.Highlight(os.Stdout, script, "python3", "terminal16m", "monokai")
+		execScript := br.MustGetScript(scriptName)
+		err := quick.Highlight(os.Stdout, execScript.ScriptString(), "python3", "terminal16m", "monokai")
 		if err != nil {
 			panic(err)
 		}

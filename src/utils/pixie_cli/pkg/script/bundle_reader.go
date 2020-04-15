@@ -1,24 +1,18 @@
-package scripts
+package script
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // BundleReader reads a script bundle.
 type BundleReader struct {
 	scripts map[string]*pixieScript
-}
-
-// ScriptMetadata has metadata information about a specific script.
-type ScriptMetadata struct {
-	ScriptName string
-	ShortDoc   string
-	LongDoc    string
 }
 
 func isValidURL(toTest string) bool {
@@ -65,8 +59,8 @@ func NewBundleReader(bundleFile string) (*BundleReader, error) {
 }
 
 // GetScriptMetadata returns metadata about available scripts.
-func (b BundleReader) GetScriptMetadata() []ScriptMetadata {
-	s := make([]ScriptMetadata, len(b.scripts))
+func (b BundleReader) GetScriptMetadata() []Metadata {
+	s := make([]Metadata, len(b.scripts))
 	i := 0
 	for k, val := range b.scripts {
 		s[i].ScriptName = k
@@ -78,10 +72,27 @@ func (b BundleReader) GetScriptMetadata() []ScriptMetadata {
 }
 
 // GetScript returns the script by name.
-func (b BundleReader) GetScript(scriptName string) (string, bool, error) {
+func (b BundleReader) GetScript(scriptName string) (*ExecutableScript, error) {
 	script, ok := b.scripts[scriptName]
 	if !ok {
-		return "", false, fmt.Errorf("script '%s' not found", scriptName)
+		return nil, ErrScriptNotFound
 	}
-	return script.Pxl, script.Vis != "", nil
+	return &ExecutableScript{
+		metadata: Metadata{
+			ScriptName: scriptName,
+			ShortDoc:   script.ShortDoc,
+			LongDoc:    script.LongDoc,
+			HasVis:     script.Pxl != "",
+		},
+		scriptString: script.Pxl,
+	}, nil
+}
+
+// MustGetScript is GetScript with fatal on error.
+func (b BundleReader) MustGetScript(scriptName string) *ExecutableScript {
+	es, err := b.GetScript(scriptName)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to get script")
+	}
+	return es
 }

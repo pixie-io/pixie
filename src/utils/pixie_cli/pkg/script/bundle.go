@@ -1,4 +1,4 @@
-package scripts
+package script
 
 type pixieScript struct {
 	Pxl       string `json:"pxl"`

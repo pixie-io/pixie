@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
 )
 
@@ -31,13 +32,14 @@ var GetPEMsCmd = &cobra.Command{
 		cloudAddr := viper.GetString("cloud_addr")
 		format, _ := cmd.Flags().GetString("output")
 		format = strings.ToLower(format)
+		br := mustCreateBundleReader()
+		execScript := br.MustGetScript(script.AgentStatusScript)
 		v := mustConnectDefaultVizier(cloudAddr)
-		q := "import px\npx.display(px.GetAgentStatus())"
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
-		resp, err := v.ExecuteScriptStream(ctx, q)
+		resp, err := v.ExecuteScriptStream(ctx, execScript.ScriptString())
 		if err != nil {
 			log.WithError(err).Fatal("Failed to execute query")
 		}

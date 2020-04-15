@@ -4,7 +4,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/scripts"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 )
 
 func init() {
@@ -33,7 +33,7 @@ var CreateBundle = &cobra.Command{
 		searchPaths, _ := cmd.Flags().GetStringArray("search_path")
 
 		out, _ := cmd.Flags().GetString("out")
-		b := scripts.NewBundleWriter(searchPaths, basePaths)
+		b := script.NewBundleWriter(searchPaths, basePaths)
 		err := b.Write(out)
 		if err != nil {
 			log.WithError(err).Fatal("Failed to create bundle")
