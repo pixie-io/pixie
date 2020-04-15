@@ -41,7 +41,7 @@ constexpr uint8_t kQueryFrame[] = {
 
 class CQLParserTest : public ::testing::Test {
  protected:
-  EventParser<Frame> parser_;
+  EventParser parser_;
 };
 
 TEST_F(CQLParserTest, Basic) {

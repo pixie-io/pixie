@@ -235,8 +235,7 @@ class DataStream {
 
   // Helper function that appends all contiguous events to the parser.
   // Returns number of events appended.
-  template <typename TFrameType>
-  size_t AppendEvents(EventParser<TFrameType>* parser) const;
+  size_t AppendEvents(EventParser* parser) const;
 
   // Raw data events from BPF.
   // TODO(oazizi/yzhao): Convert this to vector or deque.

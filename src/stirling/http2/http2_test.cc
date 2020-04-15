@@ -108,7 +108,7 @@ MATCHER_P2(MatchesTypePayload, t, p,
 
 class HTTP2ParserTest : public ::testing::Test {
  protected:
-  EventParser<Frame> parser_;
+  EventParser parser_;
 };
 
 TEST_F(HTTP2ParserTest, UnpackFrames) {
@@ -606,7 +606,7 @@ TEST_F(HTTP2ParserTest, IncompleteHeaderBlock) {
 //
 // Tests that stitching and inflation specify time span correctly.
 TEST(EventsTimeSpanTest, FromEventsToHTTP2Message) {
-  EventParser<Frame> parser;
+  EventParser parser;
   constexpr uint8_t flags = 0;
   constexpr uint32_t stream_id = 1;
   const std::string frame0 = PackHeadersFrame("\x86\x83", flags, stream_id);

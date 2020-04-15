@@ -39,8 +39,7 @@ void DataStream::AddData(std::unique_ptr<SocketDataEvent> event) {
   has_new_events_ = true;
 }
 
-template <typename TFrameType>
-size_t DataStream::AppendEvents(EventParser<TFrameType>* parser) const {
+size_t DataStream::AppendEvents(EventParser* parser) const {
   size_t append_count = 0;
 
   // Prepare all recorded events for parsing.
@@ -152,7 +151,7 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
   parse_result.end_position = {next_seq_num_, offset_};
 
   while (keep_processing) {
-    EventParser<TFrameType> parser;
+    EventParser parser;
 
     // Set-up events in parser.
     size_t num_events_appended = AppendEvents(&parser);

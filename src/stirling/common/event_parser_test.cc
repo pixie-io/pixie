@@ -79,7 +79,7 @@ TEST(PositionConverterTest, Basic) {
 
 // Use dummy protocol to test basics of EventParser and its position conversions.
 TEST(EventParserTest, BasicPositionConversions) {
-  EventParser<TestFrame> parser;
+  EventParser parser;
   std::deque<TestFrame> word_frames;
 
   SocketDataEvent event0 = DataEventWithTimestamp("jupiter,satu", 0);

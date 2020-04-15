@@ -141,7 +141,6 @@ class PositionConverter {
  * @brief Parses a stream of events traced from write/send/read/recv syscalls,
  * and emits as many complete parsed frames as it can.
  */
-template <typename TFrameType>
 class EventParser {
  public:
   /**
@@ -168,6 +167,7 @@ class EventParser {
    *
    * @return ParseResult with locations where parseable frames were found in the source buffer.
    */
+  template <typename TFrameType>
   ParseResult<BufferPosition> ParseFrames(MessageType type, std::deque<TFrameType>* frames,
                                           bool resync = false) {
     std::string buf = Combine();
@@ -236,6 +236,7 @@ class EventParser {
    * @return ParseResult with locations where parseable frames were found in the source buffer.
    */
   // TODO(oazizi): Convert tests to use ParseFrames() instead of ParseFramesLoop().
+  template <typename TFrameType>
   ParseResult<size_t> ParseFramesLoop(MessageType type, std::string_view buf,
                                       std::deque<TFrameType>* frames) {
     std::vector<size_t> start_positions;

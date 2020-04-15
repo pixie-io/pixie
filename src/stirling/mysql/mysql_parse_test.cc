@@ -55,7 +55,7 @@ TEST(MySQLParseFrame, Basics) {
 
 class MySQLParserTest : public ::testing::Test {
  protected:
-  EventParser<Packet> parser_;
+  EventParser parser_;
 };
 
 TEST_F(MySQLParserTest, ParseRaw) {

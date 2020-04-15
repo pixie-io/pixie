@@ -255,7 +255,7 @@ class HTTPParserTest : public ::testing::TestWithParam<TestParam> {
     }
   }
 
-  EventParser<Message> parser_;
+  EventParser parser_;
 };
 
 //=============================================================================
