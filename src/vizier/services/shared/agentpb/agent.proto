@@ -31,6 +31,10 @@ message HostInfo {
     // The Hostname is not always unique. EKS autoscaling groups assign all nodes the same hostname so we use this
     // to disambiguate the different PEMs.
     string pod_name = 2;
+    // The IP of the host that pod is running on. This can used to avoid extra K8s lookups.
+    string host_ip = 3[
+                      (gogoproto.customname) = "HostIP"
+                      ];
 }
 
 // Agent contains information about a specific agent instance.

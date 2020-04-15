@@ -14,6 +14,8 @@ DEFINE_string(nats_url, gflags::StringFromEnv("PL_NATS_URL", "pl-nats"),
               "The host address of the nats cluster");
 DEFINE_string(pod_name, gflags::StringFromEnv("PL_POD_NAME", ""),
               "The name of the POD the PEM is running on");
+DEFINE_string(host_ip, gflags::StringFromEnv("PL_HOST_IP", ""),
+              "The IP of the host this service is running on");
 
 using ::pl::stirling::Stirling;
 using ::pl::vizier::agent::Manager;
@@ -50,7 +52,11 @@ int main(int argc, char** argv) {
   LOG(INFO) << absl::Substitute("Pixie PEM. Version: $0, id: $1", pl::VersionInfo::VersionString(),
                                 agent_id.str());
 
-  auto manager = PEMManager::Create(agent_id, FLAGS_pod_name, FLAGS_nats_url).ConsumeValueOrDie();
+  if (FLAGS_host_ip.length() == 0) {
+    LOG(FATAL) << "The HOST_IP must be specified";
+  }
+  auto manager = PEMManager::Create(agent_id, FLAGS_pod_name, FLAGS_host_ip, FLAGS_nats_url)
+                     .ConsumeValueOrDie();
 
   err_handler.set_manager(manager.get());
 

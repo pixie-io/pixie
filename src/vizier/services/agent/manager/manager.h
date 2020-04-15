@@ -81,12 +81,12 @@ class Manager : public pl::NotCopyable {
 
  protected:
   // Protect constructor since we need to use Init on this class.
-  Manager(sole::uuid agent_id, std::string_view pod_name, int grpc_server_port,
-          services::shared::agent::AgentCapabilities capabilities, std::string_view nats_url,
-          std::string_view mds_url);
-  Manager(sole::uuid agent_id, std::string_view pod_name, int grpc_server_port,
-          services::shared::agent::AgentCapabilities capabilities, std::string_view mds_url,
-          std::unique_ptr<VizierNATSConnector> nats_connector);
+  Manager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
+          int grpc_server_port, services::shared::agent::AgentCapabilities capabilities,
+          std::string_view nats_url, std::string_view mds_url);
+  Manager(sole::uuid agent_id, std::string_view pod_name, std::string_view host_ip,
+          int grpc_server_port, services::shared::agent::AgentCapabilities capabilities,
+          std::string_view mds_url, std::unique_ptr<VizierNATSConnector> nats_connector);
   Status Init();
 
   void NATSMessageHandler(VizierNATSConnector::MsgType msg);
@@ -131,6 +131,7 @@ class Manager : public pl::NotCopyable {
 
  protected:
   std::string pod_name_;
+  std::string host_ip_;
   std::shared_ptr<grpc::ChannelCredentials> grpc_channel_creds_;
 
   // The time system to use (real or simulated).

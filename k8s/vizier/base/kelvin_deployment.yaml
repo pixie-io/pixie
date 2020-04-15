@@ -49,6 +49,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
+        - name: PL_HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
         - name: PL_JWT_SIGNING_KEY
           valueFrom:
             secretKeyRef:

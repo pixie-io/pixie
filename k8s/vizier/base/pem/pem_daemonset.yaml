@@ -54,6 +54,10 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: PL_HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
         resources:
           limits:
             memory: 2048Mi
