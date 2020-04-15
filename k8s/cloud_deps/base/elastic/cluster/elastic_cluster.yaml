@@ -26,7 +26,7 @@ spec:
     - metadata:
         name: elasticsearch-data
       spec:
-        storageClassName: standard
+        storageClassName: ssd
         accessModes:
         - ReadWriteOnce
         resources:
