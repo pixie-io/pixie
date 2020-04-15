@@ -1,10 +1,24 @@
 import './graph.scss';
 
+import {WidgetDisplay} from 'containers/live/vis';
 import * as d3 from 'd3';
 import * as dagreD3 from 'dagre-d3';
 import * as dot from 'graphlib-dot';
 import * as React from 'react';
 import {AutoSizer} from 'react-virtualized';
+
+export interface GraphDisplay extends WidgetDisplay {
+  readonly dotColumn?: string;
+}
+
+export function displayToGraph(display: GraphDisplay, data) {
+    if (display.dotColumn && data.length > 0) {
+       return (
+        <Graph dot={data[0][display.dotColumn]} />
+      );
+    }
+    return <div key={name}>Invalid spec for graph</div>;
+}
 
 interface GraphProps {
   dot: string;

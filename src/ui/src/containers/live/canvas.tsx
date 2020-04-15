@@ -1,6 +1,7 @@
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
+import {displayToGraph, GraphDisplay} from 'components/chart/graph';
 import {Spinner} from 'components/spinner/spinner';
 import {parseSpecs} from 'components/vega/spec';
 import Vega from 'components/vega/vega';
@@ -14,7 +15,7 @@ import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/style
 import {LiveContext, PlacementContextOld, ResultsContext, VegaContextOld, VisContext} from './context';
 import {ChartDisplay, convertWidgetDisplayToVegaSpec} from './convert-to-vega-spec';
 import {addLayout, buildLayoutOld, toLayout, toLayoutOld, updatePositions, updatePositionsOld} from './layout';
-import {DISPLAY_TYPE_KEY, TABLE_DISPLAY_TYPE, widgetResultName} from './vis';
+import {DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, TABLE_DISPLAY_TYPE, widgetResultName} from './vis';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -94,6 +95,14 @@ const NewCanvas = () => {
           <div key={name} className='fs-exclude'>
             <QueryResultTable className={classes.table} data={table} />
           </div>
+        );
+      }
+      if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
+        const parsedTable = dataFromProto(table.relation, table.data);
+        return (
+           <div key={name} className='fs-exclude'>
+            { displayToGraph(display as GraphDisplay, parsedTable) }
+           </div>
         );
       }
       let spec;

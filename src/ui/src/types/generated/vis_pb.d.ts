@@ -373,6 +373,24 @@ export namespace Table {
   }
 }
 
+export class Graph extends jspb.Message {
+  getDotColumn(): string;
+  setDotColumn(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): Graph.AsObject;
+  static toObject(includeInstance: boolean, msg: Graph): Graph.AsObject;
+  static serializeBinaryToWriter(message: Graph, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): Graph;
+  static deserializeBinaryFromReader(message: Graph, reader: jspb.BinaryReader): Graph;
+}
+
+export namespace Graph {
+  export type AsObject = {
+    dotColumn: string,
+  }
+}
+
 export enum PXType { 
   PX_UNKNOWN = 0,
   PX_BOOLEAN = 1,

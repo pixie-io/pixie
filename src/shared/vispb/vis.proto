@@ -187,3 +187,9 @@ message VegaChart {
 // Table the spec for displaying the output as a table.
 message Table {
 }
+
+// Graph the spec for displaying the output as a graph.
+message Graph {
+  // The column which contains the dot-formatted graph file to render.
+  string dot_column = 1;
+}
