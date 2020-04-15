@@ -16,6 +16,10 @@ interface JSONDataProps {
   className?: string;
 }
 
+export function formatInt64Data(val: string): string {
+  return numeral(val).format('0,0');
+}
+
 export function formatFloat64Data(val: number): string {
   // Numeral.js doesn't actually format NaNs, it ignores them.
   if (isNaN(val)) {

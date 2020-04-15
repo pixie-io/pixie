@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import {Column, Relation, RowBatchData} from 'types/generated/vizier_pb';
+import {Column, DataType, Relation, RowBatchData} from 'types/generated/vizier_pb';
 
 import {formatUInt128} from './format-data';
 import {nanoToMilliSeconds} from './time';
@@ -54,7 +54,19 @@ export function columnFromProto(column: Column): any[] {
   throw (new Error('Unsupported data type: ' + column.getColDataCase()));
 }
 
-export function dataFromProto(relation: Relation, data: RowBatchData[]) {
+function defaultRenderers(type: DataType) {
+  return (d) => d;
+}
+
+type rendererFunc = (d: any) => any;
+
+type getRendererFunc = (type: DataType) => rendererFunc;
+
+export function dataFromProto(
+  relation: Relation,
+  data: RowBatchData[],
+  getRenderer: getRendererFunc = defaultRenderers,
+) {
   const results = [];
 
   const colRelations = relation.getColumnsList();
@@ -67,8 +79,9 @@ export function dataFromProto(relation: Relation, data: RowBatchData[]) {
     const cols = batch.getColsList();
     cols.forEach((col, i) => {
       const name = colRelations[i].getColumnName();
+      const renderer = getRenderer(colRelations[i].getColumnType());
       columnFromProto(col).forEach((d, j) => {
-        rows[j][name] = d;
+        rows[j][name] = renderer(d);
       });
     });
     results.push(...rows);

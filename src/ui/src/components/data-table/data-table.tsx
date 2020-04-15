@@ -28,9 +28,14 @@ const useStyles = makeStyles((theme: Theme) =>
       paddingRight: theme.spacing(2),
     },
     header: {
-      ...theme.typography.subtitle2,
-      fontWeight: theme.typography.fontWeightMedium,
-      backgroundColor: theme.palette.background.three,
+      ...theme.typography.caption,
+      borderTop: `solid 1px ${theme.palette.background.three}`,
+      '&:last-of-type': {
+        borderRight: `solid 1px ${theme.palette.background.three}`,
+      },
+      '&:first-of-type': {
+        borderLeft: `solid 1px ${theme.palette.background.three}`,
+      },
     },
     noClick: {
       cursor: 'initial',
@@ -47,11 +52,13 @@ const useStyles = makeStyles((theme: Theme) =>
   }),
 );
 
+export type CellAlignment = 'center' | 'start' | 'end';
+
 export interface ColumnProps {
   dataKey: string;
   label: string;
   width?: number;
-  align?: 'center' | 'start' | 'end';
+  align?: CellAlignment;
 }
 
 interface DataTableProps {
@@ -80,10 +87,6 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
     defaultHeight: rowHeight,
     fixedHeight: true,
   }), []);
-
-  React.useEffect(() => {
-    sizeCache.clearAll();
-  }, [width, height]);
 
   const cellRenderer: GridCellRenderer = React.useCallback(({
     columnIndex,
@@ -125,6 +128,10 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       </CellMeasurer>
     );
   }, []);
+
+  if (width === 0 || height === 0) {
+    return null;
+  }
 
   return (
     <MultiGrid

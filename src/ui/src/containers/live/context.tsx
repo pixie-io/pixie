@@ -59,7 +59,7 @@ const LiveContextProvider = (props) => {
 
   const [tables, setTables] = React.useState<Tables>({});
 
-  const [vis, setVis] = React.useState<Vis>(parseVis(ls.getLiveViewVisSpec()) || { variables: [], widgets: []});
+  const [vis, setVis] = React.useState<Vis>(parseVis(ls.getLiveViewVisSpec()) || { variables: [], widgets: [] });
 
   const [oldLiveViewMode, setOldLiveViewMode] = React.useState<boolean>(ls.getOldLiveViewMode());
   React.useEffect(() => {
@@ -78,7 +78,7 @@ const LiveContextProvider = (props) => {
     setOldLiveViewMode(false);
     setScript(newScript);
     setTitle(newTitle);
-    setVis(parseVis(newVis) || { variables: [], widgets: []});
+    setVis(parseVis(newVis) || { variables: [], widgets: [] });
   }, []);
 
   const [title, setTitle] = React.useState<Title>(ls.getLiveViewTitle());
