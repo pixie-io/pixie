@@ -16,6 +16,7 @@ require (
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
+	github.com/cheekybits/genny v1.0.0
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc // indirect
 	github.com/coreos/etcd v3.3.18+incompatible

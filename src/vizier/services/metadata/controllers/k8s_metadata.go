@@ -19,6 +19,8 @@ import (
 	"k8s.io/client-go/tools/watch"
 )
 
+//go:generate genny -in=k8s_metadata_utils.tmpl -out k8s_metadata_utils.gen.go gen "Resource=Pod,Service,Namespace,Endpoints"
+
 const kubeSystemNs = "kube-system"
 const kubeProxyPodPrefix = "kube-proxy"
 
@@ -49,25 +51,25 @@ func NewK8sMetadataController(mdh *MetadataHandler) (*K8sMetadataController, err
 	if err != nil {
 		log.Info("Could not list all namespaces")
 	}
-	nRv := mdh.SyncNamespaceData(namespaces.(*v1.NamespaceList))
+	nRv := mdh.SyncNamespaceData(runtimeObjToNamespaceList(namespaces))
 
 	pods, err := mc.listObject("pods")
 	if err != nil {
 		log.Info("Could not list all pods")
 	}
-	pRv := mdh.SyncPodData(pods.(*v1.PodList))
+	pRv := mdh.SyncPodData(runtimeObjToPodList(pods))
 
 	eps, err := mc.listObject("endpoints")
 	if err != nil {
 		log.Info("Could not list all endpoints")
 	}
-	eRv := mdh.SyncEndpointsData(eps.(*v1.EndpointsList))
+	eRv := mdh.SyncEndpointsData(runtimeObjToEndpointsList(eps))
 
 	services, err := mc.listObject("services")
 	if err != nil {
 		log.Info("Could not list all services")
 	}
-	sRv := mdh.SyncServiceData(services.(*v1.ServiceList))
+	sRv := mdh.SyncServiceData(runtimeObjToServiceList(services))
 
 	// Start up Watchers.
 	go mc.startWatcher("namespaces", nRv)

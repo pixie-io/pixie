@@ -1,0 +1,35 @@
+package controllers
+
+import (
+    log "github.com/sirupsen/logrus"
+    v1 "k8s.io/api/core/v1"
+    internalversion "k8s.io/apimachinery/pkg/apis/meta/internalversion"
+    "k8s.io/apimachinery/pkg/runtime"
+
+    "github.com/cheekybits/genny/generic"
+)
+
+type Resource generic.Type
+
+func runtimeObjToResourceList(o runtime.Object) *v1.ResourceList {
+    l, ok := o.(*v1.ResourceList)
+    if ok {
+        return l
+    }
+
+    internalList, ok := o.(*internalversion.List)
+    if !ok {
+        log.WithField("list", o).Fatal("Received unexpected object type from lister")
+    }
+
+    typedList := v1.ResourceList{}
+    for _, i := range internalList.Items {
+        item, ok := i.(*v1.Resource)
+        if !ok {
+            log.WithField("expectedResource", i).Fatal("Received unexpected object type from lister")
+        }
+        typedList.Items = append(typedList.Items, *item)
+    }
+
+    return &typedList
+}

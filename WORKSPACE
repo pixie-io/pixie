@@ -2768,3 +2768,10 @@ go_repository(
     sum = "h1:P2PJWzwrSpuCWXKnzqvw0b0phSfH1kJo4p2HvLynVsI=",
     version = "v0.4.1",
 )
+
+go_repository(
+    name = "com_github_cheekybits_genny",
+    importpath = "github.com/cheekybits/genny",
+    sum = "h1:uGGa4nei+j20rOSeDeP5Of12XVm7TGUd4dJA9RDitfE=",
+    version = "v1.0.0",
+)

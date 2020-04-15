@@ -5,7 +5,8 @@ final class FileCheckerTest {
     private $files;
     private $go_generate_map = array(
         'go-bindata' => '/(?<=-o=)(.*)(?=\.gen\.go)/',
-        'mockgen' => '/(?<=-destination=)(.*)(?=\.gen\.go)/'
+        'mockgen' => '/(?<=-destination=)(.*)(?=\.gen\.go)/',
+        'genny' => '/(?<=-out )(.*)(?=\.gen\.go)/'
     );
 
     public function __construct($project_root, $files) {
