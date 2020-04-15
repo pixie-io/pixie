@@ -259,8 +259,21 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Transfer of messages to the data table.
   void TransferStreams(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table);
 
-  template <typename TRecordType>
-  void TransferStream(ConnectorContext* ctx, ConnectionTracker* tracker, DataTable* data_table);
+  template <typename TProtocolTraits>
+  void TransferStream(ConnectorContext* ctx, ConnectionTracker* tracker, DataTable* data_table) {
+    VLOG(3) << absl::StrCat("Connection\n", DebugString<TProtocolTraits>(*tracker, ""));
+
+    if (tracker->state() == ConnectionTracker::State::kTransferring) {
+      // ProcessToRecords() parses raw events and produces messages in format that are expected by
+      // table store. But those messages are not cached inside ConnectionTracker.
+      //
+      // TODO(yzhao): Consider caching produced messages if they are not transferred.
+      auto result = tracker->ProcessToRecords<TProtocolTraits>();
+      for (auto& msg : result) {
+        AppendMessage(ctx, *tracker, msg, data_table);
+      }
+    }
+  }
 
   template <typename TRecordType>
   static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
