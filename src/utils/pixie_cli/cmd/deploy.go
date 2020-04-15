@@ -441,7 +441,7 @@ func waitForHealthCheck(cloudAddr string, clientset *kubernetes.Clientset, names
 		if err != nil {
 			return err
 		}
-		q := `px.display(px.GetAgentStatus())`
+		q := "import px\npx.display(px.GetAgentStatus())"
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
