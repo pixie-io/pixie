@@ -1,0 +1,4 @@
+---
+- op: replace
+  path: /spec/nodeSets/0/volumeClaimTemplates/0/spec/resources/requests/storage
+  value: 100Gi

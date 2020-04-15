@@ -10,3 +10,10 @@ patches:
 - path: elastic_creds.yaml
   target:
     kind: Elasticsearch
+patchesJson6902:
+- path: elastic_storage_patch.yaml
+  target:
+    name: pl-elastic
+    kind: Elasticsearch
+    group: elasticsearch.k8s.elastic.co
+    version: v1

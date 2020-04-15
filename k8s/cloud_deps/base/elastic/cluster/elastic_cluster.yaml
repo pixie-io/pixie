@@ -22,3 +22,13 @@ spec:
           - -c
           - |
               bin/elasticsearch-plugin install --batch repository-gcs
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data
+      spec:
+        storageClassName: standard
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 0Gi # this is replaced by version specific patches
