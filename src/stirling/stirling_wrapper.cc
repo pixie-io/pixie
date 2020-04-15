@@ -198,7 +198,7 @@ int main(int argc, char** argv) {
   }
 
   if (!FLAGS_print_record_batches.empty()) {
-    table_print_enables = absl::StrSplit(FLAGS_print_record_batches, " ", absl::SkipWhitespace());
+    table_print_enables = absl::StrSplit(FLAGS_print_record_batches, ",", absl::SkipWhitespace());
   }
 
   std::unique_ptr<SourceRegistry> registry = pl::stirling::CreateSourceRegistry(sources.value());
