@@ -4,7 +4,7 @@ package pl.services;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/common/uuid/proto/uuid.proto";
-import "src/carnot/planner/plannerpb/func_args.proto";
+import "src/shared/vispb/vis.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb;scriptmgrpb";
 
@@ -65,8 +65,9 @@ message GetLiveViewContentsResp {
   LiveViewMetadata metadata = 1;
   // string of the pxl script of the requested live view.
   string pxl_contents = 2;
-  // TODO(james): add this once @nserrino merges the vis proto.
-  // pl.shared.vis.Vis vis = 3;
+  // The vis specification for this live view. For each Widget in the View, specifies the layout in grid units,
+  // which pxl func to call and with which arguments, and what the display specification is (chart, table, etc).
+  pl.vispb.Vis vis = 3;
 }
 
 // GetScriptsReq is the request message for getting a list of all scripts.

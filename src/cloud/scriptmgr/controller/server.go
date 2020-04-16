@@ -2,8 +2,11 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
@@ -12,6 +15,7 @@ import (
 
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	pl_vispb "pixielabs.ai/pixielabs/src/shared/vispb"
 )
 
 type scriptModel struct {
@@ -25,9 +29,7 @@ type liveViewModel struct {
 	name        string
 	desc        string
 	pxlContents string
-	// This will likely not be a string soon, but its a string in the bundle.json
-	// so for now I will leave it that way.
-	vis string
+	vis         *pl_vispb.Vis
 }
 
 // TODO(james): Eventually this will be a DB.
@@ -69,14 +71,23 @@ func NewServer(bundleBucket string, bundlePath string, sc stiface.Client) *Serve
 	return s
 }
 
-func (s *Server) addLiveView(name string, bundleScript *pixieScript) {
+func (s *Server) addLiveView(name string, bundleScript *pixieScript) error {
 	ID := uuid.NewV5(s.SeedUUID, name)
+
+	var vis pl_vispb.Vis
+	err := jsonpb.UnmarshalString(bundleScript.Vis, &vis)
+	if err != nil {
+		return err
+	}
+
 	s.store.LiveViews[ID] = &liveViewModel{
 		name:        name,
 		desc:        bundleScript.ShortDoc,
-		vis:         bundleScript.Vis,
+		vis:         &vis,
 		pxlContents: bundleScript.Pxl,
 	}
+
+	return nil
 }
 
 func (s *Server) addScript(name string, bundleScript *pixieScript, hasLiveView bool) {
@@ -94,13 +105,22 @@ func (s *Server) updateStore() error {
 	if err != nil {
 		return err
 	}
+	var errorMsgs []string
 	for name, bundleScript := range b.Scripts {
 		hasLiveView := bundleScript.Vis != ""
 		s.addScript(name, bundleScript, hasLiveView)
 		if hasLiveView {
-			s.addLiveView(name, bundleScript)
+			err = s.addLiveView(name, bundleScript)
+			if err != nil {
+				errorMsgs = append(errorMsgs, fmt.Sprintf("Error in Live View %s: %s", name, err.Error()))
+			}
 		}
 	}
+
+	if len(errorMsgs) > 0 {
+		return fmt.Errorf("Encountered %d errors: %s", len(errorMsgs), strings.Join(errorMsgs, "\n"))
+	}
+
 	return nil
 }
 
@@ -176,6 +196,7 @@ func (s *Server) GetLiveViewContents(ctx context.Context, req *scriptmgrpb.GetLi
 			Desc: liveView.desc,
 		},
 		PxlContents: liveView.pxlContents,
+		Vis:         liveView.vis,
 	}, nil
 }
 

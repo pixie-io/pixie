@@ -2,6 +2,7 @@ package controller_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"cloud.google.com/go/storage"
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/googleapis/google-cloud-go-testing/storage/stiface"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -18,41 +20,61 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/controller"
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	pl_vispb "pixielabs.ai/pixielabs/src/shared/vispb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
 const bundleBucket = "test-bucket"
 const bundlePath = "bundle.json"
 
-const testBundle = `
-{
-	"scripts": {
-	  "script1": {
-	  	"pxl": "script1 pxl",
-	  	"vis": "",
-	  	"placement": "",
-	  	"ShortDoc": "script1 desc",
-	  	"LongDoc": ""
-	  },
-	  "liveview1": {
-	  	"pxl": "liveview1 pxl",
-	  	"vis": "this is a fake vis spec",
-	  	"placement": "",
-	  	"ShortDoc": "liveview1 desc",
-	  	"LongDoc": ""
-	  },
-	  "script2": {
-	  	"pxl": "script2 pxl",
-	  	"vis": "",
-	  	"placement": "",
-      "ShortDoc": "script2 desc",
-	  	"LongDoc": ""
-	  }
-	}
-}
-`
+type scriptDef = map[string]string
+type scriptsDef = map[string]scriptDef
 
-func mustSetupFakeBucket(bundleJSON []byte) stiface.Client {
+var testLiveView = `{
+ 	"widgets": [{
+		"func": {
+			"name": "make_output",
+			"args": [{
+				"name": "start_time",
+				"value": "-1m"
+			}]
+		},
+		"displaySpec": {
+			"@type": "pixielabs.ai/pl.vispb.Table"
+		}
+	}]
+}`
+
+var testBundle = map[string]scriptsDef{
+	"scripts": scriptsDef{
+		"script1": scriptDef{
+			"pxl":       "script1 pxl",
+			"placement": "",
+			"vis":       "",
+			"ShortDoc":  "script1 desc",
+			"LongDoc":   "",
+		},
+		"liveview1": {
+			"pxl":       "liveview1 pxl",
+			"vis":       testLiveView,
+			"placement": "",
+			"ShortDoc":  "liveview1 desc",
+			"LongDoc":   "",
+		},
+		"script2": {
+			"pxl":       "script2 pxl",
+			"vis":       "",
+			"placement": "",
+			"ShortDoc":  "script2 desc",
+			"LongDoc":   "",
+		},
+	},
+}
+
+func mustSetupFakeBucket(t *testing.T, testBundle map[string]scriptsDef) stiface.Client {
+	bundleJSON, err := json.Marshal(testBundle)
+	require.Nil(t, err)
+
 	return testingutils.NewMockGCSClient(map[string]*testingutils.MockGCSBucket{
 		bundleBucket: testingutils.NewMockGCSBucket(
 			map[string]*testingutils.MockGCSObject{
@@ -92,7 +114,7 @@ func TestScriptMgr_GetLiveViews(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c := mustSetupFakeBucket([]byte(testBundle))
+			c := mustSetupFakeBucket(t, testBundle)
 			s := controller.NewServer(bundleBucket, bundlePath, c)
 			ctx := context.Background()
 
@@ -135,7 +157,7 @@ func TestScriptMgr_GetLiveViewContents(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c := mustSetupFakeBucket([]byte(testBundle))
+			c := mustSetupFakeBucket(t, testBundle)
 			s := controller.NewServer(bundleBucket, bundlePath, c)
 			ctx := context.Background()
 
@@ -144,6 +166,23 @@ func TestScriptMgr_GetLiveViewContents(t *testing.T) {
 				LiveViewID: &uuidpb.UUID{
 					Data: ID.Bytes(),
 				},
+			}
+
+			resp, err := s.GetLiveViewContents(ctx, req)
+			if tc.expectErr {
+				require.NotNil(t, err)
+				status, ok := status.FromError(err)
+				require.True(t, ok)
+				assert.Equal(t, tc.errCode, status.Code())
+				return
+			}
+
+			var vis pl_vispb.Vis
+			err = jsonpb.UnmarshalString(testBundle["scripts"][tc.liveViewName]["vis"], &vis)
+			require.Nil(t, err)
+			// Make sure a future bug in the test doesn't accidentally expect the "0 value" for Vis.
+			if testBundle["scripts"][tc.liveViewName]["vis"] != "" {
+				require.True(t, len(vis.Widgets) > 0)
 			}
 
 			expectedResp := &scriptmgrpb.GetLiveViewContentsResp{
@@ -155,18 +194,11 @@ func TestScriptMgr_GetLiveViewContents(t *testing.T) {
 					Desc: fmt.Sprintf("%s desc", tc.liveViewName),
 				},
 				PxlContents: fmt.Sprintf("%s pxl", tc.liveViewName),
+				Vis:         &vis,
 			}
 
-			resp, err := s.GetLiveViewContents(ctx, req)
-			if tc.expectErr {
-				require.NotNil(t, err)
-				status, ok := status.FromError(err)
-				require.True(t, ok)
-				assert.Equal(t, tc.errCode, status.Code())
-			} else {
-				require.Nil(t, err)
-				assert.Equal(t, expectedResp, resp)
-			}
+			require.Nil(t, err)
+			assert.Equal(t, expectedResp, resp)
 		})
 	}
 }
@@ -207,7 +239,7 @@ func TestScriptMgr_GetScripts(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c := mustSetupFakeBucket([]byte(testBundle))
+			c := mustSetupFakeBucket(t, testBundle)
 			s := controller.NewServer(bundleBucket, bundlePath, c)
 			ctx := context.Background()
 
@@ -250,7 +282,7 @@ func TestScriptMgr_GetScriptContents(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c := mustSetupFakeBucket([]byte(testBundle))
+			c := mustSetupFakeBucket(t, testBundle)
 			s := controller.NewServer(bundleBucket, bundlePath, c)
 			ctx := context.Background()
 			ID := uuid.NewV5(s.SeedUUID, tc.scriptName)
