@@ -540,7 +540,7 @@ static __inline void submit_close_event(struct pt_regs* ctx, struct conn_info_t*
 // Returns the bytes output from the input buf. Note that is not the total bytes submitted to the
 // perf buffer, which includes additional metadata.
 static __inline size_t perf_submit_buf(struct pt_regs* ctx, const enum TrafficDirection direction,
-                                       const char* buf, const size_t buf_size,
+                                       const char* buf, size_t buf_size,
                                        struct conn_info_t* conn_info,
                                        struct socket_data_event_t* event) {
   switch (direction) {
@@ -554,7 +554,7 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const enum TrafficDi
       break;
   }
 
-  // This part of the code has been written carefully to keep the BPF verifier happy in older
+  // This rest of this function has been written carefully to keep the BPF verifier happy in older
   // kernels, so please take care when modifying.
   //
   // Logically, what we'd like is the following:
@@ -579,46 +579,35 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const enum TrafficDi
   // certain code, so that code can reach the BPF verifier, and convince it that everything is
   // safe.
   //
-  // Tested to work on GKE node with 4.14.127+ kernel.
+  // Tested to work on the following kernels:
+  //   4.14.104
+  //   4.15.18 (Ubuntu 4.15.0-96-generic)
 
-  unsigned int msg_submit_size = buf_size;
+  if (buf_size > MAX_MSG_SIZE || buf_size == 0) {
+    return 0;
+  }
+
+  event->attr.msg_size = buf_size;
 
   // Clang is too smart for us, and tries to remove some of the obvious hints we are leaving for the
   // BPF verifier. So we add this NOP volatile statement, so clang can't optimize away some of our
   // if-statements below.
-  // By telling clang that msg_submit_size is both an input and output to some black box assembly
+  // By telling clang that buf_size is both an input and output to some black box assembly
   // code, clang has to discard any assumptions on what values this variable can take.
-  asm volatile("" : "+r"(msg_submit_size) :);
+  asm volatile("" : "+r"(buf_size) :);
 
-  if (msg_submit_size > MAX_MSG_SIZE) {
-    // Impossible to enter here, but this helps the BPF verifier.
-    return 0;
+  // This is not possible, but is required for the verifier.
+  if (buf_size > MAX_MSG_SIZE) {
+    buf_size = 0;
   }
 
-  bpf_probe_read(&event->msg, msg_submit_size, buf);
-  event->attr.msg_size = buf_size;
-
-  // Write data to perf ring buffer.
-  unsigned int size_to_submit = sizeof(event->attr) + msg_submit_size;
-
-  // Once again, Clang optimizes away our hints, which then causes verifier issues.
-  // This particular statement is required for Ubuntu kernel 4.15.0-96-generic (==4.15.18),
-  // but not for Ubuntu kernel 4.18.0-25-generic (==4.18.20).
-  asm volatile("" : "+r"(size_to_submit) :);
-
-  // Another effective NOP, but we mask like this to help BPF verifier.
-  // Needs to be large enough to encompass the bit-range of MAX_MSG_SIZE.
-  // The currently selected value should be safe for all future values, as it is quite large.
-  // Actual value is not that important, as it just proves to verifier that
-  // size_to_submit is not negative.
-  size_to_submit &= 0xfffffff;
-
-  // This if statement should always be true, but required for BPF verifier.
-  if (size_to_submit <= sizeof(event->attr) + MAX_MSG_SIZE) {
-    socket_data_events.perf_submit(ctx, event, size_to_submit);
-  }
-
-  return msg_submit_size;
+  // Read an extra byte.
+  // Required for 4.14 kernels, which reject bpf_probe_read with size of zero.
+  // Note that event->msg is followed by event->unused, so the extra byte will not clobber
+  // anything in the case that buf_size==MAX_MSG_SIZE.
+  bpf_probe_read(&event->msg, buf_size + 1, buf);
+  socket_data_events.perf_submit(ctx, event, sizeof(event->attr) + buf_size);
+  return buf_size;
 }
 
 static __inline void perf_submit_wrapper(struct pt_regs* ctx, const enum TrafficDirection direction,
