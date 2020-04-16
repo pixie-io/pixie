@@ -499,7 +499,7 @@ func GetNodeResourceUpdateFromEndpoints(ep *metadatapb.Endpoints, hnPair *Hostna
 		for _, addr := range subset.Addresses {
 			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
 				podPair, err := mds.GetHostnameIPPairFromPodName(addr.TargetRef.Name, addr.TargetRef.Namespace)
-				if err != nil {
+				if err != nil || podPair == nil {
 					continue
 				}
 				if hnPair == nil || (podPair.Hostname == hnPair.Hostname && podPair.IP == hnPair.IP) {
