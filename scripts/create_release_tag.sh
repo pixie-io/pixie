@@ -59,7 +59,7 @@ check_args() {
 
 get_bazel_target() {
     case "$ARTIFACT_TYPE" in
-        cli) BAZEL_TARGET=//src/utils/pixie_cli:pixie;;
+        cli) BAZEL_TARGET=//src/utils/pixie_cli:px;;
         vizier) BAZEL_TARGET=//k8s/vizier:vizier_images_bundle;;
     esac
 }
@@ -111,6 +111,9 @@ CHANGELOG=''
 while IFS= read -r line; do
     CHANGELOG="${CHANGELOG}${line}\n"
 done
+
+# Fetch the latest tags.
+git fetch
 
 # Get the latest release tag.
 tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/tags \
