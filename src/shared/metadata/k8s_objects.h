@@ -228,6 +228,16 @@ class ContainerInfo {
     }
   }
 
+  // This function can be used to mark the entire container as stopped.
+  void DeactivateAllUPIDs() {
+    auto it = active_upids_.begin();
+    while (it != active_upids_.end()) {
+      inactive_upids_.emplace(*it);
+      ++it;
+    }
+    active_upids_.clear();
+  }
+
   bool HasActiveUPID(UPID upid) const { return active_upids_.contains(upid); }
   bool HasInActiveUPID(UPID upid) const { return inactive_upids_.contains(upid); }
   bool HasUPID(UPID upid) const { return HasActiveUPID(upid) || HasInActiveUPID(upid); }

@@ -214,14 +214,12 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
       // This is so we stop trying to read stats for this non-existent container.
       // NOTE: Currently, MDS sends pods that do no belong to this Agent, so this is actually
       // required to avoid repeatedly printing out the warning message above.
-      // TODO(oazizi): Can potentially remove this once MDS is fixed to only send active pods on
-      // the agent. Although this code is arguably still useful for robustness.
       if (error::IsNotFound(s)) {
         cinfo->set_stop_time_ns(ts);
         for (const auto& upid : cinfo->active_upids()) {
-          cinfo->DeactivateUPID(upid);
           md->MarkUPIDAsStopped(upid, ts);
         }
+        cinfo->DeactivateAllUPIDs();
       }
       continue;
     }
