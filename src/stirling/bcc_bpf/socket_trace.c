@@ -601,6 +601,11 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const enum TrafficDi
   // Write data to perf ring buffer.
   unsigned int size_to_submit = sizeof(event->attr) + msg_submit_size;
 
+  // Once again, Clang optimizes away our hints, which then causes verifier issues.
+  // This particular statement is required for Ubuntu kernel 4.15.0-96-generic (==4.15.18),
+  // but not for Ubuntu kernel 4.18.0-25-generic (==4.18.20).
+  asm volatile("" : "+r"(size_to_submit) :);
+
   // Another effective NOP, but we mask like this to help BPF verifier.
   // Needs to be large enough to encompass the bit-range of MAX_MSG_SIZE.
   // The currently selected value should be safe for all future values, as it is quite large.
