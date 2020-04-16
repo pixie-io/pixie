@@ -1,3 +1,4 @@
+import {VizierErrorDetails} from 'common/errors';
 import LazyPanel from 'components/lazy-panel';
 import VizierDataTable from 'components/vizier-data-table';
 import * as React from 'react';
@@ -9,15 +10,23 @@ import Tabs from '@material-ui/core/Tabs';
 import {ResultsContext} from './context';
 
 const DataViewer = () => {
-  const tables = React.useContext(ResultsContext);
+  const { tables, error } = React.useContext(ResultsContext);
   const tabs = React.useMemo(() => {
+    if (error) {
+      return [
+        {
+          title: 'Errors',
+          content: <VizierErrorDetails error={error} />,
+        },
+      ];
+    }
     return Object.keys(tables).map((tableName) => {
       return {
         title: tableName,
         content: <VizierDataTable table={tables[tableName]} />,
       };
     });
-  }, [tables]);
+  }, [tables, error]);
 
   if (tabs.length === 0) {
     return <div>No tables</div>;
@@ -68,6 +77,10 @@ interface DataViewerTabsProps {
 const DataViewerTabs = (props: DataViewerTabsProps) => {
   const { tabs } = props;
   const [activeTab, setActiveTab] = React.useState(0);
+  React.useEffect(() => {
+    setActiveTab(0);
+  }, [tabs]);
+
   const classes = useStyles();
   return (
     <div className={classes.root}>

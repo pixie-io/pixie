@@ -1,6 +1,8 @@
+import {VizierQueryError} from 'common/errors';
 import {Observable} from 'rxjs';
 import {
-    ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation, RowBatchData, Status,
+    ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
+    RowBatchData, Status,
 } from 'types/generated/vizier_pb';
 import {VizierServiceClient} from 'types/generated/VizierServiceClientPb';
 
@@ -55,39 +57,16 @@ export class VizierGRPCClient {
   }
 
   executeScriptOld(script: string): Promise<VizierQueryResult> {
-    return this.executeScript(script, () => []);
-  }
-
-  buildReq(script: string, funcs: VizierQueryFunc[]): ExecuteScriptRequest {
-    const req = new ExecuteScriptRequest();
-    req.setClusterId(this.clusterID);
-    req.setQueryStr(script);
-    funcs.forEach((input: VizierQueryFunc) => {
-      const execFuncPb = new ExecuteScriptRequest.FuncToExecute();
-      execFuncPb.setFuncName(input.name);
-      execFuncPb.setOutputTablePrefix(input.outputTablePrefix);
-      input.args.forEach((arg: VizierQueryArg) => {
-        const argValPb = new ExecuteScriptRequest.FuncToExecute.ArgValue();
-        argValPb.setName(arg.name);
-        if (!arg.value) {
-          throw new Error(`No value provided for arg ${arg.name}.`);
-        }
-        argValPb.setValue(arg.value);
-        execFuncPb.addArgValues(argValPb);
-      });
-      req.addExecFuncs(execFuncPb);
-    });
-
-    return req;
+    return this.executeScript(script, []);
   }
 
   // Use a generator to produce the VizierQueryFunc to remove the dependency on vis.tsx.
   // funcsGenerator should correspond to getQueryFuncs in vis.tsx.
-  executeScript(script: string, funcsGenerator: () => VizierQueryFunc[]): Promise<VizierQueryResult> {
+  executeScript(script: string, funcs: VizierQueryFunc[]): Promise<VizierQueryResult> {
     return new Promise((resolve, reject) => {
-      let req;
+      let req: ExecuteScriptRequest;
       try {
-        req = this.buildReq(script, funcsGenerator());
+        req = this.buildRequest(script, funcs);
       } catch (err) {
         reject(err);
         return;
@@ -104,18 +83,9 @@ export class VizierGRPCClient {
 
         if (resp.hasStatus()) {
           const status = resp.getStatus();
-          if (!status.getErrorDetailsList() || status.getErrorDetailsList().length) {
-            const errors = status.getErrorDetailsList().map((error) => {
-              switch (error.getErrorCase()) {
-                case ErrorDetails.ErrorCase.COMPILER_ERROR: {
-                  const ce = error.getCompilerError();
-                  return `Compiler error on line ${ce.getLine()}, column ${ce.getColumn()}: ${ce.getMessage()}.`;
-                }
-                default:
-                  return `Unknown error type ${ErrorDetails.ErrorCase[error.getErrorCase()]}.`;
-              }
-            });
-            reject(`Script contains ${errors.length} error${errors.length === 1 ? '' : 's'}: ${errors.join('. ')}`);
+          const errList = status.getErrorDetailsList();
+          if (errList.length > 0) {
+            reject(new VizierQueryError('execution', getExecutionErrors(errList)));
             return;
           }
 
@@ -157,8 +127,50 @@ export class VizierGRPCClient {
       });
 
       call.on('error', (err) => {
-        reject(err.message);
+        reject(new VizierQueryError('server', err.message));
+        return;
       });
     });
   }
+
+  private buildRequest(script: string, funcs: VizierQueryFunc[]): ExecuteScriptRequest {
+    const req = new ExecuteScriptRequest();
+    const errors = [];
+    req.setClusterId(this.clusterID);
+    req.setQueryStr(script);
+    funcs.forEach((input: VizierQueryFunc) => {
+      const execFuncPb = new ExecuteScriptRequest.FuncToExecute();
+      execFuncPb.setFuncName(input.name);
+      execFuncPb.setOutputTablePrefix(input.outputTablePrefix);
+      for (const arg of input.args) {
+        const argValPb = new ExecuteScriptRequest.FuncToExecute.ArgValue();
+        argValPb.setName(arg.name);
+        if (!arg.value) {
+          errors.push(`No value provided for arg ${arg.name}.`);
+          continue;
+        }
+        argValPb.setValue(arg.value);
+        execFuncPb.addArgValues(argValPb);
+      }
+      req.addExecFuncs(execFuncPb);
+    });
+
+    if (errors.length > 0) {
+      throw errors;
+    }
+    return req;
+  }
+}
+
+function getExecutionErrors(errList: ErrorDetails[]): string[] {
+  return errList.map((error) => {
+    switch (error.getErrorCase()) {
+      case ErrorDetails.ErrorCase.COMPILER_ERROR: {
+        const ce = error.getCompilerError();
+        return `Compiler error on line ${ce.getLine()}, column ${ce.getColumn()}: ${ce.getMessage()}.`;
+      }
+      default:
+        return `Unknown error type ${ErrorDetails.ErrorCase[error.getErrorCase()]}.`;
+    }
+  });
 }

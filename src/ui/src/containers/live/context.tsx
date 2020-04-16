@@ -1,5 +1,5 @@
 import * as ls from 'common/localstorage';
-import {Table} from 'common/vizier-grpc-client';
+import {Table, VizierQueryFunc} from 'common/vizier-grpc-client';
 import ClientContext from 'common/vizier-grpc-client-context';
 import {SnackbarProvider, useSnackbar} from 'components/snackbar/snackbar';
 import {parseSpecs, VisualizationSpecMap} from 'components/vega/spec';
@@ -32,6 +32,11 @@ interface Tables {
   [name: string]: Table;
 }
 
+interface Results {
+  error?: Error;
+  tables: Tables;
+}
+
 interface Title {
   title: string;
   id: string;
@@ -40,7 +45,7 @@ interface Title {
 export const ScriptContext = React.createContext<string>('');
 export const VegaContextOld = React.createContext<VisualizationSpecMap>(null);
 export const PlacementContextOld = React.createContext<Placement>(null);
-export const ResultsContext = React.createContext<Tables>(null);
+export const ResultsContext = React.createContext<Results>(null);
 export const LiveContext = React.createContext<LiveContextProps>(null);
 export const TitleContext = React.createContext<Title>(null);
 export const VisContext = React.createContext<Vis>(null);
@@ -57,7 +62,7 @@ const LiveContextProvider = (props) => {
   const [placement, setPlacementOld] = React.useState<Placement>(
     parsePlacementOld(ls.getLiveViewPlacementSpecOld()) || {});
 
-  const [tables, setTables] = React.useState<Tables>({});
+  const [results, setResults] = React.useState<Results>({ tables: {} });
 
   const [vis, setVis] = React.useState<Vis>(parseVis(ls.getLiveViewVisSpec()) || { variables: [], widgets: []});
   React.useEffect(() => {
@@ -97,29 +102,32 @@ const LiveContextProvider = (props) => {
     if (!client) {
       return;
     }
-    let err;
-    let queryId;
-    client.executeScriptOld(inputScript || script).then((results) => {
+
+    let errMsg: string;
+    let queryId: string;
+
+    client.executeScriptOld(inputScript || script).then((queryResults) => {
       const newTables = {};
-      queryId = results.queryId;
-      for (const table of results.tables) {
+      queryId = queryResults.queryId;
+      for (const table of queryResults.tables) {
         newTables[table.name] = table;
       }
-      setTables(newTables);
-    }).catch((errMsg) => {
-      err = errMsg;
+      setResults({ tables: newTables });
+    }).catch((error) => {
+      errMsg = error.message;
+      setResults({ tables: {}, error });
       showSnackbar({
-        message: 'Failed to execute script',
+        message: errMsg,
         action: () => executeScriptOld(inputScript),
         actionTitle: 'retry',
         autoHideDuration: 5000,
       });
     }).finally(() => {
       analytics.track('Query Execution', {
-        status: err ? 'success' : 'failed',
+        status: errMsg ? 'success' : 'failed',
         query: script,
         queryID: queryId,
-        error: err,
+        error: errMsg,
         title,
       });
     });
@@ -129,33 +137,45 @@ const LiveContextProvider = (props) => {
     if (!client) {
       return;
     }
-    let err;
-    let queryId;
 
-    client.executeScript(inputScript || script, getQueryFuncs.bind(null, inputVis || vis)).then((results) => {
-      const newTables = {};
-      queryId = results.queryId;
-      for (const table of results.tables) {
-        newTables[table.name] = table;
+    let errMsg: string;
+    let queryId: string;
+
+    new Promise((resolve, reject) => {
+      try {
+        resolve(getQueryFuncs(inputVis || vis));
+      } catch (error) {
+        reject(error);
       }
-      setTables(newTables);
-    }).catch((errMsg) => {
-      err = errMsg;
-      showSnackbar({
-        message: 'Failed to execute script',
-        action: () => executeScript(inputScript),
-        actionTitle: 'retry',
-        autoHideDuration: 5000,
+    })
+      .then((funcs: VizierQueryFunc[]) => client.executeScript(inputScript || script, funcs))
+      .then((queryResults) => {
+        const newTables = {};
+        queryId = queryResults.queryId;
+        for (const table of queryResults.tables) {
+          newTables[table.name] = table;
+        }
+        setResults({ tables: newTables });
+      }).catch((error) => {
+        errMsg = error.message;
+        setResults({ tables: {}, error });
+        showSnackbar({
+          message: errMsg,
+          // TODO(malthus): It doesn't make sense to always show retry.
+          // Make the action to show the error.
+          action: () => executeScript(inputScript),
+          actionTitle: 'retry',
+          autoHideDuration: 5000,
+        });
+      }).finally(() => {
+        analytics.track('Query Execution', {
+          status: errMsg ? 'success' : 'failed',
+          query: script,
+          queryID: queryId,
+          error: errMsg,
+          title,
+        });
       });
-    }).finally(() => {
-      analytics.track('Query Execution', {
-        status: err ? 'success' : 'failed',
-        query: script,
-        queryID: queryId,
-        error: err,
-        title,
-      });
-    });
   }, [client, script, vis, title]);
 
   const liveViewContext = React.useMemo(() => ({
@@ -184,7 +204,7 @@ const LiveContextProvider = (props) => {
         <ScriptContext.Provider value={script}>
           <VegaContextOld.Provider value={vegaSpec}>
             <PlacementContextOld.Provider value={placement}>
-              <ResultsContext.Provider value={tables}>
+              <ResultsContext.Provider value={results}>
                 <VisContext.Provider value={vis}>
                   {props.children}
                 </VisContext.Provider>

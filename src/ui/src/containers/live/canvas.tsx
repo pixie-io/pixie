@@ -12,9 +12,13 @@ import {dataFromProto} from 'utils/result-data-utils';
 
 import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
 
-import {LiveContext, PlacementContextOld, ResultsContext, VegaContextOld, VisContext} from './context';
+import {
+    LiveContext, PlacementContextOld, ResultsContext, VegaContextOld, VisContext,
+} from './context';
 import {ChartDisplay, convertWidgetDisplayToVegaSpec} from './convert-to-vega-spec';
-import {addLayout, buildLayoutOld, toLayout, toLayoutOld, updatePositions, updatePositionsOld} from './layout';
+import {
+    addLayout, buildLayoutOld, toLayout, toLayoutOld, updatePositions, updatePositionsOld,
+} from './layout';
 import {DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, TABLE_DISPLAY_TYPE, widgetResultName} from './vis';
 
 const useStyles = makeStyles((theme: Theme) => {
@@ -48,15 +52,15 @@ const Grid = GridLayout.WidthProvider(GridLayout);
 const Canvas = () => {
   const { oldLiveViewMode } = React.useContext(LiveContext);
   if (oldLiveViewMode) {
-    return <OldCanvas/>;
+    return <OldCanvas />;
   } else {
-    return <NewCanvas/>;
+    return <NewCanvas />;
   }
 };
 
 const NewCanvas = () => {
   const classes = useStyles();
-  const results = React.useContext(ResultsContext);
+  const { tables } = React.useContext(ResultsContext);
   const vis = React.useContext(VisContext);
   const { updateVis } = React.useContext(LiveContext);
   const [vegaModule, setVegaModule] = React.useState(null);
@@ -85,7 +89,7 @@ const NewCanvas = () => {
       // TODO(nserrino): Support multiple output tables when we have a Vega component that
       // takes in multiple output tables.
       const name = widgetResultName(widget, i);
-      const table = results[name];
+      const table = tables[name];
       if (!table) {
         return <div key={name}>Table {name} not found.</div>;
       }
@@ -100,9 +104,9 @@ const NewCanvas = () => {
       if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
         const parsedTable = dataFromProto(table.relation, table.data);
         return (
-           <div key={name} className='fs-exclude'>
-            { displayToGraph(display as GraphDisplay, parsedTable) }
-           </div>
+          <div key={name} className='fs-exclude'>
+            {displayToGraph(display as GraphDisplay, parsedTable)}
+          </div>
         );
       }
       let spec;
@@ -118,7 +122,7 @@ const NewCanvas = () => {
         </div>
       );
     });
-  }, [results, vis, vegaModule]);
+  }, [tables, vis, vegaModule]);
 
   const resize = React.useCallback(() => {
     // Dispatch a window resize event to signal the chart to redraw. As suggested in:
@@ -147,7 +151,7 @@ const NewCanvas = () => {
 const OldCanvas = () => {
   const classes = useStyles();
   const specs = React.useContext(VegaContextOld);
-  const results = React.useContext(ResultsContext);
+  const { tables } = React.useContext(ResultsContext);
   const placement = React.useContext(PlacementContextOld);
   const { updatePlacementOld } = React.useContext(LiveContext);
   const [vegaModule, setVegaModule] = React.useState(null);
@@ -177,7 +181,7 @@ const OldCanvas = () => {
     return Object.keys(specs).map((chartName) => {
       const spec = specs[chartName];
       const tableName = spec.data && (spec.data as { name: string }).name || 'output';
-      const table = results[tableName];
+      const table = tables[tableName];
       if (!table) {
         return <div key={chartName}>Table {tableName} not found.</div>;
       }
@@ -195,7 +199,7 @@ const OldCanvas = () => {
         </div>
       );
     });
-  }, [results, specs, vegaModule]);
+  }, [tables, specs, vegaModule]);
 
   const resize = React.useCallback(() => {
     // Dispatch a window resize event to signal the chart to redraw. As suggested in:
