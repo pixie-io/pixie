@@ -81,7 +81,6 @@ const VisEditor = () => {
   React.useEffect(() => {
     const newVis = parseVis(code);
     if (newVis) {
-      ls.setLiveViewVisSpec(code);
       updateVisDebounce(newVis);
     }
   }, [code]);
