@@ -9,6 +9,7 @@
 #include "src/stirling/bcc_bpf_interface/grpc.h"
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 
+#include "src/stirling/bcc_bpf/pgsql.h"
 #include "src/stirling/bcc_bpf/utils.h"
 
 // TODO(yzhao): Investigate the performance overhead of active_*_info_map.delete(id), when id is not
@@ -19,7 +20,7 @@
 // TODO(yzhao): Investigate using tail call to reuse stack space to support loop.
 // TODO(PL-914): 4.13 and older kernel versions need smaller number, 10 is tested to work.
 // See the referenced Jira issue for more details.
-#define LOOP_LIMIT 50
+#define LOOP_LIMIT 45
 
 // Determines what percentage of events must be inferred as a certain type for us to consider the
 // connection to be of that type. Encoded as a numerator/denominator. Currently set to 20%. While
@@ -368,9 +369,7 @@ static __inline enum MessageType infer_cql_message(const uint8_t* buf, size_t co
   uint8_t version = (buf[0] & 0x7f);
   uint8_t flags = buf[1];
   uint8_t opcode = buf[4];
-  int32_t length;
-  bpf_probe_read(&length, 4, &buf[5]);
-  length = bpf_ntohl(length);
+  int32_t length = read_big_endian_int32(&buf[5]);
 
   // Cassandra version should 5 or less. Also v2 and lower seem much less popular.
   // For example ScyllaDB only supports v3+.
@@ -448,6 +447,8 @@ static __inline struct traffic_class_t infer_traffic(enum TrafficDirection direc
     traffic_class.protocol = kProtocolCQL;
   } else if ((req_resp_type = infer_mysql_message(buf, count)) != kUnknown) {
     traffic_class.protocol = kProtocolMySQL;
+  } else if ((req_resp_type = infer_pgsql_startup_message(buf, count)) != kUnknown) {
+    traffic_class.protocol = kProtocolPGSQL;
   } else if ((req_resp_type = infer_http2_message(buf, count)) != kUnknown) {
     traffic_class.protocol = kProtocolHTTP2;
   } else {

@@ -24,6 +24,7 @@ enum TrafficProtocol {
   kProtocolHTTP2Uprobe,
   kProtocolMySQL,
   kProtocolCQL,
+  kProtocolPGSQL,
   kNumProtocols
 };
 

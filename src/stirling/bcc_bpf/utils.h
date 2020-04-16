@@ -45,3 +45,24 @@ static __inline u64 get_tgid_start_time() {
   struct task_struct* task = (struct task_struct*)bpf_get_current_task();
   return pl_nsec_to_clock_t(task->group_leader->start_time);
 }
+
+static __inline int32_t read_big_endian_int32(const uint8_t* buf) {
+  int32_t length;
+  bpf_probe_read(&length, 4, buf);
+  return bpf_ntohl(length);
+}
+
+// Returns 0 if lhs and rhs compares equal up to n bytes. Otherwise a non-zero value is returned.
+// NOTE #1: Cannot use C standard library's strncmp() because that cannot be compiled by BCC.
+// NOTE #2: Different from the C standard library's strncmp(), this does not distinguish order.
+// NOTE #3: n must be a literal so that the BCC runtime can unroll the inner loop.
+// NOTE #4: Loop unrolling increases instruction code, be aware when BPF verifier complains about
+// breaching instruction count limit.
+static __inline int bpf_strncmp(const char* lhs, const char* rhs, size_t n) {
+  for (size_t i = 0; i < n; ++i) {
+    if (lhs[i] != rhs[i]) {
+      return 1;
+    }
+  }
+  return 0;
+}
