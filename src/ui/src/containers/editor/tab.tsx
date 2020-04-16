@@ -38,6 +38,7 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
     client.executeScriptOld(code).then((results) => {
       queryId = results.queryId;
       setData(results);
+      setError('');
     }).catch((errMsg) => {
       err = errMsg;
       setError(errMsg);
