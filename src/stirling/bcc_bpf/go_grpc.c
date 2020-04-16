@@ -419,10 +419,17 @@ int probe_framer_write_data(struct pt_regs* ctx) {
   // Param 3 is (data []byte).
   const int kParam3Offset = 24;
 
-  void* framer_ptr = *(void**)(sp + kParam0Offset);
-  uint32_t stream_id = *(uint32_t*)(sp + kParam1Offset);
-  bool end_stream = *(bool*)(sp + kParam2Offset);
-  struct go_byte_array data = *(struct go_byte_array*)(sp + kParam3Offset);
+  void* framer_ptr;
+  bpf_probe_read(&framer_ptr, sizeof(void*), sp + kParam0Offset);
+
+  uint32_t stream_id;
+  bpf_probe_read(&stream_id, sizeof(uint32_t), sp + kParam1Offset);
+
+  bool end_stream;
+  bpf_probe_read(&end_stream, sizeof(bool), sp + kParam2Offset);
+
+  struct go_byte_array data;
+  bpf_probe_read(&data, sizeof(struct go_byte_array), sp + kParam3Offset);
 
   struct go_grpc_data_event_t* info = get_data_event();
   if (info == NULL) {
@@ -430,7 +437,11 @@ int probe_framer_write_data(struct pt_regs* ctx) {
   }
 
   u32 tgid = bpf_get_current_pid_tgid() >> 32;
-  u32 fd = get_fd_from_http2_framer(framer_ptr);
+  int32_t fd = get_fd_from_http2_framer(framer_ptr);
+  if (fd < 0) {
+    return 0;
+  }
+
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
     return 0;
@@ -474,19 +485,32 @@ int probe_framer_check_frame_order(struct pt_regs* ctx) {
   // Param 1 is (f Frame).
   const int kParam1Offset = 16;
 
-  struct go_interface* frame_interface_ptr = (struct go_interface*)(sp + kParam1Offset);
+  struct go_interface frame_interface;
+  bpf_probe_read(&frame_interface, sizeof(struct go_interface), sp + kParam1Offset);
 
   // All frames types start with a frame header, so this is safe.
-  struct FrameHeader* frame_header_ptr = (struct FrameHeader*)frame_interface_ptr->ptr;
+  struct FrameHeader* frame_header_ptr;
+  bpf_probe_read(&frame_header_ptr, sizeof(struct FrameHeader*), &frame_interface.ptr);
 
-  const bool end_stream = frame_header_ptr->flags & kFlagDataEndStream;
+  uint8_t flags;
+  bpf_probe_read(&flags, sizeof(uint8_t), &frame_header_ptr->flags);
+  const bool end_stream = flags & kFlagDataEndStream;
+
+  uint8_t frame_type;
+  bpf_probe_read(&frame_type, sizeof(uint8_t), &frame_header_ptr->frame_type);
+
+  uint32_t stream_id;
+  bpf_probe_read(&stream_id, sizeof(uint32_t), &frame_header_ptr->stream_id);
 
   // Consider only data frames (0).
-  if (frame_header_ptr->frame_type == 0) {
-    void* framer_ptr = *(void**)(sp + kParam0Offset);
+  if (frame_type == 0) {
+    void* framer_ptr;
+    bpf_probe_read(&framer_ptr, sizeof(void*), sp + kParam0Offset);
+
     // Reinterpret as data frame.
     struct DataFrame* data_frame_ptr = (struct DataFrame*)frame_header_ptr;
-    struct go_byte_array data = data_frame_ptr->data;
+    struct go_byte_array data;
+    bpf_probe_read(&data, sizeof(struct go_byte_array), &data_frame_ptr->data);
 
     struct go_grpc_data_event_t* info = get_data_event();
     if (info == NULL) {
@@ -494,7 +518,11 @@ int probe_framer_check_frame_order(struct pt_regs* ctx) {
     }
 
     u32 tgid = bpf_get_current_pid_tgid() >> 32;
-    u32 fd = get_fd_from_http2_framer(framer_ptr);
+    int32_t fd = get_fd_from_http2_framer(framer_ptr);
+    if (fd < 0) {
+      return 0;
+    }
+
     struct conn_info_t* conn_info = get_conn_info(tgid, fd);
     if (conn_info == NULL) {
       return 0;
@@ -505,7 +533,7 @@ int probe_framer_check_frame_order(struct pt_regs* ctx) {
     info->attr.type = kDataFrameEventRead;
     info->attr.timestamp_ns = bpf_ktime_get_ns();
     info->attr.conn_id = conn_info->conn_id;
-    info->attr.stream_id = frame_header_ptr->stream_id;
+    info->attr.stream_id = stream_id;
     info->attr.end_stream = end_stream;
     uint32_t data_len = BPF_LEN_CAP(data.len, MAX_DATA_SIZE);
     info->attr.data_len = data_len;
