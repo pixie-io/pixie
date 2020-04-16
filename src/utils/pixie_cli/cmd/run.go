@@ -110,7 +110,7 @@ var RunCmd = &cobra.Command{
 			b := color.New(color.Bold).Sprint
 			u := color.New(color.Underline).Sprintf
 			p("\n%s %s: %s.\n", color.CyanString("\n==> "),
-				b("Live UI"), u("https://%s/live?script=%s", cloudAddr, execScript.Metadata().ScriptName))
+				b("Live UI"), u(execScript.Metadata().LiveViewLink()))
 		}
 
 	},

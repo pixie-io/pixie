@@ -1,11 +1,30 @@
 package script
 
+import (
+	"fmt"
+
+	"github.com/spf13/viper"
+)
+
 // Metadata has metadata information about a specific script.
 type Metadata struct {
 	ScriptName string
 	ShortDoc   string
 	LongDoc    string
 	HasVis     bool
+}
+
+// LiveViewLink returns the fully qualified URL for the live view.
+func (m Metadata) LiveViewLink() string {
+	if !m.HasVis {
+		return ""
+	}
+	cloudAddr := viper.GetString("cloud_addr")
+	if len(cloudAddr) == 0 {
+		cloudAddr = "withpixie.ai"
+	}
+
+	return fmt.Sprintf("https://%s/live?script=%s", cloudAddr, m.ScriptName)
 }
 
 // ExecutableScript is the basic script entity that can be run.
