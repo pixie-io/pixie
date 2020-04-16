@@ -19,6 +19,12 @@ static_assert((MAX_DATA_SIZE & (MAX_DATA_SIZE - 1)) == 0, "MAX_DATA_SIZE must be
 struct header_field_t {
   uint32_t size;
   char msg[HEADER_FIELD_STR_SIZE];
+  // IMPORTANT: This unused byte is required to follow char msg[HEADER_FIELD_STR_SIZE].
+  // It is placed here because of the way bpf_probe_read is used.
+  // Since bpf_probe_read size must be greater than 0 in 4.14 kernels,
+  // we always add 1 to the size.
+  // That could cause an overflow in the copy, which this unused byte will absorb.
+  char unused[1];
 };
 
 enum HeaderEventType { kHeaderEventUnknown, kHeaderEventRead, kHeaderEventWrite };
@@ -48,4 +54,10 @@ struct go_grpc_data_event_t {
     uint32_t data_len;
   } attr;
   char data[MAX_DATA_SIZE];
+  // IMPORTANT: This unused byte is required to follow char data[MAX_DATA_SIZE].
+  // It is placed here because of the way bpf_probe_read is used.
+  // Since bpf_probe_read size must be greater than 0 in 4.14 kernels,
+  // we always add 1 to the size.
+  // That could cause an overflow in the copy, which this unused byte will absorb.
+  char unused[1];
 };

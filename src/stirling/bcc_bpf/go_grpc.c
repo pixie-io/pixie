@@ -172,11 +172,15 @@ static __inline void fill_header_field(struct go_grpc_http2_header_event_t* even
   struct HPackHeaderField field;
   bpf_probe_read(&field, sizeof(struct HPackHeaderField), user_space_ptr);
 
+  // Note that we read one extra byte for name and value.
+  // This is to avoid passing a size of 0 to bpf_probe_read(),
+  // which causes BPF verifier issues on kernel 4.14.
+
   event->name.size = BPF_LEN_CAP(field.name.len, HEADER_FIELD_STR_SIZE);
-  bpf_probe_read(event->name.msg, event->name.size, field.name.ptr);
+  bpf_probe_read(event->name.msg, event->name.size + 1, field.name.ptr);
 
   event->value.size = BPF_LEN_CAP(field.value.len, HEADER_FIELD_STR_SIZE);
-  bpf_probe_read(event->value.msg, event->value.size, field.value.ptr);
+  bpf_probe_read(event->value.msg, event->value.size + 1, field.value.ptr);
 }
 
 struct go_grpc_framer_t {
@@ -439,7 +443,7 @@ int probe_framer_write_data(struct pt_regs* ctx) {
   info->attr.end_stream = end_stream;
   uint32_t data_len = BPF_LEN_CAP(data.len, MAX_DATA_SIZE);
   info->attr.data_len = data_len;
-  bpf_probe_read(info->data, info->attr.data_len, data.ptr);
+  bpf_probe_read(info->data, data_len + 1, data.ptr);
 
   // Replacing data_len with info->attr.data_len causes BPF verifier to reject the statement below.
   // Possibly because it lost track of the value because of the indirect access to info->attr.
@@ -505,7 +509,7 @@ int probe_framer_check_frame_order(struct pt_regs* ctx) {
     info->attr.end_stream = end_stream;
     uint32_t data_len = BPF_LEN_CAP(data.len, MAX_DATA_SIZE);
     info->attr.data_len = data_len;
-    bpf_probe_read(info->data, data_len, data.ptr);
+    bpf_probe_read(info->data, data_len + 1, data.ptr);
 
     go_grpc_data_events.perf_submit(ctx, info, sizeof(info->attr) + data_len);
   }
