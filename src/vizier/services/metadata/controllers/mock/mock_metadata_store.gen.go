@@ -74,17 +74,17 @@ func (mr *MockMetadataStoreMockRecorder) GetAgent(agentID interface{}) *gomock.C
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgent", reflect.TypeOf((*MockMetadataStore)(nil).GetAgent), agentID)
 }
 
-// GetAgentIDForHostname mocks base method
-func (m *MockMetadataStore) GetAgentIDForHostname(hostname string) (string, error) {
-	ret := m.ctrl.Call(m, "GetAgentIDForHostname", hostname)
+// GetAgentIDForHostnamePair mocks base method
+func (m *MockMetadataStore) GetAgentIDForHostnamePair(hnPair *controllers.HostnameIPPair) (string, error) {
+	ret := m.ctrl.Call(m, "GetAgentIDForHostnamePair", hnPair)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAgentIDForHostname indicates an expected call of GetAgentIDForHostname
-func (mr *MockMetadataStoreMockRecorder) GetAgentIDForHostname(hostname interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentIDForHostname", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentIDForHostname), hostname)
+// GetAgentIDForHostnamePair indicates an expected call of GetAgentIDForHostnamePair
+func (mr *MockMetadataStoreMockRecorder) GetAgentIDForHostnamePair(hnPair interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentIDForHostnamePair", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentIDForHostnamePair), hnPair)
 }
 
 // DeleteAgent mocks base method
@@ -136,17 +136,17 @@ func (mr *MockMetadataStoreMockRecorder) GetAgents() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgents", reflect.TypeOf((*MockMetadataStore)(nil).GetAgents))
 }
 
-// GetAgentsForHostnames mocks base method
-func (m *MockMetadataStore) GetAgentsForHostnames(arg0 *[]string) ([]string, error) {
-	ret := m.ctrl.Call(m, "GetAgentsForHostnames", arg0)
+// GetAgentsForHostnamePairs mocks base method
+func (m *MockMetadataStore) GetAgentsForHostnamePairs(arg0 *[]*controllers.HostnameIPPair) ([]string, error) {
+	ret := m.ctrl.Call(m, "GetAgentsForHostnamePairs", arg0)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAgentsForHostnames indicates an expected call of GetAgentsForHostnames
-func (mr *MockMetadataStoreMockRecorder) GetAgentsForHostnames(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentsForHostnames", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentsForHostnames), arg0)
+// GetAgentsForHostnamePairs indicates an expected call of GetAgentsForHostnamePairs
+func (mr *MockMetadataStoreMockRecorder) GetAgentsForHostnamePairs(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentsForHostnamePairs", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentsForHostnamePairs), arg0)
 }
 
 // GetASID mocks base method
@@ -251,7 +251,7 @@ func (mr *MockMetadataStoreMockRecorder) UpdatePod(arg0, arg1 interface{}) *gomo
 }
 
 // GetNodePods mocks base method
-func (m *MockMetadataStore) GetNodePods(hostname string) ([]*metadatapb.Pod, error) {
+func (m *MockMetadataStore) GetNodePods(hostname *controllers.HostnameIPPair) ([]*metadatapb.Pod, error) {
 	ret := m.ctrl.Call(m, "GetNodePods", hostname)
 	ret0, _ := ret[0].([]*metadatapb.Pod)
 	ret1, _ := ret[1].(error)
@@ -289,7 +289,7 @@ func (mr *MockMetadataStoreMockRecorder) UpdateEndpoints(arg0, arg1 interface{})
 }
 
 // GetNodeEndpoints mocks base method
-func (m *MockMetadataStore) GetNodeEndpoints(hostname string) ([]*metadatapb.Endpoints, error) {
+func (m *MockMetadataStore) GetNodeEndpoints(hostname *controllers.HostnameIPPair) ([]*metadatapb.Endpoints, error) {
 	ret := m.ctrl.Call(m, "GetNodeEndpoints", hostname)
 	ret0, _ := ret[0].([]*metadatapb.Endpoints)
 	ret1, _ := ret[1].(error)
@@ -389,7 +389,7 @@ func (mr *MockMetadataStoreMockRecorder) UpdateContainersFromPod(arg0, arg1 inte
 }
 
 // GetMetadataUpdates mocks base method
-func (m *MockMetadataStore) GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error) {
+func (m *MockMetadataStore) GetMetadataUpdates(hostname *controllers.HostnameIPPair) ([]*metadatapb.ResourceUpdate, error) {
 	ret := m.ctrl.Call(m, "GetMetadataUpdates", hostname)
 	ret0, _ := ret[0].([]*metadatapb.ResourceUpdate)
 	ret1, _ := ret[1].(error)
@@ -439,7 +439,7 @@ func (mr *MockMetadataStoreMockRecorder) GetSubscriberResourceVersion(arg0 inter
 }
 
 // GetMetadataUpdatesForHostname mocks base method
-func (m *MockMetadataStore) GetMetadataUpdatesForHostname(arg0, arg1, arg2 string) ([]*metadatapb.ResourceUpdate, error) {
+func (m *MockMetadataStore) GetMetadataUpdatesForHostname(arg0 *controllers.HostnameIPPair, arg1, arg2 string) ([]*metadatapb.ResourceUpdate, error) {
 	ret := m.ctrl.Call(m, "GetMetadataUpdatesForHostname", arg0, arg1, arg2)
 	ret0, _ := ret[0].([]*metadatapb.ResourceUpdate)
 	ret1, _ := ret[1].(error)
@@ -449,6 +449,19 @@ func (m *MockMetadataStore) GetMetadataUpdatesForHostname(arg0, arg1, arg2 strin
 // GetMetadataUpdatesForHostname indicates an expected call of GetMetadataUpdatesForHostname
 func (mr *MockMetadataStoreMockRecorder) GetMetadataUpdatesForHostname(arg0, arg1, arg2 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetMetadataUpdatesForHostname", reflect.TypeOf((*MockMetadataStore)(nil).GetMetadataUpdatesForHostname), arg0, arg1, arg2)
+}
+
+// GetHostnameIPPairFromPodName mocks base method
+func (m *MockMetadataStore) GetHostnameIPPairFromPodName(arg0, arg1 string) (*controllers.HostnameIPPair, error) {
+	ret := m.ctrl.Call(m, "GetHostnameIPPairFromPodName", arg0, arg1)
+	ret0, _ := ret[0].(*controllers.HostnameIPPair)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetHostnameIPPairFromPodName indicates an expected call of GetHostnameIPPairFromPodName
+func (mr *MockMetadataStoreMockRecorder) GetHostnameIPPairFromPodName(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHostnameIPPairFromPodName", reflect.TypeOf((*MockMetadataStore)(nil).GetHostnameIPPairFromPodName), arg0, arg1)
 }
 
 // MockMetadataSubscriber is a mock of MetadataSubscriber interface

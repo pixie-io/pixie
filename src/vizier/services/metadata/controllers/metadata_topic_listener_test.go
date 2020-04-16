@@ -112,7 +112,7 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 		Return("", nil)
 	mockMdStore.
 		EXPECT().
-		GetMetadataUpdatesForHostname("", "", "1_0").
+		GetMetadataUpdatesForHostname(nil, "", "1_0").
 		Return([]*metadatapb.ResourceUpdate{
 			&metadatapb.ResourceUpdate{
 				ResourceVersion:     "0",
@@ -143,7 +143,7 @@ func TestMetadataTopicListener_HandleMessage(t *testing.T) {
 	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
 	mockMdStore.
 		EXPECT().
-		GetMetadataUpdatesForHostname("", "", "5").
+		GetMetadataUpdatesForHostname(nil, "", "5").
 		Return([]*metadatapb.ResourceUpdate{
 			&metadatapb.ResourceUpdate{ResourceVersion: "1"},
 			&metadatapb.ResourceUpdate{ResourceVersion: "2"},
@@ -233,7 +233,7 @@ func TestMetadataTopicListener_HandleMessageBatch(t *testing.T) {
 
 			mockMdStore.
 				EXPECT().
-				GetMetadataUpdatesForHostname("", "", fmt.Sprintf("%d", test.numUpdates+1)).
+				GetMetadataUpdatesForHostname(nil, "", fmt.Sprintf("%d", test.numUpdates+1)).
 				Return(retUpdates, nil)
 
 			mockMdStore.

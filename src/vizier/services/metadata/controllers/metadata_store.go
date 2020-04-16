@@ -50,6 +50,12 @@ func NewKVMetadataStoreWithExpiryTime(cache *kvstore.Cache, expiryDuration time.
 	return mds, nil
 }
 
+// HostnameIPPair is a unique identifies for a K8s node.
+type HostnameIPPair struct {
+	Hostname string
+	IP       string
+}
+
 // GetClusterCIDR returns the CIDR for the current cluster.
 func (mds *KVMetadataStore) GetClusterCIDR() string {
 	if mds.clusterInfo.ClusterCIDR == nil {
@@ -104,9 +110,9 @@ func getAgentKey(agentID uuid.UUID) string {
 	return path.Join("/", "agent", agentID.String())
 }
 
-// GetHostnameAgentKey gets the key for the hostname's agent.
-func getHostnameAgentKey(hostname string) string {
-	return path.Join("/", "hostname", hostname, "agent")
+// GetHostnamePairAgentKey gets the key for the hostname pair's agent.
+func GetHostnamePairAgentKey(pair *HostnameIPPair) string {
+	return path.Join("/", "hostnameIP", fmt.Sprintf("%s-%s", pair.Hostname, pair.IP), "agent")
 }
 
 // GetKelvinAgentKey gets the key for a kelvin node.
@@ -146,6 +152,10 @@ func getPodsKey() string {
 
 func getPodKey(e *metadatapb.Pod) string {
 	return getPodKeyFromStrings(e.Metadata.UID, getNamespaceFromMetadata(e.Metadata))
+}
+
+func getPodToHostnamePairKey(podName string, namespace string) string {
+	return path.Join("/podHostnamePair/", fmt.Sprintf("%s-%s", namespace, podName))
 }
 
 func getPodKeyFromStrings(uid string, namespace string) string {
@@ -235,9 +245,9 @@ func (mds *KVMetadataStore) GetKelvinIDs() ([]string, error) {
 	return ids, nil
 }
 
-// GetAgentIDForHostname gets the agent for the given hostname, if it exists.
-func (mds *KVMetadataStore) GetAgentIDForHostname(hostname string) (string, error) {
-	id, err := mds.cache.Get(getHostnameAgentKey(hostname))
+// GetAgentIDForHostnamePair gets the agent for the given hostnamePair, if it exists.
+func (mds *KVMetadataStore) GetAgentIDForHostnamePair(hnPair *HostnameIPPair) (string, error) {
+	id, err := mds.cache.Get(GetHostnamePairAgentKey(hnPair))
 	if err != nil {
 		return "", err
 	}
@@ -248,15 +258,15 @@ func (mds *KVMetadataStore) GetAgentIDForHostname(hostname string) (string, erro
 	return string(id), err
 }
 
-// GetAgentsForHostnames gets the agents running on the given hostnames.
-func (mds *KVMetadataStore) GetAgentsForHostnames(hostnames *[]string) ([]string, error) {
+// GetAgentsForHostnamePairs gets the agents running on the given hostnames.
+func (mds *KVMetadataStore) GetAgentsForHostnamePairs(hostnames *[]*HostnameIPPair) ([]string, error) {
 	if len(*hostnames) == 0 {
 		return nil, nil
 	}
 
 	agents := []string{}
 	for _, hn := range *hostnames {
-		resp, err := mds.cache.Get(getHostnameAgentKey(hn))
+		resp, err := mds.cache.Get(GetHostnamePairAgentKey(hn))
 		if err != nil {
 			continue
 		}
@@ -288,8 +298,11 @@ func (mds *KVMetadataStore) DeleteAgent(agentID uuid.UUID) error {
 		return err
 	}
 
-	hostname := aPb.Info.HostInfo.Hostname
-	delKeys := []string{getAgentKey(agentID), getHostnameAgentKey(hostname)}
+	hnPair := &HostnameIPPair{
+		Hostname: aPb.Info.HostInfo.Hostname,
+		IP:       aPb.Info.HostInfo.HostIP,
+	}
+	delKeys := []string{getAgentKey(agentID), GetHostnamePairAgentKey(hnPair)}
 
 	// Info.Capabiltiies should never be nil with our new PEMs/Kelvin. If it is nil,
 	// this means that the protobuf we retrieved from etcd belongs to an older agent.
@@ -309,8 +322,11 @@ func (mds *KVMetadataStore) CreateAgent(agentID uuid.UUID, a *agentpb.Agent) err
 	if err != nil {
 		return errors.New("Unable to marshal agent protobuf: " + err.Error())
 	}
-
-	mds.cache.Set(getHostnameAgentKey(a.Info.HostInfo.Hostname), agentID.String())
+	hnPair := &HostnameIPPair{
+		Hostname: a.Info.HostInfo.Hostname,
+		IP:       a.Info.HostInfo.HostIP,
+	}
+	mds.cache.Set(GetHostnamePairAgentKey(hnPair), agentID.String())
 	mds.cache.Set(getAgentKey(agentID), string(i))
 
 	collectsData := a.Info.Capabilities == nil || a.Info.Capabilities.CollectsData
@@ -318,6 +334,7 @@ func (mds *KVMetadataStore) CreateAgent(agentID uuid.UUID, a *agentpb.Agent) err
 		mds.cache.Set(getKelvinAgentKey(agentID), agentID.String())
 	}
 
+	log.WithField("hostname", hnPair.Hostname).WithField("HostIP", hnPair.IP).Info("Registering agent")
 	return nil
 }
 
@@ -480,21 +497,10 @@ func (mds *KVMetadataStore) GetProcesses(upids []*types.UInt128) ([]*metadatapb.
 /* =============== Pod Operations ============== */
 
 // GetNodePods gets all pods belonging to a node in the metadata store.
-func (mds *KVMetadataStore) GetNodePods(hostname string) ([]*metadatapb.Pod, error) {
+func (mds *KVMetadataStore) GetNodePods(hnPair *HostnameIPPair) ([]*metadatapb.Pod, error) {
 	_, vals, err := mds.cache.GetWithPrefix(getPodsKey())
 	if err != nil {
 		return nil, err
-	}
-
-	ip, err := net.LookupIP(hostname)
-	if err != nil && hostname != "" {
-		log.WithError(err).Error("Could not lookup IP for host")
-		return nil, err
-	}
-	ipStr := ""
-
-	if len(ip) > 0 {
-		ipStr = ip[0].String()
 	}
 
 	var pods []*metadatapb.Pod
@@ -504,7 +510,7 @@ func (mds *KVMetadataStore) GetNodePods(hostname string) ([]*metadatapb.Pod, err
 		if pb.Status.HostIP == "" {
 			log.WithField("pod_name", pb.Metadata.Name).Info("Pod has no hostIP")
 		}
-		if (pb.Status.HostIP == ipStr || hostname == "") && pb.Metadata.DeletionTimestampNS == 0 {
+		if (hnPair == nil || pb.Status.HostIP == hnPair.IP) && pb.Metadata.DeletionTimestampNS == 0 {
 			pods = append(pods, pb)
 		}
 	}
@@ -546,6 +552,8 @@ func (mds *KVMetadataStore) UpdatePod(p *metadatapb.Pod, deleted bool) error {
 		mds.cache.Set(key, string(val))
 	}
 
+	mds.cache.Set(getPodToHostnamePairKey(p.Metadata.Name, p.Metadata.Namespace), fmt.Sprintf("%s:%s", p.Spec.NodeName, p.Status.HostIP))
+
 	// Add mapping from resource version -> pod.
 	rvUpdate := &metadatapb.MetadataObject{
 		Object: &metadatapb.MetadataObject_Pod{
@@ -559,6 +567,23 @@ func (mds *KVMetadataStore) UpdatePod(p *metadatapb.Pod, deleted bool) error {
 	mds.cache.Set(getResourceVersionMapKey(p.Metadata.ResourceVersion), string(val))
 
 	return nil
+}
+
+// GetHostnameIPPairFromPodName gets the hostname IP pair from a given pod name.
+func (mds *KVMetadataStore) GetHostnameIPPairFromPodName(podName string, namespace string) (*HostnameIPPair, error) {
+	resp, err := mds.cache.Get(getPodToHostnamePairKey(podName, namespace))
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil {
+		return nil, nil
+	}
+	splitVal := strings.Split(string(resp), ":")
+	if len(splitVal) != 2 {
+		return nil, errors.New("malformed hostname IP pair")
+	}
+	return &HostnameIPPair{
+		splitVal[0], splitVal[1]}, nil
 }
 
 /* =============== Container Operations ============== */
@@ -640,7 +665,7 @@ func (mds *KVMetadataStore) UpdateContainersFromPod(pod *metadatapb.Pod, deleted
 /* =============== Endpoints Operations ============== */
 
 // GetNodeEndpoints gets all endpoints in the metadata store that belong to a particular hostname.
-func (mds *KVMetadataStore) GetNodeEndpoints(hostname string) ([]*metadatapb.Endpoints, error) {
+func (mds *KVMetadataStore) GetNodeEndpoints(hnPair *HostnameIPPair) ([]*metadatapb.Endpoints, error) {
 	_, vals, err := mds.cache.GetWithPrefix(getEndpointsKey())
 	if err != nil {
 		return nil, err
@@ -652,7 +677,14 @@ func (mds *KVMetadataStore) GetNodeEndpoints(hostname string) ([]*metadatapb.End
 		proto.Unmarshal(val, pb)
 		for _, subset := range pb.Subsets {
 			for _, address := range subset.Addresses {
-				if (address.NodeName == hostname || hostname == "") && pb.Metadata.DeletionTimestampNS == 0 {
+				if address.TargetRef.Kind != "Pod" {
+					continue
+				}
+				podPair, err := mds.GetHostnameIPPairFromPodName(address.TargetRef.Name, address.TargetRef.Namespace)
+				if err != nil || podPair == nil {
+					continue
+				}
+				if (hnPair == nil || (podPair.Hostname == hnPair.Hostname && podPair.IP == hnPair.IP)) && pb.Metadata.DeletionTimestampNS == 0 {
 					endpoints = append(endpoints, pb)
 				}
 			}
@@ -860,7 +892,7 @@ func (mds *KVMetadataStore) UpdateNamespace(s *metadatapb.Namespace, deleted boo
 /* =============== Cumulative Metadata Operations ============== */
 
 // GetMetadataUpdates gets all metadata updates in the store.
-func (mds *KVMetadataStore) GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error) {
+func (mds *KVMetadataStore) GetMetadataUpdates(hnPair *HostnameIPPair) ([]*metadatapb.ResourceUpdate, error) {
 	var updates []*metadatapb.ResourceUpdate
 
 	namespaces, err := mds.GetNamespaces()
@@ -868,12 +900,12 @@ func (mds *KVMetadataStore) GetMetadataUpdates(hostname string) ([]*metadatapb.R
 		return nil, err
 	}
 
-	pods, err := mds.GetNodePods(hostname)
+	pods, err := mds.GetNodePods(hnPair)
 	if err != nil {
 		return nil, err
 	}
 
-	endpoints, err := mds.GetNodeEndpoints(hostname)
+	endpoints, err := mds.GetNodeEndpoints(hnPair)
 	if err != nil {
 		return nil, err
 	}
@@ -892,7 +924,7 @@ func (mds *KVMetadataStore) GetMetadataUpdates(hostname string) ([]*metadatapb.R
 	}
 
 	for _, endpoint := range endpoints {
-		epUpdate := GetNodeResourceUpdateFromEndpoints(endpoint, hostname)
+		epUpdate := GetNodeResourceUpdateFromEndpoints(endpoint, hnPair, mds)
 		updates = append(updates, epUpdate)
 	}
 
@@ -900,7 +932,7 @@ func (mds *KVMetadataStore) GetMetadataUpdates(hostname string) ([]*metadatapb.R
 }
 
 // GetMetadataUpdatesForHostname get the metadata updates that should be sent to the hostname in the given range.
-func (mds *KVMetadataStore) GetMetadataUpdatesForHostname(hostname string, from string, to string) ([]*metadatapb.ResourceUpdate, error) {
+func (mds *KVMetadataStore) GetMetadataUpdatesForHostname(hnPair *HostnameIPPair, from string, to string) ([]*metadatapb.ResourceUpdate, error) {
 	// To/From can be of the format <resource_version>_<number> for pods/container updates. We want to parse the from into just <resource_version>.
 	fromFormatted := strings.Split(from, "_")[0]
 
@@ -923,13 +955,13 @@ func (mds *KVMetadataStore) GetMetadataUpdatesForHostname(hostname string, from 
 
 		switch m := obj.Object.(type) {
 		case *metadatapb.MetadataObject_Pod:
-			if hostname != "" && m.Pod.Spec.NodeName != hostname {
+			if hnPair != nil && m.Pod.Spec.NodeName != hnPair.Hostname && m.Pod.Status.HostIP != hnPair.IP {
 				continue
 			}
 			updatePbs = append(updatePbs, GetContainerResourceUpdatesFromPod(m.Pod)...)
 			updatePbs = append(updatePbs, GetResourceUpdateFromPod(m.Pod))
 		case *metadatapb.MetadataObject_Endpoints:
-			updatePbs = append(updatePbs, GetNodeResourceUpdateFromEndpoints(m.Endpoints, hostname))
+			updatePbs = append(updatePbs, GetNodeResourceUpdateFromEndpoints(m.Endpoints, hnPair, mds))
 		case *metadatapb.MetadataObject_Service:
 			// We currently don't send updates for services. They are covered by endpoints.
 			continue

@@ -59,7 +59,7 @@ func (m *MetadataTopicListener) HandleMessage(msg *nats.Msg) error {
 		return err
 	}
 
-	updates, err := m.mds.GetMetadataUpdatesForHostname("", pb.From, pb.To)
+	updates, err := m.mds.GetMetadataUpdatesForHostname(nil, pb.From, pb.To)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (m *MetadataTopicListener) HandleUpdate(update *UpdateMessage) {
 	}
 
 	if prevRV == "" { // This should only happen on the first update we ever send from Vizier->Cloud.
-		updates, err := m.mds.GetMetadataUpdatesForHostname("", "", update.Message.ResourceVersion)
+		updates, err := m.mds.GetMetadataUpdatesForHostname(nil, "", update.Message.ResourceVersion)
 		if err != nil {
 			log.WithError(err).Error("Could not fetch previous updates to get PrevResourceVersion")
 			return

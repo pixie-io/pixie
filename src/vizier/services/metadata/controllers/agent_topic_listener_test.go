@@ -41,6 +41,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "test-host",
+				HostIP:   "127.0.0.1",
 			},
 			AgentID: &uuidpb.UUID{Data: []byte("11285cdd1de94ab1ae6a0ba08c8c676c")},
 		},
@@ -61,8 +62,8 @@ func TestAgentRegisterRequest(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		GetMetadataUpdates("test-host").
-		DoAndReturn(func(hostname string) ([]*metadatapb.ResourceUpdate, error) {
+		GetMetadataUpdates(&controllers.HostnameIPPair{"test-host", "127.0.0.1"}).
+		DoAndReturn(func(hostname *controllers.HostnameIPPair) ([]*metadatapb.ResourceUpdate, error) {
 			return updates, nil
 		})
 
@@ -132,6 +133,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "test-host",
+				HostIP:   "127.0.0.1",
 			},
 			AgentID: &uuidpb.UUID{Data: []byte("11285cdd1de94ab1ae6a0ba08c8c676c")},
 			Capabilities: &agentpb.AgentCapabilities{
@@ -155,8 +157,8 @@ func TestKelvinRegisterRequest(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		GetMetadataUpdates("").
-		DoAndReturn(func(hostname string) ([]*metadatapb.ResourceUpdate, error) {
+		GetMetadataUpdates(nil).
+		DoAndReturn(func(hostname *controllers.HostnameIPPair) ([]*metadatapb.ResourceUpdate, error) {
 			return updates, nil
 		})
 
@@ -220,6 +222,7 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "test-host",
+				HostIP:   "127.0.0.1",
 			},
 			AgentID: &uuidpb.UUID{Data: []byte("11285cdd1de94ab1ae6a0ba08c8c676c")},
 		},
@@ -247,8 +250,8 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 
 	mockAgtMgr.
 		EXPECT().
-		GetMetadataUpdates("test-host").
-		DoAndReturn(func(hostname string) ([]*metadatapb.ResourceUpdate, error) {
+		GetMetadataUpdates(&controllers.HostnameIPPair{"test-host", "127.0.0.1"}).
+		DoAndReturn(func(hostname *controllers.HostnameIPPair) ([]*metadatapb.ResourceUpdate, error) {
 			return updates, errors.New("Could not get metadata info")
 		})
 
@@ -318,6 +321,7 @@ func TestAgentCreateFailed(t *testing.T) {
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "test-host",
+				HostIP:   "127.0.0.1",
 			},
 			AgentID: &uuidpb.UUID{Data: []byte("11285cdd1de94ab1ae6a0ba08c8c676c")},
 		},

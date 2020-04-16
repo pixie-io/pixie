@@ -54,7 +54,7 @@ type AgentManager interface {
 
 	AddToUpdateQueue(uuid.UUID, *messagespb.AgentUpdateInfo)
 
-	GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error)
+	GetMetadataUpdates(hostname *HostnameIPPair) ([]*metadatapb.ResourceUpdate, error)
 
 	AddUpdatesToAgentQueue(string, []*metadatapb.ResourceUpdate) error
 
@@ -196,7 +196,7 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 	}
 
 	// Check there's an existing agent for the hostname.
-	hostnameAgID, err := m.mds.GetAgentIDForHostname(info.HostInfo.Hostname)
+	hostnameAgID, err := m.mds.GetAgentIDForHostnamePair(&HostnameIPPair{info.HostInfo.Hostname, info.HostInfo.HostIP})
 	if err != nil {
 		log.WithError(err).Fatal("Failed to get agent hostname")
 	} else if hostnameAgID != "" {
@@ -365,7 +365,7 @@ func (m *AgentManagerImpl) HandleUpdate(update *UpdateMessage) {
 	hostnames := update.Hostnames
 	nodeSpecific := update.NodeSpecific
 
-	agents, err := m.mds.GetAgentsForHostnames(&hostnames)
+	agents, err := m.mds.GetAgentsForHostnamePairs(&hostnames)
 	if err != nil {
 		return
 	}
@@ -412,6 +412,6 @@ func (m *AgentManagerImpl) AddUpdatesToAgentQueue(agentID string, updates []*met
 
 // GetMetadataUpdates gets all updates from the metadata store. If no hostname is specified, it fetches all updates
 // regardless of hostname.
-func (m *AgentManagerImpl) GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error) {
+func (m *AgentManagerImpl) GetMetadataUpdates(hostname *HostnameIPPair) ([]*metadatapb.ResourceUpdate, error) {
 	return m.mds.GetMetadataUpdates(hostname)
 }

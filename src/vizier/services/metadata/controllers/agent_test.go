@@ -94,6 +94,7 @@ func TestRegisterAgent(t *testing.T) {
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "localhost",
+				HostIP:   "127.0.0.1",
 			},
 			AgentID: upb,
 			Capabilities: &agentpb.AgentCapabilities{
@@ -121,7 +122,7 @@ func TestRegisterAgent(t *testing.T) {
 	assert.Equal(t, "localhost", agent.Info.HostInfo.Hostname)
 	assert.Equal(t, uint32(4), agent.ASID)
 
-	hostnameID, err := mds.GetAgentIDForHostname("localhost")
+	hostnameID, err := mds.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"localhost", "127.0.0.1"})
 	assert.Nil(t, err)
 	assert.Equal(t, testutils.NewAgentUUID, hostnameID)
 }
@@ -139,6 +140,7 @@ func TestRegisterKelvinAgent(t *testing.T) {
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "test",
+				HostIP:   "127.0.0.1",
 			},
 			AgentID: upb,
 			Capabilities: &agentpb.AgentCapabilities{
@@ -170,7 +172,7 @@ func TestRegisterKelvinAgent(t *testing.T) {
 	assert.Equal(t, "test", agent.Info.HostInfo.Hostname)
 	assert.Equal(t, uint32(4), agent.ASID)
 
-	hostnameID, err := mds.GetAgentIDForHostname("test")
+	hostnameID, err := mds.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"test", "127.0.0.1"})
 	assert.Nil(t, err)
 	assert.Equal(t, testutils.KelvinAgentUUID, hostnameID)
 
@@ -196,6 +198,7 @@ func TestRegisterAgentWithExistingHostname(t *testing.T) {
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "testhost",
+				HostIP:   "127.0.0.1",
 			},
 			AgentID: upb,
 			Capabilities: &agentpb.AgentCapabilities{
@@ -223,7 +226,7 @@ func TestRegisterAgentWithExistingHostname(t *testing.T) {
 	assert.Equal(t, "testhost", agent.Info.HostInfo.Hostname)
 	assert.Equal(t, uint32(4), agent.ASID)
 
-	hostnameID, err := mds.GetAgentIDForHostname("testhost")
+	hostnameID, err := mds.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"testhost", "127.0.0.1"})
 	assert.Nil(t, err)
 	assert.Equal(t, testutils.NewAgentUUID, hostnameID)
 
@@ -246,6 +249,7 @@ func TestRegisterExistingAgent(t *testing.T) {
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "localhost",
+				HostIP:   "127.0.0.1",
 			},
 			AgentID: upb,
 		},
@@ -320,7 +324,7 @@ func TestUpdateAgentState(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Nil(t, agent)
 
-	hostnameID, err := mds.GetAgentIDForHostname("anotherhost")
+	hostnameID, err := mds.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"anotherhost", "127.0.0.1"})
 	assert.Nil(t, err)
 	assert.Equal(t, "", hostnameID)
 
@@ -345,6 +349,7 @@ func TestGetActiveAgents(t *testing.T) {
 			AgentID: &uuidpb.UUID{Data: []byte("5ba7b8109dad11d180b400c04fd430c8")},
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "abcd",
+				HostIP:   "127.0.0.1",
 			},
 			Capabilities: &agentpb.AgentCapabilities{
 				CollectsData: false,
@@ -361,6 +366,7 @@ func TestGetActiveAgents(t *testing.T) {
 			AgentID: &uuidpb.UUID{Data: []byte("7ba7b8109dad11d180b400c04fd430c8")},
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "testhost",
+				HostIP:   "127.0.0.1",
 			},
 			Capabilities: &agentpb.AgentCapabilities{
 				CollectsData: true,
@@ -377,6 +383,7 @@ func TestGetActiveAgents(t *testing.T) {
 			AgentID: &uuidpb.UUID{Data: []byte("8ba7b8109dad11d180b400c04fd430c8")},
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "anotherhost",
+				HostIP:   "127.0.0.1",
 			},
 			Capabilities: &agentpb.AgentCapabilities{
 				CollectsData: true,
@@ -567,6 +574,7 @@ func TestAgent_AddToFrontOfAgentQueue(t *testing.T) {
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "localhost",
+				HostIP:   "127.0.0.1",
 			},
 			AgentID: upb,
 			Capabilities: &agentpb.AgentCapabilities{
@@ -640,6 +648,7 @@ func TestAgent_AddUpdatesToAgentQueue(t *testing.T) {
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "localhost",
+				HostIP:   "127.0.0.1",
 			},
 			AgentID: upb,
 			Capabilities: &agentpb.AgentCapabilities{
@@ -681,6 +690,7 @@ func TestAgent_GetFromAgentQueue(t *testing.T) {
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
 				Hostname: "localhost",
+				HostIP:   "127.0.0.1",
 			},
 			AgentID: upb,
 			Capabilities: &agentpb.AgentCapabilities{
@@ -710,7 +720,7 @@ func TestAgent_HandleUpdate(t *testing.T) {
 	_, agtMgr := setupAgentManager(t)
 
 	update := &controllers.UpdateMessage{
-		Hostnames:    []string{"testhost"},
+		Hostnames:    []*controllers.HostnameIPPair{&controllers.HostnameIPPair{"testhost", "127.0.0.1"}},
 		NodeSpecific: false,
 		Message: &metadatapb.ResourceUpdate{
 			Update: &metadatapb.ResourceUpdate_PodUpdate{

@@ -83,12 +83,22 @@ func TestObjectToEndpointsProto(t *testing.T) {
 		EXPECT().
 		UpdateEndpoints(expectedPb, false).
 		Return(nil)
+	mockMds.
+		EXPECT().
+		GetHostnameIPPairFromPodName("pod-name", "pl").
+		Return(&controllers.HostnameIPPair{"this-is-a-node", "127.0.0.1"}, nil).
+		AnyTimes()
+	mockMds.
+		EXPECT().
+		GetHostnameIPPairFromPodName("another-pod", "pl").
+		Return(&controllers.HostnameIPPair{"node-a", "127.0.0.2"}, nil).
+		AnyTimes()
 
 	mockSubscriber.
 		EXPECT().
 		HandleUpdate(&controllers.UpdateMessage{
 			Message:      ag2UpdatePb,
-			Hostnames:    []string{"node-a"},
+			Hostnames:    []*controllers.HostnameIPPair{&controllers.HostnameIPPair{"node-a", "127.0.0.2"}},
 			NodeSpecific: true,
 		}).
 		DoAndReturn(func(update *controllers.UpdateMessage) {
@@ -99,7 +109,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 		EXPECT().
 		HandleUpdate(&controllers.UpdateMessage{
 			Message:      ag1UpdatePb,
-			Hostnames:    []string{"this-is-a-node"},
+			Hostnames:    []*controllers.HostnameIPPair{&controllers.HostnameIPPair{"this-is-a-node", "127.0.0.1"}},
 			NodeSpecific: true,
 		}).
 		DoAndReturn(func(update *controllers.UpdateMessage) {
@@ -110,7 +120,7 @@ func TestObjectToEndpointsProto(t *testing.T) {
 		EXPECT().
 		HandleUpdate(&controllers.UpdateMessage{
 			Message:      fullUpdatePb,
-			Hostnames:    []string{},
+			Hostnames:    []*controllers.HostnameIPPair{},
 			NodeSpecific: false,
 		}).
 		DoAndReturn(func(update *controllers.UpdateMessage) {
@@ -411,7 +421,7 @@ func TestObjectToPodProto(t *testing.T) {
 		EXPECT().
 		HandleUpdate(&controllers.UpdateMessage{
 			Message:      updatePb,
-			Hostnames:    []string{"test"},
+			Hostnames:    []*controllers.HostnameIPPair{&controllers.HostnameIPPair{"test", "127.0.0.5"}},
 			NodeSpecific: false,
 		}).
 		DoAndReturn(func(update *controllers.UpdateMessage) {
@@ -460,6 +470,7 @@ func TestObjectToPodProto(t *testing.T) {
 		Conditions:        conditions,
 		ContainerStatuses: containers,
 		QOSClass:          v1.PodQOSBurstable,
+		HostIP:            "127.0.0.5",
 	}
 
 	spec := v1.PodSpec{

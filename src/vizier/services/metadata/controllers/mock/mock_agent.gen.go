@@ -135,7 +135,7 @@ func (mr *MockAgentManagerMockRecorder) AddToUpdateQueue(arg0, arg1 interface{})
 }
 
 // GetMetadataUpdates mocks base method
-func (m *MockAgentManager) GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error) {
+func (m *MockAgentManager) GetMetadataUpdates(hostname *controllers.HostnameIPPair) ([]*metadatapb.ResourceUpdate, error) {
 	ret := m.ctrl.Call(m, "GetMetadataUpdates", hostname)
 	ret0, _ := ret[0].([]*metadatapb.ResourceUpdate)
 	ret1, _ := ret[1].(error)

@@ -49,7 +49,7 @@ func createAgent(t *testing.T, c *kvstore.Cache, agentID string, agentPb string)
 		t.Fatal("Unable to marshal agentData pb.")
 	}
 	c.Set("/agent/"+agentID, string(i))
-	c.Set("/hostname/"+info.Info.HostInfo.Hostname+"/agent", agentID)
+	c.Set("/hostnameIP/"+info.Info.HostInfo.Hostname+"-127.0.0.1"+"/agent", agentID)
 	if !info.Info.Capabilities.CollectsData {
 		c.Set("/kelvin/"+agentID, agentID)
 	}
@@ -106,7 +106,7 @@ func TestKVMetadataStore_GetAgentIDForHostname(t *testing.T) {
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
 	mockDs.
 		EXPECT().
-		Get("/hostname/blah/agent").
+		Get("/hostnameIP/blah-127.0.0.1/agent").
 		Return(nil, nil)
 
 	clock := testingutils.NewTestClock(time.Unix(2, 0))
@@ -119,12 +119,12 @@ func TestKVMetadataStore_GetAgentIDForHostname(t *testing.T) {
 	createAgent(t, c, testutils.ExistingAgentUUID, testutils.ExistingAgentInfo)
 
 	// Get existing agent hostname.
-	agent, err := mds.GetAgentIDForHostname("testhost")
+	agent, err := mds.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"testhost", "127.0.0.1"})
 	assert.Nil(t, err)
 	assert.Equal(t, testutils.ExistingAgentUUID, agent)
 
 	// Get non-existent agent hostname.
-	agent, err = mds.GetAgentIDForHostname("blah")
+	agent, err = mds.GetAgentIDForHostnamePair(&controllers.HostnameIPPair{"blah", "127.0.0.1"})
 	assert.Nil(t, err)
 	assert.Equal(t, "", agent)
 }
@@ -156,7 +156,7 @@ func TestKVMetadataStore_DeleteAgent(t *testing.T) {
 	// Delete existing PEM.
 	err = mds.DeleteAgent(existingAgUUID)
 	assert.Nil(t, err)
-	hostnameVal, _ := c.Get("/hostname/testhost/agent")
+	hostnameVal, _ := c.Get("/hostnameIP/testhost-127.0.0.1/agent")
 	assert.Equal(t, []byte(""), hostnameVal)
 	agentVal, _ := c.Get("/agent/" + testutils.ExistingAgentUUID)
 	assert.Equal(t, []byte(""), agentVal)
@@ -724,6 +724,22 @@ func TestKVMetadataStore_GetNodeEndpoints(t *testing.T) {
 		Return(nil, nil, nil).
 		Times(2)
 
+	mockDs.
+		EXPECT().
+		Get("/podHostnamePair/test-abcd").
+		Return([]byte("test:127.0.0.1"), nil).
+		Times(2)
+	mockDs.
+		EXPECT().
+		Get("/podHostnamePair/test2-abcdefg").
+		Return([]byte("localhost:127.0.0.1"), nil).
+		Times(2)
+	mockDs.
+		EXPECT().
+		Get("/podHostnamePair/test3-xyz").
+		Return([]byte("localhost:127.0.0.1"), nil).
+		Times(2)
+
 	clock := testingutils.NewTestClock(time.Unix(2, 0))
 	c := kvstore.NewCacheWithClock(mockDs, clock)
 
@@ -742,6 +758,11 @@ func TestKVMetadataStore_GetNodeEndpoints(t *testing.T) {
 				Addresses: []*metadatapb.EndpointAddress{
 					&metadatapb.EndpointAddress{
 						NodeName: "test",
+						TargetRef: &metadatapb.ObjectReference{
+							Kind:      "Pod",
+							Namespace: "test",
+							Name:      "abcd",
+						},
 					},
 				},
 			},
@@ -763,6 +784,11 @@ func TestKVMetadataStore_GetNodeEndpoints(t *testing.T) {
 				Addresses: []*metadatapb.EndpointAddress{
 					&metadatapb.EndpointAddress{
 						NodeName: "localhost",
+						TargetRef: &metadatapb.ObjectReference{
+							Kind:      "Pod",
+							Namespace: "test2",
+							Name:      "abcdefg",
+						},
 					},
 				},
 			},
@@ -785,6 +811,11 @@ func TestKVMetadataStore_GetNodeEndpoints(t *testing.T) {
 				Addresses: []*metadatapb.EndpointAddress{
 					&metadatapb.EndpointAddress{
 						NodeName: "localhost",
+						TargetRef: &metadatapb.ObjectReference{
+							Kind:      "Pod",
+							Namespace: "test3",
+							Name:      "xyz",
+						},
 					},
 				},
 			},
@@ -799,13 +830,13 @@ func TestKVMetadataStore_GetNodeEndpoints(t *testing.T) {
 	c.Set("/endpoints/test/efgh", string(e2Text))
 	c.Set("/endpoints/test/xyz", string(e3Text))
 
-	eps, err := mds.GetNodeEndpoints("localhost")
+	eps, err := mds.GetNodeEndpoints(&controllers.HostnameIPPair{"localhost", "127.0.0.1"})
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(eps))
 
 	assert.Equal(t, e2.Metadata.Name, (*eps[0]).Metadata.Name)
 
-	eps, err = mds.GetNodeEndpoints("")
+	eps, err = mds.GetNodeEndpoints(nil)
 	assert.Nil(t, err)
 	assert.Equal(t, 2, len(eps))
 	assert.Equal(t, e1.Metadata.Name, (*eps[0]).Metadata.Name)
@@ -1289,7 +1320,7 @@ func TestKVMetadataStore_GetAgentsForHostnames(t *testing.T) {
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
 	mockDs.
 		EXPECT().
-		Get("/hostname/test5/agent").
+		Get("/hostnameIP/test5-127.0.0.1/agent").
 		Return(nil, nil)
 
 	clock := testingutils.NewTestClock(time.Unix(2, 0))
@@ -1298,14 +1329,20 @@ func TestKVMetadataStore_GetAgentsForHostnames(t *testing.T) {
 	mds, err := controllers.NewKVMetadataStore(c)
 	assert.Nil(t, err)
 
-	c.Set("/hostname/test/agent", "agent1")
-	c.Set("/hostname/test2/agent", "agent2")
-	c.Set("/hostname/test3/agent", "agent3")
-	c.Set("/hostname/test4/agent", "agent4")
+	c.Set("/hostnameIP/test-127.0.0.1/agent", "agent1")
+	c.Set("/hostnameIP/test2-127.0.0.1/agent", "agent2")
+	c.Set("/hostnameIP/test3-127.0.0.1/agent", "agent3")
+	c.Set("/hostnameIP/test4-127.0.0.1/agent", "agent4")
 
-	hostnames := []string{"test", "test2", "test3", "test4", "test5"}
+	hostnames := []*controllers.HostnameIPPair{
+		&controllers.HostnameIPPair{"test", "127.0.0.1"},
+		&controllers.HostnameIPPair{"test2", "127.0.0.1"},
+		&controllers.HostnameIPPair{"test3", "127.0.0.1"},
+		&controllers.HostnameIPPair{"test4", "127.0.0.1"},
+		&controllers.HostnameIPPair{"test5", "127.0.0.1"},
+	}
 
-	agents, err := mds.GetAgentsForHostnames(&hostnames)
+	agents, err := mds.GetAgentsForHostnamePairs(&hostnames)
 	assert.Nil(t, err)
 
 	assert.Equal(t, 4, len(agents))
@@ -1412,6 +1449,16 @@ func TestKVMetadataStore_GetMetadataUpdatesForHostname(t *testing.T) {
 		GetWithRange("/resourceVersionUpdate", "/resourceVersionUpdate/5_1").
 		Return(nil, nil, nil).
 		AnyTimes()
+	mockDs.
+		EXPECT().
+		Get("/podHostnamePair/pl-another-pod").
+		Return([]byte("node-a:127.0.0.2"), nil).
+		AnyTimes()
+	mockDs.
+		EXPECT().
+		Get("/podHostnamePair/pl-pod-name").
+		Return([]byte("this-is-a-node:127.0.0.1"), nil).
+		AnyTimes()
 
 	clock := testingutils.NewTestClock(time.Unix(2, 0))
 	c := kvstore.NewCacheWithClock(mockDs, clock)
@@ -1463,7 +1510,7 @@ func TestKVMetadataStore_GetMetadataUpdatesForHostname(t *testing.T) {
 	c.Set("/resourceVersionUpdate/3", string(sBytes))
 	c.Set("/resourceVersionUpdate/5", string(pBytes))
 
-	updates, err := mds.GetMetadataUpdatesForHostname("", "", "6")
+	updates, err := mds.GetMetadataUpdatesForHostname(nil, "", "6")
 	assert.Equal(t, 3, len(updates))
 	assert.Equal(t, "1", updates[0].ResourceVersion)
 	assert.Equal(t, "5_0", updates[1].ResourceVersion)
@@ -1471,13 +1518,13 @@ func TestKVMetadataStore_GetMetadataUpdatesForHostname(t *testing.T) {
 	assert.Equal(t, "5_1", updates[2].ResourceVersion)
 	assert.Equal(t, "5_0", updates[2].PrevResourceVersion)
 
-	updates, err = mds.GetMetadataUpdatesForHostname("", "", "5_1")
+	updates, err = mds.GetMetadataUpdatesForHostname(nil, "", "5_1")
 	assert.Equal(t, 2, len(updates))
 	assert.Equal(t, "1", updates[0].ResourceVersion)
 	assert.Equal(t, "5_0", updates[1].ResourceVersion)
 	assert.Equal(t, "1", updates[1].PrevResourceVersion)
 
-	updates, err = mds.GetMetadataUpdatesForHostname("host", "", "6")
+	updates, err = mds.GetMetadataUpdatesForHostname(&controllers.HostnameIPPair{"host", "127.0.0.1"}, "", "6")
 	assert.Equal(t, 1, len(updates))
 	assert.Equal(t, "1", updates[0].ResourceVersion)
 }
@@ -1502,6 +1549,10 @@ func TestKVMetadataStore_GetMetadataUpdates(t *testing.T) {
 		},
 		Status: &metadatapb.PodStatus{
 			ContainerStatuses: containers,
+			HostIP:            "127.0.0.1",
+		},
+		Spec: &metadatapb.PodSpec{
+			NodeName: "test",
 		},
 	}
 	pod2 := &metadatapb.Pod{
@@ -1509,7 +1560,12 @@ func TestKVMetadataStore_GetMetadataUpdates(t *testing.T) {
 			Name: "efgh",
 			UID:  "5678",
 		},
-		Status: &metadatapb.PodStatus{},
+		Status: &metadatapb.PodStatus{
+			HostIP: "127.0.0.1",
+		},
+		Spec: &metadatapb.PodSpec{
+			NodeName: "test",
+		},
 	}
 
 	ns := &metadatapb.Namespace{
@@ -1543,6 +1599,17 @@ func TestKVMetadataStore_GetMetadataUpdates(t *testing.T) {
 		GetWithPrefix("/namespace/").
 		Return(nil, nil, nil).
 		Times(1)
+	mockDs.
+		EXPECT().
+		Get("/podHostnamePair/pl-another-pod").
+		Return([]byte("node-a:127.0.0.2"), nil).
+		AnyTimes()
+	mockDs.
+		EXPECT().
+		Get("/podHostnamePair/pl-pod-name").
+		Return([]byte("this-is-a-node:127.0.0.1"), nil).
+		AnyTimes()
+
 	clock := testingutils.NewTestClock(time.Unix(2, 0))
 	c := kvstore.NewCacheWithClock(mockDs, clock)
 	mds, err := controllers.NewKVMetadataStore(c)
@@ -1559,7 +1626,7 @@ func TestKVMetadataStore_GetMetadataUpdates(t *testing.T) {
 	err = mds.UpdateEndpoints(ep1, false)
 	assert.Nil(t, err)
 
-	updates, err := mds.GetMetadataUpdates("")
+	updates, err := mds.GetMetadataUpdates(nil)
 	assert.Nil(t, err)
 
 	assert.Equal(t, 7, len(updates))

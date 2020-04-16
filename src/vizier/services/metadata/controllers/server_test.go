@@ -51,6 +51,7 @@ func TestGetAgentInfo(t *testing.T) {
 				AgentID: u1pb,
 				HostInfo: &agentpb.HostInfo{
 					Hostname: "test_host",
+					HostIP:   "127.0.0.1",
 				},
 			},
 			ASID: 123,
@@ -62,6 +63,7 @@ func TestGetAgentInfo(t *testing.T) {
 				AgentID: u2pb,
 				HostInfo: &agentpb.HostInfo{
 					Hostname: "another_host",
+					HostIP:   "127.0.0.1",
 				},
 			},
 			ASID: 456,

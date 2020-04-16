@@ -27,12 +27,12 @@ type MetadataStore interface {
 	GetClusterCIDR() string
 	GetServiceCIDR() string
 	GetAgent(agentID uuid.UUID) (*agentpb.Agent, error)
-	GetAgentIDForHostname(hostname string) (string, error)
+	GetAgentIDForHostnamePair(hnPair *HostnameIPPair) (string, error)
 	DeleteAgent(agentID uuid.UUID) error
 	CreateAgent(agentID uuid.UUID, a *agentpb.Agent) error
 	UpdateAgent(agentID uuid.UUID, a *agentpb.Agent) error
 	GetAgents() ([]*agentpb.Agent, error)
-	GetAgentsForHostnames(*[]string) ([]string, error)
+	GetAgentsForHostnamePairs(*[]*HostnameIPPair) ([]string, error)
 	GetASID() (uint32, error)
 	GetKelvinIDs() ([]string, error)
 	GetComputedSchemas() ([]*metadatapb.SchemaInfo, error)
@@ -41,10 +41,10 @@ type MetadataStore interface {
 	GetProcesses(upids []*types.UInt128) ([]*metadatapb.ProcessInfo, error)
 	GetPods() ([]*metadatapb.Pod, error)
 	UpdatePod(*metadatapb.Pod, bool) error
-	GetNodePods(hostname string) ([]*metadatapb.Pod, error)
+	GetNodePods(hostname *HostnameIPPair) ([]*metadatapb.Pod, error)
 	GetEndpoints() ([]*metadatapb.Endpoints, error)
 	UpdateEndpoints(*metadatapb.Endpoints, bool) error
-	GetNodeEndpoints(hostname string) ([]*metadatapb.Endpoints, error)
+	GetNodeEndpoints(hostname *HostnameIPPair) ([]*metadatapb.Endpoints, error)
 	GetServices() ([]*metadatapb.Service, error)
 	UpdateService(*metadatapb.Service, bool) error
 	GetNamespaces() ([]*metadatapb.Namespace, error)
@@ -52,11 +52,12 @@ type MetadataStore interface {
 	GetContainers() ([]*metadatapb.ContainerInfo, error)
 	UpdateContainer(*metadatapb.ContainerInfo) error
 	UpdateContainersFromPod(*metadatapb.Pod, bool) error
-	GetMetadataUpdates(hostname string) ([]*metadatapb.ResourceUpdate, error)
+	GetMetadataUpdates(hostname *HostnameIPPair) ([]*metadatapb.ResourceUpdate, error)
 	AddResourceVersion(string, *metadatapb.MetadataObject) error
 	UpdateSubscriberResourceVersion(string, string) error
 	GetSubscriberResourceVersion(string) (string, error)
-	GetMetadataUpdatesForHostname(string, string, string) ([]*metadatapb.ResourceUpdate, error)
+	GetMetadataUpdatesForHostname(*HostnameIPPair, string, string) ([]*metadatapb.ResourceUpdate, error)
+	GetHostnameIPPairFromPodName(string, string) (*HostnameIPPair, error)
 }
 
 // MetadataSubscriber is a consumer of metadata updates.
@@ -74,7 +75,7 @@ type K8sMessage struct {
 // UpdateMessage is an update message for a specific hostname.
 type UpdateMessage struct {
 	Message      *metadatapb.ResourceUpdate
-	Hostnames    []string
+	Hostnames    []*HostnameIPPair
 	NodeSpecific bool // Specifies whether the update should only be sent to a specific node.
 }
 
@@ -254,19 +255,26 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object, eventType w
 	// Add endpoint update to agent update queues.
 	for _, subset := range pb.Subsets {
 		for _, addr := range subset.Addresses {
-			hostnames := []string{addr.NodeName}
-			updatePb := GetNodeResourceUpdateFromEndpoints(pb, addr.NodeName)
+			if addr.TargetRef.Kind != "Pod" {
+				continue
+			}
+			hnPair, err := mh.mds.GetHostnameIPPairFromPodName(addr.TargetRef.Name, addr.TargetRef.Namespace)
+
+			if err != nil {
+				continue
+			}
+			updatePb := GetNodeResourceUpdateFromEndpoints(pb, hnPair, mh.mds)
 			mh.subscriberUpdates <- &UpdateMessage{
-				Hostnames:    hostnames,
+				Hostnames:    []*HostnameIPPair{hnPair},
 				Message:      updatePb,
 				NodeSpecific: true,
 			}
 		}
 	}
 	// Add endpoint update for Kelvins.
-	updatePb := GetNodeResourceUpdateFromEndpoints(pb, "")
+	updatePb := GetNodeResourceUpdateFromEndpoints(pb, nil, mh.mds)
 	mh.subscriberUpdates <- &UpdateMessage{
-		Hostnames:    []string{},
+		Hostnames:    []*HostnameIPPair{},
 		Message:      updatePb,
 		NodeSpecific: false,
 	}
@@ -305,7 +313,9 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object, eventType watch.E
 	}
 
 	// Add pod update to agent update queue.
-	hostname := []string{e.Spec.NodeName}
+	hostname := []*HostnameIPPair{
+		&HostnameIPPair{Hostname: e.Spec.NodeName, IP: e.Status.HostIP},
+	}
 
 	// Send container updates.
 	containerUpdates := GetContainerResourceUpdatesFromPod(pb)
@@ -378,7 +388,7 @@ func (mh *MetadataHandler) handleNamespaceMetadata(o runtime.Object, eventType w
 	// Send namespace update to subscribers.
 	updatePb := GetResourceUpdateFromNamespace(pb)
 	mh.subscriberUpdates <- &UpdateMessage{
-		Hostnames:    []string{},
+		Hostnames:    []*HostnameIPPair{},
 		Message:      updatePb,
 		NodeSpecific: false,
 	}
@@ -482,14 +492,20 @@ func GetResourceUpdateFromEndpoints(ep *metadatapb.Endpoints) *metadatapb.Resour
 }
 
 // GetNodeResourceUpdateFromEndpoints gets the update info for a node from the given endpoint proto.
-func GetNodeResourceUpdateFromEndpoints(ep *metadatapb.Endpoints, hostname string) *metadatapb.ResourceUpdate {
+func GetNodeResourceUpdateFromEndpoints(ep *metadatapb.Endpoints, hnPair *HostnameIPPair, mds MetadataStore) *metadatapb.ResourceUpdate {
 	var podIDs []string
 	var podNames []string
 	for _, subset := range ep.Subsets {
 		for _, addr := range subset.Addresses {
-			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" && (addr.NodeName == hostname || hostname == "") {
-				podIDs = append(podIDs, addr.TargetRef.UID)
-				podNames = append(podNames, addr.TargetRef.Name)
+			if addr.TargetRef != nil && addr.TargetRef.Kind == "Pod" {
+				podPair, err := mds.GetHostnameIPPairFromPodName(addr.TargetRef.Name, addr.TargetRef.Namespace)
+				if err != nil {
+					continue
+				}
+				if hnPair == nil || (podPair.Hostname == hnPair.Hostname && podPair.IP == hnPair.IP) {
+					podIDs = append(podIDs, addr.TargetRef.UID)
+					podNames = append(podNames, addr.TargetRef.Name)
+				}
 			}
 		}
 	}

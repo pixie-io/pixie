@@ -171,9 +171,9 @@ func (a *AgentTopicListener) onAgentRegisterRequest(m *messages.RegisterAgentReq
 		return
 	}
 
-	hostname := m.Info.HostInfo.Hostname
+	hostname := &HostnameIPPair{m.Info.HostInfo.Hostname, m.Info.HostInfo.HostIP}
 	if m.Info.Capabilities != nil && !m.Info.Capabilities.CollectsData {
-		hostname = ""
+		hostname = nil
 	}
 	updates, err := a.agentManager.GetMetadataUpdates(hostname)
 	if err != nil {

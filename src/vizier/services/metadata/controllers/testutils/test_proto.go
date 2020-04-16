@@ -32,6 +32,7 @@ info {
   }
   host_info {
     hostname: "testhost"
+    host_ip: "127.0.0.1"
   }
   capabilities {
     collects_data: true
@@ -50,6 +51,7 @@ info {
   }
   host_info {
     hostname: "anotherhost"
+    host_ip: "127.0.0.1"
   }
   capabilities {
     collects_data: true
@@ -68,6 +70,7 @@ info {
   }
   host_info {
     hostname: "abcd"
+    host_ip: "127.0.0.1"
   }
   capabilities {
     collects_data: false
@@ -89,6 +92,7 @@ agent {
     }
     host_info {
       hostname: "test_host"
+      host_ip: "127.0.0.1"
     }
   }
   last_heartbeat_ns: 10
@@ -110,6 +114,7 @@ agent {
     }
     host_info {
       hostname: "another_host"
+      host_ip: "127.0.0.1"
     }
   }
   last_heartbeat_ns: 20
@@ -247,6 +252,7 @@ register_agent_request {
     }
     host_info {
       hostname: "test-host"
+      host_ip: "127.0.0.1"
     }
   }
 }
@@ -261,6 +267,7 @@ register_agent_request {
     }
     host_info {
       hostname: "test-host"
+      host_ip: "127.0.0.1"
     }
     capabilities {
       collects_data: false
@@ -278,6 +285,7 @@ register_agent_request {
     }
     host_info {
       hostname: "test-host"
+      host_ip: "127.0.0.1"
     }
   }
 }
@@ -294,6 +302,7 @@ update_agent_request {
     }
     host_info {
       hostname: "test-host"
+      host_ip: "127.0.0.1"
     }
   }
 }
@@ -308,6 +317,7 @@ update_agent_request {
     }
     host_info {
       hostname: "test-host"
+      host_ip: "127.0.0.1"
     }
   }
 }
@@ -532,6 +542,7 @@ status {
     container_id: "docker://test"
   }
   qos_class: QOS_CLASS_BURSTABLE
+  host_ip: "127.0.0.5"
 }
 spec {
   node_name: "test"
