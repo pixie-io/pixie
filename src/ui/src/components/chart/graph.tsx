@@ -7,8 +7,15 @@ import * as dot from 'graphlib-dot';
 import * as React from 'react';
 import {AutoSizer} from 'react-virtualized';
 
+interface AdjacencyList {
+  toColumn: string;
+  fromColumn: string;
+}
+
 export interface GraphDisplay extends WidgetDisplay {
   readonly dotColumn?: string;
+  readonly adjacencyList?: AdjacencyList;
+  readonly data?: any;
 }
 
 export function displayToGraph(display: GraphDisplay, data) {
@@ -16,12 +23,19 @@ export function displayToGraph(display: GraphDisplay, data) {
        return (
         <Graph dot={data[0][display.dotColumn]} />
       );
+    } else if (display.adjacencyList && display.adjacencyList.fromColumn && display.adjacencyList.toColumn) {
+      return (
+        <Graph data={data} toCol={display.adjacencyList.toColumn} fromCol={display.adjacencyList.fromColumn} />
+      );
     }
     return <div key={name}>Invalid spec for graph</div>;
 }
 
 interface GraphProps {
-  dot: string;
+  dot?: any;
+  data?: any;
+  toCol?: string;
+  fromCol?: string;
 }
 
 export class Graph extends React.Component<GraphProps, {}> {
@@ -29,8 +43,22 @@ export class Graph extends React.Component<GraphProps, {}> {
     super(props);
   }
 
+  dataToGraph = () => {
+    const graph = new dagreD3.graphlib.Graph()
+      .setGraph({})
+      .setDefaultEdgeLabel(() => ({}));
+
+    this.props.data.forEach((rb) => {
+      graph.setNode(rb[this.props.toCol], {label: rb[this.props.toCol]});
+      graph.setNode(rb[this.props.fromCol], {label: rb[this.props.fromCol]});
+      graph.setEdge(rb[this.props.fromCol], rb[this.props.toCol]);
+    });
+
+    return graph;
+  }
+
   componentDidMount = () => {
-    const graph = dot.read(this.props.dot);
+    const graph = this.props.dot ? dot.read(this.props.dot) : this.dataToGraph();
     const render = new dagreD3.render();
     const svg = d3.select<SVGGraphicsElement, any>('#pixie-graph svg');
     const svgGroup = svg.append('g');

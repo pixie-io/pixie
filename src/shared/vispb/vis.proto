@@ -190,6 +190,16 @@ message Table {
 
 // Graph the spec for displaying the output as a graph.
 message Graph {
-  // The column which contains the dot-formatted graph file to render.
-  string dot_column = 1;
+  message AdjacencyList {
+    // The column containing the source nodes in the graph.
+    string from_column = 1;
+    // The column containing the destination nodes in the graph.
+    string to_column = 2;
+  }
+  oneof input {
+    // The column which contains the dot-formatted graph file to render.
+    string dot_column = 1;
+    AdjacencyList adjacency_list = 2;
+  }
+
 }

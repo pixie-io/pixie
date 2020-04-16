@@ -377,6 +377,13 @@ export class Graph extends jspb.Message {
   getDotColumn(): string;
   setDotColumn(value: string): void;
 
+  getAdjacencyList(): Graph.AdjacencyList | undefined;
+  setAdjacencyList(value?: Graph.AdjacencyList): void;
+  hasAdjacencyList(): boolean;
+  clearAdjacencyList(): void;
+
+  getInputCase(): Graph.InputCase;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Graph.AsObject;
   static toObject(includeInstance: boolean, msg: Graph): Graph.AsObject;
@@ -388,6 +395,36 @@ export class Graph extends jspb.Message {
 export namespace Graph {
   export type AsObject = {
     dotColumn: string,
+    adjacencyList?: Graph.AdjacencyList.AsObject,
+  }
+
+  export class AdjacencyList extends jspb.Message {
+    getFromColumn(): string;
+    setFromColumn(value: string): void;
+
+    getToColumn(): string;
+    setToColumn(value: string): void;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): AdjacencyList.AsObject;
+    static toObject(includeInstance: boolean, msg: AdjacencyList): AdjacencyList.AsObject;
+    static serializeBinaryToWriter(message: AdjacencyList, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): AdjacencyList;
+    static deserializeBinaryFromReader(message: AdjacencyList, reader: jspb.BinaryReader): AdjacencyList;
+  }
+
+  export namespace AdjacencyList {
+    export type AsObject = {
+      fromColumn: string,
+      toColumn: string,
+    }
+  }
+
+
+  export enum InputCase { 
+    INPUT_NOT_SET = 0,
+    DOT_COLUMN = 1,
+    ADJACENCY_LIST = 2,
   }
 }
 
