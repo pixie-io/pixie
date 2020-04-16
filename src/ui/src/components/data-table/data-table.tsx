@@ -7,6 +7,8 @@ import withAutoSizer, {WithAutoSizerProps} from 'utils/autosizer';
 import noop from 'utils/noop';
 
 import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
+import DownIcon from '@material-ui/icons/KeyboardArrowDown';
+import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -37,8 +39,8 @@ const useStyles = makeStyles((theme: Theme) =>
         borderLeft: `solid 1px ${theme.palette.background.three}`,
       },
     },
-    noClick: {
-      cursor: 'initial',
+    clickable: {
+      cursor: 'pointer',
     },
     center: {
       justifyContent: 'center',
@@ -48,6 +50,12 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     end: {
       justifyContent: 'flex-end',
+    },
+    sortPlaceholder: {
+      paddingRight: theme.spacing(2),
+    },
+    sortIcon: {
+      width: theme.spacing(2),
     },
   }),
 );
@@ -65,9 +73,60 @@ interface DataTableProps {
   columns: ColumnProps[];
   onRowClick?: (rowIndex: number) => void;
   rowGetter: (rowIndex: number) => { [key: string]: React.ReactNode };
+  onSort?: (sort: SortState) => void;
   rowCount: number;
   compact?: boolean;
 }
+
+type SortDirection = 'asc' | 'desc';
+
+export interface SortState {
+  prevDataKey?: string;
+  prevDirection?: SortDirection;
+  dataKey: string;
+  direction: SortDirection;
+}
+
+function sortReducer(state: SortState, dataKey: string): SortState {
+  if (dataKey === state.dataKey) {
+    return {
+      prevDataKey: state.dataKey,
+      prevDirection: state.direction,
+      direction: state.direction === 'asc' ? 'desc' : 'asc',
+      dataKey,
+    };
+  }
+  return {
+    prevDataKey: state.dataKey,
+    prevDirection: state.direction,
+    direction: 'desc',
+    dataKey,
+  };
+}
+
+interface HeaderProps extends ColumnProps {
+  sort: SortDirection | '';
+}
+
+const Header = (props: HeaderProps) => {
+  const classes = useStyles();
+  let sortIcon = <div className={classes.sortPlaceholder} />;
+  if (props.sort === 'asc') {
+    sortIcon = <UpIcon className={classes.sortIcon} />;
+  } else if (props.sort === 'desc') {
+    sortIcon = <DownIcon className={classes.sortIcon} />;
+  }
+  if (props.align === 'end') {
+    return <>
+      {sortIcon}
+      {props.label}
+    </>;
+  }
+  return <>
+    {props.label}
+    {sortIcon}
+  </>;
+};
 
 export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerProps<DataTableProps>>(({
   columns,
@@ -77,16 +136,26 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
   height,
   rowGetter,
   compact = false,
+  onSort = noop,
 }) => {
   const classes = useStyles();
   const theme = useTheme();
   const rowHeight = compact ? theme.spacing(4) : theme.spacing(6);
 
+  const gridRef = React.useRef(null);
   const sizeCache = React.useMemo(() => new CellMeasurerCache({
     defaultWidth: 100,
     defaultHeight: rowHeight,
     fixedHeight: true,
   }), []);
+
+  const [sortState, dispatchSortState] = React.useReducer(sortReducer, { dataKey: '', direction: 'desc' });
+  React.useEffect(() => {
+    if (sortState.dataKey) {
+      onSort(sortState);
+      gridRef.current.forceUpdateGrids();
+    }
+  }, [sortState]);
 
   const cellRenderer: GridCellRenderer = React.useCallback(({
     columnIndex,
@@ -97,16 +166,26 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
   }) => {
     const column = columns[columnIndex];
     const isHeader = rowIndex === 0;
+    let onClick = noop;
+    if (isHeader) {
+      onClick = () => {
+        dispatchSortState(column.dataKey);
+      };
+    } else if (onRowClick) {
+      onClick = () => onRowClick(rowIndex - 1);
+    }
+
     const className = clsx(
       classes.cell,
       isHeader && classes.header,
       column.align && classes[column.align],
       compact && classes.compact,
+      onClick !== noop && classes.clickable,
     );
-    const content = isHeader ? column.label : rowGetter(rowIndex - 1)[column.dataKey];
-    const onClick = isHeader || !onRowClick ? noop : () => {
-      onRowClick(rowIndex - 1);
-    };
+    const content = isHeader ?
+      <Header {...column} sort={sortState.dataKey === column.dataKey ? sortState.direction : ''} /> :
+      rowGetter(rowIndex - 1)[column.dataKey];
+
     return (
       <CellMeasurer
         cache={sizeCache}
@@ -127,7 +206,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
         )}
       </CellMeasurer>
     );
-  }, []);
+  }, [sortState]);
 
   if (width === 0 || height === 0) {
     return null;
@@ -135,6 +214,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
 
   return (
     <MultiGrid
+      ref={gridRef}
       className={classes.table}
       columnCount={columns.length}
       columnWidth={sizeCache.columnWidth}
@@ -149,6 +229,8 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       rowCount={rowCount + 1}
       rowHeight={rowHeight}
       width={width}
+      sortBy={sortState.dataKey}
+      sortDirection={sortState.direction}
     />
   );
 }));

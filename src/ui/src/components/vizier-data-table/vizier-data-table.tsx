@@ -1,5 +1,5 @@
 import {Table} from 'common/vizier-grpc-client';
-import {CellAlignment, ColumnProps, DataTable} from 'components/data-table';
+import {CellAlignment, ColumnProps, DataTable, SortState} from 'components/data-table';
 import * as React from 'react';
 import {Column, DataType} from 'types/generated/vizier_pb';
 import {formatFloat64Data, formatInt64Data} from 'utils/format-data';
@@ -40,24 +40,64 @@ function getDataRenderer(type: DataType) {
   }
 }
 
+function getSortFunc(dataKey: string, type: DataType, direction: 'asc' | 'desc') {
+  const dir = direction === 'asc' ? -1 : 1;
+  return (a, b) => {
+    return a[dataKey] < b[dataKey] ? dir : -dir;
+  };
+}
+
+function formatRow(row, columnsMap) {
+  const out = {};
+  for (const key of Object.keys(row)) {
+    const column = columnsMap.get(key);
+    const renderer = getDataRenderer(column.type);
+    out[key] = renderer(row[key]);
+  }
+  return out;
+}
+
 export const VizierDataTable = (props: VizierDataTableProps) => {
   const { table } = props;
-  const rows = React.useMemo(() =>
-    dataFromProto(table.relation, table.data, getDataRenderer),
-    [table.relation, table.data]);
-  const columns: ColumnProps[] = table.relation.getColumnsList().map((col) => {
-    return {
-      dataKey: col.getColumnName(),
-      label: col.getColumnName(),
-      align: AlignmentMap.get(col.getColumnType()) || 'start',
-    };
-  });
+  const [rows, setRows] = React.useState([]);
+  React.useEffect(() => {
+    setRows(dataFromProto(table.relation, table.data));
+  }, [table.relation, table.data]);
+
+  const columnsMap = React.useMemo(() => {
+    const map = new Map();
+    for (const col of table.relation.getColumnsList()) {
+      const name = col.getColumnName();
+      map.set(name, {
+        type: col.getColumnType(),
+        dataKey: col.getColumnName(),
+        label: col.getColumnName(),
+        align: AlignmentMap.get(col.getColumnType()) || 'start',
+      });
+    }
+    return map;
+  }, [table.relation]);
+
+  const rowGetter = React.useCallback(
+    (i) => formatRow(rows[i], columnsMap),
+    [rows, columnsMap]);
+
+  const onSort = (sortState: SortState) => {
+    const column = columnsMap.get(sortState.dataKey);
+    setRows(rows.sort(getSortFunc(sortState.dataKey, column.type, sortState.direction)));
+  };
+
+  if (rows.length === 0) {
+    return null;
+  }
+
   return (
     <DataTable
-      rowGetter={(i) => rows[i]}
+      rowGetter={rowGetter}
       rowCount={rows.length}
-      columns={columns}
+      columns={[...columnsMap.values()]}
       compact={true}
+      onSort={onSort}
     />
   );
 };
