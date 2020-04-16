@@ -100,9 +100,9 @@ std::string K8sMetadataState::DebugString(int indent_level) const {
     str += absl::Substitute("$0\n", it.second->DebugString(indent_level + 1));
   }
   str += "\n";
-  str += prefix + "Ips:\n";
+  str += prefix + "IPs:\n";
   for (const auto& [k, v] : pods_by_ip_) {
-    str += absl::Substitute("pod_id: $0, ip: $1", v, k);
+    str += absl::Substitute("pod_id: $0, ip: $1\n", v, k);
   }
   return str;
 }
