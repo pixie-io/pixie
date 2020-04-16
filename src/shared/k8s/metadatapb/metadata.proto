@@ -628,6 +628,54 @@ message ProcessTerminated {
                               ];
 }
 
+// Node is a worker node in Kubernetes.
+message Node {
+  // Standard object's metadata.
+  ObjectMetadata metadata = 1;
+  NodeSpec spec = 2;
+  NodeStatus status = 3;
+}
+
+// NodeSpec describes the attributes that a node is created with.
+message NodeSpec{
+  // PodCIDR represents the pod IP range assigned to the node.
+  repeated string pod_cidrs = 1 [
+                       (gogoproto.customname) = "PodCIDRs"
+                      ];
+
+}
+
+// These are the valid phases of node.
+enum NodePhase {
+  NODE_PHASE_UNKNOWN = 0;
+  NODE_PHASE_PENDING = 1;
+  NODE_PHASE_RUNNING = 2;
+  NODE_PHASE_TERMINATED = 3;
+}
+
+// These are valid address type of node.
+enum NodeAddressType {
+  NODE_ADDR_TYPE_UNKNOWN = 0;
+  NODE_ADDR_TYPE_HOSTNAME = 1;
+  NODE_ADDR_TYPE_EXTERNAL_IP = 2;
+  NODE_ADDR_TYPE_INTERNAL_IP = 3;
+  NODE_ADDR_TYPE_EXTERNAL_DNS = 4;
+  NODE_ADDR_TYPE_INTERNAL_DNS = 5;
+}
+
+// NodeAddress contains information for the node's address.
+message NodeAddress {
+  NodeAddressType type = 1;
+  string address = 2;
+}
+
+// NodeStatus is information about the current status of a node.
+message NodeStatus{
+  NodePhase phase = 1;
+  // List of addresses reachable to the node.
+  repeated NodeAddress addresses = 2;
+}
+
 // Resource update is the message we send to the agent/compute nodes
 // from the metadata service (MDS).
 // These updates can contain cross references to other objects (ie. pods can refer to containers).
