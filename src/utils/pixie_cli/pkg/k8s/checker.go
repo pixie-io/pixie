@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -36,7 +37,14 @@ func NamedCheck(name string, check func() error) Checker {
 	return &namedCheck{name: name, check: check}
 }
 
-func versionCompatible(version string, minVersion string) (bool, error) {
+// VersionCompatible checks to make sure version >= minVersion as per semver.
+func VersionCompatible(version string, minVersion string) (bool, error) {
+	// We don't actually care about pre-release tags, so drop them since they sometimes cause parse error.
+	sp := strings.Split(version, "-")
+	if len(sp) == 0 {
+		return false, errors.New("Failed to parse version string")
+	}
+	version = sp[0]
 	version = strings.TrimPrefix(version, "v")
 	// Minor version can sometime contain a "+", we remove it so it parses properly with semver.
 	version = strings.TrimSuffix(version, "+")

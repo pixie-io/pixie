@@ -27,7 +27,7 @@ var (
 		}
 
 		for _, node := range nodes.Items {
-			compatible, err := versionCompatible(node.Status.NodeInfo.KernelVersion, kernelMinVersion)
+			compatible, err := VersionCompatible(node.Status.NodeInfo.KernelVersion, kernelMinVersion)
 			if err != nil {
 				return err
 			}
@@ -45,7 +45,7 @@ var (
 		if err != nil {
 			return err
 		}
-		compatible, err := versionCompatible(version.GitVersion, k8sMinVersion)
+		compatible, err := VersionCompatible(version.GitVersion, k8sMinVersion)
 		if err != nil {
 			return err
 		}
@@ -72,7 +72,7 @@ var (
 		}
 
 		kubectlVersion := fmt.Sprintf("%s.%s.0", version.ClientVersion.Major, version.ClientVersion.Minor)
-		compatible, err := versionCompatible(kubectlVersion, kubectlMinVersion)
+		compatible, err := VersionCompatible(kubectlVersion, kubectlMinVersion)
 		if err != nil {
 			return err
 		}
