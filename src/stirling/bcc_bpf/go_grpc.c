@@ -84,6 +84,10 @@ struct DataFrame {
   struct go_byte_array data;
 };
 
+//-----------------------------------------------------------------------------
+// FD extraction functions
+//-----------------------------------------------------------------------------
+
 // This function accesses one of the following:
 //   conn.conn.conn.fd.pfd.Sysfd
 //   conn.conn.fd.pfd.Sysfd
@@ -112,7 +116,7 @@ static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf) {
   uint32_t tgid = current_pid_tgid >> 32;
   struct conn_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
-    return 0;
+    return -1;
   }
 
   if (conn_intf.type == symaddrs->syscall_conn) {
@@ -126,7 +130,7 @@ static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf) {
   }
 
   if (conn_intf.type != symaddrs->tcp_conn) {
-    return 0;
+    return -1;
   }
 
   void* fd_ptr;
@@ -158,6 +162,10 @@ static __inline int32_t get_fd_from_http2_framer(const void* framer_ptr) {
 
   return get_fd_from_conn_intf(conn_intf);
 }
+
+//-----------------------------------------------------------------------------
+// HTTP2 Header Tracing Functions
+//-----------------------------------------------------------------------------
 
 static __inline void fill_header_field(struct go_grpc_http2_header_event_t* event,
                                        const struct HPackHeaderField* user_space_ptr) {
@@ -227,6 +235,9 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   struct go_grpc_framer_t go_grpc_framer = {};
   bpf_probe_read(&go_grpc_framer, sizeof(go_grpc_framer), framer_ptr);
   const int32_t fd = get_fd_from_http2_framer(go_grpc_framer.http2_framer);
+  if (fd < 0) {
+    return 0;
+  }
 
   uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
@@ -268,8 +279,8 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
 //   probe_http2_client_operate_headers()
 //   probe_http2_server_operate_headers()
 // The two probes are similar but the conn_intf location is specific to each struct.
-static int probe_http2_operate_headers(struct pt_regs* ctx, struct go_interface conn_intf,
-                                       const void* frame_ptr) {
+static __inline void probe_http2_operate_headers(struct pt_regs* ctx, struct go_interface conn_intf,
+                                                 const void* frame_ptr) {
   const void* frame_header_ptr = *(const void**)frame_ptr;
 
   // type FrameHeader {
@@ -291,15 +302,19 @@ static int probe_http2_operate_headers(struct pt_regs* ctx, struct go_interface 
   // TODO(yzhao): We saw some arbitrary large slices received by operateHeaders(), it's not clear
   // what conditions result into them.
   if (fields.len > 100 || fields.len <= 0 || fields.cap <= 0) {
-    return 0;
+    return;
   }
 
   uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
 
   const uint32_t fd = get_fd_from_conn_intf(conn_intf);
+  if (fd < 0) {
+    return;
+  }
+
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
-    return 0;
+    return;
   }
 
   struct go_grpc_http2_header_event_t event = {};
@@ -323,8 +338,6 @@ static int probe_http2_operate_headers(struct pt_regs* ctx, struct go_interface 
     event.attr.end_stream = true;
     go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
   }
-
-  return 0;
 }
 
 // Probes (*http2Client).operateHeaders(*http2.MetaHeadersFrame) inside gRPC-go, which processes
@@ -345,7 +358,9 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   const int kHTTP2ClientConnFieldOffset = 64;
   bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_client_ptr + kHTTP2ClientConnFieldOffset);
 
-  return probe_http2_operate_headers(ctx, conn_intf, frame_ptr);
+  probe_http2_operate_headers(ctx, conn_intf, frame_ptr);
+
+  return 0;
 }
 
 // Function signature:
@@ -365,8 +380,14 @@ int probe_http2_server_operate_headers(struct pt_regs* ctx) {
   const int kHTTP2ServerConnFieldOffset = 32;
   bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_server_ptr + kHTTP2ServerConnFieldOffset);
 
-  return probe_http2_operate_headers(ctx, conn_intf, frame_ptr);
+  probe_http2_operate_headers(ctx, conn_intf, frame_ptr);
+
+  return 0;
 }
+
+//-----------------------------------------------------------------------------
+// HTTP2 Data Tracing Functions
+//-----------------------------------------------------------------------------
 
 // Probe for the http2 library's frame writer.
 //
