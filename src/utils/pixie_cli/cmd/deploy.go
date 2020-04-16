@@ -17,6 +17,7 @@ import (
 	"github.com/fatih/color"
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/segmentio/analytics-go.v3"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
@@ -438,15 +439,16 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 func waitForHealthCheck(cloudAddr string, clientset *kubernetes.Clientset, namespace string, numNodes int) {
 	runSimpleScript := func() error {
 		v, err := connectDefaultVizier(cloudAddr)
+		br := mustCreateBundleReader()
 		if err != nil {
 			return err
 		}
-		q := "import px\npx.display(px.GetAgentStatus())"
+		execScript := br.MustGetScript(script.AgentStatusScript)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
-		resp, err := v.ExecuteScriptStream(ctx, q)
+		resp, err := v.ExecuteScriptStream(ctx, execScript.ScriptString())
 		if err != nil {
 			return err
 		}
