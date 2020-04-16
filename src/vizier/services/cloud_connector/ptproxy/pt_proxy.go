@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"reflect"
 	"sync"
 	"time"
 
@@ -150,6 +151,7 @@ func (s *PassThroughProxy) handleCancel(req *cvmsgspb.C2VAPIStreamRequest) error
 func (s *PassThroughProxy) runRequest(reqState *RequestState, msg *cvmsgspb.C2VAPIStreamRequest) {
 	defer s.cleanupRequest(reqState)
 
+	log.WithField("type", reflect.TypeOf(msg.Msg)).Info("Got passthrough request")
 	var stream Stream
 	switch msg.Msg.(type) {
 	case *cvmsgspb.C2VAPIStreamRequest_ExecReq:
@@ -190,7 +192,7 @@ func (s *PassThroughProxy) runRequest(reqState *RequestState, msg *cvmsgspb.C2VA
 			s.sendMessage(reqState.requestID, v2cResp)
 			return
 		}
-		log.Trace("Sending message from stream")
+		log.Info("Sending response message from stream")
 		s.sendMessage(reqState.requestID, msg)
 	}
 }
