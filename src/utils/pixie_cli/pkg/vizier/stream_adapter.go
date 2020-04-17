@@ -250,7 +250,7 @@ func (v *VizierStreamOutputAdapter) printErrorAndDie(ctx context.Context, s *pl_
 	}
 
 	fmt.Fprint(os.Stderr, "\n")
-	log.Fatalf("Script execution error: ", s.Message)
+	log.Fatalf("Script execution error: %s", s.Message)
 }
 
 func (v *VizierStreamOutputAdapter) getFormattedValue(tableInfo *TableInfo, colIdx int, val interface{}) interface{} {
