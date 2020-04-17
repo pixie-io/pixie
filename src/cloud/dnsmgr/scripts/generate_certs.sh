@@ -30,7 +30,7 @@ function create_cert() {
   fi
 
 
-  $LEGO --email="$EMAIL" --domains="$DOMAIN" --dns='gcloud' --path="${OUTDIR}" -a run
+  $LEGO -k rsa4096 --email="$EMAIL" --domains="$DOMAIN" --dns='gcloud' --path="${OUTDIR}" -a run
 }
 
 function create_uuid_certs() {
@@ -61,10 +61,10 @@ create_cert "default" "clusters.testing.withpixie.dev"
 
 echo "Creating the production certificates."
 
-# gcloud config set project pixie-prod
+gcloud config set project pixie-prod
 export GCE_PROJECT="pixie-prod"
-create_uuid_certs "clusters.staging.withpixie.dev"
 create_uuid_certs "clusters.withpixie.ai"
+create_uuid_certs "clusters.staging.withpixie.dev"
 
 
 # # Return to the original GCP project.
