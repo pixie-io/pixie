@@ -19,6 +19,7 @@ pl_cc_library(
     ),
     deps = [
         "//src/stirling/common:cc_library",
+        "//src/stirling/utils:cc_library",
     ],
 )
 
@@ -26,4 +27,13 @@ pl_cc_test(
     name = "parse_test",
     srcs = ["parse_test.cc"],
     deps = [":cc_library"],
+)
+
+pl_cc_test(
+    name = "binary_decoder_test",
+    srcs = ["binary_decoder_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
 )

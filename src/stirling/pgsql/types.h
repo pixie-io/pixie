@@ -1,6 +1,11 @@
 #pragma once
 
 #include <string>
+#include <vector>
+
+#include "src/stirling/common/protocol_traits.h"
+#include "src/stirling/common/utils.h"
+#include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
 namespace stirling {
@@ -13,8 +18,11 @@ namespace pgsql {
  *
  * NOTE: The enum value names are shortened, which are not exactly what shown in the above document.
  */
-enum class MessageType : char {
+enum class Tag : char {
   kAuth = 'R',
+  // Password message is response to authenticate request.
+  kPasswd = 'p',
+
   kKey = 'K',
   kBind = 'B',
   kBindComplete = '2',
@@ -30,6 +38,7 @@ enum class MessageType : char {
   kQuery = 'Q',
   kReadyForQuery = 'Z',
   kRowDesc = 'T',
+  kDataRow = 'D',
 
   // TODO(yzhao): More tags to be added.
 };
@@ -40,13 +49,26 @@ enum class MessageType : char {
  * | char tag | int32 len (including this field) | payload |
  * ---------------------------------------------------------
  */
-struct RegularMessage {
-  char tag;
+struct RegularMessage : public stirling::FrameBase {
+  Tag tag;
   int32_t len;
   std::string payload;
+
+  size_t ByteSize() const override { return 5 + payload.size(); }
 };
 
 struct Query : RegularMessage {};
+
+struct NV {
+  std::string name;
+  std::string value;
+
+  // This allows GoogleTest to print NV values.
+  friend std::ostream& operator<<(std::ostream& os, const NV& nv) {
+    os << "[" << nv.name << ", " << nv.value << "]";
+    return os;
+  }
+};
 
 /**
  * Startup message's wire format:
@@ -55,9 +77,16 @@ struct Query : RegularMessage {};
  * -----------------------------------------------------------------------
  */
 struct StartupMessage {
+  static constexpr size_t kMinLen = sizeof(int32_t) + sizeof(int32_t);
   int32_t len;
-  int32_t protocol;
-  std::string payload;
+  struct ProtocolVersion {
+    int16_t major;
+    int16_t minor;
+  };
+  ProtocolVersion proto_ver;
+  // TODO(yzhao): Check if user field is required. See StartupMessage section of
+  // https://www.postgresql.org/docs/9.3/protocol-message-formats.html.
+  std::vector<NV> nvs;
 };
 
 struct CancelRequestMessage {
@@ -65,6 +94,14 @@ struct CancelRequestMessage {
   int32_t cancel_code;
   int32_t pid;
   int32_t secret;
+};
+
+using Record = ReqRespPair<RegularMessage, RegularMessage>;
+
+struct ProtocolTraits {
+  using frame_type = RegularMessage;
+  using record_type = Record;
+  using state_type = NoState;
 };
 
 }  // namespace pgsql
