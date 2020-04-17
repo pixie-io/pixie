@@ -116,5 +116,13 @@ void TableStore::AddRelation(const std::string& table_name, const schema::Relati
   name_to_relation_map_[table_name] = relation;
 }
 
+std::vector<uint64_t> TableStore::GetTableIDs() {
+  std::vector<uint64_t> ids;
+  for (const auto& it : id_to_table_map_) {
+    ids.emplace_back(it.first.table_id_);
+  }
+  return ids;
+}
+
 }  // namespace table_store
 }  // namespace pl

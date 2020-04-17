@@ -1,5 +1,7 @@
+#include <gmock/gmock.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/message_differencer.h>
+#include <gtest/gtest.h>
 #include <vector>
 
 #include "src/common/testing/testing.h"
@@ -51,6 +53,15 @@ TEST_F(TableStoreTest, basic) {
   EXPECT_EQ(types::DataType::INT64, lookup->at("b").GetColumnType(2));
   EXPECT_EQ("table2col3", lookup->at("b").GetColumnName(2));
 }
+
+TEST_F(TableStoreTest, get_table_ids) {
+  auto table_store = TableStore();
+  EXPECT_OK(table_store.AddTable(1, "a", table1));
+  EXPECT_OK(table_store.AddTable(20, "b", table2));
+
+  EXPECT_THAT(table_store.GetTableIDs(), ::testing::UnorderedElementsAre(1, 20));
+}
+
 using TableStoreDeathTest = TableStoreTest;
 TEST_F(TableStoreDeathTest, rewrite_fails) {
   auto table_store = TableStore();

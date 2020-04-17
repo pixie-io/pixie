@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 #include <absl/container/flat_hash_map.h>
 
@@ -62,6 +63,12 @@ class TableStore {
   using RelationMap = std::unordered_map<std::string, schema::Relation>;
 
   TableStore() = default;
+
+  /**
+   * Get table IDs returns a list of table ids available in the table store.
+   * @return vector of table ids.
+   */
+  std::vector<uint64_t> GetTableIDs();
 
   /*
    * Gets the table associated with the given name, grabbing the default tablet.
