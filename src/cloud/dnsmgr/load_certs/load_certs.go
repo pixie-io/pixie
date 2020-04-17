@@ -93,6 +93,7 @@ func loadCerts(db *sqlx.DB) {
 	domainSuffix := viper.GetString("domain_name_suffix")
 	domainSuffix = "." + domainSuffix
 	for fullCname, certInfo := range certs {
+		log.Infof("inserting %s", fullCname)
 		if !strings.HasSuffix(fullCname, domainSuffix) {
 			log.Fatal("certificate suffix does not match the supplied domain")
 		}
@@ -106,11 +107,10 @@ func loadCerts(db *sqlx.DB) {
 			Cert:  certInfo.Cert,
 			Key:   certInfo.Key,
 		}
-		rows, err := db.NamedQuery(query, &sc)
+		_, err := db.NamedExec(query, &sc)
 		if err != nil {
 			log.WithError(err).Fatal("Failed to insert certs into DB")
 		}
-		rows.Close()
 	}
 }
 
