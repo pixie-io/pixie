@@ -14,10 +14,12 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 )
 
-func main() {
+func init() {
 	pflag.String("namespace", "pl", "The namespace of Vizier")
-	pflag.String("cloud_connector_addr", "vizier-cloud-connector.pl.svc:50800", "The address to the cloud connector")
+	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
+}
 
+func main() {
 	log.WithField("service", "certmgr-service").Info("Starting service")
 
 	services.SetupService("certmgr-service", 50900)
@@ -26,6 +28,9 @@ func main() {
 	services.CheckServiceFlags()
 	services.CheckSSLClientFlags()
 	services.SetupServiceLogging()
+
+	flush := services.InitDefaultSentry(viper.GetString("cluster_id"))
+	defer flush()
 
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)

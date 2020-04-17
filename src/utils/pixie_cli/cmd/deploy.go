@@ -17,6 +17,7 @@ import (
 	"github.com/fatih/color"
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/segmentio/analytics-go.v3"
+	"pixielabs.ai/pixielabs/src/shared/version"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
@@ -51,6 +52,25 @@ const (
 	natsYAMLPath   = "./yamls/vizier_deps/nats_prod.yaml"
 	vizierYAMLPath = "./yamls/vizier/vizier_prod.yaml"
 )
+
+// Sentry configs are not actually secret and safe to check in.
+const (
+	// We can't really distinguish between prod/dev, so we use some heuristics to decide.
+	prodSentryDSN = "https://a8a635734bb840799befb63190e904e0@o324879.ingest.sentry.io/5203506"
+	devSentryDSN  = "https://8e4acf22871543f1aa143a93a5216a16@o324879.ingest.sentry.io/5203508"
+)
+
+func getSentryDSN(vizierVersion string) string {
+	// Only we have dev CLI.
+	if version.GetVersion().IsDev() {
+		return devSentryDSN
+	}
+	// If it contains - it must be a pre-release Vizier.
+	if strings.Contains(vizierVersion, "-") {
+		return devSentryDSN
+	}
+	return prodSentryDSN
+}
 
 // DeployCmd is the "deploy" command.
 var DeployCmd = &cobra.Command{
@@ -355,6 +375,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	})
 
 	secretJob := newTaskWrapper("Loading secrets", func() error {
+		versionString, _ := cmd.Flags().GetString("use_version")
 		var credsData string
 		if credsFile == "" {
 			credsData = mustGetImagePullSecret(cloudConn)
@@ -367,7 +388,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		if err != nil {
 			return err
 		}
-		return LoadClusterSecrets(clientset, cloudAddr, clusterID.String(), namespace, devCloudNS, kubeConfig)
+		return LoadClusterSecrets(clientset, cloudAddr, clusterID.String(), namespace, devCloudNS, kubeConfig, getSentryDSN(versionString))
 	})
 
 	clusterRoleJob := newTaskWrapper("Updating clusterroles", func() error {

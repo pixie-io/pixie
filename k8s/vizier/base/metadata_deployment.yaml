@@ -35,7 +35,7 @@ spec:
         - name: PROTOCOL
           value: "http"
       containers:
-      - name: vizier-metadata
+      - name: app
         image: gcr.io/pl-dev-infra/vizier/metadata_server_image:latest
         env:
         - name: PL_JWT_SIGNING_KEY

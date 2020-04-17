@@ -18,7 +18,7 @@ spec:
       imagePullSecrets:
       - name: pl-image-secret
       containers:
-      - name: envoy
+      - name: app
         image: envoyproxy/envoy:v1.12.2
         command: ["envoy"]
         args: ["-c", "/etc/envoy.yaml", "--service-cluster", "$(POD_NAME)"]

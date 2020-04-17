@@ -29,6 +29,7 @@ func setupCommonFlags() {
 	pflag.Bool("disable_grpc_auth", false, "Disable auth on the GRPC server")
 	pflag.String("tls_ca_cert", "../certs/ca.crt", "The CA cert.")
 	pflag.String("jwt_signing_key", "", "The signing key used for JWTs")
+	pflag.String("pod_name", "<unknown>", "The pod name")
 }
 
 // SetupCommonFlags sets flags that are used by every service, even non GRPC servers.

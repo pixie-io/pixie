@@ -22,9 +22,13 @@ import (
 
 const plMDSAddr = "vizier-metadata.pl.svc:50400"
 
+func init() {
+	pflag.String("cloud_connector_addr", "vizier-cloud-connector.pl.svc:50800", "The address to the cloud connector")
+	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
+}
+
 func main() {
 	log.WithField("service", "query-broker").Info("Starting service")
-	pflag.String("cloud_connector_addr", "vizier-cloud-connector.pl.svc:50800", "The address to the cloud connector")
 
 	services.SetupService("query-broker", 50300)
 	services.SetupSSLClientFlags()
@@ -32,6 +36,9 @@ func main() {
 	services.CheckServiceFlags()
 	services.CheckSSLClientFlags()
 	services.SetupServiceLogging()
+
+	flush := services.InitDefaultSentry(viper.GetString("cluster_id"))
+	defer flush()
 
 	env, err := querybrokerenv.New()
 	if err != nil {

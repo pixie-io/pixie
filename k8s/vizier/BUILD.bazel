@@ -22,7 +22,7 @@ generate_vizier_yamls(
     cmd = """
       T=`mktemp -d`
       cp -aL k8s/vizier $$T
-      kustomize build $$T/vizier/base -o $@
+      kustomize build $$T/vizier/prod -o $@
     """,
     image_map = VIZIER_IMAGE_MAP,
 )

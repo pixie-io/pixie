@@ -8,6 +8,10 @@ namespace: pl
 patchesStrategicMerge:
 - patch_pem_daemonset.yaml
 - patch_logging_pem_daemonset.yaml
+patches:
+- path: patch_sentry.yaml
+  target:
+    kind: Deployment
 resources:
 - pem
 - proxy_envoy.yaml

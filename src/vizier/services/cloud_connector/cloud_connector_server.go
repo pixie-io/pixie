@@ -78,6 +78,9 @@ func main() {
 	services.CheckSSLClientFlags()
 	services.SetupServiceLogging()
 
+	flush := services.InitDefaultSentry(viper.GetString("cluster_id"))
+	defer flush()
+
 	vzClient, err := controllers.NewVZConnClient()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to init vzconn client")

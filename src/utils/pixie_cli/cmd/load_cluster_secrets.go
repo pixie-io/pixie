@@ -49,7 +49,7 @@ func init() {
 }
 
 // LoadClusterSecrets loads Vizier's secrets and configmap to the given namespace.
-func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, clusterID string, namespace string, devCloudNamespace string, kubeConfig *rest.Config) error {
+func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, clusterID string, namespace string, devCloudNamespace string, kubeConfig *rest.Config, sentryDSN string) error {
 	if clusterID == "" {
 		return errors.New("cluster_id is required")
 	}
@@ -59,7 +59,7 @@ func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, clust
 		return err
 	}
 
-	err = createClusterSecrets(clientset, clusterID, namespace)
+	err = createClusterSecrets(clientset, clusterID, sentryDSN, namespace)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func createCloudConfig(clientset *kubernetes.Clientset, cloudAddr string, namesp
 	return err
 }
 
-func createClusterSecrets(clientset *kubernetes.Clientset, clusterID string, namespace string) error {
+func createClusterSecrets(clientset *kubernetes.Clientset, clusterID, sentryDSN, namespace string) error {
 	jwtSigningKey := make([]byte, 64)
 	_, err := rand.Read(jwtSigningKey)
 	if err != nil {
@@ -114,6 +114,7 @@ func createClusterSecrets(clientset *kubernetes.Clientset, clusterID string, nam
 	k8s.DeleteSecret(clientset, namespace, "pl-cluster-secrets")
 	err = k8s.CreateGenericSecretFromLiterals(clientset, namespace, "pl-cluster-secrets", map[string]string{
 		"cluster-id":      clusterID,
+		"sentry-dsn":      sentryDSN,
 		"jwt-signing-key": fmt.Sprintf("%x", jwtSigningKey),
 	})
 	if err != nil {

@@ -26,8 +26,15 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 )
 
-const cacheFlushPeriod = 1 * time.Second
-const cacheClearPeriod = 2 * time.Second
+const (
+	cacheFlushPeriod = 1 * time.Second
+	cacheClearPeriod = 2 * time.Second
+)
+
+func init() {
+	pflag.String("md_etcd_server", "https://pl-etcd-client.pl.svc:2379", "The address to metadata etcd server.")
+	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
+}
 
 func etcdTLSConfig() (*tls.Config, error) {
 	tlsCert := viper.GetString("client_tls_cert")
@@ -46,15 +53,15 @@ func etcdTLSConfig() (*tls.Config, error) {
 func main() {
 	log.WithField("service", "metadata").Info("Starting service")
 
-	pflag.String("md_etcd_server", "https://pl-etcd-client.pl.svc:2379", "The address to metadata etcd server.")
-	pflag.String("cloud_connector_addr", "vizier-cloud-connector.pl.svc:50800", "The address to the cloud connector")
-
 	services.SetupService("metadata", 50400)
 	services.SetupSSLClientFlags()
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()
 	services.CheckSSLClientFlags()
 	services.SetupServiceLogging()
+
+	flush := services.InitDefaultSentry(viper.GetString("cluster_id"))
+	defer flush()
 
 	var tlsConfig *tls.Config
 	if !viper.GetBool("disable_ssl") {
