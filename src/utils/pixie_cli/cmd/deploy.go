@@ -95,7 +95,7 @@ var DeployCmd = &cobra.Command{
 		p("\nRun some scripts using the %s cli. For example: \n", g("px"))
 		p("- %s : to show pre-installed scripts.\n", g("px script list"))
 		p("- %s : to run service info for sock-shop demo application (service selection coming soon!).\n",
-			g("px run px/service_info"))
+			g("px run %s", script.ServiceStatsScript))
 		p("\nCheck out our docs: %s.\n", u("https://work.withpixie.ai/docs"))
 	},
 	Run: runDeployCmd,
