@@ -92,7 +92,7 @@ func (b BundleReader) GetScript(scriptName string) (*ExecutableScript, error) {
 			ScriptName: scriptName,
 			ShortDoc:   script.ShortDoc,
 			LongDoc:    script.LongDoc,
-			HasVis:     script.Pxl != "",
+			HasVis:     script.Vis != "",
 		},
 		scriptString: script.Pxl,
 	}, nil
