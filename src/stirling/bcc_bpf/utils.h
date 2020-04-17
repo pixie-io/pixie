@@ -39,9 +39,11 @@
 
 // This is how Linux converts nanoseconds to clock ticks.
 // Used to report PID start times in clock ticks, just like /proc/<pid>/stat does.
-static __inline u64 pl_nsec_to_clock_t(u64 x) { return div_u64(x, NSEC_PER_SEC / USER_HZ); }
+static __inline uint64_t pl_nsec_to_clock_t(uint64_t x) {
+  return div_u64(x, NSEC_PER_SEC / USER_HZ);
+}
 
-static __inline u64 get_tgid_start_time() {
+static __inline uint64_t get_tgid_start_time() {
   struct task_struct* task = (struct task_struct*)bpf_get_current_task();
   return pl_nsec_to_clock_t(task->group_leader->start_time);
 }

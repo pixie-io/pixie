@@ -46,7 +46,7 @@ BPF_PERF_OUTPUT(socket_control_events);
 
 struct connect_args_t {
   const struct sockaddr* addr;
-  u32 fd;
+  uint32_t fd;
 };
 
 struct accept_args_t {
@@ -54,7 +54,7 @@ struct accept_args_t {
 };
 
 struct data_args_t {
-  u32 fd;
+  uint32_t fd;
   // For send()/recv()/write()/read().
   const char* buf;
   // For sendmsg()/recvmsg()/writev()/readv().
@@ -63,50 +63,50 @@ struct data_args_t {
 };
 
 struct close_args_t {
-  u32 fd;
+  uint32_t fd;
 };
 
 // This control_map is a bit-mask that controls which endpoints are traced in a connection.
 // The bits are defined in EndpointRole enum, kRoleClient or kRoleServer. kRoleUnknown is not
 // really used, but is defined for completeness.
 // There is a control map element for each protocol.
-BPF_PERCPU_ARRAY(control_map, u64, kNumProtocols);
+BPF_PERCPU_ARRAY(control_map, uint64_t, kNumProtocols);
 
 // Map from user-space file descriptors to the connections obtained from accept() syscall.
 // Tracks connection from accept() -> close().
 // Key is {tgid, fd}.
-BPF_HASH(conn_info_map, u64, struct conn_info_t);
+BPF_HASH(conn_info_map, uint64_t, struct conn_info_t);
 
 // Map from user-space file descriptors to open files obtained from open() syscall.
 // Used to filter out file read/writes.
 // Tracks connection from open() -> close().
 // Key is {tgid, fd}.
-BPF_HASH(open_file_map, u64, bool);
+BPF_HASH(open_file_map, uint64_t, bool);
 
 // Map from thread to its ongoing accept() syscall's input argument.
 // Tracks accept() call from entry -> exit.
 // Key is {tgid, pid}.
-BPF_HASH(active_accept_args_map, u64, struct accept_args_t);
+BPF_HASH(active_accept_args_map, uint64_t, struct accept_args_t);
 
 // Map from thread to its ongoing connect() syscall's input argument.
 // Tracks connect() call from entry -> exit.
 // Key is {tgid, pid}.
-BPF_HASH(active_connect_args_map, u64, struct connect_args_t);
+BPF_HASH(active_connect_args_map, uint64_t, struct connect_args_t);
 
 // Map from thread to its ongoing write() syscall's input argument.
 // Tracks write() call from entry -> exit.
 // Key is {tgid, pid}.
-BPF_HASH(active_write_args_map, u64, struct data_args_t);
+BPF_HASH(active_write_args_map, uint64_t, struct data_args_t);
 
 // Map from thread to its ongoing read() syscall's input argument.
 // Tracks read() call from entry -> exit.
 // Key is {tgid, pid}.
-BPF_HASH(active_read_args_map, u64, struct data_args_t);
+BPF_HASH(active_read_args_map, uint64_t, struct data_args_t);
 
 // Map from thread to its ongoing close() syscall's input argument.
 // Tracks close() call from entry -> exit.
 // Key is {tgid, pid}.
-BPF_HASH(active_close_args_map, u64, struct close_args_t);
+BPF_HASH(active_close_args_map, uint64_t, struct close_args_t);
 
 // BPF programs are limited to a 512-byte stack. We store this value per CPU
 // and use it as a heap allocated value.
@@ -114,44 +114,46 @@ BPF_PERCPU_ARRAY(data_buffer_heap, struct socket_data_event_t, 1);
 
 // This array records singular values that are used by probes. We group them together to reduce the
 // number of arrays with only 1 element.
-BPF_PERCPU_ARRAY(control_values, s64, kNumControlValues);
+BPF_PERCPU_ARRAY(control_values, int64_t, kNumControlValues);
 
 /***********************************************************
  * General helper functions
  ***********************************************************/
 
-static __inline u64 gen_tgid_fd(u32 tgid, int fd) { return ((u64)tgid << 32) | (u32)fd; }
+static __inline uint64_t gen_tgid_fd(uint32_t tgid, int fd) {
+  return ((uint64_t)tgid << 32) | (uint32_t)fd;
+}
 
-static __inline void set_open_file(u64 id, int fd) {
-  u32 tgid = id >> 32;
-  u64 tgid_fd = gen_tgid_fd(tgid, fd);
+static __inline void set_open_file(uint64_t id, int fd) {
+  uint32_t tgid = id >> 32;
+  uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   bool kTrue = 1;
   open_file_map.insert(&tgid_fd, &kTrue);
 }
 
-static __inline bool is_open_file(u64 id, int fd) {
-  u32 tgid = id >> 32;
-  u64 tgid_fd = gen_tgid_fd(tgid, fd);
+static __inline bool is_open_file(uint64_t id, int fd) {
+  uint32_t tgid = id >> 32;
+  uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   bool* open_file = open_file_map.lookup(&tgid_fd);
   return (open_file != NULL);
 }
 
-static __inline void clear_open_file(u64 id, int fd) {
-  u32 tgid = id >> 32;
-  u64 tgid_fd = gen_tgid_fd(tgid, fd);
+static __inline void clear_open_file(uint64_t id, int fd) {
+  uint32_t tgid = id >> 32;
+  uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   open_file_map.delete(&tgid_fd);
 }
 
 // The caller must memset conn_info to '0', otherwise the behavior is undefined.
-static __inline void init_conn_info(u32 tgid, u32 fd, struct conn_info_t* conn_info) {
+static __inline void init_conn_info(uint32_t tgid, uint32_t fd, struct conn_info_t* conn_info) {
   conn_info->conn_id.upid.tgid = tgid;
   conn_info->conn_id.upid.start_time_ticks = get_tgid_start_time();
   conn_info->conn_id.fd = fd;
   conn_info->conn_id.tsid = bpf_ktime_get_ns();
 }
 
-static __inline struct conn_info_t* get_conn_info(u32 tgid, u32 fd) {
-  u64 tgid_fd = gen_tgid_fd(tgid, fd);
+static __inline struct conn_info_t* get_conn_info(uint32_t tgid, uint32_t fd) {
+  uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   struct conn_info_t new_conn_info;
   memset(&new_conn_info, 0, sizeof(struct conn_info_t));
   new_conn_info.addr_valid = false;
@@ -168,7 +170,7 @@ static __inline struct conn_info_t* get_conn_info(u32 tgid, u32 fd) {
  ***********************************************************/
 
 static __inline bool should_trace_protocol(const struct traffic_class_t* traffic_class) {
-  u32 protocol = traffic_class->protocol;
+  uint32_t protocol = traffic_class->protocol;
 
   // If this connection has an unknown protocol, abort (to avoid pollution).
   // TODO(oazizi/yzhao): Remove this after we implement connections of interests through tgid + fd.
@@ -177,11 +179,11 @@ static __inline bool should_trace_protocol(const struct traffic_class_t* traffic
     return false;
   }
 
-  u64 kZero = 0;
+  uint64_t kZero = 0;
   // TODO(yzhao): BCC doc states BPF_PERCPU_ARRAY: all array elements are **pre-allocated with zero
   // values** (https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md). That suggests
   // lookup() suffices. But this seems more robust, as BCC behavior is often not intuitive.
-  u64 control = *control_map.lookup_or_init(&protocol, &kZero);
+  uint64_t control = *control_map.lookup_or_init(&protocol, &kZero);
   return control & traffic_class->role;
 }
 
@@ -204,9 +206,9 @@ static __inline bool should_trace_conn(const struct conn_info_t* conn_info) {
          should_trace_protocol(&conn_info->traffic_class);
 }
 
-static __inline bool test_only_should_trace_target_tgid(const u32 tgid) {
+static __inline bool test_only_should_trace_target_tgid(const uint32_t tgid) {
   int idx = kTargetTGIDIndex;
-  s64* target_tgid = control_values.lookup(&idx);
+  int64_t* target_tgid = control_values.lookup(&idx);
   if (target_tgid == NULL) {
     return true;
   }
@@ -216,22 +218,22 @@ static __inline bool test_only_should_trace_target_tgid(const u32 tgid) {
   return *target_tgid == tgid;
 }
 
-static __inline bool is_stirling_tgid(const u32 tgid) {
+static __inline bool is_stirling_tgid(const uint32_t tgid) {
   int idx = kStirlingTGIDIndex;
-  s64* target_tgid = control_values.lookup(&idx);
+  int64_t* target_tgid = control_values.lookup(&idx);
   if (target_tgid == NULL) {
     return false;
   }
   return *target_tgid == tgid;
 }
 
-static __inline bool should_trace_tgid(const u32 tgid) {
+static __inline bool should_trace_tgid(const uint32_t tgid) {
   return test_only_should_trace_target_tgid(tgid) && !is_stirling_tgid(tgid);
 }
 
 static __inline struct socket_data_event_t* fill_event(enum TrafficDirection direction,
                                                        const struct conn_info_t* conn_info) {
-  u32 kZero = 0;
+  uint32_t kZero = 0;
   struct socket_data_event_t* event = data_buffer_heap.lookup(&kZero);
   if (event == NULL) {
     return NULL;
@@ -499,7 +501,7 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
  * Perf submit functions
  ***********************************************************/
 
-static __inline void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd,
+static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_t fd,
                                      struct sockaddr_in6 addr) {
   struct conn_info_t conn_info;
   memset(&conn_info, 0, sizeof(struct conn_info_t));
@@ -507,7 +509,7 @@ static __inline void submit_new_conn(struct pt_regs* ctx, u32 tgid, u32 fd,
   conn_info.addr = addr;
   init_conn_info(tgid, fd, &conn_info);
 
-  u64 tgid_fd = gen_tgid_fd(tgid, fd);
+  uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   conn_info_map.update(&tgid_fd, &conn_info);
 
   struct socket_control_event_t conn_event;
@@ -687,7 +689,7 @@ static __inline void perf_submit_iovecs(struct pt_regs* ctx, const enum TrafficD
 // TODO(oazizi): For consistency, may want to pull reading the return value out
 //               to the outer layer, just like the args.
 
-static __inline void process_syscall_open(struct pt_regs* ctx, u64 id) {
+static __inline void process_syscall_open(struct pt_regs* ctx, uint64_t id) {
   int fd = PT_REGS_RC(ctx);
 
   if (fd < 0) {
@@ -697,9 +699,9 @@ static __inline void process_syscall_open(struct pt_regs* ctx, u64 id) {
   set_open_file(id, fd);
 }
 
-static __inline void process_syscall_connect(struct pt_regs* ctx, u64 id,
+static __inline void process_syscall_connect(struct pt_regs* ctx, uint64_t id,
                                              const struct connect_args_t* args) {
-  u32 tgid = id >> 32;
+  uint32_t tgid = id >> 32;
   int ret_val = PT_REGS_RC(ctx);
 
   if (!should_trace_tgid(tgid)) {
@@ -727,12 +729,12 @@ static __inline void process_syscall_connect(struct pt_regs* ctx, u64 id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, (u32)args->fd, *((struct sockaddr_in6*)args->addr));
+  submit_new_conn(ctx, tgid, (uint32_t)args->fd, *((struct sockaddr_in6*)args->addr));
 }
 
-static __inline void process_syscall_accept(struct pt_regs* ctx, u64 id,
+static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
                                             const struct accept_args_t* args) {
-  u32 tgid = id >> 32;
+  uint32_t tgid = id >> 32;
   int ret_fd = PT_REGS_RC(ctx);
 
   if (!should_trace_tgid(tgid)) {
@@ -748,13 +750,13 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, u64 id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, (u32)ret_fd, *((struct sockaddr_in6*)args->addr));
+  submit_new_conn(ctx, tgid, (uint32_t)ret_fd, *((struct sockaddr_in6*)args->addr));
 }
 
-static __inline void process_data(struct pt_regs* ctx, u64 id,
+static __inline void process_data(struct pt_regs* ctx, uint64_t id,
                                   const enum TrafficDirection direction,
                                   const struct data_args_t* args, bool ssl) {
-  u32 tgid = id >> 32;
+  uint32_t tgid = id >> 32;
   ssize_t bytes_count = PT_REGS_RC(ctx);
 
   if (args->fd < 0) {
@@ -818,7 +820,7 @@ static __inline void process_data(struct pt_regs* ctx, u64 id,
     update_traffic_class(conn_info, direction, iov_cpy.iov_base, buf_size);
   }
 
-  u64 tgid_fd = gen_tgid_fd(tgid, args->fd);
+  uint64_t tgid_fd = gen_tgid_fd(tgid, args->fd);
 
   // Filter for request or response based on control flags and protocol type.
   if (!should_trace_conn(conn_info)) {
@@ -848,15 +850,15 @@ static __inline void process_data(struct pt_regs* ctx, u64 id,
   return;
 }
 
-static __inline void process_syscall_data(struct pt_regs* ctx, u64 id,
+static __inline void process_syscall_data(struct pt_regs* ctx, uint64_t id,
                                           const enum TrafficDirection direction,
                                           const struct data_args_t* args) {
   process_data(ctx, id, direction, args, /* ssl */ false);
 }
 
-static __inline void process_syscall_close(struct pt_regs* ctx, u64 id,
+static __inline void process_syscall_close(struct pt_regs* ctx, uint64_t id,
                                            const struct close_args_t* close_args) {
-  u32 tgid = id >> 32;
+  uint32_t tgid = id >> 32;
   int ret_val = PT_REGS_RC(ctx);
 
   if (close_args->fd < 0) {
@@ -874,7 +876,7 @@ static __inline void process_syscall_close(struct pt_regs* ctx, u64 id,
     return;
   }
 
-  u64 tgid_fd = gen_tgid_fd(tgid, close_args->fd);
+  uint64_t tgid_fd = gen_tgid_fd(tgid, close_args->fd);
   struct conn_info_t* conn_info = conn_info_map.lookup(&tgid_fd);
   if (conn_info == NULL) {
     return;
@@ -906,7 +908,7 @@ static __inline void process_syscall_close(struct pt_regs* ctx, u64 id,
 //                  and processing the syscall with the combined context.
 
 int syscall__probe_ret_open(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // No arguments were stashed; non-existent entry probe.
   process_syscall_open(ctx, id);
@@ -916,7 +918,7 @@ int syscall__probe_ret_open(struct pt_regs* ctx) {
 
 int syscall__probe_entry_connect(struct pt_regs* ctx, int sockfd, const struct sockaddr* addr,
                                  size_t addrlen) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
   struct connect_args_t connect_args = {};
@@ -928,7 +930,7 @@ int syscall__probe_entry_connect(struct pt_regs* ctx, int sockfd, const struct s
 }
 
 int syscall__probe_ret_connect(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Unstash arguments, and process syscall.
   const struct connect_args_t* connect_args = active_connect_args_map.lookup(&id);
@@ -942,7 +944,7 @@ int syscall__probe_ret_connect(struct pt_regs* ctx) {
 
 int syscall__probe_entry_accept(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
                                 size_t* addrlen) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
   struct accept_args_t accept_args;
@@ -953,7 +955,7 @@ int syscall__probe_entry_accept(struct pt_regs* ctx, int sockfd, struct sockaddr
 }
 
 int syscall__probe_ret_accept(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Unstash arguments, and process syscall.
   struct accept_args_t* accept_args = active_accept_args_map.lookup(&id);
@@ -967,7 +969,7 @@ int syscall__probe_ret_accept(struct pt_regs* ctx) {
 
 int syscall__probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockaddr* addr,
                                  size_t* addrlen) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
   struct accept_args_t accept_args;
@@ -978,7 +980,7 @@ int syscall__probe_entry_accept4(struct pt_regs* ctx, int sockfd, struct sockadd
 }
 
 int syscall__probe_ret_accept4(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Unstash arguments, and process syscall.
   struct accept_args_t* accept_args = active_accept_args_map.lookup(&id);
@@ -991,7 +993,7 @@ int syscall__probe_ret_accept4(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
   struct data_args_t write_args = {};
@@ -1003,7 +1005,7 @@ int syscall__probe_entry_write(struct pt_regs* ctx, int fd, char* buf, size_t co
 }
 
 int syscall__probe_ret_write(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
@@ -1016,7 +1018,7 @@ int syscall__probe_ret_write(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_send(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
   struct data_args_t write_args = {};
@@ -1028,7 +1030,7 @@ int syscall__probe_entry_send(struct pt_regs* ctx, int fd, char* buf, size_t cou
 }
 
 int syscall__probe_ret_send(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
@@ -1041,7 +1043,7 @@ int syscall__probe_ret_send(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
   struct data_args_t read_args = {};
@@ -1053,7 +1055,7 @@ int syscall__probe_entry_read(struct pt_regs* ctx, int fd, char* buf, size_t cou
 }
 
 int syscall__probe_ret_read(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
@@ -1066,7 +1068,7 @@ int syscall__probe_ret_read(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_recv(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
   struct data_args_t read_args = {};
@@ -1078,7 +1080,7 @@ int syscall__probe_entry_recv(struct pt_regs* ctx, int fd, char* buf, size_t cou
 }
 
 int syscall__probe_ret_recv(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
@@ -1091,7 +1093,7 @@ int syscall__probe_ret_recv(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_sendto(struct pt_regs* ctx, int fd, char* buf, size_t count) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
   struct data_args_t write_args = {};
@@ -1103,7 +1105,7 @@ int syscall__probe_entry_sendto(struct pt_regs* ctx, int fd, char* buf, size_t c
 }
 
 int syscall__probe_ret_sendto(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
@@ -1116,7 +1118,7 @@ int syscall__probe_ret_sendto(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int fd, const struct user_msghdr* msghdr) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   if (msghdr != NULL) {
     // Stash arguments.
@@ -1131,7 +1133,7 @@ int syscall__probe_entry_sendmsg(struct pt_regs* ctx, int fd, const struct user_
 }
 
 int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
@@ -1144,7 +1146,7 @@ int syscall__probe_ret_sendmsg(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int fd, struct user_msghdr* msghdr) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   if (msghdr != NULL) {
     // Stash arguments.
@@ -1159,7 +1161,7 @@ int syscall__probe_entry_recvmsg(struct pt_regs* ctx, int fd, struct user_msghdr
 }
 
 int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
@@ -1172,7 +1174,7 @@ int syscall__probe_ret_recvmsg(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_writev(struct pt_regs* ctx, int fd, const struct iovec* iov, int iovlen) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
   struct data_args_t write_args = {};
@@ -1185,7 +1187,7 @@ int syscall__probe_entry_writev(struct pt_regs* ctx, int fd, const struct iovec*
 }
 
 int syscall__probe_ret_writev(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Unstash arguments, and process syscall.
   struct data_args_t* write_args = active_write_args_map.lookup(&id);
@@ -1198,7 +1200,7 @@ int syscall__probe_ret_writev(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_readv(struct pt_regs* ctx, int fd, struct iovec* iov, int iovlen) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
   struct data_args_t read_args = {};
@@ -1211,7 +1213,7 @@ int syscall__probe_entry_readv(struct pt_regs* ctx, int fd, struct iovec* iov, i
 }
 
 int syscall__probe_ret_readv(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Unstash arguments, and process syscall.
   struct data_args_t* read_args = active_read_args_map.lookup(&id);
@@ -1224,7 +1226,7 @@ int syscall__probe_ret_readv(struct pt_regs* ctx) {
 }
 
 int syscall__probe_entry_close(struct pt_regs* ctx, unsigned int fd) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Stash arguments.
   struct close_args_t close_args;
@@ -1235,7 +1237,7 @@ int syscall__probe_entry_close(struct pt_regs* ctx, unsigned int fd) {
 }
 
 int syscall__probe_ret_close(struct pt_regs* ctx) {
-  u64 id = bpf_get_current_pid_tgid();
+  uint64_t id = bpf_get_current_pid_tgid();
 
   // Unstash arguments, and process syscall.
   const struct close_args_t* close_args = active_close_args_map.lookup(&id);

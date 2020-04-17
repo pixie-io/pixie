@@ -4,7 +4,7 @@
  * General helpers
  ***********************************************************/
 
-static __inline void process_openssl_data(struct pt_regs* ctx, u64 id,
+static __inline void process_openssl_data(struct pt_regs* ctx, uint64_t id,
                                           const enum TrafficDirection direction,
                                           const struct data_args_t* args) {
   process_data(ctx, id, direction, args, /* ssl */ true);

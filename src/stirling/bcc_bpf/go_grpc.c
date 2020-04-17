@@ -11,7 +11,7 @@ BPF_PERF_OUTPUT(go_grpc_data_events);
 // and use it as a heap allocated value.
 BPF_PERCPU_ARRAY(data_event_buffer_heap, struct go_grpc_data_event_t, 1);
 static __inline struct go_grpc_data_event_t* get_data_event() {
-  u32 kZero = 0;
+  uint32_t kZero = 0;
   return data_event_buffer_heap.lookup(&kZero);
 }
 
@@ -436,7 +436,7 @@ int probe_framer_write_data(struct pt_regs* ctx) {
     return 0;
   }
 
-  u32 tgid = bpf_get_current_pid_tgid() >> 32;
+  uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
   int32_t fd = get_fd_from_http2_framer(framer_ptr);
   if (fd < 0) {
     return 0;
@@ -517,7 +517,7 @@ int probe_framer_check_frame_order(struct pt_regs* ctx) {
       return 0;
     }
 
-    u32 tgid = bpf_get_current_pid_tgid() >> 32;
+    uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
     int32_t fd = get_fd_from_http2_framer(framer_ptr);
     if (fd < 0) {
       return 0;
