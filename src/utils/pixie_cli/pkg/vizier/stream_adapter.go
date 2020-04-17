@@ -16,6 +16,7 @@ import (
 	"github.com/fatih/color"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
@@ -125,6 +126,12 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 	for {
 		select {
 		case <-ctx.Done():
+			if err := ctx.Err(); err != nil {
+				if errors.Is(err, context.DeadlineExceeded) {
+					log.Fatalf("Script execution timeout")
+				}
+				log.WithError(err).Fatal("Script execution error")
+			}
 			return
 		case msg := <-stream:
 			if msg == nil {
@@ -134,7 +141,11 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 				if msg.Err == io.EOF {
 					return
 				}
-				return
+				grpcErr, ok := status.FromError(msg.Err)
+				if !ok {
+					log.WithField("error", grpcErr).Fatal("Failed to execute script")
+				}
+				log.Fatalf("Failed to execute script: %s", grpcErr.Message())
 			}
 
 			if msg.Resp.Status != nil && msg.Resp.Status.Code != 0 {
@@ -218,10 +229,6 @@ func (v *VizierStreamOutputAdapter) getNativeTypedValue(tableInfo *TableInfo, ro
 	return nil
 }
 func (v *VizierStreamOutputAdapter) printErrorAndDie(ctx context.Context, s *pl_api_vizierpb.Status) {
-	if s.Message != "" {
-		fmt.Fprint(os.Stderr, "\nError: %s\n", s.Message)
-	}
-
 	var compilerErrors []string
 	if s.ErrorDetails != nil {
 		for _, ed := range s.ErrorDetails {
@@ -243,7 +250,7 @@ func (v *VizierStreamOutputAdapter) printErrorAndDie(ctx context.Context, s *pl_
 	}
 
 	fmt.Fprint(os.Stderr, "\n")
-	log.Fatal("Script execution error")
+	log.Fatalf("Script execution error: ", s.Message)
 }
 
 func (v *VizierStreamOutputAdapter) getFormattedValue(tableInfo *TableInfo, colIdx int, val interface{}) interface{} {
