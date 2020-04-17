@@ -10,3 +10,4 @@ data:
   SLACKIN_THEME: "pixie"
   SLACKIN_PORT: "58000"
   SLACKIN_PROXY: "true"
+  SLACKIN_CORS: "true"
