@@ -368,6 +368,7 @@ func (s *ScriptMgrServer) GetLiveViewContents(ctx context.Context, req *cloudapi
 	if err != nil {
 		return nil, err
 	}
+
 	return &cloudapipb.GetLiveViewContentsResp{
 		Metadata: &cloudapipb.LiveViewMetadata{
 			ID:   req.LiveViewID,
@@ -375,6 +376,7 @@ func (s *ScriptMgrServer) GetLiveViewContents(ctx context.Context, req *cloudapi
 			Desc: smResp.Metadata.Desc,
 		},
 		PxlContents: smResp.PxlContents,
+		Vis:         smResp.Vis,
 	}, nil
 }
 

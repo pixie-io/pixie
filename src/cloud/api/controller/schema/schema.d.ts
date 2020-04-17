@@ -119,6 +119,7 @@ export interface GQLLiveViewMetadata {
 export interface GQLLiveViewContents {
   metadata: GQLLiveViewMetadata;
   pxlContents: string;
+  visJSON: string;
 }
 
 export interface GQLScriptMetadata {
@@ -422,6 +423,7 @@ export interface LiveViewMetadataToDescResolver<TParent = any, TResult = any> {
 export interface GQLLiveViewContentsTypeResolver<TParent = any> {
   metadata?: LiveViewContentsToMetadataResolver<TParent>;
   pxlContents?: LiveViewContentsToPxlContentsResolver<TParent>;
+  visJSON?: LiveViewContentsToVisJSONResolver<TParent>;
 }
 
 export interface LiveViewContentsToMetadataResolver<TParent = any, TResult = any> {
@@ -429,6 +431,10 @@ export interface LiveViewContentsToMetadataResolver<TParent = any, TResult = any
 }
 
 export interface LiveViewContentsToPxlContentsResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface LiveViewContentsToVisJSONResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

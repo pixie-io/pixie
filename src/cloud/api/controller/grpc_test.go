@@ -10,6 +10,7 @@ import (
 	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
@@ -23,6 +24,7 @@ import (
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	pl_vispb "pixielabs.ai/pixielabs/src/shared/vispb"
 	pbutils "pixielabs.ai/pixielabs/src/utils"
 )
 
@@ -319,7 +321,28 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 	assert.Equal(t, 3, len(resp.TabSuggestions))
 }
 
+func toBytes(t *testing.T, msg proto.Message) []byte {
+	bytes, err := proto.Marshal(msg)
+	require.Nil(t, err)
+	return bytes
+}
+
 func TestScriptMgr(t *testing.T) {
+	var testVis = &pl_vispb.Vis{
+		Widgets: []*pl_vispb.Widget{
+			&pl_vispb.Widget{
+				Func: &pl_vispb.Widget_Func{
+					Name: "my_func",
+				},
+				DisplaySpec: &types.Any{
+					TypeUrl: "pixielabs.ai/pl.vispb.Graph",
+					Value: toBytes(t, &pl_vispb.Graph{
+						DotColumn: "foo",
+					}),
+				},
+			},
+		},
+	}
 
 	ID1 := uuid.NewV4()
 	ID2 := uuid.NewV4()
@@ -378,6 +401,7 @@ func TestScriptMgr(t *testing.T) {
 					Desc: "liveview1 desc",
 				},
 				PxlContents: "liveview1 pxl",
+				Vis:         testVis,
 			},
 			req: &cloudapipb.GetLiveViewContentsReq{
 				LiveViewID: ID1.String(),
@@ -389,6 +413,7 @@ func TestScriptMgr(t *testing.T) {
 					Desc: "liveview1 desc",
 				},
 				PxlContents: "liveview1 pxl",
+				Vis:         testVis,
 			},
 		},
 		{

@@ -6,10 +6,12 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
+	types "github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	"github.com/graph-gophers/graphql-go/gqltesting"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	pl_vispb "pixielabs.ai/pixielabs/src/shared/vispb"
 )
 
 func TestScriptMgrResolver(t *testing.T) {
@@ -80,6 +82,21 @@ func TestScriptMgrResolver(t *testing.T) {
 					Desc: "1 desc",
 				},
 				PxlContents: "1 pxl",
+				Vis: &pl_vispb.Vis{
+					Widgets: []*pl_vispb.Widget{
+						&pl_vispb.Widget{
+							Func: &pl_vispb.Widget_Func{
+								Name: "my_func",
+							},
+							DisplaySpec: &types.Any{
+								TypeUrl: "pixielabs.ai/pl.vispb.Graph",
+								Value: toBytes(t, &pl_vispb.Graph{
+									DotColumn: "foo",
+								}),
+							},
+						},
+					},
+				},
 			},
 			query: `
 				query LiveViewContents($id: ID!) {
@@ -90,6 +107,7 @@ func TestScriptMgrResolver(t *testing.T) {
 							desc
 						},
 						pxlContents
+						visJSON
 					}
 				}
 			`,
@@ -101,7 +119,9 @@ func TestScriptMgrResolver(t *testing.T) {
 							"name": "1",
 							"desc": "1 desc"
 						},
-						"pxlContents": "1 pxl"
+						"pxlContents": "1 pxl",
+						"visJSON": "{\"widgets\":[{\"func\":{\"name\":\"my_func\"},\"displaySpec\":` +
+				`{\"@type\":\"pixielabs.ai/pl.vispb.Graph\",\"dotColumn\":\"foo\"}}]}"
 					}
 				}
 			`,

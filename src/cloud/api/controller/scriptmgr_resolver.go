@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 
+	"github.com/gogo/protobuf/jsonpb"
 	"github.com/graph-gophers/graphql-go"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 )
@@ -40,6 +41,7 @@ func (q *QueryResolver) LiveViews(ctx context.Context) ([]LiveViewMetadataResolv
 type LiveViewContentsResolver struct {
 	Metadata    LiveViewMetadataResolver
 	PxlContents string
+	VisJSON     string
 }
 
 type liveViewContentsArgs struct {
@@ -58,6 +60,15 @@ func (q *QueryResolver) LiveViewContents(ctx context.Context, args *liveViewCont
 		return nil, err
 	}
 
+	visJSON := ""
+	if resp.Vis != nil {
+		m := jsonpb.Marshaler{}
+		visJSON, err = m.MarshalToString(resp.Vis)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &LiveViewContentsResolver{
 		Metadata: LiveViewMetadataResolver{
 			ID:   graphql.ID(resp.Metadata.ID),
@@ -65,6 +76,7 @@ func (q *QueryResolver) LiveViewContents(ctx context.Context, args *liveViewCont
 			Desc: resp.Metadata.Desc,
 		},
 		PxlContents: resp.PxlContents,
+		VisJSON:     visJSON,
 	}, nil
 }
 

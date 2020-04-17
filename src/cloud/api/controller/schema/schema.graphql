@@ -142,6 +142,7 @@ type LiveViewMetadata {
 type LiveViewContents {
   metadata: LiveViewMetadata!
   pxlContents: String!
+  visJSON: String!
 }
 
 # Refer to docs in cloudapi.proto
