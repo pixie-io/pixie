@@ -64,7 +64,7 @@ const LiveContextProvider = (props) => {
 
   const [results, setResults] = React.useState<Results>({ tables: {} });
 
-  const [vis, setVis] = React.useState<Vis>(parseVis(ls.getLiveViewVisSpec()) || { variables: [], widgets: []});
+  const [vis, setVis] = React.useState<Vis>(parseVis(ls.getLiveViewVisSpec()) || { variables: [], widgets: [] });
   React.useEffect(() => {
     ls.setLiveViewVisSpec(JSON.stringify(vis, null, 2));
   }, [vis]);

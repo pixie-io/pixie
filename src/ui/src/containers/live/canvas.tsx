@@ -168,7 +168,7 @@ const OldCanvas = () => {
     if (newPlacement !== placement) {
       updatePlacementOld(newPlacement);
     }
-  }, [specs]);
+  }, [specs, placement]);
 
   const layout = React.useMemo(() => {
     return toLayoutOld(placement);
@@ -199,7 +199,7 @@ const OldCanvas = () => {
         </div>
       );
     });
-  }, [tables, specs, vegaModule]);
+  }, [tables, specs, placement, vegaModule]);
 
   const resize = React.useCallback(() => {
     // Dispatch a window resize event to signal the chart to redraw. As suggested in:
