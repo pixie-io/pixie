@@ -29,7 +29,7 @@ struct ExecutionStats {
   int64_t rows_processed;
 };
 
-constexpr std::chrono::milliseconds kDefaultYieldTimeoutMS{100};
+constexpr std::chrono::milliseconds kDefaultYieldTimeoutMS{1000};
 
 /**
  * An Execution Graph defines the structure of execution nodes for a given plan fragment.
