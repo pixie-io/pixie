@@ -31,3 +31,7 @@ export function isProd(): boolean {
 export function isDev(): boolean {
   return DOMAIN_NAME.startsWith('dev');
 }
+
+export function isStaging(): boolean {
+  return DOMAIN_NAME.startsWith('staging');
+}

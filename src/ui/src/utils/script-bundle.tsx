@@ -1,5 +1,5 @@
 import Axios from 'axios';
-import {isProd} from 'utils/env';
+import {isStaging} from 'utils/env';
 
 const PROD_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle.json';
 const STAGING_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-staging.json';
@@ -14,10 +14,7 @@ export interface Script {
 }
 
 export function GetPxScripts(): Promise<Script[]> {
-  // Temporary workaround to get bundle path from localstorage. This is
-  // needed to easily test changes until we have script persistence.
-  const bundlePath = localStorage.getItem('px-custom-bundle-path') ||
-    (isProd() ? PROD_SCRIPTS : STAGING_SCRIPTS);
+  const bundlePath = isStaging() ? STAGING_SCRIPTS : PROD_SCRIPTS;
   return Axios({
     method: 'get',
     url: bundlePath,
