@@ -43,7 +43,9 @@ export const scrollbarStyles = (theme: Theme) => {
     },
     '& ::-webkit-scrollbar-track': commonStyle(theme.palette.background.one),
     '& ::-webkit-scrollbar-thumb': commonStyle(theme.palette.foreground.one),
-
+    '& ::-webkit-scrollbar-corner': {
+      backgroundColor: 'transparent',
+    },
   };
 };
 

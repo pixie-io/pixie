@@ -2,6 +2,7 @@ import {
     getLiveViewDataDrawerOpened, getLiveViewEditorOpened, setLiveViewDataDrawerOpened,
     setLiveViewEditorOpened,
 } from 'common/localstorage';
+import {scrollbarStyles} from 'common/mui-theme';
 import EditIcon from 'components/icons/edit';
 import MagicIcon from 'components/icons/magic';
 import LazyPanel from 'components/lazy-panel';
@@ -26,12 +27,6 @@ import {useInitScriptLoader} from './script-loader';
 import LiveViewTitle from './title';
 
 const useStyles = makeStyles((theme: Theme) => {
-  const scrollbarStyles = (color: string) => ({
-    borderRadius: theme.spacing(1.5),
-    border: [['solid', theme.spacing(0.5), 'transparent']],
-    backgroundColor: 'transparent',
-    boxShadow: [['inset', 0, 0, theme.spacing(1), theme.spacing(1), color]],
-  });
   return createStyles({
     root: {
       height: '100%',
@@ -39,12 +34,7 @@ const useStyles = makeStyles((theme: Theme) => {
       display: 'flex',
       flexDirection: 'column',
       backgroundColor: theme.palette.background.default,
-      '& ::-webkit-scrollbar': {
-        width: theme.spacing(2),
-        height: theme.spacing(2),
-      },
-      '& ::-webkit-scrollbar-track': scrollbarStyles(theme.palette.background.one),
-      '& ::-webkit-scrollbar-thumb': scrollbarStyles(theme.palette.foreground.one),
+      ...scrollbarStyles(theme),
     },
     topBar: {
       display: 'flex',

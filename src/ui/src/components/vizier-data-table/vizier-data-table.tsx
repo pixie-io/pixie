@@ -1,15 +1,12 @@
 import {Table} from 'common/vizier-grpc-client';
-import {CellAlignment, ColumnProps, DataTable, SortState} from 'components/data-table';
+import {CellAlignment, DataTable, SortState} from 'components/data-table';
 import * as React from 'react';
-import {Column, DataType} from 'types/generated/vizier_pb';
-import {formatFloat64Data, formatInt64Data} from 'utils/format-data';
+import {DataType} from 'types/generated/vizier_pb';
+import {formatFloat64Data, formatInt64Data, JSONData} from 'utils/format-data';
+import noop from 'utils/noop';
 import {dataFromProto} from 'utils/result-data-utils';
 
 import {createStyles, makeStyles, Theme, withStyles} from '@material-ui/core/styles';
-
-interface VizierDataTableProps {
-  table: Table;
-}
 
 const AlignmentMap = new Map<DataType, CellAlignment>(
   [
@@ -57,9 +54,16 @@ function formatRow(row, columnsMap) {
   return out;
 }
 
+interface VizierDataTableProps {
+  table: Table;
+  onRowSelectionChanged?: (row: any) => void;
+}
+
 export const VizierDataTable = (props: VizierDataTableProps) => {
-  const { table } = props;
+  const { table, onRowSelectionChanged = noop } = props;
   const [rows, setRows] = React.useState([]);
+  const [selectedRow, setSelectedRow] = React.useState(-1);
+
   React.useEffect(() => {
     setRows(dataFromProto(table.relation, table.data));
   }, [table.relation, table.data]);
@@ -85,7 +89,17 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
   const onSort = (sortState: SortState) => {
     const column = columnsMap.get(sortState.dataKey);
     setRows(rows.sort(getSortFunc(sortState.dataKey, column.type, sortState.direction)));
+    setSelectedRow(-1);
+    onRowSelectionChanged(null);
   };
+
+  const onRowSelect = React.useCallback((rowIndex) => {
+    if (rowIndex === selectedRow) {
+      rowIndex = -1;
+    }
+    setSelectedRow(rowIndex);
+    onRowSelectionChanged(rows[rowIndex]);
+  }, [rows, selectedRow]);
 
   if (rows.length === 0) {
     return null;
@@ -98,6 +112,57 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
       columns={[...columnsMap.values()]}
       compact={true}
       onSort={onSort}
+      onRowClick={onRowSelect}
+      highlightedRow={selectedRow}
     />
   );
+};
+
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    root: {
+      display: 'flex',
+      flexDirection: 'row',
+      height: '100%',
+      position: 'relative',
+    },
+    table: {
+      flex: 3,
+    },
+    details: {
+      flex: 1,
+      padding: theme.spacing(2),
+      borderLeft: `solid 1px ${theme.palette.background.three}`,
+    },
+    close: {
+      position: 'absolute',
+    },
+  }));
+
+export const VizierDataTableWithDetails = (props: { table: Table }) => {
+  const [details, setDetails] = React.useState(null);
+
+  const classes = useStyles();
+
+  return (
+    <div className={classes.root}>
+      <div className={classes.table}>
+        <VizierDataTable table={props.table} onRowSelectionChanged={(row) => { setDetails(row); }} />
+      </div>
+      <VizierDataRowDetails className={classes.details} data={details} />
+    </div>
+  );
+};
+
+interface VizierDataRowDetailsProps {
+  data?: any;
+  className?: string;
+}
+
+const VizierDataRowDetails = (props: VizierDataRowDetailsProps) => {
+  const { data, className } = props;
+  if (!data) {
+    return null;
+  }
+  return <JSONData className={className} data={data} multiline={true} />;
 };

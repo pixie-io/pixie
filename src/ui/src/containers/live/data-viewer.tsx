@@ -1,6 +1,6 @@
 import {VizierErrorDetails} from 'common/errors';
 import LazyPanel from 'components/lazy-panel';
-import VizierDataTable from 'components/vizier-data-table';
+import {VizierDataTableWithDetails} from 'components/vizier-data-table/vizier-data-table';
 import * as React from 'react';
 
 import {createStyles, makeStyles, Theme, withStyles} from '@material-ui/core/styles';
@@ -23,7 +23,7 @@ const DataViewer = () => {
     return Object.keys(tables).map((tableName) => {
       return {
         title: tableName,
-        content: <VizierDataTable table={tables[tableName]} />,
+        content: <VizierDataTableWithDetails table={tables[tableName]} />,
       };
     });
   }, [tables, error]);

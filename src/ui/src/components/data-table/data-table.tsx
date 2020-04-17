@@ -42,6 +42,14 @@ const useStyles = makeStyles((theme: Theme) =>
     clickable: {
       cursor: 'pointer',
     },
+    highlighted: {
+      backgroundColor: theme.palette.background.three,
+    },
+    highlightable: {
+      '&:hover': {
+        backgroundColor: theme.palette.background.three,
+      },
+    },
     center: {
       justifyContent: 'center',
     },
@@ -76,6 +84,7 @@ interface DataTableProps {
   onSort?: (sort: SortState) => void;
   rowCount: number;
   compact?: boolean;
+  highlightedRow?: number;
 }
 
 type SortDirection = 'asc' | 'desc';
@@ -137,10 +146,14 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
   rowGetter,
   compact = false,
   onSort = noop,
+  highlightedRow = -1,
 }) => {
   const classes = useStyles();
   const theme = useTheme();
   const rowHeight = compact ? theme.spacing(4) : theme.spacing(6);
+
+  // Header row offset
+  highlightedRow = highlightedRow + 1;
 
   const gridRef = React.useRef(null);
   const sizeCache = React.useMemo(() => new CellMeasurerCache({
@@ -156,6 +169,12 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       gridRef.current.forceUpdateGrids();
     }
   }, [sortState]);
+
+  React.useEffect(() => {
+    if (highlightedRow !== 0) {
+      gridRef.current.forceUpdateGrids();
+    }
+  }, [highlightedRow]);
 
   const cellRenderer: GridCellRenderer = React.useCallback(({
     columnIndex,
@@ -181,6 +200,8 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       column.align && classes[column.align],
       compact && classes.compact,
       onClick !== noop && classes.clickable,
+      !isHeader && rowIndex === highlightedRow && classes.highlighted,
+      !isHeader && onClick !== noop && classes.highlightable,
     );
     const content = isHeader ?
       <Header {...column} sort={sortState.dataKey === column.dataKey ? sortState.direction : ''} /> :
@@ -206,7 +227,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
         )}
       </CellMeasurer>
     );
-  }, [sortState]);
+  }, [sortState, highlightedRow]);
 
   if (width === 0 || height === 0) {
     return null;
