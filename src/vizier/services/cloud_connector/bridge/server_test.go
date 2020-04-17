@@ -125,6 +125,14 @@ func (f *FakeVZInfo) GetAddress() (string, int32, error) {
 	return f.externalAddr, f.port, nil
 }
 
+func (f *FakeVZInfo) GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, error) {
+	return &cvmsgspb.VizierClusterInfo{
+		ClusterUID:     "084cb5f0-ff69-11e9-a63e-42010a8a0193",
+		ClusterName:    "test-cluster",
+		ClusterVersion: "v1.14.10-gke.27",
+	}, nil
+}
+
 type testState struct {
 	vzServer    *FakeVZConnServer
 	vzClient    vzconnpb.VZConnServiceClient
@@ -237,6 +245,9 @@ func TestNATSGRPCBridgeTest_CorrectRegistrationFlow(t *testing.T) {
 	assert.Equal(t, string(registerMsg.VizierID.Data), ts.vzID.String())
 	assert.Equal(t, registerMsg.JwtKey, ts.jwt)
 	assert.Equal(t, registerMsg.Address, "foobar")
+	assert.Equal(t, "test-cluster", registerMsg.ClusterInfo.ClusterName)
+	assert.Equal(t, "v1.14.10-gke.27", registerMsg.ClusterInfo.ClusterVersion)
+	assert.Equal(t, "084cb5f0-ff69-11e9-a63e-42010a8a0193", registerMsg.ClusterInfo.ClusterUID)
 
 	// Check the contents
 	sslMsg := &cvmsgspb.VizierSSLCertRequest{}

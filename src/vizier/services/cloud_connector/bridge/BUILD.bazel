@@ -14,6 +14,7 @@ go_library(
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/services:go_default_library",
         "//src/shared/services/utils:go_default_library",
+        "//src/shared/version:go_default_library",
         "//src/utils:go_default_library",
         "//src/vizier/services/certmgr/certmgrpb:service_go_proto",
         "//src/vizier/utils/messagebus:go_default_library",

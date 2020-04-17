@@ -37,6 +37,7 @@ var ErrRegistrationTimeout = errors.New("Registration timeout")
 // VizierInfo fetches information about Vizier.
 type VizierInfo interface {
 	GetAddress() (string, int32, error)
+	GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, error)
 }
 
 // Bridge is the NATS<->GRPC bridge.
@@ -157,11 +158,16 @@ func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridg
 		log.WithError(err).Error("Unable to get vizier proxy address")
 	}
 
+	clusterInfo, err := s.vzInfo.GetVizierClusterInfo()
+	if err != nil {
+		log.WithError(err).Error("Unable to get k8s cluster info")
+	}
 	// Send over a registration request and wait for ACK.
 	regReq := &cvmsgspb.RegisterVizierRequest{
-		VizierID: utils.ProtoFromUUID(&s.vizierID),
-		JwtKey:   s.jwtSigningKey,
-		Address:  addr,
+		VizierID:    utils.ProtoFromUUID(&s.vizierID),
+		JwtKey:      s.jwtSigningKey,
+		Address:     addr,
+		ClusterInfo: clusterInfo,
 	}
 
 	err = s.publishBridgeSync(stream, "register", regReq)

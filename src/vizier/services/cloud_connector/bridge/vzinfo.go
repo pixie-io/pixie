@@ -10,6 +10,9 @@ import (
 	// Blank import necessary for kubeConfig to work.
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
+
+	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	"pixielabs.ai/pixielabs/src/shared/version"
 )
 
 // TODO(michelle): Make namespace a flag that can be passed in.
@@ -17,11 +20,13 @@ const plNamespace = "pl"
 
 // K8sVizierInfo is responsible for fetching Vizier information through K8s.
 type K8sVizierInfo struct {
-	clientset *kubernetes.Clientset
+	clientset      *kubernetes.Clientset
+	clusterVersion string
+	clusterName    string
 }
 
 // NewK8sVizierInfo creates a new K8sVizierInfo.
-func NewK8sVizierInfo() (*K8sVizierInfo, error) {
+func NewK8sVizierInfo(clusterVersion string, clusterName string) (*K8sVizierInfo, error) {
 	// There is a specific config for services running in the cluster.
 	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
@@ -35,7 +40,23 @@ func NewK8sVizierInfo() (*K8sVizierInfo, error) {
 	}
 
 	return &K8sVizierInfo{
-		clientset: clientset,
+		clientset:      clientset,
+		clusterVersion: clusterVersion,
+		clusterName:    clusterName,
+	}, nil
+}
+
+// GetVizierClusterInfo gets the K8s cluster info for the current running vizier.
+func (v *K8sVizierInfo) GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, error) {
+	clusterUID, err := v.GetClusterUID()
+	if err != nil {
+		return nil, err
+	}
+	return &cvmsgspb.VizierClusterInfo{
+		ClusterUID:     clusterUID,
+		ClusterName:    v.clusterName,
+		ClusterVersion: v.clusterVersion,
+		VizierVersion:  version.GetVersion().ToString(),
 	}, nil
 }
 
