@@ -106,7 +106,10 @@ const LiveView = () => {
   const classes = useStyles();
 
   const hotkeyHandlers = React.useMemo(() => ({
-    PIXIE_COMMAND: toggleCommandOpen,
+    PIXIE_COMMAND: (e) => {
+      e.preventDefault();
+      toggleCommandOpen();
+    },
   }), []);
 
   useInitScriptLoader();
@@ -144,7 +147,7 @@ const LiveView = () => {
             <Canvas />
           </div>
         </div>
-        <DataDrawer/>
+        <DataDrawer />
       </div>
       <Drawer open={drawerOpen} onClose={toggleDrawer}>
         <div>drawer content</div>
