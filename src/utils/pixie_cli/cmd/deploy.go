@@ -482,6 +482,10 @@ func waitForHealthCheck(cloudAddr string, clientset *kubernetes.Clientset, names
 			for {
 				select {
 				case <-ctx.Done():
+					if ctx.Err() != nil {
+						errCh <- ctx.Err()
+						return
+					}
 					errCh <- nil
 					return
 				case msg := <-resp:
@@ -495,6 +499,9 @@ func waitForHealthCheck(cloudAddr string, clientset *kubernetes.Clientset, names
 						}
 						errCh <- msg.Err
 						return
+					}
+					if msg.Resp.Status != nil && msg.Resp.Status.Code != 0 {
+						errCh <- errors.New(msg.Resp.Status.Message)
 					}
 					// Eat messages.
 				}
