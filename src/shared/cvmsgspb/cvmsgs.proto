@@ -87,6 +87,8 @@ message VizierHeartbeat {
     //   vizier-metadata-7b668797b9-bjsvd: { name: vizier-metadata-7b668797b9-bjsvd, status: FAILED }
     // }
     map<string, PodStatus> pod_statuses = 6;
+    // The last time the pod statuses were updated.
+    int64 pod_statuses_last_updated = 7;
 }
 
 // PodStatus represents a pod's status at a moment in time. Currently this message

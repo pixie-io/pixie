@@ -2,6 +2,8 @@ package bridge
 
 import (
 	"errors"
+	"sync"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,17 +14,24 @@ import (
 	"k8s.io/client-go/rest"
 
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
+	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/version"
 )
 
 // TODO(michelle): Make namespace a flag that can be passed in.
 const plNamespace = "pl"
 
+const podUpdatePeriod = 10 * time.Second
+
 // K8sVizierInfo is responsible for fetching Vizier information through K8s.
 type K8sVizierInfo struct {
-	clientset      *kubernetes.Clientset
-	clusterVersion string
-	clusterName    string
+	clientset            *kubernetes.Clientset
+	clusterVersion       string
+	clusterName          string
+	currentPodStatus     map[string]*cvmsgspb.PodStatus
+	podStatusLastUpdated time.Time
+	mu                   sync.Mutex
 }
 
 // NewK8sVizierInfo creates a new K8sVizierInfo.
@@ -39,11 +48,19 @@ func NewK8sVizierInfo(clusterVersion string, clusterName string) (*K8sVizierInfo
 		return nil, err
 	}
 
-	return &K8sVizierInfo{
+	vzInfo := &K8sVizierInfo{
 		clientset:      clientset,
 		clusterVersion: clusterVersion,
 		clusterName:    clusterName,
-	}, nil
+	}
+
+	go func() {
+		for _ = time.Tick(podUpdatePeriod); ; {
+			vzInfo.UpdatePodStatuses()
+		}
+	}()
+
+	return vzInfo, nil
 }
 
 // GetVizierClusterInfo gets the K8s cluster info for the current running vizier.
@@ -132,4 +149,49 @@ func (v *K8sVizierInfo) GetClusterUID() (string, error) {
 		return "", err
 	}
 	return string(ksNS.UID), nil
+}
+
+// UpdatePodStatuses gets the status of the pods at the current moment in time.
+func (v *K8sVizierInfo) UpdatePodStatuses() {
+
+	podsList, err := v.clientset.CoreV1().Pods(plNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		return
+	}
+
+	now := time.Now()
+
+	podMap := make(map[string]*cvmsgspb.PodStatus)
+	for _, p := range podsList.Items {
+		podPb, err := protoutils.PodToProto(&p)
+		if err != nil {
+			return
+		}
+
+		status := metadatapb.PHASE_UNKNOWN
+		if podPb.Status != nil {
+			status = podPb.Status.Phase
+		}
+		name := podPb.Metadata.Name
+
+		s := &cvmsgspb.PodStatus{
+			Name:   name,
+			Status: status,
+		}
+		podMap[name] = s
+	}
+
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
+	v.currentPodStatus = podMap
+	v.podStatusLastUpdated = now
+}
+
+// GetPodStatuses gets the pod statuses and the last time they were updated.
+func (v *K8sVizierInfo) GetPodStatuses() (map[string]*cvmsgspb.PodStatus, time.Time) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+
+	return v.currentPodStatus, v.podStatusLastUpdated
 }

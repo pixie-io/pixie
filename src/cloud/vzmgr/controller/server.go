@@ -559,6 +559,10 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		return
 	}
 
+	// TODO(michelle): Instead of logging this information so that the pod statuses appears in our logs,
+	// we should be storing the pod status info in postgres.
+	log.WithField("hb", req).Info("Got heartbeat message")
+
 	// Send DNS address.
 	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
 	if err != nil {

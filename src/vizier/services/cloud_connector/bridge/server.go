@@ -38,6 +38,7 @@ var ErrRegistrationTimeout = errors.New("Registration timeout")
 type VizierInfo interface {
 	GetAddress() (string, int32, error)
 	GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, error)
+	GetPodStatuses() (map[string]*cvmsgspb.PodStatus, time.Time)
 }
 
 // Bridge is the NATS<->GRPC bridge.
@@ -452,12 +453,15 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 		if err != nil {
 			log.WithError(err).Error("Failed to get vizier address")
 		}
+		podStatuses, updatedTime := s.vzInfo.GetPodStatuses()
 		hbCh <- &cvmsgspb.VizierHeartbeat{
-			VizierID:       utils.ProtoFromUUID(&s.vizierID),
-			Time:           time.Now().UnixNano(),
-			SequenceNumber: atomic.LoadInt64(&s.hbSeqNum),
-			Address:        addr,
-			Port:           port,
+			VizierID:               utils.ProtoFromUUID(&s.vizierID),
+			Time:                   time.Now().UnixNano(),
+			SequenceNumber:         atomic.LoadInt64(&s.hbSeqNum),
+			Address:                addr,
+			Port:                   port,
+			PodStatuses:            podStatuses,
+			PodStatusesLastUpdated: updatedTime.UnixNano(),
 		}
 		atomic.AddInt64(&s.hbSeqNum, 1)
 	}

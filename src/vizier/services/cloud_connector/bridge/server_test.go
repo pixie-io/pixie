@@ -20,6 +20,7 @@ import (
 
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
 	mock_certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb/mock"
@@ -131,6 +132,17 @@ func (f *FakeVZInfo) GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, error)
 		ClusterName:    "test-cluster",
 		ClusterVersion: "v1.14.10-gke.27",
 	}, nil
+}
+
+func (f *FakeVZInfo) GetPodStatuses() (map[string]*cvmsgspb.PodStatus, time.Time) {
+	lastUpdatedTime := time.Unix(2, 0)
+	podStatus := make(map[string]*cvmsgspb.PodStatus)
+	podStatus["vizier-query-broker"] = &cvmsgspb.PodStatus{
+		Name:   "vizier-query-broker",
+		Status: metadatapb.RUNNING,
+	}
+
+	return podStatus, lastUpdatedTime
 }
 
 type testState struct {
