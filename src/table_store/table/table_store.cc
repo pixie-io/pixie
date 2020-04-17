@@ -47,7 +47,7 @@ Status TableStore::AppendData(uint64_t table_id, types::TabletID tablet_id,
 }
 
 table_store::Table* TableStore::GetTable(const std::string& table_name,
-                                         const types::TabletID& tablet_id) {
+                                         const types::TabletID& tablet_id) const {
   auto name_to_table_iter = name_to_table_map_.find(NameTablet{table_name, tablet_id});
   if (name_to_table_iter == name_to_table_map_.end()) {
     return nullptr;
@@ -55,7 +55,8 @@ table_store::Table* TableStore::GetTable(const std::string& table_name,
   return name_to_table_iter->second.get();
 }
 
-table_store::Table* TableStore::GetTable(uint64_t table_id, const types::TabletID& tablet_id) {
+table_store::Table* TableStore::GetTable(uint64_t table_id,
+                                         const types::TabletID& tablet_id) const {
   auto id_to_table_iter = id_to_table_map_.find(TableIDTablet{table_id, tablet_id});
   if (id_to_table_iter == id_to_table_map_.end()) {
     return nullptr;
@@ -116,7 +117,7 @@ void TableStore::AddRelation(const std::string& table_name, const schema::Relati
   name_to_relation_map_[table_name] = relation;
 }
 
-std::vector<uint64_t> TableStore::GetTableIDs() {
+std::vector<uint64_t> TableStore::GetTableIDs() const {
   std::vector<uint64_t> ids;
   for (const auto& it : id_to_table_map_) {
     ids.emplace_back(it.first.table_id_);

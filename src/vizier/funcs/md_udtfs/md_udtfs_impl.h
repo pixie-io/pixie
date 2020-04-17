@@ -60,6 +60,20 @@ class UDTFWithRegistryFactory : public carnot::udf::UDTFFactory {
   const carnot::udf::Registry* registry_;
 };
 
+template <typename TUDTF>
+class UDTFWithTableStoreFactory : public carnot::udf::UDTFFactory {
+ public:
+  UDTFWithTableStoreFactory() = delete;
+  explicit UDTFWithTableStoreFactory(const ::pl::table_store::TableStore* table_store)
+      : table_store_(table_store) {}
+
+  std::unique_ptr<carnot::udf::AnyUDTF> Make() override {
+    return std::make_unique<TUDTF>(table_store_);
+  }
+
+ private:
+  const ::pl::table_store::TableStore* table_store_;
+};
 /**
  * This UDTF fetches all the schemas that are available to query from the MDS.
  */
@@ -434,6 +448,66 @@ class GetDebugMDState final : public carnot::udf::UDTF<GetDebugMDState> {
   }
 };
 
+/**
+ * This UDTF dumps the debug information for all registered tables.
+ */
+class GetDebugTableInfo final : public carnot::udf::UDTF<GetDebugTableInfo> {
+ public:
+  GetDebugTableInfo() = delete;
+  explicit GetDebugTableInfo(const ::pl::table_store::TableStore* table_store)
+      : table_store_(table_store) {}
+  static constexpr auto Executor() { return carnot::udfspb::UDTFSourceExecutor::UDTF_ALL_AGENTS; }
+
+  static constexpr auto OutputRelation() {
+    return MakeArray(
+        ColInfo("asid", types::DataType::INT64, types::PatternType::GENERAL,
+                "The short ID of the agent"),
+        ColInfo("name", types::DataType::STRING, types::PatternType::GENERAL,
+                "The name of this table"),
+        ColInfo("id", types::DataType::INT64, types::PatternType::GENERAL, "The id of the table"),
+        ColInfo("batches_added", types::DataType::INT64, types::PatternType::GENERAL,
+                "The number of batches added to this table"),
+        ColInfo("batches_expired", types::DataType::INT64, types::PatternType::GENERAL,
+                "The number of batches expired from this table"),
+        ColInfo("num_batches", types::DataType::INT64, types::PatternType::GENERAL,
+                "The number of batches active in this table"),
+        ColInfo("size", types::DataType::INT64, types::PatternType::GENERAL,
+                "The size of this table in bytes"),
+        ColInfo("max_table_size", types::DataType::INT64, types::PatternType::GENERAL,
+                "The maximum size of this table"));
+  }
+  Status Init(FunctionContext*) {
+    table_ids_ = table_store_->GetTableIDs();
+    return Status::OK();
+  }
+
+  bool NextRecord(FunctionContext* ctx, RecordWriter* rw) {
+    if (static_cast<size_t>(current_idx_) >= table_ids_.size()) {
+      return false;
+    }
+
+    uint64_t selected_id = table_ids_[current_idx_];
+    const auto* table = table_store_->GetTable(selected_id);
+    auto info = table->GetTableInfo();
+
+    rw->Append<IndexOf("asid")>(ctx->metadata_state()->asid());
+    rw->Append<IndexOf("name")>(table_store_->GetTableName(selected_id));
+    rw->Append<IndexOf("id")>(selected_id);
+    rw->Append<IndexOf("batches_added")>(info.batches_added);
+    rw->Append<IndexOf("batches_expired")>(info.batches_expired);
+    rw->Append<IndexOf("num_batches")>(info.num_batches);
+    rw->Append<IndexOf("size")>(info.bytes);
+    rw->Append<IndexOf("max_table_size")>(info.max_table_size);
+
+    ++current_idx_;
+    return static_cast<size_t>(current_idx_) < table_ids_.size();
+  }
+
+ private:
+  const ::pl::table_store::TableStore* table_store_;
+  int current_idx_ = 0;
+  std::vector<uint64_t> table_ids_;
+};
 }  // namespace md
 }  // namespace funcs
 }  // namespace vizier

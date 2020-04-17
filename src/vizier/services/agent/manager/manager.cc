@@ -48,11 +48,12 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
       api_(std::make_unique<pl::event::APIImpl>(time_system_.get())),
       dispatcher_(api_->AllocateDispatcher("manager")),
       nats_connector_(std::move(nats_connector)),
+      table_store_(std::make_shared<table_store::TableStore>()),
       // TODO(zasgar): Not constructing the MDS by checking the url being empty is a bit janky. Fix
       // this.
       func_context_(
-          this, mds_url.size() == 0 ? nullptr : CreateDefaultMDSStub(mds_url, grpc_channel_creds_)),
-      table_store_(std::make_shared<table_store::TableStore>()) {
+          this, mds_url.size() == 0 ? nullptr : CreateDefaultMDSStub(mds_url, grpc_channel_creds_),
+          table_store_) {
   // Register Vizier specific and carnot builtin functions.
 
   auto func_registry = std::make_unique<pl::carnot::udf::Registry>("vizier_func_registry");

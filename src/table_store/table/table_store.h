@@ -68,7 +68,8 @@ class TableStore {
    * Get table IDs returns a list of table ids available in the table store.
    * @return vector of table ids.
    */
-  std::vector<uint64_t> GetTableIDs();
+  std::vector<uint64_t> GetTableIDs() const;
+
 
   /*
    * Gets the table associated with the given name, grabbing the default tablet.
@@ -77,7 +78,7 @@ class TableStore {
    * @ returns the associated table
    */
   table_store::Table* GetTable(const std::string& table_name,
-                               const types::TabletID& tablet_id = kDefaultTablet);
+                               const types::TabletID& tablet_id = kDefaultTablet) const;
 
   /**
    * @brief Get the Table according to table_id.
@@ -87,7 +88,7 @@ class TableStore {
    * @return table_store::Table*: the tablet associated with the table.
    */
   table_store::Table* GetTable(uint64_t table_id,
-                               const types::TabletID& tablet_id = kDefaultTablet);
+                               const types::TabletID& tablet_id = kDefaultTablet) const;
 
   /*
    * Add a table under the given name.
@@ -149,6 +150,17 @@ class TableStore {
                     std::unique_ptr<pl::types::ColumnWrapperRecordBatch> record_batch);
 
   Status SchemaAsProto(schemapb::Schema* schema) const;
+
+  /**
+   * GetTableName returns the table name if the ID is found, else empty string.
+   */
+  std::string GetTableName(uint64_t id) const {
+    const auto& it = id_to_name_relation_pair_map_.find(id);
+    if (it != id_to_name_relation_pair_map_.end()) {
+      return it->second.table_name;
+    }
+    return "";
+  }
 
  private:
   /**

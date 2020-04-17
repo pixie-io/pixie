@@ -3,6 +3,7 @@
 #include <memory>
 
 #include "src/common/base/base.h"
+#include "src/table_store/table_store.h"
 #include "src/vizier/services/metadata/metadatapb/service.grpc.pb.h"
 
 namespace pl {
@@ -24,8 +25,9 @@ class VizierFuncFactoryContext : public NotCopyable {
 
   VizierFuncFactoryContext() = default;
   VizierFuncFactoryContext(const agent::Manager* agent_manager,
-                           const std::shared_ptr<MDSStub>& mds_stub)
-      : agent_manager_(agent_manager), mds_stub_(mds_stub) {}
+                           const std::shared_ptr<MDSStub>& mds_stub,
+                           std::shared_ptr<::pl::table_store::TableStore> table_store)
+      : agent_manager_(agent_manager), mds_stub_(mds_stub), table_store_(table_store) {}
   virtual ~VizierFuncFactoryContext() = default;
 
   const agent::Manager* agent_manager() const {
@@ -38,9 +40,12 @@ class VizierFuncFactoryContext : public NotCopyable {
     return mds_stub_;
   }
 
+  ::pl::table_store::TableStore* table_store() const { return table_store_.get(); }
+
  private:
   const agent::Manager* agent_manager_ = nullptr;
   std::shared_ptr<MDSStub> mds_stub_ = nullptr;
+  std::shared_ptr<::pl::table_store::TableStore> table_store_ = nullptr;
 };
 
 }  // namespace funcs

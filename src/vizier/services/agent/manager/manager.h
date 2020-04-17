@@ -145,14 +145,14 @@ class Manager : public pl::NotCopyable {
   // The controller is still running. Force stopping will cause un-graceful termination.
   std::atomic<bool> running_ = false;
 
-  // Factory context for vizier functions.
-  funcs::VizierFuncFactoryContext func_context_;
-
   // The base agent contains the following components.
   std::shared_ptr<table_store::TableStore> table_store_;
   std::unique_ptr<carnot::Carnot> carnot_;
   std::unique_ptr<pl::md::AgentMetadataStateManager> mds_manager_;
   std::unique_ptr<RelationInfoManager> relation_info_manager_;
+
+  // Factory context for vizier functions.
+  funcs::VizierFuncFactoryContext func_context_;
 
  private:
   // Message handlers are registered per type of Vizier message.
