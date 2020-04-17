@@ -13,6 +13,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
+	"pixielabs.ai/pixielabs/src/shared/version"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
@@ -28,7 +29,9 @@ func init() {
 }
 
 func main() {
-	log.WithField("service", "query-broker").Info("Starting service")
+	log.WithField("service", "query-broker").
+		WithField("version", version.GetVersion().ToString()).
+		Info("Starting service")
 
 	services.SetupService("query-broker", 50300)
 	services.SetupSSLClientFlags()

@@ -51,7 +51,9 @@ func etcdTLSConfig() (*tls.Config, error) {
 }
 
 func main() {
-	log.WithField("service", "metadata").Info("Starting service")
+	log.WithField("service", "metadata").
+		WithField("version", version.GetVersion().ToString()).
+		Info("Starting service")
 
 	services.SetupService("metadata", 50400)
 	services.SetupSSLClientFlags()

@@ -16,6 +16,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
+	"pixielabs.ai/pixielabs/src/shared/version"
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/bridge"
 	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/ptproxy"
@@ -71,7 +72,9 @@ func NewVizierServiceClient() (vizierpb.VizierServiceClient, error) {
 }
 
 func main() {
-	log.WithField("service", "cloud-connector").Info("Starting service")
+	log.WithField("service", "cloud-connector").
+		WithField("version", version.GetVersion().ToString()).
+		Info("Starting service")
 
 	services.SetupService("cloud-connector", 50800)
 	services.SetupSSLClientFlags()
