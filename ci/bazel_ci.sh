@@ -81,6 +81,10 @@ buildables=$(bazel query \
 if [[ -n $buildables ]]; then
   echo "Building binaries"
   bazel build ${BAZEL_RUN_EXTRA_ARGS} $buildables
+  rc=$?
+  if [ $rc -ne 0 ]; then
+    exit $rc
+  fi
 fi
 
 tests=$(bazel query \
