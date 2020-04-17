@@ -4,5 +4,6 @@ filegroup(
     name = "scripts",
     srcs = glob([
         "*.sql",
+        "script.py",
     ]),
 )

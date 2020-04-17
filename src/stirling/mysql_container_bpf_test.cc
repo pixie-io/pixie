@@ -36,6 +36,8 @@ using ::testing::SizeIs;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
+DEFINE_bool(tracing_mode, false, "If true, only runs the containers and exits. For tracing.");
+
 class MySQLContainer : public ContainerRunner {
  public:
   MySQLContainer() : ContainerRunner(kMySQLImage, kMySQLInstanceNamePrefix, kMySQLReadyMessage) {}
@@ -97,6 +99,7 @@ class MySQLTraceTest : public SocketTraceBPFTest {
   StatusOr<int32_t> RunPythonScript(std::string_view script_path) {
     std::string absl_script_path = TestFilePath(script_path);
 
+    // TODO(chengruizhe): Pull out pip3 install into the environment.
     std::string cmd =
         absl::StrFormat("pip3 install -q mysql-connector-python && python3 %s", absl_script_path);
     PL_ASSIGN_OR_RETURN(std::string out, pl::Exec(cmd));
@@ -356,7 +359,7 @@ TEST_F(MySQLTraceTest, mysql_capture) {
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     // Check client-side tracing results.
-    {
+    if (!FLAGS_tracing_mode) {
       std::vector<mysql::Record> records = GetTargetRecords(record_batch, client_pid);
 
       EXPECT_THAT(records,
@@ -382,7 +385,7 @@ TEST_F(MySQLTraceTest, mysql_capture) {
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     // Check client-side tracing results.
-    {
+    if (!FLAGS_tracing_mode) {
       std::vector<mysql::Record> records = GetTargetRecords(record_batch, client_pid);
 
       EXPECT_THAT(records,
@@ -396,7 +399,13 @@ TEST_F(MySQLTraceTest, mysql_capture) {
     // TODO(oazizi): Check server-side tracing results.
   }
 
-  // TODO(chengruizhe): Add Test for running Python script.
+  {
+    ASSERT_OK_AND_ASSIGN(int32_t client_pid,
+                         RunPythonScript("src/stirling/mysql/testing/script.py"));
+
+    PL_UNUSED(client_pid);
+    // TODO(chengruizhe): Check client-side results.
+  }
 }
 
 }  // namespace stirling
