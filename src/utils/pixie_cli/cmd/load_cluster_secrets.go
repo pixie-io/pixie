@@ -30,7 +30,7 @@ var LoadClusterSecretsCmd = &cobra.Command{
 		kubeConfig := k8s.GetConfig()
 		clientset := k8s.GetClientset(kubeConfig)
 
-		err := LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace, devCloudNamespace, kubeConfig)
+		err := LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace, devCloudNamespace, kubeConfig, "")
 		if err != nil {
 			log.WithError(err).Fatal("Could not load cluster secrets")
 		}
