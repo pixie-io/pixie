@@ -32,6 +32,14 @@ struct BatchPosition {
   bool FoundValidBatches() { return batch_idx != -1; }
 };
 
+struct TableInfo {
+  int64_t bytes;
+  int64_t num_batches;
+  int64_t batches_added;
+  int64_t batches_expired;
+  int64_t max_table_size;
+};
+
 /**
  * A Column is batched into equally-sized Arrow Arrays.
  */
@@ -187,6 +195,8 @@ class Table : public NotCopyable {
    */
   Status ToProto(table_store::schemapb::Table* table_proto) const;
 
+  TableInfo GetTableInfo() const;
+
  private:
   /**
    * Adds a column to the table. The column must have the same type as the column expected by the
@@ -220,7 +230,9 @@ class Table : public NotCopyable {
 
   mutable absl::base_internal::SpinLock cold_batches_lock_;
 
+  int64_t batches_expired_ = 0;
   int64_t bytes_ = 0;
+  int64_t batches_added_ = 0;
   int64_t max_table_size_ = 0;
 };
 

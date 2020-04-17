@@ -179,7 +179,7 @@ Status Table::DeleteNextRowBatch() {
       PL_RETURN_IF_ERROR(col->DeleteNextBatch());
     }
     bytes_ -= rb_size;
-
+    ++batches_expired_;
     // Delete row batches from hot columns if cold columns are empty.
   } else if (!hot_batches_.empty()) {
     absl::base_internal::SpinLockHolder lock(&hot_batches_lock_);
@@ -192,6 +192,7 @@ Status Table::DeleteNextRowBatch() {
 
     hot_batches_.pop_front();
     bytes_ -= rb_size;
+    ++batches_expired_;
   } else {
     return error::InvalidArgument("No row batches to delete.");
   }
@@ -224,7 +225,6 @@ Status Table::WriteRowBatch(schema::RowBatch rb) {
           "RowBatch's row descriptor does not match table's row descriptor.");
     }
   }
-
   auto rb_bytes = rb.NumBytes();
 
   PL_RETURN_IF_ERROR(ExpireRowBatches(rb_bytes));
@@ -238,6 +238,7 @@ Status Table::WriteRowBatch(schema::RowBatch rb) {
     }
   }
   bytes_ += rb_bytes;
+  ++batches_added_;
   return Status::OK();
 }
 
@@ -272,6 +273,7 @@ Status Table::TransferRecordBatch(
   absl::base_internal::SpinLockHolder lock(&hot_batches_lock_);
   hot_batches_.push_back(std::move(record_batch));
   bytes_ += rb_bytes;
+  ++batches_added_;
 
   return Status::OK();
 }
@@ -386,6 +388,20 @@ schema::Relation Table::GetRelation() const {
   }
 
   return schema::Relation(types, names);
+}
+
+TableInfo Table::GetTableInfo() const {
+  TableInfo info;
+  absl::base_internal::SpinLockHolder cold_lock(&cold_batches_lock_);
+  absl::base_internal::SpinLockHolder lock(&hot_batches_lock_);
+
+  info.batches_added = batches_added_;
+  info.batches_expired = batches_expired_;
+  info.num_batches = NumBatchesUnlocked();
+  info.bytes = bytes_;
+  info.max_table_size = max_table_size_;
+
+  return info;
 }
 
 }  // namespace table_store
