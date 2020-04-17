@@ -1,7 +1,4 @@
-import {
-    getLiveViewDataDrawerOpened, getLiveViewEditorOpened, setLiveViewDataDrawerOpened,
-    setLiveViewEditorOpened,
-} from 'common/localstorage';
+import {getLiveViewEditorOpened, setLiveViewEditorOpened} from 'common/localstorage';
 import {scrollbarStyles} from 'common/mui-theme';
 import EditIcon from 'components/icons/edit';
 import MagicIcon from 'components/icons/magic';
@@ -19,8 +16,7 @@ import ToggleButton from '@material-ui/lab/ToggleButton';
 import Canvas from './canvas';
 import CommandInput from './command-input';
 import {withLiveContextProvider} from './context';
-import DataDrawerToggle from './data-drawer-toggle';
-import DataViewer from './data-viewer';
+import DataDrawer from './data-drawer';
 import Editor from './editor';
 import ExecuteScriptButton from './execute-button';
 import {useInitScriptLoader} from './script-loader';
@@ -107,12 +103,6 @@ const LiveView = () => {
   const [commandOpen, setCommandOpen] = React.useState<boolean>(false);
   const toggleCommandOpen = React.useCallback(() => setCommandOpen((opened) => !opened), []);
 
-  const [dataDrawerOpen, setDataDrawerOpen] = React.useState<boolean>(getLiveViewDataDrawerOpened());
-  const toggleDataDrawer = React.useCallback(() => setDataDrawerOpen((opened) => !opened), []);
-  React.useEffect(() => {
-    setLiveViewDataDrawerOpened(dataDrawerOpen);
-  }, [dataDrawerOpen]);
-
   const classes = useStyles();
 
   const hotkeyHandlers = React.useMemo(() => ({
@@ -154,10 +144,7 @@ const LiveView = () => {
             <Canvas />
           </div>
         </div>
-        <DataDrawerToggle opened={dataDrawerOpen} toggle={toggleDataDrawer} />
-        <LazyPanel className={classes.dataDrawer} show={dataDrawerOpen}>
-          <DataViewer />
-        </LazyPanel>
+        <DataDrawer/>
       </div>
       <Drawer open={drawerOpen} onClose={toggleDrawer}>
         <div>drawer content</div>

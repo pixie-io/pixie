@@ -4,6 +4,8 @@ import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 import ExpandLessIcon from '@material-ui/icons/ExpandLess';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
+import {ResultsContext} from './context';
+
 interface DataDrawerToggleProps {
   opened: boolean;
   toggle: () => void;
@@ -32,9 +34,11 @@ const useStyles = makeStyles((theme: Theme) => {
 const DataDrawerToggle = (props: DataDrawerToggleProps) => {
   const { opened, toggle } = props;
   const classes = useStyles();
+  const { error } = React.useContext(ResultsContext);
+
   return (
     <div className={classes.root} onClick={toggle}>
-      <div className={classes.title}>Underlying Data</div>
+      <div className={classes.title}>{error ? 'Error Details' : 'Underlying Data'}</div>
       {opened ? <ExpandMoreIcon /> : <ExpandLessIcon />}
     </div>
   );

@@ -1,3 +1,4 @@
+import {VizierQueryError} from 'common/errors';
 import * as ls from 'common/localstorage';
 import {Table, VizierQueryFunc} from 'common/vizier-grpc-client';
 import ClientContext from 'common/vizier-grpc-client-context';
@@ -18,6 +19,7 @@ interface LiveContextProps {
   // Shared between old and new live view functions.
   updateScript: (code: string) => void;
   vizierReady: boolean;
+  toggleDataDrawer: () => void;
 
   // New live view functions.
   executeScript: (script?: string, vis?: Vis) => void;
@@ -49,6 +51,7 @@ export const ResultsContext = React.createContext<Results>(null);
 export const LiveContext = React.createContext<LiveContextProps>(null);
 export const TitleContext = React.createContext<Title>(null);
 export const VisContext = React.createContext<Vis>(null);
+export const DrawerContext = React.createContext<boolean>(false);
 
 const LiveContextProvider = (props) => {
   const [script, setScript] = React.useState<string>(ls.getLiveViewPixieScript());
@@ -100,6 +103,12 @@ const LiveContextProvider = (props) => {
     ls.setLiveViewTitle(title);
   }, [title]);
 
+  const [dataDrawerOpen, setDataDrawerOpen] = React.useState<boolean>(ls.getLiveViewDataDrawerOpened());
+  const toggleDataDrawer = React.useCallback(() => setDataDrawerOpen((opened) => !opened), []);
+  React.useEffect(() => {
+    ls.setLiveViewDataDrawerOpened(dataDrawerOpen);
+  }, [dataDrawerOpen]);
+
   const client = React.useContext(ClientContext);
 
   const showSnackbar = useSnackbar();
@@ -120,14 +129,24 @@ const LiveContextProvider = (props) => {
       }
       setResults({ tables: newTables });
     }).catch((error) => {
+      const errType = (error as VizierQueryError).errType;
       errMsg = error.message;
+      if (errType === 'execution') {
+        showSnackbar({
+          message: errMsg,
+          action: () => setDataDrawerOpen(true),
+          actionTitle: 'details',
+          autoHideDuration: 5000,
+        });
+      } else {
+        showSnackbar({
+          message: errMsg,
+          action: () => executeScript(inputScript),
+          actionTitle: 'retry',
+          autoHideDuration: 5000,
+        });
+      }
       setResults({ tables: {}, error });
-      showSnackbar({
-        message: errMsg,
-        action: () => executeScriptOld(inputScript),
-        actionTitle: 'retry',
-        autoHideDuration: 5000,
-      });
     }).finally(() => {
       analytics.track('Query Execution', {
         status: errMsg ? 'success' : 'failed',
@@ -163,16 +182,24 @@ const LiveContextProvider = (props) => {
         }
         setResults({ tables: newTables });
       }).catch((error) => {
+        const errType = (error as VizierQueryError).errType;
         errMsg = error.message;
+        if (errType === 'execution') {
+          showSnackbar({
+            message: errMsg,
+            action: () => setDataDrawerOpen(true),
+            actionTitle: 'details',
+            autoHideDuration: 5000,
+          });
+        } else {
+          showSnackbar({
+            message: errMsg,
+            action: () => executeScript(inputScript),
+            actionTitle: 'retry',
+            autoHideDuration: 5000,
+          });
+        }
         setResults({ tables: {}, error });
-        showSnackbar({
-          message: errMsg,
-          // TODO(malthus): It doesn't make sense to always show retry.
-          // Make the action to show the error.
-          action: () => executeScript(inputScript),
-          actionTitle: 'retry',
-          autoHideDuration: 5000,
-        });
       }).finally(() => {
         analytics.track('Query Execution', {
           status: errMsg ? 'success' : 'failed',
@@ -199,6 +226,7 @@ const LiveContextProvider = (props) => {
     executeScriptOld,
     executeScript,
     updateVis: setVis,
+    toggleDataDrawer,
 
     // temporary
     oldLiveViewMode,
@@ -212,7 +240,9 @@ const LiveContextProvider = (props) => {
             <PlacementContextOld.Provider value={placement}>
               <ResultsContext.Provider value={results}>
                 <VisContext.Provider value={vis}>
-                  {props.children}
+                  <DrawerContext.Provider value={dataDrawerOpen}>
+                    {props.children}
+                  </DrawerContext.Provider>
                 </VisContext.Provider>
               </ResultsContext.Provider>
             </PlacementContextOld.Provider>
