@@ -335,9 +335,9 @@ func TestScriptMgr(t *testing.T) {
 					Name: "my_func",
 				},
 				DisplaySpec: &types.Any{
-					TypeUrl: "pixielabs.ai/pl.vispb.Graph",
-					Value: toBytes(t, &pl_vispb.Graph{
-						DotColumn: "foo",
+					TypeUrl: "pixielabs.ai/pl.vispb.VegaChart",
+					Value: toBytes(t, &pl_vispb.VegaChart{
+						Spec: "{}",
 					}),
 				},
 			},

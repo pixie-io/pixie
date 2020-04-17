@@ -89,9 +89,9 @@ func TestScriptMgrResolver(t *testing.T) {
 								Name: "my_func",
 							},
 							DisplaySpec: &types.Any{
-								TypeUrl: "pixielabs.ai/pl.vispb.Graph",
-								Value: toBytes(t, &pl_vispb.Graph{
-									DotColumn: "foo",
+								TypeUrl: "pixielabs.ai/pl.vispb.VegaChart",
+								Value: toBytes(t, &pl_vispb.VegaChart{
+									Spec: "{}",
 								}),
 							},
 						},
@@ -121,7 +121,7 @@ func TestScriptMgrResolver(t *testing.T) {
 						},
 						"pxlContents": "1 pxl",
 						"visJSON": "{\"widgets\":[{\"func\":{\"name\":\"my_func\"},\"displaySpec\":` +
-				`{\"@type\":\"pixielabs.ai/pl.vispb.Graph\",\"dotColumn\":\"foo\"}}]}"
+				`{\"@type\":\"pixielabs.ai/pl.vispb.VegaChart\",\"spec\":\"{}\"}}]}"
 					}
 				}
 			`,
