@@ -51,7 +51,6 @@ const VegaSpecEditor = () => {
   const updateVegaSpecDebounce = React.useMemo(() => debounce(updateVegaSpecOld, 2000), []);
 
   React.useEffect(() => {
-    ls.setLiveViewVegaSpecOld(code);
     const specs = parseSpecs(code);
     if (specs) {
       updateVegaSpecDebounce(specs);
@@ -120,7 +119,6 @@ const PlacementEditor = () => {
   const updatePlacementDebounce = React.useMemo(() => debounce(updatePlacementOld, 2000), []);
 
   React.useEffect(() => {
-    ls.setLiveViewPlacementSpecOld(code);
     const newPlacement = parsePlacementOld(code);
     if (newPlacement) {
       updatePlacementDebounce(newPlacement);

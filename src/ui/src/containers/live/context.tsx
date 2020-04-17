@@ -58,9 +58,15 @@ const LiveContextProvider = (props) => {
 
   const [vegaSpec, setVegaSpecOld] = React.useState<VisualizationSpecMap>(
     parseSpecs(ls.getLiveViewVegaSpecOld()) || {});
+  React.useEffect(() => {
+    ls.setLiveViewVegaSpecOld(JSON.stringify(vegaSpec, null, 2));
+  }, [vegaSpec]);
 
   const [placement, setPlacementOld] = React.useState<Placement>(
     parsePlacementOld(ls.getLiveViewPlacementSpecOld()) || {});
+  React.useEffect(() => {
+    ls.setLiveViewPlacementSpecOld(JSON.stringify(placement, null, 2));
+  }, [placement]);
 
   const [results, setResults] = React.useState<Results>({ tables: {} });
 
