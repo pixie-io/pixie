@@ -366,6 +366,16 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		log.Fatalln(err)
 	}
 
+	versionString := viper.GetString("use_version")
+	if len(versionString) == 0 {
+		// Fetch latest version.
+		versionString, err = getLatestVizierVersion(cloudConn)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to fetch Vizier versions")
+		}
+	}
+	fmt.Printf("Installing version: %s\n", versionString)
+
 	namespaceJob := newTaskWrapper("Creating namespace", func() error {
 		return optionallyCreateNamespace(clientset, namespace)
 	})
@@ -375,7 +385,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	})
 
 	secretJob := newTaskWrapper("Loading secrets", func() error {
-		versionString, _ := cmd.Flags().GetString("use_version")
+		versionString := viper.GetString("use_version")
 		var credsData string
 		if credsFile == "" {
 			credsData = mustGetImagePullSecret(cloudConn)
@@ -397,18 +407,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	var yamlMap map[string]string
 	yamlJob := newTaskWrapper("Downloading Vizier YAMLs", func() error {
-		versionString, err := cmd.Flags().GetString("use_version")
-		if err != nil {
-			return errors.New("Version string is invalid")
-		}
-		if len(versionString) == 0 {
-			// Fetch latest version.
-			versionString, err = getLatestVizierVersion(cloudConn)
-			if err != nil {
-				return err
-			}
-		}
-
 		reader, err := downloadVizierYAMLs(cloudConn, versionString)
 		if err != nil {
 			return err
