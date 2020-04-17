@@ -85,7 +85,7 @@ export class VizierGRPCClient {
           const status = resp.getStatus();
           const errList = status.getErrorDetailsList();
           if (errList.length > 0) {
-            reject(new VizierQueryError('execution', getExecutionErrors(errList)));
+            reject(new VizierQueryError('execution', getExecutionErrors(errList), status));
             return;
           }
 

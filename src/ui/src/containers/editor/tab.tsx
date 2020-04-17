@@ -20,7 +20,7 @@ const DEFAULT_CODE = '# Enter Query Here\n';
 export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
   const initialCode = getCodeFromStorage(props.id) || DEFAULT_CODE;
   const [code, setCode] = React.useState<string>(initialCode);
-  const [error, setError] = React.useState('');
+  const [error, setError] = React.useState<Error>(null);
   const [data, setData] = React.useState<VizierQueryResult>(null);
   const [loading, setLoading] = React.useState(false);
   const client = React.useContext(VizierGRPCClientContext);
@@ -33,22 +33,22 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
     }
     const time = new Date();
     let queryId;
-    let err;
+    let errMsg: string;
     setLoading(true);
     client.executeScriptOld(code).then((results) => {
       queryId = results.queryId;
       setData(results);
-      setError('');
-    }).catch((errMsg) => {
-      err = errMsg;
-      setError(errMsg);
+      setError(null);
+    }).catch((e) => {
+      errMsg = e.message;
+      setError(e);
     }).finally(() => {
       setLoading(false);
       analytics.track('Query Execution', {
-        status: err ? 'success' : 'failed',
+        status: errMsg ? 'success' : 'failed',
         query: code,
         queryID: queryId,
-        error: err,
+        error: errMsg,
         title: props.title,
       });
       saveHistory({
@@ -57,7 +57,7 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
             time,
             code,
             title: props.title,
-            status: err ? 'success' : 'failed',
+            status: errMsg ? 'success' : 'failed',
           },
         },
       });

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import {Status} from 'types/generated/vizier_pb';
 
 import {createStyles, makeStyles, Theme, withStyles} from '@material-ui/core/styles';
 
@@ -7,7 +8,8 @@ export type VizierQueryErrorType = 'script' | 'vis' | 'execution' | 'server';
 export class VizierQueryError extends Error {
   constructor(
     public errType: VizierQueryErrorType,
-    public details?: string | string[]) {
+    public details?: string | string[],
+    public status?: Status) {
     super(getUserFacingMessage(errType));
   }
 }

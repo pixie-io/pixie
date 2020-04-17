@@ -1,6 +1,7 @@
 import './results.scss';
 
 import clsx from 'clsx';
+import {VizierQueryError} from 'common/errors';
 import {VizierQueryResult} from 'common/vizier-grpc-client';
 import * as Graph from 'components/chart/graph';
 import * as LineChart from 'components/chart/line-chart';
@@ -16,7 +17,7 @@ import {columnFromProto} from 'utils/result-data-utils';
 
 interface ConsoleResultsProps {
   loading?: boolean;
-  error?: string;
+  error?: Error;
   data?: VizierQueryResult;
   code?: string;
 }
@@ -30,18 +31,20 @@ interface ResultsTab {
 export const ConsoleResults = React.memo<ConsoleResultsProps>(
   ({ loading, error, data, code = '' }) => {
     let placeholder = null;
+    const vizierErr = error as VizierQueryError;
     if (loading) {
       placeholder = <Spinner />;
-    } else if (!!error) {
-      placeholder = <span>{error}</span>;
+    } else if (vizierErr && !vizierErr.status) {
+      placeholder = <span>{vizierErr.message}</span>;
     }
 
     const tabs = React.useMemo<ResultsTab[]>(() => {
+      if (vizierErr && vizierErr.status) {
+        return [{ title: 'Errors', content: <QueryResultErrors status={vizierErr.status} /> }];
+      }
+
       if (!data) {
         return [];
-      }
-      if (data.status) {
-        return [{ title: 'Errors', content: <QueryResultErrors status={data.status} /> }];
       }
 
       const tables = data.tables || [];
@@ -92,7 +95,7 @@ export const ConsoleResults = React.memo<ConsoleResultsProps>(
       }
 
       return [...resultsTables, ...scatterPlot, ...lineCharts, ...graphs];
-    }, [data]);
+    }, [data, vizierErr]);
 
     if (tabs.length < 1 && !placeholder) {
       placeholder = <span>no results</span>;
