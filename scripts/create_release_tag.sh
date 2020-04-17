@@ -113,7 +113,7 @@ while IFS= read -r line; do
 done
 
 # Fetch the latest tags.
-git fetch
+git fetch --tags
 
 # Get the latest release tag.
 tags=$(git for-each-ref --sort='-*authordate' --format '%(refname:short)' refs/tags \
