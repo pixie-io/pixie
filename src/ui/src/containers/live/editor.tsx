@@ -11,7 +11,9 @@ import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import CloseIcon from '@material-ui/icons/Close';
 
-import {LiveContext, PlacementContextOld, ScriptContext, VegaContextOld, VisContext} from './context';
+import {
+    LiveContext, PlacementContextOld, ScriptContext, VegaContextOld, VisContext,
+} from './context';
 import {parsePlacementOld} from './layout';
 import {parseVis} from './vis';
 
@@ -51,7 +53,6 @@ const VegaSpecEditor = () => {
   const updateVegaSpecDebounce = React.useMemo(() => debounce(updateVegaSpecOld, 2000), []);
 
   React.useEffect(() => {
-    ls.setLiveViewVegaSpecOld(code);
     const specs = parseSpecs(code);
     if (specs) {
       updateVegaSpecDebounce(specs);
@@ -120,7 +121,6 @@ const PlacementEditor = () => {
   const updatePlacementDebounce = React.useMemo(() => debounce(updatePlacementOld, 2000), []);
 
   React.useEffect(() => {
-    ls.setLiveViewPlacementSpecOld(code);
     const newPlacement = parsePlacementOld(code);
     if (newPlacement) {
       updatePlacementDebounce(newPlacement);
@@ -169,7 +169,7 @@ interface LiveViewEditorProps {
 const LiveViewEditor = (props: LiveViewEditorProps) => {
   const { oldLiveViewMode } = React.useContext(LiveContext);
   if (oldLiveViewMode) {
-    return <LiveViewEditorOld {...props}/>;
+    return <LiveViewEditorOld {...props} />;
   }
 
   const classes = useStyles();
