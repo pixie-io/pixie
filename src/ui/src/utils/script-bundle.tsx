@@ -14,7 +14,8 @@ export interface Script {
 }
 
 export function GetPxScripts(): Promise<Script[]> {
-  const bundlePath = isStaging() ? STAGING_SCRIPTS : PROD_SCRIPTS;
+  const bundlePath = localStorage.getItem('px-custom-bundle-path') ||
+    (isStaging() ? STAGING_SCRIPTS : PROD_SCRIPTS);
   return Axios({
     method: 'get',
     url: bundlePath,
