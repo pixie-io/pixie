@@ -5,6 +5,17 @@ import java.net.URLEncoder;
 import groovy.json.JsonBuilder
 import jenkins.model.Jenkins
 
+// Choose a label from configuration here:
+// https://jenkins.corp.pixielabs.ai/configureClouds/
+//
+// IMPORTANT: Make sure worker node is one with a 4.14 kernel,
+// to ensure that we don't have BPF compatibility regressions.
+//
+// Technically, only the BPF jobs need this kind of worker node,
+// but all jobs currently use this node for simplicity and
+// to maintain better node utilization (minimize GCP dollars).
+WORKER_NODE='jenkins-worker-with-4.14-kernel'
+
 
 /**
   * PhabConnector handles all communication with phabricator if the build
@@ -96,10 +107,6 @@ K8S_STAGING_CREDS='pixie-cloud-staging'
 
 K8S_PROD_CLUSTER='https://pixie-cloud-prod-cluster.internal.corp.pixielabs.ai'
 K8S_PROD_CREDS='pixie-cloud-prod'
-
-// Sometimes docker fetches fail, so we just do a retry. This can be optimized to just
-// retry on docker failues, but not worth it now.
-JENKINS_RETRIES = 2;
 
 // This variable store the dev docker image that we need to parse before running any docker steps.
 devDockerImageWithTag = ''
@@ -237,7 +244,7 @@ def createBazelStash(String stashName) {
 def WithSourceCode(String stashName = SRC_STASH_NAME, Closure body) {
   warnError('Script failed') {
     timeout(time: 60, unit: 'MINUTES') {
-      node {
+      node(WORKER_NODE) {
         sh 'hostname'
         deleteDir()
         unstashFromGCS(stashName)
@@ -251,7 +258,7 @@ def WithSourceCode(String stashName = SRC_STASH_NAME, Closure body) {
   * This function checks out the source code and wraps the builds steps.
   */
 def WithSourceCodeFatalError(String stashName = SRC_STASH_NAME, Closure body) {
-  node {
+  node(WORKER_NODE) {
     sh 'hostname'
     deleteDir()
     unstashFromGCS(stashName)
@@ -650,7 +657,7 @@ def buildScriptForCommits = {
     codeReviewPreBuild()
   }
 
-  node {
+  node(WORKER_NODE) {
     currentBuild.result = 'SUCCESS'
     deleteDir()
     try {
@@ -752,7 +759,7 @@ regressionBuilders['Test (TSAN)'] = {
  *****************************************************************************/
 
 def buildScriptForNightlyTestRegression = {
-  node {
+  node(WORKER_NODE) {
     currentBuild.result = 'SUCCESS'
     deleteDir()
     try {
@@ -799,7 +806,7 @@ def updateVersionsDB(String credsName, String clusterURL, String namespace) {
 }
 
 def  buildScriptForCLIRelease = {
-  node {
+  node(WORKER_NODE) {
     currentBuild.result = 'SUCCESS'
     deleteDir()
     try {
@@ -857,7 +864,7 @@ def  buildScriptForCLIRelease = {
 }
 
 def  buildScriptForVizierRelease = {
-  node {
+  node(WORKER_NODE) {
     currentBuild.result = 'SUCCESS'
     deleteDir()
     try {
@@ -891,8 +898,6 @@ def  buildScriptForVizierRelease = {
 }
 
 if(isNightlyTestRegressionRun) {
-  // Disable retries for regression run.
-  JENKINS_RETRIES=1
   buildScriptForNightlyTestRegression()
 } else if(isCLIBuildRun) {
   buildScriptForCLIRelease()
