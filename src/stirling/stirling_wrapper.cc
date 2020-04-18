@@ -10,6 +10,7 @@
 #include "src/common/base/base.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/stirling/jvm_stats_connector.h"
+#include "src/stirling/pgsql_table.h"
 #include "src/stirling/pid_runtime_connector.h"
 #include "src/stirling/seq_gen_connector.h"
 #include "src/stirling/socket_trace_connector.h"
@@ -47,6 +48,7 @@ using pl::stirling::kCQLTable;
 using pl::stirling::kHTTPTable;
 using pl::stirling::kJVMStatsTable;
 using pl::stirling::kMySQLTable;
+using pl::stirling::kPGSQLTable;
 
 using pl::ArrayView;
 
@@ -147,6 +149,8 @@ void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
                      *record_batch);
   } else if (name == kJVMStatsTable.name()) {
     PrintRecordBatch("JVMStats", kJVMStatsTable.elements(), num_records, *record_batch);
+  } else if (name == kPGSQLTable.name()) {
+    PrintRecordBatch("PostgreSQL", kPGSQLTable.elements(), num_records, *record_batch);
   }
   // Can add other connectors, if desired, here.
 }

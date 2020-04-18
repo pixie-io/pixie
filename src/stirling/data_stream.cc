@@ -2,6 +2,8 @@
 
 #include <utility>
 
+#include "src/stirling/pgsql/types.h"
+
 DEFINE_uint32(messages_expiration_duration_secs, 10 * 60,
               "The duration for which a cached message to be erased.");
 DEFINE_uint32(messages_size_limit_bytes, 1024 * 1024,
@@ -229,6 +231,7 @@ template void DataStream::ProcessBytesToFrames<http::Message>(MessageType type);
 template void DataStream::ProcessBytesToFrames<http2::Frame>(MessageType type);
 template void DataStream::ProcessBytesToFrames<mysql::Packet>(MessageType type);
 template void DataStream::ProcessBytesToFrames<cass::Frame>(MessageType type);
+template void DataStream::ProcessBytesToFrames<pgsql::RegularMessage>(MessageType type);
 
 void DataStream::Reset() {
   // Before clearing raw events, update next_seq_num_ to the next expected value.

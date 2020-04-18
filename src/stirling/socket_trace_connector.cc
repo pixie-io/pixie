@@ -59,6 +59,8 @@ DEFINE_bool(stirling_enable_grpc_uprobe_tracing, true,
             "If true, stirling will trace and process gRPC RPCs.");
 DEFINE_bool(stirling_enable_mysql_tracing, true,
             "If true, stirling will trace and process MySQL messages.");
+DEFINE_bool(stirling_enable_pgsql_tracing, true,
+            "If true, stirling will trace and process PostgreSQL messages.");
 DEFINE_bool(stirling_enable_cass_tracing, true,
             "If true, stirling will trace and process Cassandra messages.");
 DEFINE_bool(stirling_disable_self_tracing, true,
@@ -131,6 +133,10 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
   protocol_transfer_specs_[kProtocolCQL].enabled = FLAGS_stirling_enable_mysql_tracing;
   protocol_transfer_specs_[kProtocolCQL].role_to_trace = role_to_trace;
 
+  DCHECK(protocol_transfer_specs_.find(kProtocolPGSQL) != protocol_transfer_specs_.end());
+  protocol_transfer_specs_[kProtocolPGSQL].enabled = FLAGS_stirling_enable_pgsql_tracing;
+  protocol_transfer_specs_[kProtocolPGSQL].role_to_trace = role_to_trace;
+
   DCHECK(protocol_transfer_specs_.find(kProtocolHTTP2Uprobe) != protocol_transfer_specs_.end());
   protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled =
       FLAGS_stirling_enable_grpc_uprobe_tracing;
@@ -198,6 +204,10 @@ Status SocketTraceConnector::InitImpl() {
   if (protocol_transfer_specs_[kProtocolCQL].enabled) {
     PL_RETURN_IF_ERROR(UpdateProtocolTraceRole(
         kProtocolCQL, protocol_transfer_specs_[kProtocolCQL].role_to_trace));
+  }
+  if (protocol_transfer_specs_[kProtocolPGSQL].enabled) {
+    PL_RETURN_IF_ERROR(UpdateProtocolTraceRole(
+        kProtocolPGSQL, protocol_transfer_specs_[kProtocolPGSQL].role_to_trace));
   }
   PL_RETURN_IF_ERROR(TestOnlySetTargetPID(FLAGS_test_only_socket_trace_target_pid));
   if (FLAGS_stirling_disable_self_tracing) {
@@ -644,10 +654,7 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
 
   const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-  DCHECK(event->attr.traffic_class.protocol == kProtocolHTTP ||
-         event->attr.traffic_class.protocol == kProtocolHTTP2 ||
-         event->attr.traffic_class.protocol == kProtocolMySQL ||
-         event->attr.traffic_class.protocol == kProtocolCQL)
+  DCHECK(event->attr.traffic_class.protocol != kProtocolUnknown)
       << absl::Substitute("AcceptDataEvent received event with unknown protocol: $0",
                           magic_enum::enum_name(event->attr.traffic_class.protocol));
 
@@ -902,6 +909,25 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("req_body")>(std::move(entry.req.msg));
   r.Append<r.ColIndex("resp_op")>(static_cast<uint64_t>(entry.resp.op));
   r.Append<r.ColIndex("resp_body")>(std::move(entry.resp.msg));
+  r.Append<r.ColIndex("latency_ns")>(
+      CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
+}
+
+template <>
+void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
+                                         const ConnectionTracker& conn_tracker, pgsql::Record entry,
+                                         DataTable* data_table) {
+  DCHECK_EQ(kPGSQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
+
+  md::UPID upid(ctx->GetASID(), conn_tracker.pid(), conn_tracker.pid_start_time_ticks());
+
+  RecordBuilder<&kPGSQLTable> r(data_table);
+  r.Append<r.ColIndex("time_")>(entry.req.timestamp_ns);
+  r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
+  r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
+  r.Append<r.ColIndex("req")>(std::move(entry.req.payload));
+  r.Append<r.ColIndex("resp")>(std::move(entry.resp.payload));
   r.Append<r.ColIndex("latency_ns")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 }

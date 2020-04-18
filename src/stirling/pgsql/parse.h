@@ -29,6 +29,18 @@ std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_
 RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMessage>* reqs,
                                                    std::deque<pgsql::RegularMessage>* resps);
 
+using MsgDeqIter = std::deque<RegularMessage>::iterator;
+
+/**
+ * Return a formatted string for messages that can form the response for a query.
+ * The input result argument begin is modified to point to the next message that has not been
+ * examined yet.
+ */
+StatusOr<RegularMessage> AssembleQueryResp(MsgDeqIter* begin, const MsgDeqIter& end);
+
+RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<RegularMessage>* reqs,
+                                                   std::deque<RegularMessage>* resps);
+
 }  // namespace pgsql
 
 template <>

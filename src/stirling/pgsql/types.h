@@ -30,6 +30,7 @@ enum class Tag : char {
   kCloseComplete = '3',
   // This is same as kClose, but this is always sent by a server.
   kCmdComplete = 'C',
+  kErrResp = 'E',
   kCopy = 'd',
   kCopyDone = 'c',
   kCopyFail = 'f',

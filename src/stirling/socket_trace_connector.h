@@ -38,6 +38,8 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/stirling/http/utils.h"
 #include "src/stirling/http_table.h"
 #include "src/stirling/mysql_table.h"
+#include "src/stirling/pgsql/types.h"
+#include "src/stirling/pgsql_table.h"
 #include "src/stirling/socket_trace_bpf_tables.h"
 #include "src/stirling/source_connector.h"
 #include "src/stirling/utils/proc_tracker.h"
@@ -64,10 +66,11 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       MakeArray<std::string_view>("socket_control_events", "socket_data_events",
                                   "go_grpc_header_events", "go_grpc_data_events");
 
-  static constexpr auto kTables = MakeArray(kHTTPTable, kMySQLTable, kCQLTable);
+  static constexpr auto kTables = MakeArray(kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable);
   static constexpr uint32_t kHTTPTableNum = SourceConnector::TableNum(kTables, kHTTPTable);
   static constexpr uint32_t kMySQLTableNum = SourceConnector::TableNum(kTables, kMySQLTable);
   static constexpr uint32_t kCQLTableNum = SourceConnector::TableNum(kTables, kCQLTable);
+  static constexpr uint32_t kPGSQLTableNum = SourceConnector::TableNum(kTables, kPGSQLTable);
 
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
@@ -320,6 +323,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {kProtocolMySQL,
        {kMySQLTableNum, &SocketTraceConnector::TransferStream<mysql::ProtocolTraits>}},
       {kProtocolCQL, {kCQLTableNum, &SocketTraceConnector::TransferStream<cass::ProtocolTraits>}},
+      {kProtocolPGSQL,
+       {kPGSQLTableNum, &SocketTraceConnector::TransferStream<pgsql::ProtocolTraits>}},
       // Unknown protocols attached to HTTP table so that they run their cleanup functions,
       // but the use of nullptr transfer_fn means it won't actually transfer data to the HTTP table.
       {kProtocolUnknown, {kHTTPTableNum, nullptr}},

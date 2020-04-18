@@ -21,14 +21,12 @@ static constexpr DataElement kPGSQLElements[] = {
 };
 // clang-format on
 
-static constexpr auto kPGSqlTable = DataTableSchema("pgsql_events", kPGSqlElements);
+static constexpr auto kPGSQLTable = DataTableSchema("pgsql_events", kPGSQLElements);
 
-constexpr int kPGSqlUPIDIdx = kPGSqlTable.ColIndex("upid");
-constexpr int kPGSqlReqCmdIdx = kPGSqlTable.ColIndex("req_cmd");
-constexpr int kPGSqlReqBodyIdx = kPGSqlTable.ColIndex("req_body");
-constexpr int kPGSqlRespStatusIdx = kPGSqlTable.ColIndex("resp_status");
-constexpr int kPGSqlRespBodyIdx = kPGSqlTable.ColIndex("resp_body");
-constexpr int kPGSqlLatencyIdx = kPGSqlTable.ColIndex("latency_ns");
+constexpr int kPGSQLUPIDIdx = kPGSQLTable.ColIndex("upid");
+constexpr int kPGSQLReqCmdIdx = kPGSQLTable.ColIndex("req");
+constexpr int kPGSQLRespIdx = kPGSQLTable.ColIndex("resp");
+constexpr int kPGSQLLatencyIdx = kPGSQLTable.ColIndex("latency_ns");
 
 }  // namespace stirling
 }  // namespace pl

@@ -1,5 +1,6 @@
 #include "src/stirling/pgsql/parse.h"
 
+#include <algorithm>
 #include <optional>
 #include <string>
 #include <utility>
@@ -35,6 +36,10 @@ ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg) {
   // Len includes the length field itself (int32_t), so the payload needs to exclude 4 bytes.
   msg->payload = std::string(decoder.ExtractString(str_len));
   *buf = decoder.Buf();
+  if (msg->tag == Tag::kCmdComplete) {
+    // The last character of a kCmdComplete is '\0'.
+    msg->payload.pop_back();
+  }
   return ParseState::kSuccess;
 }
 
@@ -84,14 +89,11 @@ void AdvanceIterBeyondTimestamp(MsgDeqIter* start, const MsgDeqIter& end, uint64
   }
 }
 
-MsgDeqIter FindTag(MsgDeqIter begin, MsgDeqIter end, Tag tag) {
-  for (auto iter = begin; iter != end; ++iter) {
-    if (iter->tag == tag) {
-      return iter;
-    }
-  }
-  return end;
-}
+struct TagMatcher {
+  explicit TagMatcher(Tag tag) : target_tag(tag) {}
+  bool operator()(const RegularMessage& msg) { return msg.tag == target_tag; }
+  Tag target_tag;
+};
 
 }  // namespace
 
@@ -163,9 +165,144 @@ std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_
   return res;
 }
 
+namespace {
+
+template <typename TElemType>
+class DequeView {
+ public:
+  using Iteraotr = typename std::deque<TElemType>::iterator;
+
+  DequeView(Iteraotr begin, Iteraotr end)
+      : size_(std::distance(begin, end)), begin_(begin), end_(end) {}
+
+  const TElemType& operator[](size_t i) const { return *(begin_ + i); }
+  const TElemType& Back() const { return *(end_ - 1); }
+  const TElemType& Front() const { return *begin_; }
+  size_t Size() const { return size_; }
+  bool Empty() const { return size_ == 0; }
+
+  const Iteraotr& Begin() const { return begin_; }
+  const Iteraotr& End() const { return end_; }
+
+ private:
+  size_t size_ = 0;
+  Iteraotr begin_;
+  Iteraotr end_;
+};
+
+// Returns a list of messages that before ends with a kCmdComplete message.
+DequeView<RegularMessage> GetCmdRespMsgs(MsgDeqIter* begin, MsgDeqIter end) {
+  auto resp_iter = std::find_if(*begin, end, TagMatcher(Tag::kCmdComplete));
+  if (resp_iter == end) {
+    resp_iter = std::find_if(*begin, end, TagMatcher(Tag::kErrResp));
+  }
+  if (resp_iter == end) {
+    return {end, end};
+  }
+  ++resp_iter;
+  DequeView<RegularMessage> res(*begin, resp_iter);
+  *begin = resp_iter;
+  return res;
+}
+
+// Error message's payload has multiple following fields:
+// | byte type | string value |
+//
+// TODO(yzhao): Do not call parsing functions. Check out frame_body_decoder.cc
+// StatusOr<QueryReq> ParseQueryReq(Frame* frame) for parsing;
+// and cql_stitcher.cc Status ProcessQueryReq(Frame* req_frame, Request* req) for stitching and
+// formatting.
+std::string_view FmtErrorResp(const RegularMessage& msg) {
+  BinaryDecoder decoder(msg.payload);
+  // Each field has at least 2 bytes, one for byte, another for string, which can be empty, but
+  // always ends with '\0'.
+  while (decoder.BufSize() >= 2) {
+    const char type = decoder.ExtractChar();
+    // See https://www.postgresql.org/docs/9.3/protocol-error-fields.html for the complete list of
+    // error code.
+    constexpr char kHumanReadableMessage = 'M';
+    if (type == kHumanReadableMessage) {
+      return decoder.ExtractStringUtil('\0');
+    }
+  }
+  return msg.payload;
+}
+
+// TODO(yzhao): Do not call parsing functions.
+std::string FmtSelectResp(const DequeView<RegularMessage>& msgs) {
+  auto row_desc_iter = std::find_if(msgs.Begin(), msgs.End(), TagMatcher(Tag::kRowDesc));
+  ECHECK(row_desc_iter != msgs.End()) << "Failed to find kRowDesc message in SELECT response.";
+
+  std::string res;
+  if (row_desc_iter != msgs.End()) {
+    std::vector<std::string_view> row_descs = ParseRowDesc(row_desc_iter->payload);
+    absl::StrAppend(&res, absl::StrJoin(row_descs, ","));
+    absl::StrAppend(&res, "\n");
+  }
+  for (size_t i = 1; i < msgs.Size() - 1; ++i) {
+    std::vector<std::optional<std::string_view>> data_row = ParseDataRow(msgs[i].payload);
+    absl::StrAppend(&res,
+                    absl::StrJoin(data_row, ",",
+                                  [](std::string* out, const std::optional<std::string_view>& d) {
+                                    out->append(d.has_value() ? d.value() : "[NULL]");
+                                  }));
+    absl::StrAppend(&res, "\n");
+  }
+  absl::StrAppend(&res, msgs.Back().payload);
+  return res;
+}
+
+namespace cmd {
+
+constexpr std::string_view kSelect = "SELECT";
+
+}  // namespace cmd
+
+// Query response messages end with a kCmdComplete message. Its payload determines the content prior
+// to that message.
+//
+// See CommandComplete section in https://www.postgresql.org/docs/9.3/protocol-message-formats.html.
+//
+// TODO(yzhao): Format in JSON.
+// TODO(yzhao): Do not call parsing code inside.
+std::string FmtCmdResp(const DequeView<RegularMessage>& msgs) {
+  const RegularMessage& cmd_complete_msg = msgs.Back();
+  if (cmd_complete_msg.tag == Tag::kErrResp) {
+    return std::string(FmtErrorResp(cmd_complete_msg));
+  }
+  if (absl::StartsWith(cmd_complete_msg.payload, cmd::kSelect)) {
+    return FmtSelectResp(msgs);
+  }
+  // Non-SELECT response only has one kCmdComplete message. Output the payload directly.
+  if (msgs.Size() == 1) {
+    return msgs.Begin()->payload;
+  }
+  // TODO(yzhao): Need to test and handle other cases, if any.
+  return {};
+}
+
+}  // namespace
+
+// Find the messages of query response. The result argument begin is advanced past the right most
+// message being consumed.
+//
+// TODO(yzhao): Change this to use ContainerView<> as input.
+StatusOr<RegularMessage> AssembleQueryResp(MsgDeqIter* begin, const MsgDeqIter& end) {
+  DequeView<RegularMessage> msgs = GetCmdRespMsgs(begin, end);
+  if (msgs.Empty()) {
+    return error::InvalidArgument("Did not find kCmdComplete or kErrResp message");
+  }
+  std::string text = FmtCmdResp(msgs);
+  RegularMessage msg = {};
+  msg.timestamp_ns = msgs.Front().timestamp_ns;
+  msg.payload = std::move(text);
+  return msg;
+}
+
 RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMessage>* reqs,
                                                    std::deque<pgsql::RegularMessage>* resps) {
   std::vector<pgsql::Record> records;
+  int error_count = 0;
   auto req_iter = reqs->begin();
   auto resp_iter = resps->begin();
   // PostgreSQL query mode:
@@ -197,19 +334,18 @@ RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMess
         // Ignore auth response.
         ++req_iter;
         break;
-      case Tag::kQuery:
-        resp_iter = FindTag(resp_iter, resps->end(), Tag::kRowDesc);
-        if (resp_iter == resps->end()) {
-          // Not found, skip current request.
-          ++req_iter;
+      case Tag::kQuery: {
+        auto query_resp_or = AssembleQueryResp(&resp_iter, resps->end());
+        if (query_resp_or.ok()) {
+          records.push_back({std::move(*req_iter), query_resp_or.ConsumeValueOrDie()});
         } else {
-          resp_iter->payload = absl::StrJoin(ParseRowDesc(resp_iter->payload), ",");
-          resp_iter->len = sizeof(int32_t) + resp_iter->payload.size();
-          records.push_back({std::move(*req_iter), std::move(*resp_iter)});
-          ++req_iter;
-          ++resp_iter;
+          ++error_count;
+          VLOG(1) << "Failed to assemble query response message, status: "
+                  << query_resp_or.ToString();
         }
+        ++req_iter;
         break;
+      }
       default:
         // By default for any message with unhandled or invalid tag, ignore and continue.
         // TODO(yzhao): Revise based on feedbacks.
@@ -220,7 +356,7 @@ RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMess
   }
   reqs->erase(reqs->begin(), req_iter);
   resps->erase(resps->begin(), resp_iter);
-  return {records, 0};
+  return {records, error_count};
 }
 
 }  // namespace pgsql

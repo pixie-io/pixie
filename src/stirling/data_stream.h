@@ -12,6 +12,7 @@
 #include "src/stirling/http2/http2.h"
 #include "src/stirling/http2u/types.h"
 #include "src/stirling/mysql/types.h"
+#include "src/stirling/pgsql/types.h"
 
 DECLARE_uint32(messages_expiration_duration_secs);
 DECLARE_uint32(messages_size_limit_bytes);
@@ -260,7 +261,8 @@ class DataStream {
   // Additionally, ConnectionTracker must not switch type during runtime, which indicates serious
   // bug, so we add std::monostate as the default type. And switch to the right time in runtime.
   std::variant<std::monostate, std::deque<http::Message>, std::deque<http2::Frame>,
-               std::deque<mysql::Packet>, std::deque<cass::Frame>>
+               std::deque<mysql::Packet>, std::deque<cass::Frame>,
+               std::deque<pgsql::RegularMessage>>
       frames_;
 
   // Used by Uprobe-based HTTP2 only.

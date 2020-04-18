@@ -6,6 +6,7 @@
 #include <gtest/gtest.h>
 
 #include "src/common/base/base.h"
+#include "src/common/base/test_utils.h"
 
 namespace pl {
 namespace stirling {
@@ -24,7 +25,8 @@ const std::string_view kStartupMsgTestData = CreateStringView<char>(
     "application_name\x00psql\x00"
     "client_encoding\x00UTF8\x00\x00");
 
-auto IsRegularMessage(Tag tag, int32_t len, std::string_view payload) {
+template <typename TagMatcher, typename LengthType, typename PayloadMatcher>
+auto IsRegularMessage(TagMatcher tag, LengthType len, PayloadMatcher payload) {
   return AllOf(Field(&RegularMessage::tag, tag), Field(&RegularMessage::len, len),
                Field(&RegularMessage::payload, payload));
 }
@@ -101,6 +103,39 @@ TEST(PGSQLParseTest, DataRow) {
                                                      "en_US.utf8", std::nullopt));
 }
 
+TEST(PGSQLParseTest, AssembleQueryResp) {
+  auto row_desc_data = kRowDescTestData;
+  auto data_row_data = kDataRowTestData;
+
+  RegularMessage m1 = {};
+  RegularMessage m2 = {};
+  RegularMessage m3 = {};
+  m3.tag = Tag::kCmdComplete;
+  m3.payload = "SELECT 1";
+
+  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&row_desc_data, &m1));
+  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data_row_data, &m2));
+
+  std::deque<RegularMessage> resps = {m1, m2, m3};
+
+  auto begin = resps.begin();
+  ASSERT_OK_AND_THAT(AssembleQueryResp(&begin, resps.end()),
+                     Field(&RegularMessage::payload,
+                           "Name,Owner,Encoding,Collate,Ctype,Access privileges\n"
+                           "postgres,postgres,UTF8,en_US.utf8,en_US.utf8,[NULL]\n"
+                           "SELECT 1"));
+  EXPECT_EQ(begin, resps.end());
+}
+
+TEST(PGSQLParseTest, AssembleQueryRespFailures) {
+  std::deque<RegularMessage> resps;
+  auto begin = resps.begin();
+  const auto end = resps.end();
+  EXPECT_NOT_OK(AssembleQueryResp(&begin, end));
+}
+
+const std::string_view kCmdCompleteData = CreateStringView<char>("C\000\000\000\rSELECT 1\000");
+
 TEST(ProcessFramesTest, MatchQueryAndRowDesc) {
   constexpr char kQueryText[] = "select * from table;";
   RegularMessage q = {};
@@ -112,17 +147,52 @@ TEST(ProcessFramesTest, MatchQueryAndRowDesc) {
   RegularMessage t = {};
   EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &t));
 
+  data = kDataRowTestData;
+  RegularMessage d = {};
+  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &d));
+
+  data = kCmdCompleteData;
+  RegularMessage c = {};
+  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &c));
+
   std::deque<RegularMessage> reqs = {std::move(q)};
-  std::deque<RegularMessage> resps = {std::move(t)};
+  std::deque<RegularMessage> resps = {std::move(t), std::move(d), std::move(c)};
+  RecordsWithErrorCount<pgsql::Record> records_and_err_count = ProcessFrames(&reqs, &resps);
+  EXPECT_THAT(reqs, IsEmpty());
+  EXPECT_THAT(resps, IsEmpty());
+  EXPECT_THAT(records_and_err_count.records,
+              ElementsAre(AllOf(
+                  Field(&Record::req, Field(&RegularMessage::payload, "select * from table;")),
+                  Field(&Record::resp, Field(&RegularMessage::payload,
+                                             "Name,Owner,Encoding,Collate,Ctype,Access privileges\n"
+                                             "postgres,postgres,UTF8,en_US.utf8,en_US.utf8,[NULL]\n"
+                                             "SELECT 1")))));
+  EXPECT_EQ(0, records_and_err_count.error_count);
+}
+
+const std::string_view kDropTableCmplMsg =
+    CreateStringView<char>("C\000\000\000\017DROP TABLE\000");
+
+TEST(ProcessFramesTest, DropTable) {
+  constexpr char kQueryText[] = "drop table foo;";
+  RegularMessage q = {};
+  q.tag = Tag::kQuery;
+  q.len = sizeof(kQueryText) + sizeof(int32_t);
+  q.payload = kQueryText;
+
+  std::string_view data = kDropTableCmplMsg;
+  RegularMessage c = {};
+  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &c));
+
+  std::deque<RegularMessage> reqs = {std::move(q)};
+  std::deque<RegularMessage> resps = {std::move(c)};
   RecordsWithErrorCount<pgsql::Record> records_and_err_count = ProcessFrames(&reqs, &resps);
   EXPECT_THAT(reqs, IsEmpty());
   EXPECT_THAT(resps, IsEmpty());
   EXPECT_THAT(
       records_and_err_count.records,
-      ElementsAre(AllOf(
-          Field(&Record::req, Field(&RegularMessage::payload, "select * from table;")),
-          Field(&Record::resp, Field(&RegularMessage::payload,
-                                     "Name,Owner,Encoding,Collate,Ctype,Access privileges")))));
+      ElementsAre(AllOf(Field(&Record::req, Field(&RegularMessage::payload, "drop table foo;")),
+                        Field(&Record::resp, Field(&RegularMessage::payload, "DROP TABLE")))));
   EXPECT_EQ(0, records_and_err_count.error_count);
 }
 

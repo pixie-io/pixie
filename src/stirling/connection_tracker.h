@@ -21,6 +21,7 @@
 #include "src/stirling/http2u/stitcher.h"
 #include "src/stirling/mysql/mysql_parse.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
+#include "src/stirling/pgsql/parse.h"
 #include "src/stirling/socket_resolver.h"
 #include "src/stirling/socket_trace_bpf_tables.h"
 
