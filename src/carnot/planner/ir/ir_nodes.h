@@ -147,6 +147,10 @@ class IRNode {
   pypa::AstPtr ast_node_;
 };
 
+inline std::ostream& operator<<(std::ostream& out, IRNode* node) {
+  return out << node->DebugString();
+}
+
 class OperatorIR;
 /**
  * IR contains the intermediate representation of the query
@@ -458,6 +462,7 @@ class ExpressionIR : public IRNode {
   virtual bool IsColumn() const { return false; }
   virtual bool IsData() const { return false; }
   virtual bool IsFunction() const { return false; }
+  virtual bool Equals(ExpressionIR* expr) const = 0;
   virtual Status ToProto(planpb::ScalarExpression* expr) const = 0;
   static bool NodeMatches(IRNode* input);
   static std::string class_type_string() { return "Expression"; }
@@ -748,6 +753,14 @@ class ColumnIR : public ExpressionIR {
    */
   Status ToProto(planpb::Column* column_pb) const;
 
+  bool Equals(ExpressionIR* expr) const override {
+    if (!expr->IsColumn()) {
+      return false;
+    }
+    auto col = static_cast<ColumnIR*>(expr);
+    return col->col_name() == col_name() && col->EvaluatedDataType() == EvaluatedDataType();
+  }
+
  protected:
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
@@ -770,7 +783,7 @@ class ColumnIR : public ExpressionIR {
  private:
   std::string col_name_;
   bool col_name_set_ = false;
-  types::DataType evaluated_data_type_;
+  types::DataType evaluated_data_type_ = types::DATA_TYPE_UNKNOWN;
   bool is_data_type_evaluated_ = false;
 
   int64_t container_op_parent_idx_ = -1;
@@ -795,6 +808,14 @@ class StringIR : public DataIR {
   static bool NodeMatches(IRNode* input);
   static std::string class_type_string() { return TypeString(IRNodeType::kString); }
   std::string DebugString() const override;
+
+  bool Equals(ExpressionIR* expr) const override {
+    if (!NodeMatches(expr)) {
+      return false;
+    }
+    auto s = static_cast<StringIR*>(expr);
+    return s->str() == str();
+  }
 
  private:
   std::string str_;
@@ -826,6 +847,14 @@ class UInt128IR : public DataIR {
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
   Status ToProtoImpl(planpb::ScalarValue* value) const override;
+
+  bool Equals(ExpressionIR* expr) const override {
+    if (!NodeMatches(expr)) {
+      return false;
+    }
+    auto data = static_cast<UInt128IR*>(expr);
+    return data->val() == val();
+  }
 
  private:
   absl::uint128 val_;
@@ -914,6 +943,22 @@ class FuncIR : public ExpressionIR {
   static bool NodeMatches(IRNode* input);
   static std::string class_type_string() { return "Func"; }
 
+  bool Equals(ExpressionIR* expr) const override {
+    if (!NodeMatches(expr)) {
+      return false;
+    }
+    auto func = static_cast<FuncIR*>(expr);
+    if (func->func_name() != func_name() || func->args().size() != args().size()) {
+      return false;
+    }
+    for (const auto& [idx, node] : Enumerate(func->args())) {
+      if (!args()[idx]->Equals(node)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
  private:
   std::string func_prefix_ = kPLFuncPrefix;
   Op op_;
@@ -940,6 +985,14 @@ class FloatIR : public DataIR {
 
   Status ToProtoImpl(planpb::ScalarValue* value) const override;
 
+  bool Equals(ExpressionIR* expr) const override {
+    if (!NodeMatches(expr)) {
+      return false;
+    }
+    auto data = static_cast<FloatIR*>(expr);
+    return data->val() == val();
+  }
+
  private:
   double val_;
 };
@@ -961,6 +1014,14 @@ class IntIR : public DataIR {
   static bool NodeMatches(IRNode* input);
   static std::string class_type_string() { return TypeString(IRNodeType::kInt); }
 
+  bool Equals(ExpressionIR* expr) const override {
+    if (!NodeMatches(expr)) {
+      return false;
+    }
+    auto data = static_cast<IntIR*>(expr);
+    return data->val() == val();
+  }
+
  private:
   int64_t val_;
 };
@@ -977,6 +1038,14 @@ class BoolIR : public DataIR {
 
   Status ToProtoImpl(planpb::ScalarValue* value) const override;
 
+  bool Equals(ExpressionIR* expr) const override {
+    if (!NodeMatches(expr)) {
+      return false;
+    }
+    auto data = static_cast<BoolIR*>(expr);
+    return data->val() == val();
+  }
+
  private:
   bool val_;
 };
@@ -991,6 +1060,14 @@ class TimeIR : public DataIR {
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
   Status ToProtoImpl(planpb::ScalarValue* value) const override;
+
+  bool Equals(ExpressionIR* expr) const override {
+    if (!NodeMatches(expr)) {
+      return false;
+    }
+    auto data = static_cast<TimeIR*>(expr);
+    return data->val() == val();
+  }
 
  private:
   int64_t val_;
@@ -1047,6 +1124,14 @@ class MetadataLiteralIR : public ExpressionIR {
 
   Status ToProto(planpb::ScalarExpression* expr) const override;
 
+  bool Equals(ExpressionIR* expr) const override {
+    if (expr->type() != IRNodeType::kMetadataLiteral) {
+      return false;
+    }
+    auto ml_ir = static_cast<MetadataLiteralIR*>(expr);
+    return ml_ir->literal()->Equals(literal());
+  }
+
  private:
   DataIR* literal_ = nullptr;
 };
@@ -1084,6 +1169,12 @@ class MemorySourceIR : public OperatorIR {
     time_stop_ns_ = time_stop_ns;
     time_set_ = true;
   }
+  /**
+   * @brief Removes the marker that says time is set. Used to make a memory
+   * source look at all data.
+   *
+   */
+  void ClearTimeNS() { time_set_ = false; }
   bool IsTimeSet() const { return time_set_; }
 
   std::string DebugString() const override;
