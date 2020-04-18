@@ -160,9 +160,10 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
        elf_tools::SymbolMatchType::kSuffix, "probe_loopy_writer_write_header",
        bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"golang.org/x/net/http2.(*Framer).WriteDataPadded", elf_tools::SymbolMatchType::kSuffix,
-       "probe_framer_write_data", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+       "probe_http2_framer_write_data", bpf_probe_attach_type::BPF_PROBE_ENTRY},
       {"golang.org/x/net/http2.(*Framer).checkFrameOrder", elf_tools::SymbolMatchType::kSuffix,
-       "probe_framer_check_frame_order", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+       "probe_http2_framer_check_frame_order", bpf_probe_attach_type::BPF_PROBE_ENTRY},
+      // TODO(oazizi): Hook-up http.
   });
 
   inline static const auto kOpenSSLUProbes = MakeArray<bpf_tools::UProbeSpec>(

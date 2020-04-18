@@ -84,6 +84,14 @@ struct DataFrame {
   struct go_byte_array data;
 };
 
+// There are two similar, but different framers
+enum FramerType {
+  // http2.Framer object
+  khttp2_Framer,
+  // http.http2Framer object
+  khttp_http2Framer
+};
+
 //-----------------------------------------------------------------------------
 // FD extraction functions
 //-----------------------------------------------------------------------------
@@ -144,23 +152,90 @@ static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf) {
 }
 
 // Returns the file descriptor from a http2.Framer object.
-static __inline int32_t get_fd_from_http2_framer(const void* framer_ptr) {
-  // From llvm-dwarfdump -n w ./client
+static __inline int32_t get_fd_from_http2_Framer(const void* framer_ptr) {
+  // From llvm-dwarfdump -n net/http.http2Framer -c ./server
+  //
+  // ...
   // 0x00070b39: DW_TAG_member
   //              DW_AT_name  ("w")
   //              DW_AT_data_member_location  (112)
   //              DW_AT_type  (0x000000000004a883 "io.Writer")
   //              DW_AT_unknown_2903  (0x00)
+  // ...
   const int kFramerIOWriterOffset = 112;
   struct go_interface io_writer_interface;
   bpf_probe_read(&io_writer_interface, sizeof(io_writer_interface),
                  framer_ptr + kFramerIOWriterOffset);
 
+  // At this point, we have the following struct:
+  // go.itab.*google.golang.org/grpc/internal/transport.bufWriter,io.Writer
+  //
+  // type bufWriter struct {
+  //   buf       []byte
+  //   offset    int
+  //   batchSize int
+  //   conn      net.Conn
+  //   err       error
+  //
+  //   onFlush func()
+  // }
+
   const int kIOWriterConnOffset = 40;
-  struct go_interface conn_intf = {};
+  struct go_interface conn_intf;
   bpf_probe_read(&conn_intf, sizeof(conn_intf), io_writer_interface.ptr + kIOWriterConnOffset);
 
   return get_fd_from_conn_intf(conn_intf);
+}
+
+// Returns the file descriptor from a http.http2Framer object.
+static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr) {
+  // From llvm-dwarfdump -n net/http.http2Framer -c ./server
+  //
+  // ...
+  // 0x00070b39: DW_TAG_member
+  //              DW_AT_name  ("w")
+  //              DW_AT_data_member_location  (112)
+  //              DW_AT_type  (0x000000000004a883 "io.Writer")
+  //              DW_AT_unknown_2903  (0x00)
+  // ...
+  const int kFramerIOWriterOffset = 112;
+  struct go_interface io_writer_interface;
+  bpf_probe_read(&io_writer_interface, sizeof(io_writer_interface),
+                 framer_ptr + kFramerIOWriterOffset);
+
+  // At this point, we have the following struct:
+  // go.itab.*net/http.http2bufferedWriter,io.Writer
+  //
+  // Where http2bufferedWriter is defined as follows:
+  // type http2bufferedWriter struct {
+  //   w  io.Writer     // immutable
+  //   bw *bufio.Writer // non-nil when data is buffered
+  // }
+
+  // We have to dereference one more time, to get the inner io.Writer:
+  const int kHTTP2BufferedWriterIOWriterOffset = 0;
+  struct go_interface inner_io_writer_interface;
+  bpf_probe_read(&inner_io_writer_interface, sizeof(inner_io_writer_interface),
+                 io_writer_interface.ptr + kHTTP2BufferedWriterIOWriterOffset);
+
+  // Now get the struct implementing net.Conn.
+  const int kIOWriterConnOffset = 0;
+  struct go_interface conn_intf;
+  bpf_probe_read(&conn_intf, sizeof(conn_intf),
+                 inner_io_writer_interface.ptr + kIOWriterConnOffset);
+
+  return get_fd_from_conn_intf(conn_intf);
+}
+
+static __inline int32_t get_fd_from_framer(enum FramerType framer_type, const void* framer_ptr) {
+  switch (framer_type) {
+    case khttp2_Framer:
+      return get_fd_from_http2_Framer(framer_ptr);
+    case khttp_http2Framer:
+      return get_fd_from_http_http2Framer(framer_ptr);
+    default:
+      return -1;
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -193,6 +268,9 @@ struct go_grpc_framer_t {
 // Function signature:
 //     func (l *loopyWriter) writeHeader(streamID uint32, endStream bool, hf []hpack.HeaderField,
 //     onWrite func()) error
+//
+// Symbol:
+//   google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader
 int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   // The following code tries to extract the file descriptor held by the loopyWriter object, when
   // probing the (*loopyWriter).writeHeader() function call. The whole structure looks like:
@@ -236,9 +314,9 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
 
   const int kFramerFieldOffset = 40;
   const void* framer_ptr = *(const void**)(loopy_writer_ptr + kFramerFieldOffset);
-  struct go_grpc_framer_t go_grpc_framer = {};
+  struct go_grpc_framer_t go_grpc_framer;
   bpf_probe_read(&go_grpc_framer, sizeof(go_grpc_framer), framer_ptr);
-  const int32_t fd = get_fd_from_http2_framer(go_grpc_framer.http2_framer);
+  const int32_t fd = get_fd_from_http2_Framer(go_grpc_framer.http2_framer);
   if (fd < 0) {
     return 0;
   }
@@ -349,6 +427,9 @@ static __inline void probe_http2_operate_headers(struct pt_regs* ctx, struct go_
 //
 // Function signature:
 //   func (t *http2Client) operateHeaders(frame *http2.MetaHeadersFrame)
+//
+// Symbol:
+//   google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders
 int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   const void* sp = (const void*)PT_REGS_SP(ctx);
 
@@ -358,7 +439,7 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   const int kFrameParamOffset = 16;
   const void* frame_ptr = *(const void**)(sp + kFrameParamOffset);
 
-  struct go_interface conn_intf = {};
+  struct go_interface conn_intf;
   const int kHTTP2ClientConnFieldOffset = 64;
   bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_client_ptr + kHTTP2ClientConnFieldOffset);
 
@@ -371,6 +452,8 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
 //   func (t *http2Server) operateHeaders(frame *http2.MetaHeadersFrame, handle func(*Stream),
 //                                        traceCtx func(context.Context, string) context.Context
 //                                        (fatal bool)
+// Symbol:
+//   google.golang.org/grpc/internal/transport.(*http2Server).operateHeaders
 int probe_http2_server_operate_headers(struct pt_regs* ctx) {
   const void* sp = (const void*)PT_REGS_SP(ctx);
 
@@ -380,7 +463,7 @@ int probe_http2_server_operate_headers(struct pt_regs* ctx) {
   const int kFrameParamOffset = 16;
   const void* frame_ptr = *(const void**)(sp + kFrameParamOffset);
 
-  struct go_interface conn_intf = {};
+  struct go_interface conn_intf;
   const int kHTTP2ServerConnFieldOffset = 32;
   bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_server_ptr + kHTTP2ServerConnFieldOffset);
 
@@ -393,18 +476,13 @@ int probe_http2_server_operate_headers(struct pt_regs* ctx) {
 // HTTP2 Data Tracing Functions
 //-----------------------------------------------------------------------------
 
-// Probe for the http2 library's frame writer.
-//
-// Function signature:
-//   func (f *Framer) WriteData(streamID uint32, endStream bool, data []byte) error
-//   func (f *Framer) WriteDataPadded(streamID uint32, endStream bool, data, pad []byte) error
-//
-// Verified to be stable from go1.7 to t go.1.13.
-// This probe extracts the header field, which is the 1st argument.
-int probe_framer_write_data(struct pt_regs* ctx) {
+// Shared helper function for:
+//   probe_http2_framer_write_data()
+//   probe_http_http2framer_write_data()
+static __inline void probe_write_data(struct pt_regs* ctx, enum FramerType framer_type) {
   const char* sp = (const char*)ctx->sp;
   if (sp == NULL) {
-    return 0;
+    return;
   }
 
   // Param 0 (receiver) is (fr *Framer).
@@ -433,18 +511,18 @@ int probe_framer_write_data(struct pt_regs* ctx) {
 
   struct go_grpc_data_event_t* info = get_data_event();
   if (info == NULL) {
-    return 0;
+    return;
   }
 
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  int32_t fd = get_fd_from_http2_framer(framer_ptr);
+  int32_t fd = get_fd_from_framer(framer_type, framer_ptr);
   if (fd < 0) {
-    return 0;
+    return;
   }
 
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
-    return 0;
+    return;
   }
 
   info->attr.type = kDataFrameEventWrite;
@@ -461,30 +539,25 @@ int probe_framer_write_data(struct pt_regs* ctx) {
   // TODO(yzhao): This could be one reason to prefer flat data structure to grouped attributes,
   // as its simplicity is more friendly to BPF verifier.
   go_grpc_data_events.perf_submit(ctx, info, sizeof(info->attr) + data_len);
-
-  return 0;
 }
 
-// Probe for the http2 library's frame reader.
-// As a proxy for the return probe on ReadFrame(), we currently probe checkFrameOrder,
-// since return probes don't work for Go.
-//
-// Function signature:
-//   func (fr *Framer) checkFrameOrder(f Frame) error
-//
-// Verified to be stable from at least go1.6 to t go.1.13.
-int probe_framer_check_frame_order(struct pt_regs* ctx) {
+// Shared helper function for:
+//   probe_http2_framer_check_frame_order()
+//   probe_http_http2framer_check_frame_order()
+static __inline void probe_check_frame_order(struct pt_regs* ctx, enum FramerType framer_type) {
   const char* sp = (const char*)ctx->sp;
   if (sp == NULL) {
-    return 0;
+    return;
   }
 
-  // Param 0 (receiver) is (fr *Framer).
+  // Param 0 (receiver) is (fr *Framer) or (fr *http2Framer).
   const int kParam0Offset = 8;
 
-  // Param 1 is (f Frame).
+  // Param 1 is (f Frame) or (f http2Frame).
   const int kParam1Offset = 16;
 
+  // NOTE: We get lucky enough that http.http2Frame interface is similar enough to http2.Frame,
+  // that we don't currently have to differentiate the two.
   struct go_interface frame_interface;
   bpf_probe_read(&frame_interface, sizeof(struct go_interface), sp + kParam1Offset);
 
@@ -514,18 +587,18 @@ int probe_framer_check_frame_order(struct pt_regs* ctx) {
 
     struct go_grpc_data_event_t* info = get_data_event();
     if (info == NULL) {
-      return 0;
+      return;
     }
 
     uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-    int32_t fd = get_fd_from_http2_framer(framer_ptr);
+    int32_t fd = get_fd_from_framer(framer_type, framer_ptr);
     if (fd < 0) {
-      return 0;
+      return;
     }
 
     struct conn_info_t* conn_info = get_conn_info(tgid, fd);
     if (conn_info == NULL) {
-      return 0;
+      return;
     }
     info->attr.conn_id = conn_info->conn_id;
 
@@ -541,6 +614,64 @@ int probe_framer_check_frame_order(struct pt_regs* ctx) {
 
     go_grpc_data_events.perf_submit(ctx, info, sizeof(info->attr) + data_len);
   }
+}
 
+// Probe for the http2 library's frame reader.
+// As a proxy for the return probe on ReadFrame(), we currently probe checkFrameOrder,
+// since return probes don't work for Go.
+//
+// Function signature:
+//   func (fr *Framer) checkFrameOrder(f Frame) error
+//
+// Symbol:
+//   golang.org/x/net/http2.(*Framer).checkFrameOrder
+//
+// Verified to be stable from at least go1.6 to t go.1.13.
+int probe_http2_framer_check_frame_order(struct pt_regs* ctx) {
+  probe_check_frame_order(ctx, khttp2_Framer);
+  return 0;
+}
+
+// Probe for the http library's frame reader.
+// As a proxy for the return probe on ReadFrame(), we currently probe checkFrameOrder,
+// since return probes don't work for Go.
+//
+// Function signature:
+//   func (fr *http2Framer) checkFrameOrder(f http2Frame) error
+//
+// Symbol:
+//   golang.org/x/net/http2.(*Framer).checkFrameOrder
+//
+// Verified to be stable from at least go1.?? to go.1.13.
+int probe_http_http2framer_check_frame_order(struct pt_regs* ctx) {
+  probe_check_frame_order(ctx, khttp_http2Framer);
+  return 0;
+}
+
+// Probe for the http2 library's frame writer.
+//
+// Function signature:
+//   func (f *Framer) WriteDataPadded(streamID uint32, endStream bool, data, pad []byte) error
+//
+// Symbol:
+//   golang.org/x/net/http2.(*Framer).WriteDataPadded
+//
+// Verified to be stable from go1.7 to t go.1.13.
+int probe_http2_framer_write_data(struct pt_regs* ctx) {
+  probe_write_data(ctx, khttp2_Framer);
+  return 0;
+}
+
+// Probe for the http2 library's frame writer.
+//
+// Function signature:
+//   func (f *http2Framer) WriteDataPadded(streamID uint32, endStream bool, data, pad []byte) error
+//
+// Symbol:
+//   net/http.(*http2Framer).WriteDataPadded
+//
+// Verified to be stable from go1.?? to t go.1.13.
+int probe_http_http2framer_write_data(struct pt_regs* ctx) {
+  probe_write_data(ctx, khttp_http2Framer);
   return 0;
 }
