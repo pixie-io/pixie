@@ -45,6 +45,8 @@ type VizierStreamOutputAdapter struct {
 	enableFormat        bool
 	format              string
 
+	// Captures error if any on the stream and returns it with Finish.
+	err                      error
 	latencyYellowThresholdMS float64
 	latencyRedThresholdMS    float64
 
@@ -95,30 +97,38 @@ func NewVizierStreamOutputAdapter(ctx context.Context, stream chan *VizierExecDa
 }
 
 // Finish must be called to wait for the output and flush all the data.
-func (v *VizierStreamOutputAdapter) Finish() {
+func (v *VizierStreamOutputAdapter) Finish() error {
 	v.wg.Wait()
+
+	if v.err != nil {
+		return v.err
+	}
 
 	for _, ti := range v.tableNameToInfo {
 		ti.w.Finish()
 	}
+	return nil
 }
 
 // Views gets all the accumulated views. This function is only valid with format = inmemory and after Finish.
-func (v *VizierStreamOutputAdapter) Views() []components.TableView {
+func (v *VizierStreamOutputAdapter) Views() ([]components.TableView, error) {
+	if v.err != nil {
+		return nil, v.err
+	}
 	// This function only works for in memory format.
 	if v.format != FormatInMemory {
-		return nil
+		return nil, errors.New("invalid format")
 	}
 	views := make([]components.TableView, 0)
 	for _, ti := range v.tableNameToInfo {
 		var ok bool
 		vitv, ok := ti.w.(components.TableView)
 		if !ok {
-			log.Fatalln("Cannot convert to table view")
+			return nil, errors.New("cannot convert to table view")
 		}
 		views = append(views, vitv)
 	}
-	return views
+	return views, nil
 }
 
 func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream chan *VizierExecData) {
@@ -128,9 +138,10 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 		case <-ctx.Done():
 			if err := ctx.Err(); err != nil {
 				if errors.Is(err, context.DeadlineExceeded) {
-					log.Fatalf("Script execution timeout")
+					v.err = newScriptExecutionError(CodeTimeout, err.Error())
+					return
 				}
-				log.WithError(err).Fatal("Script execution error")
+				v.err = newScriptExecutionError(CodeUnknown, err.Error())
 			}
 			return
 		case msg := <-stream:
@@ -142,15 +153,18 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 					return
 				}
 				grpcErr, ok := status.FromError(msg.Err)
-				if !ok {
-					log.WithField("error", grpcErr).Fatal("Failed to execute script")
+				if ok {
+					v.err = newScriptExecutionError(CodeGRPCError, "Failed to execute script: "+grpcErr.Message())
+					return
 				}
-				log.Fatalf("Failed to execute script: %s", grpcErr.Message())
+				v.err = newScriptExecutionError(CodeUnknown, "failed to execute script")
+				return
 			}
 
 			if msg.Resp.Status != nil && msg.Resp.Status.Code != 0 {
 				// Try to parse the error and return it up stream.
-				v.printErrorAndDie(ctx, msg.Resp.Status)
+				v.err = v.parseError(ctx, msg.Resp.Status)
+				return
 			}
 			var err error
 			switch res := msg.Resp.Result.(type) {
@@ -162,7 +176,8 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 				panic("unhandled response type")
 			}
 			if err != nil {
-				log.WithError(err).Fatalln("Failed to handle data from Vizier")
+				v.err = newScriptExecutionError(CodeBadData, "failed to handle data from Vizier: "+err.Error())
+				return
 			}
 		}
 	}
@@ -228,7 +243,7 @@ func (v *VizierStreamOutputAdapter) getNativeTypedValue(tableInfo *TableInfo, ro
 	}
 	return nil
 }
-func (v *VizierStreamOutputAdapter) printErrorAndDie(ctx context.Context, s *pl_api_vizierpb.Status) {
+func (v *VizierStreamOutputAdapter) parseError(ctx context.Context, s *pl_api_vizierpb.Status) error {
 	var compilerErrors []string
 	if s.ErrorDetails != nil {
 		for _, ed := range s.ErrorDetails {
@@ -243,14 +258,13 @@ func (v *VizierStreamOutputAdapter) printErrorAndDie(ctx context.Context, s *pl_
 	}
 
 	if len(compilerErrors) > 0 {
-		fmt.Fprintf(os.Stderr, "\nScript compilation failed: \n")
-		for _, s := range compilerErrors {
-			fmt.Fprintf(os.Stderr, s)
-		}
+		err := newScriptExecutionError(CodeCompilerError, "Script compilation failed")
+		err.compilerErrors = compilerErrors
+		return err
 	}
 
-	fmt.Fprint(os.Stderr, "\n")
 	log.Fatalf("Script execution error: %s", s.Message)
+	return newScriptExecutionError(CodeUnknown, "Script execution error:"+s.Message)
 }
 
 func (v *VizierStreamOutputAdapter) getFormattedValue(tableInfo *TableInfo, colIdx int, val interface{}) interface{} {

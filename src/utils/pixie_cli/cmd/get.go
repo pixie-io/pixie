@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 	"time"
@@ -39,7 +40,8 @@ var GetPEMsCmd = &cobra.Command{
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		if err := vizier.RunScriptAndOutputResults(ctx, v, execScript, format); err != nil {
-			log.WithError(err).Fatal("Failed to execute script")
+			fmt.Fprint(os.Stderr, vizier.FormatErrorMessage(err))
+			log.Fatal("Script Failed")
 		}
 	},
 }

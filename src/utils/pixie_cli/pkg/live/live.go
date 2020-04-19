@@ -180,7 +180,7 @@ func (v *View) runScript(execScript *script.ExecutableScript) error {
 	tw := vizier.NewVizierStreamOutputAdapter(ctx, resp, vizier.FormatInMemory)
 	tw.Finish()
 
-	v.s.tables = tw.Views()
+	v.s.tables, _ = tw.Views()
 	v.s.execScript = execScript
 	v.s.selectedTable = 0
 

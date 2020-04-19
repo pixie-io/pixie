@@ -17,8 +17,7 @@ func RunScriptAndOutputResults(ctx context.Context, v *Connector, execScript *sc
 		return err
 	}
 	tw := NewVizierStreamOutputAdapter(ctx, resp, format)
-	tw.Finish()
-	return nil
+	return tw.Finish()
 }
 
 // RunScript runs the script and return the data channel

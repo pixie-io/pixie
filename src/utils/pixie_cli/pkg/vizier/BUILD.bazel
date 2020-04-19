@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "client.go",
         "connector.go",
+        "errors.go",
         "lister.go",
         "script.go",
         "stream_adapter.go",
