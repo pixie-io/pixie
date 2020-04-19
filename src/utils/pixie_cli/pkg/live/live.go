@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 	"unicode"
 
+	"github.com/alecthomas/chroma/quick"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
@@ -47,6 +49,8 @@ type appState struct {
 	pageNames []string
 	// The currently selected table. Will reset to zero when new tables are inserted.
 	selectedTable int
+
+	scriptViewOpen bool
 }
 
 // View is the top level of the Live View.
@@ -344,6 +348,33 @@ func (v *View) createTviewTable(t components.TableView) *tview.Table {
 	return table
 }
 
+func (v *View) showScriptView() {
+	v.s.scriptViewOpen = true
+	tv := tview.NewTextView()
+	tv.SetDynamicColors(true)
+	v.pages.AddAndSwitchToPage("script", tv, true)
+	if v.s.execScript != nil {
+		highlighted := strings.Builder{}
+		quick.Highlight(&highlighted, v.s.execScript.ScriptString(), "python",
+			"terminal16m", "monokai")
+		fmt.Fprintf(tv, "%s :\n\n", withAccent("Script"))
+		fmt.Fprint(tv, tview.TranslateANSI(highlighted.String()))
+	} else {
+		fmt.Fprintf(tv, "[red]Script Not Found[white]")
+	}
+
+	v.app.SetFocus(tv)
+}
+
+func (v *View) closeScriptView() {
+	if !v.s.scriptViewOpen {
+		return
+	}
+	v.pages.RemovePage("script")
+	v.s.scriptViewOpen = false
+	v.selectTableAndHighlight(v.s.selectedTable)
+}
+
 func (v *View) showDataModal(s string) {
 	v.closeModal()
 	d := newDetailsModal(s)
@@ -391,6 +422,9 @@ func (v *View) selectTableAndHighlight(tableNum int) {
 
 // selectTable selects the numbered table. Out of bounds wrap in both directions.
 func (v *View) selectTable(tableNum int) int {
+	if v.s.scriptViewOpen {
+		v.closeScriptView()
+	}
 	if len(v.s.tables) == 0 {
 		return 0
 	}
@@ -462,6 +496,13 @@ func (v *View) keyHandler(event *tcell.EventKey) *tcell.EventKey {
 			v.showHelpModal()
 			return nil
 		}
+	case tcell.KeyCtrlS:
+		if v.s.scriptViewOpen {
+			v.closeScriptView()
+			return nil
+		}
+		v.showScriptView()
+		return nil
 	case tcell.KeyCtrlK:
 		v.showAutcompleteModal()
 		return nil
