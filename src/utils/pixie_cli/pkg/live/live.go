@@ -171,6 +171,7 @@ func (v *View) Stop() {
 
 // runScript is the internal method to run an executable script and update relevant appState.
 func (v *View) runScript(execScript *script.ExecutableScript) error {
+	v.clearErrorIfAny()
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	resp, err := vizier.RunScript(ctx, v.s.vizier, execScript)
@@ -178,14 +179,37 @@ func (v *View) runScript(execScript *script.ExecutableScript) error {
 		return err
 	}
 	tw := vizier.NewVizierStreamOutputAdapter(ctx, resp, vizier.FormatInMemory)
-	tw.Finish()
+	err = tw.Finish()
+	if err != nil {
+		v.execCompleteWithError(err)
+	}
 
-	v.s.tables, _ = tw.Views()
+	v.s.tables, err = tw.Views()
+	if err != nil {
+		v.execCompleteWithError(err)
+	}
+	// The view can update with nil data if there is an error.
 	v.s.execScript = execScript
 	v.s.selectedTable = 0
 
 	v.execCompleteViewUpdate()
 	return nil
+}
+
+func (v *View) clearErrorIfAny() {
+	// Clear error pages if any.
+	if v.pages.HasPage("error") {
+		v.pages.RemovePage("error")
+	}
+}
+func (v *View) execCompleteWithError(err error) {
+	m := vizier.FormatErrorMessage(err)
+	tv := tview.NewTextView()
+	tv.SetDynamicColors(true)
+	tv.SetText(tview.TranslateANSI(m))
+
+	v.pages.AddAndSwitchToPage("error", tv, true)
+	v.app.SetFocus(tv)
 }
 
 func (v *View) execCompleteViewUpdate() {
