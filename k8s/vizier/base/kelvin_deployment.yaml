@@ -69,10 +69,10 @@ spec:
           readOnly: true
         resources:
           limits:
-            memory: 256Mi
+            memory: 4096Mi
           requests:
-            cpu: 100m
-            memory: 256Mi
+            cpu: 1000m
+            memory: 2048Mi
       terminationGracePeriodSeconds: 30
       volumes:
       - name: certs
