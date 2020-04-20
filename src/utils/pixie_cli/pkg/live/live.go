@@ -523,8 +523,11 @@ func (v *View) selectTable(tableNum int) int {
 	}
 	tableNum = tableNum % len(v.s.tables)
 
-	v.s.selectedTable = tableNum
-	v.renderCurrentTable()
+	// We only need to render if it's a different table.
+	if v.s.selectedTable != tableNum {
+		v.s.selectedTable = tableNum
+		v.renderCurrentTable()
+	}
 	v.app.SetFocus(v.pages)
 
 	return tableNum
