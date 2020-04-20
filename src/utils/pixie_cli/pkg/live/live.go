@@ -2,6 +2,7 @@ package live
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"sort"
@@ -181,10 +182,7 @@ func New(br *script.BundleManager, vizier *vizier.Connector, execScript *script.
 	searchBox.SetChangedFunc(v.search)
 	searchBox.SetInputCapture(v.searchInputCapture)
 	// If a default script was passed in execute it.
-	err := v.runScript(execScript)
-	if err != nil {
-		return nil, err
-	}
+	v.runScript(execScript)
 
 	// Wire up the main keyboard handler.
 	app.SetInputCapture(v.keyHandler)
@@ -202,23 +200,30 @@ func (v *View) Stop() {
 }
 
 // runScript is the internal method to run an executable script and update relevant appState.
-func (v *View) runScript(execScript *script.ExecutableScript) error {
+func (v *View) runScript(execScript *script.ExecutableScript) {
 	v.clearErrorIfAny()
+	if execScript == nil {
+		v.execCompleteWithError(errors.New("No script provided"))
+		return
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	resp, err := vizier.RunScript(ctx, v.s.vizier, execScript)
 	if err != nil {
-		return err
+		return
 	}
 	tw := vizier.NewVizierStreamOutputAdapter(ctx, resp, vizier.FormatInMemory)
 	err = tw.Finish()
 	if err != nil {
 		v.execCompleteWithError(err)
+		return
 	}
 
 	v.s.tables, err = tw.Views()
 	if err != nil {
 		v.execCompleteWithError(err)
+		return
 	}
 	// Reset sort state.
 	v.s.sortState = make([][]sortType, len(v.s.tables))
@@ -231,7 +236,7 @@ func (v *View) runScript(execScript *script.ExecutableScript) error {
 	v.s.selectedTable = 0
 
 	v.execCompleteViewUpdate()
-	return nil
+	return
 }
 
 func (v *View) clearErrorIfAny() {
@@ -245,6 +250,9 @@ func (v *View) execCompleteWithError(err error) {
 	v.closeModal()
 
 	m := vizier.FormatErrorMessage(err)
+	if v.s.execScript == nil {
+		m += "\nType '?' for help or ctrl-k to get started."
+	}
 	tv := tview.NewTextView()
 	tv.SetDynamicColors(true)
 	tv.SetText(tview.TranslateANSI(m))

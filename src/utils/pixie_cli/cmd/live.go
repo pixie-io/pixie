@@ -26,11 +26,10 @@ var LiveCmd = &cobra.Command{
 		var err error
 		scriptFile, _ := cmd.Flags().GetString("file")
 		if scriptFile == "" {
-			if len(args) != 1 {
-				log.Fatal("Expected a single arg, script_name")
+			if len(args) > 0 {
+				scriptName := args[0]
+				execScript = br.MustGetScript(scriptName)
 			}
-			scriptName := args[0]
-			execScript = br.MustGetScript(scriptName)
 		} else {
 			execScript, err = loadScriptFromFile(scriptFile)
 			if err != nil {
