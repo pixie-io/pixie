@@ -67,7 +67,7 @@ const FormatInMemory string = "inmemory"
 // NewVizierStreamOutputAdapter creates a new vizier output adapter.
 func NewVizierStreamOutputAdapterWithFactory(ctx context.Context, stream chan *VizierExecData, format string,
 	factoryFunc func(*pl_api_vizierpb.ExecuteScriptResponse_MetaData) components.OutputStreamWriter) *VizierStreamOutputAdapter {
-	enableFormat := format != "json"
+	enableFormat := format != "json" && format != FormatInMemory
 
 	adapter := &VizierStreamOutputAdapter{
 		tableNameToInfo:     make(map[string]*TableInfo),

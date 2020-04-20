@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -34,6 +35,14 @@ const (
 	modalTypeAutocomplete
 )
 
+type sortType int
+
+const (
+	stUnsorted = iota
+	stAsc
+	stDesc
+)
+
 // appState is the global state that is used by the live view.
 type appState struct {
 	br *script.BundleManager
@@ -44,7 +53,9 @@ type appState struct {
 	execScript *script.ExecutableScript
 	// The view of all the tables in the current execution.
 	tables []components.TableView
-
+	// Sort state is tracked on a per table basis for each column. It is cleared when a new
+	// script is executed.
+	sortState [][]sortType
 	// ----- View Specific State ------
 	// tview does not allow us to access page names so we hang onto the pages we create here.
 	pageNames []string
@@ -211,6 +222,12 @@ func (v *View) runScript(execScript *script.ExecutableScript) error {
 	if err != nil {
 		v.execCompleteWithError(err)
 	}
+	// Reset sort state.
+	v.s.sortState = make([][]sortType, len(v.s.tables))
+	for i, t := range v.s.tables {
+		// Default value is unsorted.
+		v.s.sortState[i] = make([]sortType, len(t.Header()))
+	}
 	// The view can update with nil data if there is an error.
 	v.s.execScript = execScript
 	v.s.selectedTable = 0
@@ -269,14 +286,14 @@ func (v *View) updateTableView() {
 	for idx, table := range v.s.tables {
 		pageName := fmt.Sprintf(pageName(idx))
 		// Iterate through each table and create a page for it.
-		table := v.createTviewTable(table)
+		table := v.createTviewTable(table, v.s.sortState[idx])
 		v.tvTables = append(v.tvTables, table)
 		v.s.pageNames = append(v.s.pageNames, pageName)
 		v.pages.AddPage(pageName, table, true, false)
 	}
 
 	// We select the first table and set the app level focus on the main view.
-	v.selectTableAndHighlight(0)
+	v.selectTableAndHighlight(v.s.selectedTable)
 	v.app.SetFocus(v.pages)
 }
 
@@ -296,7 +313,7 @@ func (v *View) selectPrevTable() {
 	v.selectTableAndHighlight(v.s.selectedTable - 1)
 }
 
-func (v *View) createTviewTable(t components.TableView) *tview.Table {
+func (v *View) createTviewTable(t components.TableView, sortState []sortType) *tview.Table {
 	table := tview.NewTable().
 		SetBorders(true).
 		SetSelectable(true, true).
@@ -304,14 +321,36 @@ func (v *View) createTviewTable(t components.TableView) *tview.Table {
 
 	for idx, val := range t.Header() {
 		// Render the header.
-		tableCell := tview.NewTableCell(withAccent(val)).
+		tableCell := tview.NewTableCell(withAccent(val) + sortIcon(sortState[idx])).
 			SetAlign(tview.AlignCenter).
 			SetSelectable(false).
 			SetExpansion(2)
 		table.SetCell(0, idx, tableCell)
 	}
 
-	for rowIdx, row := range t.Data() {
+	data := t.Data()
+	// Sort columns from left to right.
+	sorting := false
+	for _, order := range sortState {
+		if order != stUnsorted {
+			sorting = true
+		}
+	}
+	if sorting {
+		sort.SliceStable(data, func(i, j int) bool {
+			// TODO(zasgar): Clean this up when we have properly type columns.
+			for idx, order := range sortState {
+				if order == stUnsorted {
+					continue
+				}
+				return colCompare(data[i][idx], data[j][idx], order)
+			}
+			return false
+		})
+	}
+
+	// Sort the data according to the
+	for rowIdx, row := range data {
 		for colIdx, val := range stringifyRow(row) {
 			if len(val) > maxCellSize {
 				val = val[:maxCellSize-1] + "\u2026"
@@ -360,6 +399,13 @@ func (v *View) createTviewTable(t components.TableView) *tview.Table {
 	})
 
 	table.SetSelectionChangedFunc(func(row, column int) {
+		//fmt.Printf("%+v  %+v\n", row, column)
+		// Switch the sort state.
+		if row == 0 {
+			cs := v.s.sortState[v.s.selectedTable][column]
+			v.s.sortState[v.s.selectedTable][column] = nextSort(cs)
+			v.updateTableView()
+		}
 		// Store the selection so we can pop open the blob view on double click.
 		selectedRow = row
 		selectedCol = column
@@ -730,4 +776,69 @@ func stringifyRow(row []interface{}) []string {
 		}
 	}
 	return s
+}
+
+func sortIcon(s sortType) string {
+	switch s {
+	case stUnsorted:
+		return " \u2195"
+	case stAsc:
+		return " \u2191"
+	case stDesc:
+		return " \u2193"
+	}
+	return ""
+}
+
+func nextSort(s sortType) sortType {
+	switch s {
+	case stUnsorted:
+		return stAsc
+	case stAsc:
+		return stDesc
+	case stDesc:
+		fallthrough
+	default:
+		return stUnsorted
+	}
+}
+
+func colCompare(v1 interface{}, v2 interface{}, s sortType) bool {
+	switch v1c := v1.(type) {
+	case time.Time:
+		v2c, ok := v2.(time.Time)
+		if !ok {
+			break
+		}
+		if s == stAsc {
+			return v1c.Sub(v2c) > 0
+		}
+		return v1c.Sub(v2c) < 0
+	case float64:
+		v2c, ok := v2.(float64)
+		if !ok {
+			break
+		}
+		if s == stAsc {
+			return v1c < v2c
+		}
+		return v2c < v1c
+	case int64:
+		v2c, ok := v2.(int64)
+		if !ok {
+			break
+		}
+		if s == stAsc {
+			return v1c < v2c
+		}
+		return v2c < v1c
+	}
+
+	// Sort as strings, since we can't find type.
+	v1c := fmt.Sprintf("%+v", v1)
+	v2c := fmt.Sprintf("%+v", v2)
+	if s == stAsc {
+		return v1c < v2c
+	}
+	return v2c < v1c
 }
