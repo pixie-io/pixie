@@ -23,6 +23,14 @@ const (
 	bgColor          = "#000000"
 )
 
+type modalType int
+
+const (
+	modalTypeUnknown modalType = iota
+	modalTypeHelp
+	modalTypeAutocomplete
+)
+
 // appState is the global state that is used by the live view.
 type appState struct {
 	br *script.BundleReader
@@ -331,6 +339,14 @@ func (v *View) showAutcompleteModal() {
 		65, 30), true, true)
 }
 
+func (v *View) showHelpModal() {
+	v.closeModal()
+	hm := &helpModal{}
+	v.modal = hm
+	v.pages.AddPage("modal", createModal(v.modal.Show(v.app),
+		65, 30), true, true)
+}
+
 // closes modal if open, noop if not.
 func (v *View) closeModal() {
 	if v.modal == nil {
@@ -363,18 +379,48 @@ func (v *View) selectTable(tableNum int) int {
 	return tableNum
 }
 
+func (v *View) activeModalType() modalType {
+	if v.modal == nil {
+		return modalTypeUnknown
+	}
+	switch v.modal.(type) {
+	case *helpModal:
+		return modalTypeHelp
+	case *autocompleteModal:
+		return modalTypeAutocomplete
+	default:
+		return modalTypeUnknown
+	}
+}
+
 func (v *View) keyHandler(event *tcell.EventKey) *tcell.EventKey {
-	// If the modal is open capture the event and only let
-	// escape work to close the modal.
+	// If the modal is open capture the event and let escape or the original
+	// shortcut close it.
 	if v.modal != nil {
-		if event.Key() == tcell.KeyEscape {
+		switch event.Key() {
+		case tcell.KeyEscape:
 			v.closeModal()
+			return nil
+		case tcell.KeyRune:
+			switch string(event.Rune()) {
+			case "?":
+				if v.activeModalType() == modalTypeHelp {
+					v.closeModal()
+					return nil
+				}
+			}
+		case tcell.KeyCtrlK:
+			if v.activeModalType() == modalTypeAutocomplete {
+				v.closeModal()
+				return nil
+			}
 		}
 		return event
 	}
 
 	switch event.Key() {
 	case tcell.KeyTAB:
+
 		// Default for tab is to quit so stop that.
 		return nil
 	case tcell.KeyCtrlN:
@@ -386,6 +432,11 @@ func (v *View) keyHandler(event *tcell.EventKey) *tcell.EventKey {
 		r := event.Rune()
 		if unicode.IsDigit(r) {
 			v.selectTableAndHighlight(int(r-'0') - 1)
+		}
+
+		if string(r) == "?" {
+			v.showHelpModal()
+			return nil
 		}
 	case tcell.KeyCtrlK:
 		v.showAutcompleteModal()

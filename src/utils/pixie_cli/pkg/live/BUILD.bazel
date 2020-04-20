@@ -5,6 +5,7 @@ go_library(
     srcs = [
         "autocomplete.go",
         "details.go",
+        "help.go",
         "live.go",
         "utils.go",
     ],

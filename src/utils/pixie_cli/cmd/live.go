@@ -24,6 +24,7 @@ var LiveCmd = &cobra.Command{
 		br := mustCreateBundleReader()
 		scriptName := args[0]
 		execScript := br.MustGetScript(scriptName)
+
 		v := mustConnectDefaultVizier(cloudAddr)
 
 		lv, err := live.New(br, v, execScript)
