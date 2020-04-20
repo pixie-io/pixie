@@ -39,13 +39,6 @@ parse_args() {
 }
 
 check_args() {
-    if [ "$BUMP_MAJOR" = "true" ] || [ "$BUMP_MINOR" = "true" ]; then
-        if [ "$RELEASE" != "true" ]; then
-          echo "Cannot bump major and minor version in non-release."
-          exit
-        fi
-    fi
-
     if [ "$BUMP_MAJOR" = "true" ] && [ "$BUMP_MINOR" = "true" ]; then
         echo "Cannot bump both major and minor."
         exit
@@ -99,7 +92,7 @@ function update_pre {
     read -r major minor patch pre <<< "$(parse "$1")"
     commits=$2
     branch=$3
-    echo "$major.$minor.$((patch +1))-pre-$branch.$commits"
+    echo "$major.$minor.$patch-pre-$branch.$commits"
 }
 
 parse_args "$@"
@@ -126,15 +119,15 @@ prev_tag=$(echo "$tags" | head -1)
 version_str=${prev_tag//*\/v/}
 
 new_version_str=""
-if [ "$RELEASE" = "true" ]; then
-    if [ "$BUMP_MAJOR" = "true" ]; then
-        new_version_str=$(bump_major "$version_str")
-    elif [ "$BUMP_MINOR" = "true" ]; then
-        new_version_str=$(bump_minor "$version_str")
-    else
-        new_version_str=$(bump_patch "$version_str")
-    fi
+if [ "$BUMP_MAJOR" = "true" ]; then
+    new_version_str=$(bump_major "$version_str")
+elif [ "$BUMP_MINOR" = "true" ]; then
+    new_version_str=$(bump_minor "$version_str")
 else
+    new_version_str=$(bump_patch "$version_str")
+fi
+
+if [ "$RELEASE" != "true" ]; then
     # Find the number all the commits between now and the last release.
     commits=$(git log HEAD..."$prev_tag" --pretty=format:"%H")
 
@@ -159,7 +152,7 @@ else
     branch_name=$(git rev-parse --abbrev-ref HEAD)
     sanitized_branch=$(echo "$branch_name" | sed -E 's/[._\/]+/-/g')
 
-    new_version_str=$(update_pre "$version_str" "$commit_count" "$sanitized_branch")
+    new_version_str=$(update_pre "$new_version_str" "$commit_count" "$sanitized_branch")
 fi
 
 new_tag="release/$ARTIFACT_TYPE/v"$new_version_str
