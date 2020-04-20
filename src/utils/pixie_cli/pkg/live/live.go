@@ -226,6 +226,9 @@ func (v *View) clearErrorIfAny() {
 	}
 }
 func (v *View) execCompleteWithError(err error) {
+	v.searchClear()
+	v.closeModal()
+
 	m := vizier.FormatErrorMessage(err)
 	tv := tview.NewTextView()
 	tv.SetDynamicColors(true)
@@ -237,6 +240,7 @@ func (v *View) execCompleteWithError(err error) {
 
 func (v *View) execCompleteViewUpdate() {
 	v.closeModal()
+	v.searchClear()
 
 	v.updateScriptInfoView()
 	v.updateTableNav()
@@ -281,6 +285,7 @@ func (v *View) updateTableNav() {
 	for idx, t := range v.s.tables {
 		fmt.Fprintf(v.tableSelector, `%d ["%d"]%s[""]  `, idx+1, idx, withAccent(t.Name()))
 	}
+	v.showTableNav()
 }
 
 func (v *View) selectNextTable() {
@@ -430,8 +435,13 @@ func (v *View) closeModal() {
 	}
 	v.pages.RemovePage("modal")
 	v.modal = nil
-	// This will cause a refocus to occur on the table.
-	v.selectTableAndHighlight(v.s.selectedTable)
+	if v.s.searchBoxEnabled {
+		// This will refocus the search box.
+		v.showSearchBox()
+	} else {
+		// This will cause a refocus to occur on the table.
+		v.selectTableAndHighlight(v.s.selectedTable)
+	}
 }
 
 // selectTableAndHighlight selects and highligts the table. Don't call this from within the highlight func
@@ -647,6 +657,9 @@ func (v *View) keyHandler(event *tcell.EventKey) *tcell.EventKey {
 	}
 
 	if v.s.searchBoxEnabled {
+		if event.Key() == tcell.KeyCtrlK {
+			v.showAutcompleteModal()
+		}
 		return event
 	}
 
