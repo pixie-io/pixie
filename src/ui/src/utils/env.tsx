@@ -1,7 +1,6 @@
 import {DOMAIN_NAME} from 'containers/constants';
 import * as moment from 'moment';
 
-const BUILD_ENV = process.env.BUILD_ENV;
 const BUILD_NUMBER = process.env.BUILD_NUMBER;
 const BUILD_SCM_REVISION = process.env.BUILD_SCM_REVISION;
 const BUILD_SCM_STATUS = process.env.BUILD_SCM_STATUS;
@@ -25,7 +24,7 @@ if (!!BUILD_NUMBER) {
 export const PIXIE_CLOUD_VERSION = `${dateStr}+${parts.join('.')}`;
 
 export function isProd(): boolean {
-  return (BUILD_ENV || '').toLowerCase() === 'prod';
+  return !isDev() && !isStaging();
 }
 
 export function isDev(): boolean {
