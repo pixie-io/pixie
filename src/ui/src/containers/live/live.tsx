@@ -2,6 +2,7 @@ import {getLiveViewEditorOpened, setLiveViewEditorOpened} from 'common/localstor
 import {scrollbarStyles} from 'common/mui-theme';
 import EditIcon from 'components/icons/edit';
 import MagicIcon from 'components/icons/magic';
+import PixieLogo from 'components/icons/pixie-logo';
 import LazyPanel from 'components/lazy-panel';
 import * as React from 'react';
 import {GlobalHotKeys} from 'react-hotkeys';
@@ -83,6 +84,13 @@ const useStyles = makeStyles((theme: Theme) => {
       margin: theme.spacing(1),
       overflow: 'auto',
     },
+    pixieLogo: {
+      opacity: 0.5,
+      position: 'fixed',
+      bottom: theme.spacing(1),
+      right: theme.spacing(2),
+      width: '48px',
+    },
   });
 });
 
@@ -153,6 +161,7 @@ const LiveView = () => {
         <div>drawer content</div>
       </Drawer>
       <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
+      <PixieLogo className={classes.pixieLogo} />
     </div >
   );
 };

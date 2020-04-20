@@ -16,9 +16,8 @@ const useStyles = makeStyles((theme: Theme) => {
     root: {
       display: 'flex',
       flexDirection: 'row',
-      paddingLeft: theme.spacing(2),
-      paddingRight: theme.spacing(2),
       height: theme.spacing(5),
+      paddingLeft: theme.spacing(2),
       alignItems: 'center',
       backgroundColor: theme.palette.background.three,
       cursor: 'pointer',
@@ -26,7 +25,7 @@ const useStyles = makeStyles((theme: Theme) => {
     title: {
       ...theme.typography.subtitle2,
       color: theme.palette.foreground.one,
-      marginRight: 'auto',
+      marginLeft: theme.spacing(2),
     },
   });
 });
@@ -38,8 +37,8 @@ const DataDrawerToggle = (props: DataDrawerToggleProps) => {
 
   return (
     <div className={classes.root} onClick={toggle}>
-      <div className={classes.title}>{error ? 'Error Details' : 'Underlying Data'}</div>
       {opened ? <ExpandMoreIcon /> : <ExpandLessIcon />}
+      <div className={classes.title}>{error ? 'Error Details' : 'Underlying Data'}</div>
     </div>
   );
 };
