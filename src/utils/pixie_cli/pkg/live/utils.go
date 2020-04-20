@@ -26,10 +26,6 @@ func createModal(p tview.Primitive, width, height int) tview.Primitive {
 		AddItem(nil, 0, 1, false)
 }
 
-func pageName(tableIdx int) string {
-	return fmt.Sprintf("table-%d", tableIdx)
-}
-
 func contains(needle int, haystack []int) bool {
 	for _, i := range haystack {
 		if needle == i {

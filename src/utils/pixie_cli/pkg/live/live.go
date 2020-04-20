@@ -57,8 +57,6 @@ type appState struct {
 	// script is executed.
 	sortState [][]sortType
 	// ----- View Specific State ------
-	// tview does not allow us to access page names so we hang onto the pages we create here.
-	pageNames []string
 	// The currently selected table. Will reset to zero when new tables are inserted.
 	selectedTable int
 
@@ -76,7 +74,7 @@ type View struct {
 	pages         *tview.Pages
 	tableSelector *tview.TextView
 	infoView      *tview.TextView
-	tvTables      []*tview.Table
+	tvTable       *tview.Table
 	logoBox       *tview.TextView
 	bottomBar     *tview.Flex
 	searchBox     *tview.InputField
@@ -251,6 +249,8 @@ func (v *View) execCompleteWithError(err error) {
 	tv.SetDynamicColors(true)
 	tv.SetText(tview.TranslateANSI(m))
 
+	v.s.selectedTable = 0
+	v.tvTable = nil
 	v.pages.AddAndSwitchToPage("error", tv, true)
 	v.app.SetFocus(tv)
 }
@@ -261,7 +261,7 @@ func (v *View) execCompleteViewUpdate() {
 
 	v.updateScriptInfoView()
 	v.updateTableNav()
-	v.updateTableView()
+	v.renderCurrentTable()
 }
 
 func (v *View) updateScriptInfoView() {
@@ -276,24 +276,18 @@ func (v *View) updateScriptInfoView() {
 	}
 }
 
-func (v *View) updateTableView() {
+func (v *View) renderCurrentTable() {
 	// We remove all the old pages and create new pages for tables.
-	for _, pageName := range v.s.pageNames {
-		v.pages.RemovePage(pageName)
+	if v.pages.HasPage("table") {
+		v.pages.RemovePage("table")
 	}
 
-	v.tvTables = make([]*tview.Table, 0)
-	for idx, table := range v.s.tables {
-		pageName := fmt.Sprintf(pageName(idx))
-		// Iterate through each table and create a page for it.
-		table := v.createTviewTable(table, v.s.sortState[idx])
-		v.tvTables = append(v.tvTables, table)
-		v.s.pageNames = append(v.s.pageNames, pageName)
-		v.pages.AddPage(pageName, table, true, false)
+	if len(v.s.tables) < v.s.selectedTable {
+		return
 	}
-
-	// We select the first table and set the app level focus on the main view.
-	v.selectTableAndHighlight(v.s.selectedTable)
+	table := v.s.tables[v.s.selectedTable]
+	v.tvTable = v.createTviewTable(table, v.s.sortState[v.s.selectedTable])
+	v.pages.AddAndSwitchToPage("table", v.tvTable, true)
 	v.app.SetFocus(v.pages)
 }
 
@@ -404,7 +398,7 @@ func (v *View) createTviewTable(t components.TableView, sortState []sortType) *t
 		if row == 0 {
 			cs := v.s.sortState[v.s.selectedTable][column]
 			v.s.sortState[v.s.selectedTable][column] = nextSort(cs)
-			v.updateTableView()
+			v.renderCurrentTable()
 		}
 		// Store the selection so we can pop open the blob view on double click.
 		selectedRow = row
@@ -529,8 +523,8 @@ func (v *View) selectTable(tableNum int) int {
 	}
 	tableNum = tableNum % len(v.s.tables)
 
-	v.pages.SwitchToPage(pageName(tableNum))
 	v.s.selectedTable = tableNum
+	v.renderCurrentTable()
 	v.app.SetFocus(v.pages)
 
 	return tableNum
@@ -568,10 +562,10 @@ func (v *View) searchNext(searchBackwards bool, advance bool) {
 	}
 
 	// Very unoptimized search function...
-	if len(v.tvTables) < v.s.selectedTable {
+	if v.tvTable == nil {
 		return
 	}
-	t := v.tvTables[v.s.selectedTable]
+	t := v.tvTable
 	rc := t.GetRowCount()
 	cc := t.GetColumnCount()
 
