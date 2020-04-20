@@ -38,14 +38,9 @@ var GetPEMsCmd = &cobra.Command{
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-
-		resp, err := v.ExecuteScriptStream(ctx, execScript.ScriptString())
-		if err != nil {
-			log.WithError(err).Fatal("Failed to execute query")
+		if err := vizier.RunScriptAndOutputResults(ctx, v, execScript, format); err != nil {
+			log.WithError(err).Fatal("Failed to execute script")
 		}
-
-		tw := vizier.NewVizierStreamOutputAdapter(ctx, resp, format)
-		tw.Finish()
 	},
 }
 

@@ -38,6 +38,7 @@ func init() {
 	RootCmd.AddCommand(UpdateCmd)
 	RootCmd.AddCommand(ProxyCmd)
 	RootCmd.AddCommand(RunCmd)
+	RootCmd.AddCommand(LiveCmd)
 	RootCmd.AddCommand(GetCmd)
 	RootCmd.AddCommand(ConfigCmd)
 	RootCmd.AddCommand(ScriptCmd)

@@ -1,0 +1,22 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "autocomplete.go",
+        "details.go",
+        "live.go",
+        "utils.go",
+    ],
+    importpath = "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/live",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/utils/pixie_cli/pkg/components:go_default_library",
+        "//src/utils/pixie_cli/pkg/script:go_default_library",
+        "//src/utils/pixie_cli/pkg/vizier:go_default_library",
+        "@com_github_alecthomas_chroma//quick:go_default_library",
+        "@com_github_gdamore_tcell//:go_default_library",
+        "@com_github_rivo_tview//:go_default_library",
+        "@com_github_sahilm_fuzzy//:go_default_library",
+    ],
+)

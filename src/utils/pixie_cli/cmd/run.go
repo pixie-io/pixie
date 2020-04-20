@@ -12,14 +12,11 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/segmentio/analytics-go.v3"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
-
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
 )
-
-const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle.json"
 
 func init() {
 	RunCmd.Flags().StringP("output", "o", "", "Output format: one of: json|table")
@@ -64,6 +61,7 @@ var RunCmd = &cobra.Command{
 				log.WithError(err).Fatal("Failed to get query string")
 			}
 		}
+		v := mustConnectDefaultVizier(cloudAddr)
 
 		// TODO(zasgar): Refactor this when we change to the new API to make analytics cleaner.
 		_ = pxanalytics.Client().Enqueue(&analytics.Track{
@@ -74,34 +72,11 @@ var RunCmd = &cobra.Command{
 				Set("scriptString", execScript.ScriptString()),
 		})
 
-		v := mustConnectDefaultVizier(cloudAddr)
-
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-
-		resp, err := v.ExecuteScriptStream(ctx, execScript.ScriptString())
-		if err != nil {
-			_ = pxanalytics.Client().Enqueue(&analytics.Track{
-				UserId: pxconfig.Cfg().UniqueClientID,
-				Event:  "Script Execution Failed",
-				Properties: analytics.NewProperties().
-					Set("scriptString", execScript.ScriptString()).
-					Set("passthrough", v.PassthroughMode()),
-			})
+		if err := vizier.RunScriptAndOutputResults(ctx, v, execScript, format); err != nil {
 			log.WithError(err).Fatal("Failed to execute script")
 		}
-
-		_ = pxanalytics.Client().Enqueue(&analytics.Track{
-			UserId: pxconfig.Cfg().UniqueClientID,
-			Event:  "Script Execution Success",
-			Properties: analytics.NewProperties().
-				Set("scriptString", execScript.ScriptString()).
-				Set("outputFormat", format).
-				Set("passthrough", v.PassthroughMode()),
-		})
-
-		tw := vizier.NewVizierStreamOutputAdapter(ctx, resp, format)
-		tw.Finish()
 
 		if execScript.Metadata().HasVis {
 			p := func(s string, a ...interface{}) {
@@ -112,6 +87,5 @@ var RunCmd = &cobra.Command{
 			p("\n%s %s: %s.\n", color.CyanString("\n==> "),
 				b("Live UI"), u(execScript.Metadata().LiveViewLink()))
 		}
-
 	},
 }

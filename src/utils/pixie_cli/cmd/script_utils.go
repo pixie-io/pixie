@@ -11,6 +11,8 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 )
 
+const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle.json"
+
 func mustCreateBundleReader() *script.BundleReader {
 	br, err := createBundleReader()
 	if err != nil {

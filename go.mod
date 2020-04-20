@@ -5,6 +5,7 @@ go 1.13
 require (
 	cloud.google.com/go v0.44.3
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
+	github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 // indirect
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/ajstarks/svgo v0.0.0-20181006003313-6ce6a3bcf6cd // indirect
@@ -33,6 +34,7 @@ require (
 	github.com/fatih/color v1.7.0
 	github.com/fluent/fluent-bit-go v0.0.0-20200304012558-215d6804159a
 	github.com/fogleman/gg v1.3.0 // indirect
+	github.com/gdamore/tcell v1.3.0
 	github.com/getsentry/sentry-go v0.5.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang-migrate/migrate v3.5.4+incompatible
@@ -53,6 +55,7 @@ require (
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/lib/pq v1.3.0
+	github.com/mattn/go-sixel v0.0.1 // indirect
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/nats-io/nats-server/v2 v2.1.4
 	github.com/nats-io/nats-streaming-server v0.17.0
@@ -65,12 +68,15 @@ require (
 	github.com/opencontainers/runc v1.0.0-rc8 // indirect
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/phayes/freeport v0.0.0-20171002181615-b8543db493a5
+	github.com/rivo/tview v0.0.0-20200404204604-ca37f83cb2e7
+	github.com/sahilm/fuzzy v0.1.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c // indirect
 	github.com/sercand/kuberesolver v2.1.0+incompatible
 	github.com/shopspring/decimal v0.0.0-20190905144223-a36b5d85f337 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/skratchdot/open-golang v0.0.0-20190402232053-79abb63cd66e
+	github.com/soniakeys/quant v1.0.0 // indirect
 	github.com/spf13/cast v1.3.0
 	github.com/spf13/cobra v0.0.6
 	github.com/spf13/pflag v1.0.3
@@ -87,7 +93,7 @@ require (
 	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5
+	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4
 	gonum.org/v1/gonum v0.0.0-20190413104459-5d695651a1d5 // indirect
 	gonum.org/v1/plot v0.0.0-20190410204940-3a5f52653745
 	google.golang.org/api v0.9.0

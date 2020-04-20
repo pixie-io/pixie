@@ -118,8 +118,8 @@ go_repository(
 go_repository(
     name = "org_golang_x_sys",
     importpath = "golang.org/x/sys",
-    sum = "h1:LfCXLvNmTYH9kEmVgqbnsWfruoXZIrh4YBgqVHtDvw0=",
-    version = "v0.0.0-20200202164722-d101bd2416d5",
+    sum = "h1:sfkvUWPNGwSV+8/fNqctR5lS2AqCSqYwXdrjCxp/dXo=",
+    version = "v0.0.0-20200212091648-12a6c2dcc1e4",
 )
 
 go_repository(
@@ -439,8 +439,8 @@ go_repository(
 go_repository(
     name = "com_github_mattn_go_runewidth",
     importpath = "github.com/mattn/go-runewidth",
-    sum = "h1:Ei8KR0497xHyKJPAv59M1dkC+rOZCMBJ+t3fZ+twI54=",
-    version = "v0.0.7",
+    sum = "h1:3tS41NlGYSmhhe/8fhGRzc+z3AYCw1Fe1WAyLuujKs0=",
+    version = "v0.0.8",
 )
 
 go_repository(
@@ -2773,5 +2773,75 @@ go_repository(
     name = "com_github_cheekybits_genny",
     importpath = "github.com/cheekybits/genny",
     sum = "h1:uGGa4nei+j20rOSeDeP5Of12XVm7TGUd4dJA9RDitfE=",
+    version = "v1.0.0",
+)
+
+go_repository(
+    name = "com_github_data_dog_go_sqlmock",
+    importpath = "github.com/DATA-DOG/go-sqlmock",
+    sum = "h1:CWUqKXe0s8A2z6qCgkP4Kru7wC11YoAnoupUKFDnH08=",
+    version = "v1.3.3",
+)
+
+go_repository(
+    name = "com_github_gdamore_encoding",
+    importpath = "github.com/gdamore/encoding",
+    sum = "h1:+7OoQ1Bc6eTm5niUzBa0Ctsh6JbMW6Ra+YNuAtDBdko=",
+    version = "v1.0.0",
+)
+
+go_repository(
+    name = "com_github_gdamore_tcell",
+    importpath = "github.com/gdamore/tcell",
+    sum = "h1:r35w0JBADPZCVQijYebl6YMWWtHRqVEGt7kL2eBADRM=",
+    version = "v1.3.0",
+)
+
+go_repository(
+    name = "com_github_lucasb_eyer_go_colorful",
+    importpath = "github.com/lucasb-eyer/go-colorful",
+    sum = "h1:QIbQXiugsb+q10B+MI+7DI1oQLdmnep86tWFlaaUAac=",
+    version = "v1.0.3",
+)
+
+go_repository(
+    name = "com_github_rivo_tview",
+    importpath = "github.com/rivo/tview",
+    sum = "h1:Jfm2O5tRzzHt5LeM9F4AuwcNGxCH7erPl8GeVOzJKd0=",
+    version = "v0.0.0-20200404204604-ca37f83cb2e7",
+)
+
+go_repository(
+    name = "com_github_rivo_uniseg",
+    importpath = "github.com/rivo/uniseg",
+    sum = "h1:+2KBaVoUmb9XzDsrx/Ct0W/EYOSFf/nWTauy++DprtY=",
+    version = "v0.1.0",
+)
+
+go_repository(
+    name = "com_github_sahilm_fuzzy",
+    importpath = "github.com/sahilm/fuzzy",
+    sum = "h1:FzWGaw2Opqyu+794ZQ9SYifWv2EIXpwP4q8dY1kDAwI=",
+    version = "v0.1.0",
+)
+
+go_repository(
+    name = "com_github_burntsushi_graphics_go",
+    importpath = "github.com/BurntSushi/graphics-go",
+    sum = "h1:lTG4HQym5oPKjL7nGs+csTgiDna685ZXjxijkne828g=",
+    version = "v0.0.0-20160129215708-b43f31a4a966",
+)
+
+go_repository(
+    name = "com_github_mattn_go_sixel",
+    importpath = "github.com/mattn/go-sixel",
+    sum = "h1:rhJSpux2xjsmXdXqY694uiEC0Rwxt6jYoq7Bahqo2xs=",
+    version = "v0.0.1",
+)
+
+go_repository(
+    name = "com_github_soniakeys_quant",
+    importpath = "github.com/soniakeys/quant",
+    sum = "h1:N1um9ktjbkZVcywBVAAYpZYSHxEfJGzshHCxx/DaI0Y=",
     version = "v1.0.0",
 )
