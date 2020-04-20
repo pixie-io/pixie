@@ -3,6 +3,7 @@ package live
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -51,6 +52,11 @@ type appState struct {
 	selectedTable int
 
 	scriptViewOpen bool
+
+	// State for search input box.
+	searchBoxEnabled bool
+	searchEnterHit   bool
+	searchString     string
 }
 
 // View is the top level of the Live View.
@@ -59,6 +65,10 @@ type View struct {
 	pages         *tview.Pages
 	tableSelector *tview.TextView
 	infoView      *tview.TextView
+	tvTables      []*tview.Table
+	logoBox       *tview.TextView
+	bottomBar     *tview.Flex
+	searchBox     *tview.InputField
 	modal         Modal
 	s             *appState
 }
@@ -119,6 +129,10 @@ func New(br *script.BundleReader, vizier *vizier.Connector, execScript *script.E
 		AddItem(pages, 0, 1, true).
 		AddItem(bottomBar, 2, 0, false)
 
+	searchBox := tview.NewInputField()
+	searchBox.SetBackgroundColor(tcell.ColorBlack)
+	searchBox.SetFieldBackgroundColor(tcell.ColorBlack)
+
 	// Application setup.
 	app := tview.NewApplication()
 	app.SetRoot(layout, true).
@@ -129,6 +143,9 @@ func New(br *script.BundleReader, vizier *vizier.Connector, execScript *script.E
 		pages:         pages,
 		tableSelector: tableSelector,
 		infoView:      infoView,
+		logoBox:       logoBox,
+		searchBox:     searchBox,
+		bottomBar:     bottomBar,
 		s: &appState{
 			br:     br,
 			vizier: vizier,
@@ -152,6 +169,8 @@ func New(br *script.BundleReader, vizier *vizier.Connector, execScript *script.E
 		}
 	})
 
+	searchBox.SetChangedFunc(v.search)
+	searchBox.SetInputCapture(v.searchInputCapture)
 	// If a default script was passed in execute it.
 	err := v.runScript(execScript)
 	if err != nil {
@@ -242,10 +261,12 @@ func (v *View) updateTableView() {
 		v.pages.RemovePage(pageName)
 	}
 
+	v.tvTables = make([]*tview.Table, 0)
 	for idx, table := range v.s.tables {
 		pageName := fmt.Sprintf(pageName(idx))
 		// Iterate through each table and create a page for it.
 		table := v.createTviewTable(table)
+		v.tvTables = append(v.tvTables, table)
 		v.s.pageNames = append(v.s.pageNames, pageName)
 		v.pages.AddPage(pageName, table, true, false)
 	}
@@ -420,6 +441,28 @@ func (v *View) selectTableAndHighlight(tableNum int) {
 	v.tableSelector.Highlight(strconv.Itoa(tableNum)).ScrollToHighlight()
 }
 
+func (v *View) showTableNav() {
+	v.s.searchBoxEnabled = false
+	// Clear the text box.
+	v.searchClear()
+	v.bottomBar.
+		Clear().
+		AddItem(v.tableSelector, 0, 1, false).
+		AddItem(v.logoBox, 8, 1, false)
+
+	// Switch focus back to the active table.
+	v.selectTableAndHighlight(v.s.selectedTable)
+}
+
+func (v *View) showSearchBox() {
+	v.s.searchBoxEnabled = true
+	v.bottomBar.
+		Clear().
+		AddItem(v.searchBox, 0, 1, false).
+		AddItem(v.logoBox, 8, 1, false)
+	v.app.SetFocus(v.searchBox)
+}
+
 // selectTable selects the numbered table. Out of bounds wrap in both directions.
 func (v *View) selectTable(tableNum int) int {
 	if v.s.scriptViewOpen {
@@ -451,6 +494,133 @@ func (v *View) activeModalType() modalType {
 	}
 }
 
+func (v *View) searchClear() {
+	v.s.searchEnterHit = false
+	v.s.searchString = ""
+	v.searchBox.SetText("")
+}
+
+func (v *View) search(s string) {
+	v.s.searchString = s
+	v.searchNext(false, false)
+}
+
+func (v *View) searchNext(searchBackwards bool, advance bool) {
+	s := v.s.searchString
+	if s == "" {
+		return
+	}
+
+	// Very unoptimized search function...
+	if len(v.tvTables) < v.s.selectedTable {
+		return
+	}
+	t := v.tvTables[v.s.selectedTable]
+	rc := t.GetRowCount()
+	cc := t.GetColumnCount()
+
+	searchFunc := func(t string) bool {
+		return strings.Contains(t, s)
+	}
+
+	// If possible try to make it a regexp.
+	re, err := regexp.Compile(s)
+	if err == nil {
+		searchFunc = func(t string) bool {
+			return re.Match([]byte(t))
+		}
+	}
+	wrappedCount := 0
+	for wrappedCount < 2 {
+		r, c := t.GetSelection()
+		if advance {
+			c++
+		}
+		rowCond := func() bool {
+			return r < rc
+		}
+		colCond := func() bool {
+			return c < cc
+		}
+
+		if searchBackwards {
+			if advance {
+				c -= 2 // For the increment above, and back one more col.
+			}
+			rowCond = func() bool {
+				return r >= 0
+			}
+			colCond = func() bool {
+				return c >= 0
+			}
+		}
+
+		for rowCond() {
+			for colCond() {
+				if searchFunc(stripColors(t.GetCell(r, c).Text)) {
+					t.Select(r, c)
+					return
+				}
+				if searchBackwards {
+					c--
+				} else {
+					c++
+				}
+			}
+			if searchBackwards {
+				c = cc
+				r--
+			} else {
+				c = 0
+				r++
+			}
+		}
+
+		// Roll over.
+		if searchBackwards {
+			t.Select(rc, cc)
+		} else {
+			t.Select(0, 0)
+		}
+		wrappedCount++
+	}
+}
+
+func (v *View) searchInputCapture(event *tcell.EventKey) *tcell.EventKey {
+	switch event.Key() {
+	case tcell.KeyEnter:
+		v.s.searchEnterHit = true
+		return nil
+	case tcell.KeyBackspace2:
+		fallthrough
+	case tcell.KeyBackspace:
+		fallthrough
+	case tcell.KeyDelete:
+		v.s.searchEnterHit = false
+		return event
+	case tcell.KeyCtrlR:
+		v.searchNext(true, true)
+	case tcell.KeyCtrlS:
+		v.searchNext(false, true)
+	case tcell.KeyRune:
+		if v.s.searchEnterHit {
+			s := string(event.Rune())
+			if s == "n" {
+				v.searchNext(false, true)
+			}
+			if s == "p" {
+				v.searchNext(true, true)
+			}
+			return nil
+		}
+	case tcell.KeyEscape:
+		v.searchClear()
+		v.showTableNav()
+		return nil
+	}
+	return event
+}
+
 func (v *View) keyHandler(event *tcell.EventKey) *tcell.EventKey {
 	// If the modal is open capture the event and let escape or the original
 	// shortcut close it.
@@ -476,9 +646,12 @@ func (v *View) keyHandler(event *tcell.EventKey) *tcell.EventKey {
 		return event
 	}
 
+	if v.s.searchBoxEnabled {
+		return event
+	}
+
 	switch event.Key() {
 	case tcell.KeyTAB:
-
 		// Default for tab is to quit so stop that.
 		return nil
 	case tcell.KeyCtrlN:
@@ -496,7 +669,18 @@ func (v *View) keyHandler(event *tcell.EventKey) *tcell.EventKey {
 			v.showHelpModal()
 			return nil
 		}
+		if string(r) == "/" {
+			if v.s.searchBoxEnabled {
+				v.showTableNav()
+				return nil
+			}
+			v.showSearchBox()
+			return nil
+		}
 	case tcell.KeyCtrlS:
+		v.showSearchBox()
+		return nil
+	case tcell.KeyCtrlV:
 		if v.s.scriptViewOpen {
 			v.closeScriptView()
 			return nil

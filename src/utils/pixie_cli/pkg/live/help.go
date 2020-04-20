@@ -23,10 +23,10 @@ func (h *helpModal) Show(app *tview.Application) tview.Primitive {
 
 	shortcuts := []shortcut{
 		{[]string{"?"}, "Show this help menu"},
-		{[]string{"/"}, "Search for text"},
+		{[]string{"ctrl", "s"}, "Search for text (\"/\")"},
 		{[]string{"ctrl", "k"}, "Show Pixie command menu"},
 		{[]string{"ctrl", "c"}, "Quit the application"},
-		{[]string{"ctrl", "s"}, "View the underlying script"},
+		{[]string{"ctrl", "v"}, "View the underlying script"},
 		{[]string{"escape"}, "Close dialogs/modals"},
 	}
 
