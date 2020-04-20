@@ -45,16 +45,18 @@ func publishLogMsgToNATS(t *testing.T, nc *nats.Conn, logMsg string, vizID strin
 	nc.Publish(chanName, v2cBytes)
 }
 
-func assertLogMsgInElastic(ctx context.Context, t *testing.T, logMsg string, vizID string, sanitizeJSONFunc func(map[string]interface{}) map[string]interface{}) {
+func assertLogMsgInElastic(ctx context.Context, t *testing.T, logMsg, vizID, indexName string, sanitizeJSONFunc func(map[string]interface{}) map[string]interface{}) {
 	var j map[string]interface{}
 	err := json.Unmarshal([]byte(logMsg), &j)
 	require.Nil(t, err)
 	j = sanitizeJSONFunc(j)
 
+	j["cluster_id"] = vizID
+
 	testID := j["test_id"].(string)
 	query := elastic.NewMatchQuery("test_id", testID)
 	searchResult, err := elasticClient.Search().
-		Index(fmt.Sprintf("%s-%s", logmessagehandler.IndexPrefix, vizID)).
+		Index(indexName).
 		Query(query).
 		Do(ctx)
 	require.Nil(t, err)
@@ -76,7 +78,8 @@ func TestLogMessagesSingleVizier(t *testing.T) {
 		t.Fatal("Could not connect to NATS.")
 	}
 	ctx := context.Background()
-	h := logmessagehandler.NewLogMessageHandler(ctx, nc, elasticClient)
+	indexName := "vizier-logs"
+	h := logmessagehandler.NewLogMessageHandler(ctx, nc, elasticClient, indexName)
 	h.Start()
 
 	vizID := "my-fake-cluster-id"
@@ -90,7 +93,7 @@ func TestLogMessagesSingleVizier(t *testing.T) {
 	h.Stop()
 
 	for _, logMsg := range logMessages {
-		assertLogMsgInElastic(ctx, t, logMsg, vizID, h.SanitizeJSONForElastic)
+		assertLogMsgInElastic(ctx, t, logMsg, vizID, indexName, h.SanitizeJSONForElastic)
 	}
 }
 

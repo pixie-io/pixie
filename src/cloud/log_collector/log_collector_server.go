@@ -17,6 +17,24 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 )
 
+// Note: we have to force the mapping to use "text" for the time field
+// in log_processed, because some logs have time in date format and some
+// have time in "%dms" format.
+const indexSpec = `
+{
+	"mappings" : {
+		"properties" : {
+			"log_processed" : {
+				"properties" : {
+					"time" : {
+						"type" : "text"
+					}
+				}
+			}
+		}
+	}
+}`
+
 func init() {
 	pflag.String("nats_url", "pl-nats", "The url of the nats message bus")
 	pflag.String("elastic_service", "https://pl-elastic-es-http.plc-dev.svc.cluster.local:9200", "The url of the elasticsearch cluster")
@@ -25,6 +43,9 @@ func init() {
 	pflag.String("elastic_tls_key", "/elastic-certs/tls.key", "TLS Key for elastic cluster")
 	pflag.String("elastic_username", "elastic", "Username for access to elastic cluster")
 	pflag.String("elastic_password", "", "Password for access to elastic")
+	pflag.String("logs_index_name", "vizier-logs-allclusters", "Name of managed index to use for logs.")
+	pflag.String("logs_max_index_size", "50mb", "Maximum size the log index is allowed to grow to before its rolled over.")
+	pflag.String("logs_time_before_delete", "1d", "Time to keep rolledover logs around before deletion.")
 }
 
 func connectNATS(natsURL string) *nats.Conn {
@@ -71,8 +92,21 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Could not connect to elastic")
 	}
+
+	indexName := viper.GetString("logs_index_name")
+	maxIndexSize := viper.GetString("logs_max_index_size")
+	timeBeforeDelete := viper.GetString("logs_time_before_delete")
+	err = esutils.NewManagedIndex(es, indexName).
+		IndexFromJSONString(indexSpec).
+		MaxIndexSize(maxIndexSize).
+		TimeBeforeDelete(timeBeforeDelete).
+		Migrate(context.Background())
+	if err != nil {
+		log.WithError(err).Fatal("failed to migrate ManagedIndex")
+	}
+
 	nc := connectNATS(viper.GetString("nats_url"))
-	h := logmessagehandler.NewLogMessageHandler(context.Background(), nc, es)
+	h := logmessagehandler.NewLogMessageHandler(context.Background(), nc, es, indexName)
 	h.Start()
 
 	env := env.New()

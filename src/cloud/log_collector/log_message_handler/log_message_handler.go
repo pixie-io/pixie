@@ -3,7 +3,6 @@ package logmessagehandler
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"strings"
 	"sync"
 
@@ -18,77 +17,28 @@ import (
 // LogMessageHandler is the component that subscribes to the NATS log channel
 // and writes log messages to file
 type LogMessageHandler struct {
-	ch      chan *nats.Msg
-	nc      *nats.Conn
-	es      *elastic.Client
-	esCtx   context.Context
-	wg      *sync.WaitGroup
-	indexes map[string]struct{}
-	sub     *nats.Subscription
+	ch        chan *nats.Msg
+	nc        *nats.Conn
+	es        *elastic.Client
+	esCtx     context.Context
+	wg        *sync.WaitGroup
+	sub       *nats.Subscription
+	indexName string
 }
 
-// Note: we have to force the mapping to use "text" for the time field
-// in log_processed, because some logs have time in date format and some
-// have time in "%dms" format.
-// TODO(james): Probably should put this into some sort of migration job eventually.
-const indexMapping = `
-{
-	"mappings" : {
-		"properties" : {
-			"log_processed" : {
-				"properties" : {
-					"time" : {
-						"type" : "text"
-					}
-				}
-			}
-		}
-	}
-}`
-
-// IndexPrefix is the prefix for all log indices in elastic.
-// The full index is of the format <IndexPrefix>-<VizierID>
-const IndexPrefix = "vizier-logs"
 const bufferSize = 5000
 
 // NewLogMessageHandler creates a new handler for log messages.
-func NewLogMessageHandler(esCtx context.Context, nc *nats.Conn, es *elastic.Client) *LogMessageHandler {
+func NewLogMessageHandler(esCtx context.Context, nc *nats.Conn, es *elastic.Client, indexName string) *LogMessageHandler {
 	h := &LogMessageHandler{
-		ch:      make(chan *nats.Msg, bufferSize),
-		nc:      nc,
-		es:      es,
-		esCtx:   esCtx,
-		wg:      &sync.WaitGroup{},
-		indexes: make(map[string]struct{}),
+		ch:        make(chan *nats.Msg, bufferSize),
+		nc:        nc,
+		es:        es,
+		esCtx:     esCtx,
+		wg:        &sync.WaitGroup{},
+		indexName: indexName,
 	}
 	return h
-}
-
-func (h *LogMessageHandler) createIndexIfNeeded(vizID string) (string, error) {
-	index := fmt.Sprintf("%s-%s", IndexPrefix, vizID)
-	_, existsInCache := h.indexes[index]
-	if !existsInCache {
-
-		exists, err := h.es.IndexExists(index).Do(h.esCtx)
-		if err != nil {
-			return "", err
-		}
-		var empty struct{}
-		if !exists {
-			resp, err := h.es.CreateIndex(index).BodyString(indexMapping).Do(h.esCtx)
-			if err != nil {
-				return "", err
-			}
-			if !resp.Acknowledged {
-				return "", fmt.Errorf("Elastic failed to create index: %s", index)
-			}
-			h.indexes[index] = empty
-		} else {
-			h.indexes[index] = empty
-		}
-		return index, nil
-	}
-	return index, nil
 }
 
 // SanitizeJSONForElastic replaces "." with "_" in json keys.
@@ -137,20 +87,15 @@ func (h *LogMessageHandler) handleNatsMessage(natsMsg *nats.Msg) {
 		log.WithError(err).Error("Failed to unmarshal NATS msg")
 	}
 
-	index, err := h.createIndexIfNeeded(vizID)
-	if err != nil {
-		log.WithError(err).Error("Failed to create index")
-		return
-	}
-
 	JSON, err := h.convertLogMsgToJSON(logMsg)
 	if err != nil {
 		log.WithError(err).Error("Failed to unmarshal json.")
 		return
 	}
+	JSON["cluster_id"] = vizID
 
 	_, err = h.es.Index().
-		Index(index).
+		Index(h.indexName).
 		BodyJson(JSON).
 		Do(h.esCtx)
 
@@ -209,13 +154,7 @@ func (h *LogMessageHandler) Stop() {
 	}
 	close(h.ch)
 	h.wg.Wait()
-	indexNames := make([]string, len(h.indexes))
-	var i int
-	for index := range h.indexes {
-		indexNames[i] = index
-		i++
-	}
-	_, err := h.es.Refresh().Index(indexNames...).Do(h.esCtx)
+	_, err := h.es.Refresh().Index(h.indexName).Do(h.esCtx)
 	if err != nil {
 		log.WithError(err).Error("Failed to refresh indices")
 	}
