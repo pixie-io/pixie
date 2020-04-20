@@ -30,6 +30,7 @@ DEFINE_uint32(stirling_bpf_perf_buffer_page_count, 256,
               "The size of the perf buffers, in number of memory pages.");
 
 namespace pl {
+namespace stirling {
 namespace bpf_tools {
 
 // TODO(yzhao): Read CPU count during runtime and set maxactive to Multiplier * N_CPU. That way, we
@@ -252,6 +253,7 @@ void BCCWrapper::Stop() {
 }
 
 }  // namespace bpf_tools
+}  // namespace stirling
 }  // namespace pl
 
 #endif

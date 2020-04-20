@@ -33,6 +33,7 @@
 DECLARE_uint32(stirling_bpf_perf_buffer_page_count);
 
 namespace pl {
+namespace stirling {
 namespace bpf_tools {
 
 /**
@@ -73,7 +74,7 @@ struct UProbeSpec {
 // TODO(yzhao): This should be updated after D2844 is landed.
 struct UProbeTmpl {
   std::string_view symbol;
-  stirling::elf_tools::SymbolMatchType match_type;
+  elf_tools::SymbolMatchType match_type;
   std::string_view probe_fn;
   bpf_probe_attach_type attach_type;
 };
@@ -257,6 +258,7 @@ class BCCWrapper {
 };
 
 }  // namespace bpf_tools
+}  // namespace stirling
 }  // namespace pl
 
 #endif
