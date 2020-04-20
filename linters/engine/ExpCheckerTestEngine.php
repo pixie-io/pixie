@@ -20,7 +20,7 @@ final class ExpCheckerTest {
         while(!feof($readFile))
           {
             $line = fgets($readFile);
-            if (strpos($line, "load(//") === 0) {
+            if (strpos($line, "load(\"//") === 0) {
                 // If the line begins with 'load("//', check to see if it contains any pl_cc/pl_go rules.
                 if (strpos($line, "pl_go") !== false || strpos($line, "pl_cc") !== false) {
                     $failed = true;
