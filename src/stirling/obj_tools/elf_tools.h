@@ -69,7 +69,7 @@ class ElfReader {
   /**
    * Returns the address of the return instructions of the function.
    */
-  StatusOr<std::vector<int>> FuncRetInstAddrs(const SymbolInfo& func_symbol);
+  StatusOr<std::vector<uint64_t>> FuncRetInstAddrs(const SymbolInfo& func_symbol);
 
  private:
   ElfReader() = default;

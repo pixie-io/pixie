@@ -258,7 +258,7 @@ bool IsRetInst(uint8_t code) {
   return code == kRetn || code == kRetf || code == kRetnImm || code == kRetfImm;
 }
 
-std::vector<int> FindRetInsts(utils::u8string_view byte_code) {
+std::vector<uint64_t> FindRetInsts(utils::u8string_view byte_code) {
   if (byte_code.empty()) {
     return {};
   }
@@ -274,12 +274,12 @@ std::vector<int> FindRetInsts(utils::u8string_view byte_code) {
   // Initialize array to zero. See more details at: https://stackoverflow.com/a/5591516.
   char buf[kBufSize] = {};
 
-  int pc = 0;
+  uint64_t pc = 0;
   auto* codes = const_cast<uint8_t*>(byte_code.data());
-  int codes_size = byte_code.size();
+  size_t codes_size = byte_code.size();
   int inst_size = 0;
 
-  std::vector<int> res;
+  std::vector<uint64_t> res;
   do {
     if (IsRetInst(*codes)) {
       res.push_back(pc);
@@ -299,9 +299,9 @@ std::vector<int> FindRetInsts(utils::u8string_view byte_code) {
 
 }  // namespace
 
-StatusOr<std::vector<int>> ElfReader::FuncRetInstAddrs(const SymbolInfo& func_symbol) {
+StatusOr<std::vector<uint64_t>> ElfReader::FuncRetInstAddrs(const SymbolInfo& func_symbol) {
   PL_ASSIGN_OR_RETURN(utils::u8string byte_code, FuncByteCode(func_symbol));
-  std::vector<int> addrs = FindRetInsts(byte_code);
+  std::vector<uint64_t> addrs = FindRetInsts(byte_code);
   for (auto& offset : addrs) {
     offset += func_symbol.address;
   }
