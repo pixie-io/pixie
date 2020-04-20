@@ -52,6 +52,7 @@ COMMIT_RANGE=${COMMIT_RANGE:-$(git merge-base origin/master HEAD)".."}
 TARGET_PATTERN=${TARGET_PATTERN:-"//..."}
 BAZEL_RUN_EXTRA_ARGS=
 BAZEL_QUERY_EXTRA_ARGS=
+BAZEL_EXCEPT_CLAUSE='attr(\"tags\", \"manual\", //...)'
 
 if [ -n "${COMPILATION_MODE}" ]; then
   BAZEL_RUN_EXTRA_ARGS="${BAZEL_RUN_EXTRA_ARGS} --compilation_mode=${COMPILATION_MODE}"
@@ -76,7 +77,7 @@ buildables=$(bazel query \
     ${BAZEL_QUERY_EXTRA_ARGS} \
     --keep_going \
     --noshow_progress \
-    "kind(.*_binary, rdeps(${TARGET_PATTERN}, set(${files[*]})))")
+    "kind(.*_binary, rdeps(${TARGET_PATTERN}, set(${files[*]}))) except ${BAZEL_EXCEPT_CLAUSE}")
 # Run the tests if there were results
 if [[ -n $buildables ]]; then
   echo "Building binaries"
@@ -91,7 +92,7 @@ tests=$(bazel query \
     ${BAZEL_QUERY_EXTRA_ARGS} \
     --keep_going \
     --noshow_progress \
-    "kind(test, rdeps(${TARGET_PATTERN}, set(${files[*]}))) except attr('tags', 'manual', //...)")
+    "kind(test, rdeps(${TARGET_PATTERN}, set(${files[*]}))) except ${BAZEL_EXCEPT_CLAUSE}")
 # Run the tests if there were results
 if [[ -n $tests ]]; then
   echo "Running tests"

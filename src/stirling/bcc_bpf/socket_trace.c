@@ -478,22 +478,25 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
   // TODO(oazizi): conn_info currently works only if tracing on the send or recv side of a process,
   //               but not both simultaneously, because we need to mark two traffic classes.
 
-  if (conn_info != NULL) {
-    // Try to infer connection type (protocol) based on data.
-    struct traffic_class_t traffic_class = infer_traffic(direction, buf, count);
+  if (conn_info == NULL) {
+    return;
+  }
+  conn_info->protocol_total_count += 1;
 
-    if (conn_info->traffic_class.protocol == kProtocolUnknown) {
-      // TODO(oazizi): Look for only certain protocols on write/send()?
-      conn_info->traffic_class = traffic_class;
+  // Try to infer connection type (protocol) based on data.
+  struct traffic_class_t traffic_class = infer_traffic(direction, buf, count);
 
-      if (conn_info->traffic_class.protocol != kProtocolUnknown) {
-        conn_info->protocol_match_count = 1;
-      }
-    } else if (traffic_class.protocol == conn_info->traffic_class.protocol) {
-      conn_info->protocol_match_count += 1;
-    }
+  // Could not infer the traffic.
+  if (traffic_class.protocol == kProtocolUnknown) {
+    return;
+  }
 
-    conn_info->protocol_total_count += 1;
+  if (conn_info->traffic_class.protocol == kProtocolUnknown) {
+    // TODO(oazizi): Look for only certain protocols on write/send()?
+    conn_info->traffic_class = traffic_class;
+    conn_info->protocol_match_count = 1;
+  } else if (conn_info->traffic_class.protocol == traffic_class.protocol) {
+    conn_info->protocol_match_count += 1;
   }
 }
 

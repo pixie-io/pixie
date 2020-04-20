@@ -48,7 +48,10 @@ struct conn_info_t {
   uint64_t rd_next_http2_frame_offset;
 
   // Some stats for protocol inference. Used for threshold-based filtering.
+  //
+  // How many times the data segments have been classified as the designated protocol.
   int32_t protocol_match_count;
+  // How many times traffic inference has been applied on this connection.
   int32_t protocol_total_count;
 };
 
