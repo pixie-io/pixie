@@ -189,7 +189,8 @@ static __inline bool should_trace_protocol(const struct traffic_class_t* traffic
 
 // Returns true if detection passes threshold. Right now this only makes sense for MySQL.
 static __inline bool protocol_detection_passes_threshold(const struct conn_info_t* conn_info) {
-  if (conn_info->traffic_class.protocol == kProtocolMySQL) {
+  if (conn_info->traffic_class.protocol == kProtocolMySQL ||
+      conn_info->traffic_class.protocol == kProtocolPGSQL) {
     // Since some protocols are hard to infer from a single event, we track the inference stats over
     // time, and then use the match rate to determine whether we really want to consider it to be of
     // the protocol or not. This helps reduce polluting events to user-space.
@@ -447,10 +448,10 @@ static __inline struct traffic_class_t infer_traffic(enum TrafficDirection direc
     traffic_class.protocol = kProtocolHTTP;
   } else if ((req_resp_type = infer_cql_message(buf, count)) != kUnknown) {
     traffic_class.protocol = kProtocolCQL;
+  } else if ((req_resp_type = infer_pgsql_message(buf, count)) != kUnknown) {
+    traffic_class.protocol = kProtocolPGSQL;
   } else if ((req_resp_type = infer_mysql_message(buf, count)) != kUnknown) {
     traffic_class.protocol = kProtocolMySQL;
-  } else if ((req_resp_type = infer_pgsql_startup_message(buf, count)) != kUnknown) {
-    traffic_class.protocol = kProtocolPGSQL;
   } else if ((req_resp_type = infer_http2_message(buf, count)) != kUnknown) {
     traffic_class.protocol = kProtocolHTTP2;
   } else {
