@@ -4,7 +4,7 @@ go_library(
     name = "go_default_library",
     srcs = [
         "bundle.go",
-        "bundle_reader.go",
+        "bundle_manager.go",
         "bundle_writer.go",
         "err.go",
         "script.go",

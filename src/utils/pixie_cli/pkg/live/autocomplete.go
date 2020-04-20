@@ -185,12 +185,12 @@ func (m *autocompleteModal) setScriptExecFunc(f func(s *script.ExecutableScript)
 func (m *autocompleteModal) Close(app *tview.Application) {}
 
 type fuzzyAutocompleter struct {
-	br *script.BundleReader
+	br *script.BundleManager
 	// We cache the script names to make it easier to do searches.
 	scriptNames []string
 }
 
-func newFuzzyAutoCompleter(br *script.BundleReader) *fuzzyAutocompleter {
+func newFuzzyAutoCompleter(br *script.BundleManager) *fuzzyAutocompleter {
 	mdList := br.GetOrderedScriptMetadata()
 	scriptNames := make([]string, len(mdList))
 	for idx, md := range mdList {

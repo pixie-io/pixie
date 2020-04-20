@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -13,7 +14,7 @@ import (
 
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle.json"
 
-func mustCreateBundleReader() *script.BundleReader {
+func mustCreateBundleReader() *script.BundleManager {
 	br, err := createBundleReader()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to load bundle scripts")
@@ -21,19 +22,19 @@ func mustCreateBundleReader() *script.BundleReader {
 	return br
 }
 
-func createBundleReader() (*script.BundleReader, error) {
+func createBundleReader() (*script.BundleManager, error) {
 	bundleFile := viper.GetString("bundle")
 	if bundleFile == "" {
 		bundleFile = defaultBundleFile
 	}
-	br, err := script.NewBundleReader(bundleFile)
+	br, err := script.NewBundleManager(bundleFile)
 	if err != nil {
 		return nil, err
 	}
 	return br, nil
 }
 
-func listBundleScripts(br *script.BundleReader, format string) {
+func listBundleScripts(br *script.BundleManager, format string) {
 	w := components.CreateStreamWriter(format, os.Stdout)
 	defer w.Finish()
 	w.SetHeader("script_list", []string{"Name", "Description"})
@@ -66,10 +67,14 @@ func loadScriptFromFile(path string) (*script.ExecutableScript, error) {
 	if len(qb) == 0 {
 		return nil, errors.New("script string is empty")
 	}
+	scriptName := "stdin_script"
+	if path != "-" {
+		scriptName = filepath.Base(path)
+	}
 	return script.NewExecutableScript(script.Metadata{
-		ScriptName: "custom_input",
-		ShortDoc:   "N/A",
-		LongDoc:    "N/A",
+		ScriptName: scriptName,
+		ShortDoc:   "Script supplied by user",
+		LongDoc:    "Script supplied by user",
 		HasVis:     false,
 	}, string(qb)), nil
 }

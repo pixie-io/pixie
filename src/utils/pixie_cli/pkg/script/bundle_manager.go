@@ -2,6 +2,7 @@ package script
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/url"
@@ -11,8 +12,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// BundleReader reads a script bundle.
-type BundleReader struct {
+// BundleManager reads a script bundle.
+type BundleManager struct {
 	scripts map[string]*pixieScript
 }
 
@@ -30,8 +31,8 @@ func isValidURL(toTest string) bool {
 	return true
 }
 
-// NewBundleReader reads the json bundle and initializes the bundle reader.
-func NewBundleReader(bundleFile string) (*BundleReader, error) {
+// NewBundleManager reads the json bundle and initializes the bundle reader.
+func NewBundleManager(bundleFile string) (*BundleManager, error) {
 	var r io.Reader
 	if isValidURL(bundleFile) {
 		resp, err := http.Get(bundleFile)
@@ -54,13 +55,13 @@ func NewBundleReader(bundleFile string) (*BundleReader, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &BundleReader{
+	return &BundleManager{
 		scripts: b.Scripts,
 	}, nil
 }
 
 // GetScriptMetadata returns metadata about available scripts.
-func (b BundleReader) GetScriptMetadata() []Metadata {
+func (b BundleManager) GetScriptMetadata() []Metadata {
 	s := make([]Metadata, len(b.scripts))
 	i := 0
 	for k, val := range b.scripts {
@@ -73,7 +74,7 @@ func (b BundleReader) GetScriptMetadata() []Metadata {
 }
 
 // GetOrderedScriptMetadata returns metadata about available scripts ordered by the name of the script.
-func (b BundleReader) GetOrderedScriptMetadata() []Metadata {
+func (b BundleManager) GetOrderedScriptMetadata() []Metadata {
 	s := b.GetScriptMetadata()
 	sort.Slice(s, func(i, j int) bool {
 		return s[i].ScriptName < s[j].ScriptName
@@ -82,7 +83,7 @@ func (b BundleReader) GetOrderedScriptMetadata() []Metadata {
 }
 
 // GetScript returns the script by name.
-func (b BundleReader) GetScript(scriptName string) (*ExecutableScript, error) {
+func (b BundleManager) GetScript(scriptName string) (*ExecutableScript, error) {
 	script, ok := b.scripts[scriptName]
 	if !ok {
 		return nil, ErrScriptNotFound
@@ -99,10 +100,27 @@ func (b BundleReader) GetScript(scriptName string) (*ExecutableScript, error) {
 }
 
 // MustGetScript is GetScript with fatal on error.
-func (b BundleReader) MustGetScript(scriptName string) *ExecutableScript {
+func (b BundleManager) MustGetScript(scriptName string) *ExecutableScript {
 	es, err := b.GetScript(scriptName)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to get script")
 	}
 	return es
+}
+
+// AddScript adds the specified script to the bundle manager.
+func (b *BundleManager) AddScript(script *ExecutableScript) error {
+	n := script.Metadata().ScriptName
+
+	_, has := b.scripts[n]
+	if has {
+		return errors.New("script with same name already exists")
+	}
+	p := &pixieScript{
+		Pxl:      script.scriptString,
+		ShortDoc: script.metadata.ShortDoc,
+		LongDoc:  script.metadata.LongDoc,
+	}
+	b.scripts[n] = p
+	return nil
 }

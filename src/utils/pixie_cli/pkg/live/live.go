@@ -36,7 +36,7 @@ const (
 
 // appState is the global state that is used by the live view.
 type appState struct {
-	br *script.BundleReader
+	br *script.BundleManager
 	ac autocompleter
 
 	vizier *vizier.Connector
@@ -80,7 +80,7 @@ type Modal interface {
 }
 
 // New creates a new live view.
-func New(br *script.BundleReader, vizier *vizier.Connector, execScript *script.ExecutableScript) (*View, error) {
+func New(br *script.BundleManager, vizier *vizier.Connector, execScript *script.ExecutableScript) (*View, error) {
 	// App is the top level view. The layout is approximately as follows:
 	//  ------------------------------------------
 	//  | View Information ...                   |

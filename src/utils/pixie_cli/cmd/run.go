@@ -35,7 +35,10 @@ var RunCmd = &cobra.Command{
 		cloudAddr := viper.GetString("cloud_addr")
 		format, _ := cmd.Flags().GetString("output")
 		format = strings.ToLower(format)
-
+		if format == "live" {
+			LiveCmd.Run(cmd, args)
+			return
+		}
 		listScripts, _ := cmd.Flags().GetBool("list")
 		br, err := createBundleReader()
 		if err != nil {
