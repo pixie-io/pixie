@@ -364,15 +364,36 @@ bool SocketTraceConnector::UpdateHTTP2SymAddrs(
 StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(
     const ArrayView<bpf_tools::UProbeTmpl>& probe_tmpls, const std::string& binary,
     elf_tools::ElfReader* elf_reader) {
+  using bpf_tools::BPFProbeAttachType;
+
   int uprobe_count = 0;
   for (const auto& tmpl : probe_tmpls) {
     bpf_tools::UProbeSpec spec = {binary, {}, 0, tmpl.attach_type, std::string(tmpl.probe_fn)};
     const std::vector<ElfReader::SymbolInfo> symbol_infos =
         elf_reader->ListFuncSymbols(tmpl.symbol, tmpl.match_type);
     for (const auto& symbol_info : symbol_infos) {
-      spec.symbol = symbol_info.name;
-      PL_RETURN_IF_ERROR(AttachUProbe(spec));
-      ++uprobe_count;
+      switch (tmpl.attach_type) {
+        case BPFProbeAttachType::kEntry:
+        case BPFProbeAttachType::kReturn: {
+          spec.symbol = symbol_info.name;
+          PL_RETURN_IF_ERROR(AttachUProbe(spec));
+          ++uprobe_count;
+          break;
+        }
+        case BPFProbeAttachType::kReturnInsts: {
+          PL_ASSIGN_OR_RETURN(std::vector<uint64_t> ret_inst_addrs,
+                              elf_reader->FuncRetInstAddrs(symbol_info));
+          for (const uint64_t& addr : ret_inst_addrs) {
+            spec.attach_type = BPFProbeAttachType::kEntry;
+            spec.address = addr;
+            PL_RETURN_IF_ERROR(AttachUProbe(spec));
+            ++uprobe_count;
+          }
+          break;
+        }
+        default:
+          LOG(DFATAL) << "Invalid attach type in switch statement.";
+      }
     }
   }
   return uprobe_count;

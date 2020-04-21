@@ -61,9 +61,10 @@ Status BCCWrapper::AttachKProbe(const KProbeSpec& probe) {
   VLOG(1) << absl::Substitute("Deploying kprobe:\n   type=$0\n   kernel_fn=$1\n   trace_fn=$2",
                               magic_enum::enum_name(probe.attach_type), probe.kernel_fn,
                               probe.probe_fn);
+  DCHECK(probe.attach_type != BPFProbeAttachType::kReturnInsts);
   ebpf::StatusTuple attach_status = bpf_.attach_kprobe(
       bpf_.get_syscall_fnname(std::string(probe.kernel_fn)), std::string(probe.probe_fn),
-      0 /* offset */, probe.attach_type, kKprobeMaxActive);
+      0 /* offset */, static_cast<bpf_probe_attach_type>(probe.attach_type), kKprobeMaxActive);
   if (attach_status.code() != 0) {
     return error::Internal("Failed to attach kprobe to kernel function: $0, error message: $1",
                            probe.kernel_fn, attach_status.msg());
@@ -78,12 +79,14 @@ Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
       "Deploying uprobe:\n   type=$0\n   binary=$1\n   symbol=$2\n   address=$3\n   trace_fn=$4",
       magic_enum::enum_name(probe.attach_type), probe.binary_path.string(), probe.symbol,
       probe.address, probe.probe_fn);
+  // TODO(oazizi): Natively support this attach type in BCCWrapper.
+  DCHECK(probe.attach_type != BPFProbeAttachType::kReturnInsts);
   DCHECK((probe.symbol.empty() && probe.address != 0) ||
          (!probe.symbol.empty() && probe.address == 0))
       << "Exactly one of 'symbol' and 'address' must be specified.";
   ebpf::StatusTuple attach_status =
       bpf().attach_uprobe(probe.binary_path, probe.symbol, std::string(probe.probe_fn),
-                          probe.address, probe.attach_type);
+                          probe.address, static_cast<bpf_probe_attach_type>(probe.attach_type));
   if (attach_status.code() != 0) {
     return error::Internal("Failed to attach uprobe to binary $0 at symbol $1, error message: $2",
                            probe.binary_path.string(), probe.symbol, attach_status.msg());
@@ -112,7 +115,8 @@ Status BCCWrapper::DetachKProbe(const KProbeSpec& probe) {
   VLOG(1) << absl::Substitute("Detaching kprobe:\n   kernel_fn=$0\n   trace_fn=$1", probe.kernel_fn,
                               probe.probe_fn);
   ebpf::StatusTuple detach_status =
-      bpf().detach_kprobe(bpf_.get_syscall_fnname(std::string(probe.kernel_fn)), probe.attach_type);
+      bpf().detach_kprobe(bpf_.get_syscall_fnname(std::string(probe.kernel_fn)),
+                          static_cast<bpf_probe_attach_type>(probe.attach_type));
 
   if (detach_status.code() != 0) {
     return error::Internal("Failed to detach kprobe to kernel function: $0, error message: $1",
@@ -127,7 +131,8 @@ Status BCCWrapper::DetachUProbe(const UProbeSpec& probe) {
       "Detaching uprobe:\n   binary=$0\n   symbol=$1\n   address=$2   trace_fn=$3",
       probe.binary_path.string(), probe.symbol, probe.address, probe.probe_fn);
   ebpf::StatusTuple detach_status =
-      bpf().detach_uprobe(probe.binary_path, probe.symbol, probe.address, probe.attach_type);
+      bpf().detach_uprobe(probe.binary_path, probe.symbol, probe.address,
+                          static_cast<bpf_probe_attach_type>(probe.attach_type));
 
   if (detach_status.code() != 0) {
     return error::Internal("Failed to detach uprobe from binary $0 on symbol $1, error message: $2",

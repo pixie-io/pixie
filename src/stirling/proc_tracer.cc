@@ -30,8 +30,8 @@ void HandleProcCreationEventLoss(void* /*cb_cookie*/, uint64_t lost) {
 }  // namespace
 
 constexpr auto kKProbeSpecs = MakeArray<bpf_tools::KProbeSpec>({
-    {"clone", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_clone"},
-    {"vfork", bpf_probe_attach_type::BPF_PROBE_RETURN, "syscall__probe_ret_vfork"},
+    {"clone", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_clone"},
+    {"vfork", bpf_tools::BPFProbeAttachType::kReturn, "syscall__probe_ret_vfork"},
 });
 
 constexpr char kProcCreationEventsName[] = "proc_creation_events";

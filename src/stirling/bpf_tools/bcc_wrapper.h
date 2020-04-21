@@ -36,6 +36,15 @@ namespace pl {
 namespace stirling {
 namespace bpf_tools {
 
+enum class BPFProbeAttachType {
+  // Attach to function entry.
+  kEntry = BPF_PROBE_ENTRY,
+  // Attach to function return (BCC native way, using stack).
+  kReturn = BPF_PROBE_RETURN,
+  // Attach to all function return instructions (required for golang).
+  kReturnInsts,
+};
+
 /**
  * Describes a kernel probe (kprobe).
  */
@@ -44,7 +53,7 @@ struct KProbeSpec {
   std::string_view kernel_fn;
 
   // Whether this is an ENTRY or RETURN probe.
-  bpf_probe_attach_type attach_type;
+  BPFProbeAttachType attach_type;
 
   // Name of user-provided function to run when event is triggered.
   std::string_view probe_fn;
@@ -59,7 +68,7 @@ struct UProbeSpec {
   // Exact one of symbol and address must be specified.
   std::string symbol;
   uint64_t address = 0;
-  bpf_probe_attach_type attach_type;
+  BPFProbeAttachType attach_type;
   std::string probe_fn;
 };
 
@@ -76,7 +85,7 @@ struct UProbeTmpl {
   std::string_view symbol;
   elf_tools::SymbolMatchType match_type;
   std::string_view probe_fn;
-  bpf_probe_attach_type attach_type;
+  BPFProbeAttachType attach_type;
 };
 
 /**
