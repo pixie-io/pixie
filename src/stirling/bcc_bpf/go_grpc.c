@@ -19,6 +19,17 @@ static __inline struct go_grpc_data_event_t* get_data_event() {
 // Value: Symbol addresses for the binary with that TGID.
 BPF_HASH(http2_symaddrs_map, uint32_t, struct conn_symaddrs_t);
 
+// This map is used to help extract HTTP2 headers from the net/http library.
+// The tracing process requires multiple probes:
+//  - The primary probe collects context and sets this map entry.
+//  - Dependent probes trace functions called by the primary function;
+//    these read the map to get the context.
+//  - The return probe of the primary function deletes the map entry.
+//
+// Key: encoder instance pointer
+// Value: Header attributes (e.g. stream_id, fd)
+BPF_HASH(active_write_headers_frame_map, void*, struct header_attr_t);
+
 // From golang source:
 // //A HeaderField is a name-value pair. Both the name and value are
 // // treated as opaque sequences of octets.
@@ -241,6 +252,14 @@ static __inline int32_t get_fd_from_framer(enum FramerType framer_type, const vo
 //-----------------------------------------------------------------------------
 // HTTP2 Header Tracing Functions
 //-----------------------------------------------------------------------------
+
+// TODO(oazizi): Convert to use designated initializers.
+// Example:
+// Instead of
+//   x = {};
+//   x.foo = 5;
+// Use:
+//   x = { .foo = 5 }
 
 static __inline void fill_header_field(struct go_grpc_http2_header_event_t* event,
                                        const struct HPackHeaderField* user_space_ptr) {
@@ -531,6 +550,161 @@ int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
   return 0;
 }
 
+static __inline void submit_header(struct pt_regs* ctx, enum HeaderEventType type,
+                                   void* encoder_ptr, struct HPackHeaderField* header_field_ptr) {
+  struct header_attr_t* attr = active_write_headers_frame_map.lookup(&encoder_ptr);
+  if (attr == NULL) {
+    return;
+  }
+
+  struct HPackHeaderField header_field;
+  bpf_probe_read(&header_field, sizeof(header_field), header_field_ptr);
+
+  struct go_grpc_http2_header_event_t event = {};
+  event.attr.type = type;
+  event.attr.timestamp_ns = bpf_ktime_get_ns();
+  event.attr.conn_id = attr->conn_id;
+  event.attr.stream_id = attr->stream_id;
+
+  event.name.size = BPF_LEN_CAP(header_field.name.len, HEADER_FIELD_STR_SIZE);
+  bpf_probe_read(event.name.msg, event.name.size, header_field.name.ptr);
+
+  event.value.size = BPF_LEN_CAP(header_field.value.len, HEADER_FIELD_STR_SIZE);
+  bpf_probe_read(event.value.msg, event.value.size, header_field.value.ptr);
+
+  go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
+}
+
+// Probe for the hpack's header encoder.
+//
+// Function signature:
+//   func (e *Encoder) WriteField(f HeaderField) error
+//
+// Symbol:
+//   golang.org/x/net/http2/hpack.(*Encoder).WriteField
+//
+// Verified to be stable from at least go1.6 to t go.1.13.
+int probe_hpack_header_encoder(struct pt_regs* ctx) {
+  const void* sp = (const void*)ctx->sp;
+  if (sp == NULL) {
+    return 0;
+  }
+
+  // Receiver is (*Encoder).
+  const int kReceiverOffset = 8;
+  void* encoder_ptr;
+  bpf_probe_read(&encoder_ptr, sizeof(void*), sp + kReceiverOffset);
+
+  // Param 1 is (HeaderField).
+  const int kParam1Offset = 16;
+  struct HPackHeaderField* header_field;
+  bpf_probe_read(&header_field, sizeof(struct HPackHeaderField*), sp + kParam1Offset);
+
+  submit_header(ctx, kHeaderEventWrite, encoder_ptr, header_field);
+
+  return 0;
+}
+
+// Probe for the net/http library's header writer.
+//
+// Function signature:
+//   func (w *http2writeResHeaders) writeFrame(ctx http2writeContext) error {
+//
+// Symbol:
+//   net/http.(*http2writeResHeaders).writeFrame
+//
+// Verified to be stable from go1.?? to t go.1.13.
+int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
+  // ---------------------------------------------
+  // Extract arguments (on stack)
+  // ---------------------------------------------
+
+  const void* sp = (const void*)PT_REGS_SP(ctx);
+
+  // Receiver is (*http2writeResHeaders).
+  const int kReceiverOffset = 8;
+  void* http2writeResHeaders_ptr;
+  bpf_probe_read(&http2writeResHeaders_ptr, sizeof(void*), sp + kReceiverOffset);
+
+  // Param 1 is (http2writeContext).
+  const int kParam1Offset = 16;
+  struct go_interface http2writeContext;
+  bpf_probe_read(&http2writeContext, sizeof(struct go_interface), sp + kParam1Offset);
+
+  void* http2serverConn_ptr = http2writeContext.ptr;
+
+  // ------------------------------------------------------
+  // Extract members of http2writeResHeaders_ptr (stream_id, end_stream)
+  // ------------------------------------------------------
+
+  const int kWriteResHeadersStreamIDOffset = 0;
+  const int kWriteResHeadersEndStreamOffset = 48;
+
+  uint32_t stream_id;
+  bpf_probe_read(&stream_id, sizeof(uint32_t),
+                 http2writeResHeaders_ptr + kWriteResHeadersStreamIDOffset);
+
+  bool end_stream;
+  bpf_probe_read(&end_stream, sizeof(bool),
+                 http2writeResHeaders_ptr + kWriteResHeadersEndStreamOffset);
+
+  // ------------------------------------------------------
+  // Extract members of http2serverConn_ptr (encoder, fd)
+  // ------------------------------------------------------
+
+  const int kWriteContextHpackEncoderOffset = 0x168;
+  void* henc_addr;
+  bpf_probe_read(&henc_addr, sizeof(void*), http2serverConn_ptr + kWriteContextHpackEncoderOffset);
+
+  const int kWriteContextConnOffset = 16;
+  struct go_interface conn_intf;
+  bpf_probe_read(&conn_intf, sizeof(conn_intf), http2serverConn_ptr + kWriteContextConnOffset);
+
+  int32_t fd = get_fd_from_conn_intf(conn_intf);
+
+  // ------------------------------------------------------
+  // Prepare to submit headers to perf buffer
+  // ------------------------------------------------------
+
+  uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
+  struct conn_info_t* conn_info = get_conn_info(tgid, fd);
+  if (conn_info == NULL) {
+    return 0;
+  }
+  conn_info->addr_valid = true;
+
+  struct header_attr_t attr = {};
+  attr.conn_id = conn_info->conn_id;
+  attr.stream_id = stream_id;
+
+  // We don't have the header values yet, and they are not easy to get from this probe,
+  // so we just stash the information collected so far.
+  // A separate probe, on the hpack encoder monitors the headers being encoded,
+  // and joins that information with the stashed information collected here.
+  // The key is the encoder instance.
+  active_write_headers_frame_map.update(&henc_addr, &attr);
+
+  // TODO(oazizi): Content beyond this point needs to move to return probe of the same function.
+
+  if (end_stream) {
+    struct go_grpc_http2_header_event_t event = {};
+    event.attr.type = kHeaderEventWrite;
+    event.attr.timestamp_ns = bpf_ktime_get_ns();
+    event.attr.conn_id = conn_info->conn_id;
+    event.attr.stream_id = stream_id;
+    event.name.size = 0;
+    event.value.size = 0;
+    event.attr.end_stream = true;
+    go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
+  }
+
+  // TODO(oazizi): We are leaking BPF map entries until this line is activated,
+  // which can only happen once we have return probes enabled.
+  // active_write_headers_frame_map.update(&henc_addr, &attr);
+
+  return 0;
+}
+
 //-----------------------------------------------------------------------------
 // HTTP2 Data Tracing Functions
 //-----------------------------------------------------------------------------
@@ -609,10 +783,10 @@ static __inline void probe_check_frame_order(struct pt_regs* ctx, enum FramerTyp
     return;
   }
 
-  // Param 0 (receiver) is (fr *Framer) or (fr *http2Framer).
+  // Param 0 (receiver) is (*Framer) or (*http2Framer).
   const int kParam0Offset = 8;
 
-  // Param 1 is (f Frame) or (f http2Frame).
+  // Param 1 is (Frame) or (http2Frame).
   const int kParam1Offset = 16;
 
   // NOTE: We get lucky enough that http.http2Frame interface is similar enough to http2.Frame,

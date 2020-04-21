@@ -197,6 +197,18 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       //          .attach_type = bpf_probe_attach_type::BPF_PROBE_ENTRY
       //      },
       //      bpf_tools::UProbeTmpl{
+      //          .symbol = "net/http.(*http2writeResHeaders).writeFrame",
+      //          .match_type = elf_tools::SymbolMatchType::kSuffix,
+      //          .probe_fn = "probe_http_http2writeResHeaders_write_frame",
+      //          .attach_type = bpf_probe_attach_type::BPF_PROBE_ENTRY
+      //      },
+      //      bpf_tools::UProbeTmpl{
+      //           .symbol = "golang.org/x/net/http2/hpack.(*Encoder).WriteField",
+      //           .match_type = elf_tools::SymbolMatchType::kSuffix,
+      //           .probe_fn = "probe_hpack_header_encoder",
+      //           .attach_type = bpf_probe_attach_type::BPF_PROBE_ENTRY
+      //      },
+      //      bpf_tools::UProbeTmpl{
       //          .symbol = "net/http.(*http2serverConn).processHeaders",
       //          .match_type = elf_tools::SymbolMatchType::kSuffix,
       //          .probe_fn = "probe_http_http2serverConn_processHeaders",
