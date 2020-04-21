@@ -258,6 +258,38 @@ static __inline void fill_header_field(struct go_grpc_http2_header_event_t* even
   bpf_probe_read(event->value.msg, event->value.size + 1, field.value.ptr);
 }
 
+static __inline void submit_headers(struct pt_regs* ctx, enum HeaderEventType type, int32_t fd,
+                                    uint32_t stream_id, bool end_stream,
+                                    struct go_ptr_array fields) {
+  uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
+  struct conn_info_t* conn_info = get_conn_info(tgid, fd);
+  if (conn_info == NULL) {
+    return;
+  }
+  conn_info->addr_valid = true;
+
+  struct go_grpc_http2_header_event_t event = {};
+  event.attr.type = type;
+  event.attr.timestamp_ns = bpf_ktime_get_ns();
+  event.attr.conn_id = conn_info->conn_id;
+  event.attr.stream_id = stream_id;
+
+  const struct HPackHeaderField* fields_ptr = fields.ptr;
+#pragma unroll
+  for (unsigned int i = 0; i < HEADER_COUNT && i < fields.len; ++i) {
+    fill_header_field(&event, fields_ptr + i);
+    go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
+  }
+
+  // If end of stream, send one extra empty header with end-stream flag set.
+  if (end_stream) {
+    event.name.size = 0;
+    event.value.size = 0;
+    event.attr.end_stream = true;
+    go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
+  }
+}
+
 struct go_grpc_framer_t {
   void* writer;
   void* http2_framer;
@@ -312,6 +344,10 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   const int kEndStreamParamOffset = 20;
   bool end_stream = *(bool*)(sp + kEndStreamParamOffset);
 
+  const int kHeaderFieldSliceParamOffset = 24;
+  const struct go_ptr_array fields =
+      *(const struct go_ptr_array*)(sp + kHeaderFieldSliceParamOffset);
+
   const int kFramerFieldOffset = 40;
   const void* framer_ptr = *(const void**)(loopy_writer_ptr + kFramerFieldOffset);
   struct go_grpc_framer_t go_grpc_framer;
@@ -321,38 +357,7 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
     return 0;
   }
 
-  uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct conn_info_t* conn_info = get_conn_info(tgid, fd);
-  if (conn_info == NULL) {
-    return 0;
-  }
-
-  struct go_grpc_http2_header_event_t event = {};
-  event.attr.type = kHeaderEventWrite;
-  event.attr.timestamp_ns = bpf_ktime_get_ns();
-  event.attr.conn_id = conn_info->conn_id;
-  event.attr.stream_id = stream_id;
-
-  const int kHeaderFieldSliceParamOffset = 24;
-  const struct go_ptr_array fields =
-      *(const struct go_ptr_array*)(sp + kHeaderFieldSliceParamOffset);
-  const struct HPackHeaderField* fields_ptr = fields.ptr;
-
-  // Using 'int i' below seems prevent loop getting rolled.
-  // TODO(yzhao): Investigate and fix.
-#pragma unroll
-  for (unsigned int i = 0; i < LOOP_LIMIT && i < fields.len; ++i) {
-    fill_header_field(&event, fields_ptr + i);
-    go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
-  }
-
-  // If end of stream, send one extra empty header with end-stream flag set.
-  if (end_stream) {
-    event.name.size = 0;
-    event.value.size = 0;
-    event.attr.end_stream = true;
-    go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
-  }
+  submit_headers(ctx, kHeaderEventWrite, fd, stream_id, end_stream, fields);
 
   return 0;
 }
@@ -394,34 +399,11 @@ static __inline void probe_http2_operate_headers(struct pt_regs* ctx, struct go_
     return;
   }
 
-  struct conn_info_t* conn_info = get_conn_info(tgid, fd);
-  if (conn_info == NULL) {
-    return;
-  }
-
-  struct go_grpc_http2_header_event_t event = {};
-  event.attr.type = kHeaderEventRead;
-  event.attr.timestamp_ns = bpf_ktime_get_ns();
-  event.attr.conn_id = conn_info->conn_id;
-  event.attr.stream_id = stream_id;
-
-  // Using 'int i' below seems prevent loop getting rolled.
-  // TODO(yzhao): Investigate and fix.
-#pragma unroll
-  for (unsigned int i = 0; i < HEADER_COUNT && i < fields.len; ++i) {
-    fill_header_field(&event, fields_ptr + i);
-    go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
-  }
-
-  // If end of stream, send one extra empty header with end-stream flag set.
-  if (end_stream) {
-    event.name.size = 0;
-    event.value.size = 0;
-    event.attr.end_stream = true;
-    go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
-  }
+  submit_headers(ctx, kHeaderEventRead, fd, stream_id, end_stream, fields);
 }
 
+// Probe for the golang.org/x/net/http2 library's header reader (client-side).
+//
 // Probes (*http2Client).operateHeaders(*http2.MetaHeadersFrame) inside gRPC-go, which processes
 // HTTP2 headers of the received responses.
 //
@@ -448,6 +430,8 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   return 0;
 }
 
+// Probe for the golang.org/x/net/http2 library's header reader (server-side).
+//
 // Function signature:
 //   func (t *http2Server) operateHeaders(frame *http2.MetaHeadersFrame, handle func(*Stream),
 //                                        traceCtx func(context.Context, string) context.Context
@@ -468,6 +452,81 @@ int probe_http2_server_operate_headers(struct pt_regs* ctx) {
   bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_server_ptr + kHTTP2ServerConnFieldOffset);
 
   probe_http2_operate_headers(ctx, conn_intf, frame_ptr);
+
+  return 0;
+}
+
+// Probe for the net/http library's header reader.
+//
+// Function signature:
+//   func (sc *http2serverConn) processHeaders(f *http2MetaHeadersFrame) error
+//
+// Symbol:
+//   net/http.(*http2serverConn).processHeaders
+//
+// Verified to be stable from go1.?? to t go.1.13.
+int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
+  const void* sp = (const void*)PT_REGS_SP(ctx);
+
+  // ---------------------------------------------
+  // Extract arguments (on stack)
+  // ---------------------------------------------
+
+  // Receiver is (*http2serverConn).
+  const int kReceiverOffset = 8;
+  void* http2serverConn_ptr;
+  bpf_probe_read(&http2serverConn_ptr, sizeof(void*), sp + kReceiverOffset);
+
+  // Param 1 is (*http2MetaHeadersFrame).
+  const int kParam1Offset = 16;
+  void* http2MetaHeadersFrame_ptr;
+  bpf_probe_read(&http2MetaHeadersFrame_ptr, sizeof(void*), sp + kParam1Offset);
+
+  // ------------------------------------------------------
+  // Extract members of http2MetaHeadersFrame_ptr (headers)
+  // ------------------------------------------------------
+
+  const int kFrameFieldsOffset = 8;
+  struct go_ptr_array fields;
+  bpf_probe_read(&fields, sizeof(struct go_ptr_array),
+                 http2MetaHeadersFrame_ptr + kFrameFieldsOffset);
+
+  const int kMetaHeadersFrameHeadersFrameOffset = 0;
+  void* http2HeadersFrame_ptr;
+  bpf_probe_read(&http2HeadersFrame_ptr, sizeof(void*),
+                 http2MetaHeadersFrame_ptr + kMetaHeadersFrameHeadersFrameOffset);
+
+  // ------------------------------------------------------
+  // Extract members of http2HeadersFrame_ptr (stream_id, end_stream)
+  // ------------------------------------------------------
+
+  const int kFrameFlagsOffset = 2;
+  uint8_t flags;
+  bpf_probe_read(&flags, sizeof(uint8_t), http2HeadersFrame_ptr + kFrameFlagsOffset);
+  const bool end_stream = flags & kFlagHeadersEndStream;
+
+  const int kFrameStreamIDOffset = 8;
+  uint32_t stream_id;
+  bpf_probe_read(&stream_id, sizeof(uint32_t), http2HeadersFrame_ptr + kFrameStreamIDOffset);
+
+  // ------------------------------------------------------
+  // Extract members of http2serverConn_ptr (fd)
+  // ------------------------------------------------------
+
+  const int kHTTP2ServerConnFieldOffset = 16;
+  struct go_interface conn_intf;
+  bpf_probe_read(&conn_intf, sizeof(conn_intf), http2serverConn_ptr + kHTTP2ServerConnFieldOffset);
+
+  int32_t fd = get_fd_from_conn_intf(conn_intf);
+  if (fd < 0) {
+    return 0;
+  }
+
+  // ------------------------------------------------------
+  // Wrap-ups
+  // ------------------------------------------------------
+
+  submit_headers(ctx, kHeaderEventRead, fd, stream_id, end_stream, fields);
 
   return 0;
 }
