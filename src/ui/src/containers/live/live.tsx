@@ -16,11 +16,12 @@ import ToggleButton from '@material-ui/lab/ToggleButton';
 
 import Canvas from './canvas';
 import CommandInput from './command-input';
-import {withLiveContextProvider} from './context';
+import {LiveContext, withLiveContextProvider} from './context';
 import DataDrawer from './data-drawer';
 import Editor from './editor';
 import ExecuteScriptButton from './execute-button';
 import {useInitScriptLoader} from './script-loader';
+import LiveViewShortcuts from './shortcuts';
 import LiveViewTitle from './title';
 
 const useStyles = makeStyles((theme: Theme) => {
@@ -94,11 +95,9 @@ const useStyles = makeStyles((theme: Theme) => {
   });
 });
 
-const COMMAND_KEYMAP = {
-  PIXIE_COMMAND: ['Meta+k', 'Control+k'],
-};
-
 const LiveView = () => {
+  const classes = useStyles();
+
   const [drawerOpen, setDrawerOpen] = React.useState<boolean>(false);
   const toggleDrawer = React.useCallback(() => setDrawerOpen((opened) => !opened), []);
 
@@ -111,20 +110,19 @@ const LiveView = () => {
   const [commandOpen, setCommandOpen] = React.useState<boolean>(false);
   const toggleCommandOpen = React.useCallback(() => setCommandOpen((opened) => !opened), []);
 
-  const classes = useStyles();
+  const { toggleDataDrawer } = React.useContext(LiveContext);
 
   const hotkeyHandlers = React.useMemo(() => ({
-    PIXIE_COMMAND: (e) => {
-      e.preventDefault();
-      toggleCommandOpen();
-    },
+    'pixie-command': toggleCommandOpen,
+    'toggle-editor': toggleEditor,
+    'toggle-data-drawer': toggleDataDrawer,
   }), []);
 
   useInitScriptLoader();
 
   return (
     <div className={classes.root}>
-      <GlobalHotKeys handlers={hotkeyHandlers} keyMap={COMMAND_KEYMAP} />
+      <LiveViewShortcuts handlers={hotkeyHandlers} />
       <div className={classes.topBar}>
         {/* <IconButton disabled={true} onClick={toggleDrawer}>
           <MenuIcon />
