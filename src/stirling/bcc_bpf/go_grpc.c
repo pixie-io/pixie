@@ -153,7 +153,7 @@ static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf) {
 
 // Returns the file descriptor from a http2.Framer object.
 static __inline int32_t get_fd_from_http2_Framer(const void* framer_ptr) {
-  // From llvm-dwarfdump -n net/http.http2Framer -c ./server
+  // From llvm-dwarfdump -n net/http2.Framer -c ./server
   //
   // ...
   // 0x00070b39: DW_TAG_member
@@ -341,7 +341,7 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   // Using 'int i' below seems prevent loop getting rolled.
   // TODO(yzhao): Investigate and fix.
 #pragma unroll
-  for (unsigned int i = 0, pos = 0; i < LOOP_LIMIT && i < fields.len; ++i) {
+  for (unsigned int i = 0; i < LOOP_LIMIT && i < fields.len; ++i) {
     fill_header_field(&event, fields_ptr + i);
     go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
   }
@@ -408,7 +408,7 @@ static __inline void probe_http2_operate_headers(struct pt_regs* ctx, struct go_
   // Using 'int i' below seems prevent loop getting rolled.
   // TODO(yzhao): Investigate and fix.
 #pragma unroll
-  for (unsigned int i = 0, pos = 0; i < HEADER_COUNT && i < fields.len; ++i) {
+  for (unsigned int i = 0; i < HEADER_COUNT && i < fields.len; ++i) {
     fill_header_field(&event, fields_ptr + i);
     go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
   }
@@ -616,7 +616,7 @@ static __inline void probe_check_frame_order(struct pt_regs* ctx, enum FramerTyp
   }
 }
 
-// Probe for the http2 library's frame reader.
+// Probe for the golang.org/x/net/http2 library's HTTP2 frame reader.
 // As a proxy for the return probe on ReadFrame(), we currently probe checkFrameOrder,
 // since return probes don't work for Go.
 //
@@ -632,7 +632,7 @@ int probe_http2_framer_check_frame_order(struct pt_regs* ctx) {
   return 0;
 }
 
-// Probe for the http library's frame reader.
+// Probe for the net/http library's frame reader.
 // As a proxy for the return probe on ReadFrame(), we currently probe checkFrameOrder,
 // since return probes don't work for Go.
 //
@@ -640,7 +640,7 @@ int probe_http2_framer_check_frame_order(struct pt_regs* ctx) {
 //   func (fr *http2Framer) checkFrameOrder(f http2Frame) error
 //
 // Symbol:
-//   golang.org/x/net/http2.(*Framer).checkFrameOrder
+//   net/http.(*http2Framer).checkFrameOrder
 //
 // Verified to be stable from at least go1.?? to go.1.13.
 int probe_http_http2framer_check_frame_order(struct pt_regs* ctx) {
@@ -648,7 +648,7 @@ int probe_http_http2framer_check_frame_order(struct pt_regs* ctx) {
   return 0;
 }
 
-// Probe for the http2 library's frame writer.
+// Probe for the golang.org/x/net/http2 library's frame writer.
 //
 // Function signature:
 //   func (f *Framer) WriteDataPadded(streamID uint32, endStream bool, data, pad []byte) error
@@ -662,7 +662,7 @@ int probe_http2_framer_write_data(struct pt_regs* ctx) {
   return 0;
 }
 
-// Probe for the http2 library's frame writer.
+// Probe for the net/http library's frame writer.
 //
 // Function signature:
 //   func (f *http2Framer) WriteDataPadded(streamID uint32, endStream bool, data, pad []byte) error
