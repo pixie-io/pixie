@@ -120,7 +120,7 @@ func (m *MetadataTopicListener) HandleUpdate(update *UpdateMessage) {
 
 	// Don't send updates we have already sent before.
 	if update.Message.ResourceVersion <= prevRV {
-		log.WithField("update", update).Info("Received old update that should have already been sent")
+		log.WithField("update", update).Trace("Received old update that should have already been sent")
 		return
 	}
 

@@ -181,7 +181,7 @@ func (a *AgentTopicListener) onAgentRegisterRequest(m *messages.RegisterAgentReq
 		return
 	}
 
-	log.WithField("agent", agentID.String()).WithField("updates", updates).Infof("Queuing up initial updates for agent")
+	log.WithField("agent", agentID.String()).WithField("updates", updates).Trace("Queuing up initial updates for agent")
 	err = a.agentManager.AddUpdatesToAgentQueue(agentID.String(), updates)
 	if err != nil {
 		log.WithError(err).Error("Could not add initial metadata updates to agent's queue")

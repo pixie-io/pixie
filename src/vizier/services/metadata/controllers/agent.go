@@ -371,7 +371,7 @@ func (m *AgentManagerImpl) HandleUpdate(update *UpdateMessage) {
 	}
 
 	log.WithField("agents", agents).WithField("hostnames", hostnames).
-		WithField("update", updatePb).Infof("Adding update to agent queue for agents")
+		WithField("update", updatePb).Trace("Adding update to agent queue for agents")
 
 	allAgents := make([]string, len(agents))
 	copy(allAgents, agents)
@@ -384,7 +384,7 @@ func (m *AgentManagerImpl) HandleUpdate(update *UpdateMessage) {
 		} else {
 			allAgents = append(allAgents, kelvinIDs...)
 		}
-		log.WithField("kelvins", kelvinIDs).WithField("update", updatePb).Infof("Adding update to agent queue for kelvins")
+		log.WithField("kelvins", kelvinIDs).WithField("update", updatePb).Trace("Adding update to agent queue for kelvins")
 	}
 
 	for _, agent := range allAgents {
