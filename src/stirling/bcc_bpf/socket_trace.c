@@ -154,8 +154,7 @@ static __inline void init_conn_info(uint32_t tgid, uint32_t fd, struct conn_info
 
 static __inline struct conn_info_t* get_conn_info(uint32_t tgid, uint32_t fd) {
   uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
-  struct conn_info_t new_conn_info;
-  memset(&new_conn_info, 0, sizeof(struct conn_info_t));
+  struct conn_info_t new_conn_info = {};
   new_conn_info.addr_valid = false;
   struct conn_info_t* conn_info = conn_info_map.lookup_or_init(&tgid_fd, &new_conn_info);
   // Use TGID zero to detect that a new conn_info needs to be initialized.
@@ -507,8 +506,7 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
 
 static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_t fd,
                                      struct sockaddr_in6 addr) {
-  struct conn_info_t conn_info;
-  memset(&conn_info, 0, sizeof(struct conn_info_t));
+  struct conn_info_t conn_info = {};
   conn_info.addr_valid = true;
   conn_info.addr = addr;
   init_conn_info(tgid, fd, &conn_info);
@@ -516,8 +514,7 @@ static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_
   uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   conn_info_map.update(&tgid_fd, &conn_info);
 
-  struct socket_control_event_t conn_event;
-  memset(&conn_event, 0, sizeof(struct socket_control_event_t));
+  struct socket_control_event_t conn_event = {};
   conn_event.type = kConnOpen;
   conn_event.open.timestamp_ns = bpf_ktime_get_ns();
   conn_event.open.conn_id = conn_info.conn_id;
@@ -528,8 +525,7 @@ static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_
 }
 
 static __inline void submit_close_event(struct pt_regs* ctx, struct conn_info_t* conn_info) {
-  struct socket_control_event_t close_event;
-  memset(&close_event, 0, sizeof(struct socket_control_event_t));
+  struct socket_control_event_t close_event = {};
   close_event.type = kConnClose;
   close_event.close.timestamp_ns = bpf_ktime_get_ns();
   close_event.close.conn_id = conn_info->conn_id;
