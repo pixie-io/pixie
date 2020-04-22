@@ -143,12 +143,13 @@ function formatValue(view: View, value: any, valueToHtml: (value: any) => string
       }
       if (shouldShowColor) {
         const inlineStyles = `
-          height: '6px',
-          width: '6px',
-          backgroundColor: ${(view as any).scale(colorScale)(key)},
-          borderRadius: '50%',
-          display: 'inline-block',
-          padding: '3px',
+          height: 6px;
+          width: 6px;
+          background-color: ${(view as any).scale(colorScale)(key)};
+          border-radius: 50%;
+          display: inline-block;
+          padding: 3px;
+          margin-right: 3px;
         `;
         content += `<td><div style="${inlineStyles}"></div></td>`;
       } else {
