@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"os/exec"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -79,8 +78,7 @@ func getK8sVersion(kubeConfig *rest.Config) (string, error) {
 
 func createCloudConfig(clientset *kubernetes.Clientset, cloudAddr string, namespace string, devCloudNamespace string, kubeConfig *rest.Config) error {
 	// Attempt to delete an existing pl-cloud-config configmap.
-	delCmd := exec.Command("kubectl", "delete", "configmap", "pl-cloud-config", "-n", namespace)
-	_ = delCmd.Run()
+	_ = k8s.DeleteConfigMap(clientset, "pl-cloud-config", "pl")
 	// devCloudNamespace implies we are running in a dev enivironment and we should attach to
 	// vzconn in that namespace.
 	if devCloudNamespace != "" {

@@ -358,6 +358,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+
 	fmt.Printf("Found %v nodes\n", numNodes)
 
 	// Get grpc connection to cloud.
@@ -402,7 +403,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	})
 
 	clusterRoleJob := newTaskWrapper("Updating clusterroles", func() error {
-		return optionallyDeleteClusterrole()
+		return optionallyDeleteClusterrole(clientset)
 	})
 
 	var yamlMap map[string]string
@@ -584,17 +585,16 @@ func optionallyCreateNamespace(clientset *kubernetes.Clientset, namespace string
 	return nil
 }
 
-func optionallyDeleteClusterrole() error {
-	kcmd := exec.Command("kubectl", "delete", "clusterrole", "vizier-metadata")
-	var out bytes.Buffer
-	kcmd.Stdout = &out
-	kcmd.Stderr = os.Stderr
-	_ = kcmd.Run()
+func optionallyDeleteClusterrole(clientset *kubernetes.Clientset) error {
+	err := k8s.DeleteClusterRole(clientset, "vizier-metadata")
+	if err != nil {
+		return err
+	}
 
-	kcmd = exec.Command("kubectl", "delete", "clusterrolebinding", "vizier-metadata")
-	kcmd.Stdout = &out
-	kcmd.Stderr = os.Stderr
-	_ = kcmd.Run()
+	err = k8s.DeleteClusterRoleBinding(clientset, "vizier-metadata")
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

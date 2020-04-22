@@ -7,6 +7,7 @@ go_library(
         "auth.go",
         "checker.go",
         "checks.go",
+        "delete.go",
         "logs.go",
         "proxy.go",
         "secrets.go",

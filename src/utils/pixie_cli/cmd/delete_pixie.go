@@ -5,6 +5,11 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/client-go/kubernetes"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s"
+
+	// Blank import necessary for kubeConfig to work.
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
@@ -29,15 +34,18 @@ func init() {
 }
 
 func deletePixie(ns string, clobberAll bool) {
+	kubeConfig := k8s.GetConfig()
+	clientset := k8s.GetClientset(kubeConfig)
+
 	var deleteJob utils.Task
 
 	if clobberAll {
 		deleteJob = newTaskWrapper("Deleting namespace", func() error {
-			return utils.ExecCommand("kubectl", []string{"delete", "namespace", ns}...)
+			return k8s.DeleteNamespace(clientset, ns)
 		})
 	} else {
 		deleteJob = newTaskWrapper("Deleting Vizier pods/services", func() error {
-			err := deleteVizier(ns)
+			err := deleteVizier(clientset, ns)
 			if err != nil {
 				return err
 			}
@@ -52,8 +60,6 @@ func deletePixie(ns string, clobberAll bool) {
 	}
 }
 
-func deleteVizier(ns string) error {
-	return utils.ExecCommand("kubectl", []string{
-		"-n", ns, "delete", "pods,deployments,services,daemonsets", "-l", "component=vizier",
-	}...)
+func deleteVizier(clientset *kubernetes.Clientset, ns string) error {
+	return k8s.DeleteAllResources(clientset, ns, "component=vizier")
 }
