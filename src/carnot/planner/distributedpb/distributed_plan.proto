@@ -2,12 +2,28 @@ syntax = "proto3";
 
 import "src/carnot/planpb/plan.proto";
 import "src/common/base/proto/status.proto";
+import "src/shared/bloomfilterpb/bloomfilter.proto";
+import "src/shared/metadatapb/metadata.proto";
 import "src/table_store/proto/schema.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 package pl.carnot.planner.distributedpb;
 
 option go_package = "distributedpb";
+
+// Info about the Metadata stored on a Carnot instance.
+message MetadataInfo {
+  // A list of the metadata fields that are stored in MetadataInfo.
+  // If we don't store a particular field in metadata_fields, the compiler shouldn't
+  // use it for pruning query plans.
+  repeated pl.shared.metadatapb.MetadataType metadata_fields = 1;
+  // A structure such as a bloom filter, that contains all of the values
+  // for the carnot's metadata, such as container id, service name, pod id, namespace.
+  // This structure may contain false positives but not false negatives.
+  oneof filter {
+      pl.shared.bloomfilterpb.XXHash64BloomFilter xxhash64_bloom_filter = 2;
+  }
+}
 
 // Info about the Distributed characteristics of a Carnot instance.
 message CarnotInfo {
@@ -33,6 +49,8 @@ message CarnotInfo {
   repeated TableInfo table_info = 7;
   // The asid of the Agent running the Carnot.
   uint32 asid = 8 [ (gogoproto.customname) = "ASID" ];
+  // Information about the metadata stored on a Carnot instance.
+  MetadataInfo metadata_info = 9;
 }
 
 // Information about the table structure as well as the tablet keys.

@@ -3,6 +3,7 @@ syntax = "proto3";
 package pl.vizier.messages;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/carnot/planner/distributedpb/distributed_plan.proto";
 import "src/carnot/planpb/plan.proto";
 import "src/common/uuid/proto/uuid.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
@@ -46,6 +47,12 @@ message UpdateAgentRequest {
 
 message UpdateAgentResponse {}
 
+// Struct representing the data that the agent has available to query.
+// Used by the compiler to selectively run queries on applicable agents only.
+message AgentDataInfo {
+    pl.carnot.planner.distributedpb.MetadataInfo metadata_info = 1;
+}
+
 message AgentUpdateInfo {
     // TODO(zasgar/michelle): Delete and cleanup.
     repeated pl.shared.k8s.metadatapb.SchemaInfo schema = 2;
@@ -56,6 +63,7 @@ message AgentUpdateInfo {
     repeated pl.shared.k8s.metadatapb.ProcessTerminated process_terminated = 5;
     // Whether the schema updates.
     bool does_update_schema = 6;
+    repeated AgentDataInfo data = 7;
 }
 
 // The heart beat signal.

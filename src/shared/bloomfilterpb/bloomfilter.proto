@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package pl.shared.bloomfilterpb;
+
+option go_package = "bloomfilterpb";
+
+// This file contains bloom filters: https://en.wikipedia.org/wiki/Bloom_filter
+// They are used check whether elements are present in a given set.
+// They have a false negative rate of zero, but there is a false positive rate.
+
+// XXHash64BloomFilter contains a simple serialized bloom filter that uses xxHash
+// as its hash function: https://github.com/Cyan4973/xxHash
+message XXHash64BloomFilter {
+  // The bloom filter contents serialized as bytes.
+  bytes data = 1;
+  // The number of hashes to apply to convert strings to their byte representation for this bloom filter.
+  int32 num_hashes = 2;
+}
