@@ -189,4 +189,10 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "fluent-bit-1.3.9",
         urls = ["https://github.com/fluent/fluent-bit/archive/v1.3.9.tar.gz"],
     ),
+    # April 21, 2020.
+    com_github_cyan4973_xxhash = dict(
+        sha256 = "952ebbf5b11fbf59ae5d760a562d1e9112278f244340ad7714e8556cbe54f7f7",
+        strip_prefix = "xxHash-0.7.3",
+        urls = ["https://github.com/Cyan4973/xxHash/archive/v0.7.3.tar.gz"],
+    ),
 )
