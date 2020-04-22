@@ -38,34 +38,31 @@ We're building up Pixie for broad use by the end of 2020. If you are interested,
 
 ## Quick Start
 
-##### 1. Signup
+##### Signup
 
 Visit our [product page](https://work.withpixie.ai/) and signup with your google account.
 <br> 
 
-##### 2. Install CLI 
+##### Install CLI 
 
 Copy and run the command below to install Pixie's CLI"
 
  `bash -c "$(curl -fsSL https://withpixie.ai/install.sh)"`
 <br> 
 
-##### 3. Setup a sandbox
+##### (optional) Setup a sandbox
 
-You can easily build a local set-up to use Pixie if you don't already have a K8s setup or meaningful workloads to mintor set-up.
+If you don't already have a K8s cluster available you can:
 
-  - Set-up a local K8s environment:
-      - [Install Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) and run `kind create cluster`
-      - [Install Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) and run `minikube start`
-      - Review our [docs](https://work.withpixie.ai/docs/getting-started) for detailed instructions and alternate options.
-
+  - et-up a local K8s environment by
+    - [Install Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) and run `kind create cluster`
+    - [Install Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) and run `minikube start`
+    - Review our [docs](https://work.withpixie.ai/docs/getting-started) for alternate options.
   - Start a demo-app:
-      - View available demo apps by running `px demo list`
-      - As an example, deploy [Weaveworks'](https://www.weave.works/) [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by running `px demo deploy px-sock-shop`
-
-<br>       
-
-##### 4. Deploy Pixie
+    - Deploy [Weaveworks'](https://www.weave.works/) [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by running `px demo deploy px-sock-shop`
+<br> 
+    
+##### Deploy Pixie
 
 Run `px deploy` to deploy the Pixie Platform in your K8s cluster.
 
