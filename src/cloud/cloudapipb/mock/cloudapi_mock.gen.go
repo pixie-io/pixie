@@ -37,7 +37,6 @@ func (m *MockAuthServiceClient) EXPECT() *MockAuthServiceClientMockRecorder {
 
 // Login mocks base method
 func (m *MockAuthServiceClient) Login(ctx context.Context, in *cloudapipb.LoginRequest, opts ...grpc.CallOption) (*cloudapipb.LoginReply, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -50,7 +49,6 @@ func (m *MockAuthServiceClient) Login(ctx context.Context, in *cloudapipb.LoginR
 
 // Login indicates an expected call of Login
 func (mr *MockAuthServiceClientMockRecorder) Login(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockAuthServiceClient)(nil).Login), varargs...)
 }
@@ -80,7 +78,6 @@ func (m *MockAuthServiceServer) EXPECT() *MockAuthServiceServerMockRecorder {
 
 // Login mocks base method
 func (m *MockAuthServiceServer) Login(arg0 context.Context, arg1 *cloudapipb.LoginRequest) (*cloudapipb.LoginReply, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Login", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.LoginReply)
 	ret1, _ := ret[1].(error)
@@ -89,7 +86,6 @@ func (m *MockAuthServiceServer) Login(arg0 context.Context, arg1 *cloudapipb.Log
 
 // Login indicates an expected call of Login
 func (mr *MockAuthServiceServerMockRecorder) Login(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Login", reflect.TypeOf((*MockAuthServiceServer)(nil).Login), arg0, arg1)
 }
 
@@ -118,7 +114,6 @@ func (m *MockVizierImageAuthorizationClient) EXPECT() *MockVizierImageAuthorizat
 
 // GetImageCredentials mocks base method
 func (m *MockVizierImageAuthorizationClient) GetImageCredentials(ctx context.Context, in *cloudapipb.GetImageCredentialsRequest, opts ...grpc.CallOption) (*cloudapipb.GetImageCredentialsResponse, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -131,7 +126,6 @@ func (m *MockVizierImageAuthorizationClient) GetImageCredentials(ctx context.Con
 
 // GetImageCredentials indicates an expected call of GetImageCredentials
 func (mr *MockVizierImageAuthorizationClientMockRecorder) GetImageCredentials(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageCredentials", reflect.TypeOf((*MockVizierImageAuthorizationClient)(nil).GetImageCredentials), varargs...)
 }
@@ -161,7 +155,6 @@ func (m *MockVizierImageAuthorizationServer) EXPECT() *MockVizierImageAuthorizat
 
 // GetImageCredentials mocks base method
 func (m *MockVizierImageAuthorizationServer) GetImageCredentials(arg0 context.Context, arg1 *cloudapipb.GetImageCredentialsRequest) (*cloudapipb.GetImageCredentialsResponse, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetImageCredentials", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetImageCredentialsResponse)
 	ret1, _ := ret[1].(error)
@@ -170,7 +163,6 @@ func (m *MockVizierImageAuthorizationServer) GetImageCredentials(arg0 context.Co
 
 // GetImageCredentials indicates an expected call of GetImageCredentials
 func (mr *MockVizierImageAuthorizationServerMockRecorder) GetImageCredentials(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetImageCredentials", reflect.TypeOf((*MockVizierImageAuthorizationServer)(nil).GetImageCredentials), arg0, arg1)
 }
 
@@ -199,7 +191,6 @@ func (m *MockArtifactTrackerClient) EXPECT() *MockArtifactTrackerClientMockRecor
 
 // GetArtifactList mocks base method
 func (m *MockArtifactTrackerClient) GetArtifactList(ctx context.Context, in *cloudapipb.GetArtifactListRequest, opts ...grpc.CallOption) (*cloudapipb.ArtifactSet, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -212,14 +203,12 @@ func (m *MockArtifactTrackerClient) GetArtifactList(ctx context.Context, in *clo
 
 // GetArtifactList indicates an expected call of GetArtifactList
 func (mr *MockArtifactTrackerClientMockRecorder) GetArtifactList(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArtifactList", reflect.TypeOf((*MockArtifactTrackerClient)(nil).GetArtifactList), varargs...)
 }
 
 // GetDownloadLink mocks base method
 func (m *MockArtifactTrackerClient) GetDownloadLink(ctx context.Context, in *cloudapipb.GetDownloadLinkRequest, opts ...grpc.CallOption) (*cloudapipb.GetDownloadLinkResponse, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -232,7 +221,6 @@ func (m *MockArtifactTrackerClient) GetDownloadLink(ctx context.Context, in *clo
 
 // GetDownloadLink indicates an expected call of GetDownloadLink
 func (mr *MockArtifactTrackerClientMockRecorder) GetDownloadLink(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDownloadLink", reflect.TypeOf((*MockArtifactTrackerClient)(nil).GetDownloadLink), varargs...)
 }
@@ -262,7 +250,6 @@ func (m *MockArtifactTrackerServer) EXPECT() *MockArtifactTrackerServerMockRecor
 
 // GetArtifactList mocks base method
 func (m *MockArtifactTrackerServer) GetArtifactList(arg0 context.Context, arg1 *cloudapipb.GetArtifactListRequest) (*cloudapipb.ArtifactSet, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetArtifactList", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.ArtifactSet)
 	ret1, _ := ret[1].(error)
@@ -271,13 +258,11 @@ func (m *MockArtifactTrackerServer) GetArtifactList(arg0 context.Context, arg1 *
 
 // GetArtifactList indicates an expected call of GetArtifactList
 func (mr *MockArtifactTrackerServerMockRecorder) GetArtifactList(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetArtifactList", reflect.TypeOf((*MockArtifactTrackerServer)(nil).GetArtifactList), arg0, arg1)
 }
 
 // GetDownloadLink mocks base method
 func (m *MockArtifactTrackerServer) GetDownloadLink(arg0 context.Context, arg1 *cloudapipb.GetDownloadLinkRequest) (*cloudapipb.GetDownloadLinkResponse, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetDownloadLink", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetDownloadLinkResponse)
 	ret1, _ := ret[1].(error)
@@ -286,7 +271,6 @@ func (m *MockArtifactTrackerServer) GetDownloadLink(arg0 context.Context, arg1 *
 
 // GetDownloadLink indicates an expected call of GetDownloadLink
 func (mr *MockArtifactTrackerServerMockRecorder) GetDownloadLink(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDownloadLink", reflect.TypeOf((*MockArtifactTrackerServer)(nil).GetDownloadLink), arg0, arg1)
 }
 
@@ -315,7 +299,6 @@ func (m *MockVizierClusterInfoClient) EXPECT() *MockVizierClusterInfoClientMockR
 
 // CreateCluster mocks base method
 func (m *MockVizierClusterInfoClient) CreateCluster(ctx context.Context, in *cloudapipb.CreateClusterRequest, opts ...grpc.CallOption) (*cloudapipb.CreateClusterResponse, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -328,14 +311,12 @@ func (m *MockVizierClusterInfoClient) CreateCluster(ctx context.Context, in *clo
 
 // CreateCluster indicates an expected call of CreateCluster
 func (mr *MockVizierClusterInfoClientMockRecorder) CreateCluster(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCluster", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).CreateCluster), varargs...)
 }
 
 // GetClusterInfo mocks base method
 func (m *MockVizierClusterInfoClient) GetClusterInfo(ctx context.Context, in *cloudapipb.GetClusterInfoRequest, opts ...grpc.CallOption) (*cloudapipb.GetClusterInfoResponse, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -348,14 +329,12 @@ func (m *MockVizierClusterInfoClient) GetClusterInfo(ctx context.Context, in *cl
 
 // GetClusterInfo indicates an expected call of GetClusterInfo
 func (mr *MockVizierClusterInfoClientMockRecorder) GetClusterInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterInfo", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).GetClusterInfo), varargs...)
 }
 
 // GetClusterConnectionInfo mocks base method
 func (m *MockVizierClusterInfoClient) GetClusterConnectionInfo(ctx context.Context, in *cloudapipb.GetClusterConnectionInfoRequest, opts ...grpc.CallOption) (*cloudapipb.GetClusterConnectionInfoResponse, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -368,14 +347,12 @@ func (m *MockVizierClusterInfoClient) GetClusterConnectionInfo(ctx context.Conte
 
 // GetClusterConnectionInfo indicates an expected call of GetClusterConnectionInfo
 func (mr *MockVizierClusterInfoClientMockRecorder) GetClusterConnectionInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterConnectionInfo", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).GetClusterConnectionInfo), varargs...)
 }
 
 // UpdateClusterVizierConfig mocks base method
 func (m *MockVizierClusterInfoClient) UpdateClusterVizierConfig(ctx context.Context, in *cloudapipb.UpdateClusterVizierConfigRequest, opts ...grpc.CallOption) (*cloudapipb.UpdateClusterVizierConfigResponse, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -388,9 +365,26 @@ func (m *MockVizierClusterInfoClient) UpdateClusterVizierConfig(ctx context.Cont
 
 // UpdateClusterVizierConfig indicates an expected call of UpdateClusterVizierConfig
 func (mr *MockVizierClusterInfoClientMockRecorder) UpdateClusterVizierConfig(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateClusterVizierConfig", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).UpdateClusterVizierConfig), varargs...)
+}
+
+// UpdateOrInstallCluster mocks base method
+func (m *MockVizierClusterInfoClient) UpdateOrInstallCluster(ctx context.Context, in *cloudapipb.UpdateOrInstallClusterRequest, opts ...grpc.CallOption) (*cloudapipb.UpdateOrInstallClusterResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateOrInstallCluster", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.UpdateOrInstallClusterResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateOrInstallCluster indicates an expected call of UpdateOrInstallCluster
+func (mr *MockVizierClusterInfoClientMockRecorder) UpdateOrInstallCluster(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrInstallCluster", reflect.TypeOf((*MockVizierClusterInfoClient)(nil).UpdateOrInstallCluster), varargs...)
 }
 
 // MockVizierClusterInfoServer is a mock of VizierClusterInfoServer interface
@@ -418,7 +412,6 @@ func (m *MockVizierClusterInfoServer) EXPECT() *MockVizierClusterInfoServerMockR
 
 // CreateCluster mocks base method
 func (m *MockVizierClusterInfoServer) CreateCluster(arg0 context.Context, arg1 *cloudapipb.CreateClusterRequest) (*cloudapipb.CreateClusterResponse, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateCluster", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.CreateClusterResponse)
 	ret1, _ := ret[1].(error)
@@ -427,13 +420,11 @@ func (m *MockVizierClusterInfoServer) CreateCluster(arg0 context.Context, arg1 *
 
 // CreateCluster indicates an expected call of CreateCluster
 func (mr *MockVizierClusterInfoServerMockRecorder) CreateCluster(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateCluster", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).CreateCluster), arg0, arg1)
 }
 
 // GetClusterInfo mocks base method
 func (m *MockVizierClusterInfoServer) GetClusterInfo(arg0 context.Context, arg1 *cloudapipb.GetClusterInfoRequest) (*cloudapipb.GetClusterInfoResponse, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClusterInfo", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetClusterInfoResponse)
 	ret1, _ := ret[1].(error)
@@ -442,13 +433,11 @@ func (m *MockVizierClusterInfoServer) GetClusterInfo(arg0 context.Context, arg1 
 
 // GetClusterInfo indicates an expected call of GetClusterInfo
 func (mr *MockVizierClusterInfoServerMockRecorder) GetClusterInfo(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterInfo", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).GetClusterInfo), arg0, arg1)
 }
 
 // GetClusterConnectionInfo mocks base method
 func (m *MockVizierClusterInfoServer) GetClusterConnectionInfo(arg0 context.Context, arg1 *cloudapipb.GetClusterConnectionInfoRequest) (*cloudapipb.GetClusterConnectionInfoResponse, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetClusterConnectionInfo", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetClusterConnectionInfoResponse)
 	ret1, _ := ret[1].(error)
@@ -457,13 +446,11 @@ func (m *MockVizierClusterInfoServer) GetClusterConnectionInfo(arg0 context.Cont
 
 // GetClusterConnectionInfo indicates an expected call of GetClusterConnectionInfo
 func (mr *MockVizierClusterInfoServerMockRecorder) GetClusterConnectionInfo(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterConnectionInfo", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).GetClusterConnectionInfo), arg0, arg1)
 }
 
 // UpdateClusterVizierConfig mocks base method
 func (m *MockVizierClusterInfoServer) UpdateClusterVizierConfig(arg0 context.Context, arg1 *cloudapipb.UpdateClusterVizierConfigRequest) (*cloudapipb.UpdateClusterVizierConfigResponse, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateClusterVizierConfig", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.UpdateClusterVizierConfigResponse)
 	ret1, _ := ret[1].(error)
@@ -472,8 +459,20 @@ func (m *MockVizierClusterInfoServer) UpdateClusterVizierConfig(arg0 context.Con
 
 // UpdateClusterVizierConfig indicates an expected call of UpdateClusterVizierConfig
 func (mr *MockVizierClusterInfoServerMockRecorder) UpdateClusterVizierConfig(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateClusterVizierConfig", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).UpdateClusterVizierConfig), arg0, arg1)
+}
+
+// UpdateOrInstallCluster mocks base method
+func (m *MockVizierClusterInfoServer) UpdateOrInstallCluster(arg0 context.Context, arg1 *cloudapipb.UpdateOrInstallClusterRequest) (*cloudapipb.UpdateOrInstallClusterResponse, error) {
+	ret := m.ctrl.Call(m, "UpdateOrInstallCluster", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.UpdateOrInstallClusterResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateOrInstallCluster indicates an expected call of UpdateOrInstallCluster
+func (mr *MockVizierClusterInfoServerMockRecorder) UpdateOrInstallCluster(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrInstallCluster", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).UpdateOrInstallCluster), arg0, arg1)
 }
 
 // MockScriptMgrClient is a mock of ScriptMgrClient interface
@@ -501,7 +500,6 @@ func (m *MockScriptMgrClient) EXPECT() *MockScriptMgrClientMockRecorder {
 
 // GetLiveViews mocks base method
 func (m *MockScriptMgrClient) GetLiveViews(ctx context.Context, in *cloudapipb.GetLiveViewsReq, opts ...grpc.CallOption) (*cloudapipb.GetLiveViewsResp, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -514,14 +512,12 @@ func (m *MockScriptMgrClient) GetLiveViews(ctx context.Context, in *cloudapipb.G
 
 // GetLiveViews indicates an expected call of GetLiveViews
 func (mr *MockScriptMgrClientMockRecorder) GetLiveViews(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViews", reflect.TypeOf((*MockScriptMgrClient)(nil).GetLiveViews), varargs...)
 }
 
 // GetLiveViewContents mocks base method
 func (m *MockScriptMgrClient) GetLiveViewContents(ctx context.Context, in *cloudapipb.GetLiveViewContentsReq, opts ...grpc.CallOption) (*cloudapipb.GetLiveViewContentsResp, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -534,14 +530,12 @@ func (m *MockScriptMgrClient) GetLiveViewContents(ctx context.Context, in *cloud
 
 // GetLiveViewContents indicates an expected call of GetLiveViewContents
 func (mr *MockScriptMgrClientMockRecorder) GetLiveViewContents(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViewContents", reflect.TypeOf((*MockScriptMgrClient)(nil).GetLiveViewContents), varargs...)
 }
 
 // GetScripts mocks base method
 func (m *MockScriptMgrClient) GetScripts(ctx context.Context, in *cloudapipb.GetScriptsReq, opts ...grpc.CallOption) (*cloudapipb.GetScriptsResp, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -554,14 +548,12 @@ func (m *MockScriptMgrClient) GetScripts(ctx context.Context, in *cloudapipb.Get
 
 // GetScripts indicates an expected call of GetScripts
 func (mr *MockScriptMgrClientMockRecorder) GetScripts(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScripts", reflect.TypeOf((*MockScriptMgrClient)(nil).GetScripts), varargs...)
 }
 
 // GetScriptContents mocks base method
 func (m *MockScriptMgrClient) GetScriptContents(ctx context.Context, in *cloudapipb.GetScriptContentsReq, opts ...grpc.CallOption) (*cloudapipb.GetScriptContentsResp, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -574,7 +566,6 @@ func (m *MockScriptMgrClient) GetScriptContents(ctx context.Context, in *cloudap
 
 // GetScriptContents indicates an expected call of GetScriptContents
 func (mr *MockScriptMgrClientMockRecorder) GetScriptContents(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScriptContents", reflect.TypeOf((*MockScriptMgrClient)(nil).GetScriptContents), varargs...)
 }
@@ -604,7 +595,6 @@ func (m *MockScriptMgrServer) EXPECT() *MockScriptMgrServerMockRecorder {
 
 // GetLiveViews mocks base method
 func (m *MockScriptMgrServer) GetLiveViews(arg0 context.Context, arg1 *cloudapipb.GetLiveViewsReq) (*cloudapipb.GetLiveViewsResp, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLiveViews", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetLiveViewsResp)
 	ret1, _ := ret[1].(error)
@@ -613,13 +603,11 @@ func (m *MockScriptMgrServer) GetLiveViews(arg0 context.Context, arg1 *cloudapip
 
 // GetLiveViews indicates an expected call of GetLiveViews
 func (mr *MockScriptMgrServerMockRecorder) GetLiveViews(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViews", reflect.TypeOf((*MockScriptMgrServer)(nil).GetLiveViews), arg0, arg1)
 }
 
 // GetLiveViewContents mocks base method
 func (m *MockScriptMgrServer) GetLiveViewContents(arg0 context.Context, arg1 *cloudapipb.GetLiveViewContentsReq) (*cloudapipb.GetLiveViewContentsResp, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetLiveViewContents", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetLiveViewContentsResp)
 	ret1, _ := ret[1].(error)
@@ -628,13 +616,11 @@ func (m *MockScriptMgrServer) GetLiveViewContents(arg0 context.Context, arg1 *cl
 
 // GetLiveViewContents indicates an expected call of GetLiveViewContents
 func (mr *MockScriptMgrServerMockRecorder) GetLiveViewContents(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLiveViewContents", reflect.TypeOf((*MockScriptMgrServer)(nil).GetLiveViewContents), arg0, arg1)
 }
 
 // GetScripts mocks base method
 func (m *MockScriptMgrServer) GetScripts(arg0 context.Context, arg1 *cloudapipb.GetScriptsReq) (*cloudapipb.GetScriptsResp, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetScripts", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetScriptsResp)
 	ret1, _ := ret[1].(error)
@@ -643,13 +629,11 @@ func (m *MockScriptMgrServer) GetScripts(arg0 context.Context, arg1 *cloudapipb.
 
 // GetScripts indicates an expected call of GetScripts
 func (mr *MockScriptMgrServerMockRecorder) GetScripts(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScripts", reflect.TypeOf((*MockScriptMgrServer)(nil).GetScripts), arg0, arg1)
 }
 
 // GetScriptContents mocks base method
 func (m *MockScriptMgrServer) GetScriptContents(arg0 context.Context, arg1 *cloudapipb.GetScriptContentsReq) (*cloudapipb.GetScriptContentsResp, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetScriptContents", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.GetScriptContentsResp)
 	ret1, _ := ret[1].(error)
@@ -658,7 +642,6 @@ func (m *MockScriptMgrServer) GetScriptContents(arg0 context.Context, arg1 *clou
 
 // GetScriptContents indicates an expected call of GetScriptContents
 func (mr *MockScriptMgrServerMockRecorder) GetScriptContents(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetScriptContents", reflect.TypeOf((*MockScriptMgrServer)(nil).GetScriptContents), arg0, arg1)
 }
 
@@ -687,7 +670,6 @@ func (m *MockAutocompleteServiceClient) EXPECT() *MockAutocompleteServiceClientM
 
 // Autocomplete mocks base method
 func (m *MockAutocompleteServiceClient) Autocomplete(ctx context.Context, in *cloudapipb.AutocompleteRequest, opts ...grpc.CallOption) (*cloudapipb.AutocompleteResponse, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{ctx, in}
 	for _, a := range opts {
 		varargs = append(varargs, a)
@@ -700,7 +682,6 @@ func (m *MockAutocompleteServiceClient) Autocomplete(ctx context.Context, in *cl
 
 // Autocomplete indicates an expected call of Autocomplete
 func (mr *MockAutocompleteServiceClientMockRecorder) Autocomplete(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Autocomplete", reflect.TypeOf((*MockAutocompleteServiceClient)(nil).Autocomplete), varargs...)
 }
@@ -730,7 +711,6 @@ func (m *MockAutocompleteServiceServer) EXPECT() *MockAutocompleteServiceServerM
 
 // Autocomplete mocks base method
 func (m *MockAutocompleteServiceServer) Autocomplete(arg0 context.Context, arg1 *cloudapipb.AutocompleteRequest) (*cloudapipb.AutocompleteResponse, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Autocomplete", arg0, arg1)
 	ret0, _ := ret[0].(*cloudapipb.AutocompleteResponse)
 	ret1, _ := ret[1].(error)
@@ -739,6 +719,5 @@ func (m *MockAutocompleteServiceServer) Autocomplete(arg0 context.Context, arg1 
 
 // Autocomplete indicates an expected call of Autocomplete
 func (mr *MockAutocompleteServiceServerMockRecorder) Autocomplete(arg0, arg1 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Autocomplete", reflect.TypeOf((*MockAutocompleteServiceServer)(nil).Autocomplete), arg0, arg1)
 }

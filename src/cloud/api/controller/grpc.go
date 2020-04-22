@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -278,6 +279,11 @@ func (v *VizierClusterInfo) UpdateClusterVizierConfig(ctx context.Context, req *
 	}
 
 	return &cloudapipb.UpdateClusterVizierConfigResponse{}, nil
+}
+
+// UpdateOrInstallCluster updates or installs the given vizier cluster to the specified version.
+func (v *VizierClusterInfo) UpdateOrInstallCluster(ctx context.Context, req *cloudapipb.UpdateOrInstallClusterRequest) (*cloudapipb.UpdateOrInstallClusterResponse, error) {
+	return nil, errors.New("Not yet implemented")
 }
 
 func vzStatusToClusterStatus(s cvmsgspb.VizierInfo_Status) cloudapipb.ClusterStatus {

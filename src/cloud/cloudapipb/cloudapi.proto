@@ -129,11 +129,31 @@ message CreateClusterResponse {
                           ];
 }
 
+// UpdateOrInstallClusterRequest is a request to update or install a Vizier cluster.
+message UpdateOrInstallClusterRequest {
+  // The ID of the cluster to upgrade/install.
+  pl.uuidpb.UUID cluster_id = 1 [
+                        (gogoproto.customname) = "clusterID"
+                        ];
+  // The version to upgrade/install the cluster as. If no version is specified, we assume we should
+  // upgrade to the latest version.
+  string version = 2;
+}
+
+// UpdateOrInstallClusterResponse is a response to an UpdateOrInstallClusterRequest.
+message UpdateOrInstallClusterResponse {
+  // Whether the cluster intall/update was started successfully.
+  bool update_started = 1;
+}
+
 service VizierClusterInfo {
     rpc CreateCluster(CreateClusterRequest) returns(CreateClusterResponse) {}
     rpc GetClusterInfo(GetClusterInfoRequest) returns(GetClusterInfoResponse) {}
     rpc GetClusterConnectionInfo(GetClusterConnectionInfoRequest) returns(GetClusterConnectionInfoResponse) {}
     rpc UpdateClusterVizierConfig(UpdateClusterVizierConfigRequest) returns(UpdateClusterVizierConfigResponse) {}
+    // This call is made when we want to update or install a Vizier. This call is made when deploying
+    // a new Vizier through the CLI or by invoking the "update" command in the CLI.
+    rpc UpdateOrInstallCluster(UpdateOrInstallClusterRequest) returns (UpdateOrInstallClusterResponse) {}
 }
 
 message VizierConfig {
