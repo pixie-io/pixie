@@ -1,6 +1,6 @@
 <p align="center">
 
-   [![Pixie!](./assets/readme_banner_v2.png)](https://pixielabs.ai)
+   [![Pixie!](./assets/readme_banner_v3.png)](https://pixielabs.ai)
 
 </p>
 
@@ -29,9 +29,10 @@ We're building up Pixie for broad use by the end of 2020. If you are interested,
 - [Demo](#demos)
 - [Contributing](#contributing)
 - [Open Source](#open-source)
-- [Under the Hood](#under-the-hood)
+- [Platform Architecture](#under-the-hood)
 - [About Us](#about-us)
 - [License](#license)
+
 </details>
 
 
