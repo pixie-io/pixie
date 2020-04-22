@@ -11,10 +11,14 @@
 [![Slack](https://slackin.withpixie.ai/badge.svg)](https://slackin.withpixie.ai)
 [![Mentioned in Awesome Kubernetes](https://awesome.re/mentioned-badge.svg)](https://github.com/ramitsurana/awesome-kubernetes)
 
-<img src="./assets/live_7apr20.gif" alt="Playbook" width="400" align="right">
-Pixie gives engineers access to no-instrumentation, streaming & unsampled auto-telemetry to debug performance issues in real-time.
 
-We're building up Pixie for broad use by the end of 2020 with an initial focus on Kubernetes workloads. If you are interested, feel free to try our beta and join our community on slack.
+## About Pixie
+
+<img src="./assets/live_7apr20.gif" alt="Playbook" width="400" align="right">
+
+Pixie is a machine intelligence platform to help you avoid wasting hours debugging after spending weeks instrumenting your code.
+
+We're building up Pixie for broad use by the end of 2020. If you are interested, feel free to try our [community beta](https://work.withpixie.ai/signup) and join our community on [slack](https://slackin.withpixie.ai/).
 
 <details>
   <summary><strong>Table of contents</strong></summary>
