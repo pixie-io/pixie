@@ -61,11 +61,12 @@ func NewBundleManager(bundleFile string) (*BundleManager, error) {
 }
 
 // GetScriptMetadata returns metadata about available scripts.
-func (b BundleManager) GetScriptMetadata() []Metadata {
-	s := make([]Metadata, len(b.scripts))
+func (b BundleManager) GetScripts() []*ExecutableScript {
+	s := make([]*ExecutableScript, len(b.scripts))
 	i := 0
 	for k, val := range b.scripts {
 		s[i].ScriptName = k
+		s[i].ScriptString = val.Pxl
 		s[i].ShortDoc = val.ShortDoc
 		s[i].LongDoc = val.LongDoc
 		i++
@@ -74,8 +75,8 @@ func (b BundleManager) GetScriptMetadata() []Metadata {
 }
 
 // GetOrderedScriptMetadata returns metadata about available scripts ordered by the name of the script.
-func (b BundleManager) GetOrderedScriptMetadata() []Metadata {
-	s := b.GetScriptMetadata()
+func (b BundleManager) GetOrderedScripts() []*ExecutableScript {
+	s := b.GetScripts()
 	sort.Slice(s, func(i, j int) bool {
 		return s[i].ScriptName < s[j].ScriptName
 	})
@@ -89,13 +90,11 @@ func (b BundleManager) GetScript(scriptName string) (*ExecutableScript, error) {
 		return nil, ErrScriptNotFound
 	}
 	return &ExecutableScript{
-		metadata: Metadata{
-			ScriptName: scriptName,
-			ShortDoc:   script.ShortDoc,
-			LongDoc:    script.LongDoc,
-			HasVis:     script.Vis != "",
-		},
-		scriptString: script.Pxl,
+		ScriptName:   scriptName,
+		ShortDoc:     script.ShortDoc,
+		LongDoc:      script.LongDoc,
+		HasVis:       script.Vis != "",
+		ScriptString: script.Pxl,
 	}, nil
 }
 
@@ -110,16 +109,16 @@ func (b BundleManager) MustGetScript(scriptName string) *ExecutableScript {
 
 // AddScript adds the specified script to the bundle manager.
 func (b *BundleManager) AddScript(script *ExecutableScript) error {
-	n := script.Metadata().ScriptName
+	n := script.ScriptName
 
 	_, has := b.scripts[n]
 	if has {
 		return errors.New("script with same name already exists")
 	}
 	p := &pixieScript{
-		Pxl:      script.scriptString,
-		ShortDoc: script.metadata.ShortDoc,
-		LongDoc:  script.metadata.LongDoc,
+		Pxl:      script.ScriptString,
+		ShortDoc: script.ShortDoc,
+		LongDoc:  script.LongDoc,
 	}
 	b.scripts[n] = p
 	return nil

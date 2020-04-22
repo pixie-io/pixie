@@ -71,8 +71,8 @@ var RunCmd = &cobra.Command{
 			UserId: pxconfig.Cfg().UniqueClientID,
 			Event:  "Script Execution Started",
 			Properties: analytics.NewProperties().
-				Set("scriptName", execScript.Metadata().ScriptName).
-				Set("scriptString", execScript.ScriptString()),
+				Set("scriptName", execScript.ScriptName).
+				Set("scriptString", execScript.ScriptString),
 		})
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -82,14 +82,14 @@ var RunCmd = &cobra.Command{
 			log.Fatal("Script Failed")
 		}
 
-		if execScript.Metadata().HasVis {
+		if lvl := execScript.LiveViewLink(); lvl != "" {
 			p := func(s string, a ...interface{}) {
 				fmt.Fprintf(os.Stderr, s, a...)
 			}
 			b := color.New(color.Bold).Sprint
 			u := color.New(color.Underline).Sprintf
 			p("\n%s %s: %s.\n", color.CyanString("\n==> "),
-				b("Live UI"), u(execScript.Metadata().LiveViewLink()))
+				b("Live UI"), u(lvl))
 		}
 	},
 }

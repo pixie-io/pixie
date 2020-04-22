@@ -276,11 +276,10 @@ func (v *View) updateScriptInfoView() {
 	v.infoView.Clear()
 
 	fmt.Fprintf(v.infoView, "%s %s\n", withAccent("Script Name:"),
-		v.s.execScript.Metadata().ScriptName)
+		v.s.execScript.ScriptName)
 
-	if v.s.execScript.Metadata().HasVis {
-		liveLink := v.s.execScript.Metadata().LiveViewLink()
-		fmt.Fprintf(v.infoView, "%s %s", withAccent("Live View:"), liveLink)
+	if lvl := v.s.execScript.LiveViewLink(); lvl != "" {
+		fmt.Fprintf(v.infoView, "%s %s", withAccent("Live View:"), lvl)
 	}
 }
 
@@ -429,7 +428,7 @@ func (v *View) showScriptView() {
 	v.pages.AddAndSwitchToPage("script", tv, true)
 	if v.s.execScript != nil {
 		highlighted := strings.Builder{}
-		quick.Highlight(&highlighted, v.s.execScript.ScriptString(), "python",
+		quick.Highlight(&highlighted, v.s.execScript.ScriptString, "python",
 			"terminal16m", "monokai")
 		fmt.Fprintf(tv, "%s :\n\n", withAccent("Script"))
 		fmt.Fprint(tv, tview.TranslateANSI(highlighted.String()))

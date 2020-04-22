@@ -38,7 +38,7 @@ func listBundleScripts(br *script.BundleManager, format string) {
 	w := components.CreateStreamWriter(format, os.Stdout)
 	defer w.Finish()
 	w.SetHeader("script_list", []string{"Name", "Description"})
-	for _, script := range br.GetScriptMetadata() {
+	for _, script := range br.GetScripts() {
 		w.Write([]interface{}{script.ScriptName, script.ShortDoc})
 	}
 }
@@ -71,10 +71,11 @@ func loadScriptFromFile(path string) (*script.ExecutableScript, error) {
 	if path != "-" {
 		scriptName = filepath.Base(path)
 	}
-	return script.NewExecutableScript(script.Metadata{
-		ScriptName: scriptName,
-		ShortDoc:   "Script supplied by user",
-		LongDoc:    "Script supplied by user",
-		HasVis:     false,
-	}, string(qb)), nil
+	return &script.ExecutableScript{
+		ScriptName:   scriptName,
+		ScriptString: string(qb),
+		ShortDoc:     "Script supplied by user",
+		LongDoc:      "Script supplied by user",
+		HasVis:       false,
+	}, nil
 }

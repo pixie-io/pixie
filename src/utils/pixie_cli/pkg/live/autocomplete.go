@@ -191,10 +191,10 @@ type fuzzyAutocompleter struct {
 }
 
 func newFuzzyAutoCompleter(br *script.BundleManager) *fuzzyAutocompleter {
-	mdList := br.GetOrderedScriptMetadata()
-	scriptNames := make([]string, len(mdList))
-	for idx, md := range mdList {
-		scriptNames[idx] = md.ScriptName
+	scripts := br.GetScripts()
+	scriptNames := make([]string, len(scripts))
+	for idx, s := range scripts {
+		scriptNames[idx] = s.ScriptName
 	}
 
 	return &fuzzyAutocompleter{
@@ -211,7 +211,7 @@ func (f *fuzzyAutocompleter) GetSuggestions(input string) []suggestion {
 		for i, sn := range f.scriptNames {
 			suggestions[i] = suggestion{
 				scriptName:     sn,
-				desc:           f.br.MustGetScript(sn).Metadata().LongDoc,
+				desc:           f.br.MustGetScript(sn).LongDoc,
 				matchedIndexes: nil,
 			}
 		}
@@ -223,7 +223,7 @@ func (f *fuzzyAutocompleter) GetSuggestions(input string) []suggestion {
 	for i, m := range matches {
 		suggestions[i] = suggestion{
 			scriptName:     m.Str,
-			desc:           f.br.MustGetScript(m.Str).Metadata().LongDoc,
+			desc:           f.br.MustGetScript(m.Str).LongDoc,
 			matchedIndexes: m.MatchedIndexes,
 		}
 	}

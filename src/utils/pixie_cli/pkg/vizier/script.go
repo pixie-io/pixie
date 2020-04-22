@@ -27,17 +27,17 @@ func RunScript(ctx context.Context, v *Connector, execScript *script.ExecutableS
 		UserId: pxconfig.Cfg().UniqueClientID,
 		Event:  "Script Execution Started",
 		Properties: analytics.NewProperties().
-			Set("scriptName", execScript.Metadata().ScriptName).
-			Set("scriptString", execScript.ScriptString()),
+			Set("scriptName", execScript.ScriptName).
+			Set("scriptString", execScript.ScriptString),
 	})
 
-	resp, err := v.ExecuteScriptStream(ctx, execScript.ScriptString())
+	resp, err := v.ExecuteScriptStream(ctx, execScript.ScriptString)
 	if err != nil {
 		_ = pxanalytics.Client().Enqueue(&analytics.Track{
 			UserId: pxconfig.Cfg().UniqueClientID,
 			Event:  "Script Execution Failed",
 			Properties: analytics.NewProperties().
-				Set("scriptString", execScript.ScriptString()).
+				Set("scriptString", execScript.ScriptString).
 				Set("passthrough", v.PassthroughMode()),
 		})
 		return nil, err
@@ -47,7 +47,7 @@ func RunScript(ctx context.Context, v *Connector, execScript *script.ExecutableS
 		UserId: pxconfig.Cfg().UniqueClientID,
 		Event:  "Script Execution Success",
 		Properties: analytics.NewProperties().
-			Set("scriptString", execScript.ScriptString()).
+			Set("scriptString", execScript.ScriptString).
 			Set("passthrough", v.PassthroughMode()),
 	})
 	return resp, nil

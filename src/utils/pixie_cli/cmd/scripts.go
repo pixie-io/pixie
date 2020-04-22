@@ -49,7 +49,7 @@ var ScriptShowCmd = &cobra.Command{
 		br := mustCreateBundleReader()
 		scriptName := args[0]
 		execScript := br.MustGetScript(scriptName)
-		err := quick.Highlight(os.Stdout, execScript.ScriptString(), "python3", "terminal16m", "monokai")
+		err := quick.Highlight(os.Stdout, execScript.ScriptString, "python3", "terminal16m", "monokai")
 		if err != nil {
 			panic(err)
 		}
