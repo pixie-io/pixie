@@ -112,6 +112,23 @@ describe('simple timeseries', () => {
         {
           "as": [colorFieldName, valueFieldName],
           "fold": ["bytes_per_second"],
+        },
+        {
+          "joinaggregate" : [
+            {
+              "field" : "time_",
+              "op" : "max",
+              "as" : "max_time",
+            },
+            {
+              "field" : "time_",
+              "op" : "min",
+              "as" : "min_time",
+            },
+          ],
+        },
+        {
+          "filter" : "datum.time_ > datum.min_time && datum.time_ < datum.max_time",
         }
       ]
     });
@@ -199,6 +216,23 @@ describe('simple timeseries', () => {
         {
           "as": [colorFieldName, valueFieldName],
           "fold": ["bytes_per_second"],
+        },
+        {
+          "joinaggregate" : [
+            {
+              "field" : "time_",
+              "op" : "max",
+              "as" : "max_time",
+            },
+            {
+              "field" : "time_",
+              "op" : "min",
+              "as" : "min_time",
+            },
+          ],
+        },
+        {
+          "filter" : "datum.time_ > datum.min_time && datum.time_ < datum.max_time",
         }
       ]
     });
@@ -281,6 +315,23 @@ describe('simple timeseries', () => {
         {
           "as": [colorFieldName, valueFieldName],
           "fold": ["bytes_per_second"],
+        },
+        {
+          "joinaggregate" : [
+            {
+              "field" : "time_",
+              "op" : "max",
+              "as" : "max_time",
+            },
+            {
+              "field" : "time_",
+              "op" : "min",
+              "as" : "min_time",
+            },
+          ],
+        },
+        {
+          "filter" : "datum.time_ > datum.min_time && datum.time_ < datum.max_time",
         }
       ]
     });
@@ -363,6 +414,23 @@ describe('simple timeseries', () => {
         {
           "as": [colorFieldName, valueFieldName],
           "fold": ["bytes_per_second"],
+        },
+        {
+          "joinaggregate" : [
+            {
+              "field" : "time_",
+              "op" : "max",
+              "as" : "max_time",
+            },
+            {
+              "field" : "time_",
+              "op" : "min",
+              "as" : "min_time",
+            },
+          ],
+        },
+        {
+          "filter" : "datum.time_ > datum.min_time && datum.time_ < datum.max_time",
         }
       ]
     });
@@ -438,6 +506,25 @@ describe('timeseries with series', () => {
               "value": "bytes_per_second",
             }
           ]
+        }
+      ],
+      "transform": [
+        {
+          "joinaggregate" : [
+            {
+              "field" : "time_",
+              "op" : "max",
+              "as" : "max_time",
+            },
+            {
+              "field" : "time_",
+              "op" : "min",
+              "as" : "min_time",
+            },
+          ],
+        },
+        {
+          "filter" : "datum.time_ > datum.min_time && datum.time_ < datum.max_time",
         }
       ]
     });
@@ -516,6 +603,25 @@ describe('timeseries with series', () => {
           ]
         }
       ],
+      "transform": [
+        {
+          "joinaggregate" : [
+            {
+              "field" : "time_",
+              "op" : "max",
+              "as" : "max_time",
+            },
+            {
+              "field" : "time_",
+              "op" : "min",
+              "as" : "min_time",
+            },
+          ],
+        },
+        {
+          "filter" : "datum.time_ > datum.min_time && datum.time_ < datum.max_time",
+        }
+      ]
     });
   });
 });

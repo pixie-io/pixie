@@ -186,6 +186,34 @@ function randStr(length: number): string {
   return _.range(length).map(() => _.random(radix).toString(radix)).join('');
 }
 
+function trimFirstAndLastTimestep(spec) {
+  // NOTE(philkuz): These transforms are a hack to remove sampling artifacts created by our
+  // range-agg. This should be fixed with the implementation of the window aggregate. A side-effect
+  // of this hack is that any time-series created w/o range-agg will also have time-boundaries
+  // removed. I'd argue that doesn't hurt the experience because those points would be missing if
+  // they executed the live-view 1 sampling window earlier or later, where sampling windows
+  // typically are 1-10s long.
+  return extendTransforms(spec, [
+    {
+      joinaggregate : [
+        {
+          field : 'time_',
+          op : 'max',
+          as : 'max_time',
+        },
+        {
+          field : 'time_',
+          op : 'min',
+          as : 'min_time',
+        },
+      ],
+    },
+    {
+      filter : 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
+    },
+  ]);
+}
+
 function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): VisualizationSpec {
   let spec = BASE_TIMESERIES_SPEC;
 
@@ -257,6 +285,8 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
   }
 
   spec = extendLayer(spec, layers);
+  // NOTE(philkuz): Hack to remove the sampling artifacts created by our range-agg.
+  spec = trimFirstAndLastTimestep(spec);
 
   return addSources(spec, source);
 }

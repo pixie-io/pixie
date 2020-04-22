@@ -4,7 +4,7 @@ import {View} from 'vega-typings';
 
 import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
 
-import {addTooltipsToSpec, COLOR_SCALE, hydrateSpec, hydrateSpecOld} from './spec';
+import {addTooltipsToSpec,  COLOR_SCALE, hydrateSpec, hydrateSpecOld} from './spec';
 import {ColoredTooltipHandler} from './tooltip';
 
 
