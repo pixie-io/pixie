@@ -1,6 +1,6 @@
 <p align="center">
 
-  [![Pixie!](./assets/readme_banner_v2.png)](https://pixielabs.ai)
+  [![Pixie!](./assets/readme_banner_v3.png)](https://pixielabs.ai)
 
 </p>
 
@@ -45,21 +45,21 @@ Visit our [product page](https://work.withpixie.ai/) and signup with your google
 
 #### Install CLI 
 
-Copy and run the command below to install Pixie's CLI"
+Run the command below:
 
- `bash -c "$(curl -fsSL https://withpixie.ai/install.sh)"`
+`bash -c "$(curl -fsSL https://withpixie.ai/install.sh)"`
 
 
 #### (optional) Setup a sandbox
 
 If you don't already have a K8s cluster available you can:
 
-  - Set-up a local K8s environment by
-    - [Install Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) and run `kind create cluster`
-    - [Install Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) and run `minikube start`
-    - Review our [docs](https://work.withpixie.ai/docs/getting-started) for alternate options.
-  - Start a demo-app:
-    - Deploy [Weaveworks'](https://www.weave.works/) [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by running `px demo deploy px-sock-shop`
+- Set-up a local K8s environment
+  - [Install Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) and run `kind create cluster`
+  - [Install Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) and run `minikube start`
+  - Review our [docs](https://work.withpixie.ai/docs/getting-started) for alternate options.
+- Start a demo-app
+  - Deploy [Weaveworks'](https://www.weave.works/) [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by running `px demo deploy px-sock-shop`
  
 
 #### 🚀Deploy Pixie
