@@ -5,18 +5,16 @@
 </p>
 
 
-## 
-
 [![Docs](https://img.shields.io/badge/docs-latest-blue)](https://withpixie.ai/docs)
 [![Slack](https://slackin.withpixie.ai/badge.svg)](https://slackin.withpixie.ai)
 [![Mentioned in Awesome Kubernetes](https://awesome.re/mentioned-badge.svg)](https://github.com/ramitsurana/awesome-kubernetes)
 
 
-## About Pixie
+## What is Pixie?
 
-<img src="./assets/live_7apr20.gif" alt="Playbook" width="400" align="right">
+<img src="./assets/live_7apr20.gif" alt="Pixie" width="425" align="right">
 
-Pixie is a machine intelligence platform to help you avoid wasting hours debugging after spending weeks instrumenting your code.
+Pixie is an edge intelligence platform to help you debug in minutes and avoid wasting months instrumenting your entire codebase.
 
 We're building up Pixie for broad use by the end of 2020. If you are interested, feel free to try our [community beta](https://work.withpixie.ai/signup) and join our community on [slack](https://slackin.withpixie.ai/).
 
@@ -34,6 +32,8 @@ We're building up Pixie for broad use by the end of 2020. If you are interested,
 
 
 ## Quick Start
+
+
 
 1. **Signup**: Visit our [product page](https://work.withpixie.ai/) and signup with your google account.
 
@@ -55,50 +55,70 @@ We're building up Pixie for broad use by the end of 2020. If you are interested,
 4. **Deploy Pixie**: Run `px deploy` to deploy the Pixie Platform in your K8s cluster.
 
 
-You now have lift off! 🚀 Start by running `px scripts list` or check out your [Live Views](https://work.withpixie.ai/). 
-
-Here's a quick walkthrough video to recap:
-
-[![Pixie Deploy Overview](https://img.youtube.com/vi/iMh2f8abTYU/0.jpg)](https://www.youtube.com/watch?v=iMh2f8abTYU)
+🚀  You have lift off! Check out our [install guides](https://docs.withpixie.ai/install-guides/) and [walkthrough videos](https://www.youtube.com/watch?v=iMh2f8abTYU) for alternate install schemes.
 
 
 ## Get Instant Auto-Telemetry
 
-**Run scripts with `px` CLI**
+#### Run scripts with `px` CLI
 
-Access data in seconds by running pre-built community scripts like:
+<img src="./pxl_scripts/http_data.svg" alt="CLI Demo" width="425" align="right">
 
-- Service SLA: `px run px/service_stats`
-- Node health: `px run px/node_stats`
-- MySQL metrics: `px run px/mysql_stats`
-- Explore more scripts by running `px scripts list`
-- Check out our [pxl_scripts](pxl_scripts) repo for more examples.
+<br> Service SLA:
 
-![CLI Demo](./pxl_scripts/http_data.svg)
+`px run px/service_stats`
 
-**View results on machine generated Live dashboards**
+<br> Node health:
 
-The Pixie Platform auto-generates "Live View" dashboard to visualize script results. You can view them by clicking on the URLs prompted by `px` or by visiting: `https://work.withpixie.ai/live`
+`px run px/node_stats`
 
-![CLI Demo](./assets/live_7apr20.gif)
+<br> MySQL metrics:
 
-**Pipe Pixie dust into any tool**
+`px run px/mysql_stats`
+
+<br> Explore more scripts by running:
+
+`px scripts list`
+
+<br> Check out our [pxl_scripts](pxl_scripts) repo for more examples.
+
+<br clear="all">
+
+##### View machine generated dashboards with Live views
+
+<img src="./assets/live_7apr20.gif" alt="CLI Demo" width="425" align="right">
+
+<br>The Pixie Platform auto-generates "Live View" dashboard to visualize script results. 
+
+You can view them by clicking on the URLs prompted by `px` or by visiting: 
+
+`https://work.withpixie.ai/live`
+
+<br clear="all">
+
+
+##### Pipe Pixie dust into any tool
+
+<img src="./assets/./cli_demo.svg" alt="CLI Demo" width="425" align="right">
 
 You can transform and pipe your script results into any other system or workflow by consuming `px` results with tools like [jq](https://stedolan.github.io/jq/). 
 
-- Example: `px run px/http_data -o json| jq -r .`
-- More examples [here](pxl_scripts).
+Example with http_data:
 
-![CLI Demo](./assets/./cli_demo.svg)
+`px run px/http_data -o json| jq -r .`
 
-_To see more script examples and learn how to write your own, check out our [docs](https://work.withpixie.ai/docs) for more guides_
+More examples [here](pxl_scripts)
+
+<br>_To see more script examples and learn how to write your own, check out our [docs](https://work.withpixie.ai/docs) for more guides_
+
+<br clear="all">
 
 ## Contributing
 
 - **Bugs:** Something not working as expected? [Send a bug report](https://github.com/pixie-labs/pixie/issues/new?template=Bug_report.md).
 - **Features:** Need new Pixie capabilities? [Send a feature request](https://github.com/pixie-labs/pixie/issues/new?template=Feature_request.md).
 - **Views & Scripts:** Need help building a live views or pxl scripts? [Send a live view request](https://github.com/pixie-labs/pixie/issues/new?template=Live_view_request.md).
-- **Community:** Interested in becoming a Pixienaut and in helping shape our community? [Email us](mailto:community@pixielabs.ai).
+- **Pixienaut Community:** Interested in becoming a [Pixienaut](https://github.com/pixie-labs/pixie/tree/master/pixienauts) and in helping shape our community? [Apply here](https://pixielabs.ai/community/).
 
 
 ## Open Source
@@ -124,12 +144,13 @@ _For more information on Pixie Platform's architecture, check out our [docs](htt
 
 ## Resources
 
+- [Company Website](https://pixielabs.ai)
 - [Documentation](https://work.withpixie.ai/docs)
 - [Community Slack](https://slackin.withpixie.ai/)
 - [Issue Tracker](https://github.com/pixie-labs/pixie/issues)
+- [Community Overview](https://github.com/pixie-labs/pixie/tree/master/pixienauts)
 - [Youtube](https://www.youtube.com/channel/UCOMCDRvBVNIS0lCyOmst7eg/videos)
 - [Overview Slide Deck](https://docsend.com/view/kj38d76)
-- [Company Website](https://pixielabs.ai)
 
 ## About Us
 
