@@ -659,6 +659,17 @@ func getServiceCredentials(signingKey string) (string, error) {
 func (s *Server) UpdateOrInstallVizier(ctx context.Context, req *cvmsgspb.UpdateOrInstallVizierRequest) (*cvmsgspb.UpdateOrInstallVizierResponse, error) {
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 
+	// Generate a signed token for this cluster.
+	claims := jwtutils.GenerateJWTForCluster("vizier_cluster")
+	tokenString, err := jwtutils.SignJWTClaims(claims, viper.GetString("jwt_signing_key"))
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to sign token: %s", err.Error())
+	}
+
+	req.Token = tokenString
+	// TODO(michelle): We should populate this with the correct YAML contents.
+	req.UpdaterJobYAML = ""
+
 	// Send a message to the correct vizier that it should be updated.
 	reqAnyMsg, err := types.MarshalAny(req)
 	if err != nil {

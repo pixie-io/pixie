@@ -15,6 +15,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -671,6 +672,8 @@ func TestServer_GetSSLCerts(t *testing.T) {
 }
 
 func TestServer_UpdateOrInstallVizier(t *testing.T) {
+	viper.Set("jwt_signing_key", "jwtkey")
+
 	db, teardown := setupTestDB(t)
 	defer teardown()
 	loadTestData(t, db)
@@ -696,7 +699,13 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 		resp := &cvmsgspb.UpdateOrInstallVizierRequest{}
 		err = types.UnmarshalAny(c2vMsg.Msg, resp)
 		assert.Equal(t, "0.1.30", resp.Version)
-
+		assert.NotNil(t, resp.Token)
+		claims := jwt.MapClaims{}
+		_, err = jwt.ParseWithClaims(resp.Token, claims, func(token *jwt.Token) (interface{}, error) {
+			return []byte("jwtkey"), nil
+		})
+		assert.Nil(t, err)
+		assert.Equal(t, "cluster", claims["Scopes"].(string))
 		// Send response.
 		updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
 			UpdateStarted: true,
