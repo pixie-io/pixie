@@ -30,23 +30,23 @@ inline constexpr char kUpgrade[] = "Upgrade";
 struct Message : public stirling::FrameBase {
   MessageType type = MessageType::kUnknown;
 
-  int http_minor_version = -1;
-  HeadersMap http_headers = {};
+  int minor_version = -1;
+  HeadersMap headers = {};
 
-  std::string http_req_method = "-";
-  std::string http_req_path = "-";
+  std::string req_method = "-";
+  std::string req_path = "-";
 
-  int http_resp_status = -1;
-  std::string http_resp_message = "-";
+  int resp_status = -1;
+  std::string resp_message = "-";
 
-  std::string http_msg_body = "-";
+  std::string body = "-";
 
   // The number of bytes in the HTTP header, used in ByteSize(),
   // as an approximation of the size of the non-body fields.
   size_t headers_byte_size = 0;
 
   size_t ByteSize() const override {
-    return sizeof(Message) + headers_byte_size + http_msg_body.size() + http_resp_message.size();
+    return sizeof(Message) + headers_byte_size + body.size() + resp_message.size();
   }
 };
 

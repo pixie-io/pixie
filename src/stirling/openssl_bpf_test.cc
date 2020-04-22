@@ -81,22 +81,22 @@ std::vector<http::Record> ToRecordVector(const types::ColumnWrapperRecordBatch& 
 
   for (const auto& idx : indices) {
     http::Record r;
-    r.req.http_req_path = rb[kHTTPReqPathIdx]->Get<types::StringValue>(idx);
-    r.req.http_minor_version = rb[kHTTPMinorVersionIdx]->Get<types::Int64Value>(idx).val;
-    r.resp.http_resp_status = rb[kHTTPRespStatusIdx]->Get<types::Int64Value>(idx).val;
-    r.req.http_resp_message = rb[kHTTPRespMessageIdx]->Get<types::StringValue>(idx);
+    r.req.req_path = rb[kHTTPReqPathIdx]->Get<types::StringValue>(idx);
+    r.req.minor_version = rb[kHTTPMinorVersionIdx]->Get<types::Int64Value>(idx).val;
+    r.resp.resp_status = rb[kHTTPRespStatusIdx]->Get<types::Int64Value>(idx).val;
+    r.req.resp_message = rb[kHTTPRespMessageIdx]->Get<types::StringValue>(idx);
     result.push_back(r);
   }
   return result;
 }
 
 auto EqHTTPReq(const http::Message& x) {
-  return AllOf(Field(&http::Message::http_req_path, Eq(x.http_req_path)),
-               Field(&http::Message::http_minor_version, Eq(x.http_minor_version)));
+  return AllOf(Field(&http::Message::req_path, Eq(x.req_path)),
+               Field(&http::Message::minor_version, Eq(x.minor_version)));
 }
 
 auto EqHTTPResp(const http::Message& x) {
-  return AllOf(Field(&http::Message::http_resp_status, Eq(x.http_resp_status)));
+  return AllOf(Field(&http::Message::resp_status, Eq(x.resp_status)));
 }
 
 auto EqHTTPRecord(const http::Record& x) {
@@ -150,9 +150,9 @@ TEST_F(OpenSSLTraceTest, ssl_capture) {
       std::vector<http::Record> records = GetTargetRecords(record_batch, worker_pid);
 
       http::Record expected_record;
-      expected_record.req.http_minor_version = 1;
-      expected_record.req.http_req_path = "/index.html";
-      expected_record.resp.http_resp_status = 200;
+      expected_record.req.minor_version = 1;
+      expected_record.req.req_path = "/index.html";
+      expected_record.resp.resp_status = 200;
 
       EXPECT_THAT(records, UnorderedElementsAre(EqHTTPRecord(expected_record)));
     }

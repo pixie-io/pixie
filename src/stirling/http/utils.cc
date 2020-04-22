@@ -63,8 +63,8 @@ HTTPHeaderFilter ParseHTTPHeaderFilters(std::string_view filters) {
 }
 
 bool IsJSONContent(const Message& message) {
-  auto content_type_iter = message.http_headers.find(kContentType);
-  if (content_type_iter == message.http_headers.end()) {
+  auto content_type_iter = message.headers.find(kContentType);
+  if (content_type_iter == message.headers.end()) {
     return false;
   }
   if (absl::StrContains(content_type_iter->second, "json")) {

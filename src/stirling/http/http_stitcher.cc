@@ -81,32 +81,31 @@ void PreProcessMessage(Message* message) {
       ParseHTTPHeaderFilters(FLAGS_http_response_header_filters);
 
   // Rule: Exclude anything that doesn't specify its Content-Type.
-  auto content_type_iter = message->http_headers.find(http::kContentType);
-  if (content_type_iter == message->http_headers.end()) {
-    message->http_msg_body = "<removed: unsupported content-type>";
+  auto content_type_iter = message->headers.find(http::kContentType);
+  if (content_type_iter == message->headers.end()) {
+    message->body = "<removed: unsupported content-type>";
     return;
   }
 
   // Rule: Exclude anything that doesn't match the filter, if filter is active.
   if (message->type == MessageType::kResponse && (!kHTTPResponseHeaderFilter.inclusions.empty() ||
                                                   !kHTTPResponseHeaderFilter.exclusions.empty())) {
-    if (!MatchesHTTPHeaders(message->http_headers, kHTTPResponseHeaderFilter)) {
-      message->http_msg_body = "<removed: unsupported content-type>";
+    if (!MatchesHTTPHeaders(message->headers, kHTTPResponseHeaderFilter)) {
+      message->body = "<removed: unsupported content-type>";
       return;
     }
   }
 
-  auto content_encoding_iter = message->http_headers.find(kContentEncoding);
+  auto content_encoding_iter = message->headers.find(kContentEncoding);
   // Replace body with decompressed version, if required.
-  if (content_encoding_iter != message->http_headers.end() &&
-      content_encoding_iter->second == "gzip") {
-    std::string_view body_strview(message->http_msg_body);
+  if (content_encoding_iter != message->headers.end() && content_encoding_iter->second == "gzip") {
+    std::string_view body_strview(message->body);
     auto bodyOrErr = pl::zlib::Inflate(body_strview);
     if (!bodyOrErr.ok()) {
       LOG(WARNING) << "Unable to gunzip HTTP body.";
-      message->http_msg_body = "<Failed to gunzip body>";
+      message->body = "<Failed to gunzip body>";
     } else {
-      message->http_msg_body = bodyOrErr.ValueOrDie();
+      message->body = bodyOrErr.ValueOrDie();
     }
   }
 }

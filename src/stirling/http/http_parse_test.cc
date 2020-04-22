@@ -33,13 +33,13 @@ const std::string_view kHTTPGetReq0 =
 Message HTTPGetReq0ExpectedMessage() {
   Message expected_message;
   expected_message.type = MessageType::kRequest;
-  expected_message.http_minor_version = 1;
-  expected_message.http_headers = {{"Host", "www.pixielabs.ai"},
-                                   {"Accept", "image/gif, image/jpeg, */*"},
-                                   {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
-  expected_message.http_req_method = "GET";
-  expected_message.http_req_path = "/index.html";
-  expected_message.http_msg_body = "-";
+  expected_message.minor_version = 1;
+  expected_message.headers = {{"Host", "www.pixielabs.ai"},
+                              {"Accept", "image/gif, image/jpeg, */*"},
+                              {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
+  expected_message.req_method = "GET";
+  expected_message.req_path = "/index.html";
+  expected_message.body = "-";
   return expected_message;
 }
 
@@ -53,13 +53,13 @@ const std::string_view kHTTPGetReq1 =
 Message HTTPGetReq1ExpectedMessage() {
   Message expected_message;
   expected_message.type = MessageType::kRequest;
-  expected_message.http_minor_version = 1;
-  expected_message.http_headers = {{"Host", "www.pixielabs.ai"},
-                                   {"Accept", "image/gif, image/jpeg, */*"},
-                                   {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
-  expected_message.http_req_method = "GET";
-  expected_message.http_req_path = "/foo.html";
-  expected_message.http_msg_body = "-";
+  expected_message.minor_version = 1;
+  expected_message.headers = {{"Host", "www.pixielabs.ai"},
+                              {"Accept", "image/gif, image/jpeg, */*"},
+                              {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
+  expected_message.req_method = "GET";
+  expected_message.req_path = "/foo.html";
+  expected_message.body = "-";
   return expected_message;
 }
 
@@ -74,13 +74,13 @@ const std::string_view kHTTPPostReq0 =
 Message HTTPPostReq0ExpectedMessage() {
   Message expected_message;
   expected_message.type = MessageType::kRequest;
-  expected_message.http_minor_version = 1;
-  expected_message.http_headers = {{"host", "pixielabs.ai"},
-                                   {"content-type", "application/x-www-form-urlencoded"},
-                                   {"content-length", "27"}};
-  expected_message.http_req_method = "POST";
-  expected_message.http_req_path = "/test";
-  expected_message.http_msg_body = "field1=value1&field2=value2";
+  expected_message.minor_version = 1;
+  expected_message.headers = {{"host", "pixielabs.ai"},
+                              {"content-type", "application/x-www-form-urlencoded"},
+                              {"content-length", "27"}};
+  expected_message.req_method = "POST";
+  expected_message.req_path = "/test";
+  expected_message.body = "field1=value1&field2=value2";
   return expected_message;
 }
 
@@ -94,11 +94,11 @@ const std::string_view kHTTPResp0 =
 Message HTTPResp0ExpectedMessage() {
   Message expected_message;
   expected_message.type = MessageType::kResponse;
-  expected_message.http_minor_version = 1;
-  expected_message.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
-  expected_message.http_resp_status = 200;
-  expected_message.http_resp_message = "OK";
-  expected_message.http_msg_body = "pixielabs";
+  expected_message.minor_version = 1;
+  expected_message.headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
+  expected_message.resp_status = 200;
+  expected_message.resp_message = "OK";
+  expected_message.body = "pixielabs";
   return expected_message;
 }
 
@@ -112,11 +112,11 @@ const std::string_view kHTTPResp1 =
 Message HTTPResp1ExpectedMessage() {
   Message expected_message;
   expected_message.type = MessageType::kResponse;
-  expected_message.http_minor_version = 1;
-  expected_message.http_headers = {{"Content-Type", "bar"}, {"Content-Length", "21"}};
-  expected_message.http_resp_status = 200;
-  expected_message.http_resp_message = "OK";
-  expected_message.http_msg_body = "pixielabs is awesome!";
+  expected_message.minor_version = 1;
+  expected_message.headers = {{"Content-Type", "bar"}, {"Content-Length", "21"}};
+  expected_message.resp_status = 200;
+  expected_message.resp_message = "OK";
+  expected_message.body = "pixielabs is awesome!";
   return expected_message;
 }
 
@@ -134,31 +134,31 @@ const std::string_view kHTTPResp2 =
 Message HTTPResp2ExpectedMessage() {
   Message expected_message;
   expected_message.type = MessageType::kResponse;
-  expected_message.http_minor_version = 1;
-  expected_message.http_headers = {{"Transfer-Encoding", "chunked"}};
-  expected_message.http_resp_status = 200;
-  expected_message.http_resp_message = "OK";
-  expected_message.http_msg_body = "pixielabs is awesome!";
+  expected_message.minor_version = 1;
+  expected_message.headers = {{"Transfer-Encoding", "chunked"}};
+  expected_message.resp_status = 200;
+  expected_message.resp_message = "OK";
+  expected_message.body = "pixielabs is awesome!";
   return expected_message;
 }
 
 Message EmptyHTTPResp() {
   Message result;
   result.type = MessageType::kResponse;
-  result.http_minor_version = 1;
-  result.http_resp_status = 200;
-  result.http_resp_message = "OK";
+  result.minor_version = 1;
+  result.resp_status = 200;
+  result.resp_message = "OK";
   return result;
 }
 
-// Leave http_msg_body set by caller.
+// Leave body set by caller.
 Message EmptyChunkedHTTPResp() {
   Message result = EmptyHTTPResp();
-  result.http_headers = {{"Transfer-Encoding", "chunked"}};
+  result.headers = {{"Transfer-Encoding", "chunked"}};
   return result;
 }
 
-MATCHER_P(HasBody, body, "") { return arg.http_msg_body == body; }
+MATCHER_P(HasBody, body, "") { return arg.body == body; }
 
 std::string HTTPRespWithSizedBody(std::string_view body) {
   return absl::Substitute(
@@ -194,14 +194,14 @@ bool operator==(const Message& lhs, const Message& rhs) {
     LOG(INFO) << #field ": " << lhs.field << " vs. " << rhs.field; \
     return false;                                                  \
   }
-  CMP(http_minor_version);
-  CMP(http_resp_status);
-  CMP(http_resp_message);
-  if (lhs.http_headers != rhs.http_headers) {
-    LOG(INFO) << absl::StrJoin(std::begin(lhs.http_headers), std::end(lhs.http_headers), " ",
+  CMP(minor_version);
+  CMP(resp_status);
+  CMP(resp_message);
+  if (lhs.headers != rhs.headers) {
+    LOG(INFO) << absl::StrJoin(std::begin(lhs.headers), std::end(lhs.headers), " ",
                                absl::PairFormatter(":"))
               << " vs. "
-              << absl::StrJoin(std::begin(rhs.http_headers), std::end(rhs.http_headers), " ",
+              << absl::StrJoin(std::begin(rhs.headers), std::end(rhs.headers), " ",
                                absl::PairFormatter(":"));
     return false;
   }
@@ -359,19 +359,19 @@ TEST_F(HTTPParserTest, ParseCompleteHTTPResponseWithContentLengthHeader) {
 
   Message expected_message1;
   expected_message1.type = MessageType::kResponse;
-  expected_message1.http_minor_version = 1;
-  expected_message1.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
-  expected_message1.http_resp_status = 200;
-  expected_message1.http_resp_message = "OK";
-  expected_message1.http_msg_body = "pixielabs";
+  expected_message1.minor_version = 1;
+  expected_message1.headers = {{"Content-Type", "foo"}, {"Content-Length", "9"}};
+  expected_message1.resp_status = 200;
+  expected_message1.resp_message = "OK";
+  expected_message1.body = "pixielabs";
 
   Message expected_message2;
   expected_message2.type = MessageType::kResponse;
-  expected_message2.http_minor_version = 1;
-  expected_message2.http_headers = {{"Content-Type", "bar"}, {"Content-Length", "10"}};
-  expected_message2.http_resp_status = 200;
-  expected_message2.http_resp_message = "OK";
-  expected_message2.http_msg_body = "pixielabs!";
+  expected_message2.minor_version = 1;
+  expected_message2.headers = {{"Content-Type", "bar"}, {"Content-Length", "10"}};
+  expected_message2.resp_status = 200;
+  expected_message2.resp_message = "OK";
+  expected_message2.body = "pixielabs!";
 
   std::deque<Message> parsed_messages;
   const std::string buf = absl::StrCat(msg1, msg2);
@@ -393,11 +393,11 @@ TEST_F(HTTPParserTest, ParseIncompleteHTTPResponseWithContentLengthHeader) {
 
   Message expected_message1;
   expected_message1.type = MessageType::kResponse;
-  expected_message1.http_minor_version = 1;
-  expected_message1.http_headers = {{"Content-Type", "foo"}, {"Content-Length", "21"}};
-  expected_message1.http_resp_status = 200;
-  expected_message1.http_resp_message = "OK";
-  expected_message1.http_msg_body = "pixielabs is awesome!";
+  expected_message1.minor_version = 1;
+  expected_message1.headers = {{"Content-Type", "foo"}, {"Content-Length", "21"}};
+  expected_message1.resp_status = 200;
+  expected_message1.resp_message = "OK";
+  expected_message1.body = "pixielabs is awesome!";
 
   const std::string buf = absl::StrCat(msg1, msg2, msg3);
   std::deque<Message> parsed_messages;
@@ -435,7 +435,7 @@ TEST_F(HTTPParserTest, ParseCompleteChunkEncodedMessage) {
       " is awesome!\r\n"
       "0\r\n";
   Message expected_message = EmptyChunkedHTTPResp();
-  expected_message.http_msg_body = "pixielabs is awesome!";
+  expected_message.body = "pixielabs is awesome!";
 
   std::deque<Message> parsed_messages;
   ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, msg, &parsed_messages);
@@ -455,7 +455,7 @@ TEST_F(HTTPParserTest, ParseMultipleChunks) {
   std::string msg3 = "0\r\n\r\n";
 
   Message expected_message = EmptyChunkedHTTPResp();
-  expected_message.http_msg_body = "pixielabs is awesome!";
+  expected_message.body = "pixielabs is awesome!";
 
   const std::string buf = absl::StrCat(msg1, msg2, msg3);
   std::deque<Message> parsed_messages;
@@ -476,7 +476,7 @@ TEST_F(HTTPParserTest, ParseIncompleteChunks) {
   std::string msg3 = "0\r\n\r\n";
 
   Message expected_message = EmptyChunkedHTTPResp();
-  expected_message.http_msg_body = "pixielabs";
+  expected_message.body = "pixielabs";
 
   const std::string buf = absl::StrCat(msg1, msg2, msg3);
   std::deque<Message> parsed_messages;
@@ -498,13 +498,13 @@ TEST_F(HTTPParserTest, ParseRequestWithoutLengthOrChunking) {
 
   Message expected_message;
   expected_message.type = MessageType::kRequest;
-  expected_message.http_minor_version = 1;
-  expected_message.http_headers = {{"Host", "www.pixielabs.ai"},
-                                   {"Accept", "image/gif, image/jpeg, */*"},
-                                   {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
-  expected_message.http_req_method = "GET";
-  expected_message.http_req_path = "/index.html";
-  expected_message.http_msg_body = "-";
+  expected_message.minor_version = 1;
+  expected_message.headers = {{"Host", "www.pixielabs.ai"},
+                              {"Accept", "image/gif, image/jpeg, */*"},
+                              {"User-Agent", "Mozilla/5.0 (X11; Linux x86_64)"}};
+  expected_message.req_method = "GET";
+  expected_message.req_path = "/index.html";
+  expected_message.body = "-";
 
   std::deque<Message> parsed_messages;
   ParseResult result = parser_.ParseFramesLoop(MessageType::kRequest, msg1, &parsed_messages);
@@ -523,7 +523,7 @@ TEST_F(HTTPParserTest, ParseResponseWithoutLengthOrChunking) {
       "pixielabs is aweso";
 
   Message expected_message = EmptyHTTPResp();
-  expected_message.http_msg_body = "pixielabs is aweso";
+  expected_message.body = "pixielabs is aweso";
 
   std::deque<Message> parsed_messages;
   ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse, msg1, &parsed_messages);

@@ -775,16 +775,16 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
   r.Append<r.ColIndex("http_major_version")>(1);
-  r.Append<r.ColIndex("http_minor_version")>(resp_message.http_minor_version);
+  r.Append<r.ColIndex("http_minor_version")>(resp_message.minor_version);
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(content_type));
-  r.Append<r.ColIndex("http_req_headers")>(ToJSONString(req_message.http_headers));
-  r.Append<r.ColIndex("http_req_method")>(std::move(req_message.http_req_method));
-  r.Append<r.ColIndex("http_req_path")>(std::move(req_message.http_req_path));
+  r.Append<r.ColIndex("http_req_headers")>(ToJSONString(req_message.headers));
+  r.Append<r.ColIndex("http_req_method")>(std::move(req_message.req_method));
+  r.Append<r.ColIndex("http_req_path")>(std::move(req_message.req_path));
   r.Append<r.ColIndex("http_req_body")>("-");
-  r.Append<r.ColIndex("http_resp_headers")>(ToJSONString(resp_message.http_headers));
-  r.Append<r.ColIndex("http_resp_status")>(resp_message.http_resp_status);
-  r.Append<r.ColIndex("http_resp_message")>(std::move(resp_message.http_resp_message));
-  r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.http_msg_body));
+  r.Append<r.ColIndex("http_resp_headers")>(ToJSONString(resp_message.headers));
+  r.Append<r.ColIndex("http_resp_status")>(resp_message.resp_status);
+  r.Append<r.ColIndex("http_resp_message")>(std::move(resp_message.resp_message));
+  r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.body));
   r.Append<r.ColIndex("http_resp_latency_ns")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
 }

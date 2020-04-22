@@ -83,9 +83,9 @@ TEST_F(DataStreamTest, StuckTemporarily) {
   stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
   const auto& requests = stream.Frames<http::Message>();
   ASSERT_THAT(requests, SizeIs(3));
-  EXPECT_EQ(requests[0].http_req_path, "/index.html");
-  EXPECT_EQ(requests[1].http_req_path, "/foo.html");
-  EXPECT_EQ(requests[2].http_req_path, "/bar.html");
+  EXPECT_EQ(requests[0].req_path, "/index.html");
+  EXPECT_EQ(requests[1].req_path, "/foo.html");
+  EXPECT_EQ(requests[2].req_path, "/bar.html");
 }
 
 TEST_F(DataStreamTest, StuckTooLong) {
@@ -117,8 +117,8 @@ TEST_F(DataStreamTest, StuckTooLong) {
   stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
   const auto& requests = stream.Frames<http::Message>();
   ASSERT_THAT(requests, SizeIs(2));
-  EXPECT_EQ(requests[0].http_req_path, "/foo.html");
-  EXPECT_EQ(requests[1].http_req_path, "/bar.html");
+  EXPECT_EQ(requests[0].req_path, "/foo.html");
+  EXPECT_EQ(requests[1].req_path, "/bar.html");
 }
 
 TEST_F(DataStreamTest, PartialMessageRecovery) {
@@ -139,8 +139,8 @@ TEST_F(DataStreamTest, PartialMessageRecovery) {
   stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
   const auto& requests = stream.Frames<http::Message>();
   ASSERT_THAT(requests, SizeIs(2));
-  EXPECT_EQ(requests[0].http_req_path, "/index.html");
-  EXPECT_EQ(requests[1].http_req_path, "/bar.html");
+  EXPECT_EQ(requests[0].req_path, "/index.html");
+  EXPECT_EQ(requests[1].req_path, "/bar.html");
 }
 
 TEST_F(DataStreamTest, HeadAndMiddleMissing) {
@@ -168,7 +168,7 @@ TEST_F(DataStreamTest, HeadAndMiddleMissing) {
   stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
   const auto& requests = stream.Frames<http::Message>();
   ASSERT_THAT(requests, SizeIs(1));
-  EXPECT_EQ(requests[0].http_req_path, "/bar.html");
+  EXPECT_EQ(requests[0].req_path, "/bar.html");
 }
 
 TEST_F(DataStreamTest, LateArrivalPlusMissingEvents) {
@@ -218,9 +218,9 @@ TEST_F(DataStreamTest, LateArrivalPlusMissingEvents) {
   stream.ProcessBytesToFrames<http::Message>(MessageType::kRequest);
   const auto& requests = stream.Frames<http::Message>();
   ASSERT_THAT(requests, SizeIs(3));
-  EXPECT_EQ(requests[0].http_req_path, "/foo.html");
-  EXPECT_EQ(requests[1].http_req_path, "/index.html");
-  EXPECT_EQ(requests[2].http_req_path, "/foo.html");
+  EXPECT_EQ(requests[0].req_path, "/foo.html");
+  EXPECT_EQ(requests[1].req_path, "/index.html");
+  EXPECT_EQ(requests[2].req_path, "/foo.html");
 }
 
 // This test checks that various stats updated on each call ProcessBytesToFrames()

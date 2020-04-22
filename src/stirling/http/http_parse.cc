@@ -34,7 +34,7 @@ namespace {
 
 // Mutates the input data.
 ParseState ParseChunk(std::string_view* data, Message* result) {
-  result->http_msg_body.clear();
+  result->body.clear();
   phr_chunked_decoder chunk_decoder = {};
   auto buf = const_cast<char*>(data->data());
   size_t buf_size = data->size();
@@ -44,7 +44,7 @@ ParseState ParseChunk(std::string_view* data, Message* result) {
     return ParseState::kInvalid;
   } else if (retval >= 0) {
     // Complete message.
-    result->http_msg_body.append(buf, buf_size);
+    result->body.append(buf, buf_size);
     // phr_decode_chunked rewrites the buffer in place, removing chunked-encoding headers.
     // So we cannot simply remove the prefix, but rather have to shorten the buffer too.
     // This is done via retval, which specifies how many unprocessed bytes are left.
@@ -81,8 +81,8 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
   //  body.
 
   // Case 1: Content-Length
-  const auto content_length_iter = result->http_headers.find(kContentLength);
-  if (content_length_iter != result->http_headers.end()) {
+  const auto content_length_iter = result->headers.find(kContentLength);
+  if (content_length_iter != result->headers.end()) {
     const int len = std::stoi(content_length_iter->second);
     if (len < 0) {
       LOG(ERROR) << "HTTP message has a negative Content-Length: " << len;
@@ -93,14 +93,14 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
       return ParseState::kNeedsMoreData;
     }
 
-    result->http_msg_body = buf->substr(0, len);
+    result->body = buf->substr(0, len);
     buf->remove_prefix(std::min(static_cast<size_t>(len), buf->size()));
     return ParseState::kSuccess;
   }
 
   // Case 2: Chunked transfer.
-  const auto transfer_encoding_iter = result->http_headers.find(kTransferEncoding);
-  if (transfer_encoding_iter != result->http_headers.end() &&
+  const auto transfer_encoding_iter = result->headers.find(kTransferEncoding);
+  if (transfer_encoding_iter != result->headers.end() &&
       transfer_encoding_iter->second == "chunked") {
     // TODO(yzhao): Change to set default value in appending record batch instead of data for
     // parsing.
@@ -118,7 +118,7 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
   // We apply this to all methods, since we have no better strategy in other cases.
   // TODO(oazizi): Revisit this strategy if we see problems.
   if (result->type == MessageType::kRequest) {
-    result->http_msg_body = "";
+    result->body = "";
     return ParseState::kSuccess;
   }
 
@@ -128,14 +128,14 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
   // assume they don't have a body.
   // See: https://tools.ietf.org/html/rfc2616#section-4.4
   // TODO(oazizi): Are there more responses where we can assume no body?
-  if ((result->http_resp_status >= 100 && result->http_resp_status < 200) ||
-      result->http_resp_status == 204 || result->http_resp_status == 304) {
-    result->http_msg_body = "";
+  if ((result->resp_status >= 100 && result->resp_status < 200) || result->resp_status == 204 ||
+      result->resp_status == 304) {
+    result->body = "";
 
     // Status 101 is an even more special case.
-    if (result->http_resp_status == 101) {
-      const auto upgrade_iter = result->http_headers.find(kUpgrade);
-      if (upgrade_iter == result->http_headers.end()) {
+    if (result->resp_status == 101) {
+      const auto upgrade_iter = result->headers.find(kUpgrade);
+      if (upgrade_iter == result->headers.end()) {
         LOG(WARNING) << "Expected an Upgrade header with HTTP status 101";
         return ParseState::kEOS;
       }
@@ -168,7 +168,7 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
     // TODO(yzhao): This assignment overwrites the default value "-". We should move the setting of
     // default value outside of HTTP message parsing and into appending HTTP messages to record
     // batch.
-    result->http_msg_body = *buf;
+    result->body = *buf;
     buf->remove_prefix(buf->size());
     LOG(WARNING) << "HTTP message with no Content-Length or Transfer-Encoding may produce "
                     "incomplete message bodies.";
@@ -201,10 +201,10 @@ ParseState ParseRequest(std::string_view* buf, Message* result) {
     buf->remove_prefix(retval);
 
     result->type = MessageType::kRequest;
-    result->http_minor_version = minor_version;
-    result->http_headers = GetHTTPHeadersMap(headers, num_headers);
-    result->http_req_method = std::string(method, method_len);
-    result->http_req_path = std::string(path, path_len);
+    result->minor_version = minor_version;
+    result->headers = GetHTTPHeadersMap(headers, num_headers);
+    result->req_method = std::string(method, method_len);
+    result->req_path = std::string(path, path_len);
     result->headers_byte_size = retval;
 
     return ParseBody(buf, result);
@@ -233,10 +233,10 @@ ParseState ParseResponse(std::string_view* buf, Message* result) {
     buf->remove_prefix(retval);
 
     result->type = MessageType::kResponse;
-    result->http_minor_version = minor_version;
-    result->http_headers = GetHTTPHeadersMap(headers, num_headers);
-    result->http_resp_status = status;
-    result->http_resp_message = std::string(msg, msg_len);
+    result->minor_version = minor_version;
+    result->headers = GetHTTPHeadersMap(headers, num_headers);
+    result->resp_status = status;
+    result->resp_message = std::string(msg, msg_len);
     result->headers_byte_size = retval;
 
     return ParseBody(buf, result);

@@ -137,14 +137,14 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSimple) {
 
   ASSERT_EQ(3, records.size());
 
-  EXPECT_EQ(records[0].req.http_req_path, "/index.html");
-  EXPECT_EQ(records[0].resp.http_msg_body, "pixie");
+  EXPECT_EQ(records[0].req.req_path, "/index.html");
+  EXPECT_EQ(records[0].resp.body, "pixie");
 
-  EXPECT_EQ(records[1].req.http_req_path, "/foo.html");
-  EXPECT_EQ(records[1].resp.http_msg_body, "foo");
+  EXPECT_EQ(records[1].req.req_path, "/foo.html");
+  EXPECT_EQ(records[1].resp.body, "foo");
 
-  EXPECT_EQ(records[2].req.http_req_path, "/bar.html");
-  EXPECT_EQ(records[2].resp.http_msg_body, "bar");
+  EXPECT_EQ(records[2].req.req_path, "/bar.html");
+  EXPECT_EQ(records[2].resp.body, "bar");
 }
 
 TEST_F(ConnectionTrackerTest, DISABLED_ReqRespMatchingPipelined) {
@@ -172,14 +172,14 @@ TEST_F(ConnectionTrackerTest, DISABLED_ReqRespMatchingPipelined) {
 
   ASSERT_EQ(3, records.size());
 
-  EXPECT_EQ(records[0].req.http_req_path, "/index.html");
-  EXPECT_EQ(records[0].resp.http_msg_body, "pixie");
+  EXPECT_EQ(records[0].req.req_path, "/index.html");
+  EXPECT_EQ(records[0].resp.body, "pixie");
 
-  EXPECT_EQ(records[1].req.http_req_path, "/foo.html");
-  EXPECT_EQ(records[1].resp.http_msg_body, "foo");
+  EXPECT_EQ(records[1].req.req_path, "/foo.html");
+  EXPECT_EQ(records[1].resp.body, "foo");
 
-  EXPECT_EQ(records[2].req.http_req_path, "/bar.html");
-  EXPECT_EQ(records[2].resp.http_msg_body, "bar");
+  EXPECT_EQ(records[2].req.req_path, "/bar.html");
+  EXPECT_EQ(records[2].resp.body, "bar");
 }
 
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
@@ -207,11 +207,11 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingRequest) {
 
   ASSERT_EQ(2, records.size());
 
-  EXPECT_EQ(records[0].req.http_req_path, "/index.html");
-  EXPECT_EQ(records[0].resp.http_msg_body, "pixie");
+  EXPECT_EQ(records[0].req.req_path, "/index.html");
+  EXPECT_EQ(records[0].resp.body, "pixie");
 
-  EXPECT_EQ(records[1].req.http_req_path, "/bar.html");
-  EXPECT_EQ(records[1].resp.http_msg_body, "bar");
+  EXPECT_EQ(records[1].req.req_path, "/bar.html");
+  EXPECT_EQ(records[1].resp.body, "bar");
 }
 
 TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
@@ -239,11 +239,11 @@ TEST_F(ConnectionTrackerTest, ReqRespMatchingSerializedMissingResponse) {
 
   ASSERT_EQ(2, records.size());
 
-  EXPECT_EQ(records[0].req.http_req_path, "/index.html");
-  EXPECT_EQ(records[0].resp.http_msg_body, "pixie");
+  EXPECT_EQ(records[0].req.req_path, "/index.html");
+  EXPECT_EQ(records[0].resp.body, "pixie");
 
-  EXPECT_EQ(records[1].req.http_req_path, "/bar.html");
-  EXPECT_EQ(records[1].resp.http_msg_body, "bar");
+  EXPECT_EQ(records[1].req.req_path, "/bar.html");
+  EXPECT_EQ(records[1].resp.body, "bar");
 }
 
 TEST_F(ConnectionTrackerTest, TrackerDisable) {
