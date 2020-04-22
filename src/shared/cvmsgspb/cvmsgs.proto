@@ -152,6 +152,23 @@ message UpdateVizierConfigRequest {
 
 message UpdateVizierConfigResponse {}
 
+// UpdateOrInstallVizierRequest is a request to install/update a vizier.
+message UpdateOrInstallVizierRequest {
+  // The ID of the vizier to upgrade/install.
+  pl.uuidpb.UUID vizier_id = 1 [
+                        (gogoproto.customname) = "VizierID"
+                        ];
+  // The version to upgrade/install the cluster as. If no version is specified, we assume we should
+  // upgrade to the latest version.
+  string version = 2;
+}
+
+// UpdateOrInstallVizierResponse is a response to an UpdateOrInstallVizierRequest.
+message UpdateOrInstallVizierResponse {
+  // Whether the vizier intall/update was started successfully.
+  bool update_started = 1;
+}
+
 // Information require to connect to a vizier cluster.
 message VizierConnectionInfo {
     string ip_address = 1 [

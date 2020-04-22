@@ -654,3 +654,8 @@ func getServiceCredentials(signingKey string) (string, error) {
 	claims := jwtutils.GenerateJWTForService("vzmgr Service")
 	return jwtutils.SignJWTClaims(claims, signingKey)
 }
+
+// UpdateOrInstallVizier updates or installs the given vizier cluster to the specified version.
+func (s *Server) UpdateOrInstallVizier(ctx context.Context, req *cvmsgspb.UpdateOrInstallVizierRequest) (*cvmsgspb.UpdateOrInstallVizierResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}
