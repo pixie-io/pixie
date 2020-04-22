@@ -1,10 +1,6 @@
 <p align="center">
 
-   [![Pixie!](./assets/pixie_banner.svg)](https://pixielabs.ai)
-
-  <p align="center">
-    Live-debug distributed environments with <a href="https://work.withpixie.ai/">Pixie</a>
-  </p>
+   [![Pixie!](./assets/pixie_banner_v2.png)](https://pixielabs.ai)
 
 </p>
 
