@@ -637,13 +637,13 @@ TEST_F(CompilerTest, reused_result) {
   EXPECT_EQ(mem_src->Children().size(), 2);
 
   OperatorIR* src_child1 = mem_src->Children()[0];
-  ASSERT_TRUE(Match(src_child1, Filter()));
+  ASSERT_MATCH(src_child1, Filter());
   FilterIR* filter_child = static_cast<FilterIR*>(src_child1);
-  EXPECT_TRUE(Match(filter_child->filter_expr(), LessThan(ColumnNode(), Int(1000000))));
+  EXPECT_MATCH(filter_child->filter_expr(), LessThan(ColumnNode(), Int(1000000)));
   EXPECT_EQ(filter_child->Children().size(), 1);
 
   OperatorIR* src_child2 = mem_src->Children()[1];
-  ASSERT_TRUE(Match(src_child2, MemorySink()));
+  ASSERT_MATCH(src_child2, MemorySink());
   MemorySinkIR* mem_sink_child = static_cast<MemorySinkIR*>(src_child2);
   EXPECT_EQ(mem_sink_child->name(), "out");
 }
@@ -2590,9 +2590,9 @@ TEST_F(CompilerTest, BadDropQuery) {
       {types::STRING, types::FLOAT64, types::FLOAT64, types::FLOAT64, types::TIME64NS},
       {"service", "p50", "p90", "p99", "time_"});
   EXPECT_EQ(mem_sink->relation(), expected_relation);
-  ASSERT_TRUE(Match(mem_sink->parents()[0], Filter()));
+  ASSERT_MATCH(mem_sink->parents()[0], Filter());
   FilterIR* filter = static_cast<FilterIR*>(mem_sink->parents()[0]);
-  ASSERT_TRUE(Match(filter->parents()[0], Map()));
+  ASSERT_MATCH(filter->parents()[0], Map());
   MapIR* map = static_cast<MapIR*>(filter->parents()[0]);
   EXPECT_EQ(map->relation(), expected_relation);
 }
@@ -2696,17 +2696,17 @@ TEST_F(CompilerTest, UnusedOperatorsRemoved) {
   EXPECT_EQ(mem_src->Children().size(), 1);
 
   OperatorIR* src_child = mem_src->Children()[0];
-  ASSERT_TRUE(Match(src_child, Filter()));
+  ASSERT_MATCH(src_child, Filter());
   FilterIR* filter_src_child = static_cast<FilterIR*>(src_child);
-  EXPECT_TRUE(Match(filter_src_child->filter_expr(), LessThan(ColumnNode(), Int(1000000))));
+  EXPECT_MATCH(filter_src_child->filter_expr(), LessThan(ColumnNode(), Int(1000000)));
   EXPECT_EQ(filter_src_child->Children().size(), 1);
 
   OperatorIR* filter_child1 = filter_src_child->Children()[0];
-  ASSERT_TRUE(Match(filter_child1, Map()));
+  ASSERT_MATCH(filter_child1, Map());
   EXPECT_EQ(filter_child1->Children().size(), 1);
 
   OperatorIR* filter_child_child = filter_child1->Children()[0];
-  ASSERT_TRUE(Match(filter_child_child, MemorySink()));
+  ASSERT_MATCH(filter_child_child, MemorySink());
   MemorySinkIR* mem_sink = static_cast<MemorySinkIR*>(filter_child_child);
   Relation expected_relation({types::TIME64NS}, {"time_"});
   EXPECT_EQ(mem_sink->relation(), expected_relation);
@@ -2763,7 +2763,7 @@ TEST_F(CompilerTest, DISABLED_RollingTimeStringQuery) {
   auto rolling = static_cast<RollingIR*>(rolling_nodes[0]);
 
   ASSERT_EQ(rolling->window_col()->col_name(), "time_");
-  ASSERT_TRUE(Match(rolling->window_size(), Int()));
+  ASSERT_MATCH(rolling->window_size(), Int());
   IntIR* window_size_int = static_cast<IntIR*>(rolling->window_size());
   ASSERT_EQ(window_size_int->val(),
             std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::seconds(3)).count());
@@ -2789,7 +2789,7 @@ TEST_F(CompilerTest, DISABLED_RollingIntQuery) {
   auto rolling = static_cast<RollingIR*>(rolling_nodes[0]);
 
   ASSERT_EQ(rolling->window_col()->col_name(), "time_");
-  ASSERT_TRUE(Match(rolling->window_size(), Int()));
+  ASSERT_MATCH(rolling->window_size(), Int());
   IntIR* window_size_int = static_cast<IntIR*>(rolling->window_size());
   ASSERT_EQ(window_size_int->val(), 3000);
   Relation rolling_relation({types::TIME64NS, types::INT64}, {"time_", "remote_port"});
@@ -2814,7 +2814,7 @@ TEST_F(CompilerTest, DISABLED_RollingCompileTimeExprEvalQuery) {
   auto rolling = static_cast<RollingIR*>(rolling_nodes[0]);
 
   ASSERT_EQ(rolling->window_col()->col_name(), "time_");
-  ASSERT_TRUE(Match(rolling->window_size(), Int()));
+  ASSERT_MATCH(rolling->window_size(), Int());
   IntIR* window_size_int = static_cast<IntIR*>(rolling->window_size());
   ASSERT_EQ(window_size_int->val(), compiler_state_->time_now().val + 1);
   Relation rolling_relation({types::TIME64NS, types::INT64}, {"time_", "remote_port"});

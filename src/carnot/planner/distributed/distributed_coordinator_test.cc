@@ -55,7 +55,7 @@ class CoordinatorTest : public OperatorTests {
     ASSERT_EQ(mem_src_nodes.size(), 1);
     MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_src_nodes[0]);
     ASSERT_EQ(mem_src->Children().size(), 1);
-    EXPECT_TRUE(Match(mem_src->Children()[0], GRPCSink()));
+    EXPECT_MATCH(mem_src->Children()[0], GRPCSink());
   }
 
   // Verifies whether the PEM plan matches what we expect.

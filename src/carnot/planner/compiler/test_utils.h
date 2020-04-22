@@ -25,6 +25,20 @@ namespace pl {
 namespace carnot {
 namespace planner {
 
+// Macros to better support match tests.
+#define EXPECT_MATCH(value, matcher)                                        \
+  do {                                                                      \
+    auto v = value;                                                         \
+    EXPECT_TRUE(Match(v, matcher))                                          \
+        << absl::Substitute("Matcher didn't match '$0'", v->DebugString()); \
+  } while (false)
+#define ASSERT_MATCH(value, matcher)                                        \
+  do {                                                                      \
+    auto v = value;                                                         \
+    ASSERT_TRUE(Match(v, matcher))                                          \
+        << absl::Substitute("Matcher didn't match '$0'", v->DebugString()); \
+  } while (false)
+
 using table_store::schema::Relation;
 
 constexpr char kExpectedUDFInfo[] = R"(

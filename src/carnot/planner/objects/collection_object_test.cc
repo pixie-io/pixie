@@ -21,7 +21,7 @@ TEST_F(CollectionTest, GetItemTest) {
   auto result_or_s = subscript_fn->Call({{}, {ToQLObject(MakeInt(1))}}, ast);
   ASSERT_OK(result_or_s);
   auto element = result_or_s.ConsumeValueOrDie();
-  ASSERT_TRUE(Match(element->node(), String()));
+  ASSERT_MATCH(element->node(), String());
   auto str = static_cast<StringIR*>(element->node());
   EXPECT_EQ(str->str(), "b");
 }
@@ -55,7 +55,7 @@ TEST_F(CollectionTest, TupleIndex) {
   auto result_or_s = subscript_fn->Call({{}, {ToQLObject(MakeInt(1))}}, ast);
   ASSERT_OK(result_or_s);
   auto element = result_or_s.ConsumeValueOrDie();
-  ASSERT_TRUE(Match(element->node(), String()));
+  ASSERT_MATCH(element->node(), String());
   auto str = static_cast<StringIR*>(element->node());
   EXPECT_EQ(str->str(), "b");
 }
@@ -73,7 +73,7 @@ TEST_F(CollectionTest, SaveSubscriptMethodToUseElsewhere) {
     auto result_or_s = subscript_fn->Call({{}, {ToQLObject(MakeInt(1))}}, ast);
     ASSERT_OK(result_or_s);
     auto element = result_or_s.ConsumeValueOrDie();
-    ASSERT_TRUE(Match(element->node(), String()));
+    ASSERT_MATCH(element->node(), String());
     auto str = static_cast<StringIR*>(element->node());
     EXPECT_EQ(str->str(), "b");
   }
@@ -82,7 +82,7 @@ TEST_F(CollectionTest, SaveSubscriptMethodToUseElsewhere) {
   auto result_or_s = subscript_fn->Call({{}, {ToQLObject(MakeInt(1))}}, ast);
   ASSERT_OK(result_or_s);
   auto element = result_or_s.ConsumeValueOrDie();
-  ASSERT_TRUE(Match(element->node(), String()));
+  ASSERT_MATCH(element->node(), String());
   auto str = static_cast<StringIR*>(element->node());
   EXPECT_EQ(str->str(), "b");
 }

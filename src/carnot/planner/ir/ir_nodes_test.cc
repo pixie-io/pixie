@@ -1698,7 +1698,7 @@ TEST_F(OperatorTests, map_prune_outputs) {
   auto exprs = map->col_exprs();
   EXPECT_EQ(1, exprs.size());
   EXPECT_EQ("cpu1", exprs[0].name);
-  EXPECT_TRUE(Match(exprs[0].node, ColumnNode("cpu1", /*parent_idx*/ 0)));
+  EXPECT_MATCH(exprs[0].node, ColumnNode("cpu1", /*parent_idx*/ 0));
 }
 
 TEST_F(OperatorTests, filter_prune_outputs) {
@@ -1726,7 +1726,7 @@ TEST_F(OperatorTests, agg_prune_outputs) {
   auto agg_exprs = agg->aggregate_expressions();
   EXPECT_EQ(1, agg_exprs.size());
   EXPECT_EQ("cpu0", agg_exprs[0].name);
-  EXPECT_TRUE(Match(agg_exprs[0].node, Func()));
+  EXPECT_MATCH(agg_exprs[0].node, Func());
 }
 
 TEST_F(OperatorTests, union_prune_outputs) {

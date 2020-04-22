@@ -807,17 +807,17 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumns) {
   EXPECT_EQ(join->output_columns().size(), 5);
   EXPECT_TRUE(Match(join->output_columns()[0], ColumnNode(join_key, /* parent_idx */ 0)))
       << join->output_columns()[0]->DebugString();
-  EXPECT_TRUE(Match(join->output_columns()[1], ColumnNode("latency", /* parent_idx */ 0)));
-  EXPECT_TRUE(Match(join->output_columns()[2], ColumnNode("data", /* parent_idx */ 0)));
-  EXPECT_TRUE(Match(join->output_columns()[3], ColumnNode(join_key, /* parent_idx */ 1)));
-  EXPECT_TRUE(Match(join->output_columns()[4], ColumnNode("cpu_usage", /* parent_idx */ 1)));
+  EXPECT_MATCH(join->output_columns()[1], ColumnNode("latency", /* parent_idx */ 0));
+  EXPECT_MATCH(join->output_columns()[2], ColumnNode("data", /* parent_idx */ 0));
+  EXPECT_MATCH(join->output_columns()[3], ColumnNode(join_key, /* parent_idx */ 1));
+  EXPECT_MATCH(join->output_columns()[4], ColumnNode("cpu_usage", /* parent_idx */ 1));
 
   // Match expected data types.
-  EXPECT_TRUE(Match(join->output_columns()[0], Expression(types::INT64)));
-  EXPECT_TRUE(Match(join->output_columns()[1], Expression(types::FLOAT64)));
-  EXPECT_TRUE(Match(join->output_columns()[2], Expression(types::STRING)));
-  EXPECT_TRUE(Match(join->output_columns()[3], Expression(types::INT64)));
-  EXPECT_TRUE(Match(join->output_columns()[4], Expression(types::FLOAT64)));
+  EXPECT_MATCH(join->output_columns()[0], Expression(types::INT64));
+  EXPECT_MATCH(join->output_columns()[1], Expression(types::FLOAT64));
+  EXPECT_MATCH(join->output_columns()[2], Expression(types::STRING));
+  EXPECT_MATCH(join->output_columns()[3], Expression(types::INT64));
+  EXPECT_MATCH(join->output_columns()[4], Expression(types::FLOAT64));
 
   // Join relation should be set.
   EXPECT_TRUE(join->IsRelationInit());
@@ -936,17 +936,17 @@ TEST_F(OperatorRelationTest, JoinCreateOutputColumnsAfterRightJoin) {
   EXPECT_EQ(join->output_columns().size(), 5);
   EXPECT_TRUE(Match(join->output_columns()[0], ColumnNode(join_key, /* parent_idx */ 1)))
       << join->output_columns()[0]->DebugString();
-  EXPECT_TRUE(Match(join->output_columns()[1], ColumnNode("latency", /* parent_idx */ 1)));
-  EXPECT_TRUE(Match(join->output_columns()[2], ColumnNode("data", /* parent_idx */ 1)));
-  EXPECT_TRUE(Match(join->output_columns()[3], ColumnNode(join_key, /* parent_idx */ 0)));
-  EXPECT_TRUE(Match(join->output_columns()[4], ColumnNode("cpu_usage", /* parent_idx */ 0)));
+  EXPECT_MATCH(join->output_columns()[1], ColumnNode("latency", /* parent_idx */ 1));
+  EXPECT_MATCH(join->output_columns()[2], ColumnNode("data", /* parent_idx */ 1));
+  EXPECT_MATCH(join->output_columns()[3], ColumnNode(join_key, /* parent_idx */ 0));
+  EXPECT_MATCH(join->output_columns()[4], ColumnNode("cpu_usage", /* parent_idx */ 0));
 
   // Match expected data types.
-  EXPECT_TRUE(Match(join->output_columns()[0], Expression(types::INT64)));
-  EXPECT_TRUE(Match(join->output_columns()[1], Expression(types::FLOAT64)));
-  EXPECT_TRUE(Match(join->output_columns()[2], Expression(types::STRING)));
-  EXPECT_TRUE(Match(join->output_columns()[3], Expression(types::INT64)));
-  EXPECT_TRUE(Match(join->output_columns()[4], Expression(types::FLOAT64)));
+  EXPECT_MATCH(join->output_columns()[0], Expression(types::INT64));
+  EXPECT_MATCH(join->output_columns()[1], Expression(types::FLOAT64));
+  EXPECT_MATCH(join->output_columns()[2], Expression(types::STRING));
+  EXPECT_MATCH(join->output_columns()[3], Expression(types::INT64));
+  EXPECT_MATCH(join->output_columns()[4], Expression(types::FLOAT64));
 
   // Join relation should be set.
   EXPECT_TRUE(join->IsRelationInit());
@@ -994,8 +994,8 @@ TEST_F(CompileTimeExpressionTest, mem_src_one_argument_string) {
 
   auto start_res = mem_src->start_time_expr();
   auto end_res = mem_src->end_time_expr();
-  EXPECT_TRUE(Match(start_res, Int()));
-  EXPECT_TRUE(Match(end_res, Int()));
+  EXPECT_MATCH(start_res, Int());
+  EXPECT_MATCH(end_res, Int());
   EXPECT_EQ(static_cast<IntIR*>(start_res)->val(), 10);
   EXPECT_EQ(static_cast<IntIR*>(end_res)->val(), expected_time);
 }
@@ -1023,8 +1023,8 @@ TEST_F(CompileTimeExpressionTest, mem_src_two_argument_string) {
 
   auto start_res = mem_src->start_time_expr();
   auto end_res = mem_src->end_time_expr();
-  EXPECT_TRUE(Match(start_res, Int()));
-  EXPECT_TRUE(Match(end_res, Int()));
+  EXPECT_MATCH(start_res, Int());
+  EXPECT_MATCH(end_res, Int());
   EXPECT_EQ(static_cast<IntIR*>(start_res)->val(), expected_start_time);
   EXPECT_EQ(static_cast<IntIR*>(end_res)->val(), expected_stop_time);
 }
@@ -1045,7 +1045,7 @@ TEST_F(CompileTimeExpressionTest, rolling_time_string) {
   EXPECT_TRUE(result.ValueOrDie());
 
   auto new_window_size = rolling->window_size();
-  EXPECT_TRUE(Match(new_window_size, Int()));
+  EXPECT_MATCH(new_window_size, Int());
   EXPECT_EQ(static_cast<IntIR*>(new_window_size)->val(), expected_window_size);
 }
 
@@ -1942,7 +1942,7 @@ TEST_F(RulesTest, drop_to_map) {
   EXPECT_FALSE(graph->dag().HasNode(drop_id));
 
   ASSERT_EQ(mem_src->Children().size(), 1);
-  EXPECT_TRUE(Match(mem_src->Children()[0], Map()));
+  EXPECT_MATCH(mem_src->Children()[0], Map());
   auto op = static_cast<MapIR*>(mem_src->Children()[0]);
   EXPECT_EQ(op->col_exprs().size(), 2);
   EXPECT_EQ(op->col_exprs()[0].name, "count");
@@ -1981,7 +1981,7 @@ TEST_F(RulesTest, drop_middle_columns) {
   EXPECT_FALSE(graph->dag().HasNode(drop_id));
 
   ASSERT_EQ(mem_src->Children().size(), 1);
-  EXPECT_TRUE(Match(mem_src->Children()[0], Map()));
+  EXPECT_MATCH(mem_src->Children()[0], Map());
   auto op = static_cast<MapIR*>(mem_src->Children()[0]);
   EXPECT_EQ(op->col_exprs().size(), 4);
   EXPECT_EQ(op->col_exprs()[0].name, "service");
@@ -2400,9 +2400,9 @@ TEST_F(RulesTest, MergeAndRemove_GroupByOnMetadataColumns) {
   }
   EXPECT_THAT(actual_group_ids, Not(UnorderedElementsAreArray(groupby_ids)));
 
-  EXPECT_TRUE(Match(agg->groups()[0], Metadata()));
+  EXPECT_MATCH(agg->groups()[0], Metadata());
   EXPECT_TRUE(!Match(agg->groups()[1], Metadata()));
-  EXPECT_TRUE(Match(agg->groups()[1], ColumnNode()));
+  EXPECT_MATCH(agg->groups()[1], ColumnNode());
 }
 
 TEST_F(RulesTest, UniqueSinkNameRule) {

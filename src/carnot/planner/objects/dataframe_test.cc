@@ -45,17 +45,17 @@ TEST_F(DataframeTest, MergeTest) {
 
   // Check to make sure that the output is a Join operator.
   OperatorIR* op = df_obj->op();
-  ASSERT_TRUE(Match(op, Join()));
+  ASSERT_MATCH(op, Join());
   JoinIR* join = static_cast<JoinIR*>(op);
   // Verify that the operator does what we expect it to.
   EXPECT_THAT(join->parents(), ElementsAre(left, right));
   EXPECT_EQ(join->join_type(), JoinIR::JoinType::kInner);
 
-  EXPECT_TRUE(Match(join->left_on_columns()[0], ColumnNode("a", 0)));
-  EXPECT_TRUE(Match(join->left_on_columns()[1], ColumnNode("b", 0)));
+  EXPECT_MATCH(join->left_on_columns()[0], ColumnNode("a", 0));
+  EXPECT_MATCH(join->left_on_columns()[1], ColumnNode("b", 0));
 
-  EXPECT_TRUE(Match(join->right_on_columns()[0], ColumnNode("b", 1)));
-  EXPECT_TRUE(Match(join->right_on_columns()[1], ColumnNode("c", 1)));
+  EXPECT_MATCH(join->right_on_columns()[0], ColumnNode("b", 1));
+  EXPECT_MATCH(join->right_on_columns()[1], ColumnNode("c", 1));
 
   EXPECT_THAT(join->suffix_strs(), ElementsAre("_x", "_y"));
 }
@@ -81,19 +81,19 @@ TEST_F(JoinHandlerTest, MergeTest) {
 
   // Check to make sure that the output is a Join operator.
   OperatorIR* op = df_obj->op();
-  ASSERT_TRUE(Match(op, Join()));
+  ASSERT_MATCH(op, Join());
   JoinIR* join = static_cast<JoinIR*>(op);
   // Verify that the operator does what we expect it to.
   EXPECT_THAT(join->parents(), ElementsAre(left, right));
   EXPECT_EQ(join->join_type(), JoinIR::JoinType::kInner);
 
   EXPECT_EQ(2, join->left_on_columns().size());
-  EXPECT_TRUE(Match(join->left_on_columns()[0], ColumnNode("a", 0)));
-  EXPECT_TRUE(Match(join->left_on_columns()[1], ColumnNode("b", 0)));
+  EXPECT_MATCH(join->left_on_columns()[0], ColumnNode("a", 0));
+  EXPECT_MATCH(join->left_on_columns()[1], ColumnNode("b", 0));
 
   EXPECT_EQ(2, join->right_on_columns().size());
-  EXPECT_TRUE(Match(join->right_on_columns()[0], ColumnNode("b", 1)));
-  EXPECT_TRUE(Match(join->right_on_columns()[1], ColumnNode("c", 1)));
+  EXPECT_MATCH(join->right_on_columns()[0], ColumnNode("b", 1));
+  EXPECT_MATCH(join->right_on_columns()[1], ColumnNode("c", 1));
 
   EXPECT_THAT(join->suffix_strs(), ElementsAre("_x", "_y"));
 }
@@ -118,7 +118,7 @@ TEST_F(JoinHandlerTest, NonListKeysMergeTest) {
 
   // Check to make sure that the output is a Join operator.
   OperatorIR* op = df_obj->op();
-  ASSERT_TRUE(Match(op, Join()));
+  ASSERT_MATCH(op, Join());
   JoinIR* join = static_cast<JoinIR*>(op);
   // Verify that the operator does what we expect it to.
   EXPECT_THAT(join->parents(), ElementsAre(left, right));
@@ -126,8 +126,8 @@ TEST_F(JoinHandlerTest, NonListKeysMergeTest) {
 
   EXPECT_EQ(1, join->left_on_columns().size());
   EXPECT_EQ(1, join->right_on_columns().size());
-  EXPECT_TRUE(Match(join->left_on_columns()[0], ColumnNode("a", 0)));
-  EXPECT_TRUE(Match(join->right_on_columns()[0], ColumnNode("b", 1)));
+  EXPECT_MATCH(join->left_on_columns()[0], ColumnNode("a", 0));
+  EXPECT_MATCH(join->right_on_columns()[0], ColumnNode("b", 1));
 
   EXPECT_THAT(join->suffix_strs(), ElementsAre("_x", "_y"));
 }
@@ -147,7 +147,7 @@ TEST_F(DropHandlerTest, DropTest) {
 
   // Check to make sure that the output is a Drop operator.
   OperatorIR* op = df_obj->op();
-  ASSERT_TRUE(Match(op, Drop()));
+  ASSERT_MATCH(op, Drop());
   DropIR* drop = static_cast<DropIR*>(op);
   // Verify that the operator does what we expect it to.
   EXPECT_EQ(drop->col_names(), std::vector<std::string>({"foo", "bar"}));
@@ -179,7 +179,7 @@ TEST_F(DropHandlerTest, DropTestStringWithoutList) {
 
   // Check to make sure that the output is a Drop operator.
   OperatorIR* op = df_obj->op();
-  ASSERT_TRUE(Match(op, Drop()));
+  ASSERT_MATCH(op, Drop());
   DropIR* drop = static_cast<DropIR*>(op);
   // Verify that the operator does what we expect it to.
   EXPECT_EQ(drop->col_names(), std::vector<std::string>({"foo"}));
@@ -228,7 +228,7 @@ TEST_F(DataframeTest, AggTest) {
 
   // Check to make sure that the output is a Join operator.
   OperatorIR* op = df_obj->op();
-  ASSERT_TRUE(Match(op, BlockingAgg()));
+  ASSERT_MATCH(op, BlockingAgg());
   BlockingAggIR* agg = static_cast<BlockingAggIR*>(op);
   // Verify that the operator does what we expect it to.
   EXPECT_THAT(agg->parents(), ElementsAre(src));
@@ -335,7 +335,7 @@ TEST_F(LimitTest, CreateLimit) {
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
   auto limit_obj = std::static_pointer_cast<Dataframe>(ql_object);
 
-  ASSERT_TRUE(Match(limit_obj->op(), Limit()));
+  ASSERT_MATCH(limit_obj->op(), Limit());
   LimitIR* limit = static_cast<LimitIR*>(limit_obj->op());
   EXPECT_EQ(limit->limit_value(), 1234);
 
@@ -376,7 +376,7 @@ TEST_F(DataframeTest, LimitCall) {
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
   auto limit_obj = std::static_pointer_cast<Dataframe>(ql_object);
 
-  ASSERT_TRUE(Match(limit_obj->op(), Limit()));
+  ASSERT_MATCH(limit_obj->op(), Limit());
   LimitIR* limit = static_cast<LimitIR*>(limit_obj->op());
   EXPECT_EQ(limit->limit_value(), 1234);
 
@@ -491,7 +491,7 @@ TEST_F(SubscriptTest, SubscriptCreateColumn) {
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kExpr);
   ASSERT_TRUE(ql_object->HasNode());
   auto maybe_col_node = ql_object->node();
-  ASSERT_TRUE(Match(maybe_col_node, ColumnNode()));
+  ASSERT_MATCH(maybe_col_node, ColumnNode());
   ColumnIR* col_node = static_cast<ColumnIR*>(maybe_col_node);
   EXPECT_EQ(col_node->col_name(), "col1");
 }
@@ -521,11 +521,11 @@ TEST_F(GroupByTest, GroupByList) {
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
   auto group_by_obj = std::static_pointer_cast<Dataframe>(ql_object);
 
-  ASSERT_TRUE(Match(group_by_obj->op(), GroupBy()));
+  ASSERT_MATCH(group_by_obj->op(), GroupBy());
   GroupByIR* group_by = static_cast<GroupByIR*>(group_by_obj->op());
   EXPECT_EQ(group_by->groups().size(), 2);
-  EXPECT_TRUE(Match(group_by->groups()[0], ColumnNode("col1", 0)));
-  EXPECT_TRUE(Match(group_by->groups()[1], ColumnNode("col2", 0)));
+  EXPECT_MATCH(group_by->groups()[0], ColumnNode("col1", 0));
+  EXPECT_MATCH(group_by->groups()[1], ColumnNode("col2", 0));
 }
 
 TEST_F(GroupByTest, GroupByString) {
@@ -540,10 +540,10 @@ TEST_F(GroupByTest, GroupByString) {
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
   auto group_by_obj = std::static_pointer_cast<Dataframe>(ql_object);
 
-  ASSERT_TRUE(Match(group_by_obj->op(), GroupBy()));
+  ASSERT_MATCH(group_by_obj->op(), GroupBy());
   GroupByIR* group_by = static_cast<GroupByIR*>(group_by_obj->op());
   EXPECT_EQ(group_by->groups().size(), 1);
-  EXPECT_TRUE(Match(group_by->groups()[0], ColumnNode("col1", 0)));
+  EXPECT_MATCH(group_by->groups()[0], ColumnNode("col1", 0));
 }
 
 TEST_F(GroupByTest, GroupByMixedListElementTypesCausesError) {
@@ -570,10 +570,10 @@ TEST_F(GroupByTest, GroupByInDataframe) {
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
   auto group_by_obj = std::static_pointer_cast<Dataframe>(ql_object);
 
-  ASSERT_TRUE(Match(group_by_obj->op(), GroupBy()));
+  ASSERT_MATCH(group_by_obj->op(), GroupBy());
   GroupByIR* group_by = static_cast<GroupByIR*>(group_by_obj->op());
   EXPECT_EQ(group_by->groups().size(), 1);
-  EXPECT_TRUE(Match(group_by->groups()[0], ColumnNode("col1", 0)));
+  EXPECT_MATCH(group_by->groups()[0], ColumnNode("col1", 0));
 }
 
 TEST_F(DataframeTest, AttributeMetadataSubscriptTest) {
@@ -598,7 +598,7 @@ TEST_F(DataframeTest, AttributeMetadataSubscriptTest) {
   ASSERT_TRUE(func_result->type_descriptor().type() == QLObjectType::kExpr);
   auto metadata_expr = static_cast<ExprObject*>(func_result.get());
   ASSERT_TRUE(metadata_expr->HasNode());
-  ASSERT_TRUE(Match(metadata_expr->node(), Metadata()));
+  ASSERT_MATCH(metadata_expr->node(), Metadata());
   auto metadata_node = static_cast<MetadataIR*>(metadata_expr->node());
   EXPECT_EQ(metadata_node->name(), "service");
 }
@@ -619,7 +619,7 @@ TEST_F(UnionHandlerTest, UnionTest_array) {
 
   // Check to make sure that the output is a Union operator.
   OperatorIR* op = df_obj->op();
-  ASSERT_TRUE(Match(op, Union()));
+  ASSERT_MATCH(op, Union());
   EXPECT_THAT(op->parents(), ElementsAre(src1, src2, src3));
 }
 
@@ -637,7 +637,7 @@ TEST_F(UnionHandlerTest, UnionTest_single) {
 
   // Check to make sure that the output is a Union operator.
   OperatorIR* op = df_obj->op();
-  ASSERT_TRUE(Match(op, Union()));
+  ASSERT_MATCH(op, Union());
   EXPECT_THAT(op->parents(), ElementsAre(src1, src2));
 }
 
@@ -658,7 +658,7 @@ TEST_F(DataframeTest, ConstructorTest) {
 
   // Check to make sure that the output is a Join operator.
   OperatorIR* op = df_obj->op();
-  ASSERT_TRUE(Match(op, MemorySource()));
+  ASSERT_MATCH(op, MemorySource());
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(op);
   EXPECT_EQ(mem_src->table_name(), "http_events");
 }

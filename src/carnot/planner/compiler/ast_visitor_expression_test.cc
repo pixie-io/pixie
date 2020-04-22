@@ -71,7 +71,7 @@ TEST_F(ASTExpressionTest, String) {
 
   auto obj = visitor_result.ConsumeValueOrDie();
   ASSERT_TRUE(obj->HasNode());
-  ASSERT_TRUE(Match(obj->node(), String()));
+  ASSERT_MATCH(obj->node(), String());
   EXPECT_EQ(static_cast<StringIR*>(obj->node())->str(), "value");
 }
 
@@ -84,7 +84,7 @@ TEST_F(ASTExpressionTest, Integer) {
 
   auto obj = visitor_result.ConsumeValueOrDie();
   ASSERT_TRUE(obj->HasNode());
-  ASSERT_TRUE(Match(obj->node(), Int()));
+  ASSERT_MATCH(obj->node(), Int());
   EXPECT_EQ(static_cast<IntIR*>(obj->node())->val(), 1);
 }
 

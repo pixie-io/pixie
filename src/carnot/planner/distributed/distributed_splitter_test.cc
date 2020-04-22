@@ -119,7 +119,7 @@ TEST_F(SplitterTest, blocking_agg_test) {
   EXPECT_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
 
   OperatorIR* sink_parent = GetEquivalentInNewPlan(after_blocking, sink)->parents()[0];
-  EXPECT_TRUE(Match(sink_parent, BlockingAgg()));
+  EXPECT_MATCH(sink_parent, BlockingAgg());
 }
 
 TEST_F(SplitterTest, limit_test) {
@@ -301,7 +301,7 @@ TEST_F(SplitterTest, union_operator) {
   EXPECT_OK(union_op->SetRelationFromParents());
 
   for (const auto union_parent : union_op->parents()) {
-    EXPECT_TRUE(Match(union_parent, MemorySource()));
+    EXPECT_MATCH(union_parent, MemorySource());
   }
 
   DistributedSplitter splitter;
@@ -364,12 +364,12 @@ TEST_F(SplitterTest, two_blocking_children) {
   // Verify the resultant graph.
   BlockingAggIR* new_blocking_agg1 = GetEquivalentInNewPlan(after_blocking, blocking_agg1);
   ASSERT_EQ(new_blocking_agg1->parents().size(), 1);
-  EXPECT_TRUE(Match(new_blocking_agg1->parents()[0], GRPCSourceGroup()));
+  EXPECT_MATCH(new_blocking_agg1->parents()[0], GRPCSourceGroup());
   auto grpc_source1 = static_cast<GRPCSourceGroupIR*>(new_blocking_agg1->parents()[0]);
 
   BlockingAggIR* new_blocking_agg2 = GetEquivalentInNewPlan(after_blocking, blocking_agg2);
   ASSERT_EQ(new_blocking_agg2->parents().size(), 1);
-  EXPECT_TRUE(Match(new_blocking_agg2->parents()[0], GRPCSourceGroup()));
+  EXPECT_MATCH(new_blocking_agg2->parents()[0], GRPCSourceGroup());
   auto grpc_source2 = static_cast<GRPCSourceGroupIR*>(new_blocking_agg2->parents()[0]);
 
   // TODO(philkuz) (PL-846) replace the following with the commented out code.
@@ -390,7 +390,7 @@ TEST_F(SplitterTest, two_blocking_children) {
   // EXPECT_EQ(grpc_source1, grpc_source2);
   // auto source_children = mem_src->Children();
   // ASSERT_EQ(source_children.size(), 1);
-  // ASSERT_TRUE(Match(source_children[0], GRPCSink()));
+  // ASSERT_MATCH(source_children[0], GRPCSink());
 
   // auto grpc_sink1 = static_cast<GRPCSinkIR*>(source_children[0]);
 
@@ -425,13 +425,13 @@ TEST_F(SplitterTest, agg_join_children) {
 
   auto new_blocking_agg = GetEquivalentInNewPlan(after_blocking, blocking_agg);
   ASSERT_EQ(new_blocking_agg->parents().size(), 1);
-  ASSERT_TRUE(Match(new_blocking_agg->parents()[0], GRPCSourceGroup()));
+  ASSERT_MATCH(new_blocking_agg->parents()[0], GRPCSourceGroup());
   auto blocking_agg_parent = static_cast<GRPCSourceGroupIR*>(new_blocking_agg->parents()[0]);
 
   auto new_join = GetEquivalentInNewPlan(after_blocking, join);
   ASSERT_EQ(new_join->parents().size(), 2);
   // Parent 1 should be the GRPCSourceGroup
-  ASSERT_TRUE(Match(new_join->parents()[0], GRPCSourceGroup()));
+  ASSERT_MATCH(new_join->parents()[0], GRPCSourceGroup());
   auto join_parent = static_cast<GRPCSourceGroupIR*>(new_join->parents()[0]);
 
   // TODO(philkuz) Replace the following with the commented out code with (PL-846).
@@ -439,8 +439,8 @@ TEST_F(SplitterTest, agg_join_children) {
 
   auto source_children = GetEquivalentInNewPlan(before_blocking, mem_src)->Children();
   ASSERT_EQ(source_children.size(), 2);
-  ASSERT_TRUE(Match(source_children[0], GRPCSink()));
-  ASSERT_TRUE(Match(source_children[1], GRPCSink()));
+  ASSERT_MATCH(source_children[0], GRPCSink());
+  ASSERT_MATCH(source_children[1], GRPCSink());
 
   auto grpc_sink1 = static_cast<GRPCSinkIR*>(source_children[0]);
   auto grpc_sink2 = static_cast<GRPCSinkIR*>(source_children[1]);
@@ -454,7 +454,7 @@ TEST_F(SplitterTest, agg_join_children) {
   // EXPECT_EQ(join_parent.Children().size(), 2);
   // auto source_children = mem_src->Children();
   // ASSERT_EQ(source_children.size(), 1);
-  // ASSERT_TRUE(Match(source_children[0], GRPCSink()));
+  // ASSERT_MATCH(source_children[0], GRPCSink());
 
   // auto grpc_sink = static_cast<GRPCSinkIR*>(source_children[0]);
 

@@ -681,7 +681,7 @@ TEST_F(AnalyzerTest, join_test) {
 
   ASSERT_EQ(join->Children().size(), 2);
   // Ignore the sink that is there just to preserve the join output relation.
-  ASSERT_TRUE(Match(join->Children()[0], Map()));
+  ASSERT_MATCH(join->Children()[0], Map());
   auto map = static_cast<MapIR*>(join->Children()[0]);
 
   EXPECT_THAT(map->relation().col_names(),

@@ -629,15 +629,15 @@ TEST_F(FilterTest, TestNewFilter) {
   ASSERT_TRUE(filter) << "Filter not found in graph.";
 
   ASSERT_EQ(filter->parents().size(), 1);
-  ASSERT_TRUE(Match(filter->parents()[0], MemorySource()));
+  ASSERT_MATCH(filter->parents()[0], MemorySource());
   auto mem_src = static_cast<MemorySourceIR*>(filter->parents()[0]);
   EXPECT_EQ(mem_src->table_name(), "bar");
 
-  ASSERT_TRUE(Match(filter->filter_expr(), Equals(ColumnNode(), String())));
+  ASSERT_MATCH(filter->filter_expr(), Equals(ColumnNode(), String()));
 
   auto filter_expr = static_cast<FuncIR*>(filter->filter_expr());
-  ASSERT_TRUE(Match(filter_expr->args()[0], ColumnNode()));
-  ASSERT_TRUE(Match(filter_expr->args()[1], String()));
+  ASSERT_MATCH(filter_expr->args()[0], ColumnNode());
+  ASSERT_MATCH(filter_expr->args()[1], String());
 
   ColumnIR* col = static_cast<ColumnIR*>(filter_expr->args()[0]);
   StringIR* str = static_cast<StringIR*>(filter_expr->args()[1]);
@@ -645,7 +645,7 @@ TEST_F(FilterTest, TestNewFilter) {
   EXPECT_EQ(str->str(), "foo");
 
   ASSERT_EQ(filter->Children().size(), 1);
-  ASSERT_TRUE(Match(filter->Children()[0], MemorySink()));
+  ASSERT_MATCH(filter->Children()[0], MemorySink());
 }
 
 constexpr char kFilterChainedQuery[] = R"query(
@@ -670,15 +670,15 @@ TEST_F(FilterTest, ChainedFilterQuery) {
   ASSERT_TRUE(filter) << "Filter not found in graph.";
 
   ASSERT_EQ(filter->parents().size(), 1);
-  ASSERT_TRUE(Match(filter->parents()[0], MemorySource()));
+  ASSERT_MATCH(filter->parents()[0], MemorySource());
   auto mem_src = static_cast<MemorySourceIR*>(filter->parents()[0]);
   EXPECT_EQ(mem_src->table_name(), "bar");
 
-  ASSERT_TRUE(Match(filter->filter_expr(), Equals(ColumnNode(), String())));
+  ASSERT_MATCH(filter->filter_expr(), Equals(ColumnNode(), String()));
 
   auto filter_expr = static_cast<FuncIR*>(filter->filter_expr());
-  ASSERT_TRUE(Match(filter_expr->args()[0], ColumnNode()));
-  ASSERT_TRUE(Match(filter_expr->args()[1], String()));
+  ASSERT_MATCH(filter_expr->args()[0], ColumnNode());
+  ASSERT_MATCH(filter_expr->args()[1], String());
 
   ColumnIR* col = static_cast<ColumnIR*>(filter_expr->args()[0]);
   StringIR* str = static_cast<StringIR*>(filter_expr->args()[1]);
@@ -686,7 +686,7 @@ TEST_F(FilterTest, ChainedFilterQuery) {
   EXPECT_EQ(str->str(), "foo");
 
   ASSERT_EQ(filter->Children().size(), 1);
-  ASSERT_TRUE(Match(filter->Children()[0], MemorySink()));
+  ASSERT_MATCH(filter->Children()[0], MemorySink());
 }
 
 constexpr char kInvalidFilterChainQuery[] = R"query(
@@ -724,15 +724,15 @@ TEST_F(FilterTest, ChainedFilterWithNewMetadataQuery) {
   ASSERT_TRUE(filter) << "Filter not found in graph.";
 
   ASSERT_EQ(filter->parents().size(), 1);
-  ASSERT_TRUE(Match(filter->parents()[0], MemorySource()));
+  ASSERT_MATCH(filter->parents()[0], MemorySource());
   auto mem_src = static_cast<MemorySourceIR*>(filter->parents()[0]);
   EXPECT_EQ(mem_src->table_name(), "bar");
 
-  ASSERT_TRUE(Match(filter->filter_expr(), Equals(Metadata(), String())));
+  ASSERT_MATCH(filter->filter_expr(), Equals(Metadata(), String()));
 
   auto filter_expr = static_cast<FuncIR*>(filter->filter_expr());
-  ASSERT_TRUE(Match(filter_expr->args()[0], Metadata()));
-  ASSERT_TRUE(Match(filter_expr->args()[1], String()));
+  ASSERT_MATCH(filter_expr->args()[0], Metadata());
+  ASSERT_MATCH(filter_expr->args()[1], String());
 
   MetadataIR* col = static_cast<MetadataIR*>(filter_expr->args()[0]);
   StringIR* str = static_cast<StringIR*>(filter_expr->args()[1]);
@@ -740,7 +740,7 @@ TEST_F(FilterTest, ChainedFilterWithNewMetadataQuery) {
   EXPECT_EQ(str->str(), "foo");
 
   ASSERT_EQ(filter->Children().size(), 1);
-  ASSERT_TRUE(Match(filter->Children()[0], MemorySink()));
+  ASSERT_MATCH(filter->Children()[0], MemorySink());
 }
 
 TEST_F(ASTVisitorTest, MemorySourceStartAndDefaultStop) {
@@ -753,9 +753,9 @@ TEST_F(ASTVisitorTest, MemorySourceStartAndDefaultStop) {
 
   auto mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_TRUE(mem_src->HasTimeExpressions());
-  EXPECT_TRUE(Match(mem_src->start_time_expr(), String()));
+  EXPECT_MATCH(mem_src->start_time_expr(), String());
   EXPECT_EQ(static_cast<StringIR*>(mem_src->start_time_expr())->str(), "-1m");
-  EXPECT_TRUE(Match(mem_src->end_time_expr(), Func()));
+  EXPECT_MATCH(mem_src->end_time_expr(), Func());
   auto stop_time_func = static_cast<FuncIR*>(mem_src->end_time_expr());
   EXPECT_EQ(stop_time_func->func_name(), "now");
 }
@@ -783,9 +783,9 @@ TEST_F(ASTVisitorTest, MemorySourceStartAndStop) {
 
   auto mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_TRUE(mem_src->HasTimeExpressions());
-  EXPECT_TRUE(Match(mem_src->start_time_expr(), Int()));
+  EXPECT_MATCH(mem_src->start_time_expr(), Int());
   EXPECT_EQ(static_cast<IntIR*>(mem_src->start_time_expr())->val(), 12);
-  EXPECT_TRUE(Match(mem_src->end_time_expr(), Int()));
+  EXPECT_MATCH(mem_src->end_time_expr(), Int());
   EXPECT_EQ(static_cast<IntIR*>(mem_src->end_time_expr())->val(), 100);
 }
 
@@ -802,7 +802,7 @@ TEST_F(ASTVisitorTest, DisplayTest) {
   EXPECT_EQ(mem_sink->name(), "output");
 
   ASSERT_EQ(mem_sink->parents().size(), 1);
-  ASSERT_TRUE(Match(mem_sink->parents()[0], MemorySource()));
+  ASSERT_MATCH(mem_sink->parents()[0], MemorySource());
   auto mem_src = static_cast<MemorySourceIR*>(mem_sink->parents()[0]);
   EXPECT_EQ(mem_src->table_name(), "bar");
 }
@@ -819,7 +819,7 @@ TEST_F(ASTVisitorTest, DisplayArgumentsTest) {
   EXPECT_EQ(mem_sink->name(), "foo");
 
   ASSERT_EQ(mem_sink->parents().size(), 1);
-  ASSERT_TRUE(Match(mem_sink->parents()[0], MemorySource()));
+  ASSERT_MATCH(mem_sink->parents()[0], MemorySource());
   auto mem_src = static_cast<MemorySourceIR*>(mem_sink->parents()[0]);
   EXPECT_EQ(mem_src->table_name(), "bar");
 }
@@ -962,7 +962,7 @@ TEST_F(ASTVisitorTest, define_func_query) {
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_EQ(mem_src->table_name(), "http_events");
   ASSERT_EQ(mem_src->Children().size(), 1);
-  ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
+  ASSERT_MATCH(mem_src->Children()[0], MemorySink());
 }
 
 constexpr char kLocalStateQuery[] = R"query(
@@ -987,7 +987,7 @@ TEST_F(ASTVisitorTest, func_context_does_not_affect_global_context) {
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_EQ(mem_src->table_name(), "foo");
   ASSERT_EQ(mem_src->Children().size(), 1);
-  ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
+  ASSERT_MATCH(mem_src->Children()[0], MemorySink());
   std::vector<IRNode*> strings = ir_graph->FindNodesOfType(IRNodeType::kString);
   ASSERT_EQ(strings.size(), 5);
   // Note(james): __doc__ is set to the empty string for both the function and the whole module.
@@ -1024,7 +1024,7 @@ TEST_F(ASTVisitorTest, nested_func_calls) {
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_EQ(mem_src->table_name(), "foo");
   ASSERT_EQ(mem_src->Children().size(), 1);
-  ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
+  ASSERT_MATCH(mem_src->Children()[0], MemorySink());
   std::vector<IRNode*> strings = ir_graph->FindNodesOfType(IRNodeType::kString);
   ASSERT_EQ(strings.size(), 6);
   // Note(james): before optimization there is an empty string representing __doc__ for each of
@@ -1057,7 +1057,7 @@ TEST_F(ASTVisitorTest, func_def_with_type) {
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_EQ(mem_src->table_name(), "http_events");
   ASSERT_EQ(mem_src->Children().size(), 1);
-  ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
+  ASSERT_MATCH(mem_src->Children()[0], MemorySink());
   // Check what would happen if the wrong type is passed in.
   ir_graph_or_s = CompileGraph(absl::Substitute(kFuncDefWithType, "func(1)"));
   ASSERT_NOT_OK(ir_graph_or_s);
@@ -1083,7 +1083,7 @@ TEST_F(ASTVisitorTest, func_def_with_dataframe_type) {
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_EQ(mem_src->table_name(), "http_events");
   ASSERT_EQ(mem_src->Children().size(), 1);
-  ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
+  ASSERT_MATCH(mem_src->Children()[0], MemorySink());
 
   // Check whether non-Dataframes cause a failure.
   ir_graph_or_s = CompileGraph(absl::Substitute(kFuncDefWithDataframe, "func(1)"));
@@ -1166,7 +1166,7 @@ TEST_F(ASTVisitorTest, func_can_return_object) {
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_EQ(mem_src->table_name(), "http_events");
   ASSERT_EQ(mem_src->Children().size(), 1);
-  ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
+  ASSERT_MATCH(mem_src->Children()[0], MemorySink());
 }
 
 constexpr char kRawReturnNoFuncDef[] = R"query(
@@ -1229,7 +1229,7 @@ TEST_F(ASTVisitorTest, func_with_empty_return) {
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_EQ(mem_src->table_name(), "http_events");
   ASSERT_EQ(mem_src->Children().size(), 1);
-  ASSERT_TRUE(Match(mem_src->Children()[0], MemorySink()));
+  ASSERT_MATCH(mem_src->Children()[0], MemorySink());
 }
 
 constexpr char kFuncDefDoesntDupGlobals[] = R"pxl(
@@ -1263,12 +1263,12 @@ TEST_F(ASTVisitorTest, func_def_doesnt_make_new_globals) {
   // and thus won't have a node
   auto func_return_obj = var_table->Lookup("foo");
   ASSERT_TRUE(func_return_obj->HasNode());
-  ASSERT_TRUE(Match(func_return_obj->node(), String()));
+  ASSERT_MATCH(func_return_obj->node(), String());
   ASSERT_EQ(static_cast<StringIR*>(func_return_obj->node())->str(), "123");
 
   auto func2_return_obj = var_table->Lookup("string");
   ASSERT_TRUE(func2_return_obj->HasNode());
-  ASSERT_TRUE(Match(func2_return_obj->node(), String()));
+  ASSERT_MATCH(func2_return_obj->node(), String());
   ASSERT_EQ(static_cast<StringIR*>(func2_return_obj->node())->str(), "abc");
 }
 

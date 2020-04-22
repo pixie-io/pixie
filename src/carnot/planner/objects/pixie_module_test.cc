@@ -132,7 +132,7 @@ TEST_F(PixieModuleTest, ModuleFindAttributeFromRegistryInfo) {
   auto result_or_s = std::static_pointer_cast<FuncObject>(attr_object)->Call({}, ast);
   ASSERT_OK(result_or_s);
   auto ql_object = result_or_s.ConsumeValueOrDie();
-  ASSERT_TRUE(Match(ql_object->node(), Func()));
+  ASSERT_MATCH(ql_object->node(), Func());
 
   FuncIR* func = static_cast<FuncIR*>(ql_object->node());
   EXPECT_EQ(func->carnot_op_name(), "equals");
@@ -162,14 +162,14 @@ TEST_F(PixieModuleTest, GetUDTFMethod) {
   ASSERT_OK(result_or_s);
   auto ql_object = result_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
-  ASSERT_TRUE(Match(ql_object->node(), UDTFSource()));
+  ASSERT_MATCH(ql_object->node(), UDTFSource());
 
   auto udtf = static_cast<UDTFSourceIR*>(ql_object->node());
   EXPECT_EQ(udtf->func_name(), network_conns_udtf_name);
   const auto& arg_values = udtf->arg_values();
   ASSERT_EQ(arg_values.size(), 1);
   auto upid = md::UPID::ParseFromUUIDString(upid_value).ConsumeValueOrDie();
-  EXPECT_TRUE(Match(arg_values[0], UInt128Value()));
+  EXPECT_MATCH(arg_values[0], UInt128Value());
   EXPECT_EQ(static_cast<UInt128IR*>(arg_values[0])->val(), upid.value());
 }
 
@@ -186,14 +186,14 @@ TEST_F(PixieModuleTest, UDTFDefaultValueTest) {
   ASSERT_OK(result_or_s);
   auto ql_object = result_or_s.ConsumeValueOrDie();
   ASSERT_TRUE(ql_object->type_descriptor().type() == QLObjectType::kDataframe);
-  ASSERT_TRUE(Match(ql_object->node(), UDTFSource()));
+  ASSERT_MATCH(ql_object->node(), UDTFSource());
 
   auto udtf = static_cast<UDTFSourceIR*>(ql_object->node());
   EXPECT_EQ(udtf->func_name(), udtf_name);
   const auto& arg_values = udtf->arg_values();
   ASSERT_EQ(arg_values.size(), 1);
   auto uint_value = absl::MakeUint128(0, 1);
-  EXPECT_TRUE(Match(arg_values[0], UInt128Value()));
+  EXPECT_MATCH(arg_values[0], UInt128Value());
   EXPECT_EQ(static_cast<UInt128IR*>(arg_values[0])->val(), uint_value);
 }
 

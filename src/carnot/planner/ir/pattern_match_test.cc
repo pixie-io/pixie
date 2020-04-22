@@ -17,8 +17,8 @@ TEST_F(PatternMatchTest, equals_test) {
 
   auto func = MakeEqualsFunc(c1, c2);
 
-  EXPECT_TRUE(Match(func, Equals(Int(10), Value())));
-  EXPECT_TRUE(Match(func, Equals(Value(), Int())));
+  EXPECT_MATCH(func, Equals(Int(10), Value()));
+  EXPECT_MATCH(func, Equals(Value(), Int()));
   EXPECT_FALSE(Match(func, Equals(Value(), Int(9))));
 }
 
@@ -39,7 +39,7 @@ TEST_F(PatternMatchTest, compile_time_func_test) {
                                std::vector<ExpressionIR*>{})
           .ValueOrDie();
 
-  EXPECT_TRUE(Match(time_now_func, CompileTimeNow()));
+  EXPECT_MATCH(time_now_func, CompileTimeNow());
   EXPECT_FALSE(Match(not_now_func, CompileTimeNow()));
 
   // 10 * (10 + 9)
@@ -62,15 +62,15 @@ TEST_F(PatternMatchTest, compile_time_func_test) {
                                std::vector<ExpressionIR*>{})
           .ValueOrDie();
 
-  EXPECT_TRUE(Match(hours_func, CompileTimeUnitTime()));
+  EXPECT_MATCH(hours_func, CompileTimeUnitTime());
   EXPECT_FALSE(Match(no_arg_hours_func, CompileTimeUnitTime()));
 
-  EXPECT_TRUE(Match(mult_func, CompileTimeIntegerArithmetic()));
+  EXPECT_MATCH(mult_func, CompileTimeIntegerArithmetic());
   EXPECT_FALSE(Match(add_func_no_args, CompileTimeIntegerArithmetic()));
 
-  EXPECT_TRUE(Match(time_now_func, CompileTimeFunc()));
-  EXPECT_TRUE(Match(hours_func, CompileTimeFunc()));
-  EXPECT_TRUE(Match(mult_func, CompileTimeFunc()));
+  EXPECT_MATCH(time_now_func, CompileTimeFunc());
+  EXPECT_MATCH(hours_func, CompileTimeFunc());
+  EXPECT_MATCH(mult_func, CompileTimeFunc());
 
   EXPECT_FALSE(Match(not_now_func, CompileTimeFunc()));
   EXPECT_FALSE(Match(no_arg_hours_func, CompileTimeFunc()));
@@ -84,7 +84,7 @@ TEST_F(PatternMatchTest, contains_compile_time_func_test) {
 
   // 10 + 9 -> true
   auto ct_add = MakeAddFunc(c1, c2);
-  EXPECT_TRUE(Match(ct_add, ContainsCompileTimeFunc()));
+  EXPECT_MATCH(ct_add, ContainsCompileTimeFunc());
 
   // pl.not_compile_time(10 + 9) -> true
   auto rt_func =
@@ -92,7 +92,7 @@ TEST_F(PatternMatchTest, contains_compile_time_func_test) {
           ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "not_compile_time"},
                                std::vector<ExpressionIR*>({ct_add}))
           .ConsumeValueOrDie();
-  EXPECT_TRUE(Match(rt_func, ContainsCompileTimeFunc()));
+  EXPECT_MATCH(rt_func, ContainsCompileTimeFunc());
 
   // 10 + t1['foo'] -> false
   auto rt_add = graph
@@ -131,8 +131,8 @@ TEST_F(PatternMatchTest, arbitrary_bin_op_test) {
                   .ValueOrDie();
 
   EXPECT_FALSE(Match(func, Equals(Int(10), Value())));
-  EXPECT_TRUE(Match(func, BinOp(Value(), Value())));
-  EXPECT_TRUE(Match(func, BinOp()));
+  EXPECT_MATCH(func, BinOp(Value(), Value()));
+  EXPECT_MATCH(func, BinOp());
 }
 
 TEST_F(PatternMatchTest, expression_data_type_resolution) {
@@ -144,41 +144,41 @@ TEST_F(PatternMatchTest, expression_data_type_resolution) {
                   .ValueOrDie();
 
   // Make sure expression works.
-  EXPECT_TRUE(Match(int1, Expression()));
-  EXPECT_TRUE(Match(col1, Expression()));
-  EXPECT_TRUE(Match(func, Expression()));
+  EXPECT_MATCH(int1, Expression());
+  EXPECT_MATCH(col1, Expression());
+  EXPECT_MATCH(func, Expression());
 
   // Make sure unresolved expression works.
   EXPECT_FALSE(Match(int1, UnresolvedExpression()));
-  EXPECT_TRUE(Match(col1, UnresolvedExpression()));
-  EXPECT_TRUE(Match(func, UnresolvedExpression()));
+  EXPECT_MATCH(col1, UnresolvedExpression());
+  EXPECT_MATCH(func, UnresolvedExpression());
 
   // Make sure resolved expression works.
-  EXPECT_TRUE(Match(int1, ResolvedExpression()));
+  EXPECT_MATCH(int1, ResolvedExpression());
   EXPECT_FALSE(Match(col1, ResolvedExpression()));
   EXPECT_FALSE(Match(func, ResolvedExpression()));
 
   // Specific expressions
-  EXPECT_TRUE(Match(col1, UnresolvedColumnType()));
+  EXPECT_MATCH(col1, UnresolvedColumnType());
   EXPECT_FALSE(Match(func, UnresolvedColumnType()));
   EXPECT_FALSE(Match(col1, UnresolvedFuncType()));
-  EXPECT_TRUE(Match(func, UnresolvedFuncType()));
+  EXPECT_MATCH(func, UnresolvedFuncType());
 
   // Test out UnresolvedRTFuncMatchAllArgs.
   EXPECT_FALSE(Match(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression())));
 
   // Resolve column and check whether test works.
   col1->ResolveColumnType(types::DataType::INT64);
-  EXPECT_TRUE(Match(col1, ResolvedExpression()));
-  EXPECT_TRUE(Match(col1, ResolvedColumnType()));
+  EXPECT_MATCH(col1, ResolvedExpression());
+  EXPECT_MATCH(col1, ResolvedColumnType());
 
   // Should Pass now
-  EXPECT_TRUE(Match(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression())));
+  EXPECT_MATCH(func, UnresolvedRTFuncMatchAllArgs(ResolvedExpression()));
 
   // Make sure that resolution works
   func->SetOutputDataType(types::DataType::INT64);
-  EXPECT_TRUE(Match(func, ResolvedExpression()));
-  EXPECT_TRUE(Match(func, ResolvedFuncType()));
+  EXPECT_MATCH(func, ResolvedExpression());
+  EXPECT_MATCH(func, ResolvedFuncType());
 }
 
 TEST_F(PatternMatchTest, relation_status_operator_match) {
@@ -213,17 +213,17 @@ TEST_F(PatternMatchTest, relation_status_operator_match) {
   // Resolve parent.
   EXPECT_OK(mem_src->SetRelation(test_relation));
   // Unresolved blocking aggregate with resolved parent.
-  EXPECT_TRUE(Match(blocking_agg, UnresolvedReadyOp(BlockingAgg())));
+  EXPECT_MATCH(blocking_agg, UnresolvedReadyOp(BlockingAgg()));
   EXPECT_FALSE(Match(blocking_agg, UnresolvedReadyOp(Map())));
-  EXPECT_TRUE(Match(blocking_agg, UnresolvedReadyOp()));
+  EXPECT_MATCH(blocking_agg, UnresolvedReadyOp());
   // Unresolved map with resolved parent.
   EXPECT_FALSE(Match(map, UnresolvedReadyOp(BlockingAgg())));
-  EXPECT_TRUE(Match(map, UnresolvedReadyOp(Map())));
-  EXPECT_TRUE(Match(map, UnresolvedReadyOp()));
+  EXPECT_MATCH(map, UnresolvedReadyOp(Map()));
+  EXPECT_MATCH(map, UnresolvedReadyOp());
   // Unresolved Filter with resolved parent.
   EXPECT_FALSE(Match(filter, UnresolvedReadyOp(BlockingAgg())));
   EXPECT_FALSE(Match(filter, UnresolvedReadyOp(Map())));
-  EXPECT_TRUE(Match(filter, UnresolvedReadyOp()));
+  EXPECT_MATCH(filter, UnresolvedReadyOp());
 
   // Resolve children.
   EXPECT_OK(blocking_agg->SetRelation(test_relation));
@@ -258,7 +258,7 @@ TEST_F(PatternMatchTest, relation_status_union_test) {
 
   EXPECT_OK(mem_src2->SetRelation(MakeRelation()));
   // Check to make sure that setting both parents does set it off.
-  EXPECT_TRUE(Match(union_op, UnresolvedReadyOp(Union())));
+  EXPECT_MATCH(union_op, UnresolvedReadyOp(Union()));
 }
 
 TEST_F(PatternMatchTest, OpWithParentMatch) {
@@ -266,8 +266,8 @@ TEST_F(PatternMatchTest, OpWithParentMatch) {
   auto group = MakeGroupBy(mem_src1, {MakeColumn("c", 0)});
   auto agg = MakeBlockingAgg(group, {}, {{"a", MakeMeanFunc(MakeColumn("b", 0))}});
 
-  EXPECT_TRUE(Match(agg, OperatorWithParent(BlockingAgg(), GroupBy())));
-  EXPECT_TRUE(Match(group, OperatorWithParent(GroupBy(), MemorySource())));
+  EXPECT_MATCH(agg, OperatorWithParent(BlockingAgg(), GroupBy()));
+  EXPECT_MATCH(group, OperatorWithParent(GroupBy(), MemorySource()));
   EXPECT_FALSE(Match(group, OperatorWithParent(BlockingAgg(), GroupBy())));
 }
 

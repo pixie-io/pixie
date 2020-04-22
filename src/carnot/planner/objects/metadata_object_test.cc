@@ -28,7 +28,7 @@ TEST_F(MetadataObjectTest, SubscriptWithString) {
   ASSERT_TRUE(func_result->type_descriptor().type() == QLObjectType::kExpr);
   auto metadata_expr = static_cast<ExprObject*>(func_result.get());
   ASSERT_TRUE(metadata_expr->HasNode());
-  ASSERT_TRUE(Match(metadata_expr->node(), Metadata()));
+  ASSERT_MATCH(metadata_expr->node(), Metadata());
   auto metadata_node = static_cast<MetadataIR*>(metadata_expr->node());
   EXPECT_EQ(metadata_node->name(), "service");
 }
