@@ -38,19 +38,19 @@ We're building up Pixie for broad use by the end of 2020. If you are interested,
 
 ## Quick Start
 
-##### Signup
+#### Signup
 
 Visit our [product page](https://work.withpixie.ai/) and signup with your google account.
 
 
-##### Install CLI 
+#### Install CLI 
 
 Copy and run the command below to install Pixie's CLI"
 
  `bash -c "$(curl -fsSL https://withpixie.ai/install.sh)"`
 
 
-##### (optional) Setup a sandbox
+#### (optional) Setup a sandbox
 
 If you don't already have a K8s cluster available you can:
 
@@ -62,11 +62,12 @@ If you don't already have a K8s cluster available you can:
     - Deploy [Weaveworks'](https://www.weave.works/) [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by running `px demo deploy px-sock-shop`
  
 
-##### 🚀Deploy Pixie
+#### 🚀Deploy Pixie
 
 Deploy the Pixie Platform in your K8s cluster by runnning: 
 
 `px deploy`
+<br>
 
 Check out our [install guides](https://docs.withpixie.ai/install-guides/) and [walkthrough videos](https://www.youtube.com/watch?v=iMh2f8abTYU) for alternate install schemes.
 
@@ -77,7 +78,7 @@ Check out our [install guides](https://docs.withpixie.ai/install-guides/) and [w
 
 <img src="./pxl_scripts/http_data.svg" alt="CLI Demo" width="425" align="right">
 
-Service SLA:
+<br> Service SLA:
 
 `px run px/service_stats`
 
@@ -97,7 +98,7 @@ Service SLA:
 
 <br clear="all">
 
-##### View machine generated dashboards with Live views
+#### View machine generated dashboards with Live views
 
 <img src="./assets/live_7apr20.gif" alt="CLI Demo" width="425" align="right">
 
@@ -110,7 +111,7 @@ You can view them by clicking on the URLs prompted by `px` or by visiting:
 <br clear="all">
 
 
-##### Pipe Pixie dust into any tool
+#### Pipe Pixie dust into any tool
 
 <img src="./assets/./cli_demo.svg" alt="CLI Demo" width="425" align="right">
 
