@@ -41,14 +41,14 @@ We're building up Pixie for broad use by the end of 2020. If you are interested,
 ##### Signup
 
 Visit our [product page](https://work.withpixie.ai/) and signup with your google account.
-<br> 
+
 
 ##### Install CLI 
 
 Copy and run the command below to install Pixie's CLI"
 
  `bash -c "$(curl -fsSL https://withpixie.ai/install.sh)"`
-<br> 
+
 
 ##### (optional) Setup a sandbox
 
@@ -60,13 +60,14 @@ If you don't already have a K8s cluster available you can:
     - Review our [docs](https://work.withpixie.ai/docs/getting-started) for alternate options.
   - Start a demo-app:
     - Deploy [Weaveworks'](https://www.weave.works/) [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by running `px demo deploy px-sock-shop`
-<br> 
-    
+ 
+
 ##### Deploy Pixie
 
 Run `px deploy` to deploy the Pixie Platform in your K8s cluster.
 
 <br> 
+
 🚀  You have lift off! Check out our [install guides](https://docs.withpixie.ai/install-guides/) and [walkthrough videos](https://www.youtube.com/watch?v=iMh2f8abTYU) for alternate install schemes.
 
 <br clear="all">
