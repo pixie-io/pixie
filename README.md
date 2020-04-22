@@ -62,15 +62,14 @@ If you don't already have a K8s cluster available you can:
     - Deploy [Weaveworks'](https://www.weave.works/) [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by running `px demo deploy px-sock-shop`
  
 
-##### Deploy Pixie
+##### 🚀Deploy Pixie
 
-Run `px deploy` to deploy the Pixie Platform in your K8s cluster.
+Deploy the Pixie Platform in your K8s cluster by runnning: 
 
-<br> 
+`px deploy`
 
-🚀  You have lift off! Check out our [install guides](https://docs.withpixie.ai/install-guides/) and [walkthrough videos](https://www.youtube.com/watch?v=iMh2f8abTYU) for alternate install schemes.
+Check out our [install guides](https://docs.withpixie.ai/install-guides/) and [walkthrough videos](https://www.youtube.com/watch?v=iMh2f8abTYU) for alternate install schemes.
 
-<br clear="all">
 
 ## Get Instant Auto-Telemetry
 
