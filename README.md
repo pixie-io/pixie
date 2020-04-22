@@ -4,11 +4,13 @@
 
 </p>
 
+<br>
 
 [![Docs](https://img.shields.io/badge/docs-latest-blue)](https://withpixie.ai/docs)
 [![Slack](https://slackin.withpixie.ai/badge.svg)](https://slackin.withpixie.ai)
 [![Mentioned in Awesome Kubernetes](https://awesome.re/mentioned-badge.svg)](https://github.com/ramitsurana/awesome-kubernetes)
 
+<br clear="all">
 
 ## What is Pixie?
 
@@ -17,6 +19,8 @@
 Pixie is an edge intelligence platform to help you debug in minutes and avoid wasting months instrumenting your entire codebase.
 
 We're building up Pixie for broad use by the end of 2020. If you are interested, feel free to try our [community beta](https://work.withpixie.ai/signup) and join our community on [slack](https://slackin.withpixie.ai/).
+
+<br>
 
 <details>
   <summary><strong>Table of contents</strong></summary>
@@ -33,15 +37,13 @@ We're building up Pixie for broad use by the end of 2020. If you are interested,
 
 ## Quick Start
 
-
-
 1. **Signup**: Visit our [product page](https://work.withpixie.ai/) and signup with your google account.
 
 2. **Install CLI:** Copy and run the command below to install Pixie's CLI.
 
     `bash -c "$(curl -fsSL https://withpixie.ai/install.sh)"`
 
-3. **Setup a sandbox**  You can easily build a local set-up to use Pixie if you don't already have a K8s setup or meaningful workloads to mintor set-up.
+3. **Setup a sandbox** You can easily build a local set-up to use Pixie if you don't already have a K8s setup or meaningful workloads to mintor set-up.
 
     - Set-up a local K8s environment:
         - [Install Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) and run `kind create cluster`
@@ -49,7 +51,7 @@ We're building up Pixie for broad use by the end of 2020. If you are interested,
         - Review our [docs](https://work.withpixie.ai/docs/getting-started) for detailed instructions and alternate options.
 
     - Start a demo-app:
-        - View available demo apps by running `px  demo list`
+        - View available demo apps by running `px demo list`
         - As an example, deploy [Weaveworks'](https://www.weave.works/) [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by running `px demo deploy px-sock-shop`
 
 4. **Deploy Pixie**: Run `px deploy` to deploy the Pixie Platform in your K8s cluster.
