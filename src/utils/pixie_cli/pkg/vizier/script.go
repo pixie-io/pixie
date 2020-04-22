@@ -31,7 +31,7 @@ func RunScript(ctx context.Context, v *Connector, execScript *script.ExecutableS
 			Set("scriptString", execScript.ScriptString),
 	})
 
-	resp, err := v.ExecuteScriptStream(ctx, execScript.ScriptString)
+	resp, err := v.ExecuteScriptStream(ctx, execScript)
 	if err != nil {
 		_ = pxanalytics.Client().Enqueue(&analytics.Track{
 			UserId: pxconfig.Cfg().UniqueClientID,

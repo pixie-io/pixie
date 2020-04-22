@@ -76,6 +76,5 @@ func loadScriptFromFile(path string) (*script.ExecutableScript, error) {
 		ScriptString: string(qb),
 		ShortDoc:     "Script supplied by user",
 		LongDoc:      "Script supplied by user",
-		HasVis:       false,
 	}, nil
 }

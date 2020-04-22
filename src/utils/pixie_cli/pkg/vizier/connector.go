@@ -14,6 +14,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/utils"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
@@ -98,15 +99,47 @@ func (c *Connector) PassthroughMode() bool {
 }
 
 // ExecuteScriptStream execute a vizier query as a stream.
-func (c *Connector) ExecuteScriptStream(ctx context.Context, q string) (chan *VizierExecData, error) {
-	q = strings.TrimSpace(q)
-	if len(q) == 0 {
+func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.ExecutableScript) (chan *VizierExecData, error) {
+	scriptStr := strings.TrimSpace(script.ScriptString)
+	if len(scriptStr) == 0 {
 		return nil, errors.New("input query is empty")
 	}
 
+	var execFuncs []*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute
+	if script.Vis != nil && script.Vis.Widgets != nil {
+		execFuncs = make([]*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute, len(script.Vis.Widgets))
+		defaults := make(map[string]string, 0)
+		for _, v := range script.Vis.Variables {
+			defaults[v.Name] = v.DefaultValue
+		}
+
+		for idx, w := range script.Vis.Widgets {
+			execFunc := &pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute{}
+			execFunc.FuncName = w.Func.Name
+			execFunc.OutputTablePrefix = "widget"
+			if w.Name != "" {
+				execFunc.OutputTablePrefix = w.Name
+			}
+			execFunc.ArgValues = make([]*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute_ArgValue, len(w.Func.Args))
+			// TODO(zasgar): Add argument support.
+			// TODO(zasgar): Deduplicate, exact funcs since table output does not make sense for it.
+			for idx, arg := range w.Func.Args {
+				execFunc.ArgValues[idx] = &pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute_ArgValue{
+					Name: arg.Name,
+				}
+				execFunc.ArgValues[idx].Name = arg.Name
+				if defaultValue, ok := defaults[arg.Name]; ok {
+					execFunc.ArgValues[idx].Value = defaultValue
+				}
+			}
+			execFuncs[idx] = execFunc
+		}
+	}
+
 	reqPB := &pl_api_vizierpb.ExecuteScriptRequest{
-		QueryStr:  q,
+		QueryStr:  scriptStr,
 		ClusterID: c.id.String(),
+		ExecFuncs: execFuncs,
 	}
 
 	if c.passthroughEnabled {

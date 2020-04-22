@@ -468,7 +468,7 @@ func waitForHealthCheck(cloudAddr string, clientset *kubernetes.Clientset, names
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 
-		resp, err := v.ExecuteScriptStream(ctx, execScript.ScriptString)
+		resp, err := v.ExecuteScriptStream(ctx, execScript)
 		if err != nil {
 			return err
 		}

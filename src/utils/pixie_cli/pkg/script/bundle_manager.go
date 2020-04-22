@@ -17,6 +17,16 @@ type BundleManager struct {
 	scripts map[string]*pixieScript
 }
 
+func pixieScriptToExecutableScript(scriptName string, script *pixieScript) *ExecutableScript {
+	return &ExecutableScript{
+		ScriptName:   scriptName,
+		ShortDoc:     script.ShortDoc,
+		LongDoc:      script.LongDoc,
+		Vis:          parseVisSpec(script.Vis),
+		ScriptString: script.Pxl,
+	}
+}
+
 func isValidURL(toTest string) bool {
 	_, err := url.ParseRequestURI(toTest)
 	if err != nil {
@@ -65,10 +75,7 @@ func (b BundleManager) GetScripts() []*ExecutableScript {
 	s := make([]*ExecutableScript, len(b.scripts))
 	i := 0
 	for k, val := range b.scripts {
-		s[i].ScriptName = k
-		s[i].ScriptString = val.Pxl
-		s[i].ShortDoc = val.ShortDoc
-		s[i].LongDoc = val.LongDoc
+		s[i] = pixieScriptToExecutableScript(k, val)
 		i++
 	}
 	return s
@@ -89,13 +96,7 @@ func (b BundleManager) GetScript(scriptName string) (*ExecutableScript, error) {
 	if !ok {
 		return nil, ErrScriptNotFound
 	}
-	return &ExecutableScript{
-		ScriptName:   scriptName,
-		ShortDoc:     script.ShortDoc,
-		LongDoc:      script.LongDoc,
-		HasVis:       script.Vis != "",
-		ScriptString: script.Pxl,
-	}, nil
+	return pixieScriptToExecutableScript(scriptName, script), nil
 }
 
 // MustGetScript is GetScript with fatal on error.
