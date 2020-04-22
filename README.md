@@ -1,6 +1,6 @@
 <p align="center">
 
-  [![Pixie!](./assets/github_hero.png)](https://pixielabs.ai)
+  [![Pixie!](./assets/readme_banner_v2_small.png)](https://pixielabs.ai)
 
 </p>
 
