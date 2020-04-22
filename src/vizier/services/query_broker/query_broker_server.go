@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/version"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers"
+	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/ptproxy"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
@@ -28,12 +30,30 @@ func init() {
 	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
 }
 
+// NewVizierServiceClient creates a new vz RPC client stub.
+func NewVizierServiceClient(port uint) (vizierpb.VizierServiceClient, error) {
+	dialOpts, err := services.GetGRPCClientDialOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	// Note: This has to be localhost to pass the SSL cert verification.
+	addr := fmt.Sprintf("localhost:%d", port)
+	vzChannel, err := grpc.Dial(addr, dialOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return vizierpb.NewVizierServiceClient(vzChannel), nil
+}
+
 func main() {
 	log.WithField("service", "query-broker").
 		WithField("version", version.GetVersion().ToString()).
 		Info("Starting service")
 
-	services.SetupService("query-broker", 50300)
+	servicePort := uint(50300)
+	services.SetupService("query-broker", servicePort)
 	services.SetupSSLClientFlags()
 	services.PostFlagSetupAndParse()
 	services.CheckServiceFlags()
@@ -87,6 +107,22 @@ func main() {
 		httpmiddleware.WithBearerAuthMiddleware(env, mux))
 	querybrokerpb.RegisterQueryBrokerServiceServer(s.GRPCServer(), server)
 	vizierpb.RegisterVizierServiceServer(s.GRPCServer(), server)
+
+	// For the passthrough proxy we create a GRPC client to the current server. It appears really
+	// hard to emulate the streaming GRPC connection and this helps keep the API straightforward.
+	vzServiceClient, err := NewVizierServiceClient(servicePort)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to init vzservice client")
+	}
+
+	// Start passthrough proxy.
+	ptProxy, err := ptproxy.NewPassThroughProxy(natsConn, vzServiceClient)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to start passthrough proxy.")
+	}
+	go ptProxy.Run()
+	defer ptProxy.Close()
+
 	s.Start()
 	s.StopOnInterrupt()
 }

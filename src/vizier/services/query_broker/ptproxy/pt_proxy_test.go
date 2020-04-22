@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
-	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/ptproxy"
+	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/ptproxy"
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 

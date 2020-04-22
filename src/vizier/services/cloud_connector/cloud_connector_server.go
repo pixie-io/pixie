@@ -19,8 +19,6 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/version"
 	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/bridge"
-	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/ptproxy"
-	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 func init() {
@@ -53,24 +51,6 @@ func NewCertMgrServiceClient() (certmgrpb.CertMgrServiceClient, error) {
 	return certmgrpb.NewCertMgrServiceClient(certMgrChannel), nil
 }
 
-// NewVizierServiceClient creates a new vz RPC client stub.
-func NewVizierServiceClient() (vizierpb.VizierServiceClient, error) {
-	dialOpts, err := services.GetGRPCClientDialOpts()
-	if err != nil {
-		return nil, err
-	}
-
-	// Block until we connect to prevent races.
-	dialOpts = append(dialOpts, grpc.WithBlock())
-
-	vzChannel, err := grpc.Dial(viper.GetString("qb_service"), dialOpts...)
-	if err != nil {
-		return nil, err
-	}
-
-	return vizierpb.NewVizierServiceClient(vzChannel), nil
-}
-
 func main() {
 	log.WithField("service", "cloud-connector").
 		WithField("version", version.GetVersion().ToString()).
@@ -94,11 +74,6 @@ func main() {
 	certMgrClient, err := NewCertMgrServiceClient()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to init certmgr client")
-	}
-
-	vzServiceClient, err := NewVizierServiceClient()
-	if err != nil {
-		log.WithError(err).Fatal("Failed to init vzservice client")
 	}
 
 	clusterID := viper.GetString("cluster_id")
@@ -151,14 +126,6 @@ func main() {
 	// Resign leadership after the server stops.
 	defer resign()
 
-	// Start passthrough proxy.
-	ptProxy, err := ptproxy.NewPassThroughProxy(nc, vzServiceClient)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to start passthrough proxy.")
-	}
-	go ptProxy.Run()
-	defer ptProxy.Close()
-
 	// We just use the current time in nanoseconds to mark the session ID. This will let the cloud side know that
 	// the cloud connector restarted. Clock skew might make this incorrect, but we mostly want this for debugging.
 	sessionID := time.Now().UnixNano()
@@ -174,6 +141,5 @@ func main() {
 		httpmiddleware.WithBearerAuthMiddleware(e, mux))
 
 	s.Start()
-
 	s.StopOnInterrupt()
 }

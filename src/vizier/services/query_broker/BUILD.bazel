@@ -15,6 +15,7 @@ go_library(
         "//src/shared/version:go_default_library",
         "//src/vizier/services/metadata/metadatapb:service_pl_go_proto",
         "//src/vizier/services/query_broker/controllers:go_default_library",
+        "//src/vizier/services/query_broker/ptproxy:go_default_library",
         "//src/vizier/services/query_broker/querybrokerenv:go_default_library",
         "//src/vizier/services/query_broker/querybrokerpb:service_pl_go_proto",
         "//src/vizier/vizierpb:vizier_pl_go_proto",
