@@ -88,10 +88,10 @@ func New(vizierID uuid.UUID, jwtSigningKey string, sessionID int64, vzClient vzc
 		hbSeqNum:      0,
 		nc:            nc,
 		// Buffer NATS channels to make sure we don't back-pressure NATS
-		natsCh:            make(chan *nats.Msg, 1000),
+		natsCh:            make(chan *nats.Msg, 5000),
 		registered:        false,
-		grpcOutCh:         make(chan *vzconnpb.V2CBridgeMessage, 1000),
-		grpcInCh:          make(chan *vzconnpb.C2VBridgeMessage, 1000),
+		grpcOutCh:         make(chan *vzconnpb.V2CBridgeMessage, 5000),
+		grpcInCh:          make(chan *vzconnpb.C2VBridgeMessage, 5000),
 		pendingGRPCOutMsg: nil,
 		quitCh:            make(chan bool),
 		wg:                sync.WaitGroup{},
