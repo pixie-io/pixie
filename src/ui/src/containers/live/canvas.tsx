@@ -25,6 +25,12 @@ import {DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, TABLE_DISPLAY_TYPE, widgetResultNa
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
+    grid: {
+      '& .react-grid-item.react-grid-placeholder': {
+        backgroundColor: theme.palette.foreground.grey1,
+        borderRadius: theme.spacing(0.5),
+      },
+    },
     gridItem: {
       padding: theme.spacing(1),
       backgroundColor: theme.palette.background.default,
@@ -188,6 +194,7 @@ const NewCanvas = (props: CanvasProps) => {
 
   return (
     <Grid
+      className={classes.grid}
       layout={layout}
       onLayoutChange={handleLayoutChange}
       isDraggable={props.editable}
@@ -289,6 +296,7 @@ const OldCanvas = (props: CanvasProps) => {
 
   return (
     <Grid
+      className={classes.grid}
       layout={layout}
       onLayoutChange={handleLayoutChange}
       isDraggable={props.editable}
