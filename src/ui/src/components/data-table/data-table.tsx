@@ -18,7 +18,7 @@ const useStyles = makeStyles((theme: Theme) =>
     cell: {
       paddingLeft: theme.spacing(3),
       paddingRight: theme.spacing(3),
-      backgroundColor: theme.palette.background.two,
+      backgroundColor: theme.palette.background.default,
       whiteSpace: 'nowrap',
       display: 'flex',
       alignItems: 'center',

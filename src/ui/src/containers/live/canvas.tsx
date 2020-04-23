@@ -52,15 +52,16 @@ const useStyles = makeStyles((theme: Theme) => {
         color: `${theme.palette.text.primary} !important`,
       },
       '& .scrollable-table--row-odd': {
-        backgroundColor: theme.palette.background.two,
+        backgroundColor: theme.palette.background.default,
         borderBottom: [['solid', theme.spacing(0.25), theme.palette.background.three]],
       },
       '& .scrollable-table--row-even': {
-        backgroundColor: theme.palette.background.two,
+        backgroundColor: theme.palette.background.default,
         borderBottom: [['solid', theme.spacing(0.25), theme.palette.background.three]],
       },
       '& .ReactVirtualized__Table__headerRow': {
-        backgroundColor: theme.palette.background.one,
+        borderBottom: [['solid', theme.spacing(0.25), theme.palette.background.three]],
+        backgroundColor: theme.palette.background.default,
         '& *': {
           ...theme.typography.caption,
           fontWeight: theme.typography.fontWeightLight,

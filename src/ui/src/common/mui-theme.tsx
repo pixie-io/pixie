@@ -80,11 +80,11 @@ export const DARK_THEME = createMuiTheme({
       grey3: '#212324',
     },
     background: {
-      default: '#272822',
+      default: '#161616',
       paper: '#292929',
       one: '#121212',
       two: '#272822',
-      three: '#353535',
+      three: '#252525',
       four: '#0C1714',
     },
     divider: '#272822',
