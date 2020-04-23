@@ -26,14 +26,14 @@ import {DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, TABLE_DISPLAY_TYPE, widgetResultNa
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
     gridItem: {
-      padding: theme.spacing(3),
+      padding: theme.spacing(1),
       backgroundColor: theme.palette.background.default,
       borderRadius: theme.spacing(0.5),
-      border: `solid 1px transparent`,
+      border: `solid 1px ${theme.palette.background.three}`,
     },
     editable: {
-      boxShadow: theme.shadows[5],
-      borderColor: theme.palette.background.three,
+      boxShadow: theme.shadows[10],
+      borderColor: theme.palette.foreground.grey2,
       cursor: 'move',
       '& > *': {
         pointerEvents: 'none',
@@ -46,6 +46,10 @@ const useStyles = makeStyles((theme: Theme) => {
           height: theme.spacing(1),
         },
       },
+    },
+    widgetTitle: {
+      ...theme.typography.subtitle2,
+      paddingLeft: theme.spacing(1),
     },
     table: {
       '& *': {
@@ -137,7 +141,10 @@ const NewCanvas = (props: CanvasProps) => {
       if (!table) {
         content = <div key={name}>Table {name} not found.</div>;
       } else if (display[DISPLAY_TYPE_KEY] === TABLE_DISPLAY_TYPE) {
-        content = <QueryResultTable className={classes.table} data={table} />;
+        content = <>
+          <div className={classes.widgetTitle}>{name}</div>
+          <QueryResultTable className={classes.table} data={table} />
+        </>;
       } else if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
         const parsedTable = dataFromProto(table.relation, table.data);
         content = displayToGraph(display as GraphDisplay, parsedTable);
@@ -185,7 +192,7 @@ const NewCanvas = (props: CanvasProps) => {
       onLayoutChange={handleLayoutChange}
       isDraggable={props.editable}
       isResizable={props.editable}
-      margin={[theme.spacing(2), theme.spacing(2)]}
+      margin={[theme.spacing(2.5), theme.spacing(2.5)]}
     >
       {charts}
     </Grid>
@@ -242,9 +249,12 @@ const OldCanvas = (props: CanvasProps) => {
       );
       let content = null;
       if (!table) {
-        content = <div key={chartName}>Table {tableName} not found.</div>;
+        content = <div>Table {tableName} not found.</div>;
       } else if ((spec as { mark: string }).mark === 'table') {
-        content = <QueryResultTable className={classes.table} data={table} />;
+        content = <>
+          <div className={classes.widgetTitle}>{chartName}</div>
+          <QueryResultTable className={classes.table} data={table} />
+        </>;
       } else {
         const data = dataFromProto(table.relation, table.data);
         content = <Vega
@@ -283,7 +293,7 @@ const OldCanvas = (props: CanvasProps) => {
       onLayoutChange={handleLayoutChange}
       isDraggable={props.editable}
       isResizable={props.editable}
-      margin={[theme.spacing(2), theme.spacing(2)]}
+      margin={[theme.spacing(2.5), theme.spacing(2.5)]}
     >
       {charts}
     </Grid>
