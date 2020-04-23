@@ -63,6 +63,18 @@ scalar_udfs {
 scalar_udfs {
   name: "add"
   exec_arg_types: INT64
+  exec_arg_types: FLOAT64
+  return_type:  FLOAT64
+}
+scalar_udfs {
+  name: "add"
+  exec_arg_types: FLOAT64
+  exec_arg_types: INT64
+  return_type:  FLOAT64
+}
+scalar_udfs {
+  name: "add"
+  exec_arg_types: INT64
   exec_arg_types: INT64
   return_type:  INT64
 }
@@ -390,11 +402,17 @@ class OperatorTests : public ::testing::Test {
 
   MemorySourceIR* MakeMemSource(const std::string& table_name,
                                 const table_store::schema::Relation& relation) {
-    MemorySourceIR* mem_source = MakeMemSource(table_name, relation.col_names());
+    return MakeMemSource(table_name, relation, relation.col_names());
+  }
+
+  MemorySourceIR* MakeMemSource(const std::string& table_name,
+                                const table_store::schema::Relation& relation,
+                                const std::vector<std::string>& col_names) {
+    MemorySourceIR* mem_source = MakeMemSource(table_name, col_names);
     EXPECT_OK(mem_source->SetRelation(relation));
     std::vector<int64_t> column_index_map;
-    for (size_t i = 0; i < relation.NumColumns(); ++i) {
-      column_index_map.push_back(i);
+    for (const auto& name : col_names) {
+      column_index_map.push_back(relation.GetColumnIndex(name));
     }
     mem_source->SetColumnIndexMap(column_index_map);
     return mem_source;
@@ -495,6 +513,13 @@ class OperatorTests : public ::testing::Test {
   FuncIR* MakeAndFunc(ExpressionIR* left, ExpressionIR* right) {
     return graph
         ->CreateNode<FuncIR>(ast, FuncIR::op_map.find("and")->second,
+                             std::vector<ExpressionIR*>({left, right}))
+        .ConsumeValueOrDie();
+  }
+
+  FuncIR* MakeOrFunc(ExpressionIR* left, ExpressionIR* right) {
+    return graph
+        ->CreateNode<FuncIR>(ast, FuncIR::op_map.find("or")->second,
                              std::vector<ExpressionIR*>({left, right}))
         .ConsumeValueOrDie();
   }
@@ -763,7 +788,6 @@ class ASTVisitorTest : public OperatorTests {
     google::protobuf::TextFormat::MergeFromString(kUDTFOpenNetworkConnections, &spec);
     registry_info_->AddUDTF(spec);
     // TODO(philkuz) remove end.
-    table_store::schema::Relation cpu_relation;
     relation_map_ = std::make_unique<RelationMap>();
     cpu_relation.AddColumn(types::FLOAT64, "cpu0");
     cpu_relation.AddColumn(types::FLOAT64, "cpu1");
@@ -779,7 +803,6 @@ class ASTVisitorTest : public OperatorTests {
     non_float_relation.AddColumn(types::BOOLEAN, "bool_col");
     relation_map_->emplace("non_float_table", non_float_relation);
 
-    Relation network_relation;
     network_relation.AddColumn(types::UINT128, MetadataProperty::kUniquePIDColumn);
     network_relation.AddColumn(types::INT64, "bytes_in");
     network_relation.AddColumn(types::INT64, "bytes_out");
@@ -864,6 +887,8 @@ class ASTVisitorTest : public OperatorTests {
     return ast_walker->GetMainFuncArgsSpec();
   }
 
+  Relation cpu_relation;
+  Relation network_relation;
   std::shared_ptr<RegistryInfo> registry_info_;
   std::unique_ptr<RelationMap> relation_map_;
   std::unique_ptr<CompilerState> compiler_state_;

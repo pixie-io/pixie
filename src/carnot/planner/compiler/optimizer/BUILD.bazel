@@ -14,7 +14,7 @@ pl_cc_library(
             "**/*_test_utils.h",
         ],
     ),
-    hdrs = ["compiler.h"],
+    hdrs = ["optimizer.h"],
     deps = [
         "//src/carnot/planner/ast:cc_library",
         "//src/carnot/planner/metadata:cc_library",
@@ -23,60 +23,25 @@ pl_cc_library(
         "//src/carnot/planner/compiler_error_context:cc_library",
         "//src/carnot/planner/compiler_state:cc_library",
         "//src/carnot/planner/parser:cc_library",
-        "//src/carnot/planner/compiler/optimizer:cc_library",
         "//src/carnot/planner/objects:cc_library",
         "//src/shared/scriptspb:scripts_pl_cc_proto",
     ],
 )
 
-pl_cc_test_library(
-    name = "test_utils",
-    hdrs = glob(["*_test_utils.h"]),
+pl_cc_test(
+    name = "optimizer_test",
+    srcs = ["optimizer_test.cc"],
     deps = [
         ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
     ],
 )
 
 pl_cc_test(
-    name = "ast_visitor_test",
-    srcs = ["ast_visitor_test.cc"],
+    name = "merge_nodes_test",
+    srcs = ["merge_nodes_test.cc"],
     deps = [
         ":cc_library",
-        ":test_utils",
-    ],
-)
-
-pl_cc_test(
-    name = "ast_visitor_expression_test",
-    srcs = ["ast_visitor_expression_test.cc"],
-    deps = [
-        ":cc_library",
-        ":test_utils",
-    ],
-)
-
-pl_cc_test(
-    name = "compiler_test",
-    srcs = ["compiler_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/carnot/planpb:plan_testutils",
-        "//src/carnot/udf_exporter:cc_library",
-    ],
-)
-
-pl_cc_test(
-    name = "analyzer_test",
-    srcs = ["analyzer_test.cc"],
-    deps = [":cc_library"],
-)
-
-pl_cc_test(
-    name = "var_table_test",
-    srcs = ["var_table_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/carnot/planner/objects:test_utils",
-        ":test_utils",
+        "//src/carnot/planner/compiler:test_utils",
     ],
 )

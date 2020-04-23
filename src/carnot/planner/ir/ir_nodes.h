@@ -359,6 +359,9 @@ class OperatorIR : public IRNode {
     relation_ = relation;
     return Status::OK();
   }
+
+  void ClearRelation() { relation_init_ = false; }
+
   bool IsRelationInit() const { return relation_init_; }
   bool HasParents() const { return parents_.size() != 0; }
   bool IsChildOf(OperatorIR* parent) {
@@ -1211,6 +1214,8 @@ class MemorySourceIR : public OperatorIR {
     return std::vector<absl::flat_hash_set<std::string>>{};
   }
 
+  void SetColumnNames(const std::vector<std::string>& col_names) { column_names_ = col_names; }
+
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
       const absl::flat_hash_set<std::string>& output_colnames) override;
@@ -1428,13 +1433,13 @@ class BlockingAggIR : public GroupAcceptorIR {
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
 
+  Status SetAggExprs(const ColExpressionVector& agg_expr);
+
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
       const absl::flat_hash_set<std::string>& output_colnames) override;
 
  private:
-  Status SetAggExprs(const ColExpressionVector& agg_expr);
-
   // The map from value_names to values
   ColExpressionVector aggregate_expressions_;
 };

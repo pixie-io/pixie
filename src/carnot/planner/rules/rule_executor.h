@@ -53,8 +53,7 @@ class TryUntilMax : public Strategy {
  public:
   TryUntilMax(const std::string& name, int64_t max_iterations) : Strategy(name, max_iterations) {}
   Status MaxIterationsHandler() override {
-    LOG(WARNING) << absl::Substitute("Max iterations reached for rule batch $0. Continuing.",
-                                     name_);
+    VLOG(1) << absl::Substitute("Max iterations reached for rule batch $0. Continuing.", name_);
     return Status::OK();
   }
 };

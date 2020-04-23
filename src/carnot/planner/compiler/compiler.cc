@@ -11,6 +11,7 @@
 
 #include "src/carnot/planner/compiler/analyzer.h"
 #include "src/carnot/planner/compiler/compiler.h"
+#include "src/carnot/planner/compiler/optimizer/optimizer.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/objects/pixie_module.h"
 #include "src/carnot/planner/parser/parser.h"
@@ -42,6 +43,7 @@ StatusOr<std::shared_ptr<IR>> Compiler::CompileToIR(const std::string& query,
                                                     const ExecFuncs& exec_funcs) {
   PL_ASSIGN_OR_RETURN(std::shared_ptr<IR> ir, QueryToIR(query, compiler_state, exec_funcs));
   PL_RETURN_IF_ERROR(Analyze(ir.get(), compiler_state));
+  PL_RETURN_IF_ERROR(Optimize(ir.get(), compiler_state));
 
   PL_RETURN_IF_ERROR(VerifyGraphHasMemorySink(ir.get()));
   return ir;
@@ -50,6 +52,11 @@ StatusOr<std::shared_ptr<IR>> Compiler::CompileToIR(const std::string& query,
 Status Compiler::Analyze(IR* ir, CompilerState* compiler_state) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<Analyzer> analyzer, Analyzer::Create(compiler_state));
   return analyzer->Execute(ir);
+}
+
+Status Compiler::Optimize(IR* ir, CompilerState* compiler_state) {
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<Optimizer> optimizer, Optimizer::Create(compiler_state));
+  return optimizer->Execute(ir);
 }
 
 StatusOr<shared::scriptspb::FuncArgsSpec> Compiler::GetMainFuncArgsSpec(

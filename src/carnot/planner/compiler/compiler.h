@@ -44,6 +44,7 @@ class Compiler {
                                           const ExecFuncs& exec_funcs);
 
   Status Analyze(IR* ir, CompilerState* compiler_state);
+  Status Optimize(IR* ir, CompilerState* compiler_state);
   Status VerifyGraphHasMemorySink(IR* ir);
 };
 

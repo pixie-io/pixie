@@ -231,9 +231,25 @@ inline BinaryOpMatch<LHS, RHS, FuncIR::Opcode::eq, true> Equals(const LHS& L, co
  * @brief Match equals functions that match the left and right operators. It is commutative.
  */
 template <typename LHS, typename RHS>
+inline BinaryOpMatch<LHS, RHS, FuncIR::Opcode::add, true> Add(const LHS& L, const RHS& R) {
+  return BinaryOpMatch<LHS, RHS, FuncIR::Opcode::add, true>(L, R);
+}
+
+/**
+ * @brief Match equals functions that match the left and right operators. It is commutative.
+ */
+template <typename LHS, typename RHS>
 inline BinaryOpMatch<LHS, RHS, FuncIR::Opcode::logand, true> LogicalAnd(const LHS& L,
                                                                         const RHS& R) {
   return BinaryOpMatch<LHS, RHS, FuncIR::Opcode::logand, true>(L, R);
+}
+
+/**
+ * @brief Match equals functions that match the left and right operators. It is commutative.
+ */
+template <typename LHS, typename RHS>
+inline BinaryOpMatch<LHS, RHS, FuncIR::Opcode::logor, true> LogicalOr(const LHS& L, const RHS& R) {
+  return BinaryOpMatch<LHS, RHS, FuncIR::Opcode::logor, true>(L, R);
 }
 
 inline BinaryOpMatch<AllMatch, AllMatch, FuncIR::Opcode::logand, true> LogicalAnd() {
@@ -540,6 +556,36 @@ struct AnyFuncAllArgsMatch : public ParentMatch {
 
   Arg_t argMatcher_;
 };
+
+template <typename Arg_t>
+struct FuncNameAllArgsMatch : public ParentMatch {
+  explicit FuncNameAllArgsMatch(const std::string& name, const Arg_t& argMatcher)
+      : ParentMatch(IRNodeType::kFunc), name_(name), argMatcher_(argMatcher) {}
+
+  bool Match(const IRNode* node) const override {
+    if (node->type() == type) {
+      auto* F = static_cast<const FuncIR*>(node);
+      if (F->func_name() != name_) {
+        return false;
+      }
+      for (const auto a : F->args()) {
+        if (!argMatcher_.Match(a)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  std::string name_;
+  Arg_t argMatcher_;
+};
+
+template <typename Arg_t>
+inline FuncNameAllArgsMatch<Arg_t> Func(const std::string& name, const Arg_t& argMatcher) {
+  return FuncNameAllArgsMatch<Arg_t>(name, argMatcher);
+}
 
 /**
  * @brief Matches unresolved & runtime functions with args that satisfy

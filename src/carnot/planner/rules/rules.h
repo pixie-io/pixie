@@ -119,7 +119,6 @@ class SourceRelationRule : public Rule {
  public:
   explicit SourceRelationRule(CompilerState* compiler_state) : Rule(compiler_state) {}
 
- protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
 
  private:
@@ -141,7 +140,6 @@ class OperatorRelationRule : public Rule {
  public:
   explicit OperatorRelationRule(CompilerState* compiler_state) : Rule(compiler_state) {}
 
- protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
 
  private:
