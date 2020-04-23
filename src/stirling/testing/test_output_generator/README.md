@@ -9,3 +9,11 @@ bazel build //src/stirling:mysql_container_bpf_test
 mysql_tshark.sh
 ```
 Output is in `src/stirling/mysql/testing/tshark.json`
+
+### MySQL Expected Test Output Generation
+This consumes the raw traffic dump generated above, and outputs a trimmed JSON file that matches MySQL records. The JSON file describes an array of MySQL records expected to be captured, parsed, stitched together by stirling.
+```
+bazel run //src/stirling/testing/test_output_generator:test_generator \
+-- src/stirling/mysql/testing/tshark.json \
+src/stirling/mysql/testing/mysql_container_bpf_test.json
+```
