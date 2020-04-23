@@ -37,6 +37,8 @@ message Vis {
     // It is always represented as a string, but it will be parsed by the pxl script based on the type field.
     // so for type=PX_STRING, default_value could be "foo", and for type=PX_INT64, default_value could be "123".
     string default_value = 3;
+    // description provides a description of the variable to help the user fill it in.
+    string description = 4;
   }
   // variables defines the set of input variables that Widgets in this Live View can bind to.
   repeated Variable variables = 1;

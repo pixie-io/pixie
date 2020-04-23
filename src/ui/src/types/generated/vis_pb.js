@@ -519,7 +519,8 @@ proto.pl.vispb.Vis.Variable.toObject = function(includeInstance, msg) {
   var f, obj = {
     name: jspb.Message.getFieldWithDefault(msg, 1, ""),
     type: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    defaultValue: jspb.Message.getFieldWithDefault(msg, 3, "")
+    defaultValue: jspb.Message.getFieldWithDefault(msg, 3, ""),
+    description: jspb.Message.getFieldWithDefault(msg, 4, "")
   };
 
   if (includeInstance) {
@@ -568,6 +569,10 @@ proto.pl.vispb.Vis.Variable.deserializeBinaryFromReader = function(msg, reader) 
       var value = /** @type {string} */ (reader.readString());
       msg.setDefaultValue(value);
       break;
+    case 4:
+      var value = /** @type {string} */ (reader.readString());
+      msg.setDescription(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -615,6 +620,13 @@ proto.pl.vispb.Vis.Variable.serializeBinaryToWriter = function(message, writer) 
   if (f.length > 0) {
     writer.writeString(
       3,
+      f
+    );
+  }
+  f = message.getDescription();
+  if (f.length > 0) {
+    writer.writeString(
+      4,
       f
     );
   }
@@ -672,6 +684,24 @@ proto.pl.vispb.Vis.Variable.prototype.getDefaultValue = function() {
  */
 proto.pl.vispb.Vis.Variable.prototype.setDefaultValue = function(value) {
   return jspb.Message.setProto3StringField(this, 3, value);
+};
+
+
+/**
+ * optional string description = 4;
+ * @return {string}
+ */
+proto.pl.vispb.Vis.Variable.prototype.getDescription = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 4, ""));
+};
+
+
+/**
+ * @param {string} value
+ * @return {!proto.pl.vispb.Vis.Variable} returns this
+ */
+proto.pl.vispb.Vis.Variable.prototype.setDescription = function(value) {
+  return jspb.Message.setProto3StringField(this, 4, value);
 };
 
 

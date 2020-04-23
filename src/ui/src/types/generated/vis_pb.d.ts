@@ -37,6 +37,9 @@ export namespace Vis {
     getDefaultValue(): string;
     setDefaultValue(value: string): void;
 
+    getDescription(): string;
+    setDescription(value: string): void;
+
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Variable.AsObject;
     static toObject(includeInstance: boolean, msg: Variable): Variable.AsObject;
@@ -50,6 +53,7 @@ export namespace Vis {
       name: string,
       type: PXType,
       defaultValue: string,
+      description: string,
     }
   }
 

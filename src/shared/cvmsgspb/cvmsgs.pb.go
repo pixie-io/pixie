@@ -2,7 +2,7 @@
 // source: src/shared/cvmsgspb/cvmsgs.proto
 
 package cvmsgspb
- 
+
 import (
 	bytes "bytes"
 	fmt "fmt"
