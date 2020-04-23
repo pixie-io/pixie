@@ -110,13 +110,17 @@ const LiveView = () => {
   const [commandOpen, setCommandOpen] = React.useState<boolean>(false);
   const toggleCommandOpen = React.useCallback(() => setCommandOpen((opened) => !opened), []);
 
-  const { toggleDataDrawer } = React.useContext(LiveContext);
+  const { toggleDataDrawer, oldLiveViewMode, executeScript, executeScriptOld } = React.useContext(LiveContext);
 
-  const hotkeyHandlers = React.useMemo(() => ({
-    'pixie-command': toggleCommandOpen,
-    'toggle-editor': toggleEditor,
-    'toggle-data-drawer': toggleDataDrawer,
-  }), []);
+  const hotkeyHandlers = React.useMemo(() => {
+    const execute = oldLiveViewMode ? executeScriptOld : executeScript;
+    return {
+      'pixie-command': toggleCommandOpen,
+      'toggle-editor': toggleEditor,
+      'toggle-data-drawer': toggleDataDrawer,
+      execute,
+    };
+  }, [oldLiveViewMode, executeScript, executeScriptOld]);
 
   useInitScriptLoader();
 
@@ -160,7 +164,7 @@ const LiveView = () => {
       </Drawer>
       <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
       <PixieLogo className={classes.pixieLogo} />
-    </div >
+    </div>
   );
 };
 

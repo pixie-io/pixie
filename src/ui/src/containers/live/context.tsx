@@ -230,7 +230,7 @@ const LiveContextProvider = (props) => {
 
     // temporary
     oldLiveViewMode,
-  }), [executeScript, client]);
+  }), [executeScript, client, oldLiveViewMode]);
 
   return (
     <LiveContext.Provider value={liveViewContext}>
