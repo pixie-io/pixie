@@ -56,7 +56,7 @@ body {
 // Remove the focus outline. TODO(malthus): We make sure this doesn't affect
 // forms, when we actually have forms.
 :focus {
-  outline: none;
+  outline: none !important;
 }
 
 @import "~bootstrap/scss/bootstrap.scss";
