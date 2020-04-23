@@ -156,8 +156,7 @@ export const UserLogin = (props) => {
     <LoginContainer
       signUp={false}
       headerText={'Log-in to Pixie'}
-      footerText={'Not signed up?'}
-      footerLinkText={'Create an account here'}
+      footerLinkText={'Sign up for a new account'}
       footerLink={'/signup'}
       {...props}
     />
@@ -169,8 +168,7 @@ export const UserCreate = (props) => {
     <LoginContainer
       signUp={true}
       headerText={'Create your account'}
-      footerText={'Already signed up?'}
-      footerLinkText={'Log in here'}
+      footerLinkText={'Log into an existing account'}
       footerLink={'/login'}
       {...props}
     />
@@ -185,7 +183,6 @@ interface LoginProps {
   signUp: boolean;
   location: RouterInfo;
   headerText: string;
-  footerText: string;
   footerLinkText: string;
   footerLink: string;
 }
@@ -338,8 +335,9 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
             onCreateAuthenticated.bind(this) : onLoginAuthenticated.bind(this)}
         />
         {this.authenticating ? null :
-          <span className='login-footer'>{this.props.footerText + ' '}
-            <Link style={{ textDecoration: 'underline' }} to={this.props.footerLink}>{this.props.footerLinkText}</Link>
+          <span className='login-footer'>
+            <hr/>
+            <Link to={this.props.footerLink}>{this.props.footerLinkText}</Link>
           </span>}
       </>
     );

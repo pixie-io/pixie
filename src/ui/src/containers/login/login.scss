@@ -41,5 +41,15 @@
 
   .login-footer {
     padding-top: 20px;
+    a {
+      font-size: 22px;
+      color: #4385F4;
+      font-weight: 600;
+    }
+
+    hr {
+      border-top: 1px solid black;
+      margin-bottom: 44px;
+    }
   }
 }
