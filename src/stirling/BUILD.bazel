@@ -306,6 +306,28 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "http2_trace_bpf_test",
+    srcs = ["http2_trace_bpf_test.cc"],
+    data = [
+        "//experimental/bpf/tracers/bin/go_grpc_tls_pl/client:client_image.tar",
+        "//experimental/bpf/tracers/bin/go_grpc_tls_pl/server:server_image.tar",
+    ],
+    flaky = True,
+    tags = [
+        "requires_bpf",
+        # This test runs Go gRPC client & server, which causes other tests to attach & detach
+        # uprobes, slowing them down significantly.
+        "exclusive",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+        "//src/common/testing/test_utils:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "socket_resolver_test",
     srcs = ["socket_resolver_test.cc"],
     deps = [

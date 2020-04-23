@@ -359,7 +359,7 @@ TEST_F(GRPCCppTest, ParseTextProtoSimpleUnaryRPCCall) {
   std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, getpid());
   ASSERT_THAT(indices, SizeIs(1));
   // Was parsed as an Empty message, all fields shown as unknown fields.
-  EXPECT_EQ(std::string("1: \"Hello pixielabs!\"\n"),
+  EXPECT_EQ(std::string("1: \"Hello pixielabs!\""),
             std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(indices[0])));
 }
 

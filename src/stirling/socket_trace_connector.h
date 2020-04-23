@@ -183,37 +183,36 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       },
 
       // Probes on Golang net/http's implementation of http2.
-      // TODO(oazizi): Hook-up golang http library's http2 probes.
-      //      bpf_tools::UProbeTmpl{
-      //          .symbol = "net/http.(*http2Framer).WriteDataPadded",
-      //          .match_type = elf_tools::SymbolMatchType::kSuffix,
-      //          .probe_fn = "probe_http_http2framer_write_data",
-      //          .attach_type = bpf_probe_attach_type::BPF_PROBE_ENTRY
-      //      },
-      //      bpf_tools::UProbeTmpl{
-      //          .symbol = "net/http.(*http2Framer).checkFrameOrder",
-      //          .match_type = elf_tools::SymbolMatchType::kSuffix,
-      //          .probe_fn = "probe_http_http2framer_check_frame_order",
-      //          .attach_type = bpf_probe_attach_type::BPF_PROBE_ENTRY
-      //      },
-      //      bpf_tools::UProbeTmpl{
-      //          .symbol = "net/http.(*http2writeResHeaders).writeFrame",
-      //          .match_type = elf_tools::SymbolMatchType::kSuffix,
-      //          .probe_fn = "probe_http_http2writeResHeaders_write_frame",
-      //          .attach_type = bpf_probe_attach_type::BPF_PROBE_ENTRY
-      //      },
-      //      bpf_tools::UProbeTmpl{
-      //           .symbol = "golang.org/x/net/http2/hpack.(*Encoder).WriteField",
-      //           .match_type = elf_tools::SymbolMatchType::kSuffix,
-      //           .probe_fn = "probe_hpack_header_encoder",
-      //           .attach_type = bpf_probe_attach_type::BPF_PROBE_ENTRY
-      //      },
-      //      bpf_tools::UProbeTmpl{
-      //          .symbol = "net/http.(*http2serverConn).processHeaders",
-      //          .match_type = elf_tools::SymbolMatchType::kSuffix,
-      //          .probe_fn = "probe_http_http2serverConn_processHeaders",
-      //          .attach_type = bpf_probe_attach_type::BPF_PROBE_ENTRY
-      //      },
+      bpf_tools::UProbeTmpl{
+          .symbol = "net/http.(*http2Framer).WriteDataPadded",
+          .match_type = elf_tools::SymbolMatchType::kSuffix,
+          .probe_fn = "probe_http_http2framer_write_data",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+      },
+      bpf_tools::UProbeTmpl{
+          .symbol = "net/http.(*http2Framer).checkFrameOrder",
+          .match_type = elf_tools::SymbolMatchType::kSuffix,
+          .probe_fn = "probe_http_http2framer_check_frame_order",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+      },
+      bpf_tools::UProbeTmpl{
+          .symbol = "net/http.(*http2writeResHeaders).writeFrame",
+          .match_type = elf_tools::SymbolMatchType::kSuffix,
+          .probe_fn = "probe_http_http2writeResHeaders_write_frame",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+      },
+      bpf_tools::UProbeTmpl{
+          .symbol = "golang.org/x/net/http2/hpack.(*Encoder).WriteField",
+          .match_type = elf_tools::SymbolMatchType::kSuffix,
+          .probe_fn = "probe_hpack_header_encoder",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+      },
+      bpf_tools::UProbeTmpl{
+          .symbol = "net/http.(*http2serverConn).processHeaders",
+          .match_type = elf_tools::SymbolMatchType::kSuffix,
+          .probe_fn = "probe_http_http2serverConn_processHeaders",
+          .attach_type = bpf_tools::BPFProbeAttachType::kEntry,
+      },
   });
 
   inline static const auto kOpenSSLUProbes = MakeArray<bpf_tools::UProbeSpec>(

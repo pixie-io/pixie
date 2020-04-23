@@ -16,8 +16,9 @@ ContainerRunner::ContainerRunner(std::filesystem::path image_tar,
                                  std::string_view instance_name_prefix,
                                  std::string_view ready_message)
     : instance_name_prefix_(instance_name_prefix), ready_message_(ready_message) {
-  std::string out =
-      pl::Exec(absl::Substitute("docker load -i $0", image_tar.string())).ConsumeValueOrDie();
+  std::string docker_load_cmd = absl::Substitute("docker load -i $0", image_tar.string());
+  VLOG(1) << docker_load_cmd;
+  std::string out = pl::Exec(docker_load_cmd).ConsumeValueOrDie();
   LOG(INFO) << out;
 
   // Extract the image name.
@@ -50,6 +51,7 @@ StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::s
   docker_run_cmd.push_back(container_name_);
   docker_run_cmd.push_back(image_);
 
+  VLOG(1) << docker_run_cmd;
   PL_RETURN_IF_ERROR(container_.Start(docker_run_cmd, /* stderr_to_stdout */ true));
 
   // It may take some time for the container to come up, so we keep polling.

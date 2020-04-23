@@ -44,8 +44,8 @@ TEST(ParsePB, Basic) {
   }
 
   HelloRequest pb;
-  EXPECT_EQ(ParsePB(s, &pb), "name: \"pixielabs\"\n");
-  EXPECT_EQ(ParsePB(s, nullptr), "1 {\n  14: 105\n  15: 105\n  12: 0x7362616c\n}\n");
+  EXPECT_EQ(ParsePB(s, &pb), "name: \"pixielabs\"");
+  EXPECT_EQ(ParsePB(s, nullptr), "1 {\n  14: 105\n  15: 105\n  12: 0x7362616c\n}");
 }
 
 TEST(ParsePB, Nullptr) {
@@ -57,7 +57,7 @@ TEST(ParsePB, Nullptr) {
   }
 
   HelloRequest pb;
-  EXPECT_EQ(ParsePB(s, nullptr), "1 {\n  14: 105\n  15: 105\n  12: 0x7362616c\n}\n");
+  EXPECT_EQ(ParsePB(s, nullptr), "1 {\n  14: 105\n  15: 105\n  12: 0x7362616c\n}");
 }
 
 TEST(ParsePB, ErrorMessage) {

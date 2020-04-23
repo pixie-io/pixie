@@ -55,6 +55,7 @@ std::string ParsePB(std::string_view str, Message* pb) {
     pb = &empty;
   }
   s = PBWireToText(str, PBTextFormat::kText, pb, &text);
+  absl::StripTrailingAsciiWhitespace(&text);
   return s.ok() ? text
                 : absl::Substitute("$0; original data in hex format: $1", s.ToString(),
                                    BytesToString<bytes_format::HexCompact>(str));

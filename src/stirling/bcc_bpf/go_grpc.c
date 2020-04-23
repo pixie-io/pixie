@@ -262,9 +262,9 @@ static __inline int32_t get_fd_from_framer(enum FramerType framer_type, const vo
 //   x = { .foo = 5 }
 
 static __inline void fill_header_field(struct go_grpc_http2_header_event_t* event,
-                                       const struct HPackHeaderField* user_space_ptr) {
+                                       const struct HPackHeaderField* header_ptr) {
   struct HPackHeaderField field;
-  bpf_probe_read(&field, sizeof(struct HPackHeaderField), user_space_ptr);
+  bpf_probe_read(&field, sizeof(struct HPackHeaderField), header_ptr);
 
   // Note that we read one extra byte for name and value.
   // This is to avoid passing a size of 0 to bpf_probe_read(),
@@ -566,11 +566,7 @@ static __inline void submit_header(struct pt_regs* ctx, enum HeaderEventType typ
   event.attr.conn_id = attr->conn_id;
   event.attr.stream_id = attr->stream_id;
 
-  event.name.size = BPF_LEN_CAP(header_field.name.len, HEADER_FIELD_STR_SIZE);
-  bpf_probe_read(event.name.msg, event.name.size, header_field.name.ptr);
-
-  event.value.size = BPF_LEN_CAP(header_field.value.len, HEADER_FIELD_STR_SIZE);
-  bpf_probe_read(event.value.msg, event.value.size, header_field.value.ptr);
+  fill_header_field(&event, &header_field);
 
   go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
 }
@@ -597,10 +593,10 @@ int probe_hpack_header_encoder(struct pt_regs* ctx) {
 
   // Param 1 is (HeaderField).
   const int kParam1Offset = 16;
-  struct HPackHeaderField* header_field;
-  bpf_probe_read(&header_field, sizeof(struct HPackHeaderField*), sp + kParam1Offset);
+  struct HPackHeaderField header_field;
+  bpf_probe_read(&header_field, sizeof(struct HPackHeaderField), sp + kParam1Offset);
 
-  submit_header(ctx, kHeaderEventWrite, encoder_ptr, header_field);
+  submit_header(ctx, kHeaderEventWrite, encoder_ptr, &header_field);
 
   return 0;
 }
@@ -757,6 +753,7 @@ static __inline void probe_write_data(struct pt_regs* ctx, enum FramerType frame
   if (conn_info == NULL) {
     return;
   }
+  conn_info->addr_valid = true;
 
   info->attr.type = kDataFrameEventWrite;
   info->attr.timestamp_ns = bpf_ktime_get_ns();
@@ -833,8 +830,9 @@ static __inline void probe_check_frame_order(struct pt_regs* ctx, enum FramerTyp
     if (conn_info == NULL) {
       return;
     }
-    info->attr.conn_id = conn_info->conn_id;
+    conn_info->addr_valid = true;
 
+    info->attr.conn_id = conn_info->conn_id;
     info->attr.timestamp_ns = bpf_ktime_get_ns();
     info->attr.type = kDataFrameEventRead;
     info->attr.timestamp_ns = bpf_ktime_get_ns();
