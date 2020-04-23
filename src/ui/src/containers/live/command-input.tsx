@@ -20,13 +20,13 @@ const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     card: {
       position: 'absolute',
-      width: '40vw',
+      width: '760px',
       top: '40%',
       left: '50%',
       transform: 'translate(-50%, -10vh)',
     },
     input: {
-      maxHeight: '40vh',
+      maxHeight: '600px',
     },
   }),
 );
