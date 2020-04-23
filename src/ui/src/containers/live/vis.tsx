@@ -37,6 +37,7 @@ interface Variable {
   name: string;
   type: string;
   defaultValue?: string;
+  description?: string;
 }
 
 export interface Vis {
@@ -78,6 +79,7 @@ function getWidgetArgs(defaults: { [key: string]: string; }, widget: Widget): Vi
         name: arg.name,
         value: arg.value,
       });
+      return;
     }
     // For now, use the default value in the vis.json spec as the value to the function.
     // TODO(nserrino): Support actual variables from the command prompt, or other UI inputs.
@@ -98,19 +100,22 @@ function getWidgetArgs(defaults: { [key: string]: string; }, widget: Widget): Vi
 
 // This should only be called by vizier grpc client, and it will reject the returned promise
 // when executeScript() is called with an invalid Vis spec.
-export function getQueryFuncs(vis: Vis): VizierQueryFunc[] {
+export function getQueryFuncs(vis: Vis, variableValues: { [key: string]: string }): VizierQueryFunc[] {
   const defaults = {};
   vis.variables.forEach((v) => {
     if (v.defaultValue) {
       defaults[v.name] = v.defaultValue;
     }
   });
-
+  const valsOrDefaults = {
+    ...defaults,
+    ...variableValues,
+  };
   return vis.widgets.map((widget, i) => {
     return {
       name: widget.func.name,
       outputTablePrefix: widgetResultName(widget, i),
-      args: getWidgetArgs(defaults, widget),
+      args: getWidgetArgs(valsOrDefaults, widget),
     };
   });
 }

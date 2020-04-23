@@ -4,6 +4,7 @@ import {Table, VizierQueryFunc} from 'common/vizier-grpc-client';
 import ClientContext from 'common/vizier-grpc-client-context';
 import {SnackbarProvider, useSnackbar} from 'components/snackbar/snackbar';
 import {parseSpecs, VisualizationSpecMap} from 'components/vega/spec';
+import * as QueryString from 'query-string';
 import * as React from 'react';
 
 import {parsePlacementOld, Placement} from './layout';
@@ -167,8 +168,14 @@ const LiveContextProvider = (props) => {
     let queryId: string;
 
     new Promise((resolve, reject) => {
+      const variableValues = {};
+      const parsed = QueryString.parse(location.search);
+      Object.keys(parsed).forEach((key) => {
+        variableValues[key] = parsed[key] as string;
+      });
+
       try {
-        resolve(getQueryFuncs(inputVis || vis));
+        resolve(getQueryFuncs(inputVis || vis, variableValues));
       } catch (error) {
         reject(error);
       }
