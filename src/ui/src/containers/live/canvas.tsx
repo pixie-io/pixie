@@ -242,7 +242,7 @@ const OldCanvas = (props: CanvasProps) => {
       );
       let content = null;
       if (!table) {
-        content = <div>Table {tableName} not found.</div>;
+        content = <div key={chartName}>Table {tableName} not found.</div>;
       } else if ((spec as { mark: string }).mark === 'table') {
         content = <QueryResultTable className={classes.table} data={table} />;
       } else {
@@ -256,7 +256,7 @@ const OldCanvas = (props: CanvasProps) => {
           vegaLiteModule={vegaLiteModule}
         />;
       }
-      return <div key={name} className={className}>{content}</div>;
+      return <div key={chartName} className={className}>{content}</div>;
     });
   }, [tables, specs, placement, vegaModule, props.editable]);
 
