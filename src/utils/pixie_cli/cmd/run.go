@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -44,7 +43,7 @@ func init() {
 				// Not found.
 				continue
 			}
-			fs := createFlagsetForScript(execScript)
+			fs := execScript.GetFlagSet()
 			fs.SetOutput(os.Stderr)
 
 			name := command.Name()
@@ -64,17 +63,6 @@ func init() {
 		// If we get here, then just print the default usage.
 		command.Usage()
 	})
-}
-
-func createFlagsetForScript(execScript *script.ExecutableScript) *flag.FlagSet {
-	if execScript.Vis == nil || len(execScript.Vis.Variables) == 0 {
-		return nil
-	}
-	fs := flag.NewFlagSet(execScript.ScriptName, flag.ExitOnError)
-	for _, v := range execScript.Vis.Variables {
-		fs.String(v.Name, v.DefaultValue, fmt.Sprintf("Type: %s", v.Type))
-	}
-	return fs
 }
 
 // RunCmd is the "query" command.
@@ -110,7 +98,7 @@ var RunCmd = &cobra.Command{
 			}
 			scriptName := args[0]
 			execScript = br.MustGetScript(scriptName)
-			fs := createFlagsetForScript(execScript)
+			fs := execScript.GetFlagSet()
 
 			if fs != nil {
 				if err := fs.Parse(args[1:]); err != nil {

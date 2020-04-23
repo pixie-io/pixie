@@ -2,6 +2,7 @@ package script
 
 import (
 	"flag"
+	"fmt"
 	"net/url"
 
 	"github.com/gogo/protobuf/jsonpb"
@@ -99,4 +100,16 @@ func (e *ExecutableScript) ComputedArgs() []Arg {
 		}
 	}
 	return args
+}
+
+// GetFlagSet returns the flagset for this script based on the variables.
+func (e *ExecutableScript) GetFlagSet() *flag.FlagSet {
+	if e.Vis == nil || len(e.Vis.Variables) == 0 {
+		return nil
+	}
+	fs := flag.NewFlagSet(e.ScriptName, flag.ContinueOnError)
+	for _, v := range e.Vis.Variables {
+		fs.String(v.Name, v.DefaultValue, fmt.Sprintf("Type: %s", v.Type))
+	}
+	return fs
 }

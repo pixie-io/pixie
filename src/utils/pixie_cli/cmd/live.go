@@ -31,7 +31,7 @@ var LiveCmd = &cobra.Command{
 			}
 			scriptName := args[0]
 			execScript = br.MustGetScript(scriptName)
-			fs := createFlagsetForScript(execScript)
+			fs := execScript.GetFlagSet()
 
 			if fs != nil {
 				if err := fs.Parse(args[1:]); err != nil {

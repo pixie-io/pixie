@@ -1,7 +1,9 @@
 package live
 
 import (
+	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/gdamore/tcell"
@@ -11,14 +13,32 @@ import (
 )
 
 type suggestion struct {
-	scriptName string
-	desc       string
+	name string
+	desc string
 
 	matchedIndexes []int
 }
 
+// Very rudimentary tokenizer. Not going to be fully robust, but it should be fine for our purposes.
+func cmdTokenizer(input string) []string {
+	re := regexp.MustCompile(`[\s=]+`)
+	return re.Split(input, -1)
+}
+
 type autocompleter interface {
 	GetSuggestions(string) []suggestion
+}
+
+func getNextCmdString(current, selection string) string {
+	tokens := cmdTokenizer(current)
+	if len(tokens) <= 1 {
+		return selection
+	}
+	if len(tokens)%2 == 0 {
+		// Even args means partial command and we can replace it.
+		return strings.Join(tokens[:len(tokens)-1], " ") + " " + selection + " "
+	}
+	return current + " " + selection + " "
 }
 
 // autcompleteModal is the autocomplete modal.
@@ -95,11 +115,41 @@ func newAutocompleteModal(st *appState) *autocompleteModal {
 }
 
 // Show shows the modal.
+func (m *autocompleteModal) validateScriptAndArgs(s string) (*script.ExecutableScript, error) {
+	tokens := cmdTokenizer(s)
+	if len(tokens) == 0 {
+		return nil, errors.New("no script provided")
+	}
+
+	es, err := m.s.br.GetScript(tokens[0])
+	if err != nil {
+		return nil, err
+	}
+
+	if len(tokens) == 1 {
+		return es, nil
+	}
+	fs := es.GetFlagSet()
+	if fs == nil {
+		return es, nil
+	}
+	err = fs.Parse(tokens[1:])
+	if err != nil {
+		return nil, err
+	}
+	if len(fs.Args()) != 0 {
+		return nil, errors.New("extra unknown args provided")
+	}
+	es.UpdateFlags(fs)
+	return es, nil
+}
+
+// Show shows the modal.
 func (m *autocompleteModal) Show(app *tview.Application) tview.Primitive {
 	// Start with suggestions based on empty input.
 	m.suggestions = m.s.ac.GetSuggestions("")
 	for idx, s := range m.suggestions {
-		m.sl.InsertItem(idx, s.scriptName, "", 0, nil)
+		m.sl.InsertItem(idx, s.name, "", 0, nil)
 	}
 	if len(m.suggestions) != 0 {
 		m.dt.SetText(m.suggestions[0].desc)
@@ -115,8 +165,8 @@ func (m *autocompleteModal) Show(app *tview.Application) tview.Primitive {
 	m.sl.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		switch event.Key() {
 		case tcell.KeyEnter:
-			scriptName := m.suggestions[m.sl.GetCurrentItem()].scriptName
-			m.ib.SetText(scriptName)
+			name := m.suggestions[m.sl.GetCurrentItem()].name
+			m.ib.SetText(getNextCmdString(m.ib.GetText(), name))
 			app.SetFocus(m.ib)
 			return nil
 		case tcell.KeyUp:
@@ -130,20 +180,29 @@ func (m *autocompleteModal) Show(app *tview.Application) tview.Primitive {
 	})
 
 	m.ib.SetChangedFunc(func(currentText string) {
-		m.suggestions = m.s.ac.GetSuggestions(currentText)
+		commandAndArgs := stripColors(currentText)
+		m.suggestions = m.s.ac.GetSuggestions(commandAndArgs)
 		m.sl.Clear()
 		for i, s := range m.suggestions {
 			sb := strings.Builder{}
-			for i := 0; i < len(s.scriptName); i++ {
+			for i := 0; i < len(s.name); i++ {
 				if contains(i, s.matchedIndexes) {
-					sb.WriteString(fmt.Sprintf("[green]%s[white]", string(s.scriptName[i])))
+					sb.WriteString(fmt.Sprintf("[green]%s[white]", string(s.name[i])))
 				} else {
-					sb.WriteByte(s.scriptName[i])
+					sb.WriteByte(s.name[i])
 				}
 			}
 
-			m.sl.InsertItem(i, sb.String(), s.scriptName, 0, nil)
+			m.sl.InsertItem(i, sb.String(), s.name, 0, nil)
 		}
+		_, err := m.validateScriptAndArgs(currentText)
+		if err == nil {
+			// Valid script.
+			m.ib.SetBorderColor(tcell.ColorGreen)
+		} else {
+			m.ib.SetBorderColor(tcell.ColorYellow)
+		}
+
 	})
 
 	m.ib.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
@@ -152,9 +211,8 @@ func (m *autocompleteModal) Show(app *tview.Application) tview.Primitive {
 			app.SetFocus(m.sl)
 			return nil
 		case tcell.KeyEnter:
-			scriptName := stripColors(m.ib.GetText())
-			// Check if it's a valid script.
-			execScript, err := m.s.br.GetScript(scriptName)
+			scriptAndArgs := stripColors(m.ib.GetText())
+			execScript, err := m.validateScriptAndArgs(scriptAndArgs)
 			if err != nil {
 				return event
 			}
@@ -163,8 +221,8 @@ func (m *autocompleteModal) Show(app *tview.Application) tview.Primitive {
 			}
 		case tcell.KeyTAB:
 			if len(m.suggestions) == 1 {
-				scriptName := m.suggestions[0].scriptName
-				m.ib.SetText(stripColors(scriptName))
+				value := m.suggestions[0].name
+				m.ib.SetText(getNextCmdString(m.ib.GetText(), stripColors(value)))
 			} else {
 				app.SetFocus(m.sl)
 			}
@@ -188,6 +246,8 @@ type fuzzyAutocompleter struct {
 	br *script.BundleManager
 	// We cache the script names to make it easier to do searches.
 	scriptNames []string
+
+	shouldAppend bool
 }
 
 func newFuzzyAutoCompleter(br *script.BundleManager) *fuzzyAutocompleter {
@@ -203,14 +263,21 @@ func newFuzzyAutoCompleter(br *script.BundleManager) *fuzzyAutocompleter {
 	}
 }
 
+func (f *fuzzyAutocompleter) isValidScript(scriptName string) bool {
+	_, err := f.br.GetScript(scriptName)
+	return err == nil
+}
+
 // GetSuggestions returns a list of suggestions.
 func (f *fuzzyAutocompleter) GetSuggestions(input string) []suggestion {
+	f.shouldAppend = false
+	inputArr := cmdTokenizer(input)
 	// If the input is empty return all possible values.
-	if len(input) == 0 {
+	if len(input) == 0 || len(inputArr) < 1 {
 		suggestions := make([]suggestion, len(f.scriptNames))
 		for i, sn := range f.scriptNames {
 			suggestions[i] = suggestion{
-				scriptName:     sn,
+				name:           sn,
 				desc:           f.br.MustGetScript(sn).LongDoc,
 				matchedIndexes: nil,
 			}
@@ -218,12 +285,61 @@ func (f *fuzzyAutocompleter) GetSuggestions(input string) []suggestion {
 		return suggestions
 	}
 
-	matches := fuzzy.Find(input, f.scriptNames)
+	if len(inputArr) == 1 || !f.isValidScript(inputArr[0]) {
+		matches := fuzzy.Find(inputArr[0], f.scriptNames)
+		suggestions := make([]suggestion, len(matches))
+		for i, m := range matches {
+			suggestions[i] = suggestion{
+				name:           m.Str,
+				desc:           f.br.MustGetScript(m.Str).LongDoc,
+				matchedIndexes: m.MatchedIndexes,
+			}
+		}
+		return suggestions
+	}
+	// This is a placeholder until we get proper autocomplete in.
+	// Do argument completion ...
+	es, err := f.br.GetScript(inputArr[0])
+	if err != nil {
+		return nil
+	}
+	if es.Vis == nil || es.Vis.Variables == nil {
+		return nil
+	}
+
+	allSuggestionsMap := make(map[string]suggestion, 0)
+	argNames := make([]string, 0)
+	for _, arg := range es.Vis.Variables {
+		name := fmt.Sprintf("--%s", arg.Name)
+		argNames = append(argNames, name)
+		allSuggestionsMap[name] = suggestion{
+			name:           name,
+			desc:           fmt.Sprintf("Description : %s, \n\nDefault :%s", arg.Description, arg.DefaultValue),
+			matchedIndexes: nil,
+		}
+	}
+
+	// Only show suggestions if we have an odd number of values (script + complete args).
+	if len(inputArr)%2 == 1 {
+		return nil
+	}
+	// If empty return all the values for the arguments.
+	lastArg := inputArr[len(inputArr)-1]
+	if lastArg == "" {
+		suggestions := make([]suggestion, 0)
+		for _, v := range allSuggestionsMap {
+			suggestions = append(suggestions, v)
+		}
+		return suggestions
+	}
+
+	// Else do the suggestion match:
+	matches := fuzzy.Find(lastArg, argNames)
 	suggestions := make([]suggestion, len(matches))
 	for i, m := range matches {
 		suggestions[i] = suggestion{
-			scriptName:     m.Str,
-			desc:           f.br.MustGetScript(m.Str).LongDoc,
+			name:           m.Str,
+			desc:           allSuggestionsMap[m.Str].desc,
 			matchedIndexes: m.MatchedIndexes,
 		}
 	}
