@@ -1,12 +1,19 @@
 package script
 
 import (
-	"fmt"
+	"flag"
+	"net/url"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/spf13/viper"
 	vispb "pixielabs.ai/pixielabs/src/shared/vispb"
 )
+
+// Arg is a single script argument.
+type Arg struct {
+	Name  string
+	Value string
+}
 
 // ExecutableScript is the basic script entity that can be run.
 type ExecutableScript struct {
@@ -15,6 +22,8 @@ type ExecutableScript struct {
 	ShortDoc     string
 	LongDoc      string
 	Vis          *vispb.Vis
+	// Args contains a map from name to argument info.
+	Args map[string]Arg
 }
 
 // LiveViewLink returns the fully qualified URL for the live view.
@@ -27,7 +36,21 @@ func (e ExecutableScript) LiveViewLink() string {
 		cloudAddr = "withpixie.ai"
 	}
 
-	return fmt.Sprintf("https://%s/live?script=%s", cloudAddr, e.ScriptName)
+	u := url.URL{
+		Scheme: "https",
+		Host:   cloudAddr,
+		Path:   "/live",
+	}
+
+	q := u.Query()
+	q.Add("script", e.ScriptName)
+	args := e.ComputedArgs()
+	for _, arg := range args {
+		q.Add(arg.Name, arg.Value)
+	}
+	u.RawQuery = q.Encode()
+
+	return u.String()
 }
 
 // parses the spec return nil on failure.
@@ -37,4 +60,40 @@ func parseVisSpec(specJSON string) *vispb.Vis {
 		return nil
 	}
 	return &pb
+}
+
+// UpdateFlags updates the flags based on the passed in flag set.
+func (e *ExecutableScript) UpdateFlags(fs *flag.FlagSet) {
+	if e.Args == nil {
+		e.Args = make(map[string]Arg, 0)
+	}
+	if e.Vis == nil {
+		return
+	}
+	if len(e.Vis.Variables) == 0 {
+		return
+	}
+
+	for _, v := range e.Vis.Variables {
+		f := fs.Lookup(v.Name)
+		if f == nil {
+			e.Args[v.Name] = Arg{v.Name, v.DefaultValue}
+		} else {
+			e.Args[v.Name] = Arg{v.Name, f.Value.String()}
+		}
+	}
+}
+
+// ComputedArgs returns the args with defaults computed.
+func (e *ExecutableScript) ComputedArgs() []Arg {
+	args := make([]Arg, 0)
+	for _, v := range e.Vis.Variables {
+		arg, ok := e.Args[v.Name]
+		if ok {
+			args = append(args, arg)
+		} else {
+			args = append(args, Arg{v.Name, v.DefaultValue})
+		}
+	}
+	return args
 }

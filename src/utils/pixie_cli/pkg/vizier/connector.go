@@ -108,11 +108,6 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 	var execFuncs []*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute
 	if script.Vis != nil && script.Vis.Widgets != nil {
 		execFuncs = make([]*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute, len(script.Vis.Widgets))
-		defaults := make(map[string]string, 0)
-		for _, v := range script.Vis.Variables {
-			defaults[v.Name] = v.DefaultValue
-		}
-
 		for idx, w := range script.Vis.Widgets {
 			execFunc := &pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute{}
 			execFunc.FuncName = w.Func.Name
@@ -120,16 +115,14 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 			if w.Name != "" {
 				execFunc.OutputTablePrefix = w.Name
 			}
-			execFunc.ArgValues = make([]*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute_ArgValue, len(w.Func.Args))
+			args := script.ComputedArgs()
+			execFunc.ArgValues = make([]*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute_ArgValue, len(args))
 			// TODO(zasgar): Add argument support.
 			// TODO(zasgar): Deduplicate, exact funcs since table output does not make sense for it.
-			for idx, arg := range w.Func.Args {
+			for idx, arg := range args {
 				execFunc.ArgValues[idx] = &pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute_ArgValue{
-					Name: arg.Name,
-				}
-				execFunc.ArgValues[idx].Name = arg.Name
-				if defaultValue, ok := defaults[arg.Name]; ok {
-					execFunc.ArgValues[idx].Value = defaultValue
+					Name:  arg.Name,
+					Value: arg.Value,
 				}
 			}
 			execFuncs[idx] = execFunc

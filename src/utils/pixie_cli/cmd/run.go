@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -25,6 +26,55 @@ func init() {
 
 	RunCmd.Flags().StringP("bundle", "b", "", "Path/URL to bundle file")
 	viper.BindPFlag("bundle", RunCmd.Flags().Lookup("bundle"))
+
+	RunCmd.SetHelpFunc(func(command *cobra.Command, args []string) {
+		br, err := createBundleReader()
+		if err != nil {
+			log.WithError(err).Fatal("Failed to read script bundle")
+		}
+
+		// Find the first valid script and dump out information about it.
+		for idx, scriptName := range args {
+			// First scriptName is command name.
+			if idx == 0 {
+				continue
+			}
+			execScript, err := br.GetScript(scriptName)
+			if err != nil {
+				// Not found.
+				continue
+			}
+			fs := createFlagsetForScript(execScript)
+			fs.SetOutput(os.Stderr)
+
+			name := command.Name()
+			flagsMarker := ""
+			if fs != nil {
+				flagsMarker = "-- [flags]"
+			}
+			fmt.Fprintf(os.Stderr, "Usage:\n  px %s %s %s\n", name, scriptName, flagsMarker)
+			if fs != nil {
+				fmt.Fprintf(os.Stderr, "\nFlags:\n")
+				fs.Usage()
+			}
+
+			return
+		}
+
+		// If we get here, then just print the default usage.
+		command.Usage()
+	})
+}
+
+func createFlagsetForScript(execScript *script.ExecutableScript) *flag.FlagSet {
+	if execScript.Vis == nil || len(execScript.Vis.Variables) == 0 {
+		return nil
+	}
+	fs := flag.NewFlagSet(execScript.ScriptName, flag.ExitOnError)
+	for _, v := range execScript.Vis.Variables {
+		fs.String(v.Name, v.DefaultValue, fmt.Sprintf("Type: %s", v.Type))
+	}
+	return fs
 }
 
 // RunCmd is the "query" command.
@@ -34,11 +84,13 @@ var RunCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cloudAddr := viper.GetString("cloud_addr")
 		format, _ := cmd.Flags().GetString("output")
+
 		format = strings.ToLower(format)
 		if format == "live" {
 			LiveCmd.Run(cmd, args)
 			return
 		}
+
 		listScripts, _ := cmd.Flags().GetBool("list")
 		br, err := createBundleReader()
 		if err != nil {
@@ -53,17 +105,26 @@ var RunCmd = &cobra.Command{
 		var execScript *script.ExecutableScript
 		scriptFile, _ := cmd.Flags().GetString("file")
 		if scriptFile == "" {
-			if len(args) != 1 {
-				log.Fatal("Expected a single arg, script_name")
+			if len(args) == 0 {
+				log.Fatal("Expected script_name with script args.")
 			}
 			scriptName := args[0]
 			execScript = br.MustGetScript(scriptName)
+			fs := createFlagsetForScript(execScript)
+
+			if fs != nil {
+				if err := fs.Parse(args[1:]); err != nil {
+					log.WithError(err).Fatal("Failed to parse script flags")
+				}
+				execScript.UpdateFlags(fs)
+			}
 		} else {
 			execScript, err = loadScriptFromFile(scriptFile)
 			if err != nil {
 				log.WithError(err).Fatal("Failed to get query string")
 			}
 		}
+
 		v := mustConnectDefaultVizier(cloudAddr)
 
 		// TODO(zasgar): Refactor this when we change to the new API to make analytics cleaner.
@@ -87,7 +148,7 @@ var RunCmd = &cobra.Command{
 				fmt.Fprintf(os.Stderr, s, a...)
 			}
 			b := color.New(color.Bold).Sprint
-			u := color.New(color.Underline).Sprintf
+			u := color.New(color.Underline).Sprint
 			p("\n%s %s: %s.\n", color.CyanString("\n==> "),
 				b("Live UI"), u(lvl))
 		}

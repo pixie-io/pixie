@@ -26,9 +26,18 @@ var LiveCmd = &cobra.Command{
 		var err error
 		scriptFile, _ := cmd.Flags().GetString("file")
 		if scriptFile == "" {
-			if len(args) > 0 {
-				scriptName := args[0]
-				execScript = br.MustGetScript(scriptName)
+			if len(args) == 0 {
+				log.Fatal("Expected script_name with script args.")
+			}
+			scriptName := args[0]
+			execScript = br.MustGetScript(scriptName)
+			fs := createFlagsetForScript(execScript)
+
+			if fs != nil {
+				if err := fs.Parse(args[1:]); err != nil {
+					log.WithError(err).Fatal("Failed to parse script flags")
+				}
+				execScript.UpdateFlags(fs)
 			}
 		} else {
 			execScript, err = loadScriptFromFile(scriptFile)
