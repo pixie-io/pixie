@@ -29,10 +29,11 @@ const useStyles = makeStyles((theme: Theme) => {
       padding: theme.spacing(3),
       backgroundColor: theme.palette.background.default,
       borderRadius: theme.spacing(0.5),
+      border: `solid 1px transparent`,
     },
     editable: {
       boxShadow: theme.shadows[5],
-      border: `solid 1px ${theme.palette.background.three}`,
+      borderColor: theme.palette.background.three,
       cursor: 'move',
       '& > *': {
         pointerEvents: 'none',
