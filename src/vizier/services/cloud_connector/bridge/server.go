@@ -25,11 +25,13 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )
 
-const heartbeatIntervalS = 5 * time.Second
-
-// HeartbeatTopic is the topic that heartbeats are written to.
-const HeartbeatTopic = "heartbeat"
-const registrationTimeout = 30 * time.Second
+const (
+	heartbeatIntervalS = 5 * time.Second
+	// HeartbeatTopic is the topic that heartbeats are written to.
+	HeartbeatTopic                = "heartbeat"
+	registrationTimeout           = 30 * time.Second
+	passthroughReplySubjectPrefix = "v2c.reply-"
+)
 
 // ErrRegistrationTimeout is the registration timeout error.
 var ErrRegistrationTimeout = errors.New("Registration timeout")
@@ -66,8 +68,11 @@ type Bridge struct {
 	// channels in place so that data does not get lost. The data will simply be resent
 	// once the connection comes back alive. If data is lost due to a crash, the rest of the system
 	// is resilient to this loss, but reducing it is optimal to prevent a lot of replay traffic.
+
 	grpcOutCh chan *vzconnpb.V2CBridgeMessage
 	grpcInCh  chan *vzconnpb.C2VBridgeMessage
+	// Explicitly prioritize passthrough traffic to prevent script failure under load.
+	ptOutCh chan *vzconnpb.V2CBridgeMessage
 	// This tracks the message we are trying to send, but has not been sent yet.
 	pendingGRPCOutMsg *vzconnpb.V2CBridgeMessage
 
@@ -90,6 +95,7 @@ func New(vizierID uuid.UUID, jwtSigningKey string, sessionID int64, vzClient vzc
 		// Buffer NATS channels to make sure we don't back-pressure NATS
 		natsCh:            make(chan *nats.Msg, 5000),
 		registered:        false,
+		ptOutCh:           make(chan *vzconnpb.V2CBridgeMessage, 5000),
 		grpcOutCh:         make(chan *vzconnpb.V2CBridgeMessage, 5000),
 		grpcInCh:          make(chan *vzconnpb.C2VBridgeMessage, 5000),
 		pendingGRPCOutMsg: nil,
@@ -281,6 +287,18 @@ func (s *Bridge) startStreamGRPCWriter(stream vzconnpb.VZConnService_NATSBridgeC
 	log.Trace("Starting GRPC writer stream")
 	defer log.Trace("Closing GRPC writer stream")
 
+	sendMsg := func(m *vzconnpb.V2CBridgeMessage) {
+		s.pendingGRPCOutMsg = m
+		// Write message to GRPC if it exists.
+		err := stream.Send(s.pendingGRPCOutMsg)
+		if err != nil {
+			// Need to resend this message.
+			return
+		}
+		s.pendingGRPCOutMsg = nil
+		return
+	}
+
 	for {
 		// Pending message try to send it first.
 		if s.pendingGRPCOutMsg != nil {
@@ -292,6 +310,7 @@ func (s *Bridge) startStreamGRPCWriter(stream vzconnpb.VZConnService_NATSBridgeC
 			}
 			s.pendingGRPCOutMsg = nil
 		}
+		// Try to send PT traffic first.
 		select {
 		case <-stream.Context().Done():
 			log.Trace("Write stream has closed")
@@ -301,17 +320,40 @@ func (s *Bridge) startStreamGRPCWriter(stream vzconnpb.VZConnService_NATSBridgeC
 			stream.CloseSend()
 			// Quit called.
 			return
+		case m := <-s.ptOutCh:
+			sendMsg(m)
+			break
+		default:
+		}
+
+		select {
+		case <-stream.Context().Done():
+			log.Trace("Write stream has closed")
+			return
+		case <-done:
+			log.Trace("Closing GRPC writer because of <-done")
+			stream.CloseSend()
+			// Quit called.
+			return
+		case m := <-s.ptOutCh:
+			sendMsg(m)
 		case m := <-s.grpcOutCh:
-			s.pendingGRPCOutMsg = m
-			// Write message to GRPC if it exists.
-			err := stream.Send(s.pendingGRPCOutMsg)
-			if err != nil {
-				// Need to resend this message.
-				continue
-			}
-			s.pendingGRPCOutMsg = nil
+			sendMsg(m)
 		}
 	}
+}
+
+func (s *Bridge) parseV2CNatsMsg(data *nats.Msg) (*cvmsgspb.V2CMessage, string, error) {
+	v2cPrefix := messagebus.V2CTopic("")
+	topic := strings.TrimPrefix(data.Subject, v2cPrefix)
+
+	// Message over nats should be wrapped in a V2CMessage.
+	v2cMsg := &cvmsgspb.V2CMessage{}
+	err := proto.Unmarshal(data.Data, v2cMsg)
+	if err != nil {
+		return nil, "", err
+	}
+	return v2cMsg, topic, nil
 }
 
 // HandleNATSBridging routes message to and from cloud NATS.
@@ -346,16 +388,24 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 			if !strings.HasPrefix(data.Subject, v2cPrefix) {
 				return errors.New("invalid subject: " + data.Subject)
 			}
-			topic := strings.TrimPrefix(data.Subject, v2cPrefix)
-			// Message over nats should be wrapped in a V2CMessage.
-			v2cMsg := &cvmsgspb.V2CMessage{}
-			err := proto.Unmarshal(data.Data, v2cMsg)
+
+			v2cMsg, topic, err := s.parseV2CNatsMsg(data)
 			if err != nil {
+				log.WithError(err).Error("Failed to parse message")
 				return err
 			}
-			err = s.publishBridgeCh(topic, v2cMsg.Msg)
-			if err != nil {
-				return err
+
+			if strings.HasPrefix(data.Subject, passthroughReplySubjectPrefix) {
+				// Passthrough message.
+				err = s.publishPTBridgeCh(topic, v2cMsg.Msg)
+				if err != nil {
+					return err
+				}
+			} else {
+				err = s.publishBridgeCh(topic, v2cMsg.Msg)
+				if err != nil {
+					return err
+				}
 			}
 		case bridgeMsg := <-s.grpcInCh:
 			log.Info("Got Message on GRPC channel")
@@ -414,7 +464,23 @@ func (s *Bridge) publishBridgeCh(topic string, msg *types.Any) error {
 		SessionId: s.sessionID,
 		Msg:       msg,
 	}
-	s.grpcOutCh <- wrappedReq
+
+	// Don't stall the queue for regular message.
+	select {
+	case s.grpcOutCh <- wrappedReq:
+	default:
+		log.WithField("Message", wrappedReq.String()).Error("Dropping message because of queue backoff")
+	}
+	return nil
+}
+
+func (s *Bridge) publishPTBridgeCh(topic string, msg *types.Any) error {
+	wrappedReq := &vzconnpb.V2CBridgeMessage{
+		Topic:     topic,
+		SessionId: s.sessionID,
+		Msg:       msg,
+	}
+	s.ptOutCh <- wrappedReq
 	return nil
 }
 
