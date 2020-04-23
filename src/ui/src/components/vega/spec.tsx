@@ -103,18 +103,12 @@ const BASE_SPECS = {
     },
     range: {
       category: [
-        '#1f77b4',
+        '#21a1e7',
+        '#2ca02c',
+        '#98df8a',
         '#aec7e8',
         '#ff7f0e',
         '#ffbb78',
-        '#2ca02c',
-        '#98df8a',
-        '#d62728',
-        '#ff9896',
-        '#9467bd',
-        '#c5b0d5',
-        '#8c564b',
-        '#c49c94',
       ],
       diverging: [
         '#cc0020',
@@ -175,11 +169,11 @@ export function addTooltipsToSpec(vegaSpec, vegaLiteSpec) {
   }
   vegaSpec.marks = marks.map((mark) => {
     if (mark.type !== 'path'
-        || !mark.interactive
-        || !mark.encode
-        || !mark.encode.update
-        || !mark.encode.update.isVoronoi
-        || !mark.encode.update.isVoronoi.value) {
+      || !mark.interactive
+      || !mark.encode
+      || !mark.encode.update
+      || !mark.encode.update.isVoronoi
+      || !mark.encode.update.isVoronoi.value) {
       return mark;
     }
     return {
