@@ -87,6 +87,9 @@ func (e *ExecutableScript) UpdateFlags(fs *flag.FlagSet) {
 // ComputedArgs returns the args with defaults computed.
 func (e *ExecutableScript) ComputedArgs() []Arg {
 	args := make([]Arg, 0)
+	if e.Vis == nil || len(e.Vis.Variables) == 0 {
+		return args
+	}
 	for _, v := range e.Vis.Variables {
 		arg, ok := e.Args[v.Name]
 		if ok {

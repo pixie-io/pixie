@@ -275,9 +275,16 @@ func (v *View) execCompleteViewUpdate() {
 func (v *View) updateScriptInfoView() {
 	v.infoView.Clear()
 
-	fmt.Fprintf(v.infoView, "%s %s\n", withAccent("Script Name:"),
+	fmt.Fprintf(v.infoView, "%s %s", withAccent("Script:"),
 		v.s.execScript.ScriptName)
+	args := v.s.execScript.ComputedArgs()
+	if len(args) > 0 {
+		for _, arg := range args {
+			fmt.Fprintf(v.infoView, " --%s=%s ", withAccent(arg.Name), arg.Value)
+		}
+	}
 
+	fmt.Fprintf(v.infoView, "\n")
 	if lvl := v.s.execScript.LiveViewLink(); lvl != "" {
 		fmt.Fprintf(v.infoView, "%s %s", withAccent("Live View:"), lvl)
 	}
