@@ -433,7 +433,8 @@ StatusOr<ParseState> HandleStmtExecuteRequest(const Packet& req_packet,
     // 1. The stitcher is confused/messed up and accidentally deleted wrong prepare event.
     // 2. Client sent a Stmt Exec for a deleted Stmt Prepare
     // We return -1 as stmt_id to indicate error and defer decision to the caller.
-    LOG(WARNING) << absl::Substitute("Could not find prepare statement for stmt_id=$0", stmt_id);
+    LOG_FIRST_N(WARNING, 10) << absl::Substitute("Could not find prepare statement for stmt_id=$0",
+                                                 stmt_id);
 
     // We can't determine whether the rest of this packet is valid or not, so just return success.
     return ParseState::kSuccess;

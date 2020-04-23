@@ -80,7 +80,7 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   Status s = PopulateSockAddr(reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
                               &open_info_.remote_addr);
   if (!s.ok()) {
-    LOG(WARNING) << absl::Substitute("Could not parse IP address, msg: $0", s.msg());
+    LOG_FIRST_N(WARNING, 10) << absl::Substitute("Could not parse IP address, msg: $0", s.msg());
   }
 }
 
@@ -150,7 +150,7 @@ http2u::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wr
 
   size_t index;
   if (stream_id < *oldest_active_stream_id_ptr) {
-    LOG_EVERY_N(WARNING, 100) << absl::Substitute(
+    LOG_FIRST_N(WARNING, 100) << absl::Substitute(
         "Stream ID ($0) is lower than the current head stream ID ($1). "
         "Not expected, but will handle it anyways. If not a data race, "
         "this could be indicative of a bug that could result in a memory leak.",
@@ -160,7 +160,7 @@ http2u::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wr
                       ((*oldest_active_stream_id_ptr - stream_id) / kHTTP2StreamIDIncrement);
     // Reset everything for now.
     if (new_size - streams_deque_ptr->size() > FLAGS_stirling_http2_stream_id_gap_threshold) {
-      LOG_EVERY_N(ERROR, 100) << absl::Substitute(
+      LOG_FIRST_N(ERROR, 10) << absl::Substitute(
           "Encountered a stream ID $0 that is too far from the last known stream ID $1. Resetting "
           "all streams on this connection.",
           stream_id, *oldest_active_stream_id_ptr + streams_deque_ptr->size() * 2);
@@ -182,7 +182,7 @@ http2u::HalfStream* ConnectionTracker::HalfStreamPtr(uint32_t stream_id, bool wr
     // If we are to grow by more than some threshold, then something appears wrong.
     // Reset everything for now.
     if (new_size - streams_deque_ptr->size() > FLAGS_stirling_http2_stream_id_gap_threshold) {
-      LOG_EVERY_N(ERROR, 100) << absl::Substitute(
+      LOG_FIRST_N(ERROR, 10) << absl::Substitute(
           "Encountered a stream ID $0 that is too far from the last known stream ID $1. Resetting "
           "all streams on this connection",
           stream_id, *oldest_active_stream_id_ptr + streams_deque_ptr->size() * 2);
@@ -259,10 +259,12 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   if (traffic_class_.role == kRoleUnknown) {
     traffic_class_.role = role;
   } else {
-    ECHECK(role == kRoleUnknown || role == traffic_class_.role) << absl::Substitute(
-        "The role of an active ConnectionTracker was changed: $0 role: $1 -> $2",
-        ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
-        magic_enum::enum_name(role));
+    if (!(role == kRoleUnknown || role == traffic_class_.role)) {
+      LOG_FIRST_N(ERROR, 10) << absl::Substitute(
+          "The role of an active ConnectionTracker was changed: $0 role: $1 -> $2",
+          ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
+          magic_enum::enum_name(role));
+    }
   }
 
   http2u::HalfStream* half_stream_ptr = HalfStreamPtr(hdr->attr.stream_id, write_event);
@@ -280,9 +282,11 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
     // For now, just print a warning. The only harm is duplicated headers in the tables.
     // Note that the duplicates are not necessarily restricted to headers which have the end_stream
     // flag set; the end_stream cases are just the easiest to detect.
-    LOG_IF(WARNING, half_stream_ptr->end_stream)
-        << absl::Substitute("Duplicate end_stream flag in header. stream_id: $0, conn_id: $1",
-                            hdr->attr.stream_id, ToString(hdr->attr.conn_id));
+    if (half_stream_ptr->end_stream) {
+      LOG_FIRST_N(WARNING, 10) << absl::Substitute(
+          "Duplicate end_stream flag in header. stream_id: $0, conn_id: $1", hdr->attr.stream_id,
+          ToString(hdr->attr.conn_id));
+    }
 
     half_stream_ptr->end_stream = true;
     return;
@@ -336,9 +340,11 @@ void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   // It is not yet known if duplicate data also occurs. This log will help us figure out if such
   // cases exist. Note that the duplicates are not related to the end_stream flag being set;
   // the end_stream cases are just the easiest to detect.
-  LOG_IF(WARNING, half_stream_ptr->end_stream && data->attr.end_stream)
-      << absl::Substitute("Duplicate end_stream flag in data. stream_id: $0, conn_id: $1",
-                          data->attr.stream_id, ToString(data->attr.conn_id));
+  if (half_stream_ptr->end_stream && data->attr.end_stream) {
+    LOG_FIRST_N(WARNING, 10) << absl::Substitute(
+        "Duplicate end_stream flag in data. stream_id: $0, conn_id: $1", data->attr.stream_id,
+        ToString(data->attr.conn_id));
+  }
 
   half_stream_ptr->data += data->payload;
   half_stream_ptr->end_stream |= data->attr.end_stream;
@@ -437,9 +443,11 @@ void ConnectionTracker::CheckTracker() {
              "Did not expect new event more than 1 sampling iteration after Close. Connection=$0.",
              ToString(conn_id_));
 
-  LOG_IF(ERROR, conn_id_.fd == 0 && state() != State::kDisabled) << absl::Substitute(
-      "FD==0, which usually means the FD was not captured correctly. Connection=$0.",
-      ToString(conn_id_));
+  if (conn_id_.fd == 0 && state() != State::kDisabled) {
+    LOG_FIRST_N(ERROR, 10) << absl::Substitute(
+        "FD==0, which usually means the FD was not captured correctly. Connection=$0.",
+        ToString(conn_id_));
+  }
 }
 
 DataStream* ConnectionTracker::req_data() {
@@ -725,9 +733,9 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
     return;
   }
 
-  LOG(INFO) << absl::Substitute("Inferred connection pid=$0 fd=$1 gen=$2 dest=$3:$4", pid(), fd(),
-                                tsid(), open_info_.remote_addr.AddrStr(),
-                                open_info_.remote_addr.port);
+  VLOG(1) << absl::Substitute("Inferred connection pid=$0 fd=$1 gen=$2 dest=$3:$4", pid(), fd(),
+                              tsid(), open_info_.remote_addr.AddrStr(),
+                              open_info_.remote_addr.port);
 
   // No need for the resolver anymore, so free its memory.
   conn_resolver_.reset();

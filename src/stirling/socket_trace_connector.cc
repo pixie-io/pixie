@@ -573,7 +573,7 @@ std::string ProbeLossMessage(std::string_view perf_buffer_name, uint64_t lost) {
 }  // namespace
 
 void SocketTraceConnector::HandleDataEventsLoss(void* /*cb_cookie*/, uint64_t lost) {
-  LOG(WARNING) << ProbeLossMessage("socket_data_events", lost);
+  VLOG(1) << ProbeLossMessage("socket_data_events", lost);
 }
 
 void SocketTraceConnector::HandleControlEvent(void* cb_cookie, void* data, int /*data_size*/) {
@@ -583,7 +583,7 @@ void SocketTraceConnector::HandleControlEvent(void* cb_cookie, void* data, int /
 }
 
 void SocketTraceConnector::HandleControlEventsLoss(void* /*cb_cookie*/, uint64_t lost) {
-  LOG(WARNING) << ProbeLossMessage("socket_control_events", lost);
+  VLOG(1) << ProbeLossMessage("socket_control_events", lost);
 }
 
 void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, int /*data_size*/) {
@@ -602,7 +602,7 @@ void SocketTraceConnector::HandleHTTP2HeaderEvent(void* cb_cookie, void* data, i
 }
 
 void SocketTraceConnector::HandleHTTP2HeaderEventLoss(void* /*cb_cookie*/, uint64_t lost) {
-  LOG(WARNING) << ProbeLossMessage("go_grpc_header_events", lost);
+  VLOG(1) << ProbeLossMessage("go_grpc_header_events", lost);
 }
 
 void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*data_size*/) {
@@ -622,7 +622,7 @@ void SocketTraceConnector::HandleHTTP2Data(void* cb_cookie, void* data, int /*da
 }
 
 void SocketTraceConnector::HandleHTTP2DataLoss(void* /*cb_cookie*/, uint64_t lost) {
-  LOG(WARNING) << ProbeLossMessage("go_grpc_data_events", lost);
+  VLOG(1) << ProbeLossMessage("go_grpc_data_events", lost);
 }
 
 //-----------------------------------------------------------------------------

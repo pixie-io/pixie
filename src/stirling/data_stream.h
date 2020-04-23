@@ -173,7 +173,7 @@ class DataStream {
     }
 
     if (size > FLAGS_messages_size_limit_bytes) {
-      LOG(WARNING) << absl::Substitute(
+      LOG_FIRST_N(WARNING, 10) << absl::Substitute(
           "HTTP2 Streams were cleared, because their size $0 is larger than the specified limit "
           "$1.",
           size, FLAGS_messages_size_limit_bytes);

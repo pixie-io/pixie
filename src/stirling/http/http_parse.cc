@@ -170,13 +170,14 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
     // batch.
     result->body = *buf;
     buf->remove_prefix(buf->size());
-    LOG(WARNING) << "HTTP message with no Content-Length or Transfer-Encoding may produce "
-                    "incomplete message bodies.";
+    LOG_FIRST_N(WARNING, 10)
+        << "HTTP message with no Content-Length or Transfer-Encoding may produce "
+           "incomplete message bodies.";
     // TODO(yzhao/oazizi): Revisit the implementation of this case.
     return ParseState::kSuccess;
   }
 
-  LOG(WARNING) << "Could not figure out how to extract body" << std::endl;
+  LOG_FIRST_N(WARNING, 10) << "Could not figure out how to extract body" << std::endl;
   return ParseState::kInvalid;
 }
 
