@@ -1,6 +1,7 @@
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
+import clsx from 'clsx';
 import {displayToGraph, GraphDisplay} from 'components/chart/graph';
 import {Spinner} from 'components/spinner/spinner';
 import {parseSpecs} from 'components/vega/spec';
@@ -8,6 +9,7 @@ import Vega from 'components/vega/vega';
 import {QueryResultTable} from 'containers/vizier/query-result-viewer';
 import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
+import {createClassExpression} from 'typescript';
 import {dataFromProto} from 'utils/result-data-utils';
 
 import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
@@ -23,6 +25,27 @@ import {DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, TABLE_DISPLAY_TYPE, widgetResultNa
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
+    gridItem: {
+      padding: theme.spacing(3),
+      backgroundColor: theme.palette.background.default,
+      borderRadius: theme.spacing(0.5),
+    },
+    editable: {
+      boxShadow: theme.shadows[5],
+      border: `solid 1px ${theme.palette.background.three}`,
+      cursor: 'move',
+      '& > *': {
+        pointerEvents: 'none',
+      },
+      '& .react-resizable-handle': {
+        pointerEvents: 'all',
+        '&::after': {
+          borderColor: theme.palette.foreground.one,
+          width: theme.spacing(1),
+          height: theme.spacing(1),
+        },
+      },
+    },
     table: {
       '& *': {
         ...theme.typography.body2,
@@ -49,17 +72,22 @@ const useStyles = makeStyles((theme: Theme) => {
 
 const Grid = GridLayout.WidthProvider(GridLayout);
 
-const Canvas = () => {
+interface CanvasProps {
+  editable: boolean;
+}
+
+const Canvas = (props: CanvasProps) => {
   const { oldLiveViewMode } = React.useContext(LiveContext);
   if (oldLiveViewMode) {
-    return <OldCanvas />;
+    return <OldCanvas editable={props.editable} />;
   } else {
-    return <NewCanvas />;
+    return <NewCanvas editable={props.editable} />;
   }
 };
 
-const NewCanvas = () => {
+const NewCanvas = (props: CanvasProps) => {
   const classes = useStyles();
+  const theme = useTheme();
   const { tables } = React.useContext(ResultsContext);
   const vis = React.useContext(VisContext);
   const { updateVis } = React.useContext(LiveContext);
@@ -98,46 +126,39 @@ const NewCanvas = () => {
       // takes in multiple output tables.
       const name = widgetResultName(widget, i);
       const table = tables[name];
-      if (!table) {
-        return <div key={name}>Table {name} not found.</div>;
-      }
-
-      if (display[DISPLAY_TYPE_KEY] === TABLE_DISPLAY_TYPE) {
-        return (
-          <div key={name} className='fs-exclude'>
-            <QueryResultTable className={classes.table} data={table} />
-          </div>
-        );
-      }
-      if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
-        const parsedTable = dataFromProto(table.relation, table.data);
-        return (
-          <div key={name} className='fs-exclude'>
-            {displayToGraph(display as GraphDisplay, parsedTable)}
-          </div>
-        );
-      }
-      let spec;
-      try {
-        spec = convertWidgetDisplayToVegaSpec(display as ChartDisplay, name);
-      } catch (e) {
-        return <div key={name} className='fs-exclude'>Error in displaySpec: {e.message}</div>;
-      }
-      const data = dataFromProto(table.relation, table.data);
-      return (
-        <div key={name} className='fs-exclude'>
-          <Vega
-            data={data}
-            spec={spec}
-            tableName={name}
-            oldSpec={false}
-            vegaModule={vegaModule}
-            vegaLiteModule={vegaLiteModule}
-          />
-        </div>
+      const className = clsx(
+        'fs-exclude',
+        classes.gridItem,
+        props.editable && classes.editable,
       );
+      let content = null;
+      if (!table) {
+        content = <div key={name}>Table {name} not found.</div>;
+      } else if (display[DISPLAY_TYPE_KEY] === TABLE_DISPLAY_TYPE) {
+        content = <QueryResultTable className={classes.table} data={table} />;
+      } else if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
+        const parsedTable = dataFromProto(table.relation, table.data);
+        content = displayToGraph(display as GraphDisplay, parsedTable);
+      } else {
+        try {
+          const spec = convertWidgetDisplayToVegaSpec(display as ChartDisplay, name);
+          const data = dataFromProto(table.relation, table.data);
+          content =
+            <Vega
+              data={data}
+              spec={spec}
+              tableName={name}
+              oldSpec={false}
+              vegaModule={vegaModule}
+              vegaLiteModule={vegaLiteModule}
+            />;
+        } catch (e) {
+          content = <div>Error in displaySpec: {e.message}</div>;
+        }
+      }
+      return <div key={name} className={className}>{content}</div>;
     });
-  }, [tables, vis, vegaModule]);
+  }, [tables, vis, vegaModule, props.editable]);
 
   const resize = React.useCallback(() => {
     // Dispatch a window resize event to signal the chart to redraw. As suggested in:
@@ -157,14 +178,21 @@ const NewCanvas = () => {
   }
 
   return (
-    <Grid layout={layout} onLayoutChange={handleLayoutChange}>
+    <Grid
+      layout={layout}
+      onLayoutChange={handleLayoutChange}
+      isDraggable={props.editable}
+      isResizable={props.editable}
+      margin={[theme.spacing(2), theme.spacing(2)]}
+    >
       {charts}
     </Grid>
   );
 };
 
-const OldCanvas = () => {
+const OldCanvas = (props: CanvasProps) => {
   const classes = useStyles();
+  const theme = useTheme();
   const specs = React.useContext(VegaContextOld);
   const { tables } = React.useContext(ResultsContext);
   const placement = React.useContext(PlacementContextOld);
@@ -205,31 +233,30 @@ const OldCanvas = () => {
       const spec = specs[chartName];
       const tableName = spec.data && (spec.data as { name: string }).name || 'output';
       const table = tables[tableName];
-      if (!table) {
-        return <div key={chartName}>Table {tableName} not found.</div>;
-      }
-      if ((spec as { mark: string }).mark === 'table') {
-        return (
-          <div key={chartName} className='fs-exclude'>
-            <QueryResultTable className={classes.table} data={table} />
-          </div>
-        );
-      }
-      const data = dataFromProto(table.relation, table.data);
-      return (
-        <div key={chartName} className='fs-exclude'>
-          <Vega
-            data={data}
-            spec={spec}
-            tableName={tableName}
-            oldSpec={true}
-            vegaModule={vegaModule}
-            vegaLiteModule={vegaLiteModule}
-          />
-        </div>
+      const className = clsx(
+        'fs-exclude',
+        classes.gridItem,
+        props.editable && classes.editable,
       );
+      let content = null;
+      if (!table) {
+        content = <div>Table {tableName} not found.</div>;
+      } else if ((spec as { mark: string }).mark === 'table') {
+        content = <QueryResultTable className={classes.table} data={table} />;
+      } else {
+        const data = dataFromProto(table.relation, table.data);
+        content = <Vega
+          data={data}
+          spec={spec}
+          tableName={tableName}
+          oldSpec={true}
+          vegaModule={vegaModule}
+          vegaLiteModule={vegaLiteModule}
+        />;
+      }
+      return <div key={name} className={className}>{content}</div>;
     });
-  }, [tables, specs, placement, vegaModule]);
+  }, [tables, specs, placement, vegaModule, props.editable]);
 
   const resize = React.useCallback(() => {
     // Dispatch a window resize event to signal the chart to redraw. As suggested in:
@@ -249,7 +276,13 @@ const OldCanvas = () => {
   }
 
   return (
-    <Grid layout={layout} onLayoutChange={handleLayoutChange}>
+    <Grid
+      layout={layout}
+      onLayoutChange={handleLayoutChange}
+      isDraggable={props.editable}
+      isResizable={props.editable}
+      margin={[theme.spacing(2), theme.spacing(2)]}
+    >
       {charts}
     </Grid>
   );

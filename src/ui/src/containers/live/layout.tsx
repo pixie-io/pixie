@@ -68,6 +68,8 @@ export function toLayout(visSpec: Vis): Layout[] {
       i: widgetResultName(widget, i),
       x: widget.position.x || 0,
       y: widget.position.y || 0,
+      minH: 2,
+      minW: 2,
     };
   });
 }
@@ -128,6 +130,8 @@ export function toLayoutOld(placement: Placement) {
     return {
       ...chart.position,
       i: key,
+      minH: 2,
+      minW: 2,
     };
   });
 }

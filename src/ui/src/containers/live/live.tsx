@@ -11,6 +11,7 @@ import Drawer from '@material-ui/core/Drawer';
 import IconButton from '@material-ui/core/IconButton';
 import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 import MenuIcon from '@material-ui/icons/Menu';
+import MoveIcon from '@material-ui/icons/OpenWith';
 import ShareIcon from '@material-ui/icons/Share';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 
@@ -107,6 +108,9 @@ const LiveView = () => {
     setLiveViewEditorOpened(editorOpen);
   }, [editorOpen]);
 
+  const [canvasEditable, setCanvasEditable] = React.useState<boolean>(false);
+  const toggleCanvasEditable = React.useCallback(() => setCanvasEditable((editable) => !editable), []);
+
   const [commandOpen, setCommandOpen] = React.useState<boolean>(false);
   const toggleCommandOpen = React.useCallback(() => setCommandOpen((opened) => !opened), []);
 
@@ -144,6 +148,14 @@ const LiveView = () => {
         >
           <EditIcon />
         </ToggleButton>
+        <ToggleButton
+          className={classes.editorToggle}
+          selected={canvasEditable}
+          onChange={toggleCanvasEditable}
+          value='canvasEditable'
+        >
+          <MoveIcon />
+        </ToggleButton>
         <IconButton onClick={toggleCommandOpen}>
           <MagicIcon />
         </IconButton>
@@ -154,7 +166,7 @@ const LiveView = () => {
             <Editor onClose={toggleEditor} />
           </LazyPanel>
           <div className={classes.canvas}>
-            <Canvas />
+            <Canvas editable={canvasEditable} />
           </div>
         </div>
         <DataDrawer />
