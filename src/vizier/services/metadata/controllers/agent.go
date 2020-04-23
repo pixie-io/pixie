@@ -29,6 +29,7 @@ type AgentUpdate struct {
 type AgentQueue struct {
 	FailedQueue chan *metadatapb.ResourceUpdate
 	Queue       chan *metadatapb.ResourceUpdate
+	Mu          sync.Mutex
 }
 
 // AgentManager handles any agent updates and requests.
@@ -310,6 +311,9 @@ func (m *AgentManagerImpl) GetActiveAgents() ([]*agentpb.Agent, error) {
 }
 
 func (m *AgentManagerImpl) getOrCreateAgentQueue(agentID string) *AgentQueue {
+	m.queueMu.Lock()
+	defer m.queueMu.Unlock()
+
 	if currQueue, ok := m.agentQueues[agentID]; ok {
 		return &currQueue
 	}
@@ -325,10 +329,10 @@ func (m *AgentManagerImpl) getOrCreateAgentQueue(agentID string) *AgentQueue {
 
 // AddToFrontOfAgentQueue adds the given value to the front of the agent's update queue.
 func (m *AgentManagerImpl) AddToFrontOfAgentQueue(agentID string, value *metadatapb.ResourceUpdate) error {
-	m.queueMu.Lock()
-	defer m.queueMu.Unlock()
-
 	currQueue := m.getOrCreateAgentQueue(agentID)
+	currQueue.Mu.Lock()
+	defer currQueue.Mu.Unlock()
+
 	if len(currQueue.FailedQueue) >= MaxAgentUpdates {
 		return errors.New("Agent queue full, could not add to queue")
 	}
@@ -339,24 +343,28 @@ func (m *AgentManagerImpl) AddToFrontOfAgentQueue(agentID string, value *metadat
 // GetFromAgentQueue gets all items currently in the agent's update queue.
 func (m *AgentManagerImpl) GetFromAgentQueue(agentID string) ([]*metadatapb.ResourceUpdate, error) {
 	m.queueMu.Lock()
-	defer m.queueMu.Unlock()
+	currQueue, ok := m.agentQueues[agentID]
+	m.queueMu.Unlock()
 
-	var updates []*metadatapb.ResourceUpdate
-	if currQueue, ok := m.agentQueues[agentID]; ok {
-		fQLen := len(currQueue.FailedQueue)
-		qLen := len(currQueue.Queue)
-		for i := 0; i < fQLen; i++ {
-			update := <-currQueue.FailedQueue
-			updates = append(updates, update)
-		}
-		for i := 0; i < qLen; i++ {
-			update := <-currQueue.Queue
-			updates = append(updates, update)
-		}
-		return updates, nil
+	if !ok {
+		return nil, nil
 	}
 
-	return nil, nil
+	currQueue.Mu.Lock()
+	defer currQueue.Mu.Unlock()
+
+	var updates []*metadatapb.ResourceUpdate
+	fQLen := len(currQueue.FailedQueue)
+	qLen := len(currQueue.Queue)
+	for i := 0; i < fQLen; i++ {
+		update := <-currQueue.FailedQueue
+		updates = append(updates, update)
+	}
+	for i := 0; i < qLen; i++ {
+		update := <-currQueue.Queue
+		updates = append(updates, update)
+	}
+	return updates, nil
 }
 
 // HandleUpdate processes a metadata update and adds it to the appropriate agent queues.
@@ -397,10 +405,10 @@ func (m *AgentManagerImpl) HandleUpdate(update *UpdateMessage) {
 
 // AddUpdatesToAgentQueue adds the given updates in order to the agent's update queue.
 func (m *AgentManagerImpl) AddUpdatesToAgentQueue(agentID string, updates []*metadatapb.ResourceUpdate) error {
-	m.queueMu.Lock()
-	defer m.queueMu.Unlock()
-
 	currQueue := m.getOrCreateAgentQueue(agentID)
+	currQueue.Mu.Lock()
+	defer currQueue.Mu.Unlock()
+
 	if len(currQueue.Queue)+len(updates) >= MaxAgentUpdates {
 		return errors.New("Agent queue full, could not add to queue")
 	}
