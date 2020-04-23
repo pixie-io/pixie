@@ -72,5 +72,9 @@ static __inline enum MessageType infer_pgsql_regular_message(const uint8_t* buf,
 }
 
 static __inline enum MessageType infer_pgsql_message(const uint8_t* buf, size_t count) {
-  return infer_pgsql_startup_message(buf, count) || infer_pgsql_regular_message(buf, count);
+  enum MessageType type = infer_pgsql_startup_message(buf, count);
+  if (type != kUnknown) {
+    return type;
+  }
+  return infer_pgsql_startup_message(buf, count);
 }
