@@ -140,7 +140,7 @@ void AgentMetadataStateManager::RemoveDeadPods(int64_t ts, AgentMetadataState* m
 
     if (pod_info->stop_time_ns() == 0 && pod_info->phase() != PodPhase::kFailed &&
         !md_reader->PodDirExists(*pod_info)) {
-      LOG(WARNING) << absl::Substitute(
+      VLOG(1) << absl::Substitute(
           "Marking pod and its containers as dead. Likely didn't belong to this node to begin "
           "with. [pod_id=$0]",
           pod_info->uid());
@@ -196,8 +196,8 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
     }
     const PodInfo* pod_info = k8s_md_state->PodInfoByID(pod_id);
     if (pod_info->stop_time_ns() != 0) {
-      LOG(WARNING) << absl::Substitute(
-          "Found a running container in a deleted pod [cid=$0, pod_id=$1]", cid, pod_id);
+      VLOG(1) << absl::Substitute("Found a running container in a deleted pod [cid=$0, pod_id=$1]",
+                                  cid, pod_id);
       cinfo->set_stop_time_ns(pod_info->stop_time_ns());
       continue;
     }
@@ -207,8 +207,8 @@ Status AgentMetadataStateManager::ProcessPIDUpdates(
     if (!s.ok()) {
       // Container probably died, we will eventually get a message from MDS and everything in that
       // container will be marked dead.
-      LOG(WARNING) << absl::Substitute("Failed to read PID info for pod=$0, cid=$1 [msg=$2]",
-                                       pod_id, cid, s.msg());
+      VLOG(1) << absl::Substitute("Failed to read PID info for pod=$0, cid=$1 [msg=$2]", pod_id,
+                                  cid, s.msg());
 
       // Don't wait for MDS to send the container death information; set the stop time right away.
       // This is so we stop trying to read stats for this non-existent container.

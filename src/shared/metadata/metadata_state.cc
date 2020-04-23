@@ -138,7 +138,6 @@ Status K8sMetadataState::HandlePodUpdate(const PodUpdate& update) {
   pod_info->set_node_name(update.node_name());
   pod_info->set_hostname(update.hostname());
   pod_info->set_pod_ip(update.pod_ip());
-  LOG(INFO) << "name: " << update.name() << " pod_ip: " << update.pod_ip();
 
   pods_by_name_[{ns, name}] = object_uid;
   pods_by_ip_[update.pod_ip()] = object_uid;
@@ -154,7 +153,7 @@ Status K8sMetadataState::HandleContainerUpdate(const ContainerUpdate& update) {
     VLOG(1) << "Adding Container: " << container->DebugString();
     it = containers_by_id_.try_emplace(cid, std::move(container)).first;
   }
-  LOG(INFO) << "container update: " << update.name();
+  VLOG(1) << "container update: " << update.name();
 
   auto* container_info = it->second.get();
   container_info->set_stop_time_ns(update.stop_timestamp_ns());
@@ -190,7 +189,7 @@ Status K8sMetadataState::HandleServiceUpdate(const ServiceUpdate& update) {
   service_info->set_start_time_ns(update.start_timestamp_ns());
   service_info->set_stop_time_ns(update.stop_timestamp_ns());
 
-  LOG(INFO) << "service update: " << update.name();
+  VLOG(1) << "service update: " << update.name();
 
   services_by_name_[{ns, name}] = service_uid;
   return Status::OK();
