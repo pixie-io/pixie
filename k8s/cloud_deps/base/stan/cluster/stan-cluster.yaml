@@ -16,6 +16,10 @@ data:
         max_age: "168h"
         max_channels: 1000
       }
+      store_limits {
+        max_channels: 1000
+        max_subscriptions: 1000
+      }
     }
 ---
 apiVersion: streaming.nats.io/v1alpha1
