@@ -2,20 +2,20 @@ import {VisualizationSpec} from 'vega-embed';
 
 import {Theme} from '@material-ui/core/styles';
 
+export const COLOR_SCALE = 'color';
+
 export function hydrateSpecOld(input, theme: Theme, tableName: string = 'output'): VisualizationSpec {
   return {
-    ...specsFromTheme(theme),
     ...input,
-    ...BASE_SPECS,
+    ...specsFromTheme(theme),
     data: { name: tableName },
   };
 }
 
 export function hydrateSpec(input, theme: Theme): VisualizationSpec {
   return {
-    ...specsFromTheme(theme),
     ...input,
-    ...BASE_SPECS,
+    ...specsFromTheme(theme),
   };
 }
 
@@ -34,126 +34,131 @@ export function parseSpecs(spec: string): VisualizationSpecMap {
 
 function specsFromTheme(theme: Theme) {
   return {
+    $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+    width: 'container',
+    height: 'container',
     background: theme.palette.background.default,
+    padding: theme.spacing(1),
+    config: {
+      arc: {
+        fill: '#39A8F5',
+      },
+      area: {
+        fill: '#39A8F5',
+      },
+      axis: {
+        labelColor: theme.palette.foreground.one,
+        labelFont: 'Roboto',
+        labelFontSize: 10,
+        labelPadding: theme.spacing(0.5),
+        tickColor: theme.palette.foreground.grey4,
+        tickSize: 10,
+        tickWidth: 1,
+        titleColor: theme.palette.foreground.one,
+        titleFont: 'Roboto',
+        titleFontSize: 12,
+        titleFontWeight: theme.typography.fontWeightRegular,
+        titlePadding: theme.spacing(3),
+      },
+      axisY: {
+        grid: true,
+        domain: false,
+        gridColor: theme.palette.foreground.grey4,
+        gridWidth: 0.5,
+      },
+      axisX: {
+        grid: false,
+        domain: true,
+        domainColor: theme.palette.foreground.grey4,
+        tickOpacity: 0,
+        tickSize: theme.spacing(0.5),
+      },
+      axisBand: {
+        grid: false,
+      },
+      background: '#272822',
+      group: {
+        fill: '#f0f0f0',
+      },
+      legend: {
+        fillOpacity: 1,
+        labelColor: theme.palette.foreground.one,
+        labelFont: 'Roboto',
+        labelFontSize: 10,
+        padding: theme.spacing(1),
+        symbolSize: 100,
+        titleColor: theme.palette.foreground.one,
+        titleFontSize: 12,
+      },
+      view: {
+        stroke: 'transparent',
+      },
+      line: {
+        stroke: '#39A8F5',
+        strokeWidth: 1,
+      },
+      path: {
+        stroke: '#39A8F5',
+        strokeWidth: 0.5,
+      },
+      rect: {
+        fill: '#39A8F5',
+      },
+      range: {
+        category: [
+          '#21a1e7',
+          '#2ca02c',
+          '#98df8a',
+          '#aec7e8',
+          '#ff7f0e',
+          '#ffbb78',
+        ],
+        diverging: [
+          '#cc0020',
+          '#e77866',
+          '#f6e7e1',
+          '#d6e8ed',
+          '#91bfd9',
+          '#1d78b5',
+        ],
+        heatmap: [
+          '#d6e8ed',
+          '#cee0e5',
+          '#91bfd9',
+          '#549cc6',
+          '#1d78b5',
+        ],
+      },
+      point: {
+        filled: true,
+        shape: 'circle',
+      },
+      shape: {
+        stroke: '#39A8F5',
+      },
+      rule: {
+        stroke: '#00dba6',
+        strokeDash: [6, 6],
+        strokeOpacity: 0.9,
+        strokeWidth: 2,
+      },
+      style: {
+        bar: {
+          binSpacing: 2,
+          fill: '#39A8F5',
+          stroke: null,
+        },
+      },
+      title: {
+        anchor: 'start',
+        fontSize: 24,
+        fontWeight: 600,
+        offset: 20,
+      },
+    },
   };
 }
 
-export const COLOR_SCALE = 'color';
-
-const BASE_SPECS = {
-  $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
-  width: 'container',
-  height: 'container',
-  config: {
-    arc: {
-      fill: '#39A8F5',
-    },
-    area: {
-      fill: '#39A8F5',
-    },
-    axis: {
-      domain: false,
-      domainColor: 'red',
-      grid: true,
-      gridColor: '#343434',
-      gridWidth: 0.5,
-      labelColor: '#A6A8AE',
-      labelFontSize: 10,
-      titleColor: '#A6A8AE',
-      tickColor: '#A6A8AE',
-      tickSize: 10,
-      titleFontSize: 12,
-      titleFontWeigth: 1,
-      titlePadding: 8,
-      titleFont: 'Lato',
-      labelPadding: 4,
-      labelFont: 'Lato',
-    },
-    axisBand: {
-      grid: false,
-    },
-    background: '#272822',
-    group: {
-      fill: '#f0f0f0',
-    },
-    legend: {
-      labelColor: '#A6A8AE',
-      labelFontSize: 11,
-      labelFont: 'Lato',
-      padding: 1,
-      symbolSize: 100,
-      fillOpacity: 1,
-      titleColor: '#A6A8AE',
-      titleFontSize: 12,
-      titlePadding: 5,
-    },
-    view: {
-      stroke: 'transparent',
-    },
-    line: {
-      stroke: '#39A8F5',
-      strokeWidth: 1,
-    },
-    path: {
-      stroke: '#39A8F5',
-      strokeWidth: 0.5,
-    },
-    rect: {
-      fill: '#39A8F5',
-    },
-    range: {
-      category: [
-        '#21a1e7',
-        '#2ca02c',
-        '#98df8a',
-        '#aec7e8',
-        '#ff7f0e',
-        '#ffbb78',
-      ],
-      diverging: [
-        '#cc0020',
-        '#e77866',
-        '#f6e7e1',
-        '#d6e8ed',
-        '#91bfd9',
-        '#1d78b5',
-      ],
-      heatmap: [
-        '#d6e8ed',
-        '#cee0e5',
-        '#91bfd9',
-        '#549cc6',
-        '#1d78b5',
-      ],
-    },
-    point: {
-      filled: true,
-      shape: 'circle',
-    },
-    shape: {
-      stroke: '#39A8F5',
-    },
-    rule: {
-      stroke: '#00dba6',
-      strokeDash: [6, 6],
-      strokeOpacity: 0.9,
-      strokeWidth: 2,
-    },
-    style: {
-      bar: {
-        binSpacing: 2,
-        fill: '#39A8F5',
-        stroke: null,
-      },
-    },
-    title: {
-      anchor: 'start',
-      fontSize: 24,
-      fontWeight: 600,
-      offset: 20,
-    },
-  },
-};
 
 // This function is not ideal. But it will go away when we move convert-to-vega-spec.tsx to produce
 // an actual vega spec instead of a vega-lite spec. Once we do that, both this logic and addTooltipsToSpec

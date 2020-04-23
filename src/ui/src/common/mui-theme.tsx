@@ -15,6 +15,7 @@ declare module '@material-ui/core/styles/createPalette' {
       grey1?: string;
       grey2?: string;
       grey3?: string;
+      grey4?: string;
     };
   }
 
@@ -25,6 +26,7 @@ declare module '@material-ui/core/styles/createPalette' {
       grey1?: string;
       grey2?: string;
       grey3?: string;
+      grey4?: string;
     };
   }
 }
@@ -78,6 +80,7 @@ export const DARK_THEME = createMuiTheme({
       grey1: '#4a4c4f',
       grey2: '#353738',
       grey3: '#212324',
+      grey4: '#343434',
     },
     background: {
       default: '#161616',
