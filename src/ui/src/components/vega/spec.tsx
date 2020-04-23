@@ -133,6 +133,12 @@ const BASE_SPECS = {
     shape: {
       stroke: '#39A8F5',
     },
+    rule: {
+      stroke: '#00dba6',
+      strokeDash: [6, 6],
+      strokeOpacity: 0.9,
+      strokeWidth: 2,
+    },
     style: {
       bar: {
         binSpacing: 2,

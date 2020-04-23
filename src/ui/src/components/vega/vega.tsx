@@ -7,7 +7,6 @@ import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/style
 import {addTooltipsToSpec,  COLOR_SCALE, hydrateSpec, hydrateSpecOld} from './spec';
 import {ColoredTooltipHandler} from './tooltip';
 
-
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
     vega: {
