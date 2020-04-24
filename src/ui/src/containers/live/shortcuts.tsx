@@ -104,7 +104,7 @@ const LiveViewShortcuts = (props: LiveViewShortcutsProps) => {
 
   return (
     <>
-      <GlobalHotKeys keyMap={actionSequences} handlers={handlers} />
+      <GlobalHotKeys keyMap={actionSequences} handlers={handlers} allowChanges={true} />
       <LiveViewShortcutsHelp keyMap={keyMap} open={openHelp} onClose={toggleOpenHelp} />
     </>
   );
