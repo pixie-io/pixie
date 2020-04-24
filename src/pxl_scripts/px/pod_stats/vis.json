@@ -3,7 +3,7 @@
     {
       "name": "start_time",
       "type": "PX_STRING",
-      "defaultValue": "-30s"
+      "defaultValue": "-10m"
     },
     {
       "name": "pod_name",
@@ -165,34 +165,9 @@
       }
     },
     {
-      "name": "Summary",
-      "position": {
-        "x": 0,
-        "y": 6,
-        "w": 6,
-        "h": 3
-      },
-      "func": {
-        "name": "summary_pod_let",
-        "args": [
-          {
-            "name": "start_time",
-            "variable": "start_time"
-          },
-          {
-            "name": "pod_name",
-            "variable": "pod_name"
-          }
-        ]
-      },
-      "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
-      }
-    },
-    {
       "name": "cpu",
       "position": {
-        "x": 6,
+        "x": 0,
         "y": 6,
         "w": 6,
         "h": 3
@@ -223,6 +198,44 @@
         "title": "",
         "yAxis": {
           "label": "CPU (%)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "rss",
+      "position": {
+        "x": 6,
+        "y": 6,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "resource_stats",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rss_mb",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Resident Memory (mb)"
         },
         "xAxis": null
       }

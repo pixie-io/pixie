@@ -218,7 +218,7 @@ def format_resource_table(rsrc_df):
     rsrc_df.cpu_utime_s = rsrc_df.cpu_utime_ns / 1.0E9
     rsrc_df.cpu_ktime_s = rsrc_df.cpu_ktime_ns / 1.0E9
     rsrc_df.vsize_mb = rsrc_df.vsize_bytes / bytes_per_mb
-    rsrc_df.rss_bytes_mb = rsrc_df.rss_bytes / bytes_per_mb
+    rsrc_df.rss_mb = rsrc_df.rss_bytes / bytes_per_mb
     rsrc_df.read_bytes_mb = rsrc_df.read_bytes / bytes_per_mb
     rsrc_df.write_bytes_mb = rsrc_df.write_bytes / bytes_per_mb
     rsrc_df.rchar_bytes_mb = rsrc_df.rchar_bytes / bytes_per_mb
@@ -247,6 +247,7 @@ def calc_resource(rsrc_df):
         max_cpu_ktime_s=('cpu_ktime_s', px.max),
         max_rchar_bytes_mb=('rchar_bytes_mb', px.max),
         max_wchar_bytes_mb=('wchar_bytes_mb', px.max),
+        rss_mb=('rss_mb', px.mean),
     )
 
     upid_agg.cpu_utime_s = (upid_agg.max_cpu_utime_s
@@ -265,6 +266,7 @@ def calc_resource(rsrc_df):
         cpu_ktime_s=('cpu_ktime_s', px.sum),
         rchar_bytes_mb=('rchar_bytes_mb', px.sum),
         wchar_bytes_mb=('wchar_bytes_mb', px.sum),
+        rss_mb=('rss_mb', px.sum),
     )
 
     k8s_agg.cpu_pct = (k8s_agg.cpu_utime_s
@@ -273,4 +275,5 @@ def calc_resource(rsrc_df):
     # Get the output columns we want to plot.
     k8s_agg[split_series_name] = k8s_agg[k8s_object]
     k8s_agg['time_'] = k8s_agg['timestamp']
-    return k8s_agg[[split_series_name, 'time_', 'cpu_pct', 'rchar_bytes_mb', 'wchar_bytes_mb']]
+    return k8s_agg[[split_series_name, 'time_', 'cpu_pct', 'rchar_bytes_mb',
+                    'wchar_bytes_mb', 'rss_mb']]
