@@ -41,7 +41,7 @@ const DEFAULT_OPTIONS = {
   /**
    * numeral.js format string to use for numeric vals.
    */
-  numeralFmtString: '0[.]00',
+  numeralFmtString: '0.00',
 };
 type Options = Partial<typeof DEFAULT_OPTIONS>;
 
