@@ -4,7 +4,9 @@ go_library(
     name = "go_default_library",
     srcs = [
         "elastic.go",
+        "errors.go",
         "ilm_policy.go",
+        "index.go",
         "index_template.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/cloud/shared/esutils",
@@ -21,6 +23,7 @@ go_test(
         "elastic_test.go",
         "ilm_policy_test.go",
         "index_template_test.go",
+        "index_test.go",
     ],
     embed = [":go_default_library"],
     deps = [
