@@ -3,12 +3,12 @@
     {
       "name": "service_name",
       "type": "PX_SERVICE",
-      "defaultValue": "/"
+      "defaultValue": ""
     },
     {
       "name": "start_time",
       "type": "PX_STRING",
-      "defaultValue": "-3m"
+      "defaultValue": "-10m"
     }
   ],
   "widgets": [
@@ -17,7 +17,7 @@
       "position": {
         "x": 0,
         "y": 0,
-        "w": 12,
+        "w": 6,
         "h": 3
       },
       "func": {
@@ -45,7 +45,45 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Latency (p50)"
+          "label": "P50 Latency (ms)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "latency_p90",
+      "position": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "service_let",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "service_name",
+            "variable": "service_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p90",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "P90 Latency (ms)"
         },
         "xAxis": null
       }
@@ -127,12 +165,12 @@
       }
     },
     {
-      "name": "incoming_traffic",
+      "name": "Incoming Traffic",
       "position": {
         "x": 0,
         "y": 6,
         "w": 12,
-        "h": 1
+        "h": 3
       },
       "func": {
         "name": "incoming_edges",
@@ -152,12 +190,12 @@
       }
     },
     {
-      "name": "outgoing_traffic",
+      "name": "Outgoing Traffic",
       "position": {
         "x": 0,
         "y": 7,
         "w": 12,
-        "h": 1
+        "h": 3
       },
       "func": {
         "name": "outgoing_edges",

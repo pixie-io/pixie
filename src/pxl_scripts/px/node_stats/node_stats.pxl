@@ -69,7 +69,7 @@ def cpu_stats(start_time: str, node_name: px.Node, pod_name: px.Pod):
     # Calculate the CPU usage per window.
     cpu_df = calculate_cpu(df, window_s)
     cpu_df[split_series_name] = cpu_df[k8s_object]
-    return cpu_df['time_', split_series_name, 'cpu_pct']
+    return cpu_df['time_', split_series_name, 'cpu_pct', 'rss_mb']
 
 
 def pod_table(start_time: str, node_name: px.Node, pod_name: px.Pod):
@@ -175,7 +175,7 @@ def format_process_table(df, window_size):
 
     # Convert bytes to MB.
     df.vsize_mb = df.vsize_bytes / bytes_per_mb
-    df.rss_bytes_mb = df.rss_bytes / bytes_per_mb
+    df.rss_mb = df.rss_bytes / bytes_per_mb
 
     # Convert nanoseconds to milliseconds.
     df.cpu_utime_ms = df.cpu_ktime_ns / 1.0E6
@@ -253,6 +253,7 @@ def calculate_cpu(df, window_size):
         cpu_utime_ms_min=('cpu_utime_ms', px.min),
         cpu_ktime_ms_max=('cpu_ktime_ms', px.max),
         cpu_ktime_ms_min=('cpu_ktime_ms', px.min),
+        rss_mb=('rss_mb', px.mean),
     )
 
     # Next calculate cpu usage per window.
@@ -264,6 +265,7 @@ def calculate_cpu(df, window_size):
     cpu_per_k8s = cpu_by_upid.groupby([k8s_object, 'timestamp']).agg(
         cpu_ktime_ms=('cpu_ktime_ms', px.sum),
         cpu_utime_ms=('cpu_utime_ms', px.sum),
+        rss_mb=('rss_mb', px.mean),
     )
 
     # Convert window_size into the same units as cpu time.

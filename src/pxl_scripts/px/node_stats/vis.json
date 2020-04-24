@@ -3,17 +3,17 @@
     {
       "name": "start_time",
       "type": "PX_STRING",
-      "defaultValue": "-3m"
+      "defaultValue": "-10m"
     },
     {
       "name": "node_name",
       "type": "PX_STRING",
-      "defaultValue": "gke"
+      "defaultValue": ""
     },
     {
       "name": "pod_name",
       "type": "PX_STRING",
-      "defaultValue": "/"
+      "defaultValue": ""
     }
   ],
   "widgets": [
@@ -22,7 +22,7 @@
       "position": {
         "x": 0,
         "y": 0,
-        "w": 12,
+        "w": 6,
         "h": 3
       },
       "func": {
@@ -55,6 +55,48 @@
         "title": "",
         "yAxis": {
           "label": "CPU usage (%)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "rss",
+      "position": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "cpu_stats",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "node_name",
+            "variable": "node_name"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "rss_mb",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Resident Memory Usage (mb)"
         },
         "xAxis": null
       }
@@ -144,7 +186,7 @@
       }
     },
     {
-      "name": "nodes",
+      "name": "Nodes",
       "position": {
         "x": 0,
         "y": 6,
@@ -173,7 +215,7 @@
       }
     },
     {
-      "name": "pods",
+      "name": "Pods",
       "position": {
         "x": 6,
         "y": 6,

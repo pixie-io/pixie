@@ -8,7 +8,7 @@
     {
       "name": "pod_name",
       "type": "PX_STRING",
-      "defaultValue": "/"
+      "defaultValue": ""
     }
   ],
   "widgets": [
@@ -165,7 +165,7 @@
       }
     },
     {
-      "name": "object_list",
+      "name": "Summary",
       "position": {
         "x": 0,
         "y": 6,

@@ -3,12 +3,12 @@
     {
       "name": "start_time",
       "type": "PX_STRING",
-      "defaultValue": "-3m"
+      "defaultValue": "-10m"
     },
     {
       "name": "pod_name",
       "type": "PX_STRING",
-      "defaultValue": "/"
+      "defaultValue": ""
     }
   ],
   "widgets": [
@@ -17,7 +17,7 @@
       "position": {
         "x": 0,
         "y": 0,
-        "w": 12,
+        "w": 6,
         "h": 3
       },
       "func": {
@@ -45,7 +45,45 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Latency (p50)"
+          "label": "P50 Latency (ms)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "latency_p90",
+      "position": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "pod_mysql_let",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p90",
+            "series": "k8s",
+            "stackBySeries": false,
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "P90 Latency (ms)"
         },
         "xAxis": null
       }
@@ -127,7 +165,7 @@
       }
     },
     {
-      "name": "summary",
+      "name": "Summary",
       "position": {
         "x": 0,
         "y": 6,
