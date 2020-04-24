@@ -107,6 +107,7 @@ function formatValue(view: View, value: any, valueToHtml: (value: any) => string
     sortedItems = _.sortBy(sortedItems, (item: {key: string, val: any}) => item.key);
   } else {
     sortedItems = _.sortBy(sortedItems, (item: {key: string, val: any}) => -Number(item.val) || 0);
+    sortedItems = sortedItems.slice(0, 10);
   }
 
   if (sortedItems.length > 0) {
