@@ -261,7 +261,7 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
                                                const std::vector<OperatorIR*>& operators_to_merge) {
   // This function should receive >= 2 operators because groups of 1 should be
   // eliminated before hand.
-  CHECK_GE(operators_to_merge.size(), 2);
+  CHECK_GE(operators_to_merge.size(), 2UL);
 
   OperatorIR* base_op = operators_to_merge[0];
   OperatorIR* merged_op = nullptr;
@@ -274,8 +274,8 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
 
     // Memory sources need special handling for time.
     bool time_not_set = !base_src->IsTimeSet();
-    int64_t start_time;
-    int64_t stop_time;
+    int64_t start_time = 0;
+    int64_t stop_time = 0;
 
     if (!time_not_set) {
       start_time = base_src->time_start_ns();
@@ -318,14 +318,14 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
   } else if (Match(base_op, Map())) {
     // TODO(philkuz) support Map operators where out_column_names conflict.
     auto base_map = static_cast<MapIR*>(base_op);
-    DCHECK_EQ(base_map->parents().size(), 1) << "maps should only have one parent.";
+    DCHECK_EQ(base_map->parents().size(), 1UL) << "maps should only have one parent.";
     absl::flat_hash_map<std::string, ExpressionIR*> exprs;
     auto expr_list = base_map->col_exprs();
     for (const auto& e : base_map->col_exprs()) {
       exprs[e.name] = e.node;
     }
     for (OperatorIR* other_op : operators_to_merge) {
-      DCHECK_EQ(other_op->parents().size(), 1);
+      DCHECK_EQ(other_op->parents().size(), 1UL);
       PL_RETURN_IF_ERROR(CheckParentsAreEqual(other_op, base_op));
 
       auto other_map = static_cast<MapIR*>(other_op);
@@ -337,14 +337,14 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
   } else if (Match(base_op, BlockingAgg())) {
     // TODO(philkuz) support heterogenous Agg operators.
     auto base_agg = static_cast<BlockingAggIR*>(base_op);
-    DCHECK_EQ(base_agg->parents().size(), 1);
+    DCHECK_EQ(base_agg->parents().size(), 1Ul);
     absl::flat_hash_map<std::string, ExpressionIR*> exprs;
     auto expr_list = base_agg->aggregate_expressions();
     for (const auto& e : base_agg->aggregate_expressions()) {
       exprs[e.name] = e.node;
     }
     for (OperatorIR* other_op : operators_to_merge) {
-      DCHECK_EQ(other_op->parents().size(), 1);
+      DCHECK_EQ(other_op->parents().size(), 1UL);
       PL_RETURN_IF_ERROR(CheckParentsAreEqual(other_op, base_op));
       auto other_agg = static_cast<BlockingAggIR*>(other_op);
       PL_RETURN_IF_ERROR(MergeExprs(&expr_list, &exprs, other_agg->aggregate_expressions()));
@@ -400,7 +400,7 @@ Status ReplaceOpsWithMerged(CompilerState* compiler_state, OperatorIR* merged,
     }
   }
   for (const auto& [child, parents] : child_to_parent_map) {
-    DCHECK_GE(parents.size(), 1);
+    DCHECK_GE(parents.size(), 1UL);
     // TODO(philkuz) (PP-1812) need to figure out how we would propagate information about
     // renamed output columns to the children. We'll need to add some data structure
     // that describes the transformation of o -> merged.
