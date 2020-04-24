@@ -43,9 +43,8 @@ func init() {
 				// Not found.
 				continue
 			}
-			fs := execScript.GetFlagSet()
-			fs.SetOutput(os.Stderr)
 
+			fs := execScript.GetFlagSet()
 			name := command.Name()
 			flagsMarker := ""
 			if fs != nil {
@@ -53,6 +52,7 @@ func init() {
 			}
 			fmt.Fprintf(os.Stderr, "Usage:\n  px %s %s %s\n", name, scriptName, flagsMarker)
 			if fs != nil {
+				fs.SetOutput(os.Stderr)
 				fmt.Fprintf(os.Stderr, "\nFlags:\n")
 				fs.Usage()
 			}

@@ -3,6 +3,7 @@ package live
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"regexp"
 	"strings"
 
@@ -116,6 +117,7 @@ func newAutocompleteModal(st *appState) *autocompleteModal {
 
 // Show shows the modal.
 func (m *autocompleteModal) validateScriptAndArgs(s string) (*script.ExecutableScript, error) {
+	s = strings.TrimSpace(s)
 	tokens := cmdTokenizer(s)
 	if len(tokens) == 0 {
 		return nil, errors.New("no script provided")
@@ -133,6 +135,8 @@ func (m *autocompleteModal) validateScriptAndArgs(s string) (*script.ExecutableS
 	if fs == nil {
 		return es, nil
 	}
+
+	fs.SetOutput(ioutil.Discard)
 	err = fs.Parse(tokens[1:])
 	if err != nil {
 		return nil, err
