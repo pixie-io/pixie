@@ -39,7 +39,7 @@ pl_proto_library(
 pl_cc_proto_library(
     name = "sock_event_pl_cc_proto",
     proto = ":sock_event_pl_proto",
-    visibility = ["//src/stirling:__pkg__"],
+    visibility = ["//visibility:public"],
 )
 
 pl_go_proto_library(
