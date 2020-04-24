@@ -1,4 +1,4 @@
-#include "src/stirling/pgsql/binary_decoder.h"
+#include "src/stirling/common/binary_decoder.h"
 
 #include "src/common/base/base.h"
 

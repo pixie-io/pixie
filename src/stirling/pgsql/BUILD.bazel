@@ -28,12 +28,3 @@ pl_cc_test(
     srcs = ["parse_test.cc"],
     deps = [":cc_library"],
 )
-
-pl_cc_test(
-    name = "binary_decoder_test",
-    srcs = ["binary_decoder_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/stirling/testing:cc_library",
-    ],
-)

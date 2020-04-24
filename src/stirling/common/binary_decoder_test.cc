@@ -1,4 +1,4 @@
-#include "src/stirling/pgsql/binary_decoder.h"
+#include "src/stirling/common/binary_decoder.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

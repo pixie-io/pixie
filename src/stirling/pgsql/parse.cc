@@ -9,7 +9,7 @@
 #include <magic_enum.hpp>
 
 #include "src/common/base/base.h"
-#include "src/stirling/pgsql/binary_decoder.h"
+#include "src/stirling/common/binary_decoder.h"
 
 namespace pl {
 namespace stirling {
@@ -127,8 +127,8 @@ std::vector<std::string_view> ParseRowDesc(std::string_view row_desc) {
                                   kFieldDescSize, decoder.BufSize());
       return res;
     }
-    // Just make sure to discard.
-    decoder.Discard(kFieldDescSize);
+    // Discard the reset of the message, which are not used.
+    decoder.ExtractString(kFieldDescSize);
   }
   return res;
 }

@@ -18,7 +18,6 @@ class BinaryDecoder {
   bool Empty() const { return buf_.empty(); }
   size_t BufSize() const { return buf_.size(); }
   std::string_view Buf() const { return buf_; }
-  void Discard(size_t n) { buf_.remove_prefix(n); }
 
   char ExtractChar();
 
