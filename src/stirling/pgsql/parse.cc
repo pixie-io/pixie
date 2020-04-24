@@ -79,6 +79,15 @@ ParseState ParseStartupMessage(std::string_view* buf, StartupMessage* msg) {
   return ParseState::kSuccess;
 }
 
+size_t FindFrameBoundary(std::string_view buf, size_t start) {
+  for (size_t i = start; i < buf.size(); ++i) {
+    if (magic_enum::enum_cast<Tag>(buf[i]).has_value()) {
+      return i;
+    }
+  }
+  return std::string_view::npos;
+}
+
 namespace {
 
 using MsgDeqIter = std::deque<RegularMessage>::iterator;
@@ -379,22 +388,7 @@ template <>
 size_t FindFrameBoundary<pgsql::RegularMessage>(MessageType type, std::string_view buf,
                                                 size_t start) {
   PL_UNUSED(type);
-  for (; start < buf.size(); ++start) {
-    constexpr int kPGSQLMsgTrialCount = 10;
-    auto tmp_buf = buf.substr(start);
-    pgsql::RegularMessage msg = {};
-    bool parse_succeeded = true;
-    for (int i = 0; i < kPGSQLMsgTrialCount; ++i) {
-      if (pgsql::ParseRegularMessage(&tmp_buf, &msg) != ParseState::kSuccess) {
-        parse_succeeded = false;
-        break;
-      }
-    }
-    if (parse_succeeded) {
-      return start;
-    }
-  }
-  return std::string_view::npos;
+  return pgsql::FindFrameBoundary(buf, start);
 }
 
 RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMessage>* reqs,

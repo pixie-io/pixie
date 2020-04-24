@@ -26,6 +26,8 @@ ParseState ParseStartupMessage(std::string_view* buf, StartupMessage* msg);
 std::vector<std::string_view> ParseRowDesc(std::string_view row_desc);
 std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_row);
 
+size_t FindFrameBoundary(std::string_view buf, size_t start);
+
 RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMessage>* reqs,
                                                    std::deque<pgsql::RegularMessage>* resps);
 

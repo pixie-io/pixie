@@ -1,5 +1,6 @@
 #include "src/stirling/pgsql/parse.h"
 
+#include <string>
 #include <utility>
 
 #include <gmock/gmock.h>
@@ -194,6 +195,14 @@ TEST(ProcessFramesTest, DropTable) {
       ElementsAre(AllOf(Field(&Record::req, Field(&RegularMessage::payload, "drop table foo;")),
                         Field(&Record::resp, Field(&RegularMessage::payload, "DROP TABLE")))));
   EXPECT_EQ(0, records_and_err_count.error_count);
+}
+
+TEST(FindFrameBoundaryTest, FindTag) {
+  EXPECT_EQ(0, FindFrameBoundary(kDropTableCmplMsg, 0));
+  EXPECT_EQ(0, FindFrameBoundary(kRowDescTestData, 0));
+  EXPECT_EQ(0, FindFrameBoundary(kDataRowTestData, 0));
+  const std::string data = absl::StrCat("aaaaa", kDataRowTestData);
+  EXPECT_EQ(5, FindFrameBoundary(data, 0));
 }
 
 }  // namespace pgsql
