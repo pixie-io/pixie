@@ -347,10 +347,10 @@ RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMess
         break;
       }
       default:
+        LOG(WARNING) << "Unhandled or invalid tag: " << static_cast<char>(req_iter->tag);
         // By default for any message with unhandled or invalid tag, ignore and continue.
         // TODO(yzhao): Revise based on feedbacks.
         ++req_iter;
-        LOG(WARNING) << "Unhandled or invalid tag: " << static_cast<char>(req_iter->tag);
         break;
     }
   }
