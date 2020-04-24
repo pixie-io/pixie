@@ -5,8 +5,6 @@ import {
     CloudClientInterface, VizierGQLClient, VizierGQLClientContext,
 } from 'common/vizier-gql-client';
 import {VizierGRPCClientProvider} from 'common/vizier-grpc-client-context';
-import {DialogBox} from 'components/dialog-box/dialog-box';
-import {Spinner} from 'components/spinner/spinner';
 import {CloudClientContext} from 'containers/App/context';
 import {Editor} from 'containers/editor';
 import LiveView from 'containers/live/live';
@@ -16,7 +14,7 @@ import {ApolloConsumer, Query, withApollo} from 'react-apollo';
 import {Redirect, Route, Switch} from 'react-router-dom';
 
 import {AgentDisplay} from './agent-display';
-import {DeployInstructions} from './deploy-instructions';
+import {ClusterInstructions, DeployInstructions} from './deploy-instructions';
 import {VizierTopNav} from './top-nav';
 
 export const CREATE_CLUSTER = gql`
@@ -62,10 +60,6 @@ const PATH_TO_HEADER_TITLE = {
   '/vizier/query': 'Query',
 };
 
-interface ClusterInstructionsProps {
-  message: string;
-}
-
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
     banner: {
@@ -79,18 +73,6 @@ const useStyles = makeStyles((theme: Theme) => {
     },
   });
 });
-
-const ClusterInstructions = (props: ClusterInstructionsProps) => (
-  <div className='cluster-instructions'>
-    <DialogBox width={760}>
-      <div className='cluster-instructions--content'>
-        {props.message}
-        <p></p>
-        <Spinner variant='dark' />
-      </div>
-    </DialogBox>
-  </div>
-);
 
 /**
  * This is need to get the apollo client to the editor, because ApolloProvider
