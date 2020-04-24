@@ -38,8 +38,9 @@ interface TimeseriesDisplay extends WidgetDisplay {
 }
 
 interface Bar {
-  readonly value: string;
+  readonly value?: string;
   readonly label: string;
+  readonly bin?: boolean;
   readonly stackBy?: string;
   readonly groupBy?: string;
 }
@@ -299,7 +300,6 @@ const BASE_BAR_SPEC: VisualizationSpec = {
       type: 'quantitative',
     },
     x: {
-      field: 'service',
       type: 'ordinal',
     },
   },
@@ -309,8 +309,8 @@ function convertToBarChart(display: BarDisplay, source: string): VisualizationSp
   if (!display.bar) {
     throw new Error('BarChart must have an entry for property bar');
   }
-  if (!display.bar.value) {
-    throw new Error('BarChart property bar must have an entry for property value');
+  if (!display.bar.value && !display.bar.bin) {
+    throw new Error('BarChart property bar must have an entry for property value or set bin to true');
   }
   if (!display.bar.label) {
     throw new Error('BarChart property bar must have an entry for property label');
@@ -318,7 +318,21 @@ function convertToBarChart(display: BarDisplay, source: string): VisualizationSp
 
   let spec = addSources(BASE_BAR_SPEC, source);
   spec = extendXEncoding(spec, {field: display.bar.label});
-  spec = extendYEncoding(spec, {field: display.bar.value});
+
+  // TODO(nserrino): Infer x axis type from the schema of the data.
+  // That way we can support temporal values as well.
+  if (display.bar.bin) {
+    if (display.bar.stackBy) {
+      throw new Error('BarChart does not support bin and stackBy options to be set simultaneously.');
+    }
+    if (display.bar.value) {
+      throw new Error(`BarChart does not support a value when bin option is set to true.`);
+    }
+    spec = extendXEncoding(spec, {type: 'quantitative', bin: true});
+    spec = extendYEncoding(spec, {aggregate: 'count'});
+  } else {
+    spec = extendYEncoding(spec, {field: display.bar.value});
+  }
 
   if (display.bar.stackBy) {
     spec = extendColorEncoding(spec, {field: display.bar.stackBy, type: 'nominal'});
