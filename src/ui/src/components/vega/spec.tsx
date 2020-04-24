@@ -38,7 +38,7 @@ function specsFromTheme(theme: Theme) {
     width: 'container',
     height: 'container',
     background: theme.palette.background.default,
-    padding: theme.spacing(1),
+    padding: theme.spacing(2),
     config: {
       arc: {
         fill: '#39A8F5',
@@ -150,10 +150,7 @@ function specsFromTheme(theme: Theme) {
         },
       },
       title: {
-        anchor: 'start',
-        fontSize: 24,
-        fontWeight: 600,
-        offset: 20,
+        fontSize: 0,
       },
     },
   };

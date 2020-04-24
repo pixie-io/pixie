@@ -9,7 +9,6 @@ import Vega from 'components/vega/vega';
 import {QueryResultTable} from 'containers/vizier/query-result-viewer';
 import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
-import {createClassExpression} from 'typescript';
 import {dataFromProto} from 'utils/result-data-utils';
 
 import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
@@ -57,8 +56,9 @@ const useStyles = makeStyles((theme: Theme) => {
       },
     },
     widgetTitle: {
-      ...theme.typography.subtitle2,
-      paddingLeft: theme.spacing(1),
+      ...theme.typography.subtitle1,
+      padding: theme.spacing(1),
+      borderBottom: `solid 1px ${theme.palette.background.three}`,
     },
     table: {
       '& *': {
@@ -161,7 +161,8 @@ const NewCanvas = (props: CanvasProps) => {
         try {
           const spec = convertWidgetDisplayToVegaSpec(display as ChartDisplay, name);
           const data = dataFromProto(table.relation, table.data);
-          content =
+          content = <>
+            <div className={classes.widgetTitle}>{name}</div>
             <Vega
               data={data}
               spec={spec}
@@ -169,7 +170,8 @@ const NewCanvas = (props: CanvasProps) => {
               oldSpec={false}
               vegaModule={vegaModule}
               vegaLiteModule={vegaLiteModule}
-            />;
+            />
+          </>;
         } catch (e) {
           content = <div>Error in displaySpec: {e.message}</div>;
         }
