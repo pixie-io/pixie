@@ -3,7 +3,7 @@
     {
       "name": "service_name",
       "type": "PX_SERVICE",
-      "defaultValue": ""
+      "defaultValue": "/"
     },
     {
       "name": "start_time",
@@ -17,7 +17,7 @@
       "position": {
         "x": 0,
         "y": 0,
-        "w": 6,
+        "w": 4,
         "h": 3
       },
       "func": {
@@ -53,9 +53,9 @@
     {
       "name": "latency_p90",
       "position": {
-        "x": 6,
+        "x": 4,
         "y": 0,
-        "w": 6,
+        "w": 4,
         "h": 3
       },
       "func": {
@@ -91,9 +91,9 @@
     {
       "name": "throughput",
       "position": {
-        "x": 0,
-        "y": 3,
-        "w": 6,
+        "x": 8,
+        "y": 0,
+        "w": 4,
         "h": 3
       },
       "func": {
@@ -129,9 +129,9 @@
     {
       "name": "errors",
       "position": {
-        "x": 6,
+        "x": 4,
         "y": 3,
-        "w": 6,
+        "w": 4,
         "h": 3
       },
       "func": {
@@ -165,11 +165,81 @@
       }
     },
     {
+      "name": "status_codes",
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "func": {
+        "name": "http_code_histogram",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "service_name",
+            "variable": "service_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.BarChart",
+        "bar": {
+          "value": "count",
+          "label": "http_resp_status"
+        },
+        "xAxis": {
+          "label": "HTTP Status Code"
+        },
+        "yAxis": {
+          "label": "# of requests"
+        }
+      }
+    },
+    {
+      "name": "latency_histogram",
+      "func": {
+        "name": "latency_histogram",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "service_name",
+            "variable": "service_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.BarChart",
+        "bar": {
+          "value": "count",
+          "label": "request_latency_ms"
+        },
+        "xAxis": {
+          "label": "Request Latency (ms)"
+        },
+        "yAxis": {
+          "label": "# of requests"
+        }
+      },
+      "position": {
+        "x": 8,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      }
+    },
+    {
       "name": "Incoming Traffic",
       "position": {
         "x": 0,
         "y": 6,
-        "w": 12,
+        "w": 6,
         "h": 3
       },
       "func": {
@@ -192,9 +262,9 @@
     {
       "name": "Outgoing Traffic",
       "position": {
-        "x": 0,
-        "y": 7,
-        "w": 12,
+        "x": 6,
+        "y": 6,
+        "w": 6,
         "h": 3
       },
       "func": {

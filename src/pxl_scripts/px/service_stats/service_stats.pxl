@@ -35,6 +35,8 @@ dest_col = 'responder'
 # k8s_object column is renamed to this and is used in
 # visualization spec.
 split_series_name = 'k8s'
+# The bin size to use for the latency histogram.
+latency_bin_size_ms = 50
 # ----------------------------------------------------------------
 
 
@@ -60,6 +62,38 @@ def service_let(start_time: str, service_name: px.Service):
     let_df = let_df[['time_', split_series_name, 'latency_p50',
                      'latency_p90', 'latency_p99', 'error_rate', 'rps', 'bytes_per_s']]
     return let_df
+
+
+def http_code_histogram(start_time: str, service_name: px.Service):
+    """ Computes a histogram of HTTP status codes
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @service_name: the partial/full-name of the service.
+
+    Returns: DataFrame of the HTTP status code stats for services that
+        match @service_name.
+    """
+    df = make_http_table(start_time)
+    matching_df = df[px.contains(df[k8s_object], service_name)]
+    return matching_df.groupby(['http_resp_status']).agg(count=('time_', px.count))
+
+
+def latency_histogram(start_time: str, service_name: px.Service):
+    """ Computes a histogram of HTTP request latency.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @service_name: the partial/full-name of the service.
+
+    Returns: DataFrame of the HTTP latency histogram for services that
+        match @service_name.
+    """
+    df = make_http_table(start_time)
+    matching_df = df[px.contains(df[k8s_object], service_name)]
+    matching_df.request_latency_ms = px.bin(matching_df.http_resp_latency_ns / (1000 * 1000),
+                                            latency_bin_size_ms)
+    return matching_df.groupby('request_latency_ms').agg(count=('time_', px.count))
 
 
 def outgoing_edges(start_time: str, service_name: px.Service):
