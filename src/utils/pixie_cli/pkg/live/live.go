@@ -667,8 +667,10 @@ func (v *View) searchInputCapture(event *tcell.EventKey) *tcell.EventKey {
 		return event
 	case tcell.KeyCtrlR:
 		v.searchNext(true, true)
+		return nil
 	case tcell.KeyCtrlS:
 		v.searchNext(false, true)
+		return nil
 	case tcell.KeyRune:
 		if v.s.searchEnterHit {
 			s := string(event.Rune())
@@ -759,6 +761,9 @@ func (v *View) keyHandler(event *tcell.EventKey) *tcell.EventKey {
 		return nil
 	case tcell.KeyCtrlK:
 		v.showAutcompleteModal()
+		return nil
+	case tcell.KeyCtrlR:
+		v.runScript(v.s.execScript)
 		return nil
 	}
 

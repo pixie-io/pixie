@@ -27,6 +27,7 @@ func (h *helpModal) Show(app *tview.Application) tview.Primitive {
 		{[]string{"ctrl", "k"}, "Show Pixie command menu"},
 		{[]string{"ctrl", "c"}, "Quit the application"},
 		{[]string{"ctrl", "v"}, "View the underlying script"},
+		{[]string{"ctrl", "r"}, "Run current script (again)"},
 		{[]string{"escape"}, "Close dialogs/modals"},
 	}
 
