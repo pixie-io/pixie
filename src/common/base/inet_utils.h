@@ -16,14 +16,14 @@
 
 namespace pl {
 
-enum class SockAddrFamily { kUninitialized, kIPv4, kIPv6, kUnix };
+enum class SockAddrFamily { kUnspecified, kIPv4, kIPv6, kUnix, kOther };
 
 /**
  * Describes a connection from user space. This corresponds to struct conn_info_t in
  * src/stirling/bcc_bpf_interface/socket_trace.h.
  */
 struct SockAddr {
-  SockAddrFamily family = SockAddrFamily::kUninitialized;
+  SockAddrFamily family = SockAddrFamily::kUnspecified;
   std::variant<struct in_addr, struct in6_addr, std::string> addr;
   int port = -1;
 
@@ -122,10 +122,11 @@ void PopulateInet6Addr(struct in6_addr in6_addr, in_port_t port, SockAddr* addr)
 void PopulateUnixAddr(const char* sun_path, uint32_t inode, SockAddr* addr);
 
 /**
- * Parses sockaddr into a C++ style SockAddr. Only accept IPv4 and IPv6 addresses.
- * Does not mutate the result argument on parse failure.
+ * Parses sockaddr into a C++ style SockAddr.
+ * Supports IPv4, IPv6 and Unix domain sockets; all other addresses
+ * are marked with a special address family, with an address of 0.
  */
-Status PopulateSockAddr(const struct sockaddr* sa, SockAddr* addr);
+void PopulateSockAddr(const struct sockaddr* sa, SockAddr* addr);
 
 /**
  * Parses a string as IPv4 or IPv6 address.

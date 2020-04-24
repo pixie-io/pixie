@@ -494,6 +494,7 @@ class ConnectionTracker {
   void UpdateTimestamps(uint64_t bpf_timestamp);
   void CheckTracker();
   void HandleInactivity();
+  bool IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_cidrs);
   void UpdateState(const std::vector<CIDRBlock>& cluster_cidrs);
 
   // bpf_table_info_ is used to release BPF map resources when a ConnectionTracker is destroyed.

@@ -610,6 +610,24 @@ TEST_F(ConnectionTrackerTest, TrackerDisabledForUnixDomainSocket) {
   EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
 }
 
+// Tests that tracker state is kDisabled if the remote address is kOther (non-IP, non-Unix).
+TEST_F(ConnectionTrackerTest, TrackerDisabledForOtherSockAddrFamily) {
+  testing::EventGenerator event_gen(&real_clock_);
+  struct socket_control_event_t conn = event_gen.InitConn<kProtocolHTTP>();
+  conn.open.traffic_class.role = EndpointRole::kRoleServer;
+  // Any non-IP family works for testing purposes.
+  conn.open.addr.sin6_family = AF_NETLINK;
+
+  CIDRBlock cidr;
+  ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
+  std::vector cidrs = {cidr};
+
+  ConnectionTracker tracker;
+  tracker.AddControlEvent(conn);
+  tracker.IterationPreTick(cidrs, /*proc_parser*/ nullptr, /*connections*/ nullptr);
+  EXPECT_EQ(ConnectionTracker::State::kDisabled, tracker.state());
+}
+
 // Tests that tracker is disabled after mapping the addresses from IPv4 to IPv6.
 TEST_F(ConnectionTrackerTest, TrackerDisabledAfterMapping) {
   {

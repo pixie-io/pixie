@@ -77,11 +77,8 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
 
   open_info_.timestamp_ns = conn_event.timestamp_ns;
 
-  Status s = PopulateSockAddr(reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
-                              &open_info_.remote_addr);
-  if (!s.ok()) {
-    LOG_FIRST_N(WARNING, 10) << absl::Substitute("Could not parse IP address, msg: $0", s.msg());
-  }
+  PopulateSockAddr(reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
+                   &open_info_.remote_addr);
 }
 
 void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
@@ -491,7 +488,31 @@ bool ConnectionTracker::ReadyForDestruction() const {
   return death_countdown_ == 0;
 }
 
+bool ConnectionTracker::IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_cidrs) {
+  DCHECK(open_info_.remote_addr.family == SockAddrFamily::kIPv4 ||
+         open_info_.remote_addr.family == SockAddrFamily::kIPv6);
+
+  for (const auto& cluster_cidr : cluster_cidrs) {
+    if (CIDRContainsIPAddr(cluster_cidr, open_info_.remote_addr)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs) {
+  // Don't handle anything but IP or Unix domain sockets.
+  if (open_info_.remote_addr.family == SockAddrFamily::kOther) {
+    Disable("Unhandled socket address family");
+    return;
+  }
+
+  // And normally, we don't want to trace Unix domain sockets.
+  if (open_info_.remote_addr.family == SockAddrFamily::kUnix && !FLAGS_enable_unix_domain_sockets) {
+    Disable("Unix domain socket");
+    return;
+  }
+
   switch (role()) {
     case EndpointRole::kRoleServer:
       if (state() == State::kCollecting) {
@@ -516,7 +537,7 @@ void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs)
         break;
       }
 
-      if (open_info_.remote_addr.family == SockAddrFamily::kUninitialized) {
+      if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified) {
         // Don't disable because we are still trying to resolve the remote endpoint.
         // If resolution fails, then conn_resolution_failed_ will get set, and
         // this tracker should become disabled.
@@ -524,19 +545,17 @@ void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs)
       }
 
       if (open_info_.remote_addr.family == SockAddrFamily::kUnix) {
+        // Never perform client-side tracing on Unix socket.
+        // For sockets like Unix sockets, the server is always also local, we'll trace it there.
         Disable("No client-side tracing: Unix socket.");
         break;
       }
 
-      bool disabled = false;
-      for (const auto& cluster_cidr : cluster_cidrs) {
-        if (CIDRContainsIPAddr(cluster_cidr, open_info_.remote_addr)) {
-          Disable("No client-side tracing: Remote endpoint is inside the cluster.");
-          disabled = true;
-          break;
-        }
-      }
-      if (disabled) {
+      // At this point we should only see IP addresses (not any other format).
+      DCHECK(open_info_.remote_addr.family == SockAddrFamily::kIPv4 ||
+             open_info_.remote_addr.family == SockAddrFamily::kIPv6);
+      if (IsRemoteAddrInCluster(cluster_cidrs)) {
+        Disable("No client-side tracing: Remote endpoint is inside the cluster.");
         break;
       }
 
@@ -563,14 +582,8 @@ void ConnectionTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_c
 
   // If remote_addr is missing, it means the connect/accept was not traced.
   // Attempt to infer the connection information, to populate remote_addr.
-  if (open_info_.remote_addr.family == SockAddrFamily::kUninitialized &&
-      socket_info_mgr != nullptr) {
+  if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr != nullptr) {
     InferConnInfo(proc_parser, socket_info_mgr);
-  }
-
-  // Normally, we don't want to trace Unix domain sockets.
-  if (open_info_.remote_addr.family == SockAddrFamily::kUnix && !FLAGS_enable_unix_domain_sockets) {
-    Disable("Unix domain socket");
   }
 
   UpdateState(cluster_cidrs);

@@ -50,7 +50,7 @@ TEST(ParseSockAddr, IPv4) {
 
   // Now check InetAddrToString produces the expected string.
   SockAddr addr;
-  ASSERT_OK(PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr));
+  PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
   EXPECT_EQ(addr.AddrStr(), "10.1.2.3");
   EXPECT_EQ(addr.port, 53000);
 }
@@ -62,7 +62,7 @@ TEST(ParseSockAddr, IPv6) {
   sockaddr.sin6_port = htons(12345);
 
   SockAddr addr;
-  ASSERT_OK(PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr));
+  PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
   EXPECT_EQ(addr.AddrStr(), "::1");
   EXPECT_EQ(addr.port, 12345);
 }
@@ -74,21 +74,19 @@ TEST(ParseSockAddr, Unix) {
   memcpy(&sockaddr.sun_path, kUnixPath, sizeof(kUnixPath));
 
   SockAddr addr;
-  ASSERT_OK(PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr));
+  PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
   EXPECT_EQ(addr.AddrStr(), "unix_socket");
   EXPECT_EQ(addr.port, -1);
 }
 
-TEST(ParseSockAddr, Unsupported) {
-  // Create an IP address for the test.
-  struct sockaddr_in sockaddr;
-  sockaddr.sin_family = AF_UNSPEC;
-  inet_pton(AF_INET, "10.1.2.3", &sockaddr.sin_addr);
-  sockaddr.sin_port = htons(53000);
+TEST(ParseSockAddr, Unspecified) {
+  struct sockaddr sockaddr;
+  sockaddr.sa_family = AF_UNSPEC;
 
   SockAddr addr;
-  EXPECT_NOT_OK(PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr));
-  EXPECT_EQ(addr.family, SockAddrFamily::kUninitialized) << "addr should not be mutated";
+  PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
+  EXPECT_EQ(addr.AddrStr(), "-");
+  EXPECT_EQ(addr.port, -1);
 }
 
 TEST(ParseIPAddr, ipv4) {

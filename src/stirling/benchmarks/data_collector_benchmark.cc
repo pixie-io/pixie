@@ -42,6 +42,7 @@ auto CreateData(int size) {
   return data;
 }
 
+#ifdef ARROW_EN
 auto CreateArrowRecordBatch(size_t size) {
   // Random number distributions for generating data
 
@@ -91,6 +92,7 @@ auto CreateArrowRecordBatch(size_t size) {
 
   return record_batch;
 }
+#endif
 
 // This function converts a vector of tuples of data into
 // columnar vectors to simulate conversion of data from
@@ -221,6 +223,7 @@ auto CanonicalProtoProcessDataRepeatedColumn(
   return std::make_tuple(time_stamp, data_0, data_1);
 }
 
+#ifdef ARROW_EN
 // Serialize and then deserialize an Arrow Record Batch.
 // Used to model the overheads of sending messages with Arrow format.
 auto ArrowProcessRecordBatch(const std::shared_ptr<arrow::RecordBatch>& record_batch) {
@@ -265,6 +268,7 @@ auto ArrowProcessData(const std::vector<std::tuple<int64_t, double, int64_t>>& c
 
   return result;
 }
+#endif
 
 // Benchmark to measure performance for converting data to
 // a column of std::vector<T> for each column.
@@ -328,6 +332,7 @@ static void BM_proto_repeated_column(benchmark::State& state) {
                           collected_data.size());
 }
 
+#ifdef ARROW_EN
 // Benchmark to measure performance for converting data to an
 // Arrow record batch, and then serializing into a message and
 // then deserializing.
@@ -365,6 +370,7 @@ static void BM_arrow_record_batch(benchmark::State& state) {
 
   state.SetBytesProcessed(state.iterations() * (2 * sizeof(int64_t) + sizeof(double)) * size);
 }
+#endif
 
 const size_t kRangeMultiplier = 10;
 const size_t kRangeBegin = 10;
@@ -378,5 +384,7 @@ BENCHMARK(BM_proto)->RangeMultiplier(kRangeMultiplier)->Range(kRangeBegin, kRang
 BENCHMARK(BM_proto_repeated_column)
     ->RangeMultiplier(kRangeMultiplier)
     ->Range(kRangeBegin, kRangeEnd);
+#ifdef ARROW_EN
 BENCHMARK(BM_arrow)->RangeMultiplier(kRangeMultiplier)->Range(kRangeBegin, kRangeEnd);
 BENCHMARK(BM_arrow_record_batch)->RangeMultiplier(kRangeMultiplier)->Range(kRangeBegin, kRangeEnd);
+#endif

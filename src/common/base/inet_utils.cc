@@ -12,7 +12,7 @@ std::string SockAddr::AddrStr() const {
 
   Status s;
   switch (family) {
-    case SockAddrFamily::kUninitialized:
+    case SockAddrFamily::kUnspecified:
       out = "-";
       break;
     case SockAddrFamily::kIPv4:
@@ -23,6 +23,9 @@ std::string SockAddr::AddrStr() const {
       break;
     case SockAddrFamily::kUnix:
       out = "unix_socket";
+      break;
+    case SockAddrFamily::kOther:
+      out = "other";
       break;
   }
 
@@ -64,25 +67,34 @@ void PopulateUnixAddr(const char* sun_path, uint32_t inode_num, SockAddr* addr) 
   addr->port = inode_num;
 }
 
-Status PopulateSockAddr(const struct sockaddr* sa, SockAddr* addr) {
+void PopulateSockAddr(const struct sockaddr* sa, SockAddr* addr) {
   switch (sa->sa_family) {
     case AF_INET: {
       const auto* sa_in = reinterpret_cast<const struct sockaddr_in*>(sa);
       PopulateInetAddr(sa_in->sin_addr, sa_in->sin_port, addr);
-      return Status::OK();
+      break;
     }
     case AF_INET6: {
       const auto* sa_in6 = reinterpret_cast<const struct sockaddr_in6*>(sa);
       PopulateInet6Addr(sa_in6->sin6_addr, sa_in6->sin6_port, addr);
-      return Status::OK();
+      break;
     }
     case AF_UNIX: {
       const auto* sa_un = reinterpret_cast<const struct sockaddr_un*>(sa);
       PopulateUnixAddr(sa_un->sun_path, -1, addr);
-      return Status::OK();
+      break;
     }
-    default:
-      return error::InvalidArgument("Unhandled sockaddr family: $0", sa->sa_family);
+    case AF_UNSPEC: {
+      addr->family = SockAddrFamily::kUnspecified;
+      addr->addr = {};
+      addr->port = -1;
+      break;
+    }
+    default: {
+      addr->family = SockAddrFamily::kOther;
+      addr->addr = {};
+      addr->port = -1;
+    }
   }
 }
 
