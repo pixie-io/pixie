@@ -88,7 +88,7 @@ export const DeployInstructions = () => {
       <div className={classes.content}>
         <span className={classes.header}>Install Pixie</span>
         <CodeRenderer
-          code={`bash -c "$(curl -fsSL ' + window.location.origin + '/install.sh)"`}
+          code={'bash -c "$(curl -fsSL ' + window.location.origin + '/install.sh)"'}
           language='bash'
         />
         <div className={classes.instructions}>
