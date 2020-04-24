@@ -83,7 +83,6 @@ const useStyles = makeStyles((theme: Theme) => {
     canvas: {
       flex: 3,
       minWidth: 0,
-      margin: theme.spacing(1),
       overflow: 'auto',
     },
     pixieLogo: {

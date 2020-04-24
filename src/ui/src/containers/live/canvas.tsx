@@ -36,6 +36,9 @@ const useStyles = makeStyles((theme: Theme) => {
       backgroundColor: theme.palette.background.default,
       borderRadius: theme.spacing(0.5),
       border: `solid 1px ${theme.palette.background.three}`,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'stretch',
     },
     editable: {
       boxShadow: theme.shadows[10],
