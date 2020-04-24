@@ -30,6 +30,8 @@ split_series_name = 'k8s'
 ip_col_name = 'MySQL IP'
 # Temporary way to ensure px.Pod works as expected.
 px.Pod = str
+# The bin size to use for the latency histogram.
+latency_bin_size_ms = 50
 # ----------------------------------------------------------------
 
 
@@ -71,6 +73,31 @@ def summary_mysql_let(start_time: str, pod_name: px.Pod):
     df = mysql_let_per_pod(start_time, pod_name)
     summary_df = summarize_LET(df, [k8s_object, ip_col_name])
     return summary_df[[k8s_object, ip_col_name, "rps", "error_rate", "latency", "total_requests"]]
+
+
+def latency_histogram(start_time: str, pod_name: px.Pod):
+    """ Computes a histogram of HTTP request latency.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @service_name: the partial/full-name of the service.
+
+    Returns: DataFrame of the HTTP latency histogram for services that
+        match @service_name.
+    """
+    # The data necessary to compute MySQL LET information is located in the
+    # mysql_events table. We filter and aggregate data from this table to compute the
+    # required metrics.
+    df = px.DataFrame(table='mysql_events', start_time=start_time)
+    df = format_mysql_table(df, filter_responses_with_none_code)
+
+    # Calculate LET of pod(s) (k8s_object) connection to MySQL conections
+    # over the time window ('timestamp') after filtering for matching services.
+    matching_df = df[px.contains(df[k8s_object], pod_name)]
+
+    matching_df.request_latency_ms = px.bin(matching_df.latency_ns / 1000 / 1000,
+                                            latency_bin_size_ms)
+    return matching_df.groupby('request_latency_ms').agg(count=('time_', px.count))
 
 
 # ----------------------------------------------------------------

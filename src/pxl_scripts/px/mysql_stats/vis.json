@@ -17,7 +17,7 @@
       "position": {
         "x": 0,
         "y": 0,
-        "w": 6,
+        "w": 4,
         "h": 3
       },
       "func": {
@@ -53,9 +53,9 @@
     {
       "name": "latency_p90",
       "position": {
-        "x": 6,
+        "x": 4,
         "y": 0,
-        "w": 6,
+        "w": 4,
         "h": 3
       },
       "func": {
@@ -129,9 +129,9 @@
     {
       "name": "errors",
       "position": {
-        "x": 6,
-        "y": 3,
-        "w": 6,
+        "x": 8,
+        "y": 0,
+        "w": 4,
         "h": 3
       },
       "func": {
@@ -162,6 +162,41 @@
           "label": "Error Rate (%)"
         },
         "xAxis": null
+      }
+    },
+    {
+      "name": "latency_histogram",
+      "func": {
+        "name": "latency_histogram",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "pod_name",
+            "variable": "pod_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.BarChart",
+        "bar": {
+          "value": "count",
+          "label": "request_latency_ms"
+        },
+        "xAxis": {
+          "label": "Request Latency (ms)"
+        },
+        "yAxis": {
+          "label": "# of requests"
+        }
+      },
+      "position": {
+        "x": 6,
+        "y": 3,
+        "w": 6,
+        "h": 3
       }
     },
     {
