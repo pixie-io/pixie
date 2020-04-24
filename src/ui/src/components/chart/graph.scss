@@ -3,6 +3,9 @@
 #pixie-graph {
   height: 100%;
   overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 svg .cluster rect {

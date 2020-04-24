@@ -49,9 +49,12 @@ export class Graph extends React.Component<GraphProps, {}> {
       .setDefaultEdgeLabel(() => ({}));
 
     this.props.data.forEach((rb) => {
-      graph.setNode(rb[this.props.toCol], {label: rb[this.props.toCol]});
-      graph.setNode(rb[this.props.fromCol], {label: rb[this.props.fromCol]});
-      graph.setEdge(rb[this.props.fromCol], rb[this.props.toCol]);
+      // Filter out empty columns, because this will cause dagre to crash.
+      if (this.props.toCol !== '' && this.props.fromCol !== '') {
+        graph.setNode(rb[this.props.toCol], {label: rb[this.props.toCol]});
+        graph.setNode(rb[this.props.fromCol], {label: rb[this.props.fromCol]});
+        graph.setEdge(rb[this.props.fromCol], rb[this.props.toCol]);
+      }
     });
 
     return graph;
