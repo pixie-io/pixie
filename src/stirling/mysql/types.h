@@ -322,11 +322,15 @@ struct PreparedStatement {
 
 /**
  * State stores a map of stmt_id to active StmtPrepare event. It's used to be looked up
- * for the Stmtprepare event when a StmtExecute is received. cllient_deprecate_eof indicates
- * whether the ClientDeprecateEOF Flag is set.
+ * for the StmtPrepare event when a StmtExecute is received.
  */
 struct State {
   std::map<int, PreparedStatement> prepared_statements;
+  // To prevent pushing data on mis-classified connections,
+  // we start off in inactive state, which means no data will be pushed out.
+  // Only on certain conditions, which increase our confidence that the data is indeed MySQL,
+  // do we flip this switch, and start pushing data.
+  bool active = false;
 };
 
 struct StateWrapper {

@@ -199,7 +199,7 @@ TEST(ProcessMySQLPacketsTest, NonMySQLTraffic1) {
 
   std::deque<Packet> requests = {p0};
   std::deque<Packet> responses = {p1};
-  State state{std::map<int, PreparedStatement>()};
+  State state{.prepared_statements = std::map<int, PreparedStatement>(), .active = false};
 
   RecordsWithErrorCount<Record> result = ProcessMySQLPackets(&requests, &responses, &state);
   EXPECT_EQ(result.records.size(), 0);
@@ -222,11 +222,31 @@ TEST(ProcessMySQLPacketsTest, NonMySQLTraffic2) {
 
   std::deque<Packet> requests = {p0};
   std::deque<Packet> responses = {p1};
-  State state{std::map<int, PreparedStatement>()};
+  State state{.prepared_statements = std::map<int, PreparedStatement>(), .active = false};
 
   RecordsWithErrorCount<Record> result = ProcessMySQLPackets(&requests, &responses, &state);
   EXPECT_EQ(result.records.size(), 0);
   EXPECT_EQ(result.error_count, 1);
+  EXPECT_EQ(requests.size(), 0);
+  EXPECT_EQ(responses.size(), 0);
+}
+
+TEST(ProcessMySQLPacketsTest, NonMySQLTraffic3) {
+  Packet p;
+  p.sequence_id = 0;
+  p.timestamp_ns = 0;
+  // This packet is particularly tricky to filter out, because it is a StmtSendLongData (0x18),
+  // Random bytes easily match to StmtSendLongData because it has no response,
+  // and the command can carry an arbitrary payload.
+  p.msg = ConstStringView("\x18\x16\x04\x01\x96\x00\x00\x00\x01\x01\x6F\x00\x33");
+
+  std::deque<Packet> requests = {p};
+  std::deque<Packet> responses = {};
+  State state{std::map<int, PreparedStatement>(), .active = false};
+
+  RecordsWithErrorCount<Record> result = ProcessMySQLPackets(&requests, &responses, &state);
+  EXPECT_EQ(result.records.size(), 0);
+  EXPECT_EQ(result.error_count, 0);
   EXPECT_EQ(requests.size(), 0);
   EXPECT_EQ(responses.size(), 0);
 }
