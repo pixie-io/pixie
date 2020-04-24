@@ -586,16 +586,8 @@ func optionallyCreateNamespace(clientset *kubernetes.Clientset, namespace string
 }
 
 func optionallyDeleteClusterrole(clientset *kubernetes.Clientset) error {
-	err := k8s.DeleteClusterRole(clientset, "vizier-metadata")
-	if err != nil {
-		return err
-	}
-
-	err = k8s.DeleteClusterRoleBinding(clientset, "vizier-metadata")
-	if err != nil {
-		return err
-	}
-
+	_ = k8s.DeleteClusterRole(clientset, "vizier-metadata")
+	_ = k8s.DeleteClusterRoleBinding(clientset, "vizier-metadata")
 	return nil
 }
 
