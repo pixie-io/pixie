@@ -1,6 +1,5 @@
 import './vizier.scss';
 
-import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 import {
     CloudClientInterface, VizierGQLClient, VizierGQLClientContext,
 } from 'common/vizier-gql-client';
@@ -12,6 +11,8 @@ import gql from 'graphql-tag';
 import * as React from 'react';
 import {ApolloConsumer, Query, withApollo} from 'react-apollo';
 import {Redirect, Route, Switch} from 'react-router-dom';
+
+import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 
 import {AgentDisplay} from './agent-display';
 import {ClusterInstructions, DeployInstructions} from './deploy-instructions';
@@ -94,7 +95,6 @@ export const VizierMain = (props: VizierMainProps) => {
       <Switch>
         <Route path='/admin' component={AgentDisplay} />
         <Route path='/console' component={EditorWithApollo} />
-        <Redirect from='/*' to='/console' />
       </Switch>
     </div>
   );
@@ -105,28 +105,28 @@ interface VizierState {
 }
 
 const ClusterBanner = () => {
-    const classes = useStyles();
-    return (<Query query={GET_USER} fetchPolicy={'network-only'}>
-      {
-        ({loading, error, data}) => {
-          if (loading || error) {
-            return null;
-          }
-
-          if (data.user.email.split('@')[1] === 'pixie.support') {
-            return (
-              <div className={classes.banner}>
-                {
-                  'You are viewing clusters for an external org: ' + data.user.orgName
-                }
-              </div>
-            );
-          }
-
+  const classes = useStyles();
+  return (<Query query={GET_USER} fetchPolicy={'network-only'}>
+    {
+      ({ loading, error, data }) => {
+        if (loading || error) {
           return null;
         }
+
+        if (data.user.email.split('@')[1] === 'pixie.support') {
+          return (
+            <div className={classes.banner}>
+              {
+                'You are viewing clusters for an external org: ' + data.user.orgName
+              }
+            </div>
+          );
+        }
+
+        return null;
       }
-    </Query>);
+    }
+  </Query>);
 };
 
 export class Vizier extends React.Component<{}, VizierState> {
@@ -175,7 +175,11 @@ export class Vizier extends React.Component<{}, VizierState> {
                           >
                             <Switch>
                               <Route path='/live' component={LiveViewWithApollo} />
-                              <Route render={(props) => <VizierMain {...props} cloudClient={cloudClient} />} />
+                              <Route
+                                path={['/console', '/admin']}
+                                render={(props) => <VizierMain {...props} cloudClient={cloudClient} />}
+                              />
+                              <Redirect from='/*' to='/live' />
                             </Switch>
                           </VizierGRPCClientProvider>
                         );
