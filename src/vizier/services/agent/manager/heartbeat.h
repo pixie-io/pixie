@@ -56,7 +56,7 @@ class HeartbeatMessageHandler : public Manager::MessageHandler {
 
   static constexpr std::chrono::seconds kAgentHeartbeatInterval{5};
   static constexpr int kHeartbeatRetryCount = 5;
-  // The amount of time to wait for a hearbeat ack.
+  // The amount of time to wait for a heartbeat ack.
   static constexpr std::chrono::milliseconds kHeartbeatWaitMillis{5000};
 };
 
