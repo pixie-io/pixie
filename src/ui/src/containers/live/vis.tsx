@@ -103,7 +103,7 @@ function getWidgetArgs(defaults: { [key: string]: string; }, widget: Widget): Vi
 export function getQueryFuncs(vis: Vis, variableValues: { [key: string]: string }): VizierQueryFunc[] {
   const defaults = {};
   vis.variables.forEach((v) => {
-    if (v.defaultValue) {
+    if (typeof v.defaultValue === 'string') {
       defaults[v.name] = v.defaultValue;
     }
   });

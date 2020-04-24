@@ -145,7 +145,7 @@ export class VizierGRPCClient {
       for (const arg of input.args) {
         const argValPb = new ExecuteScriptRequest.FuncToExecute.ArgValue();
         argValPb.setName(arg.name);
-        if (!arg.value) {
+        if (typeof arg.value !== 'string') {
           errors.push(`No value provided for arg ${arg.name}.`);
           continue;
         }
