@@ -8,6 +8,7 @@ go_library(
         "ilm_policy.go",
         "index.go",
         "index_template.go",
+        "managed_index.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/cloud/shared/esutils",
     visibility = ["//visibility:public"],
@@ -24,6 +25,7 @@ go_test(
         "ilm_policy_test.go",
         "index_template_test.go",
         "index_test.go",
+        "managed_index_test.go",
     ],
     embed = [":go_default_library"],
     deps = [

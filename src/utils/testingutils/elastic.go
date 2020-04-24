@@ -33,6 +33,7 @@ func SetupElastic() (*elastic.Client, func()) {
 			fmt.Sprintf("ELASTIC_PASSWORD=%s", esPass),
 			"xpack.security.http.ssl.enabled=false",
 			"xpack.security.transport.ssl.enabled=false",
+			"indices.lifecycle.poll_interval=5s",
 		},
 	})
 
