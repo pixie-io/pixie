@@ -1,12 +1,13 @@
-import Button from '@material-ui/core/Button';
-import Card from '@material-ui/core/Card';
-import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 import CodeRenderer from 'components/code-renderer/code-renderer';
 import {Spinner} from 'components/spinner/spinner';
 // @ts-ignore : TS does not like image files.
 import * as logoImage from 'images/new-logo.svg';
 import * as React from 'react';
 import {Query} from 'react-apollo';
+
+import Button from '@material-ui/core/Button';
+import Card from '@material-ui/core/Card';
+import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -30,7 +31,7 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     instructions: {
       marginTop: theme.spacing(3),
-       ...theme.typography.body1,
+      ...theme.typography.body1,
       fontFamily: 'monospace',
     },
     linksHeader: {
@@ -85,8 +86,8 @@ export const DeployInstructions = () => {
   return (<div className={classes.container}>
     <Card className={classes.dialog}>
       <div className={classes.content}>
-       <span className={classes.header}>Install Pixie</span>
-       <CodeRenderer
+        <span className={classes.header}>Install Pixie</span>
+        <CodeRenderer
           code={`bash -c "$(curl -fsSL ' + window.location.origin + '/install.sh)"`}
           language='bash'
         />
@@ -108,16 +109,16 @@ export const DeployInstructions = () => {
             variant='outlined' color='primary' size='large'>
             Slack
           </Button>
-          <Button  className={classes.button} href='/docs' variant='outlined' color='primary' size='large'>
+          <Button className={classes.button} href='/docs' variant='outlined' color='primary' size='large'>
             Docs
           </Button>
-          <Button  className={classes.button} href='https://github.com/pixie-labs/pixie'
+          <Button className={classes.button} href='https://github.com/pixie-labs/pixie'
             variant='outlined' color='primary' size='large'>
             Github
           </Button>
         </div>
       </div>
-      <img className={classes.logo} src={logoImage} style={{ width: '55px' }}/>
+      <img className={classes.logo} src={logoImage} style={{ width: '55px' }} />
     </Card>
   </div>);
 };
@@ -126,19 +127,18 @@ interface ClusterInstructionsProps {
   message: string;
 }
 
-export const ClusterInstructions = (props) => {
+export const ClusterInstructions = (props: ClusterInstructionsProps) => {
   const classes = useStyles();
 
   return (<div className={classes.container}>
     <Card className={classes.dialog}>
       <div className={classes.content}>
         <div className={classes.centered}>
-          {props.message}
-          <p></p>
-          <Spinner variant='dark' />
+          <p>{props.message}</p>
+          <Spinner variant='light' />
         </div>
       </div>
-      <img className={classes.logo} src={logoImage} style={{ width: '55px' }}/>
+      <img className={classes.logo} src={logoImage} style={{ width: '55px' }} />
     </Card>
   </div>);
 }
