@@ -1,8 +1,10 @@
-import * as QueryString from 'query-string';
 import * as React from 'react';
+import {getQueryParams} from 'utils/query-params';
 import {GetPxScripts} from 'utils/script-bundle';
 
-import {LiveContext, PlacementContextOld, ScriptContext, VegaContextOld, VisContext} from './context';
+import {
+    LiveContext, PlacementContextOld, ScriptContext, VegaContextOld, VisContext,
+} from './context';
 import {parseVis} from './vis';
 
 export function useInitScriptLoader() {
@@ -14,9 +16,7 @@ export function useInitScriptLoader() {
   // both
   const [loaded, setLoaded] = React.useState(false);
   const script = React.useContext(ScriptContext);
-  const queryParams = QueryString.parse(window.location.search);
-  const [scriptParam, setScriptParam] = React.useState(
-    typeof queryParams.script === 'string' ? queryParams.script : '');
+  const [params, setParams] = React.useState(getQueryParams());
 
   // new
   const { executeScript, oldLiveViewMode, setScripts } = React.useContext(LiveContext);
@@ -24,7 +24,7 @@ export function useInitScriptLoader() {
 
   // Execute the default scripts if script is not set in the query params.
   React.useEffect(() => {
-    if (loaded || scriptParam || !script) {
+    if (loaded || params.script || !script) {
       return;
     }
     if (oldLiveViewMode && placementSpec && vegaSpec) {
@@ -36,25 +36,29 @@ export function useInitScriptLoader() {
     }
 
     setLoaded(true);
-  }, [loaded, script, visSpec, placementSpec, vegaSpec]);
+  }, [loaded, script, visSpec, placementSpec, vegaSpec, params]);
 
+  // This effect only runs once.
   React.useEffect(() => {
-    if (!scriptParam) {
+    if (!params.script) {
       return;
     }
     GetPxScripts().then((examples) => {
       for (const { title, vis, placement, code, id } of examples) {
-        if (id === scriptParam && vis && placement && code) {
+        if (id === params.script && vis && placement && code) {
           setScriptsOld(code, vis, placement, { title, id });
           executeScriptOld(code);
           return;
-        } else if (id === scriptParam && vis && code) {
-          setScripts(code, vis, {title, id});
-          executeScript(code, parseVis(vis));
+        } else if (id === params.script && vis && code) {
+          setScripts(code, vis, { title, id }, params);
+          executeScript(code, parseVis(vis), params);
         }
       }
       // No script has been loaded if we got here, clear the script param the first effect will run.
-      setScriptParam('');
+      setParams({
+        ...params,
+        script: '',
+      });
     });
   }, []);
 }

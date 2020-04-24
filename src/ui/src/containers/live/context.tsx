@@ -4,8 +4,8 @@ import {Table, VizierQueryFunc} from 'common/vizier-grpc-client';
 import ClientContext from 'common/vizier-grpc-client-context';
 import {SnackbarProvider, useSnackbar} from 'components/snackbar/snackbar';
 import {parseSpecs, VisualizationSpecMap} from 'components/vega/spec';
-import * as QueryString from 'query-string';
 import * as React from 'react';
+import {setQueryParams} from 'utils/query-params';
 
 import {parsePlacementOld, Placement} from './layout';
 import {getQueryFuncs, parseVis, Vis} from './vis';
@@ -23,8 +23,8 @@ interface LiveContextProps {
   toggleDataDrawer: () => void;
 
   // New live view functions.
-  executeScript: (script?: string, vis?: Vis) => void;
-  setScripts: (script: string, vis: string, title: Title) => void;
+  executeScript: (script?: string, vis?: Vis, args?: Arguments) => void;
+  setScripts: (script: string, vis: string, title: Title, args: Arguments) => void;
   updateVis: (spec: Vis) => void;
 
   // Temporary bool that allows the UI to know whether the current live view is old or new mode.
@@ -45,6 +45,15 @@ interface Title {
   id: string;
 }
 
+interface Arguments {
+  [arg: string]: string;
+}
+
+interface ArgsContextProps {
+  args: Arguments;
+  setArgs: (args: Arguments) => void;
+}
+
 export const ScriptContext = React.createContext<string>('');
 export const VegaContextOld = React.createContext<VisualizationSpecMap>(null);
 export const PlacementContextOld = React.createContext<Placement>(null);
@@ -53,6 +62,7 @@ export const LiveContext = React.createContext<LiveContextProps>(null);
 export const TitleContext = React.createContext<Title>(null);
 export const VisContext = React.createContext<Vis>(null);
 export const DrawerContext = React.createContext<boolean>(false);
+export const ArgsContext = React.createContext<ArgsContextProps>(null);
 
 const LiveContextProvider = (props) => {
   const [script, setScript] = React.useState<string>(ls.getLiveViewPixieScript());
@@ -92,11 +102,12 @@ const LiveContextProvider = (props) => {
     setPlacementOld(parsePlacementOld(newPlacement) || {});
   }, []);
 
-  const setScripts = React.useCallback((newScript, newVis, newTitle) => {
+  const setScripts = React.useCallback((newScript, newVis, newTitle, newArgs) => {
     setOldLiveViewMode(false);
     setScript(newScript);
     setTitle(newTitle);
     setVis(parseVis(newVis) || { variables: [], widgets: [] });
+    setArgs(newArgs);
   }, []);
 
   const [title, setTitle] = React.useState<Title>(ls.getLiveViewTitle());
@@ -109,6 +120,14 @@ const LiveContextProvider = (props) => {
   React.useEffect(() => {
     ls.setLiveViewDataDrawerOpened(dataDrawerOpen);
   }, [dataDrawerOpen]);
+
+  const [args, setArgs] = React.useState<Arguments | null>(null);
+  const argsContext = React.useMemo(() => ({ args, setArgs }), [args, setArgs]);
+  React.useEffect(() => {
+    if (args) {
+      setQueryParams(args);
+    }
+  }, [args]);
 
   const client = React.useContext(ClientContext);
 
@@ -159,7 +178,7 @@ const LiveContextProvider = (props) => {
     });
   }, [client, script, title]);
 
-  const executeScript = React.useCallback((inputScript?: string, inputVis?: Vis) => {
+  const executeScript = React.useCallback((inputScript?: string, inputVis?: Vis, inputArgs?: Arguments) => {
     if (!client) {
       return;
     }
@@ -168,14 +187,8 @@ const LiveContextProvider = (props) => {
     let queryId: string;
 
     new Promise((resolve, reject) => {
-      const variableValues = {};
-      const parsed = QueryString.parse(location.search);
-      Object.keys(parsed).forEach((key) => {
-        variableValues[key] = parsed[key] as string;
-      });
-
       try {
-        resolve(getQueryFuncs(inputVis || vis, variableValues));
+        resolve(getQueryFuncs(inputVis || vis, inputArgs || args || {}));
       } catch (error) {
         reject(error);
       }
@@ -216,7 +229,7 @@ const LiveContextProvider = (props) => {
           title,
         });
       });
-  }, [client, script, vis, title]);
+  }, [client, script, vis, title, args]);
 
   const liveViewContext = React.useMemo(() => ({
     // Old Live View format
@@ -242,19 +255,21 @@ const LiveContextProvider = (props) => {
   return (
     <LiveContext.Provider value={liveViewContext}>
       <TitleContext.Provider value={title}>
-        <ScriptContext.Provider value={script}>
-          <VegaContextOld.Provider value={vegaSpec}>
-            <PlacementContextOld.Provider value={placement}>
-              <ResultsContext.Provider value={results}>
-                <VisContext.Provider value={vis}>
-                  <DrawerContext.Provider value={dataDrawerOpen}>
-                    {props.children}
-                  </DrawerContext.Provider>
-                </VisContext.Provider>
-              </ResultsContext.Provider>
-            </PlacementContextOld.Provider>
-          </VegaContextOld.Provider>
-        </ScriptContext.Provider>
+        <ArgsContext.Provider value={argsContext}>
+          <ScriptContext.Provider value={script}>
+            <VegaContextOld.Provider value={vegaSpec}>
+              <PlacementContextOld.Provider value={placement}>
+                <ResultsContext.Provider value={results}>
+                  <VisContext.Provider value={vis}>
+                    <DrawerContext.Provider value={dataDrawerOpen}>
+                      {props.children}
+                    </DrawerContext.Provider>
+                  </VisContext.Provider>
+                </ResultsContext.Provider>
+              </PlacementContextOld.Provider>
+            </VegaContextOld.Provider>
+          </ScriptContext.Provider>
+        </ArgsContext.Provider>
       </TitleContext.Provider>
     </LiveContext.Provider>
   );

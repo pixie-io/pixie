@@ -89,7 +89,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
       setScriptsOld(script.code, script.vis, script.placement, { title: script.title, id: script.id });
       executeScriptOld(script.code);
     } else if (script) {
-      setScripts(script.code, script.vis, { title: script.title, id: script.id });
+      setScripts(script.code, script.vis, { title: script.title, id: script.id }, {});
       executeScript(script.code, parseVis(script.vis));
     }
     onClose();
