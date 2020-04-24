@@ -91,7 +91,7 @@ export const Editor = ({ client }) => {
 
   const createNewTab = React.useCallback((query?) => {
     const newTab = {
-      title: (query && query.title) || 'untitled',
+      title: (query && query.id) || 'untitled',
       id: uuid(),
     };
     if (query && query.code) {

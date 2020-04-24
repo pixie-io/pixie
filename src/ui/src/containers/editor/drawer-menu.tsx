@@ -15,7 +15,9 @@ export const EditorDrawerMenu = (props: EditorDrawerMenuProps) => {
   const [exampleScripts, setExampleScripts] = React.useState<Script[]>([]);
 
   React.useEffect(() => {
-    GetPxScripts().then(setExampleScripts);
+    GetPxScripts().then((scripts) => {
+      setExampleScripts(scripts.filter((s) => !s.vis));
+    });
   }, []);
 
   const { data: historyData } = useQuery<{ scriptHistory: ScriptHistory[] }>(SCRIPT_HISTORY);
