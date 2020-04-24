@@ -23,7 +23,7 @@ ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg) {
 
   BinaryDecoder decoder(*buf);
   msg->tag = static_cast<Tag>(decoder.ExtractChar());
-  msg->len = decoder.ExtractInteger<int32_t>();
+  msg->len = decoder.ExtractInt<int32_t>().ValueOrDie();
   constexpr int kLenFieldLen = 4;
   if (msg->len < kLenFieldLen) {
     // Len includes the len field itself, so its value cannot be less than the length of the field.
@@ -34,7 +34,7 @@ ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg) {
     return ParseState::kNeedsMoreData;
   }
   // Len includes the length field itself (int32_t), so the payload needs to exclude 4 bytes.
-  msg->payload = std::string(decoder.ExtractString(str_len));
+  msg->payload = std::string(decoder.ExtractString<char>(str_len).ValueOrDie());
   *buf = decoder.Buf();
   if (msg->tag == Tag::kCmdComplete) {
     // The last character of a kCmdComplete is '\0'.
@@ -50,9 +50,9 @@ ParseState ParseStartupMessage(std::string_view* buf, StartupMessage* msg) {
 
   BinaryDecoder decoder(*buf);
 
-  msg->len = decoder.ExtractInteger<int32_t>();
-  msg->proto_ver = {.major = decoder.ExtractInteger<int16_t>(),
-                    .minor = decoder.ExtractInteger<int16_t>()};
+  msg->len = decoder.ExtractInt<int32_t>().ValueOrDie();
+  msg->proto_ver = {.major = decoder.ExtractInt<int16_t>().ValueOrDie(),
+                    .minor = decoder.ExtractInt<int16_t>().ValueOrDie()};
 
   const size_t kHeaderSize = 2 * sizeof(int32_t);
 
@@ -60,7 +60,7 @@ ParseState ParseStartupMessage(std::string_view* buf, StartupMessage* msg) {
     return ParseState::kNeedsMoreData;
   }
 
-  while (!decoder.Empty()) {
+  while (!decoder.eof()) {
     std::string_view name = decoder.ExtractStringUtil('\0');
     if (name.empty()) {
       // Each name or value is terminated by '\0'. And all name value pairs are terminated by an
@@ -118,7 +118,7 @@ std::vector<std::string_view> ParseRowDesc(std::string_view row_desc) {
   std::vector<std::string_view> res;
 
   BinaryDecoder decoder(row_desc);
-  const int16_t field_count = decoder.ExtractInteger<int16_t>();
+  const int16_t field_count = decoder.ExtractInt<int16_t>().ValueOrDie();
   for (int i = 0; i < field_count; ++i) {
     std::string_view col_name = decoder.ExtractStringUtil('\0');
 
@@ -137,7 +137,7 @@ std::vector<std::string_view> ParseRowDesc(std::string_view row_desc) {
       return res;
     }
     // Discard the reset of the message, which are not used.
-    decoder.ExtractString(kFieldDescSize);
+    decoder.ExtractString<char>(kFieldDescSize);
   }
   return res;
 }
@@ -146,7 +146,7 @@ std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_
   std::vector<std::optional<std::string_view>> res;
 
   BinaryDecoder decoder(data_row);
-  const int16_t field_count = decoder.ExtractInteger<int16_t>();
+  const int16_t field_count = decoder.ExtractInt<int16_t>().ValueOrDie();
 
   for (int i = 0; i < field_count; ++i) {
     if (decoder.BufSize() < sizeof(int32_t)) {
@@ -155,7 +155,7 @@ std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_
     }
     // The length of the column value, in bytes (this count does not include itself). Can be zero.
     // As a special case, -1 indicates a NULL column value. No value bytes follow in the NULL case.
-    auto value_len = decoder.ExtractInteger<int32_t>();
+    auto value_len = decoder.ExtractInt<int32_t>().ValueOrDie();
     constexpr int kNullValLen = -1;
     if (value_len == kNullValLen) {
       res.push_back(std::nullopt);
@@ -169,7 +169,7 @@ std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_
       VLOG(1) << "Not enough data, copy the rest of data";
       value_len = decoder.BufSize();
     }
-    res.push_back(decoder.ExtractString(value_len));
+    res.push_back(decoder.ExtractString<char>(value_len).ValueOrDie());
   }
   return res;
 }

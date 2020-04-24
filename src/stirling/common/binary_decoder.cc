@@ -11,12 +11,6 @@ char BinaryDecoder::ExtractChar() {
   return res;
 }
 
-std::string_view BinaryDecoder::ExtractString(size_t len) {
-  auto res = buf_.substr(0, len);
-  buf_.remove_prefix(len);
-  return res;
-}
-
 // Extract until encounter the input sentinel character.
 // The sentinel character is returned, and removed from the buffer.
 std::string_view BinaryDecoder::ExtractStringUtil(char sentinel) {

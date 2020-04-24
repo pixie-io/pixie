@@ -15,12 +15,7 @@ namespace cass {
 
 template <typename TIntType>
 StatusOr<TIntType> FrameBodyDecoder::ExtractIntCore() {
-  if (buf_.size() < sizeof(TIntType)) {
-    return error::ResourceUnavailable("Insufficient number of bytes.");
-  }
-  TIntType val = utils::BEndianBytesToInt<TIntType>(buf_);
-  buf_.remove_prefix(sizeof(TIntType));
-  return val;
+  return binary_decoder_.ExtractInt<TIntType>();
 }
 
 template <typename TFloatType>
@@ -35,27 +30,16 @@ StatusOr<TFloatType> ExtractFloatCore(std::string_view* buf) {
 
 template <typename TCharType>
 StatusOr<std::basic_string<TCharType>> FrameBodyDecoder::ExtractBytesCore(int64_t len) {
-  if (static_cast<ssize_t>(buf_.size()) < len) {
-    return error::ResourceUnavailable("Insufficient number of bytes.");
-  }
-
-  // TODO(oazizi): Optimization when input and output types match: no need for tbuf.
-  auto tbuf = CreateStringView<TCharType>(buf_);
-  std::basic_string<TCharType> str(tbuf.substr(0, len));
-  buf_.remove_prefix(len);
-  return str;
+  PL_ASSIGN_OR_RETURN(std::basic_string_view<TCharType> tbuf,
+                      binary_decoder_.ExtractString<TCharType>(len));
+  return std::basic_string<TCharType>(tbuf);
 }
 
 template <typename TCharType, size_t N>
 Status FrameBodyDecoder::ExtractBytesCore(TCharType* out) {
-  if (buf_.size() < N) {
-    return error::ResourceUnavailable("Insufficient number of bytes.");
-  }
-
-  // TODO(oazizi): Optimization when input and output types match: no need for tbuf.
-  auto tbuf = CreateStringView<TCharType>(buf_);
+  PL_ASSIGN_OR_RETURN(std::basic_string_view<TCharType> tbuf,
+                      binary_decoder_.ExtractString<TCharType>(N));
   memcpy(out, tbuf.data(), N);
-  buf_.remove_prefix(N);
   return Status::OK();
 }
 

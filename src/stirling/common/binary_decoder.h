@@ -15,20 +15,31 @@ class BinaryDecoder {
  public:
   explicit BinaryDecoder(std::string_view buf) : buf_(buf) {}
 
-  bool Empty() const { return buf_.empty(); }
+  bool eof() const { return buf_.empty(); }
   size_t BufSize() const { return buf_.size(); }
   std::string_view Buf() const { return buf_; }
 
   char ExtractChar();
 
   template <typename TIntType>
-  TIntType ExtractInteger() {
-    TIntType val = utils::BEndianBytesToInt<TIntType>(buf_);
+  StatusOr<TIntType> ExtractInt() {
+    if (buf_.size() < sizeof(TIntType)) {
+      return error::ResourceUnavailable("Insufficient number of bytes.");
+    }
+    TIntType val = ::pl::utils::BEndianBytesToInt<TIntType>(buf_);
     buf_.remove_prefix(sizeof(TIntType));
     return val;
   }
 
-  std::string_view ExtractString(size_t len);
+  template <typename TCharType>
+  StatusOr<std::basic_string_view<TCharType>> ExtractString(size_t len) {
+    if (buf_.size() < len) {
+      return error::ResourceUnavailable("Insufficient number of bytes.");
+    }
+    auto tbuf = CreateStringView<TCharType>(buf_);
+    buf_.remove_prefix(len);
+    return tbuf.substr(0, len);
+  }
 
   // Extract until encounter the input sentinel character.
   // The sentinel character is not returned, but is still removed from the buffer.

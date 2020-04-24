@@ -3,16 +3,18 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include "src/common/testing/testing.h"
+
 namespace pl {
 namespace stirling {
 
-TEST(BinaryDecoderTest, ExtractInteger) {
+TEST(BinaryDecoderTest, ExtractInt) {
   std::string_view data("\x01\x01\x01\x01\x01\x01\x01");
   BinaryDecoder bin_decoder(data);
 
-  EXPECT_EQ(1, bin_decoder.ExtractInteger<int8_t>());
-  EXPECT_EQ(257, bin_decoder.ExtractInteger<int16_t>());
-  EXPECT_EQ(16843009, bin_decoder.ExtractInteger<int32_t>());
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractInt<int8_t>(), 1);
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractInt<int16_t>(), 257);
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractInt<int32_t>(), 16843009);
   EXPECT_EQ(0, bin_decoder.BufSize());
 }
 

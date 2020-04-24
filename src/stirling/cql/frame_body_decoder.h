@@ -9,6 +9,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/base/inet_utils.h"
+#include "src/stirling/common/binary_decoder.h"
 #include "src/stirling/cql/types.h"
 
 namespace pl {
@@ -277,7 +278,7 @@ class FrameBodyDecoder {
    * @param buf A string_view into the body of the CQL frame.
    */
   explicit FrameBodyDecoder(std::string_view buf, uint8_t version = 3)
-      : buf_(buf), version_(version) {
+      : binary_decoder_(buf), version_(version) {
     // Actual enforcement happens in cql_parse, so we just CHECK here.
     DCHECK_GE(version, kMinSupportedProtocolVersion);
     DCHECK_LE(version, kMaxSupportedProtocolVersion);
@@ -365,11 +366,11 @@ class FrameBodyDecoder {
   /**
    * Whether processing has reached end-of-frame.
    */
-  bool eof() { return buf_.empty(); }
+  bool eof() { return binary_decoder_.eof(); }
 
   Status ExpectEOF() {
     if (!eof()) {
-      return error::Internal("There are still $0 bytes left", buf_.size());
+      return error::Internal("There are still $0 bytes left", binary_decoder_.BufSize());
     }
     return Status::OK();
   }
@@ -384,8 +385,7 @@ class FrameBodyDecoder {
   template <typename TCharType, size_t N>
   Status ExtractBytesCore(TCharType* out);
 
-  // View into the frame contents.
-  std::string_view buf_;
+  BinaryDecoder binary_decoder_;
 
   // Version of the CQL binary protocol to use when decoding.
   const uint8_t version_;
