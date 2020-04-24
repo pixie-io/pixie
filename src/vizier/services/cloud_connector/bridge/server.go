@@ -469,7 +469,7 @@ func (s *Bridge) publishBridgeCh(topic string, msg *types.Any) error {
 	select {
 	case s.grpcOutCh <- wrappedReq:
 	default:
-		log.WithField("Message", wrappedReq.String()).Error("Dropping message because of queue backoff")
+		log.WithField("Topic", wrappedReq.Topic).Error("Dropping message because of queue backoff")
 	}
 	return nil
 }
