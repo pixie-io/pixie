@@ -24,7 +24,7 @@ static constexpr DataElement kPGSQLElements[] = {
 static constexpr auto kPGSQLTable = DataTableSchema("pgsql_events", kPGSQLElements);
 
 constexpr int kPGSQLUPIDIdx = kPGSQLTable.ColIndex("upid");
-constexpr int kPGSQLReqCmdIdx = kPGSQLTable.ColIndex("req");
+constexpr int kPGSQLReqIdx = kPGSQLTable.ColIndex("req");
 constexpr int kPGSQLRespIdx = kPGSQLTable.ColIndex("resp");
 constexpr int kPGSQLLatencyIdx = kPGSQLTable.ColIndex("latency_ns");
 

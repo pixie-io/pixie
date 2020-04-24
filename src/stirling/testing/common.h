@@ -25,6 +25,19 @@ std::vector<size_t> FindRecordIdxMatchesPid(const types::ColumnWrapperRecordBatc
   return res;
 }
 
+// Note the index is column major, so it comes before row_idx.
+template <typename TValueType>
+const TValueType& AccessRecordBatch(const types::ColumnWrapperRecordBatch& record_batch,
+                                    int column_idx, int row_idx) {
+  return record_batch[column_idx]->Get<TValueType>(row_idx).val;
+}
+
+template <>
+const types::StringValue& AccessRecordBatch<types::StringValue>(
+    const types::ColumnWrapperRecordBatch& record_batch, int column_idx, int row_idx) {
+  return record_batch[column_idx]->Get<types::StringValue>(row_idx);
+}
+
 }  // namespace testing
 }  // namespace stirling
 }  // namespace pl
