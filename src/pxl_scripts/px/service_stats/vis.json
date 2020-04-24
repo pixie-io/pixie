@@ -3,7 +3,7 @@
     {
       "name": "service_name",
       "type": "PX_SERVICE",
-      "defaultValue": "/"
+      "defaultValue": ""
     },
     {
       "name": "start_time",
@@ -282,6 +282,35 @@
       },
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    },
+    {
+      "name": "Graph",
+      "position": {
+        "x": 3,
+        "y": 12,
+        "w": 6,
+        "h": 3
+      },
+      "func": {
+        "name": "service_graph",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "service_name",
+            "variable": "service_name"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Graph",
+        "adjacencyList": {
+          "fromColumn": "requestor",
+          "toColumn": "responder"
+        }
       }
     }
   ]

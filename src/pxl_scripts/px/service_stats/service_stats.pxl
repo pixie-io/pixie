@@ -138,6 +138,23 @@ def incoming_edges(start_time: str, service_name: px.Service):
     return summarize_LET(incoming_let_df, [src_col, dest_col])
 
 
+def service_graph(start_time: str, service_name: px.Service):
+    """ Determines the services that make requests to this service.
+    Like incoming_edges, but filters out empty strings in the src/dest.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @service_name: the partial/full-name of the service to
+        get service_graph in.
+
+    Returns: DataFrame of the services that talk to this service
+        and the LET summary of that communication.
+    """
+
+    df = incoming_edges(start_time, service_name)
+    return df[df[src_col] != '' and df[dest_col] != '']
+
+
 # ----------------------------------------------------------------
 # Utility functions:
 #
