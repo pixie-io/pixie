@@ -687,34 +687,6 @@ describe('bar', () => {
     });
   });
 
-  it('produces the expected spec for a simple case with binning', () => {
-    const input = {
-      "@type": "pixielabs.ai/pl.vispb.BarChart",
-      "bar": {
-        "label": "latency",
-        "bin": true
-      }
-    };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
-      "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
-      "data": {
-        "name": "mysource",
-      },
-      "encoding": {
-        "x": {
-          "field": "latency",
-          "type": "quantitative",
-          "bin": true
-        },
-        "y": {
-          "aggregate": "count",
-          "type": "quantitative"
-        }
-      },
-      "mark": "bar"
-    });
-  });
-
   it('produces a spec with a custom title and custom x/y axis titles', () => {
     const input = {
       "@type": "pixielabs.ai/pl.vispb.BarChart",
