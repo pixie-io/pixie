@@ -134,9 +134,6 @@ message BarChart {
     // Group columns When group_by is set, group by the provided column, for example "cluster".
     // (visual ex: https://vega.github.io/vega-lite/examples/bar_grouped.html)
     string group_by = 4;
-    // Bin denotes whether or not binning should be applied.
-    // It is only supported for quantitative values of 'value'.
-    bool bin = 5;
   }
   Bar bar = 1;
   // title is the title string for the chart.
