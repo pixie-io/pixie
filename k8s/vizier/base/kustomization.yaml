@@ -33,3 +33,4 @@ resources:
 - tls_config.yaml
 - fluentbit
 - updater_role.yaml
+- cloud_connector_role.yaml
