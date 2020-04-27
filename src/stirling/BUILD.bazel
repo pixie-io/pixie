@@ -309,8 +309,8 @@ pl_cc_test(
     name = "http2_trace_bpf_test",
     srcs = ["http2_trace_bpf_test.cc"],
     data = [
-        "//experimental/bpf/tracers/bin/go_grpc_tls_pl/client:client_image.tar",
-        "//experimental/bpf/tracers/bin/go_grpc_tls_pl/server:server_image.tar",
+        "//demos/client_server_apps/go_grpc_tls_pl/client:client_image.tar",
+        "//demos/client_server_apps/go_grpc_tls_pl/server:server_image.tar",
     ],
     flaky = True,
     tags = [

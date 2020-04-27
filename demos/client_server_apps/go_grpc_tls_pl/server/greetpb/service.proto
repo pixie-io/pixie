@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package pl.go_grpc_tls_pl.server;
+
+option go_package = "pixielabs.ai/pixielabs/demos/client_server_apps/go_grpc_tls_pl/server/greetpb;greetpb";
+
+// The greeting service definition.
+service Greeter {
+  // Sends a greeting
+  rpc SayHello (HelloRequest) returns (HelloReply) {}
+}
+
+// The request message containing the user's name.
+message HelloRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings
+message HelloReply {
+  string message = 1;
+}

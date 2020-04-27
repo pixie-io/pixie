@@ -1,0 +1,17 @@
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "client_certs",
+    srcs = glob([
+        "client.*",
+        "rootCA.crt",
+    ]),
+)
+
+filegroup(
+    name = "server_certs",
+    srcs = glob([
+        "server.*",
+        "rootCA.crt",
+    ]),
+)

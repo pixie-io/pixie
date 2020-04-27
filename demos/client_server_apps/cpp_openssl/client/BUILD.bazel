@@ -1,0 +1,9 @@
+load("//bazel:pl_build_system.bzl", "pl_exp_cc_binary")
+
+pl_exp_cc_binary(
+    name = "client",
+    srcs = ["client.cc"],
+    deps = [
+        "@boringssl//:ssl",
+    ],
+)
