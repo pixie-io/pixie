@@ -314,40 +314,27 @@ StatusOr<std::unique_ptr<IR>> DistributedSplitter::CreateGRPCBridge(
   absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>> edges_to_break =
       GetEdgesToBreak(grpc_bridge_plan.get(), on_kelvin, sources);
   int64_t grpc_id_counter = 0;
-  // TODO(philkuz) enable for (PL-846)
-  // for (const auto& [parent, children] : edges_to_break) {
-  //   PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink, CreateGRPCSink(parent, grpc_id_counter));
-  //   PL_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
-  //                       CreateGRPCSourceGroup(parent, grpc_id_counter));
-  //   // Go through the children and replace the parent with the new child.
-  //   for (auto child : children) {
-  //     PL_RETURN_IF_ERROR(child->ReplaceParent(parent, grpc_source_group));
-  //   }
-
-  //   ++grpc_id_counter;
-  // }
-
-  // TODO(philkuz) replace with the above when ready (846)
   for (const auto& [parent, children] : edges_to_break) {
+    OperatorIR* grpc_sink_parent = parent;
+    // If there is one child and it is a Limit, then just limit before the GRPCBridge.
+    if (children.size() == 1 && Match(children[0], Limit())) {
+      LimitIR* limit = static_cast<LimitIR*>(children[0]);
+      PL_ASSIGN_OR_RETURN(LimitIR * new_limit, grpc_bridge_plan->CopyNode(limit));
+      PL_RETURN_IF_ERROR(new_limit->CopyParentsFrom(limit));
+      grpc_sink_parent = new_limit;
+    }
+    PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink, CreateGRPCSink(grpc_sink_parent, grpc_id_counter));
+    PL_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
+                        CreateGRPCSourceGroup(parent, grpc_id_counter));
+    DCHECK_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
     // Go through the children and replace the parent with the new child.
     for (auto child : children) {
-      // TODO(philkuz) figure out how this limit works with PL-846.
-      OperatorIR* grpc_sink_parent = parent;
-      if (Match(child, Limit())) {
-        LimitIR* limit = static_cast<LimitIR*>(child);
-        PL_ASSIGN_OR_RETURN(LimitIR * new_limit, grpc_bridge_plan->CopyNode(limit));
-        PL_RETURN_IF_ERROR(new_limit->CopyParentsFrom(limit));
-        grpc_sink_parent = new_limit;
-      }
-      PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink,
-                          CreateGRPCSink(grpc_sink_parent, grpc_id_counter));
-      PL_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
-                          CreateGRPCSourceGroup(parent, grpc_id_counter));
+      DCHECK(child->IsBlocking());
       PL_RETURN_IF_ERROR(child->ReplaceParent(parent, grpc_source_group));
-      DCHECK_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
-      ++grpc_id_counter;
     }
+    ++grpc_id_counter;
   }
+
   return grpc_bridge_plan;
 }
 

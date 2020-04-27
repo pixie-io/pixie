@@ -29,10 +29,8 @@ namespace distributed {
  * 1. Where all sources are MemorySources and all sinks are GRPCSinks
  * 2. Where all sources are GRPCSourceGroups and all sinks are MemorySinks
  *
- * TODO(philkuz) (PL-846) support an optimization to remove extraneous GRPCBridge insertions, or
- * pruning them somehow, as described below:
- *
- * Table1
+ * Graphically, we want to be able to convert the following logical plan:
+ * MemSrc1
  *  |   \
  *  |    Agg
  *  |   /
@@ -40,10 +38,12 @@ namespace distributed {
  *  |
  * Sink
  *
- * can be accurately represented as
- * Table1
+ * Into
+ * MemSrc1
  *  |
- * GRPC
+ * GRPCSink(1)
+ *
+ * GRPCSource(1)
  *  |   \
  *  |    Agg
  *  |   /
@@ -51,17 +51,7 @@ namespace distributed {
  *  |
  * Sink
  *
- * but the current implementation does
- * Table1
- *  |  \
- *  |   \
- * GRPC  GRPC
- *  |     |
- *  |    Agg
- *  |   /
- * Join
- *  |
- * Sink
+ * Where GRPCSink and GRPCSource are a bridge.
  *
  */
 // TODO(philkuz) (PL-1470) Clean up splitter
@@ -133,6 +123,38 @@ class DistributedSplitter : public NotCopyable {
  public:
   /**
    * @brief The logical plan is split into two different pieces along blocking nodes lines.
+   *
+   */
+  /**
+   * @brief Inserts a GRPCBridge in front of blocking operators in a graph.
+   * Inserts a GRPCBridge (GRPCSink -> GRPCSourceGroup) between the parent_op
+   * and blocking ops. The returned SplitPlan should contain two IRs now:
+   * 1. Where all sources are MemorySources and all sinks are GRPCSinks
+   * 2. Where all sources are GRPCSourceGroups and all sinks are MemorySinks
+   *
+   * Graphically, we want to be able to convert the following logical plan:
+   * MemSrc1
+   *  |   \
+   *  |    Agg
+   *  |   /
+   * Join
+   *  |
+   * Sink
+   *
+   * Into
+   * MemSrc1
+   *  |
+   * GRPCSink(1)
+   *
+   * GRPCSource(1)
+   *  |   \
+   *  |    Agg
+   *  |   /
+   * Join
+   *  |
+   * Sink
+   *
+   * Where GRPCSink and GRPCSource are a bridge.
    *
    * @param logical_plan: the input logical_plan
    * @return StatusOr<std::unique_ptr<BlockingSplitPLan>>: the plan split along blocking lines.

@@ -64,8 +64,6 @@ class SplitterTest : public OperatorTests {
     IRNode* maybe_op_node = test_graph->Get(id);
     ASSERT_TRUE(Match(maybe_op_node, Operator())) << err_string;
     OperatorIR* op = static_cast<OperatorIR*>(maybe_op_node);
-    // TODO(philkuz) with multiple parents support check to see whether we can get
-    // check whether either has a parent. Maybe we just pass in an index?
     ASSERT_EQ(op->parents().size(), 1);
     OperatorIR* sink_parent = op->parents()[0];
     EXPECT_EQ(sink_parent->type(), IRNodeType::kGRPCSourceGroup);
@@ -335,10 +333,17 @@ TEST_F(SplitterTest, union_operator) {
   EXPECT_THAT(source_group_ids, UnorderedElementsAreArray(sink_ids));
 }
 
-// Two blocking children of one source operator
-// TODO(philkuz) (PL-846) optimize this case to only have one GRPCBridge.
-/** Tests the following graph.
+/** Tests that the following graph
  *    T1
+ *   /  \
+ * Agg1   Agg2
+ *
+ * becomes:
+ *    T1
+ *     |
+ * GRPCSink(1)
+ *
+ * GRPCSource(1)
  *   /  \
  * Agg1   Agg2
  */
@@ -372,38 +377,34 @@ TEST_F(SplitterTest, two_blocking_children) {
   EXPECT_MATCH(new_blocking_agg2->parents()[0], GRPCSourceGroup());
   auto grpc_source2 = static_cast<GRPCSourceGroupIR*>(new_blocking_agg2->parents()[0]);
 
-  // TODO(philkuz) (PL-846) replace the following with the commented out code.
-  EXPECT_NE(grpc_source1->source_id(), grpc_source2->source_id());
+  EXPECT_EQ(grpc_source1->source_id(), grpc_source2->source_id());
+  EXPECT_EQ(grpc_source1, grpc_source2);
   auto source_children = GetEquivalentInNewPlan(before_blocking, mem_src)->Children();
-  ASSERT_EQ(source_children.size(), 2);
-  ASSERT_EQ(source_children[0]->type(), IRNodeType::kGRPCSink);
-  ASSERT_EQ(source_children[1]->type(), IRNodeType::kGRPCSink);
+  ASSERT_EQ(source_children.size(), 1);
+  ASSERT_MATCH(source_children[0], GRPCSink());
 
   auto grpc_sink1 = static_cast<GRPCSinkIR*>(source_children[0]);
-  auto grpc_sink2 = static_cast<GRPCSinkIR*>(source_children[1]);
 
-  EXPECT_THAT(std::vector<int64_t>({grpc_source1->source_id(), grpc_source2->source_id()}),
-              UnorderedElementsAre(grpc_sink1->destination_id(), grpc_sink2->destination_id()));
-
-  // TODO(philkuz) (PL-846) uncomment with this issue.
-  // EXPECT_EQ(grpc_source1->source_id(), grpc_source2->source_id());
-  // EXPECT_EQ(grpc_source1, grpc_source2);
-  // auto source_children = mem_src->Children();
-  // ASSERT_EQ(source_children.size(), 1);
-  // ASSERT_MATCH(source_children[0], GRPCSink());
-
-  // auto grpc_sink1 = static_cast<GRPCSinkIR*>(source_children[0]);
-
-  // EXPECT_EQ(grpc_source1->source_id(), grpc_sink1->destination_id());
+  EXPECT_EQ(grpc_source1->source_id(), grpc_sink1->destination_id());
 }
 
-// TODO(philkuz) (PL-846) optimize this case to only have one GRPCBridge.
-/** Tests the following graph.
+/** Tests the following graph:
  *    T1
  *   /  \
  * Agg   \
  *   \   /
  *    Join
+ *
+ * becomes
+ *    T1
+ *     |
+ * GRPCSink(1)
+ *
+ * GRPCSource(1)
+ *     /  \
+ *   Agg   \
+ *     \   /
+ *      Join
  */
 TEST_F(SplitterTest, agg_join_children) {
   auto mem_src = MakeMemSource(MakeRelation());
@@ -434,31 +435,17 @@ TEST_F(SplitterTest, agg_join_children) {
   ASSERT_MATCH(new_join->parents()[0], GRPCSourceGroup());
   auto join_parent = static_cast<GRPCSourceGroupIR*>(new_join->parents()[0]);
 
-  // TODO(philkuz) Replace the following with the commented out code with (PL-846).
-  EXPECT_NE(join_parent->source_id(), blocking_agg_parent->source_id());
+  EXPECT_EQ(join_parent->source_id(), blocking_agg_parent->source_id());
+  EXPECT_EQ(join_parent, blocking_agg_parent);
+  EXPECT_EQ(join_parent->Children().size(), 2);
 
   auto source_children = GetEquivalentInNewPlan(before_blocking, mem_src)->Children();
-  ASSERT_EQ(source_children.size(), 2);
+  ASSERT_EQ(source_children.size(), 1);
   ASSERT_MATCH(source_children[0], GRPCSink());
-  ASSERT_MATCH(source_children[1], GRPCSink());
 
-  auto grpc_sink1 = static_cast<GRPCSinkIR*>(source_children[0]);
-  auto grpc_sink2 = static_cast<GRPCSinkIR*>(source_children[1]);
+  auto grpc_sink = static_cast<GRPCSinkIR*>(source_children[0]);
 
-  EXPECT_THAT(std::vector<int64_t>({join_parent->source_id(), blocking_agg_parent->source_id()}),
-              UnorderedElementsAre(grpc_sink1->destination_id(), grpc_sink2->destination_id()));
-
-  // TODO(philkuz) Uncomment with (PL-846)
-  // EXPECT_EQ(join_parent->source_id(), blocking_agg_parent->source_id());
-  // EXPECT_EQ(join_parent, blocking_agg_parent);
-  // EXPECT_EQ(join_parent.Children().size(), 2);
-  // auto source_children = mem_src->Children();
-  // ASSERT_EQ(source_children.size(), 1);
-  // ASSERT_MATCH(source_children[0], GRPCSink());
-
-  // auto grpc_sink = static_cast<GRPCSinkIR*>(source_children[0]);
-
-  // EXPECT_EQ(join_parent->source_id(), grpc_sink->destination_id());
+  EXPECT_EQ(join_parent->source_id(), grpc_sink->destination_id());
 }
 
 TEST_F(SplitterTest, simple_split_test) {
