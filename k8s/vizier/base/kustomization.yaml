@@ -32,3 +32,4 @@ resources:
 - query_broker_service.yaml
 - tls_config.yaml
 - fluentbit
+- updater_role.yaml
