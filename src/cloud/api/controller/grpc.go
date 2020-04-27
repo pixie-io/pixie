@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -283,7 +282,24 @@ func (v *VizierClusterInfo) UpdateClusterVizierConfig(ctx context.Context, req *
 
 // UpdateOrInstallCluster updates or installs the given vizier cluster to the specified version.
 func (v *VizierClusterInfo) UpdateOrInstallCluster(ctx context.Context, req *cloudapipb.UpdateOrInstallClusterRequest) (*cloudapipb.UpdateOrInstallClusterResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
+
+	resp, err := v.VzMgr.UpdateOrInstallVizier(ctx, &cvmsgspb.UpdateOrInstallVizierRequest{
+		VizierID: req.ClusterID,
+		Version:  req.Version,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudapipb.UpdateOrInstallClusterResponse{
+		UpdateStarted: resp.UpdateStarted,
+	}, nil
 }
 
 func vzStatusToClusterStatus(s cvmsgspb.VizierInfo_Status) cloudapipb.ClusterStatus {

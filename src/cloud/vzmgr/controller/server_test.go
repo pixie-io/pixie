@@ -22,6 +22,7 @@ import (
 	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 	mock_dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb/mock"
 	messagespb "pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
+	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/schema"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
@@ -667,6 +668,63 @@ func TestServer_GetSSLCerts(t *testing.T) {
 			t.Fatal("Timeout")
 		}
 	})
+}
+
+func TestServer_UpdateOrInstallVizier(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDNSClient := mock_dnsmgrpb.NewMockDNSMgrServiceClient(ctrl)
+
+	port, cleanup := testingutils.StartNATS(t)
+	defer cleanup()
+
+	nc, err := nats.Connect(testingutils.GetNATSURL(port))
+	if err != nil {
+		t.Fatal("Could not connect to NATS.")
+	}
+
+	vizierID, _ := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
+
+	go nc.Subscribe("c2v.123e4567-e89b-12d3-a456-426655440001.VizierUpdate", func(m *nats.Msg) {
+		c2vMsg := &cvmsgspb.C2VMessage{}
+		err := proto.Unmarshal(m.Data, c2vMsg)
+		assert.Nil(t, err)
+		resp := &cvmsgspb.UpdateOrInstallVizierRequest{}
+		err = types.UnmarshalAny(c2vMsg.Msg, resp)
+		assert.Equal(t, "0.1.30", resp.Version)
+
+		// Send response.
+		updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
+			UpdateStarted: true,
+		}
+		respAnyMsg, err := types.MarshalAny(updateResp)
+		assert.Nil(t, err)
+		wrappedMsg := &cvmsgspb.C2VMessage{
+			VizierID: vizierID.String(),
+			Msg:      respAnyMsg,
+		}
+
+		b, err := wrappedMsg.Marshal()
+		assert.Nil(t, err)
+		topic := vzshard.C2VTopic("VizierUpdateResponse", vizierID)
+		err = nc.Publish(topic, b)
+		assert.Nil(t, err)
+	})
+
+	s := controller.New(db, "test", mockDNSClient, nc)
+
+	req := &cvmsgspb.UpdateOrInstallVizierRequest{
+		VizierID: utils.ProtoFromUUIDStrOrNil(vizierID.String()),
+		Version:  "0.1.30",
+	}
+
+	resp, err := s.UpdateOrInstallVizier(context.Background(), req)
+	require.Nil(t, err)
+	require.NotNil(t, resp)
 }
 
 func TestServer_MessageHandler(t *testing.T) {

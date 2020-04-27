@@ -133,7 +133,7 @@ message CreateClusterResponse {
 message UpdateOrInstallClusterRequest {
   // The ID of the cluster to upgrade/install.
   pl.uuidpb.UUID cluster_id = 1 [
-                        (gogoproto.customname) = "clusterID"
+                        (gogoproto.customname) = "ClusterID"
                         ];
   // The version to upgrade/install the cluster as. If no version is specified, we assume we should
   // upgrade to the latest version.

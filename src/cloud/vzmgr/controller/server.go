@@ -657,5 +657,44 @@ func getServiceCredentials(signingKey string) (string, error) {
 
 // UpdateOrInstallVizier updates or installs the given vizier cluster to the specified version.
 func (s *Server) UpdateOrInstallVizier(ctx context.Context, req *cvmsgspb.UpdateOrInstallVizierRequest) (*cvmsgspb.UpdateOrInstallVizierResponse, error) {
-	return nil, errors.New("Not yet implemented")
+	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
+
+	// Send a message to the correct vizier that it should be updated.
+	reqAnyMsg, err := types.MarshalAny(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Subscribe to topic that the response will be sent on.
+	subCh := make(chan *nats.Msg, 1024)
+	sub, err := s.nc.ChanSubscribe(vzshard.C2VTopic("VizierUpdateResponse", vizierID), subCh)
+	log.Info(vzshard.V2CTopic("VizierUpdateResponse", vizierID))
+	defer sub.Unsubscribe()
+
+	log.WithField("Vizier ID", vizierID.String()).WithField("version", req.Version).Info("Sending update request to Vizier")
+	s.sendNATSMessage("VizierUpdate", reqAnyMsg, vizierID)
+
+	// Wait to receive a response from the vizier that it has received the update message.
+	for {
+		select {
+		case msg := <-subCh:
+			c2vMsg := &cvmsgspb.C2VMessage{}
+			err := proto.Unmarshal(msg.Data, c2vMsg)
+			if err != nil {
+				return nil, err
+			}
+			resp := &cvmsgspb.UpdateOrInstallVizierResponse{}
+			err = types.UnmarshalAny(c2vMsg.Msg, resp)
+			if err != nil {
+				log.WithError(err).Error("Could not unmarshal response message")
+				return nil, err
+			}
+			return resp, nil
+		case <-ctx.Done():
+			if ctx.Err() != nil {
+				// We never received a response back.
+				return nil, errors.New("Vizier did not send response")
+			}
+		}
+	}
 }

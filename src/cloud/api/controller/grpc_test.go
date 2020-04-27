@@ -237,6 +237,37 @@ func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
 	assert.NotNil(t, resp)
 }
 
+func TestVizierClusterInfo_UpdateOrInstallCluster(t *testing.T) {
+	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	assert.NotNil(t, clusterID)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	updateReq := &cvmsgspb.UpdateOrInstallVizierRequest{
+		VizierID: clusterID,
+		Version:  "0.1.30",
+	}
+
+	mockVzMgr.EXPECT().UpdateOrInstallVizier(gomock.Any(), updateReq).Return(&cvmsgspb.UpdateOrInstallVizierResponse{UpdateStarted: true}, nil)
+
+	vzClusterInfoServer := &controller.VizierClusterInfo{
+		VzMgr: mockVzMgr,
+	}
+
+	resp, err := vzClusterInfoServer.UpdateOrInstallCluster(ctx, &cloudapipb.UpdateOrInstallClusterRequest{
+		ClusterID: clusterID,
+		Version:   "0.1.30",
+	})
+
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+}
+
 type SuggestionRequest struct {
 	requestKinds []cloudapipb.AutocompleteEntityKind
 	requestArgs  []cloudapipb.AutocompleteEntityKind
