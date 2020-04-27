@@ -7,19 +7,26 @@ namespace pl {
 namespace stirling {
 namespace utils {
 
-TEST(LinuxHeadersUtils, ParseUnameCases) {
-  EXPECT_OK_AND_EQ(ParseUname("4.18.0-25-generic"), 266752);
-  EXPECT_OK_AND_EQ(ParseUname("4.18.0"), 266752);
-  EXPECT_NOT_OK(ParseUname("4.18."));
-  EXPECT_NOT_OK(ParseUname("linux-4.18.0-25-generic"));
+TEST(LinuxHeadersUtils, VersionStringToCode) {
+  EXPECT_OK_AND_EQ(VersionStringToCode("4.18.0-25-generic"), 266752);
+  EXPECT_OK_AND_EQ(VersionStringToCode("4.18.0"), 266752);
+  EXPECT_NOT_OK(VersionStringToCode("4.18."));
+  EXPECT_NOT_OK(VersionStringToCode("linux-4.18.0-25-generic"));
+}
+
+TEST(LinuxHeadersUtils, LinuxVersionCode) {
+  // We don't know on what host this test will run, so we don't know what the version code will be.
+  // But we can put some bounds, to check for obvious screw-ups.
+  // We assume test will run on a Linux machine with kernel 3.x.x or higher,
+  // and version 9.x.x or lower.
+  // Yes, we're being very generous here, but we want this test to pass the test of time.
+  EXPECT_OK_AND_GE(LinuxVersionCode(), 0x030000);
+  EXPECT_OK_AND_LE(LinuxVersionCode(), 0x090000);
 }
 
 TEST(LinuxHeadersUtils, ModifyVersion) {
-  std::string version_h_original = R"(#define LINUX_VERSION_CODE 260000
-#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))
-)";
-
-  std::string version_h_modified = R"(#define LINUX_VERSION_CODE 262400
+  // Use 000000 (which is not a real kernel version), so we can detect changes.
+  std::string version_h_original = R"(#define LINUX_VERSION_CODE 000000
 #define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))
 )";
 
@@ -35,12 +42,19 @@ TEST(LinuxHeadersUtils, ModifyVersion) {
   // Write the original file to disk.
   ASSERT_OK(WriteFileFromString(version_h_filename, version_h_original));
 
-  EXPECT_OK(ModifyKernelVersion(std::filesystem::path(base_dir), "4.1.0"));
+  EXPECT_OK(ModifyKernelVersion(std::filesystem::path(base_dir)));
+
+  StatusOr<uint32_t> host_linux_version = LinuxVersionCode();
+  EXPECT_OK_AND_GE(host_linux_version, 0);
 
   // Read the file into a string.
-  std::string expected_contents = R"(#define LINUX_VERSION_CODE 262400
-#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))
-)";
+  std::string expected_contents_template =
+      "#define LINUX_VERSION_CODE $0\n"
+      "#define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))\n";
+
+  std::string expected_contents =
+      absl::Substitute(expected_contents_template, host_linux_version.ValueOrDie());
+
   EXPECT_OK_AND_EQ(ReadFileToString(version_h_filename), expected_contents);
 
   std::filesystem::remove_all(tmp_dir);

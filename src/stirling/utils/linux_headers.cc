@@ -11,22 +11,13 @@
 
 #include "src/common/base/file.h"
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/system/config.h"
 
 namespace pl {
 namespace stirling {
 namespace utils {
 
-StatusOr<std::string> GetUname() {
-  // The following effectively runs `uname -r`.
-  struct utsname buffer;
-  if (uname(&buffer) != 0) {
-    LOG(ERROR) << "Could not determine kernel version";
-    return error::Internal("Could not determine kernel version (uname -r)");
-  }
-  return std::string(buffer.release);
-}
-
-StatusOr<uint32_t> ParseUname(const std::string& linux_release) {
+StatusOr<uint32_t> VersionStringToCode(const std::string& linux_release) {
   uint32_t kernel_version;
   uint32_t major_rev;
   uint32_t minor_rev;
@@ -47,8 +38,51 @@ StatusOr<uint32_t> ParseUname(const std::string& linux_release) {
   return version_code;
 }
 
-Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
-                           const std::string& linux_release) {
+StatusOr<std::string> GetUname() {
+  // The following effectively runs `uname -r`.
+  struct utsname buffer;
+  if (uname(&buffer) != 0) {
+    LOG(ERROR) << "Could not determine kernel version";
+    return error::Internal("Could not determine kernel version (uname -r)");
+  }
+  return std::string(buffer.release);
+}
+
+StatusOr<std::string> GetProcVersionSignature() {
+  std::filesystem::path version_signature_path =
+      system::Config::GetInstance().proc_path() / "version_signature";
+  PL_ASSIGN_OR_RETURN(std::string version_signature, ReadFileToString(version_signature_path));
+
+  // Example version signature:
+  // Ubuntu 4.15.0-96.97-generic 4.15.18
+
+  std::vector<std::string_view> tokens =
+      absl::StrSplit(version_signature, " ", absl::SkipWhitespace());
+  if (!tokens.empty()) {
+    return std::string(tokens.back());
+  }
+
+  return error::NotFound("Could not parse /proc/version_signature file");
+}
+
+StatusOr<uint32_t> LinuxVersionCode() {
+  // First option is to check /proc/version_signature, which exists on Ubuntu distributions.
+  // This has to be higher priority because uname -r does not include the minor rev number with
+  // uname.
+  StatusOr<std::string> version_string_status = GetProcVersionSignature();
+
+  // Second option is to use `uname -r`.
+  if (!version_string_status.ok()) {
+    version_string_status = GetUname();
+  }
+
+  PL_RETURN_IF_ERROR(version_string_status);
+  return VersionStringToCode(version_string_status.ConsumeValueOrDie());
+}
+
+Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base) {
+  PL_ASSIGN_OR_RETURN(uint32_t linux_version_code, LinuxVersionCode());
+
   std::filesystem::path version_file_path =
       linux_headers_base / "include/generated/uapi/linux/version.h";
 
@@ -56,7 +90,6 @@ Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
   PL_ASSIGN_OR_RETURN(std::string file_contents, ReadFileToString(version_file_path));
 
   // Modify the version code.
-  PL_ASSIGN_OR_RETURN(uint32_t linux_version_code, ParseUname(linux_release));
   LOG(INFO) << absl::Substitute("Overriding linux version code to $0", linux_version_code);
   std::string linux_version_code_override =
       absl::Substitute("#define LINUX_VERSION_CODE $0", linux_version_code);
@@ -146,8 +179,7 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   return Status::OK();
 }
 
-Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir,
-                                   const std::string& uname) {
+Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   std::filesystem::path lib_modules_build_dir = lib_modules_dir / "build";
 
   LOG(INFO) << absl::Substitute("Attempting to install packaged headers to $0",
@@ -157,7 +189,7 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir,
   std::filesystem::path packaged_headers = "/usr/src/linux-headers-4.14.104-pl";
   LOG(INFO) << absl::Substitute("Looking for packaged headers at $0", packaged_headers.string());
   if (fs::Exists(packaged_headers).ok()) {
-    PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers, uname));
+    PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers));
     PL_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers, lib_modules_build_dir));
     LOG(INFO) << "Successfully installed packaged copy of headers at " << lib_modules_build_dir;
     return Status::OK();
@@ -188,7 +220,7 @@ Status FindOrInstallLinuxHeaders(const std::vector<LinuxHeaderStrategy>& attempt
         PL_RETURN_IF_ERROR(LinkHostLinuxHeaders(lib_modules_dir));
       } break;
       case LinuxHeaderStrategy::kInstallPackagedHeaders: {
-        PL_RETURN_IF_ERROR(InstallPackagedLinuxHeaders(lib_modules_dir, uname));
+        PL_RETURN_IF_ERROR(InstallPackagedLinuxHeaders(lib_modules_dir));
         break;
       }
     }

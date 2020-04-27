@@ -18,7 +18,29 @@ namespace utils {
  * @param linux_release the uname string (see uname() from <sys/utsname.h>).
  * @return Linux version code, as used in the linux source code (see version.h).
  */
-StatusOr<uint32_t> ParseUname(const std::string& linux_release);
+StatusOr<uint32_t> VersionStringToCode(const std::string& linux_release);
+
+/**
+ * Returns the kernel version from /proc/version_signature.
+ * This is required for Ubuntu, which does not report the correct minor version through uname.
+ * Other distributions do not have /proc/version signature.
+ *
+ * @return Kernel release version (e.g. 4.15.4)
+ */
+StatusOr<std::string> GetProcVersionSignature();
+
+/**
+ * Extracts the linux version code integer.
+ * It first searches /proc/version_signature (for Ubuntu distros).
+ * If /proc/version_signature does not exist, it uses uname.
+ *
+ * Note that the version number reported by uname on Ubuntu distros does not include the minor
+ * version, and thus cannot be used to create a version code.
+ *
+ * @return The version code as used in the linux source code, or error if it could not be
+ * determined.
+ */
+StatusOr<uint32_t> LinuxVersionCode();
 
 /**
  * Modifies the version.h on the filesystem to the specified version.
@@ -28,11 +50,10 @@ StatusOr<uint32_t> ParseUname(const std::string& linux_release);
  * In theory, this is actually quite dangerous, but in practice it seems to work.
  *
  * @param linux_headers_base path to root directory of Linux headers root to modify.
- * @param linux_release the desired linux release (e.g. 4.18.0-25-generic) to use.
+ * @param uname_kernel_release the desired linux release (e.g. 4.18.0-25-generic) to use.
  * @return Status error if unable to modify the sources.
  */
-Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
-                           const std::string& linux_release);
+Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base);
 
 enum class LinuxHeaderStrategy {
   // Search for linux Linux headers are already accessible (must be running directly on host).
