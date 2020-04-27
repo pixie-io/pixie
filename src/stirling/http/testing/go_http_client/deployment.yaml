@@ -1,0 +1,32 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-http-client
+  namespace: stirling-testing
+  labels:
+    name: go-http-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: go-http-client
+  template:
+    metadata:
+      labels:
+        name: go-http-client
+    spec:
+      containers:
+      - name: go-http-client
+        # Replace with your own username.
+        image: gcr.io/pl-dev-infra/demos/go_http_client:{{USER}}
+        args:
+        - --address=fe:50051
+        - --count=100000
+        imagePullPolicy: Always
+        resources:
+          limits:
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 512Mi

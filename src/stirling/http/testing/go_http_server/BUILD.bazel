@@ -6,25 +6,22 @@ go_library(
     name = "go_default_library",
     srcs = ["main.go"],
     importpath = "pixielabs.ai/pixielabs/src/stirling/http/testing/go_http_server",
-    visibility = ["//visibility:private"],
 )
 
 go_binary(
     name = "go_http_server",
     embed = [":go_default_library"],
-    visibility = ["//visibility:public"],
 )
 
 go_image(
-    name = "go_http_server_image",
+    name = "image",
     binary = ":go_http_server",
-    visibility = ["//visibility:public"],
 )
 
 container_push(
-    name = "push_go_http_server_image",
+    name = "push_image",
     format = "Docker",
-    image = ":go_http_server_image",
+    image = ":image",
     registry = "gcr.io",
     repository = "pl-dev-infra/demos/go_http_server",
     tag = "{BUILD_USER}",
