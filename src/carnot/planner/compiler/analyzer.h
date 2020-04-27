@@ -67,6 +67,7 @@ class Analyzer : public RuleExecutor<IR> {
     intermediate_resolution_batch->AddRule<SetMemSourceNsTimesRule>();
   }
 
+  // TODO(philkuz) need to add a new optimization that combines maps.
   void CreateCombineConsecutiveMapsRule() {
     RuleBatch* consecutive_maps = CreateRuleBatch<FailOnMax>("CombineConsecutiveMapsRule", 2);
     consecutive_maps->AddRule<CombineConsecutiveMapsRule>();
@@ -93,16 +94,6 @@ class Analyzer : public RuleExecutor<IR> {
     remove_ir_only_nodes_batch->AddRule<RemoveGroupByRule>();
   }
 
-  void CreatePruneUnusedColumnsBatch() {
-    RuleBatch* prune_unused_columns = CreateRuleBatch<FailOnMax>("PruneUnusedColumns", 2);
-    prune_unused_columns->AddRule<PruneUnusedColumnsRule>();
-  }
-
-  void CreatePruneUnconnectedOpsBatch() {
-    RuleBatch* prune_ops_batch = CreateRuleBatch<FailOnMax>("PruneUnconnectedOps", 2);
-    prune_ops_batch->AddRule<PruneUnconnectedOperatorsRule>();
-  }
-
   Status Init() {
     md_handler_ = MetadataHandler::Create();
     CreateSourceAndMetadataResolutionBatch();
@@ -114,8 +105,6 @@ class Analyzer : public RuleExecutor<IR> {
     CreateDataTypeResolutionBatch();
     CreateResolutionVerificationBatch();
     CreateRemoveIROnlyNodesBatch();
-    CreatePruneUnconnectedOpsBatch();
-    CreatePruneUnusedColumnsBatch();
     return Status::OK();
   }
 

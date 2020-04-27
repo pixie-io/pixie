@@ -49,6 +49,18 @@ scalar_udfs {
   return_type:FLOAT64
 }
 scalar_udfs {
+  name: "equals"
+  exec_arg_types: FLOAT64
+  exec_arg_types: FLOAT64
+  return_type:BOOLEAN
+}
+scalar_udfs {
+  name: "equals"
+  exec_arg_types: FLOAT64
+  exec_arg_types: INT64
+  return_type:BOOLEAN
+}
+scalar_udfs {
   name: "divide"
   exec_arg_types: INT64
   exec_arg_types: FLOAT64

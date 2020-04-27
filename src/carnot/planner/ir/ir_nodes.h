@@ -813,7 +813,7 @@ class StringIR : public DataIR {
   std::string DebugString() const override;
 
   bool Equals(ExpressionIR* expr) const override {
-    if (!NodeMatches(expr)) {
+    if (!StringIR::NodeMatches(expr)) {
       return false;
     }
     auto s = static_cast<StringIR*>(expr);

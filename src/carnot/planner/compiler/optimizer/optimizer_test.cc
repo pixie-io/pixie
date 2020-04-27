@@ -49,36 +49,49 @@ TEST_F(OptimizerTest, mem_src_and_sink_test) {
     MakeMemSink(mem_src, "");
   }
 
+  EXPECT_OK(Analyze(graph));
   EXPECT_OK(Optimize(graph));
 
   auto memory_sources = graph->FindNodesThatMatch(MemorySource());
   ASSERT_EQ(memory_sources.size(), 1);
+
   auto mem_src = static_cast<MemorySourceIR*>(memory_sources[0]);
-  ASSERT_EQ(mem_src->Children().size(), 5);
-  for (auto ch : mem_src->Children()) {
+  ASSERT_EQ(mem_src->Children().size(), 1);
+
+  auto limit = mem_src->Children()[0];
+  ASSERT_MATCH(limit, Limit());
+  ASSERT_EQ(limit->Children().size(), 5);
+
+  for (auto ch : limit->Children()) {
     ASSERT_MATCH(ch, MemorySink());
   }
 }
 
 TEST_F(OptimizerTest, mem_src_different_columns_test) {
   {
-    auto mem_src = MakeMemSource("cpu", cpu_relation, {"upid", "cpu0"});
+    auto mem_src = MakeMemSource("cpu", {"upid", "cpu0"});
     MakeMemSink(mem_src, "");
   }
 
   {
-    auto mem_src = MakeMemSource("cpu", cpu_relation, {"upid", "cpu1"});
+    auto mem_src = MakeMemSource("cpu", {"upid", "cpu1"});
     MakeMemSink(mem_src, "");
   }
 
+  EXPECT_OK(Analyze(graph));
   EXPECT_OK(Optimize(graph));
 
   auto memory_sources = graph->FindNodesThatMatch(MemorySource());
   ASSERT_EQ(memory_sources.size(), 1);
   auto mem_src = static_cast<MemorySourceIR*>(memory_sources[0]);
   EXPECT_THAT(mem_src->column_names(), UnorderedElementsAre("upid", "cpu0", "cpu1"));
-  ASSERT_EQ(mem_src->Children().size(), 2);
-  for (auto ch : mem_src->Children()) {
+  ASSERT_EQ(mem_src->Children().size(), 1);
+
+  auto limit = mem_src->Children()[0];
+  ASSERT_MATCH(limit, Limit());
+  ASSERT_EQ(limit->Children().size(), 2);
+
+  for (auto ch : limit->Children()) {
     ASSERT_MATCH(ch, MemorySink());
   }
 }
@@ -351,12 +364,13 @@ TEST_F(OptimizerTest, mem_src_filter_test) {
   // Test to make sure we can remove duplicated graphs.
   int64_t num_runs = 5;
   for (int64_t i = 0; i < num_runs; i++) {
-    auto mem_src = MakeMemSource("cpu", cpu_relation);
+    auto mem_src = MakeMemSource("cpu");
     auto filter_expr = MakeEqualsFunc(MakeColumn("cpu0", 0), MakeInt(23));
     filter_expr->SetOutputDataType(types::BOOLEAN);
     auto filter = MakeFilter(mem_src, filter_expr);
     MakeMemSink(filter, "");
   }
+  EXPECT_OK(Analyze(graph));
   EXPECT_OK(Optimize(graph));
 
   auto memory_sources = graph->FindNodesThatMatch(MemorySource());
@@ -372,7 +386,10 @@ TEST_F(OptimizerTest, mem_src_filter_test) {
   auto filter = static_cast<FilterIR*>(mem_src_cpu->Children()[0]);
 
   EXPECT_MATCH(filter->filter_expr(), Equals(ColumnNode("cpu0"), Int(23)));
-  EXPECT_MATCH(filter->Children()[0], MemorySink());
+  auto limit = filter->Children()[0];
+  ASSERT_MATCH(limit, Limit());
+  ASSERT_MATCH(limit->Children()[0], MemorySink());
+  EXPECT_EQ(limit->Children().size(), num_runs);
 }
 
 TEST_F(OptimizerTest, mem_src_different_filter_test) {
@@ -395,6 +412,7 @@ TEST_F(OptimizerTest, mem_src_different_filter_test) {
     auto filter = MakeFilter(mem_src, filter_expr);
     MakeMemSink(filter, "");
   }
+  EXPECT_OK(Analyze(graph));
   EXPECT_OK(Optimize(graph));
 
   auto memory_sources = graph->FindNodesThatMatch(MemorySource());
@@ -420,9 +438,14 @@ TEST_F(OptimizerTest, mem_src_different_filter_test) {
   EXPECT_MATCH(filter_expr1,
                LogicalOr(Equals(ColumnNode("cpu0"), Int(23)), Equals(ColumnNode("cpu0"), Int(46))));
   EXPECT_EQ(filter0->Children().size(), 1);
-  EXPECT_MATCH(filter0->Children()[0], MemorySink());
+  auto limit0 = filter0->Children()[0];
+  ASSERT_EQ(limit0->Children().size(), 1);
+  EXPECT_MATCH(limit0->Children()[0], MemorySink());
+
   EXPECT_EQ(filter1->Children().size(), 1);
-  EXPECT_MATCH(filter1->Children()[0], MemorySink());
+  auto limit1 = filter1->Children()[0];
+  ASSERT_EQ(limit1->Children().size(), 1);
+  EXPECT_MATCH(limit1->Children()[0], MemorySink());
 }
 
 TEST_F(OptimizerTest, dont_merge_joins_that_have_different_parents) {
@@ -588,6 +611,87 @@ TEST_F(OptimizerTest, self_union) {
 
   EXPECT_EQ(mem_src->Children()[0], mem_src->Children()[1]->Children()[0]);
   EXPECT_EQ(mem_src->Children()[0], mem_src->Children()[2]->Children()[0]);
+}
+
+TEST_F(OptimizerTest, assign_udf_func_ids_consolidated_maps) {
+  std::string chain_operators = absl::StrJoin(
+      {"import px",
+       "queryDF = px.DataFrame(table='cpu', select=['cpu0', 'cpu1', 'cpu2'], "
+       "start_time=0, end_time=10)",
+       "queryDF['cpu_sub'] = queryDF['cpu0'] - queryDF['cpu1']",
+       "queryDF['cpu_sum'] = queryDF['cpu0'] + queryDF['cpu1']",
+       "queryDF['cpu_sum2'] = queryDF['cpu2'] + queryDF['cpu1']",
+       "df = queryDF[['cpu_sum2', 'cpu_sum', 'cpu_sub']]", "px.display(df, 'cpu_out')"},
+      "\n");
+  auto ir_graph_status = CompileGraph(chain_operators);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  ASSERT_OK(Analyze(ir_graph));
+  ASSERT_OK(Optimize(ir_graph));
+
+  std::vector<IRNode*> map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
+  ASSERT_EQ(map_nodes.size(), 2);
+  auto map_node = static_cast<MapIR*>(map_nodes[0]);
+
+  EXPECT_EQ(0, static_cast<FuncIR*>(map_node->col_exprs()[3].node)->func_id());
+  EXPECT_EQ(1, static_cast<FuncIR*>(map_node->col_exprs()[4].node)->func_id());
+  EXPECT_EQ(1, static_cast<FuncIR*>(map_node->col_exprs()[5].node)->func_id());
+}
+
+constexpr char kInnerJoinFollowedByMapQuery[] = R"pxl(
+import px
+src1 = px.DataFrame(table='cpu', select=['upid', 'cpu0','cpu1'])
+src2 = px.DataFrame(table='network', select=['upid', 'bytes_in', 'bytes_out'])
+join = src1.merge(src2, how='inner', left_on=['upid'], right_on=['upid'], suffixes=['', '_x'])
+join = join[['upid', 'bytes_in', 'bytes_out', 'cpu0', 'cpu1']]
+join['mb_in'] = join['bytes_in'] / 1E6
+df = join[['mb_in']]
+px.display(df, 'joined')
+)pxl";
+
+TEST_F(OptimizerTest, prune_unused_columns) {
+  auto ir_graph_status = CompileGraph(kInnerJoinFollowedByMapQuery);
+  ASSERT_OK(ir_graph_status);
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  ASSERT_OK(Analyze(ir_graph));
+  ASSERT_OK(Optimize(ir_graph));
+
+  // Check source nodes.
+  auto source_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(2, source_nodes.size());
+
+  auto right_src = static_cast<MemorySourceIR*>(source_nodes[0]);
+  ASSERT_EQ("network", right_src->table_name());
+  EXPECT_THAT(right_src->column_names(), ElementsAre("upid", "bytes_in"));
+
+  auto left_src = static_cast<MemorySourceIR*>(source_nodes[1]);
+  ASSERT_EQ("cpu", left_src->table_name());
+  EXPECT_THAT(left_src->column_names(), ElementsAre("upid"));
+
+  // Check join node
+  auto join_nodes = ir_graph->FindNodesOfType(IRNodeType::kJoin);
+  ASSERT_EQ(1, join_nodes.size());
+  EXPECT_THAT(static_cast<JoinIR*>(join_nodes[0])->column_names(), ElementsAre("bytes_in"));
+
+  // Check map nodes
+  auto map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
+  ASSERT_EQ(3, map_nodes.size());
+
+  // TODO(nserrino): PL-1344 Maps 1 and 3 are no-ops after this column pruning,
+  // we should have a rule for detecting that and cleaning them up.
+  auto map1 = static_cast<MapIR*>(map_nodes[0])->relation();
+  EXPECT_THAT(map1.col_names(), ElementsAre("bytes_in"));
+
+  auto map2 = static_cast<MapIR*>(map_nodes[1])->relation();
+  EXPECT_THAT(map2.col_names(), ElementsAre("mb_in"));
+
+  auto map3 = static_cast<MapIR*>(map_nodes[2])->relation();
+  EXPECT_THAT(map3.col_names(), ElementsAre("mb_in"));
+
+  // Check sink node
+  auto sink_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySink);
+  ASSERT_EQ(1, sink_nodes.size());
+  auto sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
+  EXPECT_THAT(sink->relation().col_names(), ElementsAre("mb_in"));
 }
 
 }  // namespace compiler

@@ -32,9 +32,20 @@ class Optimizer : public RuleExecutor<IR> {
     merge_nodes_batch->AddRule<MergeNodesRule>(compiler_state_);
   }
 
+  void CreatePruneUnusedColumnsBatch() {
+    RuleBatch* prune_unused_columns = CreateRuleBatch<FailOnMax>("PruneUnusedColumns", 2);
+    prune_unused_columns->AddRule<PruneUnusedColumnsRule>();
+  }
+
+  void CreatePruneUnconnectedOpsBatch() {
+    RuleBatch* prune_ops_batch = CreateRuleBatch<FailOnMax>("PruneUnconnectedOps", 2);
+    prune_ops_batch->AddRule<PruneUnconnectedOperatorsRule>();
+  }
+
   Status Init() {
     CreateMergeNodesBatch();
-    PL_UNUSED(compiler_state_);
+    CreatePruneUnconnectedOpsBatch();
+    CreatePruneUnusedColumnsBatch();
     return Status::OK();
   }
 

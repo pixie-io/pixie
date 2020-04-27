@@ -842,52 +842,6 @@ TEST_F(AnalyzerTest, nested_agg_fails) {
   EXPECT_THAT(analyzer_status.status(), HasCompilerError("agg function arg cannot be a function"));
 }
 
-TEST_F(AnalyzerTest, prune_unused_columns) {
-  auto ir_graph_status = CompileGraph(kInnerJoinFollowedByMapQuery);
-  ASSERT_OK(ir_graph_status);
-  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
-  auto analyzer_status = HandleRelation(ir_graph);
-  ASSERT_OK(analyzer_status);
-
-  // Check source nodes
-  auto source_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
-  ASSERT_EQ(2, source_nodes.size());
-
-  auto right_src = static_cast<MemorySourceIR*>(source_nodes[0]);
-  ASSERT_EQ("network", right_src->table_name());
-  EXPECT_THAT(right_src->column_names(), ElementsAre("upid", "bytes_in"));
-
-  auto left_src = static_cast<MemorySourceIR*>(source_nodes[1]);
-  ASSERT_EQ("cpu", left_src->table_name());
-  EXPECT_THAT(left_src->column_names(), ElementsAre("upid"));
-
-  // Check join node
-  auto join_nodes = ir_graph->FindNodesOfType(IRNodeType::kJoin);
-  ASSERT_EQ(1, join_nodes.size());
-  EXPECT_THAT(static_cast<JoinIR*>(join_nodes[0])->column_names(), ElementsAre("bytes_in"));
-
-  // Check map nodes
-  auto map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
-  ASSERT_EQ(3, map_nodes.size());
-
-  // TODO(nserrino): PL-1344 Maps 1 and 3 are no-ops after this column pruning,
-  // we should have a rule for detecting that and cleaning them up.
-  auto map1 = static_cast<MapIR*>(map_nodes[0])->relation();
-  EXPECT_THAT(map1.col_names(), ElementsAre("bytes_in"));
-
-  auto map2 = static_cast<MapIR*>(map_nodes[1])->relation();
-  EXPECT_THAT(map2.col_names(), ElementsAre("mb_in"));
-
-  auto map3 = static_cast<MapIR*>(map_nodes[2])->relation();
-  EXPECT_THAT(map3.col_names(), ElementsAre("mb_in"));
-
-  // Check sink node
-  auto sink_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySink);
-  ASSERT_EQ(1, sink_nodes.size());
-  auto sink = static_cast<MemorySinkIR*>(sink_nodes[0]);
-  EXPECT_THAT(sink->relation().col_names(), ElementsAre("mb_in"));
-}
-
 constexpr char kReassignedColname[] = R"pxl(
 import px
 t1 = px.DataFrame(table='http_events', start_time='-5s')

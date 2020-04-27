@@ -308,7 +308,6 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
     } else {
       new_src->SetTimeValuesNS(start_time, stop_time);
     }
-    DCHECK_EQ(columns.size(), column_idx_map.size());
     new_src->ClearRelation();
     SourceRelationRule src_rule(compiler_state_);
     PL_ASSIGN_OR_RETURN(bool result, src_rule.Apply(new_src));

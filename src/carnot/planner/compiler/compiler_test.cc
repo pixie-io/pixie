@@ -80,6 +80,13 @@ class CompilerTest : public ::testing::Test {
     rel_map->emplace("network", Relation({types::UINT128, types::INT64, types::INT64, types::INT64},
                                          {MetadataProperty::kUniquePIDColumn, "bytes_in",
                                           "bytes_out", "agent_id"}));
+    rel_map->emplace("process_stats",
+                     Relation({types::TIME64NS, types::UINT128, types::INT64, types::INT64,
+                               types::INT64, types::INT64, types::INT64, types::INT64, types::INT64,
+                               types::INT64, types::INT64, types::INT64, types::INT64},
+                              {"time_", "upid", "major_faults", "minor_faults", "cpu_utime_ns",
+                               "cpu_ktime_ns", "num_threads", "vsize_bytes", "rss_bytes",
+                               "rchar_bytes", "wchar_bytes", "read_bytes", "write_bytes"}));
     Relation http_events_relation;
     http_events_relation.AddColumn(types::TIME64NS, "time_");
     http_events_relation.AddColumn(types::UINT128, MetadataProperty::kUniquePIDColumn);
@@ -2835,6 +2842,127 @@ TEST_F(CompilerTest, RollingNonTimeUnsupported) {
 
   EXPECT_THAT(graph_or_s.status(),
               HasCompilerError("Windowing is only supported on time_ at the moment"));
+}
+
+const char* kFunctionOptimizationQuery = R"pxl(
+import px
+bytes_per_mb = 1024.0 * 1024.0
+window_s = 10
+node_col = 'node'
+k8s_object = 'pod'
+split_series_name = 'pod'
+def format_stats_table(df, window_size):
+    df.timestamp = px.bin(df.time_, px.seconds(window_size))
+    return df
+
+def format_process_table(df, window_size: int):
+    df = format_stats_table(df, window_size)
+    df[node_col] = df.ctx['node_name']
+    df[k8s_object] = df.ctx['pod']
+
+    # Convert bytes to MB.
+    df.vsize_mb = df.vsize_bytes / bytes_per_mb
+    df.rss_mb = df.rss_bytes / bytes_per_mb
+
+    # Convert nanoseconds to milliseconds.
+    df.cpu_utime_ms = df.cpu_utime_ns / 1.0E6
+    df.cpu_ktime_ms = df.cpu_ktime_ns / 1.0E6
+    return df
+
+def filter_stats(df, node_filter, k8s_filter):
+    df = df[px.contains(df[node_col], node_filter)]
+    df = df[px.contains(df[k8s_object], k8s_filter)]
+    return df
+
+def filtered_process_stats(start_time: str, node_name: str, pod_name: px.Service):
+    process_df = px.DataFrame(table='process_stats', start_time=start_time)
+    process_df = format_process_table(process_df, window_s)
+    process_df = filter_stats(process_df, node_name, pod_name)
+    return process_df
+
+def calculate_cpu(df, window_size):
+    cpu_by_upid = df.groupby(['upid', k8s_object, 'timestamp']).agg(
+        cpu_utime_ms_max=('cpu_utime_ms', px.max),
+        cpu_utime_ms_min=('cpu_utime_ms', px.min),
+        cpu_ktime_ms_max=('cpu_ktime_ms', px.max),
+        cpu_ktime_ms_min=('cpu_ktime_ms', px.min),
+        rss_mb=('rss_mb', px.mean),
+    )
+
+    cpu_by_upid.cpu_utime_ms = cpu_by_upid.cpu_utime_ms_max - cpu_by_upid.cpu_utime_ms_min
+    cpu_by_upid.cpu_ktime_ms = cpu_by_upid.cpu_ktime_ms_max - cpu_by_upid.cpu_ktime_ms_min
+
+    cpu_per_k8s = cpu_by_upid.groupby([k8s_object, 'timestamp']).agg(
+        cpu_ktime_ms=('cpu_ktime_ms', px.sum),
+        cpu_utime_ms=('cpu_utime_ms', px.sum),
+        rss_mb=('rss_mb', px.mean),
+    )
+
+    # Convert window_size into the same units as cpu time.
+    window_size_ms = window_size * 1.0E3
+    # Finally, calculate total (kernel + user time)  percentage used over window.
+    cpu_per_k8s.cpu_pct = (cpu_per_k8s.cpu_ktime_ms
+                           + cpu_per_k8s.cpu_utime_ms) / window_size_ms * 100
+    cpu_per_k8s['time_'] = cpu_per_k8s['timestamp']
+    return cpu_per_k8s
+
+def cpu_stats(start_time: str, node_name: str, pod_name: str):
+    df = filtered_process_stats(start_time, node_name, pod_name)
+    # Calculate the CPU usage per window.
+    cpu_df = calculate_cpu(df, window_s)
+    cpu_df[split_series_name] = cpu_df[k8s_object]
+    return cpu_df['time_', split_series_name, 'cpu_pct', 'rss_mb']
+
+def node_table(start_time: str, node_name: str, pod_name: str):
+    df = filtered_process_stats(start_time, node_name, pod_name)
+    nodes = df.groupby(node_col).agg(cc=(node_col, px.count))
+    return nodes.drop('cc')
+)pxl";
+
+const char* kFuncToExecutePbStr = R"proto(
+arg_values: {
+  name: "start_time"
+  value: "-30s"
+}
+arg_values: {
+  name: "pod_name"
+  value: ""
+}
+arg_values: {
+  name: "node_name"
+  value: ""
+}
+output_table_prefix: "foo"
+)proto";
+
+TEST_F(CompilerTest, multiple_def_calls_get_optimized) {
+  ExecFuncs exec_funcs;
+  FuncToExecute func;
+
+  ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kFuncToExecutePbStr, &func));
+
+  // Push 3 times.
+  func.set_func_name("cpu_stats");
+  exec_funcs.push_back(func);
+  exec_funcs.push_back(func);
+  func.set_func_name("node_table");
+  exec_funcs.push_back(func);
+
+  auto graph_or_s =
+      compiler_.CompileToIR(kFunctionOptimizationQuery, compiler_state_.get(), exec_funcs);
+  ASSERT_OK(graph_or_s);
+
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  auto mem_src_vec = graph->FindNodesThatMatch(MemorySource());
+  ASSERT_EQ(mem_src_vec.size(), 1);
+  auto mem_src = static_cast<MemorySourceIR*>(mem_src_vec[0]);
+  EXPECT_EQ(mem_src->Children().size(), 1);
+
+  for (auto child : mem_src->Children()) {
+    ASSERT_MATCH(child, Map());
+  }
+  ASSERT_MATCH(mem_src->Children()[0], Map());
+  ASSERT_EQ(graph->FindNodesThatMatch(MemorySink()).size(), 3);
 }
 }  // namespace compiler
 }  // namespace planner
