@@ -173,7 +173,10 @@ Status SocketTraceConnector::InitImpl() {
     FLAGS_stirling_enable_grpc_kprobe_tracing = false;
   }
 
-  PL_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script));
+  PL_ASSIGN_OR_RETURN(uint32_t linux_version_code, utils::LinuxVersionCode());
+  std::string defines = absl::Substitute("-DLINUX_VERSION_CODE=$0", linux_version_code);
+
+  PL_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script, {std::move(defines)}));
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
   LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
 
