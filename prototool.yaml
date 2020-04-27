@@ -2,6 +2,13 @@
 excludes:
 - vendor
 - third_party
+- src/ui
+- chef
+- bazel-bin
+- bazel-out
+- bazel-pixielabs
+- bazel-testlogs
+- docs
 protoc:
   version: 3.8.0
   includes:
