@@ -287,6 +287,10 @@ func (v *VizierClusterInfo) UpdateOrInstallCluster(ctx context.Context, req *clo
 		return nil, err
 	}
 
+	if req.Version == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "version cannot be empty")
+	}
+
 	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
 
 	resp, err := v.VzMgr.UpdateOrInstallVizier(ctx, &cvmsgspb.UpdateOrInstallVizierRequest{

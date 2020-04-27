@@ -667,8 +667,6 @@ func (s *Server) UpdateOrInstallVizier(ctx context.Context, req *cvmsgspb.Update
 	}
 
 	req.Token = tokenString
-	// TODO(michelle): We should populate this with the correct YAML contents.
-	req.UpdaterJobYAML = ""
 
 	// Send a message to the correct vizier that it should be updated.
 	reqAnyMsg, err := types.MarshalAny(req)

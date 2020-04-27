@@ -163,10 +163,6 @@ message UpdateOrInstallVizierRequest {
   string version = 2;
   // The token the Vizier should use to make authenticated requests to the cloud.
   string token = 3;
-  // The contents of the YAML file that should be applied to run the K8s job.
-  string updater_job_yaml = 4 [
-                        (gogoproto.customname) = "UpdaterJobYAML"
-                        ];
 }
 
 // UpdateOrInstallVizierResponse is a response to an UpdateOrInstallVizierRequest.
