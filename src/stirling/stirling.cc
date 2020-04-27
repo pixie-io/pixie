@@ -11,6 +11,7 @@
 #include <absl/base/internal/spinlock.h>
 
 #include "src/common/base/base.h"
+#include "src/common/system/system_info.h"
 #include "src/stirling/bpf_tools/probe_cleaner.h"
 #include "src/stirling/data_table.h"
 #include "src/stirling/proto/stirling.pb.h"
@@ -212,9 +213,7 @@ StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
 StirlingImpl::~StirlingImpl() { Stop(); }
 
 Status StirlingImpl::Init() {
-  const system::Config& sysconfig = system::Config::GetInstance();
-  LOG(INFO) << absl::StrCat("Location of proc: ", sysconfig.proc_path().string());
-  LOG(INFO) << absl::StrCat("Location of sysfs: ", sysconfig.sysfs_path().string());
+  system::LogSystemInfo();
 
   // Clean up any probes from a previous instance.
   static constexpr char kPixieBPFProbeMarker[] = "__pixie__";

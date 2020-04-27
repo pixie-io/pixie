@@ -45,13 +45,20 @@ StatusOr<std::string> GetUname() {
     LOG(ERROR) << "Could not determine kernel version";
     return error::Internal("Could not determine kernel version (uname -r)");
   }
-  return std::string(buffer.release);
+
+  std::string version_string(buffer.release);
+  LOG(INFO) << absl::Substitute("Obtained Linux version string from `uname`: $0", version_string);
+
+  return version_string;
 }
 
 StatusOr<std::string> GetProcVersionSignature() {
   std::filesystem::path version_signature_path =
       system::Config::GetInstance().proc_path() / "version_signature";
   PL_ASSIGN_OR_RETURN(std::string version_signature, ReadFileToString(version_signature_path));
+
+  LOG(INFO) << absl::Substitute("Obtained Linux version string from $0: $1",
+                                version_signature_path.string(), version_signature);
 
   // Example version signature:
   // Ubuntu 4.15.0-96.97-generic 4.15.18
@@ -191,7 +198,8 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
   if (fs::Exists(packaged_headers).ok()) {
     PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers));
     PL_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers, lib_modules_build_dir));
-    LOG(INFO) << "Successfully installed packaged copy of headers at " << lib_modules_build_dir;
+    LOG(INFO) << absl::Substitute("Successfully installed packaged copy of headers at $0",
+                                  lib_modules_build_dir.string());
     return Status::OK();
   }
 
