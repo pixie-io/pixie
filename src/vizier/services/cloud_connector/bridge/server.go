@@ -3,7 +3,6 @@ package bridge
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -15,13 +14,9 @@ import (
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
-	"google.golang.org/grpc/metadata"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
-	utils2 "pixielabs.ai/pixielabs/src/shared/services/utils"
 	"pixielabs.ai/pixielabs/src/utils"
-	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
 	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )
 
@@ -49,8 +44,7 @@ type Bridge struct {
 	jwtSigningKey string
 	sessionID     int64
 
-	vzConnClient  vzconnpb.VZConnServiceClient
-	certMgrClient certmgrpb.CertMgrServiceClient
+	vzConnClient vzconnpb.VZConnServiceClient
 
 	vzInfo VizierInfo
 
@@ -82,13 +76,12 @@ type Bridge struct {
 }
 
 // New creates a cloud connector to cloud bridge.
-func New(vizierID uuid.UUID, jwtSigningKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, certMgrClient certmgrpb.CertMgrServiceClient, vzInfo VizierInfo, nc *nats.Conn) *Bridge {
+func New(vizierID uuid.UUID, jwtSigningKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo, nc *nats.Conn) *Bridge {
 	return &Bridge{
 		vizierID:      vizierID,
 		jwtSigningKey: jwtSigningKey,
 		sessionID:     sessionID,
 		vzConnClient:  vzClient,
-		certMgrClient: certMgrClient,
 		vzInfo:        vzInfo,
 		hbSeqNum:      0,
 		nc:            nc,
@@ -256,6 +249,8 @@ func (s *Bridge) startStreamGRPCReader(stream vzconnpb.VZConnService_NATSBridgeC
 	defer log.Trace("Closing GRPC read stream")
 	for {
 		select {
+		case <-s.quitCh:
+			return
 		case <-stream.Context().Done():
 			return
 		case <-done:
@@ -304,14 +299,22 @@ func (s *Bridge) startStreamGRPCWriter(stream vzconnpb.VZConnService_NATSBridgeC
 		if s.pendingGRPCOutMsg != nil {
 			err := stream.Send(s.pendingGRPCOutMsg)
 			if err != nil {
-				// Error sending message. Second error aborts.
-				errCh <- err
+				// Error sending message. The stream might terminate in the middle so the select
+				// guards against exited goroutines to prevent a hang.
+				select {
+				case errCh <- err:
+				case <-done:
+				case <-s.quitCh:
+				}
+
 				return
 			}
 			s.pendingGRPCOutMsg = nil
 		}
 		// Try to send PT traffic first.
 		select {
+		case <-s.quitCh:
+			return
 		case <-stream.Context().Done():
 			log.Trace("Write stream has closed")
 			return
@@ -372,8 +375,7 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 
 	log.Info("Starting NATS bridge.")
 	hbChan := s.generateHeartbeats(done)
-	s.wg.Add(1)
-	go s.requestSSLCerts(stream.Context(), done)
+
 	for {
 		select {
 		case <-s.quitCh:
@@ -513,14 +515,14 @@ func (s *Bridge) publishBridgeSync(stream vzconnpb.VZConnService_NATSBridgeClien
 
 func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.VizierHeartbeat) {
 	hbCh = make(chan *cvmsgspb.VizierHeartbeat)
-	s.wg.Add(1)
+
 	sendHeartbeat := func() {
 		addr, port, err := s.vzInfo.GetAddress()
 		if err != nil {
 			log.WithError(err).Error("Failed to get vizier address")
 		}
 		podStatuses, updatedTime := s.vzInfo.GetPodStatuses()
-		hbCh <- &cvmsgspb.VizierHeartbeat{
+		hbMsg := &cvmsgspb.VizierHeartbeat{
 			VizierID:               utils.ProtoFromUUID(&s.vizierID),
 			Time:                   time.Now().UnixNano(),
 			SequenceNumber:         atomic.LoadInt64(&s.hbSeqNum),
@@ -529,9 +531,17 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 			PodStatuses:            podStatuses,
 			PodStatusesLastUpdated: updatedTime.UnixNano(),
 		}
-		atomic.AddInt64(&s.hbSeqNum, 1)
+		select {
+		case <-s.quitCh:
+			return
+		case <-done:
+			return
+		case hbCh <- hbMsg:
+			atomic.AddInt64(&s.hbSeqNum, 1)
+		}
 	}
 
+	s.wg.Add(1)
 	go func() {
 		defer s.wg.Done()
 		ticker := time.NewTicker(heartbeatIntervalS)
@@ -542,6 +552,9 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 
 		for {
 			select {
+			case <-s.quitCh:
+				log.Info("Stopping heartbeat routine")
+				return
 			case <-done:
 				log.Info("Stopping heartbeat routine")
 				return
@@ -551,80 +564,4 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 		}
 	}()
 	return
-}
-
-// TODO(zasgar/michelle): Move this out of here.
-// RequestAndHandleSSLCerts registers the cluster with VZConn.
-func (s *Bridge) requestSSLCerts(ctx context.Context, done chan bool) error {
-	defer s.wg.Done()
-	log.Info("Requesting SSL certs")
-	sslCh := make(chan *nats.Msg)
-	sub, err := s.nc.ChanSubscribe(messagebus.C2VTopic("sslResp"), sslCh)
-	defer sub.Unsubscribe()
-
-	// Send over a request for SSL certs.
-	regReq := &cvmsgspb.VizierSSLCertRequest{
-		VizierID: utils.ProtoFromUUID(&s.vizierID),
-	}
-	s.publishProtoToBridgeCh("ssl", regReq)
-	sslResp := cvmsgspb.VizierSSLCertResponse{}
-
-loop:
-	for {
-		select {
-		case <-done:
-			return nil
-		case <-time.After(30 * time.Second):
-			log.Error("Timeout waiting for SSL certs. Re-requesting")
-			s.publishProtoToBridgeCh("ssl", regReq)
-		case msg := <-sslCh:
-			log.Trace("Got SSL message")
-			envelope := &cvmsgspb.C2VMessage{}
-			err := envelope.Unmarshal(msg.Data)
-			if err != nil {
-				// jump out and wait for timeout.
-				log.WithError(err).Error("Got bad SSL response.")
-				break
-			}
-
-			err = types.UnmarshalAny(envelope.Msg, &sslResp)
-			if err != nil {
-				log.WithError(err).Error("Got bad SSL response.")
-				break
-			}
-			break loop
-		}
-
-	}
-
-	certMgrReq := &certmgrpb.UpdateCertsRequest{
-		Key:  sslResp.Key,
-		Cert: sslResp.Cert,
-	}
-
-	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
-	if err != nil {
-		return err
-	}
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
-		fmt.Sprintf("bearer %s", serviceAuthToken))
-
-	certMgrResp, err := s.certMgrClient.UpdateCerts(ctx, certMgrReq)
-	if err != nil {
-		return err
-	}
-
-	if !certMgrResp.OK {
-		log.Error("Failed to update certs")
-		return errors.New("Failed to update certs")
-	}
-	log.WithField("reply", certMgrResp.String()).Info("Certs updated")
-	return nil
-}
-
-// TODO(zasgar/michelle): Remove this, we need to make this into cluster credentials.
-// getServiceCredentials returns JWT credentials for inter-service requests.
-func getServiceCredentials(signingKey string) (string, error) {
-	claims := utils2.GenerateJWTForService("cloud connector Service")
-	return utils2.SignJWTClaims(claims, signingKey)
 }

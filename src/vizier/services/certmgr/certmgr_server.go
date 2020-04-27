@@ -3,6 +3,8 @@ package main
 import (
 	"net/http"
 
+	"github.com/nats-io/nats.go"
+	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"pixielabs.ai/pixielabs/src/shared/version"
@@ -18,6 +20,7 @@ import (
 func init() {
 	pflag.String("namespace", "pl", "The namespace of Vizier")
 	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
+	pflag.String("nats_url", "pl-nats", "The URL of NATS")
 }
 
 func main() {
@@ -35,6 +38,18 @@ func main() {
 	flush := services.InitDefaultSentry(viper.GetString("cluster_id"))
 	defer flush()
 
+	nc, err := nats.Connect(viper.GetString("nats_url"),
+		nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
+		nats.RootCAs(viper.GetString("tls_ca_cert")))
+	if err != nil {
+		log.WithError(err).Fatal("Failed to connect to NATS.")
+	}
+
+	clusterID, err := uuid.FromString(viper.GetString("cluster_id"))
+	if err != nil {
+		log.WithError(err).Fatal("Failed to parse passed in cluster ID")
+	}
+
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
@@ -44,7 +59,9 @@ func main() {
 	}
 
 	env := certmgrenv.New()
-	server := controller.NewServer(env, k8sAPI)
+	server := controller.NewServer(env, clusterID, nc, k8sAPI)
+	go server.CertRequester()
+	defer server.StopCertRequester()
 
 	s := services.NewPLServer(env, mux)
 	certmgrpb.RegisterCertMgrServiceServer(s.GRPCServer(), server)

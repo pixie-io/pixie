@@ -11,7 +11,6 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
-	"github.com/golang/mock/gomock"
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
@@ -22,14 +21,10 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
-	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
-	mock_certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/bridge"
 )
 
 const bufSize = 1024 * 1024
-const testKey = "my key value"
-const testCert = "my cert value"
 
 type FakeVZConnServer struct {
 	quitCh chan bool
@@ -55,17 +50,17 @@ func handleMsg(srv vzconnpb.VZConnService_NATSBridgeServer, msg *vzconnpb.V2CBri
 	if msg.Topic == "register" {
 		return marshalAndSend(srv, "registerAck", &cvmsgspb.RegisterVizierAck{Status: cvmsgspb.ST_OK})
 	}
-
-	if msg.Topic == "ssl" {
-		msg := &cvmsgspb.VizierSSLCertResponse{
-			Key:  testKey,
-			Cert: testCert,
-		}
-		return marshalAndSend(srv, "sslResp", msg)
-	}
-
 	if msg.Topic == "randomtopic" {
 		return nil
+	}
+	if msg.Topic == "randomtopicNeedsResponse" {
+		var unmarshal = &cvmsgspb.VLogMessage{}
+		err := types.UnmarshalAny(msg.Msg, unmarshal)
+		if err != nil {
+			panic(err)
+			return err
+		}
+		return marshalAndSend(srv, "randomtopicNeedsResponseAck", unmarshal)
 	}
 
 	return fmt.Errorf("Got unknown topic %s", msg.Topic)
@@ -146,15 +141,14 @@ func (f *FakeVZInfo) GetPodStatuses() (map[string]*cvmsgspb.PodStatus, time.Time
 }
 
 type testState struct {
-	vzServer    *FakeVZConnServer
-	vzClient    vzconnpb.VZConnServiceClient
-	mockCertMgr *mock_certmgrpb.MockCertMgrServiceClient
-	nats        *nats.Conn
-	vzID        uuid.UUID
-	jwt         string
-	wg          *sync.WaitGroup
-	lis         *bufconn.Listener
-	s           *grpc.Server
+	vzServer *FakeVZConnServer
+	vzClient vzconnpb.VZConnServiceClient
+	nats     *nats.Conn
+	vzID     uuid.UUID
+	jwt      string
+	wg       *sync.WaitGroup
+	lis      *bufconn.Listener
+	s        *grpc.Server
 }
 
 func createDialer(lis *bufconn.Listener) func(string, time.Duration) (net.Conn, error) {
@@ -163,7 +157,7 @@ func createDialer(lis *bufconn.Listener) func(string, time.Duration) (net.Conn, 
 	}
 }
 
-func makeTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t *testing.T)) {
+func makeTestState(t *testing.T) (*testState, func(t *testing.T)) {
 	lis := bufconn.Listen(bufSize)
 	s := grpc.NewServer()
 	wg := &sync.WaitGroup{}
@@ -199,54 +193,35 @@ func makeTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t *t
 	}
 
 	return &testState{
-		vzID:        u,
-		vzServer:    vs,
-		vzClient:    vc,
-		mockCertMgr: mock_certmgrpb.NewMockCertMgrServiceClient(ctrl),
-		nats:        nc,
-		jwt:         testingutils.GenerateTestJWTToken(t, "jwt-key"),
-		wg:          wg,
-		lis:         lis,
+		vzID:     u,
+		vzServer: vs,
+		vzClient: vc,
+		nats:     nc,
+		jwt:      testingutils.GenerateTestJWTToken(t, "jwt-key"),
+		wg:       wg,
+		lis:      lis,
 	}, cleanupFunc
 }
 
 func TestNATSGRPCBridgeTest_CorrectRegistrationFlow(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	ts, cleanup := makeTestState(t, ctrl)
+	ts, cleanup := makeTestState(t)
 	defer cleanup(t)
 
+	ts.wg.Add(1)
+
 	sessionID := time.Now().UnixNano()
-	b := bridge.New(ts.vzID, ts.jwt, sessionID, ts.vzClient, ts.mockCertMgr, makeFakeVZInfo("foobar", 123), ts.nats)
+	b := bridge.New(ts.vzID, ts.jwt, sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), ts.nats)
 	defer b.Stop()
 	go b.RunStream()
 
-	expectedV2CMsgs := 2
-	ts.wg.Add(expectedV2CMsgs)
-	ts.wg.Add(1) // add an extra one for the cert manager reply
-
-	ts.mockCertMgr.EXPECT().
-		UpdateCerts(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(ctx context.Context, req *certmgrpb.UpdateCertsRequest) (*certmgrpb.UpdateCertsResponse, error) {
-			ts.wg.Done()
-			assert.Equal(t, req.Key, testKey)
-			assert.Equal(t, req.Cert, testCert)
-			return &certmgrpb.UpdateCertsResponse{
-				OK: true,
-			}, nil
-		})
-
 	ts.wg.Wait()
-	assert.Equal(t, expectedV2CMsgs, len(ts.vzServer.msgQ))
+	assert.Equal(t, 1, len(ts.vzServer.msgQ))
 
 	register := ts.vzServer.msgQ[0]
-	ssl := ts.vzServer.msgQ[1]
 
 	// Check the metadata
 	assert.Equal(t, "register", register.Topic)
 	assert.Equal(t, sessionID, register.SessionId)
-	assert.Equal(t, "ssl", ssl.Topic)
-	assert.Equal(t, sessionID, ssl.SessionId)
 
 	// Check the contents
 	registerMsg := &cvmsgspb.RegisterVizierRequest{}
@@ -260,73 +235,59 @@ func TestNATSGRPCBridgeTest_CorrectRegistrationFlow(t *testing.T) {
 	assert.Equal(t, "test-cluster", registerMsg.ClusterInfo.ClusterName)
 	assert.Equal(t, "v1.14.10-gke.27", registerMsg.ClusterInfo.ClusterVersion)
 	assert.Equal(t, "084cb5f0-ff69-11e9-a63e-42010a8a0193", registerMsg.ClusterInfo.ClusterUID)
-
-	// Check the contents
-	sslMsg := &cvmsgspb.VizierSSLCertRequest{}
-	err = types.UnmarshalAny(ssl.Msg, sslMsg)
-	if err != nil {
-		t.Fatalf("Could not unmarshal: %+v", err)
-	}
-	assert.Equal(t, string(registerMsg.VizierID.Data), ts.vzID.String())
 }
 
 // Test a message that comes from our NATS queue (and should end up sent to the VZConn)
 func TestNATSGRPCBridgeTest_TestOutboundNATSMessage(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	ts, cleanup := makeTestState(t, ctrl)
+	ts, cleanup := makeTestState(t)
 	defer cleanup(t)
 
+	// wait for registration
+	ts.wg.Add(1)
+
 	sessionID := time.Now().UnixNano()
-	b := bridge.New(ts.vzID, ts.jwt, sessionID, ts.vzClient, ts.mockCertMgr, makeFakeVZInfo("foobar", 123), ts.nats)
-	defer b.Stop()
+	b := bridge.New(ts.vzID, ts.jwt, sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), ts.nats)
+	defer func() {
+		b.Stop()
+	}()
 	go b.RunStream()
 
-	expectedV2CMsgs := 3
-	ts.wg.Add(expectedV2CMsgs)
-	ts.wg.Add(1) // add an extra one for the cert manager reply
+	ts.wg.Wait()
 
+	// log message
+	ts.wg.Add(1)
 	logmsg := &cvmsgspb.VLogMessage{
 		Data: []byte("Foobar"),
 	}
+	subany, err := types.MarshalAny(logmsg)
+	if err != nil {
+		t.Fatal("Error marshalling msg: %+v", err)
+	}
+	v2cMsg := &cvmsgspb.V2CMessage{
+		VizierID:  ts.vzID.String(),
+		SessionId: sessionID,
+		Msg:       subany,
+	}
+	serializedBytes, err := v2cMsg.Marshal()
+	if err != nil {
+		t.Fatalf("Error marshalling msg: %+v", err)
+	}
+	inMsg := &nats.Msg{Subject: "v2c.randomtopic", Data: serializedBytes}
+	err = ts.nats.PublishMsg(inMsg)
+	if err != nil {
+		t.Fatalf("Error publishing NATS msg: %+v", err)
+	}
 
-	ts.mockCertMgr.EXPECT().
-		UpdateCerts(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(ctx context.Context, req *certmgrpb.UpdateCertsRequest) (*certmgrpb.UpdateCertsResponse, error) {
-			ts.wg.Done() // cert mgr reply
-
-			subany, err := types.MarshalAny(logmsg)
-			if err != nil {
-				t.Fatal("Error marshalling msg: %+v", err)
-			}
-			msg := &cvmsgspb.V2CMessage{
-				VizierID:  ts.vzID.String(),
-				SessionId: sessionID,
-				Msg:       subany,
-			}
-			b, err := msg.Marshal()
-			if err != nil {
-				t.Fatalf("Error marshalling msg: %+v", err)
-			}
-			inMsg := &nats.Msg{Subject: "v2c.randomtopic", Data: b}
-			err = ts.nats.PublishMsg(inMsg)
-			if err != nil {
-				t.Fatalf("Error publishing NATS msg: %+v", err)
-			}
-			return &certmgrpb.UpdateCertsResponse{
-				OK: true,
-			}, nil
-		})
-
+	// wait for log message
 	ts.wg.Wait()
-	assert.Equal(t, expectedV2CMsgs, len(ts.vzServer.msgQ))
+	assert.Equal(t, 2, len(ts.vzServer.msgQ))
 
-	msg := ts.vzServer.msgQ[2]
+	msg := ts.vzServer.msgQ[1]
 	assert.Equal(t, "randomtopic", msg.Topic)
 	assert.Equal(t, sessionID, msg.SessionId)
 
 	expected := &cvmsgspb.VLogMessage{}
-	err := types.UnmarshalAny(msg.Msg, expected)
+	err = types.UnmarshalAny(msg.Msg, expected)
 	if err != nil {
 		t.Fatalf("Error Unmarshaling: %+v", err)
 	}
@@ -336,14 +297,18 @@ func TestNATSGRPCBridgeTest_TestOutboundNATSMessage(t *testing.T) {
 
 // Test a message that is sent by VZConn and should end up in our NATS queue
 func TestNATSGRPCBridgeTest_TestInboundNATSMessage(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	ts, cleanup := makeTestState(t, ctrl)
+	ts, cleanup := makeTestState(t)
 	defer cleanup(t)
 
+	// wait for registration
+	ts.wg.Add(1)
+
 	sessionID := time.Now().UnixNano()
-	b := bridge.New(ts.vzID, ts.jwt, sessionID, ts.vzClient, ts.mockCertMgr, makeFakeVZInfo("foobar", 123), ts.nats)
+	b := bridge.New(ts.vzID, ts.jwt, sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), ts.nats)
 	defer b.Stop()
+
+	go b.RunStream()
+	ts.wg.Wait()
 
 	// Subscribe to NATS
 	natsCh := make(chan *nats.Msg)
@@ -353,44 +318,45 @@ func TestNATSGRPCBridgeTest_TestInboundNATSMessage(t *testing.T) {
 	}
 
 	var inboundNats *nats.Msg
-	ts.wg.Add(1) // For the nats msg
+	ts.wg.Add(1) // For the nats msg.
 	go func() {
 		inboundNats = <-natsCh
 		natsSub.Unsubscribe()
 		ts.wg.Done()
 	}()
 
-	go b.RunStream()
-
-	expectedV2CMsgs := 2
-	ts.wg.Add(expectedV2CMsgs)
-	ts.wg.Add(1) // add an extra one for the cert manager reply
-
-	ts.mockCertMgr.EXPECT().
-		UpdateCerts(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(ctx context.Context, req *certmgrpb.UpdateCertsRequest) (*certmgrpb.UpdateCertsResponse, error) {
-			ts.wg.Done()
-			return &certmgrpb.UpdateCertsResponse{
-				OK: true,
-			}, nil
-		})
+	// This message originates in the NATS queue but will trigger a response to also show up in the NATS queue.
+	ts.wg.Add(1)
+	logmsg := &cvmsgspb.VLogMessage{
+		Data: []byte("Foobar"),
+	}
+	subany, err := types.MarshalAny(logmsg)
+	if err != nil {
+		t.Fatal("Error marshalling msg: %+v", err)
+	}
+	v2cMsg := &cvmsgspb.V2CMessage{
+		VizierID:  ts.vzID.String(),
+		SessionId: sessionID,
+		Msg:       subany,
+	}
+	serializedBytes, err := v2cMsg.Marshal()
+	if err != nil {
+		t.Fatalf("Error marshalling msg: %+v", err)
+	}
+	inMsg := &nats.Msg{Subject: "v2c.randomtopicNeedsResponse", Data: serializedBytes}
+	err = ts.nats.PublishMsg(inMsg)
+	if err != nil {
+		t.Fatalf("Error publishing NATS msg: %+v", err)
+	}
 
 	ts.wg.Wait()
-	assert.Equal(t, expectedV2CMsgs, len(ts.vzServer.msgQ))
-	assert.Equal(t, inboundNats.Subject, "c2v.sslResp")
+	assert.Equal(t, 2, len(ts.vzServer.msgQ))
+	assert.Equal(t, inboundNats.Subject, "c2v.randomtopicNeedsResponseAck")
 
 	// Unmarshal and check the nats message
-	var msgAny *types.Any
-	expectedMsg := &cvmsgspb.VizierSSLCertResponse{
-		Key:  testKey,
-		Cert: testCert,
-	}
-	if msgAny, err = types.MarshalAny(expectedMsg); err != nil {
-		t.Fatalf("Error marshaling: %+v", err)
-	}
 	expectedNats := &cvmsgspb.C2VMessage{
 		VizierID: ts.vzID.String(),
-		Msg:      msgAny,
+		Msg:      subany,
 	}
 
 	actualNats := &cvmsgspb.C2VMessage{}

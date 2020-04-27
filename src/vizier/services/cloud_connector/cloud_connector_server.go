@@ -10,14 +10,12 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"google.golang.org/grpc"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/election"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
 	"pixielabs.ai/pixielabs/src/shared/version"
-	certmgrpb "pixielabs.ai/pixielabs/src/vizier/services/certmgr/certmgrpb"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/bridge"
 )
 
@@ -31,24 +29,6 @@ func init() {
 	pflag.String("qb_service", "vizier-query-broker.pl.svc:50300", "The querybroker service url (load balancer/list is ok)")
 	pflag.String("cluster_name", "", "The name of the user's K8s cluster")
 	pflag.String("cluster_version", "", "The version of the user's K8s cluster")
-}
-
-// NewCertMgrServiceClient creates a new cert mgr RPC client stub.
-func NewCertMgrServiceClient() (certmgrpb.CertMgrServiceClient, error) {
-	dialOpts, err := services.GetGRPCClientDialOpts()
-	if err != nil {
-		return nil, err
-	}
-
-	// Block until we connect to prevent races.
-	dialOpts = append(dialOpts, grpc.WithBlock())
-
-	certMgrChannel, err := grpc.Dial(viper.GetString("certmgr_service"), dialOpts...)
-	if err != nil {
-		return nil, err
-	}
-
-	return certmgrpb.NewCertMgrServiceClient(certMgrChannel), nil
 }
 
 func main() {
@@ -69,11 +49,6 @@ func main() {
 	vzClient, err := controllers.NewVZConnClient()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to init vzconn client")
-	}
-
-	certMgrClient, err := NewCertMgrServiceClient()
-	if err != nil {
-		log.WithError(err).Fatal("Failed to init certmgr client")
 	}
 
 	clusterID := viper.GetString("cluster_id")
@@ -129,7 +104,7 @@ func main() {
 	// We just use the current time in nanoseconds to mark the session ID. This will let the cloud side know that
 	// the cloud connector restarted. Clock skew might make this incorrect, but we mostly want this for debugging.
 	sessionID := time.Now().UnixNano()
-	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), sessionID, vzClient, certMgrClient, vzInfo, nc)
+	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), sessionID, vzClient, vzInfo, nc)
 	go server.RunStream()
 	defer server.Stop()
 
