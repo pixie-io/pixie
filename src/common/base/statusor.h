@@ -80,9 +80,7 @@ class StatusOr {
   // Moves the current value.
   T ConsumeValueOrDie();
 
-  std::string ToString() const {
-    return status().ToString();
-  }
+  std::string ToString() const { return status().ToString(); }
 
   template <typename U>
   struct IsNull {
@@ -139,10 +137,12 @@ StatusOr<T>::StatusOr(T&& value) {
   }
 }
 
+// PL_UNUSED(__s__) is useful if the caller does not use the status.
 #define PL_ASSIGN_OR_IMPL(statusor, lhs, rexpr, ...) \
   auto statusor = (rexpr);                           \
   if (!statusor.ok()) {                              \
     auto& __s__ = statusor;                          \
+    PL_UNUSED(__s__);                                \
     __VA_ARGS__;                                     \
   }                                                  \
   lhs = std::move(statusor.ValueOrDie())

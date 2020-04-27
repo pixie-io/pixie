@@ -15,26 +15,26 @@ namespace pl {
 namespace stirling {
 namespace pgsql {
 
-ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg) {
-  constexpr int kMinMsgLen = 1 + sizeof(int32_t);
-  if (buf->size() < kMinMsgLen) {
-    return ParseState::kNeedsMoreData;
-  }
+#define PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(expr, val_or) \
+  PL_ASSIGN_OR(expr, val_or, return ParseState::kNeedsMoreData)
 
+ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg) {
   BinaryDecoder decoder(*buf);
-  msg->tag = static_cast<Tag>(decoder.ExtractChar());
-  msg->len = decoder.ExtractInt<int32_t>().ValueOrDie();
+  PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(const char char_val, decoder.ExtractChar());
+  msg->tag = static_cast<Tag>(char_val);
+  PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(msg->len, decoder.ExtractInt<int32_t>());
+
   constexpr int kLenFieldLen = 4;
   if (msg->len < kLenFieldLen) {
     // Len includes the len field itself, so its value cannot be less than the length of the field.
     return ParseState::kInvalid;
   }
   const size_t str_len = msg->len - 4;
-  if (decoder.BufSize() < str_len) {
-    return ParseState::kNeedsMoreData;
-  }
   // Len includes the length field itself (int32_t), so the payload needs to exclude 4 bytes.
-  msg->payload = std::string(decoder.ExtractString<char>(str_len).ValueOrDie());
+  PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(std::string_view str_view,
+                                      decoder.ExtractString<char>(str_len));
+  msg->payload = std::string(str_view);
+
   *buf = decoder.Buf();
   if (msg->tag == Tag::kCmdComplete) {
     // The last character of a kCmdComplete is '\0'.
@@ -44,15 +44,11 @@ ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg) {
 }
 
 ParseState ParseStartupMessage(std::string_view* buf, StartupMessage* msg) {
-  if (buf->size() < StartupMessage::kMinLen) {
-    return ParseState::kNeedsMoreData;
-  }
-
   BinaryDecoder decoder(*buf);
 
-  msg->len = decoder.ExtractInt<int32_t>().ValueOrDie();
-  msg->proto_ver = {.major = decoder.ExtractInt<int16_t>().ValueOrDie(),
-                    .minor = decoder.ExtractInt<int16_t>().ValueOrDie()};
+  PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(msg->len, decoder.ExtractInt<int32_t>());
+  PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(msg->proto_ver.major, decoder.ExtractInt<int16_t>());
+  PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(msg->proto_ver.minor, decoder.ExtractInt<int16_t>());
 
   const size_t kHeaderSize = 2 * sizeof(int32_t);
 
@@ -61,7 +57,7 @@ ParseState ParseStartupMessage(std::string_view* buf, StartupMessage* msg) {
   }
 
   while (!decoder.eof()) {
-    std::string_view name = decoder.ExtractStringUtil('\0');
+    PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(std::string_view name, decoder.ExtractStringUtil('\0'));
     if (name.empty()) {
       // Each name or value is terminated by '\0'. And all name value pairs are terminated by an
       // additional '\0'.
@@ -69,7 +65,7 @@ ParseState ParseStartupMessage(std::string_view* buf, StartupMessage* msg) {
       // Extracting an empty name means we are at the end of the string.
       break;
     }
-    std::string_view value = decoder.ExtractStringUtil('\0');
+    PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(std::string_view value, decoder.ExtractStringUtil('\0'));
     if (value.empty()) {
       return ParseState::kInvalid;
     }
@@ -104,6 +100,8 @@ struct TagMatcher {
   Tag target_tag;
 };
 
+#define PL_ASSIGN_OR_RETURN_RES(expr, val_or, res) PL_ASSIGN_OR(expr, val_or, return res)
+
 }  // namespace
 
 // Given the input as the payload of a kRowDesc message, returns a list of column name.
@@ -118,9 +116,9 @@ std::vector<std::string_view> ParseRowDesc(std::string_view row_desc) {
   std::vector<std::string_view> res;
 
   BinaryDecoder decoder(row_desc);
-  const int16_t field_count = decoder.ExtractInt<int16_t>().ValueOrDie();
+  PL_ASSIGN_OR_RETURN_RES(const int16_t field_count, decoder.ExtractInt<int16_t>(), res);
   for (int i = 0; i < field_count; ++i) {
-    std::string_view col_name = decoder.ExtractStringUtil('\0');
+    PL_ASSIGN_OR_RETURN_RES(std::string_view col_name, decoder.ExtractStringUtil('\0'), res);
 
     if (col_name.empty()) {
       // Empty column name is invalid. Just put all remaining data as another name and return.
@@ -146,16 +144,15 @@ std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_
   std::vector<std::optional<std::string_view>> res;
 
   BinaryDecoder decoder(data_row);
-  const int16_t field_count = decoder.ExtractInt<int16_t>().ValueOrDie();
-
+  PL_ASSIGN_OR_RETURN_RES(const int16_t field_count, decoder.ExtractInt<int16_t>(), res);
   for (int i = 0; i < field_count; ++i) {
     if (decoder.BufSize() < sizeof(int32_t)) {
       VLOG(1) << "Not enough data";
       return res;
     }
     // The length of the column value, in bytes (this count does not include itself). Can be zero.
+    PL_ASSIGN_OR_RETURN_RES(int32_t value_len, decoder.ExtractInt<int32_t>(), res);
     // As a special case, -1 indicates a NULL column value. No value bytes follow in the NULL case.
-    auto value_len = decoder.ExtractInt<int32_t>().ValueOrDie();
     constexpr int kNullValLen = -1;
     if (value_len == kNullValLen) {
       res.push_back(std::nullopt);
@@ -169,7 +166,8 @@ std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_
       VLOG(1) << "Not enough data, copy the rest of data";
       value_len = decoder.BufSize();
     }
-    res.push_back(decoder.ExtractString<char>(value_len).ValueOrDie());
+    PL_ASSIGN_OR_RETURN_RES(std::string_view value, decoder.ExtractString<char>(value_len), res);
+    res.push_back(value);
   }
   return res;
 }
@@ -226,12 +224,13 @@ std::string_view FmtErrorResp(const RegularMessage& msg) {
   // Each field has at least 2 bytes, one for byte, another for string, which can be empty, but
   // always ends with '\0'.
   while (decoder.BufSize() >= 2) {
-    const char type = decoder.ExtractChar();
+    PL_ASSIGN_OR_RETURN_RES(const char type, decoder.ExtractChar(), {});
     // See https://www.postgresql.org/docs/9.3/protocol-error-fields.html for the complete list of
     // error code.
     constexpr char kHumanReadableMessage = 'M';
     if (type == kHumanReadableMessage) {
-      return decoder.ExtractStringUtil('\0');
+      PL_ASSIGN_OR_RETURN_RES(std::string_view str_view, decoder.ExtractStringUtil('\0'), {});
+      return str_view;
     }
   }
   return msg.payload;

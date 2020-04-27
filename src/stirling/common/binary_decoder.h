@@ -19,7 +19,16 @@ class BinaryDecoder {
   size_t BufSize() const { return buf_.size(); }
   std::string_view Buf() const { return buf_; }
 
-  char ExtractChar();
+  template <typename TCharType = char>
+  StatusOr<TCharType> ExtractChar() {
+    static_assert(sizeof(TCharType) == 1);
+    if (buf_.size() < sizeof(TCharType)) {
+      return error::ResourceUnavailable("Insufficient number of bytes.");
+    }
+    TCharType res = buf_.front();
+    buf_.remove_prefix(1);
+    return res;
+  }
 
   template <typename TIntType>
   StatusOr<TIntType> ExtractInt() {
@@ -31,8 +40,9 @@ class BinaryDecoder {
     return val;
   }
 
-  template <typename TCharType>
+  template <typename TCharType = char>
   StatusOr<std::basic_string_view<TCharType>> ExtractString(size_t len) {
+    static_assert(sizeof(TCharType) == 1);
     if (buf_.size() < len) {
       return error::ResourceUnavailable("Insufficient number of bytes.");
     }
@@ -43,7 +53,17 @@ class BinaryDecoder {
 
   // Extract until encounter the input sentinel character.
   // The sentinel character is not returned, but is still removed from the buffer.
-  std::string_view ExtractStringUtil(char sentinel);
+  template <typename TCharType = char>
+  StatusOr<std::basic_string_view<TCharType>> ExtractStringUtil(TCharType sentinel) {
+    static_assert(sizeof(TCharType) == 1);
+    auto tbuf = CreateStringView<TCharType>(buf_);
+    size_t pos = tbuf.find(sentinel);
+    if (pos == std::string_view::npos) {
+      return error::NotFound("Could not find sentinel character");
+    }
+    buf_.remove_prefix(pos + 1);
+    return tbuf.substr(0, pos);
+  }
 
  private:
   std::string_view buf_;

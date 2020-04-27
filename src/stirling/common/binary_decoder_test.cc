@@ -8,6 +8,16 @@
 namespace pl {
 namespace stirling {
 
+TEST(BinaryDecoderTest, ExtractChar) {
+  std::string_view data("\xff\x02");
+  BinaryDecoder bin_decoder(data);
+
+  constexpr uint8_t k255 = 255;
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractChar<uint8_t>(), k255);
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractChar<char>(), 2);
+  EXPECT_EQ(0, bin_decoder.BufSize());
+}
+
 TEST(BinaryDecoderTest, ExtractInt) {
   std::string_view data("\x01\x01\x01\x01\x01\x01\x01");
   BinaryDecoder bin_decoder(data);
@@ -18,15 +28,24 @@ TEST(BinaryDecoderTest, ExtractInt) {
   EXPECT_EQ(0, bin_decoder.BufSize());
 }
 
+TEST(BinaryDecoderTest, ExtractString) {
+  std::string_view data("abc123");
+  BinaryDecoder bin_decoder(data);
+
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractString(3), "abc");
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractString(3), "123");
+  EXPECT_EQ(0, bin_decoder.BufSize());
+}
+
 TEST(BinaryDecoderTest, ExtractStringUtil) {
   std::string_view data("name!value!name");
   BinaryDecoder bin_decoder(data);
 
-  EXPECT_EQ("name", bin_decoder.ExtractStringUtil('!'));
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractStringUtil('!'), "name");
   EXPECT_EQ("value!name", bin_decoder.Buf());
-  EXPECT_EQ("value", bin_decoder.ExtractStringUtil('!'));
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractStringUtil('!'), "value");
   EXPECT_EQ("name", bin_decoder.Buf());
-  EXPECT_EQ("", bin_decoder.ExtractStringUtil('!'));
+  EXPECT_NOT_OK(bin_decoder.ExtractStringUtil('!'));
   EXPECT_EQ("name", bin_decoder.Buf());
 }
 
