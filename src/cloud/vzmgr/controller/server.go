@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -681,8 +682,14 @@ func getServiceCredentials(signingKey string) (string, error) {
 func (s *Server) UpdateOrInstallVizier(ctx context.Context, req *cvmsgspb.UpdateOrInstallVizierRequest) (*cvmsgspb.UpdateOrInstallVizierResponse, error) {
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 
-	// Generate a signed token for this cluster.
-	claims := jwtutils.GenerateJWTForCluster("vizier_cluster")
+	// Generate a signed token for the user who initiated the request.
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	userClaims := sCtx.Claims.GetUserClaims()
+	claims := jwtutils.GenerateJWTForUser(userClaims.UserID, userClaims.OrgID, userClaims.Email, time.Now().Add(time.Minute*30))
 	tokenString, err := jwtutils.SignJWTClaims(claims, viper.GetString("jwt_signing_key"))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to sign token: %s", err.Error())

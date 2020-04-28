@@ -722,7 +722,7 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 			return []byte("jwtkey"), nil
 		})
 		assert.Nil(t, err)
-		assert.Equal(t, "cluster", claims["Scopes"].(string))
+		assert.Equal(t, "user", claims["Scopes"].(string))
 		// Send response.
 		updateResp := &cvmsgspb.UpdateOrInstallVizierResponse{
 			UpdateStarted: true,
@@ -748,7 +748,7 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 		Version:  "0.1.30",
 	}
 
-	resp, err := s.UpdateOrInstallVizier(context.Background(), req)
+	resp, err := s.UpdateOrInstallVizier(CreateTestContext(), req)
 	require.Nil(t, err)
 	require.NotNil(t, resp)
 }
