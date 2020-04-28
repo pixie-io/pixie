@@ -54,7 +54,6 @@ build:
 deploy:
   kustomize:
     paths:
-    - k8s/vizier_bootstrap/dev
     - k8s/vizier/dev
 profiles:
 - name: minikube
@@ -84,8 +83,6 @@ profiles:
   - op: replace
     path: /deploy/kustomize/paths
     value:
-    # bootstrap does not have sanitizer build.
-    - k8s/vizier_bootstrap/dev
     - k8s/vizier/sanitizer
 - name: tsan
   patches:
@@ -100,6 +97,4 @@ profiles:
   - op: replace
     path: /deploy/kustomize/paths
     value:
-    # bootstrap does not have sanitizer build.
-    - k8s/vizier_bootstrap/dev
     - k8s/vizier/sanitizer
