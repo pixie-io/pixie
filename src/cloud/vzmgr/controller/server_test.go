@@ -36,7 +36,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 )
 
-type vizierStatus cvmsgspb.VizierInfo_Status
+type vizierStatus cvmsgspb.VizierStatus
 
 func setupTestDB(t *testing.T) (*sqlx.DB, func()) {
 	s := bindata.Resource(schema.AssetNames(), func(name string) (bytes []byte, e error) {
@@ -458,7 +458,7 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 	assert.Nil(t, err)
 	err = db.Get(&clusterInfo, clusterQuery, clusterID)
 	assert.Nil(t, err)
-	assert.Equal(t, "HEALTHY", clusterInfo.Status)
+	assert.Equal(t, "CONNECTED", clusterInfo.Status)
 
 	select {
 	case msg := <-subCh:
@@ -505,6 +505,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		hbPort                    int
 		updatedClusterStatus      string
 		expectedClusterAddress    string
+		status                    cvmsgspb.VizierStatus
 	}{
 		{
 			name:                      "valid vizier",
@@ -546,6 +547,21 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			hbAddress:                 "",
 			updatedClusterStatus:      "",
 			expectedClusterAddress:    "",
+			status:                    cvmsgspb.VZ_ST_UPDATING,
+		},
+		{
+			name:                      "updating vizier",
+			expectGetDNSAddressCalled: true,
+			dnsAddressResponse: &dnsmgrpb.GetDNSAddressResponse{
+				DNSAddress: "abc.clusters.dev.withpixie.dev",
+			},
+			dnsAddressError:        nil,
+			vizierID:               "123e4567-e89b-12d3-a456-426655440001",
+			hbAddress:              "127.0.0.1",
+			hbPort:                 123,
+			updatedClusterStatus:   "UPDATING",
+			expectedClusterAddress: "abc.clusters.dev.withpixie.dev:123",
+			status:                 cvmsgspb.VZ_ST_UPDATING,
 		},
 	}
 
@@ -568,6 +584,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 				SequenceNumber: 200,
 				Address:        tc.hbAddress,
 				Port:           int32(tc.hbPort),
+				Status:         tc.status,
 			}
 			nestedAny, err := types.MarshalAny(nestedMsg)
 			if err != nil {

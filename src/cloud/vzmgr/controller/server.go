@@ -128,10 +128,10 @@ func (s *Server) sendNATSMessage(topic string, msg *types.Any, vizierID uuid.UUI
 	}
 }
 
-type vizierStatus cvmsgspb.VizierInfo_Status
+type vizierStatus cvmsgspb.VizierStatus
 
 func (s vizierStatus) Value() (driver.Value, error) {
-	v := cvmsgspb.VizierInfo_Status(s)
+	v := cvmsgspb.VizierStatus(s)
 	switch v {
 	case cvmsgspb.VZ_ST_UNKNOWN:
 		return "UNKNOWN", nil
@@ -143,6 +143,8 @@ func (s vizierStatus) Value() (driver.Value, error) {
 		return "DISCONNECTED", nil
 	case cvmsgspb.VZ_ST_UPDATING:
 		return "UPDATING", nil
+	case cvmsgspb.VZ_ST_CONNECTED:
+		return "CONNECTED", nil
 	}
 	return nil, fmt.Errorf("failed to parse status: %v", s)
 }
@@ -174,14 +176,24 @@ func (s *vizierStatus) Scan(value interface{}) error {
 				*s = vizierStatus(cvmsgspb.VZ_ST_DISCONNECTED)
 				return nil
 			}
+		case "UPDATING":
+			{
+				*s = vizierStatus(cvmsgspb.VZ_ST_UPDATING)
+				return nil
+			}
+		case "CONNECTED":
+			{
+				*s = vizierStatus(cvmsgspb.VZ_ST_CONNECTED)
+				return nil
+			}
 		}
 	}
 
 	return errors.New("failed to scan vizier status")
 }
 
-func (s vizierStatus) ToProto() cvmsgspb.VizierInfo_Status {
-	return cvmsgspb.VizierInfo_Status(s)
+func (s vizierStatus) ToProto() cvmsgspb.VizierStatus {
+	return cvmsgspb.VizierStatus(s)
 }
 
 func validateOrgID(ctx context.Context, providedOrgIDPB *uuidpb.UUID) error {
@@ -501,7 +513,7 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
     	NOW(), $2, PGP_SYM_ENCRYPT($3, $4), $5)
     WHERE vizier_cluster_id = $1`
 
-	vzStatus := "HEALTHY"
+	vzStatus := "CONNECTED"
 	if req.Address == "" {
 		vzStatus = "UNHEALTHY"
 	}
@@ -599,6 +611,14 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	vzStatus := "HEALTHY"
 	if req.Address == "" {
 		vzStatus = "UNHEALTHY"
+	}
+	if req.Status != cvmsgspb.VZ_ST_UNKNOWN {
+		s, err := vizierStatus(req.Status).Value()
+		if err != nil {
+			log.WithError(err).Error("Could not convert status")
+			return
+		}
+		vzStatus = s.(string)
 	}
 
 	_, err = s.db.Exec(query, vzStatus, addr, vizierID)

@@ -14,6 +14,8 @@
 // 000006_add_project_id_to_cluster_table.up.sql
 // 000007_update_cluster_status_enum.down.sql
 // 000007_update_cluster_status_enum.up.sql
+// 000008_connected_cluster_status_enum.down.sql
+// 000008_connected_cluster_status_enum.up.sql
 package schema
 
 import (
@@ -345,12 +347,12 @@ func _000007_update_cluster_status_enumDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000007_update_cluster_status_enum.down.sql", size: 112, mode: os.FileMode(436), modTime: time.Unix(1588042807, 0)}
+	info := bindataFileInfo{name: "000007_update_cluster_status_enum.down.sql", size: 112, mode: os.FileMode(436), modTime: time.Unix(1588051168, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var __000007_update_cluster_status_enumUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x89\x0c\x70\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x2f\x2e\x49\x2c\x29\x2d\x56\x70\x74\x71\x51\x08\x73\xf4\x09\x75\x55\x50\x0f\x0d\x70\x71\x0c\xf1\xf4\x73\x57\x57\x70\x74\x03\xa9\x56\x77\xf1\x0c\x76\xf6\xf7\xf3\x73\x75\x0e\x71\x75\x51\xb7\x06\x04\x00\x00\xff\xff\xaa\x49\x3f\xcd\x43\x00\x00\x00")
+var __000007_update_cluster_status_enumUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x89\x0c\x70\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x2f\x2e\x49\x2c\x29\x2d\x56\x70\x74\x71\x51\x08\x73\xf4\x09\x75\x55\x50\x0f\x0d\x70\x71\x0c\xf1\xf4\x73\x57\x57\x70\x74\x03\xa9\x56\x77\xf1\x0c\x76\xf6\xf7\xf3\x73\x75\x0e\x71\x75\x51\xb7\xe6\x02\x04\x00\x00\xff\xff\x2c\x73\x19\x04\x44\x00\x00\x00")
 
 func _000007_update_cluster_status_enumUpSqlBytes() ([]byte, error) {
 	return bindataRead(
@@ -365,7 +367,47 @@ func _000007_update_cluster_status_enumUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000007_update_cluster_status_enum.up.sql", size: 67, mode: os.FileMode(436), modTime: time.Unix(1588042838, 0)}
+	info := bindataFileInfo{name: "000007_update_cluster_status_enum.up.sql", size: 68, mode: os.FileMode(436), modTime: time.Unix(1588051168, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000008_connected_cluster_status_enumDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\x08\x89\x0c\x70\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x2f\x2e\x49\x2c\x29\x2d\xb6\xe6\x72\x0e\x72\x75\x0c\x71\xc5\x22\xa5\xe0\x18\xac\xe0\xea\x17\xea\xab\xa0\xa1\x1e\xea\xe7\xed\xe7\x1f\xee\xa7\xae\xa3\xa0\xee\xe1\xea\xe8\x13\xe2\x11\x09\x62\x86\xfa\x21\x71\x5c\x3c\x83\x9d\xfd\xfd\xfc\x5c\x9d\x43\x5c\x5d\xc0\x92\x01\x2e\x8e\x21\x9e\x7e\xee\xea\x9a\xd6\x5c\x80\x00\x00\x00\xff\xff\x08\x85\xa3\x9f\x7c\x00\x00\x00")
+
+func _000008_connected_cluster_status_enumDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000008_connected_cluster_status_enumDownSql,
+		"000008_connected_cluster_status_enum.down.sql",
+	)
+}
+
+func _000008_connected_cluster_status_enumDownSql() (*asset, error) {
+	bytes, err := _000008_connected_cluster_status_enumDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000008_connected_cluster_status_enum.down.sql", size: 124, mode: os.FileMode(436), modTime: time.Unix(1588051245, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000008_connected_cluster_status_enumUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x89\x0c\x70\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x2f\x2e\x49\x2c\x29\x2d\x56\x70\x74\x71\x51\x08\x73\xf4\x09\x75\x55\x50\x77\xf6\xf7\xf3\x73\x75\x0e\x71\x75\x51\x57\x70\x74\x03\x29\x57\x0f\x0d\x70\x71\x0c\xf1\xf4\x73\x57\xb7\xe6\x02\x04\x00\x00\xff\xff\x25\xaa\x03\x86\x41\x00\x00\x00")
+
+func _000008_connected_cluster_status_enumUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000008_connected_cluster_status_enumUpSql,
+		"000008_connected_cluster_status_enum.up.sql",
+	)
+}
+
+func _000008_connected_cluster_status_enumUpSql() (*asset, error) {
+	bytes, err := _000008_connected_cluster_status_enumUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000008_connected_cluster_status_enum.up.sql", size: 65, mode: os.FileMode(436), modTime: time.Unix(1588051253, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -436,6 +478,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000006_add_project_id_to_cluster_table.up.sql":    _000006_add_project_id_to_cluster_tableUpSql,
 	"000007_update_cluster_status_enum.down.sql":       _000007_update_cluster_status_enumDownSql,
 	"000007_update_cluster_status_enum.up.sql":         _000007_update_cluster_status_enumUpSql,
+	"000008_connected_cluster_status_enum.down.sql":    _000008_connected_cluster_status_enumDownSql,
+	"000008_connected_cluster_status_enum.up.sql":      _000008_connected_cluster_status_enumUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -493,6 +537,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000006_add_project_id_to_cluster_table.up.sql":    &bintree{_000006_add_project_id_to_cluster_tableUpSql, map[string]*bintree{}},
 	"000007_update_cluster_status_enum.down.sql":       &bintree{_000007_update_cluster_status_enumDownSql, map[string]*bintree{}},
 	"000007_update_cluster_status_enum.up.sql":         &bintree{_000007_update_cluster_status_enumUpSql, map[string]*bintree{}},
+	"000008_connected_cluster_status_enum.down.sql":    &bintree{_000008_connected_cluster_status_enumDownSql, map[string]*bintree{}},
+	"000008_connected_cluster_status_enum.up.sql":      &bintree{_000008_connected_cluster_status_enumUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

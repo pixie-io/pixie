@@ -306,7 +306,7 @@ func (v *VizierClusterInfo) UpdateOrInstallCluster(ctx context.Context, req *clo
 	}, nil
 }
 
-func vzStatusToClusterStatus(s cvmsgspb.VizierInfo_Status) cloudapipb.ClusterStatus {
+func vzStatusToClusterStatus(s cvmsgspb.VizierStatus) cloudapipb.ClusterStatus {
 	switch s {
 	case cvmsgspb.VZ_ST_HEALTHY:
 		return cloudapipb.CS_HEALTHY
@@ -316,6 +316,8 @@ func vzStatusToClusterStatus(s cvmsgspb.VizierInfo_Status) cloudapipb.ClusterSta
 		return cloudapipb.CS_DISCONNECTED
 	case cvmsgspb.VZ_ST_UPDATING:
 		return cloudapipb.CS_UPDATING
+	case cvmsgspb.VZ_ST_CONNECTED:
+		return cloudapipb.CS_CONNECTED
 	default:
 		return cloudapipb.CS_UNKNOWN
 	}

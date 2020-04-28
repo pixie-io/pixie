@@ -95,6 +95,9 @@ enum ClusterStatus {
   VZ_ST_DISCONNECTED
   # The state is updating when the cluster is in the process of updating.
   VZ_ST_UPDATING
+  # The vizier has connected, but has not sent any other further status updates about
+  # whether it is healthy or updating.
+  VZ_ST_CONNECTED
 }
 
 type VizierConfig {

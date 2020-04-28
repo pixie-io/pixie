@@ -68,6 +68,15 @@ message RegisterVizierAck {
     RegistrationStatus status = 1;
 }
 
+enum VizierStatus {
+    VZ_ST_UNKNOWN = 0;
+    VZ_ST_HEALTHY = 1;
+    VZ_ST_UNHEALTHY = 2;
+    VZ_ST_DISCONNECTED = 3;
+    VZ_ST_UPDATING = 4;
+    VZ_ST_CONNECTED = 5;
+}
+
 message VizierHeartbeat {
     // The ID for this Vizier.
     uuidpb.UUID vizier_id = 1 [
@@ -89,6 +98,9 @@ message VizierHeartbeat {
     map<string, PodStatus> pod_statuses = 6;
     // The last time the pod statuses were updated.
     int64 pod_statuses_last_updated = 7;
+    // The status of vizier at the time of the heartbeat. For backwards compatibility,
+    // if status is VZ_ST_UNKNOWN, then we assume the vizier is healthy.
+    VizierStatus status = 8;
 }
 
 // PodStatus represents a pod's status at a moment in time. Currently this message
@@ -123,19 +135,12 @@ message VizierConfigUpdate {
 }
 
 message VizierInfo {
-    enum Status {
-        VZ_ST_UNKNOWN = 0;
-        VZ_ST_HEALTHY = 1;
-        VZ_ST_UNHEALTHY = 2;
-        VZ_ST_DISCONNECTED = 3;
-        VZ_ST_UPDATING = 4;
-    }
     // The ID for this Vizier.
     uuidpb.UUID vizier_id = 1 [
                               (gogoproto.customname) = "VizierID",
                               (gogoproto.moretags) = "db:vizier_id"
                               ];
-    Status status = 2;
+    VizierStatus status = 2;
     // Time in ns since the last heart beat. Negative number implies heartbeat never received.
     int64 last_heartbeat_ns = 3 [
                                 (gogoproto.moretags) = "db:last_heartbeat"
