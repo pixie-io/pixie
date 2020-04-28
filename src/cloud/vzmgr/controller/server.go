@@ -688,13 +688,13 @@ func (s *Server) UpdateOrInstallVizier(ctx context.Context, req *cvmsgspb.Update
 	for {
 		select {
 		case msg := <-subCh:
-			c2vMsg := &cvmsgspb.C2VMessage{}
-			err := proto.Unmarshal(msg.Data, c2vMsg)
+			v2cMsg := &cvmsgspb.V2CMessage{}
+			err := proto.Unmarshal(msg.Data, v2cMsg)
 			if err != nil {
 				return nil, err
 			}
 			resp := &cvmsgspb.UpdateOrInstallVizierResponse{}
-			err = types.UnmarshalAny(c2vMsg.Msg, resp)
+			err = types.UnmarshalAny(v2cMsg.Msg, resp)
 			if err != nil {
 				log.WithError(err).Error("Could not unmarshal response message")
 				return nil, err

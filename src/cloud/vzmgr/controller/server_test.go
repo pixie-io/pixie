@@ -712,7 +712,7 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 		}
 		respAnyMsg, err := types.MarshalAny(updateResp)
 		assert.Nil(t, err)
-		wrappedMsg := &cvmsgspb.C2VMessage{
+		wrappedMsg := &cvmsgspb.V2CMessage{
 			VizierID: vizierID.String(),
 			Msg:      respAnyMsg,
 		}
