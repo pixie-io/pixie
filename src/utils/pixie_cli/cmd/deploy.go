@@ -574,11 +574,11 @@ func optionallyInstallCerts(clientset *kubernetes.Clientset, namespace string) e
 }
 
 func optionallyCreateNamespace(clientset *kubernetes.Clientset, namespace string) error {
-	_, err := clientset.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+	_, err := clientset.CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
 	if err == nil {
 		return nil
 	}
-	_, err = clientset.CoreV1().Namespaces().Create(&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
+	_, err = clientset.CoreV1().Namespaces().Create(context.Background(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -636,6 +636,7 @@ func retryDeploy(clientset *kubernetes.Clientset, config *rest.Config, namespace
 		if err == nil {
 			return nil
 		}
+
 		time.Sleep(5 * time.Second)
 		tries--
 	}

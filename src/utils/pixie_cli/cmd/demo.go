@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -287,7 +288,7 @@ func deleteDemoApp(appName string) error {
 			kubeConfig := k8s.GetConfig()
 			clientset := k8s.GetClientset(kubeConfig)
 
-			err := clientset.CoreV1().Namespaces().Delete(appName, &metav1.DeleteOptions{})
+			err := clientset.CoreV1().Namespaces().Delete(context.Background(), appName, metav1.DeleteOptions{})
 			if err != nil {
 				return err
 			}
@@ -302,7 +303,7 @@ func deleteDemoApp(appName string) error {
 				case <-t.C:
 					return errors.New("timeout waiting for namespace deletion")
 				default:
-					_, err := clientset.CoreV1().Namespaces().Get(appName, metav1.GetOptions{})
+					_, err := clientset.CoreV1().Namespaces().Get(context.Background(), appName, metav1.GetOptions{})
 					if k8s_errors.IsNotFound(err) {
 						return nil
 					}
@@ -358,14 +359,14 @@ func downloadDemoAppYAMLs(appName, artifacts string) (map[string][]byte, error) 
 func namespaceExists(namespace string) bool {
 	kubeConfig := k8s.GetConfig()
 	clientset := k8s.GetClientset(kubeConfig)
-	_, err := clientset.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+	_, err := clientset.CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
 	return err == nil
 }
 
 func createNamespace(namespace string) error {
 	kubeConfig := k8s.GetConfig()
 	clientset := k8s.GetClientset(kubeConfig)
-	_, err := clientset.CoreV1().Namespaces().Create(&v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}})
+	_, err := clientset.CoreV1().Namespaces().Create(context.Background(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}, metav1.CreateOptions{})
 	return err
 }
 

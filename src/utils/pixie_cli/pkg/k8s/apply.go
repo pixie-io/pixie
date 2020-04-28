@@ -1,9 +1,11 @@
 package k8s
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -38,9 +40,9 @@ func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace s
 			return err
 		}
 
-		versions := &runtime.VersionedObjects{}
-		_, gvk, err := unstructured.UnstructuredJSONScheme.Decode(ext.Raw, nil, versions)
+		_, gvk, err := unstructured.UnstructuredJSONScheme.Decode(ext.Raw, nil, nil)
 		if err != nil {
+			logrus.WithError(err).Fatalf(err.Error())
 			return err
 		}
 
@@ -77,7 +79,7 @@ func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace s
 			createRes = res
 		}
 
-		_, err = createRes.Create(&unstruct, metav1.CreateOptions{})
+		_, err = createRes.Create(context.Background(), &unstruct, metav1.CreateOptions{})
 		if err != nil {
 			if !errors.IsAlreadyExists(err) {
 				return err

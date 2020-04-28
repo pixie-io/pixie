@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -105,7 +106,7 @@ func (mc *K8sMetadataController) startWatcher(resource string, resourceVersion i
 
 // GetClusterCIDR get the CIDR for the current cluster.
 func (mc *K8sMetadataController) GetClusterCIDR() string {
-	kubeSysPods, err := mc.clientset.CoreV1().Pods(kubeSystemNs).List(metav1.ListOptions{})
+	kubeSysPods, err := mc.clientset.CoreV1().Pods(kubeSystemNs).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		log.WithError(err).Fatal("Could not fetch kube-system pods to get CIDR")
 	}

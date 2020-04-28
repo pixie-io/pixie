@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"sync"
@@ -83,7 +84,7 @@ func (v *K8sVizierInfo) GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, err
 // GetAddress gets the external address of Vizier's proxy service.
 func (v *K8sVizierInfo) GetAddress() (string, int32, error) {
 	// TODO(michelle): Make the service name a flag that can be passed in.
-	proxySvc, err := v.clientset.CoreV1().Services(plNamespace).Get("vizier-proxy-service", metav1.GetOptions{})
+	proxySvc, err := v.clientset.CoreV1().Services(plNamespace).Get(context.Background(), "vizier-proxy-service", metav1.GetOptions{})
 	if err != nil {
 		return "", int32(0), err
 	}
@@ -92,7 +93,7 @@ func (v *K8sVizierInfo) GetAddress() (string, int32, error) {
 	port := int32(0)
 
 	if proxySvc.Spec.Type == corev1.ServiceTypeNodePort {
-		nodesList, err := v.clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+		nodesList, err := v.clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 		if err != nil {
 			return "", int32(0), err
 		}
@@ -147,7 +148,7 @@ func (v *K8sVizierInfo) GetAddress() (string, int32, error) {
 
 // GetClusterUID gets UID for the cluster, represented by the kube-system namespace UID.
 func (v *K8sVizierInfo) GetClusterUID() (string, error) {
-	ksNS, err := v.clientset.CoreV1().Namespaces().Get("kube-system", metav1.GetOptions{})
+	ksNS, err := v.clientset.CoreV1().Namespaces().Get(context.Background(), "kube-system", metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -157,7 +158,7 @@ func (v *K8sVizierInfo) GetClusterUID() (string, error) {
 // UpdatePodStatuses gets the status of the pods at the current moment in time.
 func (v *K8sVizierInfo) UpdatePodStatuses() {
 
-	podsList, err := v.clientset.CoreV1().Pods(plNamespace).List(metav1.ListOptions{})
+	podsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return
 	}
@@ -231,7 +232,7 @@ func (v *K8sVizierInfo) ParseJobYAML(yamlStr string, imageTag map[string]string,
 // LaunchJob starts the specified job.
 func (v *K8sVizierInfo) LaunchJob(j *batchv1.Job) (*batchv1.Job, error) {
 	// TODO(michelle): Don't hardcode namespace
-	job, err := v.clientset.BatchV1().Jobs("pl").Create(j)
+	job, err := v.clientset.BatchV1().Jobs("pl").Create(context.Background(), j, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}

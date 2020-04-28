@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -21,7 +22,7 @@ var (
 	kernelVersionCheck = NamedCheck(fmt.Sprintf("Kernel version > %s", kernelMinVersion), func() error {
 		kubeConfig := GetConfig()
 		clientset := GetClientset(kubeConfig)
-		nodes, err := clientset.CoreV1().Nodes().List(metav1.ListOptions{})
+		nodes, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 		if err != nil {
 			return err
 		}

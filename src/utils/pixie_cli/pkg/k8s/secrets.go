@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
@@ -15,12 +16,12 @@ import (
 
 // DeleteSecret deletes the given secret in kubernetes.
 func DeleteSecret(clientset *kubernetes.Clientset, namespace, name string) {
-	clientset.CoreV1().Secrets(namespace).Delete(name, &metav1.DeleteOptions{})
+	clientset.CoreV1().Secrets(namespace).Delete(context.Background(), name, metav1.DeleteOptions{})
 }
 
 // GetSecret gets the secret in kubernetes.
 func GetSecret(clientset *kubernetes.Clientset, namespace, name string) *v1.Secret {
-	secret, err := clientset.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+	secret, err := clientset.CoreV1().Secrets(namespace).Get(context.Background(), name, metav1.GetOptions{})
 	if err != nil {
 		return nil
 	}
@@ -44,7 +45,7 @@ func CreateGenericSecret(clientset *kubernetes.Clientset, namespace, name string
 		return err
 	}
 
-	_, err = clientset.CoreV1().Secrets(namespace).Create(secret)
+	_, err = clientset.CoreV1().Secrets(namespace).Create(context.Background(), secret, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -63,7 +64,7 @@ func CreateGenericSecretFromLiterals(clientset *kubernetes.Clientset, namespace,
 		secret.Data[k] = []byte(v)
 	}
 
-	_, err := clientset.CoreV1().Secrets(namespace).Create(secret)
+	_, err := clientset.CoreV1().Secrets(namespace).Create(context.Background(), secret, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -82,7 +83,7 @@ func CreateConfigMapFromLiterals(clientset *kubernetes.Clientset, namespace, nam
 		cm.Data[k] = v
 	}
 
-	_, err := clientset.CoreV1().ConfigMaps(namespace).Create(cm)
+	_, err := clientset.CoreV1().ConfigMaps(namespace).Create(context.Background(), cm, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -111,7 +112,7 @@ func CreateTLSSecret(clientset *kubernetes.Clientset, namespace, name string, ke
 	secret.Data[v1.TLSCertKey] = []byte(tlsCrt)
 	secret.Data[v1.TLSPrivateKeyKey] = []byte(tlsKey)
 
-	_, err = clientset.CoreV1().Secrets(namespace).Create(secret)
+	_, err = clientset.CoreV1().Secrets(namespace).Create(context.Background(), secret, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}
@@ -122,7 +123,7 @@ func CreateTLSSecret(clientset *kubernetes.Clientset, namespace, name string, ke
 // Currently the golang v1.Secret API doesn't perform the massaging of the credentials file that invoking
 // kubectl with a docker-registry secret (like below) does.
 func CreateDockerConfigJSONSecret(clientset *kubernetes.Clientset, namespace, name, credsData string) error {
-	_, err := clientset.CoreV1().Secrets(namespace).Get(name, metav1.GetOptions{})
+	_, err := clientset.CoreV1().Secrets(namespace).Get(context.Background(), name, metav1.GetOptions{})
 	if err == nil {
 		DeleteSecret(clientset, namespace, name)
 	}

@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"archive/zip"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -57,7 +58,7 @@ func (c *LogCollector) logPodInfoToZipFile(zf *zip.Writer, pod v12.Pod, containe
 		Previous:  prev,
 	}
 	req := c.k8sClientSet.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, logOpts)
-	podLogs, err := req.Stream()
+	podLogs, err := req.Stream(context.Background())
 	if err != nil {
 		return err
 	}
@@ -112,7 +113,7 @@ func (c *LogCollector) CollectPixieLogs(fName string) error {
 	zf := zip.NewWriter(f)
 	defer zf.Close()
 
-	pods, err := c.k8sClientSet.CoreV1().Pods(c.ns).List(v1.ListOptions{})
+	pods, err := c.k8sClientSet.CoreV1().Pods(c.ns).List(context.Background(), v1.ListOptions{})
 	if err != nil {
 		return err
 	}

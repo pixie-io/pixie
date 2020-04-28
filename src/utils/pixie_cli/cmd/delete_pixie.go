@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -36,20 +37,24 @@ func init() {
 func deletePixie(ns string, clobberAll bool) {
 	kubeConfig := k8s.GetConfig()
 	clientset := k8s.GetClientset(kubeConfig)
+	od := k8s.ObjectDeleter{
+		Namespace:  ns,
+		Clientset:  clientset,
+		RestConfig: kubeConfig,
+		Timeout:    2 * time.Minute,
+	}
 
 	var deleteJob utils.Task
 
 	if clobberAll {
 		deleteJob = newTaskWrapper("Deleting namespace", func() error {
-			return k8s.DeleteNamespace(clientset, ns)
+			return od.DeleteNamespace()
 		})
 	} else {
 		deleteJob = newTaskWrapper("Deleting Vizier pods/services", func() error {
-			err := deleteVizier(clientset, ns)
-			if err != nil {
-				return err
-			}
-			return nil
+			return od.DeleteByLabel(map[string]string{
+				"component": "vizier",
+			}, k8s.AllResourceKinds...)
 		})
 	}
 

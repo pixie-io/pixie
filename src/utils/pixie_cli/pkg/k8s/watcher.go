@@ -1,6 +1,8 @@
 package k8s
 
 import (
+	"context"
+
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -23,5 +25,5 @@ func WatchK8sResource(clientset *kubernetes.Clientset, resource string, namespac
 // ListNodes lists the nodes in this Kubernetes cluster.
 func ListNodes(clientset *kubernetes.Clientset) (*v1.NodeList, error) {
 	opts := metav1.ListOptions{}
-	return clientset.CoreV1().Nodes().List(opts)
+	return clientset.CoreV1().Nodes().List(context.Background(), opts)
 }

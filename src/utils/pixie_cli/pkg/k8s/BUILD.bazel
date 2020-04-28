@@ -23,6 +23,7 @@ go_library(
         "@in_gopkg_yaml_v2//:go_default_library",
         "@io_k8s_api//core/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/api/errors:go_default_library",
+        "@io_k8s_apimachinery//pkg/api/meta:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1:go_default_library",
         "@io_k8s_apimachinery//pkg/apis/meta/v1/unstructured:go_default_library",
         "@io_k8s_apimachinery//pkg/fields:go_default_library",
@@ -31,7 +32,11 @@ go_library(
         "@io_k8s_apimachinery//pkg/util/validation:go_default_library",
         "@io_k8s_apimachinery//pkg/util/yaml:go_default_library",
         "@io_k8s_apimachinery//pkg/watch:go_default_library",
+        "@io_k8s_cli_runtime//pkg/genericclioptions:go_default_library",
+        "@io_k8s_cli_runtime//pkg/printers:go_default_library",
+        "@io_k8s_cli_runtime//pkg/resource:go_default_library",
         "@io_k8s_client_go//discovery:go_default_library",
+        "@io_k8s_client_go//discovery/cached:go_default_library",
         "@io_k8s_client_go//dynamic:go_default_library",
         "@io_k8s_client_go//kubernetes:go_default_library",
         "@io_k8s_client_go//plugin/pkg/client/auth/gcp:go_default_library",
@@ -39,6 +44,8 @@ go_library(
         "@io_k8s_client_go//restmapper:go_default_library",
         "@io_k8s_client_go//tools/cache:go_default_library",
         "@io_k8s_client_go//tools/clientcmd:go_default_library",
+        "@io_k8s_kubectl//pkg/cmd/util:go_default_library",
+        "@io_k8s_kubectl//pkg/cmd/wait:go_default_library",
     ],
 )
 
