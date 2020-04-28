@@ -2,12 +2,15 @@ package bridge
 
 import (
 	"errors"
+	"strings"
 	"sync"
 	"time"
 
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 
 	// Blank import necessary for kubeConfig to work.
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -194,4 +197,44 @@ func (v *K8sVizierInfo) GetPodStatuses() (map[string]*cvmsgspb.PodStatus, time.T
 	defer v.mu.Unlock()
 
 	return v.currentPodStatus, v.podStatusLastUpdated
+}
+
+// ParseJobYAML parses the yaml string into a k8s job and applies the image tag and env subtitutions.
+func (v *K8sVizierInfo) ParseJobYAML(yamlStr string, imageTag map[string]string, envSubtitutions map[string]string) (*batchv1.Job, error) {
+	decode := scheme.Codecs.UniversalDeserializer().Decode
+	obj, _, err := decode([]byte(yamlStr), nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	job, ok := obj.(*batchv1.Job)
+	if !ok {
+		return nil, errors.New("YAML could not be decoded to job")
+	}
+
+	// Add proper image tag and env substitutions.
+	for i, c := range job.Spec.Template.Spec.Containers {
+		if val, ok := imageTag[c.Name]; ok {
+			imgTag := strings.Split(job.Spec.Template.Spec.Containers[i].Image, ":")
+			job.Spec.Template.Spec.Containers[i].Image = imgTag[0] + ":" + val
+		}
+		for j, e := range c.Env {
+			if val, ok := envSubtitutions[e.Name]; ok {
+				job.Spec.Template.Spec.Containers[i].Env[j].Value = val
+			}
+		}
+	}
+
+	return job, nil
+}
+
+// LaunchJob starts the specified job.
+func (v *K8sVizierInfo) LaunchJob(j *batchv1.Job) (*batchv1.Job, error) {
+	// TODO(michelle): Don't hardcode namespace
+	job, err := v.clientset.BatchV1().Jobs("pl").Create(j)
+	if err != nil {
+		return nil, err
+	}
+
+	return job, nil
 }

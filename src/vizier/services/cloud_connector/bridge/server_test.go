@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/test/bufconn"
+	batchv1 "k8s.io/api/batch/v1"
 
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
@@ -138,6 +139,14 @@ func (f *FakeVZInfo) GetPodStatuses() (map[string]*cvmsgspb.PodStatus, time.Time
 	}
 
 	return podStatus, lastUpdatedTime
+}
+
+func (f *FakeVZInfo) LaunchJob(j *batchv1.Job) (*batchv1.Job, error) {
+	return nil, nil
+}
+
+func (f *FakeVZInfo) ParseJobYAML(yamlStr string, imageTag map[string]string, envSubtitutions map[string]string) (*batchv1.Job, error) {
+	return nil, nil
 }
 
 type testState struct {

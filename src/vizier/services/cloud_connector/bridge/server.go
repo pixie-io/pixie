@@ -14,11 +14,51 @@ import (
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+	batchv1 "k8s.io/api/batch/v1"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )
+
+// UpdaterJobYAML is the YAML that should be applied for the updater job.
+const UpdaterJobYAML string = `---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vizier-upgrade-job
+spec:
+  ttlSecondsAfterFinished: 10
+  template:
+    metadata:
+      name: vizier-upgrade-job
+    spec:
+      containers:
+      - name: updater
+        image: gcr.io/pl-dev-infra/vizier/vizier_updater_image:__VIZIER_UPDATER_IMAGE_TAG__
+        command: ["/busybox/sh", "-c"]
+        args:
+        - |
+            mkdir ~/.pixie
+            echo ${PL_CLOUD_TOKEN} > ~/.pixie/auth.json
+            /vizier_updater/vizier_updater
+        envFrom:
+        - configMapRef:
+            name: pl-tls-config
+        env:
+        - name: PL_CLOUD_TOKEN
+          value: "__PL_CLOUD_TOKEN__"
+        volumeMounts:
+        - name: certs
+          mountPath: /certs
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
+      restartPolicy: "Never"
+  backoffLimit: 1
+  parallelism: 1
+  completions: 1`
 
 const (
 	heartbeatIntervalS = 5 * time.Second
@@ -36,6 +76,8 @@ type VizierInfo interface {
 	GetAddress() (string, int32, error)
 	GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, error)
 	GetPodStatuses() (map[string]*cvmsgspb.PodStatus, time.Time)
+	ParseJobYAML(yamlStr string, imageTag map[string]string, envSubtitutions map[string]string) (*batchv1.Job, error)
+	LaunchJob(j *batchv1.Job) (*batchv1.Job, error)
 }
 
 // Bridge is the NATS<->GRPC bridge.
@@ -150,6 +192,53 @@ func (s *Bridge) RunStream() {
 			close(errCh)
 		}
 	}
+}
+
+func (s *Bridge) handleUpdateMessage(msg *types.Any) error {
+	pb := &cvmsgspb.UpdateOrInstallVizierRequest{}
+	err := types.UnmarshalAny(msg, pb)
+	if err != nil {
+		log.WithError(err).Error("Could not unmarshal update req message")
+		return err
+	}
+
+	// TODO(michelle): Fill in the YAML contents.
+	job, err := s.vzInfo.ParseJobYAML(UpdaterJobYAML, map[string]string{"updater": pb.Version}, map[string]string{
+		"PL_CLOUD_TOKEN": pb.Token,
+	})
+	if err != nil {
+		log.WithError(err).Error("Could not parse job")
+		return err
+	}
+	_, err = s.vzInfo.LaunchJob(job)
+	if err != nil {
+		log.WithError(err).Error("Could not launch job")
+		return err
+	}
+
+	// Send response message to indicate update job has started.
+	m := cvmsgspb.UpdateOrInstallVizierResponse{
+		UpdateStarted: true,
+	}
+	reqAnyMsg, err := types.MarshalAny(&m)
+	if err != nil {
+		return err
+	}
+
+	v2cMsg := cvmsgspb.V2CMessage{
+		Msg: reqAnyMsg,
+	}
+	b, err := v2cMsg.Marshal()
+	if err != nil {
+		return err
+	}
+	err = s.nc.Publish(messagebus.V2CTopic("VizierUpdateResponse"), b)
+	if err != nil {
+		log.WithError(err).Error("Failed to publish VizierUpdateResponse")
+		return err
+	}
+
+	return nil
 }
 
 func (s *Bridge) doRegistrationHandshake(stream vzconnpb.VZConnService_NATSBridgeClient) error {
@@ -418,6 +507,15 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 			log.
 				WithField("msg", bridgeMsg.String()).
 				Trace("Got Message on GRPC channel")
+
+			if bridgeMsg.Topic == "VizierUpdate" {
+				err := s.handleUpdateMessage(bridgeMsg.Msg)
+				if err != nil {
+					log.WithError(err).Error("Failed to launch vizier update job")
+				}
+				continue
+			}
+
 			topic := messagebus.C2VTopic(bridgeMsg.Topic)
 
 			natsMsg := &cvmsgspb.C2VMessage{

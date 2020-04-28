@@ -678,8 +678,7 @@ func (s *Server) UpdateOrInstallVizier(ctx context.Context, req *cvmsgspb.Update
 
 	// Subscribe to topic that the response will be sent on.
 	subCh := make(chan *nats.Msg, 1024)
-	sub, err := s.nc.ChanSubscribe(vzshard.C2VTopic("VizierUpdateResponse", vizierID), subCh)
-	log.Info(vzshard.V2CTopic("VizierUpdateResponse", vizierID))
+	sub, err := s.nc.ChanSubscribe(vzshard.V2CTopic("VizierUpdateResponse", vizierID), subCh)
 	defer sub.Unsubscribe()
 
 	log.WithField("Vizier ID", vizierID.String()).WithField("version", req.Version).Info("Sending update request to Vizier")

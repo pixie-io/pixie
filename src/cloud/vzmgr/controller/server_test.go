@@ -719,7 +719,7 @@ func TestServer_UpdateOrInstallVizier(t *testing.T) {
 
 		b, err := wrappedMsg.Marshal()
 		assert.Nil(t, err)
-		topic := vzshard.C2VTopic("VizierUpdateResponse", vizierID)
+		topic := vzshard.V2CTopic("VizierUpdateResponse", vizierID)
 		err = nc.Publish(topic, b)
 		assert.Nil(t, err)
 	})
