@@ -1,3 +1,5 @@
+#include <filesystem>
+
 #include <absl/strings/str_cat.h>
 #include <gtest/gtest.h>
 
@@ -6,14 +8,14 @@
 
 namespace pl {
 
+using ::pl::testing::TempDir;
+
 TEST(FileUtils, WriteThenRead) {
   std::string write_val = R"(This is a a file content.
 It has two lines.)";
 
-  char tmp_dir_template[] = "/tmp/utils_test_XXXXXX";
-  char* tmp_dir = mkdtemp(tmp_dir_template);
-  CHECK(tmp_dir != nullptr);
-  std::string test_file = absl::StrCat(tmp_dir, "/file");
+  TempDir tmp_dir;
+  std::filesystem::path test_file = tmp_dir.path() / "file";
 
   EXPECT_OK(WriteFileFromString(test_file, write_val));
   std::string read_val = FileContentsOrDie(test_file);

@@ -7,6 +7,8 @@ namespace pl {
 namespace stirling {
 namespace utils {
 
+using ::pl::testing::TempDir;
+
 bool operator==(const KernelVersion& a, const KernelVersion& b) {
   return (a.version == b.version) && (a.major_rev == b.major_rev) && (a.minor_rev == b.minor_rev);
 }
@@ -61,12 +63,9 @@ TEST(LinuxHeadersUtils, ModifyVersion) {
 #define KERNEL_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))
 )";
 
-  char tmp_dir_template[] = "/tmp/linux_headers_test_XXXXXX";
-  char* tmp_dir = mkdtemp(tmp_dir_template);
-  CHECK(tmp_dir != nullptr);
+  TempDir tmp_dir;
 
-  std::filesystem::path base_dir(tmp_dir);
-  std::filesystem::path version_h_dir = base_dir / "include/generated/uapi/linux";
+  std::filesystem::path version_h_dir = tmp_dir.path() / "include/generated/uapi/linux";
   std::filesystem::create_directories(version_h_dir);
   std::string version_h_filename = version_h_dir / "version.h";
 
@@ -80,7 +79,7 @@ TEST(LinuxHeadersUtils, ModifyVersion) {
   uint32_t host_linux_version_code = host_linux_version.ValueOrDie().code();
   EXPECT_GT(host_linux_version_code, 0);
 
-  EXPECT_OK(ModifyKernelVersion(std::filesystem::path(base_dir), host_linux_version_code));
+  EXPECT_OK(ModifyKernelVersion(tmp_dir.path(), host_linux_version_code));
 
   // Read the file into a string.
   std::string expected_contents_template =
@@ -91,8 +90,6 @@ TEST(LinuxHeadersUtils, ModifyVersion) {
       absl::Substitute(expected_contents_template, host_linux_version_code);
 
   EXPECT_OK_AND_EQ(ReadFileToString(version_h_filename), expected_contents);
-
-  std::filesystem::remove_all(tmp_dir);
 }
 
 TEST(LinuxHeadersUtils, FindClosestPackagedHeader) {

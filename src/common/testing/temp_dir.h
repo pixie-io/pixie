@@ -32,7 +32,7 @@ class TempDir {
 
   ~TempDir() {
     std::error_code ec;
-    remove_all(temp_dir_path_, ec);
+    std::filesystem::remove_all(temp_dir_path_, ec);
   }
 
   const std::filesystem::path& path() const { return temp_dir_path_; }
