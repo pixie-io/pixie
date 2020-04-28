@@ -1,8 +1,9 @@
+import {Theme} from '@material-ui/core/styles';
 import * as _ from 'lodash';
 import {Spec as VgSpec} from 'vega';
 import {VisualizationSpec} from 'vega-embed';
-import {EncodeEntry} from 'vega-typings';
 import {TopLevelSpec as VlSpec} from 'vega-lite';
+import {EncodeEntry} from 'vega-typings';
 
 import {DISPLAY_TYPE_KEY, WidgetDisplay} from './vis';
 
@@ -13,7 +14,7 @@ const VEGA_LITE_SCHEMA_SUBSTRING = 'vega.github.io/schema/vega-lite/';
 const VEGA_SCHEMA_SUBSTRING = 'vega.github.io/schema/vega/';
 const VEGA_SCHEMA = '$schema';
 const TIMESERIES_CHART_TYPE = 'pixielabs.ai/pl.vispb.TimeseriesChart';
-
+const COLOR_SCALE = 'color';
 
 interface XAxis {
   readonly label: string;
@@ -57,7 +58,7 @@ interface VegaDisplay extends WidgetDisplay {
 
 export type ChartDisplay = TimeseriesDisplay | BarDisplay | VegaDisplay;
 
-export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: string): VisualizationSpec {
+export function convertWidgetDisplayToVegaLiteSpec(display: ChartDisplay, source: string): VisualizationSpec {
   switch (display[DISPLAY_TYPE_KEY]) {
     case BAR_CHART_TYPE:
       return convertToBarChart(display as BarDisplay, source);
@@ -70,6 +71,13 @@ export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: st
   }
 }
 
+export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: string, theme: Theme,
+                                               vegaLiteModule): VisualizationSpec {
+  const vegaLiteSpec = convertWidgetDisplayToVegaLiteSpec(display, source);
+  const hydratedVegaLite = hydrateSpec(vegaLiteSpec, theme);
+  const vegaSpec = vegaLiteModule.compile(hydratedVegaLite).spec;
+  return addExtrasToVegaSpec(vegaSpec, display);
+}
 // Currently only supports a single input dataframe.
 // TODO(nserrino): Add support for the multi-dataframe case.
 function addSources(spec: VisualizationSpec, source: string): VisualizationSpec {
@@ -363,4 +371,193 @@ function convertToVegaChart(display: VegaDisplay, source: string): Visualization
     spec[VEGA_SCHEMA] = VEGA_LITE_V4;
   }
   return addSources(spec, source);
+}
+
+function addExtrasToVegaSpec(vegaSpec, display: ChartDisplay): VisualizationSpec {
+  switch (display[DISPLAY_TYPE_KEY]) {
+    case TIMESERIES_CHART_TYPE:
+      return addExtrasForTimeseries(vegaSpec, display as TimeseriesDisplay);
+    default:
+      return vegaSpec;
+  }
+}
+
+function addExtrasForTimeseries(vegaSpec, display: TimeseriesDisplay): VisualizationSpec {
+  const isStacked: boolean = display.timeseries[0].stackBySeries;
+  const newSpec = addTooltipsToVegaSpec(vegaSpec, isStacked);
+  return newSpec;
+}
+
+/**
+ * Add the tooltip spec to a Vega spec (not vega-lite spec).
+ * Note that this currently will add a tooltip to every voronoi layer.
+ */
+function addTooltipsToVegaSpec(vegaSpec, isStacked: boolean) {
+  const marks = vegaSpec.marks;
+  if (!marks) {
+    return vegaSpec;
+  }
+  vegaSpec.marks = marks.map((mark) => {
+    if (mark.type !== 'path'
+        || !mark.interactive
+        || !mark.encode
+        || !mark.encode.update
+        || !mark.encode.update.isVoronoi
+        || !mark.encode.update.isVoronoi.value) {
+      return mark;
+    }
+    return {
+      ...mark,
+      encode: {
+        ...mark.encode,
+        update: {
+          ...mark.encode.update,
+          tooltip: {
+            signal: `merge(datum.datum, {colorScale: "${COLOR_SCALE}", isStacked: ${isStacked}})`,
+          },
+        },
+      },
+    };
+  });
+  return vegaSpec;
+}
+
+// We can get rid of this once we delete OldCanvas.
+export function hydrateSpecOld(input, theme: Theme, tableName: string = 'output'): VisualizationSpec {
+  return {
+    ...input,
+    ...specsFromTheme(theme),
+    data: {name: tableName},
+  };
+}
+
+function hydrateSpec(input, theme: Theme): VisualizationSpec {
+  return {
+    ...input,
+    ...specsFromTheme(theme),
+  };
+}
+
+function specsFromTheme(theme: Theme) {
+  return {
+    $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+    width: 'container',
+    height: 'container',
+    background: theme.palette.background.default,
+    padding: theme.spacing(2),
+    config: {
+      arc: {
+        fill: '#39A8F5',
+      },
+      area: {
+        fill: '#39A8F5',
+      },
+      axis: {
+        labelColor: theme.palette.foreground.one,
+        labelFont: 'Roboto',
+        labelFontSize: 10,
+        labelPadding: theme.spacing(0.5),
+        tickColor: theme.palette.foreground.grey4,
+        tickSize: 10,
+        tickWidth: 1,
+        titleColor: theme.palette.foreground.one,
+        titleFont: 'Roboto',
+        titleFontSize: 12,
+        titleFontWeight: theme.typography.fontWeightRegular,
+        titlePadding: theme.spacing(3),
+      },
+      axisY: {
+        grid: true,
+        domain: false,
+        gridColor: theme.palette.foreground.grey4,
+        gridWidth: 0.5,
+      },
+      axisX: {
+        grid: false,
+        domain: true,
+        domainColor: theme.palette.foreground.grey4,
+        tickOpacity: 0,
+        tickSize: theme.spacing(0.5),
+      },
+      axisBand: {
+        grid: false,
+      },
+      background: '#272822',
+      group: {
+        fill: '#f0f0f0',
+      },
+      legend: {
+        fillOpacity: 1,
+        labelColor: theme.palette.foreground.one,
+        labelFont: 'Roboto',
+        labelFontSize: 10,
+        padding: theme.spacing(1),
+        symbolSize: 100,
+        titleColor: theme.palette.foreground.one,
+        titleFontSize: 12,
+      },
+      view: {
+        stroke: 'transparent',
+      },
+      line: {
+        stroke: '#39A8F5',
+        strokeWidth: 1,
+      },
+      path: {
+        stroke: '#39A8F5',
+        strokeWidth: 0.5,
+      },
+      rect: {
+        fill: '#39A8F5',
+      },
+      range: {
+        category: [
+          '#21a1e7',
+          '#2ca02c',
+          '#98df8a',
+          '#aec7e8',
+          '#ff7f0e',
+          '#ffbb78',
+        ],
+        diverging: [
+          '#cc0020',
+          '#e77866',
+          '#f6e7e1',
+          '#d6e8ed',
+          '#91bfd9',
+          '#1d78b5',
+        ],
+        heatmap: [
+          '#d6e8ed',
+          '#cee0e5',
+          '#91bfd9',
+          '#549cc6',
+          '#1d78b5',
+        ],
+      },
+      point: {
+        filled: true,
+        shape: 'circle',
+      },
+      shape: {
+        stroke: '#39A8F5',
+      },
+      rule: {
+        stroke: '#00dba6',
+        strokeDash: [ 6, 6 ],
+        strokeOpacity: 0.9,
+        strokeWidth: 2,
+      },
+      style: {
+        bar: {
+          binSpacing: 2,
+          fill: '#39A8F5',
+          stroke: null,
+        },
+      },
+      title: {
+        fontSize: 0,
+      },
+    },
+  };
 }

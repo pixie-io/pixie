@@ -16,7 +16,7 @@ import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/style
 import {
     LiveContext, PlacementContextOld, ResultsContext, VegaContextOld, VisContext,
 } from './context';
-import {ChartDisplay, convertWidgetDisplayToVegaSpec} from './convert-to-vega-spec';
+import {ChartDisplay, convertWidgetDisplayToVegaSpec, hydrateSpecOld} from './convert-to-vega-spec';
 import {
     addLayout, buildLayoutOld, toLayout, toLayoutOld, updatePositions, updatePositionsOld,
 } from './layout';
@@ -132,7 +132,7 @@ const NewCanvas = (props: CanvasProps) => {
   }, [vis]);
 
   const charts = React.useMemo(() => {
-    if (!vegaModule) {
+    if (!vegaModule || !vegaLiteModule) {
       return [];
     }
     return vis.widgets.map((widget, i) => {
@@ -159,7 +159,7 @@ const NewCanvas = (props: CanvasProps) => {
         content = displayToGraph(display as GraphDisplay, parsedTable);
       } else {
         try {
-          const spec = convertWidgetDisplayToVegaSpec(display as ChartDisplay, name);
+          const spec = convertWidgetDisplayToVegaSpec(display as ChartDisplay, name, theme, vegaLiteModule);
           const data = dataFromProto(table.relation, table.data);
           content = <>
             <div className={classes.widgetTitle}>{name}</div>
@@ -167,9 +167,7 @@ const NewCanvas = (props: CanvasProps) => {
               data={data}
               spec={spec}
               tableName={name}
-              oldSpec={false}
               vegaModule={vegaModule}
-              vegaLiteModule={vegaLiteModule}
             />
           </>;
         } catch (e) {
@@ -269,13 +267,13 @@ const OldCanvas = (props: CanvasProps) => {
         </>;
       } else {
         const data = dataFromProto(table.relation, table.data);
+        const hydratedSpec = hydrateSpecOld(spec, theme, tableName);
+        const vgSpec = vegaLiteModule.compile(hydratedSpec).spec;
         content = <Vega
           data={data}
-          spec={spec}
+          spec={vgSpec}
           tableName={tableName}
-          oldSpec={true}
           vegaModule={vegaModule}
-          vegaLiteModule={vegaLiteModule}
         />;
       }
       return <div key={chartName} className={className}>{content}</div>;

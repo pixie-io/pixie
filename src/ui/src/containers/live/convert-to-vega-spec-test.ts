@@ -1,4 +1,4 @@
-import {convertWidgetDisplayToVegaSpec} from './convert-to-vega-spec';
+import {convertWidgetDisplayToVegaLiteSpec} from './convert-to-vega-spec';
 
 // The output specs are all fully enumerated to make it easy to use https://vega.github.io/editor
 // to verify that they look right.
@@ -45,7 +45,7 @@ describe('simple timeseries', () => {
         }
       ],
     };
-    const spec = convertWidgetDisplayToVegaSpec(input, "mysource");
+    const spec = convertWidgetDisplayToVegaLiteSpec(input, "mysource");
     const {colorFieldName, valueFieldName} = extractRandomFieldNamessFromSpec(spec);
     expect(colorFieldName).toBeTruthy();
     expect(valueFieldName).toBeTruthy();
@@ -147,7 +147,7 @@ describe('simple timeseries', () => {
       "xAxis": {"label": "My custom x axis title"},
       "yAxis": {"label": "My custom y axis title"}
     };
-    const spec = convertWidgetDisplayToVegaSpec(input, "mysource");
+    const spec = convertWidgetDisplayToVegaLiteSpec(input, "mysource");
     const {colorFieldName, valueFieldName} = extractRandomFieldNamessFromSpec(spec);
     expect(colorFieldName).toBeTruthy();
     expect(valueFieldName).toBeTruthy();
@@ -248,7 +248,7 @@ describe('simple timeseries', () => {
         }
       ],
     };
-    const spec = convertWidgetDisplayToVegaSpec(input, "mysource");
+    const spec = convertWidgetDisplayToVegaLiteSpec(input, "mysource");
     const {colorFieldName, valueFieldName} = extractRandomFieldNamessFromSpec(spec);
     expect(colorFieldName).toBeTruthy();
     expect(valueFieldName).toBeTruthy();
@@ -347,7 +347,7 @@ describe('simple timeseries', () => {
         }
       ],
     };
-    const spec = convertWidgetDisplayToVegaSpec(input, "mysource");
+    const spec = convertWidgetDisplayToVegaLiteSpec(input, "mysource");
     const {colorFieldName, valueFieldName} = extractRandomFieldNamessFromSpec(spec);
     expect(colorFieldName).toBeTruthy();
     expect(valueFieldName).toBeTruthy();
@@ -449,7 +449,7 @@ describe('timeseries with series', () => {
         }
       ],
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    expect(convertWidgetDisplayToVegaLiteSpec(input, "mysource")).toStrictEqual({
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
       "data": {
         "name": "mysource",
@@ -542,7 +542,7 @@ describe('timeseries with series', () => {
         }
       ],
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    expect(convertWidgetDisplayToVegaLiteSpec(input, "mysource")).toStrictEqual({
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
       "data": {
         "name": "mysource",
@@ -668,7 +668,7 @@ describe('bar', () => {
         "value": "num_errors"
       }
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    expect(convertWidgetDisplayToVegaLiteSpec(input, "mysource")).toStrictEqual({
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
       "data": {
         "name": "mysource",
@@ -698,7 +698,7 @@ describe('bar', () => {
       "xAxis": {"label": "My custom x axis"},
       "yAxis": {"label": "My custom y axis"}
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    expect(convertWidgetDisplayToVegaLiteSpec(input, "mysource")).toStrictEqual({
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
       "title": "My custom title",
       "data": {
@@ -729,7 +729,7 @@ describe('bar', () => {
         "stackBy": "endpoint"
       }
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    expect(convertWidgetDisplayToVegaLiteSpec(input, "mysource")).toStrictEqual({
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
       "data": {
         "name": "mysource",
@@ -764,7 +764,7 @@ describe('grouped bar', () => {
         "groupBy": "cluster"
       }
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    expect(convertWidgetDisplayToVegaLiteSpec(input, "mysource")).toStrictEqual({
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
       "data": {
         "name": "mysource",
@@ -805,7 +805,7 @@ describe('grouped bar', () => {
       "xAxis": {"label": "My custom x axis"},
       "yAxis": {"label": "My custom y axis"}
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    expect(convertWidgetDisplayToVegaLiteSpec(input, "mysource")).toStrictEqual({
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
       "data": {
         "name": "mysource",
@@ -849,7 +849,7 @@ describe('grouped bar', () => {
         "stackBy": "endpoint",
       }
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    expect(convertWidgetDisplayToVegaLiteSpec(input, "mysource")).toStrictEqual({
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
       "data": {
         "name": "mysource",
@@ -896,7 +896,7 @@ describe('grouped bar', () => {
       "xAxis": {"label": "My custom x axis"},
       "yAxis": {"label": "My custom y axis"}
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    expect(convertWidgetDisplayToVegaLiteSpec(input, "mysource")).toStrictEqual({
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
       "data": {
         "name": "mysource",
@@ -991,7 +991,7 @@ describe('vega spec', () => {
       "@type": "pixielabs.ai/pl.vispb.VegaChart",
       "spec": JSON.stringify(inputVegaLite),
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    expect(convertWidgetDisplayToVegaLiteSpec(input, "mysource")).toStrictEqual({
       "$schema": "https://vega.github.io/schema/vega-lite/v2.json",
       "data": {
         "name": "mysource"
@@ -1025,7 +1025,7 @@ describe('vega spec', () => {
       "@type": "pixielabs.ai/pl.vispb.VegaChart",
       "spec": JSON.stringify(inputVegaLite),
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    expect(convertWidgetDisplayToVegaLiteSpec(input, "mysource")).toStrictEqual({
       "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
       "data": {
         "name": "mysource"
@@ -1052,7 +1052,7 @@ describe('vega spec', () => {
       "@type": "pixielabs.ai/pl.vispb.VegaChart",
       spec: JSON.stringify(testInputVega),
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    expect(convertWidgetDisplayToVegaLiteSpec(input, "mysource")).toStrictEqual({
       ...testInputVega,
       "data": [
         {"name": "mysource"},
@@ -1083,7 +1083,7 @@ describe('vega spec', () => {
       "@type": "pixielabs.ai/pl.vispb.VegaChart",
       spec: JSON.stringify(testVegaWithData),
     };
-    expect(convertWidgetDisplayToVegaSpec(input, "mysource")).toStrictEqual({
+    expect(convertWidgetDisplayToVegaLiteSpec(input, "mysource")).toStrictEqual({
       ...testInputVega,
       "data": [existingData, {"name": "mysource"}]
     });
