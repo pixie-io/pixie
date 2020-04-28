@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load(":images.bzl", "generate_vizier_yamls", "image_map_with_bundle_version")
+load(":images.bzl", "generate_vizier_bootstrap_yamls", "generate_vizier_yamls", "image_map_with_bundle_version")
 load("@io_bazel_rules_docker//container:container.bzl", "container_bundle", "container_image", "container_pull")
 load("@io_bazel_rules_docker//contrib:push-all.bzl", "container_push")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_tar")
@@ -19,11 +19,13 @@ generate_vizier_yamls(
     name = "vizier_prod",
     srcs = glob(["**/*.yaml"]),
     out = "vizier_prod.yaml",
-    cmd = """
-      T=`mktemp -d`
-      cp -aL k8s/vizier $$T
-      kustomize build $$T/vizier/prod -o $@
-    """,
+    image_map = VIZIER_IMAGE_MAP,
+)
+
+generate_vizier_bootstrap_yamls(
+    name = "vizier_bootstrap_prod",
+    srcs = ["//k8s/vizier_bootstrap:bootstrap_yamls"],
+    out = "vizier_bootstrap_prod.yaml",
     image_map = VIZIER_IMAGE_MAP,
 )
 

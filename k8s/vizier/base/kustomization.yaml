@@ -18,8 +18,7 @@ resources:
 - certmgr_role.yaml
 - certmgr_deployment.yaml
 - certmgr_service.yaml
-- cloud_connector_deployment.yaml
-- cloud_connector_service.yaml
+- fluentbit
 - kelvin_deployment.yaml
 - kelvin_service.yaml
 - metadata_deployment.yaml
@@ -31,6 +30,3 @@ resources:
 - query_broker_deployment.yaml
 - query_broker_service.yaml
 - tls_config.yaml
-- fluentbit
-- updater_role.yaml
-- cloud_connector_role.yaml
