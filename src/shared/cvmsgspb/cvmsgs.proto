@@ -128,6 +128,7 @@ message VizierInfo {
         VZ_ST_HEALTHY = 1;
         VZ_ST_UNHEALTHY = 2;
         VZ_ST_DISCONNECTED = 3;
+        VZ_ST_UPDATING = 4;
     }
     // The ID for this Vizier.
     uuidpb.UUID vizier_id = 1 [

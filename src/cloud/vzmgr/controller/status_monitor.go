@@ -65,7 +65,7 @@ func (s *StatusMonitor) UpdateDBEntries() {
      SET
        status='DISCONNECTED',
        address=''
-     WHERE last_heartbeat < NOW() - INTERVAL '%f seconds';`
+     WHERE last_heartbeat < NOW() - INTERVAL '%f seconds' AND status != 'UPDATING';`
 
 	// Variable substitution does not seem to work for intervals. Since we control this entire
 	// query and input data it should be safe to add the value to the query using

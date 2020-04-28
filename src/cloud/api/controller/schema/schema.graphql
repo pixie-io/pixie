@@ -93,6 +93,8 @@ enum ClusterStatus {
   # The state will go to disconnected if the GRPC connection breaks. The hope is that
   # the cluster will come back online and resume in HEALTHY state.
   VZ_ST_DISCONNECTED
+  # The state is updating when the cluster is in the process of updating.
+  VZ_ST_UPDATING
 }
 
 type VizierConfig {

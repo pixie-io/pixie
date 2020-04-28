@@ -43,7 +43,8 @@ export interface GQLClusterInfo {
 export const enum GQLClusterStatus {
   VZ_ST_UNKNOWN = 'VZ_ST_UNKNOWN',
   VZ_ST_HEALTHY = 'VZ_ST_HEALTHY',
-  VZ_ST_DISCONNECTED = 'VZ_ST_DISCONNECTED'
+  VZ_ST_DISCONNECTED = 'VZ_ST_DISCONNECTED',
+  VZ_ST_UPDATING = 'VZ_ST_UPDATING'
 }
 
 export interface GQLVizierConfig {

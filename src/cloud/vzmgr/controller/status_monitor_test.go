@@ -19,6 +19,12 @@ func loadStatusMonitorTestData(t *testing.T, db *sqlx.DB) {
 
 	insertVizierClusterInfoQuery := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat) VALUES($1, $2, $3, $4, NOW() - INTERVAL '30 seconds')`
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440000", "HEALTHY", "addr0", "key0")
+
+	insertVizierClusterQuery = `INSERT INTO vizier_cluster(org_id, id) VALUES ($1, $2)`
+	db.MustExec(insertVizierClusterQuery, "223e4567-e89b-12d3-a456-426655440001", "123e4567-e89b-12d3-a456-426655440001")
+
+	insertVizierClusterInfoQuery = `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat) VALUES($1, $2, $3, $4, NOW() - INTERVAL '30 seconds')`
+	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440001", "UPDATING", "addr0", "key0")
 }
 
 func TestStatusMonitor_Start(t *testing.T) {
@@ -48,4 +54,9 @@ func TestStatusMonitor_Start(t *testing.T) {
 	require.Nil(t, err)
 	assert.Equal(t, vizInfo.Address, "")
 	assert.Equal(t, vizInfo.Status, "DISCONNECTED")
+
+	err = db.Get(&vizInfo, query, uuid.FromStringOrNil("123e4567-e89b-12d3-a456-426655440001"))
+	require.Nil(t, err)
+	assert.Equal(t, vizInfo.Address, "addr0")
+	assert.Equal(t, vizInfo.Status, "UPDATING")
 }

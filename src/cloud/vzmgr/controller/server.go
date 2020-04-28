@@ -141,6 +141,8 @@ func (s vizierStatus) Value() (driver.Value, error) {
 		return "UNHEALTHY", nil
 	case cvmsgspb.VZ_ST_DISCONNECTED:
 		return "DISCONNECTED", nil
+	case cvmsgspb.VZ_ST_UPDATING:
+		return "UPDATING", nil
 	}
 	return nil, fmt.Errorf("failed to parse status: %v", s)
 }
@@ -698,6 +700,7 @@ func (s *Server) UpdateOrInstallVizier(ctx context.Context, req *cvmsgspb.Update
 				log.WithError(err).Error("Could not unmarshal response message")
 				return nil, err
 			}
+
 			return resp, nil
 		case <-ctx.Done():
 			if ctx.Err() != nil {

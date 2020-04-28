@@ -314,6 +314,8 @@ func vzStatusToClusterStatus(s cvmsgspb.VizierInfo_Status) cloudapipb.ClusterSta
 		return cloudapipb.CS_UNHEALTHY
 	case cvmsgspb.VZ_ST_DISCONNECTED:
 		return cloudapipb.CS_DISCONNECTED
+	case cvmsgspb.VZ_ST_UPDATING:
+		return cloudapipb.CS_UPDATING
 	default:
 		return cloudapipb.CS_UNKNOWN
 	}
