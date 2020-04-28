@@ -42,13 +42,14 @@ def generate_vizier_bootstrap_yamls(name, srcs, out, image_map, **kwargs):
         outs = [out],
         cmd = """
         T=`mktemp -d`
-        cp -aL k8s/vizier_bootstrap $$T
+        mkdir -p $$T/k8s/vizier
+        cp -aL k8s/vizier/bootstrap $$T/k8s/vizier
 
         # Update the bundle versions.
-        pushd $$T/vizier_bootstrap/prod
+        pushd $$T/k8s/vizier/bootstrap
         {0}
         popd
 
-        kustomize build $$T/vizier_bootstrap/prod -o $@
+        kustomize build $$T/k8s/vizier/bootstrap/ -o $@
         """.format(merged_edits),
     )

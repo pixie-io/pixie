@@ -10,6 +10,7 @@ patches:
   target:
     kind: Deployment
 resources:
+- cloud_connector_tls_config.yaml
 - cloud_connector_deployment.yaml
 - cloud_connector_service.yaml
 - updater_role.yaml

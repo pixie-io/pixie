@@ -13,6 +13,7 @@ patches:
   target:
     kind: Deployment
 resources:
+- ../bootstrap
 - pem
 - proxy_envoy.yaml
 - certmgr_role.yaml

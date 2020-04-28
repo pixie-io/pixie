@@ -42,7 +42,7 @@ spec:
         - configMapRef:
             name: pl-cloud-config
         - configMapRef:
-            name: pl-tls-config
+            name: pl-cloud-connector-tls-config
         ports:
         - containerPort: 50800
           hostPort: 50800
