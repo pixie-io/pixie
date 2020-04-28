@@ -149,6 +149,10 @@ func (f *FakeVZInfo) ParseJobYAML(yamlStr string, imageTag map[string]string, en
 	return nil, nil
 }
 
+func (f *FakeVZInfo) CreateSecret(name string, literals map[string]string) error {
+	return nil
+}
+
 type testState struct {
 	vzServer *FakeVZConnServer
 	vzClient vzconnpb.VZConnServiceClient

@@ -33,21 +33,27 @@ spec:
     metadata:
       name: vizier-upgrade-job
     spec:
+      serviceAccountName: updater-service-account
       containers:
       - name: updater
         image: gcr.io/pl-dev-infra/vizier/vizier_updater_image:__VIZIER_UPDATER_IMAGE_TAG__
         command: ["/busybox/sh", "-c"]
         args:
         - |
-            mkdir ~/.pixie
-            echo ${PL_CLOUD_TOKEN} > ~/.pixie/auth.json
             /vizier_updater/vizier_updater
         envFrom:
         - configMapRef:
             name: pl-tls-config
+        - configMapRef:
+            name: pl-cloud-config
         env:
         - name: PL_CLOUD_TOKEN
-          value: "__PL_CLOUD_TOKEN__"
+          valueFrom:
+            secretKeyRef:
+              key: pl-update-job-secrets
+              name: cloud-token
+        - name: PL_VIZIER_VERSION
+          value: __PL_VIZIER_VERSION__
         volumeMounts:
         - name: certs
           mountPath: /certs
@@ -78,6 +84,7 @@ type VizierInfo interface {
 	GetPodStatuses() (map[string]*cvmsgspb.PodStatus, time.Time)
 	ParseJobYAML(yamlStr string, imageTag map[string]string, envSubtitutions map[string]string) (*batchv1.Job, error)
 	LaunchJob(j *batchv1.Job) (*batchv1.Job, error)
+	CreateSecret(string, map[string]string) error
 }
 
 // Bridge is the NATS<->GRPC bridge.
@@ -204,12 +211,21 @@ func (s *Bridge) handleUpdateMessage(msg *types.Any) error {
 
 	// TODO(michelle): Fill in the YAML contents.
 	job, err := s.vzInfo.ParseJobYAML(UpdaterJobYAML, map[string]string{"updater": pb.Version}, map[string]string{
-		"PL_CLOUD_TOKEN": pb.Token,
+		"PL_VIZIER_VERSION": pb.Version,
 	})
 	if err != nil {
 		log.WithError(err).Error("Could not parse job")
 		return err
 	}
+
+	err = s.vzInfo.CreateSecret("pl-update-job-secrets", map[string]string{
+		"cloud-token": pb.Token,
+	})
+	if err != nil {
+		log.WithError(err).Error("Failed to create job secrets")
+		return err
+	}
+
 	_, err = s.vzInfo.LaunchJob(job)
 	if err != nil {
 		log.WithError(err).Error("Could not launch job")

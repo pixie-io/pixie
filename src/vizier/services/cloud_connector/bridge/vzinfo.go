@@ -239,3 +239,25 @@ func (v *K8sVizierInfo) LaunchJob(j *batchv1.Job) (*batchv1.Job, error) {
 
 	return job, nil
 }
+
+// CreateSecret creates the K8s secret.
+func (v *K8sVizierInfo) CreateSecret(name string, literals map[string]string) error {
+	// Attempt to delete the secret first, if it already exists.
+	v.clientset.CoreV1().Secrets(plNamespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+
+	secret := &corev1.Secret{}
+	secret.SetGroupVersionKind(corev1.SchemeGroupVersion.WithKind("Secret"))
+
+	secret.Name = name
+	secret.Data = map[string][]byte{}
+
+	for k, v := range literals {
+		secret.Data[k] = []byte(v)
+	}
+
+	_, err := v.clientset.CoreV1().Secrets(plNamespace).Create(context.Background(), secret, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
