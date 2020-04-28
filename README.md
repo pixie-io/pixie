@@ -9,6 +9,7 @@
 [![Docs](https://img.shields.io/badge/docs-latest-blue)](https://withpixie.ai/docs)
 [![Slack](https://slackin.withpixie.ai/badge.svg)](https://slackin.withpixie.ai)
 [![Mentioned in Awesome Kubernetes](https://awesome.re/mentioned-badge.svg)](https://github.com/ramitsurana/awesome-kubernetes)
+[![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
 
 <br clear="all">
 
