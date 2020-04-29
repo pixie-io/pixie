@@ -1,18 +1,26 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gopkg.in/segmentio/analytics-go.v3"
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/shared/version"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/update"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
 func init() {
 	UpdateCmd.AddCommand(CLIUpdateCmd)
+	UpdateCmd.AddCommand(VizierUpdateCmd)
 
 	CLIUpdateCmd.Flags().StringP("use_version", "v", "", "Select a specific version to install")
 	_ = CLIUpdateCmd.Flags().MarkHidden("use_version")
@@ -30,10 +38,96 @@ var UpdateCmd = &cobra.Command{
 	},
 }
 
+// VizierUpdateCmd is the command used to update Vizier.
+var VizierUpdateCmd = &cobra.Command{
+	Use:     "vizier",
+	Aliases: []string{"platform", "pixie"},
+	Short:   "Run updates of Pixie Platform",
+	PreRun: func(cmd *cobra.Command, args []string) {
+		if e, has := os.LookupEnv("PL_VIZIER_VERSION"); has {
+			viper.Set("use_version", e)
+		}
+	},
+	Run: func(cmd *cobra.Command, args []string) {
+		versionString := viper.GetString("use_version")
+		cloudAddr := viper.GetString("cloud_addr")
+
+		// Get grpc connection to cloud.
+		cloudConn, err := getCloudClientConnection(cloudAddr)
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		status, clusterID, err := getClusterID(cloudAddr)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to fetch cluster information")
+		}
+
+		if *status != cloudapipb.CS_HEALTHY {
+			log.WithField("status", status.String()).Fatalf("Cluster must be in a healthy state to update")
+		}
+
+		_ = pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Vizier Update Initiated",
+			Properties: analytics.NewProperties().
+				Set("cloud_addr", cloudAddr).
+				Set("cluster_id", clusterID).
+				Set("cluster_status", status.String()),
+		})
+
+		if len(versionString) == 0 {
+			// Fetch latest version.
+			versionString, err = getLatestVizierVersion(cloudConn)
+			if err != nil {
+				log.WithError(err).Fatal("Failed to fetch Vizier versions")
+			}
+		}
+		fmt.Printf("Updating to version: %s\n", versionString)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+		defer cancel()
+		updateJobs := []utils.Task{
+			newTaskWrapper("Initiating Update", func() error {
+				err := initiateUpdate(ctx, cloudConn, clusterID, versionString)
+				if err != nil {
+					return err
+				}
+				// TODO(zasgar): Fix this by doing a version check.
+				time.Sleep(10 * time.Second)
+				return nil
+			}),
+			newTaskWrapper("Wait for healthcheck", waitForHealthCheckTaskGenerator(cloudAddr)),
+		}
+		uj := utils.NewSerialTaskRunner(updateJobs)
+		err = uj.RunAndMonitor()
+
+		if err != nil {
+			_ = pxanalytics.Client().Enqueue(&analytics.Track{
+				UserId: pxconfig.Cfg().UniqueClientID,
+				Event:  "Vizier Update Failed",
+				Properties: analytics.NewProperties().
+					Set("cloud_addr", cloudAddr).
+					Set("cluster_id", clusterID),
+			})
+
+			log.WithError(err).Fatal("Update failed")
+		}
+
+		_ = pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Vizier Update Complete",
+			Properties: analytics.NewProperties().
+				Set("cloud_addr", cloudAddr).
+				Set("cluster_id", clusterID),
+		})
+	},
+}
+
 // CLIUpdateCmd is the cli subcommand of the "update" command.
 var CLIUpdateCmd = &cobra.Command{
 	Use:   "cli",
-	Short: "Run updates of CLI/Pixie",
+	Short: "Run updates of CLI",
 	PreRun: func(cmd *cobra.Command, args []string) {
 		if e, has := os.LookupEnv("PL_CLI_VERSION"); has {
 			viper.Set("use_version", e)
