@@ -3,9 +3,11 @@ package k8s
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"io"
+	"io/ioutil"
 
-	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -16,7 +18,19 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
+	"k8s.io/klog"
 )
+
+func init() {
+	// Suppress k8s log output.
+	klog.InitFlags(nil)
+	flag.Set("logtostderr", "false")
+	flag.Set("v", "9")
+	flag.Set("alsologtostderr", "false")
+
+	// Suppress k8s log output.
+	klog.SetOutput(ioutil.Discard)
+}
 
 // ApplyYAML does the equivalent of a kubectl apply for the given yaml.
 // This function is copied from https://stackoverflow.com/a/47139247 with major updates with
@@ -42,7 +56,7 @@ func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace s
 
 		_, gvk, err := unstructured.UnstructuredJSONScheme.Decode(ext.Raw, nil, nil)
 		if err != nil {
-			logrus.WithError(err).Fatalf(err.Error())
+			log.WithError(err).Fatalf(err.Error())
 			return err
 		}
 

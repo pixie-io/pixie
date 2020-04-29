@@ -102,6 +102,7 @@ require (
 	k8s.io/apimachinery v0.18.2
 	k8s.io/cli-runtime v0.18.2
 	k8s.io/client-go v0.18.2
+	k8s.io/klog v1.0.0
 	k8s.io/kube-openapi v0.0.0-20200204173128-addea2498afe // indirect
 	k8s.io/kubectl v0.18.2
 )
