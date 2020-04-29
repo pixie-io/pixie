@@ -99,14 +99,14 @@ container_image(
 container_image(
     name = "pl_cc_bpf_image",
     base = ":pl_cc_base_image",
-    tars = ["@linux_headers_tar_gz//file:file"],
+    tars = ["@linux_headers_4_14_104_tar_gz//file:file"],
     visibility = ["//visibility:public"],
 )
 
 container_image(
     name = "pl_cc_bpf_debug_image",
     base = ":pl_cc_base_debug_image",
-    tars = ["@linux_headers_tar_gz//file:file"],
+    tars = ["@linux_headers_4_14_104_tar_gz//file:file"],
     visibility = ["//visibility:public"],
 )
 

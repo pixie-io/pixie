@@ -19,8 +19,9 @@ gperftools_deb_gs_path :=  gs://pl-infra-dev-artifacts/$(gperftools_deb_fname)
 gperftools_deb_image_tag := "gcr.io/pl-dev-infra/gperftools_deb_image:$(GPERFTOOLS_DEB_IMAGE_VERSION)"
 
 ## Linux image parameters
-LINUX_KERNEL_VERSION := 4.14.104
-LINUX_HEADERS_REV := pl2
+LINUX_MAJOR_VERSION := 5
+LINUX_KERNEL_VERSION := 5.0.21
+LINUX_HEADERS_REV := pl1
 linux_headers_fname := linux-headers-$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV).tar.gz
 linux_headers_gs_path := gs://pl-infra-dev-artifacts/$(linux_headers_fname)
 linux_headers_image_tag := "gcr.io/pl-dev-infra/linux_headers_image:$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV)"
@@ -60,7 +61,7 @@ upload_gperftools_deb: build_gperftools_deb_image ## Target to build and upload 
 .PHONY: build_linux_headers_image
 build_linux_headers_image:
 	cd $(mkfile_dir)/linux_headers_image && \
-	$(DOCKER) build . -t $(linux_headers_image_tag)
+	$(DOCKER) build --build-arg KERN_VERSION=${LINUX_KERNEL_VERSION} --build-arg KERN_MAJ=${LINUX_MAJOR_VERSION} . -t $(linux_headers_image_tag)
 
 .PHONY: upload_linux_headers
 upload_linux_headers: build_linux_headers_image ## Target to build and upload linux headers image

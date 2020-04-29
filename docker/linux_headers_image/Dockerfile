@@ -1,32 +1,38 @@
 FROM ubuntu:18.04
 
-ARG KERN_VERSION=4.14.104
+ARG KERN_MAJ
+ARG KERN_VERSION
 
+# Install required packages
 RUN apt-get update
 RUN apt-get upgrade -y -q
-
-# Download Linux sources
-RUN apt-get install -y -q wget
-WORKDIR /pl/src
-RUN wget -nv http://mirrors.edge.kernel.org/pub/linux/kernel/v4.x/linux-${KERN_VERSION}.tar.gz
-RUN tar zxf linux-${KERN_VERSION}.tar.gz
-
-# Build Linux kernel into a deb package
 RUN apt-get install -y -q build-essential \
   bc \
   libelf-dev \
-  libssl-dev
+  libssl-dev \
+  flex \
+  bison \
+  kmod \
+  cpio \
+  rsync \
+  wget
+
+# Download Linux sources
+WORKDIR /pl/src
+RUN wget -nv http://mirrors.edge.kernel.org/pub/linux/kernel/v${KERN_MAJ}.x/linux-${KERN_VERSION}.tar.gz
+RUN tar zxf linux-${KERN_VERSION}.tar.gz
+
+# Build Linux kernel
 WORKDIR /pl/src/linux-${KERN_VERSION}
 ADD config .config
-RUN make O=/pl/build oldconfig
-RUN rm .config
-RUN make -j $(nproc) O=/pl/build deb-pkg
+RUN make olddefconfig
+RUN make clean
+RUN make -j $(nproc) deb-pkg LOCALVERSION=-pl
 
 # Extract headers into a tarball
 WORKDIR /pl
-RUN mkdir build-deb && mv linux* build-deb
-RUN dpkg -x build-deb/linux-headers-${KERN_VERSION}_${KERN_VERSION}-1_amd64.deb .
+RUN dpkg -x src/linux-headers-${KERN_VERSION}-pl_${KERN_VERSION}-pl-1_amd64.deb .
+
 # Remove broken symlinks
-RUN find usr/src/linux-headers-${KERN_VERSION} -xtype l | xargs rm
-RUN mv usr/src/linux-headers-${KERN_VERSION} usr/src/linux-headers-${KERN_VERSION}-pl
+RUN find usr/src/linux-headers-${KERN_VERSION}-pl -xtype l -exec rm {} +
 RUN tar zcf linux-headers-${KERN_VERSION}.tar.gz usr
