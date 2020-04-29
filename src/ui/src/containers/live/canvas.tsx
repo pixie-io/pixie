@@ -2,21 +2,21 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
 import clsx from 'clsx';
-import {displayToGraph, GraphDisplay} from 'components/chart/graph';
-import {Spinner} from 'components/spinner/spinner';
-import {parseSpecs} from 'components/vega/spec';
+import { displayToGraph, GraphDisplay } from 'components/chart/graph';
+import { Spinner } from 'components/spinner/spinner';
+import { parseSpecs } from 'components/vega/spec';
 import Vega from 'components/vega/vega';
-import {QueryResultTable} from 'containers/vizier/query-result-viewer';
+import { QueryResultTable } from 'containers/vizier/query-result-viewer';
 import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
-import {dataFromProto} from 'utils/result-data-utils';
+import { dataFromProto } from 'utils/result-data-utils';
 
-import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/styles';
 
-import {LiveContext, ResultsContext, VisContext} from './context';
-import {ChartDisplay, convertWidgetDisplayToVegaSpec} from './convert-to-vega-spec';
-import {addLayout, toLayout, updatePositions} from './layout';
-import {DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, TABLE_DISPLAY_TYPE, widgetResultName} from './vis';
+import { LiveContext, ResultsContext, VisContext } from './context';
+import { ChartDisplay, convertWidgetDisplayToVegaSpec } from './convert-to-vega-spec';
+import { addLayout, toLayout, updatePositions } from './layout';
+import { DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, TABLE_DISPLAY_TYPE, widgetResultName } from './vis';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -55,6 +55,10 @@ const useStyles = makeStyles((theme: Theme) => {
       ...theme.typography.subtitle1,
       padding: theme.spacing(1),
       borderBottom: `solid 1px ${theme.palette.background.three}`,
+    },
+    chart: {
+      flex: 1,
+      minHeight: 0,
     },
     table: {
       '& *': {
@@ -151,6 +155,7 @@ const Canvas = (props: CanvasProps) => {
           content = <>
             <div className={classes.widgetTitle}>{name}</div>
             <Vega
+              className={classes.chart}
               data={data}
               spec={spec}
               tableName={name}
