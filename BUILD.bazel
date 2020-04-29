@@ -96,17 +96,33 @@ container_image(
     visibility = ["//visibility:public"],
 )
 
+# Each tarball is ~15MB compressed and ~230MB uncompressed.
+# Be careful adding too many headers until they are put on a diet.
+linux_headers_tarballs = [
+    "@linux_headers_4_14_176_tar_gz//file:file",
+    # "@linux_headers_4_15_18_tar_gz//file:file",
+    # "@linux_headers_4_16_18_tar_gz//file:file",
+    # "@linux_headers_4_17_19_tar_gz//file:file",
+    # "@linux_headers_4_18_20_tar_gz//file:file",
+    # "@linux_headers_4_19_118_tar_gz//file:file",
+    # "@linux_headers_5_0_21_tar_gz//file:file",
+    # "@linux_headers_5_1_21_tar_gz//file:file",
+    # "@linux_headers_5_2_21_tar_gz//file:file",
+    "@linux_headers_5_3_18_tar_gz//file:file",
+    # "@linux_headers_5_4_35_tar_gz//file:file",],
+]
+
 container_image(
     name = "pl_cc_bpf_image",
     base = ":pl_cc_base_image",
-    tars = ["@linux_headers_4_14_104_tar_gz//file:file"],
+    tars = linux_headers_tarballs,
     visibility = ["//visibility:public"],
 )
 
 container_image(
     name = "pl_cc_bpf_debug_image",
     base = ":pl_cc_base_debug_image",
-    tars = ["@linux_headers_4_14_104_tar_gz//file:file"],
+    tars = linux_headers_tarballs,
     visibility = ["//visibility:public"],
 )
 

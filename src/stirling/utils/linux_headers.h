@@ -12,13 +12,23 @@ namespace pl {
 namespace stirling {
 namespace utils {
 
+struct KernelVersion {
+  uint16_t version = 0;
+  uint8_t major_rev = 0;
+  uint8_t minor_rev = 0;
+
+  uint32_t code() { return (version << 16) | (major_rev << 8) | (minor_rev); }
+};
+
+uint64_t KernelHeadersDistance(KernelVersion a, KernelVersion b);
+
 /**
- * Parses a the Linux version code from a uname release string (e.g. 'uname -r').
+ * Parses a the Linux version code from a string.
  *
- * @param linux_release the uname string (see uname() from <sys/utsname.h>).
- * @return Linux version code, as used in the linux source code (see version.h).
+ * @param linux_release the kernel version string (e.g. 4.15.8-foobar).
+ * @return Linux version as {version, major, minor}.
  */
-StatusOr<uint32_t> VersionStringToCode(const std::string& linux_release);
+StatusOr<KernelVersion> ParseKernelVersionString(const std::string& linux_release);
 
 /**
  * Returns the kernel version from /proc/version_signature.
@@ -30,17 +40,16 @@ StatusOr<uint32_t> VersionStringToCode(const std::string& linux_release);
 StatusOr<std::string> GetProcVersionSignature();
 
 /**
- * Extracts the linux version code integer.
+ * Determines the linux kernel version.
  * It first searches /proc/version_signature (for Ubuntu distros).
  * If /proc/version_signature does not exist, it uses uname.
  *
  * Note that the version number reported by uname on Ubuntu distros does not include the minor
- * version, and thus cannot be used to create a version code.
+ * version, and thus cannot be used to get an accurate version.
  *
- * @return The version code as used in the linux source code, or error if it could not be
- * determined.
+ * @return The kernel version, or error if it could not be determined.
  */
-StatusOr<uint32_t> LinuxVersionCode();
+StatusOr<KernelVersion> GetKernelVersion();
 
 /**
  * Modifies the version.h on the filesystem to the specified version.
@@ -53,7 +62,13 @@ StatusOr<uint32_t> LinuxVersionCode();
  * @param uname_kernel_release the desired linux release (e.g. 4.18.0-25-generic) to use.
  * @return Status error if unable to modify the sources.
  */
-Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base);
+Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
+                           uint32_t linux_version_code);
+
+StatusOr<std::filesystem::path> FindClosestPackagedHeader(
+    std::filesystem::path packaged_headers_root, KernelVersion kernel_version);
+
+Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir);
 
 enum class LinuxHeaderStrategy {
   // Search for linux Linux headers are already accessible (must be running directly on host).

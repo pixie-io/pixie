@@ -70,9 +70,65 @@ def _docker_images_setup():
 
 def _artifacts_setup():
     http_file(
-        name = "linux_headers_4_14_104_tar_gz",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.14.104-pl2.tar.gz"],
-        sha256 = "dacd190bd5a7cf3d8a38f53fe13ff077512a0146cbb78b9e77dfbab05fce03bd",
+        name = "linux_headers_4_14_176_tar_gz",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.14.176-pl1.tar.gz"],
+        sha256 = "59b7414f39ee0d76041558594c2b67a0c818360f2c9184c2021c906d5ad54300",
+        downloaded_file_path = "linux_headers.tar.gz",
+    )
+
+    http_file(
+        name = "linux_headers_4_15_18_tar_gz",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.15.18-pl1.tar.gz"],
+        sha256 = "0a1280e02aef58486634e4cbf17c1a4d9a650411e17a9b4587b7892efe89bcfc",
+        downloaded_file_path = "linux_headers.tar.gz",
+    )
+
+    http_file(
+        name = "linux_headers_4_16_18_tar_gz",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.16.18-pl1.tar.gz"],
+        sha256 = "03a93b70b76d405170fa2ca8b640f9932741715b344bbab2acb233f8e65c27b0",
+        downloaded_file_path = "linux_headers.tar.gz",
+    )
+
+    http_file(
+        name = "linux_headers_4_17_19_tar_gz",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.17.19-pl1.tar.gz"],
+        sha256 = "a7e0fd404360ef7a18a7809de2b3bc07a3e4667d1e753fafd0d441636178b44a",
+        downloaded_file_path = "linux_headers.tar.gz",
+    )
+
+    http_file(
+        name = "linux_headers_4_18_20_tar_gz",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.18.20-pl1.tar.gz"],
+        sha256 = "04975487e731a966a6a0ab301ad6b306122c15f1cd783f752e5c99b6b23832bb",
+        downloaded_file_path = "linux_headers.tar.gz",
+    )
+
+    http_file(
+        name = "linux_headers_4_19_118_tar_gz",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.19.118-pl1.tar.gz"],
+        sha256 = "5957b27bd2ee22197b00f006c9b8337a3577b6f54972728fdb98e262284c27bf",
+        downloaded_file_path = "linux_headers.tar.gz",
+    )
+
+    http_file(
+        name = "linux_headers_5_0_21_tar_gz",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-5.0.21-pl1.tar.gz"],
+        sha256 = "f85d8dd0c2d1fa710afd796350d7bafeb636ed54653ecc6f7ba1fc18ea2ce9c2",
+        downloaded_file_path = "linux_headers.tar.gz",
+    )
+
+    http_file(
+        name = "linux_headers_5_1_21_tar_gz",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-5.1.21-pl1.tar.gz"],
+        sha256 = "852e5898be4b61fe8c92aa4aada4747b678b361a57764e5cec6ed5bbfd423a9c",
+        downloaded_file_path = "linux_headers.tar.gz",
+    )
+
+    http_file(
+        name = "linux_headers_5_2_21_tar_gz",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-5.2.21-pl1.tar.gz"],
+        sha256 = "2c8f605f38cb673eefba3efedf7b3d3a0bbcd3b67d391768ab09eea76f9dba7f",
         downloaded_file_path = "linux_headers.tar.gz",
     )
 
@@ -80,6 +136,13 @@ def _artifacts_setup():
         name = "linux_headers_5_3_18_tar_gz",
         urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-5.3.18-pl1.tar.gz"],
         sha256 = "0c83721bb2f42acdd2a0c54164d873749acae2c3a9696b599ce70396fc0ede3b",
+        downloaded_file_path = "linux_headers.tar.gz",
+    )
+
+    http_file(
+        name = "linux_headers_5_4_35_tar_gz",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-5.4.35-pl1.tar.gz"],
+        sha256 = "e9a732e6879728dfd667ef6917089c6d562b85334f46ce4b8aacd91ec307c9ae",
         downloaded_file_path = "linux_headers.tar.gz",
     )
 

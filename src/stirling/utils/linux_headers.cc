@@ -4,6 +4,7 @@
 
 #include <sys/utsname.h>
 
+#include <limits>
 #include <sstream>
 #include <vector>
 
@@ -17,25 +18,39 @@ namespace pl {
 namespace stirling {
 namespace utils {
 
-StatusOr<uint32_t> VersionStringToCode(const std::string& linux_release) {
-  uint32_t kernel_version;
-  uint32_t major_rev;
-  uint32_t minor_rev;
+StatusOr<KernelVersion> ParseKernelVersionString(const std::string& linux_release_str) {
+  KernelVersion kernel_version;
 
   std::regex uname_regex("^([0-9]+)\\.([0-9]+)\\.([0-9]+)");
   std::smatch match;
-  bool s = std::regex_search(linux_release, match, uname_regex);
+  bool s = std::regex_search(linux_release_str, match, uname_regex);
   if (!s || match.size() != 4) {
-    return error::Internal("Could not parse uname: [status=$0, match_size=$1]", s, match.size());
+    return error::Internal("Could not parse kernel version string: [status=$0, match_size=$1]", s,
+                           match.size());
   }
 
-  // SimpleAtoi should always succeed, due to regex match.
-  ECHECK(absl::SimpleAtoi(match[1].str(), &kernel_version));
-  ECHECK(absl::SimpleAtoi(match[2].str(), &major_rev));
-  ECHECK(absl::SimpleAtoi(match[3].str(), &minor_rev));
+  uint32_t tmp;
 
-  uint32_t version_code = (kernel_version << 16) | (major_rev << 8) | (minor_rev);
-  return version_code;
+  // SimpleAtoi should always succeed, due to regex match.
+  ECHECK(absl::SimpleAtoi(match[1].str(), &tmp));
+  if (tmp > std::numeric_limits<uint16_t>::max()) {
+    return error::Internal("Kernel version does not appear valid %d", tmp);
+  }
+  kernel_version.version = tmp;
+
+  ECHECK(absl::SimpleAtoi(match[2].str(), &tmp));
+  if (tmp > std::numeric_limits<uint8_t>::max()) {
+    return error::Internal("Kernel major_rev does not appear valid %d", tmp);
+  }
+  kernel_version.major_rev = tmp;
+
+  ECHECK(absl::SimpleAtoi(match[3].str(), &tmp));
+  if (tmp > std::numeric_limits<uint8_t>::max()) {
+    return error::Internal("Kernel minor_rev does not appear valid %d", tmp);
+  }
+  kernel_version.minor_rev = tmp;
+
+  return kernel_version;
 }
 
 StatusOr<std::string> GetUname() {
@@ -72,7 +87,7 @@ StatusOr<std::string> GetProcVersionSignature() {
   return error::NotFound("Could not parse /proc/version_signature file");
 }
 
-StatusOr<uint32_t> LinuxVersionCode() {
+StatusOr<KernelVersion> GetKernelVersion() {
   // First option is to check /proc/version_signature, which exists on Ubuntu distributions.
   // This has to be higher priority because uname -r does not include the minor rev number with
   // uname.
@@ -84,12 +99,11 @@ StatusOr<uint32_t> LinuxVersionCode() {
   }
 
   PL_RETURN_IF_ERROR(version_string_status);
-  return VersionStringToCode(version_string_status.ConsumeValueOrDie());
+  return ParseKernelVersionString(version_string_status.ConsumeValueOrDie());
 }
 
-Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base) {
-  PL_ASSIGN_OR_RETURN(uint32_t linux_version_code, LinuxVersionCode());
-
+Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
+                           uint32_t linux_version_code) {
   std::filesystem::path version_file_path =
       linux_headers_base / "include/generated/uapi/linux/version.h";
 
@@ -186,25 +200,86 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   return Status::OK();
 }
 
+uint64_t KernelHeadersDistance(KernelVersion a, KernelVersion b) {
+  // minor_rev range: 0-255
+  // major_rev range: 0-255
+  // version range: 0-65535
+
+  // Distance function makes sure major rev change is greater than 2x the minor rev change,
+  // so two versions on the same major rev are always closer than two version on different major
+  // revs. Similar logic for version.
+
+  return (abs(a.minor_rev - b.minor_rev)) + (abs(a.major_rev - b.major_rev) << 9) +
+         (abs(a.version - b.version) << 18);
+}
+
+StatusOr<std::filesystem::path> FindClosestPackagedHeader(
+    std::filesystem::path packaged_headers_root, KernelVersion kernel_version) {
+  const std::string kHeaderDirPrefix =
+      std::filesystem::path(packaged_headers_root / "linux-headers-").string();
+  const std::string_view kHeaderDirSuffix = "-pl";
+
+  std::filesystem::path selected_headers;
+  KernelVersion selected_headers_version;
+
+  if (fs::Exists(packaged_headers_root).ok()) {
+    for (const auto& p : std::filesystem::directory_iterator(packaged_headers_root)) {
+      VLOG(1) << absl::Substitute("Directory: $0", p.path().string());
+      std::string path = p.path().string();
+
+      if (!absl::StartsWith(path, kHeaderDirPrefix) || !absl::EndsWith(path, kHeaderDirSuffix)) {
+        LOG(DFATAL) << "Do not expect anything but Pixie headers in this directory.";
+        continue;
+      }
+
+      std::string_view version_string_view(path);
+      version_string_view.remove_prefix(kHeaderDirPrefix.size());
+      version_string_view.remove_suffix(kHeaderDirSuffix.size());
+      std::string version_string(version_string_view);
+
+      StatusOr<KernelVersion> headers_kernel_version_status =
+          ParseKernelVersionString(version_string);
+      if (!headers_kernel_version_status.ok()) {
+        LOG(DFATAL) << "Do not expect an unparseable linux-headers format in this directory.";
+        continue;
+      }
+      KernelVersion headers_kernel_version = headers_kernel_version_status.ValueOrDie();
+
+      if (selected_headers.empty() ||
+          KernelHeadersDistance(kernel_version, headers_kernel_version) <
+              KernelHeadersDistance(kernel_version, selected_headers_version)) {
+        selected_headers = p;
+        selected_headers_version = headers_kernel_version;
+      }
+    }
+  }
+
+  if (selected_headers.empty()) {
+    return error::Internal("Could not find packaged headers to install. Search location: $0",
+                           packaged_headers_root.string());
+  }
+
+  return selected_headers;
+}
+
 Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
+  // This is the directory in our container images that contains packaged linux headers.
+  const std::filesystem::path kPackagedHeadersRoot = "/usr/src";
+
   std::filesystem::path lib_modules_build_dir = lib_modules_dir / "build";
 
   LOG(INFO) << absl::Substitute("Attempting to install packaged headers to $0",
                                 lib_modules_build_dir.string());
 
-  // TODO(oazizi): /usr/src/linux-headers-4.14.104-pl is tied to our container build. Too brittle.
-  std::filesystem::path packaged_headers = "/usr/src/linux-headers-4.14.104-pl";
-  LOG(INFO) << absl::Substitute("Looking for packaged headers at $0", packaged_headers.string());
-  if (fs::Exists(packaged_headers).ok()) {
-    PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers));
-    PL_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers, lib_modules_build_dir));
-    LOG(INFO) << absl::Substitute("Successfully installed packaged copy of headers at $0",
-                                  lib_modules_build_dir.string());
-    return Status::OK();
-  }
+  PL_ASSIGN_OR_RETURN(KernelVersion kernel_version, GetKernelVersion());
 
-  return error::Internal("Could not find packaged headers to install. Search location: $0",
-                         packaged_headers.string());
+  PL_ASSIGN_OR_RETURN(std::filesystem::path packaged_headers,
+                      FindClosestPackagedHeader(kPackagedHeadersRoot, kernel_version));
+  PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers, kernel_version.code()));
+  PL_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers, lib_modules_build_dir));
+  LOG(INFO) << absl::Substitute("Successfully installed packaged copy of headers at $0",
+                                lib_modules_build_dir.string());
+  return Status::OK();
 }
 
 Status FindOrInstallLinuxHeaders(const std::vector<LinuxHeaderStrategy>& attempt_order) {
