@@ -48,6 +48,10 @@ class PostgreSQLTraceTest : public testing::SocketTraceBPFTest {
   PostgreSQLContainer container_;
 };
 
+// TODO(yzhao): We want to test Stirling's behavior when intercept the middle of the traffic.
+// One way is to let SubProcess able to accept STDIN after launching. This test does not have that
+// capability because it's running a query from start to finish, which always establish new
+// connections.
 TEST_F(PostgreSQLTraceTest, SelectQuery) {
   // --pid host is required to access the correct PID.
   constexpr char kCmdTmpl[] =

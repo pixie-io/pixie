@@ -1,6 +1,6 @@
 package(default_visibility = ["//src/stirling:__pkg__"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library")
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
 load("//bazel:cc_resource.bzl", "pl_bpf_cc_resource", "pl_cc_resource", "pl_cc_resource_impl")
 load("//bazel:pl_bpf_preprocess.bzl", "pl_bpf_preprocess")
 
@@ -99,4 +99,17 @@ pl_bpf_preprocess(
         "//src/stirling/bcc_bpf_interface:headers",
     ],
     syshdrs = ":dummy_system_headers",
+)
+
+pl_cc_test(
+    name = "pgsql_test",
+    srcs = [
+        "pgsql.h",
+        "utils.h",
+        "stubs.h",
+        "pgsql_test.cc",
+    ],
+    deps = [
+        "//src/stirling/common:cc_library",
+    ],
 )

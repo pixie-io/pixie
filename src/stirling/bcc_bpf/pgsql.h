@@ -1,3 +1,4 @@
+// LINT_C_FILE: Do not remove this line. It ensures cpplint treats this as a C file.
 #pragma once
 
 #include "src/stirling/bcc_bpf/utils.h"
@@ -23,13 +24,13 @@ static __inline enum MessageType infer_pgsql_startup_message(const uint8_t* buf,
     return kUnknown;
   }
 
-  const uint8_t kPgsqlVer30[] = {'\x0', '\x03', '\x00', '\x00'};
-  if (bpf_strncmp(buf + 4, kPgsqlVer30, 4) != 0) {
+  const char kPgsqlVer30[] = "\x00\x03\x00\x00";
+  if (bpf_strncmp((const char*)buf + 4, kPgsqlVer30, 4) != 0) {
     return kUnknown;
   }
 
   const char kPgsqlUser[] = "user";
-  if (bpf_strncmp(buf + 8, kPgsqlUser, 4) != 0) {
+  if (bpf_strncmp((const char*)buf + 8, kPgsqlUser, 4) != 0) {
     return kUnknown;
   }
 
@@ -51,8 +52,8 @@ static __inline enum MessageType infer_pgsql_query_message(const uint8_t* buf, s
   if (len < kMinPayloadLen || len > kMaxPayloadLen) {
     return kUnknown;
   }
-  // If the input includes a whole message, check the last 2 characters.
-  if (len + 1 <= count && (buf[count - 1] != '\0' || buf[count - 2] != ';')) {
+  // If the input includes a whole message (1 byte tag + length), check the last character.
+  if ((len + 1 <= (int)count) && (buf[len] != '\0')) {
     return kUnknown;
   }
   return kRequest;
@@ -76,5 +77,5 @@ static __inline enum MessageType infer_pgsql_message(const uint8_t* buf, size_t 
   if (type != kUnknown) {
     return type;
   }
-  return infer_pgsql_startup_message(buf, count);
+  return infer_pgsql_regular_message(buf, count);
 }
