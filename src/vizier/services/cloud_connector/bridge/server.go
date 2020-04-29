@@ -29,7 +29,6 @@ kind: Job
 metadata:
   name: vizier-upgrade-job
 spec:
-  ttlSecondsAfterFinished: 10
   template:
     metadata:
       name: vizier-upgrade-job

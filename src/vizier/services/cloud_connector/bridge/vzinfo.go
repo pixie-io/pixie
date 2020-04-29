@@ -266,7 +266,11 @@ func (v *K8sVizierInfo) CreateSecret(name string, literals map[string]string) er
 
 // DeleteJob deletes the job with the specified name.
 func (v *K8sVizierInfo) DeleteJob(name string) error {
-	return v.clientset.BatchV1().Jobs(plNamespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+	policy := metav1.DeletePropagationBackground
+
+	return v.clientset.BatchV1().Jobs(plNamespace).Delete(context.Background(), name, metav1.DeleteOptions{
+		PropagationPolicy: &policy,
+	})
 }
 
 // GetJob gets the job with the specified name.
