@@ -7,7 +7,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
 metadata:
-  name: cloud-connector-role
+  name: pl-cloud-connector-role
 rules:
 - apiGroups:
   - ""
@@ -36,11 +36,11 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: cloud-connector-binding
+  name: pl-cloud-connector-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: cloud-connector-role
+  name: pl-cloud-connector-role
 subjects:
 - kind: ServiceAccount
   name: cloud-conn-service-account
