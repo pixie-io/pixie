@@ -13,9 +13,9 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
 )
 
-// getClusterID is a placeholder to fetch the cluster ID to query/install.
+// getClusterInfo is a placeholder to fetch the cluster ID to query/install.
 // This will be replaced with a more comprehensive config/cluster management in future releases
-func getClusterID(cloudAddr string) (*cloudapipb.ClusterStatus, *uuid.UUID, error) {
+func getClusterInfo(cloudAddr string) (*cloudapipb.ClusterInfo, *uuid.UUID, error) {
 	// Get grpc connection to cloud.
 
 	conn, err := getCloudClientConnection(cloudAddr)
@@ -40,5 +40,5 @@ func getClusterID(cloudAddr string) (*cloudapipb.ClusterStatus, *uuid.UUID, erro
 	}
 	selectedCluster := resp.Clusters[0]
 	id := utils.UUIDFromProtoOrNil(selectedCluster.ID)
-	return &selectedCluster.Status, &id, nil
+	return selectedCluster, &id, nil
 }

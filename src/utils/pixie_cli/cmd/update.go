@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
 
+	"github.com/blang/semver"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -58,13 +60,31 @@ var VizierUpdateCmd = &cobra.Command{
 			log.Fatalln(err)
 		}
 
-		status, clusterID, err := getClusterID(cloudAddr)
+		clusterInfo, clusterID, err := getClusterInfo(cloudAddr)
 		if err != nil {
 			log.WithError(err).Fatal("Failed to fetch cluster information")
 		}
 
-		if *status != cloudapipb.CS_HEALTHY {
-			log.WithField("status", status.String()).Fatalf("Cluster must be in a healthy state to update")
+		status := clusterInfo.Status
+		if status != cloudapipb.CS_HEALTHY {
+			log.WithField("status", status).Fatalf("Cluster must be in a healthy state to update")
+		}
+
+		if len(versionString) == 0 {
+			// Fetch latest version.
+			versionString, err = getLatestVizierVersion(cloudConn)
+			if err != nil {
+				log.WithError(err).Fatal("Failed to fetch Vizier versions")
+			}
+		}
+
+		if sv, err := semver.Parse(clusterInfo.VizierVersion); err == nil {
+			svNew := semver.MustParse(versionString)
+			if svNew.Compare(sv) < 0 {
+				log.WithField("current", sv.String()).
+					WithField("requested", svNew.String()).
+					Fatalf("Cannot upgrade to older version")
+			}
 		}
 
 		_ = pxanalytics.Client().Enqueue(&analytics.Track{
@@ -76,26 +96,44 @@ var VizierUpdateCmd = &cobra.Command{
 				Set("cluster_status", status.String()),
 		})
 
-		if len(versionString) == 0 {
-			// Fetch latest version.
-			versionString, err = getLatestVizierVersion(cloudConn)
-			if err != nil {
-				log.WithError(err).Fatal("Failed to fetch Vizier versions")
-			}
-		}
 		fmt.Printf("Updating to version: %s\n", versionString)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
 		updateJobs := []utils.Task{
 			newTaskWrapper("Initiating Update", func() error {
-				err := initiateUpdate(ctx, cloudConn, clusterID, versionString)
-				if err != nil {
-					return err
+				return initiateUpdate(ctx, cloudConn, clusterID, versionString)
+			}),
+			newTaskWrapper("Wait for update", func() error {
+				timer := time.NewTicker(5 * time.Second)
+				timeout := time.NewTimer(5 * time.Minute)
+				defer timer.Stop()
+				defer timeout.Stop()
+				for {
+					select {
+					case <-timer.C:
+						clusterInfo, _, err := getClusterInfo(cloudAddr)
+						if err != nil {
+							return err
+						}
+						if clusterInfo.Status == cloudapipb.CS_HEALTHY {
+							updateVersion, err := semver.Parse(versionString)
+							if err != nil {
+								return err
+							}
+							currentVersion, err := semver.Parse(clusterInfo.VizierVersion)
+							if err != nil {
+								return err
+							}
+
+							if currentVersion.Compare(updateVersion) == 0 {
+								return nil
+							}
+						}
+					case <-timeout.C:
+						return errors.New("timeout waiting for update")
+					}
 				}
-				// TODO(zasgar): Fix this by doing a version check.
-				time.Sleep(10 * time.Second)
-				return nil
 			}),
 			newTaskWrapper("Wait for healthcheck", waitForHealthCheckTaskGenerator(cloudAddr)),
 		}

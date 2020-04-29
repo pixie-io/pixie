@@ -83,17 +83,19 @@ var GetViziersCmd = &cobra.Command{
 							time.Now().Sub(time.Unix(0, vz.LastHeartbeatNs)).Nanoseconds()))
 				}
 			}
-			// Parse the version to pretty print it.
-			sv := semver.MustParse(vz.VizierVersion)
 			sb := strings.Builder{}
-			sb.WriteString(fmt.Sprintf("%d.%d.%d", sv.Major, sv.Minor, sv.Patch))
-			for idx, pre := range sv.Pre {
-				if idx == 0 {
-					sb.WriteString("-")
-				} else {
-					sb.WriteString(".")
+
+			// Parse the version to pretty print it.
+			if sv, err := semver.Parse(vz.VizierVersion); err == nil {
+				sb.WriteString(fmt.Sprintf("%d.%d.%d", sv.Major, sv.Minor, sv.Patch))
+				for idx, pre := range sv.Pre {
+					if idx == 0 {
+						sb.WriteString("-")
+					} else {
+						sb.WriteString(".")
+					}
+					sb.WriteString(pre.String())
 				}
-				sb.WriteString(pre.String())
 			}
 			_ = w.Write([]interface{}{vz.ClusterName, utils.UUIDFromProtoOrNil(vz.ID), vz.ClusterVersion, sb.String(),
 				vz.Status, lastHeartbeat, passthrough})
