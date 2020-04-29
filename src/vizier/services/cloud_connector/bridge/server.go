@@ -37,23 +37,27 @@ spec:
       containers:
       - name: updater
         image: gcr.io/pl-dev-infra/vizier/vizier_updater_image:__VIZIER_UPDATER_IMAGE_TAG__
-        command: ["/busybox/sh", "-c"]
-        args:
-        - |
-            /vizier_updater/vizier_updater
         envFrom:
-        - configMapRef:
-            name: pl-tls-config
         - configMapRef:
             name: pl-cloud-config
         env:
         - name: PL_CLOUD_TOKEN
           valueFrom:
             secretKeyRef:
-              key: pl-update-job-secrets
-              name: cloud-token
+              name: pl-update-job-secrets
+              key: cloud-token
         - name: PL_VIZIER_VERSION
           value: __PL_VIZIER_VERSION__
+        - name: PL_CLIENT_TLS_CERT
+          value: /certs/client.crt
+        - name: PL_CLIENT_TLS_KEY
+          value: /certs/client.key
+        - name: PL_SERVER_TLS_CERT
+          value: /certs/server.crt
+        - name: PL_SERVER_TLS_KEY
+          value: /certs/server.key
+        - name: PL_TLS_CA_CERT
+          value: /certs/ca.crt
         volumeMounts:
         - name: certs
           mountPath: /certs
