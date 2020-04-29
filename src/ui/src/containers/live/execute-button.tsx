@@ -6,11 +6,9 @@ import IconButton from '@material-ui/core/IconButton';
 import {LiveContext} from './context';
 
 const ExecuteScriptButton = () => {
-  const { vizierReady, executeScript, executeScriptOld } = React.useContext(LiveContext);
-  const { oldLiveViewMode } = React.useContext(LiveContext);
-
+  const { vizierReady, executeScript } = React.useContext(LiveContext);
   return (
-    <IconButton disabled={!vizierReady} onClick={() => (oldLiveViewMode ? executeScriptOld() : executeScript())}>
+    <IconButton disabled={!vizierReady} onClick={() => executeScript()}>
       <PlayIcon />
     </IconButton>
   );

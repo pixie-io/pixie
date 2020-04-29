@@ -11,10 +11,7 @@ import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import CloseIcon from '@material-ui/icons/Close';
 
-import {
-    LiveContext, PlacementContextOld, ScriptContext, VegaContextOld, VisContext,
-} from './context';
-import {parsePlacementOld} from './layout';
+import {LiveContext, ScriptContext, VisContext} from './context';
 import {parseVis} from './vis';
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -44,33 +41,6 @@ const useStyles = makeStyles((theme: Theme) =>
       },
     },
   }));
-
-const VegaSpecEditor = () => {
-  const classes = useStyles();
-  const { updateVegaSpecOld } = React.useContext(LiveContext);
-  const spec = React.useContext(VegaContextOld);
-  const [code, setCode] = React.useState('');
-  const updateVegaSpecDebounce = React.useMemo(() => debounce(updateVegaSpecOld, 2000), []);
-
-  React.useEffect(() => {
-    const specs = parseSpecs(code);
-    if (specs) {
-      updateVegaSpecDebounce(specs);
-    }
-  }, [code]);
-
-  React.useEffect(() => {
-    setCode(JSON.stringify(spec, null, 2));
-  }, [spec]);
-
-  return (
-    <CodeEditor
-      className={classes.editor}
-      code={code}
-      onChange={setCode}
-    />
-  );
-};
 
 const VisEditor = () => {
   const classes = useStyles();
@@ -113,33 +83,6 @@ const ScriptEditor = () => {
   );
 };
 
-const PlacementEditor = () => {
-  const classes = useStyles();
-  const { updatePlacementOld } = React.useContext(LiveContext);
-  const placement = React.useContext(PlacementContextOld);
-  const [code, setCode] = React.useState('');
-  const updatePlacementDebounce = React.useMemo(() => debounce(updatePlacementOld, 2000), []);
-
-  React.useEffect(() => {
-    const newPlacement = parsePlacementOld(code);
-    if (newPlacement) {
-      updatePlacementDebounce(newPlacement);
-    }
-  }, [code]);
-
-  React.useEffect(() => {
-    setCode(JSON.stringify(placement, null, 2));
-  }, [placement]);
-
-  return (
-    <CodeEditor
-      className={classes.editor}
-      code={code}
-      onChange={setCode}
-    />
-  );
-};
-
 const StyledTabs = withStyles((theme: Theme) =>
   createStyles({
     root: {
@@ -167,11 +110,6 @@ interface LiveViewEditorProps {
 }
 
 const LiveViewEditor = (props: LiveViewEditorProps) => {
-  const { oldLiveViewMode } = React.useContext(LiveContext);
-  if (oldLiveViewMode) {
-    return <LiveViewEditorOld {...props} />;
-  }
-
   const classes = useStyles();
   const [tab, setTab] = React.useState('pixie');
 
@@ -194,39 +132,6 @@ const LiveViewEditor = (props: LiveViewEditorProps) => {
       </LazyPanel>
       <LazyPanel className={classes.panel} show={tab === 'vis'}>
         <VisEditor />
-      </LazyPanel>
-    </div>
-  );
-};
-
-const LiveViewEditorOld = (props: LiveViewEditorProps) => {
-  const classes = useStyles();
-
-  const [tab, setTab] = React.useState('pixie');
-
-  return (
-    <div className={classes.root}>
-      <div className={classes.tabs}>
-        <StyledTabs
-          value={tab}
-          onChange={(event, newTab) => setTab(newTab)}
-        >
-          <StyledTab value='pixie' label='PXL Script' />
-          <StyledTab value='vega' label='Viz Spec' />
-          <StyledTab value='placement' label='Placement' />
-        </StyledTabs>
-        <IconButton onClick={props.onClose}>
-          <CloseIcon />
-        </IconButton>
-      </div>
-      <LazyPanel className={classes.panel} show={tab === 'pixie'}>
-        <ScriptEditor />
-      </LazyPanel>
-      <LazyPanel className={classes.panel} show={tab === 'vega'}>
-        <VegaSpecEditor />
-      </LazyPanel>
-      <LazyPanel className={classes.panel} show={tab === 'placement'}>
-        <PlacementEditor />
       </LazyPanel>
     </div>
   );

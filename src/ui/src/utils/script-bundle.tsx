@@ -9,7 +9,6 @@ export interface Script {
   title: string;
   code: string;
   vis?: string;
-  placement?: string;
   description?: string;
 }
 
@@ -27,7 +26,6 @@ export function GetPxScripts(): Promise<Script[]> {
         title: s.ShortDoc,
         code: s.pxl,
         vis: s.vis,
-        placement: s.placement,
         description: s.LongDoc,
       };
     });

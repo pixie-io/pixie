@@ -37,7 +37,7 @@ export const ExampleScripts = () => {
       const scripts = [];
       const map = {};
       for (const s of examples) {
-        if (s.vis && s.placement) {
+        if (s.vis) {
           scripts.push(s);
           map[s.title] = s;
         }
@@ -47,11 +47,11 @@ export const ExampleScripts = () => {
     });
   }, []);
 
-  const { setScriptsOld } = React.useContext(LiveContext);
+  const { setScripts } = React.useContext(LiveContext);
 
   const selectScript = (e) => {
     const s = liveScriptMap[e.target.value];
-    setScriptsOld(s.code, s.vis, s.placement, { title: s.title, id: s.id });
+    setScripts(s.code, s.vis, { title: s.title, id: s.id }, {});
     executeScript(s.code);
   };
 
