@@ -123,7 +123,7 @@ func (l *Lister) GetVizierConnection(id uuid.UUID) (*ConnectionInfo, error) {
 	if len(ci.IPAddress) > 0 {
 		addr, err := selectVizierOrProxy(ci.IPAddress)
 		if err != nil {
-			log.WithError(err).Fatal("Failed to contact Vizier")
+			return nil, err
 		}
 
 		log.WithField("addr", addr).Info("Selected Vizier address")
