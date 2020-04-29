@@ -146,6 +146,8 @@ func (s vizierStatus) Value() (driver.Value, error) {
 		return "UPDATING", nil
 	case cvmsgspb.VZ_ST_CONNECTED:
 		return "CONNECTED", nil
+	case cvmsgspb.VZ_ST_UPDATE_FAILED:
+		return "UPDATE_FAILED", nil
 	}
 	return nil, fmt.Errorf("failed to parse status: %v", s)
 }
@@ -185,6 +187,11 @@ func (s *vizierStatus) Scan(value interface{}) error {
 		case "CONNECTED":
 			{
 				*s = vizierStatus(cvmsgspb.VZ_ST_CONNECTED)
+				return nil
+			}
+		case "UPDATE_FAILED":
+			{
+				*s = vizierStatus(cvmsgspb.VZ_ST_UPDATE_FAILED)
 				return nil
 			}
 		}

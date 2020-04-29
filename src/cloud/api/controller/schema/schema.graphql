@@ -98,6 +98,8 @@ enum ClusterStatus {
   # The vizier has connected, but has not sent any other further status updates about
   # whether it is healthy or updating.
   VZ_ST_CONNECTED
+  # The vizier was trying to update, but failed and is now in a bad state.
+  VZ_ST_UPDATE_FAILED
 }
 
 type VizierConfig {

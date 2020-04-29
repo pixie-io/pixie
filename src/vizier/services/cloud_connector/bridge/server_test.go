@@ -153,6 +153,18 @@ func (f *FakeVZInfo) CreateSecret(name string, literals map[string]string) error
 	return nil
 }
 
+func (f *FakeVZInfo) WaitForJobCompletion(name string) (bool, error) {
+	return false, nil
+}
+
+func (f *FakeVZInfo) DeleteJob(name string) error {
+	return nil
+}
+
+func (f *FakeVZInfo) GetJob(name string) (*batchv1.Job, error) {
+	return nil, nil
+}
+
 type testState struct {
 	vzServer *FakeVZConnServer
 	vzClient vzconnpb.VZConnServiceClient

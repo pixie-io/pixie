@@ -10,12 +10,14 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	// Blank import necessary for kubeConfig to work.
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/cache"
 
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	protoutils "pixielabs.ai/pixielabs/src/shared/k8s"
@@ -260,4 +262,37 @@ func (v *K8sVizierInfo) CreateSecret(name string, literals map[string]string) er
 		return err
 	}
 	return nil
+}
+
+// DeleteJob deletes the job with the specified name.
+func (v *K8sVizierInfo) DeleteJob(name string) error {
+	return v.clientset.BatchV1().Jobs(plNamespace).Delete(context.Background(), name, metav1.DeleteOptions{})
+}
+
+// GetJob gets the job with the specified name.
+func (v *K8sVizierInfo) GetJob(name string) (*batchv1.Job, error) {
+	return v.clientset.BatchV1().Jobs(plNamespace).Get(context.Background(), name, metav1.GetOptions{})
+}
+
+// WaitForJobCompletion waits for the job with given name to complete.
+func (v *K8sVizierInfo) WaitForJobCompletion(name string) (bool, error) {
+	watcher := cache.NewListWatchFromClient(v.clientset.BatchV1().RESTClient(), "jobs", plNamespace, fields.OneTermEqualSelector("metadata.name", name))
+
+	w, err := watcher.Watch(metav1.ListOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	for c := range w.ResultChan() {
+		o, ok := c.Object.(*batchv1.Job)
+		if ok {
+			if !o.Status.CompletionTime.IsZero() {
+				return true, nil // Job has completed.
+			}
+			if o.Status.Failed > 0 {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
 }

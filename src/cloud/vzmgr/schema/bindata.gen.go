@@ -16,6 +16,8 @@
 // 000007_update_cluster_status_enum.up.sql
 // 000008_connected_cluster_status_enum.down.sql
 // 000008_connected_cluster_status_enum.up.sql
+// 000009_update_failed_cluster_status_enum.down.sql
+// 000009_update_failed_cluster_status_enum.up.sql
 package schema
 
 import (
@@ -347,7 +349,7 @@ func _000007_update_cluster_status_enumDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000007_update_cluster_status_enum.down.sql", size: 112, mode: os.FileMode(436), modTime: time.Unix(1588051168, 0)}
+	info := bindataFileInfo{name: "000007_update_cluster_status_enum.down.sql", size: 112, mode: os.FileMode(436), modTime: time.Unix(1588054080, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -367,7 +369,7 @@ func _000007_update_cluster_status_enumUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000007_update_cluster_status_enum.up.sql", size: 68, mode: os.FileMode(436), modTime: time.Unix(1588051168, 0)}
+	info := bindataFileInfo{name: "000007_update_cluster_status_enum.up.sql", size: 68, mode: os.FileMode(436), modTime: time.Unix(1588054080, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -387,7 +389,7 @@ func _000008_connected_cluster_status_enumDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000008_connected_cluster_status_enum.down.sql", size: 124, mode: os.FileMode(436), modTime: time.Unix(1588051245, 0)}
+	info := bindataFileInfo{name: "000008_connected_cluster_status_enum.down.sql", size: 124, mode: os.FileMode(436), modTime: time.Unix(1588103412, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -407,7 +409,47 @@ func _000008_connected_cluster_status_enumUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000008_connected_cluster_status_enum.up.sql", size: 65, mode: os.FileMode(436), modTime: time.Unix(1588051253, 0)}
+	info := bindataFileInfo{name: "000008_connected_cluster_status_enum.up.sql", size: 65, mode: os.FileMode(436), modTime: time.Unix(1588103412, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000009_update_failed_cluster_status_enumDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\x08\x89\x0c\x70\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x2f\x2e\x49\x2c\x29\x2d\xb6\xe6\x72\x0e\x72\x75\x0c\x71\xc5\x22\xa5\xe0\x18\xac\xe0\xea\x17\xea\xab\xa0\xa1\x1e\xea\xe7\xed\xe7\x1f\xee\xa7\xae\xa3\xa0\xee\xe1\xea\xe8\x13\xe2\x11\x09\x62\x86\xfa\x21\x71\x5c\x3c\x83\x9d\xfd\xfd\xfc\x5c\x9d\x43\x5c\x5d\xc0\x92\x01\x2e\x8e\x21\x9e\x7e\xee\x20\x36\x42\x42\xd3\x9a\x0b\x10\x00\x00\xff\xff\x72\x79\xf5\xe9\x89\x00\x00\x00")
+
+func _000009_update_failed_cluster_status_enumDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000009_update_failed_cluster_status_enumDownSql,
+		"000009_update_failed_cluster_status_enum.down.sql",
+	)
+}
+
+func _000009_update_failed_cluster_status_enumDownSql() (*asset, error) {
+	bytes, err := _000009_update_failed_cluster_status_enumDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000009_update_failed_cluster_status_enum.down.sql", size: 137, mode: os.FileMode(436), modTime: time.Unix(1588116018, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000009_update_failed_cluster_status_enumUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x89\x0c\x70\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x2f\x2e\x49\x2c\x29\x2d\x56\x70\x74\x71\x51\x08\x73\xf4\x09\x75\x55\x50\x0f\x0d\x70\x71\x0c\x71\x8d\x77\x73\xf4\xf4\x71\x75\x51\x57\x70\x74\x03\x69\x51\x77\xf6\xf7\xf3\x73\x75\x0e\x71\x75\x51\xb7\xe6\x02\x04\x00\x00\xff\xff\x75\x34\x49\x0e\x46\x00\x00\x00")
+
+func _000009_update_failed_cluster_status_enumUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000009_update_failed_cluster_status_enumUpSql,
+		"000009_update_failed_cluster_status_enum.up.sql",
+	)
+}
+
+func _000009_update_failed_cluster_status_enumUpSql() (*asset, error) {
+	bytes, err := _000009_update_failed_cluster_status_enumUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000009_update_failed_cluster_status_enum.up.sql", size: 70, mode: os.FileMode(436), modTime: time.Unix(1588116040, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -464,22 +506,24 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"000001_create_cluster_tables.down.sql":            _000001_create_cluster_tablesDownSql,
-	"000001_create_cluster_tables.up.sql":              _000001_create_cluster_tablesUpSql,
-	"000002_create_pgcrypto_extension.down.sql":        _000002_create_pgcrypto_extensionDownSql,
-	"000002_create_pgcrypto_extension.up.sql":          _000002_create_pgcrypto_extensionUpSql,
-	"000003_create_index_table.down.sql":               _000003_create_index_tableDownSql,
-	"000003_create_index_table.up.sql":                 _000003_create_index_tableUpSql,
-	"000004_create_shard_index.down.sql":               _000004_create_shard_indexDownSql,
-	"000004_create_shard_index.up.sql":                 _000004_create_shard_indexUpSql,
-	"000005_add_passthrough_to_cluster_table.down.sql": _000005_add_passthrough_to_cluster_tableDownSql,
-	"000005_add_passthrough_to_cluster_table.up.sql":   _000005_add_passthrough_to_cluster_tableUpSql,
-	"000006_add_project_id_to_cluster_table.down.sql":  _000006_add_project_id_to_cluster_tableDownSql,
-	"000006_add_project_id_to_cluster_table.up.sql":    _000006_add_project_id_to_cluster_tableUpSql,
-	"000007_update_cluster_status_enum.down.sql":       _000007_update_cluster_status_enumDownSql,
-	"000007_update_cluster_status_enum.up.sql":         _000007_update_cluster_status_enumUpSql,
-	"000008_connected_cluster_status_enum.down.sql":    _000008_connected_cluster_status_enumDownSql,
-	"000008_connected_cluster_status_enum.up.sql":      _000008_connected_cluster_status_enumUpSql,
+	"000001_create_cluster_tables.down.sql":             _000001_create_cluster_tablesDownSql,
+	"000001_create_cluster_tables.up.sql":               _000001_create_cluster_tablesUpSql,
+	"000002_create_pgcrypto_extension.down.sql":         _000002_create_pgcrypto_extensionDownSql,
+	"000002_create_pgcrypto_extension.up.sql":           _000002_create_pgcrypto_extensionUpSql,
+	"000003_create_index_table.down.sql":                _000003_create_index_tableDownSql,
+	"000003_create_index_table.up.sql":                  _000003_create_index_tableUpSql,
+	"000004_create_shard_index.down.sql":                _000004_create_shard_indexDownSql,
+	"000004_create_shard_index.up.sql":                  _000004_create_shard_indexUpSql,
+	"000005_add_passthrough_to_cluster_table.down.sql":  _000005_add_passthrough_to_cluster_tableDownSql,
+	"000005_add_passthrough_to_cluster_table.up.sql":    _000005_add_passthrough_to_cluster_tableUpSql,
+	"000006_add_project_id_to_cluster_table.down.sql":   _000006_add_project_id_to_cluster_tableDownSql,
+	"000006_add_project_id_to_cluster_table.up.sql":     _000006_add_project_id_to_cluster_tableUpSql,
+	"000007_update_cluster_status_enum.down.sql":        _000007_update_cluster_status_enumDownSql,
+	"000007_update_cluster_status_enum.up.sql":          _000007_update_cluster_status_enumUpSql,
+	"000008_connected_cluster_status_enum.down.sql":     _000008_connected_cluster_status_enumDownSql,
+	"000008_connected_cluster_status_enum.up.sql":       _000008_connected_cluster_status_enumUpSql,
+	"000009_update_failed_cluster_status_enum.down.sql": _000009_update_failed_cluster_status_enumDownSql,
+	"000009_update_failed_cluster_status_enum.up.sql":   _000009_update_failed_cluster_status_enumUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -523,22 +567,24 @@ type bintree struct {
 }
 
 var _bintree = &bintree{nil, map[string]*bintree{
-	"000001_create_cluster_tables.down.sql":            &bintree{_000001_create_cluster_tablesDownSql, map[string]*bintree{}},
-	"000001_create_cluster_tables.up.sql":              &bintree{_000001_create_cluster_tablesUpSql, map[string]*bintree{}},
-	"000002_create_pgcrypto_extension.down.sql":        &bintree{_000002_create_pgcrypto_extensionDownSql, map[string]*bintree{}},
-	"000002_create_pgcrypto_extension.up.sql":          &bintree{_000002_create_pgcrypto_extensionUpSql, map[string]*bintree{}},
-	"000003_create_index_table.down.sql":               &bintree{_000003_create_index_tableDownSql, map[string]*bintree{}},
-	"000003_create_index_table.up.sql":                 &bintree{_000003_create_index_tableUpSql, map[string]*bintree{}},
-	"000004_create_shard_index.down.sql":               &bintree{_000004_create_shard_indexDownSql, map[string]*bintree{}},
-	"000004_create_shard_index.up.sql":                 &bintree{_000004_create_shard_indexUpSql, map[string]*bintree{}},
-	"000005_add_passthrough_to_cluster_table.down.sql": &bintree{_000005_add_passthrough_to_cluster_tableDownSql, map[string]*bintree{}},
-	"000005_add_passthrough_to_cluster_table.up.sql":   &bintree{_000005_add_passthrough_to_cluster_tableUpSql, map[string]*bintree{}},
-	"000006_add_project_id_to_cluster_table.down.sql":  &bintree{_000006_add_project_id_to_cluster_tableDownSql, map[string]*bintree{}},
-	"000006_add_project_id_to_cluster_table.up.sql":    &bintree{_000006_add_project_id_to_cluster_tableUpSql, map[string]*bintree{}},
-	"000007_update_cluster_status_enum.down.sql":       &bintree{_000007_update_cluster_status_enumDownSql, map[string]*bintree{}},
-	"000007_update_cluster_status_enum.up.sql":         &bintree{_000007_update_cluster_status_enumUpSql, map[string]*bintree{}},
-	"000008_connected_cluster_status_enum.down.sql":    &bintree{_000008_connected_cluster_status_enumDownSql, map[string]*bintree{}},
-	"000008_connected_cluster_status_enum.up.sql":      &bintree{_000008_connected_cluster_status_enumUpSql, map[string]*bintree{}},
+	"000001_create_cluster_tables.down.sql":             &bintree{_000001_create_cluster_tablesDownSql, map[string]*bintree{}},
+	"000001_create_cluster_tables.up.sql":               &bintree{_000001_create_cluster_tablesUpSql, map[string]*bintree{}},
+	"000002_create_pgcrypto_extension.down.sql":         &bintree{_000002_create_pgcrypto_extensionDownSql, map[string]*bintree{}},
+	"000002_create_pgcrypto_extension.up.sql":           &bintree{_000002_create_pgcrypto_extensionUpSql, map[string]*bintree{}},
+	"000003_create_index_table.down.sql":                &bintree{_000003_create_index_tableDownSql, map[string]*bintree{}},
+	"000003_create_index_table.up.sql":                  &bintree{_000003_create_index_tableUpSql, map[string]*bintree{}},
+	"000004_create_shard_index.down.sql":                &bintree{_000004_create_shard_indexDownSql, map[string]*bintree{}},
+	"000004_create_shard_index.up.sql":                  &bintree{_000004_create_shard_indexUpSql, map[string]*bintree{}},
+	"000005_add_passthrough_to_cluster_table.down.sql":  &bintree{_000005_add_passthrough_to_cluster_tableDownSql, map[string]*bintree{}},
+	"000005_add_passthrough_to_cluster_table.up.sql":    &bintree{_000005_add_passthrough_to_cluster_tableUpSql, map[string]*bintree{}},
+	"000006_add_project_id_to_cluster_table.down.sql":   &bintree{_000006_add_project_id_to_cluster_tableDownSql, map[string]*bintree{}},
+	"000006_add_project_id_to_cluster_table.up.sql":     &bintree{_000006_add_project_id_to_cluster_tableUpSql, map[string]*bintree{}},
+	"000007_update_cluster_status_enum.down.sql":        &bintree{_000007_update_cluster_status_enumDownSql, map[string]*bintree{}},
+	"000007_update_cluster_status_enum.up.sql":          &bintree{_000007_update_cluster_status_enumUpSql, map[string]*bintree{}},
+	"000008_connected_cluster_status_enum.down.sql":     &bintree{_000008_connected_cluster_status_enumDownSql, map[string]*bintree{}},
+	"000008_connected_cluster_status_enum.up.sql":       &bintree{_000008_connected_cluster_status_enumUpSql, map[string]*bintree{}},
+	"000009_update_failed_cluster_status_enum.down.sql": &bintree{_000009_update_failed_cluster_status_enumDownSql, map[string]*bintree{}},
+	"000009_update_failed_cluster_status_enum.up.sql":   &bintree{_000009_update_failed_cluster_status_enumUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

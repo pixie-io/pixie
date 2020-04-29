@@ -15,6 +15,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
+	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -77,6 +78,8 @@ const (
 // ErrRegistrationTimeout is the registration timeout error.
 var ErrRegistrationTimeout = errors.New("Registration timeout")
 
+const upgradeJobName = "vizier-upgrade-job"
+
 // VizierInfo fetches information about Vizier.
 type VizierInfo interface {
 	GetAddress() (string, int32, error)
@@ -85,6 +88,9 @@ type VizierInfo interface {
 	ParseJobYAML(yamlStr string, imageTag map[string]string, envSubtitutions map[string]string) (*batchv1.Job, error)
 	LaunchJob(j *batchv1.Job) (*batchv1.Job, error)
 	CreateSecret(string, map[string]string) error
+	WaitForJobCompletion(string) (bool, error)
+	DeleteJob(string) error
+	GetJob(string) (*batchv1.Job, error)
 }
 
 // Bridge is the NATS<->GRPC bridge.
@@ -119,9 +125,11 @@ type Bridge struct {
 	// This tracks the message we are trying to send, but has not been sent yet.
 	pendingGRPCOutMsg *vzconnpb.V2CBridgeMessage
 
-	quitCh chan bool      // Channel is used to signal that things should shutdown.
-	wg     sync.WaitGroup // Tracks all the active goroutines.
-	wdWg   sync.WaitGroup // Tracks all the active goroutines.
+	quitCh   chan bool             // Channel is used to signal that things should shutdown.
+	wg       sync.WaitGroup        // Tracks all the active goroutines.
+	wdWg     sync.WaitGroup        // Tracks all the active goroutines.
+	status   cvmsgspb.VizierStatus // Status of the vizier.
+	statusMu sync.Mutex
 }
 
 // New creates a cloud connector to cloud bridge.
@@ -167,6 +175,27 @@ func (s *Bridge) WatchDog() {
 	}
 }
 
+// WaitForUpdater waits for the update job to complete, if any.
+func (s *Bridge) WaitForUpdater() {
+	ok, err := s.vzInfo.WaitForJobCompletion(upgradeJobName)
+	if err != nil {
+		log.WithError(err).Error("Error while trying to watch vizier-upgrade-job")
+		return
+	}
+
+	s.statusMu.Lock()
+	s.status = cvmsgspb.VZ_ST_HEALTHY
+	if !ok {
+		s.status = cvmsgspb.VZ_ST_UPDATE_FAILED // Should be marked as update failed.
+	}
+	s.statusMu.Unlock()
+
+	err = s.vzInfo.DeleteJob(upgradeJobName)
+	if err != nil {
+		log.WithError(err).Error("Error deleting upgrade job")
+	}
+}
+
 // RunStream manages starting and restarting the stream to VZConn.
 func (s *Bridge) RunStream() {
 	natsTopic := messagebus.V2CTopic("*")
@@ -178,6 +207,19 @@ func (s *Bridge) RunStream() {
 	defer natsSub.Unsubscribe()
 	// Set large limits on message size and count.
 	natsSub.SetPendingLimits(1e7, 1e7)
+
+	// Check if there is an existing update job. If so, then set the status to "UPDATING".
+	_, err = s.vzInfo.GetJob(upgradeJobName)
+	if err != nil && !k8sErrors.IsNotFound(err) {
+		log.WithError(err).Fatal("Could not check for upgrade job")
+	}
+	if err == nil { // There is an upgrade job running.
+		s.statusMu.Lock()
+		s.status = cvmsgspb.VZ_ST_UPDATING
+		s.statusMu.Unlock()
+
+		go s.WaitForUpdater()
+	}
 
 	s.wdWg.Add(1)
 	go s.WatchDog()
@@ -636,6 +678,8 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 			log.WithError(err).Error("Failed to get vizier address")
 		}
 		podStatuses, updatedTime := s.vzInfo.GetPodStatuses()
+		s.statusMu.Lock()
+		defer s.statusMu.Unlock()
 		hbMsg := &cvmsgspb.VizierHeartbeat{
 			VizierID:               utils.ProtoFromUUID(&s.vizierID),
 			Time:                   time.Now().UnixNano(),
@@ -644,6 +688,7 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 			Port:                   port,
 			PodStatuses:            podStatuses,
 			PodStatusesLastUpdated: updatedTime.UnixNano(),
+			Status:                 s.status,
 		}
 		select {
 		case <-s.quitCh:

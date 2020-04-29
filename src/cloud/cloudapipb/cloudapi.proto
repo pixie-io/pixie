@@ -178,6 +178,7 @@ enum ClusterStatus {
     CS_DISCONNECTED = 3;
     CS_UPDATING = 4;
     CS_CONNECTED = 5;
+    CS_UPDATE_FAILED = 6;
 }
 
 message ClusterInfo {
