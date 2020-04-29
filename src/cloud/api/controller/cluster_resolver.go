@@ -55,6 +55,10 @@ func (q *QueryResolver) Cluster(ctx context.Context) (*ClusterInfoResolver, erro
 		clusterID, cluster.Status, float64(cluster.LastHeartbeatNs), &VizierConfigResolver{
 			passthroughEnabled: &cluster.Config.PassthroughEnabled,
 		},
+		&cluster.VizierVersion,
+		&cluster.ClusterVersion,
+		&cluster.ClusterUID,
+		&cluster.ClusterName,
 	}, nil
 }
 
@@ -99,6 +103,10 @@ type ClusterInfoResolver struct {
 	status          cloudapipb.ClusterStatus
 	lastHeartbeatNs float64
 	vizierConfig    *VizierConfigResolver
+	vizierVersion   *string
+	clusterVersion  *string
+	clusterUID      *string
+	clusterName     *string
 }
 
 // ID returns cluster ID.
@@ -119,6 +127,26 @@ func (c *ClusterInfoResolver) LastHeartbeatMs() float64 {
 // VizierConfig returns the config for the Vizier.
 func (c *ClusterInfoResolver) VizierConfig() *VizierConfigResolver {
 	return c.vizierConfig
+}
+
+// ClusterVersion returns the k8s cluster version.
+func (c *ClusterInfoResolver) ClusterVersion() *string {
+	return c.clusterVersion
+}
+
+// ClusterUID returns the k8s cluster UID.
+func (c *ClusterInfoResolver) ClusterUID() *string {
+	return c.clusterUID
+}
+
+// ClusterName returns the k8s cluster name.
+func (c *ClusterInfoResolver) ClusterName() *string {
+	return c.clusterName
+}
+
+// VizierVersion returns the vizier's version.
+func (c *ClusterInfoResolver) VizierVersion() *string {
+	return c.vizierVersion
 }
 
 // ClusterConnection resolves cluster connection information.

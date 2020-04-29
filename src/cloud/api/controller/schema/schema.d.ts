@@ -38,6 +38,10 @@ export interface GQLClusterInfo {
   status: GQLClusterStatus;
   lastHeartbeatMs: number;
   vizierConfig: GQLVizierConfig;
+  vizierVersion?: string;
+  clusterVersion?: string;
+  clusterName?: string;
+  clusterUID?: string;
 }
 
 export const enum GQLClusterStatus {
@@ -273,6 +277,10 @@ export interface GQLClusterInfoTypeResolver<TParent = any> {
   status?: ClusterInfoToStatusResolver<TParent>;
   lastHeartbeatMs?: ClusterInfoToLastHeartbeatMsResolver<TParent>;
   vizierConfig?: ClusterInfoToVizierConfigResolver<TParent>;
+  vizierVersion?: ClusterInfoToVizierVersionResolver<TParent>;
+  clusterVersion?: ClusterInfoToClusterVersionResolver<TParent>;
+  clusterName?: ClusterInfoToClusterNameResolver<TParent>;
+  clusterUID?: ClusterInfoToClusterUIDResolver<TParent>;
 }
 
 export interface ClusterInfoToIdResolver<TParent = any, TResult = any> {
@@ -288,6 +296,22 @@ export interface ClusterInfoToLastHeartbeatMsResolver<TParent = any, TResult = a
 }
 
 export interface ClusterInfoToVizierConfigResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ClusterInfoToVizierVersionResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ClusterInfoToClusterVersionResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ClusterInfoToClusterNameResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ClusterInfoToClusterUIDResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

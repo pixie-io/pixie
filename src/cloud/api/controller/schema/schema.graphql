@@ -111,6 +111,10 @@ type ClusterInfo {
   status: ClusterStatus!
   lastHeartbeatMs: Float!
   vizierConfig: VizierConfig!
+  vizierVersion: String
+  clusterVersion: String
+  clusterName: String
+  clusterUID: String
 }
 
 type ClusterConnectionInfo {

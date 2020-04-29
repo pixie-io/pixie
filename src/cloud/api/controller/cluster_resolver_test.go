@@ -80,6 +80,10 @@ func TestClusterInfo(t *testing.T) {
 		Config: &cloudapipb.VizierConfig{
 			PassthroughEnabled: false,
 		},
+		VizierVersion:  "vzVersion",
+		ClusterVersion: "clusterVersion",
+		ClusterName:    "clusterName",
+		ClusterUID:     "clusterUID",
 	}
 
 	mockVzSvc.EXPECT().GetClusterInfo(gomock.Any(), &cloudapipb.GetClusterInfoRequest{}).
@@ -101,6 +105,10 @@ func TestClusterInfo(t *testing.T) {
 						vizierConfig {
 							passthroughEnabled
 						}
+						vizierVersion
+						clusterVersion
+						clusterName
+						clusterUID
 					}
 				}
 			`,
@@ -112,7 +120,11 @@ func TestClusterInfo(t *testing.T) {
 						"lastHeartbeatMs": 4,
 						"vizierConfig": {
 							"passthroughEnabled": false
-						}
+						},
+						"vizierVersion": "vzVersion",
+						"clusterVersion": "clusterVersion",
+						"clusterName": "clusterName",
+						"clusterUID": "clusterUID"
 					}
 				}
 			`,

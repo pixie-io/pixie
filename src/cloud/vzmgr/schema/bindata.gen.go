@@ -18,6 +18,8 @@
 // 000008_connected_cluster_status_enum.up.sql
 // 000009_update_failed_cluster_status_enum.down.sql
 // 000009_update_failed_cluster_status_enum.up.sql
+// 000010_add_vizier_info_to_cluster_info.down.sql
+// 000010_add_vizier_info_to_cluster_info.up.sql
 package schema
 
 import (
@@ -429,7 +431,7 @@ func _000009_update_failed_cluster_status_enumDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000009_update_failed_cluster_status_enum.down.sql", size: 137, mode: os.FileMode(436), modTime: time.Unix(1588116018, 0)}
+	info := bindataFileInfo{name: "000009_update_failed_cluster_status_enum.down.sql", size: 137, mode: os.FileMode(436), modTime: time.Unix(1588122374, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -449,7 +451,47 @@ func _000009_update_failed_cluster_status_enumUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000009_update_failed_cluster_status_enum.up.sql", size: 70, mode: os.FileMode(436), modTime: time.Unix(1588116040, 0)}
+	info := bindataFileInfo{name: "000009_update_failed_cluster_status_enum.up.sql", size: 70, mode: os.FileMode(436), modTime: time.Unix(1588122374, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000010_add_vizier_info_to_cluster_infoDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\x57\xe0\x72\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x83\x29\x28\x4b\x2d\x2a\xce\xcc\xcf\xd3\x41\x91\x83\xe9\xca\x4b\xcc\x4d\xc5\x2e\x83\x57\x5b\x69\x66\x8a\x35\x17\x20\x00\x00\xff\xff\xaf\xe1\x37\xdc\x8d\x00\x00\x00")
+
+func _000010_add_vizier_info_to_cluster_infoDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000010_add_vizier_info_to_cluster_infoDownSql,
+		"000010_add_vizier_info_to_cluster_info.down.sql",
+	)
+}
+
+func _000010_add_vizier_info_to_cluster_infoDownSql() (*asset, error) {
+	bytes, err := _000010_add_vizier_info_to_cluster_infoDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000010_add_vizier_info_to_cluster_info.down.sql", size: 141, mode: os.FileMode(436), modTime: time.Unix(1588128705, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000010_add_vizier_info_to_cluster_infoUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\x57\xe0\x72\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x83\xc9\x97\xa5\x16\x15\x67\xe6\xe7\x29\x94\x25\x16\x25\x67\x24\x16\x69\x18\x1a\x18\x18\x68\xea\x20\x2b\x84\x99\x90\x97\x98\x9b\x4a\x84\x32\xe2\x0d\x2c\xcd\x4c\x41\x55\x65\xcd\x05\x08\x00\x00\xff\xff\xf8\x10\x04\xa5\xc1\x00\x00\x00")
+
+func _000010_add_vizier_info_to_cluster_infoUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000010_add_vizier_info_to_cluster_infoUpSql,
+		"000010_add_vizier_info_to_cluster_info.up.sql",
+	)
+}
+
+func _000010_add_vizier_info_to_cluster_infoUpSql() (*asset, error) {
+	bytes, err := _000010_add_vizier_info_to_cluster_infoUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000010_add_vizier_info_to_cluster_info.up.sql", size: 193, mode: os.FileMode(436), modTime: time.Unix(1588128780, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -524,6 +566,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000008_connected_cluster_status_enum.up.sql":       _000008_connected_cluster_status_enumUpSql,
 	"000009_update_failed_cluster_status_enum.down.sql": _000009_update_failed_cluster_status_enumDownSql,
 	"000009_update_failed_cluster_status_enum.up.sql":   _000009_update_failed_cluster_status_enumUpSql,
+	"000010_add_vizier_info_to_cluster_info.down.sql":   _000010_add_vizier_info_to_cluster_infoDownSql,
+	"000010_add_vizier_info_to_cluster_info.up.sql":     _000010_add_vizier_info_to_cluster_infoUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -585,6 +629,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000008_connected_cluster_status_enum.up.sql":       &bintree{_000008_connected_cluster_status_enumUpSql, map[string]*bintree{}},
 	"000009_update_failed_cluster_status_enum.down.sql": &bintree{_000009_update_failed_cluster_status_enumDownSql, map[string]*bintree{}},
 	"000009_update_failed_cluster_status_enum.up.sql":   &bintree{_000009_update_failed_cluster_status_enumUpSql, map[string]*bintree{}},
+	"000010_add_vizier_info_to_cluster_info.down.sql":   &bintree{_000010_add_vizier_info_to_cluster_infoDownSql, map[string]*bintree{}},
+	"000010_add_vizier_info_to_cluster_info.up.sql":     &bintree{_000010_add_vizier_info_to_cluster_infoUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

@@ -346,13 +346,17 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 		return nil, err
 	}
 
-	query := `SELECT vizier_cluster_id, status, (EXTRACT(EPOCH FROM age(now(), last_heartbeat))*1E9)::bigint as last_heartbeat,
+	query := `SELECT vizier_cluster_id, cluster_uid, cluster_name, cluster_version, vizier_version, status, (EXTRACT(EPOCH FROM age(now(), last_heartbeat))*1E9)::bigint as last_heartbeat,
               passthrough_enabled from vizier_cluster_info WHERE vizier_cluster_id=$1`
 	var val struct {
 		ID                 uuid.UUID    `db:"vizier_cluster_id"`
 		Status             vizierStatus `db:"status"`
 		LastHeartbeat      *int64       `db:"last_heartbeat"`
 		PassthroughEnabled bool         `db:"passthrough_enabled"`
+		ClusterUID         string       `db:"cluster_uid"`
+		ClusterName        string       `db:"cluster_name"`
+		ClusterVersion     string       `db:"cluster_version"`
+		VizierVersion      string       `db:"vizier_version"`
 	}
 	clusterID, err := utils.UUIDFromProto(req)
 	if err != nil {
@@ -381,6 +385,10 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 			Config: &cvmsgspb.VizierConfig{
 				PassthroughEnabled: val.PassthroughEnabled,
 			},
+			ClusterUID:     val.ClusterUID,
+			ClusterName:    val.ClusterName,
+			ClusterVersion: val.ClusterVersion,
+			VizierVersion:  val.VizierVersion,
 		}, nil
 	}
 	return nil, status.Error(codes.NotFound, "vizier not found")
@@ -506,6 +514,17 @@ func (s *Server) GetViziersByShard(ctx context.Context, req *vzmgrpb.GetViziersB
 func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizierRequest) (*cvmsgspb.RegisterVizierAck, error) {
 	log.WithField("req", req).Info("Received RegisterVizierRequest")
 
+	vzVersion := ""
+	clusterName := ""
+	clusterVersion := ""
+	clusterUID := ""
+	if req.ClusterInfo != nil {
+		vzVersion = req.ClusterInfo.VizierVersion
+		clusterName = req.ClusterInfo.ClusterName
+		clusterVersion = req.ClusterInfo.ClusterVersion
+		clusterUID = req.ClusterInfo.ClusterUID
+	}
+
 	// Add a salt to the signing key.
 	salt := make([]byte, SaltLength/2)
 	_, err := rand.Read(salt)
@@ -517,8 +536,8 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 	query := `
     UPDATE vizier_cluster_info
-    SET (last_heartbeat, address, jwt_signing_key, status)  = (
-    	NOW(), $2, PGP_SYM_ENCRYPT($3, $4), $5)
+    SET (last_heartbeat, address, jwt_signing_key, status, vizier_version, cluster_name, cluster_version, cluster_uid)  = (
+    	NOW(), $2, PGP_SYM_ENCRYPT($3, $4), $5, $6, $7, $8, $9)
     WHERE vizier_cluster_id = $1`
 
 	vzStatus := "CONNECTED"
@@ -526,7 +545,7 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 		vzStatus = "UNHEALTHY"
 	}
 
-	res, err := s.db.Exec(query, vizierID, req.Address, signingKey, s.dbKey, vzStatus)
+	res, err := s.db.Exec(query, vizierID, req.Address, signingKey, s.dbKey, vzStatus, vzVersion, clusterName, clusterVersion, clusterUID)
 	if err != nil {
 		return nil, err
 	}

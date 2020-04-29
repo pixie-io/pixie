@@ -148,6 +148,10 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 		Config: &cvmsgspb.VizierConfig{
 			PassthroughEnabled: false,
 		},
+		VizierVersion:  "1.2.3",
+		ClusterUID:     "a UID",
+		ClusterName:    "some cluster",
+		ClusterVersion: "5.6.7",
 	}, nil)
 
 	vzClusterInfoServer := &controller.VizierClusterInfo{
@@ -163,6 +167,10 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 	assert.Equal(t, cluster.Status, cloudapipb.CS_HEALTHY)
 	assert.Equal(t, cluster.LastHeartbeatNs, int64(1305646598000000000))
 	assert.Equal(t, cluster.Config.PassthroughEnabled, false)
+	assert.Equal(t, "1.2.3", cluster.VizierVersion)
+	assert.Equal(t, "a UID", cluster.ClusterUID)
+	assert.Equal(t, "some cluster", cluster.ClusterName)
+	assert.Equal(t, "5.6.7", cluster.ClusterVersion)
 }
 
 func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
@@ -183,6 +191,10 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 		Config: &cvmsgspb.VizierConfig{
 			PassthroughEnabled: false,
 		},
+		VizierVersion:  "1.2.3",
+		ClusterUID:     "a UID",
+		ClusterName:    "some cluster",
+		ClusterVersion: "5.6.7",
 	}, nil)
 
 	vzClusterInfoServer := &controller.VizierClusterInfo{
