@@ -52,9 +52,7 @@ func deletePixie(ns string, clobberAll bool) {
 		})
 	} else {
 		deleteJob = newTaskWrapper("Deleting Vizier pods/services", func() error {
-			return od.DeleteByLabel(map[string]string{
-				"component": "vizier",
-			}, k8s.AllResourceKinds...)
+			return od.DeleteByLabel("component=vizier", k8s.AllResourceKinds...)
 		})
 	}
 

@@ -15,9 +15,11 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/segmentio/analytics-go.v3"
 	"pixielabs.ai/pixielabs/src/shared/version"
+	utils2 "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
@@ -48,9 +50,9 @@ const (
 )
 
 const (
-	etcdYAMLPath   = "./yamls/vizier_deps/etcd_prod.yaml"
-	natsYAMLPath   = "./yamls/vizier_deps/nats_prod.yaml"
-	vizierYAMLPath = "./yamls/vizier/vizier_prod.yaml"
+	etcdYAMLPath            = "./yamls/vizier_deps/etcd_prod.yaml"
+	natsYAMLPath            = "./yamls/vizier_deps/nats_prod.yaml"
+	vizierBootstrapYAMLPath = "./yamls/vizier/vizier_bootstrap_prod.yaml"
 )
 
 // Sentry configs are not actually secret and safe to check in.
@@ -353,6 +355,12 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	kubeConfig := k8s.GetConfig()
 	clientset := k8s.GetClientset(kubeConfig)
+	od := k8s.ObjectDeleter{
+		Namespace:  namespace,
+		Clientset:  clientset,
+		RestConfig: kubeConfig,
+		Timeout:    2 * time.Minute,
+	}
 	// Get the number of nodes.
 	numNodes, err := getNumNodes(clientset)
 	if err != nil {
@@ -381,6 +389,11 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		return optionallyCreateNamespace(clientset, namespace)
 	})
 
+	clusterRoleJob := newTaskWrapper("Deleting stale Pixie objects, if any", func() error {
+		// TODO(zasgar/michelle): Only run this if we see stale objects.
+		return od.DeleteByLabel("component=vizier", k8s.AllResourceKinds...)
+	})
+
 	certJob := newTaskWrapper("Installing certs", func() error {
 		return optionallyInstallCerts(clientset, namespace)
 	})
@@ -400,10 +413,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			return err
 		}
 		return LoadClusterSecrets(clientset, cloudAddr, clusterID.String(), namespace, devCloudNS, kubeConfig, getSentryDSN(versionString))
-	})
-
-	clusterRoleJob := newTaskWrapper("Updating clusterroles", func() error {
-		return optionallyDeleteClusterrole(clientset)
 	})
 
 	var yamlMap map[string]string
@@ -436,7 +445,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	})
 
 	setupJobs := []utils.Task{
-		namespaceJob, certJob, secretJob, clusterRoleJob, yamlJob,
+		namespaceJob, clusterRoleJob, certJob, secretJob, yamlJob,
 	}
 	jr := utils.NewSerialTaskRunner(setupJobs)
 	err = jr.RunAndMonitor()
@@ -452,87 +461,91 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	depsOnly, _ := cmd.Flags().GetBool("deps_only")
 
-	deploy(clientset, kubeConfig, yamlMap, namespace, depsOnly)
+	deploy(cloudConn, clusterID, versionString, clientset, kubeConfig, yamlMap, namespace, depsOnly)
 	waitForHealthCheck(cloudAddr, clientset, namespace, numNodes)
 }
 
-func waitForHealthCheck(cloudAddr string, clientset *kubernetes.Clientset, namespace string, numNodes int) {
-	runSimpleScript := func() error {
-		v, err := connectDefaultVizier(cloudAddr)
-		br := mustCreateBundleReader()
-		if err != nil {
-			return err
-		}
-		execScript := br.MustGetScript(script.AgentStatusScript)
+func runSimpleHealthCheckScript(cloudAddr string) error {
+	v, err := connectDefaultVizier(cloudAddr)
+	br := mustCreateBundleReader()
+	if err != nil {
+		return err
+	}
+	execScript := br.MustGetScript(script.AgentStatusScript)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
-		resp, err := v.ExecuteScriptStream(ctx, execScript)
-		if err != nil {
-			return err
-		}
-
-		// TODO(zasgar): Make this use the Null output. We can't right now
-		// because of fatal message on vizier failure.
-		errCh := make(chan error)
-		// Eat all responses.
-		go func() {
-			for {
-				select {
-				case <-ctx.Done():
-					if ctx.Err() != nil {
-						errCh <- ctx.Err()
-						return
-					}
-					errCh <- nil
-					return
-				case msg := <-resp:
-					if msg == nil {
-						errCh <- nil
-					}
-					if msg.Err != nil {
-						if msg.Err == io.EOF {
-							errCh <- nil
-							return
-						}
-						errCh <- msg.Err
-						return
-					}
-					if msg.Resp.Status != nil && msg.Resp.Status.Code != 0 {
-						errCh <- errors.New(msg.Resp.Status.Message)
-					}
-					// Eat messages.
-				}
-			}
-		}()
-
-		err = <-errCh
+	resp, err := v.ExecuteScriptStream(ctx, execScript)
+	if err != nil {
 		return err
 	}
 
+	// TODO(zasgar): Make this use the Null output. We can't right now
+	// because of fatal message on vizier failure.
+	errCh := make(chan error)
+	// Eat all responses.
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				if ctx.Err() != nil {
+					errCh <- ctx.Err()
+					return
+				}
+				errCh <- nil
+				return
+			case msg := <-resp:
+				if msg == nil {
+					errCh <- nil
+				}
+				if msg.Err != nil {
+					if msg.Err == io.EOF {
+						errCh <- nil
+						return
+					}
+					errCh <- msg.Err
+					return
+				}
+				if msg.Resp.Status != nil && msg.Resp.Status.Code != 0 {
+					errCh <- errors.New(msg.Resp.Status.Message)
+				}
+				// Eat messages.
+			}
+		}
+	}()
+
+	err = <-errCh
+	return err
+}
+
+func waitForHealthCheckTaskGenerator(cloudAddr string) func() error {
+	return func() error {
+		timeout := time.NewTimer(2 * time.Minute)
+		defer timeout.Stop()
+		for {
+			select {
+			case <-timeout.C:
+				return errors.New("timeout waiting for healthcheck")
+			default:
+				err := runSimpleHealthCheckScript(cloudAddr)
+				if err == nil {
+					return nil
+				}
+				time.Sleep(5 * time.Second)
+			}
+		}
+	}
+}
+
+func waitForHealthCheck(cloudAddr string, clientset *kubernetes.Clientset, namespace string, numNodes int) {
 	fmt.Printf("Waiting for Pixie to pass healthcheck\n")
 
 	healthCheckJobs := []utils.Task{
 		newTaskWrapper("Wait for PEMs/Kelvin", func() error {
 			return waitForPems(clientset, namespace, numNodes)
 		}),
-		newTaskWrapper("Wait for healthcheck", func() error {
-			timeout := time.NewTimer(2 * time.Minute)
-			defer timeout.Stop()
-			for {
-				select {
-				case <-timeout.C:
-					return errors.New("timeout waiting for healthcheck")
-				default:
-					err := runSimpleScript()
-					if err == nil {
-						return nil
-					}
-					time.Sleep(5 * time.Second)
-				}
-			}
-		}),
+		newTaskWrapper("Wait for healthcheck", waitForHealthCheckTaskGenerator(cloudAddr)),
 	}
 
 	hc := utils.NewSerialTaskRunner(healthCheckJobs)
@@ -590,8 +603,66 @@ func optionallyDeleteClusterrole(clientset *kubernetes.Clientset) error {
 	_ = k8s.DeleteClusterRoleBinding(clientset, "vizier-metadata")
 	return nil
 }
+func waitForCluster(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.UUID) error {
+	client := cloudapipb.NewVizierClusterInfoClient(conn)
 
-func deploy(clientset *kubernetes.Clientset, config *rest.Config, yamlMap map[string]string, namespace string, depsOnly bool) {
+	creds, err := auth.LoadDefaultCredentials()
+	if err != nil {
+		return err
+	}
+
+	req := &cloudapipb.GetClusterInfoRequest{
+		ID: utils2.ProtoFromUUID(clusterID),
+	}
+
+	ctxWithCreds := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+		fmt.Sprintf("bearer %s", creds.Token))
+
+	t := time.NewTicker(2 * time.Second)
+	defer t.Stop()
+	for {
+		select {
+		case <-t.C:
+			resp, err := client.GetClusterInfo(ctxWithCreds, req)
+			if err != nil {
+				return err
+			}
+			if len(resp.Clusters) > 0 && resp.Clusters[0].Status != cloudapipb.CS_DISCONNECTED {
+				return nil
+			}
+		case <-ctx.Done():
+			return errors.New("context cancelled waiting for cluster to come online")
+		}
+	}
+}
+
+func initiateUpdate(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.UUID, version string) error {
+	client := cloudapipb.NewVizierClusterInfoClient(conn)
+
+	creds, err := auth.LoadDefaultCredentials()
+	if err != nil {
+		return err
+	}
+
+	req := &cloudapipb.UpdateOrInstallClusterRequest{
+		ClusterID: utils2.ProtoFromUUID(clusterID),
+		Version:   version,
+	}
+
+	ctxWithCreds := metadata.AppendToOutgoingContext(ctx, "authorization",
+		fmt.Sprintf("bearer %s", creds.Token))
+
+	resp, err := client.UpdateOrInstallCluster(ctxWithCreds, req)
+	if err != nil {
+		return err
+	}
+	if !resp.UpdateStarted {
+		return errors.New("failed to start install process")
+	}
+	return nil
+}
+
+func deploy(cloudConn *grpc.ClientConn, clusterID *uuid.UUID, version string, clientset *kubernetes.Clientset, config *rest.Config, yamlMap map[string]string, namespace string, depsOnly bool) {
 	// NATS and etcd deploys depend on timing, so may sometimes fail. Include some retry behavior.
 	// TODO(zasgar/michelle): This logic is flaky and we should make smarter to actually detect and wait
 	// based on the message.
@@ -616,8 +687,18 @@ func deploy(clientset *kubernetes.Clientset, config *rest.Config, yamlMap map[st
 	}
 
 	deployJob := []utils.Task{
-		newTaskWrapper("Deploying Vizier", func() error {
-			return k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlMap[vizierYAMLPath]))
+		newTaskWrapper("Deploying Cloud Connector", func() error {
+			return k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlMap[vizierBootstrapYAMLPath]))
+		}),
+		newTaskWrapper("Waiting for Cloud Connector to come online", func() error {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			defer cancel()
+			return waitForCluster(ctx, cloudConn, clusterID)
+		}),
+		newTaskWrapper("Initiating deploy/upgrade", func() error {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+			defer cancel()
+			return initiateUpdate(ctx, cloudConn, clusterID, version)
 		}),
 	}
 

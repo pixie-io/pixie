@@ -2,7 +2,6 @@ package k8s
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -97,24 +96,18 @@ func (o *ObjectDeleter) DeleteNamespace() error {
 }
 
 // DeleteByLabel delete objects that match the labels and specified by resourceKinds. Waits for deletion.
-func (o *ObjectDeleter) DeleteByLabel(matchLabels map[string]string, resourceKinds ...string) error {
+func (o *ObjectDeleter) DeleteByLabel(selector string, resourceKinds ...string) error {
 	rca := &restClientAdapter{
 		clientset:  o.Clientset,
 		restConfig: o.RestConfig,
 	}
-
-	sels := make([]string, 0)
-	for k, v := range matchLabels {
-		sels = append(sels, fmt.Sprintf("%s=%s", k, v))
-	}
-	sel := strings.Join(sels, ",")
 
 	f := cmdutil.NewFactory(rca)
 	r := f.NewBuilder().
 		Unstructured().
 		ContinueOnError().
 		NamespaceParam(o.Namespace).
-		LabelSelector(sel).
+		LabelSelector(selector).
 		ResourceTypeOrNameArgs(false, strings.Join(resourceKinds, ",")).
 		RequireObject(false).
 		Flatten().
