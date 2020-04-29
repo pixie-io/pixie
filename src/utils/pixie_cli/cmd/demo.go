@@ -33,6 +33,8 @@ import (
 
 const manifestFile = "manifest.json"
 
+var errNamespaceAlreadyExists = errors.New("namespace already exists")
+
 // DemoCmd is the demo sub-command of the CLI to deploy and delete demo apps.
 var DemoCmd = &cobra.Command{
 	Use:   "demo",
@@ -234,6 +236,9 @@ func deployCmd(cmd *cobra.Command, args []string) {
 
 	err = setupDemoApp(appName, yamls)
 	if err != nil {
+		if errors.Is(err, errNamespaceAlreadyExists) {
+			log.Fatalf("Failed to deploy demo application: namespace already exists.")
+		}
 		log.WithError(err).Errorf("Error deploying demo application, deleting namespace %s", appName)
 		// Note: If you can specify the namespace for the demo app in the future, we shouldn't delete the namespace.
 		if err = deleteDemoApp(appName); err != nil {
@@ -376,7 +381,7 @@ func setupDemoApp(appName string, yamls map[string][]byte) error {
 	if namespaceExists(appName) {
 		fmt.Printf("%s: namespace %s already exists. If created with px, run %s to remove\n",
 			color.RedString("Error"), color.RedString(appName), color.GreenString((fmt.Sprintf("px demo delete %s", appName))))
-		return errors.New("namespace already exists")
+		return errNamespaceAlreadyExists
 	}
 
 	tasks := []utils.Task{
