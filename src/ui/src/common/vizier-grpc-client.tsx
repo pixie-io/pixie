@@ -31,6 +31,12 @@ export interface VizierQueryFunc {
   outputTablePrefix: string;
   args: VizierQueryArg[];
 }
+function deadlineHeader(timeout: number) {
+  const deadline = new Date();
+  deadline.setSeconds(deadline.getSeconds() + timeout);
+
+  return { deadline: deadline.getTime().toString() };
+}
 
 export class VizierGRPCClient {
   private client: VizierServiceClient;
@@ -40,10 +46,16 @@ export class VizierGRPCClient {
   }
 
   health(): Observable<Status> {
+    const headers = {
+      ...deadlineHeader(10),
+      ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),
+    };
+
     return Observable.create((observer) => {
       const req = new HealthCheckRequest();
       req.setClusterId(this.clusterID);
-      const call = this.client.healthCheck(req, this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` });
+      const call = this.client.healthCheck(req, headers);
+
       call.on('data', (resp) => {
         observer.next(resp.getStatus());
       });
@@ -63,6 +75,10 @@ export class VizierGRPCClient {
   // Use a generator to produce the VizierQueryFunc to remove the dependency on vis.tsx.
   // funcsGenerator should correspond to getQueryFuncs in vis.tsx.
   executeScript(script: string, funcs: VizierQueryFunc[]): Promise<VizierQueryResult> {
+    const headers = {
+      ...deadlineHeader(5),
+      ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),
+    };
     return new Promise((resolve, reject) => {
       let req: ExecuteScriptRequest;
       try {
@@ -72,7 +88,7 @@ export class VizierGRPCClient {
         return;
       }
 
-      const call = this.client.executeScript(req, this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` });
+      const call = this.client.executeScript(req, headers);
       const tablesMap = new Map<string, Table>();
       const results: VizierQueryResult = { tables: [] };
 

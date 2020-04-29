@@ -48,9 +48,9 @@ data:
                     allow_headers: >-
                       keep-alive,user-agent,cache-control,content-type,content-transfer-encoding,
                       x-accept-content-transfer-encoding,x-accept-response-streaming,
-                      x-user-agent,x-grpc-web,authorization
+                      x-user-agent,x-grpc-web,authorization,grpc-timeout
                     max_age: "1728000"
-                    expose_headers: grpc-status,grpc-message
+                    expose_headers: grpc-status,grpc-message,grpc-timeout
               http_filters:
               - name: envoy.grpc_web
               - name: envoy.cors
