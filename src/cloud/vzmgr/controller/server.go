@@ -353,10 +353,10 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 		Status             vizierStatus `db:"status"`
 		LastHeartbeat      *int64       `db:"last_heartbeat"`
 		PassthroughEnabled bool         `db:"passthrough_enabled"`
-		ClusterUID         string       `db:"cluster_uid"`
-		ClusterName        string       `db:"cluster_name"`
-		ClusterVersion     string       `db:"cluster_version"`
-		VizierVersion      string       `db:"vizier_version"`
+		ClusterUID         *string      `db:"cluster_uid"`
+		ClusterName        *string      `db:"cluster_name"`
+		ClusterVersion     *string      `db:"cluster_version"`
+		VizierVersion      *string      `db:"vizier_version"`
 	}
 	clusterID, err := utils.UUIDFromProto(req)
 	if err != nil {
@@ -365,18 +365,37 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 
 	rows, err := s.db.Queryx(query, clusterID)
 	if err != nil {
-		return nil, err
+		log.WithError(err).Error("Could not query Vizier info")
+		return nil, status.Error(codes.Internal, "could not query for viziers")
 	}
 	defer rows.Close()
+	clusterUID := ""
+	clusterName := ""
+	clusterVersion := ""
+	vizierVersion := ""
 
 	if rows.Next() {
 		err := rows.StructScan(&val)
 		if err != nil {
-			return nil, err
+			log.WithError(err).Error("Could not query Vizier info")
+			return nil, status.Error(codes.Internal, "could not query for viziers")
 		}
 		lastHearbeat := int64(-1)
 		if val.LastHeartbeat != nil {
 			lastHearbeat = *val.LastHeartbeat
+		}
+
+		if val.ClusterUID != nil {
+			clusterUID = *val.ClusterUID
+		}
+		if val.ClusterName != nil {
+			clusterName = *val.ClusterName
+		}
+		if val.ClusterVersion != nil {
+			clusterVersion = *val.ClusterVersion
+		}
+		if val.VizierVersion != nil {
+			vizierVersion = *val.VizierVersion
 		}
 		return &cvmsgspb.VizierInfo{
 			VizierID:        utils.ProtoFromUUID(&val.ID),
@@ -385,10 +404,10 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 			Config: &cvmsgspb.VizierConfig{
 				PassthroughEnabled: val.PassthroughEnabled,
 			},
-			ClusterUID:     val.ClusterUID,
-			ClusterName:    val.ClusterName,
-			ClusterVersion: val.ClusterVersion,
-			VizierVersion:  val.VizierVersion,
+			ClusterUID:     clusterUID,
+			ClusterName:    clusterName,
+			ClusterVersion: clusterVersion,
+			VizierVersion:  vizierVersion,
 		}, nil
 	}
 	return nil, status.Error(codes.NotFound, "vizier not found")
