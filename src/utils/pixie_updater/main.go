@@ -73,7 +73,9 @@ func main() {
 
 	version := viper.GetString("vizier_version")
 	log.WithField("Version", version).Info("Fetching YAMLs")
-	yamlMap, err := artifacts.FetchVizierYAMLMap(conn, version)
+
+	token := viper.GetString("cloud_token")
+	yamlMap, err := artifacts.FetchVizierYAMLMap(conn, token, version)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to download YAMLs")
 	}

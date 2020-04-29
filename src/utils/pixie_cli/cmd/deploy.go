@@ -385,8 +385,11 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	var yamlMap map[string]string
 	yamlJob := newTaskWrapper("Downloading Vizier YAMLs", func() error {
-		var err error
-		yamlMap, err = artifacts.FetchVizierYAMLMap(cloudConn, versionString)
+		creds, err := auth.LoadDefaultCredentials()
+		if err != nil {
+			return err
+		}
+		yamlMap, err = artifacts.FetchVizierYAMLMap(cloudConn, creds.Token, versionString)
 		if err != nil {
 			return err
 		}

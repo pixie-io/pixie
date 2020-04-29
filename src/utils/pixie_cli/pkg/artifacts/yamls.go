@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
@@ -22,13 +21,8 @@ func downloadFile(url string) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-func downloadVizierYAMLs(conn *grpc.ClientConn, version string) (io.ReadCloser, error) {
+func downloadVizierYAMLs(conn *grpc.ClientConn, authToken, version string) (io.ReadCloser, error) {
 	client := cloudapipb.NewArtifactTrackerClient(conn)
-
-	creds, err := auth.LoadDefaultCredentials()
-	if err != nil {
-		return nil, err
-	}
 
 	req := &cloudapipb.GetDownloadLinkRequest{
 		ArtifactName: "vizier",
@@ -36,7 +30,7 @@ func downloadVizierYAMLs(conn *grpc.ClientConn, version string) (io.ReadCloser, 
 		ArtifactType: cloudapipb.AT_CONTAINER_SET_YAMLS,
 	}
 	ctxWithCreds := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", creds.Token))
+		fmt.Sprintf("bearer %s", authToken))
 
 	resp, err := client.GetDownloadLink(ctxWithCreds, req)
 	if err != nil {
@@ -47,8 +41,8 @@ func downloadVizierYAMLs(conn *grpc.ClientConn, version string) (io.ReadCloser, 
 }
 
 // FetchVizierYAMLMap fetches Vizier YAML files and write to a map <fname>:<yaml string>.
-func FetchVizierYAMLMap(conn *grpc.ClientConn, version string) (map[string]string, error) {
-	reader, err := downloadVizierYAMLs(conn, version)
+func FetchVizierYAMLMap(conn *grpc.ClientConn, authToken, version string) (map[string]string, error) {
+	reader, err := downloadVizierYAMLs(conn, authToken, version)
 
 	if err != nil {
 		return nil, err
