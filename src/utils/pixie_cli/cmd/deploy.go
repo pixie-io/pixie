@@ -1,13 +1,13 @@
 package cmd
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -20,6 +20,7 @@ import (
 	"gopkg.in/segmentio/analytics-go.v3"
 	"pixielabs.ai/pixielabs/src/shared/version"
 	utils2 "pixielabs.ai/pixielabs/src/utils"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/artifacts"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
@@ -207,39 +208,6 @@ func mustReadCredsFile(credsFile string) string {
 	return string(credsData)
 }
 
-func downloadFile(url string) (io.ReadCloser, error) {
-	// Get the data
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	return resp.Body, nil
-}
-
-func downloadVizierYAMLs(conn *grpc.ClientConn, version string) (io.ReadCloser, error) {
-	client := newArtifactTrackerClient(conn)
-
-	creds, err := auth.LoadDefaultCredentials()
-	if err != nil {
-		return nil, err
-	}
-
-	req := &cloudapipb.GetDownloadLinkRequest{
-		ArtifactName: "vizier",
-		VersionStr:   version,
-		ArtifactType: cloudapipb.AT_CONTAINER_SET_YAMLS,
-	}
-	ctxWithCreds := metadata.AppendToOutgoingContext(context.Background(), "authorization",
-		fmt.Sprintf("bearer %s", creds.Token))
-
-	resp, err := client.GetDownloadLink(ctxWithCreds, req)
-	if err != nil {
-		return nil, err
-	}
-
-	return downloadFile(resp.Url)
-}
-
 func writeToFile(filepath string, filename string, reader io.ReadCloser) error {
 	// Create directory for the files.
 	if _, err := os.Stat(filepath); os.IsNotExist(err) {
@@ -417,30 +385,37 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	var yamlMap map[string]string
 	yamlJob := newTaskWrapper("Downloading Vizier YAMLs", func() error {
-		reader, err := downloadVizierYAMLs(cloudConn, versionString)
+		var err error
+		yamlMap, err = artifacts.FetchVizierYAMLMap(cloudConn, versionString)
 		if err != nil {
 			return err
 		}
-		defer reader.Close()
 
 		extractPath, _ := cmd.Flags().GetString("extract_yaml")
 		// If extract_path is specified, write out yamls to file.
 		if extractPath != "" {
-			err := writeToFile(extractPath, "yamls.tar", reader)
+			filePath := path.Join(extractPath, "yamls.tar")
+			writer, err := os.OpenFile(filePath, os.O_RDWR, 0755)
 			if err != nil {
 				return err
 			}
-			reader, err = os.OpenFile(path.Join(extractPath, "yamls.tar"), os.O_RDWR, 0755)
-			if err != nil {
+			defer writer.Close()
+			w := tar.NewWriter(writer)
+
+			for k, v := range yamlMap {
+				if err = w.WriteHeader(&tar.Header{Name: k, Size: int64(len(v))}); err != nil {
+					return err
+				}
+				if _, err = w.Write([]byte(v)); err != nil {
+					return err
+				}
+
+			}
+			if err := w.Close(); err != nil {
 				return err
 			}
-			defer reader.Close()
 		}
 
-		yamlMap, err = utils.ReadTarFileFromReader(reader)
-		if err != nil {
-			return err
-		}
 		return nil
 	})
 

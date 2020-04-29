@@ -32,6 +32,7 @@ go_library(
         "//src/shared/services:go_default_library",
         "//src/shared/version:go_default_library",
         "//src/utils:go_default_library",
+        "//src/utils/pixie_cli/pkg/artifacts:go_default_library",
         "//src/utils/pixie_cli/pkg/auth:go_default_library",
         "//src/utils/pixie_cli/pkg/certs:go_default_library",
         "//src/utils/pixie_cli/pkg/components:go_default_library",
