@@ -186,6 +186,8 @@ export class Vizier extends React.Component<{}, VizierState> {
                       } else if (data.cluster.status === 'CS_UNHEALTHY') {
                         const clusterStarting = 'Cluster found. Waiting for pods and services to become ready...';
                         return <ClusterInstructions message={clusterStarting} />;
+                      } else if (data.cluster.status === 'CS_UPDATING') {
+                        return <ClusterInstructions message='Cluster updating...' />;
                       } else {
                         return (
                           <DeployInstructions />
