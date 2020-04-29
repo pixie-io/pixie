@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -67,7 +68,7 @@ var GetViziersCmd = &cobra.Command{
 
 		w := components.CreateStreamWriter(format, os.Stdout)
 		defer w.Finish()
-		w.SetHeader("viziers", []string{"ID", "Status", "LastHeartbeat", "Passthrough"})
+		w.SetHeader("viziers", []string{"ClusterName", "ID", "K8s Version", "Vizier Version", "Status", "LastHeartbeat", "Passthrough"})
 		for _, vz := range vzs {
 			passthrough := false
 			if vz.Config != nil {
@@ -82,7 +83,20 @@ var GetViziersCmd = &cobra.Command{
 							time.Now().Sub(time.Unix(0, vz.LastHeartbeatNs)).Nanoseconds()))
 				}
 			}
-			_ = w.Write([]interface{}{utils.UUIDFromProtoOrNil(vz.ID), vz.Status, lastHeartbeat, passthrough})
+			// Parse the version to pretty print it.
+			sv := semver.MustParse(vz.VizierVersion)
+			sb := strings.Builder{}
+			sb.WriteString(fmt.Sprintf("%d.%d.%d", sv.Major, sv.Minor, sv.Patch))
+			for idx, pre := range sv.Pre {
+				if idx == 0 {
+					sb.WriteString("-")
+				} else {
+					sb.WriteString(".")
+				}
+				sb.WriteString(pre.String())
+			}
+			_ = w.Write([]interface{}{vz.ClusterName, utils.UUIDFromProtoOrNil(vz.ID), vz.ClusterVersion, sb.String(),
+				vz.Status, lastHeartbeat, passthrough})
 		}
 	},
 }
