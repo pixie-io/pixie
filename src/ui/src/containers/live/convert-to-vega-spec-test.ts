@@ -86,32 +86,6 @@ describe('simple timeseries', () => {
             {"mark": "line"}
           ]
         },
-        {
-          "encoding": {
-            "opacity": {
-              "condition": {"selection": "hover", "value": 0.3},
-              "value": 0,
-            }
-          },
-          "mark": "rule",
-          "selection": {
-            "hover": {
-              "clear": "mouseout",
-              "empty": "none",
-              "fields": ["time_"],
-              "nearest": true,
-              "on": "mouseover",
-              "type": "single"
-            }
-          },
-          "transform": [
-            {
-              "groupby": ["time_"],
-              "pivot": colorFieldName,
-              "value": "bytes_per_second",
-            }
-          ]
-        }
       ],
       "transform": [
         {
@@ -195,32 +169,6 @@ describe('simple timeseries', () => {
             {"mark": "line"}
           ]
         },
-        {
-          "encoding": {
-            "opacity": {
-              "condition": {"selection": "hover", "value": 0.3},
-              "value": 0,
-            }
-          },
-          "mark": "rule",
-          "selection": {
-            "hover": {
-              "clear": "mouseout",
-              "empty": "none",
-              "fields": ["time_"],
-              "nearest": true,
-              "on": "mouseover",
-              "type": "single"
-            }
-          },
-          "transform": [
-            {
-              "groupby": ["time_"],
-              "pivot": colorFieldName,
-              "value": "bytes_per_second",
-            }
-          ]
-        }
       ],
       "transform": [
         {
@@ -299,32 +247,6 @@ describe('simple timeseries', () => {
             {"mark": "bar"}
           ]
         },
-        {
-          "encoding": {
-            "opacity": {
-              "condition": {"selection": "hover", "value": 0.3},
-              "value": 0,
-            }
-          },
-          "mark": "rule",
-          "selection": {
-            "hover": {
-              "clear": "mouseout",
-              "empty": "none",
-              "fields": ["time_"],
-              "nearest": true,
-              "on": "mouseover",
-              "type": "single"
-            }
-          },
-          "transform": [
-            {
-              "groupby": ["time_"],
-              "pivot": colorFieldName,
-              "value": "bytes_per_second",
-            }
-          ]
-        }
       ],
       "transform": [
         {
@@ -403,32 +325,6 @@ describe('simple timeseries', () => {
             {"mark": "point"}
           ]
         },
-        {
-          "encoding": {
-            "opacity": {
-              "condition": {"selection": "hover", "value": 0.3},
-              "value": 0,
-            }
-          },
-          "mark": "rule",
-          "selection": {
-            "hover": {
-              "clear": "mouseout",
-              "empty": "none",
-              "fields": ["time_"],
-              "nearest": true,
-              "on": "mouseover",
-              "type": "single"
-            }
-          },
-          "transform": [
-            {
-              "groupby": ["time_"],
-              "pivot": colorFieldName,
-              "value": "bytes_per_second",
-            }
-          ]
-        }
       ],
       "transform": [
         {
@@ -506,32 +402,6 @@ describe('timeseries with series', () => {
             {"mark": "line"}
           ]
         },
-        {
-          "encoding": {
-            "opacity": {
-              "condition": {"selection": "hover", "value": 0.3},
-              "value": 0,
-            }
-          },
-          "mark": "rule",
-          "selection": {
-            "hover": {
-              "clear": "mouseout",
-              "empty": "none",
-              "fields": ["time_"],
-              "nearest": true,
-              "on": "mouseover",
-              "type": "single"
-            }
-          },
-          "transform": [
-            {
-              "groupby": ["time_"],
-              "pivot": "service",
-              "value": "bytes_per_second",
-            }
-          ]
-        }
       ],
       "transform": [
         {
@@ -606,32 +476,6 @@ describe('timeseries with series', () => {
             {"mark": "line"}
           ]
         },
-        {
-          "encoding": {
-            "opacity": {
-              "condition": {"selection": "hover", "value": 0.3},
-              "value": 0,
-            }
-          },
-          "mark": "rule",
-          "selection": {
-            "hover": {
-              "clear": "mouseout",
-              "empty": "none",
-              "fields": ["time_"],
-              "nearest": true,
-              "on": "mouseover",
-              "type": "single"
-            }
-          },
-          "transform": [
-            {
-              "groupby": ["time_"],
-              "pivot": "service",
-              "value": "bytes_per_second",
-            }
-          ]
-        }
       ],
       "transform": [
         {

@@ -1,11 +1,10 @@
-import {Theme} from '@material-ui/core/styles';
+import { Theme } from '@material-ui/core/styles';
 import * as _ from 'lodash';
-import {Spec as VgSpec} from 'vega';
-import {VisualizationSpec} from 'vega-embed';
-import {TopLevelSpec as VlSpec} from 'vega-lite';
-import {EncodeEntry} from 'vega-typings';
+import { Data, Mark, Signal, Spec as VgSpec } from 'vega';
+import { VisualizationSpec } from 'vega-embed';
+import { TopLevelSpec as VlSpec } from 'vega-lite';
 
-import {DISPLAY_TYPE_KEY, WidgetDisplay} from './vis';
+import { DISPLAY_TYPE_KEY, WidgetDisplay } from './vis';
 
 const BAR_CHART_TYPE = 'pixielabs.ai/pl.vispb.BarChart';
 const VEGA_CHART_TYPE = 'pixielabs.ai/pl.vispb.VegaChart';
@@ -15,6 +14,10 @@ const VEGA_SCHEMA_SUBSTRING = 'vega.github.io/schema/vega/';
 const VEGA_SCHEMA = '$schema';
 const TIMESERIES_CHART_TYPE = 'pixielabs.ai/pl.vispb.TimeseriesChart';
 const COLOR_SCALE = 'color';
+const HOVER_LINE_COLOR = '#00dba6';
+const HOVER_LINE_OPACITY = 0.3;
+const HOVER_LINE_DASH = [6, 6];
+const HOVER_LINE_WIDTH = 2;
 
 interface XAxis {
   readonly label: string;
@@ -76,8 +79,9 @@ export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: st
   const vegaLiteSpec = convertWidgetDisplayToVegaLiteSpec(display, source);
   const hydratedVegaLite = hydrateSpec(vegaLiteSpec, theme);
   const vegaSpec = vegaLiteModule.compile(hydratedVegaLite).spec;
-  return addExtrasToVegaSpec(vegaSpec, display);
+  return addExtrasToVegaSpec(vegaSpec, display, source);
 }
+
 // Currently only supports a single input dataframe.
 // TODO(nserrino): Add support for the multi-dataframe case.
 function addSources(spec: VisualizationSpec, source: string): VisualizationSpec {
@@ -117,33 +121,6 @@ function timeseriesDataLayer(yField: string, mark: string) {
     ],
   };
 };
-
-function timeseriesHoverLayer(colorField: string, yField: string, timeField: string) {
-  return {
-    transform: [{
-      pivot: colorField,
-      value: yField,
-      groupby: [timeField],
-    }],
-    mark: 'rule',
-    encoding: {
-      opacity: {
-        condition: {value: 0.3, selection: 'hover'},
-        value: 0,
-      },
-    },
-    selection: {
-      hover: {
-        type: 'single',
-        fields: [timeField],
-        nearest: true,
-        on: 'mouseover',
-        empty: 'none',
-        clear: 'mouseout',
-      },
-    },
-  };
-}
 
 function extendEncoding(spec, field, params) {
   return {
@@ -302,8 +279,6 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
     ]);
   }
   layers[0] = extendColorEncoding(layers[0], {field: colorField, type: 'nominal', legend: null});
-  // Add layer for voronoi and hover line.
-  layers.push(timeseriesHoverLayer(colorField, timeseries.value, TIMESERIES_TIME_COLUMN));
 
   if (timeseries.stackBySeries) {
     if (!timeseries.series) {
@@ -397,52 +372,178 @@ function convertToVegaChart(display: VegaDisplay, source: string): Visualization
   return addSources(spec, source);
 }
 
-function addExtrasToVegaSpec(vegaSpec, display: ChartDisplay): VisualizationSpec {
+function addExtrasToVegaSpec(vegaSpec, display: ChartDisplay, source: string): VisualizationSpec {
   switch (display[DISPLAY_TYPE_KEY]) {
     case TIMESERIES_CHART_TYPE:
-      return addExtrasForTimeseries(vegaSpec, display as TimeseriesDisplay);
+      return addExtrasForTimeseries(vegaSpec, display as TimeseriesDisplay, source);
     default:
       return vegaSpec;
   }
 }
 
-function addExtrasForTimeseries(vegaSpec, display: TimeseriesDisplay): VisualizationSpec {
+function extractPivotField(vegaSpec: VgSpec, display: TimeseriesDisplay): string | null {
+  if (display.timeseries[0].series) {
+    return display.timeseries[0].series;
+  }
+  if (!vegaSpec.scales) {
+    return null;
+  }
+  for (const scale of vegaSpec.scales) {
+    if (scale.name === COLOR_SCALE && scale.domain && (scale.domain as any).field) {
+      return (scale.domain as any).field;
+    }
+  }
+  return null;
+}
+
+function addExtrasForTimeseries(vegaSpec, display: TimeseriesDisplay, source: string): VisualizationSpec {
   const isStacked: boolean = display.timeseries[0].stackBySeries;
-  const newSpec = addTooltipsToVegaSpec(vegaSpec, isStacked);
+  const pivotField: string = extractPivotField(vegaSpec, display);
+  if (!pivotField) {
+    return vegaSpec;
+  }
+  const valueField: string = display.timeseries[0].value;
+  const newSpec = addHoverHandlersToVgSpec(vegaSpec, source, isStacked, pivotField, valueField);
   return newSpec;
 }
 
-/**
- * Add the tooltip spec to a Vega spec (not vega-lite spec).
- * Note that this currently will add a tooltip to every voronoi layer.
- */
-function addTooltipsToVegaSpec(vegaSpec, isStacked: boolean) {
-  const marks = vegaSpec.marks;
-  if (!marks) {
-    return vegaSpec;
-  }
-  vegaSpec.marks = marks.map((mark) => {
-    if (mark.type !== 'path'
-        || !mark.interactive
-        || !mark.encode
-        || !mark.encode.update
-        || !mark.encode.update.isVoronoi
-        || !mark.encode.update.isVoronoi.value) {
-      return mark;
-    }
-    return {
-      ...mark,
-      encode: {
-        ...mark.encode,
-        update: {
-          ...mark.encode.update,
-          tooltip: {
-            signal: `merge(datum.datum, {colorScale: "${COLOR_SCALE}", isStacked: ${isStacked}})`,
+const HOVER_VORONOI = 'hover_voronoi_layer';
+const TIME_FIELD = 'time_';
+const HOVER_RULE = 'hover_rule_layer';
+export const HOVER_SIGNAL = 'hover_value';
+export const EXTERNAL_HOVER_SIGNAL = 'external_hover_value';
+export const INTERNAL_HOVER_SIGNAL = 'internal_hover_value';
+export const HOVER_PIVOT_TRANSFORM = 'hover_pivot_data';
+
+function addHoverHandlersToVgSpec(vegaSpec: VgSpec, source: string, isStacked: boolean,
+                                  pivotField: string, valueField: string): VgSpec {
+  vegaSpec = addHoverDataToVgSpec(vegaSpec, source, pivotField, valueField);
+  vegaSpec = addHoverSignalsToVgSpec(vegaSpec);
+  vegaSpec = addHoverMarksToVgSpec(vegaSpec, isStacked);
+  return vegaSpec;
+}
+
+function addHoverDataToVgSpec(vegaSpec: VgSpec, source: string, pivotField: string, valueField: string): VgSpec {
+  const data: Data[] = [];
+  data.push({
+    name: HOVER_PIVOT_TRANSFORM,
+    source,
+    transform: [
+      {
+        type: 'pivot',
+        field: pivotField,
+        value: valueField,
+        groupby: [TIME_FIELD],
+      },
+    ],
+  });
+  vegaSpec.data.push(...data);
+  return vegaSpec;
+}
+
+function addHoverSignalsToVgSpec(vegaSpec: VgSpec): VgSpec {
+  const signals: Signal[] = [];
+  // Add signal to determine hover time value for current chart.
+  signals.push({
+    name: INTERNAL_HOVER_SIGNAL,
+    on: [
+      {
+        events: [
+          {
+            source: 'scope',
+            type: 'mouseover',
+            markname: HOVER_VORONOI,
           },
+        ],
+        // Voronoi layers store data in datum.datum instead of datum.
+        update: `datum && datum.datum && {${TIME_FIELD}: datum.datum["${TIME_FIELD}"]}`,
+      },
+      {
+        events: [
+          {
+            source: 'scope',
+            type: 'mouseout',
+          },
+        ],
+        update: 'null',
+      },
+    ],
+  });
+  // Add signal for hover value from external chart.
+  signals.push({
+    name: EXTERNAL_HOVER_SIGNAL,
+    value: null,
+  });
+  // Add signal for hover value that merges internal, and external hover values, with priority to internal.
+  signals.push({
+    name: HOVER_SIGNAL,
+    on: [
+      {
+        events: [{signal: EXTERNAL_HOVER_SIGNAL}, {signal: INTERNAL_HOVER_SIGNAL}],
+        update: `${INTERNAL_HOVER_SIGNAL} || ${EXTERNAL_HOVER_SIGNAL}`,
+      },
+    ],
+  });
+  vegaSpec.signals.push(...signals);
+  return vegaSpec;
+}
+
+function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
+  const marks: Mark[] = [];
+  // Add mark for vertical line where cursor is.
+  marks.push({
+    name: HOVER_RULE,
+    type: 'rule',
+    style: ['rule'],
+    interactive: true,
+    from: {data: HOVER_PIVOT_TRANSFORM},
+    encode: {
+      enter: {
+        stroke: {value: HOVER_LINE_COLOR},
+        strokeDash: {value: HOVER_LINE_DASH},
+        strokeWidth: {value: HOVER_LINE_WIDTH},
+      },
+      update: {
+        opacity: [
+          {
+            test: `${HOVER_SIGNAL} && datum && (${HOVER_SIGNAL}["${TIME_FIELD}"] === datum["${TIME_FIELD}"])`,
+            value: HOVER_LINE_OPACITY,
+          },
+          {value: 0},
+        ],
+        x: {scale: 'x', field: TIME_FIELD},
+        y: {value: 0},
+        y2: {signal: 'height'},
+      },
+    },
+  });
+  // Add mark for voronoi layer.
+  marks.push({
+    name: HOVER_VORONOI,
+    type: 'path',
+    interactive: true,
+    from: {data: HOVER_RULE},
+    encode: {
+      update: {
+        fill: {value: 'transparent'},
+        strokeWidth: {value: 0.35},
+        stroke: {value: 'transparent'},
+        isVoronoi: {value: true},
+        tooltip: {
+          signal: `merge(datum.datum, {colorScale: "${COLOR_SCALE}", isStacked: ${isStacked}})`,
         },
       },
-    };
+    },
+    transform: [
+      {
+        type: 'voronoi',
+        x: {expr: 'datum.datum.x || 0'},
+        y: {expr: 'datum.datum.y || 0'},
+        size: [{signal: 'width'}, {signal: 'height'}],
+      },
+    ],
   });
+  vegaSpec.marks.push(...marks);
   return vegaSpec;
 }
 
@@ -565,12 +666,6 @@ function specsFromTheme(theme: Theme) {
       },
       shape: {
         stroke: '#39A8F5',
-      },
-      rule: {
-        stroke: '#00dba6',
-        strokeDash: [ 6, 6 ],
-        strokeOpacity: 0.9,
-        strokeWidth: 2,
       },
       style: {
         bar: {
