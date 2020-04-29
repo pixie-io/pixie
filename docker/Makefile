@@ -20,8 +20,8 @@ gperftools_deb_image_tag := "gcr.io/pl-dev-infra/gperftools_deb_image:$(GPERFTOO
 
 ## Linux image parameters
 LINUX_MAJOR_VERSION := 5
-LINUX_KERNEL_VERSION := 5.0.21
-LINUX_HEADERS_REV := pl1
+LINUX_KERNEL_VERSION := 5.3.18
+LINUX_HEADERS_REV := pl2
 linux_headers_fname := linux-headers-$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV).tar.gz
 linux_headers_gs_path := gs://pl-infra-dev-artifacts/$(linux_headers_fname)
 linux_headers_image_tag := "gcr.io/pl-dev-infra/linux_headers_image:$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV)"

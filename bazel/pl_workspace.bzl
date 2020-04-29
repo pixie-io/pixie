@@ -71,8 +71,8 @@ def _docker_images_setup():
 def _artifacts_setup():
     http_file(
         name = "linux_headers_4_14_176_tar_gz",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.14.176-pl1.tar.gz"],
-        sha256 = "59b7414f39ee0d76041558594c2b67a0c818360f2c9184c2021c906d5ad54300",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-4.14.176-pl2.tar.gz"],
+        sha256 = "f0d9ae109ed491e0a56183bbf70e0c38ae1eaad0b400231b1b45225459ac3c2b",
         downloaded_file_path = "linux_headers.tar.gz",
     )
 
@@ -134,8 +134,8 @@ def _artifacts_setup():
 
     http_file(
         name = "linux_headers_5_3_18_tar_gz",
-        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-5.3.18-pl1.tar.gz"],
-        sha256 = "0c83721bb2f42acdd2a0c54164d873749acae2c3a9696b599ce70396fc0ede3b",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/linux-headers-5.3.18-pl2.tar.gz"],
+        sha256 = "6a738503d9168210b366d557c4b66363902b34c0aba4f518bbb255f680c42986",
         downloaded_file_path = "linux_headers.tar.gz",
     )
 

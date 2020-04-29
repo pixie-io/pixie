@@ -228,7 +228,8 @@ StatusOr<std::filesystem::path> FindClosestPackagedHeader(
       std::string path = p.path().string();
 
       if (!absl::StartsWith(path, kHeaderDirPrefix) || !absl::EndsWith(path, kHeaderDirSuffix)) {
-        LOG(DFATAL) << "Do not expect anything but Pixie headers in this directory.";
+        LOG(DFATAL) << absl::Substitute(
+            "Did not expect anything but Pixie headers in this directory. Found $0", path);
         continue;
       }
 
@@ -240,7 +241,8 @@ StatusOr<std::filesystem::path> FindClosestPackagedHeader(
       StatusOr<KernelVersion> headers_kernel_version_status =
           ParseKernelVersionString(version_string);
       if (!headers_kernel_version_status.ok()) {
-        LOG(DFATAL) << "Do not expect an unparseable linux-headers format in this directory.";
+        LOG(DFATAL) << absl::Substitute(
+            "Did not expect an unparseable linux-headers format in this directory. Found $0", path);
         continue;
       }
       KernelVersion headers_kernel_version = headers_kernel_version_status.ValueOrDie();
