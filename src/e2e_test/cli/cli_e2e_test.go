@@ -21,9 +21,6 @@ var testBlacklist = []string{
 
 var stressTestBlacklist = []string{
 	"px/http2_data",
-	// Likely too slow.
-	"px/pod_stats",
-	"px/pid_memory_usage",
 }
 
 type scriptInfo struct {
@@ -120,8 +117,6 @@ func TestCLIE2E_AllScriptsRepeat10(t *testing.T) {
 	// Run each script once.
 	for _, s := range scripts {
 		t.Run(s.Name, func(t *testing.T) {
-			// TODO(zasgar): Figure out why this is flaky.
-			t.Skip("skipping test due to flakiness")
 			if containsStr(stressTestBlacklist, s.Name) {
 				t.Skip()
 				return
