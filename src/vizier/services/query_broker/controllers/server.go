@@ -238,7 +238,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 	queryExecutor := s.newExecutor(s.natsConn, queryID, &pemIDs)
 
 	s.trackExecutorForQuery(queryExecutor)
-
+	defer s.deleteExecutorForQuery(queryID)
 	// TODO(zasgar): Cleanup this code to push the distrbuted plan into
 	// ExecuteQuery directly and do the mapping in there.
 	if plannerState.PlanOptions.Explain {
@@ -256,7 +256,6 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 		return nil, nil, err
 	}
 
-	s.deleteExecutorForQuery(queryID)
 	return queryResult, nil, nil
 }
 
