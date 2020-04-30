@@ -207,7 +207,7 @@ class GRPCTraceUprobingTest : public GRPCTraceGoTest, public ::testing::WithPara
   }
 };
 
-TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
+TEST_P(GRPCTraceUprobingTest, DISABLED_CaptureRPCTraceRecord) {
   // Server is launched after initializing socket tracer, which verifies that uprobes
   // are dynamically attached.
   GRPCTraceGoTest::LaunchServer(GetParam());
