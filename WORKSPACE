@@ -854,13 +854,6 @@ go_repository(
 )
 
 go_repository(
-    name = "io_etcd_go_etcd",
-    importpath = "go.etcd.io/etcd",
-    sum = "h1:jCejD5EMnlGxFvcGRyEV4VGlENZc7oPQX6o0t7n3xbw=",
-    version = "v3.3.13+incompatible",
-)
-
-go_repository(
     name = "com_github_azure_go_ansiterm",
     importpath = "github.com/Azure/go-ansiterm",
     sum = "h1:w+iIsaOQNcT7OZ575w+acHgRric5iCyQh+xv+KJ4HB8=",
