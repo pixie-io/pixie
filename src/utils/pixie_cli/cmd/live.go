@@ -25,10 +25,7 @@ var LiveCmd = &cobra.Command{
 		var execScript *script.ExecutableScript
 		var err error
 		scriptFile, _ := cmd.Flags().GetString("file")
-		if scriptFile == "" {
-			if len(args) == 0 {
-				log.Fatal("Expected script_name with script args.")
-			}
+		if len(args) > 0 {
 			scriptName := args[0]
 			execScript = br.MustGetScript(scriptName)
 			fs := execScript.GetFlagSet()
@@ -39,7 +36,7 @@ var LiveCmd = &cobra.Command{
 				}
 				execScript.UpdateFlags(fs)
 			}
-		} else {
+		} else if len(scriptFile) > 0 {
 			execScript, err = loadScriptFromFile(scriptFile)
 			if err != nil {
 				log.WithError(err).Fatal("Failed to get query string")
