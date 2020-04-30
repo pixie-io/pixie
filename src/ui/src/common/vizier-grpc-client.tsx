@@ -1,10 +1,10 @@
-import {VizierQueryError} from 'common/errors';
-import {Observable} from 'rxjs';
+import { VizierQueryError } from 'common/errors';
+import { Observable } from 'rxjs';
 import {
     ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
     RowBatchData, Status,
 } from 'types/generated/vizier_pb';
-import {VizierServiceClient} from 'types/generated/VizierServiceClientPb';
+import { VizierServiceClient } from 'types/generated/VizierServiceClientPb';
 
 export interface Table {
   relation: Relation;
@@ -47,15 +47,12 @@ export class VizierGRPCClient {
 
   health(): Observable<Status> {
     const headers = {
-      ...deadlineHeader(10),
       ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),
     };
-
     return Observable.create((observer) => {
       const req = new HealthCheckRequest();
       req.setClusterId(this.clusterID);
       const call = this.client.healthCheck(req, headers);
-
       call.on('data', (resp) => {
         observer.next(resp.getStatus());
       });
@@ -76,7 +73,6 @@ export class VizierGRPCClient {
   // funcsGenerator should correspond to getQueryFuncs in vis.tsx.
   executeScript(script: string, funcs: VizierQueryFunc[]): Promise<VizierQueryResult> {
     const headers = {
-      ...deadlineHeader(5),
       ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),
     };
     return new Promise((resolve, reject) => {
