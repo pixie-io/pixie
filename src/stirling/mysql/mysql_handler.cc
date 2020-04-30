@@ -444,7 +444,7 @@ StatusOr<ParseState> HandleStmtExecuteRequest(const Packet& req_packet,
 
   size_t offset = kStmtIDStartOffset + kStmtIDBytes + kFlagsBytes + kIterationCountBytes;
 
-  if (req_packet.msg.size() < offset + 1) {
+  if (req_packet.msg.size() < offset) {
     return error::Internal("Not a valid StmtExecuteRequest");
   }
 
