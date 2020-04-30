@@ -3,20 +3,20 @@ import './vizier.scss';
 import {
     CloudClientInterface, VizierGQLClient, VizierGQLClientContext,
 } from 'common/vizier-gql-client';
-import {VizierGRPCClientProvider} from 'common/vizier-grpc-client-context';
-import {CloudClientContext} from 'containers/App/context';
-import {Editor} from 'containers/editor';
+import { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
+import { CloudClientContext } from 'containers/App/context';
+import { Editor } from 'containers/editor';
 import LiveView from 'containers/live/live';
 import gql from 'graphql-tag';
 import * as React from 'react';
-import {ApolloConsumer, Query, withApollo} from 'react-apollo';
-import {Redirect, Route, Switch} from 'react-router-dom';
+import { ApolloConsumer, Query, withApollo } from 'react-apollo';
+import { Redirect, Route, Switch } from 'react-router-dom';
 
-import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
-import {AgentDisplay} from './agent-display';
-import {ClusterInstructions, DeployInstructions} from './deploy-instructions';
-import {VizierTopNav} from './top-nav';
+import { AgentDisplay } from './agent-display';
+import { ClusterInstructions, DeployInstructions } from './deploy-instructions';
+import { VizierTopNav } from './top-nav';
 
 export const CREATE_CLUSTER = gql`
   mutation CreateCluster {
@@ -32,6 +32,7 @@ export const GET_CLUSTER = gql`
     id
     status
     lastHeartbeatMs
+    vizierVersion
     vizierConfig {
       passthroughEnabled
     }
@@ -172,6 +173,7 @@ export class Vizier extends React.Component<{}, VizierState> {
                             clusterID={data.cluster.id}
                             passthroughEnabled={data.cluster.vizierConfig.passthroughEnabled}
                             loadingScreen={<ClusterInstructions message='Connecting to cluster...' />}
+                            vizierVersion={data.cluster.vizierVersion}
                           >
                             <Switch>
                               <Route path='/live' component={LiveViewWithApollo} />

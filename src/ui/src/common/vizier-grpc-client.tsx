@@ -1,5 +1,6 @@
 import { VizierQueryError } from 'common/errors';
 import { Observable } from 'rxjs';
+import * as semver from 'semver';
 import {
     ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
     RowBatchData, Status,
@@ -31,22 +32,24 @@ export interface VizierQueryFunc {
   outputTablePrefix: string;
   args: VizierQueryArg[];
 }
-function deadlineHeader(timeout: number) {
-  const deadline = new Date();
-  deadline.setSeconds(deadline.getSeconds() + timeout);
 
-  return { deadline: deadline.getTime().toString() };
-}
+const VizierDeadlineSupportVersion = '>=0.2.2';
 
 export class VizierGRPCClient {
   private client: VizierServiceClient;
 
-  constructor(addr: string, private token: string, private clusterID: string, private attachCreds: boolean) {
+  constructor(
+    addr: string,
+    private token: string,
+    private clusterID: string,
+    private attachCreds: boolean,
+    private vizierVersion: string) {
     this.client = new VizierServiceClient(addr, null, attachCreds ? { withCredentials: 'true' } : {});
   }
 
   health(): Observable<Status> {
     const headers = {
+      ...this.deadlineHeader(10),
       ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),
     };
     return Observable.create((observer) => {
@@ -73,6 +76,7 @@ export class VizierGRPCClient {
   // funcsGenerator should correspond to getQueryFuncs in vis.tsx.
   executeScript(script: string, funcs: VizierQueryFunc[]): Promise<VizierQueryResult> {
     const headers = {
+      ...this.deadlineHeader(5),
       ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),
     };
     return new Promise((resolve, reject) => {
@@ -171,6 +175,16 @@ export class VizierGRPCClient {
       throw errors;
     }
     return req;
+  }
+
+  private deadlineHeader(timeout: number) {
+    if (!semver.satisfies(semver.coerce(this.vizierVersion), VizierDeadlineSupportVersion)) {
+      return {};
+    }
+    const deadline = new Date();
+    deadline.setSeconds(deadline.getSeconds() + timeout);
+
+    return { deadline: deadline.getTime().toString() };
   }
 }
 

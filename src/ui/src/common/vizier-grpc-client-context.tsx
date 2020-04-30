@@ -1,9 +1,9 @@
 import * as React from 'react';
-import {debounce} from 'utils/debounce';
-import {isDev} from 'utils/env';
+import { debounce } from 'utils/debounce';
+import { isDev } from 'utils/env';
 
-import {CloudClient} from './cloud-gql-client';
-import {VizierGRPCClient} from './vizier-grpc-client';
+import { CloudClient } from './cloud-gql-client';
+import { VizierGRPCClient } from './vizier-grpc-client';
 
 const VizierGRPCClientContext = React.createContext<VizierGRPCClient>(null);
 
@@ -13,11 +13,14 @@ interface Props {
   children: React.ReactNode;
   clusterID: string;
   loadingScreen: React.ReactNode;
+  vizierVersion: string;
 }
 
 export type VizierConnectionStatus = 'healthy' | 'unhealthy' | 'disconnected';
 
-async function newVizierClient(cloudClient: CloudClient, clusterID: string, passthroughEnabled: boolean) {
+async function newVizierClient(
+  cloudClient: CloudClient, clusterID: string, passthroughEnabled: boolean, vizierVersion: string) {
+
   const { ipAddress, token } = await cloudClient.getClusterConnection(true);
   let address = ipAddress;
   if (passthroughEnabled) {
@@ -25,16 +28,16 @@ async function newVizierClient(cloudClient: CloudClient, clusterID: string, pass
     // no GCLB to redirect for us in dev.
     address = window.location.origin + (isDev() ? ':4444' : '');
   }
-  return new VizierGRPCClient(address, token, clusterID, passthroughEnabled);
+  return new VizierGRPCClient(address, token, clusterID, passthroughEnabled, vizierVersion);
 }
 
 export const VizierGRPCClientProvider = (props: Props) => {
-  const { cloudClient, children, passthroughEnabled, clusterID } = props;
+  const { cloudClient, children, passthroughEnabled, clusterID, vizierVersion } = props;
   const [client, setClient] = React.useState<VizierGRPCClient>(null);
   const [connectionStatus, setConnectionStatus] = React.useState<VizierConnectionStatus>('disconnected');
   const [loaded, setLoaded] = React.useState(false);
 
-  const newClient = () => newVizierClient(cloudClient, clusterID, passthroughEnabled).then(setClient);
+  const newClient = () => newVizierClient(cloudClient, clusterID, passthroughEnabled, vizierVersion).then(setClient);
   const reconnect = () => {
     client.health().subscribe({
       next: (status) => {
