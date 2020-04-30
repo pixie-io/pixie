@@ -120,7 +120,7 @@
     "react-grid-layout": "^0.18.2",
     "react-highlight": "^0.12.0",
     "react-hotkeys": "^2.0.0",
-    "react-router-dom": "^4.3.1",
+    "react-router-dom": "^5.1.2",
     "react-split": "^2.0.7",
     "react-transition-group": "^2.5.0",
     "react-vega": "^7.3.0",
