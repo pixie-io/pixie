@@ -84,6 +84,7 @@ def _cc_deps():
     _include_all_repo("com_github_gperftools_gperftools", patch_cmds = ["./autogen.sh"])
     _include_all_repo("com_github_nats_io_natsc", patches = ["//third_party:natsc.patch"], patch_args = ["-p1"])
     _include_all_repo("com_github_libuv_libuv", patches = ["//third_party:libuv.patch"], patch_args = ["-p1"])
+    _include_all_repo("com_github_libarchive_libarchive")
 
     _repo_impl("com_google_double_conversion", build_file = "//third_party:double_conversion.BUILD")
     _repo_impl("com_github_rlyeh_sole", build_file = "//third_party:sole.BUILD")
@@ -92,7 +93,6 @@ def _cc_deps():
     _repo_impl("com_github_ariafallah_csv_parser", build_file = "//third_party:csv_parser.BUILD")
     _repo_impl("com_github_cameron314_concurrentqueue", build_file = "//third_party:concurrentqueue.BUILD")
     _repo_impl("com_github_skystrife_cpptoml", build_file = "//third_party:cpptoml.BUILD")
-    _repo_impl("com_github_neargye_magic_enum", build_file = "//third_party:magic_enum.BUILD")
     _repo_impl("com_github_neargye_magic_enum", build_file = "//third_party:magic_enum.BUILD")
     _repo_impl("com_github_arun11299_cpp_jwt", build_file = "//third_party:cpp_jwt.BUILD")
     _repo_impl("com_github_cyan4973_xxhash", build_file = "//third_party:xxhash.BUILD")

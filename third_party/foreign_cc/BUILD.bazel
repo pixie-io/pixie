@@ -67,6 +67,23 @@ cmake_external(
 )
 
 cmake_external(
+    name = "libarchive",
+    cache_entries = {
+        "ENABLE_CNG": "OFF",
+        "ENABLE_TAR": "OFF",
+        "ENABLE_TAR_SHARED": "OFF",
+        "ENABLE_CPIO": "OFF",
+        "ENABLE_CPIO_SHARED": "OFF",
+        "ENABLE_CAT": "OFF",
+        "ENABLE_CAT_SHARED": "OFF",
+        "ENABLE_TEST": "OFF",
+    },
+    generate_crosstool_file = True,
+    lib_name = "libarchive",
+    lib_source = "@com_github_libarchive_libarchive//:all",
+)
+
+cmake_external(
     name = "bcc",
     generate_crosstool_file = True,
     lib_name = "libbcc_static",
@@ -112,35 +129,35 @@ cmake_external(
 
 cmake_external(
     name = "fluentbit",
+    binaries = ["fluent-bit"],
     cache_entries = {
         "FLB_EXAMPLES": "No",
         "FLB_LUAJIT": "No",
         "FLB_JEMALLOC": "No",
     },
     generate_crosstool_file = True,
+    install_prefix = ".",
     lib_name = "fluent-bit",
     lib_source = "@com_github_fluent_fluentbit//:all",
-    install_prefix = ".",
-    binaries = ["fluent-bit"],
     make_commands = ["make -j${nproc} fluent-bit-bin"],
 )
 
 filegroup(
     name = "fluentbit_binary",
     srcs = [":fluentbit"],
-    output_group = "fluent-bit"
+    output_group = "fluent-bit",
 )
 
 container_image(
     name = "fluentbit_base_image",
     base = "//:pl_cc_base_image",
-    files = [":fluentbit_binary"],
-    visibility = ["//visibility:public"],
     debs = [
         packages["libc6"],
         packages["zlib1g"],
         packages["libsasl2-2"],
         packages["libssl1.1"],
         packages["libgcc1"],
-    ]
+    ],
+    files = [":fluentbit_binary"],
+    visibility = ["//visibility:public"],
 )
