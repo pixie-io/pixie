@@ -14,7 +14,7 @@ import px
 # (options: 'pod', 'service')
 k8s_object = 'pod'
 # Window in seconds within which to aggregate metrics.
-window_s = 2
+window_s = 10
 # k8s_object column is assigned to this and is used in vis spec.
 split_series_name = 'k8s'
 px.Pod = str
