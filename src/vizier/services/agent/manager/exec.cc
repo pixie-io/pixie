@@ -19,6 +19,8 @@ namespace pl {
 namespace vizier {
 namespace agent {
 
+constexpr auto kRPCResultTimeout = std::chrono::seconds(2);
+
 using ::pl::event::AsyncTask;
 using ::pl::vizier::services::query_broker::querybrokerpb::AgentQueryResponse;
 using ::pl::vizier::services::query_broker::querybrokerpb::AgentQueryResultRequest;
@@ -77,6 +79,8 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
     grpc::ClientContext context;
     std::string token = GenerateServiceToken();
     context.AddMetadata("authorization", absl::Substitute("bearer $0", token));
+    // This timeout ensures that we don't get a hang.
+    context.set_deadline(std::chrono::system_clock::now() + kRPCResultTimeout);
     auto query_response_status = qb_stub_->ReceiveAgentQueryResult(&context, res_req, &res_resp);
     if (!query_response_status.ok()) {
       LOG(ERROR) << absl::Substitute(
@@ -141,6 +145,7 @@ Status ExecuteQueryMessageHandler::HandleMessage(std::unique_ptr<messages::Vizie
   auto query_id = task->query_id();
   auto runnable = dispatcher()->CreateAsyncTask(std::move(task));
   auto runnable_ptr = runnable.get();
+  LOG(INFO) << "Queries in flight: " << running_queries_.size();
   running_queries_[query_id] = std::move(runnable);
   runnable_ptr->Run();
 

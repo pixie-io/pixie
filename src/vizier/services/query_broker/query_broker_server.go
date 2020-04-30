@@ -97,14 +97,21 @@ func main() {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to NATS.")
 	}
+	natsConn.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
+		log.WithError(err).
+			WithField("sub", subscription.Subject).
+			Error("Got nats error")
+	})
 
 	server, err := controllers.NewServer(env, mdsClient, natsConn)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}
 
+	// For query broker we bump up the max message size since resuls might be larger than 4mb.
+	maxMsgSize := grpc.MaxRecvMsgSize(8 * 1024 * 1024)
 	s := services.NewPLServer(env,
-		httpmiddleware.WithBearerAuthMiddleware(env, mux))
+		httpmiddleware.WithBearerAuthMiddleware(env, mux), maxMsgSize)
 	querybrokerpb.RegisterQueryBrokerServiceServer(s.GRPCServer(), server)
 	vizierpb.RegisterVizierServiceServer(s.GRPCServer(), server)
 

@@ -54,7 +54,8 @@ type Stream interface {
 func NewPassThroughProxy(nc *nats.Conn, vzClient vizierpb.VizierServiceClient) (*PassThroughProxy, error) {
 	requests := make(map[string]*RequestState)
 	quitCh := make(chan bool)
-	subCh := make(chan *nats.Msg)
+	// Buffer channel so we don't drop passthrough requests.
+	subCh := make(chan *nats.Msg, 4096)
 	sub, err := nc.ChanSubscribe(PassthroughRequestChannel, subCh)
 	if err != nil {
 		return nil, err
@@ -72,17 +73,21 @@ func (s *PassThroughProxy) Run() error {
 			return nil
 		case msg := <-s.subCh:
 			log.Trace("Received message in PassThroughProxy")
-			err := s.HandleMessage(msg)
-			if err != nil {
-				log.WithError(err).Error("Stopping PassThroughProxy because of HandleMessage error")
-				return err
-			}
+			go s.HandleMessage(msg)
 		}
 	}
 }
 
 // HandleMessage handles a stream API request or cancel request.
-func (s *PassThroughProxy) HandleMessage(msg *nats.Msg) error {
+func (s *PassThroughProxy) HandleMessage(msg *nats.Msg) {
+	err := s.handleMessage(msg)
+	if err != nil {
+		log.WithError(err).Error("Pass through request failed.")
+	}
+}
+
+// HandleMessage handles a stream API request or cancel request.
+func (s *PassThroughProxy) handleMessage(msg *nats.Msg) error {
 	// Arriving messages are wrapped in a C2V message.
 	c2vMsg := &cvmsgspb.C2VMessage{}
 	err := proto.Unmarshal(msg.Data, c2vMsg)

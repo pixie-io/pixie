@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -166,6 +167,10 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 				v.err = v.parseError(ctx, msg.Resp.Status)
 				return
 			}
+			if msg.Resp.Result == nil {
+				v.err = newScriptExecutionError(CodeUnknown, "Got empty response")
+				return
+			}
 			var err error
 			switch res := msg.Resp.Result.(type) {
 			case *pl_api_vizierpb.ExecuteScriptResponse_MetaData:
@@ -173,7 +178,7 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 			case *pl_api_vizierpb.ExecuteScriptResponse_Data:
 				err = v.handleData(ctx, res)
 			default:
-				panic("unhandled response type")
+				panic("unhandled response type" + reflect.TypeOf(msg.Resp.Result).String())
 			}
 			if err != nil {
 				v.err = newScriptExecutionError(CodeBadData, "failed to handle data from Vizier: "+err.Error())

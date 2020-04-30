@@ -11,6 +11,7 @@ require (
 	github.com/alecthomas/chroma v0.7.1
 	github.com/alecthomas/participle v0.4.1
 	github.com/badoux/checkmail v0.0.0-20181210160741-9661bd69e9ad
+	github.com/bazelbuild/rules_go v0.22.4
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.2
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
@@ -36,7 +37,7 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang/mock v1.3.1
-	github.com/golang/protobuf v1.3.4
+	github.com/golang/protobuf v1.4.0
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/googleapis/google-cloud-go-testing v0.0.0-20191008195207-8e1d251e947d
 	github.com/gorilla/handlers v1.4.2
@@ -86,15 +87,15 @@ require (
 	github.com/zenazn/goji v0.9.1-0.20160507202103-64eb34159fe5
 	go.etcd.io/etcd v3.3.13+incompatible
 	golang.org/x/image v0.0.0-20190321063152-3fc05d484e9f // indirect
-	golang.org/x/net v0.0.0-20200301022130-244492dfa37a
+	golang.org/x/net v0.0.0-20200425230154-ff2c4b7c35a0
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4
+	golang.org/x/sys v0.0.0-20200428200454-593003d681fa
 	gonum.org/v1/gonum v0.0.0-20190413104459-5d695651a1d5 // indirect
 	gonum.org/v1/plot v0.0.0-20190410204940-3a5f52653745
 	google.golang.org/api v0.9.0
-	google.golang.org/genproto v0.0.0-20190801165951-fa694d86fc64
-	google.golang.org/grpc v1.23.1
+	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
+	google.golang.org/grpc v1.24.0
 	gopkg.in/segmentio/analytics-go.v3 v3.1.0
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.2.8

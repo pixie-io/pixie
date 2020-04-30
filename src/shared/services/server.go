@@ -43,8 +43,8 @@ type PLServer struct {
 }
 
 // NewPLServer creates a new PLServer.
-func NewPLServer(env env.Env, httpHandler http.Handler) *PLServer {
-	opts := &GRPCServerOptions{}
+func NewPLServer(env env.Env, httpHandler http.Handler, grpcServerOpts ...grpc.ServerOption) *PLServer {
+	opts := &GRPCServerOptions{GRPCServerOpts: grpcServerOpts}
 	return NewPLServerWithOptions(env, httpHandler, opts)
 }
 

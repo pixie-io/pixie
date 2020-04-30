@@ -21,6 +21,7 @@ import (
 type GRPCServerOptions struct {
 	DisableAuth    map[string]bool
 	AuthMiddleware func(context.Context, env.Env) (string, error) // Currently only used by cloud api-server.
+	GRPCServerOpts []grpc.ServerOption
 }
 
 func grpcUnaryInjectSession() grpc.UnaryServerInterceptor {
