@@ -66,7 +66,7 @@ const LiveContextProvider = (props) => {
     setArgs(newArgs);
   }, []);
 
-  const [title, setTitle] = ls.useLocalStorage<Title>(ls.LIVE_VIEW_TITLE_KEY, { title: 'untitled', id: 'unknown' });
+  const [title, setTitle] = ls.useLocalStorage<Title>(ls.LIVE_VIEW_TITLE_KEY, null);
 
   const [dataDrawerOpen, setDataDrawerOpen] = ls.useLocalStorage<boolean>(ls.LIVE_VIEW_DATA_DRAWER_OPENED_KEY, false);
   const toggleDataDrawer = React.useCallback(() => setDataDrawerOpen((opened) => !opened), []);

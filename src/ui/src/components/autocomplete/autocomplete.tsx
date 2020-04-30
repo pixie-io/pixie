@@ -1,14 +1,14 @@
 import clsx from 'clsx';
-import {scrollbarStyles} from 'common/mui-theme';
+import { scrollbarStyles } from 'common/mui-theme';
 import * as React from 'react';
 
-import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 import Completions, {
     CompletionId, CompletionItem, CompletionItems, CompletionTitle,
 } from './completions';
 import Input from './input';
-import {Key} from './key';
+import { Key } from './key';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -89,7 +89,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
         }
       }
     });
-  }, [inputValue]);
+  }, [inputValue, getCompletions]);
 
   const handleSelection = React.useCallback((id) => {
     const item = itemsMap.get(id);

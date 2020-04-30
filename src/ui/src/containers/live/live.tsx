@@ -17,7 +17,7 @@ import ToggleButton from '@material-ui/lab/ToggleButton';
 
 import Canvas from './canvas';
 import CommandInput from './command-input';
-import { LiveContext, withLiveContextProvider } from './context';
+import { LiveContext, ScriptContext, TitleContext, withLiveContextProvider } from './context';
 import DataDrawer from './data-drawer';
 import Editor from './editor';
 import ExecuteScriptButton from './execute-button';
@@ -123,6 +123,14 @@ const LiveView = () => {
   }, [executeScript]);
 
   useInitScriptLoader();
+
+  const script = React.useContext(ScriptContext);
+  const title = React.useContext(TitleContext);
+  React.useEffect(() => {
+    if (!script && !title) {
+      setCommandOpen(true);
+    }
+  }, []);
 
   return (
     <div className={classes.root}>

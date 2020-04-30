@@ -1,9 +1,9 @@
 import clsx from 'clsx';
 import * as React from 'react';
 
-import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
-import {ArgsContext, TitleContext} from './context';
+import { ArgsContext, TitleContext } from './context';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -37,11 +37,17 @@ const LiveViewTitle = (props) => {
       argsList.push(<div key={argName}>&nbsp;&nbsp;{argName}: {argVal}</div>);
     }
   }
+
+  // tslint:disable:whitespace remove this once we switch to eslint
+  const id = title?.id || 'unknown';
+  const desc = title?.title || 'untitled';
+  // tslint:enable:whitespace
+
   return (
     <div className={clsx(props.className, classes.root)}>
-      <div className={classes.title}>{title.title}</div>
+      <div className={classes.title}>{desc}</div>
       <div className={classes.scriptName}>
-        script: {title.id}
+        script: {id}
         {argsList}
       </div>
     </div>
