@@ -19,12 +19,14 @@ gperftools_deb_gs_path :=  gs://pl-infra-dev-artifacts/$(gperftools_deb_fname)
 gperftools_deb_image_tag := "gcr.io/pl-dev-infra/gperftools_deb_image:$(GPERFTOOLS_DEB_IMAGE_VERSION)"
 
 ## Linux image parameters
-LINUX_MAJOR_VERSION := 5
-LINUX_KERNEL_VERSION := 5.3.18
-LINUX_HEADERS_REV := pl2
+LINUX_MAJOR_VERSION ?= 5
+LINUX_KERNEL_VERSION ?= 5.3.18
+LINUX_HEADERS_REV ?= pl2
+linux_headers_image_tag := "gcr.io/pl-dev-infra/linux_headers_image:$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV)"
 linux_headers_fname := linux-headers-$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV).tar.gz
 linux_headers_gs_path := gs://pl-infra-dev-artifacts/$(linux_headers_fname)
-linux_headers_image_tag := "gcr.io/pl-dev-infra/linux_headers_image:$(LINUX_KERNEL_VERSION)-$(LINUX_HEADERS_REV)"
+linux_headers_trimmed_fname := linux-headers-$(LINUX_KERNEL_VERSION)-trimmed-$(LINUX_HEADERS_REV).tar.gz
+linux_headers_trimmed_gs_path := gs://pl-infra-dev-artifacts/$(linux_headers_trimmed_fname)
 
 mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 mkfile_dir := $(dir $(mkfile_path))
@@ -65,12 +67,20 @@ build_linux_headers_image:
 
 .PHONY: upload_linux_headers
 upload_linux_headers: build_linux_headers_image ## Target to build and upload linux headers image
+	# Upload full headers.
 	scripts/docker-extract.sh $(linux_headers_image_tag) /pl/linux-headers-$(LINUX_KERNEL_VERSION).tar.gz $(linux_headers_fname)
 	gsutil cp $(linux_headers_fname) $(linux_headers_gs_path)
 	gsutil acl ch -u allUsers:READER $(linux_headers_gs_path)
 	@echo "SHA: "
 	sha256sum $(linux_headers_fname)
 	rm -f $(linux_headers_fname)
+	# Upload trimmed headers.
+	scripts/docker-extract.sh $(linux_headers_image_tag) /pl/linux-headers-$(LINUX_KERNEL_VERSION)-trimmed.tar.gz $(linux_headers_trimmed_fname)
+	gsutil cp $(linux_headers_trimmed_fname) $(linux_headers_trimmed_gs_path)
+	gsutil acl ch -u allUsers:READER $(linux_headers_trimmed_gs_path)
+	@echo "SHA: "
+	sha256sum $(linux_headers_trimmed_fname)
+	rm -f $(linux_headers_trimmed_fname)
 
 help: ## Print help for targets with comments.
 	@echo "Usage:"

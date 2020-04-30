@@ -270,13 +270,13 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
 
   std::filesystem::path lib_modules_build_dir = lib_modules_dir / "build";
 
-  LOG(INFO) << absl::Substitute("Attempting to install packaged headers to $0",
-                                lib_modules_build_dir.string());
+  LOG(INFO) << "Attempting to install packaged headers.";
 
   PL_ASSIGN_OR_RETURN(KernelVersion kernel_version, GetKernelVersion());
 
   PL_ASSIGN_OR_RETURN(std::filesystem::path packaged_headers,
                       FindClosestPackagedHeader(kPackagedHeadersRoot, kernel_version));
+  LOG(INFO) << absl::Substitute("Using packaged header: $0.", packaged_headers.string());
   PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers, kernel_version.code()));
   PL_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers, lib_modules_build_dir));
   LOG(INFO) << absl::Substitute("Successfully installed packaged copy of headers at $0",

@@ -96,20 +96,22 @@ container_image(
     visibility = ["//visibility:public"],
 )
 
-# Each tarball is ~15MB compressed and ~230MB uncompressed.
 # Be careful adding too many headers until they are put on a diet.
+# Full linux header tarballs are ~15MB compressed and ~230MB uncompressed.
+# Trimmed versions are ~8MB compressed and ~110MB uncompressed.
+# Currently including long-term release versions.
 linux_headers_tarballs = [
     "@linux_headers_4_14_176_tar_gz//file:file",
     # "@linux_headers_4_15_18_tar_gz//file:file",
     # "@linux_headers_4_16_18_tar_gz//file:file",
     # "@linux_headers_4_17_19_tar_gz//file:file",
     # "@linux_headers_4_18_20_tar_gz//file:file",
-    # "@linux_headers_4_19_118_tar_gz//file:file",
+    "@linux_headers_4_19_118_tar_gz//file:file",
     # "@linux_headers_5_0_21_tar_gz//file:file",
     # "@linux_headers_5_1_21_tar_gz//file:file",
     # "@linux_headers_5_2_21_tar_gz//file:file",
     "@linux_headers_5_3_18_tar_gz//file:file",
-    # "@linux_headers_5_4_35_tar_gz//file:file",],
+    "@linux_headers_5_4_35_tar_gz//file:file",
 ]
 
 container_image(
