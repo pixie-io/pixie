@@ -1,13 +1,13 @@
-import {VizierQueryError} from 'common/errors';
+import { VizierQueryError } from 'common/errors';
 import * as ls from 'common/localstorage';
-import {Table, VizierQueryFunc} from 'common/vizier-grpc-client';
+import { Table, VizierQueryFunc } from 'common/vizier-grpc-client';
 import ClientContext from 'common/vizier-grpc-client-context';
-import {SnackbarProvider, useSnackbar} from 'components/snackbar/snackbar';
-import {parseSpecs, VisualizationSpecMap} from 'components/vega/spec';
+import { SnackbarProvider, useSnackbar } from 'components/snackbar/snackbar';
+import { parseSpecs, VisualizationSpecMap } from 'components/vega/spec';
 import * as React from 'react';
-import {setQueryParams} from 'utils/query-params';
+import { setQueryParams } from 'utils/query-params';
 
-import {getQueryFuncs, parseVis, Vis} from './vis';
+import { getQueryFuncs, parseVis, Vis } from './vis';
 
 interface LiveContextProps {
   vizierReady: boolean;
@@ -50,10 +50,7 @@ export const DrawerContext = React.createContext<boolean>(false);
 export const ArgsContext = React.createContext<ArgsContextProps>(null);
 
 const LiveContextProvider = (props) => {
-  const [script, setScript] = React.useState<string>(ls.getLiveViewPixieScript());
-  React.useEffect(() => {
-    ls.setLiveViewPixieScript(script);
-  }, [script]);
+  const [script, setScript] = ls.useLocalStorage(ls.LIVE_VIEW_PIXIE_SCRIPT_KEY, '');
 
   const [results, setResults] = React.useState<Results>({ tables: {} });
 
@@ -69,16 +66,10 @@ const LiveContextProvider = (props) => {
     setArgs(newArgs);
   }, []);
 
-  const [title, setTitle] = React.useState<Title>(ls.getLiveViewTitle());
-  React.useEffect(() => {
-    ls.setLiveViewTitle(title);
-  }, [title]);
+  const [title, setTitle] = ls.useLocalStorage<Title>(ls.LIVE_VIEW_TITLE_KEY, { title: 'untitled', id: 'unknown' });
 
-  const [dataDrawerOpen, setDataDrawerOpen] = React.useState<boolean>(ls.getLiveViewDataDrawerOpened());
+  const [dataDrawerOpen, setDataDrawerOpen] = ls.useLocalStorage<boolean>(ls.LIVE_VIEW_DATA_DRAWER_OPENED_KEY, false);
   const toggleDataDrawer = React.useCallback(() => setDataDrawerOpen((opened) => !opened), []);
-  React.useEffect(() => {
-    ls.setLiveViewDataDrawerOpened(dataDrawerOpen);
-  }, [dataDrawerOpen]);
 
   const [args, setArgs] = React.useState<Arguments | null>(null);
   const argsContext = React.useMemo(() => ({ args, setArgs }), [args, setArgs]);

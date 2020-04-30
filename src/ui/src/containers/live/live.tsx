@@ -1,15 +1,15 @@
-import {getLiveViewEditorOpened, setLiveViewEditorOpened} from 'common/localstorage';
-import {scrollbarStyles} from 'common/mui-theme';
+import { LIVE_VIEW_EDITOR_OPENED_KEY, useLocalStorage } from 'common/localstorage';
+import { scrollbarStyles } from 'common/mui-theme';
 import EditIcon from 'components/icons/edit';
 import MagicIcon from 'components/icons/magic';
 import PixieLogo from 'components/icons/pixie-logo';
 import LazyPanel from 'components/lazy-panel';
 import * as React from 'react';
-import {GlobalHotKeys} from 'react-hotkeys';
+import { GlobalHotKeys } from 'react-hotkeys';
 
 import Drawer from '@material-ui/core/Drawer';
 import IconButton from '@material-ui/core/IconButton';
-import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import MenuIcon from '@material-ui/icons/Menu';
 import MoveIcon from '@material-ui/icons/OpenWith';
 import ShareIcon from '@material-ui/icons/Share';
@@ -17,11 +17,11 @@ import ToggleButton from '@material-ui/lab/ToggleButton';
 
 import Canvas from './canvas';
 import CommandInput from './command-input';
-import {LiveContext, withLiveContextProvider} from './context';
+import { LiveContext, withLiveContextProvider } from './context';
 import DataDrawer from './data-drawer';
 import Editor from './editor';
 import ExecuteScriptButton from './execute-button';
-import {useInitScriptLoader} from './script-loader';
+import { useInitScriptLoader } from './script-loader';
 import LiveViewShortcuts from './shortcuts';
 import LiveViewTitle from './title';
 
@@ -102,11 +102,8 @@ const LiveView = () => {
   const [drawerOpen, setDrawerOpen] = React.useState<boolean>(false);
   const toggleDrawer = React.useCallback(() => setDrawerOpen((opened) => !opened), []);
 
-  const [editorOpen, setEditorOpen] = React.useState<boolean>(getLiveViewEditorOpened());
+  const [editorOpen, setEditorOpen] = useLocalStorage<boolean>(LIVE_VIEW_EDITOR_OPENED_KEY, false);
   const toggleEditor = React.useCallback(() => setEditorOpen((opened) => !opened), []);
-  React.useEffect(() => {
-    setLiveViewEditorOpened(editorOpen);
-  }, [editorOpen]);
 
   const [canvasEditable, setCanvasEditable] = React.useState<boolean>(false);
   const toggleCanvasEditable = React.useCallback(() => setCanvasEditable((editable) => !editable), []);
