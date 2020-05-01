@@ -217,16 +217,7 @@ Status SocketTraceConnector::InitImpl() {
     PL_RETURN_IF_ERROR(DisableSelfTracing());
   }
   if (!FLAGS_perf_buffer_events_output_path.empty()) {
-    std::filesystem::path output_path(FLAGS_perf_buffer_events_output_path);
-    std::filesystem::path abs_path = std::filesystem::absolute(output_path);
-    perf_buffer_events_output_stream_ = std::make_unique<std::ofstream>(abs_path);
-    std::string format = "text";
-    constexpr char kBinSuffix[] = ".bin";
-    if (absl::EndsWith(FLAGS_perf_buffer_events_output_path, kBinSuffix)) {
-      perf_buffer_events_output_format_ = OutputFormat::kBin;
-      format = "binary";
-    }
-    LOG(INFO) << absl::Substitute("Writing output to: $0 in $1 format.", abs_path.string(), format);
+    SetupOutput(FLAGS_perf_buffer_events_output_path);
   }
 
   bpf_table_info_ = std::make_shared<SocketTraceBPFTableManager>(&bpf());
@@ -657,23 +648,9 @@ void SocketDataEventToPB(const SocketDataEvent& event, sockeventpb::SocketDataEv
 
 void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> event) {
   event->attr.timestamp_ns += ClockRealTimeOffset();
+
   if (perf_buffer_events_output_stream_ != nullptr) {
-    sockeventpb::SocketDataEvent pb;
-    SocketDataEventToPB(*event, &pb);
-    std::string text;
-    switch (perf_buffer_events_output_format_) {
-      case OutputFormat::kTxt:
-        // TextFormat::Print() can print to a stream. That complicates things a bit, and we opt not
-        // to do that as this is for debugging.
-        TextFormat::PrintToString(pb, &text);
-        // TextFormat already output a \n, so no need to do it here.
-        *perf_buffer_events_output_stream_ << text << std::flush;
-        break;
-      case OutputFormat::kBin:
-        rio::SerializeToStream(pb, perf_buffer_events_output_stream_.get());
-        *perf_buffer_events_output_stream_ << std::flush;
-        break;
-    }
+    WriteDataEvent(*event);
   }
 
   const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
@@ -954,6 +931,41 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("resp")>(std::move(entry.resp.payload));
   r.Append<r.ColIndex("latency_ns")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
+}
+
+void SocketTraceConnector::SetupOutput(const std::filesystem::path& path) {
+  DCHECK(!path.empty());
+
+  std::filesystem::path abs_path = std::filesystem::absolute(path);
+  perf_buffer_events_output_stream_ = std::make_unique<std::ofstream>(abs_path);
+  std::string format = "text";
+  constexpr char kBinSuffix[] = ".bin";
+  if (absl::EndsWith(FLAGS_perf_buffer_events_output_path, kBinSuffix)) {
+    perf_buffer_events_output_format_ = OutputFormat::kBin;
+    format = "binary";
+  }
+  LOG(INFO) << absl::Substitute("Writing output to: $0 in $1 format.", abs_path.string(), format);
+}
+
+void SocketTraceConnector::WriteDataEvent(const SocketDataEvent& event) {
+  DCHECK(perf_buffer_events_output_stream_ != nullptr);
+
+  sockeventpb::SocketDataEvent pb;
+  SocketDataEventToPB(event, &pb);
+  std::string text;
+  switch (perf_buffer_events_output_format_) {
+    case OutputFormat::kTxt:
+      // TextFormat::Print() can print to a stream. That complicates things a bit, and we opt not
+      // to do that as this is for debugging.
+      TextFormat::PrintToString(pb, &text);
+      // TextFormat already output a \n, so no need to do it here.
+      *perf_buffer_events_output_stream_ << text << std::flush;
+      break;
+    case OutputFormat::kBin:
+      rio::SerializeToStream(pb, perf_buffer_events_output_stream_.get());
+      *perf_buffer_events_output_stream_ << std::flush;
+      break;
+  }
 }
 
 //-----------------------------------------------------------------------------

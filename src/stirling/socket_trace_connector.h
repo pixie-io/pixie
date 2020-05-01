@@ -342,6 +342,11 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
     mds_upids_ = std::move(upids);
   }
 
+  // Setups output file stream object writing to the input file path.
+  void SetupOutput(const std::filesystem::path& file);
+  // Writes data event to the specified output file.
+  void WriteDataEvent(const SocketDataEvent& event);
+
   // TODO(oazizi/yzhao): Change to use std::unique_ptr.
 
   // Note that the inner map cannot be a vector, because there is no guaranteed order
