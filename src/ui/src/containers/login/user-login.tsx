@@ -1,8 +1,8 @@
 import Auth0Lock from 'auth0-lock';
 import Axios from 'axios';
-import {CodeSnippet} from 'components/code-snippet/code-snippet';
-import {DialogBox} from 'components/dialog-box/dialog-box';
-import {AUTH0_CLIENT_ID, AUTH0_DOMAIN, DOMAIN_NAME} from 'containers/constants';
+import { CodeSnippet } from 'components/code-snippet/code-snippet';
+import { DialogBox } from 'components/dialog-box/dialog-box';
+import { AUTH0_CLIENT_ID, AUTH0_DOMAIN, DOMAIN_NAME } from 'containers/constants';
 // @ts-ignore : TS does not like image files.
 import * as check from 'images/icons/check.svg';
 // @ts-ignore : TS does not like image files.
@@ -15,13 +15,13 @@ import * as backgroundTop from 'images/login-background-top.svg';
 import * as logo from 'images/new-logo.svg';
 import * as QueryString from 'query-string';
 import * as React from 'react';
-import {ApolloConsumer} from 'react-apollo';
-import {Button} from 'react-bootstrap';
-import {Link} from 'react-router-dom';
+import { ApolloConsumer } from 'react-apollo';
+import { Button } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 import analytics from 'utils/analytics';
 import * as RedirectUtils from 'utils/redirect-utils';
 
-import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/styles';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -157,7 +157,7 @@ export const UserLogin = (props) => {
       signUp={false}
       headerText={'Log-in to Pixie'}
       footerLinkText={'Sign up for a new account'}
-      footerLink={'/signup'}
+      footerLink='/signup'
       {...props}
     />
   );
@@ -169,7 +169,7 @@ export const UserCreate = (props) => {
       signUp={true}
       headerText={'Create your account'}
       footerLinkText={'Log into an existing account'}
-      footerLink={'/login'}
+      footerLink='/login'
       {...props}
     />
   );
@@ -336,8 +336,13 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
         />
         {this.authenticating ? null :
           <span className='login-footer'>
-            <hr/>
-            <Link to={this.props.footerLink}>{this.props.footerLinkText}</Link>
+            <hr />
+            <Link to={{
+              pathname: this.props.footerLink,
+              search: this.props.location.search,
+            }}>
+              {this.props.footerLinkText}
+            </Link>
           </span>}
       </>
     );
