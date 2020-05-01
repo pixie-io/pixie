@@ -318,9 +318,10 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 			&autocomplete.SuggestionResult{
 				Suggestions: []*autocomplete.Suggestion{
 					&autocomplete.Suggestion{
-						Name:  "px/svc_info",
-						Score: 1,
-						Args:  []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
+						Name:     "px/svc_info",
+						Score:    1,
+						ArgNames: []string{"svc_name"},
+						ArgKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
 					},
 				},
 				ExactMatch: true,

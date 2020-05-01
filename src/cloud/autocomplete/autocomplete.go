@@ -22,11 +22,12 @@ type Suggester interface {
 
 // Suggestion is a suggestion for a token.
 type Suggestion struct {
-	Name  string
-	Desc  string
-	Score float64 // A score representing how closely the suggestion matches the given input.
-	Kind  cloudapipb.AutocompleteEntityKind
-	Args  []cloudapipb.AutocompleteEntityKind // If the suggestion is a script, the args that the script takes.
+	Name     string
+	Desc     string
+	Score    float64 // A score representing how closely the suggestion matches the given input.
+	Kind     cloudapipb.AutocompleteEntityKind
+	ArgNames []string // If the suggestion is a script, the args that the script takes.
+	ArgKinds []cloudapipb.AutocompleteEntityKind
 }
 
 // TabStop represents a tab stop in a command.
@@ -36,6 +37,7 @@ type TabStop struct {
 	Valid          bool
 	Suggestions    []*Suggestion
 	ContainsCursor bool
+	ArgName        string
 }
 
 // Command represents an executable command.
@@ -109,10 +111,12 @@ func parseGoCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester) error 
 	return errors.New("Not yet implemented")
 }
 
-func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID uuid.UUID) (int, map[cloudapipb.AutocompleteEntityKind]int, error) {
+func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID uuid.UUID) (int, bool, []string, []cloudapipb.AutocompleteEntityKind, error) {
 	// The TabStop after the action should be the script. Check if there are any scripts defined.
-	scriptArgs := make(map[cloudapipb.AutocompleteEntityKind]int)
+	argNames := make([]string, 0)
+	argTypes := make([]cloudapipb.AutocompleteEntityKind, 0)
 	scriptTabIndex := -1
+	scriptValid := false
 	for i, a := range parsedCmd.Args {
 		if a.Type != nil && *a.Type == "script" {
 			// Determine if this is a valid script, and if so, what arguments it takes.
@@ -128,21 +132,16 @@ func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID 
 
 			res, err := s.GetSuggestions([]*SuggestionRequest{&SuggestionRequest{orgID, searchTerm, []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT}, []cloudapipb.AutocompleteEntityKind{}}})
 			if err != nil {
-				return -1, nil, err
+				return -1, scriptValid, nil, nil, err
 			}
 
 			suggestions := res[0].Suggestions
 			exactMatch := res[0].ExactMatch
 
 			if exactMatch {
-				// Create a mapping from argKind to count.
-				for _, scriptArg := range suggestions[0].Args {
-					if _, ok := scriptArgs[scriptArg]; ok {
-						scriptArgs[scriptArg]++
-					} else {
-						scriptArgs[scriptArg] = 1
-					}
-				}
+				argNames = suggestions[0].ArgNames
+				argTypes = suggestions[0].ArgKinds
+				scriptValid = true
 			}
 
 			cmd.TabStops = append(cmd.TabStops, &TabStop{
@@ -157,12 +156,131 @@ func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID 
 		}
 	}
 
-	return scriptTabIndex, scriptArgs, nil
+	return scriptTabIndex, scriptValid, argNames, argTypes, nil
 }
 
-func parseRunArgs(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, scriptArgs map[cloudapipb.AutocompleteEntityKind]int, scriptTabIndex int) ([]*TabStop, []cloudapipb.AutocompleteEntityKind) {
-	// Look through other entities that are already defined (by svc:,pod:, etc. specifiers) to determine which script
-	// args still need to be filled out.
+// parseRunArgsWithScript parses the command args according to the expected args for the given script.
+func parseRunArgsWithScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, argNames []string, argTypes []cloudapipb.AutocompleteEntityKind, scriptTabIndex int) ([]*TabStop, []cloudapipb.AutocompleteEntityKind) {
+	// The tab stops for the command should be the args for the given script.
+	argToTabStop := make(map[string]*TabStop)
+	argNameToKind := make(map[string]cloudapipb.AutocompleteEntityKind)
+	kindToArgNames := make(map[cloudapipb.AutocompleteEntityKind][]string)
+
+	for i, n := range argNames {
+		argToTabStop[n] = nil
+		argType := argTypes[i]
+		if _, ok := kindToArgNames[argType]; ok {
+			kindToArgNames[argType] = append(kindToArgNames[argType], n)
+		} else {
+			kindToArgNames[argTypes[i]] = []string{n}
+		}
+		argNameToKind[n] = argType
+	}
+
+	unusedArgs := make([]*ebnf.ParsedArg, 0)
+	// Look through args for any that are already labeled by an argName.
+	for i, a := range parsedCmd.Args {
+		if i == scriptTabIndex {
+			continue // Don't re-parse the script field.
+		}
+
+		if a.Type != nil {
+			if val, ok := argToTabStop[*a.Type]; ok {
+				if val == nil { // No other cmdArg has been assigned to this scriptArg.
+					label := *a.Type
+					value := ""
+					if a.Name != nil {
+						value = *a.Name
+					}
+					argToTabStop[label] = &TabStop{
+						Value:          value,
+						Kind:           argNameToKind[label],
+						ContainsCursor: strings.Contains(value, CursorMarker),
+						ArgName:        label,
+					}
+					continue
+				}
+			}
+		}
+		unusedArgs = append(unusedArgs, a)
+	}
+
+	// Look through the remaining unassigned args for any that are labeled by entity type ("pod:", "svc:", etc.) and try to assign to a scriptArg with the same type.
+	unassignedArgs := make([]string, 0)
+	for _, a := range unusedArgs {
+		if a.Type != nil {
+			if val, ok := kindLabelToProtoMap[*a.Type]; ok { // The label is a specifier for the entity type.
+				if argNames, argNamesOk := kindToArgNames[val]; argNamesOk {
+					assigned := false
+					for _, n := range argNames {
+						// If any scriptArgs with this entityType is unassigned, assign this cmdArg to that scriptArg.
+						if argToTabStop[n] == nil {
+							value := ""
+							if a.Name != nil {
+								value = *a.Name
+							}
+							argToTabStop[n] = &TabStop{
+								Value:          value,
+								Kind:           val,
+								ContainsCursor: strings.Contains(value, CursorMarker),
+								ArgName:        n,
+							}
+							assigned = true
+							break
+						}
+					}
+					if assigned {
+						continue
+					}
+				}
+			}
+		}
+
+		value := ""
+		if a.Type != nil {
+			value += *a.Type + ":"
+		}
+		if a.Name != nil {
+			value += *a.Name
+		}
+		unassignedArgs = append(unassignedArgs, value)
+	}
+
+	unassignedArgString := strings.Join(unassignedArgs, " ")
+
+	// Create tabstops for any unassigne scriptArgs, and assign the remaining args to some unassigned scriptArg, if any.
+	args := make([]*TabStop, 0)
+	for _, n := range argNames {
+		v := argToTabStop[n]
+		if v != nil {
+			args = append(args, v)
+			continue
+		}
+
+		args = append(args, &TabStop{
+			Value:          unassignedArgString,
+			Kind:           argNameToKind[n],
+			ArgName:        n,
+			ContainsCursor: strings.Contains(unassignedArgString, CursorMarker),
+		})
+		unassignedArgString = ""
+	}
+
+	if unassignedArgString != "" { // If all of the scriptArgs were assigned, but there is a cmdArg remaining, create an additional tab stop.
+		args = append(args, &TabStop{
+			Value:          unassignedArgString,
+			Kind:           cloudapipb.AEK_UNKNOWN,
+			ContainsCursor: strings.Contains(unassignedArgString, CursorMarker),
+		})
+	}
+
+	return args, make([]cloudapipb.AutocompleteEntityKind, 0)
+}
+
+// parseRunArgs parses the command args when no script is specified.
+func parseRunArgs(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, scriptTabIndex int) ([]*TabStop, []cloudapipb.AutocompleteEntityKind) {
+	// Look through entities that are already defined (by svc:,pod:, etc. specifiers) to determine what arguments the
+	// script needs to take.
 	specifiedEntities := []cloudapipb.AutocompleteEntityKind{}
 	args := make([]*TabStop, 0)
 	for i, a := range parsedCmd.Args {
@@ -179,18 +297,9 @@ func parseRunArgs(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, scriptAr
 			value += *a.Type + ":"
 		}
 
-		// If a script was defined, and a type is defined for this arg, we should check that the arg is valid argument for the script.
 		if entityType != cloudapipb.AEK_UNKNOWN {
-			count, ok := scriptArgs[entityType]
-			if (len(scriptArgs) == 0 && scriptTabIndex == -1) || (ok && count > 0) {
-				if ok {
-					scriptArgs[entityType]-- // Track this argument kind has already been used.
-				}
-				value = ""
-				specifiedEntities = append(specifiedEntities, entityType)
-			} else {
-				entityType = cloudapipb.AEK_UNKNOWN // The specified type is not valid. This argument should be another type.
-			}
+			value = ""
+			specifiedEntities = append(specifiedEntities, entityType)
 		}
 
 		if a.Name != nil {
@@ -206,19 +315,13 @@ func parseRunArgs(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, scriptAr
 	return args, specifiedEntities
 }
 
-func validateCommand(scriptDefined bool, scriptArgs map[cloudapipb.AutocompleteEntityKind]int, cmd *Command) {
+func validateCommand(scriptDefined bool, cmd *Command) {
 	// Determine if the command is executable.
 	cmd.Executable = true
 	if !scriptDefined {
 		cmd.Executable = false
 	}
-	for _, v := range scriptArgs {
-		// All script args should be specified.
-		if v != 0 {
-			cmd.Executable = false
-			break
-		}
-	}
+
 	for _, a := range cmd.TabStops {
 		// All args should be valid.
 		if a.Valid != true {
@@ -234,28 +337,23 @@ func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID
 		return nil
 	}
 
-	scriptTabIndex, scriptArgs, err := parseRunScript(parsedCmd, cmd, s, orgID)
+	scriptTabIndex, scriptValid, argNames, argTypes, err := parseRunScript(parsedCmd, cmd, s, orgID)
 	if err != nil {
 		return err
 	}
 
-	args, specifiedEntities := parseRunArgs(parsedCmd, cmd, s, scriptArgs, scriptTabIndex)
+	var args []*TabStop
+	var specifiedEntities []cloudapipb.AutocompleteEntityKind
 
-	// Determine what entity kinds we should search for.
-	allowedKinds := make([]cloudapipb.AutocompleteEntityKind, 0)
-	if len(scriptArgs) == 0 { // No script was defined, so we can search for all possible types.
-		allowedKinds = []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE}
+	allowedKinds := []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE}
+	if scriptValid {
+		args, specifiedEntities = parseRunArgsWithScript(parsedCmd, cmd, s, argNames, argTypes, scriptTabIndex)
+		allowedKinds = []cloudapipb.AutocompleteEntityKind{}
 	} else {
-		for k, v := range scriptArgs {
-			// Get the remaining allowed kinds based on the
-			// arguments of the script and what kinds have already been specified.
-			if v > 0 {
-				allowedKinds = append(allowedKinds, k)
-			}
+		args, specifiedEntities = parseRunArgs(parsedCmd, cmd, s, scriptTabIndex)
+		if scriptTabIndex == -1 {
+			allowedKinds = append(allowedKinds, cloudapipb.AEK_SCRIPT)
 		}
-	}
-	if scriptTabIndex == -1 { // No script is defined, so we can search for scripts as well.
-		allowedKinds = append(allowedKinds, cloudapipb.AEK_SCRIPT)
 	}
 
 	// Get suggestions for each argument.
@@ -269,7 +367,6 @@ func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID
 		if a.ContainsCursor {
 			searchTerm = strings.Replace(searchTerm, CursorMarker, "", 1)
 		}
-
 		reqs = append(reqs, &SuggestionRequest{orgID, searchTerm, ak, specifiedEntities})
 	}
 
@@ -280,12 +377,12 @@ func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID
 
 	for i, a := range args {
 		args[i].Suggestions = res[i].Suggestions
-		args[i].Valid = res[i].ExactMatch && a.Kind != cloudapipb.AEK_UNKNOWN
+		args[i].Valid = res[i].ExactMatch && a.Kind != cloudapipb.AEK_UNKNOWN && a.ArgName != ""
 	}
 
 	cmd.TabStops = append(cmd.TabStops, args...)
 
-	validateCommand(scriptTabIndex != -1, scriptArgs, cmd)
+	validateCommand(scriptTabIndex != -1, cmd)
 
 	return nil
 }
@@ -342,7 +439,9 @@ func (cmd *Command) ToFormatString(action cloudapipb.AutocompleteActionType) (fo
 			fStr += fmt.Sprintf("$%d", idx)
 		} else {
 			fStr += fmt.Sprintf("${%d:", idx)
-			if t.Kind != cloudapipb.AEK_UNKNOWN {
+			if t.ArgName != "" {
+				fStr += t.ArgName + ":"
+			} else if t.Kind != cloudapipb.AEK_UNKNOWN {
 				fStr += protoToKindLabelMap[t.Kind] + ":"
 			}
 			if t.Value != "" {
