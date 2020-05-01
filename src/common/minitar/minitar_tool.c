@@ -130,7 +130,6 @@ static void usage(void);
 static int verbose = 0;
 
 int main(int argc, const char** argv) {
-  printf("hello\n");
   const char* filename = NULL;
   int compress, flags, mode, opt;
 

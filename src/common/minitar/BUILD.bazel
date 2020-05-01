@@ -1,0 +1,51 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        ["*.cc"],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_tool.cc",
+        ],
+    ),
+    hdrs = glob(["*.h"]),
+    linkopts = ["-lz"],
+    deps = [
+        "//third_party/foreign_cc:libarchive",
+    ],
+)
+
+pl_cc_test(
+    name = "minitar_test",
+    srcs = ["minitar_test.cc"],
+    data = [
+        "testdata/a.tar.gz",
+        "testdata/ref/bar",
+        "testdata/ref/foo",
+    ],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+    ],
+)
+
+# This is minitar tool is a stand-alone tar extractor.
+# Current uses are for manual testing and as back plan to extracting linux headers.
+# TODO(oazizi): Can probably kill this soon.
+# Make sure not to use pl_cc_binary, because the binary becomes 21 MB instead of 460KB.
+cc_binary(
+    name = "minitar",
+    srcs = ["minitar_tool.c"],
+    defines = [
+        "NO_BZIP2",
+        "NO_COMPRESS",
+        "NO_CREATE",
+        "NO_CPIO_EXTRACT",
+        "NO_LOOKUP",
+    ],
+    linkopts = ["-lz"],
+    deps = ["//third_party/foreign_cc:libarchive"],
+)
