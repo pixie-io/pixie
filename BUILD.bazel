@@ -96,20 +96,20 @@ container_image(
     visibility = ["//visibility:public"],
 )
 
-# Be careful adding too many headers until they are put on a diet.
-# Full linux header tarballs are ~15MB compressed and ~230MB uncompressed.
+# Note that each ull linux header tarballs is ~15MB compressed and ~230MB uncompressed.
 # Trimmed versions are ~8MB compressed and ~110MB uncompressed.
-# Currently including long-term release versions.
+# These are all trimmed versions, so we have 8 * 12 = 96 MB of headers.
 linux_headers_tarballs = [
     "@linux_headers_4_14_176_tar_gz//file:file",
-    # "@linux_headers_4_15_18_tar_gz//file:file",
-    # "@linux_headers_4_16_18_tar_gz//file:file",
-    # "@linux_headers_4_17_19_tar_gz//file:file",
-    # "@linux_headers_4_18_20_tar_gz//file:file",
+    "@linux_headers_4_15_18_tar_gz//file:file",
+    "@linux_headers_4_16_18_tar_gz//file:file",
+    "@linux_headers_4_17_19_tar_gz//file:file",
+    "@linux_headers_4_18_20_tar_gz//file:file",
     "@linux_headers_4_19_118_tar_gz//file:file",
-    # "@linux_headers_5_0_21_tar_gz//file:file",
-    # "@linux_headers_5_1_21_tar_gz//file:file",
-    # "@linux_headers_5_2_21_tar_gz//file:file",
+    "@linux_headers_4_20_17_tar_gz//file:file",
+    "@linux_headers_5_0_21_tar_gz//file:file",
+    "@linux_headers_5_1_21_tar_gz//file:file",
+    "@linux_headers_5_2_21_tar_gz//file:file",
     "@linux_headers_5_3_18_tar_gz//file:file",
     "@linux_headers_5_4_35_tar_gz//file:file",
 ]
@@ -117,14 +117,16 @@ linux_headers_tarballs = [
 container_image(
     name = "pl_cc_bpf_image",
     base = ":pl_cc_base_image",
-    tars = linux_headers_tarballs,
+    directory = "/pl",
+    files = linux_headers_tarballs,
     visibility = ["//visibility:public"],
 )
 
 container_image(
     name = "pl_cc_bpf_debug_image",
     base = ":pl_cc_base_debug_image",
-    tars = linux_headers_tarballs,
+    directory = "/pl",
+    files = linux_headers_tarballs,
     visibility = ["//visibility:public"],
 )
 

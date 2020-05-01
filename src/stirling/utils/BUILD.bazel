@@ -14,6 +14,7 @@ pl_cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "//src/common/fs:cc_library",
+        "//src/common/minitar:cc_library",
         "//src/common/system:cc_library",
         "//src/shared/metadata:cc_library",
         "//src/stirling/common:cc_library",
@@ -25,9 +26,9 @@ pl_cc_test(
     name = "linux_headers_test",
     srcs = ["linux_headers_test.cc"],
     data = [
-        "testdata/usr_src/linux-headers-4.14.176-pl/include/generated/uapi/linux/version.h",
-        "testdata/usr_src/linux-headers-4.18.20-pl/include/generated/uapi/linux/version.h",
-        "testdata/usr_src/linux-headers-5.3.18-pl/include/generated/uapi/linux/version.h",
+        "testdata/dummy_header_packages/linux-headers-4.14.176.tar.gz",
+        "testdata/dummy_header_packages/linux-headers-4.18.20.tar.gz",
+        "testdata/dummy_header_packages/linux-headers-5.3.18.tar.gz",
     ],
     deps = [":cc_library"],
 )

@@ -65,8 +65,15 @@ StatusOr<KernelVersion> GetKernelVersion();
 Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
                            uint32_t linux_version_code);
 
-StatusOr<std::filesystem::path> FindClosestPackagedHeader(
-    std::filesystem::path packaged_headers_root, KernelVersion kernel_version);
+struct PackagedLinuxHeadersSpec {
+  KernelVersion version;
+  // This path stores either (1) the path to the tarball (before it has been extracted),
+  // or (2) the path the extracted headers (after it has been extracted).
+  std::filesystem::path path;
+};
+
+StatusOr<PackagedLinuxHeadersSpec> FindClosestPackagedLinuxHeaders(
+    const std::filesystem::path& packaged_headers_root, KernelVersion kernel_version);
 
 Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir);
 

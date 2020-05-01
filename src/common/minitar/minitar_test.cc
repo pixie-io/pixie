@@ -17,6 +17,27 @@ TEST(Minitar, Extract) {
   ::pl::tools::Minitar minitar(tarball);
   EXPECT_OK(minitar.Extract());
 
-  std::string diff_cmd = absl::Substitute("diff a $0", ref.string());
-  EXPECT_OK_AND_EQ(::pl::Exec(diff_cmd), "");
+  std::string diff_cmd = absl::Substitute("diff -rs a $0", ref.string());
+  const std::string kExpectedDiffResult =
+      "Files a/bar and src/common/minitar/testdata/ref/bar are identical\n"
+      "Files a/foo and src/common/minitar/testdata/ref/foo are identical\n";
+  EXPECT_OK_AND_EQ(::pl::Exec(diff_cmd), kExpectedDiffResult);
+}
+
+TEST(Minitar, ExtractTo) {
+  // Tarball and a reference extracted version for comparison.
+  std::filesystem::path tarball = TestFilePath("src/common/minitar/testdata/a.tar.gz");
+  std::filesystem::path ref = TestFilePath("src/common/minitar/testdata/ref");
+
+  ::pl::tools::Minitar minitar(tarball);
+  EXPECT_OK(minitar.Extract("src/common/minitar/testdata"));
+
+  std::string diff_cmd =
+      absl::Substitute("diff -rs src/common/minitar/testdata/a $0", ref.string());
+  const std::string kExpectedDiffResult =
+      "Files src/common/minitar/testdata/a/bar and src/common/minitar/testdata/ref/bar are "
+      "identical\n"
+      "Files src/common/minitar/testdata/a/foo and src/common/minitar/testdata/ref/foo are "
+      "identical\n";
+  EXPECT_OK_AND_EQ(::pl::Exec(diff_cmd), kExpectedDiffResult);
 }

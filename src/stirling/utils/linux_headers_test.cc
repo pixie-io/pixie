@@ -92,37 +92,43 @@ TEST(LinuxHeadersUtils, ModifyVersion) {
   EXPECT_OK_AND_EQ(ReadFileToString(version_h_filename), expected_contents);
 }
 
-TEST(LinuxHeadersUtils, FindClosestPackagedHeader) {
-  const std::string kTestSrcDir = testing::TestFilePath("src/stirling/utils/testdata/usr_src");
+TEST(LinuxHeadersUtils, FindClosestPackagedLinuxHeaders) {
+  const std::string kTestSrcDir =
+      testing::TestFilePath("src/stirling/utils/testdata/dummy_header_packages");
 
   {
-    ASSERT_OK_AND_ASSIGN(std::filesystem::path match,
-                         FindClosestPackagedHeader(kTestSrcDir, KernelVersion{4, 4, 18}));
-    EXPECT_EQ(match.string(), "src/stirling/utils/testdata/usr_src/linux-headers-4.14.176-pl");
+    ASSERT_OK_AND_ASSIGN(PackagedLinuxHeadersSpec match,
+                         FindClosestPackagedLinuxHeaders(kTestSrcDir, KernelVersion{4, 4, 18}));
+    EXPECT_EQ(match.path.string(),
+              "src/stirling/utils/testdata/dummy_header_packages/linux-headers-4.14.176.tar.gz");
   }
 
   {
-    ASSERT_OK_AND_ASSIGN(std::filesystem::path match,
-                         FindClosestPackagedHeader(kTestSrcDir, KernelVersion{4, 15, 10}));
-    EXPECT_EQ(match.string(), "src/stirling/utils/testdata/usr_src/linux-headers-4.14.176-pl");
+    ASSERT_OK_AND_ASSIGN(PackagedLinuxHeadersSpec match,
+                         FindClosestPackagedLinuxHeaders(kTestSrcDir, KernelVersion{4, 15, 10}));
+    EXPECT_EQ(match.path.string(),
+              "src/stirling/utils/testdata/dummy_header_packages/linux-headers-4.14.176.tar.gz");
   }
 
   {
-    ASSERT_OK_AND_ASSIGN(std::filesystem::path match,
-                         FindClosestPackagedHeader(kTestSrcDir, KernelVersion{4, 18, 1}));
-    EXPECT_EQ(match.string(), "src/stirling/utils/testdata/usr_src/linux-headers-4.18.20-pl");
+    ASSERT_OK_AND_ASSIGN(PackagedLinuxHeadersSpec match,
+                         FindClosestPackagedLinuxHeaders(kTestSrcDir, KernelVersion{4, 18, 1}));
+    EXPECT_EQ(match.path.string(),
+              "src/stirling/utils/testdata/dummy_header_packages/linux-headers-4.18.20.tar.gz");
   }
 
   {
-    ASSERT_OK_AND_ASSIGN(std::filesystem::path match,
-                         FindClosestPackagedHeader(kTestSrcDir, KernelVersion{5, 0, 0}));
-    EXPECT_EQ(match.string(), "src/stirling/utils/testdata/usr_src/linux-headers-5.3.18-pl");
+    ASSERT_OK_AND_ASSIGN(PackagedLinuxHeadersSpec match,
+                         FindClosestPackagedLinuxHeaders(kTestSrcDir, KernelVersion{5, 0, 0}));
+    EXPECT_EQ(match.path.string(),
+              "src/stirling/utils/testdata/dummy_header_packages/linux-headers-5.3.18.tar.gz");
   }
 
   {
-    ASSERT_OK_AND_ASSIGN(std::filesystem::path match,
-                         FindClosestPackagedHeader(kTestSrcDir, KernelVersion{5, 7, 20}));
-    EXPECT_EQ(match.string(), "src/stirling/utils/testdata/usr_src/linux-headers-5.3.18-pl");
+    ASSERT_OK_AND_ASSIGN(PackagedLinuxHeadersSpec match,
+                         FindClosestPackagedLinuxHeaders(kTestSrcDir, KernelVersion{5, 7, 20}));
+    EXPECT_EQ(match.path.string(),
+              "src/stirling/utils/testdata/dummy_header_packages/linux-headers-5.3.18.tar.gz");
   }
 }
 

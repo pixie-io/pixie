@@ -56,7 +56,7 @@ Status CopyData(struct archive* ar, struct archive* aw) {
 }
 }  // namespace
 
-Status Minitar::Extract(int flags) {
+Status Minitar::Extract(std::string_view dest_dir, int flags) {
   int r;
 
   // Declare the deferred closes up-front,
@@ -78,6 +78,12 @@ Status Minitar::Extract(int flags) {
       break;
     }
     PL_RETURN_IF_NOT_ARCHIVE_OK(r, a);
+
+    if (!dest_dir.empty()) {
+      std::string dest_path = absl::StrCat(dest_dir, "/", archive_entry_pathname(entry));
+      archive_entry_set_pathname(entry, dest_path.c_str());
+    }
+
     r = archive_write_header(ext, entry);
     PL_RETURN_IF_NOT_ARCHIVE_OK(r, a);
     PL_RETURN_IF_ERROR(CopyData(a, ext));

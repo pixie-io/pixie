@@ -12,6 +12,7 @@
 
 #include "src/common/base/file.h"
 #include "src/common/fs/fs_wrapper.h"
+#include "src/common/minitar/minitar.h"
 #include "src/common/system/config.h"
 
 namespace pl {
@@ -200,6 +201,30 @@ Status LinkHostLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   return Status::OK();
 }
 
+Status ExtractPackagedHeaders(PackagedLinuxHeadersSpec* headers_package) {
+  std::string expected_directory =
+      absl::Substitute("/usr/src/linux-headers-$0.$1.$2-pl", headers_package->version.version,
+                       headers_package->version.major_rev, headers_package->version.minor_rev);
+
+  // This is a loose check that we don't clobber what we *think* should the output directory.
+  // If someone built a tar.gz with an incorrect directory structure, this check wouldn't save us.
+  if (fs::Exists(expected_directory).ok()) {
+    return error::Internal("Refusing to clobber existing directory");
+  }
+
+  // Extract the files.
+  ::pl::tools::Minitar minitar(headers_package->path.string());
+  PL_RETURN_IF_ERROR(minitar.Extract("/"));
+
+  // Update the path to the extracted copy.
+  headers_package->path = expected_directory;
+  if (!fs::Exists(headers_package->path).ok()) {
+    return error::Internal("Package extraction did not result in the expected headers directory");
+  }
+
+  return Status::OK();
+}
+
 uint64_t KernelHeadersDistance(KernelVersion a, KernelVersion b) {
   // minor_rev range: 0-255
   // major_rev range: 0-255
@@ -213,23 +238,20 @@ uint64_t KernelHeadersDistance(KernelVersion a, KernelVersion b) {
          (abs(a.version - b.version) << 18);
 }
 
-StatusOr<std::filesystem::path> FindClosestPackagedHeader(
-    std::filesystem::path packaged_headers_root, KernelVersion kernel_version) {
+StatusOr<PackagedLinuxHeadersSpec> FindClosestPackagedLinuxHeaders(
+    const std::filesystem::path& packaged_headers_root, KernelVersion kernel_version) {
   const std::string kHeaderDirPrefix =
       std::filesystem::path(packaged_headers_root / "linux-headers-").string();
-  const std::string_view kHeaderDirSuffix = "-pl";
+  const std::string_view kHeaderDirSuffix = ".tar.gz";
 
-  std::filesystem::path selected_headers;
-  KernelVersion selected_headers_version;
+  PackagedLinuxHeadersSpec selected;
 
   if (fs::Exists(packaged_headers_root).ok()) {
     for (const auto& p : std::filesystem::directory_iterator(packaged_headers_root)) {
-      VLOG(1) << absl::Substitute("Directory: $0", p.path().string());
+      VLOG(1) << absl::Substitute("File: $0", p.path().string());
       std::string path = p.path().string();
 
       if (!absl::StartsWith(path, kHeaderDirPrefix) || !absl::EndsWith(path, kHeaderDirSuffix)) {
-        LOG(DFATAL) << absl::Substitute(
-            "Did not expect anything but Pixie headers in this directory. Found $0", path);
         continue;
       }
 
@@ -241,32 +263,30 @@ StatusOr<std::filesystem::path> FindClosestPackagedHeader(
       StatusOr<KernelVersion> headers_kernel_version_status =
           ParseKernelVersionString(version_string);
       if (!headers_kernel_version_status.ok()) {
-        LOG(DFATAL) << absl::Substitute(
-            "Did not expect an unparseable linux-headers format in this directory. Found $0", path);
+        LOG(WARNING) << absl::Substitute(
+            "Ignoring $0 since it does not conform to the naming convention", path);
         continue;
       }
       KernelVersion headers_kernel_version = headers_kernel_version_status.ValueOrDie();
 
-      if (selected_headers.empty() ||
-          KernelHeadersDistance(kernel_version, headers_kernel_version) <
-              KernelHeadersDistance(kernel_version, selected_headers_version)) {
-        selected_headers = p;
-        selected_headers_version = headers_kernel_version;
+      if (selected.path.empty() || KernelHeadersDistance(kernel_version, headers_kernel_version) <
+                                       KernelHeadersDistance(kernel_version, selected.version)) {
+        selected = {headers_kernel_version, p};
       }
     }
   }
 
-  if (selected_headers.empty()) {
+  if (selected.path.empty()) {
     return error::Internal("Could not find packaged headers to install. Search location: $0",
                            packaged_headers_root.string());
   }
 
-  return selected_headers;
+  return selected;
 }
 
 Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir) {
   // This is the directory in our container images that contains packaged linux headers.
-  const std::filesystem::path kPackagedHeadersRoot = "/usr/src";
+  const std::filesystem::path kPackagedHeadersRoot = "/pl";
 
   std::filesystem::path lib_modules_build_dir = lib_modules_dir / "build";
 
@@ -274,11 +294,12 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
 
   PL_ASSIGN_OR_RETURN(KernelVersion kernel_version, GetKernelVersion());
 
-  PL_ASSIGN_OR_RETURN(std::filesystem::path packaged_headers,
-                      FindClosestPackagedHeader(kPackagedHeadersRoot, kernel_version));
-  LOG(INFO) << absl::Substitute("Using packaged header: $0.", packaged_headers.string());
-  PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers, kernel_version.code()));
-  PL_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers, lib_modules_build_dir));
+  PL_ASSIGN_OR_RETURN(PackagedLinuxHeadersSpec packaged_headers,
+                      FindClosestPackagedLinuxHeaders(kPackagedHeadersRoot, kernel_version));
+  LOG(INFO) << absl::Substitute("Using packaged header: $0", packaged_headers.path.string());
+  PL_RETURN_IF_ERROR(ExtractPackagedHeaders(&packaged_headers));
+  PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers.path, kernel_version.code()));
+  PL_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers.path, lib_modules_build_dir));
   LOG(INFO) << absl::Substitute("Successfully installed packaged copy of headers at $0",
                                 lib_modules_build_dir.string());
   return Status::OK();
