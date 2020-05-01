@@ -27,10 +27,25 @@ struct header_field_t {
   char unused[1];
 };
 
+enum http2_probe_type_t {
+  k_probe_http2_operate_headers,
+  k_probe_loopy_writer_write_header,
+  k_probe_http2_client_operate_headers,
+  k_probe_http2_server_operate_headers,
+  k_probe_http_http2serverConn_processHeaders,
+  k_probe_hpack_header_encoder,
+  k_probe_http_http2writeResHeaders_write_frame,
+  k_probe_http2_framer_check_frame_order,
+  k_probe_http_http2framer_check_frame_order,
+  k_probe_probe_http2_framer_write_data,
+  k_probe_http_http2framer_write_data,
+};
+
 enum HeaderEventType { kHeaderEventUnknown, kHeaderEventRead, kHeaderEventWrite };
 
 struct go_grpc_http2_header_event_t {
   struct header_attr_t {
+    enum http2_probe_type_t probe_type;
     enum HeaderEventType type;
     uint64_t timestamp_ns;
     struct conn_id_t conn_id;
@@ -46,6 +61,7 @@ enum DataFrameEventType { kDataFrameEventUnknown, kDataFrameEventRead, kDataFram
 
 struct go_grpc_data_event_t {
   struct data_attr_t {
+    enum http2_probe_type_t probe_type;
     enum DataFrameEventType type;
     uint64_t timestamp_ns;
     struct conn_id_t conn_id;

@@ -27,6 +27,12 @@ pl_cc_library(
 )
 
 pl_cc_test(
+    name = "frame_test",
+    srcs = ["frame_test.cc"],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "http2_test",
     srcs = ["http2_test.cc"],
     deps = [

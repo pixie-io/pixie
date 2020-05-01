@@ -107,6 +107,8 @@ enum FramerType {
 // FD extraction functions
 //-----------------------------------------------------------------------------
 
+const int32_t kInvalidFD = -1;
+
 // This function accesses one of the following:
 //   conn.conn.conn.fd.pfd.Sysfd
 //   conn.conn.fd.pfd.Sysfd
@@ -135,7 +137,7 @@ static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf) {
   uint32_t tgid = current_pid_tgid >> 32;
   struct conn_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
   if (symaddrs == NULL) {
-    return -1;
+    return kInvalidFD;
   }
 
   if (conn_intf.type == symaddrs->syscall_conn) {
@@ -149,7 +151,7 @@ static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf) {
   }
 
   if (conn_intf.type != symaddrs->tcp_conn) {
-    return -1;
+    return kInvalidFD;
   }
 
   void* fd_ptr;
@@ -277,9 +279,9 @@ static __inline void fill_header_field(struct go_grpc_http2_header_event_t* even
   bpf_probe_read(event->value.msg, event->value.size + 1, field.value.ptr);
 }
 
-static __inline void submit_headers(struct pt_regs* ctx, enum HeaderEventType type, int32_t fd,
-                                    uint32_t stream_id, bool end_stream,
-                                    struct go_ptr_array fields) {
+static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
+                                    enum HeaderEventType type, int32_t fd, uint32_t stream_id,
+                                    bool end_stream, struct go_ptr_array fields) {
   uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
@@ -372,11 +374,12 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   struct go_grpc_framer_t go_grpc_framer;
   bpf_probe_read(&go_grpc_framer, sizeof(go_grpc_framer), framer_ptr);
   const int32_t fd = get_fd_from_http2_Framer(go_grpc_framer.http2_framer);
-  if (fd < 0) {
+  if (fd == -1) {
     return 0;
   }
 
-  submit_headers(ctx, kHeaderEventWrite, fd, stream_id, end_stream, fields);
+  submit_headers(ctx, k_probe_loopy_writer_write_header, kHeaderEventWrite, fd, stream_id,
+                 end_stream, fields);
 
   return 0;
 }
@@ -385,7 +388,8 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
 //   probe_http2_client_operate_headers()
 //   probe_http2_server_operate_headers()
 // The two probes are similar but the conn_intf location is specific to each struct.
-static __inline void probe_http2_operate_headers(struct pt_regs* ctx, struct go_interface conn_intf,
+static __inline void probe_http2_operate_headers(struct pt_regs* ctx,
+                                                 enum http2_probe_type_t probe_type, int32_t fd,
                                                  const void* frame_ptr) {
   const void* frame_header_ptr = *(const void**)frame_ptr;
 
@@ -413,12 +417,7 @@ static __inline void probe_http2_operate_headers(struct pt_regs* ctx, struct go_
 
   uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
 
-  const uint32_t fd = get_fd_from_conn_intf(conn_intf);
-  if (fd < 0) {
-    return;
-  }
-
-  submit_headers(ctx, kHeaderEventRead, fd, stream_id, end_stream, fields);
+  submit_headers(ctx, probe_type, kHeaderEventRead, fd, stream_id, end_stream, fields);
 }
 
 // Probe for the golang.org/x/net/http2 library's header reader (client-side).
@@ -443,8 +442,12 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   struct go_interface conn_intf;
   const int kHTTP2ClientConnFieldOffset = 64;
   bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_client_ptr + kHTTP2ClientConnFieldOffset);
+  const int32_t fd = get_fd_from_conn_intf(conn_intf);
+  if (fd == kInvalidFD) {
+    return 0;
+  }
 
-  probe_http2_operate_headers(ctx, conn_intf, frame_ptr);
+  probe_http2_operate_headers(ctx, k_probe_http2_client_operate_headers, fd, frame_ptr);
 
   return 0;
 }
@@ -467,10 +470,24 @@ int probe_http2_server_operate_headers(struct pt_regs* ctx) {
   const void* frame_ptr = *(const void**)(sp + kFrameParamOffset);
 
   struct go_interface conn_intf;
-  const int kHTTP2ServerConnFieldOffset = 32;
-  bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_server_ptr + kHTTP2ServerConnFieldOffset);
 
-  probe_http2_operate_headers(ctx, conn_intf, frame_ptr);
+  const int kHTTP2ServerConnFieldOffset1 = 24;
+  bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_server_ptr + kHTTP2ServerConnFieldOffset1);
+  int32_t fd = get_fd_from_conn_intf(conn_intf);
+
+  if (fd == kInvalidFD) {
+    // It is known that the offset changed between grpc-go version.
+    // So we try with another offset from an older version.
+    const int kHTTP2ServerConnFieldOffset2 = 32;
+    bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_server_ptr + kHTTP2ServerConnFieldOffset2);
+    fd = get_fd_from_conn_intf(conn_intf);
+  }
+
+  if (fd == kInvalidFD) {
+    return 0;
+  }
+
+  probe_http2_operate_headers(ctx, k_probe_http2_server_operate_headers, fd, frame_ptr);
 
   return 0;
 }
@@ -537,7 +554,7 @@ int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
   bpf_probe_read(&conn_intf, sizeof(conn_intf), http2serverConn_ptr + kHTTP2ServerConnFieldOffset);
 
   int32_t fd = get_fd_from_conn_intf(conn_intf);
-  if (fd < 0) {
+  if (fd == kInvalidFD) {
     return 0;
   }
 
@@ -545,13 +562,15 @@ int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
   // Wrap-ups
   // ------------------------------------------------------
 
-  submit_headers(ctx, kHeaderEventRead, fd, stream_id, end_stream, fields);
+  submit_headers(ctx, k_probe_http_http2serverConn_processHeaders, kHeaderEventRead, fd, stream_id,
+                 end_stream, fields);
 
   return 0;
 }
 
-static __inline void submit_header(struct pt_regs* ctx, enum HeaderEventType type,
-                                   void* encoder_ptr, struct HPackHeaderField* header_field_ptr) {
+static __inline void submit_header(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
+                                   enum HeaderEventType type, void* encoder_ptr,
+                                   struct HPackHeaderField* header_field_ptr) {
   struct header_attr_t* attr = active_write_headers_frame_map.lookup(&encoder_ptr);
   if (attr == NULL) {
     return;
@@ -561,6 +580,7 @@ static __inline void submit_header(struct pt_regs* ctx, enum HeaderEventType typ
   bpf_probe_read(&header_field, sizeof(header_field), header_field_ptr);
 
   struct go_grpc_http2_header_event_t event = {};
+  event.attr.probe_type = probe_type;
   event.attr.type = type;
   event.attr.timestamp_ns = bpf_ktime_get_ns();
   event.attr.conn_id = attr->conn_id;
@@ -596,7 +616,7 @@ int probe_hpack_header_encoder(struct pt_regs* ctx) {
   struct HPackHeaderField header_field;
   bpf_probe_read(&header_field, sizeof(struct HPackHeaderField), sp + kParam1Offset);
 
-  submit_header(ctx, kHeaderEventWrite, encoder_ptr, &header_field);
+  submit_header(ctx, k_probe_hpack_header_encoder, kHeaderEventWrite, encoder_ptr, &header_field);
 
   return 0;
 }
@@ -656,7 +676,10 @@ int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
   struct go_interface conn_intf;
   bpf_probe_read(&conn_intf, sizeof(conn_intf), http2serverConn_ptr + kWriteContextConnOffset);
 
-  int32_t fd = get_fd_from_conn_intf(conn_intf);
+  const int32_t fd = get_fd_from_conn_intf(conn_intf);
+  if (fd == kInvalidFD) {
+    return 0;
+  }
 
   // ------------------------------------------------------
   // Prepare to submit headers to perf buffer
@@ -684,6 +707,7 @@ int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
 
   if (end_stream) {
     struct go_grpc_http2_header_event_t event = {};
+    event.attr.probe_type = k_probe_http_http2writeResHeaders_write_frame;
     event.attr.type = kHeaderEventWrite;
     event.attr.timestamp_ns = bpf_ktime_get_ns();
     event.attr.conn_id = conn_info->conn_id;
@@ -847,7 +871,8 @@ static __inline void probe_check_frame_order(struct pt_regs* ctx, enum FramerTyp
   }
 }
 
-// Probe for the golang.org/x/net/http2 library's HTTP2 frame reader.
+// Probes golang.org/x/net/http2.Framer for payload.
+//
 // As a proxy for the return probe on ReadFrame(), we currently probe checkFrameOrder,
 // since return probes don't work for Go.
 //
@@ -859,11 +884,13 @@ static __inline void probe_check_frame_order(struct pt_regs* ctx, enum FramerTyp
 //
 // Verified to be stable from at least go1.6 to t go.1.13.
 int probe_http2_framer_check_frame_order(struct pt_regs* ctx) {
+  bpf_trace_printk("probe_http2_framer_check_frame_order()\n");
   probe_check_frame_order(ctx, khttp2_Framer);
   return 0;
 }
 
-// Probe for the net/http library's frame reader.
+// Probes golang.org/net/http.http2Framer for HTTP2 payload.
+//
 // As a proxy for the return probe on ReadFrame(), we currently probe checkFrameOrder,
 // since return probes don't work for Go.
 //

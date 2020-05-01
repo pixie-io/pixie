@@ -32,6 +32,8 @@ class NVMap : public std::multimap<std::string, std::string> {
     }
     return default_value;
   }
+
+  std::string DebugString() const { return absl::StrJoin(*this, ", ", absl::PairFormatter(":")); }
 };
 
 /**

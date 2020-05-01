@@ -32,6 +32,21 @@
 namespace pl {
 namespace stirling {
 
+inline std::string DebugString(const struct go_grpc_http2_header_event_t::header_attr_t& attr) {
+  return absl::Substitute(
+      "[probe_type=$0] [type=$1] [timestamp_ns=$2] [conn_id=$3] [stream_id=$4] [end_stream=$5] ",
+      magic_enum::enum_name(attr.probe_type), magic_enum::enum_name(attr.type), attr.timestamp_ns,
+      ToString(attr.conn_id), attr.stream_id, attr.end_stream);
+}
+
+inline std::string DebugString(const struct go_grpc_data_event_t::data_attr_t& attr) {
+  return absl::Substitute(
+      "[probe_type=$0] [type=$1] [timestamp_ns=$2] [conn_id=$3] [stream_id=$4] [end_stream=$5] "
+      "[data_len=$6]",
+      magic_enum::enum_name(attr.probe_type), magic_enum::enum_name(attr.type), attr.timestamp_ns,
+      ToString(attr.conn_id), attr.stream_id, attr.end_stream, attr.data_len);
+}
+
 struct HTTP2DataEvent {
   HTTP2DataEvent() : attr{}, payload{} {}
   explicit HTTP2DataEvent(const void* data) {
@@ -42,6 +57,11 @@ struct HTTP2DataEvent {
     size_t payload_len = std::min<size_t>(attr.data_len, sizeof(go_grpc_data_event_t::data));
     payload.assign(payload_ptr, payload_len);
   }
+
+  std::string DebugString() const {
+    return absl::Substitute("[attr=$0] [payload=$1]", ::pl::stirling::DebugString(attr), payload);
+  }
+
   go_grpc_data_event_t::data_attr_t attr;
   // TODO(oazizi/yzhao): payload will be copied into ConnectionTracker/DataStream's internal buffer.
   // It appears we should use string_view here.
@@ -77,6 +97,12 @@ struct HTTP2HeaderEvent {
     value.assign(value_data_ptr,
                  std::min<uint32_t>(value_len, sizeof(go_grpc_http2_header_event_t::value)));
   }
+
+  std::string DebugString() const {
+    return absl::Substitute("[attr=$0] [name=$1] [value=$2]", ::pl::stirling::DebugString(attr),
+                            name, value);
+  }
+
   go_grpc_http2_header_event_t::header_attr_t attr;
   std::string name;
   std::string value;

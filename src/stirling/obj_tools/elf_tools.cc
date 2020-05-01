@@ -36,6 +36,8 @@ struct LowercaseHex {
 
 StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(const std::string& binary_path,
                                                        std::string_view debug_file_dir) {
+  VLOG(1) << absl::Substitute("Creating ElfReader, [binary=$0] [debug_file_dir=$1]", binary_path,
+                              debug_file_dir);
   auto elf_reader = std::unique_ptr<ElfReader>(new ElfReader);
 
   elf_reader->binary_path_ = binary_path;
@@ -52,8 +54,6 @@ StatusOr<std::unique_ptr<ElfReader>> ElfReader::Create(const std::string& binary
   ELFIO::Elf_Half sec_num = elf_reader->elf_reader_.sections.size();
   for (int i = 0; i < sec_num; ++i) {
     ELFIO::section* psec = elf_reader->elf_reader_.sections[i];
-    VLOG(1) << absl::Substitute("$0 $1", psec->get_type(), psec->get_name());
-
     if (psec->get_type() == SHT_SYMTAB) {
       found_symtab = true;
     }

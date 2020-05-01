@@ -20,7 +20,7 @@ struct HalfStream {
   http2::NVMap headers;
   std::string data;
   http2::NVMap trailers;
-  bool end_stream;
+  bool end_stream = false;
 
   void UpdateTimestamp(uint64_t t) {
     if (timestamp_ns == 0) {
@@ -34,6 +34,11 @@ struct HalfStream {
     return sizeof(HalfStream) + data.size() + CountStringMapSize(headers) +
            CountStringMapSize(trailers);
   }
+
+  std::string DebugString() const {
+    return absl::Substitute("[headers=$0] [data=$1] [trailers=$2] [end_stream=$3",
+                            headers.DebugString(), data, trailers.DebugString(), end_stream);
+  }
 };
 
 // This struct represents an HTTP2 stream (https://http2.github.io/http2-spec/#StreamsLayer).
@@ -46,6 +51,10 @@ struct Stream {
   bool StreamEnded() { return send.end_stream && recv.end_stream; }
   bool consumed = false;
   size_t ByteSize() const { return send.ByteSize() + recv.ByteSize(); }
+
+  std::string DebugString() const {
+    return absl::Substitute("[send=$0] [recv=$1]", send.DebugString(), recv.DebugString());
+  }
 };
 
 using Record = Stream;
