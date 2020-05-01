@@ -18,6 +18,18 @@ using ::testing::ElementsAre;
 using ::testing::Field;
 using ::testing::IsEmpty;
 
+template <typename TagMatcher, typename LengthType, typename PayloadMatcher>
+auto IsRegularMessage(TagMatcher tag, LengthType len, PayloadMatcher payload) {
+  return AllOf(Field(&RegularMessage::tag, tag), Field(&RegularMessage::len, len),
+               Field(&RegularMessage::payload, payload));
+}
+
+template <typename PayloadMatcher>
+auto HasPayloads(PayloadMatcher req_payload, PayloadMatcher resp_payload) {
+  return AllOf(Field(&Record::req, Field(&RegularMessage::payload, req_payload)),
+               Field(&Record::resp, Field(&RegularMessage::payload, resp_payload)));
+}
+
 const std::string_view kQueryTestData =
     CreateStringView<char>("Q\000\000\000\033select * from account;\000");
 const std::string_view kStartupMsgTestData = CreateStringView<char>(
@@ -25,12 +37,6 @@ const std::string_view kStartupMsgTestData = CreateStringView<char>(
     "database\x00postgres\x00"
     "application_name\x00psql\x00"
     "client_encoding\x00UTF8\x00\x00");
-
-template <typename TagMatcher, typename LengthType, typename PayloadMatcher>
-auto IsRegularMessage(TagMatcher tag, LengthType len, PayloadMatcher payload) {
-  return AllOf(Field(&RegularMessage::tag, tag), Field(&RegularMessage::len, len),
-               Field(&RegularMessage::payload, payload));
-}
 
 TEST(PGSQLParseTest, BasicMessage) {
   std::string_view data = kQueryTestData;
@@ -135,6 +141,94 @@ TEST(PGSQLParseTest, AssembleQueryRespFailures) {
   EXPECT_NOT_OK(AssembleQueryResp(&begin, end));
 }
 
+const std::string_view kReadyForQueryMsg = CreateStringView<char>("Z\000\000\000\005I");
+const std::string_view kSyncMsg = CreateStringView<char>("S\000\000\000\004");
+
+const std::string_view kParseMsg = CreateStringView<char>(
+    // Parse
+    "P"
+    "\000\000\000\251"  // 169, payload is the next 165 bytes.
+    "\000"
+    "select t.oid, t.typname, t.typbasetype\n"
+    "from pg_type t\n"
+    "  join pg_type base_type on t.typbasetype=base_type.oid\n"
+    "where t.typtype = \'d\'\n"
+    "  and base_type.typtype = \'b\'\000\000\000"
+    // kDesc
+    "D\000\000\000\006S\000"
+    // kSync
+    "S\000\000\000\004"
+    // kBind
+    "B\000\000\000\020\000\000\000\000\000\000\000\002\000\001\000\001"
+    // kExecute
+    "E\000\000\000\011\000\000\000\000\000");
+
+const std::string_view kParseRespMsg = CreateStringView<char>(
+    // kParseComplete
+    "1\000\000\000\004"
+    // kParamDesc
+    "t\000\000\000\006\000\000"
+    // kRowDesc
+    "T\000\000\000\124"
+    // 3 fields
+    "\000\003"
+    "oid\000\000\000\004\337\377\376\000\000\000\032\000\004\377\377\377\377\000\000"
+    "typname\000\000\000\004\337\000\001\000\000\000\023\000@\377\377\377\377\000\000"
+    "typbasetype\000\000\000\004\337\000\030\000\000\000\032\000\004\377\377\377\377\000\000"
+    // kReadyForQuery
+    "Z\000\000\000\005I"
+    // kBindComplete
+    "2\000\000\000\004"
+    // kDataRow
+    "D\000\000\000)\000\003\000\000\000\004\000\0001\361\000\000\000\017cardinal_"
+    "number\000\000\000\004\000\000\000\027"
+    "D\000\000\000#\000\003\000\000\000\004\000\0001\375\000\000\000\tyes_or_"
+    "no\000\000\000\004\000\000\004\023"
+    "D\000\000\000(\000\003\000\000\000\004\000\0001\366\000\000\000\016sql_"
+    "identifier\000\000\000\004\000\000\004\023"
+    "D\000\000\000(\000\003\000\000\000\004\000\0001\364\000\000\000\016character_"
+    "data\000\000\000\004\000\000\004\023"
+    "D\000\000\000$\000\003\000\000\000\004\000\0001\373\000\000\000\ntime_"
+    "stamp\000\000\000\004\000\000\004\240"
+    // kCmdComplete
+    "C\000\000\000\rSELECT 5\000");
+
+StatusOr<std::deque<RegularMessage>> ParseRegularMessages(std::string_view data) {
+  std::deque<RegularMessage> msgs;
+  RegularMessage msg = {};
+  while (ParseRegularMessage(&data, &msg) == ParseState::kSuccess) {
+    msgs.push_back(std::move(msg));
+  }
+  if (!data.empty()) {
+    return error::InvalidArgument("Some data are not parsed");
+  }
+  return msgs;
+}
+
+TEST(ProcessFramesTest, GetParseReqMsgs) {
+  ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> reqs, ParseRegularMessages(kParseMsg));
+  ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> resps, ParseRegularMessages(kParseRespMsg));
+
+  RecordsWithErrorCount<pgsql::Record> records_and_err_count = ProcessFrames(&reqs, &resps);
+  EXPECT_THAT(reqs, IsEmpty());
+  EXPECT_THAT(resps, IsEmpty());
+  EXPECT_NE(0, records_and_err_count.records.front().req.payload.size());
+  EXPECT_THAT(records_and_err_count.records,
+              ElementsAre(HasPayloads(
+                  CreateStringView<char>("select t.oid, t.typname, t.typbasetype\n"
+                                         "from pg_type t\n"
+                                         "  join pg_type base_type on t.typbasetype=base_type.oid\n"
+                                         "where t.typtype = 'd'\n"
+                                         "  and base_type.typtype = 'b'"),
+                  CreateStringView<char>("oid,typname,typbasetype\n"
+                                         "\0\0\x31\xF1,cardinal_number,\0\0\0\x17\n"
+                                         "\0\0\x31\xFD,yes_or_no,\0\0\x4\x13\n"
+                                         "\0\0\x31\xF6,sql_identifier,\0\0\x4\x13\n"
+                                         "\0\0\x31\xF4,character_data,\0\0\x4\x13\n"
+                                         "\0\0\x31\xFB,time_stamp,\0\0\x4\xA0\nSELECT 5"))));
+  EXPECT_EQ(0, records_and_err_count.error_count);
+}
+
 const std::string_view kCmdCompleteData = CreateStringView<char>("C\000\000\000\rSELECT 1\000");
 
 TEST(ProcessFramesTest, MatchQueryAndRowDesc) {
@@ -162,12 +256,10 @@ TEST(ProcessFramesTest, MatchQueryAndRowDesc) {
   EXPECT_THAT(reqs, IsEmpty());
   EXPECT_THAT(resps, IsEmpty());
   EXPECT_THAT(records_and_err_count.records,
-              ElementsAre(AllOf(
-                  Field(&Record::req, Field(&RegularMessage::payload, "select * from table;")),
-                  Field(&Record::resp, Field(&RegularMessage::payload,
-                                             "Name,Owner,Encoding,Collate,Ctype,Access privileges\n"
-                                             "postgres,postgres,UTF8,en_US.utf8,en_US.utf8,[NULL]\n"
-                                             "SELECT 1")))));
+              ElementsAre(HasPayloads("select * from table;",
+                                      "Name,Owner,Encoding,Collate,Ctype,Access privileges\n"
+                                      "postgres,postgres,UTF8,en_US.utf8,en_US.utf8,[NULL]\n"
+                                      "SELECT 1")));
   EXPECT_EQ(0, records_and_err_count.error_count);
 }
 
@@ -190,10 +282,31 @@ TEST(ProcessFramesTest, DropTable) {
   RecordsWithErrorCount<pgsql::Record> records_and_err_count = ProcessFrames(&reqs, &resps);
   EXPECT_THAT(reqs, IsEmpty());
   EXPECT_THAT(resps, IsEmpty());
-  EXPECT_THAT(
-      records_and_err_count.records,
-      ElementsAre(AllOf(Field(&Record::req, Field(&RegularMessage::payload, "drop table foo;")),
-                        Field(&Record::resp, Field(&RegularMessage::payload, "DROP TABLE")))));
+  EXPECT_THAT(records_and_err_count.records,
+              ElementsAre(HasPayloads("drop table foo;", "DROP TABLE")));
+  EXPECT_EQ(0, records_and_err_count.error_count);
+}
+
+const std::string_view kRollbackMsg =
+    CreateStringView<char>("\x51\x00\x00\x00\x0d\x52\x4f\x4c\x4c\x42\x41\x43\x4b\x00");
+const std::string_view kRollbackCmplMsg =
+    CreateStringView<char>("\x43\x00\x00\x00\x0d\x52\x4f\x4c\x4c\x42\x41\x43\x4b\x00");
+
+TEST(ProcessFramesTest, Rollback) {
+  RegularMessage rollback_msg = {};
+  std::string_view data = kRollbackMsg;
+  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &rollback_msg));
+
+  RegularMessage cmpl_msg = {};
+  data = kRollbackCmplMsg;
+  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &cmpl_msg));
+
+  std::deque<RegularMessage> reqs = {std::move(rollback_msg)};
+  std::deque<RegularMessage> resps = {std::move(cmpl_msg)};
+  RecordsWithErrorCount<pgsql::Record> records_and_err_count = ProcessFrames(&reqs, &resps);
+  EXPECT_THAT(reqs, IsEmpty());
+  EXPECT_THAT(resps, IsEmpty());
+  EXPECT_THAT(records_and_err_count.records, ElementsAre(HasPayloads("ROLLBACK", "ROLLBACK")));
   EXPECT_EQ(0, records_and_err_count.error_count);
 }
 

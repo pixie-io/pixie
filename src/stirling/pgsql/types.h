@@ -38,8 +38,18 @@ enum class Tag : char {
   kCopyOutResponse = 'H',
   kQuery = 'Q',
   kReadyForQuery = 'Z',
-  kRowDesc = 'T',
   kDataRow = 'D',
+
+  // All these are sent from client. Some tag are duplicate with the above ones.
+  kParse = 'P',
+  kDesc = 'D',
+  kSync = 'S',
+  kExecute = 'E',
+
+  // From server.
+  kParseComplete = '1',
+  kParamDesc = 't',
+  kRowDesc = 'T',
 
   // TODO(yzhao): More tags to be added.
 };
@@ -56,6 +66,10 @@ struct RegularMessage : public stirling::FrameBase {
   std::string payload;
 
   size_t ByteSize() const override { return 5 + payload.size(); }
+  std::string DebugString() const {
+    return absl::Substitute("[tag: $0] [len: $1] [payload: $2]", static_cast<char>(tag), len,
+                            payload);
+  }
 };
 
 struct Query : RegularMessage {};

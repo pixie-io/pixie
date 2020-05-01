@@ -34,11 +34,16 @@ RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMess
 using MsgDeqIter = std::deque<RegularMessage>::iterator;
 
 /**
- * Return a formatted string for messages that can form the response for a query.
+ * Returns a formatted string for messages that can form the response for a query.
  * The input result argument begin is modified to point to the next message that has not been
  * examined yet.
  */
 StatusOr<RegularMessage> AssembleQueryResp(MsgDeqIter* begin, const MsgDeqIter& end);
+
+/**
+ * Returns a list of RegularMessage corresponding to the Parse-bind-execute sequence request.
+ */
+StatusOr<std::vector<RegularMessage>> GetParseReqMsgs(MsgDeqIter* begin, const MsgDeqIter& end);
 
 RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<RegularMessage>* reqs,
                                                    std::deque<RegularMessage>* resps);

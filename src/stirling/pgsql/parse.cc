@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <set>
 #include <string>
 #include <utility>
 
@@ -36,10 +37,6 @@ ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg) {
   msg->payload = std::string(str_view);
 
   *buf = decoder.Buf();
-  if (msg->tag == Tag::kCmdComplete) {
-    // The last character of a kCmdComplete is '\0'.
-    msg->payload.pop_back();
-  }
   return ParseState::kSuccess;
 }
 
@@ -95,9 +92,11 @@ void AdvanceIterBeyondTimestamp(MsgDeqIter* start, const MsgDeqIter& end, uint64
 }
 
 struct TagMatcher {
-  explicit TagMatcher(Tag tag) : target_tag(tag) {}
-  bool operator()(const RegularMessage& msg) { return msg.tag == target_tag; }
-  Tag target_tag;
+  explicit TagMatcher(std::set<Tag> tags) : target_tags(std::move(tags)) {}
+  bool operator()(const RegularMessage& msg) {
+    return target_tags.find(msg.tag) != target_tags.end();
+  }
+  std::set<Tag> target_tags;
 };
 
 #define PL_ASSIGN_OR_RETURN_RES(expr, val_or, res) PL_ASSIGN_OR(expr, val_or, return res)
@@ -197,12 +196,9 @@ class DequeView {
   Iteraotr end_;
 };
 
-// Returns a list of messages that before ends with a kCmdComplete message.
+// Returns a list of messages that before ends with a kCmdComplete or kErrResp message.
 DequeView<RegularMessage> GetCmdRespMsgs(MsgDeqIter* begin, MsgDeqIter end) {
-  auto resp_iter = std::find_if(*begin, end, TagMatcher(Tag::kCmdComplete));
-  if (resp_iter == end) {
-    resp_iter = std::find_if(*begin, end, TagMatcher(Tag::kErrResp));
-  }
+  auto resp_iter = std::find_if(*begin, end, TagMatcher({Tag::kCmdComplete, Tag::kErrResp}));
   if (resp_iter == end) {
     return {end, end};
   }
@@ -238,7 +234,7 @@ std::string_view FmtErrorResp(const RegularMessage& msg) {
 
 // TODO(yzhao): Do not call parsing functions.
 std::string FmtSelectResp(const DequeView<RegularMessage>& msgs) {
-  auto row_desc_iter = std::find_if(msgs.Begin(), msgs.End(), TagMatcher(Tag::kRowDesc));
+  auto row_desc_iter = std::find_if(msgs.Begin(), msgs.End(), TagMatcher({Tag::kRowDesc}));
   ECHECK(row_desc_iter != msgs.End()) << "Failed to find kRowDesc message in SELECT response.";
 
   std::string res;
@@ -248,6 +244,12 @@ std::string FmtSelectResp(const DequeView<RegularMessage>& msgs) {
     absl::StrAppend(&res, "\n");
   }
   for (size_t i = 1; i < msgs.Size() - 1; ++i) {
+    // kDataRow messages can mixed with other responses in an extended query, in which protocol
+    // parsing, parameter binding, execution are separated into multiple request & response
+    // exchanges.
+    if (msgs[i].tag != Tag::kDataRow) {
+      continue;
+    }
     std::vector<std::optional<std::string_view>> data_row = ParseDataRow(msgs[i].payload);
     absl::StrAppend(&res,
                     absl::StrJoin(data_row, ",",
@@ -289,6 +291,21 @@ std::string FmtCmdResp(const DequeView<RegularMessage>& msgs) {
   return {};
 }
 
+std::string_view StripZeroChar(std::string_view str) {
+  while (!str.empty() && str.back() == '\0') {
+    str.remove_suffix(1);
+  }
+  while (!str.empty() && str.front() == '\0') {
+    str.remove_prefix(1);
+  }
+  return str;
+}
+
+void StripZeroChar(Record* record) {
+  record->req.payload = StripZeroChar(record->req.payload);
+  record->resp.payload = StripZeroChar(record->resp.payload);
+}
+
 }  // namespace
 
 // Find the messages of query response. The result argument begin is advanced past the right most
@@ -305,6 +322,26 @@ StatusOr<RegularMessage> AssembleQueryResp(MsgDeqIter* begin, const MsgDeqIter& 
   msg.timestamp_ns = msgs.Front().timestamp_ns;
   msg.payload = std::move(text);
   return msg;
+}
+
+// Returns all messages until the first kExecute message. Some of the returned messages are used to
+// format a request message. As of 2020-04, only the first kParse message's payload is included in
+// the request message, all others are discarded.
+StatusOr<std::vector<RegularMessage>> GetParseReqMsgs(MsgDeqIter* begin, const MsgDeqIter& end) {
+  auto kExec_iter = std::find_if(*begin, end, TagMatcher({Tag::kExecute}));
+  if (kExec_iter == end) {
+    return error::InvalidArgument("Could not find kExec message");
+  }
+  std::vector<RegularMessage> msgs;
+  for (auto iter = *begin; iter != kExec_iter; ++iter) {
+    msgs.push_back(std::move(*iter));
+  }
+  ++kExec_iter;
+  *begin = kExec_iter;
+  if (msgs.empty()) {
+    return error::InvalidArgument("Did not find any messages");
+  }
+  return msgs;
 }
 
 RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMessage>* reqs,
@@ -329,12 +366,17 @@ RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMess
   // TODO(yzhao): Research batch and pipeline mode and confirm their behaviors.
   while (req_iter != reqs->end() && resp_iter != resps->end()) {
     // First advance response iterator to be at or later than the request's time stamp.
+    // This can:
+    // * Skip kReadyForQuery message, which appears before any of request messages.
     AdvanceIterBeyondTimestamp(&resp_iter, resps->end(), req_iter->timestamp_ns);
 
     // TODO(yzhao): Use a map to encode request type and the actions to find the response.
     // So we can get rid of the switch statement. That also include AdvanceIterBeyondTimestamp()
     // into the handler functions, such that the logic is more grouped.
     switch (req_iter->tag) {
+      case Tag::kReadyForQuery:
+        VLOG(1) << "Skip Tag::kReadyForQuery.";
+        break;
       // NOTE: kPasswd message is a response by client to the authenticate request.
       // But it was still classified as request to server from client, according to our model.
       // And we just ignore such message, and kAuth message as well.
@@ -345,13 +387,36 @@ RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMess
       case Tag::kQuery: {
         auto query_resp_or = AssembleQueryResp(&resp_iter, resps->end());
         if (query_resp_or.ok()) {
-          records.push_back({std::move(*req_iter), query_resp_or.ConsumeValueOrDie()});
+          Record record{std::move(*req_iter), query_resp_or.ConsumeValueOrDie()};
+          StripZeroChar(&record);
+          records.push_back(std::move(record));
         } else {
           ++error_count;
           VLOG(1) << "Failed to assemble query response message, status: "
                   << query_resp_or.ToString();
         }
         ++req_iter;
+        break;
+      }
+      case Tag::kParse: {
+        auto req_msgs_or = GetParseReqMsgs(&req_iter, reqs->end());
+        if (!req_msgs_or.ok()) {
+          ++error_count;
+          VLOG(1) << "Failed to assemble parse request messages, status: "
+                  << req_msgs_or.ToString();
+          break;
+        }
+        auto query_resp_or = AssembleQueryResp(&resp_iter, resps->end());
+        if (!query_resp_or.ok()) {
+          ++error_count;
+          VLOG(1) << "Failed to assemble query response message, status: "
+                  << query_resp_or.ToString();
+          break;
+        }
+        Record record{std::move(req_msgs_or.ConsumeValueOrDie().front()),
+                      query_resp_or.ConsumeValueOrDie()};
+        StripZeroChar(&record);
+        records.push_back(std::move(record));
         break;
       }
       default:
