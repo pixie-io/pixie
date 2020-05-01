@@ -17,7 +17,8 @@ pl_cc_library(
     ),
     deps = [
         "//src/carnot/udf:cc_library",
-        "@com_github_threadstacks//threadstacks:signal_handler",
+        "//src/shared/version:cc_library",
         "//src/vizier/funcs/context:cc_library",
+        "@com_github_threadstacks//threadstacks:signal_handler",
     ],
 )

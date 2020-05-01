@@ -8,6 +8,7 @@ namespace internal {
 
 void RegisterFuncsOrDie(carnot::udf::Registry* registry) {
   registry->RegisterOrDie<StackTracerUDTF>("_DebugStackTrace");
+  registry->RegisterOrDie<KelvinVersionUDTF>("Version");
 }
 
 }  // namespace internal
