@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import * as React from 'react';
 
-import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 interface LazyPanelProps {
   show: boolean;
@@ -12,9 +12,8 @@ interface LazyPanelProps {
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     panel: {
-      display: 'none',
-      '&.visible': {
-        display: 'block',
+      '&:not(.visible)': {
+        display: 'none',
       },
     },
   }));

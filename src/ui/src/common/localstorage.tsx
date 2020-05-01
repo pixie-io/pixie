@@ -5,6 +5,8 @@ export const LIVE_VIEW_EDITOR_OPENED_KEY = 'px-live-editor-opened';
 export const LIVE_VIEW_PIXIE_SCRIPT_KEY = 'px-live-pixie-script';
 export const LIVE_VIEW_TITLE_KEY = 'px-live-title';
 export const LIVE_VIEW_VIS_SPEC_KEY = 'px-live-vis';
+export const LIVE_VIEW_EDITOR_SPLITS_KEY = 'px-live-editor-splits';
+export const LIVE_VIEW_DATA_DRAWER_SPLITS_KEY = 'px-live-data-drawer-splits';
 
 type LocalStorageKey =
   typeof LIVE_VIEW_DATA_DRAWER_OPENED_KEY |
@@ -12,7 +14,9 @@ type LocalStorageKey =
   typeof LIVE_VIEW_EDITOR_OPENED_KEY |
   typeof LIVE_VIEW_PIXIE_SCRIPT_KEY |
   typeof LIVE_VIEW_TITLE_KEY |
-  typeof LIVE_VIEW_VIS_SPEC_KEY;
+  typeof LIVE_VIEW_VIS_SPEC_KEY |
+  typeof LIVE_VIEW_EDITOR_SPLITS_KEY |
+  typeof LIVE_VIEW_DATA_DRAWER_SPLITS_KEY;
 
 export function getLiveViewVisSpec(): string {
   return localStorage.getItem(LIVE_VIEW_VIS_SPEC_KEY) || '';

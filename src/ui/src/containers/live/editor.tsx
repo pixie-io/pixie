@@ -1,26 +1,39 @@
+import clsx from 'clsx';
 import * as ls from 'common/localstorage';
-import {CodeEditor} from 'components/code-editor';
+import { CodeEditor } from 'components/code-editor';
 import LazyPanel from 'components/lazy-panel';
-import {parseSpecs} from 'components/vega/spec';
+import { parseSpecs } from 'components/vega/spec';
 import * as React from 'react';
-import {debounce} from 'utils/debounce';
+import Split from 'react-split';
+import { debounce } from 'utils/debounce';
 
 import IconButton from '@material-ui/core/IconButton';
-import {createStyles, makeStyles, Theme, withStyles} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme, useTheme, withStyles } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import CloseIcon from '@material-ui/icons/Close';
 
-import {LiveContext, ScriptContext, VisContext} from './context';
-import {parseVis} from './vis';
+import { LiveContext, ScriptContext, VisContext } from './context';
+import { LayoutContext } from './context/layout-context';
+import { parseVis } from './vis';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     root: {
       height: '100%',
+      color: theme.palette.foreground.one,
+      minWidth: 0,
+      overflowX: 'hidden',
+    },
+    rootPanel: {
+      height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      color: theme.palette.foreground.one,
+    },
+    splits: {
+      '& .gutter:hover': {
+        cursor: 'col-resize',
+      },
     },
     tabs: {
       display: 'flex',
@@ -105,36 +118,85 @@ const StyledTab = withStyles((theme: Theme) =>
   }),
 )(Tab);
 
-interface LiveViewEditorProps {
-  onClose: () => void;
-}
-
-const LiveViewEditor = (props: LiveViewEditorProps) => {
+const LiveViewEditor = () => {
   const classes = useStyles();
   const [tab, setTab] = React.useState('pixie');
+  const { setEditorPanelOpen } = React.useContext(LayoutContext);
+  const closeEditor = () => setEditorPanelOpen(false);
+  const { editorPanelOpen } = React.useContext(LayoutContext);
 
   return (
     <div className={classes.root}>
-      <div className={classes.tabs}>
-        <StyledTabs
-          value={tab}
-          onChange={(event, newTab) => setTab(newTab)}
-        >
-          <StyledTab value='pixie' label='PXL Script' />
-          <StyledTab value='vis' label='Vis Spec' />
-        </StyledTabs>
-        <IconButton onClick={props.onClose}>
-          <CloseIcon />
-        </IconButton>
-      </div>
-      <LazyPanel className={classes.panel} show={tab === 'pixie'}>
-        <ScriptEditor />
-      </LazyPanel>
-      <LazyPanel className={classes.panel} show={tab === 'vis'}>
-        <VisEditor />
+      <LazyPanel show={editorPanelOpen} className={classes.rootPanel}>
+        <div className={classes.tabs}>
+          <StyledTabs
+            value={tab}
+            onChange={(event, newTab) => setTab(newTab)}
+          >
+            <StyledTab value='pixie' label='PXL Script' />
+            <StyledTab value='vis' label='Vis Spec' />
+          </StyledTabs>
+          <IconButton onClick={closeEditor}>
+            <CloseIcon />
+          </IconButton>
+        </div>
+        <LazyPanel className={classes.panel} show={tab === 'pixie'}>
+          <ScriptEditor />
+        </LazyPanel>
+        <LazyPanel className={classes.panel} show={tab === 'vis'}>
+          <VisEditor />
+        </LazyPanel>
       </LazyPanel>
     </div>
   );
 };
 
-export default LiveViewEditor;
+export const EditorSplitPanel = (props) => {
+  const ref = React.useRef(null);
+  const theme = useTheme();
+  const classes = useStyles();
+  const {
+    editorPanelOpen,
+    editorSplitsSizes,
+    setEditorPanelOpen,
+    setEditorSplitSizes,
+  } = React.useContext(LayoutContext);
+
+  const [collapsedPanel, setCollapsedPanel] = React.useState<null | 0>(null);
+
+  const dragHandler = ((sizes) => {
+    if (sizes[0] <= 5) { // Snap the editor close when it is less than 5%.
+      setEditorPanelOpen(false);
+    } else {
+      setEditorPanelOpen(true);
+      setEditorSplitSizes(sizes);
+    }
+  });
+
+  React.useEffect(() => {
+    if (!editorPanelOpen) {
+      setCollapsedPanel(0);
+    } else {
+      setCollapsedPanel(null);
+      ref.current.split.setSizes(editorSplitsSizes);
+    }
+    window.dispatchEvent(new Event('resize'));
+  }, [editorPanelOpen, editorSplitsSizes]);
+
+  return (
+    <Split
+      ref={ref}
+      direction='horizontal'
+      sizes={editorSplitsSizes}
+      className={clsx(props.className, classes.splits)}
+      gutterSize={theme.spacing(0.5)}
+      minSize={0}
+      onDragEnd={dragHandler}
+      collapsed={collapsedPanel}
+      cursor='col-resize'
+    >
+      <LiveViewEditor />
+      {props.children}
+    </Split>
+  );
+};

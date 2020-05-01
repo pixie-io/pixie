@@ -7,6 +7,7 @@ import { parseSpecs, VisualizationSpecMap } from 'components/vega/spec';
 import * as React from 'react';
 import { setQueryParams } from 'utils/query-params';
 
+import { LayoutContext, LayoutContextProvider } from './context/layout-context';
 import { getQueryFuncs, parseVis, Vis } from './vis';
 
 interface LiveContextProps {
@@ -15,7 +16,6 @@ interface LiveContextProps {
   executeScript: (script?: string, vis?: Vis, args?: Arguments) => void;
   updateScript: (code: string) => void;
   updateVis: (spec: Vis) => void;
-  toggleDataDrawer: () => void;
 }
 
 interface Tables {
@@ -46,7 +46,6 @@ export const ResultsContext = React.createContext<Results>(null);
 export const LiveContext = React.createContext<LiveContextProps>(null);
 export const TitleContext = React.createContext<Title>(null);
 export const VisContext = React.createContext<Vis>(null);
-export const DrawerContext = React.createContext<boolean>(false);
 export const ArgsContext = React.createContext<ArgsContextProps>(null);
 
 // Filters the arguments to only those that are specified in Vis.
@@ -84,9 +83,6 @@ const LiveContextProvider = (props) => {
 
   const [title, setTitle] = ls.useLocalStorage<Title>(ls.LIVE_VIEW_TITLE_KEY, null);
 
-  const [dataDrawerOpen, setDataDrawerOpen] = ls.useLocalStorage<boolean>(ls.LIVE_VIEW_DATA_DRAWER_OPENED_KEY, false);
-  const toggleDataDrawer = React.useCallback(() => setDataDrawerOpen((opened) => !opened), []);
-
   // setArgsRaw sets the args without considering the context of the vis.
   // the exported setArgs listens to the vis and only sets those args which are specified in the vis.
   const [args, setArgsRaw] = React.useState<Arguments | null>(null);
@@ -111,6 +107,7 @@ const LiveContextProvider = (props) => {
 
   const showSnackbar = useSnackbar();
 
+  const { setDataDrawerOpen } = React.useContext(LayoutContext);
   const executeScript = React.useCallback((inputScript?: string, inputVis?: Vis, inputArgs?: Arguments) => {
     if (!client) {
       return;
@@ -170,7 +167,6 @@ const LiveContextProvider = (props) => {
     setScripts,
     executeScript,
     updateVis: setVis,
-    toggleDataDrawer,
   }), [executeScript, client]);
 
   return (
@@ -180,9 +176,7 @@ const LiveContextProvider = (props) => {
           <ScriptContext.Provider value={script}>
             <ResultsContext.Provider value={results}>
               <VisContext.Provider value={vis}>
-                <DrawerContext.Provider value={dataDrawerOpen}>
-                  {props.children}
-                </DrawerContext.Provider>
+                {props.children}
               </VisContext.Provider>
             </ResultsContext.Provider>
           </ScriptContext.Provider>
@@ -195,9 +189,11 @@ const LiveContextProvider = (props) => {
 export function withLiveContextProvider(WrappedComponent) {
   return () => (
     <SnackbarProvider>
-      <LiveContextProvider>
-        <WrappedComponent />
-      </LiveContextProvider>
+      <LayoutContextProvider>
+        <LiveContextProvider>
+          <WrappedComponent />
+        </LiveContextProvider>
+      </LayoutContextProvider>
     </SnackbarProvider>
   );
 }
