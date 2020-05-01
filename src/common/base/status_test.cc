@@ -9,6 +9,8 @@
 
 namespace pl {
 
+using ::pl::testing::status::StatusIs;
+
 TEST(Status, Default) {
   Status status;
   EXPECT_TRUE(status.ok());
@@ -133,6 +135,11 @@ TEST(StatusAdapter, from_proto_without_error) {
   auto pb1 = Status::OK().ToProto();
   std::cout << pb1.DebugString() << std::endl;
   EXPECT_TRUE(Status::OK() == StatusAdapter(pb1));
+}
+
+TEST(PrependMessage, ResultsIsAsExpected) {
+  Status s1(pl::statuspb::INTERNAL, "Internal");
+  EXPECT_THAT(s1, StatusIs(pl::statuspb::INTERNAL, "Internal"));
 }
 
 }  // namespace pl

@@ -32,6 +32,12 @@ inline ::testing::PolymorphicMatcher<IsOKAndHoldsMatcher<ValueType>> IsOKAndHold
   return ::testing::MakePolymorphicMatcher(IsOKAndHoldsMatcher(v));
 }
 
+template <typename TMessageMatcherType>
+auto StatusIs(pl::statuspb::Code code, const TMessageMatcherType& msg_matcher) {
+  return ::testing::AllOf(::testing::Property(&Status::code, ::testing::Eq(code)),
+                          ::testing::Property(&Status::msg, msg_matcher));
+}
+
 }  // namespace status
 }  // namespace testing
 }  // namespace pl
