@@ -178,7 +178,7 @@ def format_process_table(df, window_size):
     df.rss_mb = df.rss_bytes / bytes_per_mb
 
     # Convert nanoseconds to milliseconds.
-    df.cpu_utime_ms = df.cpu_ktime_ns / 1.0E6
+    df.cpu_utime_ms = df.cpu_utime_ns / 1.0E6
     df.cpu_ktime_ms = df.cpu_ktime_ns / 1.0E6
     return df
 
