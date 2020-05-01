@@ -36,6 +36,10 @@ const (
 	modalTypeAutocomplete
 )
 
+var (
+	errMissingScript = errors.New("No script provided")
+)
+
 type sortType int
 
 const (
@@ -203,7 +207,7 @@ func (v *View) Stop() {
 func (v *View) runScript(execScript *script.ExecutableScript) {
 	v.clearErrorIfAny()
 	if execScript == nil {
-		v.execCompleteWithError(errors.New("No script provided"))
+		v.execCompleteWithError(errMissingScript)
 		return
 	}
 
@@ -249,9 +253,12 @@ func (v *View) execCompleteWithError(err error) {
 	v.searchClear()
 	v.closeModal()
 
-	m := vizier.FormatErrorMessage(err)
+	var m string
 	if v.s.execScript == nil {
-		m += "\nType '?' for help or ctrl-k to get started."
+		m = "No Script Provided.\n"
+		m += "Type '?' for help or ctrl-k to get started."
+	} else {
+		m = vizier.FormatErrorMessage(err)
 	}
 	tv := tview.NewTextView()
 	tv.SetDynamicColors(true)
