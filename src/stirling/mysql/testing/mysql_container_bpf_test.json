@@ -1,0 +1,218 @@
+[
+    {
+        "req_cmd": "\u0003",
+        "req_msg": "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_general_ci'",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0003",
+        "req_msg": "SET NAMES utf8mb4",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0003",
+        "req_msg": "set autocommit=0",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0003",
+        "req_msg": "CREATE DATABASE employee DEFAULT CHARACTER SET 'utf8'",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0002",
+        "req_msg": "employee",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0003",
+        "req_msg": "CREATE TABLE `employees` (  `emp_no` int(11) NOT NULL AUTO_INCREMENT,  `first_name` varchar(14) NOT NULL,  `last_name` varchar(16) NOT NULL,  `gender` enum('M','F') NOT NULL,  PRIMARY KEY (`emp_no`)) ENGINE=InnoDB",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u000E",
+        "req_msg": "",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0016",
+        "req_msg": "INSERT INTO employees (first_name, last_name, gender) VALUES (?, ?, ?)",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u001A",
+        "req_msg": "",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0017",
+        "req_msg": "INSERT INTO employees (first_name, last_name, gender) VALUES (First0, Last0, M)",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u001A",
+        "req_msg": "",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0017",
+        "req_msg": "INSERT INTO employees (first_name, last_name, gender) VALUES (First1, Last1, F)",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u001A",
+        "req_msg": "",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0017",
+        "req_msg": "INSERT INTO employees (first_name, last_name, gender) VALUES (First2, Last2, M)",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0003",
+        "req_msg": "commit",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0019",
+        "req_msg": "",
+        "req_timestamp": 0,
+        "resp_status": "\u0001",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0016",
+        "req_msg": "SELECT * FROM employees",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u001A",
+        "req_msg": "",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0017",
+        "req_msg": "SELECT * FROM employees",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "Resultset rows = 3",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u001A",
+        "req_msg": "",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0019",
+        "req_msg": "",
+        "req_timestamp": 0,
+        "resp_status": "\u0001",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0001",
+        "req_msg": "",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0003",
+        "req_msg": "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_general_ci'",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0003",
+        "req_msg": "SET NAMES utf8mb4",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0003",
+        "req_msg": "set autocommit=0",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u000E",
+        "req_msg": "",
+        "req_timestamp": 0,
+        "resp_status": "\u0002",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    },
+    {
+        "req_cmd": "\u0001",
+        "req_msg": "",
+        "req_timestamp": 0,
+        "resp_status": "\u0001",
+        "resp_msg": "",
+        "resp_timestamp": 0
+    }
+]
