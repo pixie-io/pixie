@@ -194,6 +194,22 @@ function randStr(length: number): string {
   return _.range(length).map(() => _.random(radix).toString(radix)).join('');
 }
 
+// Creates the time axis configuration. The label expression calls pxTimeFormat.
+function setupTimeXAxis(spec, numTicksExpr: string, separation: number, fontName: string,
+                        fontSize: number) {
+  return extendXEncoding(spec, {
+    axis: {
+      grid: false,
+      tickCount: {
+        signal: `${numTicksExpr}`,
+      },
+      labelExpr: `pxTimeFormat(datum, ceil(width), ${numTicksExpr}, ${separation}, '${
+          fontName}', ${fontSize})`,
+      labelFlush: true,
+    },
+  });
+}
+
 function trimFirstAndLastTimestep(spec) {
   // NOTE(philkuz): These transforms are a hack to remove sampling artifacts created by our
   // range-agg. This should be fixed with the implementation of the window aggregate. A side-effect
@@ -224,6 +240,10 @@ function trimFirstAndLastTimestep(spec) {
 
 function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): VisualizationSpec {
   let spec = BASE_TIMESERIES_SPEC;
+  // TODO(philkuz/reviewer) should this come from somewhere else?
+  const axisLabelSeparationPx = 100;
+  const axisLabelFontName = 'Roboto';
+  const axisLabelFontSize = 10;
 
   if (display.title) {
     spec = {...spec, title: display.title};
@@ -266,7 +286,7 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
   }
 
   let colorField: string;
-  if (timeseries.series ) {
+  if (timeseries.series) {
     colorField = timeseries.series;
   } else {
     // If there is no series provided, then we generate a series column,
@@ -293,6 +313,10 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
   }
 
   spec = extendLayer(spec, layers);
+
+  spec = setupTimeXAxis(spec, 'ceil(width/20)', axisLabelSeparationPx, axisLabelFontName,
+                        axisLabelFontSize);
+
   // NOTE(philkuz): Hack to remove the sampling artifacts created by our range-agg.
   spec = trimFirstAndLastTimestep(spec);
 

@@ -57,7 +57,12 @@ describe('simple timeseries', () => {
       "encoding": {
        "x": {
           "axis": {
-            "grid": false
+            "grid": false,
+            "labelExpr": "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
+            "labelFlush": true,
+            "tickCount": {
+              "signal": "ceil(width/20)",
+            },
           },
           "field": "time_",
           "title": null,
@@ -159,7 +164,12 @@ describe('simple timeseries', () => {
       "encoding": {
        "x": {
           "axis": {
-            "grid": false
+            "grid": false,
+            "labelExpr": "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
+            "labelFlush": true,
+            "tickCount": {
+              "signal": "ceil(width/20)",
+            },
           },
           "field": "time_",
           "title": "My custom x axis title",
@@ -260,7 +270,12 @@ describe('simple timeseries', () => {
       "encoding": {
        "x": {
           "axis": {
-            "grid": false
+            "grid": false,
+            "labelExpr": "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
+            "labelFlush": true,
+            "tickCount": {
+              "signal": "ceil(width/20)",
+            },
           },
           "field": "time_",
           "title": null,
@@ -359,7 +374,12 @@ describe('simple timeseries', () => {
       "encoding": {
        "x": {
           "axis": {
-            "grid": false
+            "grid": false,
+            "labelExpr": "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
+            "labelFlush": true,
+            "tickCount": {
+              "signal": "ceil(width/20)",
+            },
           },
           "field": "time_",
           "title": null,
@@ -457,7 +477,12 @@ describe('timeseries with series', () => {
       "encoding": {
        "x": {
           "axis": {
-            "grid": false
+            "grid": false,
+            "labelExpr": "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
+            "labelFlush": true,
+            "tickCount": {
+              "signal": "ceil(width/20)",
+            },
           },
           "field": "time_",
           "title": null,
@@ -550,7 +575,12 @@ describe('timeseries with series', () => {
       "encoding": {
        "x": {
           "axis": {
-            "grid": false
+            "grid": false,
+            "labelExpr": "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
+            "labelFlush": true,
+            "tickCount": {
+              "signal": "ceil(width/20)",
+            },
           },
           "field": "time_",
           "title": null,

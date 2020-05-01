@@ -8,7 +8,7 @@ interface VegaProps {
   data: Array<{}>;
   spec: VisualizationSpec;
   tableName: string;
-  vegaModule: any;
+  reactVegaModule: any;
   className?: string;
 }
 
@@ -22,7 +22,7 @@ const Vega = React.memo((props: VegaProps) => {
   };
 
   return (
-    <props.vegaModule.Vega
+    <props.reactVegaModule.Vega
       className={props.className}
       spec={inputSpec}
       data={data}

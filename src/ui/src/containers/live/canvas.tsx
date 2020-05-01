@@ -5,6 +5,7 @@ import clsx from 'clsx';
 import { displayToGraph, GraphDisplay } from 'components/chart/graph';
 import { Spinner } from 'components/spinner/spinner';
 import { parseSpecs } from 'components/vega/spec';
+import { addPxTimeFormatExpression } from 'components/vega/timeseries-axis';
 import Vega from 'components/vega/vega';
 import { QueryResultTable } from 'containers/vizier/query-result-viewer';
 import * as React from 'react';
@@ -98,11 +99,19 @@ const Canvas = (props: CanvasProps) => {
   const vis = React.useContext(VisContext);
   const { updateVis } = React.useContext(LiveContext);
   const [vegaModule, setVegaModule] = React.useState(null);
+  const [reactVegaModule, setReactVegaModule] = React.useState(null);
   const [vegaLiteModule, setVegaLiteModule] = React.useState(null);
+
+  // Load react-vega.
+  React.useEffect(() => {
+    import(/* webpackChunkName: "react-vega" webpackPreload: true */ 'react-vega').then((module) => {
+      setReactVegaModule(module);
+    });
+  }, []);
 
   // Load vega.
   React.useEffect(() => {
-    import(/* webpackChunkName: "react-vega" webpackPreload: true */ 'react-vega').then((module) => {
+    import(/* webpackChunkName: "vega" webpackPreload: true */ 'vega').then((module) => {
       setVegaModule(module);
     });
   }, []);
@@ -123,7 +132,7 @@ const Canvas = (props: CanvasProps) => {
   }, [vis]);
 
   const charts = React.useMemo(() => {
-    if (!vegaModule || !vegaLiteModule) {
+    if (!reactVegaModule || !vegaModule) {
       return [];
     }
     return vis.widgets.map((widget, i) => {
@@ -152,6 +161,7 @@ const Canvas = (props: CanvasProps) => {
         try {
           const spec = convertWidgetDisplayToVegaSpec(display as ChartDisplay, name, theme, vegaLiteModule);
           const data = dataFromProto(table.relation, table.data);
+          addPxTimeFormatExpression(vegaModule);
           content = <>
             <div className={classes.widgetTitle}>{name}</div>
             <Vega
@@ -159,7 +169,7 @@ const Canvas = (props: CanvasProps) => {
               data={data}
               spec={spec}
               tableName={name}
-              vegaModule={vegaModule}
+              reactVegaModule={reactVegaModule}
             />
           </>;
         } catch (e) {
@@ -168,7 +178,7 @@ const Canvas = (props: CanvasProps) => {
       }
       return <div key={name} className={className}>{content}</div>;
     });
-  }, [tables, vis, vegaModule, props.editable]);
+  }, [tables, vis, reactVegaModule, props.editable]);
 
   const resize = React.useCallback(() => {
     // Dispatch a window resize event to signal the chart to redraw. As suggested in:
@@ -181,7 +191,7 @@ const Canvas = (props: CanvasProps) => {
     resize();
   }, [vis]);
 
-  if (!vegaModule) {
+  if (!reactVegaModule) {
     return (
       <div className='center-content'><Spinner /></div>
     );
