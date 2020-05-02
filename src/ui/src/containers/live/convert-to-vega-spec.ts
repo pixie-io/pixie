@@ -14,14 +14,16 @@ const VEGA_SCHEMA_SUBSTRING = 'vega.github.io/schema/vega/';
 const VEGA_SCHEMA = '$schema';
 const TIMESERIES_CHART_TYPE = 'pixielabs.ai/pl.vispb.TimeseriesChart';
 export const COLOR_SCALE = 'color';
-const HOVER_LINE_COLOR = '#00dba6';
-const HOVER_LINE_OPACITY = 0.3;
+const HOVER_LINE_COLOR = '#4dffd4';
+const HOVER_LINE_OPACITY = 0.75;
 const HOVER_LINE_DASH = [6, 6];
 const HOVER_LINE_WIDTH = 2;
 const LINE_WIDTH = 1.0;
 const HIGHLIGHTED_LINE_WIDTH = 3.0;
 const SELECTED_LINE_OPACITY = 1.0;
 const UNSELECTED_LINE_OPACITY = 0.2;
+
+const HOVER_BULB_OFFSET = 10;
 
 interface XAxis {
   readonly label: string;
@@ -439,6 +441,7 @@ function addExtrasForTimeseries(vegaSpec, display: TimeseriesDisplay, source: st
 const HOVER_VORONOI = 'hover_voronoi_layer';
 const TIME_FIELD = 'time_';
 const HOVER_RULE = 'hover_rule_layer';
+const HOVER_BULB = 'hover_bulb_layer';
 export const HOVER_SIGNAL = 'hover_value';
 export const EXTERNAL_HOVER_SIGNAL = 'external_hover_value';
 export const INTERNAL_HOVER_SIGNAL = 'internal_hover_value';
@@ -581,6 +584,16 @@ function addHoverSignalsToVgSpec(vegaSpec: VgSpec): VgSpec {
 
 function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
   const marks: Mark[] = [];
+  // Used by both HOVER_RULE and HOVER_BULB.
+  const hoverOpacityEncoding = [
+    {
+      test: `${HOVER_SIGNAL} && datum && (${HOVER_SIGNAL}["${TIME_FIELD}"] === datum["${TIME_FIELD}"])`,
+      value: HOVER_LINE_OPACITY,
+    },
+    {value: 0},
+  ];
+  // The bulb position and the bottom of the rule.
+  const bulbPositionSignal = {signal: `height + ${HOVER_BULB_OFFSET}`};
   // Add mark for vertical line where cursor is.
   marks.push({
     name: HOVER_RULE,
@@ -595,16 +608,32 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
         strokeWidth: {value: HOVER_LINE_WIDTH},
       },
       update: {
-        opacity: [
-          {
-            test: `${HOVER_SIGNAL} && datum && (${HOVER_SIGNAL}["${TIME_FIELD}"] === datum["${TIME_FIELD}"])`,
-            value: HOVER_LINE_OPACITY,
-          },
-          {value: 0},
-        ],
+        opacity: hoverOpacityEncoding,
         x: {scale: 'x', field: TIME_FIELD},
         y: {value: 0},
-        y2: {signal: 'height'},
+        y2: bulbPositionSignal,
+      },
+    },
+  });
+  // Bulb mark.
+  marks.push({
+    name: HOVER_BULB,
+    type: 'symbol',
+    interactive: true,
+    from: {data: HOVER_PIVOT_TRANSFORM},
+    encode: {
+      enter: {
+        fill: {value: HOVER_LINE_COLOR},
+        stroke: {value: HOVER_LINE_COLOR},
+        size: {value: 45},
+        shape: {value: 'circle'},
+        strokeOpacity: {value: 0},
+        strokeWidth: {value: 2},
+      },
+      update: {
+        fillOpacity: hoverOpacityEncoding,
+        x: {scale: 'x', field: TIME_FIELD},
+        y: bulbPositionSignal,
       },
     },
   });
