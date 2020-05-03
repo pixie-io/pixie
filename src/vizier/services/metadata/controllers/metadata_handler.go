@@ -399,7 +399,13 @@ func (mh *MetadataHandler) handleNodeMetadata(o runtime.Object, eType watch.Even
 }
 
 func formatContainerID(cid string) string {
-	return strings.Replace(cid, "docker://", "", 1)
+	// Strip prefixes like docker:// or containerd://
+	tokens := strings.SplitN(cid, "://", 2)
+	if len(tokens) != 2 {
+		log.Error("Container ID is not in the expected format: " + cid)
+		return cid
+	}
+	return tokens[1]
 }
 
 // GetResourceUpdateFromNamespace gets the update info from the given namespace proto.
