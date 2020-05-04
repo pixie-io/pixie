@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 	"sync"
+	"time"
 
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 
@@ -18,25 +19,32 @@ import (
 // and writes log messages to file
 type LogMessageHandler struct {
 	ch        chan *nats.Msg
+	jsonCh    chan []byte
 	nc        *nats.Conn
 	es        *elastic.Client
 	esCtx     context.Context
 	wg        *sync.WaitGroup
 	sub       *nats.Subscription
 	indexName string
+	stats     *logMessageHandlerStats
 }
 
 const bufferSize = 5000
+
+// Number of log messages to group into single bulk index request.
+const indexBlockSize = 1000
 
 // NewLogMessageHandler creates a new handler for log messages.
 func NewLogMessageHandler(esCtx context.Context, nc *nats.Conn, es *elastic.Client, indexName string) *LogMessageHandler {
 	h := &LogMessageHandler{
 		ch:        make(chan *nats.Msg, bufferSize),
+		jsonCh:    make(chan []byte, bufferSize),
 		nc:        nc,
 		es:        es,
 		esCtx:     esCtx,
 		wg:        &sync.WaitGroup{},
 		indexName: indexName,
+		stats:     newStats(),
 	}
 	return h
 }
@@ -82,6 +90,7 @@ func unmarshalNATSMsg(natsMsg *nats.Msg) (string, *cvmsgspb.VLogMessage, error) 
 }
 
 func (h *LogMessageHandler) handleNatsMessage(natsMsg *nats.Msg) {
+	start := time.Now()
 	vizID, logMsg, err := unmarshalNATSMsg(natsMsg)
 	if err != nil {
 		log.WithError(err).Error("Failed to unmarshal NATS msg")
@@ -94,36 +103,80 @@ func (h *LogMessageHandler) handleNatsMessage(natsMsg *nats.Msg) {
 	}
 	JSON["cluster_id"] = vizID
 
-	_, err = h.es.Index().
-		Index(h.indexName).
-		BodyJson(JSON).
-		Do(h.esCtx)
-
+	jsonBytes, err := json.Marshal(JSON)
 	if err != nil {
-		log.WithError(err).WithFields(log.Fields{
-			"VizierID": vizID,
-			"Subject":  natsMsg.Subject,
-		}).Error("Failed to add logmessage to index")
+		log.WithError(err).Error("Failed to marshal json.")
 		return
 	}
 
-	marshaledJSON, err := json.Marshal(JSON)
-	if err != nil {
-		return
+	select {
+	case h.jsonCh <- jsonBytes:
+		h.stats.Prepped(time.Since(start))
+	default:
+		h.stats.Dropped()
 	}
-	log.WithFields(log.Fields{
-		"VizierID": vizID,
-		"JSON":     marshaledJSON,
-	}).Trace("Handled log message")
 }
 
-func (h *LogMessageHandler) run() {
+func (h *LogMessageHandler) runNATSHandler() {
 	h.wg.Add(1)
+	defer h.wg.Done()
+
 	for msg := range h.ch {
 		h.handleNatsMessage(msg)
 	}
+	close(h.jsonCh)
+	h.jsonCh = nil
+}
 
-	h.wg.Done()
+func (h *LogMessageHandler) doBulkIndex(b *elastic.BulkService) {
+	numActions := b.NumberOfActions()
+	start := time.Now()
+	_, err := b.Do(h.esCtx)
+	if err != nil {
+		log.WithError(err).
+			WithField("index", h.indexName).
+			Error("Failed to bulk index log messages.")
+		return
+	}
+	h.stats.Indexed(numActions, time.Since(start))
+}
+
+func (h *LogMessageHandler) runElasticBulkIndexer() {
+	h.wg.Add(1)
+	defer h.wg.Done()
+
+	timeout := time.NewTicker(5 * time.Second)
+	currentBulkReq := h.es.Bulk()
+
+	for {
+		if h.jsonCh == nil {
+			break
+		}
+		doReq := false
+		select {
+		case jsonBytes := <-h.jsonCh:
+			currentBulkReq.Add(elastic.NewBulkIndexRequest().
+				Doc(string(jsonBytes)).
+				Index(h.indexName))
+		case <-timeout.C:
+			if currentBulkReq.NumberOfActions() > 0 {
+				doReq = true
+			}
+		}
+
+		if currentBulkReq.NumberOfActions() >= indexBlockSize {
+			doReq = true
+		}
+
+		if doReq {
+			h.doBulkIndex(currentBulkReq)
+			currentBulkReq = h.es.Bulk()
+		}
+	}
+
+	if currentBulkReq.NumberOfActions() > 0 {
+		h.doBulkIndex(currentBulkReq)
+	}
 }
 
 func (h *LogMessageHandler) subscribeToNatsChannels() {
@@ -143,7 +196,9 @@ func (h *LogMessageHandler) subscribeToNatsChannels() {
 // Start initializes the handler, starts the handler goroutine and then returns.
 func (h *LogMessageHandler) Start() {
 	h.subscribeToNatsChannels()
-	go h.run()
+	go h.runNATSHandler()
+	go h.runElasticBulkIndexer()
+	go h.stats.Run()
 }
 
 // Stop unsubscribes from Nats and then closes the channel and waits for all messages to be handled.
@@ -159,4 +214,86 @@ func (h *LogMessageHandler) Stop() {
 		log.WithError(err).Error("Failed to refresh indices")
 	}
 
+}
+
+type logMessageHandlerStats struct {
+	numIndexCalls int
+	numIndexed    int
+	numPrepped    int
+	numDropped    int
+	timePrepping  time.Duration
+	timeIndexing  time.Duration
+	mux           sync.Mutex
+}
+
+func newStats() *logMessageHandlerStats {
+	s := &logMessageHandlerStats{}
+	return s.reset()
+}
+
+func (s *logMessageHandlerStats) reset() *logMessageHandlerStats {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	s.numIndexCalls = 0
+	s.numIndexed = 0
+	s.numPrepped = 0
+	s.numDropped = 0
+	s.timePrepping = time.Duration(0)
+	s.timeIndexing = time.Duration(0)
+	return s
+}
+
+func (s *logMessageHandlerStats) Indexed(numIndexed int, dur time.Duration) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	s.numIndexCalls++
+	s.numIndexed += numIndexed
+	s.timeIndexing += dur
+}
+
+func (s *logMessageHandlerStats) Dropped() {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	s.numDropped++
+}
+
+func (s *logMessageHandlerStats) Prepped(dur time.Duration) {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+	s.numPrepped++
+	s.timePrepping += dur
+}
+
+func (s *logMessageHandlerStats) PrintStats() {
+	s.mux.Lock()
+	defer s.mux.Unlock()
+
+	var avgPrepTime time.Duration
+	if s.numPrepped == 0 {
+		avgPrepTime = time.Duration(0)
+	} else {
+		avgPrepTime = s.timePrepping / time.Duration(s.numPrepped)
+	}
+	var avgIndexTime time.Duration
+	if s.numIndexCalls == 0 {
+		avgIndexTime = time.Duration(0)
+	} else {
+		avgIndexTime = s.timeIndexing / time.Duration(s.numIndexCalls)
+	}
+
+	log.WithField("avg_prep_time_ms", avgPrepTime.Milliseconds()).
+		WithField("avg_index_time_ms", avgIndexTime.Milliseconds()).
+		WithField("prepped_msgs", s.numPrepped).
+		WithField("indexed_msgs", s.numIndexed).
+		WithField("dropped_msgs", s.numDropped).
+		Info("log_message_handler stats")
+}
+
+func (s *logMessageHandlerStats) Run() {
+	ticker := time.NewTicker(30 * time.Second)
+
+	for range ticker.C {
+		s.PrintStats()
+		s.reset()
+	}
 }
