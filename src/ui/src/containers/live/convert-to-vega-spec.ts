@@ -269,9 +269,11 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
 
   const layers = [];
   layers.push(timeseriesDataLayer(timeseries.value, mark));
+
   if (display.yAxis && display.yAxis.label) {
-    layers[0] = extendYEncoding(layers[0], {title: display.yAxis.label});
+    layers[0] = extendYEncoding(layers[0], { title: display.yAxis.label });
   }
+  layers[0] = extendYEncoding(layers[0], { scale: { zero: false } });
 
   let colorField: string;
   if (timeseries.series) {

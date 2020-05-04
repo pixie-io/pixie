@@ -79,6 +79,9 @@ describe('simple timeseries', () => {
             },
             "y": {
               "field": "bytes_per_second",
+              "scale": {
+                "zero": false
+              },
               "type": "quantitative"
             }
           },
@@ -156,6 +159,9 @@ describe('simple timeseries', () => {
           "encoding": {
             "y": {
               "field": "bytes_per_second",
+              "scale": {
+                "zero": false
+              },
               "title": "My custom y axis title",
               "type": "quantitative"
             },
@@ -235,6 +241,9 @@ describe('simple timeseries', () => {
           "encoding": {
             "y": {
               "field": "bytes_per_second",
+              "scale": {
+                "zero": false
+              },
               "type": "quantitative"
             },
             "color": {
@@ -313,6 +322,9 @@ describe('simple timeseries', () => {
           "encoding": {
             "y": {
               "field": "bytes_per_second",
+              "scale": {
+                "zero": false
+              },
               "type": "quantitative"
             },
             "color": {
@@ -390,6 +402,9 @@ describe('timeseries with series', () => {
           "encoding": {
             "y": {
               "field": "bytes_per_second",
+              "scale": {
+                "zero": false
+              },
               "type": "quantitative"
             },
             "color": {
@@ -464,6 +479,9 @@ describe('timeseries with series', () => {
               "field": "bytes_per_second",
               "type": "quantitative",
               "stack": "zero",
+              "scale": {
+                "zero": false
+              },
               "aggregate": "sum"
             },
             "color": {
