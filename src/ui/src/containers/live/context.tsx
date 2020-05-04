@@ -49,6 +49,21 @@ export const VisContext = React.createContext<Vis>(null);
 export const DrawerContext = React.createContext<boolean>(false);
 export const ArgsContext = React.createContext<ArgsContextProps>(null);
 
+// Filters the arguments to only those that are specified in Vis.
+function argsForVis(vis: Vis, args: Arguments): Arguments {
+  if (!args) {
+    return {};
+  }
+  const visArgs = new Set(vis.variables.map((v) => v.name));
+  const outArgs = {};
+  Object.keys(args).forEach((keyName) => {
+    if (keyName === 'script' || visArgs.has(keyName)) {
+      outArgs[keyName] = args[keyName];
+    }
+  });
+  return outArgs;
+}
+
 const LiveContextProvider = (props) => {
   const [script, setScript] = ls.useLocalStorage(ls.LIVE_VIEW_PIXIE_SCRIPT_KEY, '');
 
@@ -62,8 +77,9 @@ const LiveContextProvider = (props) => {
   const setScripts = React.useCallback((newScript, newVis, newTitle, newArgs) => {
     setScript(newScript);
     setTitle(newTitle);
-    setVis(parseVis(newVis) || { variables: [], widgets: [] });
-    setArgs(newArgs);
+    const parsedVis = parseVis(newVis) || { variables: [], widgets: [] };
+    setVis(parsedVis);
+    setArgsRaw(argsForVis(parsedVis, newArgs));
   }, []);
 
   const [title, setTitle] = ls.useLocalStorage<Title>(ls.LIVE_VIEW_TITLE_KEY, null);
@@ -71,8 +87,20 @@ const LiveContextProvider = (props) => {
   const [dataDrawerOpen, setDataDrawerOpen] = ls.useLocalStorage<boolean>(ls.LIVE_VIEW_DATA_DRAWER_OPENED_KEY, false);
   const toggleDataDrawer = React.useCallback(() => setDataDrawerOpen((opened) => !opened), []);
 
-  const [args, setArgs] = React.useState<Arguments | null>(null);
-  const argsContext = React.useMemo(() => ({ args, setArgs }), [args, setArgs]);
+  // setArgsRaw sets the args without considering the context of the vis.
+  // the exported setArgs listens to the vis and only sets those args which are specified in the vis.
+  const [args, setArgsRaw] = React.useState<Arguments | null>(null);
+
+  const argsContext = React.useMemo(() => {
+    return {
+      // Only return the arguments that apply to the current vis spec.
+      args: argsForVis(vis, args),
+      setArgs: (inputArgs: Arguments) => {
+        return setArgsRaw(argsForVis(vis, inputArgs));
+      },
+    };
+  }, [args, setArgsRaw, vis]);
+
   React.useEffect(() => {
     if (args) {
       setQueryParams(args);
