@@ -27,6 +27,8 @@
 
 DECLARE_bool(enable_unix_domain_sockets);
 
+#define CONN_TRACE LOG_IF(INFO, debug_trace_) << absl::Substitute("$0 ", ToString(conn_id_))
+
 namespace pl {
 namespace stirling {
 
@@ -139,7 +141,13 @@ class ConnectionTracker {
     auto& resp_frames = resp_data()->Frames<TFrameType>();
     auto state_ptr = protocol_state<TStateType>();
 
+    CONN_TRACE << absl::Substitute("req_frames=$0 resp_frames=$1", req_frames.size(),
+                                   resp_frames.size());
+
     RecordsWithErrorCount<TRecordType> result = ProcessFrames(&req_frames, &resp_frames, state_ptr);
+
+    CONN_TRACE << absl::Substitute("records=$0", result.records.size());
+
     stat_invalid_records_ += result.error_count;
     stat_valid_records_ += result.records.size();
 
@@ -485,6 +493,8 @@ class ConnectionTracker {
     bpf_table_info_ = bpf_table_info;
   }
 
+  void SetDebugTrace(bool val) { debug_trace_ = val; }
+
  private:
   void AddConnOpenEvent(const conn_event_t& conn_info);
   void AddConnCloseEvent(const close_event_t& close_event);
@@ -512,6 +522,8 @@ class ConnectionTracker {
     DCHECK(req_data_ptr != nullptr);
     req_data_ptr->template ProcessBytesToFrames<TFrameType>(MessageType::kRequest);
   }
+
+  bool debug_trace_ = false;
 
   // Used to identify the remove endpoint in case the accept/connect was not traced.
   std::unique_ptr<SocketResolver> conn_resolver_ = nullptr;

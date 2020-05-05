@@ -79,6 +79,8 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
 
   PopulateSockAddr(reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
                    &open_info_.remote_addr);
+
+  CONN_TRACE << absl::Substitute("conn_open");
 }
 
 void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
@@ -103,6 +105,9 @@ void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
 void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   SetConnID(event->attr.conn_id);
   SetTrafficClass(event->attr.traffic_class);
+
+  CONN_TRACE << absl::Substitute(
+      "data $0 ...", BytesToString<bytes_format::HexAsciiMix>(event->msg.substr(0, 10)));
 
   // A disabled tracker doesn't collect data events.
   if (state() == State::kDisabled) {
