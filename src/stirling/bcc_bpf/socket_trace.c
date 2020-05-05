@@ -504,15 +504,27 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
  * Perf submit functions
  ***********************************************************/
 
+static __inline bool should_trace_sockaddr_family(sa_family_t sa_family) {
+  return sa_family == AF_UNSPEC || sa_family == AF_INET || sa_family == AF_INET6 ||
+         sa_family == AF_UNIX;
+}
+
 static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_t fd,
-                                     struct sockaddr_in6 addr) {
+                                     const struct sockaddr* addr) {
   struct conn_info_t conn_info = {};
   conn_info.addr_valid = true;
-  conn_info.addr = addr;
+  conn_info.addr = *((struct sockaddr_in6*)addr);
   init_conn_info(tgid, fd, &conn_info);
 
   uint64_t tgid_fd = gen_tgid_fd(tgid, fd);
   conn_info_map.update(&tgid_fd, &conn_info);
+
+  // While we keep all sa_family types in conn_info_map,
+  // we only send connections with supported protocols to user-space.
+  // We use the same filter function to avoid sending data of unwanted connections as well.
+  if (!should_trace_sockaddr_family(addr->sa_family)) {
+    return;
+  }
 
   struct socket_control_event_t conn_event = {};
   conn_event.type = kConnOpen;
@@ -724,7 +736,7 @@ static __inline void process_syscall_connect(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, (uint32_t)args->fd, *((struct sockaddr_in6*)args->addr));
+  submit_new_conn(ctx, tgid, (uint32_t)args->fd, args->addr);
 }
 
 static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
@@ -740,7 +752,7 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  submit_new_conn(ctx, tgid, (uint32_t)ret_fd, *((struct sockaddr_in6*)args->addr));
+  submit_new_conn(ctx, tgid, (uint32_t)ret_fd, args->addr);
 }
 
 static __inline void process_data(struct pt_regs* ctx, uint64_t id,
@@ -771,9 +783,25 @@ static __inline void process_data(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
+  // Note: From this point on, if exiting early, and conn_info->addr_valid == 0,
+  // then call conn_info_map.delete(&tgid_fd) to avoid a BPF map leak.
+
+  uint64_t tgid_fd = gen_tgid_fd(tgid, args->fd);
+
+  // While we keep all sa_family types in conn_info_map,
+  // we only send connections with supported protocols to user-space.
+  if (!should_trace_sockaddr_family(conn_info->addr.sin6_family)) {
+    if (!conn_info->addr_valid) {
+      conn_info_map.delete(&tgid_fd);
+    }
+    return;
+  }
+
   if (conn_info->ssl && !ssl) {
     // This connection is tracking SSL now.
     // Don't report encrypted data.
+    // Also, note this is a special case. We don't delete conn_info_map entry,
+    // because we are still tracking the connection.
     return;
   }
 
@@ -794,9 +822,6 @@ static __inline void process_data(struct pt_regs* ctx, uint64_t id,
     conn_info->traffic_class.protocol = kProtocolUnknown;
   }
 
-  // Note: From this point on, if exiting early, and conn_info->addr_valid == 0,
-  // then call conn_info_map.delete(&tgid_fd) to avoid a BPF map leak.
-
   // TODO(yzhao): Split the interface such that the singular buf case and multiple bufs in msghdr
   // are handled separately without mixed interface. The plan is to factor out helper functions for
   // lower-level functionalities, and call them separately for each case.
@@ -809,8 +834,6 @@ static __inline void process_data(struct pt_regs* ctx, uint64_t id,
     const size_t buf_size = iov_cpy.iov_len < bytes_count ? iov_cpy.iov_len : bytes_count;
     update_traffic_class(conn_info, direction, iov_cpy.iov_base, buf_size);
   }
-
-  uint64_t tgid_fd = gen_tgid_fd(tgid, args->fd);
 
   // Filter for request or response based on control flags and protocol type.
   if (!should_trace_conn(conn_info)) {
