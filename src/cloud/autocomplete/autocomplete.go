@@ -436,7 +436,7 @@ func (cmd *Command) ToFormatString(action cloudapipb.AutocompleteActionType) (fo
 
 		// Append to the formatted string.
 		if t.Value == "" && t.Kind == cloudapipb.AEK_UNKNOWN {
-			fStr += fmt.Sprintf("$%d", idx)
+			fStr += fmt.Sprintf("${%d}", idx)
 		} else {
 			fStr += fmt.Sprintf("${%d:", idx)
 			if t.ArgName != "" {

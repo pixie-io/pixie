@@ -903,7 +903,7 @@ func TestToFormatString(t *testing.T) {
 				Executable: false,
 			},
 			action:      cloudapipb.AAT_EDIT,
-			expectedStr: "${2:run} ${3:script:px/svc_info$0} $1",
+			expectedStr: "${2:run} ${3:script:px/svc_info$0} ${1}",
 			expectedSuggestions: []*cloudapipb.TabSuggestion{
 				&cloudapipb.TabSuggestion{
 					TabIndex:              2,

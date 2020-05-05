@@ -1,10 +1,11 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "go_default_library",
     srcs = [
         "autocomplete.go",
         "details.go",
+        "ebnf_parser.go",
         "help.go",
         "live.go",
         "utils.go",
@@ -16,8 +17,18 @@ go_library(
         "//src/utils/pixie_cli/pkg/script:go_default_library",
         "//src/utils/pixie_cli/pkg/vizier:go_default_library",
         "@com_github_alecthomas_chroma//quick:go_default_library",
+        "@com_github_alecthomas_participle//:go_default_library",
+        "@com_github_alecthomas_participle//lexer:go_default_library",
+        "@com_github_alecthomas_participle//lexer/ebnf:go_default_library",
         "@com_github_gdamore_tcell//:go_default_library",
         "@com_github_rivo_tview//:go_default_library",
         "@com_github_sahilm_fuzzy//:go_default_library",
     ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["ebnf_parser_test.go"],
+    embed = [":go_default_library"],
+    deps = ["@com_github_stretchr_testify//assert:go_default_library"],
 )
