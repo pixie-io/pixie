@@ -13,12 +13,24 @@ Few links to learn more about
 - [Welcome to Colaboratory](https://colab.research.google.com/notebooks/intro.ipynb#scrollTo=5fCEDCU_qrC0)
 
 
+## Prequisites
+
+You'll need the following to use the notebooks: 
+
+- Google account to loginnn
+- Pixie pre-installed in a K8s environment
+
+
+## Notes
+
+- Notebooks currently do not support deployment of a local kubnernets environment to install Pixie. You'll need to log into a cluster with Pixie already running. 
+
 
 ## 🚀 Quickstart
 
+Open any one of the notebooks listed above and follow these steps: 
 
-- Open any of the colab notebooks above
-- Click on "Open with Colab" 
-- You're all set
-
-
+1. Click on "Open in Colab" button on the top
+2. Login with a google account
+3. Follow the instructions 
+4. If you are interested, save a private copy for future reference
