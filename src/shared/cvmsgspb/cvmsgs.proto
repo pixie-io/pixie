@@ -108,9 +108,28 @@ message VizierHeartbeat {
 // only contains name and status, but could contain more information that could
 // help debug in the future.
 message PodStatus {
-    string name = 1; // The name of the pod. Ex: vizier-pem-z26d8
-    pl.shared.k8s.metadatapb.PodPhase status = 2; // The status of the pod.
-    string status_message = 3; // The message for why the pod is in its current status.
+    // The name of the pod. Ex: vizier-pem-z26d8
+    string name = 1;
+    // The status of the pod.
+    pl.shared.k8s.metadatapb.PodPhase status = 2;
+    // The message for why the pod is in its current status.
+    string status_message = 3;
+    // A brief CamelCase message indicating details about why the pod is in this state.
+    string reason = 4;
+    // The containers running in the pod.
+    repeated ContainerStatus containers = 5;
+}
+
+// ContainerStatus represents pa container's status at a moment in time.
+message ContainerStatus {
+    // The name of the container.
+    string name = 1;
+    // The current state of the container.
+    pl.shared.k8s.metadatapb.ContainerState state = 2;
+     // The message for why the container is in its current status.
+    string message = 3;
+    // A brief CamelCase message indicating details about why the container is in this state.
+    string reason = 4;
 }
 
 message VizierHeartbeatAck {

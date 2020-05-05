@@ -176,6 +176,10 @@ message ContainerStatus {
   int64 stop_timestamp_ns = 5 [
                                   (gogoproto.customname) = "StopTimestampNS"
                                   ];
+  // The message for why the container is in its current status.
+  string message = 6;
+  // A brief CamelCase message indicating details about why the container is in this state.
+  string reason = 7;
 }
 
 // PodStatus represents information about the status of a pod.

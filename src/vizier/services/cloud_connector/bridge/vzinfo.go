@@ -176,9 +176,18 @@ func (v *K8sVizierInfo) UpdatePodStatuses() {
 
 		status := metadatapb.PHASE_UNKNOWN
 		msg := ""
+		containers := make([]*cvmsgspb.ContainerStatus, 0)
 		if podPb.Status != nil {
 			status = podPb.Status.Phase
-			msg = podPb.Status.Message
+			msg = podPb.Status.Reason
+			for _, c := range podPb.Status.ContainerStatuses {
+				containers = append(containers, &cvmsgspb.ContainerStatus{
+					Name:    c.Name,
+					Message: c.Message,
+					Reason:  c.Reason,
+					State:   c.ContainerState,
+				})
+			}
 		}
 		name := podPb.Metadata.Name
 
@@ -186,6 +195,7 @@ func (v *K8sVizierInfo) UpdatePodStatuses() {
 			Name:          name,
 			Status:        status,
 			StatusMessage: msg,
+			Containers:    containers,
 		}
 		podMap[name] = s
 	}

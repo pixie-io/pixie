@@ -319,6 +319,7 @@ const waitingContainerStatusPb = `
 name: "test_container"
 container_id: "test_id"
 container_state: 3
+reason: "reason"
 `
 
 const runningContainerStatusPb = `
