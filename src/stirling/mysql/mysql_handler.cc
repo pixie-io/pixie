@@ -230,15 +230,16 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
   size_t warning_count = utils::LEndianBytesToInt<size_t, 2>(first_resp_packet.msg.substr(10));
 
   // TODO(chengruizhe): Handle missing packets more robustly. Assuming no missing packet.
-  // If num_col or num_param is non-zero, they will be followed by EOF.
+  // If num_col or num_param is non-zero, they might be followed by EOF.
   // Reference: https://dev.mysql.com/doc/internals/en/com-stmt-prepare-response.html.
-  size_t expected_num_packets = num_col + num_param + (num_col != 0) + (num_param != 0);
-  if (expected_num_packets > resp_packets.size()) {
+  size_t min_expected_packets = num_col + num_param;
+  if (min_expected_packets > resp_packets.size()) {
     entry->resp.status = MySQLRespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
   }
 
   StmtPrepareRespHeader resp_header{stmt_id, num_col, num_param, warning_count};
+  entry->resp.timestamp_ns = first_resp_packet.timestamp_ns;
 
   // Params come before columns
   std::vector<ColDefinition> param_defs;
@@ -249,15 +250,18 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
 
     ColDefinition param_def{param_def_packet.msg};
     param_defs.push_back(std::move(param_def));
+    entry->resp.timestamp_ns = param_def_packet.timestamp_ns;
   }
 
-  bool client_deprecate_eof = true;
   if (num_param != 0) {
-    RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets);
-    // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
-    if (IsEOFPacket(resp_packets.front())) {
-      resp_packets.pop_front();
-      client_deprecate_eof = false;
+    // Optional EOF packet, based on CLIENT_DEPRECATE_EOF. But difficult to infer
+    // CLIENT_DEPRECATE_EOF because num_param can be zero.
+    if (!resp_packets.empty()) {
+      const Packet& eof_packet = resp_packets.front();
+      if (IsEOFPacket(eof_packet)) {
+        resp_packets.pop_front();
+        entry->resp.timestamp_ns = eof_packet.timestamp_ns;
+      }
     }
   }
 
@@ -274,10 +278,10 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
   }
 
   // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
-  if (!client_deprecate_eof && num_col != 0) {
-    if (resp_packets.empty()) {
-      LOG(ERROR) << "Ignoring EOF packet that is expected, but appears to be missing.";
-    } else {
+  if (num_col != 0) {
+    // Optional EOF packet, based on CLIENT_DEPRECATE_EOF. But difficult to infer
+    // CLIENT_DEPRECATE_EOF because num_param can be zero.
+    if (!resp_packets.empty()) {
       const Packet& eof_packet = resp_packets.front();
       if (IsEOFPacket(eof_packet)) {
         resp_packets.pop_front();

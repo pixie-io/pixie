@@ -86,6 +86,11 @@ TEST(HandleStmtPrepareOKResponse, Valid) {
 
 TEST(HandleStmtPrepareOKResponse, NeedsMoreData) {
   std::deque<Packet> packets = testutils::GenStmtPrepareOKResponse(testdata::kStmtPrepareResponse);
+  // Popping off just one packet would pop off the EOF at the end, but an EOF isn't always required
+  // to be present. So the missing of the last EOF shouldn't trigger NeedsMoreData, but rather just
+  // a warning if not DeprecateEOF. But popping off two packets should definitely trigger
+  // NeedsMoreData.
+  packets.pop_back();
   packets.pop_back();
 
   Record entry;
