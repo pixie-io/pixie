@@ -4,15 +4,18 @@ metadata:
   name: stirling
   namespace: pl-{{USER}}
   labels:
-    app: pl-test
+    app: pl-monitoring
 spec:
+  imagePullSecrets:
+  - name: image-pull-secret
   containers:
   - name: stirling
     image: gcr.io/pl-dev-infra/stirling_wrapper:{{USER}}
+    args: ["--stirling_enable_parsing_protobufs=true"]
     imagePullPolicy: Always
     resources:
       limits:
-        memory: 512Mi
+        memory: 2048Mi
       requests:
         cpu: 100m
         memory: 512Mi
@@ -32,6 +35,8 @@ spec:
     env:
     - name: PL_HOST_PATH
       value: "/host"
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet
   terminationGracePeriodSeconds: 30
   restartPolicy: Never
   volumes:

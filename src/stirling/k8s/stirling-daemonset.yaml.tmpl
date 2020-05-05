@@ -17,6 +17,8 @@ spec:
       tolerations:
       - key: node-role.kubernetes.io/master
         effect: NoSchedule
+      imagePullSecrets:
+      - name: image-pull-secret
       containers:
       - name: stirling-wrapper
         image: gcr.io/pl-dev-infra/stirling_wrapper:{{USER}}
