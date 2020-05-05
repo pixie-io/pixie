@@ -7,41 +7,37 @@
 namespace pl {
 namespace stirling {
 
-absl::flat_hash_map<md::UPID, std::filesystem::path> ProcTracker::ListUPIDs(
-    const std::filesystem::path& proc_path) {
-  absl::flat_hash_map<md::UPID, std::filesystem::path> pids;
+absl::flat_hash_set<md::UPID> ProcTracker::ListUPIDs(const std::filesystem::path& proc_path) {
+  absl::flat_hash_set<md::UPID> pids;
   for (const auto& p : std::filesystem::directory_iterator(proc_path)) {
     uint32_t pid = 0;
     if (!absl::SimpleAtoi(p.path().filename().string(), &pid)) {
       continue;
     }
-    md::UPID upid(/*asid*/ 0, pid, system::GetPIDStartTimeTicks(p.path()));
-    pids[upid] = p.path();
+    pids.emplace(/*asid*/ 0, pid, system::GetPIDStartTimeTicks(p.path()));
   }
   return pids;
 }
 
-absl::flat_hash_map<md::UPID, std::filesystem::path> ProcTracker::Cleanse(
-    const std::filesystem::path& proc_path, const absl::flat_hash_set<md::UPID>& upids) {
-  absl::flat_hash_map<md::UPID, std::filesystem::path> res;
+absl::flat_hash_set<md::UPID> ProcTracker::Cleanse(const absl::flat_hash_set<md::UPID>& upids) {
+  absl::flat_hash_set<md::UPID> res;
   for (const md::UPID& upid : upids) {
-    md::UPID local_upid(/*asid*/ 0, upid.pid(), upid.start_ts());
-    res[local_upid] = proc_path / std::to_string(local_upid.pid());
+    res.emplace(/*asid*/ 0, upid.pid(), upid.start_ts());
   }
   return res;
 }
 
-absl::flat_hash_map<md::UPID, std::filesystem::path> ProcTracker::TakeSnapshotAndDiff(
-    absl::flat_hash_map<md::UPID, std::filesystem::path> upids) {
-  absl::flat_hash_map<md::UPID, std::filesystem::path> new_upid_paths;
-  for (const auto& [upid, pid_path] : upids) {
+absl::flat_hash_set<md::UPID> ProcTracker::TakeSnapshotAndDiff(
+    absl::flat_hash_set<md::UPID> upids) {
+  absl::flat_hash_set<md::UPID> new_upids;
+  for (const auto& upid : upids) {
     if (upids_.contains(upid)) {
       continue;
     }
-    new_upid_paths[upid] = pid_path;
+    new_upids.emplace(upid);
   }
   upids_.swap(upids);
-  return new_upid_paths;
+  return new_upids;
 }
 
 }  // namespace stirling

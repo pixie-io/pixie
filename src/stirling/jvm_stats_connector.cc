@@ -53,17 +53,15 @@ StatusOr<std::filesystem::path> ResolveHsperfDataPath(pid_t pid) {
 void JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
   std::filesystem::path proc_path = system::Config::GetInstance().proc_path();
 
-  absl::flat_hash_map<md::UPID, std::filesystem::path> upid_proc_path_map =
-      ProcTracker::Cleanse(proc_path, ctx.GetMdsUpids());
+  absl::flat_hash_set<md::UPID> upids = ProcTracker::Cleanse(ctx.GetMdsUpids());
 
-  if (upid_proc_path_map.empty()) {
-    upid_proc_path_map = ProcTracker::ListUPIDs(proc_path);
+  if (upids.empty()) {
+    upids = ProcTracker::ListUPIDs(proc_path);
   }
 
-  absl::flat_hash_map<md::UPID, std::filesystem::path> new_upid_proc_path_map =
-      proc_tracker_.TakeSnapshotAndDiff(std::move(upid_proc_path_map));
+  absl::flat_hash_set<md::UPID> new_upids = proc_tracker_.TakeSnapshotAndDiff(std::move(upids));
 
-  for (const auto& [upid, proc_pid_path] : new_upid_proc_path_map) {
+  for (const auto& upid : new_upids) {
     // The host PID 1 is not a Java app. But ProcParser::ResolveMountPoint() is confused.
     // TODO(yzhao): Look for more robust mechanism.
     if (upid.pid() == 1) {

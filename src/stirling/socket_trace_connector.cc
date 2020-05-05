@@ -301,21 +301,20 @@ std::map<std::string, std::vector<int32_t>> SocketTraceConnector::FindNewPIDs() 
   // or list all PIDs on the system if MDS is not present.
   // TODO(oazizi/yzhao): Technically the if statement is not checking for the presence of the MDS.
   // There could be a subtle bug lurking.
-  absl::flat_hash_map<md::UPID, std::filesystem::path> upid_proc_path_map =
-      ProcTracker::Cleanse(proc_path, get_mds_upids());
-  if (upid_proc_path_map.empty()) {
-    upid_proc_path_map = ProcTracker::ListUPIDs(proc_path);
+  absl::flat_hash_set<md::UPID> upids = ProcTracker::Cleanse(get_mds_upids());
+  if (upids.empty()) {
+    upids = ProcTracker::ListUPIDs(proc_path);
   }
 
   // Consider new UPIDs only.
-  absl::flat_hash_map<md::UPID, std::filesystem::path> new_upid_paths =
-      proc_tracker_.TakeSnapshotAndDiff(std::move(upid_proc_path_map));
+  absl::flat_hash_set<md::UPID> new_upids = proc_tracker_.TakeSnapshotAndDiff(std::move(upids));
 
   // Convert to a map of binaries, with the upids that are instances of that binary.
   std::filesystem::path host_path = system::Config::GetInstance().host_path();
   std::map<std::string, std::vector<int32_t>> new_pids;
 
-  for (const auto& [upid, pid_path] : new_upid_paths) {
+  for (const auto& upid : new_upids) {
+    std::filesystem::path pid_path = proc_path / std::to_string(upid.pid());
     auto host_exe_or = GetActiveBinary(host_path, pid_path);
     if (!host_exe_or.ok()) {
       continue;

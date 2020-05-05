@@ -21,28 +21,24 @@ class ProcTracker : NotCopyMoveable {
   /**
    * Returns the list of processes from the proc filesystem.
    */
-  static absl::flat_hash_map<md::UPID, std::filesystem::path> ListUPIDs(
-      const std::filesystem::path& proc_path);
+  static absl::flat_hash_set<md::UPID> ListUPIDs(const std::filesystem::path& proc_path);
 
   /**
-   * Standardizes by setting ASID of UPIDs to 0, and appending proc PID path
+   * Standardizes by setting ASID of UPIDs to 0.
    */
-  static absl::flat_hash_map<md::UPID, std::filesystem::path> Cleanse(
-      const std::filesystem::path& proc_path, const absl::flat_hash_set<md::UPID>& upids);
+  static absl::flat_hash_set<md::UPID> Cleanse(const absl::flat_hash_set<md::UPID>& upids);
 
   /**
    * Accepts the list of all currently-running processes. Returns the list of newly-created
    * processes since last snapshot.
    */
   // TODO(yzhao): Consider calling ListUPIDs() directly inside TakeSnapshotAndDiff().
-  absl::flat_hash_map<md::UPID, std::filesystem::path> TakeSnapshotAndDiff(
-      absl::flat_hash_map<md::UPID, std::filesystem::path> upids);
+  absl::flat_hash_set<md::UPID> TakeSnapshotAndDiff(absl::flat_hash_set<md::UPID> upids);
 
   const auto& upids() const { return upids_; }
 
  private:
-  // <md::UPID>:<proc_pid_path>
-  absl::flat_hash_map<md::UPID, std::filesystem::path> upids_;
+  absl::flat_hash_set<md::UPID> upids_;
 };
 
 }  // namespace stirling

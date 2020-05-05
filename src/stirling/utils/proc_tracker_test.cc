@@ -16,12 +16,10 @@ using ::testing::UnorderedElementsAre;
 
 TEST(ProcTrackerListPIDsTest, ListUPIDs) {
   const std::filesystem::path proc_path = TestFilePath("src/common/system/testdata/proc");
-  absl::flat_hash_map<md::UPID, std::filesystem::path> pids = ProcTracker::ListUPIDs(proc_path);
+  absl::flat_hash_set<md::UPID> pids = ProcTracker::ListUPIDs(proc_path);
   EXPECT_THAT(ProcTracker::ListUPIDs(proc_path),
-              UnorderedElementsAre(Pair(md::UPID{0, 123, 14329}, proc_path / "123"),
-                                   Pair(md::UPID{0, 1, 0}, proc_path / "1"),
-                                   Pair(md::UPID{0, 456, 17594622}, proc_path / "456"),
-                                   Pair(md::UPID{0, 789, 46120203}, proc_path / "789")));
+              UnorderedElementsAre(md::UPID{0, 123, 14329}, md::UPID{0, 1, 0},
+                                   md::UPID{0, 456, 17594622}, md::UPID{0, 789, 46120203}));
 }
 
 class ProcTrackerTest : public ::testing::Test {
@@ -30,21 +28,18 @@ class ProcTrackerTest : public ::testing::Test {
 };
 
 TEST_F(ProcTrackerTest, TakeSnapshotAndDiff) {
-  EXPECT_THAT(proc_tracker_.TakeSnapshotAndDiff(
-                  {{md::UPID(0, 1, 123), "/proc/1"}, {md::UPID(0, 2, 456), "/proc/2"}}),
-              UnorderedElementsAre(Pair(md::UPID(0, 1, 123), "/proc/1"),
-                                   Pair(md::UPID(0, 2, 456), "/proc/2")));
-  EXPECT_THAT(proc_tracker_.upids(), UnorderedElementsAre(Pair(md::UPID(0, 1, 123), "/proc/1"),
-                                                          Pair(md::UPID(0, 2, 456), "/proc/2")));
+  EXPECT_THAT(proc_tracker_.TakeSnapshotAndDiff({{md::UPID(0, 1, 123)}, {md::UPID(0, 2, 456)}}),
+              UnorderedElementsAre(md::UPID(0, 1, 123), md::UPID(0, 2, 456)));
+  EXPECT_THAT(proc_tracker_.upids(),
+              UnorderedElementsAre(md::UPID(0, 1, 123), md::UPID(0, 2, 456)));
   EXPECT_THAT(proc_tracker_.TakeSnapshotAndDiff({
-                  {md::UPID(0, 1, 123), "/proc/1"},
-                  {md::UPID(0, 2, 456), "/proc/2"},
-                  {md::UPID(0, 3, 789), "/proc/3"},
+                  {md::UPID(0, 1, 123)},
+                  {md::UPID(0, 2, 456)},
+                  {md::UPID(0, 3, 789)},
               }),
-              UnorderedElementsAre(Pair(md::UPID(0, 3, 789), "/proc/3")));
-  EXPECT_THAT(proc_tracker_.upids(), UnorderedElementsAre(Pair(md::UPID(0, 1, 123), "/proc/1"),
-                                                          Pair(md::UPID(0, 2, 456), "/proc/2"),
-                                                          Pair(md::UPID(0, 3, 789), "/proc/3")));
+              UnorderedElementsAre(md::UPID(0, 3, 789)));
+  EXPECT_THAT(proc_tracker_.upids(),
+              UnorderedElementsAre(md::UPID(0, 1, 123), md::UPID(0, 2, 456), md::UPID(0, 3, 789)));
 }
 
 }  // namespace stirling
