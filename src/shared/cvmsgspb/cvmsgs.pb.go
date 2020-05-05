@@ -43,7 +43,7 @@ const (
 	VZ_ST_CONNECTED     VizierStatus = 5
 	VZ_ST_UPDATE_FAILED VizierStatus = 6
 )
- 
+
 var VizierStatus_name = map[int32]string{
 	0: "VZ_ST_UNKNOWN",
 	1: "VZ_ST_HEALTHY",
