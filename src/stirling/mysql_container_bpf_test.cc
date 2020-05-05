@@ -78,9 +78,10 @@ class MySQLTraceTest : public SocketTraceBPFTest {
 
     // Run mysql as a way of generating traffic.
     // Run it through bash, and return the PID, so we can use it to filter captured results.
-    std::string cmd =
-        absl::StrFormat("docker exec %s bash -c 'echo \"%s\" | mysql -uroot & echo $! && wait'",
-                        container_.container_name(), script_content);
+    std::string cmd = absl::StrFormat(
+        "docker exec %s bash -c 'echo \"%s\" | mysql --protocol=TCP --ssl-mode=DISABLED "
+        "--host=localhost --port=3306 -uroot & echo $! && wait'",
+        container_.container_name(), script_content);
     PL_ASSIGN_OR_RETURN(std::string out, pl::Exec(cmd));
 
     std::vector<std::string_view> lines = absl::StrSplit(out, "\n");
@@ -92,6 +93,8 @@ class MySQLTraceTest : public SocketTraceBPFTest {
     if (!absl::SimpleAtoi(lines[0], &client_pid)) {
       return error::Internal("Could not extract PID.");
     }
+
+    LOG(INFO) << absl::Substitute("Client PID: $0", client_pid);
 
     return client_pid;
   }
