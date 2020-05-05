@@ -712,11 +712,6 @@ static __inline void process_syscall_connect(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  // Only record IP (IPV4 and IPV6) connections.
-  if (!(args->addr->sa_family == AF_INET || args->addr->sa_family == AF_INET6)) {
-    return;
-  }
-
   // We allow EINPROGRESS to go through, which indicates that a NON_BLOCK socket is undergoing
   // handshake.
   //
@@ -742,11 +737,6 @@ static __inline void process_syscall_accept(struct pt_regs* ctx, uint64_t id,
   }
 
   if (ret_fd < 0) {
-    return;
-  }
-
-  // Only record IP (IPV4 and IPV6) connections.
-  if (!(args->addr->sa_family == AF_INET || args->addr->sa_family == AF_INET6)) {
     return;
   }
 
