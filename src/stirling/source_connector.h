@@ -79,6 +79,10 @@ class ConnectorContext {
     }
     absl::flat_hash_set<md::UPID> upids;
     for (const auto& [upid, pid_info] : md->pids_by_upid()) {
+      if (pid_info == nullptr || pid_info->stop_time_ns() > 0) {
+        // PID has been stopped.
+        continue;
+      }
       upids.insert(upid);
     }
     return upids;
