@@ -44,7 +44,7 @@ data:
                     allow_headers: >
                       keep-alive,user-agent,cache-control,content-type,content-transfer-encoding,
                       x-accept-content-transfer-encoding,x-accept-response-streaming,x-user-agent,
-                      x-grpc-web,authorization,grpc-timeout
+                      x-grpc-web,authorization,grpc-timeout,grpc-status,grpc-message
                     max_age: "1728000"
                     expose_headers: grpc-status,grpc-message,grpc-timeout
                     allow_credentials: true
