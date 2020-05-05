@@ -24,7 +24,7 @@ StatusOr<int64_t> ProcessLengthEncodedInt(std::string_view s, size_t* offset);
 /**
  * These dissectors are helper functions that parse out a parameter from a packet's raw contents.
  * The offset identifies where to begin the parsing, and the offset is updated to reflect where
- * the parsing ends. The parsed result in placed in the StmtExecuteParam.
+ * the parsing ends.
  */
 // TODO(oazizi): Convert Dissectors to use std::string_view*, and use remove_prefix().
 // Then param_offset is no longer needed.
@@ -39,6 +39,16 @@ Status DissectFloatParam(std::string_view msg, size_t* offset, std::string* pack
 
 Status DissectDateTimeParam(std::string_view msg, size_t* offset, std::string* packet);
 
+// TODO(chengruizhe): infer length from int_type. Will require changes to DissectIntParam as well.
+template <size_t length, typename int_type>
+Status DissectInt(std::string_view msg, size_t* offset, int_type* result) {
+  if (msg.size() < *offset + length) {
+    return error::Internal("Not enough bytes to dissect int param.");
+  }
+  *result = utils::LEndianBytesToInt<int_type, length>(msg.substr(*offset));
+  *offset += length;
+  return Status::OK();
+}
 }  // namespace mysql
 }  // namespace stirling
 }  // namespace pl

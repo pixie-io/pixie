@@ -21,7 +21,6 @@ namespace mysql {
 bool IsEOFPacket(const Packet& packet);
 bool IsErrPacket(const Packet& packet);
 bool IsOKPacket(const Packet& packet);
-bool IsLengthEncodedIntPacket(const Packet& packet);
 bool IsColumnDefPacket(const Packet& packet);
 bool IsResultsetRowPacket(const Packet& packet, bool client_deprecate_eof);
 bool IsStmtPrepareOKPacket(const Packet& packet);

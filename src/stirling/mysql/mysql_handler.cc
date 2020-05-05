@@ -117,14 +117,21 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
   }
 
   // Process header packet.
-  if (!IsLengthEncodedIntPacket(first_resp_packet)) {
+  size_t param_offset = 0;
+  auto s = ProcessLengthEncodedInt(first_resp_packet.msg, &param_offset);
+  if (!s.ok()) {
     entry->resp.status = MySQLRespStatus::kUnknown;
-    return error::Internal("First packet should be length-encoded integer.");
+    return error::Internal("Unable to process header packet of resultset response.");
+  }
+  int num_col = s.ValueOrDie();
+
+  if (param_offset != first_resp_packet.msg.size()) {
+    entry->resp.status = MySQLRespStatus::kUnknown;
+    return error::Internal("Extra bytes in length-encoded int packet.");
   }
 
-  size_t param_offset = 0;
-  PL_ASSIGN_OR_RETURN(int num_col, ProcessLengthEncodedInt(first_resp_packet.msg, &param_offset));
   if (num_col == 0) {
+    entry->resp.status = MySQLRespStatus::kUnknown;
     return error::Internal("HandleResultsetResponse(): num columns should never be 0.");
   }
 

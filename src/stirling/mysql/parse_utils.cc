@@ -19,6 +19,10 @@ StatusOr<int64_t> ProcessLengthEncodedInt(std::string_view s, size_t* offset) {
   constexpr uint8_t kLencIntPrefix3b = 0xfd;
   constexpr uint8_t kLencIntPrefix8b = 0xfe;
 
+  if (s.empty()) {
+    return error::Internal("Not enough bytes to extract length-encoded int");
+  }
+
   s = s.substr(*offset);
 
   if (s.empty()) {
@@ -74,11 +78,9 @@ Status DissectStringParam(std::string_view msg, size_t* param_offset, std::strin
 
 template <size_t length>
 Status DissectIntParam(std::string_view msg, size_t* offset, std::string* param) {
-  if (msg.size() < *offset + length) {
-    return error::Internal("Not enough bytes to dissect int param.");
-  }
-  *param = std::to_string(utils::LEndianBytesToInt<int64_t, length>(msg.substr(*offset)));
-  *offset += length;
+  int64_t p;
+  PL_RETURN_IF_ERROR(DissectInt<length>(msg, offset, &p));
+  *param = std::to_string(p);
   return Status::OK();
 }
 

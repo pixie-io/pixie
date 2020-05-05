@@ -32,19 +32,37 @@ bool IsErrPacket(const Packet& packet) {
 }
 
 /**
+ * Assume CLIENT_PROTOCOL_41 is set.
  * https://dev.mysql.com/doc/internals/en/packet-OK_Packet.html
  */
-bool IsOKPacket(const Packet& packet, bool protocol_41) {
+bool IsOKPacket(const Packet& packet) {
   // TODO(oazizi): Remove static_cast once msg is converted to basic_string<uint8_t>.
-
+  constexpr uint8_t kOKPacketHeaderOffset = 1;
   uint8_t header = packet.msg[0];
 
-  if (!protocol_41) {
-    // 3 byte minimum packet size prior to protocol 4.1.
-    return ((header == kRespHeaderOK) && (packet.msg.size() >= 3));
+  // Parse affected_rows.
+  size_t offset = kOKPacketHeaderOffset;
+  if (!ProcessLengthEncodedInt(packet.msg, &offset).ok()) {
+    return false;
+  }
+  // Parse last_insert_id.
+  if (!ProcessLengthEncodedInt(packet.msg, &offset).ok()) {
+    return false;
   }
 
-  // Protocol 4.1 is more complicated.
+  // Parse status flag.
+  int16_t status_flag;
+  if (!DissectInt<2, int16_t>(packet.msg, &offset, &status_flag).ok()) {
+    return false;
+  }
+
+  // Parse warnings.
+  int16_t warnings;
+  if (!DissectInt<2, int16_t>(packet.msg, &offset, &warnings).ok()) {
+    return false;
+  }
+  LOG_IF(WARNING, warnings > 1000)
+      << "Large warnings count is a sign of misclassification of OK packet.";
 
   // 7 byte minimum packet size in protocol 4.1.
   if ((header == kRespHeaderOK) && (packet.msg.size() >= 7)) {
@@ -58,27 +76,6 @@ bool IsOKPacket(const Packet& packet, bool protocol_41) {
   }
 
   return false;
-}
-
-bool IsOKPacket(const Packet& packet) {
-  return IsOKPacket(packet, true) || IsOKPacket(packet, false);
-}
-
-bool IsLengthEncodedIntPacket(const Packet& packet) {
-  constexpr uint8_t kLencIntPrefix2b = 0xfc;
-  constexpr uint8_t kLencIntPrefix3b = 0xfd;
-  constexpr uint8_t kLencIntPrefix8b = 0xfe;
-
-  switch (static_cast<uint8_t>(packet.msg[0])) {
-    case kLencIntPrefix8b:
-      return packet.msg.size() == 9;
-    case kLencIntPrefix3b:
-      return packet.msg.size() == 4;
-    case kLencIntPrefix2b:
-      return packet.msg.size() == 3;
-    default:
-      return packet.msg.size() == 1 && (static_cast<uint8_t>(packet.msg[0]) < 251);
-  }
 }
 
 bool IsColumnDefPacket(const Packet& packet) {
@@ -108,7 +105,7 @@ bool IsStmtPrepareOKPacket(const Packet& packet) {
 bool MoreResultsExists(const Packet& last_packet) {
   constexpr uint8_t kServerMoreResultsExistsFlag = 0x8;
 
-  if (IsOKPacket(last_packet, /* protocol_41 */ true)) {
+  if (IsOKPacket(last_packet)) {
     size_t pos = 1;
 
     StatusOr<int> s1 = ProcessLengthEncodedInt(last_packet.msg, &pos);
