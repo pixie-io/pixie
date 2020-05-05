@@ -175,14 +175,17 @@ func (v *K8sVizierInfo) UpdatePodStatuses() {
 		}
 
 		status := metadatapb.PHASE_UNKNOWN
+		msg := ""
 		if podPb.Status != nil {
 			status = podPb.Status.Phase
+			msg = podPb.Status.Message
 		}
 		name := podPb.Metadata.Name
 
 		s := &cvmsgspb.PodStatus{
-			Name:   name,
-			Status: status,
+			Name:          name,
+			Status:        status,
+			StatusMessage: msg,
 		}
 		podMap[name] = s
 	}

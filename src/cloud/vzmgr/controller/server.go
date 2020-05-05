@@ -618,10 +618,11 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		log.WithError(err).Error("Could not unmarshal NATS message")
 		return
 	}
+	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 
 	// TODO(michelle): Instead of logging this information so that the pod statuses appears in our logs,
 	// we should be storing the pod status info in postgres.
-	log.WithField("hb", req).Info("Got heartbeat message")
+	log.WithField("vzID", vizierID.String()).WithField("hb", req.String()).Info("Got heartbeat message")
 
 	// Send DNS address.
 	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
@@ -648,7 +649,6 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		addr = fmt.Sprintf("%s:%d", addr, req.Port)
 	}
 
-	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 	query := `
     UPDATE vizier_cluster_info
     SET last_heartbeat = NOW(), status = $1, address= $2

@@ -110,6 +110,7 @@ message VizierHeartbeat {
 message PodStatus {
     string name = 1; // The name of the pod. Ex: vizier-pem-z26d8
     pl.shared.k8s.metadatapb.PodPhase status = 2; // The status of the pod.
+    string status_message = 3; // The message for why the pod is in its current status.
 }
 
 message VizierHeartbeatAck {
