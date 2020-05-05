@@ -1,13 +1,13 @@
-import {VizierErrorDetails} from 'common/errors';
+import { VizierErrorDetails } from 'common/errors';
 import LazyPanel from 'components/lazy-panel';
-import {VizierDataTableWithDetails} from 'components/vizier-data-table/vizier-data-table';
+import { VizierDataTableWithDetails } from 'components/vizier-data-table/vizier-data-table';
 import * as React from 'react';
 
-import {createStyles, makeStyles, Theme, withStyles} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 
-import {ResultsContext} from './context';
+import { ResultsContext } from './context';
 
 const DataViewer = () => {
   const { tables, error } = React.useContext(ResultsContext);
@@ -42,6 +42,9 @@ const StyledTabs = withStyles((theme: Theme) =>
     },
     indicator: {
       backgroundColor: theme.palette.foreground.one,
+    },
+    scrollButtons: {
+      height: theme.spacing(3),
     },
   }),
 )(Tabs);
@@ -87,6 +90,8 @@ const DataViewerTabs = (props: DataViewerTabsProps) => {
       <StyledTabs
         value={activeTab}
         orientation='vertical'
+        variant='scrollable'
+        scrollButtons='auto'
         onChange={(event, newTab) => setActiveTab(newTab)}
       >
         {
