@@ -1,13 +1,15 @@
 import clsx from 'clsx';
 import LazyPanel from 'components/lazy-panel';
+import { DataDrawerContext, DataDrawerTabsKey } from 'containers/live/context/data-drawer-context';
+import { LayoutContext } from 'containers/live/context/layout-context';
 import * as React from 'react';
 import Split from 'react-split';
 
 import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/styles';
 
-import { LayoutContext } from './context/layout-context';
 import DataDrawerToggle from './data-drawer-toggle';
 import DataViewer from './data-viewer';
+import ErrorPanel from './error-panel';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -20,7 +22,7 @@ const useStyles = makeStyles((theme: Theme) => {
       display: 'flex',
       flexDirection: 'column',
     },
-    dataViewer: {
+    content: {
       flex: 1,
       minHeight: 0,
     },
@@ -31,12 +33,21 @@ const DataDrawer = () => {
   const { dataDrawerOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
   const toggleDrawerOpen = () => setDataDrawerOpen((open) => !open);
   const classes = useStyles();
+  const { activeTab, setActiveTab } = React.useContext(DataDrawerContext);
 
   return (
     <div className={classes.drawerRoot}>
-      <DataDrawerToggle opened={dataDrawerOpen} toggle={toggleDrawerOpen} />
-      <LazyPanel className={classes.dataViewer} show={dataDrawerOpen}>
+      <DataDrawerToggle
+        opened={dataDrawerOpen}
+        toggle={toggleDrawerOpen}
+        activeTab={activeTab}
+        setActiveTab={(tab: DataDrawerTabsKey) => setActiveTab(tab)}
+      />
+      <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'data'}>
         <DataViewer />
+      </LazyPanel>
+      <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'errors'}>
+        <ErrorPanel />
       </LazyPanel>
     </div>
   );

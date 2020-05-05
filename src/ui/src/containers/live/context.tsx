@@ -7,7 +7,8 @@ import { parseSpecs, VisualizationSpecMap } from 'components/vega/spec';
 import * as React from 'react';
 import { setQueryParams } from 'utils/query-params';
 
-import { LayoutContext, LayoutContextProvider } from './context/layout-context';
+import { DataDrawerContext, DataDrawerContextProvider } from './context/data-drawer-context';
+import { LayoutContextProvider } from './context/layout-context';
 import { getQueryFuncs, parseVis, Vis } from './vis';
 
 interface LiveContextProps {
@@ -107,7 +108,8 @@ const LiveContextProvider = (props) => {
 
   const showSnackbar = useSnackbar();
 
-  const { setDataDrawerOpen } = React.useContext(LayoutContext);
+  const { openDrawerTab } = React.useContext(DataDrawerContext);
+
   const executeScript = React.useCallback((inputScript?: string, inputVis?: Vis, inputArgs?: Arguments) => {
     if (!client) {
       return;
@@ -137,7 +139,7 @@ const LiveContextProvider = (props) => {
         if (errType === 'execution') {
           showSnackbar({
             message: errMsg,
-            action: () => setDataDrawerOpen(true),
+            action: () => openDrawerTab('errors'),
             actionTitle: 'details',
             autoHideDuration: 5000,
           });
@@ -190,9 +192,11 @@ export function withLiveContextProvider(WrappedComponent) {
   return () => (
     <SnackbarProvider>
       <LayoutContextProvider>
-        <LiveContextProvider>
-          <WrappedComponent />
-        </LiveContextProvider>
+        <DataDrawerContextProvider>
+          <LiveContextProvider>
+            <WrappedComponent />
+          </LiveContextProvider>
+        </DataDrawerContextProvider>
       </LayoutContextProvider>
     </SnackbarProvider>
   );

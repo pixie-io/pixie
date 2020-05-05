@@ -7,29 +7,27 @@ import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/s
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 
-import { ResultsContext } from './context';
+import { ResultsContext } from '../context';
 
 const DataViewer = () => {
-  const { tables, error } = React.useContext(ResultsContext);
+  const { tables } = React.useContext(ResultsContext);
   const tabs = React.useMemo(() => {
-    if (error) {
-      return [
-        {
-          title: 'Errors',
-          content: <VizierErrorDetails error={error} />,
-        },
-      ];
-    }
     return Object.keys(tables).map((tableName) => {
       return {
         title: tableName,
         content: <VizierDataTableWithDetails table={tables[tableName]} />,
       };
     });
-  }, [tables, error]);
+  }, [tables]);
 
   if (tabs.length === 0) {
-    return <div>No tables</div>;
+    return <div style={{
+      display: 'flex',
+      flexDirection: 'row',
+      height: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}>No data available to show</div>;
   }
   return <DataViewerTabs tabs={tabs} />;
 };

@@ -1,0 +1,84 @@
+import { ResultsContext } from 'containers/live/context';
+import * as React from 'react';
+
+import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
+import Tab from '@material-ui/core/Tab';
+import Tabs from '@material-ui/core/Tabs';
+import ExpandLessIcon from '@material-ui/icons/ExpandLess';
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+
+interface DataDrawerToggleProps {
+  opened: boolean;
+  activeTab: string;
+  setActiveTab: (newTab: string) => void;
+  toggle: () => void;
+}
+
+const useStyles = makeStyles((theme: Theme) => {
+  return createStyles({
+    root: {
+      minHeight: theme.spacing(5),
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.palette.background.three,
+      cursor: 'pointer',
+    },
+    icon: {
+      marginLeft: theme.spacing(2),
+      marginRight: theme.spacing(2),
+    },
+    title: {
+      ...theme.typography.subtitle2,
+      color: theme.palette.foreground.one,
+      marginLeft: theme.spacing(2),
+    },
+  });
+});
+
+const StyledTabs = withStyles((theme: Theme) =>
+  createStyles({
+    root: {
+      flex: 1,
+      height: theme.spacing(4),
+    },
+    indicator: {
+      backgroundColor: theme.palette.foreground.one,
+    },
+  }),
+)(Tabs);
+
+const StyledTab = withStyles((theme: Theme) =>
+  createStyles({
+    root: {
+      padding: 0,
+      textTransform: 'none',
+      '&:focus': {
+        color: theme.palette.foreground.two,
+      },
+    },
+  }),
+)(Tab);
+
+const DataDrawerToggle = (props: DataDrawerToggleProps) => {
+  const { opened, toggle, activeTab, setActiveTab } = props;
+  const classes = useStyles();
+  const onTabChange = (event, newTab) => {
+    setActiveTab(newTab);
+    if (opened && newTab !== activeTab) {
+      event.stopPropagation();
+    }
+  };
+
+  return (
+    <div className={classes.root} onClick={toggle}>
+      {opened ? <ExpandMoreIcon className={classes.icon} /> : <ExpandLessIcon className={classes.icon} />}
+      <StyledTabs value={activeTab} onChange={onTabChange}>
+        <StyledTab value='data' label='Underlying Data' />
+        <StyledTab value='errors' label='Errors' />
+      </StyledTabs>
+    </div >
+  );
+};
+
+export default DataDrawerToggle;

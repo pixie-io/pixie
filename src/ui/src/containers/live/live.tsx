@@ -17,7 +17,7 @@ import Canvas from './canvas';
 import CommandInput from './command-input';
 import { LiveContext, ScriptContext, TitleContext, withLiveContextProvider } from './context';
 import { LayoutContext } from './context/layout-context';
-import { DataDrawerSplitPanel } from './data-drawer';
+import { DataDrawerSplitPanel } from './data-drawer/data-drawer';
 import { EditorSplitPanel } from './editor';
 import ExecuteScriptButton from './execute-button';
 import { useInitScriptLoader } from './script-loader';
