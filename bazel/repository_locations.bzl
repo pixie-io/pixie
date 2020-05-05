@@ -200,4 +200,8 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "xxHash-0.7.3",
         urls = ["https://github.com/Cyan4973/xxHash/archive/v0.7.3.tar.gz"],
     ),
+    com_github_nlohmann_json = dict(
+        sha256 = "87b5884741427220d3a33df1363ae0e8b898099fbc59f1c451113f6732891014",
+        urls = ["https://github.com/nlohmann/json/releases/download/v3.7.3/include.zip"],
+    ),
 )
