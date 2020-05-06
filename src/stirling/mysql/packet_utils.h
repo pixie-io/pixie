@@ -21,9 +21,14 @@ namespace mysql {
 bool IsEOFPacket(const Packet& packet);
 bool IsErrPacket(const Packet& packet);
 bool IsOKPacket(const Packet& packet);
-bool IsColumnDefPacket(const Packet& packet);
 bool IsResultsetRowPacket(const Packet& packet, bool client_deprecate_eof);
 bool IsStmtPrepareOKPacket(const Packet& packet);
+
+/**
+ * The following functions process packets by attempting to parse through the fields and check
+ * there's nothing extra.
+ */
+StatusOr<ColDefinition> ProcessColumnDefPacket(const Packet& packet);
 
 /**
  * Checks an OK packet for the SERVER_MORE_RESULTS_EXISTS flag.

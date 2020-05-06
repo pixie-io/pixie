@@ -34,6 +34,13 @@ std::string LengthEncodedInt(int num) {
   }
 }
 
+template <size_t N>
+std::string FixedLengthInt(int num) {
+  char bytes[N];
+  utils::IntToLEndianBytes(num, bytes);
+  return std::string(bytes, N);
+}
+
 std::string LengthEncodedString(std::string_view s) {
   return absl::StrCat(LengthEncodedInt(s.size()), s);
 }
@@ -86,7 +93,14 @@ Packet GenCountPacket(uint8_t seq_id, int num_col) {
 Packet GenColDefinition(uint8_t seq_id, const ColDefinition& col_def) {
   Packet p;
   p.sequence_id = seq_id;
-  p.msg = col_def.msg;
+  p.msg = absl::StrCat(
+      LengthEncodedString(col_def.catalog), LengthEncodedString(col_def.schema),
+      LengthEncodedString(col_def.table), LengthEncodedString(col_def.org_table),
+      LengthEncodedString(col_def.name), LengthEncodedString(col_def.org_name),
+      LengthEncodedInt(col_def.next_length), FixedLengthInt<2>(col_def.character_set),
+      FixedLengthInt<4>(col_def.column_length),
+      std::string(1, static_cast<char>(col_def.column_type)), FixedLengthInt<2>(col_def.flags),
+      FixedLengthInt<1>(col_def.decimals), "\x00\x00");
   return p;
 }
 
@@ -157,14 +171,12 @@ std::deque<Packet> GenStmtPrepareOKResponse(const StmtPrepareOKResponse& resp) {
   result.push_back(GenStmtPrepareRespHeader(seq_id++, resp.header));
 
   for (const ColDefinition& param_def : resp.param_defs) {
-    ColDefinition p{param_def.msg};
-    result.push_back(GenColDefinition(seq_id++, p));
+    result.push_back(GenColDefinition(seq_id++, param_def));
   }
   result.push_back(GenEOF(seq_id++));
 
   for (const ColDefinition& col_def : resp.col_defs) {
-    ColDefinition c{col_def.msg};
-    result.push_back(GenColDefinition(seq_id++, c));
+    result.push_back(GenColDefinition(seq_id++, col_def));
   }
   result.push_back(GenEOF(seq_id++));
   return result;

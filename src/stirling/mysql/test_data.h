@@ -36,26 +36,56 @@ const StmtPrepareRespHeader kStmtPrepareRespHeader{
 // The following columns definitions and resultset rows are from real packet capture, but the
 // contents don't really matter to the functionality of the test.
 const std::vector<ColDefinition> kStmtPrepareParamDefs{
-    ColDefinition{
-        testutils::LengthEncodedString("def") +
-        ConstString(
-            "\x00\x00\x00\x01\x3f\x00\x0c\x3f\x00\x00\x00\x00\x00\xfd\x80\x00\x00\x00\x00")},
-    ColDefinition{
-        testutils::LengthEncodedString("def") +
-        ConstString(
-            "\x00\x00\x00\x01\x3f\x00\x0c\x3f\x00\x00\x00\x00\x00\xfd\x80\x00\x00\x00\x00")}};
+    ColDefinition{.catalog = "def",
+                  .schema = "\x00",
+                  .table = "\x00",
+                  .org_table = "\x00",
+                  .name = "?",
+                  .org_name = "\x00",
+                  .next_length = 12,
+                  .character_set = 63,
+                  .column_length = 0,
+                  .column_type = MySQLColType::kVarString,
+                  .flags = 0x0080,
+                  .decimals = 0x00},
+    ColDefinition{.catalog = "def",
+                  .schema = "\x00",
+                  .table = "\x00",
+                  .org_table = "\x00",
+                  .name = "?",
+                  .org_name = "\x00",
+                  .next_length = 12,
+                  .character_set = 63,
+                  .column_length = 0,
+                  .column_type = MySQLColType::kVarString,
+                  .flags = 0x0080,
+                  .decimals = 0x00}};
 
 const std::vector<ColDefinition> kStmtPrepareColDefs{
-    ColDefinition{testutils::LengthEncodedString("def") +
-                  testutils::LengthEncodedString("socksdb") +
-                  testutils::LengthEncodedString("sock") + testutils::LengthEncodedString("sock") +
-                  testutils::LengthEncodedString("id") + testutils::LengthEncodedString("sock_id") +
-                  ConstString("\x0c\x21\x00\x78\x00\x00\x00\xfd\x03\x50\x00\x00\x00")},
-    ColDefinition{testutils::LengthEncodedString("def") +
-                  testutils::LengthEncodedString("socksdb") +
-                  testutils::LengthEncodedString("sock") + testutils::LengthEncodedString("sock") +
-                  testutils::LengthEncodedString("name") + testutils::LengthEncodedString("name") +
-                  ConstString("\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\x00")}};
+    ColDefinition{.catalog = "def",
+                  .schema = "socksdb",
+                  .table = "sock",
+                  .org_table = "sock",
+                  .name = "id",
+                  .org_name = "sock_id",
+                  .next_length = 12,
+                  .character_set = 33,
+                  .column_length = 120,
+                  .column_type = MySQLColType::kVarString,
+                  .flags = 0x5003,
+                  .decimals = 0x00},
+    ColDefinition{.catalog = "def",
+                  .schema = "socksdb",
+                  .table = "sock",
+                  .org_table = "sock",
+                  .name = "name",
+                  .org_name = "name",
+                  .next_length = 12,
+                  .character_set = 33,
+                  .column_length = 60,
+                  .column_type = MySQLColType::kVarString,
+                  .flags = 0x0000,
+                  .decimals = 0x00}};
 
 const StmtPrepareOKResponse kStmtPrepareResponse{.header = kStmtPrepareRespHeader,
                                                  .col_defs = kStmtPrepareColDefs,
@@ -75,16 +105,30 @@ const std::vector<StmtExecuteParam> kStmtExecuteParams = {{MySQLColType::kString
 const StmtExecuteRequest kStmtExecuteRequest{.stmt_id = kStmtID, .params = kStmtExecuteParams};
 
 const std::vector<ColDefinition> kStmtExecuteColDefs = {
-    ColDefinition{testutils::LengthEncodedString("def") +
-                  testutils::LengthEncodedString("socksdb") +
-                  testutils::LengthEncodedString("sock") + testutils::LengthEncodedString("sock") +
-                  testutils::LengthEncodedString("id") + testutils::LengthEncodedString("sock_id") +
-                  ConstString("\x0c\x21\x00\x78\x00\x00\x00\xfd\x01\x10\x00\x00\x00")},
-    ColDefinition{testutils::LengthEncodedString("def") +
-                  testutils::LengthEncodedString("socksdb") +
-                  testutils::LengthEncodedString("sock") + testutils::LengthEncodedString("sock") +
-                  testutils::LengthEncodedString("name") + testutils::LengthEncodedString("name") +
-                  ConstString("\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\x00")}};
+    ColDefinition{.catalog = "def",
+                  .schema = "socksdb",
+                  .table = "sock",
+                  .org_table = "sock",
+                  .name = "id",
+                  .org_name = "sock_id",
+                  .next_length = 12,
+                  .character_set = 33,
+                  .column_length = 120,
+                  .column_type = MySQLColType::kVarString,
+                  .flags = 0x1001,
+                  .decimals = 0x00},
+    ColDefinition{.catalog = "def",
+                  .schema = "socksdb",
+                  .table = "sock",
+                  .org_table = "sock",
+                  .name = "name",
+                  .org_name = "name",
+                  .next_length = 12,
+                  .character_set = 33,
+                  .column_length = 60,
+                  .column_type = MySQLColType::kVarString,
+                  .flags = 0x0000,
+                  .decimals = 0x00}};
 
 const std::vector<ResultsetRow> kStmtExecuteResultsetRows = {
     ResultsetRow{testutils::LengthEncodedString("id1")},
@@ -104,11 +148,18 @@ const StmtCloseRequest kStmtCloseRequest{.stmt_id = kStmtID};
 const StringRequest kQueryRequest{.msg = "SELECT name FROM tag;"};
 
 const std::vector<ColDefinition> kQueryColDefs = {
-    ColDefinition{ConstString("\x2b\x00\x00\x02") + testutils::LengthEncodedString("def") +
-                  testutils::LengthEncodedString("socksdb") +
-                  testutils::LengthEncodedString("tag") + testutils::LengthEncodedString("tag") +
-                  testutils::LengthEncodedString("name") + testutils::LengthEncodedString("name") +
-                  ConstString("\x0c\x21\x00\x3c\x00\x00\x00\xfd\x00\x00\x00\x00\x00")}};
+    ColDefinition{.catalog = "def",
+                  .schema = "socksdb",
+                  .table = "tag",
+                  .org_table = "tag",
+                  .name = "name",
+                  .org_name = "name",
+                  .next_length = 12,
+                  .character_set = 33,
+                  .column_length = 60,
+                  .column_type = MySQLColType::kVarString,
+                  .flags = 0x0000,
+                  .decimals = 0x00}};
 
 const std::vector<ResultsetRow> kQueryResultsetRows = {
     ResultsetRow{testutils::LengthEncodedString("brown")},

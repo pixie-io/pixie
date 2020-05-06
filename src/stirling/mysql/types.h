@@ -226,9 +226,19 @@ constexpr int kIterationCountBytes = 4;
  * Column definition is not parsed right now, but may be further parsed in the future.
  * https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnDefinition
  */
-// TODO(chengruizhe): Parse Column definition packets.
 struct ColDefinition {
-  std::string msg;
+  std::string catalog;  // Always "def"
+  std::string schema;
+  std::string table;
+  std::string org_table;
+  std::string name;
+  std::string org_name;
+  int8_t next_length;  // Always 0x0c
+  int16_t character_set;
+  int32_t column_length;
+  MySQLColType column_type;
+  int16_t flags;
+  int8_t decimals;
 };
 
 /**

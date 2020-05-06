@@ -79,14 +79,6 @@ bool IsOKPacket(const Packet& packet) {
   return false;
 }
 
-bool IsColumnDefPacket(const Packet& packet) {
-  // TODO(oazizi): This is a weak placeholder.
-  // Study link below for a stronger implementation.
-  // https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnDefinition
-
-  return !(IsEOFPacket(packet) || IsOKPacket(packet) || IsErrPacket(packet));
-}
-
 bool IsResultsetRowPacket(const Packet& packet, bool client_deprecate_eof) {
   // TODO(oazizi): This is a weak placeholder.
   // Study link below for a stronger implementation.
@@ -99,6 +91,36 @@ bool IsResultsetRowPacket(const Packet& packet, bool client_deprecate_eof) {
 bool IsStmtPrepareOKPacket(const Packet& packet) {
   // https://dev.mysql.com/doc/internals/en/com-stmt-prepare-response.html#packet-COM_STMT_PREPARE_OK
   return (packet.msg.size() == 12U && packet.msg[0] == 0 && packet.msg[9] == 0);
+}
+
+StatusOr<ColDefinition> ProcessColumnDefPacket(const Packet& packet) {
+  ColDefinition col_def;
+  size_t offset = 0;
+  PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.catalog));
+  if (col_def.catalog.compare("def") != 0) {
+    return error::Internal("ColumnDef Packet must start with `def`.");
+  }
+
+  PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.schema));
+  PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.table));
+  PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.org_table));
+  PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.name));
+  PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &col_def.org_name));
+  PL_ASSIGN_OR_RETURN(col_def.next_length, ProcessLengthEncodedInt(packet.msg, &offset));
+  if (col_def.next_length != 12) {
+    return error::Internal("ColumnDef Packet's next_length field is always 0x0c.");
+  }
+
+  PL_RETURN_IF_ERROR(DissectInt<2>(packet.msg, &offset, &col_def.character_set));
+  PL_RETURN_IF_ERROR(DissectInt<4>(packet.msg, &offset, &col_def.column_length));
+  int8_t type;
+  PL_RETURN_IF_ERROR(DissectInt<1>(packet.msg, &offset, &type));
+  col_def.column_type = static_cast<MySQLColType>(type);
+
+  PL_RETURN_IF_ERROR(DissectInt<2>(packet.msg, &offset, &col_def.flags));
+  PL_RETURN_IF_ERROR(DissectInt<1>(packet.msg, &offset, &col_def.decimals));
+
+  return col_def;
 }
 
 // Look for SERVER_MORE_RESULTS_EXIST in Status field OK or EOF packet.

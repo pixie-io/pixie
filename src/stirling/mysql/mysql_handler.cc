@@ -155,14 +155,16 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
     const Packet& packet = resp_packets.front();
     resp_packets.pop_front();
 
-    if (!IsColumnDefPacket(packet)) {
+    auto s = ProcessColumnDefPacket(packet);
+    if (!s.ok()) {
       entry->resp.status = MySQLRespStatus::kUnknown;
       return error::Internal("Expected column definition packet");
     }
 
-    ColDefinition col_def{packet.msg};
+    ColDefinition col_def = s.ValueOrDie();
     col_defs.push_back(std::move(col_def));
   }
+  // TODO(chengruizhe): Use the type in col_def packets to parse the binary resultset row.
 
   // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
   bool client_deprecate_eof = true;
@@ -255,8 +257,13 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
     const Packet& param_def_packet = resp_packets.front();
     resp_packets.pop_front();
 
-    ColDefinition param_def{param_def_packet.msg};
-    param_defs.push_back(std::move(param_def));
+    auto s = ProcessColumnDefPacket(param_def_packet);
+    if (!s.ok()) {
+      entry->resp.status = MySQLRespStatus::kUnknown;
+      return error::Internal("Fail to process param definition packet.");
+    }
+
+    param_defs.push_back(s.ConsumeValueOrDie());
     entry->resp.timestamp_ns = param_def_packet.timestamp_ns;
   }
 
@@ -278,8 +285,13 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
     const Packet& col_def_packet = resp_packets.front();
     resp_packets.pop_front();
 
-    ColDefinition col_def{col_def_packet.msg};
-    col_defs.push_back(std::move(col_def));
+    auto s = ProcessColumnDefPacket(col_def_packet);
+    if (!s.ok()) {
+      entry->resp.status = MySQLRespStatus::kUnknown;
+      return error::Internal("Fail to process column definition packet.");
+    }
+
+    col_defs.push_back(s.ConsumeValueOrDie());
     // Update timestamp, in case this turns out to be the last packet.
     entry->resp.timestamp_ns = col_def_packet.timestamp_ns;
   }
