@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Subscription } from 'rxjs';
 import { debounce } from 'utils/debounce';
 import { isDev } from 'utils/env';
 
@@ -36,10 +37,16 @@ export const VizierGRPCClientProvider = (props: Props) => {
   const [client, setClient] = React.useState<VizierGRPCClient>(null);
   const [connectionStatus, setConnectionStatus] = React.useState<VizierConnectionStatus>('disconnected');
   const [loaded, setLoaded] = React.useState(false);
+  const [subscription, setSubscription] = React.useState<Subscription>(null);
 
-  const newClient = () => newVizierClient(cloudClient, clusterID, passthroughEnabled, vizierVersion).then(setClient);
+  const newClient = () => {
+    if (subscription) {
+      subscription.unsubscribe();
+    }
+    newVizierClient(cloudClient, clusterID, passthroughEnabled, vizierVersion).then(setClient);
+  };
   const reconnect = () => {
-    client.health().subscribe({
+    setSubscription(client.health().subscribe({
       next: (status) => {
         if (status.getCode() === 0) {
           setConnectionStatus('healthy');
@@ -53,15 +60,17 @@ export const VizierGRPCClientProvider = (props: Props) => {
         setConnectionStatus('disconnected');
         newClient();
       },
-    });
+    }));
   };
 
   React.useEffect(() => {
-    if (!client) {
-      newClient();
-      return;
+    newClient();
+  }, [clusterID, passthroughEnabled]);
+
+  React.useEffect(() => {
+    if (client) {
+      reconnect();
     }
-    reconnect();
   }, [client]);
 
   return (

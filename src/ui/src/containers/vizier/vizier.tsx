@@ -147,7 +147,7 @@ export class Vizier extends React.Component<{}, VizierState> {
             return (
               <>
                 <ClusterBanner />
-                <Query query={GET_CLUSTER} pollInterval={2500}>
+                <Query query={GET_CLUSTER} pollInterval={2500} fetchPolicy='network-only'>
                   {
                     ({ loading, error, data }) => {
                       if (loading) { return 'Loading...'; }
