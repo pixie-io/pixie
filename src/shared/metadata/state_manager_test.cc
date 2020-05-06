@@ -7,6 +7,7 @@
 #include "src/shared/k8s/metadatapb/metadata.pb.h"
 #include "src/shared/metadata/cgroup_metadata_reader_mock.h"
 #include "src/shared/metadata/state_manager.h"
+#include "src/shared/metadata/test_utils.h"
 
 namespace pl {
 namespace md {
@@ -14,6 +15,7 @@ namespace md {
 using pl::shared::k8s::metadatapb::MetadataResourceType;
 using ResourceUpdate = pl::shared::k8s::metadatapb::ResourceUpdate;
 
+using ::testing::ElementsAre;
 using ::testing::Pair;
 using ::testing::Return;
 using ::testing::UnorderedElementsAre;
@@ -143,13 +145,15 @@ class AgentMetadataStateTest : public ::testing::Test {
 
   sole::uuid agent_id_;
   AgentMetadataState metadata_state_;
+  TestAgentMetadataFilter md_filter_;
 };
 
 TEST_F(AgentMetadataStateTest, initialize_md_state) {
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
   GenerateTestUpdateEvents(&updates);
 
-  EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &updates));
+  EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &md_filter_,
+                                                       &updates));
   EXPECT_EQ(0, updates.size_approx());
 
   EXPECT_EQ("myhost", metadata_state_.hostname());
@@ -191,7 +195,8 @@ TEST_F(AgentMetadataStateTest, remove_dead_pods) {
   GenerateTestUpdateEvents(&updates);
   GenerateTestUpdateEventsForNonExistentPod(&updates);
 
-  ASSERT_OK(AgentMetadataStateManager::ApplyK8sUpdates(/*ts*/ 2000, &metadata_state_, &updates));
+  ASSERT_OK(AgentMetadataStateManager::ApplyK8sUpdates(/*ts*/ 2000, &metadata_state_, &md_filter_,
+                                                       &updates));
   ASSERT_EQ(0, updates.size_approx());
 
   FakePIDData md_reader;
@@ -239,7 +244,8 @@ TEST_F(AgentMetadataStateTest, pid_created) {
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
   GenerateTestUpdateEvents(&updates);
 
-  EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &updates));
+  EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &md_filter_,
+                                                       &updates));
 
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>> events;
   FakePIDData md_reader;
@@ -272,6 +278,25 @@ TEST_F(AgentMetadataStateTest, pid_created) {
 
   EXPECT_EQ(2, pids_started.size());
   EXPECT_THAT(pids_started, UnorderedElementsAre(PIDStartedEvent{pid1}, PIDStartedEvent{pid2}));
+}
+
+TEST_F(AgentMetadataStateTest, insert_into_filter) {
+  moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> updates;
+  GenerateTestUpdateEvents(&updates);
+
+  EXPECT_OK(AgentMetadataStateManager::ApplyK8sUpdates(2000 /*ts*/, &metadata_state_, &md_filter_,
+                                                       &updates));
+  EXPECT_EQ(0, updates.size_approx());
+
+  EXPECT_THAT(md_filter_.metadata_types(),
+              UnorderedElementsAre(MetadataType::SERVICE_ID, MetadataType::SERVICE_NAME,
+                                   MetadataType::POD_ID, MetadataType::POD_NAME,
+                                   MetadataType::CONTAINER_ID));
+  EXPECT_THAT(md_filter_.inserted_entities(),
+              ElementsAre("container_id1", "pod_id1", "pl/pod1", "service_id1", "pl/service1"));
+  EXPECT_THAT(md_filter_.inserted_types(),
+              ElementsAre(MetadataType::CONTAINER_ID, MetadataType::POD_ID, MetadataType::POD_NAME,
+                          MetadataType::SERVICE_ID, MetadataType::SERVICE_NAME));
 }
 
 }  // namespace md

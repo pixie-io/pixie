@@ -11,13 +11,13 @@
 
 #include <pypa/ast/ast.hh>
 
-#include "src/carnot/metadatapb/metadata.pb.h"
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/planner/compiler_error_context/compiler_error_context.h"
 #include "src/carnot/planner/compilerpb/compiler_status.pb.h"
 #include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/base/base.h"
+#include "src/shared/metadatapb/metadata.pb.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {
@@ -541,7 +541,7 @@ class MetadataProperty : public NotCopyable {
 
   // Getters.
   inline std::string name() const { return name_; }
-  inline metadatapb::MetadataType metadata_type() const { return metadata_type_; }
+  inline shared::metadatapb::MetadataType metadata_type() const { return metadata_type_; }
   inline types::DataType column_type() const { return column_type_; }
 
   /**
@@ -550,16 +550,16 @@ class MetadataProperty : public NotCopyable {
   inline static std::string FormatMetadataColumn(const std::string_view col_name) {
     return absl::Substitute("$0$1", kMetadataColumnPrefix, col_name);
   }
-  inline static std::string GetMetadataString(metadatapb::MetadataType metadata_type) {
-    if (metadata_type == metadatapb::MetadataType::UPID) {
+  inline static std::string GetMetadataString(shared::metadatapb::MetadataType metadata_type) {
+    if (metadata_type == shared::metadatapb::MetadataType::UPID) {
       return kUniquePIDColumn;
     }
-    std::string name = metadatapb::MetadataType_Name(metadata_type);
+    std::string name = shared::metadatapb::MetadataType_Name(metadata_type);
     absl::AsciiStrToLower(&name);
     return name;
   }
-  inline static std::string FormatMetadataColumn(metadatapb::MetadataType metadata_type) {
-    if (metadata_type == metadatapb::MetadataType::UPID) {
+  inline static std::string FormatMetadataColumn(shared::metadatapb::MetadataType metadata_type) {
+    if (metadata_type == shared::metadatapb::MetadataType::UPID) {
       return kUniquePIDColumn;
     }
     return FormatMetadataColumn(GetMetadataString(metadata_type));
@@ -584,17 +584,17 @@ class MetadataProperty : public NotCopyable {
   inline static constexpr char kUniquePIDColumn[] = "upid";
 
  protected:
-  MetadataProperty(metadatapb::MetadataType metadata_type, types::DataType column_type,
-                   std::vector<metadatapb::MetadataType> key_columns)
+  MetadataProperty(shared::metadatapb::MetadataType metadata_type, types::DataType column_type,
+                   std::vector<shared::metadatapb::MetadataType> key_columns)
       : metadata_type_(metadata_type), column_type_(column_type), key_columns_(key_columns) {
     name_ = GetMetadataString(metadata_type);
   }
 
  private:
-  metadatapb::MetadataType metadata_type_;
+  shared::metadatapb::MetadataType metadata_type_;
   types::DataType column_type_;
   std::string name_;
-  std::vector<metadatapb::MetadataType> key_columns_;
+  std::vector<shared::metadatapb::MetadataType> key_columns_;
 };
 
 class DataIR : public ExpressionIR {

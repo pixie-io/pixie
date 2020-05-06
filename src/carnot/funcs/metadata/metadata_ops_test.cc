@@ -12,6 +12,7 @@
 #include "src/shared/metadata/base_types.h"
 #include "src/shared/metadata/pids.h"
 #include "src/shared/metadata/state_manager.h"
+#include "src/shared/metadata/test_utils.h"
 
 namespace pl {
 namespace carnot {
@@ -41,7 +42,7 @@ class MetadataOpsTest : public ::testing::Test {
     updates_->enqueue(pl::metadatapb::testutils::CreateTerminatingServiceUpdatePB());
 
     auto s = pl::md::AgentMetadataStateManager::ApplyK8sUpdates(10, metadata_state_.get(),
-                                                                updates_.get());
+                                                                &md_filter_, updates_.get());
 
     // Apply PID updates to metadata state.
     auto upid1 = md::UPID(123, 567, 89101);
@@ -56,6 +57,7 @@ class MetadataOpsTest : public ::testing::Test {
   sole::uuid agent_id_;
   std::shared_ptr<pl::md::AgentMetadataState> metadata_state_;
   std::unique_ptr<moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>> updates_;
+  md::TestAgentMetadataFilter md_filter_;
 };
 
 TEST_F(MetadataOpsTest, asid_test) {
@@ -142,7 +144,7 @@ TEST_F(MetadataOpsTest, upid_to_service_id_test) {
   // Terminate a service, and make sure that the upid no longer associates with that service.
   updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedServiceUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
-                                                               updates_.get()));
+                                                               &md_filter_, updates_.get()));
   // upid2 previously was connected to 4_uid.
   udf_tester.ForInput(upid2).Expect("");
 }
@@ -159,7 +161,7 @@ TEST_F(MetadataOpsTest, upid_to_service_name_test) {
 
   updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedServiceUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
-                                                               updates_.get()));
+                                                               &md_filter_, updates_.get()));
   // upid2 previously was connected to pl/terminating_service.
   udf_tester.ForInput(upid2).Expect("");
 }
@@ -176,7 +178,7 @@ TEST_F(MetadataOpsTest, upid_to_node_name_test) {
 
   updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
-                                                               updates_.get()));
+                                                               &md_filter_, updates_.get()));
   // upid2 previously was connected to pl/terminating_pod.
   udf_tester.ForInput(upid2).Expect("");
 }
@@ -201,7 +203,7 @@ TEST_F(MetadataOpsTest, upid_to_hostname_test) {
 
   updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
-                                                               updates_.get()));
+                                                               &md_filter_, updates_.get()));
   // upid2 previously was connected to pl/terminating_pod.
   udf_tester.ForInput(upid2).Expect("");
 }
@@ -224,7 +226,7 @@ TEST_F(MetadataOpsTest, service_name_to_service_id_test) {
 TEST_F(MetadataOpsTest, upid_to_service_id_test_multiple_services) {
   updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
-                                                               updates_.get()));
+                                                               &md_filter_, updates_.get()));
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
   // auto udf_tester = pl::carnot::udf::UDFTester<UPIDToServiceIDUDF>(std::move(function_ctx));
   UPIDToServiceIDUDF udf;
@@ -236,7 +238,7 @@ TEST_F(MetadataOpsTest, upid_to_service_id_test_multiple_services) {
 TEST_F(MetadataOpsTest, upid_to_service_name_test_multiple_services) {
   updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
-                                                               updates_.get()));
+                                                               &md_filter_, updates_.get()));
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
   UPIDToServiceNameUDF udf;
   auto upid1 = types::UInt128Value(528280977975, 89101);
@@ -248,7 +250,7 @@ TEST_F(MetadataOpsTest, upid_to_service_name_test_multiple_services) {
 TEST_F(MetadataOpsTest, pod_id_to_service_name_test_multiple_services) {
   updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
-                                                               updates_.get()));
+                                                               &md_filter_, updates_.get()));
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
   PodIDToServiceNameUDF udf;
   EXPECT_THAT(udf.Exec(function_ctx.get(), "1_uid"),
@@ -259,7 +261,7 @@ TEST_F(MetadataOpsTest, pod_id_to_service_name_test_multiple_services) {
 TEST_F(MetadataOpsTest, pod_id_to_service_id_test_multiple_services) {
   updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
-                                                               updates_.get()));
+                                                               &md_filter_, updates_.get()));
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
   PodIDToServiceIDUDF udf;
   EXPECT_THAT(udf.Exec(function_ctx.get(), "1_uid"),
@@ -269,7 +271,7 @@ TEST_F(MetadataOpsTest, pod_id_to_service_id_test_multiple_services) {
 TEST_F(MetadataOpsTest, pod_name_to_service_name_test_multiple_services) {
   updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
-                                                               updates_.get()));
+                                                               &md_filter_, updates_.get()));
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
   PodNameToServiceNameUDF udf;
   EXPECT_THAT(udf.Exec(function_ctx.get(), "pl/running_pod"),
@@ -280,7 +282,7 @@ TEST_F(MetadataOpsTest, pod_name_to_service_name_test_multiple_services) {
 TEST_F(MetadataOpsTest, pod_name_to_service_id_test_multiple_services) {
   updates_->enqueue(pl::metadatapb::testutils::CreateServiceWithSamePodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
-                                                               updates_.get()));
+                                                               &md_filter_, updates_.get()));
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
   PodNameToServiceIDUDF udf;
   EXPECT_THAT(udf.Exec(function_ctx.get(), "pl/running_pod"),
@@ -327,7 +329,7 @@ TEST_F(MetadataOpsTest, pod_name_to_pod_status) {
   PodNameToPodStatusUDF udf;
   updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
-                                                               updates_.get()));
+                                                               &md_filter_, updates_.get()));
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
   // 1_uid is the Pod id for the currently running pod.
   EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/running_pod"), "Running");

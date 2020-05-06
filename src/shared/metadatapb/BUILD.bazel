@@ -22,7 +22,7 @@ pl_cc_proto_library(
 
 pl_go_proto_library(
     name = "metadata_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/carnot/metadatapb",
+    importpath = "pixielabs.ai/pixielabs/src/shared/metadatapb",
     proto = ":metadata_pl_proto",
     visibility = ["//visibility:public"],
 )

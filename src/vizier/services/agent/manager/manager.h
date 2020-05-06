@@ -39,6 +39,20 @@ struct Info {
 };
 
 /**
+ * A (temporary) noop implementation used for the metadata filter of AgentMetadataStateManager.
+ * TODO(nserrino): Replace with non-noop implementation that stores metadata entities.
+ */
+class NoopAgentMetadataFilter : public md::AgentMetadataFilter {
+ public:
+  NoopAgentMetadataFilter()
+      : md::AgentMetadataFilter(md::AgentMetadataStateManager::MetadataFilterEntities()) {}
+
+ protected:
+  void InsertEntityImpl(md::MetadataType, std::string_view) override {}
+  bool ContainsEntityImpl(md::MetadataType, std::string_view) const override { return false; }
+};
+
+/**
  * Manager is the shared code and common interface for the entity responsible for managing the
  * sub-components of a pixie agent. The base version has a table store, carnot and metadata system.
  * This version can be extended to add more sub-components.
@@ -175,6 +189,8 @@ class Manager : public pl::NotCopyable {
 
   // Timeout for registration ACK.
   static constexpr std::chrono::seconds kRegistrationPeriod{30};
+
+  NoopAgentMetadataFilter agent_metadata_filter_;
 };
 
 /**

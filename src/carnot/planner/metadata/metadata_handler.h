@@ -5,18 +5,18 @@
 #include <utility>
 #include <vector>
 
-#include "src/carnot/metadatapb/metadata.pb.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/common/base/error.h"
 #include "src/common/base/status.h"
 #include "src/common/base/statusor.h"
+#include "src/shared/metadatapb/metadata.pb.h"
 #include "src/shared/types/proto/types.pb.h"
 
 namespace pl {
 namespace carnot {
 namespace planner {
 
-using ::pl::carnot::metadatapb::MetadataType;
+using ::pl::shared::metadatapb::MetadataType;
 
 class NameMetadataProperty : public MetadataProperty {
  public:

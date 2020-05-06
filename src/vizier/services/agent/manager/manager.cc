@@ -237,7 +237,7 @@ void Manager::HandleRegisterAgentResponse(std::unique_ptr<messages::VizierMessag
 
   mds_manager_ = std::make_unique<pl::md::AgentMetadataStateManager>(
       info_.hostname, info_.asid, info_.agent_id, info_.capabilities.collects_data(),
-      cluster_cidr_opt, pl::system::Config::GetInstance());
+      cluster_cidr_opt, pl::system::Config::GetInstance(), &agent_metadata_filter_);
   relation_info_manager_ = std::make_unique<RelationInfoManager>();
 
   PL_CHECK_OK(PostRegisterHook());

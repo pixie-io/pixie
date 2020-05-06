@@ -65,7 +65,8 @@ Status AgentMetadataStateManager::PerformMetadataStateUpdate() {
   // Get timestamp so all updates happen at the same timestamp.
   // TODO(zasgar): Change this to an injected clock.
   int64_t ts = CurrentTimeNS();
-  PL_RETURN_IF_ERROR(ApplyK8sUpdates(ts, shadow_state.get(), &incoming_k8s_updates_));
+  PL_RETURN_IF_ERROR(
+      ApplyK8sUpdates(ts, shadow_state.get(), metadata_filter_, &incoming_k8s_updates_));
 
   if (collects_data_) {
     // Look for dead pods. Normally, we would count on the K8s updates to take care of this,
@@ -100,7 +101,7 @@ Status AgentMetadataStateManager::PerformMetadataStateUpdate() {
 }
 
 Status AgentMetadataStateManager::ApplyK8sUpdates(
-    int64_t ts, AgentMetadataState* state,
+    int64_t ts, AgentMetadataState* state, AgentMetadataFilter* metadata_filter,
     moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>* updates) {
   std::unique_ptr<ResourceUpdate> update(nullptr);
   PL_UNUSED(ts);
@@ -109,13 +110,14 @@ Status AgentMetadataStateManager::ApplyK8sUpdates(
   while (updates->try_dequeue(update)) {
     switch (update->update_case()) {
       case ResourceUpdate::kPodUpdate:
-        PL_RETURN_IF_ERROR(HandlePodUpdate(update->pod_update(), state));
+        PL_RETURN_IF_ERROR(HandlePodUpdate(update->pod_update(), state, metadata_filter));
         break;
       case ResourceUpdate::kContainerUpdate:
-        PL_RETURN_IF_ERROR(HandleContainerUpdate(update->container_update(), state));
+        PL_RETURN_IF_ERROR(
+            HandleContainerUpdate(update->container_update(), state, metadata_filter));
         break;
       case ResourceUpdate::kServiceUpdate:
-        PL_RETURN_IF_ERROR(HandleServiceUpdate(update->service_update(), state));
+        PL_RETURN_IF_ERROR(HandleServiceUpdate(update->service_update(), state, metadata_filter));
         break;
       default:
         LOG(ERROR) << "Unhandled Update Type: " << update->update_case() << " (ignoring)";
@@ -269,20 +271,35 @@ Status AgentMetadataStateManager::DeleteMetadataForDeadObjects(AgentMetadataStat
 }
 
 Status AgentMetadataStateManager::HandlePodUpdate(const PodUpdate& update,
-                                                  AgentMetadataState* state) {
+                                                  AgentMetadataState* state,
+                                                  AgentMetadataFilter* md_filter) {
   VLOG(2) << "Pod Update: " << update.DebugString();
+  PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::POD_ID, update.uid()));
+  // In the future we will not stire K8s entites with the namespace prepended, but that is what
+  // the query language expects for now.
+  // TODO(nserrino): Track namespace separately here (and with service below).
+  PL_RETURN_IF_ERROR(md_filter->InsertEntity(
+      MetadataType::POD_NAME,
+      AgentMetadataFilter::WithK8sNamespace(update.namespace_(), update.name())));
   return state->k8s_metadata_state()->HandlePodUpdate(update);
 }
 
 Status AgentMetadataStateManager::HandleServiceUpdate(const ServiceUpdate& update,
-                                                      AgentMetadataState* state) {
+                                                      AgentMetadataState* state,
+                                                      AgentMetadataFilter* md_filter) {
   VLOG(2) << "Service Update: " << update.DebugString();
+  PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::SERVICE_ID, update.uid()));
+  PL_RETURN_IF_ERROR(md_filter->InsertEntity(
+      MetadataType::SERVICE_NAME,
+      AgentMetadataFilter::WithK8sNamespace(update.namespace_(), update.name())));
   return state->k8s_metadata_state()->HandleServiceUpdate(update);
 }
 
 Status AgentMetadataStateManager::HandleContainerUpdate(const ContainerUpdate& update,
-                                                        AgentMetadataState* state) {
+                                                        AgentMetadataState* state,
+                                                        AgentMetadataFilter* md_filter) {
   VLOG(2) << "Container Update: " << update.DebugString();
+  PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::CONTAINER_ID, update.cid()));
   return state->k8s_metadata_state()->HandleContainerUpdate(update);
 }
 

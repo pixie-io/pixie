@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test", "pl_cc_test_library")
 
 pl_cc_library(
     name = "cc_library",
@@ -13,15 +13,27 @@ pl_cc_library(
     ),
     hdrs = glob(
         ["*.h"],
-        exclude = ["**/*_mock.h"],
+        exclude = [
+            "**/*_mock.h",
+            "test_utils.h",
+        ],
     ),
     deps = [
         "//src/common/system:cc_library",
+        "//src/shared/metadatapb:metadata_pl_cc_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_cc_proto",
         "@com_github_cameron314_concurrentqueue//:concurrentqueue",
         "@com_google_absl//absl/numeric:int128",
         "@com_google_googletest//:gtest_prod",
         "@com_github_rlyeh_sole//:sole",
+    ],
+)
+
+pl_cc_test_library(
+    name = "test_utils",
+    hdrs = ["test_utils.h"],
+    deps = [
+        ":cc_library",
     ],
 )
 
@@ -34,6 +46,7 @@ pl_cc_test(
     data = glob(["testdata/**/*"]),
     deps = [
         ":cc_library",
+        ":test_utils",
         "//src/common/system:cc_library_mock",
     ],
 )

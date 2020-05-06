@@ -80,7 +80,8 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
     EXPECT_CALL(sys_config, HasConfig()).WillRepeatedly(Return(true));
 
     mds_manager_ = std::make_unique<md::AgentMetadataStateManager>(
-        "host", 1, /* agent_id */ sole::uuid4(), true, absl::optional<CIDRBlock>{}, sys_config);
+        "host", 1, /* agent_id */ sole::uuid4(), true, absl::optional<CIDRBlock>{}, sys_config,
+        &md_filter_);
 
     // Relation info with no tabletization.
     Relation relation0({types::TIME64NS, types::INT64}, {"time_", "count"});
@@ -111,6 +112,7 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
   std::unique_ptr<HeartbeatMessageHandler> heartbeat_handler_;
   std::unique_ptr<FakeNATSConnector<pl::vizier::messages::VizierMessage>> nats_conn_;
   agent::Info agent_info_;
+  NoopAgentMetadataFilter md_filter_;
 };
 
 TEST_F(HeartbeatMessageHandlerTest, InitialHeartbeatTimeout) {

@@ -2,7 +2,9 @@
 
 #include <memory>
 #include <mutex>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include <absl/base/internal/spinlock.h>
 #include <absl/container/flat_hash_map.h>
@@ -14,8 +16,10 @@
 #include "src/shared/metadata/base_types.h"
 #include "src/shared/metadata/cgroup_metadata_reader.h"
 #include "src/shared/metadata/k8s_objects.h"
+#include "src/shared/metadata/metadata_filter.h"
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/metadata/pids.h"
+#include "src/shared/metadatapb/metadata.pb.h"
 
 PL_SUPPRESS_WARNINGS_START()
 // TODO(michelle): Fix this so that we don't need to the NOLINT.
@@ -38,8 +42,13 @@ class AgentMetadataStateManager {
 
   explicit AgentMetadataStateManager(std::string_view hostname, uint32_t asid, sole::uuid agent_id,
                                      bool collects_data, absl::optional<CIDRBlock> cluster_cidr_opt,
-                                     const pl::system::Config& config)
-      : asid_(asid), agent_id_(agent_id), proc_parser_(config), collects_data_(collects_data) {
+                                     const pl::system::Config& config,
+                                     AgentMetadataFilter* metadata_filter)
+      : asid_(asid),
+        agent_id_(agent_id),
+        proc_parser_(config),
+        collects_data_(collects_data),
+        metadata_filter_(metadata_filter) {
     md_reader_ = std::make_unique<CGroupMetadataReader>(config);
     agent_metadata_state_ = std::make_shared<AgentMetadataState>(hostname, asid, agent_id);
     if (cluster_cidr_opt.has_value()) {
@@ -92,7 +101,7 @@ class AgentMetadataStateManager {
   }
 
   static Status ApplyK8sUpdates(
-      int64_t ts, AgentMetadataState* state,
+      int64_t ts, AgentMetadataState* state, AgentMetadataFilter* metadata_filter,
       moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>* updates);
 
   static void RemoveDeadPods(int64_t ts, AgentMetadataState* md, CGroupMetadataReader* md_reader);
@@ -102,6 +111,13 @@ class AgentMetadataStateManager {
       moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>>* pid_updates);
 
   static Status DeleteMetadataForDeadObjects(AgentMetadataState*, int64_t ttl);
+
+  static absl::flat_hash_set<MetadataType> MetadataFilterEntities() {
+    // TODO(nserrino): Add other metadata fields, such as container name, namespace, node name,
+    // hostname.
+    return {MetadataType::SERVICE_ID, MetadataType::SERVICE_NAME, MetadataType::POD_ID,
+            MetadataType::POD_NAME, MetadataType::CONTAINER_ID};
+  }
 
  private:
   uint32_t asid_;
@@ -119,9 +135,14 @@ class AgentMetadataStateManager {
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>> incoming_k8s_updates_;
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<PIDStatusEvent>> pid_updates_;
 
-  static Status HandlePodUpdate(const PodUpdate& update, AgentMetadataState* state);
-  static Status HandleContainerUpdate(const ContainerUpdate& update, AgentMetadataState* state);
-  static Status HandleServiceUpdate(const ServiceUpdate& update, AgentMetadataState* state);
+  AgentMetadataFilter* metadata_filter_;
+
+  static Status HandlePodUpdate(const PodUpdate& update, AgentMetadataState* state,
+                                AgentMetadataFilter* metadata_filter);
+  static Status HandleContainerUpdate(const ContainerUpdate& update, AgentMetadataState* state,
+                                      AgentMetadataFilter* metadata_filter);
+  static Status HandleServiceUpdate(const ServiceUpdate& update, AgentMetadataState* state,
+                                    AgentMetadataFilter* metadata_filter);
 };
 
 }  // namespace md
