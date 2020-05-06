@@ -17,13 +17,13 @@ Few links to learn more about
 
 You'll need the following to use the notebooks: 
 
-- Google account to loginnn
+- Google account to login
 - Pixie pre-installed in a K8s environment
 
 
 ## Notes
 
-- Notebooks currently do not support deployment of a local kubnernets environment to install Pixie. You'll need to log into a cluster with Pixie already running. 
+- Notebooks currently do not support deployment of a local kubernetes environment to install Pixie. You'll need to log into a cluster with Pixie already running. 
 
 
 ## 🚀 Quickstart
