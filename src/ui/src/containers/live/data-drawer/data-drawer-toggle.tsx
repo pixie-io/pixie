@@ -69,13 +69,21 @@ const DataDrawerToggle = (props: DataDrawerToggleProps) => {
       event.stopPropagation();
     }
   };
+  const { error, stats } = React.useContext(ResultsContext);
+  React.useEffect(() => {
+    if ((!error && activeTab === 'errors') ||
+      (!stats && activeTab === 'stats')) {
+      setActiveTab('data');
+    }
+  }, [activeTab, error, stats]);
 
   return (
     <div className={classes.root} onClick={toggle}>
       {opened ? <ExpandMoreIcon className={classes.icon} /> : <ExpandLessIcon className={classes.icon} />}
       <StyledTabs value={activeTab} onChange={onTabChange}>
         <StyledTab value='data' label='Underlying Data' />
-        <StyledTab value='errors' label='Errors' />
+        {error ? <StyledTab value='errors' label='Errors' /> : null}
+        {stats ? <StyledTab value='stats' label='Stats' /> : null}
       </StyledTabs>
     </div >
   );

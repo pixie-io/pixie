@@ -10,6 +10,7 @@ import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/sty
 import DataDrawerToggle from './data-drawer-toggle';
 import DataViewer from './data-viewer';
 import ErrorPanel from './error-panel';
+import ExecutionStats from './execution-stats';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -48,6 +49,9 @@ const DataDrawer = () => {
       </LazyPanel>
       <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'errors'}>
         <ErrorPanel />
+      </LazyPanel>
+      <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'stats'}>
+        <ExecutionStats />
       </LazyPanel>
     </div>
   );

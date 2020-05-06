@@ -3,8 +3,8 @@ import * as ls from 'common/localstorage';
 import { Table, VizierQueryFunc } from 'common/vizier-grpc-client';
 import ClientContext from 'common/vizier-grpc-client-context';
 import { SnackbarProvider, useSnackbar } from 'components/snackbar/snackbar';
-import { parseSpecs, VisualizationSpecMap } from 'components/vega/spec';
 import * as React from 'react';
+import { QueryExecutionStats } from 'types/generated/vizier_pb';
 import { setQueryParams } from 'utils/query-params';
 
 import { DataDrawerContext, DataDrawerContextProvider } from './context/data-drawer-context';
@@ -26,6 +26,7 @@ interface Tables {
 interface Results {
   error?: Error;
   tables: Tables;
+  stats?: QueryExecutionStats;
 }
 
 interface Title {
@@ -132,7 +133,7 @@ const LiveContextProvider = (props) => {
         for (const table of queryResults.tables) {
           newTables[table.name] = table;
         }
-        setResults({ tables: newTables });
+        setResults({ tables: newTables, stats: queryResults.executionStats });
       }).catch((error) => {
         const errType = (error as VizierQueryError).errType;
         errMsg = error.message;
