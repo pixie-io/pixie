@@ -456,10 +456,14 @@ StatusOr<ParseState> HandleStmtExecuteRequest(const Packet& req_packet,
     // 1. The stitcher is confused/messed up and accidentally deleted wrong prepare event.
     // 2. Client sent a Stmt Exec for a deleted Stmt Prepare
     // We return -1 as stmt_id to indicate error and defer decision to the caller.
-    LOG_FIRST_N(WARNING, 10) << absl::Substitute("Could not find prepare statement for stmt_id=$0",
-                                                 stmt_id);
 
     // We can't determine whether the rest of this packet is valid or not, so just return success.
+    // But pass the information up.
+    entry->px_info = absl::Substitute(
+        "Could not find PREPARE statement for this EXECUTE command. Query not decoded. "
+        "[stmt_id=$0].",
+        stmt_id);
+    entry->req.msg = absl::Substitute("Execute stmt_id=$0.", stmt_id);
     return ParseState::kSuccess;
   }
 
@@ -517,8 +521,8 @@ StatusOr<ParseState> HandleStmtCloseRequest(const Packet& req_packet,
   } else {
     // We may have missed the prepare statement (e.g. due to the missing start of connection
     // problem), but we can still process the close, and continue on. Just print a warning.
-    LOG(WARNING) << absl::Substitute("Cannot find Stmt Prepare Event to close [stmt_id=$0].",
-                                     stmt_id);
+    entry->px_info = absl::Substitute(
+        "Could not find prepare statement for this close command [stmt_id=$0].", stmt_id);
   }
 
   return ParseState::kSuccess;

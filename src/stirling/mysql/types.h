@@ -380,7 +380,15 @@ struct MySQLResponse {
 /**
  *  Record is the primary output of the mysql parser.
  */
-using Record = ReqRespPair<MySQLRequest, MySQLResponse>;
+struct Record {
+  MySQLRequest req;
+  MySQLResponse resp;
+
+  // Debug information that we want to pass up this record.
+  // Used to record info/warnings.
+  // Only pushed to table store on debug builds.
+  std::string px_info = "";
+};
 
 struct ProtocolTraits {
   using frame_type = Packet;

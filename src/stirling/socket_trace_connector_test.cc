@@ -769,7 +769,7 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
 
   EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
   EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]),
-              ElementsAre(expected_entry0, expected_entry1, "", ""));
+              ElementsAre(expected_entry0, expected_entry1, "", "Execute stmt_id=2."));
   EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]),
               ElementsAre("", "Resultset rows = 2", "", "This is an error."));
   // In test environment, latencies are simply the number of packets in the response.
