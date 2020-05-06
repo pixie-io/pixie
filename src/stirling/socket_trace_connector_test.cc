@@ -914,7 +914,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
-  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(8)));
+  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(9)));
 
   // In this test environment, latencies are the number of events.
 
@@ -982,6 +982,13 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx),
             "Unknown system variable 'storage_engine'");
   EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx).val, 1);
+
+  ++idx;
+  EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx), "");
+  EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
+            static_cast<int>(mysql::MySQLEventType::kQuit));
+  EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "");
+  // Not checking latency since connection ended.
 }
 
 // Inspired from real traced query.

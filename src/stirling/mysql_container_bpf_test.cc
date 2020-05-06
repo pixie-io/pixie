@@ -242,6 +242,19 @@ mysql::Record kRecordScript1Cmd5 = {
   }
 };
 
+mysql::Record kRecordScript1Cmd6 = {
+  .req = {
+    .cmd = mysql::MySQLEventType::kQuit,
+    .msg = "",
+    .timestamp_ns = 0,
+  },
+  .resp = {
+    .status = mysql::MySQLRespStatus::kNone,
+    .msg = "",
+    .timestamp_ns = 0,
+  }
+};
+
 mysql::Record kRecordScript2Cmd1 = {
   .req = {
     .cmd = mysql::MySQLEventType::kQuery,
@@ -336,6 +349,19 @@ mysql::Record kRecordScript2Cmd7 = {
   }
 };
 
+mysql::Record kRecordScript2Cmd8 = {
+  .req = {
+    .cmd = mysql::MySQLEventType::kQuit,
+    .msg = "",
+    .timestamp_ns = 0,
+  },
+  .resp = {
+    .status = mysql::MySQLRespStatus::kNone,
+    .msg = "",
+    .timestamp_ns = 0,
+  }
+};
+
 // clang-format on
 
 //-----------------------------------------------------------------------------
@@ -365,11 +391,11 @@ TEST_F(MySQLTraceTest, mysql_capture) {
     if (!FLAGS_tracing_mode) {
       std::vector<mysql::Record> records = GetTargetRecords(record_batch, client_pid);
 
-      EXPECT_THAT(records,
-                  UnorderedElementsAre(
-                      EqMySQLRecord(kRecordInit), EqMySQLRecord(kRecordScript1Cmd1),
-                      EqMySQLRecord(kRecordScript1Cmd2), EqMySQLRecord(kRecordScript1Cmd3),
-                      EqMySQLRecord(kRecordScript1Cmd4), EqMySQLRecord(kRecordScript1Cmd5)));
+      EXPECT_THAT(records, UnorderedElementsAre(
+                               EqMySQLRecord(kRecordInit), EqMySQLRecord(kRecordScript1Cmd1),
+                               EqMySQLRecord(kRecordScript1Cmd2), EqMySQLRecord(kRecordScript1Cmd3),
+                               EqMySQLRecord(kRecordScript1Cmd4), EqMySQLRecord(kRecordScript1Cmd5),
+                               EqMySQLRecord(kRecordScript1Cmd6)));
     }
 
     // TODO(oazizi): Check server-side tracing results.
@@ -391,12 +417,12 @@ TEST_F(MySQLTraceTest, mysql_capture) {
     if (!FLAGS_tracing_mode) {
       std::vector<mysql::Record> records = GetTargetRecords(record_batch, client_pid);
 
-      EXPECT_THAT(records,
-                  UnorderedElementsAre(
-                      EqMySQLRecord(kRecordInit), EqMySQLRecord(kRecordScript2Cmd1),
-                      EqMySQLRecord(kRecordScript2Cmd2), EqMySQLRecord(kRecordScript2Cmd3),
-                      EqMySQLRecord(kRecordScript2Cmd4), EqMySQLRecord(kRecordScript2Cmd5),
-                      EqMySQLRecord(kRecordScript2Cmd6), EqMySQLRecord(kRecordScript2Cmd7)));
+      EXPECT_THAT(records, UnorderedElementsAre(
+                               EqMySQLRecord(kRecordInit), EqMySQLRecord(kRecordScript2Cmd1),
+                               EqMySQLRecord(kRecordScript2Cmd2), EqMySQLRecord(kRecordScript2Cmd3),
+                               EqMySQLRecord(kRecordScript2Cmd4), EqMySQLRecord(kRecordScript2Cmd5),
+                               EqMySQLRecord(kRecordScript2Cmd6), EqMySQLRecord(kRecordScript2Cmd7),
+                               EqMySQLRecord(kRecordScript2Cmd8)));
     }
 
     // TODO(oazizi): Check server-side tracing results.

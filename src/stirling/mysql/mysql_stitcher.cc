@@ -101,8 +101,7 @@ StatusOr<ParseState> ProcessPackets(const Packet& req_packet, DequeView<Packet> 
                                              entry);
 
     case MySQLEventType::kQuit:  // Response: OK_Packet or a connection close.
-      return ProcessRequestWithBasicResponse(req_packet, /* string_req */ false, resp_packets_view,
-                                             entry);
+      return ProcessQuit(req_packet, resp_packets_view, entry);
 
       // Basic Commands with response: EOF_Packet or ERR_Packet.
     case MySQLEventType::kShutdown:  // Deprecated.
@@ -450,6 +449,36 @@ StatusOr<ParseState> ProcessFieldList(const Packet& req_packet,
 
   entry->resp.status = MySQLRespStatus::kUnknown;
   return error::Unimplemented("COM_FIELD_LIST response is unhandled.");
+}
+
+// Process a COM_QUIT request and response, and populate details into a record entry.
+// MySQL documentation: https://dev.mysql.com/doc/internals/en/com-quit.html
+StatusOr<ParseState> ProcessQuit(const Packet& req_packet, DequeView<Packet> resp_packets,
+                                 Record* entry) {
+  //----------------
+  // Request
+  //----------------
+
+  PL_RETURN_IF_NOT_SUCCESS(HandleNonStringRequest(req_packet, entry));
+
+  //----------------
+  // Response
+  //----------------
+
+  if (resp_packets.empty()) {
+    entry->resp.status = MySQLRespStatus::kNone;
+    entry->resp.timestamp_ns = req_packet.timestamp_ns;
+    return ParseState::kSuccess;
+  }
+
+  const Packet& resp_packet = resp_packets.front();
+  if (IsOKPacket(resp_packet)) {
+    entry->resp.status = MySQLRespStatus::kOK;
+    entry->resp.timestamp_ns = resp_packet.timestamp_ns;
+    return ParseState::kSuccess;
+  }
+
+  return error::Internal("Extra response packet after ComQuit.");
 }
 
 // Process a simple request and response pair, and populate details into a record entry.
