@@ -1,10 +1,10 @@
 import * as React from 'react';
-import {configure, GlobalHotKeys} from 'react-hotkeys';
-import {isMac} from 'utils/detect-os';
+import { configure, GlobalHotKeys } from 'react-hotkeys';
+import { isMac } from 'utils/detect-os';
 
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
-import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 type HotKeyAction =
   'pixie-command' |
@@ -21,9 +21,9 @@ type KeyMap = {
   }
 };
 
-export type Handlers = Partial<{
+export type Handlers = Omit<{
   [action in HotKeyAction]: () => void;
-}>;
+}, 'show-help'>;
 
 interface LiveViewShortcutsProps {
   handlers: Handlers;

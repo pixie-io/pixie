@@ -94,7 +94,7 @@ const LiveView = () => {
       'pixie-command': toggleCommandOpen,
       'toggle-editor': toggleEditor,
       'toggle-data-drawer': () => setDataDrawerOpen((open) => !open),
-      executeScript,
+      execute: executeScript,
     };
   }, [executeScript]);
 
