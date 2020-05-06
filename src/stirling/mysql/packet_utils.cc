@@ -61,8 +61,9 @@ bool IsOKPacket(const Packet& packet) {
   if (!DissectInt<2, int16_t>(packet.msg, &offset, &warnings).ok()) {
     return false;
   }
-  LOG_IF(WARNING, warnings > 1000)
-      << "Large warnings count is a sign of misclassification of OK packet.";
+  if (warnings > 1000) {
+    LOG_FIRST_N(WARNING, 10) << "Large warnings count is a sign of misclassification of OK packet.";
+  }
 
   // 7 byte minimum packet size in protocol 4.1.
   if ((header == kRespHeaderOK) && (packet.msg.size() >= 7)) {
