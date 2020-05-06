@@ -87,6 +87,14 @@ pl::StatusOr<std::filesystem::path> ResolveProcessPath(std::filesystem::path pro
 
 pl::StatusOr<std::filesystem::path> ResolveProcExe(std::filesystem::path proc_pid) {
   PL_ASSIGN_OR_RETURN(std::filesystem::path proc_exe, fs::ReadSymlink(proc_pid / "exe"));
+  if (proc_exe.empty() || proc_exe == "/") {
+    // Not sure what causes this, but sometimes get symlinks that point to "/".
+    // Seems to happen with PIDs that are short-lived, because I can never catch it in the act.
+    // I suspect there is a race with the proc filesystem, with PID creation/destruction,
+    // but this is not confirmed. Would be nice to understand the root cause, but for now, just
+    // filter these out.
+    return error::Internal("Symlink appears malformed.");
+  }
   return ResolveProcessPath(proc_pid, proc_exe);
 }
 
