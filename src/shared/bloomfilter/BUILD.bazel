@@ -1,0 +1,39 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
+
+pl_cc_library(
+    name = "cc_library",
+    srcs = glob(
+        [
+            "*.cc",
+            "*.h",
+        ],
+        exclude = [
+            "**/*_test.cc",
+            "**/*_benchmark.cc",
+        ],
+    ),
+    deps = [
+        "@com_github_cyan4973_xxhash//:xxhash",
+    ],
+)
+
+pl_cc_test(
+    name = "bloomfilter_test",
+    srcs = ["bloomfilter_test.cc"],
+    deps = [
+        ":cc_library",
+    ],
+)
+
+pl_cc_binary(
+    name = "bloomfilter_benchmark",
+    testonly = 1,
+    srcs = ["bloomfilter_benchmark.cc"],
+    deps = [
+        ":cc_library",
+        "//src/common/benchmark:cc_library",
+        "//src/common/datagen:cc_library",
+    ],
+)

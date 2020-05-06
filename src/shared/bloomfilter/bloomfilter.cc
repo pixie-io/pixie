@@ -1,0 +1,78 @@
+#include <math.h>
+#include <memory>
+
+#include "src/common/base/base.h"
+#include "src/shared/bloomfilter/bloomfilter.h"
+
+PL_SUPPRESS_WARNINGS_START()
+// NOLINTNEXTLINE: build/include_subdir
+#include "xxhash.h"
+PL_SUPPRESS_WARNINGS_END()
+
+namespace pl {
+namespace bloomfilter {
+
+StatusOr<std::unique_ptr<XXHash64BloomFilter>> XXHash64BloomFilter::Create(int64_t max_entries,
+                                                                           double error_rate) {
+  if (error_rate <= 0.0 || error_rate >= 1.0) {
+    return error::Internal(
+        "Bloom filter error rate must be greater than 0 and less than 1, received %e", error_rate);
+  }
+  if (max_entries <= 0) {
+    return error::Internal("Bloom filter must have a maximum of at least 1 entry, received %d",
+                           max_entries);
+  }
+
+  // From Wikipedia: https://en.wikipedia.org/wiki/Bloom_filter
+  // bits per entry = ln(error_rate)/ln(2)^2
+  double bpe = -(std::log(error_rate) / std::pow(std::log(2), 2));
+  int64_t num_bits = static_cast<int64_t>(std::ceil(max_entries * bpe));
+  int64_t num_bytes = (num_bits / 8) + ((num_bits % 8) ? 1 : 0);
+
+  // num hashes = ln(2) * bpe
+  int32_t num_hashes = static_cast<int32_t>(std::ceil(std::log(2) * bpe));
+
+  return std::unique_ptr<XXHash64BloomFilter>(new XXHash64BloomFilter(num_bytes, num_hashes));
+}
+
+void XXHash64BloomFilter::SetBit(int bit_number) {
+  int byte_index = bit_number >> 3;
+  int mask = 1 << (bit_number % 8);
+  buffer_[byte_index] = buffer_[byte_index] | mask;
+}
+
+bool XXHash64BloomFilter::HasBitSet(int bit_number) const {
+  int byte_index = bit_number >> 3;
+  int mask = 1 << (bit_number % 8);
+  return buffer_[byte_index] & mask;
+}
+
+void XXHash64BloomFilter::Insert(std::string_view item) {
+  uint64_t a = XXH64(item.data(), item.size(), seed_);
+  uint64_t b = XXH64(item.data(), item.size(), a);
+
+  for (auto i = 0; i < num_hashes_; ++i) {
+    // Use int128 because the combination of uint64s below (the underyling type of XXH64) could
+    // overflow.
+    absl::uint128 x = a + i * b;
+    int bit_number = static_cast<int>(x % (buffer_.size() << 3));
+    SetBit(bit_number);
+  }
+}
+
+bool XXHash64BloomFilter::Contains(std::string_view item) const {
+  uint64_t a = XXH64(item.data(), item.size(), seed_);
+  uint64_t b = XXH64(item.data(), item.size(), a);
+
+  for (auto i = 0; i < num_hashes_; ++i) {
+    absl::uint128 x = a + i * b;
+    int bit_number = static_cast<int>(x % (buffer_.size() << 3));
+    if (!HasBitSet(bit_number)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+}  // namespace bloomfilter
+}  // namespace pl
