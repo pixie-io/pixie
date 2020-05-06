@@ -884,7 +884,6 @@ static __inline void probe_check_frame_order(struct pt_regs* ctx, enum FramerTyp
 //
 // Verified to be stable from at least go1.6 to t go.1.13.
 int probe_http2_framer_check_frame_order(struct pt_regs* ctx) {
-  bpf_trace_printk("probe_http2_framer_check_frame_order()\n");
   probe_check_frame_order(ctx, khttp2_Framer);
   return 0;
 }
