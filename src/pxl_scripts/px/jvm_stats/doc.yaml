@@ -1,3 +1,4 @@
 ---
-short: JVM stats
-long: JVM stats for Java processes running on the cluster
+short: JVM Stats per Pod
+long: >
+  Returns the JVM Stats per Pod. You can filter this by node.

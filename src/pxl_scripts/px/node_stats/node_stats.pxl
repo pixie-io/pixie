@@ -265,7 +265,7 @@ def calculate_cpu(df, window_size):
     cpu_per_k8s = cpu_by_upid.groupby([k8s_object, 'timestamp']).agg(
         cpu_ktime_ms=('cpu_ktime_ms', px.sum),
         cpu_utime_ms=('cpu_utime_ms', px.sum),
-        rss_mb=('rss_mb', px.mean),
+        rss_mb=('rss_mb', px.sum),
     )
 
     # Convert window_size into the same units as cpu time.
