@@ -72,6 +72,70 @@ func TestParseIntoCommand(t *testing.T) {
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
 					&autocomplete.TabStop{
+						Value: "px/svc_info",
+						Kind:  cloudapipb.AEK_SCRIPT,
+						Valid: true,
+					},
+					&autocomplete.TabStop{
+						Value:   "pl/test",
+						Kind:    cloudapipb.AEK_SVC,
+						Valid:   true,
+						ArgName: "svc_name",
+					},
+				},
+				Executable: true,
+			},
+		},
+		{
+			name:  "valid with run",
+			input: "run script:px/svc_info svc_name:pl/test",
+			requests: [][]*autocomplete.SuggestionRequest{
+				[]*autocomplete.SuggestionRequest{
+					&autocomplete.SuggestionRequest{
+						OrgID:        orgID,
+						Input:        "px/svc_info",
+						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT},
+						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
+					},
+				},
+				[]*autocomplete.SuggestionRequest{
+					&autocomplete.SuggestionRequest{
+						OrgID:        orgID,
+						Input:        "pl/test",
+						AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
+						AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
+					},
+				},
+			},
+			responses: [][]*autocomplete.SuggestionResult{
+				[]*autocomplete.SuggestionResult{
+					&autocomplete.SuggestionResult{
+						Suggestions: []*autocomplete.Suggestion{
+							&autocomplete.Suggestion{
+								Name:     "px/svc_info",
+								Score:    1,
+								ArgNames: []string{"svc_name"},
+								ArgKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
+							},
+						},
+						ExactMatch: true,
+					},
+				},
+				[]*autocomplete.SuggestionResult{
+					&autocomplete.SuggestionResult{
+						Suggestions: []*autocomplete.Suggestion{
+							&autocomplete.Suggestion{
+								Name:  "px/test",
+								Score: 1,
+							},
+						},
+						ExactMatch: true,
+					},
+				},
+			},
+			expectedCmd: &autocomplete.Command{
+				TabStops: []*autocomplete.TabStop{
+					&autocomplete.TabStop{
 						Value: "run",
 						Kind:  cloudapipb.AEK_UNKNOWN,
 						Valid: true,
@@ -141,11 +205,6 @@ func TestParseIntoCommand(t *testing.T) {
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
 					&autocomplete.TabStop{
-						Value: "run",
-						Kind:  cloudapipb.AEK_UNKNOWN,
-						Valid: true,
-					},
-					&autocomplete.TabStop{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_SCRIPT,
 						Valid: true,
@@ -210,11 +269,6 @@ func TestParseIntoCommand(t *testing.T) {
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
 					&autocomplete.TabStop{
-						Value: "run",
-						Kind:  cloudapipb.AEK_UNKNOWN,
-						Valid: true,
-					},
-					&autocomplete.TabStop{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_SCRIPT,
 						Valid: true,
@@ -274,11 +328,6 @@ func TestParseIntoCommand(t *testing.T) {
 			},
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
-						Value: "run",
-						Kind:  cloudapipb.AEK_UNKNOWN,
-						Valid: true,
-					},
 					&autocomplete.TabStop{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_UNKNOWN,
@@ -342,11 +391,6 @@ func TestParseIntoCommand(t *testing.T) {
 			},
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
-						Value: "run",
-						Kind:  cloudapipb.AEK_UNKNOWN,
-						Valid: true,
-					},
 					&autocomplete.TabStop{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_SCRIPT,
@@ -426,11 +470,6 @@ func TestParseIntoCommand(t *testing.T) {
 			},
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
-						Value: "run",
-						Kind:  cloudapipb.AEK_UNKNOWN,
-						Valid: true,
-					},
 					&autocomplete.TabStop{
 						Value:          "$0px/svc_info",
 						Kind:           cloudapipb.AEK_SCRIPT,
@@ -518,11 +557,6 @@ func TestParseIntoCommand(t *testing.T) {
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
 					&autocomplete.TabStop{
-						Value: "run",
-						Kind:  cloudapipb.AEK_UNKNOWN,
-						Valid: true,
-					},
-					&autocomplete.TabStop{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_SCRIPT,
 						Valid: true,
@@ -608,11 +642,6 @@ func TestParseIntoCommand(t *testing.T) {
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
 					&autocomplete.TabStop{
-						Value: "run",
-						Kind:  cloudapipb.AEK_UNKNOWN,
-						Valid: true,
-					},
-					&autocomplete.TabStop{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_SCRIPT,
 						Valid: true,
@@ -692,11 +721,6 @@ func TestParseIntoCommand(t *testing.T) {
 			},
 			expectedCmd: &autocomplete.Command{
 				TabStops: []*autocomplete.TabStop{
-					&autocomplete.TabStop{
-						Value: "run",
-						Kind:  cloudapipb.AEK_UNKNOWN,
-						Valid: true,
-					},
 					&autocomplete.TabStop{
 						Value: "px/svc_info",
 						Kind:  cloudapipb.AEK_SCRIPT,

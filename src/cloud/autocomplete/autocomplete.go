@@ -86,13 +86,13 @@ func ParseIntoCommand(input string, s Suggester, orgID uuid.UUID) (*Command, err
 	action := "run"
 	if parsedCmd.Action != nil {
 		action = *parsedCmd.Action
+		// First tabstop should always be action. if specified explicitly.
+		cmd.TabStops = append(cmd.TabStops, &TabStop{
+			Value: action,
+			Kind:  cloudapipb.AEK_UNKNOWN,
+			Valid: true,
+		})
 	}
-	// First tabstop should always be action.
-	cmd.TabStops = append(cmd.TabStops, &TabStop{
-		Value: action,
-		Kind:  cloudapipb.AEK_UNKNOWN,
-		Valid: true,
-	})
 
 	if action == "go" {
 		err = parseGoCommand(parsedCmd, cmd, s)

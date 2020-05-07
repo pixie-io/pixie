@@ -360,9 +360,9 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	assert.Equal(t, "${2:run} ${3:$0px/svc_info} ${1:pl/test}", resp.FormattedInput)
+	assert.Equal(t, "${2:$0px/svc_info} ${1:pl/test}", resp.FormattedInput)
 	assert.False(t, resp.IsExecutable)
-	assert.Equal(t, 3, len(resp.TabSuggestions))
+	assert.Equal(t, 2, len(resp.TabSuggestions))
 }
 
 func toBytes(t *testing.T, msg proto.Message) []byte {
