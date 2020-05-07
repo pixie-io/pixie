@@ -16,6 +16,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/types"
+	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
@@ -132,6 +133,14 @@ func getAgentSchemasKey(agentID uuid.UUID) string {
 
 func getAgentSchemaKey(agentID uuid.UUID, schemaName string) string {
 	return path.Join(getAgentSchemasKey(agentID), schemaName)
+}
+
+func getAgentDataInfoPrefix() string {
+	return path.Join("/", "agentDataInfo")
+}
+
+func getAgentDataInfoKey(agentID uuid.UUID) string {
+	return path.Join(getAgentDataInfoPrefix(), agentID.String())
 }
 
 func getComputedSchemasKey() string {
@@ -313,6 +322,10 @@ func (mds *KVMetadataStore) DeleteAgent(agentID uuid.UUID) error {
 
 	mds.cache.DeleteAll(delKeys)
 
+	err = mds.cache.DeleteWithPrefix(getAgentDataInfoKey(agentID))
+	if err != nil {
+		return err
+	}
 	return mds.cache.DeleteWithPrefix(getAgentSchemasKey(agentID))
 }
 
@@ -373,6 +386,47 @@ func (mds *KVMetadataStore) GetAgents() ([]*agentpb.Agent, error) {
 	}
 
 	return agents, nil
+}
+
+// GetAgentsDataInfo returns all of the information about data tables that each agent has.
+func (mds *KVMetadataStore) GetAgentsDataInfo() (map[uuid.UUID]*messagespb.AgentDataInfo, error) {
+	dataInfos := make(map[uuid.UUID]*messagespb.AgentDataInfo)
+
+	keys, vals, err := mds.cache.GetWithPrefix(getAgentDataInfoPrefix())
+	if err != nil {
+		return nil, err
+	}
+
+	for i, key := range keys {
+		// Filter out keys that aren't of the form /agentDataInfo/<uuid>.
+		splitKey := strings.Split(string(key), "/")
+		if len(splitKey) != 3 {
+			continue
+		}
+		agentID, err := uuid.FromString(splitKey[2])
+		if err != nil {
+			return nil, err
+		}
+
+		pb := &messagespb.AgentDataInfo{}
+		err = proto.Unmarshal(vals[i], pb)
+		if err != nil {
+			return nil, err
+		}
+		dataInfos[agentID] = pb
+	}
+	return dataInfos, nil
+}
+
+// UpdateAgentDataInfo updates the information about data tables that a particular agent has.
+func (mds *KVMetadataStore) UpdateAgentDataInfo(agentID uuid.UUID, dataInfo *messagespb.AgentDataInfo) error {
+	i, err := dataInfo.Marshal()
+	if err != nil {
+		return errors.New("Unable to marshal agent data info protobuf: " + err.Error())
+	}
+
+	mds.cache.Set(getAgentDataInfoKey(agentID), string(i))
+	return nil
 }
 
 // GetASID gets the next assignable ASID.

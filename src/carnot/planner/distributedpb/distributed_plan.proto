@@ -21,7 +21,9 @@ message MetadataInfo {
   // for the carnot's metadata, such as container id, service name, pod id, namespace.
   // This structure may contain false positives but not false negatives.
   oneof filter {
-      pl.shared.bloomfilterpb.XXHash64BloomFilter xxhash64_bloom_filter = 2;
+      pl.shared.bloomfilterpb.XXHash64BloomFilter xxhash64_bloom_filter = 2 [
+        (gogoproto.customname) = "XXHash64BloomFilter"
+      ];
   }
 }
 

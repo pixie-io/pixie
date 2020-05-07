@@ -17,6 +17,7 @@ import (
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/types"
 	"pixielabs.ai/pixielabs/src/utils"
+	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
@@ -32,6 +33,8 @@ type MetadataStore interface {
 	CreateAgent(agentID uuid.UUID, a *agentpb.Agent) error
 	UpdateAgent(agentID uuid.UUID, a *agentpb.Agent) error
 	GetAgents() ([]*agentpb.Agent, error)
+	GetAgentsDataInfo() (map[uuid.UUID]*messagespb.AgentDataInfo, error)
+	UpdateAgentDataInfo(agentID uuid.UUID, dataInfo *messagespb.AgentDataInfo) error
 	GetAgentsForHostnamePairs(*[]*HostnameIPPair) ([]string, error)
 	GetASID() (uint32, error)
 	GetKelvinIDs() ([]string, error)

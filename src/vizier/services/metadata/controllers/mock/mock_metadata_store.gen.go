@@ -9,6 +9,7 @@ import (
 	go_uuid "github.com/satori/go.uuid"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	types "pixielabs.ai/pixielabs/src/shared/types"
+	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	reflect "reflect"
@@ -134,6 +135,31 @@ func (m *MockMetadataStore) GetAgents() ([]*agentpb.Agent, error) {
 // GetAgents indicates an expected call of GetAgents
 func (mr *MockMetadataStoreMockRecorder) GetAgents() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgents", reflect.TypeOf((*MockMetadataStore)(nil).GetAgents))
+}
+
+// GetAgentsDataInfo mocks base method
+func (m *MockMetadataStore) GetAgentsDataInfo() (map[go_uuid.UUID]*messagespb.AgentDataInfo, error) {
+	ret := m.ctrl.Call(m, "GetAgentsDataInfo")
+	ret0, _ := ret[0].(map[go_uuid.UUID]*messagespb.AgentDataInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetAgentsDataInfo indicates an expected call of GetAgentsDataInfo
+func (mr *MockMetadataStoreMockRecorder) GetAgentsDataInfo() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentsDataInfo", reflect.TypeOf((*MockMetadataStore)(nil).GetAgentsDataInfo))
+}
+
+// UpdateAgentDataInfo mocks base method
+func (m *MockMetadataStore) UpdateAgentDataInfo(agentID go_uuid.UUID, dataInfo *messagespb.AgentDataInfo) error {
+	ret := m.ctrl.Call(m, "UpdateAgentDataInfo", agentID, dataInfo)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateAgentDataInfo indicates an expected call of UpdateAgentDataInfo
+func (mr *MockMetadataStoreMockRecorder) UpdateAgentDataInfo(agentID, dataInfo interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateAgentDataInfo", reflect.TypeOf((*MockMetadataStore)(nil).UpdateAgentDataInfo), agentID, dataInfo)
 }
 
 // GetAgentsForHostnamePairs mocks base method

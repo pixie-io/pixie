@@ -9,10 +9,14 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
-	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
+	bloomfilterpb "pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
+	k8s_metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	metadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/types"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore/mock"
@@ -55,7 +59,7 @@ func createAgent(t *testing.T, c *kvstore.Cache, agentID string, agentPb string)
 	}
 
 	// Add schema info.
-	schema := new(metadatapb.SchemaInfo)
+	schema := new(k8s_metadatapb.SchemaInfo)
 	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -136,6 +140,10 @@ func TestKVMetadataStore_DeleteAgent(t *testing.T) {
 	mockDs.
 		EXPECT().
 		DeleteWithPrefix("/agents/" + testutils.ExistingAgentUUID + "/schema").
+		Return(nil)
+	mockDs.
+		EXPECT().
+		DeleteWithPrefix("/agentDataInfo/" + testutils.ExistingAgentUUID).
 		Return(nil)
 	mockDs.
 		EXPECT().
@@ -223,6 +231,111 @@ func TestKVMetadataStore_CreateAgent(t *testing.T) {
 	assert.Equal(t, "testhost", agent.Info.HostInfo.Hostname)
 }
 
+func TestKVMetadataStore_UpdateAgentDataInfo(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	existingAgUUID, err := uuid.FromString(testutils.ExistingAgentUUID)
+	assert.Nil(t, err)
+
+	newInfo := &messagespb.AgentDataInfo{
+		MetadataInfo: &distributedpb.MetadataInfo{
+			MetadataFields: []metadatapb.MetadataType{
+				metadatapb.CONTAINER_ID,
+				metadatapb.POD_NAME,
+			},
+			Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
+				XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
+					Data:      []byte("1234"),
+					NumHashes: 4,
+				},
+			},
+		},
+	}
+
+	err = mds.UpdateAgentDataInfo(existingAgUUID, newInfo)
+	assert.Nil(t, err)
+
+	savedInfo, err := c.Get("/agentDataInfo/" + testutils.ExistingAgentUUID)
+	savedMsg := &messagespb.AgentDataInfo{}
+	err = proto.Unmarshal(savedInfo, savedMsg)
+	assert.Nil(t, err)
+	assert.Equal(t, newInfo, savedMsg)
+}
+
+func TestKVMetadataStore_GetAgentsDataInfo(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/agentDataInfo").
+		Return(nil, nil, nil).
+		Times(1)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	agUUID1, err := uuid.FromString(testutils.ExistingAgentUUID)
+	assert.Nil(t, err)
+
+	info1 := &messagespb.AgentDataInfo{
+		MetadataInfo: &distributedpb.MetadataInfo{
+			MetadataFields: []metadatapb.MetadataType{
+				metadatapb.CONTAINER_ID,
+				metadatapb.POD_NAME,
+			},
+			Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
+				XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
+					Data:      []byte("1234"),
+					NumHashes: 4,
+				},
+			},
+		},
+	}
+
+	err = mds.UpdateAgentDataInfo(agUUID1, info1)
+	assert.Nil(t, err)
+
+	agUUID2, err := uuid.FromString(testutils.NewAgentUUID)
+	assert.Nil(t, err)
+
+	info2 := &messagespb.AgentDataInfo{
+		MetadataInfo: &distributedpb.MetadataInfo{
+			MetadataFields: []metadatapb.MetadataType{
+				metadatapb.CONTAINER_ID,
+				metadatapb.POD_NAME,
+			},
+			Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
+				XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
+					Data:      []byte("5678"),
+					NumHashes: 3,
+				},
+			},
+		},
+	}
+
+	err = mds.UpdateAgentDataInfo(agUUID2, info2)
+	assert.Nil(t, err)
+
+	dataInfo, err := mds.GetAgentsDataInfo()
+	assert.Nil(t, err)
+
+	assert.Equal(t, len(dataInfo), 2)
+	assert.Equal(t, dataInfo[agUUID1], info1)
+	assert.Equal(t, dataInfo[agUUID2], info2)
+}
+
 func TestKVMetadataStore_GetASID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -268,9 +381,9 @@ func TestKVMetadataStore_UpdateSchemas(t *testing.T) {
 		t.Fatal("Could not parse UUID from string.")
 	}
 
-	schemas := make([]*metadatapb.SchemaInfo, 1)
+	schemas := make([]*k8s_metadatapb.SchemaInfo, 1)
 
-	schema1 := new(metadatapb.SchemaInfo)
+	schema1 := new(k8s_metadatapb.SchemaInfo)
 	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -282,14 +395,14 @@ func TestKVMetadataStore_UpdateSchemas(t *testing.T) {
 	savedSchema, err := c.Get("/agents/" + testutils.NewAgentUUID + "/schema/a_table")
 	assert.Nil(t, err)
 	assert.NotNil(t, savedSchema)
-	schemaPb := &metadatapb.SchemaInfo{}
+	schemaPb := &k8s_metadatapb.SchemaInfo{}
 	proto.Unmarshal(savedSchema, schemaPb)
 	assert.Equal(t, "a_table", schemaPb.Name)
 
 	cSchema, err := c.Get("/computedSchema")
 	assert.Nil(t, err)
 	assert.NotNil(t, cSchema)
-	computedPb := &metadatapb.ComputedSchema{}
+	computedPb := &k8s_metadatapb.ComputedSchema{}
 	proto.Unmarshal(cSchema, computedPb)
 	assert.Equal(t, 1, len(computedPb.Tables))
 	assert.Equal(t, "a_table", computedPb.Tables[0].Name)
@@ -307,18 +420,18 @@ func TestKVMetadataStore_GetComputedSchemas(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create schemas.
-	c1 := &metadatapb.SchemaInfo{
+	c1 := &k8s_metadatapb.SchemaInfo{
 		Name:             "table1",
 		StartTimestampNS: 4,
 	}
 
-	c2 := &metadatapb.SchemaInfo{
+	c2 := &k8s_metadatapb.SchemaInfo{
 		Name:             "table2",
 		StartTimestampNS: 5,
 	}
 
-	computedSchema := &metadatapb.ComputedSchema{
-		Tables: []*metadatapb.SchemaInfo{
+	computedSchema := &k8s_metadatapb.ComputedSchema{
+		Tables: []*k8s_metadatapb.SchemaInfo{
 			c1, c2,
 		},
 	}
@@ -349,15 +462,15 @@ func TestKVMetadataStore_UpdateProcesses(t *testing.T) {
 	mds, err := controllers.NewKVMetadataStore(c)
 	assert.Nil(t, err)
 
-	processes := make([]*metadatapb.ProcessInfo, 2)
+	processes := make([]*k8s_metadatapb.ProcessInfo, 2)
 
-	p1 := new(metadatapb.ProcessInfo)
+	p1 := new(k8s_metadatapb.ProcessInfo)
 	if err := proto.UnmarshalText(testutils.Process1PB, p1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	processes[0] = p1
 
-	p2 := new(metadatapb.ProcessInfo)
+	p2 := new(k8s_metadatapb.ProcessInfo)
 	if err := proto.UnmarshalText(testutils.Process2PB, p2); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -369,25 +482,25 @@ func TestKVMetadataStore_UpdateProcesses(t *testing.T) {
 	resp, err := c.Get("/processes/123:567:89101")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	p1Pb := &metadatapb.ProcessInfo{}
+	p1Pb := &k8s_metadatapb.ProcessInfo{}
 	proto.Unmarshal(resp, p1Pb)
 	assert.Equal(t, "p1", p1Pb.Name)
 
 	resp, err = c.Get("/processes/123:567:246")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	p2Pb := &metadatapb.ProcessInfo{}
+	p2Pb := &k8s_metadatapb.ProcessInfo{}
 	proto.Unmarshal(resp, p2Pb)
 	assert.Equal(t, "p2", p2Pb.Name)
 
 	// Update Process.
 	p2Pb.Name = "new name"
-	err = mds.UpdateProcesses([]*metadatapb.ProcessInfo{p2Pb})
+	err = mds.UpdateProcesses([]*k8s_metadatapb.ProcessInfo{p2Pb})
 	assert.Nil(t, err)
 	resp, err = c.Get("/processes/123:567:246")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	p2Pb = &metadatapb.ProcessInfo{}
+	p2Pb = &k8s_metadatapb.ProcessInfo{}
 	proto.Unmarshal(resp, p2Pb)
 	assert.Equal(t, "new name", p2Pb.Name)
 }
@@ -413,7 +526,7 @@ func TestKVMetadataStore_GetProcesses(t *testing.T) {
 		High: uint64(528280977975),
 	}
 
-	p1 := &metadatapb.ProcessInfo{
+	p1 := &k8s_metadatapb.ProcessInfo{
 		Name: "process1",
 		PID:  123,
 		CID:  "567",
@@ -433,7 +546,7 @@ func TestKVMetadataStore_GetProcesses(t *testing.T) {
 		High: uint64(1056561955185),
 	}
 
-	p3 := &metadatapb.ProcessInfo{
+	p3 := &k8s_metadatapb.ProcessInfo{
 		Name: "process2",
 		PID:  246,
 		CID:  "369",
@@ -446,7 +559,7 @@ func TestKVMetadataStore_GetProcesses(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 3, len(processes))
 	assert.Equal(t, "process1", processes[0].Name)
-	assert.Equal(t, (*metadatapb.ProcessInfo)(nil), processes[1])
+	assert.Equal(t, (*k8s_metadatapb.ProcessInfo)(nil), processes[1])
 	assert.Equal(t, "process2", processes[2].Name)
 }
 
@@ -467,8 +580,8 @@ func TestKVMetadataStore_GetPods(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create pods.
-	pod1 := &metadatapb.Pod{
-		Metadata: &metadatapb.ObjectMetadata{
+	pod1 := &k8s_metadatapb.Pod{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:      "abcd",
 			Namespace: "test",
 			UID:       "abcd-pod",
@@ -479,8 +592,8 @@ func TestKVMetadataStore_GetPods(t *testing.T) {
 		t.Fatal("Unable to marshal pod pb")
 	}
 
-	pod2 := &metadatapb.Pod{
-		Metadata: &metadatapb.ObjectMetadata{
+	pod2 := &k8s_metadatapb.Pod{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:      "efgh",
 			Namespace: "test",
 			UID:       "efgh-pod",
@@ -513,7 +626,7 @@ func TestKVMetadataStore_UpdatePod(t *testing.T) {
 	mds, err := controllers.NewKVMetadataStore(c)
 	assert.Nil(t, err)
 
-	expectedPb := &metadatapb.Pod{}
+	expectedPb := &k8s_metadatapb.Pod{}
 	if err := proto.UnmarshalText(testutils.PodPb, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -527,14 +640,14 @@ func TestKVMetadataStore_UpdatePod(t *testing.T) {
 	resp, err := c.Get("/pod/default/ijkl")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	pb := &metadatapb.Pod{}
+	pb := &k8s_metadatapb.Pod{}
 	proto.Unmarshal(resp, pb)
 
 	assert.Equal(t, expectedPb, pb)
 
 	resp, err = c.Get("/resourceVersionUpdate/1")
 	assert.Nil(t, err)
-	rvPb := &metadatapb.MetadataObject{}
+	rvPb := &k8s_metadatapb.MetadataObject{}
 	proto.Unmarshal(resp, rvPb)
 	assert.Equal(t, "ijkl", rvPb.GetPod().Metadata.UID)
 
@@ -548,7 +661,7 @@ func TestKVMetadataStore_UpdatePod(t *testing.T) {
 	resp, err = c.Get("/pod/default/ijkl")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	pb = &metadatapb.Pod{}
+	pb = &k8s_metadatapb.Pod{}
 	proto.Unmarshal(resp, pb)
 
 	assert.NotEqual(t, int64(0), pb.Metadata.DeletionTimestampNS)
@@ -564,7 +677,7 @@ func TestKVMetadataStore_UpdatePod(t *testing.T) {
 	resp, err = c.Get("/pod/default/ijkl")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	pb = &metadatapb.Pod{}
+	pb = &k8s_metadatapb.Pod{}
 	proto.Unmarshal(resp, pb)
 	assert.Equal(t, int64(10), pb.Metadata.DeletionTimestampNS)
 }
@@ -586,7 +699,7 @@ func TestKVMetadataStore_GetContainers(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create containers.
-	c1 := &metadatapb.ContainerInfo{
+	c1 := &k8s_metadatapb.ContainerInfo{
 		Name: "container_1",
 		UID:  "container_id_1",
 	}
@@ -595,7 +708,7 @@ func TestKVMetadataStore_GetContainers(t *testing.T) {
 		t.Fatal("Unable to marshal container pb")
 	}
 
-	c2 := &metadatapb.ContainerInfo{
+	c2 := &k8s_metadatapb.ContainerInfo{
 		Name: "container_2",
 		UID:  "container_id_2",
 	}
@@ -625,7 +738,7 @@ func TestKVMetadataStore_UpdateContainer(t *testing.T) {
 
 	mds, err := controllers.NewKVMetadataStore(c)
 	assert.Nil(t, err)
-	expectedPb := &metadatapb.ContainerInfo{}
+	expectedPb := &k8s_metadatapb.ContainerInfo{}
 	if err := proto.UnmarshalText(testutils.ContainerInfoPB, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -639,7 +752,7 @@ func TestKVMetadataStore_UpdateContainer(t *testing.T) {
 	resp, err := c.Get("/containers/container1/info")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	pb := &metadatapb.ContainerInfo{}
+	pb := &k8s_metadatapb.ContainerInfo{}
 	proto.Unmarshal(resp, pb)
 
 	assert.Equal(t, expectedPb, pb)
@@ -656,7 +769,7 @@ func TestKVMetadataStore_UpdateContainersFromPod(t *testing.T) {
 	mds, err := controllers.NewKVMetadataStore(c)
 	assert.Nil(t, err)
 
-	podInfo := &metadatapb.Pod{}
+	podInfo := &k8s_metadatapb.Pod{}
 	if err := proto.UnmarshalText(testutils.PodPbWithContainers, podInfo); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -667,7 +780,7 @@ func TestKVMetadataStore_UpdateContainersFromPod(t *testing.T) {
 	containerResp, err := c.Get("/containers/test/info")
 	assert.Nil(t, err)
 	assert.NotNil(t, containerResp)
-	containerPb := &metadatapb.ContainerInfo{}
+	containerPb := &k8s_metadatapb.ContainerInfo{}
 	proto.Unmarshal(containerResp, containerPb)
 	assert.Equal(t, "container1", containerPb.Name)
 	assert.Equal(t, "test", containerPb.UID)
@@ -680,7 +793,7 @@ func TestKVMetadataStore_UpdateContainersFromPod(t *testing.T) {
 	containerResp, err = c.Get("/containers/test/info")
 	assert.Nil(t, err)
 	assert.NotNil(t, containerResp)
-	containerPb = &metadatapb.ContainerInfo{}
+	containerPb = &k8s_metadatapb.ContainerInfo{}
 	proto.Unmarshal(containerResp, containerPb)
 	assert.NotEqual(t, int64(0), containerPb.StopTimestampNS)
 }
@@ -701,7 +814,7 @@ func TestKVMetadataStore_UpdateContainersFromPendingPod(t *testing.T) {
 	mds, err := controllers.NewKVMetadataStore(c)
 	assert.Nil(t, err)
 
-	podInfo := &metadatapb.Pod{}
+	podInfo := &k8s_metadatapb.Pod{}
 	if err := proto.UnmarshalText(testutils.PendingPodPb, podInfo); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -747,18 +860,18 @@ func TestKVMetadataStore_GetNodeEndpoints(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create endpoints.
-	e1 := &metadatapb.Endpoints{
-		Metadata: &metadatapb.ObjectMetadata{
+	e1 := &k8s_metadatapb.Endpoints{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:      "abcd",
 			Namespace: "test",
 			UID:       "abcd",
 		},
-		Subsets: []*metadatapb.EndpointSubset{
-			&metadatapb.EndpointSubset{
-				Addresses: []*metadatapb.EndpointAddress{
-					&metadatapb.EndpointAddress{
+		Subsets: []*k8s_metadatapb.EndpointSubset{
+			&k8s_metadatapb.EndpointSubset{
+				Addresses: []*k8s_metadatapb.EndpointAddress{
+					&k8s_metadatapb.EndpointAddress{
 						NodeName: "test",
-						TargetRef: &metadatapb.ObjectReference{
+						TargetRef: &k8s_metadatapb.ObjectReference{
 							Kind:      "Pod",
 							Namespace: "test",
 							Name:      "abcd",
@@ -773,18 +886,18 @@ func TestKVMetadataStore_GetNodeEndpoints(t *testing.T) {
 		t.Fatal("Unable to marshal endpoint pb")
 	}
 
-	e2 := &metadatapb.Endpoints{
-		Metadata: &metadatapb.ObjectMetadata{
+	e2 := &k8s_metadatapb.Endpoints{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:      "efgh",
 			Namespace: "test",
 			UID:       "efgh",
 		},
-		Subsets: []*metadatapb.EndpointSubset{
-			&metadatapb.EndpointSubset{
-				Addresses: []*metadatapb.EndpointAddress{
-					&metadatapb.EndpointAddress{
+		Subsets: []*k8s_metadatapb.EndpointSubset{
+			&k8s_metadatapb.EndpointSubset{
+				Addresses: []*k8s_metadatapb.EndpointAddress{
+					&k8s_metadatapb.EndpointAddress{
 						NodeName: "localhost",
-						TargetRef: &metadatapb.ObjectReference{
+						TargetRef: &k8s_metadatapb.ObjectReference{
 							Kind:      "Pod",
 							Namespace: "test2",
 							Name:      "abcdefg",
@@ -799,19 +912,19 @@ func TestKVMetadataStore_GetNodeEndpoints(t *testing.T) {
 		t.Fatal("Unable to marshal endpoint pb")
 	}
 
-	e3 := &metadatapb.Endpoints{
-		Metadata: &metadatapb.ObjectMetadata{
+	e3 := &k8s_metadatapb.Endpoints{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:                "xyz",
 			Namespace:           "test",
 			UID:                 "xyz",
 			DeletionTimestampNS: 10,
 		},
-		Subsets: []*metadatapb.EndpointSubset{
-			&metadatapb.EndpointSubset{
-				Addresses: []*metadatapb.EndpointAddress{
-					&metadatapb.EndpointAddress{
+		Subsets: []*k8s_metadatapb.EndpointSubset{
+			&k8s_metadatapb.EndpointSubset{
+				Addresses: []*k8s_metadatapb.EndpointAddress{
+					&k8s_metadatapb.EndpointAddress{
 						NodeName: "localhost",
-						TargetRef: &metadatapb.ObjectReference{
+						TargetRef: &k8s_metadatapb.ObjectReference{
 							Kind:      "Pod",
 							Namespace: "test3",
 							Name:      "xyz",
@@ -860,8 +973,8 @@ func TestKVMetadataStore_GetEndpoints(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create endpoints.
-	e1 := &metadatapb.Endpoints{
-		Metadata: &metadatapb.ObjectMetadata{
+	e1 := &k8s_metadatapb.Endpoints{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:      "abcd",
 			Namespace: "test",
 			UID:       "abcd",
@@ -872,8 +985,8 @@ func TestKVMetadataStore_GetEndpoints(t *testing.T) {
 		t.Fatal("Unable to marshal endpoint pb")
 	}
 
-	e2 := &metadatapb.Endpoints{
-		Metadata: &metadatapb.ObjectMetadata{
+	e2 := &k8s_metadatapb.Endpoints{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:      "efgh",
 			Namespace: "test",
 			UID:       "efgh",
@@ -906,7 +1019,7 @@ func TestKVMetadataStore_UpdateEndpoints(t *testing.T) {
 	mds, err := controllers.NewKVMetadataStore(c)
 	assert.Nil(t, err)
 
-	expectedPb := &metadatapb.Endpoints{}
+	expectedPb := &k8s_metadatapb.Endpoints{}
 	if err := proto.UnmarshalText(testutils.EndpointsPb, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -920,7 +1033,7 @@ func TestKVMetadataStore_UpdateEndpoints(t *testing.T) {
 	resp, err := c.Get("/endpoints/a_namespace/ijkl")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	pb := &metadatapb.Endpoints{}
+	pb := &k8s_metadatapb.Endpoints{}
 	proto.Unmarshal(resp, pb)
 
 	mapResp, err := c.Get("/services/a_namespace/object_md/pods")
@@ -938,13 +1051,13 @@ func TestKVMetadataStore_UpdateEndpoints(t *testing.T) {
 	resp, err = c.Get("/endpoints/a_namespace/ijkl")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	pb = &metadatapb.Endpoints{}
+	pb = &k8s_metadatapb.Endpoints{}
 	proto.Unmarshal(resp, pb)
 	assert.NotEqual(t, int64(0), pb.Metadata.DeletionTimestampNS)
 
 	resp, err = c.Get("/resourceVersionUpdate/1")
 	assert.Nil(t, err)
-	rvPb := &metadatapb.MetadataObject{}
+	rvPb := &k8s_metadatapb.MetadataObject{}
 	proto.Unmarshal(resp, rvPb)
 	assert.Equal(t, "ijkl", rvPb.GetEndpoints().Metadata.UID)
 
@@ -959,7 +1072,7 @@ func TestKVMetadataStore_UpdateEndpoints(t *testing.T) {
 	resp, err = c.Get("/endpoints/a_namespace/ijkl")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	pb = &metadatapb.Endpoints{}
+	pb = &k8s_metadatapb.Endpoints{}
 	proto.Unmarshal(resp, pb)
 	assert.Equal(t, int64(10), pb.Metadata.DeletionTimestampNS)
 }
@@ -981,8 +1094,8 @@ func TestKVMetadataStore_GetServices(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create services.
-	s1 := &metadatapb.Service{
-		Metadata: &metadatapb.ObjectMetadata{
+	s1 := &k8s_metadatapb.Service{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:      "abcd",
 			Namespace: "test",
 			UID:       "abcd-service",
@@ -993,8 +1106,8 @@ func TestKVMetadataStore_GetServices(t *testing.T) {
 		t.Fatal("Unable to marshal service pb")
 	}
 
-	s2 := &metadatapb.Service{
-		Metadata: &metadatapb.ObjectMetadata{
+	s2 := &k8s_metadatapb.Service{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:      "efgh",
 			Namespace: "test",
 			UID:       "efgh-service",
@@ -1027,7 +1140,7 @@ func TestKVMetadataStore_UpdateService(t *testing.T) {
 	mds, err := controllers.NewKVMetadataStore(c)
 	assert.Nil(t, err)
 
-	expectedPb := &metadatapb.Service{}
+	expectedPb := &k8s_metadatapb.Service{}
 	if err := proto.UnmarshalText(testutils.ServicePb, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -1041,14 +1154,14 @@ func TestKVMetadataStore_UpdateService(t *testing.T) {
 	resp, err := c.Get("/service/a_namespace/ijkl")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	pb := &metadatapb.Service{}
+	pb := &k8s_metadatapb.Service{}
 	proto.Unmarshal(resp, pb)
 
 	assert.Equal(t, expectedPb, pb)
 
 	resp, err = c.Get("/resourceVersionUpdate/1")
 	assert.Nil(t, err)
-	rvPb := &metadatapb.MetadataObject{}
+	rvPb := &k8s_metadatapb.MetadataObject{}
 	proto.Unmarshal(resp, rvPb)
 	assert.Equal(t, "ijkl", rvPb.GetService().Metadata.UID)
 
@@ -1062,7 +1175,7 @@ func TestKVMetadataStore_UpdateService(t *testing.T) {
 	resp, err = c.Get("/service/a_namespace/ijkl")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	pb = &metadatapb.Service{}
+	pb = &k8s_metadatapb.Service{}
 	proto.Unmarshal(resp, pb)
 	assert.NotEqual(t, int64(0), pb.Metadata.DeletionTimestampNS)
 
@@ -1077,7 +1190,7 @@ func TestKVMetadataStore_UpdateService(t *testing.T) {
 	resp, err = c.Get("/service/a_namespace/ijkl")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	pb = &metadatapb.Service{}
+	pb = &k8s_metadatapb.Service{}
 	proto.Unmarshal(resp, pb)
 	assert.Equal(t, int64(10), pb.Metadata.DeletionTimestampNS)
 }
@@ -1100,13 +1213,13 @@ func TestKVMetadataStore_GetServiceCIDR(t *testing.T) {
 	assert.Equal(t, "", mds.GetServiceCIDR())
 
 	// First Service turns into the service CIDR.
-	s1 := &metadatapb.Service{
-		Metadata: &metadatapb.ObjectMetadata{
+	s1 := &k8s_metadatapb.Service{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:      "s1",
 			Namespace: "test",
 			UID:       "s1-service",
 		},
-		Spec: &metadatapb.ServiceSpec{
+		Spec: &k8s_metadatapb.ServiceSpec{
 			ClusterIP: "10.64.3.1",
 		},
 	}
@@ -1117,13 +1230,13 @@ func TestKVMetadataStore_GetServiceCIDR(t *testing.T) {
 	assert.Equal(t, "10.64.3.1/32", mds.GetServiceCIDR())
 
 	// Next service should expand the mask.
-	s4 := &metadatapb.Service{
-		Metadata: &metadatapb.ObjectMetadata{
+	s4 := &k8s_metadatapb.Service{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:      "s4",
 			Namespace: "test",
 			UID:       "s4-service",
 		},
-		Spec: &metadatapb.ServiceSpec{
+		Spec: &k8s_metadatapb.ServiceSpec{
 			ClusterIP: "10.64.3.7",
 		},
 	}
@@ -1134,13 +1247,13 @@ func TestKVMetadataStore_GetServiceCIDR(t *testing.T) {
 	assert.Equal(t, "10.64.3.0/29", mds.GetServiceCIDR())
 
 	// This one shouldn't expand the mask, because it's already within the same range.
-	s2 := &metadatapb.Service{
-		Metadata: &metadatapb.ObjectMetadata{
+	s2 := &k8s_metadatapb.Service{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:      "s2",
 			Namespace: "test",
 			UID:       "s2-service",
 		},
-		Spec: &metadatapb.ServiceSpec{
+		Spec: &k8s_metadatapb.ServiceSpec{
 			ClusterIP: "10.64.3.2",
 		},
 	}
@@ -1151,13 +1264,13 @@ func TestKVMetadataStore_GetServiceCIDR(t *testing.T) {
 	assert.Equal(t, "10.64.3.0/29", mds.GetServiceCIDR())
 
 	// Another range expansion.
-	s3 := &metadatapb.Service{
-		Metadata: &metadatapb.ObjectMetadata{
+	s3 := &k8s_metadatapb.Service{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:      "s3",
 			Namespace: "test",
 			UID:       "s3-service",
 		},
-		Spec: &metadatapb.ServiceSpec{
+		Spec: &k8s_metadatapb.ServiceSpec{
 			ClusterIP: "10.64.4.1",
 		},
 	}
@@ -1168,13 +1281,13 @@ func TestKVMetadataStore_GetServiceCIDR(t *testing.T) {
 	assert.Equal(t, "10.64.0.0/21", mds.GetServiceCIDR())
 
 	// Test on Services that do not have ClusterIP.
-	s5 := &metadatapb.Service{
-		Metadata: &metadatapb.ObjectMetadata{
+	s5 := &k8s_metadatapb.Service{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:      "s5",
 			Namespace: "test",
 			UID:       "s5-service",
 		},
-		Spec: &metadatapb.ServiceSpec{
+		Spec: &k8s_metadatapb.ServiceSpec{
 			// No ClusterIP.
 		},
 	}
@@ -1202,8 +1315,8 @@ func TestKVMetadataStore_GetNamespaces(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create namespaces.
-	s1 := &metadatapb.Namespace{
-		Metadata: &metadatapb.ObjectMetadata{
+	s1 := &k8s_metadatapb.Namespace{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:      "test",
 			Namespace: "test",
 			UID:       "5678",
@@ -1214,8 +1327,8 @@ func TestKVMetadataStore_GetNamespaces(t *testing.T) {
 		t.Fatal("Unable to marshal namespace pb")
 	}
 
-	s2 := &metadatapb.Service{
-		Metadata: &metadatapb.ObjectMetadata{
+	s2 := &k8s_metadatapb.Service{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:      "efgh",
 			Namespace: "efgh",
 			UID:       "1234",
@@ -1248,8 +1361,8 @@ func TestKVMetadataStore_UpdateNamespace(t *testing.T) {
 	mds, err := controllers.NewKVMetadataStore(c)
 	assert.Nil(t, err)
 
-	expectedPb := &metadatapb.Namespace{
-		Metadata: &metadatapb.ObjectMetadata{
+	expectedPb := &k8s_metadatapb.Namespace{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name:            "efgh",
 			Namespace:       "efgh",
 			UID:             "1234",
@@ -1266,14 +1379,14 @@ func TestKVMetadataStore_UpdateNamespace(t *testing.T) {
 	resp, err := c.Get("/namespace/1234")
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
-	pb := &metadatapb.Namespace{}
+	pb := &k8s_metadatapb.Namespace{}
 	proto.Unmarshal(resp, pb)
 
 	assert.Equal(t, expectedPb, pb)
 
 	resp, err = c.Get("/resourceVersionUpdate/1")
 	assert.Nil(t, err)
-	rvPb := &metadatapb.MetadataObject{}
+	rvPb := &k8s_metadatapb.MetadataObject{}
 	proto.Unmarshal(resp, rvPb)
 	assert.Equal(t, "1234", rvPb.GetNamespace().Metadata.UID)
 }
@@ -1393,13 +1506,13 @@ func TestKVMetadataStore_AddResourceVersion(t *testing.T) {
 	mds, err := controllers.NewKVMetadataStore(c)
 	assert.Nil(t, err)
 
-	expectedPb := &metadatapb.Pod{}
+	expectedPb := &k8s_metadatapb.Pod{}
 	if err := proto.UnmarshalText(testutils.PodPb, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	obj := &metadatapb.MetadataObject{
-		Object: &metadatapb.MetadataObject_Pod{
+	obj := &k8s_metadatapb.MetadataObject{
+		Object: &k8s_metadatapb.MetadataObject_Pod{
 			Pod: expectedPb,
 		},
 	}
@@ -1467,39 +1580,39 @@ func TestKVMetadataStore_GetMetadataUpdatesForHostname(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Set up resource version -> update mapping.
-	ep1 := &metadatapb.Endpoints{}
+	ep1 := &k8s_metadatapb.Endpoints{}
 	if err := proto.UnmarshalText(testutils.EndpointsPb, ep1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	ep1.Metadata.ResourceVersion = "1"
-	rv1 := &metadatapb.MetadataObject{
-		Object: &metadatapb.MetadataObject_Endpoints{
+	rv1 := &k8s_metadatapb.MetadataObject{
+		Object: &k8s_metadatapb.MetadataObject_Endpoints{
 			Endpoints: ep1,
 		},
 	}
 	ep1Bytes, err := rv1.Marshal()
 	assert.Nil(t, err)
 
-	s := &metadatapb.Service{}
+	s := &k8s_metadatapb.Service{}
 	if err := proto.UnmarshalText(testutils.ServicePb, s); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	s.Metadata.ResourceVersion = "3"
-	rv2 := &metadatapb.MetadataObject{
-		Object: &metadatapb.MetadataObject_Service{
+	rv2 := &k8s_metadatapb.MetadataObject{
+		Object: &k8s_metadatapb.MetadataObject_Service{
 			Service: s,
 		},
 	}
 	sBytes, err := rv2.Marshal()
 	assert.Nil(t, err)
 
-	p := &metadatapb.Pod{}
+	p := &k8s_metadatapb.Pod{}
 	if err := proto.UnmarshalText(testutils.PodPbWithContainers, p); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	p.Metadata.ResourceVersion = "5"
-	rv3 := &metadatapb.MetadataObject{
-		Object: &metadatapb.MetadataObject_Pod{
+	rv3 := &k8s_metadatapb.MetadataObject{
+		Object: &k8s_metadatapb.MetadataObject_Pod{
 			Pod: p,
 		},
 	}
@@ -1530,52 +1643,52 @@ func TestKVMetadataStore_GetMetadataUpdatesForHostname(t *testing.T) {
 }
 
 func TestKVMetadataStore_GetMetadataUpdates(t *testing.T) {
-	containers := make([]*metadatapb.ContainerStatus, 2)
+	containers := make([]*k8s_metadatapb.ContainerStatus, 2)
 
-	containers[0] = &metadatapb.ContainerStatus{
+	containers[0] = &k8s_metadatapb.ContainerStatus{
 		Name:        "c1",
 		ContainerID: "0987",
 	}
 
-	containers[1] = &metadatapb.ContainerStatus{
+	containers[1] = &k8s_metadatapb.ContainerStatus{
 		Name:        "c2",
 		ContainerID: "2468",
 	}
 
-	pod1 := &metadatapb.Pod{
-		Metadata: &metadatapb.ObjectMetadata{
+	pod1 := &k8s_metadatapb.Pod{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name: "abcd",
 			UID:  "1234",
 		},
-		Status: &metadatapb.PodStatus{
+		Status: &k8s_metadatapb.PodStatus{
 			ContainerStatuses: containers,
 			HostIP:            "127.0.0.1",
 		},
-		Spec: &metadatapb.PodSpec{
+		Spec: &k8s_metadatapb.PodSpec{
 			NodeName: "test",
 		},
 	}
-	pod2 := &metadatapb.Pod{
-		Metadata: &metadatapb.ObjectMetadata{
+	pod2 := &k8s_metadatapb.Pod{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name: "efgh",
 			UID:  "5678",
 		},
-		Status: &metadatapb.PodStatus{
+		Status: &k8s_metadatapb.PodStatus{
 			HostIP: "127.0.0.1",
 		},
-		Spec: &metadatapb.PodSpec{
+		Spec: &k8s_metadatapb.PodSpec{
 			NodeName: "test",
 		},
 	}
 
-	ns := &metadatapb.Namespace{
-		Metadata: &metadatapb.ObjectMetadata{
+	ns := &k8s_metadatapb.Namespace{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
 			Name: "test",
 			UID:  "abcd",
 		},
 	}
 
-	ep1 := &metadatapb.Endpoints{}
+	ep1 := &k8s_metadatapb.Endpoints{}
 	if err := proto.UnmarshalText(testutils.EndpointsPb, ep1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
