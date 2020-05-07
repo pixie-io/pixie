@@ -42,8 +42,9 @@ type TabStop struct {
 
 // Command represents an executable command.
 type Command struct {
-	TabStops   []*TabStop
-	Executable bool
+	TabStops       []*TabStop
+	Executable     bool
+	HasValidScript bool
 }
 
 var kindLabelToProtoMap = map[string]cloudapipb.AutocompleteEntityKind{
@@ -111,12 +112,11 @@ func parseGoCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester) error 
 	return errors.New("Not yet implemented")
 }
 
-func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID uuid.UUID) (int, bool, []string, []cloudapipb.AutocompleteEntityKind, error) {
+func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID uuid.UUID) (int, []string, []cloudapipb.AutocompleteEntityKind, error) {
 	// The TabStop after the action should be the script. Check if there are any scripts defined.
 	argNames := make([]string, 0)
 	argTypes := make([]cloudapipb.AutocompleteEntityKind, 0)
 	scriptTabIndex := -1
-	scriptValid := false
 	for i, a := range parsedCmd.Args {
 		if a.Type != nil && *a.Type == "script" {
 			// Determine if this is a valid script, and if so, what arguments it takes.
@@ -132,7 +132,7 @@ func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID 
 
 			res, err := s.GetSuggestions([]*SuggestionRequest{&SuggestionRequest{orgID, searchTerm, []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SCRIPT}, []cloudapipb.AutocompleteEntityKind{}}})
 			if err != nil {
-				return -1, scriptValid, nil, nil, err
+				return -1, nil, nil, err
 			}
 
 			suggestions := res[0].Suggestions
@@ -141,7 +141,7 @@ func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID 
 			if exactMatch {
 				argNames = suggestions[0].ArgNames
 				argTypes = suggestions[0].ArgKinds
-				scriptValid = true
+				cmd.HasValidScript = true
 			}
 
 			cmd.TabStops = append(cmd.TabStops, &TabStop{
@@ -156,7 +156,7 @@ func parseRunScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID 
 		}
 	}
 
-	return scriptTabIndex, scriptValid, argNames, argTypes, nil
+	return scriptTabIndex, argNames, argTypes, nil
 }
 
 // parseRunArgsWithScript parses the command args according to the expected args for the given script.
@@ -337,7 +337,7 @@ func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID
 		return nil
 	}
 
-	scriptTabIndex, scriptValid, argNames, argTypes, err := parseRunScript(parsedCmd, cmd, s, orgID)
+	scriptTabIndex, argNames, argTypes, err := parseRunScript(parsedCmd, cmd, s, orgID)
 	if err != nil {
 		return err
 	}
@@ -346,7 +346,7 @@ func parseRunCommand(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, orgID
 	var specifiedEntities []cloudapipb.AutocompleteEntityKind
 
 	allowedKinds := []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_POD, cloudapipb.AEK_SVC, cloudapipb.AEK_NAMESPACE}
-	if scriptValid {
+	if cmd.HasValidScript {
 		args, specifiedEntities = parseRunArgsWithScript(parsedCmd, cmd, s, argNames, argTypes, scriptTabIndex)
 		allowedKinds = []cloudapipb.AutocompleteEntityKind{}
 	} else {
@@ -397,11 +397,23 @@ func (cmd *Command) ToFormatString(action cloudapipb.AutocompleteActionType) (fo
 		// If the action was an edit, the cursor should stay in the same position.
 		break
 	case cloudapipb.AAT_SELECT:
-		// If the action was a select, we should move the cursor to the next invalid tabstop.
-		// Remove cursor from current tab stop.
-		cmd.TabStops[curTabStop].Value = strings.Replace(cmd.TabStops[curTabStop].Value, CursorMarker, "", 1)
-		cmd.TabStops[nextInvalidTabStop].Value = cmd.TabStops[nextInvalidTabStop].Value + CursorMarker
-		curTabStop = nextInvalidTabStop
+		// If the action was a select, and the args are not prefined by a script, we should move the user's cursor to a
+		// new, empty tabstop.
+		if !cmd.HasValidScript && curTabStop == len(cmd.TabStops)-1 {
+			cmd.TabStops[curTabStop].Value = strings.Replace(cmd.TabStops[curTabStop].Value, CursorMarker, "", 1)
+			cmd.TabStops = append(cmd.TabStops, &TabStop{
+				Value:          CursorMarker,
+				Kind:           cloudapipb.AEK_UNKNOWN,
+				ContainsCursor: true,
+			})
+			curTabStop++
+			invalidTabs[curTabStop] = true
+		} else {
+			// Move the cursor to the next invalid tabstop.
+			cmd.TabStops[curTabStop].Value = strings.Replace(cmd.TabStops[curTabStop].Value, CursorMarker, "", 1)
+			cmd.TabStops[nextInvalidTabStop].Value = cmd.TabStops[nextInvalidTabStop].Value + CursorMarker
+			curTabStop = nextInvalidTabStop
+		}
 		break
 	default:
 		break

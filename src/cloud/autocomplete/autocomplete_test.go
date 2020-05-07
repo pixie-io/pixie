@@ -962,9 +962,91 @@ func TestToFormatString(t *testing.T) {
 						Valid: true,
 					},
 					&autocomplete.TabStop{
-						Value: "blah",
+						Value: "px/service_stats",
+						Kind:  cloudapipb.AEK_SCRIPT,
+						Valid: true,
+						Suggestions: []*autocomplete.Suggestion{
+							&autocomplete.Suggestion{
+								Name: "px/service_stats",
+								Desc: "a svc",
+								Kind: cloudapipb.AEK_SCRIPT,
+							},
+						},
+					},
+					&autocomplete.TabStop{
+						Value:          "pl/",
+						Kind:           cloudapipb.AEK_SVC,
+						Valid:          false,
+						ContainsCursor: false,
+						Suggestions: []*autocomplete.Suggestion{
+							&autocomplete.Suggestion{
+								Name: "pl/blah",
+								Desc: "a svc",
+								Kind: cloudapipb.AEK_SVC,
+							},
+						},
+					},
+					&autocomplete.TabStop{
+						Value:          "pl/frontend$0",
+						Kind:           cloudapipb.AEK_SVC,
+						Valid:          true,
+						ContainsCursor: true,
+					},
+				},
+				HasValidScript: true,
+				Executable:     false,
+			},
+			action:      cloudapipb.AAT_SELECT,
+			expectedStr: "${2:run} ${3:script:px/service_stats} ${4:svc:pl/$0} ${1:svc:pl/frontend}",
+			expectedSuggestions: []*cloudapipb.TabSuggestion{
+				&cloudapipb.TabSuggestion{
+					TabIndex:              2,
+					ExecutableAfterSelect: false,
+					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
+				},
+				&cloudapipb.TabSuggestion{
+					TabIndex:              3,
+					ExecutableAfterSelect: false,
+					Suggestions: []*cloudapipb.AutocompleteSuggestion{
+						&cloudapipb.AutocompleteSuggestion{
+							Kind:        cloudapipb.AEK_SCRIPT,
+							Name:        "px/service_stats",
+							Description: "a svc",
+						},
+					},
+				},
+				&cloudapipb.TabSuggestion{
+					TabIndex:              4,
+					ExecutableAfterSelect: true,
+					Suggestions: []*cloudapipb.AutocompleteSuggestion{
+						&cloudapipb.AutocompleteSuggestion{
+							Kind:        cloudapipb.AEK_SVC,
+							Name:        "pl/blah",
+							Description: "a svc",
+						},
+					},
+				},
+				&cloudapipb.TabSuggestion{
+					TabIndex:              1,
+					ExecutableAfterSelect: false,
+					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
+				},
+			},
+		},
+		{
+			name: "add new tabstop",
+			cmd: &autocomplete.Command{
+				TabStops: []*autocomplete.TabStop{
+					&autocomplete.TabStop{
+						Value: "run",
 						Kind:  cloudapipb.AEK_UNKNOWN,
-						Valid: false,
+						Valid: true,
+					},
+					&autocomplete.TabStop{
+						Value:          "pl/",
+						Kind:           cloudapipb.AEK_SVC,
+						Valid:          false,
+						ContainsCursor: false,
 						Suggestions: []*autocomplete.Suggestion{
 							&autocomplete.Suggestion{
 								Name: "pl/blah",
@@ -983,16 +1065,16 @@ func TestToFormatString(t *testing.T) {
 				Executable: false,
 			},
 			action:      cloudapipb.AAT_SELECT,
-			expectedStr: "${2:run} ${3:blah$0} ${1:svc:pl/frontend}",
+			expectedStr: "${1:run} ${2:svc:pl/} ${3:svc:pl/frontend} ${4:$0}",
 			expectedSuggestions: []*cloudapipb.TabSuggestion{
 				&cloudapipb.TabSuggestion{
-					TabIndex:              2,
+					TabIndex:              1,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
 				},
 				&cloudapipb.TabSuggestion{
-					TabIndex:              3,
-					ExecutableAfterSelect: true,
+					TabIndex:              2,
+					ExecutableAfterSelect: false,
 					Suggestions: []*cloudapipb.AutocompleteSuggestion{
 						&cloudapipb.AutocompleteSuggestion{
 							Kind:        cloudapipb.AEK_SVC,
@@ -1002,7 +1084,12 @@ func TestToFormatString(t *testing.T) {
 					},
 				},
 				&cloudapipb.TabSuggestion{
-					TabIndex:              1,
+					TabIndex:              3,
+					ExecutableAfterSelect: false,
+					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
+				},
+				&cloudapipb.TabSuggestion{
+					TabIndex:              4,
 					ExecutableAfterSelect: false,
 					Suggestions:           []*cloudapipb.AutocompleteSuggestion{},
 				},
