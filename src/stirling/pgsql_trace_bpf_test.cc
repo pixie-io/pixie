@@ -18,7 +18,13 @@ namespace stirling {
 
 using ::pl::stirling::testing::AccessRecordBatch;
 using ::pl::stirling::testing::FindRecordIdxMatchesPid;
+using ::pl::testing::BazelBinTestFilePath;
+using ::testing::_;
+using ::testing::ElementsAre;
 using ::testing::HasSubstr;
+using ::testing::IsEmpty;
+using ::testing::Not;
+using ::testing::Pair;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
@@ -31,6 +37,18 @@ class PostgreSQLContainer : public ContainerRunner {
   static constexpr std::string_view kContainerNamePrefix = "postgres_testing";
   static constexpr std::string_view kReadyMessage =
       "database system is ready to accept connections";
+};
+
+class GolangSQLxContainer : public ContainerRunner {
+ public:
+  GolangSQLxContainer()
+      : ContainerRunner(BazelBinTestFilePath(kBazelImageTar), kContainerNamePrefix, kReadyMessage) {
+  }
+
+ private:
+  static constexpr std::string_view kBazelImageTar = "src/stirling/pgsql/testing/demo_image.tar";
+  static constexpr std::string_view kContainerNamePrefix = "pgsql_demo";
+  static constexpr std::string_view kReadyMessage = "";
 };
 
 class PostgreSQLTraceTest : public testing::SocketTraceBPFTest {
@@ -79,6 +97,59 @@ TEST_F(PostgreSQLTraceTest, SelectQuery) {
   EXPECT_THAT(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLRespIdx, indices[0]),
               // TODO(yzhao): This is a bug, it should return output for the other 2 queries.
               StrEq("CREATE TABLE"));
+}
+
+class PostgreSQLTraceGoSQLxTest : public testing::SocketTraceBPFTest {
+ protected:
+  PostgreSQLTraceGoSQLxTest() {
+    PL_CHECK_OK(pgsql_container_.Run(150, {"--env=POSTGRES_PASSWORD=docker"}));
+  }
+
+  DataTable data_table_{kPGSQLTable};
+  PostgreSQLContainer pgsql_container_;
+  GolangSQLxContainer sqlx_container_;
+};
+
+std::vector<std::pair<std::string_view, std::string_view>> RecordBatchToPairs(
+    const types::ColumnWrapperRecordBatch& record_batch, const std::vector<size_t>& indices) {
+  std::vector<std::pair<std::string_view, std::string_view>> res;
+  for (size_t i : indices) {
+    res.push_back({AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqIdx, i),
+                   AccessRecordBatch<types::StringValue>(record_batch, kPGSQLRespIdx, i)});
+  }
+  return res;
+}
+
+// Executes a demo golang app that queries PostgreSQL database with sqlx.
+TEST_F(PostgreSQLTraceGoSQLxTest, GolangSqlxDemo) {
+  PL_CHECK_OK(sqlx_container_.Run(
+      10, {absl::Substitute("--network=container:$0", pgsql_container_.container_name())}));
+
+  source_->TransferData(ctx_.get(), SocketTraceConnector::kPGSQLTableNum, &data_table_);
+
+  const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
+
+  // Select only the records from the client side. Stirling captures both client and server side
+  // traffic because of the remote address is outside of the cluster.
+  const auto indices =
+      FindRecordIdxMatchesPid(record_batch, kPGSQLUPIDIdx, sqlx_container_.process_pid());
+
+  EXPECT_THAT(
+      RecordBatchToPairs(record_batch, indices),
+      ElementsAre(Pair("CREATE TABLE IF NOT EXISTS person (\n"
+                       "    first_name text,\n"
+                       "    last_name text,\n"
+                       "    email text\n"
+                       ")",
+                       "CREATE TABLE"),
+                  Pair("BEGIN READ WRITE", "BEGIN"),
+                  Pair("INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)",
+                       "INSERT 0 1"),
+                  Pair("COMMIT", "COMMIT"),
+                  Pair("SELECT * FROM person WHERE first_name=$1",
+                       "first_name,last_name,email\n"
+                       "Jason,Moiron,jmoiron@jmoiron.net\n"
+                       "SELECT 1")));
 }
 
 }  // namespace stirling

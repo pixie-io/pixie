@@ -258,7 +258,6 @@ std::string FmtSelectResp(const DequeView<RegularMessage>& msgs) {
                                   }));
     absl::StrAppend(&res, "\n");
   }
-  absl::StrAppend(&res, msgs.Back().payload);
   return res;
 }
 
@@ -280,15 +279,17 @@ std::string FmtCmdResp(const DequeView<RegularMessage>& msgs) {
   if (cmd_complete_msg.tag == Tag::kErrResp) {
     return std::string(FmtErrorResp(cmd_complete_msg));
   }
-  if (absl::StartsWith(cmd_complete_msg.payload, cmd::kSelect)) {
-    return FmtSelectResp(msgs);
-  }
   // Non-SELECT response only has one kCmdComplete message. Output the payload directly.
   if (msgs.Size() == 1) {
     return msgs.Begin()->payload;
   }
+  std::string res;
+  if (absl::StartsWith(cmd_complete_msg.payload, cmd::kSelect)) {
+    res = FmtSelectResp(msgs);
+  }
+  absl::StrAppend(&res, msgs.Back().payload);
   // TODO(yzhao): Need to test and handle other cases, if any.
-  return {};
+  return res;
 }
 
 std::string_view StripZeroChar(std::string_view str) {

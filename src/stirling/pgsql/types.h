@@ -66,6 +66,7 @@ struct RegularMessage : public stirling::FrameBase {
   std::string payload;
 
   size_t ByteSize() const override { return 5 + payload.size(); }
+
   std::string DebugString() const {
     return absl::Substitute("[tag: $0] [len: $1] [payload: $2]", static_cast<char>(tag), len,
                             payload);

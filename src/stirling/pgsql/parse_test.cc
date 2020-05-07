@@ -144,7 +144,45 @@ TEST(PGSQLParseTest, AssembleQueryRespFailures) {
 const std::string_view kReadyForQueryMsg = CreateStringView<char>("Z\000\000\000\005I");
 const std::string_view kSyncMsg = CreateStringView<char>("S\000\000\000\004");
 
-const std::string_view kParseMsg = CreateStringView<char>(
+// TODO(yzhao): Consider creating RegularMessage objects directly rather than
+// parsing from raw bytes.
+StatusOr<std::deque<RegularMessage>> ParseRegularMessages(std::string_view data) {
+  std::deque<RegularMessage> msgs;
+  RegularMessage msg = {};
+  while (ParseRegularMessage(&data, &msg) == ParseState::kSuccess) {
+    msgs.push_back(std::move(msg));
+  }
+  if (!data.empty()) {
+    return error::InvalidArgument("Some data are not parsed");
+  }
+  return msgs;
+}
+
+struct ProcessFramesTestCase {
+  std::string_view req_data;
+  std::string_view resp_data;
+  std::string_view expected_req_msg;
+  std::string_view expected_resp_msg;
+};
+
+using ProcessFramesTest = ::testing::TestWithParam<ProcessFramesTestCase>;
+
+TEST_P(ProcessFramesTest, VerifySingleOutputMessage) {
+  const ProcessFramesTestCase test_case = GetParam();
+
+  ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> reqs, ParseRegularMessages(test_case.req_data));
+  ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> resps, ParseRegularMessages(test_case.resp_data));
+
+  RecordsWithErrorCount<pgsql::Record> records_and_err_count = ProcessFrames(&reqs, &resps);
+  EXPECT_THAT(reqs, IsEmpty());
+  EXPECT_THAT(resps, IsEmpty());
+  EXPECT_NE(0, records_and_err_count.records.front().req.payload.size());
+  EXPECT_THAT(records_and_err_count.records,
+              ElementsAre(HasPayloads(test_case.expected_req_msg, test_case.expected_resp_msg)));
+  EXPECT_EQ(0, records_and_err_count.error_count);
+}
+
+const std::string_view kParseData = CreateStringView<char>(
     // Parse
     "P"
     "\000\000\000\251"  // 169, payload is the next 165 bytes.
@@ -163,7 +201,7 @@ const std::string_view kParseMsg = CreateStringView<char>(
     // kExecute
     "E\000\000\000\011\000\000\000\000\000");
 
-const std::string_view kParseRespMsg = CreateStringView<char>(
+const std::string_view kParseRespData = CreateStringView<char>(
     // kParseComplete
     "1\000\000\000\004"
     // kParamDesc
@@ -193,41 +231,61 @@ const std::string_view kParseRespMsg = CreateStringView<char>(
     // kCmdComplete
     "C\000\000\000\rSELECT 5\000");
 
-StatusOr<std::deque<RegularMessage>> ParseRegularMessages(std::string_view data) {
-  std::deque<RegularMessage> msgs;
-  RegularMessage msg = {};
-  while (ParseRegularMessage(&data, &msg) == ParseState::kSuccess) {
-    msgs.push_back(std::move(msg));
-  }
-  if (!data.empty()) {
-    return error::InvalidArgument("Some data are not parsed");
-  }
-  return msgs;
-}
+const std::string_view kParseMsg =
+    "select t.oid, t.typname, t.typbasetype\n"
+    "from pg_type t\n"
+    "  join pg_type base_type on t.typbasetype=base_type.oid\n"
+    "where t.typtype = 'd'\n"
+    "  and base_type.typtype = 'b'";
 
-TEST(ProcessFramesTest, GetParseReqMsgs) {
-  ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> reqs, ParseRegularMessages(kParseMsg));
-  ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> resps, ParseRegularMessages(kParseRespMsg));
+const std::string_view kParseRespMsg = CreateStringView<char>(
+    "oid,typname,typbasetype\n"
+    "\0\0\x31\xF1,cardinal_number,\0\0\0\x17\n"
+    "\0\0\x31\xFD,yes_or_no,\0\0\x4\x13\n"
+    "\0\0\x31\xF6,sql_identifier,\0\0\x4\x13\n"
+    "\0\0\x31\xF4,character_data,\0\0\x4\x13\n"
+    "\0\0\x31\xFB,time_stamp,\0\0\x4\xA0\nSELECT 5");
+// Sent from Client.
+const std::string_view kParseInsertData = CreateStringView<char>(
+    "P\000\000\000\115"
+    "\000INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)\000\000\000"
+    // kDesc message, 'S' stands for a prepared statement, followed by an empty string as the name
+    // of the prepared statement, which means the statement is unnamed.
+    "D\000\000\000\006S\000"
+    // kSync message.
+    "S\000\000\000\004"
+    // kBind.
+    "B\000\000\000\066"
+    "\000\000\000\000\000\003\000\000\000\005Jason\000\000\000\006Moiron\000\000\000\023jmoiron@"
+    "jmoiron.net\000\000"
+    // kExecute.
+    "E\000\000\000\011"
+    "\000\000\000\000\000");
 
-  RecordsWithErrorCount<pgsql::Record> records_and_err_count = ProcessFrames(&reqs, &resps);
-  EXPECT_THAT(reqs, IsEmpty());
-  EXPECT_THAT(resps, IsEmpty());
-  EXPECT_NE(0, records_and_err_count.records.front().req.payload.size());
-  EXPECT_THAT(records_and_err_count.records,
-              ElementsAre(HasPayloads(
-                  CreateStringView<char>("select t.oid, t.typname, t.typbasetype\n"
-                                         "from pg_type t\n"
-                                         "  join pg_type base_type on t.typbasetype=base_type.oid\n"
-                                         "where t.typtype = 'd'\n"
-                                         "  and base_type.typtype = 'b'"),
-                  CreateStringView<char>("oid,typname,typbasetype\n"
-                                         "\0\0\x31\xF1,cardinal_number,\0\0\0\x17\n"
-                                         "\0\0\x31\xFD,yes_or_no,\0\0\x4\x13\n"
-                                         "\0\0\x31\xF6,sql_identifier,\0\0\x4\x13\n"
-                                         "\0\0\x31\xF4,character_data,\0\0\x4\x13\n"
-                                         "\0\0\x31\xFB,time_stamp,\0\0\x4\xA0\nSELECT 5"))));
-  EXPECT_EQ(0, records_and_err_count.error_count);
-}
+const std::string_view kParseInsertRespData = CreateStringView<char>(
+    // kParseComplete
+    "1\000\000\000\004"
+    // kParamDesc
+    "t\000\000\000\022"
+    "\000\003\000\000\000\031\000\000\000\031\000\000\000\031"
+    // kNoData
+    "n\000\000\000\004"
+    // kReadyForQuery
+    "Z\000\000\000\005T"
+    // kBindComplete
+    "2\000\000\000\004"
+    // kCmdComplete
+    "C\000\000\000\017INSERT 0 1\000");
+
+const std::string_view kParseInsertMsg =
+    "INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)";
+const std::string_view kParseInsertRespMsg = "INSERT 0 1";
+
+INSTANTIATE_TEST_SUITE_P(
+    SingleOutputMessagePair, ProcessFramesTest,
+    ::testing::Values(ProcessFramesTestCase{kParseData, kParseRespData, kParseMsg, kParseRespMsg},
+                      ProcessFramesTestCase{kParseInsertData, kParseInsertRespData, kParseInsertMsg,
+                                            kParseInsertRespMsg}));
 
 const std::string_view kCmdCompleteData = CreateStringView<char>("C\000\000\000\rSELECT 1\000");
 

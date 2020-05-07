@@ -51,7 +51,7 @@ StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::s
   docker_run_cmd.push_back(container_name_);
   docker_run_cmd.push_back(image_);
 
-  VLOG(1) << docker_run_cmd;
+  LOG(INFO) << docker_run_cmd;
   PL_RETURN_IF_ERROR(container_.Start(docker_run_cmd, /* stderr_to_stdout */ true));
 
   // It may take some time for the container to come up, so we keep polling.
