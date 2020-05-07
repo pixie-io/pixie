@@ -15,6 +15,7 @@ pl_cc_library(
         ],
     ),
     deps = [
+        "//src/shared/bloomfilterpb:bloomfilter_pl_cc_proto",
         "@com_github_cyan4973_xxhash//:xxhash",
     ],
 )
@@ -24,6 +25,7 @@ pl_cc_test(
     srcs = ["bloomfilter_test.cc"],
     deps = [
         ":cc_library",
+        "//src/shared/bloomfilterpb:bloomfilter_pl_cc_proto",
     ],
 )
 

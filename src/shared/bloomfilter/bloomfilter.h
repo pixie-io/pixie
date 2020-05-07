@@ -6,9 +6,12 @@
 #include <vector>
 
 #include "src/common/base/base.h"
+#include "src/shared/bloomfilterpb/bloomfilter.pb.h"
 
 namespace pl {
 namespace bloomfilter {
+
+using XXHash64BloomFilterPB = shared::bloomfilterpb::XXHash64BloomFilter;
 
 class XXHash64BloomFilter {
  public:
@@ -18,9 +21,8 @@ class XXHash64BloomFilter {
    */
   static StatusOr<std::unique_ptr<XXHash64BloomFilter>> Create(int64_t max_entries,
                                                                double error_rate);
-  // TODO(nserrino): Add these in.
-  // static StatusOr<std::unique_ptr<BloomFilter>> FromProto(const bloomfilterpb::BloomFilter& pb);
-  // bloomfilterpb::BloomFilter ToProto();
+  static StatusOr<std::unique_ptr<XXHash64BloomFilter>> FromProto(const XXHash64BloomFilterPB& pb);
+  XXHash64BloomFilterPB ToProto();
 
   /**
    * Insert inserts an item into the bloom filter.
@@ -47,7 +49,10 @@ class XXHash64BloomFilter {
 
  protected:
   XXHash64BloomFilter(int64_t num_bytes, int num_hashes)
-      : num_hashes_(num_hashes), buffer_(std::vector<uint8_t>(num_bytes, 0)) {}
+      : XXHash64BloomFilter(std::vector<uint8_t>(num_bytes, 0), num_hashes) {}
+
+  XXHash64BloomFilter(const std::vector<uint8_t>& buffer, int32_t num_hashes)
+      : num_hashes_(num_hashes), buffer_(buffer) {}
 
  private:
   void SetBit(int bit_number);

@@ -1,5 +1,6 @@
 #include <math.h>
 #include <memory>
+#include <utility>
 
 #include "src/common/base/base.h"
 #include "src/shared/bloomfilter/bloomfilter.h"
@@ -33,6 +34,29 @@ StatusOr<std::unique_ptr<XXHash64BloomFilter>> XXHash64BloomFilter::Create(int64
   int32_t num_hashes = static_cast<int32_t>(std::ceil(std::log(2) * bpe));
 
   return std::unique_ptr<XXHash64BloomFilter>(new XXHash64BloomFilter(num_bytes, num_hashes));
+}
+
+StatusOr<std::unique_ptr<XXHash64BloomFilter>> XXHash64BloomFilter::FromProto(
+    const XXHash64BloomFilterPB& pb) {
+  auto bytes_str = pb.data();
+
+  if (!bytes_str.size()) {
+    return error::Internal("Received 0 bytes in BloomFilter data field");
+  }
+  if (!pb.num_hashes()) {
+    return error::Internal("Received 0 hash functions in BloomFilter num_hashes field");
+  }
+
+  std::vector<uint8_t> data{bytes_str.begin(), bytes_str.end()};
+  return std::unique_ptr<XXHash64BloomFilter>(new XXHash64BloomFilter(data, pb.num_hashes()));
+}
+
+XXHash64BloomFilterPB XXHash64BloomFilter::ToProto() {
+  XXHash64BloomFilterPB output;
+  output.set_num_hashes(num_hashes_);
+  std::string bytes_str{buffer_.begin(), buffer_.end()};
+  output.set_data(std::move(bytes_str));
+  return output;
 }
 
 void XXHash64BloomFilter::SetBit(int bit_number) {

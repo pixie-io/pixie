@@ -69,5 +69,31 @@ TEST(XXHash64BloomFilter, test_error_rate) {
   }
 }
 
+TEST(XXHash64BloomFilter, test_create_from_proto) {
+  std::vector<std::string> matches{"foo", "bar", "abc"};
+  std::vector<std::string> non_matches{"123", "456", "789"};
+
+  auto bf = XXHash64BloomFilter::Create(100000, 0.01).ConsumeValueOrDie();
+  EXPECT_EQ(bf->num_hashes(), 7);
+  EXPECT_EQ(bf->buffer_size_bytes(), 119814);
+  for (const auto& match : matches) {
+    bf->Insert(match);
+  }
+
+  auto proto = bf->ToProto();
+  auto reconstructed = XXHash64BloomFilter::FromProto(proto).ConsumeValueOrDie();
+  EXPECT_EQ(reconstructed->num_hashes(), 7);
+  EXPECT_EQ(reconstructed->buffer_size_bytes(), 119814);
+
+  EXPECT_GT(matches.size(), 0);
+  EXPECT_GT(non_matches.size(), 0);
+  for (const auto& match : matches) {
+    EXPECT_TRUE(reconstructed->Contains(match));
+  }
+  for (const auto& non_match : non_matches) {
+    EXPECT_FALSE(reconstructed->Contains(non_match));
+  }
+}
+
 }  // namespace bloomfilter
 }  // namespace pl
