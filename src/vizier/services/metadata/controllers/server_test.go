@@ -10,10 +10,15 @@ import (
 	"github.com/golang/mock/gomock"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
+	bloomfilterpb "pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
 	k8smetadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	sharedmetadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	utils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
+	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
@@ -239,4 +244,102 @@ func TestGetSchemaByAgent(t *testing.T) {
 
 	assert.Nil(t, resp)
 	assert.NotNil(t, err)
+}
+
+func TestGetAgentTableMetadata(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
+	agent1ID, err := uuid.FromString("11285cdd-1de9-4ab1-ae6a-0ba08c8c676c")
+	require.Nil(t, err)
+	agent2ID, err := uuid.FromString("21285cdd-1de9-4ab1-ae6a-0ba08c8c676c")
+	require.Nil(t, err)
+
+	schemaInfos := []*k8smetadatapb.SchemaInfo{
+		&k8smetadatapb.SchemaInfo{
+			Name: "table1",
+			Columns: []*k8smetadatapb.SchemaInfo_ColumnInfo{
+				&k8smetadatapb.SchemaInfo_ColumnInfo{
+					Name:     "t1Col1",
+					DataType: 1,
+				},
+			},
+		},
+	}
+	mockMds.
+		EXPECT().
+		GetComputedSchemas().
+		Return(schemaInfos, nil)
+
+	expectedDataInfos := map[uuid.UUID]*messagespb.AgentDataInfo{}
+	expectedDataInfos[agent1ID] = &messagespb.AgentDataInfo{
+		MetadataInfo: &distributedpb.MetadataInfo{
+			MetadataFields: []sharedmetadatapb.MetadataType{
+				sharedmetadatapb.CONTAINER_ID,
+				sharedmetadatapb.POD_NAME,
+			},
+			Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
+				XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
+					Data:      []byte("1234"),
+					NumHashes: 4,
+				},
+			},
+		},
+	}
+	expectedDataInfos[agent2ID] = &messagespb.AgentDataInfo{
+		MetadataInfo: &distributedpb.MetadataInfo{
+			MetadataFields: []sharedmetadatapb.MetadataType{
+				sharedmetadatapb.CONTAINER_ID,
+				sharedmetadatapb.POD_NAME,
+			},
+			Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
+				XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
+					Data:      []byte("5678"),
+					NumHashes: 3,
+				},
+			},
+		},
+	}
+
+	mockMds.
+		EXPECT().
+		GetAgentsDataInfo().
+		Return(expectedDataInfos, nil)
+
+	// Set up server.
+	env, err := metadataenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	clock := testingutils.NewTestClock(time.Unix(0, 70))
+
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, mockMds, clock)
+
+	req := metadatapb.AgentTableMetadataRequest{}
+
+	resp, err := s.GetAgentTableMetadata(context.Background(), &req)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, len(resp.MetadataByAgent), 2)
+	dataInfoMap := map[uuid.UUID]*messagespb.AgentDataInfo{}
+
+	for _, agentMetadata := range resp.MetadataByAgent {
+		id := utils.UUIDFromProtoOrNil(agentMetadata.AgentID)
+		dataInfoMap[id] = agentMetadata.DataInfo
+
+		// check the schema
+		assert.Equal(t, 1, len(agentMetadata.Schema.RelationMap))
+		assert.Equal(t, 1, len(agentMetadata.Schema.RelationMap["table1"].Columns))
+		assert.Equal(t, "t1Col1", agentMetadata.Schema.RelationMap["table1"].Columns[0].ColumnName)
+		assert.Equal(t, typespb.BOOLEAN, agentMetadata.Schema.RelationMap["table1"].Columns[0].ColumnType)
+	}
+
+	assert.Equal(t, len(dataInfoMap), 2)
+	assert.Equal(t, dataInfoMap[agent1ID], expectedDataInfos[agent1ID])
+	assert.Equal(t, dataInfoMap[agent2ID], expectedDataInfos[agent2ID])
 }

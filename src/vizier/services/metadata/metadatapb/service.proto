@@ -6,6 +6,7 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/common/uuid/proto/uuid.proto";
 import "src/table_store/proto/schema.proto";
 import "src/carnot/planner/distributedpb/distributed_plan.proto";
+import "src/vizier/messages/messagespb/messages.proto";
 import "src/vizier/services/shared/agentpb/agent.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb;metadatapb";
@@ -18,6 +19,7 @@ service MetadataService {
   rpc GetSchemas(SchemaRequest) returns (SchemaResponse) {}
   rpc GetSchemaByAgent(SchemaByAgentRequest) returns (SchemaByAgentResponse) {}
   rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
+  rpc GetAgentTableMetadata(AgentTableMetadataRequest) returns (AgentTableMetadataResponse) {}
 }
 
 // The schema request for each agent's schema.
@@ -55,4 +57,16 @@ message AgentMetadata {
   pl.vizier.services.shared.agent.AgentStatus status = 2;
   // Info that describes the carnot instance for the agent.
   pl.carnot.planner.distributedpb.CarnotInfo carnot_info = 3;
+}
+
+message AgentTableMetadataRequest {}
+
+message AgentTableMetadata {
+  uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
+  pl.table_store.schemapb.Schema schema = 2;
+  pl.vizier.messages.AgentDataInfo data_info = 3;
+}
+
+message AgentTableMetadataResponse {
+  repeated AgentTableMetadata metadata_by_agent = 1;
 }

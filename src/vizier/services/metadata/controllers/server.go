@@ -41,8 +41,7 @@ func NewServer(env metadataenv.MetadataEnv, agtMgr AgentManager, mds MetadataSto
 	return NewServerWithClock(env, agtMgr, mds, clock)
 }
 
-// GetSchemas returns the schemas in the system.
-func (s *Server) GetSchemas(ctx context.Context, req *metadatapb.SchemaRequest) (*metadatapb.SchemaResponse, error) {
+func (s *Server) getSchemas() (*schemapb.Schema, error) {
 	schemas, err := s.mds.GetComputedSchemas()
 	if err != nil {
 		return nil, err
@@ -65,10 +64,18 @@ func (s *Server) GetSchemas(ctx context.Context, req *metadatapb.SchemaRequest) 
 		respSchemaPb.RelationMap[schema.Name] = schemaPb
 	}
 
+	return respSchemaPb, nil
+}
+
+// GetSchemas returns the schemas in the system.
+func (s *Server) GetSchemas(ctx context.Context, req *metadatapb.SchemaRequest) (*metadatapb.SchemaResponse, error) {
+	respSchemaPb, err := s.getSchemas()
+	if err != nil {
+		return nil, err
+	}
 	resp := &metadatapb.SchemaResponse{
 		Schema: respSchemaPb,
 	}
-
 	return resp, nil
 }
 
@@ -107,6 +114,36 @@ func (s *Server) GetAgentInfo(ctx context.Context, req *metadatapb.AgentInfoRequ
 
 	resp := metadatapb.AgentInfoResponse{
 		Info: agentResponses,
+	}
+
+	return &resp, nil
+}
+
+// GetAgentTableMetadata returns table metadata for each agent. We currently assume that all agents
+// have the same schema, but this code will need to be updated when that assumption no longer holds true.
+func (s *Server) GetAgentTableMetadata(ctx context.Context, req *metadatapb.AgentTableMetadataRequest) (*metadatapb.AgentTableMetadataResponse, error) {
+	respSchemaPb, err := s.getSchemas()
+	if err != nil {
+		return nil, err
+	}
+	dataInfos, err := s.mds.GetAgentsDataInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	// Populate AgentTableMetadataResponse.
+	var agentsMetadata []*metadatapb.AgentTableMetadata
+	for agentID, dataInfo := range dataInfos {
+		a := &metadatapb.AgentTableMetadata{
+			AgentID:  utils.ProtoFromUUID(&agentID),
+			Schema:   respSchemaPb,
+			DataInfo: dataInfo,
+		}
+		agentsMetadata = append(agentsMetadata, a)
+	}
+
+	resp := metadatapb.AgentTableMetadataResponse{
+		MetadataByAgent: agentsMetadata,
 	}
 
 	return &resp, nil
