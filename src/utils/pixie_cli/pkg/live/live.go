@@ -14,6 +14,7 @@ import (
 	"github.com/alecthomas/chroma/quick"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
@@ -85,6 +86,7 @@ type View struct {
 	searchBox     *tview.InputField
 	modal         Modal
 	s             *appState
+	useNewAC      bool
 }
 
 // Modal is the interface for a pop-up view.
@@ -94,7 +96,7 @@ type Modal interface {
 }
 
 // New creates a new live view.
-func New(br *script.BundleManager, vizier *vizier.Connector, execScript *script.ExecutableScript) (*View, error) {
+func New(br *script.BundleManager, vizier *vizier.Connector, aClient cloudapipb.AutocompleteServiceClient, execScript *script.ExecutableScript, useNewAC bool) (*View, error) {
 	// App is the top level view. The layout is approximately as follows:
 	//  ------------------------------------------
 	//  | View Information ...                   |
@@ -152,6 +154,13 @@ func New(br *script.BundleManager, vizier *vizier.Connector, execScript *script.
 	app.SetRoot(layout, true).
 		EnableMouse(true)
 
+	var ac autocompleter
+	if useNewAC {
+		ac = newCloudAutocompleter(aClient)
+	} else {
+		ac = newFuzzyAutoCompleter(br)
+	}
+
 	v := &View{
 		app:           app,
 		pages:         pages,
@@ -163,8 +172,9 @@ func New(br *script.BundleManager, vizier *vizier.Connector, execScript *script.
 		s: &appState{
 			br:     br,
 			vizier: vizier,
-			ac:     newFuzzyAutoCompleter(br),
+			ac:     ac,
 		},
+		useNewAC: useNewAC,
 	}
 
 	// Wire up components.
@@ -472,8 +482,13 @@ func (v *View) showDataModal(s string) {
 
 func (v *View) showAutcompleteModal() {
 	v.closeModal()
-	ac := newAutocompleteModal(v.s)
-	ac.setScriptExecFunc(func(s *script.ExecutableScript) {
+	var ac AutocompleteModal
+	if v.useNewAC {
+		ac = newTabAutocompleteModal(v.s)
+	} else {
+		ac = newAutocompleteModal(v.s)
+	}
+	ac.SetScriptExecFunc(func(s *script.ExecutableScript) {
 		v.runScript(s)
 	})
 	v.modal = ac

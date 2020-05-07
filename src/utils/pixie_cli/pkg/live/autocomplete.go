@@ -10,24 +10,14 @@ import (
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	"github.com/sahilm/fuzzy"
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 )
-
-type suggestion struct {
-	name string
-	desc string
-
-	matchedIndexes []int
-}
 
 // Very rudimentary tokenizer. Not going to be fully robust, but it should be fine for our purposes.
 func cmdTokenizer(input string) []string {
 	re := regexp.MustCompile(`[\s=]+`)
 	return re.Split(input, -1)
-}
-
-type autocompleter interface {
-	GetSuggestions(string) []suggestion
 }
 
 func getNextCmdString(current, selection string) string {
@@ -151,7 +141,10 @@ func (m *autocompleteModal) validateScriptAndArgs(s string) (*script.ExecutableS
 // Show shows the modal.
 func (m *autocompleteModal) Show(app *tview.Application) tview.Primitive {
 	// Start with suggestions based on empty input.
-	m.suggestions = m.s.ac.GetSuggestions("")
+	_, suggestionMap, _, _ := m.s.ac.GetSuggestions("", 0, cloudapipb.AAT_UNKNOWN)
+	if suggestionMap != nil {
+		m.suggestions = suggestionMap[0]
+	}
 	for idx, s := range m.suggestions {
 		m.sl.InsertItem(idx, s.name, "", 0, nil)
 	}
@@ -185,7 +178,10 @@ func (m *autocompleteModal) Show(app *tview.Application) tview.Primitive {
 
 	m.ib.SetChangedFunc(func(currentText string) {
 		commandAndArgs := stripColors(currentText)
-		m.suggestions = m.s.ac.GetSuggestions(commandAndArgs)
+		_, suggestionMap, _, _ := m.s.ac.GetSuggestions(commandAndArgs, 0, cloudapipb.AAT_UNKNOWN)
+		if suggestionMap != nil {
+			m.suggestions = suggestionMap[0]
+		}
 		m.sl.Clear()
 		for i, s := range m.suggestions {
 			sb := strings.Builder{}
@@ -239,7 +235,7 @@ func (m *autocompleteModal) Show(app *tview.Application) tview.Primitive {
 	return m.layout
 }
 
-func (m *autocompleteModal) setScriptExecFunc(f func(s *script.ExecutableScript)) {
+func (m *autocompleteModal) SetScriptExecFunc(f func(s *script.ExecutableScript)) {
 	m.scriptExecFunc = f
 }
 
@@ -273,9 +269,10 @@ func (f *fuzzyAutocompleter) isValidScript(scriptName string) bool {
 }
 
 // GetSuggestions returns a list of suggestions.
-func (f *fuzzyAutocompleter) GetSuggestions(input string) []suggestion {
+func (f *fuzzyAutocompleter) GetSuggestions(input string, cursor int, action cloudapipb.AutocompleteActionType) ([]*TabStop, map[int][]suggestion, bool, error) {
 	f.shouldAppend = false
 	inputArr := cmdTokenizer(input)
+	suggestionMap := make(map[int][]suggestion)
 	// If the input is empty return all possible values.
 	if len(input) == 0 || len(inputArr) < 1 {
 		suggestions := make([]suggestion, len(f.scriptNames))
@@ -286,7 +283,8 @@ func (f *fuzzyAutocompleter) GetSuggestions(input string) []suggestion {
 				matchedIndexes: nil,
 			}
 		}
-		return suggestions
+		suggestionMap[0] = suggestions
+		return nil, suggestionMap, false, nil
 	}
 
 	if len(inputArr) == 1 || !f.isValidScript(inputArr[0]) {
@@ -299,18 +297,18 @@ func (f *fuzzyAutocompleter) GetSuggestions(input string) []suggestion {
 				matchedIndexes: m.MatchedIndexes,
 			}
 		}
-		return suggestions
+		suggestionMap[0] = suggestions
+		return nil, suggestionMap, false, nil
 	}
 	// This is a placeholder until we get proper autocomplete in.
 	// Do argument completion ...
 	es, err := f.br.GetScript(inputArr[0])
 	if err != nil {
-		return nil
+		return nil, nil, false, nil
 	}
 	if es.Vis == nil || es.Vis.Variables == nil {
-		return nil
+		return nil, nil, false, nil
 	}
-
 	allSuggestionsMap := make(map[string]suggestion, 0)
 	argNames := make([]string, 0)
 	for _, arg := range es.Vis.Variables {
@@ -325,7 +323,7 @@ func (f *fuzzyAutocompleter) GetSuggestions(input string) []suggestion {
 
 	// Only show suggestions if we have an odd number of values (script + complete args).
 	if len(inputArr)%2 == 1 {
-		return nil
+		return nil, nil, false, nil
 	}
 	// If empty return all the values for the arguments.
 	lastArg := inputArr[len(inputArr)-1]
@@ -334,7 +332,8 @@ func (f *fuzzyAutocompleter) GetSuggestions(input string) []suggestion {
 		for _, v := range allSuggestionsMap {
 			suggestions = append(suggestions, v)
 		}
-		return suggestions
+		suggestionMap[0] = suggestions
+		return nil, suggestionMap, false, nil
 	}
 
 	// Else do the suggestion match:
@@ -347,5 +346,6 @@ func (f *fuzzyAutocompleter) GetSuggestions(input string) []suggestion {
 			matchedIndexes: m.MatchedIndexes,
 		}
 	}
-	return suggestions
+	suggestionMap[0] = suggestions
+	return nil, suggestionMap, false, nil
 }

@@ -8,11 +8,14 @@ go_library(
         "ebnf_parser.go",
         "help.go",
         "live.go",
+        "new_autocomplete.go",
         "utils.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/live",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
+        "//src/utils/pixie_cli/pkg/auth:go_default_library",
         "//src/utils/pixie_cli/pkg/components:go_default_library",
         "//src/utils/pixie_cli/pkg/script:go_default_library",
         "//src/utils/pixie_cli/pkg/vizier:go_default_library",
@@ -23,6 +26,7 @@ go_library(
         "@com_github_gdamore_tcell//:go_default_library",
         "@com_github_rivo_tview//:go_default_library",
         "@com_github_sahilm_fuzzy//:go_default_library",
+        "@org_golang_google_grpc//metadata:go_default_library",
     ],
 )
 
