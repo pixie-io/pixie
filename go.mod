@@ -54,6 +54,7 @@ require (
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/lib/pq v1.3.0
+	github.com/mattn/go-runewidth v0.0.8
 	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/nats-io/nats-server/v2 v2.1.4
@@ -67,6 +68,7 @@ require (
 	github.com/ory/dockertest v3.3.5+incompatible
 	github.com/phayes/freeport v0.0.0-20171002181615-b8543db493a5
 	github.com/rivo/tview v0.0.0-20200404204604-ca37f83cb2e7
+	github.com/rivo/uniseg v0.1.0
 	github.com/sahilm/fuzzy v0.1.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/segmentio/backo-go v0.0.0-20160424052352-204274ad699c // indirect
