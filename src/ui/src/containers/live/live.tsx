@@ -8,6 +8,7 @@ import * as React from 'react';
 import Drawer from '@material-ui/core/Drawer';
 import IconButton from '@material-ui/core/IconButton';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import Tooltip from '@material-ui/core/Tooltip';
 import MenuIcon from '@material-ui/icons/Menu';
 import MoveIcon from '@material-ui/icons/OpenWith';
 import ShareIcon from '@material-ui/icons/Share';
@@ -120,25 +121,31 @@ const LiveView = () => {
         {/* <IconButton disabled={true}>
           <ShareIcon />
         </IconButton> */}
-        <ToggleButton
-          className={classes.editorToggle}
-          selected={editorPanelOpen}
-          onChange={toggleEditor}
-          value='editorOpened'
-        >
-          <EditIcon />
-        </ToggleButton>
-        <ToggleButton
-          className={classes.editorToggle}
-          selected={canvasEditable}
-          onChange={toggleCanvasEditable}
-          value='canvasEditable'
-        >
-          <MoveIcon />
-        </ToggleButton>
-        <IconButton onClick={toggleCommandOpen}>
-          <MagicIcon />
-        </IconButton>
+        <Tooltip title={editorPanelOpen ? 'Close editor' : 'Open editor'}>
+          <ToggleButton
+            className={classes.editorToggle}
+            selected={editorPanelOpen}
+            onChange={toggleEditor}
+            value='editorOpened'
+          >
+            <EditIcon />
+          </ToggleButton>
+        </Tooltip>
+        <Tooltip title={canvasEditable ? 'Confim widget layout' : 'Edit widget layout'}>
+          <ToggleButton
+            className={classes.editorToggle}
+            selected={canvasEditable}
+            onChange={toggleCanvasEditable}
+            value='canvasEditable'
+          >
+            <MoveIcon />
+          </ToggleButton>
+        </Tooltip>
+        <Tooltip title='Pixie Command'>
+          <IconButton onClick={toggleCommandOpen}>
+            <MagicIcon />
+          </IconButton>
+        </Tooltip>
       </div>
       <DataDrawerSplitPanel className={classes.main}>
         <EditorSplitPanel className={classes.editorPanel}>
