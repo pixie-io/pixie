@@ -121,7 +121,7 @@ const LiveContextProvider = (props) => {
 
     new Promise((resolve, reject) => {
       try {
-        resolve(getQueryFuncs(inputVis || vis, inputArgs || args || {}));
+        resolve(getQueryFuncs(typeof inputVis === 'undefined' ? vis : inputVis, inputArgs || args || {}));
       } catch (error) {
         reject(error);
       }

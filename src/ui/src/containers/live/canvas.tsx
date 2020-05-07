@@ -16,7 +16,7 @@ import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/sty
 
 import { LiveContext, ResultsContext, VisContext } from './context';
 import { ChartDisplay, convertWidgetDisplayToVegaSpec } from './convert-to-vega-spec';
-import { addLayout, toLayout, updatePositions } from './layout';
+import { addLayout, addTableLayout, Layout, toLayout, updatePositions } from './layout';
 import { DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, TABLE_DISPLAY_TYPE, widgetResultName } from './vis';
 
 const useStyles = makeStyles((theme: Theme) => {
@@ -102,6 +102,9 @@ const Canvas = (props: CanvasProps) => {
   const [reactVegaModule, setReactVegaModule] = React.useState(null);
   const [vegaLiteModule, setVegaLiteModule] = React.useState(null);
 
+  // Default layout used when there is no vis defining widgets.
+  const [defaultLayout, setDefaultLayout] = React.useState<Layout[]>([]);
+
   // Load react-vega.
   React.useEffect(() => {
     import(/* webpackChunkName: "react-vega" webpackPreload: true */ 'react-vega').then((module) => {
@@ -123,35 +126,47 @@ const Canvas = (props: CanvasProps) => {
     });
   }, []);
 
-  const layout = React.useMemo(() => {
+  React.useEffect(() => {
     const newVis = addLayout(vis);
     if (newVis !== vis) {
       updateVis(newVis);
     }
-    return toLayout(newVis);
   }, [vis]);
 
   const charts = React.useMemo(() => {
     if (!reactVegaModule || !vegaModule) {
       return [];
     }
+    const className = clsx(
+      'fs-exclude',
+      classes.gridItem,
+      props.editable && classes.editable,
+    );
+
+    if (vis.widgets.length === 0) {
+      const layoutMap = new Map(addTableLayout(Object.keys(tables), defaultLayout).map((layout) => {
+        return [layout.i, layout];
+      }));
+      return Object.entries(tables).map(([tableName, table]) => (
+        <div key={tableName} className={className} data-grid={layoutMap.get(tableName)}>
+          <div className={classes.widgetTitle}>{tableName}</div>
+          <QueryResultTable className={classes.table} data={table} />
+        </div>
+      ));
+    }
+
     return vis.widgets.map((widget, i) => {
       const display = widget.displaySpec;
       // TODO(nserrino): Support multiple output tables when we have a Vega component that
       // takes in multiple output tables.
-      const name = widgetResultName(widget, i);
-      const table = tables[name];
-      const className = clsx(
-        'fs-exclude',
-        classes.gridItem,
-        props.editable && classes.editable,
-      );
+      const widgetName = widgetResultName(widget, i);
+      const table = tables[widgetName];
       let content = null;
       if (!table) {
-        content = <div key={name}>Table {name} not found.</div>;
+        content = <div key={widgetName}>Table {widgetName} not found.</div>;
       } else if (display[DISPLAY_TYPE_KEY] === TABLE_DISPLAY_TYPE) {
         content = <>
-          <div className={classes.widgetTitle}>{name}</div>
+          <div className={classes.widgetTitle}>{widgetName}</div>
           <QueryResultTable className={classes.table} data={table} />
         </>;
       } else if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
@@ -159,16 +174,16 @@ const Canvas = (props: CanvasProps) => {
         content = displayToGraph(display as GraphDisplay, parsedTable);
       } else {
         try {
-          const spec = convertWidgetDisplayToVegaSpec(display as ChartDisplay, name, theme, vegaLiteModule);
+          const spec = convertWidgetDisplayToVegaSpec(display as ChartDisplay, widgetName, theme, vegaLiteModule);
           const data = dataFromProto(table.relation, table.data);
           addPxTimeFormatExpression(vegaModule);
           content = <>
-            <div className={classes.widgetTitle}>{name}</div>
+            <div className={classes.widgetTitle}>{widgetName}</div>
             <Vega
               className={classes.chart}
               data={data}
               spec={spec}
-              tableName={name}
+              tableName={widgetName}
               reactVegaModule={reactVegaModule}
             />
           </>;
@@ -176,9 +191,9 @@ const Canvas = (props: CanvasProps) => {
           content = <div>Error in displaySpec: {e.message}</div>;
         }
       }
-      return <div key={name} className={className}>{content}</div>;
+      return <div key={widgetName} className={className} data-grid={toLayout(widget, widgetName)}>{content}</div>;
     });
-  }, [tables, vis, reactVegaModule, props.editable]);
+  }, [tables, vis, reactVegaModule, props.editable, defaultLayout]);
 
   const resize = React.useCallback(() => {
     // Dispatch a window resize event to signal the chart to redraw. As suggested in:
@@ -187,7 +202,11 @@ const Canvas = (props: CanvasProps) => {
   }, []);
 
   const handleLayoutChange = React.useCallback((newLayout) => {
-    updateVis(updatePositions(vis, newLayout));
+    if (vis.widgets.length > 0) {
+      updateVis(updatePositions(vis, newLayout));
+    } else {
+      setDefaultLayout(newLayout);
+    }
     resize();
   }, [vis]);
 
@@ -200,14 +219,13 @@ const Canvas = (props: CanvasProps) => {
   return (
     <Grid
       className={classes.grid}
-      layout={layout}
       onLayoutChange={handleLayoutChange}
       isDraggable={props.editable}
       isResizable={props.editable}
       margin={[theme.spacing(2.5), theme.spacing(2.5)]}
     >
       {charts}
-    </Grid>
+    </Grid >
   );
 };
 

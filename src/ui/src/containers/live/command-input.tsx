@@ -1,15 +1,15 @@
 import Autocomplete from 'components/autocomplete/autocomplete';
-import {CompletionHeader, CompletionItem} from 'components/autocomplete/completions';
+import { CompletionHeader, CompletionItem } from 'components/autocomplete/completions';
 import MagicIcon from 'components/icons/magic';
 import * as React from 'react';
-import {GetPxScripts, Script} from 'utils/script-bundle';
+import { GetPxScripts, Script } from 'utils/script-bundle';
 
-import {createStyles, makeStyles, Theme} from '@material-ui/core';
+import { createStyles, makeStyles, Theme } from '@material-ui/core';
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 
-import {LiveContext} from './context';
-import {parseVis} from './vis';
+import { LiveContext } from './context';
+import { parseVis } from './vis';
 
 interface CommandInputProps {
   open: boolean;
@@ -63,14 +63,13 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
 
   React.useEffect(() => {
     GetPxScripts().then((examples) => {
-      const valid = examples.filter((s) => s.code && s.vis);
-      setCompletions(valid.map((s) => ({
+      setCompletions(examples.map((s) => ({
         type: 'item',
         id: s.id,
         title: s.id,
         description: s.description,
       })));
-      setScriptsMap(new Map(valid.map((s) => [s.id, s])));
+      setScriptsMap(new Map(examples.map((s) => [s.id, s])));
     });
   }, []);
 
@@ -90,7 +89,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
       executeScript(script.code, parseVis(script.vis));
     }
     onClose();
-  }, [scriptsMap]);
+  }, [scriptsMap, executeScript]);
 
   return (
     <Modal open={open} onClose={onClose} BackdropProps={{}}>

@@ -1,8 +1,8 @@
-import {VizierQueryError} from 'common/errors';
-import {VizierQueryArg, VizierQueryFunc} from 'common/vizier-grpc-client';
+import { VizierQueryError } from 'common/errors';
+import { VizierQueryArg, VizierQueryFunc } from 'common/vizier-grpc-client';
 
-import {ChartDisplay} from './convert-to-vega-spec';
-import {ChartPosition, DEFAULT_HEIGHT, GRID_WIDTH} from './layout';
+import { ChartDisplay } from './convert-to-vega-spec';
+import { ChartPosition, DEFAULT_HEIGHT, GRID_WIDTH } from './layout';
 
 // TODO(nserrino): Replace these with proto when the UI receives protobuf from the script manager
 // instead of json from the json bundle.
@@ -26,7 +26,7 @@ export interface WidgetDisplay {
   readonly '@type': string;
 }
 
-interface Widget {
+export interface Widget {
   name?: string;
   position?: ChartPosition;
   func: Func;
@@ -102,6 +102,9 @@ function getWidgetArgs(defaults: { [key: string]: string; }, widget: Widget): Vi
 // when executeScript() is called with an invalid Vis spec.
 export function getQueryFuncs(vis: Vis, variableValues: { [key: string]: string }): VizierQueryFunc[] {
   const defaults = {};
+  if (!vis) {
+    return [];
+  }
   vis.variables.forEach((v) => {
     if (typeof v.defaultValue === 'string') {
       defaults[v.name] = v.defaultValue;
