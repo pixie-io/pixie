@@ -237,9 +237,6 @@ func parseRunArgsWithScript(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester
 		}
 
 		value := ""
-		if a.Type != nil {
-			value += *a.Type + ":"
-		}
 		if a.Name != nil {
 			value += *a.Name
 		}
@@ -294,7 +291,6 @@ func parseRunArgs(parsedCmd *ebnf.ParsedCmd, cmd *Command, s Suggester, scriptTa
 			if val, ok := kindLabelToProtoMap[*a.Type]; ok {
 				entityType = val
 			}
-			value += *a.Type + ":"
 		}
 
 		if entityType != cloudapipb.AEK_UNKNOWN {
