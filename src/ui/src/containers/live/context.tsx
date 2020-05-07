@@ -5,7 +5,7 @@ import ClientContext from 'common/vizier-grpc-client-context';
 import { SnackbarProvider, useSnackbar } from 'components/snackbar/snackbar';
 import * as React from 'react';
 import { QueryExecutionStats } from 'types/generated/vizier_pb';
-import { setQueryParams } from 'utils/query-params';
+import { getQueryParams, setQueryParams } from 'utils/query-params';
 
 import { DataDrawerContext, DataDrawerContextProvider } from './context/data-drawer-context';
 import { LayoutContextProvider } from './context/layout-context';
@@ -50,18 +50,41 @@ export const TitleContext = React.createContext<Title>(null);
 export const VisContext = React.createContext<Vis>(null);
 export const ArgsContext = React.createContext<ArgsContextProps>(null);
 
-// Filters the arguments to only those that are specified in Vis.
-function argsForVis(vis: Vis, args: Arguments): Arguments {
-  if (!args) {
-    return {};
+// TODO(malthus): Move these into a separate module.
+function argsEquals(args1: Arguments, args2: Arguments): boolean {
+  if (Object.keys(args1).length !== Object.keys(args2).length) {
+    return false;
   }
-  const visArgs = new Set(vis.variables.map((v) => v.name));
-  const outArgs = {};
-  Object.keys(args).forEach((keyName) => {
-    if (keyName === 'script' || visArgs.has(keyName)) {
-      outArgs[keyName] = args[keyName];
+  const args1Map = new Map(Object.entries(args1));
+  for (const [key, val] of Object.entries(args2)) {
+    if (args1Map.get(key) !== val) {
+      return false;
     }
-  });
+    args1Map.delete(key);
+  }
+  if (args1Map.size !== 0) {
+    return false;
+  }
+  return true;
+}
+
+// Populate arguments either from defaultValues or from the input args.
+function argsForVis(vis: Vis, args: Arguments): Arguments {
+  const outArgs: Arguments = {};
+  if (!args) {
+    args = {};
+  }
+  for (const variable of vis.variables) {
+    const val = typeof args[variable.name] !== 'undefined' ? args[variable.name] : variable.defaultValue;
+    outArgs[variable.name] = val;
+  }
+  if (args.script) {
+    outArgs.script = args.script;
+  }
+  // Compare the two sets of arguments to avoid infinite render cycles.
+  if (argsEquals(args, outArgs)) {
+    return args;
+  }
   return outArgs;
 }
 
@@ -87,7 +110,13 @@ const LiveContextProvider = (props) => {
 
   // setArgsRaw sets the args without considering the context of the vis.
   // the exported setArgs listens to the vis and only sets those args which are specified in the vis.
-  const [args, setArgsRaw] = React.useState<Arguments | null>(null);
+  const [args, setArgsRaw] = React.useState<Arguments | null>(() => {
+    return getQueryParams();
+  });
+
+  React.useEffect(() => {
+    setArgsRaw(argsForVis(vis, args));
+  }, [vis, args]);
 
   const argsContext = React.useMemo(() => {
     return {
