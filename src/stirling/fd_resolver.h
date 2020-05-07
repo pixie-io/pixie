@@ -23,7 +23,7 @@ namespace stirling {
  * If the inode number is stable across samples, then this module can return the inode number for a
  * query within the valid time window.
  */
-class SocketResolver {
+class FDResolver {
  public:
   /**
    * Creates a SocketResolver for the PID and FD.
@@ -32,7 +32,7 @@ class SocketResolver {
    * @param pid The PID to monitor.
    * @param fd The FD of the PID to monitor.
    */
-  SocketResolver(system::ProcParser* proc_parser, int pid, int fd);
+  FDResolver(system::ProcParser* proc_parser, int pid, int fd);
 
   /**
    * Collects the first sample from Linux, to begin the tracking process.
@@ -50,7 +50,8 @@ class SocketResolver {
    * @param time The time at which the socket inode number is requested.
    * @return the socket inode number, if it is known. Otherwise, returns std::nullopt_t.
    */
-  std::optional<uint32_t> InferSocket(std::chrono::time_point<std::chrono::steady_clock> time);
+  std::optional<std::string_view> InferFDLink(
+      std::chrono::time_point<std::chrono::steady_clock> time);
 
   /**
    * Whether the tracking is still active. Once inactive, then resolver will not collect any new
@@ -69,16 +70,13 @@ class SocketResolver {
 
   // The FD link contents that at setup time.
   // Potentially contains the socket inode number.
-  std::string first_fd_link_;
+  std::string fd_link_;
 
-  // This is a time after the first_fd_link_ was recorded.
+  // This is a time after the fd_link_ was recorded.
   // Used to determine the valid time window for the link, if the link is still
   // the same on a subsequent sample.
   std::chrono::time_point<std::chrono::steady_clock> first_timestamp_;
   std::chrono::time_point<std::chrono::steady_clock> last_timestamp_;
-
-  // The extracted inode_number.
-  std::optional<int> inode_num_;
 };
 
 }  // namespace stirling

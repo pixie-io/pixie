@@ -344,8 +344,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "socket_resolver_test",
-    srcs = ["socket_resolver_test.cc"],
+    name = "fd_resolver_test",
+    srcs = ["fd_resolver_test.cc"],
     deps = [
         ":cc_library",
         "//src/common/system:cc_library",

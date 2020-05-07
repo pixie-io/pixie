@@ -445,12 +445,6 @@ void ConnectionTracker::CheckTracker() {
         "Did not expect new event more than 1 sampling iteration after Close. Connection=$0.",
         ToString(conn_id_));
   }
-
-  if (conn_id_.fd == 0 && state() != State::kDisabled) {
-    LOG_FIRST_N(ERROR, 10) << absl::Substitute(
-        "FD==0, which usually means the FD was not captured correctly. Connection=$0.",
-        ToString(conn_id_));
-  }
 }
 
 DataStream* ConnectionTracker::req_data() {
@@ -698,10 +692,10 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
                               conn_id_.upid.pid, conn_id_.fd, conn_id_.tsid);
 
   if (conn_resolver_ == nullptr) {
-    conn_resolver_ = std::make_unique<SocketResolver>(proc_parser, conn_id_.upid.pid, conn_id_.fd);
+    conn_resolver_ = std::make_unique<FDResolver>(proc_parser, conn_id_.upid.pid, conn_id_.fd);
     bool success = conn_resolver_->Setup();
     if (!success) {
-      conn_resolver_ = nullptr;
+      conn_resolver_.reset();
       conn_resolution_failed_ = true;
       VLOG(2) << "Can't infer remote endpoint. Setup failed.";
     }
@@ -715,25 +709,40 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
 
   bool success = conn_resolver_->Update();
   if (!success) {
-    conn_resolver_ = nullptr;
+    conn_resolver_.reset();
     conn_resolution_failed_ = true;
     VLOG(2) << "Can't infer remote endpoint. Could not determine socket inode number of FD.";
     return;
   }
 
-  std::optional<uint32_t> inode_num_or_nullopt =
-      conn_resolver_->InferSocket(last_update_timestamp_);
-  if (!inode_num_or_nullopt) {
-    // This is not a conn resolution failure. We just need more time to figure out the right inode.
+  std::optional<std::string_view> fd_link_or_nullopt =
+      conn_resolver_->InferFDLink(last_update_timestamp_);
+  if (!fd_link_or_nullopt) {
+    // This is not a conn resolution failure. We just need more time to figure out the right link.
     return;
   }
-  uint32_t inode_num = *inode_num_or_nullopt;
+
+  // At this point we have something like "socket:[32431]" or "/dev/null" or "pipe:[2342]"
+  // Next we extract the inode number, if it is a socket type..
+  auto socket_inode_num_status = fs::ExtractInodeNum(fs::kSocketInodePrefix, *fd_link_or_nullopt);
+
+  // After resolving the FD, it may turn out to be non-socket data.
+  // This is possible when the BPF read()/write() probes have inferred a protocol,
+  // without seeing the connect()/accept().
+  // For example, the captured data may have been for a FD to stdin/stdout, or a FD to a pipe.
+  // Here we disable such non-socket connections.
+  if (!socket_inode_num_status.ok()) {
+    Disable("Resolved the connection to a non-socket type.");
+    conn_resolver_.reset();
+    return;
+  }
+  uint32_t socket_inode_num = socket_inode_num_status.ValueOrDie();
 
   // We found the inode number, now lets see if it maps to a known connection.
   StatusOr<const system::SocketInfo*> socket_info_status =
-      socket_info_mgr->Lookup(pid(), inode_num);
+      socket_info_mgr->Lookup(pid(), socket_inode_num);
   if (!socket_info_status.ok()) {
-    conn_resolver_ = nullptr;
+    conn_resolver_.reset();
     conn_resolution_failed_ = true;
     VLOG(1) << absl::Substitute("$0 Could not map inode to a connection. Message = $1",
                                 ToString(conn_id_), socket_info_status.msg());
@@ -745,7 +754,7 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
 
   Status s = ParseSocketInfoRemoteAddr(*socket_info, &open_info_.remote_addr);
   if (!s.ok()) {
-    conn_resolver_ = nullptr;
+    conn_resolver_.reset();
     conn_resolution_failed_ = true;
     LOG(ERROR) << absl::Substitute("Remote address (type=$0) parsing failed. Message: $1",
                                    socket_info->family, s.msg());

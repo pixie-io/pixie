@@ -17,12 +17,12 @@
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/cql/cql_stitcher.h"
 #include "src/stirling/data_stream.h"
+#include "src/stirling/fd_resolver.h"
 #include "src/stirling/http/http_stitcher.h"
 #include "src/stirling/http2u/stitcher.h"
 #include "src/stirling/mysql/mysql_parse.h"
 #include "src/stirling/mysql/mysql_stitcher.h"
 #include "src/stirling/pgsql/parse.h"
-#include "src/stirling/socket_resolver.h"
 #include "src/stirling/socket_trace_bpf_tables.h"
 
 DECLARE_bool(enable_unix_domain_sockets);
@@ -526,7 +526,7 @@ class ConnectionTracker {
   bool debug_trace_ = false;
 
   // Used to identify the remove endpoint in case the accept/connect was not traced.
-  std::unique_ptr<SocketResolver> conn_resolver_ = nullptr;
+  std::unique_ptr<FDResolver> conn_resolver_ = nullptr;
   bool conn_resolution_failed_ = false;
 
   struct conn_id_t conn_id_ = {};
