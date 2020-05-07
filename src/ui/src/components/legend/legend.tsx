@@ -146,7 +146,7 @@ const Legend = React.memo((props: LegendProps) => {
 
   const entriesPerPage = numGrids * NUM_ROWS;
   const pageEntriesStart = currentPage * entriesPerPage;
-  const pageEntriesEnd = Math.min((currentPage + 1) * entriesPerPage, props.data.entries.length - 1);
+  const pageEntriesEnd = Math.min((currentPage + 1) * entriesPerPage, props.data.entries.length);
   let entries = props.data.entries.slice(pageEntriesStart, pageEntriesEnd);
   entries = toRowMajorOrder(entries, numGrids, NUM_ROWS);
 
