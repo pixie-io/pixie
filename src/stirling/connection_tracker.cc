@@ -440,10 +440,11 @@ void ConnectionTracker::UpdateTimestamps(uint64_t bpf_timestamp) {
 }
 
 void ConnectionTracker::CheckTracker() {
-  LOG_IF(WARNING, death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1)
-      << absl::Substitute(
-             "Did not expect new event more than 1 sampling iteration after Close. Connection=$0.",
-             ToString(conn_id_));
+  if (death_countdown_ >= 0 && death_countdown_ < kDeathCountdownIters - 1) {
+    LOG_FIRST_N(WARNING, 10) << absl::Substitute(
+        "Did not expect new event more than 1 sampling iteration after Close. Connection=$0.",
+        ToString(conn_id_));
+  }
 
   if (conn_id_.fd == 0 && state() != State::kDisabled) {
     LOG_FIRST_N(ERROR, 10) << absl::Substitute(
