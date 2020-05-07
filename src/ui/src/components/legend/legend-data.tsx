@@ -117,7 +117,7 @@ const buildTimeHashMap = (hoverData: ValidHoverDatum[], sortBy: (key: string) =>
   const timeHashMap: TimeHashMap = {};
   for (const datum of hoverData) {
     const rest: UnformattedLegendEntry[] = Object.entries(datum).map((entry) => ({key: entry[0], val: entry[1]}))
-      .filter((item) => item.key !== 'time');
+      .filter((item) => item.key !== 'time' && item.key !== 'sum');
     const sortedRest = _.sortBy(rest, (item) => sortBy(item.key));
     timeHashMap[datum.time] = sortedRest;
   }

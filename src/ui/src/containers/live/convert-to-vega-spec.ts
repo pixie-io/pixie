@@ -19,7 +19,7 @@ const HOVER_LINE_OPACITY = 0.3;
 const HOVER_LINE_DASH = [6, 6];
 const HOVER_LINE_WIDTH = 2;
 const LINE_WIDTH = 1.0;
-const HIGHLIGHTED_LINE_WIDTH = 5.0;
+const HIGHLIGHTED_LINE_WIDTH = 3.0;
 const SELECTED_LINE_OPACITY = 1.0;
 const UNSELECTED_LINE_OPACITY = 0.2;
 
@@ -479,6 +479,10 @@ function addOpacityTestsToLine(vegaSpec: VgSpec, pivotField: string, valueField:
     }
 
     mark.marks[0].encode.update.opacity = [
+      {
+        value: SELECTED_LINE_OPACITY,
+        test: `${LEGEND_HOVER_SIGNAL} && datum["${pivotField}"] === ${LEGEND_HOVER_SIGNAL}`,
+      },
       {
         value: UNSELECTED_LINE_OPACITY,
         test: `${LEGEND_SELECT_SIGNAL}.length !== 0 && indexof(${LEGEND_SELECT_SIGNAL}, datum["${pivotField}"]) === -1`,

@@ -9,7 +9,7 @@ const NUM_ROWS = 2;
 const MAX_NUM_GRIDS = 4;
 
 const COLOR_COLUMN_SIZE = 8;
-const KEY_COLUMN_SIZE = 200;
+const KEY_COLUMN_SIZE = 225;
 const COLON_COLUMN_SIZE = 5;
 const VAL_COLUMN_SIZE = 50;
 const COLUMN_GAP_SIZE = 5;
@@ -20,7 +20,7 @@ const GRID_WIDTH = (
   COLON_COLUMN_SIZE + COLUMN_GAP_SIZE +
   VAL_COLUMN_SIZE
 );
-const GRID_GAP_SIZE = 100;
+const GRID_GAP_SIZE = 25;
 
 const calcGridWidth = (numGrids: number) => (numGrids - 1) * GRID_GAP_SIZE + numGrids * GRID_WIDTH;
 
@@ -64,7 +64,6 @@ const useStyles = makeStyles((theme: Theme) => {
       overflow: 'hidden',
     },
     header: {
-      ...theme.typography.subtitle1,
       textAlign: 'left',
       height: `${HEADER_HEIGHT}px`,
     },
@@ -72,8 +71,8 @@ const useStyles = makeStyles((theme: Theme) => {
       display: 'contents',
     },
     colorCircle: {
-      height: '8px',
-      width: '8px',
+      height: `${COLOR_COLUMN_SIZE}px`,
+      width: `${COLOR_COLUMN_SIZE}px`,
       borderRadius: '50%',
       marginRight: theme.spacing(1),
       display: 'inline-block',
@@ -183,6 +182,7 @@ const Legend = React.memo((props: LegendProps) => {
       }
       if (props.interactState.hoveredSeries === entry.key) {
         styles.color = entry.color;
+        styles.opacity = '1.0';
       }
 
       rows.push(
@@ -227,7 +227,7 @@ const Legend = React.memo((props: LegendProps) => {
 
   return (
     <div className={classes.container} style={containerStyles}>
-      <div className={classes.header}>{props.data.time ? `${props.name} (${props.data.time})` : ''}</div>
+      <div className={classes.header}>{props.data.time ? `${props.data.time}` : ''}</div>
       <div className={classes.gridsContainer}>
         {grids}
       </div>
