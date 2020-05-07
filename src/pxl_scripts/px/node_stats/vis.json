@@ -18,7 +18,7 @@
   ],
   "widgets": [
     {
-      "name": "cpu",
+      "name": "CPU%",
       "position": {
         "x": 0,
         "y": 0,
@@ -60,7 +60,7 @@
       }
     },
     {
-      "name": "rss",
+      "name": "Resident Set Size",
       "position": {
         "x": 6,
         "y": 0,
@@ -102,7 +102,7 @@
       }
     },
     {
-      "name": "sent_data",
+      "name": "Sent Network Traffic",
       "position": {
         "x": 0,
         "y": 3,
@@ -144,7 +144,7 @@
       }
     },
     {
-      "name": "received_data",
+      "name": "Received Network Traffic",
       "position": {
         "x": 6,
         "y": 3,

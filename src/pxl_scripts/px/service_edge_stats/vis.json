@@ -18,7 +18,7 @@
   ],
   "widgets": [
     {
-      "name": "latency_p50",
+      "name": "p50 Latency",
       "position": {
         "x": 0,
         "y": 0,
@@ -60,7 +60,7 @@
       }
     },
     {
-      "name": "latency_p90",
+      "name": "p90 Latency",
       "position": {
         "x": 6,
         "y": 0,
@@ -102,7 +102,7 @@
       }
     },
     {
-      "name": "throughput",
+      "name": "Request Throughput",
       "position": {
         "x": 0,
         "y": 3,
@@ -144,7 +144,7 @@
       }
     },
     {
-      "name": "errors",
+      "name": "Request Error Rate",
       "position": {
         "x": 6,
         "y": 3,
