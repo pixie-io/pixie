@@ -19,12 +19,25 @@ spec:
       containers:
       - name: load-test
         image: weaveworksdemos/load-test:0.1.1
-        command: ["/bin/sh"]
-        # This runs locust in web-mode.
-        args: ["-c", "locust --host http://front-end.sock-shop.svc.cluster.local -f /config/locustfile.py"]
-        # The following form may be useful for batch mode, if we ever want to switch.
-        #locust --no-web --host http://front-end.sock-shop.svc.cluster.local -f /config/locustfile.py -c 100 -r 5
-        ports:
-        - containerPort: 8089
+        command: ["locust"]
+        # This runs locust in batch mode.
+        # The following form runs locust in web mode.
+        # locust --host http://front-end.sock-shop.svc.cluster.local -f /config/locustfile.py
+        args: ["-c", "100", "-r", "5", "--no-web", "-f", "/config/locustfile.py",
+               "--host", "http://front-end.sock-shop.svc.cluster.local"]
+
+      initContainers:
+      - name: wait-sock-shop
+        image: alpine:3.6
+        # yamllint disable
+        command: ['sh', '-c', 'set -x;  apk add --no-cache curl;
+          until timeout -t 2 curl -f "${SOCK_SHOP_HEALTH_ADDR}"; do
+            echo "waiting for ${SOCK_SHOP_HEALTH_ADDR}";
+            sleep 2;
+          done;']
+        env:
+        - name: SOCK_SHOP_HEALTH_ADDR
+          value: "http://orders.sock-shop.svc.cluster.local/health"
+
       nodeSelector:
         beta.kubernetes.io/os: linux
