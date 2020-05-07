@@ -6,9 +6,11 @@ import (
 	"strings"
 
 	"github.com/olivere/elastic/v7"
+	"github.com/sahilm/fuzzy"
 	uuid "github.com/satori/go.uuid"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 )
 
 // ElasticSuggester provides suggestions based on the given index in Elastic.
@@ -16,6 +18,8 @@ type ElasticSuggester struct {
 	client          *elastic.Client
 	mdIndexName     string
 	scriptIndexName string
+	// This is temporary, and will be removed once we start indexing scripts.
+	br *script.BundleManager
 }
 
 // EsMDEntity is information about metadata entities, stored in Elastic.
@@ -52,8 +56,8 @@ var elasticLabelToProtoMap = map[string]cloudapipb.AutocompleteEntityKind{
 }
 
 // NewElasticSuggester creates a suggester based on an elastic index.
-func NewElasticSuggester(client *elastic.Client, mdIndex string, scriptIndex string) *ElasticSuggester {
-	return &ElasticSuggester{client, mdIndex, scriptIndex}
+func NewElasticSuggester(client *elastic.Client, mdIndex string, scriptIndex string, br *script.BundleManager) *ElasticSuggester {
+	return &ElasticSuggester{client, mdIndex, scriptIndex, br}
 }
 
 // SuggestionRequest is a request for autocomplete suggestions.
@@ -91,7 +95,73 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 		return nil, err
 	}
 
+	// Parse scripts to prepare for matching. This is temporary until we have script indexing.
+	scripts := []string{}
+	scriptArgMap := make(map[string][]cloudapipb.AutocompleteEntityKind)
+	scriptArgNames := make(map[string][]string)
+	if e.br != nil {
+		for _, s := range e.br.GetScripts() {
+			scripts = append(scripts, s.ScriptName)
+			scriptArgMap[s.ScriptName] = make([]cloudapipb.AutocompleteEntityKind, 0)
+			for _, a := range s.ComputedArgs() {
+				aKind := cloudapipb.AEK_UNKNOWN
+				// The args aren't typed yet, so we assume the type from the name.
+				if strings.Index(a.Name, "pod") != -1 {
+					aKind = cloudapipb.AEK_POD
+				}
+				if strings.Index(a.Name, "svc") != -1 || strings.Index(a.Name, "service") != -1 {
+					aKind = cloudapipb.AEK_SVC
+				}
+
+				if aKind != cloudapipb.AEK_UNKNOWN {
+					scriptArgMap[s.ScriptName] = append(scriptArgMap[s.ScriptName], aKind)
+					scriptArgNames[s.ScriptName] = append(scriptArgNames[s.ScriptName], a.Name)
+				}
+			}
+		}
+	}
+
 	for i, r := range resp.Responses {
+		// This is temporary until we index scripts in Elastic.
+		scriptResults := make([]*Suggestion, 0)
+		if e.br != nil {
+			for _, t := range reqs[i].AllowedKinds {
+				if t == cloudapipb.AEK_SCRIPT { // Script is an allowed type for this tabstop, so we should find matching scripts.
+					matches := fuzzy.Find(reqs[i].Input, scripts)
+					for _, m := range matches {
+						script := e.br.MustGetScript(m.Str)
+						scriptArgs := scriptArgMap[m.Str]
+						scriptNames := scriptArgNames[m.Str]
+						valid := true
+						for _, r := range reqs[i].AllowedArgs { // Check that the script takes the allowed args.
+							found := false
+							for _, arg := range scriptArgs {
+								if arg == r {
+									found = true
+									break
+								}
+							}
+							if !found {
+								valid = false
+								break
+							}
+						}
+						if valid {
+							scriptResults = append(scriptResults, &Suggestion{
+								Name:     m.Str,
+								Kind:     cloudapipb.AEK_SCRIPT,
+								Desc:     script.LongDoc,
+								ArgNames: scriptNames,
+								ArgKinds: scriptArgs,
+							})
+						}
+					}
+					break
+				}
+			}
+		}
+		exactMatch := len(scriptResults) > 0 && scriptResults[0].Name == reqs[i].Input
+
 		// Convert elastic entity into a suggestion object.
 		results := make([]*Suggestion, 0)
 		for _, h := range r.Hits.Hits {
@@ -107,7 +177,10 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 			})
 		}
 
-		exactMatch := len(results) > 0 && results[0].Name == reqs[i].Input
+		exactMatch = exactMatch || len(results) > 0 && results[0].Name == reqs[i].Input
+
+		results = append(scriptResults, results...)
+
 		resps[i] = &SuggestionResult{
 			Suggestions: results,
 			ExactMatch:  exactMatch,
