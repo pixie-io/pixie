@@ -174,7 +174,13 @@ const Canvas = (props: CanvasProps) => {
         content = displayToGraph(display as GraphDisplay, parsedTable);
       } else {
         try {
-          const spec = convertWidgetDisplayToVegaSpec(display as ChartDisplay, widgetName, theme, vegaLiteModule);
+          const specWithProps = convertWidgetDisplayToVegaSpec(
+            display as ChartDisplay,
+            widgetName,
+            theme,
+            vegaLiteModule,
+          );
+
           const data = dataFromProto(table.relation, table.data);
           addPxTimeFormatExpression(vegaModule);
           content = <>
@@ -182,7 +188,7 @@ const Canvas = (props: CanvasProps) => {
             <Vega
               className={classes.chart}
               data={data}
-              spec={spec}
+              specWithProps={specWithProps}
               tableName={widgetName}
               reactVegaModule={reactVegaModule}
             />

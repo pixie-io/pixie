@@ -17,6 +17,7 @@ interface LiveContextProps {
   executeScript: (script?: string, vis?: Vis, args?: Arguments) => void;
   updateScript: (code: string) => void;
   updateVis: (spec: Vis) => void;
+  setHoverTime: (time: number) => void;
 }
 
 interface Tables {
@@ -49,6 +50,7 @@ export const LiveContext = React.createContext<LiveContextProps>(null);
 export const TitleContext = React.createContext<Title>(null);
 export const VisContext = React.createContext<Vis>(null);
 export const ArgsContext = React.createContext<ArgsContextProps>(null);
+export const HoverTimeContext = React.createContext<number>(null);
 
 // TODO(malthus): Move these into a separate module.
 function argsEquals(args1: Arguments, args2: Arguments): boolean {
@@ -193,12 +195,15 @@ const LiveContextProvider = (props) => {
       });
   }, [client, script, vis, title, args]);
 
+  const [hoverTime, setHoverTime] = React.useState<number>(null);
+
   const liveViewContext = React.useMemo(() => ({
     updateScript: setScript,
     vizierReady: !!client,
     setScripts,
     executeScript,
     updateVis: setVis,
+    setHoverTime,
   }), [executeScript, client]);
 
   return (
@@ -208,7 +213,9 @@ const LiveContextProvider = (props) => {
           <ScriptContext.Provider value={script}>
             <ResultsContext.Provider value={results}>
               <VisContext.Provider value={vis}>
-                {props.children}
+                <HoverTimeContext.Provider value={hoverTime}>
+                  {props.children}
+                </HoverTimeContext.Provider>
               </VisContext.Provider>
             </ResultsContext.Provider>
           </ScriptContext.Provider>

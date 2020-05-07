@@ -1,0 +1,253 @@
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { CSSProperties } from '@material-ui/core/styles/withStyles';
+import * as _ from 'lodash';
+import * as React from 'react';
+
+import { LegendData, LegendEntry } from './legend-data';
+
+const NUM_ROWS = 2;
+const MAX_NUM_GRIDS = 4;
+
+const COLOR_COLUMN_SIZE = 8;
+const KEY_COLUMN_SIZE = 200;
+const COLON_COLUMN_SIZE = 5;
+const VAL_COLUMN_SIZE = 50;
+const COLUMN_GAP_SIZE = 5;
+const COLUMN_SIZES = `${COLOR_COLUMN_SIZE}px ${KEY_COLUMN_SIZE}px ${COLON_COLUMN_SIZE}px ${VAL_COLUMN_SIZE}px`;
+const GRID_WIDTH = (
+  COLOR_COLUMN_SIZE + COLUMN_GAP_SIZE +
+  KEY_COLUMN_SIZE + COLUMN_GAP_SIZE +
+  COLON_COLUMN_SIZE + COLUMN_GAP_SIZE +
+  VAL_COLUMN_SIZE
+);
+const GRID_GAP_SIZE = 100;
+
+const calcGridWidth = (numGrids: number) => (numGrids - 1) * GRID_GAP_SIZE + numGrids * GRID_WIDTH;
+
+const ROW_HEIGHT = 25;
+const HEADER_HEIGHT = 25;
+
+// I've provided MIN_WIDTH and MIN_HEIGHT here to be used to prevent the user from making too small a chart.
+// But I'm not sure how to do that yet.
+export const MIN_HEIGHT = HEADER_HEIGHT + (NUM_ROWS * ROW_HEIGHT);
+// NUM_GRIDS is scaled up/down based on width, so the minimum witdth is the width of just 1 grid.
+export const MIN_WIDTH = GRID_WIDTH;
+
+export interface LegendInteractState {
+  selectedSeries: string[];
+  hoveredSeries: string;
+}
+
+interface LegendProps {
+  data: LegendData;
+  vegaOrigin: number[];
+  chartWidth: number;
+  name: string;
+  interactState: LegendInteractState;
+  setInteractState: (s: LegendInteractState) => void;
+}
+
+const useStyles = makeStyles((theme: Theme) => {
+  return createStyles({
+    container: {
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+      width: '100%',
+    },
+    gridsContainer: {
+      flex: '1',
+      minHeight: 0,
+      display: 'flex',
+      flexDirection: 'row',
+      justifyContent: 'flex-start',
+      overflow: 'hidden',
+    },
+    header: {
+      ...theme.typography.subtitle1,
+      textAlign: 'left',
+      height: `${HEADER_HEIGHT}px`,
+    },
+    rowContainer: {
+      display: 'contents',
+    },
+    colorCircle: {
+      height: '8px',
+      width: '8px',
+      borderRadius: '50%',
+      marginRight: theme.spacing(1),
+      display: 'inline-block',
+    },
+    colorContainer: {
+      textAlign: 'center',
+    },
+    key: {
+      textAlign: 'left',
+      marginRight: '10px',
+      textOverflow: 'ellipsis',
+      overflow: 'hidden',
+      whiteSpace: 'nowrap',
+    },
+    val: {
+      textAlign: 'left',
+    },
+    gridGap: {
+      height: '100%',
+      width: `${GRID_GAP_SIZE}px`,
+    },
+  });
+});
+
+const Legend = React.memo((props: LegendProps) => {
+  const classes = useStyles();
+  const [currentPage, setCurrentPage] = React.useState<number>(0);
+
+  const handleRowLeftClick = React.useCallback((key: string, e: React.SyntheticEvent) => {
+    // Toggle selected series.
+    if (_.includes(props.interactState.selectedSeries, key)) {
+      props.setInteractState({
+        ...props.interactState,
+        selectedSeries: props.interactState.selectedSeries.filter((s: string) => s !== key),
+      });
+    } else {
+      props.setInteractState({
+        ...props.interactState,
+        selectedSeries: [...props.interactState.selectedSeries, key],
+      });
+    }
+  }, [props.interactState]);
+
+  const handleRowRightClick = React.useCallback((key: string, e: React.SyntheticEvent) => {
+    // Reset all selected series.
+    props.setInteractState({...props.interactState, selectedSeries: []});
+    // Prevent right click menu from showing up.
+    e.preventDefault();
+    return false;
+  }, [props.interactState]);
+
+  const handleRowHover = React.useCallback((key: string, e: React.SyntheticEvent) => {
+    props.setInteractState({...props.interactState, hoveredSeries: key});
+  }, [props.interactState]);
+
+  const handleRowLeave = React.useCallback((e: React.SyntheticEvent) => {
+    props.setInteractState({...props.interactState, hoveredSeries: null});
+  }, [props.interactState]);
+
+  if (props.vegaOrigin.length < 2) {
+    return <div/>;
+  }
+
+  const leftRightPadding = props.vegaOrigin[0];
+
+  let numGrids = MAX_NUM_GRIDS;
+  // Dynamically take out grids if theres no room for them.
+  while ((2 * leftRightPadding + calcGridWidth(numGrids)) > props.chartWidth && numGrids > 1) {
+    numGrids--;
+  }
+
+  const entriesPerPage = numGrids * NUM_ROWS;
+  const pageEntriesStart = currentPage * entriesPerPage;
+  const pageEntriesEnd = Math.min((currentPage + 1) * entriesPerPage, props.data.entries.length - 1);
+  let entries = props.data.entries.slice(pageEntriesStart, pageEntriesEnd);
+  entries = toRowMajorOrder(entries, numGrids, NUM_ROWS);
+
+  let index = 0;
+  // We add a grid per "column" we want to see in the legend.
+  // Each grid contains NUM_ROWS rows and 4 columns: (color circle | key | : | value).
+  const grids = [];
+  for (let i = 0; i < numGrids; i++) {
+    const rows = [];
+    // We have to break both here and in the inner loop in case we run out of entries before
+    // we have reached all of the grids/rows respectively.
+    if (index >= entries.length) {
+      break;
+    }
+    for (let j = 0; j < NUM_ROWS; j++) {
+      if (index >= entries.length) {
+        break;
+      }
+      const entry = entries[index];
+      index++;
+
+      const colorStyles: CSSProperties = {
+        backgroundColor: entry.color,
+      };
+
+      // Handle hover/selection styling.
+      const onMouseOver = (e) => handleRowHover(entry.key, e);
+      const styles: CSSProperties = {
+        opacity: '1.0',
+      };
+      if (props.interactState.selectedSeries.length > 0 && !_.includes(props.interactState.selectedSeries, entry.key)) {
+        styles.opacity = '0.3';
+      }
+      if (props.interactState.hoveredSeries === entry.key) {
+        styles.color = entry.color;
+      }
+
+      rows.push(
+        <div
+          className={classes.rowContainer}
+          onMouseOver={onMouseOver}
+          onMouseOut={handleRowLeave}
+          onClick={(e) => handleRowLeftClick(entry.key, e)}
+          onContextMenu={(e) => handleRowRightClick(entry.key, e)}
+        >
+          <div style={styles} className={classes.colorContainer}>
+            <div className={classes.colorCircle} style={colorStyles}/>
+          </div>
+          <div style={styles} className={classes.key}>{entry.key}</div>
+          <div style={styles}>:</div>
+          <div style={styles} className={classes.val}>{entry.val}</div>
+        </div>);
+    }
+
+    const gridStyle: CSSProperties = {
+      display: 'grid',
+      gridTemplateColumns: COLUMN_SIZES,
+      columnGap: `${COLUMN_GAP_SIZE}px`,
+      gridTemplateRows: `repeat(${NUM_ROWS}, ${ROW_HEIGHT}px)`,
+    };
+    const grid = (
+      <div style={gridStyle}>
+        {rows}
+      </div>
+    );
+    grids.push(grid);
+    // If this isn't the last grid, add a spacing div.
+    if (i !== numGrids - 1) {
+      grids.push(<div className={classes.gridGap}></div>);
+    }
+  }
+
+  const containerStyles: CSSProperties = {
+    paddingLeft: `${leftRightPadding}px`,
+    paddingRight: `${leftRightPadding}px`,
+  };
+
+  return (
+    <div className={classes.container} style={containerStyles}>
+      <div className={classes.header}>{props.data.time ? `${props.name} (${props.data.time})` : ''}</div>
+      <div className={classes.gridsContainer}>
+        {grids}
+      </div>
+    </div>
+  );
+});
+
+const toRowMajorOrder = (entries: LegendEntry[], numCols: number, numRows: number): LegendEntry[] => {
+  const newEntries: LegendEntry[] = [];
+  outerLoop:
+  for (let i = 0; i < numCols; i++) {
+    for (let j = 0; j < numRows; j++) {
+      const index = j * numCols + i;
+      if (index >= entries.length) {
+        break outerLoop;
+      }
+      newEntries.push(entries[index]);
+    }
+  }
+  return newEntries;
+};
+
+export default Legend;

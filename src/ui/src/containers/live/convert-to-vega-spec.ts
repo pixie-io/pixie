@@ -13,11 +13,15 @@ const VEGA_LITE_SCHEMA_SUBSTRING = 'vega.github.io/schema/vega-lite/';
 const VEGA_SCHEMA_SUBSTRING = 'vega.github.io/schema/vega/';
 const VEGA_SCHEMA = '$schema';
 const TIMESERIES_CHART_TYPE = 'pixielabs.ai/pl.vispb.TimeseriesChart';
-const COLOR_SCALE = 'color';
+export const COLOR_SCALE = 'color';
 const HOVER_LINE_COLOR = '#00dba6';
 const HOVER_LINE_OPACITY = 0.3;
 const HOVER_LINE_DASH = [6, 6];
 const HOVER_LINE_WIDTH = 2;
+const LINE_WIDTH = 1.0;
+const HIGHLIGHTED_LINE_WIDTH = 5.0;
+const SELECTED_LINE_OPACITY = 1.0;
+const UNSELECTED_LINE_OPACITY = 0.2;
 
 interface XAxis {
   readonly label: string;
@@ -59,6 +63,13 @@ interface VegaDisplay extends WidgetDisplay {
   readonly spec: string;
 }
 
+export interface VegaSpecWithProps {
+  spec: VisualizationSpec;
+  hasLegend: boolean;
+  legendColumnName: string;
+  isStacked: boolean;
+}
+
 export type ChartDisplay = TimeseriesDisplay | BarDisplay | VegaDisplay;
 
 export function convertWidgetDisplayToVegaLiteSpec(display: ChartDisplay, source: string): VisualizationSpec {
@@ -75,7 +86,7 @@ export function convertWidgetDisplayToVegaLiteSpec(display: ChartDisplay, source
 }
 
 export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: string, theme: Theme,
-                                               vegaLiteModule): VisualizationSpec {
+                                               vegaLiteModule): VegaSpecWithProps {
   const vegaLiteSpec = convertWidgetDisplayToVegaLiteSpec(display, source);
   const hydratedVegaLite = hydrateSpec(vegaLiteSpec, theme);
   const vegaSpec = vegaLiteModule.compile(hydratedVegaLite).spec;
@@ -372,12 +383,17 @@ function convertToVegaChart(display: VegaDisplay, source: string): Visualization
   return addSources(spec, source);
 }
 
-function addExtrasToVegaSpec(vegaSpec, display: ChartDisplay, source: string): VisualizationSpec {
+function addExtrasToVegaSpec(vegaSpec, display: ChartDisplay, source: string): VegaSpecWithProps {
   switch (display[DISPLAY_TYPE_KEY]) {
     case TIMESERIES_CHART_TYPE:
       return addExtrasForTimeseries(vegaSpec, display as TimeseriesDisplay, source);
     default:
-      return vegaSpec;
+      return {
+        spec: vegaSpec,
+        hasLegend: false,
+        legendColumnName: '',
+        isStacked: false,
+      };
   }
 }
 
@@ -396,15 +412,26 @@ function extractPivotField(vegaSpec: VgSpec, display: TimeseriesDisplay): string
   return null;
 }
 
-function addExtrasForTimeseries(vegaSpec, display: TimeseriesDisplay, source: string): VisualizationSpec {
+function addExtrasForTimeseries(vegaSpec, display: TimeseriesDisplay, source: string): VegaSpecWithProps {
   const isStacked: boolean = display.timeseries[0].stackBySeries;
   const pivotField: string = extractPivotField(vegaSpec, display);
   if (!pivotField) {
-    return vegaSpec;
+    return {
+      spec: vegaSpec,
+      hasLegend: false,
+      legendColumnName: '',
+      isStacked,
+    };
   }
   const valueField: string = display.timeseries[0].value;
-  const newSpec = addHoverHandlersToVgSpec(vegaSpec, source, isStacked, pivotField, valueField);
-  return newSpec;
+  let newSpec = addHoverHandlersToVgSpec(vegaSpec, source, isStacked, pivotField, valueField);
+  newSpec = addLegendSelectHandlersToVgSpec(newSpec, pivotField, valueField);
+  return {
+    spec: newSpec,
+    hasLegend: true,
+    legendColumnName: display.timeseries[0].series || valueField,
+    isStacked,
+  };
 }
 
 const HOVER_VORONOI = 'hover_voronoi_layer';
@@ -414,6 +441,64 @@ export const HOVER_SIGNAL = 'hover_value';
 export const EXTERNAL_HOVER_SIGNAL = 'external_hover_value';
 export const INTERNAL_HOVER_SIGNAL = 'internal_hover_value';
 export const HOVER_PIVOT_TRANSFORM = 'hover_pivot_data';
+export const LEGEND_SELECT_SIGNAL = 'selected_series';
+export const LEGEND_HOVER_SIGNAL = 'legend_hovered_series';
+
+function addLegendSelectHandlersToVgSpec(vegaSpec: VgSpec, pivotField: string, valueField: string): VgSpec {
+  let spec = addLegendSignalsToVgSpec(vegaSpec);
+  spec = addOpacityTestsToLine(spec, pivotField, valueField);
+  return spec;
+}
+
+function addLegendSignalsToVgSpec(vegaSpec: VgSpec): VgSpec {
+  const signals: Signal[] = [];
+  signals.push({
+    name: LEGEND_SELECT_SIGNAL,
+    value: [],
+  });
+  signals.push({
+    name: LEGEND_HOVER_SIGNAL,
+    value: 'null',
+  });
+  vegaSpec.signals.push(...signals);
+  return vegaSpec;
+}
+
+function addOpacityTestsToLine(vegaSpec: VgSpec, pivotField: string, valueField: string): VgSpec {
+  const newMarks = vegaSpec.marks.map((mark: Mark) => {
+    if (mark.type !== 'group'
+        || !mark.marks
+        || mark.marks.length === 0
+        || !mark.marks[0]
+        || !mark.marks[0].encode
+        || !mark.marks[0].encode.update
+        || !mark.marks[0].encode.update.y
+        || !(mark.marks[0].encode.update.y as any).field
+        || (mark.marks[0].encode.update.y as any).field !== valueField) {
+      return mark;
+    }
+
+    mark.marks[0].encode.update.opacity = [
+      {
+        value: UNSELECTED_LINE_OPACITY,
+        test: `${LEGEND_SELECT_SIGNAL}.length !== 0 && indexof(${LEGEND_SELECT_SIGNAL}, datum["${pivotField}"]) === -1`,
+      },
+      { value: SELECTED_LINE_OPACITY },
+    ];
+    mark.marks[0].encode.update.strokeWidth = [
+      {
+        value: HIGHLIGHTED_LINE_WIDTH,
+        test: `${LEGEND_HOVER_SIGNAL} && datum["${pivotField}"] === ${LEGEND_HOVER_SIGNAL}`,
+      },
+      {
+        value: LINE_WIDTH,
+      },
+    ];
+    return mark;
+  });
+  vegaSpec.marks = newMarks;
+  return vegaSpec;
+}
 
 function addHoverHandlersToVgSpec(vegaSpec: VgSpec, source: string, isStacked: boolean,
                                   pivotField: string, valueField: string): VgSpec {
@@ -529,9 +614,6 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
         strokeWidth: {value: 0.35},
         stroke: {value: 'transparent'},
         isVoronoi: {value: true},
-        tooltip: {
-          signal: `merge(datum.datum, {colorScale: "${COLOR_SCALE}", isStacked: ${isStacked}})`,
-        },
       },
     },
     transform: [
