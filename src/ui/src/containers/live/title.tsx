@@ -3,7 +3,8 @@ import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
-import { ArgsContext, TitleContext } from './context';
+import ArgsEditor from './args-editor';
+import { TitleContext } from './context';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -19,24 +20,14 @@ const useStyles = makeStyles((theme: Theme) =>
       flexDirection: 'row',
       ...theme.typography.subtitle2,
       fontWeight: theme.typography.fontWeightLight,
+      alignItems: 'center',
     },
   }),
 );
 
 const LiveViewTitle = (props) => {
   const title = React.useContext(TitleContext);
-  const { args } = React.useContext(ArgsContext);
   const classes = useStyles();
-  const argsList = [];
-  if (args) {
-    for (const argName of Object.keys(args)) {
-      if (argName === 'script') {
-        continue;
-      }
-      const argVal = args[argName];
-      argsList.push(<div key={argName}>&nbsp;&nbsp;{argName}: {argVal}</div>);
-    }
-  }
 
   // tslint:disable:whitespace remove this once we switch to eslint
   const id = title?.id || 'unknown';
@@ -48,7 +39,7 @@ const LiveViewTitle = (props) => {
       <div className={classes.title}>{desc}</div>
       <div className={classes.scriptName}>
         script: {id}
-        {argsList}
+        <ArgsEditor />
       </div>
     </div>
   );
