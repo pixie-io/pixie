@@ -11,6 +11,9 @@ import { DataDrawerContext, DataDrawerContextProvider } from './context/data-dra
 import { LayoutContextProvider } from './context/layout-context';
 import { getQueryFuncs, parseVis, Vis } from './vis';
 
+// Type alias to clean up domain management.
+type Domain = [number, number] | null;
+type DomainFn = ((domain: Domain) => Domain);
 interface LiveContextProps {
   vizierReady: boolean;
   setScripts: (script: string, vis: string, title: Title, args: Arguments) => void;
@@ -18,6 +21,7 @@ interface LiveContextProps {
   updateScript: (code: string) => void;
   updateVis: (spec: Vis) => void;
   setHoverTime: (time: number) => void;
+  setTSDomain: (domain: Domain | DomainFn) => void;
 }
 
 interface Tables {
@@ -51,6 +55,7 @@ export const TitleContext = React.createContext<Title>(null);
 export const VisContext = React.createContext<Vis>(null);
 export const ArgsContext = React.createContext<ArgsContextProps>(null);
 export const HoverTimeContext = React.createContext<number>(null);
+export const TSDomainContext = React.createContext<number[]>([]);
 
 // TODO(malthus): Move these into a separate module.
 function argsEquals(args1: Arguments, args2: Arguments): boolean {
@@ -92,6 +97,7 @@ function argsForVis(vis: Vis, args: Arguments): Arguments {
 
 const LiveContextProvider = (props) => {
   const [script, setScript] = ls.useLocalStorage(ls.LIVE_VIEW_PIXIE_SCRIPT_KEY, '');
+  const [tsDomain, setTSDomain] = React.useState<Domain>(null);
 
   const [results, setResults] = React.useState<Results>({ tables: {} });
 
@@ -204,6 +210,7 @@ const LiveContextProvider = (props) => {
     executeScript,
     updateVis: setVis,
     setHoverTime,
+    setTSDomain,
   }), [executeScript, client]);
 
   return (
@@ -214,7 +221,9 @@ const LiveContextProvider = (props) => {
             <ResultsContext.Provider value={results}>
               <VisContext.Provider value={vis}>
                 <HoverTimeContext.Provider value={hoverTime}>
+                  <TSDomainContext.Provider value={tsDomain}>
                   {props.children}
+                  </TSDomainContext.Provider>
                 </HoverTimeContext.Provider>
               </VisContext.Provider>
             </ResultsContext.Provider>

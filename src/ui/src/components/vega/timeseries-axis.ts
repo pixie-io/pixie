@@ -142,6 +142,13 @@ export function prepareLabels(domain: any, width: number, numTicks: number, over
   return labels;
 }
 
+function combineInternalExternal(internal, external) {
+  if (external && external.length === 2) {
+    return external;
+  }
+  return internal;
+}
+
 // This adds the pxTimeFormat function to the passed in vega Module.
 export function addPxTimeFormatExpression(vega) {
   if (vega && vega.expressionFunction) {
@@ -179,5 +186,7 @@ export function addPxTimeFormatExpression(vega) {
       return labels[trueIndex].label;
     }
     vega.expressionFunction('pxTimeFormat', pxTimeFormat);
+
+    vega.expressionFunction('combineInternalExternal', combineInternalExternal);
   }
 }

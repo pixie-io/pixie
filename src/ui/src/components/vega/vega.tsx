@@ -2,12 +2,14 @@ import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import { CSSProperties } from '@material-ui/core/styles/withStyles';
 import Legend, { LegendInteractState } from 'components/legend/legend';
 import { buildHoverDataCache, formatLegendData, HoverDataCache, LegendData } from 'components/legend/legend-data';
-import { HoverTimeContext, LiveContext } from 'containers/live/context';
+import { HoverTimeContext, LiveContext, TSDomainContext } from 'containers/live/context';
 import {
   EXTERNAL_HOVER_SIGNAL,
+  EXTERNAL_TS_DOMAIN_SIGNAL,
   HOVER_PIVOT_TRANSFORM,
   HOVER_SIGNAL,
   INTERNAL_HOVER_SIGNAL,
+  INTERNAL_TS_DOMAIN_SIGNAL,
   LEGEND_HOVER_SIGNAL,
   LEGEND_SELECT_SIGNAL,
   VegaSpecWithProps,
@@ -40,7 +42,8 @@ const Vega = React.memo((props: VegaProps) => {
   const data = React.useMemo(() => ({ [tableName]: inputData }), [tableName, inputData]);
 
   const externalHoverTime = React.useContext(HoverTimeContext);
-  const { setHoverTime } = React.useContext(LiveContext);
+  const externalTSDomain = React.useContext(TSDomainContext);
+  const { setHoverTime, setTSDomain } = React.useContext(LiveContext);
 
   const [currentView, setCurrentView] = React.useState<View>(null);
   const [vegaOrigin, setVegaOrigin] = React.useState<number[]>([]);
@@ -50,6 +53,19 @@ const Vega = React.memo((props: VegaProps) => {
   const [hoverDataCache, setHoverDataCache] = React.useState<HoverDataCache>(null);
 
   const chartRef = React.useRef(null);
+
+  const setTimeDomainWrapper = (v) => {
+    if (!v || v.length === 0) {
+      setTSDomain(v);
+      return;
+    }
+    setTSDomain((s: number[]) => {
+      if (s && s.length === 2) {
+        return [Math.min(s[0], v[0]), Math.max(s[1], v[1])];
+      }
+      return [v[0].getTime(), v[1].getTime()];
+    });
+  };
 
   const widthListener = React.useCallback((name, value) => {
     if (!currentView) {
@@ -79,6 +95,17 @@ const Vega = React.memo((props: VegaProps) => {
         setHoverTime(value.time_);
       }
     },
+
+    [INTERNAL_TS_DOMAIN_SIGNAL]: (name, value) => {
+      if (!value) {
+        return;
+      }
+      if (value.length !== 2) {
+        return;
+      }
+      setTimeDomainWrapper(value);
+    },
+
     // Add signal listener for width, because the origin changes when width changes.
     width: widthListener,
     // Add signal listener for the merged hover signal. This listener updates the values in the legend.
@@ -113,6 +140,13 @@ const Vega = React.memo((props: VegaProps) => {
       setLegendData(formatLegendData(currentView, hoverDataCache.maxTime, unformattedEntries));
     }
   }, [hoverDataCache, currentView]);
+
+  React.useEffect(() => {
+    if (currentView) {
+      currentView.signal(EXTERNAL_TS_DOMAIN_SIGNAL, externalTSDomain);
+      currentView.runAsync();
+    }
+  }, [externalTSDomain, currentView]);
 
   // Inject the selected series into the corresponding vega signal for this chart.
   React.useEffect(() => {

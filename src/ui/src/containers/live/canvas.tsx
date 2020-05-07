@@ -97,7 +97,7 @@ const Canvas = (props: CanvasProps) => {
   const theme = useTheme();
   const { tables } = React.useContext(ResultsContext);
   const vis = React.useContext(VisContext);
-  const { updateVis } = React.useContext(LiveContext);
+  const { updateVis, setTSDomain } = React.useContext(LiveContext);
   const [vegaModule, setVegaModule] = React.useState(null);
   const [reactVegaModule, setReactVegaModule] = React.useState(null);
   const [vegaLiteModule, setVegaLiteModule] = React.useState(null);
@@ -200,6 +200,10 @@ const Canvas = (props: CanvasProps) => {
       return <div key={widgetName} className={className} data-grid={toLayout(widget, widgetName)}>{content}</div>;
     });
   }, [tables, vis, reactVegaModule, props.editable, defaultLayout]);
+
+  React.useEffect(() => {
+    setTSDomain(null);
+  }, [charts]);
 
   const resize = React.useCallback(() => {
     // Dispatch a window resize event to signal the chart to redraw. As suggested in:

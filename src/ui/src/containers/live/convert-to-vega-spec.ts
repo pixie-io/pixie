@@ -1,6 +1,6 @@
 import { Theme } from '@material-ui/core/styles';
 import * as _ from 'lodash';
-import { Data, Mark, Signal, Spec as VgSpec } from 'vega';
+import { Data, Mark, Signal, Spec as VgSpec, TimeScale } from 'vega';
 import { VisualizationSpec } from 'vega-embed';
 import { TopLevelSpec as VlSpec } from 'vega-lite';
 
@@ -172,7 +172,7 @@ function extendLayer(spec, layers) {
 }
 
 function extendTransforms(spec, transforms) {
-  return  {
+  return {
     ...spec,
     transform: [...(spec.transform || []), ...transforms],
   };
@@ -209,21 +209,21 @@ function trimFirstAndLastTimestep(spec) {
   // typically are 1-10s long.
   return extendTransforms(spec, [
     {
-      joinaggregate : [
+      joinaggregate: [
         {
-          field : 'time_',
-          op : 'max',
-          as : 'max_time',
+          field: 'time_',
+          op: 'max',
+          as: 'max_time',
         },
         {
-          field : 'time_',
-          op : 'min',
-          as : 'min_time',
+          field: 'time_',
+          op: 'min',
+          as: 'min_time',
         },
       ],
     },
     {
-      filter : 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
+      filter: 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
     },
   ]);
 }
@@ -509,8 +509,15 @@ function addOpacityTestsToLine(vegaSpec: VgSpec, pivotField: string, valueField:
   return vegaSpec;
 }
 
+export const TS_DOMAIN_SIGNAL = 'ts_domain_value';
+export const EXTERNAL_TS_DOMAIN_SIGNAL = 'external_ts_domain_value';
+export const INTERNAL_TS_DOMAIN_SIGNAL = 'internal_ts_domain_value';
+
 function addHoverHandlersToVgSpec(vegaSpec: VgSpec, source: string, isStacked: boolean,
                                   pivotField: string, valueField: string): VgSpec {
+  const signalName = '_x_signal';
+  vegaSpec = addTimeSeriesDomainBackupToVgSpec(vegaSpec, signalName);
+  vegaSpec = addTimeseriesDomainSignalsToVgSpec(vegaSpec, signalName);
   vegaSpec = addHoverDataToVgSpec(vegaSpec, source, pivotField, valueField);
   vegaSpec = addHoverSignalsToVgSpec(vegaSpec);
   vegaSpec = addHoverMarksToVgSpec(vegaSpec, isStacked);
@@ -575,6 +582,68 @@ function addHoverSignalsToVgSpec(vegaSpec: VgSpec): VgSpec {
       {
         events: [{signal: EXTERNAL_HOVER_SIGNAL}, {signal: INTERNAL_HOVER_SIGNAL}],
         update: `${INTERNAL_HOVER_SIGNAL} || ${EXTERNAL_HOVER_SIGNAL}`,
+      },
+    ],
+  });
+  vegaSpec.signals.push(...signals);
+  return vegaSpec;
+}
+
+function getXScaleFromConfig(vegaSpec: VgSpec): TimeScale {
+  if (!vegaSpec.scales) {
+    return null;
+  }
+  for (const scale of vegaSpec.scales) {
+    // TODO move x to a constant.
+    if (scale.name === 'x' && (scale.type === 'time' || scale.type === 'utc')) {
+      return (scale as TimeScale);
+    }
+  }
+  return null;
+}
+
+function addTimeSeriesDomainBackupToVgSpec(vegaSpec: VgSpec, signalName: string): VgSpec {
+  const xScale: TimeScale = getXScaleFromConfig(vegaSpec);
+
+  if (!xScale) {
+    return vegaSpec;
+  }
+
+  // Shallow copy so we don't interrupt the domain.
+  const newXScale = { ...xScale };
+
+  // Set the xScale domain to correspond to the TS_DOMAIN_SIGNAL.
+  xScale.domainRaw = { signal: TS_DOMAIN_SIGNAL };
+
+  newXScale.name = signalName;
+  vegaSpec.scales.push(newXScale);
+  return vegaSpec;
+}
+
+function addTimeseriesDomainSignalsToVgSpec(vegaSpec: VgSpec, signalName: string): VgSpec {
+  const signals: Signal[] = [];
+  // Add signal to determine hover time value for current chart.
+  signals.push({
+    name: INTERNAL_TS_DOMAIN_SIGNAL,
+    on: [
+      {
+        events: { scale: signalName },
+        update: `domain('${signalName}')`,
+      },
+    ],
+  });
+  // Add signal for hover value from external chart.
+  signals.push({
+    name: EXTERNAL_TS_DOMAIN_SIGNAL,
+    value: null,
+  });
+  // Add signal for hover value that merges internal, and external hover values, with priority to internal.
+  signals.push({
+    name: TS_DOMAIN_SIGNAL,
+    on: [
+      {
+        events: [{ signal: INTERNAL_TS_DOMAIN_SIGNAL }, { signal: EXTERNAL_TS_DOMAIN_SIGNAL }],
+        update: `combineInternalExternal(${INTERNAL_TS_DOMAIN_SIGNAL}, ${EXTERNAL_TS_DOMAIN_SIGNAL})`,
       },
     ],
   });
