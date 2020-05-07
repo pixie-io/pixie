@@ -76,7 +76,7 @@ function argsEquals(args1: Arguments, args2: Arguments): boolean {
 }
 
 // Populate arguments either from defaultValues or from the input args.
-function argsForVis(vis: Vis, args: Arguments): Arguments {
+function argsForVis(vis: Vis, args: Arguments, scriptId?: string): Arguments {
   const outArgs: Arguments = {};
   if (!args) {
     args = {};
@@ -87,6 +87,9 @@ function argsForVis(vis: Vis, args: Arguments): Arguments {
   }
   if (args.script) {
     outArgs.script = args.script;
+  }
+  if (scriptId) {
+    outArgs.script = scriptId;
   }
   // Compare the two sets of arguments to avoid infinite render cycles.
   if (argsEquals(args, outArgs)) {
@@ -111,7 +114,7 @@ const LiveContextProvider = (props) => {
     setTitle(newTitle);
     const parsedVis = parseVis(newVis) || { variables: [], widgets: [] };
     setVis(parsedVis);
-    setArgsRaw(argsForVis(parsedVis, newArgs));
+    setArgsRaw(argsForVis(parsedVis, newArgs, newTitle.id));
   }, []);
 
   const [title, setTitle] = ls.useLocalStorage<Title>(ls.LIVE_VIEW_TITLE_KEY, null);
@@ -123,8 +126,8 @@ const LiveContextProvider = (props) => {
   });
 
   React.useEffect(() => {
-    setArgsRaw(argsForVis(vis, args));
-  }, [vis, args]);
+    setArgsRaw(argsForVis(vis, args, title.id));
+  }, [vis, args, title.id]);
 
   const argsContext = React.useMemo(() => {
     return {
