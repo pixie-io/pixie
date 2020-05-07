@@ -3,11 +3,13 @@
     {
       "name": "start",
       "type": "PX_STRING",
+      "description": "The relative start time of the window. Current time is assumed to be now",
       "defaultValue": "-10m"
     },
     {
       "name": "pod",
       "type": "PX_STRING",
+      "description": "The full/partial name of the pod to use as a filter. Format: ns/pod_name",
       "defaultValue": ""
     }
   ],
