@@ -597,6 +597,7 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 		VizierID:        utils.ProtoFromUUID(&vizierID),
 		ResourceVersion: val.ResourceVersion,
 		OrgID:           utils.ProtoFromUUID(&val.OrgID),
+		K8sUID:          clusterUID,
 	}
 	b, err := connMsg.Marshal()
 	if err != nil {
