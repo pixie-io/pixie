@@ -44,6 +44,34 @@ info {
 }
 `
 
+const getAgentTableMetadataResponse = `
+metadata_by_agent {
+	agent_id {
+		data: "21285cdd1de94ab1ae6a0ba08c8c676c"
+	}
+	schema {
+		relation_map {
+			key: "perf_and_http"
+			value {
+				columns {
+					column_name: "_time"
+				}
+			}
+		}
+	}
+	data_info {
+		metadata_info {
+			metadata_fields: CONTAINER_ID
+			metadata_fields: SERVICE_NAME			
+			xxhash64_bloom_filter {
+				num_hashes: 2
+				data: "1234"
+			}			
+		}
+	}
+}
+`
+
 const getSchemaResponse = `
 schema {
 	relation_map {
@@ -56,30 +84,31 @@ schema {
 	}
 }
 `
+
 const multipleAgentDistributedState = `
 schema: {
-  relation_map: {
-    key: "perf_and_http"
-    value: {
-      columns: {
-        column_name: "_time"
-      }
-    }
-  }
+	relation_map: {
+		key: "perf_and_http"
+    	value: {
+      		columns: {
+        		column_name: "_time"
+      		}
+    	}
+  	}
 }
 distributed_state: {
-  carnot_info: {
-    query_broker_address: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-    has_data_store: true
+	carnot_info: {
+    	query_broker_address: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+    	has_data_store: true
 		processes_data: true
 		asid: 123
-  }
-  carnot_info: {
-    query_broker_address: "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-    has_data_store: true
+  	}
+  	carnot_info: {
+    	query_broker_address: "31285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+    	has_data_store: true
 		processes_data: true
 		asid: 456
-  }
+  	}
 }
 plan_options: {
 	explain: false
@@ -89,22 +118,30 @@ plan_options: {
 
 const singleAgentDistributedState = `
 schema: {
-  relation_map: {
-    key: "perf_and_http"
-    value: {
-      columns: {
-        column_name: "_time"
-      }
-    }
-  }
+	relation_map: {
+    	key: "perf_and_http"
+    	value: {
+      		columns: {
+        		column_name: "_time"
+      		}
+    	}
+  	}
 }
 distributed_state: {
-  carnot_info: {
-    query_broker_address: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-    has_data_store: true
+	carnot_info: {
+    	query_broker_address: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+    	has_data_store: true
 		processes_data: true
 		asid: 123
-  }
+		metadata_info {
+			metadata_fields: CONTAINER_ID
+			metadata_fields: SERVICE_NAME
+			xxhash64_bloom_filter {
+				num_hashes: 2
+				data: "1234"
+			}
+		}	
+  	}
 }
 plan_options: {
 	explain: false
@@ -158,14 +195,13 @@ agent_id {
 	data: "21285cdd1de94ab1ae6a0ba08c8c676c"
 }
 response {
-  query_result {
-    tables {
-     relation {
-
-     }
-     name: "test"
-    }
-  }
+	query_result {
+    	tables {
+	     	relation {
+	     	}
+	     	name: "test"
+    	}
+  	}
 }
 `
 
@@ -210,69 +246,69 @@ nodes: {
 const expectedPlannerResult = `
 status: {}
 plan: {
-  qb_address_to_plan: {
-    key: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
-    value: {
-      dag: {
-        nodes: {
-          id: 1
-        }
-      }
-      nodes: {
-        id: 1
-        dag: {
-          nodes: {
-            id: 3
-            sorted_children: 0
-          }
-          nodes: {
-            sorted_parents: 3
-          }
-        }
-        nodes: {
-          id: 3
-          op: {
-            op_type: MEMORY_SOURCE_OPERATOR
-            mem_source_op: {
-              name: "table1"
-              column_idxs: 0
-              column_idxs: 1
-              column_idxs: 2
-              column_names: "time_"
-              column_names: "cpu_cycles"
-              column_names: "upid"
-              column_types: TIME64NS
-              column_types: INT64
-              column_types: UINT128
-              tablet: "1"
-            }
-          }
-        }
-        nodes: {
-          op: {
-            op_type: MEMORY_SINK_OPERATOR
-            mem_sink_op: {
-              name: "out"
-              column_types: TIME64NS
-              column_types: INT64
-              column_types: UINT128
-              column_names: "time_"
-              column_names: "cpu_cycles"
-              column_names: "upid"
-            }
-          }
-        }
-      }
-    }
-  }
-  qb_address_to_dag_id: {
-    key: "agent1"
-    value: 0
-  }
-  dag: {
-    nodes: {
-    }
-  }
+	qb_address_to_plan: {
+		key: "21285cdd-1de9-4ab1-ae6a-0ba08c8c676c"
+		value: {
+			dag: {
+				nodes: {
+					id: 1
+				}
+			}
+			nodes: {
+				id: 1
+				dag: {
+					nodes: {
+						id: 3
+						sorted_children: 0
+					}
+					nodes: {
+						sorted_parents: 3
+					}
+				}
+				nodes: {
+					id: 3
+					op: {
+						op_type: MEMORY_SOURCE_OPERATOR
+						mem_source_op: {
+							name: "table1"
+							column_idxs: 0
+							column_idxs: 1
+							column_idxs: 2
+							column_names: "time_"
+							column_names: "cpu_cycles"
+							column_names: "upid"
+							column_types: TIME64NS
+							column_types: INT64
+							column_types: UINT128
+							tablet: "1"
+						}
+					}
+				}
+				nodes: {
+					op: {
+						op_type: MEMORY_SINK_OPERATOR
+						mem_sink_op: {
+							name: "out"
+							column_types: TIME64NS
+							column_types: INT64
+							column_types: UINT128
+							column_names: "time_"
+							column_names: "cpu_cycles"
+							column_names: "upid"
+						}
+					}
+				}
+			}
+		}
+	}
+	qb_address_to_dag_id: {
+		key: "agent1"
+		value: 0
+	}
+	dag: {
+		nodes: {
+		}
+	}
 }
 `
 
@@ -347,15 +383,15 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 		GetAgentInfo(gomock.Any(), &metadatapb.AgentInfoRequest{}).
 		Return(getAgentsPB, nil)
 
-	getSchemaPB := new(metadatapb.SchemaResponse)
-	if err := proto.UnmarshalText(getSchemaResponse, getSchemaPB); err != nil {
+	getAgentTableMetadataPB := new(metadatapb.AgentTableMetadataResponse)
+	if err := proto.UnmarshalText(getAgentTableMetadataResponse, getAgentTableMetadataPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
 	mds.
 		EXPECT().
-		GetSchemas(gomock.Any(), &metadatapb.SchemaRequest{}).
-		Return(getSchemaPB, nil)
+		GetAgentTableMetadata(gomock.Any(), &metadatapb.AgentTableMetadataRequest{}).
+		Return(getAgentTableMetadataPB, nil)
 
 		// Set up server.
 	env, err := querybrokerenv.New()
@@ -608,15 +644,15 @@ func TestPlannerErrorResult(t *testing.T) {
 		GetAgentInfo(gomock.Any(), &metadatapb.AgentInfoRequest{}).
 		Return(getAgentsPB, nil)
 
-	getSchemaPB := new(metadatapb.SchemaResponse)
-	if err := proto.UnmarshalText(getSchemaResponse, getSchemaPB); err != nil {
+	getAgentTableMetadataPB := new(metadatapb.AgentTableMetadataResponse)
+	if err := proto.UnmarshalText(getAgentTableMetadataResponse, getAgentTableMetadataPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
 	mds.
 		EXPECT().
-		GetSchemas(gomock.Any(), &metadatapb.SchemaRequest{}).
-		Return(getSchemaPB, nil)
+		GetAgentTableMetadata(gomock.Any(), &metadatapb.AgentTableMetadataRequest{}).
+		Return(getAgentTableMetadataPB, nil)
 
 	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
@@ -696,15 +732,15 @@ func TestErrorInStatusResult(t *testing.T) {
 		GetAgentInfo(gomock.Any(), &metadatapb.AgentInfoRequest{}).
 		Return(getAgentsPB, nil)
 
-	getSchemaPB := new(metadatapb.SchemaResponse)
-	if err := proto.UnmarshalText(getSchemaResponse, getSchemaPB); err != nil {
+	getAgentTableMetadataPB := new(metadatapb.AgentTableMetadataResponse)
+	if err := proto.UnmarshalText(getAgentTableMetadataResponse, getAgentTableMetadataPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
 	mds.
 		EXPECT().
-		GetSchemas(gomock.Any(), &metadatapb.SchemaRequest{}).
-		Return(getSchemaPB, nil)
+		GetAgentTableMetadata(gomock.Any(), &metadatapb.AgentTableMetadataRequest{}).
+		Return(getAgentTableMetadataPB, nil)
 
 	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)

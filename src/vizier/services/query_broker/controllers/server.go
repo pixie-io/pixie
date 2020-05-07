@@ -112,7 +112,7 @@ func formatCompilerError(status *statuspb.Status) (string, error) {
 	return proto.MarshalTextString(&errorPB), nil
 }
 
-func makeAgentCarnotInfo(agentID uuid.UUID, asid uint32) *distributedpb.CarnotInfo {
+func makeAgentCarnotInfo(agentID uuid.UUID, asid uint32, agentMetadata *distributedpb.MetadataInfo) *distributedpb.CarnotInfo {
 	// TODO(philkuz) (PL-910) need to update this to also contain table info.
 	return &distributedpb.CarnotInfo{
 		QueryBrokerAddress:   agentID.String(),
@@ -121,6 +121,7 @@ func makeAgentCarnotInfo(agentID uuid.UUID, asid uint32) *distributedpb.CarnotIn
 		HasDataStore:         true,
 		ProcessesData:        true,
 		AcceptsRemoteSources: false,
+		MetadataInfo:         agentMetadata,
 	}
 }
 
@@ -133,15 +134,22 @@ func makeKelvinCarnotInfo(agentID uuid.UUID, grpcAddress string, asid uint32) *d
 		HasDataStore:         false,
 		ProcessesData:        true,
 		AcceptsRemoteSources: true,
+		// When we support persistent backup, Kelvins will also have MetadataInfo.
+		MetadataInfo: nil,
 	}
 }
 
-func makePlannerState(pemInfo []*agentpb.Agent, kelvinList []*agentpb.Agent, schema *schemapb.Schema, planOpts *planpb.PlanOptions) (*distributedpb.LogicalPlannerState, error) {
+func makePlannerState(pemInfo []*agentpb.Agent, kelvinList []*agentpb.Agent, agentMetadataMap map[uuid.UUID]*distributedpb.MetadataInfo,
+	schema *schemapb.Schema, planOpts *planpb.PlanOptions) (*distributedpb.LogicalPlannerState, error) {
 	// TODO(philkuz) (PL-910) need to update this to pass table info.
 	carnotInfoList := make([]*distributedpb.CarnotInfo, 0)
 	for _, pem := range pemInfo {
 		pemID := utils.UUIDFromProtoOrNil(pem.Info.AgentID)
-		carnotInfoList = append(carnotInfoList, makeAgentCarnotInfo(pemID, pem.ASID))
+		var agentMetadata *distributedpb.MetadataInfo
+		if md, found := agentMetadataMap[pemID]; found {
+			agentMetadata = md
+		}
+		carnotInfoList = append(carnotInfoList, makeAgentCarnotInfo(pemID, pem.ASID, agentMetadata))
 	}
 
 	for _, kelvin := range kelvinList {
@@ -157,6 +165,7 @@ func makePlannerState(pemInfo []*agentpb.Agent, kelvinList []*agentpb.Agent, sch
 		},
 		PlanOptions: planOpts,
 	}
+
 	return &plannerState, nil
 }
 
@@ -168,17 +177,9 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 	}
 	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", aCtx.AuthToken))
 
-	// Get the table schema that is presumably shared across agents.
-	mdsSchemaReq := &metadatapb.SchemaRequest{}
-	mdsSchemaResp, err := s.mdsClient.GetSchemas(ctx, mdsSchemaReq)
-	if err != nil {
-		log.WithError(err).Error("Failed to get schemas.")
-		return nil, nil, err
-	}
-	schema := mdsSchemaResp.Schema
 	// Get all available agents for now.
-	mdsReq := &metadatapb.AgentInfoRequest{}
-	mdsResp, err := s.mdsClient.GetAgentInfo(ctx, mdsReq)
+	agentInfosReq := &metadatapb.AgentInfoRequest{}
+	agentInfosResp, err := s.mdsClient.GetAgentInfo(ctx, agentInfosReq)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -186,7 +187,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 	var kelvinList []*agentpb.Agent
 	var pemList []*agentpb.Agent
 
-	for _, m := range mdsResp.Info {
+	for _, m := range agentInfosResp.Info {
 		if m.Agent.Info.Capabilities == nil || m.Agent.Info.Capabilities.CollectsData {
 			pemList = append(pemList, m.Agent)
 		} else {
@@ -194,7 +195,41 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 		}
 	}
 
-	plannerState, err := makePlannerState(pemList, kelvinList, schema, planOpts)
+	mdsAgentMetadataResp, err := s.mdsClient.GetAgentTableMetadata(ctx, &metadatapb.AgentTableMetadataRequest{})
+	if err != nil {
+		log.WithError(err).Error("Failed to get agent metadata.")
+		return nil, nil, err
+	}
+
+	var schema *schemapb.Schema
+	// We currently assume the schema is shared across all agents.
+	// In the unusual case where there are no agents, we can still run Kelvin-only
+	// queries, so in that case we call out for the schemas directly.
+	if len(mdsAgentMetadataResp.MetadataByAgent) > 0 {
+		schema = mdsAgentMetadataResp.MetadataByAgent[0].Schema
+	} else {
+		// Get the table schema that is presumably shared across agents.
+		mdsSchemaReq := &metadatapb.SchemaRequest{}
+		mdsSchemaResp, err := s.mdsClient.GetSchemas(ctx, mdsSchemaReq)
+		if err != nil {
+			log.WithError(err).Error("Failed to get schemas.")
+		}
+		schema = mdsSchemaResp.Schema
+	}
+
+	var agentTableMetadata = make(map[uuid.UUID]*distributedpb.MetadataInfo)
+	for _, md := range mdsAgentMetadataResp.MetadataByAgent {
+		if md.DataInfo != nil && md.DataInfo.MetadataInfo != nil {
+			agentUUID, err := utils.UUIDFromProto(md.AgentID)
+			if err != nil {
+				log.WithError(err).Error("Failed to parse agent UUID: %+v", md.AgentID)
+				return nil, nil, err
+			}
+			agentTableMetadata[agentUUID] = md.DataInfo.MetadataInfo
+		}
+	}
+
+	plannerState, err := makePlannerState(pemList, kelvinList, agentTableMetadata, schema, planOpts)
 	if err != nil {
 		return nil, nil, err
 	}
