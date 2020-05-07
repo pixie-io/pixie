@@ -23,10 +23,10 @@ const useStyles = makeStyles((theme: Theme) =>
       width: '760px',
       top: '40%',
       left: '50%',
-      transform: 'translate(-50%, -10vh)',
+      transform: 'translate(-50%, -20vh)',
     },
     input: {
-      maxHeight: '600px',
+      maxHeight: '60vh',
     },
   }),
 );

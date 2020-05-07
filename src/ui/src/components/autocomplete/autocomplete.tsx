@@ -47,8 +47,9 @@ function findNextItem(activeItem: CompletionId, itemsMap: ItemsMap, completions:
     return '';
   }
   const { index } = itemsMap.get(activeItem);
-  for (let i = 1; i < completions.length; i++) {
-    const nextIndex = (index + (i * direction)) % completions.length;
+  const length = completions.length;
+  for (let i = 1; i < length; i++) {
+    const nextIndex = (index + (i * direction) + length) % length;
     const next = completions[nextIndex] as CompletionItem;
     if (next.title && next.id) {
       return next.id;
