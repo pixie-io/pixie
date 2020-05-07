@@ -287,9 +287,9 @@
     {
       "name": "Service Graph",
       "position": {
-        "x": 3,
-        "y": 12,
-        "w": 6,
+        "x": 0,
+        "y": 9,
+        "w": 12,
         "h": 3
       },
       "func": {
