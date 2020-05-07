@@ -1,12 +1,12 @@
 {
   "variables": [
     {
-      "name": "start_time",
+      "name": "start",
       "type": "PX_STRING",
       "defaultValue": "-10m"
     },
     {
-      "name": "pod_name",
+      "name": "pod",
       "type": "PX_STRING",
       "defaultValue": ""
     }
@@ -24,12 +24,12 @@
         "name": "pod_mysql_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },
@@ -62,12 +62,12 @@
         "name": "pod_mysql_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },
@@ -100,12 +100,12 @@
         "name": "pod_mysql_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },
@@ -138,12 +138,12 @@
         "name": "pod_mysql_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },
@@ -170,12 +170,12 @@
         "name": "latency_histogram",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },
@@ -211,12 +211,12 @@
         "name": "summary_mysql_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },

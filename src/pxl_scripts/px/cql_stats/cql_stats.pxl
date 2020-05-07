@@ -33,59 +33,59 @@ latency_bin_size_ms = 50
 # These functions are formatted and ready for use in
 # the visualization speciciation, vis.json.
 # ----------------------------------------------------------------
-def pod_cql_let(start_time: str, pod_name: px.Pod):
+def pod_cql_let(start: str, pod: px.Pod):
     """ Calculate LET time-series for CQL traffic per Pod, database pair.
 
     Calculates latency, error_rate, and throughput for each pod's
     connection to CQL databases.
 
-    @start_time: The timestamp of data to start at.
-    @pod_name: the partial/full-name of the pod to monitor CQL LET.
+    @start: The timestamp of data to start at.
+    @pod: the partial/full-name of the pod to monitor CQL LET.
 
     Returns: Returns the DataFrame contiaining LET time-series for CQL
         traffic for each database Pods talk to.
     """
-    df = cql_let_per_pod(start_time, pod_name)
+    df = cql_let_per_pod(start, pod)
     return df['time_', split_series_name, ip_col_name, 'latency_p50',
               'latency_p90', 'latency_p99', 'error_rate', 'rps']
 
 
-def summary_cql_let(start_time: str, pod_name: px.Pod):
+def summary_cql_let(start: str, pod: px.Pod):
     """ Calculate LET summary for CQL traffic per Pod, database pair.
 
     Calculates latency, error_rate, and throughput for each pod's
     connection to CQL databases.
 
-    @start_time: The timestamp of data to start at.
-    @pod_name: the partial/full-name of the pod to monitor CQL LET.
+    @start: The timestamp of data to start at.
+    @pod: the partial/full-name of the pod to monitor CQL LET.
 
     Returns: Returns the DataFrame contiaining LET time-series for CQL
         traffic for each database Pods talk to.
     """
-    df = cql_let_per_pod(start_time, pod_name)
+    df = cql_let_per_pod(start, pod)
     summary_df = summarize_LET(df, [k8s_object, ip_col_name])
     return summary_df[[k8s_object, ip_col_name, "rps", "error_rate", "latency", "total_requests"]]
 
 
-def latency_histogram(start_time: str, pod_name: px.Pod):
+def latency_histogram(start: str, pod: px.Pod):
     """ Computes a histogram of HTTP request latency.
 
     Args:
-    @start_time: The timestamp of data to start at.
-    @service_name: the partial/full-name of the service.
+    @start: The timestamp of data to start at.
+    @svc: the partial/full-name of the svc.
 
-    Returns: DataFrame of the HTTP latency histogram for services that
-        match @service_name.
+    Returns: DataFrame of the HTTP latency histogram for svcs that
+        match @svc.
     """
     # The data necessary to compute CQL LET information is located in the
     # cql_events table. We filter and aggregate data from this table to compute the
     # required metrics.
-    df = px.DataFrame(table='cql_events', start_time=start_time)
+    df = px.DataFrame(table='cql_events', start_time=start)
     df = format_cql_table(df)
 
     # Calculate LET of pod(s) (k8s_object) connection to CQL conections
-    # over the time window ('timestamp') after filtering for matching services.
-    matching_df = df[px.contains(df[k8s_object], pod_name)]
+    # over the time window ('timestamp') after filtering for matching svcs.
+    matching_df = df[px.contains(df[k8s_object], pod)]
 
     matching_df.request_latency_ms = px.bin(matching_df.latency_ns / 1000 / 1000,
                                             latency_bin_size_ms)
@@ -99,14 +99,14 @@ def latency_histogram(start_time: str, pod_name: px.Pod):
 # which will allow these functions to be shared across multiple
 # scripts.
 # ----------------------------------------------------------------
-def cql_let_per_pod(start_time: str, pod_name: px.Pod):
+def cql_let_per_pod(start: str, pod: px.Pod):
     """ Calculate LET time-series for CQL traffic per Pod, database pair.
 
     Calculates latency, error_rate, and throughput for each pod's
     connection to CQL databases.
 
-    @start_time: The timestamp of data to start at.
-    @pod_name: the partial/full-name of the pod to monitor CQL LET.
+    @start: The timestamp of data to start at.
+    @pod: the partial/full-name of the pod to monitor CQL LET.
 
     Returns: Returns the DataFrame contiaining LET time-series for CQL
         traffic for each database Pods talk to.
@@ -114,12 +114,12 @@ def cql_let_per_pod(start_time: str, pod_name: px.Pod):
     # The data necessary to compute CQL LET information is located in the
     # cql_events table. We filter and aggregate data from this table to compute the
     # required metrics.
-    df = px.DataFrame(table='cql_events', start_time=start_time)
+    df = px.DataFrame(table='cql_events', start_time=start)
     df = format_cql_table(df)
 
     # Calculate LET of pod(s) (k8s_object) connection to CQL conections
-    # over the time window ('timestamp') after filtering for matching services.
-    matching_df = df[px.contains(df[k8s_object], pod_name)]
+    # over the time window ('timestamp') after filtering for matching svcs.
+    matching_df = df[px.contains(df[k8s_object], pod)]
     let_df = calc_cql_LET(
         matching_df, [k8s_object, 'timestamp', 'remote_addr'])
     let_df[split_series_name] = let_df[k8s_object]
@@ -131,7 +131,7 @@ def format_events_table(df, latency_ns_col):
     """ Format data and add semantic columns in event tables
 
     Unifies latency column to 'latency_ms', adds a binned
-    timestamp field to aggregate on, and adds the service
+    timestamp field to aggregate on, and adds the svc
     (k8s_object) as a semantic column.
 
     Works on "cql_events" and "http_events"
@@ -231,15 +231,15 @@ def calc_cql_LET(df, groups):
 
 
 def ip_to_svc_name(df, ip_col, svc_col_name):
-    """ Map IP to service name.
+    """ Map IP to svc name.
 
-    Maps IP values stored in @ip_col into service names to store into
+    Maps IP values stored in @ip_col into svc names to store into
     @svc_col_name.
 
     Args:
     @df: the input dataframe.
     @ip_col: the IP column to map from.
-    @svc_col_name: the column name to assign the new service values.
+    @svc_col_name: the column name to assign the new svc values.
 
     Returns: DataFrame with the svc_col added.
     """

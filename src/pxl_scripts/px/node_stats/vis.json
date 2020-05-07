@@ -1,7 +1,7 @@
 {
   "variables": [
     {
-      "name": "start_time",
+      "name": "start",
       "type": "PX_STRING",
       "defaultValue": "-10m"
     },
@@ -11,7 +11,7 @@
       "defaultValue": ""
     },
     {
-      "name": "pod_name",
+      "name": "pod",
       "type": "PX_STRING",
       "defaultValue": ""
     }
@@ -29,16 +29,16 @@
         "name": "cpu_stats",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
             "name": "node_name",
             "variable": "node_name"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },
@@ -71,16 +71,16 @@
         "name": "cpu_stats",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
             "name": "node_name",
             "variable": "node_name"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },
@@ -113,16 +113,16 @@
         "name": "net_stats",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
             "name": "node_name",
             "variable": "node_name"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },
@@ -155,16 +155,16 @@
         "name": "net_stats",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
             "name": "node_name",
             "variable": "node_name"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },
@@ -197,16 +197,16 @@
         "name": "node_table",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
             "name": "node_name",
             "variable": "node_name"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },
@@ -226,16 +226,16 @@
         "name": "pod_table",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
             "name": "node_name",
             "variable": "node_name"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },

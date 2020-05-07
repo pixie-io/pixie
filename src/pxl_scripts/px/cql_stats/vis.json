@@ -1,12 +1,13 @@
 {
   "variables": [
     {
-      "name": "start_time",
+      "name": "start",
       "type": "PX_STRING",
+      "description": "Start of time window",
       "defaultValue": "-10m"
     },
     {
-      "name": "pod_name",
+      "name": "pod",
       "type": "PX_STRING",
       "defaultValue": ""
     }
@@ -24,12 +25,12 @@
         "name": "pod_cql_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },
@@ -62,12 +63,12 @@
         "name": "pod_cql_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },
@@ -100,12 +101,12 @@
         "name": "pod_cql_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },
@@ -138,12 +139,12 @@
         "name": "pod_cql_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },
@@ -170,12 +171,12 @@
         "name": "latency_histogram",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },
@@ -211,12 +212,12 @@
         "name": "summary_cql_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "pod_name",
-            "variable": "pod_name"
+            "name": "pod",
+            "variable": "pod"
           }
         ]
       },

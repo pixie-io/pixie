@@ -1,17 +1,17 @@
 {
   "variables": [
     {
-      "name": "start_time",
+      "name": "start",
       "type": "PX_STRING",
       "defaultValue": "-10m"
     },
     {
-      "name": "requesting_service",
+      "name": "requesting_svc",
       "type": "PX_SERVICE",
       "defaultValue": ""
     },
     {
-      "name": "responding_service",
+      "name": "responding_svc",
       "type": "PX_SERVICE",
       "defaultValue": ""
     }
@@ -26,19 +26,19 @@
         "h": 3
       },
       "func": {
-        "name": "service_edge_let",
+        "name": "svc_edge_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "requesting_service",
-            "variable": "requesting_service"
+            "name": "requesting_svc",
+            "variable": "requesting_svc"
           },
           {
-            "name": "responding_service",
-            "variable": "responding_service"
+            "name": "responding_svc",
+            "variable": "responding_svc"
           }
         ]
       },
@@ -68,19 +68,19 @@
         "h": 3
       },
       "func": {
-        "name": "service_edge_let",
+        "name": "svc_edge_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "requesting_service",
-            "variable": "requesting_service"
+            "name": "requesting_svc",
+            "variable": "requesting_svc"
           },
           {
-            "name": "responding_service",
-            "variable": "responding_service"
+            "name": "responding_svc",
+            "variable": "responding_svc"
           }
         ]
       },
@@ -110,19 +110,19 @@
         "h": 3
       },
       "func": {
-        "name": "service_edge_let",
+        "name": "svc_edge_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "requesting_service",
-            "variable": "requesting_service"
+            "name": "requesting_svc",
+            "variable": "requesting_svc"
           },
           {
-            "name": "responding_service",
-            "variable": "responding_service"
+            "name": "responding_svc",
+            "variable": "responding_svc"
           }
         ]
       },
@@ -152,19 +152,19 @@
         "h": 3
       },
       "func": {
-        "name": "service_edge_let",
+        "name": "svc_edge_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "requesting_service",
-            "variable": "requesting_service"
+            "name": "requesting_svc",
+            "variable": "requesting_svc"
           },
           {
-            "name": "responding_service",
-            "variable": "responding_service"
+            "name": "responding_svc",
+            "variable": "responding_svc"
           }
         ]
       },
@@ -197,16 +197,16 @@
         "name": "summary_edge_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "requesting_service",
-            "variable": "requesting_service"
+            "name": "requesting_svc",
+            "variable": "requesting_svc"
           },
           {
-            "name": "responding_service",
-            "variable": "responding_service"
+            "name": "responding_svc",
+            "variable": "responding_svc"
           }
         ]
       },

@@ -27,20 +27,20 @@ px.Pod = str
 # These functions are formatted and ready for use in
 # the visualization speciciation, vis.json.
 # ----------------------------------------------------------------
-def pod_let(start_time: str, pod_name: px.Pod):
-    """ Calculates LET time-series for pods that match pod_name.
+def pod_let(start: str, pod: px.Pod):
+    """ Calculates LET time-series for pods that matchpod.
     Args:
-    @start_time: The timestamp of data to start at.
-    @pod_name: the partial/full-name of the pod to
+    @start: The timestamp of data to start at.
+    @pod: the partial/full-name of the pod to
         calculate LET.
 
     Returns: DataFrame of the LET stats for pods that
-        match @pod_name.
+        match @pod.
     """
-    df = make_http_table(start_time)
-    # Calculate LET of service(s) (k8s_object) over the time window ('timestamp')
-    # after filtering for matching services.
-    matching_df = df[px.contains(df[k8s_object], pod_name)]
+    df = make_http_table(start)
+    # Calculate LET of svc(s) (k8s_object) over the time window ('timestamp')
+    # after filtering for matching svcs.
+    matching_df = df[px.contains(df[k8s_object], pod)]
     let_df = calc_LET(matching_df, [k8s_object, 'timestamp'])
 
     # Format and organize resulting columns.
@@ -50,37 +50,37 @@ def pod_let(start_time: str, pod_name: px.Pod):
     return let_df
 
 
-def summary_pod_let(start_time: str, pod_name: px.Pod):
-    """ Calculates LET summary for pods matching pod_name filter.
+def summary_pod_let(start: str, pod: px.Pod):
+    """ Calculates LET summary for pods matching pod filter.
 
     Args:
-    @start_time: The timestamp of data to start at.
-    @pod_name: the partial/full-name of the pod to
+    @start: The timestamp of data to start at.
+    @pod: the partial/full-name of the pod to
         calculate LET.
 
     Returns: DataFrame of the LET summary for pods that
-        match @pod_name.
+        match @pod.
     """
-    df = pod_let(start_time, pod_name)
+    df = pod_let(start, pod)
     summary_df = summarize_LET(df, [split_series_name])
     return summary_df
 
 
-def resource_stats(start_time: str, pod_name: px.Pod):
+def resource_stats(start: str, pod: px.Pod):
     """ Gets the resource usage of matching pods.
 
     Args:
-    @start_time: Starting time of the data to examine.
-    @pod_name: The partial name of the pod(s) to display data for.
+    @start: Starting time of the data to examine.
+    @pod: The partial name of the pod(s) to display data for.
 
     Returns: A DataFrame of resource usage per pod matched in the passed
         in filters.
     """
     # Query process stats in target window
-    rsrc_df = px.DataFrame(table='process_stats', start_time=start_time)
+    rsrc_df = px.DataFrame(table='process_stats', start_time=start)
     rsrc_df = format_resource_table(rsrc_df)
     # Filter down to specified objects
-    rsrc_df = rsrc_df[px.contains(rsrc_df[k8s_object], pod_name)]
+    rsrc_df = rsrc_df[px.contains(rsrc_df[k8s_object], pod)]
     rsrc_df = calc_resource(rsrc_df)
     return rsrc_df
 
@@ -92,22 +92,22 @@ def resource_stats(start_time: str, pod_name: px.Pod):
 # which will allow these functions to be shared across multiple
 # scripts.
 # ----------------------------------------------------------------
-def make_http_table(start_time: str):
-    """ Makes the HTTP table given the passed in start_time.
+def make_http_table(start: str):
+    """ Makes the HTTP table given the passed in start.
 
-    The data necessary to compute HTTP level service information is located in the
+    The data necessary to compute HTTP level svc information is located in the
     http_events table. We filter and aggregate data from this table to compute the
     required metrics.
 
     Args:
-    @start_time: The timestamp of data to start at.
+    @start: The timestamp of data to start at.
 
     Returns: DataFrame of HTTP events with formatted columns.
     """
-    # The data necessary to compute HTTP level service information is located in the
+    # The data necessary to compute HTTP level svc information is located in the
     # http_events table. We filter and aggregate data from this table to compute the
     # required metrics.
-    df = px.DataFrame(table='http_events', start_time=start_time)
+    df = px.DataFrame(table='http_events', start_time=start)
     df = format_http_table(df)
     return df
 
@@ -116,7 +116,7 @@ def format_events_table(spans_df, latency_ns_col):
     """ Format data and add semantic columns in event tables
 
     Unifies latency column to 'latency_ms', adds a binned
-    timestamp field to aggregate on, and adds the service
+    timestamp field to aggregate on, and adds the svc
     (k8s_object) as a semantic column.
 
     Works on "mysql_events" and "http_events"
@@ -138,7 +138,7 @@ def format_http_table(spans_df):
     """ Formats HTTP events tables
 
     Unifies latency column to 'latency_ms', adds a binned
-    timestamp field to aggregate on, and adds the service
+    timestamp field to aggregate on, and adds the svc
     (k8s_object) as a semantic column.
 
     Works on "mysql_events" and "http_events".
@@ -205,7 +205,7 @@ def format_resource_table(rsrc_df):
 
     Converts nanoseconds to seconds, bytes to megabytes,
     adds a binned timestamp field to aggregate on, and adds
-    the service (k8s_object) as a semantic column.
+    the svc (k8s_object) as a semantic column.
 
     Args:
     @rsrc_df: the input process_stats table.

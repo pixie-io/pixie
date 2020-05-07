@@ -1,12 +1,12 @@
 {
   "variables": [
     {
-      "name": "service_name",
+      "name": "svc",
       "type": "PX_SERVICE",
       "defaultValue": ""
     },
     {
-      "name": "start_time",
+      "name": "start",
       "type": "PX_STRING",
       "defaultValue": "-10m"
     }
@@ -21,15 +21,15 @@
         "h": 3
       },
       "func": {
-        "name": "service_let",
+        "name": "svc_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "service_name",
-            "variable": "service_name"
+            "name": "svc",
+            "variable": "svc"
           }
         ]
       },
@@ -59,15 +59,15 @@
         "h": 3
       },
       "func": {
-        "name": "service_let",
+        "name": "svc_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "service_name",
-            "variable": "service_name"
+            "name": "svc",
+            "variable": "svc"
           }
         ]
       },
@@ -97,15 +97,15 @@
         "h": 3
       },
       "func": {
-        "name": "service_let",
+        "name": "svc_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "service_name",
-            "variable": "service_name"
+            "name": "svc",
+            "variable": "svc"
           }
         ]
       },
@@ -135,15 +135,15 @@
         "h": 3
       },
       "func": {
-        "name": "service_let",
+        "name": "svc_let",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "service_name",
-            "variable": "service_name"
+            "name": "svc",
+            "variable": "svc"
           }
         ]
       },
@@ -176,12 +176,12 @@
         "name": "http_code_histogram",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "service_name",
-            "variable": "service_name"
+            "name": "svc",
+            "variable": "svc"
           }
         ]
       },
@@ -205,12 +205,12 @@
         "name": "latency_histogram",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "service_name",
-            "variable": "service_name"
+            "name": "svc",
+            "variable": "svc"
           }
         ]
       },
@@ -246,12 +246,12 @@
         "name": "incoming_edges",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "service_name",
-            "variable": "service_name"
+            "name": "svc",
+            "variable": "svc"
           }
         ]
       },
@@ -271,12 +271,12 @@
         "name": "outgoing_edges",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "service_name",
-            "variable": "service_name"
+            "name": "svc",
+            "variable": "svc"
           }
         ]
       },
@@ -293,15 +293,15 @@
         "h": 3
       },
       "func": {
-        "name": "service_graph",
+        "name": "svc_graph",
         "args": [
           {
-            "name": "start_time",
-            "variable": "start_time"
+            "name": "start",
+            "variable": "start"
           },
           {
-            "name": "service_name",
-            "variable": "service_name"
+            "name": "svc",
+            "variable": "svc"
           }
         ]
       },

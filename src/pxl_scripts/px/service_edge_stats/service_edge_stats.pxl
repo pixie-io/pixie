@@ -3,9 +3,9 @@
 This live view calculates LET between two Services.
 
 Notes:
-* Setting requesting_service or responding_service does not exclusively match
+* Setting requesting_svc or responding_svc does not exclusively match
   at the moment.
-  IE: if you have two services 'a' and 'a-db', setting `service_name = 'a'`
+  IE: if you have two svcs 'a' and 'a-db', setting `svc_name = 'a'`
   will still match `a-db`
 '''
 import px
@@ -37,20 +37,20 @@ split_series_name = 'k8s'
 ###############################################################
 
 
-def service_edge_stats():
-    """Top level service info function used to test live view.
+def svc_edge_stats():
+    """Top level svc info function used to test live view.
 
-    For each edge in the service graph that matches the filter, we calculate the latency,
+    For each edge in the svc graph that matches the filter, we calculate the latency,
     error rate, and throughput as a time-series as well as an avg over the examined
     data window.
 
     Notes:
     1. Will be deleted in the future when live view is done.
     """
-    px.display(service_edge_let(
-        start_time, requesting_service, responding_service), 'test')
-    px.display(summary_edge_let(start_time, requesting_service,
-                                responding_service), 'summary')
+    px.display(svc_edge_let(
+        start, requesting_svc, responding_svc), 'test')
+    px.display(summary_edge_let(start, requesting_svc,
+                                responding_svc), 'summary')
 
 
 # ----------------------------------------------------------------
@@ -59,61 +59,61 @@ def service_edge_stats():
 # These functions are formatted and ready for use in
 # the visualization speciciation, vis.json.
 # ----------------------------------------------------------------
-def service_edge_let(start_time: str, requesting_service: px.Service,
-                     responding_service: px.Service):
+def svc_edge_let(start: str, requesting_svc: px.Service,
+                 responding_svc: px.Service):
     """ Returns the LET time-series for each edge that matches the filter.
 
-    For each edge in the service graph that matches the filter, we calculate the latency,
+    For each edge in the svc graph that matches the filter, we calculate the latency,
     error rate, and throughput as a time-series.
 
-    A matching edge will start at a service that matches @requesting_service
-    and end at a service that matches @responding_service
+    A matching edge will start at a svc that matches @requesting_svc
+    and end at a svc that matches @responding_svc
 
     Args:
-    @start_time: The timestamp of data to start at.
-    @requesting_service: the partial/full-name of the service(s)
+    @start: The timestamp of data to start at.
+    @requesting_svc: the partial/full-name of the svc(s)
         that originate requests. (start of the edge).
-    @responding_service: the partial/full-name of the service(s)
+    @responding_svc: the partial/full-name of the svc(s)
         to receive requests. (end of the edge).
 
-    Returns: DataFrame of the LET stats for edges in the service graph.
+    Returns: DataFrame of the LET stats for edges in the svc graph.
     """
-    df = make_http_table(start_time)
+    df = make_http_table(start)
 
-    # Calculate LET of service(s) (k8s_object) over the time window ('timestamp')
-    # after filtering for matching services.
-    matching_df = df[px.contains(df[k8s_object], responding_service)]
+    # Calculate LET of svc(s) (k8s_object) over the time window ('timestamp')
+    # after filtering for matching svcs.
+    matching_df = df[px.contains(df[k8s_object], responding_svc)]
     let_df = let_per_edge(matching_df)
-    # Filter the DataFrame to only those services that match the requesting service.
-    let_df = let_df[px.contains(let_df[src_col], requesting_service)]
+    # Filter the DataFrame to only those svcs that match the requesting svc.
+    let_df = let_df[px.contains(let_df[src_col], requesting_svc)]
     let_df[dest_col] = let_df[k8s_object]
     let_df = let_df['time_', src_col, split_series_name, dest_col, 'latency_p50',
                     'latency_p90', 'latency_p99', 'error_rate', 'rps', 'bytes_per_s']
     return let_df
 
 
-def summary_edge_let(start_time: str, requesting_service: px.Service,
-                     responding_service: px.Service):
+def summary_edge_let(start: str, requesting_svc: px.Service,
+                     responding_svc: px.Service):
     """ Returns the summary of LET statistics for matching edges.
 
 
-    For each edge in the service graph that matches the filter, we calculate the latency,
+    For each edge in the svc graph that matches the filter, we calculate the latency,
     error rate, and throughput as an avg over the examined
     data window.
 
-    A matching edge will start at a service that matches @requesting_service
-    and end at a service that matches @responding_service
+    A matching edge will start at a svc that matches @requesting_svc
+    and end at a svc that matches @responding_svc
 
     Args:
-    @start_time: The timestamp of data to start at.
-    @requesting_service: the partial/full-name of the service(s)
+    @start: The timestamp of data to start at.
+    @requesting_svc: the partial/full-name of the svc(s)
         that originate requests. (start of the edge).
-    @responding_service: the partial/full-name of the service(s)
+    @responding_svc: the partial/full-name of the svc(s)
         to receive requests. (end of the edge).
 
-    Returns: DataFrame of the LET stats for edges in the service graph.
+    Returns: DataFrame of the LET stats for edges in the svc graph.
     """
-    df = service_edge_let(start_time, requesting_service, responding_service)
+    df = svc_edge_let(start, requesting_svc, responding_svc)
     return summarize_LET(df, [src_col, dest_col])
 
 
@@ -125,18 +125,18 @@ def summary_edge_let(start_time: str, requesting_service: px.Service,
 # scripts.
 # ----------------------------------------------------------------
 def let_per_edge(df: px.DataFrame):
-    """ Calculates the LET per edge of the service graph.
+    """ Calculates the LET per edge of the svc graph.
 
     Args:
-    @start_time: The timestamp of data to start at.
+    @start: The timestamp of data to start at.
 
     Returns: DataFrame of HTTP events with formatted columns.
     """
-    # Calculate LET for each service edge in the service graph over each time window.
+    # Calculate LET for each svc edge in the svc graph over each time window.
     # Each edge starts at a requester ('remote_addr') and ends at a
     # responder (k8s_object).
     edge_let_df = calc_http_LET(df, ['remote_addr', k8s_object, 'timestamp'])
-    # Convert 'remote_addr' IP into a service name.
+    # Convert 'remote_addr' IP into a svc name.
     edge_let_df = ip_to_svc_name(edge_let_df, 'remote_addr', src_col)
     # Rename k8s_object to dest_col.
     edge_let_df[dest_col] = edge_let_df[k8s_object]
@@ -145,22 +145,22 @@ def let_per_edge(df: px.DataFrame):
     return edge_let_df
 
 
-def make_http_table(start_time: str):
-    """ Makes the HTTP table given the passed in start_time.
+def make_http_table(start: str):
+    """ Makes the HTTP table given the passed in start.
 
-    The data necessary to compute HTTP level service information is located in the
+    The data necessary to compute HTTP level svc information is located in the
     http_events table. We filter and aggregate data from this table to compute the
     required metrics.
 
     Args:
-    @start_time: The timestamp of data to start at.
+    @start: The timestamp of data to start at.
 
     Returns: DataFrame of HTTP events with formatted columns.
     """
-    # The data necessary to compute HTTP level service information is located in the
+    # The data necessary to compute HTTP level svc information is located in the
     # http_events table. We filter and aggregate data from this table to compute the
     # required metrics.
-    df = px.DataFrame(table='http_events', start_time=start_time)
+    df = px.DataFrame(table='http_events', start_time=start)
     df = format_http_table(df, filter_health_checks,
                            filter_ready_checks, filter_unresolved_inbound)
     return df
@@ -170,7 +170,7 @@ def format_events_table(df, latency_ns_col):
     """ Format data and add semantic columns in event tables
 
     Unifies latency column to 'latency_ms', adds a binned
-    timestamp field to aggregate on, and adds the service
+    timestamp field to aggregate on, and adds the svc
     (k8s_object) as a semantic column.
 
     Works on "mysql_events" and "http_events"
@@ -292,15 +292,15 @@ def ip_to_pod_name(df, ip_col, pod_col_name):
 
 
 def ip_to_svc_name(df, ip_col, svc_col_name):
-    """ Map IP to service name.
+    """ Map IP to svc name.
 
-    Maps IP values stored in @ip_col into service names to store into
+    Maps IP values stored in @ip_col into svc names to store into
     @svc_col_name.
 
     Args:
     @df: the input dataframe.
     @ip_col: the IP column to map from.
-    @svc_col_name: the column name to assign the new service values.
+    @svc_col_name: the column name to assign the new svc values.
 
     Returns: DataFrame with the svc_col added.
     """

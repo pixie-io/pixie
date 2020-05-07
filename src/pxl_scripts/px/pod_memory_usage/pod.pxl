@@ -13,7 +13,7 @@ match_name = ''
 ###############################################################
 
 #
-# Get the virtual and real memory usage for each pod/service
+# Get the virtual and real memory usage for each pod/svc
 # in the cluster.
 #
 t1 = px.DataFrame(table='process_stats', start_time='-1m')
@@ -31,7 +31,7 @@ upid_aggop = t1.groupby(['upid', k8s_object, 'timestamp']).agg(
 )
 
 # For this aggregate, we sum up the values as we've already calculated the average/usage
-# for the upids already, just need to do it for the entire service.
+# for the upids already, just need to do it for the entire svc.
 aggop = upid_aggop.groupby([k8s_object, 'timestamp']).agg(
     vsize_mb=('vsize_mb', px.sum),
     rss_bytes_mb=('rss_bytes_mb', px.sum),
