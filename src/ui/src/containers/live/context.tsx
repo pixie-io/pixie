@@ -126,8 +126,10 @@ const LiveContextProvider = (props) => {
   });
 
   React.useEffect(() => {
-    setArgsRaw(argsForVis(vis, args, title.id));
-  }, [vis, args, title.id]);
+    // TODO(malthus): Remove this once we switch to eslint.
+    // tslint:disable-next-line:whitespace
+    setArgsRaw(argsForVis(vis, args, title?.id));
+  }, [vis, args, title]);
 
   const argsContext = React.useMemo(() => {
     return {
@@ -225,7 +227,7 @@ const LiveContextProvider = (props) => {
               <VisContext.Provider value={vis}>
                 <HoverTimeContext.Provider value={hoverTime}>
                   <TSDomainContext.Provider value={tsDomain}>
-                  {props.children}
+                    {props.children}
                   </TSDomainContext.Provider>
                 </HoverTimeContext.Provider>
               </VisContext.Provider>
