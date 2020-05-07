@@ -9,9 +9,10 @@ import (
 )
 
 type tabStop struct {
-	Index int
-	Label string
-	Value string
+	Index    int
+	Label    string
+	Value    string
+	HasLabel bool
 }
 
 func TestParseInput(t *testing.T) {
@@ -25,19 +26,46 @@ func TestParseInput(t *testing.T) {
 			input: "${1:run} ${2:svc_name:$0pl/test} ${3}",
 			expectedTabStops: []*tabStop{
 				&tabStop{
-					Index: 1,
-					Label: "run",
-					Value: "",
+					Index:    1,
+					Label:    "run",
+					Value:    "",
+					HasLabel: false,
 				},
 				&tabStop{
-					Index: 2,
-					Label: "svc_name",
-					Value: "$0pl/test",
+					Index:    2,
+					Label:    "svc_name",
+					Value:    "$0pl/test",
+					HasLabel: true,
 				},
 				&tabStop{
-					Index: 3,
-					Label: "",
-					Value: "",
+					Index:    3,
+					Label:    "",
+					Value:    "",
+					HasLabel: false,
+				},
+			},
+		},
+		{
+			name:  "empty label",
+			input: "${1:run} ${2:svc_name:} ${3}",
+			expectedTabStops: []*tabStop{
+				&tabStop{
+					Index:    1,
+					Label:    "run",
+					Value:    "",
+					HasLabel: false,
+				},
+				&tabStop{
+					Index:    2,
+					Label:    "svc_name",
+					Value:    "",
+					HasLabel: true,
+				},
+				&tabStop{
+					Index:    3,
+					Label:    "",
+					Value:    "",
+					HasLabel: false,
 				},
 			},
 		},
@@ -61,6 +89,7 @@ func TestParseInput(t *testing.T) {
 				} else {
 					assert.Equal(t, test.expectedTabStops[i].Value, *ts.Value)
 				}
+				assert.Equal(t, test.expectedTabStops[i].HasLabel, ts.HasLabel)
 			}
 		})
 	}

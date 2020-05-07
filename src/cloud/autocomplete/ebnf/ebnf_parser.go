@@ -10,7 +10,7 @@ import (
 
 var (
 	grammar = `
-        Ident = (alpha | digit | "/" | "_" | "$" ) { "/" | alpha | digit | "_" | "$"} .
+        Ident = (alpha | digit | "/" | "_" | "$" | "-") { "/" | alpha | digit | "_" | "$" | "-"} .
         Whitespace = " " | "\t" | "\n" | "\r" .
         Punct = "!"…"/" | ":"…"@" | "["…` + "\"`\"" + ` | "{"…"~" .
         alpha = "a"…"z" | "A"…"Z" .
@@ -19,20 +19,19 @@ var (
 	cmdLexer = lexer.Must(ebnf.New(grammar))
 	parser   = participle.MustBuild(&ParsedCmd{},
 		participle.Lexer(cmdLexer),
-		participle.Elide("Whitespace"),
 	)
 )
 
 // ParsedCmd represents a command parsed through ebnf.
 type ParsedCmd struct {
-	Action *string      `parser:"{@ \"go\"| @ \"run\" }?"` //nolint: govet
+	Action *string      `parser:"{@ \"go\" Whitespace? | @ \"run\" Whitespace?}?"`
 	Args   []*ParsedArg `parser:"@@*"`
 }
 
 // ParsedArg represents an arg parsed through ebnf.
 type ParsedArg struct {
 	Type *string `parser:"(@Ident \":\")?"`
-	Name *string `parser:"@Ident | \":\" @Ident"`
+	Name *string `parser:"(@Ident Whitespace?|Whitespace)?"`
 }
 
 // ParseInput parses the user input into a command using an ebnf parser.

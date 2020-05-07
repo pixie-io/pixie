@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete/ebnf"
 )
 
@@ -109,12 +108,12 @@ func TestParseInput(t *testing.T) {
 		},
 		{
 			name:           "cursor",
-			input:          "script:px/svc ab$0cd svc:pl/frontend go",
+			input:          "script:px-test/svc ab$0cd svc:pl/frontend go",
 			expectedAction: "",
 			expectedArgs: []*arg{
 				&arg{
 					Type: "script",
-					Name: "px/svc",
+					Name: "px-test/svc",
 				},
 				&arg{
 					Type: "",
@@ -127,6 +126,71 @@ func TestParseInput(t *testing.T) {
 				&arg{
 					Type: "",
 					Name: "go",
+				},
+			},
+		},
+		{
+			name:           "empty value",
+			input:          "script:px/svc ab$0cd svc:",
+			expectedAction: "",
+			expectedArgs: []*arg{
+				&arg{
+					Type: "script",
+					Name: "px/svc",
+				},
+				&arg{
+					Type: "",
+					Name: "ab$0cd",
+				},
+				&arg{
+					Type: "svc",
+					Name: "",
+				},
+			},
+		},
+		{
+			name:           "two empty values",
+			input:          "script:px/svc ab$0cd svc: svc2:",
+			expectedAction: "",
+			expectedArgs: []*arg{
+				&arg{
+					Type: "script",
+					Name: "px/svc",
+				},
+				&arg{
+					Type: "",
+					Name: "ab$0cd",
+				},
+				&arg{
+					Type: "svc",
+					Name: "",
+				},
+				&arg{
+					Type: "svc2",
+					Name: "",
+				},
+			},
+		},
+		{
+			name:           "two values",
+			input:          "script:px/svc ab$0cd svc: svc2:test",
+			expectedAction: "",
+			expectedArgs: []*arg{
+				&arg{
+					Type: "script",
+					Name: "px/svc",
+				},
+				&arg{
+					Type: "",
+					Name: "ab$0cd",
+				},
+				&arg{
+					Type: "svc",
+					Name: "",
+				},
+				&arg{
+					Type: "svc2",
+					Name: "test",
 				},
 			},
 		},
