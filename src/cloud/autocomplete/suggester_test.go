@@ -320,6 +320,66 @@ func TestGetSuggestions(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "empty",
+			reqs: []*autocomplete.SuggestionRequest{
+				&autocomplete.SuggestionRequest{
+					Input: "",
+					OrgID: org1,
+					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
+						cloudapipb.AEK_SVC,
+					},
+					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+				},
+			},
+			expectedResults: []*autocomplete.SuggestionResult{
+				&autocomplete.SuggestionResult{
+					ExactMatch: false,
+					Suggestions: []*autocomplete.Suggestion{
+						&autocomplete.Suggestion{
+							Name: "pl/testService",
+							Kind: cloudapipb.AEK_SVC,
+						},
+						&autocomplete.Suggestion{
+							Name: "anotherNS/testService",
+							Kind: cloudapipb.AEK_SVC,
+						},
+						&autocomplete.Suggestion{
+							Name: "pl/abcd",
+							Kind: cloudapipb.AEK_SVC,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "only namespace",
+			reqs: []*autocomplete.SuggestionRequest{
+				&autocomplete.SuggestionRequest{
+					Input: "pl/",
+					OrgID: org1,
+					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
+						cloudapipb.AEK_SVC,
+					},
+					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+				},
+			},
+			expectedResults: []*autocomplete.SuggestionResult{
+				&autocomplete.SuggestionResult{
+					ExactMatch: false,
+					Suggestions: []*autocomplete.Suggestion{
+						&autocomplete.Suggestion{
+							Name: "pl/testService",
+							Kind: cloudapipb.AEK_SVC,
+						},
+						&autocomplete.Suggestion{
+							Name: "pl/abcd",
+							Kind: cloudapipb.AEK_SVC,
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

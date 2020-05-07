@@ -132,7 +132,9 @@ func (e *ElasticSuggester) getMDEntityQuery(orgID uuid.UUID, input string, allow
 		entityQuery.Must(elastic.NewTermQuery("ns", splitInput[0]))
 		name = splitInput[1]
 	}
-	entityQuery.Must(elastic.NewMatchQuery("name", name))
+	if name != "" {
+		entityQuery.Must(elastic.NewMatchQuery("name", name))
+	}
 
 	// Only search for entities in org.
 	entityQuery.Must(elastic.NewTermQuery("orgID", orgID.String()))
