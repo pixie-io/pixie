@@ -498,8 +498,8 @@ void SocketTraceConnector::DeployUProbes() {
     {
       StatusOr<int> attach_status = AttachOpenSSLUProbes(binary, pid_vec);
       if (!attach_status.ok()) {
-        LOG(WARNING) << absl::Substitute("Failed to attach SSL Uprobes to $0: $1", binary,
-                                         attach_status.ToString());
+        LOG_FIRST_N(WARNING, 10) << absl::Substitute("Failed to attach SSL Uprobes to $0: $1",
+                                                     binary, attach_status.ToString());
       } else {
         uprobe_count += attach_status.ValueOrDie();
       }
@@ -510,8 +510,8 @@ void SocketTraceConnector::DeployUProbes() {
       StatusOr<int> attach_status =
           AttachHTTP2UProbes(binary, elf_reader.get(), pid_vec, &http2_symaddrs_map);
       if (!attach_status.ok()) {
-        LOG(WARNING) << absl::Substitute("Failed to attach HTTP2 Uprobes to $0: $1", binary,
-                                         attach_status.ToString());
+        LOG_FIRST_N(WARNING, 10) << absl::Substitute("Failed to attach HTTP2 Uprobes to $0: $1",
+                                                     binary, attach_status.ToString());
       } else {
         uprobe_count += attach_status.ValueOrDie();
       }

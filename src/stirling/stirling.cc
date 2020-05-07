@@ -204,10 +204,12 @@ StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
     : config_(std::make_unique<PubSubManager>()), registry_(std::move(registry)) {
   LOG(INFO) << "Creating Stirling";
 
-  LOG(INFO) << "Stirling: Registered sources: ";
+  std::string msg = "Stirling: Registered sources: [ ";
   for (const auto& registered_source : registry_->sources()) {
-    LOG(INFO) << "    " << registered_source.first;
+    absl::StrAppend(&msg, registered_source.first, " ");
   }
+  absl::StrAppend(&msg, "]");
+  LOG(INFO) << msg;
 }
 
 StirlingImpl::~StirlingImpl() { Stop(); }

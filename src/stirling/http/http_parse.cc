@@ -153,7 +153,7 @@ ParseState ParseBody(std::string_view* buf, Message* result) {
     return ParseState::kSuccess;
   }
 
-  // Case 3C: Response where we can't assume no body, but where  no Content-Length or
+  // Case 3C: Response where we can't assume no body, but where no Content-Length or
   // Transfer-Encoding is provided. In these cases we should wait for close().
   // According to HTTP/1.1 standard:
   // https://www.w3.org/Protocols/HTTP/1.0/draft-ietf-http-spec.html#BodyLength
