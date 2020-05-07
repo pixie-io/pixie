@@ -380,6 +380,11 @@ func TestGetSuggestions(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:            "empty req",
+			reqs:            []*autocomplete.SuggestionRequest{},
+			expectedResults: []*autocomplete.SuggestionResult{},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

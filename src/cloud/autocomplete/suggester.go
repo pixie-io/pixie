@@ -72,6 +72,11 @@ type SuggestionResult struct {
 
 // GetSuggestions get suggestions for the given input using Elastic.
 func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*SuggestionResult, error) {
+	resps := make([]*SuggestionResult, len(reqs))
+
+	if len(reqs) == 0 {
+		return resps, nil
+	}
 
 	ms := e.client.MultiSearch()
 
@@ -86,7 +91,6 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 		return nil, err
 	}
 
-	resps := make([]*SuggestionResult, len(reqs))
 	for i, r := range resp.Responses {
 		// Convert elastic entity into a suggestion object.
 		results := make([]*Suggestion, 0)
