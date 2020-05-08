@@ -108,6 +108,7 @@ pl_cc_test(
 pl_cc_test(
     name = "stirling_bpf_test",
     srcs = ["stirling_bpf_test.cc"],
+    args = ["--v=1"],
     flaky = True,
     tags = ["requires_bpf"],
     deps = [":cc_library"],
