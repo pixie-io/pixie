@@ -88,7 +88,7 @@ const useStyles = makeStyles((theme: Theme) => {
       whiteSpace: 'nowrap',
     },
     val: {
-      textAlign: 'left',
+      textAlign: 'right',
     },
     gridGap: {
       height: '100%',
