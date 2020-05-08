@@ -1167,9 +1167,10 @@ func TestToFormatString(t *testing.T) {
 						ContainsCursor: true,
 						Suggestions: []*autocomplete.Suggestion{
 							&autocomplete.Suggestion{
-								Name: "pl/frontend-test",
-								Desc: "a pod",
-								Kind: cloudapipb.AEK_POD,
+								Name:           "pl/frontend-test",
+								Desc:           "a pod",
+								Kind:           cloudapipb.AEK_POD,
+								MatchedIndexes: []int64{1, 2, 3},
 							},
 						},
 					},
@@ -1200,9 +1201,10 @@ func TestToFormatString(t *testing.T) {
 					ExecutableAfterSelect: false,
 					Suggestions: []*cloudapipb.AutocompleteSuggestion{
 						&cloudapipb.AutocompleteSuggestion{
-							Kind:        cloudapipb.AEK_POD,
-							Name:        "pl/frontend-test",
-							Description: "a pod",
+							Kind:           cloudapipb.AEK_POD,
+							Name:           "pl/frontend-test",
+							Description:    "a pod",
+							MatchedIndexes: []int64{1, 2, 3},
 						},
 					},
 				},

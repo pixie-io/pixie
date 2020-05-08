@@ -39,15 +39,20 @@ const mdIndexMapping = `
             "my_tokenizer": {
               "type": "pattern",
               "pattern": "-"
+            },
+            "ngram_tokenizer": {
+              "type": "edge_ngram",
+              "min_gram": 1,
+              "max_gram": 20,
+              "token_chars": [] 
             }
           },
           "analyzer": {
             "autocomplete": {
               "type": "custom",
-              "tokenizer": "my_tokenizer",
+              "tokenizer": "ngram_tokenizer",
               "filter": [
-                "lowercase",
-                "autocomplete_filter"
+                "lowercase"
               ]
             },
             "myAnalyzer" : {
@@ -71,7 +76,7 @@ const mdIndexMapping = `
         "analyzer": "autocomplete"
     },
     "ns":{
-      "type":"text"
+      "type":"text", "analyzer": "myAnalyzer"
     },
     "kind":{
       "type":"text"
@@ -117,7 +122,7 @@ var mdEntities = []autocomplete.EsMDEntity{
 	autocomplete.EsMDEntity{
 		OrgID:              org1.String(),
 		UID:                "pod1",
-		Name:               "testPod",
+		Name:               "test-Pod",
 		NS:                 "anotherNS",
 		Kind:               "pod",
 		TimeStartedNS:      1,
@@ -244,6 +249,54 @@ func TestGetSuggestions(t *testing.T) {
 			},
 		},
 		{
+			name: "typo",
+			reqs: []*autocomplete.SuggestionRequest{
+				&autocomplete.SuggestionRequest{
+					Input: "pl/tss",
+					OrgID: org1,
+					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
+						cloudapipb.AEK_SVC,
+					},
+					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+				},
+			},
+			expectedResults: []*autocomplete.SuggestionResult{
+				&autocomplete.SuggestionResult{
+					ExactMatch: false,
+					Suggestions: []*autocomplete.Suggestion{
+						&autocomplete.Suggestion{
+							Name: "pl/testService",
+							Kind: cloudapipb.AEK_SVC,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "dash",
+			reqs: []*autocomplete.SuggestionRequest{
+				&autocomplete.SuggestionRequest{
+					Input: "t-Po",
+					OrgID: org1,
+					AllowedKinds: []cloudapipb.AutocompleteEntityKind{
+						cloudapipb.AEK_POD,
+					},
+					AllowedArgs: []cloudapipb.AutocompleteEntityKind{},
+				},
+			},
+			expectedResults: []*autocomplete.SuggestionResult{
+				&autocomplete.SuggestionResult{
+					ExactMatch: false,
+					Suggestions: []*autocomplete.Suggestion{
+						&autocomplete.Suggestion{
+							Name: "anotherNS/test-Pod",
+							Kind: cloudapipb.AEK_POD,
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "multiple kinds",
 			reqs: []*autocomplete.SuggestionRequest{
 				&autocomplete.SuggestionRequest{
@@ -268,7 +321,7 @@ func TestGetSuggestions(t *testing.T) {
 							Kind: cloudapipb.AEK_SVC,
 						},
 						&autocomplete.Suggestion{
-							Name: "anotherNS/testPod",
+							Name: "anotherNS/test-Pod",
 							Kind: cloudapipb.AEK_POD,
 						},
 					},
@@ -398,6 +451,7 @@ func TestGetSuggestions(t *testing.T) {
 				// Remove the score so we can do a comparison.
 				for j := range r.Suggestions {
 					r.Suggestions[j].Score = 0
+					r.Suggestions[j].MatchedIndexes = nil
 				}
 				assert.ElementsMatch(t, test.expectedResults[i].Suggestions, r.Suggestions)
 				assert.Equal(t, test.expectedResults[i].ExactMatch, r.ExactMatch)

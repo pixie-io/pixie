@@ -22,12 +22,13 @@ type Suggester interface {
 
 // Suggestion is a suggestion for a token.
 type Suggestion struct {
-	Name     string
-	Desc     string
-	Score    float64 // A score representing how closely the suggestion matches the given input.
-	Kind     cloudapipb.AutocompleteEntityKind
-	ArgNames []string // If the suggestion is a script, the args that the script takes.
-	ArgKinds []cloudapipb.AutocompleteEntityKind
+	Name           string
+	Desc           string
+	Score          float64 // A score representing how closely the suggestion matches the given input.
+	Kind           cloudapipb.AutocompleteEntityKind
+	ArgNames       []string // If the suggestion is a script, the args that the script takes.
+	ArgKinds       []cloudapipb.AutocompleteEntityKind
+	MatchedIndexes []int64
 }
 
 // TabStop represents a tab stop in a command.
@@ -429,9 +430,10 @@ func (cmd *Command) ToFormatString(action cloudapipb.AutocompleteActionType) (fo
 		acSugg := make([]*cloudapipb.AutocompleteSuggestion, len(t.Suggestions))
 		for j, s := range t.Suggestions {
 			acSugg[j] = &cloudapipb.AutocompleteSuggestion{
-				Kind:        s.Kind,
-				Name:        s.Name,
-				Description: s.Desc,
+				Kind:           s.Kind,
+				Name:           s.Name,
+				Description:    s.Desc,
+				MatchedIndexes: s.MatchedIndexes,
 			}
 		}
 

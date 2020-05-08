@@ -74,6 +74,31 @@ type SuggestionResult struct {
 	ExactMatch  bool
 }
 
+func parseHighlightIndexes(highlightStr string, offset int) []int64 {
+	inHighlight := false
+	j := int64(offset)
+	k := 0
+	matchedIndexes := make([]int64, 0)
+	for k < len(highlightStr) {
+		if string(highlightStr[k]) == "<" {
+			if inHighlight { // Ending highlight.
+				inHighlight = false
+				k += len("</em>")
+			} else { // Starting highlight section.
+				inHighlight = true
+				k += len("<em>")
+			}
+			continue
+		}
+		if inHighlight {
+			matchedIndexes = append(matchedIndexes, j)
+		}
+		k++
+		j++
+	}
+	return matchedIndexes
+}
+
 // GetSuggestions get suggestions for the given input using Elastic.
 func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*SuggestionResult, error) {
 	resps := make([]*SuggestionResult, len(reqs))
@@ -84,8 +109,12 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 
 	ms := e.client.MultiSearch()
 
+	highlight := elastic.NewHighlight()
+	highlight = highlight.Fields(elastic.NewHighlighterField("*"))
+
 	for _, r := range reqs {
 		ms.Add(elastic.NewSearchRequest().
+			Highlight(highlight).
 			Query(e.getQueryForRequest(r.OrgID, r.Input, r.AllowedKinds, r.AllowedArgs)))
 	}
 
@@ -170,10 +199,20 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 			if err != nil {
 				return nil, err
 			}
+
+			matchedIndexes := make([]int64, 0)
+			// Parse highlight string into indexes.
+			if len(h.Highlight["ns"]) > 0 {
+				matchedIndexes = append(matchedIndexes, parseHighlightIndexes(h.Highlight["ns"][0], 0)...)
+			}
+			if len(h.Highlight["name"]) > 0 {
+				matchedIndexes = append(matchedIndexes, parseHighlightIndexes(h.Highlight["name"][0], len(res.NS)+1)...)
+			}
 			results = append(results, &Suggestion{
-				Name:  res.NS + "/" + res.Name,
-				Score: float64(*h.Score),
-				Kind:  elasticLabelToProtoMap[res.Kind],
+				Name:           res.NS + "/" + res.Name,
+				Score:          float64(*h.Score),
+				Kind:           elasticLabelToProtoMap[res.Kind],
+				MatchedIndexes: matchedIndexes,
 			})
 		}
 
