@@ -1091,22 +1091,42 @@ Status OperatorIR::CopyFromNode(const IRNode* node,
 // Clone Functions
 StatusOr<std::unique_ptr<IR>> IR::Clone() const {
   auto new_ir = std::make_unique<IR>();
-  // Iterate through the children.
+  absl::flat_hash_set<int64_t> nodes{dag().nodes().begin(), dag().nodes().end()};
+  PL_RETURN_IF_ERROR(new_ir->CopySelectedNodesAndDeps(this, nodes));
+  // TODO(philkuz) check to make sure these are the same.
+  new_ir->dag_ = dag_;
+  return new_ir;
+}
+
+Status IR::CopySelectedNodesAndDeps(const IR* src,
+                                    const absl::flat_hash_set<int64_t>& selected_nodes) {
   absl::flat_hash_map<const IRNode*, IRNode*> copied_nodes_map;
-  for (int64_t i : dag().TopologicalSort()) {
-    IRNode* node = Get(i);
-    if (new_ir->HasNode(i) && new_ir->Get(i)->type() == node->type()) {
+  // Need to perform the copies in topological sort order to ensure the edges can be successfully
+  // added.
+  for (int64_t i : src->dag().TopologicalSort()) {
+    if (!selected_nodes.contains(i)) {
       continue;
     }
-    PL_ASSIGN_OR_RETURN(IRNode * new_node, new_ir->CopyNode(node, &copied_nodes_map));
+    IRNode* node = src->Get(i);
+    if (HasNode(i) && Get(i)->type() == node->type()) {
+      continue;
+    }
+    PL_ASSIGN_OR_RETURN(IRNode * new_node, CopyNode(node, &copied_nodes_map));
     if (new_node->IsOperator()) {
       PL_RETURN_IF_ERROR(static_cast<OperatorIR*>(new_node)->CopyParentsFrom(
           static_cast<const OperatorIR*>(node)));
     }
   }
-  // TODO(philkuz) check to make sure these are the same.
-  new_ir->dag_ = dag_;
-  return new_ir;
+  return Status::OK();
+}
+
+Status IR::CopyOperatorSubgraph(const IR* src,
+                                const absl::flat_hash_set<OperatorIR*>& selected_ops) {
+  absl::flat_hash_set<int64_t> op_ids;
+  for (auto op : selected_ops) {
+    op_ids.insert(op->id());
+  }
+  return CopySelectedNodesAndDeps(src, op_ids);
 }
 
 Status OperatorIR::CopyParentsFrom(const OperatorIR* source_op) {

@@ -289,6 +289,72 @@ const distributedpb::CarnotInfo& CoordinatorImpl::GetRemoteProcessor() const {
   return remote_processor_nodes_[0];
 }
 
+/**
+ * @brief Evaluates whether a subgraph may produce data on a given Carnot instance.
+ * Will first detect when the query filters data to metadata that is not part of the
+ * input Carnot instance, but in the future can add more logic based on column contents, etc.
+ */
+bool SubgraphMayProduceData(absl::flat_hash_set<OperatorIR*> query_subgraph_ops,
+                            CarnotInstance* carnot) {
+  // TODO(nserrino): Fill in with metadata entity filter logic.
+  PL_UNUSED(carnot);
+  PL_UNUSED(query_subgraph_ops);
+  return true;
+}
+
+/**
+ * @brief Produces the IR for each input Carnot instance in `plan` with the relevant subgraph
+ * of `query` based on metadata stored on each selected carnot instance.
+ *
+ * 1. For the Carnot in the list, create an entry in `plan`.
+ * 2. Find the parts of `query` that might produce data on each Carnot
+ * 3. Copy over the relevant subgraphs of `query` for that particular carnot instance.
+ * We currently filter on Carnot metadata only for now.
+ * This function guarantees that even if no Carnots will produce data for a subgraph in `query`,
+ * each subgraph will still be run on at least one Carnot instance in the list.
+ * The work necessary to connect the output of these Carnot instances to a GRPCSink must be done
+ * in the client, because this function does not assume a particular configuration.
+ */
+StatusOr<absl::flat_hash_map<int64_t, std::unique_ptr<IR>>> GetCarnotPlans(
+    IR* query, DistributedPlan* plan, absl::flat_hash_set<int64_t> carnot_instances) {
+  absl::flat_hash_map<int64_t, std::unique_ptr<IR>> carnot_plans;
+
+  auto independent_subgraph_op_ids = query->IndependentGraphs();
+  std::vector<absl::flat_hash_set<OperatorIR*>> independent_subgraphs_ops(
+      independent_subgraph_op_ids.size());
+  for (const auto& [i, subgraph_ids] : Enumerate(independent_subgraph_op_ids)) {
+    for (const auto op_id : subgraph_ids) {
+      independent_subgraphs_ops[i].insert(static_cast<OperatorIR*>(query->Get(op_id)));
+    }
+  }
+
+  // Used to make sure each subgraph runs on at least one of the input Carnots, even if none will
+  // produce data.
+  absl::flat_hash_map<int64_t, int64_t> carnots_per_subgraph;
+
+  for (const auto& [carnot_idx, carnot_id] : Enumerate(carnot_instances)) {
+    absl::flat_hash_set<OperatorIR*> relevant_ops_for_instance;
+
+    for (const auto& [subgraph_idx, subgraph_ops] : Enumerate(independent_subgraphs_ops)) {
+      // TODO(nserrino): Remove this logic when we replace it with a sink-oriented approach,
+      // rather than a subgraph oriented approach.
+      auto subgraph_produces_data = SubgraphMayProduceData(subgraph_ops, plan->Get(carnot_id));
+      // If the subgraph produces data, or this is the last Carnot instance and no Carnot has
+      // matched this subgraph, then add it to the current Carnot instance.
+      if (!subgraph_produces_data &&
+          (carnot_idx < carnot_instances.size() - 1 || carnots_per_subgraph[subgraph_idx] > 0)) {
+        continue;
+      }
+      ++carnots_per_subgraph[subgraph_idx];
+      relevant_ops_for_instance.insert(subgraph_ops.begin(), subgraph_ops.end());
+    }
+    carnot_plans[carnot_id] = std::make_unique<IR>();
+    PL_RETURN_IF_ERROR(
+        carnot_plans[carnot_id]->CopyOperatorSubgraph(query, relevant_ops_for_instance));
+  }
+  return carnot_plans;
+}
+
 StatusOr<std::unique_ptr<DistributedPlan>> CoordinatorImpl::CoordinateImpl(const IR* logical_plan) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<BlockingSplitPlan> split_plan,
                       DistributedSplitter::SplitKelvinAndAgents(logical_plan));
@@ -299,13 +365,19 @@ StatusOr<std::unique_ptr<DistributedPlan>> CoordinatorImpl::CoordinateImpl(const
   PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> remote_plan, split_plan->original_plan->Clone());
   physical_plan->Get(remote_node_id)->AddPlan(std::move(remote_plan));
 
-  for (const auto& data_store_info : data_store_nodes_) {
-    PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> source_plan, split_plan->before_blocking->Clone());
-
+  absl::flat_hash_set<int64_t> source_node_ids;
+  for (const auto& [i, data_store_info] : Enumerate(data_store_nodes_)) {
     int64_t source_node_id = physical_plan->AddCarnot(data_store_info);
-    physical_plan->Get(source_node_id)->AddPlan(std::move(source_plan));
     physical_plan->AddEdge(source_node_id, remote_node_id);
+    source_node_ids.insert(source_node_id);
   }
+
+  PL_ASSIGN_OR_RETURN(auto carnot_plans, GetCarnotPlans(split_plan->before_blocking.get(),
+                                                        physical_plan.get(), source_node_ids));
+  for (const auto carnot_id : source_node_ids) {
+    physical_plan->Get(carnot_id)->AddPlan(std::move(carnot_plans.at(carnot_id)));
+  }
+
   return physical_plan;
 }
 

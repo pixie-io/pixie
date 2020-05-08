@@ -23,6 +23,7 @@ using ::testing::ElementsAreArray;
 using ::testing::IsEmpty;
 using ::testing::IsSupersetOf;
 using ::testing::UnorderedElementsAre;
+using ::testing::UnorderedElementsAreArray;
 
 TEST(IRTypes, types_enum_test) {
   // Quick test to make sure the enums test is inline with the type strings.
@@ -897,6 +898,29 @@ TEST_F(CloneTests, copy_into_existing_dag) {
     subtree_node_count++;
   }
   CHECK_EQ(subtree_node_count, 11);
+}
+
+TEST_F(CloneTests, repeated_exprs_copy_selected_nodes) {
+  auto mem_source = MakeMemSource();
+  IntIR* intnode = MakeInt(105);
+  FuncIR* add_func = MakeAddFunc(intnode, MakeInt(3));
+  FuncIR* add_func2 = MakeAddFunc(intnode, add_func);
+  MapIR* map1 = MakeMap(mem_source, {{{"int", intnode}, {"add", add_func}}});
+  MapIR* map2 = MakeMap(map1, {{{"add1", add_func}, {"add2", add_func2}}});
+  auto sink = MakeMemSink(map2, "out");
+
+  // non-copied ops.
+  auto other_source = MakeMemSource();
+  MakeMemSink(other_source, "not copied");
+
+  auto dest = std::make_unique<IR>();
+  EXPECT_OK(dest->CopyOperatorSubgraph(graph.get(), {mem_source, map1, map2, sink}));
+  ASSERT_EQ(8, dest->dag().nodes().size());
+
+  // Make sure that all of the columns are now part of the new graph.
+  for (int64_t i : dest->dag().nodes()) {
+    CompareClone(dest->Get(i), graph->Get(i), absl::Substitute("For index $0", i));
+  }
 }
 
 class ToProtoTests : public OperatorTests {};

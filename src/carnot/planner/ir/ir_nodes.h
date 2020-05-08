@@ -289,6 +289,16 @@ class IR {
 
   StatusOr<std::unique_ptr<IR>> Clone() const;
 
+  /**
+   * @brief Copies the selected operators from src into the current IR, including their edges
+   * and dependencies.
+   * @param src: The source IR which contains the nodes to copy.
+   * @param selected_nodes: list of operators to copy from src. should be comprised of complete,
+   * weakly connected subgraphs from src.
+   * Note: Skips node IDs already present in the IR.
+   */
+  Status CopyOperatorSubgraph(const IR* src, const absl::flat_hash_set<OperatorIR*>& subgraph);
+
   StatusOr<planpb::Plan> ToProto() const;
 
   /**
@@ -334,6 +344,9 @@ class IR {
 
  private:
   Status OutputProto(planpb::PlanFragment* pf, const OperatorIR* op_node) const;
+  // Helper function for Clone and CopySelectedOperators.
+  Status CopySelectedNodesAndDeps(const IR* src, const absl::flat_hash_set<int64_t>& selected_ids);
+
   plan::DAG dag_;
   std::unordered_map<int64_t, IRNodePtr> id_node_map_;
   int64_t id_node_counter = 0;
