@@ -82,6 +82,7 @@ type AutocompleteSuggestion {
   kind: AutocompleteEntityKind
   name: String
   description: String
+  matchedIndexes: [Int]
 }
 
 enum ClusterStatus {

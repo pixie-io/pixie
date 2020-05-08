@@ -107,6 +107,7 @@ export interface GQLAutocompleteSuggestion {
   kind?: GQLAutocompleteEntityKind;
   name?: string;
   description?: string;
+  matchedIndexes?: Array<number | null>;
 }
 
 export const enum GQLAutocompleteEntityKind {
@@ -415,6 +416,7 @@ export interface GQLAutocompleteSuggestionTypeResolver<TParent = any> {
   kind?: AutocompleteSuggestionToKindResolver<TParent>;
   name?: AutocompleteSuggestionToNameResolver<TParent>;
   description?: AutocompleteSuggestionToDescriptionResolver<TParent>;
+  matchedIndexes?: AutocompleteSuggestionToMatchedIndexesResolver<TParent>;
 }
 
 export interface AutocompleteSuggestionToKindResolver<TParent = any, TResult = any> {
@@ -426,6 +428,10 @@ export interface AutocompleteSuggestionToNameResolver<TParent = any, TResult = a
 }
 
 export interface AutocompleteSuggestionToDescriptionResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface AutocompleteSuggestionToMatchedIndexesResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

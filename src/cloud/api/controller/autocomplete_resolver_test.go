@@ -34,9 +34,10 @@ func TestAutocomplete(t *testing.T) {
 					ExecutableAfterSelect: false,
 					Suggestions: []*cloudapipb.AutocompleteSuggestion{
 						&cloudapipb.AutocompleteSuggestion{
-							Kind:        cloudapipb.AEK_POD,
-							Name:        "svc_info_pod",
-							Description: "this is a pod",
+							Kind:           cloudapipb.AEK_POD,
+							Name:           "svc_info_pod",
+							Description:    "this is a pod",
+							MatchedIndexes: []int64{0, 1, 2},
 						},
 					},
 				},
@@ -45,9 +46,10 @@ func TestAutocomplete(t *testing.T) {
 					ExecutableAfterSelect: false,
 					Suggestions: []*cloudapipb.AutocompleteSuggestion{
 						&cloudapipb.AutocompleteSuggestion{
-							Kind:        cloudapipb.AEK_SVC,
-							Name:        "pl/test",
-							Description: "this is a svc",
+							Kind:           cloudapipb.AEK_SVC,
+							Name:           "pl/test",
+							Description:    "this is a svc",
+							MatchedIndexes: []int64{5, 6, 7},
 						},
 					},
 				},
@@ -71,6 +73,7 @@ func TestAutocomplete(t *testing.T) {
 								kind 
 								name 
 								description
+								matchedIndexes
 							}
 						}
 					}
@@ -84,10 +87,10 @@ func TestAutocomplete(t *testing.T) {
 						"tabSuggestions": [
 							{ "tabIndex": 2, "executableAfterSelect": false, "suggestions": []},
 							{ "tabIndex": 3, "executableAfterSelect": false, "suggestions": 
-								[{"kind": "AEK_POD", "name": "svc_info_pod", "description": "this is a pod"}]
+								[{"kind": "AEK_POD", "name": "svc_info_pod", "description": "this is a pod", "matchedIndexes": [0, 1, 2]}]
 							},
 							{ "tabIndex": 1, "executableAfterSelect": false, "suggestions": 
-								[{"kind": "AEK_SVC", "name": "pl/test", "description": "this is a svc"}]
+								[{"kind": "AEK_SVC", "name": "pl/test", "description": "this is a svc", "matchedIndexes": [5, 6, 7]}]
 							}
 						]
 					}

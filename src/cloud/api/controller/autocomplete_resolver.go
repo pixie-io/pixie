@@ -37,10 +37,16 @@ func (q *QueryResolver) Autocomplete(ctx context.Context, args *autocompleteArgs
 		as := make([]*AutocompleteSuggestion, len(s.Suggestions))
 		for j := range s.Suggestions {
 			kind := protoToKindMap[s.Suggestions[j].Kind]
+			idxs := make([]*int32, len(s.Suggestions[j].MatchedIndexes))
+			for k, idx := range s.Suggestions[j].MatchedIndexes {
+				castedIdx := int32(idx)
+				idxs[k] = &castedIdx
+			}
 			as[j] = &AutocompleteSuggestion{
-				Kind:        &kind,
-				Name:        &s.Suggestions[j].Name,
-				Description: &s.Suggestions[j].Description,
+				Kind:           &kind,
+				Name:           &s.Suggestions[j].Name,
+				Description:    &s.Suggestions[j].Description,
+				MatchedIndexes: &idxs,
 			}
 		}
 
@@ -81,7 +87,8 @@ type TabSuggestion struct {
 
 // AutocompleteSuggestion represents a single suggestion.
 type AutocompleteSuggestion struct {
-	Kind        *string
-	Name        *string
-	Description *string
+	Kind           *string
+	Name           *string
+	Description    *string
+	MatchedIndexes *[]*int32
 }

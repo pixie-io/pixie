@@ -394,6 +394,8 @@ message AutocompleteSuggestion {
   string name = 2;
   // A description of the suggestion.
   string description = 3;
+  // The indexes of the name which matched the user's input.
+  repeated int64 matched_indexes = 4;
 }
 
 message AutocompleteResponse {
