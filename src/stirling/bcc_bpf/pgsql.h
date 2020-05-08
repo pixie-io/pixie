@@ -48,7 +48,9 @@ static __inline enum MessageType infer_pgsql_query_message(const uint8_t* buf, s
   // COPY/MOVE. The minimal length is therefore 8.
   const int32_t kMinPayloadLen = 8;
   // Assume typical query message size is below an artificial limit.
-  const int32_t kMaxPayloadLen = 1024;
+  // 30000 is copied from postgres code base:
+  // https://github.com/postgres/postgres/tree/master/src/interfaces/libpq/fe-protocol3.c#L94
+  const int32_t kMaxPayloadLen = 30000;
   if (len < kMinPayloadLen || len > kMaxPayloadLen) {
     return kUnknown;
   }
