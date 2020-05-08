@@ -2986,6 +2986,301 @@ TEST_F(RulesTest, AddLimitToMemorySinkRuleTest_skip_if_no_limit) {
   EXPECT_FALSE(result.ValueOrDie());
 }
 
+TEST_F(RulesTest, FilterPushdownTest_simple_no_op) {
+  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  FilterIR* filter = MakeFilter(src);
+  MakeMemSink(filter, "foo", {});
+
+  FilterPushdownRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
+}
+
+TEST_F(RulesTest, FilterPushdownTest_simple) {
+  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  MapIR* map =
+      MakeMap(src, {{"abc_1", MakeColumn("abc", 0)}, {"abc", MakeColumn("abc", 0)}}, false);
+  FilterIR* filter = MakeFilter(map, MakeEqualsFunc(MakeColumn("abc", 0), MakeInt(2)));
+  MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  FilterPushdownRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_THAT(sink->parents(), ElementsAre(map));
+  EXPECT_THAT(map->parents(), ElementsAre(filter));
+  EXPECT_THAT(filter->parents(), ElementsAre(src));
+
+  EXPECT_MATCH(filter->filter_expr(), Func("equals", Expression()));
+  auto args = static_cast<FuncIR*>(filter->filter_expr())->args();
+  EXPECT_EQ(2, args.size());
+  EXPECT_MATCH(args[0], ColumnNode("abc"));
+  EXPECT_MATCH(args[1], Int(2));
+}
+
+TEST_F(RulesTest, FilterPushdownTest_two_col_filter) {
+  Relation relation({types::DataType::INT64}, {"abc"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  MapIR* map1 = MakeMap(src, {{"abc", MakeColumn("abc", 0)}}, false);
+  MapIR* map2 = MakeMap(map1, {{"xyz", MakeInt(3)}, {"abc", MakeColumn("abc", 0)}}, false);
+  MapIR* map3 =
+      MakeMap(map2, {{"xyz", MakeColumn("xyz", 0)}, {"abc", MakeColumn("abc", 0)}}, false);
+  MapIR* map4 =
+      MakeMap(map3, {{"xyz", MakeColumn("xyz", 0)}, {"abc", MakeColumn("abc", 0)}}, false);
+  FilterIR* filter = MakeFilter(map4, MakeEqualsFunc(MakeColumn("abc", 0), MakeColumn("xyz", 0)));
+  MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  FilterPushdownRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_THAT(sink->parents(), ElementsAre(map4));
+  EXPECT_THAT(map4->parents(), ElementsAre(map3));
+  EXPECT_THAT(map3->parents(), ElementsAre(filter));
+  EXPECT_THAT(filter->parents(), ElementsAre(map2));
+  EXPECT_THAT(map2->parents(), ElementsAre(map1));
+  EXPECT_THAT(map1->parents(), ElementsAre(src));
+
+  EXPECT_MATCH(filter->filter_expr(), Func("equals", ColumnNode()));
+  auto args = static_cast<FuncIR*>(filter->filter_expr())->args();
+  EXPECT_EQ(2, args.size());
+  EXPECT_MATCH(args[0], ColumnNode("abc"));
+  EXPECT_MATCH(args[1], ColumnNode("xyz"));
+}
+
+TEST_F(RulesTest, FilterPushdownTest_multi_condition_filter) {
+  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  MapIR* map1 = MakeMap(src, {{"abc", MakeColumn("abc", 0)}}, false);
+  MapIR* map2 = MakeMap(map1, {{"xyz", MakeInt(3)}, {"abc", MakeColumn("abc", 0)}}, false);
+  MapIR* map3 =
+      MakeMap(map2, {{"xyz", MakeColumn("xyz", 0)}, {"abc", MakeColumn("abc", 0)}}, false);
+  FilterIR* filter =
+      MakeFilter(map3, MakeAndFunc(MakeEqualsFunc(MakeColumn("abc", 0), MakeInt(2)),
+                                   MakeEqualsFunc(MakeColumn("xyz", 0), MakeInt(3))));
+  MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  FilterPushdownRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_THAT(sink->parents(), ElementsAre(map3));
+  EXPECT_THAT(map3->parents(), ElementsAre(filter));
+  EXPECT_THAT(filter->parents(), ElementsAre(map2));
+  EXPECT_THAT(map2->parents(), ElementsAre(map1));
+  EXPECT_THAT(map1->parents(), ElementsAre(src));
+
+  EXPECT_MATCH(filter->filter_expr(), Func("logicalAnd", Func("equals", Expression())));
+  auto args = static_cast<FuncIR*>(filter->filter_expr())->args();
+  EXPECT_EQ(2, args.size());
+  auto func0_args = static_cast<FuncIR*>(args[0])->args();
+  auto func1_args = static_cast<FuncIR*>(args[1])->args();
+  EXPECT_EQ(2, func0_args.size());
+  EXPECT_MATCH(func0_args[0], ColumnNode("abc"));
+  EXPECT_MATCH(func0_args[1], Int(2));
+  EXPECT_EQ(2, func1_args.size());
+  EXPECT_MATCH(func1_args[0], ColumnNode("xyz"));
+  EXPECT_MATCH(func1_args[1], Int(3));
+}
+
+TEST_F(RulesTest, FilterPushdownTest_column_rename) {
+  // abc -> def
+  // filter on def
+  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  MapIR* map1 = MakeMap(src, {{"def", MakeColumn("abc", 0)}}, false);
+  MapIR* map2 = MakeMap(map1, {{"xyz", MakeInt(3)}, {"def", MakeColumn("def", 0)}}, false);
+  FilterIR* filter = MakeFilter(map2, MakeEqualsFunc(MakeColumn("def", 0), MakeInt(2)));
+  MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  FilterPushdownRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_THAT(sink->parents(), ElementsAre(map2));
+  EXPECT_THAT(map2->parents(), ElementsAre(map1));
+  EXPECT_THAT(map1->parents(), ElementsAre(filter));
+  EXPECT_THAT(filter->parents(), ElementsAre(src));
+
+  EXPECT_MATCH(filter->filter_expr(), Func("equals", Expression()));
+  auto args = static_cast<FuncIR*>(filter->filter_expr())->args();
+  EXPECT_EQ(2, args.size());
+  EXPECT_MATCH(args[0], ColumnNode("abc"));
+  EXPECT_MATCH(args[1], Int(2));
+}
+
+TEST_F(RulesTest, FilterPushdownTest_two_filters_different_cols) {
+  // create abc
+  // create def
+  // create ghi
+  // filter on def
+  // filter on abc
+  Relation relation({types::DataType::INT64}, {"abc"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  MapIR* map1 = MakeMap(src, {{"abc", MakeColumn("abc", 0)}, {"def", MakeInt(2)}}, false);
+  MapIR* map2 = MakeMap(
+      map1, {{"abc", MakeColumn("abc", 0)}, {"def", MakeColumn("def", 0)}, {"ghi", MakeInt(2)}},
+      false);
+  FilterIR* filter1 = MakeFilter(map2, MakeEqualsFunc(MakeColumn("def", 0), MakeInt(2)));
+  FilterIR* filter2 = MakeFilter(filter1, MakeEqualsFunc(MakeColumn("abc", 0), MakeInt(3)));
+  MemorySinkIR* sink = MakeMemSink(filter2, "foo", {});
+
+  FilterPushdownRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_THAT(sink->parents(), ElementsAre(map2));
+  EXPECT_THAT(map2->parents(), ElementsAre(filter1));
+  EXPECT_THAT(filter1->parents(), ElementsAre(map1));
+  EXPECT_THAT(map1->parents(), ElementsAre(filter2));
+  EXPECT_THAT(filter2->parents(), ElementsAre(src));
+
+  EXPECT_MATCH(filter1->filter_expr(), Func("equals", Expression()));
+  auto args = static_cast<FuncIR*>(filter1->filter_expr())->args();
+  EXPECT_EQ(2, args.size());
+  EXPECT_MATCH(args[0], ColumnNode("def"));
+  EXPECT_MATCH(args[1], Int(2));
+
+  EXPECT_MATCH(filter2->filter_expr(), Func("equals", Expression()));
+  args = static_cast<FuncIR*>(filter2->filter_expr())->args();
+  EXPECT_EQ(2, args.size());
+  EXPECT_MATCH(args[0], ColumnNode("abc"));
+  EXPECT_MATCH(args[1], Int(3));
+}
+
+TEST_F(RulesTest, FilterPushdownTest_two_filters_same_cols) {
+  // create def
+  // filter on def
+  // create ghi
+  // filter on def again
+  Relation relation({types::DataType::INT64}, {"abc"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  MapIR* map1 = MakeMap(src, {{"abc", MakeColumn("abc", 0)}, {"def", MakeInt(2)}}, false);
+  MapIR* map2 =
+      MakeMap(map1, {{"abc", MakeColumn("abc", 0)}, {"def", MakeColumn("def", 0)}}, false);
+  FilterIR* filter1 = MakeFilter(map2, MakeEqualsFunc(MakeColumn("def", 0), MakeInt(2)));
+  MapIR* map3 = MakeMap(
+      filter1, {{"abc", MakeColumn("abc", 0)}, {"def", MakeColumn("def", 0)}, {"ghi", MakeInt(2)}},
+      false);
+  FilterIR* filter2 = MakeFilter(map3, MakeEqualsFunc(MakeInt(3), MakeColumn("def", 0)));
+  MemorySinkIR* sink = MakeMemSink(filter2, "foo", {});
+
+  FilterPushdownRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_THAT(sink->parents(), ElementsAre(map3));
+  EXPECT_THAT(map3->parents(), ElementsAre(map2));
+  EXPECT_THAT(map2->parents(), ElementsAre(filter1));
+  EXPECT_THAT(filter1->parents(), ElementsAre(filter2));
+  EXPECT_THAT(filter2->parents(), ElementsAre(map1));
+  EXPECT_THAT(map1->parents(), ElementsAre(src));
+
+  EXPECT_MATCH(filter1->filter_expr(), Func("equals", Expression()));
+  auto args = static_cast<FuncIR*>(filter1->filter_expr())->args();
+  EXPECT_EQ(2, args.size());
+  EXPECT_MATCH(args[0], ColumnNode("def"));
+  EXPECT_MATCH(args[1], Int(2));
+
+  EXPECT_MATCH(filter2->filter_expr(), Func("equals", Expression()));
+  args = static_cast<FuncIR*>(filter2->filter_expr())->args();
+  EXPECT_EQ(2, args.size());
+  EXPECT_MATCH(args[0], Int(3));
+  EXPECT_MATCH(args[1], ColumnNode("def"));
+}
+
+TEST_F(RulesTest, FilterPushdownTest_single_col_rename_collision) {
+  // 0: abc, def
+  // 1: abc->def, drop first def, xyz->2
+  // 2: abc=xyz, def=def
+  // 3: filter on def (bool col) becomes filter on abc at position 1.
+  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "def"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  MapIR* map1 = MakeMap(src, {{"def", MakeColumn("abc", 0)}, {"xyz", MakeInt(2)}}, false);
+  MapIR* map2 =
+      MakeMap(map1, {{"def", MakeColumn("def", 0)}, {"abc", MakeColumn("xyz", 0)}}, false);
+  FilterIR* filter = graph->CreateNode<FilterIR>(ast, map2, MakeColumn("def", 0)).ValueOrDie();
+  MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  FilterPushdownRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_THAT(sink->parents(), ElementsAre(map2));
+  EXPECT_THAT(map2->parents(), ElementsAre(map1));
+  EXPECT_THAT(map1->parents(), ElementsAre(filter));
+  EXPECT_THAT(filter->parents(), ElementsAre(src));
+
+  // Make sure the former name of the filter column gets used.
+  EXPECT_MATCH(filter->filter_expr(), ColumnNode("abc"));
+}
+
+TEST_F(RulesTest, FilterPushdownTest_single_col_rename_collision_swap) {
+  // abc -> xyz, xyz -> abc
+  // filter on abc
+  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  MapIR* map = MakeMap(src, {{"xyz", MakeColumn("abc", 0)}, {"abc", MakeColumn("xyz", 0)}}, false);
+  FilterIR* filter = MakeFilter(map, MakeEqualsFunc(MakeColumn("abc", 0), MakeInt(2)));
+  MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  FilterPushdownRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  EXPECT_THAT(sink->parents(), ElementsAre(map));
+  EXPECT_THAT(map->parents(), ElementsAre(filter));
+  EXPECT_THAT(filter->parents(), ElementsAre(src));
+
+  EXPECT_MATCH(filter->filter_expr(), Func("equals", Expression()));
+  auto args = static_cast<FuncIR*>(filter->filter_expr())->args();
+  EXPECT_EQ(2, args.size());
+  EXPECT_MATCH(args[0], ColumnNode("xyz"));
+  EXPECT_MATCH(args[1], Int(2));
+}
+
+TEST_F(RulesTest, FilterPushdownTest_multicol_rename_collision) {
+  // abc -> def, def -> abc
+  // abc -> def, def -> abc
+  // filter on abc
+  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  MapIR* map1 = MakeMap(src, {{"xyz", MakeColumn("abc", 0)}, {"abc", MakeColumn("xyz", 0)}}, false);
+  MapIR* map2 =
+      MakeMap(map1, {{"xyz", MakeColumn("abc", 0)}, {"abc", MakeColumn("xyz", 0)}}, false);
+  FilterIR* filter = MakeFilter(map2, MakeEqualsFunc(MakeColumn("abc", 0), MakeInt(2)));
+  MemorySinkIR* sink = MakeMemSink(filter, "foo", {});
+
+  FilterPushdownRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_THAT(sink->parents(), ElementsAre(map2));
+  EXPECT_THAT(map2->parents(), ElementsAre(map1));
+  EXPECT_THAT(map1->parents(), ElementsAre(filter));
+  EXPECT_THAT(filter->parents(), ElementsAre(src));
+
+  EXPECT_MATCH(filter->filter_expr(), Func("equals", Expression()));
+  auto args = static_cast<FuncIR*>(filter->filter_expr())->args();
+  EXPECT_EQ(2, args.size());
+  EXPECT_MATCH(args[0], ColumnNode("abc"));
+  EXPECT_MATCH(args[1], Int(2));
+}
+
+// TODO(nserrino): Fill these in when pushdown is supported with join, agg, and union.
+// TEST_F(RulesTest, FilterPushdownTest_join_no_suffix) {
+// }
+// TEST_F(RulesTest, FilterPushdownTest_join_with_suffix) {
+// }
+// TEST_F(RulesTest, FilterPushdownTest_agg) {
+// }
+// TEST_F(RulesTest, FilterPushdownTest_union) {
+// }
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl

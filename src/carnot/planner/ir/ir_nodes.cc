@@ -440,32 +440,10 @@ Status MapIR::Init(OperatorIR* parent, const ColExpressionVector& col_exprs,
   return Status::OK();
 }
 
-StatusOr<absl::flat_hash_set<std::string>> CollectInputColumns(const ExpressionIR* expr) {
-  if (Match(expr, DataNode())) {
-    return absl::flat_hash_set<std::string>{};
-  }
-  if (Match(expr, ColumnNode())) {
-    return absl::flat_hash_set<std::string>{static_cast<const ColumnIR*>(expr)->col_name()};
-  }
-  if (Match(expr, MetadataLiteral())) {
-    return CollectInputColumns(static_cast<const MetadataLiteralIR*>(expr)->literal());
-  }
-  if (!Match(expr, Func())) {
-    return error::Internal("Unexpected Expression type: $0", expr->DebugString());
-  }
-  absl::flat_hash_set<std::string> ret;
-  auto func = static_cast<const FuncIR*>(expr);
-  for (const ExpressionIR* arg : func->args()) {
-    PL_ASSIGN_OR_RETURN(auto input_cols, CollectInputColumns(arg));
-    ret.insert(input_cols.begin(), input_cols.end());
-  }
-  return ret;
-}
-
 StatusOr<std::vector<absl::flat_hash_set<std::string>>> MapIR::RequiredInputColumns() const {
   absl::flat_hash_set<std::string> required;
   for (const auto& expr : col_exprs_) {
-    PL_ASSIGN_OR_RETURN(auto inputs, CollectInputColumns(expr.node));
+    PL_ASSIGN_OR_RETURN(auto inputs, expr.node->InputColumnNames());
     required.insert(inputs.begin(), inputs.end());
   }
   return std::vector<absl::flat_hash_set<std::string>>{required};
@@ -530,7 +508,7 @@ absl::flat_hash_set<std::string> ColumnsFromRelation(Relation r) {
 
 StatusOr<std::vector<absl::flat_hash_set<std::string>>> FilterIR::RequiredInputColumns() const {
   DCHECK(IsRelationInit());
-  PL_ASSIGN_OR_RETURN(auto filter_cols, CollectInputColumns(filter_expr_));
+  PL_ASSIGN_OR_RETURN(auto filter_cols, filter_expr_->InputColumnNames());
   auto relation_cols = ColumnsFromRelation(relation());
   filter_cols.insert(relation_cols.begin(), relation_cols.end());
   return std::vector<absl::flat_hash_set<std::string>>{filter_cols};
@@ -625,7 +603,7 @@ StatusOr<std::vector<absl::flat_hash_set<std::string>>> BlockingAggIR::RequiredI
     required.insert(group->col_name());
   }
   for (const auto& agg_expr : aggregate_expressions_) {
-    PL_ASSIGN_OR_RETURN(auto ret, CollectInputColumns(agg_expr.node));
+    PL_ASSIGN_OR_RETURN(auto ret, agg_expr.node->InputColumnNames());
     required.insert(ret.begin(), ret.end());
   }
   return std::vector<absl::flat_hash_set<std::string>>{required};
@@ -718,6 +696,37 @@ Status BlockingAggIR::ToProto(planpb::Operator* op) const {
 
   op->set_op_type(planpb::AGGREGATE_OPERATOR);
   return Status::OK();
+}
+
+StatusOr<absl::flat_hash_set<ColumnIR*>> ExpressionIR::InputColumns() {
+  if (Match(this, DataNode())) {
+    return absl::flat_hash_set<ColumnIR*>{};
+  }
+  if (Match(this, ColumnNode())) {
+    return absl::flat_hash_set<ColumnIR*>{static_cast<ColumnIR*>(this)};
+  }
+  if (Match(this, MetadataLiteral())) {
+    return static_cast<MetadataLiteralIR*>(this)->literal()->InputColumns();
+  }
+  if (!Match(this, Func())) {
+    return error::Internal("Unexpected Expression type: $0", DebugString());
+  }
+  absl::flat_hash_set<ColumnIR*> ret;
+  auto func = static_cast<FuncIR*>(this);
+  for (ExpressionIR* arg : func->args()) {
+    PL_ASSIGN_OR_RETURN(auto input_cols, arg->InputColumns());
+    ret.insert(input_cols.begin(), input_cols.end());
+  }
+  return ret;
+}
+
+StatusOr<absl::flat_hash_set<std::string>> ExpressionIR::InputColumnNames() {
+  PL_ASSIGN_OR_RETURN(auto cols, InputColumns());
+  absl::flat_hash_set<std::string> output;
+  for (auto col : cols) {
+    output.insert(col->col_name());
+  }
+  return output;
 }
 
 Status DataIR::ToProto(planpb::ScalarExpression* expr) const {

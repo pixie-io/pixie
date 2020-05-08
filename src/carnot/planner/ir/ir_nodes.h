@@ -469,6 +469,8 @@ class ExpressionIR : public IRNode {
   virtual Status ToProto(planpb::ScalarExpression* expr) const = 0;
   static bool NodeMatches(IRNode* input);
   static std::string class_type_string() { return "Expression"; }
+  StatusOr<absl::flat_hash_set<ColumnIR*>> InputColumns();
+  StatusOr<absl::flat_hash_set<std::string>> InputColumnNames();
 
  protected:
   ExpressionIR(int64_t id, IRNodeType type) : IRNode(id, type) {}
@@ -762,6 +764,11 @@ class ColumnIR : public ExpressionIR {
     }
     auto col = static_cast<ColumnIR*>(expr);
     return col->col_name() == col_name() && col->EvaluatedDataType() == EvaluatedDataType();
+  }
+
+  void UpdateColumnName(const std::string& col_name) {
+    DCHECK(col_name_set_);
+    col_name_ = col_name;
   }
 
  protected:
