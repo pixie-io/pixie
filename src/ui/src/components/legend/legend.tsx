@@ -10,14 +10,12 @@ const MAX_NUM_GRIDS = 4;
 
 const COLOR_COLUMN_SIZE = 8;
 const KEY_COLUMN_SIZE = 225;
-const COLON_COLUMN_SIZE = 5;
 const VAL_COLUMN_SIZE = 50;
 const COLUMN_GAP_SIZE = 5;
-const COLUMN_SIZES = `${COLOR_COLUMN_SIZE}px ${KEY_COLUMN_SIZE}px ${COLON_COLUMN_SIZE}px ${VAL_COLUMN_SIZE}px`;
+const COLUMN_SIZES = `${COLOR_COLUMN_SIZE}px ${KEY_COLUMN_SIZE}px ${VAL_COLUMN_SIZE}px`;
 const GRID_WIDTH = (
   COLOR_COLUMN_SIZE + COLUMN_GAP_SIZE +
   KEY_COLUMN_SIZE + COLUMN_GAP_SIZE +
-  COLON_COLUMN_SIZE + COLUMN_GAP_SIZE +
   VAL_COLUMN_SIZE
 );
 const GRID_GAP_SIZE = 25;
@@ -197,7 +195,6 @@ const Legend = React.memo((props: LegendProps) => {
             <div className={classes.colorCircle} style={colorStyles}/>
           </div>
           <div style={styles} className={classes.key}>{entry.key}</div>
-          <div style={styles}>:</div>
           <div style={styles} className={classes.val}>{entry.val}</div>
         </div>);
     }
