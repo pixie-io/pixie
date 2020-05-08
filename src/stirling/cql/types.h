@@ -8,7 +8,6 @@
 
 #include "src/stirling/common/event_parser.h"  // For FrameBase.
 #include "src/stirling/common/protocol_traits.h"
-#include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
 namespace stirling {
@@ -131,7 +130,10 @@ struct Response {
 /**
  *  Record is the primary output of the mysql parser.
  */
-using Record = ReqRespPair<Request, Response>;
+struct Record {
+  Request req;
+  Response resp;
+};
 
 struct ProtocolTraits {
   using frame_type = cass::Frame;

@@ -7,7 +7,6 @@
 #include "src/stirling/bcc_bpf_interface/common.h"
 #include "src/stirling/common/event_parser.h"  // For FrameBase
 #include "src/stirling/common/protocol_traits.h"
-#include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
 namespace stirling {
@@ -57,7 +56,15 @@ struct Message : public stirling::FrameBase {
 /**
  *  Record is the primary output of the http stitcher.
  */
-using Record = ReqRespPair<Message, Message>;
+struct Record {
+  Message req;
+  Message resp;
+
+  // Debug information that we want to pass up this record.
+  // Used to record info/warnings.
+  // Only pushed to table store on debug builds.
+  std::string px_info = "";
+};
 
 struct ProtocolTraits {
   using frame_type = Message;

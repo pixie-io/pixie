@@ -9,7 +9,6 @@
 #include <vector>
 #include "src/common/base/base.h"
 #include "src/stirling/mysql/types.h"
-#include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
 namespace stirling {

@@ -323,7 +323,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       // TODO(yzhao): Consider caching produced messages if they are not transferred.
       auto result = tracker->ProcessToRecords<TProtocolTraits>();
       for (auto& msg : result) {
-        AppendMessage(ctx, *tracker, msg, data_table);
+        AppendMessage(ctx, *tracker, std::move(msg), data_table);
       }
     }
   }

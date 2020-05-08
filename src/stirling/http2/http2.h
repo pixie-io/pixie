@@ -26,7 +26,6 @@ extern "C" {
 #include "src/stirling/common/stitcher.h"
 #include "src/stirling/http2/frame.h"
 #include "src/stirling/http2/message.h"
-#include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
 namespace stirling {
@@ -65,7 +64,10 @@ ParseState InflateHeaderBlock(nghttp2_hd_inflater* inflater, u8string_view buf, 
  */
 ParseState UnpackFrame(std::string_view* buf, Frame* frame);
 
-using Record = ReqRespPair<HTTP2Message, HTTP2Message>;
+struct Record {
+  HTTP2Message req;
+  HTTP2Message resp;
+};
 
 struct State {
   std::monostate global;

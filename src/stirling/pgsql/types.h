@@ -5,7 +5,6 @@
 
 #include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/common/utils.h"
-#include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
 namespace stirling {
@@ -112,7 +111,10 @@ struct CancelRequestMessage {
   int32_t secret;
 };
 
-using Record = ReqRespPair<RegularMessage, RegularMessage>;
+struct Record {
+  RegularMessage req;
+  RegularMessage resp;
+};
 
 struct ProtocolTraits {
   using frame_type = RegularMessage;

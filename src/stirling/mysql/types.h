@@ -13,7 +13,6 @@
 #include "src/common/base/base.h"
 #include "src/stirling/common/event_parser.h"  // For FrameBase
 #include "src/stirling/common/utils.h"
-#include "src/stirling/utils/req_resp_pair.h"
 
 namespace pl {
 namespace stirling {

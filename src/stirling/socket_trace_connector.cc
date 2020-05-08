@@ -766,6 +766,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.body));
   r.Append<r.ColIndex("http_resp_latency_ns")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>(std::move(record.px_info));
+#endif
 }
 
 template <>
@@ -811,6 +814,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.message));
   r.Append<r.ColIndex("http_resp_latency_ns")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>("");
+#endif
 }
 
 template <>
@@ -868,6 +874,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_resp_body")>(std::move(resp_stream->data));
   r.Append<r.ColIndex("http_resp_latency_ns")>(
       CalculateLatency(req_stream->timestamp_ns, resp_stream->timestamp_ns));
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>("");
+#endif
 }
 
 template <>
@@ -891,7 +900,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("latency_ns")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
 #ifndef NDEBUG
-  r.Append<r.ColIndex("px_info_")>(entry.px_info);
+  r.Append<r.ColIndex("px_info_")>(std::move(entry.px_info));
 #endif
 }
 
@@ -914,6 +923,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("resp_body")>(std::move(entry.resp.msg));
   r.Append<r.ColIndex("latency_ns")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>("");
+#endif
 }
 
 template <>
@@ -933,6 +945,9 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("resp")>(std::move(entry.resp.payload));
   r.Append<r.ColIndex("latency_ns")>(
       CalculateLatency(entry.req.timestamp_ns, entry.resp.timestamp_ns));
+#ifndef NDEBUG
+  r.Append<r.ColIndex("px_info_")>("");
+#endif
 }
 
 void SocketTraceConnector::SetupOutput(const std::filesystem::path& path) {

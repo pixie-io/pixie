@@ -40,7 +40,11 @@ constexpr DataElement kHTTPElements[] = {
     "Response body in JSON format"},
     // TODO(yzhao): Rename this to latency_ns and consolidate into canonical_types.h.
     {"http_resp_latency_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
-    "Request-response latency in nanoseconds"}
+    "Request-response latency in nanoseconds"},
+#ifndef NDEBUG
+        {"px_info_", types::DataType::STRING, types::PatternType::GENERAL,
+                  "Pixie messages regarding the record (e.g. warnings)"},
+#endif
 };
 // clang-format on
 

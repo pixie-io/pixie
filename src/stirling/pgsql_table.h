@@ -18,6 +18,10 @@ static constexpr DataElement kPGSQLElements[] = {
         "PostgreSQL response body"},
         {"latency_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
         "Request-response latency in nanoseconds"},
+#ifndef NDEBUG
+        {"px_info_", types::DataType::STRING, types::PatternType::GENERAL,
+         "Pixie messages regarding the record (e.g. warnings)"},
+#endif
 };
 // clang-format on
 
