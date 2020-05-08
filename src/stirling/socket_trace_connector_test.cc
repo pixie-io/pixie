@@ -225,8 +225,8 @@ TEST_F(SocketTraceConnectorTest, HTTPContentType) {
               ElementsAre("foo", "<removed: unsupported content-type>",
                           "<removed: unsupported content-type>", "foo"));
   EXPECT_THAT(ToIntVector<types::Time64NSValue>(record_batch[kHTTPTimeIdx]),
-              ElementsAre(3 + source_->ClockRealTimeOffset(), 5 + source_->ClockRealTimeOffset(),
-                          7 + source_->ClockRealTimeOffset(), 9 + source_->ClockRealTimeOffset()));
+              ElementsAre(2 + source_->ClockRealTimeOffset(), 4 + source_->ClockRealTimeOffset(),
+                          6 + source_->ClockRealTimeOffset(), 8 + source_->ClockRealTimeOffset()));
 }
 
 TEST_F(SocketTraceConnectorTest, UPIDCheck) {
