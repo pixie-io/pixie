@@ -6,10 +6,10 @@
 #include <iostream>
 #include <string>
 
-
 #include "src/common/base/base.h"
 #include "src/common/system/proc_parser.h"
 #include "src/shared/metadata/metadata.h"
+#include "src/stirling/record_builder.h"
 
 namespace pl {
 namespace stirling {

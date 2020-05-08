@@ -81,6 +81,15 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "record_builder_test",
+    srcs = ["record_builder_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "pub_sub_manager_test",
     srcs = ["pub_sub_manager_test.cc"],
     deps = [":cc_library"],
@@ -268,11 +277,11 @@ pl_cc_test(
     name = "pgsql_trace_bpf_test",
     timeout = "moderate",
     srcs = ["pgsql_trace_bpf_test.cc"],
-    flaky = True,
-    tags = ["requires_bpf"],
     data = [
         "//src/stirling/pgsql/testing:demo_image.tar",
     ],
+    flaky = True,
+    tags = ["requires_bpf"],
     deps = [
         ":cc_library",
         "//src/common/testing/test_utils:cc_library",

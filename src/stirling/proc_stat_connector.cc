@@ -1,7 +1,9 @@
+#include "src/stirling/proc_stat_connector.h"
+
 #include <fstream>
 
 #include "src/common/base/base.h"
-#include "src/stirling/proc_stat_connector.h"
+#include "src/stirling/record_builder.h"
 
 namespace pl {
 namespace stirling {

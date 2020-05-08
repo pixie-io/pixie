@@ -12,6 +12,7 @@
 #include "src/common/system/proc_parser.h"
 #include "src/stirling/jvm_stats_table.h"
 #include "src/stirling/obj_tools/proc_path_tools.h"
+#include "src/stirling/record_builder.h"
 #include "src/stirling/utils/hsperfdata.h"
 #include "src/stirling/utils/java.h"
 #include "src/stirling/utils/proc_tracker.h"

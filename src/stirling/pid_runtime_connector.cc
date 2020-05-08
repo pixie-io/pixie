@@ -1,9 +1,11 @@
 #ifdef __linux__
 
+#include "src/stirling/pid_runtime_connector.h"
+
 #include <string>
 
 #include "src/common/base/base.h"
-#include "src/stirling/pid_runtime_connector.h"
+#include "src/stirling/record_builder.h"
 
 BCC_SRC_STRVIEW(pidruntime_bcc_script, pidruntime);
 

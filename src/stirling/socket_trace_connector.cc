@@ -31,6 +31,7 @@
 #include "src/stirling/obj_tools/obj_tools.h"
 #include "src/stirling/obj_tools/proc_path_tools.h"
 #include "src/stirling/proto/sock_event.pb.h"
+#include "src/stirling/record_builder.h"
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/utils/linux_headers.h"
 

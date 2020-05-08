@@ -1,5 +1,7 @@
 #include "src/stirling/seq_gen_connector.h"
 
+#include "src/stirling/record_builder.h"
+
 namespace pl {
 namespace stirling {
 
