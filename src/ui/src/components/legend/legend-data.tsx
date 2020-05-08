@@ -1,6 +1,6 @@
 import { COLOR_SCALE } from 'containers/live/convert-to-vega-spec';
 import * as _ from 'lodash';
-import * as numeral from 'numeral';
+import { formatFloat64Data } from 'utils/format-data';
 import { isArray, isNumber } from 'util';
 import { View } from 'vega-typings';
 
@@ -38,7 +38,7 @@ const formatLegendEntry = (scale, key: string, val: number): LegendEntry =>  {
   return {
     color: scale(key),
     key,
-    val: numeral(val).format(NUMERAL_FORMAT_STRING),
+    val: formatFloat64Data(val, NUMERAL_FORMAT_STRING),
   };
 };
 
