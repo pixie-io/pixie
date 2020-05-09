@@ -114,7 +114,12 @@ func (m *AgentManagerImpl) ApplyAgentUpdate(update *AgentUpdate) error {
 	if err != nil {
 		log.WithError(err).Error("Error when updating terminated processes")
 	}
-
+	if update.UpdateInfo.Data != nil {
+		err = m.mds.UpdateAgentDataInfo(update.AgentID, update.UpdateInfo.Data)
+		if err != nil {
+			return err
+		}
+	}
 	if !update.UpdateInfo.DoesUpdateSchema {
 		return nil
 	}

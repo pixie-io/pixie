@@ -9,8 +9,11 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 
+	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
-	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	bloomfilterpb "pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
+	k8s_metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	metadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/types"
 	utils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
@@ -71,11 +74,11 @@ func createAgentInMDS(t *testing.T, agentID string, mds controllers.MetadataStor
 	err = mds.CreateAgent(agUUID, info)
 
 	// Add schema info.
-	schema := new(metadatapb.SchemaInfo)
+	schema := new(k8s_metadatapb.SchemaInfo)
 	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	err = mds.UpdateSchemas(agUUID, []*metadatapb.SchemaInfo{schema})
+	err = mds.UpdateSchemas(agUUID, []*k8s_metadatapb.SchemaInfo{schema})
 	if err != nil {
 		t.Fatalf("Could not add schema for agent")
 	}
@@ -402,43 +405,59 @@ func TestAddToUpdateQueue(t *testing.T) {
 		t.Fatal("Could not parse UUID from string.")
 	}
 
-	schemas := make([]*metadatapb.SchemaInfo, 1)
+	schemas := make([]*k8s_metadatapb.SchemaInfo, 1)
 
-	schema1 := new(metadatapb.SchemaInfo)
+	schema1 := new(k8s_metadatapb.SchemaInfo)
 	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	schemas[0] = schema1
 
-	createdProcesses := make([]*metadatapb.ProcessCreated, 2)
+	createdProcesses := make([]*k8s_metadatapb.ProcessCreated, 2)
 
-	cp1 := new(metadatapb.ProcessCreated)
+	cp1 := new(k8s_metadatapb.ProcessCreated)
 	if err := proto.UnmarshalText(testutils.ProcessCreated1PB, cp1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	createdProcesses[0] = cp1
-	cp2 := new(metadatapb.ProcessCreated)
+	cp2 := new(k8s_metadatapb.ProcessCreated)
 	if err := proto.UnmarshalText(testutils.ProcessCreated2PB, cp2); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	createdProcesses[1] = cp2
 
-	cProcessInfo := make([]*metadatapb.ProcessInfo, 2)
+	cProcessInfo := make([]*k8s_metadatapb.ProcessInfo, 2)
 
-	cpi1 := new(metadatapb.ProcessInfo)
+	cpi1 := new(k8s_metadatapb.ProcessInfo)
 	if err := proto.UnmarshalText(testutils.ProcessInfo1PB, cpi1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	cProcessInfo[0] = cpi1
-	cpi2 := new(metadatapb.ProcessInfo)
+	cpi2 := new(k8s_metadatapb.ProcessInfo)
 	if err := proto.UnmarshalText(testutils.ProcessInfo2PB, cpi2); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	cProcessInfo[1] = cpi2
 
+	expectedDataInfo := &messagespb.AgentDataInfo{
+		MetadataInfo: &distributedpb.MetadataInfo{
+			MetadataFields: []metadatapb.MetadataType{
+				metadatapb.CONTAINER_ID,
+				metadatapb.POD_NAME,
+			},
+			Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
+				XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
+					Data:      []byte("1234"),
+					NumHashes: 4,
+				},
+			},
+		},
+	}
+
 	update := &messagespb.AgentUpdateInfo{
 		Schema:         schemas,
 		ProcessCreated: createdProcesses,
+		Data:           expectedDataInfo,
 	}
 
 	agentUpdate := controllers.AgentUpdate{
@@ -464,6 +483,13 @@ func TestAddToUpdateQueue(t *testing.T) {
 
 	assert.Equal(t, cProcessInfo[0], pInfos[0])
 	assert.Equal(t, cProcessInfo[1], pInfos[1])
+
+	dataInfos, err := mds.GetAgentsDataInfo()
+	assert.Nil(t, err)
+	assert.NotNil(t, dataInfos)
+	dataInfo, present := dataInfos[u]
+	assert.True(t, present)
+	assert.Equal(t, dataInfo, expectedDataInfo)
 }
 
 func TestAgentQueueTerminatedProcesses(t *testing.T) {
@@ -474,48 +500,48 @@ func TestAgentQueueTerminatedProcesses(t *testing.T) {
 		t.Fatal("Could not parse UUID from string.")
 	}
 
-	schemas := make([]*metadatapb.SchemaInfo, 1)
+	schemas := make([]*k8s_metadatapb.SchemaInfo, 1)
 
-	schema1 := new(metadatapb.SchemaInfo)
+	schema1 := new(k8s_metadatapb.SchemaInfo)
 	if err := proto.UnmarshalText(testutils.SchemaInfoPB, schema1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	schemas[0] = schema1
 
-	terminatedProcesses := make([]*metadatapb.ProcessTerminated, 2)
+	terminatedProcesses := make([]*k8s_metadatapb.ProcessTerminated, 2)
 
-	tp1 := new(metadatapb.ProcessTerminated)
+	tp1 := new(k8s_metadatapb.ProcessTerminated)
 	if err := proto.UnmarshalText(testutils.ProcessTerminated1PB, tp1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	terminatedProcesses[0] = tp1
-	tp2 := new(metadatapb.ProcessTerminated)
+	tp2 := new(k8s_metadatapb.ProcessTerminated)
 	if err := proto.UnmarshalText(testutils.ProcessTerminated2PB, tp2); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	terminatedProcesses[1] = tp2
 
-	createdProcesses := make([]*metadatapb.ProcessCreated, 2)
+	createdProcesses := make([]*k8s_metadatapb.ProcessCreated, 2)
 
-	cp1 := new(metadatapb.ProcessCreated)
+	cp1 := new(k8s_metadatapb.ProcessCreated)
 	if err := proto.UnmarshalText(testutils.ProcessCreated1PB, cp1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	createdProcesses[0] = cp1
-	cp2 := new(metadatapb.ProcessCreated)
+	cp2 := new(k8s_metadatapb.ProcessCreated)
 	if err := proto.UnmarshalText(testutils.ProcessCreated2PB, cp2); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	createdProcesses[1] = cp2
 
-	updatedInfo := make([]*metadatapb.ProcessInfo, 2)
-	upi1 := new(metadatapb.ProcessInfo)
+	updatedInfo := make([]*k8s_metadatapb.ProcessInfo, 2)
+	upi1 := new(k8s_metadatapb.ProcessInfo)
 	if err := proto.UnmarshalText(testutils.ProcessInfo1PB, upi1); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	upi1.StopTimestampNS = 6
 	updatedInfo[0] = upi1
-	upi2 := new(metadatapb.ProcessInfo)
+	upi2 := new(k8s_metadatapb.ProcessInfo)
 	if err := proto.UnmarshalText(testutils.ProcessInfo2PB, upi2); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
@@ -588,21 +614,21 @@ func TestAgent_AddToFrontOfAgentQueue(t *testing.T) {
 	_, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
 
-	updatePb1 := &metadatapb.ResourceUpdate{
-		Update: &metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &metadatapb.PodUpdate{
+	updatePb1 := &k8s_metadatapb.ResourceUpdate{
+		Update: &k8s_metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &k8s_metadatapb.PodUpdate{
 				UID:  "podUid1",
 				Name: "podName",
 			},
 		},
 	}
 
-	err = agtMgr.AddUpdatesToAgentQueue(u1.String(), []*metadatapb.ResourceUpdate{updatePb1})
+	err = agtMgr.AddUpdatesToAgentQueue(u1.String(), []*k8s_metadatapb.ResourceUpdate{updatePb1})
 	assert.Nil(t, err)
 
-	updatePb2 := &metadatapb.ResourceUpdate{
-		Update: &metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &metadatapb.PodUpdate{
+	updatePb2 := &k8s_metadatapb.ResourceUpdate{
+		Update: &k8s_metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &k8s_metadatapb.PodUpdate{
 				UID:  "podUid2",
 				Name: "podName",
 			},
@@ -623,18 +649,18 @@ func TestAgent_AddToFrontOfAgentQueue(t *testing.T) {
 func TestAgent_AddUpdatesToAgentQueue(t *testing.T) {
 	_, agtMgr := setupAgentManager(t)
 
-	updatePb1 := &metadatapb.ResourceUpdate{
-		Update: &metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &metadatapb.PodUpdate{
+	updatePb1 := &k8s_metadatapb.ResourceUpdate{
+		Update: &k8s_metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &k8s_metadatapb.PodUpdate{
 				UID:  "podUid",
 				Name: "podName",
 			},
 		},
 	}
 
-	updatePb2 := &metadatapb.ResourceUpdate{
-		Update: &metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &metadatapb.PodUpdate{
+	updatePb2 := &k8s_metadatapb.ResourceUpdate{
+		Update: &k8s_metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &k8s_metadatapb.PodUpdate{
 				UID:  "podUid2",
 				Name: "podName2",
 			},
@@ -661,7 +687,7 @@ func TestAgent_AddUpdatesToAgentQueue(t *testing.T) {
 
 	_, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
-	err = agtMgr.AddUpdatesToAgentQueue(u1.String(), []*metadatapb.ResourceUpdate{updatePb1, updatePb2})
+	err = agtMgr.AddUpdatesToAgentQueue(u1.String(), []*k8s_metadatapb.ResourceUpdate{updatePb1, updatePb2})
 	assert.Nil(t, err)
 
 	resp, err := agtMgr.GetFromAgentQueue(u1.String())
@@ -674,9 +700,9 @@ func TestAgent_AddUpdatesToAgentQueue(t *testing.T) {
 func TestAgent_GetFromAgentQueue(t *testing.T) {
 	_, agtMgr := setupAgentManager(t)
 
-	updatePb := &metadatapb.ResourceUpdate{
-		Update: &metadatapb.ResourceUpdate_PodUpdate{
-			PodUpdate: &metadatapb.PodUpdate{
+	updatePb := &k8s_metadatapb.ResourceUpdate{
+		Update: &k8s_metadatapb.ResourceUpdate_PodUpdate{
+			PodUpdate: &k8s_metadatapb.PodUpdate{
 				UID:  "podUid",
 				Name: "podName",
 			},
@@ -703,7 +729,7 @@ func TestAgent_GetFromAgentQueue(t *testing.T) {
 
 	_, err := agtMgr.RegisterAgent(agentInfo)
 	assert.Equal(t, nil, err)
-	err = agtMgr.AddUpdatesToAgentQueue(u1.String(), []*metadatapb.ResourceUpdate{updatePb})
+	err = agtMgr.AddUpdatesToAgentQueue(u1.String(), []*k8s_metadatapb.ResourceUpdate{updatePb})
 	assert.Nil(t, err)
 
 	resp, err := agtMgr.GetFromAgentQueue(u1.String())
@@ -722,9 +748,9 @@ func TestAgent_HandleUpdate(t *testing.T) {
 	update := &controllers.UpdateMessage{
 		Hostnames:    []*controllers.HostnameIPPair{&controllers.HostnameIPPair{"testhost", "127.0.0.1"}},
 		NodeSpecific: false,
-		Message: &metadatapb.ResourceUpdate{
-			Update: &metadatapb.ResourceUpdate_PodUpdate{
-				PodUpdate: &metadatapb.PodUpdate{
+		Message: &k8s_metadatapb.ResourceUpdate{
+			Update: &k8s_metadatapb.ResourceUpdate_PodUpdate{
+				PodUpdate: &k8s_metadatapb.PodUpdate{
 					UID:  "podUid1",
 					Name: "podName",
 				},
