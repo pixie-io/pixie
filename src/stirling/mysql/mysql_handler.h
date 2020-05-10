@@ -22,8 +22,12 @@ StatusOr<ParseState> HandleErrMessage(DequeView<Packet> resp_packets, Record* en
 
 StatusOr<ParseState> HandleOKMessage(DequeView<Packet> resp_packets, Record* entry);
 
+/**
+ * A Resultset can either be a binary resultset(returned by StmtExecute), or a text
+ * resultset(returned by Query).
+ */
 StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry,
-                                             bool multiresultset = false);
+                                             bool binaryresultset, bool multiresultset = false);
 
 StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets, State* state,
                                                  Record* entry);

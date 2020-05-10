@@ -100,7 +100,7 @@ StatusOr<ParseState> HandleOKMessage(DequeView<Packet> resp_packets, Record* ent
 }
 
 StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Record* entry,
-                                             bool multi_resultset) {
+                                             bool binary_resultset, bool multi_resultset) {
   VLOG(3) << absl::Substitute("HandleResultsetResponse with $0 packets", resp_packets.size());
 
   RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets);
@@ -166,33 +166,44 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
   }
   // TODO(chengruizhe): Use the type in col_def packets to parse the binary resultset row.
 
-  // Optional EOF packet, based on CLIENT_DEPRECATE_EOF.
-  bool client_deprecate_eof = true;
+  // Optional EOF packet.
   RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets);
   if (IsEOFPacket(resp_packets.front())) {
     resp_packets.pop_front();
-    client_deprecate_eof = false;
   }
 
   std::vector<ResultsetRow> results;
 
-  auto isLastPacket = [client_deprecate_eof](const Packet& p) {
-    // Depending on CLIENT_DEPRECATE_EOF, we may either get an OK or EOF packet.
-    return IsErrPacket(p) || (client_deprecate_eof ? IsOKPacket(p) : IsEOFPacket(p));
+  auto isLastPacket = [](const Packet& p) {
+    return (IsErrPacket(p) || IsOKPacket(p) || IsEOFPacket(p));
   };
 
-  while (!resp_packets.empty() && !isLastPacket(resp_packets.front())) {
+  while (!resp_packets.empty()) {
     const Packet& row_packet = resp_packets.front();
-    resp_packets.pop_front();
-    if (!IsResultsetRowPacket(row_packet, client_deprecate_eof)) {
-      entry->resp.status = MySQLRespStatus::kUnknown;
-      return error::Internal(
-          "Expected resultset row packet [OK=$0 ERR=$1 EOF=$2 client_deprecate_eof=$3]",
-          IsOKPacket(row_packet), IsErrPacket(row_packet), IsEOFPacket(row_packet),
-          client_deprecate_eof);
+
+    Status s;
+    // TODO(chengruizhe): Get actual results from the resultset row packets if needed.
+    // Attempt to process it as a resultset row packet first. Process[Text/Binary]ResultRowPacket
+    // functions, if returning ok, indicates with very high confidence that the packet is indeed a
+    // resultset row packet. IsOKPacket, on the other hand, is not as robust.
+    if (binary_resultset) {
+      s = ProcessBinaryResultsetRowPacket(row_packet, col_defs);
+    } else {
+      s = ProcessTextResultsetRowPacket(row_packet, col_defs.size());
     }
-    ResultsetRow row{row_packet.msg};
-    results.emplace_back(std::move(row));
+
+    if (s.ok()) {
+      resp_packets.pop_front();
+      ResultsetRow row{row_packet.msg};
+      results.emplace_back(std::move(row));
+    } else if (isLastPacket(row_packet)) {
+      break;
+    } else {
+      entry->resp.status = MySQLRespStatus::kUnknown;
+      return error::Internal("Expected resultset row packet [OK=$0 ERR=$1 EOF=$2]",
+                             IsOKPacket(row_packet), IsErrPacket(row_packet),
+                             IsEOFPacket(row_packet));
+    }
   }
 
   RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets);
@@ -212,7 +223,8 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
 
   // Check for another resultset in case this is a multi-resultset.
   if (MoreResultsExists(last_packet)) {
-    return HandleResultsetResponse(resp_packets, entry, true);
+    return HandleResultsetResponse(resp_packets, entry, binary_resultset,
+                                   /* multiresultset */ true);
   }
 
   LOG_IF(ERROR, !resp_packets.empty())

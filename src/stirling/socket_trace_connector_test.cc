@@ -1013,18 +1013,25 @@ TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
       mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::LengthEncodedInt(1))));
   // The column def packet (a bunch of length-encoded strings).
   events.push_back(event_gen.InitRecvEvent<kProtocolMySQL>(mysql::testutils::GenRawPacket(
-      seq_id++, mysql::testutils::LengthEncodedString("def") +
-                    mysql::testutils::LengthEncodedString("employees") +
-                    mysql::testutils::LengthEncodedString("employees") +
-                    mysql::testutils::LengthEncodedString("employees") +
-                    mysql::testutils::LengthEncodedString("emp_no") +
-                    mysql::testutils::LengthEncodedString("emp_no") +
-                    mysql::testutils::LengthEncodedString(
-                        ConstStringView("\x3F\x00\x0B\x00\x00\x00\x03\x03\x50\x00\x00\x00")))));
+      seq_id, mysql::testutils::GenColDefinition(
+                  seq_id, mysql::ColDefinition{.catalog = "def",
+                                               .schema = "employees",
+                                               .table = "employees",
+                                               .org_table = "employees",
+                                               .name = "emp_no",
+                                               .org_name = "emp_no",
+                                               .next_length = 12,
+                                               .character_set = 0x3f,
+                                               .column_length = 11,
+                                               .column_type = mysql::MySQLColType::kLong,
+                                               .flags = 0x5003,
+                                               .decimals = 0})
+                  .msg)));
+  ++seq_id;
   // A bunch of resultset rows.
   for (int id = 10001; id < 19999; ++id) {
-    events.push_back(event_gen.InitRecvEvent<kProtocolMySQL>(
-        mysql::testutils::GenRawPacket(seq_id++, mysql::testutils::LengthEncodedInt(id))));
+    events.push_back(event_gen.InitRecvEvent<kProtocolMySQL>(mysql::testutils::GenRawPacket(
+        seq_id++, mysql::testutils::LengthEncodedString(std::to_string(id)))));
   }
   // Final OK/EOF packet.
   events.push_back(event_gen.InitRecvEvent<kProtocolMySQL>(

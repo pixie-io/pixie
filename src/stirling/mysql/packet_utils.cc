@@ -79,13 +79,111 @@ bool IsOKPacket(const Packet& packet) {
   return false;
 }
 
-bool IsResultsetRowPacket(const Packet& packet, bool client_deprecate_eof) {
-  // TODO(oazizi): This is a weak placeholder.
-  // Study link below for a stronger implementation.
-  // https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-ProtocolText::ResultsetRow
+// https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-ProtocolText::ResultsetRow
+Status ProcessTextResultsetRowPacket(const Packet& packet, size_t num_col) {
+  constexpr char kResultsetRowNullPrefix = '\xfb';
+  if ((packet.msg.length() == 1) && (packet.msg.front() == kResultsetRowNullPrefix)) {
+    return Status::OK();
+  }
+  std::string result;
+  size_t offset = 0;
+  for (size_t i = 0; i < num_col; ++i) {
+    PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &result));
+  }
 
-  return (client_deprecate_eof ? !IsOKPacket(packet) : !IsEOFPacket(packet)) &&
-         !IsErrPacket(packet);
+  // Shouldn't have anything after the length encoded string.
+  if (offset < packet.msg.length()) {
+    return error::Internal("Have extra bytes in text resultset row.");
+  }
+  return Status::OK();
+}
+
+Status ProcessBinaryResultsetRowPacket(const Packet& packet,
+                                       VectorView<ColDefinition> column_defs) {
+  constexpr int kBinaryResultsetRowHeaderOffset = 1;
+  constexpr int kBinaryResultsetRowNullBitmapOffset = 2;
+  constexpr int kBinaryResultsetRowNullBitmapByteFiller = 7;
+
+  if (packet.msg.at(0) != '\x00') {
+    return error::Internal("Binary resultset row header mismatch.");
+  }
+  size_t null_bitmap_len = (column_defs.size() + kBinaryResultsetRowNullBitmapByteFiller +
+                            kBinaryResultsetRowNullBitmapOffset) /
+                           8;
+  size_t offset = kBinaryResultsetRowHeaderOffset + null_bitmap_len;
+
+  if (offset >= packet.msg.size()) {
+    return error::Internal("Not enough bytes.");
+  }
+
+  std::string_view null_bitmap =
+      std::string_view(packet.msg).substr(kBinaryResultsetRowHeaderOffset, null_bitmap_len);
+
+  // Starting from the 3rd bit in the null_bitmap, each bit at pos i records if the the i-2th value
+  // is null.
+  for (size_t i = 0; i < column_defs.size(); ++i) {
+    unsigned int null_bitmap_bytepos = (i + kBinaryResultsetRowNullBitmapOffset) / 8;
+    unsigned int null_bitmap_bitpos = (i + kBinaryResultsetRowNullBitmapOffset) % 8;
+
+    unsigned int is_null = (null_bitmap[null_bitmap_bytepos] >> null_bitmap_bitpos) & 1;
+
+    if (is_null == 1) {
+      continue;
+    }
+
+    std::string val;
+    switch (column_defs[i].column_type) {
+      case MySQLColType::kString:
+      case MySQLColType::kVarChar:
+      case MySQLColType::kVarString:
+      case MySQLColType::kEnum:
+      case MySQLColType::kSet:
+      case MySQLColType::kLongBlob:
+      case MySQLColType::kMediumBlob:
+      case MySQLColType::kBlob:
+      case MySQLColType::kTinyBlob:
+      case MySQLColType::kGeometry:
+      case MySQLColType::kBit:
+      case MySQLColType::kDecimal:
+      case MySQLColType::kNewDecimal:
+        PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &val));
+        break;
+      case MySQLColType::kLongLong:
+        PL_RETURN_IF_ERROR(DissectIntParam<8>(packet.msg, &offset, &val));
+        break;
+      case MySQLColType::kLong:
+      case MySQLColType::kInt24:
+        PL_RETURN_IF_ERROR(DissectIntParam<4>(packet.msg, &offset, &val));
+        break;
+      case MySQLColType::kShort:
+      case MySQLColType::kYear:
+        PL_RETURN_IF_ERROR(DissectIntParam<2>(packet.msg, &offset, &val));
+        break;
+      case MySQLColType::kTiny:
+        PL_RETURN_IF_ERROR(DissectIntParam<1>(packet.msg, &offset, &val));
+        break;
+      case MySQLColType::kDouble:
+        PL_RETURN_IF_ERROR(DissectFloatParam<double>(packet.msg, &offset, &val));
+        break;
+      case MySQLColType::kFloat:
+        PL_RETURN_IF_ERROR(DissectFloatParam<float>(packet.msg, &offset, &val));
+        break;
+      case MySQLColType::kDate:
+      case MySQLColType::kDateTime:
+      case MySQLColType::kTimestamp:
+      case MySQLColType::kTime:
+        // TODO(chengaruizhe): Implement DissectDateTime correctly.
+        PL_RETURN_IF_ERROR(DissectDateTimeParam(packet.msg, &offset, &val));
+        break;
+      default:
+        return error::Internal("Unrecognized result column type.");
+    }
+  }
+
+  if (offset != packet.msg.size()) {
+    return error::Internal("Extra bytes in binary resultset row.");
+  }
+  return Status::OK();
 }
 
 bool IsStmtPrepareOKPacket(const Packet& packet) {

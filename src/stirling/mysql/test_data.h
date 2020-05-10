@@ -130,9 +130,12 @@ const std::vector<ColDefinition> kStmtExecuteColDefs = {
                   .flags = 0x0000,
                   .decimals = 0x00}};
 
+// Binary Resultset Row
 const std::vector<ResultsetRow> kStmtExecuteResultsetRows = {
-    ResultsetRow{testutils::LengthEncodedString("id1")},
-    ResultsetRow{testutils::LengthEncodedString("id2")}};
+    ResultsetRow{absl::StrCat(std::string(2, '\x00'), testutils::LengthEncodedString("id1"),
+                              testutils::LengthEncodedString("name1"))},
+    ResultsetRow{absl::StrCat(std::string(2, '\x00'), testutils::LengthEncodedString("id2"),
+                              testutils::LengthEncodedString("name2"))}};
 
 const Resultset kStmtExecuteResultset{
     .num_col = 2, .col_defs = kStmtExecuteColDefs, .results = kStmtExecuteResultsetRows};
@@ -161,6 +164,7 @@ const std::vector<ColDefinition> kQueryColDefs = {
                   .flags = 0x0000,
                   .decimals = 0x00}};
 
+// Text Resultset Row
 const std::vector<ResultsetRow> kQueryResultsetRows = {
     ResultsetRow{testutils::LengthEncodedString("brown")},
     ResultsetRow{testutils::LengthEncodedString("geek")},

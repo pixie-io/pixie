@@ -347,7 +347,8 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
     return ParseState::kSuccess;
   }
 
-  return HandleResultsetResponse(resp_packets, entry);
+  return HandleResultsetResponse(resp_packets, entry, /* binaryresultset */ true,
+                                 /* multiresultset */ false);
 }
 
 // Process a COM_STMT_CLOSE request and response, and populate details into a record entry.
@@ -430,7 +431,8 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
     return ParseState::kSuccess;
   }
 
-  return HandleResultsetResponse(resp_packets, entry);
+  return HandleResultsetResponse(resp_packets, entry, /* binaryresultset */ false,
+                                 /* multiresultset */ false);
 }
 
 // Process a COM_FIELD_LIST request and response, and populate details into a record entry.

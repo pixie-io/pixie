@@ -26,6 +26,19 @@ TEST(ProcessColDefinition, Basics) {
   EXPECT_EQ(col_def.decimals, expected_col_def.decimals);
 }
 
+TEST(ProcessBinaryResultsetRow, Basics) {
+  ResultsetRow r = testdata::kStmtExecuteResultsetRows[0];
+  std::vector<ColDefinition> col_defs = testdata::kStmtExecuteColDefs;
+  Packet resultset_row_packet = testutils::GenResultsetRow(0, r);
+  EXPECT_OK(ProcessBinaryResultsetRowPacket(resultset_row_packet, col_defs));
+}
+
+TEST(ProcessTextResultsetRow, Basics) {
+  ResultsetRow r = testdata::kQueryResultsetRows[0];
+  Packet resultset_row_packet = testutils::GenResultsetRow(0, r);
+  EXPECT_OK(ProcessTextResultsetRowPacket(resultset_row_packet, testdata::kQueryResultset.num_col));
+}
+
 }  // namespace mysql
 }  // namespace stirling
 }  // namespace pl

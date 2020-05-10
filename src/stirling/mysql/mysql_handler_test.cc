@@ -34,7 +34,9 @@ TEST(HandleResultsetResponse, ValidWithEOF) {
   std::deque<Packet> resp_packets = testutils::GenResultset(testdata::kStmtExecuteResultset);
 
   Record entry;
-  EXPECT_OK_AND_EQ(HandleResultsetResponse(resp_packets, &entry), ParseState::kSuccess);
+  EXPECT_OK_AND_EQ(HandleResultsetResponse(resp_packets, &entry, /* binaryresultset */ true,
+                                           /* multiresultset */ false),
+                   ParseState::kSuccess);
   EXPECT_EQ(entry.resp.status, MySQLRespStatus::kOK);
   EXPECT_EQ(entry.resp.msg, "Resultset rows = 2");
 }
@@ -44,7 +46,9 @@ TEST(HandleResultsetResponse, ValidNoEOF) {
   std::deque<Packet> resp_packets = testutils::GenResultset(testdata::kStmtExecuteResultset, true);
 
   Record entry;
-  EXPECT_OK_AND_EQ(HandleResultsetResponse(resp_packets, &entry), ParseState::kSuccess);
+  EXPECT_OK_AND_EQ(HandleResultsetResponse(resp_packets, &entry, /* binaryresultset */ true,
+                                           /* multiresultset */ false),
+                   ParseState::kSuccess);
   EXPECT_EQ(entry.resp.status, MySQLRespStatus::kOK);
   EXPECT_EQ(entry.resp.msg, "Resultset rows = 2");
 }
@@ -55,7 +59,9 @@ TEST(HandleResultsetResponse, NeedsMoreData) {
   resp_packets.pop_back();
 
   Record entry;
-  EXPECT_OK_AND_EQ(HandleResultsetResponse(resp_packets, &entry), ParseState::kNeedsMoreData);
+  EXPECT_OK_AND_EQ(HandleResultsetResponse(resp_packets, &entry, /* binaryresultset */ true,
+                                           /* multiresultset */ false),
+                   ParseState::kNeedsMoreData);
   EXPECT_EQ(entry.resp.status, MySQLRespStatus::kUnknown);
   EXPECT_EQ(entry.resp.msg, "");
 }
@@ -68,7 +74,8 @@ TEST(HandleResultsetResponse, InvalidResponse) {
 
   Record entry;
   State state;
-  EXPECT_NOT_OK(HandleResultsetResponse(resp_packets, &entry));
+  EXPECT_NOT_OK(HandleResultsetResponse(resp_packets, &entry, /* binaryresultset */ true,
+                                        /* multiresultset */ false));
   EXPECT_EQ(entry.resp.status, MySQLRespStatus::kUnknown);
   EXPECT_EQ(entry.resp.msg, "");
 }

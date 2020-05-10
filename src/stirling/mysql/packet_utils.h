@@ -20,13 +20,18 @@ namespace mysql {
 bool IsEOFPacket(const Packet& packet);
 bool IsErrPacket(const Packet& packet);
 bool IsOKPacket(const Packet& packet);
-bool IsResultsetRowPacket(const Packet& packet, bool client_deprecate_eof);
 bool IsStmtPrepareOKPacket(const Packet& packet);
 
 /**
  * The following functions process packets by attempting to parse through the fields and check
- * there's nothing extra.
+ * there's nothing extra. The Process[Text/Binary]ResultsetRowPacket functions currently don't
+ * return the processed resultset rows. However, they are named "Process" for consistency and
+ * because , in the future, we may want to return processed resultset rows and append to table.
  */
+// https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-ProtocolText::Resultset
+Status ProcessTextResultsetRowPacket(const Packet& packet, size_t num_col);
+// https://dev.mysql.com/doc/internals/en/binary-protocol-resultset-row.html
+Status ProcessBinaryResultsetRowPacket(const Packet& packet, VectorView<ColDefinition> column_defs);
 StatusOr<ColDefinition> ProcessColumnDefPacket(const Packet& packet);
 
 /**
