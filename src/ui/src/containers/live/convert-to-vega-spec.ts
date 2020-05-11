@@ -15,6 +15,7 @@ const VEGA_SCHEMA = '$schema';
 const TIMESERIES_CHART_TYPE = 'pixielabs.ai/pl.vispb.TimeseriesChart';
 export const COLOR_SCALE = 'color';
 const HOVER_LINE_COLOR = '#4dffd4';
+const HOVER_TIME_COLOR = '#121212';
 const HOVER_LINE_OPACITY = 0.75;
 const HOVER_LINE_DASH = [6, 6];
 const HOVER_LINE_WIDTH = 2;
@@ -24,6 +25,7 @@ const SELECTED_LINE_OPACITY = 1.0;
 const UNSELECTED_LINE_OPACITY = 0.2;
 
 const HOVER_BULB_OFFSET = 10;
+const HOVER_LINE_TEXT_OFFSET = 6;
 
 interface XAxis {
   readonly label: string;
@@ -442,6 +444,9 @@ const HOVER_VORONOI = 'hover_voronoi_layer';
 const TIME_FIELD = 'time_';
 const HOVER_RULE = 'hover_rule_layer';
 const HOVER_BULB = 'hover_bulb_layer';
+const HOVER_LINE_TIME = 'hover_time_mark';
+const HOVER_LINE_TEXT_BOX = 'hover_line_text_box_mark';
+const HOVER_LINE_TEXT_PADDING = 3;
 export const HOVER_SIGNAL = 'hover_value';
 export const EXTERNAL_HOVER_SIGNAL = 'external_hover_value';
 export const INTERNAL_HOVER_SIGNAL = 'internal_hover_value';
@@ -653,7 +658,7 @@ function addTimeseriesDomainSignalsToVgSpec(vegaSpec: VgSpec, signalName: string
 
 function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
   const marks: Mark[] = [];
-  // Used by both HOVER_RULE and HOVER_BULB.
+  // Used by both HOVER_RULE, HOVER_LINE_TIME and HOVER_BULB.
   const hoverOpacityEncoding = [
     {
       test: `${HOVER_SIGNAL} && datum && (${HOVER_SIGNAL}["${TIME_FIELD}"] === datum["${TIME_FIELD}"])`,
@@ -661,8 +666,9 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
     },
     {value: 0},
   ];
-  // The bulb position and the bottom of the rule.
+  // The bulb position.
   const bulbPositionSignal = {signal: `height + ${HOVER_BULB_OFFSET}`};
+
   // Add mark for vertical line where cursor is.
   marks.push({
     name: HOVER_RULE,
@@ -680,7 +686,7 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
         opacity: hoverOpacityEncoding,
         x: {scale: 'x', field: TIME_FIELD},
         y: {value: 0},
-        y2: bulbPositionSignal,
+        y2: {signal: `height + ${HOVER_LINE_TEXT_OFFSET}`},
       },
     },
   });
@@ -700,9 +706,49 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
         strokeWidth: {value: 2},
       },
       update: {
-        fillOpacity: hoverOpacityEncoding,
+        // fillOpacity: hoverOpacityEncoding,
+        fillOpacity: {value: 0},
         x: {scale: 'x', field: TIME_FIELD},
         y: bulbPositionSignal,
+      },
+    },
+  });
+  // Add mark for the text of the time at the bottom of the rule.
+  marks.push({
+    name: HOVER_LINE_TIME,
+    type: 'text',
+    from: {data: HOVER_PIVOT_TRANSFORM},
+    encode: {
+      enter: {
+        fill: {value: HOVER_TIME_COLOR},
+        align: {value: 'center'},
+        baseline: {value: 'top'},
+        font: {value: 'Roboto'},
+        fontSize: {value: 10},
+      },
+      update: {
+        opacity: hoverOpacityEncoding,
+        text: {signal: `datum && timeFormat(datum["${TIME_FIELD}"], "%I:%M:%S")`},
+        x: {scale: 'x', field: TIME_FIELD},
+        y: {signal: `height + ${HOVER_LINE_TEXT_OFFSET} + ${HOVER_LINE_TEXT_PADDING}`},
+      },
+    },
+    // Display text above text box.
+    zindex: 1,
+  });
+  // Add mark for fill box around time text.
+  marks.push({
+    name: HOVER_LINE_TEXT_BOX,
+    type: 'rect',
+    from: {data: HOVER_LINE_TIME},
+    encode: {
+      update: {
+        x: {signal: `datum.x - ((datum.bounds.x2 - datum.bounds.x1) / 2) - ${HOVER_LINE_TEXT_PADDING}`},
+        y: {signal: `datum.y - ${HOVER_LINE_TEXT_PADDING}`},
+        width: {signal: `datum.bounds.x2 - datum.bounds.x1 + 2 * ${HOVER_LINE_TEXT_PADDING}`},
+        height: {signal: `datum.bounds.y2 - datum.bounds.y1 + 2 * ${HOVER_LINE_TEXT_PADDING}`},
+        fill: {value: HOVER_LINE_COLOR},
+        opacity: {signal: 'datum.opacity > 0 ? 1.0 : 0.0'},
       },
     },
   });
