@@ -29,7 +29,7 @@ std::string GenRawPacket(uint8_t packet_num, std::string_view msg);
 
 std::string GenRawPacket(const Packet& packet);
 
-std::string GenRequestPacket(MySQLEventType command, std::string_view msg);
+std::string GenRequestPacket(Command command, std::string_view msg);
 
 Packet GenCountPacket(uint8_t seq_id, int num_col);
 
@@ -43,7 +43,7 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req);
 
 Packet GenStmtCloseRequest(const StmtCloseRequest& req);
 
-Packet GenStringRequest(const StringRequest& req, MySQLEventType type);
+Packet GenStringRequest(const StringRequest& req, Command type);
 
 Packet GenStringRequest(const StringRequest& req, char command);
 

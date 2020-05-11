@@ -45,7 +45,7 @@ const std::vector<ColDefinition> kStmtPrepareParamDefs{
                   .next_length = 12,
                   .character_set = 63,
                   .column_length = 0,
-                  .column_type = MySQLColType::kVarString,
+                  .column_type = ColType::kVarString,
                   .flags = 0x0080,
                   .decimals = 0x00},
     ColDefinition{.catalog = "def",
@@ -57,7 +57,7 @@ const std::vector<ColDefinition> kStmtPrepareParamDefs{
                   .next_length = 12,
                   .character_set = 63,
                   .column_length = 0,
-                  .column_type = MySQLColType::kVarString,
+                  .column_type = ColType::kVarString,
                   .flags = 0x0080,
                   .decimals = 0x00}};
 
@@ -71,7 +71,7 @@ const std::vector<ColDefinition> kStmtPrepareColDefs{
                   .next_length = 12,
                   .character_set = 33,
                   .column_length = 120,
-                  .column_type = MySQLColType::kVarString,
+                  .column_type = ColType::kVarString,
                   .flags = 0x5003,
                   .decimals = 0x00},
     ColDefinition{.catalog = "def",
@@ -83,7 +83,7 @@ const std::vector<ColDefinition> kStmtPrepareColDefs{
                   .next_length = 12,
                   .character_set = 33,
                   .column_length = 60,
-                  .column_type = MySQLColType::kVarString,
+                  .column_type = ColType::kVarString,
                   .flags = 0x0000,
                   .decimals = 0x00}};
 
@@ -99,8 +99,8 @@ const PreparedStatement kPreparedStatement{
 /**
  * Statement Execute Event with 2 params, 2 col definitions, and 2 resultset rows.
  */
-const std::vector<StmtExecuteParam> kStmtExecuteParams = {{MySQLColType::kString, "brown"},
-                                                          {MySQLColType::kString, "id"}};
+const std::vector<StmtExecuteParam> kStmtExecuteParams = {{ColType::kString, "brown"},
+                                                          {ColType::kString, "id"}};
 
 const StmtExecuteRequest kStmtExecuteRequest{.stmt_id = kStmtID, .params = kStmtExecuteParams};
 
@@ -114,7 +114,7 @@ const std::vector<ColDefinition> kStmtExecuteColDefs = {
                   .next_length = 12,
                   .character_set = 33,
                   .column_length = 120,
-                  .column_type = MySQLColType::kVarString,
+                  .column_type = ColType::kVarString,
                   .flags = 0x1001,
                   .decimals = 0x00},
     ColDefinition{.catalog = "def",
@@ -126,7 +126,7 @@ const std::vector<ColDefinition> kStmtExecuteColDefs = {
                   .next_length = 12,
                   .character_set = 33,
                   .column_length = 60,
-                  .column_type = MySQLColType::kVarString,
+                  .column_type = ColType::kVarString,
                   .flags = 0x0000,
                   .decimals = 0x00}};
 
@@ -150,19 +150,18 @@ const StmtCloseRequest kStmtCloseRequest{.stmt_id = kStmtID};
  */
 const StringRequest kQueryRequest{.msg = "SELECT name FROM tag;"};
 
-const std::vector<ColDefinition> kQueryColDefs = {
-    ColDefinition{.catalog = "def",
-                  .schema = "socksdb",
-                  .table = "tag",
-                  .org_table = "tag",
-                  .name = "name",
-                  .org_name = "name",
-                  .next_length = 12,
-                  .character_set = 33,
-                  .column_length = 60,
-                  .column_type = MySQLColType::kVarString,
-                  .flags = 0x0000,
-                  .decimals = 0x00}};
+const std::vector<ColDefinition> kQueryColDefs = {ColDefinition{.catalog = "def",
+                                                                .schema = "socksdb",
+                                                                .table = "tag",
+                                                                .org_table = "tag",
+                                                                .name = "name",
+                                                                .org_name = "name",
+                                                                .next_length = 12,
+                                                                .character_set = 33,
+                                                                .column_length = 60,
+                                                                .column_type = ColType::kVarString,
+                                                                .flags = 0x0000,
+                                                                .decimals = 0x00}};
 
 // Text Resultset Row
 const std::vector<ResultsetRow> kQueryResultsetRows = {
@@ -184,8 +183,8 @@ namespace impl {
 
 std::vector<std::string> InitRawStmtPrepareReq() {
   std::vector<std::string> req;
-  req.push_back(GenRawPacket(mysql::testutils::GenStringRequest(
-      kStmtPrepareRequest, mysql::MySQLEventType::kStmtPrepare)));
+  req.push_back(GenRawPacket(
+      mysql::testutils::GenStringRequest(kStmtPrepareRequest, mysql::Command::kStmtPrepare)));
   return req;
 }
 
@@ -221,8 +220,8 @@ std::vector<std::string> InitRawStmtCloseReq() {
 
 std::vector<std::string> InitRawQueryReq() {
   std::vector<std::string> req;
-  req.push_back(GenRawPacket(
-      mysql::testutils::GenStringRequest(kQueryRequest, mysql::MySQLEventType::kQuery)));
+  req.push_back(
+      GenRawPacket(mysql::testutils::GenStringRequest(kQueryRequest, mysql::Command::kQuery)));
   return req;
 }
 

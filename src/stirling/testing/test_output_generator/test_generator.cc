@@ -17,19 +17,19 @@ void GenMySQLRequest(const rapidjson::Value& mysql_request, Record* r) {
   const rapidjson::Value& mysql_command = mysql_request["mysql.command"];
   int mysql_command_int;
   CHECK(absl::SimpleAtoi(mysql_command.GetString(), &mysql_command_int));
-  MySQLEventType type = static_cast<MySQLEventType>(mysql_command_int);
+  Command type = static_cast<Command>(mysql_command_int);
   r->req.cmd = type;
   r->req.timestamp_ns = 0;
 
   switch (type) {
-    case MySQLEventType::kQuery:
-    case MySQLEventType::kStmtPrepare:
+    case Command::kQuery:
+    case Command::kStmtPrepare:
       r->req.msg = mysql_request["mysql.query"].GetString();
       break;
-    case MySQLEventType::kInitDB:
+    case Command::kInitDB:
       r->req.msg = mysql_request["mysql.schema"].GetString();
       break;
-    case MySQLEventType::kStmtExecute:
+    case Command::kStmtExecute:
       // TODO(chengruizhe): Pair together StmtExecute with StmtPrepare.
       r->req.msg = "";
       break;
@@ -63,10 +63,10 @@ std::unique_ptr<std::vector<Record>> GenMySQLRecords(const std::string& wireshar
         if (!next_data.HasMember("mysql.request")) {
           // Next packet is a response.
           if (next_data.HasMember("mysql.err_code")) {
-            r.resp.status = MySQLRespStatus::kErr;
+            r.resp.status = RespStatus::kErr;
             r.resp.msg = next_data["mysql.error"]["message"].GetString();
           } else {
-            r.resp.status = MySQLRespStatus::kOK;
+            r.resp.status = RespStatus::kOK;
             // TODO(chengruizhe): Here the resp message can contain resultset or other types of
             // responses. Further parsing is needed. E.g. Need to keep the states of StmtPrepare and
             // fill in with StmtExecute params.
@@ -75,12 +75,12 @@ std::unique_ptr<std::vector<Record>> GenMySQLRecords(const std::string& wireshar
           ++idx;
         } else {
           // Next packet is also a request.
-          r.resp.status = MySQLRespStatus::kNone;
+          r.resp.status = RespStatus::kNone;
           r.resp.msg = "";
         }
       } else {
         // This request is the last packet.
-        r.resp.status = MySQLRespStatus::kNone;
+        r.resp.status = RespStatus::kNone;
         r.resp.msg = "";
       }
 

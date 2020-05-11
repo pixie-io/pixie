@@ -17,7 +17,7 @@ namespace mysql {
 struct MySQLReqResp {
   std::string request;
   std::string response;
-  MySQLEventType type;
+  Command type;
 };
 
 using ::testing::ElementsAre;
@@ -78,19 +78,19 @@ TEST_F(MySQLParserTest, ParseRaw) {
 }
 
 TEST_F(MySQLParserTest, ParseComStmtPrepare) {
-  std::string msg1 = testutils::GenRequestPacket(MySQLEventType::kStmtPrepare,
-                                                 "SELECT name FROM users WHERE id = ?");
-  std::string msg2 = testutils::GenRequestPacket(MySQLEventType::kStmtPrepare,
-                                                 "SELECT age FROM users WHERE id = ?");
+  std::string msg1 =
+      testutils::GenRequestPacket(Command::kStmtPrepare, "SELECT name FROM users WHERE id = ?");
+  std::string msg2 =
+      testutils::GenRequestPacket(Command::kStmtPrepare, "SELECT age FROM users WHERE id = ?");
 
   Packet expected_message1;
-  expected_message1.msg = absl::StrCat(CommandToString(MySQLEventType::kStmtPrepare),
-                                       "SELECT name FROM users WHERE id = ?");
+  expected_message1.msg =
+      absl::StrCat(CommandToString(Command::kStmtPrepare), "SELECT name FROM users WHERE id = ?");
   expected_message1.sequence_id = 0;
 
   Packet expected_message2;
-  expected_message2.msg = absl::StrCat(CommandToString(MySQLEventType::kStmtPrepare),
-                                       "SELECT age FROM users WHERE id = ?");
+  expected_message2.msg =
+      absl::StrCat(CommandToString(Command::kStmtPrepare), "SELECT age FROM users WHERE id = ?");
   expected_message2.sequence_id = 0;
 
   const std::string buf = absl::StrCat(msg1, msg2);
@@ -107,10 +107,10 @@ TEST_F(MySQLParserTest, ParseComStmtExecute) {
   // https://dev.mysql.com/doc/internals/en/com-stmt-execute.html.
   const std::string body(
       ConstStringView("\x01\x00\x00\x00\x00\x01\x00\x00\x00\x00\x01\x0f\x00\x03\x66\x6f\x6f"));
-  std::string msg1 = testutils::GenRequestPacket(MySQLEventType::kStmtExecute, body);
+  std::string msg1 = testutils::GenRequestPacket(Command::kStmtExecute, body);
 
   Packet expected_message1;
-  expected_message1.msg = absl::StrCat(CommandToString(MySQLEventType::kStmtExecute), body);
+  expected_message1.msg = absl::StrCat(CommandToString(Command::kStmtExecute), body);
   expected_message1.sequence_id = 0;
 
   std::deque<Packet> parsed_messages;
@@ -132,17 +132,15 @@ TEST_F(MySQLParserTest, ParseComStmtClose) {
 }
 
 TEST_F(MySQLParserTest, ParseComQuery) {
-  std::string msg1 = testutils::GenRequestPacket(MySQLEventType::kQuery, "SELECT name FROM users");
-  std::string msg2 = testutils::GenRequestPacket(MySQLEventType::kQuery, "SELECT age FROM users");
+  std::string msg1 = testutils::GenRequestPacket(Command::kQuery, "SELECT name FROM users");
+  std::string msg2 = testutils::GenRequestPacket(Command::kQuery, "SELECT age FROM users");
 
   Packet expected_message1;
-  expected_message1.msg =
-      absl::StrCat(CommandToString(MySQLEventType::kQuery), "SELECT name FROM users");
+  expected_message1.msg = absl::StrCat(CommandToString(Command::kQuery), "SELECT name FROM users");
   expected_message1.sequence_id = 0;
 
   Packet expected_message2;
-  expected_message2.msg =
-      absl::StrCat(CommandToString(MySQLEventType::kQuery), "SELECT age FROM users");
+  expected_message2.msg = absl::StrCat(CommandToString(Command::kQuery), "SELECT age FROM users");
   expected_message2.sequence_id = 0;
 
   const std::string buf = absl::StrCat(msg1, msg2);
@@ -158,7 +156,7 @@ TEST_F(MySQLParserTest, ParseResponse) {
   // TODO(chengruizhe): Define GenResponse to generate responses.
   MySQLReqResp kMySQLStmtPrepareMessage = {
       testutils::GenRequestPacket(
-          MySQLEventType::kStmtPrepare,
+          Command::kStmtPrepare,
           "SELECT COUNT(DISTINCT sock.sock_id) FROM sock JOIN sock_tag ON "
           "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id;"),
       // Response
@@ -172,7 +170,7 @@ TEST_F(MySQLParserTest, ParseResponse) {
               "\x64\x29\x00\x0c\x3f\x00\x15\x00\x00\x00\x08\x81\x00\x00\x00\x00"),
           // EOF packet
           ConstStringView("\x05\x00\x00\x03\xfe\x00\x00\x02\x00")),
-      MySQLEventType::kStmtPrepare};
+      Command::kStmtPrepare};
 
   std::deque<Packet> parsed_messages;
   ParseResult result = parser_.ParseFramesLoop(MessageType::kResponse,
@@ -245,7 +243,7 @@ TEST_F(MySQLParserTest, ParseMultipleRawPackets) {
 
 TEST_F(MySQLParserTest, ParseIncompleteRequest) {
   std::string msg1 =
-      testutils::GenRequestPacket(MySQLEventType::kStmtPrepare, "SELECT name FROM users WHERE");
+      testutils::GenRequestPacket(Command::kStmtPrepare, "SELECT name FROM users WHERE");
   // Change the length of the request so that it isn't complete.
   msg1[0] = '\x24';
 
@@ -279,8 +277,8 @@ TEST_F(MySQLParserTest, NoAppend) {
 
 TEST_F(MySQLParserTest, FindReqBoundaryAligned) {
   const std::string buf =
-      absl::StrCat(testutils::GenRequestPacket(MySQLEventType::kQuery, "SELECT foo"),
-                   testutils::GenRequestPacket(MySQLEventType::kStmtPrepare, "blahblahblah"));
+      absl::StrCat(testutils::GenRequestPacket(Command::kQuery, "SELECT foo"),
+                   testutils::GenRequestPacket(Command::kStmtPrepare, "blahblahblah"));
 
   size_t pos = FindFrameBoundary<mysql::Packet>(MessageType::kRequest, buf, 0);
   ASSERT_EQ(pos, 0);
@@ -289,27 +287,25 @@ TEST_F(MySQLParserTest, FindReqBoundaryAligned) {
 TEST_F(MySQLParserTest, FindReqBoundaryUnaligned) {
   const std::string buf =
       absl::StrCat(ConstStringView("some garbage leftover content\x03\x00\x00\x00"),
-                   testutils::GenRequestPacket(MySQLEventType::kQuery, "SELECT foo"),
-                   testutils::GenRequestPacket(MySQLEventType::kStmtPrepare, "blahblahblah"));
+                   testutils::GenRequestPacket(Command::kQuery, "SELECT foo"),
+                   testutils::GenRequestPacket(Command::kStmtPrepare, "blahblahblah"));
 
   // FindFrameBoundary() should cut out the garbage text.
   size_t pos = FindFrameBoundary<mysql::Packet>(MessageType::kRequest, buf, 0);
   ASSERT_NE(pos, std::string::npos);
-  EXPECT_EQ(
-      buf.substr(pos),
-      absl::StrCat(testutils::GenRequestPacket(MySQLEventType::kQuery, "SELECT foo"),
-                   testutils::GenRequestPacket(MySQLEventType::kStmtPrepare, "blahblahblah")));
+  EXPECT_EQ(buf.substr(pos),
+            absl::StrCat(testutils::GenRequestPacket(Command::kQuery, "SELECT foo"),
+                         testutils::GenRequestPacket(Command::kStmtPrepare, "blahblahblah")));
 }
 
 TEST_F(MySQLParserTest, FindReqBoundaryWithStartPos) {
   const std::string buf =
-      absl::StrCat(testutils::GenRequestPacket(MySQLEventType::kQuery, "SELECT foo"),
-                   testutils::GenRequestPacket(MySQLEventType::kStmtPrepare, "blahblahblah"));
+      absl::StrCat(testutils::GenRequestPacket(Command::kQuery, "SELECT foo"),
+                   testutils::GenRequestPacket(Command::kStmtPrepare, "blahblahblah"));
 
   size_t pos = FindFrameBoundary<mysql::Packet>(MessageType::kRequest, buf, 1);
   ASSERT_NE(pos, std::string::npos);
-  EXPECT_EQ(buf.substr(pos),
-            testutils::GenRequestPacket(MySQLEventType::kStmtPrepare, "blahblahblah"));
+  EXPECT_EQ(buf.substr(pos), testutils::GenRequestPacket(Command::kStmtPrepare, "blahblahblah"));
 }
 
 TEST_F(MySQLParserTest, FindNoBoundary) {

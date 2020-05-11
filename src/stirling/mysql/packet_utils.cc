@@ -133,45 +133,45 @@ Status ProcessBinaryResultsetRowPacket(const Packet& packet,
 
     std::string val;
     switch (column_defs[i].column_type) {
-      case MySQLColType::kString:
-      case MySQLColType::kVarChar:
-      case MySQLColType::kVarString:
-      case MySQLColType::kEnum:
-      case MySQLColType::kSet:
-      case MySQLColType::kLongBlob:
-      case MySQLColType::kMediumBlob:
-      case MySQLColType::kBlob:
-      case MySQLColType::kTinyBlob:
-      case MySQLColType::kGeometry:
-      case MySQLColType::kBit:
-      case MySQLColType::kDecimal:
-      case MySQLColType::kNewDecimal:
+      case ColType::kString:
+      case ColType::kVarChar:
+      case ColType::kVarString:
+      case ColType::kEnum:
+      case ColType::kSet:
+      case ColType::kLongBlob:
+      case ColType::kMediumBlob:
+      case ColType::kBlob:
+      case ColType::kTinyBlob:
+      case ColType::kGeometry:
+      case ColType::kBit:
+      case ColType::kDecimal:
+      case ColType::kNewDecimal:
         PL_RETURN_IF_ERROR(DissectStringParam(packet.msg, &offset, &val));
         break;
-      case MySQLColType::kLongLong:
+      case ColType::kLongLong:
         PL_RETURN_IF_ERROR(DissectIntParam<8>(packet.msg, &offset, &val));
         break;
-      case MySQLColType::kLong:
-      case MySQLColType::kInt24:
+      case ColType::kLong:
+      case ColType::kInt24:
         PL_RETURN_IF_ERROR(DissectIntParam<4>(packet.msg, &offset, &val));
         break;
-      case MySQLColType::kShort:
-      case MySQLColType::kYear:
+      case ColType::kShort:
+      case ColType::kYear:
         PL_RETURN_IF_ERROR(DissectIntParam<2>(packet.msg, &offset, &val));
         break;
-      case MySQLColType::kTiny:
+      case ColType::kTiny:
         PL_RETURN_IF_ERROR(DissectIntParam<1>(packet.msg, &offset, &val));
         break;
-      case MySQLColType::kDouble:
+      case ColType::kDouble:
         PL_RETURN_IF_ERROR(DissectFloatParam<double>(packet.msg, &offset, &val));
         break;
-      case MySQLColType::kFloat:
+      case ColType::kFloat:
         PL_RETURN_IF_ERROR(DissectFloatParam<float>(packet.msg, &offset, &val));
         break;
-      case MySQLColType::kDate:
-      case MySQLColType::kDateTime:
-      case MySQLColType::kTimestamp:
-      case MySQLColType::kTime:
+      case ColType::kDate:
+      case ColType::kDateTime:
+      case ColType::kTimestamp:
+      case ColType::kTime:
         // TODO(chengaruizhe): Implement DissectDateTime correctly.
         PL_RETURN_IF_ERROR(DissectDateTimeParam(packet.msg, &offset, &val));
         break;
@@ -213,7 +213,7 @@ StatusOr<ColDefinition> ProcessColumnDefPacket(const Packet& packet) {
   PL_RETURN_IF_ERROR(DissectInt<4>(packet.msg, &offset, &col_def.column_length));
   int8_t type;
   PL_RETURN_IF_ERROR(DissectInt<1>(packet.msg, &offset, &type));
-  col_def.column_type = static_cast<MySQLColType>(type);
+  col_def.column_type = static_cast<ColType>(type);
 
   PL_RETURN_IF_ERROR(DissectInt<2>(packet.msg, &offset, &col_def.flags));
   PL_RETURN_IF_ERROR(DissectInt<1>(packet.msg, &offset, &col_def.decimals));

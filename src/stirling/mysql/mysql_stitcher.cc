@@ -72,86 +72,86 @@ StatusOr<ParseState> ProcessPackets(const Packet& req_packet, DequeView<Packet> 
   StatusOr<ParseState> s;
 
   char command_byte = req_packet.msg[0];
-  MySQLEventType command = DecodeCommand(command_byte);
+  Command command = DecodeCommand(command_byte);
 
   switch (command) {
     // Internal commands with response: ERR_Packet.
-    case MySQLEventType::kConnect:
-    case MySQLEventType::kConnectOut:
-    case MySQLEventType::kTime:
-    case MySQLEventType::kDelayedInsert:
-    case MySQLEventType::kDaemon:
+    case Command::kConnect:
+    case Command::kConnectOut:
+    case Command::kTime:
+    case Command::kDelayedInsert:
+    case Command::kDaemon:
       return ProcessRequestWithBasicResponse(req_packet, /* string_req */ false, resp_packets_view,
                                              entry);
 
-    case MySQLEventType::kInitDB:
-    case MySQLEventType::kCreateDB:
-    case MySQLEventType::kDropDB:
+    case Command::kInitDB:
+    case Command::kCreateDB:
+    case Command::kDropDB:
       return ProcessRequestWithBasicResponse(req_packet, /* string_req */ true, resp_packets_view,
                                              entry);
 
       // Basic Commands with response: OK_Packet or ERR_Packet
-    case MySQLEventType::kSleep:
-    case MySQLEventType::kRegisterSlave:
-    case MySQLEventType::kResetConnection:
-    case MySQLEventType::kProcessKill:
-    case MySQLEventType::kRefresh:  // Deprecated.
-    case MySQLEventType::kPing:     // COM_PING can't actually send ERR_Packet.
+    case Command::kSleep:
+    case Command::kRegisterSlave:
+    case Command::kResetConnection:
+    case Command::kProcessKill:
+    case Command::kRefresh:  // Deprecated.
+    case Command::kPing:     // COM_PING can't actually send ERR_Packet.
       return ProcessRequestWithBasicResponse(req_packet, /* string_req */ false, resp_packets_view,
                                              entry);
 
-    case MySQLEventType::kQuit:  // Response: OK_Packet or a connection close.
+    case Command::kQuit:  // Response: OK_Packet or a connection close.
       return ProcessQuit(req_packet, resp_packets_view, entry);
 
       // Basic Commands with response: EOF_Packet or ERR_Packet.
-    case MySQLEventType::kShutdown:  // Deprecated.
-    case MySQLEventType::kSetOption:
-    case MySQLEventType::kDebug:
+    case Command::kShutdown:  // Deprecated.
+    case Command::kSetOption:
+    case Command::kDebug:
       return ProcessRequestWithBasicResponse(req_packet, /* string_req */ false, resp_packets_view,
                                              entry);
 
       // COM_FIELD_LIST has its own COM_FIELD_LIST meta response (ERR_Packet or one or more Column
       // Definition packets and a closing EOF_Packet).
-    case MySQLEventType::kFieldList:  // Deprecated.
+    case Command::kFieldList:  // Deprecated.
       return ProcessFieldList(req_packet, resp_packets_view, entry);
 
       // COM_QUERY has its own COM_QUERY meta response (ERR_Packet, OK_Packet,
       // Protocol::LOCAL_INFILE_Request, or ProtocolText::Resultset).
-    case MySQLEventType::kQuery:
+    case Command::kQuery:
       return ProcessQuery(req_packet, resp_packets_view, entry);
 
       // COM_STMT_PREPARE returns COM_STMT_PREPARE_OK on success, ERR_Packet otherwise.
-    case MySQLEventType::kStmtPrepare:
+    case Command::kStmtPrepare:
       return ProcessStmtPrepare(req_packet, resp_packets_view, state, entry);
 
       // COM_STMT_SEND_LONG_DATA has no response.
-    case MySQLEventType::kStmtSendLongData:
+    case Command::kStmtSendLongData:
       return ProcessStmtSendLongData(req_packet, resp_packets_view, state, entry);
 
       // COM_STMT_EXECUTE has its own COM_STMT_EXECUTE meta response (OK_Packet, ERR_Packet or a
       // resultset: Binary Protocol Resultset).
-    case MySQLEventType::kStmtExecute:
+    case Command::kStmtExecute:
       return ProcessStmtExecute(req_packet, resp_packets_view, state, entry);
 
       // COM_CLOSE has no response.
-    case MySQLEventType::kStmtClose:
+    case Command::kStmtClose:
       return ProcessStmtClose(req_packet, resp_packets_view, state, entry);
 
       // COM_STMT_RESET response is OK_Packet if the statement could be reset, ERR_Packet if not.
-    case MySQLEventType::kStmtReset:
+    case Command::kStmtReset:
       return ProcessStmtReset(req_packet, resp_packets_view, state, entry);
 
       // COM_STMT_FETCH has a meta response (multi-resultset, or ERR_Packet).
-    case MySQLEventType::kStmtFetch:
+    case Command::kStmtFetch:
       return ProcessStmtFetch(req_packet, resp_packets_view, state, entry);
 
-    case MySQLEventType::kProcessInfo:     // a ProtocolText::Resultset or ERR_Packet
-    case MySQLEventType::kChangeUser:      // Authentication Method Switch Request Packet or
-                                           // ERR_Packet
-    case MySQLEventType::kBinlogDumpGTID:  // binlog network stream, ERR_Packet or EOF_Packet
-    case MySQLEventType::kBinlogDump:      // binlog network stream, ERR_Packet or EOF_Packet
-    case MySQLEventType::kTableDump:       // a table dump or ERR_Packet
-    case MySQLEventType::kStatistics:      // string.EOF
+    case Command::kProcessInfo:     // a ProtocolText::Resultset or ERR_Packet
+    case Command::kChangeUser:      // Authentication Method Switch Request Packet or
+                                    // ERR_Packet
+    case Command::kBinlogDumpGTID:  // binlog network stream, ERR_Packet or EOF_Packet
+    case Command::kBinlogDump:      // binlog network stream, ERR_Packet or EOF_Packet
+    case Command::kTableDump:       // a table dump or ERR_Packet
+    case Command::kStatistics:      // string.EOF
       // Rely on recovery to re-sync responses based on timestamps.
       return error::Internal("Unimplemented command $0.", magic_enum::enum_name(command));
 
@@ -179,7 +179,7 @@ RecordsWithErrorCount<Record> ProcessMySQLPackets(std::deque<Packet>* req_packet
 
     // Command is the first byte.
     char command_byte = req_packet.msg[0];
-    MySQLEventType command = DecodeCommand(command_byte);
+    Command command = DecodeCommand(command_byte);
 
     VLOG(2) << absl::StrFormat("command=%x msg=%s", command_byte, req_packet.msg.substr(1));
 
@@ -202,13 +202,13 @@ RecordsWithErrorCount<Record> ProcessMySQLPackets(std::deque<Packet>* req_packet
     // are indicative of a higher confidence that this is indeed a MySQL protocol.
     if (!state->active && s.ok() && s.ValueOrDie() == ParseState::kSuccess) {
       switch (command) {
-        case MySQLEventType::kConnect:
-        case MySQLEventType::kInitDB:
-        case MySQLEventType::kCreateDB:
-        case MySQLEventType::kDropDB:
-        case MySQLEventType::kQuery:
-        case MySQLEventType::kStmtPrepare:
-        case MySQLEventType::kStmtExecute:
+        case Command::kConnect:
+        case Command::kInitDB:
+        case Command::kCreateDB:
+        case Command::kDropDB:
+        case Command::kQuery:
+        case Command::kStmtPrepare:
+        case Command::kStmtExecute:
           state->active = true;
           break;
         default:
@@ -278,7 +278,7 @@ StatusOr<ParseState> ProcessStmtPrepare(const Packet& req_packet, DequeView<Pack
   //----------------
 
   if (resp_packets.empty()) {
-    entry->resp.status = MySQLRespStatus::kUnknown;
+    entry->resp.status = RespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
   }
 
@@ -329,7 +329,7 @@ StatusOr<ParseState> ProcessStmtExecute(const Packet& req_packet, DequeView<Pack
   //----------------
 
   if (resp_packets.empty()) {
-    entry->resp.status = MySQLRespStatus::kUnknown;
+    entry->resp.status = RespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
   }
 
@@ -384,7 +384,7 @@ StatusOr<ParseState> ProcessStmtFetch(const Packet& req_packet,
   // Response
   //----------------
 
-  entry->resp.status = MySQLRespStatus::kUnknown;
+  entry->resp.status = RespStatus::kUnknown;
   return error::Unimplemented("COM_STMT_FETCH response is unhandled.");
 }
 
@@ -413,7 +413,7 @@ StatusOr<ParseState> ProcessQuery(const Packet& req_packet, DequeView<Packet> re
   //----------------
 
   if (resp_packets.empty()) {
-    entry->resp.status = MySQLRespStatus::kUnknown;
+    entry->resp.status = RespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
   }
 
@@ -449,7 +449,7 @@ StatusOr<ParseState> ProcessFieldList(const Packet& req_packet,
   // Response
   //----------------
 
-  entry->resp.status = MySQLRespStatus::kUnknown;
+  entry->resp.status = RespStatus::kUnknown;
   return error::Unimplemented("COM_FIELD_LIST response is unhandled.");
 }
 
@@ -468,14 +468,14 @@ StatusOr<ParseState> ProcessQuit(const Packet& req_packet, DequeView<Packet> res
   //----------------
 
   if (resp_packets.empty()) {
-    entry->resp.status = MySQLRespStatus::kNone;
+    entry->resp.status = RespStatus::kNone;
     entry->resp.timestamp_ns = req_packet.timestamp_ns;
     return ParseState::kSuccess;
   }
 
   const Packet& resp_packet = resp_packets.front();
   if (IsOKPacket(resp_packet)) {
-    entry->resp.status = MySQLRespStatus::kOK;
+    entry->resp.status = RespStatus::kOK;
     entry->resp.timestamp_ns = resp_packet.timestamp_ns;
     return ParseState::kSuccess;
   }
@@ -507,7 +507,7 @@ StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, b
   //----------------
 
   if (resp_packets.empty()) {
-    entry->resp.status = MySQLRespStatus::kUnknown;
+    entry->resp.status = RespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
   }
 
@@ -520,7 +520,7 @@ StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, b
   const Packet& resp_packet = resp_packets.front();
 
   if (IsOKPacket(resp_packet) || IsEOFPacket(resp_packet)) {
-    entry->resp.status = MySQLRespStatus::kOK;
+    entry->resp.status = RespStatus::kOK;
     entry->resp.timestamp_ns = resp_packet.timestamp_ns;
     return ParseState::kSuccess;
   }
@@ -529,7 +529,7 @@ StatusOr<ParseState> ProcessRequestWithBasicResponse(const Packet& req_packet, b
     return HandleErrMessage(resp_packets, entry);
   }
 
-  entry->resp.status = MySQLRespStatus::kUnknown;
+  entry->resp.status = RespStatus::kUnknown;
   return error::Internal("Unexpected packet");
 }
 

@@ -133,25 +133,23 @@ std::vector<mysql::Record> ToRecordVector(const types::ColumnWrapperRecordBatch&
 
   for (const auto& idx : indices) {
     mysql::Record r;
-    r.req.cmd =
-        static_cast<mysql::MySQLEventType>(rb[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx).val);
+    r.req.cmd = static_cast<mysql::Command>(rb[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx).val);
     r.req.msg = rb[kMySQLReqBodyIdx]->Get<types::StringValue>(idx);
-    r.resp.status = static_cast<mysql::MySQLRespStatus>(
-        rb[kMySQLRespStatusIdx]->Get<types::Int64Value>(idx).val);
+    r.resp.status =
+        static_cast<mysql::RespStatus>(rb[kMySQLRespStatusIdx]->Get<types::Int64Value>(idx).val);
     r.resp.msg = rb[kMySQLRespBodyIdx]->Get<types::StringValue>(idx);
     result.push_back(r);
   }
   return result;
 }
 
-auto EqMySQLReq(const mysql::MySQLRequest& x) {
-  return AllOf(Field(&mysql::MySQLRequest::cmd, Eq(x.cmd)),
-               Field(&mysql::MySQLRequest::msg, StrEq(x.msg)));
+auto EqMySQLReq(const mysql::Request& x) {
+  return AllOf(Field(&mysql::Request::cmd, Eq(x.cmd)), Field(&mysql::Request::msg, StrEq(x.msg)));
 }
 
-auto EqMySQLResp(const mysql::MySQLResponse& x) {
-  return AllOf(Field(&mysql::MySQLResponse::status, Eq(x.status)),
-               Field(&mysql::MySQLResponse::msg, StrEq(x.msg)));
+auto EqMySQLResp(const mysql::Response& x) {
+  return AllOf(Field(&mysql::Response::status, Eq(x.status)),
+               Field(&mysql::Response::msg, StrEq(x.msg)));
 }
 
 auto EqMySQLRecord(const mysql::Record& x) {
@@ -166,12 +164,12 @@ auto EqMySQLRecord(const mysql::Record& x) {
 // clang-format off
 mysql::Record kRecordInit = {
   .req = {
-    .cmd = mysql::MySQLEventType::kQuery,
+    .cmd = mysql::Command::kQuery,
     .msg = R"(select @@version_comment limit 1)",
     .timestamp_ns = 0,
   },
   .resp = {
-    .status = mysql::MySQLRespStatus::kOK,
+    .status = mysql::RespStatus::kOK,
     .msg = R"(Resultset rows = 1)",
     .timestamp_ns = 0,
   }
@@ -179,12 +177,12 @@ mysql::Record kRecordInit = {
 
 mysql::Record kRecordScript1Cmd1 = {
   .req = {
-    .cmd = mysql::MySQLEventType::kQuery,
+    .cmd = mysql::Command::kQuery,
     .msg = R"(select table_schema as database_name, table_name from information_schema.tables)",
     .timestamp_ns = 0,
   },
   .resp = {
-    .status = mysql::MySQLRespStatus::kOK,
+    .status = mysql::RespStatus::kOK,
     .msg = R"(Resultset rows = 301)",
     .timestamp_ns = 0,
   }
@@ -192,12 +190,12 @@ mysql::Record kRecordScript1Cmd1 = {
 
 mysql::Record kRecordScript1Cmd2 = {
   .req = {
-    .cmd = mysql::MySQLEventType::kQuery,
+    .cmd = mysql::Command::kQuery,
     .msg = "SHOW DATABASES",
     .timestamp_ns = 0,
   },
   .resp = {
-    .status = mysql::MySQLRespStatus::kOK,
+    .status = mysql::RespStatus::kOK,
     .msg = "Resultset rows = 4",
     .timestamp_ns = 0,
   }
@@ -205,12 +203,12 @@ mysql::Record kRecordScript1Cmd2 = {
 
 mysql::Record kRecordScript1Cmd3 = {
   .req = {
-    .cmd = mysql::MySQLEventType::kQuery,
+    .cmd = mysql::Command::kQuery,
     .msg = "SELECT DATABASE()",
     .timestamp_ns = 0,
   },
   .resp = {
-    .status = mysql::MySQLRespStatus::kOK,
+    .status = mysql::RespStatus::kOK,
     .msg = "Resultset rows = 1",
     .timestamp_ns = 0,
   }
@@ -218,12 +216,12 @@ mysql::Record kRecordScript1Cmd3 = {
 
 mysql::Record kRecordScript1Cmd4 = {
   .req = {
-    .cmd = mysql::MySQLEventType::kInitDB,
+    .cmd = mysql::Command::kInitDB,
     .msg = "mysql",
     .timestamp_ns = 0,
   },
   .resp = {
-    .status = mysql::MySQLRespStatus::kOK,
+    .status = mysql::RespStatus::kOK,
     .msg = "",
     .timestamp_ns = 0,
   }
@@ -231,12 +229,12 @@ mysql::Record kRecordScript1Cmd4 = {
 
 mysql::Record kRecordScript1Cmd5 = {
   .req = {
-    .cmd = mysql::MySQLEventType::kQuery,
+    .cmd = mysql::Command::kQuery,
     .msg = "SELECT user, host FROM user",
     .timestamp_ns = 0,
   },
   .resp = {
-    .status = mysql::MySQLRespStatus::kOK,
+    .status = mysql::RespStatus::kOK,
     .msg = "Resultset rows = 6",
     .timestamp_ns = 0,
   }
@@ -244,12 +242,12 @@ mysql::Record kRecordScript1Cmd5 = {
 
 mysql::Record kRecordScript1Cmd6 = {
   .req = {
-    .cmd = mysql::MySQLEventType::kQuit,
+    .cmd = mysql::Command::kQuit,
     .msg = "",
     .timestamp_ns = 0,
   },
   .resp = {
-    .status = mysql::MySQLRespStatus::kNone,
+    .status = mysql::RespStatus::kNone,
     .msg = "",
     .timestamp_ns = 0,
   }
@@ -257,7 +255,7 @@ mysql::Record kRecordScript1Cmd6 = {
 
 mysql::Record kRecordScript2Cmd1 = {
   .req = {
-    .cmd = mysql::MySQLEventType::kQuery,
+    .cmd = mysql::Command::kQuery,
     .msg = R"(PREPARE pstmt FROM 'select table_schema as database_name, table_name
 from information_schema.tables
 where table_type = ? and table_schema = ?
@@ -265,7 +263,7 @@ order by database_name, table_name')",
     .timestamp_ns = 0,
   },
   .resp = {
-      .status = mysql::MySQLRespStatus::kOK,
+      .status = mysql::RespStatus::kOK,
       .msg = "",
       .timestamp_ns = 0,
   }
@@ -273,12 +271,12 @@ order by database_name, table_name')",
 
 mysql::Record kRecordScript2Cmd2 = {
   .req = {
-    .cmd = mysql::MySQLEventType::kQuery,
+    .cmd = mysql::Command::kQuery,
     .msg = "SET @tableType = 'BASE TABLE'",
     .timestamp_ns = 0,
   },
   .resp = {
-    .status = mysql::MySQLRespStatus::kOK,
+    .status = mysql::RespStatus::kOK,
     .msg = "",
     .timestamp_ns = 0,
   }
@@ -286,12 +284,12 @@ mysql::Record kRecordScript2Cmd2 = {
 
 mysql::Record kRecordScript2Cmd3 = {
   .req = {
-    .cmd = mysql::MySQLEventType::kQuery,
+    .cmd = mysql::Command::kQuery,
     .msg = "SET @tableSchema = 'mysql'",
     .timestamp_ns = 0,
   },
   .resp = {
-    .status = mysql::MySQLRespStatus::kOK,
+    .status = mysql::RespStatus::kOK,
     .msg = "",
     .timestamp_ns = 0,
   }
@@ -299,12 +297,12 @@ mysql::Record kRecordScript2Cmd3 = {
 
 mysql::Record kRecordScript2Cmd4 = {
   .req = {
-    .cmd = mysql::MySQLEventType::kQuery,
+    .cmd = mysql::Command::kQuery,
     .msg = "EXECUTE pstmt USING @tableType, @tableSchema",
     .timestamp_ns = 0,
   },
   .resp = {
-    .status = mysql::MySQLRespStatus::kOK,
+    .status = mysql::RespStatus::kOK,
     .msg = "Resultset rows = 33",
     .timestamp_ns = 0,
   }
@@ -312,12 +310,12 @@ mysql::Record kRecordScript2Cmd4 = {
 
 mysql::Record kRecordScript2Cmd5 = {
   .req = {
-    .cmd = mysql::MySQLEventType::kQuery,
+    .cmd = mysql::Command::kQuery,
     .msg = "SET @tableSchema = 'bogus'",
     .timestamp_ns = 0,
   },
   .resp = {
-    .status = mysql::MySQLRespStatus::kOK,
+    .status = mysql::RespStatus::kOK,
     .msg = "",
     .timestamp_ns = 0,
   }
@@ -325,12 +323,12 @@ mysql::Record kRecordScript2Cmd5 = {
 
 mysql::Record kRecordScript2Cmd6 = {
   .req = {
-    .cmd = mysql::MySQLEventType::kQuery,
+    .cmd = mysql::Command::kQuery,
     .msg = "EXECUTE pstmt USING @tableType, @tableSchema",
     .timestamp_ns = 0,
   },
   .resp = {
-    .status = mysql::MySQLRespStatus::kOK,
+    .status = mysql::RespStatus::kOK,
     .msg = "Resultset rows = 0",
     .timestamp_ns = 0,
   }
@@ -338,12 +336,12 @@ mysql::Record kRecordScript2Cmd6 = {
 
 mysql::Record kRecordScript2Cmd7 = {
   .req = {
-    .cmd = mysql::MySQLEventType::kQuery,
+    .cmd = mysql::Command::kQuery,
     .msg = "DEALLOCATE PREPARE pstmt",
     .timestamp_ns = 0,
   },
   .resp = {
-    .status = mysql::MySQLRespStatus::kOK,
+    .status = mysql::RespStatus::kOK,
     .msg = "",
     .timestamp_ns = 0,
   }
@@ -351,12 +349,12 @@ mysql::Record kRecordScript2Cmd7 = {
 
 mysql::Record kRecordScript2Cmd8 = {
   .req = {
-    .cmd = mysql::MySQLEventType::kQuit,
+    .cmd = mysql::Command::kQuit,
     .msg = "",
     .timestamp_ns = 0,
   },
   .resp = {
-    .status = mysql::MySQLRespStatus::kNone,
+    .status = mysql::RespStatus::kNone,
     .msg = "",
     .timestamp_ns = 0,
   }

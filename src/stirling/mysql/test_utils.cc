@@ -73,7 +73,7 @@ std::string GenRawPacket(const Packet& packet) {
 /**
  * Generates a raw packet with a string request.
  */
-std::string GenRequestPacket(MySQLEventType command, std::string_view msg) {
+std::string GenRequestPacket(Command command, std::string_view msg) {
   return GenRawPacket(0, absl::StrCat(CommandToString(command), msg));
 }
 
@@ -186,7 +186,7 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
   char statement_id[4];
   utils::IntToLEndianBytes(req.stmt_id, statement_id);
   std::string msg =
-      absl::StrCat(CommandToString(MySQLEventType::kStmtExecute), CharArrayStringView(statement_id),
+      absl::StrCat(CommandToString(Command::kStmtExecute), CharArrayStringView(statement_id),
                    ConstStringView("\x00\x01\x00\x00\x00"));
   int num_params = req.params.size();
   if (num_params > 0) {
@@ -198,7 +198,7 @@ Packet GenStmtExecuteRequest(const StmtExecuteRequest& req) {
   for (const StmtExecuteParam& param : req.params) {
     switch (param.type) {
       // TODO(chengruizhe): Add more types.
-      case MySQLColType::kString:
+      case ColType::kString:
         msg += ConstStringView("\xfe\x00");
         break;
       default:
@@ -219,7 +219,7 @@ Packet GenStmtCloseRequest(const StmtCloseRequest& req) {
   char statement_id[4];
   utils::IntToLEndianBytes(req.stmt_id, statement_id);
   std::string msg =
-      absl::StrCat(CommandToString(MySQLEventType::kStmtClose), CharArrayStringView(statement_id));
+      absl::StrCat(CommandToString(Command::kStmtClose), CharArrayStringView(statement_id));
   Packet p;
   p.msg = std::move(msg);
   return p;
@@ -228,7 +228,7 @@ Packet GenStmtCloseRequest(const StmtCloseRequest& req) {
 /**
  * Generates a String Request packet of the specified type.
  */
-Packet GenStringRequest(const StringRequest& req, MySQLEventType command) {
+Packet GenStringRequest(const StringRequest& req, Command command) {
   DCHECK_LE(static_cast<uint8_t>(command), kMaxCommandValue);
   Packet p;
   p.msg = absl::StrCat(CommandToString(command), req.msg);

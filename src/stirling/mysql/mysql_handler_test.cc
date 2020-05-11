@@ -17,7 +17,7 @@ TEST(HandleErrMessage, Basic) {
 
   Record entry;
   EXPECT_OK_AND_EQ(HandleErrMessage(resp_packets, &entry), ParseState::kSuccess);
-  EXPECT_EQ(entry.resp.status, MySQLRespStatus::kErr);
+  EXPECT_EQ(entry.resp.status, RespStatus::kErr);
   EXPECT_EQ(entry.resp.msg, "This is an error.");
 }
 
@@ -26,7 +26,7 @@ TEST(HandleOKMessage, Basic) {
 
   Record entry;
   EXPECT_OK_AND_EQ(HandleOKMessage(resp_packets, &entry), ParseState::kSuccess);
-  EXPECT_EQ(entry.resp.status, MySQLRespStatus::kOK);
+  EXPECT_EQ(entry.resp.status, RespStatus::kOK);
 }
 
 TEST(HandleResultsetResponse, ValidWithEOF) {
@@ -37,7 +37,7 @@ TEST(HandleResultsetResponse, ValidWithEOF) {
   EXPECT_OK_AND_EQ(HandleResultsetResponse(resp_packets, &entry, /* binaryresultset */ true,
                                            /* multiresultset */ false),
                    ParseState::kSuccess);
-  EXPECT_EQ(entry.resp.status, MySQLRespStatus::kOK);
+  EXPECT_EQ(entry.resp.status, RespStatus::kOK);
   EXPECT_EQ(entry.resp.msg, "Resultset rows = 2");
 }
 
@@ -49,7 +49,7 @@ TEST(HandleResultsetResponse, ValidNoEOF) {
   EXPECT_OK_AND_EQ(HandleResultsetResponse(resp_packets, &entry, /* binaryresultset */ true,
                                            /* multiresultset */ false),
                    ParseState::kSuccess);
-  EXPECT_EQ(entry.resp.status, MySQLRespStatus::kOK);
+  EXPECT_EQ(entry.resp.status, RespStatus::kOK);
   EXPECT_EQ(entry.resp.msg, "Resultset rows = 2");
 }
 
@@ -62,7 +62,7 @@ TEST(HandleResultsetResponse, NeedsMoreData) {
   EXPECT_OK_AND_EQ(HandleResultsetResponse(resp_packets, &entry, /* binaryresultset */ true,
                                            /* multiresultset */ false),
                    ParseState::kNeedsMoreData);
-  EXPECT_EQ(entry.resp.status, MySQLRespStatus::kUnknown);
+  EXPECT_EQ(entry.resp.status, RespStatus::kUnknown);
   EXPECT_EQ(entry.resp.msg, "");
 }
 
@@ -76,7 +76,7 @@ TEST(HandleResultsetResponse, InvalidResponse) {
   State state;
   EXPECT_NOT_OK(HandleResultsetResponse(resp_packets, &entry, /* binaryresultset */ true,
                                         /* multiresultset */ false));
-  EXPECT_EQ(entry.resp.status, MySQLRespStatus::kUnknown);
+  EXPECT_EQ(entry.resp.status, RespStatus::kUnknown);
   EXPECT_EQ(entry.resp.msg, "");
 }
 
@@ -86,7 +86,7 @@ TEST(HandleStmtPrepareOKResponse, Valid) {
   Record entry;
   State state;
   EXPECT_OK_AND_EQ(HandleStmtPrepareOKResponse(packets, &state, &entry), ParseState::kSuccess);
-  EXPECT_EQ(entry.resp.status, MySQLRespStatus::kOK);
+  EXPECT_EQ(entry.resp.status, RespStatus::kOK);
   EXPECT_EQ(state.prepared_statements.size(), 1);
   EXPECT_EQ(entry.resp.msg, "");
 }
@@ -104,7 +104,7 @@ TEST(HandleStmtPrepareOKResponse, NeedsMoreData) {
   State state;
   EXPECT_OK_AND_EQ(HandleStmtPrepareOKResponse(packets, &state, &entry),
                    ParseState::kNeedsMoreData);
-  EXPECT_EQ(entry.resp.status, MySQLRespStatus::kUnknown);
+  EXPECT_EQ(entry.resp.status, RespStatus::kUnknown);
   EXPECT_EQ(state.prepared_statements.size(), 0);
   EXPECT_EQ(entry.resp.msg, "");
 }
@@ -117,7 +117,7 @@ TEST(HandleStmtPrepareOKResponse, Invalid) {
   Record entry;
   State state;
   EXPECT_NOT_OK(HandleStmtPrepareOKResponse(packets, &state, &entry));
-  EXPECT_EQ(entry.resp.status, MySQLRespStatus::kUnknown);
+  EXPECT_EQ(entry.resp.status, RespStatus::kUnknown);
   EXPECT_EQ(state.prepared_statements.size(), 0);
   EXPECT_EQ(entry.resp.msg, "");
 }
@@ -132,7 +132,7 @@ TEST(HandleStmtExecuteRequest, Basic) {
   Record entry;
   EXPECT_OK_AND_EQ(HandleStmtExecuteRequest(req_packet, &prepare_map, &entry),
                    ParseState::kSuccess);
-  EXPECT_EQ(entry.req.cmd, MySQLEventType::kStmtExecute);
+  EXPECT_EQ(entry.req.cmd, Command::kStmtExecute);
   EXPECT_EQ(entry.req.msg,
             "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock JOIN sock_tag "
             "ON sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE "
@@ -141,11 +141,11 @@ TEST(HandleStmtExecuteRequest, Basic) {
 
 TEST(HandleStringRequest, Basic) {
   Packet req_packet =
-      testutils::GenStringRequest(testdata::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
+      testutils::GenStringRequest(testdata::kStmtPrepareRequest, Command::kStmtPrepare);
 
   Record entry;
   EXPECT_OK_AND_EQ(HandleStringRequest(req_packet, &entry), ParseState::kSuccess);
-  EXPECT_EQ(entry.req.cmd, MySQLEventType::kStmtPrepare);
+  EXPECT_EQ(entry.req.cmd, Command::kStmtPrepare);
   EXPECT_EQ(entry.req.msg,
             "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock JOIN sock_tag "
             "ON sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE "

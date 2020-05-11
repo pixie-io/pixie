@@ -72,8 +72,7 @@ size_t FindFrameBoundary(MessageType type, std::string_view buf, size_t start_po
     std::string_view cur_buf = buf.substr(i);
     int packet_length = utils::LEndianBytesToInt<int, mysql::kPayloadLengthLength>(cur_buf);
     uint8_t sequence_id = static_cast<uint8_t>(cur_buf[3]);
-    auto command_byte =
-        magic_enum::enum_cast<mysql::MySQLEventType>(cur_buf[mysql::kPacketHeaderLength]);
+    auto command_byte = magic_enum::enum_cast<mysql::Command>(cur_buf[mysql::kPacketHeaderLength]);
 
     // Requests must have sequence id of 0.
     if (sequence_id != 0) {

@@ -100,7 +100,7 @@ std::vector<std::string> PacketsToRaw(const std::deque<mysql::Packet>& packets) 
 // NOLINTNEXTLINE : runtime/string.
 const std::string kMySQLStmtPrepareReq =
     mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
-        mysql::testdata::kStmtPrepareRequest, mysql::MySQLEventType::kStmtPrepare));
+        mysql::testdata::kStmtPrepareRequest, mysql::Command::kStmtPrepare));
 
 const std::vector<std::string> kMySQLStmtPrepareResp =
     PacketsToRaw(mysql::testutils::GenStmtPrepareOKResponse(mysql::testdata::kStmtPrepareResponse));
@@ -121,9 +121,8 @@ const std::string kMySQLErrResp = mysql::testutils::GenRawPacket(mysql::testutil
     1, mysql::ErrResponse{.error_code = 1096, .error_message = "This is an error."}));
 
 // NOLINTNEXTLINE : runtime/string.
-const std::string kMySQLQueryReq =
-    mysql::testutils::GenRawPacket(mysql::testutils::GenStringRequest(
-        mysql::testdata::kQueryRequest, mysql::MySQLEventType::kQuery));
+const std::string kMySQLQueryReq = mysql::testutils::GenRawPacket(
+    mysql::testutils::GenStringRequest(mysql::testdata::kQueryRequest, mysql::Command::kQuery));
 
 const std::vector<std::string> kMySQLQueryResp =
     PacketsToRaw(mysql::testutils::GenResultset(mysql::testdata::kQueryResultset));
@@ -923,7 +922,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
             "select @@version_comment limit 1");
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "Resultset rows = 1");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
-            static_cast<int>(mysql::MySQLEventType::kQuery));
+            static_cast<int>(mysql::Command::kQuery));
   EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
 
   ++idx;
@@ -931,7 +930,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
             "DROP DATABASE IF EXISTS employees");
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
-            static_cast<int>(mysql::MySQLEventType::kQuery));
+            static_cast<int>(mysql::Command::kQuery));
   EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
 
   ++idx;
@@ -939,20 +938,20 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
             "CREATE DATABASE IF NOT EXISTS employees");
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
-            static_cast<int>(mysql::MySQLEventType::kQuery));
+            static_cast<int>(mysql::Command::kQuery));
   EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
 
   ++idx;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx), "SELECT DATABASE()");
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "Resultset rows = 1");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
-            static_cast<int>(mysql::MySQLEventType::kQuery));
+            static_cast<int>(mysql::Command::kQuery));
   EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
 
   ++idx;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx), "employees");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
-            static_cast<int>(mysql::MySQLEventType::kInitDB));
+            static_cast<int>(mysql::Command::kInitDB));
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "");
   EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
 
@@ -960,7 +959,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
             "SELECT 'CREATING DATABASE STRUCTURE' as 'INFO'");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
-            static_cast<int>(mysql::MySQLEventType::kQuery));
+            static_cast<int>(mysql::Command::kQuery));
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "Resultset rows = 1");
   EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
 
@@ -970,7 +969,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
             "   titles,\n                     salaries, \n                     employees, \n       "
             "              departments");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
-            static_cast<int>(mysql::MySQLEventType::kQuery));
+            static_cast<int>(mysql::Command::kQuery));
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "");
   EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx), 1);
 
@@ -978,7 +977,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
             "set storage_engine = InnoDB");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
-            static_cast<int>(mysql::MySQLEventType::kQuery));
+            static_cast<int>(mysql::Command::kQuery));
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx),
             "Unknown system variable 'storage_engine'");
   EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx).val, 1);
@@ -986,7 +985,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
   ++idx;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx), "");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
-            static_cast<int>(mysql::MySQLEventType::kQuit));
+            static_cast<int>(mysql::Command::kQuit));
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "");
   // Not checking latency since connection ended.
 }
@@ -1003,7 +1002,7 @@ TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
   // The following is a captured trace while running a script on a real instance of MySQL.
   std::vector<std::unique_ptr<SocketDataEvent>> events;
   events.push_back(event_gen.InitSendEvent<kProtocolMySQL>(mysql::testutils::GenRequestPacket(
-      mysql::MySQLEventType::kQuery, "SELECT emp_no FROM employees WHERE emp_no < 15000;")));
+      mysql::Command::kQuery, "SELECT emp_no FROM employees WHERE emp_no < 15000;")));
 
   // Sequence ID of zero is the request.
   int seq_id = 1;
@@ -1023,7 +1022,7 @@ TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
                                                .next_length = 12,
                                                .character_set = 0x3f,
                                                .column_length = 11,
-                                               .column_type = mysql::MySQLColType::kLong,
+                                               .column_type = mysql::ColType::kLong,
                                                .flags = 0x5003,
                                                .decimals = 0})
                   .msg)));
@@ -1051,7 +1050,7 @@ TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
             "SELECT emp_no FROM employees WHERE emp_no < 15000;");
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx), "Resultset rows = 9998");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
-            static_cast<int>(mysql::MySQLEventType::kQuery));
+            static_cast<int>(mysql::Command::kQuery));
   EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx).val, 10001);
 }
 
@@ -1079,7 +1078,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
   // The following is a captured trace while running a script on a real instance of MySQL.
   std::vector<std::unique_ptr<SocketDataEvent>> events;
   events.push_back(event_gen.InitSendEvent<kProtocolMySQL>(
-      mysql::testutils::GenRequestPacket(mysql::MySQLEventType::kQuery, "CALL multi()")));
+      mysql::testutils::GenRequestPacket(mysql::Command::kQuery, "CALL multi()")));
 
   // Sequence ID of zero is the request.
   int seq_id = 1;
@@ -1140,7 +1139,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
   EXPECT_EQ(record_batch[kMySQLRespBodyIdx]->Get<types::StringValue>(idx),
             "Resultset rows = 1, Resultset rows = 1");
   EXPECT_EQ(record_batch[kMySQLReqCmdIdx]->Get<types::Int64Value>(idx),
-            static_cast<int>(mysql::MySQLEventType::kQuery));
+            static_cast<int>(mysql::Command::kQuery));
   EXPECT_EQ(record_batch[kMySQLLatencyIdx]->Get<types::Int64Value>(idx).val, 9);
 }
 

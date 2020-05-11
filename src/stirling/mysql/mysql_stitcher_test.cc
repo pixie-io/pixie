@@ -18,8 +18,7 @@ bool operator==(const Record& lhs, const Record& rhs) {
 
 TEST(StitcherTest, TestProcessStmtPrepareOK) {
   // Test setup.
-  Packet req =
-      testutils::GenStringRequest(testdata::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
+  Packet req = testutils::GenStringRequest(testdata::kStmtPrepareRequest, Command::kStmtPrepare);
   std::deque<Packet> ok_resp_packets =
       testutils::GenStmtPrepareOKResponse(testdata::kStmtPrepareResponse);
   State state{std::map<int, PreparedStatement>()};
@@ -31,15 +30,14 @@ TEST(StitcherTest, TestProcessStmtPrepareOK) {
   // Check resulting state and entries.
   auto iter = state.prepared_statements.find(testdata::kStmtID);
   EXPECT_TRUE(iter != state.prepared_statements.end());
-  Record expected_entry{.req = {MySQLEventType::kStmtPrepare, testdata::kStmtPrepareRequest.msg, 0},
-                        .resp = {MySQLRespStatus::kOK, "", 0}};
+  Record expected_entry{.req = {Command::kStmtPrepare, testdata::kStmtPrepareRequest.msg, 0},
+                        .resp = {RespStatus::kOK, "", 0}};
   EXPECT_EQ(expected_entry, entry);
 }
 
 TEST(StitcherTest, TestProcessStmtPrepareErr) {
   // Test setup.
-  Packet req =
-      testutils::GenStringRequest(testdata::kStmtPrepareRequest, MySQLEventType::kStmtPrepare);
+  Packet req = testutils::GenStringRequest(testdata::kStmtPrepareRequest, Command::kStmtPrepare);
   std::deque<Packet> err_resp_packets;
   ErrResponse err_resp = {.error_code = 1096, .error_message = "This is an error."};
   err_resp_packets.emplace_back(testutils::GenErr(/* seq_id */ 1, err_resp));
@@ -52,9 +50,8 @@ TEST(StitcherTest, TestProcessStmtPrepareErr) {
   // Check resulting state and entries.
   auto iter = state.prepared_statements.find(testdata::kStmtID);
   EXPECT_EQ(iter, state.prepared_statements.end());
-  Record expected_err_entry{
-      .req = {MySQLEventType::kStmtPrepare, testdata::kStmtPrepareRequest.msg, 0},
-      .resp = {MySQLRespStatus::kErr, "This is an error.", 0}};
+  Record expected_err_entry{.req = {Command::kStmtPrepare, testdata::kStmtPrepareRequest.msg, 0},
+                            .resp = {RespStatus::kErr, "This is an error.", 0}};
   EXPECT_EQ(expected_err_entry, entry);
 }
 
@@ -71,7 +68,7 @@ TEST(StitcherTest, TestProcessStmtExecute) {
 
   // Check resulting state and entries.
   Record expected_resultset_entry{
-      .req = {MySQLEventType::kStmtExecute,
+      .req = {Command::kStmtExecute,
               "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
               "JOIN sock_tag ON "
               "sock.sock_id=sock_tag.sock_id JOIN tag ON sock_tag.tag_id=tag.tag_id WHERE "
@@ -79,14 +76,14 @@ TEST(StitcherTest, TestProcessStmtExecute) {
               "GROUP "
               "BY id ORDER BY id",
               0},
-      .resp = {MySQLRespStatus::kOK, "Resultset rows = 2", 0}};
+      .resp = {RespStatus::kOK, "Resultset rows = 2", 0}};
   EXPECT_EQ(expected_resultset_entry, entry);
 }
 
 TEST(StitcherTest, TestProcessStmtSendLongData) {
   // Test setup.
   // TODO(oazizi): Not a real COM_STMT_SEND_LONG_DATA. Need to replace with a real capture.
-  Packet req = testutils::GenStringRequest(StringRequest{""}, MySQLEventType::kStmtSendLongData);
+  Packet req = testutils::GenStringRequest(StringRequest{""}, Command::kStmtSendLongData);
   std::deque<Packet> resp_packets = {};
   State state{std::map<int, PreparedStatement>()};
   state.prepared_statements.emplace(testdata::kStmtID, testdata::kPreparedStatement);
@@ -97,8 +94,8 @@ TEST(StitcherTest, TestProcessStmtSendLongData) {
                    ParseState::kSuccess);
 
   // Check the resulting entries and state.
-  Record expected_entry{.req = {MySQLEventType::kStmtSendLongData, "", 0},
-                        .resp = {MySQLRespStatus::kNone, "", 0}};
+  Record expected_entry{.req = {Command::kStmtSendLongData, "", 0},
+                        .resp = {RespStatus::kNone, "", 0}};
   EXPECT_EQ(expected_entry, entry);
 }
 
@@ -114,14 +111,13 @@ TEST(StitcherTest, TestProcessStmtClose) {
   EXPECT_OK_AND_EQ(ProcessStmtClose(req, resp_packets, &state, &entry), ParseState::kSuccess);
 
   // Check the resulting entries and state.
-  Record expected_entry{.req = {MySQLEventType::kStmtClose, "", 0},
-                        .resp = {MySQLRespStatus::kNone, "", 0}};
+  Record expected_entry{.req = {Command::kStmtClose, "", 0}, .resp = {RespStatus::kNone, "", 0}};
   EXPECT_EQ(expected_entry, entry);
 }
 
 TEST(StitcherTest, TestProcessQuery) {
   // Test setup.
-  Packet req = testutils::GenStringRequest(testdata::kQueryRequest, MySQLEventType::kQuery);
+  Packet req = testutils::GenStringRequest(testdata::kQueryRequest, Command::kQuery);
   std::deque<Packet> resultset = testutils::GenResultset(testdata::kQueryResultset);
 
   // Run function-under-test.
@@ -129,15 +125,15 @@ TEST(StitcherTest, TestProcessQuery) {
   EXPECT_OK_AND_EQ(ProcessQuery(req, resultset, &entry), ParseState::kSuccess);
 
   // Check resulting state and entries.
-  Record expected_resultset_entry{.req = {MySQLEventType::kQuery, "SELECT name FROM tag;", 0},
-                                  .resp = {MySQLRespStatus::kOK, "Resultset rows = 3", 0}};
+  Record expected_resultset_entry{.req = {Command::kQuery, "SELECT name FROM tag;", 0},
+                                  .resp = {RespStatus::kOK, "Resultset rows = 3", 0}};
   EXPECT_EQ(expected_resultset_entry, entry);
 }
 
 TEST(StitcherTest, ProcessRequestWithBasicResponse) {
   // Test setup.
   // Ping is a request that always has a response OK.
-  Packet req = testutils::GenStringRequest(StringRequest(), MySQLEventType::kPing);
+  Packet req = testutils::GenStringRequest(StringRequest(), Command::kPing);
   std::deque<Packet> resp_packets = {testutils::GenOK(/*seq_id*/ 1)};
 
   // Run function-under-test.
@@ -147,8 +143,7 @@ TEST(StitcherTest, ProcessRequestWithBasicResponse) {
       ParseState::kSuccess);
 
   // Check resulting state and entries.
-  Record expected_entry{.req = {MySQLEventType::kPing, "", 0},
-                        .resp = {MySQLRespStatus::kOK, "", 0}};
+  Record expected_entry{.req = {Command::kPing, "", 0}, .resp = {RespStatus::kOK, "", 0}};
   EXPECT_EQ(expected_entry, entry);
 }
 

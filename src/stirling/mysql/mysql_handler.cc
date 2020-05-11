@@ -20,7 +20,7 @@ namespace mysql {
 
 #define RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets) \
   if (resp_packets.empty()) {                         \
-    entry->resp.status = MySQLRespStatus::kUnknown;   \
+    entry->resp.status = RespStatus::kUnknown;        \
     return ParseState::kNeedsMoreData;                \
   }
 
@@ -30,7 +30,7 @@ StatusOr<ParseState> HandleNoResponse(DequeView<Packet> resp_packets, Record* en
                            resp_packets.size());
   }
 
-  entry->resp.status = MySQLRespStatus::kNone;
+  entry->resp.status = RespStatus::kNone;
   entry->resp.timestamp_ns = 0;
 
   return ParseState::kSuccess;
@@ -63,7 +63,7 @@ StatusOr<ParseState> HandleErrMessage(DequeView<Packet> resp_packets, Record* en
   // TODO(oazizi): Add error code into resp msg.
   PL_UNUSED(error_code);
 
-  entry->resp.status = MySQLRespStatus::kErr;
+  entry->resp.status = RespStatus::kErr;
   entry->resp.timestamp_ns = packet.timestamp_ns;
 
   if (resp_packets.size() > 1) {
@@ -87,7 +87,7 @@ StatusOr<ParseState> HandleOKMessage(DequeView<Packet> resp_packets, Record* ent
     return error::Internal("Insufficient number of bytes for an OK packet.");
   }
 
-  entry->resp.status = MySQLRespStatus::kOK;
+  entry->resp.status = RespStatus::kOK;
   entry->resp.timestamp_ns = resp_packets.front().timestamp_ns;
 
   if (resp_packets.size() > 1) {
@@ -109,7 +109,7 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
 
   // The last resultset of a multi-resultset is just an OK packet.
   if (multi_resultset && IsOKPacket(first_resp_packet)) {
-    entry->resp.status = MySQLRespStatus::kOK;
+    entry->resp.status = RespStatus::kOK;
     entry->resp.timestamp_ns = first_resp_packet.timestamp_ns;
     LOG_IF(ERROR, resp_packets.size() != 1)
         << absl::Substitute("Found $0 extra packets", resp_packets.size() - 1);
@@ -120,18 +120,18 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
   size_t param_offset = 0;
   auto s = ProcessLengthEncodedInt(first_resp_packet.msg, &param_offset);
   if (!s.ok()) {
-    entry->resp.status = MySQLRespStatus::kUnknown;
+    entry->resp.status = RespStatus::kUnknown;
     return error::Internal("Unable to process header packet of resultset response.");
   }
   int num_col = s.ValueOrDie();
 
   if (param_offset != first_resp_packet.msg.size()) {
-    entry->resp.status = MySQLRespStatus::kUnknown;
+    entry->resp.status = RespStatus::kUnknown;
     return error::Internal("Extra bytes in length-encoded int packet.");
   }
 
   if (num_col == 0) {
-    entry->resp.status = MySQLRespStatus::kUnknown;
+    entry->resp.status = RespStatus::kUnknown;
     return error::Internal("HandleResultsetResponse(): num columns should never be 0.");
   }
 
@@ -145,7 +145,7 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
   //  1             OK or EOF packet
   // Must have at least the minimum number of remaining packets in a response.
   if (resp_packets.size() < static_cast<size_t>(num_col + 1)) {
-    entry->resp.status = MySQLRespStatus::kUnknown;
+    entry->resp.status = RespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
   }
 
@@ -157,7 +157,7 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
 
     auto s = ProcessColumnDefPacket(packet);
     if (!s.ok()) {
-      entry->resp.status = MySQLRespStatus::kUnknown;
+      entry->resp.status = RespStatus::kUnknown;
       return error::Internal("Expected column definition packet");
     }
 
@@ -199,7 +199,7 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
     } else if (isLastPacket(row_packet)) {
       break;
     } else {
-      entry->resp.status = MySQLRespStatus::kUnknown;
+      entry->resp.status = RespStatus::kUnknown;
       return error::Internal("Expected resultset row packet [OK=$0 ERR=$1 EOF=$2]",
                              IsOKPacket(row_packet), IsErrPacket(row_packet),
                              IsEOFPacket(row_packet));
@@ -230,7 +230,7 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
   LOG_IF(ERROR, !resp_packets.empty())
       << absl::Substitute("Found $0 extra packets", resp_packets.size());
 
-  entry->resp.status = MySQLRespStatus::kOK;
+  entry->resp.status = RespStatus::kOK;
   entry->resp.timestamp_ns = last_packet.timestamp_ns;
   return ParseState::kSuccess;
 }
@@ -241,7 +241,7 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
   const Packet& first_resp_packet = resp_packets.front();
   resp_packets.pop_front();
   if (!IsStmtPrepareOKPacket(first_resp_packet)) {
-    entry->resp.status = MySQLRespStatus::kUnknown;
+    entry->resp.status = RespStatus::kUnknown;
     return error::Internal("Expected StmtPrepareOK packet");
   }
 
@@ -255,7 +255,7 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
   // Reference: https://dev.mysql.com/doc/internals/en/com-stmt-prepare-response.html.
   size_t min_expected_packets = num_col + num_param;
   if (min_expected_packets > resp_packets.size()) {
-    entry->resp.status = MySQLRespStatus::kUnknown;
+    entry->resp.status = RespStatus::kUnknown;
     return ParseState::kNeedsMoreData;
   }
 
@@ -271,7 +271,7 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
 
     auto s = ProcessColumnDefPacket(param_def_packet);
     if (!s.ok()) {
-      entry->resp.status = MySQLRespStatus::kUnknown;
+      entry->resp.status = RespStatus::kUnknown;
       return error::Internal("Fail to process param definition packet.");
     }
 
@@ -299,7 +299,7 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
 
     auto s = ProcessColumnDefPacket(col_def_packet);
     if (!s.ok()) {
-      entry->resp.status = MySQLRespStatus::kUnknown;
+      entry->resp.status = RespStatus::kUnknown;
       return error::Internal("Fail to process column definition packet.");
     }
 
@@ -333,7 +333,7 @@ StatusOr<ParseState> HandleStmtPrepareOKResponse(DequeView<Packet> resp_packets,
                                                           .col_defs = std::move(col_defs),
                                                           .param_defs = std::move(param_defs)}});
 
-  entry->resp.status = MySQLRespStatus::kOK;
+  entry->resp.status = RespStatus::kOK;
   return ParseState::kSuccess;
 }
 
@@ -390,54 +390,54 @@ std::string CombinePrepareExecute(std::string_view stmt_prepare_request,
 // and one that points to current value position
 Status ProcessStmtExecuteParam(std::string_view msg, size_t* type_offset, size_t* val_offset,
                                StmtExecuteParam* param) {
-  param->type = static_cast<MySQLColType>(msg[*type_offset]);
+  param->type = static_cast<ColType>(msg[*type_offset]);
   type_offset += 2;
 
   switch (param->type) {
-    case MySQLColType::kString:
-    case MySQLColType::kVarChar:
-    case MySQLColType::kVarString:
-    case MySQLColType::kEnum:
-    case MySQLColType::kSet:
-    case MySQLColType::kLongBlob:
-    case MySQLColType::kMediumBlob:
-    case MySQLColType::kBlob:
-    case MySQLColType::kTinyBlob:
-    case MySQLColType::kGeometry:
-    case MySQLColType::kBit:
-    case MySQLColType::kDecimal:
-    case MySQLColType::kNewDecimal:
+    case ColType::kString:
+    case ColType::kVarChar:
+    case ColType::kVarString:
+    case ColType::kEnum:
+    case ColType::kSet:
+    case ColType::kLongBlob:
+    case ColType::kMediumBlob:
+    case ColType::kBlob:
+    case ColType::kTinyBlob:
+    case ColType::kGeometry:
+    case ColType::kBit:
+    case ColType::kDecimal:
+    case ColType::kNewDecimal:
       PL_RETURN_IF_ERROR(DissectStringParam(msg, val_offset, &param->value));
       break;
-    case MySQLColType::kTiny:
+    case ColType::kTiny:
       PL_RETURN_IF_ERROR(DissectIntParam<1>(msg, val_offset, &param->value));
       break;
-    case MySQLColType::kShort:
-    case MySQLColType::kYear:
+    case ColType::kShort:
+    case ColType::kYear:
       PL_RETURN_IF_ERROR(DissectIntParam<2>(msg, val_offset, &param->value));
       break;
-    case MySQLColType::kLong:
-    case MySQLColType::kInt24:
+    case ColType::kLong:
+    case ColType::kInt24:
       PL_RETURN_IF_ERROR(DissectIntParam<4>(msg, val_offset, &param->value));
       break;
-    case MySQLColType::kLongLong:
+    case ColType::kLongLong:
       PL_RETURN_IF_ERROR(DissectIntParam<8>(msg, val_offset, &param->value));
       break;
-    case MySQLColType::kFloat:
+    case ColType::kFloat:
       PL_RETURN_IF_ERROR(DissectFloatParam<float>(msg, val_offset, &param->value));
       break;
-    case MySQLColType::kDouble:
+    case ColType::kDouble:
       PL_RETURN_IF_ERROR(DissectFloatParam<double>(msg, val_offset, &param->value));
       break;
-    case MySQLColType::kDate:
-    case MySQLColType::kDateTime:
-    case MySQLColType::kTimestamp:
+    case ColType::kDate:
+    case ColType::kDateTime:
+    case ColType::kTimestamp:
       PL_RETURN_IF_ERROR(DissectDateTimeParam(msg, val_offset, &param->value));
       break;
-    case MySQLColType::kTime:
+    case ColType::kTime:
       PL_RETURN_IF_ERROR(DissectDateTimeParam(msg, val_offset, &param->value));
       break;
-    case MySQLColType::kNull:
+    case ColType::kNull:
       break;
     default:
       LOG(DFATAL) << absl::Substitute("Unexpected/unhandled column type $0",

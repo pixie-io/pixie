@@ -48,7 +48,7 @@ struct Packet : public stirling::FrameBase {
 
 // Command Types
 // https://dev.mysql.com/doc/internals/en/command-phase.html
-enum class MySQLEventType : char {
+enum class Command : char {
   kSleep = 0x00,
   kQuit = 0x01,
   kInitDB = 0x02,
@@ -86,8 +86,7 @@ enum class MySQLEventType : char {
 constexpr uint8_t kMaxCommandValue = 0x1f;
 
 inline bool IsValidCommand(uint8_t command_byte) {
-  std::optional<MySQLEventType> command_type_option =
-      magic_enum::enum_cast<MySQLEventType>(command_byte);
+  std::optional<Command> command_type_option = magic_enum::enum_cast<Command>(command_byte);
   if (!command_type_option.has_value()) {
     return false;
   }
@@ -96,72 +95,69 @@ inline bool IsValidCommand(uint8_t command_byte) {
   // In some sense, they are a valid part of the protocol, as the server will properly respond with
   // error. But for the sake of identifying mis-classified MySQL connections, it helps to call these
   // out as invalid commands.
-  MySQLEventType command_type = command_type_option.value();
-  if (command_type == MySQLEventType::kSleep || command_type == MySQLEventType::kTime ||
-      command_type == MySQLEventType::kDelayedInsert ||
-      command_type == MySQLEventType::kConnectOut || command_type == MySQLEventType::kDaemon) {
+  Command command_type = command_type_option.value();
+  if (command_type == Command::kSleep || command_type == Command::kTime ||
+      command_type == Command::kDelayedInsert || command_type == Command::kConnectOut ||
+      command_type == Command::kDaemon) {
     return false;
   }
 
   return true;
 }
 
-inline MySQLEventType DecodeCommand(uint8_t command) {
-  return static_cast<MySQLEventType>(command);
-}
+inline Command DecodeCommand(uint8_t command) { return static_cast<Command>(command); }
 
-inline std::string CommandToString(MySQLEventType command) {
+inline std::string CommandToString(Command command) {
   return std::string(1, static_cast<char>(command));
 }
 
-constexpr int kMaxMySQLPacketLength = (1 << 24) - 1;
+constexpr int kMaxPacketLength = (1 << 24) - 1;
 
 struct NumberRange {
   int min;
   int max;
 };
 
-inline std::vector<NumberRange> InitMySQLCommandLengths() {
-  std::vector<NumberRange> cmd_length_ranges(magic_enum::enum_count<mysql::MySQLEventType>());
+inline std::vector<NumberRange> InitCommandLengths() {
+  std::vector<NumberRange> cmd_length_ranges(magic_enum::enum_count<mysql::Command>());
 
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kSleep)] = {1, 1};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kQuit)] = {1, 1};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kInitDB)] = {1, kMaxMySQLPacketLength};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kQuery)] = {1, kMaxMySQLPacketLength};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kFieldList)] = {2, kMaxMySQLPacketLength};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kCreateDB)] = {1, kMaxMySQLPacketLength};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kDropDB)] = {1, kMaxMySQLPacketLength};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kRefresh)] = {2, 2};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kShutdown)] = {1, 2};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kStatistics)] = {1, 1};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kProcessInfo)] = {1, 1};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kConnect)] = {1, 1};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kProcessKill)] = {1, 5};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kDebug)] = {1, 1};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kPing)] = {1, 1};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kTime)] = {1, 1};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kDelayedInsert)] = {1, 1};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kChangeUser)] = {4, kMaxMySQLPacketLength};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kBinlogDump)] = {11, kMaxMySQLPacketLength};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kTableDump)] = {3, kMaxMySQLPacketLength};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kConnectOut)] = {1, 1};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kRegisterSlave)] = {18, kMaxMySQLPacketLength};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kStmtPrepare)] = {1, kMaxMySQLPacketLength};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kStmtExecute)] = {10, kMaxMySQLPacketLength};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kStmtSendLongData)] = {7,
-                                                                            kMaxMySQLPacketLength};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kStmtClose)] = {5, 5};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kStmtReset)] = {5, 5};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kSetOption)] = {3, 3};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kStmtFetch)] = {9, 9};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kDaemon)] = {1, 1};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kBinlogDumpGTID)] = {19, 19};
-  cmd_length_ranges[static_cast<int>(MySQLEventType::kResetConnection)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(Command::kSleep)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(Command::kQuit)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(Command::kInitDB)] = {1, kMaxPacketLength};
+  cmd_length_ranges[static_cast<int>(Command::kQuery)] = {1, kMaxPacketLength};
+  cmd_length_ranges[static_cast<int>(Command::kFieldList)] = {2, kMaxPacketLength};
+  cmd_length_ranges[static_cast<int>(Command::kCreateDB)] = {1, kMaxPacketLength};
+  cmd_length_ranges[static_cast<int>(Command::kDropDB)] = {1, kMaxPacketLength};
+  cmd_length_ranges[static_cast<int>(Command::kRefresh)] = {2, 2};
+  cmd_length_ranges[static_cast<int>(Command::kShutdown)] = {1, 2};
+  cmd_length_ranges[static_cast<int>(Command::kStatistics)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(Command::kProcessInfo)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(Command::kConnect)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(Command::kProcessKill)] = {1, 5};
+  cmd_length_ranges[static_cast<int>(Command::kDebug)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(Command::kPing)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(Command::kTime)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(Command::kDelayedInsert)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(Command::kChangeUser)] = {4, kMaxPacketLength};
+  cmd_length_ranges[static_cast<int>(Command::kBinlogDump)] = {11, kMaxPacketLength};
+  cmd_length_ranges[static_cast<int>(Command::kTableDump)] = {3, kMaxPacketLength};
+  cmd_length_ranges[static_cast<int>(Command::kConnectOut)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(Command::kRegisterSlave)] = {18, kMaxPacketLength};
+  cmd_length_ranges[static_cast<int>(Command::kStmtPrepare)] = {1, kMaxPacketLength};
+  cmd_length_ranges[static_cast<int>(Command::kStmtExecute)] = {10, kMaxPacketLength};
+  cmd_length_ranges[static_cast<int>(Command::kStmtSendLongData)] = {7, kMaxPacketLength};
+  cmd_length_ranges[static_cast<int>(Command::kStmtClose)] = {5, 5};
+  cmd_length_ranges[static_cast<int>(Command::kStmtReset)] = {5, 5};
+  cmd_length_ranges[static_cast<int>(Command::kSetOption)] = {3, 3};
+  cmd_length_ranges[static_cast<int>(Command::kStmtFetch)] = {9, 9};
+  cmd_length_ranges[static_cast<int>(Command::kDaemon)] = {1, 1};
+  cmd_length_ranges[static_cast<int>(Command::kBinlogDumpGTID)] = {19, 19};
+  cmd_length_ranges[static_cast<int>(Command::kResetConnection)] = {1, 1};
 
   return cmd_length_ranges;
 }
 
-inline std::vector<NumberRange> kMySQLCommandLengths = InitMySQLCommandLengths();
+inline std::vector<NumberRange> kMySQLCommandLengths = InitCommandLengths();
 
 // Response types
 // https://dev.mysql.com/doc/internals/en/generic-response-packets.html
@@ -171,7 +167,7 @@ constexpr uint8_t kRespHeaderOK = 0x00;
 
 // Column Types
 // https://dev.mysql.com/doc/internals/en/com-query-response.html#packet-Protocol::ColumnType
-enum class MySQLColType : uint8_t {
+enum class ColType : uint8_t {
   kDecimal = 0x00,
   kTiny = 0x01,
   kShort = 0x02,
@@ -235,7 +231,7 @@ struct ColDefinition {
   int8_t next_length;  // Always 0x0c
   int16_t character_set;
   int32_t column_length;
-  MySQLColType column_type;
+  ColType column_type;
   int16_t flags;
   int8_t decimals;
 };
@@ -263,7 +259,7 @@ struct ResultsetRow {
  * A parameter in StmtExecuteRequest.
  */
 struct StmtExecuteParam {
-  MySQLColType type;
+  ColType type;
   std::string value;
 };
 
@@ -352,11 +348,11 @@ struct StateWrapper {
 // Table Store Entry Level Structs
 //-----------------------------------------------------------------------------
 
-enum class MySQLRespStatus { kUnknown, kNone, kOK, kErr };
+enum class RespStatus { kUnknown, kNone, kOK, kErr };
 
-struct MySQLRequest {
-  // MySQL command. See MySQLEventType.
-  MySQLEventType cmd;
+struct Request {
+  // MySQL command. See Command.
+  Command cmd;
 
   // The body of the request, if request has a single string parameter. Otherwise empty for now.
   std::string msg;
@@ -365,9 +361,9 @@ struct MySQLRequest {
   uint64_t timestamp_ns;
 };
 
-struct MySQLResponse {
+struct Response {
   // MySQL response status: OK, ERR or Unknown.
-  MySQLRespStatus status;
+  RespStatus status;
 
   // Any relevant response message.
   std::string msg;
@@ -380,8 +376,8 @@ struct MySQLResponse {
  *  Record is the primary output of the mysql parser.
  */
 struct Record {
-  MySQLRequest req;
-  MySQLResponse resp;
+  Request req;
+  Response resp;
 
   // Debug information that we want to pass up this record.
   // Used to record info/warnings.
