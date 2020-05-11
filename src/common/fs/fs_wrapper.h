@@ -40,6 +40,8 @@ Status CreateSymlinkIfNotExists(std::filesystem::path target, std::filesystem::p
  * (for example, because of lack of permission).
  */
 Status Exists(std::filesystem::path path);
+Status Copy(const std::filesystem::path& from, const std::filesystem::path& to);
+Status Remove(const std::filesystem::path& f);
 
 StatusOr<std::filesystem::path> Absolute(const std::filesystem::path& path);
 

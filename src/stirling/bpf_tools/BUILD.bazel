@@ -33,3 +33,11 @@ pl_cc_binary(
     srcs = ["probe_cleaner_standalone.cc"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "bcc_wrapper_test",
+    data = ["//src/stirling/obj_tools/testdata:dummy_exe"],
+    srcs = ["bcc_wrapper_test.cc"],
+    deps = [":cc_library"],
+    tags = ["requires_bpf"],
+)

@@ -15,6 +15,7 @@
 #include <magic_enum.hpp>
 
 #include "src/common/base/base.h"
+#include "src/common/fs/fs_wrapper.h"
 #include "src/common/system/system.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 
@@ -130,13 +131,17 @@ Status BCCWrapper::DetachUProbe(const UProbeSpec& probe) {
   VLOG(1) << absl::Substitute(
       "Detaching uprobe:\n   binary=$0\n   symbol=$1\n   address=$2   trace_fn=$3",
       probe.binary_path.string(), probe.symbol, probe.address, probe.probe_fn);
-  ebpf::StatusTuple detach_status =
-      bpf().detach_uprobe(probe.binary_path, probe.symbol, probe.address,
-                          static_cast<bpf_probe_attach_type>(probe.attach_type));
 
-  if (detach_status.code() != 0) {
-    return error::Internal("Failed to detach uprobe from binary $0 on symbol $1, error message: $2",
-                           probe.binary_path.string(), probe.symbol, detach_status.msg());
+  if (fs::Exists(probe.binary_path).ok()) {
+    ebpf::StatusTuple detach_status =
+        bpf().detach_uprobe(probe.binary_path, probe.symbol, probe.address,
+                            static_cast<bpf_probe_attach_type>(probe.attach_type));
+
+    if (detach_status.code() != 0) {
+      return error::Internal(
+          "Failed to detach uprobe from binary $0 on symbol $1, error message: $2",
+          probe.binary_path.string(), probe.symbol, detach_status.msg());
+    }
   }
   --num_attached_uprobes_;
   return Status::OK();

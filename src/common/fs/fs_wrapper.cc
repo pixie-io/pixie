@@ -84,6 +84,28 @@ Status Exists(std::filesystem::path path) {
   return error::InvalidArgument("Does not exist");
 }
 
+Status Copy(const std::filesystem::path& from, const std::filesystem::path& to) {
+  std::error_code ec;
+  if (std::filesystem::copy_file(from, to, ec)) {
+    return Status::OK();
+  }
+  if (ec) {
+    return error::System(ec.message());
+  }
+  return error::InvalidArgument("Could not copy from $0 to $1", from.string(), to.string());
+}
+
+Status Remove(const std::filesystem::path& f) {
+  std::error_code ec;
+  if (std::filesystem::remove(f, ec)) {
+    return Status::OK();
+  }
+  if (ec) {
+    return error::System(ec.message());
+  }
+  return error::InvalidArgument("Could not delete $0", f.string());
+}
+
 StatusOr<std::filesystem::path> Absolute(const std::filesystem::path& path) {
   std::error_code ec;
   std::filesystem::path abs_path = std::filesystem::absolute(path, ec);

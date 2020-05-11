@@ -5,6 +5,8 @@
 #include <bcc/BPF.h>
 #include <linux/perf_event.h>
 
+#include <gtest/gtest_prod.h>
+
 #include <filesystem>
 #include <map>
 #include <memory>
@@ -53,7 +55,7 @@ struct KProbeSpec {
   std::string_view kernel_fn;
 
   // Whether this is an ENTRY or RETURN probe.
-  BPFProbeAttachType attach_type;
+  BPFProbeAttachType attach_type = BPFProbeAttachType::kEntry;
 
   // Name of user-provided function to run when event is triggered.
   std::string_view probe_fn;
@@ -68,7 +70,7 @@ struct UProbeSpec {
   // Exact one of symbol and address must be specified.
   std::string symbol;
   uint64_t address = 0;
-  BPFProbeAttachType attach_type;
+  BPFProbeAttachType attach_type = BPFProbeAttachType::kEntry;
   std::string probe_fn;
 };
 
@@ -85,7 +87,7 @@ struct UProbeTmpl {
   std::string_view symbol;
   elf_tools::SymbolMatchType match_type;
   std::string_view probe_fn;
-  BPFProbeAttachType attach_type;
+  BPFProbeAttachType attach_type = BPFProbeAttachType::kEntry;
 };
 
 /**
@@ -237,6 +239,8 @@ class BCCWrapper {
   static size_t num_attached_perf_events() { return num_attached_perf_events_; }
 
  private:
+  FRIEND_TEST(BCCWraperTest, DetachUProbe);
+
   Status DetachKProbe(const KProbeSpec& probe);
   Status DetachUProbe(const UProbeSpec& probe);
   Status ClosePerfBuffer(const PerfBufferSpec& perf_buffer);
