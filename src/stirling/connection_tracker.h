@@ -27,7 +27,8 @@
 
 DECLARE_bool(enable_unix_domain_sockets);
 
-#define CONN_TRACE LOG_IF(INFO, debug_trace_) << absl::Substitute("$0 ", ToString(conn_id_))
+#define CONN_TRACE(level) \
+  LOG_IF(INFO, level <= debug_trace_level_) << absl::Substitute("$0 ", ToString(conn_id_))
 
 namespace pl {
 namespace stirling {
@@ -141,12 +142,12 @@ class ConnectionTracker {
     auto& resp_frames = resp_data()->Frames<TFrameType>();
     auto state_ptr = protocol_state<TStateType>();
 
-    CONN_TRACE << absl::Substitute("req_frames=$0 resp_frames=$1", req_frames.size(),
-                                   resp_frames.size());
+    CONN_TRACE(1) << absl::Substitute("req_frames=$0 resp_frames=$1", req_frames.size(),
+                                      resp_frames.size());
 
     RecordsWithErrorCount<TRecordType> result = ProcessFrames(&req_frames, &resp_frames, state_ptr);
 
-    CONN_TRACE << absl::Substitute("records=$0", result.records.size());
+    CONN_TRACE(1) << absl::Substitute("records=$0", result.records.size());
 
     stat_invalid_records_ += result.error_count;
     stat_valid_records_ += result.records.size();
@@ -493,7 +494,7 @@ class ConnectionTracker {
     bpf_table_info_ = bpf_table_info;
   }
 
-  void SetDebugTrace(bool val) { debug_trace_ = val; }
+  void SetDebugTrace(int level) { debug_trace_level_ = level; }
 
  private:
   void AddConnOpenEvent(const conn_event_t& conn_info);
@@ -523,7 +524,7 @@ class ConnectionTracker {
     req_data_ptr->template ProcessBytesToFrames<TFrameType>(MessageType::kRequest);
   }
 
-  bool debug_trace_ = false;
+  int debug_trace_level_ = 0;
 
   // Used to identify the remove endpoint in case the accept/connect was not traced.
   std::unique_ptr<FDResolver> conn_resolver_ = nullptr;

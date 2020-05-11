@@ -80,7 +80,8 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   PopulateSockAddr(reinterpret_cast<const struct sockaddr*>(&conn_event.addr),
                    &open_info_.remote_addr);
 
-  CONN_TRACE << absl::Substitute("conn_open");
+  CONN_TRACE(1) << absl::Substitute("conn_open af=$0",
+                                    magic_enum::enum_name(open_info_.remote_addr.family));
 }
 
 void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
@@ -106,7 +107,7 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   SetConnID(event->attr.conn_id);
   SetTrafficClass(event->attr.traffic_class);
 
-  CONN_TRACE << absl::Substitute(
+  CONN_TRACE(1) << absl::Substitute(
       "data $0 ...", BytesToString<bytes_format::HexAsciiMix>(event->msg.substr(0, 10)));
 
   // A disabled tracker doesn't collect data events.
@@ -377,9 +378,11 @@ void ConnectionTracker::Reset() {
 }
 
 void ConnectionTracker::Disable(std::string_view reason) {
-  VLOG_IF(1, state_ != State::kDisabled)
-      << absl::Substitute("Disabling connection=$0 dest=$1:$2, reason=$3", ToString(conn_id_),
-                          open_info_.remote_addr.AddrStr(), open_info_.remote_addr.port, reason);
+  if (state_ != State::kDisabled) {
+    CONN_TRACE(1) << absl::Substitute("Disabling connection dest=$0:$1 reason=$2",
+                                      open_info_.remote_addr.AddrStr(), open_info_.remote_addr.port,
+                                      reason);
+  }
 
   state_ = State::kDisabled;
   disable_reason_ = reason;
@@ -681,15 +684,12 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   if (conn_resolution_failed_) {
     // We've previously tried and failed to perform connection inference,
     // so don't waste any time...a connection only gets one chance.
-    VLOG(2) << absl::Substitute(
-        "Skipping connection inference (previous inference attempt failed, and won't try again) "
-        "pid=$0 fd=$1 gen=$2",
-        conn_id_.upid.pid, conn_id_.fd, conn_id_.tsid);
+    CONN_TRACE(2) << "Skipping connection inference (previous inference attempt failed, and won't "
+                     "try again).";
     return;
   }
 
-  VLOG(2) << absl::Substitute("Attempting connection inference pid=$0 fd=$1 gen=$2",
-                              conn_id_.upid.pid, conn_id_.fd, conn_id_.tsid);
+  CONN_TRACE(2) << "Attempting connection inference";
 
   if (conn_resolver_ == nullptr) {
     conn_resolver_ = std::make_unique<FDResolver>(proc_parser, conn_id_.upid.pid, conn_id_.fd);
@@ -697,7 +697,7 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
     if (!success) {
       conn_resolver_.reset();
       conn_resolution_failed_ = true;
-      VLOG(2) << "Can't infer remote endpoint. Setup failed.";
+      CONN_TRACE(2) << "Can't infer remote endpoint. Setup failed.";
     }
     // Return after Setup(), since we won't be able to infer until some time has elapsed.
     // This is because file descriptors can be re-used, and if we sample the FD just once,
@@ -711,7 +711,7 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   if (!success) {
     conn_resolver_.reset();
     conn_resolution_failed_ = true;
-    VLOG(2) << "Can't infer remote endpoint. Could not determine socket inode number of FD.";
+    CONN_TRACE(2) << "Can't infer remote endpoint. Could not determine socket inode number of FD.";
     return;
   }
 
@@ -744,8 +744,8 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
   if (!socket_info_status.ok()) {
     conn_resolver_.reset();
     conn_resolution_failed_ = true;
-    VLOG(1) << absl::Substitute("$0 Could not map inode to a connection. Message = $1",
-                                ToString(conn_id_), socket_info_status.msg());
+    CONN_TRACE(2) << absl::Substitute("Could not map inode to a connection. Message = $0",
+                                      socket_info_status.msg());
     return;
   }
   const system::SocketInfo* socket_info = socket_info_status.ValueOrDie();
@@ -761,9 +761,8 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
     return;
   }
 
-  VLOG(1) << absl::Substitute("Inferred connection pid=$0 fd=$1 gen=$2 dest=$3:$4", pid(), fd(),
-                              tsid(), open_info_.remote_addr.AddrStr(),
-                              open_info_.remote_addr.port);
+  CONN_TRACE(1) << absl::Substitute("Inferred connection dest=$0:$1",
+                                    open_info_.remote_addr.AddrStr(), open_info_.remote_addr.port);
 
   // No need for the resolver anymore, so free its memory.
   conn_resolver_.reset();
