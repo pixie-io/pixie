@@ -167,7 +167,8 @@ TEST_F(DistributedPlanTest, construction_test) {
   std::unordered_map<int64_t, distributedpb::CarnotInfo> carnot_id_to_carnot_info_map;
   for (int64_t i = 0; i < physical_state.carnot_info_size(); ++i) {
     distributedpb::CarnotInfo carnot_info = physical_state.carnot_info()[i];
-    carnot_id_to_carnot_info_map.emplace(physical_plan->AddCarnot(carnot_info), carnot_info);
+    auto carnot = physical_plan->AddCarnot(carnot_info).ConsumeValueOrDie();
+    carnot_id_to_carnot_info_map.emplace(carnot, carnot_info);
   }
 
   for (const auto& [carnot_id, carnot_info] : carnot_id_to_carnot_info_map) {

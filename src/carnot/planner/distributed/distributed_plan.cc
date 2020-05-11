@@ -4,6 +4,7 @@ namespace pl {
 namespace carnot {
 namespace planner {
 namespace distributed {
+
 StatusOr<distributedpb::DistributedPlan> DistributedPlan::ToProto() const {
   distributedpb::DistributedPlan physical_plan_pb;
   auto physical_plan_dag = physical_plan_pb.mutable_dag();
@@ -27,14 +28,25 @@ StatusOr<distributedpb::DistributedPlan> DistributedPlan::ToProto() const {
   return physical_plan_pb;
 }
 
-int64_t DistributedPlan::AddCarnot(const distributedpb::CarnotInfo& carnot_info) {
+StatusOr<int64_t> DistributedPlan::AddCarnot(const distributedpb::CarnotInfo& carnot_info) {
   int64_t carnot_id = id_counter_;
   ++id_counter_;
-  auto instance = std::make_unique<CarnotInstance>(carnot_id, carnot_info, this);
+  PL_ASSIGN_OR_RETURN(auto instance, CarnotInstance::Create(carnot_id, carnot_info, this));
   id_to_node_map_.emplace(carnot_id, std::move(instance));
   dag_.AddNode(carnot_id);
   return carnot_id;
 }
+
+StatusOr<std::unique_ptr<CarnotInstance>> CarnotInstance::Create(
+    int64_t id, const distributedpb::CarnotInfo& carnot_info, DistributedPlan* parent_plan) {
+  if (carnot_info.has_metadata_info()) {
+    PL_ASSIGN_OR_RETURN(auto bf, md::AgentMetadataFilter::FromProto(carnot_info.metadata_info()));
+    return std::unique_ptr<CarnotInstance>(
+        new CarnotInstance(id, carnot_info, parent_plan, std::move(bf)));
+  }
+  return std::unique_ptr<CarnotInstance>(new CarnotInstance(id, carnot_info, parent_plan, nullptr));
+}
+
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot

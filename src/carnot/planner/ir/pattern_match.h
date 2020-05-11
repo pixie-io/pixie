@@ -122,6 +122,25 @@ inline ClassMatch<IRNodeType::kMetadataLiteral> MetadataLiteral() {
   return ClassMatch<IRNodeType::kMetadataLiteral>();
 }
 
+/* Match Filter with a specific filter expression */
+template <typename Matcher>
+struct MetadataLiteralWithValue : public ParentMatch {
+  explicit MetadataLiteralWithValue(Matcher matcher)
+      : ParentMatch(IRNodeType::kFilter), matcher_(matcher) {}
+  bool Match(const IRNode* node) const override {
+    return MetadataLiteral().Match(node) &&
+           matcher_.Match(static_cast<const MetadataLiteralIR*>(node)->literal());
+  }
+
+ private:
+  Matcher matcher_;
+};
+
+template <typename Matcher>
+inline MetadataLiteralWithValue<Matcher> MetadataLiteral(Matcher m) {
+  return MetadataLiteralWithValue<Matcher>(m);
+}
+
 // Match an arbitrary MetadataResolver operator.
 inline ClassMatch<IRNodeType::kMetadataResolver> MetadataResolver() {
   return ClassMatch<IRNodeType::kMetadataResolver>();
@@ -180,9 +199,31 @@ struct IntMatch : public ParentMatch {
 };
 
 /**
+ * @brief Match a specific string value.
+ */
+struct StringMatch : public ParentMatch {
+  explicit StringMatch(const std::string s) : ParentMatch(IRNodeType::kString), val(s) {}
+
+  bool Match(const IRNode* node) const override {
+    if (node->type() == type) {
+      auto sVal = static_cast<const StringIR*>(node);
+      return sVal->str() == val;
+    }
+    return false;
+  }
+
+  const std::string val;
+};
+
+/**
  * @brief Match a specific integer value.
  */
 inline IntMatch Int(const int64_t val) { return IntMatch(val); }
+
+/**
+ * @brief Match a specific integer value.
+ */
+inline StringMatch String(const std::string val) { return StringMatch(val); }
 
 /**
  * @brief Match a tablet ID type.
@@ -811,6 +852,24 @@ inline ClassMatch<IRNodeType::kBlockingAgg> BlockingAgg() {
  * @brief Match Filter operator.
  */
 inline ClassMatch<IRNodeType::kFilter> Filter() { return ClassMatch<IRNodeType::kFilter>(); }
+
+/* Match Filter with a specific filter expression */
+template <typename Matcher>
+struct FilterWithExpr : public ParentMatch {
+  explicit FilterWithExpr(Matcher matcher) : ParentMatch(IRNodeType::kFilter), matcher_(matcher) {}
+  bool Match(const IRNode* node) const override {
+    return Filter().Match(node) &&
+           matcher_.Match(static_cast<const FilterIR*>(node)->filter_expr());
+  }
+
+ private:
+  Matcher matcher_;
+};
+
+template <typename Matcher>
+inline FilterWithExpr<Matcher> Filter(Matcher m) {
+  return FilterWithExpr<Matcher>(m);
+}
 
 struct ColumnMatch : public ParentMatch {
   ColumnMatch() : ParentMatch(IRNodeType::kAny) {}

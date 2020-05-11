@@ -14,13 +14,14 @@
 #include "src/carnot/planner/rules/rules.h"
 #include "src/carnot/planner/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
-
 #include "src/common/testing/protobuf.h"
+#include "src/shared/metadata/metadata_filter.h"
 
 namespace pl {
 namespace carnot {
 namespace planner {
 namespace distributed {
+using md::AgentMetadataFilter;
 using ::pl::testing::proto::EqualsProto;
 using ::pl::testing::proto::Partially;
 using ::testing::ContainsRegex;
@@ -29,7 +30,7 @@ using testutils::kOneAgentOneKelvinDistributedState;
 using testutils::kOneAgentThreeKelvinsDistributedState;
 using testutils::kThreeAgentsOneKelvinDistributedState;
 
-class CoordinatorTest : public OperatorTests {
+class CoordinatorTest : public testutils::DistributedRulesTest {
  protected:
   distributedpb::DistributedState LoadDistributedStatePb(const std::string& physical_state_txt) {
     distributedpb::DistributedState physical_state_pb;
@@ -78,6 +79,47 @@ class CoordinatorTest : public OperatorTests {
     ASSERT_EQ(grpc_src->Children().size(), 1);
     EXPECT_TRUE(Match(grpc_src->Children()[0], MemorySink()))
         << grpc_src->Children()[0]->DebugString();
+  }
+
+  distributedpb::DistributedState ThreeAgentOneKelvinStateWithMetadataInfo() {
+    auto ps = LoadDistributedStatePb(kThreeAgentsOneKelvinDistributedState);
+    auto agent1_filter =
+        AgentMetadataFilter::Create(100, 0.01, {MetadataType::POD_ID, MetadataType::SERVICE_ID})
+            .ConsumeValueOrDie();
+    auto agent2_filter =
+        AgentMetadataFilter::Create(100, 0.01, {MetadataType::POD_ID, MetadataType::SERVICE_ID})
+            .ConsumeValueOrDie();
+    auto agent3_filter =
+        AgentMetadataFilter::Create(100, 0.01, {MetadataType::POD_ID, MetadataType::SERVICE_ID})
+            .ConsumeValueOrDie();
+
+    PL_CHECK_OK(agent1_filter->InsertEntity(MetadataType::POD_ID, "agent1_pod"));
+    PL_CHECK_OK(agent2_filter->InsertEntity(MetadataType::SERVICE_ID, "agent2_service"));
+
+    absl::flat_hash_map<std::string, distributedpb::MetadataInfo> mds;
+    mds["agent1"] = agent1_filter->ToProto();
+    mds["agent2"] = agent2_filter->ToProto();
+    mds["agent3"] = agent3_filter->ToProto();
+
+    for (auto i = 0; i < ps.carnot_info_size(); ++i) {
+      if (ps.carnot_info(i).query_broker_address() == "kelvin") {
+        continue;
+      }
+      *(ps.mutable_carnot_info(i)->mutable_metadata_info()) =
+          mds.at(ps.carnot_info(i).query_broker_address());
+    }
+    return ps;
+  }
+
+  std::unique_ptr<DistributedPlan> ThreeAgentOneKelvinCoordinateQuery(std::string_view query) {
+    auto ps = ThreeAgentOneKelvinStateWithMetadataInfo();
+
+    auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
+    compiler::Compiler compiler;
+    auto graph =
+        compiler.CompileToIR(std::string(query), compiler_state_.get()).ConsumeValueOrDie();
+
+    return coordinator->Coordinate(graph.get()).ConsumeValueOrDie();
   }
 };
 
@@ -213,6 +255,236 @@ TEST_F(CoordinatorTest, bad_kelvin_spec) {
   EXPECT_EQ(coordinator_status.status().msg(),
             "Distributed state does not have a Carnot instance that satisifies the condition "
             "`processes_data() && accepts_remote_sources()`.");
+}
+
+constexpr char kPruneAgentsSimple[] = R"pxl(
+import px
+
+# simple case 1
+t1 = px.DataFrame(table='http_events', start_time='-120s', select=['upid'])
+t1 = t1[t1.ctx['pod_id'] == 'agent1_pod']
+px.display(t1, 't1')
+
+# simple case 2
+t2 = px.DataFrame(table='http_events', start_time='-120s', select=['upid'])
+t2 = t2['agent2_service' == t2.ctx['service_id']]
+px.display(t2, 't2')
+)pxl";
+
+TEST_F(CoordinatorTest, prune_agents_simple) {
+  auto physical_plan = ThreeAgentOneKelvinCoordinateQuery(kPruneAgentsSimple);
+  EXPECT_EQ(physical_plan->dag().nodes().size(), 4UL);
+
+  absl::flat_hash_map<std::string, IR*> plan_by_qb_addr;
+  for (int64_t carnot_id : physical_plan->dag().nodes()) {
+    auto carnot = physical_plan->Get(carnot_id);
+    plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
+  }
+
+  auto agent1_sinks = plan_by_qb_addr["agent1"]->FindNodesThatMatch(GRPCSink());
+  EXPECT_EQ(1, agent1_sinks.size());
+  auto agent1_sink_parents = static_cast<OperatorIR*>(agent1_sinks[0])->parents();
+  EXPECT_EQ(1, agent1_sink_parents.size());
+  EXPECT_MATCH(agent1_sink_parents[0],
+               Filter(Equals(Metadata(), MetadataLiteral(String("agent1_pod")))));
+
+  auto agent2_sinks = plan_by_qb_addr["agent2"]->FindNodesThatMatch(GRPCSink());
+  EXPECT_EQ(1, agent2_sinks.size());
+  auto agent2_sink_parents = static_cast<OperatorIR*>(agent2_sinks[0])->parents();
+  EXPECT_EQ(1, agent2_sink_parents.size());
+  EXPECT_MATCH(agent2_sink_parents[0],
+               Filter(Equals(Metadata(), MetadataLiteral(String("agent2_service")))));
+
+  auto agent3_sinks = plan_by_qb_addr["agent3"]->FindNodesThatMatch(GRPCSink());
+  EXPECT_EQ(0, agent3_sinks.size());
+  auto kelvin_sources = plan_by_qb_addr["kelvin"]->FindNodesThatMatch(GRPCSourceGroup());
+  EXPECT_EQ(2, kelvin_sources.size());
+}
+
+constexpr char kPruneAgentsDoesNotExist[] = R"pxl(
+import px
+
+# does not exist
+t1 = px.DataFrame(table='http_events', start_time='-120s', select=['upid'])
+t1 = t1[t1.ctx['pod_id'] == 'does_not_exist']
+px.display(t1, 't1')
+)pxl";
+
+TEST_F(CoordinatorTest, prune_agents_nonexistent) {
+  auto physical_plan = ThreeAgentOneKelvinCoordinateQuery(kPruneAgentsDoesNotExist);
+
+  EXPECT_EQ(physical_plan->dag().nodes().size(), 4UL);
+
+  absl::flat_hash_map<std::string, IR*> plan_by_qb_addr;
+  for (int64_t carnot_id : physical_plan->dag().nodes()) {
+    auto carnot = physical_plan->Get(carnot_id);
+    plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
+  }
+
+  EXPECT_EQ(0, plan_by_qb_addr["agent1"]->FindNodesThatMatch(GRPCSink()).size());
+  EXPECT_EQ(0, plan_by_qb_addr["agent2"]->FindNodesThatMatch(GRPCSink()).size());
+
+  auto agent3_sinks = plan_by_qb_addr["agent3"]->FindNodesThatMatch(GRPCSink());
+  EXPECT_EQ(1, agent3_sinks.size());
+  auto agent3_sink_parents = static_cast<OperatorIR*>(agent3_sinks[0])->parents();
+  EXPECT_EQ(1, agent3_sink_parents.size());
+  EXPECT_MATCH(agent3_sink_parents[0],
+               Filter(Equals(Metadata(), MetadataLiteral(String("does_not_exist")))));
+
+  EXPECT_EQ(1, plan_by_qb_addr["kelvin"]->FindNodesThatMatch(GRPCSourceGroup()).size());
+}
+
+constexpr char kPruneAgentsUnsupportedMDType[] = R"pxl(
+import px
+
+# container_id is not a supported metadata filter type in the test environment.
+t1 = px.DataFrame(table='http_events', start_time='-120s', select=['upid'])
+t1 = t1[t1.ctx['container_id'] == 'foobar']
+px.display(t1, 't1')
+)pxl";
+
+TEST_F(CoordinatorTest, prune_agents_unsupported_metadata_type) {
+  auto physical_plan = ThreeAgentOneKelvinCoordinateQuery(kPruneAgentsUnsupportedMDType);
+
+  EXPECT_EQ(physical_plan->dag().nodes().size(), 4UL);
+
+  absl::flat_hash_map<std::string, IR*> plan_by_qb_addr;
+  for (int64_t carnot_id : physical_plan->dag().nodes()) {
+    auto carnot = physical_plan->Get(carnot_id);
+    plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
+  }
+
+  for (const auto& str : {"agent1", "agent2", "agent3"}) {
+    auto agent_sinks = plan_by_qb_addr[str]->FindNodesThatMatch(GRPCSink());
+    EXPECT_EQ(1, agent_sinks.size());
+    auto agent_sink_parents = static_cast<OperatorIR*>(agent_sinks[0])->parents();
+    EXPECT_EQ(1, agent_sink_parents.size());
+    EXPECT_MATCH(agent_sink_parents[0],
+                 Filter(Equals(Metadata(), MetadataLiteral(String("foobar")))));
+  }
+  EXPECT_EQ(1, plan_by_qb_addr["kelvin"]->FindNodesThatMatch(GRPCSourceGroup()).size());
+}
+
+constexpr char kPruneAgentsNonPruningFilter[] = R"pxl(
+import px
+
+# not a metadata filter (yet). TODO(nserrino): Support aliases.
+t1 = px.DataFrame(table='http_events', start_time='-120s', select=['upid', 'remote_port'])
+t1.pod_id = t1.ctx['pod_id']
+t1 = t1[t1.remote_port > 0]
+t1 = t1[t1.pod_id == 'agent1_pod']
+px.display(t1, 't1')
+)pxl";
+
+TEST_F(CoordinatorTest, prune_agents_nonpruning_filter) {
+  auto physical_plan = ThreeAgentOneKelvinCoordinateQuery(kPruneAgentsNonPruningFilter);
+
+  EXPECT_EQ(physical_plan->dag().nodes().size(), 4UL);
+
+  absl::flat_hash_map<std::string, IR*> plan_by_qb_addr;
+  for (int64_t carnot_id : physical_plan->dag().nodes()) {
+    auto carnot = physical_plan->Get(carnot_id);
+    plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
+  }
+
+  for (const auto& str : {"agent1", "agent2", "agent3"}) {
+    auto agent_sinks = plan_by_qb_addr[str]->FindNodesThatMatch(GRPCSink());
+    EXPECT_EQ(1, agent_sinks.size());
+    auto agent_sink_parents = static_cast<OperatorIR*>(agent_sinks[0])->parents();
+    EXPECT_EQ(1, agent_sink_parents.size());
+    EXPECT_MATCH(agent_sink_parents[0], Filter(Equals(ColumnNode(), String("agent1_pod"))));
+  }
+  EXPECT_EQ(1, plan_by_qb_addr["kelvin"]->FindNodesThatMatch(GRPCSourceGroup()).size());
+}
+
+constexpr char kPruneAgentsMultiParent[] = R"pxl(
+import px
+
+left = px.DataFrame(table='http_events', start_time='-120s', select=['upid'])
+left = left[left.ctx['pod_id'] == 'agent1_pod']
+right = px.DataFrame(table='http_events', start_time='-120s', select=['upid'])
+joined_table = left.merge(right, how='inner', left_on=['upid'], right_on=['upid'],
+                          suffixes=['', '_x'])
+px.display(joined_table, 'multi_parent')
+)pxl";
+TEST_F(CoordinatorTest, prune_agents_multiparent) {
+  auto physical_plan = ThreeAgentOneKelvinCoordinateQuery(kPruneAgentsMultiParent);
+
+  EXPECT_EQ(physical_plan->dag().nodes().size(), 4UL);
+
+  absl::flat_hash_map<std::string, IR*> plan_by_qb_addr;
+  for (int64_t carnot_id : physical_plan->dag().nodes()) {
+    auto carnot = physical_plan->Get(carnot_id);
+    plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
+  }
+
+  auto agent1_sinks = plan_by_qb_addr["agent1"]->FindNodesThatMatch(GRPCSink());
+  EXPECT_EQ(2, agent1_sinks.size());
+  auto agent1_sink0_parents = static_cast<OperatorIR*>(agent1_sinks[0])->parents();
+  EXPECT_EQ(1, agent1_sink0_parents.size());
+  EXPECT_MATCH(agent1_sink0_parents[0], MemorySource());
+  auto agent1_sink1_parents = static_cast<OperatorIR*>(agent1_sinks[1])->parents();
+  EXPECT_EQ(1, agent1_sink1_parents.size());
+  EXPECT_MATCH(agent1_sink1_parents[0],
+               Filter(Equals(ColumnNode(), MetadataLiteral(String("agent1_pod")))));
+
+  auto agent2_sinks = plan_by_qb_addr["agent2"]->FindNodesThatMatch(GRPCSink());
+  EXPECT_EQ(1, agent2_sinks.size());
+  auto agent2_sink_parents = static_cast<OperatorIR*>(agent2_sinks[0])->parents();
+  EXPECT_EQ(1, agent2_sink_parents.size());
+  EXPECT_MATCH(agent2_sink_parents[0], MemorySource());
+
+  auto agent3_sinks = plan_by_qb_addr["agent3"]->FindNodesThatMatch(GRPCSink());
+  EXPECT_EQ(1, agent3_sinks.size());
+  auto agent3_sink_parents = static_cast<OperatorIR*>(agent3_sinks[0])->parents();
+  EXPECT_EQ(1, agent3_sink_parents.size());
+  EXPECT_MATCH(agent3_sink_parents[0], MemorySource());
+
+  EXPECT_EQ(2, plan_by_qb_addr["kelvin"]->FindNodesThatMatch(GRPCSourceGroup()).size());
+}
+
+constexpr char kPruneAgentsMultiChild[] = R"pxl(
+import px
+
+# multi-child
+multichild = px.DataFrame(table='http_events', start_time='-120s', select=['upid'])
+px.display(multichild, 'sink1')
+multichild = multichild[multichild.ctx['service_id'] == 'agent2_service']
+px.display(multichild, 'sink2')
+
+)pxl";
+
+TEST_F(CoordinatorTest, prune_agents_multichild) {
+  auto physical_plan = ThreeAgentOneKelvinCoordinateQuery(kPruneAgentsMultiChild);
+  EXPECT_EQ(physical_plan->dag().nodes().size(), 4UL);
+
+  absl::flat_hash_map<std::string, IR*> plan_by_qb_addr;
+  for (int64_t carnot_id : physical_plan->dag().nodes()) {
+    auto carnot = physical_plan->Get(carnot_id);
+    plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
+  }
+
+  auto agent1_sinks = plan_by_qb_addr["agent1"]->FindNodesThatMatch(GRPCSink());
+  EXPECT_EQ(1, agent1_sinks.size());
+  auto agent1_sink_parents = static_cast<OperatorIR*>(agent1_sinks[0])->parents();
+  EXPECT_EQ(1, agent1_sink_parents.size());
+  EXPECT_MATCH(agent1_sink_parents[0], MemorySource());
+
+  auto agent2_sinks = plan_by_qb_addr["agent2"]->FindNodesThatMatch(GRPCSink());
+  EXPECT_EQ(2, agent2_sinks.size());
+  auto agent2_sink0_parents = static_cast<OperatorIR*>(agent2_sinks[0])->parents();
+  EXPECT_EQ(1, agent2_sink0_parents.size());
+  EXPECT_MATCH(agent2_sink0_parents[0], MemorySource());
+  auto agent2_sink1_parents = static_cast<OperatorIR*>(agent2_sinks[1])->parents();
+  EXPECT_EQ(1, agent2_sink1_parents.size());
+  EXPECT_MATCH(agent2_sink1_parents[0],
+               Filter(Equals(Metadata(), MetadataLiteral(String("agent2_service")))));
+
+  auto agent3_sinks = plan_by_qb_addr["agent3"]->FindNodesThatMatch(GRPCSink());
+  EXPECT_EQ(1, agent3_sinks.size());
+  auto agent3_sink_parents = static_cast<OperatorIR*>(agent3_sinks[0])->parents();
+  EXPECT_EQ(1, agent3_sink_parents.size());
+  EXPECT_MATCH(agent3_sink_parents[0], MemorySource());
 }
 
 }  // namespace distributed

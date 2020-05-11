@@ -11,6 +11,7 @@
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/carnot/planpb/plan.pb.h"
+#include "src/shared/metadata/metadata_filter.h"
 
 namespace pl {
 namespace carnot {
@@ -27,9 +28,8 @@ class DistributedPlan;
  */
 class CarnotInstance {
  public:
-  CarnotInstance(int64_t id, const distributedpb::CarnotInfo& carnot_info,
-                 DistributedPlan* parent_plan)
-      : id_(id), carnot_info_(carnot_info), distributed_plan_(parent_plan) {}
+  static StatusOr<std::unique_ptr<CarnotInstance>> Create(
+      int64_t id, const distributedpb::CarnotInfo& carnot_info, DistributedPlan* parent_plan);
 
   const std::string& QueryBrokerAddress() const { return carnot_info_.query_broker_address(); }
   int64_t id() const { return id_; }
@@ -47,7 +47,16 @@ class CarnotInstance {
     return absl::Substitute("Carnot(id=$0, qb_address=$1)", id(), QueryBrokerAddress());
   }
 
+  md::AgentMetadataFilter* metadata_filter() { return md_filter_.get(); }
+
  private:
+  CarnotInstance(int64_t id, const distributedpb::CarnotInfo& carnot_info,
+                 DistributedPlan* parent_plan, std::unique_ptr<md::AgentMetadataFilter> md_filter)
+      : id_(id),
+        carnot_info_(carnot_info),
+        distributed_plan_(parent_plan),
+        md_filter_(std::move(md_filter)) {}
+
   // The id used by the physical plan to define the DAG.
   int64_t id_;
   // The specification of this carnot instance.
@@ -55,6 +64,8 @@ class CarnotInstance {
   std::unique_ptr<IR> plan_;
   // The distributed plan that this instance belongs to.
   DistributedPlan* distributed_plan_;
+  // A filter containing the metadata entities stored on a particular Carnot.
+  std::unique_ptr<md::AgentMetadataFilter> md_filter_;
 };
 
 // TODO(nserrino): Refactor this and IR to share a common base class for shared operations like
@@ -67,7 +78,7 @@ class DistributedPlan {
    * @param carnot_instance the proto representation of the Carnot instance.
    * @return the id of the added carnot instance.
    */
-  int64_t AddCarnot(const distributedpb::CarnotInfo& carnot_instance);
+  StatusOr<int64_t> AddCarnot(const distributedpb::CarnotInfo& carnot_instance);
 
   /**
    * @brief Gets the carnot instance at the index i.

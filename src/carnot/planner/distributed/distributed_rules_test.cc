@@ -37,7 +37,8 @@ TEST_F(DistributedRulesTest, DistributedIRRuleTest) {
       LoadDistributedStatePb(kOneAgentDistributedState);
 
   for (int64_t i = 0; i < physical_state.carnot_info_size(); ++i) {
-    int64_t carnot_id = physical_plan->AddCarnot(physical_state.carnot_info()[i]);
+    int64_t carnot_id =
+        physical_plan->AddCarnot(physical_state.carnot_info()[i]).ConsumeValueOrDie();
     physical_plan->Get(carnot_id)->AddPlan(std::make_unique<IR>());
   }
 

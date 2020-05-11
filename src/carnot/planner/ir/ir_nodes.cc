@@ -1044,6 +1044,9 @@ Status MetadataIR::ResolveMetadataColumn(MetadataResolverIR* resolver_op,
   resolver_ = resolver_op;
   property_ = property;
   has_metadata_resolver_ = true;
+  if (property) {
+    metadata_type_ = property->metadata_type();
+  }
   return Status::OK();
 }
 
@@ -1222,6 +1225,7 @@ Status MetadataIR::CopyFromNodeImpl(const IRNode* node,
                                     absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const MetadataIR* metadata_ir = static_cast<const MetadataIR*>(node);
   metadata_name_ = metadata_ir->metadata_name_;
+  metadata_type_ = metadata_ir->metadata_type_;
   return Status::OK();
 }
 

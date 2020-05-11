@@ -1105,6 +1105,8 @@ class MetadataIR : public ColumnIR {
   Status Init(const std::string& metadata_val, int64_t parent_op_idx);
 
   std::string name() const { return metadata_name_; }
+  shared::metadatapb::MetadataType metadata_type() const { return metadata_type_; }
+
   bool HasMetadataResolver() const { return has_metadata_resolver_; }
 
   Status ResolveMetadataColumn(MetadataResolverIR* resolver_op, MetadataProperty* property);
@@ -1118,6 +1120,13 @@ class MetadataIR : public ColumnIR {
 
  private:
   std::string metadata_name_;
+  // Set by ResolveMetadataColumn. property_ also stores metadata type, but it will not
+  // stick around long enough for the distributed planner to access it due to the fact
+  // that it is allocated via a memory pool that is freed after the single node phase.
+  // TODO(nserrino, philkuz): Clean up the logic around property_ so we don't have to store
+  // this information twice.
+  shared::metadatapb::MetadataType metadata_type_ =
+      shared::metadatapb::MetadataType::METADATA_TYPE_UNKNOWN;
   bool has_metadata_resolver_ = false;
   MetadataResolverIR* resolver_ = nullptr;
   MetadataProperty* property_ = nullptr;

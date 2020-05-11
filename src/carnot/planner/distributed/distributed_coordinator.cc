@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <memory>
 #include <queue>
 #include <string>
@@ -68,14 +69,14 @@ StatusOr<std::unique_ptr<DistributedPlan>> OneRemoteCoordinator::CoordinateImpl(
                       DistributedSplitter::SplitAtBlockingNode(logical_plan));
   auto physical_plan = std::make_unique<DistributedPlan>();
   DCHECK_GT(remote_processor_nodes_.size(), 0UL);
-  int64_t remote_node_id = physical_plan->AddCarnot(remote_processor_nodes_[0]);
+  PL_ASSIGN_OR_RETURN(int64_t remote_node_id, physical_plan->AddCarnot(remote_processor_nodes_[0]));
 
   // TODO(philkuz) in the future save the remote_processor_nodes that are not being used
   PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> remote_plan, split_plan->after_blocking->Clone());
   physical_plan->Get(remote_node_id)->AddPlan(std::move(remote_plan));
 
   for (const auto& data_store_info : data_store_nodes_) {
-    int64_t source_node_id = physical_plan->AddCarnot(data_store_info);
+    PL_ASSIGN_OR_RETURN(int64_t source_node_id, physical_plan->AddCarnot(data_store_info));
     PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> source_plan, split_plan->before_blocking->Clone());
     physical_plan->Get(source_node_id)->AddPlan(std::move(source_plan));
     physical_plan->AddEdge(source_node_id, remote_node_id);
@@ -113,7 +114,7 @@ StatusOr<std::unique_ptr<DistributedPlan>> NoRemoteCoordinator::CoordinateImpl(
     const IR* logical_plan) {
   auto physical_plan = std::make_unique<DistributedPlan>();
   for (const auto& data_store_info : data_store_nodes_) {
-    int64_t source_node_id = physical_plan->AddCarnot(data_store_info);
+    PL_ASSIGN_OR_RETURN(int64_t source_node_id, physical_plan->AddCarnot(data_store_info));
     PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> source_plan, logical_plan->Clone());
     physical_plan->Get(source_node_id)->AddPlan(std::move(source_plan));
   }
@@ -289,65 +290,138 @@ const distributedpb::CarnotInfo& CoordinatorImpl::GetRemoteProcessor() const {
   return remote_processor_nodes_[0];
 }
 
-/**
- * @brief Evaluates whether a subgraph may produce data on a given Carnot instance.
- * Will first detect when the query filters data to metadata that is not part of the
- * input Carnot instance, but in the future can add more logic based on column contents, etc.
- */
-bool SubgraphMayProduceData(absl::flat_hash_set<OperatorIR*> query_subgraph_ops,
-                            CarnotInstance* carnot) {
-  // TODO(nserrino): Fill in with metadata entity filter logic.
-  PL_UNUSED(carnot);
-  PL_UNUSED(query_subgraph_ops);
-  return true;
+// MetadataType MetadataNameToType()
+
+// TODO(nserrino): Support aliases for pruning metadata filters,
+// such as p = df.ctx['pod'], then filter on p.
+// TOOD(nserrino): Support conjunctions for pruning metadata filters,
+// such as df.ctx['pod'] == 'foo' or df.ctx['pod'] == 'bar'.
+bool FilterMayProduceData(FilterIR* filter, const md::AgentMetadataFilter& md_filter) {
+  MetadataIR* metadata;
+  MetadataLiteralIR* literal;
+
+  if (!Match(filter->filter_expr(), Equals(Metadata(), MetadataLiteral()))) {
+    return true;
+  }
+
+  auto args = static_cast<FuncIR*>(filter->filter_expr())->args();
+  if (args.size() != 2) {
+    return true;
+  }
+  if (Match(args[0], Metadata())) {
+    metadata = static_cast<MetadataIR*>(args[0]);
+    literal = static_cast<MetadataLiteralIR*>(args[1]);
+  } else {
+    literal = static_cast<MetadataLiteralIR*>(args[0]);
+    metadata = static_cast<MetadataIR*>(args[1]);
+  }
+
+  if (!Match(literal->literal(), String())) {
+    return true;
+  }
+
+  std::string literal_string = static_cast<StringIR*>(literal->literal())->str();
+  MetadataType md_type = metadata->metadata_type();
+
+  if (!md_filter.metadata_types().contains(md_type)) {
+    return true;
+  }
+  return md_filter.ContainsEntity(md_type, literal_string);
 }
 
 /**
- * @brief Produces the IR for each input Carnot instance in `plan` with the relevant subgraph
+ * @brief Evaluates whether an operator may produce data on a given Carnot instance.
+ * Will first detect when the query filters data to metadata that is not part of the
+ * input Carnot instance, but in the future can add more logic based on column contents, etc.
+ */
+bool OperatorMayProduceData(OperatorIR* op, const md::AgentMetadataFilter& md_filter) {
+  // If the filter makes it so that no data will be produced, return false.
+  if (Match(op, Filter()) && !FilterMayProduceData(static_cast<FilterIR*>(op), md_filter)) {
+    return false;
+  }
+  auto parents = op->parents();
+  if (parents.size() == 0) {
+    return true;
+  }
+  for (OperatorIR* parent : parents) {
+    // If any parent may produce data, return true.
+    // TODO(nserrino): Optimize this, for example inner joins would need both
+    // parents to produce data. However, inner joins are not on the "before blocking"
+    // side of the query, so it isn't relevant for now.
+    if (OperatorMayProduceData(parent, md_filter)) {
+      return true;
+    }
+  }
+
+  // If none of the parents may produce data, neither will this operator.
+  return false;
+}
+
+// Returns a set containing the input sink and all of its ancestor ops.
+absl::flat_hash_set<OperatorIR*> GetSinkAndAncestors(OperatorIR* sink) {
+  absl::flat_hash_set<OperatorIR*> result;
+  std::queue<OperatorIR*> queue;
+  queue.push(sink);
+  while (queue.size()) {
+    auto op = queue.front();
+    result.insert(op);
+    for (OperatorIR* parent_op : op->parents()) {
+      queue.push(parent_op);
+    }
+    queue.pop();
+  }
+  return result;
+}
+
+/**
+ * @brief Produces the IR for each input Carnot instance in `plan` with the relevant sinks
  * of `query` based on metadata stored on each selected carnot instance.
  *
  * 1. For the Carnot in the list, create an entry in `plan`.
  * 2. Find the parts of `query` that might produce data on each Carnot
  * 3. Copy over the relevant subgraphs of `query` for that particular carnot instance.
  * We currently filter on Carnot metadata only for now.
- * This function guarantees that even if no Carnots will produce data for a subgraph in `query`,
- * each subgraph will still be run on at least one Carnot instance in the list.
+ * This function guarantees that even if no Carnots will produce data for a sink in `query`,
+ * each sink will still be run on at least one Carnot instance in the list.
  * The work necessary to connect the output of these Carnot instances to a GRPCSink must be done
  * in the client, because this function does not assume a particular configuration.
  */
 StatusOr<absl::flat_hash_map<int64_t, std::unique_ptr<IR>>> GetCarnotPlans(
-    IR* query, DistributedPlan* plan, absl::flat_hash_set<int64_t> carnot_instances) {
+    IR* query, DistributedPlan* plan, const std::vector<int64_t>& carnot_instances) {
   absl::flat_hash_map<int64_t, std::unique_ptr<IR>> carnot_plans;
 
-  auto independent_subgraph_op_ids = query->IndependentGraphs();
-  std::vector<absl::flat_hash_set<OperatorIR*>> independent_subgraphs_ops(
-      independent_subgraph_op_ids.size());
-  for (const auto& [i, subgraph_ids] : Enumerate(independent_subgraph_op_ids)) {
-    for (const auto op_id : subgraph_ids) {
-      independent_subgraphs_ops[i].insert(static_cast<OperatorIR*>(query->Get(op_id)));
-    }
+  // Map each sink to its dependency operators.
+  absl::flat_hash_map<GRPCSinkIR*, absl::flat_hash_set<OperatorIR*>> sinks_to_ancestor_ops;
+  auto sink_nodes = query->FindNodesThatMatch(GRPCSink());
+  for (IRNode* node : sink_nodes) {
+    auto casted_op = static_cast<GRPCSinkIR*>(node);
+    sinks_to_ancestor_ops[casted_op] = GetSinkAndAncestors(casted_op);
   }
 
-  // Used to make sure each subgraph runs on at least one of the input Carnots, even if none will
+  // Used to make sure each sink runs on at least one of the input Carnots, even if none will
   // produce data.
-  absl::flat_hash_map<int64_t, int64_t> carnots_per_subgraph;
+  absl::flat_hash_set<GRPCSinkIR*> allocated_sinks;
 
   for (const auto& [carnot_idx, carnot_id] : Enumerate(carnot_instances)) {
     absl::flat_hash_set<OperatorIR*> relevant_ops_for_instance;
+    md::AgentMetadataFilter* md_filter = plan->Get(carnot_id)->metadata_filter();
 
-    for (const auto& [subgraph_idx, subgraph_ops] : Enumerate(independent_subgraphs_ops)) {
-      // TODO(nserrino): Remove this logic when we replace it with a sink-oriented approach,
-      // rather than a subgraph oriented approach.
-      auto subgraph_produces_data = SubgraphMayProduceData(subgraph_ops, plan->Get(carnot_id));
-      // If the subgraph produces data, or this is the last Carnot instance and no Carnot has
+    for (const auto& [sink, sink_and_ancestors] : sinks_to_ancestor_ops) {
+      auto sink_produces_data = true;
+      // If we don't have a metadata filter on this Carnot, we assume it might produce data.
+      if (md_filter != nullptr) {
+        sink_produces_data = OperatorMayProduceData(sink, *md_filter);
+      }
+      // If the sink produces data, or this is the last Carnot instance and no Carnot has
       // matched this subgraph, then add it to the current Carnot instance.
-      if (!subgraph_produces_data &&
-          (carnot_idx < carnot_instances.size() - 1 || carnots_per_subgraph[subgraph_idx] > 0)) {
+      if (!sink_produces_data &&
+          (carnot_idx < carnot_instances.size() - 1 || allocated_sinks.contains(sink))) {
         continue;
       }
-      ++carnots_per_subgraph[subgraph_idx];
-      relevant_ops_for_instance.insert(subgraph_ops.begin(), subgraph_ops.end());
+      allocated_sinks.insert(sink);
+      relevant_ops_for_instance.insert(sink_and_ancestors.begin(), sink_and_ancestors.end());
     }
+
     carnot_plans[carnot_id] = std::make_unique<IR>();
     PL_RETURN_IF_ERROR(
         carnot_plans[carnot_id]->CopyOperatorSubgraph(query, relevant_ops_for_instance));
@@ -359,17 +433,17 @@ StatusOr<std::unique_ptr<DistributedPlan>> CoordinatorImpl::CoordinateImpl(const
   PL_ASSIGN_OR_RETURN(std::unique_ptr<BlockingSplitPlan> split_plan,
                       DistributedSplitter::SplitKelvinAndAgents(logical_plan));
   auto physical_plan = std::make_unique<DistributedPlan>();
-  int64_t remote_node_id = physical_plan->AddCarnot(GetRemoteProcessor());
+  PL_ASSIGN_OR_RETURN(int64_t remote_node_id, physical_plan->AddCarnot(GetRemoteProcessor()));
   // TODO(philkuz) Need to update the Blocking Split Plan to better represent what we expect.
   // TODO(philkuz) (PL-1469) Future support for grabbing data from multiple Kelvin nodes.
   PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> remote_plan, split_plan->original_plan->Clone());
   physical_plan->Get(remote_node_id)->AddPlan(std::move(remote_plan));
 
-  absl::flat_hash_set<int64_t> source_node_ids;
+  std::vector<int64_t> source_node_ids;
   for (const auto& [i, data_store_info] : Enumerate(data_store_nodes_)) {
-    int64_t source_node_id = physical_plan->AddCarnot(data_store_info);
+    PL_ASSIGN_OR_RETURN(int64_t source_node_id, physical_plan->AddCarnot(data_store_info));
     physical_plan->AddEdge(source_node_id, remote_node_id);
-    source_node_ids.insert(source_node_id);
+    source_node_ids.push_back(source_node_id);
   }
 
   PL_ASSIGN_OR_RETURN(auto carnot_plans, GetCarnotPlans(split_plan->before_blocking.get(),
