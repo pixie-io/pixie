@@ -219,6 +219,14 @@ func getSubscriberResourceVersionKey(sub string) string {
 	return path.Join("/", "subscriber", "resourceVersion", sub)
 }
 
+func getNodesKey() string {
+	return path.Join("/", "node") + "/"
+}
+
+func getNodeKey(n *metadatapb.Node) string {
+	return path.Join(getNodesKey(), n.Metadata.UID)
+}
+
 /* =============== Agent Operations ============== */
 
 // GetAgent gets the agent info for the agent with the given id.
@@ -932,6 +940,58 @@ func (mds *KVMetadataStore) UpdateNamespace(s *metadatapb.Namespace, deleted boo
 	rvUpdate := &metadatapb.MetadataObject{
 		Object: &metadatapb.MetadataObject_Namespace{
 			Namespace: s,
+		},
+	}
+	val, err = rvUpdate.Marshal()
+	if err != nil {
+		return errors.New("Unable to marshal rv pb")
+	}
+	mds.cache.Set(getResourceVersionMapKey(s.Metadata.ResourceVersion), string(val))
+
+	return nil
+}
+
+/* =============== Node Operations ============== */
+
+// GetNodes gets all nodes in the metadata store.
+func (mds *KVMetadataStore) GetNodes() ([]*metadatapb.Node, error) {
+	_, vals, err := mds.cache.GetWithPrefix(getNodesKey())
+	if err != nil {
+		return nil, err
+	}
+
+	namespaces := make([]*metadatapb.Node, len(vals))
+	for i, val := range vals {
+		pb := &metadatapb.Node{}
+		proto.Unmarshal(val, pb)
+		namespaces[i] = pb
+	}
+	return namespaces, nil
+}
+
+// UpdateNode adds or updates the given node in the metadata store.
+func (mds *KVMetadataStore) UpdateNode(s *metadatapb.Node, deleted bool) error {
+	if deleted && s.Metadata.DeletionTimestampNS == 0 {
+		s.Metadata.DeletionTimestampNS = time.Now().UnixNano()
+	}
+
+	val, err := s.Marshal()
+	if err != nil {
+		return errors.New("Unable to marshal node pb")
+	}
+
+	key := getNodeKey(s)
+
+	if s.Metadata.DeletionTimestampNS > 0 {
+		mds.cache.SetWithTTL(key, string(val), mds.expiryDuration)
+	} else {
+		mds.cache.Set(key, string(val))
+	}
+
+	// Add mapping from resource version -> namespace.
+	rvUpdate := &metadatapb.MetadataObject{
+		Object: &metadatapb.MetadataObject_Node{
+			Node: s,
 		},
 	}
 	val, err = rvUpdate.Marshal()

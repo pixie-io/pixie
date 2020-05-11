@@ -1391,6 +1391,96 @@ func TestKVMetadataStore_UpdateNamespace(t *testing.T) {
 	assert.Equal(t, "1234", rvPb.GetNamespace().Metadata.UID)
 }
 
+func TestKVMetadataStore_GetNodes(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/node/").
+		Return(nil, nil, nil).
+		Times(1)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	// Create nodes.
+	s1 := &k8s_metadatapb.Node{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
+			Name: "test",
+			UID:  "5678",
+		},
+	}
+	s1Text, err := s1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal namespace pb")
+	}
+
+	s2 := &k8s_metadatapb.Node{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
+			Name: "test",
+			UID:  "1234",
+		},
+	}
+	s2Text, err := s2.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal namespace pb")
+	}
+
+	c.Set("/node/5678", string(s1Text))
+	c.Set("/node/1234", string(s2Text))
+
+	nodes, err := mds.GetNodes()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(nodes))
+
+	assert.Equal(t, s1.Metadata.Name, (*nodes[1]).Metadata.Name)
+	assert.Equal(t, s2.Metadata.Name, (*nodes[0]).Metadata.Name)
+}
+
+func TestKVMetadataStore_UpdateNode(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	expectedPb := &k8s_metadatapb.Node{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
+			Name:            "efgh",
+			UID:             "1234",
+			ResourceVersion: "1",
+		},
+	}
+
+	err = mds.UpdateNode(expectedPb, false)
+	if err != nil {
+		t.Fatal("Could not update service.")
+	}
+
+	// Check that correct service info is in etcd.
+	resp, err := c.Get("/node/1234")
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	pb := &k8s_metadatapb.Node{}
+	proto.Unmarshal(resp, pb)
+
+	assert.Equal(t, expectedPb, pb)
+
+	resp, err = c.Get("/resourceVersionUpdate/1")
+	assert.Nil(t, err)
+	rvPb := &k8s_metadatapb.MetadataObject{}
+	proto.Unmarshal(resp, rvPb)
+	assert.Equal(t, "1234", rvPb.GetNode().Metadata.UID)
+}
+
 func TestKVMetadataStore_GetAgents(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

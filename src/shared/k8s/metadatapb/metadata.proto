@@ -16,6 +16,7 @@ message MetadataObject {
     Endpoints endpoints = 2;
     Service service = 3;
     Namespace namespace = 4;
+    Node node = 5;
   }
 }
 
