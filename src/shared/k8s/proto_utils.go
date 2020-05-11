@@ -100,6 +100,20 @@ var qosClassPbToObjMap = map[metadatapb.PodQOSClass]v1.PodQOSClass{
 	metadatapb.QOS_CLASS_BEST_EFFORT: v1.PodQOSBestEffort,
 }
 
+var nodePhaseToPbMap = map[v1.NodePhase]metadatapb.NodePhase{
+	v1.NodePending:    metadatapb.NODE_PHASE_PENDING,
+	v1.NodeRunning:    metadatapb.NODE_PHASE_RUNNING,
+	v1.NodeTerminated: metadatapb.NODE_PHASE_TERMINATED,
+}
+
+var nodeAddressTypeToPbMap = map[v1.NodeAddressType]metadatapb.NodeAddressType{
+	v1.NodeHostName:    metadatapb.NODE_ADDR_TYPE_HOSTNAME,
+	v1.NodeExternalIP:  metadatapb.NODE_ADDR_TYPE_EXTERNAL_IP,
+	v1.NodeInternalIP:  metadatapb.NODE_ADDR_TYPE_INTERNAL_IP,
+	v1.NodeExternalDNS: metadatapb.NODE_ADDR_TYPE_EXTERNAL_DNS,
+	v1.NodeInternalDNS: metadatapb.NODE_ADDR_TYPE_INTERNAL_DNS,
+}
+
 // OwnerReferenceToProto converts an OwnerReference into a proto.
 func OwnerReferenceToProto(o *metav1.OwnerReference) (*metadatapb.OwnerReference, error) {
 	oPb := &metadatapb.OwnerReference{
@@ -670,4 +684,46 @@ func ContainerStatusToProto(c *v1.ContainerStatus) (*metadatapb.ContainerStatus,
 	}
 
 	return cPb, nil
+}
+
+// NodeToProto converts a k8s Node object into a proto.
+func NodeToProto(n *v1.Node) (*metadatapb.Node, error) {
+	metadata, err := ObjectMetadataToProto(&n.ObjectMeta)
+	if err != nil {
+		return nil, err
+	}
+
+	spec := NodeSpecToProto(&n.Spec)
+
+	status := NodeStatusToProto(&n.Status)
+
+	return &metadatapb.Node{
+		Metadata: metadata,
+		Spec:     spec,
+		Status:   status,
+	}, nil
+}
+
+// NodeStatusToProto converts a k8s Node status into a proto.
+func NodeStatusToProto(n *v1.NodeStatus) *metadatapb.NodeStatus {
+	addrs := make([]*metadatapb.NodeAddress, len(n.Addresses))
+	for i, a := range n.Addresses {
+		addrs[i] = &metadatapb.NodeAddress{
+			Type:    nodeAddressTypeToPbMap[a.Type],
+			Address: a.Address,
+		}
+	}
+
+	return &metadatapb.NodeStatus{
+		Phase:     nodePhaseToPbMap[n.Phase],
+		Addresses: addrs,
+	}
+}
+
+// NodeSpecToProto converts a k8s Node spec into a proto.
+func NodeSpecToProto(n *v1.NodeSpec) *metadatapb.NodeSpec {
+	return &metadatapb.NodeSpec{
+		PodCIDRs: n.PodCIDRs,
+		PodCIDR:  n.PodCIDR,
+	}
 }

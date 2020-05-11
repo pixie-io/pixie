@@ -642,11 +642,16 @@ message Node {
 
 // NodeSpec describes the attributes that a node is created with.
 message NodeSpec{
-  // PodCIDR represents the pod IP range assigned to the node.
+  // podCIDRs represents the IP ranges assigned to the node for usage by Pods on that node. If this
+  // field is specified, the 0th entry must match the podCIDR field. It may contain at most 1 value for
+  // each of IPv4 and IPv6.
   repeated string pod_cidrs = 1 [
                        (gogoproto.customname) = "PodCIDRs"
                       ];
-
+  // PodCIDR represents the pod IP range assigned to the node.
+  string pod_cidr = 2 [
+                       (gogoproto.customname) = "PodCIDR"
+                      ];
 }
 
 // These are the valid phases of node.

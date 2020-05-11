@@ -337,6 +337,31 @@ start_timestamp_ns: 4
 stop_timestamp_ns: 6
 `
 
+const nodePb = `
+metadata {
+	name: "some_node"
+	uid: "12"
+	resource_version: "1",
+	creation_timestamp_ns: 4
+	owner_references: {}
+}
+status {
+	addresses {
+		address: "10.32.0.77"
+		type: 3
+	}
+	addresses {
+		address: "34.82.242.42"
+		type: 2
+	}
+	phase: 2
+}
+spec {
+	pod_cidr: "10.60.4.0/24"
+	pod_cidrs: "10.60.4.0/24"
+}
+`
+
 func TestOwnerReferenceToProto(t *testing.T) {
 	o := metav1.OwnerReference{
 		Kind: "pod",
@@ -1207,6 +1232,63 @@ func TestContainerStatusToProtoTerminated(t *testing.T) {
 
 	expectedPb := &metadatapb.ContainerStatus{}
 	if err := proto.UnmarshalText(terminatedContainerStatusPb, expectedPb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	assert.Equal(t, expectedPb, oPb)
+}
+
+func TestNodeToProto(t *testing.T) {
+	oRefs := []metav1.OwnerReference{
+		metav1.OwnerReference{
+			Kind: "",
+			Name: "",
+			UID:  "",
+		},
+	}
+
+	creationTime := metav1.Unix(0, 4)
+	metadata := metav1.ObjectMeta{
+		Name:              "some_node",
+		Namespace:         "",
+		UID:               "12",
+		ResourceVersion:   "1",
+		ClusterName:       "",
+		CreationTimestamp: creationTime,
+		OwnerReferences:   oRefs,
+	}
+
+	addresses := []v1.NodeAddress{
+		v1.NodeAddress{
+			Type:    v1.NodeInternalIP,
+			Address: "10.32.0.77",
+		},
+		v1.NodeAddress{
+			Type:    v1.NodeExternalIP,
+			Address: "34.82.242.42",
+		},
+	}
+
+	status := v1.NodeStatus{
+		Phase:     v1.NodeRunning,
+		Addresses: addresses,
+	}
+
+	spec := v1.NodeSpec{
+		PodCIDR:  "10.60.4.0/24",
+		PodCIDRs: []string{"10.60.4.0/24"},
+	}
+
+	o := v1.Node{
+		ObjectMeta: metadata,
+		Status:     status,
+		Spec:       spec,
+	}
+
+	oPb, err := k8s.NodeToProto(&o)
+	assert.Nil(t, err, "must not have an error")
+
+	expectedPb := &metadatapb.Node{}
+	if err := proto.UnmarshalText(nodePb, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 	assert.Equal(t, expectedPb, oPb)
