@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package pl.stirling.tableenums.cqlpb;
+
+option go_package = "cqlpb";
+
+
+// enum ReqOp provides the encoding used in the cql_events::req_op column.
+// The encodings are the same as from CQL spec.
+enum ReqOp {
+  // Proto3 requires first enum value to be zero.
+  UNUSED = 0x00;
+  Startup = 0x01;
+  AuthResponse = 0x0f;
+  Options = 0x05;
+  Query = 0x07;
+  Prepare = 0x09;
+  Execute = 0x0a;
+  Batch = 0x0d;
+  Register = 0x0b;
+}
+
+// enum RespOp provides the encoding used in the cql_events::resp_op column.
+// The encodings are the same as from CQL spec.
+enum RespOp {
+  Error = 0x00;
+  Ready = 0x02;
+  Authenticate = 0x03;
+  Supported = 0x06;
+  Result = 0x08;
+  Event = 0x0c;
+  AuthChallenge = 0x0e;
+  AuthSuccess = 0x10;
+}

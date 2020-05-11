@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package pl.stirling.tableenums.mysqlpb;
+
+option go_package = "mysqlpb";
+
+// enum Command provides the encoding used in the mysql_events::req_cmd column.
+// The encodings are the same as from MySQL spec.
+enum Command {
+  Sleep = 0x00;
+  Quit = 0x01;
+  InitDB = 0x02;
+  Query = 0x03;
+  FieldList = 0x04;
+  CreateDB = 0x05;
+  DropDB = 0x06;
+  Refresh = 0x07;
+  Shutdown = 0x08;
+  Statistics = 0x09;
+  ProcessInfo = 0x0a;
+  Connect = 0x0b;
+  ProcessKill = 0x0c;
+  Debug = 0x0d;
+  Ping = 0x0e;
+  Time = 0x0f;
+  DelayedInsert = 0x10;
+  ChangeUser = 0x11;
+  BinlogDump = 0x12;
+  TableDump = 0x13;
+  ConnectOut = 0x14;
+  RegisterSlave = 0x15;
+  StmtPrepare = 0x16;
+  StmtExecute = 0x17;
+  StmtSendLongData = 0x18;
+  StmtClose = 0x19;
+  StmtReset = 0x1a;
+  SetOption = 0x1b;
+  StmtFetch = 0x1c;
+  Daemon = 0x1d;
+  BinlogDumpGTID = 0x1e;
+  ResetConnection = 0x1f;
+}
+
+// enum RespStatus provides the encoding used in the mysql_events::req_cmd column.
+// This is a custom enum (not from MySQL spec).
+enum RespStatus {
+    Unknown = 0;
+    None = 1;
+    OK = 2;
+    Err = 3;
+}
