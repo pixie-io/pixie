@@ -222,7 +222,7 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
   absl::StrAppend(&entry->resp.msg, "Resultset rows = ", results.size());
 
   // Check for another resultset in case this is a multi-resultset.
-  if (MoreResultsExists(last_packet)) {
+  if (MoreResultsExist(last_packet)) {
     return HandleResultsetResponse(resp_packets, entry, binary_resultset,
                                    /* multiresultset */ true);
   }

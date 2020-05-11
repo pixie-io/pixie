@@ -37,7 +37,7 @@ StatusOr<ColDefinition> ProcessColumnDefPacket(const Packet& packet);
 /**
  * Checks an OK packet for the SERVER_MORE_RESULTS_EXISTS flag.
  */
-bool MoreResultsExists(const Packet& last_packet);
+bool MoreResultsExist(const Packet& last_packet);
 
 }  // namespace mysql
 }  // namespace stirling

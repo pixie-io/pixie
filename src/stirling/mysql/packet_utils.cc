@@ -223,8 +223,8 @@ StatusOr<ColDefinition> ProcessColumnDefPacket(const Packet& packet) {
 
 // Look for SERVER_MORE_RESULTS_EXIST in Status field OK or EOF packet.
 // Multi-resultsets only exist in protocol 4.1 and above.
-bool MoreResultsExists(const Packet& last_packet) {
-  constexpr uint8_t kServerMoreResultsExistsFlag = 0x8;
+bool MoreResultsExist(const Packet& last_packet) {
+  constexpr uint8_t kServerMoreResultsExistFlag = 0x8;
 
   if (IsOKPacket(last_packet)) {
     size_t pos = 1;
@@ -236,12 +236,12 @@ bool MoreResultsExists(const Packet& last_packet) {
       return false;
     }
 
-    return last_packet.msg[pos] & kServerMoreResultsExistsFlag;
+    return last_packet.msg[pos] & kServerMoreResultsExistFlag;
   }
 
   if (IsEOFPacket(last_packet, /* protocol_41 */ true)) {
     constexpr int kEOFPacketStatusPos = 3;
-    return (last_packet.msg[kEOFPacketStatusPos] & kServerMoreResultsExistsFlag);
+    return (last_packet.msg[kEOFPacketStatusPos] & kServerMoreResultsExistFlag);
   }
 
   return false;
