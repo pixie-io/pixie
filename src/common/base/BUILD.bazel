@@ -111,6 +111,12 @@ pl_cc_test(
     deps = [":cc_library"],
 )
 
+pl_cc_test(
+    name = "enum_utils_test",
+    srcs = ["enum_utils_test.cc"],
+    deps = [":cc_library"],
+)
+
 pl_cc_binary(
     name = "bytes_to_int_benchmark",
     srcs = ["bytes_to_int_benchmark.cc"],
