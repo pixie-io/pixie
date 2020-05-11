@@ -10,13 +10,16 @@ option go_package = "stirlingpb";
 // in a file_system_cache would be elements in an
 // InfoClass file_system_cache.
 message Element {
-  // name referes to the name of the Element such as user_percentage (Element)
+  // name refers to the name of the Element such as user_percentage (Element)
   // for cpu usage (InfoClass).
   string name = 1;
   types.DataType type = 2;
   types.PatternType ptype = 3;
   // The description of the column.
   string desc = 4;
+  // If the type is INT64, and ptype is GENERAL_ENUM,
+  // then this map can convert values to human readable strings.
+  map<int64,string> decoder = 5;
 }
 
 message TableSchema {

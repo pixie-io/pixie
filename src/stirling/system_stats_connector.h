@@ -50,7 +50,7 @@ class SystemStatsConnector : public SourceConnector {
       {"rchar_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
       "IO reads in bytes of the process"},
       {"wchar_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
-      "IO writes in bytes of the process" },
+      "IO writes in bytes of the process"},
       {"read_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER,
       "IO reads actually go to storage layer in bytes of the process"},
       {"write_bytes", types::DataType::INT64, types::PatternType::METRIC_COUNTER,

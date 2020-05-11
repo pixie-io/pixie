@@ -26,16 +26,19 @@ const char* kInfoClassManager = R"(
       name: "user_percentage"
       type: FLOAT64
       ptype: METRIC_GAUGE
+      desc: "User percentage"
     }
     elements {
       name: "system_percentage"
       type: FLOAT64
       ptype: METRIC_GAUGE
+      desc: "System percentage"
     }
     elements {
       name: "io_percentage"
       type: FLOAT64
       ptype: METRIC_GAUGE
+      desc: "IO percentage"
     }
     tabletized: false
     tabletization_key: 18446744073709551615
@@ -51,9 +54,9 @@ const char* kInfoClassManager = R"(
 class TestSourceConnector : public SourceConnector {
  public:
   static constexpr DataElement kElements[] = {
-      {"user_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE},
-      {"system_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE},
-      {"io_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE}};
+      {"user_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE, "User percentage"},
+      {"system_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE, "System percentage"},
+      {"io_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE, "IO percentage"}};
 
   static constexpr auto kTable = DataTableSchema("cpu", kElements);
   static constexpr auto kTables = MakeArray(kTable);

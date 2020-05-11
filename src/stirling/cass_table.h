@@ -1,9 +1,18 @@
 #pragma once
 
+#include <map>
+
 #include "src/stirling/canonical_types.h"
+#include "src/stirling/cql/types.h"
+#include "src/stirling/types.h"
 
 namespace pl {
 namespace stirling {
+
+static const std::map<int64_t, std::string_view> kCQLReqOpDecoder =
+    pl::EnumDefToMap<cass::RespOp>();
+static const std::map<int64_t, std::string_view> kCQLRespOpDecoder =
+    pl::EnumDefToMap<cass::RespOp>();
 
 // clang-format off
 static constexpr DataElement kCQLElements[] = {
@@ -11,9 +20,11 @@ static constexpr DataElement kCQLElements[] = {
         canonical_data_elements::kUPID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
-        {"req_op", types::DataType::INT64, types::PatternType::GENERAL_ENUM, "Request opcode"},
+        {"req_op", types::DataType::INT64, types::PatternType::GENERAL_ENUM, "Request opcode",
+         &kCQLReqOpDecoder},
         {"req_body", types::DataType::STRING, types::PatternType::GENERAL, "Request body"},
-        {"resp_op", types::DataType::INT64, types::PatternType::GENERAL_ENUM, "Response opcode"},
+        {"resp_op", types::DataType::INT64, types::PatternType::GENERAL_ENUM, "Response opcode",
+         &kCQLRespOpDecoder},
         {"resp_body", types::DataType::STRING, types::PatternType::GENERAL, "Request body"},
         {"latency_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
          "Request-response latency in nanoseconds"},

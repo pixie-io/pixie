@@ -1,10 +1,18 @@
 #pragma once
 
+#include <map>
+
 #include "src/stirling/canonical_types.h"
+#include "src/stirling/mysql/types.h"
 #include "src/stirling/types.h"
 
 namespace pl {
 namespace stirling {
+
+static const std::map<int64_t, std::string_view> kMySQLReqCmdDecoder =
+    pl::EnumDefToMap<mysql::Command>();
+static const std::map<int64_t, std::string_view> kMySQLRespStatusDecoder =
+    pl::EnumDefToMap<mysql::RespStatus>();
 
 // clang-format off
 static constexpr DataElement kMySQLElements[] = {
@@ -13,11 +21,11 @@ static constexpr DataElement kMySQLElements[] = {
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
         {"req_cmd", types::DataType::INT64, types::PatternType::GENERAL_ENUM,
-        "MySQL request command"},
+        "MySQL request command", &kMySQLReqCmdDecoder},
         {"req_body", types::DataType::STRING, types::PatternType::GENERAL,
         "MySQL request body"},
         {"resp_status", types::DataType::INT64, types::PatternType::GENERAL_ENUM,
-        "MySQL response status code"},
+        "MySQL response status code", &kMySQLRespStatusDecoder},
         {"resp_body", types::DataType::STRING, types::PatternType::GENERAL,
         "MySQL response body"},
         {"latency_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE,

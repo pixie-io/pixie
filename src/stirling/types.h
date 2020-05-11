@@ -1,7 +1,7 @@
 #pragma once
 
-#include <arrow/type.h>
 #include <limits>
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -15,37 +15,60 @@
 namespace pl {
 namespace stirling {
 
-using ArrowArrayBuilderUPtrVec = std::vector<std::unique_ptr<arrow::ArrayBuilder>>;
-using ArrowRecordBatchSPtrVec = std::vector<std::shared_ptr<arrow::RecordBatch>>;
-
 using PushDataCallback = std::function<void(uint32_t, types::TabletID,
                                             std::unique_ptr<types::ColumnWrapperRecordBatch>)>;
 
 using AgentMetadataType = std::shared_ptr<const pl::md::AgentMetadataState>;
+
 /**
  * The callback function signature to fetch new metadata.
  */
 using AgentMetadataCallback = std::function<AgentMetadataType()>;
 
-// TODO(oazizi/yzhao): Consider change this to a struct.
 class DataElement {
  public:
   constexpr DataElement() = delete;
   constexpr DataElement(std::string_view name, types::DataType type, types::PatternType ptype,
-                        std::string_view desc = {})
-      : name_(name), type_(type), ptype_(ptype), desc_(desc) {}
+                        std::string_view desc,
+                        const std::map<int64_t, std::string_view>* decoder = {})
+      : name_(name), type_(type), ptype_(ptype), desc_(desc), decoder_(decoder) {
+    // Note: Ideally, we'd call CheckSchema() here because GCC chokes.
+    // This is because we use initializers, in our table definitions (e.g. http_table.h),
+    // for which GCC wants to call the default constructor before setting the values.
+    // Clang does this differently, so has no problem with it.
+    //
+    // Workaround is to make CheckSchema() public, and let DataTableSchema call it as part of
+    // its enforcement. With the workaround, standalone DataElements are not enforced,
+    // but we never effectively have standalone DataElements, so we're protected.
+  }
 
-  constexpr const std::string_view& name() const { return name_; }
-  constexpr const types::DataType& type() const { return type_; }
-  constexpr const types::PatternType& ptype() const { return ptype_; }
-  constexpr const std::string_view& desc() const { return desc_; }
+  constexpr std::string_view name() const { return name_; }
+  constexpr types::DataType type() const { return type_; }
+  constexpr types::PatternType ptype() const { return ptype_; }
+  constexpr std::string_view desc() const { return desc_; }
+  constexpr const std::map<int64_t, std::string_view>* decoder() const { return decoder_; }
   stirlingpb::Element ToProto() const;
+
+  constexpr void CheckSchema() const {
+    COMPILE_TIME_ASSERT(!name_.empty(), "Element name may not be empty.");
+    COMPILE_TIME_ASSERT(type_ != types::DataType::DATA_TYPE_UNKNOWN,
+                        "Element may not have unknown data type.");
+    COMPILE_TIME_ASSERT(ptype_ != types::PatternType::UNSPECIFIED,
+                        "Element may not have unspecified pattern type.");
+    if (decoder_ != nullptr) {
+      COMPILE_TIME_ASSERT(type_ == types::DataType::INT64,
+                          "Enum decoders are only valid for columns with type INT64");
+      COMPILE_TIME_ASSERT(ptype_ == types::PatternType::GENERAL_ENUM,
+                          "Enum decoders are only valid for columns with pattern type ENUM");
+    }
+  }
 
  protected:
   const std::string_view name_;
-  types::DataType type_;
-  types::PatternType ptype_;
+  const types::DataType type_ = types::DataType::DATA_TYPE_UNKNOWN;
+  const types::PatternType ptype_ = types::PatternType::UNSPECIFIED;
   const std::string_view desc_;
+  const std::map<int64_t, std::string_view>* decoder_ = nullptr;
 };
 
 class DataTableSchema {
@@ -110,11 +133,7 @@ class DataTableSchema {
     }
 
     for (size_t i = 0; i < elements_.size(); ++i) {
-      COMPILE_TIME_ASSERT(elements_[i].name() != "", "Element name may not be empty.");
-      COMPILE_TIME_ASSERT(elements_[i].type() != types::DataType::DATA_TYPE_UNKNOWN,
-                          "Element may not have unknown data type.");
-      COMPILE_TIME_ASSERT(elements_[i].ptype() != types::PatternType::UNSPECIFIED,
-                          "Element may not have unspecified pattern type.");
+      elements_[i].CheckSchema();
     }
   }
 

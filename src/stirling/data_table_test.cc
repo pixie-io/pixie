@@ -14,9 +14,9 @@ class DataTableTest : public ::testing::Test {
 
   // The test uses a pre-defined schema.
   static constexpr DataElement kElements[] = {
-      {"f0", types::DataType::INT64, types::PatternType::GENERAL},
-      {"f1", types::DataType::FLOAT64, types::PatternType::GENERAL},
-      {"f2", types::DataType::INT64, types::PatternType::GENERAL_ENUM},
+      {"f0", types::DataType::INT64, types::PatternType::GENERAL, "f(x) = x+100"},
+      {"f1", types::DataType::FLOAT64, types::PatternType::GENERAL, "f(x) = 3.14159*x+3.14159"},
+      {"f2", types::DataType::INT64, types::PatternType::GENERAL_ENUM, "f(x) = x % 10"},
   };
   static constexpr auto kSchema = DataTableSchema("test_table", kElements);
 

@@ -17,7 +17,7 @@ enum DataType {
 }
 
 // The types of patterns for the different data elements.
-//|                | Current Value | Time Series | Histagram | Event log | Top K | Example                          |
+//|                | Current Value | Time Series | Histogram | Event log | Top K | Example                          |
 //|----------------|---------------|-------------|-----------|-----------|-------|----------------------------------|
 //| UNSPECIFIED    |               |             |           |           |       |                                  |
 //| METRIC_COUNTER | Y             | Y           | N         | Y?        | N     | time, cpu_utime_ns               |

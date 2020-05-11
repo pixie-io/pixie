@@ -1,10 +1,22 @@
 #pragma once
 
+#include <map>
+
 #include "src/stirling/canonical_types.h"
 #include "src/stirling/types.h"
 
 namespace pl {
 namespace stirling {
+
+enum class HTTPContentType {
+  kUnknown = 0,
+  kJSON = 1,
+  // We use gRPC instead of PB to be consistent with the wording used in gRPC.
+  kGRPC = 2,
+};
+
+static const std::map<int64_t, std::string_view> kHTTPContentTypeDecoder =
+    pl::EnumDefToMap<HTTPContentType>();
 
 // clang-format off
 constexpr DataElement kHTTPElements[] = {
@@ -19,9 +31,7 @@ constexpr DataElement kHTTPElements[] = {
     {"http_minor_version", types::DataType::INT64, types::PatternType::GENERAL_ENUM,
     "HTTP minor version, HTTP1 uses 1, HTTP2 set this value to 0"},
     {"http_content_type", types::DataType::INT64, types::PatternType::GENERAL_ENUM,
-    // TODO(yzhao): Add a map from enum to text, note that this has to be constexpr, the actual
-    // mechanism might require some template trick.
-    "Type of the HTTP payload, can be JSON or protobuf"},
+    "Type of the HTTP payload, can be JSON or protobuf", &kHTTPContentTypeDecoder},
     {"http_req_headers", types::DataType::STRING, types::PatternType::STRUCTURED,
     "Request headers in JSON format"},
     {"http_req_method", types::DataType::STRING, types::PatternType::GENERAL_ENUM,
@@ -47,13 +57,6 @@ constexpr DataElement kHTTPElements[] = {
 #endif
 };
 // clang-format on
-
-enum class HTTPContentType {
-  kUnknown = 0,
-  kJSON = 1,
-  // We use gRPC instead of PB to be consistent with the wording used in gRPC.
-  kGRPC = 2,
-};
 
 constexpr auto kHTTPTable = DataTableSchema("http_events", kHTTPElements);
 

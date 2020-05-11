@@ -9,6 +9,10 @@ stirlingpb::Element DataElement::ToProto() const {
   element_proto.set_type(type_);
   element_proto.set_ptype(ptype_);
   element_proto.set_desc(std::string(desc_));
+  if (decoder_ != nullptr) {
+    google::protobuf::Map<int64_t, std::string>* decoder = element_proto.mutable_decoder();
+    *decoder = google::protobuf::Map<int64_t, std::string>(decoder_->begin(), decoder_->end());
+  }
   return element_proto;
 }
 
