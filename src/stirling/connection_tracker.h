@@ -394,7 +394,15 @@ class ConnectionTracker {
   double StitchFailureRate() const;
 
   enum class CountStats {
+    // The number of data events.
     kDataEvent = 0,
+
+    // The number of sent bytes.
+    kBytesSent,
+
+    // The number of received bytes.
+    kBytesRecv,
+
     kNumCountStats,
   };
 
@@ -402,7 +410,7 @@ class ConnectionTracker {
    * Increment a stats event counter for this tracker.
    * @param stat stat selector.
    */
-  void IncrementStat(CountStats stat) { ++stats_[static_cast<int>(stat)]; }
+  void IncrementStat(CountStats stat, int count = 1) { stats_[static_cast<int>(stat)] += count; }
 
   /**
    * Get current value of a stats event counter for this tracker.

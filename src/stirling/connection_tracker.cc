@@ -120,10 +120,14 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
 
   switch (event->attr.direction) {
     case TrafficDirection::kEgress: {
+      // Attributes are not included as the data.
+      IncrementStat(CountStats::kBytesSent, event->msg.size());
       send_data_.AddData(std::move(event));
       ++num_send_events_;
     } break;
     case TrafficDirection::kIngress: {
+      // Attributes are not included as the data.
+      IncrementStat(CountStats::kBytesRecv, event->msg.size());
       recv_data_.AddData(std::move(event));
       ++num_recv_events_;
     } break;

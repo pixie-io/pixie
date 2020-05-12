@@ -27,7 +27,10 @@ using testing::kHTTPUpgradeResp;
 
 class ConnectionTrackerTest : public ::testing::Test {
  protected:
+  ConnectionTrackerTest() : event_gen_(&real_clock_) {}
+
   testing::RealClock real_clock_;
+  testing::EventGenerator event_gen_;
 };
 
 TEST_F(ConnectionTrackerTest, timestamp_test) {
@@ -366,8 +369,24 @@ TEST_F(ConnectionTrackerTest, stats_counter) {
   tracker.IncrementStat(ConnectionTracker::CountStats::kDataEvent);
   EXPECT_EQ(1, tracker.Stat(ConnectionTracker::CountStats::kDataEvent));
 
-  tracker.IncrementStat(ConnectionTracker::CountStats::kDataEvent);
-  EXPECT_EQ(2, tracker.Stat(ConnectionTracker::CountStats::kDataEvent));
+  tracker.IncrementStat(ConnectionTracker::CountStats::kDataEvent, 5);
+  EXPECT_EQ(6, tracker.Stat(ConnectionTracker::CountStats::kDataEvent));
+}
+
+TEST_F(ConnectionTrackerTest, DataEventsChangesCounter) {
+  auto frame0 = event_gen_.InitRecvEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
+  auto frame1 = event_gen_.InitSendEvent<kProtocolHTTP2>(kHTTP2EndStreamHeadersFrame);
+
+  ConnectionTracker tracker;
+
+  EXPECT_EQ(0, tracker.Stat(ConnectionTracker::CountStats::kBytesSent));
+  EXPECT_EQ(0, tracker.Stat(ConnectionTracker::CountStats::kBytesRecv));
+
+  tracker.AddDataEvent(std::move(frame0));
+  tracker.AddDataEvent(std::move(frame1));
+
+  EXPECT_EQ(9, tracker.Stat(ConnectionTracker::CountStats::kBytesSent));
+  EXPECT_EQ(9, tracker.Stat(ConnectionTracker::CountStats::kBytesRecv));
 }
 
 TEST_F(ConnectionTrackerTest, HTTP2ResetAfterStitchFailure) {
