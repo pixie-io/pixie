@@ -53,8 +53,7 @@ void MetadataHandler::AddObject(MetadataType md_type, const std::vector<std::str
                                 const std::vector<MetadataType>& key_metadata) {
   MetadataProperty* raw_property = AddProperty(std::make_unique<Property>(md_type, key_metadata));
   std::string md_name = MetadataProperty::GetMetadataString(md_type);
-  std::transform(md_name.begin(), md_name.end(), md_name.begin(),
-                 [](unsigned char c) { return std::tolower(c); });
+  absl::AsciiStrToLower(&md_name);
   DCHECK(!HasProperty(md_name)) << absl::Substitute("Metadata already exists for key '$0'.",
                                                     md_name);
   AddMapping(md_name, raw_property);
