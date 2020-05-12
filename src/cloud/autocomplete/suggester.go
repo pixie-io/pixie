@@ -176,12 +176,17 @@ func (e *ElasticSuggester) GetSuggestions(reqs []*SuggestionRequest) ([]*Suggest
 							}
 						}
 						if valid {
+							matchedIdxs := make([]int64, len(m.MatchedIndexes))
+							for i, matched := range m.MatchedIndexes {
+								matchedIdxs[i] = int64(matched)
+							}
 							scriptResults = append(scriptResults, &Suggestion{
-								Name:     m.Str,
-								Kind:     cloudapipb.AEK_SCRIPT,
-								Desc:     script.LongDoc,
-								ArgNames: scriptNames,
-								ArgKinds: scriptArgs,
+								Name:           m.Str,
+								Kind:           cloudapipb.AEK_SCRIPT,
+								Desc:           script.LongDoc,
+								ArgNames:       scriptNames,
+								ArgKinds:       scriptArgs,
+								MatchedIndexes: matchedIdxs,
 							})
 						}
 					}

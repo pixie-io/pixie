@@ -464,11 +464,15 @@ func (a *cloudAutocompleter) GetSuggestions(input string, cursor int, action clo
 	for _, s := range resp.TabSuggestions {
 		suggestionsMap[int(s.TabIndex)] = make([]suggestion, len(s.Suggestions))
 		for i, v := range s.Suggestions {
+			matchedIdxs := make([]int, len(v.MatchedIndexes))
+			for i, matched := range v.MatchedIndexes {
+				matchedIdxs[i] = int(matched)
+			}
 			suggestionsMap[int(s.TabIndex)][i] = suggestion{
 				name:           v.Name,
 				desc:           v.Description,
 				kind:           v.Kind,
-				matchedIndexes: []int{}, //TODO(michelle): Handle highlighting.
+				matchedIndexes: matchedIdxs,
 			}
 		}
 	}
