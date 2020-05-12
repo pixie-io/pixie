@@ -2964,6 +2964,29 @@ TEST_F(CompilerTest, multiple_def_calls_get_optimized) {
   ASSERT_MATCH(mem_src->Children()[0], Map());
   ASSERT_EQ(graph->FindNodesThatMatch(MemorySink()).size(), 3);
 }
+
+constexpr char kPodNodeTypesQuery[] = R"pxl(
+import px
+def f(a: px.Pod, b: px.Node):
+  return px.DataFrame('http_events')
+)pxl";
+
+TEST_F(CompilerTest, pod_and_node_types) {
+  ExecFuncs exec_funcs;
+  FuncToExecute f;
+  f.set_func_name("f");
+  f.set_output_table_prefix("f_out");
+  auto a = f.add_arg_values();
+  a->set_name("a");
+  a->set_value("my_pod_name");
+  auto b = f.add_arg_values();
+  b->set_name("b");
+  b->set_value("my_node_name");
+  exec_funcs.push_back(f);
+
+  auto graph_or_s = compiler_.CompileToIR(kPodNodeTypesQuery, compiler_state_.get(), exec_funcs);
+  ASSERT_OK(graph_or_s);
+}
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

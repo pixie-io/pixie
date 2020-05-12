@@ -159,6 +159,12 @@ Status PixieModule::RegisterTypeObjs() {
   PL_ASSIGN_OR_RETURN(auto service_type_object,
                       TypeObject::Create(types::STRING, types::ST_SERVICE_NAME, ast_visitor()));
   PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kServiceTypeName, service_type_object));
+  PL_ASSIGN_OR_RETURN(auto pod_type_object,
+                      TypeObject::Create(types::STRING, types::ST_POD_NAME, ast_visitor()));
+  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kPodTypeName, pod_type_object));
+  PL_ASSIGN_OR_RETURN(auto node_type_object,
+                      TypeObject::Create(types::STRING, types::ST_NODE_NAME, ast_visitor()));
+  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kNodeTypeName, node_type_object));
   return Status::OK();
 }
 
