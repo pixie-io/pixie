@@ -99,3 +99,58 @@ func TestAutocomplete(t *testing.T) {
 		},
 	})
 }
+
+func TestAutocompleteField(t *testing.T) {
+	gqlEnv, _, _, _, as, cleanup := testutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	as.EXPECT().AutocompleteField(gomock.Any(), &cloudapipb.AutocompleteFieldRequest{
+		Input:            "px/svc_info",
+		FieldType:        cloudapipb.AEK_SVC,
+		RequiredArgTypes: []cloudapipb.AutocompleteEntityKind{},
+	}).
+		Return(&cloudapipb.AutocompleteFieldResponse{
+			Suggestions: []*cloudapipb.AutocompleteSuggestion{
+				&cloudapipb.AutocompleteSuggestion{
+					Kind:           cloudapipb.AEK_SVC,
+					Name:           "px/svc_info",
+					Description:    "test",
+					MatchedIndexes: []int64{0, 1, 2},
+				},
+				&cloudapipb.AutocompleteSuggestion{
+					Kind:           cloudapipb.AEK_SVC,
+					Name:           "px/svc_info2",
+					Description:    "test2",
+					MatchedIndexes: []int64{0, 1, 2},
+				},
+			},
+		}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					autocompleteField(input: "px/svc_info", fieldType: AEK_SVC) {
+						kind 
+						name 
+						description
+						matchedIndexes
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"autocompleteField": 
+						[
+						 {"kind": "AEK_SVC", "name": "px/svc_info", "description": "test", "matchedIndexes": [0, 1, 2]},
+						 {"kind": "AEK_SVC", "name": "px/svc_info2", "description": "test2", "matchedIndexes": [0, 1, 2]}
+						]
+				}
+			`,
+		},
+	})
+}

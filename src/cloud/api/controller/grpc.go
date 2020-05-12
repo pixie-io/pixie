@@ -358,6 +358,55 @@ func (a *AutocompleteServer) Autocomplete(ctx context.Context, req *cloudapipb.A
 	}, nil
 }
 
+// AutocompleteField returns suggestions for a single field.
+func (a *AutocompleteServer) AutocompleteField(ctx context.Context, req *cloudapipb.AutocompleteFieldRequest) (*cloudapipb.AutocompleteFieldResponse, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
+	orgID, err := uuid.FromString(orgIDstr)
+	if err != nil {
+		return nil, err
+	}
+
+	allowedArgs := []cloudapipb.AutocompleteEntityKind{}
+	if req.RequiredArgTypes != nil {
+		allowedArgs = req.RequiredArgTypes
+	}
+
+	suggestionReq := []*autocomplete.SuggestionRequest{
+		&autocomplete.SuggestionRequest{
+			OrgID:        orgID,
+			Input:        req.Input,
+			AllowedKinds: []cloudapipb.AutocompleteEntityKind{req.FieldType},
+			AllowedArgs:  allowedArgs,
+		},
+	}
+	suggestions, err := a.Suggester.GetSuggestions(suggestionReq)
+	if err != nil {
+		return nil, err
+	}
+	if len(suggestions) != 1 {
+		return nil, status.Error(codes.Internal, "failed to get autocomplete suggestions")
+	}
+
+	acSugg := make([]*cloudapipb.AutocompleteSuggestion, len(suggestions[0].Suggestions))
+	for j, s := range suggestions[0].Suggestions {
+		acSugg[j] = &cloudapipb.AutocompleteSuggestion{
+			Kind:           s.Kind,
+			Name:           s.Name,
+			Description:    s.Desc,
+			MatchedIndexes: s.MatchedIndexes,
+		}
+	}
+
+	return &cloudapipb.AutocompleteFieldResponse{
+		Suggestions: acSugg,
+	}, nil
+
+}
+
 // ScriptMgrServer is the server that implements the ScriptMgr gRPC service.
 type ScriptMgrServer struct {
 	ScriptMgr scriptmgrpb.ScriptMgrServiceClient

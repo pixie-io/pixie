@@ -342,6 +342,7 @@ message GetScriptContentsResp {
 // AutocompleteService responds to autocomplete requests.
 service AutocompleteService {
     rpc Autocomplete(AutocompleteRequest) returns(AutocompleteResponse) {}
+    rpc AutocompleteField(AutocompleteFieldRequest) returns (AutocompleteFieldResponse) {}
 }
 
 enum AutocompleteActionType {
@@ -407,4 +408,19 @@ message AutocompleteResponse {
   bool is_executable = 2;
   // The suggestions available for each tab.
   repeated TabSuggestion tabSuggestions = 3;
+}
+
+// AutocompleteFieldRequest is a request to autocomplete a single input field.
+message AutocompleteFieldRequest {
+  // The text of the field that is being autocompleted.
+  string input = 1;
+  // The entity type of the field that is being autocompleted.
+  AutocompleteEntityKind field_type = 2;
+  // If autocompleting a script field, these are arg types which the script must take.
+  repeated AutocompleteEntityKind required_arg_types = 3;
+}
+
+message AutocompleteFieldResponse{
+  // The suggestions for the single field being autocompleted.
+  repeated AutocompleteSuggestion suggestions = 1;
 }

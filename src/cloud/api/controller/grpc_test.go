@@ -365,6 +365,63 @@ func TestAutocompleteService_Autocomplete(t *testing.T) {
 	assert.Equal(t, 2, len(resp.TabSuggestions))
 }
 
+func TestAutocompleteService_AutocompleteField(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	orgID, err := uuid.FromString("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	assert.Nil(t, err)
+	ctx := CreateTestContext()
+
+	s := mock_autocomplete.NewMockSuggester(ctrl)
+
+	requests := [][]*autocomplete.SuggestionRequest{
+		[]*autocomplete.SuggestionRequest{
+			&autocomplete.SuggestionRequest{
+				OrgID:        orgID,
+				Input:        "px/svc_info",
+				AllowedKinds: []cloudapipb.AutocompleteEntityKind{cloudapipb.AEK_SVC},
+				AllowedArgs:  []cloudapipb.AutocompleteEntityKind{},
+			},
+		},
+	}
+
+	responses := []*autocomplete.SuggestionResult{
+		&autocomplete.SuggestionResult{
+			Suggestions: []*autocomplete.Suggestion{
+				&autocomplete.Suggestion{
+					Name:  "px/svc_info",
+					Score: 1,
+				},
+				&autocomplete.Suggestion{
+					Name:  "px/svc_info2",
+					Score: 1,
+				},
+			},
+			ExactMatch: true,
+		},
+	}
+
+	s.EXPECT().
+		GetSuggestions(gomock.Any()).
+		DoAndReturn(func(req []*autocomplete.SuggestionRequest) ([]*autocomplete.SuggestionResult, error) {
+			assert.ElementsMatch(t, requests[0], req)
+			return responses, nil
+		})
+
+	autocompleteServer := &controller.AutocompleteServer{
+		Suggester: s,
+	}
+
+	resp, err := autocompleteServer.AutocompleteField(ctx, &cloudapipb.AutocompleteFieldRequest{
+		Input:     "px/svc_info",
+		FieldType: cloudapipb.AEK_SVC,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, 2, len(resp.Suggestions))
+}
+
 func toBytes(t *testing.T, msg proto.Message) []byte {
 	bytes, err := proto.Marshal(msg)
 	require.Nil(t, err)

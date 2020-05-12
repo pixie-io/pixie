@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 )
@@ -18,6 +19,55 @@ var protoToKindMap = map[cloudapipb.AutocompleteEntityKind]string{
 	cloudapipb.AEK_SVC:       "AEK_SVC",
 	cloudapipb.AEK_SCRIPT:    "AEK_SCRIPT",
 	cloudapipb.AEK_NAMESPACE: "AEK_NAMESPACE",
+}
+
+var kindToProtoMap = map[string]cloudapipb.AutocompleteEntityKind{
+	"AEK_UNKNOWN":   cloudapipb.AEK_UNKNOWN,
+	"AEK_POD":       cloudapipb.AEK_POD,
+	"AEK_SVC":       cloudapipb.AEK_SVC,
+	"AEK_SCRIPT":    cloudapipb.AEK_SCRIPT,
+	"AEK_NAMESPACE": cloudapipb.AEK_NAMESPACE,
+}
+
+// AutocompleteField is the resolver for autocompleting a single field.
+func (q *QueryResolver) AutocompleteField(ctx context.Context, args *autocompleteFieldArgs) (*[]*AutocompleteSuggestion, error) {
+	grpcAPI := q.Env.AutocompleteServer
+	allowedArgs := make([]cloudapipb.AutocompleteEntityKind, 0)
+	if args.RequiredArgTypes != nil {
+		for _, a := range *args.RequiredArgTypes {
+			allowedArgs = append(allowedArgs, kindToProtoMap[*a])
+		}
+	}
+	if args.FieldType == nil {
+		return nil, errors.New("field type required")
+	}
+
+	res, err := grpcAPI.AutocompleteField(ctx, &cloudapipb.AutocompleteFieldRequest{
+		Input:            *args.Input,
+		FieldType:        kindToProtoMap[*args.FieldType],
+		RequiredArgTypes: allowedArgs,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	suggestions := make([]*AutocompleteSuggestion, len(res.Suggestions))
+	for j := range res.Suggestions {
+		kind := protoToKindMap[res.Suggestions[j].Kind]
+		idxs := make([]*int32, len(res.Suggestions[j].MatchedIndexes))
+		for k, idx := range res.Suggestions[j].MatchedIndexes {
+			castedIdx := int32(idx)
+			idxs[k] = &castedIdx
+		}
+		suggestions[j] = &AutocompleteSuggestion{
+			Kind:           &kind,
+			Name:           &res.Suggestions[j].Name,
+			Description:    &res.Suggestions[j].Description,
+			MatchedIndexes: &idxs,
+		}
+	}
+
+	return &suggestions, nil
 }
 
 // Autocomplete responds to an autocomplete request.
@@ -63,6 +113,12 @@ func (q *QueryResolver) Autocomplete(ctx context.Context, args *autocompleteArgs
 		IsExecutable:   &res.IsExecutable,
 		TabSuggestions: &suggestions,
 	}, nil
+}
+
+type autocompleteFieldArgs struct {
+	Input            *string
+	FieldType        *string
+	RequiredArgTypes *[]*string
 }
 
 type autocompleteArgs struct {

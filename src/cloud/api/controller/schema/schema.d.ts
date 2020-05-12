@@ -19,6 +19,7 @@ export interface GQLQuery {
   cliArtifact: GQLCLIArtifact;
   artifacts: GQLArtifactsInfo;
   autocomplete: GQLAutocompleteResult;
+  autocompleteField?: Array<GQLAutocompleteSuggestion | null>;
   liveViews: Array<GQLLiveViewMetadata>;
   liveViewContents: GQLLiveViewContents;
   scripts: Array<GQLScriptMetadata>;
@@ -182,6 +183,7 @@ export interface GQLQueryTypeResolver<TParent = any> {
   cliArtifact?: QueryToCliArtifactResolver<TParent>;
   artifacts?: QueryToArtifactsResolver<TParent>;
   autocomplete?: QueryToAutocompleteResolver<TParent>;
+  autocompleteField?: QueryToAutocompleteFieldResolver<TParent>;
   liveViews?: QueryToLiveViewsResolver<TParent>;
   liveViewContents?: QueryToLiveViewContentsResolver<TParent>;
   scripts?: QueryToScriptsResolver<TParent>;
@@ -221,6 +223,15 @@ export interface QueryToAutocompleteArgs {
 }
 export interface QueryToAutocompleteResolver<TParent = any, TResult = any> {
   (parent: TParent, args: QueryToAutocompleteArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToAutocompleteFieldArgs {
+  input?: string;
+  fieldType?: GQLAutocompleteEntityKind;
+  requiredArgTypes?: Array<GQLAutocompleteEntityKind | null>;
+}
+export interface QueryToAutocompleteFieldResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToAutocompleteFieldArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface QueryToLiveViewsResolver<TParent = any, TResult = any> {

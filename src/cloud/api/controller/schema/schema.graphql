@@ -52,6 +52,8 @@ type Query {
   cliArtifact(artifactType: ArtifactType): CLIArtifact!
   artifacts(artifactName: String): ArtifactsInfo!
   autocomplete(input: String, cursorPos: Int, action: AutocompleteActionType): AutocompleteResult!
+  autocompleteField(input: String, fieldType: AutocompleteEntityKind,
+    requiredArgTypes: [AutocompleteEntityKind]):[AutocompleteSuggestion]
 
   # Scriptmgr endpoints, refer to docs in cloudapi.proto
   liveViews: [LiveViewMetadata!]!

@@ -686,6 +686,24 @@ func (mr *MockAutocompleteServiceClientMockRecorder) Autocomplete(ctx, in interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Autocomplete", reflect.TypeOf((*MockAutocompleteServiceClient)(nil).Autocomplete), varargs...)
 }
 
+// AutocompleteField mocks base method
+func (m *MockAutocompleteServiceClient) AutocompleteField(ctx context.Context, in *cloudapipb.AutocompleteFieldRequest, opts ...grpc.CallOption) (*cloudapipb.AutocompleteFieldResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "AutocompleteField", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.AutocompleteFieldResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AutocompleteField indicates an expected call of AutocompleteField
+func (mr *MockAutocompleteServiceClientMockRecorder) AutocompleteField(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AutocompleteField", reflect.TypeOf((*MockAutocompleteServiceClient)(nil).AutocompleteField), varargs...)
+}
+
 // MockAutocompleteServiceServer is a mock of AutocompleteServiceServer interface
 type MockAutocompleteServiceServer struct {
 	ctrl     *gomock.Controller
@@ -720,4 +738,17 @@ func (m *MockAutocompleteServiceServer) Autocomplete(arg0 context.Context, arg1 
 // Autocomplete indicates an expected call of Autocomplete
 func (mr *MockAutocompleteServiceServerMockRecorder) Autocomplete(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Autocomplete", reflect.TypeOf((*MockAutocompleteServiceServer)(nil).Autocomplete), arg0, arg1)
+}
+
+// AutocompleteField mocks base method
+func (m *MockAutocompleteServiceServer) AutocompleteField(arg0 context.Context, arg1 *cloudapipb.AutocompleteFieldRequest) (*cloudapipb.AutocompleteFieldResponse, error) {
+	ret := m.ctrl.Call(m, "AutocompleteField", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.AutocompleteFieldResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// AutocompleteField indicates an expected call of AutocompleteField
+func (mr *MockAutocompleteServiceServerMockRecorder) AutocompleteField(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AutocompleteField", reflect.TypeOf((*MockAutocompleteServiceServer)(nil).AutocompleteField), arg0, arg1)
 }
