@@ -9,15 +9,16 @@
 package bridge
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"strings"
-	"sync"
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -42,10 +43,7 @@ type NATSBridgeController struct {
 	grpcOutCh chan *vzconnpb.C2VBridgeMessage
 	grpcInCh  chan *vzconnpb.V2CBridgeMessage
 
-	quitCh chan bool      // Channel is used to signal that things should shutdown.
-	wg     sync.WaitGroup // Tracks all the active goroutines.
-
-	errCh        chan error
+	quitCh       chan bool // Channel is used to signal that things should shutdown.
 	subCh        chan *nats.Msg
 	durableSubCh chan *stan.Msg
 }
@@ -65,7 +63,6 @@ func NewNATSBridgeController(clusterID uuid.UUID, srv vzconnpb.VZConnService_NAT
 		grpcInCh:  make(chan *vzconnpb.V2CBridgeMessage, 1000),
 
 		quitCh:       make(chan bool),
-		errCh:        make(chan error),
 		subCh:        make(chan *nats.Msg, 1000),
 		durableSubCh: make(chan *stan.Msg),
 	}
@@ -75,7 +72,7 @@ func NewNATSBridgeController(clusterID uuid.UUID, srv vzconnpb.VZConnService_NAT
 func (s *NATSBridgeController) Run() error {
 	s.l.Info("Starting new cloud connect stream")
 	defer close(s.quitCh)
-	defer s.wg.Wait()
+
 	// We need to connect to the appropriate queues based on the clusterID.
 	log.WithField("ClusterID:", s.clusterID).Info("Subscribing to cluster IDs")
 	topics := vzshard.C2VTopic("*", s.clusterID)
@@ -89,7 +86,7 @@ func (s *NATSBridgeController) Run() error {
 	defer natsSub.Unsubscribe()
 
 	for _, topic := range DurableNATSChannels {
-		sub, err := s.sc.QueueSubscribe(topic, "vzcon", func(msg *stan.Msg) {
+		sub, err := s.sc.QueueSubscribe(topic, "vzconn", func(msg *stan.Msg) {
 			s.durableSubCh <- msg
 		}, stan.SetManualAckMode())
 		if err != nil {
@@ -98,33 +95,28 @@ func (s *NATSBridgeController) Run() error {
 		defer sub.Unsubscribe()
 	}
 
-	s.wg.Add(1)
-	go s.startStreamGRPCWriter()
-	s.wg.Add(1)
-	go s.startStreamGRPCReader()
-
-	s.wg.Add(1)
-	return s._run()
+	eg, ctx := errgroup.WithContext(context.Background())
+	eg.Go(func() error {
+		return s.startStreamGRPCWriter(ctx)
+	})
+	eg.Go(func() error {
+		return s.startStreamGRPCReader(ctx)
+	})
+	eg.Go(func() error {
+		return s._run(ctx)
+	})
+	err = eg.Wait()
+	if status.Code(err) == codes.Canceled {
+		s.l.Info("Closing stream, context cancellation")
+		return nil
+	}
+	return err
 }
 
-func (s *NATSBridgeController) _run() error {
-	defer s.wg.Done()
-	sendError := func(e error) {
-		go func() {
-			s.errCh <- e
-		}()
-	}
-
+func (s *NATSBridgeController) _run(ctx context.Context) error {
 	for {
 		var err error
 		select {
-		case err := <-s.errCh:
-			if status.Code(err) == codes.Canceled {
-				s.l.Info("Closing stream, context cancellation")
-				return nil
-			}
-			s.l.WithError(err).Error("Got error, terminating stream.")
-			return err
 		case <-s.quitCh:
 			return nil
 		case msg := <-s.durableSubCh:
@@ -135,12 +127,11 @@ func (s *NATSBridgeController) _run() error {
 			err = s.sendNATSMessageToGRPC(msg)
 		case msg := <-s.grpcInCh:
 			err = s.sendMessageToMessageBus(msg)
-			if err != nil {
-				sendError(err)
-			}
+		case <-ctx.Done():
+			return ctx.Err()
 		}
 		if err != nil {
-			sendError(err)
+			return err
 		}
 	}
 
@@ -192,7 +183,6 @@ func (s *NATSBridgeController) sendNATSMessageToGRPC(msg *nats.Msg) error {
 }
 
 func (s *NATSBridgeController) sendMessageToMessageBus(msg *vzconnpb.V2CBridgeMessage) error {
-
 	natsMsg := &cvmsgspb.V2CMessage{
 		VizierID:  s.clusterID.String(),
 		SessionId: msg.SessionId,
@@ -216,50 +206,52 @@ func (s *NATSBridgeController) sendMessageToMessageBus(msg *vzconnpb.V2CBridgeMe
 
 }
 
-func (s *NATSBridgeController) startStreamGRPCReader() {
-	defer s.wg.Done()
+func (s *NATSBridgeController) startStreamGRPCReader(ctx context.Context) error {
 	s.l.Trace("Starting GRPC reader stream")
 
 	for {
 		select {
 		case <-s.srv.Context().Done():
-			return
+			return nil
 		case <-s.quitCh:
 			s.l.Info("Closing GRPC reader because of <-quit")
-			return
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
 		default:
 			msg, err := s.srv.Recv()
 			if err != nil && err == io.EOF {
 				// stream closed.
-				return
+				return nil
 			}
 			if err != nil {
-				s.errCh <- err
+				return err
 			}
 			s.grpcInCh <- msg
 		}
 	}
 }
 
-func (s *NATSBridgeController) startStreamGRPCWriter() {
-	defer s.wg.Done()
+func (s *NATSBridgeController) startStreamGRPCWriter(ctx context.Context) error {
 	s.l.Trace("Starting GRPC writer stream")
 	for {
 		select {
 		case <-s.srv.Context().Done():
-			return
+			return nil
 		case <-s.quitCh:
 			s.l.Info("Closing GRPC writer because of <-quit")
 
 			// Quit called.
-			return
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
 		case m := <-s.grpcOutCh:
 			s.l.WithField("message", m.String()).Trace("Sending message over GRPC connection")
 			// Write message to GRPC if it exists.
 			err := s.srv.Send(m)
 			if err != nil {
 				s.l.WithError(err).Error("Failed to send message")
-				s.errCh <- err
+				return err
 			}
 		}
 	}
