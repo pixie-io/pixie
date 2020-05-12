@@ -488,6 +488,19 @@ metadata {
 }
 `
 
+// Node
+
+// NodePb is the protobuf for a generic node object.
+const NodePb = `
+metadata {
+  name: "a_node"
+  uid: "ijkl"
+  resource_version: "1",
+  creation_timestamp_ns: 4
+  deletion_timestamp_ns: 6
+}
+`
+
 // Pod
 
 // PodPb is the protobuf for a pod object.

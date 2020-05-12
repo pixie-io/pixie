@@ -1029,3 +1029,85 @@ func TestSyncNamespacesData(t *testing.T) {
 
 	mh.SyncNamespaceData(&nList)
 }
+
+func TestSyncNodesData(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+
+	nodes := make([]v1.Node, 1)
+	// Create node object.
+	creationTime := metav1.Unix(0, 4)
+	md := metav1.ObjectMeta{
+		Name:              "test",
+		UID:               "active_node",
+		ResourceVersion:   "1",
+		CreationTimestamp: creationTime,
+	}
+
+	activeNode := v1.Node{
+		ObjectMeta: md,
+	}
+	nodes[0] = activeNode
+	activeListNSPb, err := protoutils.NodeToProto(&activeNode)
+	assert.Nil(t, err)
+
+	nList := v1.NodeList{
+		Items: nodes,
+	}
+
+	etcdNodes := make([](*metadatapb.Node), 3)
+	activeNodePb := &metadatapb.Node{}
+	if err := proto.UnmarshalText(testutils.NodePb, activeNodePb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	activeNodePb.Metadata.UID = "active_node"
+	activeNodePb.Metadata.DeletionTimestampNS = 0
+	etcdNodes[0] = activeNodePb
+
+	deadNodePb := &metadatapb.Node{}
+	if err := proto.UnmarshalText(testutils.NodePb, deadNodePb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	deadNodePb.Metadata.UID = "dead_node"
+	deadNodePb.Metadata.DeletionTimestampNS = 5
+	etcdNodes[1] = deadNodePb
+
+	undeadNodePb := &metadatapb.Node{}
+	if err := proto.UnmarshalText(testutils.NodePb, undeadNodePb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	undeadNodePb.Metadata.UID = "undead_node"
+	undeadNodePb.Metadata.DeletionTimestampNS = 0
+	etcdNodes[2] = undeadNodePb
+
+	deletedUndeadNodePb := &metadatapb.Node{}
+	if err := proto.UnmarshalText(testutils.NodePb, deletedUndeadNodePb); err != nil {
+		t.Fatal("Cannot Unmarshal protobuf.")
+	}
+	deletedUndeadNodePb.Metadata.UID = "undead_node"
+	deletedUndeadNodePb.Metadata.DeletionTimestampNS = 10
+
+	mockMds.
+		EXPECT().
+		GetNodes().
+		Return(etcdNodes, nil)
+
+	mockMds.
+		EXPECT().
+		UpdateNode(activeListNSPb, false).
+		Return(nil)
+
+	mockMds.
+		EXPECT().
+		UpdateNode(deletedUndeadNodePb, false).
+		Return(nil)
+
+	clock := testingutils.NewTestClock(time.Unix(0, 10))
+	isLeader := true
+	mh, err := controllers.NewMetadataHandlerWithClock(mockMds, &isLeader, clock)
+	assert.Nil(t, err)
+
+	mh.SyncNodeData(&nList)
+}

@@ -50,6 +50,8 @@ type MetadataStore interface {
 	GetNodeEndpoints(hostname *HostnameIPPair) ([]*metadatapb.Endpoints, error)
 	GetServices() ([]*metadatapb.Service, error)
 	UpdateService(*metadatapb.Service, bool) error
+	GetNodes() ([]*metadatapb.Node, error)
+	UpdateNode(*metadatapb.Node, bool) error
 	GetNamespaces() ([]*metadatapb.Namespace, error)
 	UpdateNamespace(*metadatapb.Namespace, bool) error
 	GetContainers() ([]*metadatapb.ContainerInfo, error)
@@ -398,7 +400,31 @@ func (mh *MetadataHandler) handleNamespaceMetadata(o runtime.Object, eventType w
 }
 
 func (mh *MetadataHandler) handleNodeMetadata(o runtime.Object, eType watch.EventType) {
-	// Do nothing for now.
+	e, ok := o.(*v1.Node)
+
+	if !ok {
+		log.WithField("object", o).Error("Received non-node object when handling node metadata.")
+		return
+	}
+
+	_, err := mh.updateNode(e, eType == watch.Deleted)
+	if err != nil {
+		log.WithError(err).Fatal("Could not write node update")
+	}
+
+	// TODO(michelle): Update aggregate PodCIDRs.
+}
+
+func (mh *MetadataHandler) updateNode(e *v1.Node, deleted bool) (*metadatapb.Node, error) {
+	pb, err := protoutils.NodeToProto(e)
+	if err != nil {
+		return nil, err
+	}
+	err = mh.mds.UpdateNode(pb, deleted)
+	if err != nil {
+		return nil, err
+	}
+	return pb, err
 }
 
 func formatContainerID(cid string) string {
@@ -756,6 +782,54 @@ func (mh *MetadataHandler) SyncNamespaceData(sList *v1.NamespaceList) int {
 			}
 		}
 	}
+
+	return rv
+}
+
+// SyncNodeData syncs the data in etcd according to the current active nodes.
+func (mh *MetadataHandler) SyncNodeData(sList *v1.NodeList) int {
+	activeNodes := map[string]bool{}
+
+	currentTime := mh.clock.Now().UnixNano()
+	rv := 0
+	// Create a map so that we can easily check which nodes are currently active by ID.
+	for _, item := range sList.Items {
+		log.Info(item)
+		i, err := strconv.Atoi(item.ObjectMeta.ResourceVersion)
+		if err != nil {
+			log.WithError(err).Error("Could not get RV from node")
+		}
+		if i > rv {
+			rv = i
+		}
+		activeNodes[string(item.ObjectMeta.UID)] = true
+
+		// Update node in metadata store.
+		_, err = mh.updateNode(&item, false)
+		if err != nil {
+			log.WithField("node", item).WithError(err).Error("Could not update node in metadata store during sync")
+		}
+	}
+
+	// Find all nodes in etcd.
+	nodes, err := mh.mds.GetNodes()
+	if err != nil {
+		log.WithError(err).Error("Could not get all nodes from etcd.")
+	}
+
+	for _, node := range nodes {
+		_, exists := activeNodes[node.Metadata.UID]
+		// If there a node in etcd that is not active, and is not marked as dead, mark it as dead.
+		if !exists && node.Metadata.DeletionTimestampNS == 0 {
+			node.Metadata.DeletionTimestampNS = currentTime
+			err := mh.mds.UpdateNode(node, false)
+			if err != nil {
+				log.WithError(err).Error("Could not update node during sync.")
+			}
+		}
+	}
+
+	// TODO(michelle): Update aggregate pod CIDRs from active nodes.
 
 	return rv
 }

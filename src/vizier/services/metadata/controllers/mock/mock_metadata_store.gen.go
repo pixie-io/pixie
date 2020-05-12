@@ -352,6 +352,31 @@ func (mr *MockMetadataStoreMockRecorder) UpdateService(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateService", reflect.TypeOf((*MockMetadataStore)(nil).UpdateService), arg0, arg1)
 }
 
+// GetNodes mocks base method
+func (m *MockMetadataStore) GetNodes() ([]*metadatapb.Node, error) {
+	ret := m.ctrl.Call(m, "GetNodes")
+	ret0, _ := ret[0].([]*metadatapb.Node)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNodes indicates an expected call of GetNodes
+func (mr *MockMetadataStoreMockRecorder) GetNodes() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodes", reflect.TypeOf((*MockMetadataStore)(nil).GetNodes))
+}
+
+// UpdateNode mocks base method
+func (m *MockMetadataStore) UpdateNode(arg0 *metadatapb.Node, arg1 bool) error {
+	ret := m.ctrl.Call(m, "UpdateNode", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateNode indicates an expected call of UpdateNode
+func (mr *MockMetadataStoreMockRecorder) UpdateNode(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateNode", reflect.TypeOf((*MockMetadataStore)(nil).UpdateNode), arg0, arg1)
+}
+
 // GetNamespaces mocks base method
 func (m *MockMetadataStore) GetNamespaces() ([]*metadatapb.Namespace, error) {
 	ret := m.ctrl.Call(m, "GetNamespaces")

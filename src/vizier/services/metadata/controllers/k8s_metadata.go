@@ -70,11 +70,18 @@ func NewK8sMetadataController(mdh *MetadataHandler) (*K8sMetadataController, err
 	}
 	sRv := mdh.SyncServiceData(runtimeObjToServiceList(services))
 
+	nodes, err := mc.listObject("nodes")
+	if err != nil {
+		log.Info("Could not list all nodes")
+	}
+	nodeRv := mdh.SyncNodeData(runtimeObjToNodeList(nodes))
+
 	// Start up Watchers.
 	go mc.startWatcher("namespaces", nRv)
 	go mc.startWatcher("pods", pRv)
 	go mc.startWatcher("endpoints", eRv)
 	go mc.startWatcher("services", sRv)
+	go mc.startWatcher("nodes", nodeRv)
 
 	return mc, nil
 }
