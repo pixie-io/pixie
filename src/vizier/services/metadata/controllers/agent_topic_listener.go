@@ -112,6 +112,7 @@ func (a *AgentTopicListener) onAgentHeartBeat(m *messages.Heartbeat) {
 				UpdateInfo: &messages.MetadataUpdateInfo{
 					Updates:     updates,
 					ServiceCIDR: a.mdStore.GetServiceCIDR(),
+					PodCIDRs:    a.mdStore.GetPodCIDRs(),
 				},
 				SequenceNumber: m.SequenceNumber,
 			},

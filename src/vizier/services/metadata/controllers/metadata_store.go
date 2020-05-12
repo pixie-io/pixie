@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/EvilSuperstars/go-cidrman"
 	"github.com/gogo/protobuf/proto"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
@@ -32,6 +33,7 @@ type KVMetadataStore struct {
 type ClusterInfo struct {
 	ClusterCIDR *net.IPNet // This is the cluster (pod) CIDR block.
 	ServiceCIDR *net.IPNet // This is the service CIDR block; it is inferred from all observed service IPs.
+	PodCIDRs    []string   // The pod CIDRs in the cluster, inferred from each node's reported pod CIDR.
 }
 
 // NewKVMetadataStore creates a new key-value metadata store.
@@ -45,7 +47,7 @@ func NewKVMetadataStoreWithExpiryTime(cache *kvstore.Cache, expiryDuration time.
 	mds := &KVMetadataStore{
 		cache:          cache,
 		expiryDuration: expiryDuration,
-		clusterInfo:    ClusterInfo{ClusterCIDR: nil, ServiceCIDR: nil},
+		clusterInfo:    ClusterInfo{ClusterCIDR: nil, ServiceCIDR: nil, PodCIDRs: make([]string, 0)},
 	}
 
 	return mds, nil
@@ -83,6 +85,21 @@ func (mds *KVMetadataStore) SetClusterCIDR(cidr string) {
 	}
 
 	mds.clusterInfo.ClusterCIDR = ipNet
+}
+
+// UpdatePodCIDR updates list of pod CIDRs.
+func (mds *KVMetadataStore) UpdatePodCIDR(cidrs []string) error {
+	mergedCIDRs, err := cidrman.MergeCIDRs(append(mds.clusterInfo.PodCIDRs, cidrs...))
+	if err != nil {
+		return err
+	}
+	mds.clusterInfo.PodCIDRs = mergedCIDRs
+	return nil
+}
+
+// GetPodCIDRs returns the PodCIDRs for the cluster.
+func (mds *KVMetadataStore) GetPodCIDRs() []string {
+	return mds.clusterInfo.PodCIDRs
 }
 
 /* ================= Keys =================*/
@@ -971,6 +988,19 @@ func (mds *KVMetadataStore) GetNodes() ([]*metadatapb.Node, error) {
 
 // UpdateNode adds or updates the given node in the metadata store.
 func (mds *KVMetadataStore) UpdateNode(s *metadatapb.Node, deleted bool) error {
+	if s.Spec != nil {
+		cidrs := []string{s.Spec.PodCIDR}
+		if s.Spec.PodCIDRs != nil {
+			// If a list of PodCIDRs is specified, this list already includes the PodCIDR field.
+			cidrs = s.Spec.PodCIDRs
+		}
+
+		err := mds.UpdatePodCIDR(cidrs)
+		if err != nil {
+			log.WithField("cidrs", cidrs).WithError(err).Error("Error updating Pod CIDRs")
+		}
+	}
+
 	if deleted && s.Metadata.DeletionTimestampNS == 0 {
 		s.Metadata.DeletionTimestampNS = time.Now().UnixNano()
 	}
@@ -1081,6 +1111,9 @@ func (mds *KVMetadataStore) GetMetadataUpdatesForHostname(hnPair *HostnameIPPair
 			continue
 		case *metadatapb.MetadataObject_Namespace:
 			updatePbs = append(updatePbs, GetResourceUpdateFromNamespace(m.Namespace))
+		case *metadatapb.MetadataObject_Node:
+			// TODO(michelle): Implement this for nodes.
+			continue
 		default:
 			log.Info("Got unknown K8s object")
 		}

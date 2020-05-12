@@ -62,6 +62,18 @@ func (mr *MockMetadataStoreMockRecorder) GetServiceCIDR() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceCIDR", reflect.TypeOf((*MockMetadataStore)(nil).GetServiceCIDR))
 }
 
+// GetPodCIDRs mocks base method
+func (m *MockMetadataStore) GetPodCIDRs() []string {
+	ret := m.ctrl.Call(m, "GetPodCIDRs")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// GetPodCIDRs indicates an expected call of GetPodCIDRs
+func (mr *MockMetadataStoreMockRecorder) GetPodCIDRs() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodCIDRs", reflect.TypeOf((*MockMetadataStore)(nil).GetPodCIDRs))
+}
+
 // GetAgent mocks base method
 func (m *MockMetadataStore) GetAgent(agentID go_uuid.UUID) (*agentpb.Agent, error) {
 	ret := m.ctrl.Call(m, "GetAgent", agentID)

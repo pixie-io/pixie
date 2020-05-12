@@ -434,6 +434,11 @@ func TestAgentHeartbeat(t *testing.T) {
 		GetServiceCIDR().
 		Return("10.64.4.0/22")
 
+	mockMdStore.
+		EXPECT().
+		GetPodCIDRs().
+		Return([]string{"10.64.4.0/21"})
+
 	mockAgtMgr.
 		EXPECT().
 		UpdateHeartbeat(u).

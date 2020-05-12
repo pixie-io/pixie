@@ -27,6 +27,7 @@ const maxSubscriberUpdates = 10000
 type MetadataStore interface {
 	GetClusterCIDR() string
 	GetServiceCIDR() string
+	GetPodCIDRs() []string
 	GetAgent(agentID uuid.UUID) (*agentpb.Agent, error)
 	GetAgentIDForHostnamePair(hnPair *HostnameIPPair) (string, error)
 	DeleteAgent(agentID uuid.UUID) error

@@ -1458,6 +1458,9 @@ func TestKVMetadataStore_UpdateNode(t *testing.T) {
 			UID:             "1234",
 			ResourceVersion: "1",
 		},
+		Spec: &k8s_metadatapb.NodeSpec{
+			PodCIDR: "192.0.2.112/31",
+		},
 	}
 
 	err = mds.UpdateNode(expectedPb, false)
@@ -1479,6 +1482,25 @@ func TestKVMetadataStore_UpdateNode(t *testing.T) {
 	rvPb := &k8s_metadatapb.MetadataObject{}
 	proto.Unmarshal(resp, rvPb)
 	assert.Equal(t, "1234", rvPb.GetNode().Metadata.UID)
+	assert.ElementsMatch(t, []string{"192.0.2.112/31"}, mds.GetPodCIDRs())
+
+	// Check that pod CIDRs are merged.
+	node2 := &k8s_metadatapb.Node{
+		Metadata: &k8s_metadatapb.ObjectMetadata{
+			Name:            "abcd",
+			UID:             "5678",
+			ResourceVersion: "1",
+		},
+		Spec: &k8s_metadatapb.NodeSpec{
+			PodCIDRs: []string{"192.0.2.116/31", "192.0.2.118/31"},
+		},
+	}
+
+	err = mds.UpdateNode(node2, false)
+	if err != nil {
+		t.Fatal("Could not update node.")
+	}
+	assert.ElementsMatch(t, []string{"192.0.2.112/31", "192.0.2.116/30"}, mds.GetPodCIDRs())
 }
 
 func TestKVMetadataStore_GetAgents(t *testing.T) {

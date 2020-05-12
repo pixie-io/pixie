@@ -3070,3 +3070,10 @@ go_repository(
     sum = "h1:qdOKuR/EIArgaWNjetjgTzgVTAZ+S/WXVrq9HW9zimw=",
     version = "v1.21.0",
 )
+
+go_repository(
+    name = "com_github_evilsuperstars_go_cidrman",
+    importpath = "github.com/EvilSuperstars/go-cidrman",
+    sum = "h1:D9u6wYxZ2bPjDwYYq25y+n6ZmOKj/TsAMGSl4xL1yQI=",
+    version = "v0.0.0-20190607145828-28e79e32899a",
+)

@@ -331,6 +331,7 @@ heartbeat_ack {
   time: 10
   update_info {
     service_cidr: "10.64.4.0/22"
+    pod_cidrs: "10.64.4.0/21"
     updates {
       pod_update {
         uid:  "podUid"
