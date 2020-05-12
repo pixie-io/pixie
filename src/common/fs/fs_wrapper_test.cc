@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 
 #include "src/common/fs/fs_wrapper.h"
-#include "src/common/testing/temp_dir.h"
 #include "src/common/testing/testing.h"
 
 namespace pl {
 namespace fs {
 
+using ::pl::testing::status::StatusIs;
 using ::testing::ElementsAre;
 using ::testing::HasSubstr;
 
@@ -85,7 +85,8 @@ TEST_F(FSWrapperTest, JoinPath) {
 }
 
 TEST_F(FSWrapperTest, ExistsReturnsErrorForNonExistentFile) {
-  EXPECT_EQ("Does not exist", Exists(tmp_dir_.path() / "dummy").msg());
+  EXPECT_THAT(Exists(tmp_dir_.path() / "dummy"),
+              StatusIs(statuspb::INVALID_ARGUMENT, HasSubstr("does not exist")));
 }
 
 TEST_F(FSWrapperTest, GetChildRelPath) {

@@ -14,11 +14,11 @@ namespace fs {
 // These are wrappers around std::filesystem functions to convert error codes to Status.
 // More functions should be added as needed.
 
-Status CreateSymlink(std::filesystem::path target, std::filesystem::path link);
+Status CreateSymlink(const std::filesystem::path& target, const std::filesystem::path& link);
 
-Status CreateDirectories(std::filesystem::path dir);
+Status CreateDirectories(const std::filesystem::path& dir);
 
-pl::StatusOr<std::filesystem::path> ReadSymlink(std::filesystem::path symlink);
+pl::StatusOr<std::filesystem::path> ReadSymlink(const std::filesystem::path& symlink);
 
 /**
  * Joins multiple paths together.
@@ -33,13 +33,14 @@ pl::StatusOr<std::filesystem::path> ReadSymlink(std::filesystem::path symlink);
 std::filesystem::path JoinPath(const std::vector<const std::filesystem::path*>& paths);
 
 // Designed for use in test code only.
-Status CreateSymlinkIfNotExists(std::filesystem::path target, std::filesystem::path link);
+Status CreateSymlinkIfNotExists(const std::filesystem::path& target,
+                                const std::filesystem::path& link);
 
 /**
  * Returns OK if the path exists. Returns error if does not exist, or failed to detect
  * (for example, because of lack of permission).
  */
-Status Exists(std::filesystem::path path);
+Status Exists(const std::filesystem::path& path);
 Status Copy(const std::filesystem::path& from, const std::filesystem::path& to);
 Status Remove(const std::filesystem::path& f);
 

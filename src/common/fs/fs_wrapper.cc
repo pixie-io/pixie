@@ -7,7 +7,7 @@
 namespace pl {
 namespace fs {
 
-Status CreateSymlink(std::filesystem::path target, std::filesystem::path link) {
+Status CreateSymlink(const std::filesystem::path& target, const std::filesystem::path& link) {
   std::error_code ec;
   std::filesystem::create_symlink(target, link, ec);
   if (ec) {
@@ -23,7 +23,7 @@ Status CreateSymlink(std::filesystem::path target, std::filesystem::path link) {
   return Status::OK();
 }
 
-Status CreateDirectories(std::filesystem::path dir) {
+Status CreateDirectories(const std::filesystem::path& dir) {
   std::error_code ec;
   std::filesystem::create_directories(dir, ec);
   if (ec) {
@@ -32,7 +32,7 @@ Status CreateDirectories(std::filesystem::path dir) {
   return Status::OK();
 }
 
-pl::StatusOr<std::filesystem::path> ReadSymlink(std::filesystem::path symlink) {
+pl::StatusOr<std::filesystem::path> ReadSymlink(const std::filesystem::path& symlink) {
   std::error_code ec;
   std::filesystem::path res = std::filesystem::read_symlink(symlink, ec);
   if (ec) {
@@ -56,7 +56,8 @@ std::filesystem::path JoinPath(const std::vector<const std::filesystem::path*>& 
   return res;
 }
 
-Status CreateSymlinkIfNotExists(std::filesystem::path target, std::filesystem::path link) {
+Status CreateSymlinkIfNotExists(const std::filesystem::path& target,
+                                const std::filesystem::path& link) {
   PL_RETURN_IF_ERROR(fs::CreateDirectories(link.parent_path()));
 
   // Attempt to create the symlink, but ignore the return status.
@@ -73,36 +74,27 @@ Status CreateSymlinkIfNotExists(std::filesystem::path target, std::filesystem::p
   return Status::OK();
 }
 
-Status Exists(std::filesystem::path path) {
-  std::error_code ec;
-  if (std::filesystem::exists(path, ec)) {
-    return Status::OK();
+#define WRAP_BOOL_FN(expr)              \
+  std::error_code ec;                   \
+  if (expr) {                           \
+    return Status::OK();                \
+  }                                     \
+  if (ec) {                             \
+    return error::System(ec.message()); \
   }
-  if (ec) {
-    return error::System(ec.message());
-  }
-  return error::InvalidArgument("Does not exist");
+
+Status Exists(const std::filesystem::path& path) {
+  WRAP_BOOL_FN(std::filesystem::exists(path, ec))
+  return error::InvalidArgument("Path $0 does not exist", path.string());
 }
 
 Status Copy(const std::filesystem::path& from, const std::filesystem::path& to) {
-  std::error_code ec;
-  if (std::filesystem::copy_file(from, to, ec)) {
-    return Status::OK();
-  }
-  if (ec) {
-    return error::System(ec.message());
-  }
+  WRAP_BOOL_FN(std::filesystem::copy_file(from, to, ec))
   return error::InvalidArgument("Could not copy from $0 to $1", from.string(), to.string());
 }
 
 Status Remove(const std::filesystem::path& f) {
-  std::error_code ec;
-  if (std::filesystem::remove(f, ec)) {
-    return Status::OK();
-  }
-  if (ec) {
-    return error::System(ec.message());
-  }
+  WRAP_BOOL_FN(std::filesystem::remove(f, ec))
   return error::InvalidArgument("Could not delete $0", f.string());
 }
 
