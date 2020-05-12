@@ -11,17 +11,12 @@ import { DataDrawerContext, DataDrawerContextProvider } from './context/data-dra
 import { LayoutContextProvider } from './context/layout-context';
 import { getQueryFuncs, parseVis, Vis } from './vis';
 
-// Type alias to clean up domain management.
-type Domain = [number, number] | null;
-type DomainFn = ((domain: Domain) => Domain);
 interface LiveContextProps {
   vizierReady: boolean;
   setScripts: (script: string, vis: string, title: Title, args: Arguments) => void;
   executeScript: (script?: string, vis?: Vis, args?: Arguments) => void;
   updateScript: (code: string) => void;
   updateVis: (spec: Vis) => void;
-  setHoverTime: (time: number) => void;
-  setTSDomain: (domain: Domain | DomainFn) => void;
 }
 
 interface Tables {
@@ -54,8 +49,6 @@ export const LiveContext = React.createContext<LiveContextProps>(null);
 export const TitleContext = React.createContext<Title>(null);
 export const VisContext = React.createContext<Vis>(null);
 export const ArgsContext = React.createContext<ArgsContextProps>(null);
-export const HoverTimeContext = React.createContext<number>(null);
-export const TSDomainContext = React.createContext<number[]>([]);
 
 // TODO(malthus): Move these into a separate module.
 function argsEquals(args1: Arguments, args2: Arguments): boolean {
@@ -100,7 +93,6 @@ function argsForVis(vis: Vis, args: Arguments, scriptId?: string): Arguments {
 
 const LiveContextProvider = (props) => {
   const [script, setScript] = ls.useLocalStorage(ls.LIVE_VIEW_PIXIE_SCRIPT_KEY, '');
-  const [tsDomain, setTSDomain] = React.useState<Domain>(null);
 
   const [results, setResults] = React.useState<Results>({ tables: {} });
 
@@ -161,7 +153,7 @@ const LiveContextProvider = (props) => {
     let errMsg: string;
     let queryId: string;
 
-    setResults({tables: {}});
+    setResults({ tables: {} });
 
     new Promise((resolve, reject) => {
       try {
@@ -208,16 +200,12 @@ const LiveContextProvider = (props) => {
       });
   }, [client, script, vis, title, args]);
 
-  const [hoverTime, setHoverTime] = React.useState<number>(null);
-
   const liveViewContext = React.useMemo(() => ({
     updateScript: setScript,
     vizierReady: !!client,
     setScripts,
     executeScript,
     updateVis: setVis,
-    setHoverTime,
-    setTSDomain,
   }), [executeScript, client]);
 
   return (
@@ -227,11 +215,7 @@ const LiveContextProvider = (props) => {
           <ScriptContext.Provider value={script}>
             <ResultsContext.Provider value={results}>
               <VisContext.Provider value={vis}>
-                <HoverTimeContext.Provider value={hoverTime}>
-                  <TSDomainContext.Provider value={tsDomain}>
-                    {props.children}
-                  </TSDomainContext.Provider>
-                </HoverTimeContext.Provider>
+                {props.children}
               </VisContext.Provider>
             </ResultsContext.Provider>
           </ScriptContext.Provider>

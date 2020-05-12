@@ -1,21 +1,19 @@
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
-import { CSSProperties } from '@material-ui/core/styles/withStyles';
 import Legend, { LegendInteractState } from 'components/legend/legend';
-import { buildHoverDataCache, formatLegendData, HoverDataCache, LegendData } from 'components/legend/legend-data';
-import { HoverTimeContext, LiveContext, TSDomainContext } from 'containers/live/context';
 import {
-  EXTERNAL_HOVER_SIGNAL,
-  EXTERNAL_TS_DOMAIN_SIGNAL,
-  HOVER_PIVOT_TRANSFORM,
-  HOVER_SIGNAL,
-  INTERNAL_HOVER_SIGNAL,
-  INTERNAL_TS_DOMAIN_SIGNAL,
-  LEGEND_HOVER_SIGNAL,
-  LEGEND_SELECT_SIGNAL,
-  VegaSpecWithProps,
+    buildHoverDataCache, formatLegendData, HoverDataCache, LegendData,
+} from 'components/legend/legend-data';
+import {
+    EXTERNAL_HOVER_SIGNAL, EXTERNAL_TS_DOMAIN_SIGNAL, HOVER_PIVOT_TRANSFORM, HOVER_SIGNAL,
+    INTERNAL_HOVER_SIGNAL, INTERNAL_TS_DOMAIN_SIGNAL, LEGEND_HOVER_SIGNAL, LEGEND_SELECT_SIGNAL,
+    VegaSpecWithProps,
 } from 'containers/live/convert-to-vega-spec';
 import * as React from 'react';
 import { View } from 'vega-typings';
+
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { CSSProperties } from '@material-ui/core/styles/withStyles';
+
+import { VegaContext } from './vega-context';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -38,18 +36,21 @@ interface VegaProps {
 
 const Vega = React.memo((props: VegaProps) => {
   const classes = useStyles();
-  const { data: inputData, specWithProps: {spec, hasLegend, legendColumnName, isStacked}, tableName } = props;
+  const { data: inputData, specWithProps: { spec, hasLegend, legendColumnName, isStacked }, tableName } = props;
   const data = React.useMemo(() => ({ [tableName]: inputData }), [tableName, inputData]);
 
-  const externalHoverTime = React.useContext(HoverTimeContext);
-  const externalTSDomain = React.useContext(TSDomainContext);
-  const { setHoverTime, setTSDomain } = React.useContext(LiveContext);
+  const {
+    setHoverTime,
+    setTimeseriesDomain: setTSDomain,
+    hoverTime: externalHoverTime,
+    timeseriesDomain: externalTSDomain,
+  } = React.useContext(VegaContext);
 
   const [currentView, setCurrentView] = React.useState<View>(null);
   const [vegaOrigin, setVegaOrigin] = React.useState<number[]>([]);
-  const [legendData, setLegendData] = React.useState<LegendData>({time: '', entries: []});
+  const [legendData, setLegendData] = React.useState<LegendData>({ time: '', entries: [] });
   const [legendInteractState, setLegendInteractState] = React.useState<LegendInteractState>(
-    {selectedSeries: [], hoveredSeries: ''});
+    { selectedSeries: [], hoveredSeries: '' });
   const [hoverDataCache, setHoverDataCache] = React.useState<HoverDataCache>(null);
 
   const chartRef = React.useRef(null);
@@ -161,7 +162,7 @@ const Vega = React.memo((props: VegaProps) => {
         } else if (externalHoverTime > hoverDataCache.maxTime) {
           time = hoverDataCache.maxTime;
         }
-        currentView.signal(EXTERNAL_HOVER_SIGNAL, {time_: time});
+        currentView.signal(EXTERNAL_HOVER_SIGNAL, { time_: time });
       }
       currentView.runAsync();
     }
@@ -169,10 +170,10 @@ const Vega = React.memo((props: VegaProps) => {
 
   // If this chart has a legend, then make vega use only 80% of the height and leave 20% for the legend.
   const vegaStyles: CSSProperties = React.useMemo(() => {
-    return {height: (hasLegend) ? '85%' : '100%'};
+    return { height: (hasLegend) ? '85%' : '100%' };
   }, [hasLegend]);
   const legendStyles: CSSProperties = React.useMemo(() => {
-    return {height: (hasLegend) ? '15%' : '0%'};
+    return { height: (hasLegend) ? '15%' : '0%' };
   }, [hasLegend]);
 
   return (

@@ -7,6 +7,7 @@ import { Spinner } from 'components/spinner/spinner';
 import { parseSpecs } from 'components/vega/spec';
 import { addPxTimeFormatExpression } from 'components/vega/timeseries-axis';
 import Vega from 'components/vega/vega';
+import { VegaContext, withVegaContextProvider } from 'components/vega/vega-context';
 import { QueryResultTable } from 'containers/vizier/query-result-viewer';
 import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
@@ -97,7 +98,8 @@ const Canvas = (props: CanvasProps) => {
   const theme = useTheme();
   const { tables } = React.useContext(ResultsContext);
   const vis = React.useContext(VisContext);
-  const { updateVis, setTSDomain } = React.useContext(LiveContext);
+  const { updateVis } = React.useContext(LiveContext);
+  const { setTimeseriesDomain } = React.useContext(VegaContext);
   const [vegaModule, setVegaModule] = React.useState(null);
   const [reactVegaModule, setReactVegaModule] = React.useState(null);
   const [vegaLiteModule, setVegaLiteModule] = React.useState(null);
@@ -202,7 +204,7 @@ const Canvas = (props: CanvasProps) => {
   }, [tables, vis, reactVegaModule, props.editable, defaultLayout]);
 
   React.useEffect(() => {
-    setTSDomain(null);
+    setTimeseriesDomain(null);
   }, [charts]);
 
   const resize = React.useCallback(() => {
@@ -239,4 +241,4 @@ const Canvas = (props: CanvasProps) => {
   );
 };
 
-export default Canvas;
+export default withVegaContextProvider(Canvas);
