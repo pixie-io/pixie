@@ -13,6 +13,11 @@ export class Vis extends jspb.Message {
   clearWidgetsList(): void;
   addWidgets(value?: Widget, index?: number): Widget;
 
+  getGlobalFuncsList(): Array<Vis.GlobalFunc>;
+  setGlobalFuncsList(value: Array<Vis.GlobalFunc>): void;
+  clearGlobalFuncsList(): void;
+  addGlobalFuncs(value?: Vis.GlobalFunc, index?: number): Vis.GlobalFunc;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Vis.AsObject;
   static toObject(includeInstance: boolean, msg: Vis): Vis.AsObject;
@@ -25,6 +30,7 @@ export namespace Vis {
   export type AsObject = {
     variablesList: Array<Vis.Variable.AsObject>,
     widgetsList: Array<Widget.AsObject>,
+    globalFuncsList: Array<Vis.GlobalFunc.AsObject>,
   }
 
   export class Variable extends jspb.Message {
@@ -57,6 +63,31 @@ export namespace Vis {
     }
   }
 
+
+  export class GlobalFunc extends jspb.Message {
+    getOutputName(): string;
+    setOutputName(value: string): void;
+
+    getFunc(): Widget.Func | undefined;
+    setFunc(value?: Widget.Func): void;
+    hasFunc(): boolean;
+    clearFunc(): void;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): GlobalFunc.AsObject;
+    static toObject(includeInstance: boolean, msg: GlobalFunc): GlobalFunc.AsObject;
+    static serializeBinaryToWriter(message: GlobalFunc, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): GlobalFunc;
+    static deserializeBinaryFromReader(message: GlobalFunc, reader: jspb.BinaryReader): GlobalFunc;
+  }
+
+  export namespace GlobalFunc {
+    export type AsObject = {
+      outputName: string,
+      func?: Widget.Func.AsObject,
+    }
+  }
+
 }
 
 export class Widget extends jspb.Message {
@@ -73,10 +104,15 @@ export class Widget extends jspb.Message {
   hasFunc(): boolean;
   clearFunc(): void;
 
+  getGlobalFuncOutputName(): string;
+  setGlobalFuncOutputName(value: string): void;
+
   getDisplaySpec(): google_protobuf_any_pb.Any | undefined;
   setDisplaySpec(value?: google_protobuf_any_pb.Any): void;
   hasDisplaySpec(): boolean;
   clearDisplaySpec(): void;
+
+  getFuncOrRefCase(): Widget.FuncOrRefCase;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Widget.AsObject;
@@ -91,6 +127,7 @@ export namespace Widget {
     name: string,
     position?: Widget.Position.AsObject,
     func?: Widget.Func.AsObject,
+    globalFuncOutputName: string,
     displaySpec?: google_protobuf_any_pb.Any.AsObject,
   }
 
@@ -184,6 +221,12 @@ export namespace Widget {
 
   }
 
+
+  export enum FuncOrRefCase { 
+    FUNC_OR_REF_NOT_SET = 0,
+    FUNC = 3,
+    GLOBAL_FUNC_OUTPUT_NAME = 5,
+  }
 }
 
 export class Axis extends jspb.Message {

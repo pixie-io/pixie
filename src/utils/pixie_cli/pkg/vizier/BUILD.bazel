@@ -15,6 +15,7 @@ go_library(
     deps = [
         "//src/cloud/cloudapipb:cloudapi_pl_go_proto",
         "//src/shared/services:go_default_library",
+        "//src/shared/vispb:vis_pl_go_proto",
         "//src/utils:go_default_library",
         "//src/utils/pixie_cli/pkg/auth:go_default_library",
         "//src/utils/pixie_cli/pkg/components:go_default_library",

@@ -45,6 +45,20 @@ message Vis {
   // widgets defines the set of Widgets that will be displayed by the Live View in the shared grid.
   // These can be charts, tables, or other visualizations that display the output of a pxl function.
   repeated Widget widgets = 2;
+
+  // Global functions are function calls that can be referenced by widgets as an
+  // alternative to writing a function in-line. Using global functions instead
+  // of a locally defined function means you can safely re-use and update a
+  // definition of a function without much issue and also has a slight
+  // performance benefit because you reduce the necessary data transfer.
+  message GlobalFunc {
+    // The name to assign the result of the function call.
+    string output_name = 1;
+    // The function to call and store in output_name.
+    Widget.Func func = 2;
+  }
+  // The list of global functions available to the widgets.
+  repeated GlobalFunc global_funcs = 3;
 }
 
 // Widget A Widget is a visual element in a Live View. It can be a chart, a map, a table,
@@ -95,7 +109,11 @@ message Widget {
     // args is the keyword args and their values with which to call the func specified in 'name' (above).
     repeated FuncArg args = 2;
   }
-  Func func = 3;
+
+  oneof func_or_ref {
+    Func func = 3;
+    string global_func_output_name = 5;
+  }
 
   // This field represents the display of the Widget.
   // See BarChart and TimeseriesChart below for example displays.
@@ -203,5 +221,4 @@ message Graph {
     string dot_column = 1;
     AdjacencyList adjacency_list = 2;
   }
-
 }

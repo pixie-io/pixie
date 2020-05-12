@@ -432,8 +432,10 @@ func TestScriptMgr(t *testing.T) {
 	var testVis = &pl_vispb.Vis{
 		Widgets: []*pl_vispb.Widget{
 			&pl_vispb.Widget{
-				Func: &pl_vispb.Widget_Func{
-					Name: "my_func",
+				FuncOrRef: &pl_vispb.Widget_Func_{
+					Func: &pl_vispb.Widget_Func{
+						Name: "my_func",
+					},
 				},
 				DisplaySpec: &types.Any{
 					TypeUrl: "pixielabs.ai/pl.vispb.VegaChart",

@@ -3,6 +3,7 @@ package vizier
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"os/signal"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"google.golang.org/grpc"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/shared/services"
+	vispb "pixielabs.ai/pixielabs/src/shared/vispb"
 	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
@@ -98,6 +100,86 @@ func (c *Connector) PassthroughMode() bool {
 	return c.passthroughEnabled
 }
 
+func lookupVariable(variable string, computedArgs []script.Arg) (string, error) {
+	for _, arg := range computedArgs {
+		if arg.Name == variable {
+			return arg.Value, nil
+		}
+	}
+	return "", fmt.Errorf("variable '%s' not found", variable)
+}
+
+func makeFuncToExecute(f *vispb.Widget_Func, computedArgs []script.Arg, name string) (*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute, error) {
+	execFunc := &pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute{}
+	execFunc.FuncName = f.Name
+
+	execFunc.ArgValues = make([]*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute_ArgValue, len(f.Args))
+	for idx, arg := range f.Args {
+		var value string
+		var err error
+		switch x := arg.Input.(type) {
+		case *vispb.Widget_Func_FuncArg_Value:
+			value = x.Value
+		case *vispb.Widget_Func_FuncArg_Variable:
+			// Lookup variable.
+			value, err = lookupVariable(x.Variable, computedArgs)
+			if err != nil {
+				return nil, err
+			}
+		default:
+			return nil, fmt.Errorf("Value not found")
+		}
+
+		execFunc.ArgValues[idx] = &pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute_ArgValue{
+			Name:  arg.Name,
+			Value: value,
+		}
+	}
+
+	execFunc.OutputTablePrefix = "widget"
+	if name != "" {
+		execFunc.OutputTablePrefix = name
+	}
+
+	return execFunc, nil
+}
+
+func getFuncsToExecute(script *script.ExecutableScript) ([]*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute, error) {
+	if script.Vis == nil {
+		return []*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute{}, nil
+	}
+	// Accumulate the global function definitions.
+	execFuncs := []*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute{}
+	if script.Vis.GlobalFuncs != nil {
+		for _, f := range script.Vis.GlobalFuncs {
+			execFunc, err := makeFuncToExecute(f.Func, script.ComputedArgs(), f.OutputName)
+			if err != nil {
+				return []*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute{}, err
+			}
+			execFuncs = append(execFuncs, execFunc)
+		}
+
+	}
+	// Find function definitions within widgets.
+	for _, w := range script.Vis.Widgets {
+		var f *vispb.Widget_Func
+		switch x := w.FuncOrRef.(type) {
+		case *vispb.Widget_Func_:
+			f = x.Func
+		default:
+			// Skip if it's not a function definition.
+			continue
+		}
+
+		execFunc, err := makeFuncToExecute(f, script.ComputedArgs(), w.Name)
+		if err != nil {
+			return []*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute{}, err
+		}
+		execFuncs = append(execFuncs, execFunc)
+	}
+	return execFuncs, nil
+}
+
 // ExecuteScriptStream execute a vizier query as a stream.
 func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.ExecutableScript) (chan *VizierExecData, error) {
 	scriptStr := strings.TrimSpace(script.ScriptString)
@@ -105,28 +187,9 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 		return nil, errors.New("input query is empty")
 	}
 
-	var execFuncs []*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute
-	if script.Vis != nil && script.Vis.Widgets != nil {
-		execFuncs = make([]*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute, len(script.Vis.Widgets))
-		for idx, w := range script.Vis.Widgets {
-			execFunc := &pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute{}
-			execFunc.FuncName = w.Func.Name
-			execFunc.OutputTablePrefix = "widget"
-			if w.Name != "" {
-				execFunc.OutputTablePrefix = w.Name
-			}
-			args := script.ComputedArgs()
-			execFunc.ArgValues = make([]*pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute_ArgValue, len(args))
-			// TODO(zasgar): Add argument support.
-			// TODO(zasgar): Deduplicate, exact funcs since table output does not make sense for it.
-			for idx, arg := range args {
-				execFunc.ArgValues[idx] = &pl_api_vizierpb.ExecuteScriptRequest_FuncToExecute_ArgValue{
-					Name:  arg.Name,
-					Value: arg.Value,
-				}
-			}
-			execFuncs[idx] = execFunc
-		}
+	execFuncs, err := getFuncsToExecute(script)
+	if err != nil {
+		return nil, err
 	}
 
 	reqPB := &pl_api_vizierpb.ExecuteScriptRequest{
