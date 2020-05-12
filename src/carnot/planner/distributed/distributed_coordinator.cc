@@ -290,43 +290,48 @@ const distributedpb::CarnotInfo& CoordinatorImpl::GetRemoteProcessor() const {
   return remote_processor_nodes_[0];
 }
 
-// MetadataType MetadataNameToType()
-
 // TODO(nserrino): Support aliases for pruning metadata filters,
 // such as p = df.ctx['pod'], then filter on p.
-// TOOD(nserrino): Support conjunctions for pruning metadata filters,
-// such as df.ctx['pod'] == 'foo' or df.ctx['pod'] == 'bar'.
-bool FilterMayProduceData(FilterIR* filter, const md::AgentMetadataFilter& md_filter) {
-  MetadataIR* metadata;
-  MetadataLiteralIR* literal;
-
-  if (!Match(filter->filter_expr(), Equals(Metadata(), MetadataLiteral()))) {
+bool FilterExpressionMayProduceData(ExpressionIR* expr, const md::AgentMetadataFilter& md_filter) {
+  if (!Match(expr, Func())) {
+    return true;
+  }
+  auto func = static_cast<FuncIR*>(expr);
+  if (func->args().size() != 2) {
     return true;
   }
 
-  auto args = static_cast<FuncIR*>(filter->filter_expr())->args();
-  if (args.size() != 2) {
-    return true;
-  }
-  if (Match(args[0], Metadata())) {
-    metadata = static_cast<MetadataIR*>(args[0]);
-    literal = static_cast<MetadataLiteralIR*>(args[1]);
-  } else {
-    literal = static_cast<MetadataLiteralIR*>(args[0]);
-    metadata = static_cast<MetadataIR*>(args[1]);
+  auto logical_and = Match(expr, LogicalAnd(Value(), Value()));
+  auto logical_or = Match(expr, LogicalOr(Value(), Value()));
+  if (logical_and || logical_or) {
+    auto lhs = FilterExpressionMayProduceData(func->args()[0], md_filter);
+    auto rhs = FilterExpressionMayProduceData(func->args()[1], md_filter);
+    return logical_and ? lhs && rhs : lhs || rhs;
   }
 
-  if (!Match(literal->literal(), String())) {
-    return true;
-  }
+  if (Match(expr, Equals(Metadata(), MetadataLiteral()))) {
+    MetadataIR* metadata;
+    MetadataLiteralIR* literal;
 
-  std::string literal_string = static_cast<StringIR*>(literal->literal())->str();
-  MetadataType md_type = metadata->metadata_type();
+    if (Match(func->args()[0], Metadata())) {
+      metadata = static_cast<MetadataIR*>(func->args()[0]);
+      literal = static_cast<MetadataLiteralIR*>(func->args()[1]);
+    } else {
+      literal = static_cast<MetadataLiteralIR*>(func->args()[0]);
+      metadata = static_cast<MetadataIR*>(func->args()[1]);
+    }
+    if (!Match(literal->literal(), String())) {
+      return true;
+    }
+    std::string literal_string = static_cast<StringIR*>(literal->literal())->str();
+    MetadataType md_type = metadata->metadata_type();
 
-  if (!md_filter.metadata_types().contains(md_type)) {
-    return true;
+    if (!md_filter.metadata_types().contains(md_type)) {
+      return true;
+    }
+    return md_filter.ContainsEntity(md_type, literal_string);
   }
-  return md_filter.ContainsEntity(md_type, literal_string);
+  return true;
 }
 
 /**
@@ -336,7 +341,8 @@ bool FilterMayProduceData(FilterIR* filter, const md::AgentMetadataFilter& md_fi
  */
 bool OperatorMayProduceData(OperatorIR* op, const md::AgentMetadataFilter& md_filter) {
   // If the filter makes it so that no data will be produced, return false.
-  if (Match(op, Filter()) && !FilterMayProduceData(static_cast<FilterIR*>(op), md_filter)) {
+  if (Match(op, Filter()) &&
+      !FilterExpressionMayProduceData(static_cast<FilterIR*>(op)->filter_expr(), md_filter)) {
     return false;
   }
   auto parents = op->parents();
