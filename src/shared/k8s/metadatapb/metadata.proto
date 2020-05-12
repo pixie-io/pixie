@@ -685,6 +685,40 @@ message NodeStatus{
   repeated NodeAddress addresses = 2;
 }
 
+// NodeUpdate is the update that is sent to the agents when there are any node changes.
+// This should contain information important for our agents to know.
+message NodeUpdate {
+  // UID is the unique ID of this node in both space and time.
+  string uid = 1 [
+                 (gogoproto.customname) = "UID"
+                 ];
+
+  // Name of the node, unique in space, but not time.
+  string name = 2;
+  // The unix time in nanoseconds when the this node was created.
+  int64 start_timestamp_ns = 3 [
+                               (gogoproto.customname) = "StartTimestampNS"
+                               ];
+  // The unix time in nanoseconds when the this node was deleted. Still active if 0.
+  int64 stop_timestamp_ns = 4 [
+                              (gogoproto.customname) = "StopTimestampNS"
+                              ];
+  // The current phase of the node.
+  NodePhase phase = 5;
+
+  // PodCIDR represents the pod IP range assigned to the node.
+  string pod_cidr = 6 [
+                       (gogoproto.customname) = "PodCIDR"
+                      ];
+
+  // podCIDRs represents the IP ranges assigned to the node for usage by Pods on that node. If this
+  // field is specified, the 0th entry must match the podCIDR field. It may contain at most 1 value for
+  // each of IPv4 and IPv6.
+  repeated string pod_cidrs = 7 [
+                       (gogoproto.customname) = "PodCIDRs"
+                      ];
+}
+
 // Resource update is the message we send to the agent/compute nodes
 // from the metadata service (MDS).
 // These updates can contain cross references to other objects (ie. pods can refer to containers).
@@ -696,6 +730,7 @@ message ResourceUpdate {
     ContainerUpdate container_update = 2;
     ServiceUpdate service_update = 3;
     NamespaceUpdate namespace_update = 6;
+    NodeUpdate node_update = 7;
   }
   string resource_version = 4;
   string prev_resource_version = 5;
