@@ -169,10 +169,10 @@ const Vega = React.memo((props: VegaProps) => {
 
   // If this chart has a legend, then make vega use only 80% of the height and leave 20% for the legend.
   const vegaStyles: CSSProperties = React.useMemo(() => {
-    return {height: (hasLegend) ? '80%' : '100%'};
+    return {height: (hasLegend) ? '85%' : '100%'};
   }, [hasLegend]);
   const legendStyles: CSSProperties = React.useMemo(() => {
-    return {height: (hasLegend) ? '20%' : '0%'};
+    return {height: (hasLegend) ? '15%' : '0%'};
   }, [hasLegend]);
 
   return (

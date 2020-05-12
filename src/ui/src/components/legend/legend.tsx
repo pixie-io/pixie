@@ -47,23 +47,13 @@ interface LegendProps {
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
-    container: {
-      display: 'flex',
-      flexDirection: 'column',
+    gridsContainer: {
       height: '100%',
       width: '100%',
-    },
-    gridsContainer: {
-      flex: '1',
-      minHeight: 0,
       display: 'flex',
       flexDirection: 'row',
       justifyContent: 'flex-start',
       overflow: 'hidden',
-    },
-    header: {
-      textAlign: 'left',
-      height: `${HEADER_HEIGHT}px`,
     },
     rowContainer: {
       display: 'contents',
@@ -223,11 +213,8 @@ const Legend = React.memo((props: LegendProps) => {
   };
 
   return (
-    <div className={classes.container} style={containerStyles}>
-      <div className={classes.header}>{props.data.time ? `${props.data.time}` : ''}</div>
-      <div className={classes.gridsContainer}>
-        {grids}
-      </div>
+    <div className={classes.gridsContainer} style={containerStyles}>
+      {grids}
     </div>
   );
 });
