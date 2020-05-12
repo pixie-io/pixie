@@ -1,5 +1,4 @@
 #include "src/stirling/testing/test_output_generator/test_utils.h"
-
 #include <rapidjson/istreamwrapper.h>
 #include <rapidjson/ostreamwrapper.h>
 #include <cstring>
@@ -7,6 +6,7 @@
 #include <memory>
 #include "rapidjson/filewritestream.h"
 #include "rapidjson/prettywriter.h"
+#include "src/stirling/mysql/types.h"
 
 namespace pl {
 namespace stirling {
@@ -48,5 +48,30 @@ void WriteJSON(const std::string& output_path, rapidjson::Document* d) {
 }
 
 }  // namespace test_generator_utils
+
+namespace mysql {
+
+std::unique_ptr<std::vector<Record>> JSONtoMySQLRecord(const std::string& input_path) {
+  rapidjson::Document d;
+  test_generator_utils::ReadJSON(input_path, &d);
+
+  auto records = std::make_unique<std::vector<Record>>();
+
+  for (auto& value : d.GetArray()) {
+    Record r;
+    r.req.cmd = static_cast<Command>(value["req_cmd"].GetString()[0]);
+    r.req.msg = value["req_msg"].GetString();
+    r.req.timestamp_ns = value["req_timestamp"].GetInt();
+
+    r.resp.status = static_cast<RespStatus>(value["resp_status"].GetString()[0]);
+    r.resp.msg = value["resp_msg"].GetString();
+    r.resp.timestamp_ns = value["resp_timestamp"].GetInt();
+
+    records->push_back(r);
+  }
+  return records;
+}
+
+}  // namespace mysql
 }  // namespace stirling
 }  // namespace pl

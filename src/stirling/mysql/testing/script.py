@@ -43,7 +43,9 @@ def main():
     cnx = mysql.connector.connect(**config)
 
     # kStatistics 0x09
-    cnx.cmd_statistics()
+    # TODO(chengruizhe): MySQL parser currently doesn't support kStatistics.
+    #  Turn on when it's supported.
+    # cnx.cmd_statistics()
 
     # kQuery 0x03
     cnx.cmd_query(create_db_command)

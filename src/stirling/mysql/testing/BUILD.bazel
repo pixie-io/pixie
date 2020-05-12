@@ -7,3 +7,10 @@ filegroup(
         "script.py",
     ]),
 )
+
+filegroup(
+    name = "expected_outputs",
+    srcs = glob([
+        "mysql_container_bpf_test.json",
+    ]),
+)

@@ -171,7 +171,7 @@
         "req_cmd": "\u0001",
         "req_msg": "",
         "req_timestamp": 0,
-        "resp_status": "\u0002",
+        "resp_status": "\u0001",
         "resp_msg": "",
         "resp_timestamp": 0
     },

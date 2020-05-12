@@ -2,8 +2,10 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 #include "rapidjson/document.h"
 #include "src/common/base/base.h"
+#include "src/stirling/mysql/types.h"
 
 namespace pl {
 namespace stirling {
@@ -32,5 +34,14 @@ void ReadJSON(const std::string& json_path, rapidjson::Document* d);
 void WriteJSON(const std::string& output_path, rapidjson::Document* d);
 
 }  // namespace test_generator_utils
+
+namespace mysql {
+/**
+ * JSONtoMySQLRecord reads in the trimmed JSON file and converts it to a vector of mysql records.
+ * @param input_path
+ */
+std::unique_ptr<std::vector<Record>> JSONtoMySQLRecord(const std::string& input_path);
+
+}  // namespace mysql
 }  // namespace stirling
 }  // namespace pl

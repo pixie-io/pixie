@@ -236,7 +236,10 @@ pl_cc_test(
     name = "mysql_container_bpf_test",
     timeout = "moderate",
     srcs = ["mysql_container_bpf_test.cc"],
-    data = ["//src/stirling/mysql/testing:scripts"],
+    data = [
+        "//src/stirling/mysql/testing:expected_outputs",
+        "//src/stirling/mysql/testing:scripts",
+    ],
     flaky = True,
     tags = ["requires_bpf"],
     deps = [

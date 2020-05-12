@@ -18,6 +18,7 @@
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/socket_trace_bpf_test_fixture.h"
+#include "src/stirling/testing/test_output_generator/test_utils.h"
 
 namespace pl {
 namespace stirling {
@@ -32,9 +33,11 @@ using ::testing::AllOf;
 using ::testing::Eq;
 using ::testing::Field;
 using ::testing::IsEmpty;
+using ::testing::Matcher;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
+using ::testing::UnorderedElementsAreArray;
 
 DEFINE_bool(tracing_mode, false, "If true, only runs the containers and exits. For tracing.");
 
@@ -430,8 +433,30 @@ TEST_F(MySQLTraceTest, mysql_capture) {
     ASSERT_OK_AND_ASSIGN(int32_t client_pid,
                          RunPythonScript("src/stirling/mysql/testing/script.py"));
 
-    PL_UNUSED(client_pid);
-    // TODO(chengruizhe): Check client-side results.
+    // Sleep a little more, just to be safe.
+    sleep(1);
+
+    // Grab the data from Stirling.
+    DataTable data_table(kMySQLTable);
+    source_->TransferData(ctx_.get(), SocketTraceConnector::kMySQLTableNum, &data_table);
+    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+
+    // Check client-side tracing results.
+    if (!FLAGS_tracing_mode) {
+      std::vector<mysql::Record> records = GetTargetRecords(record_batch, client_pid);
+
+      auto expected_records =
+          mysql::JSONtoMySQLRecord("src/stirling/mysql/testing/mysql_container_bpf_test.json");
+
+      std::vector<Matcher<mysql::Record>> expected_matchers;
+
+      for (size_t i = 0; i < expected_records->size(); ++i) {
+        expected_matchers.push_back(EqMySQLRecord((*expected_records)[i]));
+      }
+
+      EXPECT_THAT(records,
+                  UnorderedElementsAreArray(expected_matchers.begin(), expected_matchers.end()));
+    }
   }
 }
 
