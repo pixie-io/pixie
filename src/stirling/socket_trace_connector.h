@@ -34,6 +34,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/cass_table.h"
 #include "src/stirling/common/socket_trace.h"
+#include "src/stirling/conn_stats_table.h"
 #include "src/stirling/connection_tracker.h"
 #include "src/stirling/http/utils.h"
 #include "src/stirling/http_table.h"
@@ -66,7 +67,10 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       MakeArray<std::string_view>("socket_control_events", "socket_data_events",
                                   "go_grpc_header_events", "go_grpc_data_events");
 
-  static constexpr auto kTables = MakeArray(kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable);
+  static constexpr auto kTables =
+      MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable);
+  static constexpr uint32_t kConnStatsTableNum =
+      SourceConnector::TableNum(kTables, kConnStatsTable);
   static constexpr uint32_t kHTTPTableNum = SourceConnector::TableNum(kTables, kHTTPTable);
   static constexpr uint32_t kMySQLTableNum = SourceConnector::TableNum(kTables, kMySQLTable);
   static constexpr uint32_t kCQLTableNum = SourceConnector::TableNum(kTables, kCQLTable);
