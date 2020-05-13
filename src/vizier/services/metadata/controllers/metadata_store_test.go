@@ -24,24 +24,6 @@ import (
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
-func TestKVMetadataStore_GetClusterCIDR(t *testing.T) {
-	// Set up mock.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
-
-	clock := testingutils.NewTestClock(time.Unix(2, 0))
-	c := kvstore.NewCacheWithClock(mockDs, clock)
-
-	mds, err := controllers.NewKVMetadataStore(c)
-	assert.Nil(t, err)
-
-	assert.Equal(t, "", mds.GetClusterCIDR())
-
-	mds.SetClusterCIDR("1.2.3.4/18")
-	assert.Equal(t, "1.2.0.0/18", mds.GetClusterCIDR())
-}
-
 // createAgent manually creates the agent keys/values in the cache.
 func createAgent(t *testing.T, c *kvstore.Cache, agentID string, agentPb string) {
 	info := new(agentpb.Agent)

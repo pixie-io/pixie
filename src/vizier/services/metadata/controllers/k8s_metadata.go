@@ -1,10 +1,7 @@
 package controllers
 
 import (
-	"context"
 	"fmt"
-	"regexp"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -109,42 +106,4 @@ func (mc *K8sMetadataController) startWatcher(resource string, resourceVersion i
 		mc.mdHandler.GetChannel() <- msg
 	}
 	log.WithField("resource", resource).Info("k8s watcher channel closed")
-}
-
-// GetClusterCIDR get the CIDR for the current cluster.
-func (mc *K8sMetadataController) GetClusterCIDR() string {
-	kubeSysPods, err := mc.clientset.CoreV1().Pods(kubeSystemNs).List(context.Background(), metav1.ListOptions{})
-	if err != nil {
-		log.WithError(err).Fatal("Could not fetch kube-system pods to get CIDR")
-	}
-
-	for _, pod := range kubeSysPods.Items {
-		if !strings.HasPrefix(pod.GetName(), kubeProxyPodPrefix) {
-			continue
-		}
-
-		// The pod should only have a single container, but we iterate through the list to be sure.
-		for _, container := range pod.Spec.Containers {
-			if !strings.HasPrefix(container.Name, kubeProxyPodPrefix) {
-				continue
-			}
-
-			for _, cmd := range container.Command {
-				if !strings.Contains(cmd, "--cluster-cidr") {
-					continue
-				}
-				return findClusterCIDRFromArg(cmd)
-			}
-		}
-	}
-	return ""
-}
-
-func findClusterCIDRFromArg(cmd string) string {
-	re := regexp.MustCompile(`--cluster-cidr=(.*?)\s`)
-	matches := re.FindStringSubmatch(cmd)
-	if len(matches) == 2 {
-		return matches[1]
-	}
-	return ""
 }

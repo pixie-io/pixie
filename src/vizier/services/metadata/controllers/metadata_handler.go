@@ -25,7 +25,6 @@ const maxSubscriberUpdates = 10000
 
 // MetadataStore is the interface for our metadata store.
 type MetadataStore interface {
-	GetClusterCIDR() string
 	GetServiceCIDR() string
 	GetPodCIDRs() []string
 	GetAgent(agentID uuid.UUID) (*agentpb.Agent, error)

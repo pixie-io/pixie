@@ -31,7 +31,6 @@ type KVMetadataStore struct {
 
 // ClusterInfo contains static information about the cluster, stored in memory.
 type ClusterInfo struct {
-	ClusterCIDR *net.IPNet // This is the cluster (pod) CIDR block.
 	ServiceCIDR *net.IPNet // This is the service CIDR block; it is inferred from all observed service IPs.
 	PodCIDRs    []string   // The pod CIDRs in the cluster, inferred from each node's reported pod CIDR.
 }
@@ -47,7 +46,7 @@ func NewKVMetadataStoreWithExpiryTime(cache *kvstore.Cache, expiryDuration time.
 	mds := &KVMetadataStore{
 		cache:          cache,
 		expiryDuration: expiryDuration,
-		clusterInfo:    ClusterInfo{ClusterCIDR: nil, ServiceCIDR: nil, PodCIDRs: make([]string, 0)},
+		clusterInfo:    ClusterInfo{ServiceCIDR: nil, PodCIDRs: make([]string, 0)},
 	}
 
 	return mds, nil
@@ -59,32 +58,12 @@ type HostnameIPPair struct {
 	IP       string
 }
 
-// GetClusterCIDR returns the CIDR for the current cluster.
-func (mds *KVMetadataStore) GetClusterCIDR() string {
-	if mds.clusterInfo.ClusterCIDR == nil {
-		return ""
-	}
-	return mds.clusterInfo.ClusterCIDR.String()
-}
-
 // GetServiceCIDR returns the service CIDR for the current cluster.
 func (mds *KVMetadataStore) GetServiceCIDR() string {
 	if mds.clusterInfo.ServiceCIDR == nil {
 		return ""
 	}
 	return mds.clusterInfo.ServiceCIDR.String()
-}
-
-// SetClusterCIDR sets the static pod CIDR for the current cluster.
-func (mds *KVMetadataStore) SetClusterCIDR(cidr string) {
-	_, ipNet, err := net.ParseCIDR(cidr)
-
-	if err != nil {
-		log.WithError(err).Error("Could not parse cluster (pod) CIDR.")
-		return
-	}
-
-	mds.clusterInfo.ClusterCIDR = ipNet
 }
 
 // UpdatePodCIDR updates list of pod CIDRs.

@@ -35,9 +35,8 @@ message RegisterAgentResponse {
     uint32 asid = 1 [
                     (gogoproto.customname) = "ASID"
                     ];
-    string cluster_cidr = 2 [
-                    (gogoproto.customname) = "ClusterCIDR"
-                    ];
+    // DEPRECATED: This was clusterCIDR has been replaced by PodCIDRs in HeartbeatAck.
+    reserved 2;
 }
 
 message UpdateAgentRequest {

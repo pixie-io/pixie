@@ -163,8 +163,7 @@ func main() {
 	}
 	defer mc.Close()
 
-	k8sMd, err := controllers.NewK8sMetadataController(mdHandler)
-	mds.SetClusterCIDR(k8sMd.GetClusterCIDR())
+	_, err = controllers.NewK8sMetadataController(mdHandler)
 
 	// Set up server.
 	env, err := metadataenv.New()

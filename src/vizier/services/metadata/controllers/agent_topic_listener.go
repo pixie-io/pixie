@@ -160,8 +160,7 @@ func (a *AgentTopicListener) onAgentRegisterRequest(m *messages.RegisterAgentReq
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_RegisterAgentResponse{
 			RegisterAgentResponse: &messages.RegisterAgentResponse{
-				ASID:        asid,
-				ClusterCIDR: a.mdStore.GetClusterCIDR(),
+				ASID: asid,
 			},
 		},
 	}

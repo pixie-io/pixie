@@ -32,10 +32,6 @@ func TestAgentRegisterRequest(t *testing.T) {
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
-	mockMdStore.
-		EXPECT().
-		GetClusterCIDR().
-		Return("10.24.0.0/14")
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -83,8 +79,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_RegisterAgentResponse{
 			RegisterAgentResponse: &messages.RegisterAgentResponse{
-				ASID:        1,
-				ClusterCIDR: "10.24.0.0/14",
+				ASID: 1,
 			},
 		},
 	}
@@ -123,11 +118,6 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
-
-	mockMdStore.
-		EXPECT().
-		GetClusterCIDR().
-		Return("10.24.0.0/14")
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -178,8 +168,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_RegisterAgentResponse{
 			RegisterAgentResponse: &messages.RegisterAgentResponse{
-				ASID:        1,
-				ClusterCIDR: "10.24.0.0/14",
+				ASID: 1,
 			},
 		},
 	}
@@ -213,10 +202,6 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
-	mockMdStore.
-		EXPECT().
-		GetClusterCIDR().
-		Return("10.24.0.0/14")
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -264,8 +249,7 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	resp := messages.VizierMessage{
 		Msg: &messages.VizierMessage_RegisterAgentResponse{
 			RegisterAgentResponse: &messages.RegisterAgentResponse{
-				ASID:        1,
-				ClusterCIDR: "10.24.0.0/14",
+				ASID: 1,
 			},
 		},
 	}
