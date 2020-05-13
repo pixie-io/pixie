@@ -22,7 +22,7 @@ include_recipe 'pixielabs::golang'
 
 execute 'install node packages' do
   command %(/opt/node/bin/npm install -g \
-            tslint@5.11.0 typescript@3.0.1 yarn@1.22.4 webpack@4.42.0 jshint@2.9.6 jest@23.4.2)
+            tslint@5.11.0 typescript@3.0.1 yarn@1.22.4 webpack@4.42.0 jshint@2.11.0 jest@23.4.2)
 end
 
 directory '/opt/pixielabs' do
