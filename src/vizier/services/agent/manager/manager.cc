@@ -93,6 +93,11 @@ Status Manager::RegisterAgent() {
 }
 
 Status Manager::Init() {
+  PL_ASSIGN_OR_RETURN(
+      agent_metadata_filter_,
+      md::AgentMetadataFilter::Create(kMetadataFilterMaxEntries, kMetadataFilterMaxErrorRate,
+                                      md::AgentMetadataStateManager::MetadataFilterEntities()));
+
   auto hostname_or_s = GetHostname();
   if (!hostname_or_s.ok()) {
     return hostname_or_s.status();
@@ -237,7 +242,7 @@ void Manager::HandleRegisterAgentResponse(std::unique_ptr<messages::VizierMessag
 
   mds_manager_ = std::make_unique<pl::md::AgentMetadataStateManager>(
       info_.hostname, info_.asid, info_.agent_id, info_.capabilities.collects_data(),
-      cluster_cidr_opt, pl::system::Config::GetInstance(), &agent_metadata_filter_);
+      cluster_cidr_opt, pl::system::Config::GetInstance(), agent_metadata_filter_.get());
   relation_info_manager_ = std::make_unique<RelationInfoManager>();
 
   PL_CHECK_OK(PostRegisterHook());

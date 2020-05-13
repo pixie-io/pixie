@@ -8,6 +8,7 @@
 #include "src/common/event/nats.h"
 #include "src/common/system/config_mock.h"
 #include "src/common/testing/event/simulated_time_system.h"
+#include "src/shared/metadatapb/metadata.pb.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"
 #include "src/vizier/services/agent/manager/heartbeat.h"
 #include "src/vizier/services/agent/manager/manager.h"
@@ -20,7 +21,10 @@ namespace agent {
 
 using ::pl::table_store::schema::Relation;
 using ::pl::testing::proto::EqualsProto;
+using ::pl::testing::proto::Partially;
+using shared::metadatapb::MetadataType;
 using ::testing::Return;
+using ::testing::UnorderedElementsAreArray;
 
 const char* kAgentUpdateInfoSchemaNoTablets = R"proto(
 does_update_schema: true
@@ -45,7 +49,8 @@ schema {
     name: "gauge"
     data_type: FLOAT64
   }
-})proto";
+}
+)proto";
 
 template <typename TMsg>
 class FakeNATSConnector : public event::NATSConnector<TMsg> {
@@ -79,9 +84,12 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
     EXPECT_CALL(sys_config, KernelTicksPerSecond()).WillRepeatedly(::testing::Return(10000000));
     EXPECT_CALL(sys_config, HasConfig()).WillRepeatedly(Return(true));
 
+    md_filter_ = md::AgentMetadataFilter::Create(
+                     100, 0.01, md::AgentMetadataStateManager::MetadataFilterEntities())
+                     .ConsumeValueOrDie();
     mds_manager_ = std::make_unique<md::AgentMetadataStateManager>(
         "host", 1, /* agent_id */ sole::uuid4(), true, absl::optional<CIDRBlock>{}, sys_config,
-        &md_filter_);
+        md_filter_.get());
 
     // Relation info with no tabletization.
     Relation relation0({types::TIME64NS, types::INT64}, {"time_", "count"});
@@ -112,7 +120,7 @@ class HeartbeatMessageHandlerTest : public ::testing::Test {
   std::unique_ptr<HeartbeatMessageHandler> heartbeat_handler_;
   std::unique_ptr<FakeNATSConnector<pl::vizier::messages::VizierMessage>> nats_conn_;
   agent::Info agent_info_;
-  NoopAgentMetadataFilter md_filter_;
+  std::unique_ptr<md::AgentMetadataFilter> md_filter_;
 };
 
 TEST_F(HeartbeatMessageHandlerTest, InitialHeartbeatTimeout) {
@@ -153,7 +161,7 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeat) {
   EXPECT_EQ(1, nats_conn_->published_msgs_.size());
   auto hb = nats_conn_->published_msgs_[0].mutable_heartbeat();
   EXPECT_EQ(0, hb->sequence_number());
-  EXPECT_THAT(*hb->mutable_update_info(), EqualsProto(kAgentUpdateInfoSchemaNoTablets));
+  EXPECT_THAT(*hb->mutable_update_info(), Partially(EqualsProto(kAgentUpdateInfoSchemaNoTablets)));
 
   time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 4000));
   dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
@@ -172,6 +180,46 @@ TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeat) {
   EXPECT_EQ(1, hb->sequence_number());
   // No schema should be included in subsequent heartbeats.
   EXPECT_EQ(0, hb->mutable_update_info()->schema().size());
+}
+
+TEST_F(HeartbeatMessageHandlerTest, HandleHeartbeatMetadata) {
+  ASSERT_OK(mds_manager_->PerformMetadataStateUpdate());
+
+  ASSERT_OK(mds_manager_->metadata_filter()->InsertEntity(MetadataType::POD_NAME, "foo"));
+
+  dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
+
+  auto hb_ack = std::make_unique<messages::VizierMessage>();
+  auto hb_ack_msg = hb_ack->mutable_heartbeat_ack();
+  hb_ack_msg->set_sequence_number(0);
+
+  auto s = heartbeat_handler_->HandleMessage(std::move(hb_ack));
+
+  EXPECT_EQ(1, nats_conn_->published_msgs_.size());
+  auto hb = nats_conn_->published_msgs_[0].mutable_heartbeat();
+  EXPECT_EQ(0, hb->sequence_number());
+  EXPECT_TRUE(hb->update_info().data().has_metadata_info());
+  EXPECT_THAT(*hb->mutable_update_info(), Partially(EqualsProto(kAgentUpdateInfoSchemaNoTablets)));
+
+  auto metadata_info = hb->update_info().data().metadata_info();
+  std::vector<MetadataType> types;
+  for (auto i = 0; i < metadata_info.metadata_fields_size(); ++i) {
+    types.push_back(metadata_info.metadata_fields(i));
+  }
+  EXPECT_THAT(types,
+              UnorderedElementsAreArray(md::AgentMetadataStateManager::MetadataFilterEntities()));
+  auto bf = md::AgentMetadataFilter::FromProto(metadata_info).ConsumeValueOrDie();
+  EXPECT_TRUE(bf->ContainsEntity(MetadataType::POD_NAME, "foo"));
+  EXPECT_FALSE(bf->ContainsEntity(MetadataType::SERVICE_NAME, "foo"));
+
+  // Don't update the metadata filter when the k8s epoch hasn't changed.
+  time_system_->SetMonotonicTime(start_monotonic_time_ + std::chrono::milliseconds(5 * 5000 + 1));
+  dispatcher_->Run(event::Dispatcher::RunType::NonBlock);
+  EXPECT_EQ(2, nats_conn_->published_msgs_.size());
+
+  hb = nats_conn_->published_msgs_[1].mutable_heartbeat();
+  EXPECT_EQ(1, hb->sequence_number());
+  EXPECT_FALSE(hb->update_info().data().has_metadata_info());
 }
 
 }  // namespace agent

@@ -73,6 +73,14 @@ Status HeartbeatMessageHandler::SendHeartbeatInternal() {
     relation_info_manager_->AddSchemaToUpdateInfo(update_info);
   }
 
+  // We skip sending the metadata update when there have been no changes.
+  auto current_epoch = mds_manager_->CurrentAgentMetadataState()->epoch_id();
+  if (last_metadata_epoch_id_ == 0 || last_metadata_epoch_id_ != current_epoch) {
+    auto metadata_filter = update_info->mutable_data()->mutable_metadata_info();
+    *metadata_filter = mds_manager_->metadata_filter()->ToProto();
+    last_metadata_epoch_id_ = current_epoch;
+  }
+
   VLOG(1) << "Sending heartbeat message: " << req.DebugString();
   heartbeat_info_.last_heartbeat_send_time_ = time_source_.MonotonicTime();
 

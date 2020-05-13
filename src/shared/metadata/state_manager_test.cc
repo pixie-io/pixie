@@ -293,10 +293,8 @@ TEST_F(AgentMetadataStateTest, insert_into_filter) {
                                    MetadataType::POD_ID, MetadataType::POD_NAME,
                                    MetadataType::CONTAINER_ID));
   EXPECT_THAT(md_filter_.inserted_entities(),
-              ElementsAre("container_id1", "pod_id1", "pl/pod1", "service_id1", "pl/service1"));
-  EXPECT_THAT(md_filter_.inserted_types(),
-              ElementsAre(MetadataType::CONTAINER_ID, MetadataType::POD_ID, MetadataType::POD_NAME,
-                          MetadataType::SERVICE_ID, MetadataType::SERVICE_NAME));
+              ElementsAre("CONTAINER_ID=container_id1", "POD_ID=pod_id1", "POD_NAME=pod1",
+                          "SERVICE_ID=service_id1", "SERVICE_NAME=service1"));
 }
 
 }  // namespace md

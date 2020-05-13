@@ -24,6 +24,13 @@ namespace vizier {
 namespace agent {
 
 /**
+ * The maximum number of entries and the maximum false positive error rate to use for
+ * the metadata filter that is stored on this agent to track entities.
+ */
+constexpr int64_t kMetadataFilterMaxEntries = 10000;
+constexpr double kMetadataFilterMaxErrorRate = 0.01;
+
+/**
  * Info tracks basic information about and agent such as:
  * id, asid, hostname.
  */
@@ -36,20 +43,6 @@ struct Info {
   std::string hostname;
   std::string address;
   services::shared::agent::AgentCapabilities capabilities;
-};
-
-/**
- * A (temporary) noop implementation used for the metadata filter of AgentMetadataStateManager.
- * TODO(nserrino): Replace with non-noop implementation that stores metadata entities.
- */
-class NoopAgentMetadataFilter : public md::AgentMetadataFilter {
- public:
-  NoopAgentMetadataFilter()
-      : md::AgentMetadataFilter(md::AgentMetadataStateManager::MetadataFilterEntities()) {}
-
- protected:
-  void InsertEntityImpl(md::MetadataType, std::string_view) override {}
-  bool ContainsEntityImpl(md::MetadataType, std::string_view) const override { return false; }
 };
 
 /**
@@ -190,7 +183,7 @@ class Manager : public pl::NotCopyable {
   // Timeout for registration ACK.
   static constexpr std::chrono::seconds kRegistrationPeriod{30};
 
-  NoopAgentMetadataFilter agent_metadata_filter_;
+  std::unique_ptr<md::AgentMetadataFilter> agent_metadata_filter_;
 };
 
 /**

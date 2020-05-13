@@ -275,12 +275,7 @@ Status AgentMetadataStateManager::HandlePodUpdate(const PodUpdate& update,
                                                   AgentMetadataFilter* md_filter) {
   VLOG(2) << "Pod Update: " << update.DebugString();
   PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::POD_ID, update.uid()));
-  // In the future we will not stire K8s entites with the namespace prepended, but that is what
-  // the query language expects for now.
-  // TODO(nserrino): Track namespace separately here (and with service below).
-  PL_RETURN_IF_ERROR(md_filter->InsertEntity(
-      MetadataType::POD_NAME,
-      AgentMetadataFilter::WithK8sNamespace(update.namespace_(), update.name())));
+  PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::POD_NAME, update.name()));
   return state->k8s_metadata_state()->HandlePodUpdate(update);
 }
 
@@ -289,9 +284,8 @@ Status AgentMetadataStateManager::HandleServiceUpdate(const ServiceUpdate& updat
                                                       AgentMetadataFilter* md_filter) {
   VLOG(2) << "Service Update: " << update.DebugString();
   PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::SERVICE_ID, update.uid()));
-  PL_RETURN_IF_ERROR(md_filter->InsertEntity(
-      MetadataType::SERVICE_NAME,
-      AgentMetadataFilter::WithK8sNamespace(update.namespace_(), update.name())));
+  PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::SERVICE_NAME, update.name()));
+
   return state->k8s_metadata_state()->HandleServiceUpdate(update);
 }
 

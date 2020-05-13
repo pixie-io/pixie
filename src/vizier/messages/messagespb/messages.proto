@@ -63,7 +63,7 @@ message AgentUpdateInfo {
     repeated pl.shared.k8s.metadatapb.ProcessTerminated process_terminated = 5;
     // Whether the schema updates.
     bool does_update_schema = 6;
-    repeated AgentDataInfo data = 7;
+    AgentDataInfo data = 7;
 }
 
 // The heart beat signal.

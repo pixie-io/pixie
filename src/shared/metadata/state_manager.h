@@ -119,6 +119,8 @@ class AgentMetadataStateManager {
             MetadataType::POD_NAME, MetadataType::CONTAINER_ID};
   }
 
+  AgentMetadataFilter* metadata_filter() const { return metadata_filter_; }
+
  private:
   uint32_t asid_;
   sole::uuid agent_id_;
