@@ -25,16 +25,22 @@ TEST(DwarfReaderTest, Basic) {
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader, DwarfReader::Create(path));
   ASSERT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("foo"), IsEmpty());
+
   ASSERT_OK_AND_ASSIGN(dies, dwarf_reader->GetMatchingDIEs("PairStruct"));
   ASSERT_THAT(dies, SizeIs(1));
   ASSERT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_structure_type);
 
   ASSERT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("PairStruct", llvm::dwarf::DW_TAG_member),
                      IsEmpty());
+
   ASSERT_OK_AND_ASSIGN(
       dies, dwarf_reader->GetMatchingDIEs("PairStruct", llvm::dwarf::DW_TAG_structure_type));
   ASSERT_THAT(dies, SizeIs(1));
   ASSERT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_structure_type);
+
+  ASSERT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "a"), 0);
+  ASSERT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "b"), 4);
+  ASSERT_NOT_OK(dwarf_reader->GetStructMemberOffset("PairStruct", "bogus"));
 }
 
 }  // namespace dwarf_tools

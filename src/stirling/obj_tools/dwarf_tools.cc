@@ -82,6 +82,37 @@ StatusOr<std::vector<DWARFDie>> DwarfReader::GetMatchingDIEs(std::string_view na
   return dies;
 }
 
+StatusOr<int> DwarfReader::GetStructMemberOffset(std::string_view struct_name,
+                                                 std::string member_name) {
+  PL_ASSIGN_OR_RETURN(std::vector<DWARFDie> dies,
+                      GetMatchingDIEs(struct_name, llvm::dwarf::DW_TAG_structure_type));
+  if (dies.empty()) {
+    return error::Internal("Could not locate structure");
+  }
+  if (dies.size() > 1) {
+    return error::Internal("Found too many DIE matches");
+  }
+
+  DWARFDie& struct_die = dies.front();
+
+  for (const auto& die : struct_die.children()) {
+    if ((die.getTag() == llvm::dwarf::DW_TAG_member) &&
+        (die.getName(llvm::DINameKind::ShortName) == member_name)) {
+      llvm::Optional<llvm::DWARFFormValue> attr = die.find(llvm::dwarf::DW_AT_data_member_location);
+      if (!attr.hasValue()) {
+        return error::Internal("Found member, but could not find data_member_location attribute.");
+      }
+      llvm::Optional<uint64_t> offset = attr.getValue().getAsUnsignedConstant();
+      if (!offset.hasValue()) {
+        return error::Internal("Could not extract offset.");
+      }
+      return offset.getValue();
+    }
+  }
+
+  return error::Internal("Could not find member");
+}
+
 }  // namespace dwarf_tools
 }  // namespace stirling
 }  // namespace pl

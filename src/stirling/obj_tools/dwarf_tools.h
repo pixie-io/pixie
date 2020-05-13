@@ -36,6 +36,8 @@ class DwarfReader {
       std::string_view name,
       llvm::dwarf::Tag type = static_cast<llvm::dwarf::Tag>(llvm::dwarf::DW_TAG_invalid));
 
+  StatusOr<int> GetStructMemberOffset(std::string_view struct_name, std::string member_name);
+
  private:
   DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
               std::unique_ptr<llvm::DWARFContext> dwarf_context)
