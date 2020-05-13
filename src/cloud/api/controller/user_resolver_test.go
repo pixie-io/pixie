@@ -19,6 +19,7 @@ import (
 
 func TestUserInfoResolver(t *testing.T) {
 	sCtx := authcontext.New()
+	userID := "123e4567-e89b-12d3-a456-426655440000"
 
 	ctrl := gomock.NewController(t)
 	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
@@ -26,18 +27,29 @@ func TestUserInfoResolver(t *testing.T) {
 		ID:      pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
 		OrgName: "testOrg",
 	}
+	mockUserInfo := &profilepb.UserInfo{
+		ID:             pbutils.ProtoFromUUIDStrOrNil(userID),
+		ProfilePicture: "test",
+		FirstName:      "first",
+		LastName:       "last",
+	}
 	mockProfile.EXPECT().
 		GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
 		Return(mockOrgInfo, nil)
+	mockProfile.EXPECT().
+		GetUser(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(userID)).
+		Return(mockUserInfo, nil)
 
 	gqlEnv := controller.GraphQLEnv{
 		ProfileServiceClient: mockProfile,
 	}
 
-	sCtx.Claims = utils.GenerateJWTForUser("abcdef", "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "test@test.com", time.Now())
+	sCtx.Claims = utils.GenerateJWTForUser(userID, "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "test@test.com", time.Now())
 
-	resolver := controller.UserInfoResolver{SessionCtx: sCtx, GQLEnv: &gqlEnv}
+	resolver := controller.UserInfoResolver{SessionCtx: sCtx, GQLEnv: &gqlEnv, UserInfo: mockUserInfo}
 	assert.Equal(t, "test@test.com", resolver.Email())
-	assert.Equal(t, graphql.ID("abcdef"), resolver.ID())
+	assert.Equal(t, graphql.ID(userID), resolver.ID())
 	assert.Equal(t, "testOrg", resolver.OrgName())
+	assert.Equal(t, "test", resolver.Picture())
+	assert.Equal(t, "first last", resolver.Name())
 }

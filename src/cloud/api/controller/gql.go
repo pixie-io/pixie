@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/graph-gophers/graphql-go"
@@ -9,7 +8,6 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/schema"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 )
 
 // GraphQLEnv holds the GRPC API servers so the GraphQL server can call out to them.
@@ -25,15 +23,6 @@ type GraphQLEnv struct {
 // QueryResolver resolves queries for GQL.
 type QueryResolver struct {
 	Env GraphQLEnv
-}
-
-// User resolves user information.
-func (q *QueryResolver) User(ctx context.Context) (*UserInfoResolver, error) {
-	sCtx, err := authcontext.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &UserInfoResolver{sCtx, &q.Env, ctx}, nil
 }
 
 // NewGraphQLHandler is the hTTP handler used for handling GraphQL requests.
