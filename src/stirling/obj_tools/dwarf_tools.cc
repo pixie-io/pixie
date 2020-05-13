@@ -41,23 +41,27 @@ StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(std::string_view obj_
 
 namespace {
 
-bool IsMatchingDIE(std::string_view name, std::string_view die_name) { return (name == die_name); }
+bool IsMatchingDIE(std::string_view name, llvm::dwarf::Tag tag, std::string_view die_name,
+                   llvm::dwarf::Tag die_tag) {
+  return (tag == static_cast<llvm::dwarf::Tag>(llvm::dwarf::DW_TAG_invalid) || (tag == die_tag)) &&
+         (name == die_name);
+}
 
 }  // namespace
 
 Status DwarfReader::GetMatchingDIEs(DWARFContext::unit_iterator_range CUs, std::string_view name,
-                                    std::vector<DWARFDie>* dies_out) {
+                                    llvm::dwarf::Tag tag, std::vector<DWARFDie>* dies_out) {
   for (const auto& CU : CUs) {
     for (const auto& Entry : CU->dies()) {
       DWARFDie die = {CU.get(), &Entry};
       if (const char* die_name = die.getName(llvm::DINameKind::ShortName)) {
-        if (IsMatchingDIE(name, die_name)) {
+        if (IsMatchingDIE(name, tag, die_name, die.getTag())) {
           dies_out->push_back(std::move(die));
           continue;
         }
       }
       if (const char* die_name = die.getName(llvm::DINameKind::LinkageName)) {
-        if (IsMatchingDIE(name, die_name)) {
+        if (IsMatchingDIE(name, tag, die_name, die.getTag())) {
           dies_out->push_back(std::move(die));
         }
       }
@@ -67,14 +71,13 @@ Status DwarfReader::GetMatchingDIEs(DWARFContext::unit_iterator_range CUs, std::
   return Status::OK();
 }
 
-StatusOr<std::vector<DWARFDie>> DwarfReader::GetMatchingDIEs(std::string_view name) {
+StatusOr<std::vector<DWARFDie>> DwarfReader::GetMatchingDIEs(std::string_view name,
+                                                             llvm::dwarf::Tag type) {
   DCHECK(dwarf_context_ != nullptr);
   std::vector<DWARFDie> dies;
 
-  PL_RETURN_IF_ERROR(GetMatchingDIEs(dwarf_context_->normal_units(), name, &dies));
-  // Some day this might be useful. It searches .dwo files.
-  //  PL_RETURN_IF_ERROR(
-  //      GetMatchingDIEs(dwarf_context_->dwo_units(), name, &dies));
+  PL_RETURN_IF_ERROR(GetMatchingDIEs(dwarf_context_->normal_units(), name, type, &dies));
+  // TODO(oazizi): Might want to consider dwarf_context_->dwo_units() as well.
 
   return dies;
 }

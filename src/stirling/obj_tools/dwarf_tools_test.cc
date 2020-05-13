@@ -21,9 +21,20 @@ TEST(DwarfReaderTest, NonExistentPath) {
 TEST(DwarfReaderTest, Basic) {
   const std::string path = pl::testing::BazelBinTestFilePath(kBinary);
 
+  std::vector<llvm::DWARFDie> dies;
+
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader, DwarfReader::Create(path));
   ASSERT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("foo"), IsEmpty());
-  ASSERT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("PairStruct"), SizeIs(1));
+  ASSERT_OK_AND_ASSIGN(dies, dwarf_reader->GetMatchingDIEs("PairStruct"));
+  ASSERT_THAT(dies, SizeIs(1));
+  ASSERT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_structure_type);
+
+  ASSERT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("PairStruct", llvm::dwarf::DW_TAG_member),
+                     IsEmpty());
+  ASSERT_OK_AND_ASSIGN(
+      dies, dwarf_reader->GetMatchingDIEs("PairStruct", llvm::dwarf::DW_TAG_structure_type));
+  ASSERT_THAT(dies, SizeIs(1));
+  ASSERT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_structure_type);
 }
 
 }  // namespace dwarf_tools
