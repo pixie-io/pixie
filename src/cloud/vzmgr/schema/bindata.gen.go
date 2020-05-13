@@ -20,6 +20,8 @@
 // 000009_update_failed_cluster_status_enum.up.sql
 // 000010_add_vizier_info_to_cluster_info.down.sql
 // 000010_add_vizier_info_to_cluster_info.up.sql
+// 000011_add_updated_at_to_vizier_cluster.down.sql
+// 000011_add_updated_at_to_vizier_cluster.up.sql
 package schema
 
 import (
@@ -456,7 +458,7 @@ func _000009_update_failed_cluster_status_enumUpSql() (*asset, error) {
 	return a, nil
 }
 
-var __000010_add_vizier_info_to_cluster_infoDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\x57\xe0\x72\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x83\x29\x28\x4b\x2d\x2a\xce\xcc\xcf\xd3\x41\x91\x83\xe9\xca\x4b\xcc\x4d\xc5\x2e\x83\x57\x5b\x69\x66\x8a\x35\x17\x20\x00\x00\xff\xff\xaf\xe1\x37\xdc\x8d\x00\x00\x00")
+var __000010_add_vizier_info_to_cluster_infoDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\xe7\x72\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x83\xc9\x97\xa5\x16\x15\x67\xe6\xe7\xe9\xa0\xc8\xc1\x34\xe5\x25\xe6\xa6\x62\x97\xc1\xab\xad\x34\x33\xc5\x9a\x0b\x10\x00\x00\xff\xff\x1b\x7c\x41\x1a\x8c\x00\x00\x00")
 
 func _000010_add_vizier_info_to_cluster_infoDownSqlBytes() ([]byte, error) {
 	return bindataRead(
@@ -471,12 +473,12 @@ func _000010_add_vizier_info_to_cluster_infoDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000010_add_vizier_info_to_cluster_info.down.sql", size: 141, mode: os.FileMode(436), modTime: time.Unix(1588128705, 0)}
+	info := bindataFileInfo{name: "000010_add_vizier_info_to_cluster_info.down.sql", size: 140, mode: os.FileMode(436), modTime: time.Unix(1588134890, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var __000010_add_vizier_info_to_cluster_infoUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\x57\xe0\x72\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x83\xc9\x97\xa5\x16\x15\x67\xe6\xe7\x29\x94\x25\x16\x25\x67\x24\x16\x69\x18\x1a\x18\x18\x68\xea\x20\x2b\x84\x99\x90\x97\x98\x9b\x4a\x84\x32\xe2\x0d\x2c\xcd\x4c\x41\x55\x65\xcd\x05\x08\x00\x00\xff\xff\xf8\x10\x04\xa5\xc1\x00\x00\x00")
+var __000010_add_vizier_info_to_cluster_infoUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\xe7\x72\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x83\x49\x97\xa5\x16\x15\x67\xe6\xe7\x29\x94\x25\x16\x25\x67\x24\x16\x69\x18\x1a\x18\x18\x68\xea\x20\x2b\x84\x19\x90\x97\x98\x9b\x4a\x84\x32\xe2\x0d\x2c\xcd\x4c\x41\x55\x65\xcd\x05\x08\x00\x00\xff\xff\xfe\xe4\x5a\xc6\xc0\x00\x00\x00")
 
 func _000010_add_vizier_info_to_cluster_infoUpSqlBytes() ([]byte, error) {
 	return bindataRead(
@@ -491,7 +493,47 @@ func _000010_add_vizier_info_to_cluster_infoUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000010_add_vizier_info_to_cluster_info.up.sql", size: 193, mode: os.FileMode(436), modTime: time.Unix(1588128780, 0)}
+	info := bindataFileInfo{name: "000010_add_vizier_info_to_cluster_info.up.sql", size: 192, mode: os.FileMode(436), modTime: time.Unix(1588134890, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000011_add_updated_at_to_vizier_clusterDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\xe2\x72\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x28\x2d\x48\x49\x2c\x49\x4d\x89\x4f\x2c\xb1\xe6\x82\x48\x84\x04\x79\xba\xbb\xbb\x06\x29\x78\xba\x29\xb8\x46\x78\x06\x87\x04\x43\xd5\xc4\xa3\x9a\x12\x8f\xd0\xa9\xe0\xef\x87\x66\x85\x35\x17\x20\x00\x00\xff\xff\x13\xad\x96\x33\x7f\x00\x00\x00")
+
+func _000011_add_updated_at_to_vizier_clusterDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000011_add_updated_at_to_vizier_clusterDownSql,
+		"000011_add_updated_at_to_vizier_cluster.down.sql",
+	)
+}
+
+func _000011_add_updated_at_to_vizier_clusterDownSql() (*asset, error) {
+	bytes, err := _000011_add_updated_at_to_vizier_clusterDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000011_add_updated_at_to_vizier_cluster.down.sql", size: 127, mode: os.FileMode(436), modTime: time.Unix(1589391099, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000011_add_updated_at_to_vizier_clusterUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x7c\x50\x4d\x6b\xb3\x40\x10\xbe\xef\xaf\x78\x0e\x42\x92\xcb\xfb\x07\xc2\x7b\xd8\xec\x8e\x56\xd0\x5d\x19\x67\x49\x6f\x22\x8d\x48\x40\x52\x9b\x68\x0b\xfd\xf5\x45\x53\x49\xfa\x41\xf7\xb2\x30\xcf\x3c\x5f\xa3\x33\x21\x86\xe8\x5d\x46\x78\x3d\xbe\x1f\x9b\x73\xf5\xd4\x8d\x97\xa1\x39\x43\x5b\x0b\xe3\xb3\x90\x3b\x8c\xfd\xa1\x1e\x9a\x43\x55\x0f\x90\x34\xa7\x52\x74\x5e\x6c\xd5\x5f\xdc\x19\xfa\xc9\x2e\x49\x60\x29\xd6\x21\x13\x9c\x9e\xdf\xd6\x9b\xad\x52\x86\x49\x0b\xc1\x33\x98\x8a\x4c\x1b\x42\x1c\x9c\x91\xd4\x2f\xcc\xea\x26\xb0\xde\x28\x80\x49\x02\xbb\x12\xc2\x69\x92\x10\x43\x97\x88\x22\x05\xec\x28\x49\x9d\xc2\xfc\x1c\xed\xff\xdd\xf9\xfe\x5f\xdc\xae\xe8\x55\x61\x5a\x9a\x26\xe4\xec\xf4\x45\x11\xba\xfa\xd4\x8e\x75\xdb\x60\xd5\x77\x7d\x7b\x79\xe9\x56\xb7\x7c\x8b\xdb\x67\xa6\xaf\x85\xef\x22\xaa\x1d\xc5\x9e\x09\xa1\xb0\x73\x2d\xf7\xed\x36\x2a\xf6\x0c\xd2\xe6\x01\xec\xf7\xa0\x47\x32\x41\x08\x05\x7b\x43\x36\x30\xfd\xd6\x79\xfb\x11\x00\x00\xff\xff\xb7\xc5\x07\x8d\xa6\x01\x00\x00")
+
+func _000011_add_updated_at_to_vizier_clusterUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000011_add_updated_at_to_vizier_clusterUpSql,
+		"000011_add_updated_at_to_vizier_cluster.up.sql",
+	)
+}
+
+func _000011_add_updated_at_to_vizier_clusterUpSql() (*asset, error) {
+	bytes, err := _000011_add_updated_at_to_vizier_clusterUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000011_add_updated_at_to_vizier_cluster.up.sql", size: 422, mode: os.FileMode(436), modTime: time.Unix(1589391051, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -568,6 +610,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000009_update_failed_cluster_status_enum.up.sql":   _000009_update_failed_cluster_status_enumUpSql,
 	"000010_add_vizier_info_to_cluster_info.down.sql":   _000010_add_vizier_info_to_cluster_infoDownSql,
 	"000010_add_vizier_info_to_cluster_info.up.sql":     _000010_add_vizier_info_to_cluster_infoUpSql,
+	"000011_add_updated_at_to_vizier_cluster.down.sql":  _000011_add_updated_at_to_vizier_clusterDownSql,
+	"000011_add_updated_at_to_vizier_cluster.up.sql":    _000011_add_updated_at_to_vizier_clusterUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -631,6 +675,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000009_update_failed_cluster_status_enum.up.sql":   &bintree{_000009_update_failed_cluster_status_enumUpSql, map[string]*bintree{}},
 	"000010_add_vizier_info_to_cluster_info.down.sql":   &bintree{_000010_add_vizier_info_to_cluster_infoDownSql, map[string]*bintree{}},
 	"000010_add_vizier_info_to_cluster_info.up.sql":     &bintree{_000010_add_vizier_info_to_cluster_infoUpSql, map[string]*bintree{}},
+	"000011_add_updated_at_to_vizier_cluster.down.sql":  &bintree{_000011_add_updated_at_to_vizier_clusterDownSql, map[string]*bintree{}},
+	"000011_add_updated_at_to_vizier_cluster.up.sql":    &bintree{_000011_add_updated_at_to_vizier_clusterUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

@@ -6,6 +6,8 @@
 // 000002_add_unique_constraint_email.up.sql
 // 000003_add_profile_picture.down.sql
 // 000003_add_profile_picture.up.sql
+// 000004_add_updated_created_at.down.sql
+// 000004_add_updated_created_at.up.sql
 package schema
 
 import (
@@ -177,7 +179,7 @@ func _000003_add_profile_pictureDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000003_add_profile_picture.down.sql", size: 47, mode: os.FileMode(436), modTime: time.Unix(1589325017, 0)}
+	info := bindataFileInfo{name: "000003_add_profile_picture.down.sql", size: 47, mode: os.FileMode(436), modTime: time.Unix(1589389742, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -197,7 +199,47 @@ func _000003_add_profile_pictureUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000003_add_profile_picture.up.sql", size: 60, mode: os.FileMode(436), modTime: time.Unix(1589325004, 0)}
+	info := bindataFileInfo{name: "000003_add_profile_picture.up.sql", size: 60, mode: os.FileMode(436), modTime: time.Unix(1589389742, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000004_add_updated_created_atDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\x2d\x4e\x2d\x2a\xe6\x72\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\x48\x2e\x4a\x4d\x2c\x49\x4d\x89\x4f\x2c\xb1\xe6\x82\x48\x84\x04\x79\xba\xbb\xbb\x06\x29\x78\xba\x29\xb8\x46\x78\x06\x87\x04\x2b\x94\x16\xa4\x24\x96\xa4\xc6\x83\x35\xc7\x43\x38\x20\x0d\x0a\xfe\x7e\x10\x03\xad\xb9\x00\x01\x00\x00\xff\xff\x0f\x2e\xd7\x9f\x64\x00\x00\x00")
+
+func _000004_add_updated_created_atDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000004_add_updated_created_atDownSql,
+		"000004_add_updated_created_at.down.sql",
+	)
+}
+
+func _000004_add_updated_created_atDownSql() (*asset, error) {
+	bytes, err := _000004_add_updated_created_atDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000004_add_updated_created_at.down.sql", size: 100, mode: os.FileMode(436), modTime: time.Unix(1589390009, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000004_add_updated_created_atUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x94\x90\xc1\x8a\xb3\x30\x14\x85\xf7\x79\x8a\xb3\x10\xda\x6e\xfe\x17\x28\xff\x22\x4d\xae\x8e\xa0\x89\x5c\x6f\xe8\xec\x8a\x4c\xc5\x8d\x74\x9c\x5a\x99\xd7\x1f\x54\x44\x61\xdc\x8c\x1b\xe1\x26\xdf\xfd\xce\x89\xce\x84\x18\xa2\x2f\x19\x61\xe8\xeb\x67\x0f\x6d\x2d\x8c\xcf\x42\xee\xf0\xf1\xac\xab\x57\x7d\xbf\x55\x2f\x48\x9a\x53\x29\x3a\x2f\xce\x6a\x07\x99\x26\xbf\xa1\x92\x04\x96\x62\x1d\x32\xc1\xe3\xf3\xfb\x78\xda\x85\x57\xdf\xd0\xdd\xff\xee\xdb\x40\x3b\x3e\x65\x98\xb4\x10\x3c\x83\xa9\xc8\xb4\x21\xc4\xc1\x19\x49\xfd\x42\xde\xd6\x05\xc7\x93\x02\x98\x24\xb0\x2b\x21\x9c\x26\x09\x31\x74\x89\x28\x52\xc0\x85\x92\xd4\x29\x4c\x9f\xa3\xeb\xbf\x8d\xf7\xff\x62\x9b\x4f\xe7\x0d\xe3\xa5\x71\x42\xce\x8e\xbf\x28\x42\x5b\x3d\x9a\xa1\x6a\x6a\x1c\xba\xb6\x6b\xfa\xaf\xf6\xb0\xe6\x5b\x6c\x4b\xa6\xb1\xe7\x26\x99\xba\x50\xec\x99\x10\x0a\x3b\xb5\x71\xf3\x4b\xa8\xd8\x33\x48\x9b\x37\xb0\xbf\x82\xde\xc9\x04\x21\x14\xec\x0d\xd9\xc0\xb4\xd7\xf0\xfc\x13\x00\x00\xff\xff\x51\x8a\x4d\x52\xf2\x01\x00\x00")
+
+func _000004_add_updated_created_atUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000004_add_updated_created_atUpSql,
+		"000004_add_updated_created_at.up.sql",
+	)
+}
+
+func _000004_add_updated_created_atUpSql() (*asset, error) {
+	bytes, err := _000004_add_updated_created_atUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000004_add_updated_created_at.up.sql", size: 498, mode: os.FileMode(436), modTime: time.Unix(1589389939, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -260,6 +302,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000002_add_unique_constraint_email.up.sql":   _000002_add_unique_constraint_emailUpSql,
 	"000003_add_profile_picture.down.sql":         _000003_add_profile_pictureDownSql,
 	"000003_add_profile_picture.up.sql":           _000003_add_profile_pictureUpSql,
+	"000004_add_updated_created_at.down.sql":      _000004_add_updated_created_atDownSql,
+	"000004_add_updated_created_at.up.sql":        _000004_add_updated_created_atUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -309,6 +353,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000002_add_unique_constraint_email.up.sql":   &bintree{_000002_add_unique_constraint_emailUpSql, map[string]*bintree{}},
 	"000003_add_profile_picture.down.sql":         &bintree{_000003_add_profile_pictureDownSql, map[string]*bintree{}},
 	"000003_add_profile_picture.up.sql":           &bintree{_000003_add_profile_pictureUpSql, map[string]*bintree{}},
+	"000004_add_updated_created_at.down.sql":      &bintree{_000004_add_updated_created_atDownSql, map[string]*bintree{}},
+	"000004_add_updated_created_at.up.sql":        &bintree{_000004_add_updated_created_atUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

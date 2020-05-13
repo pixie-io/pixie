@@ -3,6 +3,7 @@ package datastore
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	uuid "github.com/satori/go.uuid"
@@ -12,13 +13,15 @@ import (
 
 // UserInfo tracks information about a specific end-user.
 type UserInfo struct {
-	ID             uuid.UUID `db:"id"`
-	OrgID          uuid.UUID `db:"org_id"`
-	Username       string    `db:"username"`
-	FirstName      string    `db:"first_name"`
-	LastName       string    `db:"last_name"`
-	Email          string    `db:"email"`
-	ProfilePicture *string   `db:"profile_picture"`
+	ID             uuid.UUID  `db:"id"`
+	OrgID          uuid.UUID  `db:"org_id"`
+	Username       string     `db:"username"`
+	FirstName      string     `db:"first_name"`
+	LastName       string     `db:"last_name"`
+	Email          string     `db:"email"`
+	ProfilePicture *string    `db:"profile_picture"`
+	UpdatedAt      *time.Time `db:"updated_at"`
+	CreatedAt      *time.Time `db:"created_at"`
 }
 
 // OrgInfo tracks information about an organization.
