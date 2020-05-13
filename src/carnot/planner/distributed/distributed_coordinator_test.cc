@@ -371,7 +371,6 @@ import px
 # not a metadata filter (yet). TODO(nserrino): Support aliases.
 t1 = px.DataFrame(table='http_events', start_time='-120s', select=['upid', 'remote_port'])
 t1.pod_id = t1.ctx['pod_id']
-t1 = t1[t1.remote_port > 0]
 t1 = t1[t1.pod_id == 'agent1_pod']
 px.display(t1, 't1')
 )pxl";
@@ -392,7 +391,10 @@ TEST_F(CoordinatorTest, prune_agents_nonpruning_filter) {
     EXPECT_EQ(1, agent_sinks.size());
     auto agent_sink_parents = static_cast<OperatorIR*>(agent_sinks[0])->parents();
     EXPECT_EQ(1, agent_sink_parents.size());
-    EXPECT_MATCH(agent_sink_parents[0], Filter(Equals(ColumnNode(), String("agent1_pod"))));
+    EXPECT_MATCH(agent_sink_parents[0], Map());
+    auto agent_map_parents = agent_sink_parents[0]->parents();
+    EXPECT_EQ(1, agent_map_parents.size());
+    EXPECT_MATCH(agent_map_parents[0], Filter(Equals(ColumnNode(), String("agent1_pod"))));
   }
   EXPECT_EQ(1, plan_by_qb_addr["kelvin"]->FindNodesThatMatch(GRPCSourceGroup()).size());
 }
