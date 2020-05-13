@@ -1,7 +1,8 @@
-import {getQueryFuncs, TABLE_DISPLAY_TYPE} from './vis';
+import {getQueryFuncs, TABLE_DISPLAY_TYPE, Vis} from './vis';
 
-const testVisNoVars = {
+const testVisNoVars: Vis = {
   variables: [],
+  globalFuncs: [],
   widgets: [{
     func: {
       name: 'get_latency',
@@ -28,7 +29,7 @@ const testVisNoVars = {
   }],
 };
 
-const testVisWithVars = {
+const testVisWithVars: Vis = {
   variables: [{
     name: 'myvar1',
     type: 'PX_STRING',
@@ -38,6 +39,7 @@ const testVisWithVars = {
     type: 'PX_STRING',
     defaultValue: 'def',
   }],
+  globalFuncs: [],
   widgets: [    {
     name: 'latency',
     func: {
@@ -48,9 +50,40 @@ const testVisWithVars = {
       }, {
         name: 'bar',
         variable: 'myvar2',
-        default: 'def',
       }],
     },
+    displaySpec: {
+      '@type': TABLE_DISPLAY_TYPE,
+    },
+  }],
+};
+
+const testVisWithGlobalFuncs: Vis = {
+  variables: [{
+    name: 'myvar1',
+    type: 'PX_STRING',
+    defaultValue: 'abc',
+  }, {
+    name: 'myvar2',
+    type: 'PX_STRING',
+    defaultValue: 'def',
+  }],
+  globalFuncs: [{
+    outputName: 'LET',
+    func: {
+      name: 'get_latency',
+      args: [{
+        name: 'foo',
+        variable: 'myvar1',
+      }, {
+        name: 'bar',
+        variable: 'myvar2',
+      }],
+    },
+  }],
+  widgets: [{
+    name: 'latency',
+    globalFuncOutputName: 'LET',
     displaySpec: {
       '@type': TABLE_DISPLAY_TYPE,
     },
@@ -93,6 +126,21 @@ describe('getQueryFuncs', () => {
       {
         name: 'get_latency',
         outputTablePrefix: 'latency',
+        args: [
+          {name: 'foo', value: 'abc'},
+          {name: 'bar', value: 'xyz'},
+        ],
+      },
+    ]);
+  });
+
+  it('should yield only one result from global functions', () => {
+    expect(getQueryFuncs(testVisWithGlobalFuncs, {
+      myvar2: 'xyz',
+    })).toStrictEqual([
+      {
+        name: 'get_latency',
+        outputTablePrefix: 'LET',
         args: [
           {name: 'foo', value: 'abc'},
           {name: 'bar', value: 'xyz'},

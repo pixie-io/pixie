@@ -3,6 +3,7 @@ import {TABLE_DISPLAY_TYPE, Vis} from './vis';
 
 const visSpec: Vis = {
   variables: [],
+  globalFuncs: [],
   widgets: [
     {
       name: 'latency',

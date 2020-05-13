@@ -29,7 +29,8 @@ export interface WidgetDisplay {
 export interface Widget {
   name?: string;
   position?: ChartPosition;
-  func: Func;
+  func?: Func;
+  globalFuncOutputName?: string;
   displaySpec: WidgetDisplay;
 }
 
@@ -40,9 +41,15 @@ interface Variable {
   description?: string;
 }
 
+interface GlobalFunc {
+  outputName: string;
+  func: Func;
+}
+
 export interface Vis {
   variables: Variable[];
   widgets: Widget[];
+  globalFuncs: GlobalFunc[];
 }
 
 export function parseVis(json: string): Vis {
@@ -57,19 +64,24 @@ export function parseVis(json: string): Vis {
   return null;
 }
 
-export function widgetResultName(widget: Widget, widgetIndex: number): string {
+// Gets the name of the table backing this widget. It will either be globalFuncOutputName, the name
+// of the widget, or "widget_{index}"".
+export function widgetTableName(widget: Widget, widgetIndex: number): string {
+  if (widget.globalFuncOutputName) {
+    return widget.globalFuncOutputName;
+  }
   if (widget.name) {
     return widget.name;
   }
   return `widget_${widgetIndex}`;
 }
 
-function getWidgetArgs(defaults: { [key: string]: string; }, widget: Widget): VizierQueryArg[] {
+function getFuncArgs(defaults: { [key: string]: string; }, func: Func): VizierQueryArg[] {
   const args = [];
   const errors = [];
-  widget.func.args.forEach((arg: FuncArg) => {
+  func.args.forEach((arg: FuncArg) => {
     if ((arg.value == null) === (arg.variable == null)) {
-      errors.push(`Arg '${arg.name}' for function '${widget.func.name}'` +
+      errors.push(`Arg '${arg.name}' for function '${func.name}'` +
         `must contain either a value or a reference to a variable`);
       return;
     }
@@ -114,11 +126,29 @@ export function getQueryFuncs(vis: Vis, variableValues: { [key: string]: string 
     ...defaults,
     ...variableValues,
   };
-  return vis.widgets.map((widget, i) => {
+
+  if (!vis.globalFuncs) {
+    vis.globalFuncs = [];
+  }
+
+  const globalFuncs = vis.globalFuncs.map((globalFunc, i) => {
     return {
-      name: widget.func.name,
-      outputTablePrefix: widgetResultName(widget, i),
-      args: getWidgetArgs(valsOrDefaults, widget),
+      name: globalFunc.func.name,
+      // There shouldn't be any confusion over this name, outputName is a required field
+      // and should be validated before reaching this point.
+      outputTablePrefix: globalFunc.outputName,
+      args: getFuncArgs(valsOrDefaults, globalFunc.func),
     };
   });
+  // We filter out widgets that don't have function definitions.
+  const widgetFuncs =  vis.widgets.filter((widget) => {
+    return widget.func;
+  }).map((widget, i) => {
+    return {
+      name: widget.func.name,
+      outputTablePrefix: widgetTableName(widget, i),
+      args: getFuncArgs(valsOrDefaults, widget.func),
+    };
+  });
+  return globalFuncs.concat(widgetFuncs);
 }

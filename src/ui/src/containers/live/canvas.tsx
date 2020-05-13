@@ -18,7 +18,7 @@ import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/sty
 import { LiveContext, ResultsContext, VisContext } from './context';
 import { ChartDisplay, convertWidgetDisplayToVegaSpec } from './convert-to-vega-spec';
 import { addLayout, addTableLayout, Layout, toLayout, updatePositions } from './layout';
-import { DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, TABLE_DISPLAY_TYPE, widgetResultName } from './vis';
+import { DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, TABLE_DISPLAY_TYPE, widgetTableName } from './vis';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -161,14 +161,14 @@ const Canvas = (props: CanvasProps) => {
       const display = widget.displaySpec;
       // TODO(nserrino): Support multiple output tables when we have a Vega component that
       // takes in multiple output tables.
-      const widgetName = widgetResultName(widget, i);
-      const table = tables[widgetName];
+      const tableName = widgetTableName(widget, i);
+      const table = tables[tableName];
       let content = null;
       if (!table) {
-        content = <div key={widgetName}>Table {widgetName} not found.</div>;
+        content = <div key={widget.name}>Table {tableName} not found.</div>;
       } else if (display[DISPLAY_TYPE_KEY] === TABLE_DISPLAY_TYPE) {
         content = <>
-          <div className={classes.widgetTitle}>{widgetName}</div>
+          <div className={classes.widgetTitle}>{widget.name}</div>
           <QueryResultTable className={classes.table} data={table} />
         </>;
       } else if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
@@ -178,7 +178,7 @@ const Canvas = (props: CanvasProps) => {
         try {
           const specWithProps = convertWidgetDisplayToVegaSpec(
             display as ChartDisplay,
-            widgetName,
+            tableName,
             theme,
             vegaLiteModule,
           );
@@ -186,12 +186,12 @@ const Canvas = (props: CanvasProps) => {
           const data = dataFromProto(table.relation, table.data);
           addPxTimeFormatExpression(vegaModule);
           content = <>
-            <div className={classes.widgetTitle}>{widgetName}</div>
+            <div className={classes.widgetTitle}>{widget.name}</div>
             <Vega
               className={classes.chart}
               data={data}
               specWithProps={specWithProps}
-              tableName={widgetName}
+              tableName={tableName}
               reactVegaModule={reactVegaModule}
             />
           </>;
@@ -199,7 +199,7 @@ const Canvas = (props: CanvasProps) => {
           content = <div>Error in displaySpec: {e.message}</div>;
         }
       }
-      return <div key={widgetName} className={className} data-grid={toLayout(widget, widgetName)}>{content}</div>;
+      return <div key={widget.name} className={className} data-grid={toLayout(widget, widget.name)}>{content}</div>;
     });
   }, [tables, vis, reactVegaModule, props.editable, defaultLayout]);
 

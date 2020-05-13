@@ -13,15 +13,9 @@
       "defaultValue": ""
     }
   ],
-  "widgets": [
+  "globalFuncs": [
     {
-      "name": "p50 Latency",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "w": 4,
-        "h": 3
-      },
+      "outputName": "LET",
       "func": {
         "name": "pod_mysql_let",
         "args": [
@@ -34,7 +28,19 @@
             "variable": "pod"
           }
         ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "p50 Latency",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 3
       },
+      "globalFuncOutputName": "LET",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -60,19 +66,7 @@
         "w": 4,
         "h": 3
       },
-      "func": {
-        "name": "pod_mysql_let",
-        "args": [
-          {
-            "name": "start",
-            "variable": "start"
-          },
-          {
-            "name": "pod",
-            "variable": "pod"
-          }
-        ]
-      },
+      "globalFuncOutputName": "LET",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -98,19 +92,7 @@
         "w": 6,
         "h": 3
       },
-      "func": {
-        "name": "pod_mysql_let",
-        "args": [
-          {
-            "name": "start",
-            "variable": "start"
-          },
-          {
-            "name": "pod",
-            "variable": "pod"
-          }
-        ]
-      },
+      "globalFuncOutputName": "LET",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -136,19 +118,7 @@
         "w": 4,
         "h": 3
       },
-      "func": {
-        "name": "pod_mysql_let",
-        "args": [
-          {
-            "name": "start",
-            "variable": "start"
-          },
-          {
-            "name": "pod",
-            "variable": "pod"
-          }
-        ]
-      },
+      "globalFuncOutputName": "LET",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [

@@ -19,15 +19,9 @@
       "defaultValue": ""
     }
   ],
-  "widgets": [
+  "globalFuncs": [
     {
-      "name": "CPU%",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "w": 6,
-        "h": 3
-      },
+      "outputName": "process_resources",
       "func": {
         "name": "cpu_stats",
         "args": [
@@ -44,7 +38,39 @@
             "variable": "pod"
           }
         ]
+      }
+    },
+    {
+      "outputName": "network_resources",
+      "func": {
+        "name": "net_stats",
+        "args": [
+          {
+            "name": "start",
+            "variable": "start"
+          },
+          {
+            "name": "node_name",
+            "variable": "node_name"
+          },
+          {
+            "name": "pod",
+            "variable": "pod"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "CPU%",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 3
       },
+      "globalFuncOutputName": "process_resources",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -70,23 +96,7 @@
         "w": 6,
         "h": 3
       },
-      "func": {
-        "name": "cpu_stats",
-        "args": [
-          {
-            "name": "start",
-            "variable": "start"
-          },
-          {
-            "name": "node_name",
-            "variable": "node_name"
-          },
-          {
-            "name": "pod",
-            "variable": "pod"
-          }
-        ]
-      },
+      "globalFuncOutputName": "process_resources",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -112,23 +122,7 @@
         "w": 6,
         "h": 3
       },
-      "func": {
-        "name": "net_stats",
-        "args": [
-          {
-            "name": "start",
-            "variable": "start"
-          },
-          {
-            "name": "node_name",
-            "variable": "node_name"
-          },
-          {
-            "name": "pod",
-            "variable": "pod"
-          }
-        ]
-      },
+      "globalFuncOutputName": "network_resources",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -154,23 +148,7 @@
         "w": 6,
         "h": 3
       },
-      "func": {
-        "name": "net_stats",
-        "args": [
-          {
-            "name": "start",
-            "variable": "start"
-          },
-          {
-            "name": "node_name",
-            "variable": "node_name"
-          },
-          {
-            "name": "pod",
-            "variable": "pod"
-          }
-        ]
-      },
+      "globalFuncOutputName": "network_resources",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [

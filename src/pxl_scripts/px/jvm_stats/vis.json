@@ -19,15 +19,9 @@
       "defaultValue": ""
     }
   ],
-  "widgets": [
+  "globalFuncs": [
     {
-      "name": "Young GC Time",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "w": 6,
-        "h": 3
-      },
+      "outputName": "JVM",
       "func": {
         "name": "jvm_stats",
         "args": [
@@ -44,7 +38,19 @@
             "variable": "pod"
           }
         ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Young GC Time",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 3
       },
+      "globalFuncOutputName": "JVM",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -70,23 +76,7 @@
         "w": 6,
         "h": 3
       },
-      "func": {
-        "name": "jvm_stats",
-        "args": [
-          {
-            "name": "start",
-            "variable": "start"
-          },
-          {
-            "name": "node_name",
-            "variable": "node_name"
-          },
-          {
-            "name": "pod",
-            "variable": "pod"
-          }
-        ]
-      },
+      "globalFuncOutputName": "JVM",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -112,23 +102,7 @@
         "w": 6,
         "h": 3
       },
-      "func": {
-        "name": "jvm_stats",
-        "args": [
-          {
-            "name": "start",
-            "variable": "start"
-          },
-          {
-            "name": "node_name",
-            "variable": "node_name"
-          },
-          {
-            "name": "pod",
-            "variable": "pod"
-          }
-        ]
-      },
+      "globalFuncOutputName": "JVM",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -154,23 +128,7 @@
         "w": 6,
         "h": 3
       },
-      "func": {
-        "name": "jvm_stats",
-        "args": [
-          {
-            "name": "start",
-            "variable": "start"
-          },
-          {
-            "name": "node_name",
-            "variable": "node_name"
-          },
-          {
-            "name": "pod",
-            "variable": "pod"
-          }
-        ]
-      },
+      "globalFuncOutputName": "JVM",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -196,23 +154,7 @@
         "w": 6,
         "h": 3
       },
-      "func": {
-        "name": "jvm_stats",
-        "args": [
-          {
-            "name": "start",
-            "variable": "start"
-          },
-          {
-            "name": "node_name",
-            "variable": "node_name"
-          },
-          {
-            "name": "pod",
-            "variable": "pod"
-          }
-        ]
-      },
+      "globalFuncOutputName": "JVM",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [

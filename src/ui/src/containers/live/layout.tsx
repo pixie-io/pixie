@@ -1,6 +1,6 @@
 import { VisualizationSpecMap } from 'components/vega/spec';
 
-import { Vis, Widget, widgetResultName } from './vis';
+import { Vis, Widget } from './vis';
 
 export interface ChartPosition {
   x: number;
@@ -66,6 +66,7 @@ export function toLayout(widget: Widget, widgetName: string): Layout {
 export function updatePositions(visSpec: Vis, layouts: ChartPosition[]): Vis {
   return {
     variables: visSpec.variables,
+    globalFuncs: visSpec.globalFuncs,
     widgets: layouts.map((layout, i) => {
       return {
         ...visSpec.widgets[i],

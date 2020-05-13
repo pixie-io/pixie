@@ -91,12 +91,16 @@ function argsForVis(vis: Vis, args: Arguments, scriptId?: string): Arguments {
   return outArgs;
 }
 
+function emptyVis(): Vis {
+  return { variables: [], widgets: [], globalFuncs: []};
+}
+
 const LiveContextProvider = (props) => {
   const [script, setScript] = ls.useLocalStorage(ls.LIVE_VIEW_PIXIE_SCRIPT_KEY, '');
 
   const [results, setResults] = React.useState<Results>({ tables: {} });
 
-  const [vis, setVis] = React.useState<Vis>(parseVis(ls.getLiveViewVisSpec()) || { variables: [], widgets: [] });
+  const [vis, setVis] = React.useState<Vis>(parseVis(ls.getLiveViewVisSpec()) || emptyVis());
   React.useEffect(() => {
     ls.setLiveViewVisSpec(JSON.stringify(vis, null, 2));
   }, [vis]);
@@ -104,7 +108,7 @@ const LiveContextProvider = (props) => {
   const setScripts = React.useCallback((newScript, newVis, newTitle, newArgs) => {
     setScript(newScript);
     setTitle(newTitle);
-    const parsedVis = parseVis(newVis) || { variables: [], widgets: [] };
+    const parsedVis = parseVis(newVis) || emptyVis();
     setVis(parsedVis);
     setArgsRaw(argsForVis(parsedVis, newArgs, newTitle.id));
   }, []);

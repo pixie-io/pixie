@@ -19,15 +19,9 @@
       "defaultValue": ""
     }
   ],
-  "widgets": [
+  "globalFuncs": [
     {
-      "name": "p50 Latency",
-      "position": {
-        "x": 0,
-        "y": 0,
-        "w": 6,
-        "h": 3
-      },
+      "outputName": "LET",
       "func": {
         "name": "svc_edge_let",
         "args": [
@@ -44,7 +38,19 @@
             "variable": "responding_svc"
           }
         ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "p50 Latency",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 3
       },
+      "globalFuncOutputName": "LET",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -70,23 +76,7 @@
         "w": 6,
         "h": 3
       },
-      "func": {
-        "name": "svc_edge_let",
-        "args": [
-          {
-            "name": "start",
-            "variable": "start"
-          },
-          {
-            "name": "requesting_svc",
-            "variable": "requesting_svc"
-          },
-          {
-            "name": "responding_svc",
-            "variable": "responding_svc"
-          }
-        ]
-      },
+      "globalFuncOutputName": "LET",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -112,23 +102,7 @@
         "w": 6,
         "h": 3
       },
-      "func": {
-        "name": "svc_edge_let",
-        "args": [
-          {
-            "name": "start",
-            "variable": "start"
-          },
-          {
-            "name": "requesting_svc",
-            "variable": "requesting_svc"
-          },
-          {
-            "name": "responding_svc",
-            "variable": "responding_svc"
-          }
-        ]
-      },
+      "globalFuncOutputName": "LET",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
@@ -154,23 +128,7 @@
         "w": 6,
         "h": 3
       },
-      "func": {
-        "name": "svc_edge_let",
-        "args": [
-          {
-            "name": "start",
-            "variable": "start"
-          },
-          {
-            "name": "requesting_svc",
-            "variable": "requesting_svc"
-          },
-          {
-            "name": "responding_svc",
-            "variable": "responding_svc"
-          }
-        ]
-      },
+      "globalFuncOutputName": "LET",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
