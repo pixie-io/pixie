@@ -2575,7 +2575,7 @@ window1_agg['p90'] = px.pluck_float64(window1_agg['quantiles'], 'p90')
 window1_agg['p99'] = px.pluck_float64(window1_agg['quantiles'], 'p99')
 window1_agg['time_'] = window1_agg['window1']
 window1_agg = window1_agg.drop(['window1', 'quantiles'])
-window = window1_agg[window1_agg['service'] != '']
+window = window1_agg[True]
 px.display(window)
 )pxl";
 

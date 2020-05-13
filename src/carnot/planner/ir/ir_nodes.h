@@ -779,6 +779,9 @@ class ColumnIR : public ExpressionIR {
     return col->col_name() == col_name() && col->EvaluatedDataType() == EvaluatedDataType();
   }
 
+  // Note: This should be used carefully, only when the column has just been created by a clone
+  // and ideally has a single parent. Otherwise other dependents on this column may end up with
+  // this update, when they actually wanted the original column name.
   void UpdateColumnName(const std::string& col_name) {
     DCHECK(col_name_set_);
     col_name_ = col_name;
@@ -1508,6 +1511,7 @@ class FilterIR : public OperatorIR {
  public:
   FilterIR() = delete;
   explicit FilterIR(int64_t id) : OperatorIR(id, IRNodeType::kFilter, true, false) {}
+  std::string DebugString() const override;
 
   ExpressionIR* filter_expr() const { return filter_expr_; }
   Status SetFilterExpr(ExpressionIR* expr);

@@ -229,7 +229,7 @@ StatusOr<std::vector<OperatorIR*>> OperatorIR::HandleDuplicateParents(
 Status OperatorIR::PruneOutputColumnsTo(const absl::flat_hash_set<std::string>& output_colnames) {
   DCHECK(IsRelationInit());
   for (const auto& kept_colname : output_colnames) {
-    DCHECK(relation_.HasColumn(kept_colname));
+    DCHECK(relation_.HasColumn(kept_colname)) << kept_colname;
   }
 
   auto output_cols = output_colnames;
@@ -269,6 +269,7 @@ std::string OperatorIR::ChildrenDebugString() {
 std::string MemorySourceIR::DebugString() const {
   return absl::Substitute("$0(id=$1, table=$2)", type_string(), id(), table_name_);
 }
+
 Status MemorySourceIR::ToProto(planpb::Operator* op) const {
   auto pb = op->mutable_mem_source_op();
   op->set_op_type(planpb::MEMORY_SOURCE_OPERATOR);
@@ -487,6 +488,10 @@ Status MapIR::ToProto(planpb::Operator* op) const {
 Status FilterIR::Init(OperatorIR* parent, ExpressionIR* expr) {
   PL_RETURN_IF_ERROR(AddParent(parent));
   return SetFilterExpr(expr);
+}
+
+std::string FilterIR::DebugString() const {
+  return absl::Substitute("$0(id=$1, expr=$2)", type_string(), id(), filter_expr_->DebugString());
 }
 
 Status FilterIR::SetFilterExpr(ExpressionIR* expr) {

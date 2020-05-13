@@ -1611,8 +1611,33 @@ OperatorIR* FilterPushdownRule::HandleMapPushdown(MapIR* map,
   return map;
 }
 
-OperatorIR* FilterPushdownRule::NextFilterParent(OperatorIR* current_node,
-                                                 ColumnNameMapping* column_name_mapping) {
+OperatorIR* FilterPushdownRule::HandleAggPushdown(BlockingAggIR* agg,
+                                                  ColumnNameMapping* column_name_mapping) {
+  ColumnNameMapping reverse_column_name_mapping;
+  for (const auto& [old_name, cur_name] : *column_name_mapping) {
+    reverse_column_name_mapping[cur_name] = old_name;
+  }
+
+  for (const auto& agg_expr : agg->aggregate_expressions()) {
+    // If any of the filter columns come from the output of an aggregate expression,
+    // don't push the filter up any further.
+    // TODO(nserrino): For certain aggregate functions like min or max, it is actually
+    // possible to push the aggregate up further. In order to support this, we need a
+    // way of identifying whether or not a given aggregate func outputs the same type
+    // of values that it receives (max(foo) returns an instance of a "foo" data point,
+    // whereas count(foo) does not) and only push the filter up with that type.
+    if (reverse_column_name_mapping.contains(agg_expr.name)) {
+      return nullptr;
+    }
+  }
+
+  // If all of the filter columns come from the group by column in an agg, then we are
+  // safe to push the filter above the agg.
+  return agg;
+}
+
+OperatorIR* FilterPushdownRule::NextFilterLocation(OperatorIR* current_node,
+                                                   ColumnNameMapping* column_name_mapping) {
   // TODO(nserrino): Support pushing filters that originate from multiple parents.
   if (current_node->parents().size() != 1) {
     return nullptr;
@@ -1622,10 +1647,13 @@ OperatorIR* FilterPushdownRule::NextFilterParent(OperatorIR* current_node,
   if (Match(parent, Filter()) || Match(parent, Limit())) {
     return parent;
   }
+  if (Match(parent, BlockingAgg())) {
+    return HandleAggPushdown(static_cast<BlockingAggIR*>(parent), column_name_mapping);
+  }
   if (Match(parent, Map())) {
     return HandleMapPushdown(static_cast<MapIR*>(parent), column_name_mapping);
   }
-  // TODO(nserrino): Support aggs, unions, joins.
+  // TODO(nserrino): Support joins and unions.
   return nullptr;
 }
 
@@ -1662,7 +1690,7 @@ StatusOr<bool> FilterPushdownRule::Apply(IRNode* ir_node) {
 
   // Iterate up from the current node, stopping when we reach the earliest allowable
   // new location for the filter node.
-  while (OperatorIR* next_parent = NextFilterParent(current_node, &column_name_mapping)) {
+  while (OperatorIR* next_parent = NextFilterLocation(current_node, &column_name_mapping)) {
     current_node = next_parent;
   }
 
@@ -1675,18 +1703,17 @@ StatusOr<bool> FilterPushdownRule::Apply(IRNode* ir_node) {
   // Make the filter's parent its children's new parent.
   DCHECK_EQ(1, filter->parents().size());
   OperatorIR* filter_parent = filter->parents()[0];
+
   for (OperatorIR* child : filter->Children()) {
     PL_RETURN_IF_ERROR(child->ReplaceParent(filter, filter_parent));
   }
   PL_RETURN_IF_ERROR(filter->RemoveParent(filter_parent));
 
-  // Stitch the filter in as the parent of the current node.
-  for (OperatorIR* current_node_parent : current_node->parents()) {
-    PL_RETURN_IF_ERROR(filter->AddParent(current_node_parent));
-    PL_RETURN_IF_ERROR(current_node->RemoveParent(current_node_parent));
-  }
-  PL_RETURN_IF_ERROR(current_node->AddParent(filter));
-
+  DCHECK_EQ(1, current_node->parents().size());
+  auto new_filter_parent = current_node->parents()[0];
+  PL_RETURN_IF_ERROR(filter->AddParent(new_filter_parent));
+  PL_RETURN_IF_ERROR(current_node->ReplaceParent(new_filter_parent, filter));
+  PL_RETURN_IF_ERROR(filter->SetRelation(new_filter_parent->relation()));
   return true;
 }
 

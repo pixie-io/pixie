@@ -598,8 +598,9 @@ class FilterPushdownRule : public Rule {
 
  private:
   using ColumnNameMapping = absl::flat_hash_map<std::string, std::string>;
+  OperatorIR* HandleAggPushdown(BlockingAggIR* map, ColumnNameMapping* column_name_mapping);
   OperatorIR* HandleMapPushdown(MapIR* map, ColumnNameMapping* column_name_mapping);
-  OperatorIR* NextFilterParent(OperatorIR* current_node, ColumnNameMapping* column_name_mapping);
+  OperatorIR* NextFilterLocation(OperatorIR* current_node, ColumnNameMapping* column_name_mapping);
   Status UpdateFilter(FilterIR* expr, const ColumnNameMapping& column_name_mapping);
 };
 

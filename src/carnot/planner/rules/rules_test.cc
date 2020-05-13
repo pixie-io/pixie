@@ -3013,12 +3013,7 @@ TEST_F(RulesTest, FilterPushdownTest_simple) {
   EXPECT_THAT(sink->parents(), ElementsAre(map));
   EXPECT_THAT(map->parents(), ElementsAre(filter));
   EXPECT_THAT(filter->parents(), ElementsAre(src));
-
-  EXPECT_MATCH(filter->filter_expr(), Func("equals", Expression()));
-  auto args = static_cast<FuncIR*>(filter->filter_expr())->args();
-  EXPECT_EQ(2, args.size());
-  EXPECT_MATCH(args[0], ColumnNode("abc"));
-  EXPECT_MATCH(args[1], Int(2));
+  EXPECT_MATCH(filter->filter_expr(), Equals(ColumnNode("abc"), Int(2)));
 }
 
 TEST_F(RulesTest, FilterPushdownTest_two_col_filter) {
@@ -3043,12 +3038,7 @@ TEST_F(RulesTest, FilterPushdownTest_two_col_filter) {
   EXPECT_THAT(filter->parents(), ElementsAre(map2));
   EXPECT_THAT(map2->parents(), ElementsAre(map1));
   EXPECT_THAT(map1->parents(), ElementsAre(src));
-
-  EXPECT_MATCH(filter->filter_expr(), Func("equals", ColumnNode()));
-  auto args = static_cast<FuncIR*>(filter->filter_expr())->args();
-  EXPECT_EQ(2, args.size());
-  EXPECT_MATCH(args[0], ColumnNode("abc"));
-  EXPECT_MATCH(args[1], ColumnNode("xyz"));
+  EXPECT_MATCH(filter->filter_expr(), Equals(ColumnNode("abc"), ColumnNode("xyz")));
 }
 
 TEST_F(RulesTest, FilterPushdownTest_multi_condition_filter) {
@@ -3072,18 +3062,8 @@ TEST_F(RulesTest, FilterPushdownTest_multi_condition_filter) {
   EXPECT_THAT(filter->parents(), ElementsAre(map2));
   EXPECT_THAT(map2->parents(), ElementsAre(map1));
   EXPECT_THAT(map1->parents(), ElementsAre(src));
-
-  EXPECT_MATCH(filter->filter_expr(), Func("logicalAnd", Func("equals", Expression())));
-  auto args = static_cast<FuncIR*>(filter->filter_expr())->args();
-  EXPECT_EQ(2, args.size());
-  auto func0_args = static_cast<FuncIR*>(args[0])->args();
-  auto func1_args = static_cast<FuncIR*>(args[1])->args();
-  EXPECT_EQ(2, func0_args.size());
-  EXPECT_MATCH(func0_args[0], ColumnNode("abc"));
-  EXPECT_MATCH(func0_args[1], Int(2));
-  EXPECT_EQ(2, func1_args.size());
-  EXPECT_MATCH(func1_args[0], ColumnNode("xyz"));
-  EXPECT_MATCH(func1_args[1], Int(3));
+  EXPECT_MATCH(filter->filter_expr(),
+               LogicalAnd(Equals(ColumnNode("abc"), Int(2)), Equals(ColumnNode("xyz"), Int(3))));
 }
 
 TEST_F(RulesTest, FilterPushdownTest_column_rename) {
@@ -3104,12 +3084,7 @@ TEST_F(RulesTest, FilterPushdownTest_column_rename) {
   EXPECT_THAT(map2->parents(), ElementsAre(map1));
   EXPECT_THAT(map1->parents(), ElementsAre(filter));
   EXPECT_THAT(filter->parents(), ElementsAre(src));
-
-  EXPECT_MATCH(filter->filter_expr(), Func("equals", Expression()));
-  auto args = static_cast<FuncIR*>(filter->filter_expr())->args();
-  EXPECT_EQ(2, args.size());
-  EXPECT_MATCH(args[0], ColumnNode("abc"));
-  EXPECT_MATCH(args[1], Int(2));
+  EXPECT_MATCH(filter->filter_expr(), Equals(ColumnNode("abc"), Int(2)));
 }
 
 TEST_F(RulesTest, FilterPushdownTest_two_filters_different_cols) {
@@ -3138,17 +3113,8 @@ TEST_F(RulesTest, FilterPushdownTest_two_filters_different_cols) {
   EXPECT_THAT(map1->parents(), ElementsAre(filter2));
   EXPECT_THAT(filter2->parents(), ElementsAre(src));
 
-  EXPECT_MATCH(filter1->filter_expr(), Func("equals", Expression()));
-  auto args = static_cast<FuncIR*>(filter1->filter_expr())->args();
-  EXPECT_EQ(2, args.size());
-  EXPECT_MATCH(args[0], ColumnNode("def"));
-  EXPECT_MATCH(args[1], Int(2));
-
-  EXPECT_MATCH(filter2->filter_expr(), Func("equals", Expression()));
-  args = static_cast<FuncIR*>(filter2->filter_expr())->args();
-  EXPECT_EQ(2, args.size());
-  EXPECT_MATCH(args[0], ColumnNode("abc"));
-  EXPECT_MATCH(args[1], Int(3));
+  EXPECT_MATCH(filter1->filter_expr(), Equals(ColumnNode("def"), Int(2)));
+  EXPECT_MATCH(filter2->filter_expr(), Equals(ColumnNode("abc"), Int(3)));
 }
 
 TEST_F(RulesTest, FilterPushdownTest_two_filters_same_cols) {
@@ -3179,17 +3145,8 @@ TEST_F(RulesTest, FilterPushdownTest_two_filters_same_cols) {
   EXPECT_THAT(filter2->parents(), ElementsAre(map1));
   EXPECT_THAT(map1->parents(), ElementsAre(src));
 
-  EXPECT_MATCH(filter1->filter_expr(), Func("equals", Expression()));
-  auto args = static_cast<FuncIR*>(filter1->filter_expr())->args();
-  EXPECT_EQ(2, args.size());
-  EXPECT_MATCH(args[0], ColumnNode("def"));
-  EXPECT_MATCH(args[1], Int(2));
-
-  EXPECT_MATCH(filter2->filter_expr(), Func("equals", Expression()));
-  args = static_cast<FuncIR*>(filter2->filter_expr())->args();
-  EXPECT_EQ(2, args.size());
-  EXPECT_MATCH(args[0], Int(3));
-  EXPECT_MATCH(args[1], ColumnNode("def"));
+  EXPECT_MATCH(filter1->filter_expr(), Equals(ColumnNode("def"), Int(2)));
+  EXPECT_MATCH(filter2->filter_expr(), Equals(ColumnNode("def"), Int(3)));
 }
 
 TEST_F(RulesTest, FilterPushdownTest_single_col_rename_collision) {
@@ -3234,12 +3191,7 @@ TEST_F(RulesTest, FilterPushdownTest_single_col_rename_collision_swap) {
   EXPECT_THAT(sink->parents(), ElementsAre(map));
   EXPECT_THAT(map->parents(), ElementsAre(filter));
   EXPECT_THAT(filter->parents(), ElementsAre(src));
-
-  EXPECT_MATCH(filter->filter_expr(), Func("equals", Expression()));
-  auto args = static_cast<FuncIR*>(filter->filter_expr())->args();
-  EXPECT_EQ(2, args.size());
-  EXPECT_MATCH(args[0], ColumnNode("xyz"));
-  EXPECT_MATCH(args[1], Int(2));
+  EXPECT_MATCH(filter->filter_expr(), Equals(ColumnNode("xyz"), Int(2)));
 }
 
 TEST_F(RulesTest, FilterPushdownTest_multicol_rename_collision) {
@@ -3264,19 +3216,46 @@ TEST_F(RulesTest, FilterPushdownTest_multicol_rename_collision) {
   EXPECT_THAT(map1->parents(), ElementsAre(filter));
   EXPECT_THAT(filter->parents(), ElementsAre(src));
 
-  EXPECT_MATCH(filter->filter_expr(), Func("equals", Expression()));
-  auto args = static_cast<FuncIR*>(filter->filter_expr())->args();
-  EXPECT_EQ(2, args.size());
-  EXPECT_MATCH(args[0], ColumnNode("abc"));
-  EXPECT_MATCH(args[1], Int(2));
+  EXPECT_MATCH(filter->filter_expr(), Equals(ColumnNode("abc"), Int(2)));
 }
 
-// TODO(nserrino): Fill these in when pushdown is supported with join, agg, and union.
+TEST_F(RulesTest, FilterPushdownTest_agg_group) {
+  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  BlockingAggIR* agg =
+      MakeBlockingAgg(src, {MakeColumn("abc", 0)}, {{"out", MakeMeanFunc(MakeColumn("xyz", 0))}});
+  FilterIR* filter = MakeFilter(agg, MakeEqualsFunc(MakeColumn("abc", 0), MakeInt(2)));
+  MemorySinkIR* sink = MakeMemSink(filter, "");
+
+  FilterPushdownRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_THAT(sink->parents(), ElementsAre(agg));
+  EXPECT_THAT(agg->parents(), ElementsAre(filter));
+  EXPECT_THAT(filter->parents(), ElementsAre(src));
+  EXPECT_MATCH(filter->filter_expr(), Equals(ColumnNode("abc"), Int(2)));
+}
+
+TEST_F(RulesTest, FilterPushdownTest_agg_expr_no_push) {
+  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  BlockingAggIR* agg =
+      MakeBlockingAgg(src, {MakeColumn("abc", 0)}, {{"xyz", MakeMeanFunc(MakeColumn("xyz", 0))}});
+  FilterIR* filter = MakeFilter(agg, MakeEqualsFunc(MakeColumn("xyz", 0), MakeColumn("abc", 0)));
+  MakeMemSink(filter, "");
+
+  FilterPushdownRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
+}
+
+// TODO(nserrino): Fill these in when pushdown is supported with join and union.
 // TEST_F(RulesTest, FilterPushdownTest_join_no_suffix) {
 // }
 // TEST_F(RulesTest, FilterPushdownTest_join_with_suffix) {
-// }
-// TEST_F(RulesTest, FilterPushdownTest_agg) {
 // }
 // TEST_F(RulesTest, FilterPushdownTest_union) {
 // }

@@ -82,6 +82,12 @@ class Analyzer : public RuleExecutor<IR> {
     intermediate_resolution_batch->AddRule<DropToMapOperatorRule>(compiler_state_);
   }
 
+  void CreateFilterPushdownBatch() {
+    // Use TryUntilMax here to avoid swapping the positions of "equal" filters endlessly.
+    RuleBatch* filter_pushdown_batch = CreateRuleBatch<TryUntilMax>("FilterPushdown", 1);
+    filter_pushdown_batch->AddRule<FilterPushdownRule>();
+  }
+
   void CreateResolutionVerificationBatch() {
     RuleBatch* resolution_verification_batch =
         CreateRuleBatch<FailOnMax>("ResolutionVerification", 1);
@@ -103,6 +109,7 @@ class Analyzer : public RuleExecutor<IR> {
     CreateOperatorCompileTimeExpressionRuleBatch();
     CreateCombineConsecutiveMapsRule();
     CreateDataTypeResolutionBatch();
+    CreateFilterPushdownBatch();
     CreateResolutionVerificationBatch();
     CreateRemoveIROnlyNodesBatch();
     return Status::OK();
