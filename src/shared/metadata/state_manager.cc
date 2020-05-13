@@ -270,12 +270,21 @@ Status AgentMetadataStateManager::DeleteMetadataForDeadObjects(AgentMetadataStat
   return Status::OK();
 }
 
+std::string PrependK8sNamespace(std::string_view ns, std::string_view name) {
+  return absl::Substitute("$0/$1", ns, name);
+}
+
 Status AgentMetadataStateManager::HandlePodUpdate(const PodUpdate& update,
                                                   AgentMetadataState* state,
                                                   AgentMetadataFilter* md_filter) {
   VLOG(2) << "Pod Update: " << update.DebugString();
   PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::POD_ID, update.uid()));
   PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::POD_NAME, update.name()));
+  // TODO(nserrino): Remove this once k8s entities are referred to without namespace in the query
+  // language. for now we store names like <namespace>/<entity_name> but in the future just like
+  // <entity_name>.
+  PL_RETURN_IF_ERROR(md_filter->InsertEntity(
+      MetadataType::POD_NAME, PrependK8sNamespace(update.namespace_(), update.name())));
   return state->k8s_metadata_state()->HandlePodUpdate(update);
 }
 
@@ -284,7 +293,12 @@ Status AgentMetadataStateManager::HandleServiceUpdate(const ServiceUpdate& updat
                                                       AgentMetadataFilter* md_filter) {
   VLOG(2) << "Service Update: " << update.DebugString();
   PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::SERVICE_ID, update.uid()));
+  // TODO(nserrino): Remove this once k8s entities are referred to without namespace in the query
+  // language. for now we store names like <namespace>/<entity_name> but in the future just like
+  // <entity_name>.
   PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::SERVICE_NAME, update.name()));
+  PL_RETURN_IF_ERROR(md_filter->InsertEntity(
+      MetadataType::SERVICE_NAME, PrependK8sNamespace(update.namespace_(), update.name())));
 
   return state->k8s_metadata_state()->HandleServiceUpdate(update);
 }

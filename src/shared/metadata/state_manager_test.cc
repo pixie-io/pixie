@@ -294,7 +294,8 @@ TEST_F(AgentMetadataStateTest, insert_into_filter) {
                                    MetadataType::CONTAINER_ID));
   EXPECT_THAT(md_filter_.inserted_entities(),
               ElementsAre("CONTAINER_ID=container_id1", "POD_ID=pod_id1", "POD_NAME=pod1",
-                          "SERVICE_ID=service_id1", "SERVICE_NAME=service1"));
+                          "POD_NAME=pl/pod1", "SERVICE_ID=service_id1", "SERVICE_NAME=service1",
+                          "SERVICE_NAME=pl/service1"));
 }
 
 }  // namespace md
