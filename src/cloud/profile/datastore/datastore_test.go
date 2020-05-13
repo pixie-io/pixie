@@ -228,4 +228,23 @@ func TestDatastore(t *testing.T) {
 		require.NotNil(t, err)
 		require.Nil(t, orgInfo)
 	})
+
+	t.Run("update user", func(t *testing.T) {
+		db, teardown := pgtest.SetupTestDB(t, s)
+		defer teardown()
+
+		loadTestData(t, db)
+		d := datastore.NewDatastore(db)
+
+		userID := "123e4567-e89b-12d3-a456-426655440001"
+		profilePicture := "http://somepicture"
+		err := d.UpdateUser(&datastore.UserInfo{ID: uuid.FromStringOrNil(userID), FirstName: "first", LastName: "last", ProfilePicture: &profilePicture})
+		assert.Nil(t, err)
+
+		userInfoFetched, err := d.GetUser(uuid.FromStringOrNil(userID))
+		require.Nil(t, err)
+		require.NotNil(t, userInfoFetched)
+		assert.Equal(t, "http://somepicture", *userInfoFetched.ProfilePicture)
+
+	})
 }

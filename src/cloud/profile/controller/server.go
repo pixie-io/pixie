@@ -44,6 +44,8 @@ type Datastore interface {
 	GetOrgByDomain(string) (*datastore.OrgInfo, error)
 	// Delete Org and all of its users
 	DeleteOrgAndUsers(uuid.UUID) error
+	// UpdateUser updates the user info.
+	UpdateUser(*datastore.UserInfo) error
 }
 
 // Server is an implementation of GRPC server for profile service.
@@ -58,13 +60,18 @@ func NewServer(env profileenv.ProfileEnv, d Datastore) *Server {
 }
 
 func userInfoToProto(u *datastore.UserInfo) *profile.UserInfo {
+	profilePicture := ""
+	if u.ProfilePicture != nil {
+		profilePicture = *u.ProfilePicture
+	}
 	return &profile.UserInfo{
-		ID:        utils.ProtoFromUUID(&u.ID),
-		OrgID:     utils.ProtoFromUUID(&u.OrgID),
-		Username:  u.Username,
-		FirstName: u.FirstName,
-		LastName:  u.LastName,
-		Email:     u.Email,
+		ID:             utils.ProtoFromUUID(&u.ID),
+		OrgID:          utils.ProtoFromUUID(&u.OrgID),
+		Username:       u.Username,
+		FirstName:      u.FirstName,
+		LastName:       u.LastName,
+		Email:          u.Email,
+		ProfilePicture: profilePicture,
 	}
 }
 
@@ -243,4 +250,26 @@ func (s *Server) DeleteOrgAndUsers(ctx context.Context, req *uuidpb.UUID) error 
 		return err
 	}
 	return s.d.DeleteOrgAndUsers(utils.UUIDFromProtoOrNil(req))
+}
+
+// UpdateUser updates a user's info.
+func (s *Server) UpdateUser(ctx context.Context, req *profile.UpdateUserRequest) (*profile.UserInfo, error) {
+	userID := utils.UUIDFromProtoOrNil(req.ID)
+	userInfo, err := s.d.GetUser(userID)
+	if err != nil {
+		return nil, toExternalError(err)
+	}
+
+	if userInfo.ProfilePicture != nil && req.ProfilePicture == *userInfo.ProfilePicture { // No change.
+		return userInfoToProto(userInfo), nil
+	}
+
+	userInfo.ProfilePicture = &req.ProfilePicture
+
+	err = s.d.UpdateUser(userInfo)
+	if err != nil {
+		return nil, toExternalError(err)
+	}
+
+	return userInfoToProto(userInfo), nil
 }

@@ -144,6 +144,24 @@ func (mr *MockProfileServiceClientMockRecorder) GetOrgByDomain(ctx, in interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgByDomain", reflect.TypeOf((*MockProfileServiceClient)(nil).GetOrgByDomain), varargs...)
 }
 
+// UpdateUser mocks base method
+func (m *MockProfileServiceClient) UpdateUser(ctx context.Context, in *profilepb.UpdateUserRequest, opts ...grpc.CallOption) (*profilepb.UserInfo, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "UpdateUser", varargs...)
+	ret0, _ := ret[0].(*profilepb.UserInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateUser indicates an expected call of UpdateUser
+func (mr *MockProfileServiceClientMockRecorder) UpdateUser(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockProfileServiceClient)(nil).UpdateUser), varargs...)
+}
+
 // MockProfileServiceServer is a mock of ProfileServiceServer interface
 type MockProfileServiceServer struct {
 	ctrl     *gomock.Controller
@@ -243,4 +261,17 @@ func (m *MockProfileServiceServer) GetOrgByDomain(arg0 context.Context, arg1 *pr
 // GetOrgByDomain indicates an expected call of GetOrgByDomain
 func (mr *MockProfileServiceServerMockRecorder) GetOrgByDomain(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgByDomain", reflect.TypeOf((*MockProfileServiceServer)(nil).GetOrgByDomain), arg0, arg1)
+}
+
+// UpdateUser mocks base method
+func (m *MockProfileServiceServer) UpdateUser(arg0 context.Context, arg1 *profilepb.UpdateUserRequest) (*profilepb.UserInfo, error) {
+	ret := m.ctrl.Call(m, "UpdateUser", arg0, arg1)
+	ret0, _ := ret[0].(*profilepb.UserInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateUser indicates an expected call of UpdateUser
+func (mr *MockProfileServiceServerMockRecorder) UpdateUser(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockProfileServiceServer)(nil).UpdateUser), arg0, arg1)
 }

@@ -18,6 +18,7 @@ service ProfileService {
     rpc CreateOrgAndUser(CreateOrgAndUserRequest) returns (CreateOrgAndUserResponse) {}
     rpc GetOrg(pl.uuidpb.UUID) returns (OrgInfo) {}
     rpc GetOrgByDomain(GetOrgByDomainRequest) returns (OrgInfo) {}
+    rpc UpdateUser(UpdateUserRequest) returns (UserInfo) {}
 }
 
 
@@ -35,6 +36,7 @@ message UserInfo {
     string first_name = 4;
     string last_name = 5;
     string email = 6;
+    string profile_picture = 7;
 }
 
 message GetUserByEmailRequest {
@@ -92,4 +94,12 @@ message CreateOrgAndUserResponse {
 
 message GetOrgByDomainRequest {
     string domain_name = 1;
+}
+
+message UpdateUserRequest {
+  // The ID of the user.
+  pl.uuidpb.UUID id = 1 [
+                        (gogoproto.customname) = "ID"
+                        ];
+  string profile_picture = 2;
 }

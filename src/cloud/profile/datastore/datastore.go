@@ -12,12 +12,13 @@ import (
 
 // UserInfo tracks information about a specific end-user.
 type UserInfo struct {
-	ID        uuid.UUID `db:"id"`
-	OrgID     uuid.UUID `db:"org_id"`
-	Username  string    `db:"username"`
-	FirstName string    `db:"first_name"`
-	LastName  string    `db:"last_name"`
-	Email     string    `db:"email"`
+	ID             uuid.UUID `db:"id"`
+	OrgID          uuid.UUID `db:"org_id"`
+	Username       string    `db:"username"`
+	FirstName      string    `db:"first_name"`
+	LastName       string    `db:"last_name"`
+	Email          string    `db:"email"`
+	ProfilePicture *string   `db:"profile_picture"`
 }
 
 // OrgInfo tracks information about an organization.
@@ -219,4 +220,16 @@ func (d *Datastore) createOrgUsingTxn(txn *sqlx.Tx, orgInfo *OrgInfo) (uuid.UUID
 		return id, nil
 	}
 	return uuid.Nil, errors.New("failed to read org id from the database")
+}
+
+// UpdateUser updates the user in the database.
+func (d *Datastore) UpdateUser(userInfo *UserInfo) error {
+	query := `UPDATE users SET profile_picture = :profile_picture WHERE id = :id`
+	row, err := d.db.NamedQuery(query, userInfo)
+	if err != nil {
+		return err
+	}
+	defer row.Close()
+
+	return nil
 }

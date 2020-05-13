@@ -124,3 +124,15 @@ func (m *MockDatastore) DeleteOrgAndUsers(arg0 go_uuid.UUID) error {
 func (mr *MockDatastoreMockRecorder) DeleteOrgAndUsers(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteOrgAndUsers", reflect.TypeOf((*MockDatastore)(nil).DeleteOrgAndUsers), arg0)
 }
+
+// UpdateUser mocks base method
+func (m *MockDatastore) UpdateUser(arg0 *datastore.UserInfo) error {
+	ret := m.ctrl.Call(m, "UpdateUser", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateUser indicates an expected call of UpdateUser
+func (mr *MockDatastoreMockRecorder) UpdateUser(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUser", reflect.TypeOf((*MockDatastore)(nil).UpdateUser), arg0)
+}

@@ -684,3 +684,45 @@ func TestServer_DeleteOrgAndUsers_MissingOrg(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, status.Code(err), codes.NotFound)
 }
+
+func TestServer_UpdateUser(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	d := mock_controller.NewMockDatastore(ctrl)
+
+	userID := uuid.NewV4()
+	s := controller.NewServer(nil, d)
+
+	profilePicture := "something"
+	newProfilePicture := "new"
+	mockReply := &datastore.UserInfo{
+		ID:             userID,
+		FirstName:      "first",
+		LastName:       "last",
+		ProfilePicture: &profilePicture,
+	}
+
+	mockUpdateReq := &datastore.UserInfo{
+		ID:             userID,
+		FirstName:      "first",
+		LastName:       "last",
+		ProfilePicture: &newProfilePicture,
+	}
+
+	d.EXPECT().
+		GetUser(userID).
+		Return(mockReply, nil)
+
+	d.EXPECT().
+		UpdateUser(mockUpdateReq).
+		Return(nil)
+
+	resp, err := s.UpdateUser(
+		context.Background(),
+		&profile.UpdateUserRequest{ID: utils.ProtoFromUUID(&userID), ProfilePicture: "new"})
+
+	require.Nil(t, err)
+	assert.Equal(t, resp.ID, utils.ProtoFromUUID(&userID))
+	assert.Equal(t, resp.ProfilePicture, "new")
+}

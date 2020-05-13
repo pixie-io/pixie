@@ -114,6 +114,12 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 		}
 	}
 
+	// Update user's profile photo.
+	_, err = pc.UpdateUser(ctx, &profilepb.UpdateUserRequest{ID: &uuidpb.UUID{Data: []byte(userInfo.AppMetadata[s.a.GetClientID()].PLUserID)}, ProfilePicture: userInfo.Picture})
+	if err != nil {
+		return nil, err
+	}
+
 	token, expiresAt, err := generateJWTTokenForUser(userInfo, s.env.JWTSigningKey(), s.a.GetClientID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate token")

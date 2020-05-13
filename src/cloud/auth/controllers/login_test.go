@@ -45,6 +45,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
+		Picture:     "something",
 	}
 
 	fakeOrgInfo := &profilepb.OrgInfo{
@@ -61,6 +62,7 @@ func TestServer_LoginNewUser(t *testing.T) {
 		Email:       "abc@gmail.com",
 		FirstName:   "first",
 		LastName:    "last",
+		Picture:     "something",
 	}
 	a.EXPECT().SetPLMetadata(userID, gomock.Any(), gomock.Any()).Do(func(uid, plorgid, plid string) {
 		fakeUserInfoSecondRequest.AppMetadata["foo"] = &controllers.UserMetadata{
@@ -85,6 +87,13 @@ func TestServer_LoginNewUser(t *testing.T) {
 			Email:     "abc@gmail.com",
 		}).
 		Return(pbutils.ProtoFromUUIDStrOrNil(userID), nil)
+
+	mockProfile.EXPECT().
+		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
+			ID:             &uuidpb.UUID{Data: []byte(userID)},
+			ProfilePicture: "something",
+		}).
+		Return(nil, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
@@ -458,6 +467,12 @@ func TestServer_Login_HasPLUserID(t *testing.T) {
 	mockProfile.EXPECT().
 		GetOrgByDomain(gomock.Any(), &profilepb.GetOrgByDomainRequest{DomainName: "abc@gmail.com"}).
 		Return(fakeOrgInfo, nil)
+	mockProfile.EXPECT().
+		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
+			ID:             &uuidpb.UUID{Data: []byte("pluserid")},
+			ProfilePicture: "",
+		}).
+		Return(nil, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
@@ -541,6 +556,13 @@ func TestServer_Login_HasOldPLUserID(t *testing.T) {
 			Email:     "abc@gmail.com",
 		}).
 		Return(&uuidpb.UUID{Data: []byte(userID)}, nil)
+
+	mockProfile.EXPECT().
+		UpdateUser(gomock.Any(), &profilepb.UpdateUserRequest{
+			ID:             &uuidpb.UUID{Data: []byte(userID)},
+			ProfilePicture: "",
+		}).
+		Return(nil, nil)
 
 	viper.Set("jwt_signing_key", "jwtkey")
 	env, err := authenv.New(mockProfile)
