@@ -111,6 +111,24 @@ struct CancelRequestMessage {
   int32_t secret;
 };
 
+enum class FmtCode : int16_t {
+  // https://www.postgresql.org/docs/9.3/protocol-message-formats.html
+  kText = 0,
+  kBinary = 1,
+};
+
+struct Param {
+  FmtCode format_code;
+  std::optional<std::string> value;
+};
+
+struct BindRequest {
+  std::string dest_portal_name;
+  std::string src_prepared_stat_name;
+  std::vector<Param> params;
+  std::vector<FmtCode> res_col_fmt_codes;
+};
+
 struct Record {
   RegularMessage req;
   RegularMessage resp;

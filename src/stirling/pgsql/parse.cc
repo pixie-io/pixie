@@ -16,8 +16,14 @@ namespace pl {
 namespace stirling {
 namespace pgsql {
 
+// As a special case, -1 indicates a NULL column value. No value bytes follow in this case.
+constexpr int kNullValLen = -1;
+
 #define PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(expr, val_or) \
   PL_ASSIGN_OR(expr, val_or, return ParseState::kNeedsMoreData)
+
+#define PL_ASSIGN_OR_RETURN_INVALID(expr, val_or) \
+  PL_ASSIGN_OR(expr, val_or, return ParseState::kInvalid)
 
 ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg) {
   BinaryDecoder decoder(*buf);
@@ -54,7 +60,7 @@ ParseState ParseStartupMessage(std::string_view* buf, StartupMessage* msg) {
   }
 
   while (!decoder.eof()) {
-    PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(std::string_view name, decoder.ExtractStringUtil('\0'));
+    PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(std::string_view name, decoder.ExtractStringUntil('\0'));
     if (name.empty()) {
       // Each name or value is terminated by '\0'. And all name value pairs are terminated by an
       // additional '\0'.
@@ -62,7 +68,7 @@ ParseState ParseStartupMessage(std::string_view* buf, StartupMessage* msg) {
       // Extracting an empty name means we are at the end of the string.
       break;
     }
-    PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(std::string_view value, decoder.ExtractStringUtil('\0'));
+    PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(std::string_view value, decoder.ExtractStringUntil('\0'));
     if (value.empty()) {
       return ParseState::kInvalid;
     }
@@ -117,7 +123,7 @@ std::vector<std::string_view> ParseRowDesc(std::string_view row_desc) {
   BinaryDecoder decoder(row_desc);
   PL_ASSIGN_OR_RETURN_RES(const int16_t field_count, decoder.ExtractInt<int16_t>(), res);
   for (int i = 0; i < field_count; ++i) {
-    PL_ASSIGN_OR_RETURN_RES(std::string_view col_name, decoder.ExtractStringUtil('\0'), res);
+    PL_ASSIGN_OR_RETURN_RES(std::string_view col_name, decoder.ExtractStringUntil('\0'), res);
 
     if (col_name.empty()) {
       // Empty column name is invalid. Just put all remaining data as another name and return.
@@ -151,8 +157,6 @@ std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_
     }
     // The length of the column value, in bytes (this count does not include itself). Can be zero.
     PL_ASSIGN_OR_RETURN_RES(int32_t value_len, decoder.ExtractInt<int32_t>(), res);
-    // As a special case, -1 indicates a NULL column value. No value bytes follow in the NULL case.
-    constexpr int kNullValLen = -1;
     if (value_len == kNullValLen) {
       res.push_back(std::nullopt);
       continue;
@@ -169,6 +173,70 @@ std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_
     res.push_back(value);
   }
   return res;
+}
+
+ParseState ParseBindRequest(std::string_view payload, BindRequest* res) {
+  BinaryDecoder decoder(payload);
+
+  // Any decoding error means the input is invalid. As the input must be the payload of a regular
+  // message with tag 'B'. Therefore, it must meet a predefined pattern.
+  PL_ASSIGN_OR_RETURN_INVALID(res->dest_portal_name, decoder.ExtractStringUntil('\0'));
+  PL_ASSIGN_OR_RETURN_INVALID(res->src_prepared_stat_name, decoder.ExtractStringUntil('\0'));
+
+  PL_ASSIGN_OR_RETURN_INVALID(const int16_t param_fmt_code_count, decoder.ExtractInt<int16_t>());
+
+  std::vector<FmtCode> param_fmt_codes;
+  param_fmt_codes.reserve(param_fmt_code_count);
+
+  for (int i = 0; i < param_fmt_code_count; ++i) {
+    PL_ASSIGN_OR_RETURN_INVALID(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
+    param_fmt_codes.push_back(static_cast<FmtCode>(fmt_code));
+  }
+
+  PL_ASSIGN_OR_RETURN_INVALID(int16_t param_count, decoder.ExtractInt<int16_t>());
+
+  // The number of parameter format codes can be:
+  // * 0: There is no parameter; or the format code is the default (TEXT) for all parameter.
+  // * 1: There is at least 1 parameter, and the format code is the specified one for all parameter.
+  // * >1: There is more than 1 parameter, and the format codes are exactly specified.
+  auto get_format_code_for_ith_param = [&param_fmt_codes](size_t i) {
+    if (param_fmt_codes.empty()) {
+      return FmtCode::kText;
+    }
+    if (param_fmt_codes.size() == 1) {
+      return param_fmt_codes.front();
+    }
+    DCHECK(i < param_fmt_codes.size());
+    return param_fmt_codes[i];
+  };
+
+  // Check the >1 case: parameter format code count must match parameter count.
+  if (param_fmt_codes.size() > 1 && param_fmt_codes.size() != static_cast<size_t>(param_count)) {
+    return ParseState::kInvalid;
+  }
+
+  for (int i = 0; i < param_count; ++i) {
+    PL_ASSIGN_OR_RETURN_INVALID(int16_t param_value_len, decoder.ExtractInt<int32_t>());
+
+    if (param_value_len == kNullValLen) {
+      res->params.push_back({FmtCode::kText, std::nullopt});
+      continue;
+    }
+
+    PL_ASSIGN_OR_RETURN_INVALID(std::string_view param_value,
+                                decoder.ExtractString(param_value_len));
+    const FmtCode code = get_format_code_for_ith_param(i);
+    res->params.push_back({code, std::string(param_value)});
+  }
+
+  PL_ASSIGN_OR_RETURN_INVALID(const int16_t res_col_fmt_code_count, decoder.ExtractInt<int16_t>());
+
+  for (int i = 0; i < res_col_fmt_code_count; ++i) {
+    PL_ASSIGN_OR_RETURN_INVALID(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
+    res->res_col_fmt_codes.push_back(static_cast<FmtCode>(fmt_code));
+  }
+
+  return ParseState::kSuccess;
 }
 
 namespace {
@@ -225,7 +293,7 @@ std::string_view FmtErrorResp(const RegularMessage& msg) {
     // error code.
     constexpr char kHumanReadableMessage = 'M';
     if (type == kHumanReadableMessage) {
-      PL_ASSIGN_OR_RETURN_RES(std::string_view str_view, decoder.ExtractStringUtil('\0'), {});
+      PL_ASSIGN_OR_RETURN_RES(std::string_view str_view, decoder.ExtractStringUntil('\0'), {});
       return str_view;
     }
   }

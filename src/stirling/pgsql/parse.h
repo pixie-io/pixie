@@ -16,6 +16,8 @@ namespace stirling {
 
 namespace pgsql {
 
+using MsgDeqIter = std::deque<RegularMessage>::iterator;
+
 /**
  * Parse input data into messages.
  */
@@ -25,13 +27,12 @@ ParseState ParseStartupMessage(std::string_view* buf, StartupMessage* msg);
 
 std::vector<std::string_view> ParseRowDesc(std::string_view row_desc);
 std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_row);
+ParseState ParseBindRequest(std::string_view payload, BindRequest* res);
 
 size_t FindFrameBoundary(std::string_view buf, size_t start);
 
 RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMessage>* reqs,
                                                    std::deque<pgsql::RegularMessage>* resps);
-
-using MsgDeqIter = std::deque<RegularMessage>::iterator;
 
 /**
  * Returns a formatted string for messages that can form the response for a query.

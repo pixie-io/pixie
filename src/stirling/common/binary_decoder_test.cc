@@ -37,15 +37,15 @@ TEST(BinaryDecoderTest, ExtractString) {
   EXPECT_EQ(0, bin_decoder.BufSize());
 }
 
-TEST(BinaryDecoderTest, ExtractStringUtil) {
+TEST(BinaryDecoderTest, ExtractStringUntil) {
   std::string_view data("name!value!name");
   BinaryDecoder bin_decoder(data);
 
-  ASSERT_OK_AND_EQ(bin_decoder.ExtractStringUtil('!'), "name");
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractStringUntil('!'), "name");
   EXPECT_EQ("value!name", bin_decoder.Buf());
-  ASSERT_OK_AND_EQ(bin_decoder.ExtractStringUtil('!'), "value");
+  ASSERT_OK_AND_EQ(bin_decoder.ExtractStringUntil('!'), "value");
   EXPECT_EQ("name", bin_decoder.Buf());
-  EXPECT_NOT_OK(bin_decoder.ExtractStringUtil('!'));
+  EXPECT_NOT_OK(bin_decoder.ExtractStringUntil('!'));
   EXPECT_EQ("name", bin_decoder.Buf());
 }
 

@@ -17,6 +17,7 @@ using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::Field;
 using ::testing::IsEmpty;
+using ::testing::StrEq;
 
 template <typename TagMatcher, typename LengthType, typename PayloadMatcher>
 auto IsRegularMessage(TagMatcher tag, LengthType len, PayloadMatcher payload) {
@@ -139,6 +140,46 @@ TEST(PGSQLParseTest, AssembleQueryRespFailures) {
   auto begin = resps.begin();
   const auto end = resps.end();
   EXPECT_NOT_OK(AssembleQueryResp(&begin, end));
+}
+
+auto ParamIs(FmtCode fmt_code, std::string_view value) {
+  return AllOf(Field(&Param::format_code, fmt_code), Field(&Param::value, value));
+}
+
+// Tests that ParseBindReq
+TEST(PGSQLParseTest, ParseBindRequest) {
+  std::string_view bind_msg_payload = CreateStringView<char>(
+      // destination portal name
+      "destination portal\x00"
+      // source prepared statement name
+      "source prepared statement\x00"
+      // Parameter format code count
+      "\x00\x01"
+      // 1st parameter format code
+      "\x00\x01"
+      // Parameter count
+      "\x00\x02"
+      // 1st parameter value length
+      "\x00\x00\x00\x05"
+      // 1st parameter value
+      "\x4a\x61\x73\x6f\x6e"
+      // 2nd parameter value length
+      "\x00\x00\x00\x03"
+      // 2nd parameter value
+      "\xaa\xbb\xcc"
+      // Result column format code count
+      "\x00\x02"
+      // 1st result column format code
+      "\x00\x00"
+      // 2nd result column format code
+      "\x00\x01");
+  BindRequest bind_req;
+  EXPECT_EQ(ParseState::kSuccess, ParseBindRequest(bind_msg_payload, &bind_req));
+  EXPECT_THAT(bind_req.dest_portal_name, StrEq("destination portal"));
+  EXPECT_THAT(bind_req.src_prepared_stat_name, StrEq("source prepared statement"));
+  EXPECT_THAT(bind_req.params, ElementsAre(ParamIs(FmtCode::kBinary, "\x4a\x61\x73\x6f\x6e"),
+                                           ParamIs(FmtCode::kBinary, "\xaa\xbb\xcc")));
+  EXPECT_THAT(bind_req.res_col_fmt_codes, ElementsAre(FmtCode::kText, FmtCode::kBinary));
 }
 
 const std::string_view kReadyForQueryMsg = CreateStringView<char>("Z\000\000\000\005I");

@@ -54,7 +54,7 @@ class BinaryDecoder {
   // Extract until encounter the input sentinel character.
   // The sentinel character is not returned, but is still removed from the buffer.
   template <typename TCharType = char>
-  StatusOr<std::basic_string_view<TCharType>> ExtractStringUtil(TCharType sentinel) {
+  StatusOr<std::basic_string_view<TCharType>> ExtractStringUntil(TCharType sentinel) {
     static_assert(sizeof(TCharType) == 1);
     auto tbuf = CreateStringView<TCharType>(buf_);
     size_t pos = tbuf.find(sentinel);
