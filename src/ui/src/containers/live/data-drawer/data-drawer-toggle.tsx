@@ -83,7 +83,7 @@ const DataDrawerToggle = (props: DataDrawerToggleProps) => {
       <StyledTabs value={activeTab} onChange={onTabChange}>
         <StyledTab value='data' label='Underlying Data' />
         {error ? <StyledTab value='errors' label='Errors' /> : null}
-        {stats ? <StyledTab value='stats' label='Stats' /> : null}
+        {stats ? <StyledTab value='stats' label='Execution Stats' /> : null}
       </StyledTabs>
     </div >
   );
