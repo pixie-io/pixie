@@ -23,6 +23,7 @@ const LINE_WIDTH = 1.0;
 const HIGHLIGHTED_LINE_WIDTH = 3.0;
 const SELECTED_LINE_OPACITY = 1.0;
 const UNSELECTED_LINE_OPACITY = 0.2;
+const AXIS_HEIGHT = 25;
 
 const HOVER_BULB_OFFSET = 10;
 const HOVER_LINE_TEXT_OFFSET = 6;
@@ -567,8 +568,10 @@ function addHoverSignalsToVgSpec(vegaSpec: VgSpec): VgSpec {
       {
         events: [
           {
-            source: 'scope',
+            source: 'view',
             type: 'mouseout',
+            // Seem to be hitting a bug in vega here where mouseout events also capture some mousemove events.
+            filter: `event.type === "mouseout"`,
           },
         ],
         update: 'null',
@@ -771,9 +774,11 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
         type: 'voronoi',
         x: {expr: 'datum.datum.x || 0'},
         y: {expr: 'datum.datum.y || 0'},
-        size: [{signal: 'width'}, {signal: 'height'}],
+        size: [{signal: 'width'}, {signal: `height + ${AXIS_HEIGHT}`}],
       },
     ],
+    // Make sure voronoi layer is on top.
+    zindex: 100,
   });
   vegaSpec.marks.push(...marks);
   return vegaSpec;
