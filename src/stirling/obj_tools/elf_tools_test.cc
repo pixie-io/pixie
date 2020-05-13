@@ -26,7 +26,7 @@ TEST(ElfReaderTest, NonExistentPath) {
 auto SymbolNameIs(const std::string& n) { return Field(&ElfReader::SymbolInfo::name, n); }
 
 TEST(ElfReaderTest, ListSymbolsAnyMatch) {
-  const std::string path = pl::testing::TestFilePath(kBinary);
+  const std::string path = pl::testing::BazelBinTestFilePath(kBinary);
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<ElfReader> elf_reader, ElfReader::Create(path));
 
