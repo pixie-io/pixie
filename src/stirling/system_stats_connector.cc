@@ -27,10 +27,7 @@ void SystemStatsConnector::TransferProcessStatsTable(ConnectorContext* ctx, Data
     return;
   }
 
-  auto now = std::chrono::steady_clock::now();
-  int64_t timestamp =
-      std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count() +
-      ClockRealTimeOffset();
+  int64_t timestamp = AdjustedSteadyClockNowNS();
 
   const auto& pid_info_by_upid = md->pids_by_upid();
   for (const auto& [upid, pid_info] : pid_info_by_upid) {
@@ -88,10 +85,7 @@ void SystemStatsConnector::TransferNetworkStatsTable(ConnectorContext* ctx, Data
 
   const auto& k8s_md = md->k8s_metadata_state();
 
-  auto now = std::chrono::steady_clock::now();
-  int64_t timestamp =
-      std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count() +
-      ClockRealTimeOffset();
+  int64_t timestamp = AdjustedSteadyClockNowNS();
 
   for (const auto& [pod_name, pod_id] : k8s_md.pods_by_name()) {
     PL_UNUSED(pod_name);

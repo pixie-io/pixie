@@ -167,6 +167,11 @@ class SourceConnector : public NotCopyable {
    * This is especially useful for converting times from BPF, which are all in monotonic clock.
    */
   uint64_t ClockRealTimeOffset() const { return sysconfig_.ClockRealTimeOffset(); }
+  uint64_t AdjustedSteadyClockNowNS() const {
+    auto now = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count() +
+           ClockRealTimeOffset();
+  }
 
  protected:
   explicit SourceConnector(std::string_view source_name,

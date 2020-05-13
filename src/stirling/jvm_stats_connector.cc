@@ -92,10 +92,7 @@ Status JVMStatsConnector::ExportStats(const md::UPID& upid,
     return Status::OK();
   }
   RecordBuilder<&kJVMStatsTable> r(data_table);
-  r.Append<kTimeIdx>(std::chrono::duration_cast<std::chrono::nanoseconds>(
-                         std::chrono::steady_clock::now().time_since_epoch())
-                         .count() +
-                     ClockRealTimeOffset());
+  r.Append<kTimeIdx>(AdjustedSteadyClockNowNS());
   r.Append<kUPIDIdx>(upid.value());
   r.Append<kYoungGCTimeIdx>(stats.YoungGCTimeNanos());
   r.Append<kFullGCTimeIdx>(stats.FullGCTimeNanos());
