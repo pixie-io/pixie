@@ -95,7 +95,7 @@ TEST_F(PostgreSQLTraceTest, SelectQuery) {
                         "insert into foo values (12345);"
                         "select * from foo;"));
   EXPECT_THAT(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLRespIdx, indices[0]),
-              // TODO(yzhao): This is a bug, it should return output for the other 2 queries.
+              // TODO(PP-1920): This is a bug, it should return output for the other 2 queries.
               StrEq("CREATE TABLE"));
 }
 
@@ -150,6 +150,66 @@ TEST_F(PostgreSQLTraceGoSQLxTest, GolangSqlxDemo) {
                        "first_name,last_name,email\n"
                        "Jason,Moiron,jmoiron@jmoiron.net\n"
                        "SELECT 1")));
+}
+
+TEST_F(PostgreSQLTraceTest, FunctionCall) {
+  // --pid host is required to access the correct PID.
+  constexpr char kCmdTmpl[] =
+      "docker run --pid host --rm -e PGPASSWORD=docker --network pg-net postgres bash -c "
+      R"('psql -h $0 -U postgres -c "$1" &>/dev/null & echo $$! && wait')";
+  {
+    const std::string cmd = absl::Substitute(
+        kCmdTmpl, container_.container_name(),
+        "CREATE OR REPLACE FUNCTION increment(i integer) RETURNS integer AS \\$\\$\n"
+        "BEGIN\n"
+        "      RETURN i + 1;\n"
+        "END;\n"
+        "\\$\\$ LANGUAGE plpgsql;");
+    ASSERT_OK_AND_ASSIGN(const std::string output, pl::Exec(cmd));
+    int32_t client_pid;
+    ASSERT_TRUE(absl::SimpleAtoi(output, &client_pid));
+
+    source_->TransferData(ctx_.get(), SocketTraceConnector::kPGSQLTableNum, &data_table_);
+
+    const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
+
+    auto indices = FindRecordIdxMatchesPid(record_batch, kPGSQLUPIDIdx, client_pid);
+    ASSERT_THAT(indices, SizeIs(1));
+
+    EXPECT_THAT(
+        std::string(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqIdx, indices[0])),
+        StrEq("CREATE OR REPLACE FUNCTION increment(i integer) RETURNS integer AS $$\n"
+              "BEGIN\n"
+              "      RETURN i + 1;\n"
+              "END;\n"
+              "$$ LANGUAGE plpgsql;"));
+    EXPECT_THAT(
+        std::string(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLRespIdx, indices[0])),
+        StrEq("CREATE FUNCTION"));
+  }
+  {
+    const std::string cmd =
+        absl::Substitute(kCmdTmpl, container_.container_name(), "select increment(1);");
+    ASSERT_OK_AND_ASSIGN(const std::string output, pl::Exec(cmd));
+    int32_t client_pid;
+    ASSERT_TRUE(absl::SimpleAtoi(output, &client_pid));
+
+    source_->TransferData(ctx_.get(), SocketTraceConnector::kPGSQLTableNum, &data_table_);
+
+    const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
+
+    auto indices = FindRecordIdxMatchesPid(record_batch, kPGSQLUPIDIdx, client_pid);
+    ASSERT_THAT(indices, SizeIs(1));
+
+    EXPECT_THAT(
+        std::string(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqIdx, indices[0])),
+        StrEq("select increment(1);"));
+    EXPECT_THAT(
+        std::string(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLRespIdx, indices[0])),
+        StrEq("increment\n"
+              "2\n"
+              "SELECT 1"));
+  }
 }
 
 }  // namespace stirling
