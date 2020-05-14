@@ -5,6 +5,10 @@ import * as React from 'react';
 
 import { LegendData, LegendEntry } from './legend-data';
 
+import {IconButton} from '@material-ui/core';
+import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
+import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
+
 const NUM_ROWS = 2;
 const MAX_NUM_GRIDS = 4;
 
@@ -54,6 +58,7 @@ const useStyles = makeStyles((theme: Theme) => {
       flexDirection: 'row',
       justifyContent: 'flex-start',
       overflow: 'hidden',
+      alignItems: 'center',
     },
     rowContainer: {
       display: 'contents',
@@ -81,6 +86,12 @@ const useStyles = makeStyles((theme: Theme) => {
     gridGap: {
       height: '100%',
       width: `${GRID_GAP_SIZE}px`,
+    },
+    iconContainer: {
+      display: 'flex',
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      flex: '1',
     },
   });
 });
@@ -133,6 +144,7 @@ const Legend = React.memo((props: LegendProps) => {
   }
 
   const entriesPerPage = numGrids * NUM_ROWS;
+  const maxPages = Math.ceil(props.data.entries.length / entriesPerPage);
   const pageEntriesStart = currentPage * entriesPerPage;
   const pageEntriesEnd = Math.min((currentPage + 1) * entriesPerPage, props.data.entries.length);
   let entries = props.data.entries.slice(pageEntriesStart, pageEntriesEnd);
@@ -212,9 +224,31 @@ const Legend = React.memo((props: LegendProps) => {
     paddingRight: `${leftRightPadding}px`,
   };
 
+  const handlePageBack = (e) => {
+    setCurrentPage((page) => page - 1);
+  };
+
+  const handlePageForward = (e) => {
+    setCurrentPage((page) => page + 1);
+  };
+
   return (
     <div className={classes.gridsContainer} style={containerStyles}>
       {grids}
+      <div className={classes.iconContainer}>
+        <IconButton
+          onClick={handlePageBack}
+          disabled={currentPage === 0}
+          size='small'>
+            <KeyboardArrowLeftIcon/>
+        </IconButton>
+        <IconButton
+          onClick={handlePageForward}
+          disabled={currentPage === maxPages - 1}
+          size='small'>
+            <KeyboardArrowRightIcon/>
+        </IconButton>
+      </div>
     </div>
   );
 });
