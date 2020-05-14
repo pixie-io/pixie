@@ -163,7 +163,8 @@ func main() {
 	}
 	defer mc.Close()
 
-	_, err = controllers.NewK8sMetadataController(mdHandler)
+	k8sMc, err := controllers.NewK8sMetadataController(mdHandler)
+	defer k8sMc.Stop()
 
 	// Set up server.
 	env, err := metadataenv.New()

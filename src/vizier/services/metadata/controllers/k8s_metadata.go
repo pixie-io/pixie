@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -24,6 +25,7 @@ const kubeProxyPodPrefix = "kube-proxy"
 type K8sMetadataController struct {
 	mdHandler *MetadataHandler
 	clientset *kubernetes.Clientset
+	quitCh    chan bool
 }
 
 // NewK8sMetadataController creates a new K8sMetadataController.
@@ -91,19 +93,48 @@ func (mc *K8sMetadataController) listObject(resource string) (runtime.Object, er
 
 func (mc *K8sMetadataController) startWatcher(resource string, resourceVersion int) {
 	// Start up watcher for the given resource.
-	watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), resource, v1.NamespaceAll, fields.Everything())
-	retryWatcher, err := watch.NewRetryWatcher(fmt.Sprintf("%d", resourceVersion), watcher)
-	if err != nil {
-		log.WithError(err).Fatal("Could not start watcher for k8s resource: " + resource)
-	}
-
-	for c := range retryWatcher.ResultChan() {
-		msg := &K8sMessage{
-			Object:     c.Object,
-			ObjectType: resource,
-			EventType:  c.Type,
+	for {
+		watcher := cache.NewListWatchFromClient(mc.clientset.CoreV1().RESTClient(), resource, v1.NamespaceAll, fields.Everything())
+		retryWatcher, err := watch.NewRetryWatcher(fmt.Sprintf("%d", resourceVersion), watcher)
+		if err != nil {
+			log.WithError(err).Fatal("Could not start watcher for k8s resource: " + resource)
 		}
-		mc.mdHandler.GetChannel() <- msg
+
+		resCh := retryWatcher.ResultChan()
+
+		for {
+			select {
+			case <-mc.quitCh:
+				return
+			case c := <-resCh:
+				s, ok := c.Object.(*metav1.Status)
+				if ok && s.Status == metav1.StatusFailure {
+					// Ignore and let the retry watcher retry.
+					log.WithField("resource", resource).WithField("object", c.Object).Error("Failed to read from k8s watcher")
+					continue
+				}
+
+				msg := &K8sMessage{
+					Object:     c.Object,
+					ObjectType: resource,
+					EventType:  c.Type,
+				}
+				mc.mdHandler.GetChannel() <- msg
+			}
+		}
+
+		log.WithField("resource", resource).Info("k8s watcher channel closed. retrying")
+
+		select {
+		case <-mc.quitCh:
+			return
+		case <-time.After(time.Second):
+			continue
+		}
 	}
-	log.WithField("resource", resource).Info("k8s watcher channel closed")
+}
+
+// Stop stops all K8s watchers.
+func (mc *K8sMetadataController) Stop() {
+	mc.quitCh <- true
 }
