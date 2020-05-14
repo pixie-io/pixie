@@ -270,13 +270,16 @@ def format_LET_aggs(df):
 
     Returns: DataFrame with formatted LET metrics.
     """
+    window_size = window_s * 1.0
+
     df.latency_p50 = px.pluck_float64(df.latency_quantiles, 'p50')
     df.latency_p90 = px.pluck_float64(df.latency_quantiles, 'p90')
     df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
     df['time_'] = df['timestamp']
-    df.error_rate = df.error_rate_per_window * df.throughput_total / window_s
-    df.rps = df.throughput_total / window_s
-    df.bytes_per_s = df.bytes_total / window_s
+    df.rps = df.throughput_total / window_size
+    df.bytes_per_s = df.bytes_total / window_size
+    df.error_rate = df.error_rate_per_window * df.rps
+
     return df
 
 
