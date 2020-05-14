@@ -27,7 +27,7 @@ func (q *QueryResolver) User(ctx context.Context) (*UserInfoResolver, error) {
 	grpcAPI := q.Env.ProfileServiceClient
 	userInfo, err := grpcAPI.GetUser(ctx, pbutils.ProtoFromUUIDStrOrNil(sCtx.Claims.GetUserClaims().UserID))
 	if err != nil {
-		return nil, err
+		userInfo = nil
 	}
 
 	return &UserInfoResolver{sCtx, &q.Env, ctx, userInfo}, nil
@@ -40,6 +40,9 @@ func (u *UserInfoResolver) ID() graphql.ID {
 
 // Name returns the user name.
 func (u *UserInfoResolver) Name() string {
+	if u.UserInfo == nil {
+		return ""
+	}
 	return fmt.Sprintf("%s %s", u.UserInfo.FirstName, u.UserInfo.LastName)
 }
 
@@ -50,6 +53,9 @@ func (u *UserInfoResolver) Email() string {
 
 // Picture returns the users picture/avatar.
 func (u *UserInfoResolver) Picture() string {
+	if u.UserInfo == nil {
+		return ""
+	}
 	return u.UserInfo.ProfilePicture
 }
 

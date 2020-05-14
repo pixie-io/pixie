@@ -1,6 +1,7 @@
 package controller_test
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -18,38 +19,64 @@ import (
 )
 
 func TestUserInfoResolver(t *testing.T) {
-	sCtx := authcontext.New()
 	userID := "123e4567-e89b-12d3-a456-426655440000"
 
-	ctrl := gomock.NewController(t)
-	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-	mockOrgInfo := &profilepb.OrgInfo{
-		ID:      pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
-		OrgName: "testOrg",
+	tests := []struct {
+		name            string
+		mockUser        *profilepb.UserInfo
+		error           error
+		expectedName    string
+		expectedPicture string
+	}{
+		{
+			name: "existing user",
+			mockUser: &profilepb.UserInfo{
+				ID:             pbutils.ProtoFromUUIDStrOrNil(userID),
+				ProfilePicture: "test",
+				FirstName:      "first",
+				LastName:       "last",
+			},
+			error:           nil,
+			expectedName:    "first last",
+			expectedPicture: "test",
+		},
+		{
+			name:     "no user",
+			mockUser: nil,
+			error:    errors.New("Could not get user"),
+		},
 	}
-	mockUserInfo := &profilepb.UserInfo{
-		ID:             pbutils.ProtoFromUUIDStrOrNil(userID),
-		ProfilePicture: "test",
-		FirstName:      "first",
-		LastName:       "last",
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			sCtx := authcontext.New()
+
+			ctrl := gomock.NewController(t)
+			mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+			mockOrgInfo := &profilepb.OrgInfo{
+				ID:      pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID),
+				OrgName: "testOrg",
+			}
+
+			mockProfile.EXPECT().
+				GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
+				Return(mockOrgInfo, nil)
+			mockProfile.EXPECT().
+				GetUser(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(userID)).
+				Return(test.mockUser, test.error)
+
+			gqlEnv := controller.GraphQLEnv{
+				ProfileServiceClient: mockProfile,
+			}
+
+			sCtx.Claims = utils.GenerateJWTForUser(userID, "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "test@test.com", time.Now())
+
+			resolver := controller.UserInfoResolver{SessionCtx: sCtx, GQLEnv: &gqlEnv, UserInfo: test.mockUser}
+			assert.Equal(t, "test@test.com", resolver.Email())
+			assert.Equal(t, graphql.ID(userID), resolver.ID())
+			assert.Equal(t, "testOrg", resolver.OrgName())
+			assert.Equal(t, test.expectedPicture, resolver.Picture())
+			assert.Equal(t, test.expectedName, resolver.Name())
+		})
 	}
-	mockProfile.EXPECT().
-		GetOrg(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(testingutils.TestOrgID)).
-		Return(mockOrgInfo, nil)
-	mockProfile.EXPECT().
-		GetUser(gomock.Any(), pbutils.ProtoFromUUIDStrOrNil(userID)).
-		Return(mockUserInfo, nil)
-
-	gqlEnv := controller.GraphQLEnv{
-		ProfileServiceClient: mockProfile,
-	}
-
-	sCtx.Claims = utils.GenerateJWTForUser(userID, "6ba7b810-9dad-11d1-80b4-00c04fd430c8", "test@test.com", time.Now())
-
-	resolver := controller.UserInfoResolver{SessionCtx: sCtx, GQLEnv: &gqlEnv, UserInfo: mockUserInfo}
-	assert.Equal(t, "test@test.com", resolver.Email())
-	assert.Equal(t, graphql.ID(userID), resolver.ID())
-	assert.Equal(t, "testOrg", resolver.OrgName())
-	assert.Equal(t, "test", resolver.Picture())
-	assert.Equal(t, "first last", resolver.Name())
 }
