@@ -602,6 +602,8 @@ func (mds *KVMetadataStore) GetPods() ([]*metadatapb.Pod, error) {
 
 // UpdatePod adds or updates the given pod in the metadata store.
 func (mds *KVMetadataStore) UpdatePod(p *metadatapb.Pod, deleted bool) error {
+	cidrs := []string{p.Status.HostIP + "/32"}
+
 	if deleted && p.Metadata.DeletionTimestampNS == 0 {
 		p.Metadata.DeletionTimestampNS = time.Now().UnixNano()
 	}
@@ -620,6 +622,11 @@ func (mds *KVMetadataStore) UpdatePod(p *metadatapb.Pod, deleted bool) error {
 	}
 
 	mds.cache.Set(getPodToHostnamePairKey(p.Metadata.Name, p.Metadata.Namespace), fmt.Sprintf("%s:%s", "", p.Status.HostIP))
+
+	err = mds.UpdatePodCIDR(cidrs)
+	if err != nil {
+		log.WithField("cidrs", cidrs).WithError(err).Error("Error updating Pod CIDRs")
+	}
 
 	// Add mapping from resource version -> pod.
 	rvUpdate := &metadatapb.MetadataObject{
@@ -976,19 +983,6 @@ func (mds *KVMetadataStore) GetNodes() ([]*metadatapb.Node, error) {
 
 // UpdateNode adds or updates the given node in the metadata store.
 func (mds *KVMetadataStore) UpdateNode(s *metadatapb.Node, deleted bool) error {
-	if s.Spec != nil {
-		cidrs := []string{s.Spec.PodCIDR}
-		if s.Spec.PodCIDRs != nil {
-			// If a list of PodCIDRs is specified, this list already includes the PodCIDR field.
-			cidrs = s.Spec.PodCIDRs
-		}
-
-		err := mds.UpdatePodCIDR(cidrs)
-		if err != nil {
-			log.WithField("cidrs", cidrs).WithError(err).Error("Error updating Pod CIDRs")
-		}
-	}
-
 	if deleted && s.Metadata.DeletionTimestampNS == 0 {
 		s.Metadata.DeletionTimestampNS = time.Now().UnixNano()
 	}
