@@ -23,12 +23,6 @@ enum class SymbolMatchType {
   kSubstr
 };
 
-/**
- * Initialize environment for LLVM disassembler APIs.
- * Can be called multiple times.
- */
-void InitLLVMDisasm();
-
 class ElfReader {
  public:
   /**

@@ -11,18 +11,11 @@
 #include "src/common/base/byte_utils.h"
 #include "src/common/base/utils.h"
 #include "src/common/fs/fs_wrapper.h"
+#include "src/stirling/obj_tools/init.h"
 
 namespace pl {
 namespace stirling {
 namespace elf_tools {
-
-void InitLLVMDisasm() {
-  // It's legal to call these multiple times.
-  llvm::InitializeNativeTarget();
-  llvm::InitializeNativeTargetAsmPrinter();
-  llvm::InitializeNativeTargetAsmParser();
-  llvm::InitializeNativeTargetDisassembler();
-}
 
 // See http://elfio.sourceforge.net/elfio.pdf for examples of how to use ELFIO.
 
@@ -224,6 +217,8 @@ namespace {
 class LLVMDisasmContext {
  public:
   LLVMDisasmContext() {
+    InitLLVMOnce();
+
     // TripleName is ARCHITECTURE-VENDOR-OPERATING_SYSTEM.
     // See https://llvm.org/doxygen/Triple_8h_source.html
     // TODO(yzhao): Change to get TripleName from the system, instead of hard coding.

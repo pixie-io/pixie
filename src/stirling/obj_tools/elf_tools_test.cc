@@ -111,7 +111,6 @@ TEST(ElfReaderTest, ExternalDebugSymbols) {
 }
 
 TEST(ElfReaderTest, FuncByteCode) {
-  elf_tools::InitLLVMDisasm();
   {
     const std::string path =
         pl::testing::TestFilePath("src/stirling/obj_tools/testdata/prebuilt_dummy_exe");

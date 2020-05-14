@@ -48,13 +48,7 @@ class DwarfReader {
 
  private:
   DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
-              std::unique_ptr<llvm::DWARFContext> dwarf_context)
-      : memory_buffer_(std::move(buffer)), dwarf_context_(std::move(dwarf_context)) {
-    // TODO(oazizi): This might cause it to get called too many times. Check perf cost.
-    // There is also a similar call in elf_tools.cc.
-    // TODO(oazizi): Hacky - clean-up.
-    // llvm::InitializeNativeTarget();
-  }
+              std::unique_ptr<llvm::DWARFContext> dwarf_context);
 
   static Status GetMatchingDIEs(llvm::DWARFContext::unit_iterator_range CUs, std::string_view name,
                                 llvm::dwarf::Tag tag, std::vector<llvm::DWARFDie>* dies_out);

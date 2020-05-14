@@ -3,6 +3,8 @@
 #include <llvm/DebugInfo/DIContext.h>
 #include <llvm/Object/ObjectFile.h>
 
+#include "src/stirling/obj_tools/init.h"
+
 namespace pl {
 namespace stirling {
 namespace dwarf_tools {
@@ -37,6 +39,13 @@ StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(std::string_view obj_
 
   return std::unique_ptr<DwarfReader>(
       new DwarfReader(std::move(buffer), DWARFContext::create(*obj_file)));
+}
+
+DwarfReader::DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
+                         std::unique_ptr<llvm::DWARFContext> dwarf_context)
+    : memory_buffer_(std::move(buffer)), dwarf_context_(std::move(dwarf_context)) {
+  // Only very first call will actually perform initialization.
+  InitLLVMOnce();
 }
 
 namespace {
