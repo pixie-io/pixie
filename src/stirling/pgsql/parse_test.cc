@@ -3,11 +3,8 @@
 #include <string>
 #include <utility>
 
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-
-#include "src/common/base/base.h"
-#include "src/common/base/test_utils.h"
+#include "src/common/testing/testing.h"
+#include "src/stirling/pgsql/types.h"
 
 namespace pl {
 namespace stirling {
@@ -194,6 +191,20 @@ TEST(PGSQLParseTest, ParseParamDesc) {
   ParamDesc param_desc;
   EXPECT_EQ(ParseState::kSuccess, ParseParamDesc(payload, &param_desc));
   EXPECT_THAT(param_desc.type_oids, ElementsAre(25, 25, 25));
+}
+
+TEST(PGSQLParseTest, ParseParse) {
+  std::string_view payload = CreateStringView<char>(
+      "test\x00"
+      "SELECT * FROM person WHERE first_name=$1\x00"
+      // Parameter type OIDs count
+      "\x00\x01"
+      "\x00\x00\x00\x19");
+  Parse parse;
+  EXPECT_EQ(ParseState::kSuccess, ParseParse(payload, &parse));
+  EXPECT_THAT(parse.stmt_name, StrEq("test"));
+  EXPECT_THAT(parse.query, StrEq("SELECT * FROM person WHERE first_name=$1"));
+  EXPECT_THAT(parse.param_type_oids, ElementsAre(25));
 }
 
 const std::string_view kReadyForQueryMsg = CreateStringView<char>("Z\000\000\000\005I");

@@ -252,6 +252,22 @@ ParseState ParseParamDesc(std::string_view payload, ParamDesc* param_desc) {
   return ParseState::kSuccess;
 }
 
+ParseState ParseParse(std::string_view payload, Parse* parse) {
+  BinaryDecoder decoder(payload);
+
+  PL_ASSIGN_OR_RETURN_INVALID(parse->stmt_name, decoder.ExtractStringUntil<char>('\0'));
+
+  PL_ASSIGN_OR_RETURN_INVALID(parse->query, decoder.ExtractStringUntil<char>('\0'));
+
+  PL_ASSIGN_OR_RETURN_INVALID(const int16_t param_type_count, decoder.ExtractInt<int16_t>());
+  for (int i = 0; i < param_type_count; ++i) {
+    PL_ASSIGN_OR_RETURN_INVALID(const int32_t type_oid, decoder.ExtractInt<int32_t>());
+    parse->param_type_oids.push_back(type_oid);
+  }
+
+  return ParseState::kSuccess;
+}
+
 namespace {
 
 template <typename TElemType>
