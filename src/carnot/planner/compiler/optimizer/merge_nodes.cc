@@ -176,11 +176,21 @@ bool MergeNodesRule::CanMerge(OperatorIR* a, OperatorIR* b) {
   } else if (Match(a, Filter())) {
     auto filter_a = static_cast<FilterIR*>(a);
     auto filter_b = static_cast<FilterIR*>(b);
-    return filter_a->filter_expr()->Equals(filter_b->filter_expr());
+    // Filter's output relation mirrors its input parent relation, so two filters can only be
+    // merged if they share the same output relation.
+    DCHECK_EQ(1, a->parents().size());
+    DCHECK_EQ(1, b->parents().size());
+    return filter_a->filter_expr()->Equals(filter_b->filter_expr()) &&
+           a->parents()[0]->relation() == b->parents()[0]->relation();
   } else if (Match(a, Limit())) {
     auto limit_a = static_cast<LimitIR*>(a);
     auto limit_b = static_cast<LimitIR*>(b);
-    return limit_a->limit_value() == limit_b->limit_value();
+    // Limit's output relation mirrors its input parent relation, so two limits can only be
+    // merged if they share the same output relation.
+    DCHECK_EQ(1, a->parents().size());
+    DCHECK_EQ(1, b->parents().size());
+    return limit_a->limit_value() == limit_b->limit_value() &&
+           a->parents()[0]->relation() == b->parents()[0]->relation();
   }
   VLOG(1) << "Can't match, so excluding from merge." << a->DebugString();
   return false;

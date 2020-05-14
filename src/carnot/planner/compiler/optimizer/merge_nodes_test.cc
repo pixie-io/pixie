@@ -230,6 +230,40 @@ TEST_F(MergeNodesTest, memory_sources_with_non_intersecting_time_ranges) {
   EXPECT_FALSE(rule.CanMerge(srcs[0], srcs[1]));
 }
 
+TEST_F(MergeNodesTest, limit_merge) {
+  auto mem_src = MakeMemSource("cpu", {"upid", "cpu0"});
+  mem_src->SetTimeValuesNS(10, 100);
+  auto map = MakeMap(mem_src, {{"cpu0_mo", MakeAddFunc(MakeColumn("cpu0", 0), MakeInt(2))}});
+  auto limit1 = MakeLimit(map, 100);
+  auto limit2 = MakeLimit(map, 100);
+  auto limit3 = MakeLimit(map, 101);
+  MakeMemSink(limit1, "1");
+  MakeMemSink(limit2, "2");
+  MakeMemSink(limit3, "2");
+
+  EXPECT_OK(Analyze(graph));
+
+  MergeNodesRule rule(compiler_state_.get());
+  EXPECT_TRUE(rule.CanMerge(limit1, limit2));
+  EXPECT_FALSE(rule.CanMerge(limit1, limit3));
+}
+
+TEST_F(MergeNodesTest, limit_merge_different_relations_shouldnt_merge) {
+  auto mem_src = MakeMemSource("cpu", {"upid", "cpu0", "cpu1"});
+  mem_src->SetTimeValuesNS(10, 100);
+  auto map1 = MakeMap(mem_src, {{"cpu0_mo", MakeAddFunc(MakeColumn("cpu0", 0), MakeInt(2))}});
+  auto map2 = MakeMap(mem_src, {{"cpu1_mo", MakeAddFunc(MakeColumn("cpu1", 0), MakeInt(2))}});
+  auto limit1 = MakeLimit(map1, 100);
+  auto limit2 = MakeLimit(map2, 100);
+  MakeMemSink(limit1, "1");
+  MakeMemSink(limit2, "2");
+
+  EXPECT_OK(Analyze(graph));
+
+  MergeNodesRule rule(compiler_state_.get());
+  EXPECT_FALSE(rule.CanMerge(limit1, limit2));
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
