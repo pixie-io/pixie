@@ -1,5 +1,5 @@
 import Axios from 'axios';
-import {isStaging} from 'utils/env';
+import { isStaging } from 'utils/env';
 
 const PROD_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle.json';
 const STAGING_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-staging.json';
@@ -10,24 +10,39 @@ export interface Script {
   code: string;
   vis?: string;
   description?: string;
+  hidden?: boolean;
 }
 
-export function GetPxScripts(): Promise<Script[]> {
+interface ScriptJSON {
+  ShortDoc: string;
+  pxl: string;
+  vis: string;
+  LongDoc: string;
+  hidden: boolean;
+  orgName: string;
+}
+
+export function GetPxScripts(orgName: string): Promise<Script[]> {
   const bundlePath = localStorage.getItem('px-custom-bundle-path') ||
     (isStaging() ? STAGING_SCRIPTS : PROD_SCRIPTS);
   return Axios({
     method: 'get',
     url: bundlePath,
   }).then((response) => {
-    return Object.keys(response.data.scripts).map((k) => {
-      const s = response.data.scripts[k];
-      return {
-        id: k,
+    const scripts = [];
+    for (const [id, s] of Object.entries(response.data.scripts as ScriptJSON[])) {
+      if (s.orgName && orgName !== s.orgName) {
+        continue;
+      }
+      scripts.push({
+        id,
         title: s.ShortDoc,
         code: s.pxl,
         vis: s.vis,
         description: s.LongDoc,
-      };
-    });
+        hidden: s.hidden,
+      });
+    }
+    return scripts;
   });
 }

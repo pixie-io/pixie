@@ -1,24 +1,24 @@
-import {SCRIPT_HISTORY} from 'common/local-gql';
-import {Accordion, AccordionList} from 'components/accordion';
+import { SCRIPT_HISTORY } from 'common/local-gql';
+import { Accordion, AccordionList } from 'components/accordion';
+import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
-import {GetPxScripts, Script} from 'utils/script-bundle';
+import { GetPxScripts, Script } from 'utils/script-bundle';
 
-import {useQuery} from '@apollo/react-hooks';
+import { useQuery } from '@apollo/react-hooks';
 
-import {HistoryList, ScriptHistory} from './script-history';
+import { HistoryList, ScriptHistory } from './script-history';
 
 interface EditorDrawerMenuProps {
   onSelect: (script: Script) => void;
 }
 
 export const EditorDrawerMenu = (props: EditorDrawerMenuProps) => {
+  const { scripts } = React.useContext(ScriptsContext);
   const [exampleScripts, setExampleScripts] = React.useState<Script[]>([]);
 
   React.useEffect(() => {
-    GetPxScripts().then((scripts) => {
-      setExampleScripts(scripts.filter((s) => !s.vis));
-    });
-  }, []);
+    setExampleScripts(scripts.filter((s) => !s.vis));
+  }, [scripts]);
 
   const { data: historyData } = useQuery<{ scriptHistory: ScriptHistory[] }>(SCRIPT_HISTORY);
   const accordionItem = React.useMemo(() => {

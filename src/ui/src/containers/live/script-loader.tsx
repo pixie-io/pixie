@@ -28,7 +28,7 @@ export function useInitScriptLoader() {
     if (!params.script) {
       return;
     }
-    GetPxScripts().then((examples) => {
+    GetPxScripts(params.org_name).then((examples) => {
       for (const { title, vis, code, id } of examples) {
         if (id === params.script && code) {
           execute({

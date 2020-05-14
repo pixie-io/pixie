@@ -2,7 +2,8 @@ import * as QueryString from 'query-string';
 
 export function setQueryParams(params: { [key: string]: string }) {
   const { protocol, host, pathname } = window.location;
-  const newQueryString = QueryString.stringify(params);
+  const currentParams = getQueryParams();
+  const newQueryString = QueryString.stringify({ ...currentParams, ...params });
   const search = newQueryString ? `?${newQueryString}` : '';
   const newurl = `${protocol}//${host}${pathname}${search}`;
 

@@ -1,8 +1,9 @@
 import Autocomplete from 'components/autocomplete/autocomplete';
 import { CompletionHeader, CompletionItem } from 'components/autocomplete/completions';
 import PixieCommandIcon from 'components/icons/pixie-command';
+import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
-import { GetPxScripts, Script } from 'utils/script-bundle';
+import { Script } from 'utils/script-bundle';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core';
 import Card from '@material-ui/core/Card';
@@ -37,20 +38,19 @@ const useStyles = makeStyles((theme: Theme) =>
 const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
   const classes = useStyles();
 
+  const { scripts } = React.useContext(ScriptsContext);
   const [scriptsMap, setScriptsMap] = React.useState<Map<string, Script>>(null);
   const [completions, setCompletions] = React.useState<CompletionItem[]>([]);
 
   React.useEffect(() => {
-    GetPxScripts().then((examples) => {
-      setCompletions(examples.map((s) => ({
-        type: 'item',
-        id: s.id,
-        title: s.id,
-        description: s.description,
-      })));
-      setScriptsMap(new Map(examples.map((s) => [s.id, s])));
-    });
-  }, []);
+    setCompletions(scripts.map((s) => ({
+      type: 'item',
+      id: s.id,
+      title: s.id,
+      description: s.description,
+    })));
+    setScriptsMap(new Map(scripts.map((s) => [s.id, s])));
+  }, [scripts]);
 
   const { execute } = React.useContext(ExecuteContext);
 

@@ -5,6 +5,7 @@ import {
 } from 'common/vizier-gql-client';
 import { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import { CloudClientContext } from 'containers/App/context';
+import { ScriptsContextProvider } from 'containers/App/scripts-context';
 import { Editor } from 'containers/editor';
 import LiveView from 'containers/live/live';
 import gql from 'graphql-tag';
@@ -175,14 +176,16 @@ export class Vizier extends React.Component<{}, VizierState> {
                             loadingScreen={<ClusterInstructions message='Connecting to cluster...' />}
                             vizierVersion={data.cluster.vizierVersion}
                           >
-                            <Switch>
-                              <Route path='/live' component={LiveViewWithApollo} />
-                              <Route
-                                path={['/console', '/admin']}
-                                render={(props) => <VizierMain {...props} cloudClient={cloudClient} />}
-                              />
-                              <Redirect from='/*' to='/live' />
-                            </Switch>
+                            <ScriptsContextProvider>
+                              <Switch>
+                                <Route path='/live' component={LiveViewWithApollo} />
+                                <Route
+                                  path={['/console', '/admin']}
+                                  render={(props) => <VizierMain {...props} cloudClient={cloudClient} />}
+                                />
+                                <Redirect from='/*' to='/live' />
+                              </Switch>
+                            </ScriptsContextProvider>
                           </VizierGRPCClientProvider>
                         );
                       } else if (data.cluster.status === 'CS_UNHEALTHY') {
