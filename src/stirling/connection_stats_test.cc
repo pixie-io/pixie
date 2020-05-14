@@ -7,7 +7,10 @@
 namespace pl {
 namespace stirling {
 
+using ::testing::AllOf;
+using ::testing::Field;
 using ::testing::IsEmpty;
+using ::testing::Pair;
 using ::testing::SizeIs;
 
 TEST(HashTest, CanBeUsedInFlatHashMap) {
@@ -35,51 +38,70 @@ TEST(HashTest, CanBeUsedInFlatHashMap) {
   EXPECT_THAT(map, SizeIs(2));
 }
 
-namespace internal {
+class ConnectionStatsTest : public ::testing::Test {
+ protected:
+  ConnectionStats conn_stats_;
+};
 
-TEST(BuildAggKeyTest, UPIDClearedForClientRole) {
-  upid_t upid = {.tgid = 1, .start_time_ticks = 2};
-  traffic_class_t traffic_class = {.protocol = kProtocolHTTP, .role = kRoleClient};
-  std::string remote_addr = "localhost";
-  int remote_port = 12345;
-  ConnectionStats::AggKey key = BuildAggKey(upid, traffic_class, remote_addr, remote_port);
-  EXPECT_EQ(0, key.upid.tgid);
-  EXPECT_EQ(0, key.upid.start_time_ticks);
-  EXPECT_EQ(kProtocolHTTP, key.traffic_class.protocol);
-  EXPECT_EQ(kRoleClient, key.traffic_class.role);
-  EXPECT_EQ("localhost", key.remote_addr);
-  EXPECT_EQ(12345, key.remote_port);
+auto AggKeyIs(int tgid, TrafficProtocol protocol, EndpointRole role, std::string_view remote_addr) {
+  return AllOf(Field(&ConnectionStats::AggKey::upid, Field(&upid_t::tgid, tgid)),
+               Field(&ConnectionStats::AggKey::traffic_class,
+                     AllOf(Field(&traffic_class_t::protocol, protocol),
+                           Field(&traffic_class_t::role, role))),
+               Field(&ConnectionStats::AggKey::remote_addr, remote_addr));
 }
 
-TEST(BuildAggKeyTest, RemoteAddrPortClearedForServerRole) {
-  upid_t upid = {.tgid = 1, .start_time_ticks = 2};
-  traffic_class_t traffic_class = {.protocol = kProtocolHTTP, .role = kRoleServer};
-  std::string remote_addr = "localhost";
-  int remote_port = 12345;
-  ConnectionStats::AggKey key = BuildAggKey(upid, traffic_class, remote_addr, remote_port);
-  EXPECT_EQ(1, key.upid.tgid);
-  EXPECT_EQ(2, key.upid.start_time_ticks);
-  EXPECT_EQ(kProtocolHTTP, key.traffic_class.protocol);
-  EXPECT_EQ(kRoleServer, key.traffic_class.role);
-  EXPECT_EQ("", key.remote_addr);
-  EXPECT_EQ(0, key.remote_port);
+auto StatsIs(int open, int close, int sent, int recv) {
+  return AllOf(Field(&ConnectionStats::Stats::conn_open, open),
+               Field(&ConnectionStats::Stats::conn_close, close),
+               Field(&ConnectionStats::Stats::bytes_sent, sent),
+               Field(&ConnectionStats::Stats::bytes_recv, recv));
 }
 
-TEST(BuildAggKeyTest, RoleAndProtocolCanBeUnknown) {
-  upid_t upid = {.tgid = 1, .start_time_ticks = 2};
-  traffic_class_t traffic_class = {.protocol = kProtocolUnknown, .role = kRoleUnknown};
-  std::string remote_addr = "localhost";
-  int remote_port = 12345;
-  ConnectionStats::AggKey key = BuildAggKey(upid, traffic_class, remote_addr, remote_port);
-  EXPECT_EQ(1, key.upid.tgid);
-  EXPECT_EQ(2, key.upid.start_time_ticks);
-  EXPECT_EQ(kProtocolUnknown, key.traffic_class.protocol);
-  EXPECT_EQ(kRoleUnknown, key.traffic_class.role);
-  EXPECT_EQ("localhost", key.remote_addr);
-  EXPECT_EQ(12345, key.remote_port);
-}
+// Tests that aggregated records for client side events are correctly put into ConnectionStats.
+TEST_F(ConnectionStatsTest, ClientSizeAggregationRecord) {
+  struct conn_id_t conn_id = {
+      .upid = {.tgid = 1, .start_time_ticks = 2},
+      .fd = 2,
+      .tsid = 3,
+  };
 
-}  // namespace internal
+  // GCC requires initialize all fields in designated initializer expression.
+  // So we use the field initialization.
+  struct conn_event_t event = {};
+  event.conn_id = conn_id;
+  auto* sockaddr = reinterpret_cast<struct sockaddr_in*>(&event.addr);
+  sockaddr->sin_family = AF_INET;
+  sockaddr->sin_port = 12345;
+  // 1.1.1.1
+  sockaddr->sin_addr.s_addr = 0x01010101;
+
+  struct socket_control_event_t ctrl_event = {};
+  ctrl_event.type = kConnOpen, ctrl_event.open = event;
+
+  // This setup the remote address and port, which is then used by ConnectionStats::AddDataEvent().
+  ConnectionTracker tracker;
+  tracker.AddControlEvent(ctrl_event);
+
+  SocketDataEvent data_event;
+  data_event.attr = {};
+  data_event.attr.conn_id = conn_id;
+  data_event.attr.traffic_class.protocol = kProtocolHTTP;
+  data_event.attr.traffic_class.role = kRoleClient;
+  data_event.attr.direction = kEgress;
+  data_event.attr.msg_size = 12345;
+
+  conn_stats_.AddDataEvent(tracker, data_event);
+  conn_stats_.AddDataEvent(tracker, data_event);
+
+  data_event.attr.direction = kIngress;
+  conn_stats_.AddDataEvent(tracker, data_event);
+  conn_stats_.AddDataEvent(tracker, data_event);
+
+  EXPECT_THAT(conn_stats_.agg_stats(),
+              ElementsAre(Pair(AggKeyIs(1, kProtocolHTTP, kRoleClient, "1.1.1.1"),
+                               StatsIs(1, 0, 24690, 24690))));
+}
 
 }  // namespace stirling
 }  // namespace pl

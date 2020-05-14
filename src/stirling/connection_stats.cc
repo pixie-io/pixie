@@ -8,33 +8,22 @@
 namespace pl {
 namespace stirling {
 
-namespace internal {
+namespace {
 
 ConnectionStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t& traffic_class,
                                     std::string_view remote_addr, int remote_port) {
   DCHECK_NE(traffic_class.role, kRoleAll);
-
-  // TODO(yzhao): Remote address might not be resolved yet. That causes imprecise stats.
-  // Add code in address resolution to update stats after resolution is done.
-
-  upid_t agg_upid = upid;
-  if (traffic_class.role == kRoleServer) {
-    // Server side traffic does not distinguish remote endpoint.
-    remote_addr = {};
-    remote_port = 0;
-  } else if (traffic_class.role == kRoleClient) {
-    agg_upid = {};
-  }
-
   return {
-      .upid = agg_upid,
+      .upid = upid,
       .traffic_class = traffic_class,
+      // TODO(yzhao): Remote address might not be resolved yet. That causes imprecise stats.
+      // Add code in address resolution to update stats after resolution is done.
       .remote_addr = std::string(remote_addr),
       .remote_port = remote_port,
   };
 }
 
-}  // namespace internal
+}  // namespace
 
 void ConnectionStats::AddConnOpenEvent(const conn_event_t& event) {
   const upid_t& upid = event.conn_id.upid;
@@ -83,7 +72,7 @@ void ConnectionStats::AddDataEvent(const ConnectionTracker& tracker, const Socke
 void ConnectionStats::RecordConn(const struct upid_t& upid,
                                  const struct traffic_class_t& traffic_class,
                                  std::string_view remote_addr, int remote_port, bool is_open) {
-  AggKey key = internal::BuildAggKey(upid, traffic_class, remote_addr, remote_port);
+  AggKey key = BuildAggKey(upid, traffic_class, remote_addr, remote_port);
   auto& stats = agg_stats_[key];
 
   if (is_open) {
@@ -97,7 +86,7 @@ void ConnectionStats::RecordData(const struct upid_t& upid,
                                  const struct traffic_class_t& traffic_class,
                                  TrafficDirection direction, std::string_view remote_addr,
                                  int remote_port, size_t size) {
-  AggKey key = internal::BuildAggKey(upid, traffic_class, remote_addr, remote_port);
+  AggKey key = BuildAggKey(upid, traffic_class, remote_addr, remote_port);
   auto& stats = agg_stats_[key];
 
   switch (direction) {

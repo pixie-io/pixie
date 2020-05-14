@@ -53,6 +53,11 @@ class ConnectionStats {
                         key.traffic_class.protocol, key.traffic_class.role, key.remote_addr,
                         key.remote_port);
     }
+
+    std::string DebugString() const {
+      return absl::Substitute("[tgid=$0 protocol=$1 role=$2 addr=$3 port=$4]", upid.tgid,
+                              traffic_class.protocol, traffic_class.role, remote_addr, remote_port);
+    }
   };
 
   struct Stats {
@@ -60,6 +65,11 @@ class ConnectionStats {
     uint64_t conn_close = 0;
     uint64_t bytes_sent = 0;
     uint64_t bytes_recv = 0;
+
+    std::string DebugString() const {
+      return absl::Substitute("[conn_open=$0 conn_close=$1 bytes_sent=$2 bytes_recv=$3]", conn_open,
+                              conn_close, bytes_sent, bytes_recv);
+    }
   };
 
   const auto& agg_stats() const { return agg_stats_; }
@@ -80,12 +90,6 @@ class ConnectionStats {
   absl::flat_hash_map<AggKey, Stats> agg_stats_;
   absl::flat_hash_set<struct conn_id_t> known_conns_;
 };
-
-namespace internal {
-
-ConnectionStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t& traffic_class,
-                                    std::string_view remote_addr, int remote_port);
-}  // namespace internal
 
 }  // namespace stirling
 }  // namespace pl
