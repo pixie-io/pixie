@@ -1,6 +1,6 @@
 import Autocomplete from 'components/autocomplete/autocomplete';
 import { CompletionHeader, CompletionItem } from 'components/autocomplete/completions';
-import MagicIcon from 'components/icons/magic';
+import PixieCommandIcon from 'components/icons/pixie-command';
 import * as React from 'react';
 import { GetPxScripts, Script } from 'utils/script-bundle';
 
@@ -81,7 +81,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
         <Autocomplete
           className={classes.input}
           placeholder='Pixie Command'
-          prefix={<MagicIcon />}
+          prefix={<PixieCommandIcon />}
           onSelection={selectScript}
           getCompletions={getCompletions}
         />

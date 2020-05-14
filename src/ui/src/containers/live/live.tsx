@@ -1,6 +1,6 @@
 import { scrollbarStyles } from 'common/mui-theme';
 import EditIcon from 'components/icons/edit';
-import MagicIcon from 'components/icons/magic';
+import PixieCommandIcon from 'components/icons/pixie-command';
 import PixieLogo from 'components/icons/pixie-logo';
 import LazyPanel from 'components/lazy-panel';
 import * as React from 'react';
@@ -142,7 +142,7 @@ const LiveView = () => {
         </Tooltip>
         <Tooltip title='Pixie Command'>
           <IconButton onClick={toggleCommandOpen}>
-            <MagicIcon />
+            <PixieCommandIcon color='primary' />
           </IconButton>
         </Tooltip>
       </div>
