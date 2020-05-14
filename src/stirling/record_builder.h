@@ -30,7 +30,7 @@ template <const DataTableSchema* schema>
 class RecordBuilder {
  public:
   // Any string larger than this size will be truncated before being placed in the record.
-  static constexpr int kMaxStringBytes = 8192;
+  static constexpr int kMaxStringBytes = 512;
 
   explicit RecordBuilder(DataTable* data_table, types::TabletIDView tablet_id)
       : RecordBuilder(data_table->ActiveRecordBatch(tablet_id)) {
