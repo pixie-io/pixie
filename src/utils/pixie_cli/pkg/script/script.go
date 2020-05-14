@@ -23,6 +23,8 @@ type ExecutableScript struct {
 	ShortDoc     string
 	LongDoc      string
 	Vis          *vispb.Vis
+	OrgName      string
+	Hidden       bool
 	// Args contains a map from name to argument info.
 	Args map[string]Arg
 }

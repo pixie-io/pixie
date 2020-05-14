@@ -6,6 +6,8 @@ type pixieScript struct {
 	Placement string `json:"placement"`
 	ShortDoc  string `json:"ShortDoc"`
 	LongDoc   string `json:"LongDoc"`
+	OrgName   string `json:"orgName"`
+	Hidden    bool   `json:"hidden"`
 }
 
 type bundle struct {

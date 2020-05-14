@@ -39,6 +39,9 @@ func listBundleScripts(br *script.BundleManager, format string) {
 	defer w.Finish()
 	w.SetHeader("script_list", []string{"Name", "Description"})
 	for _, script := range br.GetScripts() {
+		if script.Hidden {
+			continue
+		}
 		w.Write([]interface{}{script.ScriptName, script.ShortDoc})
 	}
 }

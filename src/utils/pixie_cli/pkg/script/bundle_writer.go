@@ -21,8 +21,10 @@ type BundleWriter struct {
 }
 
 type docSpec struct {
-	Short string `yaml:"short"`
-	Long  string `yaml:"long"`
+	Short   string  `yaml:"short"`
+	Long    string  `yaml:"long"`
+	OrgName *string `yaml:"org_name"`
+	Hidden  *bool   `yaml:"hidden"`
 }
 
 // fileExists checks if a file exists and is not a directory before we
@@ -103,6 +105,12 @@ func (b BundleWriter) parseBundleScripts(basePath string) (*pixieScript, error) 
 
 	ps.ShortDoc = doc.Short
 	ps.LongDoc = doc.Long
+	if doc.OrgName != nil {
+		ps.OrgName = *doc.OrgName
+	}
+	if doc.Hidden != nil {
+		ps.Hidden = *doc.Hidden
+	}
 	return ps, nil
 }
 

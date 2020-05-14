@@ -10,6 +10,7 @@ import (
 	"sort"
 
 	log "github.com/sirupsen/logrus"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
 )
 
 // BundleManager reads a script bundle.
@@ -24,6 +25,8 @@ func pixieScriptToExecutableScript(scriptName string, script *pixieScript) *Exec
 		LongDoc:      script.LongDoc,
 		Vis:          parseVisSpec(script.Vis),
 		ScriptString: script.Pxl,
+		OrgName:      script.OrgName,
+		Hidden:       script.Hidden,
 	}
 }
 
@@ -59,14 +62,28 @@ func NewBundleManager(bundleFile string) (*BundleManager, error) {
 		defer f.Close()
 		r = f
 	}
+	// TODO(zasgar): Refactor user login state, etc.
+	authInfo, err := auth.LoadDefaultCredentials()
+	if err != nil {
+		log.WithError(err).Fatal("Must be logged in")
+	}
 
 	var b bundle
-	err := json.NewDecoder(r).Decode(&b)
+	err = json.NewDecoder(r).Decode(&b)
 	if err != nil {
 		return nil, err
 	}
+
+	filtered := make(map[string]*pixieScript, 0)
+	// Filter scripts by org.
+	for k, script := range b.Scripts {
+		if len(script.OrgName) == 0 || script.OrgName == authInfo.OrgName {
+			filtered[k] = script
+		}
+	}
+
 	return &BundleManager{
-		scripts: b.Scripts,
+		scripts: filtered,
 	}, nil
 }
 
