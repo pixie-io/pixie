@@ -44,6 +44,7 @@ export const ExeucteContextProvider = (props) => {
     if (!execArgs) {
       execArgs = { script, vis, args };
     } else {
+      clearResults();
       setVis(execArgs.vis);
       setScript(execArgs.script);
 
