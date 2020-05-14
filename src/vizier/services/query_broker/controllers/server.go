@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -385,9 +384,10 @@ func (s *Server) ReceiveAgentQueryResult(ctx context.Context, req *querybrokerpb
 	queryIDPB := req.Result.QueryID
 	queryID, err := utils.UUIDFromProto(queryIDPB)
 	if err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	log.WithField("queryID", queryID.String()).Info("Got Kelvin Results")
 	setExecutor := func(queryID uuid.UUID) (Executor, bool) {
 		s.mux.Lock()
 		exec, ok := s.executors[queryID]
@@ -397,7 +397,7 @@ func (s *Server) ReceiveAgentQueryResult(ctx context.Context, req *querybrokerpb
 
 	exec, ok := setExecutor(queryID)
 	if !ok {
-		return nil, errors.New("Query ID not present")
+		return nil, status.Error(codes.InvalidArgument, "Unexpected/Incorrect queryID")
 	}
 
 	exec.AddResult(req)
