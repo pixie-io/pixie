@@ -20,6 +20,7 @@ static constexpr DataElement kMySQLElements[] = {
         canonical_data_elements::kUPID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
+        canonical_data_elements::kTraceSide,
         {"req_cmd", types::DataType::INT64, types::PatternType::GENERAL_ENUM,
         "MySQL request command", &kMySQLReqCmdDecoder},
         {"req_body", types::DataType::STRING, types::PatternType::GENERAL,

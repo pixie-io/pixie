@@ -71,7 +71,8 @@ class RecordBuilder {
 
   ~RecordBuilder() {
     DCHECK(signature_.all()) << absl::Substitute(
-        "Must call Append() on all columns. Column bitset = $0", signature_.to_string());
+        "Must call Append() on all columns. Table name = $0, Column bitset = $1", schema->name(),
+        signature_.to_string());
   }
 
  private:

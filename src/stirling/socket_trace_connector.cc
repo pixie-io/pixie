@@ -794,6 +794,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   // But std::move is not allowed because we re-use conn object.
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
   r.Append<r.ColIndex("http_major_version")>(1);
   r.Append<r.ColIndex("http_minor_version")>(resp_message.minor_version);
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(content_type));
@@ -840,6 +841,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
   r.Append<r.ColIndex("http_major_version")>(2);
   // HTTP2 does not define minor version.
   r.Append<r.ColIndex("http_minor_version")>(0);
@@ -900,6 +902,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
   r.Append<r.ColIndex("http_major_version")>(2);
   // HTTP2 does not define minor version.
   r.Append<r.ColIndex("http_minor_version")>(0);
@@ -934,6 +937,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
   r.Append<r.ColIndex("req_cmd")>(static_cast<uint64_t>(entry.req.cmd));
   r.Append<r.ColIndex("req_body")>(std::move(entry.req.msg));
   r.Append<r.ColIndex("resp_status")>(static_cast<uint64_t>(entry.resp.status));
@@ -958,6 +962,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
   r.Append<r.ColIndex("req_op")>(static_cast<uint64_t>(entry.req.op));
   r.Append<r.ColIndex("req_body")>(std::move(entry.req.msg));
   r.Append<r.ColIndex("resp_op")>(static_cast<uint64_t>(entry.resp.op));
@@ -982,6 +987,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
+  r.Append<r.ColIndex("trace_role")>(conn_tracker.traffic_class().role);
   r.Append<r.ColIndex("req")>(std::move(entry.req.payload));
   r.Append<r.ColIndex("resp")>(std::move(entry.resp.payload));
   r.Append<r.ColIndex("latency_ns")>(

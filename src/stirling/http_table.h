@@ -22,10 +22,9 @@ static const std::map<int64_t, std::string_view> kHTTPContentTypeDecoder =
 constexpr DataElement kHTTPElements[] = {
     canonical_data_elements::kTime,
     canonical_data_elements::kUPID,
-    // TODO(PL-519): Eventually, use uint128 to represent IP addresses, as will be resolved in
-    // the Jira issue.
     canonical_data_elements::kRemoteAddr,
     canonical_data_elements::kRemotePort,
+    canonical_data_elements::kTraceSide,
     {"http_major_version", types::DataType::INT64, types::PatternType::GENERAL_ENUM,
     "HTTP major version, can be 1 or 2"},
     {"http_minor_version", types::DataType::INT64, types::PatternType::GENERAL_ENUM,
