@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -38,7 +39,17 @@ func listBundleScripts(br *script.BundleManager, format string) {
 	w := components.CreateStreamWriter(format, os.Stdout)
 	defer w.Finish()
 	w.SetHeader("script_list", []string{"Name", "Description"})
-	for _, script := range br.GetScripts() {
+	scripts := br.GetScripts()
+
+	// Sort show org scripts show up first.
+	sort.Slice(scripts, func(i, j int) bool {
+		if len(scripts[i].OrgName) != 0 || len(scripts[j].OrgName) != 0 {
+			return scripts[i].OrgName > scripts[j].OrgName
+		}
+		return scripts[i].ScriptName < scripts[j].ScriptName
+	})
+
+	for _, script := range scripts {
 		if script.Hidden {
 			continue
 		}
