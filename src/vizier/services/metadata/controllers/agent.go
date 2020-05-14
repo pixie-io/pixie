@@ -17,7 +17,7 @@ import (
 // from an agent before marking it as unhealthy.
 const AgentExpirationTimeout int64 = 1e9 * 60 // 60 seconds in nano-seconds.
 // MaxAgentUpdates is the total number of updates each agent can have on its queue.
-const MaxAgentUpdates int = 1024
+const MaxAgentUpdates int = 10000
 
 // AgentUpdate describes the update info for a given agent.
 type AgentUpdate struct {
