@@ -84,5 +84,7 @@ func FormatErrorMessage(err error) string {
 		sb.WriteString("\n")
 		sb.WriteString(e.Error())
 	}
+
+	sb.WriteString("\nType '?' for help or ctrl-k to select another script.")
 	return sb.String()
 }

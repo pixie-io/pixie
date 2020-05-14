@@ -220,8 +220,8 @@ func (v *View) runScript(execScript *script.ExecutableScript) {
 		v.execCompleteWithError(errMissingScript)
 		return
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	v.s.execScript = execScript
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	resp, err := vizier.RunScript(ctx, v.s.vizier, execScript)
 	if err != nil {
@@ -246,7 +246,6 @@ func (v *View) runScript(execScript *script.ExecutableScript) {
 		v.s.sortState[i] = make([]sortType, len(t.Header()))
 	}
 	// The view can update with nil data if there is an error.
-	v.s.execScript = execScript
 	v.s.selectedTable = 0
 
 	v.execCompleteViewUpdate()
@@ -263,6 +262,7 @@ func (v *View) execCompleteWithError(err error) {
 	v.searchClear()
 	v.closeModal()
 
+	fmt.Print(err.Error())
 	var m string
 	if v.s.execScript == nil {
 		m = "No Script Provided.\n"
