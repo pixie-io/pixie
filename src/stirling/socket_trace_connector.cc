@@ -29,6 +29,7 @@
 #include "src/stirling/http2/grpc.h"
 #include "src/stirling/http2/http2.h"
 #include "src/stirling/mysql/mysql_parse.h"
+#include "src/stirling/obj_tools/dwarf_tools.h"
 #include "src/stirling/obj_tools/obj_tools.h"
 #include "src/stirling/obj_tools/proc_path_tools.h"
 #include "src/stirling/proto/sock_event.pb.h"
@@ -87,6 +88,7 @@ using ::pl::grpc::MethodInputOutput;
 using ::pl::stirling::kCQLTable;
 using ::pl::stirling::kHTTPTable;
 using ::pl::stirling::kMySQLTable;
+using ::pl::stirling::dwarf_tools::DwarfReader;
 using ::pl::stirling::elf_tools::ElfReader;
 using ::pl::stirling::grpc::ParsePB;
 using ::pl::stirling::http2::HTTP2Message;
@@ -513,6 +515,14 @@ void SocketTraceConnector::DeployUProbes() {
       continue;
     }
     std::unique_ptr<ElfReader> elf_reader = elf_reader_status.ConsumeValueOrDie();
+
+    // Temporary start.
+    StatusOr<std::unique_ptr<DwarfReader>> dwarf_reader_status = DwarfReader::Create(binary);
+    bool is_go_binary = elf_reader->SymbolAddress("runtime.buildVersion").has_value();
+    bool has_dwarf = dwarf_reader_status.ok() && dwarf_reader_status.ValueOrDie()->IsValid();
+    LOG(INFO) << absl::Substitute("binary=$0 has_dwarf=$1 is_go_binary=$2", binary, has_dwarf,
+                                  is_go_binary);
+    // Temporary end.
 
     // OpenSSL Probes.
     {

@@ -36,7 +36,15 @@ class DwarfReader {
       std::string_view name,
       llvm::dwarf::Tag type = static_cast<llvm::dwarf::Tag>(llvm::dwarf::DW_TAG_invalid));
 
+  /**
+   * Returns the offset of a member within a struct.
+   * @param struct_name Full name of the struct.
+   * @param member_name Name of member within the struct.
+   * @return Error if offset could not be found; otherwise, offset in bytes.
+   */
   StatusOr<int> GetStructMemberOffset(std::string_view struct_name, std::string member_name);
+
+  bool IsValid() { return dwarf_context_->getNumCompileUnits() != 0; }
 
  private:
   DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
@@ -44,7 +52,8 @@ class DwarfReader {
       : memory_buffer_(std::move(buffer)), dwarf_context_(std::move(dwarf_context)) {
     // TODO(oazizi): This might cause it to get called too many times. Check perf cost.
     // There is also a similar call in elf_tools.cc.
-    llvm::InitializeNativeTarget();
+    // TODO(oazizi): Hacky - clean-up.
+    // llvm::InitializeNativeTarget();
   }
 
   static Status GetMatchingDIEs(llvm::DWARFContext::unit_iterator_range CUs, std::string_view name,

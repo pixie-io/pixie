@@ -1,6 +1,11 @@
 #pragma once
 
 #include <bcc/BPF.h>
+// Including bcc/BPF.h creates some conflicts with later including llvm.
+// So must remove this stray define for things to work.
+#ifdef STT_GNU_IFUNC
+#undef STT_GNU_IFUNC
+#endif
 
 #include <string>
 

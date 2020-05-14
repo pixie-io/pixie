@@ -14,8 +14,6 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 
 #else
 
-#include <bcc/BPF.h>
-
 #include <deque>
 #include <fstream>
 #include <map>
