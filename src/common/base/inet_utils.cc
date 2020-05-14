@@ -22,7 +22,7 @@ std::string SockAddr::AddrStr() const {
       s = IPv6AddrToString(std::get<struct in6_addr>(addr), &out);
       break;
     case SockAddrFamily::kUnix:
-      out = "unix_socket";
+      out = absl::StrCat("unix_socket:", std::get<std::string>(addr));
       break;
     case SockAddrFamily::kOther:
       out = "other";

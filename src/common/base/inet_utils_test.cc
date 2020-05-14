@@ -37,7 +37,7 @@ TEST(PopulateUnixAddr, Basic) {
 
   SockAddr addr;
   PopulateUnixAddr(path, inode_num, &addr);
-  EXPECT_EQ(addr.AddrStr(), "unix_socket");
+  EXPECT_EQ(addr.AddrStr(), "unix_socket:/path/to/unix/domain/socket");
   EXPECT_EQ(addr.port, 54321);
 }
 
@@ -75,7 +75,7 @@ TEST(ParseSockAddr, Unix) {
 
   SockAddr addr;
   PopulateSockAddr(reinterpret_cast<struct sockaddr*>(&sockaddr), &addr);
-  EXPECT_EQ(addr.AddrStr(), "unix_socket");
+  EXPECT_EQ(addr.AddrStr(), "unix_socket:/path/to/unix/domain/socket");
   EXPECT_EQ(addr.port, -1);
 }
 
