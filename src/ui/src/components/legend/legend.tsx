@@ -13,8 +13,8 @@ const NUM_ROWS = 2;
 const MAX_NUM_GRIDS = 4;
 
 const COLOR_COLUMN_SIZE = 8;
-const KEY_COLUMN_SIZE = 225;
-const VAL_COLUMN_SIZE = 50;
+const KEY_COLUMN_SIZE = 160;
+const VAL_COLUMN_SIZE = 40;
 const COLUMN_GAP_SIZE = 5;
 const COLUMN_SIZES = `${COLOR_COLUMN_SIZE}px ${KEY_COLUMN_SIZE}px ${VAL_COLUMN_SIZE}px`;
 const GRID_WIDTH = (
@@ -22,7 +22,7 @@ const GRID_WIDTH = (
   KEY_COLUMN_SIZE + COLUMN_GAP_SIZE +
   VAL_COLUMN_SIZE
 );
-const GRID_GAP_SIZE = 25;
+const GRID_GAP_SIZE = 20;
 
 const calcGridWidth = (numGrids: number) => (numGrids - 1) * GRID_GAP_SIZE + numGrids * GRID_WIDTH;
 
@@ -75,7 +75,6 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     key: {
       textAlign: 'left',
-      marginRight: '10px',
       textOverflow: 'ellipsis',
       overflow: 'hidden',
       whiteSpace: 'nowrap',
@@ -86,6 +85,7 @@ const useStyles = makeStyles((theme: Theme) => {
     gridGap: {
       height: '100%',
       width: `${GRID_GAP_SIZE}px`,
+      minWidth: `${GRID_GAP_SIZE}px`,
     },
     iconContainer: {
       display: 'flex',
@@ -135,11 +135,11 @@ const Legend = React.memo((props: LegendProps) => {
     return <div/>;
   }
 
-  const leftRightPadding = props.vegaOrigin[0];
+  const leftPadding = props.vegaOrigin[0];
 
   let numGrids = MAX_NUM_GRIDS;
   // Dynamically take out grids if theres no room for them.
-  while ((2 * leftRightPadding + calcGridWidth(numGrids)) > props.chartWidth && numGrids > 1) {
+  while ((leftPadding + calcGridWidth(numGrids)) > props.chartWidth && numGrids > 1) {
     numGrids--;
   }
 
@@ -223,8 +223,7 @@ const Legend = React.memo((props: LegendProps) => {
   }
 
   const containerStyles: CSSProperties = {
-    paddingLeft: `${leftRightPadding}px`,
-    paddingRight: `${leftRightPadding}px`,
+    paddingLeft: `${leftPadding}px`,
   };
 
   const handlePageBack = (e) => {
