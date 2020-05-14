@@ -192,6 +192,9 @@ class ConnectionTracker {
     return recv_data_.Frames<TFrameType>();
   }
 
+  const conn_id_t& conn_id() const { return conn_id_; }
+  const traffic_class_t& traffic_class() const { return traffic_class_; }
+
   /**
    * @brief Get the protocol for this connection.
    *

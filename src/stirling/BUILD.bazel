@@ -188,6 +188,15 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "connection_stats_test",
+    srcs = ["connection_stats_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "socket_trace_bpf_test",
     timeout = "long",
     srcs = ["socket_trace_bpf_test.cc"],

@@ -35,6 +35,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/stirling/cass_table.h"
 #include "src/stirling/common/socket_trace.h"
 #include "src/stirling/conn_stats_table.h"
+#include "src/stirling/connection_stats.h"
 #include "src/stirling/connection_tracker.h"
 #include "src/stirling/http/utils.h"
 #include "src/stirling/http_table.h"
@@ -315,6 +316,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   // Transfer of messages to the data table.
   void TransferStreams(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table);
+  void TransferConnectionStats(ConnectorContext* ctx, DataTable* data_table);
 
   template <typename TProtocolTraits>
   void TransferStream(ConnectorContext* ctx, ConnectionTracker* tracker, DataTable* data_table) {
@@ -361,6 +363,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Inner map could be a priority_queue, but benchmarks showed better performance with a std::map.
   // Key is {PID, FD} for outer map (see GetStreamId()), and tsid for inner map.
   std::unordered_map<uint64_t, std::map<uint64_t, ConnectionTracker> > connection_trackers_;
+  ConnectionStats connection_stats_;
 
   struct TransferSpec {
     uint32_t table_num;

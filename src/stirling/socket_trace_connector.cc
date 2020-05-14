@@ -23,6 +23,7 @@
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 #include "src/stirling/common/event_parser.h"
 #include "src/stirling/common/go_grpc_types.h"
+#include "src/stirling/connection_stats.h"
 #include "src/stirling/cql/types.h"
 #include "src/stirling/http/http_stitcher.h"
 #include "src/stirling/http2/grpc.h"
@@ -272,7 +273,13 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
     socket_info_mgr_->Flush();
   }
 
-  TransferStreams(ctx, table_num, data_table);
+  if (table_num == kConnStatsTableNum) {
+    // Connection stats table does not follow the convention of tables for data streams.
+    // So we handle it separately.
+    TransferConnectionStats(ctx, data_table);
+  } else {
+    TransferStreams(ctx, table_num, data_table);
+  }
 
   // Refresh UPIDs from MDS so that the uprobe attaching thread can detect new processes.
   set_mds_upids(ctx->GetMdsUpids());
@@ -672,6 +679,7 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
                           magic_enum::enum_name(event->attr.traffic_class.protocol));
 
   ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.tsid];
+  connection_stats_.AddDataEvent(tracker, *event);
   tracker.AddDataEvent(std::move(event));
 }
 
@@ -682,6 +690,16 @@ void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
   const uint64_t conn_map_key = GetConnMapKey(event.open.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
   ConnectionTracker& tracker = connection_trackers_[conn_map_key][event.open.conn_id.tsid];
+  switch (event.type) {
+    case kConnOpen:
+      connection_stats_.AddConnOpenEvent(event.open);
+      break;
+    case kConnClose:
+      connection_stats_.AddConnCloseEvent(tracker);
+      break;
+    default:
+      LOG(DFATAL) << "Unknown control event type: " << event.type;
+  }
   tracker.AddControlEvent(event);
 }
 
@@ -1093,6 +1111,46 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
 
     tracker_set_it =
         tracker_generations.empty() ? connection_trackers_.erase(tracker_set_it) : ++tracker_set_it;
+  }
+}
+
+void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTable* data_table) {
+  DCHECK_EQ(kConnStatsTable.elements().size(), data_table->ActiveRecordBatch()->size());
+
+  namespace idx = ::pl::stirling::conn_stats_idx;
+
+  absl::flat_hash_set<md::UPID> upids = ProcTracker::Cleanse(get_mds_upids());
+  if (upids.empty()) {
+    upids = ProcTracker::ListUPIDs(system::Config::GetInstance().proc_path());
+  }
+
+  for (const auto& [key, stats] : connection_stats_.agg_stats()) {
+    md::UPID dummy_upid(/*asid*/ 0, key.upid.tgid, key.upid.start_time_ticks);
+    if (!upids.contains(dummy_upid)) {
+      VLOG(1) << "Ignore because of not in MDS upids, upid: " << dummy_upid.String();
+      continue;
+    }
+
+    DCHECK_GE(stats.conn_open, stats.conn_close)
+        << "Connection open cannot be smaller than connection close.";
+
+    RecordBuilder<&kConnStatsTable> r(data_table);
+
+    r.Append<idx::kTime>(AdjustedSteadyClockNow());
+    md::UPID upid(ctx->AgentMetadataState()->asid(), key.upid.tgid, key.upid.start_time_ticks);
+    r.Append<idx::kUPID>(upid.value());
+    r.Append<idx::kRemoteAddr>(key.remote_addr);
+    r.Append<idx::kRemotePort>(key.remote_port);
+    r.Append<idx::kProtocol>(key.traffic_class.protocol);
+    r.Append<idx::kRole>(key.traffic_class.role);
+    r.Append<idx::kConnOpen>(stats.conn_open);
+    r.Append<idx::kConnClose>(stats.conn_close);
+    r.Append<idx::kConnActive>(stats.conn_open - stats.conn_close);
+    r.Append<idx::kBytesSent>(stats.bytes_sent);
+    r.Append<idx::kBytesRecv>(stats.bytes_recv);
+#ifndef NDEBUG
+    r.Append<idx::kPxInfo>("");
+#endif
   }
 }
 

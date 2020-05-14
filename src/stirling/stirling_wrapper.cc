@@ -45,6 +45,7 @@ using pl::stirling::SocketTraceConnector;
 using pl::stirling::SystemStatsConnector;
 
 using pl::stirling::DataElement;
+using pl::stirling::kConnStatsTable;
 using pl::stirling::kCQLTable;
 using pl::stirling::kHTTPTable;
 using pl::stirling::kJVMStatsTable;
@@ -105,6 +106,8 @@ void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
     PrintRecordBatch("JVMStats", kJVMStatsTable.elements(), num_records, *record_batch);
   } else if (name == kPGSQLTable.name()) {
     PrintRecordBatch("PostgreSQL", kPGSQLTable.elements(), num_records, *record_batch);
+  } else if (name == kConnStatsTable.name()) {
+    PrintRecordBatch("ConnStats", kConnStatsTable.elements(), num_records, *record_batch);
   }
   // Can add other connectors, if desired, here.
 }

@@ -173,6 +173,13 @@ class SourceConnector : public NotCopyable {
            ClockRealTimeOffset();
   }
 
+  uint64_t AdjustedSteadyClockNow() const {
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(
+               std::chrono::steady_clock::now().time_since_epoch())
+               .count() +
+           ClockRealTimeOffset();
+  }
+
  protected:
   explicit SourceConnector(std::string_view source_name,
                            const ArrayView<DataTableSchema>& table_schemas,

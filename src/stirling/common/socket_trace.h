@@ -7,6 +7,8 @@
 #include <string>
 #include <utility>
 
+#include <absl/hash/hash.h>
+
 #include "src/stirling/bcc_bpf_interface/socket_trace.h"
 
 // This header defines the C++ counterparts of the BPF data structures.
@@ -46,3 +48,14 @@ struct SocketDataEvent {
 
 }  // namespace stirling
 }  // namespace pl
+
+inline bool operator==(const struct conn_id_t& lhs, const struct conn_id_t& rhs) {
+  return lhs.upid.tgid == rhs.upid.tgid && lhs.upid.start_time_ticks == rhs.upid.start_time_ticks &&
+         lhs.fd == rhs.fd && lhs.tsid == rhs.tsid;
+}
+
+// This template is in global namespace to allow ABSL library to discover.
+template <typename H>
+H AbslHashValue(H h, const struct conn_id_t& key) {
+  return H::combine(std::move(h), key.upid.tgid, key.upid.start_time_ticks, key.fd, key.tsid);
+}
