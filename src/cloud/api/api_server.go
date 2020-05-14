@@ -25,7 +25,7 @@ import (
 	svcEnv "pixielabs.ai/pixielabs/src/shared/services/env"
 	"pixielabs.ai/pixielabs/src/shared/services/handler"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
+	// "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 )
 
 const defaultBundleFile = "https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle.json"
@@ -149,12 +149,14 @@ func main() {
 	sms := &controller.ScriptMgrServer{ScriptMgr: sm}
 	cloudapipb.RegisterScriptMgrServer(s.GRPCServer(), sms)
 
-	br, err := script.NewBundleManager(defaultBundleFile)
-	if err != nil {
-		log.WithError(err).Error("Failed to init bundle manager")
-		br = nil
-	}
-	esSuggester := autocomplete.NewElasticSuggester(es, "md_entities", "scripts", br)
+	//TODO(michelle): If we decide to continue to use bundle manager here, we
+	// need to update it so that it does not expect credentials.
+	// br, err := script.NewBundleManager(defaultBundleFile)
+	// if err != nil {
+	// 	log.WithError(err).Error("Failed to init bundle manager")
+	// 	br = nil
+	// }
+	esSuggester := autocomplete.NewElasticSuggester(es, "md_entities", "scripts", nil)
 
 	as := &controller.AutocompleteServer{Suggester: esSuggester}
 	cloudapipb.RegisterAutocompleteServiceServer(s.GRPCServer(), as)
