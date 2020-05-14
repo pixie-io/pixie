@@ -44,8 +44,8 @@ func isValidURL(toTest string) bool {
 	return true
 }
 
-// NewBundleManager reads the json bundle and initializes the bundle reader.
-func NewBundleManager(bundleFile string) (*BundleManager, error) {
+// NewBundleManagerWithOrgName reads the json bundle and initializes the bundle reader for a specific org.
+func NewBundleManagerWithOrgName(bundleFile string, orgName string) (*BundleManager, error) {
 	var r io.Reader
 	if isValidURL(bundleFile) {
 		resp, err := http.Get(bundleFile)
@@ -62,14 +62,9 @@ func NewBundleManager(bundleFile string) (*BundleManager, error) {
 		defer f.Close()
 		r = f
 	}
-	// TODO(zasgar): Refactor user login state, etc.
-	authInfo, err := auth.LoadDefaultCredentials()
-	if err != nil {
-		log.WithError(err).Fatal("Must be logged in")
-	}
 
 	var b bundle
-	err = json.NewDecoder(r).Decode(&b)
+	err := json.NewDecoder(r).Decode(&b)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +72,7 @@ func NewBundleManager(bundleFile string) (*BundleManager, error) {
 	filtered := make(map[string]*pixieScript, 0)
 	// Filter scripts by org.
 	for k, script := range b.Scripts {
-		if len(script.OrgName) == 0 || script.OrgName == authInfo.OrgName {
+		if len(script.OrgName) == 0 || script.OrgName == orgName {
 			filtered[k] = script
 		}
 	}
@@ -85,6 +80,17 @@ func NewBundleManager(bundleFile string) (*BundleManager, error) {
 	return &BundleManager{
 		scripts: filtered,
 	}, nil
+}
+
+// NewBundleManager reads the json bundle and initializes the bundle reader.
+func NewBundleManager(bundleFile string) (*BundleManager, error) {
+	// TODO(zasgar): Refactor user login state, etc.
+	authInfo, err := auth.LoadDefaultCredentials()
+	if err != nil {
+		log.WithError(err).Fatal("Must be logged in")
+	}
+
+	return NewBundleManagerWithOrgName(bundleFile, authInfo.OrgName)
 }
 
 // GetScriptMetadata returns metadata about available scripts.
