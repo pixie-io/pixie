@@ -100,6 +100,8 @@ func CreateGRPCServer(env env.Env, serverOpts *GRPCServerOptions) *grpc.Server {
 		),
 	}
 
+	opts = append(opts, serverOpts.GRPCServerOpts...)
+
 	grpcServer := grpc.NewServer(opts...)
 	return grpcServer
 }
