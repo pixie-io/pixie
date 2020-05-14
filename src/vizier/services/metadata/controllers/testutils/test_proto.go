@@ -51,7 +51,7 @@ info {
   }
   host_info {
     hostname: "anotherhost"
-    host_ip: "127.0.0.1"
+    host_ip: "127.0.0.2"
   }
   capabilities {
     collects_data: true
@@ -70,7 +70,7 @@ info {
   }
   host_info {
     hostname: "abcd"
-    host_ip: "127.0.0.1"
+    host_ip: "127.0.0.3"
   }
   capabilities {
     collects_data: false

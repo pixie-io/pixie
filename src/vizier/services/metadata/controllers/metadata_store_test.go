@@ -146,7 +146,7 @@ func TestKVMetadataStore_DeleteAgent(t *testing.T) {
 	// Delete existing PEM.
 	err = mds.DeleteAgent(existingAgUUID)
 	assert.Nil(t, err)
-	hostnameVal, _ := c.Get("/hostnameIP/testhost-127.0.0.1/agent")
+	hostnameVal, _ := c.Get("/hostnameIP/-127.0.0.1/agent")
 	assert.Equal(t, []byte(""), hostnameVal)
 	agentVal, _ := c.Get("/agent/" + testutils.ExistingAgentUUID)
 	assert.Equal(t, []byte(""), agentVal)
@@ -822,17 +822,17 @@ func TestKVMetadataStore_GetNodeEndpoints(t *testing.T) {
 	mockDs.
 		EXPECT().
 		Get("/podHostnamePair/test-abcd").
-		Return([]byte("test:127.0.0.1"), nil).
+		Return([]byte(":127.0.0.3"), nil).
 		Times(2)
 	mockDs.
 		EXPECT().
 		Get("/podHostnamePair/test2-abcdefg").
-		Return([]byte("localhost:127.0.0.1"), nil).
+		Return([]byte(":127.0.0.1"), nil).
 		Times(2)
 	mockDs.
 		EXPECT().
 		Get("/podHostnamePair/test3-xyz").
-		Return([]byte("localhost:127.0.0.1"), nil).
+		Return([]byte(":127.0.0.1"), nil).
 		Times(2)
 
 	clock := testingutils.NewTestClock(time.Unix(2, 0))

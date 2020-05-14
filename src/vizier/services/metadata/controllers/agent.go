@@ -202,7 +202,11 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 	}
 
 	// Check there's an existing agent for the hostname.
-	hostnameAgID, err := m.mds.GetAgentIDForHostnamePair(&HostnameIPPair{info.HostInfo.Hostname, info.HostInfo.HostIP})
+	hostname := ""
+	if !info.Capabilities.CollectsData {
+		hostname = info.HostInfo.Hostname
+	}
+	hostnameAgID, err := m.mds.GetAgentIDForHostnamePair(&HostnameIPPair{hostname, info.HostInfo.HostIP})
 	if err != nil {
 		log.WithError(err).Fatal("Failed to get agent hostname")
 	} else if hostnameAgID != "" {

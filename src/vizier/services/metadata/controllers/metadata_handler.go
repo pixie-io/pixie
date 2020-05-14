@@ -319,7 +319,7 @@ func (mh *MetadataHandler) handlePodMetadata(o runtime.Object, eventType watch.E
 
 	// Add pod update to agent update queue.
 	hostname := []*HostnameIPPair{
-		&HostnameIPPair{Hostname: e.Spec.NodeName, IP: e.Status.HostIP},
+		&HostnameIPPair{Hostname: "", IP: e.Status.HostIP},
 	}
 
 	// Send container updates.
@@ -537,7 +537,7 @@ func GetNodeResourceUpdateFromEndpoints(ep *metadatapb.Endpoints, hnPair *Hostna
 				if err != nil || podPair == nil {
 					continue
 				}
-				if hnPair == nil || (podPair.Hostname == hnPair.Hostname && podPair.IP == hnPair.IP) {
+				if hnPair == nil || (podPair.IP == hnPair.IP) {
 					podIDs = append(podIDs, addr.TargetRef.UID)
 					podNames = append(podNames, addr.TargetRef.Name)
 				}

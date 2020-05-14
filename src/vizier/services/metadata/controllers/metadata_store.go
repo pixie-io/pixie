@@ -311,8 +311,13 @@ func (mds *KVMetadataStore) DeleteAgent(agentID uuid.UUID) error {
 		return err
 	}
 
+	hostname := ""
+	if !aPb.Info.Capabilities.CollectsData {
+		hostname = aPb.Info.HostInfo.Hostname
+	}
+
 	hnPair := &HostnameIPPair{
-		Hostname: aPb.Info.HostInfo.Hostname,
+		Hostname: hostname,
 		IP:       aPb.Info.HostInfo.HostIP,
 	}
 	delKeys := []string{getAgentKey(agentID), GetHostnamePairAgentKey(hnPair)}
@@ -339,8 +344,12 @@ func (mds *KVMetadataStore) CreateAgent(agentID uuid.UUID, a *agentpb.Agent) err
 	if err != nil {
 		return errors.New("Unable to marshal agent protobuf: " + err.Error())
 	}
+	hostname := ""
+	if !a.Info.Capabilities.CollectsData {
+		hostname = a.Info.HostInfo.Hostname
+	}
 	hnPair := &HostnameIPPair{
-		Hostname: a.Info.HostInfo.Hostname,
+		Hostname: hostname,
 		IP:       a.Info.HostInfo.HostIP,
 	}
 	mds.cache.Set(GetHostnamePairAgentKey(hnPair), agentID.String())
@@ -610,7 +619,7 @@ func (mds *KVMetadataStore) UpdatePod(p *metadatapb.Pod, deleted bool) error {
 		mds.cache.Set(key, string(val))
 	}
 
-	mds.cache.Set(getPodToHostnamePairKey(p.Metadata.Name, p.Metadata.Namespace), fmt.Sprintf("%s:%s", p.Spec.NodeName, p.Status.HostIP))
+	mds.cache.Set(getPodToHostnamePairKey(p.Metadata.Name, p.Metadata.Namespace), fmt.Sprintf("%s:%s", "", p.Status.HostIP))
 
 	// Add mapping from resource version -> pod.
 	rvUpdate := &metadatapb.MetadataObject{
@@ -742,7 +751,7 @@ func (mds *KVMetadataStore) GetNodeEndpoints(hnPair *HostnameIPPair) ([]*metadat
 				if err != nil || podPair == nil {
 					continue
 				}
-				if (hnPair == nil || (podPair.Hostname == hnPair.Hostname && podPair.IP == hnPair.IP)) && pb.Metadata.DeletionTimestampNS == 0 {
+				if (hnPair == nil || (podPair.IP == hnPair.IP)) && pb.Metadata.DeletionTimestampNS == 0 {
 					endpoints = append(endpoints, pb)
 				}
 			}
@@ -1078,7 +1087,7 @@ func (mds *KVMetadataStore) GetMetadataUpdatesForHostname(hnPair *HostnameIPPair
 
 		switch m := obj.Object.(type) {
 		case *metadatapb.MetadataObject_Pod:
-			if hnPair != nil && m.Pod.Spec.NodeName != hnPair.Hostname && m.Pod.Status.HostIP != hnPair.IP {
+			if hnPair != nil && m.Pod.Status.HostIP != hnPair.IP {
 				continue
 			}
 			updatePbs = append(updatePbs, GetContainerResourceUpdatesFromPod(m.Pod)...)
