@@ -40,7 +40,6 @@ export const ExeucteContextProvider = (props) => {
     }
 
     setLoading(true);
-    clearResults();
 
     if (!execArgs) {
       execArgs = { script, vis, args };

@@ -85,6 +85,16 @@ const useStyles = makeStyles((theme: Theme) => {
         },
       },
     },
+    loading: {
+      opacity: 0.6,
+      pointerEvents: 'none',
+    },
+    spinner: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+    },
   });
 });
 
@@ -97,7 +107,7 @@ interface CanvasProps {
 const Canvas = (props: CanvasProps) => {
   const classes = useStyles();
   const theme = useTheme();
-  const { tables } = React.useContext(ResultsContext);
+  const { tables, loading } = React.useContext(ResultsContext);
   const { vis, setVis } = React.useContext(VisContext);
   const { setTimeseriesDomain } = React.useContext(VegaContext);
   const [vegaModule, setVegaModule] = React.useState(null);
@@ -143,6 +153,7 @@ const Canvas = (props: CanvasProps) => {
       'fs-exclude',
       classes.gridItem,
       props.editable && classes.editable,
+      loading && classes.loading,
     );
 
     if (vis.widgets.length === 0) {
@@ -157,7 +168,8 @@ const Canvas = (props: CanvasProps) => {
       ));
     }
 
-    return vis.widgets.map((widget, i) => {
+    const widgets = [];
+    vis.widgets.forEach((widget, i) => {
       const display = widget.displaySpec;
       // TODO(nserrino): Support multiple output tables when we have a Vega component that
       // takes in multiple output tables.
@@ -165,7 +177,7 @@ const Canvas = (props: CanvasProps) => {
       const table = tables[tableName];
       let content = null;
       if (!table) {
-        content = <div key={widget.name}>Table {tableName} not found.</div>;
+        return;
       } else if (display[DISPLAY_TYPE_KEY] === TABLE_DISPLAY_TYPE) {
         content = <>
           <div className={classes.widgetTitle}>{widget.name}</div>
@@ -199,9 +211,15 @@ const Canvas = (props: CanvasProps) => {
           content = <div>Error in displaySpec: {e.message}</div>;
         }
       }
-      return <div key={widget.name} className={className} data-grid={toLayout(widget, widget.name)}>{content}</div>;
+      widgets.push(
+        <div key={tableName} className={className} data-grid={toLayout(widget, tableName)}>
+          {content}
+          {loading ? <div className={classes.spinner}><Spinner /></div> : null}
+        </div>,
+      );
     });
-  }, [tables, vis, reactVegaModule, props.editable, defaultLayout]);
+    return widgets;
+  }, [tables, vis, reactVegaModule, props.editable, defaultLayout, loading]);
 
   React.useEffect(() => {
     setTimeseriesDomain(null);
@@ -222,7 +240,7 @@ const Canvas = (props: CanvasProps) => {
     resize();
   }, [vis]);
 
-  if (!reactVegaModule) {
+  if (!reactVegaModule || (loading && charts.length === 0)) {
     return (
       <div className='center-content'><Spinner /></div>
     );

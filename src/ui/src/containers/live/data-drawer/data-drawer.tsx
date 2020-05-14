@@ -1,7 +1,9 @@
 import clsx from 'clsx';
 import LazyPanel from 'components/lazy-panel';
+import { Spinner } from 'components/spinner/spinner';
 import { DataDrawerContext, DataDrawerTabsKey } from 'containers/live/context/data-drawer-context';
 import { LayoutContext } from 'containers/live/context/layout-context';
+import { ResultsContext } from 'containers/live/context/results-context';
 import * as React from 'react';
 import Split from 'react-split';
 
@@ -20,12 +22,19 @@ const useStyles = makeStyles((theme: Theme) => {
       },
     },
     drawerRoot: {
+      position: 'relative',
       display: 'flex',
       flexDirection: 'column',
     },
     content: {
       flex: 1,
       minHeight: 0,
+    },
+    spinner: {
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
     },
   });
 });
@@ -35,6 +44,7 @@ const DataDrawer = () => {
   const toggleDrawerOpen = () => setDataDrawerOpen((open) => !open);
   const classes = useStyles();
   const { activeTab, setActiveTab } = React.useContext(DataDrawerContext);
+  const { loading } = React.useContext(ResultsContext);
 
   return (
     <div className={classes.drawerRoot}>
@@ -44,16 +54,22 @@ const DataDrawer = () => {
         activeTab={activeTab}
         setActiveTab={(tab: DataDrawerTabsKey) => setActiveTab(tab)}
       />
-      <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'data'}>
-        <DataViewer />
-      </LazyPanel>
-      <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'errors'}>
-        <ErrorPanel />
-      </LazyPanel>
-      <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'stats'}>
-        <ExecutionStats />
-      </LazyPanel>
-    </div>
+      {
+        loading ?
+          (dataDrawerOpen ? <div className={classes.spinner}><Spinner /></div> : null) :
+          <>
+            <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'data'}>
+              <DataViewer />
+            </LazyPanel>
+            <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'errors'}>
+              <ErrorPanel />
+            </LazyPanel>
+            <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'stats'}>
+              <ExecutionStats />
+            </LazyPanel>
+          </>
+      }
+    </div >
   );
 };
 
