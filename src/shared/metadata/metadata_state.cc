@@ -104,6 +104,13 @@ std::string K8sMetadataState::DebugString(int indent_level) const {
   for (const auto& [k, v] : pods_by_ip_) {
     str += absl::Substitute("pod_id: $0, ip: $1\n", v, k);
   }
+
+  str += prefix + absl::Substitute("PodCIDRs($0): ", pod_cidrs_.size());
+  for (const auto cidr : pod_cidrs_) {
+    str += absl::Substitute("$0,", ToString(cidr));
+  }
+  str += "\n";
+
   return str;
 }
 
@@ -223,6 +230,7 @@ std::string AgentMetadataState::DebugString(int indent_level) const {
     PL_UNUSED(upid);
     str += prefix + absl::Substitute("$0\n", upid_info->DebugString());
   }
+
   str += prefix + "\n";
   str += prefix + "--------------------------------------------\n";
   return str;
