@@ -239,6 +239,19 @@ ParseState ParseBindRequest(std::string_view payload, BindRequest* res) {
   return ParseState::kSuccess;
 }
 
+ParseState ParseParamDesc(std::string_view payload, ParamDesc* param_desc) {
+  BinaryDecoder decoder(payload);
+
+  PL_ASSIGN_OR_RETURN_INVALID(const int16_t param_count, decoder.ExtractInt<int16_t>());
+
+  for (int i = 0; i < param_count; ++i) {
+    PL_ASSIGN_OR_RETURN_INVALID(const int32_t type_oid, decoder.ExtractInt<int32_t>());
+    param_desc->type_oids.push_back(type_oid);
+  }
+
+  return ParseState::kSuccess;
+}
+
 namespace {
 
 template <typename TElemType>

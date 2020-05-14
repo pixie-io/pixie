@@ -129,6 +129,10 @@ struct BindRequest {
   std::vector<FmtCode> res_col_fmt_codes;
 };
 
+struct ParamDesc {
+  std::vector<int32_t> type_oids;
+};
+
 struct Record {
   RegularMessage req;
   RegularMessage resp;

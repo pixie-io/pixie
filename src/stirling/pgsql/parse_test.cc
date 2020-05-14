@@ -146,7 +146,6 @@ auto ParamIs(FmtCode fmt_code, std::string_view value) {
   return AllOf(Field(&Param::format_code, fmt_code), Field(&Param::value, value));
 }
 
-// Tests that ParseBindReq
 TEST(PGSQLParseTest, ParseBindRequest) {
   std::string_view bind_msg_payload = CreateStringView<char>(
       // destination portal name
@@ -180,6 +179,21 @@ TEST(PGSQLParseTest, ParseBindRequest) {
   EXPECT_THAT(bind_req.params, ElementsAre(ParamIs(FmtCode::kBinary, "\x4a\x61\x73\x6f\x6e"),
                                            ParamIs(FmtCode::kBinary, "\xaa\xbb\xcc")));
   EXPECT_THAT(bind_req.res_col_fmt_codes, ElementsAre(FmtCode::kText, FmtCode::kBinary));
+}
+
+TEST(PGSQLParseTest, ParseParamDesc) {
+  std::string_view payload = CreateStringView<char>(
+      // Parameter count
+      "\x00\x03"
+      // 1st type oid
+      "\x00\x00\x00\x19"
+      // 2nd type oid
+      "\x00\x00\x00\x19"
+      // 2rd type oid
+      "\x00\x00\x00\x19");
+  ParamDesc param_desc;
+  EXPECT_EQ(ParseState::kSuccess, ParseParamDesc(payload, &param_desc));
+  EXPECT_THAT(param_desc.type_oids, ElementsAre(25, 25, 25));
 }
 
 const std::string_view kReadyForQueryMsg = CreateStringView<char>("Z\000\000\000\005I");
