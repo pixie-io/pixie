@@ -23,6 +23,7 @@ import { ScriptContext } from './context/script-context';
 import { DataDrawerSplitPanel } from './data-drawer/data-drawer';
 import { EditorSplitPanel } from './editor';
 import ExecuteScriptButton from './execute-button';
+import ProfileMenu from './profile-menu';
 import { useInitScriptLoader } from './script-loader';
 import LiveViewShortcuts from './shortcuts';
 import LiveViewTitle from './title';
@@ -145,6 +146,7 @@ const LiveView = () => {
             <MoveIcon />
           </ToggleButton>
         </Tooltip>
+        <ProfileMenu/>
       </div>
       <DataDrawerSplitPanel className={classes.main}>
         <EditorSplitPanel className={classes.editorPanel}>
