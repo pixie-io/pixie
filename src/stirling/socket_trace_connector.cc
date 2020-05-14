@@ -805,6 +805,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_resp_headers")>(ToJSONString(resp_message.headers));
   r.Append<r.ColIndex("http_resp_status")>(resp_message.resp_status);
   r.Append<r.ColIndex("http_resp_message")>(std::move(resp_message.resp_message));
+  r.Append<r.ColIndex("http_resp_body_size")>(resp_message.body.size());
   r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.body));
   r.Append<r.ColIndex("http_resp_latency_ns")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
@@ -854,6 +855,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   // TODO(yzhao): Populate the following field from headers.
   r.Append<r.ColIndex("http_resp_message")>("-");
   r.Append<r.ColIndex("http_req_body")>(std::move(req_message.message));
+  r.Append<r.ColIndex("http_resp_body_size")>(resp_message.message.size());
   r.Append<r.ColIndex("http_resp_body")>(std::move(resp_message.message));
   r.Append<r.ColIndex("http_resp_latency_ns")>(
       CalculateLatency(req_message.timestamp_ns, resp_message.timestamp_ns));
@@ -915,6 +917,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   // TODO(yzhao): Populate the following field from headers.
   r.Append<r.ColIndex("http_resp_message")>("OK");
   r.Append<r.ColIndex("http_req_body")>(std::move(req_stream->data));
+  r.Append<r.ColIndex("http_resp_body_size")>(resp_stream->data.size());
   r.Append<r.ColIndex("http_resp_body")>(std::move(resp_stream->data));
   r.Append<r.ColIndex("http_resp_latency_ns")>(
       CalculateLatency(req_stream->timestamp_ns, resp_stream->timestamp_ns));

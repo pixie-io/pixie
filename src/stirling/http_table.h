@@ -47,6 +47,8 @@ constexpr DataElement kHTTPElements[] = {
     "HTTP response status text (e.g. OK, Not Found, ...)"},
     {"http_resp_body", types::DataType::STRING, types::PatternType::STRUCTURED,
     "Response body in JSON format"},
+    {"http_resp_body_size", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
+     "Response body size (before any truncation)"},
     // TODO(yzhao): Rename this to latency_ns and consolidate into canonical_types.h.
     {"http_resp_latency_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
     "Request-response latency in nanoseconds"},
