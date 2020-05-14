@@ -46,8 +46,17 @@ Status PEMManager::InitSchemas() {
   auto relation_info_vec = ConvertSubscribePBToRelationInfo(subscribe_pb);
   PL_RETURN_IF_ERROR(relation_info_manager()->UpdateRelationInfo(relation_info_vec));
   for (const auto& relation_info : relation_info_vec) {
-    PL_RETURN_IF_ERROR(table_store()->AddTable(relation_info.id, relation_info.name,
-                                               table_store::Table::Create(relation_info.relation)));
+    if (relation_info.name == "http_events") {
+      // Make http_events hold 1Gi. This is a hack and will be removed once we have proactive
+      // backup.
+      auto t = std::shared_ptr<table_store::Table>(
+          new table_store::Table(relation_info.relation, 1024 * 1024 * 1024));
+      PL_RETURN_IF_ERROR(table_store()->AddTable(relation_info.id, relation_info.name, t));
+    } else {
+      PL_RETURN_IF_ERROR(
+          table_store()->AddTable(relation_info.id, relation_info.name,
+                                  table_store::Table::Create(relation_info.relation)));
+    }
   }
   return Status::OK();
 }
