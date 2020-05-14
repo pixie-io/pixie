@@ -41,8 +41,7 @@ class AgentMetadataStateManager {
   using ServiceUpdate = pl::shared::k8s::metadatapb::ServiceUpdate;
 
   explicit AgentMetadataStateManager(std::string_view hostname, uint32_t asid, sole::uuid agent_id,
-                                     bool collects_data, absl::optional<CIDRBlock> cluster_cidr_opt,
-                                     const pl::system::Config& config,
+                                     bool collects_data, const pl::system::Config& config,
                                      AgentMetadataFilter* metadata_filter)
       : asid_(asid),
         agent_id_(agent_id),
@@ -51,9 +50,6 @@ class AgentMetadataStateManager {
         metadata_filter_(metadata_filter) {
     md_reader_ = std::make_unique<CGroupMetadataReader>(config);
     agent_metadata_state_ = std::make_shared<AgentMetadataState>(hostname, asid, agent_id);
-    if (cluster_cidr_opt.has_value()) {
-      agent_metadata_state_->k8s_metadata_state()->set_cluster_cidr(cluster_cidr_opt.value());
-    }
   }
 
   uint32_t asid() const { return asid_; }
@@ -98,6 +94,10 @@ class AgentMetadataStateManager {
 
   void SetServiceCIDR(const CIDRBlock& cidr) {
     agent_metadata_state_->k8s_metadata_state()->set_service_cidr(cidr);
+  }
+
+  void SetPodCIDR(std::vector<CIDRBlock> cidrs) {
+    agent_metadata_state_->k8s_metadata_state()->set_pod_cidrs(std::move(cidrs));
   }
 
   static Status ApplyK8sUpdates(

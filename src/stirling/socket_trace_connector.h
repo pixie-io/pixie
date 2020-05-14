@@ -346,6 +346,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
     mds_upids_ = std::move(upids);
   }
 
+  // Returns vector representing currently known cluster (pod and service) CIDRs.
+  std::vector<CIDRBlock> ClusterCIDRs(ConnectorContext* ctx);
+
   // Setups output file stream object writing to the input file path.
   void SetupOutput(const std::filesystem::path& file);
   // Writes data event to the specified output file.
@@ -416,6 +419,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   absl::flat_hash_set<std::string> openssl_probed_binaries_;
 
   std::shared_ptr<SocketTraceBPFTableManager> bpf_table_info_;
+
+  // Manual cluster CIDR provided through flags.
+  std::optional<CIDRBlock> cluster_cidr_override_;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);

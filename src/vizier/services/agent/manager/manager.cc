@@ -226,23 +226,9 @@ void Manager::HandleRegisterAgentResponse(std::unique_ptr<messages::VizierMessag
   CHECK(!agent_registered_) << "Agent already registered, but got another registration response.";
   info_.asid = msg->register_agent_response().asid();
 
-  // Save typing
-  const auto& cluster_cidr_str = msg->register_agent_response().cluster_cidr();
-  CIDRBlock cidr;
-  Status status = ParseCIDRBlock(cluster_cidr_str, &cidr);
-  LOG_IF(ERROR, !status.ok()) << "Could not parse CIDR block string, status: " << status.ToString();
-  absl::optional<CIDRBlock> cluster_cidr_opt;
-  if (status.ok()) {
-    LOG(INFO) << "cluster_cidr is set to: " << cluster_cidr_str;
-    cluster_cidr_opt = cidr;
-  } else {
-    LOG(ERROR) << absl::Substitute("Cloud not obtain cluster_cidr, cidr string: '$0'",
-                                   cluster_cidr_str);
-  }
-
   mds_manager_ = std::make_unique<pl::md::AgentMetadataStateManager>(
       info_.hostname, info_.asid, info_.agent_id, info_.capabilities.collects_data(),
-      cluster_cidr_opt, pl::system::Config::GetInstance(), agent_metadata_filter_.get());
+      pl::system::Config::GetInstance(), agent_metadata_filter_.get());
   relation_info_manager_ = std::make_unique<RelationInfoManager>();
 
   PL_CHECK_OK(PostRegisterHook());

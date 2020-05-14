@@ -224,6 +224,18 @@ Status SocketTraceConnector::InitImpl() {
   bpf_table_info_ = std::make_shared<SocketTraceBPFTableManager>(&bpf());
   ConnectionTracker::SetBPFTableManager(bpf_table_info_);
 
+  if (!FLAGS_stirling_cluster_cidr.empty()) {
+    CIDRBlock cidr;
+    Status s = ParseCIDRBlock(FLAGS_stirling_cluster_cidr, &cidr);
+    if (s.ok()) {
+      cluster_cidr_override_ = std::move(cidr);
+    } else {
+      LOG(ERROR) << absl::Substitute(
+          "Could not parse flag --stirling_cluster_cidr as a CIDR. Value=$0",
+          FLAGS_stirling_cluster_cidr);
+    }
+  }
+
   return Status::OK();
 }
 
@@ -991,35 +1003,38 @@ void SocketTraceConnector::WriteDataEvent(const SocketDataEvent& event) {
 //-----------------------------------------------------------------------------
 
 namespace {
-std::vector<CIDRBlock> ClusterCIDRs(ConnectorContext* ctx) {
-  // TODO(yzhao/oazizi): Cache CIDRs (Except for service CIDR, which must be updated continually).
-  std::optional<CIDRBlock> pod_cidr =
-      ctx->AgentMetadataState()->k8s_metadata_state().cluster_cidr();
-  std::optional<CIDRBlock> service_cidr =
-      ctx->AgentMetadataState()->k8s_metadata_state().service_cidr();
 
+std::vector<CIDRBlock> K8sClusterCIDRs(ConnectorContext* ctx) {
   std::vector<CIDRBlock> cluster_cidrs;
-  if (pod_cidr.has_value()) {
-    cluster_cidrs.push_back(std::move(pod_cidr.value()));
+
+  // Copy Pod CIDRs.
+  const std::vector<CIDRBlock>& pod_cidrs =
+      ctx->AgentMetadataState()->k8s_metadata_state().pod_cidrs();
+  for (const auto& pod_cidr : pod_cidrs) {
+    cluster_cidrs.push_back(pod_cidr);
   }
+
+  // Copy Service CIDRs.
+  const std::optional<CIDRBlock>& service_cidr =
+      ctx->AgentMetadataState()->k8s_metadata_state().service_cidr();
   if (service_cidr.has_value()) {
-    cluster_cidrs.push_back(std::move(service_cidr.value()));
-  }
-  if (!FLAGS_stirling_cluster_cidr.empty()) {
-    CIDRBlock cidr;
-    Status s = ParseCIDRBlock(FLAGS_stirling_cluster_cidr, &cidr);
-    if (s.ok()) {
-      cluster_cidrs.push_back(std::move(cidr));
-    } else {
-      LOG_FIRST_N(ERROR, 1) << absl::Substitute(
-          "Could not parse flag --stirling_cluster_cidr as a CIDR. Value=$0",
-          FLAGS_stirling_cluster_cidr);
-    }
+    cluster_cidrs.push_back(service_cidr.value());
   }
 
   return cluster_cidrs;
 }
+
 }  // namespace
+
+std::vector<CIDRBlock> SocketTraceConnector::ClusterCIDRs(ConnectorContext* ctx) {
+  // If we have a cluster CIDR override, then just use that value.
+  if (cluster_cidr_override_.has_value()) {
+    return {cluster_cidr_override_.value()};
+  }
+
+  // Otherwise, use CIDRs from ctx.
+  return K8sClusterCIDRs(ctx);
+}
 
 void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table_num,
                                            DataTable* data_table) {

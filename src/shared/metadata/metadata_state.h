@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
@@ -76,26 +77,17 @@ class K8sMetadataState : NotCopyable {
   using ServicesByNameMap = PodsByNameMap;
   using PodsByPodIpMap = absl::flat_hash_map<std::string, UID>;
 
-  // This is not satisfactory, as it violates the general pattern of this class, where mutations
-  // are applied asynchronously through the Handle*() functions.
-  //
-  // This is adopted because:
-  // * cluster_cidr is a property of the K8s cluster.
-  // * Eventually, it's likely that cluster_cidr can change during the lifetime of the K8s cluster,
-  // which then requires the same update pattern as other fields.
-  //
-  // Alternative could be:
-  // * AgentMetadataState::cluster_cidr_.
-  void set_cluster_cidr(const CIDRBlock& cidr) { cluster_cidr_ = cidr; }
-  const auto& cluster_cidr() const { return cluster_cidr_; }
-
   void set_service_cidr(const CIDRBlock& cidr) {
     if (!service_cidr_.has_value() || service_cidr_.value() != cidr) {
       LOG(INFO) << absl::Substitute("Service CIDR updated to $0", ToString(cidr));
     }
     service_cidr_ = cidr;
   }
-  const auto& service_cidr() const { return service_cidr_; }
+  const std::optional<CIDRBlock>& service_cidr() const { return service_cidr_; }
+
+  void set_pod_cidrs(std::vector<CIDRBlock> cidrs) { pod_cidrs_ = std::move(cidrs); }
+
+  const std::vector<CIDRBlock>& pod_cidrs() const { return pod_cidrs_; }
 
   const PodsByNameMap& pods_by_name() const { return pods_by_name_; }
 
@@ -155,15 +147,11 @@ class K8sMetadataState : NotCopyable {
   std::string DebugString(int indent_level = 0) const;
 
  private:
-  // The CIDR block assigned to the pods of the cluster. This is used to determine an IP address
-  // is inside/outside of the cluster.
-  //
-  // If unset, only client-side events, which are detected by traffic direction and the content
-  // being request or response, are captured.
-  std::optional<CIDRBlock> cluster_cidr_;
-
   // The CIDR block used for services inside the cluster.
   std::optional<CIDRBlock> service_cidr_;
+
+  // The CIDRs used for pods inside the cluster.
+  std::vector<CIDRBlock> pod_cidrs_;
 
   // This stores K8s native objects (services, pods, etc).
   absl::flat_hash_map<UID, K8sMetadataObjectUPtr> k8s_objects_;

@@ -147,7 +147,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     // because it would think the server is in the cluster.
     CIDRBlock cidr_block;
     ASSERT_OK(ParseCIDRBlock("1.2.3.4/32", &cidr_block));
-    agent_metadata_state->k8s_metadata_state()->set_cluster_cidr(cidr_block);
+    agent_metadata_state->k8s_metadata_state()->set_service_cidr(cidr_block);
 
     ctx_ = std::make_unique<ConnectorContext>(agent_metadata_state);
 

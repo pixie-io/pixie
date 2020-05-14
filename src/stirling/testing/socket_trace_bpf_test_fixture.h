@@ -29,7 +29,7 @@ class SocketTraceBPFTest : public ::testing::Test {
     // Some tests depends on cidr not containing remote IP address.
     CIDRBlock cidr;
     ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
-    agent_metadata_state->k8s_metadata_state()->set_cluster_cidr(cidr);
+    agent_metadata_state->k8s_metadata_state()->set_service_cidr(cidr);
 
     ctx_ = std::make_unique<ConnectorContext>(std::move(agent_metadata_state));
   }
