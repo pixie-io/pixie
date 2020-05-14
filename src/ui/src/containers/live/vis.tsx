@@ -152,3 +152,7 @@ export function getQueryFuncs(vis: Vis, variableValues: { [key: string]: string 
   });
   return globalFuncs.concat(widgetFuncs);
 }
+
+export function toJSON(vis: Vis) {
+  return JSON.stringify(vis, null, 2);
+}

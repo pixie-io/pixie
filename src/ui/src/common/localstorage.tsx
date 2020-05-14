@@ -3,7 +3,8 @@ import * as React from 'react';
 export const LIVE_VIEW_DATA_DRAWER_OPENED_KEY = 'px-live-data-drawer-opened';
 export const LIVE_VIEW_EDITOR_OPENED_KEY = 'px-live-editor-opened';
 export const LIVE_VIEW_PIXIE_SCRIPT_KEY = 'px-live-pixie-script';
-export const LIVE_VIEW_TITLE_KEY = 'px-live-title';
+export const LIVE_VIEW_SCRIPT_TITLE_KEY = 'px-live-script-title';
+export const LIVE_VIEW_SCRIPT_ID_KEY = 'px-live-script-id';
 export const LIVE_VIEW_VIS_SPEC_KEY = 'px-live-vis';
 export const LIVE_VIEW_EDITOR_SPLITS_KEY = 'px-live-editor-splits';
 export const LIVE_VIEW_DATA_DRAWER_SPLITS_KEY = 'px-live-data-drawer-splits';
@@ -13,7 +14,8 @@ type LocalStorageKey =
   typeof LIVE_VIEW_DATA_DRAWER_OPENED_KEY |
   typeof LIVE_VIEW_EDITOR_OPENED_KEY |
   typeof LIVE_VIEW_PIXIE_SCRIPT_KEY |
-  typeof LIVE_VIEW_TITLE_KEY |
+  typeof LIVE_VIEW_SCRIPT_ID_KEY |
+  typeof LIVE_VIEW_SCRIPT_TITLE_KEY |
   typeof LIVE_VIEW_VIS_SPEC_KEY |
   typeof LIVE_VIEW_EDITOR_SPLITS_KEY |
   typeof LIVE_VIEW_DATA_DRAWER_SPLITS_KEY;

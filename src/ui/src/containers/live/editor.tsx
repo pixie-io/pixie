@@ -5,7 +5,6 @@ import LazyPanel from 'components/lazy-panel';
 import { parseSpecs } from 'components/vega/spec';
 import * as React from 'react';
 import Split from 'react-split';
-import { debounce } from 'utils/debounce';
 
 import IconButton from '@material-ui/core/IconButton';
 import { createStyles, makeStyles, Theme, useTheme, withStyles } from '@material-ui/core/styles';
@@ -13,8 +12,9 @@ import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import CloseIcon from '@material-ui/icons/Close';
 
-import { LiveContext, ScriptContext, VisContext } from './context';
 import { LayoutContext } from './context/layout-context';
+import { ScriptContext } from './context/script-context';
+import { VisContext } from './context/vis-context';
 import { parseVis } from './vis';
 
 const useStyles = makeStyles((theme: Theme) =>
@@ -57,41 +57,26 @@ const useStyles = makeStyles((theme: Theme) =>
 
 const VisEditor = () => {
   const classes = useStyles();
-  const { updateVis } = React.useContext(LiveContext);
-  const vis = React.useContext(VisContext);
-  const [code, setCode] = React.useState('');
-  const updateVisDebounce = React.useMemo(() => debounce(updateVis, 2000), []);
-
-  React.useEffect(() => {
-    const newVis = parseVis(code);
-    if (newVis) {
-      updateVisDebounce(newVis);
-    }
-  }, [code]);
-
-  React.useEffect(() => {
-    setCode(JSON.stringify(vis, null, 2));
-  }, [vis]);
+  const { visJSON, setVisJSON } = React.useContext(VisContext);
 
   return (
     <CodeEditor
       className={classes.editor}
-      code={code}
-      onChange={setCode}
+      code={visJSON}
+      onChange={setVisJSON}
     />
   );
 };
 
 const ScriptEditor = () => {
   const classes = useStyles();
-  const { updateScript } = React.useContext(LiveContext);
-  const code = React.useContext(ScriptContext);
+  const { setScript, script } = React.useContext(ScriptContext);
 
   return (
     <CodeEditor
       className={classes.editor}
-      code={code}
-      onChange={updateScript}
+      code={script}
+      onChange={setScript}
     />
   );
 };

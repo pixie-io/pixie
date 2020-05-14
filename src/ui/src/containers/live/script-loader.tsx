@@ -1,15 +1,17 @@
 import * as React from 'react';
-import {getQueryParams} from 'utils/query-params';
-import {GetPxScripts} from 'utils/script-bundle';
+import { getQueryParams } from 'utils/query-params';
+import { GetPxScripts } from 'utils/script-bundle';
 
-import {LiveContext, ScriptContext, VisContext} from './context';
-import {parseVis} from './vis';
+import { ExecuteContext } from './context/execute-context';
+import { ScriptContext } from './context/script-context';
+import { VisContext } from './context/vis-context';
+import { parseVis } from './vis';
 
 export function useInitScriptLoader() {
   const [loaded, setLoaded] = React.useState(false);
   const script = React.useContext(ScriptContext);
   const [params, setParams] = React.useState(getQueryParams());
-  const { executeScript, setScripts } = React.useContext(LiveContext);
+  const { execute } = React.useContext(ExecuteContext);
   const visSpec = React.useContext(VisContext);
 
   // Execute the default scripts if script is not set in the query params.
@@ -17,7 +19,7 @@ export function useInitScriptLoader() {
     if (loaded || params.script || !script || !visSpec) {
       return;
     }
-    executeScript();
+    execute();
     setLoaded(true);
   }, [loaded, script, visSpec, params]);
 
@@ -28,9 +30,14 @@ export function useInitScriptLoader() {
     }
     GetPxScripts().then((examples) => {
       for (const { title, vis, code, id } of examples) {
-        if (id === params.script && vis && code) {
-          setScripts(code, vis, { title, id }, params);
-          executeScript(code, parseVis(vis), params);
+        if (id === params.script && code) {
+          execute({
+            script: code,
+            vis: parseVis(vis),
+            args: params,
+            title,
+            id,
+          });
         }
       }
       // No script has been loaded if we got here, clear the script param the first effect will run.

@@ -15,7 +15,8 @@ import { dataFromProto } from 'utils/result-data-utils';
 
 import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/styles';
 
-import { LiveContext, ResultsContext, VisContext } from './context';
+import { ResultsContext } from './context/results-context';
+import { VisContext } from './context/vis-context';
 import { ChartDisplay, convertWidgetDisplayToVegaSpec } from './convert-to-vega-spec';
 import { addLayout, addTableLayout, Layout, toLayout, updatePositions } from './layout';
 import { DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, TABLE_DISPLAY_TYPE, widgetTableName } from './vis';
@@ -97,8 +98,7 @@ const Canvas = (props: CanvasProps) => {
   const classes = useStyles();
   const theme = useTheme();
   const { tables } = React.useContext(ResultsContext);
-  const vis = React.useContext(VisContext);
-  const { updateVis } = React.useContext(LiveContext);
+  const { vis, setVis } = React.useContext(VisContext);
   const { setTimeseriesDomain } = React.useContext(VegaContext);
   const [vegaModule, setVegaModule] = React.useState(null);
   const [reactVegaModule, setReactVegaModule] = React.useState(null);
@@ -131,7 +131,7 @@ const Canvas = (props: CanvasProps) => {
   React.useEffect(() => {
     const newVis = addLayout(vis);
     if (newVis !== vis) {
-      updateVis(newVis);
+      setVis(newVis);
     }
   }, [vis]);
 
@@ -215,7 +215,7 @@ const Canvas = (props: CanvasProps) => {
 
   const handleLayoutChange = React.useCallback((newLayout) => {
     if (vis.widgets.length > 0) {
-      updateVis(updatePositions(vis, newLayout));
+      setVis(updatePositions(vis, newLayout));
     } else {
       setDefaultLayout(newLayout);
     }

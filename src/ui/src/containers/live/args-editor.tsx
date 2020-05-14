@@ -3,7 +3,7 @@ import * as React from 'react';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 
-import { ArgsContext } from './context';
+import { ArgsContext } from './context/args-context';
 
 const ArgsEditor = () => {
   const { args, setArgs } = React.useContext(ArgsContext);

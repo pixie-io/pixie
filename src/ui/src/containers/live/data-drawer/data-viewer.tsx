@@ -1,13 +1,12 @@
 import { VizierErrorDetails } from 'common/errors';
 import LazyPanel from 'components/lazy-panel';
 import { VizierDataTableWithDetails } from 'components/vizier-data-table/vizier-data-table';
+import { ResultsContext } from 'containers/live/context/results-context';
 import * as React from 'react';
 
 import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
-
-import { ResultsContext } from '../context';
 
 const DataViewer = () => {
   const { tables } = React.useContext(ResultsContext);

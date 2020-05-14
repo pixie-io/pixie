@@ -1,5 +1,5 @@
 import { VizierErrorDetails } from 'common/errors';
-import { ResultsContext } from 'containers/live/context';
+import { ResultsContext } from 'containers/live/context/results-context';
 import * as React from 'react';
 
 const ErrorPanel = () => {

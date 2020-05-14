@@ -1,4 +1,4 @@
-import { ResultsContext } from 'containers/live/context';
+import { ResultsContext } from 'containers/live/context/results-context';
 import * as React from 'react';
 
 import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
@@ -69,7 +69,9 @@ const DataDrawerToggle = (props: DataDrawerToggleProps) => {
       event.stopPropagation();
     }
   };
+
   const { error, stats } = React.useContext(ResultsContext);
+
   React.useEffect(() => {
     if ((!error && activeTab === 'errors') ||
       (!stats && activeTab === 'stats')) {

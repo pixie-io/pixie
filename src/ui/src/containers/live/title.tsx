@@ -4,7 +4,7 @@ import * as React from 'react';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 import ArgsEditor from './args-editor';
-import { TitleContext } from './context';
+import { ScriptContext } from './context/script-context';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -26,13 +26,11 @@ const useStyles = makeStyles((theme: Theme) =>
 );
 
 const LiveViewTitle = (props) => {
-  const title = React.useContext(TitleContext);
+  const { id, title } = React.useContext(ScriptContext);
   const classes = useStyles();
 
-  // tslint:disable:whitespace remove this once we switch to eslint
-  const id = title?.id || 'unknown';
-  const desc = title?.title || 'untitled';
-  // tslint:enable:whitespace
+  const scriptId = id || 'unknown';
+  const desc = title || 'untitled';
 
   return (
     <div className={clsx(props.className, classes.root)}>

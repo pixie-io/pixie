@@ -16,8 +16,10 @@ import ToggleButton from '@material-ui/lab/ToggleButton';
 
 import Canvas from './canvas';
 import CommandInput from './command-input';
-import { LiveContext, ScriptContext, TitleContext, withLiveContextProvider } from './context';
+import { withLiveViewContext } from './context';
+import { ExecuteContext } from './context/execute-context';
 import { LayoutContext } from './context/layout-context';
+import { ScriptContext } from './context/script-context';
 import { DataDrawerSplitPanel } from './data-drawer/data-drawer';
 import { EditorSplitPanel } from './editor';
 import ExecuteScriptButton from './execute-button';
@@ -77,7 +79,7 @@ const useStyles = makeStyles((theme: Theme) => {
 const LiveView = () => {
   const classes = useStyles();
 
-  const { executeScript } = React.useContext(LiveContext);
+  const { execute } = React.useContext(ExecuteContext);
   const { setDataDrawerOpen, setEditorPanelOpen, editorPanelOpen } = React.useContext(LayoutContext);
   const toggleEditor = React.useCallback(() => setEditorPanelOpen((open) => !open), [setEditorPanelOpen]);
 
@@ -90,21 +92,18 @@ const LiveView = () => {
   const [commandOpen, setCommandOpen] = React.useState<boolean>(false);
   const toggleCommandOpen = React.useCallback(() => setCommandOpen((opened) => !opened), []);
 
-  const hotkeyHandlers = React.useMemo(() => {
-    return {
-      'pixie-command': toggleCommandOpen,
-      'toggle-editor': toggleEditor,
-      'toggle-data-drawer': () => setDataDrawerOpen((open) => !open),
-      execute: executeScript,
-    };
-  }, [executeScript]);
+  const hotkeyHandlers = {
+    'pixie-command': toggleCommandOpen,
+    'toggle-editor': toggleEditor,
+    'toggle-data-drawer': () => setDataDrawerOpen((open) => !open),
+    execute,
+  };
 
   useInitScriptLoader();
 
-  const script = React.useContext(ScriptContext);
-  const title = React.useContext(TitleContext);
+  const { script, id } = React.useContext(ScriptContext);
   React.useEffect(() => {
-    if (!script && !title) {
+    if (!script && !id) {
       setCommandOpen(true);
     }
   }, []);
@@ -163,4 +162,4 @@ const LiveView = () => {
   );
 };
 
-export default withLiveContextProvider(LiveView);
+export default withLiveViewContext(LiveView);
