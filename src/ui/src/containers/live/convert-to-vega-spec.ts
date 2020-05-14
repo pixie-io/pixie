@@ -448,20 +448,26 @@ const HOVER_BULB = 'hover_bulb_layer';
 const HOVER_LINE_TIME = 'hover_time_mark';
 const HOVER_LINE_TEXT_BOX = 'hover_line_text_box_mark';
 const HOVER_LINE_TEXT_PADDING = 3;
+// TODO(james): refactor conversion so that we don't need to store vega-lite names in constants.
+const LINE_MARK_NAME = 'layer_0_layer_0_marks';
+const RIGHT_MOUSE_DOWN_CODE = 3;
 export const HOVER_SIGNAL = 'hover_value';
 export const EXTERNAL_HOVER_SIGNAL = 'external_hover_value';
 export const INTERNAL_HOVER_SIGNAL = 'internal_hover_value';
 export const HOVER_PIVOT_TRANSFORM = 'hover_pivot_data';
 export const LEGEND_SELECT_SIGNAL = 'selected_series';
 export const LEGEND_HOVER_SIGNAL = 'legend_hovered_series';
+export const REVERSE_HOVER_SIGNAL = 'reverse_hovered_series';
+export const REVERSE_SELECT_SIGNAL = 'reverse_selected_series';
+export const REVERSE_UNSELECT_SIGNAL = 'reverse_unselect_signal';
 
 function addLegendSelectHandlersToVgSpec(vegaSpec: VgSpec, pivotField: string, valueField: string): VgSpec {
-  let spec = addLegendSignalsToVgSpec(vegaSpec);
+  let spec = addLegendSignalsToVgSpec(vegaSpec, pivotField);
   spec = addOpacityTestsToLine(spec, pivotField, valueField);
   return spec;
 }
 
-function addLegendSignalsToVgSpec(vegaSpec: VgSpec): VgSpec {
+function addLegendSignalsToVgSpec(vegaSpec: VgSpec, pivotField: string): VgSpec {
   const signals: Signal[] = [];
   signals.push({
     name: LEGEND_SELECT_SIGNAL,
@@ -470,6 +476,45 @@ function addLegendSignalsToVgSpec(vegaSpec: VgSpec): VgSpec {
   signals.push({
     name: LEGEND_HOVER_SIGNAL,
     value: 'null',
+  });
+  signals.push({
+    name: REVERSE_HOVER_SIGNAL,
+    on: [
+      {
+        events: {source: 'view', type: 'mouseover', markname: LINE_MARK_NAME},
+        update: `datum && datum["${pivotField}"]`,
+      },
+      {
+        events: {source: 'view', type: 'mouseout', markname: LINE_MARK_NAME},
+        update: 'null',
+      },
+    ],
+  });
+  signals.push({
+    name: REVERSE_SELECT_SIGNAL,
+    on: [
+      {
+        events: {source: 'view', type: 'click', markname: LINE_MARK_NAME},
+        update: `datum && datum["${pivotField}"]`,
+        force: true,
+      },
+    ],
+  });
+  signals.push({
+    name: REVERSE_UNSELECT_SIGNAL,
+    on: [
+      {
+        events: {
+          source: 'view',
+          type: 'mousedown',
+          markname: LINE_MARK_NAME,
+          consume: true,
+          filter: `event.which === ${RIGHT_MOUSE_DOWN_CODE}`,
+        },
+        update: 'true',
+        force: true,
+      },
+    ],
   });
   vegaSpec.signals.push(...signals);
   return vegaSpec;
@@ -488,7 +533,8 @@ function addOpacityTestsToLine(vegaSpec: VgSpec, pivotField: string, valueField:
         || (mark.marks[0].encode.update.y as any).field !== valueField) {
       return mark;
     }
-
+    // Force the lines to be above the voronoi layer.
+    mark.zindex = 200;
     mark.marks[0].encode.update.opacity = [
       {
         value: SELECTED_LINE_OPACITY,

@@ -1,17 +1,24 @@
-import Legend, { LegendInteractState } from 'components/legend/legend';
-import {
-    buildHoverDataCache, formatLegendData, HoverDataCache, LegendData,
-} from 'components/legend/legend-data';
-import {
-    EXTERNAL_HOVER_SIGNAL, EXTERNAL_TS_DOMAIN_SIGNAL, HOVER_PIVOT_TRANSFORM, HOVER_SIGNAL,
-    INTERNAL_HOVER_SIGNAL, INTERNAL_TS_DOMAIN_SIGNAL, LEGEND_HOVER_SIGNAL, LEGEND_SELECT_SIGNAL,
-    VegaSpecWithProps,
-} from 'containers/live/convert-to-vega-spec';
-import * as React from 'react';
-import { View } from 'vega-typings';
-
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import { CSSProperties } from '@material-ui/core/styles/withStyles';
+import Legend, { LegendInteractState } from 'components/legend/legend';
+import { buildHoverDataCache, formatLegendData, HoverDataCache, LegendData } from 'components/legend/legend-data';
+import {
+  EXTERNAL_HOVER_SIGNAL,
+  EXTERNAL_TS_DOMAIN_SIGNAL,
+  HOVER_PIVOT_TRANSFORM,
+  HOVER_SIGNAL,
+  INTERNAL_HOVER_SIGNAL,
+  INTERNAL_TS_DOMAIN_SIGNAL,
+  LEGEND_HOVER_SIGNAL,
+  LEGEND_SELECT_SIGNAL,
+  REVERSE_HOVER_SIGNAL,
+  REVERSE_SELECT_SIGNAL,
+  REVERSE_UNSELECT_SIGNAL,
+  VegaSpecWithProps,
+} from 'containers/live/convert-to-vega-spec';
+import * as _ from 'lodash';
+import * as React from 'react';
+import { View } from 'vega-typings';
 
 import { VegaContext } from './vega-context';
 
@@ -111,6 +118,38 @@ const Vega = React.memo((props: VegaProps) => {
     width: widthListener,
     // Add signal listener for the merged hover signal. This listener updates the values in the legend.
     [HOVER_SIGNAL]: hoverListener,
+    [REVERSE_HOVER_SIGNAL]: (name, value) => {
+      if (!value) {
+        setLegendInteractState((state) => ({...state, hoveredSeries: ''}));
+        return;
+      }
+      setLegendInteractState((state) => {
+        return {
+          ...state,
+          hoveredSeries: value,
+        };
+      });
+    },
+    [REVERSE_SELECT_SIGNAL]: (name, value) => {
+      if (!value) {
+        return;
+      }
+      setLegendInteractState((state) => {
+        if (_.includes(state.selectedSeries, value)) {
+          return {...state, selectedSeries: state.selectedSeries.filter((s) => s !== value)};
+        } else {
+          return {...state, selectedSeries: [...state.selectedSeries, value]};
+        }
+      });
+    },
+    [REVERSE_UNSELECT_SIGNAL]: (name, value) => {
+      if (!value) {
+        return;
+      }
+      setLegendInteractState((state) => {
+        return {...state, selectedSeries: []};
+      });
+    },
   };
 
   const onNewView = (view: View) => {
