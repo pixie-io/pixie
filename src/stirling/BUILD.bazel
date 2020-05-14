@@ -116,6 +116,7 @@ pl_cc_test(
 
 pl_cc_test(
     name = "stirling_bpf_test",
+    timeout = "moderate",
     srcs = ["stirling_bpf_test.cc"],
     args = ["--v=1"],
     flaky = True,
