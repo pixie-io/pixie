@@ -174,13 +174,14 @@ const Canvas = (props: CanvasProps) => {
       // TODO(nserrino): Support multiple output tables when we have a Vega component that
       // takes in multiple output tables.
       const tableName = widgetTableName(widget, i);
+      const widgetName = widget.name || `${tableName}_${i}`;
       const table = tables[tableName];
       let content = null;
       if (!table) {
         return;
       } else if (display[DISPLAY_TYPE_KEY] === TABLE_DISPLAY_TYPE) {
         content = <>
-          <div className={classes.widgetTitle}>{widget.name}</div>
+          <div className={classes.widgetTitle}>{widgetName}</div>
           <QueryResultTable className={classes.table} data={table} />
         </>;
       } else if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
@@ -198,7 +199,7 @@ const Canvas = (props: CanvasProps) => {
           const data = dataFromProto(table.relation, table.data);
           addPxTimeFormatExpression(vegaModule);
           content = <>
-            <div className={classes.widgetTitle}>{widget.name}</div>
+            <div className={classes.widgetTitle}>{widgetName}</div>
             <Vega
               className={classes.chart}
               data={data}
@@ -212,7 +213,7 @@ const Canvas = (props: CanvasProps) => {
         }
       }
       widgets.push(
-        <div key={tableName} className={className} data-grid={toLayout(widget, tableName)}>
+        <div key={widgetName} className={className} data-grid={toLayout(widget, widgetName)}>
           {content}
           {loading ? <div className={classes.spinner}><Spinner /></div> : null}
         </div>,
