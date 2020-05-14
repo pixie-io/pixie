@@ -116,6 +116,11 @@ const LiveView = () => {
           <MenuIcon />
         </IconButton> */}
         <LiveViewTitle className={classes.title} />
+        <Tooltip title='Pixie Command'>
+          <IconButton onClick={toggleCommandOpen}>
+            <PixieCommandIcon color='primary' />
+          </IconButton>
+        </Tooltip>
         <ExecuteScriptButton />
         {/* <IconButton disabled={true}>
           <ShareIcon />
@@ -139,11 +144,6 @@ const LiveView = () => {
           >
             <MoveIcon />
           </ToggleButton>
-        </Tooltip>
-        <Tooltip title='Pixie Command'>
-          <IconButton onClick={toggleCommandOpen}>
-            <PixieCommandIcon color='primary' />
-          </IconButton>
         </Tooltip>
       </div>
       <DataDrawerSplitPanel className={classes.main}>

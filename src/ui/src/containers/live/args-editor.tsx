@@ -40,6 +40,7 @@ const useStyles = makeStyles((theme: Theme) =>
       border: 'none',
       padding: 0,
       color: theme.palette.foreground.two,
+      borderBottom: `1px solid ${theme.palette.foreground.one}`,
       marginLeft: theme.spacing(0.5),
       position: 'absolute',
       left: 0,
@@ -47,6 +48,9 @@ const useStyles = makeStyles((theme: Theme) =>
       width: '100%',
       ...theme.typography.subtitle2,
       fontWeight: theme.typography.fontWeightLight,
+      '&:focus': {
+        borderBottom: `1px solid ${theme.palette.primary.main}`,
+      },
     },
     measurer: {
       position: 'relative',
