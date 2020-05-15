@@ -40,7 +40,7 @@ const StyledTabs = withStyles((theme: Theme) =>
   createStyles({
     root: {
       flex: 1,
-      height: theme.spacing(4),
+      minHeight: theme.spacing(5),
     },
     indicator: {
       backgroundColor: theme.palette.foreground.one,
@@ -51,6 +51,7 @@ const StyledTabs = withStyles((theme: Theme) =>
 const StyledTab = withStyles((theme: Theme) =>
   createStyles({
     root: {
+      minHeight: theme.spacing(5),
       padding: 0,
       textTransform: 'none',
       '&:focus': {

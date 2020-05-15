@@ -20,6 +20,7 @@ const useStyles = makeStyles((theme: Theme) => {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-around',
+      overflow: 'auto',
     },
     metric: {
       display: 'flex',
