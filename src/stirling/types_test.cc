@@ -38,6 +38,8 @@ TEST(DataTableSchemaTest, table_schema_proto_getters_test) {
   };
   auto table_schema = DataTableSchema("table", elements);
 
+  EXPECT_EQ(1, table_schema.ColIndex("a"));
+  EXPECT_EQ("a", table_schema.ColName(1));
   EXPECT_EQ("table", table_schema.name());
   EXPECT_EQ(false, table_schema.tabletized());
   EXPECT_EQ(6, table_schema.elements().size());

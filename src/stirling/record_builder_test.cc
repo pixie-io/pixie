@@ -11,6 +11,8 @@ namespace stirling {
 
 using ::pl::stirling::testing::ColWrapperSizeIs;
 using ::testing::Each;
+using ::testing::ElementsAre;
+using ::testing::IsEmpty;
 
 static constexpr DataElement kElements[] = {
     {"a", types::DataType::INT64, types::PatternType::GENERAL, ""},
@@ -35,6 +37,19 @@ TEST(RecordBuilder, StringMaxSize) {
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
 
   EXPECT_EQ(record_batch[2]->Get<types::StringValue>(0), kExpectedString);
+}
+
+TEST(RecordBuilder, UnfilledColNames) {
+  DataTable data_table(kTableSchema);
+
+  RecordBuilder<&kTableSchema> r(&data_table);
+  EXPECT_THAT(r.UnfilledColNames(), ElementsAre("a", "b", "c"));
+
+  r.Append<r.ColIndex("a")>(1);
+  EXPECT_THAT(r.UnfilledColNames(), ElementsAre("b", "c"));
+  r.Append<r.ColIndex("b")>("test");
+  r.Append<r.ColIndex("c")>("test");
+  EXPECT_THAT(r.UnfilledColNames(), IsEmpty());
 }
 
 }  // namespace stirling

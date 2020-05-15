@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "src/common/base/base.h"
 #include "src/shared/types/types.h"
@@ -64,15 +65,24 @@ class RecordBuilder {
 
     record_batch_[index]->Append(std::move(val));
     DCHECK(!signature_[index]) << absl::Substitute(
-        "Attempt to Append() to column $0 (name=$1) multiple times", index,
-        schema->elements()[index].name().data());
+        "Attempt to Append() to column $0 (name=$1) multiple times", index, schema->ColName(index));
     signature_.set(index);
   }
 
   ~RecordBuilder() {
     DCHECK(signature_.all()) << absl::Substitute(
-        "Must call Append() on all columns. Table name = $0, Column bitset = $1", schema->name(),
-        signature_.to_string());
+        "Must call Append() on all columns. Table name = $0, Column unfilled = [$1]",
+        schema->name(), absl::StrJoin(UnfilledColNames(), ","));
+  }
+
+  std::vector<std::string_view> UnfilledColNames() const {
+    std::vector<std::string_view> res;
+    for (size_t i = 0; i < signature_.size(); ++i) {
+      if (!signature_.test(i)) {
+        res.push_back(schema->ColName(i));
+      }
+    }
+    return res;
   }
 
  private:

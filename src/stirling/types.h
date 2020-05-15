@@ -116,6 +116,11 @@ class DataTableSchema {
     return i;
   }
 
+  constexpr std::string_view ColName(size_t i) const {
+    DCHECK(i < elements_.size());
+    return elements_[i].name();
+  }
+
   stirlingpb::TableSchema ToProto() const;
 
  private:
