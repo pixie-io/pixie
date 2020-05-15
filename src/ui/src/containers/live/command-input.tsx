@@ -43,13 +43,14 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
   const [completions, setCompletions] = React.useState<CompletionItem[]>([]);
 
   React.useEffect(() => {
-    setCompletions(scripts.map((s) => ({
+    const visibleScripts = scripts.filter((s) => !s.hidden);
+    setCompletions(visibleScripts.map((s) => ({
       type: 'item',
       id: s.id,
       title: s.id,
       description: s.description,
     })));
-    setScriptsMap(new Map(scripts.map((s) => [s.id, s])));
+    setScriptsMap(new Map(visibleScripts.map((s) => [s.id, s])));
   }, [scripts]);
 
   const { execute } = React.useContext(ExecuteContext);

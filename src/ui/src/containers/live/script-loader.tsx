@@ -1,6 +1,6 @@
+import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
 import { getQueryParams } from 'utils/query-params';
-import { GetPxScripts } from 'utils/script-bundle';
 
 import { ExecuteContext } from './context/execute-context';
 import { ScriptContext } from './context/script-context';
@@ -9,6 +9,7 @@ import { parseVis } from './vis';
 
 export function useInitScriptLoader() {
   const [loaded, setLoaded] = React.useState(false);
+  const { promise: scriptPromise } = React.useContext(ScriptsContext);
   const script = React.useContext(ScriptContext);
   const [params, setParams] = React.useState(getQueryParams());
   const { execute } = React.useContext(ExecuteContext);
@@ -28,7 +29,7 @@ export function useInitScriptLoader() {
     if (!params.script) {
       return;
     }
-    GetPxScripts(params.org_name).then((examples) => {
+    scriptPromise.then((examples) => {
       for (const { title, vis, code, id } of examples) {
         if (id === params.script && code) {
           execute({

@@ -1,24 +1,42 @@
+import gql from 'graphql-tag';
 import * as React from 'react';
-import { getQueryParams } from 'utils/query-params';
 import { GetPxScripts, Script } from 'utils/script-bundle';
+
+import { useApolloClient } from '@apollo/react-hooks';
+
+const GET_USER_ORG = gql`
+{
+  user {
+    orgName
+  }
+}
+`;
 
 interface ScriptsContextProps {
   scripts: Script[];
+  promise: Promise<Script[]>;
 }
 
 export const ScriptsContext = React.createContext<ScriptsContextProps>(null);
 
 export const ScriptsContextProvider = (props) => {
+  const client = useApolloClient();
   const [scripts, setScripts] = React.useState<Script[]>([]);
-  React.useEffect(() => {
-    const orgName = getQueryParams().org_name || '';
-    GetPxScripts(orgName).then((pxScripts) => {
-      // Fitler out the hidden scripts.
-      setScripts(pxScripts.filter((s) => !s.hidden));
-    });
+
+  const promise = React.useMemo(() => {
+    return client.query({ query: GET_USER_ORG, fetchPolicy: 'network-only' })
+      .then((result) => {
+        const orgName = result?.data?.user.orgName;
+        return GetPxScripts(orgName);
+      });
   }, []);
 
-  const context = React.useMemo(() => ({ scripts }), [scripts]);
+  React.useEffect(() => {
+    // Do this only once.
+    promise.then(setScripts);
+  }, []);
+
+  const context = React.useMemo(() => ({ scripts, promise }), [scripts]);
 
   return (
     <ScriptsContext.Provider value={context}>
