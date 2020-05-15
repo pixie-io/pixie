@@ -1,8 +1,12 @@
 #pragma once
 
+#include <deque>
+#include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
+#include "src/stirling/common/event_parser.h"
 #include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/common/utils.h"
 
@@ -148,6 +152,16 @@ struct ProtocolTraits {
   using frame_type = RegularMessage;
   using record_type = Record;
   using state_type = NoState;
+};
+
+using MsgDeqIter = std::deque<RegularMessage>::iterator;
+
+struct TagMatcher {
+  explicit TagMatcher(std::set<Tag> tags) : target_tags(std::move(tags)) {}
+  bool operator()(const RegularMessage& msg) {
+    return target_tags.find(msg.tag) != target_tags.end();
+  }
+  std::set<Tag> target_tags;
 };
 
 }  // namespace pgsql

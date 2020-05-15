@@ -38,6 +38,7 @@ DUMMY_SOURCE_CONNECTOR(SocketTraceConnector);
 #include "src/stirling/http/utils.h"
 #include "src/stirling/http_table.h"
 #include "src/stirling/mysql_table.h"
+#include "src/stirling/pgsql/stitcher.h"
 #include "src/stirling/pgsql/types.h"
 #include "src/stirling/pgsql_table.h"
 #include "src/stirling/socket_trace_bpf_tables.h"
