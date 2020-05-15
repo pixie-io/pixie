@@ -164,7 +164,8 @@ func (a ArtifactTrackerServer) GetDownloadLink(ctx context.Context, req *cloudap
 
 // VizierClusterInfo is the server that implements the VizierClusterInfo gRPC service.
 type VizierClusterInfo struct {
-	VzMgr vzmgrpb.VZMgrServiceClient
+	VzMgr                 vzmgrpb.VZMgrServiceClient
+	ArtifactTrackerClient artifacttrackerpb.ArtifactTrackerClient
 }
 
 // CreateCluster creates a cluster for the current org.
@@ -296,6 +297,18 @@ func (v *VizierClusterInfo) UpdateOrInstallCluster(ctx context.Context, req *clo
 	}
 
 	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
+
+	// Validate version.
+	atReq := &artifacttrackerpb.GetDownloadLinkRequest{
+		ArtifactName: "vizier",
+		VersionStr:   req.Version,
+		ArtifactType: versionspb.AT_CONTAINER_SET_YAMLS,
+	}
+
+	_, err = v.ArtifactTrackerClient.GetDownloadLink(ctx, atReq)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid version")
+	}
 
 	resp, err := v.VzMgr.UpdateOrInstallVizier(ctx, &cvmsgspb.UpdateOrInstallVizierRequest{
 		VizierID: req.ClusterID,

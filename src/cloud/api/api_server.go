@@ -136,7 +136,7 @@ func main() {
 	}
 	cloudapipb.RegisterArtifactTrackerServer(s.GRPCServer(), artifactTrackerServer)
 
-	cis := &controller.VizierClusterInfo{VzMgr: vc}
+	cis := &controller.VizierClusterInfo{VzMgr: vc, ArtifactTrackerClient: at}
 	cloudapipb.RegisterVizierClusterInfoServer(s.GRPCServer(), cis)
 
 	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc)

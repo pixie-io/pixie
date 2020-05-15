@@ -256,7 +256,7 @@ func TestVizierClusterInfo_UpdateOrInstallCluster(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	_, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	_, _, _, mockVzMgr, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -267,8 +267,17 @@ func TestVizierClusterInfo_UpdateOrInstallCluster(t *testing.T) {
 
 	mockVzMgr.EXPECT().UpdateOrInstallVizier(gomock.Any(), updateReq).Return(&cvmsgspb.UpdateOrInstallVizierResponse{UpdateStarted: true}, nil)
 
+	mockArtifactClient.EXPECT().
+		GetDownloadLink(gomock.Any(), &artifacttrackerpb.GetDownloadLinkRequest{
+			ArtifactName: "vizier",
+			VersionStr:   "0.1.30",
+			ArtifactType: versionspb.AT_CONTAINER_SET_YAMLS,
+		}).
+		Return(nil, nil)
+
 	vzClusterInfoServer := &controller.VizierClusterInfo{
-		VzMgr: mockVzMgr,
+		VzMgr:                 mockVzMgr,
+		ArtifactTrackerClient: mockArtifactClient,
 	}
 
 	resp, err := vzClusterInfoServer.UpdateOrInstallCluster(ctx, &cloudapipb.UpdateOrInstallClusterRequest{
