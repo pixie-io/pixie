@@ -2,14 +2,15 @@ jest.mock('./deploy-instructions', () => {
   return { DeployInstructions: () => <></> };
 });
 
-import {mount} from 'enzyme';
+import { mount } from 'enzyme';
 import * as React from 'react';
-import {MockedProvider} from 'react-apollo/test-utils';
-import {Navbar} from 'react-bootstrap';
-import {BrowserRouter as Router, Route} from 'react-router-dom';
+import { Navbar } from 'react-bootstrap';
+import { BrowserRouter as Router, Route } from 'react-router-dom';
 
-import {DeployInstructions} from './deploy-instructions';
-import {CHECK_VIZIER, CREATE_CLUSTER, GET_CLUSTER, Vizier, VizierMain} from './vizier';
+import { MockedProvider } from '@apollo/react-testing';
+
+import { DeployInstructions } from './deploy-instructions';
+import Vizier, { CHECK_VIZIER, CREATE_CLUSTER, GET_CLUSTER, VizierMain } from './vizier';
 
 // Mock CodeMirror component because it does not mount properly in Jest.
 jest.mock('react-codemirror', () => () => <div id='mock-codemirror'></div>);
@@ -39,7 +40,7 @@ describe.skip('<VizierMain/> test', () => {
     const app = mount(
       <Router>
         <MockedProvider mocks={mocks} addTypename={false}>
-          <VizierMain cloudClient={mockCloudClient} />
+          <VizierMain />
         </MockedProvider>
       </Router>);
 
@@ -65,7 +66,7 @@ describe.skip('<VizierMain/> test', () => {
     const app = mount(
       <Router>
         <MockedProvider mocks={mocks} addTypename={false}>
-          <VizierMain cloudClient={mockCloudClient} />
+          <VizierMain />
         </MockedProvider>
       </Router>);
 

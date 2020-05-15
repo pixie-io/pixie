@@ -1,13 +1,12 @@
 import CodeRenderer from 'components/code-renderer/code-renderer';
-import {Spinner} from 'components/spinner/spinner';
+import { Spinner } from 'components/spinner/spinner';
 // @ts-ignore : TS does not like image files.
 import * as logoImage from 'images/new-logo.svg';
 import * as React from 'react';
-import {Query} from 'react-apollo';
 
 import Button from '@material-ui/core/Button';
 import Card from '@material-ui/core/Card';
-import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({

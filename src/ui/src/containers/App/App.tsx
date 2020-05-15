@@ -1,21 +1,21 @@
 import './App.scss';
 
 import Axios from 'axios';
-import {CloudClient} from 'common/cloud-gql-client';
-import {DARK_THEME} from 'common/mui-theme';
-import {VersionInfo} from 'components/version-info/version-info';
-import {AuthComplete} from 'containers/login/auth-complete';
-import {Login} from 'containers/login/login';
-import {Vizier} from 'containers/vizier/vizier';
+import { CloudClient } from 'common/cloud-gql-client';
+import { DARK_THEME } from 'common/mui-theme';
+import { VersionInfo } from 'components/version-info/version-info';
+import { AuthComplete } from 'containers/login/auth-complete';
+import { Login } from 'containers/login/login';
+import Vizier from 'containers/vizier/vizier';
 import * as React from 'react';
-import {ApolloProvider} from 'react-apollo';
-import {Redirect, Route, Router, Switch} from 'react-router-dom';
-import {isProd} from 'utils/env';
+import { Redirect, Route, Router, Switch } from 'react-router-dom';
+import { isProd } from 'utils/env';
 import history from 'utils/pl-history';
 
-import {ThemeProvider} from '@material-ui/core/styles';
+import { ApolloProvider } from '@apollo/react-hooks';
+import { ThemeProvider } from '@material-ui/core/styles';
 
-import {CloudClientContext} from './context';
+import { CloudClientContext } from './context';
 
 export class App extends React.Component {
   state = {

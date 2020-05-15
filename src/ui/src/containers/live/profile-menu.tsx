@@ -2,13 +2,12 @@ import DocsIcon from 'components/icons/docs';
 import LogoutIcon from 'components/icons/logout';
 import PlayIcon from 'components/icons/play';
 import SettingsIcon from 'components/icons/settings';
-import {DOMAIN_NAME} from 'containers/constants';
-
+import { DOMAIN_NAME } from 'containers/constants';
 import gql from 'graphql-tag';
 import * as React from 'react';
-import {Query} from 'react-apollo';
-import {Link} from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
+import { useQuery } from '@apollo/react-hooks';
 import BaseAvatar from '@material-ui/core/Avatar';
 import IconButton from '@material-ui/core/IconButton';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
@@ -63,7 +62,7 @@ const Avatar = (props: AvatarProps) => {
   if (!props.picture && props.name.length > 0) {
     return <BaseAvatar className={props.className}>{props.name[0]}</BaseAvatar>;
   }
-  return <BaseAvatar src={props.picture} alt={props.name} className={props.className}/>;
+  return <BaseAvatar src={props.picture} alt={props.name} className={props.className} />;
 };
 
 const StyledListItemText = withStyles((theme: Theme) =>
@@ -98,44 +97,39 @@ const ProfileMenu = () => {
     setAnchorEl(null);
   }, []);
 
-  return (<Query query={GET_USER_INFO} fetchPolicy={'network-only'}>
-  {
-    ({ loading, error, data }) => {
-      if (loading || error || !data.user) {
-        return null;
-      }
-      const user = data.user;
-      return (
-        <>
-          <IconButton onClick={openMenu}>
-            <Avatar name={user.name} picture={user.picture} className={classes.avatarSm}/>
-          </IconButton>
-          <Menu open={open} onClose={closeMenu} anchorEl={anchorEl} getContentAnchorEl={null}
-           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-            <MenuItem key='profile' alignItems='center' button={false} className={classes.centeredMenuItem}>
-              <Avatar name={user.name} picture={user.picture} className={classes.avatarLg}/>
-              <ListItemText primary={user.name} secondary={user.email}
-               classes={{primary: classes.listItemHeader, secondary: classes.listItemText}}
-               className={classes.centeredListItemText}/>
-            </MenuItem>
-            <MenuItem key='docs' button component='a' href={`https://docs.${DOMAIN_NAME}`} target='_blank'>
-              <StyledListItemIcon>
-                <DocsIcon/>
-              </StyledListItemIcon>
-              <StyledListItemText primary='Documentation'/>
-            </MenuItem>
-            <MenuItem key='logout' button component={Link} to='/logout'>
-              <StyledListItemIcon>
-                <LogoutIcon/>
-              </StyledListItemIcon>
-              <StyledListItemText primary='Logout'/>
-            </MenuItem>
-          </Menu>
-        </>
-      );
-    }
+  const { loading, error, data } = useQuery(GET_USER_INFO, { fetchPolicy: 'network-only' });
+
+  if (loading || error || !data.user) {
+    return null;
   }
-  </Query>
+  const user = data.user;
+  return (
+    <>
+      <IconButton onClick={openMenu}>
+        <Avatar name={user.name} picture={user.picture} className={classes.avatarSm} />
+      </IconButton>
+      <Menu open={open} onClose={closeMenu} anchorEl={anchorEl} getContentAnchorEl={null}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <MenuItem key='profile' alignItems='center' button={false} className={classes.centeredMenuItem}>
+          <Avatar name={user.name} picture={user.picture} className={classes.avatarLg} />
+          <ListItemText primary={user.name} secondary={user.email}
+            classes={{ primary: classes.listItemHeader, secondary: classes.listItemText }}
+            className={classes.centeredListItemText} />
+        </MenuItem>
+        <MenuItem key='docs' button component='a' href={`https://docs.${DOMAIN_NAME}`} target='_blank'>
+          <StyledListItemIcon>
+            <DocsIcon />
+          </StyledListItemIcon>
+          <StyledListItemText primary='Documentation' />
+        </MenuItem>
+        <MenuItem key='logout' button component={Link} to='/logout'>
+          <StyledListItemIcon>
+            <LogoutIcon />
+          </StyledListItemIcon>
+          <StyledListItemText primary='Logout' />
+        </MenuItem>
+      </Menu>
+    </>
   );
 };
 

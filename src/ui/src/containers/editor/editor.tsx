@@ -1,21 +1,21 @@
 import './editor.scss';
 
-import {MUTATE_DRAWER_OPENED, QUERY_DRAWER_OPENED} from 'common/local-gql';
+import { MUTATE_DRAWER_OPENED, QUERY_DRAWER_OPENED } from 'common/local-gql';
 import gql from 'graphql-tag';
 // @ts-ignore : TS does not like image files.
 import * as closeIcon from 'images/icons/cross.svg';
 // @ts-ignore : TS does not like image files.
 import * as newTabIcon from 'images/icons/new-tab.svg';
 import * as React from 'react';
-import {Button, Nav, Tab, Tabs} from 'react-bootstrap';
+import { Button, Nav, Tab, Tabs } from 'react-bootstrap';
 import * as uuid from 'uuid/v1';
 
-import {ApolloProvider, useMutation, useQuery} from '@apollo/react-hooks';
+import { useMutation, useQuery } from '@apollo/react-hooks';
 
-import {Drawer} from '../../components/drawer/drawer';
-import {saveCodeToStorage} from './code-utils';
-import {EditorDrawerMenu} from './drawer-menu';
-import {ConsoleTab} from './tab';
+import { Drawer } from '../../components/drawer/drawer';
+import { saveCodeToStorage } from './code-utils';
+import { EditorDrawerMenu } from './drawer-menu';
+import { ConsoleTab } from './tab';
 
 const NEW_TAB = 'new-tab';
 const PIXIE_EDITOR_TABS_KEY = 'pixie-editor-tabs';
@@ -31,7 +31,7 @@ interface EditorState {
   activeTab: string;
 }
 
-export const Editor = ({ client }) => {
+export const Editor = () => {
   let savedTabs: EditorTabInfo[] = [];
   try {
     const saved = JSON.parse(localStorage.getItem(PIXIE_EDITOR_TABS_KEY));
@@ -102,53 +102,51 @@ export const Editor = ({ client }) => {
     });
   }, []);
 
-  const { data } = useQuery(QUERY_DRAWER_OPENED, { client });
-  const [updateDrawer] = useMutation(MUTATE_DRAWER_OPENED, { client });
+  const { data } = useQuery(QUERY_DRAWER_OPENED);
+  const [updateDrawer] = useMutation(MUTATE_DRAWER_OPENED);
   const updateDrawerMemo = React.useCallback((opened) => {
     updateDrawer({ variables: { drawerOpened: opened } });
   }, []);
 
   return (
-    <ApolloProvider client={client}>
-      <div className='pixie-editor-container' style={{ display: 'flex', height: '100%' }}>
-        <Drawer
-          openedWidth='15vw'
-          defaultOpened={data && data.drawerOpened}
-          onOpenedChanged={updateDrawerMemo}
-        >
-          <EditorDrawerMenu onSelect={createNewTab} />
-        </Drawer>
-        <div className='pixie-editor-tabs-container'>
-          <Tab.Container
-            activeKey={state.activeTab}
-            onSelect={selectTab}
-            mountOnEnter={true}
-            id='pixie-editor-tabs'>
-            <Nav variant='tabs' className='pixie-editor-tabs-nav'>
-              {state.tabs.map((tab) =>
-                <Nav.Item key={tab.id} as={Nav.Link} eventKey={tab.id}>
-                  <EditorTabTitle {...tab} onClose={(id) => deleteTab(id)} />
-                </Nav.Item>,
-              )}
-              <Nav.Item as={Nav.Link} eventKey={NEW_TAB} className='pixie-editor-tabs-new'>
-                <img src={newTabIcon} />
-              </Nav.Item>
-            </Nav>
-            <Tab.Content className='pixie-editor-tab-content-container'>
-              {state.tabs.map((tab) =>
-                <Tab.Pane
-                  eventKey={tab.id}
-                  key={tab.id}
-                  unmountOnExit={false}
-                  className='pixie-editor-content-fullbleed'>
-                  <ConsoleTab {...tab} />
-                </Tab.Pane>,
-              )}
-            </Tab.Content>
-          </Tab.Container>
-        </div>
-      </div >
-    </ApolloProvider>
+    <div className='pixie-editor-container' style={{ display: 'flex', height: '100%' }}>
+      <Drawer
+        openedWidth='15vw'
+        defaultOpened={data && data.drawerOpened}
+        onOpenedChanged={updateDrawerMemo}
+      >
+        <EditorDrawerMenu onSelect={createNewTab} />
+      </Drawer>
+      <div className='pixie-editor-tabs-container'>
+        <Tab.Container
+          activeKey={state.activeTab}
+          onSelect={selectTab}
+          mountOnEnter={true}
+          id='pixie-editor-tabs'>
+          <Nav variant='tabs' className='pixie-editor-tabs-nav'>
+            {state.tabs.map((tab) =>
+              <Nav.Item key={tab.id} as={Nav.Link} eventKey={tab.id}>
+                <EditorTabTitle {...tab} onClose={(id) => deleteTab(id)} />
+              </Nav.Item>,
+            )}
+            <Nav.Item as={Nav.Link} eventKey={NEW_TAB} className='pixie-editor-tabs-new'>
+              <img src={newTabIcon} />
+            </Nav.Item>
+          </Nav>
+          <Tab.Content className='pixie-editor-tab-content-container'>
+            {state.tabs.map((tab) =>
+              <Tab.Pane
+                eventKey={tab.id}
+                key={tab.id}
+                unmountOnExit={false}
+                className='pixie-editor-content-fullbleed'>
+                <ConsoleTab {...tab} />
+              </Tab.Pane>,
+            )}
+          </Tab.Content>
+        </Tab.Container>
+      </div>
+    </div >
   );
 };
 

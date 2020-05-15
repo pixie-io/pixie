@@ -1,3 +1,4 @@
+import { CloudClientContext } from 'containers/App/context';
 import * as React from 'react';
 import { Subscription } from 'rxjs';
 import { debounce } from 'utils/debounce';
@@ -9,7 +10,6 @@ import { VizierGRPCClient } from './vizier-grpc-client';
 const VizierGRPCClientContext = React.createContext<VizierGRPCClient>(null);
 
 interface Props {
-  cloudClient: CloudClient;
   passthroughEnabled: boolean;
   children: React.ReactNode;
   clusterID: string;
@@ -33,7 +33,8 @@ async function newVizierClient(
 }
 
 export const VizierGRPCClientProvider = (props: Props) => {
-  const { cloudClient, children, passthroughEnabled, clusterID, vizierVersion } = props;
+  const { children, passthroughEnabled, clusterID, vizierVersion } = props;
+  const cloudClient = React.useContext(CloudClientContext);
   const [client, setClient] = React.useState<VizierGRPCClient>(null);
   const [connectionStatus, setConnectionStatus] = React.useState<VizierConnectionStatus>('disconnected');
   const [loaded, setLoaded] = React.useState(false);

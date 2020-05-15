@@ -146,7 +146,7 @@ const LiveView = () => {
             <MoveIcon />
           </ToggleButton>
         </Tooltip>
-        <ProfileMenu/>
+        <ProfileMenu />
       </div>
       <DataDrawerSplitPanel className={classes.main}>
         <EditorSplitPanel className={classes.editorPanel}>

@@ -15,7 +15,6 @@ import * as backgroundTop from 'images/login-background-top.svg';
 import * as logo from 'images/new-logo.svg';
 import * as QueryString from 'query-string';
 import * as React from 'react';
-import { ApolloConsumer } from 'react-apollo';
 import { Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import analytics from 'utils/analytics';
