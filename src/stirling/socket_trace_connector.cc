@@ -1157,8 +1157,9 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
       continue;
     }
 
-    DCHECK_GE(stats.conn_open, stats.conn_close)
-        << "Connection open cannot be smaller than connection close.";
+    if (stats.conn_open < stats.conn_close) {
+      LOG_FIRST_N(WARNING, 10) << "Connection open should not be smaller than connection close.";
+    }
 
     RecordBuilder<&kConnStatsTable> r(data_table);
 
