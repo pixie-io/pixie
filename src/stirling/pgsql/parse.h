@@ -28,6 +28,7 @@ ParseState ParseBindRequest(std::string_view payload, BindRequest* res);
 ParseState ParseParamDesc(std::string_view payload, ParamDesc* param_desc);
 // This is for 'Parse' message.
 ParseState ParseParse(std::string_view payload, Parse* parse);
+ParseState ParseRowDesc(std::string_view payload, RowDesc* row_desc);
 
 size_t FindFrameBoundary(std::string_view buf, size_t start);
 

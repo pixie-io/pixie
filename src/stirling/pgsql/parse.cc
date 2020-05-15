@@ -89,6 +89,21 @@ size_t FindFrameBoundary(std::string_view buf, size_t start) {
 
 #define PL_ASSIGN_OR_RETURN_RES(expr, val_or, res) PL_ASSIGN_OR(expr, val_or, return res)
 
+std::vector<std::string_view> ParseRowDesc(std::string_view payload) {
+  RowDesc row_desc;
+  if (ParseRowDesc(payload, &row_desc) != ParseState::kSuccess) {
+    return {};
+  }
+
+  std::vector<std::string_view> res;
+  res.reserve(row_desc.fields.size());
+
+  for (const auto& f : row_desc.fields) {
+    res.push_back(f.name);
+  }
+  return res;
+}
+
 // Given the input as the payload of a kRowDesc message, returns a list of column name.
 // Row description format:
 // | int16 field count |
@@ -97,32 +112,27 @@ size_t FindFrameBoundary(std::string_view buf, size_t start) {
 // Field description format:
 // | string name | int32 table ID | int16 column number | int32 type ID | int16 type size |
 // | int32 type modifier | int16 format code (text|binary) |
-std::vector<std::string_view> ParseRowDesc(std::string_view row_desc) {
-  std::vector<std::string_view> res;
+ParseState ParseRowDesc(std::string_view payload, RowDesc* row_desc) {
+  BinaryDecoder decoder(payload);
 
-  BinaryDecoder decoder(row_desc);
-  PL_ASSIGN_OR_RETURN_RES(const int16_t field_count, decoder.ExtractInt<int16_t>(), res);
+  PL_ASSIGN_OR_RETURN_INVALID(const int16_t field_count, decoder.ExtractInt<int16_t>());
+
   for (int i = 0; i < field_count; ++i) {
-    PL_ASSIGN_OR_RETURN_RES(std::string_view col_name, decoder.ExtractStringUntil('\0'), res);
+    RowDesc::Field field = {};
 
-    if (col_name.empty()) {
-      // Empty column name is invalid. Just put all remaining data as another name and return.
-      VLOG(1) << "Encounter an empty column name on the column " << i;
-      res.push_back(decoder.Buf());
-      return res;
-    }
-    res.push_back(col_name);
+    PL_ASSIGN_OR_RETURN_INVALID(field.name, decoder.ExtractStringUntil('\0'));
+    PL_ASSIGN_OR_RETURN_INVALID(field.table_oid, decoder.ExtractInt<int32_t>());
+    PL_ASSIGN_OR_RETURN_INVALID(field.attr_num, decoder.ExtractInt<int16_t>());
+    PL_ASSIGN_OR_RETURN_INVALID(field.type_oid, decoder.ExtractInt<int32_t>());
+    PL_ASSIGN_OR_RETURN_INVALID(field.type_size, decoder.ExtractInt<int16_t>());
+    PL_ASSIGN_OR_RETURN_INVALID(field.type_modifier, decoder.ExtractInt<int32_t>());
+    PL_ASSIGN_OR_RETURN_INVALID(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
+    field.fmt_code = static_cast<FmtCode>(fmt_code);
 
-    constexpr size_t kFieldDescSize = 3 * sizeof(int32_t) + 3 * sizeof(int16_t);
-    if (decoder.BufSize() < kFieldDescSize) {
-      VLOG(1) << absl::Substitute("Not enough data for parsing, needs $0 bytes, got $1",
-                                  kFieldDescSize, decoder.BufSize());
-      return res;
-    }
-    // Discard the reset of the message, which are not used.
-    decoder.ExtractString<char>(kFieldDescSize);
+    row_desc->fields.push_back(std::move(field));
   }
-  return res;
+  DCHECK_EQ(decoder.BufSize(), 0);
+  return ParseState::kSuccess;
 }
 
 std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_row) {

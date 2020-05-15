@@ -15,6 +15,7 @@ using ::testing::AllOf;
 using ::testing::ElementsAre;
 using ::testing::Field;
 using ::testing::IsEmpty;
+using ::testing::SizeIs;
 using ::testing::StrEq;
 
 template <typename TagMatcher, typename LengthType, typename PayloadMatcher>
@@ -80,6 +81,30 @@ TEST(PGSQLParseTest, RowDesc) {
   EXPECT_EQ(166, msg.len);
   EXPECT_THAT(ParseRowDesc(msg.payload),
               ElementsAre("Name", "Owner", "Encoding", "Collate", "Ctype", "Access privileges"));
+}
+
+TEST(PGSQLParseTest, RowDesc2) {
+  std::string_view payload = CreateStringView<char>(
+      // Field count
+      "\x00\x01"
+      "first_name\x00"
+      "\x00\x00\x40\x01\x00\x01\x00\x00\x00\x19\xff\xff\xff\xff"
+      "\xff\xff\x00\x00");
+
+  RowDesc row_desc;
+  EXPECT_EQ(ParseState::kSuccess, ParseRowDesc(payload, &row_desc));
+
+  ASSERT_THAT(row_desc.fields, SizeIs(1));
+
+  const auto& field = row_desc.fields.front();
+
+  EXPECT_EQ(field.name, "first_name");
+  EXPECT_THAT(field.table_oid, 16385);
+  EXPECT_THAT(field.attr_num, 1);
+  EXPECT_THAT(field.type_oid, 25);
+  EXPECT_THAT(field.type_size, -1);
+  EXPECT_THAT(field.type_modifier, -1);
+  EXPECT_THAT(field.fmt_code, FmtCode::kText);
 }
 
 const std::string_view kDataRowTestData = CreateStringView<char>(

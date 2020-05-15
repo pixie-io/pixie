@@ -143,6 +143,30 @@ struct Parse {
   std::vector<int32_t> param_type_oids;
 };
 
+struct RowDesc {
+  struct Field {
+    std::string_view name;
+    // 0 means this field cannot be identified as a column of any table.
+    int32_t table_oid;
+    // 0 means this field cannot be identified as a column of any table.
+    int16_t attr_num;
+    int32_t type_oid;
+    // Negative values denote variable-width types.
+    int16_t type_size;
+    int32_t type_modifier;
+    FmtCode fmt_code;
+
+    std::string DebugString() const {
+      return absl::Substitute(
+          "[name=$0 table_oid=$1 attr_num=$2 type_oid=$3 type_size=$4 type_modifier=$5 "
+          "fmt_code=$6]",
+          name, table_oid, attr_num, type_oid, type_size, type_modifier,
+          magic_enum::enum_name(fmt_code));
+    }
+  };
+  std::vector<Field> fields;
+};
+
 struct Record {
   RegularMessage req;
   RegularMessage resp;
