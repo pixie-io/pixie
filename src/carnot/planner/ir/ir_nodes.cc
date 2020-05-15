@@ -710,9 +710,6 @@ StatusOr<absl::flat_hash_set<ColumnIR*>> ExpressionIR::InputColumns() {
   if (Match(this, ColumnNode())) {
     return absl::flat_hash_set<ColumnIR*>{static_cast<ColumnIR*>(this)};
   }
-  if (Match(this, MetadataLiteral())) {
-    return static_cast<MetadataLiteralIR*>(this)->literal()->InputColumns();
-  }
   if (!Match(this, Func())) {
     return error::Internal("Unexpected Expression type: $0", DebugString());
   }
@@ -1055,22 +1052,9 @@ Status MetadataIR::ResolveMetadataColumn(MetadataResolverIR* resolver_op,
   return Status::OK();
 }
 
-/* MetadataLiteral IR */
-Status MetadataLiteralIR::Init(DataIR* literal) { return SetLiteral(literal); }
-
-Status MetadataLiteralIR::SetLiteral(DataIR* literal) {
-  DCHECK_EQ(literal_, nullptr);
-  PL_ASSIGN_OR_RETURN(literal_, graph_ptr()->OptionallyCloneWithEdge(this, literal));
-  return Status::OK();
-}
-
 bool MetadataResolverIR::HasMetadataColumn(const std::string& col_name) {
   auto md_map_it = metadata_columns_.find(col_name);
   return md_map_it != metadata_columns_.end();
-}
-
-Status MetadataLiteralIR::ToProto(planpb::ScalarExpression* expr) const {
-  return literal_->ToProto(expr);
 }
 
 Status MetadataResolverIR::AddMetadata(MetadataProperty* md_property) {
@@ -1232,14 +1216,6 @@ Status MetadataIR::CopyFromNodeImpl(const IRNode* node,
   metadata_name_ = metadata_ir->metadata_name_;
   metadata_type_ = metadata_ir->metadata_type_;
   return Status::OK();
-}
-
-Status MetadataLiteralIR::CopyFromNodeImpl(
-    const IRNode* node, absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
-  const MetadataLiteralIR* literal_ir = static_cast<const MetadataLiteralIR*>(node);
-  PL_ASSIGN_OR_RETURN(DataIR * new_literal,
-                      graph_ptr()->CopyNode(literal_ir->literal_, copied_nodes_map));
-  return SetLiteral(new_literal);
 }
 
 Status MemorySourceIR::CopyFromNodeImpl(

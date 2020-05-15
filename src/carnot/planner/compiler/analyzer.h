@@ -34,7 +34,6 @@ class Analyzer : public RuleExecutor<IR> {
     source_and_metadata_resolution_batch->AddRule<SourceRelationRule>(compiler_state_);
     source_and_metadata_resolution_batch->AddRule<ResolveMetadataRule>(compiler_state_,
                                                                        md_handler_.get());
-    source_and_metadata_resolution_batch->AddRule<MetadataFunctionFormatRule>(compiler_state_);
     source_and_metadata_resolution_batch->AddRule<SetupJoinTypeRule>();
     source_and_metadata_resolution_batch->AddRule<MergeGroupByIntoGroupAcceptorRule>(
         IRNodeType::kBlockingAgg);

@@ -117,30 +117,6 @@ inline ClassMatch<IRNodeType::kMemorySink> MemorySink() {
 }
 inline ClassMatch<IRNodeType::kLimit> Limit() { return ClassMatch<IRNodeType::kLimit>(); }
 
-// Match an arbitrary MetadataLiteral value.
-inline ClassMatch<IRNodeType::kMetadataLiteral> MetadataLiteral() {
-  return ClassMatch<IRNodeType::kMetadataLiteral>();
-}
-
-/* Match Filter with a specific filter expression */
-template <typename Matcher>
-struct MetadataLiteralWithValue : public ParentMatch {
-  explicit MetadataLiteralWithValue(Matcher matcher)
-      : ParentMatch(IRNodeType::kFilter), matcher_(matcher) {}
-  bool Match(const IRNode* node) const override {
-    return MetadataLiteral().Match(node) &&
-           matcher_.Match(static_cast<const MetadataLiteralIR*>(node)->literal());
-  }
-
- private:
-  Matcher matcher_;
-};
-
-template <typename Matcher>
-inline MetadataLiteralWithValue<Matcher> MetadataLiteral(Matcher m) {
-  return MetadataLiteralWithValue<Matcher>(m);
-}
-
 // Match an arbitrary MetadataResolver operator.
 inline ClassMatch<IRNodeType::kMetadataResolver> MetadataResolver() {
   return ClassMatch<IRNodeType::kMetadataResolver>();

@@ -1136,42 +1136,6 @@ class MetadataIR : public ColumnIR {
 };
 
 /**
- * @brief MetadataLiteral is a representation for any literal (DataIR)
- * that we know is properly formatted for some function.
- */
-class MetadataLiteralIR : public ExpressionIR {
- public:
-  MetadataLiteralIR() = delete;
-  explicit MetadataLiteralIR(int64_t id) : ExpressionIR(id, IRNodeType::kMetadataLiteral) {}
-  Status Init(DataIR* literal);
-
-  IRNodeType literal_type() const {
-    CHECK(literal_ != nullptr);
-    return literal_->type();
-  }
-  DataIR* literal() const { return literal_; }
-  bool IsDataTypeEvaluated() const override { return literal_->IsDataTypeEvaluated(); }
-  types::DataType EvaluatedDataType() const override { return literal_->EvaluatedDataType(); }
-
-  Status CopyFromNodeImpl(const IRNode* node,
-                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
-  Status SetLiteral(DataIR* literal);
-
-  Status ToProto(planpb::ScalarExpression* expr) const override;
-
-  bool Equals(ExpressionIR* expr) const override {
-    if (expr->type() != IRNodeType::kMetadataLiteral) {
-      return false;
-    }
-    auto ml_ir = static_cast<MetadataLiteralIR*>(expr);
-    return ml_ir->literal()->Equals(literal());
-  }
-
- private:
-  DataIR* literal_ = nullptr;
-};
-
-/**
  * @brief The MemorySourceIR is a dual logical plan
  * and IR node operator. It inherits from both classes
  */

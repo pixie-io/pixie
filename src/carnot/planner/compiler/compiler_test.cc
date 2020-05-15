@@ -756,17 +756,17 @@ nodes {
   dag {
     nodes {
       id: 6
-      sorted_children: 23
+      sorted_children: 22
     }
     nodes {
-      id: 23
+      id: 22
       sorted_children: 11
       sorted_parents: 6
     }
     nodes {
       id: 11
       sorted_children: 13
-      sorted_parents: 23
+      sorted_parents: 22
     }
     nodes {
       id: 13
@@ -798,7 +798,7 @@ nodes {
     }
   }
   nodes {
-    id: 23
+    id: 22
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -863,7 +863,7 @@ nodes {
             name: "equal"
             args {
               column {
-                node: 23
+                node: 22
                 index: 5
               }
             }
@@ -878,22 +878,22 @@ nodes {
           }
         }
         columns {
-          node: 23
+          node: 22
         }
         columns {
-          node: 23
+          node: 22
           index: 1
         }
         columns {
-          node: 23
+          node: 22
           index: 2
         }
         columns {
-          node: 23
+          node: 22
           index: 3
         }
         columns {
-          node: 23
+          node: 22
           index: 4
         }
       }
@@ -1306,7 +1306,7 @@ nodes {
 )proto";
 
 constexpr char kExpectedAggFilter1MetadataPlan[] = R"proto(
-  dag {
+dag {
   nodes {
     id: 1
   }
@@ -1316,32 +1316,32 @@ nodes {
   dag {
     nodes {
       id: 6
-      sorted_children: 46
+      sorted_children: 45
     }
     nodes {
-      id: 46
+      id: 45
       sorted_children: 11
       sorted_parents: 6
     }
     nodes {
       id: 11
       sorted_children: 20
-      sorted_parents: 46
+      sorted_parents: 45
     }
     nodes {
       id: 20
-      sorted_children: 52
+      sorted_children: 51
       sorted_parents: 11
     }
     nodes {
-      id: 52
+      id: 51
       sorted_children: 25
       sorted_parents: 20
     }
     nodes {
       id: 25
       sorted_children: 27
-      sorted_parents: 52
+      sorted_parents: 51
     }
     nodes {
       id: 27
@@ -1364,7 +1364,7 @@ nodes {
     }
   }
   nodes {
-    id: 46
+    id: 45
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1405,18 +1405,18 @@ nodes {
       map_op {
         expressions {
           column {
-            node: 46
+            node: 45
           }
         }
         expressions {
           column {
-            node: 46
+            node: 45
             index: 1
           }
         }
         expressions {
           column {
-            node: 46
+            node: 45
             index: 2
           }
         }
@@ -1455,7 +1455,7 @@ nodes {
     }
   }
   nodes {
-    id: 52
+    id: 51
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1505,7 +1505,7 @@ nodes {
             name: "equal"
             args {
               column {
-                node: 52
+                node: 51
                 index: 3
               }
             }
@@ -1520,14 +1520,14 @@ nodes {
           }
         }
         columns {
-          node: 52
+          node: 51
         }
         columns {
-          node: 52
+          node: 51
           index: 1
         }
         columns {
-          node: 52
+          node: 51
           index: 2
         }
       }

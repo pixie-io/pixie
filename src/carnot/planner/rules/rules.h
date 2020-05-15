@@ -311,15 +311,6 @@ class ResolveMetadataRule : public Rule {
   MetadataHandler* md_handler_;
 };
 
-class MetadataFunctionFormatRule : public Rule {
- public:
-  explicit MetadataFunctionFormatRule(CompilerState* compiler_state) : Rule(compiler_state) {}
-
- protected:
-  StatusOr<bool> Apply(IRNode* ir_node) override;
-  StatusOr<MetadataLiteralIR*> WrapLiteral(DataIR* data, MetadataProperty* md_property) const;
-};
-
 class CheckMetadataColumnNamingRule : public Rule {
   /**
    * @brief Checks to make sure that the column naming scheme doesn't collide with metadata.

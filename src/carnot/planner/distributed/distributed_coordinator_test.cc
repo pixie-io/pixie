@@ -285,15 +285,13 @@ TEST_F(CoordinatorTest, prune_agents_simple) {
   EXPECT_EQ(1, agent1_sinks.size());
   auto agent1_sink_parents = static_cast<OperatorIR*>(agent1_sinks[0])->parents();
   EXPECT_EQ(1, agent1_sink_parents.size());
-  EXPECT_MATCH(agent1_sink_parents[0],
-               Filter(Equals(Metadata(), MetadataLiteral(String("agent1_pod")))));
+  EXPECT_MATCH(agent1_sink_parents[0], Filter(Equals(Metadata(), String("agent1_pod"))));
 
   auto agent2_sinks = plan_by_qb_addr["agent2"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent2_sinks.size());
   auto agent2_sink_parents = static_cast<OperatorIR*>(agent2_sinks[0])->parents();
   EXPECT_EQ(1, agent2_sink_parents.size());
-  EXPECT_MATCH(agent2_sink_parents[0],
-               Filter(Equals(Metadata(), MetadataLiteral(String("agent2_service")))));
+  EXPECT_MATCH(agent2_sink_parents[0], Filter(Equals(Metadata(), String("agent2_service"))));
 
   auto agent3_sinks = plan_by_qb_addr["agent3"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(0, agent3_sinks.size());
@@ -328,8 +326,7 @@ TEST_F(CoordinatorTest, prune_agents_nonexistent) {
   EXPECT_EQ(1, agent3_sinks.size());
   auto agent3_sink_parents = static_cast<OperatorIR*>(agent3_sinks[0])->parents();
   EXPECT_EQ(1, agent3_sink_parents.size());
-  EXPECT_MATCH(agent3_sink_parents[0],
-               Filter(Equals(Metadata(), MetadataLiteral(String("does_not_exist")))));
+  EXPECT_MATCH(agent3_sink_parents[0], Filter(Equals(Metadata(), String("does_not_exist"))));
 
   EXPECT_EQ(1, plan_by_qb_addr["kelvin"]->FindNodesThatMatch(GRPCSourceGroup()).size());
 }
@@ -359,8 +356,7 @@ TEST_F(CoordinatorTest, prune_agents_unsupported_metadata_type) {
     EXPECT_EQ(1, agent_sinks.size());
     auto agent_sink_parents = static_cast<OperatorIR*>(agent_sinks[0])->parents();
     EXPECT_EQ(1, agent_sink_parents.size());
-    EXPECT_MATCH(agent_sink_parents[0],
-                 Filter(Equals(Metadata(), MetadataLiteral(String("foobar")))));
+    EXPECT_MATCH(agent_sink_parents[0], Filter(Equals(Metadata(), String("foobar"))));
   }
   EXPECT_EQ(1, plan_by_qb_addr["kelvin"]->FindNodesThatMatch(GRPCSourceGroup()).size());
 }
@@ -427,8 +423,7 @@ TEST_F(CoordinatorTest, prune_agents_multiparent) {
   EXPECT_MATCH(agent1_sink0_parents[0], MemorySource());
   auto agent1_sink1_parents = static_cast<OperatorIR*>(agent1_sinks[1])->parents();
   EXPECT_EQ(1, agent1_sink1_parents.size());
-  EXPECT_MATCH(agent1_sink1_parents[0],
-               Filter(Equals(ColumnNode(), MetadataLiteral(String("agent1_pod")))));
+  EXPECT_MATCH(agent1_sink1_parents[0], Filter(Equals(ColumnNode(), String("agent1_pod"))));
 
   auto agent2_sinks = plan_by_qb_addr["agent2"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent2_sinks.size());
@@ -479,8 +474,7 @@ TEST_F(CoordinatorTest, prune_agents_multichild) {
   EXPECT_MATCH(agent2_sink0_parents[0], MemorySource());
   auto agent2_sink1_parents = static_cast<OperatorIR*>(agent2_sinks[1])->parents();
   EXPECT_EQ(1, agent2_sink1_parents.size());
-  EXPECT_MATCH(agent2_sink1_parents[0],
-               Filter(Equals(Metadata(), MetadataLiteral(String("agent2_service")))));
+  EXPECT_MATCH(agent2_sink1_parents[0], Filter(Equals(Metadata(), String("agent2_service"))));
 
   auto agent3_sinks = plan_by_qb_addr["agent3"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent3_sinks.size());
@@ -524,15 +518,15 @@ TEST_F(CoordinatorTest, prune_agents_logical_conjunctions) {
   auto agent1_sink_parents = static_cast<OperatorIR*>(agent1_sinks[0])->parents();
   EXPECT_EQ(1, agent1_sink_parents.size());
   EXPECT_MATCH(agent1_sink_parents[0],
-               Filter(LogicalOr(Equals(Metadata(), MetadataLiteral(String("agent1_pod"))),
-                                Equals(Metadata(), MetadataLiteral(String("does_not_exist"))))));
+               Filter(LogicalOr(Equals(Metadata(), String("agent1_pod")),
+                                Equals(Metadata(), String("does_not_exist")))));
 
   auto agent2_sinks = plan_by_qb_addr["agent2"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent2_sinks.size());
   auto agent2_sink_parents = static_cast<OperatorIR*>(agent2_sinks[0])->parents();
   EXPECT_EQ(1, agent2_sink_parents.size());
   EXPECT_MATCH(agent2_sink_parents[0],
-               Filter(LogicalAnd(Equals(Metadata(), MetadataLiteral(String("agent2_service"))),
+               Filter(LogicalAnd(Equals(Metadata(), String("agent2_service")),
                                  LogicalOr(Value(), Value()))));
 
   auto agent3_sinks = plan_by_qb_addr["agent3"]->FindNodesThatMatch(GRPCSink());

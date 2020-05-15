@@ -542,12 +542,6 @@ class OperatorTests : public ::testing::Test {
     return metadata;
   }
 
-  MetadataLiteralIR* MakeMetadataLiteral(DataIR* data_ir) {
-    MetadataLiteralIR* metadata_literal =
-        graph->CreateNode<MetadataLiteralIR>(ast, data_ir).ConsumeValueOrDie();
-    return metadata_literal;
-  }
-
   FuncIR* MakeMeanFunc(ExpressionIR* value) {
     return graph
         ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "mean"},
@@ -1034,14 +1028,6 @@ void CompareCloneNode(GroupByIR* new_ir, GroupByIR* old_ir, const std::string& e
     CompareClone(new_groups[i], old_groups[i], new_ir->graph_ptr() == old_ir->graph_ptr(),
                  err_string);
   }
-}
-
-template <>
-void CompareCloneNode(MetadataLiteralIR* new_ir, MetadataLiteralIR* old_ir,
-                      const std::string& err_string) {
-  EXPECT_EQ(new_ir->literal_type(), old_ir->literal_type()) << err_string;
-  CompareClone(new_ir->literal(), old_ir->literal(), new_ir->graph_ptr() == old_ir->graph_ptr(),
-               err_string);
 }
 
 template <>
