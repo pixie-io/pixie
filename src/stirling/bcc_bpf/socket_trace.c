@@ -531,7 +531,6 @@ static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_
   conn_event.open.timestamp_ns = bpf_ktime_get_ns();
   conn_event.open.conn_id = conn_info.conn_id;
   conn_event.open.addr = conn_info.addr;
-  conn_event.open.traffic_class = conn_info.traffic_class;
 
   socket_control_events.perf_submit(ctx, &conn_event, sizeof(struct socket_control_event_t));
 }

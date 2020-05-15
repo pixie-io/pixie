@@ -69,7 +69,6 @@ void ConnectionTracker::AddConnOpenEvent(const conn_event_t& conn_event) {
   }
 
   SetConnID(conn_event.conn_id);
-  SetTrafficClass(conn_event.traffic_class);
 
   CheckTracker();
 

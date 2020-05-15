@@ -20,7 +20,6 @@ class EventGenerator {
  public:
   explicit EventGenerator(Clock* clock) : clock_(clock) {}
 
-  template <TrafficProtocol TProtocol>
   struct socket_control_event_t InitConn() {
     struct socket_control_event_t conn_event {};
     conn_event.type = kConnOpen;
@@ -30,9 +29,6 @@ class EventGenerator {
     conn_event.open.conn_id.tsid = ++tsid_;
     conn_event.open.conn_id.upid.start_time_ticks = kPIDStartTimeTicks;
     conn_event.open.addr.sin6_family = AF_INET;
-    conn_event.open.traffic_class.protocol = TProtocol;
-    conn_event.open.traffic_class.role =
-        (TProtocol == kProtocolHTTP2Uprobe) ? kRoleUnknown : kRoleClient;
     return conn_event;
   }
 

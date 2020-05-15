@@ -506,13 +506,13 @@ class ConnectionTracker {
   }
 
   void SetDebugTrace(int level) { debug_trace_level_ = level; }
+  void SetTrafficClass(struct traffic_class_t traffic_class);
 
  private:
   void AddConnOpenEvent(const conn_event_t& conn_info);
   void AddConnCloseEvent(const close_event_t& close_event);
 
   void SetConnID(struct conn_id_t conn_id);
-  void SetTrafficClass(struct traffic_class_t traffic_class);
   void UpdateTimestamps(uint64_t bpf_timestamp);
   void CheckTracker();
   void HandleInactivity();
