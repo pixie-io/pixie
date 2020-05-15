@@ -1,19 +1,17 @@
-import * as _ from 'lodash';
-import * as React from 'react';
-import * as ReactDOM from 'react-dom';
-import {OverlayTrigger, Tooltip} from 'react-bootstrap';
-import Highlight from 'react-highlight';
-
 import 'highlight.js/styles/github.css';
 import './code-snippet.scss';
 
-// @ts-ignore : TS does not like image files.
 import * as copyImage from 'images/icons/copy.svg';
+import * as _ from 'lodash';
+import * as React from 'react';
+import { OverlayTrigger, Tooltip } from 'react-bootstrap';
+import * as ReactDOM from 'react-dom';
+import Highlight from 'react-highlight';
 
 interface CodeSnippetProps {
-    showCopy: boolean;
-    children: string;
-    language: string;
+  showCopy: boolean;
+  children: string;
+  language: string;
 }
 
 interface CodeSnippetState {
@@ -21,21 +19,20 @@ interface CodeSnippetState {
 }
 
 export class CodeSnippet extends React.Component<CodeSnippetProps, CodeSnippetState> {
+  private textRef: React.RefObject<HTMLPreElement>;
   constructor(props) {
     super(props);
     this.state = {
       copied: false,
     };
+    this.textRef = React.createRef();
   }
 
   handleCopySnippet() {
-    const domEl = ReactDOM.findDOMNode(this) as Element;
-    const copyText = domEl.querySelector('.code-snippet pre');
-
     // You can only copy from a visible text area, so create a text area containing
     // the snippet contents, copy, then delete the text area.
     const textArea = document.createElement('textarea');
-    textArea.value = copyText.textContent;
+    textArea.value = this.textRef.current.textContent;
     document.body.appendChild(textArea);
     textArea.select();
     document.execCommand('Copy');
@@ -57,7 +54,7 @@ export class CodeSnippet extends React.Component<CodeSnippetProps, CodeSnippetSt
     props.scheduleUpdate();
     return (
       <Tooltip className='code-snippet--tooltip' {...props}>
-        { this.state.copied ? 'Copied' : 'Copy to clipboard' }
+        {this.state.copied ? 'Copied' : 'Copy to clipboard'}
       </Tooltip>);
   }
 
@@ -68,7 +65,7 @@ export class CodeSnippet extends React.Component<CodeSnippetProps, CodeSnippetSt
         overlay={this.renderCopyTooltip.bind(this)}
       >
         <div className='code-snippet--copy-button' onClick={this.handleCopySnippet.bind(this)}>
-          <img src={copyImage}/>
+          <img src={copyImage} />
         </div>
       </OverlayTrigger>
     );
@@ -82,13 +79,13 @@ export class CodeSnippet extends React.Component<CodeSnippetProps, CodeSnippetSt
             <Highlight className={this.props.language}>
               {this.props.children}
             </Highlight> :
-            <pre>
+            <pre ref={this.textRef}>
               {this.props.children}
             </pre>
           }
         </div>
 
-        { this.props.showCopy ? this.renderCopyButton() : null}
+        {this.props.showCopy ? this.renderCopyButton() : null}
       </div>
     );
   }

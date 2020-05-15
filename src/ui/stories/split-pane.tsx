@@ -1,7 +1,7 @@
-import {SplitContainer, SplitPane} from 'components/split-pane/split-pane';
+import { SplitContainer, SplitPane } from 'components/split-pane/split-pane';
 import * as React from 'react';
 
-import {storiesOf} from '@storybook/react';
+import { storiesOf } from '@storybook/react';
 
 storiesOf('SplitPane', module)
   .add('Basic', () => (

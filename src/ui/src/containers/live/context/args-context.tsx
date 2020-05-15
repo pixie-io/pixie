@@ -15,6 +15,23 @@ interface ArgsContextProps {
   setArgs: SetStateFunc<Arguments>;
 }
 
+function argsEquals(args1: Arguments, args2: Arguments): boolean {
+  if (Object.keys(args1).length !== Object.keys(args2).length) {
+    return false;
+  }
+  const args1Map = new Map(Object.entries(args1));
+  for (const [key, val] of Object.entries(args2)) {
+    if (args1Map.get(key) !== val) {
+      return false;
+    }
+    args1Map.delete(key);
+  }
+  if (args1Map.size !== 0) {
+    return false;
+  }
+  return true;
+}
+
 // Populate arguments either from defaultValues or from the input args.
 function argsForVis(vis: Vis, args: Arguments, scriptId?: string): Arguments {
   const outArgs: Arguments = {};
@@ -36,23 +53,6 @@ function argsForVis(vis: Vis, args: Arguments, scriptId?: string): Arguments {
     return args;
   }
   return outArgs;
-}
-
-function argsEquals(args1: Arguments, args2: Arguments): boolean {
-  if (Object.keys(args1).length !== Object.keys(args2).length) {
-    return false;
-  }
-  const args1Map = new Map(Object.entries(args1));
-  for (const [key, val] of Object.entries(args2)) {
-    if (args1Map.get(key) !== val) {
-      return false;
-    }
-    args1Map.delete(key);
-  }
-  if (args1Map.size !== 0) {
-    return false;
-  }
-  return true;
 }
 
 export const ArgsContext = React.createContext<ArgsContextProps>(null);

@@ -1,13 +1,13 @@
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
-import { CSSProperties } from '@material-ui/core/styles/withStyles';
 import * as _ from 'lodash';
 import * as React from 'react';
 
-import { LegendData, LegendEntry } from './legend-data';
-
-import {IconButton} from '@material-ui/core';
+import { IconButton } from '@material-ui/core';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { CSSProperties } from '@material-ui/core/styles/withStyles';
 import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
 import KeyboardArrowRightIcon from '@material-ui/icons/KeyboardArrowRight';
+
+import { LegendData, LegendEntry } from './legend-data';
 
 const NUM_ROWS = 2;
 const MAX_NUM_GRIDS = 4;
@@ -96,6 +96,21 @@ const useStyles = makeStyles((theme: Theme) => {
   });
 });
 
+const toRowMajorOrder = (entries: LegendEntry[], numCols: number, numRows: number): LegendEntry[] => {
+  const newEntries: LegendEntry[] = [];
+  outerLoop:
+  for (let i = 0; i < numCols; i++) {
+    for (let j = 0; j < numRows; j++) {
+      const index = j * numCols + i;
+      if (index >= entries.length) {
+        break outerLoop;
+      }
+      newEntries.push(entries[index]);
+    }
+  }
+  return newEntries;
+};
+
 const Legend = React.memo((props: LegendProps) => {
   const classes = useStyles();
   const [currentPage, setCurrentPage] = React.useState<number>(0);
@@ -117,22 +132,22 @@ const Legend = React.memo((props: LegendProps) => {
 
   const handleRowRightClick = React.useCallback((key: string, e: React.SyntheticEvent) => {
     // Reset all selected series.
-    props.setInteractState({...props.interactState, selectedSeries: []});
+    props.setInteractState({ ...props.interactState, selectedSeries: [] });
     // Prevent right click menu from showing up.
     e.preventDefault();
     return false;
   }, [props.interactState]);
 
   const handleRowHover = React.useCallback((key: string, e: React.SyntheticEvent) => {
-    props.setInteractState({...props.interactState, hoveredSeries: key});
+    props.setInteractState({ ...props.interactState, hoveredSeries: key });
   }, [props.interactState]);
 
   const handleRowLeave = React.useCallback((e: React.SyntheticEvent) => {
-    props.setInteractState({...props.interactState, hoveredSeries: null});
+    props.setInteractState({ ...props.interactState, hoveredSeries: null });
   }, [props.interactState]);
 
   if (props.vegaOrigin.length < 2) {
-    return <div/>;
+    return <div />;
   }
 
   const leftPadding = props.vegaOrigin[0];
@@ -197,7 +212,7 @@ const Legend = React.memo((props: LegendProps) => {
           onContextMenu={(e) => handleRowRightClick(entry.key, e)}
         >
           <div style={styles} className={classes.colorContainer}>
-            <div className={classes.colorCircle} style={colorStyles}/>
+            <div className={classes.colorCircle} style={colorStyles} />
           </div>
           <div style={styles} className={classes.key}>{entry.key}</div>
           <div style={styles} className={classes.val}>{entry.val}</div>
@@ -242,32 +257,18 @@ const Legend = React.memo((props: LegendProps) => {
           onClick={handlePageBack}
           disabled={currentPage === 0}
           size='small'>
-            <KeyboardArrowLeftIcon/>
+          <KeyboardArrowLeftIcon />
         </IconButton>
         <IconButton
           onClick={handlePageForward}
           disabled={currentPage === maxPages - 1}
           size='small'>
-            <KeyboardArrowRightIcon/>
+          <KeyboardArrowRightIcon />
         </IconButton>
       </div>
     </div>
   );
 });
-
-const toRowMajorOrder = (entries: LegendEntry[], numCols: number, numRows: number): LegendEntry[] => {
-  const newEntries: LegendEntry[] = [];
-  for (let i = 0; i < numCols; i++) {
-    for (let j = 0; j < numRows; j++) {
-      const index = j * numCols + i;
-      if (index >= entries.length) {
-        newEntries.push(null);
-        continue;
-      }
-      newEntries.push(entries[index]);
-    }
-  }
-  return newEntries;
-};
+Legend.displayName = 'Legend';
 
 export default Legend;

@@ -1,7 +1,7 @@
 /// <reference types="@types/segment-analytics" />
 
-import {SEGMENT_UI_WRITE_KEY} from 'containers/constants';
-import {PIXIE_CLOUD_VERSION} from 'utils/env';
+import { SEGMENT_UI_WRITE_KEY } from 'containers/constants';
+import { PIXIE_CLOUD_VERSION } from 'utils/env';
 
 declare global {
     interface Window {
@@ -25,6 +25,7 @@ class Analytics {
     }
 
     load() {
+        // eslint-disable-next-line @typescript-eslint/camelcase
         window.__pixie_cloud_version__ = PIXIE_CLOUD_VERSION;
         window.analytics.load(SEGMENT_UI_WRITE_KEY);
     }

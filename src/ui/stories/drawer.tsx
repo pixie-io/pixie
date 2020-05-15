@@ -1,9 +1,8 @@
 import * as React from 'react';
 
-import {action} from '@storybook/addon-actions';
-import {storiesOf} from '@storybook/react';
+import { storiesOf } from '@storybook/react';
 
-import {Drawer} from '../src/components/drawer/drawer';
+import { Drawer } from '../src/components/drawer/drawer';
 
 storiesOf('Drawer', module)
   .add('Basic', () => (
@@ -22,8 +21,8 @@ storiesOf('Drawer', module)
     </div>
   ), {
     info: { inline: true },
-    notes: 'The drawer defaults to be opened. Set the prop defaultOpened to ' +
-      'false to make it closed',
+    notes: 'The drawer defaults to be opened. Set the prop defaultOpened to '
+      + 'false to make it closed',
   })
   .add('Custom Width', () => (
     <div style={{ margin: '20px', display: 'flex', height: '400px' }}>

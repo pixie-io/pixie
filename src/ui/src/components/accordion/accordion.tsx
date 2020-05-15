@@ -1,11 +1,9 @@
 import './accordion.scss';
 
-// @ts-ignore : TS does not like image files.
 import * as closedIcon from 'images/icons/collapse-closed.svg';
-// @ts-ignore : TS does not like image files.
 import * as openedIcon from 'images/icons/collapse-opened.svg';
 import * as React from 'react';
-import {Button, Collapse} from 'react-bootstrap';
+import { Button, Collapse } from 'react-bootstrap';
 
 interface AccordionProps {
   items: AccordionToggleItem[];

@@ -1,9 +1,17 @@
-import {Status} from 'types/generated/vizier_pb';
+import { Status } from 'types/generated/vizier_pb';
 
 interface CompilerError {
   line: number;
   column: number;
   message: string;
+}
+
+function compare(err1: CompilerError, err2: CompilerError) {
+  const lineDiff = err1.line - err2.line;
+  if (lineDiff !== 0) {
+    return lineDiff;
+  }
+  return err1.column - err2.column;
 }
 
 export function ParseCompilerErrors(status: Status): CompilerError[] {
@@ -30,12 +38,4 @@ export function ParseCompilerErrors(status: Status): CompilerError[] {
   }
   out.sort(compare);
   return out;
-}
-
-function compare(err1: CompilerError, err2: CompilerError) {
-  const lineDiff = err1.line - err2.line;
-  if (lineDiff !== 0) {
-    return lineDiff;
-  }
-  return err1.column - err2.column;
 }

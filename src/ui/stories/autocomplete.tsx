@@ -5,8 +5,8 @@ import FormInput from 'components/autocomplete/form';
 import Input from 'components/autocomplete/input';
 import * as React from 'react';
 
-import {action} from '@storybook/addon-actions';
-import {storiesOf} from '@storybook/react';
+import { action } from '@storybook/addon-actions';
+import { storiesOf } from '@storybook/react';
 
 storiesOf('AutoComplete', module)
   .add('input with hint', () => {
@@ -64,13 +64,25 @@ storiesOf('AutoComplete', module)
         inputValue='script'
         items={[
           { type: 'header', header: 'Recently used' },
-          { type: 'item', title: 'px/script1', id: 'px-0', highlights: [[3, 5]] },
-          { type: 'item', title: 'px/script2', id: 'px-1', highlights: [[3, 5]] },
-          { type: 'item', title: 'px/script3', id: 'px-2', highlights: [[3, 5]] },
-          { type: 'item', title: 'px/script4', id: 'px-3', highlights: [[3, 5]] },
+          {
+            type: 'item', title: 'px/script1', id: 'px-0', highlights: [[3, 5]],
+          },
+          {
+            type: 'item', title: 'px/script2', id: 'px-1', highlights: [[3, 5]],
+          },
+          {
+            type: 'item', title: 'px/script3', id: 'px-2', highlights: [[3, 5]],
+          },
+          {
+            type: 'item', title: 'px/script4', id: 'px-3', highlights: [[3, 5]],
+          },
           { type: 'header', header: 'Org scripts' },
-          { type: 'item', title: 'hulu/script1', id: 'hulu-4', description: 'cool script' },
-          { type: 'item', title: 'hulu/script2', id: 'hulu-5', description: 'another cool script' },
+          {
+            type: 'item', title: 'hulu/script1', id: 'hulu-4', description: 'cool script',
+          },
+          {
+            type: 'item', title: 'hulu/script2', id: 'hulu-5', description: 'another cool script',
+          },
           { type: 'item', title: 'hulu/script3', id: 'hulu-6' },
           { type: 'item', title: 'hulu/script4', id: 'hulu-7' },
         ]}
@@ -83,36 +95,34 @@ storiesOf('AutoComplete', module)
     info: { inline: true },
     notes: 'completions list with active item',
   })
-  .add('autocomplete component', () => {
-    return (
-      <Autocomplete
-        onSelection={action('selection')}
-        getCompletions={async (input) => {
-          if (!input) {
-            return [];
-          }
-          const resp = await Axios({
-            method: 'get',
-            url: 'https://api.datamuse.com/sug',
-            params: { s: input },
-          });
+  .add('autocomplete component', () => (
+    <Autocomplete
+      onSelection={action('selection')}
+      getCompletions={async (input) => {
+        if (!input) {
+          return [];
+        }
+        const resp = await Axios({
+          method: 'get',
+          url: 'https://api.datamuse.com/sug',
+          params: { s: input },
+        });
 
-          if (resp.status !== 200) {
-            return [];
-          }
-          return [
-            { type: 'header', header: 'Suggested words' },
-            ...resp.data.map((suggestion, i) => ({
-              type: 'item',
-              title: suggestion.word,
-              id: i,
-              description: `score: ${suggestion.score}`,
-            })),
-          ];
-        }}
-      />
-    );
-  }, {
+        if (resp.status !== 200) {
+          return [];
+        }
+        return [
+          { type: 'header', header: 'Suggested words' },
+          ...resp.data.map((suggestion, i) => ({
+            type: 'item',
+            title: suggestion.word,
+            id: i,
+            description: `score: ${suggestion.score}`,
+          })),
+        ];
+      }}
+    />
+  ), {
     info: { inline: true },
     notes: 'completions list with active item',
   });

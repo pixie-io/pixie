@@ -1,13 +1,12 @@
-import {Table} from 'common/vizier-grpc-client';
+import { Table } from 'common/vizier-grpc-client';
 import * as React from 'react';
-import {Highlight, Hint, LineSeries, MarkSeries, XYPlot} from 'react-vis';
-import {DataType} from 'types/generated/vizier_pb';
-import {columnFromProto} from 'utils/result-data-utils';
+import { Highlight, Hint, LineSeries, MarkSeries, XYPlot } from 'react-vis';
+import { DataType } from 'types/generated/vizier_pb';
+import withAutoSizer from 'utils/autosizer';
+import { columnFromProto } from 'utils/result-data-utils';
 
-import {
-    LineSeriesData, LineSeriesLegends, paletteColorByIndex, TimeValueAxis, withAutoSizer,
-} from './chart';
-import {parseData as parseLineData} from './line-chart';
+import { LineSeriesData, LineSeriesLegends, paletteColorByIndex, TimeValueAxis } from './chart';
+import { parseData as parseLineData } from './line-chart';
 
 interface Point {
   x: number | Date;
@@ -18,25 +17,6 @@ interface Point {
 interface ScatterPlotData {
   points: Point[];
   lines?: LineSeriesData[];
-}
-
-export function parseData(tables: Table[]): ScatterPlotData | null {
-  try {
-    let lines = [];
-    if (tables.length < 1) {
-      return null;
-    }
-    const scatter = getScatterPoints(tables[0]);
-    if (scatter.length === 0) {
-      return null;
-    }
-    if (tables.length > 1) {
-      lines = parseLineData(tables[1]);
-    }
-    return { points: scatter, lines };
-  } catch (e) {
-    return null;
-  }
 }
 
 function getScatterPoints(table: Table): Point[] {
@@ -64,6 +44,25 @@ function getScatterPoints(table: Table): Point[] {
     }
   }
   return out;
+}
+
+export function parseData(tables: Table[]): ScatterPlotData | null {
+  try {
+    let lines = [];
+    if (tables.length < 1) {
+      return null;
+    }
+    const scatter = getScatterPoints(tables[0]);
+    if (scatter.length === 0) {
+      return null;
+    }
+    if (tables.length > 1) {
+      lines = parseLineData(tables[1]);
+    }
+    return { points: scatter, lines };
+  } catch (e) {
+    return null;
+  }
 }
 
 function formatHint(value: Point) {
@@ -107,7 +106,7 @@ export const ScatterPlot = React.memo<ScatterPlotData>(withAutoSizer(
           onNearestXY={(val) => setValue(val)}
         />
         {lineSeries}
-        {!!value ? <Hint value={value} format={formatHint} /> : null}
+        {value ? <Hint value={value} format={formatHint} /> : null}
         <Highlight
           enableY={false}
           onBrushEnd={(br) => setBrush(br)}

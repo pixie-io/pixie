@@ -1,7 +1,7 @@
-import {Hello} from 'pixie-components';
+import { Hello } from 'pixie-components';
 import * as React from 'react';
 
-import {storiesOf} from '@storybook/react';
+import { storiesOf } from '@storybook/react';
 
 storiesOf('Pixie Hello Component', module)
   .add('Basic', () => <Hello />, {

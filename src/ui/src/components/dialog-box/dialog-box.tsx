@@ -1,6 +1,5 @@
 import './dialog-box.scss';
 
-// @ts-ignore : TS does not like image files.
 import * as infoImage from 'images/new-logo.svg';
 import * as _ from 'lodash';
 import * as React from 'react';
@@ -16,7 +15,7 @@ export class DialogBox extends React.Component<DialogBoxProps, {}> {
     return (
       <div className='dialog-box' style={style}>
         <div className='dialog-box--header'>
-          <img src={infoImage} style={{ width: '55px' }}/>
+          <img src={infoImage} style={{ width: '55px' }} />
         </div>
         <div className='dialog-box--content'>
           {this.props.children}

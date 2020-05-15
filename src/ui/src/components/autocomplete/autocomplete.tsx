@@ -38,7 +38,7 @@ interface AutoCompleteProps {
   className?: string;
 }
 
-type ItemsMap = Map<CompletionId, { title: CompletionTitle, index: number }>;
+type ItemsMap = Map<CompletionId, { title: CompletionTitle; index: number }>;
 
 function findNextItem(activeItem: CompletionId, itemsMap: ItemsMap, completions: CompletionItems, direction = 1):
   CompletionId {

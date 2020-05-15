@@ -1,4 +1,4 @@
-import {DOMAIN_NAME} from 'containers/constants';
+import { DOMAIN_NAME } from 'containers/constants';
 import * as moment from 'moment';
 
 const BUILD_NUMBER = process.env.BUILD_NUMBER;
@@ -13,19 +13,15 @@ const parts = [];
 if (typeof BUILD_SCM_REVISION === 'string') {
   parts.push(BUILD_SCM_REVISION.substr(0, 7));
 }
-if (!!BUILD_SCM_STATUS) {
+if (BUILD_SCM_STATUS) {
   parts.push(BUILD_SCM_STATUS);
 }
 parts.push(isNaN(timestampSec) ? Math.floor(date.valueOf() / 1000) : timestampSec);
-if (!!BUILD_NUMBER) {
+if (BUILD_NUMBER) {
   parts.push(BUILD_NUMBER);
 }
 
 export const PIXIE_CLOUD_VERSION = `${dateStr}+${parts.join('.')}`;
-
-export function isProd(): boolean {
-  return !isDev() && !isStaging();
-}
 
 export function isDev(): boolean {
   return DOMAIN_NAME.startsWith('dev');
@@ -33,4 +29,8 @@ export function isDev(): boolean {
 
 export function isStaging(): boolean {
   return DOMAIN_NAME.startsWith('staging');
+}
+
+export function isProd(): boolean {
+  return !isDev() && !isStaging();
 }

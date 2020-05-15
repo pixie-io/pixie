@@ -33,6 +33,19 @@ export interface VizierQueryFunc {
   args: VizierQueryArg[];
 }
 
+function getExecutionErrors(errList: ErrorDetails[]): string[] {
+  return errList.map((error) => {
+    switch (error.getErrorCase()) {
+      case ErrorDetails.ErrorCase.COMPILER_ERROR: {
+        const ce = error.getCompilerError();
+        return `Compiler error on line ${ce.getLine()}, column ${ce.getColumn()}: ${ce.getMessage()}.`;
+      }
+      default:
+        return `Unknown error type ${ErrorDetails.ErrorCase[error.getErrorCase()]}.`;
+    }
+  });
+}
+
 const VizierDeadlineSupportVersion = '>=0.2.2';
 
 export class VizierGRPCClient {
@@ -186,17 +199,4 @@ export class VizierGRPCClient {
 
     return { deadline: deadline.getTime().toString() };
   }
-}
-
-function getExecutionErrors(errList: ErrorDetails[]): string[] {
-  return errList.map((error) => {
-    switch (error.getErrorCase()) {
-      case ErrorDetails.ErrorCase.COMPILER_ERROR: {
-        const ce = error.getCompilerError();
-        return `Compiler error on line ${ce.getLine()}, column ${ce.getColumn()}: ${ce.getMessage()}.`;
-      }
-      default:
-        return `Unknown error type ${ErrorDetails.ErrorCase[error.getErrorCase()]}.`;
-    }
-  });
 }

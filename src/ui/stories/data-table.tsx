@@ -1,9 +1,9 @@
-import {DARK_THEME} from 'common/mui-theme';
-import {ColumnProps, DataTable} from 'components/data-table';
+import { DARK_THEME } from 'common/mui-theme';
+import { ColumnProps, DataTable } from 'components/data-table';
 import * as React from 'react';
 
-import {ThemeProvider} from '@material-ui/core/styles';
-import {storiesOf} from '@storybook/react';
+import { ThemeProvider } from '@material-ui/core/styles';
+import { storiesOf } from '@storybook/react';
 
 type Sample = [string, number, number, number, number];
 
@@ -23,7 +23,9 @@ function createData(
   carbs: number,
   protein: number,
 ) {
-  return { id, dessert, calories, fat, carbs, protein };
+  return {
+    id, dessert, calories, fat, carbs, protein,
+  };
 }
 
 const rows = [];
@@ -87,7 +89,7 @@ storiesOf('DataTable', module)
   .add('compact', () => (
     <div style={{ height: 500 }}>
       <DataTable
-        compact={true}
+        compact
         columns={columns}
         rowGetter={getRow}
         rowCount={rows.length}

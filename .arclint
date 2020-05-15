@@ -172,32 +172,6 @@
         "(k8s/vizier/base/fluentbit/configmap.yaml)"
       ]
     },
-    "tslint-ui": {
-      "type": "tslint",
-      "tslint.config": "./src/ui/tslint.json",
-      "tslint.project": "./src/ui/tsconfig.json",
-      "include": [
-        "(src/ui/.*\\.(tsx)$)",
-        "(src/ui/.*\\.(ts)$)",
-        "(src/ui/.*\\.(js)$)"
-      ],
-      "exclude": [
-        "(^src/ui/pixie-components/)"
-      ]
-    },
-    "tslint-ui-pixie-components": {
-      "type": "tslint",
-      "tslint.config": "./src/ui/tslint.json",
-      "tslint.project": "./src/ui/pixie-components/tsconfig.json",
-      "include": [
-        "(src/ui/pixie-components/src/.*\\.(tsx)$)",
-        "(src/ui/pixie-components/src/.*\\.(ts)$)",
-        "(src/ui/pixie-components/src/.*\\.(js)$)"
-      ],
-      "exclude": [
-        "(^src/ui/pixie-components/dist/)"
-      ]
-    },
     "yaml": {
       "type": "script-and-regex",
       "script-and-regex.script": "yamllint",
@@ -208,6 +182,16 @@
       ],
       "exclude": [
         "(^demos/)"
+      ]
+    },
+    "eslint-ui": {
+      "type": "eslint",
+      "bin": "./linters/eslint_ui.sh",
+      "eslint.config": ".eslintrc.json",
+      "include": [
+        "(src/ui/.*\\.(tsx)$)",
+        "(src/ui/.*\\.(ts)$)",
+        "(src/ui/.*\\.(js)$)"
       ]
     }
   }

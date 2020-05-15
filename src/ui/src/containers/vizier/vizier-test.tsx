@@ -1,7 +1,3 @@
-jest.mock('./deploy-instructions', () => {
-  return { DeployInstructions: () => <></> };
-});
-
 import { mount } from 'enzyme';
 import * as React from 'react';
 import { Navbar } from 'react-bootstrap';
@@ -11,6 +7,11 @@ import { MockedProvider } from '@apollo/react-testing';
 
 import { DeployInstructions } from './deploy-instructions';
 import Vizier, { CHECK_VIZIER, CREATE_CLUSTER, GET_CLUSTER, VizierMain } from './vizier';
+
+jest.mock('./deploy-instructions', () => {
+  const DeployInstructions = () => <></>;
+  return { DeployInstructions };
+});
 
 // Mock CodeMirror component because it does not mount properly in Jest.
 jest.mock('react-codemirror', () => () => <div id='mock-codemirror'></div>);

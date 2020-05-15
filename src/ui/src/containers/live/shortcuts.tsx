@@ -15,9 +15,9 @@ type HotKeyAction =
 
 type KeyMap = {
   [action in HotKeyAction]: {
-    sequence: string | string[],
-    displaySequence: string | string[],
-    description: string,
+    sequence: string | string[];
+    displaySequence: string | string[];
+    description: string;
   }
 };
 

@@ -1,6 +1,5 @@
 import CodeRenderer from 'components/code-renderer/code-renderer';
 import { Spinner } from 'components/spinner/spinner';
-// @ts-ignore : TS does not like image files.
 import * as logoImage from 'images/new-logo.svg';
 import * as React from 'react';
 
@@ -92,9 +91,9 @@ export const DeployInstructions = () => {
         />
         <div className={classes.instructions}>
           Run this in a macOS Terminal or Linux shell to install Pixie in your K8s cluster.
-          Share with your admin if you don't have access.
+          Share with your admin if you don&apos;t have access.
         </div>
-        <div className={classes.linksHeader}>Don't have K8s?</div>
+        <div className={classes.linksHeader}>Don&apos;t have K8s?</div>
         <ul className={classes.list}>
           <li className={classes.listItem}>
             <a className={classes.linkItem} href='/docs/install-guides'>Set up a quick local K8s sandbox</a>

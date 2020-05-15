@@ -1,8 +1,8 @@
 import * as moment from 'moment';
 import * as numeral from 'numeral';
 import * as React from 'react';
-import {AutoSizer} from 'react-virtualized';
-import {DiscreteColorLegend, XAxis, YAxis} from 'react-vis';
+import { AutoSizer } from 'react-virtualized';
+import { DiscreteColorLegend, XAxis, YAxis } from 'react-vis';
 
 export interface LineSeriesData {
   name: string;
@@ -56,20 +56,4 @@ export function TimeValueAxis() {
     <XAxis key='x-axis' tickFormat={(value) => moment(value).format('hh:mm:ss')} />,
     <YAxis key='y-axis' tickFormat={(value) => numeral(value).format('0.[0]a')} />,
   ];
-}
-
-interface AutoSizerProps {
-  width: number;
-  height: number;
-  [prop: string]: any;
-}
-
-export function withAutoSizer(WrappedComponent: React.ComponentType<AutoSizerProps>) {
-  return (props) => (
-    <AutoSizer>
-      {({ height, width }) => (
-        <WrappedComponent width={Math.max(width, 0)} height={Math.max(height, 0)} {...props} />
-      )}
-    </AutoSizer>
-  );
 }

@@ -18,6 +18,7 @@ const ArgsEditor = () => {
       {
         argsList.map(([argName, argVal]) => (
           <ArgumentField
+            key={argName}
             name={argName}
             value={argVal}
             onValueChange={(newVal) => { setArgs({ ...args, [argName]: newVal }); }}

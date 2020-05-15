@@ -1,13 +1,10 @@
 import './top-nav.scss';
 
-// @ts-ignore : TS does not like image files.
 import * as userImage from 'images/icons/user.svg';
-// @ts-ignore : TS does not like image files.
 import * as logoImage from 'images/new-logo.svg';
 import * as React from 'react';
-import {Dropdown, Nav, Navbar, NavDropdown} from 'react-bootstrap';
-import {Link, NavLink} from 'react-router-dom';
-import {getRedirectPath} from 'utils/redirect-utils';
+import { Dropdown, Nav, Navbar, NavDropdown } from 'react-bootstrap';
+import { Link, NavLink } from 'react-router-dom';
 
 export function VizierTopNav() {
   return (

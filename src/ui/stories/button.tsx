@@ -13,9 +13,9 @@ storiesOf('Button', module)
       Click me!
     </Button>
   ), {
-      info: { inline: true },
-      notes: 'This is a regular button that will be used in our UI.',
-    })
+    info: { inline: true },
+    notes: 'This is a regular button that will be used in our UI.',
+  })
   .add('Disabled', () => (
     <Button
       size='lg'

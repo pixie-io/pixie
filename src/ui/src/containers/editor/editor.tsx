@@ -2,15 +2,13 @@ import './editor.scss';
 
 import { MUTATE_DRAWER_OPENED, QUERY_DRAWER_OPENED } from 'common/local-gql';
 import gql from 'graphql-tag';
-// @ts-ignore : TS does not like image files.
 import * as closeIcon from 'images/icons/cross.svg';
-// @ts-ignore : TS does not like image files.
 import * as newTabIcon from 'images/icons/new-tab.svg';
 import * as React from 'react';
 import { Button, Nav, Tab, Tabs } from 'react-bootstrap';
 import * as uuid from 'uuid/v1';
 
-import { useMutation, useQuery } from '@apollo/react-hooks';
+import { ApolloProvider, useMutation, useQuery } from '@apollo/react-hooks';
 
 import { Drawer } from '../../components/drawer/drawer';
 import { saveCodeToStorage } from './code-utils';
@@ -61,6 +59,19 @@ export const Editor = () => {
     localStorage.setItem(PIXIE_EDITOR_LAST_OPEN_TAB_KEY, state.activeTab);
   }, [state.activeTab]);
 
+  const createNewTab = React.useCallback((query?) => {
+    const newTab = {
+      title: (query && query.id) || 'untitled',
+      id: uuid(),
+    };
+    if (query && query.code) {
+      saveCodeToStorage(newTab.id, query.code);
+    }
+    setState(({ tabs }) => {
+      return { tabs: [...tabs, newTab], activeTab: newTab.id };
+    });
+  }, []);
+
   const selectTab = (id: string) => {
     if (id === NEW_TAB) {
       createNewTab();
@@ -88,19 +99,6 @@ export const Editor = () => {
       return { tabs: newTabs, activeTab: nextActiveTab };
     });
   };
-
-  const createNewTab = React.useCallback((query?) => {
-    const newTab = {
-      title: (query && query.id) || 'untitled',
-      id: uuid(),
-    };
-    if (query && query.code) {
-      saveCodeToStorage(newTab.id, query.code);
-    }
-    setState(({ tabs }) => {
-      return { tabs: [...tabs, newTab], activeTab: newTab.id };
-    });
-  }, []);
 
   const { data } = useQuery(QUERY_DRAWER_OPENED);
   const [updateDrawer] = useMutation(MUTATE_DRAWER_OPENED);

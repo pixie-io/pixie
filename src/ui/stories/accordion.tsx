@@ -1,7 +1,7 @@
-import {Accordion} from 'components/accordion';
+import { Accordion } from 'components/accordion';
 import * as React from 'react';
 
-import {storiesOf} from '@storybook/react';
+import { storiesOf } from '@storybook/react';
 
 storiesOf('Accordion', module)
   .add('Basic', () => (

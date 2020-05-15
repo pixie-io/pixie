@@ -3,15 +3,10 @@ import Axios from 'axios';
 import { CodeSnippet } from 'components/code-snippet/code-snippet';
 import { DialogBox } from 'components/dialog-box/dialog-box';
 import { AUTH0_CLIENT_ID, AUTH0_DOMAIN, DOMAIN_NAME } from 'containers/constants';
-// @ts-ignore : TS does not like image files.
 import * as check from 'images/icons/check.svg';
-// @ts-ignore : TS does not like image files.
 import * as criticalImage from 'images/icons/critical.svg';
-// @ts-ignore : TS does not like image files.
 import * as backgroundBottom from 'images/login-background-bottom.svg';
-// @ts-ignore : TS does not like image files.
 import * as backgroundTop from 'images/login-background-top.svg';
-// @ts-ignore : TS does not like image files.
 import * as logo from 'images/new-logo.svg';
 import * as QueryString from 'query-string';
 import * as React from 'react';
@@ -129,7 +124,7 @@ const CompanyInfo = () => {
         <div className={classes.header}>Pixie Community</div>
         <div className={classes.subheader}>Beta</div>
         <div className={classes.text}>
-          Engineers use Pixie's auto-telemetry to debug distributed environments in real-time
+          Engineers use Pixie&apos;s auto-telemetry to debug distributed environments in real-time
           </div>
         <ul className={classes.list}>
           <li className={classes.bullet}>
@@ -316,7 +311,7 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
     }
   }
 
-  componentWillMount() {
+  UNSAFE_componentWillMount() {
     this.parseQueryParams();
   }
 

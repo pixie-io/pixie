@@ -1,15 +1,5 @@
 import * as QueryString from 'query-string';
 
-export function setQueryParams(params: { [key: string]: string }) {
-  const { protocol, host, pathname } = window.location;
-  const currentParams = getQueryParams();
-  const newQueryString = QueryString.stringify({ ...currentParams, ...params });
-  const search = newQueryString ? `?${newQueryString}` : '';
-  const newurl = `${protocol}//${host}${pathname}${search}`;
-
-  window.history.pushState({ path: newurl }, '', newurl);
-}
-
 export function getQueryParams(): { [key: string]: string } {
   const params = {};
   const parsed = QueryString.parse(location.search);
@@ -19,4 +9,14 @@ export function getQueryParams(): { [key: string]: string } {
     }
   }
   return params;
+}
+
+export function setQueryParams(params: { [key: string]: string }) {
+  const { protocol, host, pathname } = window.location;
+  const currentParams = getQueryParams();
+  const newQueryString = QueryString.stringify({ ...currentParams, ...params });
+  const search = newQueryString ? `?${newQueryString}` : '';
+  const newurl = `${protocol}//${host}${pathname}${search}`;
+
+  window.history.pushState({ path: newurl }, '', newurl);
 }

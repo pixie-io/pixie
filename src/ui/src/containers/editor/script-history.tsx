@@ -1,11 +1,10 @@
 import './script-history.scss';
 
-import {AccordionList} from 'components/accordion';
-// @ts-ignore : TS does not like image files.
+import { AccordionList } from 'components/accordion';
 import * as clearIcon from 'images/icons/cross.svg';
 import * as React from 'react';
-import {FormControl} from 'react-bootstrap';
-import {relativeTime} from 'utils/time';
+import { FormControl } from 'react-bootstrap';
+import { relativeTime } from 'utils/time';
 
 export interface ScriptHistory {
   id: string;
@@ -77,3 +76,4 @@ export const HistoryList = React.memo((props: HistoryListProps) => {
     </>
   );
 });
+HistoryList.displayName = 'HistoryList';

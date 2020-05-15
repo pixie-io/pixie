@@ -1,11 +1,9 @@
 import './drawer.scss';
 
-// @ts-ignore : TS does not like image files.
 import * as collapseLeft from 'images/icons/collapse-left.svg';
-// @ts-ignore : TS does not like image files.
 import * as collapseRight from 'images/icons/collapse-right.svg';
 import * as React from 'react';
-import {Button} from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 
 interface DrawerProps {
   defaultOpened?: boolean;

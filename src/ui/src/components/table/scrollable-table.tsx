@@ -2,16 +2,16 @@ import 'react-virtualized/styles.css'; // Only needs to be imported once.
 import './scrollable-table.scss';
 
 import ModalTrigger from 'components/modal';
-// @ts-ignore : TS does not like image files.
 import * as expanded from 'images/icons/expanded.svg';
-// @ts-ignore : TS does not like image files.
 import * as unexpanded from 'images/icons/unexpanded.svg';
 import * as _ from 'lodash';
 import * as React from 'react';
-import {DraggableCore} from 'react-draggable';
-import {AutoSizer, Column, defaultTableRowRenderer, Table, TableRowProps} from 'react-virtualized';
+import { DraggableCore } from 'react-draggable';
+import {
+    AutoSizer, Column, defaultTableRowRenderer, Table, TableRowProps,
+} from 'react-virtualized';
 
-import {IconButton} from '@material-ui/core';
+import { IconButton } from '@material-ui/core';
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
 
 const ROW_HEIGHT = 40;
@@ -51,7 +51,6 @@ export interface ScrollableTableState {
 }
 
 function RowRenderer(props: TableRowProps) {
-  const rowProps = _.omit(props, 'style', 'key');
   let expandedContent = null;
   if (_.has(this.state.expandedRows, props.index)) {
     const content = this.props.expandRenderer(props.rowData);
@@ -74,7 +73,7 @@ function RowRenderer(props: TableRowProps) {
       key={'row-' + props.key}
       style={props.style}
     >
-      {defaultTableRowRenderer(rowProps)}
+      {defaultTableRowRenderer({...props, key: '', style: null})}
       {expandedContent}
     </div>
   );
@@ -104,12 +103,13 @@ export class ScrollableTable extends React.Component<ScrollableTableProps, Scrol
   }
 
   expandRow(event) {
-    if (_.has(this.state.expandedRows, event.index)) {
-      _.unset(this.state.expandedRows, event.index);
+    const expandedRows = { ...this.state.expandedRows };
+    if (typeof expandedRows[event.index] !== 'undefined') {
+      delete expandedRows[event.index];
     } else {
-      this.state.expandedRows[event.index] = true;
+      expandedRows[event.index] = true;
     }
-    this.setState({ expandedRows: this.state.expandedRows });
+    this.setState({ expandedRows });
 
     this.state.table.current.recomputeRowHeights();
     this.state.table.current.forceUpdate();
@@ -147,10 +147,12 @@ export class ScrollableTable extends React.Component<ScrollableTableProps, Scrol
         // If column is last column, don't render header with drag handle.
         if (idx === this.props.columnInfo.length - 1 || !this.props.resizableCols) {
           return (<Column
+            key={colProp.key}
             cellRenderer={CellRenderer.bind(this)}
             {...colProp} />);
         }
         return (<Column
+          key={colProp.key}
           headerRenderer={this.headerRenderer}
           cellRenderer={CellRenderer.bind(this)}
           {...colProp} />);

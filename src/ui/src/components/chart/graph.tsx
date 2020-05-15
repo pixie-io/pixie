@@ -70,7 +70,7 @@ export class Graph extends React.Component<GraphProps, {}> {
     try {
       render(svgGroup, graph);
     } catch (error) {
-      this.err = `Error rendering graph. Graph may display incorrectly.`;
+      this.err = 'Error rendering graph. Graph may display incorrectly.';
     }
     const bbox = svg.node().getBBox();
     svg.style('width', bbox.width)

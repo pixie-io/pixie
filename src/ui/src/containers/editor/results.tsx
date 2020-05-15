@@ -1,19 +1,18 @@
 import './results.scss';
 
 import clsx from 'clsx';
-import {VizierQueryError} from 'common/errors';
-import {VizierQueryResult} from 'common/vizier-grpc-client';
+import { VizierQueryError } from 'common/errors';
+import { VizierQueryResult } from 'common/vizier-grpc-client';
 import * as Graph from 'components/chart/graph';
 import * as LineChart from 'components/chart/line-chart';
 import * as Scatter from 'components/chart/scatter';
-import {chartsFromSpec} from 'components/chart/spec';
-import {Spinner} from 'components/spinner/spinner';
-import {QueryResultErrors, QueryResultTable} from 'containers/vizier/query-result-viewer';
-// @ts-ignore : TS does not like image files.
+import { chartsFromSpec } from 'components/chart/spec';
+import { Spinner } from 'components/spinner/spinner';
+import { QueryResultErrors, QueryResultTable } from 'containers/vizier/query-result-viewer';
 import * as gridViewIcon from 'images/icons/grid-view.svg';
 import * as React from 'react';
-import {Button, Modal, Nav, Tab} from 'react-bootstrap';
-import {columnFromProto} from 'utils/result-data-utils';
+import { Button, Modal, Nav, Tab } from 'react-bootstrap';
+import { columnFromProto } from 'utils/result-data-utils';
 
 interface ConsoleResultsProps {
   loading?: boolean;
@@ -162,6 +161,6 @@ const ResultsGridView = (props: ResultsGridViewProps) => {
     };
   }, [props.content]);
   return (<div className='pixie-console-results-grid-view' style={styles}>
-    {props.content.map((content) => (<div>{content}</div>))}
+    {props.content.map((content, i) => (<div key={`content-${i}`}>{content}</div>))}
   </div>);
 };

@@ -20,8 +20,8 @@ export const DEFAULT_HEIGHT = 3;
 
 // Tiles a grid with the vis spec widgets.
 export function layoutDefaultGrid<T>(widgets: T[], numCols = 2): Array<T & { position: ChartPosition }> {
-  let curX: number = 0;
-  let curY: number = 0;
+  let curX = 0;
+  let curY = 0;
   const elemWidth = GRID_WIDTH / numCols;
 
   return widgets.map((widget) => {

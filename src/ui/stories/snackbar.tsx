@@ -1,8 +1,8 @@
-import {SnackbarProvider, useSnackbar} from 'components/snackbar/snackbar';
+import { SnackbarProvider, useSnackbar } from 'components/snackbar/snackbar';
 import * as React from 'react';
 
 import Button from '@material-ui/core/Button';
-import {storiesOf} from '@storybook/react';
+import { storiesOf } from '@storybook/react';
 
 storiesOf('Snackbar', module)
   .add('Basic', () => {

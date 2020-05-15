@@ -1,7 +1,7 @@
-import { action } from '@storybook/addon-actions';
+import * as React from 'react';
+
 import { storiesOf } from '@storybook/react';
 
-import * as React from 'react';
 import { DialogBox } from '../src/components/dialog-box/dialog-box';
 
 storiesOf('DialogBox', module)
@@ -14,6 +14,6 @@ storiesOf('DialogBox', module)
       </div>
     </DialogBox>
   ), {
-      info: { inline: true },
-      notes: 'This is a dialog box.',
-    });
+    info: { inline: true },
+    notes: 'This is a dialog box.',
+  });

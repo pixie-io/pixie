@@ -1,16 +1,16 @@
-import {InMemoryCache, NormalizedCacheObject} from 'apollo-cache-inmemory';
-import {persistCache} from 'apollo-cache-persist';
-import {ApolloClient} from 'apollo-client';
-import {ApolloLink} from 'apollo-link';
-import {setContext} from 'apollo-link-context';
-import {onError} from 'apollo-link-error';
-import {createHttpLink} from 'apollo-link-http';
-import {ServerError} from 'apollo-link-http-common';
+import { InMemoryCache, NormalizedCacheObject } from 'apollo-cache-inmemory';
+import { persistCache } from 'apollo-cache-persist';
+import { ApolloClient } from 'apollo-client';
+import { ApolloLink } from 'apollo-link';
+import { setContext } from 'apollo-link-context';
+import { onError } from 'apollo-link-error';
+import { createHttpLink } from 'apollo-link-http';
+import { ServerError } from 'apollo-link-http-common';
 import gql from 'graphql-tag';
 import * as RedirectUtils from 'utils/redirect-utils';
-import {fetch} from 'whatwg-fetch';
+import { fetch } from 'whatwg-fetch';
 
-import {localGQLResolvers, localGQLTypeDef} from './local-gql';
+import { localGQLResolvers, localGQLTypeDef } from './local-gql';
 
 // Apollo link that adds cookies in the request.
 const cloudAuthLink = setContext((_, { headers }) => {
@@ -28,6 +28,23 @@ const loginRedirectLink = onError(({ networkError }) => {
     RedirectUtils.redirect('/login', { ['no_cache']: 'true' });
   }
 });
+
+interface ClusterConnection {
+  ipAddress: string;
+  token: string;
+}
+
+interface GetClusterConnResults {
+  clusterConnection: ClusterConnection;
+}
+
+const GET_CLUSTER_CONN = gql`
+{
+  clusterConnection {
+    ipAddress
+    token
+  }
+}`;
 
 export class CloudClient {
   graphQL: ApolloClient<NormalizedCacheObject>;
@@ -64,7 +81,7 @@ export class CloudClient {
     return this.graphQL;
   }
 
-  async getClusterConnection(noCache: boolean = false) {
+  async getClusterConnection(noCache = false) {
     const { data } = await this.graphQL.query<GetClusterConnResults>({
       query: GET_CLUSTER_CONN,
       fetchPolicy: noCache ? 'network-only' : 'cache-first',
@@ -72,20 +89,3 @@ export class CloudClient {
     return data.clusterConnection;
   }
 }
-
-interface ClusterConnection {
-  ipAddress: string;
-  token: string;
-}
-
-interface GetClusterConnResults {
-  clusterConnection: ClusterConnection;
-}
-
-const GET_CLUSTER_CONN = gql`
-{
-  clusterConnection {
-    ipAddress
-    token
-  }
-}`;

@@ -1,4 +1,4 @@
-import {Table} from 'common/vizier-grpc-client';
+import { Table } from 'common/vizier-grpc-client';
 import * as React from 'react';
 
 import * as LineChart from './line-chart';
@@ -20,18 +20,6 @@ export interface ChartSpec extends BaseChartSpec {
 
 const CHART_SPEC_REGEX = /^#pl.chart:\s?(.*)$/gm;
 
-function extractChartSpecFromCode(code: string): ChartSpec[] {
-  const specs = [];
-  code.replace(CHART_SPEC_REGEX, (orig, match) => {
-    const spec = validateSpec(match);
-    if (spec) {
-      specs.push(spec);
-    }
-    return orig;
-  });
-  return specs;
-}
-
 function validateSpec(jsonSpec: string): ChartSpec | null {
   try {
     const spec = JSON.parse(jsonSpec) as ChartSpec;
@@ -46,30 +34,21 @@ function validateSpec(jsonSpec: string): ChartSpec | null {
   }
 }
 
+function extractChartSpecFromCode(code: string): ChartSpec[] {
+  const specs = [];
+  code.replace(CHART_SPEC_REGEX, (orig, match) => {
+    const spec = validateSpec(match);
+    if (spec) {
+      specs.push(spec);
+    }
+    return orig;
+  });
+  return specs;
+}
+
 interface Chart {
   chart: React.ReactNode;
   title?: string;
-}
-
-export function chartsFromSpec(tables: Table[], code: string): Chart[] {
-  const specs = extractChartSpecFromCode(code);
-  return specs.map((spec) => fromSpec(tables, spec));
-}
-
-function fromSpec(tables: Table[], spec: ChartSpec): Chart {
-  let chart: React.ReactNode = null;
-  switch (spec.type) {
-    case 'line':
-      chart = toLineChart(tables, spec);
-      break;
-    case 'scatter':
-      chart = toScatterPlot(tables, spec);
-      break;
-  }
-  return {
-    chart,
-    title: spec.title,
-  };
 }
 
 function tableFromSpec(tables: Table[], spec: BaseChartSpec): Table | null {
@@ -109,4 +88,25 @@ function toScatterPlot(tables: Table[], spec: ChartSpec): React.ReactNode {
     return null;
   }
   return <ScatterPlot.ScatterPlot {...data} />;
+}
+
+function fromSpec(tables: Table[], spec: ChartSpec): Chart {
+  let chart: React.ReactNode = null;
+  switch (spec.type) {
+    case 'line':
+      chart = toLineChart(tables, spec);
+      break;
+    case 'scatter':
+      chart = toScatterPlot(tables, spec);
+      break;
+  }
+  return {
+    chart,
+    title: spec.title,
+  };
+}
+
+export function chartsFromSpec(tables: Table[], code: string): Chart[] {
+  const specs = extractChartSpecFromCode(code);
+  return specs.map((spec) => fromSpec(tables, spec));
 }

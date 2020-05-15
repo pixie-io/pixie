@@ -1,0 +1,91 @@
+{
+  "env": {
+    "browser": true,
+    "es6": true
+  },
+  "extends": [
+    "eslint:recommended"
+  ],
+  "globals": {
+    "BigInt": true,
+    "Atomics": "readonly",
+    "SharedArrayBuffer": "readonly"
+  },
+  "rules": {
+    "quotes": [
+      "error",
+      "single",
+      "avoid-escape"
+    ],
+    "max-len": [
+      "error",
+      {
+        "code": 120
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": [
+        "src/utils/env.tsx",
+        "*-test.ts",
+        "*-test.tsx",
+        "./*.js",
+        "src/testing/*"
+      ],
+      "env": {
+        "node": true,
+        "jest/globals": true
+      }
+    },
+    {
+      "files": [
+        "*.ts",
+        "*.tsx"
+      ],
+      "extends": [
+        "plugin:react/recommended",
+        "plugin:@typescript-eslint/recommended"
+      ],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "ecmaFeatures": {
+          "jsx": true
+        },
+        "ecmaVersion": 2020,
+        "sourceType": "module",
+        "project": "./tsconfig.json"
+      },
+      "plugins": [
+        "jest",
+        "react",
+        "@typescript-eslint"
+      ],
+      "rules": {
+        "react/jsx-filename-extension": [
+          "warn",
+          {
+            "extensions": [
+              ".tsx"
+            ]
+          }
+        ],
+        "react/prop-types": [
+          "error",
+          {
+            "skipUndeclared": true
+          }
+        ],
+        "jsx-quotes": [
+          "error",
+          "prefer-single"
+        ],
+        "no-useless-escape": "off",
+        "@typescript-eslint/camelcase": "off",
+        "@typescript-eslint/explicit-function-return-type": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unused-vars": "off"
+      }
+    }
+  ]
+}

@@ -5,6 +5,6 @@
   "base": "git:merge-base(origin/master), arc:prompt",
   "arc.feature.start.default": "origin/master",
     "load": ["./linters/arc-tslint", "./linters/arcanist-go",
-             "./linters/clang-format-linter", "./linters/shellcheck-linter", "./linters"],
+             "./linters/clang-format-linter", "./linters/shellcheck-linter", "./linters/pinterest", "./linters"],
   "unit.engine": "PLTestEngine"
 }

@@ -71,7 +71,7 @@ const useStyles = makeStyles((theme: Theme) =>
   }));
 
 interface DataViewerTabsProps {
-  tabs: Array<{ title: string, content: React.ReactNode }>;
+  tabs: Array<{ title: string; content: React.ReactNode }>;
 }
 
 const DataViewerTabs = (props: DataViewerTabsProps) => {

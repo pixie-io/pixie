@@ -1,8 +1,11 @@
-import { Theme } from '@material-ui/core/styles';
+/* eslint-disable @typescript-eslint/no-use-before-define */
+
 import * as _ from 'lodash';
 import { Data, Mark, Signal, Spec as VgSpec, TimeScale } from 'vega';
 import { VisualizationSpec } from 'vega-embed';
 import { TopLevelSpec as VlSpec } from 'vega-lite';
+
+import { Theme } from '@material-ui/core/styles';
 
 import { DISPLAY_TYPE_KEY, WidgetDisplay } from './vis';
 
@@ -91,7 +94,7 @@ export function convertWidgetDisplayToVegaLiteSpec(display: ChartDisplay, source
 }
 
 export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: string, theme: Theme,
-                                               vegaLiteModule): VegaSpecWithProps {
+  vegaLiteModule): VegaSpecWithProps {
   const vegaLiteSpec = convertWidgetDisplayToVegaLiteSpec(display, source);
   const hydratedVegaLite = hydrateSpec(vegaLiteSpec, theme);
   const vegaSpec = vegaLiteModule.compile(hydratedVegaLite).spec;
@@ -104,10 +107,10 @@ function addSources(spec: VisualizationSpec, source: string): VisualizationSpec 
   // Vega takes the data field as an array, whereas Vega-Lite takes it as a single object.
   if (spec[VEGA_SCHEMA].includes(VEGA_SCHEMA_SUBSTRING)) {
     const vgspec = spec as VgSpec;
-    return  {...vgspec, data: [...(vgspec.data || []), { name: source }]};
+    return { ...vgspec, data: [...(vgspec.data || []), { name: source }] };
   }
   const vlspec = spec as VlSpec;
-  return {...vlspec, data: { name: source }};
+  return { ...vlspec, data: { name: source } };
 }
 
 const TIMESERIES_TIME_COLUMN = 'time_';
@@ -130,13 +133,13 @@ const BASE_TIMESERIES_SPEC: VisualizationSpec = {
 function timeseriesDataLayer(yField: string, mark: string) {
   return {
     encoding: {
-      y: { field: yField, type: 'quantitative'},
+      y: { field: yField, type: 'quantitative' },
     },
     layer: [
-      {mark},
+      { mark },
     ],
   };
-};
+}
 
 function extendEncoding(spec, field, params) {
   return {
@@ -189,7 +192,7 @@ function randStr(length: number): string {
 
 // Creates the time axis configuration. The label expression calls pxTimeFormat.
 function setupTimeXAxis(spec, numTicksExpr: string, separation: number, fontName: string,
-                        fontSize: number) {
+  fontSize: number) {
   return extendXEncoding(spec, {
     axis: {
       grid: false,
@@ -197,7 +200,7 @@ function setupTimeXAxis(spec, numTicksExpr: string, separation: number, fontName
         signal: `${numTicksExpr}`,
       },
       labelExpr: `pxTimeFormat(datum, ceil(width), ${numTicksExpr}, ${separation}, '${
-          fontName}', ${fontSize})`,
+        fontName}', ${fontSize})`,
       labelFlush: true,
     },
   });
@@ -239,10 +242,10 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
   const axisLabelFontSize = 10;
 
   if (display.title) {
-    spec = {...spec, title: display.title};
+    spec = { ...spec, title: display.title };
   }
   if (display.xAxis && display.xAxis.label) {
-    spec = extendXEncoding(spec, {title: display.xAxis.label});
+    spec = extendXEncoding(spec, { title: display.xAxis.label });
   }
 
   if (!display.timeseries) {
@@ -293,22 +296,22 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
     colorField = randStr(10);
     const valueField = randStr(10);
     spec = extendTransforms(spec, [
-      {fold: [timeseries.value], as: [colorField, valueField]},
+      { fold: [timeseries.value], as: [colorField, valueField] },
     ]);
   }
-  layers[0] = extendColorEncoding(layers[0], {field: colorField, type: 'nominal', legend: null});
+  layers[0] = extendColorEncoding(layers[0], { field: colorField, type: 'nominal', legend: null });
 
   if (timeseries.stackBySeries) {
     if (!timeseries.series) {
       throw new Error('stackBySeries is invalid for TimeseriesChart when series is not specified');
     }
-    layers[0] = extendYEncoding(layers[0], {aggregate: 'sum', stack: 'zero'});
+    layers[0] = extendYEncoding(layers[0], { aggregate: 'sum', stack: 'zero' });
   }
 
   spec = extendLayer(spec, layers);
 
   spec = setupTimeXAxis(spec, 'ceil(width/20)', axisLabelSeparationPx, axisLabelFontName,
-                        axisLabelFontSize);
+    axisLabelFontSize);
 
   // NOTE(philkuz): Hack to remove the sampling artifacts created by our range-agg.
   spec = trimFirstAndLastTimestep(spec);
@@ -342,42 +345,42 @@ function convertToBarChart(display: BarDisplay, source: string): VisualizationSp
   }
 
   let spec = addSources(BASE_BAR_SPEC, source);
-  spec = extendXEncoding(spec, {field: display.bar.label});
-  spec = extendYEncoding(spec, {field: display.bar.value});
+  spec = extendXEncoding(spec, { field: display.bar.label });
+  spec = extendYEncoding(spec, { field: display.bar.value });
 
   if (display.bar.stackBy) {
-    spec = extendColorEncoding(spec, {field: display.bar.stackBy, type: 'nominal'});
-    spec = extendYEncoding(spec, {aggregate: 'sum'});
+    spec = extendColorEncoding(spec, { field: display.bar.stackBy, type: 'nominal' });
+    spec = extendYEncoding(spec, { aggregate: 'sum' });
   }
 
   if (display.yAxis && display.yAxis.label) {
-    spec = extendYEncoding(spec, {title: display.yAxis.label});
+    spec = extendYEncoding(spec, { title: display.yAxis.label });
   }
 
   // Grouped bar charts need different formatting in the x axis and title.
   if (!display.bar.groupBy) {
     if (display.xAxis && display.xAxis.label) {
-      spec = extendXEncoding(spec, {title: display.xAxis.label});
+      spec = extendXEncoding(spec, { title: display.xAxis.label });
     }
     if (display.title) {
-      spec = {...spec, title: display.title};
+      spec = { ...spec, title: display.title };
     }
     return spec;
   }
 
   if (display.title) {
-    spec = {...spec, title: {text: display.title, anchor: 'middle'}};
+    spec = { ...spec, title: { text: display.title, anchor: 'middle' } };
   }
 
   let xlabel = `${display.bar.groupBy}, ${display.bar.label}`;
   if (display.xAxis && display.xAxis.label) {
     xlabel = display.xAxis.label;
   }
-  const header = {titleOrient: 'bottom', labelOrient: 'bottom', title: xlabel};
+  const header = { titleOrient: 'bottom', labelOrient: 'bottom', title: xlabel };
 
   // Use the Column encoding header instead of an x axis title to avoid per-group repetition.
-  spec = extendXEncoding(spec, {title: null});
-  spec = extendColumnEncoding(spec, {field: display.bar.groupBy, type: 'nominal', header});
+  spec = extendXEncoding(spec, { title: null });
+  spec = extendColumnEncoding(spec, { field: display.bar.groupBy, type: 'nominal', header });
 
   return spec;
 }
@@ -481,11 +484,11 @@ function addLegendSignalsToVgSpec(vegaSpec: VgSpec, pivotField: string): VgSpec 
     name: REVERSE_HOVER_SIGNAL,
     on: [
       {
-        events: {source: 'view', type: 'mouseover', markname: LINE_MARK_NAME},
+        events: { source: 'view', type: 'mouseover', markname: LINE_MARK_NAME },
         update: `datum && datum["${pivotField}"]`,
       },
       {
-        events: {source: 'view', type: 'mouseout', markname: LINE_MARK_NAME},
+        events: { source: 'view', type: 'mouseout', markname: LINE_MARK_NAME },
         update: 'null',
       },
     ],
@@ -494,7 +497,7 @@ function addLegendSignalsToVgSpec(vegaSpec: VgSpec, pivotField: string): VgSpec 
     name: REVERSE_SELECT_SIGNAL,
     on: [
       {
-        events: {source: 'view', type: 'click', markname: LINE_MARK_NAME},
+        events: { source: 'view', type: 'click', markname: LINE_MARK_NAME },
         update: `datum && datum["${pivotField}"]`,
         force: true,
       },
@@ -523,14 +526,14 @@ function addLegendSignalsToVgSpec(vegaSpec: VgSpec, pivotField: string): VgSpec 
 function addOpacityTestsToLine(vegaSpec: VgSpec, pivotField: string, valueField: string): VgSpec {
   const newMarks = vegaSpec.marks.map((mark: Mark) => {
     if (mark.type !== 'group'
-        || !mark.marks
-        || mark.marks.length === 0
-        || !mark.marks[0]
-        || !mark.marks[0].encode
-        || !mark.marks[0].encode.update
-        || !mark.marks[0].encode.update.y
-        || !(mark.marks[0].encode.update.y as any).field
-        || (mark.marks[0].encode.update.y as any).field !== valueField) {
+      || !mark.marks
+      || mark.marks.length === 0
+      || !mark.marks[0]
+      || !mark.marks[0].encode
+      || !mark.marks[0].encode.update
+      || !mark.marks[0].encode.update.y
+      || !(mark.marks[0].encode.update.y as any).field
+      || (mark.marks[0].encode.update.y as any).field !== valueField) {
       return mark;
     }
     // Force the lines to be above the voronoi layer.
@@ -566,7 +569,7 @@ export const EXTERNAL_TS_DOMAIN_SIGNAL = 'external_ts_domain_value';
 export const INTERNAL_TS_DOMAIN_SIGNAL = 'internal_ts_domain_value';
 
 function addHoverHandlersToVgSpec(vegaSpec: VgSpec, source: string, isStacked: boolean,
-                                  pivotField: string, valueField: string): VgSpec {
+  pivotField: string, valueField: string): VgSpec {
   const signalName = '_x_signal';
   vegaSpec = addTimeSeriesDomainBackupToVgSpec(vegaSpec, signalName);
   vegaSpec = addTimeseriesDomainSignalsToVgSpec(vegaSpec, signalName);
@@ -617,7 +620,7 @@ function addHoverSignalsToVgSpec(vegaSpec: VgSpec): VgSpec {
             source: 'view',
             type: 'mouseout',
             // Seem to be hitting a bug in vega here where mouseout events also capture some mousemove events.
-            filter: `event.type === "mouseout"`,
+            filter: 'event.type === "mouseout"',
           },
         ],
         update: 'null',
@@ -634,7 +637,7 @@ function addHoverSignalsToVgSpec(vegaSpec: VgSpec): VgSpec {
     name: HOVER_SIGNAL,
     on: [
       {
-        events: [{signal: EXTERNAL_HOVER_SIGNAL}, {signal: INTERNAL_HOVER_SIGNAL}],
+        events: [{ signal: EXTERNAL_HOVER_SIGNAL }, { signal: INTERNAL_HOVER_SIGNAL }],
         update: `${INTERNAL_HOVER_SIGNAL} || ${EXTERNAL_HOVER_SIGNAL}`,
       },
     ],
@@ -713,10 +716,10 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
       test: `${HOVER_SIGNAL} && datum && (${HOVER_SIGNAL}["${TIME_FIELD}"] === datum["${TIME_FIELD}"])`,
       value: HOVER_LINE_OPACITY,
     },
-    {value: 0},
+    { value: 0 },
   ];
   // The bulb position.
-  const bulbPositionSignal = {signal: `height + ${HOVER_BULB_OFFSET}`};
+  const bulbPositionSignal = { signal: `height + ${HOVER_BULB_OFFSET}` };
 
   // Add mark for vertical line where cursor is.
   marks.push({
@@ -724,18 +727,18 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
     type: 'rule',
     style: ['rule'],
     interactive: true,
-    from: {data: HOVER_PIVOT_TRANSFORM},
+    from: { data: HOVER_PIVOT_TRANSFORM },
     encode: {
       enter: {
-        stroke: {value: HOVER_LINE_COLOR},
-        strokeDash: {value: HOVER_LINE_DASH},
-        strokeWidth: {value: HOVER_LINE_WIDTH},
+        stroke: { value: HOVER_LINE_COLOR },
+        strokeDash: { value: HOVER_LINE_DASH },
+        strokeWidth: { value: HOVER_LINE_WIDTH },
       },
       update: {
         opacity: hoverOpacityEncoding,
-        x: {scale: 'x', field: TIME_FIELD},
-        y: {value: 0},
-        y2: {signal: `height + ${HOVER_LINE_TEXT_OFFSET}`},
+        x: { scale: 'x', field: TIME_FIELD },
+        y: { value: 0 },
+        y2: { signal: `height + ${HOVER_LINE_TEXT_OFFSET}` },
       },
     },
   });
@@ -744,20 +747,20 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
     name: HOVER_BULB,
     type: 'symbol',
     interactive: true,
-    from: {data: HOVER_PIVOT_TRANSFORM},
+    from: { data: HOVER_PIVOT_TRANSFORM },
     encode: {
       enter: {
-        fill: {value: HOVER_LINE_COLOR},
-        stroke: {value: HOVER_LINE_COLOR},
-        size: {value: 45},
-        shape: {value: 'circle'},
-        strokeOpacity: {value: 0},
-        strokeWidth: {value: 2},
+        fill: { value: HOVER_LINE_COLOR },
+        stroke: { value: HOVER_LINE_COLOR },
+        size: { value: 45 },
+        shape: { value: 'circle' },
+        strokeOpacity: { value: 0 },
+        strokeWidth: { value: 2 },
       },
       update: {
         // fillOpacity: hoverOpacityEncoding,
-        fillOpacity: {value: 0},
-        x: {scale: 'x', field: TIME_FIELD},
+        fillOpacity: { value: 0 },
+        x: { scale: 'x', field: TIME_FIELD },
         y: bulbPositionSignal,
       },
     },
@@ -766,20 +769,20 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
   marks.push({
     name: HOVER_LINE_TIME,
     type: 'text',
-    from: {data: HOVER_PIVOT_TRANSFORM},
+    from: { data: HOVER_PIVOT_TRANSFORM },
     encode: {
       enter: {
-        fill: {value: HOVER_TIME_COLOR},
-        align: {value: 'center'},
-        baseline: {value: 'top'},
-        font: {value: 'Roboto'},
-        fontSize: {value: 10},
+        fill: { value: HOVER_TIME_COLOR },
+        align: { value: 'center' },
+        baseline: { value: 'top' },
+        font: { value: 'Roboto' },
+        fontSize: { value: 10 },
       },
       update: {
         opacity: hoverOpacityEncoding,
-        text: {signal: `datum && timeFormat(datum["${TIME_FIELD}"], "%I:%M:%S")`},
-        x: {scale: 'x', field: TIME_FIELD},
-        y: {signal: `height + ${HOVER_LINE_TEXT_OFFSET} + ${HOVER_LINE_TEXT_PADDING}`},
+        text: { signal: `datum && timeFormat(datum["${TIME_FIELD}"], "%I:%M:%S")` },
+        x: { scale: 'x', field: TIME_FIELD },
+        y: { signal: `height + ${HOVER_LINE_TEXT_OFFSET} + ${HOVER_LINE_TEXT_PADDING}` },
       },
     },
     // Display text above text box.
@@ -789,15 +792,15 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
   marks.push({
     name: HOVER_LINE_TEXT_BOX,
     type: 'rect',
-    from: {data: HOVER_LINE_TIME},
+    from: { data: HOVER_LINE_TIME },
     encode: {
       update: {
-        x: {signal: `datum.x - ((datum.bounds.x2 - datum.bounds.x1) / 2) - ${HOVER_LINE_TEXT_PADDING}`},
-        y: {signal: `datum.y - ${HOVER_LINE_TEXT_PADDING}`},
-        width: {signal: `datum.bounds.x2 - datum.bounds.x1 + 2 * ${HOVER_LINE_TEXT_PADDING}`},
-        height: {signal: `datum.bounds.y2 - datum.bounds.y1 + 2 * ${HOVER_LINE_TEXT_PADDING}`},
-        fill: {value: HOVER_LINE_COLOR},
-        opacity: {signal: 'datum.opacity > 0 ? 1.0 : 0.0'},
+        x: { signal: `datum.x - ((datum.bounds.x2 - datum.bounds.x1) / 2) - ${HOVER_LINE_TEXT_PADDING}` },
+        y: { signal: `datum.y - ${HOVER_LINE_TEXT_PADDING}` },
+        width: { signal: `datum.bounds.x2 - datum.bounds.x1 + 2 * ${HOVER_LINE_TEXT_PADDING}` },
+        height: { signal: `datum.bounds.y2 - datum.bounds.y1 + 2 * ${HOVER_LINE_TEXT_PADDING}` },
+        fill: { value: HOVER_LINE_COLOR },
+        opacity: { signal: 'datum.opacity > 0 ? 1.0 : 0.0' },
       },
     },
   });
@@ -806,21 +809,21 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
     name: HOVER_VORONOI,
     type: 'path',
     interactive: true,
-    from: {data: HOVER_RULE},
+    from: { data: HOVER_RULE },
     encode: {
       update: {
-        fill: {value: 'transparent'},
-        strokeWidth: {value: 0.35},
-        stroke: {value: 'transparent'},
-        isVoronoi: {value: true},
+        fill: { value: 'transparent' },
+        strokeWidth: { value: 0.35 },
+        stroke: { value: 'transparent' },
+        isVoronoi: { value: true },
       },
     },
     transform: [
       {
         type: 'voronoi',
-        x: {expr: 'datum.datum.x || 0'},
-        y: {expr: 'datum.datum.y || 0'},
-        size: [{signal: 'width'}, {signal: `height + ${AXIS_HEIGHT}`}],
+        x: { expr: 'datum.datum.x || 0' },
+        y: { expr: 'datum.datum.y || 0' },
+        size: [{ signal: 'width' }, { signal: `height + ${AXIS_HEIGHT}` }],
       },
     ],
     // Make sure voronoi layer is on top.
@@ -831,11 +834,11 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
 }
 
 // We can get rid of this once we delete OldCanvas.
-export function hydrateSpecOld(input, theme: Theme, tableName: string = 'output'): VisualizationSpec {
+export function hydrateSpecOld(input, theme: Theme, tableName = 'output'): VisualizationSpec {
   return {
     ...input,
     ...specsFromTheme(theme),
-    data: {name: tableName},
+    data: { name: tableName },
   };
 }
 
@@ -963,3 +966,5 @@ function specsFromTheme(theme: Theme) {
     },
   };
 }
+
+/* eslint-enable @typescript-eslint/no-use-before-define */

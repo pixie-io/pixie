@@ -164,9 +164,11 @@ const Vizier = () => {
   }
 };
 
-export default () => (
-  <>
-    <ClusterBanner />
-    <Vizier />
-  </>
-);
+export default function withClusterBanner() {
+  return (
+    <>
+      <ClusterBanner />
+      <Vizier />
+    </>
+  );
+}

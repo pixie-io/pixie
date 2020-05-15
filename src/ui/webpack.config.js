@@ -1,24 +1,24 @@
-const {resolve, join} = require('path');
-const {execSync} = require('child_process');
+const { resolve, join } = require('path');
+const { execSync } = require('child_process');
 
 const webpack = require('webpack');
-const {CheckerPlugin} = require('awesome-typescript-loader');
+const { CheckerPlugin } = require('awesome-typescript-loader');
 const ArchivePlugin = require('webpack-archive-plugin');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
 const HtmlWebpackHarddiskPlugin = require('html-webpack-harddisk-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const utils = require('./webpack-utils');
 const ReplacePlugin = require('webpack-plugin-replace');
 const YAML = require('yaml');
 const fs = require('fs');
+const utils = require('./webpack-utils');
 
-const isDevServer = process.argv.find(v => v.includes('webpack-dev-server'));
+const isDevServer = process.argv.find((v) => v.includes('webpack-dev-server'));
 let topLevelDir = '';
 if (isDevServer) {
   topLevelDir = execSync('git rev-parse --show-toplevel').toString().trim();
 }
 
-let plugins = [
+const plugins = [
   new CheckerPlugin(),
   new CaseSensitivePathsPlugin(),
   new HtmlWebpackPlugin({
@@ -47,18 +47,17 @@ if (isDevServer) {
     filename: 'sourcemaps/[file].map',
     exclude: [/node_modules/, /vendor/, /vendor\.chunk\.js/, /vendor\.js/],
   }));
-
-  entryFiles = [require.resolve('react-dev-utils/webpackHotDevClient'), 'index.tsx'];
 } else {
   // Archive plugin has problems with dev server.
   plugins.push(
     new ArchivePlugin({
       output: join(resolve(__dirname, 'dist'), 'bundle'),
       format: ['tar'],
-    }));
+    })
+  );
 }
 
-var webpackConfig = {
+const webpackConfig = {
   context: resolve(__dirname, 'src'),
   devtool: false, // We use the SourceMapDevToolPlugin to generate source-maps.
   devServer: {
@@ -148,7 +147,7 @@ var webpackConfig = {
     path: resolve(__dirname, 'dist'),
     publicPath: '/',
   },
-  plugins: plugins,
+  plugins,
   resolve: {
     extensions: [
       '.js',
@@ -187,12 +186,11 @@ module.exports = (env) => {
     return webpackConfig;
   }
 
-  const sslDisabled = env && env.hasOwnProperty('disable_ssl') && env.disable_ssl;
+  const sslDisabled = env && Object.prototype.hasOwnProperty.call(env, 'disable_ssl') && env.disable_ssl;
   // Add the Gateway to the proxy config.
   let gatewayPath = process.env.PL_GATEWAY_URL;
   if (!gatewayPath) {
-    gatewayPath =
-      'http' + (sslDisabled ? '' : 's') + '://' + utils.findGatewayProxyPath();
+    gatewayPath = `http${sslDisabled ? '' : 's'}://${utils.findGatewayProxyPath()}`;
   }
 
   webpackConfig.devServer.proxy.push({
@@ -209,14 +207,14 @@ module.exports = (env) => {
   }
 
   // Get Auth0ClientID.
-  authYamlPath = join(topLevelDir, 'k8s', 'cloud', environment, 'auth0_config.yaml').replace(/\//g, '\\/');
-  auth0YamlReq = execSync('cat ' + authYamlPath);
-  auth0YAML = YAML.parse(auth0YamlReq.toString());
+  const authYamlPath = join(topLevelDir, 'k8s', 'cloud', environment, 'auth0_config.yaml').replace(/\//g, '\\/');
+  const auth0YamlReq = execSync(`cat ${authYamlPath}`);
+  const auth0YAML = YAML.parse(auth0YamlReq.toString());
 
   // Get domain name.
-  domainYamlPath = join(topLevelDir, 'k8s', 'cloud', environment, 'domain_config.yaml').replace(/\//g, '\\/');
-  domainYamlReq = execSync('cat ' + domainYamlPath);
-  domainYAML = YAML.parse(domainYamlReq.toString());
+  const domainYamlPath = join(topLevelDir, 'k8s', 'cloud', environment, 'domain_config.yaml').replace(/\//g, '\\/');
+  const domainYamlReq = execSync(`cat ${domainYamlPath}`);
+  const domainYAML = YAML.parse(domainYamlReq.toString());
 
   webpackConfig.plugins.push(
     new ReplacePlugin({
@@ -230,18 +228,19 @@ module.exports = (env) => {
         __CONFIG_DOMAIN_NAME__: domainYAML.data.PL_DOMAIN_NAME,
         __SEGMENT_ANALYTICS_JS_DOMAIN__: `segment.${domainYAML.data.PL_DOMAIN_NAME}`,
       },
-    }));
+    })
+  );
 
   if (process.env.SELFSIGN_CERT_FILE && process.env.SELFSIGN_CERT_KEY) {
     const cert = fs.readFileSync(process.env.SELFSIGN_CERT_FILE);
     const key = fs.readFileSync(process.env.SELFSIGN_CERT_KEY);
-    webpackConfig.devServer.https = {key, cert};
+    webpackConfig.devServer.https = { key, cert };
   } else {
-    let credsEnv = environment === 'base' ? 'dev' : environment;
-    let certsPath =
-      join(topLevelDir, 'credentials', 'k8s', credsEnv, 'cloud_proxy_tls_certs.yaml').replace(/\//g, '\\/');
-    let results = execSync('sops --decrypt ' + certsPath);
-    let credsYAML = YAML.parse(results.toString());
+    const credsEnv = environment === 'base' ? 'dev' : environment;
+    const certsPath = join(topLevelDir,
+                           'credentials', 'k8s', credsEnv, 'cloud_proxy_tls_certs.yaml').replace(/\//g, '\\/');
+    const results = execSync(`sops --decrypt ${certsPath}`);
+    const credsYAML = YAML.parse(results.toString());
     webpackConfig.devServer.https = {
       key: credsYAML.stringData['tls.key'],
       cert: credsYAML.stringData['tls.crt'],

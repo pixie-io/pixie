@@ -1,11 +1,10 @@
-import { Box } from '@material-ui/core';
-import IconButton from '@material-ui/core/IconButton';
-import withStyles from '@material-ui/core/styles/withStyles';
+import * as copyBtn from 'images/icons/copy-btn.svg';
 import Highlight, { defaultProps } from 'prism-react-renderer';
 import * as React from 'react';
 
-// @ts-ignore : TS does not like image files.
-import * as copyBtn from 'images/icons/copy-btn.svg';
+import { Box } from '@material-ui/core';
+import IconButton from '@material-ui/core/IconButton';
+import withStyles from '@material-ui/core/styles/withStyles';
 
 const CodeRenderer = withStyles(() => ({
   code: {
@@ -44,20 +43,20 @@ const CodeRenderer = withStyles(() => ({
       >
         {({
           className, style, tokens, getLineProps, getTokenProps,
-        }: any) => (
-          <pre
-            className={className}
-            style={{ ...style, backgroundColor: 'transparent' }}
-          >
-            {tokens.map((line, i) => (
-              <div {...getLineProps({ line, key: i })}>
-                {line.map((token, key) => (
-                  <span {...getTokenProps({ token, key })} />
-                ))}
-              </div>
-            ))}
-          </pre>
-        )}
+        }) => (
+            <pre
+              className={className}
+              style={{ ...style, backgroundColor: 'transparent' }}
+            >
+              {tokens.map((line, i) => (
+                <div key={i} {...getLineProps({ line, key: i })}>
+                  {line.map((token, key) => (
+                    <span key={key} {...getTokenProps({ token, key })} />
+                  ))}
+                </div>
+              ))}
+            </pre>
+          )}
       </Highlight>
     </Box>
     <IconButton

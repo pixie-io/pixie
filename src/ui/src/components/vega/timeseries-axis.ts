@@ -4,7 +4,6 @@ declare module 'vega-scale' {
 }
 import { timeFormat } from 'vega-functions';
 import { scale, tickValues } from 'vega-scale';
-
 import { textMetrics } from 'vega-scenegraph';
 
 interface TextConfig {
@@ -26,7 +25,7 @@ interface LabelsFormatter {
 
 // Calculates overlap of left (l) and right (r) components in 1D land.
 function overlap(l: Label, r: Label, overlapBuffer: number, textConfig: TextConfig,
-                 align: string = 'center'): boolean {
+  align = 'center'): boolean {
   if (align !== 'center') {
     throw TypeError('only "center" align supported');
   }
@@ -77,8 +76,8 @@ function parityReduce(labels: Label[]): Label[] {
 }
 
 // Formats the tick value into a time string given the options passed in.
-export function formatTime(tick: Date, showAmPm: boolean = false,
-                           showDate: boolean = false): string {
+export function formatTime(tick: Date, showAmPm = false,
+  showDate = false): string {
   let fmtStr = '%-I:%M:%S';
   if (showAmPm) {
     fmtStr += ' %p';
@@ -102,7 +101,7 @@ function AmPmFormatter(): LabelsFormatter {
 }
 
 export function prepareLabels(domain: any, width: number, numTicks: number, overlapBuffer: number,
-                              font: string, fontSize: number): Label[] {
+  font: string, fontSize: number): Label[] {
   // Gets the true tick values that will be generated.
   const s = scale('time')();
   s.domain(domain);
@@ -151,42 +150,43 @@ function combineInternalExternal(internal, external) {
 
 // This adds the pxTimeFormat function to the passed in vega Module.
 export function addPxTimeFormatExpression(vega) {
-  if (vega && vega.expressionFunction) {
-    const domainFn = vega.expressionFunction('domain');
-
-    let currentWidth = 0;
-    let labels = [];
-
-    // Function call by labelExpr in the vega-lite config.
-    function pxTimeFormat(datum, width, numTicks, separation, fontName, fontSize) {
-      if (datum.index === 0) {
-        // Generate the labels on the first run of this function.
-        // Subsequent calls of pxTimeFormat will use these results.
-        labels =
-          prepareLabels(domainFn('x', this), width, numTicks, separation, fontName, fontSize);
-        currentWidth = width;
-      // } else if (currentWidth !== width) {
-        // TODO(philkuz) how should we warn when this happens?
-        // console.warn('widths different', 'width', width, 'currentWidth', currentWidth);
-      }
-
-      // The denominator of the index.
-      const indexDenom = labels.length - 1;
-
-      // TrueIndex is the original index value.
-      const trueIndex = Math.abs(Math.round(datum.index * indexDenom));
-      // Backup if the trueIndex falls outside of the labels range.
-      if (trueIndex >= labels.length) {
-        // TODO(philkuz) how should we warn when this happens?
-        // console.warn('trueIndex out of range, returning default format for datum. trueIndex:',
-        //   datum.index * indexDenom);
-        return formatTime(datum.value);
-      }
-      // Return the label we pre-calculated.
-      return labels[trueIndex].label;
-    }
-    vega.expressionFunction('pxTimeFormat', pxTimeFormat);
-
-    vega.expressionFunction('combineInternalExternal', combineInternalExternal);
+  if (!vega || !vega.expressionFunction) {
+    return;
   }
+  const domainFn = vega.expressionFunction('domain');
+
+  let currentWidth = 0;
+  let labels = [];
+
+  // Function call by labelExpr in the vega-lite config.
+  function pxTimeFormat(datum, width, numTicks, separation, fontName, fontSize) {
+    if (datum.index === 0) {
+      // Generate the labels on the first run of this function.
+      // Subsequent calls of pxTimeFormat will use these results.
+      labels =
+        prepareLabels(domainFn('x', this), width, numTicks, separation, fontName, fontSize);
+      currentWidth = width;
+      // } else if (currentWidth !== width) {
+      // TODO(philkuz) how should we warn when this happens?
+      // console.warn('widths different', 'width', width, 'currentWidth', currentWidth);
+    }
+
+    // The denominator of the index.
+    const indexDenom = labels.length - 1;
+
+    // TrueIndex is the original index value.
+    const trueIndex = Math.abs(Math.round(datum.index * indexDenom));
+    // Backup if the trueIndex falls outside of the labels range.
+    if (trueIndex >= labels.length) {
+      // TODO(philkuz) how should we warn when this happens?
+      // console.warn('trueIndex out of range, returning default format for datum. trueIndex:',
+      //   datum.index * indexDenom);
+      return formatTime(datum.value);
+    }
+    // Return the label we pre-calculated.
+    return labels[trueIndex].label;
+  }
+  vega.expressionFunction('pxTimeFormat', pxTimeFormat);
+
+  vega.expressionFunction('combineInternalExternal', combineInternalExternal);
 }

@@ -1,7 +1,7 @@
 import './query-result-viewer.scss';
 
 import clsx from 'clsx';
-import {Table} from 'common/vizier-grpc-client';
+import { Table } from 'common/vizier-grpc-client';
 import {
     AutoSizedScrollableTable, AutoSizedScrollableTableProps, TableColumnInfo,
 } from 'components/table/scrollable-table';
@@ -11,8 +11,8 @@ import {
     Column, CompilerError, DataType, ErrorDetails, Relation, Status,
 } from 'types/generated/vizier_pb';
 import * as FormatData from 'utils/format-data';
-import {ParseCompilerErrors} from 'utils/parse-compiler-errors';
-import {dataFromProto} from 'utils/result-data-utils';
+import { ParseCompilerErrors } from 'utils/parse-compiler-errors';
+import { dataFromProto } from 'utils/result-data-utils';
 
 // Converts UInt128 to UUID formatted string.
 function formatUInt128(high: string, low: string): string {
@@ -223,3 +223,5 @@ export const QueryResultTable = React.memo<QueryResultTableProps>(({ data, class
     </div>
   );
 });
+
+QueryResultTable.displayName = 'QueryResultTable';

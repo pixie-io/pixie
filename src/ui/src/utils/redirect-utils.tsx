@@ -1,12 +1,8 @@
-import {DOMAIN_NAME} from 'containers/constants';
+import { DOMAIN_NAME } from 'containers/constants';
 import * as _ from 'lodash';
 
 interface StringMap {
   [s: string]: string;
-}
-
-export function redirect(path: string, params: StringMap) {
-  window.location.href = getRedirectPath(path, params);
 }
 
 export function getRedirectPath(path: string, params: StringMap) {
@@ -22,4 +18,8 @@ export function getRedirectPath(path: string, params: StringMap) {
   }
 
   return window.location.protocol + '//' + DOMAIN_NAME + port + path + queryParams;
+}
+
+export function redirect(path: string, params: StringMap) {
+  window.location.href = getRedirectPath(path, params);
 }

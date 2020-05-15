@@ -1,10 +1,11 @@
-import {Table} from 'common/vizier-grpc-client';
+import { Table } from 'common/vizier-grpc-client';
 import * as React from 'react';
-import {DiscreteColorLegend, LineSeries, XAxis, XYPlot} from 'react-vis';
-import {DataType} from 'types/generated/vizier_pb';
-import {columnFromProto} from 'utils/result-data-utils';
+import { DiscreteColorLegend, LineSeries, XAxis, XYPlot } from 'react-vis';
+import { DataType } from 'types/generated/vizier_pb';
+import withAutoSizer from 'utils/autosizer';
+import { columnFromProto } from 'utils/result-data-utils';
 
-import {LineSeriesLegends, paletteColorByIndex, TimeValueAxis, withAutoSizer} from './chart';
+import { LineSeriesLegends, paletteColorByIndex, TimeValueAxis } from './chart';
 
 interface Point {
   x: number | Date;

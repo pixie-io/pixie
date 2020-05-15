@@ -1,8 +1,6 @@
 import './spinner.scss';
 
-// @ts-ignore : TS does not like image files.
 import * as darkSvg from 'images/icons/loading-dark.svg';
-// @ts-ignore : TS does not like image files.
 import * as lightSvg from 'images/icons/Loading.svg';
 import * as React from 'react';
 

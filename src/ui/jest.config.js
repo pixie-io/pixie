@@ -3,10 +3,10 @@ module.exports = {
     window: true,
   },
   setupFiles: [
-    '<rootDir>/enzyme-setup.js',
+    '<rootDir>/src/testing/enzyme-setup.js',
   ],
   setupFilesAfterEnv: [
-    '<rootDir>/src/jest-test-setup.js',
+    '<rootDir>/src/testing/jest-test-setup.js',
   ],
   moduleFileExtensions: [
     'js',
@@ -21,7 +21,7 @@ module.exports = {
     '<rootDir>/src',
   ],
   moduleNameMapper: {
-    '^.+\.(jpg|jpeg|png|gif|svg)$': '<rootDir>/src/file-mock.js',
+    '^.+.(jpg|jpeg|png|gif|svg)$': '<rootDir>/src/testing/file-mock.js',
     '(\\.css|\\.scss$)|(normalize.css/normalize)|(^exports-loader)': 'identity-obj-proxy',
   },
   resolver: null,

@@ -20,7 +20,7 @@ export function formatInt64Data(val: string): string {
   return numeral(val).format('0,0');
 }
 
-export function formatFloat64Data(val: number, formatStr: string = '0[.]00'): string {
+export function formatFloat64Data(val: number, formatStr = '0[.]00'): string {
   // Numeral.js doesn't actually format NaNs, it ignores them.
   if (isNaN(val)) {
     return 'NaN';
@@ -125,6 +125,7 @@ export const JSONData = React.memo<JSONDataProps>((props) => {
   }
   return <span className={clsx(`formatted_data--json-${cls}`, props.className)}>{String(data)}</span>;
 });
+JSONData.displayName = 'JSONData';
 
 export function LatencyData(data: string) {
   const floatVal = parseFloat(data);

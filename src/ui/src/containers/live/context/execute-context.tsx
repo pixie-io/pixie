@@ -4,6 +4,7 @@ import ClientContext from 'common/vizier-grpc-client-context';
 import { useSnackbar } from 'components/snackbar/snackbar';
 import { getQueryFuncs, Vis } from 'containers/live/vis';
 import * as React from 'react';
+import analytics from 'utils/analytics';
 
 import { ArgsContext, Arguments } from './args-context';
 import { DataDrawerContext } from './data-drawer-context';

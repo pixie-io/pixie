@@ -76,13 +76,13 @@ export function widgetTableName(widget: Widget, widgetIndex: number): string {
   return `widget_${widgetIndex}`;
 }
 
-function getFuncArgs(defaults: { [key: string]: string; }, func: Func): VizierQueryArg[] {
+function getFuncArgs(defaults: { [key: string]: string }, func: Func): VizierQueryArg[] {
   const args = [];
   const errors = [];
   func.args.forEach((arg: FuncArg) => {
     if ((arg.value == null) === (arg.variable == null)) {
       errors.push(`Arg '${arg.name}' for function '${func.name}'` +
-        `must contain either a value or a reference to a variable`);
+        'must contain either a value or a reference to a variable');
       return;
     }
 
@@ -141,7 +141,7 @@ export function getQueryFuncs(vis: Vis, variableValues: { [key: string]: string 
     };
   });
   // We filter out widgets that don't have function definitions.
-  const widgetFuncs =  vis.widgets.filter((widget) => {
+  const widgetFuncs = vis.widgets.filter((widget) => {
     return widget.func;
   }).map((widget, i) => {
     return {

@@ -1,7 +1,7 @@
 import { COLOR_SCALE } from 'containers/live/convert-to-vega-spec';
 import * as _ from 'lodash';
-import { formatFloat64Data } from 'utils/format-data';
 import { isArray, isNumber } from 'util';
+import { formatFloat64Data } from 'utils/format-data';
 import { View } from 'vega-typings';
 
 const NUMERAL_FORMAT_STRING = '0.00';
@@ -16,6 +16,14 @@ export interface LegendData {
   time: string;
   entries: LegendEntry[];
 }
+
+const formatLegendEntry = (scale, key: string, val: number): LegendEntry => {
+  return {
+    color: scale(key),
+    key,
+    val: formatFloat64Data(val, NUMERAL_FORMAT_STRING),
+  };
+};
 
 export const formatLegendData = (view: View, time: number, entries: UnformattedLegendEntry[]): LegendData => {
   const legendData: LegendData = {
@@ -32,14 +40,6 @@ export const formatLegendData = (view: View, time: number, entries: UnformattedL
   }
   legendData.entries = entries.map((entry) => formatLegendEntry(scale, entry.key, entry.val));
   return legendData;
-};
-
-const formatLegendEntry = (scale, key: string, val: number): LegendEntry =>  {
-  return {
-    color: scale(key),
-    key,
-    val: formatFloat64Data(val, NUMERAL_FORMAT_STRING),
-  };
 };
 
 interface UnformattedLegendEntry {
@@ -68,13 +68,13 @@ interface ValidHoverDatum {
   [key: string]: number;
 }
 
-const minMaxTimes = (hoverData: ValidHoverDatum[]): {minTime: number, maxTime: number} => {
+const minMaxTimes = (hoverData: ValidHoverDatum[]): { minTime: number; maxTime: number } => {
   const sortedTimes = hoverData.map((datum) => datum.time).sort();
   if (sortedTimes.length === 0) {
-    return {minTime: 0, maxTime: Number.MAX_SAFE_INTEGER};
+    return { minTime: 0, maxTime: Number.MAX_SAFE_INTEGER };
   }
   if (sortedTimes.length < 3) {
-    return { minTime: sortedTimes[0], maxTime: sortedTimes[sortedTimes.length - 1]};
+    return { minTime: sortedTimes[0], maxTime: sortedTimes[sortedTimes.length - 1] };
   }
   // Because of the time removal hack we have to use the secondmin and second max times, otherwise
   // the hover line will appear off of the graph.
@@ -92,19 +92,19 @@ const minMaxTimes = (hoverData: ValidHoverDatum[]): {minTime: number, maxTime: n
   };
 };
 
-const keyAvgs = (hoverData: ValidHoverDatum[]): {[key: string]: number} => {
-  const keyedAvgState: {[key: string]: {sum: number, n: number}} = {};
+const keyAvgs = (hoverData: ValidHoverDatum[]): { [key: string]: number } => {
+  const keyedAvgState: { [key: string]: { sum: number; n: number } } = {};
   for (const datum of hoverData) {
     for (const [key, val] of Object.entries(datum)) {
       if (key === 'time') { continue; }
       if (!keyedAvgState[key]) {
-        keyedAvgState[key] = {sum: 0.0, n: 0};
+        keyedAvgState[key] = { sum: 0.0, n: 0 };
       }
       keyedAvgState[key].sum += val;
       keyedAvgState[key].n += 1;
     }
   }
-  return _.mapValues(keyedAvgState, (state: {sum: number, n: number}) => {
+  return _.mapValues(keyedAvgState, (state: { sum: number; n: number }) => {
     if (state.n === 0) {
       return 0.0;
     }
@@ -116,7 +116,7 @@ const buildTimeHashMap = (hoverData: ValidHoverDatum[], sortBy: (key: string) =>
 
   const timeHashMap: TimeHashMap = {};
   for (const datum of hoverData) {
-    const rest: UnformattedLegendEntry[] = Object.entries(datum).map((entry) => ({key: entry[0], val: entry[1]}))
+    const rest: UnformattedLegendEntry[] = Object.entries(datum).map((entry) => ({ key: entry[0], val: entry[1] }))
       .filter((item) => item.key !== 'time' && item.key !== 'sum');
     const sortedRest = _.sortBy(rest, (item) => sortBy(item.key));
     timeHashMap[datum.time] = sortedRest;
@@ -129,7 +129,7 @@ export const buildHoverDataCache = (hoverData): HoverDataCache => {
     return null;
   }
   const validEntries = hoverData.map((entry) => {
-    const {time_, ...rest} = entry;
+    const { time_, ...rest } = entry;
     if (!time_ || !isNumber(time_)) {
       return null;
     }
@@ -149,7 +149,7 @@ export const buildHoverDataCache = (hoverData): HoverDataCache => {
     return;
   }
 
-  const {minTime, maxTime} = minMaxTimes(validEntries);
+  const { minTime, maxTime } = minMaxTimes(validEntries);
   const keyedAvgs = keyAvgs(validEntries);
 
   const timeHashMap: TimeHashMap = buildTimeHashMap(validEntries, (key) => -keyedAvgs[key]);

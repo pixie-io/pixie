@@ -1,7 +1,7 @@
-import { action } from '@storybook/addon-actions';
+import * as React from 'react';
+
 import { storiesOf } from '@storybook/react';
 
-import * as React from 'react';
 import { Alert } from '../src/components/alert/alert';
 
 storiesOf('Alert', module)
@@ -12,6 +12,6 @@ storiesOf('Alert', module)
       </div>
     </Alert>
   ), {
-      info: { inline: true },
-      notes: 'This is an error alert.',
-    });
+    info: { inline: true },
+    notes: 'This is an error alert.',
+  });
