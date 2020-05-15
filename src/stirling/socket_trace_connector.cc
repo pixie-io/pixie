@@ -351,7 +351,7 @@ std::map<std::string, std::vector<int32_t>> SocketTraceConnector::FindNewPIDs() 
 }
 
 bool SocketTraceConnector::UpdateHTTP2SymAddrs(
-    ElfReader* elf_reader, const std::vector<int32_t>& pids,
+    std::string_view binary, ElfReader* elf_reader, const std::vector<int32_t>& pids,
     ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map) {
   struct conn_symaddrs_t symaddrs;
   symaddrs.syscall_conn =
@@ -368,6 +368,13 @@ bool SocketTraceConnector::UpdateHTTP2SymAddrs(
   if (symaddrs.tcp_conn == -1) {
     return false;
   }
+
+  PL_ASSIGN_OR(std::unique_ptr<DwarfReader> dwarf_reader, DwarfReader::Create(binary),
+               return false;);
+  PL_ASSIGN_OR(symaddrs.http2_server_conn_offset,
+               dwarf_reader->GetStructMemberOffset(
+                   "google.golang.org/grpc/internal/transport.http2Server", "conn"),
+               return false);
 
   for (auto& pid : pids) {
     http2_symaddrs_map->update_value(pid, symaddrs);
@@ -423,7 +430,7 @@ StatusOr<int> SocketTraceConnector::AttachHTTP2UProbes(
     const std::vector<int32_t>& new_pids,
     ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map) {
   // Step 1: Update BPF symbols_map on all new PIDs.
-  bool found_symbols = UpdateHTTP2SymAddrs(elf_reader, new_pids, http2_symaddrs_map);
+  bool found_symbols = UpdateHTTP2SymAddrs(binary, elf_reader, new_pids, http2_symaddrs_map);
   if (!found_symbols) {
     // Doesn't appear to be a binary with a TCPConn.
     // Might not even be a golang binary.

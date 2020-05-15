@@ -280,7 +280,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   std::map<std::string, std::vector<int32_t> > FindNewPIDs();
 
   bool UpdateHTTP2SymAddrs(
-      elf_tools::ElfReader* elf_reader, const std::vector<int32_t>& pids,
+      std::string_view binary, elf_tools::ElfReader* elf_reader, const std::vector<int32_t>& pids,
       ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map);
 
   StatusOr<int> AttachUProbeTmpl(const ArrayView<bpf_tools::UProbeTmpl>& probe_tmpls,

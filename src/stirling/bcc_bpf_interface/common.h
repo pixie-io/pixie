@@ -91,4 +91,5 @@ struct conn_symaddrs_t {
   int64_t syscall_conn;
   int64_t tls_conn;
   int64_t tcp_conn;
+  int64_t http2_server_conn_offset;
 };

@@ -461,6 +461,12 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
 // Symbol:
 //   google.golang.org/grpc/internal/transport.(*http2Server).operateHeaders
 int probe_http2_server_operate_headers(struct pt_regs* ctx) {
+  uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
+  struct conn_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  if (symaddrs == NULL) {
+    return 0;
+  }
+
   const void* sp = (const void*)PT_REGS_SP(ctx);
 
   const int kHTTP2ServerParamOffset = 8;
@@ -471,17 +477,9 @@ int probe_http2_server_operate_headers(struct pt_regs* ctx) {
 
   struct go_interface conn_intf;
 
-  const int kHTTP2ServerConnFieldOffset1 = 24;
-  bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_server_ptr + kHTTP2ServerConnFieldOffset1);
+  bpf_probe_read(&conn_intf, sizeof(conn_intf),
+                 http2_server_ptr + symaddrs->http2_server_conn_offset);
   int32_t fd = get_fd_from_conn_intf(conn_intf);
-
-  if (fd == kInvalidFD) {
-    // It is known that the offset changed between grpc-go version.
-    // So we try with another offset from an older version.
-    const int kHTTP2ServerConnFieldOffset2 = 32;
-    bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_server_ptr + kHTTP2ServerConnFieldOffset2);
-    fd = get_fd_from_conn_intf(conn_intf);
-  }
 
   if (fd == kInvalidFD) {
     return 0;
