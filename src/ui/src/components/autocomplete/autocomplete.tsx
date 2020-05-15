@@ -124,8 +124,6 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
         value={inputValue}
         placeholder={placeholder}
         prefix={prefix}
-        // TODO(malthus): Remove this once we switch to eslint.
-        // tslint:disable-next-line:whitespace
         suggestion={itemsMap.get(activeItem)?.title || ''}
       />
       <Completions
