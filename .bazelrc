@@ -21,6 +21,12 @@ build --test_tag_filters=-requires_root,-requires_bpf,-disabled
 # Sets the default Apple platform to macOS.
 build --apple_platform_type=macos
 
+# Keep debug symbols (required for go binaries).
+# Unfortunately, this affects C++ with -c fastbuild too.
+# Upgrading io_bazel_rules_go provides a better way to do this, but that upgrade is a tangled web.
+# TODO(oazizi): Remove after upgrading io_bazel_rules_go.
+build --strip=never
+
 # Build for Clang:
 build:clang --linkopt -fuse-ld=lld
 build:clang --action_env=BAZEL_LINKLIBS=-l%:libstdc++.a
