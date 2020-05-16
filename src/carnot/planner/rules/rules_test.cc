@@ -3172,6 +3172,235 @@ TEST_F(RulesTest, FilterPushdownTest_agg_expr_no_push) {
 // TEST_F(RulesTest, FilterPushdownTest_union) {
 // }
 
+TEST_F(RulesTest, PropagateExpressionAnnotationsRule_noop) {
+  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  MapIR* map1 = MakeMap(src, {{"def", MakeColumn("abc", 0)}}, false);
+  MapIR* map2 = MakeMap(map1, {{"xyz", MakeInt(3)}, {"def", MakeColumn("def", 0)}}, false);
+  FilterIR* filter = MakeFilter(map2, MakeEqualsFunc(MakeColumn("def", 0), MakeInt(2)));
+  MakeMemSink(filter, "foo", {});
+
+  PropagateExpressionAnnotationsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
+}
+
+TEST_F(RulesTest, PropagateExpressionAnnotationsRule_rename) {
+  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  auto map1_col = MakeColumn("abc", 0);
+  auto annotations = ExpressionIR::Annotations(MetadataType::POD_NAME);
+  map1_col->set_annotations(annotations);
+
+  MapIR* map1 = MakeMap(src, {{"def", map1_col}}, false);
+  auto map2_col1 = MakeColumn("def", 0);
+  auto map2_col2 = MakeColumn("def", 0);
+  MapIR* map2 = MakeMap(map1, {{"xyz", map2_col1}, {"def", map2_col2}, {"ghi", MakeInt(2)}}, false);
+  auto filter_col1 = MakeColumn("xyz", 0);
+  auto filter_col2 = MakeColumn("ghi", 0);
+  FilterIR* filter = MakeFilter(map2, MakeEqualsFunc(filter_col1, filter_col2));
+  MakeMemSink(filter, "foo", {});
+
+  auto default_annotations = ExpressionIR::Annotations();
+  EXPECT_EQ(default_annotations, map2_col1->annotations());
+  EXPECT_EQ(default_annotations, map2_col2->annotations());
+  ASSERT_MATCH(filter->filter_expr(), Func());
+  auto filter_func = static_cast<FuncIR*>(filter->filter_expr());
+  EXPECT_EQ(default_annotations, filter_func->args()[0]->annotations());
+
+  PropagateExpressionAnnotationsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_EQ(annotations, map1_col->annotations());
+  EXPECT_EQ(annotations, map2_col1->annotations());
+  EXPECT_EQ(annotations, map2_col2->annotations());
+  EXPECT_EQ(annotations, filter_func->args()[0]->annotations());
+  EXPECT_EQ(default_annotations, filter_func->args()[1]->annotations());
+}
+
+TEST_F(RulesTest, PropagateExpressionAnnotationsRule_join) {
+  std::string join_key = "key";
+  Relation rel1({types::FLOAT64, types::STRING}, {"latency", "data"});
+  Relation rel2({types::STRING, types::FLOAT64}, {join_key, "cpu_usage"});
+
+  auto mem_src1 = MakeMemSource(rel1);
+  auto literal_with_annotations = MakeString("my_pod_name");
+  auto annotations = ExpressionIR::Annotations(MetadataType::POD_NAME);
+  literal_with_annotations->set_annotations(annotations);
+
+  auto map = MakeMap(mem_src1, {
+                                   {join_key, literal_with_annotations},
+                                   {"latency", MakeColumn("latency", 0)},
+                                   {"data", MakeColumn("data", 0)},
+                               });
+
+  auto mem_src2 = MakeMemSource(rel2);
+
+  std::string left_suffix = "_x";
+  std::string right_suffix = "_y";
+
+  JoinIR* join = graph
+                     ->CreateNode<JoinIR>(ast, std::vector<OperatorIR*>{map, mem_src2}, "inner",
+                                          std::vector<ColumnIR*>{MakeColumn(join_key, 0)},
+                                          std::vector<ColumnIR*>{MakeColumn(join_key, 1)},
+                                          std::vector<std::string>{left_suffix, right_suffix})
+                     .ConsumeValueOrDie();
+  auto map_col1 = MakeColumn("key_x", 0);
+  auto map_col2 = MakeColumn("latency", 0);
+  auto last_node =
+      MakeMap(join, {{"annotations_col", map_col1}, {"non_annotations_col", map_col2}});
+  MakeMemSink(last_node, "foo", {});
+
+  // use this to set data types, this rule will run before PropagateExpressionAnnotationsRule.
+  DataTypeRule data_rule(compiler_state_.get());
+  auto result = data_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  // Use this to set output columns, this rule will run before PropagateExpressionAnnotationsRule.
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  result = op_rel_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ValueOrDie());
+
+  auto default_annotations = ExpressionIR::Annotations();
+
+  EXPECT_EQ(join->relation(),
+            Relation({types::STRING, types::FLOAT64, types::STRING, types::STRING, types::FLOAT64},
+                     {"key_x", "latency", "data", "key_y", "cpu_usage"}));
+
+  PropagateExpressionAnnotationsRule rule;
+  result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ValueOrDie());
+
+  EXPECT_EQ(annotations, join->output_columns()[0]->annotations());
+  for (size_t i = 1; i < join->output_columns().size(); ++i) {
+    EXPECT_EQ(default_annotations, join->output_columns()[i]->annotations());
+  }
+  EXPECT_EQ(annotations, map_col1->annotations());
+  EXPECT_EQ(default_annotations, map_col2->annotations());
+}
+
+TEST_F(RulesTest, PropagateExpressionAnnotationsRule_agg) {
+  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
+  MemorySourceIR* src = MakeMemSource(relation);
+  // Set up the columns and their annotations.
+  auto group_col = MakeColumn("abc", 0);
+  auto agg_col = MakeColumn("xyz", 0);
+  auto agg_func = MakeMeanFunc(agg_col);
+  auto group_col_annotation = ExpressionIR::Annotations(MetadataType::POD_NAME);
+  auto agg_col_annotation = ExpressionIR::Annotations(MetadataType::SERVICE_ID);
+  auto agg_func_annotation = ExpressionIR::Annotations(MetadataType::POD_ID);
+  group_col->set_annotations(group_col_annotation);
+  agg_col->set_annotations(agg_col_annotation);
+  agg_func->set_annotations(agg_func_annotation);
+
+  BlockingAggIR* agg = MakeBlockingAgg(src, {group_col}, {{"out", agg_func}});
+  auto filter_col = MakeColumn("out", 0);
+  FilterIR* filter = MakeFilter(agg, MakeEqualsFunc(filter_col, MakeInt(2)));
+  auto map_expr_col = MakeColumn("out", 0);
+  auto map_group_col = MakeColumn("abc", 0);
+  MapIR* map = MakeMap(filter, {{"agg_expr", map_expr_col}, {"agg_group", map_group_col}});
+  MakeMemSink(map, "");
+
+  PropagateExpressionAnnotationsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_EQ(agg_func_annotation, filter_col->annotations());
+  EXPECT_EQ(agg_func_annotation, map_expr_col->annotations());
+  EXPECT_EQ(group_col_annotation, map_group_col->annotations());
+}
+
+TEST_F(RulesTest, PropagateExpressionAnnotationsRule_union) {
+  // Test to make sure that union columns that share annotations produce those annotations in the
+  // union output, whereas annotations that are not shared are not produced in the output.
+  Relation relation1({types::DataType::STRING, types::DataType::STRING}, {"pod_id", "pod_name"});
+  Relation relation2({types::DataType::STRING, types::DataType::STRING},
+                     {"pod_id", "random_string"});
+  auto mem_src1 = MakeMemSource(relation1);
+  auto mem_src2 = MakeMemSource(relation2);
+
+  auto map1_col1 = MakeColumn("pod_id", 0);
+  auto map1_col2 = MakeColumn("pod_name", 0);
+  auto map2_col1 = MakeColumn("pod_id", 0);
+  auto map2_col2 = MakeColumn("random_string", 0);
+
+  auto map1 = MakeMap(mem_src1, {{"pod_id", map1_col1}, {"maybe_pod_name", map1_col2}});
+  auto map2 = MakeMap(mem_src2, {{"pod_id", map2_col1}, {"maybe_pod_name", map2_col2}});
+
+  auto union_op = MakeUnion({map1, map2});
+
+  auto map3_col1 = MakeColumn("pod_id", 0);
+  auto map3_col2 = MakeColumn("maybe_pod_name", 0);
+  MakeMap(union_op, {{"pod_id", map3_col1}, {"maybe_pod_name", map3_col2}});
+
+  // add metadata:
+  auto pod_id_annotation = ExpressionIR::Annotations(MetadataType::POD_ID);
+  auto pod_name_annotation = ExpressionIR::Annotations(MetadataType::POD_NAME);
+  auto default_annotation = ExpressionIR::Annotations();
+  map1_col1->set_annotations(pod_id_annotation);
+  map2_col1->set_annotations(pod_id_annotation);
+  map1_col2->set_annotations(pod_name_annotation);
+
+  EXPECT_EQ(default_annotation, map3_col1->annotations());
+  EXPECT_EQ(default_annotation, map3_col2->annotations());
+
+  // use this to set data types, this rule will run before PropagateExpressionAnnotationsRule.
+  DataTypeRule data_rule(compiler_state_.get());
+  auto result = data_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+  // Use this to set output columns, this rule will run before PropagateExpressionAnnotationsRule.
+  OperatorRelationRule op_rel_rule(compiler_state_.get());
+  result = op_rel_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ValueOrDie());
+
+  PropagateExpressionAnnotationsRule rule;
+  result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_EQ(pod_id_annotation, map3_col1->annotations());
+  EXPECT_EQ(default_annotation, map3_col2->annotations());
+}
+
+TEST_F(RulesTest, PropagateExpressionAnnotationsRule_filter_limit) {
+  Relation relation({types::DataType::INT64, types::DataType::INT64}, {"abc", "xyz"});
+  MemorySourceIR* src = MakeMemSource(relation);
+
+  auto map1_col = MakeColumn("abc", 0);
+  auto annotations = ExpressionIR::Annotations(MetadataType::POD_NAME);
+  auto default_annotation = ExpressionIR::Annotations();
+  map1_col->set_annotations(annotations);
+
+  auto map1 = MakeMap(src, {{"abc_1", map1_col}, {"xyz_1", MakeColumn("xyz", 0)}});
+  auto limit1 = MakeLimit(map1, 100);
+  auto filter1 = MakeFilter(limit1);
+  auto limit2 = MakeLimit(filter1, 10);
+  auto filter2 = MakeFilter(limit2);
+
+  auto map1_col1 = MakeColumn("abc_1", 0);
+  auto map1_col2 = MakeColumn("xyz_1", 0);
+  MakeMap(filter2, {{"foo", map1_col2}, {"bar", map1_col1}});
+
+  EXPECT_EQ(default_annotation, map1_col1->annotations());
+  EXPECT_EQ(default_annotation, map1_col2->annotations());
+
+  PropagateExpressionAnnotationsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_EQ(annotations, map1_col1->annotations());
+  EXPECT_EQ(default_annotation, map1_col2->annotations());
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl

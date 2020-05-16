@@ -90,7 +90,6 @@ class DataTypeRule : public Rule {
    * don't have predetermined types.
    *
    * Currently resolves non-compile-time functions and column data types.
-   *
    */
 
  public:
@@ -593,6 +592,35 @@ class FilterPushdownRule : public Rule {
   OperatorIR* HandleMapPushdown(MapIR* map, ColumnNameMapping* column_name_mapping);
   OperatorIR* NextFilterLocation(OperatorIR* current_node, ColumnNameMapping* column_name_mapping);
   Status UpdateFilter(FilterIR* expr, const ColumnNameMapping& column_name_mapping);
+};
+
+/**
+ * @brief Propagate the expression annotations to downstream nodes when a column
+ * is reassigned or used in another operator. For example, for an integer with annotations that is
+ * assigned to be the value of a new column, that new column should have receive the same
+ * annotations as the integer that created it.
+ *
+ * TODO(nserrino): Possibly move this rule to the distributed_analyzer, in the event that the unions
+ * and GRPCSources that are generated in the distributed planner need to be given annotations as
+ * well. For now, all of the nodes downstream of the union/grpc sources should be annotated in those
+ * distributed plans from this rules in the single node analyzer.
+ *
+ */
+class PropagateExpressionAnnotationsRule : public Rule {
+ public:
+  PropagateExpressionAnnotationsRule() : Rule(nullptr) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* node) override;
+  // Status HandleMapAncestor(MapIR* map, std::string_view column_name);
+  // Status HandleBlockingAggAncestor(BlockingAggIR* map, std::string_view column_name);
+  // Status HandleJoinAncestor(JoinIR* map, std::string_view column_name);
+  // Status HandleUnionAncestor(UnionIR* map, std::string_view column_name);
+
+ private:
+  using OperatorOutputAnnotations =
+      absl::flat_hash_map<OperatorIR*, absl::flat_hash_map<std::string, ExpressionIR::Annotations>>;
+  OperatorOutputAnnotations operator_output_annotations_;
 };
 
 }  // namespace planner

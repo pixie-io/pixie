@@ -485,8 +485,53 @@ class ExpressionIR : public IRNode {
   StatusOr<absl::flat_hash_set<ColumnIR*>> InputColumns();
   StatusOr<absl::flat_hash_set<std::string>> InputColumnNames();
 
+  using MetadataType = shared::metadatapb::MetadataType;
+
+  /**
+   * @brief Annotations describing a particular expression. For example, labeling it
+   * as representing a metadata field, such as pod_name.
+   */
+  struct Annotations {
+    MetadataType metadata_type = MetadataType::METADATA_TYPE_UNKNOWN;
+    bool metadata_type_set() const { return metadata_type != MetadataType::METADATA_TYPE_UNKNOWN; }
+    void clear_metadata_type() { metadata_type = MetadataType::METADATA_TYPE_UNKNOWN; }
+
+    Annotations() {}
+    explicit Annotations(MetadataType md_type) : metadata_type(md_type) {}
+
+    bool operator==(const Annotations& other) const { return metadata_type == other.metadata_type; }
+    bool operator!=(const Annotations& other) const { return !(*this == other); }
+    /**
+     * @brief Compute the shared overlap between two Annotations.
+     */
+    static Annotations Intersection(const Annotations& lhs, const Annotations& rhs) {
+      Annotations output;
+      if (lhs.metadata_type == rhs.metadata_type) {
+        output.metadata_type = lhs.metadata_type;
+      }
+      return output;
+    }
+
+    /**
+     * @brief Union two Annotations together. When the fields are both set and differ,
+     * defaults to the value specified by lhs.
+     */
+    static Annotations Union(const Annotations& lhs, const Annotations& rhs) {
+      Annotations output = lhs;
+      if (!output.metadata_type_set()) {
+        output.metadata_type = rhs.metadata_type;
+      }
+      return output;
+    }
+  };
+
+  const Annotations& annotations() const { return annotations_; }
+  void set_annotations(const Annotations& annotations) { annotations_ = annotations; }
+
  protected:
-  ExpressionIR(int64_t id, IRNodeType type) : IRNode(id, type) {}
+  ExpressionIR(int64_t id, IRNodeType type, const Annotations& annotations)
+      : IRNode(id, type), annotations_(annotations) {}
+  Annotations annotations_;
 };
 
 class MetadataProperty : public NotCopyable {
@@ -655,8 +700,8 @@ class DataIR : public ExpressionIR {
   static StatusOr<DataIR*> ZeroValueForType(IR* ir, types::DataType type);
 
  protected:
-  DataIR(int64_t id, IRNodeType type)
-      : ExpressionIR(id, type), evaluated_data_type_(DataType(type)) {}
+  DataIR(int64_t id, IRNodeType type, const ExpressionIR::Annotations& annotations)
+      : ExpressionIR(id, type, annotations), evaluated_data_type_(DataType(type)) {}
 
  private:
   types::DataType evaluated_data_type_;
@@ -693,7 +738,9 @@ class DataIR : public ExpressionIR {
 class ColumnIR : public ExpressionIR {
  public:
   ColumnIR() = delete;
-  explicit ColumnIR(int64_t id) : ExpressionIR(id, IRNodeType::kColumn) {}
+  ColumnIR(int64_t id, const ExpressionIR::Annotations& annotations)
+      : ExpressionIR(id, IRNodeType::kColumn, annotations) {}
+  explicit ColumnIR(int64_t id) : ColumnIR(id, ExpressionIR::Annotations()) {}
 
   /**
    * @brief Creates a new column that references the passed in operator.
@@ -793,7 +840,9 @@ class ColumnIR : public ExpressionIR {
   /**
    * @brief Optional protected constructor for children types.
    */
-  ColumnIR(int64_t id, IRNodeType type) : ExpressionIR(id, type) {}
+  ColumnIR(int64_t id, IRNodeType type, const ExpressionIR::Annotations& annotations)
+      : ExpressionIR(id, type, annotations) {}
+  ColumnIR(int64_t id, IRNodeType type) : ColumnIR(id, type, ExpressionIR::Annotations()) {}
 
   /**
    * @brief Point to the index of the Containing operator's parents that this column references.
@@ -824,7 +873,9 @@ class ColumnIR : public ExpressionIR {
 class StringIR : public DataIR {
  public:
   StringIR() = delete;
-  explicit StringIR(int64_t id) : DataIR(id, IRNodeType::kString) {}
+  StringIR(int64_t id, const ExpressionIR::Annotations& annotations)
+      : DataIR(id, IRNodeType::kString, annotations) {}
+  explicit StringIR(int64_t id) : StringIR(id, ExpressionIR::Annotations()) {}
   Status Init(std::string str);
   std::string str() const { return str_; }
   Status CopyFromNodeImpl(const IRNode* node,
@@ -850,7 +901,9 @@ class StringIR : public DataIR {
 class UInt128IR : public DataIR {
  public:
   UInt128IR() = delete;
-  explicit UInt128IR(int64_t id) : DataIR(id, IRNodeType::kUInt128) {}
+  UInt128IR(int64_t id, const ExpressionIR::Annotations& annotations)
+      : DataIR(id, IRNodeType::kUInt128, annotations) {}
+  explicit UInt128IR(int64_t id) : UInt128IR(id, ExpressionIR::Annotations()) {}
 
   /**
    * @brief Inits the UInt128 from a absl::uint128 value.
@@ -929,7 +982,9 @@ class FuncIR : public ExpressionIR {
   FuncIR() = delete;
   Opcode opcode() const { return op_.op_code; }
   const Op& op() const { return op_; }
-  explicit FuncIR(int64_t id) : ExpressionIR(id, IRNodeType::kFunc) {}
+  FuncIR(int64_t id, const ExpressionIR::Annotations& annotations)
+      : ExpressionIR(id, IRNodeType::kFunc, annotations) {}
+  explicit FuncIR(int64_t id) : FuncIR(id, ExpressionIR::Annotations()) {}
   Status Init(Op op, const std::vector<ExpressionIR*>& args);
 
   std::string DebugString() const override {
@@ -1002,7 +1057,9 @@ class FuncIR : public ExpressionIR {
 class FloatIR : public DataIR {
  public:
   FloatIR() = delete;
-  explicit FloatIR(int64_t id) : DataIR(id, IRNodeType::kFloat) {}
+  FloatIR(int64_t id, const ExpressionIR::Annotations& annotations)
+      : DataIR(id, IRNodeType::kFloat, annotations) {}
+  explicit FloatIR(int64_t id) : FloatIR(id, ExpressionIR::Annotations()) {}
   Status Init(double val);
 
   double val() const { return val_; }
@@ -1026,7 +1083,10 @@ class FloatIR : public DataIR {
 class IntIR : public DataIR {
  public:
   IntIR() = delete;
-  explicit IntIR(int64_t id) : DataIR(id, IRNodeType::kInt) {}
+  IntIR(int64_t id, const ExpressionIR::Annotations& annotations)
+      : DataIR(id, IRNodeType::kInt, annotations) {}
+  explicit IntIR(int64_t id) : IntIR(id, ExpressionIR::Annotations()) {}
+
   Status Init(int64_t val);
 
   int64_t val() const { return val_; }
@@ -1055,7 +1115,10 @@ class IntIR : public DataIR {
 class BoolIR : public DataIR {
  public:
   BoolIR() = delete;
-  explicit BoolIR(int64_t id) : DataIR(id, IRNodeType::kBool) {}
+  BoolIR(int64_t id, const ExpressionIR::Annotations& annotations)
+      : DataIR(id, IRNodeType::kBool, annotations) {}
+  explicit BoolIR(int64_t id) : BoolIR(id, ExpressionIR::Annotations()) {}
+
   Status Init(bool val);
 
   bool val() const { return val_; }
@@ -1079,7 +1142,10 @@ class BoolIR : public DataIR {
 class TimeIR : public DataIR {
  public:
   TimeIR() = delete;
-  explicit TimeIR(int64_t id) : DataIR(id, IRNodeType::kTime) {}
+  TimeIR(int64_t id, const ExpressionIR::Annotations& annotations)
+      : DataIR(id, IRNodeType::kTime, annotations) {}
+  explicit TimeIR(int64_t id) : TimeIR(id, ExpressionIR::Annotations()) {}
+
   Status Init(int64_t val);
 
   int64_t val() const { return val_; }
