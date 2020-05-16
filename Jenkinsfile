@@ -118,6 +118,8 @@ isCLIBuildRun =  env.JOB_NAME.startsWith("pixielabs-master-cli-release-build/")
 isVizierBuildRun = env.JOB_NAME.startsWith("pixielabs-master-vizier-release-build/")
 isCloudStagingBuildRun = env.JOB_NAME.startsWith("pixielabs-master-cloud-staging-build/")
 isCloudProdBuildRun = env.JOB_NAME.startsWith("pixielabs-master-cloud-release-build/")
+isDocsStagingBuildRun = env.JOB_NAME.startsWith("pixielabs-master-docs-staging-build/")
+isDocsProdBuildRun = env.JOB_NAME.startsWith("pixielabs-master-docs-release-build/")
 
 // TODO(zasgar): Fix the coverage job which is broken due to GCC upgrade.
 runCoverageJob = false; // isMasterRun
@@ -896,13 +898,13 @@ def  buildScriptForVizierRelease = {
 }
 
 
-def deployCloud(String profile, String namespace) {
+def deployWithSkaffold(String profile, String namespace, String skaffoldFile) {
   WithSourceCodeFatalError {
     dockerStep('', devDockerImageExtrasWithTag) {
       withKubeConfig([credentialsId: K8S_PROD_CREDS,
                     serverUrl: K8S_PROD_CLUSTER, namespace: namespace]) {
-        sh "skaffold build -q -o '{{json .}}' -p ${profile} -f skaffold/skaffold_cloud.yaml > manifest_internal.json"
-        sh "skaffold deploy -p ${profile} --build-artifacts=manifest_internal.json -f skaffold/skaffold_cloud.yaml"
+        sh "skaffold build -q -o '{{json .}}' -p ${profile} -f ${skaffoldFile} > manifest_internal.json"
+        sh "skaffold deploy -p ${profile} --build-artifacts=manifest_internal.json -f ${skaffoldFile}"
       }
     }
   }
@@ -917,7 +919,7 @@ def buildScriptForCloudStagingRelease = {
         checkoutAndInitialize()
       }
       stage('Build & Push Artifacts') {
-        deployCloud('staging', 'plc-staging')
+        deployWithSkaffold('staging', 'plc-staging', 'skaffold/skaffold_cloud.yaml')
       }
     }
     catch(err) {
@@ -940,7 +942,53 @@ def buildScriptForCloudProdRelease = {
         checkoutAndInitialize()
       }
       stage('Build & Push Artifacts') {
-        deployCloud('prod', 'plc')
+        deployWithSkaffold('prod', 'plc', 'skaffold/skaffold_cloud.yaml')
+      }
+    }
+    catch(err) {
+      currentBuild.result = 'FAILURE'
+      echo "Exception thrown:\n ${err}"
+      echo "Stacktrace:"
+      err.printStackTrace()
+    }
+
+    postBuildActions()
+  }
+}
+
+def buildScriptForDocsProdRelease = {
+  node(WORKER_NODE) {
+    currentBuild.result = 'SUCCESS'
+    deleteDir()
+    try {
+      stage('Checkout code') {
+        checkoutAndInitialize()
+      }
+      stage('Build & Push Artifacts') {
+        deployWithSkaffold('prod', 'plc', 'skaffold/skaffold_customer_docs.yaml')
+      }
+    }
+    catch(err) {
+      currentBuild.result = 'FAILURE'
+      echo "Exception thrown:\n ${err}"
+      echo "Stacktrace:"
+      err.printStackTrace()
+    }
+
+    postBuildActions()
+  }
+}
+
+def buildScriptForDocsStagingRelease = {
+  node(WORKER_NODE) {
+    currentBuild.result = 'SUCCESS'
+    deleteDir()
+    try {
+      stage('Checkout code') {
+        checkoutAndInitialize()
+      }
+      stage('Build & Push Artifacts') {
+        deployWithSkaffold('staging', 'plc-staging', 'skaffold/skaffold_customer_docs.yaml')
       }
     }
     catch(err) {
@@ -964,6 +1012,10 @@ if(isNightlyTestRegressionRun) {
   buildScriptForCloudStagingRelease()
 } else if (isCloudProdBuildRun) {
   buildScriptForCloudProdRelease()
+} else if (isDocsProdBuildRun) {
+  buildScriptForDocsProdRelease()
+} else if (isDocsStagingBuildRun) {
+  buildScriptForDocsStagingRelease()
 } else {
   buildScriptForCommits()
 }
