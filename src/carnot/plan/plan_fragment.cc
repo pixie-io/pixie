@@ -30,65 +30,68 @@ std::unique_ptr<PlanFragment> PlanFragment::FromProto(const planpb::PlanFragment
 }
 
 template <typename T, typename TWalkFunc>
-void PlanFragmentWalker::CallAs(const TWalkFunc& fn, const Operator& op) {
+Status PlanFragmentWalker::CallAs(const TWalkFunc& fn, const Operator& op) {
   DCHECK(fn) << "fn does not exist for op: " << op.DebugString();
   if (fn == nullptr) {
-    return;
+    return error::InvalidArgument("fn does not exist for op: $0", op.DebugString());
   }
   return fn(static_cast<const T&>(op));
 }
 
-void PlanFragmentWalker::CallWalkFn(const Operator& op) {
+Status PlanFragmentWalker::CallWalkFn(const Operator& op) {
   const auto op_type = op.op_type();
   switch (op_type) {
     case planpb::OperatorType::MEMORY_SOURCE_OPERATOR:
-      CallAs<MemorySourceOperator>(on_memory_source_walk_fn_, op);
+      PL_RETURN_IF_ERROR(CallAs<MemorySourceOperator>(on_memory_source_walk_fn_, op));
       break;
     case planpb::OperatorType::MAP_OPERATOR:
-      CallAs<MapOperator>(on_map_walk_fn_, op);
+      PL_RETURN_IF_ERROR(CallAs<MapOperator>(on_map_walk_fn_, op));
       break;
     case planpb::OperatorType::AGGREGATE_OPERATOR:
-      CallAs<AggregateOperator>(on_aggregate_walk_fn_, op);
+      PL_RETURN_IF_ERROR(CallAs<AggregateOperator>(on_aggregate_walk_fn_, op));
       break;
     case planpb::OperatorType::MEMORY_SINK_OPERATOR:
-      CallAs<MemorySinkOperator>(on_memory_sink_walk_fn_, op);
+      PL_RETURN_IF_ERROR(CallAs<MemorySinkOperator>(on_memory_sink_walk_fn_, op));
       break;
     case planpb::OperatorType::FILTER_OPERATOR:
-      CallAs<FilterOperator>(on_filter_walk_fn_, op);
+      PL_RETURN_IF_ERROR(CallAs<FilterOperator>(on_filter_walk_fn_, op));
       break;
     case planpb::OperatorType::LIMIT_OPERATOR:
-      CallAs<LimitOperator>(on_limit_walk_fn_, op);
+      PL_RETURN_IF_ERROR(CallAs<LimitOperator>(on_limit_walk_fn_, op));
       break;
     case planpb::OperatorType::JOIN_OPERATOR:
-      CallAs<JoinOperator>(on_join_walk_fn_, op);
+      PL_RETURN_IF_ERROR(CallAs<JoinOperator>(on_join_walk_fn_, op));
       break;
     case planpb::OperatorType::UNION_OPERATOR:
-      CallAs<UnionOperator>(on_union_walk_fn_, op);
+      PL_RETURN_IF_ERROR(CallAs<UnionOperator>(on_union_walk_fn_, op));
       break;
     case planpb::OperatorType::GRPC_SINK_OPERATOR:
-      CallAs<GRPCSinkOperator>(on_grpc_sink_walk_fn_, op);
+      PL_RETURN_IF_ERROR(CallAs<GRPCSinkOperator>(on_grpc_sink_walk_fn_, op));
       break;
     case planpb::OperatorType::GRPC_SOURCE_OPERATOR:
-      CallAs<GRPCSourceOperator>(on_grpc_source_walk_fn_, op);
+      PL_RETURN_IF_ERROR(CallAs<GRPCSourceOperator>(on_grpc_source_walk_fn_, op));
       break;
     case planpb::OperatorType::UDTF_SOURCE_OPERATOR:
-      CallAs<UDTFSourceOperator>(on_udtf_source_walk_fn_, op);
+      PL_RETURN_IF_ERROR(CallAs<UDTFSourceOperator>(on_udtf_source_walk_fn_, op));
       break;
     default:
       LOG(FATAL) << absl::Substitute("Operator does not exist: $0", magic_enum::enum_name(op_type));
+      return error::InvalidArgument("Operator does not exist: $0", magic_enum::enum_name(op_type));
   }
+  return Status::OK();
 }
 
-void PlanFragmentWalker::Walk(PlanFragment* plan_fragment) {
+Status PlanFragmentWalker::Walk(PlanFragment* plan_fragment) {
   auto operators = plan_fragment->dag().TopologicalSort();
   for (const auto& node_id : operators) {
     auto node = plan_fragment->nodes().find(node_id);
     if (node == plan_fragment->nodes().end()) {
       LOG(WARNING) << absl::StrCat("Could not find node in plan fragment");
     } else {
-      CallWalkFn(*node->second);
+      PL_RETURN_IF_ERROR(CallWalkFn(*node->second));
     }
   }
+  return Status::OK();
 }
 
 }  // namespace plan

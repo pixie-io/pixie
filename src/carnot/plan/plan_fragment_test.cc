@@ -166,32 +166,39 @@ TEST_F(PlanFragmentWalkerTest, basic_tests) {
   int filter_call_count = 0;
   int limit_call_count = 0;
 
-  PlanFragmentWalker()
-      .OnMemorySource([&](auto& mem_src) {
-        col_order.push_back(mem_src.id());
-        mem_src_call_count++;
-      })
-      .OnMap([&](auto& map) {
-        col_order.push_back(map.id());
-        map_call_count++;
-      })
-      .OnAggregate([&](auto& agg) {
-        col_order.push_back(agg.id());
-        agg_call_count++;
-      })
-      .OnMemorySink([&](auto& mem_sink) {
-        col_order.push_back(mem_sink.id());
-        mem_sink_call_count++;
-      })
-      .OnFilter([&](auto& filter) {
-        col_order.push_back(filter.id());
-        filter_call_count++;
-      })
-      .OnLimit([&](auto& limit) {
-        col_order.push_back(limit.id());
-        limit_call_count++;
-      })
-      .Walk(&plan_fragment_);
+  auto status = PlanFragmentWalker()
+                    .OnMemorySource([&](auto& mem_src) {
+                      col_order.push_back(mem_src.id());
+                      mem_src_call_count++;
+                      return Status::OK();
+                    })
+                    .OnMap([&](auto& map) {
+                      col_order.push_back(map.id());
+                      map_call_count++;
+                      return Status::OK();
+                    })
+                    .OnAggregate([&](auto& agg) {
+                      col_order.push_back(agg.id());
+                      agg_call_count++;
+                      return Status::OK();
+                    })
+                    .OnMemorySink([&](auto& mem_sink) {
+                      col_order.push_back(mem_sink.id());
+                      mem_sink_call_count++;
+                      return Status::OK();
+                    })
+                    .OnFilter([&](auto& filter) {
+                      col_order.push_back(filter.id());
+                      filter_call_count++;
+                      return Status::OK();
+                    })
+                    .OnLimit([&](auto& limit) {
+                      col_order.push_back(limit.id());
+                      limit_call_count++;
+                      return Status::OK();
+                    })
+                    .Walk(&plan_fragment_);
+  EXPECT_OK(status);
   EXPECT_EQ(1, mem_src_call_count);
   EXPECT_EQ(1, mem_sink_call_count);
   EXPECT_EQ(1, agg_call_count);

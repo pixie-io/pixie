@@ -161,7 +161,8 @@ Status CarnotImpl::RegisterUDFs(exec::ExecState* exec_state, plan::Plan* plan) {
 }
 
 Status CarnotImpl::RegisterUDFsInPlanFragment(exec::ExecState* exec_state, plan::PlanFragment* pf) {
-  plan::PlanFragmentWalker()
+  auto no_op = [&](const auto&) { return Status::OK(); };
+  return plan::PlanFragmentWalker()
       .OnMap([&](const plan::MapOperator& map) {
         for (const auto& expr : map.expressions()) {
           PL_RETURN_IF_ERROR(WalkExpression(exec_state, *expr));
@@ -177,17 +178,15 @@ Status CarnotImpl::RegisterUDFsInPlanFragment(exec::ExecState* exec_state, plan:
       .OnFilter([&](const plan::FilterOperator& filter) {
         return WalkExpression(exec_state, *filter.expression());
       })
-      .OnLimit([&](const auto&) {})
-      .OnMemorySink([&](const auto&) {})
-      .OnMemorySource([&](const auto&) {})
-      .OnUnion([&](const auto&) {})
-      .OnJoin([&](const auto&) {})
-      .OnGRPCSource([&](const auto&) {})
-      .OnGRPCSink([&](const auto&) {})
-      .OnUDTFSource([&](const auto&) {})
+      .OnLimit(no_op)
+      .OnMemorySink(no_op)
+      .OnMemorySource(no_op)
+      .OnUnion(no_op)
+      .OnJoin(no_op)
+      .OnGRPCSource(no_op)
+      .OnGRPCSink(no_op)
+      .OnUDTFSource(no_op)
       .Walk(pf);
-
-  return Status::OK();
 }
 
 Status CarnotImpl::WalkExpression(exec::ExecState* exec_state, const plan::ScalarExpression& expr) {

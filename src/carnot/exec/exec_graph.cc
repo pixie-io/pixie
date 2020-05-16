@@ -39,7 +39,7 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
 
   std::unordered_map<int64_t, ExecNode*> nodes;
   std::unordered_map<int64_t, RowDescriptor> descriptors;
-  plan::PlanFragmentWalker()
+  return plan::PlanFragmentWalker()
       .OnMap([&](auto& node) {
         return OnOperatorImpl<plan::MapOperator, MapNode>(node, &descriptors);
       })
@@ -80,8 +80,6 @@ Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
         return OnOperatorImpl<plan::UDTFSourceOperator, UDTFSourceNode>(node, &descriptors);
       })
       .Walk(pf_);
-
-  return Status::OK();
 }
 
 bool ExecutionGraph::YieldWithTimeout() {
@@ -180,7 +178,7 @@ std::vector<std::string> ExecutionGraph::OutputTables() const {
   for (int64_t sink_id : sinks_) {
     // Grab the nodes.
     auto res = nodes_.find(sink_id);
-    CHECK(res != nodes_.end());
+    CHECK(res != nodes_.end()) << absl::Substitute("sink_id not found $0", sink_id);
     ExecNode* node = res->second;
     CHECK(node->type() == ExecNodeType::kSinkNode);
     // Grab the names.

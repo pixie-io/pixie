@@ -45,17 +45,17 @@ class PlanFragment final : public PlanGraph<planpb::PlanFragment, Operator, plan
  */
 class PlanFragmentWalker {
  public:
-  using MemorySourceWalkFn = std::function<void(const MemorySourceOperator&)>;
-  using MapWalkFn = std::function<void(const MapOperator&)>;
-  using AggregateWalkFn = std::function<void(const AggregateOperator&)>;
-  using MemorySinkWalkFn = std::function<void(const MemorySinkOperator&)>;
-  using FilterWalkFn = std::function<void(const FilterOperator&)>;
-  using LimitWalkFn = std::function<void(const LimitOperator&)>;
-  using UnionWalkFn = std::function<void(const UnionOperator&)>;
-  using JoinWalkFn = std::function<void(const JoinOperator&)>;
-  using GRPCSinkWalkFn = std::function<void(const GRPCSinkOperator&)>;
-  using GRPCSourceWalkFn = std::function<void(const GRPCSourceOperator&)>;
-  using UDTFSourceWalkFn = std::function<void(const UDTFSourceOperator&)>;
+  using MemorySourceWalkFn = std::function<Status(const MemorySourceOperator&)>;
+  using MapWalkFn = std::function<Status(const MapOperator&)>;
+  using AggregateWalkFn = std::function<Status(const AggregateOperator&)>;
+  using MemorySinkWalkFn = std::function<Status(const MemorySinkOperator&)>;
+  using FilterWalkFn = std::function<Status(const FilterOperator&)>;
+  using LimitWalkFn = std::function<Status(const LimitOperator&)>;
+  using UnionWalkFn = std::function<Status(const UnionOperator&)>;
+  using JoinWalkFn = std::function<Status(const JoinOperator&)>;
+  using GRPCSinkWalkFn = std::function<Status(const GRPCSinkOperator&)>;
+  using GRPCSourceWalkFn = std::function<Status(const GRPCSourceOperator&)>;
+  using UDTFSourceWalkFn = std::function<Status(const UDTFSourceOperator&)>;
 
   /**
    * Register callback for when a memory source operator is encountered.
@@ -156,13 +156,13 @@ class PlanFragmentWalker {
    * Perform a walk of the plan fragment operators in a topologically-sorted order.
    * @param plan_fragment The plan fragment to walk.
    */
-  void Walk(PlanFragment* plan_fragment);
+  Status Walk(PlanFragment* plan_fragment);
 
  private:
-  void CallWalkFn(const Operator& op);
+  Status CallWalkFn(const Operator& op);
 
   template <typename T, typename TWalkFunc>
-  void CallAs(TWalkFunc const& fn, const Operator& op);
+  Status CallAs(TWalkFunc const& fn, const Operator& op);
 
   MemorySourceWalkFn on_memory_source_walk_fn_;
   MapWalkFn on_map_walk_fn_;
