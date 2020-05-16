@@ -14,10 +14,19 @@ namespace pl {
 namespace stirling {
 namespace testing {
 
+template <bool TEnableClientSideTracing = false>
 class SocketTraceBPFTest : public ::testing::Test {
  protected:
   void SetUp() override {
     FLAGS_stirling_disable_self_tracing = false;
+
+    // Normally, Stirling will be setup to think that all traffic is within the cluster,
+    // which means only server-side tracing will kick in.
+    if (TEnableClientSideTracing) {
+      // This makes the Stirling interpret all traffic as leaving the cluster,
+      // which means client-side tracing will also apply.
+      FLAGS_stirling_cluster_cidr = "1.2.3.4/32";
+    }
 
     source_ = SocketTraceConnector::Create("socket_trace_connector");
     ASSERT_OK(source_->Init());
@@ -25,12 +34,6 @@ class SocketTraceBPFTest : public ::testing::Test {
     // Create a context to pass into each TransferData() in the test, using a dummy ASID.
     static constexpr uint32_t kASID = 1;
     auto agent_metadata_state = std::make_shared<md::AgentMetadataState>(kASID);
-
-    // Some tests depends on cidr not containing remote IP address.
-    CIDRBlock cidr;
-    ASSERT_OK(ParseCIDRBlock("1.2.3.4/14", &cidr));
-    agent_metadata_state->k8s_metadata_state()->set_service_cidr(cidr);
-
     ctx_ = std::make_unique<ConnectorContext>(std::move(agent_metadata_state));
   }
 

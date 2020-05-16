@@ -53,7 +53,7 @@ class MySQLContainer : public ContainerRunner {
       "'/var/lib/mysql/mysql.sock'  port: 3306";
 };
 
-class MySQLTraceTest : public SocketTraceBPFTest {
+class MySQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
   MySQLTraceTest() {
     std::string script_path = TestFilePath("src/stirling/mysql/testing/script.sql");

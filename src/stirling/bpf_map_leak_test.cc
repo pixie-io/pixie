@@ -26,7 +26,9 @@ using ::testing::Not;
 constexpr std::string_view kServerPath =
     "src/stirling/http/testing/leaky_cpp_http_server/leaky_http_server";
 
-TEST_F(SocketTraceBPFTest, unclosed_connection) {
+using BPFMapLeakTest = SocketTraceBPFTest<>;
+
+TEST_F(BPFMapLeakTest, unclosed_connection) {
   const int kInactivitySeconds = 10;
   ConnectionTracker::SetInactivityDuration(std::chrono::seconds(kInactivitySeconds));
 

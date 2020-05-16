@@ -153,6 +153,18 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
   } else {
     socket_info_mgr_ = s.ConsumeValueOrDie();
   }
+
+  if (!FLAGS_stirling_cluster_cidr.empty()) {
+    CIDRBlock cidr;
+    Status s = ParseCIDRBlock(FLAGS_stirling_cluster_cidr, &cidr);
+    if (s.ok()) {
+      cluster_cidr_override_ = std::move(cidr);
+    } else {
+      LOG(ERROR) << absl::Substitute(
+          "Could not parse flag --stirling_cluster_cidr as a CIDR. Value=$0",
+          FLAGS_stirling_cluster_cidr);
+    }
+  }
 }
 
 Status SocketTraceConnector::InitImpl() {
@@ -226,18 +238,6 @@ Status SocketTraceConnector::InitImpl() {
 
   bpf_table_info_ = std::make_shared<SocketTraceBPFTableManager>(&bpf());
   ConnectionTracker::SetBPFTableManager(bpf_table_info_);
-
-  if (!FLAGS_stirling_cluster_cidr.empty()) {
-    CIDRBlock cidr;
-    Status s = ParseCIDRBlock(FLAGS_stirling_cluster_cidr, &cidr);
-    if (s.ok()) {
-      cluster_cidr_override_ = std::move(cidr);
-    } else {
-      LOG(ERROR) << absl::Substitute(
-          "Could not parse flag --stirling_cluster_cidr as a CIDR. Value=$0",
-          FLAGS_stirling_cluster_cidr);
-    }
-  }
 
   return Status::OK();
 }

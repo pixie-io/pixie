@@ -21,7 +21,6 @@ namespace stirling {
 
 using ::pl::stirling::testing::ColWrapperSizeIs;
 using ::pl::stirling::testing::FindRecordIdxMatchesPid;
-using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::system::TCPSocket;
 using ::pl::types::ColumnWrapper;
 using ::pl::types::ColumnWrapperRecordBatch;
@@ -59,6 +58,9 @@ constexpr std::string_view kNoProtocolMsg = R"(This is not an HTTP message)";
 // TODO(yzhao): We'd better rewrite the test to use BCCWrapper directly, instead of
 // SocketTraceConnector, to avoid triggering the userland parsing code, so these tests do not need
 // change if we alter output format.
+
+// TODO(oazizi): HTTP tracing should be based on server-side tracing. Tests need adjustment.
+class SocketTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {};
 
 TEST_F(SocketTraceBPFTest, Framework) {
   ConfigureCapture(kProtocolHTTP, kRoleAll);
@@ -380,7 +382,7 @@ enum class SyscallPair {
   kWriteReadv,
 };
 
-class SyscallPairBPFTest : public SocketTraceBPFTest,
+class SyscallPairBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false>,
                            public ::testing::WithParamInterface<SyscallPair> {};
 
 TEST_P(SyscallPairBPFTest, EventsAreCaptured) {

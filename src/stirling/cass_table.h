@@ -20,7 +20,7 @@ static constexpr DataElement kCQLElements[] = {
         canonical_data_elements::kUPID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
-        canonical_data_elements::kTraceSide,
+        canonical_data_elements::kTraceRole,
         {"req_op", types::DataType::INT64, types::PatternType::GENERAL_ENUM, "Request opcode",
          &kCQLReqOpDecoder},
         {"req_body", types::DataType::STRING, types::PatternType::GENERAL, "Request body"},
@@ -38,6 +38,7 @@ static constexpr DataElement kCQLElements[] = {
 
 static constexpr auto kCQLTable = DataTableSchema("cql_events", kCQLElements);
 
+static constexpr int kCQLTraceRoleIdx = kCQLTable.ColIndex("trace_role");
 static constexpr int kCQLUPIDIdx = kCQLTable.ColIndex("upid");
 static constexpr int kCQLReqOp = kCQLTable.ColIndex("req_op");
 static constexpr int kCQLReqBody = kCQLTable.ColIndex("req_body");

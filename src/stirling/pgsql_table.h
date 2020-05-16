@@ -12,7 +12,7 @@ static constexpr DataElement kPGSQLElements[] = {
         canonical_data_elements::kUPID,
         canonical_data_elements::kRemoteAddr,
         canonical_data_elements::kRemotePort,
-        canonical_data_elements::kTraceSide,
+        canonical_data_elements::kTraceRole,
         {"req", types::DataType::STRING, types::PatternType::GENERAL,
         "PostgreSQL request body"},
         {"resp", types::DataType::STRING, types::PatternType::GENERAL,

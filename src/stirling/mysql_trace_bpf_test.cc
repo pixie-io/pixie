@@ -13,36 +13,39 @@ using ::pl::types::ColumnWrapper;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
 
-testing::SendRecvScript GetPrepareExecuteScript() {
-  std::vector<std::string_view> prepare_req_packets(mysql::testdata::kRawStmtPrepareReq.begin(),
-                                                    mysql::testdata::kRawStmtPrepareReq.end());
-  std::vector<std::string_view> prepare_resp_packets(mysql::testdata::kRawStmtPrepareResp.begin(),
-                                                     mysql::testdata::kRawStmtPrepareResp.end());
-  std::vector<std::string_view> execute_req_packets(mysql::testdata::kRawStmtExecuteReq.begin(),
-                                                    mysql::testdata::kRawStmtExecuteReq.end());
-  std::vector<std::string_view> execute_resp_packets(mysql::testdata::kRawStmtExecuteResp.begin(),
-                                                     mysql::testdata::kRawStmtExecuteResp.end());
-  std::vector<std::string_view> close_req_packets(mysql::testdata::kRawStmtCloseReq.begin(),
-                                                  mysql::testdata::kRawStmtCloseReq.end());
+class MySQLTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {
+ protected:
+  testing::SendRecvScript GetPrepareExecuteScript() {
+    std::vector<std::string_view> prepare_req_packets(mysql::testdata::kRawStmtPrepareReq.begin(),
+                                                      mysql::testdata::kRawStmtPrepareReq.end());
+    std::vector<std::string_view> prepare_resp_packets(mysql::testdata::kRawStmtPrepareResp.begin(),
+                                                       mysql::testdata::kRawStmtPrepareResp.end());
+    std::vector<std::string_view> execute_req_packets(mysql::testdata::kRawStmtExecuteReq.begin(),
+                                                      mysql::testdata::kRawStmtExecuteReq.end());
+    std::vector<std::string_view> execute_resp_packets(mysql::testdata::kRawStmtExecuteResp.begin(),
+                                                       mysql::testdata::kRawStmtExecuteResp.end());
+    std::vector<std::string_view> close_req_packets(mysql::testdata::kRawStmtCloseReq.begin(),
+                                                    mysql::testdata::kRawStmtCloseReq.end());
 
-  testing::SendRecvScript script = {{prepare_req_packets, prepare_resp_packets},
-                                    {execute_req_packets, execute_resp_packets},
-                                    {close_req_packets, {""}}};
+    testing::SendRecvScript script = {{prepare_req_packets, prepare_resp_packets},
+                                      {execute_req_packets, execute_resp_packets},
+                                      {close_req_packets, {""}}};
 
-  return script;
-}
+    return script;
+  }
 
-testing::SendRecvScript GetQueryScript() {
-  std::vector<std::string_view> query_req_packets(mysql::testdata::kRawQueryReq.begin(),
-                                                  mysql::testdata::kRawQueryReq.end());
-  std::vector<std::string_view> query_resp_packets(mysql::testdata::kRawQueryResp.begin(),
-                                                   mysql::testdata::kRawQueryResp.end());
+  testing::SendRecvScript GetQueryScript() {
+    std::vector<std::string_view> query_req_packets(mysql::testdata::kRawQueryReq.begin(),
+                                                    mysql::testdata::kRawQueryReq.end());
+    std::vector<std::string_view> query_resp_packets(mysql::testdata::kRawQueryResp.begin(),
+                                                     mysql::testdata::kRawQueryResp.end());
 
-  testing::SendRecvScript script = {{query_req_packets, query_resp_packets}};
-  return script;
-}
+    testing::SendRecvScript script = {{query_req_packets, query_resp_packets}};
+    return script;
+  }
+};
 
-TEST_F(SocketTraceBPFTest, MySQLStmtPrepareExecuteClose) {
+TEST_F(MySQLTraceBPFTest, MySQLStmtPrepareExecuteClose) {
   ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleClient);
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(GetPrepareExecuteScript());
@@ -89,7 +92,7 @@ TEST_F(SocketTraceBPFTest, MySQLStmtPrepareExecuteClose) {
   }
 }
 
-TEST_F(SocketTraceBPFTest, MySQLQuery) {
+TEST_F(MySQLTraceBPFTest, MySQLQuery) {
   ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleClient);
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(GetQueryScript());

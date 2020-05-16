@@ -136,19 +136,16 @@ class SocketTraceConnectorTest : public ::testing::Test {
   static constexpr uint32_t kASID = 1;
 
   void SetUp() override {
+    // Set the CIDR for HTTP2ServerTest, which would otherwise not output any data,
+    // because it would think the server is in the cluster.
+    FLAGS_stirling_cluster_cidr = "1.2.3.4/32";
+
     // Create and configure the connector.
     connector_ = SocketTraceConnector::Create("socket_trace_connector");
     source_ = dynamic_cast<SocketTraceConnector*>(connector_.get());
     ASSERT_NE(nullptr, source_);
 
     auto agent_metadata_state = std::make_shared<md::AgentMetadataState>(kASID);
-
-    // Set the CIDR for HTTP2ServerTest, which would otherwise not output any data,
-    // because it would think the server is in the cluster.
-    CIDRBlock cidr_block;
-    ASSERT_OK(ParseCIDRBlock("1.2.3.4/32", &cidr_block));
-    agent_metadata_state->k8s_metadata_state()->set_service_cidr(cidr_block);
-
     ctx_ = std::make_unique<ConnectorContext>(agent_metadata_state);
 
     // Because some tests change the inactivity duration, make sure to reset it here for each test.

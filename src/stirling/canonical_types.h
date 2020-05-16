@@ -25,7 +25,7 @@ constexpr DataElement kRemoteAddr = {"remote_addr", types::DataType::STRING,
                                      "IP address of the remote endpoint."};
 constexpr DataElement kRemotePort = {"remote_port", types::DataType::INT64,
                                      types::PatternType::GENERAL, "Port of the remote endpoint."};
-constexpr DataElement kTraceSide = {
+constexpr DataElement kTraceRole = {
     "trace_role", types::DataType::INT64, types::PatternType::GENERAL_ENUM,
     "Side (client-or-server) where traffic was traced", &kTraceSideDecoder};
 

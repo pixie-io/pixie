@@ -24,7 +24,7 @@ constexpr DataElement kHTTPElements[] = {
     canonical_data_elements::kUPID,
     canonical_data_elements::kRemoteAddr,
     canonical_data_elements::kRemotePort,
-    canonical_data_elements::kTraceSide,
+    canonical_data_elements::kTraceRole,
     {"http_major_version", types::DataType::INT64, types::PatternType::GENERAL_ENUM,
     "HTTP major version, can be 1 or 2"},
     {"http_minor_version", types::DataType::INT64, types::PatternType::GENERAL_ENUM,
@@ -65,6 +65,7 @@ constexpr int kHTTPTimeIdx = kHTTPTable.ColIndex("time_");
 constexpr int kHTTPUPIDIdx = kHTTPTable.ColIndex("upid");
 constexpr int kHTTPRemoteAddrIdx = kHTTPTable.ColIndex("remote_addr");
 constexpr int kHTTPRemotePortIdx = kHTTPTable.ColIndex("remote_port");
+constexpr int kHTTPTraceRoleIdx = kHTTPTable.ColIndex("trace_role");
 constexpr int kHTTPMajorVersionIdx = kHTTPTable.ColIndex("http_major_version");
 constexpr int kHTTPMinorVersionIdx = kHTTPTable.ColIndex("http_minor_version");
 constexpr int kHTTPContentTypeIdx = kHTTPTable.ColIndex("http_content_type");
@@ -76,6 +77,7 @@ constexpr int kHTTPRespHeadersIdx = kHTTPTable.ColIndex("http_resp_headers");
 constexpr int kHTTPRespStatusIdx = kHTTPTable.ColIndex("http_resp_status");
 constexpr int kHTTPRespMessageIdx = kHTTPTable.ColIndex("http_resp_message");
 constexpr int kHTTPRespBodyIdx = kHTTPTable.ColIndex("http_resp_body");
+constexpr int kHTTPRespBodySizeIdx = kHTTPTable.ColIndex("http_resp_body_size");
 constexpr int kHTTPLatencyIdx = kHTTPTable.ColIndex("http_resp_latency_ns");
 
 }  // namespace stirling

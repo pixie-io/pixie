@@ -95,7 +95,7 @@ auto EqHTTPRecord(const http::Record& x) {
 // Test Class and Test Cases
 //-----------------------------------------------------------------------------
 
-class HTTP2TraceTest : public testing::SocketTraceBPFTest {
+class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {
  protected:
   HTTP2TraceTest() {
     // Run the server.

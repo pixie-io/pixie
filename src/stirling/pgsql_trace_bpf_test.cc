@@ -51,7 +51,7 @@ class GolangSQLxContainer : public ContainerRunner {
   static constexpr std::string_view kReadyMessage = "";
 };
 
-class PostgreSQLTraceTest : public testing::SocketTraceBPFTest {
+class PostgreSQLTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
   PostgreSQLTraceTest() {
     const char kCreateNetCmd[] = "docker network create --driver bridge pg-net";
@@ -99,7 +99,8 @@ TEST_F(PostgreSQLTraceTest, SelectQuery) {
               StrEq("CREATE TABLE"));
 }
 
-class PostgreSQLTraceGoSQLxTest : public testing::SocketTraceBPFTest {
+class PostgreSQLTraceGoSQLxTest
+    : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
   PostgreSQLTraceGoSQLxTest() {
     PL_CHECK_OK(pgsql_container_.Run(150, {"--env=POSTGRES_PASSWORD=docker"}));

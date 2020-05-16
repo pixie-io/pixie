@@ -45,7 +45,8 @@ class CassandraContainer : public ContainerRunner {
   static constexpr std::string_view kCassandraReadyMessage = "DSE startup complete.";
 };
 
-class CQLTraceTest : public SocketTraceBPFTest {
+// CQLTraceTest runs with both server and client-side tracing enabled.
+class CQLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ true> {
  protected:
   CQLTraceTest() {
     // Run the cassandra server.
@@ -413,13 +414,16 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
     const std::vector<size_t> target_record_indices =
         FindRecordIdxMatchesPid(record_batch, kCQLUPIDIdx, client_pid);
 
-    // For Debug:
     for (const auto& idx : target_record_indices) {
       uint32_t pid = record_batch[kCQLUPIDIdx]->Get<types::UInt128Value>(idx).High64();
       int64_t req_op = record_batch[kCQLReqOp]->Get<types::Int64Value>(idx).val;
       std::string req_body = record_batch[kCQLReqBody]->Get<types::StringValue>(idx);
       std::string resp_body = record_batch[kCQLRespBody]->Get<types::StringValue>(idx);
+      int64_t trace_role = record_batch[kCQLTraceRoleIdx]->Get<types::Int64Value>(idx).val;
+
       VLOG(1) << absl::Substitute("$0 $1 $2 $3", pid, req_op, req_body, resp_body);
+
+      EXPECT_EQ(trace_role, static_cast<int>(EndpointRole::kRoleClient));
     }
 
     std::vector<cass::Record> records = ToRecordVector(record_batch, target_record_indices);
@@ -439,13 +443,16 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
     const std::vector<size_t> target_record_indices =
         FindRecordIdxMatchesPid(record_batch, kCQLUPIDIdx, container_.process_pid());
 
-    // For Debug:
     for (const auto& idx : target_record_indices) {
       uint32_t pid = record_batch[kCQLUPIDIdx]->Get<types::UInt128Value>(idx).High64();
       int64_t req_op = record_batch[kCQLReqOp]->Get<types::Int64Value>(idx).val;
       std::string req_body = record_batch[kCQLReqBody]->Get<types::StringValue>(idx);
       std::string resp_body = record_batch[kCQLRespBody]->Get<types::StringValue>(idx);
+      int64_t trace_role = record_batch[kCQLTraceRoleIdx]->Get<types::Int64Value>(idx).val;
+
       VLOG(1) << absl::Substitute("$0 $1 $2 $3", pid, req_op, req_body, resp_body);
+
+      EXPECT_EQ(trace_role, static_cast<int>(EndpointRole::kRoleServer));
     }
 
     std::vector<cass::Record> records = ToRecordVector(record_batch, target_record_indices);

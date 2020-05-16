@@ -51,7 +51,7 @@ class NginxContainer : public ContainerRunner {
   static constexpr std::string_view kNginxReadyMessage = "";
 };
 
-class OpenSSLTraceTest : public SocketTraceBPFTest {
+class OpenSSLTraceTest : public SocketTraceBPFTest</* TClientSideTracing */ false> {
  protected:
   OpenSSLTraceTest() {
     // Run the nginx HTTPS server.

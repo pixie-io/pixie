@@ -29,7 +29,7 @@ using ::testing::MatchesRegex;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
-class GoHTTPTraceTest : public testing::SocketTraceBPFTest {
+class GoHTTPTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false> {
  protected:
   GoHTTPTraceTest() : SocketTraceBPFTest() {}
 
@@ -85,10 +85,15 @@ TEST_F(GoHTTPTraceTest, RequestAndResponse) {
   EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
-
   const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
+
+  // By default, we do not trace the client.
+  EXPECT_THAT(testing::FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, c_.child_pid()),
+              IsEmpty());
+
+  // We do expect to trace the server.
   const std::vector<size_t> target_record_indices =
-      testing::FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, c_.child_pid());
+      testing::FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, s_.child_pid());
   ASSERT_THAT(target_record_indices, SizeIs(1));
 
   const size_t target_record_idx = target_record_indices.front();
@@ -105,10 +110,13 @@ TEST_F(GoHTTPTraceTest, RequestAndResponse) {
       std::string(record_batch[kHTTPRemoteAddrIdx]->Get<types::StringValue>(target_record_idx)),
       // On IPv6 host, localhost is resolved to ::1.
       AnyOf(HasSubstr("127.0.0.1"), HasSubstr("::1")));
-  EXPECT_EQ(s_port_,
-            record_batch[kHTTPRemotePortIdx]->Get<types::Int64Value>(target_record_idx).val);
   EXPECT_THAT(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(target_record_idx),
               StrEq(absl::StrCat(R"({"greeter":"Hello PixieLabs!"})", "\n")));
+  // This test currently performs client-side tracing because of the cluster CIDR in
+  // socket_trace_bpf_test_fixture.h.
+  EXPECT_EQ(record_batch[kHTTPTraceRoleIdx]->Get<types::Int64Value>(target_record_idx).val,
+            static_cast<int>(EndpointRole::kRoleServer));
+  EXPECT_EQ(record_batch[kHTTPRespBodySizeIdx]->Get<types::Int64Value>(target_record_idx).val, 31);
 }
 
 struct TraceRoleTestParam {
@@ -132,8 +140,8 @@ TEST_P(TraceRoleTest, VerifyRecordsCount) {
   EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
-
   const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
+
   const std::vector<size_t> client_record_ids =
       testing::FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, c_.child_pid());
   EXPECT_THAT(client_record_ids, SizeIs(param.client_records_count));
@@ -144,7 +152,7 @@ TEST_P(TraceRoleTest, VerifyRecordsCount) {
 
 INSTANTIATE_TEST_SUITE_P(AllTraceRoles, TraceRoleTest,
                          ::testing::Values(TraceRoleTestParam{kRoleUnknown, 0, 0},
-                                           TraceRoleTestParam{kRoleClient, 1, 0}));
+                                           TraceRoleTestParam{kRoleServer, 0, 1}));
 
 // TODO(yzhao): Trace role only takes effect in BPF. With user-space filtering, i.e., intra-cluster
 // events are discarded, this test no longer works for kRoleServer and kRoleAll. Add test for those
