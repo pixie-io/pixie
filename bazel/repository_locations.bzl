@@ -11,6 +11,15 @@ REPOSITORY_LOCATIONS = dict(
             "https://github.com/bazelbuild/rules_go/releases/download/v0.21.3/rules_go-v0.21.3.tar.gz",
         ],
     ),
+    # TODO(oazizi): Update io_bazel_rules to the following. Still hitting some snags.
+    #    io_bazel_rules_go = dict(
+    #        sha256 = "6a68e269802911fa419abb940c850734086869d7fe9bc8e12aaf60a09641c818",
+    #        urls = [
+    #            "https://mirror.bazel.build/github.com/bazelbuild/rules_go" +
+    #            "/releases/download/v0.23.0/rules_go-v0.23.0.tar.gz",
+    #            "https://github.com/bazelbuild/rules_go/releases/download/v0.23.0/rules_go-v0.23.0.tar.gz",
+    #        ],
+    #    ),
     io_bazel_rules_k8s = dict(
         sha256 = "cc75cf0d86312e1327d226e980efd3599704e01099b58b3c2fc4efe5e321fcd9",
         strip_prefix = "rules_k8s-0.3.1",
@@ -52,9 +61,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/google/googletest/archive/release-1.10.0.tar.gz"],
     ),
     com_github_grpc_grpc = dict(
-        sha256 = "2fcb7f1ab160d6fd3aaade64520be3e5446fc4c6fa7ba6581afdc4e26094bd81",
-        strip_prefix = "grpc-1.26.0",
-        urls = ["https://github.com/grpc/grpc/archive/v1.26.0.tar.gz"],
+        sha256 = "4cbce7f708917b6e58b631c24c59fe720acc8fef5f959df9a58cdf9558d0a79b",
+        strip_prefix = "grpc-1.28.1",
+        urls = ["https://github.com/grpc/grpc/archive/v1.28.1.tar.gz"],
     ),
     com_google_boringssl = dict(
         sha256 = "781fa39693ec2984c71213cd633e9f6589eaaed75e3a9ac413237edec96fd3b9",
