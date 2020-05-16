@@ -1,5 +1,7 @@
 #include "src/stirling/connection_stats.h"
 
+#include <memory>
+
 #include <absl/container/flat_hash_map.h>
 
 #include "src/common/testing/testing.h"
@@ -101,6 +103,23 @@ TEST_F(ConnectionStatsTest, ClientSizeAggregationRecord) {
   EXPECT_THAT(conn_stats_.agg_stats(),
               ElementsAre(Pair(AggKeyIs(1, kProtocolHTTP, kRoleClient, "1.1.1.1"),
                                StatsIs(1, 0, 24690, 24690))));
+
+  auto data_event_cpy = std::make_unique<SocketDataEvent>(data_event);
+  // This changes tracker's traffic class to be consistent with conn_stats_.
+  tracker.AddDataEvent(std::move(data_event_cpy));
+
+  conn_stats_.AddConnCloseEvent(tracker);
+  // Tests that after receiving conn close event for a connection, another same close event wont
+  // increment the connection.
+  EXPECT_THAT(conn_stats_.agg_stats(),
+              ElementsAre(Pair(AggKeyIs(1, kProtocolHTTP, kRoleClient, "1.1.1.1"),
+                               StatsIs(1, 1, 24690, 24690))));
+
+  conn_stats_.AddConnCloseEvent(tracker);
+  // The conn_close is not incremented.
+  EXPECT_THAT(conn_stats_.agg_stats(),
+              ElementsAre(Pair(AggKeyIs(1, kProtocolHTTP, kRoleClient, "1.1.1.1"),
+                               StatsIs(1, 1, 24690, 24690))));
 }
 
 }  // namespace stirling

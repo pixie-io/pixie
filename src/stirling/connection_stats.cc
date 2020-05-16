@@ -42,11 +42,14 @@ void ConnectionStats::AddConnCloseEvent(const ConnectionTracker& tracker) {
   const std::string raddr = tracker.remote_endpoint().AddrStr();
   const int rport = tracker.remote_endpoint().port;
 
-  if (!known_conns_.contains(conn_id)) {
+  auto iter = known_conns_.find(conn_id);
+  if (iter == known_conns_.end()) {
     // This can happen if we did not see the open event, and there is no data.
     VLOG(1) << absl::Substitute("Ignoring connection close [conn_id=$0]", ToString(conn_id));
     return;
   }
+  // Such that a connection can only be closed once.
+  known_conns_.erase(iter);
   RecordConn(conn_id.upid, tcls, raddr, rport, /*is_open*/ false);
 }
 
