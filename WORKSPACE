@@ -20,6 +20,13 @@ load("//bazel:repositories.bzl", "pl_deps")
 # Install Pixie Labs Dependencies.
 pl_deps()
 
+# Order is important. Try to go from most basic/primitive to higher level packages.
+# - protobuf_deps
+# - grpc_deps (must come after protobuf_deps)
+# - go_rules_dependencies
+# - apple_rules_dependencies (must come after grpc_deps)
+# ...
+
 # This has to be after pl_deps(), as the bazel_skylib declared inside protobuf_deps() is older than
 # what is needed in our repo. But bazel will pick this older version if protobuf_deps() is called
 # before pl_deps(). See https://github.com/bazelbuild/bazel/issues/6664.
@@ -32,36 +39,15 @@ load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 protobuf_deps()
 
-# The go dependency does not work if loaded during our normal pl_workspace setup.
-# moving it here fixes the errors.
+load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
+
+grpc_deps()
+
 load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 
 go_rules_dependencies()
 
 go_register_toolchains(go_version = "1.13.8")
-
-load("//bazel:pl_workspace.bzl", "pl_workspace_setup")
-
-pl_workspace_setup()
-
-load("//bazel:gogo.bzl", "gogo_grpc_proto")
-load("@rules_foreign_cc//:workspace_definitions.bzl", "rules_foreign_cc_dependencies")
-
-rules_foreign_cc_dependencies()
-
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
-
-gogo_grpc_proto(name = "gogo_grpc_proto")
-
-load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
-
-container_pull(
-    name = "openresty",
-    # Stretch image.
-    digest = "sha256:1702786dcbb5b6b6d096f5e56b2153d8b508e62396fd4324367913b6645bb0b8",
-    registry = "index.docker.io",
-    repository = "openresty/openresty",
-)
 
 # These dependencies are needed by GRPC.
 load("@build_bazel_rules_apple//apple:repositories.bzl", "apple_rules_dependencies")
@@ -72,7 +58,27 @@ load("@build_bazel_apple_support//lib:repositories.bzl", "apple_support_dependen
 
 apple_support_dependencies()
 
-gazelle_dependencies()
+load("//bazel:pl_workspace.bzl", "pl_workspace_setup")
+
+pl_workspace_setup()
+
+load("@com_github_grpc_grpc//bazel:grpc_extra_deps.bzl", "grpc_extra_deps")
+
+grpc_extra_deps()
+
+load("@rules_foreign_cc//:workspace_definitions.bzl", "rules_foreign_cc_dependencies")
+
+rules_foreign_cc_dependencies()
+
+load("//bazel:gogo.bzl", "gogo_grpc_proto")
+
+gogo_grpc_proto(name = "gogo_grpc_proto")
+
+##########################################################
+# Manual GO dependencies (those we patch)
+##########################################################
+
+load("@bazel_gazelle//:deps.bzl", "go_repository")
 
 go_repository(
     name = "com_github_fluent_fluent_bit_go",
@@ -1517,15 +1523,15 @@ go_repository(
 
 go_repository(
     name = "com_github_ernesto_jimenez_gogen",
-    importpath = "github.com/ernesto-jimenez/gogen",
     commit = "d7d4131e6607813977e78297a6060f360f056a97",
+    importpath = "github.com/ernesto-jimenez/gogen",
 )
 
 go_repository(
     name = "com_github_serenize_snaker",
     importpath = "github.com/serenize/snaker",
-    version = "v0.0.0-20171204205717-a683aaf2d516",
     sum = "h1:ofR1ZdrNSkiWcMsRrubK9tb2/SlZVWttAfqUjJi6QYc=",
+    version = "v0.0.0-20171204205717-a683aaf2d516",
 )
 
 go_repository(
@@ -1768,8 +1774,8 @@ go_repository(
 
 go_repository(
     name = "com_github_hpcloud_tail",
-    importpath = "github.com/hpcloud/tail",
     commit = "a1dbeea552b7c8df4b542c66073e393de198a800",
+    importpath = "github.com/hpcloud/tail",
 )
 
 go_repository(

@@ -1,6 +1,5 @@
-load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 load("@com_github_bazelbuild_buildtools//buildifier:deps.bzl", "buildifier_dependencies")
-load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
 load(
     "@io_bazel_rules_docker//repositories:repositories.bzl",
     container_repositories = "repositories",
@@ -52,6 +51,14 @@ def _docker_images_setup():
         digest = "sha256:204a9a8e65061b10b92ad361dd6f406248404fe60efd5d6a8f2595f18bb37aad",
         registry = "index.docker.io",
         repository = "library/nginx",
+    )
+
+    container_pull(
+        name = "openresty",
+        # Stretch image.
+        digest = "sha256:1702786dcbb5b6b6d096f5e56b2153d8b508e62396fd4324367913b6645bb0b8",
+        registry = "index.docker.io",
+        repository = "openresty/openresty",
     )
 
     container_pull(
@@ -169,7 +176,6 @@ bazel_version_repository = repository_rule(
 def pl_workspace_setup():
     gazelle_dependencies()
     buildifier_dependencies()
-    grpc_deps()
 
     bazel_version_repository(
         name = "bazel_version",
