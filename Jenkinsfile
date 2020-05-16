@@ -101,12 +101,8 @@ DEV_DOCKER_IMAGE_EXTRAS = 'pl-dev-infra/dev_image_with_extras'
 GCLOUD_DOCKER_IMAGE = 'google/cloud-sdk:287.0.0'
 GCS_STASH_BUCKET='px-jenkins-build-temp'
 
-
-K8S_STAGING_CLUSTER='https://pixie-cloud-prod-cluster.internal.corp.pixielabs.ai'
-K8S_STAGING_CREDS='pixie-cloud-staging'
-
-K8S_PROD_CLUSTER='https://pixie-cloud-prod-cluster.internal.corp.pixielabs.ai'
-K8S_PROD_CREDS='pixie-cloud-prod'
+K8S_PROD_CLUSTER='https://cloud-prod.internal.corp.pixielabs.ai'
+K8S_PROD_CREDS='cloud-staging'
 
 // This variable store the dev docker image that we need to parse before running any docker steps.
 devDockerImageWithTag = ''
@@ -120,6 +116,8 @@ isMasterRun =  (env.JOB_NAME == "pixielabs-master")
 isNightlyTestRegressionRun = (env.JOB_NAME == "pixielabs-master-nightly-test-regression")
 isCLIBuildRun =  env.JOB_NAME.startsWith("pixielabs-master-cli-release-build/")
 isVizierBuildRun = env.JOB_NAME.startsWith("pixielabs-master-vizier-release-build/")
+isCloudStagingBuildRun = env.JOB_NAME.startsWith("pixielabs-master-cloud-staging-build/")
+isCloudProdBuildRun = env.JOB_NAME.startsWith("pixielabs-master-cloud-release-build/")
 
 // TODO(zasgar): Fix the coverage job which is broken due to GCC upgrade.
 runCoverageJob = false; // isMasterRun
@@ -846,7 +844,7 @@ def  buildScriptForCLIRelease = {
         }
       }
       stage('Update versions database (staging)') {
-        updateVersionsDB(K8S_STAGING_CREDS, K8S_STAGING_CLUSTER, "plc-staging")
+        updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, "plc-staging")
       }
       stage('Update versions database (prod)') {
         updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, "plc")
@@ -880,10 +878,69 @@ def  buildScriptForVizierRelease = {
         }
       }
       stage('Update versions database (staging)') {
-        updateVersionsDB(K8S_STAGING_CREDS, K8S_STAGING_CLUSTER, "plc-staging")
+        updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, "plc-staging")
       }
       stage('Update versions database (prod)') {
         updateVersionsDB(K8S_PROD_CREDS, K8S_PROD_CLUSTER, "plc")
+      }
+    }
+    catch(err) {
+      currentBuild.result = 'FAILURE'
+      echo "Exception thrown:\n ${err}"
+      echo "Stacktrace:"
+      err.printStackTrace()
+    }
+
+    postBuildActions()
+  }
+}
+
+
+def deployCloud(String profile, String namespace) {
+  WithSourceCodeFatalError {
+    dockerStep('', devDockerImageExtrasWithTag) {
+      withKubeConfig([credentialsId: K8S_PROD_CREDS,
+                    serverUrl: K8S_PROD_CLUSTER, namespace: namespace]) {
+        sh "skaffold build -q -o '{{json .}}' -p ${profile} -f skaffold/skaffold_cloud.yaml > manifest_internal.json"
+        sh "skaffold deploy -p ${profile} --build-artifacts=manifest_internal.json -f skaffold/skaffold_cloud.yaml"
+      }
+    }
+  }
+}
+
+def buildScriptForCloudStagingRelease = {
+  node(WORKER_NODE) {
+    currentBuild.result = 'SUCCESS'
+    deleteDir()
+    try {
+      stage('Checkout code') {
+        checkoutAndInitialize()
+      }
+      stage('Build & Push Artifacts') {
+        deployCloud('staging', 'plc-staging')
+      }
+    }
+    catch(err) {
+      currentBuild.result = 'FAILURE'
+      echo "Exception thrown:\n ${err}"
+      echo "Stacktrace:"
+      err.printStackTrace()
+    }
+
+    postBuildActions()
+  }
+}
+
+def buildScriptForCloudProdRelease = {
+  node(WORKER_NODE) {
+    currentBuild.result = 'SUCCESS'
+    deleteDir()
+    try {
+      stage('Checkout code') {
+        checkoutAndInitialize()
+      }
+      stage('Build & Push Artifacts') {
+        deployCloud('prod', 'plc')
       }
     }
     catch(err) {
@@ -903,6 +960,10 @@ if(isNightlyTestRegressionRun) {
   buildScriptForCLIRelease()
 } else if(isVizierBuildRun) {
   buildScriptForVizierRelease()
+} else if (isCloudStagingBuildRun) {
+  buildScriptForCloudStagingRelease()
+} else if (isCloudProdBuildRun) {
+  buildScriptForCloudProdRelease()
 } else {
   buildScriptForCommits()
 }

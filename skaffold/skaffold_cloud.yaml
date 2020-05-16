@@ -100,9 +100,8 @@ profiles:
     value:
     - --compilation_mode=opt
   - op: replace
-    path: /deploy/kustomize
-    value:
-      path: k8s/cloud/staging
+    path: /deploy/kustomize/paths
+    value: [k8s/cloud/staging]
   activation:
   - env: PL_BUILD_TYPE=staging
 - name: prod_old
@@ -112,9 +111,8 @@ profiles:
     value:
     - --compilation_mode=opt
   - op: replace
-    path: /deploy/kustomize
-    value:
-      path: k8s/cloud/prod
+    path: /deploy/kustomize/paths
+    value: [k8s/cloud/prod]
   activation:
   - env: PL_BUILD_TYPE=prod_old
 - name: prod
@@ -125,9 +123,8 @@ profiles:
     - --stamp
     - --compilation_mode=opt
   - op: replace
-    path: /deploy/kustomize
-    value:
-      path: k8s/cloud/prod
+    path: /deploy/kustomize/paths
+    value: [k8s/cloud/prod]
   - op: add
     path: /build/tagPolicy
     value:
