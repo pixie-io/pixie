@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Status } from 'types/generated/vizier_pb';
 
-import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 export type VizierQueryErrorType = 'script' | 'vis' | 'execution' | 'server';
 

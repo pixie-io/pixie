@@ -1,5 +1,3 @@
-import { VisualizationSpecMap } from 'components/vega/spec';
-
 import { Vis, Widget } from './vis';
 
 export interface ChartPosition {

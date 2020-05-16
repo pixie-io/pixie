@@ -1,10 +1,6 @@
 import './vizier.scss';
 
-import {
-    CloudClientInterface, VizierGQLClient, VizierGQLClientContext,
-} from 'common/vizier-gql-client';
 import { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
-import { CloudClientContext } from 'containers/App/context';
 import { ScriptsContextProvider } from 'containers/App/scripts-context';
 import { Editor } from 'containers/editor';
 import LiveView from 'containers/live/live';
@@ -13,7 +9,7 @@ import * as React from 'react';
 import { Redirect, Route, Switch } from 'react-router-dom';
 
 import { useApolloClient, useQuery } from '@apollo/react-hooks';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { createStyles, makeStyles } from '@material-ui/core/styles';
 
 import { AgentDisplay } from './agent-display';
 import { ClusterInstructions, DeployInstructions } from './deploy-instructions';
@@ -58,12 +54,7 @@ const GET_USER = gql`
 }
 `;
 
-const PATH_TO_HEADER_TITLE = {
-  '/vizier/agents': 'Agents',
-  '/vizier/query': 'Query',
-};
-
-const useStyles = makeStyles((theme: Theme) => {
+const useStyles = makeStyles(() => {
   return createStyles({
     banner: {
       position: 'absolute',

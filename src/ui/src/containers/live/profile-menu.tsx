@@ -1,7 +1,5 @@
 import DocsIcon from 'components/icons/docs';
 import LogoutIcon from 'components/icons/logout';
-import PlayIcon from 'components/icons/play';
-import SettingsIcon from 'components/icons/settings';
 import { DOMAIN_NAME } from 'containers/constants';
 import gql from 'graphql-tag';
 import * as React from 'react';
@@ -74,7 +72,7 @@ const StyledListItemText = withStyles((theme: Theme) =>
   }),
 )(ListItemText);
 
-const StyledListItemIcon = withStyles((theme: Theme) =>
+const StyledListItemIcon = withStyles(() =>
   createStyles({
     root: {
       minWidth: '30px',

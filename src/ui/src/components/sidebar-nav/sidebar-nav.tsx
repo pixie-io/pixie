@@ -1,8 +1,8 @@
 import './sidebar-nav.scss';
 
 import * as React from 'react';
-import {Dropdown} from 'react-bootstrap';
-import {Link} from 'react-router-dom';
+import { Dropdown } from 'react-bootstrap';
+import { Link } from 'react-router-dom';
 
 interface StringMap {
   [s: string]: string;
@@ -80,7 +80,7 @@ export class SidebarMenuItem extends React.Component<SidebarMenuItemProps, {}> {
 }
 
 export class SidebarItem extends React.Component<SidebarNavItem, {}> {
-  handleClick(e) {
+  handleClick() {
     window.location.href = this.props.link;
   }
 

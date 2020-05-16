@@ -1,6 +1,6 @@
 import { Table } from 'common/vizier-grpc-client';
 import * as React from 'react';
-import { DiscreteColorLegend, LineSeries, XAxis, XYPlot } from 'react-vis';
+import { LineSeries, XYPlot } from 'react-vis';
 import { DataType } from 'types/generated/vizier_pb';
 import withAutoSizer from 'utils/autosizer';
 import { columnFromProto } from 'utils/result-data-utils';
@@ -24,7 +24,7 @@ export function parseData(table: Table): LineSeries[] {
     let timeColName = '';
     const relation = table.relation.getColumnsList();
     const columns = new Map<string, any[]>();
-    relation.forEach((col, i) => {
+    relation.forEach((col) => {
       const type = col.getColumnType();
       const name = col.getColumnName();
       if (!SUPPORTED_TYPES.has(type)) {

@@ -1,7 +1,6 @@
 import * as moment from 'moment';
 import * as numeral from 'numeral';
 import * as React from 'react';
-import { AutoSizer } from 'react-virtualized';
 import { DiscreteColorLegend, XAxis, YAxis } from 'react-vis';
 
 export interface LineSeriesData {

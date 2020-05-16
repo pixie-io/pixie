@@ -2,7 +2,7 @@ import { SCRIPT_HISTORY } from 'common/local-gql';
 import { Accordion, AccordionList } from 'components/accordion';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
-import { GetPxScripts, Script } from 'utils/script-bundle';
+import { Script } from 'utils/script-bundle';
 
 import { useQuery } from '@apollo/react-hooks';
 

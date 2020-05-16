@@ -73,7 +73,7 @@ function RowRenderer(props: TableRowProps) {
       key={'row-' + props.key}
       style={props.style}
     >
-      {defaultTableRowRenderer({...props, key: '', style: null})}
+      {defaultTableRowRenderer({ ...props, key: '', style: null })}
       {expandedContent}
     </div>
   );
@@ -161,12 +161,8 @@ export class ScrollableTable extends React.Component<ScrollableTableProps, Scrol
   }
 
   headerRenderer = ({
-    columnData,
     dataKey,
-    disableSort,
     label,
-    sortBy,
-    sortDirection,
   }) => {
     return (
       <React.Fragment key={dataKey}>

@@ -1,8 +1,7 @@
 import { VizierQueryError } from 'common/errors';
 import { VizierQueryArg, VizierQueryFunc } from 'common/vizier-grpc-client';
 
-import { ChartDisplay } from './convert-to-vega-spec';
-import { ChartPosition, DEFAULT_HEIGHT, GRID_WIDTH } from './layout';
+import { ChartPosition } from './layout';
 
 // TODO(nserrino): Replace these with proto when the UI receives protobuf from the script manager
 // instead of json from the json bundle.
@@ -131,7 +130,7 @@ export function getQueryFuncs(vis: Vis, variableValues: { [key: string]: string 
     vis.globalFuncs = [];
   }
 
-  const globalFuncs = vis.globalFuncs.map((globalFunc, i) => {
+  const globalFuncs = vis.globalFuncs.map((globalFunc) => {
     return {
       name: globalFunc.func.name,
       // There shouldn't be any confusion over this name, outputName is a required field

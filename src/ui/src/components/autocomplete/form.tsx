@@ -1,9 +1,8 @@
 import * as React from 'react';
 
-import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 const useStyles = makeStyles((theme: Theme) => {
-  // TODO(malthus): Make use of the theme styles.
   return createStyles({
     form: {
       ...theme.typography.h6,
@@ -68,7 +67,7 @@ const FormInput: React.FC<FormInputProps> = ({
         <FormField
           key={field}
           field={field}
-          value={form[field]}
+          value={value}
           onValueChange={onValueChange}
           dispatch={dispatch}
           focus={focusIndex === i} />

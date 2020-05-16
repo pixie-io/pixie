@@ -1,12 +1,12 @@
-import {Table} from 'common/vizier-grpc-client';
-import {CellAlignment, DataTable, SortState} from 'components/data-table';
+import { Table } from 'common/vizier-grpc-client';
+import { CellAlignment, DataTable, SortState } from 'components/data-table';
 import * as React from 'react';
-import {DataType} from 'types/generated/vizier_pb';
-import {formatFloat64Data, formatInt64Data, JSONData} from 'utils/format-data';
+import { DataType } from 'types/generated/vizier_pb';
+import { formatFloat64Data, formatInt64Data, JSONData } from 'utils/format-data';
 import noop from 'utils/noop';
-import {dataFromProto} from 'utils/result-data-utils';
+import { dataFromProto } from 'utils/result-data-utils';
 
-import {createStyles, makeStyles, Theme, withStyles} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 const AlignmentMap = new Map<DataType, CellAlignment>(
   [

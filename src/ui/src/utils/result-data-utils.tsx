@@ -1,8 +1,8 @@
 import * as _ from 'lodash';
-import {Column, DataType, Relation, RowBatchData} from 'types/generated/vizier_pb';
+import { Column, DataType, Relation, RowBatchData } from 'types/generated/vizier_pb';
 
-import {formatUInt128} from './format-data';
-import {nanoToMilliSeconds} from './time';
+import { formatUInt128 } from './format-data';
+import { nanoToMilliSeconds } from './time';
 
 export function ResultsToCsv(results) {
   const jsonResults = JSON.parse(results);
@@ -54,7 +54,7 @@ export function columnFromProto(column: Column): any[] {
   throw (new Error('Unsupported data type: ' + column.getColDataCase()));
 }
 
-function defaultRenderers(type: DataType) {
+function defaultRenderers() {
   return (d) => d;
 }
 

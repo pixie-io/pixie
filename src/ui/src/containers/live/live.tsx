@@ -2,16 +2,13 @@ import { scrollbarStyles } from 'common/mui-theme';
 import EditIcon from 'components/icons/edit';
 import PixieCommandIcon from 'components/icons/pixie-command';
 import PixieLogo from 'components/icons/pixie-logo';
-import LazyPanel from 'components/lazy-panel';
 import * as React from 'react';
 
 import Drawer from '@material-ui/core/Drawer';
 import IconButton from '@material-ui/core/IconButton';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
-import MenuIcon from '@material-ui/icons/Menu';
 import MoveIcon from '@material-ui/icons/OpenWith';
-import ShareIcon from '@material-ui/icons/Share';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 
 import Canvas from './canvas';

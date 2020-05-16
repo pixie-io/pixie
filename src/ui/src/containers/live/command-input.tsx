@@ -5,7 +5,7 @@ import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
 import { Script } from 'utils/script-bundle';
 
-import { createStyles, makeStyles, Theme } from '@material-ui/core';
+import { createStyles, makeStyles } from '@material-ui/core';
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 
@@ -17,7 +17,7 @@ interface CommandInputProps {
   onClose: () => void;
 }
 
-const useStyles = makeStyles((theme: Theme) =>
+const useStyles = makeStyles(() =>
   createStyles({
     card: {
       position: 'absolute',

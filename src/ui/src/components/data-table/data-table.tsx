@@ -1,12 +1,10 @@
 import clsx from 'clsx';
 import * as React from 'react';
-import {
-    CellMeasurer, CellMeasurerCache, ColumnSizer, GridCellRenderer, MultiGrid,
-} from 'react-virtualized';
-import withAutoSizer, {WithAutoSizerProps} from 'utils/autosizer';
+import { CellMeasurer, CellMeasurerCache, GridCellRenderer, MultiGrid } from 'react-virtualized';
+import withAutoSizer, { WithAutoSizerProps } from 'utils/autosizer';
 import noop from 'utils/noop';
 
-import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/styles';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 

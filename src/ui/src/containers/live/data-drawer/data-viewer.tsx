@@ -1,4 +1,3 @@
-import { VizierErrorDetails } from 'common/errors';
 import LazyPanel from 'components/lazy-panel';
 import { VizierDataTableWithDetails } from 'components/vizier-data-table/vizier-data-table';
 import { ResultsContext } from 'containers/live/context/results-context';
@@ -58,7 +57,7 @@ const StyledTab = withStyles((theme: Theme) =>
   }),
 )(Tab);
 
-const useStyles = makeStyles((theme: Theme) =>
+const useStyles = makeStyles(() =>
   createStyles({
     root: {
       display: 'flex',

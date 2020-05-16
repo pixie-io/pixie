@@ -1,14 +1,13 @@
 import './editor.scss';
 
 import { MUTATE_DRAWER_OPENED, QUERY_DRAWER_OPENED } from 'common/local-gql';
-import gql from 'graphql-tag';
 import * as closeIcon from 'images/icons/cross.svg';
 import * as newTabIcon from 'images/icons/new-tab.svg';
 import * as React from 'react';
-import { Button, Nav, Tab, Tabs } from 'react-bootstrap';
+import { Nav, Tab } from 'react-bootstrap';
 import * as uuid from 'uuid/v1';
 
-import { ApolloProvider, useMutation, useQuery } from '@apollo/react-hooks';
+import { useMutation, useQuery } from '@apollo/react-hooks';
 
 import { Drawer } from '../../components/drawer/drawer';
 import { saveCodeToStorage } from './code-utils';

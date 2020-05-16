@@ -2,7 +2,7 @@ import { ResultsContext } from 'containers/live/context/results-context';
 import * as numeral from 'numeral';
 import * as React from 'react';
 
-import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 function nanoSecDisplay(ns: number) {
   const ms = ns / 1e6;

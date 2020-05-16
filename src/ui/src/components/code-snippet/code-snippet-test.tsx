@@ -1,9 +1,8 @@
-import {mount} from 'enzyme';
+import { mount } from 'enzyme';
 import * as React from 'react';
-import {Tooltip} from 'react-bootstrap';
 import Highlight from 'react-highlight';
 
-import {CodeSnippet} from './code-snippet';
+import { CodeSnippet } from './code-snippet';
 
 describe.skip('<CodeSnippet/> test', () => {
   it('should show correct contents', () => {

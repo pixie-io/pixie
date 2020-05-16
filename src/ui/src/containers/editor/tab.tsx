@@ -1,19 +1,19 @@
 import './tab.scss';
 
-import {APPEND_HISTORY} from 'common/local-gql';
-import {VizierQueryResult} from 'common/vizier-grpc-client';
+import { APPEND_HISTORY } from 'common/local-gql';
+import { VizierQueryResult } from 'common/vizier-grpc-client';
 import VizierGRPCClientContext from 'common/vizier-grpc-client-context';
-import {CodeEditor} from 'components/code-editor';
+import { CodeEditor } from 'components/code-editor';
 import * as React from 'react';
-import {Button, Nav, Tab} from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 import Split from 'react-split';
 import analytics from 'utils/analytics';
 
-import {useMutation} from '@apollo/react-hooks';
+import { useMutation } from '@apollo/react-hooks';
 
-import {getCodeFromStorage, saveCodeToStorage} from './code-utils';
-import {EditorTabInfo} from './editor';
-import {ConsoleResults} from './results';
+import { getCodeFromStorage, saveCodeToStorage } from './code-utils';
+import { EditorTabInfo } from './editor';
+import { ConsoleResults } from './results';
 
 const DEFAULT_CODE = '# Enter Query Here\n';
 

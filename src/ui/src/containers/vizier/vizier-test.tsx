@@ -1,7 +1,7 @@
 import { mount } from 'enzyme';
 import * as React from 'react';
 import { Navbar } from 'react-bootstrap';
-import { BrowserRouter as Router, Route } from 'react-router-dom';
+import { BrowserRouter as Router } from 'react-router-dom';
 
 import { MockedProvider } from '@apollo/react-testing';
 
@@ -15,12 +15,8 @@ jest.mock('./deploy-instructions', () => {
 
 // Mock CodeMirror component because it does not mount properly in Jest.
 jest.mock('react-codemirror', () => () => <div id='mock-codemirror'></div>);
-jest.mock('common/vizier-gql-client', () => ({}));
 
 const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
-const mockCloudClient = {
-  getClusterConnection: jest.fn(),
-};
 
 describe.skip('<VizierMain/> test', () => {
   it('should have sidebar if Vizier is connected', async () => {

@@ -1,8 +1,7 @@
-import {DialogBox} from 'components/dialog-box/dialog-box';
-import {shallow} from 'enzyme';
+import { shallow } from 'enzyme';
 import * as React from 'react';
 
-import {AuthComplete} from './auth-complete';
+import { AuthComplete } from './auth-complete';
 
 describe('<AuthSuccess/> test', () => {
   it('should show correct content when no errors', () => {

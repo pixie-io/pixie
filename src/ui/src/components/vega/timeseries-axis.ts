@@ -155,7 +155,7 @@ export function addPxTimeFormatExpression(vega) {
   }
   const domainFn = vega.expressionFunction('domain');
 
-  let currentWidth = 0;
+  //let currentWidth = 0;
   let labels = [];
 
   // Function call by labelExpr in the vega-lite config.
@@ -165,7 +165,7 @@ export function addPxTimeFormatExpression(vega) {
       // Subsequent calls of pxTimeFormat will use these results.
       labels =
         prepareLabels(domainFn('x', this), width, numTicks, separation, fontName, fontSize);
-      currentWidth = width;
+      // currentWidth = width;
       // } else if (currentWidth !== width) {
       // TODO(philkuz) how should we warn when this happens?
       // console.warn('widths different', 'width', width, 'currentWidth', currentWidth);

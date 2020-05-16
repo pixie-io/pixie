@@ -1,9 +1,9 @@
 import clsx from 'clsx';
 import * as React from 'react';
 
-import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
-import {Key} from './key';
+import { Key } from './key';
 
 const useStyles = makeStyles((theme: Theme) => {
   // TODO(malthus): Make use of the theme styles.
@@ -164,10 +164,7 @@ interface InputFormProps {
   form: FormField[];
 }
 
-export const FormInput: React.FC<InputFormProps> = ({
-  onInputChanged,
-  form,
-}) => {
+export const FormInput: React.FC<InputFormProps> = ({ form }) => {
   const classes = useStyles();
   const ref = React.useRef<HTMLTextAreaElement>(null);
   const [value, setValue] = React.useState<string>('');

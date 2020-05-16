@@ -2,10 +2,8 @@ import 'highlight.js/styles/github.css';
 import './code-snippet.scss';
 
 import * as copyImage from 'images/icons/copy.svg';
-import * as _ from 'lodash';
 import * as React from 'react';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
-import * as ReactDOM from 'react-dom';
 import Highlight from 'react-highlight';
 
 interface CodeSnippetProps {

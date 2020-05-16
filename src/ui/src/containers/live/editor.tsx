@@ -1,8 +1,6 @@
 import clsx from 'clsx';
-import * as ls from 'common/localstorage';
 import { CodeEditor } from 'components/code-editor';
 import LazyPanel from 'components/lazy-panel';
-import { parseSpecs } from 'components/vega/spec';
 import * as React from 'react';
 import Split from 'react-split';
 
@@ -15,7 +13,6 @@ import CloseIcon from '@material-ui/icons/Close';
 import { LayoutContext } from './context/layout-context';
 import { ScriptContext } from './context/script-context';
 import { VisContext } from './context/vis-context';
-import { parseVis } from './vis';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({

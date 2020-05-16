@@ -29,7 +29,7 @@ export class ContentBox extends React.Component<ContentBoxProps, ContentBoxState
   renderResizer() {
     return (
       <DraggableCore
-        onDrag={(event, { deltaX, deltaY }) => {
+        onDrag={(event, { deltaY }) => {
           this.setState({
             height: this.state.height + deltaY,
           });

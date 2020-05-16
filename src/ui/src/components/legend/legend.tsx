@@ -115,7 +115,7 @@ const Legend = React.memo((props: LegendProps) => {
   const classes = useStyles();
   const [currentPage, setCurrentPage] = React.useState<number>(0);
 
-  const handleRowLeftClick = React.useCallback((key: string, e: React.SyntheticEvent) => {
+  const handleRowLeftClick = React.useCallback((key: string) => {
     // Toggle selected series.
     if (_.includes(props.interactState.selectedSeries, key)) {
       props.setInteractState({
@@ -138,11 +138,11 @@ const Legend = React.memo((props: LegendProps) => {
     return false;
   }, [props.interactState]);
 
-  const handleRowHover = React.useCallback((key: string, e: React.SyntheticEvent) => {
+  const handleRowHover = React.useCallback((key: string) => {
     props.setInteractState({ ...props.interactState, hoveredSeries: key });
   }, [props.interactState]);
 
-  const handleRowLeave = React.useCallback((e: React.SyntheticEvent) => {
+  const handleRowLeave = React.useCallback(() => {
     props.setInteractState({ ...props.interactState, hoveredSeries: null });
   }, [props.interactState]);
 
@@ -191,7 +191,7 @@ const Legend = React.memo((props: LegendProps) => {
       };
 
       // Handle hover/selection styling.
-      const onMouseOver = (e) => handleRowHover(entry.key, e);
+      const onMouseOver = () => handleRowHover(entry.key);
       const styles: CSSProperties = {
         opacity: '1.0',
       };
@@ -208,7 +208,7 @@ const Legend = React.memo((props: LegendProps) => {
           className={classes.rowContainer}
           onMouseOver={onMouseOver}
           onMouseOut={handleRowLeave}
-          onClick={(e) => handleRowLeftClick(entry.key, e)}
+          onClick={() => handleRowLeftClick(entry.key)}
           onContextMenu={(e) => handleRowRightClick(entry.key, e)}
         >
           <div style={styles} className={classes.colorContainer}>
@@ -241,11 +241,11 @@ const Legend = React.memo((props: LegendProps) => {
     paddingLeft: `${leftPadding}px`,
   };
 
-  const handlePageBack = (e) => {
+  const handlePageBack = () => {
     setCurrentPage((page) => page - 1);
   };
 
-  const handlePageForward = (e) => {
+  const handlePageForward = () => {
     setCurrentPage((page) => page + 1);
   };
 

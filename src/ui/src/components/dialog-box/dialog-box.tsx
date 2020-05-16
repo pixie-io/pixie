@@ -1,7 +1,6 @@
 import './dialog-box.scss';
 
 import * as infoImage from 'images/new-logo.svg';
-import * as _ from 'lodash';
 import * as React from 'react';
 
 export interface DialogBoxProps {

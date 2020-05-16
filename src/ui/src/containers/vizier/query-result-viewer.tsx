@@ -7,35 +7,10 @@ import {
 } from 'components/table/scrollable-table';
 import * as numeral from 'numeral';
 import * as React from 'react';
-import {
-    Column, CompilerError, DataType, ErrorDetails, Relation, Status,
-} from 'types/generated/vizier_pb';
+import { DataType, Relation, Status } from 'types/generated/vizier_pb';
 import * as FormatData from 'utils/format-data';
 import { ParseCompilerErrors } from 'utils/parse-compiler-errors';
 import { dataFromProto } from 'utils/result-data-utils';
-
-// Converts UInt128 to UUID formatted string.
-function formatUInt128(high: string, low: string): string {
-  // TODO(zasgar/michelle): Revisit this to check and make sure endianness is correct.
-  // Each segment of the UUID is a hex value of 16 nibbles.
-  // Note: BigInt support only available in Chrome > 67, FF > 68.
-  const hexStrHigh = BigInt(high).toString(16).padStart(16, '0');
-  const hexStrLow = BigInt(low).toString(16).padStart(16, '0');
-
-  // Sample UUID: 123e4567-e89b-12d3-a456-426655440000.
-  // Format is 8-4-4-4-12.
-  let uuidStr = '';
-  uuidStr += hexStrHigh.substr(0, 8);
-  uuidStr += '-';
-  uuidStr += hexStrHigh.substr(8, 4);
-  uuidStr += '-';
-  uuidStr += hexStrHigh.substr(12, 4);
-  uuidStr += '-';
-  uuidStr += hexStrLow.substr(0, 4);
-  uuidStr += '-';
-  uuidStr += hexStrLow.substr(4);
-  return uuidStr;
-}
 
 // Formats int64 data, the input type is a string because JS does not
 // natively support 64-bit data.
@@ -188,7 +163,7 @@ function parseTable(table: Table): AutoSizedScrollableTableProps {
   // CSS.
   const colWidth = 600;
   const minColWidth = 200;
-  const columnInfo: TableColumnInfo[] = table.relation.getColumnsList().map((col, idx) => {
+  const columnInfo: TableColumnInfo[] = table.relation.getColumnsList().map((col) => {
     const colName = col.getColumnName();
     return {
       dataKey: colName,

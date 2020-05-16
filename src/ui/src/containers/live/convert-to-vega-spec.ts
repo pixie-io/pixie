@@ -12,7 +12,6 @@ import { DISPLAY_TYPE_KEY, WidgetDisplay } from './vis';
 const BAR_CHART_TYPE = 'pixielabs.ai/pl.vispb.BarChart';
 const VEGA_CHART_TYPE = 'pixielabs.ai/pl.vispb.VegaChart';
 const VEGA_LITE_V4 = 'https://vega.github.io/schema/vega-lite/v4.json';
-const VEGA_LITE_SCHEMA_SUBSTRING = 'vega.github.io/schema/vega-lite/';
 const VEGA_SCHEMA_SUBSTRING = 'vega.github.io/schema/vega/';
 const VEGA_SCHEMA = '$schema';
 const TIMESERIES_CHART_TYPE = 'pixielabs.ai/pl.vispb.TimeseriesChart';
@@ -434,7 +433,7 @@ function addExtrasForTimeseries(vegaSpec, display: TimeseriesDisplay, source: st
     };
   }
   const valueField: string = display.timeseries[0].value;
-  let newSpec = addHoverHandlersToVgSpec(vegaSpec, source, isStacked, pivotField, valueField);
+  let newSpec = addHoverHandlersToVgSpec(vegaSpec, source, pivotField, valueField);
   newSpec = addLegendSelectHandlersToVgSpec(newSpec, pivotField, valueField);
   return {
     spec: newSpec,
@@ -568,14 +567,13 @@ export const TS_DOMAIN_SIGNAL = 'ts_domain_value';
 export const EXTERNAL_TS_DOMAIN_SIGNAL = 'external_ts_domain_value';
 export const INTERNAL_TS_DOMAIN_SIGNAL = 'internal_ts_domain_value';
 
-function addHoverHandlersToVgSpec(vegaSpec: VgSpec, source: string, isStacked: boolean,
-  pivotField: string, valueField: string): VgSpec {
+function addHoverHandlersToVgSpec(vegaSpec: VgSpec, source: string, pivotField: string, valueField: string): VgSpec {
   const signalName = '_x_signal';
   vegaSpec = addTimeSeriesDomainBackupToVgSpec(vegaSpec, signalName);
   vegaSpec = addTimeseriesDomainSignalsToVgSpec(vegaSpec, signalName);
   vegaSpec = addHoverDataToVgSpec(vegaSpec, source, pivotField, valueField);
   vegaSpec = addHoverSignalsToVgSpec(vegaSpec);
-  vegaSpec = addHoverMarksToVgSpec(vegaSpec, isStacked);
+  vegaSpec = addHoverMarksToVgSpec(vegaSpec);
   return vegaSpec;
 }
 
@@ -708,7 +706,7 @@ function addTimeseriesDomainSignalsToVgSpec(vegaSpec: VgSpec, signalName: string
   return vegaSpec;
 }
 
-function addHoverMarksToVgSpec(vegaSpec: VgSpec, isStacked: boolean): VgSpec {
+function addHoverMarksToVgSpec(vegaSpec: VgSpec): VgSpec {
   const marks: Mark[] = [];
   // Used by both HOVER_RULE, HOVER_LINE_TIME and HOVER_BULB.
   const hoverOpacityEncoding = [

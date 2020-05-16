@@ -1,7 +1,7 @@
 import {
-    Column, Float64Column, Int64Column, QueryData, Relation, RowBatchData, Status, Time64NSColumn,
+    Column, Float64Column, Int64Column, Relation, RowBatchData, Time64NSColumn,
 } from 'types/generated/vizier_pb';
-import {milliToNanoSeconds} from 'utils/time';
+import { milliToNanoSeconds } from 'utils/time';
 
 import * as ResultDataUtils from './result-data-utils';
 

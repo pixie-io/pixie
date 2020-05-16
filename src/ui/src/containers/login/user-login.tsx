@@ -2,7 +2,7 @@ import Auth0Lock from 'auth0-lock';
 import Axios from 'axios';
 import { CodeSnippet } from 'components/code-snippet/code-snippet';
 import { DialogBox } from 'components/dialog-box/dialog-box';
-import { AUTH0_CLIENT_ID, AUTH0_DOMAIN, DOMAIN_NAME } from 'containers/constants';
+import { AUTH0_CLIENT_ID, AUTH0_DOMAIN } from 'containers/constants';
 import * as check from 'images/icons/check.svg';
 import * as criticalImage from 'images/icons/critical.svg';
 import * as backgroundBottom from 'images/login-background-bottom.svg';
@@ -15,7 +15,7 @@ import { Link } from 'react-router-dom';
 import analytics from 'utils/analytics';
 import * as RedirectUtils from 'utils/redirect-utils';
 
-import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -111,7 +111,6 @@ const useStyles = makeStyles((theme: Theme) => {
 
 const CompanyInfo = () => {
   const classes = useStyles();
-  const theme = useTheme();
 
   return (
     <div className={classes.container}>
@@ -186,7 +185,8 @@ interface LoginState {
   token: string;
 }
 
-function onLoginAuthenticated(authResult, profile, error) {
+function onLoginAuthenticated(authResult, profile, /* error */) {
+  // TODO(malthus): Handle the error.
   const traits = {
     email: profile.email,
     firstName: profile.firstName,
@@ -225,7 +225,8 @@ function onLoginAuthenticated(authResult, profile, error) {
   });
 }
 
-function onCreateAuthenticated(authResult, profile, error) {
+function onCreateAuthenticated(authResult, profile, /* error */) {
+  // TODO(malthus): Handle the error.
   const traits = {
     email: profile.email,
     firstName: profile.firstName,
@@ -243,7 +244,7 @@ function onCreateAuthenticated(authResult, profile, error) {
     // Associate anonymous use with actual user ID.
     analytics.identify(response.data.userInfo.userID, traits);
     analytics.track('User signed up');
-  }).then((results) => {
+  }).then(() => {
     RedirectUtils.redirect(this.redirectPath || '/', {});
   }).catch((err) => {
     analytics.track('User signup failed', { error: err.response.data });

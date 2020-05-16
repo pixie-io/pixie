@@ -1,28 +1,22 @@
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
-import { CSSProperties } from '@material-ui/core/styles/withStyles';
 import Legend, { LegendInteractState } from 'components/legend/legend';
-import { buildHoverDataCache, formatLegendData, HoverDataCache, LegendData } from 'components/legend/legend-data';
 import {
-  EXTERNAL_HOVER_SIGNAL,
-  EXTERNAL_TS_DOMAIN_SIGNAL,
-  HOVER_PIVOT_TRANSFORM,
-  HOVER_SIGNAL,
-  INTERNAL_HOVER_SIGNAL,
-  INTERNAL_TS_DOMAIN_SIGNAL,
-  LEGEND_HOVER_SIGNAL,
-  LEGEND_SELECT_SIGNAL,
-  REVERSE_HOVER_SIGNAL,
-  REVERSE_SELECT_SIGNAL,
-  REVERSE_UNSELECT_SIGNAL,
-  VegaSpecWithProps,
+    buildHoverDataCache, formatLegendData, HoverDataCache, LegendData,
+} from 'components/legend/legend-data';
+import {
+    EXTERNAL_HOVER_SIGNAL, EXTERNAL_TS_DOMAIN_SIGNAL, HOVER_PIVOT_TRANSFORM, HOVER_SIGNAL,
+    INTERNAL_HOVER_SIGNAL, INTERNAL_TS_DOMAIN_SIGNAL, LEGEND_HOVER_SIGNAL, LEGEND_SELECT_SIGNAL,
+    REVERSE_HOVER_SIGNAL, REVERSE_SELECT_SIGNAL, REVERSE_UNSELECT_SIGNAL, VegaSpecWithProps,
 } from 'containers/live/convert-to-vega-spec';
 import * as _ from 'lodash';
 import * as React from 'react';
 import { View } from 'vega-typings';
 
+import { createStyles, makeStyles } from '@material-ui/core/styles';
+import { CSSProperties } from '@material-ui/core/styles/withStyles';
+
 import { VegaContext } from './vega-context';
 
-const useStyles = makeStyles((theme: Theme) => {
+const useStyles = makeStyles(() => {
   return createStyles({
     flexbox: {
       height: '100%',
@@ -43,7 +37,7 @@ interface VegaProps {
 
 const Vega = React.memo((props: VegaProps) => {
   const classes = useStyles();
-  const { data: inputData, specWithProps: { spec, hasLegend, legendColumnName, isStacked }, tableName } = props;
+  const { data: inputData, specWithProps: { spec, hasLegend, legendColumnName }, tableName } = props;
   const data = React.useMemo(() => ({ [tableName]: inputData }), [tableName, inputData]);
 
   const {
@@ -75,13 +69,14 @@ const Vega = React.memo((props: VegaProps) => {
     });
   };
 
-  const widthListener = React.useCallback((name, value) => {
+  const widthListener = React.useCallback(() => {
     if (!currentView) {
       return;
     }
     setVegaOrigin(currentView.origin());
   }, [currentView]);
 
+  // eslint-disable @typescript-eslint/no-unused-vars
   const hoverListener = React.useCallback((name, value) => {
     if (!currentView || !hoverDataCache) {
       return;
@@ -120,7 +115,7 @@ const Vega = React.memo((props: VegaProps) => {
     [HOVER_SIGNAL]: hoverListener,
     [REVERSE_HOVER_SIGNAL]: (name, value) => {
       if (!value) {
-        setLegendInteractState((state) => ({...state, hoveredSeries: ''}));
+        setLegendInteractState((state) => ({ ...state, hoveredSeries: '' }));
         return;
       }
       setLegendInteractState((state) => {
@@ -136,9 +131,9 @@ const Vega = React.memo((props: VegaProps) => {
       }
       setLegendInteractState((state) => {
         if (_.includes(state.selectedSeries, value)) {
-          return {...state, selectedSeries: state.selectedSeries.filter((s) => s !== value)};
+          return { ...state, selectedSeries: state.selectedSeries.filter((s) => s !== value) };
         } else {
-          return {...state, selectedSeries: [...state.selectedSeries, value]};
+          return { ...state, selectedSeries: [...state.selectedSeries, value] };
         }
       });
     },
@@ -147,14 +142,14 @@ const Vega = React.memo((props: VegaProps) => {
         return;
       }
       setLegendInteractState((state) => {
-        return {...state, selectedSeries: []};
+        return { ...state, selectedSeries: [] };
       });
     },
   };
 
   const onNewView = (view: View) => {
     // Disable default tooltip handling in vega.
-    view.tooltip((handler, event, item, value) => {
+    view.tooltip(() => {
       return;
     });
     // Add listener for changes to the legend data. If the data changes we rebuild our hash map cache of the data.

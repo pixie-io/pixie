@@ -36,7 +36,7 @@ const LiveViewTitle = (props) => {
     <div className={clsx(props.className, classes.root)}>
       <div className={classes.title}>{desc}</div>
       <div className={classes.scriptName}>
-        script: {id}
+        script: {scriptId}
         <ArgsEditor />
       </div>
     </div>

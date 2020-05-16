@@ -4,7 +4,6 @@ import 'react-resizable/css/styles.css';
 import clsx from 'clsx';
 import { displayToGraph, GraphDisplay } from 'components/chart/graph';
 import { Spinner } from 'components/spinner/spinner';
-import { parseSpecs } from 'components/vega/spec';
 import { addPxTimeFormatExpression } from 'components/vega/timeseries-axis';
 import Vega from 'components/vega/vega';
 import { VegaContext, withVegaContextProvider } from 'components/vega/vega-context';

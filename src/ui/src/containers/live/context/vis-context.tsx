@@ -1,5 +1,5 @@
 import * as ls from 'common/localstorage';
-import { getQueryFuncs, parseVis, toJSON, Vis } from 'containers/live/vis';
+import { parseVis, toJSON, Vis } from 'containers/live/vis';
 import * as React from 'react';
 import { debounce } from 'utils/debounce';
 

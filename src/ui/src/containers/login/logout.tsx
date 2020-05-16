@@ -6,7 +6,7 @@ export const LogoutHandler = () => {
   Axios({
     method: 'post',
     url: '/api/auth/logout',
-  }).then((response) => {
+  }).then(() => {
     RedirectUtils.redirect('', {});
   });
 };
@@ -16,14 +16,14 @@ export class Logout extends React.Component<{}, {}> {
     Axios({
       method: 'post',
       url: '/api/auth/logout',
-    }).then((response) => {
+    }).then(() => {
       RedirectUtils.redirect('', {});
     });
 
     return (
       <div className='login'>
         <div className='login-body'>
-            Logging out...
+          Logging out...
         </div>
       </div>
     );
