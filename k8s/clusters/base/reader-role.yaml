@@ -1,0 +1,30 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: reader-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - services
+  - endpoints
+  - namespaces
+  - jobs
+  - deployments
+  - containers
+  - pods/log
+  verbs: ["get", "watch", "list"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: reader-binding
+subjects:
+- kind: Group
+  name: prod-ro@pixielabs.ai
+roleRef:
+  kind: ClusterRole
+  name: reader-role
+  apiGroup: rbac.authorization.k8s.io
