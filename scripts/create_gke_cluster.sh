@@ -141,7 +141,9 @@ gcloud beta container --project "${PROJECT}" clusters create ${CLUSTER_NAME} \
  --addons HorizontalPodAutoscaling,HttpLoadBalancing \
  --no-enable-autoupgrade \
  --no-enable-autorepair \
- --labels k8s-dev-cluster=
+ --labels k8s-dev-cluster=\
+ --security-group="gke-security-groups@pixielabs.ai"
+
 
 if [ $? -ne 0 ]; then
   exit
