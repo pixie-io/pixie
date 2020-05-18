@@ -40,7 +40,6 @@ StatusOr<ParseState> HandleErrMessage(DequeView<Packet> resp_packets, Record* en
   DCHECK(!resp_packets.empty());
   const Packet& packet = resp_packets.front();
 
-  // TODO(chengruizhe): Assuming CLIENT_PROTOCOL_41 here. Make it more robust.
   // Format of ERR packet:
   //   1  header: 0xff
   //   2  error_code
@@ -164,7 +163,6 @@ StatusOr<ParseState> HandleResultsetResponse(DequeView<Packet> resp_packets, Rec
     ColDefinition col_def = s.ValueOrDie();
     col_defs.push_back(std::move(col_def));
   }
-  // TODO(chengruizhe): Use the type in col_def packets to parse the binary resultset row.
 
   // Optional EOF packet.
   RETURN_NEEDS_MORE_DATA_IF_EMPTY(resp_packets);

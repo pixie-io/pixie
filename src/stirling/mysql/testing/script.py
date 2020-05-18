@@ -76,16 +76,8 @@ def main():
     # kQuit 0x01
     cnx.close()
 
-
-# Not implemented commands
-# kDebug
-# kPing
-# kResetConnection
-
-# Deprecated commands
-# kShutdown
-# TODO(chengruizhe): Create a table to record if each command is covered,
-#   deprecated, or not covered.
+# MySQL Test Coverage Table
+# https://pixie-labs.quip.com/qVFbAXLrTMUD/MySQL-ParserStitcher-Architecture
 
 
 if __name__ == "__main__":
