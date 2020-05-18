@@ -606,6 +606,7 @@ class MetadataProperty : public NotCopyable {
 
   /**
    * @brief Return a string that adds the Metadata column prefix to the passed in argument.
+   * TODO(nserrino): Remove this when _attr gets deprecated.
    */
   inline static std::string FormatMetadataColumn(const std::string_view col_name) {
     return absl::Substitute("$0$1", kMetadataColumnPrefix, col_name);
@@ -1181,6 +1182,8 @@ class MetadataIR : public ColumnIR {
   Status ResolveMetadataColumn(MetadataResolverIR* resolver_op, MetadataProperty* property);
   MetadataResolverIR* resolver() const { return resolver_; }
   MetadataProperty* property() const { return property_; }
+  bool has_property() const { return property_ != nullptr; }
+  void set_property(MetadataProperty* property) { property_ = property; }
 
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;

@@ -32,6 +32,9 @@ class Analyzer : public RuleExecutor<IR> {
     RuleBatch* source_and_metadata_resolution_batch =
         CreateRuleBatch<FailOnMax>("TableAndMetadataResolution", 2);
     source_and_metadata_resolution_batch->AddRule<SourceRelationRule>(compiler_state_);
+    // TODO(nserrino): Uncomment and remove ResolveMetadataRule.
+    // source_and_metadata_resolution_batch->AddRule<ResolveMetadataPropertyRule>(compiler_state_,
+    //                                                                            md_handler_.get());
     source_and_metadata_resolution_batch->AddRule<ResolveMetadataRule>(compiler_state_,
                                                                        md_handler_.get());
     source_and_metadata_resolution_batch->AddRule<SetupJoinTypeRule>();
@@ -81,6 +84,13 @@ class Analyzer : public RuleExecutor<IR> {
     intermediate_resolution_batch->AddRule<DropToMapOperatorRule>(compiler_state_);
   }
 
+  // TODO(nserrino): Uncomment and remove previous metadata handling.
+  // void CreateMetadataConversionBatch() {
+  //   RuleBatch* metadata_conversion_batch = CreateRuleBatch<FailOnMax>("MetadataConversion", 2);
+  //   metadata_conversion_batch->AddRule<ConvertMetadataRule>();
+  //   metadata_conversion_batch->AddRule<PropagateExpressionAnnotationsRule>();
+  // }
+
   void CreateFilterPushdownBatch() {
     // Use TryUntilMax here to avoid swapping the positions of "equal" filters endlessly.
     RuleBatch* filter_pushdown_batch = CreateRuleBatch<TryUntilMax>("FilterPushdown", 1);
@@ -108,6 +118,8 @@ class Analyzer : public RuleExecutor<IR> {
     CreateOperatorCompileTimeExpressionRuleBatch();
     CreateCombineConsecutiveMapsRule();
     CreateDataTypeResolutionBatch();
+    // TODO(nserrino): Uncomment and remove prior metadata handling.
+    // CreateMetadataConversionBatch();
     CreateFilterPushdownBatch();
     CreateResolutionVerificationBatch();
     CreateRemoveIROnlyNodesBatch();

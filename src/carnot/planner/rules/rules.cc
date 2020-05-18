@@ -16,7 +16,7 @@ using table_store::schema::Relation;
 StatusOr<bool> DataTypeRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, UnresolvedRTFuncMatchAllArgs(ResolvedExpression()))) {
     // Match any function that has all args resolved.
-    return EvaluateFunc(static_cast<FuncIR*>(ir_node));
+    return EvaluateFunc(compiler_state_, static_cast<FuncIR*>(ir_node));
   } else if (Match(ir_node, UnresolvedColumnType())) {
     // Evaluate any unresolved columns.
     return EvaluateColumn(static_cast<ColumnIR*>(ir_node));
@@ -27,7 +27,7 @@ StatusOr<bool> DataTypeRule::Apply(IRNode* ir_node) {
   return false;
 }
 
-StatusOr<bool> DataTypeRule::EvaluateFunc(FuncIR* func) const {
+StatusOr<bool> DataTypeRule::EvaluateFunc(CompilerState* compiler_state, FuncIR* func) {
   // Get the types of the children of this function.
   std::vector<types::DataType> children_data_types;
   for (const auto& arg : func->args()) {
@@ -36,28 +36,28 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(FuncIR* func) const {
     children_data_types.push_back(t);
   }
 
-  auto udftype_or_s = compiler_state_->registry_info()->GetUDFType(func->func_name());
+  auto udftype_or_s = compiler_state->registry_info()->GetUDFType(func->func_name());
   if (!udftype_or_s.ok()) {
     return func->CreateIRNodeError(udftype_or_s.status().msg());
   }
   switch (udftype_or_s.ConsumeValueOrDie()) {
     case UDFType::kUDF: {
       auto data_type_or_s =
-          compiler_state_->registry_info()->GetUDF(func->func_name(), children_data_types);
+          compiler_state->registry_info()->GetUDF(func->func_name(), children_data_types);
       if (!data_type_or_s.status().ok()) {
         return func->CreateIRNodeError(data_type_or_s.status().msg());
       }
       types::DataType data_type = data_type_or_s.ConsumeValueOrDie();
       func->set_func_id(
-          compiler_state_->GetUDFID(RegistryKey(func->func_name(), children_data_types)));
+          compiler_state->GetUDFID(RegistryKey(func->func_name(), children_data_types)));
       func->SetOutputDataType(data_type);
       break;
     }
     case UDFType::kUDA: {
-      PL_ASSIGN_OR_RETURN(types::DataType data_type, compiler_state_->registry_info()->GetUDA(
+      PL_ASSIGN_OR_RETURN(types::DataType data_type, compiler_state->registry_info()->GetUDA(
                                                          func->func_name(), children_data_types));
       func->set_func_id(
-          compiler_state_->GetUDAID(RegistryKey(func->func_name(), children_data_types)));
+          compiler_state->GetUDAID(RegistryKey(func->func_name(), children_data_types)));
       func->SetOutputDataType(data_type);
       break;
     }
@@ -70,7 +70,7 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(FuncIR* func) const {
   return true;
 }
 
-StatusOr<bool> DataTypeRule::EvaluateColumn(ColumnIR* column) const {
+StatusOr<bool> DataTypeRule::EvaluateColumn(ColumnIR* column) {
   PL_ASSIGN_OR_RETURN(OperatorIR * parent_op, column->ReferencedOperator());
   if (!parent_op->IsRelationInit()) {
     // Missing a relation in parent op is not a failure - the parent op still has to
@@ -1742,6 +1742,115 @@ StatusOr<bool> PropagateExpressionAnnotationsRule::Apply(IRNode* ir_node) {
   }
 
   return updated_annotation;
+}
+
+StatusOr<bool> ResolveMetadataPropertyRule::Apply(IRNode* ir_node) {
+  if (!Match(ir_node, Metadata())) {
+    return false;
+  }
+  auto metadata = static_cast<MetadataIR*>(ir_node);
+  if (metadata->has_property()) {
+    return false;
+  }
+
+  // Check to see whether metadata is valid.
+  if (!md_handler_->HasProperty(metadata->name())) {
+    return metadata->CreateIRNodeError("Specified metadata value '$0' is not properly handled.",
+                                       metadata->name());
+  }
+
+  PL_ASSIGN_OR_RETURN(MetadataProperty * md_property, md_handler_->GetProperty(metadata->name()));
+  metadata->set_property(md_property);
+  return true;
+}
+
+Status ConvertMetadataRule::UpdateMetadataContainer(IRNode* container, MetadataIR* metadata,
+                                                    ExpressionIR* metadata_expr) const {
+  if (Match(container, Func())) {
+    auto func = static_cast<FuncIR*>(container);
+    for (const auto& [arg_idx, arg] : Enumerate(func->args())) {
+      if (arg == metadata) {
+        PL_RETURN_IF_ERROR(func->UpdateArg(arg_idx, metadata_expr));
+      }
+    }
+    return Status::OK();
+  }
+  if (Match(container, Map())) {
+    auto map = static_cast<MapIR*>(container);
+    for (const auto& expr : map->col_exprs()) {
+      if (expr.node == metadata) {
+        PL_RETURN_IF_ERROR(map->UpdateColExpr(expr.name, metadata_expr));
+      }
+    }
+    return Status::OK();
+  }
+  if (Match(container, Filter())) {
+    auto filter = static_cast<FilterIR*>(container);
+    return filter->SetFilterExpr(metadata_expr);
+  }
+  return error::Internal("Unsupported IRNode container for metadata: $0", container->DebugString());
+}
+
+StatusOr<std::string> ConvertMetadataRule::FindKeyColumn(const Relation& parent_relation,
+                                                         MetadataProperty* property,
+                                                         IRNode* node_for_error) const {
+  DCHECK_NE(property, nullptr);
+  for (const std::string& key_col : property->GetKeyColumnReprs()) {
+    if (parent_relation.HasColumn(key_col)) {
+      return key_col;
+    }
+  }
+  return node_for_error->CreateIRNodeError(
+      "Can't resolve metadata because of lack of converting columns in the parent. Need one of "
+      "[$0]. Parent relation has columns [$1] available.",
+      absl::StrJoin(property->GetKeyColumnReprs(), ","),
+      absl::StrJoin(parent_relation.col_names(), ","));
+}
+
+StatusOr<bool> ConvertMetadataRule::Apply(IRNode* ir_node) {
+  if (!Match(ir_node, Metadata())) {
+    return false;
+  }
+
+  auto graph = ir_node->graph_ptr();
+  auto metadata = static_cast<MetadataIR*>(ir_node);
+  auto md_property = metadata->property();
+  auto parent_op_idx = metadata->container_op_parent_idx();
+  auto column_type = md_property->column_type();
+  auto md_type = md_property->metadata_type();
+
+  PL_ASSIGN_OR_RETURN(auto parent, metadata->ReferencedOperator());
+
+  PL_ASSIGN_OR_RETURN(std::string key_column_name,
+                      FindKeyColumn(parent->relation(), md_property, ir_node));
+
+  PL_ASSIGN_OR_RETURN(
+      ColumnIR * key_column,
+      graph->CreateNode<ColumnIR>(ir_node->ast_node(), key_column_name, parent_op_idx));
+
+  PL_ASSIGN_OR_RETURN(std::string func_name, md_property->UDFName(key_column_name));
+  PL_ASSIGN_OR_RETURN(FuncIR * conversion_func,
+                      graph->CreateNode<FuncIR>(ir_node->ast_node(),
+                                                FuncIR::Op{FuncIR::Opcode::non_op, "", func_name},
+                                                std::vector<ExpressionIR*>{key_column}));
+  for (int64_t parent_id : graph->dag().ParentsOf(metadata->id())) {
+    // For each container node of the metadata expression, update it to point to the
+    // new conversion func instead.
+    PL_RETURN_IF_ERROR(UpdateMetadataContainer(graph->Get(parent_id), metadata, conversion_func));
+  }
+
+  // Manually evaluate the column type, because DataTypeRule will run before this rule.
+  PL_ASSIGN_OR_RETURN(auto evaled_col, DataTypeRule::EvaluateColumn(key_column));
+  DCHECK(evaled_col);
+
+  PL_ASSIGN_OR_RETURN(auto evaled_func,
+                      DataTypeRule::EvaluateFunc(compiler_state_, conversion_func));
+  DCHECK(evaled_func);
+  DCHECK_EQ(conversion_func->EvaluatedDataType(), column_type)
+      << "Expected the parent_relation key column type and metadata property type to match.";
+  conversion_func->set_annotations(ExpressionIR::Annotations(md_type));
+
+  return true;
 }
 
 }  // namespace planner

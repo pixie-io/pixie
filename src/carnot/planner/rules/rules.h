@@ -105,13 +105,17 @@ class DataTypeRule : public Rule {
    */
   static Status EvaluateColumnFromRelation(ColumnIR* column,
                                            const table_store::schema::Relation& relation);
+  /**
+   * @brief Evaluates the datatype of an input func.
+   */
+  static StatusOr<bool> EvaluateFunc(CompilerState* compiler_state, FuncIR* func);
+  /**
+   * @brief Evaluates the datatype of an input column.
+   */
+  static StatusOr<bool> EvaluateColumn(ColumnIR* column);
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
-
- private:
-  StatusOr<bool> EvaluateFunc(FuncIR* func) const;
-  StatusOr<bool> EvaluateColumn(ColumnIR* column) const;
 };
 
 class SourceRelationRule : public Rule {
@@ -293,6 +297,8 @@ class ResolveMetadataRule : public Rule {
    * @brief Resolve metadata makes sure that metadata is properly added as a column in the table.
    * The job of this rule is to create, or map to a MetadataResolver for any MetadataIR in the
    * graph.
+   * TODO(nserrino): Remove this and replace with ResolveMetadataPropertyRule and
+   * ConvertMetadataRule.
    */
 
  public:
@@ -315,6 +321,8 @@ class CheckMetadataColumnNamingRule : public Rule {
    * @brief Checks to make sure that the column naming scheme doesn't collide with metadata.
    *
    * Never modifies the graph, so should always return false.
+   * TODO(nserrino): Remove this and replace with ResolveMetadataPropertyRule and
+   * ConvertMetadataRule.
    */
  public:
   explicit CheckMetadataColumnNamingRule(CompilerState* compiler_state) : Rule(compiler_state) {}
@@ -328,6 +336,8 @@ class CheckMetadataColumnNamingRule : public Rule {
 class MetadataResolverConversionRule : public Rule {
   /**
    * @brief Converts the metadata resolver into a Map after everything is done.
+   * TODO(nserrino): Remove this and replace with ResolveMetadataPropertyRule and
+   * ConvertMetadataRule.
    */
  public:
   explicit MetadataResolverConversionRule(CompilerState* compiler_state) : Rule(compiler_state) {}
@@ -367,6 +377,8 @@ class MetadataResolverConversionRule : public Rule {
 class DropMetadataColumnsFromSinksRule : public Rule {
   /**
    * @brief Drop all columns with the "_attr_" prefix from MemorySinks.
+   * TODO(nserrino): Remove this and replace with ResolveMetadataPropertyRule and
+   * ConvertMetadataRule.
    */
 
  public:
@@ -621,6 +633,40 @@ class PropagateExpressionAnnotationsRule : public Rule {
   using OperatorOutputAnnotations =
       absl::flat_hash_map<OperatorIR*, absl::flat_hash_map<std::string, ExpressionIR::Annotations>>;
   OperatorOutputAnnotations operator_output_annotations_;
+};
+
+class ResolveMetadataPropertyRule : public Rule {
+  /**
+   * @brief Resolve MetadataIR to a specific metadata property that the compiler knows about.
+   */
+
+ public:
+  explicit ResolveMetadataPropertyRule(CompilerState* compiler_state, MetadataHandler* md_handler)
+      : Rule(compiler_state), md_handler_(md_handler) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+
+ private:
+  MetadataHandler* md_handler_;
+};
+
+class ConvertMetadataRule : public Rule {
+  /**
+   * @brief Converts the MetadataIR into the expression that generates it.
+   */
+ public:
+  explicit ConvertMetadataRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+  /**
+   * @brief Updates any parents of the metadata node to point to the new metadata expression.
+   */
+  Status UpdateMetadataContainer(IRNode* container, MetadataIR* metadata,
+                                 ExpressionIR* metadata_expr) const;
+  StatusOr<std::string> FindKeyColumn(const table_store::schema::Relation& parent_relation,
+                                      MetadataProperty* property, IRNode* node_for_error) const;
 };
 
 }  // namespace planner

@@ -3401,6 +3401,107 @@ TEST_F(RulesTest, PropagateExpressionAnnotationsRule_filter_limit) {
   EXPECT_EQ(default_annotation, map1_col2->annotations());
 }
 
+TEST_F(RulesTest, ResolveMetadataPropertyRuleTest) {
+  auto metadata_name = "pod_name";
+  MetadataIR* metadata_ir = MakeMetadataIR(metadata_name, /* parent_op_idx */ 0);
+  MakeMap(MakeMemSource(), {{"md", metadata_ir}});
+
+  EXPECT_FALSE(metadata_ir->has_property());
+
+  ResolveMetadataPropertyRule rule(compiler_state_.get(), md_handler.get());
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_TRUE(metadata_ir->has_property());
+  EXPECT_EQ(MetadataType::POD_NAME, metadata_ir->property()->metadata_type());
+  EXPECT_EQ(types::DataType::STRING, metadata_ir->property()->column_type());
+}
+
+TEST_F(RulesTest, ResolveMetadataPropertyRuleTest_noop) {
+  auto metadata_name = "pod_name";
+  MetadataIR* metadata_ir = MakeMetadataIR(metadata_name, /* parent_op_idx */ 0);
+  MakeMap(MakeMemSource(), {{"md", metadata_ir}});
+
+  EXPECT_FALSE(metadata_ir->has_property());
+  MetadataProperty* property = md_handler->GetProperty(metadata_name).ValueOrDie();
+  metadata_ir->set_property(property);
+
+  ResolveMetadataPropertyRule rule(compiler_state_.get(), md_handler.get());
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
+}
+
+TEST_F(RulesTest, ConvertMetadataRuleTest_multichild) {
+  auto relation = table_store::schema::Relation(cpu_relation);
+  MetadataType conversion_column = MetadataType::UPID;
+  std::string conversion_column_str = MetadataProperty::GetMetadataString(conversion_column);
+  relation.AddColumn(types::DataType::UINT128, conversion_column_str);
+
+  auto metadata_name = "pod_name";
+  MetadataProperty* property = md_handler->GetProperty(metadata_name).ValueOrDie();
+  MetadataIR* metadata_ir = MakeMetadataIR(metadata_name, /* parent_op_idx */ 0);
+  metadata_ir->set_property(property);
+
+  auto src = MakeMemSource(relation);
+  auto map1 = MakeMap(src, {{"md", metadata_ir}});
+  auto map2 = MakeMap(src, {{"other_col", MakeInt(2)}, {"md", metadata_ir}});
+  auto filter = MakeFilter(src, MakeEqualsFunc(metadata_ir, MakeString("pl/foobar")));
+
+  ConvertMetadataRule rule(compiler_state_.get());
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  EXPECT_EQ(0, graph->FindNodesThatMatch(Metadata()).size());
+
+  // Check the contents of the new func.
+  EXPECT_MATCH(filter->filter_expr(), Equals(Func(), String()));
+  auto converted_md = static_cast<FuncIR*>(filter->filter_expr())->args()[0];
+  EXPECT_MATCH(converted_md, Func());
+  auto converted_md_func = static_cast<FuncIR*>(converted_md);
+  EXPECT_EQ(absl::Substitute("$0_to_$1", MetadataProperty::kUniquePIDColumn, metadata_name),
+            converted_md_func->func_name());
+  EXPECT_EQ(1, converted_md_func->args().size());
+  auto input_col = converted_md_func->args()[0];
+  EXPECT_MATCH(input_col, ColumnNode(MetadataProperty::kUniquePIDColumn));
+
+  EXPECT_MATCH(converted_md, ResolvedExpression());
+  EXPECT_MATCH(input_col, ResolvedExpression());
+  EXPECT_EQ(types::DataType::STRING, converted_md->EvaluatedDataType());
+  EXPECT_EQ(types::DataType::UINT128, input_col->EvaluatedDataType());
+  EXPECT_EQ(ExpressionIR::Annotations(MetadataType::POD_NAME), converted_md->annotations());
+  EXPECT_EQ(0, converted_md_func->func_id());
+
+  // Check to make sure that all of the operators and expressions depending on the metadata
+  // now have an updated reference to the func.
+  EXPECT_EQ(converted_md, map1->col_exprs()[0].node);
+  EXPECT_EQ(converted_md, map2->col_exprs()[1].node);
+}
+
+TEST_F(RulesTest, ConvertMetadataRuleTest_missing_conversion_column) {
+  auto relation = table_store::schema::Relation(cpu_relation);
+
+  auto metadata_name = "pod_name";
+  NameMetadataProperty property(MetadataType::POD_NAME, {MetadataType::UPID});
+  MetadataIR* metadata_ir = MakeMetadataIR(metadata_name, /* parent_op_idx */ 0);
+  metadata_ir->set_property(&property);
+  MakeMap(MakeMemSource(relation), {{"md", metadata_ir}});
+
+  ConvertMetadataRule rule(compiler_state_.get());
+  auto result = rule.Execute(graph.get());
+  EXPECT_NOT_OK(result);
+  VLOG(1) << result.ToString();
+  EXPECT_THAT(result.status(),
+              HasCompilerError(
+                  "Can\'t resolve metadata because of lack of converting columns in the parent. "
+                  "Need one of "
+                  "\\[upid\\]. Parent relation has columns \\[count,cpu0,cpu1,cpu2\\] available."));
+
+  skip_check_stray_nodes_ = true;
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl
