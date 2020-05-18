@@ -4,18 +4,85 @@ kind: Deployment
 metadata:
   name: kelvin
 spec:
+  selector:
+    matchLabels:
+      name: kelvin
   template:
+    metadata:
+      labels:
+        name: kelvin
+      annotations:
+        fluentbit.io/parser: glog
     spec:
+      imagePullSecrets:
+      - name: pl-image-secret
+      initContainers:
+      - name: qb-wait
+        image: byrnedo/alpine-curl:0.1.8
+        # yamllint disable
+        command: ['sh', '-c', 'set -x;
+          URL="https://${SERVICE_NAME}:${SERVICE_PORT}/healthz";
+          until [ $(curl -m 0.5 -s -o /dev/null -w "%{http_code}" -k ${URL}) -eq 200 ]; do
+            echo "waiting for ${URL}"
+            sleep 2;
+          done;
+        ']
+        env:
+        - name: SERVICE_NAME
+          value: "vizier-query-broker"
+        - name: SERVICE_PORT
+          value: "50300"
       containers:
-      - name: kelvin
+      - name: app
+        image: gcr.io/pl-dev-infra/vizier/kelvin_image:latest
+        envFrom:
+        - configMapRef:
+            name: pl-tls-config
         env:
         - name: ASAN_OPTIONS
           value: "halt_on_error=0"
         - name: TSAN_OPTIONS
           value: "halt_on_error=0"
+        - name: PL_HOST_PATH
+          value: "/host"
+        - name: PL_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: PL_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: PL_HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: PL_JWT_SIGNING_KEY
+          valueFrom:
+            secretKeyRef:
+              key: jwt-signing-key
+              name: pl-cluster-secrets
+        ports:
+        - containerPort: 59300
+          hostPort: 59300
+        volumeMounts:
+        - mountPath: /certs
+          name: certs
+        - name: sys
+          mountPath: /sys
+          readOnly: true
         resources:
           limits:
-            memory: 1024Mi
+            memory: 4096Mi
           requests:
-            cpu: 400m
-            memory: 1024Mi
+            cpu: 1000m
+            memory: 2048Mi
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: certs
+        secret:
+          secretName: service-tls-certs
+      - name: sys
+        hostPath:
+          path: /sys
+          type: Directory
