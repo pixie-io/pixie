@@ -50,10 +50,20 @@ DwarfReader::DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
 
 namespace {
 
-bool IsMatchingDIE(std::string_view name, llvm::dwarf::Tag tag, std::string_view die_name,
-                   llvm::dwarf::Tag die_tag) {
-  return (tag == static_cast<llvm::dwarf::Tag>(llvm::dwarf::DW_TAG_invalid) || (tag == die_tag)) &&
-         (name == die_name);
+bool IsMatchingDIE(std::string_view name, llvm::dwarf::Tag tag, const DWARFDie& die) {
+  llvm::dwarf::Tag die_tag = die.getTag();
+  if (tag != static_cast<llvm::dwarf::Tag>(llvm::dwarf::DW_TAG_invalid) && (tag != die_tag)) {
+    // Not the right type.
+    return false;
+  }
+
+  const char* die_short_name = die.getName(llvm::DINameKind::ShortName);
+
+  // May also want to consider the linkage name (e.g. the mangled name).
+  // That is what llvm-dwarfdebug appears to do.
+  // const char* die_linkage_name = die.getName(llvm::DINameKind::LinkageName);
+
+  return (die_short_name && name == die_short_name);
 }
 
 }  // namespace
@@ -63,16 +73,8 @@ Status DwarfReader::GetMatchingDIEs(DWARFContext::unit_iterator_range CUs, std::
   for (const auto& CU : CUs) {
     for (const auto& Entry : CU->dies()) {
       DWARFDie die = {CU.get(), &Entry};
-      if (const char* die_name = die.getName(llvm::DINameKind::ShortName)) {
-        if (IsMatchingDIE(name, tag, die_name, die.getTag())) {
-          dies_out->push_back(std::move(die));
-          continue;
-        }
-      }
-      if (const char* die_name = die.getName(llvm::DINameKind::LinkageName)) {
-        if (IsMatchingDIE(name, tag, die_name, die.getTag())) {
-          dies_out->push_back(std::move(die));
-        }
+      if (IsMatchingDIE(name, tag, die)) {
+        dies_out->push_back(std::move(die));
       }
     }
   }
