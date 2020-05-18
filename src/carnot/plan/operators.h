@@ -212,12 +212,13 @@ class LimitOperator : public Operator {
       const std::vector<int64_t>& input_ids) const override;
   Status Init(const planpb::LimitOperator& pb);
   std::string DebugString() const override;
+  std::vector<int64_t> selected_cols() { return selected_cols_; }
 
   int64_t record_limit() const { return record_limit_; }
 
  private:
   int64_t record_limit_ = 0;
-
+  std::vector<int64_t> selected_cols_;
   planpb::LimitOperator pb_;
 };
 

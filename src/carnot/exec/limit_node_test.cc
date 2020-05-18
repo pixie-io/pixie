@@ -175,6 +175,52 @@ TEST_F(LimitNodeTest, child_fail) {
                                0, error::InvalidArgument("args"));
 }
 
+TEST_F(LimitNodeTest, drop_input_columns) {
+  auto op_proto = planpb::testutils::CreateTestDropLimit1PB();
+  auto drop_limit = plan::LimitOperator::FromProto(op_proto, 1);
+
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64, types::INT64});
+  RowDescriptor output_rd({types::DataType::INT64, types::DataType::INT64});
+
+  auto tester = exec::ExecNodeTester<LimitNode, plan::LimitOperator>(*drop_limit, output_rd,
+                                                                     {input_rd}, exec_state_.get());
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 12, /*eow*/ true, /*eos*/ true)
+                       .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6})
+                       .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15, 1, 3, 6, 9, 12, 15})
+                       .AddColumn<types::Int64Value>({1, 4, 8, 12, 16, 20, 1, 4, 8, 12, 16, 20})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 10, true, true)
+                          .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6, 1, 2, 3, 4})
+                          .AddColumn<types::Int64Value>({1, 4, 8, 12, 16, 20, 1, 4, 8, 12})
+                          .get())
+      .Close();
+}
+
+TEST_F(LimitNodeTest, drop_input_columns_fewer_than_limit) {
+  auto op_proto = planpb::testutils::CreateTestDropLimit1PB();
+  auto drop_limit = plan::LimitOperator::FromProto(op_proto, 1);
+
+  RowDescriptor input_rd({types::DataType::INT64, types::DataType::INT64, types::INT64});
+  RowDescriptor output_rd({types::DataType::INT64, types::DataType::INT64});
+
+  auto tester = exec::ExecNodeTester<LimitNode, plan::LimitOperator>(*drop_limit, output_rd,
+                                                                     {input_rd}, exec_state_.get());
+  tester
+      .ConsumeNext(RowBatchBuilder(input_rd, 8, /*eow*/ true, /*eos*/ true)
+                       .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6, 1, 2})
+                       .AddColumn<types::Int64Value>({1, 3, 6, 9, 12, 15, 1, 3})
+                       .AddColumn<types::Int64Value>({1, 4, 8, 12, 16, 20, 1, 4})
+                       .get(),
+                   0)
+      .ExpectRowBatch(RowBatchBuilder(output_rd, 8, true, true)
+                          .AddColumn<types::Int64Value>({1, 2, 3, 4, 5, 6, 1, 2})
+                          .AddColumn<types::Int64Value>({1, 4, 8, 12, 16, 20, 1, 4})
+                          .get())
+      .Close();
+}
+
 }  // namespace exec
 }  // namespace carnot
 }  // namespace pl

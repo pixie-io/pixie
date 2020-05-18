@@ -366,7 +366,7 @@ class OperatorIR : public IRNode {
   OperatorIR() = delete;
   bool IsOperator() const override { return true; }
   bool IsExpression() const override { return false; }
-  table_store::schema::Relation relation() const { return relation_; }
+  const table_store::schema::Relation& relation() const { return relation_; }
   Status SetRelation(table_store::schema::Relation relation) {
     relation_init_ = true;
     relation_ = relation;

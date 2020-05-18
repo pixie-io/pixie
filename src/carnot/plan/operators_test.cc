@@ -1,6 +1,7 @@
 #include "src/carnot/plan/operators.h"
 
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 #include "src/carnot/planpb/plan.pb.h"
 #include "src/carnot/planpb/test_proto.h"
@@ -18,6 +19,7 @@ namespace plan {
 
 using table_store::schema::Relation;
 using table_store::schema::Schema;
+using ::testing::ElementsAre;
 
 class DummyTestUDF : public udf::ScalarUDF {
  public:
@@ -44,6 +46,7 @@ class OperatorTest : public ::testing::Test {
     Relation rel0;
     rel0.AddColumn(types::INT64, "col0");
     rel0.AddColumn(types::FLOAT64, "col1");
+    rel0.AddColumn(types::STRING, "col2");
 
     Relation rel1;
     rel1.AddColumn(types::INT64, "col0");
@@ -190,6 +193,15 @@ TEST_F(OperatorTest, from_proto_limit) {
   EXPECT_EQ(planpb::OperatorType::LIMIT_OPERATOR, limit_op->op_type());
 }
 
+TEST_F(OperatorTest, from_proto_drop_limit) {
+  auto limit_pb = planpb::testutils::CreateTestDropLimit1PB();
+  auto limit_op = Operator::FromProto(limit_pb, 1);
+  EXPECT_EQ(1, limit_op->id());
+  EXPECT_TRUE(limit_op->is_initialized());
+  EXPECT_EQ(planpb::OperatorType::LIMIT_OPERATOR, limit_op->op_type());
+  auto limit_typed_op = static_cast<LimitOperator*>(limit_op.get());
+  EXPECT_THAT(limit_typed_op->selected_cols(), ElementsAre(0, 2));
+}
 TEST_F(OperatorTest, from_proto_join_with_time) {
   auto join_pb = planpb::testutils::CreateTestJoinWithTimePB();
   auto join_op = std::make_unique<JoinOperator>(1);
@@ -351,6 +363,18 @@ TEST_F(OperatorTest, output_relation_limit) {
   Relation expected_relation;
   expected_relation.AddColumn(types::DataType::INT64, "col0");
   expected_relation.AddColumn(types::DataType::FLOAT64, "col1");
+  EXPECT_EQ(expected_relation, rel);
+}
+
+TEST_F(OperatorTest, output_relation_drop_limit) {
+  auto limit_pb = planpb::testutils::CreateTestDropLimit1PB();
+  auto limit_op = Operator::FromProto(limit_pb, 1);
+
+  auto rel =
+      limit_op->OutputRelation(schema_, *state_, std::vector<int64_t>({0})).ConsumeValueOrDie();
+  Relation expected_relation;
+  expected_relation.AddColumn(types::DataType::INT64, "col0");
+  expected_relation.AddColumn(types::DataType::STRING, "col2");
   EXPECT_EQ(expected_relation, rel);
 }
 

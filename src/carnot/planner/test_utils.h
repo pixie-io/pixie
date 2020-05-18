@@ -147,6 +147,62 @@ relation_map {
 }
 )proto";
 
+constexpr char kConnStatsSchema[] = R"proto(
+relation_map {
+  key: "conn_stats"
+  value {
+    columns {
+      column_name: "time_"
+      column_type: TIME64NS
+    }
+    columns {
+      column_name: "upid"
+      column_type: UINT128
+    }
+    columns {
+      column_name: "remote_addr"
+      column_type: STRING
+    }
+    columns {
+      column_name: "remote_port"
+      column_type: INT64
+    }
+    columns {
+      column_name: "protocol"
+      column_type: INT64
+    }
+    columns {
+      column_name: "role"
+      column_type: INT64
+    }
+    columns {
+      column_name: "conn_open"
+      column_type: INT64
+    }
+    columns {
+      column_name: "conn_close"
+      column_type: INT64
+    }
+    columns {
+      column_name: "conn_active"
+      column_type: INT64
+    }
+    columns {
+      column_name: "bytes_sent"
+      column_type: INT64
+    }
+    columns {
+      column_name: "bytes_recv"
+      column_type: INT64
+    }
+    columns {
+      column_name: "px_info_"
+      column_type: STRING
+    }
+  }
+}
+)proto";
+
 constexpr char kAgentCarnotInfoTpl[] = R"proto(
 query_broker_address: "$0"
 has_grpc_server: false

@@ -279,6 +279,17 @@ columns {
 }
 )";
 
+constexpr char kLimitDropOperator1[] = R"(
+limit: 10
+columns {
+  node: 1
+  index: 0
+}
+columns {
+  node: 1
+  index: 2
+}
+)";
 // relation 1: [abc, time_]
 // relation 2: [time_, abc]
 // maps to output relation:
@@ -997,6 +1008,14 @@ planpb::Operator CreateTestLimit1PB() {
   planpb::Operator op;
   auto op_proto =
       absl::Substitute(kOperatorProtoTmpl, "LIMIT_OPERATOR", "limit_op", kLimitOperator1);
+  CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
+  return op;
+}
+
+planpb::Operator CreateTestDropLimit1PB() {
+  planpb::Operator op;
+  auto op_proto =
+      absl::Substitute(kOperatorProtoTmpl, "LIMIT_OPERATOR", "limit_op", kLimitDropOperator1);
   CHECK(google::protobuf::TextFormat::MergeFromString(op_proto, &op)) << "Failed to parse proto";
   return op;
 }

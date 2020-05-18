@@ -560,10 +560,13 @@ Status LimitIR::ToProto(planpb::Operator* op) const {
   op->set_op_type(planpb::LIMIT_OPERATOR);
   DCHECK_EQ(parents().size(), 1UL);
 
-  for (size_t i = 0; i < relation().NumColumns(); ++i) {
+  auto parent_rel = parents()[0]->relation();
+  auto parent_id = parents()[0]->id();
+
+  for (const std::string& col_name : relation().col_names()) {
     planpb::Column* col_pb = pb->add_columns();
-    col_pb->set_node(parents()[0]->id());
-    col_pb->set_index(i);
+    col_pb->set_node(parent_id);
+    col_pb->set_index(parent_rel.GetColumnIndex(col_name));
   }
   if (!limit_value_set_) {
     return CreateIRNodeError("Limit value not set properly.");
@@ -1415,9 +1418,8 @@ StatusOr<planpb::Plan> IR::ToProto() const {
 Status IR::OutputProto(planpb::PlanFragment* pf, const OperatorIR* op_node) const {
   // Check to make sure that the relation is set for this op_node, otherwise it's not connected to
   // a Sink.
-  if (!op_node->IsRelationInit()) {
-    return op_node->CreateIRNodeError("$0 doesn't have a relation.", op_node->DebugString());
-  }
+  CHECK(op_node->IsRelationInit())
+      << absl::Substitute("$0 doesn't have a relation.", op_node->DebugString());
 
   // Add PlanNode.
   auto plan_node = pf->add_nodes();

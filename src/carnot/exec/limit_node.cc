@@ -25,8 +25,6 @@ Status LimitNode::InitImpl(const plan::Operator& plan_node) {
   const auto* limit_plan_node = static_cast<const plan::LimitOperator*>(&plan_node);
   // copy the plan node to local object;
   plan_node_ = std::make_unique<plan::LimitOperator>(*limit_plan_node);
-  // NOTE: We expect output and input descriptors to match.
-  DCHECK(*output_descriptor_ == input_descriptors_[0]);
 
   return Status::OK();
 }
@@ -37,20 +35,28 @@ Status LimitNode::OpenImpl(ExecState* /*exec_state*/) { return Status::OK(); }
 Status LimitNode::CloseImpl(ExecState* /*exec_state*/) { return Status::OK(); }
 
 Status LimitNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
-  size_t record_limit = plan_node_->record_limit();
+  int64_t record_limit = plan_node_->record_limit();
+  // We need to send over a slice of the input data.
+  int64_t remainder_records = record_limit - records_processed_;
+
   // Check if the entire row batch will fit.
-  if (record_limit > (records_processed_ + rb.num_rows())) {
-    // If so we just need to transfer it.
+  if (remainder_records > rb.num_rows()) {
+    RowBatch output_rb(*output_descriptor_, rb.num_rows());
+    DCHECK_EQ(output_descriptor_->size(), plan_node_->selected_cols().size());
+    // If so we just need to convert to output descriptor and transfer it.
+    for (int64_t input_col_idx : plan_node_->selected_cols()) {
+      PL_RETURN_IF_ERROR(output_rb.AddColumn(rb.ColumnAt(input_col_idx)));
+    }
     records_processed_ += rb.num_rows();
-    return SendRowBatchToChildren(exec_state, rb);
+    output_rb.set_eos(rb.eos());
+    output_rb.set_eow(rb.eow());
+    return SendRowBatchToChildren(exec_state, output_rb);
   }
 
-  // We need to send over a slice of the input data.
-  size_t remainder_records = record_limit - records_processed_;
   RowBatch output_rb(*output_descriptor_, remainder_records);
-  size_t num_cols = rb.num_columns();
-  for (size_t col_idx = 0; col_idx < num_cols; ++col_idx) {
-    auto col = rb.ColumnAt(col_idx);
+  DCHECK_EQ(output_descriptor_->size(), plan_node_->selected_cols().size());
+  for (int64_t input_col_idx : plan_node_->selected_cols()) {
+    auto col = rb.ColumnAt(input_col_idx);
     PL_RETURN_IF_ERROR(output_rb.AddColumn(col->Slice(0, remainder_records)));
   }
   output_rb.set_eow(true);

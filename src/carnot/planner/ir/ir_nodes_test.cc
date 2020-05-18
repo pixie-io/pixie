@@ -407,6 +407,43 @@ TEST(ToProto, agg_ir) {
   EXPECT_THAT(pb, EqualsProto(kExpectedAggPb));
 }
 
+constexpr char kExpectedLimitPb[] = R"(
+  op_type: LIMIT_OPERATOR
+  limit_op {
+    limit: 12
+    columns {
+      node: 0
+      index: 0
+    }
+    columns {
+      node: 0
+      index: 2
+    }
+  }
+)";
+
+TEST(ToProto, limit_ir) {
+  auto ast = MakeTestAstPtr();
+  auto graph = std::make_shared<IR>();
+  auto mem_src = graph
+                     ->CreateNode<MemorySourceIR>(
+                         ast, "source", std::vector<std::string>{"col1", "group1", "column"})
+                     .ValueOrDie();
+  table_store::schema::Relation src_rel({types::INT64, types::INT64, types::INT64},
+                                        {"col1", "group1", "column"});
+  EXPECT_OK(mem_src->SetRelation(src_rel));
+
+  auto limit = graph->CreateNode<LimitIR>(ast, mem_src, 12).ValueOrDie();
+
+  table_store::schema::Relation limit_rel({types::INT64, types::INT64}, {"col1", "column"});
+  EXPECT_OK(limit->SetRelation(limit_rel));
+
+  planpb::Operator pb;
+  ASSERT_OK(limit->ToProto(&pb));
+
+  EXPECT_THAT(pb, EqualsProto(kExpectedLimitPb));
+}
+
 constexpr char kInt64PbTxt[] = R"proto(
 constant {
   data_type: INT64

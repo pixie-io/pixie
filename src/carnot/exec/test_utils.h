@@ -183,7 +183,7 @@ class RowBatchBuilder {
   template <typename TUDF>
   RowBatchBuilder& AddColumn(std::vector<TUDF> col) {
     auto col_arrow = types::ToArrow(col, arrow::default_memory_pool());
-    EXPECT_TRUE(rb_->AddColumn(std::move(col_arrow)).ok());
+    EXPECT_OK(rb_->AddColumn(std::move(col_arrow)));
 
     return *this;
   }

@@ -328,6 +328,7 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *plannerpb.QueryRequest) 
 	}
 	planner := logicalplanner.New(&udfInfo)
 	defer planner.Free()
+
 	qr, status, err := s.ExecuteQueryWithPlanner(ctx, req, queryID, planner, planOpts)
 	if err != nil {
 		return nil, err
