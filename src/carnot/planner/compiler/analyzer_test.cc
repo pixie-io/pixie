@@ -898,6 +898,68 @@ TEST_F(AnalyzerTest, filter_pushdown) {
   EXPECT_MATCH(filter->Children()[0], Map());
 }
 
+constexpr char kAggQueryAnnotations[] = R"query(
+import px
+t1 = px.DataFrame(table='http_events', start_time='-5m', select=['http_resp_latency_ns', 'upid'])
+t1.service = t1.ctx['service']
+t1 = t1.groupby('service').agg(time_count=('http_resp_latency_ns', px.count))
+t1 = t1[['service']]
+px.display(t1)
+)query";
+
+TEST_F(AnalyzerTest, column_annotations_agg) {
+  auto ir_graph_status = CompileGraph(kAggQueryAnnotations);
+  ASSERT_OK(ir_graph_status);
+  // now pass into the relation handler.
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto handle_status = HandleRelation(ir_graph);
+  EXPECT_OK(handle_status);
+
+  auto aggs = ir_graph->FindNodesOfType(IRNodeType::kBlockingAgg);
+  ASSERT_EQ(1, aggs.size());
+  auto agg = static_cast<BlockingAggIR*>(aggs[0]);
+  ASSERT_EQ(1, agg->groups().size());
+  EXPECT_MATCH(agg->groups()[0], MetadataExpression(MetadataType::SERVICE_NAME));
+
+  ASSERT_EQ(1, agg->Children().size());
+  ASSERT_MATCH(agg->Children()[0], Map());
+  auto map = static_cast<MapIR*>(agg->Children()[0]);
+  ASSERT_EQ(1, map->col_exprs().size());
+  EXPECT_MATCH(map->col_exprs()[0].node, MetadataExpression(MetadataType::SERVICE_NAME));
+}
+
+constexpr char kInnerJoinQueryAnnotations[] = R"query(
+import px
+src1 = px.DataFrame(table='cpu', select=['upid', 'cpu0'])
+src1.service = src1.ctx['service']
+src2 = px.DataFrame(table='network', select=['upid'])
+src2.service = src2.ctx['service']
+join = src1.merge(src2, how='inner', left_on=['service'], right_on=['service'], suffixes=['', '_x'])
+px.display(join)
+)query";
+
+TEST_F(AnalyzerTest, column_annotations_join) {
+  auto ir_graph_status = CompileGraph(kInnerJoinQueryAnnotations);
+  ASSERT_OK(ir_graph_status);
+  // now pass into the relation handler.
+  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
+  auto handle_status = HandleRelation(ir_graph);
+  EXPECT_OK(handle_status);
+
+  auto joins = ir_graph->FindNodesOfType(IRNodeType::kJoin);
+  ASSERT_EQ(1, joins.size());
+  auto join = static_cast<JoinIR*>(joins[0]);
+  ASSERT_EQ(1, join->left_on_columns().size());
+  ASSERT_EQ(1, join->right_on_columns().size());
+  ASSERT_EQ(5, join->output_columns().size());
+  EXPECT_MATCH(join->left_on_columns()[0], MetadataExpression(MetadataType::SERVICE_NAME));
+  EXPECT_MATCH(join->right_on_columns()[0], MetadataExpression(MetadataType::SERVICE_NAME));
+  EXPECT_EQ(join->column_names()[2], "service");
+  EXPECT_EQ(join->column_names()[4], "service_x");
+  EXPECT_MATCH(join->output_columns()[2], MetadataExpression(MetadataType::SERVICE_NAME));
+  EXPECT_MATCH(join->output_columns()[4], MetadataExpression(MetadataType::SERVICE_NAME));
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
