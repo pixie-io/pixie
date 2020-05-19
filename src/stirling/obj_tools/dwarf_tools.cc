@@ -12,7 +12,8 @@ namespace dwarf_tools {
 using llvm::DWARFContext;
 using llvm::DWARFDie;
 
-StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(std::string_view obj_filename) {
+StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(std::string_view obj_filename,
+                                                           bool index) {
   using llvm::MemoryBuffer;
 
   std::error_code ec;
@@ -37,8 +38,13 @@ StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(std::string_view obj_
     return error::Internal("Could not create DWARFContext.");
   }
 
-  return std::unique_ptr<DwarfReader>(
+  auto dwarf_reader = std::unique_ptr<DwarfReader>(
       new DwarfReader(std::move(buffer), DWARFContext::create(*obj_file)));
+  if (index) {
+    dwarf_reader->IndexStructs();
+  }
+
+  return dwarf_reader;
 }
 
 DwarfReader::DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
@@ -50,9 +56,13 @@ DwarfReader::DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
 
 namespace {
 
-bool IsMatchingDIE(std::string_view name, llvm::dwarf::Tag tag, const DWARFDie& die) {
+bool IsMatchingTag(llvm::dwarf::Tag tag, const DWARFDie& die) {
   llvm::dwarf::Tag die_tag = die.getTag();
-  if (tag != static_cast<llvm::dwarf::Tag>(llvm::dwarf::DW_TAG_invalid) && (tag != die_tag)) {
+  return (tag == static_cast<llvm::dwarf::Tag>(llvm::dwarf::DW_TAG_invalid) || (tag == die_tag));
+}
+
+bool IsMatchingDIE(std::string_view name, llvm::dwarf::Tag tag, const DWARFDie& die) {
+  if (!IsMatchingTag(tag, die)) {
     // Not the right type.
     return false;
   }
@@ -82,10 +92,46 @@ Status DwarfReader::GetMatchingDIEs(DWARFContext::unit_iterator_range CUs, std::
   return Status::OK();
 }
 
+void DwarfReader::IndexStructs() {
+  // For now, we only index structure types.
+  // TODO(oazizi): Expand to cover other types, when needed.
+  llvm::dwarf::Tag tag = llvm::dwarf::DW_TAG_structure_type;
+
+  DWARFContext::unit_iterator_range CUs = dwarf_context_->normal_units();
+
+  for (const auto& CU : CUs) {
+    for (const auto& Entry : CU->dies()) {
+      DWARFDie die = {CU.get(), &Entry};
+      if (IsMatchingTag(tag, die)) {
+        const char* die_short_name = die.getName(llvm::DINameKind::ShortName);
+        if (die_short_name != nullptr) {
+          // TODO(oazizi): What's the right way to deal with duplicate names?
+          // Only appears to happen with structs like the following:
+          //  ThreadStart, _IO_FILE, _IO_marker, G, in6_addr
+          // So probably okay for now. But need to be wary of this.
+          if (die_struct_map_.find(die_short_name) != die_struct_map_.end()) {
+            VLOG(1) << "Duplicate name: " << die_short_name;
+          }
+          die_struct_map_[die_short_name] = die;
+        }
+      }
+    }
+  }
+}
+
 StatusOr<std::vector<DWARFDie>> DwarfReader::GetMatchingDIEs(std::string_view name,
                                                              llvm::dwarf::Tag type) {
   DCHECK(dwarf_context_ != nullptr);
   std::vector<DWARFDie> dies;
+
+  // Special case for types that are indexed (currently only struct types);
+  if (type == llvm::dwarf::DW_TAG_structure_type && !die_struct_map_.empty()) {
+    auto iter = die_struct_map_.find(name);
+    if (iter != die_struct_map_.end()) {
+      return std::vector<DWARFDie>{iter->second};
+    }
+    return {};
+  }
 
   PL_RETURN_IF_ERROR(GetMatchingDIEs(dwarf_context_->normal_units(), name, type, &dies));
   // TODO(oazizi): Might want to consider dwarf_context_->dwo_units() as well.

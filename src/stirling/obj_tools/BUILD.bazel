@@ -9,6 +9,7 @@ pl_cc_library(
         exclude = [
             "**/*_test.cc",
             "**/*_tool.cc",
+            "**/*_benchmark.cc",
         ],
     ),
     hdrs = glob(
@@ -94,5 +95,18 @@ pl_cc_binary(
     deps = [
         ":cc_library",
         "//:llvm",
+    ],
+)
+
+# NOTE: This benchmark only currently works with `-c opt`, because path to test binary is hard-coded.
+# But we should be running benchmarks with `-c opt` anyways.
+pl_cc_binary(
+    name = "dwarf_reader_benchmark",
+    srcs = ["dwarf_reader_benchmark.cc"],
+    data = ["//demos/client_server_apps/go_grpc_tls_pl/server"],
+    deps = [
+        ":cc_library",
+        "//src/common/testing:cc_library",
+        "@com_google_benchmark//:benchmark_main",
     ],
 )

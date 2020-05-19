@@ -19,7 +19,7 @@ TEST(DwarfReaderTest, NonExistentPath) {
 }
 
 TEST(DwarfReaderTest, Basic) {
-  const std::string path = pl::testing::BazelBinTestFilePath(kBinary);
+  const std::string path = pl::testing::TestFilePath(kBinary);
 
   std::vector<llvm::DWARFDie> dies;
 
@@ -37,6 +37,17 @@ TEST(DwarfReaderTest, Basic) {
       dies, dwarf_reader->GetMatchingDIEs("PairStruct", llvm::dwarf::DW_TAG_structure_type));
   ASSERT_THAT(dies, SizeIs(1));
   ASSERT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_structure_type);
+
+  ASSERT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "a"), 0);
+  ASSERT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "b"), 4);
+  ASSERT_NOT_OK(dwarf_reader->GetStructMemberOffset("PairStruct", "bogus"));
+}
+
+TEST(DwarfReaderTest, WithoutIndex) {
+  const std::string path = pl::testing::TestFilePath(kBinary);
+
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(path, /* index */ false));
 
   ASSERT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "a"), 0);
   ASSERT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "b"), 4);
