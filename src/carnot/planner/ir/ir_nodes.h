@@ -1172,8 +1172,6 @@ class TimeIR : public DataIR {
   int64_t val_;
 };
 
-class MetadataResolverIR;
-
 class MetadataIR : public ColumnIR {
  public:
   MetadataIR() = delete;
@@ -1181,12 +1179,6 @@ class MetadataIR : public ColumnIR {
   Status Init(const std::string& metadata_val, int64_t parent_op_idx);
 
   std::string name() const { return metadata_name_; }
-  shared::metadatapb::MetadataType metadata_type() const { return metadata_type_; }
-
-  bool HasMetadataResolver() const { return has_metadata_resolver_; }
-
-  Status ResolveMetadataColumn(MetadataResolverIR* resolver_op, MetadataProperty* property);
-  MetadataResolverIR* resolver() const { return resolver_; }
   MetadataProperty* property() const { return property_; }
   bool has_property() const { return property_ != nullptr; }
   void set_property(MetadataProperty* property) { property_ = property; }
@@ -1198,15 +1190,6 @@ class MetadataIR : public ColumnIR {
 
  private:
   std::string metadata_name_;
-  // Set by ResolveMetadataColumn. property_ also stores metadata type, but it will not
-  // stick around long enough for the distributed planner to access it due to the fact
-  // that it is allocated via a memory pool that is freed after the single node phase.
-  // TODO(nserrino, philkuz): Clean up the logic around property_ so we don't have to store
-  // this information twice.
-  shared::metadatapb::MetadataType metadata_type_ =
-      shared::metadatapb::MetadataType::METADATA_TYPE_UNKNOWN;
-  bool has_metadata_resolver_ = false;
-  MetadataResolverIR* resolver_ = nullptr;
   MetadataProperty* property_ = nullptr;
 };
 
@@ -1356,43 +1339,6 @@ class MemorySinkIR : public OperatorIR {
  private:
   std::string name_;
   std::vector<std::string> out_columns_;
-};
-
-/**
- * @brief The MetadataResolverIR is a IR-only operation that
- * adds metadata as a column into the query.
- * At the end of the analyzer stage of the compiler this becomes a map node.
- */
-class MetadataResolverIR : public OperatorIR {
- public:
-  MetadataResolverIR() = delete;
-  explicit MetadataResolverIR(int64_t id)
-      : OperatorIR(id, IRNodeType::kMetadataResolver, true, false) {}
-  Status ToProto(planpb::Operator*) const override {
-    return error::Unimplemented("Calling ToProto on $0, which lacks a Protobuf representation.",
-                                type_string());
-  }
-
-  Status Init(OperatorIR* parent) { return AddParent(parent); }
-
-  Status AddMetadata(MetadataProperty* md_property);
-  bool HasMetadataColumn(const std::string& type);
-  std::map<std::string, MetadataProperty*> metadata_columns() const { return metadata_columns_; }
-  Status CopyFromNodeImpl(const IRNode* node,
-                          absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
-
-  StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
-    return error::Unimplemented("Unexpected call to MetadataResolverIR::RequiredInputColumns");
-  }
-
- protected:
-  StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
-      const absl::flat_hash_set<std::string>& /*kept_columns*/) override {
-    return error::Unimplemented("Unexpected call to MetadataResolverIR::PruneOutputColumnsTo.");
-  }
-
- private:
-  std::map<std::string, MetadataProperty*> metadata_columns_;
 };
 
 /**

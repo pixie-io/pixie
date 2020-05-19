@@ -119,10 +119,6 @@ inline ClassMatch<IRNodeType::kMemorySink> MemorySink() {
 }
 inline ClassMatch<IRNodeType::kLimit> Limit() { return ClassMatch<IRNodeType::kLimit>(); }
 
-// Match an arbitrary MetadataResolver operator.
-inline ClassMatch<IRNodeType::kMetadataResolver> MetadataResolver() {
-  return ClassMatch<IRNodeType::kMetadataResolver>();
-}
 inline ClassMatch<IRNodeType::kGRPCSource> GRPCSource() {
   return ClassMatch<IRNodeType::kGRPCSource>();
 }
@@ -454,28 +450,6 @@ inline SpecificExpressionMatch<IRNodeType::kFunc, true> ResolvedFuncType() {
 inline SpecificExpressionMatch<IRNodeType::kMetadata, false> UnresolvedMetadataType() {
   return SpecificExpressionMatch<IRNodeType::kMetadata, false>();
 }
-
-/**
- * @brief Match a metadataIR node that has either been Resolved by a metadata
- * resolver node, or not.
- *
- * @tparam Resolved: whether the metadata has been resolved with a resovler node.
- */
-template <bool Resolved>
-struct MetadataIRMatch : public ParentMatch {
-  MetadataIRMatch() : ParentMatch(IRNodeType::kMetadata) {}
-  bool Match(const IRNode* node) const override {
-    if (node->type() == IRNodeType::kMetadata) {
-      return Resolved == static_cast<const MetadataIR*>(node)->HasMetadataResolver();
-    }
-    return false;
-  }
-};
-
-/**
- * @brief Match a MetadataIR that doesn't have an associated MetadataResolver node.
- */
-inline MetadataIRMatch<false> UnresolvedMetadataIR() { return MetadataIRMatch<false>(); }
 
 /**
  * @brief Match Compile Time integer arithmetic

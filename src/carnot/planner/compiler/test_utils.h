@@ -954,9 +954,6 @@ void CompareCloneNode(MetadataIR* new_ir, MetadataIR* old_ir, const std::string&
   EXPECT_EQ(new_ir->name(), old_ir->name())
       << absl::Substitute("Expected Metadata names to be the same. Got $1 vs $2. $0.", err_string,
                           new_ir->name(), old_ir->name());
-  EXPECT_EQ(new_ir->metadata_type(), old_ir->metadata_type())
-      << absl::Substitute("Expected Metadata types to be the same. Got $1 vs $2. $0.", err_string,
-                          new_ir->metadata_type(), old_ir->metadata_type());
 }
 
 template <>

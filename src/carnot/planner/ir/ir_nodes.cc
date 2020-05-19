@@ -1040,35 +1040,6 @@ Status MetadataIR::Init(const std::string& metadata_str, int64_t parent_op_idx) 
   return Status::OK();
 }
 
-Status MetadataIR::ResolveMetadataColumn(MetadataResolverIR* resolver_op,
-                                         MetadataProperty* property) {
-  SetColumnName(property->GetColumnRepr());
-  resolver_ = resolver_op;
-  property_ = property;
-  has_metadata_resolver_ = true;
-  if (property) {
-    metadata_type_ = property->metadata_type();
-  }
-  return Status::OK();
-}
-
-bool MetadataResolverIR::HasMetadataColumn(const std::string& col_name) {
-  auto md_map_it = metadata_columns_.find(col_name);
-  return md_map_it != metadata_columns_.end();
-}
-
-Status MetadataResolverIR::AddMetadata(MetadataProperty* md_property) {
-  // Check to make sure that name is a valid attribute name
-  // TODO(philkuz) grab the type from metadata handler, if it's invalid, it'll return an error.
-  // Check if metadata column exists
-  if (HasMetadataColumn(md_property->name())) {
-    return Status::OK();
-  }
-
-  metadata_columns_.emplace(md_property->name(), md_property);
-  return Status::OK();
-}
-
 Status OperatorIR::CopyFromNode(const IRNode* node,
                                 absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   PL_RETURN_IF_ERROR(IRNode::CopyFromNode(node, copied_nodes_map));
@@ -1221,7 +1192,6 @@ Status MetadataIR::CopyFromNodeImpl(const IRNode* node,
                                     absl::flat_hash_map<const IRNode*, IRNode*>*) {
   const MetadataIR* metadata_ir = static_cast<const MetadataIR*>(node);
   metadata_name_ = metadata_ir->metadata_name_;
-  metadata_type_ = metadata_ir->metadata_type_;
   return Status::OK();
 }
 
@@ -1253,13 +1223,6 @@ Status MemorySinkIR::CopyFromNodeImpl(const IRNode* node,
   const MemorySinkIR* sink_ir = static_cast<const MemorySinkIR*>(node);
   name_ = sink_ir->name_;
   out_columns_ = sink_ir->out_columns_;
-  return Status::OK();
-}
-
-Status MetadataResolverIR::CopyFromNodeImpl(const IRNode* node,
-                                            absl::flat_hash_map<const IRNode*, IRNode*>*) {
-  const MetadataResolverIR* resolver_ir = static_cast<const MetadataResolverIR*>(node);
-  metadata_columns_ = resolver_ir->metadata_columns_;
   return Status::OK();
 }
 

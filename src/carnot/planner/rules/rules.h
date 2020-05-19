@@ -149,7 +149,6 @@ class OperatorRelationRule : public Rule {
  private:
   StatusOr<bool> SetBlockingAgg(BlockingAggIR* agg_ir) const;
   StatusOr<bool> SetMap(MapIR* map_ir) const;
-  StatusOr<bool> SetMetadataResolver(MetadataResolverIR* map_ir) const;
   StatusOr<bool> SetUnion(UnionIR* union_ir) const;
   StatusOr<bool> SetOldJoin(JoinIR* join_op) const;
   StatusOr<bool> SetMemorySink(MemorySinkIR* map_ir) const;
@@ -288,102 +287,6 @@ class VerifyFilterExpressionRule : public Rule {
    */
  public:
   explicit VerifyFilterExpressionRule(CompilerState* compiler_state) : Rule(compiler_state) {}
-
- protected:
-  StatusOr<bool> Apply(IRNode* ir_node) override;
-};
-
-class ResolveMetadataRule : public Rule {
-  /**
-   * @brief Resolve metadata makes sure that metadata is properly added as a column in the table.
-   * The job of this rule is to create, or map to a MetadataResolver for any MetadataIR in the
-   * graph.
-   * TODO(nserrino): Remove this and replace with ResolveMetadataPropertyRule and
-   * ConvertMetadataRule.
-   */
-
- public:
-  explicit ResolveMetadataRule(CompilerState* compiler_state, MetadataHandler* md_handler)
-      : Rule(compiler_state), md_handler_(md_handler) {}
-
- protected:
-  StatusOr<bool> Apply(IRNode* ir_node) override;
-  StatusOr<bool> HandleMetadata(MetadataIR* md_node) const;
-  /** @brief Inserts a metadata resolver between the container op and parent op. */
-  StatusOr<MetadataResolverIR*> InsertMetadataResolver(OperatorIR* container_op,
-                                                       OperatorIR* parent_op) const;
-
- private:
-  MetadataHandler* md_handler_;
-};
-
-class CheckMetadataColumnNamingRule : public Rule {
-  /**
-   * @brief Checks to make sure that the column naming scheme doesn't collide with metadata.
-   *
-   * Never modifies the graph, so should always return false.
-   * TODO(nserrino): Remove this and replace with ResolveMetadataPropertyRule and
-   * ConvertMetadataRule.
-   */
- public:
-  explicit CheckMetadataColumnNamingRule(CompilerState* compiler_state) : Rule(compiler_state) {}
-
- protected:
-  StatusOr<bool> Apply(IRNode* ir_node) override;
-  StatusOr<bool> CheckMapColumns(MapIR* op) const;
-  StatusOr<bool> CheckAggColumns(BlockingAggIR* op) const;
-};
-
-class MetadataResolverConversionRule : public Rule {
-  /**
-   * @brief Converts the metadata resolver into a Map after everything is done.
-   * TODO(nserrino): Remove this and replace with ResolveMetadataPropertyRule and
-   * ConvertMetadataRule.
-   */
- public:
-  explicit MetadataResolverConversionRule(CompilerState* compiler_state) : Rule(compiler_state) {}
-
- protected:
-  StatusOr<bool> Apply(IRNode* ir_node) override;
-  StatusOr<bool> ReplaceMetadataResolver(MetadataResolverIR* md_resolver) const;
-
-  StatusOr<MapIR*> MakeMap(MetadataResolverIR* md_resolver) const;
-  Status SwapInMap(MetadataResolverIR* md_resolver, MapIR* map) const;
-  StatusOr<std::string> FindKeyColumn(const table_store::schema::Relation& parent_relation,
-                                      MetadataProperty* property, IRNode* node_for_error) const;
-  Status CopyParentColumns(IR* graph, OperatorIR* parent_op, ColExpressionVector* col_exprs,
-                           pypa::AstPtr ast_node) const;
-
-  Status AddMetadataConversionFns(IR* graph, MetadataResolverIR* md_resolver, OperatorIR* parent_op,
-                                  ColExpressionVector* col_exprs) const;
-
-  /**
-   * @brief Removes the metadata resolver and pushes all of it's dependencies to depend on the
-   * Metadata Resolver operator's parent.
-   *
-   * @param md_resolver: the metadata to remove from the graph.
-   * @return Status: Error if there are issues with removing the node.
-   */
-  Status RemoveMetadataResolver(MetadataResolverIR* md_resolver) const;
-  Status RemoveMap(MapIR* map) const;
-  /**
-   * @brief Returns true if the Map only copies the parent operation's columns.
-   *
-   * @param map: map_node
-   * @return true: if the map returns a copy of the parent.
-   */
-  bool DoesMapOnlyCopy(MapIR* map) const;
-};
-
-class DropMetadataColumnsFromSinksRule : public Rule {
-  /**
-   * @brief Drop all columns with the "_attr_" prefix from MemorySinks.
-   * TODO(nserrino): Remove this and replace with ResolveMetadataPropertyRule and
-   * ConvertMetadataRule.
-   */
-
- public:
-  explicit DropMetadataColumnsFromSinksRule(CompilerState* compiler_state) : Rule(compiler_state) {}
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
