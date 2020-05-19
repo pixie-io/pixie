@@ -756,17 +756,12 @@ nodes {
   dag {
     nodes {
       id: 6
-      sorted_children: 22
-    }
-    nodes {
-      id: 22
       sorted_children: 11
-      sorted_parents: 6
     }
     nodes {
       id: 11
       sorted_children: 13
-      sorted_parents: 22
+      sorted_parents: 6
     }
     nodes {
       id: 13
@@ -798,62 +793,6 @@ nodes {
     }
   }
   nodes {
-    id: 22
-    op {
-      op_type: MAP_OPERATOR
-      map_op {
-        expressions {
-          column {
-            node: 6
-          }
-        }
-        expressions {
-          column {
-            node: 6
-            index: 1
-          }
-        }
-        expressions {
-          column {
-            node: 6
-            index: 2
-          }
-        }
-        expressions {
-          column {
-            node: 6
-            index: 3
-          }
-        }
-        expressions {
-          column {
-            node: 6
-            index: 4
-          }
-        }
-        expressions {
-          func {
-            name: "upid_to_service_name"
-            args {
-              column {
-                node: 6
-                index: 4
-              }
-            }
-            id: 1
-            args_data_types: UINT128
-          }
-        }
-        column_names: "count"
-        column_names: "cpu0"
-        column_names: "cpu1"
-        column_names: "cpu2"
-        column_names: "upid"
-        column_names: "_attr_service_name"
-      }
-    }
-  }
-  nodes {
     id: 11
     op {
       op_type: FILTER_OPERATOR
@@ -862,9 +801,16 @@ nodes {
           func {
             name: "equal"
             args {
-              column {
-                node: 22
-                index: 5
+              func {
+                name: "upid_to_service_name"
+                args {
+                  column {
+                    node: 6
+                    index: 4
+                  }
+                }
+                id: 1
+                args_data_types: UINT128
               }
             }
             args {
@@ -878,22 +824,22 @@ nodes {
           }
         }
         columns {
-          node: 22
+          node: 6
         }
         columns {
-          node: 22
+          node: 6
           index: 1
         }
         columns {
-          node: 22
+          node: 6
           index: 2
         }
         columns {
-          node: 22
+          node: 6
           index: 3
         }
         columns {
-          node: 22
+          node: 6
           index: 4
         }
       }
@@ -922,7 +868,7 @@ nodes {
 )proto";
 
 constexpr char kExpectedMapMetadataPlan[] = R"proto(
-   dag {
+dag {
   nodes {
     id: 1
   }
@@ -932,17 +878,12 @@ nodes {
   dag {
     nodes {
       id: 6
-      sorted_children: 31
-    }
-    nodes {
-      id: 31
       sorted_children: 11
-      sorted_parents: 6
     }
     nodes {
       id: 11
       sorted_children: 14
-      sorted_parents: 31
+      sorted_parents: 6
     }
     nodes {
       id: 14
@@ -967,7 +908,7 @@ nodes {
     }
   }
   nodes {
-    id: 31
+    id: 11
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -980,20 +921,6 @@ nodes {
               }
             }
             args_data_types: UINT128
-          }
-        }
-        column_names: "_attr_service_name"
-      }
-    }
-  }
-  nodes {
-    id: 11
-    op {
-      op_type: MAP_OPERATOR
-      map_op {
-        expressions {
-          column {
-            node: 31
           }
         }
         column_names: "service"
@@ -1029,7 +956,7 @@ nodes {
 )proto";
 
 constexpr char kExpectedAgg1MetadataPlan[] = R"proto(
-  dag {
+dag {
   nodes {
     id: 1
   }
@@ -1039,17 +966,12 @@ nodes {
   dag {
     nodes {
       id: 6
-      sorted_children: 36
-    }
-    nodes {
-      id: 36
       sorted_children: 11
-      sorted_parents: 6
     }
     nodes {
       id: 11
       sorted_children: 18
-      sorted_parents: 36
+      sorted_parents: 6
     }
     nodes {
       id: 18
@@ -1077,7 +999,7 @@ nodes {
     }
   }
   nodes {
-    id: 36
+    id: 11
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1096,27 +1018,6 @@ nodes {
               }
             }
             args_data_types: UINT128
-          }
-        }
-        column_names: "cpu0"
-        column_names: "_attr_service_name"
-      }
-    }
-  }
-  nodes {
-    id: 11
-    op {
-      op_type: MAP_OPERATOR
-      map_op {
-        expressions {
-          column {
-            node: 36
-          }
-        }
-        expressions {
-          column {
-            node: 36
-            index: 1
           }
         }
         column_names: "cpu0"
@@ -1161,11 +1062,10 @@ nodes {
     }
   }
 }
-
 )proto";
 
 constexpr char kExpectedAgg2MetadataPlan[] = R"proto(
- dag {
+dag {
   nodes {
     id: 1
   }
@@ -1175,17 +1075,12 @@ nodes {
   dag {
     nodes {
       id: 6
-      sorted_children: 39
-    }
-    nodes {
-      id: 39
       sorted_children: 11
-      sorted_parents: 6
     }
     nodes {
       id: 11
       sorted_children: 20
-      sorted_parents: 39
+      sorted_parents: 6
     }
     nodes {
       id: 20
@@ -1213,7 +1108,7 @@ nodes {
     }
   }
   nodes {
-    id: 39
+    id: 11
     op {
       op_type: MAP_OPERATOR
       map_op {
@@ -1232,27 +1127,6 @@ nodes {
               }
             }
             args_data_types: UINT128
-          }
-        }
-        column_names: "cpu0"
-        column_names: "_attr_service_name"
-      }
-    }
-  }
-  nodes {
-    id: 11
-    op {
-      op_type: MAP_OPERATOR
-      map_op {
-        expressions {
-          column {
-            node: 39
-          }
-        }
-        expressions {
-          column {
-            node: 39
-            index: 1
           }
         }
         column_names: "cpu0"
@@ -1316,36 +1190,26 @@ nodes {
   dag {
     nodes {
       id: 6
-      sorted_children: 45
+      sorted_children: 25
     }
     nodes {
-      id: 45
+      id: 25
       sorted_children: 11
       sorted_parents: 6
     }
     nodes {
       id: 11
       sorted_children: 20
-      sorted_parents: 45
+      sorted_parents: 25
     }
     nodes {
       id: 20
-      sorted_children: 51
+      sorted_children: 27
       sorted_parents: 11
     }
     nodes {
-      id: 51
-      sorted_children: 25
-      sorted_parents: 20
-    }
-    nodes {
-      id: 25
-      sorted_children: 27
-      sorted_parents: 51
-    }
-    nodes {
       id: 27
-      sorted_parents: 25
+      sorted_parents: 20
     }
   }
   nodes {
@@ -1364,37 +1228,43 @@ nodes {
     }
   }
   nodes {
-    id: 45
+    id: 25
     op {
-      op_type: MAP_OPERATOR
-      map_op {
-        expressions {
-          column {
-            node: 6
-          }
-        }
-        expressions {
-          column {
-            node: 6
-            index: 1
-          }
-        }
-        expressions {
+      op_type: FILTER_OPERATOR
+      filter_op {
+        expression {
           func {
-            name: "upid_to_service_name"
+            name: "equal"
             args {
-              column {
-                node: 6
-                index: 1
+              func {
+                name: "upid_to_service_name"
+                args {
+                  column {
+                    node: 6
+                    index: 1
+                  }
+                }
+                id: 1
+                args_data_types: UINT128
               }
             }
-            id: 1
-            args_data_types: UINT128
+            args {
+              constant {
+                data_type: STRING
+                string_value: "pl/service-name"
+              }
+            }
+            args_data_types: STRING
+            args_data_types: STRING
           }
         }
-        column_names: "cpu0"
-        column_names: "upid"
-        column_names: "_attr_service_name"
+        columns {
+          node: 6
+        }
+        columns {
+          node: 6
+          index: 1
+        }
       }
     }
   }
@@ -1405,19 +1275,26 @@ nodes {
       map_op {
         expressions {
           column {
-            node: 45
+            node: 25
           }
         }
         expressions {
           column {
-            node: 45
+            node: 25
             index: 1
           }
         }
         expressions {
-          column {
-            node: 45
-            index: 2
+          func {
+            name: "upid_to_service_name"
+            args {
+              column {
+                node: 25
+                index: 1
+              }
+            }
+            id: 1
+            args_data_types: UINT128
           }
         }
         column_names: "cpu0"
@@ -1451,85 +1328,6 @@ nodes {
         group_names: "upid"
         group_names: "service"
         value_names: "mean_cpu"
-      }
-    }
-  }
-  nodes {
-    id: 51
-    op {
-      op_type: MAP_OPERATOR
-      map_op {
-        expressions {
-          column {
-            node: 20
-          }
-        }
-        expressions {
-          column {
-            node: 20
-            index: 1
-          }
-        }
-        expressions {
-          column {
-            node: 20
-            index: 2
-          }
-        }
-        expressions {
-          func {
-            name: "upid_to_service_name"
-            args {
-              column {
-                node: 20
-              }
-            }
-            id: 1
-            args_data_types: UINT128
-          }
-        }
-        column_names: "upid"
-        column_names: "service"
-        column_names: "mean_cpu"
-        column_names: "_attr_service_name"
-      }
-    }
-  }
-  nodes {
-    id: 25
-    op {
-      op_type: FILTER_OPERATOR
-      filter_op {
-        expression {
-          func {
-            name: "equal"
-            args {
-              column {
-                node: 51
-                index: 3
-              }
-            }
-            args {
-              constant {
-                data_type: STRING
-                string_value: "pl/service-name"
-              }
-            }
-            args_data_types: STRING
-            args_data_types: STRING
-          }
-        }
-        columns {
-          node: 51
-        }
-        columns {
-          node: 51
-          index: 1
-        }
-        columns {
-          node: 51
-          index: 2
-        }
       }
     }
   }

@@ -485,6 +485,12 @@ class ExpressionIR : public IRNode {
   StatusOr<absl::flat_hash_set<ColumnIR*>> InputColumns();
   StatusOr<absl::flat_hash_set<std::string>> InputColumnNames();
 
+  /**
+   * @brief Override of CopyFromNode that adds special handling for ExpressionIR.
+   */
+  Status CopyFromNode(const IRNode* node,
+                      absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
+
   using MetadataType = shared::metadatapb::MetadataType;
 
   /**

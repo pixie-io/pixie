@@ -22,7 +22,7 @@ StatusOr<bool> DataTypeRule::Apply(IRNode* ir_node) {
     return EvaluateColumn(static_cast<ColumnIR*>(ir_node));
   } else if (Match(ir_node, UnresolvedMetadataType())) {
     // Evaluate any unresolved columns.
-    return EvaluateColumn(static_cast<ColumnIR*>(ir_node));
+    return EvaluateMetadata(static_cast<MetadataIR*>(ir_node));
   }
   return false;
 }
@@ -80,6 +80,11 @@ StatusOr<bool> DataTypeRule::EvaluateColumn(ColumnIR* column) {
 
   // Get the parent relation and find the column in it.
   PL_RETURN_IF_ERROR(EvaluateColumnFromRelation(column, parent_op->relation()));
+  return true;
+}
+
+StatusOr<bool> DataTypeRule::EvaluateMetadata(MetadataIR* md) {
+  md->ResolveColumnType(md->property()->column_type());
   return true;
 }
 

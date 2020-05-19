@@ -32,11 +32,8 @@ class Analyzer : public RuleExecutor<IR> {
     RuleBatch* source_and_metadata_resolution_batch =
         CreateRuleBatch<FailOnMax>("TableAndMetadataResolution", 2);
     source_and_metadata_resolution_batch->AddRule<SourceRelationRule>(compiler_state_);
-    // TODO(nserrino): Uncomment and remove ResolveMetadataRule.
-    // source_and_metadata_resolution_batch->AddRule<ResolveMetadataPropertyRule>(compiler_state_,
-    //                                                                            md_handler_.get());
-    source_and_metadata_resolution_batch->AddRule<ResolveMetadataRule>(compiler_state_,
-                                                                       md_handler_.get());
+    source_and_metadata_resolution_batch->AddRule<ResolveMetadataPropertyRule>(compiler_state_,
+                                                                               md_handler_.get());
     source_and_metadata_resolution_batch->AddRule<SetupJoinTypeRule>();
     source_and_metadata_resolution_batch->AddRule<MergeGroupByIntoGroupAcceptorRule>(
         IRNodeType::kBlockingAgg);
@@ -44,12 +41,6 @@ class Analyzer : public RuleExecutor<IR> {
         IRNodeType::kRolling);
     source_and_metadata_resolution_batch->AddRule<ConvertStringTimesRule>(compiler_state_);
     source_and_metadata_resolution_batch->AddRule<NestedBlockingAggFnCheckRule>();
-  }
-
-  void CreateVerifyUserDefinedColumnsBatch() {
-    RuleBatch* verify_user_columns_batch =
-        CreateRuleBatch<FailOnMax>("VerifyUserDefinedColumns", 1);
-    verify_user_columns_batch->AddRule<CheckMetadataColumnNamingRule>(compiler_state_);
   }
 
   void CreateUniqueSinkNamesBatch() {
@@ -80,16 +71,14 @@ class Analyzer : public RuleExecutor<IR> {
         CreateRuleBatch<FailOnMax>("IntermediateResolution", 100);
     intermediate_resolution_batch->AddRule<DataTypeRule>(compiler_state_);
     intermediate_resolution_batch->AddRule<OperatorRelationRule>(compiler_state_);
-    intermediate_resolution_batch->AddRule<DropMetadataColumnsFromSinksRule>(compiler_state_);
     intermediate_resolution_batch->AddRule<DropToMapOperatorRule>(compiler_state_);
   }
 
-  // TODO(nserrino): Uncomment and remove previous metadata handling.
-  // void CreateMetadataConversionBatch() {
-  //   RuleBatch* metadata_conversion_batch = CreateRuleBatch<FailOnMax>("MetadataConversion", 2);
-  //   metadata_conversion_batch->AddRule<ConvertMetadataRule>();
-  //   metadata_conversion_batch->AddRule<PropagateExpressionAnnotationsRule>();
-  // }
+  void CreateMetadataConversionBatch() {
+    RuleBatch* metadata_conversion_batch = CreateRuleBatch<FailOnMax>("MetadataConversion", 2);
+    metadata_conversion_batch->AddRule<ConvertMetadataRule>(compiler_state_);
+    metadata_conversion_batch->AddRule<PropagateExpressionAnnotationsRule>();
+  }
 
   void CreateFilterPushdownBatch() {
     // Use TryUntilMax here to avoid swapping the positions of "equal" filters endlessly.
@@ -105,21 +94,18 @@ class Analyzer : public RuleExecutor<IR> {
 
   void CreateRemoveIROnlyNodesBatch() {
     RuleBatch* remove_ir_only_nodes_batch = CreateRuleBatch<FailOnMax>("RemoveIROnlyNodes", 2);
-    remove_ir_only_nodes_batch->AddRule<MetadataResolverConversionRule>(compiler_state_);
     remove_ir_only_nodes_batch->AddRule<RemoveGroupByRule>();
   }
 
   Status Init() {
     md_handler_ = MetadataHandler::Create();
     CreateSourceAndMetadataResolutionBatch();
-    CreateVerifyUserDefinedColumnsBatch();
     CreateUniqueSinkNamesBatch();
     CreateAddLimitToMemorySinkBatch();
     CreateOperatorCompileTimeExpressionRuleBatch();
     CreateCombineConsecutiveMapsRule();
     CreateDataTypeResolutionBatch();
-    // TODO(nserrino): Uncomment and remove prior metadata handling.
-    // CreateMetadataConversionBatch();
+    CreateMetadataConversionBatch();
     CreateFilterPushdownBatch();
     CreateResolutionVerificationBatch();
     CreateRemoveIROnlyNodesBatch();

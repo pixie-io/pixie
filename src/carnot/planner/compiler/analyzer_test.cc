@@ -612,21 +612,6 @@ TEST_F(AnalyzerTest, metadata_fails_no_upid) {
                                "columns \\[cpu0\\] available."));
 }
 
-TEST_F(AnalyzerTest, define_column_metadata) {
-  std::string valid_query = absl::StrJoin(
-      {"import px", "queryDF = px.DataFrame(table='cpu', select=['cpu0']) ",
-       "queryDF['$0service'] = px.add(queryDF['cpu0'], 1)", "px.display(queryDF, 'out')"},
-      "\n");
-  valid_query = absl::Substitute(valid_query, MetadataProperty::kMetadataColumnPrefix);
-  auto ir_graph_status = CompileGraph(valid_query);
-  ASSERT_OK(ir_graph_status);
-  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
-  EXPECT_THAT(HandleRelation(ir_graph),
-              HasCompilerError("Column name '$0service' violates naming rules. The '$0' prefix is "
-                               "reserved for internal use.",
-                               MetadataProperty::kMetadataColumnPrefix));
-}
-
 // Test to make sure that copying the metadata key column still works.
 TEST_F(AnalyzerTest, copy_metadata_key_and_og_column) {
   std::string valid_query = absl::StrJoin(

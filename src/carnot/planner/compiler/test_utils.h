@@ -1142,6 +1142,9 @@ void CompareClone(IRNode* new_ir, IRNode* old_ir, const std::string& err_string)
   // For all base classes that are derived from IRNode, check their properties here.
   if (Match(new_ir, Expression())) {
     EXPECT_EQ(new_ir->type_string(), old_ir->type_string()) << err_string;
+    auto new_expr = static_cast<ExpressionIR*>(new_ir);
+    auto old_expr = static_cast<ExpressionIR*>(old_ir);
+    EXPECT_EQ(new_expr->annotations(), old_expr->annotations()) << err_string;
   }
   if (Match(new_ir, Operator())) {
     auto new_op = static_cast<OperatorIR*>(new_ir);

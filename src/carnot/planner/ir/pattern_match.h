@@ -46,6 +46,8 @@ namespace pl {
 namespace carnot {
 namespace planner {
 
+using shared::metadatapb::MetadataType;
+
 /**
  * @brief Match function that aliases the match function attribute of a pattern.
  */
@@ -375,6 +377,31 @@ struct ExpressionMatchDataType : public ParentMatch {
 inline ExpressionMatchDataType Expression(types::DataType type) {
   return ExpressionMatchDataType(type);
 }
+
+/**
+ * @brief Matches an expression with a metadata annotation. If a MetadataType is passed in, it
+ * must match that particular metadata type.
+ *
+ */
+struct MetadataExpression : public ParentMatch {
+  MetadataExpression() : ParentMatch(IRNodeType::kAny) {}
+  explicit MetadataExpression(MetadataType type)
+      : ParentMatch(IRNodeType::kAny), metadata_type_(type) {}
+  bool Match(const IRNode* node) const override {
+    if (!node->IsExpression()) {
+      return false;
+    }
+    const ExpressionIR* expr = static_cast<const ExpressionIR*>(node);
+    bool type_set = expr->annotations().metadata_type_set();
+    if (metadata_type_ == MetadataType::METADATA_TYPE_UNKNOWN) {
+      return type_set;
+    }
+    return type_set && metadata_type_ == expr->annotations().metadata_type;
+  }
+
+ private:
+  MetadataType metadata_type_ = MetadataType::METADATA_TYPE_UNKNOWN;
+};
 
 /**
  * @brief Match a specifically typed expression that has a given resolution state.

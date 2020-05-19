@@ -307,16 +307,14 @@ TEST_F(DataTypeRuleTest, nested_functions) {
 }
 
 TEST_F(DataTypeRuleTest, metadata_column) {
-  MetadataResolverIR* md = MakeMetadataResolver(mem_src);
   std::string metadata_name = "pod_name";
   MetadataProperty* property = md_handler->GetProperty(metadata_name).ValueOrDie();
-  table_store::schema::Relation relation({property->column_type()}, {property->GetColumnRepr()});
-  EXPECT_OK(md->SetRelation(relation));
+
   MetadataIR* metadata_ir = MakeMetadataIR(metadata_name, /* parent_op_idx */ 0);
-  EXPECT_OK(metadata_ir->ResolveMetadataColumn(md, property));
-  MakeFilter(md, metadata_ir);
+  metadata_ir->set_property(property);
+  MakeFilter(MakeMemSource(), metadata_ir);
   EXPECT_FALSE(metadata_ir->IsDataTypeEvaluated());
-  // Expect the data_rule to do nothing, no more work left.
+
   DataTypeRule data_rule(compiler_state_.get());
   auto result = data_rule.Execute(graph.get());
   ASSERT_OK(result);

@@ -116,6 +116,7 @@ class DataTypeRule : public Rule {
 
  protected:
   StatusOr<bool> Apply(IRNode* ir_node) override;
+  static StatusOr<bool> EvaluateMetadata(MetadataIR* md);
 };
 
 class SourceRelationRule : public Rule {

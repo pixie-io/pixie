@@ -309,21 +309,23 @@ bool FilterExpressionMayProduceData(ExpressionIR* expr, const md::AgentMetadataF
     return logical_and ? lhs && rhs : lhs || rhs;
   }
 
-  if (Match(expr, Equals(Metadata(), String()))) {
-    MetadataIR* metadata;
+  if (Match(expr, Equals(MetadataExpression(), String()))) {
+    ExpressionIR* metadata_expr;
     StringIR* value;
 
-    if (Match(func->args()[0], Metadata())) {
-      metadata = static_cast<MetadataIR*>(func->args()[0]);
-      value = static_cast<StringIR*>(func->args()[1]);
-    } else {
+    if (Match(func->args()[0], String())) {
       value = static_cast<StringIR*>(func->args()[0]);
-      metadata = static_cast<MetadataIR*>(func->args()[1]);
+      metadata_expr = func->args()[1];
+    } else {
+      metadata_expr = func->args()[0];
+      value = static_cast<StringIR*>(func->args()[1]);
     }
-    if (!md_filter.metadata_types().contains(metadata->metadata_type())) {
+
+    auto metadata_type = metadata_expr->annotations().metadata_type;
+    if (!md_filter.metadata_types().contains(metadata_type)) {
       return true;
     }
-    return md_filter.ContainsEntity(metadata->metadata_type(), value->str());
+    return md_filter.ContainsEntity(metadata_type, value->str());
   }
   return true;
 }

@@ -1080,6 +1080,13 @@ Status OperatorIR::CopyFromNode(const IRNode* node,
   return Status::OK();
 }
 
+Status ExpressionIR::CopyFromNode(const IRNode* node,
+                                  absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
+  PL_RETURN_IF_ERROR(IRNode::CopyFromNode(node, copied_nodes_map));
+  annotations_ = static_cast<const ExpressionIR*>(node)->annotations();
+  return Status::OK();
+}
+
 // Clone Functions
 StatusOr<std::unique_ptr<IR>> IR::Clone() const {
   auto new_ir = std::make_unique<IR>();
@@ -1145,7 +1152,7 @@ std::vector<OperatorIR*> OperatorIR::Children() const {
 
 Status ColumnIR::CopyFromNode(const IRNode* source,
                               absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
-  PL_RETURN_IF_ERROR(IRNode::CopyFromNode(source, copied_nodes_map));
+  PL_RETURN_IF_ERROR(ExpressionIR::CopyFromNode(source, copied_nodes_map));
   const ColumnIR* column = static_cast<const ColumnIR*>(source);
   col_name_ = column->col_name_;
   col_name_set_ = column->col_name_set_;

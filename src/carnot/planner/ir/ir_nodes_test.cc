@@ -699,6 +699,7 @@ TEST_F(CloneTests, simple_clone) {
   auto mem_source = MakeMemSource();
   ColumnIR* col1 = MakeColumn("test1", 0);
   ColumnIR* col2 = MakeColumn("test2", 0);
+  col2->set_annotations(ExpressionIR::Annotations(MetadataType::POD_NAME));
   ColumnIR* col3 = MakeColumn("test3", 0);
   FuncIR* add_func = MakeAddFunc(col3, MakeInt(3));
   MapIR* map = MakeMap(mem_source, {{{"out1", col1}, {"out2", col2}, {"out3", add_func}}, {}});
