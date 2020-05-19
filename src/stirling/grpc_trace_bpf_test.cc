@@ -213,7 +213,7 @@ TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
   GRPCTraceGoTest::LaunchServer(GetParam());
 
   // Give 5 seconds to attach uprobes.
-  std::this_thread::sleep_for(std::chrono::seconds(5));
+  std::this_thread::sleep_for(std::chrono::seconds(10));
 
   SubProcess c;
   const std::string https_flag = GetParam() ? "--https=true" : "--https=false";

@@ -350,37 +350,98 @@ std::map<std::string, std::vector<int32_t>> SocketTraceConnector::FindNewPIDs() 
   return new_pids;
 }
 
-bool SocketTraceConnector::UpdateHTTP2SymAddrs(
+Status SocketTraceConnector::UpdateHTTP2SymAddrs(
     std::string_view binary, ElfReader* elf_reader, const std::vector<int32_t>& pids,
     ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map) {
   struct conn_symaddrs_t symaddrs;
-  symaddrs.syscall_conn =
-      elf_reader
-          ->SymbolAddress(
-              "go.itab.*google.golang.org/grpc/credentials/internal.syscallConn,net.Conn")
-          .value_or(-1);
-  symaddrs.tls_conn = elf_reader->SymbolAddress("go.itab.*crypto/tls.Conn,net.Conn").value_or(-1);
-  symaddrs.tcp_conn = elf_reader->SymbolAddress("go.itab.*net.TCPConn,net.Conn").value_or(-1);
 
-  // TCPConn is mandatory by the HTTP2 uprobes probe, so bail if it is not found (-1).
-  // It should be the last layer of nested interface, and contains the FD.
-  // The other conns can be invalid, and will simply be ignored.
-  if (symaddrs.tcp_conn == -1) {
-    return false;
-  }
-
-  PL_ASSIGN_OR(std::unique_ptr<DwarfReader> dwarf_reader, DwarfReader::Create(binary),
-               return false;);
-  PL_ASSIGN_OR(symaddrs.http2_server_conn_offset,
-               dwarf_reader->GetStructMemberOffset(
-                   "google.golang.org/grpc/internal/transport.http2Server", "conn"),
-               return false);
+  PL_RETURN_IF_ERROR(UpdateHTTP2TypeAddrs(elf_reader, &symaddrs));
+  PL_RETURN_IF_ERROR(UpdateHTTP2DebugSymbols(binary, &symaddrs));
 
   for (auto& pid : pids) {
     http2_symaddrs_map->update_value(pid, symaddrs);
   }
 
-  return true;
+  return Status::OK();
+}
+
+Status SocketTraceConnector::UpdateHTTP2TypeAddrs(ElfReader* elf_reader,
+                                                  struct conn_symaddrs_t* symaddrs) {
+  // Note: we only return error if a *mandatory* symbol is missing. Only TCPConn is mandatory.
+  // Without TCPConn, the uprobe cannot resolve the FD, and becomes pointless.
+
+#define GET_SYMADDR(symaddr, name)                        \
+  symaddr = elf_reader->SymbolAddress(name).value_or(-1); \
+  VLOG(1) << absl::Substitute(#symaddr " = $0", symaddr);
+
+  GET_SYMADDR(symaddrs->syscall_conn,
+              "go.itab.*google.golang.org/grpc/credentials/internal.syscallConn,net.Conn");
+  GET_SYMADDR(symaddrs->tls_conn, "go.itab.*crypto/tls.Conn,net.Conn");
+  GET_SYMADDR(symaddrs->tcp_conn, "go.itab.*net.TCPConn,net.Conn");
+
+#undef GET_SYMADDR
+
+  // TCPConn is mandatory by the HTTP2 uprobes probe, so bail if it is not found (-1).
+  // It should be the last layer of nested interface, and contains the FD.
+  // The other conns can be invalid, and will simply be ignored.
+  if (symaddrs->tcp_conn == -1) {
+    return error::Internal("TCPConn not found");
+  }
+
+  return Status::OK();
+}
+
+Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
+                                                     struct conn_symaddrs_t* symaddrs) {
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<DwarfReader> dwarf_reader,
+                      DwarfReader::Create(binary, /* index */ true));
+
+  // Note: we only return error if a *mandatory* symbol is missing. Currently none are mandatory,
+  // because these multiple probes for multiple HTTP2/GRPC libraries. Even if a symbol for one
+  // is missing it doesn't mean the other library's probes should not be deployed.
+
+#define GET_SYMADDR(symaddr, type, member)                                              \
+  PL_ASSIGN_OR(symaddr, dwarf_reader->GetStructMemberOffset(type, member), __s__ = -1); \
+  VLOG(1) << absl::Substitute(#symaddr " = $0", symaddr);
+
+  // clang-format off
+  GET_SYMADDR(symaddrs->http2Server_conn_offset,
+              "google.golang.org/grpc/internal/transport.http2Server", "conn");
+  GET_SYMADDR(symaddrs->http2Client_conn_offset,
+              "google.golang.org/grpc/internal/transport.http2Client", "conn");
+  GET_SYMADDR(symaddrs->loopyWriter_framer_offset,
+              "google.golang.org/grpc/internal/transport.loopyWriter", "framer");
+  GET_SYMADDR(symaddrs->Framer_w_offset,
+              "golang.org/x/net/http2.Framer", "w");
+  GET_SYMADDR(symaddrs->bufWriter_conn_offset,
+              "google.golang.org/grpc/internal/transport.bufWriter", "conn");
+  GET_SYMADDR(symaddrs->http2serverConn_conn_offset,
+              "net/http.http2serverConn", "conn");
+  GET_SYMADDR(symaddrs->http2serverConn_hpackEncoder_offset,
+              "net/http.http2serverConn", "hpackEncoder");
+  GET_SYMADDR(symaddrs->http2HeadersFrame_http2FrameHeader_offset,
+              "net/http.http2HeadersFrame", "http2FrameHeader");
+  GET_SYMADDR(symaddrs->http2FrameHeader_Flags_offset,
+              "net/http.http2FrameHeader", "Flags");
+  GET_SYMADDR(symaddrs->http2FrameHeader_StreamID_offset,
+              "net/http.http2FrameHeader", "StreamID");
+  GET_SYMADDR(symaddrs->http2writeResHeaders_streamID_offset,
+              "net/http.http2writeResHeaders", "streamID");
+  GET_SYMADDR(symaddrs->http2writeResHeaders_endStream_offset,
+              "net/http.http2writeResHeaders", "endStream");
+  GET_SYMADDR(symaddrs->http2MetaHeadersFrame_http2HeadersFrame_offset,
+              "net/http.http2MetaHeadersFrame", "http2HeadersFrame");
+  GET_SYMADDR(symaddrs->http2MetaHeadersFrame_Fields_offset,
+              "net/http.http2MetaHeadersFrame", "Fields");
+  GET_SYMADDR(symaddrs->http2Framer_w_offset,
+              "net/http.http2Framer", "w");
+  GET_SYMADDR(symaddrs->http2bufferedWriter_w_offset,
+              "net/http.http2bufferedWriter", "w");
+  // clang-format on
+
+#undef GET_SYMADDR
+
+  return Status::OK();
 }
 
 StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(
@@ -430,9 +491,9 @@ StatusOr<int> SocketTraceConnector::AttachHTTP2UProbes(
     const std::vector<int32_t>& new_pids,
     ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map) {
   // Step 1: Update BPF symbols_map on all new PIDs.
-  bool found_symbols = UpdateHTTP2SymAddrs(binary, elf_reader, new_pids, http2_symaddrs_map);
-  if (!found_symbols) {
-    // Doesn't appear to be a binary with a TCPConn.
+  Status s = UpdateHTTP2SymAddrs(binary, elf_reader, new_pids, http2_symaddrs_map);
+  if (!s.ok()) {
+    // Doesn't appear to be a binary with the mandatory symbols (e.g. TCPConn).
     // Might not even be a golang binary.
     // Either way, not of interest to probe.
     return 0;

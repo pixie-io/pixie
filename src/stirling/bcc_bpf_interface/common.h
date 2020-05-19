@@ -88,8 +88,53 @@ enum ControlValueIndex {
 };
 
 struct conn_symaddrs_t {
+  // Conn interface types.
   int64_t syscall_conn;
   int64_t tls_conn;
   int64_t tcp_conn;
-  int64_t http2_server_conn_offset;
+
+  // Struct member offsets.
+  // Naming maintains golang style: <struct>_<member>_offset
+
+  // TODO(oazizi): Remove offset in comments before submitting.
+
+  // Members of google.golang.org/grpc/internal/transport.http2Server.
+  int32_t http2Server_conn_offset;  // 16 or 24
+
+  // Members of google.golang.org/grpc/internal/transport.http2Client.
+  int32_t http2Client_conn_offset;  // 64
+
+  // Members of google.golang.org/grpc/internal/transport.loopyWriter.
+  int32_t loopyWriter_framer_offset;  // 40
+
+  // Members of net/http2.Framer.
+  int32_t Framer_w_offset;  // 112
+
+  // Members of google.golang.org/grpc/internal/transport.bufWriter.
+  int32_t bufWriter_conn_offset;  // 40
+
+  // Members of net/http.http2serverConn.
+  int32_t http2serverConn_conn_offset;          // 16
+  int32_t http2serverConn_hpackEncoder_offset;  // 360
+
+  // Members of net/http.http2HeadersFrame
+  int32_t http2HeadersFrame_http2FrameHeader_offset;  // 0
+
+  // Members of net/http.http2FrameHeader.
+  int32_t http2FrameHeader_Flags_offset;     // 2
+  int32_t http2FrameHeader_StreamID_offset;  // 8
+
+  // Members of net/http.http2writeResHeaders.
+  int32_t http2writeResHeaders_streamID_offset;   // 0
+  int32_t http2writeResHeaders_endStream_offset;  // 48
+
+  // Members of net/http.http2MetaHeadersFrame.
+  int32_t http2MetaHeadersFrame_http2HeadersFrame_offset;  // 0;
+  int32_t http2MetaHeadersFrame_Fields_offset;             // 8
+
+  // Members of net/http.http2Framer.
+  int32_t http2Framer_w_offset;  // 112
+
+  // Members of net/http.http2bufferedWriter
+  int32_t http2bufferedWriter_w_offset;  // 0
 };

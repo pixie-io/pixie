@@ -103,6 +103,11 @@ enum FramerType {
   khttp_http2Framer
 };
 
+#define REQUIRE_SYMADDR(symaddr, retval) \
+  if (symaddr == -1) {                   \
+    return retval;                       \
+  }
+
 //-----------------------------------------------------------------------------
 // FD extraction functions
 //-----------------------------------------------------------------------------
@@ -132,6 +137,27 @@ const int32_t kInvalidFD = -1;
 // 0xc000059180:  0x0000000000b3c020  0x000000c000010048
 // (gdb) x 0x0000000000b3c020
 // 0xb3c020 <go.itab.*net.TCPConn,net.Conn>:  0x00000000009f66c0
+//
+//
+// Another representation:
+//   conn net.Conn
+//   type net.Conn interface {
+//     ...
+//     data  // A pointer to *net.TCPConn, which implements the net.Conn interface.
+//     type TCPConn struct {
+//       conn  // conn is embedded inside TCPConn, which is defined as follows.
+//       type conn struct {
+//         fd *netFD
+//         type netFD struct {
+//           pfd poll.FD
+//           type FD struct {
+//             ...
+//             Sysfd int
+//           }
+//         }
+//       }
+//     }
+//   }
 static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf) {
   uint64_t current_pid_tgid = bpf_get_current_pid_tgid();
   uint32_t tgid = current_pid_tgid >> 32;
@@ -165,73 +191,45 @@ static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf) {
 }
 
 // Returns the file descriptor from a http2.Framer object.
-static __inline int32_t get_fd_from_http2_Framer(const void* framer_ptr) {
-  // From llvm-dwarfdump -n net/http2.Framer -c ./server
-  //
-  // ...
-  // 0x00070b39: DW_TAG_member
-  //              DW_AT_name  ("w")
-  //              DW_AT_data_member_location  (112)
-  //              DW_AT_type  (0x000000000004a883 "io.Writer")
-  //              DW_AT_unknown_2903  (0x00)
-  // ...
-  const int kFramerIOWriterOffset = 112;
+static __inline int32_t get_fd_from_http2_Framer(const void* framer_ptr,
+                                                 struct conn_symaddrs_t* symaddrs) {
+  REQUIRE_SYMADDR(symaddrs->Framer_w_offset, kInvalidFD);
+  REQUIRE_SYMADDR(symaddrs->bufWriter_conn_offset, kInvalidFD);
+
   struct go_interface io_writer_interface;
   bpf_probe_read(&io_writer_interface, sizeof(io_writer_interface),
-                 framer_ptr + kFramerIOWriterOffset);
+                 framer_ptr + symaddrs->Framer_w_offset);
 
   // At this point, we have the following struct:
   // go.itab.*google.golang.org/grpc/internal/transport.bufWriter,io.Writer
-  //
-  // type bufWriter struct {
-  //   buf       []byte
-  //   offset    int
-  //   batchSize int
-  //   conn      net.Conn
-  //   err       error
-  //
-  //   onFlush func()
-  // }
 
-  const int kIOWriterConnOffset = 40;
   struct go_interface conn_intf;
-  bpf_probe_read(&conn_intf, sizeof(conn_intf), io_writer_interface.ptr + kIOWriterConnOffset);
+  bpf_probe_read(&conn_intf, sizeof(conn_intf),
+                 io_writer_interface.ptr + symaddrs->bufWriter_conn_offset);
 
   return get_fd_from_conn_intf(conn_intf);
 }
 
 // Returns the file descriptor from a http.http2Framer object.
-static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr) {
-  // From llvm-dwarfdump -n net/http.http2Framer -c ./server
-  //
-  // ...
-  // 0x00070b39: DW_TAG_member
-  //              DW_AT_name  ("w")
-  //              DW_AT_data_member_location  (112)
-  //              DW_AT_type  (0x000000000004a883 "io.Writer")
-  //              DW_AT_unknown_2903  (0x00)
-  // ...
-  const int kFramerIOWriterOffset = 112;
+static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
+                                                     struct conn_symaddrs_t* symaddrs) {
+  REQUIRE_SYMADDR(symaddrs->http2Framer_w_offset, kInvalidFD);
+  REQUIRE_SYMADDR(symaddrs->http2bufferedWriter_w_offset, kInvalidFD);
+
   struct go_interface io_writer_interface;
   bpf_probe_read(&io_writer_interface, sizeof(io_writer_interface),
-                 framer_ptr + kFramerIOWriterOffset);
+                 framer_ptr + symaddrs->http2Framer_w_offset);
 
   // At this point, we have the following struct:
   // go.itab.*net/http.http2bufferedWriter,io.Writer
-  //
-  // Where http2bufferedWriter is defined as follows:
-  // type http2bufferedWriter struct {
-  //   w  io.Writer     // immutable
-  //   bw *bufio.Writer // non-nil when data is buffered
-  // }
 
   // We have to dereference one more time, to get the inner io.Writer:
-  const int kHTTP2BufferedWriterIOWriterOffset = 0;
   struct go_interface inner_io_writer_interface;
   bpf_probe_read(&inner_io_writer_interface, sizeof(inner_io_writer_interface),
-                 io_writer_interface.ptr + kHTTP2BufferedWriterIOWriterOffset);
+                 io_writer_interface.ptr + symaddrs->http2bufferedWriter_w_offset);
 
   // Now get the struct implementing net.Conn.
+  // TODO(oazizi): Convert to using DWARF information.
   const int kIOWriterConnOffset = 0;
   struct go_interface conn_intf;
   bpf_probe_read(&conn_intf, sizeof(conn_intf),
@@ -240,28 +238,21 @@ static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr) {
   return get_fd_from_conn_intf(conn_intf);
 }
 
-static __inline int32_t get_fd_from_framer(enum FramerType framer_type, const void* framer_ptr) {
+static __inline int32_t get_fd_from_framer(enum FramerType framer_type, const void* framer_ptr,
+                                           struct conn_symaddrs_t* symaddrs) {
   switch (framer_type) {
     case khttp2_Framer:
-      return get_fd_from_http2_Framer(framer_ptr);
+      return get_fd_from_http2_Framer(framer_ptr, symaddrs);
     case khttp_http2Framer:
-      return get_fd_from_http_http2Framer(framer_ptr);
+      return get_fd_from_http_http2Framer(framer_ptr, symaddrs);
     default:
-      return -1;
+      return kInvalidFD;
   }
 }
 
 //-----------------------------------------------------------------------------
 // HTTP2 Header Tracing Functions
 //-----------------------------------------------------------------------------
-
-// TODO(oazizi): Convert to use designated initializers.
-// Example:
-// Instead of
-//   x = {};
-//   x.foo = 5;
-// Use:
-//   x = { .foo = 5 }
 
 static __inline void fill_header_field(struct go_grpc_http2_header_event_t* event,
                                        const struct HPackHeaderField* header_ptr) {
@@ -282,7 +273,7 @@ static __inline void fill_header_field(struct go_grpc_http2_header_event_t* even
 static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
                                     enum HeaderEventType type, int32_t fd, uint32_t stream_id,
                                     bool end_stream, struct go_ptr_array fields) {
-  uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
+  uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
     return;
@@ -325,37 +316,20 @@ struct go_grpc_framer_t {
 // Symbol:
 //   google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader
 int probe_loopy_writer_write_header(struct pt_regs* ctx) {
-  // The following code tries to extract the file descriptor held by the loopyWriter object, when
-  // probing the (*loopyWriter).writeHeader() function call. The whole structure looks like:
-  // type loopyWriter struct {
-  //   ...  // 40 bytes offset
-  //   framer *framer
-  //   type framer struct {
-  //     writer *bufWriter
-  //     type bufWriter struct {
-  //       ...  // 40 bytes offset
-  //       conn net.Conn
-  //       type net.Conn interface {
-  //         ...  // 8 bytes offset
-  //         data  // An pointer to *net.TCPConn, which implements the net.Conn interface.
-  //         type TCPConn struct {
-  //           conn  // conn is embedded inside TCPConn, which is defined as follows.
-  //           type conn struct {
-  //             fd *netFD
-  //             type netFD struct {
-  //               pfd poll.FD
-  //               type FD struct {
-  //                 ...  // 16 bytes offset
-  //                 Sysfd int
-  //               }
-  //             }
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
+  uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
+  struct conn_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  if (symaddrs == NULL) {
+    return 0;
+  }
+
+  REQUIRE_SYMADDR(symaddrs->loopyWriter_framer_offset, 0);
+
+  // ---------------------------------------------
+  // Extract arguments (on stack)
+  // ---------------------------------------------
+
   const void* sp = (const void*)PT_REGS_SP(ctx);
+
   const int kLoopyWriterParamOffset = 8;
   const void* loopy_writer_ptr = *(const void**)(sp + kLoopyWriterParamOffset);
 
@@ -369,12 +343,18 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   const struct go_ptr_array fields =
       *(const struct go_ptr_array*)(sp + kHeaderFieldSliceParamOffset);
 
-  const int kFramerFieldOffset = 40;
-  const void* framer_ptr = *(const void**)(loopy_writer_ptr + kFramerFieldOffset);
+  // ---------------------------------------------
+  // Extract members
+  // ---------------------------------------------
+
+  const void* framer_ptr = *(const void**)(loopy_writer_ptr + symaddrs->loopyWriter_framer_offset);
+
+  // TODO(oazizi): Stop using mirrored go structs, and use DWARF info instead.
   struct go_grpc_framer_t go_grpc_framer;
   bpf_probe_read(&go_grpc_framer, sizeof(go_grpc_framer), framer_ptr);
-  const int32_t fd = get_fd_from_http2_Framer(go_grpc_framer.http2_framer);
-  if (fd == -1) {
+
+  const int32_t fd = get_fd_from_http2_Framer(go_grpc_framer.http2_framer, symaddrs);
+  if (fd == kInvalidFD) {
     return 0;
   }
 
@@ -415,8 +395,6 @@ static __inline void probe_http2_operate_headers(struct pt_regs* ctx,
     return;
   }
 
-  uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
-
   submit_headers(ctx, probe_type, kHeaderEventRead, fd, stream_id, end_stream, fields);
 }
 
@@ -431,6 +409,18 @@ static __inline void probe_http2_operate_headers(struct pt_regs* ctx,
 // Symbol:
 //   google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders
 int probe_http2_client_operate_headers(struct pt_regs* ctx) {
+  uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
+  struct conn_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  if (symaddrs == NULL) {
+    return 0;
+  }
+
+  REQUIRE_SYMADDR(symaddrs->http2Client_conn_offset, 0);
+
+  // ---------------------------------------------
+  // Extract arguments (on stack)
+  // ---------------------------------------------
+
   const void* sp = (const void*)PT_REGS_SP(ctx);
 
   const int kHTTP2ClientParamOffset = 8;
@@ -439,9 +429,14 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   const int kFrameParamOffset = 16;
   const void* frame_ptr = *(const void**)(sp + kFrameParamOffset);
 
+  // ---------------------------------------------
+  // Extract arguments (on stack)
+  // ---------------------------------------------
+
   struct go_interface conn_intf;
-  const int kHTTP2ClientConnFieldOffset = 64;
-  bpf_probe_read(&conn_intf, sizeof(conn_intf), http2_client_ptr + kHTTP2ClientConnFieldOffset);
+  bpf_probe_read(&conn_intf, sizeof(conn_intf),
+                 http2_client_ptr + symaddrs->http2Client_conn_offset);
+
   const int32_t fd = get_fd_from_conn_intf(conn_intf);
   if (fd == kInvalidFD) {
     return 0;
@@ -467,6 +462,12 @@ int probe_http2_server_operate_headers(struct pt_regs* ctx) {
     return 0;
   }
 
+  REQUIRE_SYMADDR(symaddrs->http2Server_conn_offset, 0);
+
+  // ---------------------------------------------
+  // Extract arguments (on stack)
+  // ---------------------------------------------
+
   const void* sp = (const void*)PT_REGS_SP(ctx);
 
   const int kHTTP2ServerParamOffset = 8;
@@ -475,12 +476,15 @@ int probe_http2_server_operate_headers(struct pt_regs* ctx) {
   const int kFrameParamOffset = 16;
   const void* frame_ptr = *(const void**)(sp + kFrameParamOffset);
 
+  // ---------------------------------------------
+  // Extract members
+  // ---------------------------------------------
+
   struct go_interface conn_intf;
-
   bpf_probe_read(&conn_intf, sizeof(conn_intf),
-                 http2_server_ptr + symaddrs->http2_server_conn_offset);
-  int32_t fd = get_fd_from_conn_intf(conn_intf);
+                 http2_server_ptr + symaddrs->http2Server_conn_offset);
 
+  const int32_t fd = get_fd_from_conn_intf(conn_intf);
   if (fd == kInvalidFD) {
     return 0;
   }
@@ -500,11 +504,24 @@ int probe_http2_server_operate_headers(struct pt_regs* ctx) {
 //
 // Verified to be stable from go1.?? to t go.1.13.
 int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
-  const void* sp = (const void*)PT_REGS_SP(ctx);
+  uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
+  struct conn_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  if (symaddrs == NULL) {
+    return 0;
+  }
+
+  REQUIRE_SYMADDR(symaddrs->http2MetaHeadersFrame_http2HeadersFrame_offset, 0);
+  REQUIRE_SYMADDR(symaddrs->http2MetaHeadersFrame_Fields_offset, 0);
+  REQUIRE_SYMADDR(symaddrs->http2HeadersFrame_http2FrameHeader_offset, 0);
+  REQUIRE_SYMADDR(symaddrs->http2FrameHeader_Flags_offset, 0);
+  REQUIRE_SYMADDR(symaddrs->http2FrameHeader_StreamID_offset, 0);
+  REQUIRE_SYMADDR(symaddrs->http2serverConn_conn_offset, 0);
 
   // ---------------------------------------------
   // Extract arguments (on stack)
   // ---------------------------------------------
+
+  const void* sp = (const void*)PT_REGS_SP(ctx);
 
   // Receiver is (*http2serverConn).
   const int kReceiverOffset = 8;
@@ -520,38 +537,40 @@ int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
   // Extract members of http2MetaHeadersFrame_ptr (headers)
   // ------------------------------------------------------
 
-  const int kFrameFieldsOffset = 8;
   struct go_ptr_array fields;
   bpf_probe_read(&fields, sizeof(struct go_ptr_array),
-                 http2MetaHeadersFrame_ptr + kFrameFieldsOffset);
+                 http2MetaHeadersFrame_ptr + symaddrs->http2MetaHeadersFrame_Fields_offset);
 
-  const int kMetaHeadersFrameHeadersFrameOffset = 0;
   void* http2HeadersFrame_ptr;
-  bpf_probe_read(&http2HeadersFrame_ptr, sizeof(void*),
-                 http2MetaHeadersFrame_ptr + kMetaHeadersFrameHeadersFrameOffset);
+  bpf_probe_read(
+      &http2HeadersFrame_ptr, sizeof(void*),
+      http2MetaHeadersFrame_ptr + symaddrs->http2MetaHeadersFrame_http2HeadersFrame_offset);
 
   // ------------------------------------------------------
   // Extract members of http2HeadersFrame_ptr (stream_id, end_stream)
   // ------------------------------------------------------
 
-  const int kFrameFlagsOffset = 2;
+  void* http2FrameHeader_ptr =
+      http2HeadersFrame_ptr + symaddrs->http2HeadersFrame_http2FrameHeader_offset;
+
   uint8_t flags;
-  bpf_probe_read(&flags, sizeof(uint8_t), http2HeadersFrame_ptr + kFrameFlagsOffset);
+  bpf_probe_read(&flags, sizeof(uint8_t),
+                 http2FrameHeader_ptr + symaddrs->http2FrameHeader_Flags_offset);
   const bool end_stream = flags & kFlagHeadersEndStream;
 
-  const int kFrameStreamIDOffset = 8;
   uint32_t stream_id;
-  bpf_probe_read(&stream_id, sizeof(uint32_t), http2HeadersFrame_ptr + kFrameStreamIDOffset);
+  bpf_probe_read(&stream_id, sizeof(uint32_t),
+                 http2FrameHeader_ptr + symaddrs->http2FrameHeader_StreamID_offset);
 
   // ------------------------------------------------------
   // Extract members of http2serverConn_ptr (fd)
   // ------------------------------------------------------
 
-  const int kHTTP2ServerConnFieldOffset = 16;
   struct go_interface conn_intf;
-  bpf_probe_read(&conn_intf, sizeof(conn_intf), http2serverConn_ptr + kHTTP2ServerConnFieldOffset);
+  bpf_probe_read(&conn_intf, sizeof(conn_intf),
+                 http2serverConn_ptr + symaddrs->http2serverConn_conn_offset);
 
-  int32_t fd = get_fd_from_conn_intf(conn_intf);
+  const int32_t fd = get_fd_from_conn_intf(conn_intf);
   if (fd == kInvalidFD) {
     return 0;
   }
@@ -629,6 +648,17 @@ int probe_hpack_header_encoder(struct pt_regs* ctx) {
 //
 // Verified to be stable from go1.?? to t go.1.13.
 int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
+  uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
+  struct conn_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  if (symaddrs == NULL) {
+    return 0;
+  }
+
+  REQUIRE_SYMADDR(symaddrs->http2serverConn_hpackEncoder_offset, 0);
+  REQUIRE_SYMADDR(symaddrs->http2serverConn_conn_offset, 0);
+  REQUIRE_SYMADDR(symaddrs->http2writeResHeaders_streamID_offset, 0);
+  REQUIRE_SYMADDR(symaddrs->http2writeResHeaders_endStream_offset, 0);
+
   // ---------------------------------------------
   // Extract arguments (on stack)
   // ---------------------------------------------
@@ -651,28 +681,25 @@ int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
   // Extract members of http2writeResHeaders_ptr (stream_id, end_stream)
   // ------------------------------------------------------
 
-  const int kWriteResHeadersStreamIDOffset = 0;
-  const int kWriteResHeadersEndStreamOffset = 48;
-
   uint32_t stream_id;
   bpf_probe_read(&stream_id, sizeof(uint32_t),
-                 http2writeResHeaders_ptr + kWriteResHeadersStreamIDOffset);
+                 http2writeResHeaders_ptr + symaddrs->http2writeResHeaders_streamID_offset);
 
   bool end_stream;
   bpf_probe_read(&end_stream, sizeof(bool),
-                 http2writeResHeaders_ptr + kWriteResHeadersEndStreamOffset);
+                 http2writeResHeaders_ptr + symaddrs->http2writeResHeaders_endStream_offset);
 
   // ------------------------------------------------------
   // Extract members of http2serverConn_ptr (encoder, fd)
   // ------------------------------------------------------
 
-  const int kWriteContextHpackEncoderOffset = 0x168;
   void* henc_addr;
-  bpf_probe_read(&henc_addr, sizeof(void*), http2serverConn_ptr + kWriteContextHpackEncoderOffset);
+  bpf_probe_read(&henc_addr, sizeof(void*),
+                 http2serverConn_ptr + symaddrs->http2serverConn_hpackEncoder_offset);
 
-  const int kWriteContextConnOffset = 16;
   struct go_interface conn_intf;
-  bpf_probe_read(&conn_intf, sizeof(conn_intf), http2serverConn_ptr + kWriteContextConnOffset);
+  bpf_probe_read(&conn_intf, sizeof(conn_intf),
+                 http2serverConn_ptr + symaddrs->http2serverConn_conn_offset);
 
   const int32_t fd = get_fd_from_conn_intf(conn_intf);
   if (fd == kInvalidFD) {
@@ -683,7 +710,6 @@ int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
   // Prepare to submit headers to perf buffer
   // ------------------------------------------------------
 
-  uint64_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
     return 0;
@@ -731,10 +757,13 @@ int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
 //   probe_http2_framer_write_data()
 //   probe_http_http2framer_write_data()
 static __inline void probe_write_data(struct pt_regs* ctx, enum FramerType framer_type) {
-  const char* sp = (const char*)ctx->sp;
-  if (sp == NULL) {
+  uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
+  struct conn_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  if (symaddrs == NULL) {
     return;
   }
+
+  const char* sp = (const char*)ctx->sp;
 
   // Param 0 (receiver) is (fr *Framer).
   const int kParam0Offset = 8;
@@ -765,8 +794,7 @@ static __inline void probe_write_data(struct pt_regs* ctx, enum FramerType frame
     return;
   }
 
-  uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  int32_t fd = get_fd_from_framer(framer_type, framer_ptr);
+  int32_t fd = get_fd_from_framer(framer_type, framer_ptr, symaddrs);
   if (fd < 0) {
     return;
   }
@@ -797,10 +825,13 @@ static __inline void probe_write_data(struct pt_regs* ctx, enum FramerType frame
 //   probe_http2_framer_check_frame_order()
 //   probe_http_http2framer_check_frame_order()
 static __inline void probe_check_frame_order(struct pt_regs* ctx, enum FramerType framer_type) {
-  const char* sp = (const char*)ctx->sp;
-  if (sp == NULL) {
+  uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
+  struct conn_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  if (symaddrs == NULL) {
     return;
   }
+
+  const char* sp = (const char*)ctx->sp;
 
   // Param 0 (receiver) is (*Framer) or (*http2Framer).
   const int kParam0Offset = 8;
@@ -843,7 +874,7 @@ static __inline void probe_check_frame_order(struct pt_regs* ctx, enum FramerTyp
     }
 
     uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-    int32_t fd = get_fd_from_framer(framer_type, framer_ptr);
+    int32_t fd = get_fd_from_framer(framer_type, framer_ptr, symaddrs);
     if (fd < 0) {
       return;
     }
