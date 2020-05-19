@@ -212,7 +212,7 @@ TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
   // are dynamically attached.
   GRPCTraceGoTest::LaunchServer(GetParam());
 
-  // Give 5 seconds to attach uprobes.
+  // Give 10 seconds to attach uprobes. Being generous for ASAN runs.
   std::this_thread::sleep_for(std::chrono::seconds(10));
 
   SubProcess c;

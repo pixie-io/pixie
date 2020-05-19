@@ -107,8 +107,19 @@ struct conn_symaddrs_t {
   // Members of google.golang.org/grpc/internal/transport.loopyWriter.
   int32_t loopyWriter_framer_offset;  // 40
 
-  // Members of net/http2.Framer.
+  // Members of golang.org/x/net/net/http2.Framer.
   int32_t Framer_w_offset;  // 112
+
+  // Members of golang.org/x/net/http2.MetaHeadersFrame.
+  int32_t MetaHeadersFrame_HeadersFrame_offset;  // 0
+  int32_t MetaHeadersFrame_Fields_offset;        // 0
+
+  // Members of golang.org/x/net/http2.HeadersFrame.
+  int32_t HeadersFrame_FrameHeader_offset;  // 0
+
+  // Members of golang.org/x/net/http2.FrameHeader
+  int32_t FrameHeader_Flags_offset;     // 2
+  int32_t FrameHeader_StreamID_offset;  // 8
 
   // Members of google.golang.org/grpc/internal/transport.bufWriter.
   int32_t bufWriter_conn_offset;  // 40

@@ -393,8 +393,7 @@ Status SocketTraceConnector::UpdateHTTP2TypeAddrs(ElfReader* elf_reader,
 
 Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
                                                      struct conn_symaddrs_t* symaddrs) {
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<DwarfReader> dwarf_reader,
-                      DwarfReader::Create(binary, /* index */ true));
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<DwarfReader> dwarf_reader, DwarfReader::Create(binary));
 
   // Note: we only return error if a *mandatory* symbol is missing. Currently none are mandatory,
   // because these multiple probes for multiple HTTP2/GRPC libraries. Even if a symbol for one
@@ -413,6 +412,16 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
               "google.golang.org/grpc/internal/transport.loopyWriter", "framer");
   GET_SYMADDR(symaddrs->Framer_w_offset,
               "golang.org/x/net/http2.Framer", "w");
+  GET_SYMADDR(symaddrs->MetaHeadersFrame_HeadersFrame_offset,
+              "golang.org/x/net/http2.MetaHeadersFrame", "HeadersFrame");
+  GET_SYMADDR(symaddrs->MetaHeadersFrame_Fields_offset,
+              "golang.org/x/net/http2.MetaHeadersFrame", "Fields");
+  GET_SYMADDR(symaddrs->HeadersFrame_FrameHeader_offset,
+              "golang.org/x/net/http2.HeadersFrame", "FrameHeader");
+  GET_SYMADDR(symaddrs->FrameHeader_Flags_offset,
+              "golang.org/x/net/http2.FrameHeader", "Flags");
+  GET_SYMADDR(symaddrs->FrameHeader_StreamID_offset,
+              "golang.org/x/net/http2.FrameHeader", "StreamID");
   GET_SYMADDR(symaddrs->bufWriter_conn_offset,
               "google.golang.org/grpc/internal/transport.bufWriter", "conn");
   GET_SYMADDR(symaddrs->http2serverConn_conn_offset,

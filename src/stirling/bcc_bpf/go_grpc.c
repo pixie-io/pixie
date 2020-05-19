@@ -368,26 +368,50 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
 //   probe_http2_client_operate_headers()
 //   probe_http2_server_operate_headers()
 // The two probes are similar but the conn_intf location is specific to each struct.
+// MetaHeadersFrame_ptr is of type: golang.org/x/net/http2.MetaHeadersFrame
 static __inline void probe_http2_operate_headers(struct pt_regs* ctx,
                                                  enum http2_probe_type_t probe_type, int32_t fd,
-                                                 const void* frame_ptr) {
-  const void* frame_header_ptr = *(const void**)frame_ptr;
+                                                 const void* MetaHeadersFrame_ptr,
+                                                 struct conn_symaddrs_t* symaddrs) {
+  REQUIRE_SYMADDR(symaddrs->MetaHeadersFrame_HeadersFrame_offset, /* none */);
+  REQUIRE_SYMADDR(symaddrs->MetaHeadersFrame_Fields_offset, /* none */);
+  REQUIRE_SYMADDR(symaddrs->HeadersFrame_FrameHeader_offset, /* none */);
+  REQUIRE_SYMADDR(symaddrs->FrameHeader_Flags_offset, /* none */);
+  REQUIRE_SYMADDR(symaddrs->FrameHeader_StreamID_offset, /* none */);
 
-  // type FrameHeader {
-  //   valid bool      // 1 byte
-  //   Type FrameType  // 1 byte
-  //   Flags Flags     // We are looking for this field.
-  // }
-  const int kFlagsOffset = 2;
-  const uint8_t flags = *(const uint8_t*)(frame_header_ptr + kFlagsOffset);
+  // ------------------------------------------------------
+  // Extract members of MetaHeadersFrame_ptr (HeadersFrame, Fields)
+  // ------------------------------------------------------
+
+  void* HeadersFrame_ptr;
+  bpf_probe_read(&HeadersFrame_ptr, sizeof(void*),
+                 MetaHeadersFrame_ptr + symaddrs->MetaHeadersFrame_HeadersFrame_offset);
+
+  struct go_ptr_array fields;
+  bpf_probe_read(&fields, sizeof(struct go_ptr_array),
+                 MetaHeadersFrame_ptr + symaddrs->MetaHeadersFrame_Fields_offset);
+
+  // ------------------------------------------------------
+  // Extract members of HeadersFrame_ptr (HeadersFrame)
+  // ------------------------------------------------------
+
+  void* FrameHeader_ptr = HeadersFrame_ptr + symaddrs->HeadersFrame_FrameHeader_offset;
+
+  // ------------------------------------------------------
+  // Extract members of FrameHeader_ptr (stream_id, end_stream)
+  // ------------------------------------------------------
+
+  uint8_t flags;
+  bpf_probe_read(&flags, sizeof(uint8_t), FrameHeader_ptr + symaddrs->FrameHeader_Flags_offset);
   const bool end_stream = flags & kFlagHeadersEndStream;
 
-  const int kStreamIDOffset = 8;
-  const uint32_t stream_id = *(const uint32_t*)(frame_header_ptr + kStreamIDOffset);
+  uint32_t stream_id;
+  bpf_probe_read(&stream_id, sizeof(uint32_t),
+                 FrameHeader_ptr + symaddrs->FrameHeader_StreamID_offset);
 
-  const int kFieldsOffset = 8;
-  const struct go_ptr_array fields = *(const struct go_ptr_array*)(frame_ptr + kFieldsOffset);
-  const struct HPackHeaderField* fields_ptr = fields.ptr;
+  // ------------------------------------------------------
+  // Submit
+  // ------------------------------------------------------
 
   // TODO(yzhao): We saw some arbitrary large slices received by operateHeaders(), it's not clear
   // what conditions result into them.
@@ -442,7 +466,7 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
     return 0;
   }
 
-  probe_http2_operate_headers(ctx, k_probe_http2_client_operate_headers, fd, frame_ptr);
+  probe_http2_operate_headers(ctx, k_probe_http2_client_operate_headers, fd, frame_ptr, symaddrs);
 
   return 0;
 }
@@ -489,7 +513,7 @@ int probe_http2_server_operate_headers(struct pt_regs* ctx) {
     return 0;
   }
 
-  probe_http2_operate_headers(ctx, k_probe_http2_server_operate_headers, fd, frame_ptr);
+  probe_http2_operate_headers(ctx, k_probe_http2_server_operate_headers, fd, frame_ptr, symaddrs);
 
   return 0;
 }
