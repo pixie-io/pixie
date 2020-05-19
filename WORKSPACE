@@ -1496,13 +1496,6 @@ go_repository(
 )
 
 go_repository(
-    name = "com_github_sercand_kuberesolver",
-    importpath = "github.com/sercand/kuberesolver",
-    sum = "h1:WE2OlRf6wjLxHwNkkFLQGaZcVLEXjMjBPjjEU5vksH8=",
-    version = "v2.4.0+incompatible",
-)
-
-go_repository(
     name = "com_github_google_go_querystring",
     importpath = "github.com/google/go-querystring",
     sum = "h1:Xkwi/a1rcvNg1PPYe5vI8GbeBY/jrVuDX5ASuANWTrk=",
@@ -3189,4 +3182,11 @@ go_repository(
     importpath = "github.com/cncf/udpa/go",
     sum = "h1:WBZRG4aNOuI15bLRrCgN8fCq8E5Xuty6jGbmSNEvSsU=",
     version = "v0.0.0-20191209042840-269d4d468f6f",
+)
+
+go_repository(
+    name = "com_github_sercand_kuberesolver",
+    importpath = "github.com/sercand/kuberesolver",
+    sum = "h1:WE2OlRf6wjLxHwNkkFLQGaZcVLEXjMjBPjjEU5vksH8=",
+    version = "v2.4.0+incompatible",
 )

@@ -55,3 +55,6 @@
 [submodule "third_party/ELFIO"]
 	path = third_party/ELFIO
 	url = git@github.com:pixie-labs/ELFIO.git
+[submodule "third_party/kuberesolver"]
+	path = third_party/kuberesolver
+	url = https://github.com/pixie-labs/kuberesolver

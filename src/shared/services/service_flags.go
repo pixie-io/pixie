@@ -7,12 +7,12 @@ import (
 	"io/ioutil"
 	"sync"
 
-	"github.com/sercand/kuberesolver"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"pixielabs.ai/pixielabs/third_party/kuberesolver"
 )
 
 var (

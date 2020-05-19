@@ -66,6 +66,8 @@ gazelle(
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/planner/compiler_error_context //src/carnot/planner/compiler_error_context:go_default_library
 # gazelle:resolve go pixielabs.ai/pixielabs/src/carnot/planner //src/carnot/planner:go_default_library
 
+# gazelle:resolve go pixielabs.ai/pixielabs/third_party/kuberesolver //third_party:kuberesolver_library
+
 load("@com_github_bazelbuild_buildtools//buildifier:def.bzl", "buildifier")
 
 buildifier(
