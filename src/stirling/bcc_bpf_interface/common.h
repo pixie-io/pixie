@@ -117,9 +117,13 @@ struct conn_symaddrs_t {
   // Members of golang.org/x/net/http2.HeadersFrame.
   int32_t HeadersFrame_FrameHeader_offset;  // 0
 
-  // Members of golang.org/x/net/http2.FrameHeader
+  // Members of golang.org/x/net/http2.FrameHeader.
+  int32_t FrameHeader_Type_offset;      // 1
   int32_t FrameHeader_Flags_offset;     // 2
   int32_t FrameHeader_StreamID_offset;  // 8
+
+  // Members of golang.org/x/net/http2.DataFrame.
+  int32_t DataFrame_data_offset;  // 16
 
   // Members of google.golang.org/grpc/internal/transport.bufWriter.
   int32_t bufWriter_conn_offset;  // 40
@@ -132,8 +136,12 @@ struct conn_symaddrs_t {
   int32_t http2HeadersFrame_http2FrameHeader_offset;  // 0
 
   // Members of net/http.http2FrameHeader.
+  int32_t http2FrameHeader_Type_offset;      // 1
   int32_t http2FrameHeader_Flags_offset;     // 2
   int32_t http2FrameHeader_StreamID_offset;  // 8
+
+  // Members of golang.org/x/net/http2.DataFrame.
+  int32_t http2DataFrame_data_offset;  // 16
 
   // Members of net/http.http2writeResHeaders.
   int32_t http2writeResHeaders_streamID_offset;   // 0

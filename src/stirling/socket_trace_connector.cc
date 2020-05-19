@@ -418,10 +418,14 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
               "golang.org/x/net/http2.MetaHeadersFrame", "Fields");
   GET_SYMADDR(symaddrs->HeadersFrame_FrameHeader_offset,
               "golang.org/x/net/http2.HeadersFrame", "FrameHeader");
+  GET_SYMADDR(symaddrs->FrameHeader_Type_offset,
+              "golang.org/x/net/http2.FrameHeader", "Type");
   GET_SYMADDR(symaddrs->FrameHeader_Flags_offset,
               "golang.org/x/net/http2.FrameHeader", "Flags");
   GET_SYMADDR(symaddrs->FrameHeader_StreamID_offset,
               "golang.org/x/net/http2.FrameHeader", "StreamID");
+  GET_SYMADDR(symaddrs->DataFrame_data_offset,
+              "golang.org/x/net/http2.DataFrame", "data");
   GET_SYMADDR(symaddrs->bufWriter_conn_offset,
               "google.golang.org/grpc/internal/transport.bufWriter", "conn");
   GET_SYMADDR(symaddrs->http2serverConn_conn_offset,
@@ -430,10 +434,14 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
               "net/http.http2serverConn", "hpackEncoder");
   GET_SYMADDR(symaddrs->http2HeadersFrame_http2FrameHeader_offset,
               "net/http.http2HeadersFrame", "http2FrameHeader");
+  GET_SYMADDR(symaddrs->http2FrameHeader_Type_offset,
+              "net/http.http2FrameHeader", "Type");
   GET_SYMADDR(symaddrs->http2FrameHeader_Flags_offset,
               "net/http.http2FrameHeader", "Flags");
   GET_SYMADDR(symaddrs->http2FrameHeader_StreamID_offset,
               "net/http.http2FrameHeader", "StreamID");
+  GET_SYMADDR(symaddrs->http2DataFrame_data_offset,
+              "net/http.http2DataFrame", "data");
   GET_SYMADDR(symaddrs->http2writeResHeaders_streamID_offset,
               "net/http.http2writeResHeaders", "streamID");
   GET_SYMADDR(symaddrs->http2writeResHeaders_endStream_offset,
