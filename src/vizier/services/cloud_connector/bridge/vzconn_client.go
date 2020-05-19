@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"strings"
+	"time"
 
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -17,12 +18,14 @@ func init() {
 // NewVZConnClient creates a new vzconn RPC client stub.
 func NewVZConnClient() (vzconnpb.VZConnServiceClient, error) {
 	cloudAddr := viper.GetString("cloud_addr")
+
 	isInternal := strings.ContainsAny(cloudAddr, ".svc.cluster.local")
 
 	dialOpts, err := services.GetGRPCClientDialOptsServerSideTLS(isInternal)
 	if err != nil {
 		return nil, err
 	}
+	dialOpts = append(dialOpts, []grpc.DialOption{grpc.WithBlock(), grpc.WithTimeout(time.Second * 10)}...)
 
 	ccChannel, err := grpc.Dial(cloudAddr, dialOpts...)
 	if err != nil {

@@ -17,7 +17,7 @@ require (
 	github.com/bmatcuk/doublestar v1.2.2
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff
-	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
+	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/containerd/containerd v1.3.4 // indirect
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc // indirect
@@ -113,6 +113,4 @@ require (
 // This is a workaround for an API change in gprc-go 1.27.0+ that breaks etcd.
 // See this issue: https://github.com/etcd-io/etcd/pull/11564
 // When etcd is fixed, it should be upgraded and this statement removed.
-replace (
-	github.com/coreos/etcd v3.3.18+incompatible => github.com/coreos/etcd v3.3.4+incompatible
-)
+replace github.com/coreos/etcd v3.3.18+incompatible => github.com/coreos/etcd v3.3.4+incompatible

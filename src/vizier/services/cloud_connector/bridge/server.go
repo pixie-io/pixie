@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/cenkalti/backoff"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
@@ -203,6 +204,31 @@ func (s *Bridge) WaitForUpdater() {
 
 // RunStream manages starting and restarting the stream to VZConn.
 func (s *Bridge) RunStream() {
+	if s.vzConnClient == nil {
+		var vzClient vzconnpb.VZConnServiceClient
+		var err error
+
+		connect := func() error {
+			log.Info("Connecting to VZConn...")
+			vzClient, err = NewVZConnClient()
+			if err != nil {
+				log.WithError(err).Error("Failed to connect to VZConn")
+			}
+			return err
+		}
+
+		backOffOpts := backoff.NewExponentialBackOff()
+		backOffOpts.InitialInterval = 30 * time.Second
+		backOffOpts.Multiplier = 2
+		backOffOpts.MaxElapsedTime = 30 * time.Minute
+		err = backoff.Retry(connect, backOffOpts)
+		if err != nil {
+			log.WithError(err).Fatal("Could not connect to VZConn")
+		}
+		log.Info("Successfully connected to VZConn")
+		s.vzConnClient = vzClient
+	}
+
 	natsTopic := messagebus.V2CTopic("*")
 	log.WithField("topic", natsTopic).Trace("Subscribing to NATS")
 	natsSub, err := s.nc.ChanSubscribe(natsTopic, s.natsCh)

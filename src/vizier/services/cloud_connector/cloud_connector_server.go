@@ -46,11 +46,6 @@ func main() {
 	flush := services.InitDefaultSentry(viper.GetString("cluster_id"))
 	defer flush()
 
-	vzClient, err := controllers.NewVZConnClient()
-	if err != nil {
-		log.WithError(err).Fatal("Failed to init vzconn client")
-	}
-
 	clusterID := viper.GetString("cluster_id")
 	if clusterID == "" {
 		log.Fatal("Cluster ID is required")
@@ -104,7 +99,7 @@ func main() {
 	// We just use the current time in nanoseconds to mark the session ID. This will let the cloud side know that
 	// the cloud connector restarted. Clock skew might make this incorrect, but we mostly want this for debugging.
 	sessionID := time.Now().UnixNano()
-	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), sessionID, vzClient, vzInfo, nc)
+	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), sessionID, nil, vzInfo, nc)
 	go server.RunStream()
 	defer server.Stop()
 
