@@ -84,9 +84,6 @@ const LiveView = () => {
   const [drawerOpen, setDrawerOpen] = React.useState<boolean>(false);
   const toggleDrawer = React.useCallback(() => setDrawerOpen((opened) => !opened), []);
 
-  const [canvasEditable, setCanvasEditable] = React.useState<boolean>(false);
-  const toggleCanvasEditable = React.useCallback(() => setCanvasEditable((editable) => !editable), []);
-
   const [commandOpen, setCommandOpen] = React.useState<boolean>(false);
   const toggleCommandOpen = React.useCallback(() => setCommandOpen((opened) => !opened), []);
 
@@ -133,22 +130,12 @@ const LiveView = () => {
             <EditIcon />
           </ToggleButton>
         </Tooltip>
-        <Tooltip title={canvasEditable ? 'Confim widget layout' : 'Edit widget layout'}>
-          <ToggleButton
-            className={classes.editorToggle}
-            selected={canvasEditable}
-            onChange={toggleCanvasEditable}
-            value='canvasEditable'
-          >
-            <MoveIcon />
-          </ToggleButton>
-        </Tooltip>
         <ProfileMenu />
       </div>
       <DataDrawerSplitPanel className={classes.main}>
         <EditorSplitPanel className={classes.editorPanel}>
           <div className={classes.canvas}>
-            <Canvas editable={canvasEditable} />
+            <Canvas editable={editorPanelOpen} />
           </div>
         </EditorSplitPanel>
       </DataDrawerSplitPanel>
