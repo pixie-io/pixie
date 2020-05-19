@@ -1,5 +1,8 @@
 #include "src/stirling/pgsql/stitcher.h"
 
+#include <string>
+#include <variant>
+
 #include "src/stirling/common/binary_decoder.h"
 #include "src/stirling/pgsql/parse.h"
 
@@ -190,8 +193,61 @@ StatusOr<std::vector<RegularMessage>> GetParseReqMsgs(MsgDeqIter* begin, const M
   return msgs;
 }
 
+Status HandleParse(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDeqIter& end,
+                   ParseReqResp* req_resp, State* state) {
+  DCHECK_EQ(msg.tag, Tag::kParse);
+  Parse parse;
+  PL_RETURN_IF_ERROR(ParseParse(msg.payload, &parse));
+
+  auto iter = std::find_if(*resp_iter, end, TagMatcher({Tag::kParseComplete, Tag::kErrResp}));
+  if (iter == end) {
+    return error::NotFound("Did not find CmdComplete or ErrorResponse message");
+  }
+
+  *resp_iter = iter + 1;
+  req_resp->req = parse;
+
+  if (iter->tag == Tag::kParseComplete) {
+    if (parse.stmt_name.empty()) {
+      state->unnamed_statement = parse.query;
+    } else {
+      state->prepared_statements[parse.stmt_name] = parse.query;
+    }
+  }
+
+  if (iter->tag == Tag::kErrResp) {
+    ErrResp err_resp;
+    PL_RETURN_IF_ERROR(ParseErrResp(iter->payload, &err_resp));
+    req_resp->resp = err_resp;
+  }
+
+  return Status::OK();
+}
+
+namespace {
+
+struct ErrFieldFormatter {
+  void operator()(std::string* out, const ErrResp::Field& err_field) const {
+    std::string_view field_name = magic_enum::enum_name(err_field.code);
+    if (field_name.empty()) {
+      std::string unknown_field_name = "Field:";
+      unknown_field_name.append(1, static_cast<char>(err_field.code));
+      out->append(absl::StrCat(unknown_field_name, "=", err_field.value));
+    } else {
+      out->append(absl::StrCat(field_name, "=", err_field.value));
+    }
+  }
+};
+
+}  // namespace
+
+std::string FmtErrResp(const ErrResp& err_resp) {
+  return absl::StrJoin(err_resp.fields, "\n", ErrFieldFormatter());
+}
+
 RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMessage>* reqs,
-                                                   std::deque<pgsql::RegularMessage>* resps) {
+                                                   std::deque<pgsql::RegularMessage>* resps,
+                                                   State* state) {
   std::vector<pgsql::Record> records;
   int error_count = 0;
   auto req_iter = reqs->begin();
@@ -245,6 +301,16 @@ RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMess
         break;
       }
       case Tag::kParse: {
+        ParseReqResp req_resp;
+        if (HandleParse(*req_iter, &resp_iter, resps->end(), &req_resp, state).ok()) {
+          RegularMessage req;
+          req.payload = req_resp.req.query;
+          RegularMessage resp;
+          resp.payload =
+              req_resp.resp.has_value() ? FmtErrResp(req_resp.resp.value()) : "PARSE COMPLETE";
+          records.push_back({std::move(req), std::move(resp)});
+        }
+
         auto req_msgs_or = GetParseReqMsgs(&req_iter, reqs->end());
         if (!req_msgs_or.ok()) {
           ++error_count;
@@ -283,8 +349,8 @@ RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMess
 
 RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMessage>* reqs,
                                                    std::deque<pgsql::RegularMessage>* resps,
-                                                   NoState* /*state*/) {
-  return pgsql::ProcessFrames(reqs, resps);
+                                                   pgsql::StateWrapper* state) {
+  return pgsql::ProcessFrames(reqs, resps, &state->global);
 }
 
 }  // namespace stirling

@@ -190,10 +190,36 @@ TEST(PGSQLParseTest, ParseParse) {
       "\x00\x01"
       "\x00\x00\x00\x19");
   Parse parse;
-  EXPECT_EQ(ParseState::kSuccess, ParseParse(payload, &parse));
+  EXPECT_OK(ParseParse(payload, &parse));
   EXPECT_THAT(parse.stmt_name, StrEq("test"));
   EXPECT_THAT(parse.query, StrEq("SELECT * FROM person WHERE first_name=$1"));
   EXPECT_THAT(parse.param_type_oids, ElementsAre(25));
+}
+
+auto ErrFieldIs(ErrFieldCode code, std::string_view value) {
+  return AllOf(Field(&ErrResp::Field::code, code), Field(&ErrResp::Field::value, value));
+}
+
+TEST(PGSQLParseTest, ParseErrResp) {
+  std::string_view payload = CreateStringView<char>(
+      "\x53\x45\x52\x52\x4f\x52\x00\x56\x45\x52\x52"
+      "\x4f\x52\x00\x43\x34\x32\x50\x30\x31\x00\x4d\x72\x65\x6c\x61\x74"
+      "\x69\x6f\x6e\x20\x22\x78\x78\x78\x22\x20\x64\x6f\x65\x73\x20\x6e"
+      "\x6f\x74\x20\x65\x78\x69\x73\x74\x00\x50\x31\x35\x00\x46\x70\x61"
+      "\x72\x73\x65\x5f\x72\x65\x6c\x61\x74\x69\x6f\x6e\x2e\x63\x00\x4c"
+      "\x31\x31\x39\x34\x00\x52\x70\x61\x72\x73\x65\x72\x4f\x70\x65\x6e"
+      "\x54\x61\x62\x6c\x65\x00\x00");
+  ErrResp err_resp;
+  ASSERT_OK(ParseErrResp(payload, &err_resp));
+  EXPECT_THAT(err_resp.fields,
+              ElementsAre(ErrFieldIs(ErrFieldCode::Severity, "ERROR"),
+                          ErrFieldIs(ErrFieldCode::InternalSeverity, "ERROR"),
+                          ErrFieldIs(ErrFieldCode::Code, "42P01"),
+                          ErrFieldIs(ErrFieldCode::Message, "relation \"xxx\" does not exist"),
+                          ErrFieldIs(ErrFieldCode::Position, "15"),
+                          ErrFieldIs(ErrFieldCode::File, "parse_relation.c"),
+                          ErrFieldIs(ErrFieldCode::Line, "1194"),
+                          ErrFieldIs(ErrFieldCode::Routine, "parserOpenTable")));
 }
 
 const std::string_view kDropTableCmplMsg =

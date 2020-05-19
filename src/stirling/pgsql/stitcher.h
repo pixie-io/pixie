@@ -24,14 +24,18 @@ StatusOr<RegularMessage> AssembleQueryResp(MsgDeqIter* begin, const MsgDeqIter& 
  */
 StatusOr<std::vector<RegularMessage>> GetParseReqMsgs(MsgDeqIter* begin, const MsgDeqIter& end);
 
+Status HandleParse(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDeqIter& end,
+                   ParseReqResp* req_resp, State* state);
+
 RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMessage>* reqs,
-                                                   std::deque<pgsql::RegularMessage>* resps);
+                                                   std::deque<pgsql::RegularMessage>* resps,
+                                                   State* state);
 
 }  // namespace pgsql
 
 RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMessage>* reqs,
                                                    std::deque<pgsql::RegularMessage>* resps,
-                                                   NoState* /*state*/);
+                                                   pgsql::StateWrapper* state);
 
 }  // namespace stirling
 }  // namespace pl

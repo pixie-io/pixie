@@ -27,8 +27,9 @@ std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_
 ParseState ParseBindRequest(std::string_view payload, BindRequest* res);
 ParseState ParseParamDesc(std::string_view payload, ParamDesc* param_desc);
 // This is for 'Parse' message.
-ParseState ParseParse(std::string_view payload, Parse* parse);
+Status ParseParse(std::string_view payload, Parse* parse);
 ParseState ParseRowDesc(std::string_view payload, RowDesc* row_desc);
+Status ParseErrResp(std::string_view payload, ErrResp* err_resp);
 
 size_t FindFrameBoundary(std::string_view buf, size_t start);
 

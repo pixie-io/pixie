@@ -8,6 +8,7 @@ namespace stirling {
 namespace pgsql {
 
 using ::testing::ElementsAre;
+using ::testing::ElementsAreArray;
 using ::testing::Field;
 using ::testing::IsEmpty;
 
@@ -95,11 +96,16 @@ StatusOr<std::deque<RegularMessage>> ParseRegularMessages(std::string_view data)
 struct ProcessFramesTestCase {
   std::string_view req_data;
   std::string_view resp_data;
-  std::string_view expected_req_msg;
-  std::string_view expected_resp_msg;
+  std::vector<std::string_view> expected_req_msgs;
+  std::vector<std::string_view> expected_resp_msgs;
 };
 
-using ProcessFramesTest = ::testing::TestWithParam<ProcessFramesTestCase>;
+class ProcessFramesTest : public ::testing::TestWithParam<ProcessFramesTestCase> {
+ protected:
+  State state_;
+};
+
+std::string_view GetQuery(const RegularMessage& msg) { return msg.payload; }
 
 TEST_P(ProcessFramesTest, VerifySingleOutputMessage) {
   const ProcessFramesTestCase test_case = GetParam();
@@ -107,12 +113,24 @@ TEST_P(ProcessFramesTest, VerifySingleOutputMessage) {
   ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> reqs, ParseRegularMessages(test_case.req_data));
   ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> resps, ParseRegularMessages(test_case.resp_data));
 
-  RecordsWithErrorCount<pgsql::Record> records_and_err_count = ProcessFrames(&reqs, &resps);
+  RecordsWithErrorCount<pgsql::Record> records_and_err_count =
+      ProcessFrames(&reqs, &resps, &state_);
   EXPECT_THAT(reqs, IsEmpty());
   EXPECT_THAT(resps, IsEmpty());
   EXPECT_NE(0, records_and_err_count.records.front().req.payload.size());
-  EXPECT_THAT(records_and_err_count.records,
-              ElementsAre(HasPayloads(test_case.expected_req_msg, test_case.expected_resp_msg)));
+
+  std::vector<std::string_view> req_msgs;
+  for (const auto& record : records_and_err_count.records) {
+    req_msgs.push_back(record.req.payload);
+  }
+
+  std::vector<std::string_view> resp_msgs;
+  for (const auto& record : records_and_err_count.records) {
+    resp_msgs.push_back(record.resp.payload);
+  }
+
+  EXPECT_THAT(req_msgs, ElementsAreArray(test_case.expected_req_msgs));
+  EXPECT_THAT(resp_msgs, ElementsAreArray(test_case.expected_resp_msgs));
   EXPECT_EQ(0, records_and_err_count.error_count);
 }
 
@@ -215,15 +233,21 @@ const std::string_view kParseInsertMsg =
     "INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)";
 const std::string_view kParseInsertRespMsg = "INSERT 0 1";
 
-INSTANTIATE_TEST_SUITE_P(
-    SingleOutputMessagePair, ProcessFramesTest,
-    ::testing::Values(ProcessFramesTestCase{kParseData, kParseRespData, kParseMsg, kParseRespMsg},
-                      ProcessFramesTestCase{kParseInsertData, kParseInsertRespData, kParseInsertMsg,
-                                            kParseInsertRespMsg}));
+INSTANTIATE_TEST_SUITE_P(SingleOutputMessagePair, ProcessFramesTest,
+                         ::testing::Values(ProcessFramesTestCase{kParseData,
+                                                                 kParseRespData,
+                                                                 {kParseMsg, kParseMsg},
+                                                                 {"PARSE COMPLETE", kParseRespMsg}},
+                                           ProcessFramesTestCase{
+                                               kParseInsertData,
+                                               kParseInsertRespData,
+                                               {kParseInsertMsg, kParseInsertMsg},
+                                               {"PARSE COMPLETE", kParseInsertRespMsg}}));
 
 const std::string_view kCmdCompleteData = CreateStringView<char>("C\000\000\000\rSELECT 1\000");
 
-TEST(ProcessFramesTest, MatchQueryAndRowDesc) {
+// TODO(yzhao): Parameterize the following tests.
+TEST_F(ProcessFramesTest, MatchQueryAndRowDesc) {
   constexpr char kQueryText[] = "select * from table;";
   RegularMessage q = {};
   q.tag = Tag::kQuery;
@@ -244,7 +268,8 @@ TEST(ProcessFramesTest, MatchQueryAndRowDesc) {
 
   std::deque<RegularMessage> reqs = {std::move(q)};
   std::deque<RegularMessage> resps = {std::move(t), std::move(d), std::move(c)};
-  RecordsWithErrorCount<pgsql::Record> records_and_err_count = ProcessFrames(&reqs, &resps);
+  RecordsWithErrorCount<pgsql::Record> records_and_err_count =
+      ProcessFrames(&reqs, &resps, &state_);
   EXPECT_THAT(reqs, IsEmpty());
   EXPECT_THAT(resps, IsEmpty());
   EXPECT_THAT(records_and_err_count.records,
@@ -258,7 +283,7 @@ TEST(ProcessFramesTest, MatchQueryAndRowDesc) {
 const std::string_view kDropTableCmplMsg =
     CreateStringView<char>("C\000\000\000\017DROP TABLE\000");
 
-TEST(ProcessFramesTest, DropTable) {
+TEST_F(ProcessFramesTest, DropTable) {
   constexpr char kQueryText[] = "drop table foo;";
   RegularMessage q = {};
   q.tag = Tag::kQuery;
@@ -271,7 +296,8 @@ TEST(ProcessFramesTest, DropTable) {
 
   std::deque<RegularMessage> reqs = {std::move(q)};
   std::deque<RegularMessage> resps = {std::move(c)};
-  RecordsWithErrorCount<pgsql::Record> records_and_err_count = ProcessFrames(&reqs, &resps);
+  RecordsWithErrorCount<pgsql::Record> records_and_err_count =
+      ProcessFrames(&reqs, &resps, &state_);
   EXPECT_THAT(reqs, IsEmpty());
   EXPECT_THAT(resps, IsEmpty());
   EXPECT_THAT(records_and_err_count.records,
@@ -284,7 +310,7 @@ const std::string_view kRollbackMsg =
 const std::string_view kRollbackCmplMsg =
     CreateStringView<char>("\x43\x00\x00\x00\x0d\x52\x4f\x4c\x4c\x42\x41\x43\x4b\x00");
 
-TEST(ProcessFramesTest, Rollback) {
+TEST_F(ProcessFramesTest, Rollback) {
   RegularMessage rollback_msg = {};
   std::string_view data = kRollbackMsg;
   EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &rollback_msg));
@@ -295,11 +321,66 @@ TEST(ProcessFramesTest, Rollback) {
 
   std::deque<RegularMessage> reqs = {std::move(rollback_msg)};
   std::deque<RegularMessage> resps = {std::move(cmpl_msg)};
-  RecordsWithErrorCount<pgsql::Record> records_and_err_count = ProcessFrames(&reqs, &resps);
+  RecordsWithErrorCount<pgsql::Record> records_and_err_count =
+      ProcessFrames(&reqs, &resps, &state_);
   EXPECT_THAT(reqs, IsEmpty());
   EXPECT_THAT(resps, IsEmpty());
   EXPECT_THAT(records_and_err_count.records, ElementsAre(HasPayloads("ROLLBACK", "ROLLBACK")));
   EXPECT_EQ(0, records_and_err_count.error_count);
+}
+
+TEST_F(ProcessFramesTest, HandleParse) {
+  ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> reqs, ParseRegularMessages(kParseData));
+  ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> resps, ParseRegularMessages(kParseRespData));
+
+  auto reqs_begin = reqs.begin();
+  auto resps_begin = resps.begin();
+
+  ParseReqResp req_resp;
+  ASSERT_OK(HandleParse(*reqs_begin, &resps_begin, resps.end(), &req_resp, &state_));
+  EXPECT_EQ(req_resp.req.query,
+            "select t.oid, t.typname, t.typbasetype\nfrom pg_type t\n  join pg_type base_type on "
+            "t.typbasetype=base_type.oid\nwhere t.typtype = 'd'\n  and base_type.typtype = 'b'");
+  EXPECT_FALSE(req_resp.resp.has_value());
+  EXPECT_EQ(resps_begin, resps.begin() + 1);
+}
+
+auto ErrFieldIs(ErrFieldCode code, std::string_view value) {
+  return AllOf(Field(&ErrResp::Field::code, code), Field(&ErrResp::Field::value, value));
+}
+
+TEST_F(ProcessFramesTest, HandleParseErrResp) {
+  ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> reqs, ParseRegularMessages(kParseData));
+
+  std::string_view err_resp_data = CreateStringView<char>(
+      "\x45\x00\x00\x00\x66\x53\x45\x52\x52\x4f\x52\x00\x56\x45\x52\x52"
+      "\x4f\x52\x00\x43\x34\x32\x50\x30\x31\x00\x4d\x72\x65\x6c\x61\x74"
+      "\x69\x6f\x6e\x20\x22\x78\x78\x78\x22\x20\x64\x6f\x65\x73\x20\x6e"
+      "\x6f\x74\x20\x65\x78\x69\x73\x74\x00\x50\x31\x35\x00\x46\x70\x61"
+      "\x72\x73\x65\x5f\x72\x65\x6c\x61\x74\x69\x6f\x6e\x2e\x63\x00\x4c"
+      "\x31\x31\x39\x34\x00\x52\x70\x61\x72\x73\x65\x72\x4f\x70\x65\x6e"
+      "\x54\x61\x62\x6c\x65\x00\x00");
+  ASSERT_OK_AND_ASSIGN(std::deque<RegularMessage> resps, ParseRegularMessages(err_resp_data));
+
+  auto reqs_begin = reqs.begin();
+  auto resps_begin = resps.begin();
+
+  ParseReqResp req_resp;
+  ASSERT_OK(HandleParse(*reqs_begin, &resps_begin, resps.end(), &req_resp, &state_));
+  EXPECT_EQ(req_resp.req.query,
+            "select t.oid, t.typname, t.typbasetype\nfrom pg_type t\n  join pg_type base_type on "
+            "t.typbasetype=base_type.oid\nwhere t.typtype = 'd'\n  and base_type.typtype = 'b'");
+  ASSERT_TRUE(req_resp.resp.has_value());
+  EXPECT_THAT(req_resp.resp.value().fields,
+              ElementsAre(ErrFieldIs(ErrFieldCode::Severity, "ERROR"),
+                          ErrFieldIs(ErrFieldCode::InternalSeverity, "ERROR"),
+                          ErrFieldIs(ErrFieldCode::Code, "42P01"),
+                          ErrFieldIs(ErrFieldCode::Message, "relation \"xxx\" does not exist"),
+                          ErrFieldIs(ErrFieldCode::Position, "15"),
+                          ErrFieldIs(ErrFieldCode::File, "parse_relation.c"),
+                          ErrFieldIs(ErrFieldCode::Line, "1194"),
+                          ErrFieldIs(ErrFieldCode::Routine, "parserOpenTable")));
+  EXPECT_EQ(resps_begin, resps.begin() + 1);
 }
 
 }  // namespace pgsql

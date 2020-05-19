@@ -145,8 +145,11 @@ TEST_F(PostgreSQLTraceGoSQLxTest, GolangSqlxDemo) {
                        "CREATE TABLE"),
                   Pair("BEGIN READ WRITE", "BEGIN"),
                   Pair("INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)",
+                       "PARSE COMPLETE"),
+                  Pair("INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)",
                        "INSERT 0 1"),
                   Pair("COMMIT", "COMMIT"),
+                  Pair("SELECT * FROM person WHERE first_name=$1", "PARSE COMPLETE"),
                   Pair("SELECT * FROM person WHERE first_name=$1",
                        "first_name,last_name,email\n"
                        "Jason,Moiron,jmoiron@jmoiron.net\n"

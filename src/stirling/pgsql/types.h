@@ -6,6 +6,8 @@
 #include <utility>
 #include <vector>
 
+#include <absl/container/flat_hash_map.h>
+
 #include "src/stirling/common/event_parser.h"
 #include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/common/utils.h"
@@ -56,6 +58,12 @@ enum class Tag : char {
 
   // TODO(yzhao): More tags to be added.
 };
+
+// Make Tag printable, for example for DCHECK().
+inline std::ostream& operator<<(std::ostream& os, Tag tag) {
+  os << static_cast<char>(tag) << ":" << magic_enum::enum_name(tag);
+  return os;
+}
 
 /**
  * Regular message's wire format:
@@ -167,15 +175,63 @@ struct RowDesc {
   std::vector<Field> fields;
 };
 
+// See https://www.postgresql.org/docs/9.3/protocol-error-fields.html
+// The enum name does not have 'k' prefix, so that they can be used directly.
+enum class ErrFieldCode : char {
+  Severity = 'S',
+  InternalSeverity = 'V',
+  Code = 'C',
+  Message = 'M',
+  Detail = 'D',
+  Hint = 'H',
+  Position = 'P',
+  InternalPosition = 'p',
+  InternalQuery = 'q',
+  Where = 'W',
+  SchemaName = 's',
+  TableName = 't',
+  ColumnName = 'c',
+  DataTypeName = 'd',
+  ConstraitName = 'n',
+  File = 'F',
+  Line = 'L',
+  Routine = 'R',
+};
+
+struct ErrResp {
+  struct Field {
+    ErrFieldCode code;
+    std::string_view value;
+  };
+  std::vector<Field> fields;
+};
+
+struct ParseReqResp {
+  Parse req;
+  std::optional<ErrResp> resp;
+};
+
 struct Record {
   RegularMessage req;
   RegularMessage resp;
 };
 
+struct State {
+  absl::flat_hash_map<std::string, std::string> prepared_statements;
+  // One postgres session can only have at most one unnamed statement.
+  std::string unnamed_statement;
+};
+
+struct StateWrapper {
+  State global;
+  std::monostate send;
+  std::monostate recv;
+};
+
 struct ProtocolTraits {
   using frame_type = RegularMessage;
   using record_type = Record;
-  using state_type = NoState;
+  using state_type = StateWrapper;
 };
 
 using MsgDeqIter = std::deque<RegularMessage>::iterator;

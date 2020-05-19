@@ -242,20 +242,36 @@ ParseState ParseParamDesc(std::string_view payload, ParamDesc* param_desc) {
   return ParseState::kSuccess;
 }
 
-ParseState ParseParse(std::string_view payload, Parse* parse) {
+Status ParseParse(std::string_view payload, Parse* parse) {
   BinaryDecoder decoder(payload);
 
-  PL_ASSIGN_OR_RETURN_INVALID(parse->stmt_name, decoder.ExtractStringUntil<char>('\0'));
+  PL_ASSIGN_OR_RETURN(parse->stmt_name, decoder.ExtractStringUntil<char>('\0'));
 
-  PL_ASSIGN_OR_RETURN_INVALID(parse->query, decoder.ExtractStringUntil<char>('\0'));
+  PL_ASSIGN_OR_RETURN(parse->query, decoder.ExtractStringUntil<char>('\0'));
 
-  PL_ASSIGN_OR_RETURN_INVALID(const int16_t param_type_count, decoder.ExtractInt<int16_t>());
+  PL_ASSIGN_OR_RETURN(const int16_t param_type_count, decoder.ExtractInt<int16_t>());
   for (int i = 0; i < param_type_count; ++i) {
-    PL_ASSIGN_OR_RETURN_INVALID(const int32_t type_oid, decoder.ExtractInt<int32_t>());
+    PL_ASSIGN_OR_RETURN(const int32_t type_oid, decoder.ExtractInt<int32_t>());
     parse->param_type_oids.push_back(type_oid);
   }
 
-  return ParseState::kSuccess;
+  return Status::OK();
+}
+
+Status ParseErrResp(std::string_view payload, ErrResp* err_resp) {
+  BinaryDecoder decoder(payload);
+  while (decoder.BufSize() != 0) {
+    PL_ASSIGN_OR_RETURN(const char code, decoder.ExtractChar());
+    if (code == '\0') {
+      // Reach end of stream.
+      return decoder.BufSize() == 0
+                 ? Status::OK()
+                 : error::InvalidArgument("'\\x00' is not the last character of the payload");
+    }
+    PL_ASSIGN_OR_RETURN(std::string_view value, decoder.ExtractStringUntil('\0'));
+    err_resp->fields.push_back({static_cast<ErrFieldCode>(code), value});
+  }
+  return Status::OK();
 }
 
 }  // namespace pgsql
