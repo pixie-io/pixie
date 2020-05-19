@@ -70,14 +70,6 @@ struct FD {
 const uint8_t kFlagDataEndStream = 0x1;
 const uint8_t kFlagHeadersEndStream = 0x1;
 
-// There are two similar, but different framers
-enum FramerType {
-  // http2.Framer object
-  khttp2_Framer,
-  // http.http2Framer object
-  khttp_http2Framer
-};
-
 #define REQUIRE_SYMADDR(symaddr, retval) \
   if (symaddr == -1) {                   \
     return retval;                       \
@@ -211,18 +203,6 @@ static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
                  inner_io_writer_interface.ptr + kIOWriterConnOffset);
 
   return get_fd_from_conn_intf(conn_intf);
-}
-
-static __inline int32_t get_fd_from_framer(enum FramerType framer_type, const void* framer_ptr,
-                                           struct conn_symaddrs_t* symaddrs) {
-  switch (framer_type) {
-    case khttp2_Framer:
-      return get_fd_from_http2_Framer(framer_ptr, symaddrs);
-    case khttp_http2Framer:
-      return get_fd_from_http_http2Framer(framer_ptr, symaddrs);
-    default:
-      return kInvalidFD;
-  }
 }
 
 //-----------------------------------------------------------------------------
@@ -779,50 +759,6 @@ static __inline void submit_data(struct pt_regs* ctx, uint32_t tgid, int32_t fd,
   go_grpc_data_events.perf_submit(ctx, info, sizeof(info->attr) + data_len);
 }
 
-// Shared helper function for:
-//   probe_http2_framer_write_data()
-//   probe_http_http2framer_write_data()
-static __inline void probe_write_data(struct pt_regs* ctx, enum FramerType framer_type) {
-  uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
-  struct conn_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
-  if (symaddrs == NULL) {
-    return;
-  }
-
-  const char* sp = (const char*)ctx->sp;
-
-  // Param 0 (receiver) is (fr *Framer).
-  const int kParam0Offset = 8;
-
-  // Param 1 is (streamID uint32).
-  const int kParam1Offset = 16;
-
-  // Param 2 is (endStream bool).
-  const int kParam2Offset = 20;
-
-  // Param 3 is (data []byte).
-  const int kParam3Offset = 24;
-
-  void* framer_ptr;
-  bpf_probe_read(&framer_ptr, sizeof(void*), sp + kParam0Offset);
-
-  uint32_t stream_id;
-  bpf_probe_read(&stream_id, sizeof(uint32_t), sp + kParam1Offset);
-
-  bool end_stream;
-  bpf_probe_read(&end_stream, sizeof(bool), sp + kParam2Offset);
-
-  struct go_byte_array data;
-  bpf_probe_read(&data, sizeof(struct go_byte_array), sp + kParam3Offset);
-
-  int32_t fd = get_fd_from_framer(framer_type, framer_ptr, symaddrs);
-  if (fd < 0) {
-    return;
-  }
-
-  submit_data(ctx, tgid, fd, kDataFrameEventWrite, stream_id, end_stream, data);
-}
-
 // Probes golang.org/x/net/http2.Framer for payload.
 //
 // As a proxy for the return probe on ReadFrame(), we currently probe checkFrameOrder,
@@ -1022,7 +958,53 @@ int probe_http_http2framer_check_frame_order(struct pt_regs* ctx) {
 //
 // Verified to be stable from go1.7 to t go.1.13.
 int probe_http2_framer_write_data(struct pt_regs* ctx) {
-  probe_write_data(ctx, khttp2_Framer);
+  uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
+  struct conn_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  if (symaddrs == NULL) {
+    return 0;
+  }
+
+  // ---------------------------------------------
+  // Extract arguments (on stack)
+  // ---------------------------------------------
+
+  const char* sp = (const char*)ctx->sp;
+
+  // Param 0 (receiver) is (fr *Framer).
+  const int kParam0Offset = 8;
+  void* framer_ptr;
+  bpf_probe_read(&framer_ptr, sizeof(void*), sp + kParam0Offset);
+
+  // Param 1 is (streamID uint32).
+  const int kParam1Offset = 16;
+  uint32_t stream_id;
+  bpf_probe_read(&stream_id, sizeof(uint32_t), sp + kParam1Offset);
+
+  // Param 2 is (endStream bool).
+  const int kParam2Offset = 20;
+  bool end_stream;
+  bpf_probe_read(&end_stream, sizeof(bool), sp + kParam2Offset);
+
+  // Param 3 is (data []byte).
+  const int kParam3Offset = 24;
+  struct go_byte_array data;
+  bpf_probe_read(&data, sizeof(struct go_byte_array), sp + kParam3Offset);
+
+  // ------------------------------------------------------
+  // Extract members of Framer (fd)
+  // ------------------------------------------------------
+
+  int32_t fd = get_fd_from_http2_Framer(framer_ptr, symaddrs);
+  if (fd == kInvalidFD) {
+    return 0;
+  }
+
+  // ---------------------------------------------
+  // Submit
+  // ---------------------------------------------
+
+  submit_data(ctx, tgid, fd, kDataFrameEventWrite, stream_id, end_stream, data);
+
   return 0;
 }
 
@@ -1036,6 +1018,52 @@ int probe_http2_framer_write_data(struct pt_regs* ctx) {
 //
 // Verified to be stable from go1.?? to t go.1.13.
 int probe_http_http2framer_write_data(struct pt_regs* ctx) {
-  probe_write_data(ctx, khttp_http2Framer);
+  uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
+  struct conn_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  if (symaddrs == NULL) {
+    return 0;
+  }
+
+  // ---------------------------------------------
+  // Extract arguments (on stack)
+  // ---------------------------------------------
+
+  const char* sp = (const char*)ctx->sp;
+
+  // Param 0 (receiver) is (fr *Framer).
+  const int kParam0Offset = 8;
+  void* framer_ptr;
+  bpf_probe_read(&framer_ptr, sizeof(void*), sp + kParam0Offset);
+
+  // Param 1 is (streamID uint32).
+  const int kParam1Offset = 16;
+  uint32_t stream_id;
+  bpf_probe_read(&stream_id, sizeof(uint32_t), sp + kParam1Offset);
+
+  // Param 2 is (endStream bool).
+  const int kParam2Offset = 20;
+  bool end_stream;
+  bpf_probe_read(&end_stream, sizeof(bool), sp + kParam2Offset);
+
+  // Param 3 is (data []byte).
+  const int kParam3Offset = 24;
+  struct go_byte_array data;
+  bpf_probe_read(&data, sizeof(struct go_byte_array), sp + kParam3Offset);
+
+  // ------------------------------------------------------
+  // Extract members of Framer (fd)
+  // ------------------------------------------------------
+
+  int32_t fd = get_fd_from_http_http2Framer(framer_ptr, symaddrs);
+  if (fd == kInvalidFD) {
+    return 0;
+  }
+
+  // ---------------------------------------------
+  // Submit
+  // ---------------------------------------------
+
+  submit_data(ctx, tgid, fd, kDataFrameEventWrite, stream_id, end_stream, data);
+
   return 0;
 }
