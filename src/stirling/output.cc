@@ -28,7 +28,7 @@ void PrintRecordBatch(std::string_view prefix, const ArrayView<DataElement>& sch
     std::cout << "[" << prefix << "]";
 
     for (size_t j = 0; j < schema.size(); ++j) {
-      const auto& col = record_batch[i];
+      const auto& col = record_batch[j];
       const auto& col_schema = schema[j];
       std::cout << " " << col_schema.name() << ":";
       switch (col_schema.type()) {
