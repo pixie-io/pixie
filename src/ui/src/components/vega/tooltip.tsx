@@ -5,9 +5,7 @@ import './tooltip.scss';
 import * as _ from 'lodash';
 import * as numeral from 'numeral';
 import { TooltipHandler, View } from 'vega-typings';
-import {
-  isArray, isNumber, isObject, isString,
-} from 'vega-util';
+import { isArray, isNumber, isObject, isString } from 'vega-util';
 
 /**
  * Escape special HTML characters.

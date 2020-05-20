@@ -5,7 +5,7 @@ import { Table } from 'common/vizier-grpc-client';
 import {
     AutoSizedScrollableTable, AutoSizedScrollableTableProps, TableColumnInfo,
 } from 'components/table/scrollable-table';
-import * as numeral from 'numeral';
+import numeral from 'numeral';
 import * as React from 'react';
 import { DataType, Relation, Status } from 'types/generated/vizier_pb';
 import * as FormatData from 'utils/format-data';

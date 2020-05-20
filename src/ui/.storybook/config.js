@@ -1,11 +1,18 @@
-import {addDecorator, configure} from '@storybook/react';
-import {withInfo} from '@storybook/addon-info';
-import {withNotes} from '@storybook/addon-notes';
+import { addDecorator, configure } from '@storybook/react';
+import { withInfo } from '@storybook/addon-info';
+import { withNotes } from '@storybook/addon-notes';
+import * as React from 'react';
+
+import withTheme from './mui-theme-decorator';
+
 
 import './styles.scss';
 
 addDecorator(withInfo);
 addDecorator(withNotes);
+
+// Provide a material-ui theme.
+addDecorator(withTheme);
 
 const req = require.context('../stories', true, /.tsx$/);
 

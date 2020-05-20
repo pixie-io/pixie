@@ -1,8 +1,6 @@
-import { DARK_THEME } from 'common/mui-theme';
 import { ColumnProps, DataTable } from 'components/data-table';
 import * as React from 'react';
 
-import { ThemeProvider } from '@material-ui/core/styles';
 import { storiesOf } from '@storybook/react';
 
 type Sample = [string, number, number, number, number];
@@ -82,9 +80,6 @@ storiesOf('DataTable', module)
   ), {
     info: { inline: true },
     note: 'Data table component',
-    decorators: [(StoryFn) => (
-      <ThemeProvider theme={DARK_THEME}><StoryFn /></ThemeProvider>
-    )],
   })
   .add('compact', () => (
     <div style={{ height: 500 }}>
@@ -98,7 +93,4 @@ storiesOf('DataTable', module)
   ), {
     info: { inline: true },
     note: 'compact data table component',
-    decorators: [(StoryFn) => (
-      <ThemeProvider theme={DARK_THEME}><StoryFn /></ThemeProvider>
-    )],
   });
