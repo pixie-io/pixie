@@ -46,24 +46,6 @@ struct HPackHeaderField {
   bool sensitive;
 };
 
-// From golang source:
-// type FD struct {
-//   fdmu fdMutex
-//   // fdMutex is 16 bytes.
-//   type fdMutex struct {
-//     state uint64
-//     rsema uint32
-//     wsema uint32
-//   }
-//   Sysfd int
-//   ...
-// }
-struct FD {
-  uint64_t fdmu0;
-  uint64_t fdmu1;
-  int64_t sysfd;
-};
-
 // Meaning of flag bits in FrameHeader flags.
 // https://github.com/golang/net/blob/master/http2/frame.go
 // TODO(oazizi): Use DWARF info to get these values.
@@ -150,11 +132,10 @@ static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf) {
   void* fd_ptr;
   bpf_probe_read(&fd_ptr, sizeof(fd_ptr), conn_intf.ptr);
 
-  struct FD fd;
-  const int kFDOffset = 0;
-  bpf_probe_read(&fd, sizeof(fd), fd_ptr + kFDOffset);
+  int64_t sysfd;
+  bpf_probe_read(&sysfd, sizeof(int64_t), fd_ptr + symaddrs->FD_Sysfd_offset);
 
-  return fd.sysfd;
+  return sysfd;
 }
 
 // Returns the file descriptor from a http2.Framer object.

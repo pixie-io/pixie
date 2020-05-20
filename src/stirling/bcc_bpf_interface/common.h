@@ -98,6 +98,9 @@ struct conn_symaddrs_t {
 
   // TODO(oazizi): Remove offset in comments before submitting.
 
+  // Members of internal/poll.FD.
+  int32_t FD_Sysfd_offset;  // 16
+
   // Members of google.golang.org/grpc/internal/transport.http2Server.
   int32_t http2Server_conn_offset;  // 16 or 24
 

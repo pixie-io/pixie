@@ -404,6 +404,8 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   VLOG(1) << absl::Substitute(#symaddr " = $0", symaddr);
 
   // clang-format off
+  GET_SYMADDR(symaddrs->FD_Sysfd_offset,
+              "internal/poll.FD", "Sysfd");
   GET_SYMADDR(symaddrs->http2Server_conn_offset,
               "google.golang.org/grpc/internal/transport.http2Server", "conn");
   GET_SYMADDR(symaddrs->http2Client_conn_offset,
