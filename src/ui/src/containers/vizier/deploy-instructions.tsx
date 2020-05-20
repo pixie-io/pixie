@@ -96,10 +96,12 @@ export const DeployInstructions = () => {
         <div className={classes.linksHeader}>Don&apos;t have K8s?</div>
         <ul className={classes.list}>
           <li className={classes.listItem}>
-            <a className={classes.linkItem} href='/docs/install-guides'>Set up a quick local K8s sandbox</a>
+            <a className={classes.linkItem} href='/docs/installing-pixie/install-guides'>
+              Set up a quick local K8s sandbox
+            </a>
           </li>
           <li className={classes.listItem}>
-            <a className={classes.linkItem} href='/docs/getting-started/quick-start'>Set up a demo app</a>
+            <a className={classes.linkItem} href='/docs/installing-pixie/quick-start'>Set up a demo app</a>
           </li>
         </ul>
         <div className={classes.buttons}>
