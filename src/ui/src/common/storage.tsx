@@ -9,7 +9,7 @@ export const LIVE_VIEW_VIS_SPEC_KEY = 'px-live-vis';
 export const LIVE_VIEW_EDITOR_SPLITS_KEY = 'px-live-editor-splits';
 export const LIVE_VIEW_DATA_DRAWER_SPLITS_KEY = 'px-live-data-drawer-splits';
 
-type LocalStorageKey =
+type StorageKey =
   typeof LIVE_VIEW_DATA_DRAWER_OPENED_KEY |
   typeof LIVE_VIEW_DATA_DRAWER_OPENED_KEY |
   typeof LIVE_VIEW_EDITOR_OPENED_KEY |
@@ -20,20 +20,16 @@ type LocalStorageKey =
   typeof LIVE_VIEW_EDITOR_SPLITS_KEY |
   typeof LIVE_VIEW_DATA_DRAWER_SPLITS_KEY;
 
-export function getLiveViewVisSpec(): string {
-  return localStorage.getItem(LIVE_VIEW_VIS_SPEC_KEY) || '';
+interface KeyStore {
+  getItem(key: string): string;
+  setItem(key: string, value: string): void;
 }
 
-export function setLiveViewVisSpec(spec: string) {
-  localStorage.setItem(LIVE_VIEW_VIS_SPEC_KEY, spec);
-}
-
-export function useLocalStorage<T>(key: LocalStorageKey, initialValue?: T):
+export function useStorage<T>(store: KeyStore, key: StorageKey, initialValue?: T):
   [T, React.Dispatch<React.SetStateAction<T>>] {
-
   const [state, setState] = React.useState<T>(() => {
     try {
-      const stored = localStorage.getItem(key);
+      const stored = store.getItem(key);
       if (stored) {
         return JSON.parse(stored);
       }
@@ -43,10 +39,34 @@ export function useLocalStorage<T>(key: LocalStorageKey, initialValue?: T):
     return initialValue;
   });
 
-  // Update the state in localstorage on changes.
+  // Update the state in the store on changes.
   React.useEffect(() => {
-    localStorage.setItem(key, JSON.stringify(state));
+    store.setItem(key, JSON.stringify(state));
   }, [state]);
 
   return [state, setState];
+}
+
+export function useLocalStorage<T>(key: StorageKey, initialValue?: T):
+  [T, React.Dispatch<React.SetStateAction<T>>] {
+  return useStorage(localStorage, key, initialValue);
+}
+
+// Hook to use sessionStorage. It saves to both localStorage as well as sessionStorage,
+// and it attempts to restore from sessionStorage first, and defaults to localstorage
+// (on first load).
+export function useSessionStorage<T>(key: StorageKey, initialValue?: T):
+  [T, React.Dispatch<React.SetStateAction<T>>] {
+  const setItem = (key: string, value: string) => {
+    localStorage.setItem(key, value);
+    sessionStorage.setItem(key, value);
+  };
+  const getItem = (key: string): string => {
+    const value = sessionStorage.getItem(key);
+    if (value === null) {
+      return localStorage.getItem(key);
+    }
+    return value;
+  };
+  return useStorage({ setItem, getItem }, key, initialValue);
 }

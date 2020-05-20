@@ -1,4 +1,4 @@
-import * as ls from 'common/localstorage';
+import * as storage from 'common/storage';
 import * as React from 'react';
 
 import { SetStateFunc } from './common';
@@ -14,9 +14,9 @@ interface ScriptContextProps {
 export const ScriptContext = React.createContext<ScriptContextProps>(null);
 
 export const ScriptContextProvider = (props) => {
-  const [script, setScript] = ls.useLocalStorage(ls.LIVE_VIEW_PIXIE_SCRIPT_KEY, '');
-  const [title, setTitle] = ls.useLocalStorage(ls.LIVE_VIEW_SCRIPT_TITLE_KEY, '');
-  const [id, setId] = ls.useLocalStorage(ls.LIVE_VIEW_SCRIPT_ID_KEY, '');
+  const [script, setScript] = storage.useSessionStorage(storage.LIVE_VIEW_PIXIE_SCRIPT_KEY, '');
+  const [title, setTitle] = storage.useSessionStorage(storage.LIVE_VIEW_SCRIPT_TITLE_KEY, '');
+  const [id, setId] = storage.useSessionStorage(storage.LIVE_VIEW_SCRIPT_ID_KEY, '');
 
   const setIdAndTitle = (newId: string, newTitle: string) => {
     setTitle(newTitle);

@@ -1,4 +1,4 @@
-import * as ls from 'common/localstorage';
+import * as storage from 'common/storage';
 import { parseVis, toJSON, Vis } from 'containers/live/vis';
 import * as React from 'react';
 import { debounce } from 'utils/debounce';
@@ -19,7 +19,7 @@ function emptyVis(): Vis {
 export const VisContext = React.createContext<VisContextProps>(null);
 
 export const VisContextProvider = (props) => {
-  const [visJSON, setVisJSONBase] = ls.useLocalStorage<string>('px-live-vis');
+  const [visJSON, setVisJSONBase] = storage.useSessionStorage<string>('px-live-vis');
   const [vis, setVisBase] = React.useState(() => {
     const parsed = parseVis(visJSON);
     if (parsed) {

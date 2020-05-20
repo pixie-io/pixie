@@ -1,4 +1,4 @@
-import * as ls from 'common/localstorage';
+import * as storage from 'common/storage';
 import * as React from 'react';
 
 type SetSplitSizesFunc = (sizes: [number, number]) => void;
@@ -21,13 +21,14 @@ export const LayoutContext = React.createContext<LayoutContextProps>(null);
 
 export const LayoutContextProvider = (props) => {
   const [editorSplitsSizes, setEditorSplitSizes] =
-    ls.useLocalStorage<Splits>(ls.LIVE_VIEW_EDITOR_SPLITS_KEY, [40, 60]);
-  const [editorPanelOpen, setEditorPanelOpen] = ls.useLocalStorage<boolean>(ls.LIVE_VIEW_EDITOR_OPENED_KEY, false);
+    storage.useLocalStorage<Splits>(storage.LIVE_VIEW_EDITOR_SPLITS_KEY, [40, 60]);
+  const [editorPanelOpen, setEditorPanelOpen] =
+    storage.useLocalStorage<boolean>(storage.LIVE_VIEW_EDITOR_OPENED_KEY, false);
 
   const [dataDrawerSplitsSizes, setDataDrawerSplitsSizes] =
-    ls.useLocalStorage<Splits>(ls.LIVE_VIEW_DATA_DRAWER_SPLITS_KEY, [60, 40]);
+    storage.useLocalStorage<Splits>(storage.LIVE_VIEW_DATA_DRAWER_SPLITS_KEY, [60, 40]);
   const [dataDrawerOpen, setDataDrawerOpen] =
-    ls.useLocalStorage<boolean>(ls.LIVE_VIEW_DATA_DRAWER_OPENED_KEY, false);
+    storage.useLocalStorage<boolean>(storage.LIVE_VIEW_DATA_DRAWER_OPENED_KEY, false);
 
   return (
     <LayoutContext.Provider
