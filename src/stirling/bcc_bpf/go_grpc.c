@@ -2,7 +2,7 @@
 
 #include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
 
-#define HEADER_COUNT 64
+#define MAX_HEADER_COUNT 64
 
 BPF_PERF_OUTPUT(go_grpc_header_events);
 BPF_PERF_OUTPUT(go_grpc_data_events);
@@ -29,22 +29,6 @@ BPF_HASH(http2_symaddrs_map, uint32_t, struct conn_symaddrs_t);
 // Key: encoder instance pointer
 // Value: Header attributes (e.g. stream_id, fd)
 BPF_HASH(active_write_headers_frame_map, void*, struct header_attr_t);
-
-// From golang source:
-// //A HeaderField is a name-value pair. Both the name and value are
-// // treated as opaque sequences of octets.
-// type HeaderField struct {
-//   Name, Value string
-//
-//   // Sensitive means that this header field should never be
-//   // indexed.
-//   Sensitive bool
-// }
-struct HPackHeaderField {
-  struct gostring name;
-  struct gostring value;
-  bool sensitive;
-};
 
 // Meaning of flag bits in FrameHeader flags.
 // https://github.com/golang/net/blob/master/http2/frame.go
@@ -191,25 +175,31 @@ static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
 //-----------------------------------------------------------------------------
 
 static __inline void fill_header_field(struct go_grpc_http2_header_event_t* event,
-                                       const struct HPackHeaderField* header_ptr) {
-  struct HPackHeaderField field;
-  bpf_probe_read(&field, sizeof(struct HPackHeaderField), header_ptr);
+                                       const void* header_field_ptr,
+                                       struct conn_symaddrs_t* symaddrs) {
+  struct gostring name;
+  bpf_probe_read(&name, sizeof(struct gostring),
+                 header_field_ptr + symaddrs->HeaderField_Name_offset);
+
+  struct gostring value;
+  bpf_probe_read(&value, sizeof(struct gostring),
+                 header_field_ptr + symaddrs->HeaderField_Value_offset);
 
   // Note that we read one extra byte for name and value.
   // This is to avoid passing a size of 0 to bpf_probe_read(),
   // which causes BPF verifier issues on kernel 4.14.
 
-  event->name.size = BPF_LEN_CAP(field.name.len, HEADER_FIELD_STR_SIZE);
-  bpf_probe_read(event->name.msg, event->name.size + 1, field.name.ptr);
+  event->name.size = BPF_LEN_CAP(name.len, HEADER_FIELD_STR_SIZE);
+  bpf_probe_read(event->name.msg, event->name.size + 1, name.ptr);
 
-  event->value.size = BPF_LEN_CAP(field.value.len, HEADER_FIELD_STR_SIZE);
-  bpf_probe_read(event->value.msg, event->value.size + 1, field.value.ptr);
+  event->value.size = BPF_LEN_CAP(value.len, HEADER_FIELD_STR_SIZE);
+  bpf_probe_read(event->value.msg, event->value.size + 1, value.ptr);
 }
 
-// TODO(oazizi): Convert to use symaddrs.
 static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
                                     enum HeaderEventType type, int32_t fd, uint32_t stream_id,
-                                    bool end_stream, struct go_ptr_array fields) {
+                                    bool end_stream, struct go_ptr_array fields,
+                                    struct conn_symaddrs_t* symaddrs) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
@@ -218,15 +208,17 @@ static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t
   conn_info->addr_valid = true;
 
   struct go_grpc_http2_header_event_t event = {};
+  event.attr.probe_type = probe_type;
   event.attr.type = type;
   event.attr.timestamp_ns = bpf_ktime_get_ns();
   event.attr.conn_id = conn_info->conn_id;
   event.attr.stream_id = stream_id;
 
-  const struct HPackHeaderField* fields_ptr = fields.ptr;
+  // TODO(oazizi): Replace this constant with information from DWARF.
+  const int kSizeOfHeaderField = 40;
 #pragma unroll
-  for (unsigned int i = 0; i < HEADER_COUNT && i < fields.len; ++i) {
-    fill_header_field(&event, fields_ptr + i);
+  for (unsigned int i = 0; i < MAX_HEADER_COUNT && i < fields.len; ++i) {
+    fill_header_field(&event, fields.ptr + i * kSizeOfHeaderField, symaddrs);
     go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
   }
 
@@ -239,6 +231,26 @@ static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t
   }
 }
 
+static __inline void submit_header(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
+                                   enum HeaderEventType type, void* encoder_ptr,
+                                   const void* header_field_ptr, struct conn_symaddrs_t* symaddrs) {
+  struct header_attr_t* attr = active_write_headers_frame_map.lookup(&encoder_ptr);
+  if (attr == NULL) {
+    return;
+  }
+
+  struct go_grpc_http2_header_event_t event = {};
+  event.attr.probe_type = probe_type;
+  event.attr.type = type;
+  event.attr.timestamp_ns = bpf_ktime_get_ns();
+  event.attr.conn_id = attr->conn_id;
+  event.attr.stream_id = attr->stream_id;
+
+  fill_header_field(&event, header_field_ptr, symaddrs);
+  go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
+}
+
+// TODO(oazizi): Remove this struct; Use DWARF instead.
 struct go_grpc_framer_t {
   void* writer;
   void* http2_framer;
@@ -296,7 +308,7 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
   }
 
   submit_headers(ctx, k_probe_loopy_writer_write_header, kHeaderEventWrite, fd, stream_id,
-                 end_stream, fields);
+                 end_stream, fields, symaddrs);
 
   return 0;
 }
@@ -356,7 +368,7 @@ static __inline void probe_http2_operate_headers(struct pt_regs* ctx,
     return;
   }
 
-  submit_headers(ctx, probe_type, kHeaderEventRead, fd, stream_id, end_stream, fields);
+  submit_headers(ctx, probe_type, kHeaderEventRead, fd, stream_id, end_stream, fields, symaddrs);
 }
 
 // Probe for the golang.org/x/net/http2 library's header reader (client-side).
@@ -541,32 +553,9 @@ int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
   // ------------------------------------------------------
 
   submit_headers(ctx, k_probe_http_http2serverConn_processHeaders, kHeaderEventRead, fd, stream_id,
-                 end_stream, fields);
+                 end_stream, fields, symaddrs);
 
   return 0;
-}
-
-// TODO(oazizi): Convert to use symaddrs.
-static __inline void submit_header(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
-                                   enum HeaderEventType type, void* encoder_ptr,
-                                   struct HPackHeaderField* header_field_ptr) {
-  struct header_attr_t* attr = active_write_headers_frame_map.lookup(&encoder_ptr);
-  if (attr == NULL) {
-    return;
-  }
-
-  struct HPackHeaderField header_field;
-  bpf_probe_read(&header_field, sizeof(header_field), header_field_ptr);
-
-  struct go_grpc_http2_header_event_t event = {};
-  event.attr.probe_type = probe_type;
-  event.attr.type = type;
-  event.attr.timestamp_ns = bpf_ktime_get_ns();
-  event.attr.conn_id = attr->conn_id;
-  event.attr.stream_id = attr->stream_id;
-
-  fill_header_field(&event, &header_field);
-  go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
 }
 
 // Probe for the hpack's header encoder.
@@ -579,10 +568,17 @@ static __inline void submit_header(struct pt_regs* ctx, enum http2_probe_type_t 
 //
 // Verified to be stable from at least go1.6 to t go.1.13.
 int probe_hpack_header_encoder(struct pt_regs* ctx) {
-  const void* sp = (const void*)ctx->sp;
-  if (sp == NULL) {
+  uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
+  struct conn_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
+  if (symaddrs == NULL) {
     return 0;
   }
+
+  // ---------------------------------------------
+  // Extract arguments (on stack)
+  // ---------------------------------------------
+
+  const void* sp = (const void*)ctx->sp;
 
   // Receiver is (*Encoder).
   const int kReceiverOffset = 8;
@@ -591,10 +587,14 @@ int probe_hpack_header_encoder(struct pt_regs* ctx) {
 
   // Param 1 is (HeaderField).
   const int kParam1Offset = 16;
-  struct HPackHeaderField header_field;
-  bpf_probe_read(&header_field, sizeof(struct HPackHeaderField), sp + kParam1Offset);
+  const void* header_field_ptr = sp + kParam1Offset;
 
-  submit_header(ctx, k_probe_hpack_header_encoder, kHeaderEventWrite, encoder_ptr, &header_field);
+  // ------------------------------------------------------
+  // Process
+  // ------------------------------------------------------
+
+  submit_header(ctx, k_probe_hpack_header_encoder, kHeaderEventWrite, encoder_ptr, header_field_ptr,
+                symaddrs);
 
   return 0;
 }

@@ -95,11 +95,15 @@ struct conn_symaddrs_t {
 
   // Struct member offsets.
   // Naming maintains golang style: <struct>_<member>_offset
-
-  // TODO(oazizi): Remove offset in comments before submitting.
+  // Note: values in comments represent known offsets, in case we need to fall back.
+  //       Eventually, they should be removed, because they are not reliable.
 
   // Members of internal/poll.FD.
   int32_t FD_Sysfd_offset;  // 16
+
+  // Members of golang.org/x/net/http2/hpack.HeaderField.
+  int32_t HeaderField_Name_offset;   // 0
+  int32_t HeaderField_Value_offset;  // 16
 
   // Members of google.golang.org/grpc/internal/transport.http2Server.
   int32_t http2Server_conn_offset;  // 16 or 24

@@ -406,6 +406,10 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   // clang-format off
   GET_SYMADDR(symaddrs->FD_Sysfd_offset,
               "internal/poll.FD", "Sysfd");
+  GET_SYMADDR(symaddrs->HeaderField_Name_offset,
+              "golang.org/x/net/http2/hpack.HeaderField", "Name");
+  GET_SYMADDR(symaddrs->HeaderField_Value_offset,
+              "golang.org/x/net/http2/hpack.HeaderField", "Value");
   GET_SYMADDR(symaddrs->http2Server_conn_offset,
               "google.golang.org/grpc/internal/transport.http2Server", "conn");
   GET_SYMADDR(symaddrs->http2Client_conn_offset,
@@ -459,6 +463,12 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   // clang-format on
 
 #undef GET_SYMADDR
+
+  // List mandatory symaddrs here (symaddrs without which all probes become useless).
+  // Returning an error will prevent the probes from deploying.
+  if (symaddrs->FD_Sysfd_offset == -1) {
+    return error::Internal("FD_Sysfd_offset not found");
+  }
 
   return Status::OK();
 }
