@@ -25,8 +25,8 @@ class NVMap : public std::multimap<std::string, std::string> {
  public:
   using std::multimap<std::string, std::string>::multimap;
 
-  std::string ValueByKey(const std::string& key, const std::string& default_value = "") {
-    auto iter = find(key);
+  std::string ValueByKey(const std::string& key, const std::string& default_value = "") const {
+    const auto iter = find(key);
     if (iter != end()) {
       return iter->second;
     }

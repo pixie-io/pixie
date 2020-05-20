@@ -6,6 +6,7 @@
 // For http2::NVMap
 #include "src/stirling/common/protocol_traits.h"
 #include "src/stirling/http2/frame.h"
+#include "src/stirling/http2/message.h"
 
 namespace pl {
 namespace stirling {
@@ -33,6 +34,11 @@ struct HalfStream {
   size_t ByteSize() const {
     return sizeof(HalfStream) + data.size() + CountStringMapSize(headers) +
            CountStringMapSize(trailers);
+  }
+
+  bool HasGRPCContentType() const {
+    return absl::StrContains(headers.ValueByKey(http2::headers::kContentType),
+                             http2::headers::kContentTypeGRPC);
   }
 
   std::string DebugString() const {

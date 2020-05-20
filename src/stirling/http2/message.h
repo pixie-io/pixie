@@ -11,6 +11,16 @@ namespace pl {
 namespace stirling {
 namespace http2 {
 
+namespace headers {
+
+constexpr char kContentType[] = "content-type";
+constexpr char kMethod[] = ":method";
+constexpr char kPath[] = ":path";
+
+constexpr char kContentTypeGRPC[] = "application/grpc";
+
+}  // namespace headers
+
 struct HTTP2Message {
   // TODO(yzhao): We keep this field for easier testing. Update tests to not rely on input invalid
   // data.
@@ -27,6 +37,10 @@ struct HTTP2Message {
     for (const auto* f : frames) {
       f->consumed = true;
     }
+  }
+
+  bool HasGRPCContentType() const {
+    return absl::StrContains(headers.ValueByKey(headers::kContentType), headers::kContentTypeGRPC);
   }
 };
 

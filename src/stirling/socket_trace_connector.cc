@@ -917,10 +917,11 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
                 conn_tracker.pid_start_time_ticks());
 
-  std::string method = req_message.headers.ValueByKey(":method");
+  std::string path = req_message.headers.ValueByKey(http2::headers::kPath);
 
-  if (FLAGS_stirling_enable_parsing_protobufs) {
-    MethodInputOutput rpc = grpc_desc_db_.GetMethodInputOutput(::pl::grpc::MethodPath(method));
+  if (FLAGS_stirling_enable_parsing_protobufs &&
+      (req_message.HasGRPCContentType() || resp_message.HasGRPCContentType())) {
+    MethodInputOutput rpc = grpc_desc_db_.GetMethodInputOutput(::pl::grpc::MethodPath(path));
     req_message.message = ParsePB(req_message.message, rpc.input.get());
     resp_message.message = ParsePB(resp_message.message, rpc.output.get());
   }
@@ -937,8 +938,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_req_headers")>(ToJSONString(req_message.headers));
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
   r.Append<r.ColIndex("http_resp_headers")>(ToJSONString(resp_message.headers));
-  r.Append<r.ColIndex("http_req_method")>(method);
-  r.Append<r.ColIndex("http_req_path")>(req_message.headers.ValueByKey(":path"));
+  r.Append<r.ColIndex("http_req_method")>(req_message.headers.ValueByKey(http2::headers::kMethod));
+  r.Append<r.ColIndex("http_req_path")>(path);
   r.Append<r.ColIndex("http_resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.
   r.Append<r.ColIndex("http_resp_message")>("-");
@@ -979,10 +980,11 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
                 conn_tracker.pid_start_time_ticks());
 
-  std::string method = req_stream->headers.ValueByKey(":method");
+  std::string path = req_stream->headers.ValueByKey(http2::headers::kPath);
 
-  if (FLAGS_stirling_enable_parsing_protobufs) {
-    MethodInputOutput rpc = grpc_desc_db_.GetMethodInputOutput(::pl::grpc::MethodPath(method));
+  if (FLAGS_stirling_enable_parsing_protobufs &&
+      (req_stream->HasGRPCContentType() || resp_stream->HasGRPCContentType())) {
+    MethodInputOutput rpc = grpc_desc_db_.GetMethodInputOutput(::pl::grpc::MethodPath(path));
     req_stream->data = ParsePB(req_stream->data, rpc.input.get());
     resp_stream->data = ParsePB(resp_stream->data, rpc.output.get());
   }
@@ -999,7 +1001,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   r.Append<r.ColIndex("http_req_headers")>(ToJSONString(req_stream->headers));
   r.Append<r.ColIndex("http_content_type")>(static_cast<uint64_t>(HTTPContentType::kGRPC));
   r.Append<r.ColIndex("http_resp_headers")>(ToJSONString(resp_stream->headers));
-  r.Append<r.ColIndex("http_req_method")>(method);
+  r.Append<r.ColIndex("http_req_method")>(req_stream->headers.ValueByKey(http2::headers::kMethod));
   r.Append<r.ColIndex("http_req_path")>(req_stream->headers.ValueByKey(":path"));
   r.Append<r.ColIndex("http_resp_status")>(resp_status);
   // TODO(yzhao): Populate the following field from headers.
