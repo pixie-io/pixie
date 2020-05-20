@@ -1,5 +1,7 @@
 #include "src/stirling/output.h"
 
+#include "src/shared/metadata/base_types.h"
+
 namespace pl {
 namespace stirling {
 
@@ -52,7 +54,12 @@ void PrintRecordBatch(std::string_view prefix, const ArrayView<DataElement>& sch
         } break;
         case DataType::UINT128: {
           const auto& val = col->Get<UInt128Value>(i);
-          std::cout << "[" << absl::Substitute("{$0,$1}", val.High64(), val.Low64()) << "]";
+          if (col_schema.name() == "upid") {
+            md::UPID upid(val.val);
+            std::cout << "[" << absl::Substitute("{$0}", upid.String()) << "]";
+          } else {
+            std::cout << "[" << absl::Substitute("{$0,$1}", val.High64(), val.Low64()) << "]";
+          }
         } break;
         case DataType::DURATION64NS: {
           const auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(
