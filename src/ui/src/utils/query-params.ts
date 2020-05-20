@@ -13,8 +13,7 @@ export function getQueryParams(): { [key: string]: string } {
 
 export function setQueryParams(params: { [key: string]: string }) {
   const { protocol, host, pathname } = window.location;
-  const currentParams = getQueryParams();
-  const newQueryString = QueryString.stringify({ ...currentParams, ...params });
+  const newQueryString = QueryString.stringify(params);
   const search = newQueryString ? `?${newQueryString}` : '';
   const newurl = `${protocol}//${host}${pathname}${search}`;
 

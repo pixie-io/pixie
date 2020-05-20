@@ -5,8 +5,9 @@ import { useSnackbar } from 'components/snackbar/snackbar';
 import { getQueryFuncs, Vis } from 'containers/live/vis';
 import * as React from 'react';
 import analytics from 'utils/analytics';
+import { Arguments } from 'utils/args-utils';
 
-import { ArgsContext, Arguments } from './args-context';
+import { ArgsContext } from './args-context';
 import { DataDrawerContext } from './data-drawer-context';
 import { ResultsContext } from './results-context';
 import { ScriptContext } from './script-context';
