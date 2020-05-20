@@ -70,9 +70,6 @@ absl::TimeZone tz;
 
 void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
                              std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
-  // Note: Implicit assumption (not checked here) is that all columns have the same size
-  size_t num_records = (*record_batch)[0]->Size();
-
   std::string name = table_id_to_name_map[table_id];
 
   if (std::find(table_print_enables.begin(), table_print_enables.end(), name) ==
@@ -82,32 +79,29 @@ void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
 
   // Use assigned names, from registry.
   if (name == SeqGenConnector::kSeq0Table.name()) {
-    PrintRecordBatch("SeqGen-0", SeqGenConnector::kSeq0Table.elements(), num_records,
-                     *record_batch);
+    PrintRecordBatch("SeqGen-0", SeqGenConnector::kSeq0Table.elements(), *record_batch);
   } else if (name == SeqGenConnector::kSeq1Table.name()) {
-    PrintRecordBatch("SeqGen-1", SeqGenConnector::kSeq1Table.elements(), num_records,
-                     *record_batch);
+    PrintRecordBatch("SeqGen-1", SeqGenConnector::kSeq1Table.elements(), *record_batch);
   } else if (name == kMySQLTable.name()) {
-    PrintRecordBatch("MySQLTrace", kMySQLTable.elements(), num_records, *record_batch);
+    PrintRecordBatch("MySQLTrace", kMySQLTable.elements(), *record_batch);
   } else if (name == kCQLTable.name()) {
-    PrintRecordBatch("CQLTrace", kCQLTable.elements(), num_records, *record_batch);
+    PrintRecordBatch("CQLTrace", kCQLTable.elements(), *record_batch);
   } else if (name == PIDRuntimeConnector::kTable.name()) {
-    PrintRecordBatch("PIDStat-BCC", PIDRuntimeConnector::kTable.elements(), num_records,
-                     *record_batch);
+    PrintRecordBatch("PIDStat-BCC", PIDRuntimeConnector::kTable.elements(), *record_batch);
   } else if (name == kHTTPTable.name()) {
-    PrintRecordBatch("HTTPTrace", kHTTPTable.elements(), num_records, *record_batch);
+    PrintRecordBatch("HTTPTrace", kHTTPTable.elements(), *record_batch);
   } else if (name == SystemStatsConnector::kProcessStatsTable.name()) {
     PrintRecordBatch("ProcessStats", SystemStatsConnector::kProcessStatsTable.elements(),
-                     num_records, *record_batch);
+                     *record_batch);
   } else if (name == SystemStatsConnector::kNetworkStatsTable.name()) {
-    PrintRecordBatch("NetStats", SystemStatsConnector::kNetworkStatsTable.elements(), num_records,
+    PrintRecordBatch("NetStats", SystemStatsConnector::kNetworkStatsTable.elements(),
                      *record_batch);
   } else if (name == kJVMStatsTable.name()) {
-    PrintRecordBatch("JVMStats", kJVMStatsTable.elements(), num_records, *record_batch);
+    PrintRecordBatch("JVMStats", kJVMStatsTable.elements(), *record_batch);
   } else if (name == kPGSQLTable.name()) {
-    PrintRecordBatch("PostgreSQL", kPGSQLTable.elements(), num_records, *record_batch);
+    PrintRecordBatch("PostgreSQL", kPGSQLTable.elements(), *record_batch);
   } else if (name == kConnStatsTable.name()) {
-    PrintRecordBatch("ConnStats", kConnStatsTable.elements(), num_records, *record_batch);
+    PrintRecordBatch("ConnStats", kConnStatsTable.elements(), *record_batch);
   }
   // Can add other connectors, if desired, here.
 }

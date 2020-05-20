@@ -13,17 +13,25 @@ using pl::types::Time64NSValue;
 using pl::types::UInt128Value;
 
 void PrintRecordBatch(std::string_view prefix, const ArrayView<DataElement>& schema,
-                      size_t num_records, const ColumnWrapperRecordBatch& record_batch) {
+                      const ColumnWrapperRecordBatch& record_batch) {
+  DCHECK_EQ(schema.size(), record_batch.size());
+
   constexpr char kTimeFormat[] = "%Y-%m-%d %X";
   static absl::TimeZone tz;
+  const size_t num_records = record_batch.front()->Size();
+
+  for (const auto& col : record_batch) {
+    DCHECK_EQ(col->Size(), num_records);
+  }
 
   for (size_t i = 0; i < num_records; ++i) {
     std::cout << "[" << prefix << "]";
 
-    uint32_t j = 0;
-    for (const auto& col : record_batch) {
-      std::cout << " " << schema[j].name() << ":";
-      switch (schema[j].type()) {
+    for (size_t j = 0; j < schema.size(); ++j) {
+      const auto& col = record_batch[i];
+      const auto& col_schema = schema[j];
+      std::cout << " " << col_schema.name() << ":";
+      switch (col_schema.type()) {
         case DataType::TIME64NS: {
           const auto val = col->Get<Time64NSValue>(i).val;
           std::time_t time = val / 1000000000UL;
@@ -52,9 +60,8 @@ void PrintRecordBatch(std::string_view prefix, const ArrayView<DataElement>& sch
           std::cout << absl::Substitute("[$0 seconds]", secs.count());
         } break;
         default:
-          LOG(DFATAL) << absl::Substitute("Unrecognized type: $0", ToString(schema[j].type()));
+          LOG(DFATAL) << absl::Substitute("Unrecognized type: $0", ToString(col_schema.type()));
       }
-      j++;
     }
     std::cout << std::endl;
   }

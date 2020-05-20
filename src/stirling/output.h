@@ -10,7 +10,7 @@ namespace pl {
 namespace stirling {
 
 void PrintRecordBatch(std::string_view prefix, const ArrayView<DataElement>& schema,
-                      size_t num_records, const types::ColumnWrapperRecordBatch& record_batch);
+                      const types::ColumnWrapperRecordBatch& record_batch);
 
 }  // namespace stirling
 }  // namespace pl
