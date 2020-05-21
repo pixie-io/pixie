@@ -612,7 +612,7 @@ func TestKVMetadataStore_UpdatePod(t *testing.T) {
 	if err := proto.UnmarshalText(testutils.PodPb, expectedPb); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-	expectedPb.Status.HostIP = "127.0.0.1"
+	expectedPb.Status.PodIP = "127.0.0.1"
 
 	err = mds.UpdatePod(expectedPb, false)
 	if err != nil {

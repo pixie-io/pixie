@@ -602,7 +602,7 @@ func (mds *KVMetadataStore) GetPods() ([]*metadatapb.Pod, error) {
 
 // UpdatePod adds or updates the given pod in the metadata store.
 func (mds *KVMetadataStore) UpdatePod(p *metadatapb.Pod, deleted bool) error {
-	cidrs := []string{p.Status.HostIP + "/32"}
+	cidrs := []string{p.Status.PodIP + "/32"}
 
 	if deleted && p.Metadata.DeletionTimestampNS == 0 {
 		p.Metadata.DeletionTimestampNS = time.Now().UnixNano()
