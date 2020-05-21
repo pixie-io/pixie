@@ -1635,6 +1635,64 @@ TEST_F(ASTVisitorTest, compile_with_exec_funcs_and_display) {
   EXPECT_EQ(sink->name(), "test");
 }
 
+constexpr char kExecFuncsWithDebugQuery[] = R"pxl(
+import px
+def f():
+  return px.DataFrame('http_events')
+# px debug should create a new sink with the debug prefix.
+px.debug(px.DataFrame('http_events'))
+)pxl";
+
+TEST_F(ASTVisitorTest, compile_with_exec_funcs_and_debug) {
+  FuncToExecute f;
+  f.set_func_name("f");
+  f.set_output_table_prefix("test");
+  ExecFuncs exec_funcs({f});
+
+  auto graph_or_s = CompileGraph(kExecFuncsWithDebugQuery, exec_funcs);
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+
+  std::vector<IRNode*> source_nodes = graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(source_nodes.size(), 2);
+
+  std::vector<std::string> sink_names;
+  for (auto node : graph->FindNodesOfType(IRNodeType::kMemorySink)) {
+    MemorySinkIR* sink = static_cast<MemorySinkIR*>(node);
+    sink_names.push_back(sink->name());
+  }
+  EXPECT_THAT(sink_names, UnorderedElementsAre("_output", "test"));
+}
+
+constexpr char kExecFuncsWithDuplicateDebugQuery[] = R"pxl(
+import px
+def f():
+  return px.DataFrame('http_events')
+# This px.debug should create a sink w/ a de-duplicated name because the exec function has the same name after prefixing.
+px.debug(px.DataFrame('http_events'), 'test')
+)pxl";
+
+TEST_F(ASTVisitorTest, compile_with_exec_funcs_and_duplicate_display_name) {
+  FuncToExecute f;
+  f.set_func_name("f");
+  f.set_output_table_prefix("_test");
+  ExecFuncs exec_funcs({f});
+
+  auto graph_or_s = CompileGraph(kExecFuncsWithDuplicateDebugQuery, exec_funcs);
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+
+  std::vector<IRNode*> source_nodes = graph->FindNodesOfType(IRNodeType::kMemorySource);
+  ASSERT_EQ(source_nodes.size(), 2);
+
+  std::vector<std::string> sink_names;
+  for (auto node : graph->FindNodesOfType(IRNodeType::kMemorySink)) {
+    MemorySinkIR* sink = static_cast<MemorySinkIR*>(node);
+    sink_names.push_back(sink->name());
+  }
+  EXPECT_THAT(sink_names, UnorderedElementsAre("_test_1", "_test"));
+}
+
 constexpr char kExecFuncsWithGlobals[] = R"pxl(
 import px
 df = px.DataFrame('http_events', select=['http_resp_latency_ns'])

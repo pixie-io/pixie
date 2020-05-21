@@ -851,8 +851,13 @@ class ASTVisitorTest : public OperatorTests {
 
     std::shared_ptr<IR> ir = std::make_shared<IR>();
     bool func_based_exec = exec_funcs.size() > 0;
-    PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
-                                             ir.get(), compiler_state_.get(), func_based_exec));
+    absl::flat_hash_set<std::string> reserved_names;
+    for (const auto& fn : exec_funcs) {
+      reserved_names.insert(fn.output_table_prefix());
+    }
+    PL_ASSIGN_OR_RETURN(auto ast_walker,
+                        compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get(),
+                                                         func_based_exec, reserved_names));
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     if (func_based_exec) {

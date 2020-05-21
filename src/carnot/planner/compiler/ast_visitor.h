@@ -61,8 +61,9 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param arg_values
    * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
    */
-  static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(IR* graph, CompilerState* compiler_state,
-                                                          bool func_based_exec = false);
+  static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(
+      IR* graph, CompilerState* compiler_state, bool func_based_exec = false,
+      const absl::flat_hash_set<std::string>& reserved_names = {});
 
   /**
    * @brief Creates a child AST Visitor from the top-level AST Visitor, sharing the graph,
@@ -140,11 +141,12 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param ir_graph
    */
   ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table,
-                 bool func_based_exec)
+                 bool func_based_exec, const absl::flat_hash_set<std::string>& reserved_names)
       : ir_graph_(ir_graph),
         compiler_state_(compiler_state),
         var_table_(var_table),
-        func_based_exec_(func_based_exec) {}
+        func_based_exec_(func_based_exec),
+        reserved_names_(reserved_names) {}
 
   Status InitGlobals();
   Status CreateBoolLiterals();
@@ -521,6 +523,7 @@ class ASTVisitorImpl : public ASTVisitor {
   CompilerState* compiler_state_;
   std::shared_ptr<VarTable> var_table_;
   bool func_based_exec_;
+  absl::flat_hash_set<std::string> reserved_names_;
 };
 
 }  // namespace compiler

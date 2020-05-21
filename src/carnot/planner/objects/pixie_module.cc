@@ -15,11 +15,11 @@ namespace planner {
 namespace compiler {
 constexpr const char* const PixieModule::kTimeFuncs[];
 
-StatusOr<std::shared_ptr<PixieModule>> PixieModule::Create(IR* graph, CompilerState* compiler_state,
-                                                           ASTVisitor* ast_visitor,
-                                                           bool func_based_exec) {
+StatusOr<std::shared_ptr<PixieModule>> PixieModule::Create(
+    IR* graph, CompilerState* compiler_state, ASTVisitor* ast_visitor, bool func_based_exec,
+    const absl::flat_hash_set<std::string>& reserved_names) {
   auto pixie_module = std::shared_ptr<PixieModule>(
-      new PixieModule(graph, compiler_state, ast_visitor, func_based_exec));
+      new PixieModule(graph, compiler_state, ast_visitor, func_based_exec, reserved_names));
 
   PL_RETURN_IF_ERROR(pixie_module->Init());
   return pixie_module;
@@ -187,6 +187,18 @@ Status PixieModule::Init() {
 
   AddMethod(kDisplayOpId, display_fn);
 
+  PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> debug_fn,
+      FuncObject::Create(
+          kDebugOpId, {"out", "name", "cols"}, {{"name", "'output'"}, {"cols", "[]"}},
+          /* has_variable_len_args */ false,
+          /* has_variable_len_kwargs */ false,
+          std::bind(DebugDisplayHandler::Eval, graph_, reserved_names_, std::placeholders::_1,
+                    std::placeholders::_2, std::placeholders::_3),
+          ast_visitor()));
+
+  AddMethod(kDebugOpId, debug_fn);
+
   PL_ASSIGN_OR_RETURN(auto base_df, Dataframe::Create(graph_, ast_visitor()));
   PL_RETURN_IF_ERROR(AssignAttribute(kDataframeOpId, base_df));
   PL_ASSIGN_OR_RETURN(auto viz, VisualizationObject::Create(ast_visitor()));
@@ -213,13 +225,31 @@ StatusOr<QLObjectPtr> DisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,
   return StatusOr(std::make_shared<NoneObject>(visitor));
 }
 
-StatusOr<QLObjectPtr> NoopDisplayHandler::Eval(IR* graph, const pypa::AstPtr& ast,
-                                               const ParsedArgs& args, ASTVisitor* visitor) {
-  PL_UNUSED(graph);
-  PL_UNUSED(ast);
-  PL_UNUSED(args);
+StatusOr<QLObjectPtr> NoopDisplayHandler::Eval(IR*, const pypa::AstPtr&, const ParsedArgs&,
+                                               ASTVisitor* visitor) {
   // TODO(PP-1773): Surface a warning to the user when calling px.display in a function based
   // execution regime. For now, we'll allow it and just have it do nothing.
+  return StatusOr(std::make_shared<NoneObject>(visitor));
+}
+
+StatusOr<QLObjectPtr> DebugDisplayHandler::Eval(
+    IR* graph, const absl::flat_hash_set<std::string>& reserved_names, const pypa::AstPtr& ast,
+    const ParsedArgs& args, ASTVisitor* visitor) {
+  PL_ASSIGN_OR_RETURN(OperatorIR * out_op, GetArgAs<OperatorIR>(args, "out"));
+  PL_ASSIGN_OR_RETURN(StringIR * name, GetArgAs<StringIR>(args, "name"));
+
+  std::string out_name = PixieModule::kDebugTablePrefix + name->str();
+  std::vector<std::string> columns;
+
+  std::string out_name_base = out_name;
+  // Remove ambiguitiy if there is repeated out_name in the display call and func_based_exec.
+  int64_t i = 1;
+  while (reserved_names.contains(out_name)) {
+    out_name = absl::Substitute("$0_$1", out_name_base, i);
+    ++i;
+  }
+
+  PL_RETURN_IF_ERROR(graph->CreateNode<MemorySinkIR>(ast, out_op, out_name, columns));
   return StatusOr(std::make_shared<NoneObject>(visitor));
 }
 

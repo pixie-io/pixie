@@ -33,19 +33,20 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetUnaryOp(const std::string& python_op,
   return op_find->second;
 }
 
-StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(IR* graph,
-                                                                 CompilerState* compiler_state,
-                                                                 bool func_based_exec) {
-  std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(
-      new ASTVisitorImpl(graph, compiler_state, VarTable::Create(), func_based_exec));
+StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
+    IR* graph, CompilerState* compiler_state, bool func_based_exec,
+    const absl::flat_hash_set<std::string>& reserved_names) {
+  std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(new ASTVisitorImpl(
+      graph, compiler_state, VarTable::Create(), func_based_exec, reserved_names));
+
   PL_RETURN_IF_ERROR(ast_visitor->InitGlobals());
   return ast_visitor;
 }
 
 std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChild() {
   // The flag values should come from the parent var table, not be copied here.
-  return std::shared_ptr<ASTVisitorImpl>(
-      new ASTVisitorImpl(ir_graph_, compiler_state_, var_table_->CreateChild(), func_based_exec_));
+  return std::shared_ptr<ASTVisitorImpl>(new ASTVisitorImpl(
+      ir_graph_, compiler_state_, var_table_->CreateChild(), func_based_exec_, {}));
 }
 
 Status ASTVisitorImpl::InitGlobals() {
@@ -242,7 +243,7 @@ Status ASTVisitorImpl::ProcessExecFuncs(const ExecFuncs& exec_funcs) {
       auto df = std::static_pointer_cast<Dataframe>(return_obj);
       std::vector<std::string> out_columns;
       PL_RETURN_IF_ERROR(ir_graph()->CreateNode<MemorySinkIR>(
-          nullptr, df->op(), func.output_table_prefix(), out_columns));
+          ast, df->op(), func.output_table_prefix(), out_columns));
       continue;
     }
 
@@ -256,8 +257,7 @@ Status ASTVisitorImpl::ProcessExecFuncs(const ExecFuncs& exec_funcs) {
       auto df = std::static_pointer_cast<Dataframe>(obj);
       auto out_name = absl::Substitute("$0[$1]", func.output_table_prefix(), i);
       std::vector<std::string> columns;
-      PL_RETURN_IF_ERROR(
-          ir_graph()->CreateNode<MemorySinkIR>(nullptr, df->op(), out_name, columns));
+      PL_RETURN_IF_ERROR(ir_graph()->CreateNode<MemorySinkIR>(ast, df->op(), out_name, columns));
     }
   }
   return Status::OK();
@@ -345,8 +345,8 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessASTSuite(const pypa::AstSuitePtr& b
 }
 
 Status ASTVisitorImpl::AddPixieModule(std::string_view as_name) {
-  PL_ASSIGN_OR_RETURN(auto px,
-                      PixieModule::Create(ir_graph_, compiler_state_, this, func_based_exec_));
+  PL_ASSIGN_OR_RETURN(auto px, PixieModule::Create(ir_graph_, compiler_state_, this,
+                                                   func_based_exec_, reserved_names_));
   // TODO(philkuz) verify this is done before hand in a parent var table if one exists.
   var_table_->Add(as_name, px);
   return Status::OK();
