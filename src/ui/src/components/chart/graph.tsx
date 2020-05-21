@@ -1,11 +1,11 @@
 import './graph.scss';
 
-import {WidgetDisplay} from 'containers/live/vis';
+import { WidgetDisplay } from 'containers/live/vis';
 import * as d3 from 'd3';
 import * as dagreD3 from 'dagre-d3';
 import * as dot from 'graphlib-dot';
 import * as React from 'react';
-import {AutoSizer} from 'react-virtualized';
+import { AutoSizer } from 'react-virtualized';
 
 interface AdjacencyList {
   toColumn: string;
@@ -19,16 +19,16 @@ export interface GraphDisplay extends WidgetDisplay {
 }
 
 export function displayToGraph(display: GraphDisplay, data) {
-    if (display.dotColumn && data.length > 0) {
-       return (
-        <Graph dot={data[0][display.dotColumn]} />
-      );
-    } else if (display.adjacencyList && display.adjacencyList.fromColumn && display.adjacencyList.toColumn) {
-      return (
-        <Graph data={data} toCol={display.adjacencyList.toColumn} fromCol={display.adjacencyList.fromColumn} />
-      );
-    }
-    return <div key={name}>Invalid spec for graph</div>;
+  if (display.dotColumn && data.length > 0) {
+    return (
+      <Graph dot={data[0][display.dotColumn]} />
+    );
+  } else if (display.adjacencyList && display.adjacencyList.fromColumn && display.adjacencyList.toColumn) {
+    return (
+      <Graph data={data} toCol={display.adjacencyList.toColumn} fromCol={display.adjacencyList.fromColumn} />
+    );
+  }
+  return <div key={name}>Invalid spec for graph</div>;
 }
 
 interface GraphProps {
@@ -53,8 +53,8 @@ export class Graph extends React.Component<GraphProps, {}> {
     this.props.data.forEach((rb) => {
       // Filter out empty columns, because this will cause dagre to crash.
       if (this.props.toCol !== '' && this.props.fromCol !== '') {
-        graph.setNode(rb[this.props.toCol], {label: rb[this.props.toCol]});
-        graph.setNode(rb[this.props.fromCol], {label: rb[this.props.fromCol]});
+        graph.setNode(rb[this.props.toCol], { label: rb[this.props.toCol] });
+        graph.setNode(rb[this.props.fromCol], { label: rb[this.props.fromCol] });
         graph.setEdge(rb[this.props.fromCol], rb[this.props.toCol]);
       }
     });
@@ -78,12 +78,14 @@ export class Graph extends React.Component<GraphProps, {}> {
   }
 
   render() {
-    return <AutoSizer>{({ height, width }) => {
-      return (<div id='pixie-graph' style={{ height, width }}>
-        <svg />
-        {this.err !== '' ? <p>{this.err}</p> : null }
-      </div>);
-    }
-    }</AutoSizer>;
+    return (
+      <AutoSizer>{({ height, width }) => {
+        return (<div id='pixie-graph' style={{ height, width }}>
+          <svg />
+          {this.err !== '' ? <p>{this.err}</p> : null}
+        </div>);
+      }}
+      </AutoSizer>
+    );
   }
 }
