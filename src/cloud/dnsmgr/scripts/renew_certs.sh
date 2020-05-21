@@ -41,31 +41,28 @@ echo "backing up ${ORIGINAL_CERTS_DIR} to ${BACKUP_DIR}"
 cp -r "${ORIGINAL_CERTS_DIR}" "${BACKUP_DIR}"
 cp -r "${ORIGINAL_CERTS_DIR}" "${NEW_CERTS_DIR}"
 
+# Save the original gcp project to return to the original state after running this script.
+ORIGINAL_GCP_PROJECT=$(gcloud config get-value project)
+
+echo "Renewing the production certificates."
+
+gcloud config set project pixie-prod
+export GCE_PROJECT="pixie-prod"
+renew_certs "clusters.withpixie.ai"
+renew_certs "clusters.staging.withpixie.dev"
 
 # Prepare the output file.
 echo "Renewing the dev, testing, and nightly certificates"
-
-# Save the original gcp project to return to the original state after running this script.
-ORIGINAL_GCP_PROJECT=$(gcloud config get-value project)
 
 gcloud config set project pl-dev-infra
 export GCE_PROJECT="pl-dev-infra"
 renew_certs "clusters.dev.withpixie.dev"
 renew_certs "clusters.testing.withpixie.dev"
 
-
-echo "Renewing the production certificates."
-
-gcloud config set project pixie-prod
-export GCE_PROJECT="pixie-prod"
-renew_certs "clusters.staging.withpixie.dev"
-renew_certs "clusters.withpixie.ai"
-
-
- # Return to the original GCP project.
+# Return to the original GCP project.
 gcloud config set project "${ORIGINAL_GCP_PROJECT}"
 cd "${workspace}/credentials"
-# If you don't include this, then the files will be appended to rather than replaced.
+# If you don't rm first then the files will be appended to rather than replaced.
 rm -rf "${workspace}/credentials/certs"
 mkdir "${workspace}/credentials/certs"
 "${SCRIPT_DIR}/convert_certs_to_yaml.sh" "${NEW_CERTS_DIR}/certificates" "${workspace}/credentials/certs"

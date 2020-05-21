@@ -21,8 +21,11 @@ def parse_args():
         '--lego', help='lego binary to use', default='./lego')
     parser.add_argument('--create_new_certs_dir',
                         help='Whether to create the new certs dir or not', action='store_true')
+    parser.add_argument(
+        '--cname', help='specific cname to run. Cannot be used with --renew_all', default=None)
     parser.add_argument('--renew_all',
-                        help='Whether to renew all certs instead of the unchanged',
+                        help='Whether to renew all certs instead of the unchanged.'
+                        'Cannot be used with --cname',
                         action='store_true')
     parser.add_argument('--num_tries',
                         help='Number of tries to make for each cert.', default=3)
@@ -95,7 +98,7 @@ def get_cert_domains(lego_dir, parent_domain):
         # Make sure that domain should be added.
         if parent_domain not in d:
             continue
-        cert_domains.append(cert_fname_to_domain(d))
+        cert_domains.append(d)
 
     return cert_domains
 
@@ -180,6 +183,26 @@ def get_unrenewed_domains(old_dir, new_dir, parent_domain):
 def main():
     # Backup the original out directory.
     args = parse_args()
+
+    if args.renew_all and args.cname:
+        raise ValueError(
+            '--renew_all and --cname cannot be used at the same time.')
+
+    if args.renew_all:
+        # Grab the list of certs from the original out directory.
+        cert_domains = get_cert_domains(
+            args.original_certs_dir, args.parent_domain)
+    elif args.cname:
+        # Filter only for matching cert names.
+        cert_domains = get_cert_domains(
+            args.original_certs_dir, args.parent_domain)
+        cert_domains = [c for c in cert_domains if args.cname in c]
+    else:
+        cert_domains = get_unrenewed_domains(
+            args.original_certs_dir, args.new_certs_dir, args.parent_domain)
+
+    print(cert_domains)
+
     backup_dir_name = backup_dir(args.original_certs_dir)
     print("Backed up original {} at {}".format(
         args.original_certs_dir, backup_dir_name))
@@ -188,20 +211,10 @@ def main():
     prepare_new_cert_dir(args.original_certs_dir,
                          args.new_certs_dir, args.create_new_certs_dir)
 
-    if args.renew_all:
-        # Grab the list of certs from the original out directory.
-        cert_domains = get_cert_domains(
-            args.original_certs_dir, args.parent_domain)
-    else:
-        cert_domains = get_unrenewed_domains(
-            args.original_certs_dir, args.new_certs_dir, args.parent_domain)
-
-    print(cert_domains)
-
     remaining_certs = set(cert_domains)
     print('running {} certs updates'.format(len(remaining_certs)))
 
-    # Iterate through and renew everything.
+    # Iterate and renew each cert_domain.
     failed_certs = renew_all_certs(remaining_certs, args.new_certs_dir,
                                    args.email, args.lego, args.num_tries)
     if failed_certs:
