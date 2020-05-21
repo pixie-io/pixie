@@ -360,6 +360,41 @@ TEST_F(MetadataOpsTest, pod_ip) {
   EXPECT_EQ(udf.Exec(function_ctx.get(), "1.1.1.1"), "1_uid");
 }
 
+TEST_F(MetadataOpsTest, upid_to_qos) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto udf_tester = pl::carnot::udf::UDFTester<UPIDToPodQoSUDF>(std::move(function_ctx));
+  auto upid1 = types::UInt128Value(528280977975, 89101);
+  udf_tester.ForInput(upid1).Expect("kGuaranteed");
+  auto upid2 = types::UInt128Value(528280977975, 468);
+  udf_tester.ForInput(upid2).Expect("kBestEffort");
+  auto upid3 = types::UInt128Value(528280977975, 123);
+  udf_tester.ForInput(upid3).Expect("");
+}
+
+TEST_F(MetadataOpsTest, upid_to_pod_phase) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto udf_tester = pl::carnot::udf::UDFTester<UPIDToPodPhaseUDF>(std::move(function_ctx));
+  auto upid1 = types::UInt128Value(528280977975, 89101);
+  udf_tester.ForInput(upid1).Expect("kRunning");
+  auto upid2 = types::UInt128Value(528280977975, 468);
+  udf_tester.ForInput(upid2).Expect("kFailed");
+  auto upid3 = types::UInt128Value(528280977975, 123);
+  udf_tester.ForInput(upid3).Expect("");
+}
+
+TEST_F(MetadataOpsTest, upid_to_pod_status) {
+  UPIDToPodStatusUDF udf;
+  updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());
+  EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
+                                                               &md_filter_, updates_.get()));
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  // 1_uid is the Pod id for the currently running pod.
+  auto upid1 = types::UInt128Value(528280977975, 89101);
+  EXPECT_EQ(udf.Exec(function_ctx.get(), upid1), "Running");
+  auto upid2 = types::UInt128Value(528280977975, 468);
+  EXPECT_EQ(std::string(udf.Exec(function_ctx.get(), upid2)), "Terminated");
+}
+
 }  // namespace metadata
 }  // namespace funcs
 }  // namespace carnot

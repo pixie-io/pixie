@@ -37,6 +37,7 @@ qos_class: QOS_CLASS_GUARANTEED
 node_name: "test_node"
 hostname: "test_host"
 pod_ip: "1.1.1.1"
+phase: RUNNING
 )";
 
 const char* kToBeTerminatedPodUpdatePbTxt = R"(
@@ -48,6 +49,7 @@ container_ids: "pod2_container_1"
 qos_class: QOS_CLASS_BEST_EFFORT
 node_name: "test_node_tbt"
 hostname: "test_host_tbt"
+phase: FAILED
 )";
 
 const char* kTerminatedPodUpdatePbTxt = R"(
@@ -58,6 +60,7 @@ start_timestamp_ns: 10
 stop_timestamp_ns: 15
 container_ids: "pod2_container_1"
 qos_class: QOS_CLASS_BEST_EFFORT
+phase: FAILED
 )";
 
 /*

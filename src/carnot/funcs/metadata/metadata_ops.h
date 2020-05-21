@@ -463,6 +463,16 @@ class PodNameToPodStartTimeUDF : public ScalarUDF {
   }
 };
 
+inline std::string PodInfoToPodStatus(const pl::md::PodInfo* pod_info) {
+  if (pod_info == nullptr) {
+    return "";
+  }
+  if (pod_info->stop_time_ns() != 0) {
+    return "Terminated";
+  }
+  return "Running";
+}
+
 class PodNameToPodStatusUDF : public ScalarUDF {
  public:
   /**
@@ -475,14 +485,22 @@ class PodNameToPodStatusUDF : public ScalarUDF {
   StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
     auto md = GetMetadataState(ctx);
     StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
-    const pl::md::PodInfo* pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
-    if (pod_info == nullptr) {
-      return "";
-    }
-    if (pod_info->stop_time_ns() != 0) {
-      return "Terminated";
-    }
-    return "Running";
+    return PodInfoToPodStatus(md->k8s_metadata_state().PodInfoByID(pod_id));
+  }
+};
+
+class UPIDToPodStatusUDF : public ScalarUDF {
+ public:
+  /**
+   * @brief Gets the Pod status for a passed in UPID.
+   *
+   * @param ctx: the function context
+   * @param upid_vlue: the UPID to query for.
+   * @return StringValue: the status of the pod.
+   */
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
+    auto md = GetMetadataState(ctx);
+    return PodInfoToPodStatus(UPIDtoPod(md, upid_value));
   }
 };
 
@@ -504,6 +522,47 @@ class UPIDToCmdLineUDF : public ScalarUDF {
       return "";
     }
     return pid_info->cmdline();
+  }
+};
+
+inline std::string PodInfoToPodQoS(const pl::md::PodInfo* pod_info) {
+  if (pod_info == nullptr) {
+    return "";
+  }
+  return std::string(magic_enum::enum_name(pod_info->qos_class()));
+}
+
+class UPIDToPodQoSUDF : public ScalarUDF {
+ public:
+  /**
+   * @brief Gets the qos for the upid's pod.
+   *
+   * @param ctx: The function context.
+   * @param upid_value: The UPID value
+   * @return StringValue: the cmdline for the UPID.
+   */
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
+    auto md = GetMetadataState(ctx);
+    return PodInfoToPodQoS(UPIDtoPod(md, upid_value));
+  }
+};
+
+class UPIDToPodPhaseUDF : public ScalarUDF {
+ public:
+  /**
+   * @brief Gets the phase of the pod.
+   *
+   * @param ctx: The function context.
+   * @param upid_value: The UPID value
+   * @return StringValue: the cmdline for the UPID.
+   */
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
+    auto md = GetMetadataState(ctx);
+    auto pod_info = UPIDtoPod(md, upid_value);
+    if (pod_info == nullptr) {
+      return "";
+    }
+    return std::string(magic_enum::enum_name(pod_info->phase()));
   }
 };
 
