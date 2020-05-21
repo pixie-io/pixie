@@ -88,8 +88,9 @@ Status Exists(const std::filesystem::path& path) {
   return error::InvalidArgument("Path $0 does not exist", path.string());
 }
 
-Status Copy(const std::filesystem::path& from, const std::filesystem::path& to) {
-  WRAP_BOOL_FN(std::filesystem::copy_file(from, to, ec))
+Status Copy(const std::filesystem::path& from, const std::filesystem::path& to,
+            std::filesystem::copy_options options) {
+  WRAP_BOOL_FN(std::filesystem::copy_file(from, to, options, ec))
   return error::InvalidArgument("Could not copy from $0 to $1", from.string(), to.string());
 }
 
