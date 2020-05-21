@@ -35,6 +35,10 @@ Status LimitNode::OpenImpl(ExecState* /*exec_state*/) { return Status::OK(); }
 Status LimitNode::CloseImpl(ExecState* /*exec_state*/) { return Status::OK(); }
 
 Status LimitNode::ConsumeNextImpl(ExecState* exec_state, const RowBatch& rb, size_t) {
+  if (!exec_state->keep_running()) {
+    return Status::OK();
+  }
+
   int64_t record_limit = plan_node_->record_limit();
   // We need to send over a slice of the input data.
   int64_t remainder_records = record_limit - records_processed_;

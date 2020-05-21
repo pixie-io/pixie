@@ -96,9 +96,24 @@ class ExecState {
 
   // A node can call this method to say no more records will be processed (ie. Limit).
   // That node is responsible for setting eos.
-  void StopLimitReached() { keep_running_ = false; }
+  void StopLimitReached() {
+    DCHECK(current_source_set_);
+    source_id_to_keep_running_map_[current_source_] = false;
+  }
 
-  bool keep_running() { return keep_running_; }
+  bool keep_running() {
+    DCHECK(current_source_set_);
+    return source_id_to_keep_running_map_[current_source_];
+  }
+
+  void SetCurrentSource(int64_t source) {
+    current_source_ = source;
+    current_source_set_ = true;
+    if (source_id_to_keep_running_map_.find(current_source_) ==
+        source_id_to_keep_running_map_.end()) {
+      source_id_to_keep_running_map_[current_source_] = true;
+    }
+  }
 
   void set_metadata_state(std::shared_ptr<const md::AgentMetadataState> metadata_state) {
     metadata_state_ = metadata_state;
@@ -114,8 +129,11 @@ class ExecState {
   std::map<int64_t, udf::ScalarUDFDefinition*> id_to_scalar_udf_map_;
   std::map<int64_t, udf::UDADefinition*> id_to_uda_map_;
   const sole::uuid query_id_;
-  bool keep_running_ = true;
   GRPCRouter* grpc_router_ = nullptr;
+
+  int64_t current_source_ = 0;
+  bool current_source_set_ = false;
+  std::map<int64_t, bool> source_id_to_keep_running_map_;
 };
 
 }  // namespace exec

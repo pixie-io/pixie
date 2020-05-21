@@ -219,6 +219,10 @@ class ExecNodeTester {
       : exec_state_(exec_state) {
     exec_node_ = std::make_unique<TExecNode>();
     const auto* casted_plan_node = static_cast<const TPlanNode*>(&plan_node);
+
+    // Set the exec state to use a fake source of ID 1 during the course of the test.
+    exec_state_->SetCurrentSource(1);
+
     // copy the plan node to local object;
     plan_node_ = std::make_unique<TPlanNode>(*casted_plan_node);
 

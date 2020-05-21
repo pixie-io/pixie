@@ -100,26 +100,26 @@ void ExecutionGraph::Continue() {
 
 Status ExecutionGraph::ExecuteSources() {
   std::set<SourceNode*> running_sources;
+  std::unordered_map<SourceNode*, int64_t> source_to_id;
   for (auto node_id : sources_) {
     auto node = nodes_.find(node_id);
     if (node == nodes_.end()) {
       return error::NotFound("Could not find SourceNode $0.", node_id);
     }
-    running_sources.insert(static_cast<SourceNode*>(node->second));
+    SourceNode* n = static_cast<SourceNode*>(node->second);
+    running_sources.insert(n);
+    source_to_id[n] = node_id;
   }
 
   while (running_sources.size() > 0) {
     std::vector<SourceNode*> completed_sources;
     for (SourceNode* source : running_sources) {
+      exec_state_->SetCurrentSource(source_to_id[source]);
       while (exec_state_->keep_running() && source->NextBatchReady()) {
         PL_RETURN_IF_ERROR(source->GenerateNext(exec_state_));
       }
-      if (!source->HasBatchesRemaining()) {
+      if (!source->HasBatchesRemaining() || !exec_state_->keep_running()) {
         completed_sources.push_back(source);
-      }
-
-      if (!exec_state_->keep_running()) {
-        return Status::OK();
       }
     }
 
