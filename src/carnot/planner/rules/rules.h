@@ -490,27 +490,6 @@ class AddLimitToMemorySinkRule : public Rule {
 };
 
 /**
- * @brief This rule pushes filters as early in the IR as possible.
- * It must run after OperatorRelationRule so that it has full context on all of the column
- * names that exist in the IR.
- *
- */
-class FilterPushdownRule : public Rule {
- public:
-  FilterPushdownRule() : Rule(nullptr) {}
-
- protected:
-  StatusOr<bool> Apply(IRNode*) override;
-
- private:
-  using ColumnNameMapping = absl::flat_hash_map<std::string, std::string>;
-  OperatorIR* HandleAggPushdown(BlockingAggIR* map, ColumnNameMapping* column_name_mapping);
-  OperatorIR* HandleMapPushdown(MapIR* map, ColumnNameMapping* column_name_mapping);
-  OperatorIR* NextFilterLocation(OperatorIR* current_node, ColumnNameMapping* column_name_mapping);
-  Status UpdateFilter(FilterIR* expr, const ColumnNameMapping& column_name_mapping);
-};
-
-/**
  * @brief Propagate the expression annotations to downstream nodes when a column
  * is reassigned or used in another operator. For example, for an integer with annotations that is
  * assigned to be the value of a new column, that new column should have receive the same

@@ -870,34 +870,6 @@ TEST_F(AnalyzerTest, add_limit) {
   EXPECT_EQ(10000, limit1->limit_value());
 }
 
-constexpr char kFilterPushdown[] = R"pxl(
-import px
-t1 = px.DataFrame(table='http_events', start_time='-5m', select=['http_resp_latency_ns', 'remote_port'])
-t1.int_col = t1.http_resp_latency_ns
-t1 = t1.groupby('int_col').agg(time_count=('remote_port', px.count))
-t1 = t1[t1.int_col == 2]
-px.display(t1)
-)pxl";
-
-TEST_F(AnalyzerTest, filter_pushdown) {
-  auto ir_graph_status = CompileGraph(kFilterPushdown);
-  ASSERT_OK(ir_graph_status);
-  // now pass into the relation handler.
-  auto ir_graph = ir_graph_status.ConsumeValueOrDie();
-  auto handle_status = HandleRelation(ir_graph);
-  EXPECT_OK(handle_status);
-
-  std::vector<IRNode*> src_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
-  EXPECT_EQ(1, src_nodes.size());
-  auto src = static_cast<OperatorIR*>(src_nodes[0]);
-  EXPECT_EQ(1, src->Children().size());
-  EXPECT_MATCH(src->Children()[0], Filter());
-  auto filter = static_cast<FilterIR*>(src->Children()[0]);
-  EXPECT_MATCH(filter->filter_expr(), Equals(ColumnNode("http_resp_latency_ns"), Int(2)));
-  EXPECT_EQ(1, filter->Children().size());
-  EXPECT_MATCH(filter->Children()[0], Map());
-}
-
 constexpr char kAggQueryAnnotations[] = R"query(
 import px
 t1 = px.DataFrame(table='http_events', start_time='-5m', select=['http_resp_latency_ns', 'upid'])

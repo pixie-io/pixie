@@ -49,6 +49,12 @@ scalar_udfs {
   return_type:FLOAT64
 }
 scalar_udfs {
+  name: "contains"
+  exec_arg_types: STRING
+  exec_arg_types: STRING
+  return_type:BOOLEAN
+}
+scalar_udfs {
   name: "equals"
   exec_arg_types: FLOAT64
   exec_arg_types: FLOAT64

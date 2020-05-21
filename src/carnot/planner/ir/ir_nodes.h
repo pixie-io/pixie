@@ -266,6 +266,8 @@ class IR {
   plan::DAG& dag() { return dag_; }
   const plan::DAG& dag() const { return dag_; }
   std::string DebugString();
+  std::string OperatorsDebugString();
+
   IRNode* Get(int64_t id) const {
     DCHECK(dag_.HasNode(id)) << "DAG doesn't have node: " << id;
     auto iterator = id_node_map_.find(id);

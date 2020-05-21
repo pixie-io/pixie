@@ -88,6 +88,21 @@ std::string IR::DebugString() {
   return debug_string;
 }
 
+std::string IR::OperatorsDebugString() {
+  std::string debug_string;
+  for (int64_t i : dag().TopologicalSort()) {
+    if (Match(Get(i), Operator())) {
+      auto op = static_cast<OperatorIR*>(Get(i));
+      std::string parents = absl::StrJoin(op->parents(), ",", [](std::string* out, OperatorIR* in) {
+        absl::StrAppend(out, in->id());
+      });
+
+      debug_string += absl::Substitute("[$0] $1 \n", parents, op->DebugString());
+    }
+  }
+  return debug_string;
+}
+
 std::vector<OperatorIR*> IR::GetSources() const {
   std::vector<OperatorIR*> operators;
   for (int64_t i : dag().TopologicalSort()) {

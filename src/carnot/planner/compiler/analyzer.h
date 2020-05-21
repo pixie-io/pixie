@@ -80,11 +80,6 @@ class Analyzer : public RuleExecutor<IR> {
     metadata_conversion_batch->AddRule<PropagateExpressionAnnotationsRule>();
   }
 
-  void CreateFilterPushdownBatch() {
-    // Use TryUntilMax here to avoid swapping the positions of "equal" filters endlessly.
-    RuleBatch* filter_pushdown_batch = CreateRuleBatch<TryUntilMax>("FilterPushdown", 1);
-    filter_pushdown_batch->AddRule<FilterPushdownRule>();
-  }
 
   void CreateResolutionVerificationBatch() {
     RuleBatch* resolution_verification_batch =
@@ -106,7 +101,6 @@ class Analyzer : public RuleExecutor<IR> {
     CreateCombineConsecutiveMapsRule();
     CreateDataTypeResolutionBatch();
     CreateMetadataConversionBatch();
-    CreateFilterPushdownBatch();
     CreateResolutionVerificationBatch();
     CreateRemoveIROnlyNodesBatch();
     return Status::OK();
