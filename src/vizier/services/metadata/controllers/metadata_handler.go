@@ -485,6 +485,7 @@ func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
 				NodeName:         podName,
 				Hostname:         hostname,
 				PodIP:            pod.Status.PodIP,
+				HostIP:           pod.Status.HostIP,
 			},
 		},
 	}

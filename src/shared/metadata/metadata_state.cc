@@ -147,7 +147,10 @@ Status K8sMetadataState::HandlePodUpdate(const PodUpdate& update) {
   pod_info->set_pod_ip(update.pod_ip());
 
   pods_by_name_[{ns, name}] = object_uid;
-  pods_by_ip_[update.pod_ip()] = object_uid;
+  if (update.host_ip() !=
+      update.pod_ip()) {  // Filter out daemonset which don't have their own, unique podIP.
+    pods_by_ip_[update.pod_ip()] = object_uid;
+  }
   return Status::OK();
 }
 

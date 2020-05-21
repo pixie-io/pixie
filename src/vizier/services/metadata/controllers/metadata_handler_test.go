@@ -523,6 +523,8 @@ func TestGetResourceUpdateFromPod(t *testing.T) {
 	if err := proto.UnmarshalText(testutils.PodPbWithContainers, pod); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
+	pod.Status.PodIP = "127.0.0.1"
+	pod.Status.HostIP = "127.0.0.2"
 
 	update := controllers.GetResourceUpdateFromPod(pod)
 	podUpdate := update.GetPodUpdate()
@@ -540,6 +542,8 @@ func TestGetResourceUpdateFromPod(t *testing.T) {
 	assert.Equal(t, metadatapb.RUNNING, podUpdate.Phase)
 	assert.Equal(t, "test", podUpdate.NodeName)
 	assert.Equal(t, "hostname", podUpdate.Hostname)
+	assert.Equal(t, "127.0.0.1", podUpdate.PodIP)
+	assert.Equal(t, "127.0.0.2", podUpdate.HostIP)
 }
 
 func TestGetResourceUpdateFromEndpoints(t *testing.T) {
