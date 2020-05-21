@@ -28,7 +28,7 @@ class TCPSocket {
   struct in_addr addr() {
     return addr_.sin_addr;
   }
-  in_port_t port() { return addr_.sin_port; }
+  in_port_t port() const { return addr_.sin_port; }
 
   ssize_t Write(std::string_view data) const;
   ssize_t WriteV(const std::vector<std::string_view>& data) const;

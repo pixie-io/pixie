@@ -44,6 +44,8 @@ void TCPSocket::BindAndListen(int port) {
   socklen_t addr_len = sizeof(struct sockaddr_in);
   CHECK(getsockname(sockfd_, reinterpret_cast<struct sockaddr*>(&addr_), &addr_len) == 0)
       << "Failed to get socket name, error message: " << strerror(errno);
+  LOG(INFO) << "Listening on port: " << ntohs(this->port());
+
   CHECK(addr_len == sizeof(struct sockaddr_in)) << "Address size is incorrect";
 
   CHECK(listen(sockfd_, /*backlog*/ 5) == 0)
@@ -71,6 +73,9 @@ void TCPSocket::Connect(const TCPSocket& addr) {
   socklen_t addr_len = sizeof(struct sockaddr_in);
   CHECK(getsockname(sockfd_, reinterpret_cast<struct sockaddr*>(&addr_), &addr_len) == 0)
       << "Failed to get socket name, error message: " << strerror(errno);
+  LOG(INFO) << absl::Substitute("Connected remote_port=$0 on local_port=$1", ntohs(addr.port()),
+                                ntohs(port()));
+
   CHECK(addr_len == sizeof(struct sockaddr_in)) << "Address size is incorrect";
 }
 
