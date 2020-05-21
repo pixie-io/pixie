@@ -133,6 +133,7 @@ const useStyles = makeStyles((theme: Theme) =>
       flex: 1,
       padding: theme.spacing(2),
       borderLeft: `solid 1px ${theme.palette.background.three}`,
+      minWidth: 0,
     },
     close: {
       position: 'absolute',
