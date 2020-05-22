@@ -14,7 +14,7 @@ StatusOr<bool> PruneUnavailableSourcesRule::Apply(IRNode* node) {
 }
 
 StatusOr<bool> PruneUnavailableSourcesRule::RemoveSourceIfNotNecessary(OperatorIR* source_op) {
-  DCHECK(source_op->is_source());
+  DCHECK(source_op->IsSource());
   if (Match(source_op, MemorySource())) {
     return MaybePruneMemorySource(static_cast<MemorySourceIR*>(source_op));
   } else if (Match(source_op, UDTFSource())) {
@@ -24,7 +24,7 @@ StatusOr<bool> PruneUnavailableSourcesRule::RemoveSourceIfNotNecessary(OperatorI
 }
 
 Status DeleteSourceAndChildren(OperatorIR* source_op) {
-  DCHECK(source_op->is_source());
+  DCHECK(source_op->IsSource());
   // TODO(PL-1468) figure out how to delete the Join parents.
   return source_op->graph()->DeleteOrphansInSubtree(source_op->id());
 }

@@ -718,7 +718,7 @@ struct SourceHasRelationMatch : public ParentMatch {
       return false;
     }
     const OperatorIR* op = static_cast<const OperatorIR*>(node);
-    return op->is_source() && op->IsRelationInit() == HasRelation;
+    return op->IsSource() && op->IsRelationInit() == HasRelation;
   }
 };
 
@@ -732,7 +732,7 @@ struct SourceOperator : public ParentMatch {
       return false;
     }
     const OperatorIR* op = static_cast<const OperatorIR*>(node);
-    return op->is_source();
+    return op->IsSource();
   }
 };
 

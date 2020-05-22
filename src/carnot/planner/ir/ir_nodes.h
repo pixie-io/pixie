@@ -431,8 +431,6 @@ class OperatorIR : public IRNode {
   Status CopyFromNode(const IRNode* node,
                       absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
 
-  virtual bool IsBlocking() const { return false; }
-
   /**
    * @brief Removes any output columns that are not needed to produce those listed in
    * 'output_colnames'. It expects that the relation has already been set. It is only intended to be
@@ -449,7 +447,9 @@ class OperatorIR : public IRNode {
    */
   std::vector<OperatorIR*> Children() const;
 
-  bool is_source() const { return is_source_; }
+  virtual bool IsBlocking() const { return false; }
+
+  virtual bool IsSource() const { return false; }
 
   /**
    * @brief For each parent (ordered by index), returns the required column names to execute this
@@ -465,8 +465,7 @@ class OperatorIR : public IRNode {
   static std::string class_type_string() { return "Operator"; }
 
  protected:
-  explicit OperatorIR(int64_t id, IRNodeType type, bool has_parents, bool is_source)
-      : IRNode(id, type), is_source_(is_source), can_have_parents_(has_parents) {}
+  explicit OperatorIR(int64_t id, IRNodeType type) : IRNode(id, type) {}
 
   /**
    * @brief Support for operators that have the same parent multiple times, like a self-join.
@@ -484,9 +483,7 @@ class OperatorIR : public IRNode {
       const absl::flat_hash_set<std::string>& output_colnames) = 0;
 
  private:
-  bool is_source_ = false;
   bool relation_init_ = false;
-  bool can_have_parents_;
   std::vector<OperatorIR*> parents_;
   table_store::schema::Relation relation_;
 };
@@ -1225,8 +1222,7 @@ class MetadataIR : public ColumnIR {
 class MemorySourceIR : public OperatorIR {
  public:
   MemorySourceIR() = delete;
-  explicit MemorySourceIR(int64_t id)
-      : OperatorIR(id, IRNodeType::kMemorySource, /* has_parents */ false, /* is_source */ true) {}
+  explicit MemorySourceIR(int64_t id) : OperatorIR(id, IRNodeType::kMemorySource) {}
 
   /**
    * @brief Initialize the memory source.
@@ -1295,6 +1291,8 @@ class MemorySourceIR : public OperatorIR {
 
   void SetColumnNames(const std::vector<std::string>& col_names) { column_names_ = col_names; }
 
+  bool IsSource() const override { return true; }
+
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
       const absl::flat_hash_set<std::string>& output_colnames) override;
@@ -1327,8 +1325,7 @@ class MemorySourceIR : public OperatorIR {
 class MemorySinkIR : public OperatorIR {
  public:
   MemorySinkIR() = delete;
-  explicit MemorySinkIR(int64_t id)
-      : OperatorIR(id, IRNodeType::kMemorySink, /* has_parents */ true, /* is_source */ false) {}
+  explicit MemorySinkIR(int64_t id) : OperatorIR(id, IRNodeType::kMemorySink) {}
 
   std::string name() const { return name_; }
   void set_name(const std::string& name) { name_ = name; }
@@ -1373,7 +1370,7 @@ class MemorySinkIR : public OperatorIR {
 class MapIR : public OperatorIR {
  public:
   MapIR() = delete;
-  explicit MapIR(int64_t id) : OperatorIR(id, IRNodeType::kMap, true, false) {}
+  explicit MapIR(int64_t id) : OperatorIR(id, IRNodeType::kMap) {}
 
   Status Init(OperatorIR* parent, const ColExpressionVector& col_exprs, bool keep_input_columns);
 
@@ -1407,7 +1404,7 @@ class MapIR : public OperatorIR {
 class DropIR : public OperatorIR {
  public:
   DropIR() = delete;
-  explicit DropIR(int64_t id) : OperatorIR(id, IRNodeType::kDrop, true, false) {}
+  explicit DropIR(int64_t id) : OperatorIR(id, IRNodeType::kDrop) {}
   Status Init(OperatorIR* parent, const std::vector<std::string>& drop_cols);
 
   Status ToProto(planpb::Operator*) const override;
@@ -1458,7 +1455,7 @@ class GroupAcceptorIR : public OperatorIR {
 class BlockingAggIR : public GroupAcceptorIR {
  public:
   BlockingAggIR() = delete;
-  explicit BlockingAggIR(int64_t id) : GroupAcceptorIR(id, IRNodeType::kBlockingAgg, true, false) {}
+  explicit BlockingAggIR(int64_t id) : GroupAcceptorIR(id, IRNodeType::kBlockingAgg) {}
 
   ColExpressionVector aggregate_expressions() const { return aggregate_expressions_; }
   Status ToProto(planpb::Operator*) const override;
@@ -1489,7 +1486,7 @@ class BlockingAggIR : public GroupAcceptorIR {
 class GroupByIR : public OperatorIR {
  public:
   GroupByIR() = delete;
-  explicit GroupByIR(int64_t id) : OperatorIR(id, IRNodeType::kGroupBy, true, false) {}
+  explicit GroupByIR(int64_t id) : OperatorIR(id, IRNodeType::kGroupBy) {}
   Status Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups);
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
@@ -1520,7 +1517,7 @@ class GroupByIR : public OperatorIR {
 class FilterIR : public OperatorIR {
  public:
   FilterIR() = delete;
-  explicit FilterIR(int64_t id) : OperatorIR(id, IRNodeType::kFilter, true, false) {}
+  explicit FilterIR(int64_t id) : OperatorIR(id, IRNodeType::kFilter) {}
   std::string DebugString() const override;
 
   ExpressionIR* filter_expr() const { return filter_expr_; }
@@ -1545,7 +1542,7 @@ class FilterIR : public OperatorIR {
 class LimitIR : public OperatorIR {
  public:
   LimitIR() = delete;
-  explicit LimitIR(int64_t id) : OperatorIR(id, IRNodeType::kLimit, true, false) {}
+  explicit LimitIR(int64_t id) : OperatorIR(id, IRNodeType::kLimit) {}
 
   Status ToProto(planpb::Operator*) const override;
   void SetLimitValue(int64_t value) {
@@ -1584,9 +1581,7 @@ class LimitIR : public OperatorIR {
  */
 class GRPCSinkIR : public OperatorIR {
  public:
-  explicit GRPCSinkIR(int64_t id)
-      : OperatorIR(id, IRNodeType::kGRPCSink, /* has_parents */ true,
-                   /* is_source */ false) {}
+  explicit GRPCSinkIR(int64_t id) : OperatorIR(id, IRNodeType::kGRPCSink) {}
 
   Status Init(OperatorIR* parent, int64_t destination_id) {
     PL_RETURN_IF_ERROR(AddParent(parent));
@@ -1633,9 +1628,7 @@ class GRPCSinkIR : public OperatorIR {
  */
 class GRPCSourceIR : public OperatorIR {
  public:
-  explicit GRPCSourceIR(int64_t id)
-      : OperatorIR(id, IRNodeType::kGRPCSource, /* has_parents */ false,
-                   /* is_source */ true) {}
+  explicit GRPCSourceIR(int64_t id) : OperatorIR(id, IRNodeType::kGRPCSource) {}
   Status ToProto(planpb::Operator* op_pb) const override;
 
   /**
@@ -1649,6 +1642,8 @@ class GRPCSourceIR : public OperatorIR {
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
     return error::Unimplemented("Unexpected call to GRPCSourceIR::RequiredInputColumns");
   }
+
+  bool IsSource() const override { return true; }
 
  protected:
   Status CopyFromNodeImpl(const IRNode* node,
@@ -1667,9 +1662,8 @@ class GRPCSourceIR : public OperatorIR {
  */
 class GRPCSourceGroupIR : public OperatorIR {
  public:
-  explicit GRPCSourceGroupIR(int64_t id)
-      : OperatorIR(id, IRNodeType::kGRPCSourceGroup, /* has_parents */ false,
-                   /* is_source */ true) {}
+  explicit GRPCSourceGroupIR(int64_t id) : OperatorIR(id, IRNodeType::kGRPCSourceGroup) {}
+
   Status ToProto(planpb::Operator* op_pb) const override;
 
   /**
@@ -1704,6 +1698,8 @@ class GRPCSourceGroupIR : public OperatorIR {
     return error::Unimplemented("Unexpected call to GRPCSourceGroupIR::RequiredInputColumns");
   }
 
+  bool IsSource() const override { return true; }
+
  protected:
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
@@ -1726,8 +1722,7 @@ using InputColumnMapping = std::vector<ColumnIR*>;
 class UnionIR : public OperatorIR {
  public:
   UnionIR() = delete;
-  explicit UnionIR(int64_t id)
-      : OperatorIR(id, IRNodeType::kUnion, /* has_parents */ true, /* is_source */ false) {}
+  explicit UnionIR(int64_t id) : OperatorIR(id, IRNodeType::kUnion) {}
 
   bool IsBlocking() const override { return true; }
 
@@ -1768,8 +1763,7 @@ class JoinIR : public OperatorIR {
   enum class JoinType { kLeft, kRight, kOuter, kInner };
 
   JoinIR() = delete;
-  explicit JoinIR(int64_t id)
-      : OperatorIR(id, IRNodeType::kJoin, /* has_parents */ true, /* is_source */ false) {}
+  explicit JoinIR(int64_t id) : OperatorIR(id, IRNodeType::kJoin) {}
 
   bool IsBlocking() const override { return true; }
 
@@ -1882,11 +1876,7 @@ class TabletSourceGroupIR : public OperatorIR {
     return Status::OK();
   }
 
-  explicit TabletSourceGroupIR(int64_t id)
-      : OperatorIR(id, IRNodeType::kTabletSourceGroup, /* has_parents */ false,
-                   /* is_source */ true) {}
-
-  bool IsBlocking() const override { return false; }
+  explicit TabletSourceGroupIR(int64_t id) : OperatorIR(id, IRNodeType::kTabletSourceGroup) {}
 
   Status ToProto(planpb::Operator*) const override {
     return error::Unimplemented("$0::ToProto not implemented because no use found for it yet.",
@@ -1910,6 +1900,9 @@ class TabletSourceGroupIR : public OperatorIR {
     return error::Unimplemented("Unexpected call to TabletSourceGroupIR::RequiredInputColumns");
   }
 
+  bool IsBlocking() const override { return false; }
+  bool IsSource() const override { return true; }
+
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
       const absl::flat_hash_set<std::string>& /*kept_columns*/) override {
@@ -1928,9 +1921,7 @@ class TabletSourceGroupIR : public OperatorIR {
 class UDTFSourceIR : public OperatorIR {
  public:
   UDTFSourceIR() = delete;
-  explicit UDTFSourceIR(int64_t id)
-      : OperatorIR(id, IRNodeType::kUDTFSource, /* has_parents */ false,
-                   /* is_source */ true) {}
+  explicit UDTFSourceIR(int64_t id) : OperatorIR(id, IRNodeType::kUDTFSource) {}
 
   Status Init(std::string_view func_name,
               const absl::flat_hash_map<std::string, ExpressionIR*>& arg_values,
@@ -1958,6 +1949,8 @@ class UDTFSourceIR : public OperatorIR {
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
     return std::vector<absl::flat_hash_set<std::string>>{};
   }
+
+  bool IsSource() const override { return true; }
 
  protected:
   // We currently don't support materializing a subset of UDTF output columns.
@@ -1999,10 +1992,7 @@ inline StatusOr<IRNode*> AsNodeType<IRNode>(IRNode* node, std::string_view /* no
 class RollingIR : public GroupAcceptorIR {
  public:
   RollingIR() = delete;
-  explicit RollingIR(int64_t id)
-      : GroupAcceptorIR(id, IRNodeType::kRolling, /* has_parents */ true,
-                        /* is_source */ false) {}
-
+  explicit RollingIR(int64_t id) : GroupAcceptorIR(id, IRNodeType::kRolling) {}
   Status Init(OperatorIR* parent, ColumnIR* window_col, ExpressionIR* window_size);
 
   Status ToProto(planpb::Operator*) const override;

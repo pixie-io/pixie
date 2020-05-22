@@ -173,7 +173,7 @@ bool DistributedSplitter::RunsOnRemoteProcessors(const std::vector<OperatorIR*> 
 }
 
 bool DistributedSplitter::IsSourceOnKelvin(OperatorIR* source_op) {
-  DCHECK(source_op->is_source());
+  DCHECK(source_op->IsSource());
   if (!Match(source_op, UDTFSource())) {
     return false;
   }
@@ -187,7 +187,7 @@ bool DistributedSplitter::IsSourceOnKelvin(OperatorIR* source_op) {
 }
 
 bool DistributedSplitter::IsChildOpOnKelvin(bool is_parent_on_kelvin, OperatorIR* child_op) {
-  DCHECK(!child_op->is_source());
+  DCHECK(!child_op->IsSource());
   // In the future we will add more complex logic here to determine if
   // we can actually run this on the Kelvin or not.
   return is_parent_on_kelvin || child_op->IsBlocking();

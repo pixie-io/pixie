@@ -187,7 +187,7 @@ void IRNode::SetLineCol(const pypa::AstPtr& ast) {
 }
 
 Status OperatorIR::AddParent(OperatorIR* parent) {
-  DCHECK(can_have_parents_);
+  DCHECK(!IsSource()) << DebugString();
   DCHECK(!graph()->dag().HasEdge(parent->id(), id()))
       << absl::Substitute("Edge between parent op $0(id=$1) and child op $2(id=$3) exists.",
                           parent->type_string(), parent->id(), type_string(), id());
@@ -1060,7 +1060,6 @@ Status OperatorIR::CopyFromNode(const IRNode* node,
   PL_RETURN_IF_ERROR(IRNode::CopyFromNode(node, copied_nodes_map));
   const OperatorIR* source = static_cast<const OperatorIR*>(node);
 
-  is_source_ = source->is_source_;
   relation_ = source->relation_;
   relation_init_ = source->relation_init_;
   return Status::OK();
