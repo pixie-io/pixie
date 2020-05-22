@@ -1,10 +1,14 @@
 #include "src/stirling/http2/grpc.h"
 
+#include <utility>
+#include <vector>
+
 #include <google/protobuf/empty.pb.h>
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/json_util.h>
 
 #include "src/common/base/base.h"
+#include "src/stirling/common/binary_decoder.h"
 
 namespace pl {
 namespace stirling {
@@ -23,26 +27,38 @@ Status PBWireToText(std::string_view message, PBTextFormat fmt, google::protobuf
         "Might be resulted from early termination of invalid RPC calls. "
         "E.g.: calling unimplemented method");
   }
-  const bool succeeded = pb->ParseFromArray(message.data() + kGRPCMessageHeaderSizeInBytes,
-                                            message.size() - kGRPCMessageHeaderSizeInBytes);
-  if (!succeeded) {
-    return error::InvalidArgument("Failed to parse the serialized protobuf message");
-  }
 
-  const ::google::protobuf::util::Status status;
-  switch (fmt) {
-    case PBTextFormat::kText:
-      if (!TextFormat::PrintToString(*pb, text)) {
-        return error::InvalidArgument("Failed to print protobuf message to text format");
-      }
-      break;
-    case PBTextFormat::kJSON:
-      if (!MessageToJsonString(*pb, text).ok()) {
-        return error::Internal(absl::StrCat("Failed to print protobuf message to JSON"));
-      }
-      break;
-    default:
-      DCHECK(false) << "Impossible, added to please GCC.";
+  BinaryDecoder decoder(message);
+
+  while (!decoder.eof()) {
+    PL_ASSIGN_OR_RETURN(uint8_t compressed_flag, decoder.ExtractInt<uint8_t>());
+    if (compressed_flag == 1) {
+      return error::Unimplemented("Compressed data is not implemented");
+    }
+    PL_ASSIGN_OR_RETURN(uint32_t len, decoder.ExtractInt<uint32_t>());
+    PL_ASSIGN_OR_RETURN(std::string_view data, decoder.ExtractString<char>(len));
+
+    const bool succeeded = pb->ParseFromArray(data.data(), data.size());
+    if (!succeeded) {
+      return error::InvalidArgument("Failed to parse the serialized protobuf message");
+    }
+
+    std::string message;
+    switch (fmt) {
+      case PBTextFormat::kText:
+        if (!TextFormat::PrintToString(*pb, &message)) {
+          return error::InvalidArgument("Failed to print protobuf message to text format");
+        }
+        break;
+      case PBTextFormat::kJSON:
+        if (!MessageToJsonString(*pb, &message).ok()) {
+          return error::Internal(absl::StrCat("Failed to print protobuf message to JSON"));
+        }
+        break;
+      default:
+        DCHECK(false) << "Impossible, added to please GCC.";
+    }
+    absl::StrAppend(text, message);
   }
   return Status::OK();
 }
@@ -58,7 +74,7 @@ std::string ParsePB(std::string_view str, Message* pb) {
   absl::StripTrailingAsciiWhitespace(&text);
   return s.ok() ? text
                 : absl::Substitute("$0; original data in hex format: $1", s.ToString(),
-                                   BytesToString<bytes_format::HexCompact>(str));
+                                   BytesToString<bytes_format::Hex>(str));
 }
 
 }  // namespace grpc
