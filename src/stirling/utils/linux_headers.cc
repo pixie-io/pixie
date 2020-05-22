@@ -4,11 +4,13 @@
 
 #include <sys/utsname.h>
 
+#include <fstream>
 #include <limits>
 #include <sstream>
 #include <vector>
 
 #include <absl/strings/numbers.h>
+#include <absl/strings/str_replace.h>
 
 #include "src/common/base/file.h"
 #include "src/common/fs/fs_wrapper.h"
@@ -120,6 +122,97 @@ Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
 
   // Write the modified file back.
   PL_RETURN_IF_ERROR(WriteFileFromString(version_file_path, new_file_contents));
+
+  return Status::OK();
+}
+
+StatusOr<std::filesystem::path> FindKernelConfig() {
+  PL_ASSIGN_OR_RETURN(std::string uname, GetUname());
+  const std::filesystem::path kHost = system::Config::GetInstance().host_path();
+
+  std::filesystem::path boot_kconfig = absl::StrCat("/boot/config-", uname);
+  std::filesystem::path host_boot_kconfig = fs::JoinPath({&kHost, &boot_kconfig});
+  if (fs::Exists(host_boot_kconfig).ok()) {
+    LOG(INFO) << absl::Substitute("Found kernel config at $0", host_boot_kconfig.string());
+    return host_boot_kconfig;
+  }
+
+  return error::NotFound("No kernel config at $0", host_boot_kconfig.string());
+}
+
+Status GenAutoConf(const std::filesystem::path& linux_headers_base,
+                   const std::filesystem::path& config_file, int* hz) {
+  // Sample config file format:
+  //  CONFIG_A=y
+  //  CONFIG_B=m
+  //  CONFIG_FOO="foofoo"
+  //
+  // Sample autoconf.h output format:
+  //  #define CONFIG_A 1
+  //  #define CONFIG_B_MODULE 1
+  //  #define CONFIG_FOO "foofoo"
+
+  std::ifstream fin(config_file);
+
+  std::filesystem::path autoconf_file_path = linux_headers_base / "include/generated/autoconf.h";
+  std::ofstream fout(autoconf_file_path);
+
+  // Generate autoconf.h from the config file.
+  // Perform the equivalent of:
+  // grep "^CONFIG" fin | sed -e "s/=y/ 1/g" -e "s/=m/_MODULE 1/g" -e "s/=/ /g" -e
+  // "s/^CONFIG/#define CONFIG/g"
+  std::string line;
+  while (std::getline(fin, line)) {
+    if (!absl::StartsWith(line, "CONFIG_")) {
+      continue;
+    }
+
+    // While scanning, look for HZ value.
+    if (hz != nullptr && absl::StartsWith(line, "CONFIG_HZ=")) {
+      std::vector<std::string_view> tokens = absl::StrSplit(line, "=");
+      if (tokens.size() == 2) {
+        bool ok = absl::SimpleAtoi(tokens[1], hz);
+        LOG_IF(WARNING, !ok) << "Extracting CONFIG_HZ value failed";
+      }
+    }
+
+    // Equivalent of sed -e "s/=y/ 1/g" -e "s/=m/_MODULE 1/g" -e "s/=/ /g".
+    std::string line_out =
+        absl::StrReplaceAll(line, {{"=y", " 1"}, {"=m", "_MODULE 1"}, {"=", " "}});
+
+    // Prefix line with a #define
+    line_out = absl::StrCat("#define ", line_out);
+    fout << line_out << '\n';
+  }
+
+  return Status::OK();
+}
+
+Status GenTimeconst(const std::filesystem::path& linux_headers_base, int hz) {
+  const std::filesystem::path kPackagedHeadersRoot = "/pl";
+
+  std::filesystem::path timeconst_path = linux_headers_base / "include/generated/timeconst.h";
+  std::string src_file =
+      absl::StrCat(kPackagedHeadersRoot.string(), "/timeconst_", std::to_string(hz), ".h");
+  PL_RETURN_IF_ERROR(
+      fs::Copy(src_file, timeconst_path, std::filesystem::copy_options::overwrite_existing));
+
+  return Status::OK();
+}
+
+Status ApplyConfigPatches(const std::filesystem::path& linux_headers_base) {
+  Status s;
+  int hz = 0;
+
+  // Find kernel config.
+  PL_ASSIGN_OR_RETURN(std::filesystem::path host_boot_config_status, FindKernelConfig());
+
+  // Attempt to generate autconf.h based on the config.
+  // While scanning, also pull out the CONFIG_HZ value.
+  PL_RETURN_IF_ERROR(GenAutoConf(linux_headers_base, host_boot_config_status, &hz));
+
+  // Attempt to generate timeconst.h based on the HZ in the config.
+  PL_RETURN_IF_ERROR(GenTimeconst(linux_headers_base, hz));
 
   return Status::OK();
 }
@@ -299,6 +392,11 @@ Status InstallPackagedLinuxHeaders(const std::filesystem::path& lib_modules_dir)
   LOG(INFO) << absl::Substitute("Using packaged header: $0", packaged_headers.path.string());
   PL_RETURN_IF_ERROR(ExtractPackagedHeaders(&packaged_headers));
   PL_RETURN_IF_ERROR(ModifyKernelVersion(packaged_headers.path, kernel_version.code()));
+  Status s = ApplyConfigPatches(packaged_headers.path);
+  LOG_IF(WARNING, !s.ok()) << absl::Substitute(
+      "Unable to apply correct config to packaged linux headers. Message = $0.\n"
+      "Forging on, but BPF probes may produce unexpected values (bogus UPIDs in particular)!",
+      s.msg());
   PL_RETURN_IF_ERROR(fs::CreateSymlinkIfNotExists(packaged_headers.path, lib_modules_build_dir));
   LOG(INFO) << absl::Substitute("Successfully installed packaged copy of headers at $0",
                                 lib_modules_build_dir.string());

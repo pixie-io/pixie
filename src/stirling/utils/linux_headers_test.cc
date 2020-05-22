@@ -92,6 +92,46 @@ TEST(LinuxHeadersUtils, ModifyVersion) {
   EXPECT_OK_AND_EQ(ReadFileToString(version_h_filename), expected_contents);
 }
 
+TEST(LinuxHeadersUtils, GenAutoConf) {
+  const std::string kHeadersBase =
+      testing::TestFilePath("src/stirling/utils/testdata/linux-headers");
+  const std::string kConfigFile = testing::TestFilePath("src/stirling/utils/testdata/config");
+
+  TempDir linux_headers_dir;
+
+  std::filesystem::path include_generated_dir = linux_headers_dir.path() / "include/generated";
+  std::filesystem::create_directories(include_generated_dir);
+  std::string autoconf_h_filename = include_generated_dir / "autoconf.h";
+
+  int hz;
+  ASSERT_OK(GenAutoConf(linux_headers_dir.path(), kConfigFile, &hz));
+
+  ASSERT_OK_AND_ASSIGN(std::string contents, ReadFileToString(autoconf_h_filename));
+
+  const std::string kExpectedContents = R"(#define CONFIG_64BIT 1
+#define CONFIG_X86_64 1
+#define CONFIG_X86 1
+#define CONFIG_INSTRUCTION_DECODER 1
+#define CONFIG_OUTPUT_FORMAT "elf64-x86-64"
+#define CONFIG_ARCH_DEFCONFIG "arch/x86/configs/x86_64_defconfig"
+#define CONFIG_LOCKDEP_SUPPORT 1
+#define CONFIG_STACKTRACE_SUPPORT 1
+#define CONFIG_MMU 1
+#define CONFIG_X86_64_SMP 1
+#define CONFIG_ARCH_SUPPORTS_UPROBES 1
+#define CONFIG_FIX_EARLYCON_MEM 1
+#define CONFIG_PGTABLE_LEVELS 4
+#define CONFIG_DEFCONFIG_LIST "/lib/modules/$UNAME_RELEASE/.config"
+#define CONFIG_IRQ_WORK 1
+#define CONFIG_BUILDTIME_EXTABLE_SORT 1
+#define CONFIG_THREAD_INFO_IN_TASK 1
+#define CONFIG_HZ 250
+#define CONFIG_OPROFILE_MODULE 1
+)";
+
+  EXPECT_EQ(contents, kExpectedContents);
+}
+
 TEST(LinuxHeadersUtils, FindClosestPackagedLinuxHeaders) {
   const std::string kTestSrcDir =
       testing::TestFilePath("src/stirling/utils/testdata/dummy_header_packages");

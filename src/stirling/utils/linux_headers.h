@@ -65,6 +65,47 @@ StatusOr<KernelVersion> GetKernelVersion();
 Status ModifyKernelVersion(const std::filesystem::path& linux_headers_base,
                            uint32_t linux_version_code);
 
+/**
+ * Tries to find a kernel config file that matches. Currently only searches /boot.
+ * In the future could be expanded to search /proc/config too.
+ *
+ * @return Path to a valid kernel config from the host.
+ */
+StatusOr<std::filesystem::path> FindKernelConfig();
+
+/**
+ * Replace the include/generated/autoconf.h in the packaged headers with a new one generated from a
+ * given linux config.
+ *
+ * @param linux_headers_base Path to linux headers root directory with autoconf.h to be patched.
+ * @param config_file Config file from which to extract config parameters.
+ * @param hz Output: value of CONFIG_HZ if found in the linux config.
+ * @return error if autoconf.h could not be generated.
+ */
+Status GenAutoConf(const std::filesystem::path& linux_headers_base,
+                   const std::filesystem::path& config_file, int* hz = nullptr);
+
+/**
+ * Replace the include/generated/timeconst.h in the packaged headers with a new one based on
+ * CONFIG_HZ.
+ *
+ * @param linux_headers_base Path to linux headers root directory with timeconst.h to be patched.
+ * @param hz Value of CONFIG_HZ.
+ * @return error if timeconst.h could not be generated.
+ */
+Status GenTimeconst(const std::filesystem::path& linux_headers_base, int hz);
+
+/**
+ * Tries to find a valid kernel config, and patches the prepackaged headers
+ * with re-generated header files to match the config.
+ * In particular, autoconf.h and timeconst.h, are currently replaced.
+ *
+ * @param linux_headers_base Path to linux headers root directory to be patched.
+ * @param linux config file to use to generate the patch.
+ * @return Error if config file could not be found, or if patch fails.
+ */
+Status ApplyConfigPatches(const std::filesystem::path& linux_headers_base);
+
 struct PackagedLinuxHeadersSpec {
   KernelVersion version;
   // This path stores either (1) the path to the tarball (before it has been extracted),

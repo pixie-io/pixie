@@ -26,6 +26,7 @@ pl_cc_test(
     name = "linux_headers_test",
     srcs = ["linux_headers_test.cc"],
     data = [
+        "testdata/config",
         "testdata/dummy_header_packages/linux-headers-4.14.176.tar.gz",
         "testdata/dummy_header_packages/linux-headers-4.18.20.tar.gz",
         "testdata/dummy_header_packages/linux-headers-5.3.18.tar.gz",
