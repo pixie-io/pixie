@@ -37,8 +37,13 @@ struct SocketDataEvent {
     // which is what's used by BCC when open perf buffer.
     memcpy(&attr, static_cast<const char*>(data) + offsetof(socket_data_event_t, attr),
            sizeof(socket_data_event_t::attr_t));
-    msg.assign(static_cast<const char*>(data) + offsetof(socket_data_event_t, msg),
-               std::min<uint32_t>(attr.msg_size, sizeof(socket_data_event_t::msg)));
+
+    if (attr.traffic_class.protocol != kProtocolUnknown) {
+      // Only copy data for classified events, because BPF does not really write data for
+      // unclassified event.
+      msg.assign(static_cast<const char*>(data) + offsetof(socket_data_event_t, msg),
+                 std::min<uint32_t>(attr.msg_size, sizeof(socket_data_event_t::msg)));
+    }
   }
   socket_data_event_t::attr_t attr;
   // TODO(oazizi/yzhao): Eventually, we will write the data into a buffer that can be used for later

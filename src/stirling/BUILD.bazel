@@ -367,6 +367,18 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "conn_stats_bpf_test",
+    timeout = "moderate",
+    srcs = ["conn_stats_bpf_test.cc"],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+        "//src/common/exec:cc_library",
+        "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
     name = "fd_resolver_test",
     srcs = ["fd_resolver_test.cc"],
     deps = [

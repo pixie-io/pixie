@@ -77,6 +77,8 @@ DEFINE_string(stirling_cluster_cidr, "", "Manual Cluster CIDR");
 
 // This flag is for survivability only, in case the host's located headers don't work.
 DEFINE_bool(stirling_use_packaged_headers, false, "Force use of packaged kernel headers for BCC.");
+DEFINE_bool(stirling_bpf_allow_unknown_protocol, true,
+            "If true, BPF filters out unclassified data events.");
 
 BCC_SRC_STRVIEW(socket_trace_bcc_script, socket_trace);
 
@@ -190,9 +192,14 @@ Status SocketTraceConnector::InitImpl() {
   }
 
   PL_ASSIGN_OR_RETURN(utils::KernelVersion kernel_version, utils::GetKernelVersion());
-  std::string defines = absl::Substitute("-DLINUX_VERSION_CODE=$0", kernel_version.code());
+  std::string linux_header_macro =
+      absl::Substitute("-DLINUX_VERSION_CODE=$0", kernel_version.code());
+  std::string allow_unknown_protocol_macro =
+      absl::Substitute("-DALLOW_UNKNOWN_PROTOCOL=$0", FLAGS_stirling_bpf_allow_unknown_protocol);
 
-  PL_RETURN_IF_ERROR(InitBPFProgram(socket_trace_bcc_script, {std::move(defines)}));
+  PL_RETURN_IF_ERROR(
+      InitBPFProgram(socket_trace_bcc_script,
+                     {std::move(linux_header_macro), std::move(allow_unknown_protocol_macro)}));
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
   LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
 
@@ -782,9 +789,6 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
 
   const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-  DCHECK(event->attr.traffic_class.protocol != kProtocolUnknown)
-      << absl::Substitute("AcceptDataEvent received event with unknown protocol: $0",
-                          magic_enum::enum_name(event->attr.traffic_class.protocol));
 
   ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.tsid];
   connection_stats_.AddDataEvent(tracker, *event);
@@ -798,16 +802,7 @@ void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
   const uint64_t conn_map_key = GetConnMapKey(event.open.conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
   ConnectionTracker& tracker = connection_trackers_[conn_map_key][event.open.conn_id.tsid];
-  switch (event.type) {
-    case kConnOpen:
-      connection_stats_.AddConnOpenEvent(event.open);
-      break;
-    case kConnClose:
-      connection_stats_.AddConnCloseEvent(tracker);
-      break;
-    default:
-      LOG(DFATAL) << "Unknown control event type: " << event.type;
-  }
+  connection_stats_.AddControlEvent(event, tracker);
   tracker.AddControlEvent(event);
 }
 

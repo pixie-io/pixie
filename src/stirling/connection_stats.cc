@@ -3,7 +3,7 @@
 #include <absl/strings/substitute.h>
 #include <magic_enum.hpp>
 
-#include "src/common/base/inet_utils.h"
+#include "src/common/base/base.h"
 
 namespace pl {
 namespace stirling {
@@ -25,15 +25,11 @@ ConnectionStats::AggKey BuildAggKey(const upid_t& upid, const traffic_class_t& t
 
 }  // namespace
 
-void ConnectionStats::AddConnOpenEvent(const conn_event_t& event) {
-  const upid_t& upid = event.conn_id.upid;
-  const traffic_class_t tcls = {.protocol = kProtocolUnknown, .role = kRoleUnknown};
-  SockAddr sock_addr = {};
-  PopulateSockAddr(reinterpret_cast<const struct sockaddr*>(&event.addr), &sock_addr);
-  std::string raddr = sock_addr.AddrStr();
-  int rport = sock_addr.port;
-
-  RecordConn(upid, tcls, raddr, rport, /*is_open*/ true);
+void ConnectionStats::AddControlEvent(const socket_control_event_t& event,
+                                      const ConnectionTracker& tracker) {
+  if (event.type == kConnClose) {
+    AddConnCloseEvent(tracker);
+  }
 }
 
 void ConnectionStats::AddConnCloseEvent(const ConnectionTracker& tracker) {

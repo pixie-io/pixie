@@ -168,16 +168,8 @@ static __inline struct conn_info_t* get_conn_info(uint32_t tgid, uint32_t fd) {
  * Trace filtering functions
  ***********************************************************/
 
-static __inline bool should_trace_protocol(const struct traffic_class_t* traffic_class) {
+static __inline bool should_trace_classified(const struct traffic_class_t* traffic_class) {
   uint32_t protocol = traffic_class->protocol;
-
-  // If this connection has an unknown protocol, abort (to avoid pollution).
-  // TODO(oazizi/yzhao): Remove this after we implement connections of interests through tgid + fd.
-  // NOTE: This check is covered by control_map below too, but keeping it around for explicitness.
-  if (protocol == kProtocolUnknown) {
-    return false;
-  }
-
   uint64_t kZero = 0;
   // TODO(yzhao): BCC doc states BPF_PERCPU_ARRAY: all array elements are **pre-allocated with zero
   // values** (https://github.com/iovisor/bcc/blob/master/docs/reference_guide.md). That suggests
@@ -201,9 +193,30 @@ static __inline bool protocol_detection_passes_threshold(const struct conn_info_
   return true;
 }
 
+static __inline bool is_inet_family(sa_family_t sa_family) {
+  return sa_family == AF_INET || sa_family == AF_INET6;
+}
+
+// Returns true if the input conn_info should be traced.
+// The protocol of the input conn_info must be kProtocolUnknown.
+//
+// TODO(oazizi/yzhao): Remove this after we implement connections of interests through tgid + fd.
+// NOTE: This check is covered by control_map below too, but keeping it around for explicitness.
+//
+// TODO(yzhao): A connection can have the initial events unclassified, but later being classified
+// into a known protocol. Investigate its impact.
+static __inline bool should_trace_unclassified(const struct conn_info_t* conn_info) {
+  // ALLOW_UNKNOWN_PROTOCOL must be a macro (with bool value) defined when initializing BPF program.
+  return ALLOW_UNKNOWN_PROTOCOL && conn_info->addr_valid &&
+         is_inet_family(conn_info->addr.sin6_family);
+}
+
 static __inline bool should_trace_conn(const struct conn_info_t* conn_info) {
+  if (conn_info->traffic_class.protocol == kProtocolUnknown) {
+    return should_trace_unclassified(conn_info);
+  }
   return protocol_detection_passes_threshold(conn_info) &&
-         should_trace_protocol(&conn_info->traffic_class);
+         should_trace_classified(&conn_info->traffic_class);
 }
 
 static __inline bool test_only_should_trace_target_tgid(const uint32_t tgid) {
@@ -505,8 +518,7 @@ static __inline void update_traffic_class(struct conn_info_t* conn_info,
  ***********************************************************/
 
 static __inline bool should_trace_sockaddr_family(sa_family_t sa_family) {
-  return sa_family == AF_UNSPEC || sa_family == AF_INET || sa_family == AF_INET6 ||
-         sa_family == AF_UNIX;
+  return sa_family == AF_UNSPEC || sa_family == AF_UNIX || is_inet_family(sa_family);
 }
 
 static __inline void submit_new_conn(struct pt_regs* ctx, uint32_t tgid, uint32_t fd,
@@ -615,12 +627,19 @@ static __inline size_t perf_submit_buf(struct pt_regs* ctx, const enum TrafficDi
     buf_size = 0;
   }
 
-  // Read an extra byte.
-  // Required for 4.14 kernels, which reject bpf_probe_read with size of zero.
-  // Note that event->msg is followed by event->unused, so the extra byte will not clobber
-  // anything in the case that buf_size==MAX_MSG_SIZE.
-  bpf_probe_read(&event->msg, buf_size + 1, buf);
-  socket_data_events.perf_submit(ctx, event, sizeof(event->attr) + buf_size);
+  const bool is_classified = event->attr.traffic_class.protocol != kProtocolUnknown;
+
+  // Do not export the data if they are unclassified.
+  // The metadata is still sent for accounting purpose (connection stats).
+  if (is_classified) {
+    // Read an extra byte.
+    // Required for 4.14 kernels, which reject bpf_probe_read with size of zero.
+    // Note that event->msg is followed by event->unused, so the extra byte will not clobber
+    // anything in the case that buf_size==MAX_MSG_SIZE.
+    bpf_probe_read(&event->msg, buf_size + 1, buf);
+  }
+  // BPF verifier rejects `if (!is_classified) { buf_size = 0; }`.
+  socket_data_events.perf_submit(ctx, event, sizeof(event->attr) + (is_classified ? buf_size : 0));
   return buf_size;
 }
 

@@ -103,6 +103,12 @@ void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
 }
 
 void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
+  // TODO(yzhao): Change to let userspace resolve the connection type and signal back to BPF.
+  // Then we need at least one data event to let ConnectionTracker know the field descriptor.
+  if (event->attr.traffic_class.protocol == kProtocolUnknown) {
+    return;
+  }
+
   SetConnID(event->attr.conn_id);
   SetTrafficClass(event->attr.traffic_class);
 

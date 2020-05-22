@@ -1,9 +1,9 @@
 #pragma once
 
-#include <gmock/gmock.h>
-
+#include <string>
 #include <vector>
 
+#include "src/common/testing/testing.h"
 #include "src/shared/metadata/base_types.h"
 #include "src/shared/types/column_wrapper.h"
 
@@ -29,11 +29,11 @@ std::vector<size_t> FindRecordIdxMatchesPid(const types::ColumnWrapperRecordBatc
 template <typename TValueType>
 const TValueType& AccessRecordBatch(const types::ColumnWrapperRecordBatch& record_batch,
                                     int column_idx, int row_idx) {
-  return record_batch[column_idx]->Get<TValueType>(row_idx).val;
+  return record_batch[column_idx]->Get<TValueType>(row_idx);
 }
 
 template <>
-const types::StringValue& AccessRecordBatch<types::StringValue>(
+const std::string& AccessRecordBatch<std::string>(
     const types::ColumnWrapperRecordBatch& record_batch, int column_idx, int row_idx) {
   return record_batch[column_idx]->Get<types::StringValue>(row_idx);
 }
