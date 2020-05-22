@@ -6,6 +6,18 @@ import {
     RowBatchData, Status,
 } from 'types/generated/vizier_pb';
 import { VizierServiceClient } from 'types/generated/VizierServiceClientPb';
+import noop from 'utils/noop';
+
+declare global {
+  interface Window {
+    __GRPCWEB_DEVTOOLS__: (any) => void;
+  }
+}
+
+function withDevTools(client) {
+  const enableDevTools = window.__GRPCWEB_DEVTOOLS__ || noop;
+  enableDevTools([client]);
+}
 
 export interface Table {
   relation: Relation;
@@ -58,6 +70,7 @@ export class VizierGRPCClient {
     private attachCreds: boolean,
     private vizierVersion: string) {
     this.client = new VizierServiceClient(addr, null, attachCreds ? { withCredentials: 'true' } : {});
+    withDevTools(this.client);
   }
 
   health(): Observable<Status> {
