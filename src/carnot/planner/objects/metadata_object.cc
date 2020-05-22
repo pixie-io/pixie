@@ -32,7 +32,7 @@ StatusOr<QLObjectPtr> MetadataObject::SubscriptHandler(const pypa::AstPtr& ast,
   PL_ASSIGN_OR_RETURN(StringIR * key, GetArgAs<StringIR>(args, "key"));
   std::string key_value = key->str();
   // Lookup the key
-  IR* ir_graph = key->graph_ptr();
+  IR* ir_graph = key->graph();
 
   // TODO(philkuz) (PL-1184) Only risk here is that we actually have a situation where parent_op_idx
   // is not 0. If a future developer finds this problem, use the op to reference as the parent. You

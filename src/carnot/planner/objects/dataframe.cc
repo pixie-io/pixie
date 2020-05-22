@@ -13,7 +13,7 @@ namespace planner {
 namespace compiler {
 
 StatusOr<std::shared_ptr<Dataframe>> Dataframe::Create(OperatorIR* op, ASTVisitor* visitor) {
-  std::shared_ptr<Dataframe> df(new Dataframe(op, op->graph_ptr(), visitor));
+  std::shared_ptr<Dataframe> df(new Dataframe(op, op->graph(), visitor));
   PL_RETURN_IF_ERROR(df->Init());
   return df;
 }
@@ -313,7 +313,7 @@ StatusOr<FuncIR*> AggHandler::ParseNameTuple(IR* ir, const pypa::AstPtr& ast,
   }
 
   // parent_op_idx is 0 because we only have one parent for an aggregate.
-  PL_ASSIGN_OR_RETURN(ColumnIR * argcol, ir->CreateNode<ColumnIR>(name->ast_node(), name->str(),
+  PL_ASSIGN_OR_RETURN(ColumnIR * argcol, ir->CreateNode<ColumnIR>(name->ast(), name->str(),
                                                                   /* parent_op_idx */ 0));
   PL_RETURN_IF_ERROR(func_ir->AddArg(argcol));
   return func_ir;
@@ -366,7 +366,7 @@ StatusOr<QLObjectPtr> SubscriptHandler::EvalFilter(IR* graph, OperatorIR* op,
 
 StatusOr<QLObjectPtr> SubscriptHandler::EvalColumn(IR* graph, OperatorIR*, const pypa::AstPtr&,
                                                    StringIR* expr, ASTVisitor* visitor) {
-  PL_ASSIGN_OR_RETURN(ColumnIR * column, graph->CreateNode<ColumnIR>(expr->ast_node(), expr->str(),
+  PL_ASSIGN_OR_RETURN(ColumnIR * column, graph->CreateNode<ColumnIR>(expr->ast(), expr->str(),
                                                                      /* parent_op_idx */ 0));
   return ExprObject::Create(column, visitor);
 }

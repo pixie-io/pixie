@@ -165,7 +165,7 @@ StatusOr<Relation> SourceRelationRule::GetSelectRelation(
 
 StatusOr<std::vector<ColumnIR*>> SourceRelationRule::GetColumnsFromRelation(
     OperatorIR* node, std::vector<std::string> col_names, const Relation& relation) const {
-  auto graph = node->graph_ptr();
+  auto graph = node->graph();
   auto result = std::vector<ColumnIR*>();
   // iterates through the columns, finds their relation position,
   // then create columns with index and type.
@@ -173,7 +173,7 @@ StatusOr<std::vector<ColumnIR*>> SourceRelationRule::GetColumnsFromRelation(
     if (!relation.HasColumn(col_name)) {
       return node->CreateIRNodeError("Column '$0' not found in parent dataframe", col_name);
     }
-    PL_ASSIGN_OR_RETURN(auto col_node, graph->CreateNode<ColumnIR>(node->ast_node(), col_name,
+    PL_ASSIGN_OR_RETURN(auto col_node, graph->CreateNode<ColumnIR>(node->ast(), col_name,
                                                                    /*parent_op_idx*/ 0));
     col_node->ResolveColumnType(relation);
     result.push_back(col_node);
@@ -254,8 +254,8 @@ StatusOr<ColumnIR*> OperatorRelationRule::CreateOutputColumn(JoinIR* join_node,
                                                              const std::string& col_name,
                                                              int64_t parent_idx,
                                                              const Relation& relation) const {
-  PL_ASSIGN_OR_RETURN(ColumnIR * col, join_node->graph_ptr()->CreateNode<ColumnIR>(
-                                          join_node->ast_node(), col_name, parent_idx));
+  PL_ASSIGN_OR_RETURN(ColumnIR * col, join_node->graph()->CreateNode<ColumnIR>(
+                                          join_node->ast(), col_name, parent_idx));
   PL_RETURN_IF_ERROR(DataTypeRule::EvaluateColumnFromRelation(col, relation));
   return col;
 }
@@ -434,8 +434,8 @@ StatusOr<bool> OperatorRelationRule::SetMap(MapIR* map_ir) const {
       }
       // Otherwise, bring over the column from the previous relation.
       PL_ASSIGN_OR_RETURN(ColumnIR * col_ir,
-                          map_ir->graph_ptr()->CreateNode<ColumnIR>(
-                              map_ir->ast_node(), input_col_name, 0 /*parent_op_idx*/));
+                          map_ir->graph()->CreateNode<ColumnIR>(map_ir->ast(), input_col_name,
+                                                                0 /*parent_op_idx*/));
       col_ir->ResolveColumnType(parent_relation);
       output_expressions.push_back(ColumnExpression(input_col_name, col_ir));
     }
@@ -540,14 +540,13 @@ StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalArithmetic(FuncIR* func_ir) {
                                       func_ir->carnot_op_name());
   }
 
-  return func_ir->graph_ptr()->CreateNode<IntIR>(func_ir->ast_node(), result);
+  return func_ir->graph()->CreateNode<IntIR>(func_ir->ast(), result);
 }
 
 StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalTimeNow(FuncIR* func_ir) {
   CHECK_EQ(func_ir->args().size(), 0U)
       << "Received unexpected args for " << func_ir->carnot_op_name() << " function";
-  return func_ir->graph_ptr()->CreateNode<IntIR>(func_ir->ast_node(),
-                                                 compiler_state_->time_now().val);
+  return func_ir->graph()->CreateNode<IntIR>(func_ir->ast(), compiler_state_->time_now().val);
 }
 
 StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalUnitTime(FuncIR* func_ir) {
@@ -570,7 +569,7 @@ StatusOr<IntIR*> EvaluateCompileTimeExpr::EvalUnitTime(FuncIR* func_ir) {
   auto time_unit = fn_type_iter->second;
   time_output = time_unit * time_val;
   // create the ir_node;
-  return func_ir->graph_ptr()->CreateNode<IntIR>(func_ir->ast_node(), time_output.count());
+  return func_ir->graph()->CreateNode<IntIR>(func_ir->ast(), time_output.count());
 }
 
 StatusOr<bool> OperatorCompileTimeExpressionRule::Apply(IRNode* ir_node) {
@@ -736,8 +735,8 @@ StatusOr<ExpressionIR*> ConvertStringTimesRule::ConvertStringTimes(ExpressionIR*
   // Mem sources treat expressions differently than other nodes, so if we run into one with
   // a shared parent, we should clone it to make sure that that operator doesn't get the same
   // special case treatment of the expression.
-  if (node->graph_ptr()->dag().ParentsOf(node->id()).size() > 1) {
-    PL_ASSIGN_OR_RETURN(IRNode * copy, node->graph_ptr()->CopyNode(node));
+  if (node->graph()->dag().ParentsOf(node->id()).size() > 1) {
+    PL_ASSIGN_OR_RETURN(IRNode * copy, node->graph()->CopyNode(node));
     CHECK(Match(copy, Expression()));
     node = static_cast<ExpressionIR*>(copy);
   }
@@ -749,8 +748,7 @@ StatusOr<ExpressionIR*> ConvertStringTimesRule::ConvertStringTimes(ExpressionIR*
     if (relative_time) {
       time_repr += compiler_state_->time_now().val;
     }
-    PL_ASSIGN_OR_RETURN(auto out_node,
-                        node->graph_ptr()->CreateNode<IntIR>(node->ast_node(), time_repr));
+    PL_ASSIGN_OR_RETURN(auto out_node, node->graph()->CreateNode<IntIR>(node->ast(), time_repr));
     return out_node;
   } else if (Match(node, Func())) {
     auto func_node = static_cast<FuncIR*>(node);
@@ -803,7 +801,7 @@ StatusOr<bool> DropToMapOperatorRule::Apply(IRNode* ir_node) {
 }
 
 StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
-  IR* ir_graph = drop_ir->graph_ptr();
+  IR* ir_graph = drop_ir->graph();
   DCHECK_EQ(drop_ir->parents().size(), 1UL);
   OperatorIR* parent_op = drop_ir->parents()[0];
 
@@ -824,7 +822,7 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
       continue;
     }
     PL_ASSIGN_OR_RETURN(ColumnIR * column_ir,
-                        ir_graph->CreateNode<ColumnIR>(drop_ir->ast_node(), input_col_name,
+                        ir_graph->CreateNode<ColumnIR>(drop_ir->ast(), input_col_name,
                                                        /*parent_op_idx*/ 0));
     column_ir->ResolveColumnType(parent_relation);
     col_exprs.emplace_back(input_col_name, column_ir);
@@ -832,7 +830,7 @@ StatusOr<bool> DropToMapOperatorRule::DropToMap(DropIR* drop_ir) {
 
   // Init the map from the drop.
   PL_ASSIGN_OR_RETURN(MapIR * map_ir,
-                      ir_graph->CreateNode<MapIR>(drop_ir->ast_node(), parent_op, col_exprs,
+                      ir_graph->CreateNode<MapIR>(drop_ir->ast(), parent_op, col_exprs,
                                                   /* keep_input_columns */ false));
   PL_RETURN_IF_ERROR(map_ir->SetRelation(RelationFromExprs(map_ir->col_exprs())));
 
@@ -925,12 +923,11 @@ StatusOr<bool> MergeGroupByIntoGroupAcceptorRule::AddGroupByDataIntoGroupAccepto
 
 StatusOr<ColumnIR*> MergeGroupByIntoGroupAcceptorRule::CopyColumn(ColumnIR* g) {
   if (Match(g, Metadata())) {
-    return g->graph_ptr()->CreateNode<MetadataIR>(g->ast_node(), g->col_name(),
-                                                  g->container_op_parent_idx());
+    return g->graph()->CreateNode<MetadataIR>(g->ast(), g->col_name(),
+                                              g->container_op_parent_idx());
   }
 
-  return g->graph_ptr()->CreateNode<ColumnIR>(g->ast_node(), g->col_name(),
-                                              g->container_op_parent_idx());
+  return g->graph()->CreateNode<ColumnIR>(g->ast(), g->col_name(), g->container_op_parent_idx());
 }
 
 StatusOr<bool> RemoveGroupByRule::Apply(IRNode* ir_node) {
@@ -946,7 +943,7 @@ StatusOr<bool> RemoveGroupByRule::RemoveGroupBy(GroupByIR* groupby) {
         "'groupby()' should be followed by an 'agg()' or a 'rolling()' not a $0",
         groupby->Children()[0]->type_string());
   }
-  auto graph = groupby->graph_ptr();
+  auto graph = groupby->graph();
   auto groupby_id = groupby->id();
   auto groupby_children = graph->dag().DependenciesOf(groupby->id());
   PL_RETURN_IF_ERROR(graph->DeleteNode(groupby_id));
@@ -1029,14 +1026,14 @@ Status CombineConsecutiveMapsRule::CombineMaps(
       // Otherwise just append it to the list.
       PL_RETURN_IF_ERROR(parent->AddColExpr(child_col_expr));
     }
-    PL_RETURN_IF_ERROR(child_expr->graph_ptr()->DeleteEdge(child, child_expr));
+    PL_RETURN_IF_ERROR(child_expr->graph()->DeleteEdge(child, child_expr));
   }
 
   PL_RETURN_IF_ERROR(child->RemoveParent(parent));
   for (auto grandchild : child->Children()) {
     PL_RETURN_IF_ERROR(grandchild->ReplaceParent(child, parent));
   }
-  PL_RETURN_IF_ERROR(child->graph_ptr()->DeleteNode(child->id()));
+  PL_RETURN_IF_ERROR(child->graph()->DeleteNode(child->id()));
   return Status::OK();
 }
 
@@ -1119,7 +1116,7 @@ StatusOr<bool> PruneUnusedColumnsRule::Apply(IRNode* ir_node) {
 }
 
 StatusOr<bool> CleanUpStrayIRNodesRule::Apply(IRNode* ir_node) {
-  auto ir_graph = ir_node->graph_ptr();
+  auto ir_graph = ir_node->graph();
   auto node_id = ir_node->id();
 
   if (Match(ir_node, Operator()) || connected_nodes_.contains(ir_node)) {
@@ -1133,7 +1130,7 @@ StatusOr<bool> CleanUpStrayIRNodesRule::Apply(IRNode* ir_node) {
 }
 
 StatusOr<bool> PruneUnconnectedOperatorsRule::Apply(IRNode* ir_node) {
-  auto ir_graph = ir_node->graph_ptr();
+  auto ir_graph = ir_node->graph();
   auto node_id = ir_node->id();
 
   if (Match(ir_node, MemorySink()) || sink_connected_nodes_.contains(ir_node)) {
@@ -1190,9 +1187,9 @@ StatusOr<bool> AddLimitToMemorySinkRule::Apply(IRNode* ir_node) {
     return false;
   }
 
-  PL_ASSIGN_OR_RETURN(
-      auto limit, mem_sink->graph_ptr()->CreateNode<LimitIR>(
-                      mem_sink->ast_node(), parent, compiler_state_->max_output_rows_per_table()));
+  PL_ASSIGN_OR_RETURN(auto limit,
+                      mem_sink->graph()->CreateNode<LimitIR>(
+                          mem_sink->ast(), parent, compiler_state_->max_output_rows_per_table()));
   PL_RETURN_IF_ERROR(mem_sink->ReplaceParent(parent, limit));
   return true;
 }
@@ -1206,8 +1203,8 @@ StatusOr<bool> PropagateExpressionAnnotationsRule::Apply(IRNode* ir_node) {
 
   bool updated_annotation = false;
   absl::flat_hash_set<ColumnIR*> dependent_columns;
-  for (int64_t dependency_id : ir_node->graph_ptr()->dag().DependenciesOf(ir_node->id())) {
-    auto node = ir_node->graph_ptr()->Get(dependency_id);
+  for (int64_t dependency_id : ir_node->graph()->dag().DependenciesOf(ir_node->id())) {
+    auto node = ir_node->graph()->Get(dependency_id);
     if (Match(node, Expression())) {
       PL_ASSIGN_OR_RETURN(auto expr_columns, static_cast<ExpressionIR*>(node)->InputColumns());
       dependent_columns.insert(expr_columns.begin(), expr_columns.end());
@@ -1349,7 +1346,7 @@ StatusOr<bool> ConvertMetadataRule::Apply(IRNode* ir_node) {
     return false;
   }
 
-  auto graph = ir_node->graph_ptr();
+  auto graph = ir_node->graph();
   auto metadata = static_cast<MetadataIR*>(ir_node);
   auto md_property = metadata->property();
   auto parent_op_idx = metadata->container_op_parent_idx();
@@ -1361,15 +1358,14 @@ StatusOr<bool> ConvertMetadataRule::Apply(IRNode* ir_node) {
   PL_ASSIGN_OR_RETURN(std::string key_column_name,
                       FindKeyColumn(parent->relation(), md_property, ir_node));
 
-  PL_ASSIGN_OR_RETURN(
-      ColumnIR * key_column,
-      graph->CreateNode<ColumnIR>(ir_node->ast_node(), key_column_name, parent_op_idx));
+  PL_ASSIGN_OR_RETURN(ColumnIR * key_column,
+                      graph->CreateNode<ColumnIR>(ir_node->ast(), key_column_name, parent_op_idx));
 
   PL_ASSIGN_OR_RETURN(std::string func_name, md_property->UDFName(key_column_name));
-  PL_ASSIGN_OR_RETURN(FuncIR * conversion_func,
-                      graph->CreateNode<FuncIR>(ir_node->ast_node(),
-                                                FuncIR::Op{FuncIR::Opcode::non_op, "", func_name},
-                                                std::vector<ExpressionIR*>{key_column}));
+  PL_ASSIGN_OR_RETURN(
+      FuncIR * conversion_func,
+      graph->CreateNode<FuncIR>(ir_node->ast(), FuncIR::Op{FuncIR::Opcode::non_op, "", func_name},
+                                std::vector<ExpressionIR*>{key_column}));
   for (int64_t parent_id : graph->dag().ParentsOf(metadata->id())) {
     // For each container node of the metadata expression, update it to point to the
     // new conversion func instead.

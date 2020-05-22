@@ -77,6 +77,12 @@ class IRNode {
   static std::string TypeString(const IRNodeType& node_type) {
     return kIRNodeStrings[static_cast<int64_t>(node_type)];
   }
+  /**
+   * @brief The graph that contains the node.
+   *
+   * @return IR*
+   */
+  IR* graph() const { return graph_; }
 
   /**
    * @brief Set the pointer to the graph.
@@ -84,13 +90,23 @@ class IRNode {
    * (see IR::MakeNode) so that we can add edges between this
    * object and any other objects created later on.
    *
-   * @param graph_ptr : pointer to the graph object.
+   * @param graph : pointer to the graph object.
    */
-  void SetGraphPtr(IR* graph_ptr) { graph_ptr_ = graph_ptr; }
-  // Returns the ID of the operator.
+  void set_graph(IR* graph) { graph_ = graph; }
+  /**
+   * @brief The id of the operator.
+   *
+   * @return int64_t
+   */
   int64_t id() const { return id_; }
-  IR* graph_ptr() const { return graph_ptr_; }
-  pypa::AstPtr ast_node() const { return ast_node_; }
+
+  /**
+   * @brief The AST node that lead to this IRNode to be generated.
+   *
+   * @return pypa::AstPtr
+   */
+  pypa::AstPtr ast() const { return ast_; }
+
   /**
    * @brief Create an error that incorporates line, column of ir node into the error message.
    *
@@ -127,7 +143,7 @@ class IRNode {
   virtual Status CopyFromNode(const IRNode* node,
                               absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map);
   void SetLineCol(int64_t line, int64_t col);
-  void SetLineCol(const pypa::AstPtr& ast_node);
+  void SetLineCol(const pypa::AstPtr& ast);
 
  protected:
   explicit IRNode(int64_t id, IRNodeType type) : type_(type), id_(id) {}
@@ -142,9 +158,9 @@ class IRNode {
   // used for highlighting errors in queries.
   int64_t line_;
   int64_t col_;
-  IR* graph_ptr_;
+  IR* graph_;
   bool line_col_set_ = false;
-  pypa::AstPtr ast_node_;
+  pypa::AstPtr ast_;
 };
 
 inline std::ostream& operator<<(std::ostream& out, IRNode* node) {
@@ -181,7 +197,7 @@ class IR {
     id_node_counter = std::max(id + 1, id_node_counter);
     auto node = std::make_unique<TOperator>(id);
     dag_.AddNode(node->id());
-    node->SetGraphPtr(this);
+    node->set_graph(this);
     if (ast != nullptr) {
       node->SetLineCol(ast);
     }
@@ -224,7 +240,7 @@ class IR {
       return static_cast<TIRNodeType*>(copied_nodes_map->at(source));
     }
     // Use the source's ID if we are copying in to a different graph.
-    auto new_node_id = this == source->graph_ptr() ? id_node_counter : source->id();
+    auto new_node_id = this == source->graph() ? id_node_counter : source->id();
     DCHECK(!HasNode(new_node_id)) << source->DebugString();
     PL_ASSIGN_OR_RETURN(IRNode * new_node, MakeNodeWithType(source->type(), new_node_id));
     PL_RETURN_IF_ERROR(new_node->CopyFromNode(source, copied_nodes_map));
@@ -234,11 +250,13 @@ class IR {
   }
 
   Status AddEdge(int64_t from_node, int64_t to_node);
+  Status AddEdge(const IRNode* from_node, const IRNode* to_node);
+
   bool HasEdge(int64_t from_node, int64_t to_node) const;
+  bool HasEdge(const IRNode* from_node, const IRNode* to_node) const;
+
   bool HasNode(int64_t node_id) const { return dag().HasNode(node_id); }
 
-  Status AddEdge(const IRNode* from_node, const IRNode* to_node);
-  bool HasEdge(const IRNode* from_node, const IRNode* to_node) const;
   Status DeleteEdge(int64_t from_node, int64_t to_node);
   Status DeleteEdge(IRNode* from_node, IRNode* to_node);
   Status DeleteNode(int64_t node);
@@ -275,17 +293,6 @@ class IR {
     return iterator->second.get();
   }
   size_t size() const { return id_node_map_.size(); }
-  std::vector<IRNode*> GetSinks() {
-    std::vector<IRNode*> nodes;
-    for (auto& i : dag().TopologicalSort()) {
-      IRNode* node = Get(i);
-      if (node->type() == IRNodeType::kMemorySink) {
-        nodes.push_back(node);
-        DCHECK(node->IsOperator());
-      }
-    }
-    return nodes;
-  }
 
   std::vector<OperatorIR*> GetSources() const;
 
@@ -301,6 +308,11 @@ class IR {
    */
   Status CopyOperatorSubgraph(const IR* src, const absl::flat_hash_set<OperatorIR*>& subgraph);
 
+  /**
+   * @brief Outputs the proto representation of this plan.
+   *
+   * @return StatusOr<planpb::Plan>
+   */
   StatusOr<planpb::Plan> ToProto() const;
 
   /**
@@ -327,8 +339,20 @@ class IR {
    */
   std::vector<absl::flat_hash_set<int64_t>> IndependentGraphs() const;
 
+  /**
+   * @brief Returns nodes that match the IRNodeType.
+   *
+   * @param type
+   * @return std::vector<IRNode*>
+   */
   std::vector<IRNode*> FindNodesOfType(IRNodeType type) const;
 
+  /**
+   * @brief Returns nodes that match the Matcher.
+   *
+   * @param type
+   * @return std::vector<IRNode*>
+   */
   template <typename Matcher>
   std::vector<IRNode*> FindNodesThatMatch(Matcher matcher) const {
     std::vector<IRNode*> nodes;
@@ -357,7 +381,6 @@ class IR {
 // Forward declaration for types that are used in OperatorIR. They are declared later in this
 // header.
 class ColumnIR;
-class ExpressionIR;
 
 /**
  * @brief Node class for the operator
@@ -1419,7 +1442,7 @@ class GroupAcceptorIR : public OperatorIR {
     DCHECK(groups_.empty());
     groups_.resize(new_groups.size());
     for (size_t i = 0; i < new_groups.size(); ++i) {
-      PL_ASSIGN_OR_RETURN(groups_[i], graph_ptr()->OptionallyCloneWithEdge(this, new_groups[i]));
+      PL_ASSIGN_OR_RETURN(groups_[i], graph()->OptionallyCloneWithEdge(this, new_groups[i]));
     }
     return Status::OK();
   }

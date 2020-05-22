@@ -918,7 +918,7 @@ void CompareClone(IRNode* new_ir, IRNode* old_ir, const std::string& err_string)
 // expected graph.
 void CompareClone(IRNode* new_ir, IRNode* old_ir, bool should_share_graph,
                   const std::string& err_string) {
-  auto do_share_graph = new_ir->graph_ptr() == old_ir->graph_ptr();
+  auto do_share_graph = new_ir->graph() == old_ir->graph();
   EXPECT_EQ(should_share_graph, do_share_graph)
       << "Graph placement of nodes doesn't match expectations. " << err_string;
   if (!should_share_graph) {
@@ -941,18 +941,18 @@ void CompareCloneNode(ColumnIR* new_ir, ColumnIR* old_ir, const std::string& err
   auto new_containing_ops = new_ir->ContainingOperators().ConsumeValueOrDie();
   auto old_containing_ops = old_ir->ContainingOperators().ConsumeValueOrDie();
 
-  if (new_ir->graph_ptr() != old_ir->graph_ptr()) {
+  if (new_ir->graph() != old_ir->graph()) {
     // Can't call CompareClone due to the circular dependency that would result.
     for (const auto& [i, new_containing_op] : Enumerate(new_containing_ops)) {
       auto old_containing_op = old_containing_ops[i];
       EXPECT_EQ(new_containing_op->id(), old_containing_op->id()) << err_string;
-      EXPECT_NE(new_containing_op->graph_ptr(), old_containing_op->graph_ptr()) << absl::Substitute(
+      EXPECT_NE(new_containing_op->graph(), old_containing_op->graph()) << absl::Substitute(
           "'$1' and '$2' should have container ops that are in different graphs. $0.", err_string,
           new_ir->DebugString(), old_ir->DebugString());
     }
   }
   EXPECT_EQ(new_containing_ops.size(), old_containing_ops.size());
-  CompareClone(new_referenced_op, old_referenced_op, new_ir->graph_ptr() == old_ir->graph_ptr(),
+  CompareClone(new_referenced_op, old_referenced_op, new_ir->graph() == old_ir->graph(),
                err_string);
 }
 
@@ -986,8 +986,7 @@ void CompareCloneNode(MapIR* new_ir, MapIR* old_ir, const std::string& err_strin
     ColumnExpression new_expr = new_col_exprs[i];
     ColumnExpression old_expr = old_col_exprs[i];
     EXPECT_EQ(new_expr.name, old_expr.name) << err_string;
-    CompareClone(new_expr.node, old_expr.node, new_ir->graph_ptr() == old_ir->graph_ptr(),
-                 err_string);
+    CompareClone(new_expr.node, old_expr.node, new_ir->graph() == old_ir->graph(), err_string);
   }
 }
 
@@ -1000,7 +999,7 @@ void CompareCloneNode(UnionIR* new_ir, UnionIR* old_ir, const std::string& err_s
         << err_string;
     for (size_t j = 0; j < new_ir->column_mappings()[i].size(); ++j) {
       CompareClone(new_ir->column_mappings()[i][j], old_ir->column_mappings()[i][j],
-                   new_ir->graph_ptr() == old_ir->graph_ptr(), err_string);
+                   new_ir->graph() == old_ir->graph(), err_string);
     }
   }
 }
@@ -1014,16 +1013,14 @@ void CompareCloneNode(BlockingAggIR* new_ir, BlockingAggIR* old_ir, const std::s
     ColumnExpression new_expr = new_col_exprs[i];
     ColumnExpression old_expr = old_col_exprs[i];
     EXPECT_EQ(new_expr.name, old_expr.name) << err_string;
-    CompareClone(new_expr.node, old_expr.node, new_ir->graph_ptr() == old_ir->graph_ptr(),
-                 err_string);
+    CompareClone(new_expr.node, old_expr.node, new_ir->graph() == old_ir->graph(), err_string);
   }
 
   std::vector<ColumnIR*> new_groups = new_ir->groups();
   std::vector<ColumnIR*> old_groups = old_ir->groups();
   ASSERT_EQ(new_groups.size(), old_groups.size()) << err_string;
   for (size_t i = 0; i < new_groups.size(); ++i) {
-    CompareClone(new_groups[i], old_groups[i], new_ir->graph_ptr() == old_ir->graph_ptr(),
-                 err_string);
+    CompareClone(new_groups[i], old_groups[i], new_ir->graph() == old_ir->graph(), err_string);
   }
 }
 
@@ -1033,8 +1030,7 @@ void CompareCloneNode(GroupByIR* new_ir, GroupByIR* old_ir, const std::string& e
   std::vector<ColumnIR*> old_groups = old_ir->groups();
   ASSERT_EQ(new_groups.size(), old_groups.size()) << err_string;
   for (size_t i = 0; i < new_groups.size(); ++i) {
-    CompareClone(new_groups[i], old_groups[i], new_ir->graph_ptr() == old_ir->graph_ptr(),
-                 err_string);
+    CompareClone(new_groups[i], old_groups[i], new_ir->graph() == old_ir->graph(), err_string);
   }
 }
 
@@ -1082,7 +1078,7 @@ void CompareCloneNode(FuncIR* new_ir, FuncIR* old_ir, const std::string& err_str
   std::vector<ExpressionIR*> old_args = old_ir->args();
   ASSERT_EQ(new_args.size(), old_args.size()) << err_string;
   for (size_t i = 0; i < new_args.size(); ++i) {
-    CompareClone(new_args[i], old_args[i], new_ir->graph_ptr() == old_ir->graph_ptr(), err_string);
+    CompareClone(new_args[i], old_args[i], new_ir->graph() == old_ir->graph(), err_string);
   }
 }
 
@@ -1115,8 +1111,7 @@ void CompareCloneNode(JoinIR* new_ir, JoinIR* old_ir, const std::string& err_str
   ASSERT_EQ(output_columns_new.size(), output_columns_old.size()) << err_string;
 
   for (size_t i = 0; i < output_columns_new.size(); ++i) {
-    CompareClone(output_columns_new[i], output_columns_old[i],
-                 new_ir->graph_ptr() == old_ir->graph_ptr(),
+    CompareClone(output_columns_new[i], output_columns_old[i], new_ir->graph() == old_ir->graph(),
                  absl::Substitute("$0; in Join operator.", err_string));
   }
 
@@ -1126,8 +1121,7 @@ void CompareCloneNode(JoinIR* new_ir, JoinIR* old_ir, const std::string& err_str
   auto left_on_columns_new = new_ir->left_on_columns();
   auto left_on_columns_old = old_ir->left_on_columns();
   for (size_t i = 0; i < left_on_columns_new.size(); ++i) {
-    CompareClone(left_on_columns_new[i], left_on_columns_old[i],
-                 new_ir->graph_ptr() == old_ir->graph_ptr(),
+    CompareClone(left_on_columns_new[i], left_on_columns_old[i], new_ir->graph() == old_ir->graph(),
                  absl::Substitute("$0; in Join operator.", err_string));
   }
 
@@ -1135,7 +1129,7 @@ void CompareCloneNode(JoinIR* new_ir, JoinIR* old_ir, const std::string& err_str
   auto right_on_columns_old = old_ir->right_on_columns();
   for (size_t i = 0; i < right_on_columns_new.size(); ++i) {
     CompareClone(right_on_columns_new[i], right_on_columns_old[i],
-                 new_ir->graph_ptr() == old_ir->graph_ptr(),
+                 new_ir->graph() == old_ir->graph(),
                  absl::Substitute("$0; in Join operator.", err_string));
   }
 }
@@ -1144,7 +1138,7 @@ void CompareClone(IRNode* new_ir, IRNode* old_ir, const std::string& err_string)
   ASSERT_NE(new_ir, nullptr);
   ASSERT_NE(old_ir, nullptr);
 
-  if (new_ir->graph_ptr() != old_ir->graph_ptr()) {
+  if (new_ir->graph() != old_ir->graph()) {
     EXPECT_EQ(new_ir->id(), new_ir->id()) << err_string;
   }
   // For all base classes that are derived from IRNode, check their properties here.
@@ -1166,7 +1160,7 @@ void CompareClone(IRNode* new_ir, IRNode* old_ir, const std::string& err_string)
     ASSERT_EQ(new_op->parents().size(), old_op->parents().size());
     for (size_t parent_idx = 0; parent_idx < new_op->parents().size(); ++parent_idx) {
       CompareClone(new_op->parents()[parent_idx], old_op->parents()[parent_idx],
-                   new_ir->graph_ptr() == old_ir->graph_ptr(), err_string);
+                   new_ir->graph() == old_ir->graph(), err_string);
     }
   }
 

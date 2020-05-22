@@ -36,14 +36,13 @@ StatusOr<bool> BlockingOperatorGRPCBridgeRule::InsertGRPCBridgeForBlockingChildO
 Status BlockingOperatorGRPCBridgeRule::AddNewGRPCNodes(OperatorIR* parent_op,
                                                        OperatorIR* child_op) {
   DCHECK(parent_op->IsRelationInit()) << parent_op->DebugString();
-  IR* graph = parent_op->graph_ptr();
+  IR* graph = parent_op->graph();
 
   PL_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
-                      graph->CreateNode<GRPCSourceGroupIR>(parent_op->ast_node(), grpc_id_counter_,
+                      graph->CreateNode<GRPCSourceGroupIR>(parent_op->ast(), grpc_id_counter_,
                                                            parent_op->relation()));
-  PL_ASSIGN_OR_RETURN(
-      GRPCSinkIR * grpc_sink,
-      graph->CreateNode<GRPCSinkIR>(parent_op->ast_node(), parent_op, grpc_id_counter_));
+  PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink,
+                      graph->CreateNode<GRPCSinkIR>(parent_op->ast(), parent_op, grpc_id_counter_));
   PL_RETURN_IF_ERROR(grpc_sink->SetRelation(parent_op->relation()));
 
   PL_RETURN_IF_ERROR(child_op->ReplaceParent(parent_op, grpc_source_group));
@@ -340,10 +339,10 @@ StatusOr<std::unique_ptr<IR>> DistributedSplitter::CreateGRPCBridge(
 
 StatusOr<GRPCSinkIR*> DistributedSplitter::CreateGRPCSink(OperatorIR* parent_op, int64_t grpc_id) {
   DCHECK(parent_op->IsRelationInit()) << parent_op->DebugString();
-  IR* graph = parent_op->graph_ptr();
+  IR* graph = parent_op->graph();
 
   PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink,
-                      graph->CreateNode<GRPCSinkIR>(parent_op->ast_node(), parent_op, grpc_id));
+                      graph->CreateNode<GRPCSinkIR>(parent_op->ast(), parent_op, grpc_id));
   PL_RETURN_IF_ERROR(grpc_sink->SetRelation(parent_op->relation()));
   return grpc_sink;
 }
@@ -351,11 +350,11 @@ StatusOr<GRPCSinkIR*> DistributedSplitter::CreateGRPCSink(OperatorIR* parent_op,
 StatusOr<GRPCSourceGroupIR*> DistributedSplitter::CreateGRPCSourceGroup(OperatorIR* parent_op,
                                                                         int64_t grpc_id) {
   DCHECK(parent_op->IsRelationInit()) << parent_op->DebugString();
-  IR* graph = parent_op->graph_ptr();
+  IR* graph = parent_op->graph();
 
   PL_ASSIGN_OR_RETURN(
       GRPCSourceGroupIR * grpc_source_group,
-      graph->CreateNode<GRPCSourceGroupIR>(parent_op->ast_node(), grpc_id, parent_op->relation()));
+      graph->CreateNode<GRPCSourceGroupIR>(parent_op->ast(), grpc_id, parent_op->relation()));
   return grpc_source_group;
 }
 }  // namespace distributed

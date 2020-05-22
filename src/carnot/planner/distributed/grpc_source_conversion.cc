@@ -25,7 +25,7 @@ StatusOr<bool> GRPCSourceGroupConversionRule::ExpandGRPCSourceGroup(GRPCSourceGr
     // Replace the child node's parent with the new parent.
     PL_RETURN_IF_ERROR(child->ReplaceParent(group_ir, new_parent));
   }
-  IR* graph = group_ir->graph_ptr();
+  IR* graph = group_ir->graph();
   // Remove the old group_ir from the graph.
   PL_RETURN_IF_ERROR(graph->DeleteNode(group_ir->id()));
   return true;
@@ -34,8 +34,8 @@ StatusOr<bool> GRPCSourceGroupConversionRule::ExpandGRPCSourceGroup(GRPCSourceGr
 StatusOr<GRPCSourceIR*> GRPCSourceGroupConversionRule::CreateGRPCSource(
     GRPCSourceGroupIR* group_ir) {
   DCHECK(group_ir->IsRelationInit());
-  IR* graph = group_ir->graph_ptr();
-  return graph->CreateNode<GRPCSourceIR>(group_ir->ast_node(), group_ir->relation());
+  IR* graph = group_ir->graph();
+  return graph->CreateNode<GRPCSourceIR>(group_ir->ast(), group_ir->relation());
 }
 
 Status UpdateSink(GRPCSourceIR* source, GRPCSinkIR* sink) {
@@ -45,7 +45,7 @@ Status UpdateSink(GRPCSourceIR* source, GRPCSinkIR* sink) {
 
 StatusOr<OperatorIR*> GRPCSourceGroupConversionRule::ConvertGRPCSourceGroup(
     GRPCSourceGroupIR* group_ir) {
-  auto ir_graph = group_ir->graph_ptr();
+  auto ir_graph = group_ir->graph();
   auto sinks = group_ir->dependent_sinks();
 
   if (sinks.size() == 0) {
@@ -68,7 +68,7 @@ StatusOr<OperatorIR*> GRPCSourceGroupConversionRule::ConvertGRPCSourceGroup(
   }
 
   PL_ASSIGN_OR_RETURN(UnionIR * union_op,
-                      ir_graph->CreateNode<UnionIR>(group_ir->ast_node(), grpc_sources));
+                      ir_graph->CreateNode<UnionIR>(group_ir->ast(), grpc_sources));
   PL_RETURN_IF_ERROR(union_op->SetRelationFromParents());
   DCHECK(union_op->HasColumnMappings());
   return union_op;

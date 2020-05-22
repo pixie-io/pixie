@@ -350,7 +350,7 @@ StatusOr<ExpressionIR*> UDTFSourceHandler::EvaluateExpression(
       }
       if (Match(data_node, String())) {
         // If the parse fails, then we don't have a properly formatted upid.
-        return graph->CreateNode<UInt128IR>(arg_node->ast_node(),
+        return graph->CreateNode<UInt128IR>(arg_node->ast(),
                                             static_cast<StringIR*>(data_node)->str());
       }
       // Otherwise match uint128 and do nothing.

@@ -106,7 +106,7 @@ StatusOr<pl::shared::scriptspb::VisFuncsInfo> Compiler::GetVisFuncsInfo(
 }
 
 Status Compiler::VerifyGraphHasMemorySink(IR* ir) {
-  auto sinks = ir->GetSinks();
+  auto sinks = ir->FindNodesThatMatch(MemorySink());
   if (sinks.size() == 0) {
     return error::InvalidArgument("query does not output a result, please add a $0.$1() statement",
                                   PixieModule::kPixieModuleObjName, PixieModule::kDisplayOpId);

@@ -209,10 +209,10 @@ TEST_F(DataframeTest, AggTest) {
 
   std::vector<QLObjectPtr> tup1_args{
       ToQLObject(MakeString("col1")),
-      MakeUDFFunc(ast_visitor.get(), src->graph_ptr(), "mean").ConsumeValueOrDie()};
+      MakeUDFFunc(ast_visitor.get(), src->graph(), "mean").ConsumeValueOrDie()};
   std::vector<QLObjectPtr> tup2_args{
       ToQLObject(MakeString("col2")),
-      MakeUDFFunc(ast_visitor.get(), src->graph_ptr(), "mean").ConsumeValueOrDie()};
+      MakeUDFFunc(ast_visitor.get(), src->graph(), "mean").ConsumeValueOrDie()};
 
   std::vector<NameToNode> kwargs;
   kwargs.push_back(
@@ -265,7 +265,7 @@ TEST_F(DataframeTest, AggFailsWithPosArgs) {
   std::vector<QLObjectPtr> args;
   std::vector<QLObjectPtr> tup_args{
       ToQLObject(MakeString("col1")),
-      MakeUDFFunc(ast_visitor.get(), src->graph_ptr(), "mean").ConsumeValueOrDie()};
+      MakeUDFFunc(ast_visitor.get(), src->graph(), "mean").ConsumeValueOrDie()};
   args.push_back(TupleObject::Create(tup_args, ast_visitor.get()).ConsumeValueOrDie());
   ArgMap arg_map{{}, args};
 

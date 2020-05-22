@@ -32,12 +32,12 @@ StatusOr<bool> TabletSourceConversionRule::ReplaceMemorySourceWithTabletSourceGr
     tablets.push_back(table_info->tablets()[i]);
   }
 
-  IR* graph = mem_source_ir->graph_ptr();
+  IR* graph = mem_source_ir->graph();
   // Make the tablet source groups
   // Init with the memory source and tablets.
   PL_ASSIGN_OR_RETURN(TabletSourceGroupIR * tablet_source_group,
-                      graph->CreateNode<TabletSourceGroupIR>(mem_source_ir->ast_node(),
-                                                             mem_source_ir, tablets, tablet_key));
+                      graph->CreateNode<TabletSourceGroupIR>(mem_source_ir->ast(), mem_source_ir,
+                                                             tablets, tablet_key));
 
   // Replace the child's parent that originally pointed to memory source to point to
   // the new tablet source group.
@@ -86,9 +86,9 @@ StatusOr<OperatorIR*> MemorySourceTabletRule::MakeNewSources(
     return sources[0];
   }
 
-  IR* graph = tablet_source_group->graph_ptr();
+  IR* graph = tablet_source_group->graph();
   PL_ASSIGN_OR_RETURN(UnionIR * union_op,
-                      graph->CreateNode<UnionIR>(tablet_source_group->ast_node(), sources));
+                      graph->CreateNode<UnionIR>(tablet_source_group->ast(), sources));
   PL_RETURN_IF_ERROR(union_op->SetRelationFromParents());
   DCHECK(union_op->HasColumnMappings());
   return union_op;
@@ -108,7 +108,7 @@ StatusOr<bool> MemorySourceTabletRule::ReplaceTabletSourceGroup(
 }
 
 void MemorySourceTabletRule::DeleteNodeAndNonOperatorChildren(OperatorIR* op) {
-  IR* graph = op->graph_ptr();
+  IR* graph = op->graph();
   const plan::DAG& dag = graph->dag();
   int64_t cur_node = op->id();
   std::queue<int64_t> q({cur_node});
@@ -207,10 +207,10 @@ StatusOr<MemorySourceIR*> MemorySourceTabletRule::CreateMemorySource(
     const MemorySourceIR* original_memory_source, const types::TabletID& tablet_value) {
   DCHECK(original_memory_source->IsRelationInit());
   DCHECK(original_memory_source->column_index_map_set());
-  IR* graph = original_memory_source->graph_ptr();
+  IR* graph = original_memory_source->graph();
   // Create the Memory Source.
   PL_ASSIGN_OR_RETURN(MemorySourceIR * mem_source_ir,
-                      graph->CreateNode<MemorySourceIR>(original_memory_source->ast_node(),
+                      graph->CreateNode<MemorySourceIR>(original_memory_source->ast(),
                                                         original_memory_source->table_name(),
                                                         std::vector<std::string>{}));
   // If HasTimeExpressions is true, then the time should be set.

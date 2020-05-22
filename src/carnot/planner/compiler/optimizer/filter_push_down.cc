@@ -91,8 +91,7 @@ OperatorIR* FilterPushdownRule::NextFilterLocation(OperatorIR* current_node,
 
 Status FilterPushdownRule::UpdateFilter(FilterIR* filter,
                                         const ColumnNameMapping& column_name_mapping) {
-  PL_ASSIGN_OR_RETURN(ExpressionIR * new_expr,
-                      filter->graph_ptr()->CopyNode(filter->filter_expr()));
+  PL_ASSIGN_OR_RETURN(ExpressionIR * new_expr, filter->graph()->CopyNode(filter->filter_expr()));
   PL_ASSIGN_OR_RETURN(auto filter_input_cols, new_expr->InputColumns());
   for (ColumnIR* col : filter_input_cols) {
     auto new_col_name = column_name_mapping.at(col->col_name());

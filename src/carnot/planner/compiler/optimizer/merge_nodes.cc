@@ -340,9 +340,9 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
       auto other_map = static_cast<MapIR*>(other_op);
       PL_RETURN_IF_ERROR(MergeExprs(&expr_list, &exprs, other_map->col_exprs()));
     }
-    PL_ASSIGN_OR_RETURN(
-        merged_op, graph->CreateNode<MapIR>(base_map->ast_node(), base_map->parents()[0], expr_list,
-                                            /* keep_input_columns */ false));
+    PL_ASSIGN_OR_RETURN(merged_op,
+                        graph->CreateNode<MapIR>(base_map->ast(), base_map->parents()[0], expr_list,
+                                                 /* keep_input_columns */ false));
   } else if (Match(base_op, BlockingAgg())) {
     // TODO(philkuz) support heterogenous Agg operators.
     auto base_agg = static_cast<BlockingAggIR*>(base_op);
@@ -359,9 +359,9 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
       PL_RETURN_IF_ERROR(MergeExprs(&expr_list, &exprs, other_agg->aggregate_expressions()));
     }
 
-    PL_ASSIGN_OR_RETURN(
-        merged_op, graph->CreateNode<BlockingAggIR>(base_agg->ast_node(), base_agg->parents()[0],
-                                                    base_agg->groups(), expr_list));
+    PL_ASSIGN_OR_RETURN(merged_op,
+                        graph->CreateNode<BlockingAggIR>(base_agg->ast(), base_agg->parents()[0],
+                                                         base_agg->groups(), expr_list));
 
   } else if (Match(base_op, Join())) {
     auto join = static_cast<JoinIR*>(base_op);
@@ -390,9 +390,9 @@ StatusOr<OperatorIR*> MergeNodesRule::MergeOps(IR* graph,
 }
 
 StatusOr<MapIR*> MakeNoOpMap(IR* graph, CompilerState* compiler_state, OperatorIR* op_to_copy) {
-  PL_ASSIGN_OR_RETURN(
-      MapIR * map, graph->CreateNode<MapIR>(op_to_copy->ast_node(), op_to_copy,
-                                            ColExpressionVector{}, /* keep_input_columns */ true));
+  PL_ASSIGN_OR_RETURN(MapIR * map,
+                      graph->CreateNode<MapIR>(op_to_copy->ast(), op_to_copy, ColExpressionVector{},
+                                               /* keep_input_columns */ true));
 
   OperatorRelationRule rule(compiler_state);
   PL_ASSIGN_OR_RETURN(bool did_change, rule.Apply(map));
@@ -416,8 +416,7 @@ Status ReplaceOpsWithMerged(CompilerState* compiler_state, OperatorIR* merged,
     PL_RETURN_IF_ERROR(child->ReplaceParent(parents[0], merged));
     // Insert a no-op map for each following parent that is repeated.
     for (int64_t i = 1; i < static_cast<int64_t>(parents.size()); ++i) {
-      PL_ASSIGN_OR_RETURN(MapIR * map,
-                          MakeNoOpMap(parents[i]->graph_ptr(), compiler_state, merged));
+      PL_ASSIGN_OR_RETURN(MapIR * map, MakeNoOpMap(parents[i]->graph(), compiler_state, merged));
       PL_RETURN_IF_ERROR(child->ReplaceParent(parents[i], map));
     }
   }

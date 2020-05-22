@@ -172,7 +172,7 @@ Status IRNode::CopyFromNode(const IRNode* node,
   line_ = node->line_;
   col_ = node->col_;
   line_col_set_ = node->line_col_set_;
-  ast_node_ = node->ast_node_;
+  ast_ = node->ast_;
   return CopyFromNodeImpl(node, copied_nodes_map);
 }
 
@@ -181,37 +181,37 @@ void IRNode::SetLineCol(int64_t line, int64_t col) {
   col_ = col;
   line_col_set_ = true;
 }
-void IRNode::SetLineCol(const pypa::AstPtr& ast_node) {
-  ast_node_ = ast_node;
-  SetLineCol(ast_node->line, ast_node->column);
+void IRNode::SetLineCol(const pypa::AstPtr& ast) {
+  ast_ = ast;
+  SetLineCol(ast->line, ast->column);
 }
 
 Status OperatorIR::AddParent(OperatorIR* parent) {
   DCHECK(can_have_parents_);
-  DCHECK(!graph_ptr()->dag().HasEdge(parent->id(), id()))
+  DCHECK(!graph()->dag().HasEdge(parent->id(), id()))
       << absl::Substitute("Edge between parent op $0(id=$1) and child op $2(id=$3) exists.",
                           parent->type_string(), parent->id(), type_string(), id());
 
   parents_.push_back(parent);
-  return graph_ptr()->AddEdge(parent, this);
+  return graph()->AddEdge(parent, this);
 }
 
 Status OperatorIR::RemoveParent(OperatorIR* parent) {
-  DCHECK(graph_ptr()->dag().HasEdge(parent->id(), id()))
+  DCHECK(graph()->dag().HasEdge(parent->id(), id()))
       << absl::Substitute("Edge between parent op $0(id=$1) and child op $2(id=$3) does not exist.",
                           parent->type_string(), parent->id(), type_string(), id());
   parents_.erase(std::remove(parents_.begin(), parents_.end(), parent), parents_.end());
-  return graph_ptr()->DeleteEdge(parent->id(), id());
+  return graph()->DeleteEdge(parent->id(), id());
 }
 
 Status OperatorIR::ReplaceParent(OperatorIR* old_parent, OperatorIR* new_parent) {
-  DCHECK(graph_ptr()->dag().HasEdge(old_parent->id(), id()))
+  DCHECK(graph()->dag().HasEdge(old_parent->id(), id()))
       << absl::Substitute("Edge between parent op $0 and child op $1 does not exist.",
                           old_parent->DebugString(), DebugString());
   for (size_t i = 0; i < parents_.size(); ++i) {
     if (parents_[i] == old_parent) {
       parents_[i] = new_parent;
-      graph_ptr()->dag().ReplaceParentEdge(id(), old_parent->id(), new_parent->id());
+      graph()->dag().ReplaceParentEdge(id(), old_parent->id(), new_parent->id());
       return Status::OK();
     }
   }
@@ -234,8 +234,8 @@ StatusOr<std::vector<OperatorIR*>> OperatorIR::HandleDuplicateParents(
       continue;
     }
     PL_ASSIGN_OR_RETURN(MapIR * map,
-                        graph_ptr()->CreateNode<MapIR>(ast_node(), parent, ColExpressionVector{},
-                                                       /*keep_input_columns*/ true));
+                        graph()->CreateNode<MapIR>(ast(), parent, ColExpressionVector{},
+                                                   /*keep_input_columns*/ true));
     new_parents.push_back(map);
   }
   return new_parents;
@@ -355,22 +355,21 @@ Status MemorySourceIR::SetTimeExpressions(ExpressionIR* new_start_time_expr,
   auto old_end_time_expr = end_time_expr_;
 
   if (start_time_expr_) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_start_time_expr));
+    PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_start_time_expr));
   }
   if (end_time_expr_) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_end_time_expr));
+    PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_end_time_expr));
   }
 
   PL_ASSIGN_OR_RETURN(start_time_expr_,
-                      graph_ptr()->OptionallyCloneWithEdge(this, new_start_time_expr));
-  PL_ASSIGN_OR_RETURN(end_time_expr_,
-                      graph_ptr()->OptionallyCloneWithEdge(this, new_end_time_expr));
+                      graph()->OptionallyCloneWithEdge(this, new_start_time_expr));
+  PL_ASSIGN_OR_RETURN(end_time_expr_, graph()->OptionallyCloneWithEdge(this, new_end_time_expr));
 
   if (old_start_time_expr) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(old_start_time_expr->id()));
+    PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_start_time_expr->id()));
   }
   if (old_end_time_expr) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(old_end_time_expr->id()));
+    PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_end_time_expr->id()));
   }
 
   has_time_expressions_ = true;
@@ -418,31 +417,31 @@ Status MapIR::SetColExprs(const ColExpressionVector& exprs) {
   auto old_exprs = col_exprs_;
   col_exprs_.clear();
   for (const ColumnExpression& expr : old_exprs) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, expr.node));
+    PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, expr.node));
   }
   for (const auto& expr : exprs) {
     PL_RETURN_IF_ERROR(AddColExpr(expr));
   }
   for (const ColumnExpression& expr : old_exprs) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(expr.node->id()));
+    PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(expr.node->id()));
   }
   return Status::OK();
 }
 
 Status MapIR::AddColExpr(const ColumnExpression& expr) {
-  PL_ASSIGN_OR_RETURN(auto expr_node, graph_ptr()->OptionallyCloneWithEdge(this, expr.node));
+  PL_ASSIGN_OR_RETURN(auto expr_node, graph()->OptionallyCloneWithEdge(this, expr.node));
   col_exprs_.emplace_back(expr.name, expr_node);
   return Status::OK();
 }
 
 Status MapIR::UpdateColExpr(std::string_view name, ExpressionIR* expr) {
-  PL_ASSIGN_OR_RETURN(auto expr_node, graph_ptr()->OptionallyCloneWithEdge(this, expr));
+  PL_ASSIGN_OR_RETURN(auto expr_node, graph()->OptionallyCloneWithEdge(this, expr));
   for (size_t i = 0; i < col_exprs_.size(); ++i) {
     if (col_exprs_[i].name == name) {
       auto old_expr = col_exprs_[i].node;
       col_exprs_[i].node = expr_node;
-      PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_expr));
-      return graph_ptr()->DeleteOrphansInSubtree(old_expr->id());
+      PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_expr));
+      return graph()->DeleteOrphansInSubtree(old_expr->id());
     }
   }
   return error::Internal("Column $0 does not exist in Map", name);
@@ -512,11 +511,11 @@ std::string FilterIR::DebugString() const {
 Status FilterIR::SetFilterExpr(ExpressionIR* expr) {
   auto old_filter_expr = filter_expr_;
   if (old_filter_expr) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_filter_expr));
+    PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_filter_expr));
   }
-  PL_ASSIGN_OR_RETURN(filter_expr_, graph_ptr()->OptionallyCloneWithEdge(this, expr));
+  PL_ASSIGN_OR_RETURN(filter_expr_, graph()->OptionallyCloneWithEdge(this, expr));
   if (old_filter_expr) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(old_filter_expr->id()));
+    PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_filter_expr->id()));
   }
   return Status::OK();
 }
@@ -602,18 +601,17 @@ Status BlockingAggIR::SetAggExprs(const ColExpressionVector& agg_exprs) {
   auto old_agg_expressions = aggregate_expressions_;
   for (const ColumnExpression& agg_expr : aggregate_expressions_) {
     ExpressionIR* expr = agg_expr.node;
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, expr));
+    PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, expr));
   }
   aggregate_expressions_.clear();
 
   for (const auto& agg_expr : agg_exprs) {
-    PL_ASSIGN_OR_RETURN(auto updated_expr,
-                        graph_ptr()->OptionallyCloneWithEdge(this, agg_expr.node));
+    PL_ASSIGN_OR_RETURN(auto updated_expr, graph()->OptionallyCloneWithEdge(this, agg_expr.node));
     aggregate_expressions_.emplace_back(agg_expr.name, updated_expr);
   }
 
   for (const auto& old_agg_expr : old_agg_expressions) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(old_agg_expr.node->id()));
+    PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_agg_expr.node->id()));
   }
 
   return Status::OK();
@@ -661,7 +659,7 @@ Status GroupByIR::SetGroups(const std::vector<ColumnIR*>& groups) {
   DCHECK(groups_.empty());
   groups_.resize(groups.size());
   for (size_t i = 0; i < groups.size(); ++i) {
-    PL_ASSIGN_OR_RETURN(groups_[i], graph_ptr()->OptionallyCloneWithEdge(this, groups[i]));
+    PL_ASSIGN_OR_RETURN(groups_[i], graph()->OptionallyCloneWithEdge(this, groups[i]));
   }
   return Status::OK();
 }
@@ -671,7 +669,7 @@ Status GroupByIR::CopyFromNodeImpl(const IRNode* source,
   const GroupByIR* group_by = static_cast<const GroupByIR*>(source);
   std::vector<ColumnIR*> new_groups;
   for (const ColumnIR* column : group_by->groups_) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * new_column, graph_ptr()->CopyNode(column, copied_nodes_map));
+    PL_ASSIGN_OR_RETURN(ColumnIR * new_column, graph()->CopyNode(column, copied_nodes_map));
     new_groups.push_back(new_column);
   }
   return SetGroups(new_groups);
@@ -891,19 +889,18 @@ void ColumnIR::SetContainingOperatorParentIdx(int64_t container_op_parent_idx) {
 
 StatusOr<std::vector<OperatorIR*>> ColumnIR::ContainingOperators() const {
   std::vector<OperatorIR*> parents;
-  IR* graph = graph_ptr();
   std::queue<int64_t> cur_ids;
   cur_ids.push(id());
 
   while (cur_ids.size()) {
     auto cur_id = cur_ids.front();
     cur_ids.pop();
-    IRNode* cur_node = graph->Get(cur_id);
+    IRNode* cur_node = graph()->Get(cur_id);
     if (cur_node->IsOperator()) {
       parents.push_back(static_cast<OperatorIR*>(cur_node));
       continue;
     }
-    std::vector<int64_t> parents = graph->dag().ParentsOf(cur_id);
+    std::vector<int64_t> parents = graph()->dag().ParentsOf(cur_id);
     for (auto parent_id : parents) {
       cur_ids.push(parent_id);
     }
@@ -989,7 +986,7 @@ Status FuncIR::AddArg(ExpressionIR* arg) {
     return error::Internal("Argument for FuncIR is null.");
   }
   args_.push_back(arg);
-  return graph_ptr()->AddEdge(this, arg);
+  return graph()->AddEdge(this, arg);
 }
 
 Status FuncIR::UpdateArg(int64_t idx, ExpressionIR* arg) {
@@ -997,9 +994,9 @@ Status FuncIR::UpdateArg(int64_t idx, ExpressionIR* arg) {
       << "Tried to update arg of index greater than number of args.";
   ExpressionIR* old_arg = args_[idx];
   args_[idx] = arg;
-  PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_arg));
-  PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, arg));
-  PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(old_arg->id()));
+  PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_arg));
+  PL_RETURN_IF_ERROR(graph()->AddEdge(this, arg));
+  PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_arg->id()));
   return Status::OK();
 }
 
@@ -1007,7 +1004,7 @@ Status FuncIR::AddOrCloneArg(ExpressionIR* arg) {
   if (arg == nullptr) {
     return error::Internal("Argument for FuncIR is null.");
   }
-  PL_ASSIGN_OR_RETURN(auto updated_arg, graph_ptr()->OptionallyCloneWithEdge(this, arg));
+  PL_ASSIGN_OR_RETURN(auto updated_arg, graph()->OptionallyCloneWithEdge(this, arg));
   args_.push_back(updated_arg);
   return Status::OK();
 }
@@ -1120,7 +1117,7 @@ Status IR::CopyOperatorSubgraph(const IR* src,
 Status OperatorIR::CopyParentsFrom(const OperatorIR* source_op) {
   DCHECK(parents_.empty());
   for (const auto& parent : source_op->parents()) {
-    IRNode* new_parent = graph_ptr()->Get(parent->id());
+    IRNode* new_parent = graph()->Get(parent->id());
     DCHECK(Match(new_parent, Operator()));
     PL_RETURN_IF_ERROR(AddParent(static_cast<OperatorIR*>(new_parent)));
   }
@@ -1128,10 +1125,10 @@ Status OperatorIR::CopyParentsFrom(const OperatorIR* source_op) {
 }
 
 std::vector<OperatorIR*> OperatorIR::Children() const {
-  plan::DAG dag = graph_ptr()->dag();
+  plan::DAG dag = graph()->dag();
   std::vector<OperatorIR*> op_children;
   for (int64_t d : dag.DependenciesOf(id())) {
-    auto ir_node = graph_ptr()->Get(d);
+    auto ir_node = graph()->Get(d);
     if (ir_node->IsOperator()) {
       op_children.push_back(static_cast<OperatorIR*>(ir_node));
     }
@@ -1176,7 +1173,7 @@ Status FuncIR::CopyFromNodeImpl(const IRNode* node,
 
   for (const ExpressionIR* arg : func->args_) {
     // auto id = arg->id();
-    PL_ASSIGN_OR_RETURN(ExpressionIR * new_arg, graph_ptr()->CopyNode(arg, copied_nodes_map));
+    PL_ASSIGN_OR_RETURN(ExpressionIR * new_arg, graph()->CopyNode(arg, copied_nodes_map));
     PL_RETURN_IF_ERROR(AddArg(new_arg));
   }
   return Status::OK();
@@ -1228,9 +1225,9 @@ Status MemorySourceIR::CopyFromNodeImpl(
 
   if (has_time_expressions_) {
     PL_ASSIGN_OR_RETURN(ExpressionIR * new_start_expr,
-                        graph_ptr()->CopyNode(source_ir->start_time_expr_, copied_nodes_map));
+                        graph()->CopyNode(source_ir->start_time_expr_, copied_nodes_map));
     PL_ASSIGN_OR_RETURN(ExpressionIR * new_stop_expr,
-                        graph_ptr()->CopyNode(source_ir->end_time_expr_, copied_nodes_map));
+                        graph()->CopyNode(source_ir->end_time_expr_, copied_nodes_map));
     PL_RETURN_IF_ERROR(SetTimeExpressions(new_start_expr, new_stop_expr));
   }
   return Status::OK();
@@ -1250,7 +1247,7 @@ Status MapIR::CopyFromNodeImpl(const IRNode* node,
   ColExpressionVector new_col_exprs;
   for (const ColumnExpression& col_expr : map_ir->col_exprs_) {
     PL_ASSIGN_OR_RETURN(ExpressionIR * new_node,
-                        graph_ptr()->CopyNode(col_expr.node, copied_nodes_map));
+                        graph()->CopyNode(col_expr.node, copied_nodes_map));
     new_col_exprs.push_back({col_expr.name, new_node});
   }
   keep_input_columns_ = map_ir->keep_input_columns_;
@@ -1270,13 +1267,13 @@ Status BlockingAggIR::CopyFromNodeImpl(
   ColExpressionVector new_agg_exprs;
   for (const ColumnExpression& col_expr : blocking_agg->aggregate_expressions_) {
     PL_ASSIGN_OR_RETURN(ExpressionIR * new_node,
-                        graph_ptr()->CopyNode(col_expr.node, copied_nodes_map));
+                        graph()->CopyNode(col_expr.node, copied_nodes_map));
     new_agg_exprs.push_back({col_expr.name, new_node});
   }
 
   std::vector<ColumnIR*> new_groups;
   for (const ColumnIR* column : blocking_agg->groups()) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * new_column, graph_ptr()->CopyNode(column, copied_nodes_map));
+    PL_ASSIGN_OR_RETURN(ColumnIR * new_column, graph()->CopyNode(column, copied_nodes_map));
     new_groups.push_back(new_column);
   }
 
@@ -1290,7 +1287,7 @@ Status FilterIR::CopyFromNodeImpl(const IRNode* node,
                                   absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   const FilterIR* filter = static_cast<const FilterIR*>(node);
   PL_ASSIGN_OR_RETURN(ExpressionIR * new_node,
-                      graph_ptr()->CopyNode(filter->filter_expr_, copied_nodes_map));
+                      graph()->CopyNode(filter->filter_expr_, copied_nodes_map));
   PL_RETURN_IF_ERROR(SetFilterExpr(new_node));
   return Status::OK();
 }
@@ -1332,7 +1329,7 @@ Status UnionIR::CopyFromNodeImpl(const IRNode* node,
   for (const InputColumnMapping& src_mapping : union_ir->column_mappings_) {
     InputColumnMapping dest_mapping;
     for (ColumnIR* src_col : src_mapping) {
-      PL_ASSIGN_OR_RETURN(ColumnIR * dest_col, graph_ptr()->CopyNode(src_col, copied_nodes_map));
+      PL_ASSIGN_OR_RETURN(ColumnIR * dest_col, graph()->CopyNode(src_col, copied_nodes_map));
       dest_mapping.push_back(dest_col);
     }
     dest_mappings.push_back(dest_mapping);
@@ -1347,20 +1344,20 @@ Status JoinIR::CopyFromNodeImpl(const IRNode* node,
 
   std::vector<ColumnIR*> new_output_columns;
   for (const ColumnIR* col : join_node->output_columns_) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * new_node, graph_ptr()->CopyNode(col, copied_nodes_map));
+    PL_ASSIGN_OR_RETURN(ColumnIR * new_node, graph()->CopyNode(col, copied_nodes_map));
     new_output_columns.push_back(new_node);
   }
   PL_RETURN_IF_ERROR(SetOutputColumns(join_node->column_names_, new_output_columns));
 
   std::vector<ColumnIR*> new_left_columns;
   for (const ColumnIR* col : join_node->left_on_columns_) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * new_node, graph_ptr()->CopyNode(col, copied_nodes_map));
+    PL_ASSIGN_OR_RETURN(ColumnIR * new_node, graph()->CopyNode(col, copied_nodes_map));
     new_left_columns.push_back(new_node);
   }
 
   std::vector<ColumnIR*> new_right_columns;
   for (const ColumnIR* col : join_node->right_on_columns_) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * new_node, graph_ptr()->CopyNode(col, copied_nodes_map));
+    PL_ASSIGN_OR_RETURN(ColumnIR * new_node, graph()->CopyNode(col, copied_nodes_map));
     new_right_columns.push_back(new_node);
   }
 
@@ -1523,7 +1520,7 @@ Status UnionIR::ToProto(planpb::Operator* op) const {
 Status UnionIR::AddColumnMapping(const InputColumnMapping& column_mapping) {
   InputColumnMapping cloned_mapping;
   for (ColumnIR* col : column_mapping) {
-    PL_ASSIGN_OR_RETURN(auto cloned, graph_ptr()->OptionallyCloneWithEdge(this, col));
+    PL_ASSIGN_OR_RETURN(auto cloned, graph()->OptionallyCloneWithEdge(this, col));
     cloned_mapping.push_back(cloned);
   }
 
@@ -1536,7 +1533,7 @@ Status UnionIR::SetColumnMappings(const std::vector<InputColumnMapping>& column_
   column_mappings_.clear();
   for (const auto& old_mapping : old_mappings) {
     for (ColumnIR* col : old_mapping) {
-      PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, col));
+      PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, col));
     }
   }
   for (const auto& new_mapping : column_mappings) {
@@ -1544,7 +1541,7 @@ Status UnionIR::SetColumnMappings(const std::vector<InputColumnMapping>& column_
   }
   for (const auto& old_mapping : old_mappings) {
     for (ColumnIR* col : old_mapping) {
-      PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(col->id()));
+      PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(col->id()));
     }
   }
   return Status::OK();
@@ -1578,8 +1575,8 @@ Status UnionIR::SetRelationFromParents() {
         return CreateIRNodeError(err_msg,
                                  absl::Substitute("Missing or wrong type for $0.", col_name));
       }
-      PL_ASSIGN_OR_RETURN(auto col_node, graph_ptr()->CreateNode<ColumnIR>(
-                                             ast_node(), col_name, /*parent_op_idx*/ parent_idx));
+      PL_ASSIGN_OR_RETURN(auto col_node, graph()->CreateNode<ColumnIR>(
+                                             ast(), col_name, /*parent_op_idx*/ parent_idx));
       column_mapping.push_back(col_node);
     }
     mappings.push_back(column_mapping);
@@ -1718,12 +1715,12 @@ Status JoinIR::SetJoinColumns(const std::vector<ColumnIR*>& left_columns,
   left_on_columns_.resize(left_columns.size());
   for (size_t i = 0; i < left_columns.size(); ++i) {
     PL_ASSIGN_OR_RETURN(left_on_columns_[i],
-                        graph_ptr()->OptionallyCloneWithEdge(this, left_columns[i]));
+                        graph()->OptionallyCloneWithEdge(this, left_columns[i]));
   }
   right_on_columns_.resize(right_columns.size());
   for (size_t i = 0; i < right_columns.size(); ++i) {
     PL_ASSIGN_OR_RETURN(right_on_columns_[i],
-                        graph_ptr()->OptionallyCloneWithEdge(this, right_columns[i]));
+                        graph()->OptionallyCloneWithEdge(this, right_columns[i]));
   }
   key_columns_set_ = true;
   return Status::OK();
@@ -1760,13 +1757,13 @@ Status JoinIR::SetOutputColumns(const std::vector<std::string>& column_names,
   column_names_ = column_names;
 
   for (auto old_col : old_output_cols) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteEdge(this, old_col));
+    PL_RETURN_IF_ERROR(graph()->DeleteEdge(this, old_col));
   }
   for (auto new_col : output_columns_) {
-    PL_RETURN_IF_ERROR(graph_ptr()->AddEdge(this, new_col));
+    PL_RETURN_IF_ERROR(graph()->AddEdge(this, new_col));
   }
   for (auto old_col : old_output_cols) {
-    PL_RETURN_IF_ERROR(graph_ptr()->DeleteOrphansInSubtree(old_col->id()));
+    PL_RETURN_IF_ERROR(graph()->DeleteOrphansInSubtree(old_col->id()));
   }
   return Status::OK();
 }
@@ -1817,7 +1814,7 @@ Status UDTFSourceIR::SetArgValues(const std::vector<ExpressionIR*>& arg_values) 
       return CreateIRNodeError("expected scalar value, received '$0'", value->type_string());
     }
     PL_ASSIGN_OR_RETURN(arg_values_[idx],
-                        graph_ptr()->OptionallyCloneWithEdge(this, static_cast<DataIR*>(value)));
+                        graph()->OptionallyCloneWithEdge(this, static_cast<DataIR*>(value)));
   }
   return Status::OK();
 }
@@ -1846,8 +1843,7 @@ Status UDTFSourceIR::CopyFromNodeImpl(
   udtf_spec_ = udtf->udtf_spec_;
   std::vector<ExpressionIR*> arg_values;
   for (const DataIR* arg_element : udtf->arg_values_) {
-    PL_ASSIGN_OR_RETURN(IRNode * new_arg_element,
-                        graph_ptr()->CopyNode(arg_element, copied_nodes_map));
+    PL_ASSIGN_OR_RETURN(IRNode * new_arg_element, graph()->CopyNode(arg_element, copied_nodes_map));
     DCHECK(Match(new_arg_element, DataNode()));
     arg_values.push_back(static_cast<DataIR*>(new_arg_element));
   }
@@ -1868,7 +1864,7 @@ Status RollingIR::Init(OperatorIR* parent, ColumnIR* window_col, ExpressionIR* w
 }
 
 Status RollingIR::SetWindowSize(ExpressionIR* window_size) {
-  PL_ASSIGN_OR_RETURN(window_size_, graph_ptr()->OptionallyCloneWithEdge(this, window_size));
+  PL_ASSIGN_OR_RETURN(window_size_, graph()->OptionallyCloneWithEdge(this, window_size));
   return Status::OK();
 }
 
@@ -1879,13 +1875,13 @@ Status RollingIR::ReplaceWindowSize(ExpressionIR* new_window_size) {
   if (window_size_ == nullptr) {
     return SetWindowSize(new_window_size);
   }
-  PL_RETURN_IF_ERROR(graph_ptr()->DeleteNode(window_size_->id()));
+  PL_RETURN_IF_ERROR(graph()->DeleteNode(window_size_->id()));
   PL_RETURN_IF_ERROR(SetWindowSize(new_window_size));
   return Status::OK();
 }
 
 Status RollingIR::SetWindowCol(ColumnIR* window_col) {
-  PL_ASSIGN_OR_RETURN(window_col_, graph_ptr()->OptionallyCloneWithEdge(this, window_col));
+  PL_ASSIGN_OR_RETURN(window_col_, graph()->OptionallyCloneWithEdge(this, window_col));
   return Status::OK();
 }
 
@@ -1893,16 +1889,16 @@ Status RollingIR::CopyFromNodeImpl(const IRNode* source,
                                    absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   const RollingIR* rolling_node = static_cast<const RollingIR*>(source);
   PL_ASSIGN_OR_RETURN(IRNode * new_window_col,
-                      graph_ptr()->CopyNode(rolling_node->window_col(), copied_nodes_map));
+                      graph()->CopyNode(rolling_node->window_col(), copied_nodes_map));
   DCHECK(Match(new_window_col, ColumnNode()));
   PL_RETURN_IF_ERROR(SetWindowCol(static_cast<ColumnIR*>(new_window_col)));
   PL_ASSIGN_OR_RETURN(IRNode * new_window_size,
-                      graph_ptr()->CopyNode(rolling_node->window_size(), copied_nodes_map));
+                      graph()->CopyNode(rolling_node->window_size(), copied_nodes_map));
   DCHECK(Match(new_window_size, DataNode()));
   PL_RETURN_IF_ERROR(SetWindowSize(static_cast<DataIR*>(new_window_size)));
   std::vector<ColumnIR*> new_groups;
   for (const ColumnIR* column : rolling_node->groups()) {
-    PL_ASSIGN_OR_RETURN(ColumnIR * new_column, graph_ptr()->CopyNode(column, copied_nodes_map));
+    PL_ASSIGN_OR_RETURN(ColumnIR * new_column, graph()->CopyNode(column, copied_nodes_map));
     new_groups.push_back(new_column);
   }
   return SetGroups(new_groups);

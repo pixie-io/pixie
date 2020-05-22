@@ -2389,9 +2389,8 @@ TEST_F(RulesTest, PropagateExpressionAnnotationsRule_join) {
                      .ConsumeValueOrDie();
   auto map_col1 = MakeColumn("key_x", 0);
   auto map_col2 = MakeColumn("latency", 0);
-  auto last_node =
-      MakeMap(join, {{"annotations_col", map_col1}, {"non_annotations_col", map_col2}});
-  MakeMemSink(last_node, "foo", {});
+  auto last = MakeMap(join, {{"annotations_col", map_col1}, {"non_annotations_col", map_col2}});
+  MakeMemSink(last, "foo", {});
 
   // use this to set data types, this rule will run before PropagateExpressionAnnotationsRule.
   DataTypeRule data_rule(compiler_state_.get());
