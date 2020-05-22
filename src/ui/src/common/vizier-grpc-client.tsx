@@ -117,6 +117,7 @@ export class VizierGRPCClient {
       const call = this.client.executeScript(req, headers);
       const tablesMap = new Map<string, Table>();
       const results: VizierQueryResult = { tables: [] };
+      let resolved = false;
 
       call.on('data', (resp) => {
         if (!results.queryId) {
@@ -133,6 +134,7 @@ export class VizierGRPCClient {
 
           results.status = status;
           resolve(results);
+          resolved = true;
           return;
         }
 
@@ -163,8 +165,15 @@ export class VizierGRPCClient {
             // The query finished executing, and all the data has been received.
             results.executionStats = data.getExecutionStats();
             resolve(results);
+            resolved = true;
             return;
           }
+        }
+      });
+
+      call.on('end', () => {
+        if (!resolved) {
+          reject(new VizierQueryError('execution', 'Execution ended with incomplete results'));
         }
       });
 

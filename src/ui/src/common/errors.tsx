@@ -43,7 +43,7 @@ export const VizierErrorDetails = (props: { error: Error }) => {
   const classes = useStyles();
   const details = (error as VizierQueryError).details;
 
-  if (details === 'string') {
+  if (typeof details === 'string') {
     return <div className={classes.errorRow}>{details}</div>;
   }
   if (Array.isArray(details)) {
