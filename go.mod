@@ -36,6 +36,7 @@ require (
 	github.com/gdamore/tcell v1.3.0
 	github.com/getsentry/sentry-go v0.5.1
 	github.com/gogo/protobuf v1.3.1
+	github.com/gogo/status v1.1.0
 	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.4.2

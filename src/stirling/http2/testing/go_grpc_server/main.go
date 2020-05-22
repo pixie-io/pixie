@@ -10,7 +10,9 @@ import (
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
+	status "google.golang.org/grpc/status"
 	pb "pixielabs.ai/pixielabs/src/stirling/http2/testing/proto"
 )
 
@@ -26,11 +28,27 @@ func (s *server) SayHelloAgain(ctx context.Context, in *pb.HelloRequest) (*pb.He
 	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
 }
 
+func (s *server) SayHelloServerStreaming(in *pb.HelloRequest, srv pb.StreamingGreeter_SayHelloServerStreamingServer) error {
+	log.Printf("SayHelloServerStreaming, in: %v\n", in)
+	// Send 3 responses each time. We do not care much about the exact number of responses, this is for executing the
+	// server streaming mechanism and observe the underlying HTTP2 framing data.
+	for i := 0; i < 3; i++ {
+		srv.Send(&pb.HelloReply{Message: "Hello " + in.Name})
+	}
+	return nil
+}
+
+func (s *server) SayHelloBidirStreaming(srv pb.StreamingGreeter_SayHelloBidirStreamingServer) error {
+	return status.Errorf(codes.Unimplemented, "method SayHelloBidirStreaming not implemented")
+}
+
 func main() {
 	var port = flag.Int("port", 0, "The port to listen.")
 	var https = flag.Bool("https", false, "Whether or not to use https")
 	var cert = flag.String("cert", "", "Path to the .crt file.")
 	var key = flag.String("key", "", "Path to the .key file.")
+	var streaming = flag.Bool("streaming", false, "Whether or not to call streaming RPC")
+
 	const keyPairBase = "src/stirling/http2/testing/go_grpc_server"
 
 	flag.Parse()
@@ -68,7 +86,14 @@ func main() {
 	fmt.Print(lis.Addr().(*net.TCPAddr).Port)
 
 	s := grpc.NewServer()
-	pb.RegisterGreeterServer(s, &server{})
+
+	if *streaming {
+		log.Printf("Launching streaming server")
+		pb.RegisterStreamingGreeterServer(s, &server{})
+	} else {
+		log.Printf("Launching unary server")
+		pb.RegisterGreeterServer(s, &server{})
+	}
 	// Register reflection service on gRPC server.
 	reflection.Register(s)
 	if err := s.Serve(lis); err != nil {

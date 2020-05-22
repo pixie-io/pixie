@@ -3190,3 +3190,17 @@ go_repository(
     sum = "h1:WE2OlRf6wjLxHwNkkFLQGaZcVLEXjMjBPjjEU5vksH8=",
     version = "v2.4.0+incompatible",
 )
+
+go_repository(
+    name = "com_github_gogo_googleapis",
+    importpath = "github.com/gogo/googleapis",
+    sum = "h1:dR8+Q0uO5S2ZBcs2IH6VBKYwSxPo2vYCYq0ot0mu7xA=",
+    version = "v0.0.0-20180223154316-0cd9801be74a",
+)
+
+go_repository(
+    name = "com_github_gogo_status",
+    importpath = "github.com/gogo/status",
+    sum = "h1:+eIkrewn5q6b30y+g/BJINVVdi2xH7je5MPJ3ZPK3JA=",
+    version = "v1.1.0",
+)
