@@ -3,15 +3,30 @@
 #include <string>
 #include <vector>
 
+#include <absl/strings/substitute.h>
+
 #include "src/common/testing/testing.h"
 #include "src/shared/metadata/base_types.h"
 #include "src/shared/types/column_wrapper.h"
 
 namespace pl {
+
+namespace types {
+
+// Teach gMock to print out a SharedColumnWrapper.
+inline std::ostream& operator<<(std::ostream& os, const ::pl::types::SharedColumnWrapper& col) {
+  os << absl::Substitute("size=$0", col->Size());
+  return os;
+}
+
+}  // namespace types
+
 namespace stirling {
 namespace testing {
 
-MATCHER_P(ColWrapperSizeIs, size, "") { return arg->Size() == static_cast<size_t>(size); }
+MATCHER_P(ColWrapperSizeIs, size, absl::Substitute("is a ColumnWrapper having $0 elements", size)) {
+  return arg->Size() == static_cast<size_t>(size);
+}
 
 std::vector<size_t> FindRecordIdxMatchesPid(const types::ColumnWrapperRecordBatch& http_record,
                                             int upid_column_idx, int pid) {
