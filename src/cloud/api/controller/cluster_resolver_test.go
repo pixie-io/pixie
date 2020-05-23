@@ -68,7 +68,7 @@ func TestCreateCluster(t *testing.T) {
 	})
 }
 
-func TestClusterInfo(t *testing.T) {
+func TestClusterInfoWithoutID(t *testing.T) {
 	gqlEnv, _, mockVzSvc, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
@@ -132,7 +132,73 @@ func TestClusterInfo(t *testing.T) {
 	})
 }
 
-func TestClusterConnectionInfo(t *testing.T) {
+func TestClusterInfo(t *testing.T) {
+	gqlEnv, _, mockVzSvc, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	clusterInfo := &cloudapipb.ClusterInfo{
+		ID:              utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		Status:          cloudapipb.CS_HEALTHY,
+		LastHeartbeatNs: 4 * 1000 * 1000,
+		Config: &cloudapipb.VizierConfig{
+			PassthroughEnabled: false,
+		},
+		VizierVersion:  "vzVersion",
+		ClusterVersion: "clusterVersion",
+		ClusterName:    "clusterName",
+		ClusterUID:     "clusterUID",
+	}
+
+	mockVzSvc.EXPECT().GetClusterInfo(gomock.Any(), &cloudapipb.GetClusterInfoRequest{
+		ID: clusterInfo.ID,
+	}).
+		Return(&cloudapipb.GetClusterInfoResponse{
+			Clusters: []*cloudapipb.ClusterInfo{clusterInfo},
+		}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					cluster(id: "7ba7b810-9dad-11d1-80b4-00c04fd430c8") {
+						id
+						status
+						lastHeartbeatMs
+						vizierConfig {
+							passthroughEnabled
+						}
+						vizierVersion
+						clusterVersion
+						clusterName
+						clusterUID
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"cluster": {
+						"id":"7ba7b810-9dad-11d1-80b4-00c04fd430c8",
+						"status": "CS_HEALTHY",
+						"lastHeartbeatMs": 4,
+						"vizierConfig": {
+							"passthroughEnabled": false
+						},
+						"vizierVersion": "vzVersion",
+						"clusterVersion": "clusterVersion",
+						"clusterName": "clusterName",
+						"clusterUID": "clusterUID"
+					}
+				}
+			`,
+		},
+	})
+}
+
+func TestClusterConnectionInfoWithoutID(t *testing.T) {
 	gqlEnv, _, mockVzSvc, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
@@ -169,6 +235,46 @@ func TestClusterConnectionInfo(t *testing.T) {
 			Query: `
 				query {
 					clusterConnection {
+						ipAddress
+						token
+					}
+				}
+			`,
+			ExpectedResult: `
+				{
+					"clusterConnection": {
+						"ipAddress": "127.0.0.1",
+						"token": "this-is-a-token"
+					}
+				}
+			`,
+		},
+	})
+}
+
+func TestClusterConnectionInfo(t *testing.T) {
+	gqlEnv, _, mockVzSvc, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	clusterID := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	mockVzSvc.EXPECT().GetClusterConnectionInfo(gomock.Any(), &cloudapipb.GetClusterConnectionInfoRequest{
+		ID: clusterID,
+	}).
+		Return(&cloudapipb.GetClusterConnectionInfoResponse{
+			IPAddress: "127.0.0.1",
+			Token:     "this-is-a-token",
+		}, nil)
+
+	gqlSchema := LoadSchema(gqlEnv)
+	gqltesting.RunTests(t, []*gqltesting.Test{
+		{
+			Schema:  gqlSchema,
+			Context: ctx,
+			Query: `
+				query {
+					clusterConnection(id: "7ba7b810-9dad-11d1-80b4-00c04fd430c8") {
 						ipAddress
 						token
 					}

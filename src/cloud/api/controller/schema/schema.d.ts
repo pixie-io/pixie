@@ -15,6 +15,7 @@ import { GraphQLResolveInfo } from 'graphql';
 export interface GQLQuery {
   user: GQLUserInfo;
   cluster: GQLClusterInfo;
+  clusters: Array<GQLClusterInfo>;
   clusterConnection: GQLClusterConnectionInfo;
   cliArtifact: GQLCLIArtifact;
   artifacts: GQLArtifactsInfo;
@@ -179,6 +180,7 @@ export interface GQLResolver {
 export interface GQLQueryTypeResolver<TParent = any> {
   user?: QueryToUserResolver<TParent>;
   cluster?: QueryToClusterResolver<TParent>;
+  clusters?: QueryToClustersResolver<TParent>;
   clusterConnection?: QueryToClusterConnectionResolver<TParent>;
   cliArtifact?: QueryToCliArtifactResolver<TParent>;
   artifacts?: QueryToArtifactsResolver<TParent>;
@@ -194,12 +196,22 @@ export interface QueryToUserResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
+export interface QueryToClusterArgs {
+  id?: string;
+}
 export interface QueryToClusterResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: QueryToClusterArgs, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface QueryToClustersResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
+export interface QueryToClusterConnectionArgs {
+  id?: string;
+}
 export interface QueryToClusterConnectionResolver<TParent = any, TResult = any> {
-  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+  (parent: TParent, args: QueryToClusterConnectionArgs, context: any, info: GraphQLResolveInfo): TResult;
 }
 
 export interface QueryToCliArtifactArgs {

@@ -9,6 +9,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils"
 )
@@ -29,23 +30,16 @@ func (q *QueryResolver) CreateCluster(ctx context.Context) (*ClusterInfoResolver
 	return &ClusterInfoResolver{clusterID: u}, nil
 }
 
+type clusterArgs struct {
+	ID *graphql.ID
+}
+
 // ClusterResolver is the resolver responsible for clusters belonging to the given org.
 type ClusterResolver struct {
 	SessionCtx *authcontext.AuthContext
 }
 
-// Cluster resolves cluster information.
-func (q *QueryResolver) Cluster(ctx context.Context) (*ClusterInfoResolver, error) {
-	grpcAPI := q.Env.VizierClusterInfo
-	res, err := grpcAPI.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
-	if err != nil {
-		return nil, err
-	}
-	if len(res.Clusters) == 0 {
-		return nil, errors.New("org has no clusters")
-	}
-	// Take first cluster for now.
-	cluster := res.Clusters[0]
+func clusterInfoToResolver(cluster *cloudapipb.ClusterInfo) (*ClusterInfoResolver, error) {
 	clusterID, err := utils.UUIDFromProto(cluster.ID)
 	if err != nil {
 		return nil, err
@@ -60,6 +54,55 @@ func (q *QueryResolver) Cluster(ctx context.Context) (*ClusterInfoResolver, erro
 		&cluster.ClusterUID,
 		&cluster.ClusterName,
 	}, nil
+}
+
+// Clusters lists all of the clusters.
+func (q *QueryResolver) Clusters(ctx context.Context) ([]*ClusterInfoResolver, error) {
+	grpcAPI := q.Env.VizierClusterInfo
+	resp, err := grpcAPI.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	var res []*ClusterInfoResolver
+	for _, cluster := range resp.Clusters {
+		resolver, err := clusterInfoToResolver(cluster)
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, resolver)
+	}
+	return res, nil
+}
+
+// Cluster resolves cluster information.
+func (q *QueryResolver) Cluster(ctx context.Context, args *clusterArgs) (*ClusterInfoResolver, error) {
+	if args == nil || args.ID == nil {
+		clusters, err := q.Clusters(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if len(clusters) == 0 {
+			return nil, errors.New("org has no clusters")
+		}
+		// Take first cluster for now.
+		return clusters[0], nil
+	}
+
+	grpcAPI := q.Env.VizierClusterInfo
+	res, err := grpcAPI.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{
+		ID: utils.ProtoFromUUIDStrOrNil(string(*(args.ID))),
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(res.Clusters) == 0 {
+		return nil, errors.New("org has no matching clusters")
+	}
+	if len(res.Clusters) != 1 {
+		return nil, errors.New("got multiple matching clusters for ID")
+	}
+	return clusterInfoToResolver(res.Clusters[0])
 }
 
 // VizierConfigResolver is the resolver responsible for config belonging to the given cluster.
@@ -152,23 +195,28 @@ func (c *ClusterInfoResolver) VizierVersion() *string {
 // ClusterConnection resolves cluster connection information.
 // TODO(nserrino): When we have multiple clusters per customer, we will need to change this API to take
 // a cluster ID argument to match the GRPC one.
-func (q *QueryResolver) ClusterConnection(ctx context.Context) (*ClusterConnectionInfoResolver, error) {
+func (q *QueryResolver) ClusterConnection(ctx context.Context, args *clusterArgs) (*ClusterConnectionInfoResolver, error) {
 	grpcAPI := q.Env.VizierClusterInfo
 
-	resp, err := grpcAPI.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
-	if err != nil {
-		return nil, err
-	}
+	var clusterID *uuidpb.UUID
+	if args == nil || args.ID == nil {
+		resp, err := grpcAPI.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
+		if err != nil {
+			return nil, err
+		}
 
-	if len(resp.Clusters) == 0 {
-		return nil, errors.New("org has no clusters")
-	}
+		if len(resp.Clusters) == 0 {
+			return nil, errors.New("org has no clusters")
+		}
 
-	// Take first ID for now.
-	cluster := resp.Clusters[0]
+		// Take first ID for now.
+		clusterID = resp.Clusters[0].ID
+	} else {
+		clusterID = utils.ProtoFromUUIDStrOrNil(string(*(args.ID)))
+	}
 
 	info, err := grpcAPI.GetClusterConnectionInfo(ctx, &cloudapipb.GetClusterConnectionInfoRequest{
-		ID: cluster.ID,
+		ID: clusterID,
 	})
 	if err != nil {
 		return nil, err
