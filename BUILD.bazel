@@ -118,11 +118,18 @@ linux_headers_tarballs = [
     "@linux_headers_5_4_35_tar_gz//file:file",
 ]
 
+linux_timeconst_files = [
+    "@timeconst_100//file:file",
+    "@timeconst_250//file:file",
+    "@timeconst_300//file:file",
+    "@timeconst_1000//file:file",
+]
+
 container_image(
     name = "pl_cc_bpf_image",
     base = ":pl_cc_base_image",
     directory = "/pl",
-    files = linux_headers_tarballs,
+    files = linux_headers_tarballs + linux_timeconst_files,
     visibility = ["//visibility:public"],
 )
 
@@ -130,7 +137,7 @@ container_image(
     name = "pl_cc_bpf_debug_image",
     base = ":pl_cc_base_debug_image",
     directory = "/pl",
-    files = linux_headers_tarballs,
+    files = linux_headers_tarballs + linux_timeconst_files,
     visibility = ["//visibility:public"],
 )
 

@@ -74,29 +74,27 @@ Status CreateSymlinkIfNotExists(const std::filesystem::path& target,
   return Status::OK();
 }
 
-#define WRAP_BOOL_FN(expr)              \
-  std::error_code ec;                   \
-  if (expr) {                           \
-    return Status::OK();                \
-  }                                     \
-  if (ec) {                             \
-    return error::System(ec.message()); \
+#define WRAP_BOOL_FN(expr) \
+  std::error_code ec;      \
+  if (expr) {              \
+    return Status::OK();   \
   }
 
 Status Exists(const std::filesystem::path& path) {
   WRAP_BOOL_FN(std::filesystem::exists(path, ec))
-  return error::InvalidArgument("Path $0 does not exist", path.string());
+  return error::InvalidArgument("Path $0 does not exist [ec=$1]", path.string(), ec.message());
 }
 
 Status Copy(const std::filesystem::path& from, const std::filesystem::path& to,
             std::filesystem::copy_options options) {
   WRAP_BOOL_FN(std::filesystem::copy_file(from, to, options, ec))
-  return error::InvalidArgument("Could not copy from $0 to $1", from.string(), to.string());
+  return error::InvalidArgument("Could not copy from $0 to $1 [ec=$2]", from.string(), to.string(),
+                                ec.message());
 }
 
 Status Remove(const std::filesystem::path& f) {
   WRAP_BOOL_FN(std::filesystem::remove(f, ec))
-  return error::InvalidArgument("Could not delete $0", f.string());
+  return error::InvalidArgument("Could not delete $0 [ec=$1]", f.string(), ec.message());
 }
 
 StatusOr<std::filesystem::path> Absolute(const std::filesystem::path& path) {

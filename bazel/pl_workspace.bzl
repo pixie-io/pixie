@@ -160,6 +160,34 @@ def _artifacts_setup():
         downloaded_file_path = "linux-headers-5.4.35.tar.gz",
     )
 
+    http_file(
+        name = "timeconst_100",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/timeconst_100.h"],
+        sha256 = "082496c45ab93af811732da56000caf5ffc9e6734ff633a2b348291f160ceb7e",
+        downloaded_file_path = "timeconst_100.h",
+    )
+
+    http_file(
+        name = "timeconst_250",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/timeconst_250.h"],
+        sha256 = "0db01d74b846e39dca3612d96dee8b8f6addfaeb738cc4f5574086828487c2b9",
+        downloaded_file_path = "timeconst_250.h",
+    )
+
+    http_file(
+        name = "timeconst_300",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/timeconst_300.h"],
+        sha256 = "91c6499df71695699a296b2fdcbb8c30e9bf35d024e048fa6d2305a8ac2af9ab",
+        downloaded_file_path = "timeconst_300.h",
+    )
+
+    http_file(
+        name = "timeconst_1000",
+        urls = ["https://storage.googleapis.com/pl-infra-dev-artifacts/timeconst_1000.h"],
+        sha256 = "da0ba6765f2969482bf8eaf21249552557fe4d6831749d9cfe4c25f4661f8726",
+        downloaded_file_path = "timeconst_1000.h",
+    )
+
 # TODO(zasgar): remove this when downstream bugs relying on bazel version are removed.
 def _impl(repository_ctx):
     bazel_verision_for_upb = "bazel_version = \"" + native.bazel_version + "\""
