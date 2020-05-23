@@ -29,6 +29,7 @@ service Greeter2 {
 }
 
 service StreamingGreeter {
+  rpc SayHelloClientStreaming (stream HelloRequest) returns (HelloReply) {}
   rpc SayHelloServerStreaming (HelloRequest) returns (stream HelloReply) {}
   rpc SayHelloBidirStreaming (stream HelloRequest) returns (stream HelloReply) {}
 }

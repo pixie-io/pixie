@@ -4,15 +4,15 @@ import (
 	"crypto/tls"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"strconv"
+	"strings"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/reflection"
-	status "google.golang.org/grpc/status"
 	pb "pixielabs.ai/pixielabs/src/stirling/http2/testing/proto"
 )
 
@@ -28,6 +28,20 @@ func (s *server) SayHelloAgain(ctx context.Context, in *pb.HelloRequest) (*pb.He
 	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
 }
 
+func (s *server) SayHelloClientStreaming(srv pb.StreamingGreeter_SayHelloClientStreamingServer) error {
+	names := []string{}
+	for {
+		helloReq, err := srv.Recv()
+		if err == io.EOF {
+			return srv.SendAndClose(&pb.HelloReply{Message: "Hello " + strings.Join(names, ", ") + "!"})
+		}
+		if err != nil {
+			return err
+		}
+		names = append(names, helloReq.Name)
+	}
+}
+
 func (s *server) SayHelloServerStreaming(in *pb.HelloRequest, srv pb.StreamingGreeter_SayHelloServerStreamingServer) error {
 	log.Printf("SayHelloServerStreaming, in: %v\n", in)
 	// Send 3 responses each time. We do not care much about the exact number of responses, this is for executing the
@@ -38,8 +52,17 @@ func (s *server) SayHelloServerStreaming(in *pb.HelloRequest, srv pb.StreamingGr
 	return nil
 }
 
-func (s *server) SayHelloBidirStreaming(srv pb.StreamingGreeter_SayHelloBidirStreamingServer) error {
-	return status.Errorf(codes.Unimplemented, "method SayHelloBidirStreaming not implemented")
+func (s *server) SayHelloBidirStreaming(stream pb.StreamingGreeter_SayHelloBidirStreamingServer) error {
+	for {
+		helloReq, err := stream.Recv()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		stream.Send(&pb.HelloReply{Message: "Hello " + helloReq.Name})
+	}
 }
 
 func main() {
