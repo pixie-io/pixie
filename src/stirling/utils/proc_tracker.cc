@@ -1,6 +1,7 @@
 #include "src/stirling/utils/proc_tracker.h"
 
 #include <string>
+#include <utility>
 
 #include "src/common/system/proc_parser.h"
 
@@ -27,17 +28,19 @@ absl::flat_hash_set<md::UPID> ProcTracker::Cleanse(const absl::flat_hash_set<md:
   return res;
 }
 
-absl::flat_hash_set<md::UPID> ProcTracker::TakeSnapshotAndDiff(
-    absl::flat_hash_set<md::UPID> upids) {
-  absl::flat_hash_set<md::UPID> new_upids;
+UPIDDelta ProcTracker::TakeSnapshotAndDiff(absl::flat_hash_set<md::UPID> upids) {
+  UPIDDelta result;
   for (const auto& upid : upids) {
-    if (upids_.contains(upid)) {
+    auto iter = upids_.find(upid);
+    if (iter != upids_.end()) {
+      upids_.erase(iter);
       continue;
     }
-    new_upids.emplace(upid);
+    result.new_upids.emplace(upid);
   }
-  upids_.swap(upids);
-  return new_upids;
+  result.deleted_upids = std::move(upids_);
+  upids_ = std::move(upids);
+  return result;
 }
 
 }  // namespace stirling

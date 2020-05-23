@@ -60,9 +60,9 @@ void JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
     upids = ProcTracker::ListUPIDs(proc_path);
   }
 
-  absl::flat_hash_set<md::UPID> new_upids = proc_tracker_.TakeSnapshotAndDiff(std::move(upids));
+  UPIDDelta upid_changes = proc_tracker_.TakeSnapshotAndDiff(std::move(upids));
 
-  for (const auto& upid : new_upids) {
+  for (const auto& upid : upid_changes.new_upids) {
     // The host PID 1 is not a Java app. But ProcParser::ResolveMountPoint() is confused.
     // TODO(yzhao): Look for more robust mechanism.
     if (upid.pid() == 1) {

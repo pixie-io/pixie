@@ -336,13 +336,13 @@ std::map<std::string, std::vector<int32_t>> SocketTraceConnector::FindNewPIDs() 
   }
 
   // Consider new UPIDs only.
-  absl::flat_hash_set<md::UPID> new_upids = proc_tracker_.TakeSnapshotAndDiff(std::move(upids));
+  UPIDDelta upid_changes = proc_tracker_.TakeSnapshotAndDiff(std::move(upids));
 
   // Convert to a map of binaries, with the upids that are instances of that binary.
   std::filesystem::path host_path = system::Config::GetInstance().host_path();
   std::map<std::string, std::vector<int32_t>> new_pids;
 
-  for (const auto& upid : new_upids) {
+  for (const auto& upid : upid_changes.new_upids) {
     std::filesystem::path pid_path = proc_path / std::to_string(upid.pid());
     auto host_exe_or = GetActiveBinary(host_path, pid_path);
     if (!host_exe_or.ok()) {

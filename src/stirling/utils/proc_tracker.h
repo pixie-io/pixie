@@ -9,6 +9,11 @@
 namespace pl {
 namespace stirling {
 
+struct UPIDDelta {
+  absl::flat_hash_set<md::UPID> new_upids;
+  absl::flat_hash_set<md::UPID> deleted_upids;
+};
+
 /**
  * Keeps a list of UPIDs. Tracks newly-created and terminated process, each time when a system-wide
  * rescanning is requested, and update its internal list of UPIDs.
@@ -33,7 +38,7 @@ class ProcTracker : NotCopyMoveable {
    * processes since last snapshot.
    */
   // TODO(yzhao): Consider calling ListUPIDs() directly inside TakeSnapshotAndDiff().
-  absl::flat_hash_set<md::UPID> TakeSnapshotAndDiff(absl::flat_hash_set<md::UPID> upids);
+  UPIDDelta TakeSnapshotAndDiff(absl::flat_hash_set<md::UPID> upids);
 
   const auto& upids() const { return upids_; }
 
