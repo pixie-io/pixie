@@ -385,6 +385,10 @@ Status SocketTraceConnector::UpdateHTTP2TypeAddrs(ElfReader* elf_reader,
               "go.itab.*google.golang.org/grpc/credentials/internal.syscallConn,net.Conn");
   GET_SYMADDR(symaddrs->tls_conn, "go.itab.*crypto/tls.Conn,net.Conn");
   GET_SYMADDR(symaddrs->tcp_conn, "go.itab.*net.TCPConn,net.Conn");
+  GET_SYMADDR(symaddrs->http_http2bufferedWriter,
+              "go.itab.*net/http.http2bufferedWriter,io.Writer");
+  GET_SYMADDR(symaddrs->transport_bufWriter,
+              "go.itab.*google.golang.org/grpc/internal/transport.bufWriter,io.Writer");
 
 #undef GET_SYMADDR
 

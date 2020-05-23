@@ -134,6 +134,9 @@ static __inline int32_t get_fd_from_http2_Framer(const void* framer_ptr,
 
   // At this point, we have the following struct:
   // go.itab.*google.golang.org/grpc/internal/transport.bufWriter,io.Writer
+  if (io_writer_interface.type != symaddrs->transport_bufWriter) {
+    return kInvalidFD;
+  }
 
   struct go_interface conn_intf;
   bpf_probe_read(&conn_intf, sizeof(conn_intf),
@@ -143,10 +146,12 @@ static __inline int32_t get_fd_from_http2_Framer(const void* framer_ptr,
 }
 
 // Returns the file descriptor from a http.http2Framer object.
+// Essentially accesses framer_ptr.w.w.conn.
 static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
                                                      struct conn_symaddrs_t* symaddrs) {
   REQUIRE_SYMADDR(symaddrs->http2Framer_w_offset, kInvalidFD);
   REQUIRE_SYMADDR(symaddrs->http2bufferedWriter_w_offset, kInvalidFD);
+  REQUIRE_SYMADDR(symaddrs->tlsConn_conn_offset, kInvalidFD);
 
   struct go_interface io_writer_interface;
   bpf_probe_read(&io_writer_interface, sizeof(io_writer_interface),
@@ -154,18 +159,29 @@ static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
 
   // At this point, we have the following struct:
   // go.itab.*net/http.http2bufferedWriter,io.Writer
+  if (io_writer_interface.type != symaddrs->http_http2bufferedWriter) {
+    return kInvalidFD;
+  }
 
-  // We have to dereference one more time, to get the inner io.Writer:
   struct go_interface inner_io_writer_interface;
   bpf_probe_read(&inner_io_writer_interface, sizeof(inner_io_writer_interface),
                  io_writer_interface.ptr + symaddrs->http2bufferedWriter_w_offset);
 
-  // Now get the struct implementing net.Conn.
-  // TODO(oazizi): Convert to using DWARF information.
-  const int kIOWriterConnOffset = 0;
+  // At this point, we have something like the following struct:
+  // io.Writer(*crypto/tls.Conn)
+  //
+  // Note that it is an io.Writer interface, not a net.Conn interface.
+  // In this case, it is implemented by tls.Conn, which could fit either io.Writer or net.Conn.
+  // Since it is not a net.Conn interface, we need to perform an extra dereference to get
+  // to a net.Conn interface that we can examine for the FD.
+  // TODO(oazizi): It may be possible that is implemented by some other Conn type,
+  //               but this code only works for tls.Conn.
+  // Still have to figure out how golang figures this out dynamically, given that
+  // we're not seeing the expected interface type.
+
   struct go_interface conn_intf;
   bpf_probe_read(&conn_intf, sizeof(conn_intf),
-                 inner_io_writer_interface.ptr + kIOWriterConnOffset);
+                 inner_io_writer_interface.ptr + symaddrs->tlsConn_conn_offset);
 
   return get_fd_from_conn_intf(conn_intf);
 }

@@ -88,10 +88,14 @@ enum ControlValueIndex {
 };
 
 struct conn_symaddrs_t {
-  // Conn interface types.
+  // net.Conn interface types.
   int64_t syscall_conn;
   int64_t tls_conn;
   int64_t tcp_conn;
+
+  // io.Writer interface types.
+  int64_t http_http2bufferedWriter;  // "go.itab.*net/http.http2bufferedWriter,io.Writer;
+  int64_t transport_bufWriter;  // "google.golang.org/grpc/internal/transport.bufWriter,io.Writer;
 
   // Struct member offsets.
   // Naming maintains golang style: <struct>_<member>_offset
@@ -100,6 +104,9 @@ struct conn_symaddrs_t {
 
   // Members of internal/poll.FD.
   int32_t FD_Sysfd_offset;  // 16
+
+  // Members of crypto/tls.Conn.
+  int32_t tlsConn_conn_offset;  // 0
 
   // Members of golang.org/x/net/http2/hpack.HeaderField.
   int32_t HeaderField_Name_offset;   // 0
