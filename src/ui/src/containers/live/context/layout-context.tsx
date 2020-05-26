@@ -1,6 +1,9 @@
 import * as storage from 'common/storage';
 import * as React from 'react';
 
+import { useTheme } from '@material-ui/core/styles';
+import useMediaQuery from '@material-ui/core/useMediaQuery';
+
 type SetSplitSizesFunc = (sizes: [number, number]) => void;
 type SetOpenFunc = React.Dispatch<React.SetStateAction<boolean>>;
 type Splits = [number, number];
@@ -15,6 +18,8 @@ interface LayoutContextProps {
   dataDrawerOpen: boolean;
   setDataDrawerSplitsSizes: SetSplitSizesFunc;
   setDataDrawerOpen: SetOpenFunc;
+
+  isMobile: boolean;
 }
 
 export const LayoutContext = React.createContext<LayoutContextProps>(null);
@@ -30,6 +35,9 @@ export const LayoutContextProvider = (props) => {
   const [dataDrawerOpen, setDataDrawerOpen] =
     storage.useLocalStorage<boolean>(storage.LIVE_VIEW_DATA_DRAWER_OPENED_KEY, false);
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('xs')); // width < 600px
+
   return (
     <LayoutContext.Provider
       value={{
@@ -41,6 +49,7 @@ export const LayoutContextProvider = (props) => {
         dataDrawerOpen,
         setDataDrawerSplitsSizes,
         setDataDrawerOpen,
+        isMobile,
       }}>
       {props.children}
     </LayoutContext.Provider >
