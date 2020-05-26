@@ -115,7 +115,7 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
   GRPCClientContainer client_;
 };
 
-TEST_F(HTTP2TraceTest, Basic) {
+TEST_F(HTTP2TraceTest, DISABLED_Basic) {
   // Run the server in the network of the server, so they can connect to each other.
   PL_CHECK_OK(
       client_.Run(10, {absl::Substitute("--network=container:$0", server_.container_name())}));
