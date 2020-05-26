@@ -6,7 +6,6 @@
 #include <vector>
 
 #include "src/common/base/base.h"
-#include "src/stirling/bcc_bpf_interface/common.h"
 
 namespace pl {
 namespace stirling {

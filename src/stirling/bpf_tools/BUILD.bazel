@@ -17,7 +17,6 @@ pl_cc_library(
         ],
     ),
     deps = [
-        "//src/stirling/bcc_bpf_interface:cc_library",
         "//src/stirling/obj_tools:cc_library",
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": [
@@ -36,8 +35,8 @@ pl_cc_binary(
 
 pl_cc_test(
     name = "bcc_wrapper_test",
-    data = ["//src/stirling/obj_tools/testdata:dummy_exe"],
     srcs = ["bcc_wrapper_test.cc"],
-    deps = [":cc_library"],
+    data = ["//src/stirling/obj_tools/testdata:dummy_exe"],
     tags = ["requires_bpf"],
+    deps = [":cc_library"],
 )
