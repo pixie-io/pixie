@@ -1,5 +1,6 @@
 import Axios from 'axios';
 import Autocomplete from 'components/autocomplete';
+import AutocompleteInputField from 'components/autocomplete/autocomplete-field';
 import Completions from 'components/autocomplete/completions';
 import FormInput from 'components/autocomplete/form';
 import Input from 'components/autocomplete/input';
@@ -61,7 +62,6 @@ storiesOf('AutoComplete', module)
     const [active, setActive] = React.useState('');
     return (
       <Completions
-        inputValue='script'
         items={[
           { type: 'header', header: 'Recently used' },
           {
@@ -123,6 +123,43 @@ storiesOf('AutoComplete', module)
       }}
     />
   ), {
+    info: { inline: true },
+    notes: 'completions list with active item',
+  })
+  .add('autocomplete field component', () => {
+    const [value, setValue] = React.useState('');
+    return (
+      <AutocompleteInputField
+        name='An autocomplete input'
+        value={value}
+        onValueChange={setValue}
+        getCompletions={async (input) => {
+          // Add some fake delay to the API call.
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+          if (!input) {
+            return [];
+          }
+          const resp = await Axios({
+            method: 'get',
+            url: 'https://api.datamuse.com/sug',
+            params: { s: input },
+          });
+
+          if (resp.status !== 200) {
+            return [];
+          }
+          return [
+            { type: 'header', header: 'suggestions' },
+            ...resp.data.map((suggestion, i) => ({
+              type: 'item',
+              title: suggestion.word,
+              id: i,
+            })),
+          ];
+        }}
+      />
+    );
+  }, {
     info: { inline: true },
     notes: 'completions list with active item',
   });

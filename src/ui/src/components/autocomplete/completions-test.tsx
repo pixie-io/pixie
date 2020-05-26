@@ -1,8 +1,8 @@
-import {shallow} from 'enzyme';
+import { shallow } from 'enzyme';
 import * as React from 'react';
-import {noop} from 'utils/testing';
+import { noop } from 'utils/testing';
 
-import Completions, {Completion} from './completions';
+import Completions, { Completion } from './completions';
 
 jest.mock('clsx', () => ({ default: jest.fn() }));
 
@@ -10,7 +10,6 @@ describe('<Completions/> test', () => {
   it('renders', () => {
     const wrapper = shallow(
       <Completions
-        inputValue='script'
         items={[
           { type: 'header', header: 'Recently used' },
           { type: 'item', title: 'px/script1', id: 'px-0', highlights: [[3, 5]] },

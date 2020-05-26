@@ -129,7 +129,6 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
       <Completions
         className={classes.completions}
         items={completions}
-        inputValue={inputValue}
         onActiveChange={setActiveItem}
         onSelection={handleSelection}
         activeItem={activeItem}

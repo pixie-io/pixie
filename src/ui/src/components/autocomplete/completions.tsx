@@ -1,11 +1,10 @@
 import clsx from 'clsx';
 import * as React from 'react';
-import {isInView} from 'utils/bbox';
+import { isInView } from 'utils/bbox';
 
-import {createStyles, makeStyles, Theme} from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 interface CompletionsProps {
-  inputValue: string;
   items: CompletionItems;
   activeItem?: string;
   onActiveChange: (id: string) => void;
