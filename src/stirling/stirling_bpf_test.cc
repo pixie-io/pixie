@@ -32,8 +32,9 @@ class StirlingBPFTest : public ::testing::Test {
     stirling_ = Stirling::Create(std::move(registry));
 
     // Set dummy callbacks for agent function.
-    stirling_->RegisterCallback(std::bind(&StirlingBPFTest::AppendData, this, std::placeholders::_1,
-                                          std::placeholders::_2, std::placeholders::_3));
+    stirling_->RegisterDataPushCallback(std::bind(&StirlingBPFTest::AppendData, this,
+                                                  std::placeholders::_1, std::placeholders::_2,
+                                                  std::placeholders::_3));
     stirling_->RegisterAgentMetadataCallback(
         std::bind(&StirlingBPFTest::DummyMetadataCallback, this));
   }

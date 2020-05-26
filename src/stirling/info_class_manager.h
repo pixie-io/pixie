@@ -124,7 +124,7 @@ class InfoClassManager final : public NotCopyable {
   /**
    * @brief Push data by using the callback.
    */
-  void PushData(PushDataCallback agent_callback);
+  void PushData(DataPushCallback agent_callback);
 
   /**
    * @brief Notify function to update state after making changes to the schema.

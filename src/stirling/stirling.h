@@ -105,7 +105,7 @@ class Stirling : public NotCopyable {
    *   uint64_t table_id
    *   std::unique_ptr<ColumnWrapperRecordBatch> data
    */
-  virtual void RegisterCallback(PushDataCallback f) = 0;
+  virtual void RegisterDataPushCallback(DataPushCallback f) = 0;
 
   /**
    * @brief Register a callback from the agent to fetch the latest metadata state.

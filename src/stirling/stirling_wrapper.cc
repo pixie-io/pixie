@@ -169,7 +169,7 @@ int main(int argc, char** argv) {
   table_id_to_name_map = stirling->TableIDToNameMap();
 
   // Set a dummy callback function (normally this would be in the agent).
-  stirling->RegisterCallback(StirlingWrapperCallback);
+  stirling->RegisterDataPushCallback(StirlingWrapperCallback);
   stirling->RegisterAgentMetadataCallback(AgentMetadataCallback);
 
   // Timezone used by the callback function to print timestamps.

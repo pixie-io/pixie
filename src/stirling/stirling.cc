@@ -125,7 +125,7 @@ class StirlingImpl final : public Stirling {
 
   void GetPublishProto(stirlingpb::Publish* publish_pb) override;
   Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) override;
-  void RegisterCallback(PushDataCallback f) override { agent_callback_ = f; }
+  void RegisterDataPushCallback(DataPushCallback f) override { data_push_callback_ = f; }
   void RegisterAgentMetadataCallback(AgentMetadataCallback f) override {
     agent_metadata_callback_ = f;
   }
@@ -194,9 +194,9 @@ class StirlingImpl final : public Stirling {
    *   uint64_t table_id
    *   std::unique_ptr<ColumnWrapperRecordBatch> data
    */
-  PushDataCallback agent_callback_;
+  DataPushCallback data_push_callback_ = nullptr;
 
-  AgentMetadataCallback agent_metadata_callback_;
+  AgentMetadataCallback agent_metadata_callback_ = nullptr;
   AgentMetadataType agent_metadata_;
 };
 
@@ -288,7 +288,7 @@ Status StirlingImpl::SetSubscription(const stirlingpb::Subscribe& subscribe_prot
   // Last append before clearing tables from old subscriptions.
   for (const auto& mgr : info_class_mgrs_) {
     if (mgr->subscribed()) {
-      mgr->PushData(agent_callback_);
+      mgr->PushData(data_push_callback_);
     }
   }
   tables_.clear();
@@ -302,7 +302,7 @@ Status StirlingImpl::SetSubscription(const stirlingpb::Subscribe& subscribe_prot
       auto data_table = std::make_unique<DataTable>(mgr->Schema());
       mgr->SetDataTable(data_table.get());
       // TODO(kgandhi): PL-426
-      // Set sampling frequency based on input from Vizer.
+      // Set sampling frequency based on input from Vizier.
       tables_.push_back(std::move(data_table));
     }
   }
@@ -312,7 +312,7 @@ Status StirlingImpl::SetSubscription(const stirlingpb::Subscribe& subscribe_prot
 
 // Main call to start the data collection.
 Status StirlingImpl::RunAsThread() {
-  if (agent_callback_ == nullptr) {
+  if (data_push_callback_ == nullptr) {
     return error::Internal("No callback function is registered in Stirling. Refusing to run.");
   }
 
@@ -352,7 +352,7 @@ void StirlingImpl::WaitForStop() {
 }
 
 void StirlingImpl::Run() {
-  if (agent_callback_ == nullptr) {
+  if (data_push_callback_ == nullptr) {
     LOG(ERROR) << "No callback function is registered in Stirling. Refusing to run.";
     return;
   }
@@ -399,7 +399,7 @@ void StirlingImpl::RunCore() {
 
           // Phase 2: Push Data upstream.
           if (mgr->PushRequired()) {
-            mgr->PushData(agent_callback_);
+            mgr->PushData(data_push_callback_);
           }
 
           // Optional: Update sampling periods if we are dropping data.

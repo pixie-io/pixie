@@ -137,8 +137,9 @@ class StirlingTest : public ::testing::Test {
     stirling_ = Stirling::Create(std::move(registry));
 
     // Set a dummy callback function (normally this would be in the agent).
-    stirling_->RegisterCallback(std::bind(&StirlingTest::AppendData, this, std::placeholders::_1,
-                                          std::placeholders::_2, std::placeholders::_3));
+    stirling_->RegisterDataPushCallback(std::bind(&StirlingTest::AppendData, this,
+                                                  std::placeholders::_1, std::placeholders::_2,
+                                                  std::placeholders::_3));
     // Set a dummy callback for the agent metadata (normally done by the agent).
     stirling_->RegisterAgentMetadataCallback(
         std::bind(&StirlingTest::DummyAgentMetadataCallback, this));
@@ -348,7 +349,7 @@ TEST_F(StirlingTest, hammer_time_on_stirling_on_the_fly_subs) {
 
 TEST_F(StirlingTest, no_data_callback_defined) {
   Stirling* stirling = GetStirling();
-  stirling->RegisterCallback(nullptr);
+  stirling->RegisterDataPushCallback(nullptr);
   stirling->RegisterAgentMetadataCallback(
       std::bind(&StirlingTest::DummyAgentMetadataCallback, this));
 
@@ -364,8 +365,9 @@ TEST_F(StirlingTest, no_data_callback_defined) {
 
 TEST_F(StirlingTest, no_metadata_callback_defined) {
   Stirling* stirling = GetStirling();
-  stirling->RegisterCallback(std::bind(&StirlingTest::AppendData, this, std::placeholders::_1,
-                                       std::placeholders::_2, std::placeholders::_3));
+  stirling->RegisterDataPushCallback(std::bind(&StirlingTest::AppendData, this,
+                                               std::placeholders::_1, std::placeholders::_2,
+                                               std::placeholders::_3));
   stirling->RegisterAgentMetadataCallback(nullptr);
 
   // Should fail to run as a Stirling-managed thread.

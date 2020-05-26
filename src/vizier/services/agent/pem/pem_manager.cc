@@ -10,9 +10,9 @@ namespace agent {
 Status PEMManager::InitImpl() { return Status::OK(); }
 
 Status PEMManager::PostRegisterHook() {
-  stirling_->RegisterCallback(std::bind(&table_store::TableStore::AppendData, table_store(),
-                                        std::placeholders::_1, std::placeholders::_2,
-                                        std::placeholders::_3));
+  stirling_->RegisterDataPushCallback(std::bind(&table_store::TableStore::AppendData, table_store(),
+                                                std::placeholders::_1, std::placeholders::_2,
+                                                std::placeholders::_3));
 
   // Register the metadata callback for Stirling.
   stirling_->RegisterAgentMetadataCallback(

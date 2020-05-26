@@ -35,7 +35,7 @@ void InfoClassManager::SampleData(ConnectorContext* ctx) {
   sampling_count_++;
 }
 
-void InfoClassManager::PushData(PushDataCallback agent_callback) {
+void InfoClassManager::PushData(DataPushCallback agent_callback) {
   auto record_batches = data_table_->ConsumeRecordBatches();
   for (auto& record_batch : record_batches) {
     if (!record_batch.records_uptr->empty()) {

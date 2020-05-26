@@ -15,7 +15,7 @@
 namespace pl {
 namespace stirling {
 
-using PushDataCallback = std::function<void(uint32_t, types::TabletID,
+using DataPushCallback = std::function<void(uint32_t, types::TabletID,
                                             std::unique_ptr<types::ColumnWrapperRecordBatch>)>;
 
 using AgentMetadataType = std::shared_ptr<const pl::md::AgentMetadataState>;
