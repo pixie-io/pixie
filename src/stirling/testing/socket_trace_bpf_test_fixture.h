@@ -31,10 +31,7 @@ class SocketTraceBPFTest : public ::testing::Test {
     source_ = SocketTraceConnector::Create("socket_trace_connector");
     ASSERT_OK(source_->Init());
 
-    // Create a context to pass into each TransferData() in the test, using a dummy ASID.
-    static constexpr uint32_t kASID = 1;
-    auto agent_metadata_state = std::make_shared<md::AgentMetadataState>(kASID);
-    ctx_ = std::make_unique<ConnectorContext>(std::move(agent_metadata_state));
+    ctx_ = std::make_unique<ConnectorContext>();
   }
 
   void TearDown() override { ASSERT_OK(source_->Stop()); }

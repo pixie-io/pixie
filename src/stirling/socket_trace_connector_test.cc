@@ -133,7 +133,7 @@ const std::vector<std::string> kMySQLQueryResp =
 
 class SocketTraceConnectorTest : public ::testing::Test {
  protected:
-  static constexpr uint32_t kASID = 1;
+  static constexpr uint32_t kASID = 0;
 
   void SetUp() override {
     // Set the CIDR for HTTP2ServerTest, which would otherwise not output any data,
@@ -145,8 +145,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
     source_ = dynamic_cast<SocketTraceConnector*>(connector_.get());
     ASSERT_NE(nullptr, source_);
 
-    auto agent_metadata_state = std::make_shared<md::AgentMetadataState>(kASID);
-    ctx_ = std::make_unique<ConnectorContext>(agent_metadata_state);
+    ctx_ = std::make_unique<ConnectorContext>();
 
     // Because some tests change the inactivity duration, make sure to reset it here for each test.
     ConnectionTracker::SetInactivityDuration(ConnectionTracker::kDefaultInactivityDuration);

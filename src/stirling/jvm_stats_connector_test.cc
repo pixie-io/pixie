@@ -42,8 +42,7 @@ class JVMStatsConnectorTest : public ::testing::Test {
   void SetUp() override {
     connector_ = JVMStatsConnector::Create("jvm_stats_connector");
     ASSERT_OK(connector_->Init());
-    constexpr uint32_t kASID = 1;
-    ctx_ = std::make_unique<ConnectorContext>(std::make_shared<md::AgentMetadataState>(kASID));
+    ctx_ = std::make_unique<ConnectorContext>();
   }
 
   void TearDown() override { EXPECT_OK(connector_->Stop()); }
@@ -76,7 +75,8 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   md::UPID upid(record_batch[kUPIDIdx]->Get<types::UInt128Value>(idx).val);
   std::filesystem::path proc_pid_path =
       std::filesystem::path("/proc") / std::to_string(hello_world1.child_pid());
-  md::UPID expected_upid(1, hello_world1.child_pid(), system::GetPIDStartTimeTicks(proc_pid_path));
+  md::UPID expected_upid(/* asid */ 0, hello_world1.child_pid(),
+                         system::GetPIDStartTimeTicks(proc_pid_path));
   EXPECT_EQ(upid, expected_upid);
 
   EXPECT_GE(record_batch[kYoungGCTimeIdx]->Get<types::Duration64NSValue>(idx), 0);

@@ -339,14 +339,14 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
                             TRecordType record, DataTable* data_table);
 
-  absl::flat_hash_set<md::UPID> get_mds_upids() {
-    absl::MutexLock lock(&mds_upids_lock_);
-    return mds_upids_;
+  absl::flat_hash_set<md::UPID> get_upids() {
+    absl::MutexLock lock(&upids_lock_);
+    return upids_;
   }
 
-  void set_mds_upids(absl::flat_hash_set<md::UPID> upids) {
-    absl::MutexLock lock(&mds_upids_lock_);
-    mds_upids_ = std::move(upids);
+  void set_upids(absl::flat_hash_set<md::UPID> upids) {
+    absl::MutexLock lock(&upids_lock_);
+    upids_ = std::move(upids);
   }
 
   // Returns vector representing currently known cluster (pod and service) CIDRs.
@@ -413,8 +413,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   std::thread attach_uprobes_thread_;
 
   // TODO(yzhao): To have a simple synchronization model, uses Mutex + copy.
-  absl::Mutex mds_upids_lock_;
-  absl::flat_hash_set<md::UPID> mds_upids_ GUARDED_BY(mds_upids_lock_);
+  absl::Mutex upids_lock_;
+  absl::flat_hash_set<md::UPID> upids_ GUARDED_BY(upids_lock_);
 
   ProcTracker proc_tracker_;
 

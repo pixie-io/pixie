@@ -21,15 +21,10 @@ Status SystemStatsConnector::InitImpl() { return Status::OK(); }
 Status SystemStatsConnector::StopImpl() { return Status::OK(); }
 
 void SystemStatsConnector::TransferProcessStatsTable(ConnectorContext* ctx, DataTable* data_table) {
-  auto* md = ctx->AgentMetadataState();
-  if (md == nullptr) {
-    LOG(ERROR) << "SystemStatsConnector requires metadata state";
-    return;
-  }
+  const absl::flat_hash_map<md::UPID, md::PIDInfoUPtr>& pid_info_by_upid = ctx->GetPIDInfoMap();
 
   int64_t timestamp = AdjustedSteadyClockNowNS();
 
-  const auto& pid_info_by_upid = md->pids_by_upid();
   for (const auto& [upid, pid_info] : pid_info_by_upid) {
     // TODO(zasgar): Fix condition for dead pids after helper function is added.
     if (pid_info == nullptr || pid_info->stop_time_ns() > 0) {
@@ -77,13 +72,7 @@ void SystemStatsConnector::TransferProcessStatsTable(ConnectorContext* ctx, Data
 }
 
 void SystemStatsConnector::TransferNetworkStatsTable(ConnectorContext* ctx, DataTable* data_table) {
-  auto* md = ctx->AgentMetadataState();
-  if (md == nullptr) {
-    LOG(ERROR) << "SystemStatsConnector requires metadata state";
-    return;
-  }
-
-  const auto& k8s_md = md->k8s_metadata_state();
+  const md::K8sMetadataState& k8s_md = ctx->GetK8SMetadata();
 
   int64_t timestamp = AdjustedSteadyClockNowNS();
 

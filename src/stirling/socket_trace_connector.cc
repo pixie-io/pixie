@@ -291,7 +291,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   }
 
   // Refresh UPIDs from MDS so that the uprobe attaching thread can detect new processes.
-  set_mds_upids(ctx->GetMdsUpids());
+  set_upids(ctx->GetUPIDs());
 }
 
 template <typename TValueType>
@@ -330,7 +330,7 @@ std::map<std::string, std::vector<int32_t>> SocketTraceConnector::FindNewPIDs() 
   // or list all PIDs on the system if MDS is not present.
   // TODO(oazizi/yzhao): Technically the if statement is not checking for the presence of the MDS.
   // There could be a subtle bug lurking.
-  absl::flat_hash_set<md::UPID> upids = ProcTracker::Cleanse(get_mds_upids());
+  absl::flat_hash_set<md::UPID> upids = ProcTracker::Cleanse(get_upids());
   if (upids.empty()) {
     upids = ProcTracker::ListUPIDs(proc_path);
   }
@@ -876,8 +876,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
   http::PreProcessMessage(&resp_message);
 
-  md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
-                conn_tracker.pid_start_time_ticks());
+  md::UPID upid(ctx->GetASID(), conn_tracker.pid(), conn_tracker.pid_start_time_ticks());
 
   HTTPContentType content_type = HTTPContentType::kUnknown;
   if (http::IsJSONContent(resp_message)) {
@@ -923,8 +922,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   int64_t resp_status;
   ECHECK(absl::SimpleAtoi(resp_message.headers.ValueByKey(":status", "-1"), &resp_status));
 
-  md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
-                conn_tracker.pid_start_time_ticks());
+  md::UPID upid(ctx->GetASID(), conn_tracker.pid(), conn_tracker.pid_start_time_ticks());
 
   std::string path = req_message.headers.ValueByKey(http2::headers::kPath);
 
@@ -986,8 +984,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   int64_t resp_status;
   ECHECK(absl::SimpleAtoi(resp_stream->headers.ValueByKey(":status", "-1"), &resp_status));
 
-  md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
-                conn_tracker.pid_start_time_ticks());
+  md::UPID upid(ctx->GetASID(), conn_tracker.pid(), conn_tracker.pid_start_time_ticks());
 
   std::string path = req_stream->headers.ValueByKey(http2::headers::kPath);
 
@@ -1031,8 +1028,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          DataTable* data_table) {
   DCHECK_EQ(kMySQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
-  md::UPID upid(ctx->AgentMetadataState()->asid(), conn_tracker.pid(),
-                conn_tracker.pid_start_time_ticks());
+  md::UPID upid(ctx->GetASID(), conn_tracker.pid(), conn_tracker.pid_start_time_ticks());
 
   RecordBuilder<&kMySQLTable> r(data_table);
   r.Append<r.ColIndex("time_")>(entry.req.timestamp_ns);
@@ -1138,30 +1134,7 @@ void SocketTraceConnector::WriteDataEvent(const SocketDataEvent& event) {
 // TransferData Helpers
 //-----------------------------------------------------------------------------
 
-namespace {
-
-std::vector<CIDRBlock> K8sClusterCIDRs(ConnectorContext* ctx) {
-  std::vector<CIDRBlock> cluster_cidrs;
-
-  // Copy Pod CIDRs.
-  const std::vector<CIDRBlock>& pod_cidrs =
-      ctx->AgentMetadataState()->k8s_metadata_state().pod_cidrs();
-  for (const auto& pod_cidr : pod_cidrs) {
-    cluster_cidrs.push_back(pod_cidr);
-  }
-
-  // Copy Service CIDRs.
-  const std::optional<CIDRBlock>& service_cidr =
-      ctx->AgentMetadataState()->k8s_metadata_state().service_cidr();
-  if (service_cidr.has_value()) {
-    cluster_cidrs.push_back(service_cidr.value());
-  }
-
-  return cluster_cidrs;
-}
-
-}  // namespace
-
+// TODO(oazizi): Consider moving to ConnectorContext class.
 std::vector<CIDRBlock> SocketTraceConnector::ClusterCIDRs(ConnectorContext* ctx) {
   // If we have a cluster CIDR override, then just use that value.
   if (cluster_cidr_override_.has_value()) {
@@ -1169,7 +1142,7 @@ std::vector<CIDRBlock> SocketTraceConnector::ClusterCIDRs(ConnectorContext* ctx)
   }
 
   // Otherwise, use CIDRs from ctx.
-  return K8sClusterCIDRs(ctx);
+  return ctx->GetClusterCIDRs();
 }
 
 void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table_num,
@@ -1237,7 +1210,7 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
 
   namespace idx = ::pl::stirling::conn_stats_idx;
 
-  absl::flat_hash_set<md::UPID> upids = ProcTracker::Cleanse(get_mds_upids());
+  absl::flat_hash_set<md::UPID> upids = ProcTracker::Cleanse(get_upids());
   if (upids.empty()) {
     upids = ProcTracker::ListUPIDs(system::Config::GetInstance().proc_path());
   }
@@ -1256,7 +1229,7 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
     RecordBuilder<&kConnStatsTable> r(data_table);
 
     r.Append<idx::kTime>(AdjustedSteadyClockNow());
-    md::UPID upid(ctx->AgentMetadataState()->asid(), key.upid.tgid, key.upid.start_time_ticks);
+    md::UPID upid(ctx->GetASID(), key.upid.tgid, key.upid.start_time_ticks);
     r.Append<idx::kUPID>(upid.value());
     r.Append<idx::kRemoteAddr>(key.remote_addr);
     r.Append<idx::kRemotePort>(key.remote_port);

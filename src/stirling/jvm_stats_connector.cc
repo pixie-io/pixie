@@ -54,7 +54,7 @@ StatusOr<std::filesystem::path> ResolveHsperfDataPath(pid_t pid) {
 void JVMStatsConnector::FindJavaUPIDs(const ConnectorContext& ctx) {
   std::filesystem::path proc_path = system::Config::GetInstance().proc_path();
 
-  absl::flat_hash_set<md::UPID> upids = ProcTracker::Cleanse(ctx.GetMdsUpids());
+  absl::flat_hash_set<md::UPID> upids = ProcTracker::Cleanse(ctx.GetUPIDs());
 
   if (upids.empty()) {
     upids = ProcTracker::ListUPIDs(proc_path);

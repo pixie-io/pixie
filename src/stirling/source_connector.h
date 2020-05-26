@@ -46,46 +46,66 @@ class ConnectorContext {
   ~ConnectorContext() = default;
 
   /**
-   * ConntectoContext with metadata state.
+   * ConntectorContext with metadata state.
    * @param agent_metadata_state A read-only snapshot view of the metadata state. This state
    * should not be held onto for extended periods of time.
    */
   explicit ConnectorContext(std::shared_ptr<const md::AgentMetadataState> agent_metadata_state)
       : agent_metadata_state_(std::move(agent_metadata_state)) {}
 
-  /**
-   * Get an unowned pointer to the internal agent metadata state.
-   * @return either the agent metadata state or null ptr if the state is not valid.
-   */
-  const md::AgentMetadataState* AgentMetadataState() const {
-    if (!agent_metadata_state_) {
-      return nullptr;
-    }
-    return agent_metadata_state_.get();
-  }
-
   uint32_t GetASID() const {
-    const auto* md = AgentMetadataState();
-    if (md == nullptr) {
+    if (agent_metadata_state_ == nullptr) {
       return 0;
     }
-    return md->asid();
+    return agent_metadata_state_->asid();
   }
 
-  absl::flat_hash_set<md::UPID> GetMdsUpids() const {
-    auto* md = AgentMetadataState();
-    if (md == nullptr) {
+  absl::flat_hash_set<md::UPID> GetUPIDs() const {
+    if (agent_metadata_state_ == nullptr) {
       return {};
     }
-    absl::flat_hash_set<md::UPID> upids;
-    for (const auto& [upid, pid_info] : md->pids_by_upid()) {
-      if (pid_info == nullptr || pid_info->stop_time_ns() > 0) {
-        // PID has been stopped.
-        continue;
-      }
-      upids.insert(upid);
+    return agent_metadata_state_->upids();
+  }
+
+  const absl::flat_hash_map<md::UPID, md::PIDInfoUPtr>& GetPIDInfoMap() const {
+    if (agent_metadata_state_ == nullptr) {
+      static const absl::flat_hash_map<md::UPID, md::PIDInfoUPtr> kEmpty;
+      return kEmpty;
     }
-    return upids;
+    return agent_metadata_state_->pids_by_upid();
+  }
+
+  // TODO(oazizi): Consider breaking up into GetPods() and GetContainers().
+  const md::K8sMetadataState& GetK8SMetadata() {
+    if (agent_metadata_state_ == nullptr) {
+      static const md::K8sMetadataState kEmpty;
+      return kEmpty;
+    }
+    return agent_metadata_state_->k8s_metadata_state();
+  }
+
+  std::vector<CIDRBlock> GetClusterCIDRs() {
+    if (agent_metadata_state_ == nullptr) {
+      return {};
+    }
+
+    std::vector<CIDRBlock> cluster_cidrs;
+
+    // Copy Pod CIDRs.
+    const std::vector<CIDRBlock>& pod_cidrs =
+        agent_metadata_state_->k8s_metadata_state().pod_cidrs();
+    for (const auto& pod_cidr : pod_cidrs) {
+      cluster_cidrs.push_back(pod_cidr);
+    }
+
+    // Copy Service CIDRs.
+    const std::optional<CIDRBlock>& service_cidr =
+        agent_metadata_state_->k8s_metadata_state().service_cidr();
+    if (service_cidr.has_value()) {
+      cluster_cidrs.push_back(service_cidr.value());
+    }
+
+    return cluster_cidrs;
   }
 
  private:

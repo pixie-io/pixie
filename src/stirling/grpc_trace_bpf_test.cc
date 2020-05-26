@@ -75,9 +75,7 @@ HelloRequest GetHelloRequest(const ColumnWrapperRecordBatch& record_batch, const
 
 class GRPCTraceGoTest : public ::testing::Test {
  protected:
-  GRPCTraceGoTest()
-      : data_table_(kHTTPTable),
-        ctx_(std::make_unique<ConnectorContext>(std::make_shared<md::AgentMetadataState>(kASID))) {}
+  GRPCTraceGoTest() : data_table_(kHTTPTable), ctx_(std::make_unique<ConnectorContext>()) {}
 
   void LaunchServer(bool use_https) {
     CHECK(!FLAGS_go_grpc_client_path.empty())
@@ -236,7 +234,7 @@ TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
   md::UPID upid(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(idx).val);
   std::filesystem::path proc_pid_path =
       std::filesystem::path("/proc") / std::to_string(s_.child_pid());
-  md::UPID expected_upid(1, s_.child_pid(), system::GetPIDStartTimeTicks(proc_pid_path));
+  md::UPID expected_upid(/* asid */ 0, s_.child_pid(), system::GetPIDStartTimeTicks(proc_pid_path));
   EXPECT_EQ(upid, expected_upid);
 
   EXPECT_THAT(
@@ -288,10 +286,7 @@ class GRPCCppTest : public ::testing::Test {
 
     data_table_ = std::make_unique<DataTable>(kHTTPTable);
 
-    // Create a context to pass into each TransferData() in the test, using a dummy ASID.
-    static constexpr uint32_t kASID = 1;
-    auto agent_metadata_state = std::make_shared<md::AgentMetadataState>(kASID);
-    ctx_ = std::make_unique<ConnectorContext>(std::move(agent_metadata_state));
+    ctx_ = std::make_unique<ConnectorContext>();
   }
 
   void SetUpGRPCServices() {
