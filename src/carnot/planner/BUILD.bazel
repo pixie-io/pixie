@@ -127,7 +127,6 @@ pl_cc_binary(
 
 # This test needs to run as root, because stirling needs root in order to create the http and mysql events table.
 # Jenkins will run this test as root, but to run it locally, build it and then execute the bazel-bin file with sudo.
-# TODO(philkuz) re-enable with working preset-queries
 pl_cc_test(
     name = "preset_queries_test",
     timeout = "moderate",
@@ -141,5 +140,6 @@ pl_cc_test(
         "//src/carnot/udf_exporter:cc_library",
         "//src/shared/schema:cc_library",
         "//src/stirling:cc_library",
+        "//src/shared/vispb:vis_pl_cc_proto",
     ],
 )
