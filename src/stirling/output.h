@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <string_view>
 
 #include "src/common/base/base.h"
@@ -8,6 +9,13 @@
 
 namespace pl {
 namespace stirling {
+
+// Returns a string representation of the row specified by index.
+std::string ToString(const ArrayView<DataElement>& schema,
+                     const types::ColumnWrapperRecordBatch& record_batch, size_t index);
+
+std::string ToString(std::string_view prefix, const ArrayView<DataElement>& schema,
+                     const types::ColumnWrapperRecordBatch& record_batch);
 
 void PrintRecordBatch(std::string_view prefix, const ArrayView<DataElement>& schema,
                       const types::ColumnWrapperRecordBatch& record_batch);
