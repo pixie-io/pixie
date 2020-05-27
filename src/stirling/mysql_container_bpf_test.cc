@@ -23,7 +23,7 @@
 namespace pl {
 namespace stirling {
 
-using ::pl::stirling::testing::FindRecordIdxMatchesPid;
+using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::testing::TestFilePath;
 using ::pl::types::ColumnWrapper;
@@ -372,7 +372,7 @@ mysql::Record kRecordScript2Cmd8 = {
 std::vector<mysql::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch& record_batch,
                                             int32_t client_pid) {
   std::vector<size_t> target_record_indices =
-      FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, client_pid);
+      FindRecordIdxMatchesPID(record_batch, kMySQLUPIDIdx, client_pid);
   return ToRecordVector(record_batch, target_record_indices);
 }
 

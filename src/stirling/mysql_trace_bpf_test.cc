@@ -6,7 +6,7 @@
 namespace pl {
 namespace stirling {
 
-using ::pl::stirling::testing::FindRecordIdxMatchesPid;
+using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::stirling::testing::TCPSocket;
 using ::pl::types::ColumnWrapper;
@@ -56,7 +56,7 @@ TEST_F(MySQLTraceBPFTest, MySQLStmtPrepareExecuteClose) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-    EXPECT_THAT(FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid()), IsEmpty());
+    EXPECT_THAT(FindRecordIdxMatchesPID(record_batch, kMySQLUPIDIdx, getpid()), IsEmpty());
   }
 
   // Check that MySQL table did capture the appropriate data.
@@ -66,7 +66,7 @@ TEST_F(MySQLTraceBPFTest, MySQLStmtPrepareExecuteClose) {
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     const std::vector<size_t> target_record_indices =
-        FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid());
+        FindRecordIdxMatchesPID(record_batch, kMySQLUPIDIdx, getpid());
     ASSERT_THAT(target_record_indices, SizeIs(3));
 
     EXPECT_EQ(
@@ -103,7 +103,7 @@ TEST_F(MySQLTraceBPFTest, MySQLQuery) {
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
-    EXPECT_THAT(FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid()), IsEmpty());
+    EXPECT_THAT(FindRecordIdxMatchesPID(record_batch, kMySQLUPIDIdx, getpid()), IsEmpty());
   }
 
   // Check that MySQL table did capture the appropriate data.
@@ -113,7 +113,7 @@ TEST_F(MySQLTraceBPFTest, MySQLQuery) {
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     const std::vector<size_t> target_record_indices =
-        FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid());
+        FindRecordIdxMatchesPID(record_batch, kMySQLUPIDIdx, getpid());
     ASSERT_THAT(target_record_indices, SizeIs(1));
 
     EXPECT_EQ("SELECT name FROM tag;",

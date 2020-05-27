@@ -15,7 +15,7 @@ namespace pl {
 namespace stirling {
 
 using ::pl::stirling::testing::ColWrapperSizeIs;
-using ::pl::stirling::testing::FindRecordIdxMatchesPid;
+using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::testing::TestFilePath;
 using ::testing::Each;
 using ::testing::SizeIs;
@@ -67,7 +67,7 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
 
   connector_->TransferData(ctx_.get(), JVMStatsConnector::kTableNum, &data_table_);
   const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
-  auto idxes = FindRecordIdxMatchesPid(record_batch, kUPIDIdx, hello_world1.child_pid());
+  auto idxes = FindRecordIdxMatchesPID(record_batch, kUPIDIdx, hello_world1.child_pid());
   ASSERT_THAT(idxes, SizeIs(1));
 
   auto idx = idxes[0];
@@ -91,9 +91,9 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   std::this_thread::sleep_for(std::chrono::seconds(2));
 
   connector_->TransferData(ctx_.get(), JVMStatsConnector::kTableNum, &data_table_);
-  EXPECT_THAT(FindRecordIdxMatchesPid(record_batch, kUPIDIdx, hello_world2.child_pid()), SizeIs(1));
+  EXPECT_THAT(FindRecordIdxMatchesPID(record_batch, kUPIDIdx, hello_world2.child_pid()), SizeIs(1));
   // Make sure the previous processes were scanned as well.
-  EXPECT_THAT(FindRecordIdxMatchesPid(record_batch, kUPIDIdx, hello_world1.child_pid()), SizeIs(2));
+  EXPECT_THAT(FindRecordIdxMatchesPID(record_batch, kUPIDIdx, hello_world1.child_pid()), SizeIs(2));
 }
 
 }  // namespace stirling

@@ -40,7 +40,7 @@ using ::pl::stirling::http2::testing::ServiceRunner;
 using ::pl::stirling::http2::testing::StreamingGreeter;
 using ::pl::stirling::http2::testing::StreamingGreeterService;
 using ::pl::stirling::testing::CreateInsecureGRPCChannel;
-using ::pl::stirling::testing::FindRecordIdxMatchesPid;
+using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::GRPCStub;
 using ::pl::testing::proto::EqualsProto;
 using ::pl::types::ColumnWrapperRecordBatch;
@@ -162,7 +162,7 @@ TEST_F(GoGRPCKProbeTraceTest, TestGolangGrpcService) {
     ASSERT_GE(col->Size(), 1);
   }
   const std::vector<size_t> target_record_indices =
-      FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, s_.child_pid());
+      FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, s_.child_pid());
   // We should get exactly one record.
   ASSERT_THAT(target_record_indices, SizeIs(1));
   const size_t target_record_idx = target_record_indices.front();
@@ -224,7 +224,7 @@ TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
   const std::vector<size_t> target_record_indices =
-      FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, s_.child_pid());
+      FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, s_.child_pid());
   ASSERT_GE(target_record_indices.size(), 1);
 
   // We should get exactly one record.
@@ -351,7 +351,7 @@ TEST_F(GRPCCppTest, ParseTextProtoSimpleUnaryRPCCall) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
-  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, getpid());
+  std::vector<size_t> indices = FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
   ASSERT_THAT(indices, SizeIs(1));
   // Was parsed as an Empty message, all fields shown as unknown fields.
   EXPECT_EQ(std::string("1: \"Hello pixielabs!\""),
@@ -370,7 +370,7 @@ TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
-  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, getpid());
+  std::vector<size_t> indices = FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
   EXPECT_THAT(indices, SizeIs(12));
 
   for (size_t idx : indices) {
@@ -420,7 +420,7 @@ TEST_F(GRPCCppTest, ServerStreamingRPC) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
-  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, getpid());
+  std::vector<size_t> indices = FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
   EXPECT_THAT(indices, SizeIs(1));
 
   for (size_t idx : indices) {
@@ -453,7 +453,7 @@ TEST_F(GRPCCppTest, BidirStreamingRPC) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
-  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, getpid());
+  std::vector<size_t> indices = FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
   EXPECT_THAT(indices, SizeIs(1));
 
   for (size_t idx : indices) {
@@ -484,7 +484,7 @@ TEST_F(GRPCCppMiddleInterceptTest, InterceptMiddleOfTheConnection) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
-  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, getpid());
+  std::vector<size_t> indices = FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
   EXPECT_THAT(indices, SizeIs(3));
   for (size_t idx : indices) {
     // Header parsing would fail, because missing the head of start.
@@ -518,7 +518,7 @@ TEST_F(GRPCCppCallingNonRegisteredServiceTest, ResultsAreAsExpected) {
   CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"});
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
   types::ColumnWrapperRecordBatch& record_batch = *data_table_->ActiveRecordBatch();
-  std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, getpid());
+  std::vector<size_t> indices = FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
   EXPECT_THAT(indices, SizeIs(3));
   for (size_t idx : indices) {
     EXPECT_THAT(std::string(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(idx)),

@@ -19,8 +19,10 @@
 namespace pl {
 namespace stirling {
 
+using ::pl::stirling::testing::ColWrapperIsEmpty;
 using ::pl::stirling::testing::ColWrapperSizeIs;
-using ::pl::stirling::testing::FindRecordIdxMatchesPid;
+using ::pl::stirling::testing::FindRecordIdxMatchesPID;
+using ::pl::stirling::testing::FindRecordsMatchingPID;
 using ::pl::system::TCPSocket;
 using ::pl::types::ColumnWrapper;
 using ::pl::types::ColumnWrapperRecordBatch;
@@ -28,6 +30,7 @@ using ::testing::Each;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
 using ::testing::Pair;
+using ::testing::SizeIs;
 using ::testing::StrEq;
 using ::testing::UnorderedElementsAre;
 
@@ -58,6 +61,10 @@ constexpr std::string_view kNoProtocolMsg = R"(This is not an HTTP message)";
 // TODO(yzhao): We'd better rewrite the test to use BCCWrapper directly, instead of
 // SocketTraceConnector, to avoid triggering the userland parsing code, so these tests do not need
 // change if we alter output format.
+
+// This test requires docker container with --pid=host so that the container's PID and the
+// host machine are identical.
+// See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
 
 // TODO(oazizi): HTTP tracing should be based on server-side tracing. Tests need adjustment.
 class SocketTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {};
@@ -96,20 +103,12 @@ TEST_F(SocketTraceBPFTest, WriteRespCapture) {
   {
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    types::ColumnWrapperRecordBatch record_batch =
+        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
 
     ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
-    // These getpid() EXPECTs require docker container with --pid=host so that the container's PID
-    // and the host machine are identical. See
-    // https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
-
-    EXPECT_EQ(getpid(),
-              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val).pid());
     EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
-
-    EXPECT_EQ(getpid(),
-              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(1).val).pid());
     EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
 
     // Additional verifications. These are common to all HTTP1.x tracing, so we decide to not
@@ -126,10 +125,10 @@ TEST_F(SocketTraceBPFTest, WriteRespCapture) {
   {
     DataTable data_table(kMySQLTable);
     source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    types::ColumnWrapperRecordBatch record_batch =
+        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kMySQLUPIDIdx, getpid());
 
-    std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid());
-    EXPECT_THAT(indices, IsEmpty());
+    ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
   }
 }
 
@@ -147,7 +146,8 @@ TEST_F(SocketTraceBPFTest, SendRespCapture) {
   {
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    types::ColumnWrapperRecordBatch record_batch =
+        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
 
     ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
@@ -155,12 +155,7 @@ TEST_F(SocketTraceBPFTest, SendRespCapture) {
     // host machine are identical.
     // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
 
-    EXPECT_EQ(getpid(),
-              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val).pid());
     EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
-
-    EXPECT_EQ(getpid(),
-              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(1).val).pid());
     EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
   }
 
@@ -168,10 +163,10 @@ TEST_F(SocketTraceBPFTest, SendRespCapture) {
   {
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    types::ColumnWrapperRecordBatch record_batch =
+        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kMySQLUPIDIdx, getpid());
 
-    std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid());
-    EXPECT_THAT(indices, IsEmpty());
+    ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
   }
 }
 
@@ -189,20 +184,12 @@ TEST_F(SocketTraceBPFTest, ReadRespCapture) {
   {
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    types::ColumnWrapperRecordBatch record_batch =
+        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
 
     ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
-    // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
-    // host machine are identical.
-    // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
-
-    EXPECT_EQ(getpid(),
-              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val).pid());
     EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
-
-    EXPECT_EQ(getpid(),
-              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(1).val).pid());
     EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
   }
 
@@ -210,10 +197,10 @@ TEST_F(SocketTraceBPFTest, ReadRespCapture) {
   {
     DataTable data_table(kMySQLTable);
     source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    types::ColumnWrapperRecordBatch record_batch =
+        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kMySQLUPIDIdx, getpid());
 
-    std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid());
-    EXPECT_THAT(indices, IsEmpty());
+    ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
   }
 }
 
@@ -231,20 +218,12 @@ TEST_F(SocketTraceBPFTest, RecvRespCapture) {
   {
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    types::ColumnWrapperRecordBatch record_batch =
+        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
 
     ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
-    // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
-    // host machine are identical.
-    // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
-
-    EXPECT_EQ(getpid(),
-              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val).pid());
     EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
-
-    EXPECT_EQ(getpid(),
-              md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(1).val).pid());
     EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
   }
 
@@ -252,10 +231,10 @@ TEST_F(SocketTraceBPFTest, RecvRespCapture) {
   {
     DataTable data_table(kMySQLTable);
     source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    types::ColumnWrapperRecordBatch record_batch =
+        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kMySQLUPIDIdx, getpid());
 
-    std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid());
-    EXPECT_THAT(indices, IsEmpty());
+    ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
   }
 }
 
@@ -275,20 +254,20 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
   {
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    types::ColumnWrapperRecordBatch record_batch =
+        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
 
-    std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid());
-    EXPECT_THAT(indices, IsEmpty());
+    ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
   }
 
   // Check that MySQL table did not capture any data.
   {
     DataTable data_table(kMySQLTable);
     source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    types::ColumnWrapperRecordBatch record_batch =
+        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kMySQLUPIDIdx, getpid());
 
-    std::vector<size_t> indices = FindRecordIdxMatchesPid(record_batch, kMySQLUPIDIdx, getpid());
-    EXPECT_THAT(indices, IsEmpty());
+    ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
   }
 }
 
@@ -312,7 +291,8 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
   {
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    types::ColumnWrapperRecordBatch record_batch =
+        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
 
     ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
@@ -357,7 +337,8 @@ TEST_F(SocketTraceBPFTest, StartTime) {
 
   DataTable data_table(kHTTPTable);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  types::ColumnWrapperRecordBatch record_batch =
+      FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
 
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
@@ -407,7 +388,8 @@ TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
 
   DataTable data_table(kHTTPTable);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  types::ColumnWrapperRecordBatch record_batch =
+      FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
 
   // 2 for sendmsg() and 2 for recvmsg().
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));

@@ -88,12 +88,12 @@ TEST_F(GoHTTPTraceTest, RequestAndResponse) {
   const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
 
   // By default, we do not trace the client.
-  EXPECT_THAT(testing::FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, c_.child_pid()),
+  EXPECT_THAT(testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, c_.child_pid()),
               IsEmpty());
 
   // We do expect to trace the server.
   const std::vector<size_t> target_record_indices =
-      testing::FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, s_.child_pid());
+      testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, s_.child_pid());
   ASSERT_THAT(target_record_indices, SizeIs(1));
 
   const size_t target_record_idx = target_record_indices.front();
@@ -143,10 +143,10 @@ TEST_P(TraceRoleTest, VerifyRecordsCount) {
   const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
 
   const std::vector<size_t> client_record_ids =
-      testing::FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, c_.child_pid());
+      testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, c_.child_pid());
   EXPECT_THAT(client_record_ids, SizeIs(param.client_records_count));
   const std::vector<size_t> server_record_ids =
-      testing::FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, s_.child_pid());
+      testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, s_.child_pid());
   EXPECT_THAT(server_record_ids, SizeIs(param.server_records_count));
 }
 

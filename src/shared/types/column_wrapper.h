@@ -42,6 +42,7 @@ class ColumnWrapper {
   virtual const BaseValueType* UnsafeRawData() const = 0;
   virtual DataType data_type() const = 0;
   virtual size_t Size() const = 0;
+  virtual bool Empty() const = 0;
   virtual int64_t Bytes() const = 0;
 
   virtual void Reserve(size_t size) = 0;
@@ -89,6 +90,7 @@ class ColumnWrapperTmpl : public ColumnWrapper {
   DataType data_type() const override { return ValueTypeTraits<T>::data_type; }
 
   size_t Size() const override { return data_.size(); }
+  bool Empty() const override { return data_.empty(); }
 
   std::shared_ptr<arrow::Array> ConvertToArrow(arrow::MemoryPool* mem_pool) override {
     return ToArrow(data_, mem_pool);
@@ -275,7 +277,7 @@ inline TValueType& ColumnWrapper::Get(size_t idx) {
 template <class TValueType>
 inline TValueType ColumnWrapper::Get(size_t idx) const {
   CHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
-  return static_cast<ColumnWrapperTmpl<TValueType>*>(this)->operator[](idx);
+  return static_cast<const ColumnWrapperTmpl<TValueType>*>(this)->operator[](idx);
 }
 
 template <class TValueType>

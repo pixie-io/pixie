@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -28,16 +29,49 @@ MATCHER_P(ColWrapperSizeIs, size, absl::Substitute("is a ColumnWrapper having $0
   return arg->Size() == static_cast<size_t>(size);
 }
 
-std::vector<size_t> FindRecordIdxMatchesPid(const types::ColumnWrapperRecordBatch& http_record,
+MATCHER(ColWrapperIsEmpty, "is an empty ColumnWrapper") { return arg->Empty(); }
+
+std::vector<size_t> FindRecordIdxMatchesPID(const types::ColumnWrapperRecordBatch& record,
                                             int upid_column_idx, int pid) {
   std::vector<size_t> res;
-  for (size_t i = 0; i < http_record[upid_column_idx]->Size(); ++i) {
-    md::UPID upid(http_record[upid_column_idx]->Get<types::UInt128Value>(i).val);
+  for (size_t i = 0; i < record[upid_column_idx]->Size(); ++i) {
+    md::UPID upid(record[upid_column_idx]->Get<types::UInt128Value>(i).val);
     if (upid.pid() == static_cast<uint64_t>(pid)) {
       res.push_back(i);
     }
   }
   return res;
+}
+
+std::shared_ptr<types::ColumnWrapper> SelectColumnWrapperRows(const types::ColumnWrapper& src,
+                                                              const std::vector<size_t>& indices) {
+  auto out = types::ColumnWrapper::Make(src.data_type(), 0);
+  out->Reserve(indices.size());
+
+#define TYPE_CASE(_dt_)                                                 \
+  for (int idx : indices) {                                             \
+    out->Append(src.Get<types::DataTypeTraits<_dt_>::value_type>(idx)); \
+  }
+  PL_SWITCH_FOREACH_DATATYPE(src.data_type(), TYPE_CASE);
+#undef TYPE_CASE
+
+  return out;
+}
+
+types::ColumnWrapperRecordBatch SelectRecordBatchRows(const types::ColumnWrapperRecordBatch& src,
+                                                      const std::vector<size_t>& indices) {
+  types::ColumnWrapperRecordBatch out;
+  for (const auto& col : src) {
+    out.push_back(SelectColumnWrapperRows(*col, indices));
+  }
+
+  return out;
+}
+
+types::ColumnWrapperRecordBatch FindRecordsMatchingPID(const types::ColumnWrapperRecordBatch& rb,
+                                                       int upid_column_idx, int pid) {
+  std::vector<size_t> indices = FindRecordIdxMatchesPID(rb, upid_column_idx, pid);
+  return SelectRecordBatchRows(rb, indices);
 }
 
 // Note the index is column major, so it comes before row_idx.

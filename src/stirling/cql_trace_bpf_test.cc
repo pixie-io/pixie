@@ -21,7 +21,7 @@
 namespace pl {
 namespace stirling {
 
-using ::pl::stirling::testing::FindRecordIdxMatchesPid;
+using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::types::ColumnWrapper;
 using ::pl::types::ColumnWrapperRecordBatch;
@@ -409,7 +409,7 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
   // Check client-side tracing results.
   {
     const std::vector<size_t> target_record_indices =
-        FindRecordIdxMatchesPid(record_batch, kCQLUPIDIdx, client_pid);
+        FindRecordIdxMatchesPID(record_batch, kCQLUPIDIdx, client_pid);
 
     for (const auto& idx : target_record_indices) {
       uint32_t pid = record_batch[kCQLUPIDIdx]->Get<types::UInt128Value>(idx).High64();
@@ -438,7 +438,7 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
   // Check server-side tracing results.
   {
     const std::vector<size_t> target_record_indices =
-        FindRecordIdxMatchesPid(record_batch, kCQLUPIDIdx, container_.process_pid());
+        FindRecordIdxMatchesPID(record_batch, kCQLUPIDIdx, container_.process_pid());
 
     for (const auto& idx : target_record_indices) {
       uint32_t pid = record_batch[kCQLUPIDIdx]->Get<types::UInt128Value>(idx).High64();

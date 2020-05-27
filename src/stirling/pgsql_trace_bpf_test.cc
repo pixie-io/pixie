@@ -17,7 +17,7 @@ namespace pl {
 namespace stirling {
 
 using ::pl::stirling::testing::AccessRecordBatch;
-using ::pl::stirling::testing::FindRecordIdxMatchesPid;
+using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::testing::BazelBinTestFilePath;
 using ::testing::_;
 using ::testing::ElementsAre;
@@ -87,7 +87,7 @@ TEST_F(PostgreSQLTraceTest, SelectQuery) {
   source_->TransferData(ctx_.get(), SocketTraceConnector::kPGSQLTableNum, &data_table_);
 
   const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
-  auto indices = FindRecordIdxMatchesPid(record_batch, kPGSQLUPIDIdx, client_pid);
+  auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, client_pid);
   ASSERT_THAT(indices, SizeIs(1));
 
   EXPECT_THAT(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqIdx, indices[0]),
@@ -133,7 +133,7 @@ TEST_F(PostgreSQLTraceGoSQLxTest, GolangSqlxDemo) {
   // Select only the records from the client side. Stirling captures both client and server side
   // traffic because of the remote address is outside of the cluster.
   const auto indices =
-      FindRecordIdxMatchesPid(record_batch, kPGSQLUPIDIdx, sqlx_container_.process_pid());
+      FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, sqlx_container_.process_pid());
 
   EXPECT_THAT(
       RecordBatchToPairs(record_batch, indices),
@@ -177,7 +177,7 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
 
     const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
 
-    auto indices = FindRecordIdxMatchesPid(record_batch, kPGSQLUPIDIdx, client_pid);
+    auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, client_pid);
     ASSERT_THAT(indices, SizeIs(1));
 
     EXPECT_THAT(
@@ -202,7 +202,7 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
 
     const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
 
-    auto indices = FindRecordIdxMatchesPid(record_batch, kPGSQLUPIDIdx, client_pid);
+    auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, client_pid);
     ASSERT_THAT(indices, SizeIs(1));
 
     EXPECT_THAT(

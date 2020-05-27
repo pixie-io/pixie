@@ -11,7 +11,7 @@ namespace stirling {
 
 using ::pl::stirling::testing::AccessRecordBatch;
 using ::pl::stirling::testing::ClientServerSystem;
-using ::pl::stirling::testing::FindRecordIdxMatchesPid;
+using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::SendRecvScript;
 using ::pl::stirling::testing::TCPSocket;
 using ::testing::IsEmpty;
@@ -35,7 +35,7 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
   const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
   PrintRecordBatch("test", kConnStatsTable.elements(), record_batch);
 
-  auto indices = FindRecordIdxMatchesPid(record_batch, kPGSQLUPIDIdx, getpid());
+  auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, getpid());
   ASSERT_THAT(indices, SizeIs(2));
 
   std::vector<int> bytes_sent_vals;
@@ -93,7 +93,7 @@ TEST_F(ConnStatsMidConnBPFTest, DidNotSeeConnEstablishment) {
   source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table_);
   const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
 
-  auto indices = FindRecordIdxMatchesPid(record_batch, kPGSQLUPIDIdx, getpid());
+  auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, getpid());
   ASSERT_THAT(indices, IsEmpty());
 }
 

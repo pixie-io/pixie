@@ -12,7 +12,7 @@
 namespace pl {
 namespace stirling {
 
-using ::pl::stirling::testing::FindRecordIdxMatchesPid;
+using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::testing::BazelBinTestFilePath;
 
 using ::testing::AllOf;
@@ -132,7 +132,7 @@ TEST_F(HTTP2TraceTest, Basic) {
 
   {
     const std::vector<size_t> target_record_indices =
-        FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, server_.process_pid());
+        FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, server_.process_pid());
 
     // For Debug:
     for (const auto& idx : target_record_indices) {

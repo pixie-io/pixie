@@ -22,7 +22,7 @@
 namespace pl {
 namespace stirling {
 
-using ::pl::stirling::testing::FindRecordIdxMatchesPid;
+using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::testing::BazelBinTestFilePath;
 using ::pl::testing::TestFilePath;
@@ -111,7 +111,7 @@ auto EqHTTPRecord(const http::Record& x) {
 std::vector<http::Record> GetTargetRecords(const types::ColumnWrapperRecordBatch& record_batch,
                                            int32_t pid) {
   std::vector<size_t> target_record_indices =
-      FindRecordIdxMatchesPid(record_batch, kHTTPUPIDIdx, pid);
+      FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, pid);
   return ToRecordVector(record_batch, target_record_indices);
 }
 
