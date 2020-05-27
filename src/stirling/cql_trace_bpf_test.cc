@@ -401,9 +401,6 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
   int32_t client_pid;
   ASSERT_TRUE(absl::SimpleAtoi(out, &client_pid));
 
-  // Sleep a little more, just to be safe.
-  sleep(2);
-
   // Grab the data from Stirling.
   DataTable data_table(kCQLTable);
   source_->TransferData(ctx_.get(), SocketTraceConnector::kCQLTableNum, &data_table);

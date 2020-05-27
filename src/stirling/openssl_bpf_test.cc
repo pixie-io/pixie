@@ -124,9 +124,6 @@ TEST_F(OpenSSLTraceTest, ssl_capture) {
     StatusOr<std::string> out = pl::Exec("curl --insecure -s -S https://localhost:9090/index.html");
     LOG(INFO) << out.ValueOrDie();
 
-    // Sleep a little more, just to be safe.
-    sleep(1);
-
     // Grab the data from Stirling.
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);

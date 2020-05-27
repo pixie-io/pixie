@@ -11,6 +11,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
+
 	"pixielabs.ai/pixielabs/demos/client_server_apps/go_grpc_tls_pl/server/greetpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
@@ -20,6 +23,8 @@ const serverAddr = "localhost:50400"
 const serverJWTSigningKey = "123456"
 
 func main() {
+	pflag.Int("count", 1000, "Number of requests sent.")
+
 	services.SetupSSLClientFlags()
 	services.PostFlagSetupAndParse()
 	services.CheckSSLClientFlags()
@@ -41,7 +46,7 @@ func main() {
 
 	token := testingutils.GenerateTestJWTToken(&testing.T{}, serverJWTSigningKey)
 
-	for j := 0; j < 100000; j++ {
+	for j := 0; j < viper.GetInt("count"); j++ {
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 

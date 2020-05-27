@@ -109,13 +109,12 @@ StatusOr<std::string> ContainerRunner::Run(int timeout, const std::vector<std::s
   return container_out;
 }
 
-/**
- * Stops the container by sending it an interrupt signal.
- */
 void ContainerRunner::Stop() {
   // Clean-up the container.
   container_.Signal(SIGTERM);
   container_.Wait();
 }
+
+void ContainerRunner::Wait() { container_.Wait(); }
 
 }  // namespace pl

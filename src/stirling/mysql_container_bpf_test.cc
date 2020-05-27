@@ -380,9 +380,6 @@ TEST_F(MySQLTraceTest, mysql_capture) {
   {
     ASSERT_OK_AND_ASSIGN(int32_t client_pid, RunSQLScript("src/stirling/mysql/testing/script.sql"));
 
-    // Sleep a little more, just to be safe.
-    sleep(1);
-
     // Grab the data from Stirling.
     DataTable data_table(kMySQLTable);
     source_->TransferData(ctx_.get(), SocketTraceConnector::kMySQLTableNum, &data_table);
@@ -405,9 +402,6 @@ TEST_F(MySQLTraceTest, mysql_capture) {
   {
     ASSERT_OK_AND_ASSIGN(int32_t client_pid,
                          RunSQLScript("src/stirling/mysql/testing/prepare_execute.sql"));
-
-    // Sleep a little more, just to be safe.
-    sleep(1);
 
     // Grab the data from Stirling.
     DataTable data_table(kMySQLTable);

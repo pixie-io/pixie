@@ -55,6 +55,11 @@ class ContainerRunner {
   void Stop();
 
   /**
+   * Wait for container to terminate.
+   */
+  void Wait();
+
+  /**
    * The PID of the process within the container.
    */
   int process_pid() { return process_pid_; }

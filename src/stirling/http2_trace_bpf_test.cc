@@ -115,12 +115,14 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
   GRPCClientContainer client_;
 };
 
-TEST_F(HTTP2TraceTest, DISABLED_Basic) {
-  // Run the server in the network of the server, so they can connect to each other.
+TEST_F(HTTP2TraceTest, Basic) {
+  // Run the client in the network of the server, so they can connect to each other.
   PL_CHECK_OK(
       client_.Run(10, {absl::Substitute("--network=container:$0", server_.container_name())}));
+  client_.Wait();
 
-  // Sleep a little more, just to be safe.
+  // We do not expect this sleep to be required, but it appears to be necessary for Jenkins.
+  // TODO(oazizi): Figure out why.
   sleep(3);
 
   // Grab the data from Stirling.
