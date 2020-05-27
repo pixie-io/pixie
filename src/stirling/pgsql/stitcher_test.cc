@@ -88,7 +88,7 @@ StatusOr<std::deque<RegularMessage>> ParseRegularMessages(std::string_view data)
     msgs.push_back(std::move(msg));
   }
   if (!data.empty()) {
-    return error::InvalidArgument("Some data are not parsed");
+    return error::InvalidArgument("Some data are not parsed, left $0", data.size());
   }
   return msgs;
 }
@@ -149,7 +149,20 @@ const std::string_view kParseData = CreateStringView<char>(
     // kSync
     "S\000\000\000\004"
     // kBind
-    "B\000\000\000\020\000\000\000\000\000\000\000\002\000\001\000\001"
+    "B\000\000\000\020"
+    // Portal
+    "\000"
+    // Statement
+    "\000"
+    // Number of parameter
+    "\000\000"
+    // Number of parameter format codes
+    "\000\000"
+    // Number of result column format codes
+    "\000\002"
+    // 2 kBinary
+    "\000\001"
+    "\000\001"
     // kExecute
     "E\000\000\000\011\000\000\000\000\000");
 
@@ -170,14 +183,28 @@ const std::string_view kParseRespData = CreateStringView<char>(
     // kBindComplete
     "2\000\000\000\004"
     // kDataRow
-    "D\000\000\000)\000\003\000\000\000\004\000\0001\361\000\000\000\017cardinal_"
-    "number\000\000\000\004\000\000\000\027"
+    "D\000\000\000\x29"
+    // Number of columns
+    "\000\003"
+    // 4 bytes data
+    "\000\000\000\004"
+    "\000\0001\361"
+    // 15 bytes data
+    "\000\000\000\017"
+    "cardinal_number"
+    // 4 bytes data
+    "\000\000\000\004"
+    "\000\000\000\027"
+    // kDataRow
     "D\000\000\000#\000\003\000\000\000\004\000\0001\375\000\000\000\tyes_or_"
     "no\000\000\000\004\000\000\004\023"
+    // kDataRow
     "D\000\000\000(\000\003\000\000\000\004\000\0001\366\000\000\000\016sql_"
     "identifier\000\000\000\004\000\000\004\023"
+    // kDataRow
     "D\000\000\000(\000\003\000\000\000\004\000\0001\364\000\000\000\016character_"
     "data\000\000\000\004\000\000\004\023"
+    // kDataRow
     "D\000\000\000$\000\003\000\000\000\004\000\0001\373\000\000\000\ntime_"
     "stamp\000\000\000\004\000\000\004\240"
     // kCmdComplete
