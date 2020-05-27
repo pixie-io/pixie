@@ -40,9 +40,5 @@ export function argsForVis(vis: Vis, args: Arguments, scriptId?: string): Argume
   if (scriptId) {
     outArgs.script = scriptId;
   }
-  // Compare the two sets of arguments to avoid infinite render cycles.
-  if (argsEquals(args, outArgs)) {
-    return args;
-  }
   return outArgs;
 }

@@ -1,5 +1,6 @@
 import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
+import { argsForVis } from 'utils/args-utils';
 import { getQueryParams } from 'utils/query-params';
 
 import { ExecuteContext } from './context/execute-context';
@@ -32,10 +33,12 @@ export function useInitScriptLoader() {
     scriptPromise.then((examples) => {
       for (const { title, vis, code, id } of examples) {
         if (id === params.script && code) {
+          const parsedVis = parseVis(vis);
+          const args = argsForVis(parsedVis, params, id);
           execute({
             script: code,
-            vis: parseVis(vis),
-            args: params,
+            vis: parsedVis,
+            args,
             title,
             id,
           });
