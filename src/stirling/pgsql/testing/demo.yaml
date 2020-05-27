@@ -1,0 +1,27 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-demo
+  namespace: stirling-testing
+  labels:
+    name: postgres-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: postgres-demo
+  template:
+    metadata:
+      labels:
+        name: postgres-demo
+    spec:
+      containers:
+      - name: postgres-demo
+        # Replace with your ldap
+        image: gcr.io/pl-dev-infra/demos/postgres/demo:latest
+        imagePullPolicy: Always
+        args:
+        - --address=postgres:5432
+        - --count=100000
+        - --password=docker

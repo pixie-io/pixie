@@ -12,6 +12,7 @@ go_library(
     deps = [
         "@com_github_jmoiron_sqlx//:go_default_library",
         "@com_github_lib_pq//:go_default_library",
+        "@com_github_spf13_pflag//:go_default_library",
     ],
 )
 
@@ -32,6 +33,5 @@ container_push(
     format = "Docker",
     image = ":demo_image",
     registry = "gcr.io",
-    repository = "pl-dev-infra/demos/sqlx",
-    tag = "{BUILD_USER}",
+    repository = "pl-dev-infra/demos/postgres/demo",
 )

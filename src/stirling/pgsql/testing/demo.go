@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 	"time"
+
+	"github.com/spf13/pflag"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -30,26 +33,43 @@ type place struct {
 }
 
 func main() {
-	// this Pings the database trying to connect, panics on error
-	// use sqlx.Open() for sql.Open() semantics
-	db, err := sqlx.Connect("postgres", "user=postgres sslmode=disable")
+	address := pflag.String("address", "localhost:5432", "Postgres server hostname.")
+	user := pflag.String("user", "postgres", "Postgres server username.")
+	password := pflag.String("password", "postgres", "Postgres server password.")
+	count := pflag.Int("count", 1, "The count of requests to make.")
+
+	pflag.Parse()
+
+	hostPort := strings.Split(*address, ":")
+	if len(hostPort) != 2 {
+		log.Fatalf("--address is ill-formed, got %s", *address)
+	}
+
+	psqlInfo := fmt.Sprintf("host=%s port=%s user=%s password=%s sslmode=disable connect_timeout=5",
+		hostPort[0], hostPort[1], *user, *password)
+
+	log.Printf("Connecting to postgres: %s", psqlInfo)
+
+	db, err := sqlx.Connect("postgres", psqlInfo)
 	if err != nil {
 		log.Fatalln(err)
 	}
+	defer db.Close()
 
-	// exec the schema or fail; multi-statement Exec behavior varies between
-	// database drivers;  pq will exec them all, sqlite3 won't, ymmv
-	db.MustExec(schema)
+	for i := 0; i < *count; i++ {
+		// exec the schema or fail; multi-statement Exec behavior varies between
+		// database drivers;  pq will exec them all, sqlite3 won't, ymmv
+		db.MustExec(schema)
 
-	tx := db.MustBegin()
-	tx.MustExec("INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)", "Jason", "Moiron", "jmoiron@jmoiron.net")
-	// Named queries can use structs, so if you have an existing struct (i.e. person := &person{}) that you have populated, you can pass it in as &person
-	tx.Commit()
+		tx := db.MustBegin()
+		tx.MustExec("INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)", "Jason", "Moiron", "jmoiron@jmoiron.net")
+		// Named queries can use structs, so if you have an existing struct (i.e. person := &person{}) that you have populated, you can pass it in as &person
+		tx.Commit()
 
-	// You can also get a single result, a la QueryRow
-	jason := person{}
-	err = db.Get(&jason, "SELECT * FROM person WHERE first_name=$1", "Jason")
-	fmt.Printf("%#v\n", jason)
-
-	time.Sleep(10 * time.Second)
+		// You can also get a single result, a la QueryRow
+		jason := person{}
+		err = db.Get(&jason, "SELECT * FROM person WHERE first_name=$1", "Jason")
+		fmt.Printf("%#v\n", jason)
+		time.Sleep(1 * time.Second)
+	}
 }
