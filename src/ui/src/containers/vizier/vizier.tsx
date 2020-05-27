@@ -3,6 +3,7 @@ import './vizier.scss';
 import { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import { ScriptsContextProvider } from 'containers/App/scripts-context';
 import { Editor } from 'containers/editor';
+import AdminView from 'containers/admin/admin';
 import LiveView from 'containers/live/live';
 import gql from 'graphql-tag';
 import * as React from 'react';
@@ -73,7 +74,7 @@ export const VizierMain = () => {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
       <VizierTopNav />
       <Switch>
-        <Route path='/admin' component={AgentDisplay} />
+        <Route path='/agents' component={AgentDisplay} />
         <Route path='/console' component={Editor} />
       </Switch>
     </div>
@@ -136,8 +137,9 @@ const Vizier = () => {
         <ScriptsContextProvider>
           <Switch>
             <Route path='/live' component={LiveView} />
-            <Route path={['/console', '/admin']} component={VizierMain}
+            <Route path={['/console', '/agents']} component={VizierMain}
             />
+            <Route path='/admin' component={AdminView} />
             <Redirect from='/*' to='/live' />
           </Switch>
         </ScriptsContextProvider>

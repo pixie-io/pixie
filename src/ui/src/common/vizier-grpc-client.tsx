@@ -94,10 +94,6 @@ export class VizierGRPCClient {
     });
   }
 
-  executeScriptOld(script: string): Promise<VizierQueryResult> {
-    return this.executeScript(script, []);
-  }
-
   // Use a generator to produce the VizierQueryFunc to remove the dependency on vis.tsx.
   // funcsGenerator should correspond to getQueryFuncs in vis.tsx.
   executeScript(script: string, funcs: VizierQueryFunc[]): Promise<VizierQueryResult> {

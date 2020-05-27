@@ -1,5 +1,6 @@
 import DocsIcon from 'components/icons/docs';
 import LogoutIcon from 'components/icons/logout';
+import SettingsIcon from 'components/icons/settings';
 import { DOMAIN_NAME } from 'containers/constants';
 import gql from 'graphql-tag';
 import * as React from 'react';
@@ -113,6 +114,12 @@ const ProfileMenu = () => {
           <ListItemText primary={user.name} secondary={user.email}
             classes={{ primary: classes.listItemHeader, secondary: classes.listItemText }}
             className={classes.centeredListItemText} />
+        </MenuItem>
+        <MenuItem key='admin' button component={Link} to='/admin'>
+          <StyledListItemIcon>
+            <SettingsIcon />
+          </StyledListItemIcon>
+          <StyledListItemText primary='Admin' />
         </MenuItem>
         <MenuItem key='docs' button component='a' href={`https://docs.${DOMAIN_NAME}`} target='_blank'>
           <StyledListItemIcon>

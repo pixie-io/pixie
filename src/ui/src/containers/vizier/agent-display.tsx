@@ -11,6 +11,8 @@ import {pluralize} from 'utils/pluralize';
 import {dataFromProto} from 'utils/result-data-utils';
 import {nanoToSeconds} from 'utils/time';
 
+// TODO(nserrino): Deprecate this page.
+
 const agentTableCols = [{
   dataKey: 'id',
   label: 'Agent ID',
@@ -67,7 +69,7 @@ export const AgentDisplay = () => {
     }
     let mounted = true;
     const fetchAgentStatus = () => {
-      client.executeScriptOld(AGENT_STATUS_SCRIPT).then((results) => {
+      client.executeScript(AGENT_STATUS_SCRIPT, []).then((results) => {
         if (!mounted) {
           return;
         }
