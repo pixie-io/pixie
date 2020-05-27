@@ -197,7 +197,7 @@ Status HandleParse(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
                    ParseReqResp* req_resp, State* state) {
   DCHECK_EQ(msg.tag, Tag::kParse);
   Parse parse;
-  PL_RETURN_IF_ERROR(ParseParse(msg.payload, &parse));
+  PL_RETURN_IF_ERROR(ParseParse(msg, &parse));
 
   auto iter = std::find_if(*resp_iter, end, TagMatcher({Tag::kParseComplete, Tag::kErrResp}));
   if (iter == end) {
@@ -304,7 +304,9 @@ RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMess
         ParseReqResp req_resp;
         if (HandleParse(*req_iter, &resp_iter, resps->end(), &req_resp, state).ok()) {
           RegularMessage req;
+          req.timestamp_ns = req_resp.req.timestamp_ns;
           req.payload = req_resp.req.query;
+
           RegularMessage resp;
           resp.payload =
               req_resp.resp.has_value() ? FmtErrResp(req_resp.resp.value()) : "PARSE COMPLETE";

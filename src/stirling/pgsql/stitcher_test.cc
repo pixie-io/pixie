@@ -83,8 +83,10 @@ const std::string_view kSyncMsg = CreateStringView<char>("S\000\000\000\004");
 // parsing from raw bytes.
 StatusOr<std::deque<RegularMessage>> ParseRegularMessages(std::string_view data) {
   std::deque<RegularMessage> msgs;
-  RegularMessage msg = {};
+  uint64_t ts = 100;
+  RegularMessage msg;
   while (ParseRegularMessage(&data, &msg) == ParseState::kSuccess) {
+    msg.timestamp_ns = ts++;
     msgs.push_back(std::move(msg));
   }
   if (!data.empty()) {
@@ -119,8 +121,10 @@ TEST_P(ProcessFramesTest, VerifySingleOutputMessage) {
   EXPECT_THAT(resps, IsEmpty());
   EXPECT_NE(0, records_and_err_count.records.front().req.payload.size());
 
+  std::vector<uint64_t> req_tses;
   std::vector<std::string_view> req_msgs;
   for (const auto& record : records_and_err_count.records) {
+    req_tses.push_back(record.req.timestamp_ns);
     req_msgs.push_back(record.req.payload);
   }
 
@@ -129,8 +133,11 @@ TEST_P(ProcessFramesTest, VerifySingleOutputMessage) {
     resp_msgs.push_back(record.resp.payload);
   }
 
+  EXPECT_THAT(req_tses, ElementsAre(100, 100));
+
   EXPECT_THAT(req_msgs, ElementsAreArray(test_case.expected_req_msgs));
   EXPECT_THAT(resp_msgs, ElementsAreArray(test_case.expected_resp_msgs));
+
   EXPECT_EQ(0, records_and_err_count.error_count);
 }
 

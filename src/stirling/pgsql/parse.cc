@@ -165,8 +165,10 @@ std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_
   return res;
 }
 
-ParseState ParseBindRequest(std::string_view payload, BindRequest* res) {
-  BinaryDecoder decoder(payload);
+ParseState ParseBindRequest(const RegularMessage& msg, BindRequest* res) {
+  res->timestamp_ns = msg.timestamp_ns;
+
+  BinaryDecoder decoder(msg.payload);
 
   // Any decoding error means the input is invalid. As the input must be the payload of a regular
   // message with tag 'B'. Therefore, it must meet a predefined pattern.
@@ -242,8 +244,10 @@ ParseState ParseParamDesc(std::string_view payload, ParamDesc* param_desc) {
   return ParseState::kSuccess;
 }
 
-Status ParseParse(std::string_view payload, Parse* parse) {
-  BinaryDecoder decoder(payload);
+Status ParseParse(const RegularMessage& msg, Parse* parse) {
+  parse->timestamp_ns = msg.timestamp_ns;
+
+  BinaryDecoder decoder(msg.payload);
 
   PL_ASSIGN_OR_RETURN(parse->stmt_name, decoder.ExtractStringUntil<char>('\0'));
 

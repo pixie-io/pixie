@@ -134,21 +134,31 @@ struct Param {
   std::optional<std::string> value;
 };
 
-struct BindRequest {
+struct BindRequest : public FrameBase {
   std::string dest_portal_name;
   std::string src_prepared_stat_name;
   std::vector<Param> params;
   std::vector<FmtCode> res_col_fmt_codes;
+
+  size_t ByteSize() const override {
+    LOG(DFATAL) << "BindReqResp::ByteSize() unimplemented";
+    return 0;
+  }
 };
 
 struct ParamDesc {
   std::vector<int32_t> type_oids;
 };
 
-struct Parse {
+struct Parse : public FrameBase {
   std::string stmt_name;
   std::string query;
   std::vector<int32_t> param_type_oids;
+
+  size_t ByteSize() const override {
+    LOG(DFATAL) << "BindReqResp::ByteSize() unimplemented";
+    return 0;
+  }
 };
 
 struct RowDesc {

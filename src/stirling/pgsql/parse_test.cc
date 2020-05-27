@@ -133,7 +133,9 @@ auto ParamIs(FmtCode fmt_code, std::string_view value) {
 }
 
 TEST(PGSQLParseTest, ParseBindRequest) {
-  std::string_view bind_msg_payload = CreateStringView<char>(
+  RegularMessage msg;
+  msg.timestamp_ns = 123;
+  msg.payload = CreateStringView<char>(
       // destination portal name
       "destination portal\x00"
       // source prepared statement name
@@ -159,7 +161,8 @@ TEST(PGSQLParseTest, ParseBindRequest) {
       // 2nd result column format code
       "\x00\x01");
   BindRequest bind_req;
-  EXPECT_EQ(ParseState::kSuccess, ParseBindRequest(bind_msg_payload, &bind_req));
+  EXPECT_EQ(ParseState::kSuccess, ParseBindRequest(msg, &bind_req));
+  EXPECT_EQ(123, bind_req.timestamp_ns);
   EXPECT_THAT(bind_req.dest_portal_name, StrEq("destination portal"));
   EXPECT_THAT(bind_req.src_prepared_stat_name, StrEq("source prepared statement"));
   EXPECT_THAT(bind_req.params, ElementsAre(ParamIs(FmtCode::kBinary, "\x4a\x61\x73\x6f\x6e"),
@@ -183,14 +186,17 @@ TEST(PGSQLParseTest, ParseParamDesc) {
 }
 
 TEST(PGSQLParseTest, ParseParse) {
-  std::string_view payload = CreateStringView<char>(
+  RegularMessage msg;
+  msg.timestamp_ns = 123;
+  msg.payload = CreateStringView<char>(
       "test\x00"
       "SELECT * FROM person WHERE first_name=$1\x00"
       // Parameter type OIDs count
       "\x00\x01"
       "\x00\x00\x00\x19");
   Parse parse;
-  EXPECT_OK(ParseParse(payload, &parse));
+  EXPECT_OK(ParseParse(msg, &parse));
+  EXPECT_EQ(123, msg.timestamp_ns);
   EXPECT_THAT(parse.stmt_name, StrEq("test"));
   EXPECT_THAT(parse.query, StrEq("SELECT * FROM person WHERE first_name=$1"));
   EXPECT_THAT(parse.param_type_oids, ElementsAre(25));
