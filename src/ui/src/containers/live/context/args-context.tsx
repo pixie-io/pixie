@@ -1,10 +1,9 @@
 import { LIVE_VIEW_SCRIPT_ARGS_KEY, useSessionStorage } from 'common/storage';
 import * as React from 'react';
 import { argsEquals, argsForVis, Arguments } from 'utils/args-utils';
-import { setQueryParams } from 'utils/query-params';
+import QueryParams from 'utils/query-params';
 
 import { SetStateFunc } from './common';
-import { ScriptContext } from './script-context';
 import { VisContext } from './vis-context';
 
 interface ArgsContextProps {
@@ -16,12 +15,11 @@ export const ArgsContext = React.createContext<ArgsContextProps>(null);
 
 export const ArgsContextProvider = (props) => {
   const { vis } = React.useContext(VisContext);
-  const { id } = React.useContext(ScriptContext);
 
   const [args, setArgsBase] = useSessionStorage<Arguments | null>(LIVE_VIEW_SCRIPT_ARGS_KEY, null);
 
   const setArgs = (newArgs: Arguments) => {
-    const parsed = argsForVis(vis, newArgs, id);
+    const parsed = argsForVis(vis, newArgs);
     // Compare the two sets of arguments to avoid infinite render cycles.
     if (!argsEquals(args, parsed)) {
       setArgsBase(parsed);
@@ -30,17 +28,17 @@ export const ArgsContextProvider = (props) => {
 
   React.useEffect(() => {
     if (args) {
-      setQueryParams(args);
+      QueryParams.setArgs(args);
     }
   }, [args]);
 
   React.useEffect(() => {
-    const parsed = argsForVis(vis, args, id);
+    const parsed = argsForVis(vis, args);
     // Compare the two sets of arguments to avoid infinite render cycles.
     if (!argsEquals(args, parsed)) {
       setArgsBase(parsed);
     }
-  }, [args, vis, id]);
+  }, [args, vis]);
 
   return (
     <ArgsContext.Provider

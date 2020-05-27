@@ -1,5 +1,6 @@
 import * as storage from 'common/storage';
 import * as React from 'react';
+import QueryParams from 'utils/query-params';
 
 import { SetStateFunc } from './common';
 
@@ -22,6 +23,11 @@ export const ScriptContextProvider = (props) => {
     setTitle(newTitle);
     setId(newId);
   };
+
+  React.useEffect(() => {
+    QueryParams.setScript(id, '');
+  }, [id]);
+
   return (
     <ScriptContext.Provider value={{
       script,
