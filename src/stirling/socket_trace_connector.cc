@@ -381,10 +381,10 @@ Status SocketTraceConnector::UpdateHTTP2TypeAddrs(ElfReader* elf_reader,
   symaddr = elf_reader->SymbolAddress(name).value_or(-1); \
   VLOG(1) << absl::Substitute(#symaddr " = $0", symaddr);
 
-  GET_SYMADDR(symaddrs->syscall_conn,
+  GET_SYMADDR(symaddrs->internal_syscallConn,
               "go.itab.*google.golang.org/grpc/credentials/internal.syscallConn,net.Conn");
-  GET_SYMADDR(symaddrs->tls_conn, "go.itab.*crypto/tls.Conn,net.Conn");
-  GET_SYMADDR(symaddrs->tcp_conn, "go.itab.*net.TCPConn,net.Conn");
+  GET_SYMADDR(symaddrs->tls_Conn, "go.itab.*crypto/tls.Conn,net.Conn");
+  GET_SYMADDR(symaddrs->net_TCPConn, "go.itab.*net.TCPConn,net.Conn");
   GET_SYMADDR(symaddrs->http_http2bufferedWriter,
               "go.itab.*net/http.http2bufferedWriter,io.Writer");
   GET_SYMADDR(symaddrs->transport_bufWriter,
@@ -395,7 +395,7 @@ Status SocketTraceConnector::UpdateHTTP2TypeAddrs(ElfReader* elf_reader,
   // TCPConn is mandatory by the HTTP2 uprobes probe, so bail if it is not found (-1).
   // It should be the last layer of nested interface, and contains the FD.
   // The other conns can be invalid, and will simply be ignored.
-  if (symaddrs->tcp_conn == -1) {
+  if (symaddrs->net_TCPConn == -1) {
     return error::Internal("TCPConn not found");
   }
 
@@ -417,6 +417,10 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   // clang-format off
   GET_SYMADDR(symaddrs->FD_Sysfd_offset,
               "internal/poll.FD", "Sysfd");
+  GET_SYMADDR(symaddrs->tlsConn_conn_offset,
+              "crypto/tls.Conn", "conn");
+  GET_SYMADDR(symaddrs->syscallConn_conn_offset,
+              "google.golang.org/grpc/credentials/internal.syscallConn", "conn");
   GET_SYMADDR(symaddrs->HeaderField_Name_offset,
               "golang.org/x/net/http2/hpack.HeaderField", "Name");
   GET_SYMADDR(symaddrs->HeaderField_Value_offset,

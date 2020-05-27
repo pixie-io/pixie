@@ -91,25 +91,23 @@ const int32_t kInvalidFD = -1;
 //       }
 //     }
 //   }
-static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf) {
-  uint64_t current_pid_tgid = bpf_get_current_pid_tgid();
-  uint32_t tgid = current_pid_tgid >> 32;
-  struct conn_symaddrs_t* symaddrs = http2_symaddrs_map.lookup(&tgid);
-  if (symaddrs == NULL) {
-    return kInvalidFD;
-  }
+static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf,
+                                              const struct conn_symaddrs_t* symaddrs) {
+  REQUIRE_SYMADDR(symaddrs->FD_Sysfd_offset, kInvalidFD);
 
-  if (conn_intf.type == symaddrs->syscall_conn) {
+  if (conn_intf.type == symaddrs->internal_syscallConn) {
+    REQUIRE_SYMADDR(symaddrs->syscallConn_conn_offset, kInvalidFD);
     const int kSyscallConnConnOffset = 0;
-    bpf_probe_read(&conn_intf, sizeof(conn_intf), conn_intf.ptr + kSyscallConnConnOffset);
+    bpf_probe_read(&conn_intf, sizeof(conn_intf),
+                   conn_intf.ptr + symaddrs->syscallConn_conn_offset);
   }
 
-  if (conn_intf.type == symaddrs->tls_conn) {
-    const int kTLSConnConnOffset = 0;
-    bpf_probe_read(&conn_intf, sizeof(conn_intf), conn_intf.ptr + kTLSConnConnOffset);
+  if (conn_intf.type == symaddrs->tls_Conn) {
+    REQUIRE_SYMADDR(symaddrs->tlsConn_conn_offset, kInvalidFD);
+    bpf_probe_read(&conn_intf, sizeof(conn_intf), conn_intf.ptr + symaddrs->tlsConn_conn_offset);
   }
 
-  if (conn_intf.type != symaddrs->tcp_conn) {
+  if (conn_intf.type != symaddrs->net_TCPConn) {
     return kInvalidFD;
   }
 
@@ -124,7 +122,7 @@ static __inline int32_t get_fd_from_conn_intf(struct go_interface conn_intf) {
 
 // Returns the file descriptor from a http2.Framer object.
 static __inline int32_t get_fd_from_http2_Framer(const void* framer_ptr,
-                                                 struct conn_symaddrs_t* symaddrs) {
+                                                 const struct conn_symaddrs_t* symaddrs) {
   REQUIRE_SYMADDR(symaddrs->Framer_w_offset, kInvalidFD);
   REQUIRE_SYMADDR(symaddrs->bufWriter_conn_offset, kInvalidFD);
 
@@ -142,13 +140,13 @@ static __inline int32_t get_fd_from_http2_Framer(const void* framer_ptr,
   bpf_probe_read(&conn_intf, sizeof(conn_intf),
                  io_writer_interface.ptr + symaddrs->bufWriter_conn_offset);
 
-  return get_fd_from_conn_intf(conn_intf);
+  return get_fd_from_conn_intf(conn_intf, symaddrs);
 }
 
 // Returns the file descriptor from a http.http2Framer object.
 // Essentially accesses framer_ptr.w.w.conn.
 static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
-                                                     struct conn_symaddrs_t* symaddrs) {
+                                                     const struct conn_symaddrs_t* symaddrs) {
   REQUIRE_SYMADDR(symaddrs->http2Framer_w_offset, kInvalidFD);
   REQUIRE_SYMADDR(symaddrs->http2bufferedWriter_w_offset, kInvalidFD);
   REQUIRE_SYMADDR(symaddrs->tlsConn_conn_offset, kInvalidFD);
@@ -183,7 +181,7 @@ static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
   bpf_probe_read(&conn_intf, sizeof(conn_intf),
                  inner_io_writer_interface.ptr + symaddrs->tlsConn_conn_offset);
 
-  return get_fd_from_conn_intf(conn_intf);
+  return get_fd_from_conn_intf(conn_intf, symaddrs);
 }
 
 //-----------------------------------------------------------------------------
@@ -192,7 +190,7 @@ static __inline int32_t get_fd_from_http_http2Framer(const void* framer_ptr,
 
 static __inline void fill_header_field(struct go_grpc_http2_header_event_t* event,
                                        const void* header_field_ptr,
-                                       struct conn_symaddrs_t* symaddrs) {
+                                       const struct conn_symaddrs_t* symaddrs) {
   struct gostring name;
   bpf_probe_read(&name, sizeof(struct gostring),
                  header_field_ptr + symaddrs->HeaderField_Name_offset);
@@ -215,7 +213,7 @@ static __inline void fill_header_field(struct go_grpc_http2_header_event_t* even
 static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
                                     enum HeaderEventType type, int32_t fd, uint32_t stream_id,
                                     bool end_stream, struct go_ptr_array fields,
-                                    struct conn_symaddrs_t* symaddrs) {
+                                    const struct conn_symaddrs_t* symaddrs) {
   uint32_t tgid = bpf_get_current_pid_tgid() >> 32;
   struct conn_info_t* conn_info = get_conn_info(tgid, fd);
   if (conn_info == NULL) {
@@ -249,7 +247,8 @@ static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t
 
 static __inline void submit_header(struct pt_regs* ctx, enum http2_probe_type_t probe_type,
                                    enum HeaderEventType type, void* encoder_ptr,
-                                   const void* header_field_ptr, struct conn_symaddrs_t* symaddrs) {
+                                   const void* header_field_ptr,
+                                   const struct conn_symaddrs_t* symaddrs) {
   struct header_attr_t* attr = active_write_headers_frame_map.lookup(&encoder_ptr);
   if (attr == NULL) {
     return;
@@ -337,7 +336,7 @@ int probe_loopy_writer_write_header(struct pt_regs* ctx) {
 static __inline void probe_http2_operate_headers(struct pt_regs* ctx,
                                                  enum http2_probe_type_t probe_type, int32_t fd,
                                                  const void* MetaHeadersFrame_ptr,
-                                                 struct conn_symaddrs_t* symaddrs) {
+                                                 const struct conn_symaddrs_t* symaddrs) {
   REQUIRE_SYMADDR(symaddrs->MetaHeadersFrame_HeadersFrame_offset, /* none */);
   REQUIRE_SYMADDR(symaddrs->MetaHeadersFrame_Fields_offset, /* none */);
   REQUIRE_SYMADDR(symaddrs->HeadersFrame_FrameHeader_offset, /* none */);
@@ -426,7 +425,7 @@ int probe_http2_client_operate_headers(struct pt_regs* ctx) {
   bpf_probe_read(&conn_intf, sizeof(conn_intf),
                  http2_client_ptr + symaddrs->http2Client_conn_offset);
 
-  const int32_t fd = get_fd_from_conn_intf(conn_intf);
+  const int32_t fd = get_fd_from_conn_intf(conn_intf, symaddrs);
   if (fd == kInvalidFD) {
     return 0;
   }
@@ -473,7 +472,7 @@ int probe_http2_server_operate_headers(struct pt_regs* ctx) {
   bpf_probe_read(&conn_intf, sizeof(conn_intf),
                  http2_server_ptr + symaddrs->http2Server_conn_offset);
 
-  const int32_t fd = get_fd_from_conn_intf(conn_intf);
+  const int32_t fd = get_fd_from_conn_intf(conn_intf, symaddrs);
   if (fd == kInvalidFD) {
     return 0;
   }
@@ -559,7 +558,7 @@ int probe_http_http2serverConn_processHeaders(struct pt_regs* ctx) {
   bpf_probe_read(&conn_intf, sizeof(conn_intf),
                  http2serverConn_ptr + symaddrs->http2serverConn_conn_offset);
 
-  const int32_t fd = get_fd_from_conn_intf(conn_intf);
+  const int32_t fd = get_fd_from_conn_intf(conn_intf, symaddrs);
   if (fd == kInvalidFD) {
     return 0;
   }
@@ -678,7 +677,7 @@ int probe_http_http2writeResHeaders_write_frame(struct pt_regs* ctx) {
   bpf_probe_read(&conn_intf, sizeof(conn_intf),
                  http2serverConn_ptr + symaddrs->http2serverConn_conn_offset);
 
-  const int32_t fd = get_fd_from_conn_intf(conn_intf);
+  const int32_t fd = get_fd_from_conn_intf(conn_intf, symaddrs);
   if (fd == kInvalidFD) {
     return 0;
   }

@@ -89,13 +89,14 @@ enum ControlValueIndex {
 
 struct conn_symaddrs_t {
   // net.Conn interface types.
-  int64_t syscall_conn;
-  int64_t tls_conn;
-  int64_t tcp_conn;
+  // go.itab.*google.golang.org/grpc/credentials/internal.syscallConn,net.Conn
+  int64_t internal_syscallConn;
+  int64_t tls_Conn;     // go.itab.*crypto/tls.Conn,net.Conn
+  int64_t net_TCPConn;  // go.itab.*net.TCPConn,net.Conn
 
   // io.Writer interface types.
-  int64_t http_http2bufferedWriter;  // "go.itab.*net/http.http2bufferedWriter,io.Writer;
-  int64_t transport_bufWriter;  // "google.golang.org/grpc/internal/transport.bufWriter,io.Writer;
+  int64_t http_http2bufferedWriter;  // "go.itab.*net/http.http2bufferedWriter,io.Writer
+  int64_t transport_bufWriter;  // "google.golang.org/grpc/internal/transport.bufWriter,io.Writer
 
   // Struct member offsets.
   // Naming maintains golang style: <struct>_<member>_offset
@@ -107,6 +108,9 @@ struct conn_symaddrs_t {
 
   // Members of crypto/tls.Conn.
   int32_t tlsConn_conn_offset;  // 0
+
+  // Members of google.golang.org/grpc/credentials/internal.syscallConn
+  int32_t syscallConn_conn_offset;  // 0
 
   // Members of golang.org/x/net/http2/hpack.HeaderField.
   int32_t HeaderField_Name_offset;   // 0
