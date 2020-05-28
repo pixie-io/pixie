@@ -150,27 +150,27 @@ std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_
   return res;
 }
 
-ParseState ParseBindRequest(const RegularMessage& msg, BindRequest* res) {
+Status ParseBindRequest(const RegularMessage& msg, BindRequest* res) {
   res->timestamp_ns = msg.timestamp_ns;
 
   BinaryDecoder decoder(msg.payload);
 
   // Any decoding error means the input is invalid. As the input must be the payload of a regular
   // message with tag 'B'. Therefore, it must meet a predefined pattern.
-  PL_ASSIGN_OR_RETURN_INVALID(res->dest_portal_name, decoder.ExtractStringUntil('\0'));
-  PL_ASSIGN_OR_RETURN_INVALID(res->src_prepared_stat_name, decoder.ExtractStringUntil('\0'));
+  PL_ASSIGN_OR_RETURN(res->dest_portal_name, decoder.ExtractStringUntil('\0'));
+  PL_ASSIGN_OR_RETURN(res->src_prepared_stat_name, decoder.ExtractStringUntil('\0'));
 
-  PL_ASSIGN_OR_RETURN_INVALID(const int16_t param_fmt_code_count, decoder.ExtractInt<int16_t>());
+  PL_ASSIGN_OR_RETURN(const int16_t param_fmt_code_count, decoder.ExtractInt<int16_t>());
 
   std::vector<FmtCode> param_fmt_codes;
   param_fmt_codes.reserve(param_fmt_code_count);
 
   for (int i = 0; i < param_fmt_code_count; ++i) {
-    PL_ASSIGN_OR_RETURN_INVALID(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
+    PL_ASSIGN_OR_RETURN(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
     param_fmt_codes.push_back(static_cast<FmtCode>(fmt_code));
   }
 
-  PL_ASSIGN_OR_RETURN_INVALID(int16_t param_count, decoder.ExtractInt<int16_t>());
+  PL_ASSIGN_OR_RETURN(int16_t param_count, decoder.ExtractInt<int16_t>());
 
   // The number of parameter format codes can be:
   // * 0: There is no parameter; or the format code is the default (TEXT) for all parameter.
@@ -189,44 +189,46 @@ ParseState ParseBindRequest(const RegularMessage& msg, BindRequest* res) {
 
   // Check the >1 case: parameter format code count must match parameter count.
   if (param_fmt_codes.size() > 1 && param_fmt_codes.size() != static_cast<size_t>(param_count)) {
-    return ParseState::kInvalid;
+    return error::InvalidArgument(
+        "Parameter format code count does not match parameter count, "
+        "$0 vs. $1",
+        param_fmt_codes.size(), param_count);
   }
 
   for (int i = 0; i < param_count; ++i) {
-    PL_ASSIGN_OR_RETURN_INVALID(int16_t param_value_len, decoder.ExtractInt<int32_t>());
+    PL_ASSIGN_OR_RETURN(int16_t param_value_len, decoder.ExtractInt<int32_t>());
 
     if (param_value_len == kNullValLen) {
       res->params.push_back({FmtCode::kText, std::nullopt});
       continue;
     }
 
-    PL_ASSIGN_OR_RETURN_INVALID(std::string_view param_value,
-                                decoder.ExtractString(param_value_len));
+    PL_ASSIGN_OR_RETURN(std::string_view param_value, decoder.ExtractString(param_value_len));
     const FmtCode code = get_format_code_for_ith_param(i);
     res->params.push_back({code, std::string(param_value)});
   }
 
-  PL_ASSIGN_OR_RETURN_INVALID(const int16_t res_col_fmt_code_count, decoder.ExtractInt<int16_t>());
+  PL_ASSIGN_OR_RETURN(const int16_t res_col_fmt_code_count, decoder.ExtractInt<int16_t>());
 
   for (int i = 0; i < res_col_fmt_code_count; ++i) {
-    PL_ASSIGN_OR_RETURN_INVALID(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
+    PL_ASSIGN_OR_RETURN(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
     res->res_col_fmt_codes.push_back(static_cast<FmtCode>(fmt_code));
   }
 
-  return ParseState::kSuccess;
+  return Status::OK();
 }
 
-ParseState ParseParamDesc(std::string_view payload, ParamDesc* param_desc) {
+Status ParseParamDesc(std::string_view payload, ParamDesc* param_desc) {
   BinaryDecoder decoder(payload);
 
-  PL_ASSIGN_OR_RETURN_INVALID(const int16_t param_count, decoder.ExtractInt<int16_t>());
+  PL_ASSIGN_OR_RETURN(const int16_t param_count, decoder.ExtractInt<int16_t>());
 
   for (int i = 0; i < param_count; ++i) {
-    PL_ASSIGN_OR_RETURN_INVALID(const int32_t type_oid, decoder.ExtractInt<int32_t>());
+    PL_ASSIGN_OR_RETURN(const int32_t type_oid, decoder.ExtractInt<int32_t>());
     param_desc->type_oids.push_back(type_oid);
   }
 
-  return ParseState::kSuccess;
+  return Status::OK();
 }
 
 Status ParseParse(const RegularMessage& msg, Parse* parse) {

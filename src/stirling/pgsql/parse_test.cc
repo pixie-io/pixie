@@ -163,7 +163,7 @@ TEST(PGSQLParseTest, ParseBindRequest) {
       // 2nd result column format code
       "\x00\x01");
   BindRequest bind_req;
-  EXPECT_EQ(ParseState::kSuccess, ParseBindRequest(msg, &bind_req));
+  EXPECT_OK(ParseBindRequest(msg, &bind_req));
   EXPECT_EQ(123, bind_req.timestamp_ns);
   EXPECT_THAT(bind_req.dest_portal_name, StrEq("destination portal"));
   EXPECT_THAT(bind_req.src_prepared_stat_name, StrEq("source prepared statement"));
@@ -183,7 +183,7 @@ TEST(PGSQLParseTest, ParseParamDesc) {
       // 2rd type oid
       "\x00\x00\x00\x19");
   ParamDesc param_desc;
-  EXPECT_EQ(ParseState::kSuccess, ParseParamDesc(payload, &param_desc));
+  EXPECT_OK(ParseParamDesc(payload, &param_desc));
   EXPECT_THAT(param_desc.type_oids, ElementsAre(25, 25, 25));
 }
 
