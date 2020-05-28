@@ -18,6 +18,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	mock_autocomplete "pixielabs.ai/pixielabs/src/cloud/autocomplete/mock"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
 	mock_scriptmgr "pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb/mock"
 	vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
@@ -628,4 +629,28 @@ func TestScriptMgr(t *testing.T) {
 			assert.Equal(t, tc.expectedResp, resp)
 		})
 	}
+}
+
+func TestProfileServer_GetOrgInfo(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	orgID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
+
+	_, _, mockProfileClient, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	mockProfileClient.EXPECT().GetOrg(gomock.Any(), orgID).
+		Return(&profilepb.OrgInfo{
+			OrgName: "someOrg",
+			ID:      orgID,
+		}, nil)
+
+	profileServer := &controller.ProfileServer{mockProfileClient}
+
+	resp, err := profileServer.GetOrgInfo(ctx, orgID)
+
+	assert.Nil(t, err)
+	assert.Equal(t, "someOrg", resp.OrgName)
+	assert.Equal(t, orgID, resp.ID)
 }

@@ -161,6 +161,9 @@ func main() {
 	as := &controller.AutocompleteServer{Suggester: esSuggester}
 	cloudapipb.RegisterAutocompleteServiceServer(s.GRPCServer(), as)
 
+	profileServer := &controller.ProfileServer{pc}
+	cloudapipb.RegisterProfileServiceServer(s.GRPCServer(), profileServer)
+
 	gqlEnv := controller.GraphQLEnv{
 		ArtifactTrackerServer: artifactTrackerServer,
 		VizierClusterInfo:     cis,

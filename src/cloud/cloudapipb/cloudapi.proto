@@ -424,3 +424,18 @@ message AutocompleteFieldResponse{
   // The suggestions for the single field being autocompleted.
   repeated AutocompleteSuggestion suggestions = 1;
 }
+
+service ProfileService {
+  // Get more info about an org, given the org ID.
+  rpc GetOrgInfo(pl.uuidpb.UUID) returns (OrgInfo) {}
+}
+
+// OrgInfo contains information about a company in our system.
+message OrgInfo {
+    // The ID of the organization.
+    pl.uuidpb.UUID id = 1 [
+                              (gogoproto.customname) = "ID"
+                              ];
+    // The name of the organization.
+    string org_name = 2;
+}

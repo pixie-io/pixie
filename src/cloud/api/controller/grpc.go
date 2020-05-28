@@ -16,6 +16,7 @@ import (
 	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	profilepb "pixielabs.ai/pixielabs/src/cloud/profile/profilepb"
 	"pixielabs.ai/pixielabs/src/cloud/scriptmgr/scriptmgrpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
@@ -528,5 +529,29 @@ func (s *ScriptMgrServer) GetScriptContents(ctx context.Context, req *cloudapipb
 			HasLiveView: smResp.Metadata.HasLiveView,
 		},
 		Contents: smResp.Contents,
+	}, nil
+}
+
+// ProfileServer provides info about users and orgs.
+type ProfileServer struct {
+	ProfileServiceClient profilepb.ProfileServiceClient
+}
+
+// GetOrgInfo gets the org info for a given org ID.
+func (p *ProfileServer) GetOrgInfo(ctx context.Context, req *uuidpb.UUID) (*cloudapipb.OrgInfo, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
+
+	resp, err := p.ProfileServiceClient.GetOrg(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return &cloudapipb.OrgInfo{
+		ID:      resp.ID,
+		OrgName: resp.OrgName,
 	}, nil
 }
