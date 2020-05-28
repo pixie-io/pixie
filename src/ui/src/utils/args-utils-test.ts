@@ -57,6 +57,19 @@ describe('argsEquals', () => {
     };
     expect(argsEquals(arg1, arg2)).toBe(false);
   });
+
+  it('returns true if both inputs are null', () => {
+    expect(argsEquals(null, null)).toBe(true);
+  })
+
+  it('returns false if one of the args is null', () => {
+    const arg = {
+      notFoo: 'notFoo',
+      notBar: 'notBar',
+    };
+    expect(argsEquals(null, arg)).toBe(false);
+    expect(argsEquals(arg, null)).toBe(false);
+  });
 });
 
 describe('argsForVis', () => {

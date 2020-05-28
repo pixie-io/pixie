@@ -8,6 +8,11 @@ export function argsEquals(args1: Arguments, args2: Arguments): boolean {
   if (args1 === args2) {
     return true;
   }
+
+  if (args1 === null || args2 === null) {
+    return false;
+  }
+
   if (Object.keys(args1).length !== Object.keys(args2).length) {
     return false;
   }
