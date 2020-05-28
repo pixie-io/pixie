@@ -137,6 +137,10 @@ func (s *Server) Login(ctx context.Context, in *pb.LoginRequest) (*pb.LoginReply
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
 		},
+		OrgInfo: &pb.LoginReply_OrgInfo{
+			OrgName: orgInfo.OrgName,
+			OrgID:   pbutils.UUIDFromProtoOrNil(orgInfo.ID).String(),
+		},
 	}, nil
 }
 
@@ -171,6 +175,10 @@ func (s *Server) loginSupportUser(ctx context.Context, in *pb.LoginRequest, user
 			FirstName: userInfo.FirstName,
 			LastName:  userInfo.LastName,
 			Email:     userInfo.Email,
+		},
+		OrgInfo: &pb.LoginReply_OrgInfo{
+			OrgName: orgInfo.OrgName,
+			OrgID:   orgID.String(),
 		},
 	}, nil
 }

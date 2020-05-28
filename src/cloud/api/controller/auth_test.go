@@ -80,6 +80,10 @@ func TestAuthSignupHandler(t *testing.T) {
 			LastName  string `json:"lastName"`
 			Email     string `json:"email"`
 		} `json:"userInfo"`
+		OrgInfo struct {
+			OrgID   string `json:"orgID"`
+			OrgName string `json:"orgName"`
+		} `json:"orgInfo"`
 		OrgCreated bool `json:"orgCreated"`
 	}
 	err = json.NewDecoder(rr.Body).Decode(&parsedResponse)
@@ -89,7 +93,6 @@ func TestAuthSignupHandler(t *testing.T) {
 	assert.Equal(t, "abc@defg.com", parsedResponse.UserInfo.Email)
 	assert.Equal(t, "first", parsedResponse.UserInfo.FirstName)
 	assert.Equal(t, "last", parsedResponse.UserInfo.LastName)
-	assert.Equal(t, false, parsedResponse.OrgCreated)
 
 	// Check the token in the cookie.
 	rawCookies := rr.Header().Get("Set-Cookie")
@@ -123,6 +126,10 @@ func TestAuthLoginHandler(t *testing.T) {
 			LastName:  "last",
 			Email:     "abc@defg.com",
 		},
+		OrgInfo: &authpb.LoginReply_OrgInfo{
+			OrgID:   "test",
+			OrgName: "testOrg",
+		},
 	}
 	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
 		assert.Equal(t, "the-token", in.AccessToken)
@@ -143,6 +150,10 @@ func TestAuthLoginHandler(t *testing.T) {
 			Email     string `json:"email"`
 		} `json:"userInfo"`
 		UserCreated bool `json:"userCreated"`
+		OrgInfo     struct {
+			OrgID   string `json:"orgID"`
+			OrgName string `json:"orgName"`
+		} `json:"orgInfo"`
 	}
 	err = json.NewDecoder(rr.Body).Decode(&parsedResponse)
 	assert.Nil(t, err)
@@ -152,6 +163,8 @@ func TestAuthLoginHandler(t *testing.T) {
 	assert.Equal(t, "first", parsedResponse.UserInfo.FirstName)
 	assert.Equal(t, "last", parsedResponse.UserInfo.LastName)
 	assert.Equal(t, false, parsedResponse.UserCreated)
+	assert.Equal(t, "test", parsedResponse.OrgInfo.OrgID)
+	assert.Equal(t, "testOrg", parsedResponse.OrgInfo.OrgName)
 
 	// Check the token in the cookie.
 	rawCookies := rr.Header().Get("Set-Cookie")

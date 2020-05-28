@@ -237,7 +237,7 @@ func AuthLoginHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request)
 
 	setSessionCookie(session, resp.Token, resp.ExpiresAt, r, w)
 
-	err = sendUserInfo(w, resp.UserInfo, resp.Token, resp.ExpiresAt, resp.UserCreated)
+	err = sendUserInfo(w, resp.UserInfo, resp.OrgInfo, resp.Token, resp.ExpiresAt, resp.UserCreated)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return err
@@ -320,7 +320,7 @@ func setSessionCookie(session *sessions.Session, token string, expiresAt int64, 
 	session.Save(r, w)
 }
 
-func sendUserInfo(w http.ResponseWriter, userInfo *authpb.AuthenticatedUserInfo, token string, expiresAt int64, userCreated bool) error {
+func sendUserInfo(w http.ResponseWriter, userInfo *authpb.AuthenticatedUserInfo, orgInfo *authpb.LoginReply_OrgInfo, token string, expiresAt int64, userCreated bool) error {
 	var data struct {
 		Token     string `json:"token"`
 		ExpiresAt int64  `json:"expiresAt"`
@@ -331,6 +331,10 @@ func sendUserInfo(w http.ResponseWriter, userInfo *authpb.AuthenticatedUserInfo,
 			Email     string `json:"email"`
 		} `json:"userInfo"`
 		UserCreated bool `json:"userCreated"`
+		OrgInfo     struct {
+			OrgID   string `json:"orgID"`
+			OrgName string `json:"orgName"`
+		} `json:"orgInfo"`
 	}
 
 	data.Token = token
@@ -340,6 +344,8 @@ func sendUserInfo(w http.ResponseWriter, userInfo *authpb.AuthenticatedUserInfo,
 	data.UserInfo.FirstName = userInfo.FirstName
 	data.UserInfo.LastName = userInfo.LastName
 	data.UserCreated = userCreated
+	data.OrgInfo.OrgID = orgInfo.OrgID
+	data.OrgInfo.OrgName = orgInfo.OrgName
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

@@ -57,6 +57,14 @@ message LoginReply {
 
   // Information about the logged in user.
   AuthenticatedUserInfo user_info = 5;
+
+  message OrgInfo {
+    string org_id = 1 [
+    (gogoproto.customname) = "OrgID"
+  ];
+    string org_name = 2;
+  }
+  OrgInfo org_info = 6;
 }
 
 message SignupRequest {

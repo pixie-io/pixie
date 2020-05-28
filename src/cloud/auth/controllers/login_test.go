@@ -49,7 +49,8 @@ func TestServer_LoginNewUser(t *testing.T) {
 	}
 
 	fakeOrgInfo := &profilepb.OrgInfo{
-		ID: &uuidpb.UUID{Data: []byte(orgID)},
+		ID:      &uuidpb.UUID{Data: []byte(orgID)},
+		OrgName: "testOrg",
 	}
 	a.EXPECT().GetUserInfo(userID).Return(fakeUserInfo, nil)
 
@@ -113,6 +114,8 @@ func TestServer_LoginNewUser(t *testing.T) {
 	assert.Equal(t, resp.UserInfo.FirstName, "first")
 	assert.Equal(t, resp.UserInfo.LastName, "last")
 	assert.Equal(t, resp.UserInfo.Email, "abc@gmail.com")
+	assert.Equal(t, resp.OrgInfo.OrgID, orgID)
+	assert.Equal(t, resp.OrgInfo.OrgName, "testOrg")
 	verifyToken(t, resp.Token, fakeUserInfoSecondRequest.AppMetadata["foo"].PLUserID, fakeUserInfoSecondRequest.AppMetadata["foo"].PLOrgID, resp.ExpiresAt, "jwtkey")
 }
 
