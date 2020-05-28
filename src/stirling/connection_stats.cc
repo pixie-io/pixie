@@ -50,6 +50,11 @@ void ConnectionStats::AddConnCloseEvent(const ConnectionTracker& tracker) {
 }
 
 void ConnectionStats::AddDataEvent(const ConnectionTracker& tracker, const SocketDataEvent& event) {
+  // Do not account this data event if the ConnectionTracker is disabled.
+  if (tracker.state() == ConnectionTracker::State::kDisabled) {
+    return;
+  }
+
   // Save typing.
   const conn_id_t& conn_id = event.attr.conn_id;
   const upid_t& upid = event.attr.conn_id.upid;

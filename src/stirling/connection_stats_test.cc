@@ -122,5 +122,30 @@ TEST_F(ConnectionStatsTest, ClientSizeAggregationRecord) {
                                StatsIs(1, 1, 24690, 24690))));
 }
 
+// Tests that disabled ConnectionTracker causes data event being ignored.
+TEST_F(ConnectionStatsTest, DisabledConnectionTracker) {
+  struct conn_id_t conn_id = {
+      .upid = {.tgid = 1, .start_time_ticks = 2},
+      .fd = 2,
+      .tsid = 3,
+  };
+
+  // This setup the remote address and port, which is then used by ConnectionStats::AddDataEvent().
+  ConnectionTracker tracker;
+  tracker.Disable("test");
+
+  SocketDataEvent data_event;
+  data_event.attr = {};
+  data_event.attr.conn_id = conn_id;
+  data_event.attr.traffic_class.protocol = kProtocolHTTP;
+  data_event.attr.traffic_class.role = kRoleClient;
+  data_event.attr.direction = kEgress;
+  data_event.attr.msg_size = 12345;
+
+  conn_stats_.AddDataEvent(tracker, data_event);
+
+  EXPECT_THAT(conn_stats_.agg_stats(), IsEmpty());
+}
+
 }  // namespace stirling
 }  // namespace pl
