@@ -89,21 +89,6 @@ size_t FindFrameBoundary(std::string_view buf, size_t start) {
 
 #define PL_ASSIGN_OR_RETURN_RES(expr, val_or, res) PL_ASSIGN_OR(expr, val_or, return res)
 
-std::vector<std::string_view> ParseRowDesc(std::string_view payload) {
-  RowDesc row_desc;
-  if (ParseRowDesc(payload, &row_desc) != ParseState::kSuccess) {
-    return {};
-  }
-
-  std::vector<std::string_view> res;
-  res.reserve(row_desc.fields.size());
-
-  for (const auto& f : row_desc.fields) {
-    res.push_back(f.name);
-  }
-  return res;
-}
-
 // Given the input as the payload of a kRowDesc message, returns a list of column name.
 // Row description format:
 // | int16 field count |
@@ -112,27 +97,27 @@ std::vector<std::string_view> ParseRowDesc(std::string_view payload) {
 // Field description format:
 // | string name | int32 table ID | int16 column number | int32 type ID | int16 type size |
 // | int32 type modifier | int16 format code (text|binary) |
-ParseState ParseRowDesc(std::string_view payload, RowDesc* row_desc) {
+Status ParseRowDesc(std::string_view payload, RowDesc* row_desc) {
   BinaryDecoder decoder(payload);
 
-  PL_ASSIGN_OR_RETURN_INVALID(const int16_t field_count, decoder.ExtractInt<int16_t>());
+  PL_ASSIGN_OR_RETURN(const int16_t field_count, decoder.ExtractInt<int16_t>());
 
   for (int i = 0; i < field_count; ++i) {
     RowDesc::Field field = {};
 
-    PL_ASSIGN_OR_RETURN_INVALID(field.name, decoder.ExtractStringUntil('\0'));
-    PL_ASSIGN_OR_RETURN_INVALID(field.table_oid, decoder.ExtractInt<int32_t>());
-    PL_ASSIGN_OR_RETURN_INVALID(field.attr_num, decoder.ExtractInt<int16_t>());
-    PL_ASSIGN_OR_RETURN_INVALID(field.type_oid, decoder.ExtractInt<int32_t>());
-    PL_ASSIGN_OR_RETURN_INVALID(field.type_size, decoder.ExtractInt<int16_t>());
-    PL_ASSIGN_OR_RETURN_INVALID(field.type_modifier, decoder.ExtractInt<int32_t>());
-    PL_ASSIGN_OR_RETURN_INVALID(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
+    PL_ASSIGN_OR_RETURN(field.name, decoder.ExtractStringUntil('\0'));
+    PL_ASSIGN_OR_RETURN(field.table_oid, decoder.ExtractInt<int32_t>());
+    PL_ASSIGN_OR_RETURN(field.attr_num, decoder.ExtractInt<int16_t>());
+    PL_ASSIGN_OR_RETURN(field.type_oid, decoder.ExtractInt<int32_t>());
+    PL_ASSIGN_OR_RETURN(field.type_size, decoder.ExtractInt<int16_t>());
+    PL_ASSIGN_OR_RETURN(field.type_modifier, decoder.ExtractInt<int32_t>());
+    PL_ASSIGN_OR_RETURN(const int16_t fmt_code, decoder.ExtractInt<int16_t>());
     field.fmt_code = static_cast<FmtCode>(fmt_code);
 
     row_desc->fields.push_back(std::move(field));
   }
   DCHECK_EQ(decoder.BufSize(), 0);
-  return ParseState::kSuccess;
+  return Status::OK();
 }
 
 std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_row) {

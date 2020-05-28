@@ -87,9 +87,11 @@ std::string FmtSelectResp(const DequeView<RegularMessage>& msgs) {
 
   std::string res;
   if (row_desc_iter != msgs.End()) {
-    std::vector<std::string_view> row_descs = ParseRowDesc(row_desc_iter->payload);
-    absl::StrAppend(&res, absl::StrJoin(row_descs, ","));
-    absl::StrAppend(&res, "\n");
+    RowDesc row_desc;
+    if (ParseRowDesc(row_desc_iter->payload, &row_desc).ok()) {
+      absl::StrAppend(&res, absl::StrJoin(row_desc.FieldNames(), ","));
+      absl::StrAppend(&res, "\n");
+    }
   }
   for (size_t i = 1; i < msgs.Size() - 1; ++i) {
     // kDataRow messages can mixed with other responses in an extended query, in which protocol

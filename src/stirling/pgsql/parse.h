@@ -22,13 +22,12 @@ ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg);
 
 ParseState ParseStartupMessage(std::string_view* buf, StartupMessage* msg);
 
-std::vector<std::string_view> ParseRowDesc(std::string_view row_desc);
 std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_row);
 ParseState ParseBindRequest(const RegularMessage& msg, BindRequest* res);
 ParseState ParseParamDesc(std::string_view payload, ParamDesc* param_desc);
 // This is for 'Parse' message.
 Status ParseParse(const RegularMessage& msg, Parse* parse);
-ParseState ParseRowDesc(std::string_view payload, RowDesc* row_desc);
+Status ParseRowDesc(std::string_view payload, RowDesc* row_desc);
 Status ParseErrResp(std::string_view payload, ErrResp* err_resp);
 Status ParseDesc(const RegularMessage& msg, Desc* desc);
 

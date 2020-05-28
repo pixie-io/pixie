@@ -74,37 +74,39 @@ const std::string_view kRowDescTestData = CreateStringView<char>(
     "privileges\000\000\000\000\000\000\000\000\000\000\031\377\377\377\377\377\377\000\000");
 
 TEST(PGSQLParseTest, RowDesc) {
-  std::string_view data = kRowDescTestData;
-  RegularMessage msg = {};
-  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &msg));
-  EXPECT_EQ(Tag::kRowDesc, msg.tag);
-  EXPECT_EQ(166, msg.len);
-  EXPECT_THAT(ParseRowDesc(msg.payload),
-              ElementsAre("Name", "Owner", "Encoding", "Collate", "Ctype", "Access privileges"));
-}
-
-TEST(PGSQLParseTest, RowDesc2) {
   std::string_view payload = CreateStringView<char>(
       // Field count
-      "\x00\x01"
+      "\x00\x02"
       "first_name\x00"
       "\x00\x00\x40\x01\x00\x01\x00\x00\x00\x19\xff\xff\xff\xff"
-      "\xff\xff\x00\x00");
+      "\xff\xff\x00\x00"
+      "last_name\x00"
+      "\x00\x00\x40\x01\x00\x02\x00\x00\x00\x20\xff\xff\xff\xff"
+      "\xff\xff\x00\x01");
 
   RowDesc row_desc;
-  EXPECT_EQ(ParseState::kSuccess, ParseRowDesc(payload, &row_desc));
 
-  ASSERT_THAT(row_desc.fields, SizeIs(1));
+  ASSERT_OK(ParseRowDesc(payload, &row_desc));
 
-  const auto& field = row_desc.fields.front();
+  ASSERT_THAT(row_desc.fields, SizeIs(2));
 
-  EXPECT_EQ(field.name, "first_name");
-  EXPECT_THAT(field.table_oid, 16385);
-  EXPECT_THAT(field.attr_num, 1);
-  EXPECT_THAT(field.type_oid, 25);
-  EXPECT_THAT(field.type_size, -1);
-  EXPECT_THAT(field.type_modifier, -1);
-  EXPECT_THAT(field.fmt_code, FmtCode::kText);
+  const auto& field1 = row_desc.fields.front();
+  EXPECT_EQ(field1.name, "first_name");
+  EXPECT_THAT(field1.table_oid, 16385);
+  EXPECT_THAT(field1.attr_num, 1);
+  EXPECT_THAT(field1.type_oid, 25);
+  EXPECT_THAT(field1.type_size, -1);
+  EXPECT_THAT(field1.type_modifier, -1);
+  EXPECT_THAT(field1.fmt_code, FmtCode::kText);
+
+  const auto& field2 = row_desc.fields[1];
+  EXPECT_EQ(field2.name, "last_name");
+  EXPECT_THAT(field2.table_oid, 16385);
+  EXPECT_THAT(field2.attr_num, 2);
+  EXPECT_THAT(field2.type_oid, 32);
+  EXPECT_THAT(field2.type_size, -1);
+  EXPECT_THAT(field2.type_modifier, -1);
+  EXPECT_THAT(field2.fmt_code, FmtCode::kBinary);
 }
 
 const std::string_view kDataRowTestData = CreateStringView<char>(

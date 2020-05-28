@@ -183,6 +183,14 @@ struct RowDesc {
     }
   };
   std::vector<Field> fields;
+
+  auto FieldNames() const {
+    std::vector<std::string_view> result;
+    for (const auto f : fields) {
+      result.push_back(f.name);
+    }
+    return result;
+  }
 };
 
 struct Desc {
