@@ -185,7 +185,7 @@ func (p *requestProxyer) run() error {
 				log.WithError(err).Error("Failed to send query cancel message")
 				return err
 			}
-			return nil
+			return p.ctx.Err()
 		case msg := <-p.natsCh:
 			// Incoming message from vizier.
 			if msg == nil {
