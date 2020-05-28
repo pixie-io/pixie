@@ -1,5 +1,6 @@
 import { CloudClientContext } from 'containers/App/context';
 import * as React from 'react';
+import { operation, RetryOperation } from 'retry';
 import { Subscription } from 'rxjs';
 import { debounce } from 'utils/debounce';
 import { isDev } from 'utils/env';
@@ -38,41 +39,47 @@ export const VizierGRPCClientProvider = (props: Props) => {
   const [client, setClient] = React.useState<VizierGRPCClient>(null);
   const [connectionStatus, setConnectionStatus] = React.useState<VizierConnectionStatus>('disconnected');
   const [loaded, setLoaded] = React.useState(false);
-  const [subscription, setSubscription] = React.useState<Subscription>(null);
-
-  const newClient = () => {
-    if (subscription) {
-      subscription.unsubscribe();
-    }
-    newVizierClient(cloudClient, clusterID, passthroughEnabled, vizierVersion).then(setClient);
-  };
-  const reconnect = () => {
-    setSubscription(client.health().subscribe({
-      next: (status) => {
-        if (status.getCode() === 0) {
-          setConnectionStatus('healthy');
-          setLoaded(true);
-        } else {
-          setConnectionStatus('unhealthy');
-        }
-      },
-      complete: debounce(reconnect, 2000),
-      error: () => {
-        setConnectionStatus('disconnected');
-        newClient();
-      },
-    }));
-  };
+  const subscriptionRef = React.useRef<Subscription>(null);
+  const retryRef = React.useRef<RetryOperation>(null);
+  if (!retryRef.current) {
+    retryRef.current = operation({ forever: true, randomize: true });
+  }
 
   React.useEffect(() => {
-    newClient();
+    retryRef.current.reset();
+    retryRef.current.attempt(() => {
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+      }
+      newVizierClient(cloudClient, clusterID, passthroughEnabled, vizierVersion).then(
+        (client) => {
+          setClient(client);
+          subscriptionRef.current = client.health().subscribe({
+            next: (status) => {
+              retryRef.current.reset();
+              if (status.getCode() === 0) {
+                setConnectionStatus('healthy');
+                setLoaded(true);
+              } else {
+                setConnectionStatus('unhealthy');
+              }
+            },
+            complete: () => {
+              retryRef.current.retry(new Error('stream ended'));
+            },
+            error: (error) => {
+              setConnectionStatus('disconnected');
+              retryRef.current.retry(error);
+            },
+          });
+        });
+    });
+    return () => {
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+      }
+    };
   }, [clusterID, passthroughEnabled]);
-
-  React.useEffect(() => {
-    if (client) {
-      reconnect();
-    }
-  }, [client]);
 
   return (
     <VizierGRPCClientContext.Provider value={connectionStatus === 'disconnected' ? null : client}>
