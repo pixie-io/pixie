@@ -5,6 +5,7 @@
 #include <string_view>
 #include <thread>
 
+#include "src/common/system/boot_clock.h"
 #include "src/common/system/tcp_socket.h"
 #include "src/shared/metadata/metadata.h"
 #include "src/shared/types/column_wrapper.h"
@@ -320,7 +321,7 @@ TEST_F(SocketTraceBPFTest, StartTime) {
   system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>(script);
 
   // Kernel uses monotonic clock as start_time, so we must do the same.
-  auto now = std::chrono::steady_clock::now();
+  auto now = pl::chrono::boot_clock::now();
 
   // Use a time window to make sure the recorded PID start_time is right.
   // Being super generous with the window, just in case test runs slow.
