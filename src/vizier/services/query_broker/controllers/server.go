@@ -406,13 +406,46 @@ func (s *Server) ReceiveAgentQueryResult(ctx context.Context, req *querybrokerpb
 	return queryResponse, nil
 }
 
+func (s *Server) checkHealth(ctx context.Context) error {
+	checkVersionScript := `import px; px.display(px.Version())`
+	req := plannerpb.QueryRequest{
+		QueryStr: checkVersionScript,
+	}
+	resp, err := s.ExecuteQuery(ctx, &req)
+	if err != nil {
+		return err
+	}
+	if resp.Status != nil && resp.Status.ErrCode != statuspb.OK {
+		return status.Error(codes.Code(resp.Status.ErrCode), resp.Status.Msg)
+	}
+	if resp.QueryResult == nil || len(resp.QueryResult.Tables) != 1 || len(resp.QueryResult.Tables[0].RowBatches) != 1 {
+		return status.Error(codes.Unavailable, "results not returned on health check")
+	}
+	if resp.QueryResult.Tables[0].RowBatches[0].NumRows != 1 {
+		return status.Error(codes.Unavailable, "bad results on healthcheck")
+	}
+	// HealthCheck OK.
+	return nil
+}
+
 // HealthCheck continually responds with the current health of Vizier.
 func (s *Server) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.VizierService_HealthCheckServer) error {
 	// For now, just report itself as healthy.
 	for c := time.Tick(5 * time.Second); ; {
-		err := srv.Send(&vizierpb.HealthCheckResponse{
+		err := s.checkHealth(srv.Context())
+		// Pass.
+		code := int32(codes.OK)
+		if err != nil {
+			s, ok := status.FromError(err)
+			if !ok {
+				code = int32(codes.Unavailable)
+			} else {
+				code = int32(s.Code())
+			}
+		}
+		err = srv.Send(&vizierpb.HealthCheckResponse{
 			Status: &vizierpb.Status{
-				Code: int32(codes.OK),
+				Code: code,
 			},
 		})
 		if err != nil {
@@ -426,7 +459,6 @@ func (s *Server) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.Vizi
 			continue
 		}
 	}
-	return nil
 }
 
 // ExecuteScript executes the script and sends results through the gRPC stream.
