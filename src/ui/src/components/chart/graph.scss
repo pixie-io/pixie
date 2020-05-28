@@ -1,14 +1,14 @@
 @import "../../theme.scss";
 
-#pixie-graph {
-  overflow: auto;
+.pixie-graph-root {
+  height: 100%;
+  width: 100%;
   display: flex;
-  padding: 16px;
+  flex-direction: row;
 }
 
-#pixie-graph svg {
-  margin: auto;
-  overflow: visible;
+.pixie-graph-svg {
+  flex: 1;
 }
 
 svg .cluster rect {

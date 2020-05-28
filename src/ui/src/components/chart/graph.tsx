@@ -3,9 +3,10 @@ import './graph.scss';
 import { WidgetDisplay } from 'containers/live/vis';
 import * as d3 from 'd3';
 import * as dagreD3 from 'dagre-d3';
-import * as dot from 'graphlib-dot';
+import * as graphlibDot from 'graphlib-dot';
 import * as React from 'react';
-import { AutoSizer } from 'react-virtualized';
+
+import { centerFit } from './graph-utils';
 
 interface AdjacencyList {
   toColumn: string;
@@ -38,54 +39,64 @@ interface GraphProps {
   fromCol?: string;
 }
 
-export class Graph extends React.Component<GraphProps, {}> {
-  err: string;
-  constructor(props) {
-    super(props);
-    this.err = '';
-  }
+export const Graph = (props: GraphProps) => {
+  const { dot, toCol, fromCol, data } = props;
+  const [err, setErr] = React.useState('');
+  const svgRef = React.useRef<SVGSVGElement>(null);
+  const ref = React.useRef({
+    svgGroup: null,
+    renderer: null,
+    zoom: null,
+    baseSvg: null,
+  });
 
-  dataToGraph = () => {
+  const dataToGraph = () => {
     const graph = new dagreD3.graphlib.Graph()
       .setGraph({})
       .setDefaultEdgeLabel(() => ({}));
 
-    this.props.data.forEach((rb) => {
+    data.forEach((rb) => {
       // Filter out empty columns, because this will cause dagre to crash.
-      if (this.props.toCol !== '' && this.props.fromCol !== '') {
-        graph.setNode(rb[this.props.toCol], { label: rb[this.props.toCol] });
-        graph.setNode(rb[this.props.fromCol], { label: rb[this.props.fromCol] });
-        graph.setEdge(rb[this.props.fromCol], rb[this.props.toCol]);
+      if (toCol !== '' && fromCol !== '') {
+        graph.setNode(rb[toCol], { label: rb[toCol] });
+        graph.setNode(rb[fromCol], { label: rb[fromCol] });
+        graph.setEdge(rb[fromCol], rb[toCol]);
       }
     });
 
     return graph;
-  }
+  };
 
-  componentDidMount = () => {
-    const graph = this.props.dot ? dot.read(this.props.dot) : this.dataToGraph();
-    const render = new dagreD3.render();
-    const svg = d3.select<SVGGraphicsElement, any>('#pixie-graph svg');
-    const svgGroup = svg.append('g');
+  // Do this once to setup the component.
+  React.useLayoutEffect(() => {
+    const baseSvg = d3.select<SVGGraphicsElement, any>(svgRef.current);
+    const svgGroup = baseSvg.append('g');
+    const zoom = d3.zoom().on('zoom', () => svgGroup.attr('transform', d3.event.transform));
+    const renderer = new dagreD3.render();
+    baseSvg.call(zoom);
+    ref.current = { svgGroup, baseSvg, zoom, renderer };
+  }, []);
+
+  React.useEffect(() => {
+    const graph = dot ? graphlibDot.read(dot) : dataToGraph();
+    const { baseSvg, svgGroup, renderer, zoom } = ref.current;
     try {
-      render(svgGroup, graph);
+      renderer(svgGroup, graph);
+      setErr('');
     } catch (error) {
-      this.err = 'Error rendering graph. Graph may display incorrectly.';
+      setErr('Error rendering graph. Graph may display incorrectly.');
     }
-    const bbox = svg.node().getBBox();
-    svg.style('width', bbox.width)
-      .style('height', bbox.height);
-  }
+    // Center the graph
+    const rootBbox = svgRef.current.getBoundingClientRect();
+    const groupBbox = svgGroup.node().getBBox();
 
-  render() {
-    return (
-      <AutoSizer>{({ height, width }) => {
-        return (<div id='pixie-graph' style={{ height, width }}>
-          <svg />
-          {this.err !== '' ? <p>{this.err}</p> : null}
-        </div>);
-      }}
-      </AutoSizer>
-    );
-  }
-}
+    baseSvg.call(zoom.transform, centerFit(rootBbox, groupBbox));
+  }, [dot, data]);
+
+  return (
+    <div className='pixie-graph-root'>
+      <svg className='pixie-graph-svg' ref={svgRef} />
+      {err !== '' ? <p>{err}</p> : null}
+    </div>
+  );
+};
