@@ -1,6 +1,6 @@
 import { VizierQueryError } from 'common/errors';
-import { Observable } from 'rxjs';
-import * as semver from 'semver';
+import { Observable, throwError } from 'rxjs';
+import { catchError, timeout } from 'rxjs/operators';
 import {
     ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
     RowBatchData, Status,
@@ -58,7 +58,8 @@ function getExecutionErrors(errList: ErrorDetails[]): string[] {
   });
 }
 
-const VizierDeadlineSupportVersion = '>=0.2.2';
+const EXECUTE_SCRIPT_TIMEOUT = 5000; // 5 seconds
+const HEALTHCHECK_TIMEOUT = 10000; // 10 seconds
 
 export class VizierGRPCClient {
   private client: VizierServiceClient;
@@ -75,30 +76,36 @@ export class VizierGRPCClient {
 
   health(): Observable<Status> {
     const headers = {
-      ...this.deadlineHeader(10),
       ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),
     };
-    return Observable.create((observer) => {
-      const req = new HealthCheckRequest();
-      req.setClusterId(this.clusterID);
-      const call = this.client.healthCheck(req, headers);
+    const req = new HealthCheckRequest();
+    req.setClusterId(this.clusterID);
+    const call = this.client.healthCheck(req, headers);
+    return new Observable<Status>((observer) => {
       call.on('data', (resp) => {
         observer.next(resp.getStatus());
       });
+
       call.on('error', (error) => {
         observer.error(error);
       });
+
       call.on('end', () => {
         observer.complete();
       });
-    });
+    }).pipe(
+      timeout(HEALTHCHECK_TIMEOUT),
+      catchError((err) => {
+        call.cancel();
+        return throwError(err);
+      }),
+    );
   }
 
   // Use a generator to produce the VizierQueryFunc to remove the dependency on vis.tsx.
   // funcsGenerator should correspond to getQueryFuncs in vis.tsx.
   executeScript(script: string, funcs: VizierQueryFunc[]): Promise<VizierQueryResult> {
     const headers = {
-      ...this.deadlineHeader(5),
       ...(this.attachCreds ? {} : { Authorization: `BEARER ${this.token}` }),
     };
     return new Promise((resolve, reject) => {
@@ -180,8 +187,14 @@ export class VizierGRPCClient {
 
       call.on('error', (err) => {
         reject(new VizierQueryError('server', err.message));
-        return;
       });
+
+      setTimeout(() => {
+        if (!resolved) {
+          call.cancel();
+          reject(new VizierQueryError('execution', 'Execution timed out'));
+        }
+      }, EXECUTE_SCRIPT_TIMEOUT);
     });
   }
 
@@ -211,15 +224,5 @@ export class VizierGRPCClient {
       throw errors;
     }
     return req;
-  }
-
-  private deadlineHeader(timeout: number) {
-    if (!semver.satisfies(semver.coerce(this.vizierVersion), VizierDeadlineSupportVersion)) {
-      return {};
-    }
-    const deadline = new Date();
-    deadline.setSeconds(deadline.getSeconds() + timeout);
-
-    return { deadline: deadline.getTime().toString() };
   }
 }
