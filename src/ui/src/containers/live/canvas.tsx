@@ -4,8 +4,6 @@ import 'react-resizable/css/styles.css';
 import clsx from 'clsx';
 import { displayToGraph, GraphDisplay } from 'components/chart/graph';
 import { Spinner } from 'components/spinner/spinner';
-import { addPxTimeFormatExpression } from 'components/vega/timeseries-axis';
-import Vega from 'components/vega/vega';
 import { VegaContext, withVegaContextProvider } from 'components/vega/vega-context';
 import { QueryResultTable } from 'containers/vizier/query-result-viewer';
 import * as React from 'react';
@@ -16,9 +14,13 @@ import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/sty
 
 import { ResultsContext } from './context/results-context';
 import { VisContext } from './context/vis-context';
-import { ChartDisplay, convertWidgetDisplayToVegaSpec } from './convert-to-vega-spec';
 import { addLayout, addTableLayout, Layout, toLayout, updatePositions } from './layout';
 import { DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, TABLE_DISPLAY_TYPE, widgetTableName } from './vis';
+
+const Vega = React.lazy(() => import(
+  /* webpackPreload: true */
+  /* webpackChunkName: "vega" */
+  'components/vega/vega'));
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -109,33 +111,9 @@ const Canvas = (props: CanvasProps) => {
   const { tables, loading } = React.useContext(ResultsContext);
   const { vis, setVis } = React.useContext(VisContext);
   const { setTimeseriesDomain } = React.useContext(VegaContext);
-  const [vegaModule, setVegaModule] = React.useState(null);
-  const [reactVegaModule, setReactVegaModule] = React.useState(null);
-  const [vegaLiteModule, setVegaLiteModule] = React.useState(null);
 
   // Default layout used when there is no vis defining widgets.
   const [defaultLayout, setDefaultLayout] = React.useState<Layout[]>([]);
-
-  // Load react-vega.
-  React.useEffect(() => {
-    import(/* webpackChunkName: "react-vega" webpackPreload: true */ 'react-vega').then((module) => {
-      setReactVegaModule(module);
-    });
-  }, []);
-
-  // Load vega.
-  React.useEffect(() => {
-    import(/* webpackChunkName: "vega" webpackPreload: true */ 'vega').then((module) => {
-      setVegaModule(module);
-    });
-  }, []);
-
-  // Load vega-lite.
-  React.useEffect(() => {
-    import(/* webpackChunkName: "vega-lite" webpackPreload: true */ 'vega-lite').then((module) => {
-      setVegaLiteModule(module);
-    });
-  }, []);
 
   React.useEffect(() => {
     const newVis = addLayout(vis);
@@ -145,9 +123,6 @@ const Canvas = (props: CanvasProps) => {
   }, [vis]);
 
   const charts = React.useMemo(() => {
-    if (!reactVegaModule || !vegaModule) {
-      return [];
-    }
     const className = clsx(
       'fs-exclude',
       classes.gridItem,
@@ -188,24 +163,17 @@ const Canvas = (props: CanvasProps) => {
         content = displayToGraph(display as GraphDisplay, parsedTable);
       } else {
         try {
-          const specWithProps = convertWidgetDisplayToVegaSpec(
-            display as ChartDisplay,
-            tableName,
-            theme,
-            vegaLiteModule,
-          );
-
           const data = dataFromProto(table.relation, table.data);
-          addPxTimeFormatExpression(vegaModule);
           content = <>
             <div className={classes.widgetTitle}>{widgetName}</div>
-            <Vega
-              className={classes.chart}
-              data={data}
-              specWithProps={specWithProps}
-              tableName={tableName}
-              reactVegaModule={reactVegaModule}
-            />
+            <React.Suspense fallback={<div className={classes.spinner}><Spinner /></div>}>
+              <Vega
+                className={classes.chart}
+                data={data}
+                display={display as React.ComponentProps<typeof Vega>['display']}
+                tableName={tableName}
+              />
+            </React.Suspense>
           </>;
         } catch (e) {
           content = <div>Error in displaySpec: {e.message}</div>;
@@ -219,7 +187,7 @@ const Canvas = (props: CanvasProps) => {
       );
     });
     return widgets;
-  }, [tables, vis, reactVegaModule, props.editable, defaultLayout, loading]);
+  }, [tables, vis, props.editable, defaultLayout, loading]);
 
   React.useEffect(() => {
     setTimeseriesDomain(null);
@@ -240,7 +208,7 @@ const Canvas = (props: CanvasProps) => {
     resize();
   }, [vis]);
 
-  if (!reactVegaModule || (loading && charts.length === 0)) {
+  if (loading && charts.length === 0) {
     return (
       <div className='center-content'><Spinner /></div>
     );

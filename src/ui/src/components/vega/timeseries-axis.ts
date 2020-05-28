@@ -2,6 +2,7 @@ declare module 'vega-scale' {
   export function scale(type: string, scale?: any, metadata?: any);
   export function tickValues(scale: any, count: number);
 }
+import * as vega from 'vega';
 import { timeFormat } from 'vega-functions';
 import { scale, tickValues } from 'vega-scale';
 import { textMetrics } from 'vega-scenegraph';
@@ -149,10 +150,7 @@ function combineInternalExternal(internal, external) {
 }
 
 // This adds the pxTimeFormat function to the passed in vega Module.
-export function addPxTimeFormatExpression(vega) {
-  if (!vega || !vega.expressionFunction) {
-    return;
-  }
+export function addPxTimeFormatExpression() {
   const domainFn = vega.expressionFunction('domain');
 
   //let currentWidth = 0;

@@ -1,13 +1,16 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 
+import { addPxTimeFormatExpression } from 'components/vega/timeseries-axis';
 import * as _ from 'lodash';
 import { Data, Mark, Signal, Spec as VgSpec, TimeScale } from 'vega';
 import { VisualizationSpec } from 'vega-embed';
-import { TopLevelSpec as VlSpec } from 'vega-lite';
+import { compile, TopLevelSpec as VlSpec } from 'vega-lite';
 
 import { Theme } from '@material-ui/core/styles';
 
 import { DISPLAY_TYPE_KEY, WidgetDisplay } from './vis';
+
+addPxTimeFormatExpression();
 
 const BAR_CHART_TYPE = 'pixielabs.ai/pl.vispb.BarChart';
 const VEGA_CHART_TYPE = 'pixielabs.ai/pl.vispb.VegaChart';
@@ -92,11 +95,10 @@ export function convertWidgetDisplayToVegaLiteSpec(display: ChartDisplay, source
   }
 }
 
-export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: string, theme: Theme,
-  vegaLiteModule): VegaSpecWithProps {
+export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: string, theme: Theme): VegaSpecWithProps {
   const vegaLiteSpec = convertWidgetDisplayToVegaLiteSpec(display, source);
-  const hydratedVegaLite = hydrateSpec(vegaLiteSpec, theme);
-  const vegaSpec = vegaLiteModule.compile(hydratedVegaLite).spec;
+  const hydratedVegaLite = hydrateSpec(vegaLiteSpec, theme) as VlSpec;
+  const vegaSpec = compile(hydratedVegaLite).spec;
   return addExtrasToVegaSpec(vegaSpec, display, source);
 }
 

@@ -3,15 +3,17 @@ import {
     buildHoverDataCache, formatLegendData, HoverDataCache, LegendData,
 } from 'components/legend/legend-data';
 import {
-    EXTERNAL_HOVER_SIGNAL, EXTERNAL_TS_DOMAIN_SIGNAL, HOVER_PIVOT_TRANSFORM, HOVER_SIGNAL,
-    INTERNAL_HOVER_SIGNAL, INTERNAL_TS_DOMAIN_SIGNAL, LEGEND_HOVER_SIGNAL, LEGEND_SELECT_SIGNAL,
-    REVERSE_HOVER_SIGNAL, REVERSE_SELECT_SIGNAL, REVERSE_UNSELECT_SIGNAL, VegaSpecWithProps,
+    ChartDisplay, convertWidgetDisplayToVegaSpec, EXTERNAL_HOVER_SIGNAL, EXTERNAL_TS_DOMAIN_SIGNAL,
+    HOVER_PIVOT_TRANSFORM, HOVER_SIGNAL, INTERNAL_HOVER_SIGNAL, INTERNAL_TS_DOMAIN_SIGNAL,
+    LEGEND_HOVER_SIGNAL, LEGEND_SELECT_SIGNAL, REVERSE_HOVER_SIGNAL, REVERSE_SELECT_SIGNAL,
+    REVERSE_UNSELECT_SIGNAL,
 } from 'containers/live/convert-to-vega-spec';
 import * as _ from 'lodash';
 import * as React from 'react';
+import { Vega as ReactVega } from 'react-vega';
 import { View } from 'vega-typings';
 
-import { createStyles, makeStyles } from '@material-ui/core/styles';
+import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
 import { CSSProperties } from '@material-ui/core/styles/withStyles';
 
 import { VegaContext } from './vega-context';
@@ -29,15 +31,19 @@ const useStyles = makeStyles(() => {
 
 interface VegaProps {
   data: Array<{}>;
-  specWithProps: VegaSpecWithProps;
   tableName: string;
-  reactVegaModule: any;
+  display: ChartDisplay;
   className?: string;
 }
 
 const Vega = React.memo((props: VegaProps) => {
   const classes = useStyles();
-  const { data: inputData, specWithProps: { spec, hasLegend, legendColumnName }, tableName } = props;
+  const theme = useTheme();
+  const { data: inputData, tableName, display } = props;
+  const { spec, hasLegend, legendColumnName } = React.useMemo(() =>
+    convertWidgetDisplayToVegaSpec(display, tableName, theme),
+    [display, tableName, theme]);
+
   const data = React.useMemo(() => ({ [tableName]: inputData }), [tableName, inputData]);
 
   const {
@@ -213,7 +219,7 @@ const Vega = React.memo((props: VegaProps) => {
   return (
     <div className={props.className}>
       <div className={classes.flexbox} ref={chartRef}>
-        <props.reactVegaModule.Vega
+        <ReactVega
           spec={spec}
           data={data}
           actions={false}
