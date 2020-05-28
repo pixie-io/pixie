@@ -58,7 +58,8 @@ class SystemStatsConnector : public SourceConnector {
   };
   // clang-format on
   static constexpr auto kProcessStatsTable =
-      DataTableSchema("process_stats", kProcessStatsElements);
+      DataTableSchema("process_stats", kProcessStatsElements, std::chrono::milliseconds{1000},
+                      std::chrono::milliseconds{1000});
   // TODO(oazizi): Enable version below, once rest of the agent supports tabletization.
   //               Can't enable yet because it would result in time-scrambling.
   //  static constexpr std::string_view kProcessStatsTabletizationKey = "upid";
@@ -89,15 +90,13 @@ class SystemStatsConnector : public SourceConnector {
   };
   // clang-format on
   static constexpr auto kNetworkStatsTable =
-      DataTableSchema("network_stats", kNetworkStatsElements);
+      DataTableSchema("network_stats", kNetworkStatsElements, std::chrono::milliseconds{1000},
+                      std::chrono::milliseconds{1000});
 
   static constexpr auto kTables = MakeArray(kProcessStatsTable, kNetworkStatsTable);
 
   SystemStatsConnector() = delete;
   ~SystemStatsConnector() override = default;
-
-  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{1000};
-  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SystemStatsConnector(name));
@@ -111,7 +110,7 @@ class SystemStatsConnector : public SourceConnector {
 
  protected:
   explicit SystemStatsConnector(std::string_view source_name)
-      : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {
+      : SourceConnector(source_name, kTables) {
     const auto& sysconfig = system::Config::GetInstance();
     proc_parser_ = std::make_unique<system::ProcParser>(sysconfig);
   }

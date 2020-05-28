@@ -75,18 +75,30 @@ class DataTableSchema {
  public:
   // TODO(oazizi): This constructor should only be called at compile-time. Need to enforce this.
   template <std::size_t N>
-  constexpr DataTableSchema(std::string_view name, const DataElement (&elements)[N])
-      : name_(name), elements_(elements), tabletized_(false) {
+  constexpr DataTableSchema(
+      std::string_view name, const DataElement (&elements)[N],
+      std::chrono::milliseconds default_sampling_period = kDefaultSamplingPeriod,
+      std::chrono::milliseconds default_push_period = kDefaultPushPeriod)
+      : name_(name),
+        elements_(elements),
+        tabletized_(false),
+        default_sampling_period_(default_sampling_period),
+        default_push_period_(default_push_period) {
     CheckSchema();
   }
 
   template <std::size_t N>
-  constexpr DataTableSchema(std::string_view name, const DataElement (&elements)[N],
-                            std::string_view tabletization_key_name)
+  constexpr DataTableSchema(
+      std::string_view name, const DataElement (&elements)[N],
+      std::string_view tabletization_key_name,
+      std::chrono::milliseconds default_sampling_period = kDefaultSamplingPeriod,
+      std::chrono::milliseconds default_push_period = kDefaultPushPeriod)
       : name_(name),
         elements_(elements),
         tabletized_(true),
-        tabletization_key_(ColIndex(tabletization_key_name)) {
+        tabletization_key_(ColIndex(tabletization_key_name)),
+        default_sampling_period_(default_sampling_period),
+        default_push_period_(default_push_period) {
     CheckSchema();
   }
 
@@ -94,6 +106,10 @@ class DataTableSchema {
   constexpr bool tabletized() const { return tabletized_; }
   constexpr size_t tabletization_key() const { return tabletization_key_; }
   constexpr ArrayView<DataElement> elements() const { return elements_; }
+  constexpr std::chrono::milliseconds default_sampling_period() const {
+    return default_sampling_period_;
+  }
+  constexpr std::chrono::milliseconds default_push_period() const { return default_push_period_; }
 
   // Warning: use at compile-time only!
   // TODO(oazizi): Convert to consteval when C++20 is supported, to ensure compile-time use only.
@@ -146,6 +162,11 @@ class DataTableSchema {
   const ArrayView<DataElement> elements_;
   const bool tabletized_ = false;
   size_t tabletization_key_ = std::numeric_limits<size_t>::max();
+  std::chrono::milliseconds default_sampling_period_;
+  std::chrono::milliseconds default_push_period_;
+
+  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
+  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 };
 
 }  // namespace stirling

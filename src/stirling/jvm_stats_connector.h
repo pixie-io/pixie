@@ -35,9 +35,6 @@ class JVMStatsConnector : public SourceConnector {
   static constexpr auto kTables = MakeArray(kJVMStatsTable);
   static constexpr int kTableNum = SourceConnector::TableNum(kTables, kJVMStatsTable);
 
-  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{1000};
-  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
-
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new JVMStatsConnector(name));
   }
@@ -48,7 +45,7 @@ class JVMStatsConnector : public SourceConnector {
 
  private:
   explicit JVMStatsConnector(std::string_view source_name)
-      : SourceConnector(source_name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {}
+      : SourceConnector(source_name, kTables) {}
 
   // Adds UPIDs of newly-created processes to java_procs_.
   void FindJavaUPIDs(const ConnectorContext& ctx);

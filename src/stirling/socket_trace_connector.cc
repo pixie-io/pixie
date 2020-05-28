@@ -41,10 +41,6 @@ DEFINE_bool(stirling_enable_parsing_protobufs, false,
             "If true, parses binary protobufs captured in gRPC messages. "
             "As of 2019-07, the parser can only handle protobufs defined in Hipster Shop.");
 DEFINE_int32(test_only_socket_trace_target_pid, kTraceAllTGIDs, "The process to trace.");
-// TODO(oazizi): Consolidate with dynamic sampling period though SetSamplingPeriod().
-DEFINE_uint32(stirling_socket_trace_sampling_period_millis, 100,
-              "The sampling period, in milliseconds, at which Stirling reads the BPF perf buffers "
-              "for events.");
 // TODO(yzhao): If we ever need to write all events from different perf buffers, then we need either
 // write to different files for individual perf buffers, or create a protobuf message with an oneof
 // field to include all supported message types.
@@ -115,10 +111,7 @@ StatusOr<EndpointRole> ParseEndpointRoleFlag(std::string_view role_str) {
 }  // namespace
 
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
-    : SourceConnector(source_name, kTables,
-                      std::chrono::milliseconds(FLAGS_stirling_socket_trace_sampling_period_millis),
-                      kDefaultPushPeriod),
-      bpf_tools::BCCWrapper() {
+    : SourceConnector(source_name, kTables), bpf_tools::BCCWrapper() {
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
 
   EndpointRole role_to_trace = ParseEndpointRoleFlag(FLAGS_stirling_role_to_trace).ValueOrDie();

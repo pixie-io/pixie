@@ -23,12 +23,10 @@ class ProcStatConnector : public SourceConnector {
         "The percentage of time the CPU was idle"}
   };
   // clang-format on
-  static constexpr auto kTable = DataTableSchema("proc_stat", kElements);
+  static constexpr auto kTable = DataTableSchema(
+      "proc_stat", kElements, std::chrono::milliseconds{100}, std::chrono::milliseconds{1000});
 
   static constexpr auto kTables = MakeArray(kTable);
-
-  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
-  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   ProcStatConnector() = delete;
   ~ProcStatConnector() override = default;
@@ -37,8 +35,7 @@ class ProcStatConnector : public SourceConnector {
   }
 
  protected:
-  explicit ProcStatConnector(std::string_view name)
-      : SourceConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {}
+  explicit ProcStatConnector(std::string_view name) : SourceConnector(name, kTables) {}
   Status InitImpl() override;
   void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
   Status StopImpl() override { return Status::OK(); }

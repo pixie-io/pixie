@@ -59,7 +59,8 @@ constexpr DataElement kHTTPElements[] = {
 };
 // clang-format on
 
-constexpr auto kHTTPTable = DataTableSchema("http_events", kHTTPElements);
+constexpr auto kHTTPTable = DataTableSchema(
+    "http_events", kHTTPElements, std::chrono::milliseconds{100}, std::chrono::milliseconds{1000});
 
 constexpr int kHTTPTimeIdx = kHTTPTable.ColIndex("time_");
 constexpr int kHTTPUPIDIdx = kHTTPTable.ColIndex("upid");

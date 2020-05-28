@@ -119,14 +119,11 @@ class SourceConnector : public NotCopyable {
    *
    * Default in the base class is true, and normally should not be changed in the derived class.
    *
-   * However, a dervived class may want to redefine to false in certain special circumstances:
+   * However, a derived class may want to redefine to false in certain special circumstances:
    * 1) a SourceConnector that is just a placeholder (not yet implemented).
    * 2) a SourceConnector that is not compilable (e.g. on Mac). See DUMMY_SOURCE_CONNECTOR macro.
    */
   static constexpr bool kAvailable = true;
-
-  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
-  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   SourceConnector() = delete;
   virtual ~SourceConnector() = default;
@@ -179,9 +176,6 @@ class SourceConnector : public NotCopyable {
     return i;
   }
 
-  const std::chrono::milliseconds& default_sampling_period() { return default_sampling_period_; }
-  const std::chrono::milliseconds& default_push_period() { return default_push_period_; }
-
   /**
    * @brief Utility function to convert time as recorded by in monotonic clock to real time.
    * This is especially useful for converting times from BPF, which are all in monotonic clock.
@@ -202,13 +196,8 @@ class SourceConnector : public NotCopyable {
 
  protected:
   explicit SourceConnector(std::string_view source_name,
-                           const ArrayView<DataTableSchema>& table_schemas,
-                           std::chrono::milliseconds default_sampling_period,
-                           std::chrono::milliseconds default_push_period)
-      : source_name_(source_name),
-        table_schemas_(table_schemas),
-        default_sampling_period_(default_sampling_period),
-        default_push_period_(default_push_period) {}
+                           const ArrayView<DataTableSchema>& table_schemas)
+      : source_name_(source_name), table_schemas_(table_schemas) {}
 
   virtual Status InitImpl() = 0;
   virtual void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
@@ -234,8 +223,6 @@ class SourceConnector : public NotCopyable {
 
   const std::string source_name_;
   const ArrayView<DataTableSchema> table_schemas_;
-  const std::chrono::milliseconds default_sampling_period_;
-  const std::chrono::milliseconds default_push_period_;
 };
 
 }  // namespace stirling

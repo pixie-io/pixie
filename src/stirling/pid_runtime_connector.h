@@ -44,12 +44,11 @@ class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper
       "Process command line"},
   };
   // clang-format on
-  static constexpr auto kTable = DataTableSchema("bcc_pid_cpu_usage", kElements);
+  static constexpr auto kTable =
+      DataTableSchema("bcc_pid_cpu_usage", kElements, std::chrono::milliseconds{100},
+                      std::chrono::milliseconds{1000});
 
   static constexpr auto kTables = MakeArray(kTable);
-
-  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
-  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new PIDRuntimeConnector(name));
@@ -61,8 +60,7 @@ class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper
 
  protected:
   explicit PIDRuntimeConnector(std::string_view name)
-      : SourceConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod),
-        bpf_tools::BCCWrapper() {}
+      : SourceConnector(name, kTables), bpf_tools::BCCWrapper() {}
 
  private:
   static constexpr perf_type_id kEventType = perf_type_id::PERF_TYPE_SOFTWARE;

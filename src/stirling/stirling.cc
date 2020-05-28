@@ -265,8 +265,8 @@ Status StirlingImpl::AddSourceFromRegistry(
     mgr->SetSourceConnector(source.get(), i);
 
     // Step 3: Setup the manager.
-    mgr_ptr->SetSamplingPeriod(source->default_sampling_period());
-    mgr_ptr->SetPushPeriod(source->default_push_period());
+    mgr_ptr->SetSamplingPeriod(source->TableSchema(i).default_sampling_period());
+    mgr_ptr->SetPushPeriod(source->TableSchema(i).default_push_period());
 
     // Step 4: Keep pointers to all the objects
     info_class_mgrs_.push_back(std::move(mgr));

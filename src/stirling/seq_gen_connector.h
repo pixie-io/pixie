@@ -30,7 +30,9 @@ class SeqGenConnector : public SourceConnector {
       {"PIx", types::DataType::FLOAT64, types::PatternType::GENERAL, "PI * x"},
   };
   // clang-format on
-  static constexpr auto kSeq0Table = DataTableSchema("sequence_generator0", kElementsSeq0);
+  static constexpr auto kSeq0Table =
+      DataTableSchema("sequence_generator0", kElementsSeq0, std::chrono::milliseconds{500},
+                      std::chrono::milliseconds{1000});
 
   // clang-format off
   static constexpr DataElement kElementsSeq1[] = {
@@ -41,14 +43,12 @@ class SeqGenConnector : public SourceConnector {
   // clang-format on
   static constexpr std::string_view kSeq1TabletizationKey = "xmod8";
   static constexpr auto kSeq1Table =
-      DataTableSchema("sequence_generator1", kElementsSeq1, kSeq1TabletizationKey);
+      DataTableSchema("sequence_generator1", kElementsSeq1, kSeq1TabletizationKey,
+                      std::chrono::milliseconds{500}, std::chrono::milliseconds{1000});
 
   static constexpr auto kTables = MakeArray(kSeq0Table, kSeq1Table);
   static constexpr uint32_t kSeq0TableNum = SourceConnector::TableNum(kTables, kSeq0Table);
   static constexpr uint32_t kSeq1TableNum = SourceConnector::TableNum(kTables, kSeq1Table);
-
-  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{500};
-  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new SeqGenConnector(name));
@@ -65,7 +65,7 @@ class SeqGenConnector : public SourceConnector {
 
  protected:
   explicit SeqGenConnector(std::string_view name)
-      : SourceConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod),
+      : SourceConnector(name, kTables),
         table0_lin_seq_(1, 1),
         table0_mod10_seq_(10),
         table0_square_seq_(1, 0, 0),

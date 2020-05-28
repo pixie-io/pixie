@@ -58,11 +58,9 @@ class TestSourceConnector : public SourceConnector {
       {"system_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE, "System percentage"},
       {"io_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE, "IO percentage"}};
 
-  static constexpr auto kTable = DataTableSchema("cpu", kElements);
+  static constexpr auto kTable = DataTableSchema("cpu", kElements, std::chrono::milliseconds{100},
+                                                 std::chrono::milliseconds{1000});
   static constexpr auto kTables = MakeArray(kTable);
-
-  static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{1000};
-  static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
 
   static std::unique_ptr<SourceConnector> Create(std::string_view name) {
     return std::unique_ptr<SourceConnector>(new TestSourceConnector(name));
@@ -76,8 +74,7 @@ class TestSourceConnector : public SourceConnector {
                         DataTable* /* data_table */) override{};
 
  protected:
-  explicit TestSourceConnector(std::string_view name)
-      : SourceConnector(name, kTables, kDefaultSamplingPeriod, kDefaultPushPeriod) {}
+  explicit TestSourceConnector(std::string_view name) : SourceConnector(name, kTables) {}
 };
 
 class PubSubManagerTest : public ::testing::Test {
@@ -114,10 +111,8 @@ TEST_F(PubSubManagerTest, publish_test) {
   EXPECT_FALSE(actual_publish_pb.published_info_classes(0).subscribed());
   EXPECT_EQ(1, expected_publish_pb.published_info_classes_size());
   EXPECT_EQ(0, actual_publish_pb.published_info_classes(0).id());
-  EXPECT_EQ(InfoClassManager::kDefaultSamplingPeriod,
-            actual_publish_pb.published_info_classes(0).sampling_period_millis());
-  EXPECT_EQ(InfoClassManager::kDefaultPushPeriod,
-            actual_publish_pb.published_info_classes(0).push_period_millis());
+  EXPECT_EQ(100, actual_publish_pb.published_info_classes(0).sampling_period_millis());
+  EXPECT_EQ(1000, actual_publish_pb.published_info_classes(0).push_period_millis());
 
   EXPECT_TRUE(MessageDifferencer::Equals(actual_publish_pb, expected_publish_pb));
 }

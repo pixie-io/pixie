@@ -36,7 +36,8 @@ static constexpr DataElement kCQLElements[] = {
 };
 // clang-format on
 
-static constexpr auto kCQLTable = DataTableSchema("cql_events", kCQLElements);
+static constexpr auto kCQLTable = DataTableSchema(
+    "cql_events", kCQLElements, std::chrono::milliseconds{100}, std::chrono::milliseconds{1000});
 
 static constexpr int kCQLTraceRoleIdx = kCQLTable.ColIndex("trace_role");
 static constexpr int kCQLUPIDIdx = kCQLTable.ColIndex("upid");

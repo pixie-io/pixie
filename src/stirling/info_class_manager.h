@@ -43,7 +43,12 @@ class InfoClassManager final : public NotCopyable {
    * This is required to identify an InfoClassManager parent source and also to generate
    * the publish proto.
    */
-  explicit InfoClassManager(const DataTableSchema& schema) : schema_(schema) { id_ = global_id_++; }
+  explicit InfoClassManager(const DataTableSchema& schema)
+      : schema_(schema),
+        sampling_period_(schema.default_sampling_period()),
+        push_period_(schema.default_push_period()) {
+    id_ = global_id_++;
+  }
 
   /**
    * @brief Source connector connected to this Info Class.
@@ -206,7 +211,7 @@ class InfoClassManager final : public NotCopyable {
   /**
    * Sampling period.
    */
-  std::chrono::milliseconds sampling_period_{kDefaultSamplingPeriod};
+  std::chrono::milliseconds sampling_period_;
 
   /**
    * Keep track of when the source was last sampled.
@@ -221,7 +226,7 @@ class InfoClassManager final : public NotCopyable {
   /**
    * Sampling period.
    */
-  std::chrono::milliseconds push_period_{kDefaultPushPeriod};
+  std::chrono::milliseconds push_period_;
 
   /**
    * Keep track of when the source was last sampled.
@@ -246,13 +251,6 @@ class InfoClassManager final : public NotCopyable {
  public:
   static constexpr uint32_t kDefaultOccupancyThreshold = 1024;
   static constexpr uint32_t kDefaultOccupancyPctThreshold = 100;
-
-  // The sampling/push periods are overwritten by CreateSourceConnectors(),
-  // which uses SourceConnector specific default values.
-  // So don't read too much into these constants.
-  // See the default constants in the individual source connectors instead.
-  static constexpr uint32_t kDefaultSamplingPeriod = 100;
-  static constexpr uint32_t kDefaultPushPeriod = 1000;
 };
 
 using InfoClassManagerVec = std::vector<std::unique_ptr<InfoClassManager>>;
