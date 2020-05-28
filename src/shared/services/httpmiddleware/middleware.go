@@ -52,7 +52,7 @@ func WithBearerAuthMiddleware(env env.Env, next http.Handler) http.Handler {
 			return
 		}
 
-		if !aCtx.ValidUser() {
+		if !aCtx.ValidClaims() {
 			http.Error(w, "Invalid user", http.StatusUnauthorized)
 			return
 		}

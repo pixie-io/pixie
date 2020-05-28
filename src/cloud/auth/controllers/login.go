@@ -301,36 +301,39 @@ func (s *Server) GetAugmentedToken(
 		return nil, status.Errorf(codes.Unauthenticated, "Invalid auth token")
 	}
 
-	if !aCtx.ValidUser() {
+	if !aCtx.ValidClaims() {
 		return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
 	}
 
-	// Check to make sure that the org and user exist in the system.
-	pc := s.env.ProfileClient()
+	// We perform extra checks for user tokens.
+	if utils.GetClaimsType(aCtx.Claims) == utils.UserClaimType {
+		// Check to make sure that the org and user exist in the system.
+		pc := s.env.ProfileClient()
 
-	md, _ := metadata.FromIncomingContext(ctx)
-	ctx = metadata.NewOutgoingContext(ctx, md)
+		md, _ := metadata.FromIncomingContext(ctx)
+		ctx = metadata.NewOutgoingContext(ctx, md)
 
-	orgIDstr := aCtx.Claims.GetUserClaims().OrgID
-	_, err := pc.GetOrg(ctx, pbutils.ProtoFromUUIDStrOrNil(orgIDstr))
-	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, "Invalid auth/org")
-	}
-
-	domainName, err := GetDomainNameFromEmail(aCtx.Claims.GetUserClaims().Email)
-	if err != nil {
-		return nil, status.Error(codes.Unauthenticated, "Invalid email")
-	}
-
-	if domainName != SupportAccountDomain {
-		userIDstr := aCtx.Claims.GetUserClaims().UserID
-		userInfo, err := pc.GetUser(ctx, pbutils.ProtoFromUUIDStrOrNil(userIDstr))
-		if err != nil || userInfo == nil {
-			return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
+		orgIDstr := aCtx.Claims.GetUserClaims().OrgID
+		_, err := pc.GetOrg(ctx, pbutils.ProtoFromUUIDStrOrNil(orgIDstr))
+		if err != nil {
+			return nil, status.Error(codes.Unauthenticated, "Invalid auth/org")
 		}
 
-		if orgIDstr != pbutils.UUIDFromProtoOrNil(userInfo.OrgID).String() {
-			return nil, status.Error(codes.Unauthenticated, "Mismatched org")
+		domainName, err := GetDomainNameFromEmail(aCtx.Claims.GetUserClaims().Email)
+		if err != nil {
+			return nil, status.Error(codes.Unauthenticated, "Invalid email")
+		}
+
+		if domainName != SupportAccountDomain {
+			userIDstr := aCtx.Claims.GetUserClaims().UserID
+			userInfo, err := pc.GetUser(ctx, pbutils.ProtoFromUUIDStrOrNil(userIDstr))
+			if err != nil || userInfo == nil {
+				return nil, status.Error(codes.Unauthenticated, "Invalid auth/user")
+			}
+
+			if orgIDstr != pbutils.UUIDFromProtoOrNil(userInfo.OrgID).String() {
+				return nil, status.Error(codes.Unauthenticated, "Mismatched org")
+			}
 		}
 	}
 

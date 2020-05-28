@@ -21,6 +21,12 @@ func GenerateTestClaimsWithDuration(t *testing.T, duration time.Duration, email 
 	return claims
 }
 
+// GenerateTestServiceClaims generates valid test service claims for a specified duration.
+func GenerateTestServiceClaims(t *testing.T, service string) *pb.JWTClaims {
+	claims := utils.GenerateJWTForService(service)
+	return claims
+}
+
 // GenerateTestClaims generates valid test user claims valid for 60 minutes
 func GenerateTestClaims(t *testing.T) *pb.JWTClaims {
 	return GenerateTestClaimsWithDuration(t, time.Minute*60, "test@test.com")

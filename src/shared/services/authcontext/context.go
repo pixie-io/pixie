@@ -48,8 +48,8 @@ func (s *AuthContext) UseJWTAuth(signingKey string, tokenString string) error {
 	return nil
 }
 
-// ValidUser returns true if the user is logged in and valid.
-func (s *AuthContext) ValidUser() bool {
+// ValidClaims returns true if the user is logged in and valid.
+func (s *AuthContext) ValidClaims() bool {
 	if s.Claims == nil {
 		return false
 	}

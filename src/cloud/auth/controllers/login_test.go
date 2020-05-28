@@ -631,6 +631,43 @@ func TestServer_GetAugmentedToken(t *testing.T) {
 	verifyToken(t, resp.Token, testingutils.TestUserID, testingutils.TestOrgID, resp.ExpiresAt, "jwtkey")
 }
 
+func TestServer_GetAugmentedToken_Service(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	a := mock_controllers.NewMockAuth0Connector(ctrl)
+
+	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
+	viper.Set("jwt_signing_key", "jwtkey")
+	env, err := authenv.New(mockProfile)
+	assert.Nil(t, err)
+	s, err := controllers.NewServer(env, a)
+	assert.Nil(t, err)
+
+	claims := testingutils.GenerateTestServiceClaims(t, "vzmgr")
+	token := testingutils.SignPBClaims(t, claims, "jwtkey")
+	req := &pb.GetAugmentedAuthTokenRequest{
+		Token: token,
+	}
+	sCtx := authcontext.New()
+	sCtx.Claims = claims
+	resp, err := s.GetAugmentedToken(context.Background(), req)
+
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+
+	// Make sure expiry time is in the future & > 0.
+	currentTime := time.Now().Unix()
+	maxExpiryTime := time.Now().Add(60 * time.Minute).Unix()
+	assert.True(t, resp.ExpiresAt > currentTime && resp.ExpiresAt < maxExpiryTime)
+	assert.True(t, resp.ExpiresAt > 0)
+
+	jwtclaims := jwt.MapClaims{}
+	_, err = jwt.ParseWithClaims(token, jwtclaims, func(token *jwt.Token) (interface{}, error) {
+		return []byte("jwtkey"), nil
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, "vzmgr", jwtclaims["ServiceID"])
+}
+
 func TestServer_GetAugmentedToken_NoOrg(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	a := mock_controllers.NewMockAuth0Connector(ctrl)

@@ -112,6 +112,31 @@ func TestPBToMapClaims_Cluster(t *testing.T) {
 	assert.Equal(t, "cluster_id", claims["ClusterID"])
 }
 
+func TestGetClaimsType(t *testing.T) {
+	p := &jwt2.JWTClaims{
+		Audience:  "audience",
+		ExpiresAt: 100,
+		JTI:       "jti",
+		IssuedAt:  15,
+		Issuer:    "issuer",
+		NotBefore: 5,
+		Subject:   "subject",
+		Scopes:    []string{"user"},
+	}
+
+	// User claims.
+	userClaims := &jwt2.UserJWTClaims{
+		UserID: "user_id",
+		OrgID:  "org_id",
+		Email:  "user@email.com",
+	}
+	p.CustomClaims = &jwt2.JWTClaims_UserClaims{
+		UserClaims: userClaims,
+	}
+
+	assert.Equal(t, utils.UserClaimType, utils.GetClaimsType(p))
+}
+
 func TestMapClaimsToPB_User(t *testing.T) {
 	claims := jwt.MapClaims{}
 

@@ -10,6 +10,20 @@ import (
 	jwt2 "pixielabs.ai/pixielabs/src/shared/services/proto"
 )
 
+// ClaimType represents the type of claims we allow in our system.
+type ClaimType int
+
+const (
+	// UnknownClaimType is an unknown type.
+	UnknownClaimType ClaimType = iota
+	// UserClaimType is a claim for a user.
+	UserClaimType
+	// ServiceClaimType is a claim for a service.
+	ServiceClaimType
+	// ClusterClaimType is a claim type for a cluster.
+	ClusterClaimType
+)
+
 // PBToMapClaims maps protobuf claims to map claims.
 func PBToMapClaims(pb *jwt2.JWTClaims) jwt.MapClaims {
 	claims := jwt.MapClaims{}
@@ -40,6 +54,20 @@ func PBToMapClaims(pb *jwt2.JWTClaims) jwt.MapClaims {
 	}
 
 	return claims
+}
+
+// GetClaimsType gets the type of the given claim.
+func GetClaimsType(c *jwt2.JWTClaims) ClaimType {
+	switch c.CustomClaims.(type) {
+	case *jwt2.JWTClaims_UserClaims:
+		return UserClaimType
+	case *jwt2.JWTClaims_ServiceClaims:
+		return ServiceClaimType
+	case *jwt2.JWTClaims_ClusterClaims:
+		return ClusterClaimType
+	default:
+		return UnknownClaimType
+	}
 }
 
 // MapClaimsToPB tkes a MapClaims and converts it to a protobuf.
