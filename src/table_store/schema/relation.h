@@ -14,6 +14,7 @@ namespace schema {
 using ColTypeArray = std::vector<types::DataType>;
 using ColNameArray = std::vector<std::string>;
 using ColDescArray = std::vector<std::string>;
+using ColSemanticTypeArray = std::vector<types::SemanticType>;
 
 /**
  * Relation tracks columns/types for a given table/operator
@@ -24,11 +25,17 @@ class Relation {
   // Constructor for Relation that initializes with a list of column types.
   explicit Relation(ColTypeArray col_types, ColNameArray col_names);
   explicit Relation(ColTypeArray col_types, ColNameArray col_names, ColDescArray col_desc);
+  explicit Relation(ColTypeArray col_types, ColNameArray col_names, ColDescArray col_desc,
+                    ColSemanticTypeArray col_semantic_types);
+  explicit Relation(ColTypeArray col_types, ColNameArray col_names,
+                    ColSemanticTypeArray col_semantic_types);
 
   // Get the column types.
   const ColTypeArray& col_types() const { return col_types_; }
   // Get the column names.
   const ColNameArray& col_names() const { return col_names_; }
+  // Get the column semantic types.
+  const ColSemanticTypeArray& col_semantic_types() const { return col_semantic_types_; }
 
   // Returns the number of columns.
   size_t NumColumns() const;
@@ -36,6 +43,9 @@ class Relation {
   // Add a column to the relation.
   void AddColumn(const types::DataType& col_type, const std::string& col_name,
                  std::string_view desc = "");
+  // Add a column to the relation with semantic typing.
+  void AddColumn(const types::DataType& col_type, const std::string& col_name,
+                 const types::SemanticType& col_semantic_type, std::string_view desc = "");
 
   int64_t GetColumnIndex(const std::string& col_name) const;
 
@@ -48,6 +58,8 @@ class Relation {
   const std::string& GetColumnName(size_t idx) const;
   const std::string& GetColumnDesc(size_t idx) const;
   const std::string& GetColumnDesc(const std::string& col_name) const;
+  types::SemanticType GetColumnSemanticType(size_t idx) const;
+  types::SemanticType GetColumnSemanticType(const std::string& col_name) const;
 
   // Get the debug string of this relation.
   std::string DebugString() const;
@@ -81,6 +93,7 @@ class Relation {
   ColTypeArray col_types_;
   ColNameArray col_names_;
   ColDescArray col_desc_;
+  ColSemanticTypeArray col_semantic_types_;
 };
 
 }  // namespace schema

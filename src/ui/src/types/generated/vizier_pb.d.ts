@@ -297,6 +297,9 @@ export namespace Relation {
     getColumnDesc(): string;
     setColumnDesc(value: string): void;
 
+    getColumnSemanticType(): SemanticType;
+    setColumnSemanticType(value: SemanticType): void;
+
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): ColumnInfo.AsObject;
     static toObject(includeInstance: boolean, msg: ColumnInfo): ColumnInfo.AsObject;
@@ -310,6 +313,7 @@ export namespace Relation {
       columnName: string,
       columnType: DataType,
       columnDesc: string,
+      columnSemanticType: SemanticType,
     }
   }
 
@@ -732,4 +736,15 @@ export enum DataType {
   STRING = 5,
   TIME64NS = 6,
   DURATION64NS = 7,
+}
+export enum SemanticType { 
+  ST_UNSPECIFIED = 0,
+  ST_NONE = 1,
+  ST_AGENT_UID = 100,
+  ST_UPID = 200,
+  ST_SERVICE_NAME = 300,
+  ST_POD_NAME = 400,
+  ST_NODE_NAME = 500,
+  ST_CONTAINER_NAME = 600,
+  ST_NAMESPACE_NAME = 700,
 }

@@ -27,6 +27,18 @@ var dataTypeToVizierDataType = map[typespb.DataType]vizierpb.DataType{
 	typespb.DURATION64NS:      vizierpb.DURATION64NS,
 }
 
+var semanticTypeToVizierSemanticType = map[typespb.SemanticType]vizierpb.SemanticType{
+	typespb.ST_UNSPECIFIED:    vizierpb.ST_UNSPECIFIED,
+	typespb.ST_NONE:           vizierpb.ST_NONE,
+	typespb.ST_AGENT_UID:      vizierpb.ST_AGENT_UID,
+	typespb.ST_UPID:           vizierpb.ST_UPID,
+	typespb.ST_SERVICE_NAME:   vizierpb.ST_SERVICE_NAME,
+	typespb.ST_POD_NAME:       vizierpb.ST_POD_NAME,
+	typespb.ST_NODE_NAME:      vizierpb.ST_NODE_NAME,
+	typespb.ST_CONTAINER_NAME: vizierpb.ST_CONTAINER_NAME,
+	typespb.ST_NAMESPACE_NAME: vizierpb.ST_NAMESPACE_NAME,
+}
+
 // These codes are taken from https://godoc.org/google.golang.org/grpc/codes#Code.
 var statusCodeToGRPCCode = map[statuspb.Code]codes.Code{
 	statuspb.OK:                   codes.OK,
@@ -122,9 +134,10 @@ func RelationFromTable(table *schemapb.Table) (*vizierpb.QueryMetadata, error) {
 	cols := make([]*vizierpb.Relation_ColumnInfo, len(table.Relation.Columns))
 	for i, c := range table.Relation.Columns {
 		newCol := &vizierpb.Relation_ColumnInfo{
-			ColumnName: c.ColumnName,
-			ColumnDesc: c.ColumnDesc,
-			ColumnType: dataTypeToVizierDataType[c.ColumnType],
+			ColumnName:         c.ColumnName,
+			ColumnDesc:         c.ColumnDesc,
+			ColumnType:         dataTypeToVizierDataType[c.ColumnType],
+			ColumnSemanticType: semanticTypeToVizierSemanticType[c.ColumnSemanticType],
 		}
 		cols[i] = newCol
 	}

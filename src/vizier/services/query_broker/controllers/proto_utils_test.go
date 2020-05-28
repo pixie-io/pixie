@@ -86,6 +86,22 @@ relation {
 name: "test"
 `
 
+var tableSemanticTypePb = `
+relation {
+	columns {
+		column_name: "abcd"
+		column_type: STRING
+		column_semantic_type: ST_SERVICE_NAME
+	}
+	columns {
+		column_name: "efgh"
+		column_type: STRING
+		column_semantic_type: ST_POD_NAME
+	}
+}
+name: "test"
+`
+
 var unauthenticatedStatusPb = `
 err_code: UNAUTHENTICATED
 msg: "this is a message"
@@ -214,6 +230,22 @@ func TestRelationFromTable(t *testing.T) {
 
 	expectedQm := new(vizierpb.QueryMetadata)
 	if err := proto.UnmarshalText(tablePb, expectedQm); err != nil {
+		t.Fatalf("Cannot unmarshal proto %v", err)
+	}
+
+	qm, err := controllers.RelationFromTable(sv)
+	assert.Nil(t, err)
+	assert.Equal(t, expectedQm, qm)
+}
+
+func TestRelationFromTableWithSemanticTypes(t *testing.T) {
+	sv := new(schemapb.Table)
+	if err := proto.UnmarshalText(tableSemanticTypePb, sv); err != nil {
+		t.Fatalf("Cannot unmarshal proto %v", err)
+	}
+
+	expectedQm := new(vizierpb.QueryMetadata)
+	if err := proto.UnmarshalText(tableSemanticTypePb, expectedQm); err != nil {
 		t.Fatalf("Cannot unmarshal proto %v", err)
 	}
 

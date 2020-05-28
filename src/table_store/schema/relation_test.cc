@@ -86,6 +86,13 @@ TEST(RelationTest, mutate_relation) {
   EXPECT_EQ(r.GetColumnType("abcd"), types::BOOLEAN);
 }
 
+TEST(RelationTest, semantic_types) {
+  Relation r({types::INT64, types::STRING}, {"abc", "def"},
+             {types::ST_NONE, types::ST_SERVICE_NAME});
+  EXPECT_EQ(r.GetColumnSemanticType("abc"), types::ST_NONE);
+  EXPECT_EQ(r.GetColumnSemanticType("def"), types::ST_SERVICE_NAME);
+}
+
 TEST(RelationDeathTest, out_of_bounds_col_type) {
   Relation r({types::INT64, types::STRING}, {"abc", "def"});
   EXPECT_DEATH(r.GetColumnType(2), ".*does not exist.*");

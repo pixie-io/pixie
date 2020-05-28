@@ -15,6 +15,19 @@ enum DataType {
   TIME64NS = 6;
   DURATION64NS = 7;
 }
+
+enum SemanticType {
+  ST_UNSPECIFIED = 0;
+  ST_NONE = 1;
+  ST_AGENT_UID = 100;
+  ST_UPID = 200;
+  ST_SERVICE_NAME = 300;
+  ST_POD_NAME = 400;
+  ST_NODE_NAME = 500;
+  ST_CONTAINER_NAME = 600;
+  ST_NAMESPACE_NAME = 700;
+}
+
 message UInt128 {
   uint64 low = 1;
   uint64 high = 2;
@@ -83,6 +96,7 @@ message Relation {
     string column_name = 1;
     DataType column_type = 2;
     string column_desc = 3;
+    SemanticType column_semantic_type = 4;
   }
   repeated ColumnInfo columns = 1;
 }

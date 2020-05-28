@@ -38,6 +38,7 @@ goog.exportSymbol('proto.pl.api.vizierpb.Relation.ColumnInfo', null, global);
 goog.exportSymbol('proto.pl.api.vizierpb.RowBatchData', null, global);
 goog.exportSymbol('proto.pl.api.vizierpb.ScalarValue', null, global);
 goog.exportSymbol('proto.pl.api.vizierpb.ScalarValue.ValueCase', null, global);
+goog.exportSymbol('proto.pl.api.vizierpb.SemanticType', null, global);
 goog.exportSymbol('proto.pl.api.vizierpb.Status', null, global);
 goog.exportSymbol('proto.pl.api.vizierpb.StringColumn', null, global);
 goog.exportSymbol('proto.pl.api.vizierpb.Time64NSColumn', null, global);
@@ -2769,7 +2770,8 @@ proto.pl.api.vizierpb.Relation.ColumnInfo.toObject = function(includeInstance, m
   var f, obj = {
     columnName: jspb.Message.getFieldWithDefault(msg, 1, ""),
     columnType: jspb.Message.getFieldWithDefault(msg, 2, 0),
-    columnDesc: jspb.Message.getFieldWithDefault(msg, 3, "")
+    columnDesc: jspb.Message.getFieldWithDefault(msg, 3, ""),
+    columnSemanticType: jspb.Message.getFieldWithDefault(msg, 4, 0)
   };
 
   if (includeInstance) {
@@ -2818,6 +2820,10 @@ proto.pl.api.vizierpb.Relation.ColumnInfo.deserializeBinaryFromReader = function
       var value = /** @type {string} */ (reader.readString());
       msg.setColumnDesc(value);
       break;
+    case 4:
+      var value = /** @type {!proto.pl.api.vizierpb.SemanticType} */ (reader.readEnum());
+      msg.setColumnSemanticType(value);
+      break;
     default:
       reader.skipField();
       break;
@@ -2865,6 +2871,13 @@ proto.pl.api.vizierpb.Relation.ColumnInfo.serializeBinaryToWriter = function(mes
   if (f.length > 0) {
     writer.writeString(
       3,
+      f
+    );
+  }
+  f = message.getColumnSemanticType();
+  if (f !== 0.0) {
+    writer.writeEnum(
+      4,
       f
     );
   }
@@ -2922,6 +2935,24 @@ proto.pl.api.vizierpb.Relation.ColumnInfo.prototype.getColumnDesc = function() {
  */
 proto.pl.api.vizierpb.Relation.ColumnInfo.prototype.setColumnDesc = function(value) {
   return jspb.Message.setProto3StringField(this, 3, value);
+};
+
+
+/**
+ * optional SemanticType column_semantic_type = 4;
+ * @return {!proto.pl.api.vizierpb.SemanticType}
+ */
+proto.pl.api.vizierpb.Relation.ColumnInfo.prototype.getColumnSemanticType = function() {
+  return /** @type {!proto.pl.api.vizierpb.SemanticType} */ (jspb.Message.getFieldWithDefault(this, 4, 0));
+};
+
+
+/**
+ * @param {!proto.pl.api.vizierpb.SemanticType} value
+ * @return {!proto.pl.api.vizierpb.Relation.ColumnInfo} returns this
+ */
+proto.pl.api.vizierpb.Relation.ColumnInfo.prototype.setColumnSemanticType = function(value) {
+  return jspb.Message.setProto3EnumField(this, 4, value);
 };
 
 
@@ -6035,6 +6066,21 @@ proto.pl.api.vizierpb.DataType = {
   STRING: 5,
   TIME64NS: 6,
   DURATION64NS: 7
+};
+
+/**
+ * @enum {number}
+ */
+proto.pl.api.vizierpb.SemanticType = {
+  ST_UNSPECIFIED: 0,
+  ST_NONE: 1,
+  ST_AGENT_UID: 100,
+  ST_UPID: 200,
+  ST_SERVICE_NAME: 300,
+  ST_POD_NAME: 400,
+  ST_NODE_NAME: 500,
+  ST_CONTAINER_NAME: 600,
+  ST_NAMESPACE_NAME: 700
 };
 
 goog.object.extend(exports, proto.pl.api.vizierpb);

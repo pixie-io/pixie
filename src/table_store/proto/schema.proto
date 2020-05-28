@@ -71,6 +71,7 @@ message Relation {
     string column_name = 1;
     pl.types.DataType column_type = 2;
     string column_desc = 3;
+    pl.types.SemanticType column_semantic_type = 4;
   }
   repeated ColumnInfo columns = 1;
 }
