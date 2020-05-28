@@ -16,6 +16,14 @@ rules:
   - containers
   - pods/log
   verbs: ["get", "watch", "list"]
+- apiGroups:
+  - ""
+  resources:
+  - pods/portforward
+  verbs:
+  - get
+  - list
+  - create
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
