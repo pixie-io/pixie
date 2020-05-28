@@ -84,6 +84,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   Status InitImpl() override;
   Status StopImpl() override;
+  void InitContextImpl(ConnectorContext* ctx) override;
   void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
 
   // Updates control map value for protocol, which specifies which role(s) to trace for the given

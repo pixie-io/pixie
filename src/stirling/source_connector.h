@@ -135,6 +135,12 @@ class SourceConnector : public NotCopyable {
   Status Init();
 
   /**
+   * Sets the initial context for the source connector.
+   * Used for context specific init steps (e.g. deploying uprobes on PIDs).
+   */
+  void InitContext(ConnectorContext* ctx);
+
+  /**
    * @brief Transfers any collected data, for the specified table, into the provided record_batch.
    * @param table_num The table number (id) of the data. See DataTableSchemas in individual
    * connectors.
@@ -200,8 +206,14 @@ class SourceConnector : public NotCopyable {
       : source_name_(source_name), table_schemas_(table_schemas) {}
 
   virtual Status InitImpl() = 0;
+
+  // Provide a default InitContextImpl which does nothing.
+  // SourceConnectors only need override if action is required on the initial context.
+  virtual void InitContextImpl(ConnectorContext* /* ctx */) {}
+
   virtual void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num,
                                 DataTable* data_table) = 0;
+
   virtual Status StopImpl() = 0;
 
  protected:

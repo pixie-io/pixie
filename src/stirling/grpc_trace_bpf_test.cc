@@ -114,6 +114,7 @@ class GRPCTraceGoTest : public ::testing::Test {
     // when fork() and execvp().
     connector_ = SocketTraceConnector::Create("socket_trace_connector");
     PL_CHECK_OK(connector_->Init());
+    connector_->InitContext(ctx_.get());
   }
 
   void TearDown() override {

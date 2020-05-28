@@ -61,21 +61,21 @@ class InfoClassManager final : public NotCopyable {
   }
 
   /**
-   * @brief Data table connected to this Info Class.
+   * Data table connected to this Info Class.
    *
    * @param Pointer to data table instance.
    */
   void SetDataTable(DataTable* data_table) { data_table_ = data_table; }
 
   /**
-   * @brief Get the schema of the InfoClass.
+   * Get the schema of the InfoClass.
    *
    * @return DataTableSchema schema
    */
   const DataTableSchema& Schema() const { return schema_; }
 
   /**
-   * @brief Get an Element object
+   * Get an Element object
    *
    * @param index
    * @return DataElement
@@ -86,59 +86,63 @@ class InfoClassManager final : public NotCopyable {
   }
 
   /**
-   * @brief Generate a proto message based on the InfoClassManager.
+   * Generate a proto message based on the InfoClassManager.
    *
    * @return stirlingpb::InfoClass
    */
   stirlingpb::InfoClass ToProto() const;
 
   /**
-   * @brief Configure sampling period.
+   * Configure sampling period.
    *
    * @param period Sampling period in ms.
    */
   void SetSamplingPeriod(std::chrono::milliseconds period) { sampling_period_ = period; }
 
   /**
-   * @brief Configure sampling period.
+   * Configure sampling period.
    *
    * @param period Sampling period in ms.
    */
   void SetPushPeriod(std::chrono::milliseconds period) { push_period_ = period; }
 
   /**
-   * @brief Returns true if sampling is required, for whatever reason (elapsed time, etc.).
+   * Returns true if sampling is required, for whatever reason (elapsed time, etc.).
    *
    * @return bool
    */
   bool SamplingRequired() const;
 
   /**
-   * @brief Returns true if a data push is required, for whatever reason (elapsed time, occupancy,
-   * etc.).
+   * Returns true if a data push is required, for whatever reason (elapsed time, occupancy, etc.).
    *
    * @return bool
    */
   bool PushRequired() const;
 
   /**
-   * @brief Samples the data from the Source and copies into local buffers.
+   * Set initial context. Meant to be run once as an initialization step.
+   */
+  void InitContext(ConnectorContext* ctx);
+
+  /**
+   * Samples the data from the Source and copies into local buffers.
    */
   void SampleData(ConnectorContext* ctx);
 
   /**
-   * @brief Push data by using the callback.
+   * Push data by using the callback.
    */
   void PushData(DataPushCallback agent_callback);
 
   /**
-   * @brief Notify function to update state after making changes to the schema.
+   * Notify function to update state after making changes to the schema.
    * This will make sure changes are pushed to the Source Connector and Data Tables accordingly.
    */
   void Notify() {}
 
   /**
-   * @brief Returns the next time the source needs to be sampled, according to the sampling period.
+   * Returns the next time the source needs to be sampled, according to the sampling period.
    *
    * @return std::chrono::milliseconds
    */
@@ -147,15 +151,14 @@ class InfoClassManager final : public NotCopyable {
   }
 
   /**
-   * @brief Returns the next time the data table needs to be pushed upstream, according to the push
-   * period.
+   * Returns the next time the data table needs to be pushed upstream, according to the push period.
    *
    * @return std::chrono::milliseconds
    */
   std::chrono::steady_clock::time_point NextPushTime() const { return last_pushed_ + push_period_; }
 
   /**
-   * @brief Convenience function to return current time in Milliseconds.
+   * Convenience function to return current time in Milliseconds.
    *
    * @return milliseconds
    */
@@ -164,7 +167,7 @@ class InfoClassManager final : public NotCopyable {
   }
 
   /**
-   * @brief Set the Subscription for the InfoClass.
+   * Set the Subscription for the InfoClass.
    *
    * @param subscription
    */

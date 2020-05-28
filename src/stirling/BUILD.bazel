@@ -210,6 +210,7 @@ pl_cc_test(
     name = "socket_trace_bpf_test",
     timeout = "long",
     srcs = ["socket_trace_bpf_test.cc"],
+    flaky = True,
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
@@ -379,6 +380,7 @@ pl_cc_test(
     name = "conn_stats_bpf_test",
     timeout = "moderate",
     srcs = ["conn_stats_bpf_test.cc"],
+    flaky = True,
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",

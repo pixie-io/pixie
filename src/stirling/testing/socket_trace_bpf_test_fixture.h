@@ -32,6 +32,12 @@ class SocketTraceBPFTest : public ::testing::Test {
     ASSERT_OK(source_->Init());
 
     ctx_ = std::make_unique<ConnectorContext>();
+    source_->InitContext(ctx_.get());
+
+    // InitContext will cause Uprobes to deploy.
+    // It won't return until the first set of uprobes has successfully deployed.
+    // Sleep an additional second just to be safe.
+    sleep(1);
   }
 
   void TearDown() override { ASSERT_OK(source_->Stop()); }

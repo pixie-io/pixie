@@ -26,6 +26,8 @@ bool InfoClassManager::PushRequired() const {
   return CurrentTime() > NextPushTime();
 }
 
+void InfoClassManager::InitContext(ConnectorContext* ctx) { source_->InitContext(ctx); }
+
 void InfoClassManager::SampleData(ConnectorContext* ctx) {
   source_->TransferData(ctx, source_table_num_, data_table_);
 

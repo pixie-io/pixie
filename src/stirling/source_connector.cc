@@ -19,6 +19,8 @@ Status SourceConnector::Init() {
   return s;
 }
 
+void SourceConnector::InitContext(ConnectorContext* ctx) { InitContextImpl(ctx); }
+
 void SourceConnector::TransferData(ConnectorContext* ctx, uint32_t table_num,
                                    DataTable* data_table) {
   DCHECK(ctx != nullptr);

@@ -378,6 +378,13 @@ void StirlingImpl::Run() {
 // Must run as a thread, so only call from Run() as a thread.
 void StirlingImpl::RunCore() {
   running_ = true;
+
+  // First initialize each info class manager with context.
+  ConnectorContext initial_context(agent_metadata_callback_());
+  for (const auto& s : sources_) {
+    s->InitContext(&initial_context);
+  }
+
   while (run_enable_) {
     auto sleep_duration = std::chrono::milliseconds::zero();
 

@@ -195,16 +195,10 @@ Status SocketTraceConnector::InitImpl() {
                      {std::move(linux_header_macro), std::move(allow_unknown_protocol_macro)}));
   PL_RETURN_IF_ERROR(AttachKProbes(kProbeSpecs));
   LOG(INFO) << absl::Substitute("Number of kprobes deployed = $0", kProbeSpecs.size());
-
-  // Although we spawn off a uprobe attachment thread, call DeployUProbes() once before doing so.
-  // Why? Some tests rely on UProbes being attached before returning from InitImpl().
-  DeployUProbes();
-  attach_uprobes_thread_ = std::thread([this]() { AttachUProbesLoop(); });
+  LOG(INFO) << "Probes successfully deployed.";
 
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   LOG(INFO) << absl::Substitute("Number of perf buffers opened = $0", kPerfBufferSpecs.size());
-
-  LOG(INFO) << "Probes successfully deployed.";
 
   // TODO(yzhao): Consider adding a flag to switch the role to trace, i.e., between kRoleClient &
   // kRoleServer.
@@ -240,6 +234,15 @@ Status SocketTraceConnector::InitImpl() {
   ConnectionTracker::SetBPFTableManager(bpf_table_info_);
 
   return Status::OK();
+}
+
+void SocketTraceConnector::InitContextImpl(ConnectorContext* ctx) {
+  // Deploy uprobes outside the thread once, so we can confirm they have deployed..
+  set_upids(ctx->GetUPIDs());
+  DeployUProbes();
+
+  // Now delegate responsibility of finding new PIDs a separate thread.
+  attach_uprobes_thread_ = std::thread([this]() { AttachUProbesLoop(); });
 }
 
 Status SocketTraceConnector::StopImpl() {
