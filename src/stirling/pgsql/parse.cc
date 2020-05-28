@@ -278,6 +278,20 @@ Status ParseErrResp(std::string_view payload, ErrResp* err_resp) {
   return Status::OK();
 }
 
+Status ParseDesc(const RegularMessage& msg, Desc* desc) {
+  DCHECK_EQ(msg.tag, Tag::kDesc);
+
+  desc->timestamp_ns = msg.timestamp_ns;
+
+  BinaryDecoder decoder(msg.payload);
+
+  PL_ASSIGN_OR_RETURN(const char type, decoder.ExtractChar());
+  desc->type = static_cast<Desc::Type>(type);
+  PL_ASSIGN_OR_RETURN(desc->name, decoder.ExtractStringUntil('\0'));
+
+  return Status::OK();
+}
+
 }  // namespace pgsql
 
 template <>

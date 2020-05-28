@@ -30,6 +30,7 @@ ParseState ParseParamDesc(std::string_view payload, ParamDesc* param_desc);
 Status ParseParse(const RegularMessage& msg, Parse* parse);
 ParseState ParseRowDesc(std::string_view payload, RowDesc* row_desc);
 Status ParseErrResp(std::string_view payload, ErrResp* err_resp);
+Status ParseDesc(const RegularMessage& msg, Desc* desc);
 
 size_t FindFrameBoundary(std::string_view buf, size_t start);
 

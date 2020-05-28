@@ -185,6 +185,18 @@ struct RowDesc {
   std::vector<Field> fields;
 };
 
+struct Desc {
+  enum class Type : char {
+    kStatement = 'S',
+    kPortal = 'P',
+  };
+
+  uint64_t timestamp_ns;
+
+  Type type;
+  std::string name;
+};
+
 // See https://www.postgresql.org/docs/9.3/protocol-error-fields.html
 // The enum name does not have 'k' prefix, so that they can be used directly.
 enum class ErrFieldCode : char {

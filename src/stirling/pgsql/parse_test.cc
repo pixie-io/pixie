@@ -228,6 +228,20 @@ TEST(PGSQLParseTest, ParseErrResp) {
                           ErrFieldIs(ErrFieldCode::Routine, "parserOpenTable")));
 }
 
+TEST(PGSQLParseTest, ParseDesc) {
+  RegularMessage msg;
+  msg.timestamp_ns = 123;
+  msg.tag = Tag::kDesc;
+  msg.payload = CreateStringView<char>("Stest\0");
+
+  Desc desc;
+  ASSERT_OK(ParseDesc(msg, &desc));
+
+  EXPECT_EQ(123, desc.timestamp_ns);
+  EXPECT_EQ(Desc::Type::kStatement, desc.type);
+  EXPECT_EQ("test", desc.name);
+}
+
 const std::string_view kDropTableCmplMsg =
     CreateStringView<char>("C\000\000\000\017DROP TABLE\000");
 
