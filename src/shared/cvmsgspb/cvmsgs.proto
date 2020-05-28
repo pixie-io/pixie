@@ -102,6 +102,10 @@ message VizierHeartbeat {
     // The status of vizier at the time of the heartbeat. For backwards compatibility,
     // if status is VZ_ST_UNKNOWN, then we assume the vizier is healthy.
     VizierStatus status = 8;
+    // Whether the cluster is in bootstrap mode and needs to be deployed/updated.
+    bool bootstrap_mode = 9;
+    // The version to update/deploy, if in bootstrap mode.
+    string bootstrap_version = 10;
 }
 
 // PodStatus represents a pod's status at a moment in time. Currently this message
