@@ -140,7 +140,6 @@ func (m *ManagedIndex) Migrate(ctx context.Context) error {
 }
 
 func (m *ManagedIndex) setIndexName(ctx context.Context) error {
-	var indexName string
 	aliasesResult, err := m.es.Aliases().Alias(m.name).Do(ctx)
 	if err != nil {
 		esErr, ok := err.(*elastic.Error)
@@ -151,23 +150,26 @@ func (m *ManagedIndex) setIndexName(ctx context.Context) error {
 		// the status code ourselves.
 		if esErr.Status == 404 {
 			// Alias doesn't exist, set indexName to be the alias followed by a -000000
-			indexName = fmt.Sprintf("%s-000000", m.name)
-		} else {
-			return err
+			m.index.Name(fmt.Sprintf("%s-000000", m.name))
+			return nil
 		}
-	} else {
-		if len(aliasesResult.Indices) > 1 {
-			return fmt.Errorf(
-				"Alias '%s' is backed by indices '%v', multiple backing indices not supported",
-				m.name, aliasesResult.Indices)
-		}
-		for name := range aliasesResult.Indices {
-			indexName = name
-			break
+		return err
+	}
+	// Use the index that is the current write index for the alias. Elastic requires that there is
+	// only one write index, so there ~SHOULD~ be only one matching index.
+	for indName, indexResult := range aliasesResult.Indices {
+		for _, aliasResult := range indexResult.Aliases {
+			if aliasResult.AliasName != m.name {
+				continue
+			}
+			if aliasResult.IsWriteIndex {
+				m.index.Name(indName)
+				return nil
+			}
 		}
 	}
-	m.index.Name(indexName)
-	return nil
+	// None of the indices were write indices, something went wrong.
+	return fmt.Errorf("Failed to find an index that is a write index for the alias %s", m.name)
 }
 
 func (m *ManagedIndex) setAliases() {
