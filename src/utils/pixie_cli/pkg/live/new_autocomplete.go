@@ -103,7 +103,7 @@ func newTabAutocompleteModal(st *appState) *tabAutocompleteModal {
 	// We need two layouts, one going | and the other going --.
 	horiz := tview.NewFlex().
 		SetDirection(tview.FlexColumn).
-		AddItem(scriptListBox, 0, 5, false).
+		AddItem(scriptListBox, 0, 9, false).
 		AddItem(scriptDescBox, 0, 10, false)
 
 	layout := tview.NewFlex().
@@ -169,7 +169,7 @@ func (m *tabAutocompleteModal) parseCommand() (*script.ExecutableScript, error) 
 		return es, nil
 	}
 
-	for i := startingIdx; i < len(m.tabStops); i++ {
+	for i := startingIdx + 1; i < len(m.tabStops); i++ {
 		err = fs.Set(*m.tabStops[i].Label, strings.Replace(*m.tabStops[i].Value, "$0", "", 1))
 		if err != nil {
 			return nil, err
