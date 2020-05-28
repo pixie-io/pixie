@@ -22,6 +22,9 @@ spec:
         env:
         - name: POSTGRES_PASSWORD
           value: "docker"
+        args:
+        - "--log_statement=all"
+        - "--log_destination=stderr"
 ---
 apiVersion: v1
 kind: Service
