@@ -22,8 +22,8 @@ bazel build -c opt --stamp //src/utils/pixie_cli:px
 
 write_artifacts_to_gcs() {
     output_path=$1
-    mac_binary=bazel-bin/src/utils/pixie_cli/darwin_amd64_pure_stripped/px_darwin
-    linux_binary=bazel-bin/src/utils/pixie_cli/linux_amd64_stripped/px
+    mac_binary=bazel-bin/src/utils/pixie_cli/darwin_amd64_pure/px_darwin
+    linux_binary=bazel-bin/src/utils/pixie_cli/linux_amd64/px
     copy_artifact_to_gcs "$output_path" "$mac_binary" "cli_darwin_amd64_unsigned"
     copy_artifact_to_gcs "$output_path" "$linux_binary" "cli_linux_amd64"
 }
