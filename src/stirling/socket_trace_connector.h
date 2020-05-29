@@ -393,7 +393,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   std::unique_ptr<system::ProcParser> proc_parser_;
 
   // Ensures DeployUProbes threads run sequentially.
-  std::mutex deploy_uprobes_mutex;
+  std::mutex deploy_uprobes_mutex_;
   std::atomic<int> num_deploy_uprobes_threads_ = 0;
 
   ProcTracker proc_tracker_;
