@@ -15,6 +15,7 @@ import (
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	batchv1 "k8s.io/api/batch/v1"
 	k8sErrors "k8s.io/apimachinery/pkg/api/errors"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
@@ -720,6 +721,8 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 			PodStatuses:            podStatuses,
 			PodStatusesLastUpdated: updatedTime.UnixNano(),
 			Status:                 s.status,
+			BootstrapMode:          viper.GetBool("bootstrap_mode"),
+			BootstrapVersion:       viper.GetString("bootstrap_version"),
 		}
 		select {
 		case <-s.quitCh:
