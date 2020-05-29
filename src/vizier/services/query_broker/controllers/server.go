@@ -10,6 +10,7 @@ import (
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sync/singleflight"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -33,6 +34,8 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
+
+const healthCheckInterval = 5 * time.Second
 
 // Planner describes the interface for any planner.
 type Planner interface {
@@ -58,6 +61,10 @@ type Server struct {
 	executors   map[uuid.UUID]Executor
 	// Mutex is used for managing query executor instances.
 	mux sync.Mutex
+
+	hcMux    sync.Mutex
+	hcStatus error
+	hcTime   time.Time
 }
 
 // NewServer creates GRPC handlers.
@@ -428,15 +435,35 @@ func (s *Server) checkHealth(ctx context.Context) error {
 	return nil
 }
 
+func (s *Server) checkHealthCached(ctx context.Context) error {
+	currentTime := time.Now()
+	s.hcMux.Lock()
+	defer s.hcMux.Unlock()
+	if currentTime.Sub(s.hcTime) < healthCheckInterval {
+		return s.hcStatus
+	}
+	s.hcTime = currentTime
+	s.hcStatus = s.checkHealth(ctx)
+	return s.hcStatus
+}
+
 // HealthCheck continually responds with the current health of Vizier.
 func (s *Server) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.VizierService_HealthCheckServer) error {
 	// For now, just report itself as healthy.
-	for c := time.Tick(5 * time.Second); ; {
-		err := s.checkHealth(srv.Context())
+	for c := time.Tick(healthCheckInterval); ; {
+		var sg singleflight.Group
+		res, err, _ := sg.Do("hc", func() (interface{}, error) {
+			status := s.checkHealthCached(srv.Context())
+			return status, nil
+		})
+		if err != nil {
+			return err
+		}
 		// Pass.
 		code := int32(codes.OK)
-		if err != nil {
-			s, ok := status.FromError(err)
+		if res != nil {
+			hcStatus := res.(error)
+			s, ok := status.FromError(hcStatus)
 			if !ok {
 				code = int32(codes.Unavailable)
 			} else {
