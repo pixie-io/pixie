@@ -275,11 +275,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   // Helper functions for dynamically deploying uprobes:
 
-  // Find new PIDs since the last call, grouped into a map by the binary path.
-  // The new PIDs may require the http2_symaddrs_map BPF map to be updated (even if the binary is
-  // already being traced).
-  std::map<std::string, std::vector<int32_t> > FindNewPIDs();
-
   Status UpdateHTTP2SymAddrs(
       std::string_view binary, elf_tools::ElfReader* elf_reader, const std::vector<int32_t>& pids,
       ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>* http2_symaddrs_map);
@@ -297,12 +292,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   StatusOr<int> AttachOpenSSLUProbes(const std::string& binary,
                                      const std::vector<int32_t>& new_pids);
 
-  // Scans binaries and deploys uprobes for all purposes (HTTP2, OpenSSL, etc.) on new processes.
-  void DeployUProbes();
-
-  // Wraps DeployUProbes() in a loop. Stops when this SocketTraceConnector is stopped.
-  // Used for creating a background thread to attach uprobes for newly-created processes.
-  void AttachUProbesLoop();
+  // Deploys uprobes for all purposes (HTTP2, OpenSSL, etc.) on new processes.
+  void DeployUProbes(const absl::flat_hash_set<md::UPID>& pids);
+  std::thread RunDeployUProbesThread(const absl::flat_hash_set<md::UPID>& pids);
 
   // This function causes the perf buffer to be read, and triggers callbacks per message.
   void ReadPerfBuffers();
@@ -339,16 +331,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   template <typename TRecordType>
   static void AppendMessage(ConnectorContext* ctx, const ConnectionTracker& conn_tracker,
                             TRecordType record, DataTable* data_table);
-
-  absl::flat_hash_set<md::UPID> get_upids() {
-    absl::MutexLock lock(&upids_lock_);
-    return upids_;
-  }
-
-  void set_upids(absl::flat_hash_set<md::UPID> upids) {
-    absl::MutexLock lock(&upids_lock_);
-    upids_ = std::move(upids);
-  }
 
   // Returns vector representing currently known cluster (pod and service) CIDRs.
   std::vector<CIDRBlock> ClusterCIDRs(ConnectorContext* ctx);
@@ -410,12 +392,9 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   std::unique_ptr<system::ProcParser> proc_parser_;
 
-  // Used to periodically attach uprobes.
-  std::thread attach_uprobes_thread_;
-
-  // TODO(yzhao): To have a simple synchronization model, uses Mutex + copy.
-  absl::Mutex upids_lock_;
-  absl::flat_hash_set<md::UPID> upids_ GUARDED_BY(upids_lock_);
+  // Ensures DeployUProbes threads run sequentially.
+  std::mutex deploy_uprobes_mutex;
+  std::atomic<int> num_deploy_uprobes_threads_ = 0;
 
   ProcTracker proc_tracker_;
 

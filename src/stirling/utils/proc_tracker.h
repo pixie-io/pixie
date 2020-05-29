@@ -9,41 +9,45 @@
 namespace pl {
 namespace stirling {
 
-struct UPIDDelta {
-  absl::flat_hash_set<md::UPID> new_upids;
-  absl::flat_hash_set<md::UPID> deleted_upids;
-};
-
 /**
- * Keeps a list of UPIDs. Tracks newly-created and terminated process, each time when a system-wide
- * rescanning is requested, and update its internal list of UPIDs.
+ * Returns the list of processes from the proc filesystem.
  */
 // TODO(yzhao): Consider moving this into src/common/system. Today that cannot be done because
 // md::UPID is from src/shared/metadata, which already depends on src/common/system. Having this
 // inside src/common/system would cause circular dependency.
+absl::flat_hash_set<md::UPID> ListUPIDs(const std::filesystem::path& proc_path, uint32_t asid = 0);
+
+/**
+ * Keeps a list of UPIDs. Tracks newly-created and terminated processes each time an update is
+ * provided, and updates its internal list of UPIDs.
+ */
 class ProcTracker : NotCopyMoveable {
  public:
   /**
-   * Returns the list of processes from the proc filesystem.
+   * Takes the current set of upids, and updates the internal state.
+   * @param upids Current set of UPIDs.
    */
-  static absl::flat_hash_set<md::UPID> ListUPIDs(const std::filesystem::path& proc_path);
+  void Update(absl::flat_hash_set<md::UPID> upids);
 
   /**
-   * Standardizes by setting ASID of UPIDs to 0.
+   * Returns all current upids, as set by last call to Update().
    */
-  static absl::flat_hash_set<md::UPID> Cleanse(const absl::flat_hash_set<md::UPID>& upids);
-
-  /**
-   * Accepts the list of all currently-running processes. Returns the list of newly-created
-   * processes since last snapshot.
-   */
-  // TODO(yzhao): Consider calling ListUPIDs() directly inside TakeSnapshotAndDiff().
-  UPIDDelta TakeSnapshotAndDiff(absl::flat_hash_set<md::UPID> upids);
-
   const auto& upids() const { return upids_; }
+
+  /**
+   * Returns new upids discovered by call to Update().
+   */
+  const auto& new_upids() const { return new_upids_; }
+
+  /**
+   * Returns upids that were deleted between last call the Update(), and the previous state.
+   */
+  const auto& deleted_upids() const { return deleted_upids_; }
 
  private:
   absl::flat_hash_set<md::UPID> upids_;
+  absl::flat_hash_set<md::UPID> new_upids_;
+  absl::flat_hash_set<md::UPID> deleted_upids_;
 };
 
 }  // namespace stirling

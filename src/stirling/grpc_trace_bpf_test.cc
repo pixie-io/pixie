@@ -211,8 +211,7 @@ TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
   // are dynamically attached.
   GRPCTraceGoTest::LaunchServer(GetParam());
 
-  // Give 10 seconds to attach uprobes. Being generous for ASAN runs.
-  std::this_thread::sleep_for(std::chrono::seconds(10));
+  connector_->InitContext(ctx_.get());
 
   SubProcess c;
   const std::string https_flag = GetParam() ? "--https=true" : "--https=false";

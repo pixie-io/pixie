@@ -140,15 +140,6 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
   protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled =
       FLAGS_stirling_enable_grpc_uprobe_tracing;
 
-  StatusOr<std::unique_ptr<system::SocketInfoManager>> s =
-      system::SocketInfoManager::Create(system::Config::GetInstance().proc_path());
-  if (!s.ok()) {
-    LOG(WARNING) << absl::Substitute("Failed to set up socket prober manager. Message: $0",
-                                     s.msg());
-  } else {
-    socket_info_mgr_ = s.ConsumeValueOrDie();
-  }
-
   if (!FLAGS_stirling_cluster_cidr.empty()) {
     CIDRBlock cidr;
     Status s = ParseCIDRBlock(FLAGS_stirling_cluster_cidr, &cidr);
@@ -230,6 +221,15 @@ Status SocketTraceConnector::InitImpl() {
     SetupOutput(FLAGS_perf_buffer_events_output_path);
   }
 
+  StatusOr<std::unique_ptr<system::SocketInfoManager>> s =
+      system::SocketInfoManager::Create(system::Config::GetInstance().proc_path());
+  if (!s.ok()) {
+    LOG(WARNING) << absl::Substitute("Failed to set up socket prober manager. Message: $0",
+                                     s.msg());
+  } else {
+    socket_info_mgr_ = s.ConsumeValueOrDie();
+  }
+
   bpf_table_info_ = std::make_shared<SocketTraceBPFTableManager>(&bpf());
   ConnectionTracker::SetBPFTableManager(bpf_table_info_);
 
@@ -237,20 +237,21 @@ Status SocketTraceConnector::InitImpl() {
 }
 
 void SocketTraceConnector::InitContextImpl(ConnectorContext* ctx) {
-  // Deploy uprobes outside the thread once, so we can confirm they have deployed..
-  set_upids(ctx->GetUPIDs());
-  DeployUProbes();
+  std::thread thread = RunDeployUProbesThread(ctx->GetUPIDs());
 
-  // Now delegate responsibility of finding new PIDs a separate thread.
-  attach_uprobes_thread_ = std::thread([this]() { AttachUProbesLoop(); });
+  // On the first context, we want to make sure all uprobes deploy before returning.
+  if (thread.joinable()) {
+    thread.join();
+  }
 }
 
 Status SocketTraceConnector::StopImpl() {
   if (perf_buffer_events_output_stream_ != nullptr) {
     perf_buffer_events_output_stream_->close();
   }
-  if (attach_uprobes_thread_.joinable()) {
-    attach_uprobes_thread_.join();
+
+  // Wait for all threads to finish.
+  while (num_deploy_uprobes_threads_ != 0) {
   }
 
   // Must call Stop() after attach_uprobes_thread_ has joined,
@@ -286,8 +287,12 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
     TransferStreams(ctx, table_num, data_table);
   }
 
-  // Refresh UPIDs from MDS so that the uprobe attaching thread can detect new processes.
-  set_upids(ctx->GetUPIDs());
+  // Deploy uprobes on newly discovered PIDs.
+  std::thread thread = RunDeployUProbesThread(ctx->GetUPIDs());
+  // Let it run in the background.
+  if (thread.joinable()) {
+    thread.detach();
+  }
 }
 
 template <typename TValueType>
@@ -317,40 +322,6 @@ Status SocketTraceConnector::DisableSelfTracing() {
   auto control_map_handle = bpf().get_percpu_array_table<int64_t>(kControlValuesArrayName);
   int64_t my_pid = getpid();
   return UpdatePerCPUArrayValue(kStirlingTGIDIndex, my_pid, &control_map_handle);
-}
-
-std::map<std::string, std::vector<int32_t>> SocketTraceConnector::FindNewPIDs() {
-  std::filesystem::path proc_path = system::Config::GetInstance().proc_path();
-
-  // Get a list of all PIDs of interest: either from MDS,
-  // or list all PIDs on the system if MDS is not present.
-  // TODO(oazizi/yzhao): Technically the if statement is not checking for the presence of the MDS.
-  // There could be a subtle bug lurking.
-  absl::flat_hash_set<md::UPID> upids = ProcTracker::Cleanse(get_upids());
-  if (upids.empty()) {
-    upids = ProcTracker::ListUPIDs(proc_path);
-  }
-
-  // Consider new UPIDs only.
-  UPIDDelta upid_changes = proc_tracker_.TakeSnapshotAndDiff(std::move(upids));
-
-  // Convert to a map of binaries, with the upids that are instances of that binary.
-  std::filesystem::path host_path = system::Config::GetInstance().host_path();
-  std::map<std::string, std::vector<int32_t>> new_pids;
-
-  for (const auto& upid : upid_changes.new_upids) {
-    std::filesystem::path pid_path = proc_path / std::to_string(upid.pid());
-    auto host_exe_or = GetActiveBinary(host_path, pid_path);
-    if (!host_exe_or.ok()) {
-      continue;
-    }
-    std::filesystem::path host_exe = host_exe_or.ConsumeValueOrDie();
-    new_pids[host_exe.string()].push_back(upid.pid());
-  }
-
-  LOG_FIRST_N(INFO, 1) << absl::Substitute("New PIDs count = $0", new_pids.size());
-
-  return new_pids;
 }
 
 Status SocketTraceConnector::UpdateHTTP2SymAddrs(
@@ -603,15 +574,62 @@ StatusOr<int> SocketTraceConnector::AttachOpenSSLUProbes(const std::string& bina
   return kOpenSSLUProbes.size();
 }
 
-void SocketTraceConnector::DeployUProbes() {
-  std::map<std::string, std::vector<int32_t>> new_pids = FindNewPIDs();
+namespace {
+
+// Convert PID list from list of UPIDs to a map with key=binary name, value=PIDs
+std::map<std::string, std::vector<int32_t>> ConvertPIDsListToMap(
+    const absl::flat_hash_set<md::UPID>& upids) {
+  // Convert to a map of binaries, with the upids that are instances of that binary.
+  std::filesystem::path proc_path = system::Config::GetInstance().proc_path();
+  std::filesystem::path host_path = system::Config::GetInstance().host_path();
+  std::map<std::string, std::vector<int32_t>> new_pids;
+
+  // Consider new UPIDs only.
+  for (const auto& upid : upids) {
+    std::filesystem::path pid_path = proc_path / std::to_string(upid.pid());
+    auto host_exe_or = GetActiveBinary(host_path, pid_path);
+    if (!host_exe_or.ok()) {
+      continue;
+    }
+    std::filesystem::path host_exe = host_exe_or.ConsumeValueOrDie();
+    new_pids[host_exe.string()].push_back(upid.pid());
+  }
+
+  LOG_FIRST_N(INFO, 1) << absl::Substitute("New PIDs count = $0", new_pids.size());
+
+  return new_pids;
+}
+
+}  // namespace
+
+std::thread SocketTraceConnector::RunDeployUProbesThread(
+    const absl::flat_hash_set<md::UPID>& pids) {
+  proc_tracker_.Update(pids);
+  auto& new_upids = proc_tracker_.new_upids();
+  // The check that state is not uninitialized is required for socket_trace_connector_test,
+  // which would otherwise try to deploy uprobes (for which it does not have permissions).
+  if (!new_upids.empty() && state() != State::kUninitialized) {
+    // Increment before starting thread to avoid race in case thread starts late.
+    ++num_deploy_uprobes_threads_;
+    return std::thread([this, new_upids]() {
+      DeployUProbes(new_upids);
+      --num_deploy_uprobes_threads_;
+    });
+  }
+  return {};
+}
+
+void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
+  const std::lock_guard<std::mutex> lock(deploy_uprobes_mutex);
+
+  std::map<std::string, std::vector<int32_t>> pids_map = ConvertPIDsListToMap(pids);
 
   // Suspected to be an expensive call, so perform outside the for loop.
   ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> http2_symaddrs_map =
       bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("http2_symaddrs_map");
 
   int uprobe_count = 0;
-  for (auto& [binary, pid_vec] : new_pids) {
+  for (auto& [binary, pid_vec] : pids_map) {
     // Read binary's symbols.
     StatusOr<std::unique_ptr<ElfReader>> elf_reader_status = ElfReader::Create(binary);
     if (!elf_reader_status.ok()) {
@@ -660,23 +678,6 @@ void SocketTraceConnector::DeployUProbes() {
   }
 
   LOG_FIRST_N(INFO, 1) << absl::Substitute("Number of uprobes deployed = $0", uprobe_count);
-}
-
-void SocketTraceConnector::AttachUProbesLoop() {
-  constexpr std::chrono::seconds kLoopIterationSeconds = std::chrono::seconds(5);
-
-  auto next_update_time_point = std::chrono::steady_clock::now() + kLoopIterationSeconds;
-  while (state() != State::kStopped) {
-    // Check more often than the actual attachment cycle, so that we can exit the loop faster.
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    if (std::chrono::steady_clock::now() < next_update_time_point) {
-      continue;
-    }
-
-    DeployUProbes();
-
-    next_update_time_point = std::chrono::steady_clock::now() + kLoopIterationSeconds;
-  }
 }
 
 //-----------------------------------------------------------------------------
@@ -1210,15 +1211,12 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
 
   namespace idx = ::pl::stirling::conn_stats_idx;
 
-  absl::flat_hash_set<md::UPID> upids = ProcTracker::Cleanse(get_upids());
-  if (upids.empty()) {
-    upids = ProcTracker::ListUPIDs(system::Config::GetInstance().proc_path());
-  }
+  absl::flat_hash_set<md::UPID> upids = ctx->GetUPIDs();
 
   for (const auto& [key, stats] : connection_stats_.agg_stats()) {
-    md::UPID dummy_upid(/*asid*/ 0, key.upid.tgid, key.upid.start_time_ticks);
-    if (!upids.contains(dummy_upid)) {
-      VLOG(1) << "Ignore because of not in MDS upids, upid: " << dummy_upid.String();
+    md::UPID current_upid(ctx->GetASID(), key.upid.tgid, key.upid.start_time_ticks);
+    if (!upids.contains(current_upid)) {
+      VLOG(1) << "Ignore because of not in MDS upids, upid: " << current_upid.String();
       continue;
     }
 

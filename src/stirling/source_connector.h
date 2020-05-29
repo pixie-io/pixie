@@ -11,6 +11,7 @@
 #include "src/shared/types/types.h"
 #include "src/stirling/data_table.h"
 #include "src/stirling/info_class_manager.h"
+#include "src/stirling/utils/proc_tracker.h"
 
 /**
  * These are the steps to follow to add a new data source connector.
@@ -62,7 +63,7 @@ class ConnectorContext {
 
   absl::flat_hash_set<md::UPID> GetUPIDs() const {
     if (agent_metadata_state_ == nullptr) {
-      return {};
+      return ListUPIDs(system::Config::GetInstance().proc_path(), 0);
     }
     return agent_metadata_state_->upids();
   }
