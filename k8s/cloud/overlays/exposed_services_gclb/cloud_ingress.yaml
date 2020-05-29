@@ -26,6 +26,10 @@ spec:
         backend:
           serviceName: cloud-proxy-service
           servicePort: 5555
+      - path: /pl.cloudapi.ProfileService/*
+        backend:
+          serviceName: cloud-proxy-service
+          servicePort: 5555
       - path: /pl.api.vizierpb.VizierService/*
         backend:
           serviceName: cloud-proxy-service
