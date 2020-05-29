@@ -476,9 +476,7 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 	if err != nil {
 		resp := &vizierpb.ExecuteScriptResponse{
 			QueryID: queryID.String(),
-			Status: &vizierpb.Status{
-				Message: err.Error(),
-			},
+			Status:  ErrToVizierStatus(err),
 		}
 
 		return srv.Send(resp)
@@ -520,6 +518,7 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 			QueryID: queryID.String(),
 			Status: &vizierpb.Status{
 				Message: "Query timed out with no results",
+				Code:    int32(codes.DeadlineExceeded),
 			},
 		}
 

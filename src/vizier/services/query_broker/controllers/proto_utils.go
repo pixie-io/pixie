@@ -5,6 +5,7 @@ import (
 
 	gogotypes "github.com/gogo/protobuf/types"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
@@ -63,6 +64,22 @@ func VizierQueryRequestToPlannerQueryRequest(vpb *vizierpb.ExecuteScriptRequest)
 		QueryStr:  vpb.QueryStr,
 		ExecFuncs: funcs,
 	}, nil
+}
+
+// ErrToVizierStatus converts an error to an externally-facing Vizier status.
+func ErrToVizierStatus(err error) *vizierpb.Status {
+	s, ok := status.FromError(err)
+	if ok {
+		return &vizierpb.Status{
+			Code:    int32(s.Code()),
+			Message: s.Message(),
+		}
+	}
+
+	return &vizierpb.Status{
+		Code:    int32(codes.Unknown),
+		Message: err.Error(),
+	}
 }
 
 // StatusToVizierStatus converts an internal status to an externally-facing Vizier status.
