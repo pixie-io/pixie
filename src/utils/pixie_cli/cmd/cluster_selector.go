@@ -7,6 +7,7 @@ import (
 
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/metadata"
+	utils2 "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -18,7 +19,7 @@ import (
 func getClusterInfo(cloudAddr string) (*cloudapipb.ClusterInfo, *uuid.UUID, error) {
 	// Get grpc connection to cloud.
 
-	conn, err := getCloudClientConnection(cloudAddr)
+	conn, err := utils2.GetCloudClientConnection(cloudAddr)
 	if err != nil {
 		return nil, nil, err
 	}

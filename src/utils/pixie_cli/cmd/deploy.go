@@ -27,17 +27,15 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 
-	"google.golang.org/grpc"
-	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
-	"pixielabs.ai/pixielabs/src/shared/services"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/certs"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
@@ -164,22 +162,6 @@ func newVizAuthClient(conn *grpc.ClientConn) cloudapipb.VizierImageAuthorization
 
 func newArtifactTrackerClient(conn *grpc.ClientConn) cloudapipb.ArtifactTrackerClient {
 	return cloudapipb.NewArtifactTrackerClient(conn)
-}
-
-func getCloudClientConnection(cloudAddr string) (*grpc.ClientConn, error) {
-	isInternal := strings.ContainsAny(cloudAddr, "cluster.local")
-
-	dialOpts, err := services.GetGRPCClientDialOptsServerSideTLS(isInternal)
-	if err != nil {
-		return nil, err
-	}
-
-	c, err := grpc.Dial(cloudAddr, dialOpts...)
-	if err != nil {
-		return nil, err
-	}
-
-	return c, nil
 }
 
 func mustGetImagePullSecret(conn *grpc.ClientConn) string {
@@ -338,7 +320,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	fmt.Printf("Found %v nodes\n", numNodes)
 
 	// Get grpc connection to cloud.
-	cloudConn, err := getCloudClientConnection(cloudAddr)
+	cloudConn, err := utils.GetCloudClientConnection(cloudAddr)
 	if err != nil {
 		log.Fatalln(err)
 	}

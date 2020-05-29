@@ -19,8 +19,12 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
 	"github.com/skratchdot/open-golang/open"
+	"google.golang.org/grpc/metadata"
 	"gopkg.in/segmentio/analytics-go.v3"
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
+	utils2 "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
@@ -127,6 +131,7 @@ func LoadDefaultCredentials() (*RefreshToken, error) {
 	if token.SupportAccount {
 		components.RenderBureaucratDragon(token.OrgName)
 	}
+
 	// TODO(zasgar): Exchange refresh token for new token type.
 	return token, nil
 }
@@ -344,6 +349,33 @@ func (p *PixieCloudLogin) getRefreshToken(accessToken string) (*RefreshToken, er
 	refreshToken.SupportAccount = p.OrgName != ""
 	refreshToken.OrgName = p.OrgName
 
+	if refreshToken.OrgName == "" {
+		// Get the org name from the cloud.
+		var orgID string
+		if token, _ := jwt.Parse(refreshToken.Token, nil); token != nil {
+			sc, ok := token.Claims.(jwt.MapClaims)
+			if ok {
+				orgID, _ = sc["OrgID"].(string)
+			}
+		}
+
+		uuidProto := utils.ProtoFromUUIDStrOrNil(orgID)
+		conn, err := utils2.GetCloudClientConnection(p.CloudAddr)
+		if err != nil {
+			return nil, err
+		}
+		client := cloudapipb.NewProfileServiceClient(conn)
+		ctx := context.Background()
+		ctx = metadata.AppendToOutgoingContext(context.Background(), "authorization",
+			fmt.Sprintf("bearer %s", refreshToken.Token))
+		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+		defer cancel()
+		resp, err := client.GetOrgInfo(ctx, uuidProto)
+		if err != nil {
+			return nil, err
+		}
+		refreshToken.OrgName = resp.OrgName
+	}
 	return refreshToken, nil
 }
 
@@ -352,8 +384,7 @@ type RefreshToken struct {
 	Token          string `json:"token"`
 	ExpiresAt      int64  `json:"expiresAt"`
 	SupportAccount bool   `json:"supportAccount,omitempty"`
-	// OrgName will usually be empty unless it's a support account.
-	OrgName string `json:"orgName,omitempty"`
+	OrgName        string `json:"orgName,omitempty"`
 }
 
 func (p *PixieCloudLogin) getAuthURL() *url.URL {

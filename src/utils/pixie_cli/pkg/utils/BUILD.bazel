@@ -3,6 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
+        "cloud.go",
         "cmd.go",
         "job_runner.go",
         "tar.go",
@@ -10,7 +11,9 @@ go_library(
     importpath = "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils",
     visibility = ["//visibility:public"],
     deps = [
+        "//src/shared/services:go_default_library",
         "//src/utils/pixie_cli/pkg/components:go_default_library",
+        "@org_golang_google_grpc//:go_default_library",
         "@org_golang_x_sync//errgroup:go_default_library",
     ],
 )

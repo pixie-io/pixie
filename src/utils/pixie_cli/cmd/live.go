@@ -7,6 +7,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/live"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
 func init() {
@@ -48,7 +49,7 @@ var LiveCmd = &cobra.Command{
 			br.AddScript(execScript)
 		}
 
-		cloudConn, err := getCloudClientConnection(cloudAddr)
+		cloudConn, err := utils.GetCloudClientConnection(cloudAddr)
 		if err != nil {
 			log.WithError(err).Fatal("Could not connect to cloud")
 		}

@@ -55,7 +55,7 @@ var VizierUpdateCmd = &cobra.Command{
 		cloudAddr := viper.GetString("cloud_addr")
 
 		// Get grpc connection to cloud.
-		cloudConn, err := getCloudClientConnection(cloudAddr)
+		cloudConn, err := utils.GetCloudClientConnection(cloudAddr)
 		if err != nil {
 			log.Fatalln(err)
 		}
