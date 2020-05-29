@@ -12,7 +12,9 @@ namespace stirling {
 using ::pl::stirling::testing::ColWrapperSizeIs;
 using ::testing::Each;
 using ::testing::ElementsAre;
+using ::testing::EndsWith;
 using ::testing::IsEmpty;
+using ::testing::StartsWith;
 
 static constexpr DataElement kElements[] = {
     {"a", types::DataType::INT64, types::PatternType::GENERAL, ""},
@@ -36,7 +38,8 @@ TEST(RecordBuilder, StringMaxSize) {
 
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
 
-  EXPECT_EQ(record_batch[2]->Get<types::StringValue>(0), kExpectedString);
+  EXPECT_THAT(record_batch[2]->Get<types::StringValue>(0), StartsWith(kExpectedString));
+  EXPECT_THAT(record_batch[2]->Get<types::StringValue>(0), EndsWith("[TRUNCATED]"));
 }
 
 TEST(RecordBuilder, UnfilledColNames) {
