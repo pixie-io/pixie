@@ -54,7 +54,7 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
   PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());
   // Compile into the IR.
   auto ms = logical_state.plan_options().max_output_rows_per_table();
-  LOG(ERROR) << "Max output rows: " << ms;
+  VLOG(1) << "Max output rows: " << ms;
   PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
                       CreateCompilerState(logical_state.schema(), registry_info.get(), ms));
 
