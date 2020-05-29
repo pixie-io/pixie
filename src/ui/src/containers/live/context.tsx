@@ -1,4 +1,3 @@
-import { SnackbarProvider } from 'components/snackbar/snackbar';
 import * as React from 'react';
 
 import { ArgsContextProvider } from './context/args-context';
@@ -12,23 +11,21 @@ import { VisContextProvider } from './context/vis-context';
 export const withLiveViewContext = (Component) => {
   return function LiveViewContextProvider() {
     return (
-      <SnackbarProvider>
-        <LayoutContextProvider>
-          <DataDrawerContextProvider>
-            <ScriptContextProvider>
-              <VisContextProvider>
-                <ArgsContextProvider>
-                  <ResultsContextProvider>
-                    <ExeucteContextProvider>
-                      <Component />
-                    </ExeucteContextProvider>
-                  </ResultsContextProvider>
-                </ArgsContextProvider>
-              </VisContextProvider>
-            </ScriptContextProvider>
-          </DataDrawerContextProvider>
-        </LayoutContextProvider>
-      </SnackbarProvider>
+      <LayoutContextProvider>
+        <DataDrawerContextProvider>
+          <ScriptContextProvider>
+            <VisContextProvider>
+              <ArgsContextProvider>
+                <ResultsContextProvider>
+                  <ExeucteContextProvider>
+                    <Component />
+                  </ExeucteContextProvider>
+                </ResultsContextProvider>
+              </ArgsContextProvider>
+            </VisContextProvider>
+          </ScriptContextProvider>
+        </DataDrawerContextProvider>
+      </LayoutContextProvider>
     );
   };
 };

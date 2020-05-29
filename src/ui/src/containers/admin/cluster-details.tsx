@@ -1,23 +1,24 @@
 import { scrollbarStyles } from 'common/mui-theme';
 import ClientContext from 'common/vizier-grpc-client-context';
 import ProfileMenu from 'containers/live/profile-menu';
-import {dataFromProto} from 'utils/result-data-utils';
-import {AdminTooltip, convertHeartbeatMS, StatusCell, VizierStatusGroup} from './utils';
+import { distanceInWords } from 'date-fns';
+import * as React from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { dataFromProto } from 'utils/result-data-utils';
 
 import Breadcrumbs from '@material-ui/core/Breadcrumbs';
+import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
-import Tabs from '@material-ui/core/Tabs';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
+import Tabs from '@material-ui/core/Tabs';
 import Tooltip from '@material-ui/core/Tooltip';
 import Typography from '@material-ui/core/Typography';
-import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
-import {distanceInWords} from 'date-fns';
-import * as React from 'react';
-import { Link, useParams } from 'react-router-dom';
+
+import { AdminTooltip, convertHeartbeatMS, StatusCell, VizierStatusGroup } from './utils';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -122,12 +123,12 @@ export function formatAgent(agentInfo): AgentDisplay {
     status: agentInfo.agent_state.replace('AGENT_STATE_', ''),
     statusGroup: getAgentStatusGroup(agentInfo.agent_state),
     hostname: agentInfo.hostname,
-    lastHeartbeat: convertHeartbeatMS(agentInfo.last_heartbeat_ns/(1000*1000)),
+    lastHeartbeat: convertHeartbeatMS(agentInfo.last_heartbeat_ns / (1000 * 1000)),
     uptime: distanceInWords(new Date(agentInfo.create_time), now, { addSuffix: false }),
   };
 }
 
-const AgentsTableContent = ({agents}) => {
+const AgentsTableContent = ({ agents }) => {
   const agentsDisplay = agents.map((agent) => formatAgent(agent));
   return (
     <Table>
@@ -145,7 +146,7 @@ const AgentsTableContent = ({agents}) => {
           <TableRow key={agent.id}>
             <AdminTooltip title={agent.status}>
               <TableCell>
-                <StatusCell statusGroup={agent.statusGroup}/>
+                <StatusCell statusGroup={agent.statusGroup} />
               </TableCell>
             </AdminTooltip>
             <AdminTooltip title={agent.id}>
@@ -167,7 +168,7 @@ interface AgentDisplayState {
 }
 
 const AgentsTable = () => {
-  const client = React.useContext(ClientContext);
+  const { client } = React.useContext(ClientContext);
   const [state, setState] = React.useState<AgentDisplayState>({ data: [] });
 
   React.useEffect(() => {
@@ -226,7 +227,7 @@ export const ClusterDetailsPage = () => {
           </Breadcrumbs>
         </div>
         <Link className={classes.link} to='/live'>Live View</Link>
-        <ProfileMenu/>
+        <ProfileMenu />
       </div>
       <div className={classes.main}>
         <StyledTabs
@@ -235,7 +236,7 @@ export const ClusterDetailsPage = () => {
         >
           <StyledTab value='agents' label='Agents' />
         </StyledTabs>
-        {tab == 'agents' && <AgentsTable/>}
+        {tab == 'agents' && <AgentsTable />}
       </div>
     </div>
   );

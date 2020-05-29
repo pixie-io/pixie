@@ -1,15 +1,15 @@
 import './vizier.scss';
 
 import ClientContext from 'common/vizier-grpc-client-context';
-import {ContentBox} from 'components/content-box/content-box';
-import {AutoSizedScrollableTable} from 'components/table/scrollable-table';
-import {VersionInfo} from 'components/version-info/version-info';
-import {distanceInWords} from 'date-fns';
+import { ContentBox } from 'components/content-box/content-box';
+import { AutoSizedScrollableTable } from 'components/table/scrollable-table';
+import { VersionInfo } from 'components/version-info/version-info';
+import { distanceInWords } from 'date-fns';
 import * as React from 'react';
-import {isProd} from 'utils/env';
-import {pluralize} from 'utils/pluralize';
-import {dataFromProto} from 'utils/result-data-utils';
-import {nanoToSeconds} from 'utils/time';
+import { isProd } from 'utils/env';
+import { pluralize } from 'utils/pluralize';
+import { dataFromProto } from 'utils/result-data-utils';
+import { nanoToSeconds } from 'utils/time';
 
 // TODO(nserrino): Deprecate this page.
 
@@ -60,7 +60,7 @@ const AGENT_STATUS_SCRIPT = `import px
 px.display(px.GetAgentStatus())`;
 
 export const AgentDisplay = () => {
-  const client = React.useContext(ClientContext);
+  const { client } = React.useContext(ClientContext);
   const [state, setState] = React.useState<AgentDisplayState>({ data: [] });
 
   React.useEffect(() => {

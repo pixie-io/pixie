@@ -3,6 +3,7 @@ import './App.scss';
 import Axios from 'axios';
 import { CloudClient } from 'common/cloud-gql-client';
 import { DARK_THEME } from 'common/mui-theme';
+import { SnackbarProvider } from 'components/snackbar/snackbar';
 import { VersionInfo } from 'components/version-info/version-info';
 import { AuthComplete } from 'containers/login/auth-complete';
 import { Login } from 'containers/login/login';
@@ -50,23 +51,25 @@ export class App extends React.Component {
       (
         <CloudClientContext.Provider value={cloudClient}>
           <ThemeProvider theme={DARK_THEME}>
-            <Router history={history}>
-              <ApolloProvider client={gqlClient}>
-                <div className='pixie-main-app center-content'>
-                  <Switch>
-                    <Route exact path='/auth-complete' component={AuthComplete} />
-                    <Route exact path='/login' component={Login} />
-                    <Route exact path='/logout' component={Login} />
-                    <Route exact path='/signup' component={Login} />
-                    {
-                      authenticated ? <Route component={Vizier} /> :
-                        <Redirect from='/*' to='/login' />
-                    }
-                  </Switch>
-                </div>
-              </ApolloProvider>
-            </Router>
-            {!isProd() ? <VersionInfo /> : null}
+            <SnackbarProvider>
+              <Router history={history}>
+                <ApolloProvider client={gqlClient}>
+                  <div className='pixie-main-app center-content'>
+                    <Switch>
+                      <Route exact path='/auth-complete' component={AuthComplete} />
+                      <Route exact path='/login' component={Login} />
+                      <Route exact path='/logout' component={Login} />
+                      <Route exact path='/signup' component={Login} />
+                      {
+                        authenticated ? <Route component={Vizier} /> :
+                          <Redirect from='/*' to='/login' />
+                      }
+                    </Switch>
+                  </div>
+                </ApolloProvider>
+              </Router>
+              {!isProd() ? <VersionInfo /> : null}
+            </SnackbarProvider>
           </ThemeProvider>
         </CloudClientContext.Provider>
       );

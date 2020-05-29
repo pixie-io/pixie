@@ -42,6 +42,7 @@ export function useInitScriptLoader() {
             title,
             id,
           });
+          return;
         }
       }
       // No script has been loaded if we got here, clear the script param the first effect will run.

@@ -31,13 +31,30 @@ export const ExeucteContextProvider = (props) => {
   const { id, script, setIdAndTitle, setScript } = React.useContext(ScriptContext);
   const { vis, setVis } = React.useContext(VisContext);
   const { args, setArgs } = React.useContext(ArgsContext);
-  const client = React.useContext(ClientContext);
+  const { client, healthy } = React.useContext(ClientContext);
   const { clearResults, setResults, setLoading, loading } = React.useContext(ResultsContext);
   const showSnackbar = useSnackbar();
   const { openDrawerTab } = React.useContext(DataDrawerContext);
 
   const execute = (execArgs?: ExecuteArguments) => {
-    if (!client || loading) {
+    if (loading) {
+      showSnackbar({
+        message: 'Script is already executing, please wait for it to complete',
+        autoHideDuration: 2000,
+      });
+      return;
+    }
+    if (!healthy) {
+      // TODO(malthus): Maybe link to the admin page to show what is wrong.
+      showSnackbar({
+        message: 'We are having problems talking to the cluster right now, please try again later',
+        autoHideDuration: 5000,
+      });
+      return;
+    }
+
+    if (!client) {
+      // This shouldn't happen
       return;
     }
 

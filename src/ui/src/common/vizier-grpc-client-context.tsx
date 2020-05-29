@@ -1,24 +1,44 @@
 import { CloudClientContext } from 'containers/App/context';
+import { ClusterInstructions } from 'containers/vizier/deploy-instructions';
 import * as React from 'react';
 import { operation, RetryOperation } from 'retry';
 import { Subscription } from 'rxjs';
-import { debounce } from 'utils/debounce';
 import { isDev } from 'utils/env';
 
 import { CloudClient } from './cloud-gql-client';
 import { VizierGRPCClient } from './vizier-grpc-client';
 
-const VizierGRPCClientContext = React.createContext<VizierGRPCClient>(null);
+export const CLUSTER_STATUS_UNKNOWN = 'CS_UNKNOWN';
+export const CLUSTER_STATUS_HEALTHY = 'CS_HEALTHY';
+export const CLUSTER_STATUS_UNHEALTHY = 'CS_UNHEALTHY';
+export const CLUSTER_STATUS_DISCONNECTED = 'CS_DISCONNECTED';
+export const CLUSTER_STATUS_UPDATING = 'CS_UPDATING';
+export const CLUSTER_STATUS_CONNECTED = 'CS_CONNECTED';
+export const CLUSTER_STATUS_UPDATE_FAILED = 'CS_UPDATE_FAILED';
+
+export type ClusterStatus =
+  typeof CLUSTER_STATUS_UNKNOWN |
+  typeof CLUSTER_STATUS_HEALTHY |
+  typeof CLUSTER_STATUS_UNHEALTHY |
+  typeof CLUSTER_STATUS_DISCONNECTED |
+  typeof CLUSTER_STATUS_UPDATING |
+  typeof CLUSTER_STATUS_CONNECTED |
+  typeof CLUSTER_STATUS_UPDATE_FAILED;
+
+interface ContextProps {
+  client: VizierGRPCClient | null;
+  healthy: boolean;
+}
+
+const VizierGRPCClientContext = React.createContext<ContextProps>(null);
 
 interface Props {
   passthroughEnabled: boolean;
   children: React.ReactNode;
   clusterID: string;
-  loadingScreen: React.ReactNode;
   vizierVersion: string;
+  clusterStatus: ClusterStatus;
 }
-
-export type VizierConnectionStatus = 'healthy' | 'unhealthy' | 'disconnected';
 
 async function newVizierClient(
   cloudClient: CloudClient, clusterID: string, passthroughEnabled: boolean, vizierVersion: string) {
@@ -34,10 +54,10 @@ async function newVizierClient(
 }
 
 export const VizierGRPCClientProvider = (props: Props) => {
-  const { children, passthroughEnabled, clusterID, vizierVersion } = props;
+  const { children, passthroughEnabled, clusterID, vizierVersion, clusterStatus } = props;
   const cloudClient = React.useContext(CloudClientContext);
   const [client, setClient] = React.useState<VizierGRPCClient>(null);
-  const [connectionStatus, setConnectionStatus] = React.useState<VizierConnectionStatus>('disconnected');
+  const [connected, setConnected] = React.useState<boolean>(false);
   const [loaded, setLoaded] = React.useState(false);
   const subscriptionRef = React.useRef<Subscription>(null);
   const retryRef = React.useRef<RetryOperation>(null);
@@ -45,45 +65,65 @@ export const VizierGRPCClientProvider = (props: Props) => {
     retryRef.current = operation({ forever: true, randomize: true });
   }
 
+  const healthy = clusterStatus === 'CS_HEALTHY' && connected;
+
   React.useEffect(() => {
-    retryRef.current.reset();
-    retryRef.current.attempt(() => {
+    if (clusterStatus !== 'CS_HEALTHY') {
+      retryRef.current.stop();
       if (subscriptionRef.current) {
         subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
       }
-      newVizierClient(cloudClient, clusterID, passthroughEnabled, vizierVersion).then(
-        (client) => {
-          setClient(client);
-          subscriptionRef.current = client.health().subscribe({
-            next: (status) => {
-              retryRef.current.reset();
-              if (status.getCode() === 0) {
-                setConnectionStatus('healthy');
-                setLoaded(true);
-              } else {
-                setConnectionStatus('unhealthy');
-              }
-            },
-            complete: () => {
-              retryRef.current.retry(new Error('stream ended'));
-            },
-            error: (error) => {
-              setConnectionStatus('disconnected');
-              retryRef.current.retry(error);
-            },
+    } else {
+      // Cluster is healthy
+      retryRef.current.reset();
+      retryRef.current.attempt(() => {
+        if (subscriptionRef.current) {
+          subscriptionRef.current.unsubscribe();
+        }
+        newVizierClient(cloudClient, clusterID, passthroughEnabled, vizierVersion).then(
+          (client) => {
+            setClient(client);
+            subscriptionRef.current = client.health().subscribe({
+              next: (status) => {
+                retryRef.current.reset();
+                if (status.getCode() === 0) {
+                  setConnected(true);
+                  setLoaded(true);
+                } else {
+                  setConnected(false);
+                }
+              },
+              complete: () => {
+                retryRef.current.retry(new Error('stream ended'));
+              },
+              error: (error) => {
+                setConnected(false);
+                retryRef.current.retry(error);
+              },
+            });
           });
-        });
-    });
+      });
+    }
     return () => {
       if (subscriptionRef.current) {
         subscriptionRef.current.unsubscribe();
       }
+      retryRef.current.stop();
     };
-  }, [clusterID, passthroughEnabled]);
+
+  }, [clusterID, passthroughEnabled, clusterStatus]);
+
+  const context = React.useMemo(() => {
+    return {
+      client,
+      healthy,
+    };
+  }, [client, healthy])
 
   return (
-    <VizierGRPCClientContext.Provider value={connectionStatus === 'disconnected' ? null : client}>
-      {!loaded ? props.loadingScreen : children}
+    <VizierGRPCClientContext.Provider value={context}>
+      {!loaded ? <ClusterInstructions message='Connecting to cluster...' /> : children}
     </VizierGRPCClientContext.Provider>
   );
 };

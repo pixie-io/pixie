@@ -23,7 +23,7 @@ export const ConsoleTab: React.FC<EditorTabInfo> = (props) => {
   const [error, setError] = React.useState<Error>(null);
   const [data, setData] = React.useState<VizierQueryResult>(null);
   const [loading, setLoading] = React.useState(false);
-  const client = React.useContext(VizierGRPCClientContext);
+  const { client } = React.useContext(VizierGRPCClientContext);
 
   const [saveHistory] = useMutation(APPEND_HISTORY);
 

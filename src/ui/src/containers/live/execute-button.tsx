@@ -6,15 +6,20 @@ import IconButton from '@material-ui/core/IconButton';
 import Tooltip from '@material-ui/core/Tooltip';
 
 import { ExecuteContext } from './context/execute-context';
+import { ResultsContext } from './context/results-context';
 
 const ExecuteScriptButton = () => {
-  const client = React.useContext(ClientContext);
+  const { healthy } = React.useContext(ClientContext);
   const { execute } = React.useContext(ExecuteContext);
+  const { loading } = React.useContext(ResultsContext);
+
   return (
-    <Tooltip title='Execute script'>
-      <IconButton disabled={!client} onClick={() => execute()}>
-        <PlayIcon />
-      </IconButton>
+    <Tooltip title={loading ? 'Executing' : !healthy ? 'Cluster Disconnected' : 'Execute script'}>
+      <div>
+        <IconButton disabled={!healthy || loading} onClick={() => execute()}>
+          <PlayIcon />
+        </IconButton>
+      </div>
     </Tooltip >
   );
 };

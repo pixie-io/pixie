@@ -1,9 +1,10 @@
 import './vizier.scss';
 
-import { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
+import { ClusterStatus, VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
+import { useSnackbar } from 'components/snackbar/snackbar';
+import AdminView from 'containers/admin/admin';
 import { ScriptsContextProvider } from 'containers/App/scripts-context';
 import { Editor } from 'containers/editor';
-import AdminView from 'containers/admin/admin';
 import LiveView from 'containers/live/live';
 import gql from 'graphql-tag';
 import * as React from 'react';
@@ -105,6 +106,7 @@ const ClusterBanner = () => {
 const Vizier = () => {
   const [creatingCluster, setCreatingCluster] = React.useState(false);
   const client = useApolloClient();
+  const showSnackbar = useSnackbar();
 
   const { loading, error, data } = useQuery(GET_CLUSTER, { pollInterval: 2500, fetchPolicy: 'network-only' });
 
@@ -123,38 +125,41 @@ const Vizier = () => {
 
       return <ClusterInstructions message='Initializing...' />;
     }
-    return <div>Error! {error.message}</div>;
   }
 
-  if (data.cluster.status === 'CS_HEALTHY') {
-    return (
-      <VizierGRPCClientProvider
-        clusterID={data.cluster.id}
-        passthroughEnabled={data.cluster.vizierConfig.passthroughEnabled}
-        loadingScreen={<ClusterInstructions message='Connecting to cluster...' />}
-        vizierVersion={data.cluster.vizierVersion}
-      >
-        <ScriptsContextProvider>
-          <Switch>
-            <Route path='/live' component={LiveView} />
-            <Route path={['/console', '/agents']} component={VizierMain}
-            />
-            <Route path='/admin' component={AdminView} />
-            <Redirect from='/*' to='/live' />
-          </Switch>
-        </ScriptsContextProvider>
-      </VizierGRPCClientProvider>
-    );
-  } else if (data.cluster.status === 'CS_UNHEALTHY') {
-    const clusterStarting = 'Cluster found. Waiting for pods and services to become ready...';
-    return <ClusterInstructions message={clusterStarting} />;
-  } else if (data.cluster.status === 'CS_UPDATING') {
-    return <ClusterInstructions message='Cluster updating...' />;
-  } else {
+  const errMsg = error?.message;
+  if (errMsg) {
+    // This is an error with pixie cloud, it is probably not relevant to the user.
+    // Show a generic error message instead.
+    showSnackbar({ message: 'There was a problem connecting to Pixie', autoHideDuration: 5000 });
+    console.error(errMsg);
+  }
+
+  const status: ClusterStatus = data?.cluster?.status || 'CS_UNKNOWN';
+
+  if (status === 'CS_DISCONNECTED') {
     return (
       <DeployInstructions />
     );
   }
+
+  return (
+    <VizierGRPCClientProvider
+      clusterID={data.cluster.id}
+      passthroughEnabled={data.cluster.vizierConfig.passthroughEnabled}
+      vizierVersion={data.cluster.vizierVersion}
+      clusterStatus={errMsg ? 'CS_UNKNOWN' : status}
+    >
+      <ScriptsContextProvider>
+        <Switch>
+          <Route path='/live' component={LiveView} />
+          <Route path={['/console', '/agents']} component={VizierMain} />
+          <Route path='/admin' component={AdminView} />
+          <Redirect from='/*' to='/live' />
+        </Switch>
+      </ScriptsContextProvider>
+    </VizierGRPCClientProvider>
+  );
 };
 
 export default function withClusterBanner() {
