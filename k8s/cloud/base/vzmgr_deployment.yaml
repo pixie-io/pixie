@@ -50,6 +50,11 @@ spec:
             configMapKeyRef:
               name: pl-service-config
               key: PL_DNSMGR_SERVICE
+        - name: PL_ARTIFACT_TRACKER_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: pl-service-config
+              key: PL_ARTIFACT_TRACKER_SERVICE
         - name: PL_POSTGRES_USERNAME
           valueFrom:
             secretKeyRef:

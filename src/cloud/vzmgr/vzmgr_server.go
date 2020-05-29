@@ -20,6 +20,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/pg"
 
 	log "github.com/sirupsen/logrus"
+	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 )
@@ -42,6 +43,21 @@ func NewDNSMgrServiceClient() (dnsmgrpb.DNSMgrServiceClient, error) {
 	}
 
 	return dnsmgrpb.NewDNSMgrServiceClient(dnsMgrChannel), nil
+}
+
+// NewArtifactTrackerServiceClient creates a new artifact tracker RPC client stub.
+func NewArtifactTrackerServiceClient() (artifacttrackerpb.ArtifactTrackerClient, error) {
+	dialOpts, err := services.GetGRPCClientDialOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	atChannel, err := grpc.Dial(viper.GetString("artifact_tracker_service"), dialOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return artifacttrackerpb.NewArtifactTrackerClient(atChannel), nil
 }
 
 func main() {
@@ -100,7 +116,13 @@ func main() {
 				Error("Got NATS error")
 		}
 	})
-	c := controller.New(db, dbKey, dnsMgrClient, nc)
+
+	at, err := NewArtifactTrackerServiceClient()
+	if err != nil {
+		log.Fatal("Could not connect to artifact tracker")
+	}
+
+	c := controller.New(db, dbKey, dnsMgrClient, at, nc)
 	sm := controller.NewStatusMonitor(db)
 	defer sm.Stop()
 	vzmgrpb.RegisterVZMgrServiceServer(s.GRPCServer(), c)
