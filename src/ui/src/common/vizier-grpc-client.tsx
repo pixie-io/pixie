@@ -127,6 +127,11 @@ export class VizierGRPCClient {
             reject(new VizierQueryError('execution', getExecutionErrors(errList), status));
             return;
           }
+          const errMsg = status.getMessage();
+          if (errMsg) {
+            reject(new VizierQueryError('execution', errMsg, status));
+            return;
+          }
 
           results.status = status;
           resolve(results);
