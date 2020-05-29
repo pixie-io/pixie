@@ -1,4 +1,7 @@
 import * as QueryString from 'query-string';
+import { fromEvent, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { argsEquals } from 'utils/args-utils';
 
 type Args = { [key: string]: string };
 
@@ -11,11 +14,14 @@ interface Location {
 
 interface History {
   pushState(data: any, title: string, url?: string): void;
+  replaceState(data: any, title: string, url?: string): void;
 }
 
 export interface Window {
   location: Location;
   history: History;
+  addEventListener: typeof window.addEventListener;
+  removeEventListener: typeof window.removeEventListener;
 }
 
 // Exported for testing
@@ -23,11 +29,44 @@ export class QueryParams {
   args: Args;
   scriptId: string;
   scriptDiff: string;
+  onChange: Observable<QueryParams>;
+
+  private prevParams: {
+    args: Args;
+    scriptId: string;
+    scriptDiff: string;
+  };
 
   constructor(private readonly privateWindow: Window) {
+    this.syncWithQueryParams();
+    this.prevParams = {
+      args: this.args,
+      scriptDiff: this.scriptDiff,
+      scriptId: this.scriptId,
+    };
+    this.onChange = fromEvent(this.privateWindow, 'popstate').pipe(map(() => {
+      this.syncWithQueryParams();
+      return this;
+    }));
+  }
+
+
+  private toURL(id: string, diff: string, args: Args) {
+    const params = {
+      script: id,
+      ...(diff ? { diff } : {}),
+      ...args,
+    };
+    const { protocol, host, pathname } = this.privateWindow.location;
+    const newQueryString = QueryString.stringify(params);
+    const search = newQueryString ? `?${newQueryString}` : '';
+    return `${protocol}//${host}${pathname}${search}`;
+  }
+
+  private syncWithQueryParams() {
     const { script, diff, ...args } = this.getQueryParams();
     this.scriptId = script;
-    this.scriptDiff = diff;
+    this.scriptDiff = diff || '';
     this.args = args;
   }
 
@@ -42,21 +81,28 @@ export class QueryParams {
     return params;
   }
 
-  private setQueryParams(params: { [key: string]: string }) {
-    const { protocol, host, pathname } = this.privateWindow.location;
-    const newQueryString = QueryString.stringify(params);
-    const search = newQueryString ? `?${newQueryString}` : '';
-    const newurl = `${protocol}//${host}${pathname}${search}`;
-
-    this.privateWindow.history.pushState({ path: newurl }, '', newurl);
+  private updateURL() {
+    const newurl = this.toURL(this.scriptId, this.scriptDiff, this.args);
+    this.privateWindow.history.replaceState({ path: newurl }, '', newurl);
   }
 
-  private updateURL() {
-    this.setQueryParams({
-      script: this.scriptId,
-      ...(this.scriptDiff ? { diff: this.scriptDiff } : {}),
-      ...this.args,
-    });
+  private commitURL() {
+    // Don't push the state if the params haven't changed.
+    if (this.scriptId === this.prevParams.scriptId &&
+      this.scriptDiff === this.prevParams.scriptDiff &&
+      argsEquals(this.args, this.prevParams.args)) {
+      return;
+    }
+    const newurl = this.toURL(this.scriptId, this.scriptDiff, this.args);
+    const oldurl = this.toURL(this.prevParams.scriptId, this.prevParams.scriptDiff, this.prevParams.args);
+    // Restore the current history state to the previous one, otherwise we would just be pushing the same state again.
+    this.privateWindow.history.replaceState({ path: oldurl }, '', oldurl);
+    this.privateWindow.history.pushState({ path: newurl }, '', newurl);
+    this.prevParams = {
+      scriptId: this.scriptId,
+      scriptDiff: this.scriptDiff,
+      args: this.args,
+    };
   }
 
   setArgs(newArgs: Args) {
@@ -72,10 +118,13 @@ export class QueryParams {
     this.updateURL();
   }
 
-  setAll(id: string, diff: string, args: Args) {
-    this.scriptId = id;
-    this.scriptDiff = diff;
-    this.setArgs(args);
+  commitAll(newId: string, newDiff: string, newArgs: Args) {
+    // Omit the script and diff fields of newArgs.
+    const { script, diff, ...args } = newArgs;
+    this.scriptId = newId;
+    this.scriptDiff = newDiff;
+    this.args = args;
+    this.commitURL();
   }
 }
 

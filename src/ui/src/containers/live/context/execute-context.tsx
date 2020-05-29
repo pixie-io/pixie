@@ -6,6 +6,7 @@ import { getQueryFuncs, Vis } from 'containers/live/vis';
 import * as React from 'react';
 import analytics from 'utils/analytics';
 import { Arguments } from 'utils/args-utils';
+import QueryParams from 'utils/query-params';
 
 import { ArgsContext } from './args-context';
 import { DataDrawerContext } from './data-drawer-context';
@@ -19,6 +20,7 @@ interface ExecuteArguments {
   args: Arguments;
   id?: string;
   title?: string;
+  skipURLUpdate?: boolean;
 }
 
 interface ExecuteContextProps {
@@ -61,7 +63,7 @@ export const ExeucteContextProvider = (props) => {
     setLoading(true);
 
     if (!execArgs) {
-      execArgs = { script, vis, args };
+      execArgs = { script, vis, args, id };
     } else {
       clearResults();
       setVis(execArgs.vis);
@@ -82,6 +84,10 @@ export const ExeucteContextProvider = (props) => {
 
     let errMsg: string;
     let queryId: string;
+
+    if (!execArgs.skipURLUpdate) {
+      QueryParams.commitAll(execArgs.id || '', '', execArgs.args);
+    }
 
     new Promise((resolve, reject) => {
       try {

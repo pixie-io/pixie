@@ -10,7 +10,7 @@ import { parseVis } from './vis';
 
 export function useInitScriptLoader() {
   const [loaded, setLoaded] = React.useState(false);
-  const { promise: scriptPromise } = React.useContext(ScriptsContext);
+  const { promise: scriptPromise, scripts } = React.useContext(ScriptsContext);
   const script = React.useContext(ScriptContext);
   const [params, setParams] = React.useState({
     scriptId: QueryParams.scriptId,
@@ -18,6 +18,13 @@ export function useInitScriptLoader() {
   });
   const { execute } = React.useContext(ExecuteContext);
   const visSpec = React.useContext(VisContext);
+  const ref = React.useRef({
+    scripts,
+    execute,
+  });
+
+  ref.current.scripts = scripts;
+  ref.current.execute = execute;
 
   // Execute the default scripts if script is not set in the query params.
   React.useEffect(() => {
@@ -52,4 +59,26 @@ export function useInitScriptLoader() {
       setParams({ scriptId: '', args: {} });
     });
   }, []);
+
+  React.useEffect(() => {
+    const subscription = QueryParams.onChange.subscribe(({ scriptId, args }) => {
+      for (const { title, vis, code, id } of ref.current.scripts) {
+        if (id === scriptId && code) {
+          const parsedVis = parseVis(vis);
+          const parsedArgs = argsForVis(parsedVis, args, id);
+          ref.current.execute({
+            script: code,
+            vis: parsedVis,
+            args: parsedArgs,
+            title,
+            id,
+            skipURLUpdate: true,
+          });
+        }
+      }
+    });
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [])
 }

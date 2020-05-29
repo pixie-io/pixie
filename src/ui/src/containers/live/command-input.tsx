@@ -3,6 +3,7 @@ import { CompletionHeader, CompletionItem } from 'components/autocomplete/comple
 import PixieCommandIcon from 'components/icons/pixie-command';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
+import { argsForVis } from 'utils/args-utils';
 import { Script } from 'utils/script-bundle';
 
 import { createStyles, makeStyles } from '@material-ui/core';
@@ -64,13 +65,15 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
 
   const selectScript = (id) => {
     const script = scriptsMap.get(id);
+    const vis = parseVis(script.vis);
     if (script) {
       execute({
         script: script.code,
-        vis: parseVis(script.vis),
+        vis,
         title: script.title,
         id: script.id,
-        args: {},
+        // Fill the default args for now. This will go away once the autocomplete is implemented.
+        args: argsForVis(vis, {}),
       });
     }
     onClose();
