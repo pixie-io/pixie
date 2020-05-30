@@ -1,4 +1,4 @@
-import {formatCluster} from './admin';
+import {formatCluster} from './clusters-list';
 
 describe('formatCluster', () => {
   it('correctly formats cluster info', () => {

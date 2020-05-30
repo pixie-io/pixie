@@ -1,23 +1,14 @@
 import { scrollbarStyles } from 'common/mui-theme';
 import ProfileMenu from 'containers/live/profile-menu';
-
-import { useQuery } from '@apollo/react-hooks';
-import Tab from '@material-ui/core/Tab';
-import Tabs from '@material-ui/core/Tabs';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
-import Tooltip from '@material-ui/core/Tooltip';
-import HealthyIcon from '@material-ui/icons/CheckCircle';
-import UnhealthyIcon from '@material-ui/icons/Error';
-import UnknownIcon from '@material-ui/icons/Brightness1';
-import gql from 'graphql-tag';
-import * as React from 'react';
-import { Link } from 'react-router-dom';
+import history from 'utils/pl-history';
+import {ClusterDetailsPage} from './cluster-details';
+import {ClustersTable} from './clusters-list';
 
 import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
+import Tab from '@material-ui/core/Tab';
+import Tabs from '@material-ui/core/Tabs';
+import * as React from 'react';
+import { Link, Route, Router, Switch } from 'react-router-dom';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -36,9 +27,7 @@ const useStyles = makeStyles((theme: Theme) => {
       alignItems: 'center',
     },
     title: {
-      ...theme.typography.h6,
       flexGrow: 1,
-      fontWeight: theme.typography.fontWeightBold,
       marginLeft: theme.spacing(2),
     },
     main: {
@@ -52,160 +41,21 @@ const useStyles = makeStyles((theme: Theme) => {
       ...theme.typography.subtitle1,
       margin: theme.spacing(1),
     },
-    table: {},
-    unhealthy: {
-      color: theme.palette.error.main,
+    titleText: {
+      ...theme.typography.h6,
+      fontWeight: theme.typography.fontWeightBold,
     },
-    healthy: {
-      color: theme.palette.success.main,
+    breadcrumbText: {
+      ...theme.typography.subtitle2,
+      color: theme.palette.foreground.one,
+      fontWeight: theme.typography.fontWeightLight,
     },
-    unknown: {
-      color: theme.palette.foreground.grey1,
+    breadcrumbLink: {
+      ...theme.typography.subtitle2,
+      color: theme.palette.foreground.one,
     },
   });
 });
-
-const GET_CLUSTERS = gql`
-{
-  clusters {
-    id
-    clusterName
-    clusterVersion
-    status
-    lastHeartbeatMs
-    vizierVersion
-    vizierConfig {
-      passthroughEnabled
-    }
-  }
-}`;
-
-function convertHeartbeatMS(lastHeartbeatMs: number): string {
-  const secMs = 1000;
-  const minMs = 60*secMs;
-  const hoursMs = 60*minMs;
-  const result = [];
-  let time = lastHeartbeatMs;
-  const hours = Math.floor(time / (hoursMs));
-  if (hours > 0) {
-    result.push(`${hours} hours`);
-    time = time % hoursMs;
-  }
-  const minutes = Math.floor(time / minMs);
-  if (minutes > 0) {
-    result.push(`${minutes} min`);
-    time = time % minMs;
-  }
-  const seconds = Math.floor(time / secMs);
-  result.push(`${seconds} sec`);
-  return `${result.join(' ')} ago`;
-}
-
-
-type VizierStatusGroup = 'healthy' | 'unhealthy' | 'unknown';
-type VizierConnectionMode = 'Passthrough' | 'Direct';
-
-interface ClusterDisplay {
-  id: string;
-  idShort: string;
-  name: string;
-  status: string;
-  statusGroup: VizierStatusGroup;
-  clusterVersion: string;
-  vizierVersionShort: string;
-  vizierVersion: string;
-  lastHeartbeat: string;
-  mode: VizierConnectionMode;
-}
-
-function getStatusGroup(status: string): VizierStatusGroup {
-  if (['CS_HEALTHY', 'CS_UPDATING', 'CS_CONNECTED'].indexOf(status) != -1) {
-    return 'healthy';
-  } else if (['CS_UNHEALTHY', 'CS_UPDATE_FAILED'].indexOf(status) != -1) {
-    return 'unhealthy';
-  } else {
-    return 'unknown';
-  }
-}
-
-export function formatCluster(clusterInfo): ClusterDisplay {
-  let shortVersion = clusterInfo.vizierVersion;
-  // Dashes occur in internal Vizier versions and not public release ones.
-  if (clusterInfo.vizierVersion.indexOf('-') == -1) {
-    shortVersion = clusterInfo.vizierVersion.split('+')[0];
-  }
-
-  return {
-    id: clusterInfo.id,
-    idShort: clusterInfo.id.split('-').pop(),
-    name: clusterInfo.clusterName,
-    clusterVersion: clusterInfo.clusterVersion,
-    vizierVersionShort: shortVersion,
-    vizierVersion: clusterInfo.vizierVersion,
-    status: clusterInfo.status.replace('CS_', ''),
-    statusGroup: getStatusGroup(clusterInfo.status),
-    mode: clusterInfo.vizierConfig.passthroughEnabled ? 'Passthrough' : 'Direct',
-    lastHeartbeat: convertHeartbeatMS(clusterInfo.lastHeartbeatMs),
-  }
-}
-
-const StatusCell = ({statusGroup}) => {
-  const classes = useStyles();
-  switch (statusGroup) {
-    case 'healthy':
-      return (<HealthyIcon fontSize='small' className={classes.healthy}/>);
-    case 'unhealthy':
-      return (<UnhealthyIcon fontSize='small' className={classes.unhealthy}/>);
-    default:
-      return (<UnknownIcon fontSize='small' className={classes.unknown}/>);
-  }
-}
-
-const ClustersTable = () => {
-  const classes = useStyles();
-
-  const { loading, error, data } = useQuery(GET_CLUSTERS, { fetchPolicy: 'network-only' });
-  if (loading || error || !data.clusters) {
-    return null;
-  }
-  const clusters = data.clusters.map((cluster) => formatCluster(cluster));
-  return (
-    <Table className={classes.table}>
-      <TableHead>
-        <TableRow>
-          <TableCell></TableCell>
-          <TableCell>ID</TableCell>
-          <TableCell>Name</TableCell>
-          <TableCell>Vizier</TableCell>
-          <TableCell>K8s</TableCell>
-          <TableCell>Heartbeat</TableCell>
-          <TableCell>Mode</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {clusters.map((cluster: ClusterDisplay) => (
-          <TableRow key={cluster.id}>
-            <Tooltip title={cluster.status} placement='right'>
-              <TableCell>
-                <StatusCell statusGroup={cluster.statusGroup}/>
-              </TableCell>
-            </Tooltip>
-            <Tooltip title={cluster.id} placement='right'>
-              <TableCell>{cluster.idShort}</TableCell>
-            </Tooltip>
-            <TableCell>{cluster.name}</TableCell>
-            <Tooltip title={cluster.vizierVersion} placement='right'>
-              <TableCell>{cluster.vizierVersionShort}</TableCell>
-            </Tooltip>
-            <TableCell>{cluster.clusterVersion}</TableCell>
-            <TableCell>{cluster.lastHeartbeat}</TableCell>
-            <TableCell>{cluster.mode}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
-}
 
 const StyledTabs = withStyles((theme: Theme) =>
   createStyles({
@@ -229,14 +79,16 @@ const StyledTab = withStyles((theme: Theme) =>
   }),
 )(Tab);
 
-export default function AdminView() {
+const AdminOverview = () => {
   const classes = useStyles();
   const [tab, setTab] = React.useState('clusters');
 
   return (
     <div className={classes.root}>
       <div className={classes.topBar}>
-        <div className={classes.title}>Admin View</div>
+        <div className={classes.title}>
+          <div className={classes.titleText}>Admin View</div>
+        </div>
         <Link className={classes.link} to='/live'>Live View</Link>
         <ProfileMenu/>
       </div>
@@ -250,5 +102,16 @@ export default function AdminView() {
         {tab == 'clusters' && <ClustersTable/>}
       </div>
     </div>
+  );
+}
+
+export default function AdminView() {
+  return (
+    <Router history={history}>
+      <Switch>
+        <Route exact path='/admin' component={AdminOverview} />
+        <Route exact path='/admin/cluster/:id' component={ClusterDetailsPage} />
+      </Switch>
+    </Router>
   );
 }
