@@ -84,6 +84,12 @@ describe('argsForVis', () => {
     expect(argsForVis(vis, args)).toEqual({ foo: 'foo' });
   });
 
+  it('handles null vis correctly', () => {
+    const args = { foo: 'foo', bar: 'bar' };
+
+    expect(argsForVis(null, args)).toEqual({});
+  });
+
   it('fills the arg with default value if it wasn\'t specified', () => {
     const vis = {
       widgets: [], globalFuncs: [], variables: [

@@ -32,6 +32,9 @@ export function argsEquals(args1: Arguments, args2: Arguments): boolean {
 // Populate arguments either from defaultValues or from the input args.
 export function argsForVis(vis: Vis, args: Arguments, scriptId?: string): Arguments {
   const outArgs: Arguments = {};
+  if (!vis) {
+    return {};
+  }
   if (!args) {
     args = {};
   }
