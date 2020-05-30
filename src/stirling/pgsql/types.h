@@ -17,46 +17,51 @@ namespace stirling {
 namespace pgsql {
 
 /**
- * List of tags at the beginning of each and every message.
+ * List of tags at the beginning of each and every RegularMessage.
+ *
  * The full list can be found at:
  * https://www.postgresql.org/docs/8.2/protocol-message-formats.html
+ *
+ * Use the notation in the above webpage, F refers to a tag used by messages sent by the Frontend,
+ * B Backend.
  *
  * NOTE: The enum value names are shortened, which are not exactly what shown in the above document.
  */
 enum class Tag : char {
-  kAuth = 'R',
-  // Password message is response to authenticate request.
-  kPasswd = 'p',
-
-  kKey = 'K',
-  kBind = 'B',
-  kBindComplete = '2',
-  kClose = 'C',
-  kCloseComplete = '3',
-  // This is same as kClose, but this is always sent by a server.
-  kCmdComplete = 'C',
-  kErrResp = 'E',
-  kCopy = 'd',
+  // Frontend (F) & Backend (B).
+  kCopyData = 'd',
   kCopyDone = 'c',
-  kCopyFail = 'f',
-  kCopyInResponse = 'G',
-  kCopyOutResponse = 'H',
-  kQuery = 'Q',
-  kReadyForQuery = 'Z',
-  kDataRow = 'D',
 
-  // All these are sent from client. Some tag are duplicate with the above ones.
+  // F.
+  kDataRow = 'D',
+  kQuery = 'Q',
+  kCopyFail = 'f',
+  kClose = 'C',
+  kBind = 'B',
+  kPasswd = 'p',
   kParse = 'P',
   kDesc = 'D',
   kSync = 'S',
   kExecute = 'E',
 
-  // From server.
+  // B.
+  kReadyForQuery = 'Z',
+  kCopyOutResponse = 'H',
+  kCopyInResponse = 'G',
+  kErrResp = 'E',
+  kCmdComplete = 'C',
+  kCloseComplete = '3',
+  kBindComplete = '2',
+  kKey = 'K',
+  kAuth = 'R',
   kParseComplete = '1',
   kParamDesc = 't',
   kRowDesc = 'T',
+  kNoData = 'n',
 
-  // TODO(yzhao): More tags to be added.
+  kUnknown = '\0',
+
+  // TODO(yzhao): This list is not complete. More tags to be added.
 };
 
 // Make Tag printable, for example for DCHECK().
@@ -72,29 +77,20 @@ inline std::ostream& operator<<(std::ostream& os, Tag tag) {
  * ---------------------------------------------------------
  */
 struct RegularMessage : public stirling::FrameBase {
-  Tag tag;
-  int32_t len;
+  Tag tag = Tag::kUnknown;
+  int32_t len = 0;
   std::string payload;
 
   size_t ByteSize() const override { return 5 + payload.size(); }
 
   std::string DebugString() const {
-    return absl::Substitute("[tag: $0] [len: $1] [payload: $2]", static_cast<char>(tag), len,
-                            payload);
+    return absl::Substitute("[tag=$0 len=$1 payload=$2]", static_cast<char>(tag), len, payload);
   }
 };
 
-struct Query : RegularMessage {};
-
-struct NV {
-  std::string name;
-  std::string value;
-
-  // This allows GoogleTest to print NV values.
-  friend std::ostream& operator<<(std::ostream& os, const NV& nv) {
-    os << "[" << nv.name << ", " << nv.value << "]";
-    return os;
-  }
+template <typename TValue>
+struct DebugStringFormatter {
+  void operator()(std::string* out, const TValue& v) const { out->append(v.DebugString()); }
 };
 
 /**
@@ -102,14 +98,19 @@ struct NV {
  * -----------------------------------------------------------------------
  * | int32 len (including this field) | int32 protocol version | payload |
  * -----------------------------------------------------------------------
+ *
+ * NOTE: StartupMessage is sent from client as the first message.
+ * It is not same as RegularMessage, and has no tag.
  */
 struct StartupMessage {
-  static constexpr size_t kMinLen = sizeof(int32_t) + sizeof(int32_t);
-  int32_t len;
   struct ProtocolVersion {
     int16_t major;
     int16_t minor;
   };
+
+  static constexpr size_t kMinLen = sizeof(int32_t) + sizeof(int32_t);
+
+  int32_t len = 0;
   ProtocolVersion proto_ver;
   // TODO(yzhao): Check if user field is required. See StartupMessage section of
   // https://www.postgresql.org/docs/9.3/protocol-message-formats.html.
@@ -117,10 +118,12 @@ struct StartupMessage {
 };
 
 struct CancelRequestMessage {
-  int32_t len;
-  int32_t cancel_code;
-  int32_t pid;
-  int32_t secret;
+  uint64_t timestamp_ns = 0;
+
+  int32_t len = 0;
+  int32_t cancel_code = 0;
+  int32_t pid = 0;
+  int32_t secret = 0;
 };
 
 enum class FmtCode : int16_t {
@@ -130,35 +133,62 @@ enum class FmtCode : int16_t {
 };
 
 struct Param {
-  FmtCode format_code;
+  FmtCode format_code = FmtCode::kText;
   std::optional<std::string> value;
+
+  std::string_view Value() const {
+    // TODO(PP-1885): Format value based on format_code.
+    if (value.has_value()) {
+      return value.value();
+    }
+    return "[NULL]";
+  }
+
+  std::string DebugString() const {
+    return absl::Substitute("[formt=$0 value=$1]", magic_enum::enum_name(format_code), Value());
+  }
 };
 
-struct BindRequest : public FrameBase {
+inline bool operator==(const Param& lhs, const Param& rhs) {
+  return std::tie(lhs.format_code, lhs.value) == std::tie(rhs.format_code, rhs.value);
+}
+
+struct BindRequest {
+  uint64_t timestamp_ns = 0;
+
+  // Portal is for maintaining cursored query:
+  // https://www.postgresql.org/docs/9.2/plpgsql-cursors.html
   std::string dest_portal_name;
   std::string src_prepared_stat_name;
   std::vector<Param> params;
   std::vector<FmtCode> res_col_fmt_codes;
 
-  size_t ByteSize() const override {
-    LOG(DFATAL) << "BindReqResp::ByteSize() unimplemented";
-    return 0;
+  struct FmtCodeFormatter {
+    void operator()(std::string* out, FmtCode fmt_code) const {
+      out->append(magic_enum::enum_name(fmt_code));
+    }
+  };
+
+  std::string DebugString() const {
+    return absl::Substitute("[portal=$0 statement=$1 parameters=[$2] result_format_codes=[$3]]",
+                            dest_portal_name, src_prepared_stat_name,
+                            absl::StrJoin(params, ", ", DebugStringFormatter<Param>()),
+                            absl::StrJoin(res_col_fmt_codes, ", ", FmtCodeFormatter()));
   }
 };
 
 struct ParamDesc {
+  uint64_t timestamp_ns = 0;
+
   std::vector<int32_t> type_oids;
 };
 
-struct Parse : public FrameBase {
+struct Parse {
+  uint64_t timestamp_ns = 0;
+
   std::string stmt_name;
   std::string query;
   std::vector<int32_t> param_type_oids;
-
-  size_t ByteSize() const override {
-    LOG(DFATAL) << "BindReqResp::ByteSize() unimplemented";
-    return 0;
-  }
 };
 
 struct RowDesc {
@@ -182,6 +212,9 @@ struct RowDesc {
           magic_enum::enum_name(fmt_code));
     }
   };
+
+  uint64_t timestamp_ns = 0;
+
   std::vector<Field> fields;
 
   auto FieldNames() const {
@@ -191,6 +224,10 @@ struct RowDesc {
     }
     return result;
   }
+
+  std::string DebugString() const {
+    return absl::StrJoin(fields, ", ", DebugStringFormatter<Field>());
+  }
 };
 
 struct Desc {
@@ -199,10 +236,14 @@ struct Desc {
     kPortal = 'P',
   };
 
-  uint64_t timestamp_ns;
+  uint64_t timestamp_ns = 0;
 
-  Type type;
+  Type type = Type::kStatement;
   std::string name;
+
+  std::string DebugString() const {
+    return absl::Substitute("[type=$0 name=$1", magic_enum::enum_name(type), name);
+  }
 };
 
 // See https://www.postgresql.org/docs/9.3/protocol-error-fields.html
@@ -226,19 +267,78 @@ enum class ErrFieldCode : char {
   File = 'F',
   Line = 'L',
   Routine = 'R',
+
+  kUnknown = '\0',
 };
 
 struct ErrResp {
   struct Field {
-    ErrFieldCode code;
+    ErrFieldCode code = ErrFieldCode::kUnknown;
     std::string_view value;
+
+    std::string DebugString() const {
+      std::string_view field_name = magic_enum::enum_name(code);
+      if (field_name.empty()) {
+        std::string unknown_field_name = "Field:";
+        unknown_field_name.append(1, static_cast<char>(code));
+        return absl::StrCat(unknown_field_name, "=", value);
+      } else {
+        return absl::StrCat(field_name, "=", value);
+      }
+    }
   };
+
+  uint64_t timestamp_ns = 0;
+
   std::vector<Field> fields;
+
+  struct ErrFieldFormatter {
+    void operator()(std::string* out, const ErrResp::Field& err_field) const {
+      out->append(err_field.DebugString());
+    }
+  };
+
+  std::string DebugString() const { return absl::StrJoin(fields, "\n", ErrFieldFormatter()); }
 };
 
 struct ParseReqResp {
   Parse req;
   std::optional<ErrResp> resp;
+};
+
+struct BindReqResp {
+  BindRequest req;
+  std::optional<ErrResp> resp;
+};
+
+struct DescReqResp {
+  Desc req;
+
+  struct Resp {
+    uint64_t timestamp_ns = 0;
+
+    bool is_err_resp = false;
+    bool is_no_data = false;
+
+    // This is unset if Desc asks for the description of a "portal".
+    ParamDesc param_desc;
+
+    RowDesc row_desc;
+
+    // This is set if is_err_resp is true.
+    ErrResp err_resp;
+
+    std::string DebugString() const {
+      if (is_err_resp) {
+        return err_resp.DebugString();
+      }
+      // It does not seem useful to format type OIDs, so we only report row description's field
+      // names.
+      return absl::StrJoin(row_desc.FieldNames(), ",");
+    }
+  };
+
+  Resp resp;
 };
 
 struct Record {
@@ -248,8 +348,13 @@ struct Record {
 
 struct State {
   absl::flat_hash_map<std::string, std::string> prepared_statements;
+
   // One postgres session can only have at most one unnamed statement.
   std::string unnamed_statement;
+
+  // The resolved query statement of the current extended query session.
+  // https://www.postgresql.org/docs/10/protocol-flow.html#PROTOCOL-FLOW-EXT-QUERY
+  std::string bound_statement;
 };
 
 struct StateWrapper {

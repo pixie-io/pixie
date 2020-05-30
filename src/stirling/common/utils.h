@@ -15,5 +15,20 @@ inline size_t CountStringMapSize(const std::multimap<std::string, std::string>& 
   return res;
 }
 
+struct NV {
+  std::string name;
+  std::string value;
+
+  std::string DebugString() const {
+    return absl::Substitute("[name='$0' value='$1']", name, value);
+  }
+};
+
+// This allows GoogleTest to print NV values.
+inline std::ostream& operator<<(std::ostream& os, const NV& nv) {
+  os << nv.DebugString();
+  return os;
+}
+
 }  // namespace stirling
 }  // namespace pl
