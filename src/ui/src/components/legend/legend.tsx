@@ -98,12 +98,12 @@ const useStyles = makeStyles((theme: Theme) => {
 
 const toRowMajorOrder = (entries: LegendEntry[], numCols: number, numRows: number): LegendEntry[] => {
   const newEntries: LegendEntry[] = [];
-  outerLoop:
   for (let i = 0; i < numCols; i++) {
     for (let j = 0; j < numRows; j++) {
       const index = j * numCols + i;
       if (index >= entries.length) {
-        break outerLoop;
+        newEntries.push(null);
+        continue;
       }
       newEntries.push(entries[index]);
     }
