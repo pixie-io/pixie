@@ -37,6 +37,11 @@ export const LayoutContextProvider = (props) => {
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('xs')); // width < 600px
+  React.useEffect(() => {
+    if (isMobile) {
+      setEditorPanelOpen(false);
+    }
+  }, [isMobile]);
 
   return (
     <LayoutContext.Provider
