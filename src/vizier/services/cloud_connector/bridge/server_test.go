@@ -136,7 +136,7 @@ func (f *FakeVZInfo) GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, error)
 	}, nil
 }
 
-func (f *FakeVZInfo) GetPodStatuses() (map[string]*cvmsgspb.PodStatus, time.Time) {
+func (f *FakeVZInfo) GetK8sState() (map[string]*cvmsgspb.PodStatus, int32, time.Time) {
 	lastUpdatedTime := time.Unix(2, 0)
 	podStatus := make(map[string]*cvmsgspb.PodStatus)
 	podStatus["vizier-query-broker"] = &cvmsgspb.PodStatus{
@@ -144,7 +144,7 @@ func (f *FakeVZInfo) GetPodStatuses() (map[string]*cvmsgspb.PodStatus, time.Time
 		Status: metadatapb.RUNNING,
 	}
 
-	return podStatus, lastUpdatedTime
+	return podStatus, 3, lastUpdatedTime
 }
 
 func (f *FakeVZInfo) LaunchJob(j *batchv1.Job) (*batchv1.Job, error) {

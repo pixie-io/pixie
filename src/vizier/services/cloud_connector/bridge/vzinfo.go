@@ -28,16 +28,17 @@ import (
 // TODO(michelle): Make namespace a flag that can be passed in.
 const plNamespace = "pl"
 
-const podUpdatePeriod = 10 * time.Second
+const k8sStateUpdatePeriod = 10 * time.Second
 
 // K8sVizierInfo is responsible for fetching Vizier information through K8s.
 type K8sVizierInfo struct {
-	clientset            *kubernetes.Clientset
-	clusterVersion       string
-	clusterName          string
-	currentPodStatus     map[string]*cvmsgspb.PodStatus
-	podStatusLastUpdated time.Time
-	mu                   sync.Mutex
+	clientset           *kubernetes.Clientset
+	clusterVersion      string
+	clusterName         string
+	currentPodStatus    map[string]*cvmsgspb.PodStatus
+	k8sStateLastUpdated time.Time
+	numNodes            int32
+	mu                  sync.Mutex
 }
 
 // NewK8sVizierInfo creates a new K8sVizierInfo.
@@ -61,8 +62,8 @@ func NewK8sVizierInfo(clusterVersion string, clusterName string) (*K8sVizierInfo
 	}
 
 	go func() {
-		for _ = time.Tick(podUpdatePeriod); ; {
-			vzInfo.UpdatePodStatuses()
+		for _ = time.Tick(k8sStateUpdatePeriod); ; {
+			vzInfo.UpdateK8sState()
 		}
 	}()
 
@@ -157,9 +158,12 @@ func (v *K8sVizierInfo) GetClusterUID() (string, error) {
 	return string(ksNS.UID), nil
 }
 
-// UpdatePodStatuses gets the status of the pods at the current moment in time.
-func (v *K8sVizierInfo) UpdatePodStatuses() {
-
+// UpdateK8sState gets the relevant state of the cluster, such as pod statuses, at the current moment in time.
+func (v *K8sVizierInfo) UpdateK8sState() {
+	nodesList, err := v.clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return
+	}
 	podsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{})
 	if err != nil {
 		return
@@ -204,15 +208,16 @@ func (v *K8sVizierInfo) UpdatePodStatuses() {
 	defer v.mu.Unlock()
 
 	v.currentPodStatus = podMap
-	v.podStatusLastUpdated = now
+	v.k8sStateLastUpdated = now
+	v.numNodes = int32(len(nodesList.Items))
 }
 
 // GetPodStatuses gets the pod statuses and the last time they were updated.
-func (v *K8sVizierInfo) GetPodStatuses() (map[string]*cvmsgspb.PodStatus, time.Time) {
+func (v *K8sVizierInfo) GetK8sState() (map[string]*cvmsgspb.PodStatus, int32, time.Time) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
-	return v.currentPodStatus, v.podStatusLastUpdated
+	return v.currentPodStatus, v.numNodes, v.k8sStateLastUpdated
 }
 
 // ParseJobYAML parses the yaml string into a k8s job and applies the image tag and env subtitutions.

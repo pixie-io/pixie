@@ -92,7 +92,7 @@ const upgradeJobName = "vizier-upgrade-job"
 type VizierInfo interface {
 	GetAddress() (string, int32, error)
 	GetVizierClusterInfo() (*cvmsgspb.VizierClusterInfo, error)
-	GetPodStatuses() (map[string]*cvmsgspb.PodStatus, time.Time)
+	GetK8sState() (map[string]*cvmsgspb.PodStatus, int32, time.Time)
 	ParseJobYAML(yamlStr string, imageTag map[string]string, envSubtitutions map[string]string) (*batchv1.Job, error)
 	LaunchJob(j *batchv1.Job) (*batchv1.Job, error)
 	CreateSecret(string, map[string]string) error
@@ -712,13 +712,14 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 		if err != nil {
 			log.WithError(err).Error("Failed to get vizier address")
 		}
-		podStatuses, updatedTime := s.vzInfo.GetPodStatuses()
+		podStatuses, numNodes, updatedTime := s.vzInfo.GetK8sState()
 		hbMsg := &cvmsgspb.VizierHeartbeat{
 			VizierID:               utils.ProtoFromUUID(&s.vizierID),
 			Time:                   time.Now().UnixNano(),
 			SequenceNumber:         atomic.LoadInt64(&s.hbSeqNum),
 			Address:                addr,
 			Port:                   port,
+			NumNodes:               numNodes,
 			PodStatuses:            podStatuses,
 			PodStatusesLastUpdated: updatedTime.UnixNano(),
 			Status:                 s.currentStatus(),
