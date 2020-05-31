@@ -192,13 +192,15 @@ func (s *Bridge) WatchDog() {
 
 // WaitForUpdater waits for the update job to complete, if any.
 func (s *Bridge) WaitForUpdater() {
+	defer func() {
+		s.updateRunning = false
+	}()
 	ok, err := s.vzInfo.WaitForJobCompletion(upgradeJobName)
 	if err != nil {
 		log.WithError(err).Error("Error while trying to watch vizier-upgrade-job")
 		return
 	}
 	s.updateFailed = !ok
-	s.updateRunning = false
 	err = s.vzInfo.DeleteJob(upgradeJobName)
 	if err != nil {
 		log.WithError(err).Error("Error deleting upgrade job")
@@ -588,7 +590,9 @@ func (s *Bridge) HandleNATSBridging(stream vzconnpb.VZConnService_NATSBridgeClie
 				}
 			}
 		case bridgeMsg := <-s.grpcInCh:
-			log.Info("Got Message on GRPC channel")
+			log.
+				WithField("type", bridgeMsg.Msg.TypeUrl).
+				Info("Got Message on GRPC channel")
 			if bridgeMsg == nil {
 				return nil
 			}

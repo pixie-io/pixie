@@ -89,7 +89,11 @@ func (c *Checker) run() {
 			cancel()
 			return
 		case <-resp.Context().Done():
-			log.Info("Got context close, will try to resume ...")
+			if resp.Context().Err() != nil {
+				log.WithError(resp.Context().Err()).Error("Got context close, will try to resume ...")
+			} else {
+				log.Info("Got context close, will try to resume ...")
+			}
 			continue
 		}
 	}
