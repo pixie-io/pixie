@@ -80,6 +80,7 @@ const (
 	HeartbeatTopic                = "heartbeat"
 	registrationTimeout           = 30 * time.Second
 	passthroughReplySubjectPrefix = "v2c.reply-"
+	vizStatusCheckFailInterval    = 10 * time.Second
 )
 
 // ErrRegistrationTimeout is the registration timeout error.
@@ -100,6 +101,11 @@ type VizierInfo interface {
 	GetJob(string) (*batchv1.Job, error)
 }
 
+// VizierHealthChecker is the interface that gets information on health of a Vizier.
+type VizierHealthChecker interface {
+	GetStatus() (time.Time, error)
+}
+
 // Bridge is the NATS<->GRPC bridge.
 type Bridge struct {
 	vizierID      uuid.UUID
@@ -107,8 +113,8 @@ type Bridge struct {
 	sessionID     int64
 
 	vzConnClient vzconnpb.VZConnServiceClient
-
-	vzInfo VizierInfo
+	vzInfo       VizierInfo
+	vizChecker   VizierHealthChecker
 
 	hbSeqNum int64
 
@@ -132,20 +138,22 @@ type Bridge struct {
 	// This tracks the message we are trying to send, but has not been sent yet.
 	pendingGRPCOutMsg *vzconnpb.V2CBridgeMessage
 
-	quitCh   chan bool             // Channel is used to signal that things should shutdown.
-	wg       sync.WaitGroup        // Tracks all the active goroutines.
-	wdWg     sync.WaitGroup        // Tracks all the active goroutines.
-	status   cvmsgspb.VizierStatus // Status of the vizier.
-	statusMu sync.Mutex
+	quitCh chan bool      // Channel is used to signal that things should shutdown.
+	wg     sync.WaitGroup // Tracks all the active goroutines.
+	wdWg   sync.WaitGroup // Tracks all the active goroutines.
+
+	updateRunning bool // True if an update is running.
+	updateFailed  bool // True if an update has failed (sticky).
 }
 
 // New creates a cloud connector to cloud bridge.
-func New(vizierID uuid.UUID, jwtSigningKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo, nc *nats.Conn) *Bridge {
+func New(vizierID uuid.UUID, jwtSigningKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo, nc *nats.Conn, checker VizierHealthChecker) *Bridge {
 	return &Bridge{
 		vizierID:      vizierID,
 		jwtSigningKey: jwtSigningKey,
 		sessionID:     sessionID,
 		vzConnClient:  vzClient,
+		vizChecker:    checker,
 		vzInfo:        vzInfo,
 		hbSeqNum:      0,
 		nc:            nc,
@@ -189,14 +197,8 @@ func (s *Bridge) WaitForUpdater() {
 		log.WithError(err).Error("Error while trying to watch vizier-upgrade-job")
 		return
 	}
-
-	s.statusMu.Lock()
-	s.status = cvmsgspb.VZ_ST_HEALTHY
-	if !ok {
-		s.status = cvmsgspb.VZ_ST_UPDATE_FAILED // Should be marked as update failed.
-	}
-	s.statusMu.Unlock()
-
+	s.updateFailed = !ok
+	s.updateRunning = false
 	err = s.vzInfo.DeleteJob(upgradeJobName)
 	if err != nil {
 		log.WithError(err).Error("Error deleting upgrade job")
@@ -246,10 +248,7 @@ func (s *Bridge) RunStream() {
 		log.WithError(err).Fatal("Could not check for upgrade job")
 	}
 	if err == nil { // There is an upgrade job running.
-		s.statusMu.Lock()
-		s.status = cvmsgspb.VZ_ST_UPDATING
-		s.statusMu.Unlock()
-
+		s.updateRunning = true
 		go s.WaitForUpdater()
 	}
 
@@ -710,8 +709,6 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 			log.WithError(err).Error("Failed to get vizier address")
 		}
 		podStatuses, updatedTime := s.vzInfo.GetPodStatuses()
-		s.statusMu.Lock()
-		defer s.statusMu.Unlock()
 		hbMsg := &cvmsgspb.VizierHeartbeat{
 			VizierID:               utils.ProtoFromUUID(&s.vizierID),
 			Time:                   time.Now().UnixNano(),
@@ -720,7 +717,7 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 			Port:                   port,
 			PodStatuses:            podStatuses,
 			PodStatusesLastUpdated: updatedTime.UnixNano(),
-			Status:                 s.status,
+			Status:                 s.currentStatus(),
 			BootstrapMode:          viper.GetBool("bootstrap_mode"),
 			BootstrapVersion:       viper.GetString("bootstrap_version"),
 		}
@@ -757,4 +754,21 @@ func (s *Bridge) generateHeartbeats(done <-chan bool) (hbCh chan *cvmsgspb.Vizie
 		}
 	}()
 	return
+}
+
+func (s *Bridge) currentStatus() cvmsgspb.VizierStatus {
+	if s.updateRunning && !s.updateFailed {
+		return cvmsgspb.VZ_ST_UPDATING
+	} else if s.updateFailed {
+		return cvmsgspb.VZ_ST_UPDATE_FAILED
+	}
+
+	t, status := s.vizChecker.GetStatus()
+	if time.Now().Sub(t) > vizStatusCheckFailInterval {
+		return cvmsgspb.VZ_ST_UNKNOWN
+	}
+	if status != nil {
+		return cvmsgspb.VZ_ST_UNHEALTHY
+	}
+	return cvmsgspb.VZ_ST_HEALTHY
 }

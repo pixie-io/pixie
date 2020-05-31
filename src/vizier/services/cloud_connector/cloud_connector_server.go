@@ -10,6 +10,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/election"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
@@ -17,6 +18,8 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
 	"pixielabs.ai/pixielabs/src/shared/version"
 	controllers "pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/bridge"
+	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/vizhealth"
+	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
 func init() {
@@ -29,6 +32,19 @@ func init() {
 	pflag.String("qb_service", "vizier-query-broker.pl.svc:50300", "The querybroker service url (load balancer/list is ok)")
 	pflag.String("cluster_name", "", "The name of the user's K8s cluster")
 	pflag.String("cluster_version", "", "The version of the user's K8s cluster")
+}
+func newVzServiceClient() (pl_api_vizierpb.VizierServiceClient, error) {
+	dialOpts, err := services.GetGRPCClientDialOpts()
+	if err != nil {
+		return nil, err
+	}
+
+	qbChannel, err := grpc.Dial(viper.GetString("qb_service"), dialOpts...)
+	if err != nil {
+		return nil, err
+	}
+
+	return pl_api_vizierpb.NewVizierServiceClient(qbChannel), nil
 }
 
 func main() {
@@ -96,10 +112,16 @@ func main() {
 	// Resign leadership after the server stops.
 	defer resign()
 
+	qbVzClient, err := newVzServiceClient()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to init qb stub")
+	}
+	checker := vizhealth.NewChecker(viper.GetString("jwt_signing_key"), qbVzClient)
+	defer checker.Stop()
 	// We just use the current time in nanoseconds to mark the session ID. This will let the cloud side know that
 	// the cloud connector restarted. Clock skew might make this incorrect, but we mostly want this for debugging.
 	sessionID := time.Now().UnixNano()
-	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), sessionID, nil, vzInfo, nc)
+	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), sessionID, nil, vzInfo, nc, checker)
 	go server.RunStream()
 	defer server.Stop()
 
