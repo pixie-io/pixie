@@ -66,8 +66,8 @@ var VizierUpdateCmd = &cobra.Command{
 		}
 
 		status := clusterInfo.Status
-		if status != cloudapipb.CS_HEALTHY {
-			log.WithField("status", status).Fatalf("Cluster must be in a healthy state to update")
+		if status == cloudapipb.CS_DISCONNECTED {
+			log.WithField("status", status).Fatalf("Cluster must be connected to update")
 		}
 
 		if len(versionString) == 0 {
