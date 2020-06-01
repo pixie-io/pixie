@@ -46,7 +46,7 @@ class MySQLTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTraci
 };
 
 TEST_F(MySQLTraceBPFTest, MySQLStmtPrepareExecuteClose) {
-  ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleClient);
+  ConfigureBPFCapture(TrafficProtocol::kProtocolMySQL, kRoleClient);
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(GetPrepareExecuteScript());
 
@@ -93,7 +93,7 @@ TEST_F(MySQLTraceBPFTest, MySQLStmtPrepareExecuteClose) {
 }
 
 TEST_F(MySQLTraceBPFTest, MySQLQuery) {
-  ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleClient);
+  ConfigureBPFCapture(TrafficProtocol::kProtocolMySQL, kRoleClient);
   testing::ClientServerSystem system;
   system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(GetQueryScript());
 

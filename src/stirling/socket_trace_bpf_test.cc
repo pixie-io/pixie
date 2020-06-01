@@ -67,11 +67,33 @@ constexpr std::string_view kNoProtocolMsg = R"(This is not an HTTP message)";
 // host machine are identical.
 // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
 
-// TODO(oazizi): HTTP tracing should be based on server-side tracing. Tests need adjustment.
+// TODO(yzhao): Apply this pattern to other syscall pairs. An issue is that other syscalls do not
+// use scatter buffer. One approach would be to concatenate inner vector to a single string, and
+// then feed to the syscall. Another caution is that value-parameterized tests actually discourage
+// changing functions being tested according to test parameters. The canonical pattern is using test
+// parameters as inputs, but keep the function being tested fixed.
+enum class SyscallPair {
+  kSendRecv,
+  kWriteRead,
+  kSendMsgRecvMsg,
+  kWritevReadv,
+};
+
+struct SocketTraceBPFTestParams {
+  SyscallPair syscall_pair;
+  EndpointRole trace_role;
+};
+
 class SocketTraceBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ true> {};
 
-TEST_F(SocketTraceBPFTest, Framework) {
-  ConfigureCapture(kProtocolHTTP, kRoleAll);
+class NonVecSyscallTests : public SocketTraceBPFTest,
+                           public ::testing::WithParamInterface<SocketTraceBPFTestParams> {};
+
+TEST_P(NonVecSyscallTests, NonVecSyscalls) {
+  SocketTraceBPFTestParams p = GetParam();
+  LOG(INFO) << absl::Substitute("$0 $1", magic_enum::enum_name(p.syscall_pair),
+                                magic_enum::enum_name(p.trace_role));
+  ConfigureBPFCapture(kProtocolHTTP, p.trace_role);
 
   testing::SendRecvScript script({
       {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
@@ -79,169 +101,50 @@ TEST_F(SocketTraceBPFTest, Framework) {
   });
 
   testing::ClientServerSystem system;
-  system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script);
+  switch (p.syscall_pair) {
+    case SyscallPair::kWriteRead:
+      system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script);
+      break;
+    case SyscallPair::kSendRecv:
+      system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>(script);
+      break;
+    default:
+      LOG(FATAL) << absl::Substitute("$0 not supported by this test",
+                                     magic_enum::enum_name(p.syscall_pair));
+  }
 
   DataTable data_table(kHTTPTable);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  types::ColumnWrapperRecordBatch record_batch =
+      FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
 
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
+
+  EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
+  EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
+
+  // Additional verifications. These are common to all HTTP1.x tracing, so we decide to not
+  // duplicate them on all relevant tests.
+  EXPECT_EQ(1, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(0).val);
+  EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kJSON),
+            record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(0).val);
+  EXPECT_EQ(1, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(1).val);
+  EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kJSON),
+            record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(1).val);
+
+  // TODO(oazizi): Check IPs.
 }
 
-// TODO(chengruizhe): Add test targeted at checking IPs.
-
-TEST_F(SocketTraceBPFTest, WriteRespCapture) {
-  ConfigureCapture(kProtocolHTTP, kRoleServer);
-
-  testing::SendRecvScript script({
-      {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
-      {{kHTTPReqMsg2}, {kHTTPRespMsg2}},
-  });
-
-  testing::ClientServerSystem system;
-  system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script);
-
-  {
-    DataTable data_table(kHTTPTable);
-    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch record_batch =
-        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
-
-    ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
-
-    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
-    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
-
-    // Additional verifications. These are common to all HTTP1.x tracing, so we decide to not
-    // duplicate them on all relevant tests.
-    EXPECT_EQ(1, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(0).val);
-    EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kJSON),
-              record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(0).val);
-    EXPECT_EQ(1, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(1).val);
-    EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kJSON),
-              record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(1).val);
-  }
-
-  // Check that MySQL table did not capture any data.
-  {
-    DataTable data_table(kMySQLTable);
-    source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-    types::ColumnWrapperRecordBatch record_batch =
-        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kMySQLUPIDIdx, getpid());
-
-    ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
-  }
-}
-
-TEST_F(SocketTraceBPFTest, SendRespCapture) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleServer);
-
-  testing::SendRecvScript script({
-      {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
-      {{kHTTPReqMsg2}, {kHTTPRespMsg2}},
-  });
-
-  testing::ClientServerSystem system;
-  system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>(script);
-
-  {
-    DataTable data_table(kHTTPTable);
-    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch record_batch =
-        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
-
-    ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
-
-    // These 2 EXPECTs require docker container with --pid=host so that the container's PID and the
-    // host machine are identical.
-    // See https://stackoverflow.com/questions/33328841/pid-mapping-between-docker-and-host
-
-    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
-    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
-  }
-
-  // Check that MySQL table did not capture any data.
-  {
-    DataTable data_table(kHTTPTable);
-    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch record_batch =
-        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kMySQLUPIDIdx, getpid());
-
-    ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
-  }
-}
-
-TEST_F(SocketTraceBPFTest, ReadRespCapture) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
-
-  testing::SendRecvScript script({
-      {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
-      {{kHTTPReqMsg2}, {kHTTPRespMsg2}},
-  });
-
-  testing::ClientServerSystem system;
-  system.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script);
-
-  {
-    DataTable data_table(kHTTPTable);
-    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch record_batch =
-        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
-
-    ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
-
-    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
-    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
-  }
-
-  // Check that MySQL table did not capture any data.
-  {
-    DataTable data_table(kMySQLTable);
-    source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-    types::ColumnWrapperRecordBatch record_batch =
-        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kMySQLUPIDIdx, getpid());
-
-    ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
-  }
-}
-
-TEST_F(SocketTraceBPFTest, RecvRespCapture) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
-
-  testing::SendRecvScript script({
-      {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
-      {{kHTTPReqMsg2}, {kHTTPRespMsg2}},
-  });
-
-  testing::ClientServerSystem system;
-  system.RunClientServer<&TCPSocket::Recv, &TCPSocket::Send>(script);
-
-  {
-    DataTable data_table(kHTTPTable);
-    source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch record_batch =
-        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
-
-    ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
-
-    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
-    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
-  }
-
-  // Check that MySQL table did not capture any data.
-  {
-    DataTable data_table(kMySQLTable);
-    source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-    types::ColumnWrapperRecordBatch record_batch =
-        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kMySQLUPIDIdx, getpid());
-
-    ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
-  }
-}
+INSTANTIATE_TEST_SUITE_P(
+    NonVecSyscalls, NonVecSyscallTests,
+    ::testing::Values(SocketTraceBPFTestParams{SyscallPair::kWriteRead, kRoleClient},
+                      SocketTraceBPFTestParams{SyscallPair::kWriteRead, kRoleServer},
+                      SocketTraceBPFTestParams{SyscallPair::kSendRecv, kRoleClient},
+                      SocketTraceBPFTestParams{SyscallPair::kSendRecv, kRoleServer}));
 
 TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleAll);
-  ConfigureCapture(TrafficProtocol::kProtocolMySQL, kRoleClient);
+  ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleAll);
+  ConfigureBPFCapture(TrafficProtocol::kProtocolMySQL, kRoleClient);
 
   testing::SendRecvScript script({
       {{kNoProtocolMsg}, {kNoProtocolMsg}},
@@ -273,7 +176,7 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
 }
 
 TEST_F(SocketTraceBPFTest, MultipleConnections) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
+  ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
 
   // Two separate connections.
 
@@ -310,7 +213,7 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
 }
 
 TEST_F(SocketTraceBPFTest, StartTime) {
-  ConfigureCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
+  ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleClient);
 
   testing::SendRecvScript script({
       {{kHTTPReqMsg1}, {kHTTPRespMsg1}},
@@ -354,21 +257,14 @@ TEST_F(SocketTraceBPFTest, StartTime) {
   EXPECT_GT(time_window_end, upid1.start_ts());
 }
 
-// TODO(yzhao): Apply this pattern to other syscall pairs. An issue is that other syscalls do not
-// use scatter buffer. One approach would be to concatenate inner vector to a single string, and
-// then feed to the syscall. Another caution is that value-parameterized tests actually discourage
-// changing functions being tested according to test parameters. The canonical pattern is using test
-// parameters as inputs, but keep the function being tested fixed.
-enum class SyscallPair {
-  kSendRecvMsg,
-  kWriteReadv,
-};
+class IOVecSyscallTests : public SocketTraceBPFTest,
+                          public ::testing::WithParamInterface<SocketTraceBPFTestParams> {};
 
-class SyscallPairBPFTest : public testing::SocketTraceBPFTest</* TClientSideTracing */ false>,
-                           public ::testing::WithParamInterface<SyscallPair> {};
-
-TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
-  ConfigureCapture(kProtocolHTTP, kRoleAll);
+TEST_P(IOVecSyscallTests, IOVecSyscalls) {
+  SocketTraceBPFTestParams p = GetParam();
+  LOG(INFO) << absl::Substitute("$0 $1", magic_enum::enum_name(p.syscall_pair),
+                                magic_enum::enum_name(p.trace_role));
+  ConfigureBPFCapture(kProtocolHTTP, p.trace_role);
 
   testing::SendRecvScript script({
       {{kHTTPReqMsg1},
@@ -378,13 +274,16 @@ TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
   });
 
   testing::ClientServerSystem system;
-  switch (GetParam()) {
-    case SyscallPair::kSendRecvMsg:
+  switch (p.syscall_pair) {
+    case SyscallPair::kSendMsgRecvMsg:
       system.RunClientServer<&TCPSocket::RecvMsg, &TCPSocket::SendMsg>(script);
       break;
-    case SyscallPair::kWriteReadv:
+    case SyscallPair::kWritevReadv:
       system.RunClientServer<&TCPSocket::ReadV, &TCPSocket::WriteV>(script);
       break;
+    default:
+      LOG(FATAL) << absl::Substitute("$0 not supported by this test",
+                                     magic_enum::enum_name(p.syscall_pair));
   }
 
   DataTable data_table(kHTTPTable);
@@ -411,8 +310,10 @@ TEST_P(SyscallPairBPFTest, EventsAreCaptured) {
   }
 }
 
-INSTANTIATE_TEST_SUITE_P(IOVecSyscalls, SyscallPairBPFTest,
-                         ::testing::Values(SyscallPair::kSendRecvMsg, SyscallPair::kWriteReadv));
+INSTANTIATE_TEST_SUITE_P(
+    IOVecSyscalls, IOVecSyscallTests,
+    ::testing::Values(SocketTraceBPFTestParams{SyscallPair::kSendMsgRecvMsg, kRoleAll},
+                      SocketTraceBPFTestParams{SyscallPair::kWritevReadv, kRoleAll}));
 
 }  // namespace stirling
 }  // namespace pl
