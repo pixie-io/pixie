@@ -381,8 +381,7 @@ func (mh *MetadataHandler) handleNamespaceMetadata(o runtime.Object, eventType w
 	e, ok := o.(*v1.Namespace)
 
 	if !ok {
-		// TODO(michelle): Fix this b/c it's spamming the log. Likely something is broken.
-		log.WithField("object", o).Trace("Received non-namespace object when handling namespace metadata.")
+		log.WithField("object", o).Error("Received non-namespace object when handling namespace metadata.")
 		return
 	}
 
