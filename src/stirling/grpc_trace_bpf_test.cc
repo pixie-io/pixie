@@ -75,7 +75,7 @@ HelloRequest GetHelloRequest(const ColumnWrapperRecordBatch& record_batch, const
 
 class GRPCTraceGoTest : public ::testing::Test {
  protected:
-  GRPCTraceGoTest() : data_table_(kHTTPTable), ctx_(std::make_unique<ConnectorContext>()) {}
+  GRPCTraceGoTest() : data_table_(kHTTPTable), ctx_(std::make_unique<StandaloneContext>()) {}
 
   void LaunchServer(bool use_https) {
     CHECK(!FLAGS_go_grpc_client_path.empty())
@@ -132,7 +132,7 @@ class GRPCTraceGoTest : public ::testing::Test {
   DataTable data_table_;
   SubProcess s_;
   int s_port_ = -1;
-  std::unique_ptr<ConnectorContext> ctx_;
+  std::unique_ptr<StandaloneContext> ctx_;
   std::unique_ptr<SourceConnector> connector_;
 };
 
@@ -286,7 +286,7 @@ class GRPCCppTest : public ::testing::Test {
 
     data_table_ = std::make_unique<DataTable>(kHTTPTable);
 
-    ctx_ = std::make_unique<ConnectorContext>();
+    ctx_ = std::make_unique<StandaloneContext>();
   }
 
   void SetUpGRPCServices() {
@@ -327,7 +327,7 @@ class GRPCCppTest : public ::testing::Test {
   }
 
   std::unique_ptr<SourceConnector> source_;
-  std::unique_ptr<ConnectorContext> ctx_;
+  std::unique_ptr<StandaloneContext> ctx_;
   std::unique_ptr<DataTable> data_table_;
 
   GreeterService greeter_service_;

@@ -111,8 +111,7 @@ class SystemStatsConnector : public SourceConnector {
  protected:
   explicit SystemStatsConnector(std::string_view source_name)
       : SourceConnector(source_name, kTables) {
-    const auto& sysconfig = system::Config::GetInstance();
-    proc_parser_ = std::make_unique<system::ProcParser>(sysconfig);
+    proc_parser_ = std::make_unique<system::ProcParser>(sysconfig_);
   }
 
  private:

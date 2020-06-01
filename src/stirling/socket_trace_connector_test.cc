@@ -136,16 +136,16 @@ class SocketTraceConnectorTest : public ::testing::Test {
   static constexpr uint32_t kASID = 0;
 
   void SetUp() override {
-    // Set the CIDR for HTTP2ServerTest, which would otherwise not output any data,
-    // because it would think the server is in the cluster.
-    FLAGS_stirling_cluster_cidr = "1.2.3.4/32";
-
     // Create and configure the connector.
     connector_ = SocketTraceConnector::Create("socket_trace_connector");
     source_ = dynamic_cast<SocketTraceConnector*>(connector_.get());
     ASSERT_NE(nullptr, source_);
 
-    ctx_ = std::make_unique<ConnectorContext>();
+    ctx_ = std::make_unique<StandaloneContext>();
+
+    // Set the CIDR for HTTP2ServerTest, which would otherwise not output any data,
+    // because it would think the server is in the cluster.
+    PL_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
 
     // Because some tests change the inactivity duration, make sure to reset it here for each test.
     ConnectionTracker::SetInactivityDuration(ConnectionTracker::kDefaultInactivityDuration);
@@ -153,7 +153,7 @@ class SocketTraceConnectorTest : public ::testing::Test {
 
   std::unique_ptr<SourceConnector> connector_;
   SocketTraceConnector* source_ = nullptr;
-  std::unique_ptr<ConnectorContext> ctx_;
+  std::unique_ptr<StandaloneContext> ctx_;
   testing::MockClock mock_clock_;
   testing::RealClock real_clock_;
 

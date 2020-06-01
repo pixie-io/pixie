@@ -8,7 +8,6 @@
 
 #include "absl/strings/str_split.h"
 #include "src/common/base/base.h"
-#include "src/shared/metadata/metadata.h"
 #include "src/stirling/jvm_stats_connector.h"
 #include "src/stirling/output.h"
 #include "src/stirling/pgsql_table.h"
@@ -20,7 +19,6 @@
 #include "src/stirling/system_stats_connector.h"
 #include "src/stirling/types.h"
 
-using pl::stirling::AgentMetadataType;
 using pl::stirling::SourceRegistry;
 using pl::stirling::SourceRegistrySpecifier;
 using pl::stirling::Stirling;
@@ -106,8 +104,6 @@ void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
   // Can add other connectors, if desired, here.
 }
 
-AgentMetadataType AgentMetadataCallback() { return nullptr; }
-
 // Put this in global space, so we can kill it in the signal handler.
 Stirling* g_stirling = nullptr;
 pl::ProcessStatsMonitor* g_process_stats_monitor = nullptr;
@@ -170,7 +166,6 @@ int main(int argc, char** argv) {
 
   // Set a dummy callback function (normally this would be in the agent).
   stirling->RegisterDataPushCallback(StirlingWrapperCallback);
-  stirling->RegisterAgentMetadataCallback(AgentMetadataCallback);
 
   // Timezone used by the callback function to print timestamps.
   CHECK(absl::LoadTimeZone("America/Los_Angeles", &tz));

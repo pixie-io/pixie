@@ -127,8 +127,10 @@ class StirlingImpl final : public Stirling {
   Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) override;
   void RegisterDataPushCallback(DataPushCallback f) override { data_push_callback_ = f; }
   void RegisterAgentMetadataCallback(AgentMetadataCallback f) override {
+    DCHECK(f != nullptr);
     agent_metadata_callback_ = f;
   }
+  std::unique_ptr<ConnectorContext> GetContext();
 
   std::unordered_map<uint64_t, std::string> TableIDToNameMap() const override;
   void Run() override;
@@ -242,6 +244,13 @@ Status StirlingImpl::CreateSourceConnectors() {
   return Status::OK();
 }
 
+std::unique_ptr<ConnectorContext> StirlingImpl::GetContext() {
+  if (agent_metadata_callback_ != nullptr) {
+    return std::unique_ptr<ConnectorContext>(new AgentContext(agent_metadata_callback_()));
+  }
+  return std::unique_ptr<ConnectorContext>(new StandaloneContext());
+}
+
 std::unordered_map<uint64_t, std::string> StirlingImpl::TableIDToNameMap() const {
   std::unordered_map<uint64_t, std::string> map;
 
@@ -316,11 +325,6 @@ Status StirlingImpl::RunAsThread() {
     return error::Internal("No callback function is registered in Stirling. Refusing to run.");
   }
 
-  if (agent_metadata_callback_ == nullptr) {
-    return error::Internal(
-        "No metadata callback function is registered in Stirling. Refusing to run.");
-  }
-
   bool prev_run_enable_ = run_enable_.exchange(true);
   if (prev_run_enable_) {
     return error::AlreadyExists("A Stirling thread is already running.");
@@ -357,11 +361,6 @@ void StirlingImpl::Run() {
     return;
   }
 
-  if (agent_metadata_callback_ == nullptr) {
-    LOG(ERROR) << "No metadata callback function is registered in Stirling. Refusing to run.";
-    return;
-  }
-
   // Make sure multiple instances of Run() are not active,
   // which would be possible if the caller created multiple threads.
   bool prev_run_enable_ = run_enable_.exchange(true);
@@ -380,18 +379,22 @@ void StirlingImpl::RunCore() {
   running_ = true;
 
   // First initialize each info class manager with context.
-  ConnectorContext initial_context(agent_metadata_callback_());
+  std::unique_ptr<ConnectorContext> initial_context = GetContext();
   for (const auto& s : sources_) {
-    s->InitContext(&initial_context);
+    s->InitContext(initial_context.get());
   }
 
   while (run_enable_) {
     auto sleep_duration = std::chrono::milliseconds::zero();
 
     {
-      // Update the metadata state on each run of the info classes.
+      // Update the context/state on each iteration.
       // Note that if no changes are present, the same pointer will be returned back.
-      ConnectorContext ctx(agent_metadata_callback_());
+      // TODO(oazizi): If context constructor does a lot of work (e.g. ListUPIDs()),
+      //               then there might be an inefficiency here, since we don't know if
+      //               mgr->SamplingRequired() will be true for any manager.
+      std::unique_ptr<ConnectorContext> ctx = GetContext();
+
       // Acquire spin lock to go through one iteration of sampling and pushing data.
       // Needed to avoid race with main thread update info_class_mgrs_ on new subscription.
       absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
@@ -401,7 +404,7 @@ void StirlingImpl::RunCore() {
         if (mgr->subscribed()) {
           // Phase 1: Probe each source for its data.
           if (mgr->SamplingRequired()) {
-            mgr->SampleData(&ctx);
+            mgr->SampleData(ctx.get());
           }
 
           // Phase 2: Push Data upstream.

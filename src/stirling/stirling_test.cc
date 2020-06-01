@@ -21,7 +21,6 @@
 using PubProto = pl::stirling::stirlingpb::Publish;
 using SubProto = pl::stirling::stirlingpb::Subscribe;
 
-using pl::stirling::AgentMetadataType;
 using pl::stirling::DataElement;
 using pl::stirling::DataTableSchema;
 using pl::stirling::SeqGenConnector;
@@ -140,9 +139,6 @@ class StirlingTest : public ::testing::Test {
     stirling_->RegisterDataPushCallback(std::bind(&StirlingTest::AppendData, this,
                                                   std::placeholders::_1, std::placeholders::_2,
                                                   std::placeholders::_3));
-    // Set a dummy callback for the agent metadata (normally done by the agent).
-    stirling_->RegisterAgentMetadataCallback(
-        std::bind(&StirlingTest::DummyAgentMetadataCallback, this));
 
     stirling_->GetPublishProto(&publish_proto_);
 
@@ -233,8 +229,6 @@ class StirlingTest : public ::testing::Test {
     size_t num_records = (*record_batch)[0]->Size();
     CheckRecordBatch(table_id, tablet_id, num_records, *record_batch);
   }
-
-  AgentMetadataType DummyAgentMetadataCallback() { return nullptr; }
 
   void CheckRecordBatch(const uint64_t table_id, TabletID tablet_id, size_t num_records,
                         const ColumnWrapperRecordBatch& record_batch) {
@@ -350,8 +344,6 @@ TEST_F(StirlingTest, hammer_time_on_stirling_on_the_fly_subs) {
 TEST_F(StirlingTest, no_data_callback_defined) {
   Stirling* stirling = GetStirling();
   stirling->RegisterDataPushCallback(nullptr);
-  stirling->RegisterAgentMetadataCallback(
-      std::bind(&StirlingTest::DummyAgentMetadataCallback, this));
 
   // Should fail to run as a Stirling-managed thread.
   EXPECT_NOT_OK(stirling->RunAsThread());
@@ -363,19 +355,3 @@ TEST_F(StirlingTest, no_data_callback_defined) {
   run_thread.join();
 }
 
-TEST_F(StirlingTest, no_metadata_callback_defined) {
-  Stirling* stirling = GetStirling();
-  stirling->RegisterDataPushCallback(std::bind(&StirlingTest::AppendData, this,
-                                               std::placeholders::_1, std::placeholders::_2,
-                                               std::placeholders::_3));
-  stirling->RegisterAgentMetadataCallback(nullptr);
-
-  // Should fail to run as a Stirling-managed thread.
-  EXPECT_NOT_OK(stirling->RunAsThread());
-
-  // Should also fail to run as a caller-managed thread,
-  // which means it should be immediately joinable.
-  std::thread run_thread = std::thread(&Stirling::Run, stirling);
-  ASSERT_TRUE(run_thread.joinable());
-  run_thread.join();
-}

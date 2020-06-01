@@ -55,7 +55,6 @@ DECLARE_bool(stirling_enable_mysql_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
 DECLARE_bool(stirling_use_packaged_headers);
 DECLARE_string(stirling_role_to_trace);
-DECLARE_string(stirling_cluster_cidr);
 
 namespace pl {
 namespace stirling {
@@ -403,9 +402,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   absl::flat_hash_set<std::string> openssl_probed_binaries_;
 
   std::shared_ptr<SocketTraceBPFTableManager> bpf_table_info_;
-
-  // Manual cluster CIDR provided through flags.
-  std::optional<CIDRBlock> cluster_cidr_override_;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);

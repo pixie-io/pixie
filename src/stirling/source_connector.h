@@ -2,16 +2,12 @@
 
 #include <memory>
 #include <string>
-#include <utility>
-#include <vector>
 
 #include "src/common/base/base.h"
 #include "src/common/system/system.h"
-#include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/types.h"
+#include "src/stirling/connector_context.h"
 #include "src/stirling/data_table.h"
-#include "src/stirling/info_class_manager.h"
-#include "src/stirling/utils/proc_tracker.h"
 
 /**
  * These are the steps to follow to add a new data source connector.
@@ -25,8 +21,6 @@
 namespace pl {
 namespace stirling {
 
-class InfoClassManager;
-
 #define DUMMY_SOURCE_CONNECTOR(NAME)                                        \
   class NAME : public SourceConnector {                                     \
    public:                                                                  \
@@ -37,81 +31,6 @@ class InfoClassManager;
       return nullptr;                                                       \
     }                                                                       \
   }
-
-/**
- * ConnectorContext is the information passed on every Transfer call to source connectors.
- */
-class ConnectorContext {
- public:
-  ConnectorContext() = default;
-  ~ConnectorContext() = default;
-
-  /**
-   * ConntectorContext with metadata state.
-   * @param agent_metadata_state A read-only snapshot view of the metadata state. This state
-   * should not be held onto for extended periods of time.
-   */
-  explicit ConnectorContext(std::shared_ptr<const md::AgentMetadataState> agent_metadata_state)
-      : agent_metadata_state_(std::move(agent_metadata_state)) {}
-
-  uint32_t GetASID() const {
-    if (agent_metadata_state_ == nullptr) {
-      return 0;
-    }
-    return agent_metadata_state_->asid();
-  }
-
-  absl::flat_hash_set<md::UPID> GetUPIDs() const {
-    if (agent_metadata_state_ == nullptr) {
-      return ListUPIDs(system::Config::GetInstance().proc_path(), 0);
-    }
-    return agent_metadata_state_->upids();
-  }
-
-  const absl::flat_hash_map<md::UPID, md::PIDInfoUPtr>& GetPIDInfoMap() const {
-    if (agent_metadata_state_ == nullptr) {
-      static const absl::flat_hash_map<md::UPID, md::PIDInfoUPtr> kEmpty;
-      return kEmpty;
-    }
-    return agent_metadata_state_->pids_by_upid();
-  }
-
-  // TODO(oazizi): Consider breaking up into GetPods() and GetContainers().
-  const md::K8sMetadataState& GetK8SMetadata() {
-    if (agent_metadata_state_ == nullptr) {
-      static const md::K8sMetadataState kEmpty;
-      return kEmpty;
-    }
-    return agent_metadata_state_->k8s_metadata_state();
-  }
-
-  std::vector<CIDRBlock> GetClusterCIDRs() {
-    if (agent_metadata_state_ == nullptr) {
-      return {};
-    }
-
-    std::vector<CIDRBlock> cluster_cidrs;
-
-    // Copy Pod CIDRs.
-    const std::vector<CIDRBlock>& pod_cidrs =
-        agent_metadata_state_->k8s_metadata_state().pod_cidrs();
-    for (const auto& pod_cidr : pod_cidrs) {
-      cluster_cidrs.push_back(pod_cidr);
-    }
-
-    // Copy Service CIDRs.
-    const std::optional<CIDRBlock>& service_cidr =
-        agent_metadata_state_->k8s_metadata_state().service_cidr();
-    if (service_cidr.has_value()) {
-      cluster_cidrs.push_back(service_cidr.value());
-    }
-
-    return cluster_cidrs;
-  }
-
- private:
-  std::shared_ptr<const md::AgentMetadataState> agent_metadata_state_;
-};
 
 class SourceConnector : public NotCopyable {
  public:

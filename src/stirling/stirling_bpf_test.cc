@@ -35,8 +35,6 @@ class StirlingBPFTest : public ::testing::Test {
     stirling_->RegisterDataPushCallback(std::bind(&StirlingBPFTest::AppendData, this,
                                                   std::placeholders::_1, std::placeholders::_2,
                                                   std::placeholders::_3));
-    stirling_->RegisterAgentMetadataCallback(
-        std::bind(&StirlingBPFTest::DummyMetadataCallback, this));
   }
 
   void AppendData(uint64_t table_id, TabletID tablet_id,
@@ -46,8 +44,6 @@ class StirlingBPFTest : public ::testing::Test {
     PL_UNUSED(record_batch);
     // A black hole.
   }
-
-  AgentMetadataType DummyMetadataCallback() { return nullptr; }
 
   std::unique_ptr<Stirling> stirling_;
 };

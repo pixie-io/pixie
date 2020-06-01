@@ -69,7 +69,6 @@ const char kRoleServerStr[] = "SERVER";
 const char kRoleAllStr[] = "ALL";
 DEFINE_string(stirling_role_to_trace, kRoleAllStr,
               "Must be one of [CLIENT|SERVER|ALL]. Specify which role(s) will be trace by BPF.");
-DEFINE_string(stirling_cluster_cidr, "", "Manual Cluster CIDR");
 
 // This flag is for survivability only, in case the host's located headers don't work.
 DEFINE_bool(stirling_use_packaged_headers, false, "Force use of packaged kernel headers for BCC.");
@@ -139,18 +138,6 @@ SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
   DCHECK(protocol_transfer_specs_.find(kProtocolHTTP2Uprobe) != protocol_transfer_specs_.end());
   protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled =
       FLAGS_stirling_enable_grpc_uprobe_tracing;
-
-  if (!FLAGS_stirling_cluster_cidr.empty()) {
-    CIDRBlock cidr;
-    Status s = ParseCIDRBlock(FLAGS_stirling_cluster_cidr, &cidr);
-    if (s.ok()) {
-      cluster_cidr_override_ = std::move(cidr);
-    } else {
-      LOG(ERROR) << absl::Substitute(
-          "Could not parse flag --stirling_cluster_cidr as a CIDR. Value=$0",
-          FLAGS_stirling_cluster_cidr);
-    }
-  }
 }
 
 Status SocketTraceConnector::InitImpl() {
@@ -1142,17 +1129,6 @@ void SocketTraceConnector::WriteDataEvent(const SocketDataEvent& event) {
 // TransferData Helpers
 //-----------------------------------------------------------------------------
 
-// TODO(oazizi): Consider moving to ConnectorContext class.
-std::vector<CIDRBlock> SocketTraceConnector::ClusterCIDRs(ConnectorContext* ctx) {
-  // If we have a cluster CIDR override, then just use that value.
-  if (cluster_cidr_override_.has_value()) {
-    return {cluster_cidr_override_.value()};
-  }
-
-  // Otherwise, use CIDRs from ctx.
-  return ctx->GetClusterCIDRs();
-}
-
 void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table_num,
                                            DataTable* data_table) {
   // TODO(oazizi): TransferStreams() is slightly inefficient because it loops through all
@@ -1162,7 +1138,7 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
   //               is small (currently only 2).
   //               Possible solutions: 1) different pools, 2) auxiliary pool of pointers.
 
-  std::vector<CIDRBlock> cluster_cidrs = ClusterCIDRs(ctx);
+  std::vector<CIDRBlock> cluster_cidrs = ctx->GetClusterCIDRs();
 
   // Outer loop iterates through tracker sets (keyed by PID+FD),
   // while inner loop iterates through generations of trackers for that PID+FD pair.

@@ -42,13 +42,13 @@ class JVMStatsConnectorTest : public ::testing::Test {
   void SetUp() override {
     connector_ = JVMStatsConnector::Create("jvm_stats_connector");
     ASSERT_OK(connector_->Init());
-    ctx_ = std::make_unique<ConnectorContext>();
+    ctx_ = std::make_unique<StandaloneContext>();
   }
 
   void TearDown() override { EXPECT_OK(connector_->Stop()); }
 
   std::unique_ptr<SourceConnector> connector_;
-  std::unique_ptr<ConnectorContext> ctx_;
+  std::unique_ptr<StandaloneContext> ctx_;
   DataTable data_table_{kJVMStatsTable};
 };
 

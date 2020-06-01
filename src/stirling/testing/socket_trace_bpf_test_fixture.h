@@ -20,18 +20,19 @@ class SocketTraceBPFTest : public ::testing::Test {
   void SetUp() override {
     FLAGS_stirling_disable_self_tracing = false;
 
+    source_ = SocketTraceConnector::Create("socket_trace_connector");
+    ASSERT_OK(source_->Init());
+
+    ctx_ = std::make_unique<StandaloneContext>();
+
     // Normally, Stirling will be setup to think that all traffic is within the cluster,
     // which means only server-side tracing will kick in.
     if (TEnableClientSideTracing) {
       // This makes the Stirling interpret all traffic as leaving the cluster,
       // which means client-side tracing will also apply.
-      FLAGS_stirling_cluster_cidr = "1.2.3.4/32";
+      PL_CHECK_OK(ctx_->SetClusterCIDR("1.2.3.4/32"));
     }
 
-    source_ = SocketTraceConnector::Create("socket_trace_connector");
-    ASSERT_OK(source_->Init());
-
-    ctx_ = std::make_unique<ConnectorContext>();
     source_->InitContext(ctx_.get());
 
     // InitContext will cause Uprobes to deploy.
@@ -56,7 +57,7 @@ class SocketTraceBPFTest : public ::testing::Test {
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
 
   std::unique_ptr<SourceConnector> source_;
-  std::unique_ptr<ConnectorContext> ctx_;
+  std::unique_ptr<StandaloneContext> ctx_;
 };
 
 }  // namespace testing
