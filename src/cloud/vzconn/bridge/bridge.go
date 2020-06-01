@@ -71,19 +71,29 @@ func NewNATSBridgeController(clusterID uuid.UUID, srv vzconnpb.VZConnService_NAT
 // Run is the main loop of the NATS bridge controller. This function block until Stop is called.
 func (s *NATSBridgeController) Run() error {
 	s.l.Info("Starting new cloud connect stream")
-	defer close(s.quitCh)
+	defer func() {
+		s.l.Trace("Closing quit")
+		close(s.quitCh)
+		s.l.Trace("DONE: Closing quit")
+	}()
 
 	// We need to connect to the appropriate queues based on the clusterID.
 	log.WithField("ClusterID:", s.clusterID).Info("Subscribing to cluster IDs")
 	topics := vzshard.C2VTopic("*", s.clusterID)
-	natsSub, err := s.nc.ChanQueueSubscribe(topics, "vzconn", s.subCh)
+	natsSub, err := s.nc.ChanSubscribe(topics, s.subCh)
 	if err != nil {
-		log.WithError(err).Error("error with ChanQueueSubscribe")
+		s.l.WithError(err).Error("error with ChanQueueSubscribe")
 		return err
 	}
 	// Set large limits on message size and count.
 	natsSub.SetPendingLimits(1e7, 1e7)
-	defer natsSub.Unsubscribe()
+	defer func() {
+		s.l.Infof("Unsubscribing from : %s", natsSub.Subject)
+		err := natsSub.Unsubscribe()
+		if err != nil {
+			log.WithError(err).Error("Failed to properly unsubscribe")
+		}
+	}()
 
 	for _, topic := range DurableNATSChannels {
 		sub, err := s.sc.QueueSubscribe(topic, "vzconn", func(msg *stan.Msg) {
@@ -110,6 +120,7 @@ func (s *NATSBridgeController) Run() error {
 		s.l.Info("Closing stream, context cancellation")
 		return nil
 	}
+	s.l.WithError(err).Error("Closing stream with error")
 	return err
 }
 
