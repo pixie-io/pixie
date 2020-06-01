@@ -130,7 +130,7 @@ const Legend = React.memo((props: LegendProps) => {
     }
   }, [props.interactState]);
 
-  const handleRowRightClick = React.useCallback((key: string, e: React.SyntheticEvent) => {
+  const handleRowRightClick = React.useCallback((e: React.SyntheticEvent) => {
     // Reset all selected series.
     props.setInteractState({ ...props.interactState, selectedSeries: [] });
     // Prevent right click menu from showing up.
@@ -209,7 +209,6 @@ const Legend = React.memo((props: LegendProps) => {
           onMouseOver={onMouseOver}
           onMouseOut={handleRowLeave}
           onClick={() => handleRowLeftClick(entry.key)}
-          onContextMenu={(e) => handleRowRightClick(entry.key, e)}
         >
           <div style={styles} className={classes.colorContainer}>
             <div className={classes.colorCircle} style={colorStyles} />
@@ -250,7 +249,11 @@ const Legend = React.memo((props: LegendProps) => {
   };
 
   return (
-    <div className={classes.gridsContainer} style={containerStyles}>
+    <div
+      className={classes.gridsContainer}
+      style={containerStyles}
+      onContextMenu={handleRowRightClick}
+    >
       {grids}
       <div className={classes.iconContainer}>
         <IconButton
