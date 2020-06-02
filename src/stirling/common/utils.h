@@ -3,6 +3,8 @@
 #include <map>
 #include <string>
 
+#include <absl/strings/substitute.h>
+
 namespace pl {
 namespace stirling {
 
@@ -28,6 +30,13 @@ struct NV {
 inline std::ostream& operator<<(std::ostream& os, const NV& nv) {
   os << nv.DebugString();
   return os;
+}
+
+inline void RemoveRepeatingSuffix(std::string_view* str, char c) {
+  size_t pos = str->find_last_not_of(c);
+  if (pos != std::string_view::npos) {
+    str->remove_suffix(str->size() - pos - 1);
+  }
 }
 
 }  // namespace stirling

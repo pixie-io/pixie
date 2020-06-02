@@ -47,7 +47,7 @@ auto IsNV(std::string_view name, std::string_view value) {
 TEST(PGSQLParseTest, StartupMessage) {
   std::string_view data = kStartupMsgTestData;
   StartupMessage msg = {};
-  EXPECT_EQ(ParseState::kSuccess, ParseStartupMessage(&data, &msg));
+  EXPECT_OK(ParseStartupMessage(&data, &msg));
   EXPECT_EQ(84, msg.len);
   EXPECT_EQ(3, msg.proto_ver.major);
   EXPECT_EQ(0, msg.proto_ver.minor);
@@ -74,7 +74,10 @@ const std::string_view kRowDescTestData = CreateStringView<char>(
     "privileges\000\000\000\000\000\000\000\000\000\000\031\377\377\377\377\377\377\000\000");
 
 TEST(PGSQLParseTest, RowDesc) {
-  std::string_view payload = CreateStringView<char>(
+  RegularMessage msg;
+
+  msg.timestamp_ns = 123;
+  msg.payload = CreateStringView<char>(
       // Field count
       "\x00\x02"
       "first_name\x00"
@@ -86,7 +89,9 @@ TEST(PGSQLParseTest, RowDesc) {
 
   RowDesc row_desc;
 
-  ASSERT_OK(ParseRowDesc(payload, &row_desc));
+  ASSERT_OK(ParseRowDesc(msg, &row_desc));
+
+  EXPECT_EQ(123, row_desc.timestamp_ns);
 
   ASSERT_THAT(row_desc.fields, SizeIs(2));
 
@@ -126,8 +131,11 @@ TEST(PGSQLParseTest, DataRow) {
   EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &msg));
   EXPECT_EQ(Tag::kDataRow, msg.tag);
   EXPECT_EQ(70, msg.len);
-  EXPECT_THAT(ParseDataRow(msg.payload), ElementsAre("postgres", "postgres", "UTF8", "en_US.utf8",
-                                                     "en_US.utf8", std::nullopt));
+
+  DataRow data_row;
+  ASSERT_OK(ParseDataRow(msg, &data_row));
+  EXPECT_THAT(data_row.cols, ElementsAre("postgres", "postgres", "UTF8", "en_US.utf8", "en_US.utf8",
+                                         std::nullopt));
 }
 
 auto ParamIs(FmtCode fmt_code, std::string_view value) {
@@ -173,7 +181,9 @@ TEST(PGSQLParseTest, ParseBindRequest) {
 }
 
 TEST(PGSQLParseTest, ParseParamDesc) {
-  std::string_view payload = CreateStringView<char>(
+  RegularMessage msg;
+  msg.timestamp_ns = 123;
+  msg.payload = CreateStringView<char>(
       // Parameter count
       "\x00\x03"
       // 1st type oid
@@ -182,8 +192,11 @@ TEST(PGSQLParseTest, ParseParamDesc) {
       "\x00\x00\x00\x19"
       // 2rd type oid
       "\x00\x00\x00\x19");
+
   ParamDesc param_desc;
-  EXPECT_OK(ParseParamDesc(payload, &param_desc));
+
+  EXPECT_EQ(123, msg.timestamp_ns);
+  EXPECT_OK(ParseParamDesc(msg, &param_desc));
   EXPECT_THAT(param_desc.type_oids, ElementsAre(25, 25, 25));
 }
 
@@ -199,8 +212,8 @@ TEST(PGSQLParseTest, ParseParse) {
   Parse parse;
   EXPECT_OK(ParseParse(msg, &parse));
   EXPECT_EQ(123, msg.timestamp_ns);
-  EXPECT_THAT(parse.stmt_name, StrEq("test"));
-  EXPECT_THAT(parse.query, StrEq("SELECT * FROM person WHERE first_name=$1"));
+  EXPECT_EQ(parse.stmt_name, "test");
+  EXPECT_EQ(parse.query, "SELECT * FROM person WHERE first_name=$1");
   EXPECT_THAT(parse.param_type_oids, ElementsAre(25));
 }
 
@@ -209,7 +222,10 @@ auto ErrFieldIs(ErrFieldCode code, std::string_view value) {
 }
 
 TEST(PGSQLParseTest, ParseErrResp) {
-  std::string_view payload = CreateStringView<char>(
+  RegularMessage msg;
+
+  msg.timestamp_ns = 123;
+  msg.payload = CreateStringView<char>(
       "\x53\x45\x52\x52\x4f\x52\x00\x56\x45\x52\x52"
       "\x4f\x52\x00\x43\x34\x32\x50\x30\x31\x00\x4d\x72\x65\x6c\x61\x74"
       "\x69\x6f\x6e\x20\x22\x78\x78\x78\x22\x20\x64\x6f\x65\x73\x20\x6e"
@@ -217,8 +233,12 @@ TEST(PGSQLParseTest, ParseErrResp) {
       "\x72\x73\x65\x5f\x72\x65\x6c\x61\x74\x69\x6f\x6e\x2e\x63\x00\x4c"
       "\x31\x31\x39\x34\x00\x52\x70\x61\x72\x73\x65\x72\x4f\x70\x65\x6e"
       "\x54\x61\x62\x6c\x65\x00\x00");
+
   ErrResp err_resp;
-  ASSERT_OK(ParseErrResp(payload, &err_resp));
+
+  ASSERT_OK(ParseErrResp(msg, &err_resp));
+
+  EXPECT_EQ(123, msg.timestamp_ns);
   EXPECT_THAT(err_resp.fields,
               ElementsAre(ErrFieldIs(ErrFieldCode::Severity, "ERROR"),
                           ErrFieldIs(ErrFieldCode::InternalSeverity, "ERROR"),

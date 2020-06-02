@@ -83,14 +83,15 @@ struct RegularMessage : public stirling::FrameBase {
 
   size_t ByteSize() const override { return 5 + payload.size(); }
 
-  std::string DebugString() const {
-    return absl::Substitute("[tag=$0 len=$1 payload=$2]", static_cast<char>(tag), len, payload);
+  std::string ToString() const {
+    return absl::Substitute("REGULAR MESSAGE [tag=$0 len=$1 payload=$2]", static_cast<char>(tag),
+                            len, payload);
   }
 };
 
 template <typename TValue>
-struct DebugStringFormatter {
-  void operator()(std::string* out, const TValue& v) const { out->append(v.DebugString()); }
+struct ToStringFormatter {
+  void operator()(std::string* out, const TValue& v) const { out->append(v.ToString()); }
 };
 
 /**
@@ -144,7 +145,7 @@ struct Param {
     return "[NULL]";
   }
 
-  std::string DebugString() const {
+  std::string ToString() const {
     return absl::Substitute("[formt=$0 value=$1]", magic_enum::enum_name(format_code), Value());
   }
 };
@@ -169,11 +170,11 @@ struct BindRequest {
     }
   };
 
-  std::string DebugString() const {
-    return absl::Substitute("[portal=$0 statement=$1 parameters=[$2] result_format_codes=[$3]]",
-                            dest_portal_name, src_prepared_stat_name,
-                            absl::StrJoin(params, ", ", DebugStringFormatter<Param>()),
-                            absl::StrJoin(res_col_fmt_codes, ", ", FmtCodeFormatter()));
+  std::string ToString() const {
+    return absl::Substitute(
+        "BIND [portal=$0 statement=$1 parameters=[$2] result_format_codes=[$3]]", dest_portal_name,
+        src_prepared_stat_name, absl::StrJoin(params, ", ", ToStringFormatter<Param>()),
+        absl::StrJoin(res_col_fmt_codes, ", ", FmtCodeFormatter()));
   }
 };
 
@@ -186,9 +187,11 @@ struct ParamDesc {
 struct Parse {
   uint64_t timestamp_ns = 0;
 
-  std::string stmt_name;
-  std::string query;
+  std::string_view stmt_name;
+  std::string_view query;
   std::vector<int32_t> param_type_oids;
+
+  std::string ToString() const { return std::string(query); }
 };
 
 struct RowDesc {
@@ -204,7 +207,7 @@ struct RowDesc {
     int32_t type_modifier;
     FmtCode fmt_code;
 
-    std::string DebugString() const {
+    std::string ToString() const {
       return absl::Substitute(
           "[name=$0 table_oid=$1 attr_num=$2 type_oid=$3 type_size=$4 type_modifier=$5 "
           "fmt_code=$6]",
@@ -225,8 +228,8 @@ struct RowDesc {
     return result;
   }
 
-  std::string DebugString() const {
-    return absl::StrJoin(fields, ", ", DebugStringFormatter<Field>());
+  std::string ToString() const {
+    return absl::StrCat("ROW DESCRIPTION ", absl::StrJoin(fields, " ", ToStringFormatter<Field>()));
   }
 };
 
@@ -241,8 +244,8 @@ struct Desc {
   Type type = Type::kStatement;
   std::string name;
 
-  std::string DebugString() const {
-    return absl::Substitute("[type=$0 name=$1", magic_enum::enum_name(type), name);
+  std::string ToString() const {
+    return absl::Substitute("DESCRIBE [type=$0 name=$1]", magic_enum::enum_name(type), name);
   }
 };
 
@@ -276,7 +279,7 @@ struct ErrResp {
     ErrFieldCode code = ErrFieldCode::kUnknown;
     std::string_view value;
 
-    std::string DebugString() const {
+    std::string ToString() const {
       std::string_view field_name = magic_enum::enum_name(code);
       if (field_name.empty()) {
         std::string unknown_field_name = "Field:";
@@ -294,21 +297,106 @@ struct ErrResp {
 
   struct ErrFieldFormatter {
     void operator()(std::string* out, const ErrResp::Field& err_field) const {
-      out->append(err_field.DebugString());
+      out->append(err_field.ToString());
     }
   };
 
-  std::string DebugString() const { return absl::StrJoin(fields, "\n", ErrFieldFormatter()); }
+  std::string ToString() const {
+    return absl::Substitute("ERROR RESPONSE [$0]", absl::StrJoin(fields, " ", ErrFieldFormatter()));
+  }
+};
+
+struct DataRow {
+  uint64_t timestamp_ns = 0;
+
+  std::vector<std::optional<std::string_view>> cols;
+
+  std::string ToString() const {
+    return absl::StrJoin(cols, ",", [](std::string* out, const std::optional<std::string_view>& d) {
+      out->append(d.has_value() ? d.value() : "[NULL]");
+    });
+  }
+};
+
+struct CmdCmpl {
+  uint64_t timestamp_ns = 0;
+  std::string_view cmd_tag;
+};
+
+struct ComboResp {
+  uint64_t timestamp_ns = 0;
+
+  std::variant<CmdCmpl, ErrResp> msg;
+
+  std::string ToString() const {
+    if (std::holds_alternative<CmdCmpl>(msg)) {
+      return std::string(std::get<CmdCmpl>(msg).cmd_tag);
+    }
+    if (std::holds_alternative<ErrResp>(msg)) {
+      return std::get<ErrResp>(msg).ToString();
+    }
+    DCHECK("Impossible!");
+    return {};
+  }
+};
+
+struct QueryReqResp {
+  struct Query {
+    uint64_t timestamp_ns = 0;
+
+    std::string_view query;
+
+    std::string ToString() const { return absl::Substitute("QUERY [$0]", query); }
+  };
+
+  struct QueryResp {
+    uint64_t timestamp_ns = 0;
+
+    RowDesc row_desc;
+
+    bool is_err_resp = false;
+
+    std::vector<DataRow> data_rows;
+    CmdCmpl cmd_cmpl;
+    ErrResp err_resp;
+
+    std::string ToString() const {
+      if (is_err_resp) {
+        return err_resp.ToString();
+      }
+
+      std::string res;
+
+      if (!data_rows.empty()) {
+        std::vector<std::string_view> field_names = row_desc.FieldNames();
+
+        if (!field_names.empty()) {
+          absl::StrAppend(&res, absl::StrJoin(field_names, ","));
+          absl::StrAppend(&res, "\n");
+        }
+
+        absl::StrAppend(&res, absl::StrJoin(data_rows, "\n", ToStringFormatter<DataRow>()));
+        absl::StrAppend(&res, "\n");
+      }
+
+      absl::StrAppend(&res, cmd_cmpl.cmd_tag);
+
+      return res;
+    }
+  };
+
+  Query req;
+  QueryResp resp;
 };
 
 struct ParseReqResp {
   Parse req;
-  std::optional<ErrResp> resp;
+  ComboResp resp;
 };
 
 struct BindReqResp {
   BindRequest req;
-  std::optional<ErrResp> resp;
+  ComboResp resp;
 };
 
 struct DescReqResp {
@@ -328,17 +416,30 @@ struct DescReqResp {
     // This is set if is_err_resp is true.
     ErrResp err_resp;
 
-    std::string DebugString() const {
+    std::string ToString() const {
       if (is_err_resp) {
-        return err_resp.DebugString();
+        return err_resp.ToString();
       }
       // It does not seem useful to format type OIDs, so we only report row description's field
       // names.
-      return absl::StrJoin(row_desc.FieldNames(), ",");
+      return row_desc.ToString();
     }
   };
 
   Resp resp;
+};
+
+struct Exec {
+  uint64_t timestamp_ns = 0;
+
+  std::string_view query;
+
+  std::string ToString() const { return absl::Substitute("EXECUTE [$0]", query); }
+};
+
+struct ExecReqResp {
+  Exec req;
+  QueryReqResp::QueryResp resp;
 };
 
 struct Record {

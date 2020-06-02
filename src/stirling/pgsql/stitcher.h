@@ -13,19 +13,24 @@ namespace stirling {
 namespace pgsql {
 
 /**
- * Returns a formatted string for messages that can form the response for a query.
- * The input result argument begin is modified to point to the next message that has not been
- * examined yet.
+ * Handle*() functions accept one request message and a list response messages; and find the
+ * relevant response messages for the request message (by looking for the tags specified by the
+ * PGSQL wire protocol), and writes the messages in the input result argument.
  */
-StatusOr<RegularMessage> AssembleQueryResp(MsgDeqIter* begin, const MsgDeqIter& end);
-
-/**
- * Returns a list of RegularMessage corresponding to the Parse-bind-execute sequence request.
- */
-StatusOr<std::vector<RegularMessage>> GetParseReqMsgs(MsgDeqIter* begin, const MsgDeqIter& end);
-
+Status HandleQuery(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDeqIter& end,
+                   QueryReqResp* req_resp);
+Status FillQueryResp(MsgDeqIter* resp_iter, const MsgDeqIter& end, QueryReqResp::QueryResp* resp);
 Status HandleParse(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDeqIter& end,
                    ParseReqResp* req_resp, State* state);
+Status FillStmtDescResp(MsgDeqIter* resp_iter, const MsgDeqIter& end, DescReqResp::Resp* req_resp);
+Status FillPortalDescResp(MsgDeqIter* resp_iter, const MsgDeqIter& end,
+                          DescReqResp::Resp* req_resp);
+Status HandleDesc(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDeqIter& end,
+                  DescReqResp* req_resp);
+Status HandleBind(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDeqIter& end,
+                  BindReqResp* req_resp, State* state);
+Status HandleExecute(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDeqIter& end,
+                     ExecReqResp* req_resp, State* state);
 
 RecordsWithErrorCount<pgsql::Record> ProcessFrames(std::deque<pgsql::RegularMessage>* reqs,
                                                    std::deque<pgsql::RegularMessage>* resps,

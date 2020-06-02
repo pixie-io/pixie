@@ -46,21 +46,21 @@ ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg) {
   return ParseState::kSuccess;
 }
 
-ParseState ParseStartupMessage(std::string_view* buf, StartupMessage* msg) {
+Status ParseStartupMessage(std::string_view* buf, StartupMessage* msg) {
   BinaryDecoder decoder(*buf);
 
-  PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(msg->len, decoder.ExtractInt<int32_t>());
-  PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(msg->proto_ver.major, decoder.ExtractInt<int16_t>());
-  PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(msg->proto_ver.minor, decoder.ExtractInt<int16_t>());
+  PL_ASSIGN_OR_RETURN(msg->len, decoder.ExtractInt<int32_t>());
+  PL_ASSIGN_OR_RETURN(msg->proto_ver.major, decoder.ExtractInt<int16_t>());
+  PL_ASSIGN_OR_RETURN(msg->proto_ver.minor, decoder.ExtractInt<int16_t>());
 
   const size_t kHeaderSize = 2 * sizeof(int32_t);
 
   if (decoder.BufSize() < msg->len - kHeaderSize) {
-    return ParseState::kNeedsMoreData;
+    return error::InvalidArgument("Not enough data");
   }
 
   while (!decoder.eof()) {
-    PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(std::string_view name, decoder.ExtractStringUntil('\0'));
+    PL_ASSIGN_OR_RETURN(std::string_view name, decoder.ExtractStringUntil('\0'));
     if (name.empty()) {
       // Each name or value is terminated by '\0'. And all name value pairs are terminated by an
       // additional '\0'.
@@ -68,14 +68,14 @@ ParseState ParseStartupMessage(std::string_view* buf, StartupMessage* msg) {
       // Extracting an empty name means we are at the end of the string.
       break;
     }
-    PL_ASSIGN_OR_RETURN_NEEDS_MORE_DATA(std::string_view value, decoder.ExtractStringUntil('\0'));
+    PL_ASSIGN_OR_RETURN(std::string_view value, decoder.ExtractStringUntil('\0'));
     if (value.empty()) {
-      return ParseState::kInvalid;
+      return error::InvalidArgument("Not enough data");
     }
     msg->nvs.push_back(NV{std::string(name), std::string(value)});
   }
   *buf = decoder.Buf();
-  return ParseState::kSuccess;
+  return Status::OK();
 }
 
 size_t FindFrameBoundary(std::string_view buf, size_t start) {
@@ -87,7 +87,14 @@ size_t FindFrameBoundary(std::string_view buf, size_t start) {
   return std::string_view::npos;
 }
 
-#define PL_ASSIGN_OR_RETURN_RES(expr, val_or, res) PL_ASSIGN_OR(expr, val_or, return res)
+Status ParseCmdCmpl(const RegularMessage& msg, CmdCmpl* cmd_cmpl) {
+  cmd_cmpl->timestamp_ns = msg.timestamp_ns;
+  cmd_cmpl->cmd_tag = msg.payload;
+
+  RemoveRepeatingSuffix(&cmd_cmpl->cmd_tag, '\0');
+
+  return Status::OK();
+}
 
 // Given the input as the payload of a kRowDesc message, returns a list of column name.
 // Row description format:
@@ -97,8 +104,10 @@ size_t FindFrameBoundary(std::string_view buf, size_t start) {
 // Field description format:
 // | string name | int32 table ID | int16 column number | int32 type ID | int16 type size |
 // | int32 type modifier | int16 format code (text|binary) |
-Status ParseRowDesc(std::string_view payload, RowDesc* row_desc) {
-  BinaryDecoder decoder(payload);
+Status ParseRowDesc(const RegularMessage& msg, RowDesc* row_desc) {
+  row_desc->timestamp_ns = msg.timestamp_ns;
+
+  BinaryDecoder decoder(msg.payload);
 
   PL_ASSIGN_OR_RETURN(const int16_t field_count, decoder.ExtractInt<int16_t>());
 
@@ -120,34 +129,29 @@ Status ParseRowDesc(std::string_view payload, RowDesc* row_desc) {
   return Status::OK();
 }
 
-std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_row) {
-  std::vector<std::optional<std::string_view>> res;
+Status ParseDataRow(const RegularMessage& msg, DataRow* data_row) {
+  data_row->timestamp_ns = msg.timestamp_ns;
 
-  BinaryDecoder decoder(data_row);
-  PL_ASSIGN_OR_RETURN_RES(const int16_t field_count, decoder.ExtractInt<int16_t>(), res);
+  BinaryDecoder decoder(msg.payload);
+
+  PL_ASSIGN_OR_RETURN(const int16_t field_count, decoder.ExtractInt<int16_t>());
+
   for (int i = 0; i < field_count; ++i) {
-    if (decoder.BufSize() < sizeof(int32_t)) {
-      VLOG(1) << "Not enough data";
-      return res;
-    }
     // The length of the column value, in bytes (this count does not include itself). Can be zero.
-    PL_ASSIGN_OR_RETURN_RES(int32_t value_len, decoder.ExtractInt<int32_t>(), res);
+    PL_ASSIGN_OR_RETURN(const auto value_len, decoder.ExtractInt<int32_t>());
     if (value_len == kNullValLen) {
-      res.push_back(std::nullopt);
+      data_row->cols.push_back(std::nullopt);
       continue;
     }
     if (value_len == 0) {
-      res.push_back({});
+      data_row->cols.push_back({});
       continue;
     }
-    if (decoder.BufSize() < static_cast<size_t>(value_len)) {
-      VLOG(1) << "Not enough data, copy the rest of data";
-      value_len = decoder.BufSize();
-    }
-    PL_ASSIGN_OR_RETURN_RES(std::string_view value, decoder.ExtractString<char>(value_len), res);
-    res.push_back(value);
+    PL_ASSIGN_OR_RETURN(std::string_view value, decoder.ExtractString<char>(value_len));
+    data_row->cols.push_back(value);
   }
-  return res;
+
+  return Status::OK();
 }
 
 Status ParseBindRequest(const RegularMessage& msg, BindRequest* res) {
@@ -196,7 +200,7 @@ Status ParseBindRequest(const RegularMessage& msg, BindRequest* res) {
   }
 
   for (int i = 0; i < param_count; ++i) {
-    PL_ASSIGN_OR_RETURN(int16_t param_value_len, decoder.ExtractInt<int32_t>());
+    PL_ASSIGN_OR_RETURN(int32_t param_value_len, decoder.ExtractInt<int32_t>());
 
     if (param_value_len == kNullValLen) {
       res->params.push_back({FmtCode::kText, std::nullopt});
@@ -218,8 +222,10 @@ Status ParseBindRequest(const RegularMessage& msg, BindRequest* res) {
   return Status::OK();
 }
 
-Status ParseParamDesc(std::string_view payload, ParamDesc* param_desc) {
-  BinaryDecoder decoder(payload);
+Status ParseParamDesc(const RegularMessage& msg, ParamDesc* param_desc) {
+  param_desc->timestamp_ns = msg.timestamp_ns;
+
+  BinaryDecoder decoder(msg.payload);
 
   PL_ASSIGN_OR_RETURN(const int16_t param_count, decoder.ExtractInt<int16_t>());
 
@@ -249,9 +255,12 @@ Status ParseParse(const RegularMessage& msg, Parse* parse) {
   return Status::OK();
 }
 
-Status ParseErrResp(std::string_view payload, ErrResp* err_resp) {
-  BinaryDecoder decoder(payload);
-  while (decoder.BufSize() != 0) {
+Status ParseErrResp(const RegularMessage& msg, ErrResp* err_resp) {
+  err_resp->timestamp_ns = msg.timestamp_ns;
+
+  BinaryDecoder decoder(msg.payload);
+
+  while (!decoder.eof()) {
     PL_ASSIGN_OR_RETURN(const char code, decoder.ExtractChar());
     if (code == '\0') {
       // Reach end of stream.
@@ -287,12 +296,11 @@ ParseState ParseFrame(MessageType type, std::string_view* buf, pgsql::RegularMes
 
   std::string_view buf_copy = *buf;
   pgsql::StartupMessage startup_msg = {};
-  if (ParseStartupMessage(&buf_copy, &startup_msg) == ParseState::kSuccess &&
-      !startup_msg.nvs.empty()) {
+  if (pgsql::ParseStartupMessage(&buf_copy, &startup_msg).ok() && !startup_msg.nvs.empty()) {
     // Ignore startup message, but remove it from the buffer.
     *buf = buf_copy;
   }
-  return ParseRegularMessage(buf, frame);
+  return pgsql::ParseRegularMessage(buf, frame);
 }
 
 template <>

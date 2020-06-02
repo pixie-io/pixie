@@ -20,15 +20,15 @@ namespace pgsql {
  */
 ParseState ParseRegularMessage(std::string_view* buf, RegularMessage* msg);
 
-ParseState ParseStartupMessage(std::string_view* buf, StartupMessage* msg);
-
-std::vector<std::optional<std::string_view>> ParseDataRow(std::string_view data_row);
+Status ParseStartupMessage(std::string_view* buf, StartupMessage* msg);
+Status ParseCmdCmpl(const RegularMessage& msg, CmdCmpl* cmd_cmpl);
+Status ParseDataRow(const RegularMessage& msg, DataRow* data_row);
 Status ParseBindRequest(const RegularMessage& msg, BindRequest* res);
-Status ParseParamDesc(std::string_view payload, ParamDesc* param_desc);
+Status ParseParamDesc(const RegularMessage& msg, ParamDesc* param_desc);
 // This is for 'Parse' message.
 Status ParseParse(const RegularMessage& msg, Parse* parse);
-Status ParseRowDesc(std::string_view payload, RowDesc* row_desc);
-Status ParseErrResp(std::string_view payload, ErrResp* err_resp);
+Status ParseRowDesc(const RegularMessage& msg, RowDesc* row_desc);
+Status ParseErrResp(const RegularMessage& msg, ErrResp* err_resp);
 Status ParseDesc(const RegularMessage& msg, Desc* desc);
 
 size_t FindFrameBoundary(std::string_view buf, size_t start);

@@ -111,9 +111,9 @@ class PostgreSQLTraceGoSQLxTest
   GolangSQLxContainer sqlx_container_;
 };
 
-std::vector<std::pair<std::string_view, std::string_view>> RecordBatchToPairs(
+std::vector<std::pair<std::string, std::string>> RecordBatchToPairs(
     const types::ColumnWrapperRecordBatch& record_batch, const std::vector<size_t>& indices) {
-  std::vector<std::pair<std::string_view, std::string_view>> res;
+  std::vector<std::pair<std::string, std::string>> res;
   for (size_t i : indices) {
     res.push_back({AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqIdx, i),
                    AccessRecordBatch<types::StringValue>(record_batch, kPGSQLRespIdx, i)});
@@ -137,21 +137,35 @@ TEST_F(PostgreSQLTraceGoSQLxTest, GolangSqlxDemo) {
 
   EXPECT_THAT(
       RecordBatchToPairs(record_batch, indices),
-      ElementsAre(Pair("CREATE TABLE IF NOT EXISTS person (\n"
+      ElementsAre(Pair("QUERY [CREATE TABLE IF NOT EXISTS person (\n"
                        "    first_name text,\n"
                        "    last_name text,\n"
-                       "    email text\n"
-                       ")",
+                       "    email text\n)]",
                        "CREATE TABLE"),
-                  Pair("BEGIN READ WRITE", "BEGIN"),
+                  Pair("QUERY [BEGIN READ WRITE]", "BEGIN"),
                   Pair("INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)",
                        "PARSE COMPLETE"),
-                  Pair("INSERT INTO person (first_name, last_name, email) VALUES ($1, $2, $3)",
+                  Pair("DESCRIBE [type=kStatement name=]", "ROW DESCRIPTION "),
+                  Pair("BIND [portal= statement= parameters=[[formt=kText value=Jason], "
+                       "[formt=kText value=Moiron], "
+                       "[formt=kText value=jmoiron@jmoiron.net]] result_format_codes=[]]",
+                       "BIND COMPLETE"),
+                  Pair("EXECUTE [INSERT INTO person (first_name, last_name, email) VALUES "
+                       "(Jason, Moiron, jmoiron@jmoiron.net)]",
                        "INSERT 0 1"),
-                  Pair("COMMIT", "COMMIT"),
+                  Pair("QUERY [COMMIT]", "COMMIT"),
                   Pair("SELECT * FROM person WHERE first_name=$1", "PARSE COMPLETE"),
-                  Pair("SELECT * FROM person WHERE first_name=$1",
-                       "first_name,last_name,email\n"
+                  Pair("DESCRIBE [type=kStatement name=]",
+                       "ROW DESCRIPTION [name=first_name table_oid=16384 attr_num=1 type_oid=25 "
+                       "type_size=-1 type_modifier=-1 fmt_code=kText] "
+                       "[name=last_name table_oid=16384 attr_num=2 type_oid=25 type_size=-1 "
+                       "type_modifier=-1 fmt_code=kText] "
+                       "[name=email table_oid=16384 attr_num=3 type_oid=25 type_size=-1 "
+                       "type_modifier=-1 fmt_code=kText]"),
+                  Pair("BIND [portal= statement= parameters=[[formt=kText value=Jason]] "
+                       "result_format_codes=[]]",
+                       "BIND COMPLETE"),
+                  Pair("EXECUTE [SELECT * FROM person WHERE first_name=Jason]",
                        "Jason,Moiron,jmoiron@jmoiron.net\n"
                        "SELECT 1")));
 }
@@ -182,11 +196,11 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
 
     EXPECT_THAT(
         std::string(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqIdx, indices[0])),
-        StrEq("CREATE OR REPLACE FUNCTION increment(i integer) RETURNS integer AS $$\n"
+        StrEq("QUERY [CREATE OR REPLACE FUNCTION increment(i integer) RETURNS integer AS $$\n"
               "BEGIN\n"
               "      RETURN i + 1;\n"
               "END;\n"
-              "$$ LANGUAGE plpgsql;"));
+              "$$ LANGUAGE plpgsql;]"));
     EXPECT_THAT(
         std::string(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLRespIdx, indices[0])),
         StrEq("CREATE FUNCTION"));
@@ -207,7 +221,7 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
 
     EXPECT_THAT(
         std::string(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLReqIdx, indices[0])),
-        StrEq("select increment(1);"));
+        StrEq("QUERY [select increment(1);]"));
     EXPECT_THAT(
         std::string(AccessRecordBatch<types::StringValue>(record_batch, kPGSQLRespIdx, indices[0])),
         StrEq("increment\n"
