@@ -82,6 +82,11 @@ var DeployCmd = &cobra.Command{
 		}
 	},
 	PostRun: func(cmd *cobra.Command, args []string) {
+		extractPath, _ := cmd.Flags().GetString("extract_yaml")
+		if extractPath != "" {
+			return
+		}
+
 		p := func(s string, a ...interface{}) {
 			fmt.Fprintf(os.Stderr, s, a...)
 		}
@@ -239,7 +244,9 @@ func getLatestVizierVersion(conn *grpc.ClientConn) (string, error) {
 func runDeployCmd(cmd *cobra.Command, args []string) {
 	check, _ := cmd.Flags().GetBool("check")
 	checkOnly, _ := cmd.Flags().GetBool("check_only")
-	if check || checkOnly {
+	extractPath, _ := cmd.Flags().GetString("extract_yaml")
+
+	if (check || checkOnly) && extractPath == "" {
 		_ = pxanalytics.Client().Enqueue(&analytics.Track{
 			UserId: pxconfig.Cfg().UniqueClientID,
 			Event:  "Cluster Check Run",
@@ -374,7 +381,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		log.Fatal("Failed to generate YAMLs for deploy")
 	}
 
-	extractPath, _ := cmd.Flags().GetString("extract_yaml")
 	// If extract_path is specified, write out yamls to file.
 	if extractPath != "" {
 
@@ -404,7 +410,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		}
 
 		// Write etcd + nats before bootstrap YAML.
-		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/manifets/%02d_etcd.yaml", yamlIdx), vzYamlMap[etcdYAMLPath])
+		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/manifests/%02d_etcd.yaml", yamlIdx), vzYamlMap[etcdYAMLPath])
 		if err != nil {
 			log.WithError(err).Fatal("Failed to write YAMLs")
 		}
