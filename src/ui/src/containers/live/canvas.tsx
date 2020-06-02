@@ -12,9 +12,10 @@ import { dataFromProto } from 'utils/result-data-utils';
 
 import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/styles';
 
+import { LayoutContext } from './context/layout-context';
 import { ResultsContext } from './context/results-context';
 import { VisContext } from './context/vis-context';
-import { addLayout, addTableLayout, Layout, toLayout, updatePositions } from './layout';
+import { addLayout, addTableLayout, getGridWidth, Layout, toLayout, updatePositions } from './layout';
 import { DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, TABLE_DISPLAY_TYPE, widgetTableName } from './vis';
 
 const Vega = React.lazy(() => import(
@@ -110,6 +111,7 @@ const Canvas = (props: CanvasProps) => {
   const theme = useTheme();
   const { tables, loading } = React.useContext(ResultsContext);
   const { vis, setVis } = React.useContext(VisContext);
+  const { isMobile } = React.useContext(LayoutContext);
   const { setTimeseriesDomain } = React.useContext(VegaContext);
 
   // Default layout used when there is no vis defining widgets.
@@ -131,7 +133,7 @@ const Canvas = (props: CanvasProps) => {
     );
 
     if (vis.widgets.length === 0) {
-      const layoutMap = new Map(addTableLayout(Object.keys(tables), defaultLayout).map((layout) => {
+      const layoutMap = new Map(addTableLayout(Object.keys(tables), defaultLayout, isMobile).map((layout) => {
         return [layout.i, layout];
       }));
       return Object.entries(tables).map(([tableName, table]) => (
@@ -143,12 +145,15 @@ const Canvas = (props: CanvasProps) => {
     }
 
     const widgets = [];
+    const layout = toLayout(vis.widgets, isMobile);
+
     vis.widgets.forEach((widget, i) => {
+      const widgetLayout = layout[i];
       const display = widget.displaySpec;
       // TODO(nserrino): Support multiple output tables when we have a Vega component that
       // takes in multiple output tables.
       const tableName = widgetTableName(widget, i);
-      const widgetName = widget.name || `${tableName}_${i}`;
+      const widgetName = widgetLayout.i;
       const table = tables[tableName];
       let content = null;
       if (!table) {
@@ -180,14 +185,14 @@ const Canvas = (props: CanvasProps) => {
         }
       }
       widgets.push(
-        <div key={widgetName} className={className} data-grid={toLayout(widget, widgetName)}>
+        <div key={widgetName} className={className} data-grid={widgetLayout}>
           {content}
           {loading ? <div className={classes.spinner}><Spinner /></div> : null}
         </div>,
       );
     });
     return widgets;
-  }, [tables, vis, props.editable, defaultLayout, loading]);
+  }, [tables, vis, props.editable, defaultLayout, loading, isMobile]);
 
   React.useEffect(() => {
     setTimeseriesDomain(null);
@@ -216,6 +221,7 @@ const Canvas = (props: CanvasProps) => {
 
   return (
     <Grid
+      cols={getGridWidth(isMobile)}
       className={classes.grid}
       onLayoutChange={handleLayoutChange}
       isDraggable={props.editable}

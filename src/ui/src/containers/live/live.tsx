@@ -78,7 +78,7 @@ const LiveView = () => {
   const classes = useStyles();
 
   const { execute } = React.useContext(ExecuteContext);
-  const { setDataDrawerOpen, setEditorPanelOpen, editorPanelOpen } = React.useContext(LayoutContext);
+  const { setDataDrawerOpen, setEditorPanelOpen, editorPanelOpen, isMobile } = React.useContext(LayoutContext);
   const toggleEditor = React.useCallback(() => setEditorPanelOpen((open) => !open), [setEditorPanelOpen]);
 
   const [drawerOpen, setDrawerOpen] = React.useState<boolean>(false);
@@ -122,6 +122,7 @@ const LiveView = () => {
         </IconButton> */}
         <Tooltip title={editorPanelOpen ? 'Close editor' : 'Open editor'}>
           <ToggleButton
+            disabled={isMobile}
             className={classes.editorToggle}
             selected={editorPanelOpen}
             onChange={toggleEditor}

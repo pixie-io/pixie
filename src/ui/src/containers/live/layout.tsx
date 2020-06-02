@@ -1,4 +1,4 @@
-import { Vis, Widget } from './vis';
+import { Vis, Widget, widgetTableName } from './vis';
 
 export interface ChartPosition {
   x: number;
@@ -13,66 +13,137 @@ export interface Layout extends ChartPosition {
   minW?: number;
 }
 
-export const GRID_WIDTH = 12;
-export const DEFAULT_HEIGHT = 3;
+// default layout for non-mobile case.
+// in both mobile and non-mobile, numbers are in grid coordinates.
+// 2:1 width/height ratio for default layout.
+const DEFAULT_GRID_WIDTH = 12;
+const DEFAULT_NUM_COLS = 2;
+const DEFAULT_WIDGET_HEIGHT = 3;
 
-// Tiles a grid with the vis spec widgets.
-export function layoutDefaultGrid<T>(widgets: T[], numCols = 2): Array<T & { position: ChartPosition }> {
+// default layout for mobile case.
+// 3:2 width/height ratio for mobile layout.
+const MOBILE_GRID_WIDTH = 4;
+const MOBILE_NUM_COLS = 1;
+const MOBILE_WIDGET_HEIGHT = 2;
+
+export function getGridWidth(isMobile: boolean) {
+  return isMobile ? MOBILE_GRID_WIDTH : DEFAULT_GRID_WIDTH;
+}
+
+// Tiles a grid in a default way based on the number of widgets, number of columns, etc.
+function widgetPositions(numWidgets: number, gridWidth: number, numCols: number,
+                         elemHeight: number): Array<ChartPosition> {
   let curX = 0;
   let curY = 0;
-  const elemWidth = GRID_WIDTH / numCols;
+  const elemWidth = gridWidth / numCols;
 
-  return widgets.map((widget) => {
+  return [...Array(numWidgets)].map(() => {
     // If we exceed the current width, move to the next row.
-    if (curX >= GRID_WIDTH) {
+    if (curX >= gridWidth) {
       curX = 0;
-      curY += DEFAULT_HEIGHT;
+      curY += elemHeight;
     }
-    const newWidget = {
-      ...widget,
-      position: { x: curX, y: curY, w: elemWidth, h: DEFAULT_HEIGHT },
-    };
+    const position = { x: curX, y: curY, w: elemWidth, h: elemHeight };
     // Move the next position to the right.
     curX += elemWidth;
-    return newWidget;
+    return position;
   });
 }
 
+function defaultWidgetPositions(numWidgets: number) {
+  return widgetPositions(numWidgets, DEFAULT_GRID_WIDTH, DEFAULT_NUM_COLS, DEFAULT_WIDGET_HEIGHT);
+}
+
+function mobileWidgetPositions(numWidgets: number) {
+  return widgetPositions(numWidgets, MOBILE_GRID_WIDTH, MOBILE_NUM_COLS, MOBILE_WIDGET_HEIGHT);
+}
+
+// addLayout is only called in the non-mobile case.
 export function addLayout(visSpec: Vis): Vis {
   for (const widget of visSpec.widgets) {
     if (!widget.position) {
+      const positions = defaultWidgetPositions(visSpec.widgets.length);
       return {
         ...visSpec,
-        widgets: layoutDefaultGrid(visSpec.widgets),
+        widgets: visSpec.widgets.map((widget, i) => {
+          return {
+            ...widget,
+            position: positions[i],
+          }
+        }),
       };
     }
   }
   return visSpec;
 }
 
-export function toLayout(widget: Widget, widgetName: string): Layout {
-  return {
-    ...widget.position,
-    i: widgetName,
-    x: widget.position.x || 0,
-    y: widget.position.y || 0,
-    minH: 2,
-    minW: 2,
-  };
+function widgetName(widget: Widget, widgetIndex: number): string {
+  const tableName = widgetTableName(widget, widgetIndex);
+  return widget.name || `${tableName}_${widgetIndex}`;
 }
 
-export function updatePositions(visSpec: Vis, layouts: ChartPosition[]): Vis {
+// Generates the layout of a Live View, with mobile-specific layout that follow the overall
+// order of the vis spec positions but tiles it differently.
+export function toLayout(widgets: Widget[], isMobile: boolean): Layout[] {
+  const nonMobileLayout = widgets.map((widget, i) => {
+    return {
+      ...widget.position,
+      i: widgetName(widget, i),
+      x: widget.position.x || 0,
+      y: widget.position.y || 0,
+      minH: 2,
+      minW: 2,
+    };
+  });
+
+  if (!isMobile) {
+    return nonMobileLayout;
+  }
+
+  // Find out the row-major order in which the widgets would be displayed in the non-mobile view,
+  // and match it for the mobile view.
+  nonMobileLayout.sort(function(a: Layout, b: Layout) {
+    if (a.y < b.y) {
+      return -1;
+    }
+    if (a.y > b.y) {
+      return 1;
+    }
+    if (a.x < b.x) {
+      return -1;
+    }
+    if (a.x > b.x) {
+      return 1;
+    }
+    return 0;
+  });
+  const widgetOrderMap = new Map(nonMobileLayout.map((layout, idx) => {
+    return [layout.i, idx];
+  }));
+
+  const positions = mobileWidgetPositions(widgets.length);
+  return widgets.map((widget, idx) => {
+    // Use widgetName as i in nonMobileLayout above.
+    const name = widgetName(widget, idx);
+    return {
+      ...positions[widgetOrderMap.get(name)],
+      i: name,
+    }
+  })
+}
+
+export function updatePositions(visSpec: Vis, positions: ChartPosition[]): Vis {
   return {
     variables: visSpec.variables,
     globalFuncs: visSpec.globalFuncs,
-    widgets: layouts.map((layout, i) => {
+    widgets: positions.map((position, i) => {
       return {
         ...visSpec.widgets[i],
         position: {
-          x: layout.x,
-          y: layout.y,
-          w: layout.w,
-          h: layout.h,
+          x: position.x,
+          y: position.y,
+          w: position.w,
+          h: position.h,
         },
       };
     }),
@@ -82,12 +153,16 @@ export function updatePositions(visSpec: Vis, layouts: ChartPosition[]): Vis {
 // Helper function to generate a default layout for tables without vis specs.
 // TODO(malthus): Refactor this whole file to do this better. We probably need to
 // decouple the positioning of widgets with the vis spec for more flexible manipulation.
-export function addTableLayout(tables: string[], layout: Layout[]): Layout[] {
+export function addTableLayout(tables: string[], layout: Layout[], isMobile: boolean): Layout[] {
   const layoutSet = new Set(layout.map((l) => l.i));
   if (tables.every((table) => layoutSet.has(table))) {
     return layout;
   }
-  const numCols = Math.floor(Math.sqrt(tables.length));
-  return layoutDefaultGrid(tables.map((table) => ({ i: table })), numCols)
-    .map(({ i, position }) => ({ i, ...position }));
+  const positions = isMobile ? mobileWidgetPositions(tables.length) : defaultWidgetPositions(tables.length);
+  return tables.map((table, idx) => {
+    return {
+      ...positions[idx],
+      i: table,
+    }
+  });
 }
