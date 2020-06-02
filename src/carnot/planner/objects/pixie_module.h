@@ -34,9 +34,11 @@ class PixieModule : public QLObject {
   inline static constexpr char kUInt128ConversionId[] = "uint128";
   inline static constexpr char kAbsTimeOpId[] = "strptime";
   inline static constexpr char kTimeTypeName[] = "Time";
-  inline static constexpr char kServiceTypeName[] = "Service";
-  inline static constexpr char kPodTypeName[] = "Pod";
+  inline static constexpr char kContainerTypeName[] = "Container";
+  inline static constexpr char kNamespaceTypeName[] = "Namespace";
   inline static constexpr char kNodeTypeName[] = "Node";
+  inline static constexpr char kPodTypeName[] = "Pod";
+  inline static constexpr char kServiceTypeName[] = "Service";
   inline static constexpr char kDebugTablePrefix[] = "_";
   static const constexpr char* const kTimeFuncs[] = {"minutes", "hours",        "seconds",
                                                      "days",    "microseconds", "milliseconds"};

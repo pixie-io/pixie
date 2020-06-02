@@ -15,7 +15,13 @@ enum PXType {
   PX_FLOAT64 = 3;
   PX_STRING = 4;
   // 1000+ are reserved for semantic types.
+  // Note: PX_POD and PX_SERVICE are both expressed with the namespace prepended.
+  // For example, a pod called orders-123 in namespace pl should be written like "pl/orders-123".
   PX_SERVICE = 1000;
+  PX_POD = 1001;
+  PX_CONTAINER = 1002;
+  PX_NAMESPACE = 1003;
+  PX_NODE = 1004;
 }
 
 // Vis is the protobuf form of vis.json which describes the configuration of a Live View.

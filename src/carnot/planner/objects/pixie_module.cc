@@ -156,15 +156,31 @@ Status PixieModule::RegisterTypeObjs() {
   PL_ASSIGN_OR_RETURN(auto time_type_object, TypeObject::Create(IRNodeType::kTime, ast_visitor()));
   PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kTimeTypeName, time_type_object));
 
+  // Service
   PL_ASSIGN_OR_RETURN(auto service_type_object,
                       TypeObject::Create(types::STRING, types::ST_SERVICE_NAME, ast_visitor()));
   PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kServiceTypeName, service_type_object));
+
+  // Pod
   PL_ASSIGN_OR_RETURN(auto pod_type_object,
                       TypeObject::Create(types::STRING, types::ST_POD_NAME, ast_visitor()));
   PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kPodTypeName, pod_type_object));
+
+  // Node
   PL_ASSIGN_OR_RETURN(auto node_type_object,
                       TypeObject::Create(types::STRING, types::ST_NODE_NAME, ast_visitor()));
   PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kNodeTypeName, node_type_object));
+
+  // Namespace
+  PL_ASSIGN_OR_RETURN(auto namespace_type_object,
+                      TypeObject::Create(types::STRING, types::ST_NAMESPACE_NAME, ast_visitor()));
+  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kNamespaceTypeName, namespace_type_object));
+
+  // Container
+  PL_ASSIGN_OR_RETURN(auto container_type_object,
+                      TypeObject::Create(types::STRING, types::ST_CONTAINER_NAME, ast_visitor()));
+  PL_RETURN_IF_ERROR(AssignAttribute(PixieModule::kContainerTypeName, container_type_object));
+
   return Status::OK();
 }
 

@@ -482,4 +482,8 @@ export enum PXType {
   PX_FLOAT64 = 3,
   PX_STRING = 4,
   PX_SERVICE = 1000,
+  PX_POD = 1001,
+  PX_CONTAINER = 1002,
+  PX_NAMESPACE = 1003,
+  PX_NODE = 1004,
 }
