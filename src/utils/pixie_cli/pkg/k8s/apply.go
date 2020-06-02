@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -13,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	jsonserializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -30,6 +32,17 @@ func init() {
 
 	// Suppress k8s log output.
 	klog.SetOutput(ioutil.Discard)
+}
+
+// ConvertResourceToYAML converts the given object to a YAML which can be applied.
+func ConvertResourceToYAML(obj runtime.Object) (string, error) {
+	buf := new(bytes.Buffer)
+	e := jsonserializer.NewYAMLSerializer(jsonserializer.DefaultMetaFactory, nil, nil)
+	err := e.Encode(obj, buf)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
 }
 
 // ApplyYAML does the equivalent of a kubectl apply for the given yaml.

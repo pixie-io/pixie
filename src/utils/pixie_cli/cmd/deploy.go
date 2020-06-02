@@ -32,7 +32,6 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
@@ -269,19 +268,174 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	cloudAddr := viper.GetString("cloud_addr")
 
+	// Get grpc connection to cloud.
+	cloudConn, err := utils.GetCloudClientConnection(cloudAddr)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	versionString := viper.GetString("use_version")
+	inputVersionStr := versionString
+	if len(versionString) == 0 {
+		// Fetch latest version.
+		versionString, err = getLatestVizierVersion(cloudConn)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to fetch Vizier versions")
+		}
+	}
+	fmt.Printf("Installing version: %s\n", versionString)
+
+	clusterInfo, clusterID, err := getClusterInfo(cloudAddr)
+	if err != nil {
+		log.Fatal(err)
+	}
+	kubeConfig := k8s.GetConfig()
+
+	fmt.Printf("Generating YAMLs for Pixie Cluster ID: %s.\n", clusterID.String())
+
+	yamlMap := make(map[string]string)
+	var vzYamlMap map[string]string
+	nsYAMLPath := ""
+
+	// Generate YAMLs.
+	yamlIdx := 0 // This is used to track the order in which YAMLs should be applied.
+	nsYamlJob := newTaskWrapper("Generating namespace YAML", func() error {
+		nsYAML, err := generateNamespaceYAML(namespace)
+		if err != nil {
+			return err
+		}
+		nsYAMLPath = fmt.Sprintf("./pixie_yamls/manifests/%02d_namespace.yaml", yamlIdx)
+		yamlMap[nsYAMLPath] = nsYAML
+
+		yamlIdx++
+		return nil
+	})
+	certsYamlJob := newTaskWrapper("Generating cert YAMLs", func() error {
+		certYAMLs, err := certs.DefaultGenerateCertYAMLs(namespace)
+		if err != nil {
+			return err
+		}
+		yamlMap[fmt.Sprintf("./pixie_yamls/secrets/%02d_cert.yaml", yamlIdx)] = certYAMLs
+
+		yamlIdx++
+		return nil
+	})
+	secretsYamlJob := newTaskWrapper("Generating secret YAMLs", func() error {
+		var credsData string
+		if credsFile == "" {
+			credsData = mustGetImagePullSecret(cloudConn)
+		} else {
+			credsData = mustReadCredsFile(credsFile)
+		}
+		secretName, _ := cmd.Flags().GetString("secret_name")
+		dockerSecret, err := k8s.CreateDockerConfigJSONSecret(namespace, secretName, credsData)
+		if err != nil {
+			return err
+		}
+		dYaml, err := k8s.ConvertResourceToYAML(dockerSecret)
+		if err != nil {
+			return err
+		}
+		yamlMap[fmt.Sprintf("./pixie_yamls/secrets/%02d_secret.yaml", yamlIdx)] = dYaml
+		yamlIdx++
+
+		csYAMLs, err := GenerateClusterSecretYAMLs(cloudAddr, clusterID.String(), namespace, devCloudNS, kubeConfig, getSentryDSN(versionString), inputVersionStr)
+		if err != nil {
+			return err
+		}
+		yamlMap[fmt.Sprintf("./pixie_yamls/secrets/%02d_secret.yaml", yamlIdx)] = csYAMLs
+
+		yamlIdx++
+
+		return nil
+	})
+	vzYamlJob := newTaskWrapper("Downloading Vizier YAMLs", func() error {
+		creds, err := auth.LoadDefaultCredentials()
+		if err != nil {
+			return err
+		}
+		vzYamlMap, err = artifacts.FetchVizierYAMLMap(cloudConn, creds.Token, versionString)
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+
+	yamlJobs := []utils.Task{nsYamlJob, certsYamlJob, secretsYamlJob, vzYamlJob}
+	jr := utils.NewSerialTaskRunner(yamlJobs)
+	err = jr.RunAndMonitor()
+	if err != nil {
+		_ = pxanalytics.Client().Enqueue(&analytics.Track{
+			UserId: pxconfig.Cfg().UniqueClientID,
+			Event:  "Deploy Failure",
+			Properties: analytics.NewProperties().
+				Set("err", err.Error()),
+		})
+		log.Fatal("Failed to generate YAMLs for deploy")
+	}
+
+	extractPath, _ := cmd.Flags().GetString("extract_yaml")
+	// If extract_path is specified, write out yamls to file.
+	if extractPath != "" {
+
+		writeYAML := func(w *tar.Writer, name string, contents string) error {
+			if err = w.WriteHeader(&tar.Header{Name: name, Size: int64(len(contents)), Mode: 777}); err != nil {
+				return err
+			}
+			if _, err = w.Write([]byte(contents)); err != nil {
+				return err
+			}
+			return nil
+		}
+
+		filePath := path.Join(extractPath, "yamls.tar")
+		writer, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0755)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to open file to write YAMLs")
+		}
+		defer writer.Close()
+		w := tar.NewWriter(writer)
+
+		for k, v := range yamlMap {
+			err := writeYAML(w, k, v)
+			if err != nil {
+				log.WithError(err).Fatal("Failed to write YAMLs")
+			}
+		}
+
+		// Write etcd + nats before bootstrap YAML.
+		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/manifets/%02d_etcd.yaml", yamlIdx), vzYamlMap[etcdYAMLPath])
+		if err != nil {
+			log.WithError(err).Fatal("Failed to write YAMLs")
+		}
+		yamlIdx++
+
+		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/manifests/%02d_nats.yaml", yamlIdx), vzYamlMap[natsYAMLPath])
+		if err != nil {
+			log.WithError(err).Fatal("Failed to write YAMLs")
+		}
+		yamlIdx++
+
+		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/manifests/%02d_bootstrap.yaml", yamlIdx), vzYamlMap[vizierBootstrapYAMLPath])
+		if err != nil {
+			log.WithError(err).Fatal("Failed to write YAMLs")
+		}
+
+		if err = w.Close(); err != nil {
+			if err != nil {
+				log.WithError(err).Fatal("Failed to write YAMLs")
+			}
+		}
+
+		return
+	}
+
 	_ = pxanalytics.Client().Enqueue(&analytics.Track{
 		UserId: pxconfig.Cfg().UniqueClientID,
 		Event:  "Deploy Initiated",
 		Properties: analytics.NewProperties().
 			Set("cloud_addr", cloudAddr),
 	})
-
-	clusterInfo, clusterID, err := getClusterInfo(cloudAddr)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("Deploying to Pixie Cluster ID: %s.\n", clusterID.String())
 
 	if clusterInfo.Status != cloudapipb.CS_UNKNOWN && clusterInfo.Status != cloudapipb.CS_DISCONNECTED {
 		log.Fatal("Cluster must be disconnected to deploy, please delete the install if you want to re-deploy")
@@ -303,7 +457,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	kubeConfig := k8s.GetConfig()
 	clientset := k8s.GetClientset(kubeConfig)
 	od := k8s.ObjectDeleter{
 		Namespace:  namespace,
@@ -319,24 +472,8 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	fmt.Printf("Found %v nodes\n", numNodes)
 
-	// Get grpc connection to cloud.
-	cloudConn, err := utils.GetCloudClientConnection(cloudAddr)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	versionString := viper.GetString("use_version")
-	if len(versionString) == 0 {
-		// Fetch latest version.
-		versionString, err = getLatestVizierVersion(cloudConn)
-		if err != nil {
-			log.WithError(err).Fatal("Failed to fetch Vizier versions")
-		}
-	}
-	fmt.Printf("Installing version: %s\n", versionString)
-
 	namespaceJob := newTaskWrapper("Creating namespace", func() error {
-		return optionallyCreateNamespace(clientset, namespace)
+		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamlMap[nsYAMLPath]))
 	})
 
 	clusterRoleJob := newTaskWrapper("Deleting stale Pixie objects, if any", func() error {
@@ -344,70 +481,22 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		return od.DeleteByLabel("component=vizier", k8s.AllResourceKinds...)
 	})
 
-	certJob := newTaskWrapper("Installing certs", func() error {
-		return optionallyInstallCerts(clientset, namespace)
-	})
-
-	secretJob := newTaskWrapper("Loading secrets", func() error {
-		versionString := viper.GetString("use_version")
-		var credsData string
-		if credsFile == "" {
-			credsData = mustGetImagePullSecret(cloudConn)
-		} else {
-			credsData = mustReadCredsFile(credsFile)
-		}
-
-		secretName, _ := cmd.Flags().GetString("secret_name")
-		err := k8s.CreateDockerConfigJSONSecret(clientset, namespace, secretName, credsData)
-		if err != nil {
-			return err
-		}
-		return LoadClusterSecrets(clientset, cloudAddr, clusterID.String(), namespace, devCloudNS, kubeConfig, getSentryDSN(versionString))
-	})
-
-	var yamlMap map[string]string
-	yamlJob := newTaskWrapper("Downloading Vizier YAMLs", func() error {
-		creds, err := auth.LoadDefaultCredentials()
-		if err != nil {
-			return err
-		}
-		yamlMap, err = artifacts.FetchVizierYAMLMap(cloudConn, creds.Token, versionString)
-		if err != nil {
-			return err
-		}
-
-		extractPath, _ := cmd.Flags().GetString("extract_yaml")
-		// If extract_path is specified, write out yamls to file.
-		if extractPath != "" {
-			filePath := path.Join(extractPath, "yamls.tar")
-			writer, err := os.OpenFile(filePath, os.O_RDWR, 0755)
+	certJob := newTaskWrapper("Deploying certs, secrets, and configmaps", func() error {
+		for k, v := range yamlMap {
+			if k == nsYAMLPath {
+				continue
+			}
+			err := k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(v))
 			if err != nil {
 				return err
 			}
-			defer writer.Close()
-			w := tar.NewWriter(writer)
-
-			for k, v := range yamlMap {
-				if err = w.WriteHeader(&tar.Header{Name: k, Size: int64(len(v))}); err != nil {
-					return err
-				}
-				if _, err = w.Write([]byte(v)); err != nil {
-					return err
-				}
-
-			}
-			if err := w.Close(); err != nil {
-				return err
-			}
 		}
-
 		return nil
 	})
 
 	setupJobs := []utils.Task{
-		namespaceJob, clusterRoleJob, certJob, secretJob, yamlJob,
-	}
-	jr := utils.NewSerialTaskRunner(setupJobs)
+		namespaceJob, clusterRoleJob, certJob}
+	jr = utils.NewSerialTaskRunner(setupJobs)
 	err = jr.RunAndMonitor()
 	if err != nil {
 		_ = pxanalytics.Client().Enqueue(&analytics.Track{
@@ -421,7 +510,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	depsOnly, _ := cmd.Flags().GetBool("deps_only")
 
-	deploy(cloudConn, clusterID, versionString, clientset, kubeConfig, yamlMap, namespace, depsOnly)
+	deploy(cloudConn, clusterID, versionString, clientset, kubeConfig, vzYamlMap, namespace, depsOnly)
 	waitForHealthCheck(cloudAddr, clientset, namespace, numNodes)
 }
 
@@ -537,25 +626,12 @@ func getCurrentCluster() string {
 	return out.String()
 }
 
-func optionallyInstallCerts(clientset *kubernetes.Clientset, namespace string) error {
-	secret := k8s.GetSecret(clientset, namespace, "service-tls-certs")
-	// Check if secrets already exist. If not, then create them.
-	if secret == nil {
-		certs.DefaultInstallCerts(namespace, clientset)
-	}
-	return nil
-}
+func generateNamespaceYAML(namespace string) (string, error) {
+	ns := &v1.Namespace{}
+	ns.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Namespace"))
+	ns.Name = namespace
 
-func optionallyCreateNamespace(clientset *kubernetes.Clientset, namespace string) error {
-	_, err := clientset.CoreV1().Namespaces().Get(context.Background(), namespace, metav1.GetOptions{})
-	if err == nil {
-		return nil
-	}
-	_, err = clientset.CoreV1().Namespaces().Create(context.Background(), &v1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
+	return k8s.ConvertResourceToYAML(ns)
 }
 
 func optionallyDeleteClusterrole(clientset *kubernetes.Clientset) error {
@@ -654,11 +730,6 @@ func deploy(cloudConn *grpc.ClientConn, clusterID *uuid.UUID, version string, cl
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 			defer cancel()
 			return waitForCluster(ctx, cloudConn, clusterID)
-		}),
-		newTaskWrapper("Initiating deploy/upgrade", func() error {
-			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-			defer cancel()
-			return initiateUpdate(ctx, cloudConn, clusterID, version)
 		}),
 	}
 

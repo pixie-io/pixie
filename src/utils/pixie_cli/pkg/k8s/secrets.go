@@ -1,8 +1,11 @@
 package k8s
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -11,7 +14,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/client-go/kubernetes"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
 // DeleteSecret deletes the given secret in kubernetes.
@@ -33,107 +35,132 @@ func GetSecret(clientset *kubernetes.Clientset, namespace, name string) *v1.Secr
 // https://github.com/kubernetes/kubectl/blob/3874cf79897cfe1e070e592391792658c44b78d4/pkg/generate/versioned/secret.go.
 
 // CreateGenericSecret creates a generic secret in kubernetes.
-func CreateGenericSecret(clientset *kubernetes.Clientset, namespace, name string, fromFiles map[string]string) error {
+func CreateGenericSecret(namespace, name string, fromFiles map[string]string) (*v1.Secret, error) {
 	secret := &v1.Secret{}
 	secret.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
 
 	secret.Name = name
 	secret.Data = map[string][]byte{}
+	secret.Namespace = namespace
 
 	err := handleFromFileSources(secret, fromFiles)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = clientset.CoreV1().Secrets(namespace).Create(context.Background(), secret, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
+	return secret, nil
 }
 
 // CreateGenericSecretFromLiterals creates a generic secret in kubernetes using literals.
-func CreateGenericSecretFromLiterals(clientset *kubernetes.Clientset, namespace, name string, fromLiterals map[string]string) error {
+func CreateGenericSecretFromLiterals(namespace, name string, fromLiterals map[string]string) (*v1.Secret, error) {
 	secret := &v1.Secret{}
 	secret.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
 
 	secret.Name = name
 	secret.Data = map[string][]byte{}
+	secret.Namespace = namespace
 
 	for k, v := range fromLiterals {
 		secret.Data[k] = []byte(v)
 	}
 
-	_, err := clientset.CoreV1().Secrets(namespace).Create(context.Background(), secret, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
+	return secret, nil
 }
 
 // CreateConfigMapFromLiterals creates a configmap in kubernetes using literals.
-func CreateConfigMapFromLiterals(clientset *kubernetes.Clientset, namespace, name string, fromLiterals map[string]string) error {
+func CreateConfigMapFromLiterals(namespace, name string, fromLiterals map[string]string) (*v1.ConfigMap, error) {
 	cm := &v1.ConfigMap{}
 	cm.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("ConfigMap"))
 
 	cm.Name = name
 	cm.Data = map[string]string{}
+	cm.Namespace = namespace
 
 	for k, v := range fromLiterals {
 		cm.Data[k] = v
 	}
 
-	_, err := clientset.CoreV1().ConfigMaps(namespace).Create(context.Background(), cm, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
+	return cm, nil
 }
 
 // CreateTLSSecret creates a TLS secret in kubernetes.
-func CreateTLSSecret(clientset *kubernetes.Clientset, namespace, name string, key string, cert string) error {
+func CreateTLSSecret(namespace, name string, key string, cert string) (*v1.Secret, error) {
 	tlsCrt, err := readFile(cert)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	tlsKey, err := readFile(key)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if _, err := tls.X509KeyPair(tlsCrt, tlsKey); err != nil {
-		return err
+		return nil, err
 	}
 
 	secret := &v1.Secret{}
+	secret.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
 	secret.Name = name
 	secret.Type = v1.SecretTypeTLS
 	secret.Data = map[string][]byte{}
 	secret.Data[v1.TLSCertKey] = []byte(tlsCrt)
 	secret.Data[v1.TLSPrivateKeyKey] = []byte(tlsKey)
+	secret.Namespace = namespace
 
-	_, err = clientset.CoreV1().Secrets(namespace).Create(context.Background(), secret, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
+	return secret, nil
 }
 
 // CreateDockerConfigJSONSecret creates a secret in the docker config format.
 // Currently the golang v1.Secret API doesn't perform the massaging of the credentials file that invoking
 // kubectl with a docker-registry secret (like below) does.
-func CreateDockerConfigJSONSecret(clientset *kubernetes.Clientset, namespace, name, credsData string) error {
-	_, err := clientset.CoreV1().Secrets(namespace).Get(context.Background(), name, metav1.GetOptions{})
-	if err == nil {
-		DeleteSecret(clientset, namespace, name)
+func CreateDockerConfigJSONSecret(namespace, name, credsData string) (*v1.Secret, error) {
+	secret := &v1.Secret{}
+	secret.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Secret"))
+	secret.Name = name
+	secret.Type = v1.SecretTypeDockerConfigJson
+	secret.Data = map[string][]byte{}
+
+	type dockerSecret struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+		Auth     string `json:"auth"`
 	}
 
-	args := []string{
-		"create", "secret", "docker-registry", name, "-n", namespace,
-		"--docker-server=gcr.io", "--docker-username=_json_key",
-		fmt.Sprintf("--docker-password=%s", credsData),
+	type dockerConfigAuth struct {
+		GcrIO dockerSecret `json:"gcr.io"`
 	}
-	return utils.ExecCommand("kubectl", args...)
+
+	type dockerConfig struct {
+		Auths dockerConfigAuth `json:"auths"`
+	}
+
+	encodedCredsData := "_json_key:" + credsData
+
+	credsBytes := []byte(encodedCredsData)
+	encodedCreds := new(bytes.Buffer)
+	encoder := base64.NewEncoder(base64.StdEncoding, encodedCreds)
+	encoder.Write(credsBytes)
+	encoder.Close()
+
+	s := dockerConfig{
+		Auths: dockerConfigAuth{
+			GcrIO: dockerSecret{
+				Username: "_json_key",
+				Password: credsData,
+				Auth:     encodedCreds.String(),
+			},
+		},
+	}
+
+	secretJSON, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+
+	secret.Data[v1.DockerConfigJsonKey] = secretJSON
+	secret.Namespace = namespace
+
+	return secret, nil
 }
 
 // readFile just reads a file into a byte array.

@@ -13,9 +13,11 @@ import (
 	"math/big"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s"
 )
@@ -154,21 +156,26 @@ func generateCerts(certPath string, caCertPath string, caKeyPath string, bitsize
 }
 
 // DefaultInstallCerts installs certs using the default options.
-func DefaultInstallCerts(namespace string, clientset *kubernetes.Clientset) {
-	err := installCertsUsingClientset("", "", "", namespace, 4096, clientset)
+func DefaultInstallCerts(namespace string, clientset *kubernetes.Clientset, config *rest.Config) {
+	err := installCertsUsingClientset("", "", "", namespace, 4096, clientset, config)
 	if err != nil {
 		fmt.Printf("Failed to install certs")
 	}
 }
 
-func installCertsUsingClientset(certPath string, caCertPath string, caKeyPath string, namespace string, bitsize int, clientset *kubernetes.Clientset) error {
+// DefaultGenerateCertYAMLs generates the yamls for certs with the default options.
+func DefaultGenerateCertYAMLs(namespace string) (string, error) {
+	return generateCertYAMLs("", "", "", namespace, 4096)
+}
+
+func generateCertYAMLs(certPath string, caCertPath string, caKeyPath string, namespace string, bitsize int) (string, error) {
 	var err error
 
 	deleteCerts := false
 	if certPath == "" {
 		certPath, err = ioutil.TempDir("", "certs")
 		if err != nil {
-			return err
+			return "", err
 		}
 		deleteCerts = true
 	}
@@ -182,7 +189,7 @@ func installCertsUsingClientset(certPath string, caCertPath string, caKeyPath st
 
 	err = generateCerts(certPath, caCertPath, caKeyPath, bitsize)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	serverKey := path.Join(certPath, "server.key")
@@ -194,20 +201,20 @@ func installCertsUsingClientset(certPath string, caCertPath string, caKeyPath st
 	clientKey := path.Join(certPath, "client.key")
 	clientCert := path.Join(certPath, "client.crt")
 
-	// Delete secrets in k8s.
-	k8s.DeleteSecret(clientset, namespace, "proxy-tls-certs")
-	k8s.DeleteSecret(clientset, namespace, "service-tls-certs")
-	k8s.DeleteSecret(clientset, namespace, "etcd-peer-tls-certs")
-	k8s.DeleteSecret(clientset, namespace, "etcd-client-tls-certs")
-	k8s.DeleteSecret(clientset, namespace, "etcd-server-tls-certs")
+	yamls := make([]string, 0)
 
 	// Create secrets in k8s.
-	err = k8s.CreateTLSSecret(clientset, namespace, "proxy-tls-certs", serverKey, serverCert)
+	proxyCert, err := k8s.CreateTLSSecret(namespace, "proxy-tls-certs", serverKey, serverCert)
 	if err != nil {
-		return err
+		return "", err
 	}
+	pcYaml, err := k8s.ConvertResourceToYAML(proxyCert)
+	if err != nil {
+		return "", err
+	}
+	yamls = append(yamls, pcYaml)
 
-	err = k8s.CreateGenericSecret(clientset, namespace, "service-tls-certs", map[string]string{
+	tlsCert, err := k8s.CreateGenericSecret(namespace, "service-tls-certs", map[string]string{
 		"server.key": serverKey,
 		"server.crt": serverCert,
 		"ca.crt":     caCert,
@@ -215,37 +222,75 @@ func installCertsUsingClientset(certPath string, caCertPath string, caKeyPath st
 		"client.crt": clientCert,
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
+	tcYaml, err := k8s.ConvertResourceToYAML(tlsCert)
+	if err != nil {
+		return "", err
+	}
+	yamls = append(yamls, tcYaml)
 
-	err = k8s.CreateGenericSecret(clientset, namespace, "etcd-peer-tls-certs", map[string]string{
+	etcdPeerCert, err := k8s.CreateGenericSecret(namespace, "etcd-peer-tls-certs", map[string]string{
 		"peer.key":    serverKey,
 		"peer.crt":    serverCert,
 		"peer-ca.crt": caCert,
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
+	epYaml, err := k8s.ConvertResourceToYAML(etcdPeerCert)
+	if err != nil {
+		return "", err
+	}
+	yamls = append(yamls, epYaml)
 
-	err = k8s.CreateGenericSecret(clientset, namespace, "etcd-client-tls-certs", map[string]string{
+	etcdClientCert, err := k8s.CreateGenericSecret(namespace, "etcd-client-tls-certs", map[string]string{
 		"etcd-client.key":    clientKey,
 		"etcd-client.crt":    clientCert,
 		"etcd-client-ca.crt": caCert,
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
+	ecYaml, err := k8s.ConvertResourceToYAML(etcdClientCert)
+	if err != nil {
+		return "", err
+	}
+	yamls = append(yamls, ecYaml)
 
-	err = k8s.CreateGenericSecret(clientset, namespace, "etcd-server-tls-certs", map[string]string{
+	etcdServerCert, err := k8s.CreateGenericSecret(namespace, "etcd-server-tls-certs", map[string]string{
 		"server.key":    serverKey,
 		"server.crt":    serverCert,
 		"server-ca.crt": caCert,
 	})
 	if err != nil {
+		return "", err
+	}
+	esYaml, err := k8s.ConvertResourceToYAML(etcdServerCert)
+	if err != nil {
+		return "", err
+	}
+	yamls = append(yamls, esYaml)
+
+	return "---\n" + strings.Join(yamls, "\n---\n"), nil
+}
+
+func installCertsUsingClientset(certPath string, caCertPath string, caKeyPath string, namespace string, bitsize int, clientset *kubernetes.Clientset, config *rest.Config) error {
+
+	// Delete secrets in k8s.
+	k8s.DeleteSecret(clientset, namespace, "proxy-tls-certs")
+	k8s.DeleteSecret(clientset, namespace, "service-tls-certs")
+	k8s.DeleteSecret(clientset, namespace, "etcd-peer-tls-certs")
+	k8s.DeleteSecret(clientset, namespace, "etcd-client-tls-certs")
+	k8s.DeleteSecret(clientset, namespace, "etcd-server-tls-certs")
+
+	yamls, err := generateCertYAMLs(certPath, caCertPath, caKeyPath, namespace, bitsize)
+
+	if err != nil {
 		return err
 	}
 
-	return nil
+	return k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamls))
 }
 
 // InstallCerts generates the necessary certs and installs them in kubernetes.
@@ -254,7 +299,7 @@ func InstallCerts(certPath string, caCertPath string, caKeyPath string, namespac
 	config := k8s.GetConfig()
 	clientset := k8s.GetClientset(config)
 
-	err := installCertsUsingClientset(certPath, caCertPath, caKeyPath, namespace, bitsize, clientset)
+	err := installCertsUsingClientset(certPath, caCertPath, caKeyPath, namespace, bitsize, clientset, config)
 	if err != nil {
 		fmt.Printf("Failed to install certs")
 	}
