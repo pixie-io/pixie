@@ -66,7 +66,7 @@ TEST_F(MySQLTraceBPFTest, MySQLStmtPrepareExecuteClose) {
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     const std::vector<size_t> target_record_indices =
-        FindRecordIdxMatchesPID(record_batch, kMySQLUPIDIdx, getpid());
+        FindRecordIdxMatchesPID(record_batch, kMySQLUPIDIdx, system.ClientPID());
     ASSERT_THAT(target_record_indices, SizeIs(3));
 
     EXPECT_EQ(
@@ -113,7 +113,7 @@ TEST_F(MySQLTraceBPFTest, MySQLQuery) {
     types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
     const std::vector<size_t> target_record_indices =
-        FindRecordIdxMatchesPID(record_batch, kMySQLUPIDIdx, getpid());
+        FindRecordIdxMatchesPID(record_batch, kMySQLUPIDIdx, system.ClientPID());
     ASSERT_THAT(target_record_indices, SizeIs(1));
 
     EXPECT_EQ("SELECT name FROM tag;",

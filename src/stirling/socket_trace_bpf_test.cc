@@ -115,22 +115,44 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
 
   DataTable data_table(kHTTPTable);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  types::ColumnWrapperRecordBatch record_batch =
-      FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
 
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
+  if (p.trace_role & kRoleClient) {
+    types::ColumnWrapperRecordBatch record_batch =
+        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system.ClientPID());
 
-  EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
-  EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
+    ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
-  // Additional verifications. These are common to all HTTP1.x tracing, so we decide to not
-  // duplicate them on all relevant tests.
-  EXPECT_EQ(1, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(0).val);
-  EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kJSON),
-            record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(0).val);
-  EXPECT_EQ(1, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(1).val);
-  EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kJSON),
-            record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
+    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
+
+    // Additional verifications. These are common to all HTTP1.x tracing, so we decide to not
+    // duplicate them on all relevant tests.
+    EXPECT_EQ(1, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kJSON),
+              record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(1, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kJSON),
+              record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(1).val);
+  }
+
+  if (p.trace_role & kRoleServer) {
+    types::ColumnWrapperRecordBatch record_batch =
+        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system.ServerPID());
+
+    ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
+
+    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
+    EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(1), HasSubstr("msg2"));
+
+    // Additional verifications. These are common to all HTTP1.x tracing, so we decide to not
+    // duplicate them on all relevant tests.
+    EXPECT_EQ(1, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kJSON),
+              record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(1, record_batch[kHTTPMajorVersionIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kJSON),
+              record_batch[kHTTPContentTypeIdx]->Get<types::Int64Value>(1).val);
+  }
 
   // TODO(oazizi): Check IPs.
 }
@@ -139,8 +161,10 @@ INSTANTIATE_TEST_SUITE_P(
     NonVecSyscalls, NonVecSyscallTests,
     ::testing::Values(SocketTraceBPFTestParams{SyscallPair::kWriteRead, kRoleClient},
                       SocketTraceBPFTestParams{SyscallPair::kWriteRead, kRoleServer},
+                      SocketTraceBPFTestParams{SyscallPair::kWriteRead, kRoleAll},
                       SocketTraceBPFTestParams{SyscallPair::kSendRecv, kRoleClient},
-                      SocketTraceBPFTestParams{SyscallPair::kSendRecv, kRoleServer}));
+                      SocketTraceBPFTestParams{SyscallPair::kSendRecv, kRoleServer},
+                      SocketTraceBPFTestParams{SyscallPair::kSendRecv, kRoleAll}));
 
 TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
   ConfigureBPFCapture(TrafficProtocol::kProtocolHTTP, kRoleAll);
@@ -158,20 +182,37 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
   {
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch record_batch =
-        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
 
-    ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
+    {
+      types::ColumnWrapperRecordBatch record_batch =
+          FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system.ClientPID());
+      ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
+    }
+
+    {
+      types::ColumnWrapperRecordBatch record_batch =
+          FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system.ServerPID());
+      ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
+    }
   }
 
   // Check that MySQL table did not capture any data.
   {
     DataTable data_table(kMySQLTable);
     source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-    types::ColumnWrapperRecordBatch record_batch =
-        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kMySQLUPIDIdx, getpid());
 
-    ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
+    {
+      types::ColumnWrapperRecordBatch record_batch = FindRecordsMatchingPID(
+          *data_table.ActiveRecordBatch(), kMySQLUPIDIdx, system.ClientPID());
+      ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
+    }
+
+    {
+      types::ColumnWrapperRecordBatch record_batch = FindRecordsMatchingPID(
+          *data_table.ActiveRecordBatch(), kMySQLUPIDIdx, system.ServerPID());
+
+      ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
+    }
   }
 }
 
@@ -195,20 +236,22 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
   {
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch record_batch =
-        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
 
-    ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
+    {
+      types::ColumnWrapperRecordBatch record_batch = FindRecordsMatchingPID(
+          *data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system1.ClientPID());
 
-    std::vector<std::pair<int64_t, std::string>> results;
-    for (int i = 0; i < 2; ++i) {
-      results.emplace_back(std::make_pair(
-          md::UPID(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(i).val).pid(),
-          record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(i)));
+      ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+      EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
     }
 
-    EXPECT_THAT(results, UnorderedElementsAre(Pair(getpid(), HasSubstr("msg1")),
-                                              Pair(getpid(), HasSubstr("msg2"))));
+    {
+      types::ColumnWrapperRecordBatch record_batch = FindRecordsMatchingPID(
+          *data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system2.ClientPID());
+
+      ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+      EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg2"));
+    }
   }
 }
 
@@ -242,17 +285,17 @@ TEST_F(SocketTraceBPFTest, StartTime) {
   DataTable data_table(kHTTPTable);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   types::ColumnWrapperRecordBatch record_batch =
-      FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
+      FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system.ClientPID());
 
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
   md::UPID upid0(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(0).val);
-  EXPECT_EQ(getpid(), upid0.pid());
+  EXPECT_EQ(system.ClientPID(), upid0.pid());
   EXPECT_LT(time_window_start, upid0.start_ts());
   EXPECT_GT(time_window_end, upid0.start_ts());
 
   md::UPID upid1(record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(1).val);
-  EXPECT_EQ(getpid(), upid1.pid());
+  EXPECT_EQ(system.ClientPID(), upid1.pid());
   EXPECT_LT(time_window_start, upid1.start_ts());
   EXPECT_GT(time_window_end, upid1.start_ts());
 }
@@ -288,24 +331,42 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
 
   DataTable data_table(kHTTPTable);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  types::ColumnWrapperRecordBatch record_batch =
-      FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, getpid());
 
-  // 2 for sendmsg() and 2 for recvmsg().
-  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
+  if (p.trace_role & kRoleServer) {
+    types::ColumnWrapperRecordBatch record_batch =
+        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system.ServerPID());
 
-  for (int i : {0, 2}) {
-    EXPECT_EQ(200, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(i).val);
-    EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(i)),
+    ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
+
+    EXPECT_EQ(200, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0)),
                 StrEq("a"));
-    EXPECT_THAT(std::string(record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(i)),
+    EXPECT_THAT(std::string(record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(0)),
                 StrEq("OK"));
-  }
-  for (int i : {1, 3}) {
-    EXPECT_EQ(404, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(i).val);
-    EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(i)),
+
+    EXPECT_EQ(404, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(1)),
                 StrEq("bc"));
-    EXPECT_THAT(std::string(record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(i)),
+    EXPECT_THAT(std::string(record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(1)),
+                StrEq("Not Found"));
+  }
+
+  if (p.trace_role & kRoleClient) {
+    types::ColumnWrapperRecordBatch record_batch =
+        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system.ClientPID());
+
+    ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
+
+    EXPECT_EQ(200, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0)),
+                StrEq("a"));
+    EXPECT_THAT(std::string(record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(0)),
+                StrEq("OK"));
+
+    EXPECT_EQ(404, record_batch[kHTTPRespStatusIdx]->Get<types::Int64Value>(1).val);
+    EXPECT_THAT(std::string(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(1)),
+                StrEq("bc"));
+    EXPECT_THAT(std::string(record_batch[kHTTPRespMessageIdx]->Get<types::StringValue>(1)),
                 StrEq("Not Found"));
   }
 }

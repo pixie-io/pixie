@@ -1,5 +1,8 @@
 #pragma once
 
+#include <sys/wait.h>
+#include <unistd.h>
+
 #include <memory>
 #include <string>
 #include <thread>
@@ -26,6 +29,8 @@ class ClientServerSystem {
 
   /**
    * Create and run a client-server system with the provided send-recv script.
+   * Server is run as a new thread (same PID).
+   * Client is run as a new process (different PID).
    *
    * @tparam TRecvFn: choose receive implementation from TCPSocket (&TCPSocket::Recv,
    * &TCPSocket::Read).
@@ -58,6 +63,13 @@ class ClientServerSystem {
   void RunClientServer(const SendRecvScript& script) {
     RunClientServerImpl(script)
   }
+
+ public:  // Required as an `arc lint` workaround.
+  // PID of client, if spawned. Otherwise -1.
+  uint32_t ClientPID() { return client_pid_; }
+
+  // PID of server, if spawned. Otherwise -1.
+  uint32_t ServerPID() { return server_pid_; }
 
  private:
   /**
@@ -213,11 +225,13 @@ class ClientServerSystem {
    * On odd-phases, it will expect to receive the script value.
    */
 #define SpawnClientImpl(script)                   \
-  client_thread_ = std::thread([this, script]() { \
+  client_pid_ = fork();                           \
+  if (client_pid_ == 0) {                         \
     client_.Connect(server_);                     \
     RunClient<TRecvFn, TSendFn>(script, client_); \
     client_.Close();                              \
-  });
+    exit(0);                                      \
+  }
 
   template <bool (TCPSocket::*TRecvFn)(std::string*) const,
             ssize_t (TCPSocket::*TSendFn)(std::string_view) const>
@@ -243,6 +257,7 @@ class ClientServerSystem {
    * On odd-phases, it will send the script value.
    */
 #define SpawnServerImpl(script)                         \
+  server_pid_ = getpid();                               \
   server_thread_ = std::thread([this, script]() {       \
     std::unique_ptr<TCPSocket> conn = server_.Accept(); \
     RunServer<TRecvFn, TSendFn>(script, *conn);         \
@@ -269,14 +284,17 @@ class ClientServerSystem {
 
   void JoinThreads() {
     server_thread_.join();
-    client_thread_.join();
+    waitpid(client_pid_, 0, 0);
   }
 
   TCPSocket client_;
   TCPSocket server_;
 
-  std::thread client_thread_;
+  uint32_t client_pid_ = -1;
+  uint32_t server_pid_ = -1;
+
   std::thread server_thread_;
+  // No thread for client, it is run via fork().
 };
 
 }  // namespace testing
