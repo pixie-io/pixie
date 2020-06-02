@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import * as React from 'react';
 
-import { IconButton } from '@material-ui/core';
+import { IconButton, Tooltip } from '@material-ui/core';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import { CSSProperties } from '@material-ui/core/styles/withStyles';
 import KeyboardArrowLeftIcon from '@material-ui/icons/KeyboardArrowLeft';
@@ -213,7 +213,9 @@ const Legend = React.memo((props: LegendProps) => {
           <div style={styles} className={classes.colorContainer}>
             <div className={classes.colorCircle} style={colorStyles} />
           </div>
-          <div style={styles} className={classes.key}>{entry.key}</div>
+          <Tooltip title={entry.key} interactive enterDelay={500}>
+            <div style={styles} className={classes.key}>{entry.key}</div>
+          </Tooltip>
           <div style={styles} className={classes.val}>{entry.val}</div>
         </div>);
     }
