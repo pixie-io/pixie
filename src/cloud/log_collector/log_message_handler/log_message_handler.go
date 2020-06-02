@@ -20,6 +20,7 @@ import (
 type LogMessageHandler struct {
 	ch        chan *nats.Msg
 	jsonCh    chan []byte
+	quitCh    chan bool
 	nc        *nats.Conn
 	es        *elastic.Client
 	esCtx     context.Context
@@ -39,6 +40,7 @@ func NewLogMessageHandler(esCtx context.Context, nc *nats.Conn, es *elastic.Clie
 	h := &LogMessageHandler{
 		ch:        make(chan *nats.Msg, bufferSize),
 		jsonCh:    make(chan []byte, bufferSize),
+		quitCh:    make(chan bool),
 		nc:        nc,
 		es:        es,
 		esCtx:     esCtx,
@@ -125,20 +127,27 @@ func (h *LogMessageHandler) runNATSHandler() {
 		h.handleNatsMessage(msg)
 	}
 	close(h.jsonCh)
-	h.jsonCh = nil
 }
 
 func (h *LogMessageHandler) doBulkIndex(b *elastic.BulkService) {
 	numActions := b.NumberOfActions()
 	start := time.Now()
-	_, err := b.Do(h.esCtx)
+	resp, err := b.Do(h.esCtx)
 	if err != nil {
 		log.WithError(err).
 			WithField("index", h.indexName).
 			Error("Failed to bulk index log messages.")
 		return
 	}
-	h.stats.Indexed(numActions, time.Since(start))
+	if len(resp.Failed()) > 0 {
+		numActions -= len(resp.Failed())
+		log.WithField("index", h.indexName).
+			WithField("failed items", resp.Failed()).
+			Error("Some items of the bulk index failed.")
+	}
+	if numActions > 0 {
+		h.stats.Indexed(numActions, time.Since(start))
+	}
 }
 
 func (h *LogMessageHandler) runElasticBulkIndexer() {
@@ -148,12 +157,12 @@ func (h *LogMessageHandler) runElasticBulkIndexer() {
 	timeout := time.NewTicker(5 * time.Second)
 	currentBulkReq := h.es.Bulk()
 
+forLoop:
 	for {
-		if h.jsonCh == nil {
-			break
-		}
 		doReq := false
 		select {
+		case <-h.quitCh:
+			break forLoop
 		case jsonBytes := <-h.jsonCh:
 			currentBulkReq.Add(elastic.NewBulkIndexRequest().
 				Doc(string(jsonBytes)).
@@ -172,6 +181,14 @@ func (h *LogMessageHandler) runElasticBulkIndexer() {
 			h.doBulkIndex(currentBulkReq)
 			currentBulkReq = h.es.Bulk()
 		}
+	}
+
+	// If quitCh receives a message, then jsonCh will be closed, so we can loop over the remaining
+	// jsonBytes in the channel.
+	for jsonBytes := range h.jsonCh {
+		currentBulkReq.Add(elastic.NewBulkIndexRequest().
+			Doc(string(jsonBytes)).
+			Index(h.indexName))
 	}
 
 	if currentBulkReq.NumberOfActions() > 0 {
@@ -208,12 +225,12 @@ func (h *LogMessageHandler) Stop() {
 		h.sub = nil
 	}
 	close(h.ch)
+	h.quitCh <- true
 	h.wg.Wait()
 	_, err := h.es.Refresh().Index(h.indexName).Do(h.esCtx)
 	if err != nil {
 		log.WithError(err).Error("Failed to refresh indices")
 	}
-
 }
 
 type logMessageHandlerStats struct {

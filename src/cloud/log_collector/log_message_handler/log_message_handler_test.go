@@ -61,7 +61,8 @@ func assertLogMsgInElastic(ctx context.Context, t *testing.T, logMsg, vizID, ind
 		Do(ctx)
 	require.Nil(t, err)
 
-	require.Equal(t, 1, int(searchResult.TotalHits()))
+	require.NotNilf(t, searchResult.Hits, "No search results")
+	require.Equal(t, 1, len(searchResult.Hits.Hits))
 	hit := searchResult.Hits.Hits[0]
 
 	var v map[string]interface{}
