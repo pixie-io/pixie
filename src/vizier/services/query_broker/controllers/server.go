@@ -10,7 +10,6 @@ import (
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/sync/singleflight"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -413,26 +412,27 @@ func (s *Server) ReceiveAgentQueryResult(ctx context.Context, req *querybrokerpb
 	return queryResponse, nil
 }
 
-func (s *Server) checkHealth(ctx context.Context) error {
+// checkHealth runs the health check and returns (request passed, health check error/nil).
+func (s *Server) checkHealth(ctx context.Context) (bool, error) {
 	checkVersionScript := `import px; px.display(px.Version())`
 	req := plannerpb.QueryRequest{
 		QueryStr: checkVersionScript,
 	}
 	resp, err := s.ExecuteQuery(ctx, &req)
 	if err != nil {
-		return err
+		return true, err
 	}
 	if resp.Status != nil && resp.Status.ErrCode != statuspb.OK {
-		return status.Error(codes.Code(resp.Status.ErrCode), resp.Status.Msg)
+		return false, status.Error(codes.Code(resp.Status.ErrCode), resp.Status.Msg)
 	}
 	if resp.QueryResult == nil || len(resp.QueryResult.Tables) != 1 || len(resp.QueryResult.Tables[0].RowBatches) != 1 {
-		return status.Error(codes.Unavailable, "results not returned on health check")
+		return false, status.Error(codes.Unavailable, "results not returned on health check")
 	}
 	if resp.QueryResult.Tables[0].RowBatches[0].NumRows != 1 {
-		return status.Error(codes.Unavailable, "bad results on healthcheck")
+		return false, status.Error(codes.Unavailable, "bad results on healthcheck")
 	}
 	// HealthCheck OK.
-	return nil
+	return false, nil
 }
 
 func (s *Server) checkHealthCached(ctx context.Context) error {
@@ -442,8 +442,13 @@ func (s *Server) checkHealthCached(ctx context.Context) error {
 	if currentTime.Sub(s.hcTime) < healthCheckInterval {
 		return s.hcStatus
 	}
+	reqOk, status := s.checkHealth(ctx)
+	if !reqOk || status != nil {
+		// If the request failed don't cache the results.
+		return status
+	}
 	s.hcTime = currentTime
-	s.hcStatus = s.checkHealth(ctx)
+	s.hcStatus = status
 	return s.hcStatus
 }
 
@@ -451,26 +456,23 @@ func (s *Server) checkHealthCached(ctx context.Context) error {
 func (s *Server) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.VizierService_HealthCheckServer) error {
 	// For now, just report itself as healthy.
 	for c := time.Tick(healthCheckInterval); ; {
-		var sg singleflight.Group
-		res, err, _ := sg.Do("hc", func() (interface{}, error) {
-			status := s.checkHealthCached(srv.Context())
-			return status, nil
-		})
-		if err != nil {
-			return err
-		}
+		hcStatus := s.checkHealthCached(srv.Context())
 		// Pass.
 		code := int32(codes.OK)
-		if res != nil {
-			hcStatus := res.(error)
+		if hcStatus != nil {
 			s, ok := status.FromError(hcStatus)
 			if !ok {
 				code = int32(codes.Unavailable)
 			} else {
 				code = int32(s.Code())
 			}
+
+			if code == int32(codes.Unauthenticated) {
+				// Request failed probably because of token expiration. Abort the request since this is not recoverable.
+				return status.Errorf(codes.Unauthenticated, "authentication error")
+			}
 		}
-		err = srv.Send(&vizierpb.HealthCheckResponse{
+		err := srv.Send(&vizierpb.HealthCheckResponse{
 			Status: &vizierpb.Status{
 				Code: code,
 			},

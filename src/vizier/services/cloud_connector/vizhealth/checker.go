@@ -66,17 +66,19 @@ func (c *Checker) run() {
 		}
 
 		go func() {
+			defer cancel()
 			for {
 				hc, err := resp.Recv()
-				if hc == nil {
-					// Channel closed.
+				if err != nil {
+					// Got an error. Return and wait for restart logic.
+					log.WithError(err).Error("Got error during Vizier Health Check, will retry")
 					c.updateHCResp(nil)
 					return
 				}
-				if err != nil {
-					// Got an error. Return and wait for restart logic.
-					log.WithError(err).Error("Got error during Vizier Health Check")
+				if hc == nil {
+					// Channel closed.
 					c.updateHCResp(nil)
+					log.Error("Got empty health check response, will retry")
 					return
 				}
 				c.updateHCResp(hc)
