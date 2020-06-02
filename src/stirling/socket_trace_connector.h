@@ -401,7 +401,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   absl::flat_hash_set<std::string> http2_probed_binaries_;
   absl::flat_hash_set<std::string> openssl_probed_binaries_;
 
-  std::shared_ptr<SocketTraceBPFTableManager> bpf_table_info_;
+  std::shared_ptr<ConnInfoMapManager> conn_info_map_mgr_;
+  std::unique_ptr<ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> > http2_symaddrs_map_;
 
   FRIEND_TEST(SocketTraceConnectorTest, AppendNonContiguousEvents);
   FRIEND_TEST(SocketTraceConnectorTest, NoEvents);

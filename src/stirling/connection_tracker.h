@@ -500,9 +500,8 @@ class ConnectionTracker {
     // different protocols.
   }
 
-  static void SetBPFTableManager(
-      const std::shared_ptr<SocketTraceBPFTableManager>& bpf_table_info) {
-    bpf_table_info_ = bpf_table_info;
+  static void SetConnInfoMapManager(const std::shared_ptr<ConnInfoMapManager>& conn_info_map_mgr) {
+    conn_info_map_mgr_ = conn_info_map_mgr;
   }
 
   void SetDebugTrace(int level) { debug_trace_level_ = level; }
@@ -519,10 +518,10 @@ class ConnectionTracker {
   bool IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_cidrs);
   void UpdateState(const std::vector<CIDRBlock>& cluster_cidrs);
 
-  // bpf_table_info_ is used to release BPF map resources when a ConnectionTracker is destroyed.
+  // conn_info_map_mgr_ is used to release BPF map resources when a ConnectionTracker is destroyed.
   // It is a safety net, since BPF should release the resources as long as the close() syscall is
   // made. Note that since there is only one global BPF map, this is a static/global structure.
-  static inline std::shared_ptr<SocketTraceBPFTableManager> bpf_table_info_;
+  static inline std::shared_ptr<ConnInfoMapManager> conn_info_map_mgr_;
 
   template <typename TFrameType>
   void DataStreamsToFrames() {

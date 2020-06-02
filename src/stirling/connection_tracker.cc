@@ -44,8 +44,8 @@ constexpr double kStitchFailureRateThreshold = 0.5;
 //--------------------------------------------------------------
 
 ConnectionTracker::~ConnectionTracker() {
-  if (bpf_table_info_ != nullptr) {
-    bpf_table_info_->ReleaseResources(conn_id_);
+  if (conn_info_map_mgr_ != nullptr) {
+    conn_info_map_mgr_->ReleaseResources(conn_id_);
   }
 }
 

@@ -217,8 +217,12 @@ Status SocketTraceConnector::InitImpl() {
     socket_info_mgr_ = s.ConsumeValueOrDie();
   }
 
-  bpf_table_info_ = std::make_shared<SocketTraceBPFTableManager>(&bpf());
-  ConnectionTracker::SetBPFTableManager(bpf_table_info_);
+  conn_info_map_mgr_ = std::make_shared<ConnInfoMapManager>(&bpf());
+  ConnectionTracker::SetConnInfoMapManager(conn_info_map_mgr_);
+
+  http2_symaddrs_map_ = std::make_unique<ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t>>(
+      bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("http2_symaddrs_map"));
+  // http2_symaddrs_map_mgr_ = std::make_unique<HTTP2SymAddrsMapManager>(&bpf());
 
   return Status::OK();
 }
@@ -611,15 +615,11 @@ std::thread SocketTraceConnector::RunDeployUProbesThread(
 void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pids) {
   const std::lock_guard<std::mutex> lock(deploy_uprobes_mutex_);
 
-  // Suspected to be an expensive call, so perform outside the for loop.
-  ebpf::BPFHashTable<uint32_t, struct conn_symaddrs_t> http2_symaddrs_map =
-      bpf().get_hash_table<uint32_t, struct conn_symaddrs_t>("http2_symaddrs_map");
-
   // Before deploying new probes, clean-up map entries for old processes that are now dead.
   for (const auto& pid : proc_tracker_.deleted_upids()) {
-    ebpf::StatusTuple s = http2_symaddrs_map.remove_value(pid.pid());
-    LOG_IF(WARNING, s.code() != 0)
-        << absl::StrCat("Could not remove entry from http2_symaddrs_map. Message=", s.msg());
+    ebpf::StatusTuple s = http2_symaddrs_map_->remove_value(pid.pid());
+    VLOG_IF(1, s.code() != 0) << absl::StrCat(
+        "Could not remove entry from http2_symaddrs_map. Message=", s.msg());
   }
 
   int uprobe_count = 0;
@@ -659,7 +659,7 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
     // HTTP2 Probes.
     if (protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled) {
       StatusOr<int> attach_status =
-          AttachHTTP2UProbes(binary, elf_reader.get(), pid_vec, &http2_symaddrs_map);
+          AttachHTTP2UProbes(binary, elf_reader.get(), pid_vec, http2_symaddrs_map_.get());
       if (!attach_status.ok()) {
         LOG_FIRST_N(WARNING, 10) << absl::Substitute("Failed to attach HTTP2 Uprobes to $0: $1",
                                                      binary, attach_status.ToString());

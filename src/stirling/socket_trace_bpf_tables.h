@@ -14,9 +14,9 @@
 namespace pl {
 namespace stirling {
 
-class SocketTraceBPFTableManager {
+class ConnInfoMapManager {
  public:
-  explicit SocketTraceBPFTableManager(ebpf::BPF* bpf)
+  explicit ConnInfoMapManager(ebpf::BPF* bpf)
       : conn_info_map_(bpf->get_hash_table<uint64_t, struct conn_info_t>("conn_info_map")) {}
 
   void ReleaseResources(struct conn_id_t conn_id) {
