@@ -118,8 +118,6 @@ isCLIBuildRun =  env.JOB_NAME.startsWith("pixielabs-master-cli-release-build/")
 isVizierBuildRun = env.JOB_NAME.startsWith("pixielabs-master-vizier-release-build/")
 isCloudStagingBuildRun = env.JOB_NAME.startsWith("pixielabs-master-cloud-staging-build/")
 isCloudProdBuildRun = env.JOB_NAME.startsWith("pixielabs-master-cloud-release-build/")
-isDocsStagingBuildRun = env.JOB_NAME.startsWith("pixielabs-master-docs-staging-build/")
-isDocsProdBuildRun = env.JOB_NAME.startsWith("pixielabs-master-docs-release-build/")
 
 // TODO(zasgar): Fix the coverage job which is broken due to GCC upgrade.
 runCoverageJob = false; // isMasterRun
@@ -220,9 +218,6 @@ def codeReviewPostBuild = {
 
   phabConnector.addArtifactLink(env.BUILD_URL + '/doxygen', 'doxygen.uri', 'Doxygen')
 
-  // Gatsby websites aren't portable to sub urls. So link to the download so we can host them locally.
-  phabConnector.addArtifactLink(env.BUILD_URL + '/customer-docs/*zip*/customer-docs.zip',
-                                'customer-docs.uri', 'Customer Docs')
 }
 
 def writeBazelRCFile() {
@@ -414,17 +409,6 @@ def publishStoryBook() {
   ])
 }
 
-
-def publishCustomerDocs() {
-  publishHTML([allowMissing: true,
-    alwaysLinkToLastBuild: true,
-    keepAll: true,
-    reportDir: 'build-customer-docs/public',
-    reportFiles: 'index.html',
-    reportName: 'customer-docs'
-  ])
-}
-
 def publishDoxygenDocs() {
   publishHTML([allowMissing: true,
     alwaysLinkToLastBuild: true,
@@ -542,14 +526,6 @@ builders['Build & Test All (opt + UI)'] = {
         sh "tar -zxf ${storybookBundle}"
         stashOnGCS('build-ui-storybook-static', 'storybook_static')
         stashList.add('build-ui-storybook-static')
-      }
-
-      // Untar the customer docs.
-      def customerBundle = 'bazel-bin/docs/customer/bundle.tar.gz'
-      if(shFileExists(customerBundle)) {
-        sh "tar -zxf ${customerBundle}"
-        stashOnGCS('build-customer-docs', 'public/')
-        stashList.add('build-customer-docs')
       }
     }
   }
@@ -676,8 +652,6 @@ def buildScriptForCommits = {
             dockerStep('', devDockerImageExtrasWithTag) {
                 sh './ci/build_cloud_artifacts.sh'
                 archiveArtifacts 'manifest_cloud.json'
-                sh './ci/build_customer_docs_artifacts.sh'
-                archiveArtifacts 'manifest_customer_docs.json'
             }
           }
         }
@@ -697,7 +671,6 @@ def buildScriptForCommits = {
         sh 'find . -name test_attempts -type d -exec rm -rf {} +'
 
         publishStoryBook()
-        publishCustomerDocs()
         publishDoxygenDocs()
 
         // Archive clang-tidy logs.
@@ -956,52 +929,6 @@ def buildScriptForCloudProdRelease = {
   }
 }
 
-def buildScriptForDocsProdRelease = {
-  node(WORKER_NODE) {
-    currentBuild.result = 'SUCCESS'
-    deleteDir()
-    try {
-      stage('Checkout code') {
-        checkoutAndInitialize()
-      }
-      stage('Build & Push Artifacts') {
-        deployWithSkaffold('prod', 'plc', 'skaffold/skaffold_customer_docs.yaml')
-      }
-    }
-    catch(err) {
-      currentBuild.result = 'FAILURE'
-      echo "Exception thrown:\n ${err}"
-      echo "Stacktrace:"
-      err.printStackTrace()
-    }
-
-    postBuildActions()
-  }
-}
-
-def buildScriptForDocsStagingRelease = {
-  node(WORKER_NODE) {
-    currentBuild.result = 'SUCCESS'
-    deleteDir()
-    try {
-      stage('Checkout code') {
-        checkoutAndInitialize()
-      }
-      stage('Build & Push Artifacts') {
-        deployWithSkaffold('staging', 'plc-staging', 'skaffold/skaffold_customer_docs.yaml')
-      }
-    }
-    catch(err) {
-      currentBuild.result = 'FAILURE'
-      echo "Exception thrown:\n ${err}"
-      echo "Stacktrace:"
-      err.printStackTrace()
-    }
-
-    postBuildActions()
-  }
-}
-
 if(isNightlyTestRegressionRun) {
   buildScriptForNightlyTestRegression()
 } else if(isCLIBuildRun) {
@@ -1012,10 +939,6 @@ if(isNightlyTestRegressionRun) {
   buildScriptForCloudStagingRelease()
 } else if (isCloudProdBuildRun) {
   buildScriptForCloudProdRelease()
-} else if (isDocsProdBuildRun) {
-  buildScriptForDocsProdRelease()
-} else if (isDocsStagingBuildRun) {
-  buildScriptForDocsStagingRelease()
 } else {
   buildScriptForCommits()
 }

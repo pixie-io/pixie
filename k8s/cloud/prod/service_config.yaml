@@ -6,7 +6,6 @@ metadata:
 data:
   PL_AUTH_SERVICE: kubernetes:///auth-service.plc:50100
   PL_API_SERVICE_HTTP: api-service.plc.svc.cluster.local:51200
-  PL_DOCS_SERVICE_HTTP: docs-service.plc.svc.cluster.local:59000
   PL_PROFILE_SERVICE: kubernetes:///profile-service.plc:51500
   PL_PROJECT_MANAGER_SERVICE: kubernetes:///project-manager-service.plc:50300
   PL_VZMGR_SERVICE: kubernetes:///vzmgr-service.plc:51800

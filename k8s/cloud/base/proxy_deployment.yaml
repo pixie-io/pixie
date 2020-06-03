@@ -47,11 +47,6 @@ spec:
             configMapKeyRef:
               name: pl-service-config
               key: PL_API_SERVICE_HTTP
-        - name: PL_DOCS_SERVICE_HTTP
-          valueFrom:
-            configMapKeyRef:
-              name: pl-service-config
-              key: PL_DOCS_SERVICE_HTTP
         - name: PL_SEGMENT_UI_WRITE_KEY
           valueFrom:
             secretKeyRef:
