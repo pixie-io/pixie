@@ -36,6 +36,13 @@ import (
 
 const healthCheckInterval = 5 * time.Second
 
+type contextKey string
+
+const (
+	execStartKey       = contextKey("execStart")
+	compileCompleteKey = contextKey("compileDone")
+)
+
 // Planner describes the interface for any planner.
 type Planner interface {
 	Plan(planState *distributedpb.LogicalPlannerState, req *plannerpb.QueryRequest) (*distributedpb.LogicalPlannerResult, error)
@@ -176,6 +183,7 @@ func makePlannerState(pemInfo []*agentpb.Agent, kelvinList []*agentpb.Agent, age
 
 // ExecuteQueryWithPlanner executes a query with the provided planner.
 func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.QueryRequest, queryID uuid.UUID, planner Planner, planOpts *planpb.PlanOptions) (*queryresultspb.QueryResult, *statuspb.Status, error) {
+	ctx = context.WithValue(ctx, execStartKey, time.Now())
 	aCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return nil, nil, err
@@ -253,6 +261,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 		return nil, nil, err
 	}
 
+	ctx = context.WithValue(ctx, compileCompleteKey, time.Now())
 	// When the status is not OK, this means it's a compilation error on the query passed in.
 	if plannerResultPB.Status.ErrCode != statuspb.OK {
 		return nil, plannerResultPB.Status, nil
@@ -297,6 +306,11 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 		return nil, nil, err
 	}
 
+	execStartTime := ctx.Value(execStartKey).(time.Time)
+	compilationCompleteTime := ctx.Value(compileCompleteKey).(time.Time)
+	if queryResult != nil {
+		queryResult.TimingInfo.CompilationTimeNs = compilationCompleteTime.Sub(execStartTime).Nanoseconds()
+	}
 	return queryResult, nil, nil
 }
 
@@ -492,6 +506,7 @@ func (s *Server) HealthCheck(req *vizierpb.HealthCheckRequest, srv vizierpb.Vizi
 
 // ExecuteScript executes the script and sends results through the gRPC stream.
 func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.VizierService_ExecuteScriptServer) error {
+	ctx := context.WithValue(srv.Context(), execStartKey, time.Now())
 	// TODO(philkuz) we should move the query id into the api so we can track how queries propagate through the system.
 	queryID := uuid.NewV4()
 
@@ -519,7 +534,6 @@ func (s *Server) ExecuteScript(req *vizierpb.ExecuteScriptRequest, srv vizierpb.
 	planner := logicalplanner.New(&udfInfo)
 	defer planner.Free()
 
-	ctx := srv.Context()
 	aCtx, err := authcontext.FromContext(ctx)
 	if err != nil {
 		return err

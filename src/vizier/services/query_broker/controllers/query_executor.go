@@ -28,9 +28,11 @@ type QueryExecutor struct {
 	queryResult *queryresultspb.QueryResult
 	// extraTables are tables get added to results as sidecars. For example, things like query plan.
 	extraTables []*schemapb.Table
-	conn        *nats.Conn
-	mux         sync.Mutex
-	done        chan bool
+	// Store the compilation time so we can write it to the results later.
+	compilationTime time.Duration
+	conn            *nats.Conn
+	mux             sync.Mutex
+	done            chan bool
 }
 
 // NewQueryExecutor creates a Query Executor for a specific query.
