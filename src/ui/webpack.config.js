@@ -11,6 +11,7 @@ const ReplacePlugin = require('webpack-plugin-replace');
 const YAML = require('yaml');
 const fs = require('fs');
 const utils = require('./webpack-utils');
+const CompressionPlugin = require('compression-webpack-plugin');
 
 const isDevServer = process.argv.find((v) => v.includes('webpack-dev-server'));
 let topLevelDir = '';
@@ -50,6 +51,10 @@ if (isDevServer) {
 } else {
   // Archive plugin has problems with dev server.
   plugins.push(
+    new CompressionPlugin({
+      algorithm: 'gzip',
+      threshold: 1024,
+    }),
     new ArchivePlugin({
       output: join(resolve(__dirname, 'dist'), 'bundle'),
       format: ['tar'],

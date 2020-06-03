@@ -105,6 +105,7 @@
     "bootstrap": "^4.4.1",
     "clsx": "^1.0.4",
     "codemirror": "5.x",
+    "compression-webpack-plugin": "^4.0.0",
     "copy-webpack-plugin": "^5.0.5",
     "dagre": "^0.8.5",
     "dagre-d3": "^0.6.4",
