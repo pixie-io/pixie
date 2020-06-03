@@ -4,6 +4,4 @@ commonLabels:
   app: pl-monitoring
 namespace: pl
 resources:
-- 00-etcd-prereqs.yaml
-- 10-etcd-deployment.yaml
-- 20-etcd-cluster.yaml
+- etcd.yaml
