@@ -81,7 +81,7 @@ int main(int argc, char** argv) {
   err_handler.set_manager(manager.get());
 
   PL_CHECK_OK(manager->Run());
-  PL_CHECK_OK(manager->Stop(std::chrono::seconds{5}));
+  PL_CHECK_OK(manager->Stop(std::chrono::seconds{1}));
 
   // Clear the manager, because it has been stopped.
   err_handler.set_manager(nullptr);

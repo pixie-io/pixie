@@ -42,27 +42,30 @@ void SignalAction::RegisterFatalErrorHandler(const FatalErrorHandlerInterface& h
 constexpr int SignalAction::kFatalSignals[];
 
 void SignalAction::SigHandler(int sig, siginfo_t* info, void* ucontext) {
-  LOG(ERROR) << absl::StrFormat("Caught %s, suspect faulting address %p. Trace:", strsignal(sig),
-                                info->si_addr);
+  // Don't dump stack trace for term signal.
+  if (sig != SIGTERM) {
+    LOG(ERROR) << absl::StrFormat("Caught %s, suspect faulting address %p. Trace:", strsignal(sig),
+                                  info->si_addr);
 
-  // First print out the current threads stack in as safe of a way as possible.
-  threadstacks::BackwardsTrace tracer;
-  ErrLog("**************************\n");
-  tracer.Capture(ucontext);
-  tracer.stack().PrettyPrint([](const char* str) { ErrLog(str); });
-  ErrLog("**************************\n");
+    // First print out the current threads stack in as safe of a way as possible.
+    threadstacks::BackwardsTrace tracer;
+    ErrLog("**************************\n");
+    tracer.Capture(ucontext);
+    tracer.stack().PrettyPrint([](const char* str) { ErrLog(str); });
+    ErrLog("**************************\n");
 
-  // Try to get stack of other threads. This might cause a crash because it's not async-signal-safe.
-  std::string error;
-  StackTraceCollector collector;
-  auto results = collector.Collect(&error);
-  if (results.empty()) {
-    std::cerr << "StackTrace collection failed: " << error << std::endl;
-  } else {
-    const auto& trace = StackTraceCollector::ToPrettyString(results);
-    ErrLog(trace.c_str());
+    // Try to get stack of other threads. This might cause a crash because it's not
+    // async-signal-safe.
+    std::string error;
+    StackTraceCollector collector;
+    auto results = collector.Collect(&error);
+    if (results.empty()) {
+      std::cerr << "StackTrace collection failed: " << error << std::endl;
+    } else {
+      const auto& trace = StackTraceCollector::ToPrettyString(results);
+      ErrLog(trace.c_str());
+    }
   }
-
   FailureFunctionList* list = fatal_error_handlers.exchange(nullptr, std::memory_order_relaxed);
   if (list) {
     // Finally after logging the stack trace, call any registered crash handlers.

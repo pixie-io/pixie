@@ -24,15 +24,6 @@ KelvinManager::QueryBrokerServiceSPtr KelvinManager::CreateDefaultQueryBrokerStu
     std::string_view query_broker_addr, std::shared_ptr<grpc::ChannelCredentials> channel_creds) {
   // We need to move the channel here since gRPC mocking is done by the stub.
   auto chan = grpc::CreateChannel(std::string(query_broker_addr), channel_creds);
-  // Try to connect to the query broker.
-  grpc_connectivity_state state = chan->GetState(true);
-  while (state != grpc_connectivity_state::GRPC_CHANNEL_READY) {
-    LOG(ERROR) << "Failed to connect to query broker at: " << query_broker_addr;
-    // Do a small sleep to avoid busy loop.
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    state = chan->GetState(true);
-  }
-  LOG(INFO) << "Connected to query broker at: " << query_broker_addr;
   return std::make_shared<QueryBrokerService::Stub>(chan);
 }
 
