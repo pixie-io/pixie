@@ -2,7 +2,7 @@ import { scrollbarStyles } from 'common/mui-theme';
 import ClientContext from 'common/vizier-grpc-client-context';
 import ProfileMenu from 'containers/live/profile-menu';
 import {dataFromProto} from 'utils/result-data-utils';
-import {convertHeartbeatMS, StatusCell, VizierStatusGroup} from './utils';
+import {AdminTooltip, convertHeartbeatMS, StatusCell, VizierStatusGroup} from './utils';
 
 import Breadcrumbs from '@material-ui/core/Breadcrumbs';
 import Tab from '@material-ui/core/Tab';
@@ -143,14 +143,14 @@ const AgentsTableContent = ({agents}) => {
       <TableBody>
         {agentsDisplay.map((agent) => (
           <TableRow key={agent.id}>
-            <Tooltip title={agent.status} placement='right'>
+            <AdminTooltip title={agent.status}>
               <TableCell>
                 <StatusCell statusGroup={agent.statusGroup}/>
               </TableCell>
-            </Tooltip>
-            <Tooltip title={agent.id} placement='right'>
+            </AdminTooltip>
+            <AdminTooltip title={agent.id}>
               <TableCell>{agent.idShort}</TableCell>
-            </Tooltip>
+            </AdminTooltip>
             <TableCell>{agent.hostname}</TableCell>
             <TableCell>{agent.lastHeartbeat}</TableCell>
             <TableCell>{agent.uptime}</TableCell>

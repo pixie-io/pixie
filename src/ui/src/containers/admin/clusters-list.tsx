@@ -1,4 +1,4 @@
-import {convertHeartbeatMS, StatusCell, VizierStatusGroup} from './utils';
+import {AdminTooltip, convertHeartbeatMS, StatusCell, VizierStatusGroup} from './utils';
 
 import { useQuery } from '@apollo/react-hooks';
 import Table from '@material-ui/core/Table';
@@ -94,20 +94,20 @@ export const ClustersTable = () => {
       <TableBody>
         {clusters.map((cluster: ClusterDisplay) => (
           <TableRow key={cluster.id}>
-            <Tooltip title={cluster.status} placement='right'>
+            <AdminTooltip title={cluster.status}>
               <TableCell>
                 <StatusCell statusGroup={cluster.statusGroup}/>
               </TableCell>
-            </Tooltip>
-            <Tooltip title={cluster.id} placement='right'>
+            </AdminTooltip>
+            <AdminTooltip title={cluster.id}>
               <TableCell>
                 <Link to={`/admin/cluster/${cluster.id}`}>{cluster.idShort}</Link>
               </TableCell>
-            </Tooltip>
+            </AdminTooltip>
             <TableCell>{cluster.name}</TableCell>
-            <Tooltip title={cluster.vizierVersion} placement='right'>
+            <AdminTooltip title={cluster.vizierVersion}>
               <TableCell>{cluster.vizierVersionShort}</TableCell>
-            </Tooltip>
+            </AdminTooltip>
             <TableCell>{cluster.clusterVersion}</TableCell>
             <TableCell>{cluster.lastHeartbeat}</TableCell>
             <TableCell>{cluster.mode}</TableCell>

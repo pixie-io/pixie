@@ -2,6 +2,7 @@ import UnknownIcon from '@material-ui/icons/Brightness1';
 import HealthyIcon from '@material-ui/icons/CheckCircle';
 import UnhealthyIcon from '@material-ui/icons/Error';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import Tooltip from '@material-ui/core/Tooltip';
 import * as React from 'react';
 
 const useStyles = makeStyles((theme: Theme) => {
@@ -14,6 +15,14 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     unknown: {
       color: theme.palette.foreground.grey1,
+    },
+  });
+});
+
+const tooltipStyles = makeStyles(() => {
+  return createStyles({
+    tooltip: {
+      margin: 0,
     },
   });
 });
@@ -52,4 +61,13 @@ export const StatusCell = ({statusGroup}) => {
     default:
       return (<UnknownIcon fontSize='small' className={classes.unknown}/>);
   }
+}
+
+export const AdminTooltip = ({children, title}) => {
+  const classes = tooltipStyles();
+  return (
+    <Tooltip title={title} placement='bottom' interactive classes={classes}>
+    {children}
+    </Tooltip>
+  );
 }
