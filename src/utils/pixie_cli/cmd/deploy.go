@@ -311,7 +311,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		if err != nil {
 			return err
 		}
-		nsYAMLPath = fmt.Sprintf("./pixie_yamls/manifests/%02d_namespace.yaml", yamlIdx)
+		nsYAMLPath = fmt.Sprintf("./pixie_yamls/00_namespace/%02d_namespace.yaml", yamlIdx)
 		yamlMap[nsYAMLPath] = nsYAML
 
 		yamlIdx++
@@ -322,7 +322,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		if err != nil {
 			return err
 		}
-		yamlMap[fmt.Sprintf("./pixie_yamls/secrets/%02d_cert.yaml", yamlIdx)] = certYAMLs
+		yamlMap[fmt.Sprintf("./pixie_yamls/01_secrets/%02d_cert.yaml", yamlIdx)] = certYAMLs
 
 		yamlIdx++
 		return nil
@@ -343,14 +343,14 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		if err != nil {
 			return err
 		}
-		yamlMap[fmt.Sprintf("./pixie_yamls/secrets/%02d_secret.yaml", yamlIdx)] = dYaml
+		yamlMap[fmt.Sprintf("./pixie_yamls/01_secrets/%02d_secret.yaml", yamlIdx)] = dYaml
 		yamlIdx++
 
 		csYAMLs, err := GenerateClusterSecretYAMLs(cloudAddr, clusterID.String(), namespace, devCloudNS, kubeConfig, getSentryDSN(versionString), inputVersionStr)
 		if err != nil {
 			return err
 		}
-		yamlMap[fmt.Sprintf("./pixie_yamls/secrets/%02d_secret.yaml", yamlIdx)] = csYAMLs
+		yamlMap[fmt.Sprintf("./pixie_yamls/01_secrets/%02d_secret.yaml", yamlIdx)] = csYAMLs
 
 		yamlIdx++
 
@@ -410,19 +410,19 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		}
 
 		// Write etcd + nats before bootstrap YAML.
-		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/manifests/%02d_etcd.yaml", yamlIdx), vzYamlMap[etcdYAMLPath])
+		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/02_manifests/%02d_etcd.yaml", yamlIdx), vzYamlMap[etcdYAMLPath])
 		if err != nil {
 			log.WithError(err).Fatal("Failed to write YAMLs")
 		}
 		yamlIdx++
 
-		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/manifests/%02d_nats.yaml", yamlIdx), vzYamlMap[natsYAMLPath])
+		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/02_manifests/%02d_nats.yaml", yamlIdx), vzYamlMap[natsYAMLPath])
 		if err != nil {
 			log.WithError(err).Fatal("Failed to write YAMLs")
 		}
 		yamlIdx++
 
-		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/manifests/%02d_bootstrap.yaml", yamlIdx), vzYamlMap[vizierBootstrapYAMLPath])
+		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/02_manifests/%02d_bootstrap.yaml", yamlIdx), vzYamlMap[vizierBootstrapYAMLPath])
 		if err != nil {
 			log.WithError(err).Fatal("Failed to write YAMLs")
 		}
