@@ -207,14 +207,19 @@ class PodInfo : public K8sMetadataObject {
 class ContainerInfo {
  public:
   ContainerInfo() = delete;
-  ContainerInfo(CID cid, int64_t start_time_ns, int64_t stop_time_ns = 0)
-      : cid_(std::move(cid)), start_time_ns_(start_time_ns), stop_time_ns_(stop_time_ns) {}
+  ContainerInfo(CID cid, std::string_view name, int64_t start_time_ns, int64_t stop_time_ns = 0)
+      : cid_(std::move(cid)),
+        name_(std::string(name)),
+        start_time_ns_(start_time_ns),
+        stop_time_ns_(stop_time_ns) {}
 
   explicit ContainerInfo(const pl::shared::k8s::metadatapb::ContainerUpdate& container_update_info)
-      : ContainerInfo(container_update_info.cid(), container_update_info.start_timestamp_ns(),
+      : ContainerInfo(container_update_info.cid(), container_update_info.name(),
+                      container_update_info.start_timestamp_ns(),
                       container_update_info.stop_timestamp_ns()) {}
 
   const CID& cid() const { return cid_; }
+  const std::string& name() const { return name_; }
 
   void set_pod_id(std::string_view pod_id) { pod_id_ = pod_id; }
   const UID& pod_id() const { return pod_id_; }
@@ -262,6 +267,7 @@ class ContainerInfo {
 
  private:
   const CID cid_;
+  const std::string name_;
   UID pod_id_ = "";
 
   /**

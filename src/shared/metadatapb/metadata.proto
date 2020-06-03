@@ -22,4 +22,5 @@ enum MetadataType {
   NAMESPACE = 2004;
   NODE_NAME = 2005;
   HOSTNAME = 2006;
+  CONTAINER_NAME = 2007;
 }

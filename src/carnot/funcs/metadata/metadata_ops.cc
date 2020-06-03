@@ -21,6 +21,7 @@ void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<ServiceIDToServiceNameUDF>("service_id_to_service_name");
   registry->RegisterOrDie<ServiceNameToServiceIDUDF>("service_name_to_service_id");
   registry->RegisterOrDie<UPIDToContainerIDUDF>("upid_to_container_id");
+  registry->RegisterOrDie<UPIDToContainerNameUDF>("upid_to_container_name");
   registry->RegisterOrDie<UPIDToNamespaceUDF>("upid_to_namespace");
   registry->RegisterOrDie<UPIDToPodIDUDF>("upid_to_pod_id");
   registry->RegisterOrDie<UPIDToPodNameUDF>("upid_to_pod_name");

@@ -98,6 +98,18 @@ inline const md::ContainerInfo* UPIDToContainer(const pl::md::AgentMetadataState
   return md->k8s_metadata_state().ContainerInfoByID(pid->cid());
 }
 
+class UPIDToContainerNameUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
+    auto md = GetMetadataState(ctx);
+    auto container_info = UPIDToContainer(md, upid_value);
+    if (container_info == nullptr) {
+      return "";
+    }
+    return std::string(container_info->name());
+  }
+};
+
 inline const pl::md::PodInfo* UPIDtoPod(const pl::md::AgentMetadataState* md,
                                         types::UInt128Value upid_value) {
   auto container_info = UPIDToContainer(md, upid_value);

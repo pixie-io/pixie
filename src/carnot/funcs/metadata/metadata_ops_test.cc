@@ -131,6 +131,17 @@ TEST_F(MetadataOpsTest, upid_to_container_id_test) {
   udf_tester.ForInput(upid3).Expect("");
 }
 
+TEST_F(MetadataOpsTest, upid_to_container_name_test) {
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  auto udf_tester = pl::carnot::udf::UDFTester<UPIDToContainerNameUDF>(std::move(function_ctx));
+  auto upid1 = types::UInt128Value(528280977975, 89101);
+  udf_tester.ForInput(upid1).Expect("running_container");
+  auto upid2 = types::UInt128Value(528280977975, 468);
+  udf_tester.ForInput(upid2).Expect("terminating_container");
+  auto upid3 = types::UInt128Value(528280977975, 123);
+  udf_tester.ForInput(upid3).Expect("");
+}
+
 TEST_F(MetadataOpsTest, upid_to_service_id_test) {
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
   auto udf_tester = pl::carnot::udf::UDFTester<UPIDToServiceIDUDF>(std::move(function_ctx));

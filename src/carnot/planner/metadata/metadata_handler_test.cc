@@ -14,6 +14,7 @@ TEST(MetadataPropertyTests, retrieval) {
   auto md_handle = MetadataHandler::Create();
   EXPECT_TRUE(md_handle->HasProperty("service_name"));
   EXPECT_TRUE(md_handle->HasProperty("pod_name"));
+  EXPECT_TRUE(md_handle->HasProperty("container_name"));
   EXPECT_TRUE(md_handle->HasProperty("pid"));
   EXPECT_OK(md_handle->GetProperty("pod_name"));
   EXPECT_OK(md_handle->GetProperty("service_name"));
@@ -49,8 +50,9 @@ TEST_P(MetadataGetPropertyTests, has_property) {
   EXPECT_OK(property_status);
 }
 
-std::vector<std::string> metadata_strs = {"service_name", "service_id",   "pod_name",
-                                          "pod_id",       "container_id", "deployment_id"};
+std::vector<std::string> metadata_strs = {"service_name",  "service_id",   "pod_name",
+                                          "pod_id",        "container_id", "deployment_id",
+                                          "container_name"};
 
 INSTANTIATE_TEST_SUITE_P(GetPropertyTestSuites, MetadataGetPropertyTests,
                          ::testing::ValuesIn(metadata_strs));
@@ -72,7 +74,10 @@ TEST_P(MetadataAliasPropertyTests, has_property) {
   EXPECT_EQ(alias_status.ValueOrDie(), property_status.ValueOrDie());
 }
 std::vector<std::tuple<std::string, std::string>> alias_to_original = {
-    {"service", "service_name"}, {"pod", "pod_name"}, {"deployment", "deployment_name"}};
+    {"service", "service_name"},
+    {"pod", "pod_name"},
+    {"deployment", "deployment_name"},
+    {"container", "container_name"}};
 
 INSTANTIATE_TEST_SUITE_P(AliasPropertyTestSuites, MetadataAliasPropertyTests,
                          ::testing::ValuesIn(alias_to_original));
