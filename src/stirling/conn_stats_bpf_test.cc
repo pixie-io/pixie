@@ -47,16 +47,9 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
     EXPECT_THAT(bytes_sent, 10);
     EXPECT_THAT(bytes_rcvd, 8);
   }
-
-  // TODO(yzhao): Investigate whey client-side does not get recorded.
-  //  {
-  //    auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, cs.ClientPID());
-  //    ASSERT_THAT(indices, SizeIs(1));
-  //    int bytes_sent = AccessRecordBatch<types::Int64Value>(record_batch,
-  //    conn_stats_idx::kBytesSent, indices[0]).val; int bytes_rcvd =
-  //    AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kBytesRecv,
-  //    indices[0]).val; EXPECT_THAT(bytes_sent, 8); EXPECT_THAT(bytes_rcvd, 10);
-  //  }
+  // Client process is not discovered by ConnectorContext (StandaloneContext) because it is
+  // short-lived, and SocketTraceConnector does not export connection stats of processes that are
+  // not reported, so client-side connection stats won't be exposed.
 }
 
 // Test fixture that starts SocketTraceConnector after the connection was already established.
