@@ -34,8 +34,8 @@ constexpr DataElement kConnStatsElements[] = {
 // clang-format on
 
 constexpr auto kConnStatsTable = DataTableSchema(
-    "conn_stats", kConnStatsElements, /* default_sampling_period */ std::chrono::milliseconds{1000},
-    /* default_push_period */ std::chrono::milliseconds{1000});
+    "conn_stats", kConnStatsElements, /* default_sampling_period */ std::chrono::milliseconds{5000},
+    /* default_push_period */ std::chrono::milliseconds{5000});
 
 namespace conn_stats_idx {
 
