@@ -312,8 +312,9 @@ func (v *VizierClusterInfo) UpdateOrInstallCluster(ctx context.Context, req *clo
 	}
 
 	resp, err := v.VzMgr.UpdateOrInstallVizier(ctx, &cvmsgspb.UpdateOrInstallVizierRequest{
-		VizierID: req.ClusterID,
-		Version:  req.Version,
+		VizierID:     req.ClusterID,
+		Version:      req.Version,
+		RedeployEtcd: req.RedeployEtcd,
 	})
 	if err != nil {
 		return nil, err

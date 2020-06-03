@@ -93,11 +93,12 @@ func (o *ObjectDeleter) DeleteNamespace() error {
 		return err
 	}
 
-	return o.runDelete(r)
+	_, err = o.runDelete(r)
+	return err
 }
 
 // DeleteByLabel delete objects that match the labels and specified by resourceKinds. Waits for deletion.
-func (o *ObjectDeleter) DeleteByLabel(selector string, resourceKinds ...string) error {
+func (o *ObjectDeleter) DeleteByLabel(selector string, resourceKinds ...string) (int, error) {
 	rca := &restClientAdapter{
 		clientset:  o.Clientset,
 		restConfig: o.RestConfig,
@@ -116,17 +117,17 @@ func (o *ObjectDeleter) DeleteByLabel(selector string, resourceKinds ...string) 
 
 	err := r.Err()
 	if err != nil {
-		return err
+		return 0, err
 	}
 	o.dynamicClient, err = f.DynamicClient()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	return o.runDelete(r)
 }
 
-func (o *ObjectDeleter) runDelete(r *resource.Result) error {
+func (o *ObjectDeleter) runDelete(r *resource.Result) (int, error) {
 	r = r.IgnoreErrors(errors.IsNotFound)
 	deletedInfos := []*resource.Info{}
 	uidMap := cmdwait.UIDMap{}
@@ -166,10 +167,10 @@ func (o *ObjectDeleter) runDelete(r *resource.Result) error {
 		return nil
 	})
 	if err != nil {
-		return err
+		return 0, err
 	}
 	if found == 0 {
-		return nil
+		return 0, nil
 	}
 
 	effectiveTimeout := o.Timeout
@@ -190,7 +191,7 @@ func (o *ObjectDeleter) runDelete(r *resource.Result) error {
 			ErrOut: ioutil.Discard,
 		},
 	}
-	return waitOptions.RunWait()
+	return found, waitOptions.RunWait()
 }
 
 func (o *ObjectDeleter) deleteResource(info *resource.Info, deleteOptions *metav1.DeleteOptions) (runtime.Object, error) {

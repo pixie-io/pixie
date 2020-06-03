@@ -17,6 +17,7 @@ import (
 )
 
 const (
+	etcdYAMLPath   = "./yamls/vizier_deps/etcd_prod.yaml"
 	vizierYAMLPath = "./yamls/vizier/vizier_prod.yaml"
 	deleteTimeout  = 5 * time.Minute
 )
@@ -87,8 +88,9 @@ func main() {
 		RestConfig: kubeConfig,
 		Timeout:    deleteTimeout,
 	}
+
 	// Delete everything but updater dependencies.
-	err = od.DeleteByLabel("component=vizier,vizier-updater-dep!=true", k8s.AllResourceKinds...)
+	_, err = od.DeleteByLabel("component=vizier,vizier-updater-dep!=true", k8s.AllResourceKinds...)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to delete old components")
 	}
@@ -98,5 +100,42 @@ func main() {
 		log.WithError(err).Fatalf("Failed to install vizier")
 	}
 
+	// Always attempt to delete old version of etcd operator.
+	oldEtcdExists, err := od.DeleteByLabel("app=pl-monitoring", "etcdclusters.etcd.database.coreos.com")
+
+	// Redeploy etcd.
+	if viper.GetBool("redeploy_etcd") || oldEtcdExists > 0 {
+
+		if oldEtcdExists == 0 {
+			_, err = od.DeleteByLabel("app=pl-monitoring", "StatefulSet")
+			if err != nil {
+				log.WithError(err).Fatal("Could not delete existing etcd")
+			}
+		}
+
+		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[etcdYAMLPath])
+		if err != nil {
+			log.WithError(err).Fatalf("Failed to redeploy etcd")
+		}
+	}
+
 	log.Info("Done with update/install!")
+}
+
+func retryDeploy(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlContents string) error {
+	tries := 12
+	var err error
+	for tries > 0 {
+		err = k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents))
+		if err == nil {
+			return nil
+		}
+
+		time.Sleep(5 * time.Second)
+		tries--
+	}
+	if tries == 0 {
+		return err
+	}
+	return nil
 }

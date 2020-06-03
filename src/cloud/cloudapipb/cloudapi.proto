@@ -138,6 +138,8 @@ message UpdateOrInstallClusterRequest {
   // The version to upgrade/install the cluster as. If no version is specified, we assume we should
   // upgrade to the latest version.
   string version = 2;
+  // Whether or not this upgrade should restart the etcd operator.
+  bool redeploy_etcd = 3;
 }
 
 // UpdateOrInstallClusterResponse is a response to an UpdateOrInstallClusterRequest.

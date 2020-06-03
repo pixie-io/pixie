@@ -33,6 +33,7 @@ rules:
   - apps
   - rbac.authorization.k8s.io
   - extensions
+  - etcd.database.coreos.com
   resources:
   - clusterroles
   - clusterrolebindings
@@ -47,4 +48,7 @@ rules:
   - roles
   - rolebindings
   - serviceaccounts
+  - etcdclusters.etcd.database.coreos.com
+  - etcdclusters
+  - statefulsets
   verbs: ["*"]

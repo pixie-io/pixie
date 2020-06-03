@@ -208,6 +208,8 @@ message UpdateOrInstallVizierRequest {
   string version = 2;
   // The token the Vizier should use to make authenticated requests to the cloud.
   string token = 3;
+  // Whether or not this upgrade should restart the etcd operator.
+  bool redeploy_etcd = 4;
 }
 
 // UpdateOrInstallVizierResponse is a response to an UpdateOrInstallVizierRequest.

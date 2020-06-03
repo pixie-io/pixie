@@ -484,7 +484,8 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	clusterRoleJob := newTaskWrapper("Deleting stale Pixie objects, if any", func() error {
 		// TODO(zasgar/michelle): Only run this if we see stale objects.
-		return od.DeleteByLabel("component=vizier", k8s.AllResourceKinds...)
+		_, err := od.DeleteByLabel("component=vizier", k8s.AllResourceKinds...)
+		return err
 	})
 
 	certJob := newTaskWrapper("Deploying certs, secrets, and configmaps", func() error {
@@ -678,7 +679,7 @@ func waitForCluster(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.
 	}
 }
 
-func initiateUpdate(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.UUID, version string) error {
+func initiateUpdate(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.UUID, version string, redeployEtcd bool) error {
 	client := cloudapipb.NewVizierClusterInfoClient(conn)
 
 	creds, err := auth.LoadDefaultCredentials()
@@ -687,8 +688,9 @@ func initiateUpdate(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.
 	}
 
 	req := &cloudapipb.UpdateOrInstallClusterRequest{
-		ClusterID: utils2.ProtoFromUUID(clusterID),
-		Version:   version,
+		ClusterID:    utils2.ProtoFromUUID(clusterID),
+		Version:      version,
+		RedeployEtcd: redeployEtcd,
 	}
 
 	ctxWithCreds := metadata.AppendToOutgoingContext(ctx, "authorization",

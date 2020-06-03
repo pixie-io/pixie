@@ -27,6 +27,9 @@ func init() {
 	CLIUpdateCmd.Flags().StringP("use_version", "v", "", "Select a specific version to install")
 	_ = CLIUpdateCmd.Flags().MarkHidden("use_version")
 	_ = viper.BindPFlag("use_version", CLIUpdateCmd.Flags().Lookup("use_version"))
+
+	VizierUpdateCmd.Flags().BoolP("redeploy_etcd", "e", false, "Whether or not to redeploy etcd during the update")
+	_ = viper.BindPFlag("redeploy_etcd", VizierUpdateCmd.Flags().Lookup("redeploy_etcd"))
 }
 
 // UpdateCmd is the "update" sub-command of the CLI.
@@ -53,6 +56,7 @@ var VizierUpdateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		versionString := viper.GetString("use_version")
 		cloudAddr := viper.GetString("cloud_addr")
+		redeployEtcd := viper.GetBool("redeploy_etcd")
 
 		// Get grpc connection to cloud.
 		cloudConn, err := utils.GetCloudClientConnection(cloudAddr)
@@ -102,7 +106,7 @@ var VizierUpdateCmd = &cobra.Command{
 		defer cancel()
 		updateJobs := []utils.Task{
 			newTaskWrapper("Initiating Update", func() error {
-				return initiateUpdate(ctx, cloudConn, clusterID, versionString)
+				return initiateUpdate(ctx, cloudConn, clusterID, versionString, redeployEtcd)
 			}),
 			newTaskWrapper("Wait for update", func() error {
 				timer := time.NewTicker(5 * time.Second)

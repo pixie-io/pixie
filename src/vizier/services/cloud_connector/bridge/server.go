@@ -3,6 +3,7 @@ package bridge
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -50,6 +51,8 @@ spec:
               key: cloud-token
         - name: PL_VIZIER_VERSION
           value: __PL_VIZIER_VERSION__
+        - name: PL_REDEPLOY_ETCD
+          value: __PL_REDEPLOY_ETCD__
         - name: PL_CLIENT_TLS_CERT
           value: /certs/client.crt
         - name: PL_CLIENT_TLS_KEY
@@ -287,6 +290,7 @@ func (s *Bridge) handleUpdateMessage(msg *types.Any) error {
 	// TODO(michelle): Fill in the YAML contents.
 	job, err := s.vzInfo.ParseJobYAML(UpdaterJobYAML, map[string]string{"updater": pb.Version}, map[string]string{
 		"PL_VIZIER_VERSION": pb.Version,
+		"PL_REDEPLOY_ETCD":  fmt.Sprintf("%v", pb.RedeployEtcd),
 	})
 	if err != nil {
 		log.WithError(err).Error("Could not parse job")
