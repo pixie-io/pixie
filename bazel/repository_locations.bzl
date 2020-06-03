@@ -213,4 +213,9 @@ REPOSITORY_LOCATIONS = dict(
         sha256 = "87b5884741427220d3a33df1363ae0e8b898099fbc59f1c451113f6732891014",
         urls = ["https://github.com/nlohmann/json/releases/download/v3.7.3/include.zip"],
     ),
+    com_github_badaix_jsonrpcpp = dict(
+        sha256 = "ebfe924cd7cfa5ff314de217f19d18c6bbfbd85c826765bd52f611f865922ae8",
+        strip_prefix = "jsonrpcpp-1.3.2",
+        urls = ["https://github.com/badaix/jsonrpcpp/archive/v1.3.2.tar.gz"],
+    ),
 )

@@ -97,6 +97,7 @@ def _cc_deps():
     _repo_impl("com_github_arun11299_cpp_jwt", build_file = "//third_party:cpp_jwt.BUILD")
     _repo_impl("com_github_cyan4973_xxhash", build_file = "//third_party:xxhash.BUILD")
     _repo_impl("com_github_nlohmann_json", build_file = "//third_party:nlohmann_json.BUILD")
+    _repo_impl("com_github_badaix_jsonrpcpp", build_file = "//third_party:jsonrpcpp.BUILD")
 
     _com_github_nghttp2_nghttp2()
     _com_github_threadstacks()
