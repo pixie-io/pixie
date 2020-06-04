@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzerrors"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
@@ -161,4 +162,19 @@ func (s *Service) Delete(ctx context.Context, req *uuidpb.UUID) (*types.Empty, e
 	}
 
 	return &types.Empty{}, nil
+}
+
+// FetchOrgUserIDUsingDeploymentKey gets the org and user ID based on the deployment key.
+func (s *Service) FetchOrgUserIDUsingDeploymentKey(ctx context.Context, key string) (uuid.UUID, uuid.UUID, error) {
+	query := `SELECT org_id, user_id from vizier_deployment_keys WHERE PGP_SYM_DECRYPT(key::bytea, $2)=$1`
+	var orgID uuid.UUID
+	var userID uuid.UUID
+	err := s.db.QueryRowxContext(ctx, query, key, s.dbKey).Scan(&orgID, &userID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return uuid.Nil, uuid.Nil, vzerrors.ErrDeploymentKeyNotFound
+		}
+		return uuid.Nil, uuid.Nil, err
+	}
+	return orgID, userID, nil
 }

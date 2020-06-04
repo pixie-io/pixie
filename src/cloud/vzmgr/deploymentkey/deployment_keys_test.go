@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/schema"
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzerrors"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
@@ -51,8 +52,8 @@ func createTestContext() context.Context {
 
 func loadTestData(t *testing.T, db *sqlx.DB) {
 	insertVizierDeploymentKeys := `INSERT INTO vizier_deployment_keys(id, org_id, user_id, key, description) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5), $6)`
-	db.MustExec(insertVizierDeploymentKeys, testKey1ID, testAuthOrgID, testAuthOrgID, "key1", testDBKey, "here is a desc")
-	db.MustExec(insertVizierDeploymentKeys, testKey2ID, testAuthOrgID, testAuthOrgID, "key2", testDBKey, "here is another one")
+	db.MustExec(insertVizierDeploymentKeys, testKey1ID, testAuthOrgID, testAuthUserID, "key1", testDBKey, "here is a desc")
+	db.MustExec(insertVizierDeploymentKeys, testKey2ID, testAuthOrgID, testAuthUserID, "key2", testDBKey, "here is another one")
 	db.MustExec(insertVizierDeploymentKeys, testNonAuthUserKeyID.String(), testNonAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", "key2", testDBKey, "some other desc")
 }
 
@@ -243,4 +244,33 @@ func TestDeploymentKeyService_Delete_NonExistentKey(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Nil(t, resp)
 	assert.Equal(t, codes.NotFound, status.Code(err))
+}
+
+func TestService_FetchOrgUserIDUsingDeploymentKey(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	ctx := createTestContext()
+	svc := New(db, testDBKey)
+
+	orgID, userID, err := svc.FetchOrgUserIDUsingDeploymentKey(ctx, "key1")
+	assert.Nil(t, err)
+	assert.Equal(t, testAuthOrgID, orgID)
+	assert.Equal(t, testAuthUserID, userID)
+}
+
+func TestService_FetchOrgUserIDUsingDeploymentKey_BadKey(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	ctx := createTestContext()
+	svc := New(db, testDBKey)
+
+	orgID, userID, err := svc.FetchOrgUserIDUsingDeploymentKey(ctx, "some rando key that does not exist")
+	assert.NotNil(t, err)
+	assert.Equal(t, vzerrors.ErrDeploymentKeyNotFound, err)
+	assert.Equal(t, uuid.Nil, orgID)
+	assert.Equal(t, uuid.Nil, userID)
 }

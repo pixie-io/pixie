@@ -26,7 +26,7 @@ var (
 
 type fakeDF struct{}
 
-func (f *fakeDF) FetchOrgUserIDUsingDeploymentKey(key string) (uuid.UUID, uuid.UUID, error) {
+func (f *fakeDF) FetchOrgUserIDUsingDeploymentKey(ctx context.Context, key string) (uuid.UUID, uuid.UUID, error) {
 	if key == testValidDeploymentKey {
 		return testOrgID, testUserID, nil
 	}
@@ -36,7 +36,7 @@ func (f *fakeDF) FetchOrgUserIDUsingDeploymentKey(key string) (uuid.UUID, uuid.U
 type fakeProvisioner struct {
 }
 
-func (f *fakeProvisioner) ProvisionOrClaimVizier(orgID uuid.UUID, userID uuid.UUID, clusterUID string) (uuid.UUID, error) {
+func (f *fakeProvisioner) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, userID uuid.UUID, clusterUID string) (uuid.UUID, error) {
 	if testOrgID == orgID && testUserID == userID && clusterUID == "cluster1" {
 		return testValidClusterID, nil
 	}

@@ -13,7 +13,7 @@ import (
 
 // InfoFetcher fetches information about deployments using the key.
 type InfoFetcher interface {
-	FetchOrgUserIDUsingDeploymentKey(string) (uuid.UUID, uuid.UUID, error)
+	FetchOrgUserIDUsingDeploymentKey(context.Context, string) (uuid.UUID, uuid.UUID, error)
 }
 
 // VizierProvisioner provisions a new Vizier.
@@ -21,7 +21,7 @@ type VizierProvisioner interface {
 	// ProvisionVizier creates the vizier, with specified org_id, user_id, cluster_uid. Returns
 	// Cluster ID or error. If it already exists it will return the current cluster ID. Will return an error if the cluster is
 	// currently active (ie. Not disconnected).
-	ProvisionOrClaimVizier(uuid.UUID, uuid.UUID, string) (uuid.UUID, error)
+	ProvisionOrClaimVizier(context.Context, uuid.UUID, uuid.UUID, string) (uuid.UUID, error)
 }
 
 // Service is the deployment service.
@@ -41,7 +41,7 @@ func (s *Service) RegisterVizierDeployment(ctx context.Context, req *vzmgrpb.Reg
 		return nil, status.Error(codes.InvalidArgument, "empty cluster UID is not allowed")
 	}
 	// Fetch the orgID and userID based on the deployment key.
-	orgID, userID, err := s.deploymentInfoFetcher.FetchOrgUserIDUsingDeploymentKey(req.DeploymentKey)
+	orgID, userID, err := s.deploymentInfoFetcher.FetchOrgUserIDUsingDeploymentKey(ctx, req.DeploymentKey)
 	if err != nil {
 		return nil, status.Error(codes.Unauthenticated, "invalid/unknown deployment key")
 	}
@@ -50,7 +50,7 @@ func (s *Service) RegisterVizierDeployment(ctx context.Context, req *vzmgrpb.Reg
 	// 2. If the UID matches then return that cluster.
 	// 3. Otherwise, pick a cluster with no UID specified and claim it.
 	// 4. If no empty clusters exist then we create a new cluster.
-	clusterID, err := s.vp.ProvisionOrClaimVizier(orgID, userID, req.K8sClusterUID)
+	clusterID, err := s.vp.ProvisionOrClaimVizier(ctx, orgID, userID, req.K8sClusterUID)
 	if err != nil {
 		return nil, vzerrors.ToGRPCError(err)
 
