@@ -1173,10 +1173,17 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
 
   absl::flat_hash_set<md::UPID> upids = ctx->GetUPIDs();
 
-  for (const auto& [key, stats] : connection_stats_.agg_stats()) {
+  auto& agg_stats = connection_stats_.mutable_agg_stats();
+
+  for (auto iter = agg_stats.begin(); iter != agg_stats.end(); ++iter) {
+    const auto& key = iter->first;
+    const auto& stats = iter->second;
+
     md::UPID current_upid(ctx->GetASID(), key.upid.tgid, key.upid.start_time_ticks);
     if (!upids.contains(current_upid)) {
-      VLOG(1) << "Ignore because of not in MDS upids, upid: " << current_upid.String();
+      // TODO(yzhao): It makes sense to push out one last record for the final state of the exited
+      // UPID.
+      agg_stats.erase(iter);
       continue;
     }
 

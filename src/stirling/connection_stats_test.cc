@@ -100,7 +100,7 @@ TEST_F(ConnectionStatsTest, ClientSizeAggregationRecord) {
   conn_stats_.AddDataEvent(tracker, data_event);
   conn_stats_.AddDataEvent(tracker, data_event);
 
-  EXPECT_THAT(conn_stats_.agg_stats(),
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
               ElementsAre(Pair(AggKeyIs(1, kProtocolHTTP, kRoleClient, "1.1.1.1"),
                                StatsIs(1, 0, 24690, 24690))));
 
@@ -111,13 +111,13 @@ TEST_F(ConnectionStatsTest, ClientSizeAggregationRecord) {
   conn_stats_.AddConnCloseEvent(tracker);
   // Tests that after receiving conn close event for a connection, another same close event wont
   // increment the connection.
-  EXPECT_THAT(conn_stats_.agg_stats(),
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
               ElementsAre(Pair(AggKeyIs(1, kProtocolHTTP, kRoleClient, "1.1.1.1"),
                                StatsIs(1, 1, 24690, 24690))));
 
   conn_stats_.AddConnCloseEvent(tracker);
   // The conn_close is not incremented.
-  EXPECT_THAT(conn_stats_.agg_stats(),
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(),
               ElementsAre(Pair(AggKeyIs(1, kProtocolHTTP, kRoleClient, "1.1.1.1"),
                                StatsIs(1, 1, 24690, 24690))));
 }
@@ -144,7 +144,7 @@ TEST_F(ConnectionStatsTest, DisabledConnectionTracker) {
 
   conn_stats_.AddDataEvent(tracker, data_event);
 
-  EXPECT_THAT(conn_stats_.agg_stats(), IsEmpty());
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(), IsEmpty());
 }
 
 }  // namespace stirling

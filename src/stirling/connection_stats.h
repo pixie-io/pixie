@@ -72,7 +72,7 @@ class ConnectionStats {
     }
   };
 
-  const auto& agg_stats() const { return agg_stats_; }
+  auto& mutable_agg_stats() { return agg_stats_; }
 
   void AddControlEvent(const socket_control_event_t& event, const ConnectionTracker& tracker);
   void AddConnCloseEvent(const ConnectionTracker& tracker);
