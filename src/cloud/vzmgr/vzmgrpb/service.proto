@@ -107,3 +107,33 @@ message GetDeploymentKeyRequest {
 message GetDeploymentKeyResponse {
     DeploymentKey key = 1;
 }
+
+//////////////////////////////////////////////////////////////
+// Deployment Service
+//////////////////////////////////////////////////////////////
+
+// The service that deployment and registration of Viziers. Its primary
+// consumer is Vizier through Vzconn.
+service VZDeploymentService {
+  rpc RegisterVizierDeployment(RegisterVizierDeploymentRequest) returns (RegisterVizierDeploymentResponse) {}
+}
+
+message RegisterVizierDeploymentRequest {
+    // The UID of the K8s cluster. This is typically the UI of the kube-system namespace.
+    // We assume this is globally unique.
+    string k8s_cluster_uid = 1 [
+                               (gogoproto.customname) = "K8sClusterUID"
+                               ];
+    // The deployment key that will be use to register this vizier. The org/user it's registered
+    // to will be determined by this key.
+    string deployment_key = 2;
+}
+
+// RegisterVizierDeploymentResponse returns the registration status. It either will include the
+// assigned vizier_id or a GRPC error will be returned.
+message RegisterVizierDeploymentResponse {
+    // The ID for this Vizier.
+    uuidpb.UUID vizier_id = 1 [
+                              (gogoproto.customname) = "VizierID"
+                              ];
+}
