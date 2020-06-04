@@ -8,6 +8,7 @@ import (
 	fmt "fmt"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	types "github.com/gogo/protobuf/types"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -262,12 +263,276 @@ func (m *GetViziersByShardResponse_VizierInfo) GetOrgID() *proto1.UUID {
 	return nil
 }
 
+type DeploymentKey struct {
+	ID        *proto1.UUID     `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Key       string           `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`
+	CreatedAt *types.Timestamp `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+}
+
+func (m *DeploymentKey) Reset()      { *m = DeploymentKey{} }
+func (*DeploymentKey) ProtoMessage() {}
+func (*DeploymentKey) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b112f5a7e47f58f, []int{4}
+}
+func (m *DeploymentKey) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DeploymentKey) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DeploymentKey.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DeploymentKey) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeploymentKey.Merge(m, src)
+}
+func (m *DeploymentKey) XXX_Size() int {
+	return m.Size()
+}
+func (m *DeploymentKey) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeploymentKey.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeploymentKey proto.InternalMessageInfo
+
+func (m *DeploymentKey) GetID() *proto1.UUID {
+	if m != nil {
+		return m.ID
+	}
+	return nil
+}
+
+func (m *DeploymentKey) GetKey() string {
+	if m != nil {
+		return m.Key
+	}
+	return ""
+}
+
+func (m *DeploymentKey) GetCreatedAt() *types.Timestamp {
+	if m != nil {
+		return m.CreatedAt
+	}
+	return nil
+}
+
+type CreateDeploymentKeyRequest struct {
+}
+
+func (m *CreateDeploymentKeyRequest) Reset()      { *m = CreateDeploymentKeyRequest{} }
+func (*CreateDeploymentKeyRequest) ProtoMessage() {}
+func (*CreateDeploymentKeyRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b112f5a7e47f58f, []int{5}
+}
+func (m *CreateDeploymentKeyRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *CreateDeploymentKeyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_CreateDeploymentKeyRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *CreateDeploymentKeyRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateDeploymentKeyRequest.Merge(m, src)
+}
+func (m *CreateDeploymentKeyRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *CreateDeploymentKeyRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateDeploymentKeyRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateDeploymentKeyRequest proto.InternalMessageInfo
+
+type ListDeploymentKeyRequest struct {
+}
+
+func (m *ListDeploymentKeyRequest) Reset()      { *m = ListDeploymentKeyRequest{} }
+func (*ListDeploymentKeyRequest) ProtoMessage() {}
+func (*ListDeploymentKeyRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b112f5a7e47f58f, []int{6}
+}
+func (m *ListDeploymentKeyRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ListDeploymentKeyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ListDeploymentKeyRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ListDeploymentKeyRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListDeploymentKeyRequest.Merge(m, src)
+}
+func (m *ListDeploymentKeyRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *ListDeploymentKeyRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListDeploymentKeyRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListDeploymentKeyRequest proto.InternalMessageInfo
+
+type ListDeploymentKeyResponse struct {
+	Keys []*DeploymentKey `protobuf:"bytes,1,rep,name=keys,proto3" json:"keys,omitempty"`
+}
+
+func (m *ListDeploymentKeyResponse) Reset()      { *m = ListDeploymentKeyResponse{} }
+func (*ListDeploymentKeyResponse) ProtoMessage() {}
+func (*ListDeploymentKeyResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b112f5a7e47f58f, []int{7}
+}
+func (m *ListDeploymentKeyResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ListDeploymentKeyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ListDeploymentKeyResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ListDeploymentKeyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListDeploymentKeyResponse.Merge(m, src)
+}
+func (m *ListDeploymentKeyResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *ListDeploymentKeyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListDeploymentKeyResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListDeploymentKeyResponse proto.InternalMessageInfo
+
+func (m *ListDeploymentKeyResponse) GetKeys() []*DeploymentKey {
+	if m != nil {
+		return m.Keys
+	}
+	return nil
+}
+
+type GetDeploymentKeyRequest struct {
+	ID *proto1.UUID `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (m *GetDeploymentKeyRequest) Reset()      { *m = GetDeploymentKeyRequest{} }
+func (*GetDeploymentKeyRequest) ProtoMessage() {}
+func (*GetDeploymentKeyRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b112f5a7e47f58f, []int{8}
+}
+func (m *GetDeploymentKeyRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetDeploymentKeyRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetDeploymentKeyRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetDeploymentKeyRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetDeploymentKeyRequest.Merge(m, src)
+}
+func (m *GetDeploymentKeyRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetDeploymentKeyRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetDeploymentKeyRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetDeploymentKeyRequest proto.InternalMessageInfo
+
+func (m *GetDeploymentKeyRequest) GetID() *proto1.UUID {
+	if m != nil {
+		return m.ID
+	}
+	return nil
+}
+
+type GetDeploymentKeyResponse struct {
+	Key *DeploymentKey `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+}
+
+func (m *GetDeploymentKeyResponse) Reset()      { *m = GetDeploymentKeyResponse{} }
+func (*GetDeploymentKeyResponse) ProtoMessage() {}
+func (*GetDeploymentKeyResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b112f5a7e47f58f, []int{9}
+}
+func (m *GetDeploymentKeyResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetDeploymentKeyResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetDeploymentKeyResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetDeploymentKeyResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetDeploymentKeyResponse.Merge(m, src)
+}
+func (m *GetDeploymentKeyResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetDeploymentKeyResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetDeploymentKeyResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetDeploymentKeyResponse proto.InternalMessageInfo
+
+func (m *GetDeploymentKeyResponse) GetKey() *DeploymentKey {
+	if m != nil {
+		return m.Key
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*CreateVizierClusterRequest)(nil), "pl.services.CreateVizierClusterRequest")
 	proto.RegisterType((*GetViziersByOrgResponse)(nil), "pl.services.GetViziersByOrgResponse")
 	proto.RegisterType((*GetViziersByShardRequest)(nil), "pl.services.GetViziersByShardRequest")
 	proto.RegisterType((*GetViziersByShardResponse)(nil), "pl.services.GetViziersByShardResponse")
 	proto.RegisterType((*GetViziersByShardResponse_VizierInfo)(nil), "pl.services.GetViziersByShardResponse.VizierInfo")
+	proto.RegisterType((*DeploymentKey)(nil), "pl.services.DeploymentKey")
+	proto.RegisterType((*CreateDeploymentKeyRequest)(nil), "pl.services.CreateDeploymentKeyRequest")
+	proto.RegisterType((*ListDeploymentKeyRequest)(nil), "pl.services.ListDeploymentKeyRequest")
+	proto.RegisterType((*ListDeploymentKeyResponse)(nil), "pl.services.ListDeploymentKeyResponse")
+	proto.RegisterType((*GetDeploymentKeyRequest)(nil), "pl.services.GetDeploymentKeyRequest")
+	proto.RegisterType((*GetDeploymentKeyResponse)(nil), "pl.services.GetDeploymentKeyResponse")
 }
 
 func init() {
@@ -275,49 +540,64 @@ func init() {
 }
 
 var fileDescriptor_7b112f5a7e47f58f = []byte{
-	// 659 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x54, 0xcb, 0x6e, 0xd3, 0x40,
-	0x14, 0xb5, 0x8b, 0xfa, 0xc8, 0xa4, 0x55, 0xc5, 0x20, 0xd4, 0x90, 0xc5, 0x24, 0xb5, 0xe8, 0x03,
-	0x24, 0x6c, 0xb5, 0x48, 0x2c, 0xa8, 0x58, 0x90, 0x46, 0x42, 0x06, 0x41, 0x84, 0xab, 0x16, 0xd4,
-	0x4d, 0xe5, 0x78, 0xa6, 0xd3, 0x01, 0xdb, 0x63, 0x66, 0xec, 0x08, 0xca, 0x86, 0x4f, 0xe0, 0x33,
-	0xf8, 0x14, 0x96, 0xdd, 0x20, 0x75, 0x15, 0x51, 0x57, 0x48, 0x2c, 0xfb, 0x09, 0x28, 0x9e, 0x38,
-	0x75, 0xd2, 0x84, 0x76, 0x63, 0xcf, 0xdc, 0x7b, 0xee, 0xe3, 0xdc, 0x73, 0x35, 0x60, 0x45, 0x0a,
-	0xcf, 0xf2, 0x7c, 0x9e, 0x60, 0xab, 0x73, 0x1c, 0x50, 0xa1, 0xbe, 0x51, 0xdb, 0x92, 0x44, 0x74,
-	0x98, 0x47, 0xcc, 0x48, 0xf0, 0x98, 0xc3, 0x72, 0xe4, 0x9b, 0x7d, 0x8b, 0xac, 0x3e, 0xa2, 0x2c,
-	0x3e, 0x4a, 0xda, 0xa6, 0xc7, 0x03, 0x8b, 0x72, 0xca, 0xad, 0x0c, 0xd3, 0x4e, 0x0e, 0xb3, 0x5b,
-	0x76, 0xc9, 0x4e, 0x2a, 0xb6, 0x5a, 0xcf, 0x4a, 0xf0, 0x20, 0xe0, 0xa1, 0x95, 0x24, 0x0c, 0x2b,
-	0x78, 0x76, 0x2c, 0x22, 0xe4, 0x91, 0x2b, 0x08, 0xb6, 0xbc, 0x4e, 0x20, 0xa9, 0x8c, 0xda, 0xfd,
-	0x83, 0x42, 0x18, 0x02, 0x54, 0xb7, 0x05, 0x71, 0x63, 0xb2, 0xc7, 0x8e, 0x19, 0x11, 0xdb, 0x7e,
-	0x22, 0x63, 0x22, 0x1c, 0xf2, 0x29, 0x21, 0x32, 0x86, 0x1b, 0x60, 0x86, 0x0b, 0x7a, 0xc0, 0x70,
-	0x45, 0xaf, 0xeb, 0xeb, 0xe5, 0xcd, 0x45, 0x33, 0xf2, 0xcd, 0x5e, 0xfe, 0xa8, 0x6d, 0xee, 0xee,
-	0xda, 0xcd, 0x46, 0x29, 0xed, 0xd6, 0xa6, 0x5b, 0x82, 0xda, 0x4d, 0x67, 0x9a, 0x0b, 0x6a, 0x63,
-	0xb8, 0x0c, 0xe6, 0x23, 0xc1, 0x3f, 0x10, 0x2f, 0x3e, 0x08, 0xdd, 0x80, 0x54, 0xa6, 0xea, 0xfa,
-	0x7a, 0xc9, 0x29, 0xf7, 0x6d, 0x6f, 0xdc, 0x80, 0x18, 0xef, 0xc1, 0xd2, 0x0b, 0x12, 0xab, 0x82,
-	0xb2, 0xf1, 0xa5, 0x25, 0xa8, 0x43, 0x64, 0xc4, 0x43, 0x49, 0xe0, 0x33, 0x00, 0x3a, 0x99, 0xfd,
-	0x80, 0x61, 0x59, 0xd1, 0xeb, 0xb7, 0xc6, 0x15, 0x5d, 0x48, 0xbb, 0xb5, 0x92, 0x0a, 0xb7, 0x9b,
-	0xd2, 0x29, 0xa9, 0x08, 0x1b, 0x4b, 0xa3, 0x01, 0x2a, 0xc5, 0xcc, 0x3b, 0x47, 0xae, 0xc0, 0x39,
-	0x97, 0x55, 0x30, 0xd7, 0x9b, 0x04, 0xce, 0xd9, 0x94, 0x1a, 0xe5, 0xb4, 0x5b, 0x9b, 0xcd, 0x30,
-	0x76, 0xd3, 0x99, 0xcd, 0x9c, 0x36, 0x36, 0xfe, 0xe8, 0xe0, 0xde, 0x98, 0x24, 0xfd, 0x06, 0x5f,
-	0x81, 0x59, 0x55, 0x2e, 0xef, 0x6e, 0xc3, 0x2c, 0x28, 0x68, 0x4e, 0x0c, 0x34, 0xfb, 0xfd, 0x86,
-	0x87, 0xdc, 0xc9, 0x33, 0x54, 0xbf, 0x02, 0x70, 0x69, 0x86, 0x4f, 0x41, 0x69, 0xc0, 0x7d, 0xd2,
-	0xbc, 0xe7, 0xd3, 0x6e, 0x6d, 0x2e, 0xa7, 0xee, 0xcc, 0xe5, 0xcc, 0x0b, 0x42, 0x4d, 0xdd, 0x50,
-	0xa8, 0xcd, 0x5f, 0xd3, 0x60, 0x7e, 0x6f, 0xff, 0x35, 0x15, 0x3b, 0xaa, 0x79, 0xf8, 0x16, 0xdc,
-	0x19, 0xb3, 0x0a, 0x70, 0x6d, 0x88, 0xe0, 0xe4, 0x65, 0xa9, 0x8e, 0xd6, 0x34, 0x34, 0xf8, 0x12,
-	0x2c, 0x8e, 0x28, 0x0d, 0x47, 0x51, 0xd5, 0xfb, 0x13, 0x07, 0x58, 0x58, 0x0c, 0x43, 0x83, 0x5b,
-	0x60, 0x61, 0xe0, 0xcc, 0xe6, 0x75, 0x25, 0xd3, 0x52, 0xcf, 0x90, 0xaf, 0x79, 0x61, 0xe0, 0x86,
-	0x06, 0x31, 0xb8, 0x7d, 0x45, 0x1a, 0xb8, 0x72, 0x9d, 0x74, 0x8a, 0xd7, 0xea, 0xcd, 0x14, 0x36,
-	0x34, 0xd8, 0x2a, 0x2c, 0xf6, 0x36, 0x0f, 0x43, 0xe2, 0xc5, 0x8c, 0x87, 0xe3, 0x9b, 0x5d, 0x1e,
-	0xd3, 0xec, 0x70, 0x8c, 0xa1, 0xc1, 0x77, 0x60, 0x71, 0xc8, 0x43, 0x30, 0x34, 0x86, 0xe2, 0x1c,
-	0x42, 0x59, 0x4f, 0x03, 0x85, 0xca, 0x3b, 0x46, 0xff, 0xc1, 0x3c, 0xf7, 0x3e, 0x1a, 0x1a, 0xa4,
-	0x00, 0xee, 0x46, 0xf8, 0x52, 0x49, 0x1e, 0x1e, 0x32, 0x0a, 0x57, 0x87, 0xe2, 0xae, 0x02, 0xf2,
-	0xfc, 0x6b, 0xd7, 0xe2, 0x06, 0x23, 0x89, 0xc0, 0x5d, 0xe5, 0x6f, 0x09, 0x3b, 0x94, 0xb1, 0xeb,
-	0xfb, 0x0a, 0x08, 0x1f, 0x8c, 0xc9, 0x31, 0x82, 0xc9, 0xcb, 0x3d, 0xbc, 0x09, 0x34, 0xaf, 0xd8,
-	0xf0, 0x4f, 0xce, 0x90, 0x76, 0x7a, 0x86, 0xb4, 0x8b, 0x33, 0xa4, 0x7f, 0x4b, 0x91, 0xfe, 0x23,
-	0x45, 0xfa, 0xcf, 0x14, 0xe9, 0x27, 0x29, 0xd2, 0x7f, 0xa7, 0x48, 0xff, 0x9b, 0x22, 0xed, 0x22,
-	0x45, 0xfa, 0xf7, 0x73, 0xa4, 0x9d, 0x9c, 0x23, 0xed, 0xf4, 0x1c, 0x69, 0xfb, 0x4f, 0x22, 0xf6,
-	0x99, 0x11, 0xdf, 0x6d, 0x4b, 0xd3, 0x65, 0xd6, 0xe0, 0x62, 0x4d, 0x78, 0xc5, 0xb7, 0xfa, 0xff,
-	0xf6, 0x4c, 0xf6, 0x8c, 0x3e, 0xfe, 0x17, 0x00, 0x00, 0xff, 0xff, 0x38, 0x2b, 0xb6, 0xf1, 0xef,
-	0x05, 0x00, 0x00,
+	// 899 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x56, 0x4f, 0x6f, 0xe3, 0x44,
+	0x14, 0xb7, 0xd3, 0x6d, 0xda, 0xbc, 0xb6, 0x2a, 0x0c, 0x62, 0x37, 0x6b, 0x90, 0xd3, 0x1d, 0xd1,
+	0x76, 0x41, 0xe0, 0x68, 0xbb, 0x12, 0x12, 0xac, 0x38, 0x6c, 0x1a, 0xb4, 0x98, 0x02, 0x11, 0xde,
+	0x6d, 0x41, 0xbd, 0x54, 0x8e, 0x3d, 0x75, 0x4d, 0x6d, 0x8f, 0x99, 0x99, 0x54, 0x64, 0xb9, 0x70,
+	0xe1, 0xce, 0xc7, 0xe0, 0xa3, 0x70, 0x41, 0xea, 0x05, 0x69, 0x4f, 0x11, 0x75, 0x85, 0xc4, 0x71,
+	0x3f, 0xc2, 0x2a, 0x63, 0x3b, 0x8d, 0x13, 0xbb, 0xed, 0x25, 0x99, 0x99, 0xf7, 0x7b, 0xff, 0x7f,
+	0xef, 0x25, 0xb0, 0xc9, 0x99, 0xd3, 0x76, 0x02, 0x3a, 0x70, 0xdb, 0x67, 0x2f, 0x43, 0x8f, 0xa5,
+	0x9f, 0x71, 0xbf, 0xcd, 0x09, 0x3b, 0xf3, 0x1d, 0x62, 0xc4, 0x8c, 0x0a, 0x8a, 0x56, 0xe2, 0xc0,
+	0xc8, 0x5e, 0xb8, 0xf6, 0x89, 0xe7, 0x8b, 0x93, 0x41, 0xdf, 0x70, 0x68, 0xd8, 0xf6, 0xa8, 0x47,
+	0xdb, 0x12, 0xd3, 0x1f, 0x1c, 0xcb, 0x9b, 0xbc, 0xc8, 0x53, 0xaa, 0xab, 0x6d, 0x48, 0x17, 0x34,
+	0x0c, 0x69, 0xd4, 0x1e, 0x0c, 0x7c, 0x37, 0x85, 0xcb, 0xe3, 0x34, 0x82, 0x9f, 0xd8, 0x8c, 0xb8,
+	0x6d, 0xe7, 0x2c, 0xe4, 0x1e, 0x8f, 0xfb, 0xd9, 0x21, 0x43, 0xbc, 0xe7, 0x51, 0xea, 0x05, 0xe4,
+	0xca, 0x13, 0x09, 0x63, 0x31, 0xcc, 0x84, 0xad, 0x59, 0xa1, 0xf0, 0x43, 0xc2, 0x85, 0x1d, 0xc6,
+	0x29, 0x00, 0x33, 0xd0, 0x76, 0x19, 0xb1, 0x05, 0x39, 0xf0, 0x5f, 0xfa, 0x84, 0xed, 0x06, 0x03,
+	0x2e, 0x08, 0xb3, 0xc8, 0xcf, 0x03, 0xc2, 0x05, 0x7a, 0x04, 0x75, 0xca, 0xbc, 0x23, 0xdf, 0x6d,
+	0xaa, 0x1b, 0xea, 0xc3, 0x95, 0x9d, 0x75, 0x23, 0x0e, 0x8c, 0x71, 0x74, 0x71, 0xdf, 0xd8, 0xdf,
+	0x37, 0xbb, 0x9d, 0x46, 0x32, 0x6a, 0x2d, 0xf6, 0x98, 0x67, 0x76, 0xad, 0x45, 0xca, 0x3c, 0xd3,
+	0x45, 0x0f, 0x60, 0x35, 0x66, 0xf4, 0x27, 0xe2, 0x88, 0xa3, 0xc8, 0x0e, 0x49, 0xb3, 0xb6, 0xa1,
+	0x3e, 0x6c, 0x58, 0x2b, 0xd9, 0xdb, 0x77, 0x76, 0x48, 0xf0, 0x8f, 0x70, 0xef, 0x19, 0x11, 0xa9,
+	0x43, 0xde, 0x19, 0xf6, 0x98, 0x67, 0x11, 0x1e, 0xd3, 0x88, 0x13, 0xf4, 0x05, 0xc0, 0x99, 0x7c,
+	0x3f, 0xf2, 0x5d, 0xde, 0x54, 0x37, 0x16, 0xca, 0x9c, 0xae, 0x25, 0xa3, 0x56, 0x23, 0x55, 0x37,
+	0xbb, 0xdc, 0x6a, 0xa4, 0x1a, 0xa6, 0xcb, 0x71, 0x07, 0x9a, 0xd3, 0x96, 0x9f, 0x9f, 0xd8, 0xcc,
+	0xcd, 0x73, 0xd9, 0x82, 0xe5, 0x71, 0x1d, 0xdd, 0x3c, 0x9b, 0x46, 0x67, 0x25, 0x19, 0xb5, 0x96,
+	0x24, 0xc6, 0xec, 0x5a, 0x4b, 0x52, 0x68, 0xba, 0xf8, 0x3f, 0x15, 0xee, 0x97, 0x18, 0xc9, 0x02,
+	0xdc, 0x83, 0xa5, 0xd4, 0x5d, 0x1e, 0xdd, 0x23, 0x63, 0xaa, 0xff, 0x46, 0xa5, 0xa2, 0x91, 0xc5,
+	0x1b, 0x1d, 0x53, 0x2b, 0xb7, 0xa0, 0xfd, 0x0a, 0x70, 0xf5, 0x8c, 0x3e, 0x87, 0xc6, 0x24, 0xf7,
+	0xaa, 0x7a, 0xaf, 0x26, 0xa3, 0xd6, 0x72, 0x9e, 0xba, 0xb5, 0x9c, 0x67, 0x3e, 0xd5, 0xa8, 0xda,
+	0x2d, 0x1b, 0x85, 0x7f, 0x57, 0x61, 0xad, 0x4b, 0xe2, 0x80, 0x0e, 0x43, 0x12, 0x89, 0x3d, 0x32,
+	0x44, 0xdb, 0x50, 0xab, 0xf6, 0x5c, 0x4f, 0x46, 0xad, 0x9a, 0xd9, 0xb5, 0x6a, 0xbe, 0x8b, 0xde,
+	0x82, 0x85, 0x53, 0x32, 0xcc, 0x5a, 0x3b, 0x3e, 0xa2, 0xcf, 0x00, 0x1c, 0x49, 0x23, 0xf7, 0xc8,
+	0x16, 0xcd, 0x05, 0x69, 0x42, 0x33, 0x52, 0xf2, 0x19, 0x39, 0xf9, 0x8c, 0x17, 0x39, 0xf9, 0xac,
+	0x46, 0x86, 0x7e, 0x2a, 0xf0, 0xfb, 0x39, 0x03, 0x0b, 0xc1, 0x64, 0x5d, 0xc3, 0x1a, 0x34, 0xbf,
+	0xf1, 0xb9, 0x28, 0x95, 0xed, 0xc1, 0xfd, 0x12, 0x59, 0xd6, 0x28, 0x03, 0xee, 0x9c, 0x92, 0x61,
+	0xde, 0x25, 0xad, 0xd0, 0xa5, 0xa2, 0x86, 0xc4, 0xe1, 0x8e, 0x24, 0x65, 0x99, 0x9f, 0x5b, 0xd7,
+	0x05, 0x7f, 0x25, 0xe9, 0x57, 0x1e, 0xcf, 0xc7, 0x69, 0xcd, 0xd4, 0xac, 0x34, 0xd5, 0xe1, 0x8c,
+	0x61, 0x3b, 0xff, 0x2c, 0xc2, 0xea, 0xc1, 0xe1, 0xb7, 0x1e, 0x7b, 0x9e, 0x82, 0xd0, 0xf7, 0xf0,
+	0x4e, 0xc9, 0x9c, 0xa2, 0xed, 0x82, 0xa1, 0xea, 0x49, 0xd6, 0x66, 0xe3, 0xc6, 0x0a, 0xfa, 0x1a,
+	0xd6, 0x67, 0xc6, 0x10, 0xcd, 0xa2, 0xb4, 0x0f, 0x2a, 0xd9, 0x3d, 0x35, 0xb5, 0x58, 0x41, 0x4f,
+	0x60, 0x6d, 0x22, 0x94, 0x64, 0x9e, 0xb3, 0x74, 0x6f, 0xfc, 0x90, 0x6f, 0xb0, 0xa9, 0x69, 0xc0,
+	0x0a, 0x72, 0xe1, 0xed, 0xb9, 0xb9, 0x41, 0x9b, 0x37, 0xcd, 0x55, 0x9a, 0xd7, 0xd6, 0xed, 0xc6,
+	0x0f, 0x2b, 0xa8, 0x37, 0xb5, 0x75, 0x76, 0x69, 0x14, 0x11, 0x47, 0xf8, 0x34, 0x2a, 0x0f, 0xf6,
+	0x41, 0x49, 0xb0, 0x45, 0x1d, 0xac, 0xa0, 0x1f, 0x60, 0xbd, 0x20, 0x21, 0x2e, 0xc2, 0x05, 0x3d,
+	0x8b, 0x78, 0xfe, 0xb8, 0x07, 0x29, 0x2a, 0x8f, 0x58, 0xbf, 0x06, 0xf3, 0xd4, 0x39, 0xc5, 0x0a,
+	0xf2, 0x00, 0xed, 0xc7, 0xee, 0x55, 0x27, 0x69, 0x74, 0xec, 0x7b, 0x68, 0xab, 0xa0, 0x37, 0x0f,
+	0xc8, 0xed, 0x6f, 0xdf, 0x88, 0x9b, 0x94, 0x24, 0x86, 0x77, 0x53, 0x79, 0x8f, 0x99, 0x11, 0x17,
+	0x76, 0x10, 0xa4, 0x40, 0xf4, 0x61, 0x89, 0x8d, 0x19, 0x4c, 0xee, 0xee, 0xa3, 0xdb, 0x40, 0x73,
+	0x8f, 0x3b, 0x7f, 0xd7, 0xe0, 0xee, 0xc1, 0x61, 0x81, 0xf0, 0x39, 0xc3, 0x7b, 0x50, 0x4f, 0xf9,
+	0x5b, 0x4a, 0xea, 0xb2, 0xc1, 0xd4, 0xae, 0x19, 0x23, 0xd9, 0x9f, 0x3b, 0xe3, 0xf5, 0x30, 0xc3,
+	0xa4, 0xaa, 0x6d, 0x32, 0xc3, 0xa4, 0xca, 0xc5, 0x82, 0x15, 0xf4, 0x02, 0x16, 0x9e, 0x11, 0x81,
+	0xe6, 0x66, 0xa3, 0xd4, 0xec, 0xe6, 0x0d, 0xa8, 0x89, 0xd5, 0xc7, 0x50, 0xef, 0x92, 0x80, 0x08,
+	0x32, 0x4f, 0xc7, 0xbb, 0x73, 0x9b, 0xf4, 0xcb, 0xf1, 0x6f, 0x3c, 0x56, 0x3a, 0xc1, 0xf9, 0x85,
+	0xae, 0xbc, 0xba, 0xd0, 0x95, 0xd7, 0x17, 0xba, 0xfa, 0x5b, 0xa2, 0xab, 0x7f, 0x26, 0xba, 0xfa,
+	0x57, 0xa2, 0xab, 0xe7, 0x89, 0xae, 0xfe, 0x9b, 0xe8, 0xea, 0xff, 0x89, 0xae, 0xbc, 0x4e, 0x74,
+	0xf5, 0x8f, 0x4b, 0x5d, 0x39, 0xbf, 0xd4, 0x95, 0x57, 0x97, 0xba, 0x72, 0xf8, 0x69, 0xec, 0xff,
+	0xe2, 0x93, 0xc0, 0xee, 0x73, 0xc3, 0xf6, 0xdb, 0x93, 0x4b, 0xbb, 0xe2, 0x0f, 0xcf, 0x93, 0xec,
+	0xbb, 0x5f, 0x97, 0xfe, 0x1f, 0xbf, 0x09, 0x00, 0x00, 0xff, 0xff, 0x6f, 0xa5, 0xad, 0xae, 0x1a,
+	0x09, 0x00, 0x00,
 }
 
 func (this *CreateVizierClusterRequest) Equal(that interface{}) bool {
@@ -456,6 +736,155 @@ func (this *GetViziersByShardResponse_VizierInfo) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *DeploymentKey) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DeploymentKey)
+	if !ok {
+		that2, ok := that.(DeploymentKey)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ID.Equal(that1.ID) {
+		return false
+	}
+	if this.Key != that1.Key {
+		return false
+	}
+	if !this.CreatedAt.Equal(that1.CreatedAt) {
+		return false
+	}
+	return true
+}
+func (this *CreateDeploymentKeyRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*CreateDeploymentKeyRequest)
+	if !ok {
+		that2, ok := that.(CreateDeploymentKeyRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *ListDeploymentKeyRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ListDeploymentKeyRequest)
+	if !ok {
+		that2, ok := that.(ListDeploymentKeyRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	return true
+}
+func (this *ListDeploymentKeyResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ListDeploymentKeyResponse)
+	if !ok {
+		that2, ok := that.(ListDeploymentKeyResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Keys) != len(that1.Keys) {
+		return false
+	}
+	for i := range this.Keys {
+		if !this.Keys[i].Equal(that1.Keys[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *GetDeploymentKeyRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetDeploymentKeyRequest)
+	if !ok {
+		that2, ok := that.(GetDeploymentKeyRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ID.Equal(that1.ID) {
+		return false
+	}
+	return true
+}
+func (this *GetDeploymentKeyResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetDeploymentKeyResponse)
+	if !ok {
+		that2, ok := that.(GetDeploymentKeyResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Key.Equal(that1.Key) {
+		return false
+	}
+	return true
+}
 func (this *CreateVizierClusterRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -514,6 +943,76 @@ func (this *GetViziersByShardResponse_VizierInfo) GoString() string {
 	}
 	if this.OrgID != nil {
 		s = append(s, "OrgID: "+fmt.Sprintf("%#v", this.OrgID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DeploymentKey) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&vzmgrpb.DeploymentKey{")
+	if this.ID != nil {
+		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	}
+	s = append(s, "Key: "+fmt.Sprintf("%#v", this.Key)+",\n")
+	if this.CreatedAt != nil {
+		s = append(s, "CreatedAt: "+fmt.Sprintf("%#v", this.CreatedAt)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *CreateDeploymentKeyRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&vzmgrpb.CreateDeploymentKeyRequest{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ListDeploymentKeyRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 4)
+	s = append(s, "&vzmgrpb.ListDeploymentKeyRequest{")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ListDeploymentKeyResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&vzmgrpb.ListDeploymentKeyResponse{")
+	if this.Keys != nil {
+		s = append(s, "Keys: "+fmt.Sprintf("%#v", this.Keys)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetDeploymentKeyRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&vzmgrpb.GetDeploymentKeyRequest{")
+	if this.ID != nil {
+		s = append(s, "ID: "+fmt.Sprintf("%#v", this.ID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetDeploymentKeyResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&vzmgrpb.GetDeploymentKeyResponse{")
+	if this.Key != nil {
+		s = append(s, "Key: "+fmt.Sprintf("%#v", this.Key)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -859,6 +1358,186 @@ var _VZMgrService_serviceDesc = grpc.ServiceDesc{
 	Metadata: "src/cloud/vzmgr/vzmgrpb/service.proto",
 }
 
+// VZDeploymentKeyServiceClient is the client API for VZDeploymentKeyService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type VZDeploymentKeyServiceClient interface {
+	Create(ctx context.Context, in *CreateDeploymentKeyRequest, opts ...grpc.CallOption) (*DeploymentKey, error)
+	List(ctx context.Context, in *ListDeploymentKeyRequest, opts ...grpc.CallOption) (*ListDeploymentKeyResponse, error)
+	Get(ctx context.Context, in *GetDeploymentKeyRequest, opts ...grpc.CallOption) (*GetDeploymentKeyResponse, error)
+	Delete(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*types.Empty, error)
+}
+
+type vZDeploymentKeyServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewVZDeploymentKeyServiceClient(cc *grpc.ClientConn) VZDeploymentKeyServiceClient {
+	return &vZDeploymentKeyServiceClient{cc}
+}
+
+func (c *vZDeploymentKeyServiceClient) Create(ctx context.Context, in *CreateDeploymentKeyRequest, opts ...grpc.CallOption) (*DeploymentKey, error) {
+	out := new(DeploymentKey)
+	err := c.cc.Invoke(ctx, "/pl.services.VZDeploymentKeyService/Create", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vZDeploymentKeyServiceClient) List(ctx context.Context, in *ListDeploymentKeyRequest, opts ...grpc.CallOption) (*ListDeploymentKeyResponse, error) {
+	out := new(ListDeploymentKeyResponse)
+	err := c.cc.Invoke(ctx, "/pl.services.VZDeploymentKeyService/List", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vZDeploymentKeyServiceClient) Get(ctx context.Context, in *GetDeploymentKeyRequest, opts ...grpc.CallOption) (*GetDeploymentKeyResponse, error) {
+	out := new(GetDeploymentKeyResponse)
+	err := c.cc.Invoke(ctx, "/pl.services.VZDeploymentKeyService/Get", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *vZDeploymentKeyServiceClient) Delete(ctx context.Context, in *proto1.UUID, opts ...grpc.CallOption) (*types.Empty, error) {
+	out := new(types.Empty)
+	err := c.cc.Invoke(ctx, "/pl.services.VZDeploymentKeyService/Delete", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// VZDeploymentKeyServiceServer is the server API for VZDeploymentKeyService service.
+type VZDeploymentKeyServiceServer interface {
+	Create(context.Context, *CreateDeploymentKeyRequest) (*DeploymentKey, error)
+	List(context.Context, *ListDeploymentKeyRequest) (*ListDeploymentKeyResponse, error)
+	Get(context.Context, *GetDeploymentKeyRequest) (*GetDeploymentKeyResponse, error)
+	Delete(context.Context, *proto1.UUID) (*types.Empty, error)
+}
+
+// UnimplementedVZDeploymentKeyServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedVZDeploymentKeyServiceServer struct {
+}
+
+func (*UnimplementedVZDeploymentKeyServiceServer) Create(ctx context.Context, req *CreateDeploymentKeyRequest) (*DeploymentKey, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+}
+func (*UnimplementedVZDeploymentKeyServiceServer) List(ctx context.Context, req *ListDeploymentKeyRequest) (*ListDeploymentKeyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
+}
+func (*UnimplementedVZDeploymentKeyServiceServer) Get(ctx context.Context, req *GetDeploymentKeyRequest) (*GetDeploymentKeyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Get not implemented")
+}
+func (*UnimplementedVZDeploymentKeyServiceServer) Delete(ctx context.Context, req *proto1.UUID) (*types.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+
+func RegisterVZDeploymentKeyServiceServer(s *grpc.Server, srv VZDeploymentKeyServiceServer) {
+	s.RegisterService(&_VZDeploymentKeyService_serviceDesc, srv)
+}
+
+func _VZDeploymentKeyService_Create_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateDeploymentKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VZDeploymentKeyServiceServer).Create(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.VZDeploymentKeyService/Create",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VZDeploymentKeyServiceServer).Create(ctx, req.(*CreateDeploymentKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VZDeploymentKeyService_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListDeploymentKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VZDeploymentKeyServiceServer).List(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.VZDeploymentKeyService/List",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VZDeploymentKeyServiceServer).List(ctx, req.(*ListDeploymentKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VZDeploymentKeyService_Get_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDeploymentKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VZDeploymentKeyServiceServer).Get(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.VZDeploymentKeyService/Get",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VZDeploymentKeyServiceServer).Get(ctx, req.(*GetDeploymentKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _VZDeploymentKeyService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(proto1.UUID)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VZDeploymentKeyServiceServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.VZDeploymentKeyService/Delete",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VZDeploymentKeyServiceServer).Delete(ctx, req.(*proto1.UUID))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _VZDeploymentKeyService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "pl.services.VZDeploymentKeyService",
+	HandlerType: (*VZDeploymentKeyServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Create",
+			Handler:    _VZDeploymentKeyService_Create_Handler,
+		},
+		{
+			MethodName: "List",
+			Handler:    _VZDeploymentKeyService_List_Handler,
+		},
+		{
+			MethodName: "Get",
+			Handler:    _VZDeploymentKeyService_Get_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _VZDeploymentKeyService_Delete_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "src/cloud/vzmgr/vzmgrpb/service.proto",
+}
+
 func (m *CreateVizierClusterRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -1052,6 +1731,213 @@ func (m *GetViziersByShardResponse_VizierInfo) MarshalToSizedBuffer(dAtA []byte)
 	return len(dAtA) - i, nil
 }
 
+func (m *DeploymentKey) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DeploymentKey) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DeploymentKey) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.CreatedAt != nil {
+		{
+			size, err := m.CreatedAt.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if len(m.Key) > 0 {
+		i -= len(m.Key)
+		copy(dAtA[i:], m.Key)
+		i = encodeVarintService(dAtA, i, uint64(len(m.Key)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ID != nil {
+		{
+			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CreateDeploymentKeyRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CreateDeploymentKeyRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CreateDeploymentKeyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *ListDeploymentKeyRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ListDeploymentKeyRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ListDeploymentKeyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	return len(dAtA) - i, nil
+}
+
+func (m *ListDeploymentKeyResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ListDeploymentKeyResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ListDeploymentKeyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Keys) > 0 {
+		for iNdEx := len(m.Keys) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Keys[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintService(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetDeploymentKeyRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetDeploymentKeyRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetDeploymentKeyRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ID != nil {
+		{
+			size, err := m.ID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetDeploymentKeyResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetDeploymentKeyResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetDeploymentKeyResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Key != nil {
+		{
+			size, err := m.Key.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintService(dAtA []byte, offset int, v uint64) int {
 	offset -= sovService(v)
 	base := offset
@@ -1140,6 +2026,86 @@ func (m *GetViziersByShardResponse_VizierInfo) Size() (n int) {
 	return n
 }
 
+func (m *DeploymentKey) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ID != nil {
+		l = m.ID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	l = len(m.Key)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.CreatedAt != nil {
+		l = m.CreatedAt.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *CreateDeploymentKeyRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *ListDeploymentKeyRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	return n
+}
+
+func (m *ListDeploymentKeyResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Keys) > 0 {
+		for _, e := range m.Keys {
+			l = e.Size()
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *GetDeploymentKeyRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ID != nil {
+		l = m.ID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *GetDeploymentKeyResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Key != nil {
+		l = m.Key.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
 func sovService(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -1204,6 +2170,71 @@ func (this *GetViziersByShardResponse_VizierInfo) String() string {
 	s := strings.Join([]string{`&GetViziersByShardResponse_VizierInfo{`,
 		`VizierID:` + strings.Replace(fmt.Sprintf("%v", this.VizierID), "UUID", "proto1.UUID", 1) + `,`,
 		`OrgID:` + strings.Replace(fmt.Sprintf("%v", this.OrgID), "UUID", "proto1.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DeploymentKey) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DeploymentKey{`,
+		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "proto1.UUID", 1) + `,`,
+		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
+		`CreatedAt:` + strings.Replace(fmt.Sprintf("%v", this.CreatedAt), "Timestamp", "types.Timestamp", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *CreateDeploymentKeyRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&CreateDeploymentKeyRequest{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ListDeploymentKeyRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ListDeploymentKeyRequest{`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ListDeploymentKeyResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForKeys := "[]*DeploymentKey{"
+	for _, f := range this.Keys {
+		repeatedStringForKeys += strings.Replace(f.String(), "DeploymentKey", "DeploymentKey", 1) + ","
+	}
+	repeatedStringForKeys += "}"
+	s := strings.Join([]string{`&ListDeploymentKeyResponse{`,
+		`Keys:` + repeatedStringForKeys + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetDeploymentKeyRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetDeploymentKeyRequest{`,
+		`ID:` + strings.Replace(fmt.Sprintf("%v", this.ID), "UUID", "proto1.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetDeploymentKeyResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetDeploymentKeyResponse{`,
+		`Key:` + strings.Replace(this.Key.String(), "DeploymentKey", "DeploymentKey", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1694,6 +2725,534 @@ func (m *GetViziersByShardResponse_VizierInfo) Unmarshal(dAtA []byte) error {
 				m.OrgID = &proto1.UUID{}
 			}
 			if err := m.OrgID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DeploymentKey) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DeploymentKey: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DeploymentKey: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ID == nil {
+				m.ID = &proto1.UUID{}
+			}
+			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Key = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field CreatedAt", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.CreatedAt == nil {
+				m.CreatedAt = &types.Timestamp{}
+			}
+			if err := m.CreatedAt.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CreateDeploymentKeyRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CreateDeploymentKeyRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CreateDeploymentKeyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ListDeploymentKeyRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ListDeploymentKeyRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ListDeploymentKeyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ListDeploymentKeyResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ListDeploymentKeyResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ListDeploymentKeyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Keys", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Keys = append(m.Keys, &DeploymentKey{})
+			if err := m.Keys[len(m.Keys)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetDeploymentKeyRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetDeploymentKeyRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetDeploymentKeyRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ID == nil {
+				m.ID = &proto1.UUID{}
+			}
+			if err := m.ID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetDeploymentKeyResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: GetDeploymentKeyResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: GetDeploymentKeyResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Key", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Key == nil {
+				m.Key = &DeploymentKey{}
+			}
+			if err := m.Key.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
