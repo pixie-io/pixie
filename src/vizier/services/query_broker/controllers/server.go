@@ -248,7 +248,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 	}
 
 	log.WithField("query_id", queryID).
-		WithField("script", req.QueryStr).Infof("Running script")
+		Infof("Running script")
 	start := time.Now()
 	defer func(t time.Time) {
 		duration := time.Now().Sub(t)
