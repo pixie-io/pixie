@@ -1,5 +1,6 @@
 import './vizier.scss';
 
+import ClusterContext from 'common/cluster-context';
 import * as storage from 'common/storage';
 import { ClusterStatus, VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import { useSnackbar } from 'components/snackbar/snackbar';
@@ -11,7 +12,7 @@ import gql from 'graphql-tag';
 import * as React from 'react';
 import { Redirect, Route, Switch } from 'react-router-dom';
 
-import { useApolloClient, useQuery } from '@apollo/react-hooks';
+import { useQuery } from '@apollo/react-hooks';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 
 import { AgentDisplay } from './agent-display';
@@ -110,6 +111,13 @@ const Vizier = () => {
   const [clusterId, setClusterId] = storage.useSessionStorage(storage.CLUSTER_ID_KEY, '');
   const { loading, error, data } = useQuery(LIST_CLUSTERS, { pollInterval: 2500, fetchPolicy: 'network-only' });
 
+  const context = React.useMemo(() => {
+    return {
+      selectedCluster: clusterId,
+      setCluster: setClusterId,
+    };
+  }, [clusterId, setClusterId]);
+
   if (loading) { return <div>Loading...</div>; }
 
   const errMsg = error?.message;
@@ -132,19 +140,21 @@ const Vizier = () => {
   }
 
   return (
-    <VizierGRPCClientProvider
-      clusterID={cluster.id}
-      passthroughEnabled={cluster.vizierConfig.passthroughEnabled}
-      clusterStatus={errMsg ? 'CS_UNKNOWN' : status}
-    >
-      <ScriptsContextProvider>
-        <Switch>
-          <Route path='/live' component={LiveView} />
-          <Route path={['/console', '/agents']} component={VizierMain} />
-          <Redirect from='/*' to='/live' />
-        </Switch>
-      </ScriptsContextProvider>
-    </VizierGRPCClientProvider>
+    <ClusterContext.Provider value={context}>
+      <VizierGRPCClientProvider
+        clusterID={cluster.id}
+        passthroughEnabled={cluster.vizierConfig.passthroughEnabled}
+        clusterStatus={errMsg ? 'CS_UNKNOWN' : status}
+      >
+        <ScriptsContextProvider>
+          <Switch>
+            <Route path='/live' component={LiveView} />
+            <Route path={['/console', '/agents']} component={VizierMain} />
+            <Redirect from='/*' to='/live' />
+          </Switch>
+        </ScriptsContextProvider>
+      </VizierGRPCClientProvider>
+    </ClusterContext.Provider>
   );
 };
 

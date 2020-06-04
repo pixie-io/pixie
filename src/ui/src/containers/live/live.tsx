@@ -12,6 +12,7 @@ import MoveIcon from '@material-ui/icons/OpenWith';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 
 import Canvas from './canvas';
+import ClusterSelector from './cluster-selector';
 import CommandInput from './command-input';
 import { withLiveViewContext } from './context';
 import { ExecuteContext } from './context/execute-context';
@@ -71,6 +72,9 @@ const useStyles = makeStyles((theme: Theme) => {
       right: theme.spacing(2),
       width: '48px',
     },
+    clusterSelector: {
+      marginRight: theme.spacing(2),
+    },
   });
 });
 
@@ -111,6 +115,7 @@ const LiveView = () => {
           <MenuIcon />
         </IconButton> */}
         <LiveViewTitle className={classes.title} />
+        <ClusterSelector className={classes.clusterSelector} />
         <Tooltip title='Pixie Command'>
           <IconButton onClick={toggleCommandOpen}>
             <PixieCommandIcon color='primary' />
