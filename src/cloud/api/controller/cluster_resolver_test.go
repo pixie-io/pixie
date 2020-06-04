@@ -36,11 +36,12 @@ func LoadSchema(gqlEnv controller.GraphQLEnv) *graphql.Schema {
 func TestCreateCluster(t *testing.T) {
 	clusterID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
 
-	gqlEnv, _, mockVzSvc, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	mockVzSvc.EXPECT().CreateCluster(gomock.Any(), &cloudapipb.CreateClusterRequest{}).
+	mockClients.MockVizierClusterInfo.EXPECT().
+		CreateCluster(gomock.Any(), &cloudapipb.CreateClusterRequest{}).
 		Return(&cloudapipb.CreateClusterResponse{
 			ClusterID: utils.ProtoFromUUIDStrOrNil(clusterID),
 		}, nil)
@@ -69,7 +70,7 @@ func TestCreateCluster(t *testing.T) {
 }
 
 func TestClusterInfoWithoutID(t *testing.T) {
-	gqlEnv, _, mockVzSvc, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -86,7 +87,8 @@ func TestClusterInfoWithoutID(t *testing.T) {
 		ClusterUID:     "clusterUID",
 	}
 
-	mockVzSvc.EXPECT().GetClusterInfo(gomock.Any(), &cloudapipb.GetClusterInfoRequest{}).
+	mockClients.MockVizierClusterInfo.EXPECT().
+		GetClusterInfo(gomock.Any(), &cloudapipb.GetClusterInfoRequest{}).
 		Return(&cloudapipb.GetClusterInfoResponse{
 			Clusters: []*cloudapipb.ClusterInfo{clusterInfo},
 		}, nil)
@@ -133,7 +135,7 @@ func TestClusterInfoWithoutID(t *testing.T) {
 }
 
 func TestClusterInfo(t *testing.T) {
-	gqlEnv, _, mockVzSvc, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -150,9 +152,10 @@ func TestClusterInfo(t *testing.T) {
 		ClusterUID:     "clusterUID",
 	}
 
-	mockVzSvc.EXPECT().GetClusterInfo(gomock.Any(), &cloudapipb.GetClusterInfoRequest{
-		ID: clusterInfo.ID,
-	}).
+	mockClients.MockVizierClusterInfo.EXPECT().
+		GetClusterInfo(gomock.Any(), &cloudapipb.GetClusterInfoRequest{
+			ID: clusterInfo.ID,
+		}).
 		Return(&cloudapipb.GetClusterInfoResponse{
 			Clusters: []*cloudapipb.ClusterInfo{clusterInfo},
 		}, nil)
@@ -199,7 +202,7 @@ func TestClusterInfo(t *testing.T) {
 }
 
 func TestClusterConnectionInfoWithoutID(t *testing.T) {
-	gqlEnv, _, mockVzSvc, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -214,14 +217,16 @@ func TestClusterConnectionInfoWithoutID(t *testing.T) {
 		},
 	}
 
-	mockVzSvc.EXPECT().GetClusterInfo(gomock.Any(), &cloudapipb.GetClusterInfoRequest{}).
+	mockClients.MockVizierClusterInfo.EXPECT().
+		GetClusterInfo(gomock.Any(), &cloudapipb.GetClusterInfoRequest{}).
 		Return(&cloudapipb.GetClusterInfoResponse{
 			Clusters: []*cloudapipb.ClusterInfo{clusterInfo},
 		}, nil)
 
-	mockVzSvc.EXPECT().GetClusterConnectionInfo(gomock.Any(), &cloudapipb.GetClusterConnectionInfoRequest{
-		ID: clusterID,
-	}).
+	mockClients.MockVizierClusterInfo.EXPECT().
+		GetClusterConnectionInfo(gomock.Any(), &cloudapipb.GetClusterConnectionInfoRequest{
+			ID: clusterID,
+		}).
 		Return(&cloudapipb.GetClusterConnectionInfoResponse{
 			IPAddress: "127.0.0.1",
 			Token:     "this-is-a-token",
@@ -253,15 +258,16 @@ func TestClusterConnectionInfoWithoutID(t *testing.T) {
 }
 
 func TestClusterConnectionInfo(t *testing.T) {
-	gqlEnv, _, mockVzSvc, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
 	clusterID := utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
-	mockVzSvc.EXPECT().GetClusterConnectionInfo(gomock.Any(), &cloudapipb.GetClusterConnectionInfoRequest{
-		ID: clusterID,
-	}).
+	mockClients.MockVizierClusterInfo.EXPECT().
+		GetClusterConnectionInfo(gomock.Any(), &cloudapipb.GetClusterConnectionInfoRequest{
+			ID: clusterID,
+		}).
 		Return(&cloudapipb.GetClusterConnectionInfoResponse{
 			IPAddress: "127.0.0.1",
 			Token:     "this-is-a-token",
@@ -293,16 +299,17 @@ func TestClusterConnectionInfo(t *testing.T) {
 }
 
 func TestUpdateClusterVizierConfig(t *testing.T) {
-	gqlEnv, _, mockVzSvc, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	mockVzSvc.EXPECT().UpdateClusterVizierConfig(gomock.Any(), &cloudapipb.UpdateClusterVizierConfigRequest{
-		ID: utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
-		ConfigUpdate: &cloudapipb.VizierConfigUpdate{
-			PassthroughEnabled: &types.BoolValue{Value: true},
-		},
-	}).
+	mockClients.MockVizierClusterInfo.EXPECT().
+		UpdateClusterVizierConfig(gomock.Any(), &cloudapipb.UpdateClusterVizierConfigRequest{
+			ID: utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			ConfigUpdate: &cloudapipb.VizierConfigUpdate{
+				PassthroughEnabled: &types.BoolValue{Value: true},
+			},
+		}).
 		Return(&cloudapipb.UpdateClusterVizierConfigResponse{}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)
@@ -325,14 +332,15 @@ func TestUpdateClusterVizierConfig(t *testing.T) {
 }
 
 func TestUpdateClusterVizierConfigNoUpdates(t *testing.T) {
-	gqlEnv, _, mockVzSvc, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	mockVzSvc.EXPECT().UpdateClusterVizierConfig(gomock.Any(), &cloudapipb.UpdateClusterVizierConfigRequest{
-		ID:           utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
-		ConfigUpdate: &cloudapipb.VizierConfigUpdate{},
-	}).
+	mockClients.MockVizierClusterInfo.EXPECT().
+		UpdateClusterVizierConfig(gomock.Any(), &cloudapipb.UpdateClusterVizierConfigRequest{
+			ID:           utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+			ConfigUpdate: &cloudapipb.VizierConfigUpdate{},
+		}).
 		Return(&cloudapipb.UpdateClusterVizierConfigResponse{}, nil)
 
 	gqlSchema := LoadSchema(gqlEnv)

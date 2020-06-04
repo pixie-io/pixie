@@ -6,9 +6,11 @@ package mock_cloudapipb
 
 import (
 	context "context"
+	types "github.com/gogo/protobuf/types"
 	gomock "github.com/golang/mock/gomock"
 	grpc "google.golang.org/grpc"
 	cloudapipb "pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	proto "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	reflect "reflect"
 )
 
@@ -475,6 +477,176 @@ func (mr *MockVizierClusterInfoServerMockRecorder) UpdateOrInstallCluster(arg0, 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrInstallCluster", reflect.TypeOf((*MockVizierClusterInfoServer)(nil).UpdateOrInstallCluster), arg0, arg1)
 }
 
+// MockVizierDeploymentKeyManagerClient is a mock of VizierDeploymentKeyManagerClient interface
+type MockVizierDeploymentKeyManagerClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockVizierDeploymentKeyManagerClientMockRecorder
+}
+
+// MockVizierDeploymentKeyManagerClientMockRecorder is the mock recorder for MockVizierDeploymentKeyManagerClient
+type MockVizierDeploymentKeyManagerClientMockRecorder struct {
+	mock *MockVizierDeploymentKeyManagerClient
+}
+
+// NewMockVizierDeploymentKeyManagerClient creates a new mock instance
+func NewMockVizierDeploymentKeyManagerClient(ctrl *gomock.Controller) *MockVizierDeploymentKeyManagerClient {
+	mock := &MockVizierDeploymentKeyManagerClient{ctrl: ctrl}
+	mock.recorder = &MockVizierDeploymentKeyManagerClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockVizierDeploymentKeyManagerClient) EXPECT() *MockVizierDeploymentKeyManagerClientMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method
+func (m *MockVizierDeploymentKeyManagerClient) Create(ctx context.Context, in *cloudapipb.CreateDeploymentKeyRequest, opts ...grpc.CallOption) (*cloudapipb.DeploymentKey, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Create", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.DeploymentKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create
+func (mr *MockVizierDeploymentKeyManagerClientMockRecorder) Create(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockVizierDeploymentKeyManagerClient)(nil).Create), varargs...)
+}
+
+// List mocks base method
+func (m *MockVizierDeploymentKeyManagerClient) List(ctx context.Context, in *cloudapipb.ListDeploymentKeyRequest, opts ...grpc.CallOption) (*cloudapipb.ListDeploymentKeyResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "List", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.ListDeploymentKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List
+func (mr *MockVizierDeploymentKeyManagerClientMockRecorder) List(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockVizierDeploymentKeyManagerClient)(nil).List), varargs...)
+}
+
+// Get mocks base method
+func (m *MockVizierDeploymentKeyManagerClient) Get(ctx context.Context, in *cloudapipb.GetDeploymentKeyRequest, opts ...grpc.CallOption) (*cloudapipb.GetDeploymentKeyResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Get", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.GetDeploymentKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get
+func (mr *MockVizierDeploymentKeyManagerClientMockRecorder) Get(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockVizierDeploymentKeyManagerClient)(nil).Get), varargs...)
+}
+
+// Delete mocks base method
+func (m *MockVizierDeploymentKeyManagerClient) Delete(ctx context.Context, in *proto.UUID, opts ...grpc.CallOption) (*types.Empty, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "Delete", varargs...)
+	ret0, _ := ret[0].(*types.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Delete indicates an expected call of Delete
+func (mr *MockVizierDeploymentKeyManagerClientMockRecorder) Delete(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockVizierDeploymentKeyManagerClient)(nil).Delete), varargs...)
+}
+
+// MockVizierDeploymentKeyManagerServer is a mock of VizierDeploymentKeyManagerServer interface
+type MockVizierDeploymentKeyManagerServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockVizierDeploymentKeyManagerServerMockRecorder
+}
+
+// MockVizierDeploymentKeyManagerServerMockRecorder is the mock recorder for MockVizierDeploymentKeyManagerServer
+type MockVizierDeploymentKeyManagerServerMockRecorder struct {
+	mock *MockVizierDeploymentKeyManagerServer
+}
+
+// NewMockVizierDeploymentKeyManagerServer creates a new mock instance
+func NewMockVizierDeploymentKeyManagerServer(ctrl *gomock.Controller) *MockVizierDeploymentKeyManagerServer {
+	mock := &MockVizierDeploymentKeyManagerServer{ctrl: ctrl}
+	mock.recorder = &MockVizierDeploymentKeyManagerServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockVizierDeploymentKeyManagerServer) EXPECT() *MockVizierDeploymentKeyManagerServerMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method
+func (m *MockVizierDeploymentKeyManagerServer) Create(arg0 context.Context, arg1 *cloudapipb.CreateDeploymentKeyRequest) (*cloudapipb.DeploymentKey, error) {
+	ret := m.ctrl.Call(m, "Create", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.DeploymentKey)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create
+func (mr *MockVizierDeploymentKeyManagerServerMockRecorder) Create(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockVizierDeploymentKeyManagerServer)(nil).Create), arg0, arg1)
+}
+
+// List mocks base method
+func (m *MockVizierDeploymentKeyManagerServer) List(arg0 context.Context, arg1 *cloudapipb.ListDeploymentKeyRequest) (*cloudapipb.ListDeploymentKeyResponse, error) {
+	ret := m.ctrl.Call(m, "List", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.ListDeploymentKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List
+func (mr *MockVizierDeploymentKeyManagerServerMockRecorder) List(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockVizierDeploymentKeyManagerServer)(nil).List), arg0, arg1)
+}
+
+// Get mocks base method
+func (m *MockVizierDeploymentKeyManagerServer) Get(arg0 context.Context, arg1 *cloudapipb.GetDeploymentKeyRequest) (*cloudapipb.GetDeploymentKeyResponse, error) {
+	ret := m.ctrl.Call(m, "Get", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.GetDeploymentKeyResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get
+func (mr *MockVizierDeploymentKeyManagerServerMockRecorder) Get(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockVizierDeploymentKeyManagerServer)(nil).Get), arg0, arg1)
+}
+
+// Delete mocks base method
+func (m *MockVizierDeploymentKeyManagerServer) Delete(arg0 context.Context, arg1 *proto.UUID) (*types.Empty, error) {
+	ret := m.ctrl.Call(m, "Delete", arg0, arg1)
+	ret0, _ := ret[0].(*types.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Delete indicates an expected call of Delete
+func (mr *MockVizierDeploymentKeyManagerServerMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockVizierDeploymentKeyManagerServer)(nil).Delete), arg0, arg1)
+}
+
 // MockScriptMgrClient is a mock of ScriptMgrClient interface
 type MockScriptMgrClient struct {
 	ctrl     *gomock.Controller
@@ -751,4 +923,81 @@ func (m *MockAutocompleteServiceServer) AutocompleteField(arg0 context.Context, 
 // AutocompleteField indicates an expected call of AutocompleteField
 func (mr *MockAutocompleteServiceServerMockRecorder) AutocompleteField(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AutocompleteField", reflect.TypeOf((*MockAutocompleteServiceServer)(nil).AutocompleteField), arg0, arg1)
+}
+
+// MockProfileServiceClient is a mock of ProfileServiceClient interface
+type MockProfileServiceClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockProfileServiceClientMockRecorder
+}
+
+// MockProfileServiceClientMockRecorder is the mock recorder for MockProfileServiceClient
+type MockProfileServiceClientMockRecorder struct {
+	mock *MockProfileServiceClient
+}
+
+// NewMockProfileServiceClient creates a new mock instance
+func NewMockProfileServiceClient(ctrl *gomock.Controller) *MockProfileServiceClient {
+	mock := &MockProfileServiceClient{ctrl: ctrl}
+	mock.recorder = &MockProfileServiceClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockProfileServiceClient) EXPECT() *MockProfileServiceClientMockRecorder {
+	return m.recorder
+}
+
+// GetOrgInfo mocks base method
+func (m *MockProfileServiceClient) GetOrgInfo(ctx context.Context, in *proto.UUID, opts ...grpc.CallOption) (*cloudapipb.OrgInfo, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetOrgInfo", varargs...)
+	ret0, _ := ret[0].(*cloudapipb.OrgInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrgInfo indicates an expected call of GetOrgInfo
+func (mr *MockProfileServiceClientMockRecorder) GetOrgInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgInfo", reflect.TypeOf((*MockProfileServiceClient)(nil).GetOrgInfo), varargs...)
+}
+
+// MockProfileServiceServer is a mock of ProfileServiceServer interface
+type MockProfileServiceServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockProfileServiceServerMockRecorder
+}
+
+// MockProfileServiceServerMockRecorder is the mock recorder for MockProfileServiceServer
+type MockProfileServiceServerMockRecorder struct {
+	mock *MockProfileServiceServer
+}
+
+// NewMockProfileServiceServer creates a new mock instance
+func NewMockProfileServiceServer(ctrl *gomock.Controller) *MockProfileServiceServer {
+	mock := &MockProfileServiceServer{ctrl: ctrl}
+	mock.recorder = &MockProfileServiceServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockProfileServiceServer) EXPECT() *MockProfileServiceServerMockRecorder {
+	return m.recorder
+}
+
+// GetOrgInfo mocks base method
+func (m *MockProfileServiceServer) GetOrgInfo(arg0 context.Context, arg1 *proto.UUID) (*cloudapipb.OrgInfo, error) {
+	ret := m.ctrl.Call(m, "GetOrgInfo", arg0, arg1)
+	ret0, _ := ret[0].(*cloudapipb.OrgInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrgInfo indicates an expected call of GetOrgInfo
+func (mr *MockProfileServiceServerMockRecorder) GetOrgInfo(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgInfo", reflect.TypeOf((*MockProfileServiceServer)(nil).GetOrgInfo), arg0, arg1)
 }

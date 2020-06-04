@@ -11,11 +11,11 @@ import (
 )
 
 func TestAutocomplete(t *testing.T) {
-	gqlEnv, _, _, _, as, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	as.EXPECT().Autocomplete(gomock.Any(), &cloudapipb.AutocompleteRequest{
+	mockClients.MockAutocomplete.EXPECT().Autocomplete(gomock.Any(), &cloudapipb.AutocompleteRequest{
 		Input:     "px/svc_info svc:pl/test",
 		CursorPos: 0,
 		Action:    cloudapipb.AAT_EDIT,
@@ -101,11 +101,11 @@ func TestAutocomplete(t *testing.T) {
 }
 
 func TestAutocompleteField(t *testing.T) {
-	gqlEnv, _, _, _, as, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	as.EXPECT().AutocompleteField(gomock.Any(), &cloudapipb.AutocompleteFieldRequest{
+	mockClients.MockAutocomplete.EXPECT().AutocompleteField(gomock.Any(), &cloudapipb.AutocompleteFieldRequest{
 		Input:            "px/svc_info",
 		FieldType:        cloudapipb.AEK_SVC,
 		RequiredArgTypes: []cloudapipb.AutocompleteEntityKind{},

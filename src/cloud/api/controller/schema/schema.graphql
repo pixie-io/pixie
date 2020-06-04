@@ -45,6 +45,13 @@ enum AutocompleteEntityKind {
   AEK_NAMESPACE
 }
 
+type DeploymentKey {
+  id: ID!
+  key: String!
+  createdAtMs: Float!
+  desc: String!
+}
+
 type Query {
   user: UserInfo!
   # TODO(nserrino): Make ID required once UI moves over to multi-cluster support.
@@ -63,6 +70,10 @@ type Query {
   liveViewContents(id: ID!): LiveViewContents!
   scripts: [ScriptMetadata!]!
   scriptContents(id: ID!): ScriptContents!
+
+  # Deploy keys
+  deploymentKeys: [DeploymentKey!]!
+  deploymentKey(id: ID!): DeploymentKey!
 }
 
 type AutocompleteResult {
@@ -131,6 +142,8 @@ type ClusterConnectionInfo {
 type Mutation {
   CreateCluster: ClusterInfo
   UpdateVizierConfig(clusterID: ID!, passthroughEnabled: Boolean): Boolean!
+  CreateDeploymentKey: DeploymentKey!
+  DeleteDeploymentKey(id: ID!): Boolean!
 }
 
 type CLIArtifact {

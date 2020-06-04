@@ -230,11 +230,11 @@ func TestScriptMgrResolver(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			gqlEnv, _, _, mockScriptMgr, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+			gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 			defer cleanup()
 			ctx := context.Background()
 
-			reflect.ValueOf(mockScriptMgr.EXPECT()).
+			reflect.ValueOf(mockClients.MockScriptMgr.EXPECT()).
 				MethodByName(tc.endpoint).
 				Call([]reflect.Value{
 					reflect.ValueOf(gomock.Any()),

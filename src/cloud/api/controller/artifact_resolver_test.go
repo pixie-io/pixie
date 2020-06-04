@@ -13,11 +13,11 @@ import (
 )
 
 func TestCLIArtifact(t *testing.T) {
-	gqlEnv, mockArt, _, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 
-	mockArt.EXPECT().GetArtifactList(gomock.Any(),
+	mockClients.MockArtifact.EXPECT().GetArtifactList(gomock.Any(),
 		&cloudapipb.GetArtifactListRequest{
 			ArtifactName: "cli",
 			Limit:        1,
@@ -30,7 +30,7 @@ func TestCLIArtifact(t *testing.T) {
 			}},
 		}, nil)
 
-	mockArt.EXPECT().GetDownloadLink(gomock.Any(), &cloudapipb.GetDownloadLinkRequest{
+	mockClients.MockArtifact.EXPECT().GetDownloadLink(gomock.Any(), &cloudapipb.GetDownloadLinkRequest{
 		ArtifactType: cloudapipb.AT_LINUX_AMD64,
 		VersionStr:   "test",
 		ArtifactName: "cli",
@@ -65,11 +65,11 @@ func TestCLIArtifact(t *testing.T) {
 }
 
 func TestArtifacts_CLI(t *testing.T) {
-	gqlEnv, mockArt, _, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 
-	mockArt.EXPECT().GetArtifactList(gomock.Any(),
+	mockClients.MockArtifact.EXPECT().GetArtifactList(gomock.Any(),
 		&cloudapipb.GetArtifactListRequest{
 			ArtifactName: "cli",
 			ArtifactType: cloudapipb.AT_LINUX_AMD64,
@@ -126,11 +126,11 @@ func TestArtifacts_CLI(t *testing.T) {
 }
 
 func TestArtifacts_Vizier(t *testing.T) {
-	gqlEnv, mockArt, _, _, _, cleanup := testutils.CreateTestGraphQLEnv(t)
+	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 
-	mockArt.EXPECT().GetArtifactList(gomock.Any(),
+	mockClients.MockArtifact.EXPECT().GetArtifactList(gomock.Any(),
 		&cloudapipb.GetArtifactListRequest{
 			ArtifactName: "vizier",
 			ArtifactType: cloudapipb.AT_CONTAINER_SET_LINUX_AMD64,

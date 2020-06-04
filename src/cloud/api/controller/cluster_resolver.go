@@ -10,7 +10,6 @@ import (
 
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
-	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
@@ -32,11 +31,6 @@ func (q *QueryResolver) CreateCluster(ctx context.Context) (*ClusterInfoResolver
 
 type clusterArgs struct {
 	ID *graphql.ID
-}
-
-// ClusterResolver is the resolver responsible for clusters belonging to the given org.
-type ClusterResolver struct {
-	SessionCtx *authcontext.AuthContext
 }
 
 func clusterInfoToResolver(cluster *cloudapipb.ClusterInfo) (*ClusterInfoResolver, error) {
@@ -164,7 +158,7 @@ func (c *ClusterInfoResolver) Status() string {
 
 // LastHeartbeatMs returns the heartbeat.
 func (c *ClusterInfoResolver) LastHeartbeatMs() float64 {
-	return float64(c.lastHeartbeatNs / 1e6)
+	return float64(c.lastHeartbeatNs) / 1e6
 }
 
 // VizierConfig returns the config for the Vizier.

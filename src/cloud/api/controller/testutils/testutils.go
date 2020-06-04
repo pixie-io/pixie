@@ -15,16 +15,27 @@ import (
 	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"
 )
 
+// MockCloudClients provides the mock grpc clients for the graphql test env.
+type MockCloudClients struct {
+	MockArtifact          *mock_cloudapipb.MockArtifactTrackerServer
+	MockVizierClusterInfo *mock_cloudapipb.MockVizierClusterInfoServer
+	MockVizierDeployKey   *mock_cloudapipb.MockVizierDeploymentKeyManagerServer
+	MockScriptMgr         *mock_cloudapipb.MockScriptMgrServer
+	MockAutocomplete      *mock_cloudapipb.MockAutocompleteServiceServer
+}
+
 // CreateTestGraphQLEnv creates a test graphql environment and mock clients.
-func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *mock_cloudapipb.MockArtifactTrackerServer, *mock_cloudapipb.MockVizierClusterInfoServer, *mock_cloudapipb.MockScriptMgrServer, *mock_cloudapipb.MockAutocompleteServiceServer, func()) {
+func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *MockCloudClients, func()) {
 	ctrl := gomock.NewController(t)
 	ats := mock_cloudapipb.NewMockArtifactTrackerServer(ctrl)
 	vcs := mock_cloudapipb.NewMockVizierClusterInfoServer(ctrl)
+	vds := mock_cloudapipb.NewMockVizierDeploymentKeyManagerServer(ctrl)
 	sms := mock_cloudapipb.NewMockScriptMgrServer(ctrl)
 	as := mock_cloudapipb.NewMockAutocompleteServiceServer(ctrl)
 	gqlEnv := controller.GraphQLEnv{
 		ArtifactTrackerServer: ats,
 		VizierClusterInfo:     vcs,
+		VizierDeployKeyMgr:    vds,
 		ScriptMgrServer:       sms,
 		AutocompleteServer:    as,
 	}
@@ -34,7 +45,13 @@ func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *mock_cloudapipb
 		}
 		ctrl.Finish()
 	}
-	return gqlEnv, ats, vcs, sms, as, cleanup
+	return gqlEnv, &MockCloudClients{
+		MockArtifact:          ats,
+		MockVizierClusterInfo: vcs,
+		MockVizierDeployKey:   vds,
+		MockScriptMgr:         sms,
+		MockAutocomplete:      as,
+	}, cleanup
 }
 
 // MockAPIClients is a struct containing all of the mock clients for the api env.

@@ -14,6 +14,7 @@ import (
 type GraphQLEnv struct {
 	ArtifactTrackerServer cloudapipb.ArtifactTrackerServer
 	VizierClusterInfo     cloudapipb.VizierClusterInfoServer
+	VizierDeployKeyMgr    cloudapipb.VizierDeploymentKeyManagerServer
 	ScriptMgrServer       cloudapipb.ScriptMgrServer
 	AutocompleteServer    cloudapipb.AutocompleteServiceServer
 
