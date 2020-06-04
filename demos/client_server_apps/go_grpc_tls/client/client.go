@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"runtime"
 	"time"
 
 	"crypto/tls"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -24,11 +24,14 @@ func main() {
 	pflag.Int("max_procs", 1, "The maximum number of OS threads created by the golang runtime.")
 	pflag.Int("iters", 1000, "Number of iterations.")
 	pflag.Int("sub_iters", 1000, "Number of sub-iterations with same TLS config.")
+	pflag.Int("sleep_time", 1000, "Sleep time in microseconds per iteration.")
 	pflag.Parse()
 
 	viper.BindPFlags(pflag.CommandLine)
 
 	runtime.GOMAXPROCS(viper.GetInt("max_procs"))
+
+	sleepTime := time.Duration(viper.GetInt("sleep_time")) * time.Millisecond
 
 	for i := 0; i < viper.GetInt("iters"); i++ {
 		// Set up a connection to the server.
@@ -48,11 +51,13 @@ func main() {
 			name := fmt.Sprintf("world %d", j)
 			resp, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
 			if err != nil {
-				log.Fatalf("could not greet: %v", err)
+				log.Errorf("could not greet: %v", err)
 			} else {
 				log.Printf("Greeting: %s", resp.Message)
 			}
-			time.Sleep(time.Second)
+			if sleepTime != 0 {
+				time.Sleep(sleepTime)
+			}
 		}
 	}
 }
