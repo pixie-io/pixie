@@ -14,6 +14,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/nats-io/nats.go"
+	"google.golang.org/grpc/metadata"
+
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -102,6 +104,8 @@ type VizierInfo interface {
 	WaitForJobCompletion(string) (bool, error)
 	DeleteJob(string) error
 	GetJob(string) (*batchv1.Job, error)
+	GetClusterUID() (string, error)
+	UpdateClusterID(string) error
 }
 
 // VizierHealthChecker is the interface that gets information on health of a Vizier.
@@ -114,6 +118,7 @@ type Bridge struct {
 	vizierID      uuid.UUID
 	jwtSigningKey string
 	sessionID     int64
+	deployKey     string
 
 	vzConnClient vzconnpb.VZConnServiceClient
 	vzInfo       VizierInfo
@@ -150,10 +155,11 @@ type Bridge struct {
 }
 
 // New creates a cloud connector to cloud bridge.
-func New(vizierID uuid.UUID, jwtSigningKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo, nc *nats.Conn, checker VizierHealthChecker) *Bridge {
+func New(vizierID uuid.UUID, jwtSigningKey string, deployKey string, sessionID int64, vzClient vzconnpb.VZConnServiceClient, vzInfo VizierInfo, nc *nats.Conn, checker VizierHealthChecker) *Bridge {
 	return &Bridge{
 		vizierID:      vizierID,
 		jwtSigningKey: jwtSigningKey,
+		deployKey:     deployKey,
 		sessionID:     sessionID,
 		vzConnClient:  vzClient,
 		vizChecker:    checker,
@@ -210,6 +216,27 @@ func (s *Bridge) WaitForUpdater() {
 	}
 }
 
+// RegisterDeployment registers the vizier cluster using the deployment key.
+func (s *Bridge) RegisterDeployment() error {
+	ctx := context.Background()
+	ctx = metadata.AppendToOutgoingContext(ctx, "X-API-KEY", s.deployKey)
+	k8sUID, err := s.vzInfo.GetClusterUID()
+	if err != nil {
+		return err
+	}
+	resp, err := s.vzConnClient.RegisterVizierDeployment(ctx, &vzconnpb.RegisterVizierDeploymentRequest{
+		K8sClusterUID: k8sUID,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Get cluster ID and assign to secrets.
+	s.vizierID = utils.UUIDFromProtoOrNil(resp.VizierID)
+
+	return s.vzInfo.UpdateClusterID(s.vizierID.String())
+}
+
 // RunStream manages starting and restarting the stream to VZConn.
 func (s *Bridge) RunStream() {
 	if s.vzConnClient == nil {
@@ -255,6 +282,14 @@ func (s *Bridge) RunStream() {
 	if err == nil { // There is an upgrade job running.
 		s.updateRunning = true
 		go s.WaitForUpdater()
+	}
+
+	// Get the cluster ID, if not already specified.
+	if s.vizierID == uuid.Nil {
+		err = s.RegisterDeployment()
+		if err != nil {
+			log.WithError(err).Fatal("Failed to register vizier deployment")
+		}
 	}
 
 	s.wdWg.Add(1)

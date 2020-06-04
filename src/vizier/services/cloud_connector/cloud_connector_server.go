@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/election"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
@@ -32,6 +33,7 @@ func init() {
 	pflag.String("qb_service", "vizier-query-broker.pl.svc:50300", "The querybroker service url (load balancer/list is ok)")
 	pflag.String("cluster_name", "", "The name of the user's K8s cluster")
 	pflag.String("cluster_version", "", "The version of the user's K8s cluster")
+	pflag.String("deploy_key", "", "The deploy key for the cluster")
 }
 func newVzServiceClient() (pl_api_vizierpb.VizierServiceClient, error) {
 	dialOpts, err := services.GetGRPCClientDialOpts()
@@ -63,13 +65,9 @@ func main() {
 	defer flush()
 
 	clusterID := viper.GetString("cluster_id")
-	if clusterID == "" {
-		log.Fatal("Cluster ID is required")
-	}
-	vizierID, err := uuid.FromString(clusterID)
-	if err != nil {
-		log.WithError(err).Fatal("Could not parse cluster_id")
-	}
+	vizierID := uuid.FromStringOrNil(clusterID)
+
+	deployKey := viper.GetString("deploy_key")
 
 	vzInfo, err := controllers.NewK8sVizierInfo(viper.GetString("cluster_version"), viper.GetString("cluster_name"))
 	if err != nil {
@@ -121,7 +119,7 @@ func main() {
 	// We just use the current time in nanoseconds to mark the session ID. This will let the cloud side know that
 	// the cloud connector restarted. Clock skew might make this incorrect, but we mostly want this for debugging.
 	sessionID := time.Now().UnixNano()
-	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), sessionID, nil, vzInfo, nc, checker)
+	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), deployKey, sessionID, nil, vzInfo, nc, checker)
 	go server.RunStream()
 	defer server.Stop()
 

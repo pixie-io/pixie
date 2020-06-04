@@ -38,7 +38,6 @@ func (m *MockVZConnServiceServer) EXPECT() *MockVZConnServiceServerMockRecorder 
 
 // NATSBridge mocks base method
 func (m *MockVZConnServiceServer) NATSBridge(arg0 vzconnpb.VZConnService_NATSBridgeServer) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "NATSBridge", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -46,8 +45,20 @@ func (m *MockVZConnServiceServer) NATSBridge(arg0 vzconnpb.VZConnService_NATSBri
 
 // NATSBridge indicates an expected call of NATSBridge
 func (mr *MockVZConnServiceServerMockRecorder) NATSBridge(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NATSBridge", reflect.TypeOf((*MockVZConnServiceServer)(nil).NATSBridge), arg0)
+}
+
+// RegisterVizierDeployment mocks base method
+func (m *MockVZConnServiceServer) RegisterVizierDeployment(arg0 context.Context, arg1 *vzconnpb.RegisterVizierDeploymentRequest) (*vzconnpb.RegisterVizierDeploymentResponse, error) {
+	ret := m.ctrl.Call(m, "RegisterVizierDeployment", arg0, arg1)
+	ret0, _ := ret[0].(*vzconnpb.RegisterVizierDeploymentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RegisterVizierDeployment indicates an expected call of RegisterVizierDeployment
+func (mr *MockVZConnServiceServerMockRecorder) RegisterVizierDeployment(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterVizierDeployment", reflect.TypeOf((*MockVZConnServiceServer)(nil).RegisterVizierDeployment), arg0, arg1)
 }
 
 // MockVZConnServiceClient is a mock of VZConnServiceClient interface
@@ -75,7 +86,6 @@ func (m *MockVZConnServiceClient) EXPECT() *MockVZConnServiceClientMockRecorder 
 
 // NATSBridge mocks base method
 func (m *MockVZConnServiceClient) NATSBridge(arg0 context.Context, arg1 ...grpc.CallOption) (vzconnpb.VZConnService_NATSBridgeClient, error) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0}
 	for _, a := range arg1 {
 		varargs = append(varargs, a)
@@ -88,9 +98,26 @@ func (m *MockVZConnServiceClient) NATSBridge(arg0 context.Context, arg1 ...grpc.
 
 // NATSBridge indicates an expected call of NATSBridge
 func (mr *MockVZConnServiceClientMockRecorder) NATSBridge(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0}, arg1...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NATSBridge", reflect.TypeOf((*MockVZConnServiceClient)(nil).NATSBridge), varargs...)
+}
+
+// RegisterVizierDeployment mocks base method
+func (m *MockVZConnServiceClient) RegisterVizierDeployment(arg0 context.Context, arg1 *vzconnpb.RegisterVizierDeploymentRequest, arg2 ...grpc.CallOption) (*vzconnpb.RegisterVizierDeploymentResponse, error) {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RegisterVizierDeployment", varargs...)
+	ret0, _ := ret[0].(*vzconnpb.RegisterVizierDeploymentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RegisterVizierDeployment indicates an expected call of RegisterVizierDeployment
+func (mr *MockVZConnServiceClientMockRecorder) RegisterVizierDeployment(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterVizierDeployment", reflect.TypeOf((*MockVZConnServiceClient)(nil).RegisterVizierDeployment), varargs...)
 }
 
 // MockVZConnService_NATSBridgeServer is a mock of VZConnService_NATSBridgeServer interface
@@ -118,7 +145,6 @@ func (m *MockVZConnService_NATSBridgeServer) EXPECT() *MockVZConnService_NATSBri
 
 // Context mocks base method
 func (m *MockVZConnService_NATSBridgeServer) Context() context.Context {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Context")
 	ret0, _ := ret[0].(context.Context)
 	return ret0
@@ -126,13 +152,11 @@ func (m *MockVZConnService_NATSBridgeServer) Context() context.Context {
 
 // Context indicates an expected call of Context
 func (mr *MockVZConnService_NATSBridgeServerMockRecorder) Context() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockVZConnService_NATSBridgeServer)(nil).Context))
 }
 
 // Recv mocks base method
 func (m *MockVZConnService_NATSBridgeServer) Recv() (*vzconnpb.V2CBridgeMessage, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Recv")
 	ret0, _ := ret[0].(*vzconnpb.V2CBridgeMessage)
 	ret1, _ := ret[1].(error)
@@ -141,13 +165,11 @@ func (m *MockVZConnService_NATSBridgeServer) Recv() (*vzconnpb.V2CBridgeMessage,
 
 // Recv indicates an expected call of Recv
 func (mr *MockVZConnService_NATSBridgeServerMockRecorder) Recv() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recv", reflect.TypeOf((*MockVZConnService_NATSBridgeServer)(nil).Recv))
 }
 
 // RecvMsg mocks base method
 func (m *MockVZConnService_NATSBridgeServer) RecvMsg(arg0 interface{}) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RecvMsg", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -155,13 +177,11 @@ func (m *MockVZConnService_NATSBridgeServer) RecvMsg(arg0 interface{}) error {
 
 // RecvMsg indicates an expected call of RecvMsg
 func (mr *MockVZConnService_NATSBridgeServerMockRecorder) RecvMsg(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockVZConnService_NATSBridgeServer)(nil).RecvMsg), arg0)
 }
 
 // Send mocks base method
 func (m *MockVZConnService_NATSBridgeServer) Send(arg0 *vzconnpb.C2VBridgeMessage) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -169,13 +189,11 @@ func (m *MockVZConnService_NATSBridgeServer) Send(arg0 *vzconnpb.C2VBridgeMessag
 
 // Send indicates an expected call of Send
 func (mr *MockVZConnService_NATSBridgeServerMockRecorder) Send(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockVZConnService_NATSBridgeServer)(nil).Send), arg0)
 }
 
 // SendHeader mocks base method
 func (m *MockVZConnService_NATSBridgeServer) SendHeader(arg0 metadata.MD) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendHeader", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -183,13 +201,11 @@ func (m *MockVZConnService_NATSBridgeServer) SendHeader(arg0 metadata.MD) error 
 
 // SendHeader indicates an expected call of SendHeader
 func (mr *MockVZConnService_NATSBridgeServerMockRecorder) SendHeader(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendHeader", reflect.TypeOf((*MockVZConnService_NATSBridgeServer)(nil).SendHeader), arg0)
 }
 
 // SendMsg mocks base method
 func (m *MockVZConnService_NATSBridgeServer) SendMsg(arg0 interface{}) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendMsg", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -197,13 +213,11 @@ func (m *MockVZConnService_NATSBridgeServer) SendMsg(arg0 interface{}) error {
 
 // SendMsg indicates an expected call of SendMsg
 func (mr *MockVZConnService_NATSBridgeServerMockRecorder) SendMsg(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockVZConnService_NATSBridgeServer)(nil).SendMsg), arg0)
 }
 
 // SetHeader mocks base method
 func (m *MockVZConnService_NATSBridgeServer) SetHeader(arg0 metadata.MD) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SetHeader", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -211,19 +225,16 @@ func (m *MockVZConnService_NATSBridgeServer) SetHeader(arg0 metadata.MD) error {
 
 // SetHeader indicates an expected call of SetHeader
 func (mr *MockVZConnService_NATSBridgeServerMockRecorder) SetHeader(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetHeader", reflect.TypeOf((*MockVZConnService_NATSBridgeServer)(nil).SetHeader), arg0)
 }
 
 // SetTrailer mocks base method
 func (m *MockVZConnService_NATSBridgeServer) SetTrailer(arg0 metadata.MD) {
-	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetTrailer", arg0)
 }
 
 // SetTrailer indicates an expected call of SetTrailer
 func (mr *MockVZConnService_NATSBridgeServerMockRecorder) SetTrailer(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetTrailer", reflect.TypeOf((*MockVZConnService_NATSBridgeServer)(nil).SetTrailer), arg0)
 }
 
@@ -252,7 +263,6 @@ func (m *MockVZConnService_NATSBridgeClient) EXPECT() *MockVZConnService_NATSBri
 
 // CloseSend mocks base method
 func (m *MockVZConnService_NATSBridgeClient) CloseSend() error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CloseSend")
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -260,13 +270,11 @@ func (m *MockVZConnService_NATSBridgeClient) CloseSend() error {
 
 // CloseSend indicates an expected call of CloseSend
 func (mr *MockVZConnService_NATSBridgeClientMockRecorder) CloseSend() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseSend", reflect.TypeOf((*MockVZConnService_NATSBridgeClient)(nil).CloseSend))
 }
 
 // Context mocks base method
 func (m *MockVZConnService_NATSBridgeClient) Context() context.Context {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Context")
 	ret0, _ := ret[0].(context.Context)
 	return ret0
@@ -274,13 +282,11 @@ func (m *MockVZConnService_NATSBridgeClient) Context() context.Context {
 
 // Context indicates an expected call of Context
 func (mr *MockVZConnService_NATSBridgeClientMockRecorder) Context() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Context", reflect.TypeOf((*MockVZConnService_NATSBridgeClient)(nil).Context))
 }
 
 // Header mocks base method
 func (m *MockVZConnService_NATSBridgeClient) Header() (metadata.MD, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Header")
 	ret0, _ := ret[0].(metadata.MD)
 	ret1, _ := ret[1].(error)
@@ -289,13 +295,11 @@ func (m *MockVZConnService_NATSBridgeClient) Header() (metadata.MD, error) {
 
 // Header indicates an expected call of Header
 func (mr *MockVZConnService_NATSBridgeClientMockRecorder) Header() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Header", reflect.TypeOf((*MockVZConnService_NATSBridgeClient)(nil).Header))
 }
 
 // Recv mocks base method
 func (m *MockVZConnService_NATSBridgeClient) Recv() (*vzconnpb.C2VBridgeMessage, error) {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Recv")
 	ret0, _ := ret[0].(*vzconnpb.C2VBridgeMessage)
 	ret1, _ := ret[1].(error)
@@ -304,13 +308,11 @@ func (m *MockVZConnService_NATSBridgeClient) Recv() (*vzconnpb.C2VBridgeMessage,
 
 // Recv indicates an expected call of Recv
 func (mr *MockVZConnService_NATSBridgeClientMockRecorder) Recv() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Recv", reflect.TypeOf((*MockVZConnService_NATSBridgeClient)(nil).Recv))
 }
 
 // RecvMsg mocks base method
 func (m *MockVZConnService_NATSBridgeClient) RecvMsg(arg0 interface{}) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RecvMsg", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -318,13 +320,11 @@ func (m *MockVZConnService_NATSBridgeClient) RecvMsg(arg0 interface{}) error {
 
 // RecvMsg indicates an expected call of RecvMsg
 func (mr *MockVZConnService_NATSBridgeClientMockRecorder) RecvMsg(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecvMsg", reflect.TypeOf((*MockVZConnService_NATSBridgeClient)(nil).RecvMsg), arg0)
 }
 
 // Send mocks base method
 func (m *MockVZConnService_NATSBridgeClient) Send(arg0 *vzconnpb.V2CBridgeMessage) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Send", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -332,13 +332,11 @@ func (m *MockVZConnService_NATSBridgeClient) Send(arg0 *vzconnpb.V2CBridgeMessag
 
 // Send indicates an expected call of Send
 func (mr *MockVZConnService_NATSBridgeClientMockRecorder) Send(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Send", reflect.TypeOf((*MockVZConnService_NATSBridgeClient)(nil).Send), arg0)
 }
 
 // SendMsg mocks base method
 func (m *MockVZConnService_NATSBridgeClient) SendMsg(arg0 interface{}) error {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendMsg", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
@@ -346,13 +344,11 @@ func (m *MockVZConnService_NATSBridgeClient) SendMsg(arg0 interface{}) error {
 
 // SendMsg indicates an expected call of SendMsg
 func (mr *MockVZConnService_NATSBridgeClientMockRecorder) SendMsg(arg0 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendMsg", reflect.TypeOf((*MockVZConnService_NATSBridgeClient)(nil).SendMsg), arg0)
 }
 
 // Trailer mocks base method
 func (m *MockVZConnService_NATSBridgeClient) Trailer() metadata.MD {
-	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Trailer")
 	ret0, _ := ret[0].(metadata.MD)
 	return ret0
@@ -360,6 +356,5 @@ func (m *MockVZConnService_NATSBridgeClient) Trailer() metadata.MD {
 
 // Trailer indicates an expected call of Trailer
 func (mr *MockVZConnService_NATSBridgeClientMockRecorder) Trailer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Trailer", reflect.TypeOf((*MockVZConnService_NATSBridgeClient)(nil).Trailer))
 }

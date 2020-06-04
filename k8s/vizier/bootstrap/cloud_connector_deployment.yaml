@@ -30,6 +30,13 @@ spec:
             secretKeyRef:
               key: cluster-id
               name: pl-cluster-secrets
+              optional: true
+        - name: PL_DEPLOY_KEY
+          valueFrom:
+            secretKeyRef:
+              key: deploy-key
+              name: pl-deploy-secrets
+              optional: true
         - name: PL_POD_NAMESPACE
           valueFrom:
             fieldRef:

@@ -15,14 +15,13 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 	batchv1 "k8s.io/api/batch/v1"
 
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/cloud_connector/bridge"
 )
@@ -71,7 +70,11 @@ func handleMsg(srv vzconnpb.VZConnService_NATSBridgeServer, msg *vzconnpb.V2CBri
 
 // NATSBridge is the endpoint that all viziers connect to.
 func (fs *FakeVZConnServer) RegisterVizierDeployment(ctx context.Context, req *vzconnpb.RegisterVizierDeploymentRequest) (*vzconnpb.RegisterVizierDeploymentResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "not implemented yet")
+	assert.Equal(fs.t, "fake-uid", req.K8sClusterUID)
+	newID := uuid.NewV4()
+	return &vzconnpb.RegisterVizierDeploymentResponse{
+		VizierID: utils.ProtoFromUUID(&newID),
+	}, nil
 }
 
 // NATSBridge is the endpoint that all viziers connect to.
@@ -178,6 +181,14 @@ func (f *FakeVZInfo) GetJob(name string) (*batchv1.Job, error) {
 	return nil, nil
 }
 
+func (f *FakeVZInfo) GetClusterUID() (string, error) {
+	return "fake-uid", nil
+}
+
+func (f *FakeVZInfo) UpdateClusterID(string) error {
+	return nil
+}
+
 type testState struct {
 	vzServer *FakeVZConnServer
 	vzClient vzconnpb.VZConnServiceClient
@@ -248,7 +259,7 @@ func TestNATSGRPCBridgeTest_CorrectRegistrationFlow(t *testing.T) {
 	ts.wg.Add(1)
 
 	sessionID := time.Now().UnixNano()
-	b := bridge.New(ts.vzID, ts.jwt, sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), ts.nats, &FakeVZChecker{})
+	b := bridge.New(ts.vzID, ts.jwt, "", sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), ts.nats, &FakeVZChecker{})
 	defer b.Stop()
 	go b.RunStream()
 
@@ -284,7 +295,7 @@ func TestNATSGRPCBridgeTest_TestOutboundNATSMessage(t *testing.T) {
 	ts.wg.Add(1)
 
 	sessionID := time.Now().UnixNano()
-	b := bridge.New(ts.vzID, ts.jwt, sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), ts.nats, &FakeVZChecker{})
+	b := bridge.New(ts.vzID, ts.jwt, "", sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), ts.nats, &FakeVZChecker{})
 	defer func() {
 		b.Stop()
 	}()
@@ -342,7 +353,7 @@ func TestNATSGRPCBridgeTest_TestInboundNATSMessage(t *testing.T) {
 	ts.wg.Add(1)
 
 	sessionID := time.Now().UnixNano()
-	b := bridge.New(ts.vzID, ts.jwt, sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), ts.nats, &FakeVZChecker{})
+	b := bridge.New(ts.vzID, ts.jwt, "", sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), ts.nats, &FakeVZChecker{})
 	defer b.Stop()
 
 	go b.RunStream()
@@ -403,4 +414,32 @@ func TestNATSGRPCBridgeTest_TestInboundNATSMessage(t *testing.T) {
 		t.Fatalf("Error unmarshaling: %+v", err)
 	}
 	assert.Equal(t, expectedNats, actualNats)
+}
+
+func TestNATSGRPCBridgeTest_TestRegisterDeployment(t *testing.T) {
+	ts, cleanup := makeTestState(t)
+	defer cleanup(t)
+	ts.wg.Add(1)
+
+	vzID := uuid.FromStringOrNil("")
+
+	sessionID := time.Now().UnixNano()
+	b := bridge.New(vzID, ts.jwt, "", sessionID, ts.vzClient, makeFakeVZInfo("foobar", 123), ts.nats, &FakeVZChecker{})
+	defer b.Stop()
+
+	go b.RunStream()
+	ts.wg.Wait()
+
+	// Subscribe to NATS
+	natsCh := make(chan *nats.Msg)
+	natsSub, err := ts.nats.ChanSubscribe("c2v.*", natsCh)
+	if err != nil {
+		t.Fatalf("Error subscribing to channel: %+v", err)
+	}
+	var inboundNats *nats.Msg
+	go func() {
+		inboundNats = <-natsCh
+		natsSub.Unsubscribe()
+		ts.wg.Done()
+	}()
 }

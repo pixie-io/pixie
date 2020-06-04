@@ -37,6 +37,7 @@ go_library(
         "@io_k8s_client_go//rest:go_default_library",
         "@io_k8s_client_go//tools/cache:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//metadata:go_default_library",
     ],
 )
 
@@ -48,6 +49,7 @@ go_test(
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/shared/k8s/metadatapb:metadata_pl_go_proto",
+        "//src/utils:go_default_library",
         "//src/utils/testingutils:go_default_library",
         "@com_github_gogo_protobuf//proto:go_default_library",
         "@com_github_gogo_protobuf//types:go_default_library",
@@ -56,8 +58,6 @@ go_test(
         "@com_github_stretchr_testify//assert:go_default_library",
         "@io_k8s_api//batch/v1:go_default_library",
         "@org_golang_google_grpc//:go_default_library",
-        "@org_golang_google_grpc//codes:go_default_library",
-        "@org_golang_google_grpc//status:go_default_library",
         "@org_golang_google_grpc//test/bufconn:go_default_library",
     ],
 )
