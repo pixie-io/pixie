@@ -39,7 +39,7 @@ func TestGetServiceCredentials(t *testing.T) {
 }
 
 func TestAuthSignupHandler(t *testing.T) {
-	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/signup",
@@ -62,7 +62,7 @@ func TestAuthSignupHandler(t *testing.T) {
 			Email:     "abc@defg.com",
 		},
 	}
-	mockAuthClient.EXPECT().Signup(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.SignupRequest) {
+	mockClients.MockAuth.EXPECT().Signup(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.SignupRequest) {
 		assert.Equal(t, "the-token", in.AccessToken)
 	}).Return(signupReply, nil)
 
@@ -104,7 +104,7 @@ func TestAuthSignupHandler(t *testing.T) {
 }
 
 func TestAuthLoginHandler(t *testing.T) {
-	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/login",
@@ -131,7 +131,7 @@ func TestAuthLoginHandler(t *testing.T) {
 			OrgName: "testOrg",
 		},
 	}
-	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
+	mockClients.MockAuth.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
 		assert.Equal(t, "the-token", in.AccessToken)
 	}).Return(loginResp, nil)
 
@@ -176,7 +176,7 @@ func TestAuthLoginHandler(t *testing.T) {
 }
 
 func TestAuthLoginHandler_WithOrgName(t *testing.T) {
-	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/login",
 		strings.NewReader("{\"accessToken\": \"the-token\", \"orgName\": \"hulu\"}"))
@@ -188,7 +188,7 @@ func TestAuthLoginHandler_WithOrgName(t *testing.T) {
 		OrgName:               "hulu",
 	}
 
-	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
+	mockClients.MockAuth.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
 		assert.Equal(t, "the-token", in.AccessToken)
 	}).Return(nil, nil)
 
@@ -198,7 +198,7 @@ func TestAuthLoginHandler_WithOrgName(t *testing.T) {
 }
 
 func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
-	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/login",
 		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"user@gmail.com\"}"))
@@ -209,7 +209,7 @@ func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 		CreateUserIfNotExists: true,
 	}
 
-	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
+	mockClients.MockAuth.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
 		assert.Equal(t, "the-token", in.AccessToken)
 	}).Return(nil, status.New(codes.Unauthenticated, "bad token").Err())
 
@@ -220,7 +220,7 @@ func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 }
 
 func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
-	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/login",
 		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"user@hulu.com\"}"))
@@ -231,7 +231,7 @@ func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
 		CreateUserIfNotExists: true,
 	}
 
-	mockAuthClient.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
+	mockClients.MockAuth.EXPECT().Login(gomock.Any(), expectedAuthServiceReq).Do(func(ctx context.Context, in *authpb.LoginRequest) {
 		assert.Equal(t, "the-token", in.AccessToken)
 	}).Return(nil, errors.New("badness"))
 
@@ -243,7 +243,7 @@ func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
 }
 
 func TestAuthLoginHandler_BadMethod(t *testing.T) {
-	env, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("GET", "/login", nil)
 	assert.Nil(t, err)
@@ -256,7 +256,7 @@ func TestAuthLoginHandler_BadMethod(t *testing.T) {
 }
 
 func TestAuthLogoutHandler(t *testing.T) {
-	env, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/logout", nil)
@@ -288,7 +288,7 @@ func TestAuthLogoutHandler(t *testing.T) {
 }
 
 func TestAuthLogoutHandler_BadMethod(t *testing.T) {
-	env, _, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, _, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "/logout", nil)

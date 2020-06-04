@@ -94,7 +94,7 @@ func failedRequestCheckHelper(t *testing.T, env apienv.APIEnv, mockAuthClient *m
 }
 
 func TestWithAugmentedAuthMiddlewareWithSession(t *testing.T) {
-	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
@@ -102,35 +102,35 @@ func TestWithAugmentedAuthMiddlewareWithSession(t *testing.T) {
 	cookie := getTestCookie(t, env)
 	req.Header.Add("Cookie", cookie)
 
-	validRequestCheckHelper(t, env, mockAuthClient, req)
+	validRequestCheckHelper(t, env, mockClients.MockAuth, req)
 }
 
 func TestWithAugmentedAuthMiddlewareWithBearer(t *testing.T) {
-	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
 	assert.Nil(t, err)
 	req.Header.Add("Authorization", "Bearer authpb-token")
 
-	validRequestCheckHelper(t, env, mockAuthClient, req)
+	validRequestCheckHelper(t, env, mockClients.MockAuth, req)
 }
 
 func TestWithAugmentedAuthMiddlewareMissingAuth(t *testing.T) {
-	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
 	req, err := http.NewRequest("GET", "https://pixie.dev.pixielabs.dev/api/users", nil)
 	assert.Nil(t, err)
 
-	failedRequestCheckHelper(t, env, mockAuthClient, req)
+	failedRequestCheckHelper(t, env, mockClients.MockAuth, req)
 }
 
 func TestWithAugmentedAuthMiddlewareFailedAugmentation(t *testing.T) {
-	env, mockAuthClient, _, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 
-	mockAuthClient.EXPECT().GetAugmentedToken(
+	mockClients.MockAuth.EXPECT().GetAugmentedToken(
 		gomock.Any(), gomock.Any()).Do(
 		func(c context.Context, request *authpb.GetAugmentedAuthTokenRequest) {
 			assert.Equal(t, "bad-token", request.Token)
@@ -141,5 +141,5 @@ func TestWithAugmentedAuthMiddlewareFailedAugmentation(t *testing.T) {
 	assert.Nil(t, err)
 	req.Header.Add("Authorization", "Bearer bad-token")
 
-	failedRequestCheckHelper(t, env, mockAuthClient, req)
+	failedRequestCheckHelper(t, env, mockClients.MockAuth, req)
 }

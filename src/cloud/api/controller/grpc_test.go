@@ -33,11 +33,11 @@ func TestArtifactTracker_GetArtifactList(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	_, _, _, _, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 
-	mockArtifactClient.EXPECT().GetArtifactList(gomock.Any(),
+	mockClients.MockArtifact.EXPECT().GetArtifactList(gomock.Any(),
 		&artifacttrackerpb.GetArtifactListRequest{
 			ArtifactName: "cli",
 			Limit:        1,
@@ -51,7 +51,7 @@ func TestArtifactTracker_GetArtifactList(t *testing.T) {
 		}, nil)
 
 	artifactTrackerServer := &controller.ArtifactTrackerServer{
-		ArtifactTrackerClient: mockArtifactClient,
+		ArtifactTrackerClient: mockClients.MockArtifact,
 	}
 
 	resp, err := artifactTrackerServer.GetArtifactList(ctx, &cloudapipb.GetArtifactListRequest{
@@ -69,11 +69,11 @@ func TestArtifactTracker_GetDownloadLink(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	_, _, _, _, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := context.Background()
 
-	mockArtifactClient.EXPECT().GetDownloadLink(gomock.Any(),
+	mockClients.MockArtifact.EXPECT().GetDownloadLink(gomock.Any(),
 		&artifacttrackerpb.GetDownloadLinkRequest{
 			ArtifactName: "cli",
 			VersionStr:   "version",
@@ -85,7 +85,7 @@ func TestArtifactTracker_GetDownloadLink(t *testing.T) {
 		}, nil)
 
 	artifactTrackerServer := &controller.ArtifactTrackerServer{
-		ArtifactTrackerClient: mockArtifactClient,
+		ArtifactTrackerClient: mockClients.MockArtifact,
 	}
 
 	resp, err := artifactTrackerServer.GetDownloadLink(ctx, &cloudapipb.GetDownloadLinkRequest{
@@ -107,17 +107,17 @@ func TestVizierClusterInfo_CreateCluster(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	_, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
 	ccReq := &vzmgrpb.CreateVizierClusterRequest{
 		OrgID: orgID,
 	}
-	mockVzMgr.EXPECT().CreateVizierCluster(gomock.Any(), ccReq).Return(clusterID, nil)
+	mockClients.MockVzMgr.EXPECT().CreateVizierCluster(gomock.Any(), ccReq).Return(clusterID, nil)
 
 	vzClusterInfoServer := &controller.VizierClusterInfo{
-		VzMgr: mockVzMgr,
+		VzMgr: mockClients.MockVzMgr,
 	}
 
 	resp, err := vzClusterInfoServer.CreateCluster(ctx, &cloudapipb.CreateClusterRequest{})
@@ -134,15 +134,15 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	_, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	mockVzMgr.EXPECT().GetViziersByOrg(gomock.Any(), orgID).Return(&vzmgrpb.GetViziersByOrgResponse{
+	mockClients.MockVzMgr.EXPECT().GetViziersByOrg(gomock.Any(), orgID).Return(&vzmgrpb.GetViziersByOrgResponse{
 		VizierIDs: []*uuidpb.UUID{clusterID},
 	}, nil)
 
-	mockVzMgr.EXPECT().GetVizierInfo(gomock.Any(), clusterID).Return(&cvmsgspb.VizierInfo{
+	mockClients.MockVzMgr.EXPECT().GetVizierInfo(gomock.Any(), clusterID).Return(&cvmsgspb.VizierInfo{
 		VizierID:        clusterID,
 		Status:          cvmsgspb.VZ_ST_HEALTHY,
 		LastHeartbeatNs: int64(1305646598000000000),
@@ -156,7 +156,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 	}, nil)
 
 	vzClusterInfoServer := &controller.VizierClusterInfo{
-		VzMgr: mockVzMgr,
+		VzMgr: mockClients.MockVzMgr,
 	}
 
 	resp, err := vzClusterInfoServer.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
@@ -181,11 +181,11 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	_, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	mockVzMgr.EXPECT().GetVizierInfo(gomock.Any(), clusterID).Return(&cvmsgspb.VizierInfo{
+	mockClients.MockVzMgr.EXPECT().GetVizierInfo(gomock.Any(), clusterID).Return(&cvmsgspb.VizierInfo{
 		VizierID:        clusterID,
 		Status:          cvmsgspb.VZ_ST_HEALTHY,
 		LastHeartbeatNs: int64(1305646598000000000),
@@ -199,7 +199,7 @@ func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {
 	}, nil)
 
 	vzClusterInfoServer := &controller.VizierClusterInfo{
-		VzMgr: mockVzMgr,
+		VzMgr: mockClients.MockVzMgr,
 	}
 
 	resp, err := vzClusterInfoServer.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{
@@ -222,7 +222,7 @@ func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	_, _, _, mockVzMgr, _, cleanup := testutils.CreateTestAPIEnv(t)
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -233,10 +233,10 @@ func TestVizierClusterInfo_UpdateClusterVizierConfig(t *testing.T) {
 		},
 	}
 
-	mockVzMgr.EXPECT().UpdateVizierConfig(gomock.Any(), updateReq).Return(&cvmsgspb.UpdateVizierConfigResponse{}, nil)
+	mockClients.MockVzMgr.EXPECT().UpdateVizierConfig(gomock.Any(), updateReq).Return(&cvmsgspb.UpdateVizierConfigResponse{}, nil)
 
 	vzClusterInfoServer := &controller.VizierClusterInfo{
-		VzMgr: mockVzMgr,
+		VzMgr: mockClients.MockVzMgr,
 	}
 
 	resp, err := vzClusterInfoServer.UpdateClusterVizierConfig(ctx, &cloudapipb.UpdateClusterVizierConfigRequest{
@@ -257,7 +257,7 @@ func TestVizierClusterInfo_UpdateOrInstallCluster(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	_, _, _, mockVzMgr, mockArtifactClient, cleanup := testutils.CreateTestAPIEnv(t)
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
@@ -266,9 +266,9 @@ func TestVizierClusterInfo_UpdateOrInstallCluster(t *testing.T) {
 		Version:  "0.1.30",
 	}
 
-	mockVzMgr.EXPECT().UpdateOrInstallVizier(gomock.Any(), updateReq).Return(&cvmsgspb.UpdateOrInstallVizierResponse{UpdateStarted: true}, nil)
+	mockClients.MockVzMgr.EXPECT().UpdateOrInstallVizier(gomock.Any(), updateReq).Return(&cvmsgspb.UpdateOrInstallVizierResponse{UpdateStarted: true}, nil)
 
-	mockArtifactClient.EXPECT().
+	mockClients.MockArtifact.EXPECT().
 		GetDownloadLink(gomock.Any(), &artifacttrackerpb.GetDownloadLinkRequest{
 			ArtifactName: "vizier",
 			VersionStr:   "0.1.30",
@@ -277,8 +277,8 @@ func TestVizierClusterInfo_UpdateOrInstallCluster(t *testing.T) {
 		Return(nil, nil)
 
 	vzClusterInfoServer := &controller.VizierClusterInfo{
-		VzMgr:                 mockVzMgr,
-		ArtifactTrackerClient: mockArtifactClient,
+		VzMgr:                 mockClients.MockVzMgr,
+		ArtifactTrackerClient: mockClients.MockArtifact,
 	}
 
 	resp, err := vzClusterInfoServer.UpdateOrInstallCluster(ctx, &cloudapipb.UpdateOrInstallClusterRequest{
@@ -288,6 +288,127 @@ func TestVizierClusterInfo_UpdateOrInstallCluster(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
+}
+
+func TestVizierDeploymentKeyServer_Create(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	vzreq := &vzmgrpb.CreateDeploymentKeyRequest{}
+	vzresp := &vzmgrpb.DeploymentKey{
+		ID:        pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+		Key:       "foobar",
+		CreatedAt: types.TimestampNow(),
+	}
+	mockClients.MockVzDeployKey.EXPECT().
+		Create(gomock.Any(), vzreq).Return(vzresp, nil)
+
+	vzDeployKeyServer := &controller.VizierDeploymentKeyServer{
+		VzDeploymentKey: mockClients.MockVzDeployKey,
+	}
+
+	resp, err := vzDeployKeyServer.Create(ctx, &cloudapipb.CreateDeploymentKeyRequest{})
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, resp.ID, vzresp.ID)
+	assert.Equal(t, resp.Key, vzresp.Key)
+	assert.Equal(t, resp.CreatedAt, vzresp.CreatedAt)
+}
+
+func TestVizierDeploymentKeyServer_List(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	vzreq := &vzmgrpb.ListDeploymentKeyRequest{}
+	vzresp := &vzmgrpb.ListDeploymentKeyResponse{
+		Keys: []*vzmgrpb.DeploymentKey{
+			&vzmgrpb.DeploymentKey{
+				ID:        pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
+				Key:       "foobar",
+				CreatedAt: types.TimestampNow(),
+			},
+		},
+	}
+	mockClients.MockVzDeployKey.EXPECT().
+		List(gomock.Any(), vzreq).Return(vzresp, nil)
+
+	vzDeployKeyServer := &controller.VizierDeploymentKeyServer{
+		VzDeploymentKey: mockClients.MockVzDeployKey,
+	}
+
+	resp, err := vzDeployKeyServer.List(ctx, &cloudapipb.ListDeploymentKeyRequest{})
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	for i, key := range resp.Keys {
+		assert.Equal(t, key.ID, vzresp.Keys[i].ID)
+		assert.Equal(t, key.Key, vzresp.Keys[i].Key)
+		assert.Equal(t, key.CreatedAt, vzresp.Keys[i].CreatedAt)
+	}
+}
+
+func TestVizierDeploymentKeyServer_Get(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	id := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	vzreq := &vzmgrpb.GetDeploymentKeyRequest{
+		ID: id,
+	}
+	vzresp := &vzmgrpb.GetDeploymentKeyResponse{
+		Key: &vzmgrpb.DeploymentKey{
+			ID:        id,
+			Key:       "foobar",
+			CreatedAt: types.TimestampNow(),
+		},
+	}
+	mockClients.MockVzDeployKey.EXPECT().
+		Get(gomock.Any(), vzreq).Return(vzresp, nil)
+
+	vzDeployKeyServer := &controller.VizierDeploymentKeyServer{
+		VzDeploymentKey: mockClients.MockVzDeployKey,
+	}
+	resp, err := vzDeployKeyServer.Get(ctx, &cloudapipb.GetDeploymentKeyRequest{
+		ID: id,
+	})
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, resp.Key.ID, vzresp.Key.ID)
+	assert.Equal(t, resp.Key.Key, vzresp.Key.Key)
+	assert.Equal(t, resp.Key.CreatedAt, vzresp.Key.CreatedAt)
+}
+
+func TestVizierDeploymentKeyServer_Delete(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
+	defer cleanup()
+	ctx := CreateTestContext()
+
+	id := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	vzresp := &types.Empty{}
+	mockClients.MockVzDeployKey.EXPECT().
+		Delete(gomock.Any(), id).Return(vzresp, nil)
+
+	vzDeployKeyServer := &controller.VizierDeploymentKeyServer{
+		VzDeploymentKey: mockClients.MockVzDeployKey,
+	}
+	resp, err := vzDeployKeyServer.Delete(ctx, id)
+	assert.Nil(t, err)
+	assert.NotNil(t, resp)
+	assert.Equal(t, resp, vzresp)
 }
 
 type SuggestionRequest struct {
@@ -636,17 +757,17 @@ func TestProfileServer_GetOrgInfo(t *testing.T) {
 	defer ctrl.Finish()
 	orgID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
 
-	_, _, mockProfileClient, _, _, cleanup := testutils.CreateTestAPIEnv(t)
+	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	mockProfileClient.EXPECT().GetOrg(gomock.Any(), orgID).
+	mockClients.MockProfile.EXPECT().GetOrg(gomock.Any(), orgID).
 		Return(&profilepb.OrgInfo{
 			OrgName: "someOrg",
 			ID:      orgID,
 		}, nil)
 
-	profileServer := &controller.ProfileServer{mockProfileClient}
+	profileServer := &controller.ProfileServer{mockClients.MockProfile}
 
 	resp, err := profileServer.GetOrgInfo(ctx, orgID)
 

@@ -65,9 +65,9 @@ func main() {
 		log.WithError(err).Fatal("Failed to init profile client")
 	}
 
-	vc, err := apienv.NewVZMgrServiceClient()
+	vc, vk, err := apienv.NewVZMgrServiceClients()
 	if err != nil {
-		log.WithError(err).Fatal("Failed to init vzmgr client")
+		log.WithError(err).Fatal("Failed to init vzmgr clients")
 	}
 
 	at, err := apienv.NewArtifactTrackerClient()
@@ -75,7 +75,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to init artifact tracker client")
 	}
 
-	env, err := apienv.New(ac, pc, vc, at)
+	env, err := apienv.New(ac, pc, vk, vc, at)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to create api environment")
 	}
@@ -138,6 +138,9 @@ func main() {
 
 	cis := &controller.VizierClusterInfo{VzMgr: vc, ArtifactTrackerClient: at}
 	cloudapipb.RegisterVizierClusterInfoServer(s.GRPCServer(), cis)
+
+	vdks := &controller.VizierDeploymentKeyServer{VzDeploymentKey: vk}
+	cloudapipb.RegisterVizierDeploymentKeyManagerServer(s.GRPCServer(), vdks)
 
 	vpt := ptproxy.NewVizierPassThroughProxy(nc, vc)
 	pl_api_vizierpb.RegisterVizierServiceServer(s.GRPCServer(), vpt)

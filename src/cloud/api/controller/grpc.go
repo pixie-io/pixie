@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	types "github.com/gogo/protobuf/types"
 	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -169,14 +170,27 @@ type VizierClusterInfo struct {
 	ArtifactTrackerClient artifacttrackerpb.ArtifactTrackerClient
 }
 
+func contextWithAuthToken(ctx context.Context) (context.Context, error) {
+	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return metadata.AppendToOutgoingContext(ctx, "authorization",
+		fmt.Sprintf("bearer %s", sCtx.AuthToken)), nil
+}
+
 // CreateCluster creates a cluster for the current org.
 func (v *VizierClusterInfo) CreateCluster(ctx context.Context, request *cloudapipb.CreateClusterRequest) (*cloudapipb.CreateClusterResponse, error) {
 	sCtx, err := authcontext.FromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
 
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
-		fmt.Sprintf("bearer %s", sCtx.AuthToken))
-
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 	clusterID, err := v.VzMgr.CreateVizierCluster(ctx, &vzmgrpb.CreateVizierClusterRequest{
 		OrgID: pbutils.ProtoFromUUIDStrOrNil(orgIDstr),
 	})
@@ -198,8 +212,10 @@ func (v *VizierClusterInfo) GetClusterInfo(ctx context.Context, request *cloudap
 		return nil, err
 	}
 
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
-		fmt.Sprintf("bearer %s", sCtx.AuthToken))
+	ctx, err = contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	vzIDs := make([]*uuidpb.UUID, 0)
 	if request.ID != nil {
@@ -244,14 +260,10 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 // GetClusterConnectionInfo returns information about connections to Vizier cluster.
 func (v *VizierClusterInfo) GetClusterConnectionInfo(ctx context.Context, request *cloudapipb.GetClusterConnectionInfoRequest) (*cloudapipb.GetClusterConnectionInfoResponse, error) {
 	id := request.ID
-
-	sCtx, err := authcontext.FromContext(ctx)
+	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization",
-		fmt.Sprintf("bearer %s", sCtx.AuthToken))
 
 	ci, err := v.VzMgr.GetVizierConnectionInfo(ctx, id)
 	if err != nil {
@@ -266,12 +278,10 @@ func (v *VizierClusterInfo) GetClusterConnectionInfo(ctx context.Context, reques
 
 // UpdateClusterVizierConfig supports updates of VizierConfig for a cluster
 func (v *VizierClusterInfo) UpdateClusterVizierConfig(ctx context.Context, req *cloudapipb.UpdateClusterVizierConfigRequest) (*cloudapipb.UpdateClusterVizierConfigResponse, error) {
-	sCtx, err := authcontext.FromContext(ctx)
+	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
 
 	_, err = v.VzMgr.UpdateVizierConfig(ctx, &cvmsgspb.UpdateVizierConfigRequest{
 		VizierID: req.ID,
@@ -288,16 +298,14 @@ func (v *VizierClusterInfo) UpdateClusterVizierConfig(ctx context.Context, req *
 
 // UpdateOrInstallCluster updates or installs the given vizier cluster to the specified version.
 func (v *VizierClusterInfo) UpdateOrInstallCluster(ctx context.Context, req *cloudapipb.UpdateOrInstallClusterRequest) (*cloudapipb.UpdateOrInstallClusterResponse, error) {
-	sCtx, err := authcontext.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	if req.Version == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "version cannot be empty")
 	}
 
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
 
 	// Validate version.
 	atReq := &artifacttrackerpb.GetDownloadLinkRequest{
@@ -342,6 +350,80 @@ func vzStatusToClusterStatus(s cvmsgspb.VizierStatus) cloudapipb.ClusterStatus {
 	default:
 		return cloudapipb.CS_UNKNOWN
 	}
+}
+
+// VizierDeploymentKeyServer is the server that implements the VizierDeploymentKeyManager gRPC service.
+type VizierDeploymentKeyServer struct {
+	VzDeploymentKey vzmgrpb.VZDeploymentKeyServiceClient
+}
+
+func deployKeyToCloudAPI(key *vzmgrpb.DeploymentKey) *cloudapipb.DeploymentKey {
+	return &cloudapipb.DeploymentKey{
+		ID:        key.ID,
+		Key:       key.Key,
+		CreatedAt: key.CreatedAt,
+	}
+}
+
+// Create creates a new deploy key in vzmgr.
+func (v *VizierDeploymentKeyServer) Create(ctx context.Context, req *cloudapipb.CreateDeploymentKeyRequest) (*cloudapipb.DeploymentKey, error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := v.VzDeploymentKey.Create(ctx, &vzmgrpb.CreateDeploymentKeyRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return deployKeyToCloudAPI(resp), nil
+}
+
+// List lists all of the deploy keys in vzmgr.
+func (v *VizierDeploymentKeyServer) List(ctx context.Context, req *cloudapipb.ListDeploymentKeyRequest) (*cloudapipb.ListDeploymentKeyResponse, error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := v.VzDeploymentKey.List(ctx, &vzmgrpb.ListDeploymentKeyRequest{})
+	if err != nil {
+		return nil, err
+	}
+	var keys []*cloudapipb.DeploymentKey
+	for _, key := range resp.Keys {
+		keys = append(keys, deployKeyToCloudAPI(key))
+	}
+	return &cloudapipb.ListDeploymentKeyResponse{
+		Keys: keys,
+	}, nil
+}
+
+// Get fetches a specific deploy key in vzmgr.
+func (v *VizierDeploymentKeyServer) Get(ctx context.Context, req *cloudapipb.GetDeploymentKeyRequest) (*cloudapipb.GetDeploymentKeyResponse, error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := v.VzDeploymentKey.Get(ctx, &vzmgrpb.GetDeploymentKeyRequest{
+		ID: req.ID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &cloudapipb.GetDeploymentKeyResponse{
+		Key: deployKeyToCloudAPI(resp.Key),
+	}, nil
+}
+
+// Delete deletes a specific deploy key in vzmgr.
+func (v *VizierDeploymentKeyServer) Delete(ctx context.Context, uuid *uuidpb.UUID) (*types.Empty, error) {
+	ctx, err := contextWithAuthToken(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return v.VzDeploymentKey.Delete(ctx, uuid)
 }
 
 // AutocompleteServer is the server that implements the Autocomplete gRPC service.
@@ -429,12 +511,10 @@ type ScriptMgrServer struct {
 
 // GetLiveViews returns a list of all available live views.
 func (s *ScriptMgrServer) GetLiveViews(ctx context.Context, req *cloudapipb.GetLiveViewsReq) (*cloudapipb.GetLiveViewsResp, error) {
-	sCtx, err := authcontext.FromContext(ctx)
+	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
 	}
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
-
 	smReq := &scriptmgrpb.GetLiveViewsReq{}
 	smResp, err := s.ScriptMgr.GetLiveViews(ctx, smReq)
 	if err != nil {
@@ -455,11 +535,10 @@ func (s *ScriptMgrServer) GetLiveViews(ctx context.Context, req *cloudapipb.GetL
 
 // GetLiveViewContents returns the pxl script, vis info, and metdata for a live view.
 func (s *ScriptMgrServer) GetLiveViewContents(ctx context.Context, req *cloudapipb.GetLiveViewContentsReq) (*cloudapipb.GetLiveViewContentsResp, error) {
-	sCtx, err := authcontext.FromContext(ctx)
+	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
 	}
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
 
 	smReq := &scriptmgrpb.GetLiveViewContentsReq{
 		LiveViewID: pbutils.ProtoFromUUIDStrOrNil(req.LiveViewID),
@@ -482,11 +561,10 @@ func (s *ScriptMgrServer) GetLiveViewContents(ctx context.Context, req *cloudapi
 
 // GetScripts returns a list of all available scripts.
 func (s *ScriptMgrServer) GetScripts(ctx context.Context, req *cloudapipb.GetScriptsReq) (*cloudapipb.GetScriptsResp, error) {
-	sCtx, err := authcontext.FromContext(ctx)
+	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
 	}
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
 
 	smReq := &scriptmgrpb.GetScriptsReq{}
 	smResp, err := s.ScriptMgr.GetScripts(ctx, smReq)
@@ -509,11 +587,10 @@ func (s *ScriptMgrServer) GetScripts(ctx context.Context, req *cloudapipb.GetScr
 
 // GetScriptContents returns the pxl string of the script.
 func (s *ScriptMgrServer) GetScriptContents(ctx context.Context, req *cloudapipb.GetScriptContentsReq) (*cloudapipb.GetScriptContentsResp, error) {
-	sCtx, err := authcontext.FromContext(ctx)
+	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
 	}
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
 
 	smReq := &scriptmgrpb.GetScriptContentsReq{
 		ScriptID: pbutils.ProtoFromUUIDStrOrNil(req.ScriptID),
@@ -540,11 +617,10 @@ type ProfileServer struct {
 
 // GetOrgInfo gets the org info for a given org ID.
 func (p *ProfileServer) GetOrgInfo(ctx context.Context, req *uuidpb.UUID) (*cloudapipb.OrgInfo, error) {
-	sCtx, err := authcontext.FromContext(ctx)
+	ctx, err := contextWithAuthToken(ctx)
 	if err != nil {
 		return nil, err
 	}
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", sCtx.AuthToken))
 
 	resp, err := p.ProfileServiceClient.GetOrg(ctx, req)
 	if err != nil {

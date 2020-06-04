@@ -37,8 +37,17 @@ func CreateTestGraphQLEnv(t *testing.T) (controller.GraphQLEnv, *mock_cloudapipb
 	return gqlEnv, ats, vcs, sms, as, cleanup
 }
 
+// MockAPIClients is a struct containing all of the mock clients for the api env.
+type MockAPIClients struct {
+	MockAuth        *mock_auth.MockAuthServiceClient
+	MockProfile     *mock_profilepb.MockProfileServiceClient
+	MockVzDeployKey *mock_vzmgrpb.MockVZDeploymentKeyServiceClient
+	MockVzMgr       *mock_vzmgrpb.MockVZMgrServiceClient
+	MockArtifact    *mock_artifacttrackerpb.MockArtifactTrackerClient
+}
+
 // CreateTestAPIEnv creates a test environment and mock clients.
-func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *mock_auth.MockAuthServiceClient, *mock_profilepb.MockProfileServiceClient, *mock_vzmgrpb.MockVZMgrServiceClient, *mock_artifacttrackerpb.MockArtifactTrackerClient, func()) {
+func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *MockAPIClients, func()) {
 	ctrl := gomock.NewController(t)
 	viper.Set("session_key", "fake-session-key")
 	viper.Set("jwt_signing_key", "jwt-key")
@@ -47,8 +56,9 @@ func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *mock_auth.MockAuthServiceCl
 	mockAuthClient := mock_auth.NewMockAuthServiceClient(ctrl)
 	mockProfileClient := mock_profilepb.NewMockProfileServiceClient(ctrl)
 	mockVzMgrClient := mock_vzmgrpb.NewMockVZMgrServiceClient(ctrl)
+	mockVzDeployKey := mock_vzmgrpb.NewMockVZDeploymentKeyServiceClient(ctrl)
 	mockArtifactTrackerClient := mock_artifacttrackerpb.NewMockArtifactTrackerClient(ctrl)
-	apiEnv, err := apienv.New(mockAuthClient, mockProfileClient, mockVzMgrClient, mockArtifactTrackerClient)
+	apiEnv, err := apienv.New(mockAuthClient, mockProfileClient, mockVzDeployKey, mockVzMgrClient, mockArtifactTrackerClient)
 	if err != nil {
 		t.Fatal("failed to init api env")
 	}
@@ -59,5 +69,11 @@ func CreateTestAPIEnv(t *testing.T) (apienv.APIEnv, *mock_auth.MockAuthServiceCl
 		ctrl.Finish()
 	}
 
-	return apiEnv, mockAuthClient, mockProfileClient, mockVzMgrClient, mockArtifactTrackerClient, cleanup
+	return apiEnv, &MockAPIClients{
+		MockAuth:        mockAuthClient,
+		MockProfile:     mockProfileClient,
+		MockVzMgr:       mockVzMgrClient,
+		MockVzDeployKey: mockVzDeployKey,
+		MockArtifact:    mockArtifactTrackerClient,
+	}, cleanup
 }
