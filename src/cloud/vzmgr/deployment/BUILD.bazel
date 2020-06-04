@@ -1,0 +1,31 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["deployment.go"],
+    importpath = "pixielabs.ai/pixielabs/src/cloud/vzmgr/deployment",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/cloud/vzmgr/vzerrors:go_default_library",
+        "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
+        "//src/utils:go_default_library",
+        "@com_github_satori_go_uuid//:go_default_library",
+        "@org_golang_google_grpc//codes:go_default_library",
+        "@org_golang_google_grpc//status:go_default_library",
+    ],
+)
+
+go_test(
+    name = "go_default_test",
+    srcs = ["deployment_test.go"],
+    embed = [":go_default_library"],
+    deps = [
+        "//src/cloud/vzmgr/vzerrors:go_default_library",
+        "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
+        "//src/utils:go_default_library",
+        "@com_github_alecthomas_assert//:go_default_library",
+        "@com_github_satori_go_uuid//:go_default_library",
+        "@org_golang_google_grpc//codes:go_default_library",
+        "@org_golang_google_grpc//status:go_default_library",
+    ],
+)
