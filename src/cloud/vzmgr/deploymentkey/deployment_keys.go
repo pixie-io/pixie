@@ -40,10 +40,10 @@ func (s *Service) Create(ctx context.Context, req *vzmgrpb.CreateDeploymentKeyRe
 
 	var id uuid.UUID
 	var ts time.Time
-	query := `INSERT INTO vizier_deployment_keys(org_id, user_id, key) VALUES($1, $2, PGP_SYM_ENCRYPT($3, $4)) RETURNING id, created_at`
+	query := `INSERT INTO vizier_deployment_keys(org_id, user_id, key, description) VALUES($1, $2, PGP_SYM_ENCRYPT($3, $4), $5) RETURNING id, created_at`
 	key := uuid.NewV4().String()
 	err = s.db.QueryRowxContext(ctx, query,
-		sCtx.Claims.GetUserClaims().OrgID, sCtx.Claims.GetUserClaims().UserID, key, s.dbKey).
+		sCtx.Claims.GetUserClaims().OrgID, sCtx.Claims.GetUserClaims().UserID, key, s.dbKey, req.Desc).
 		Scan(&id, &ts)
 	if err != nil {
 		log.WithError(err).Error("Failed to insert deployment keys")
@@ -66,7 +66,7 @@ func (s *Service) List(ctx context.Context, req *vzmgrpb.ListDeploymentKeyReques
 	}
 
 	// Return all clusters when the OrgID matches.
-	query := `SELECT id, org_id, PGP_SYM_DECRYPT(key::bytea, $1), created_at from vizier_deployment_keys WHERE org_id=$2 ORDER BY created_at`
+	query := `SELECT id, org_id, PGP_SYM_DECRYPT(key::bytea, $1), created_at, description from vizier_deployment_keys WHERE org_id=$2 ORDER BY created_at`
 	rows, err := s.db.QueryxContext(ctx, query, s.dbKey, sCtx.Claims.GetUserClaims().OrgID)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -83,7 +83,8 @@ func (s *Service) List(ctx context.Context, req *vzmgrpb.ListDeploymentKeyReques
 		var orgID string
 		var key string
 		var createdAt time.Time
-		err = rows.Scan(&id, &orgID, &key, &createdAt)
+		var desc string
+		err = rows.Scan(&id, &orgID, &key, &createdAt, &desc)
 		if err != nil {
 			log.WithError(err).Error("Failed to read data from postgres")
 			return nil, status.Error(codes.Internal, "failed to read data")
@@ -93,6 +94,7 @@ func (s *Service) List(ctx context.Context, req *vzmgrpb.ListDeploymentKeyReques
 			ID:        utils.ProtoFromUUIDStrOrNil(id),
 			Key:       key,
 			CreatedAt: tProto,
+			Desc:      desc,
 		})
 	}
 	return &vzmgrpb.ListDeploymentKeyResponse{
@@ -113,8 +115,9 @@ func (s *Service) Get(ctx context.Context, req *vzmgrpb.GetDeploymentKeyRequest)
 
 	var key string
 	var createdAt time.Time
-	query := `SELECT PGP_SYM_DECRYPT(key::bytea, $1), created_at from vizier_deployment_keys WHERE org_id=$2 and id=$3`
-	err = s.db.QueryRowxContext(ctx, query, s.dbKey, sCtx.Claims.GetUserClaims().OrgID, tokenID).Scan(&key, &createdAt)
+	var desc string
+	query := `SELECT PGP_SYM_DECRYPT(key::bytea, $1), created_at, description from vizier_deployment_keys WHERE org_id=$2 and id=$3`
+	err = s.db.QueryRowxContext(ctx, query, s.dbKey, sCtx.Claims.GetUserClaims().OrgID, tokenID).Scan(&key, &createdAt, &desc)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, "No such deployment key")
 	}
@@ -124,6 +127,7 @@ func (s *Service) Get(ctx context.Context, req *vzmgrpb.GetDeploymentKeyRequest)
 		ID:        req.ID,
 		Key:       key,
 		CreatedAt: createdAtProto,
+		Desc:      desc,
 	}}, nil
 }
 

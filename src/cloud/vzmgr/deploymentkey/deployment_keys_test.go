@@ -50,10 +50,10 @@ func createTestContext() context.Context {
 }
 
 func loadTestData(t *testing.T, db *sqlx.DB) {
-	insertVizierDeploymentKeys := `INSERT INTO vizier_deployment_keys(id, org_id, user_id, key) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5))`
-	db.MustExec(insertVizierDeploymentKeys, testKey1ID, testAuthOrgID, testAuthOrgID, "key1", testDBKey)
-	db.MustExec(insertVizierDeploymentKeys, testKey2ID, testAuthOrgID, testAuthOrgID, "key2", testDBKey)
-	db.MustExec(insertVizierDeploymentKeys, testNonAuthUserKeyID.String(), testNonAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", "key2", testDBKey)
+	insertVizierDeploymentKeys := `INSERT INTO vizier_deployment_keys(id, org_id, user_id, key, description) VALUES ($1, $2, $3, PGP_SYM_ENCRYPT($4, $5), $6)`
+	db.MustExec(insertVizierDeploymentKeys, testKey1ID, testAuthOrgID, testAuthOrgID, "key1", testDBKey, "here is a desc")
+	db.MustExec(insertVizierDeploymentKeys, testKey2ID, testAuthOrgID, testAuthOrgID, "key2", testDBKey, "here is another one")
+	db.MustExec(insertVizierDeploymentKeys, testNonAuthUserKeyID.String(), testNonAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", "key2", testDBKey, "some other desc")
 }
 
 func TestDeploymentKeyService_CreateDeploymentKey(t *testing.T) {
@@ -63,7 +63,7 @@ func TestDeploymentKeyService_CreateDeploymentKey(t *testing.T) {
 
 	ctx := createTestContext()
 	svc := New(db, testDBKey)
-	resp, err := svc.Create(ctx, &vzmgrpb.CreateDeploymentKeyRequest{})
+	resp, err := svc.Create(ctx, &vzmgrpb.CreateDeploymentKeyRequest{Desc: "this is a key"})
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 
@@ -95,6 +95,8 @@ func TestDeploymentKeyService_ListDeploymentKeys(t *testing.T) {
 	assert.Equal(t, 2, len(resp.Keys))
 	assert.Equal(t, testKey1ID, utils.UUIDFromProtoOrNil(resp.Keys[0].ID))
 	assert.Equal(t, testKey2ID, utils.UUIDFromProtoOrNil(resp.Keys[1].ID))
+	assert.Equal(t, "here is a desc", resp.Keys[0].Desc)
+	assert.Equal(t, "here is another one", resp.Keys[1].Desc)
 	assert.Equal(t, "key1", resp.Keys[0].Key)
 	assert.Equal(t, "key2", resp.Keys[1].Key)
 
@@ -148,6 +150,7 @@ func TestDeploymentKeyService_Get(t *testing.T) {
 		diff = -1 * diff
 	}
 	assert.LessOrEqual(t, diff, int64(10000))
+	assert.Equal(t, "here is a desc", resp.Key.Desc)
 }
 
 func TestDeploymentKeyService_Get_UnownedID(t *testing.T) {
