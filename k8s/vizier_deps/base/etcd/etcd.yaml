@@ -11,14 +11,14 @@ spec:
   - port: 2380
     name: peer
   selector:
-    app: etcd
+    vizier-dep: etcd
 ---
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
   name: etcd
   labels:
-    app: etcd
+    vizier-dep: etcd
 spec:
   serviceName: etcd
   replicas: 1
