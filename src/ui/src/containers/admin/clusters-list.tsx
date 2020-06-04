@@ -1,9 +1,9 @@
-import {AdminTooltip, convertHeartbeatMS, StatusCell, VizierStatusGroup} from './utils';
+import {AdminTooltip, convertHeartbeatMS, StatusCell, StyledTableCell, StyledTableHeaderCell,
+        StyledLeftTableCell, StyledRightTableCell, VizierStatusGroup} from './utils';
 
 import { useQuery } from '@apollo/react-hooks';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Tooltip from '@material-ui/core/Tooltip';
@@ -82,35 +82,35 @@ export const ClustersTable = () => {
     <Table>
       <TableHead>
         <TableRow>
-          <TableCell></TableCell>
-          <TableCell>ID</TableCell>
-          <TableCell>Name</TableCell>
-          <TableCell>Vizier</TableCell>
-          <TableCell>K8s</TableCell>
-          <TableCell>Heartbeat</TableCell>
-          <TableCell>Mode</TableCell>
+          <StyledTableHeaderCell></StyledTableHeaderCell>
+          <StyledTableHeaderCell>ID</StyledTableHeaderCell>
+          <StyledTableHeaderCell>Name</StyledTableHeaderCell>
+          <StyledTableHeaderCell>Vizier</StyledTableHeaderCell>
+          <StyledTableHeaderCell>K8s</StyledTableHeaderCell>
+          <StyledTableHeaderCell>Heartbeat</StyledTableHeaderCell>
+          <StyledTableHeaderCell>Mode</StyledTableHeaderCell>
         </TableRow>
       </TableHead>
       <TableBody>
         {clusters.map((cluster: ClusterDisplay) => (
           <TableRow key={cluster.id}>
             <AdminTooltip title={cluster.status}>
-              <TableCell>
+              <StyledLeftTableCell>
                 <StatusCell statusGroup={cluster.statusGroup}/>
-              </TableCell>
+              </StyledLeftTableCell>
             </AdminTooltip>
             <AdminTooltip title={cluster.id}>
-              <TableCell>
+              <StyledTableCell>
                 <Link to={`/admin/cluster/${cluster.id}`}>{cluster.idShort}</Link>
-              </TableCell>
+              </StyledTableCell>
             </AdminTooltip>
-            <TableCell>{cluster.name}</TableCell>
+            <StyledTableCell>{cluster.name}</StyledTableCell>
             <AdminTooltip title={cluster.vizierVersion}>
-              <TableCell>{cluster.vizierVersionShort}</TableCell>
+              <StyledTableCell>{cluster.vizierVersionShort}</StyledTableCell>
             </AdminTooltip>
-            <TableCell>{cluster.clusterVersion}</TableCell>
-            <TableCell>{cluster.lastHeartbeat}</TableCell>
-            <TableCell>{cluster.mode}</TableCell>
+            <StyledTableCell>{cluster.clusterVersion}</StyledTableCell>
+            <StyledTableCell>{cluster.lastHeartbeat}</StyledTableCell>
+            <StyledRightTableCell>{cluster.mode}</StyledRightTableCell>
           </TableRow>
         ))}
       </TableBody>

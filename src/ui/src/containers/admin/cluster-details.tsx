@@ -5,20 +5,19 @@ import { distanceInWords } from 'date-fns';
 import * as React from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { dataFromProto } from 'utils/result-data-utils';
-
 import Breadcrumbs from '@material-ui/core/Breadcrumbs';
 import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Tabs from '@material-ui/core/Tabs';
 import Tooltip from '@material-ui/core/Tooltip';
 import Typography from '@material-ui/core/Typography';
 
-import { AdminTooltip, convertHeartbeatMS, StatusCell, VizierStatusGroup } from './utils';
+import {AdminTooltip, convertHeartbeatMS, StatusCell, StyledTab, StyledTableCell, StyledTableHeaderCell,
+        StyledLeftTableCell, StyledRightTableCell, StyledTabs, VizierStatusGroup} from './utils';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -57,37 +56,14 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     breadcrumbText: {
       ...theme.typography.subtitle2,
-      color: theme.palette.foreground.one,
       fontWeight: theme.typography.fontWeightLight,
+      color: '#748790',
     },
     breadcrumbLink: {
       ...theme.typography.subtitle2,
-      color: theme.palette.foreground.one,
     },
   });
 });
-
-const StyledTabs = withStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      flex: 1,
-    },
-    indicator: {
-      backgroundColor: theme.palette.foreground.one,
-    },
-  }),
-)(Tabs);
-
-const StyledTab = withStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      textTransform: 'none',
-      '&:focus': {
-        color: theme.palette.foreground.two,
-      },
-    },
-  }),
-)(Tab);
 
 const AGENT_STATUS_SCRIPT = `import px
 px.display(px.GetAgentStatus())`;
@@ -134,27 +110,27 @@ const AgentsTableContent = ({ agents }) => {
     <Table>
       <TableHead>
         <TableRow>
-          <TableCell></TableCell>
-          <TableCell>ID</TableCell>
-          <TableCell>Hostname</TableCell>
-          <TableCell>Last Heartbeat</TableCell>
-          <TableCell>Uptime</TableCell>
+          <StyledTableHeaderCell></StyledTableHeaderCell>
+          <StyledTableHeaderCell>ID</StyledTableHeaderCell>
+          <StyledTableHeaderCell>Hostname</StyledTableHeaderCell>
+          <StyledTableHeaderCell>Last Heartbeat</StyledTableHeaderCell>
+          <StyledTableHeaderCell>Uptime</StyledTableHeaderCell>
         </TableRow>
       </TableHead>
       <TableBody>
         {agentsDisplay.map((agent) => (
           <TableRow key={agent.id}>
             <AdminTooltip title={agent.status}>
-              <TableCell>
-                <StatusCell statusGroup={agent.statusGroup} />
-              </TableCell>
+              <StyledLeftTableCell>
+                <StatusCell statusGroup={agent.statusGroup}/>
+              </StyledLeftTableCell>
             </AdminTooltip>
             <AdminTooltip title={agent.id}>
-              <TableCell>{agent.idShort}</TableCell>
+              <StyledTableCell>{agent.idShort}</StyledTableCell>
             </AdminTooltip>
-            <TableCell>{agent.hostname}</TableCell>
-            <TableCell>{agent.lastHeartbeat}</TableCell>
-            <TableCell>{agent.uptime}</TableCell>
+            <StyledTableCell>{agent.hostname}</StyledTableCell>
+            <StyledTableCell>{agent.lastHeartbeat}</StyledTableCell>
+            <StyledRightTableCell>{agent.uptime}</StyledRightTableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -220,7 +196,7 @@ export const ClusterDetailsPage = () => {
       <div className={classes.topBar}>
         <div className={classes.title}>
           <div className={classes.titleText}>Cluster View</div>
-          <Breadcrumbs>
+          <Breadcrumbs classes={{separator: classes.breadcrumbText}}>
             <Link className={classes.breadcrumbLink} to='/admin'>Admin</Link>
             <Typography className={classes.breadcrumbText}>Cluster</Typography>
             <Typography className={classes.breadcrumbText}>{id}</Typography>

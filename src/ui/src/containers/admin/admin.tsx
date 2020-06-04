@@ -3,6 +3,7 @@ import ProfileMenu from 'containers/live/profile-menu';
 import history from 'utils/pl-history';
 import {ClusterDetailsPage} from './cluster-details';
 import {ClustersTable} from './clusters-list';
+import {StyledTab, StyledTabs} from './utils';
 
 import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
@@ -56,28 +57,6 @@ const useStyles = makeStyles((theme: Theme) => {
     },
   });
 });
-
-const StyledTabs = withStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      flex: 1,
-    },
-    indicator: {
-      backgroundColor: theme.palette.foreground.one,
-    },
-  }),
-)(Tabs);
-
-const StyledTab = withStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      textTransform: 'none',
-      '&:focus': {
-        color: theme.palette.foreground.two,
-      },
-    },
-  }),
-)(Tab);
 
 const AdminOverview = () => {
   const classes = useStyles();

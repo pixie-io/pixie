@@ -1,7 +1,10 @@
 import UnknownIcon from '@material-ui/icons/Brightness1';
 import HealthyIcon from '@material-ui/icons/CheckCircle';
 import UnhealthyIcon from '@material-ui/icons/Error';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
+import Tab from '@material-ui/core/Tab';
+import Tabs from '@material-ui/core/Tabs';
+import TableCell from '@material-ui/core/TableCell';
 import Tooltip from '@material-ui/core/Tooltip';
 import * as React from 'react';
 
@@ -71,3 +74,66 @@ export const AdminTooltip = ({children, title}) => {
     </Tooltip>
   );
 }
+
+export const StyledTabs = withStyles(() =>
+  createStyles({
+    root: {
+      flex: 1,
+    },
+    indicator: {
+      backgroundColor: '#12D6D6',
+      height: '4px',
+    },
+  }),
+)(Tabs);
+
+export const StyledTab = withStyles((theme: Theme) =>
+  createStyles({
+    root: {
+      fontSize: '16px',
+      fontWeight: theme.typography.fontWeightLight,
+      textTransform: 'none',
+      '&:focus': {
+        color: theme.palette.foreground.two,
+      },
+    },
+  }),
+)(Tab);
+
+export const StyledTableHeaderCell = withStyles((theme: Theme) =>
+  createStyles({
+    root: {
+      fontWeight: theme.typography.fontWeightLight,
+      fontSize: '14px',
+    },
+  }),
+)(TableCell);
+
+export const StyledTableCell = withStyles((theme: Theme) =>
+  createStyles({
+    root: {
+      fontWeight: theme.typography.fontWeightLight,
+      fontSize: '14px',
+      color: '#748790',
+      backgroundColor: theme.palette.foreground.grey3,
+      borderWidth: 8,
+      borderColor: theme.palette.background.default,
+    },
+  }),
+)(TableCell);
+
+export const StyledLeftTableCell = withStyles(() =>
+  createStyles({
+    root: {
+      borderRadius: '10px 0px 0px 10px',
+    },
+  }),
+)(StyledTableCell);
+
+export const StyledRightTableCell = withStyles(() =>
+  createStyles({
+    root: {
+      borderRadius: '0px 10px 10px 0px',
+    },
+  }),
+)(StyledTableCell);
