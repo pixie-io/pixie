@@ -99,6 +99,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
    */
   size_t NumActiveConnections() const { return connection_trackers_.size(); }
 
+  ConnectionTracker& GetMutableConnTracker(struct conn_id_t conn_id);
+
   /**
    * @brief Gets a pointer to a ConnectionTracker by conn_id.
    *

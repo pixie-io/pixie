@@ -786,10 +786,8 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
     WriteDataEvent(*event);
   }
 
-  const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
-  DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
+  ConnectionTracker& tracker = GetMutableConnTracker(event->attr.conn_id);
 
-  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.tsid];
   connection_stats_.AddDataEvent(tracker, *event);
   tracker.AddDataEvent(std::move(event));
 }
@@ -797,28 +795,34 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
 void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
   // timestamp_ns is a common field of open and close fields.
   event.open.timestamp_ns += ClockRealTimeOffset();
+
   // conn_id is a common field of open & close.
-  const uint64_t conn_map_key = GetConnMapKey(event.open.conn_id);
-  DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event.open.conn_id.tsid];
+  ConnectionTracker& tracker = GetMutableConnTracker(event.open.conn_id);
+
   connection_stats_.AddControlEvent(event, tracker);
   tracker.AddControlEvent(event);
 }
 
 void SocketTraceConnector::AcceptHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> event) {
   event->attr.timestamp_ns += ClockRealTimeOffset();
-  const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
-  DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.tsid];
+
+  ConnectionTracker& tracker = GetMutableConnTracker(event->attr.conn_id);
+
   tracker.AddHTTP2Header(std::move(event));
 }
 
 void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event) {
   event->attr.timestamp_ns += ClockRealTimeOffset();
-  const uint64_t conn_map_key = GetConnMapKey(event->attr.conn_id);
-  DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-  ConnectionTracker& tracker = connection_trackers_[conn_map_key][event->attr.conn_id.tsid];
+
+  ConnectionTracker& tracker = GetMutableConnTracker(event->attr.conn_id);
+
   tracker.AddHTTP2Data(std::move(event));
+}
+
+ConnectionTracker& SocketTraceConnector::GetMutableConnTracker(struct conn_id_t conn_id) {
+  const uint64_t conn_map_key = GetConnMapKey(conn_id);
+  DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
+  return connection_trackers_[conn_map_key][conn_id.tsid];
 }
 
 const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(
