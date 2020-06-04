@@ -66,7 +66,8 @@ func main() {
 	// Communication from Vizier to VZConn is not auth'd via GRPC auth.
 	serverOpts := &services.GRPCServerOptions{
 		DisableAuth: map[string]bool{
-			"/pl.services.VZConnService/NATSBridge": true,
+			"/pl.services.VZConnService/NATSBridge":               true,
+			"/pl.services.VZConnService/RegisterVizierDeployment": true,
 		},
 	}
 
