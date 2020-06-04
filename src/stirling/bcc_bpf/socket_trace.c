@@ -179,9 +179,10 @@ static __inline bool should_trace_classified(const struct traffic_class_t* traff
 }
 
 // Returns true if detection passes threshold. Right now this only makes sense for MySQL.
+//
+// TODO(yzhao): Remove protocol detection threshold.
 static __inline bool protocol_detection_passes_threshold(const struct conn_info_t* conn_info) {
-  if (conn_info->traffic_class.protocol == kProtocolMySQL ||
-      conn_info->traffic_class.protocol == kProtocolPGSQL) {
+  if (conn_info->traffic_class.protocol == kProtocolPGSQL) {
     // Since some protocols are hard to infer from a single event, we track the inference stats over
     // time, and then use the match rate to determine whether we really want to consider it to be of
     // the protocol or not. This helps reduce polluting events to user-space.
