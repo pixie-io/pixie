@@ -254,11 +254,14 @@ message DeploymentKey {
     // The value of the key.
     string key = 2;
     google.protobuf.Timestamp created_at = 3;
+    // Description for the key.
+    string desc = 4;
 }
 
 // Create a deployment key.
 message CreateDeploymentKeyRequest {
-    // Empty message on purpose so we can extend with attributes easily if needed.
+    // Description for the key.
+    string desc = 1;
 }
 
 message ListDeploymentKeyRequest {

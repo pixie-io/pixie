@@ -298,7 +298,7 @@ func TestVizierDeploymentKeyServer_Create(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
-	vzreq := &vzmgrpb.CreateDeploymentKeyRequest{}
+	vzreq := &vzmgrpb.CreateDeploymentKeyRequest{Desc: "test key"}
 	vzresp := &vzmgrpb.DeploymentKey{
 		ID:        pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 		Key:       "foobar",
@@ -311,7 +311,7 @@ func TestVizierDeploymentKeyServer_Create(t *testing.T) {
 		VzDeploymentKey: mockClients.MockVzDeployKey,
 	}
 
-	resp, err := vzDeployKeyServer.Create(ctx, &cloudapipb.CreateDeploymentKeyRequest{})
+	resp, err := vzDeployKeyServer.Create(ctx, &cloudapipb.CreateDeploymentKeyRequest{Desc: "test key"})
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, resp.ID, vzresp.ID)
@@ -334,6 +334,7 @@ func TestVizierDeploymentKeyServer_List(t *testing.T) {
 				ID:        pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 				Key:       "foobar",
 				CreatedAt: types.TimestampNow(),
+				Desc:      "this is a key",
 			},
 		},
 	}
@@ -351,6 +352,7 @@ func TestVizierDeploymentKeyServer_List(t *testing.T) {
 		assert.Equal(t, key.ID, vzresp.Keys[i].ID)
 		assert.Equal(t, key.Key, vzresp.Keys[i].Key)
 		assert.Equal(t, key.CreatedAt, vzresp.Keys[i].CreatedAt)
+		assert.Equal(t, key.Desc, vzresp.Keys[i].Desc)
 	}
 }
 
@@ -371,6 +373,7 @@ func TestVizierDeploymentKeyServer_Get(t *testing.T) {
 			ID:        id,
 			Key:       "foobar",
 			CreatedAt: types.TimestampNow(),
+			Desc:      "this is a key",
 		},
 	}
 	mockClients.MockVzDeployKey.EXPECT().
@@ -387,6 +390,7 @@ func TestVizierDeploymentKeyServer_Get(t *testing.T) {
 	assert.Equal(t, resp.Key.ID, vzresp.Key.ID)
 	assert.Equal(t, resp.Key.Key, vzresp.Key.Key)
 	assert.Equal(t, resp.Key.CreatedAt, vzresp.Key.CreatedAt)
+	assert.Equal(t, resp.Key.Desc, vzresp.Key.Desc)
 }
 
 func TestVizierDeploymentKeyServer_Delete(t *testing.T) {

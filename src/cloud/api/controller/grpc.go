@@ -362,6 +362,7 @@ func deployKeyToCloudAPI(key *vzmgrpb.DeploymentKey) *cloudapipb.DeploymentKey {
 		ID:        key.ID,
 		Key:       key.Key,
 		CreatedAt: key.CreatedAt,
+		Desc:      key.Desc,
 	}
 }
 
@@ -372,7 +373,7 @@ func (v *VizierDeploymentKeyServer) Create(ctx context.Context, req *cloudapipb.
 		return nil, err
 	}
 
-	resp, err := v.VzDeploymentKey.Create(ctx, &vzmgrpb.CreateDeploymentKeyRequest{})
+	resp, err := v.VzDeploymentKey.Create(ctx, &vzmgrpb.CreateDeploymentKeyRequest{Desc: req.Desc})
 	if err != nil {
 		return nil, err
 	}
