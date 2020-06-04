@@ -4,10 +4,14 @@ package pl.services;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
+import "src/common/uuid/proto/uuid.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb;vzconnpb";
 
 service VZConnService {
+  // Registers a new Vizier deployment and returns a cluster ID.
+  // Needs to have an X-API-KEY metadata with the Vizier deploy key.
+  rpc RegisterVizierDeployment(RegisterVizierDeploymentRequest) returns (RegisterVizierDeploymentResponse) {}
   rpc NATSBridge(stream V2CBridgeMessage) returns (stream C2VBridgeMessage) {}
 }
 
@@ -29,4 +33,20 @@ message C2VBridgeMessage {
     string topic = 1;
     // The contents of the actual message.
     google.protobuf.Any msg = 2;
+}
+
+message RegisterVizierDeploymentRequest {
+    // The UID of the K8s cluster. This is typically the UI of the kube-system namespace.
+    // We assume this is globally unique.
+    string k8s_cluster_uid = 1 [
+                               (gogoproto.customname) = "K8sClusterUID"
+                               ];     ;
+}
+// RegisterVizierDeploymentResponse returns the registration status. It either will include the
+// assigned vizier_id or a GRPC error will be returned.
+message RegisterVizierDeploymentResponse {
+    // The ID for this Vizier.
+    uuidpb.UUID vizier_id = 1 [
+                              (gogoproto.customname) = "VizierID"
+                              ];
 }

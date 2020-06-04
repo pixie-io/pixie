@@ -32,6 +32,12 @@ func NewBridgeGRPCServer(vzmgrClient vzmgrpb.VZMgrServiceClient, nc *nats.Conn, 
 	return &GRPCServer{vzmgrClient, nc, sc}
 }
 
+// RegisterVizierDeployment registers the vizier using the deployment key passed in on X-API-KEY.
+func (s *GRPCServer) RegisterVizierDeployment(ctx context.Context, req *vzconnpb.RegisterVizierDeploymentRequest) (*vzconnpb.RegisterVizierDeploymentResponse, error) {
+	// TODO(zasgar): Implement func and rename this struct (since it's more than the bridge).
+	return nil, status.Errorf(codes.Unimplemented, "not implemented yet")
+}
+
 // NATSBridge is the endpoint that all viziers connect to.
 func (s *GRPCServer) NATSBridge(srv vzconnpb.VZConnService_NATSBridgeServer) error {
 	msg, err := srv.Recv()

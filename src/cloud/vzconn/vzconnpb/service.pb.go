@@ -15,6 +15,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	reflect "reflect"
 	strings "strings"
 )
@@ -140,9 +141,97 @@ func (m *C2VBridgeMessage) GetMsg() *types.Any {
 	return nil
 }
 
+type RegisterVizierDeploymentRequest struct {
+	K8sClusterUID string `protobuf:"bytes,1,opt,name=k8s_cluster_uid,json=k8sClusterUid,proto3" json:"k8s_cluster_uid,omitempty"`
+}
+
+func (m *RegisterVizierDeploymentRequest) Reset()      { *m = RegisterVizierDeploymentRequest{} }
+func (*RegisterVizierDeploymentRequest) ProtoMessage() {}
+func (*RegisterVizierDeploymentRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_935788a74a5b0e3d, []int{2}
+}
+func (m *RegisterVizierDeploymentRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RegisterVizierDeploymentRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RegisterVizierDeploymentRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RegisterVizierDeploymentRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RegisterVizierDeploymentRequest.Merge(m, src)
+}
+func (m *RegisterVizierDeploymentRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *RegisterVizierDeploymentRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RegisterVizierDeploymentRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RegisterVizierDeploymentRequest proto.InternalMessageInfo
+
+func (m *RegisterVizierDeploymentRequest) GetK8sClusterUID() string {
+	if m != nil {
+		return m.K8sClusterUID
+	}
+	return ""
+}
+
+type RegisterVizierDeploymentResponse struct {
+	VizierID *proto1.UUID `protobuf:"bytes,1,opt,name=vizier_id,json=vizierId,proto3" json:"vizier_id,omitempty"`
+}
+
+func (m *RegisterVizierDeploymentResponse) Reset()      { *m = RegisterVizierDeploymentResponse{} }
+func (*RegisterVizierDeploymentResponse) ProtoMessage() {}
+func (*RegisterVizierDeploymentResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_935788a74a5b0e3d, []int{3}
+}
+func (m *RegisterVizierDeploymentResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RegisterVizierDeploymentResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RegisterVizierDeploymentResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RegisterVizierDeploymentResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RegisterVizierDeploymentResponse.Merge(m, src)
+}
+func (m *RegisterVizierDeploymentResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *RegisterVizierDeploymentResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RegisterVizierDeploymentResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RegisterVizierDeploymentResponse proto.InternalMessageInfo
+
+func (m *RegisterVizierDeploymentResponse) GetVizierID() *proto1.UUID {
+	if m != nil {
+		return m.VizierID
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*V2CBridgeMessage)(nil), "pl.services.V2CBridgeMessage")
 	proto.RegisterType((*C2VBridgeMessage)(nil), "pl.services.C2VBridgeMessage")
+	proto.RegisterType((*RegisterVizierDeploymentRequest)(nil), "pl.services.RegisterVizierDeploymentRequest")
+	proto.RegisterType((*RegisterVizierDeploymentResponse)(nil), "pl.services.RegisterVizierDeploymentResponse")
 }
 
 func init() {
@@ -150,29 +239,39 @@ func init() {
 }
 
 var fileDescriptor_935788a74a5b0e3d = []byte{
-	// 347 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x91, 0xbf, 0x4e, 0x3a, 0x41,
-	0x10, 0xc7, 0x6f, 0x21, 0xbf, 0x5f, 0xc2, 0x12, 0x13, 0x72, 0xa1, 0x40, 0x12, 0x36, 0x84, 0x42,
-	0xaf, 0x71, 0xd7, 0x9c, 0x95, 0xb1, 0x02, 0x2a, 0x0b, 0x0d, 0x01, 0x43, 0x41, 0x63, 0xee, 0xcf,
-	0xba, 0x6e, 0x72, 0xec, 0x5c, 0x6e, 0x81, 0x88, 0x95, 0x8f, 0xe0, 0x63, 0xf8, 0x28, 0x96, 0x94,
-	0x94, 0xb2, 0x34, 0x96, 0x3c, 0x82, 0xf1, 0xee, 0xf0, 0x0f, 0x89, 0xd1, 0x6a, 0xe7, 0x3b, 0xf3,
-	0xdd, 0xf9, 0xec, 0xcc, 0xe2, 0x43, 0x9d, 0x04, 0x2c, 0x88, 0x60, 0x1a, 0xb2, 0xd9, 0x7d, 0x00,
-	0x4a, 0xe5, 0x47, 0xec, 0x33, 0xcd, 0x93, 0x99, 0x0c, 0x38, 0x8d, 0x13, 0x98, 0x80, 0x5d, 0x8e,
-	0x23, 0x9a, 0x67, 0x74, 0xfd, 0x48, 0xc8, 0xc9, 0xed, 0xd4, 0xa7, 0x01, 0x8c, 0x99, 0x00, 0x01,
-	0x2c, 0xf5, 0xf8, 0xd3, 0x9b, 0x54, 0xa5, 0x22, 0x8d, 0xb2, 0xbb, 0xf5, 0x7d, 0x01, 0x20, 0x22,
-	0xfe, 0xe9, 0xf2, 0xd4, 0x3c, 0x2b, 0xb5, 0x00, 0x57, 0x86, 0x6e, 0xb7, 0x93, 0xc8, 0x50, 0xf0,
-	0x0b, 0xae, 0xb5, 0x27, 0xb8, 0x5d, 0xc5, 0xff, 0x26, 0x10, 0xcb, 0xa0, 0x86, 0x9a, 0xc8, 0x29,
-	0xf5, 0x33, 0x61, 0x37, 0x30, 0xd6, 0x5c, 0x6b, 0x09, 0xea, 0x5a, 0x86, 0xb5, 0x42, 0x13, 0x39,
-	0xc5, 0x7e, 0x29, 0xcf, 0x9c, 0x87, 0xf6, 0x01, 0x2e, 0x8e, 0xb5, 0xa8, 0x15, 0x9b, 0xc8, 0x29,
-	0xbb, 0x55, 0x9a, 0x11, 0xe9, 0x96, 0x48, 0xdb, 0x6a, 0xde, 0x7f, 0x37, 0xb4, 0x7a, 0xb8, 0xd2,
-	0x75, 0x87, 0x7f, 0x01, 0xe6, 0x1d, 0x0b, 0xbf, 0x74, 0x74, 0x3d, 0xbc, 0x37, 0x1c, 0x75, 0x41,
-	0xa9, 0x41, 0xb6, 0x1e, 0xbb, 0x87, 0xf1, 0x65, 0xfb, 0x6a, 0x90, 0x31, 0xec, 0x06, 0xfd, 0xb2,
-	0x39, 0xba, 0x3b, 0x6c, 0xfd, 0x7b, 0x79, 0xf7, 0x69, 0x2d, 0xcb, 0x41, 0xc7, 0xa8, 0x03, 0x8b,
-	0x15, 0xb1, 0x96, 0x2b, 0x62, 0x6d, 0x56, 0x04, 0x3d, 0x18, 0x82, 0x9e, 0x0c, 0x41, 0xcf, 0x86,
-	0xa0, 0x85, 0x21, 0xe8, 0xc5, 0x10, 0xf4, 0x6a, 0x88, 0xb5, 0x31, 0x04, 0x3d, 0xae, 0x89, 0xb5,
-	0x58, 0x13, 0x6b, 0xb9, 0x26, 0xd6, 0xe8, 0x34, 0x96, 0x77, 0x92, 0x47, 0x9e, 0xaf, 0xa9, 0x27,
-	0xd9, 0x87, 0x60, 0x3f, 0x7e, 0xf9, 0xd9, 0x36, 0xf0, 0xff, 0xa7, 0x63, 0x9e, 0xbc, 0x05, 0x00,
-	0x00, 0xff, 0xff, 0x7f, 0xb7, 0x44, 0x5c, 0x1f, 0x02, 0x00, 0x00,
+	// 500 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x93, 0x41, 0x6f, 0xd3, 0x30,
+	0x14, 0xc7, 0xe3, 0x55, 0xa0, 0xd5, 0xa5, 0xda, 0xb0, 0x76, 0x28, 0x95, 0xe6, 0x46, 0x39, 0x40,
+	0x0f, 0xcc, 0x41, 0xe1, 0xb2, 0xc1, 0x69, 0x6d, 0x2f, 0x11, 0x02, 0x4d, 0x19, 0xed, 0x61, 0x42,
+	0x54, 0x4d, 0x62, 0x82, 0xb5, 0xc4, 0x0e, 0x71, 0x52, 0xd1, 0x9d, 0xf8, 0x08, 0x7c, 0x0c, 0x3e,
+	0x0a, 0xc7, 0x1e, 0x77, 0x40, 0x13, 0x75, 0x2f, 0x1c, 0xf7, 0x11, 0x50, 0xe3, 0x8c, 0xb1, 0x49,
+	0xd5, 0x76, 0xca, 0xfb, 0xfb, 0xfd, 0xfc, 0x7f, 0x76, 0xde, 0x33, 0x7c, 0x26, 0xb3, 0xc0, 0x0e,
+	0x62, 0x51, 0x84, 0xf6, 0xf4, 0x2c, 0x10, 0x9c, 0x57, 0x9f, 0xd4, 0xb7, 0x25, 0xcd, 0xa6, 0x2c,
+	0xa0, 0x24, 0xcd, 0x44, 0x2e, 0x50, 0x23, 0x8d, 0x49, 0xb5, 0x22, 0xdb, 0x7b, 0x11, 0xcb, 0x3f,
+	0x17, 0x3e, 0x09, 0x44, 0x62, 0x47, 0x22, 0x12, 0x76, 0xc9, 0xf8, 0xc5, 0xa7, 0x52, 0x95, 0xa2,
+	0x8c, 0xf4, 0xde, 0xf6, 0x93, 0x48, 0x88, 0x28, 0xa6, 0xd7, 0xd4, 0x84, 0xcf, 0xaa, 0x94, 0x59,
+	0xd6, 0x17, 0x49, 0x22, 0xb8, 0x5d, 0x14, 0x2c, 0xd4, 0x4c, 0x19, 0x6a, 0xc2, 0x12, 0x70, 0x7b,
+	0xe4, 0xf4, 0x7b, 0x19, 0x0b, 0x23, 0xfa, 0x96, 0x4a, 0x39, 0x89, 0x28, 0xda, 0x81, 0x0f, 0x72,
+	0x91, 0xb2, 0xa0, 0x05, 0x4c, 0xd0, 0xad, 0x7b, 0x5a, 0xa0, 0x5d, 0x08, 0x25, 0x95, 0x92, 0x09,
+	0x3e, 0x66, 0x61, 0x6b, 0xc3, 0x04, 0xdd, 0x9a, 0x57, 0xaf, 0x56, 0xdc, 0x10, 0x3d, 0x85, 0xb5,
+	0x44, 0x46, 0xad, 0x9a, 0x09, 0xba, 0x0d, 0x67, 0x87, 0xe8, 0x33, 0x91, 0xab, 0x33, 0x91, 0x43,
+	0x3e, 0xf3, 0x56, 0x80, 0x75, 0x04, 0xb7, 0xfb, 0xce, 0xe8, 0x3e, 0x05, 0x2b, 0xc7, 0x8d, 0xbb,
+	0x1c, 0x3f, 0xc0, 0x8e, 0x47, 0x23, 0x26, 0x73, 0x9a, 0x8d, 0xd8, 0x19, 0xa3, 0xd9, 0x80, 0xa6,
+	0xb1, 0x98, 0x25, 0x94, 0xe7, 0x1e, 0xfd, 0x52, 0x50, 0x99, 0xa3, 0x03, 0xb8, 0x75, 0xba, 0x2f,
+	0xc7, 0x41, 0x5c, 0xac, 0xa8, 0x71, 0xc1, 0x42, 0x5d, 0xaa, 0xf7, 0x58, 0x5d, 0x74, 0x9a, 0x6f,
+	0xf6, 0x65, 0x5f, 0x67, 0x86, 0xee, 0xc0, 0x6b, 0x9e, 0x5e, 0x4b, 0x16, 0x5a, 0x1f, 0xa1, 0xb9,
+	0xde, 0x5d, 0xa6, 0x82, 0x4b, 0x8a, 0x5e, 0xc1, 0xfa, 0xb4, 0xcc, 0x8d, 0x2b, 0xe3, 0x86, 0xb3,
+	0x45, 0xd2, 0x98, 0xac, 0xfe, 0x73, 0xea, 0x93, 0xe1, 0xd0, 0x1d, 0xf4, 0x1e, 0xa9, 0x8b, 0xce,
+	0xa6, 0x76, 0x70, 0x07, 0xde, 0xa6, 0xe6, 0xdd, 0xd0, 0xf9, 0x05, 0x60, 0x73, 0x74, 0xd2, 0x17,
+	0x9c, 0x1f, 0xeb, 0xfe, 0xa3, 0x19, 0x6c, 0xad, 0xab, 0x88, 0x9e, 0x93, 0xff, 0x06, 0x85, 0xdc,
+	0x71, 0xed, 0xf6, 0xde, 0x3d, 0x69, 0x7d, 0x0d, 0xcb, 0x40, 0x47, 0x10, 0xbe, 0x3b, 0x7c, 0x7f,
+	0xac, 0xbb, 0x83, 0x76, 0x6f, 0x6c, 0xbf, 0x3d, 0x26, 0xed, 0x9b, 0xe9, 0xdb, 0x4d, 0xb5, 0x8c,
+	0x2e, 0x78, 0x01, 0x7a, 0x62, 0xbe, 0xc0, 0xc6, 0xf9, 0x02, 0x1b, 0x97, 0x0b, 0x0c, 0xbe, 0x29,
+	0x0c, 0x7e, 0x28, 0x0c, 0x7e, 0x2a, 0x0c, 0xe6, 0x0a, 0x83, 0xdf, 0x0a, 0x83, 0x3f, 0x0a, 0x1b,
+	0x97, 0x0a, 0x83, 0xef, 0x4b, 0x6c, 0xcc, 0x97, 0xd8, 0x38, 0x5f, 0x62, 0xe3, 0xe4, 0x20, 0x65,
+	0x5f, 0x19, 0x8d, 0x27, 0xbe, 0x24, 0x13, 0x66, 0xff, 0x13, 0xf6, 0xda, 0xe7, 0xf4, 0xfa, 0x2a,
+	0xf0, 0x1f, 0x96, 0x03, 0xf2, 0xf2, 0x6f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xef, 0x9c, 0x82, 0xff,
+	0x7b, 0x03, 0x00, 0x00,
 }
 
 func (this *V2CBridgeMessage) Equal(that interface{}) bool {
@@ -232,6 +331,54 @@ func (this *C2VBridgeMessage) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *RegisterVizierDeploymentRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RegisterVizierDeploymentRequest)
+	if !ok {
+		that2, ok := that.(RegisterVizierDeploymentRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.K8sClusterUID != that1.K8sClusterUID {
+		return false
+	}
+	return true
+}
+func (this *RegisterVizierDeploymentResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RegisterVizierDeploymentResponse)
+	if !ok {
+		that2, ok := that.(RegisterVizierDeploymentResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.VizierID.Equal(that1.VizierID) {
+		return false
+	}
+	return true
+}
 func (this *V2CBridgeMessage) GoString() string {
 	if this == nil {
 		return "nil"
@@ -259,6 +406,28 @@ func (this *C2VBridgeMessage) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *RegisterVizierDeploymentRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&vzconnpb.RegisterVizierDeploymentRequest{")
+	s = append(s, "K8sClusterUID: "+fmt.Sprintf("%#v", this.K8sClusterUID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *RegisterVizierDeploymentResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&vzconnpb.RegisterVizierDeploymentResponse{")
+	if this.VizierID != nil {
+		s = append(s, "VizierID: "+fmt.Sprintf("%#v", this.VizierID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringService(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -280,6 +449,7 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type VZConnServiceClient interface {
+	RegisterVizierDeployment(ctx context.Context, in *RegisterVizierDeploymentRequest, opts ...grpc.CallOption) (*RegisterVizierDeploymentResponse, error)
 	NATSBridge(ctx context.Context, opts ...grpc.CallOption) (VZConnService_NATSBridgeClient, error)
 }
 
@@ -289,6 +459,15 @@ type vZConnServiceClient struct {
 
 func NewVZConnServiceClient(cc *grpc.ClientConn) VZConnServiceClient {
 	return &vZConnServiceClient{cc}
+}
+
+func (c *vZConnServiceClient) RegisterVizierDeployment(ctx context.Context, in *RegisterVizierDeploymentRequest, opts ...grpc.CallOption) (*RegisterVizierDeploymentResponse, error) {
+	out := new(RegisterVizierDeploymentResponse)
+	err := c.cc.Invoke(ctx, "/pl.services.VZConnService/RegisterVizierDeployment", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *vZConnServiceClient) NATSBridge(ctx context.Context, opts ...grpc.CallOption) (VZConnService_NATSBridgeClient, error) {
@@ -324,6 +503,7 @@ func (x *vZConnServiceNATSBridgeClient) Recv() (*C2VBridgeMessage, error) {
 
 // VZConnServiceServer is the server API for VZConnService service.
 type VZConnServiceServer interface {
+	RegisterVizierDeployment(context.Context, *RegisterVizierDeploymentRequest) (*RegisterVizierDeploymentResponse, error)
 	NATSBridge(VZConnService_NATSBridgeServer) error
 }
 
@@ -331,12 +511,33 @@ type VZConnServiceServer interface {
 type UnimplementedVZConnServiceServer struct {
 }
 
+func (*UnimplementedVZConnServiceServer) RegisterVizierDeployment(ctx context.Context, req *RegisterVizierDeploymentRequest) (*RegisterVizierDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RegisterVizierDeployment not implemented")
+}
 func (*UnimplementedVZConnServiceServer) NATSBridge(srv VZConnService_NATSBridgeServer) error {
 	return status.Errorf(codes.Unimplemented, "method NATSBridge not implemented")
 }
 
 func RegisterVZConnServiceServer(s *grpc.Server, srv VZConnServiceServer) {
 	s.RegisterService(&_VZConnService_serviceDesc, srv)
+}
+
+func _VZConnService_RegisterVizierDeployment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegisterVizierDeploymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(VZConnServiceServer).RegisterVizierDeployment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.services.VZConnService/RegisterVizierDeployment",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(VZConnServiceServer).RegisterVizierDeployment(ctx, req.(*RegisterVizierDeploymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _VZConnService_NATSBridge_Handler(srv interface{}, stream grpc.ServerStream) error {
@@ -368,7 +569,12 @@ func (x *vZConnServiceNATSBridgeServer) Recv() (*V2CBridgeMessage, error) {
 var _VZConnService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "pl.services.VZConnService",
 	HandlerType: (*VZConnServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "RegisterVizierDeployment",
+			Handler:    _VZConnService_RegisterVizierDeployment_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "NATSBridge",
@@ -469,6 +675,71 @@ func (m *C2VBridgeMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *RegisterVizierDeploymentRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RegisterVizierDeploymentRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterVizierDeploymentRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.K8sClusterUID) > 0 {
+		i -= len(m.K8sClusterUID)
+		copy(dAtA[i:], m.K8sClusterUID)
+		i = encodeVarintService(dAtA, i, uint64(len(m.K8sClusterUID)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RegisterVizierDeploymentResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RegisterVizierDeploymentResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterVizierDeploymentResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.VizierID != nil {
+		{
+			size, err := m.VizierID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintService(dAtA []byte, offset int, v uint64) int {
 	offset -= sovService(v)
 	base := offset
@@ -517,6 +788,32 @@ func (m *C2VBridgeMessage) Size() (n int) {
 	return n
 }
 
+func (m *RegisterVizierDeploymentRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.K8sClusterUID)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *RegisterVizierDeploymentResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.VizierID != nil {
+		l = m.VizierID.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
 func sovService(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -542,6 +839,26 @@ func (this *C2VBridgeMessage) String() string {
 	s := strings.Join([]string{`&C2VBridgeMessage{`,
 		`Topic:` + fmt.Sprintf("%v", this.Topic) + `,`,
 		`Msg:` + strings.Replace(fmt.Sprintf("%v", this.Msg), "Any", "types.Any", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *RegisterVizierDeploymentRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&RegisterVizierDeploymentRequest{`,
+		`K8sClusterUID:` + fmt.Sprintf("%v", this.K8sClusterUID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *RegisterVizierDeploymentResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&RegisterVizierDeploymentResponse{`,
+		`VizierID:` + strings.Replace(fmt.Sprintf("%v", this.VizierID), "UUID", "proto1.UUID", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -788,6 +1105,180 @@ func (m *C2VBridgeMessage) Unmarshal(dAtA []byte) error {
 				m.Msg = &types.Any{}
 			}
 			if err := m.Msg.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RegisterVizierDeploymentRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RegisterVizierDeploymentRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RegisterVizierDeploymentRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field K8sClusterUID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.K8sClusterUID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RegisterVizierDeploymentResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RegisterVizierDeploymentResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RegisterVizierDeploymentResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field VizierID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.VizierID == nil {
+				m.VizierID = &proto1.UUID{}
+			}
+			if err := m.VizierID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

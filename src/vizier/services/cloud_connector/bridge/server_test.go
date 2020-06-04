@@ -15,6 +15,8 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 	batchv1 "k8s.io/api/batch/v1"
 
@@ -65,6 +67,11 @@ func handleMsg(srv vzconnpb.VZConnService_NATSBridgeServer, msg *vzconnpb.V2CBri
 	}
 
 	return fmt.Errorf("Got unknown topic %s", msg.Topic)
+}
+
+// NATSBridge is the endpoint that all viziers connect to.
+func (fs *FakeVZConnServer) RegisterVizierDeployment(ctx context.Context, req *vzconnpb.RegisterVizierDeploymentRequest) (*vzconnpb.RegisterVizierDeploymentResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "not implemented yet")
 }
 
 // NATSBridge is the endpoint that all viziers connect to.
