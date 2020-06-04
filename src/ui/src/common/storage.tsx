@@ -9,7 +9,7 @@ export const LIVE_VIEW_VIS_SPEC_KEY = 'px-live-vis';
 export const LIVE_VIEW_EDITOR_SPLITS_KEY = 'px-live-editor-splits';
 export const LIVE_VIEW_DATA_DRAWER_SPLITS_KEY = 'px-live-data-drawer-splits';
 export const LIVE_VIEW_SCRIPT_ARGS_KEY = 'px-live-script-args';
-export const MOBILE_DEVICE = 'px-mobile-device';
+export const CLUSTER_ID_KEY = 'px-cluster-id';
 
 type StorageKey =
   typeof LIVE_VIEW_DATA_DRAWER_OPENED_KEY |
@@ -22,7 +22,7 @@ type StorageKey =
   typeof LIVE_VIEW_EDITOR_SPLITS_KEY |
   typeof LIVE_VIEW_DATA_DRAWER_SPLITS_KEY |
   typeof LIVE_VIEW_SCRIPT_ARGS_KEY |
-  typeof MOBILE_DEVICE;
+  typeof CLUSTER_ID_KEY;
 
 interface KeyStore {
   getItem(key: string): string;

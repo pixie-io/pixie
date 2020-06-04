@@ -39,8 +39,8 @@ interface GetClusterConnResults {
 }
 
 const GET_CLUSTER_CONN = gql`
-{
-  clusterConnection {
+query GetClusterConnection($id: ID) {
+  clusterConnection(id: $id) {
     ipAddress
     token
   }
@@ -81,9 +81,10 @@ export class CloudClient {
     return this.graphQL;
   }
 
-  async getClusterConnection(noCache = false) {
+  async getClusterConnection(id: string, noCache = false) {
     const { data } = await this.graphQL.query<GetClusterConnResults>({
       query: GET_CLUSTER_CONN,
+      variables: { id },
       fetchPolicy: noCache ? 'network-only' : 'cache-first',
     });
     return data.clusterConnection;

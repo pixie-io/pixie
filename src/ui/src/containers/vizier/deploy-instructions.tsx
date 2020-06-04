@@ -1,5 +1,6 @@
 import CodeRenderer from 'components/code-renderer/code-renderer';
 import { Spinner } from 'components/spinner/spinner';
+import ProfileMenu from 'containers/live/profile-menu';
 import * as logoImage from 'images/new-logo.svg';
 import * as React from 'react';
 
@@ -75,6 +76,11 @@ const useStyles = makeStyles((theme: Theme) => {
       alignItems: 'center',
       flexDirection: 'column',
     },
+    profileMenu: {
+      position: 'fixed',
+      top: theme.spacing(1),
+      right: theme.spacing(1),
+    },
   });
 });
 
@@ -82,6 +88,7 @@ export const DeployInstructions = () => {
   const classes = useStyles();
 
   return (<div className={classes.container}>
+    <ProfileMenu className={classes.profileMenu} />
     <Card className={classes.dialog}>
       <div className={classes.content}>
         <span className={classes.header}>Install Pixie</span>

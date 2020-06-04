@@ -1,10 +1,13 @@
 import { scrollbarStyles } from 'common/mui-theme';
-import ClientContext from 'common/vizier-grpc-client-context';
+import ClientContext, { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import ProfileMenu from 'containers/live/profile-menu';
 import { distanceInWords } from 'date-fns';
+import gql from 'graphql-tag';
 import * as React from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { dataFromProto } from 'utils/result-data-utils';
+
+import { useQuery } from '@apollo/react-hooks';
 import Breadcrumbs from '@material-ui/core/Breadcrumbs';
 import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
@@ -16,8 +19,10 @@ import Tabs from '@material-ui/core/Tabs';
 import Tooltip from '@material-ui/core/Tooltip';
 import Typography from '@material-ui/core/Typography';
 
-import {AdminTooltip, convertHeartbeatMS, StatusCell, StyledTab, StyledTableCell, StyledTableHeaderCell,
-        StyledLeftTableCell, StyledRightTableCell, StyledTabs, VizierStatusGroup} from './utils';
+import {
+    AdminTooltip, convertHeartbeatMS, StatusCell, StyledLeftTableCell, StyledRightTableCell,
+    StyledTab, StyledTableCell, StyledTableHeaderCell, StyledTabs, VizierStatusGroup,
+} from './utils';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -122,7 +127,7 @@ const AgentsTableContent = ({ agents }) => {
           <TableRow key={agent.id}>
             <AdminTooltip title={agent.status}>
               <StyledLeftTableCell>
-                <StatusCell statusGroup={agent.statusGroup}/>
+                <StatusCell statusGroup={agent.statusGroup} />
               </StyledLeftTableCell>
             </AdminTooltip>
             <AdminTooltip title={agent.id}>
@@ -169,7 +174,7 @@ const AgentsTable = () => {
         if (!mounted) {
           return;
         }
-        setState({ ...state, error });
+        setState({ ...state, error: error?.message });
       });
     };
     fetchAgentStatus();
@@ -186,17 +191,39 @@ const AgentsTable = () => {
   return <AgentsTableContent agents={state.data} />;
 }
 
+const GET_CLUSTER = gql`
+query GetCluster($id: ID) {
+  cluster(id: $id) {
+    status
+    clusterName
+    vizierConfig {
+      passthroughEnabled
+    }
+  }
+}
+`;
+
 export const ClusterDetailsPage = () => {
   const classes = useStyles();
   const { id } = useParams();
+
   const [tab, setTab] = React.useState('agents');
+
+  const { loading, error, data } = useQuery(GET_CLUSTER, { variables: { id }, pollInterval: AGENTS_POLL_INTERVAL });
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  if (error) {
+    return <div>{error}</div>;
+  }
 
   return (
     <div className={classes.root}>
       <div className={classes.topBar}>
         <div className={classes.title}>
           <div className={classes.titleText}>Cluster View</div>
-          <Breadcrumbs classes={{separator: classes.breadcrumbText}}>
+          <Breadcrumbs classes={{ separator: classes.breadcrumbText }}>
             <Link className={classes.breadcrumbLink} to='/admin'>Admin</Link>
             <Typography className={classes.breadcrumbText}>Cluster</Typography>
             <Typography className={classes.breadcrumbText}>{id}</Typography>
@@ -212,7 +239,18 @@ export const ClusterDetailsPage = () => {
         >
           <StyledTab value='agents' label='Agents' />
         </StyledTabs>
-        {tab == 'agents' && <AgentsTable />}
+        {
+          tab === 'agents' &&
+          (
+            <VizierGRPCClientProvider
+              clusterID={id}
+              passthroughEnabled={data?.cluster.vizierConfig.passthroughEnabled}
+              clusterStatus={data?.cluster.status}
+            >
+              <AgentsTable />
+            </VizierGRPCClientProvider>
+          )
+        }
       </div>
     </div>
   );

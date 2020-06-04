@@ -1,5 +1,6 @@
 import './vizier.scss';
 
+import * as storage from 'common/storage';
 import { ClusterStatus, VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import { useSnackbar } from 'components/snackbar/snackbar';
 import AdminView from 'containers/admin/admin';
@@ -25,9 +26,9 @@ export const CREATE_CLUSTER = gql`
   }
 `;
 
-export const GET_CLUSTER = gql`
+export const LIST_CLUSTERS = gql`
 {
-  cluster {
+  clusters {
     id
     status
     lastHeartbeatMs
@@ -104,28 +105,12 @@ const ClusterBanner = () => {
 };
 
 const Vizier = () => {
-  const [creatingCluster, setCreatingCluster] = React.useState(false);
-  const client = useApolloClient();
   const showSnackbar = useSnackbar();
 
-  const { loading, error, data } = useQuery(GET_CLUSTER, { pollInterval: 2500, fetchPolicy: 'network-only' });
+  const [clusterId, setClusterId] = storage.useSessionStorage(storage.CLUSTER_ID_KEY, '');
+  const { loading, error, data } = useQuery(LIST_CLUSTERS, { pollInterval: 2500, fetchPolicy: 'network-only' });
 
   if (loading) { return <div>Loading...</div>; }
-
-  if (error) {
-    // TODO(michelle): Figure out how to add status codes to GQL errors.
-    if (error.message.includes('no clusters')) {
-      // If no cluster exists, and is not already being created, create it.
-      if (!creatingCluster) {
-        setCreatingCluster(true);
-        client.mutate({
-          mutation: CREATE_CLUSTER,
-        });
-      }
-
-      return <ClusterInstructions message='Initializing...' />;
-    }
-  }
 
   const errMsg = error?.message;
   if (errMsg) {
@@ -135,26 +120,27 @@ const Vizier = () => {
     console.error(errMsg);
   }
 
-  const status: ClusterStatus = data?.cluster?.status || 'CS_UNKNOWN';
+  if (data.clusters.length === 0) {
+    return <DeployInstructions />;
+  }
 
-  if (status === 'CS_DISCONNECTED') {
-    return (
-      <DeployInstructions />
-    );
+  const cluster = (clusterId && data.clusters.find((c) => c.id === clusterId)) || data.clusters[0];
+  const status: ClusterStatus = cluster.status || 'CS_UNKNOWN';
+
+  if (clusterId !== cluster.id) {
+    setClusterId(cluster.id);
   }
 
   return (
     <VizierGRPCClientProvider
-      clusterID={data.cluster.id}
-      passthroughEnabled={data.cluster.vizierConfig.passthroughEnabled}
-      vizierVersion={data.cluster.vizierVersion}
+      clusterID={cluster.id}
+      passthroughEnabled={cluster.vizierConfig.passthroughEnabled}
       clusterStatus={errMsg ? 'CS_UNKNOWN' : status}
     >
       <ScriptsContextProvider>
         <Switch>
           <Route path='/live' component={LiveView} />
           <Route path={['/console', '/agents']} component={VizierMain} />
-          <Route path='/admin' component={AdminView} />
           <Redirect from='/*' to='/live' />
         </Switch>
       </ScriptsContextProvider>
@@ -166,7 +152,10 @@ export default function withClusterBanner() {
   return (
     <>
       <ClusterBanner />
-      <Vizier />
+      <Switch>
+        <Route path='/admin' component={AdminView} />
+        <Route component={Vizier} />
+      </Switch>
     </>
   );
 }

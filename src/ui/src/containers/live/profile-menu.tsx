@@ -81,7 +81,7 @@ const StyledListItemIcon = withStyles(() =>
   }),
 )(ListItemIcon);
 
-const ProfileMenu = () => {
+const ProfileMenu = (props: { className?: string }) => {
   const classes = useStyles();
   const [open, setOpen] = React.useState<boolean>(false);
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -104,7 +104,7 @@ const ProfileMenu = () => {
   const user = data.user;
   return (
     <>
-      <IconButton onClick={openMenu}>
+      <IconButton onClick={openMenu} className={props.className || ''}>
         <Avatar name={user.name} picture={user.picture} className={classes.avatarSm} />
       </IconButton>
       <Menu open={open} onClose={closeMenu} anchorEl={anchorEl} getContentAnchorEl={null}

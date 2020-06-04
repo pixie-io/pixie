@@ -1,5 +1,5 @@
 import { CloudClientContext } from 'containers/App/context';
-import { ClusterInstructions } from 'containers/vizier/deploy-instructions';
+import { ClusterInstructions, DeployInstructions } from 'containers/vizier/deploy-instructions';
 import * as React from 'react';
 import { operation, RetryOperation } from 'retry';
 import { Subscription } from 'rxjs';
@@ -36,25 +36,24 @@ interface Props {
   passthroughEnabled: boolean;
   children: React.ReactNode;
   clusterID: string;
-  vizierVersion: string;
   clusterStatus: ClusterStatus;
 }
 
 async function newVizierClient(
-  cloudClient: CloudClient, clusterID: string, passthroughEnabled: boolean, vizierVersion: string) {
+  cloudClient: CloudClient, clusterID: string, passthroughEnabled: boolean) {
 
-  const { ipAddress, token } = await cloudClient.getClusterConnection(true);
+  const { ipAddress, token } = await cloudClient.getClusterConnection(clusterID, true);
   let address = ipAddress;
   if (passthroughEnabled) {
     // If cloud is running in dev mode, automatically direct to Envoy's port, since there is
     // no GCLB to redirect for us in dev.
     address = window.location.origin + (isDev() ? ':4444' : '');
   }
-  return new VizierGRPCClient(address, token, clusterID, passthroughEnabled, vizierVersion);
+  return new VizierGRPCClient(address, token, clusterID, passthroughEnabled);
 }
 
 export const VizierGRPCClientProvider = (props: Props) => {
-  const { children, passthroughEnabled, clusterID, vizierVersion, clusterStatus } = props;
+  const { children, passthroughEnabled, clusterID, clusterStatus } = props;
   const cloudClient = React.useContext(CloudClientContext);
   const [client, setClient] = React.useState<VizierGRPCClient>(null);
   const [connected, setConnected] = React.useState<boolean>(false);
@@ -81,7 +80,7 @@ export const VizierGRPCClientProvider = (props: Props) => {
         if (subscriptionRef.current) {
           subscriptionRef.current.unsubscribe();
         }
-        newVizierClient(cloudClient, clusterID, passthroughEnabled, vizierVersion).then(
+        newVizierClient(cloudClient, clusterID, passthroughEnabled).then(
           (client) => {
             setClient(client);
             subscriptionRef.current = client.health().subscribe({
@@ -121,9 +120,17 @@ export const VizierGRPCClientProvider = (props: Props) => {
     };
   }, [client, healthy])
 
+  if (!loaded && clusterStatus === 'CS_DISCONNECTED') {
+    return <DeployInstructions />;
+  }
+
+  if (!loaded) {
+    return <ClusterInstructions message='Connecting to cluster...' />;
+  }
+
   return (
     <VizierGRPCClientContext.Provider value={context}>
-      {!loaded ? <ClusterInstructions message='Connecting to cluster...' /> : children}
+      {children}
     </VizierGRPCClientContext.Provider>
   );
 };
