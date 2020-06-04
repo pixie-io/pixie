@@ -22,6 +22,8 @@
 // 000010_add_vizier_info_to_cluster_info.up.sql
 // 000011_add_updated_at_to_vizier_cluster.down.sql
 // 000011_add_updated_at_to_vizier_cluster.up.sql
+// 000012_add_deployment_keys.down.sql
+// 000012_add_deployment_keys.up.sql
 package schema
 
 import (
@@ -113,7 +115,7 @@ func _000001_create_cluster_tablesDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_cluster_tables.down.sql", size: 114, mode: os.FileMode(436), modTime: time.Unix(1566845212, 0)}
+	info := bindataFileInfo{name: "000001_create_cluster_tables.down.sql", size: 114, mode: os.FileMode(420), modTime: time.Unix(1576965894, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -133,7 +135,7 @@ func _000001_create_cluster_tablesUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000001_create_cluster_tables.up.sql", size: 1024, mode: os.FileMode(436), modTime: time.Unix(1570577344, 0)}
+	info := bindataFileInfo{name: "000001_create_cluster_tables.up.sql", size: 1024, mode: os.FileMode(420), modTime: time.Unix(1576965894, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -153,7 +155,7 @@ func _000002_create_pgcrypto_extensionDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.down.sql", size: 37, mode: os.FileMode(436), modTime: time.Unix(1570640344, 0)}
+	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.down.sql", size: 37, mode: os.FileMode(420), modTime: time.Unix(1576965894, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -173,7 +175,7 @@ func _000002_create_pgcrypto_extensionUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.up.sql", size: 43, mode: os.FileMode(436), modTime: time.Unix(1570640344, 0)}
+	info := bindataFileInfo{name: "000002_create_pgcrypto_extension.up.sql", size: 43, mode: os.FileMode(420), modTime: time.Unix(1576965894, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -193,7 +195,7 @@ func _000003_create_index_tableDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000003_create_index_table.down.sql", size: 41, mode: os.FileMode(436), modTime: time.Unix(1588021619, 0)}
+	info := bindataFileInfo{name: "000003_create_index_table.down.sql", size: 41, mode: os.FileMode(436), modTime: time.Unix(1587101884, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -213,7 +215,7 @@ func _000003_create_index_tableUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000003_create_index_table.up.sql", size: 371, mode: os.FileMode(436), modTime: time.Unix(1588021619, 0)}
+	info := bindataFileInfo{name: "000003_create_index_table.up.sql", size: 371, mode: os.FileMode(436), modTime: time.Unix(1587101884, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -233,7 +235,7 @@ func _000004_create_shard_indexDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000004_create_shard_index.down.sql", size: 39, mode: os.FileMode(436), modTime: time.Unix(1588021619, 0)}
+	info := bindataFileInfo{name: "000004_create_shard_index.down.sql", size: 39, mode: os.FileMode(436), modTime: time.Unix(1587101884, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -253,7 +255,7 @@ func _000004_create_shard_indexUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000004_create_shard_index.up.sql", size: 166, mode: os.FileMode(436), modTime: time.Unix(1588021619, 0)}
+	info := bindataFileInfo{name: "000004_create_shard_index.up.sql", size: 166, mode: os.FileMode(436), modTime: time.Unix(1587101884, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -273,7 +275,7 @@ func _000005_add_passthrough_to_cluster_tableDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000005_add_passthrough_to_cluster_table.down.sql", size: 65, mode: os.FileMode(436), modTime: time.Unix(1588021619, 0)}
+	info := bindataFileInfo{name: "000005_add_passthrough_to_cluster_table.down.sql", size: 65, mode: os.FileMode(436), modTime: time.Unix(1587101884, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -293,7 +295,7 @@ func _000005_add_passthrough_to_cluster_tableUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000005_add_passthrough_to_cluster_table.up.sql", size: 85, mode: os.FileMode(436), modTime: time.Unix(1588021619, 0)}
+	info := bindataFileInfo{name: "000005_add_passthrough_to_cluster_table.up.sql", size: 85, mode: os.FileMode(436), modTime: time.Unix(1587101884, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -313,7 +315,7 @@ func _000006_add_project_id_to_cluster_tableDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000006_add_project_id_to_cluster_table.down.sql", size: 108, mode: os.FileMode(436), modTime: time.Unix(1588021619, 0)}
+	info := bindataFileInfo{name: "000006_add_project_id_to_cluster_table.down.sql", size: 108, mode: os.FileMode(436), modTime: time.Unix(1587101884, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -333,7 +335,7 @@ func _000006_add_project_id_to_cluster_tableUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000006_add_project_id_to_cluster_table.up.sql", size: 163, mode: os.FileMode(436), modTime: time.Unix(1588021619, 0)}
+	info := bindataFileInfo{name: "000006_add_project_id_to_cluster_table.up.sql", size: 163, mode: os.FileMode(436), modTime: time.Unix(1587101884, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -353,7 +355,7 @@ func _000007_update_cluster_status_enumDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000007_update_cluster_status_enum.down.sql", size: 112, mode: os.FileMode(436), modTime: time.Unix(1588054080, 0)}
+	info := bindataFileInfo{name: "000007_update_cluster_status_enum.down.sql", size: 112, mode: os.FileMode(436), modTime: time.Unix(1588876118, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -373,7 +375,7 @@ func _000007_update_cluster_status_enumUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000007_update_cluster_status_enum.up.sql", size: 68, mode: os.FileMode(436), modTime: time.Unix(1588054080, 0)}
+	info := bindataFileInfo{name: "000007_update_cluster_status_enum.up.sql", size: 68, mode: os.FileMode(436), modTime: time.Unix(1588876118, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -393,7 +395,7 @@ func _000008_connected_cluster_status_enumDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000008_connected_cluster_status_enum.down.sql", size: 124, mode: os.FileMode(436), modTime: time.Unix(1588103412, 0)}
+	info := bindataFileInfo{name: "000008_connected_cluster_status_enum.down.sql", size: 124, mode: os.FileMode(436), modTime: time.Unix(1588876118, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -413,7 +415,7 @@ func _000008_connected_cluster_status_enumUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000008_connected_cluster_status_enum.up.sql", size: 65, mode: os.FileMode(436), modTime: time.Unix(1588103412, 0)}
+	info := bindataFileInfo{name: "000008_connected_cluster_status_enum.up.sql", size: 65, mode: os.FileMode(436), modTime: time.Unix(1588876118, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -433,7 +435,7 @@ func _000009_update_failed_cluster_status_enumDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000009_update_failed_cluster_status_enum.down.sql", size: 137, mode: os.FileMode(436), modTime: time.Unix(1588122374, 0)}
+	info := bindataFileInfo{name: "000009_update_failed_cluster_status_enum.down.sql", size: 137, mode: os.FileMode(436), modTime: time.Unix(1588895622, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -453,7 +455,7 @@ func _000009_update_failed_cluster_status_enumUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000009_update_failed_cluster_status_enum.up.sql", size: 70, mode: os.FileMode(436), modTime: time.Unix(1588122374, 0)}
+	info := bindataFileInfo{name: "000009_update_failed_cluster_status_enum.up.sql", size: 70, mode: os.FileMode(436), modTime: time.Unix(1588895622, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -473,7 +475,7 @@ func _000010_add_vizier_info_to_cluster_infoDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000010_add_vizier_info_to_cluster_info.down.sql", size: 140, mode: os.FileMode(436), modTime: time.Unix(1588134890, 0)}
+	info := bindataFileInfo{name: "000010_add_vizier_info_to_cluster_info.down.sql", size: 140, mode: os.FileMode(436), modTime: time.Unix(1588895622, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -493,7 +495,7 @@ func _000010_add_vizier_info_to_cluster_infoUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000010_add_vizier_info_to_cluster_info.up.sql", size: 192, mode: os.FileMode(436), modTime: time.Unix(1588134890, 0)}
+	info := bindataFileInfo{name: "000010_add_vizier_info_to_cluster_info.up.sql", size: 192, mode: os.FileMode(436), modTime: time.Unix(1588895622, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -513,12 +515,12 @@ func _000011_add_updated_at_to_vizier_clusterDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000011_add_updated_at_to_vizier_cluster.down.sql", size: 127, mode: os.FileMode(436), modTime: time.Unix(1589391099, 0)}
+	info := bindataFileInfo{name: "000011_add_updated_at_to_vizier_cluster.down.sql", size: 127, mode: os.FileMode(436), modTime: time.Unix(1590701334, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var __000011_add_updated_at_to_vizier_clusterUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x7c\x50\x4d\x6b\xb3\x40\x10\xbe\xef\xaf\x78\x0e\x42\x92\xcb\xfb\x07\xc2\x7b\xd8\xec\x8e\x56\xd0\x5d\x19\x67\x49\x6f\x22\x8d\x48\x40\x52\x9b\x68\x0b\xfd\xf5\x45\x53\x49\xfa\x41\xf7\xb2\x30\xcf\x3c\x5f\xa3\x33\x21\x86\xe8\x5d\x46\x78\x3d\xbe\x1f\x9b\x73\xf5\xd4\x8d\x97\xa1\x39\x43\x5b\x0b\xe3\xb3\x90\x3b\x8c\xfd\xa1\x1e\x9a\x43\x55\x0f\x90\x34\xa7\x52\x74\x5e\x6c\xd5\x5f\xdc\x19\xfa\xc9\x2e\x49\x60\x29\xd6\x21\x13\x9c\x9e\xdf\xd6\x9b\xad\x52\x86\x49\x0b\xc1\x33\x98\x8a\x4c\x1b\x42\x1c\x9c\x91\xd4\x2f\xcc\xea\x26\xb0\xde\x28\x80\x49\x02\xbb\x12\xc2\x69\x92\x10\x43\x97\x88\x22\x05\xec\x28\x49\x9d\xc2\xfc\x1c\xed\xff\xdd\xf9\xfe\x5f\xdc\xae\xe8\x55\x61\x5a\x9a\x26\xe4\xec\xf4\x45\x11\xba\xfa\xd4\x8e\x75\xdb\x60\xd5\x77\x7d\x7b\x79\xe9\x56\xb7\x7c\x8b\xdb\x67\xa6\xaf\x85\xef\x22\xaa\x1d\xc5\x9e\x09\xa1\xb0\x73\x2d\xf7\xed\x36\x2a\xf6\x0c\xd2\xe6\x01\xec\xf7\xa0\x47\x32\x41\x08\x05\x7b\x43\x36\x30\xfd\xd6\x79\xfb\x11\x00\x00\xff\xff\xb7\xc5\x07\x8d\xa6\x01\x00\x00")
+var __000011_add_updated_at_to_vizier_clusterUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x7c\x90\xcd\xae\xda\x30\x10\x85\xf7\x7e\x8a\xb3\x88\x74\x41\x6a\xfa\x02\xa8\x0b\x93\x4c\x68\xa4\x60\x47\x8e\x2d\xba\x43\x16\x98\x10\xc9\x4d\x68\xe2\x40\xdb\xa7\xaf\x08\x8d\xa0\x3f\xba\xde\x58\xf2\x78\xe6\xfb\xce\xc4\x31\xf2\xb6\x09\x8d\xf5\xfe\x07\x06\x17\xd0\x76\x38\xba\x93\x1d\x7d\xf8\x80\xa1\x43\x38\xdb\x00\xf7\xbd\x19\x42\xd3\xd6\xe8\xbb\xdb\x80\xb3\xbd\x3a\x58\x08\x53\x14\x18\x2f\x47\x1b\xdc\x71\x6f\x03\x0e\x9d\x1f\xbf\xb6\x8c\x17\x9a\x14\x34\x5f\x17\x84\x6b\xf3\xb3\x71\xfd\xfe\xe0\xc7\x21\xb8\x1e\x3c\x4d\x91\xc8\xc2\x6c\xc5\x6b\x9f\xce\xb7\x54\x69\xbe\x2d\x57\x2c\x8e\x51\xb9\x80\x70\x76\xb3\x03\x42\x07\x21\x77\x8b\x25\x4e\x5d\x8f\xd3\x18\xc6\xde\x4d\x16\xef\x72\xa6\xd2\xbf\xa4\x8a\x34\x52\xca\xb8\x29\x34\xda\xee\xb6\x58\xae\x18\x4b\x14\x71\x4d\x90\x0a\x8a\xca\x82\x27\x84\xcc\x88\x44\xe7\x72\xee\xdc\x3f\x07\x2c\x96\x0c\x50\xa4\x8d\x12\x15\xb4\xca\x37\x1b\x52\xe0\x15\xa2\x88\x01\x6b\xda\xe4\x82\x61\x3a\x82\x76\x1f\x5f\xb8\x9f\x66\xda\xa3\xfa\x98\x70\xff\x74\x7f\x21\x91\xde\xaf\x28\x82\xb7\x6d\x3d\xda\xda\xe1\xed\xe2\x2f\xf5\xf0\xcd\xbf\x3d\xfd\x66\xda\x6f\xa7\x3f\x03\xbf\x28\xb2\x35\x65\x52\x11\x4c\x99\x4e\xb1\xc4\x5f\xbb\x61\x99\x54\x20\x9e\x7c\x86\x92\x3b\xd0\x17\x4a\x8c\x26\x94\x4a\x26\x94\x1a\x45\xff\xcb\xbc\x62\xbf\x02\x00\x00\xff\xff\xe3\x2b\x46\x12\x24\x02\x00\x00")
 
 func _000011_add_updated_at_to_vizier_clusterUpSqlBytes() ([]byte, error) {
 	return bindataRead(
@@ -533,7 +535,47 @@ func _000011_add_updated_at_to_vizier_clusterUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000011_add_updated_at_to_vizier_cluster.up.sql", size: 422, mode: os.FileMode(436), modTime: time.Unix(1589391051, 0)}
+	info := bindataFileInfo{name: "000011_add_updated_at_to_vizier_cluster.up.sql", size: 548, mode: os.FileMode(436), modTime: time.Unix(1590701334, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000012_add_deployment_keysDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\x09\xf2\x0f\x50\x08\x71\x74\xf2\x71\x55\xf0\x74\x53\x70\x8d\xf0\x0c\x0e\x09\x56\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\x49\x2d\xc8\xc9\xaf\xcc\x4d\xcd\x2b\x89\xcf\x4e\xad\x2c\xb6\xe6\x02\x04\x00\x00\xff\xff\x79\x3e\x94\xa4\x2d\x00\x00\x00")
+
+func _000012_add_deployment_keysDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000012_add_deployment_keysDownSql,
+		"000012_add_deployment_keys.down.sql",
+	)
+}
+
+func _000012_add_deployment_keysDownSql() (*asset, error) {
+	bytes, err := _000012_add_deployment_keysDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000012_add_deployment_keys.down.sql", size: 45, mode: os.FileMode(436), modTime: time.Unix(1591296821, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000012_add_deployment_keysUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x7c\x90\x31\xaf\x9b\x30\x1c\xc4\x77\x3e\xc5\xe9\x4d\x44\x6a\xaa\x54\xea\xf6\x26\xda\x38\x92\x55\x42\xd2\x60\xd4\x64\x42\x0e\xfc\x13\xac\x10\x3b\xb2\x4d\x10\xfd\xf4\x95\x81\xa6\x4b\xf5\x36\xb0\xef\x7e\xe7\xbb\xef\x07\x96\x08\x06\x76\x14\x2c\xcb\xf9\x2e\x03\xdf\x20\xdb\x09\xb0\x23\xcf\x45\x8e\xb7\xae\x53\xf5\xd2\x38\xf7\x78\x7b\x8f\xa2\xe5\x12\xa2\x51\x0e\x5e\x9e\x5b\x42\x65\xb4\x97\x4a\x3b\xdc\x68\x70\xf0\x8d\xf4\xa8\xa4\xc6\x99\xd0\x39\xaa\xe1\x0d\x6a\x7a\xb4\x66\x80\x84\xa6\x1e\x4f\xf5\x5b\x91\xfd\x1c\xcd\x89\x22\xf9\x96\xb2\xf9\xb0\x9c\x84\x77\xd2\xbe\x1c\x61\x71\x04\x8c\x61\x04\xbe\x0e\xa4\xce\x11\x2e\xc6\xc2\x87\xf8\xaa\xed\x9c\x0f\x28\x40\xd5\x28\x0a\xbe\x46\x91\xf1\x9f\x05\xc3\x9a\x6d\x92\x22\x15\x08\xaf\x2e\xaf\xa4\xc9\x4a\x4f\xe5\xf3\x6b\xbc\xf8\x34\x11\x8d\xbd\x96\xaa\x46\xe8\xd0\x10\x4c\xaf\xc9\xc2\x5c\x26\xec\x8d\x86\x80\x9c\x25\x23\x36\x2c\x91\x15\x69\x3a\xbb\x3b\x47\x36\xdc\x8d\x5d\x3f\x62\xfc\x15\xfe\x0f\x22\xd4\x9d\x9c\x97\xf7\x07\xfa\x86\xf4\xcb\x86\x5e\x3a\x54\x96\xa4\xa7\x3a\x20\xe6\xcf\x52\x7a\x08\xbe\x65\xb9\x48\xb6\xfb\x57\xbf\x6c\xf7\x2b\x54\xfa\xb7\x92\xac\x7c\x27\xdb\x91\xe3\x64\x3b\x23\xc2\xdf\x53\xda\xaa\x91\x36\xfe\xb2\x5a\xad\x26\xc7\x34\x55\x7c\xa3\x61\x1c\x65\x7f\xe0\xdb\xe4\x70\xc2\x0f\x76\x8a\x55\xbd\x88\x16\xef\xd1\x9f\x00\x00\x00\xff\xff\xda\x80\xcc\x35\x14\x02\x00\x00")
+
+func _000012_add_deployment_keysUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000012_add_deployment_keysUpSql,
+		"000012_add_deployment_keys.up.sql",
+	)
+}
+
+func _000012_add_deployment_keysUpSql() (*asset, error) {
+	bytes, err := _000012_add_deployment_keysUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000012_add_deployment_keys.up.sql", size: 532, mode: os.FileMode(436), modTime: time.Unix(1591298272, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -612,6 +654,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000010_add_vizier_info_to_cluster_info.up.sql":     _000010_add_vizier_info_to_cluster_infoUpSql,
 	"000011_add_updated_at_to_vizier_cluster.down.sql":  _000011_add_updated_at_to_vizier_clusterDownSql,
 	"000011_add_updated_at_to_vizier_cluster.up.sql":    _000011_add_updated_at_to_vizier_clusterUpSql,
+	"000012_add_deployment_keys.down.sql":               _000012_add_deployment_keysDownSql,
+	"000012_add_deployment_keys.up.sql":                 _000012_add_deployment_keysUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -677,6 +721,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000010_add_vizier_info_to_cluster_info.up.sql":     &bintree{_000010_add_vizier_info_to_cluster_infoUpSql, map[string]*bintree{}},
 	"000011_add_updated_at_to_vizier_cluster.down.sql":  &bintree{_000011_add_updated_at_to_vizier_clusterDownSql, map[string]*bintree{}},
 	"000011_add_updated_at_to_vizier_cluster.up.sql":    &bintree{_000011_add_updated_at_to_vizier_clusterUpSql, map[string]*bintree{}},
+	"000012_add_deployment_keys.down.sql":               &bintree{_000012_add_deployment_keysDownSql, map[string]*bintree{}},
+	"000012_add_deployment_keys.up.sql":                 &bintree{_000012_add_deployment_keysUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory
