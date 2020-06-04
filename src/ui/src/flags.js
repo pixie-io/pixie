@@ -5,6 +5,6 @@ const SEGMENT_UI_WRITE_KEY = '__SEGMENT_UI_WRITE_KEY__';
 
 // There is a bug with using esnext + webpack-replace-plugin, where
 // lines with an export and replacement will not compile properly.
-export {
+window.__PIXIE_FLAGS__ = {
   AUTH0_DOMAIN, AUTH0_CLIENT_ID, DOMAIN_NAME, SEGMENT_UI_WRITE_KEY,
 };

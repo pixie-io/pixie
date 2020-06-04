@@ -24,7 +24,8 @@ const plugins = [
   new CaseSensitivePathsPlugin(),
   new HtmlWebpackPlugin({
     alwaysWriteToDisk: true,
-    chunks: ['main', 'manifest', 'commons', 'vendor'],
+    chunks: ['config', 'manifest', 'commons', 'vendor', 'main'],
+    chunksSortMode: 'manual',
     template: 'index.html',
     filename: 'index.html',
   }),
@@ -54,6 +55,7 @@ if (isDevServer) {
     new CompressionPlugin({
       algorithm: 'gzip',
       threshold: 1024,
+      exclude: /config\.js/,
     }),
     new ArchivePlugin({
       output: join(resolve(__dirname, 'dist'), 'bundle'),
@@ -76,6 +78,7 @@ const webpackConfig = {
   },
   entry: {
     main: 'main.tsx',
+    config: ['flags.js', 'segment.js'],
   },
   mode: isDevServer ? 'development' : 'production',
   module: {
@@ -170,6 +173,9 @@ const webpackConfig = {
       cacheGroups: {
         commons: {
           chunks: 'initial',
+          test(module, chunks) {
+            return !chunks.find((c) => c.name === 'config');
+          },
           minChunks: 2,
           maxInitialRequests: 5, // The default limit is too small to showcase the effect
           minSize: 0, // This is example is too small to create commons chunks
@@ -224,7 +230,7 @@ module.exports = (env) => {
   webpackConfig.plugins.push(
     new ReplacePlugin({
       include: [
-        'containers/constants.tsx',
+        'flags.js',
         'segment.js',
       ],
       values: {
@@ -243,7 +249,7 @@ module.exports = (env) => {
   } else {
     const credsEnv = environment === 'base' ? 'dev' : environment;
     const certsPath = join(topLevelDir,
-                           'credentials', 'k8s', credsEnv, 'cloud_proxy_tls_certs.yaml').replace(/\//g, '\\/');
+      'credentials', 'k8s', credsEnv, 'cloud_proxy_tls_certs.yaml').replace(/\//g, '\\/');
     const results = execSync(`sops --decrypt ${certsPath}`);
     const credsYAML = YAML.parse(results.toString());
     webpackConfig.devServer.https = {
