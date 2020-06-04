@@ -102,10 +102,13 @@ func main() {
 
 	// Always attempt to delete old version of etcd operator.
 	oldEtcdExists, err := od.DeleteByLabel("app=pl-monitoring", "etcdclusters.etcd.database.coreos.com")
+	if err != nil {
+		log.WithError(err).Error("Failed to delete old etcd")
+	}
 
 	// Redeploy etcd.
 	if viper.GetBool("redeploy_etcd") || oldEtcdExists > 0 {
-
+		log.Info("Redeploying etcd")
 		if oldEtcdExists == 0 {
 			_, err = od.DeleteByLabel("app=pl-monitoring", "StatefulSet")
 			if err != nil {
