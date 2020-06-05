@@ -74,18 +74,12 @@ class DataTable : public NotCopyable {
   // Initialize a new Active record batch.
   void InitBuffers(types::ColumnWrapperRecordBatch* record_batch_ptr);
 
-  // Close the active record batch, and call InitBuffers to set up new active record batch.
-  void SealActiveRecordBatch();
-
   // Table schema: a DataElement to describe each column.
   const DataTableSchema& table_schema_;
 
   // Active record batch.
   // Key is tablet id, value is tablet active record batch.
   absl::flat_hash_map<types::TabletID, std::unique_ptr<types::ColumnWrapperRecordBatch>> tablets_;
-
-  // Sealed record batches that have been collected, but need to be pushed upstream.
-  std::vector<TaggedRecordBatch> sealed_batches_;
 };
 
 }  // namespace stirling

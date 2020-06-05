@@ -42,24 +42,19 @@ types::ColumnWrapperRecordBatch* DataTable::ActiveRecordBatch(types::TabletIDVie
 }
 
 std::vector<TaggedRecordBatch> DataTable::ConsumeRecordBatches() {
-  SealActiveRecordBatch();
+  std::vector<TaggedRecordBatch> tablets_out;
 
-  std::vector<TaggedRecordBatch> return_batches;
-  return_batches = std::move(sealed_batches_);
-  sealed_batches_.clear();
-  return return_batches;
-}
-
-void DataTable::SealActiveRecordBatch() {
   for (auto& [tablet_id, tablet] : tablets_) {
     PL_UNUSED(tablet_id);
     for (size_t j = 0; j < table_schema_.elements().size(); ++j) {
       auto col = (*tablet)[j];
       col->ShrinkToFit();
     }
-    sealed_batches_.push_back(TaggedRecordBatch{tablet_id, std::move(tablet)});
+    tablets_out.push_back(TaggedRecordBatch{tablet_id, std::move(tablet)});
   }
   tablets_.clear();
+
+  return tablets_out;
 }
 
 }  // namespace stirling
