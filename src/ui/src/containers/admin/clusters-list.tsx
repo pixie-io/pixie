@@ -72,8 +72,10 @@ export function formatCluster(clusterInfo): ClusterDisplay {
   }
 }
 
+const CLUSTERS_POLL_INTERVAL = 2500;
+
 export const ClustersTable = () => {
-  const { loading, error, data } = useQuery(GET_CLUSTERS, { fetchPolicy: 'network-only' });
+  const { loading, error, data } = useQuery(GET_CLUSTERS, { pollInterval: CLUSTERS_POLL_INTERVAL });
   if (loading || error || !data.clusters) {
     return null;
   }
