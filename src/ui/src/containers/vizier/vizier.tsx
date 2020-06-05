@@ -2,7 +2,10 @@ import './vizier.scss';
 
 import ClusterContext from 'common/cluster-context';
 import * as storage from 'common/storage';
-import { ClusterStatus, VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
+import { CLUSTER_STATUS_UNKNOWN, CLUSTER_STATUS_HEALTHY, CLUSTER_STATUS_UNHEALTHY,
+         CLUSTER_STATUS_DISCONNECTED, CLUSTER_STATUS_UPDATING, CLUSTER_STATUS_CONNECTED,
+         CLUSTER_STATUS_UPDATE_FAILED, ClusterStatus,
+         VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import { useSnackbar } from 'components/snackbar/snackbar';
 import AdminView from 'containers/admin/admin';
 import { ScriptsContextProvider } from 'containers/App/scripts-context';
@@ -23,9 +26,8 @@ export const LIST_CLUSTERS = gql`
 {
   clusters {
     id
+    clusterName
     status
-    lastHeartbeatMs
-    vizierVersion
     vizierConfig {
       passthroughEnabled
     }
@@ -97,6 +99,45 @@ const ClusterBanner = () => {
   return null;
 };
 
+interface ClusterInfo {
+  id: string;
+  clusterName: string;
+  status: string;
+}
+
+// Selects a default cluster if one hasn't already been selected by the user.
+// Selects based on cluster status and tiebreaks by cluster name.
+export function selectCluster(clusters: ClusterInfo[]): ClusterInfo {
+  // Buckets cluster states by desirability for selection.
+  // 0 = most prioritized.
+  const clusterStatusMap = {
+    [CLUSTER_STATUS_UNKNOWN]: 3,
+    [CLUSTER_STATUS_HEALTHY]: 0,
+    [CLUSTER_STATUS_UNHEALTHY]: 2,
+    [CLUSTER_STATUS_DISCONNECTED]: 3,
+    [CLUSTER_STATUS_UPDATING]: 1,
+    [CLUSTER_STATUS_CONNECTED]: 1,
+    [CLUSTER_STATUS_UPDATE_FAILED]: 2,
+  }
+  const defaultStatusValue = 3;
+
+  clusters.sort((cluster1, cluster2) => {
+    const status1 = clusterStatusMap[cluster1.status] === undefined ?
+      defaultStatusValue :  clusterStatusMap[cluster1.status];
+    const status2 = clusterStatusMap[cluster2.status] === undefined ?
+      defaultStatusValue :  clusterStatusMap[cluster2.status];
+    if (status1 < status2) {
+      return -1;
+    }
+    if (status1 > status2) {
+      return 1;
+    }
+    return cluster1.clusterName < cluster2.clusterName ? -1 : 1;
+  });
+
+  return clusters[0];
+}
+
 const Vizier = () => {
   const showSnackbar = useSnackbar();
 
@@ -124,7 +165,7 @@ const Vizier = () => {
     return <DeployInstructions />;
   }
 
-  const cluster = (clusterId && data.clusters.find((c) => c.id === clusterId)) || data.clusters[0];
+  const cluster = (clusterId && data.clusters.find((c) => c.id === clusterId)) || selectCluster(data.clusters);
   const status: ClusterStatus = cluster.status || 'CS_UNKNOWN';
 
   if (clusterId !== cluster.id) {
