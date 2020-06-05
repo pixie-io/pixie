@@ -27,6 +27,7 @@ spec:
       name: etcd
       labels:
         app: etcd
+        vizier-dep: etcd
     spec:
       containers:
       - name: etcd
