@@ -2,7 +2,7 @@
 
 import { addPxTimeFormatExpression } from 'components/vega/timeseries-axis';
 import * as _ from 'lodash';
-import { Data, Mark, Signal, Spec as VgSpec, TimeScale } from 'vega';
+import { Data, Mark, Signal, Spec as VgSpec, TimeScale, GroupMark } from 'vega';
 import { VisualizationSpec } from 'vega-embed';
 import { compile, TopLevelSpec as VlSpec } from 'vega-lite';
 
@@ -78,6 +78,7 @@ export interface VegaSpecWithProps {
   hasLegend: boolean;
   legendColumnName: string;
   isStacked: boolean;
+  error?: Error;
 }
 
 export type ChartDisplay = TimeseriesDisplay | BarDisplay | VegaDisplay;
@@ -96,10 +97,20 @@ export function convertWidgetDisplayToVegaLiteSpec(display: ChartDisplay, source
 }
 
 export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: string, theme: Theme): VegaSpecWithProps {
-  const vegaLiteSpec = convertWidgetDisplayToVegaLiteSpec(display, source);
-  const hydratedVegaLite = hydrateSpec(vegaLiteSpec, theme) as VlSpec;
-  const vegaSpec = compile(hydratedVegaLite).spec;
-  return addExtrasToVegaSpec(vegaSpec, display, source);
+  try {
+    const vegaLiteSpec = convertWidgetDisplayToVegaLiteSpec(display, source);
+    const hydratedVegaLite = hydrateSpec(vegaLiteSpec, theme) as VlSpec;
+    const vegaSpec = compile(hydratedVegaLite).spec;
+    return addExtrasToVegaSpec(vegaSpec, display, source);
+  } catch (error) {
+    return {
+      spec: {},
+      legendColumnName: null,
+      hasLegend: false,
+      isStacked: false,
+      error: error,
+    };
+  }
 }
 
 // Currently only supports a single input dataframe.
@@ -524,22 +535,27 @@ function addLegendSignalsToVgSpec(vegaSpec: VgSpec, pivotField: string): VgSpec 
   return vegaSpec;
 }
 
+function isLineMark(mark: Mark, valueField: string) {
+  return mark.type == 'group'
+    && mark.marks
+    && mark.marks.length > 0
+    && mark.marks[0]
+    && mark.marks[0].encode
+    && mark.marks[0].encode.update
+    && mark.marks[0].encode.update.y
+    && (mark.marks[0].encode.update.y as any).field
+    && (mark.marks[0].encode.update.y as any).field == valueField;
+}
+
 function addOpacityTestsToLine(vegaSpec: VgSpec, pivotField: string, valueField: string): VgSpec {
   const newMarks = vegaSpec.marks.map((mark: Mark) => {
-    if (mark.type !== 'group'
-      || !mark.marks
-      || mark.marks.length === 0
-      || !mark.marks[0]
-      || !mark.marks[0].encode
-      || !mark.marks[0].encode.update
-      || !mark.marks[0].encode.update.y
-      || !(mark.marks[0].encode.update.y as any).field
-      || (mark.marks[0].encode.update.y as any).field !== valueField) {
+    if (!isLineMark(mark, valueField)) {
       return mark;
     }
+    const lineMark = (mark as GroupMark).marks[0];
     // Force the lines to be above the voronoi layer.
     mark.zindex = 200;
-    mark.marks[0].encode.update.opacity = [
+    lineMark.encode.update.opacity = [
       {
         value: SELECTED_LINE_OPACITY,
         test: `${LEGEND_HOVER_SIGNAL} && datum["${pivotField}"] === ${LEGEND_HOVER_SIGNAL}`,
@@ -550,7 +566,7 @@ function addOpacityTestsToLine(vegaSpec: VgSpec, pivotField: string, valueField:
       },
       { value: SELECTED_LINE_OPACITY },
     ];
-    mark.marks[0].encode.update.strokeWidth = [
+    lineMark.encode.update.strokeWidth = [
       {
         value: HIGHLIGHTED_LINE_WIDTH,
         test: `${LEGEND_HOVER_SIGNAL} && datum["${pivotField}"] === ${LEGEND_HOVER_SIGNAL}`,
@@ -569,11 +585,23 @@ export const TS_DOMAIN_SIGNAL = 'ts_domain_value';
 export const EXTERNAL_TS_DOMAIN_SIGNAL = 'external_ts_domain_value';
 export const INTERNAL_TS_DOMAIN_SIGNAL = 'internal_ts_domain_value';
 
+function getLineMarkDataName(vegaSpec: VgSpec, valueField: string) {
+  for (let i = 0; i < vegaSpec.marks.length; ++i) {
+    const mark = vegaSpec.marks[i];
+    if (isLineMark(mark, valueField)) {
+      return (mark as any).from.facet.data;
+    }
+  }
+  throw new Error('No data source found for Line Mark.');
+}
+
 function addHoverHandlersToVgSpec(vegaSpec: VgSpec, source: string, pivotField: string, valueField: string): VgSpec {
   const signalName = '_x_signal';
   vegaSpec = addTimeSeriesDomainBackupToVgSpec(vegaSpec, signalName);
   vegaSpec = addTimeseriesDomainSignalsToVgSpec(vegaSpec, signalName);
-  vegaSpec = addHoverDataToVgSpec(vegaSpec, source, pivotField, valueField);
+  // Get the data source used by marks.
+  const markDataName = getLineMarkDataName(vegaSpec, valueField);
+  vegaSpec = addHoverDataToVgSpec(vegaSpec, markDataName, pivotField, valueField);
   vegaSpec = addHoverSignalsToVgSpec(vegaSpec);
   vegaSpec = addHoverMarksToVgSpec(vegaSpec);
   return vegaSpec;
@@ -659,6 +687,7 @@ function getXScaleFromConfig(vegaSpec: VgSpec): TimeScale {
   return null;
 }
 
+// Duplicates the Xscale so that when we update the time domain to match other charts we don't create a feedback loop.
 function addTimeSeriesDomainBackupToVgSpec(vegaSpec: VgSpec, signalName: string): VgSpec {
   const xScale: TimeScale = getXScaleFromConfig(vegaSpec);
 

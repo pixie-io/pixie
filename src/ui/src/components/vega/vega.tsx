@@ -1,12 +1,12 @@
 import Legend, { LegendInteractState } from 'components/legend/legend';
 import {
-    buildHoverDataCache, formatLegendData, HoverDataCache, LegendData,
+  buildHoverDataCache, formatLegendData, HoverDataCache, LegendData,
 } from 'components/legend/legend-data';
 import {
-    ChartDisplay, convertWidgetDisplayToVegaSpec, EXTERNAL_HOVER_SIGNAL, EXTERNAL_TS_DOMAIN_SIGNAL,
-    HOVER_PIVOT_TRANSFORM, HOVER_SIGNAL, INTERNAL_HOVER_SIGNAL, INTERNAL_TS_DOMAIN_SIGNAL,
-    LEGEND_HOVER_SIGNAL, LEGEND_SELECT_SIGNAL, REVERSE_HOVER_SIGNAL, REVERSE_SELECT_SIGNAL,
-    REVERSE_UNSELECT_SIGNAL,
+  ChartDisplay, convertWidgetDisplayToVegaSpec, EXTERNAL_HOVER_SIGNAL, EXTERNAL_TS_DOMAIN_SIGNAL,
+  HOVER_PIVOT_TRANSFORM, HOVER_SIGNAL, INTERNAL_HOVER_SIGNAL, INTERNAL_TS_DOMAIN_SIGNAL,
+  LEGEND_HOVER_SIGNAL, LEGEND_SELECT_SIGNAL, REVERSE_HOVER_SIGNAL, REVERSE_SELECT_SIGNAL,
+  REVERSE_UNSELECT_SIGNAL,
 } from 'containers/live/convert-to-vega-spec';
 import * as _ from 'lodash';
 import * as React from 'react';
@@ -40,7 +40,7 @@ const Vega = React.memo((props: VegaProps) => {
   const classes = useStyles();
   const theme = useTheme();
   const { data: inputData, tableName, display } = props;
-  const { spec, hasLegend, legendColumnName } = React.useMemo(() =>
+  const { spec, hasLegend, legendColumnName, error } = React.useMemo(() =>
     convertWidgetDisplayToVegaSpec(display, tableName, theme),
     [display, tableName, theme]);
 
@@ -215,32 +215,33 @@ const Vega = React.memo((props: VegaProps) => {
   const legendStyles: CSSProperties = React.useMemo(() => {
     return { height: (hasLegend) ? '15%' : '0%' };
   }, [hasLegend]);
-
   return (
     <div className={props.className}>
-      <div className={classes.flexbox} ref={chartRef}>
-        <ReactVega
-          spec={spec}
-          data={data}
-          actions={false}
-          onNewView={onNewView}
-          style={vegaStyles}
-          // Have to check for currentView, otherwise vega complains about signals not existing.
-          signalListeners={!currentView ? {} : signalListeners}
-        />
-        <div style={legendStyles}>
-          {!hasLegend ? null :
-            <Legend
-              data={legendData}
-              vegaOrigin={vegaOrigin}
-              chartWidth={chartRef.current ? chartRef.current.getBoundingClientRect().width : 0}
-              name={legendColumnName}
-              interactState={legendInteractState}
-              setInteractState={setLegendInteractState}
-            />
-          }
+      {error ? <div>{error.toString()}</div> :
+        <div className={classes.flexbox} ref={chartRef}>
+          <ReactVega
+            spec={spec}
+            data={data}
+            actions={false}
+            onNewView={onNewView}
+            style={vegaStyles}
+            // Have to check for currentView, otherwise vega complains about signals not existing.
+            signalListeners={!currentView ? {} : signalListeners}
+          />
+          <div style={legendStyles}>
+            {!hasLegend ? null :
+              <Legend
+                data={legendData}
+                vegaOrigin={vegaOrigin}
+                chartWidth={chartRef.current ? chartRef.current.getBoundingClientRect().width : 0}
+                name={legendColumnName}
+                interactState={legendInteractState}
+                setInteractState={setLegendInteractState}
+              />
+            }
+          </div>
         </div>
-      </div>
+      }
     </div>
   );
 });
