@@ -22,20 +22,48 @@ import (
 
 // GRPCServer is implementation of the vzconn server.
 type GRPCServer struct {
-	vzmgrClient vzmgrpb.VZMgrServiceClient
-	nc          *nats.Conn
-	sc          stan.Conn
+	vzmgrClient        vzmgrpb.VZMgrServiceClient
+	vzDeploymentClient vzmgrpb.VZDeploymentServiceClient
+	nc                 *nats.Conn
+	sc                 stan.Conn
 }
 
 // NewBridgeGRPCServer creates a new GRPCServer.
-func NewBridgeGRPCServer(vzmgrClient vzmgrpb.VZMgrServiceClient, nc *nats.Conn, sc stan.Conn) *GRPCServer {
-	return &GRPCServer{vzmgrClient, nc, sc}
+func NewBridgeGRPCServer(vzmgrClient vzmgrpb.VZMgrServiceClient, vzDeploymentClient vzmgrpb.VZDeploymentServiceClient, nc *nats.Conn, sc stan.Conn) *GRPCServer {
+	return &GRPCServer{vzmgrClient, vzDeploymentClient, nc, sc}
 }
 
 // RegisterVizierDeployment registers the vizier using the deployment key passed in on X-API-KEY.
 func (s *GRPCServer) RegisterVizierDeployment(ctx context.Context, req *vzconnpb.RegisterVizierDeploymentRequest) (*vzconnpb.RegisterVizierDeploymentResponse, error) {
-	// TODO(zasgar): Implement func and rename this struct (since it's more than the bridge).
-	return nil, status.Errorf(codes.Unimplemented, "not implemented yet")
+	// Get the deploy key from the ctx.
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Error(codes.NotFound, "Could not get metadata from incoming md")
+	}
+	apiKeys := md["x-api-key"]
+	if len(apiKeys) == 0 {
+		return nil, status.Error(codes.Unauthenticated, "Deploy key not included")
+	}
+
+	deployKey := apiKeys[0]
+
+	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
+	if err != nil {
+		return nil, err
+	}
+	newCtx := metadata.AppendToOutgoingContext(context.Background(), "authorization",
+		fmt.Sprintf("bearer %s", serviceAuthToken))
+	vzmgrResp, err := s.vzDeploymentClient.RegisterVizierDeployment(newCtx, &vzmgrpb.RegisterVizierDeploymentRequest{
+		K8sClusterUID: req.K8sClusterUID,
+		DeploymentKey: deployKey,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &vzconnpb.RegisterVizierDeploymentResponse{
+		VizierID: vzmgrResp.VizierID,
+	}, nil
 }
 
 // NATSBridge is the endpoint that all viziers connect to.

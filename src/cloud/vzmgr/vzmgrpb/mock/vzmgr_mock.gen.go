@@ -478,3 +478,80 @@ func (m *MockVZDeploymentKeyServiceServer) Delete(arg0 context.Context, arg1 *pr
 func (mr *MockVZDeploymentKeyServiceServerMockRecorder) Delete(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockVZDeploymentKeyServiceServer)(nil).Delete), arg0, arg1)
 }
+
+// MockVZDeploymentServiceClient is a mock of VZDeploymentServiceClient interface
+type MockVZDeploymentServiceClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockVZDeploymentServiceClientMockRecorder
+}
+
+// MockVZDeploymentServiceClientMockRecorder is the mock recorder for MockVZDeploymentServiceClient
+type MockVZDeploymentServiceClientMockRecorder struct {
+	mock *MockVZDeploymentServiceClient
+}
+
+// NewMockVZDeploymentServiceClient creates a new mock instance
+func NewMockVZDeploymentServiceClient(ctrl *gomock.Controller) *MockVZDeploymentServiceClient {
+	mock := &MockVZDeploymentServiceClient{ctrl: ctrl}
+	mock.recorder = &MockVZDeploymentServiceClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockVZDeploymentServiceClient) EXPECT() *MockVZDeploymentServiceClientMockRecorder {
+	return m.recorder
+}
+
+// RegisterVizierDeployment mocks base method
+func (m *MockVZDeploymentServiceClient) RegisterVizierDeployment(ctx context.Context, in *vzmgrpb.RegisterVizierDeploymentRequest, opts ...grpc.CallOption) (*vzmgrpb.RegisterVizierDeploymentResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RegisterVizierDeployment", varargs...)
+	ret0, _ := ret[0].(*vzmgrpb.RegisterVizierDeploymentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RegisterVizierDeployment indicates an expected call of RegisterVizierDeployment
+func (mr *MockVZDeploymentServiceClientMockRecorder) RegisterVizierDeployment(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterVizierDeployment", reflect.TypeOf((*MockVZDeploymentServiceClient)(nil).RegisterVizierDeployment), varargs...)
+}
+
+// MockVZDeploymentServiceServer is a mock of VZDeploymentServiceServer interface
+type MockVZDeploymentServiceServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockVZDeploymentServiceServerMockRecorder
+}
+
+// MockVZDeploymentServiceServerMockRecorder is the mock recorder for MockVZDeploymentServiceServer
+type MockVZDeploymentServiceServerMockRecorder struct {
+	mock *MockVZDeploymentServiceServer
+}
+
+// NewMockVZDeploymentServiceServer creates a new mock instance
+func NewMockVZDeploymentServiceServer(ctrl *gomock.Controller) *MockVZDeploymentServiceServer {
+	mock := &MockVZDeploymentServiceServer{ctrl: ctrl}
+	mock.recorder = &MockVZDeploymentServiceServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockVZDeploymentServiceServer) EXPECT() *MockVZDeploymentServiceServerMockRecorder {
+	return m.recorder
+}
+
+// RegisterVizierDeployment mocks base method
+func (m *MockVZDeploymentServiceServer) RegisterVizierDeployment(arg0 context.Context, arg1 *vzmgrpb.RegisterVizierDeploymentRequest) (*vzmgrpb.RegisterVizierDeploymentResponse, error) {
+	ret := m.ctrl.Call(m, "RegisterVizierDeployment", arg0, arg1)
+	ret0, _ := ret[0].(*vzmgrpb.RegisterVizierDeploymentResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RegisterVizierDeployment indicates an expected call of RegisterVizierDeployment
+func (mr *MockVZDeploymentServiceServerMockRecorder) RegisterVizierDeployment(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterVizierDeployment", reflect.TypeOf((*MockVZDeploymentServiceServer)(nil).RegisterVizierDeployment), arg0, arg1)
+}

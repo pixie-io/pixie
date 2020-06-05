@@ -16,11 +16,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/genproto/googleapis/rpc/code"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/bridge"
 	"pixielabs.ai/pixielabs/src/cloud/vzconn/vzconnpb"
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	mock_vzmgrpb "pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb/mock"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -35,16 +37,18 @@ type testState struct {
 	lis *bufconn.Listener
 	b   *bridge.GRPCServer
 
-	nc        *nats.Conn
-	sc        stan.Conn
-	conn      *grpc.ClientConn
-	mockVZMgr *mock_vzmgrpb.MockVZMgrServiceClient
+	nc               *nats.Conn
+	sc               stan.Conn
+	conn             *grpc.ClientConn
+	mockVZMgr        *mock_vzmgrpb.MockVZMgrServiceClient
+	mockVZDeployment *mock_vzmgrpb.MockVZDeploymentServiceClient
 }
 
 func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t *testing.T)) {
 	lis := bufconn.Listen(bufSize)
 	s := grpc.NewServer()
 	mockVZMgr := mock_vzmgrpb.NewMockVZMgrServiceClient(ctrl)
+	mockVZDeployment := mock_vzmgrpb.NewMockVZDeploymentServiceClient(ctrl)
 
 	natsPort, natsCleanup := testingutils.StartNATS(t)
 	nc, err := nats.Connect(testingutils.GetNATSURL(natsPort))
@@ -53,7 +57,7 @@ func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t 
 	}
 
 	_, sc, cleanStan := testingutils.StartStan(t, "test-stan", "test-client")
-	b := bridge.NewBridgeGRPCServer(mockVZMgr, nc, sc)
+	b := bridge.NewBridgeGRPCServer(mockVZMgr, mockVZDeployment, nc, sc)
 	vzconnpb.RegisterVZConnServiceServer(s, b)
 
 	go func() {
@@ -75,12 +79,13 @@ func createTestState(t *testing.T, ctrl *gomock.Controller) (*testState, func(t 
 	}
 
 	return &testState{
-		t:         t,
-		lis:       lis,
-		b:         b,
-		nc:        nc,
-		conn:      conn,
-		mockVZMgr: mockVZMgr,
+		t:                t,
+		lis:              lis,
+		b:                b,
+		nc:               nc,
+		conn:             conn,
+		mockVZMgr:        mockVZMgr,
+		mockVZDeployment: mockVZDeployment,
 	}, cleanupFunc
 }
 
@@ -325,6 +330,32 @@ func TestNATSGRPCBridge_BridgingTest(t *testing.T) {
 	err = msg.Unmarshal(natsMsg.Data)
 	assert.Nil(t, err)
 	assert.Equal(t, expectedMsg, msg)
+}
+
+func TestNATSGRPCBridge_RegisterVizierDeployment(t *testing.T) {
+	vizierID := uuid.NewV4()
+	ctrl := gomock.NewController(t)
+	ts, cleanup := createTestState(t, ctrl)
+	defer cleanup(t)
+
+	ts.mockVZDeployment.EXPECT().
+		RegisterVizierDeployment(gomock.Any(), &vzmgrpb.RegisterVizierDeploymentRequest{
+			K8sClusterUID: "test",
+			DeploymentKey: "deploy-key",
+		}).
+		Return(&vzmgrpb.RegisterVizierDeploymentResponse{VizierID: utils.ProtoFromUUID(&vizierID)}, nil)
+
+	// Make some GRPC Requests.
+	ctx := context.Background()
+	ctx = metadata.AppendToOutgoingContext(ctx, "X-API-KEY", "deploy-key")
+
+	client := vzconnpb.NewVZConnServiceClient(ts.conn)
+	resp, err := client.RegisterVizierDeployment(ctx, &vzconnpb.RegisterVizierDeploymentRequest{
+		K8sClusterUID: "test",
+	})
+	assert.Nil(t, err)
+	assert.Equal(t, utils.ProtoFromUUID(&vizierID), resp.VizierID)
+
 }
 
 // TODO(zasgar/michelle): Add tests for disconnect of Vizier. Should make sure messages are not lost on durable channel.

@@ -36,6 +36,7 @@ go_test(
     deps = [
         "//src/cloud/shared/vzshard:go_default_library",
         "//src/cloud/vzconn/vzconnpb:service_pl_go_proto",
+        "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
         "//src/cloud/vzmgr/vzmgrpb/mock:go_default_library",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
         "//src/utils:go_default_library",
@@ -49,6 +50,7 @@ go_test(
         "@com_github_stretchr_testify//assert:go_default_library",
         "@go_googleapis//google/rpc:code_go_proto",
         "@org_golang_google_grpc//:go_default_library",
+        "@org_golang_google_grpc//metadata:go_default_library",
         "@org_golang_google_grpc//status:go_default_library",
         "@org_golang_google_grpc//test/bufconn:go_default_library",
     ],

@@ -25,18 +25,18 @@ func init() {
 	pflag.String("stan_cluster", "pl-stan", "The name of the Stan cluster")
 }
 
-func newVZMgrServiceClient() (vzmgrpb.VZMgrServiceClient, error) {
+func newVZMgrClients() (vzmgrpb.VZMgrServiceClient, vzmgrpb.VZDeploymentServiceClient, error) {
 	dialOpts, err := services.GetGRPCClientDialOpts()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	vzmgrChannel, err := grpc.Dial(viper.GetString("vzmgr_service"), dialOpts...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return vzmgrpb.NewVZMgrServiceClient(vzmgrChannel), nil
+	return vzmgrpb.NewVZMgrServiceClient(vzmgrChannel), vzmgrpb.NewVZDeploymentServiceClient(vzmgrChannel), nil
 }
 
 func createStanNatsConnection(clientID string) (nc *nats.Conn, sc stan.Conn, err error) {
@@ -83,12 +83,12 @@ func main() {
 			Error("Error with NATS handler")
 	})
 
-	vzmgrClient, err := newVZMgrServiceClient()
+	vzmgrClient, vzdeployClient, err := newVZMgrClients()
 	if err != nil {
 		log.WithError(err).Fatal("failed to initialize vizer manager RPC client")
 		panic(err)
 	}
-	server := bridge.NewBridgeGRPCServer(vzmgrClient, nc, sc)
+	server := bridge.NewBridgeGRPCServer(vzmgrClient, vzdeployClient, nc, sc)
 	vzconnpb.RegisterVZConnServiceServer(s.GRPCServer(), server)
 
 	s.Start()
