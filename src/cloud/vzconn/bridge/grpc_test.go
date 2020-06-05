@@ -340,8 +340,9 @@ func TestNATSGRPCBridge_RegisterVizierDeployment(t *testing.T) {
 
 	ts.mockVZDeployment.EXPECT().
 		RegisterVizierDeployment(gomock.Any(), &vzmgrpb.RegisterVizierDeploymentRequest{
-			K8sClusterUID: "test",
-			DeploymentKey: "deploy-key",
+			K8sClusterUID:  "test",
+			DeploymentKey:  "deploy-key",
+			K8sClusterName: "some name",
 		}).
 		Return(&vzmgrpb.RegisterVizierDeploymentResponse{VizierID: utils.ProtoFromUUID(&vizierID)}, nil)
 
@@ -351,7 +352,8 @@ func TestNATSGRPCBridge_RegisterVizierDeployment(t *testing.T) {
 
 	client := vzconnpb.NewVZConnServiceClient(ts.conn)
 	resp, err := client.RegisterVizierDeployment(ctx, &vzconnpb.RegisterVizierDeploymentRequest{
-		K8sClusterUID: "test",
+		K8sClusterUID:  "test",
+		K8sClusterName: "some name",
 	})
 	assert.Nil(t, err)
 	assert.Equal(t, utils.ProtoFromUUID(&vizierID), resp.VizierID)

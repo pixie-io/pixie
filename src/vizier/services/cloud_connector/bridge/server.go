@@ -220,12 +220,13 @@ func (s *Bridge) WaitForUpdater() {
 func (s *Bridge) RegisterDeployment() error {
 	ctx := context.Background()
 	ctx = metadata.AppendToOutgoingContext(ctx, "X-API-KEY", s.deployKey)
-	k8sUID, err := s.vzInfo.GetClusterUID()
+	clusterInfo, err := s.vzInfo.GetVizierClusterInfo()
 	if err != nil {
 		return err
 	}
 	resp, err := s.vzConnClient.RegisterVizierDeployment(ctx, &vzconnpb.RegisterVizierDeploymentRequest{
-		K8sClusterUID: k8sUID,
+		K8sClusterUID:  clusterInfo.ClusterUID,
+		K8sClusterName: clusterInfo.ClusterName,
 	})
 	if err != nil {
 		return err
