@@ -68,6 +68,13 @@ const std::string_view kTextResp =
     "\r\n"
     "bar";
 
+const std::string_view kAppOctetResp =
+    "HTTP/1.1 200 OK\r\n"
+    "Content-Type: application/octet-stream\r\n"
+    "Content-Length: 3\r\n"
+    "\r\n"
+    "\x01\x23\x45";
+
 const std::string_view kResp0 =
     "HTTP/1.1 200 OK\r\n"
     "Content-Type: json\r\n"
@@ -189,7 +196,7 @@ TEST_F(SocketTraceConnectorTest, HTTPContentType) {
       event_gen.InitRecvEvent<kProtocolHTTP>(kTextResp);
   std::unique_ptr<SocketDataEvent> event2_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
   std::unique_ptr<SocketDataEvent> event2_resp_text =
-      event_gen.InitRecvEvent<kProtocolHTTP>(kTextResp);
+      event_gen.InitRecvEvent<kProtocolHTTP>(kAppOctetResp);
   std::unique_ptr<SocketDataEvent> event3_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
   std::unique_ptr<SocketDataEvent> event3_resp_json =
       event_gen.InitRecvEvent<kProtocolHTTP>(kJSONResp);
@@ -217,8 +224,7 @@ TEST_F(SocketTraceConnectorTest, HTTPContentType) {
       << "The filter is changed to require 'application/json' in Content-Type header, "
          "and event_json Content-Type matches, and is selected";
   EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]),
-              ElementsAre("foo", "<removed: unsupported content-type>",
-                          "<removed: unsupported content-type>", "foo"));
+              ElementsAre("foo", "bar", "<removed: non-text content-type>", "foo"));
   EXPECT_THAT(ToIntVector<types::Time64NSValue>(record_batch[kHTTPTimeIdx]),
               ElementsAre(2 + source_->ClockRealTimeOffset(), 4 + source_->ClockRealTimeOffset(),
                           6 + source_->ClockRealTimeOffset(), 8 + source_->ClockRealTimeOffset()));

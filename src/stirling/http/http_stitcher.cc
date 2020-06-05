@@ -12,7 +12,7 @@
 #include "src/stirling/http/utils.h"
 
 // TODO(yzhao): Consider simplify the semantic by filtering entirely on content type.
-DEFINE_string(http_response_header_filters, "Content-Type:json",
+DEFINE_string(http_response_header_filters, "Content-Type:json,Content-Type:text/",
               "Comma-separated strings to specify the substrings should be included for a header. "
               "The format looks like <header-1>:<substr-1>,...,<header-n>:<substr-n>. "
               "The substrings cannot include comma(s). The filters are conjunctive, "
@@ -83,7 +83,7 @@ void PreProcessMessage(Message* message) {
   // Rule: Exclude anything that doesn't specify its Content-Type.
   auto content_type_iter = message->headers.find(http::kContentType);
   if (content_type_iter == message->headers.end()) {
-    message->body = "<removed: unsupported content-type>";
+    message->body = "<removed: unknown content-type>";
     return;
   }
 
@@ -91,7 +91,7 @@ void PreProcessMessage(Message* message) {
   if (message->type == MessageType::kResponse && (!kHTTPResponseHeaderFilter.inclusions.empty() ||
                                                   !kHTTPResponseHeaderFilter.exclusions.empty())) {
     if (!MatchesHTTPHeaders(message->headers, kHTTPResponseHeaderFilter)) {
-      message->body = "<removed: unsupported content-type>";
+      message->body = "<removed: non-text content-type>";
       return;
     }
   }
