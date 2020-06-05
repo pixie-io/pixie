@@ -40,7 +40,12 @@ message RegisterVizierDeploymentRequest {
     // We assume this is globally unique.
     string k8s_cluster_uid = 1 [
                                (gogoproto.customname) = "K8sClusterUID"
-                               ];     ;
+                               ];
+    // The recommended name for the cluster. Modifications may be made to the recommended name to
+    // perform deduplication. If no name is specified, a random name will be generated.
+    string k8s_cluster_name = 2 [
+                               (gogoproto.customname) = "K8sClusterName"
+                               ];
 }
 // RegisterVizierDeploymentResponse returns the registration status. It either will include the
 // assigned vizier_id or a GRPC error will be returned.

@@ -130,6 +130,10 @@ message RegisterVizierDeploymentRequest {
     // The deployment key that will be use to register this vizier. The org/user it's registered
     // to will be determined by this key.
     string deployment_key = 2;
+    // The name of the cluster. If none is specified, a random name will be generated.
+    string k8s_cluster_name = 3 [
+                               (gogoproto.customname) = "K8sClusterName"
+                               ];
 }
 
 // RegisterVizierDeploymentResponse returns the registration status. It either will include the
