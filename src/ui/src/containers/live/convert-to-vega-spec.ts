@@ -2,7 +2,7 @@
 
 import { addPxTimeFormatExpression } from 'components/vega/timeseries-axis';
 import * as _ from 'lodash';
-import { Data, Mark, Signal, Spec as VgSpec, TimeScale, GroupMark } from 'vega';
+import { Data, GroupMark, LineMark, Mark, Signal, Spec as VgSpec, TimeScale } from 'vega';
 import { VisualizationSpec } from 'vega-embed';
 import { compile, TopLevelSpec as VlSpec } from 'vega-lite';
 
@@ -463,8 +463,11 @@ const HOVER_BULB = 'hover_bulb_layer';
 const HOVER_LINE_TIME = 'hover_time_mark';
 const HOVER_LINE_TEXT_BOX = 'hover_line_text_box_mark';
 const HOVER_LINE_TEXT_PADDING = 3;
-// TODO(james): refactor conversion so that we don't need to store vega-lite names in constants.
-const LINE_MARK_NAME = 'layer_0_layer_0_marks';
+// Width of the clickable area of a line.
+// Tweaked to a value that felt natural to click on without much effort.
+const LINE_HOVER_HIT_BOX_WIDTH = 7.0;
+// // Name of the mark that holds the hover interaction.
+const LINE_HIT_BOX_MARK_NAME = 'hover_line_mark_layer';
 const RIGHT_MOUSE_DOWN_CODE = 3;
 export const HOVER_SIGNAL = 'hover_value';
 export const EXTERNAL_HOVER_SIGNAL = 'external_hover_value';
@@ -496,11 +499,11 @@ function addLegendSignalsToVgSpec(vegaSpec: VgSpec, pivotField: string): VgSpec 
     name: REVERSE_HOVER_SIGNAL,
     on: [
       {
-        events: { source: 'view', type: 'mouseover', markname: LINE_MARK_NAME },
+        events: { source: 'view', type: 'mouseover', markname: LINE_HIT_BOX_MARK_NAME },
         update: `datum && datum["${pivotField}"]`,
       },
       {
-        events: { source: 'view', type: 'mouseout', markname: LINE_MARK_NAME },
+        events: { source: 'view', type: 'mouseout', markname: LINE_HIT_BOX_MARK_NAME },
         update: 'null',
       },
     ],
@@ -509,7 +512,7 @@ function addLegendSignalsToVgSpec(vegaSpec: VgSpec, pivotField: string): VgSpec 
     name: REVERSE_SELECT_SIGNAL,
     on: [
       {
-        events: { source: 'view', type: 'click', markname: LINE_MARK_NAME },
+        events: { source: 'view', type: 'click', markname: LINE_HIT_BOX_MARK_NAME },
         update: `datum && datum["${pivotField}"]`,
         force: true,
       },
@@ -522,7 +525,7 @@ function addLegendSignalsToVgSpec(vegaSpec: VgSpec, pivotField: string): VgSpec 
         events: {
           source: 'view',
           type: 'mousedown',
-          markname: LINE_MARK_NAME,
+          markname: LINE_HIT_BOX_MARK_NAME,
           consume: true,
           filter: `event.which === ${RIGHT_MOUSE_DOWN_CODE}`,
         },
@@ -552,9 +555,10 @@ function addOpacityTestsToLine(vegaSpec: VgSpec, pivotField: string, valueField:
     if (!isLineMark(mark, valueField)) {
       return mark;
     }
-    const lineMark = (mark as GroupMark).marks[0];
+    const groupMark = (mark as GroupMark);
     // Force the lines to be above the voronoi layer.
-    mark.zindex = 200;
+    groupMark.zindex = 200;
+    const lineMark = (groupMark.marks[0] as LineMark);
     lineMark.encode.update.opacity = [
       {
         value: SELECTED_LINE_OPACITY,
@@ -575,8 +579,31 @@ function addOpacityTestsToLine(vegaSpec: VgSpec, pivotField: string, valueField:
         value: LINE_WIDTH,
       },
     ];
-    return mark;
+    lineMark.zindex = 1;
+    // Deep copy the mark because there are several nested properties that we want to inherit
+    const newMark: Mark = {
+      ...lineMark,
+      name: LINE_HIT_BOX_MARK_NAME,
+      // Deep copy encode because we need to modify them.
+      encode: {
+        ...lineMark.encode,
+        update: {
+          ...lineMark.encode.update,
+          opacity: [{
+            value: 0,
+          }],
+          strokeWidth: [{
+            value: LINE_HOVER_HIT_BOX_WIDTH,
+          }],
+        }
+      },
+      zindex: lineMark.zindex + 1,
+    };
+
+    groupMark.marks.push(newMark);
+    return groupMark;
   });
+
   vegaSpec.marks = newMarks;
   return vegaSpec;
 }
