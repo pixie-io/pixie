@@ -23,9 +23,6 @@ using ColumnWrapperRecordBatch = std::vector<types::SharedColumnWrapper>;
 using TabletID = std::string;
 using TabletIDView = std::string_view;
 
-template <typename T>
-class ColumnWrapperTmpl;
-
 /**
  * Column wrapper stores underlying data so that it can be retrieved in a type erased way
  * to allow column chucks to be transparently passed.
