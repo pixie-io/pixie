@@ -1,8 +1,11 @@
 #pragma once
 
 #ifdef __cplusplus
-#include <absl/strings/substitute.h>
+#include <algorithm>
 #include <string>
+
+#include <absl/strings/substitute.h>
+#include <magic_enum.hpp>
 #endif
 
 // This file contains definitions that are shared between various kprobes and uprobes.
@@ -19,18 +22,30 @@ enum TrafficProtocol {
   kProtocolUnknown = 0,
   kProtocolHTTP,
   // TODO(oazizi): Consolidate the two HTTP2 protocols once Uprobe work is complete.
-  // Currently BPF doesn't produce kProtocolHTTP2Uprobe, so it is only created through tests.
+  // Currently BPF doesn't produce kProtocolHTTP2U, so it is only created through tests.
   kProtocolHTTP2,
-  kProtocolHTTP2Uprobe,
+  kProtocolHTTP2U,
   kProtocolMySQL,
   kProtocolCQL,
   kProtocolPGSQL,
   kNumProtocols
 };
 
+#ifdef __cplusplus
+inline auto TrafficProtocolEnumValues() {
+  auto protocols_array = magic_enum::enum_values<TrafficProtocol>();
+
+  // Strip off last element in protocols_array, which is not a real protocol.
+  constexpr int kNumProtocols = magic_enum::enum_count<TrafficProtocol>() - 1;
+  std::array<TrafficProtocol, kNumProtocols> protocols;
+  std::copy(protocols_array.begin(), protocols_array.end() - 1, protocols.begin());
+  return protocols;
+}
+#endif
+
 // The direction of traffic expected on a probe. Values are used in bit masks.
 enum EndpointRole {
-  kRoleUnknown = 0,
+  kRoleNone = 0,
   kRoleClient = 1 << 0,
   kRoleServer = 1 << 1,
   kRoleAll = kRoleClient | kRoleServer,

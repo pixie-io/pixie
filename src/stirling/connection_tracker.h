@@ -542,7 +542,7 @@ class ConnectionTracker {
 
   struct conn_id_t conn_id_ = {};
   struct traffic_class_t traffic_class_ {
-    kProtocolUnknown, kRoleUnknown
+    kProtocolUnknown, kRoleNone
   };
   SocketOpen open_info_;
   SocketClose close_info_;

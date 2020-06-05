@@ -224,12 +224,12 @@ EndpointRole InferHTTP2Role(bool write_event, const std::unique_ptr<HTTP2HeaderE
     return (write_event) ? kRoleServer : kRoleClient;
   }
 
-  return kRoleUnknown;
+  return kRoleNone;
 }
 
 void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   SetConnID(hdr->attr.conn_id);
-  traffic_class_.protocol = kProtocolHTTP2Uprobe;
+  traffic_class_.protocol = kProtocolHTTP2U;
 
   if (conn_id_.fd == 0) {
     Disable(
@@ -268,10 +268,10 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   // TODO(oazizi): Once we have more confidence that the ECHECK below doesn't fire, restructure this
   // code so it only calls InferHTTP2Role when the current role is Unknown.
   EndpointRole role = InferHTTP2Role(write_event, hdr);
-  if (traffic_class_.role == kRoleUnknown) {
+  if (traffic_class_.role == kRoleNone) {
     traffic_class_.role = role;
   } else {
-    if (!(role == kRoleUnknown || role == traffic_class_.role)) {
+    if (!(role == kRoleNone || role == traffic_class_.role)) {
       LOG_FIRST_N(ERROR, 10) << absl::Substitute(
           "The role of an active ConnectionTracker was changed: $0 role: $1 -> $2",
           ToString(conn_id_), magic_enum::enum_name(traffic_class_.role),
@@ -310,7 +310,7 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
 
 void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   SetConnID(data->attr.conn_id);
-  traffic_class_.protocol = kProtocolHTTP2Uprobe;
+  traffic_class_.protocol = kProtocolHTTP2U;
 
   if (conn_id_.fd == 0) {
     Disable(
@@ -434,9 +434,9 @@ void ConnectionTracker::SetTrafficClass(struct traffic_class_t traffic_class) {
         magic_enum::enum_name(traffic_class.protocol));
   }
 
-  if (traffic_class_.role == kRoleUnknown) {
+  if (traffic_class_.role == kRoleNone) {
     traffic_class_.role = traffic_class.role;
-  } else if (traffic_class.role != kRoleUnknown) {
+  } else if (traffic_class.role != kRoleNone) {
     DCHECK_EQ(traffic_class_.role, traffic_class.role) << absl::Substitute(
         "Not allowed to change the role of an active ConnectionTracker: $0, old role: $1, new "
         "role: $2",
@@ -574,7 +574,7 @@ void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs)
       // Remote endpoint appears to be outside the cluster, so trace it.
       state_ = State::kTransferring;
     } break;
-    case EndpointRole::kRoleUnknown:
+    case EndpointRole::kRoleNone:
       LOG_IF(DFATAL, !send_data_.events().empty() || !recv_data_.events().empty())
           << "Role has not been inferred from BPF events yet. conn_id: " << ToString(conn_id_);
       break;

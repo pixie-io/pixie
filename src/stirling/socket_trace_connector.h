@@ -88,7 +88,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   // Updates control map value for protocol, which specifies which role(s) to trace for the given
   // protocol's traffic.
-  Status UpdateProtocolTraceRole(TrafficProtocol protocol, EndpointRole role_to_trace);
+  Status UpdateBPFProtocolTraceRole(TrafficProtocol protocol, EndpointRole role_to_trace);
   Status TestOnlySetTargetPID(int64_t pid);
   Status DisableSelfTracing();
 
@@ -274,6 +274,8 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
 
   explicit SocketTraceConnector(std::string_view source_name);
 
+  void InitProtocols();
+
   // Helper functions for dynamically deploying uprobes:
 
   Status UpdateHTTP2SymAddrs(
@@ -354,11 +356,10 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
     uint32_t table_num;
     std::function<void(SocketTraceConnector&, ConnectorContext*, ConnectionTracker*, DataTable*)>
         transfer_fn = nullptr;
+
+    // Beyond this point, fields are controlled by flags and populated by InitProtocols().
     bool enabled = false;
-    // TODO(yzhao): Consider removing this if protocol-specific trace role is not needed.
-    // Given protocol_transfer_specs_ is already here, it makes sense to not add another member
-    // variable.
-    EndpointRole role_to_trace = kRoleClient;
+    EndpointRole role_to_trace = kRoleNone;
   };
 
   // This map controls how each protocol is processed and transferred.
@@ -368,7 +369,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {kProtocolHTTP, {kHTTPTableNum, &SocketTraceConnector::TransferStream<http::ProtocolTraits>}},
       {kProtocolHTTP2,
        {kHTTPTableNum, &SocketTraceConnector::TransferStream<http2::ProtocolTraits>}},
-      {kProtocolHTTP2Uprobe,
+      {kProtocolHTTP2U,
        {kHTTPTableNum, &SocketTraceConnector::TransferStream<http2u::ProtocolTraits>}},
       {kProtocolMySQL,
        {kMySQLTableNum, &SocketTraceConnector::TransferStream<mysql::ProtocolTraits>}},

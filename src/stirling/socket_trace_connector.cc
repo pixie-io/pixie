@@ -64,11 +64,9 @@ DEFINE_bool(stirling_enable_cass_tracing, true,
             "If true, stirling will trace and process Cassandra messages.");
 DEFINE_bool(stirling_disable_self_tracing, true,
             "If true, stirling will trace and process syscalls made by itself.");
-const char kRoleClientStr[] = "CLIENT";
-const char kRoleServerStr[] = "SERVER";
-const char kRoleAllStr[] = "ALL";
-DEFINE_string(stirling_role_to_trace, kRoleAllStr,
-              "Must be one of [CLIENT|SERVER|ALL]. Specify which role(s) will be trace by BPF.");
+DEFINE_string(stirling_role_to_trace, "kRoleAll",
+              "Must be one of [kRoleClient|kRoleServer|kRoleAll]. Specifies which role(s) will be "
+              "traced by BPF.");
 
 // This flag is for survivability only, in case the host's located headers don't work.
 DEFINE_bool(stirling_use_packaged_headers, false, "Force use of packaged kernel headers for BCC.");
@@ -93,51 +91,41 @@ using ::pl::stirling::obj_tools::GetActiveBinary;
 using ::pl::stirling::obj_tools::ResolveProcessPath;
 using ::pl::stirling::utils::ToJSONString;
 
-namespace {
-
-StatusOr<EndpointRole> ParseEndpointRoleFlag(std::string_view role_str) {
-  if (role_str == kRoleClientStr) {
-    return kRoleClient;
-  } else if (role_str == kRoleServerStr) {
-    return kRoleServer;
-  } else if (role_str == kRoleAllStr) {
-    return kRoleAll;
-  } else {
-    return error::InvalidArgument("Invalid flag value $0", role_str);
-  }
-}
-
-}  // namespace
-
 SocketTraceConnector::SocketTraceConnector(std::string_view source_name)
     : SourceConnector(source_name, kTables), bpf_tools::BCCWrapper() {
   proc_parser_ = std::make_unique<system::ProcParser>(system::Config::GetInstance());
+  InitProtocols();
+}
 
-  EndpointRole role_to_trace = ParseEndpointRoleFlag(FLAGS_stirling_role_to_trace).ValueOrDie();
+void SocketTraceConnector::InitProtocols() {
+  std::array<TrafficProtocol, kNumProtocols> protocols = TrafficProtocolEnumValues();
 
-  DCHECK(protocol_transfer_specs_.find(kProtocolHTTP) != protocol_transfer_specs_.end());
+  // Make sure a protocol transfer spec exists for each protocol.
+  for (const auto& p : protocols) {
+    DCHECK(protocol_transfer_specs_.find(p) != protocol_transfer_specs_.end());
+  }
+
+  // Populate `enabled` from flags
   protocol_transfer_specs_[kProtocolHTTP].enabled = FLAGS_stirling_enable_http_tracing;
-  protocol_transfer_specs_[kProtocolHTTP].role_to_trace = role_to_trace;
-
-  DCHECK(protocol_transfer_specs_.find(kProtocolHTTP2) != protocol_transfer_specs_.end());
   protocol_transfer_specs_[kProtocolHTTP2].enabled = FLAGS_stirling_enable_grpc_kprobe_tracing;
-  protocol_transfer_specs_[kProtocolHTTP2].role_to_trace = role_to_trace;
-
-  DCHECK(protocol_transfer_specs_.find(kProtocolMySQL) != protocol_transfer_specs_.end());
+  protocol_transfer_specs_[kProtocolHTTP2U].enabled = FLAGS_stirling_enable_grpc_uprobe_tracing;
   protocol_transfer_specs_[kProtocolMySQL].enabled = FLAGS_stirling_enable_mysql_tracing;
-  protocol_transfer_specs_[kProtocolMySQL].role_to_trace = role_to_trace;
-
-  DCHECK(protocol_transfer_specs_.find(kProtocolCQL) != protocol_transfer_specs_.end());
   protocol_transfer_specs_[kProtocolCQL].enabled = FLAGS_stirling_enable_mysql_tracing;
-  protocol_transfer_specs_[kProtocolCQL].role_to_trace = role_to_trace;
-
-  DCHECK(protocol_transfer_specs_.find(kProtocolPGSQL) != protocol_transfer_specs_.end());
   protocol_transfer_specs_[kProtocolPGSQL].enabled = FLAGS_stirling_enable_pgsql_tracing;
-  protocol_transfer_specs_[kProtocolPGSQL].role_to_trace = role_to_trace;
 
-  DCHECK(protocol_transfer_specs_.find(kProtocolHTTP2Uprobe) != protocol_transfer_specs_.end());
-  protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled =
-      FLAGS_stirling_enable_grpc_uprobe_tracing;
+  // Populate `role_to_trace` from flags.
+  std::optional<EndpointRole> role_to_trace =
+      magic_enum::enum_cast<EndpointRole>(FLAGS_stirling_role_to_trace);
+  if (!role_to_trace.has_value()) {
+    LOG(ERROR) << absl::Substitute("$0 is not a valid trace role specifier",
+                                   FLAGS_stirling_role_to_trace);
+  }
+
+  for (const auto& p : protocols) {
+    if (role_to_trace.has_value()) {
+      protocol_transfer_specs_[p].role_to_trace = role_to_trace.value();
+    }
+  }
 }
 
 Status SocketTraceConnector::InitImpl() {
@@ -178,28 +166,13 @@ Status SocketTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(OpenPerfBuffers(kPerfBufferSpecs, this));
   LOG(INFO) << absl::Substitute("Number of perf buffers opened = $0", kPerfBufferSpecs.size());
 
-  // TODO(yzhao): Consider adding a flag to switch the role to trace, i.e., between kRoleClient &
-  // kRoleServer.
-  if (protocol_transfer_specs_[kProtocolHTTP].enabled) {
-    PL_RETURN_IF_ERROR(UpdateProtocolTraceRole(
-        kProtocolHTTP, protocol_transfer_specs_[kProtocolHTTP].role_to_trace));
+  // Apply protocol_transfer_specs.
+  for (const auto& p : TrafficProtocolEnumValues()) {
+    if (protocol_transfer_specs_[p].enabled) {
+      PL_RETURN_IF_ERROR(UpdateBPFProtocolTraceRole(p, protocol_transfer_specs_[p].role_to_trace));
+    }
   }
-  if (protocol_transfer_specs_[kProtocolHTTP2].enabled) {
-    PL_RETURN_IF_ERROR(UpdateProtocolTraceRole(
-        kProtocolHTTP2, protocol_transfer_specs_[kProtocolHTTP2].role_to_trace));
-  }
-  if (protocol_transfer_specs_[kProtocolMySQL].enabled) {
-    PL_RETURN_IF_ERROR(UpdateProtocolTraceRole(
-        kProtocolMySQL, protocol_transfer_specs_[kProtocolMySQL].role_to_trace));
-  }
-  if (protocol_transfer_specs_[kProtocolCQL].enabled) {
-    PL_RETURN_IF_ERROR(UpdateProtocolTraceRole(
-        kProtocolCQL, protocol_transfer_specs_[kProtocolCQL].role_to_trace));
-  }
-  if (protocol_transfer_specs_[kProtocolPGSQL].enabled) {
-    PL_RETURN_IF_ERROR(UpdateProtocolTraceRole(
-        kProtocolPGSQL, protocol_transfer_specs_[kProtocolPGSQL].role_to_trace));
-  }
+
   PL_RETURN_IF_ERROR(TestOnlySetTargetPID(FLAGS_test_only_socket_trace_target_pid));
   if (FLAGS_stirling_disable_self_tracing) {
     PL_RETURN_IF_ERROR(DisableSelfTracing());
@@ -297,8 +270,8 @@ Status UpdatePerCPUArrayValue(int idx, TValueType val, ebpf::BPFPercpuArrayTable
   return Status::OK();
 }
 
-Status SocketTraceConnector::UpdateProtocolTraceRole(TrafficProtocol protocol,
-                                                     EndpointRole config_mask) {
+Status SocketTraceConnector::UpdateBPFProtocolTraceRole(TrafficProtocol protocol,
+                                                        EndpointRole config_mask) {
   auto control_map_handle = bpf().get_percpu_array_table<uint64_t>(kControlMapName);
   return UpdatePerCPUArrayValue(static_cast<int>(protocol), static_cast<uint64_t>(config_mask),
                                 &control_map_handle);
@@ -657,7 +630,7 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
     }
 
     // HTTP2 Probes.
-    if (protocol_transfer_specs_[kProtocolHTTP2Uprobe].enabled) {
+    if (protocol_transfer_specs_[kProtocolHTTP2U].enabled) {
       StatusOr<int> attach_status =
           AttachHTTP2UProbes(binary, elf_reader.get(), pid_vec, http2_symaddrs_map_.get());
       if (!attach_status.ok()) {

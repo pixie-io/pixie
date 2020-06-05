@@ -45,7 +45,7 @@ class SocketTraceBPFTest : public ::testing::Test {
 
   void ConfigureBPFCapture(TrafficProtocol protocol, EndpointRole role) {
     auto* socket_trace_connector = dynamic_cast<SocketTraceConnector*>(source_.get());
-    ASSERT_OK(socket_trace_connector->UpdateProtocolTraceRole(protocol, role));
+    ASSERT_OK(socket_trace_connector->UpdateBPFProtocolTraceRole(protocol, role));
   }
 
   void TestOnlySetTargetPID(int64_t pid) {

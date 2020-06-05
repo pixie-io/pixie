@@ -133,7 +133,7 @@ TEST_P(TraceRoleTest, VerifyRecordsCount) {
 
   auto* socket_trace_connector = static_cast<SocketTraceConnector*>(source_.get());
   ASSERT_NE(nullptr, socket_trace_connector);
-  EXPECT_OK(socket_trace_connector->UpdateProtocolTraceRole(kProtocolHTTP, param.role));
+  EXPECT_OK(socket_trace_connector->UpdateBPFProtocolTraceRole(kProtocolHTTP, param.role));
 
   ASSERT_OK(
       c_.Start({client_path_, "-name=PixieLabs", absl::StrCat("-address=localhost:", s_port_)}));
@@ -151,7 +151,7 @@ TEST_P(TraceRoleTest, VerifyRecordsCount) {
 }
 
 INSTANTIATE_TEST_SUITE_P(AllTraceRoles, TraceRoleTest,
-                         ::testing::Values(TraceRoleTestParam{kRoleUnknown, 0, 0},
+                         ::testing::Values(TraceRoleTestParam{kRoleNone, 0, 0},
                                            TraceRoleTestParam{kRoleServer, 0, 1}));
 
 // TODO(yzhao): Trace role only takes effect in BPF. With user-space filtering, i.e., intra-cluster

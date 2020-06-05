@@ -67,7 +67,7 @@ struct close_args_t {
 };
 
 // This control_map is a bit-mask that controls which endpoints are traced in a connection.
-// The bits are defined in EndpointRole enum, kRoleClient or kRoleServer. kRoleUnknown is not
+// The bits are defined in EndpointRole enum, kRoleClient or kRoleServer. kRoleNone is not
 // really used, but is defined for completeness.
 // There is a control map element for each protocol.
 BPF_PERCPU_ARRAY(control_map, uint64_t, kNumProtocols);
@@ -454,7 +454,7 @@ static __inline struct traffic_class_t infer_traffic(enum TrafficDirection direc
                                                      const char* buf, size_t count) {
   struct traffic_class_t traffic_class;
   traffic_class.protocol = kProtocolUnknown;
-  traffic_class.role = kRoleUnknown;
+  traffic_class.role = kRoleNone;
 
   enum MessageType req_resp_type;
   if ((req_resp_type = infer_http_message(buf, count)) != kUnknown) {
@@ -837,7 +837,7 @@ static __inline void process_data(struct pt_regs* ctx, uint64_t id,
     conn_info->wr_seq_num = 0;
     conn_info->protocol_match_count = 0;
     conn_info->protocol_total_count = 0;
-    conn_info->traffic_class.role = kRoleUnknown;
+    conn_info->traffic_class.role = kRoleNone;
     conn_info->traffic_class.protocol = kProtocolUnknown;
   }
 
