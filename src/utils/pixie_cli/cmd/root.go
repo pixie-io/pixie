@@ -45,6 +45,8 @@ func init() {
 
 	RootCmd.AddCommand(CreateBundle)
 
+	RootCmd.AddCommand(DeployKeyCmd)
+
 	// Super secret flags for Pixies.
 	RootCmd.PersistentFlags().MarkHidden("cloud_addr")
 }
