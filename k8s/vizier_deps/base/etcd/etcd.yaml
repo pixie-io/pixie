@@ -63,7 +63,9 @@ spec:
             --cert-file /servercerts/server.crt \
             --key-file /servercerts/server.key \
             --trusted-ca-file /servercerts/server-ca.crt \
-            --client-cert-auth
+            --client-cert-auth \
+            --max-wals 2 \
+            --max-snapshots 2
       volumes:
       - name: client-certs
         secret:
