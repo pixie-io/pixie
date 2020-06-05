@@ -59,24 +59,6 @@ class Coordinator : public NotCopyable {
 
 /**
  * @brief This coordinator creates a plan layout with 1 remote processor getting data
- * from N sources.
- *
- */
-class OneRemoteCoordinator : public Coordinator {
- protected:
-  StatusOr<std::unique_ptr<DistributedPlan>> CoordinateImpl(const IR* logical_plan) override;
-  Status InitImpl(const distributedpb::DistributedState& physical_state) override;
-  Status ProcessConfigImpl(const CarnotInfo& carnot_info) override;
-
- private:
-  // Nodes that have a source of data.
-  std::vector<CarnotInfo> data_store_nodes_;
-  // Nodes that remotely prcoess data.
-  std::vector<CarnotInfo> remote_processor_nodes_;
-};
-
-/**
- * @brief This coordinator creates a plan layout with 1 remote processor getting data
  * from N sources. If the passed in plan has special conditions, it will split differntly.
  *
  */
@@ -124,25 +106,6 @@ class CoordinatorImpl : public Coordinator {
   std::vector<CarnotInfo> data_store_nodes_;
   // Nodes that remotely prcoess data.
   std::vector<CarnotInfo> remote_processor_nodes_;
-};
-
-/**
- * @brief This corodinator createsa a plan laytout with no remote processors and N data sources.
- *
- */
-class NoRemoteCoordinator : public Coordinator {
- public:
-  static StatusOr<std::unique_ptr<NoRemoteCoordinator>> Create(
-      const distributedpb::DistributedState& physical_state);
-
- protected:
-  StatusOr<std::unique_ptr<DistributedPlan>> CoordinateImpl(const IR* logical_plan) override;
-  Status InitImpl(const distributedpb::DistributedState& physical_state) override;
-  Status ProcessConfigImpl(const CarnotInfo& carnot_info) override;
-
- private:
-  // Nodes that have a source of data.
-  std::vector<CarnotInfo> data_store_nodes_;
 };
 
 }  // namespace distributed

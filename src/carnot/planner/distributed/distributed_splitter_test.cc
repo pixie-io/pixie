@@ -22,24 +22,6 @@ using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
 
-class BlockingOperatorGRPCBridgeRuleTest : public OperatorTests {
- protected:
-  void SetUpImpl() override {
-    auto rel_map = std::make_unique<RelationMap>();
-    cpu_relation = table_store::schema::Relation(
-        std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
-                                      types::DataType::FLOAT64, types::DataType::FLOAT64}),
-        std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
-    rel_map->emplace("cpu", cpu_relation);
-
-    compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
-  }
-  std::unique_ptr<CompilerState> compiler_state_;
-  std::unique_ptr<RegistryInfo> info_;
-  int64_t time_now = 1552607213931245000;
-  table_store::schema::Relation cpu_relation;
-};
-
 class SplitterTest : public OperatorTests {
  protected:
   void SetUpImpl() override {
@@ -257,37 +239,6 @@ TEST_F(SplitterTest, first_blocking_node_test) {
   OperatorIR* agg2_parent = agg2->parents()[0];
   ASSERT_TRUE(Match(agg2_parent, BlockingAgg()))
       << "Expected BlockingAgg, got " << agg2_parent->type_string();
-}
-
-TEST_F(BlockingOperatorGRPCBridgeRuleTest, no_blocking_node_test) {
-  auto mem_src = MakeMemSource(MakeRelation());
-  auto map1 = MakeMap(mem_src, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
-  auto map2 = MakeMap(map1, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
-  EXPECT_OK(map2->SetRelation(MakeRelation()));
-
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
-  auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_FALSE(result.ConsumeValueOrDie());
-}
-
-// This test shows that if there is more than one child of an op, the rule will evaluate to true.
-// This looks like weird behavior, but we have an upcoming analyzer rule with PL-831 to error
-// out whenever the logical plan has an operator that doesn't have a sink with it.
-TEST_F(BlockingOperatorGRPCBridgeRuleTest, multiple_children_no_blocking_node_test) {
-  auto mem_src = MakeMemSource(MakeRelation());
-  auto map1 = MakeMap(mem_src, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
-  EXPECT_OK(map1->SetRelation(MakeRelation()));
-  MakeMemSink(map1, "name");
-
-  // Map2 does not have a child.
-  auto map2 = MakeMap(map1, {{"col0", MakeColumn("col0", 0)}, {"col1", MakeColumn("col1", 0)}});
-  EXPECT_OK(map2->SetRelation(MakeRelation()));
-
-  BlockingOperatorGRPCBridgeRule blocking_op_grpc_bridge_rule;
-  auto result = blocking_op_grpc_bridge_rule.Execute(graph.get());
-  ASSERT_OK(result);
-  EXPECT_TRUE(result.ConsumeValueOrDie());
 }
 
 // Test feeding into unions.
