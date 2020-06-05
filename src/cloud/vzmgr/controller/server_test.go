@@ -86,6 +86,8 @@ func loadTestData(t *testing.T, db *sqlx.DB) {
 	db.MustExec(`UPDATE vizier_cluster_info SET cluster_name=NULL WHERE vizier_cluster_id=$1`, testDisconnectedClusterEmptyUID)
 	insertVizierIndexQuery := `INSERT INTO vizier_index_state(cluster_id, resource_version) VALUES($1, $2)`
 	db.MustExec(insertVizierIndexQuery, "123e4567-e89b-12d3-a456-426655440001", "1234")
+
+	db.MustExec(`UPDATE vizier_cluster_info SET cluster_name='test-cluster' WHERE vizier_cluster_id=$1`, testExistingCluster)
 }
 
 func CreateTestContext() context.Context {
@@ -1028,7 +1030,7 @@ func TestServer_ProvisionOrClaimVizier(t *testing.T) {
 	userID := uuid.NewV4()
 
 	// This should select the first cluster with an empty UID that is disconnected.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my cluster")
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my cluster", "")
 	assert.Nil(t, err)
 	// Should select the disconnected cluster.
 	assert.Equal(t, testDisconnectedClusterEmptyUID, clusterID.String())
@@ -1043,7 +1045,7 @@ func TestServer_ProvisionOrClaimVizier_WithExistingUID(t *testing.T) {
 	userID := uuid.NewV4()
 
 	// This should select the existing cluster with the same UID.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "existing_cluster")
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "existing_cluster", "")
 	assert.Nil(t, err)
 	// Should select the disconnected cluster.
 	assert.Equal(t, testExistingCluster, clusterID.String())
@@ -1057,7 +1059,7 @@ func TestServer_ProvisionOrClaimVizier_WithExistingActiveUID(t *testing.T) {
 	s := controller.New(db, "test", nil, nil, nil)
 	userID := uuid.NewV4()
 	// This should select cause an error b/c we are trying to provision a cluster that is not disconnected.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my_other_cluster")
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my_other_cluster", "")
 	assert.NotNil(t, err)
 	assert.Equal(t, vzerrors.ErrProvisionFailedVizierIsActive, err)
 	assert.Equal(t, uuid.Nil, clusterID)
@@ -1071,7 +1073,28 @@ func TestServer_ProvisionOrClaimVizier_WithNewCluster(t *testing.T) {
 	s := controller.New(db, "test", nil, nil, nil)
 	userID := uuid.NewV4()
 	// This should select cause an error b/c we are trying to provision a cluster that is not disconnected.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testNonAuthOrgID), userID, "my_other_cluster")
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testNonAuthOrgID), userID, "my_other_cluster", "")
 	assert.Nil(t, err)
 	assert.NotEqual(t, uuid.Nil, clusterID)
+}
+
+func TestServer_ProvisionOrClaimVizier_WithExistingName(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	s := controller.New(db, "test", nil, nil, nil)
+	userID := uuid.NewV4()
+
+	// This should select the existing cluster with the same UID.
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "some_cluster", "test-cluster")
+	assert.Nil(t, err)
+	// Should select the disconnected cluster.
+	assert.Equal(t, testDisconnectedClusterEmptyUID, clusterID.String())
+	// Check cluster name.
+	var clusterName *string
+	nameQuery := `SELECT cluster_name from vizier_cluster_info WHERE vizier_cluster_id=$1`
+	err = db.Get(&clusterName, nameQuery, clusterID)
+	assert.Nil(t, err)
+	assert.Equal(t, "test-cluster_1", *clusterName)
 }

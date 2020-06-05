@@ -929,35 +929,45 @@ func findVizierWithEmptyUID(ctx context.Context, tx *sqlx.Tx, orgID uuid.UUID) (
 	return uuid.Nil, vizierStatus(cvmsgspb.VZ_ST_UNKNOWN), nil
 }
 
-func setRandomClusterNameIfNull(ctx context.Context, tx *sqlx.Tx, clusterID uuid.UUID) error {
-	var clusterName *string
+func setClusterNameIfNull(ctx context.Context, tx *sqlx.Tx, clusterID uuid.UUID, generateName func(i int) string) error {
+	var existingName *string
 
 	query := `SELECT cluster_name from vizier_cluster_info WHERE vizier_cluster_id=$1`
-	err := tx.QueryRowxContext(ctx, query, clusterID).Scan(&clusterName)
+	err := tx.QueryRowxContext(ctx, query, clusterID).Scan(&existingName)
 	if err != nil {
 		return err
 	}
 
-	if clusterName != nil {
+	if existingName != nil {
 		return nil
 	}
 
-	// Retry a few times incase we generate a name that collides.
+	// Retry a few times until we find a name that doesn't collide.
+	finalName := ""
 	for rc := 0; rc < 10; rc++ {
-		nm := namesgenerator.GetRandomName(rc)
-		query = `UPDATE vizier_cluster_info SET cluster_name=$1 WHERE vizier_cluster_id=$2`
-		_, err = tx.ExecContext(ctx, query, nm, clusterID)
-		if err == nil {
-			return nil
+		name := generateName(rc)
+		var queryName *string
+		query := `SELECT cluster_name from vizier_cluster_info WHERE cluster_name=$1`
+		_ = tx.QueryRowxContext(ctx, query, name).Scan(&queryName)
+
+		if queryName == nil { // Name does not exist in the DB.
+			finalName = name
+			break
 		}
 	}
 
-	// If we get here there must have been an error we can't recover from.
+	if finalName == "" {
+		return errors.New("Could not find a unique cluster name")
+	}
+
+	query = `UPDATE vizier_cluster_info SET cluster_name=$1 WHERE vizier_cluster_id=$2`
+	_, err = tx.ExecContext(ctx, query, finalName, clusterID)
+
 	return err
 }
 
 // ProvisionOrClaimVizier provisions a given cluster or returns the ID if it already exists,
-func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, userID uuid.UUID, clusterUID string) (uuid.UUID, error) {
+func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, userID uuid.UUID, clusterUID string, clusterName string) (uuid.UUID, error) {
 	// TODO(zasgar): This duplicates some functionality in the Create function. Will deprecate that Create function soon.
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -966,8 +976,25 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 	defer tx.Rollback()
 
 	var clusterID uuid.UUID
+
+	generateRandomName := func(i int) string {
+		return namesgenerator.GetRandomName(i)
+	}
+	generateFromGivenName := func(i int) string {
+		name := clusterName
+		if i > 0 {
+			name = fmt.Sprintf("%s_%d", clusterName, i)
+		}
+		return name
+	}
+
 	assignNameAndCommit := func() (uuid.UUID, error) {
-		if err := setRandomClusterNameIfNull(ctx, tx, clusterID); err != nil {
+		generateNameFunc := generateRandomName
+		if clusterName != "" {
+			generateNameFunc = generateFromGivenName
+		}
+
+		if err := setClusterNameIfNull(ctx, tx, clusterID, generateNameFunc); err != nil {
 			return uuid.Nil, vzerrors.ErrInternalDB
 		}
 

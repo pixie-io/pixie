@@ -36,8 +36,8 @@ func (f *fakeDF) FetchOrgUserIDUsingDeploymentKey(ctx context.Context, key strin
 type fakeProvisioner struct {
 }
 
-func (f *fakeProvisioner) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, userID uuid.UUID, clusterUID string) (uuid.UUID, error) {
-	if testOrgID == orgID && testUserID == userID && clusterUID == "cluster1" {
+func (f *fakeProvisioner) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, userID uuid.UUID, clusterUID string, clusterName string) (uuid.UUID, error) {
+	if testOrgID == orgID && testUserID == userID && clusterUID == "cluster1" && clusterName == "test" {
 		return testValidClusterID, nil
 	}
 	if testOrgID == orgID && testUserID == userID && clusterUID == "cluster2" {
@@ -51,8 +51,9 @@ func TestService_RegisterVizierDeployment(t *testing.T) {
 
 	ctx := context.Background()
 	resp, err := svc.RegisterVizierDeployment(ctx, &vzmgrpb.RegisterVizierDeploymentRequest{
-		K8sClusterUID: "cluster1",
-		DeploymentKey: testValidDeploymentKey,
+		K8sClusterUID:  "cluster1",
+		DeploymentKey:  testValidDeploymentKey,
+		K8sClusterName: "test",
 	})
 	assert.Nil(t, err)
 	assert.NotNil(t, resp)
