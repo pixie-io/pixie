@@ -943,7 +943,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
 
   // Depending on whether the traced entity was the requestor or responder,
   // we need to flip the interpretation of the half-streams.
-  if (conn_tracker.role() == kRoleClient) {
+  if (conn_tracker.traffic_class().role == kRoleClient) {
     req_stream = &record.send;
     resp_stream = &record.recv;
   } else {
@@ -1129,12 +1129,15 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
 
       VLOG(2) << absl::Substitute("Connection pid=$0 fd=$1 tsid=$2 protocol=$3\n", tracker.pid(),
                                   tracker.fd(), tracker.tsid(),
-                                  magic_enum::enum_name(tracker.protocol()));
+                                  magic_enum::enum_name(tracker.traffic_class().protocol));
 
-      DCHECK(protocol_transfer_specs_.find(tracker.protocol()) != protocol_transfer_specs_.end())
-          << absl::Substitute("Protocol=$0 not in protocol_transfer_specs_.", tracker.protocol());
+      DCHECK(protocol_transfer_specs_.find(tracker.traffic_class().protocol) !=
+             protocol_transfer_specs_.end())
+          << absl::Substitute("Protocol=$0 not in protocol_transfer_specs_.",
+                              tracker.traffic_class().protocol);
 
-      const TransferSpec& transfer_spec = protocol_transfer_specs_[tracker.protocol()];
+      const TransferSpec& transfer_spec =
+          protocol_transfer_specs_[tracker.traffic_class().protocol];
 
       // Don't process trackers meant for a different table_num.
       if (transfer_spec.table_num != table_num) {

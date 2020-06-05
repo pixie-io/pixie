@@ -196,20 +196,6 @@ class ConnectionTracker {
   const traffic_class_t& traffic_class() const { return traffic_class_; }
 
   /**
-   * @brief Get the protocol for this connection.
-   *
-   * @return protocol.
-   */
-  TrafficProtocol protocol() const { return traffic_class_.protocol; }
-
-  /**
-   * @brief Get the role (requestor/responder) for this connection.
-   *
-   * @return role.
-   */
-  EndpointRole role() const { return traffic_class_.role; }
-
-  /**
    * Get PID of the connection.
    *
    * @return PID.
@@ -635,7 +621,8 @@ std::string DebugString(const ConnectionTracker& c, std::string_view prefix) {
   info += absl::Substitute("state=$0\n", magic_enum::enum_name(c.state()));
   info += absl::Substitute("$0remote_addr=$1:$2\n", prefix, c.remote_endpoint().AddrStr(),
                            c.remote_endpoint().port);
-  info += absl::Substitute("$0protocol=$1\n", prefix, magic_enum::enum_name(c.protocol()));
+  info += absl::Substitute("$0protocol=$1\n", prefix,
+                           magic_enum::enum_name(c.traffic_class().protocol));
   info += absl::Substitute("$0recv queue\n", prefix);
   info += DebugString<TFrameType>(c.recv_data(), absl::StrCat(prefix, "  "));
   info += absl::Substitute("$0send queue\n", prefix);
