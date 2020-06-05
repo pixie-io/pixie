@@ -416,6 +416,9 @@ func TestServer_VizierConnectedUnhealthy(t *testing.T) {
 	req := &cvmsgspb.RegisterVizierRequest{
 		VizierID: utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440001"),
 		JwtKey:   "the-token",
+		ClusterInfo: &cvmsgspb.VizierClusterInfo{
+			ClusterUID: "cUID",
+		},
 	}
 
 	resp, err := s.VizierConnected(context.Background(), req)
@@ -468,8 +471,7 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 		JwtKey:   "the-token",
 		Address:  "127.0.0.1",
 		ClusterInfo: &cvmsgspb.VizierClusterInfo{
-			ClusterUID:     "cluster-uid",
-			ClusterName:    "some cluster",
+			ClusterUID:     "cUID",
 			ClusterVersion: "1234",
 			VizierVersion:  "some version",
 		},
@@ -485,20 +487,21 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 	clusterQuery := `SELECT PGP_SYM_DECRYPT(jwt_signing_key::bytea, 'test') as jwt_signing_key, status, cluster_uid, cluster_name, cluster_version, vizier_version from vizier_cluster_info WHERE vizier_cluster_id=$1`
 
 	var clusterInfo struct {
-		JWTSigningKey  string `db:"jwt_signing_key"`
-		Status         string `db:"status"`
-		ClusterUID     string `db:"cluster_uid"`
-		ClusterName    string `db:"cluster_name"`
-		ClusterVersion string `db:"cluster_version"`
-		VizierVersion  string `db:"vizier_version"`
+		JWTSigningKey  string  `db:"jwt_signing_key"`
+		Status         string  `db:"status"`
+		ClusterUID     string  `db:"cluster_uid"`
+		ClusterName    *string `db:"cluster_name"`
+		ClusterVersion string  `db:"cluster_version"`
+		VizierVersion  string  `db:"vizier_version"`
 	}
 	clusterID, err := uuid.FromString("123e4567-e89b-12d3-a456-426655440001")
 	assert.Nil(t, err)
 	err = db.Get(&clusterInfo, clusterQuery, clusterID)
 	assert.Nil(t, err)
 	assert.Equal(t, "CONNECTED", clusterInfo.Status)
-	assert.Equal(t, "cluster-uid", clusterInfo.ClusterUID)
-	assert.Equal(t, "some cluster", clusterInfo.ClusterName)
+	assert.Equal(t, "cUID", clusterInfo.ClusterUID)
+	// Cluster name is nil because we don't overwrite it in the API anymore.
+	assert.Nil(t, clusterInfo.ClusterName)
 	assert.Equal(t, "1234", clusterInfo.ClusterVersion)
 	assert.Equal(t, "some version", clusterInfo.VizierVersion)
 
@@ -508,7 +511,7 @@ func TestServer_VizierConnectedHealthy(t *testing.T) {
 		err := proto.Unmarshal(msg.Data, req)
 		assert.Nil(t, err)
 		assert.Equal(t, "1234", req.ResourceVersion)
-		assert.Equal(t, "cluster-uid", req.K8sUID)
+		assert.Equal(t, "cUID", req.K8sUID)
 		assert.Equal(t, "223e4567-e89b-12d3-a456-426655440000", utils.UUIDFromProtoOrNil(req.OrgID).String())
 		assert.Equal(t, "123e4567-e89b-12d3-a456-426655440001", utils.UUIDFromProtoOrNil(req.VizierID).String())
 		return

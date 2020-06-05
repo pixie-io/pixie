@@ -538,12 +538,11 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 	log.WithField("req", req).Info("Received RegisterVizierRequest")
 
 	vzVersion := ""
-	clusterName := ""
 	clusterVersion := ""
 	clusterUID := ""
+
 	if req.ClusterInfo != nil {
 		vzVersion = req.ClusterInfo.VizierVersion
-		clusterName = req.ClusterInfo.ClusterName
 		clusterVersion = req.ClusterInfo.ClusterVersion
 		clusterUID = req.ClusterInfo.ClusterUID
 	}
@@ -559,16 +558,16 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 	query := `
     UPDATE vizier_cluster_info
-    SET (last_heartbeat, address, jwt_signing_key, status, vizier_version, cluster_name, cluster_version, cluster_uid)  = (
-    	NOW(), $2, PGP_SYM_ENCRYPT($3, $4), $5, $6, $7, $8, $9)
-    WHERE vizier_cluster_id = $1`
+    SET (last_heartbeat, address, jwt_signing_key, status, vizier_version, cluster_version)  = (
+    	NOW(), $2, PGP_SYM_ENCRYPT($3, $4), $5, $6, $7)
+    WHERE vizier_cluster_id = $1 AND cluster_uid=$8`
 
 	vzStatus := "CONNECTED"
 	if req.Address == "" {
 		vzStatus = "UNHEALTHY"
 	}
 
-	res, err := s.db.Exec(query, vizierID, req.Address, signingKey, s.dbKey, vzStatus, vzVersion, clusterName, clusterVersion, clusterUID)
+	res, err := s.db.Exec(query, vizierID, req.Address, signingKey, s.dbKey, vzStatus, vzVersion, clusterVersion, clusterUID)
 	if err != nil {
 		return nil, err
 	}
