@@ -170,10 +170,10 @@ func main() {
 	gqlEnv := controller.GraphQLEnv{
 		ArtifactTrackerServer: artifactTrackerServer,
 		VizierClusterInfo:     cis,
+		VizierDeployKeyMgr:    vdks,
 		ScriptMgrServer:       sms,
 		AutocompleteServer:    as,
-
-		ProfileServiceClient: pc,
+		ProfileServiceClient:  pc,
 	}
 
 	mux.Handle("/api/graphql", controller.WithAugmentedAuthMiddleware(env, controller.NewGraphQLHandler(gqlEnv)))
