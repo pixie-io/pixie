@@ -26,6 +26,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/shared/messages"
 	messagespb "pixielabs.ai/pixielabs/src/cloud/shared/messagespb"
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzerrors"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
@@ -876,4 +877,119 @@ func (s *Server) UpdateOrInstallVizier(ctx context.Context, req *cvmsgspb.Update
 	}
 
 	return resp, nil
+}
+
+func findVizierWithUID(ctx context.Context, tx *sqlx.Tx, orgID uuid.UUID, clusterUID string) (uuid.UUID, vizierStatus, error) {
+	query := `
+       SELECT vizier_cluster.id, status from vizier_cluster, vizier_cluster_info 
+       WHERE vizier_cluster.id = vizier_cluster_info.vizier_cluster_id
+       AND vizier_cluster.org_id = $1
+       AND vizier_cluster_info.cluster_uid = $2
+    `
+
+	var vizierID uuid.UUID
+	var status vizierStatus
+	err := tx.QueryRowxContext(ctx, query, orgID, clusterUID).Scan(&vizierID, &status)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return uuid.Nil, vizierStatus(cvmsgspb.VZ_ST_UNKNOWN), nil
+		}
+		return uuid.Nil, vizierStatus(cvmsgspb.VZ_ST_UNKNOWN), vzerrors.ErrInternalDB
+	}
+	return vizierID, status, nil
+}
+
+func findVizierWithEmptyUID(ctx context.Context, tx *sqlx.Tx, orgID uuid.UUID) (uuid.UUID, vizierStatus, error) {
+	query := `
+       SELECT vizier_cluster.id, status from vizier_cluster, vizier_cluster_info 
+       WHERE vizier_cluster.id = vizier_cluster_info.vizier_cluster_id
+       AND vizier_cluster.org_id = $1
+       AND (vizier_cluster_info.cluster_uid = '' 
+            OR vizier_cluster_info.cluster_uid IS NULL)
+    `
+
+	var vizierID uuid.UUID
+	var status vizierStatus
+	rows, err := tx.QueryxContext(ctx, query, orgID)
+	if err != nil {
+		return uuid.Nil, vizierStatus(cvmsgspb.VZ_ST_UNKNOWN), err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		err = rows.Scan(&vizierID, &status)
+		if err != nil {
+			return uuid.Nil, vizierStatus(cvmsgspb.VZ_ST_UNKNOWN), err
+		}
+		// Return the first disconnected cluster.
+		if status == vizierStatus(cvmsgspb.VZ_ST_DISCONNECTED) {
+			return vizierID, status, nil
+		}
+	}
+	// Return a Nil ID.
+	return uuid.Nil, vizierStatus(cvmsgspb.VZ_ST_UNKNOWN), nil
+}
+
+// ProvisionOrClaimVizier provisions a given cluster or returns the ID if it already exists,
+func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, userID uuid.UUID, clusterUID string) (uuid.UUID, error) {
+	// TODO(zasgar): This duplicates some functionality in the Create function. Will deprecate that Create function soon.
+	tx, err := s.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return uuid.Nil, vzerrors.ErrInternalDB
+	}
+	defer tx.Rollback()
+	clusterID, status, err := findVizierWithUID(ctx, tx, orgID, clusterUID)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if clusterID != uuid.Nil {
+		if status != vizierStatus(cvmsgspb.VZ_ST_DISCONNECTED) {
+			return uuid.Nil, vzerrors.ErrProvisionFailedVizierIsActive
+		}
+		return clusterID, nil
+	}
+
+	clusterID, status, err = findVizierWithEmptyUID(ctx, tx, orgID)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if clusterID != uuid.Nil {
+		// Set the cluster ID.
+		query := `UPDATE vizier_cluster_info SET cluster_uid=$1 WHERE vizier_cluster_id=$2`
+		rows, err := tx.QueryxContext(ctx, query, clusterUID, clusterID)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		rows.Close()
+		if err := tx.Commit(); err != nil {
+			log.WithError(err).Error("Failed to commit transaction")
+			return uuid.Nil, vzerrors.ErrInternalDB
+		}
+		return clusterID, nil
+	}
+
+	// Insert new vizier case.
+	query := `
+    	WITH ins AS (
+      		INSERT INTO vizier_cluster (org_id, project_name) VALUES($1, $2) RETURNING id
+		)
+		INSERT INTO vizier_cluster_info(vizier_cluster_id, status, cluster_uid) SELECT id, 'DISCONNECTED', $3  FROM ins RETURNING vizier_cluster_id`
+	err = tx.QueryRowContext(ctx, query, orgID, DefaultProjectName, clusterUID).Scan(&clusterID)
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	// Create index state.
+	query = `
+		INSERT INTO vizier_index_state(cluster_id, resource_version) VALUES($1, '')
+	`
+	_, err = tx.ExecContext(ctx, query, &clusterID)
+	if err != nil {
+		log.WithError(err).Error("Failed to create vizier_index_state")
+		return uuid.Nil, vzerrors.ErrInternalDB
+	}
+
+	if tx.Commit() != nil {
+		return uuid.Nil, vzerrors.ErrInternalDB
+	}
+	return clusterID, nil
 }

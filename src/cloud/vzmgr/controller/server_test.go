@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
+	"pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb"
 	mock_artifacttrackerpb "pixielabs.ai/pixielabs/src/cloud/artifact_tracker/artifacttrackerpb/mock"
 	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 	mock_dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb/mock"
@@ -28,9 +28,10 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/schema"
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzerrors"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
-	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
+	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
@@ -52,16 +53,23 @@ func setupTestDB(t *testing.T) (*sqlx.DB, func()) {
 	}
 }
 
-var testAuthOrgID = "223e4567-e89b-12d3-a456-426655440000"
-var testNonAuthOrgID = "223e4567-e89b-12d3-a456-426655440001"
-var testProjectName = "foo"
+var (
+	testAuthOrgID                   = "223e4567-e89b-12d3-a456-426655440000"
+	testNonAuthOrgID                = "223e4567-e89b-12d3-a456-426655440001"
+	testProjectName                 = "foo"
+	testDisconnectedClusterEmptyUID = "123e4567-e89b-12d3-a456-426655440003"
+	testExistingCluster             = "823e4567-e89b-12d3-a456-426655440008"
+	testExistingClusterActive       = "923e4567-e89b-12d3-a456-426655440008"
+)
 
 func loadTestData(t *testing.T, db *sqlx.DB) {
 	insertVizierClusterQuery := `INSERT INTO vizier_cluster(org_id, id, project_name) VALUES ($1, $2, $3)`
 	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440000", testProjectName)
 	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", testProjectName)
 	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440002", testProjectName)
-	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440003", testProjectName)
+	db.MustExec(insertVizierClusterQuery, testAuthOrgID, testDisconnectedClusterEmptyUID, testProjectName)
+	db.MustExec(insertVizierClusterQuery, testAuthOrgID, testExistingCluster, testProjectName)
+	db.MustExec(insertVizierClusterQuery, testAuthOrgID, testExistingClusterActive, testProjectName)
 	db.MustExec(insertVizierClusterQuery, testNonAuthOrgID, "223e4567-e89b-12d3-a456-426655440003", testProjectName)
 	db.MustExec(insertVizierClusterQuery, testNonAuthOrgID, "323e4567-e89b-12d3-a456-426655440003", testProjectName)
 
@@ -69,7 +77,9 @@ func loadTestData(t *testing.T, db *sqlx.DB) {
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN", "addr0", "key0", "2011-05-16 15:36:38", true, "", "", "")
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY", "addr1", "\\xc30d04070302c5374a5098262b6d7bd23f01822f741dbebaa680b922b55fd16eb985aeb09505f8fc4a36f0e11ebb8e18f01f684146c761e2234a81e50c21bca2907ea37736f2d9a5834997f4dd9e288c", "2011-05-17 15:36:38", false, "vzVers", "cVers", "cUID")
 	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440002", "UNHEALTHY", "addr2", "key2", "2011-05-18 15:36:38", true, "", "", "")
-	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440003", "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38", false, "", "", "")
+	db.MustExec(insertVizierClusterInfoQuery, testDisconnectedClusterEmptyUID, "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38", false, "", "", "")
+	db.MustExec(insertVizierClusterInfoQuery, testExistingCluster, "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38", false, "", "", "existing_cluster")
+	db.MustExec(insertVizierClusterInfoQuery, testExistingClusterActive, "UNHEALTHY", "addr3", "key3", "2011-05-19 15:36:38", false, "", "", "my_other_cluster")
 	db.MustExec(insertVizierClusterInfoQuery, "223e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38", true, "", "", "")
 	db.MustExec(insertVizierClusterInfoQuery, "323e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38", false, "", "", "")
 
@@ -210,7 +220,7 @@ func TestServer_GetViziersByOrg(t *testing.T) {
 		require.Nil(t, err)
 		require.NotNil(t, resp)
 
-		assert.Equal(t, len(resp.VizierIDs), 4)
+		assert.Equal(t, len(resp.VizierIDs), 6)
 
 		// Convert to UUID string array.
 		var ids []string
@@ -223,6 +233,8 @@ func TestServer_GetViziersByOrg(t *testing.T) {
 			"123e4567-e89b-12d3-a456-426655440001",
 			"123e4567-e89b-12d3-a456-426655440002",
 			"123e4567-e89b-12d3-a456-426655440003",
+			"823e4567-e89b-12d3-a456-426655440008",
+			"923e4567-e89b-12d3-a456-426655440008",
 		}
 		sort.Strings(expected)
 		assert.Equal(t, ids, expected)
@@ -1000,4 +1012,62 @@ func TestServer_GetViziersByShard(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestServer_ProvisionOrClaimVizier(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	s := controller.New(db, "test", nil, nil, nil)
+	// TODO(zasgar): We need to make user IDS make sense.
+	userID := uuid.NewV4()
+
+	// This should select the first cluster with an empty UID that is disconnected.
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my cluster")
+	assert.Nil(t, err)
+	// Should select the disconnected cluster.
+	assert.Equal(t, testDisconnectedClusterEmptyUID, clusterID.String())
+}
+
+func TestServer_ProvisionOrClaimVizier_WithExistingUID(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	s := controller.New(db, "test", nil, nil, nil)
+	userID := uuid.NewV4()
+
+	// This should select the existing cluster with the same UID.
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "existing_cluster")
+	assert.Nil(t, err)
+	// Should select the disconnected cluster.
+	assert.Equal(t, testExistingCluster, clusterID.String())
+}
+
+func TestServer_ProvisionOrClaimVizier_WithExistingActiveUID(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	s := controller.New(db, "test", nil, nil, nil)
+	userID := uuid.NewV4()
+	// This should select cause an error b/c we are trying to provision a cluster that is not disconnected.
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my_other_cluster")
+	assert.NotNil(t, err)
+	assert.Equal(t, vzerrors.ErrProvisionFailedVizierIsActive, err)
+	assert.Equal(t, uuid.Nil, clusterID)
+}
+
+func TestServer_ProvisionOrClaimVizier_WithNewCluster(t *testing.T) {
+	db, teardown := setupTestDB(t)
+	defer teardown()
+	loadTestData(t, db)
+
+	s := controller.New(db, "test", nil, nil, nil)
+	userID := uuid.NewV4()
+	// This should select cause an error b/c we are trying to provision a cluster that is not disconnected.
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testNonAuthOrgID), userID, "my_other_cluster")
+	assert.Nil(t, err)
+	assert.NotEqual(t, uuid.Nil, clusterID)
 }
