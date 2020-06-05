@@ -83,6 +83,7 @@ func loadTestData(t *testing.T, db *sqlx.DB) {
 	db.MustExec(insertVizierClusterInfoQuery, "223e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38", true, "", "", "")
 	db.MustExec(insertVizierClusterInfoQuery, "323e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38", false, "", "", "")
 
+	db.MustExec(`UPDATE vizier_cluster_info SET cluster_name=NULL WHERE vizier_cluster_id=$1`, testDisconnectedClusterEmptyUID)
 	insertVizierIndexQuery := `INSERT INTO vizier_index_state(cluster_id, resource_version) VALUES($1, $2)`
 	db.MustExec(insertVizierIndexQuery, "123e4567-e89b-12d3-a456-426655440001", "1234")
 }

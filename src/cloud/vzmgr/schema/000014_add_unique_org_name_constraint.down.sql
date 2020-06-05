@@ -1,0 +1,1 @@
+ALTER TABLE vizier_cluster_info DROP CONSTRAINT uniq_org_cluster_name;

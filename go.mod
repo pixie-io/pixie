@@ -24,7 +24,7 @@ require (
 	github.com/coreos/etcd v3.3.18+incompatible
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/docker/docker v17.12.0-ce-rc1.0.20200417080019-f432f7159508+incompatible // indirect
+	github.com/docker/docker v17.12.0-ce-rc1.0.20200417080019-f432f7159508+incompatible
 	github.com/docker/go-connections v0.3.0 // indirect
 	github.com/docker/go-units v0.3.3 // indirect
 	github.com/dustin/go-humanize v1.0.0

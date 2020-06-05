@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/docker/pkg/namesgenerator"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/jmoiron/sqlx"
@@ -928,6 +929,33 @@ func findVizierWithEmptyUID(ctx context.Context, tx *sqlx.Tx, orgID uuid.UUID) (
 	return uuid.Nil, vizierStatus(cvmsgspb.VZ_ST_UNKNOWN), nil
 }
 
+func setRandomClusterNameIfNull(ctx context.Context, tx *sqlx.Tx, clusterID uuid.UUID) error {
+	var clusterName *string
+
+	query := `SELECT cluster_name from vizier_cluster_info WHERE vizier_cluster_id=$1`
+	err := tx.QueryRowxContext(ctx, query, clusterID).Scan(&clusterName)
+	if err != nil {
+		return err
+	}
+
+	if clusterName != nil {
+		return nil
+	}
+
+	// Retry a few times incase we generate a name that collides.
+	for rc := 0; rc < 10; rc++ {
+		nm := namesgenerator.GetRandomName(rc)
+		query = `UPDATE vizier_cluster_info SET cluster_name=$1 WHERE vizier_cluster_id=$2`
+		_, err = tx.ExecContext(ctx, query, nm, clusterID)
+		if err == nil {
+			return nil
+		}
+	}
+
+	// If we get here there must have been an error we can't recover from.
+	return err
+}
+
 // ProvisionOrClaimVizier provisions a given cluster or returns the ID if it already exists,
 func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, userID uuid.UUID, clusterUID string) (uuid.UUID, error) {
 	// TODO(zasgar): This duplicates some functionality in the Create function. Will deprecate that Create function soon.
@@ -936,6 +964,20 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 		return uuid.Nil, vzerrors.ErrInternalDB
 	}
 	defer tx.Rollback()
+
+	var clusterID uuid.UUID
+	assignNameAndCommit := func() (uuid.UUID, error) {
+		if err := setRandomClusterNameIfNull(ctx, tx, clusterID); err != nil {
+			return uuid.Nil, vzerrors.ErrInternalDB
+		}
+
+		if err := tx.Commit(); err != nil {
+			log.WithError(err).Error("Failed to commit transaction")
+			return uuid.Nil, vzerrors.ErrInternalDB
+		}
+		return clusterID, nil
+	}
+
 	clusterID, status, err := findVizierWithUID(ctx, tx, orgID, clusterUID)
 	if err != nil {
 		return uuid.Nil, err
@@ -944,7 +986,7 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 		if status != vizierStatus(cvmsgspb.VZ_ST_DISCONNECTED) {
 			return uuid.Nil, vzerrors.ErrProvisionFailedVizierIsActive
 		}
-		return clusterID, nil
+		return assignNameAndCommit()
 	}
 
 	clusterID, status, err = findVizierWithEmptyUID(ctx, tx, orgID)
@@ -959,11 +1001,7 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 			return uuid.Nil, err
 		}
 		rows.Close()
-		if err := tx.Commit(); err != nil {
-			log.WithError(err).Error("Failed to commit transaction")
-			return uuid.Nil, vzerrors.ErrInternalDB
-		}
-		return clusterID, nil
+		return assignNameAndCommit()
 	}
 
 	// Insert new vizier case.
@@ -986,9 +1024,5 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 		log.WithError(err).Error("Failed to create vizier_index_state")
 		return uuid.Nil, vzerrors.ErrInternalDB
 	}
-
-	if tx.Commit() != nil {
-		return uuid.Nil, vzerrors.ErrInternalDB
-	}
-	return clusterID, nil
+	return assignNameAndCommit()
 }
