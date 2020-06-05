@@ -7,12 +7,14 @@ import (
 	"github.com/golang-migrate/migrate/database/postgres"
 	bindata "github.com/golang-migrate/migrate/source/go_bindata"
 	"github.com/nats-io/nats.go"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	dnsmgrpb "pixielabs.ai/pixielabs/src/cloud/dnsmgr/dnsmgrpb"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/controller"
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/deployment"
+	"pixielabs.ai/pixielabs/src/cloud/vzmgr/deploymentkey"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/schema"
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	"pixielabs.ai/pixielabs/src/shared/services/env"
@@ -123,9 +125,14 @@ func main() {
 	}
 
 	c := controller.New(db, dbKey, dnsMgrClient, at, nc)
+	dks := deploymentkey.New(db, dbKey)
+	ds := deployment.New(dks, c)
+
 	sm := controller.NewStatusMonitor(db)
 	defer sm.Stop()
 	vzmgrpb.RegisterVZMgrServiceServer(s.GRPCServer(), c)
+	vzmgrpb.RegisterVZDeploymentKeyServiceServer(s.GRPCServer(), dks)
+	vzmgrpb.RegisterVZDeploymentServiceServer(s.GRPCServer(), ds)
 
 	_, err = controller.NewMetadataReader(db, stc, nc)
 	if err != nil {

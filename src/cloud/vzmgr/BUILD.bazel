@@ -11,6 +11,8 @@ go_library(
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/dnsmgr/dnsmgrpb:service_go_proto",
         "//src/cloud/vzmgr/controller:go_default_library",
+        "//src/cloud/vzmgr/deployment:go_default_library",
+        "//src/cloud/vzmgr/deploymentkey:go_default_library",
         "//src/cloud/vzmgr/schema:go_default_library",
         "//src/cloud/vzmgr/vzmgrpb:service_pl_go_proto",
         "//src/shared/services:go_default_library",
