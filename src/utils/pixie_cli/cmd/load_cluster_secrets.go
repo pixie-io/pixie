@@ -22,7 +22,7 @@ var LoadClusterSecretsCmd = &cobra.Command{
 	Use:   "load-cluster-secrets",
 	Short: "Loads the cluster secrets on the current K8s cluster",
 	Run: func(cmd *cobra.Command, args []string) {
-		clusterID, _ := cmd.Flags().GetString("cluster_id")
+		deployKey, _ := cmd.Flags().GetString("deploy_key")
 		namespace, _ := cmd.Flags().GetString("namespace")
 		devCloudNamespace, _ := cmd.Flags().GetString("dev_cloud_namespace")
 
@@ -30,7 +30,7 @@ var LoadClusterSecretsCmd = &cobra.Command{
 		kubeConfig := k8s.GetConfig()
 		clientset := k8s.GetClientset(kubeConfig)
 
-		err := LoadClusterSecrets(clientset, cloudAddr, clusterID, namespace, devCloudNamespace, kubeConfig, "")
+		err := LoadClusterSecrets(clientset, cloudAddr, deployKey, namespace, devCloudNamespace, kubeConfig, "")
 		if err != nil {
 			log.WithError(err).Fatal("Could not load cluster secrets")
 		}
@@ -38,8 +38,8 @@ var LoadClusterSecretsCmd = &cobra.Command{
 }
 
 func init() {
-	LoadClusterSecretsCmd.Flags().StringP("cluster_id", "i", "", "The ID of the cluster")
-	viper.BindPFlag("cluster_id", LoadClusterSecretsCmd.Flags().Lookup("cluster_id"))
+	LoadClusterSecretsCmd.Flags().StringP("deploy_key", "k", "", "The deploy key to use to deploy the cluster")
+	viper.BindPFlag("deploy_key", LoadClusterSecretsCmd.Flags().Lookup("deploy_key"))
 
 	LoadClusterSecretsCmd.Flags().StringP("namespace", "n", "pl", "The namespace to install K8s secrets to")
 	viper.BindPFlag("namespace", LoadClusterSecretsCmd.Flags().Lookup("namespace"))
@@ -49,16 +49,16 @@ func init() {
 }
 
 // LoadClusterSecrets loads Vizier's secrets and configmap to the given namespace.
-func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, clusterID string, namespace string, devCloudNamespace string, kubeConfig *rest.Config, sentryDSN string) error {
-	if clusterID == "" {
-		return errors.New("cluster_id is required")
+func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, deployKey string, namespace string, devCloudNamespace string, kubeConfig *rest.Config, sentryDSN string) error {
+	if deployKey == "" {
+		return errors.New("deploy_key is required")
 	}
 
 	// Attempt to delete an existing pl-cloud-config configmap.
 	_ = k8s.DeleteConfigMap(clientset, "pl-cloud-config", "pl")
 	k8s.DeleteSecret(clientset, namespace, "pl-cluster-secrets")
 
-	yamls, err := GenerateClusterSecretYAMLs(cloudAddr, clusterID, namespace, devCloudNamespace, kubeConfig, sentryDSN, "")
+	yamls, err := GenerateClusterSecretYAMLs(cloudAddr, deployKey, namespace, devCloudNamespace, kubeConfig, sentryDSN, "")
 	if err != nil {
 		return err
 	}
@@ -67,15 +67,15 @@ func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, clust
 }
 
 // GenerateClusterSecretYAMLs generates YAMLs for the cluster secrets.
-func GenerateClusterSecretYAMLs(cloudAddr string, clusterID string, namespace string, devCloudNamespace string, kubeConfig *rest.Config, sentryDSN string, version string) (string, error) {
-	yamls := make([]string, 3)
+func GenerateClusterSecretYAMLs(cloudAddr string, deployKey string, namespace string, devCloudNamespace string, kubeConfig *rest.Config, sentryDSN string, version string) (string, error) {
+	yamls := make([]string, 4)
 	ccYaml, err := createCloudConfigYAML(cloudAddr, namespace, devCloudNamespace, kubeConfig)
 	if err != nil {
 		return "", err
 	}
 	yamls[0] = ccYaml
 
-	csYaml, err := createClusterSecretsYAML(clusterID, sentryDSN, namespace)
+	csYaml, err := createClusterSecretsYAML(sentryDSN, namespace)
 	if err != nil {
 		return "", err
 	}
@@ -86,6 +86,12 @@ func GenerateClusterSecretYAMLs(cloudAddr string, clusterID string, namespace st
 		return "", err
 	}
 	yamls[2] = bYaml
+
+	dYaml, err := createDeploySecretsYAML(namespace, deployKey)
+	if err != nil {
+		return "", err
+	}
+	yamls[3] = dYaml
 
 	return "---\n" + strings.Join(yamls, "\n---\n"), nil
 }
@@ -99,6 +105,16 @@ func getK8sVersion(kubeConfig *rest.Config) (string, error) {
 	return version.GitVersion, nil
 }
 
+func createDeploySecretsYAML(namespace string, deployKey string) (string, error) {
+	cm, err := k8s.CreateGenericSecretFromLiterals(namespace, "pl-deploy-secrets", map[string]string{
+		"deploy-key": deployKey,
+	})
+	if err != nil {
+		return "", err
+	}
+	return k8s.ConvertResourceToYAML(cm)
+}
+
 func createCloudConfigYAML(cloudAddr string, namespace string, devCloudNamespace string, kubeConfig *rest.Config) (string, error) {
 	// devCloudNamespace implies we are running in a dev enivironment and we should attach to
 	// vzconn in that namespace.
@@ -106,11 +122,17 @@ func createCloudConfigYAML(cloudAddr string, namespace string, devCloudNamespace
 		cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNamespace)
 	}
 
-	clusterName := getCurrentCluster()
+	clusterName := ""
+	clusterVersion := ""
+	var err error
 
-	clusterVersion, err := getK8sVersion(kubeConfig)
-	if err != nil {
-		return "", errors.New("Could not get cluster version")
+	if kubeConfig != nil { // Only record cluster name/version if we are deploying directly to the current cluster.
+		clusterName = getCurrentCluster()
+
+		clusterVersion, err = getK8sVersion(kubeConfig)
+		if err != nil {
+			return "", errors.New("Could not get cluster version")
+		}
 	}
 
 	cm, err := k8s.CreateConfigMapFromLiterals(namespace, "pl-cloud-config", map[string]string{
@@ -121,16 +143,15 @@ func createCloudConfigYAML(cloudAddr string, namespace string, devCloudNamespace
 	return k8s.ConvertResourceToYAML(cm)
 }
 
-func createClusterSecretsYAML(clusterID, sentryDSN, namespace string) (string, error) {
+func createClusterSecretsYAML(sentryDSN, namespace string) (string, error) {
 	jwtSigningKey := make([]byte, 64)
 	_, err := rand.Read(jwtSigningKey)
 	if err != nil {
 		return "", errors.New("Could not generate JWT signing key")
 	}
 
-	// Load clusterID and JWT signing key as a secret.
+	// Load JWT signing key as a secret.
 	s, err := k8s.CreateGenericSecretFromLiterals(namespace, "pl-cluster-secrets", map[string]string{
-		"cluster-id":      clusterID,
 		"sentry-dsn":      sentryDSN,
 		"jwt-signing-key": fmt.Sprintf("%x", jwtSigningKey),
 	})
