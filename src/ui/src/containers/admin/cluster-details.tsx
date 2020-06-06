@@ -51,6 +51,9 @@ const useStyles = makeStyles((theme: Theme) => {
       borderTopColor: theme.palette.background.three,
       borderTopWidth: theme.spacing(0.25),
     },
+    error: {
+      padding: 20,
+    },
     link: {
       ...theme.typography.subtitle1,
       margin: theme.spacing(1),
@@ -191,9 +194,9 @@ const AgentsTable = () => {
   return <AgentsTableContent agents={state.data} />;
 }
 
-const GET_CLUSTER = gql`
-query GetCluster($id: ID) {
-  cluster(id: $id) {
+const LIST_CLUSTERS = gql`
+{
+  clusters {
     status
     clusterName
     vizierConfig {
@@ -203,21 +206,54 @@ query GetCluster($id: ID) {
 }
 `;
 
-export const ClusterDetailsPage = () => {
+const ClusterDetailsContents = ({name}) => {
   const classes = useStyles();
-  const { id } = useParams();
-
   const [tab, setTab] = React.useState('agents');
 
-  const { loading, error, data } = useQuery(GET_CLUSTER, { variables: { id }, pollInterval: AGENTS_POLL_INTERVAL });
+  const { loading, error, data } = useQuery(LIST_CLUSTERS, { pollInterval: AGENTS_POLL_INTERVAL });
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <div className={classes.error}>Loading...</div>;
   }
   if (error) {
-    return <div>{error}</div>;
+    return <div className={classes.error}>{error}</div>;
+  }
+  if (!data || !data.clusters) {
+    return <div className={classes.error}>No clusters found.</div>;
   }
 
+  const cluster = data.clusters.find((c) => c.clusterName === name);
+  if (!cluster) {
+    return <div className={classes.error}>Cluster {name} not found.</div>;
+  }
+
+  return (
+    <div>
+      <StyledTabs
+        value={tab}
+        onChange={(event, newTab) => setTab(newTab)}
+      >
+        <StyledTab value='agents' label='Agents' />
+      </StyledTabs>
+      {
+        tab === 'agents' &&
+        (
+          <VizierGRPCClientProvider
+            clusterID={cluster.id}
+            passthroughEnabled={cluster.vizierConfig.passthroughEnabled}
+            clusterStatus={cluster.status}
+          >
+            <AgentsTable />
+          </VizierGRPCClientProvider>
+        )
+      }
+    </div>
+  );
+}
+
+export const ClusterDetailsPage = () => {
+  const classes = useStyles();
+  const { name } = useParams();
   return (
     <div className={classes.root}>
       <div className={classes.topBar}>
@@ -226,31 +262,14 @@ export const ClusterDetailsPage = () => {
           <Breadcrumbs classes={{ separator: classes.breadcrumbText }}>
             <Link className={classes.breadcrumbLink} to='/admin'>Admin</Link>
             <Typography className={classes.breadcrumbText}>Cluster</Typography>
-            <Typography className={classes.breadcrumbText}>{id}</Typography>
+            <Typography className={classes.breadcrumbText}>{name}</Typography>
           </Breadcrumbs>
         </div>
         <Link className={classes.link} to='/live'>Live View</Link>
         <ProfileMenu />
       </div>
       <div className={classes.main}>
-        <StyledTabs
-          value={tab}
-          onChange={(event, newTab) => setTab(newTab)}
-        >
-          <StyledTab value='agents' label='Agents' />
-        </StyledTabs>
-        {
-          tab === 'agents' &&
-          (
-            <VizierGRPCClientProvider
-              clusterID={id}
-              passthroughEnabled={data?.cluster.vizierConfig.passthroughEnabled}
-              clusterStatus={data?.cluster.status}
-            >
-              <AgentsTable />
-            </VizierGRPCClientProvider>
-          )
-        }
+        <ClusterDetailsContents name={name}/>
       </div>
     </div>
   );

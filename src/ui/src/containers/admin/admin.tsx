@@ -89,7 +89,7 @@ export default function AdminView() {
     <Router history={history}>
       <Switch>
         <Route exact path='/admin' component={AdminOverview} />
-        <Route exact path='/admin/cluster/:id' component={ClusterDetailsPage} />
+        <Route exact path='/admin/clusters/:name' component={ClusterDetailsPage} />
       </Switch>
     </Router>
   );
