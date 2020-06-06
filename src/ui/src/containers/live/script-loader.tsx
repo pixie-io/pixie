@@ -8,7 +8,7 @@ import { ScriptContext } from './context/script-context';
 import { VisContext } from './context/vis-context';
 import { parseVis } from './vis';
 
-export function useInitScriptLoader() {
+export function ScriptLoader() {
   const [loaded, setLoaded] = React.useState(false);
   const { promise: scriptPromise, scripts } = React.useContext(ScriptsContext);
   const script = React.useContext(ScriptContext);
@@ -81,4 +81,5 @@ export function useInitScriptLoader() {
       subscription.unsubscribe();
     };
   }, [])
+  return null;
 }

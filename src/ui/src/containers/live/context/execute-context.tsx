@@ -46,17 +46,12 @@ export const ExeucteContextProvider = (props) => {
       });
       return;
     }
-    if (!healthy) {
+    if (!healthy || !client) {
       // TODO(malthus): Maybe link to the admin page to show what is wrong.
       showSnackbar({
         message: 'We are having problems talking to the cluster right now, please try again later',
         autoHideDuration: 5000,
       });
-      return;
-    }
-
-    if (!client) {
-      // This shouldn't happen
       return;
     }
 

@@ -1,5 +1,4 @@
 import { CloudClientContext } from 'containers/App/context';
-import { ClusterInstructions, DeployInstructions } from 'containers/vizier/deploy-instructions';
 import * as React from 'react';
 import { operation, RetryOperation } from 'retry';
 import { Subscription } from 'rxjs';
@@ -28,6 +27,7 @@ export type ClusterStatus =
 interface ContextProps {
   client: VizierGRPCClient | null;
   healthy: boolean;
+  loading: boolean;
 }
 
 const VizierGRPCClientContext = React.createContext<ContextProps>(null);
@@ -56,15 +56,23 @@ export const VizierGRPCClientProvider = (props: Props) => {
   const { children, passthroughEnabled, clusterID, clusterStatus } = props;
   const cloudClient = React.useContext(CloudClientContext);
   const [client, setClient] = React.useState<VizierGRPCClient>(null);
-  const [connected, setConnected] = React.useState<boolean>(false);
-  const [loaded, setLoaded] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
   const subscriptionRef = React.useRef<Subscription>(null);
   const retryRef = React.useRef<RetryOperation>(null);
   if (!retryRef.current) {
     retryRef.current = operation({ forever: true, randomize: true });
   }
 
-  const healthy = clusterStatus === 'CS_HEALTHY' && connected;
+  const healthy = client && clusterStatus === 'CS_HEALTHY';
+
+  React.useEffect(() => {
+    if (!client) {
+      return;
+    }
+    if (client.clusterID !== clusterID) {
+      setLoading(true);
+    }
+  }, [client, clusterID]);
 
   React.useEffect(() => {
     if (clusterStatus !== 'CS_HEALTHY') {
@@ -80,24 +88,24 @@ export const VizierGRPCClientProvider = (props: Props) => {
         if (subscriptionRef.current) {
           subscriptionRef.current.unsubscribe();
         }
+        setClient(null);
         newVizierClient(cloudClient, clusterID, passthroughEnabled).then(
-          (client) => {
-            setClient(client);
-            subscriptionRef.current = client.health().subscribe({
+          (newClient) => {
+            subscriptionRef.current = newClient.health().subscribe({
               next: (status) => {
                 retryRef.current.reset();
                 if (status.getCode() === 0) {
-                  setConnected(true);
-                  setLoaded(true);
+                  setClient(newClient);
+                  setLoading(false);
                 } else {
-                  setConnected(false);
+                  setClient(null);
                 }
               },
               complete: () => {
                 retryRef.current.retry(new Error('stream ended'));
               },
               error: (error) => {
-                setConnected(false);
+                setClient(null);
                 retryRef.current.retry(error);
               },
             });
@@ -117,16 +125,9 @@ export const VizierGRPCClientProvider = (props: Props) => {
     return {
       client,
       healthy,
+      loading,
     };
-  }, [client, healthy])
-
-  if (!loaded && clusterStatus === 'CS_DISCONNECTED') {
-    return <DeployInstructions />;
-  }
-
-  if (!loaded) {
-    return <ClusterInstructions message='Connecting to cluster...' />;
-  }
+  }, [client, healthy, loading])
 
   return (
     <VizierGRPCClientContext.Provider value={context}>

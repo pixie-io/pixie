@@ -67,7 +67,7 @@ export class VizierGRPCClient {
   constructor(
     addr: string,
     private token: string,
-    private clusterID: string,
+    readonly clusterID: string,
     private attachCreds: boolean) {
     this.client = new VizierServiceClient(addr, null, attachCreds ? { withCredentials: 'true' } : {});
     withDevTools(this.client);
