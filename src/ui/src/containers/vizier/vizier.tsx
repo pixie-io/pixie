@@ -19,14 +19,6 @@ import { AgentDisplay } from './agent-display';
 import { ClusterInstructions, DeployInstructions } from './deploy-instructions';
 import { VizierTopNav } from './top-nav';
 
-export const CREATE_CLUSTER = gql`
-  mutation CreateCluster {
-    CreateCluster {
-      id
-    }
-  }
-`;
-
 export const LIST_CLUSTERS = gql`
 {
   clusters {

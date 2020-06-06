@@ -181,23 +181,7 @@ func contextWithAuthToken(ctx context.Context) (context.Context, error) {
 
 // CreateCluster creates a cluster for the current org.
 func (v *VizierClusterInfo) CreateCluster(ctx context.Context, request *cloudapipb.CreateClusterRequest) (*cloudapipb.CreateClusterResponse, error) {
-	sCtx, err := authcontext.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	orgIDstr := sCtx.Claims.GetUserClaims().OrgID
-
-	ctx, err = contextWithAuthToken(ctx)
-	if err != nil {
-		return nil, err
-	}
-	clusterID, err := v.VzMgr.CreateVizierCluster(ctx, &vzmgrpb.CreateVizierClusterRequest{
-		OrgID: pbutils.ProtoFromUUIDStrOrNil(orgIDstr),
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &cloudapipb.CreateClusterResponse{ClusterID: clusterID}, nil
+	return nil, status.Errorf(codes.Unimplemented, "Deprecated. Please use `px deploy`")
 }
 
 // GetClusterInfo returns information about Vizier clusters.

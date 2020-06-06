@@ -99,33 +99,6 @@ func TestArtifactTracker_GetDownloadLink(t *testing.T) {
 	assert.Equal(t, "sha", resp.SHA256)
 }
 
-func TestVizierClusterInfo_CreateCluster(t *testing.T) {
-	orgID := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
-	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")
-	assert.NotNil(t, clusterID)
-
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	_, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
-	defer cleanup()
-	ctx := CreateTestContext()
-
-	ccReq := &vzmgrpb.CreateVizierClusterRequest{
-		OrgID: orgID,
-	}
-	mockClients.MockVzMgr.EXPECT().CreateVizierCluster(gomock.Any(), ccReq).Return(clusterID, nil)
-
-	vzClusterInfoServer := &controller.VizierClusterInfo{
-		VzMgr: mockClients.MockVzMgr,
-	}
-
-	resp, err := vzClusterInfoServer.CreateCluster(ctx, &cloudapipb.CreateClusterRequest{})
-	assert.Nil(t, err)
-	assert.NotNil(t, resp)
-	assert.Equal(t, resp.ClusterID, clusterID)
-}
-
 func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 	orgID := pbutils.ProtoFromUUIDStrOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	clusterID := pbutils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8")

@@ -15,18 +15,7 @@ import (
 
 // CreateCluster creates a new cluster.
 func (q *QueryResolver) CreateCluster(ctx context.Context) (*ClusterInfoResolver, error) {
-	grpcAPI := q.Env.VizierClusterInfo
-	res, err := grpcAPI.CreateCluster(ctx, &cloudapipb.CreateClusterRequest{})
-	if err != nil {
-		return nil, err
-	}
-
-	u, err := utils.UUIDFromProto(res.ClusterID)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ClusterInfoResolver{clusterID: u}, nil
+	return nil, errors.New("Deprecated. Please use `px deploy`")
 }
 
 type clusterArgs struct {

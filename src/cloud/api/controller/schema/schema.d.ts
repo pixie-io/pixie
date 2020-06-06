@@ -154,6 +154,11 @@ export interface GQLDeploymentKey {
 }
 
 export interface GQLMutation {
+
+  /**
+   *
+   * @deprecated Clusters are now created via px deploy
+   */
   CreateCluster?: GQLClusterInfo;
   UpdateVizierConfig: boolean;
   CreateDeploymentKey: GQLDeploymentKey;

@@ -140,7 +140,7 @@ type ClusterConnectionInfo {
 }
 
 type Mutation {
-  CreateCluster: ClusterInfo
+  CreateCluster: ClusterInfo @deprecated(reason: "Clusters are now created via px deploy")
   UpdateVizierConfig(clusterID: ID!, passthroughEnabled: Boolean): Boolean!
   CreateDeploymentKey: DeploymentKey!
   DeleteDeploymentKey(id: ID!): Boolean!

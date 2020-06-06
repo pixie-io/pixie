@@ -33,42 +33,6 @@ func LoadSchema(gqlEnv controller.GraphQLEnv) *graphql.Schema {
 	return gqlSchema
 }
 
-func TestCreateCluster(t *testing.T) {
-	clusterID := "7ba7b810-9dad-11d1-80b4-00c04fd430c8"
-
-	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
-	defer cleanup()
-	ctx := CreateTestContext()
-
-	mockClients.MockVizierClusterInfo.EXPECT().
-		CreateCluster(gomock.Any(), &cloudapipb.CreateClusterRequest{}).
-		Return(&cloudapipb.CreateClusterResponse{
-			ClusterID: utils.ProtoFromUUIDStrOrNil(clusterID),
-		}, nil)
-
-	gqlSchema := LoadSchema(gqlEnv)
-	gqltesting.RunTests(t, []*gqltesting.Test{
-		{
-			Schema:  gqlSchema,
-			Context: ctx,
-			Query: `
-				mutation {
-					CreateCluster {
-						id
-					}
-				}
-			`,
-			ExpectedResult: `
-				{
-					"CreateCluster": {
-						"id":"7ba7b810-9dad-11d1-80b4-00c04fd430c8"
-					}
-				}
-			`,
-		},
-	})
-}
-
 func TestClusterInfoWithoutID(t *testing.T) {
 	gqlEnv, mockClients, cleanup := testutils.CreateTestGraphQLEnv(t)
 	defer cleanup()
