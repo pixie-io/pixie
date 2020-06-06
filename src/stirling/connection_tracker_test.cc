@@ -82,7 +82,7 @@ TEST_F(ConnectionTrackerTest, info_string) {
 
   std::string debug_info = DebugString<http::ProtocolTraits>(tracker, "");
 
-  std::string expected_output = R"(pid=12345 fd=3 gen=1
+  std::string expected_output = R"(conn_id=[pid=12345 start_time_ticks=112358 fd=3 gen=1]
 state=kCollecting
 remote_addr=0.0.0.0:0
 protocol=kProtocolHTTP
@@ -100,7 +100,7 @@ send queue
 
   debug_info = DebugString<http::ProtocolTraits>(tracker, "");
 
-  expected_output = R"(pid=12345 fd=3 gen=1
+  expected_output = R"(conn_id=[pid=12345 start_time_ticks=112358 fd=3 gen=1]
 state=kCollecting
 remote_addr=0.0.0.0:0
 protocol=kProtocolHTTP

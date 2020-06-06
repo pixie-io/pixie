@@ -196,34 +196,6 @@ class ConnectionTracker {
   const traffic_class_t& traffic_class() const { return traffic_class_; }
 
   /**
-   * Get PID of the connection.
-   *
-   * @return PID.
-   */
-  uint64_t pid() const { return conn_id_.upid.pid; }
-
-  /**
-   * Get start_time of the PID. Used to disambiguate reusued PIDs.
-   *
-   * @return start time.
-   */
-  uint64_t pid_start_time_ticks() const { return conn_id_.upid.start_time_ticks; }
-
-  /**
-   * Get FD of the connection.
-   *
-   * @return FD.
-   */
-  uint32_t fd() const { return conn_id_.fd; }
-
-  /**
-   * Get timestamp id (unique id, assigned from monotonically growing counter) of the connection.
-   *
-   * @return timestamp id.
-   */
-  uint64_t tsid() const { return conn_id_.tsid; }
-
-  /**
    * Get remote IP endpoint of the connection.
    *
    * @return IP.
@@ -617,7 +589,7 @@ std::string DebugString(const ConnectionTracker& c, std::string_view prefix) {
   using TFrameType = typename TProtocolTraits::frame_type;
 
   std::string info;
-  info += absl::Substitute("$0pid=$1 fd=$2 gen=$3\n", prefix, c.pid(), c.fd(), c.tsid());
+  info += absl::Substitute("$0conn_id=$1\n", prefix, ToString(c.conn_id()));
   info += absl::Substitute("state=$0\n", magic_enum::enum_name(c.state()));
   info += absl::Substitute("$0remote_addr=$1:$2\n", prefix, c.remote_endpoint().AddrStr(),
                            c.remote_endpoint().port);

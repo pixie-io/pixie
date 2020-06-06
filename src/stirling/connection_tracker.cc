@@ -637,8 +637,8 @@ void ConnectionTracker::IterationPostTick() {
 
 void ConnectionTracker::HandleInactivity() {
   static const auto& sysconfig = system::Config::GetInstance();
-  std::filesystem::path fd_file =
-      sysconfig.proc_path() / std::to_string(pid()) / "fd" / std::to_string(fd());
+  std::filesystem::path fd_file = sysconfig.proc_path() / std::to_string(conn_id().upid.pid) /
+                                  "fd" / std::to_string(conn_id().fd);
 
   if (!fs::Exists(fd_file).ok()) {
     // Connection seems to be dead. Mark for immediate death.
@@ -750,7 +750,7 @@ void ConnectionTracker::InferConnInfo(system::ProcParser* proc_parser,
 
   // We found the inode number, now lets see if it maps to a known connection.
   StatusOr<const system::SocketInfo*> socket_info_status =
-      socket_info_mgr->Lookup(pid(), socket_inode_num);
+      socket_info_mgr->Lookup(conn_id().upid.pid, socket_inode_num);
   if (!socket_info_status.ok()) {
     conn_resolver_.reset();
     conn_resolution_failed_ = true;

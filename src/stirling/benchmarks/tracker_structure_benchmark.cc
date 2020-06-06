@@ -36,7 +36,7 @@ uint32_t kGenerations = 5;
 class ConnectionTrackerCompare {
  public:
   bool operator()(const ConnectionTracker& a, const ConnectionTracker& b) const {
-    return a.tsid() > b.tsid();
+    return a.conn_id().tsid > b.conn_id().tsid;
   }
 };
 

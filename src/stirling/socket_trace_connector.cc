@@ -848,7 +848,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
   http::PreProcessMessage(&resp_message);
 
-  md::UPID upid(ctx->GetASID(), conn_tracker.pid(), conn_tracker.pid_start_time_ticks());
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
 
   HTTPContentType content_type = HTTPContentType::kUnknown;
   if (http::IsJSONContent(resp_message)) {
@@ -894,7 +895,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   int64_t resp_status;
   ECHECK(absl::SimpleAtoi(resp_message.headers.ValueByKey(":status", "-1"), &resp_status));
 
-  md::UPID upid(ctx->GetASID(), conn_tracker.pid(), conn_tracker.pid_start_time_ticks());
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
 
   std::string path = req_message.headers.ValueByKey(http2::headers::kPath);
 
@@ -956,7 +958,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   int64_t resp_status;
   ECHECK(absl::SimpleAtoi(resp_stream->headers.ValueByKey(":status", "-1"), &resp_status));
 
-  md::UPID upid(ctx->GetASID(), conn_tracker.pid(), conn_tracker.pid_start_time_ticks());
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
 
   std::string path = req_stream->headers.ValueByKey(http2::headers::kPath);
 
@@ -1000,7 +1003,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          DataTable* data_table) {
   DCHECK_EQ(kMySQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
-  md::UPID upid(ctx->GetASID(), conn_tracker.pid(), conn_tracker.pid_start_time_ticks());
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
 
   RecordBuilder<&kMySQLTable> r(data_table);
   r.Append<r.ColIndex("time_")>(entry.req.timestamp_ns);
@@ -1025,7 +1029,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          DataTable* data_table) {
   DCHECK_EQ(kCQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
-  md::UPID upid(ctx->GetASID(), conn_tracker.pid(), conn_tracker.pid_start_time_ticks());
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
 
   RecordBuilder<&kCQLTable> r(data_table);
   r.Append<r.ColIndex("time_")>(entry.req.timestamp_ns);
@@ -1050,7 +1055,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          DataTable* data_table) {
   DCHECK_EQ(kPGSQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
 
-  md::UPID upid(ctx->GetASID(), conn_tracker.pid(), conn_tracker.pid_start_time_ticks());
+  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
+                conn_tracker.conn_id().upid.start_time_ticks);
 
   RecordBuilder<&kPGSQLTable> r(data_table);
   r.Append<r.ColIndex("time_")>(entry.req.timestamp_ns);
@@ -1127,8 +1133,8 @@ void SocketTraceConnector::TransferStreams(ConnectorContext* ctx, uint32_t table
     while (generation_it != tracker_generations.end()) {
       auto& tracker = generation_it->second;
 
-      VLOG(2) << absl::Substitute("Connection pid=$0 fd=$1 tsid=$2 protocol=$3\n", tracker.pid(),
-                                  tracker.fd(), tracker.tsid(),
+      VLOG(2) << absl::Substitute("Connection conn_id=$0 protocol=$1\n",
+                                  ToString(tracker.conn_id()),
                                   magic_enum::enum_name(tracker.traffic_class().protocol));
 
       DCHECK(protocol_transfer_specs_.find(tracker.traffic_class().protocol) !=
