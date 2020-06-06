@@ -1,14 +1,20 @@
 import {AdminTooltip, StyledTableCell, StyledTableHeaderCell,
         StyledLeftTableCell, StyledRightTableCell} from './utils';
-import { useQuery } from '@apollo/react-hooks';
+import { useMutation, useQuery } from '@apollo/react-hooks';
 import Table from '@material-ui/core/Table';
 import IconButton from '@material-ui/core/IconButton';
 import Input from '@material-ui/core/Input';
-import InputAdornment from '@material-ui/core/InputAdornment';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ListItemText from '@material-ui/core/ListItemText';
+import Menu from '@material-ui/core/Menu';
+import MenuItem from '@material-ui/core/MenuItem';
+import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
 import TableBody from '@material-ui/core/TableBody';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
+import Actions from '@material-ui/icons/MoreHoriz';
+import Copy from '@material-ui/icons/FileCopy';
+import Delete from '@material-ui/icons/DeleteForever';
 import Visibility from '@material-ui/icons/Visibility';
 import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import gql from 'graphql-tag';
@@ -25,6 +31,20 @@ const LIST_DEPLOYMENT_KEYS = gql`
   }
 }`;
 
+const DELETE_DEPLOY_KEY = gql`
+  mutation deleteKey($id: ID!) {
+    DeleteDeploymentKey(id: $id)
+  }
+`;
+
+export const CREATE_DEPLOYMENT_KEY = gql`
+  mutation {
+    CreateDeploymentKey {
+      id
+    }
+  }
+`;
+
 interface DeploymentKeyDisplay {
   id: string;
   idShort: string;
@@ -36,6 +56,7 @@ interface DeploymentKeyDisplay {
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
     deploymentKeyValue: {
+      padding: 0,
       fontWeight: theme.typography.fontWeightLight,
       fontSize: '14px',
       color: '#748790',
@@ -43,8 +64,43 @@ const useStyles = makeStyles((theme: Theme) => {
       borderWidth: 8,
       borderColor: theme.palette.background.default,
     },
+    actionsButton: {
+      padding: 0,
+    },
+    copyBtn: {
+      minWidth: '30px',
+    },
   });
 });
+
+export const StyledMenu = withStyles((theme: Theme) =>
+  createStyles({
+    paper: {
+      backgroundColor: theme.palette.foreground.grey3,
+      borderWidth: 8,
+      borderColor: theme.palette.background.default,
+    },
+  }),
+)(Menu);
+
+const StyledListItemIcon = withStyles(() =>
+  createStyles({
+    root: {
+      minWidth: 30,
+      marginRight: 5,
+    },
+  }),
+)(ListItemIcon);
+
+const StyledListItemText = withStyles((theme: Theme) =>
+  createStyles({
+    primary: {
+      fontWeight: theme.typography.fontWeightLight,
+      fontSize: '14px',
+      color: '#748790',
+    },
+  }),
+)(ListItemText);
 
 export function formatDeploymentKey(depKey): DeploymentKeyDisplay {
   const now = new Date();
@@ -61,6 +117,21 @@ export const DeploymentKeyRow = ({deploymentKey}) => {
   const classes = useStyles();
   const [showKey, setShowKey] = React.useState(false);
 
+  const [open, setOpen] = React.useState<boolean>(false);
+  const [anchorEl, setAnchorEl] = React.useState(null);
+
+  const [deleteDeployKey] = useMutation(DELETE_DEPLOY_KEY);
+
+  const openMenu = React.useCallback((event) => {
+    setOpen(true);
+    setAnchorEl(event.currentTarget);
+  }, []);
+
+  const closeMenu = React.useCallback(() => {
+    setOpen(false);
+    setAnchorEl(null);
+  }, []);
+
   return (
     <TableRow key={deploymentKey.id}>
       <AdminTooltip title={deploymentKey.id}>
@@ -68,7 +139,7 @@ export const DeploymentKeyRow = ({deploymentKey}) => {
       </AdminTooltip>
       <StyledTableCell>{deploymentKey.createdAt}</StyledTableCell>
       <StyledTableCell>{deploymentKey.desc}</StyledTableCell>
-      <StyledRightTableCell>
+      <StyledTableCell>
         <Input
           className={classes.deploymentKeyValue}
           id='deployment-key'
@@ -77,19 +148,36 @@ export const DeploymentKeyRow = ({deploymentKey}) => {
           disableUnderline={true}
           type={showKey ? 'text' : 'password'}
           value={deploymentKey.key}
-          endAdornment={
-            <InputAdornment position='end'>
-              <IconButton
-                size='small'
-                aria-label='toggle key visibility'
-                onClick={() => setShowKey(!showKey)}
-                edge='end'
-              >
-                {showKey ? <Visibility/> : <VisibilityOff/>}
-              </IconButton>
-            </InputAdornment>
-          }
         />
+      </StyledTableCell>
+      <StyledRightTableCell>
+        <IconButton size='small' classes={{sizeSmall: classes.actionsButton}}
+         onClick={openMenu}>
+          <Actions/>
+        </IconButton>
+        <StyledMenu open={open} onClose={closeMenu} anchorEl={anchorEl} getContentAnchorEl={null}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+          <MenuItem key='show' alignItems='center' onClick={() => setShowKey(!showKey)}>
+            <StyledListItemIcon>
+              {showKey ? <Visibility/> : <VisibilityOff/>}
+            </StyledListItemIcon>
+            <StyledListItemText primary={showKey ? 'Hide value' : 'Show value'}/>
+          </MenuItem>
+          <MenuItem key='copy' alignItems='center'
+           onClick={() => navigator.clipboard.writeText(deploymentKey.key)}>
+            <StyledListItemIcon className={classes.copyBtn}>
+              <Copy/>
+            </StyledListItemIcon>
+            <StyledListItemText primary='Copy value'/>
+          </MenuItem>
+          <MenuItem key='delete' alignItems='center'
+           onClick={() => deleteDeployKey({variables: {id: deploymentKey.id}})}>
+            <StyledListItemIcon className={classes.copyBtn}>
+              <Delete/>
+            </StyledListItemIcon>
+            <StyledListItemText primary='Delete'/>
+          </MenuItem>
+        </StyledMenu>
       </StyledRightTableCell>
     </TableRow>
   );
@@ -110,6 +198,7 @@ export const DeploymentKeysTable = () => {
             <StyledTableHeaderCell>Created</StyledTableHeaderCell>
             <StyledTableHeaderCell>Description</StyledTableHeaderCell>
             <StyledTableHeaderCell>Value</StyledTableHeaderCell>
+            <StyledTableHeaderCell>Actions</StyledTableHeaderCell>
           </TableRow>
         </TableHead>
         <TableBody>

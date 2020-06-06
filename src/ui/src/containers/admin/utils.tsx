@@ -105,6 +105,7 @@ export const StyledTableHeaderCell = withStyles((theme: Theme) =>
     root: {
       fontWeight: theme.typography.fontWeightLight,
       fontSize: '14px',
+      borderBottom: 'none',
     },
   }),
 )(TableCell);
@@ -137,3 +138,16 @@ export const StyledRightTableCell = withStyles(() =>
     },
   }),
 )(StyledTableCell);
+
+export const StyledHiddenInputCell = withStyles((theme: Theme) =>
+  createStyles({
+    root: {
+      fontWeight: theme.typography.fontWeightLight,
+      fontSize: '14px',
+      color: '#748790',
+      backgroundColor: theme.palette.foreground.grey3,
+      borderWidth: 8,
+      borderColor: theme.palette.background.default,
+    },
+  }),
+)(TableCell);

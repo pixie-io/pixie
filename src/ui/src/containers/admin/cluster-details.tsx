@@ -70,6 +70,9 @@ const useStyles = makeStyles((theme: Theme) => {
     breadcrumbLink: {
       ...theme.typography.subtitle2,
     },
+    tabContents: {
+      margin: theme.spacing(2),
+    },
   });
 });
 

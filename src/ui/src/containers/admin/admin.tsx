@@ -3,12 +3,15 @@ import ProfileMenu from 'containers/live/profile-menu';
 import history from 'utils/pl-history';
 import {ClusterDetailsPage} from './cluster-details';
 import {ClustersTable} from './clusters-list';
-import {DeploymentKeysTable} from './deployment-keys';
+import {CREATE_DEPLOYMENT_KEY, DeploymentKeysTable} from './deployment-keys';
 import {StyledTab, StyledTabs} from './utils';
 
+import { useMutation } from '@apollo/react-hooks';
 import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
+import Button from '@material-ui/core/Button';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
+import Add from '@material-ui/icons/Add';
 import * as React from 'react';
 import { Link, Route, Router, Switch } from 'react-router-dom';
 
@@ -56,10 +59,14 @@ const useStyles = makeStyles((theme: Theme) => {
       ...theme.typography.subtitle2,
       color: theme.palette.foreground.one,
     },
+    createButton: {
+      margin: theme.spacing(1),
+    }
   });
 });
 
 const AdminOverview = () => {
+  const [createDeployKey] = useMutation(CREATE_DEPLOYMENT_KEY);
   const classes = useStyles();
   const [tab, setTab] = React.useState('clusters');
 
@@ -73,15 +80,23 @@ const AdminOverview = () => {
         <ProfileMenu/>
       </div>
       <div className={classes.main}>
-        <StyledTabs
-          value={tab}
-          onChange={(event, newTab) => setTab(newTab)}
-        >
-          <StyledTab value='clusters' label='Clusters' />
-          <StyledTab value='deployment-keys' label='Deployment Keys' />
-        </StyledTabs>
-        {tab == 'clusters' && <ClustersTable/>}
-        {tab == 'deployment-keys' && <DeploymentKeysTable/>}
+        <div style={{display: 'flex'}}>
+          <StyledTabs
+            value={tab}
+            onChange={(event, newTab) => setTab(newTab)}
+          >
+            <StyledTab value='clusters' label='Clusters' />
+            <StyledTab value='deployment-keys' label='Deployment Keys' />
+          </StyledTabs>
+          {tab === 'deployment-keys' &&
+            <Button onClick={() => createDeployKey()}
+             className={classes.createButton} variant='outlined'
+             startIcon={<Add/>} color='primary'>New key</Button>}
+        </div>
+        <div style={{margin:'10px'}}>
+          {tab === 'clusters' && <ClustersTable/>}
+          {tab === 'deployment-keys' && <DeploymentKeysTable/>}
+        </div>
       </div>
     </div>
   );
