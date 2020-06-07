@@ -1,6 +1,5 @@
 import * as QueryString from 'query-string';
-import { fromEvent, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { argsEquals } from 'utils/args-utils';
 
 type Args = { [key: string]: string };
@@ -25,11 +24,11 @@ export interface Window {
 }
 
 // Exported for testing
-export class QueryParams {
+export class URLParams {
   args: Args;
   scriptId: string;
   scriptDiff: string;
-  onChange: Observable<QueryParams>;
+  onChange: Observable<URLParams>;
 
   private prevParams: {
     args: Args;
@@ -44,16 +43,17 @@ export class QueryParams {
       scriptDiff: this.scriptDiff,
       scriptId: this.scriptId,
     };
-    this.onChange = fromEvent(this.privateWindow, 'popstate').pipe(map(() => {
+    const subject = new BehaviorSubject(this);
+    this.privateWindow.addEventListener('popstate', () => {
       this.syncWithQueryParams();
-      return this;
-    }));
+      subject.next(this);
+    });
+    this.onChange = subject;
   }
-
 
   private toURL(id: string, diff: string, args: Args) {
     const params = {
-      script: id,
+      ...(id ? { script: id } : {}),
       ...(diff ? { diff } : {}),
       ...args,
     };
@@ -128,4 +128,4 @@ export class QueryParams {
   }
 }
 
-export default new QueryParams(window);
+export default new URLParams(window);

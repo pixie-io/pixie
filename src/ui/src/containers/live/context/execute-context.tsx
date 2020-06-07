@@ -6,7 +6,7 @@ import { getQueryFuncs, Vis } from 'containers/live/vis';
 import * as React from 'react';
 import analytics from 'utils/analytics';
 import { Arguments } from 'utils/args-utils';
-import QueryParams from 'utils/query-params';
+import urlParams from 'utils/url-params';
 
 import { ArgsContext } from './args-context';
 import { DataDrawerContext } from './data-drawer-context';
@@ -81,7 +81,7 @@ export const ExeucteContextProvider = (props) => {
     let queryId: string;
 
     if (!execArgs.skipURLUpdate) {
-      QueryParams.commitAll(execArgs.id || '', '', execArgs.args);
+      urlParams.commitAll(execArgs.id || '', '', execArgs.args);
     }
 
     new Promise((resolve, reject) => {

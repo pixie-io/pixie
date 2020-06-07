@@ -1,7 +1,7 @@
 import { LIVE_VIEW_SCRIPT_ARGS_KEY, useSessionStorage } from 'common/storage';
 import * as React from 'react';
 import { argsEquals, argsForVis, Arguments } from 'utils/args-utils';
-import QueryParams from 'utils/query-params';
+import urlParams from 'utils/url-params';
 
 import { SetStateFunc } from './common';
 import { VisContext } from './vis-context';
@@ -28,7 +28,7 @@ export const ArgsContextProvider = (props) => {
 
   React.useEffect(() => {
     if (args) {
-      QueryParams.setArgs(args);
+      urlParams.setArgs(args);
     }
   }, [args]);
 
