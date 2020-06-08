@@ -23,7 +23,6 @@ go_library(
         "script_utils.go",
         "scripts.go",
         "update.go",
-        "utils.go",
         "version.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/utils/pixie_cli/cmd",

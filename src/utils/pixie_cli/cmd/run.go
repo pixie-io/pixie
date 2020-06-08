@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/fatih/color"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -22,6 +23,9 @@ func init() {
 	RunCmd.Flags().StringP("output", "o", "", "Output format: one of: json|table")
 	RunCmd.Flags().StringP("file", "f", "", "Script file, specify - for STDIN")
 	RunCmd.Flags().BoolP("list", "l", false, "List available scripts")
+	RunCmd.Flags().BoolP("all-clusters", "d", false, "Run script across all clusters")
+	RunCmd.Flags().StringP("cluster", "c", "", "Run only on selected cluster")
+	RunCmd.Flags().MarkHidden("all-clusters")
 
 	RunCmd.Flags().StringP("bundle", "b", "", "Path/URL to bundle file")
 	viper.BindPFlag("bundle", RunCmd.Flags().Lookup("bundle"))
@@ -113,7 +117,10 @@ var RunCmd = &cobra.Command{
 			}
 		}
 
-		v := mustConnectDefaultVizier(cloudAddr)
+		allClusters, _ := cmd.Flags().GetBool("all-clusters")
+		selectedCluster, _ := cmd.Flags().GetString("cluster")
+		clusterID := uuid.FromStringOrNil(selectedCluster)
+		conns := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, clusterID)
 
 		// TODO(zasgar): Refactor this when we change to the new API to make analytics cleaner.
 		_ = pxanalytics.Client().Enqueue(&analytics.Track{
@@ -126,9 +133,10 @@ var RunCmd = &cobra.Command{
 
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		if err := vizier.RunScriptAndOutputResults(ctx, v, execScript, format); err != nil {
-			fmt.Fprint(os.Stderr, vizier.FormatErrorMessage(err))
-			log.Fatal("Script Failed")
+
+		err = vizier.RunScriptAndOutputResults(ctx, conns, execScript, format)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to execute script")
 		}
 
 		if lvl := execScript.LiveViewLink(); lvl != "" {

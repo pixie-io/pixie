@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -139,7 +140,7 @@ var VizierUpdateCmd = &cobra.Command{
 					}
 				}
 			}),
-			newTaskWrapper("Wait for healthcheck", waitForHealthCheckTaskGenerator(cloudAddr)),
+			newTaskWrapper("Wait for healthcheck", waitForHealthCheckTaskGenerator(cloudAddr, uuid.Nil)),
 		}
 		uj := utils.NewSerialTaskRunner(updateJobs)
 		err = uj.RunAndMonitor()

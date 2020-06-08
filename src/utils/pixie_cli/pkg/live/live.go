@@ -54,7 +54,7 @@ type appState struct {
 	br *script.BundleManager
 	ac autocompleter
 
-	vizier *vizier.Connector
+	viziers []*vizier.Connector
 	// The last script that was executed. If nil, nothing was executed.
 	execScript *script.ExecutableScript
 	// The view of all the tables in the current execution.
@@ -76,17 +76,20 @@ type appState struct {
 
 // View is the top level of the Live View.
 type View struct {
-	app           *tview.Application
-	pages         *tview.Pages
-	tableSelector *tview.TextView
-	infoView      *tview.TextView
-	tvTable       *tview.Table
-	logoBox       *tview.TextView
-	bottomBar     *tview.Flex
-	searchBox     *tview.InputField
-	modal         Modal
-	s             *appState
-	useNewAC      bool
+	app                 *tview.Application
+	pages               *tview.Pages
+	tableSelector       *tview.TextView
+	infoView            *tview.TextView
+	tvTable             *tview.Table
+	logoBox             *tview.TextView
+	bottomBar           *tview.Flex
+	searchBox           *tview.InputField
+	clusterSelector     *tview.DropDown
+	modal               Modal
+	s                   *appState
+	useNewAC            bool
+	cloudAddr           string
+	selectedClusterName string
 }
 
 // Modal is the interface for a pop-up view.
@@ -96,7 +99,7 @@ type Modal interface {
 }
 
 // New creates a new live view.
-func New(br *script.BundleManager, vizier *vizier.Connector, aClient cloudapipb.AutocompleteServiceClient, execScript *script.ExecutableScript, useNewAC bool) (*View, error) {
+func New(br *script.BundleManager, viziers []*vizier.Connector, cloudAddr string, aClient cloudapipb.AutocompleteServiceClient, execScript *script.ExecutableScript, useNewAC bool) (*View, error) {
 	// App is the top level view. The layout is approximately as follows:
 	//  ------------------------------------------
 	//  | View Information ...                   |
@@ -116,9 +119,10 @@ func New(br *script.BundleManager, vizier *vizier.Connector, aClient cloudapipb.
 		SetDynamicColors(true).
 		SetBorder(debugShowBorders)
 	infoView.SetBorderPadding(1, 0, 0, 0)
+
 	topBar := tview.NewFlex().
-		SetDirection(tview.FlexRow).
-		AddItem(infoView, 3, 0, true)
+		SetDirection(tview.FlexColumn).
+		AddItem(infoView, 0, 50, true)
 
 	// Middle of page.
 	pages := tview.NewPages()
@@ -170,11 +174,13 @@ func New(br *script.BundleManager, vizier *vizier.Connector, aClient cloudapipb.
 		searchBox:     searchBox,
 		bottomBar:     bottomBar,
 		s: &appState{
-			br:     br,
-			vizier: vizier,
-			ac:     ac,
+			br:         br,
+			viziers:    viziers,
+			ac:         ac,
+			execScript: execScript,
 		},
-		useNewAC: useNewAC,
+		useNewAC:  useNewAC,
+		cloudAddr: cloudAddr,
 	}
 
 	// Wire up components.
@@ -223,7 +229,7 @@ func (v *View) runScript(execScript *script.ExecutableScript) {
 	v.s.execScript = execScript
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	resp, err := vizier.RunScript(ctx, v.s.vizier, execScript)
+	resp, err := vizier.RunScript(ctx, v.s.viziers, execScript)
 	if err != nil {
 		return
 	}
@@ -879,4 +885,21 @@ func colCompare(v1 interface{}, v2 interface{}, s sortType) bool {
 		return v1c < v2c
 	}
 	return v2c < v1c
+}
+
+func getVizierList(cloudAddr string) ([]*cloudapipb.ClusterInfo, error) {
+	l, err := vizier.NewLister(cloudAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	vzInfo, err := l.GetViziersInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(vzInfo) == 0 {
+		return nil, errors.New("no Viziers available")
+	}
+	return vzInfo, nil
 }

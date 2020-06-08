@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -8,12 +9,18 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/live"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
 )
 
 func init() {
 	LiveCmd.Flags().StringP("bundle", "b", "", "Path/URL to bundle file")
 	LiveCmd.Flags().StringP("file", "f", "", "Script file, specify - for STDIN")
 	LiveCmd.Flags().BoolP("new_autocomplete", "n", false, "Whether to use the new autocomplete")
+
+	LiveCmd.Flags().BoolP("all-clusters", "d", false, "Run script across all clusters")
+	LiveCmd.Flags().StringP("cluster", "c", "", "Run only on selected cluster")
+	LiveCmd.Flags().MarkHidden("all-clusters")
+
 }
 
 // LiveCmd is the "query" command.
@@ -54,10 +61,10 @@ var LiveCmd = &cobra.Command{
 			log.WithError(err).Fatal("Could not connect to cloud")
 		}
 		aClient := cloudapipb.NewAutocompleteServiceClient(cloudConn)
-
-		v := mustConnectDefaultVizier(cloudAddr)
-
-		lv, err := live.New(br, v, aClient, execScript, useNewAC)
+		allClusters, _ := cmd.Flags().GetBool("all-clusters")
+		selectedCluster, _ := cmd.Flags().GetString("cluster")
+		viziers := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, uuid.FromStringOrNil(selectedCluster))
+		lv, err := live.New(br, viziers, cloudAddr, aClient, execScript, useNewAC)
 		if err != nil {
 			log.WithError(err).Fatal("Failed to initialize live view")
 		}

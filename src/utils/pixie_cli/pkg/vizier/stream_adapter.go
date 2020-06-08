@@ -34,8 +34,9 @@ type TableInfo struct {
 }
 
 type VizierExecData struct {
-	Resp *pl_api_vizierpb.ExecuteScriptResponse
-	Err  error
+	Resp      *pl_api_vizierpb.ExecuteScriptResponse
+	ClusterID uuid.UUID
+	Err       error
 }
 
 // VizierStreamOutputAdapter adapts the vizier output to the StreamWriters.
@@ -45,6 +46,9 @@ type VizierStreamOutputAdapter struct {
 	wg                  sync.WaitGroup
 	enableFormat        bool
 	format              string
+
+	// This is used to track table/ID -> names across multiple clusters.
+	tabledIDToName map[string]string
 
 	// Captures error if any on the stream and returns it with Finish.
 	err                      error
@@ -71,11 +75,11 @@ func NewVizierStreamOutputAdapterWithFactory(ctx context.Context, stream chan *V
 	enableFormat := format != "json" && format != FormatInMemory
 
 	adapter := &VizierStreamOutputAdapter{
-		tableNameToInfo:     make(map[string]*TableInfo),
-		streamWriterFactory: factoryFunc,
-		format:              format,
-		enableFormat:        enableFormat,
-
+		tableNameToInfo:          make(map[string]*TableInfo),
+		streamWriterFactory:      factoryFunc,
+		format:                   format,
+		enableFormat:             enableFormat,
+		tabledIDToName:           make(map[string]string, 0),
 		latencyYellowThresholdMS: 200,
 		latencyRedThresholdMS:    400,
 		redSprintf:               color.New(color.FgRed).SprintfFunc(),
@@ -176,7 +180,7 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 			case *pl_api_vizierpb.ExecuteScriptResponse_MetaData:
 				err = v.handleMetadata(ctx, res)
 			case *pl_api_vizierpb.ExecuteScriptResponse_Data:
-				err = v.handleData(ctx, res)
+				err = v.handleData(ctx, msg.ClusterID.String(), res)
 			default:
 				panic("unhandled response type" + reflect.TypeOf(msg.Resp.Result).String())
 			}
@@ -287,13 +291,13 @@ func (v *VizierStreamOutputAdapter) getFormattedValue(tableInfo *TableInfo, colI
 	return val
 }
 
-func (v *VizierStreamOutputAdapter) handleData(ctx context.Context, d *pl_api_vizierpb.ExecuteScriptResponse_Data) error {
+func (v *VizierStreamOutputAdapter) handleData(ctx context.Context, cid string, d *pl_api_vizierpb.ExecuteScriptResponse_Data) error {
 
 	if d.Data.Batch == nil {
 		return nil
 	}
-	tableID := d.Data.Batch.TableID
-	tableInfo, ok := v.tableNameToInfo[tableID]
+	tableName := v.tabledIDToName[d.Data.Batch.TableID]
+	tableInfo, ok := v.tableNameToInfo[tableName]
 	if !ok {
 		return ErrMetadataMissing
 	}
@@ -308,16 +312,18 @@ func (v *VizierStreamOutputAdapter) handleData(ctx context.Context, d *pl_api_vi
 
 	cols := d.Data.Batch.Cols
 	for rowIdx := 0; rowIdx < numRows; rowIdx++ {
-		rec := make([]interface{}, len(cols))
+		// Add the cluster ID to the output colums.
+		rec := make([]interface{}, len(cols)+1)
+		rec[0] = cid
 		for colIdx, col := range cols {
 			val := v.getNativeTypedValue(tableInfo, rowIdx, colIdx, col.ColData)
 			if v.enableFormat {
-				rec[colIdx] = v.getFormattedValue(tableInfo, colIdx, val)
+				rec[colIdx+1] = v.getFormattedValue(tableInfo, colIdx, val)
 			} else {
-				rec[colIdx] = val
+				rec[colIdx+1] = val
 			}
 		}
-		ti, _ := v.tableNameToInfo[d.Data.Batch.TableID]
+		ti, _ := v.tableNameToInfo[tableName]
 		if err := ti.w.Write(rec); err != nil {
 			return err
 		}
@@ -326,13 +332,20 @@ func (v *VizierStreamOutputAdapter) handleData(ctx context.Context, d *pl_api_vi
 }
 
 func (v *VizierStreamOutputAdapter) handleMetadata(ctx context.Context, md *pl_api_vizierpb.ExecuteScriptResponse_MetaData) error {
-	tableID := md.MetaData.ID
+	tableName := md.MetaData.Name
 	newWriter := v.streamWriterFactory(md)
 
-	if _, exists := v.tableNameToInfo[tableID]; exists {
+	if _, exists := v.tabledIDToName[md.MetaData.ID]; exists {
 		return ErrDuplicateMetadata
 	}
 
+	v.tabledIDToName[md.MetaData.ID] = md.MetaData.Name
+	if _, exists := v.tableNameToInfo[tableName]; exists {
+		// We already have metadata for this table.
+		// TODO(zasgar): Add more strict check to make sure all this MD is consistent
+		// across multiple viziers.
+		return nil
+	}
 	relation := md.MetaData.Relation
 
 	latencyCols := make(map[int]bool)
@@ -354,15 +367,15 @@ func (v *VizierStreamOutputAdapter) handleMetadata(ctx context.Context, md *pl_a
 	}
 
 	// Write out the header keys in the order specified by the relation.
-	headerKeys := make([]string, len(relation.Columns))
+	headerKeys := make([]string, len(relation.Columns)+1)
+	headerKeys[0] = "_clusterID_"
 	for i, col := range relation.Columns {
-		headerKeys[i] = col.ColumnName
+		headerKeys[i+1] = col.ColumnName
 	}
-
 	newWriter.SetHeader(md.MetaData.Name, headerKeys)
 
-	v.tableNameToInfo[tableID] = &TableInfo{
-		ID:          tableID,
+	v.tableNameToInfo[tableName] = &TableInfo{
+		ID:          tableName,
 		w:           newWriter,
 		relation:    relation,
 		timeColIdx:  timeColIdx,

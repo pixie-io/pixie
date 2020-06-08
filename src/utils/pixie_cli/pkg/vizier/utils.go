@@ -1,0 +1,155 @@
+package vizier
+
+import (
+	"errors"
+
+	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
+	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	"pixielabs.ai/pixielabs/src/utils"
+)
+
+// MustConnectDefaultVizier vizier will connect to default vizier based on parameters.
+func MustConnectDefaultVizier(cloudAddr string, allClusters bool, clusterID uuid.UUID) []*Connector {
+	c, err := ConnectDefaultVizier(cloudAddr, allClusters, clusterID)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to connect to vizier")
+	}
+	return c
+}
+
+// GetVizierList gets a list of all viziers.
+func GetVizierList(cloudAddr string) ([]*cloudapipb.ClusterInfo, error) {
+	l, err := NewLister(cloudAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	vzInfo, err := l.GetViziersInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(vzInfo) == 0 {
+		return nil, errors.New("no Viziers available")
+	}
+	return vzInfo, nil
+}
+
+func createVizierConnection(cloudAddr string, vzInfo *cloudapipb.ClusterInfo) (*Connector, error) {
+	l, err := NewLister(cloudAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	passthrough := false
+	if vzInfo.Config != nil {
+		passthrough = vzInfo.Config.PassthroughEnabled
+	}
+
+	u := utils.UUIDFromProtoOrNil(vzInfo.ID)
+
+	var vzConn *ConnectionInfo
+	if !passthrough {
+		vzConn, err = l.GetVizierConnection(u)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	v, err := NewConnector(cloudAddr, vzInfo, vzConn)
+	if err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
+// ConnectDefaultVizier connects to the default vizier based on parameters.
+func ConnectDefaultVizier(cloudAddr string, allClusters bool, clusterID uuid.UUID) ([]*Connector, error) {
+	var conns []*Connector
+	if allClusters {
+		var err error
+		conns, err = ConnectToAllViziers(cloudAddr)
+		if err != nil {
+			return nil, err
+		}
+		return conns, nil
+	}
+	if clusterID != uuid.Nil {
+		c, err := ConnectionToVizierByID(cloudAddr, clusterID)
+		if err != nil {
+			return nil, err
+		}
+		conns = append(conns, c)
+		return conns, nil
+	}
+	c, err := ConnectFirstHealthyVizier(cloudAddr)
+	if err != nil {
+		return nil, err
+	}
+	conns = append(conns, c)
+	return conns, nil
+}
+
+// ConnectFirstHealthyVizier connects to the first healthy vizier.
+func ConnectFirstHealthyVizier(cloudAddr string) (*Connector, error) {
+	l, err := NewLister(cloudAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	vzInfo, err := l.GetViziersInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(vzInfo) == 0 {
+		return nil, errors.New("no Viziers available")
+	}
+
+	// Find the first healthy vizier by default.
+	for _, vz := range vzInfo {
+		if vz.Status == cloudapipb.CS_HEALTHY {
+			return createVizierConnection(cloudAddr, vz)
+		}
+	}
+	return nil, errors.New("no healthy Viziers available")
+}
+
+// ConnectionToVizierByID connects to the vizier on specified ID.
+func ConnectionToVizierByID(cloudAddr string, clusterID uuid.UUID) (*Connector, error) {
+	vzInfos, err := GetVizierList(cloudAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, vzInfo := range vzInfos {
+		if utils.UUIDFromProtoOrNil(vzInfo.ID) == clusterID {
+			return createVizierConnection(cloudAddr, vzInfo)
+		}
+	}
+
+	return nil, errors.New("no such vizier")
+}
+
+// ConnectToAllViziers connets to all available viziers.
+func ConnectToAllViziers(cloudAddr string) ([]*Connector, error) {
+	vzInfos, err := GetVizierList(cloudAddr)
+	if err != nil {
+		return nil, err
+	}
+
+	var conns []*Connector
+	for _, vzInfo := range vzInfos {
+		if vzInfo.Status != cloudapipb.CS_HEALTHY {
+			continue
+		}
+		c, err := createVizierConnection(cloudAddr, vzInfo)
+		if err != nil {
+			return nil, err
+		}
+		conns = append(conns, c)
+	}
+
+	return conns, nil
+}

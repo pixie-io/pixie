@@ -9,6 +9,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/dustin/go-humanize"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -20,6 +21,10 @@ import (
 
 func init() {
 	GetCmd.PersistentFlags().StringP("output", "o", "", "Output format: one of: json|proto")
+
+	GetPEMsCmd.Flags().BoolP("all-clusters", "d", false, "Run script across all clusters")
+	GetPEMsCmd.Flags().StringP("cluster", "c", "", "Run only on selected cluster")
+	GetPEMsCmd.Flags().MarkHidden("all-clusters")
 
 	GetCmd.AddCommand(GetPEMsCmd)
 	GetCmd.AddCommand(GetViziersCmd)
@@ -36,11 +41,15 @@ var GetPEMsCmd = &cobra.Command{
 		format = strings.ToLower(format)
 		br := mustCreateBundleReader()
 		execScript := br.MustGetScript(script.AgentStatusScript)
-		v := mustConnectDefaultVizier(cloudAddr)
+
+		allClusters, _ := cmd.Flags().GetBool("all-clusters")
+		selectedCluster, _ := cmd.Flags().GetString("cluster")
+		clusterID := uuid.FromStringOrNil(selectedCluster)
+		conns := vizier.MustConnectDefaultVizier(cloudAddr, allClusters, clusterID)
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
-		if err := vizier.RunScriptAndOutputResults(ctx, v, execScript, format); err != nil {
+		if err := vizier.RunScriptAndOutputResults(ctx, conns, execScript, format); err != nil {
 			fmt.Fprint(os.Stderr, vizier.FormatErrorMessage(err))
 			log.Fatal("Script Failed")
 		}

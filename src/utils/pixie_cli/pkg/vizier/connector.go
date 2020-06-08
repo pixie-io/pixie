@@ -223,7 +223,7 @@ func (c *Connector) ExecuteScriptStream(ctx context.Context, script *script.Exec
 				return
 			default:
 				msg, err := resp.Recv()
-				results <- &VizierExecData{Resp: msg, Err: err}
+				results <- &VizierExecData{ClusterID: c.id, Resp: msg, Err: err}
 				if err != nil || msg == nil {
 					close(results)
 					return

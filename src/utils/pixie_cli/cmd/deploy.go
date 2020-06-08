@@ -22,6 +22,7 @@ import (
 	utils2 "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/artifacts"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
 
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/auth"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
@@ -40,11 +41,6 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
-)
-
-const (
-	k8sMinVersion    = "1.8"
-	kernelMinVersion = "4.14"
 )
 
 const (
@@ -194,25 +190,6 @@ func mustReadCredsFile(credsFile string) string {
 		log.WithError(err).Fatal(fmt.Sprintf("Could not read file: %s", credsFile))
 	}
 	return string(credsData)
-}
-
-func writeToFile(filepath string, filename string, reader io.ReadCloser) error {
-	// Create directory for the files.
-	if _, err := os.Stat(filepath); os.IsNotExist(err) {
-		os.Mkdir(filepath, 0777)
-	}
-
-	out, err := os.Create(path.Join(filepath, filename))
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	// Write the body to file
-	_, err = io.Copy(out, reader)
-
-	reader.Close()
-	return err
 }
 
 func getLatestVizierVersion(conn *grpc.ClientConn) (string, error) {
@@ -530,13 +507,13 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	depsOnly, _ := cmd.Flags().GetBool("deps_only")
 
-	deploy(cloudConn, versionString, clientset, kubeConfig, vzYamlMap, namespace, depsOnly)
+	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, vzYamlMap, namespace, depsOnly)
 
-	waitForHealthCheck(cloudAddr, clientset, namespace, numNodes)
+	waitForHealthCheck(cloudAddr, clusterID, clientset, namespace, numNodes)
 }
 
-func runSimpleHealthCheckScript(cloudAddr string) error {
-	v, err := connectDefaultVizier(cloudAddr)
+func runSimpleHealthCheckScript(cloudAddr string, clusterID uuid.UUID) error {
+	v, err := vizier.ConnectionToVizierByID(cloudAddr, clusterID)
 	br := mustCreateBundleReader()
 	if err != nil {
 		return err
@@ -589,7 +566,7 @@ func runSimpleHealthCheckScript(cloudAddr string) error {
 	return err
 }
 
-func waitForHealthCheckTaskGenerator(cloudAddr string) func() error {
+func waitForHealthCheckTaskGenerator(cloudAddr string, clusterID uuid.UUID) func() error {
 	return func() error {
 		timeout := time.NewTimer(2 * time.Minute)
 		defer timeout.Stop()
@@ -598,7 +575,7 @@ func waitForHealthCheckTaskGenerator(cloudAddr string) func() error {
 			case <-timeout.C:
 				return errors.New("timeout waiting for healthcheck")
 			default:
-				err := runSimpleHealthCheckScript(cloudAddr)
+				err := runSimpleHealthCheckScript(cloudAddr, clusterID)
 				if err == nil {
 					return nil
 				}
@@ -608,14 +585,14 @@ func waitForHealthCheckTaskGenerator(cloudAddr string) func() error {
 	}
 }
 
-func waitForHealthCheck(cloudAddr string, clientset *kubernetes.Clientset, namespace string, numNodes int) {
+func waitForHealthCheck(cloudAddr string, clusterID uuid.UUID, clientset *kubernetes.Clientset, namespace string, numNodes int) {
 	fmt.Printf("Waiting for Pixie to pass healthcheck\n")
 
 	healthCheckJobs := []utils.Task{
 		newTaskWrapper("Wait for PEMs/Kelvin", func() error {
 			return waitForPems(clientset, namespace, numNodes)
 		}),
-		newTaskWrapper("Wait for healthcheck", waitForHealthCheckTaskGenerator(cloudAddr)),
+		newTaskWrapper("Wait for healthcheck", waitForHealthCheckTaskGenerator(cloudAddr, clusterID)),
 	}
 
 	hc := utils.NewSerialTaskRunner(healthCheckJobs)
@@ -655,11 +632,6 @@ func generateNamespaceYAML(namespace string) (string, error) {
 	return k8s.ConvertResourceToYAML(ns)
 }
 
-func optionallyDeleteClusterrole(clientset *kubernetes.Clientset) error {
-	_ = k8s.DeleteClusterRole(clientset, "pl-vizier-metadata")
-	_ = k8s.DeleteClusterRoleBinding(clientset, "pl-vizier-metadata-binding")
-	return nil
-}
 func waitForCluster(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.UUID) error {
 	client := cloudapipb.NewVizierClusterInfoClient(conn)
 
@@ -720,7 +692,7 @@ func initiateUpdate(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.
 	return nil
 }
 
-func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Clientset, config *rest.Config, yamlMap map[string]string, namespace string, depsOnly bool) {
+func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Clientset, config *rest.Config, yamlMap map[string]string, namespace string, depsOnly bool) uuid.UUID {
 	// NATS and etcd deploys depend on timing, so may sometimes fail. Include some retry behavior.
 	// TODO(zasgar/michelle): This logic is flaky and we should make smarter to actually detect and wait
 	// based on the message.
@@ -741,9 +713,9 @@ func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Cl
 	}
 
 	if depsOnly {
-		return
+		return uuid.Nil
 	}
-
+	var clusterID uuid.UUID
 	deployJob := []utils.Task{
 		newTaskWrapper("Deploying Cloud Connector", func() error {
 			return k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlMap[vizierBootstrapYAMLPath]))
@@ -752,7 +724,6 @@ func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Cl
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 			defer cancel()
 
-			var clusterID uuid.UUID
 			t := time.NewTicker(2 * time.Second)
 			defer t.Stop()
 			clusterIDExists := false
@@ -779,6 +750,7 @@ func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Cl
 	if err != nil {
 		log.Fatal("Failed to deploy Vizier")
 	}
+	return clusterID
 }
 
 func retryDeploy(clientset *kubernetes.Clientset, config *rest.Config, namespace string, yamlContents string) error {
