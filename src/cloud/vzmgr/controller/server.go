@@ -256,62 +256,7 @@ func (s *Server) validateOrgOwnsCluster(ctx context.Context, clusterID *uuidpb.U
 
 // CreateVizierCluster creates a new tracked vizier cluster.
 func (s *Server) CreateVizierCluster(ctx context.Context, req *vzmgrpb.CreateVizierClusterRequest) (*uuidpb.UUID, error) {
-	if err := validateOrgID(ctx, req.OrgID); err != nil {
-		return nil, err
-	}
-	orgID := utils.UUIDFromProtoOrNil(req.OrgID)
-	projectName := req.ProjectName
-	if req.ProjectName == "" {
-		projectName = DefaultProjectName
-	}
-
-	tx, err := s.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to create transaction")
-	}
-	defer tx.Rollback()
-
-	// Note that we don't check whether the project name exists in the project table.
-	// This was to avoid a dependency from the vzmgr service on the project manager service.
-	// It is expected that the caller of CreateVizierCluster will first validate the project
-	// name before invoking this API.
-
-	query := `
-    	WITH ins AS (
-      		INSERT INTO vizier_cluster (org_id, project_name) VALUES($1, $2) RETURNING id
-		)
-		INSERT INTO vizier_cluster_info(vizier_cluster_id, status) SELECT id, 'DISCONNECTED'  FROM ins RETURNING vizier_cluster_id`
-	row, err := s.db.Queryx(query, orgID, projectName)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	defer row.Close()
-
-	var idPb *uuidpb.UUID
-	var id uuid.UUID
-
-	if row.Next() {
-		if err := row.Scan(&id); err != nil {
-			return nil, err
-		}
-		tx.Commit()
-
-		idPb = utils.ProtoFromUUID(&id)
-	} else {
-		return nil, status.Error(codes.Internal, "failed to read cluster id")
-	}
-
-	// Create index state.
-	query = `
-		INSERT INTO vizier_index_state(cluster_id, resource_version) VALUES($1, '')
-	`
-	idxRow, err := s.db.Queryx(query, &id)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-	defer idxRow.Close()
-
-	return idPb, nil
+	return nil, status.Errorf(codes.Unimplemented, "Deprecated. Please use `px deploy`")
 }
 
 // GetViziersByOrg gets a list of viziers by organization.
@@ -351,8 +296,8 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 		return nil, err
 	}
 
-	query := `SELECT vizier_cluster_id, cluster_uid, cluster_name, cluster_version, vizier_version, status, (EXTRACT(EPOCH FROM age(now(), last_heartbeat))*1E9)::bigint as last_heartbeat,
-              passthrough_enabled from vizier_cluster_info WHERE vizier_cluster_id=$1`
+	query := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, c.cluster_version, i.vizier_version, i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
+              i.passthrough_enabled from vizier_cluster_info as i, vizier_cluster as c WHERE i.vizier_cluster_id=$1 AND i.vizier_cluster_id=c.id`
 	var val struct {
 		ID                 uuid.UUID    `db:"vizier_cluster_id"`
 		Status             vizierStatus `db:"status"`
@@ -539,12 +484,10 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 	log.WithField("req", req).Info("Received RegisterVizierRequest")
 
 	vzVersion := ""
-	clusterVersion := ""
 	clusterUID := ""
 
 	if req.ClusterInfo != nil {
 		vzVersion = req.ClusterInfo.VizierVersion
-		clusterVersion = req.ClusterInfo.ClusterVersion
 		clusterUID = req.ClusterInfo.ClusterUID
 	}
 
@@ -559,16 +502,16 @@ func (s *Server) VizierConnected(ctx context.Context, req *cvmsgspb.RegisterVizi
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 	query := `
     UPDATE vizier_cluster_info
-    SET (last_heartbeat, address, jwt_signing_key, status, vizier_version, cluster_version)  = (
-    	NOW(), $2, PGP_SYM_ENCRYPT($3, $4), $5, $6, $7)
-    WHERE vizier_cluster_id = $1 AND cluster_uid=$8`
+    SET (last_heartbeat, address, jwt_signing_key, status, vizier_version)  = (
+    	NOW(), $2, PGP_SYM_ENCRYPT($3, $4), $5, $6)
+    WHERE vizier_cluster_id = $1`
 
 	vzStatus := "CONNECTED"
 	if req.Address == "" {
 		vzStatus = "UNHEALTHY"
 	}
 
-	res, err := s.db.Exec(query, vizierID, req.Address, signingKey, s.dbKey, vzStatus, vzVersion, clusterVersion, clusterUID)
+	res, err := s.db.Exec(query, vizierID, req.Address, signingKey, s.dbKey, vzStatus, vzVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -884,7 +827,7 @@ func findVizierWithUID(ctx context.Context, tx *sqlx.Tx, orgID uuid.UUID, cluste
        SELECT vizier_cluster.id, status from vizier_cluster, vizier_cluster_info 
        WHERE vizier_cluster.id = vizier_cluster_info.vizier_cluster_id
        AND vizier_cluster.org_id = $1
-       AND vizier_cluster_info.cluster_uid = $2
+       AND vizier_cluster.cluster_uid = $2
     `
 
 	var vizierID uuid.UUID
@@ -904,8 +847,8 @@ func findVizierWithEmptyUID(ctx context.Context, tx *sqlx.Tx, orgID uuid.UUID) (
        SELECT vizier_cluster.id, status from vizier_cluster, vizier_cluster_info 
        WHERE vizier_cluster.id = vizier_cluster_info.vizier_cluster_id
        AND vizier_cluster.org_id = $1
-       AND (vizier_cluster_info.cluster_uid = '' 
-            OR vizier_cluster_info.cluster_uid IS NULL)
+       AND (vizier_cluster.cluster_uid = '' 
+            OR vizier_cluster.cluster_uid IS NULL)
     `
 
 	var vizierID uuid.UUID
@@ -932,7 +875,7 @@ func findVizierWithEmptyUID(ctx context.Context, tx *sqlx.Tx, orgID uuid.UUID) (
 func setClusterNameIfNull(ctx context.Context, tx *sqlx.Tx, clusterID uuid.UUID, generateName func(i int) string) error {
 	var existingName *string
 
-	query := `SELECT cluster_name from vizier_cluster_info WHERE vizier_cluster_id=$1`
+	query := `SELECT cluster_name from vizier_cluster WHERE id=$1`
 	err := tx.QueryRowxContext(ctx, query, clusterID).Scan(&existingName)
 	if err != nil {
 		return err
@@ -947,7 +890,7 @@ func setClusterNameIfNull(ctx context.Context, tx *sqlx.Tx, clusterID uuid.UUID,
 	for rc := 0; rc < 10; rc++ {
 		name := generateName(rc)
 		var queryName *string
-		query := `SELECT cluster_name from vizier_cluster_info WHERE cluster_name=$1`
+		query := `SELECT cluster_name from vizier_cluster WHERE cluster_name=$1`
 		_ = tx.QueryRowxContext(ctx, query, name).Scan(&queryName)
 
 		if queryName == nil { // Name does not exist in the DB.
@@ -960,7 +903,7 @@ func setClusterNameIfNull(ctx context.Context, tx *sqlx.Tx, clusterID uuid.UUID,
 		return errors.New("Could not find a unique cluster name")
 	}
 
-	query = `UPDATE vizier_cluster_info SET cluster_name=$1 WHERE vizier_cluster_id=$2`
+	query = `UPDATE vizier_cluster SET cluster_name=$1 WHERE id=$2`
 	_, err = tx.ExecContext(ctx, query, finalName, clusterID)
 
 	return err
@@ -1006,7 +949,7 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 	}
 
 	assignClusterVersion := func(clusterID uuid.UUID) error {
-		query := `UPDATE vizier_cluster_info SET cluster_version=$1 WHERE vizier_cluster_id=$2`
+		query := `UPDATE vizier_cluster SET cluster_version=$1 WHERE id=$2`
 		rows, err := tx.QueryxContext(ctx, query, clusterVersion, clusterID)
 		if err != nil {
 			return err
@@ -1038,7 +981,7 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 	}
 	if clusterID != uuid.Nil {
 		// Set the cluster ID.
-		query := `UPDATE vizier_cluster_info SET cluster_uid=$1 WHERE vizier_cluster_id=$2`
+		query := `UPDATE vizier_cluster SET cluster_uid=$1 WHERE id=$2`
 		rows, err := tx.QueryxContext(ctx, query, clusterUID, clusterID)
 		if err != nil {
 			return uuid.Nil, err
@@ -1055,9 +998,9 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 	// Insert new vizier case.
 	query := `
     	WITH ins AS (
-      		INSERT INTO vizier_cluster (org_id, project_name) VALUES($1, $2) RETURNING id
+      		INSERT INTO vizier_cluster (org_id, project_name, cluster_uid, cluster_version) VALUES($1, $2, $3, $4) RETURNING id
 		)
-		INSERT INTO vizier_cluster_info(vizier_cluster_id, status, cluster_uid, cluster_version) SELECT id, 'DISCONNECTED', $3, $4  FROM ins RETURNING vizier_cluster_id`
+		INSERT INTO vizier_cluster_info(vizier_cluster_id, status) SELECT id, 'DISCONNECTED' FROM ins RETURNING vizier_cluster_id`
 	err = tx.QueryRowContext(ctx, query, orgID, DefaultProjectName, clusterUID, clusterVersion).Scan(&clusterID)
 	if err != nil {
 		return uuid.Nil, err
