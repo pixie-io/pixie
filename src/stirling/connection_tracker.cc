@@ -18,6 +18,7 @@
 #include "src/common/system/system.h"
 #include "src/stirling/common/go_grpc_types.h"
 #include "src/stirling/common/protocol_traits.h"
+#include "src/stirling/connection_stats.h"
 #include "src/stirling/cql/cql_stitcher.h"
 #include "src/stirling/cql/types.h"
 #include "src/stirling/http/http_stitcher.h"
@@ -103,14 +104,25 @@ void ConnectionTracker::AddConnCloseEvent(const close_event_t& close_event) {
 }
 
 void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
+  // Make sure update conn_id traffic_class before exporting stats, which uses these fields.
+  SetConnID(event->attr.conn_id);
+  SetTrafficClass(event->attr.traffic_class);
+
+  // Only export metric to conn_stats_ after remote_endpoint has been resolved.
+  if (ReadyToExportDataStats()) {
+    if (conn_stats_ != nullptr) {
+      // Export stats to ConnectionStats object.
+      conn_stats_->AddDataEvent(*this, *event);
+    }
+  }
+
+  UpdateDataStats(*event);
+
   // TODO(yzhao): Change to let userspace resolve the connection type and signal back to BPF.
   // Then we need at least one data event to let ConnectionTracker know the field descriptor.
   if (event->attr.traffic_class.protocol == kProtocolUnknown) {
     return;
   }
-
-  SetConnID(event->attr.conn_id);
-  SetTrafficClass(event->attr.traffic_class);
 
   CONN_TRACE(1) << absl::Substitute(
       "data $0 ...", BytesToString<bytes_format::HexAsciiMix>(event->msg.substr(0, 10)));
@@ -125,16 +137,10 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
 
   switch (event->attr.direction) {
     case TrafficDirection::kEgress: {
-      // Attributes are not included as the data.
-      IncrementStat(CountStats::kBytesSent, event->msg.size());
       send_data_.AddData(std::move(event));
-      ++num_send_events_;
     } break;
     case TrafficDirection::kIngress: {
-      // Attributes are not included as the data.
-      IncrementStat(CountStats::kBytesRecv, event->msg.size());
       recv_data_.AddData(std::move(event));
-      ++num_recv_events_;
     } break;
   }
 }
@@ -402,8 +408,9 @@ void ConnectionTracker::Disable(std::string_view reason) {
 }
 
 bool ConnectionTracker::AllEventsReceived() const {
-  return (close_info_.timestamp_ns != 0) && (num_send_events_ == close_info_.send_seq_num) &&
-         (num_recv_events_ == close_info_.recv_seq_num);
+  return close_info_.timestamp_ns != 0 &&
+         Stat(CountStats::kDataEventSent) == close_info_.send_seq_num &&
+         Stat(CountStats::kDataEventRecv) == close_info_.recv_seq_num;
 }
 
 void ConnectionTracker::SetConnID(struct conn_id_t conn_id) {
@@ -482,6 +489,8 @@ DataStream* ConnectionTracker::resp_data() {
 }
 
 void ConnectionTracker::MarkForDeath(int32_t countdown) {
+  ExportConnCloseStats();
+
   // We received the close event.
   // Now give up to some more TransferData calls to receive trailing data events.
   // We do this for logging/debug purposes only.
@@ -583,6 +592,45 @@ void ConnectionTracker::UpdateState(const std::vector<CIDRBlock>& cluster_cidrs)
   }
 }
 
+void ConnectionTracker::UpdateDataStats(const SocketDataEvent& event) {
+  switch (event.attr.direction) {
+    case TrafficDirection::kEgress: {
+      IncrementStat(CountStats::kBytesSent, event.attr.msg_size);
+      IncrementStat(CountStats::kDataEventSent, 1);
+    } break;
+    case TrafficDirection::kIngress: {
+      IncrementStat(CountStats::kBytesRecv, event.attr.msg_size);
+      IncrementStat(CountStats::kDataEventRecv, 1);
+    } break;
+  }
+}
+
+void ConnectionTracker::ExportDataStats() {
+  if (conn_stats_ == nullptr || data_stats_exported_) {
+    return;
+  }
+
+  // If there is no cached stats, don't do anything. This is because, if there is data events
+  // received later, ConnectionStats::AddDataEvent() will record a conn_open event anyway.
+  if (Stat(CountStats::kBytesSent) > 0 || Stat(CountStats::kBytesRecv) > 0) {
+    conn_stats_->RecordConn(conn_id_, traffic_class_, remote_endpoint(), /*is_open*/ true);
+    conn_stats_->RecordData(conn_id_.upid, traffic_class_, kEgress, remote_endpoint(),
+                            Stat(CountStats::kBytesSent));
+    conn_stats_->RecordData(conn_id_.upid, traffic_class_, kIngress, remote_endpoint(),
+                            Stat(CountStats::kBytesRecv));
+  }
+
+  // Cached stats are only exported once. Following data states are exported in AddDataEvent().
+  data_stats_exported_ = true;
+}
+
+void ConnectionTracker::ExportConnCloseStats() {
+  if (conn_stats_ == nullptr) {
+    return;
+  }
+  conn_stats_->AddConnCloseEvent(*this);
+}
+
 void ConnectionTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_cidrs,
                                          system::ProcParser* proc_parser,
                                          system::SocketInfoManager* socket_info_mgr) {
@@ -596,6 +644,11 @@ void ConnectionTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_c
   // Attempt to infer the connection information, to populate remote_addr.
   if (open_info_.remote_addr.family == SockAddrFamily::kUnspecified && socket_info_mgr != nullptr) {
     InferConnInfo(proc_parser, socket_info_mgr);
+  }
+
+  // If remote_endpoint resolution is done (either succeeded or failed), export cached data.
+  if (ReadyToExportDataStats()) {
+    ExportDataStats();
   }
 
   UpdateState(cluster_cidrs);

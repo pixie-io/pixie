@@ -761,7 +761,6 @@ void SocketTraceConnector::AcceptDataEvent(std::unique_ptr<SocketDataEvent> even
 
   ConnectionTracker& tracker = GetMutableConnTracker(event->attr.conn_id);
 
-  connection_stats_.AddDataEvent(tracker, *event);
   tracker.AddDataEvent(std::move(event));
 }
 
@@ -772,7 +771,6 @@ void SocketTraceConnector::AcceptControlEvent(socket_control_event_t event) {
   // conn_id is a common field of open & close.
   ConnectionTracker& tracker = GetMutableConnTracker(event.open.conn_id);
 
-  connection_stats_.AddControlEvent(event, tracker);
   tracker.AddControlEvent(event);
 }
 
@@ -795,7 +793,9 @@ void SocketTraceConnector::AcceptHTTP2Data(std::unique_ptr<HTTP2DataEvent> event
 ConnectionTracker& SocketTraceConnector::GetMutableConnTracker(struct conn_id_t conn_id) {
   const uint64_t conn_map_key = GetConnMapKey(conn_id);
   DCHECK(conn_map_key != 0) << "Connection map key cannot be 0, pid must be wrong";
-  return connection_trackers_[conn_map_key][conn_id.tsid];
+  auto& conn_tracker = connection_trackers_[conn_map_key][conn_id.tsid];
+  conn_tracker.set_conn_stats(&connection_stats_);
+  return conn_tracker;
 }
 
 const ConnectionTracker* SocketTraceConnector::GetConnectionTracker(

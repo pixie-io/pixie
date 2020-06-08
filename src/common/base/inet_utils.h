@@ -27,7 +27,12 @@ struct SockAddr {
   std::variant<struct in_addr, struct in6_addr, std::string> addr;
   int port = -1;
 
+  // TODO(yzhao): Merge AddStr() and ToString().
   std::string AddrStr() const;
+  std::string ToString() const {
+    return absl::Substitute("[family=$0 addr=$1 port=$2]", magic_enum::enum_name(family), AddrStr(),
+                            port);
+  }
 };
 
 // The IPv4 IP is located in the last 32-bit word of IPv6 address.
@@ -127,6 +132,12 @@ void PopulateUnixAddr(const char* sun_path, uint32_t inode, SockAddr* addr);
  * are marked with a special address family, with an address of 0.
  */
 void PopulateSockAddr(const struct sockaddr* sa, SockAddr* addr);
+
+inline std::string ToString(const struct sockaddr_in6& sa) {
+  SockAddr sock_addr;
+  PopulateSockAddr(reinterpret_cast<const sockaddr*>(&sa), &sock_addr);
+  return sock_addr.ToString();
+}
 
 /**
  * Parses a string as IPv4 or IPv6 address.

@@ -38,12 +38,28 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
   {
     auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, cs.ServerPID());
     ASSERT_THAT(indices, SizeIs(1));
+
+    int conn_open =
+        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kConnOpen, indices[0])
+            .val;
+    int conn_close =
+        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kConnClose, indices[0])
+            .val;
     int bytes_sent =
         AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kBytesSent, indices[0])
             .val;
     int bytes_rcvd =
         AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kBytesRecv, indices[0])
             .val;
+    EXPECT_THAT(conn_open, 1);
+    // TODO(yzhao): This should be 1. This fails because:
+    // * SocketTraceConnector reads perf buffers in the order:
+    //   "socket_control_events" "socket_data_events".
+    // * conn_event_t is completely ignored, because its traffic_class cannot be resolved until
+    // socket_data_event_t is received.
+    // * When close_event_t is received, it is also ignored, as the conn_event_t is ignored,
+    // and the socket_data_event_t has not arrived yet,
+    EXPECT_THAT(conn_close, 0);
     EXPECT_THAT(bytes_sent, 10);
     EXPECT_THAT(bytes_rcvd, 8);
   }

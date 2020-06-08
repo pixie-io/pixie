@@ -60,6 +60,18 @@ class EventGenerator {
     return std::make_unique<SocketDataEvent>(&event);
   }
 
+  std::unique_ptr<SocketDataEvent> InitSendEvent(TrafficProtocol protocol, std::string_view msg) {
+    auto res = InitDataEvent<kProtocolUnknown>(TrafficDirection::kEgress, send_seq_num_++, msg);
+    res->attr.traffic_class.protocol = protocol;
+    return res;
+  }
+
+  std::unique_ptr<SocketDataEvent> InitRecvEvent(TrafficProtocol protocol, std::string_view msg) {
+    auto res = InitDataEvent<kProtocolUnknown>(TrafficDirection::kIngress, send_seq_num_++, msg);
+    res->attr.traffic_class.protocol = protocol;
+    return res;
+  }
+
   socket_control_event_t InitClose() {
     struct socket_control_event_t close_event {};
     close_event.type = kConnClose;

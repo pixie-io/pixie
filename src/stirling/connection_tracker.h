@@ -33,6 +33,9 @@ DECLARE_bool(enable_unix_domain_sockets);
 namespace pl {
 namespace stirling {
 
+// Forward declaration to avoid circular include of connection_stats.h and connection_tracker.h.
+class ConnectionStats;
+
 /**
  * @brief Describes a connection from user space. This corresponds to struct conn_info_t in
  * src/stirling/bcc_bpf_interface/socket_trace.h.
@@ -78,6 +81,8 @@ class ConnectionTracker {
   ConnectionTracker(ConnectionTracker&& other) = default;
 
   ~ConnectionTracker();
+
+  void set_conn_stats(ConnectionStats* conn_stats) { conn_stats_ = conn_stats; }
 
   /**
    * @brief Registers a BPF connection control event into the tracker.
@@ -355,8 +360,11 @@ class ConnectionTracker {
   double StitchFailureRate() const;
 
   enum class CountStats {
-    // The number of data events.
-    kDataEvent = 0,
+    // The number of sent data events.
+    kDataEventSent = 0,
+
+    // The number of received data events.
+    kDataEventRecv,
 
     // The number of sent bytes.
     kBytesSent,
@@ -378,7 +386,7 @@ class ConnectionTracker {
    * @param stat stat selector.
    * @return stat count value.
    */
-  int64_t Stat(CountStats stat) { return stats_[static_cast<int>(stat)]; }
+  uint64_t Stat(CountStats stat) const { return stats_[static_cast<int>(stat)]; }
 
   /**
    * @brief Number of TransferData() (i.e. PerfBuffer read) calls during which a ConnectionTracker
@@ -476,6 +484,14 @@ class ConnectionTracker {
   bool IsRemoteAddrInCluster(const std::vector<CIDRBlock>& cluster_cidrs);
   void UpdateState(const std::vector<CIDRBlock>& cluster_cidrs);
 
+  void UpdateDataStats(const SocketDataEvent& event);
+  bool ReadyToExportDataStats() const {
+    return remote_endpoint().family == SockAddrFamily::kIPv4 ||
+           remote_endpoint().family == SockAddrFamily::kIPv6 || conn_resolution_failed_;
+  }
+  void ExportDataStats();
+  void ExportConnCloseStats();
+
   // conn_info_map_mgr_ is used to release BPF map resources when a ConnectionTracker is destroyed.
   // It is a safety net, since BPF should release the resources as long as the close() syscall is
   // made. Note that since there is only one global BPF map, this is a static/global structure.
@@ -541,9 +557,6 @@ class ConnectionTracker {
   // This can be changed in the future if required.
   std::chrono::time_point<std::chrono::steady_clock> last_update_timestamp_;
 
-  uint32_t num_send_events_ = 0;
-  uint32_t num_recv_events_ = 0;
-
   State state_ = State::kCollecting;
 
   std::string disable_reason_;
@@ -557,7 +570,10 @@ class ConnectionTracker {
   int stat_invalid_records_ = 0;
   int stat_valid_records_ = 0;
 
-  std::vector<int64_t> stats_ = std::vector<int64_t>(static_cast<int>(CountStats::kNumCountStats));
+  ConnectionStats* conn_stats_ = nullptr;
+  bool data_stats_exported_ = false;
+  std::vector<uint64_t> stats_ =
+      std::vector<uint64_t>(static_cast<int>(CountStats::kNumCountStats));
 
   // Connection trackers need to keep a state because there can be information between
   // needed from previous requests/responses needed to parse or render current request.

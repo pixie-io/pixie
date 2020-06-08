@@ -1,16 +1,20 @@
 #include "src/stirling/connection_tracker.h"
 
+#include <tuple>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <sys/socket.h>
 
 #include "src/common/base/test_utils.h"
+#include "src/stirling/connection_stats.h"
 #include "src/stirling/mysql/test_utils.h"
 #include "src/stirling/testing/event_generator.h"
 
 namespace pl {
 namespace stirling {
 
+using ::testing::Field;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
 
@@ -364,13 +368,13 @@ TEST_F(ConnectionTrackerTest, TrackerHTTP101Disable) {
 TEST_F(ConnectionTrackerTest, stats_counter) {
   ConnectionTracker tracker;
 
-  EXPECT_EQ(0, tracker.Stat(ConnectionTracker::CountStats::kDataEvent));
+  EXPECT_EQ(0, tracker.Stat(ConnectionTracker::CountStats::kDataEventSent));
 
-  tracker.IncrementStat(ConnectionTracker::CountStats::kDataEvent);
-  EXPECT_EQ(1, tracker.Stat(ConnectionTracker::CountStats::kDataEvent));
+  tracker.IncrementStat(ConnectionTracker::CountStats::kDataEventSent);
+  EXPECT_EQ(1, tracker.Stat(ConnectionTracker::CountStats::kDataEventSent));
 
-  tracker.IncrementStat(ConnectionTracker::CountStats::kDataEvent, 5);
-  EXPECT_EQ(6, tracker.Stat(ConnectionTracker::CountStats::kDataEvent));
+  tracker.IncrementStat(ConnectionTracker::CountStats::kDataEventSent, 5);
+  EXPECT_EQ(6, tracker.Stat(ConnectionTracker::CountStats::kDataEventSent));
 }
 
 TEST_F(ConnectionTrackerTest, DataEventsChangesCounter) {
@@ -811,6 +815,162 @@ TEST_F(ConnectionTrackerTest, DisabledDueToStitchingFailureRate) {
             "Connection does not appear to produce valid records of protocol kProtocolMySQL");
   EXPECT_EQ(records.size(), 0);
 }
+
+auto AggKeyIs(int tgid, TrafficProtocol protocol, EndpointRole role, std::string remote_addr) {
+  return AllOf(Field(&ConnectionStats::AggKey::upid, Field(&upid_t::tgid, tgid)),
+               Field(&ConnectionStats::AggKey::traffic_class,
+                     AllOf(Field(&traffic_class_t::protocol, protocol),
+                           Field(&traffic_class_t::role, role))),
+               Field(&ConnectionStats::AggKey::remote_addr, remote_addr));
+}
+
+auto StatsIs(int open, int close, int sent, int recv) {
+  return AllOf(Field(&ConnectionStats::Stats::conn_open, open),
+               Field(&ConnectionStats::Stats::conn_close, close),
+               Field(&ConnectionStats::Stats::bytes_sent, sent),
+               Field(&ConnectionStats::Stats::bytes_recv, recv));
+}
+
+#define DefineDebugStringStreamOutput(Type)                     \
+  std::ostream& operator<<(std::ostream& os, const Type& val) { \
+    os << val.DebugString();                                    \
+    return os;                                                  \
+  }
+
+DefineDebugStringStreamOutput(ConnectionStats::AggKey);
+DefineDebugStringStreamOutput(ConnectionStats::Stats);
+
+// Test cases for protocols and roles are enumerated to avoid uncertainty in the handling in all of
+// the combinations of protocols and roles; as the handling of protocols and roles is quite
+// complicated.
+class ConnectionTrackerStatsTest
+    : public ConnectionTrackerTest,
+      public ::testing::WithParamInterface<std::tuple<TrafficProtocol, EndpointRole>> {
+ protected:
+  void SetUp() override { tracker_.set_conn_stats(&conn_stats_); }
+
+  ConnectionStats conn_stats_;
+  ConnectionTracker tracker_;
+};
+
+// Tests that ConnectionTracker accepts conn_open, data, and conn_close events.
+TEST_P(ConnectionTrackerStatsTest, ConnOpenDataCloseSequence) {
+  TrafficProtocol protocol;
+  EndpointRole role;
+
+  std::tie(protocol, role) = GetParam();
+
+  auto open_event = event_gen_.InitConn();
+  auto req_frame0 = event_gen_.InitSendEvent(protocol, "aaaa");
+  req_frame0->attr.traffic_class.role = role;
+  auto resp_frame0 = event_gen_.InitRecvEvent(protocol, "bbbb");
+  resp_frame0->attr.traffic_class.role = role;
+  auto close_event = event_gen_.InitClose();
+
+  tracker_.AddControlEvent(open_event);
+
+  // No stats pushed for conn_open.
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(), IsEmpty());
+
+  tracker_.AddDataEvent(std::move(req_frame0));
+
+  EXPECT_THAT(
+      conn_stats_.mutable_agg_stats(),
+      UnorderedElementsAre(Pair(AggKeyIs(12345, protocol, role, "0.0.0.0"), StatsIs(1, 0, 4, 0))));
+
+  tracker_.AddDataEvent(std::move(resp_frame0));
+
+  EXPECT_THAT(
+      conn_stats_.mutable_agg_stats(),
+      UnorderedElementsAre(Pair(AggKeyIs(12345, protocol, role, "0.0.0.0"), StatsIs(1, 0, 4, 4))));
+
+  tracker_.AddControlEvent(close_event);
+
+  EXPECT_THAT(
+      conn_stats_.mutable_agg_stats(),
+      UnorderedElementsAre(Pair(AggKeyIs(12345, protocol, role, "0.0.0.0"), StatsIs(1, 1, 4, 4))));
+}
+
+// Tests that ConnectionTracker accepts data and conn_close events.
+TEST_P(ConnectionTrackerStatsTest, NoConnOpen) {
+  TrafficProtocol protocol;
+  EndpointRole role;
+
+  std::tie(protocol, role) = GetParam();
+
+  auto open_event = event_gen_.InitConn();
+  auto req_frame0 = event_gen_.InitSendEvent(protocol, "aaaa");
+  req_frame0->attr.traffic_class.role = role;
+  auto resp_frame0 = event_gen_.InitRecvEvent(protocol, "bbbb");
+  resp_frame0->attr.traffic_class.role = role;
+  auto close_event = event_gen_.InitClose();
+
+  // No stats pushed for conn_open.
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(), IsEmpty());
+
+  tracker_.AddDataEvent(std::move(req_frame0));
+  tracker_.AddDataEvent(std::move(resp_frame0));
+
+  // Simulate a successful remote endpoint resolution.
+  tracker_.AddControlEvent(open_event);
+  // Export cached data stats.
+  tracker_.IterationPreTick({}, nullptr, nullptr);
+
+  EXPECT_THAT(
+      conn_stats_.mutable_agg_stats(),
+      UnorderedElementsAre(Pair(AggKeyIs(12345, protocol, role, "0.0.0.0"), StatsIs(1, 0, 4, 4))));
+
+  tracker_.AddControlEvent(close_event);
+
+  EXPECT_THAT(
+      conn_stats_.mutable_agg_stats(),
+      UnorderedElementsAre(Pair(AggKeyIs(12345, protocol, role, "0.0.0.0"), StatsIs(1, 1, 4, 4))));
+}
+
+// Tests that receiving conn_ope and conn_close before any data event results into correct stats.
+TEST_P(ConnectionTrackerStatsTest, OnlyDataEvents) {
+  TrafficProtocol protocol;
+  EndpointRole role;
+
+  std::tie(protocol, role) = GetParam();
+
+  auto open_event = event_gen_.InitConn();
+  auto req_frame0 = event_gen_.InitSendEvent(protocol, "aaaa");
+  req_frame0->attr.traffic_class.role = role;
+  auto resp_frame0 = event_gen_.InitRecvEvent(protocol, "bbbb");
+  resp_frame0->attr.traffic_class.role = role;
+  // No close_event.
+
+  // No stats pushed for conn_open.
+  EXPECT_THAT(conn_stats_.mutable_agg_stats(), IsEmpty());
+
+  tracker_.AddDataEvent(std::move(req_frame0));
+  tracker_.AddDataEvent(std::move(resp_frame0));
+
+  // Simulate a successful remote endpoint resolution.
+  tracker_.AddControlEvent(open_event);
+  // Export cached data stats.
+  tracker_.IterationPreTick({}, nullptr, nullptr);
+
+  EXPECT_THAT(
+      conn_stats_.mutable_agg_stats(),
+      UnorderedElementsAre(Pair(AggKeyIs(12345, protocol, role, "0.0.0.0"), StatsIs(1, 0, 4, 4))));
+
+  tracker_.SetInactivityDuration(std::chrono::seconds(0));
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+  // This triggers HandleInactivity().
+  tracker_.IterationPostTick();
+
+  EXPECT_THAT(
+      conn_stats_.mutable_agg_stats(),
+      UnorderedElementsAre(Pair(AggKeyIs(12345, protocol, role, "0.0.0.0"), StatsIs(1, 1, 4, 4))));
+}
+
+INSTANTIATE_TEST_SUITE_P(AllProtocols, ConnectionTrackerStatsTest,
+                         ::testing::Combine(::testing::Values(kProtocolUnknown, kProtocolHTTP,
+                                                              kProtocolHTTP2, kProtocolMySQL,
+                                                              kProtocolCQL, kProtocolPGSQL),
+                                            ::testing::Values(kRoleClient, kRoleServer)));
 
 }  // namespace stirling
 }  // namespace pl

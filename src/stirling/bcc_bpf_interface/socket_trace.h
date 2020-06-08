@@ -144,3 +144,38 @@ struct socket_control_event_t {
     struct close_event_t close;
   };
 };
+
+#ifdef __cplusplus
+
+#include <string>
+
+#include "src/common/base/base.h"
+
+inline std::string ToString(const traffic_class_t& tcls) {
+  return absl::Substitute("[protocol=$0 role=$1]", magic_enum::enum_name(tcls.protocol),
+                          magic_enum::enum_name(tcls.role));
+}
+
+inline std::string ToString(const socket_data_event_t::attr_t& attr) {
+  return absl::Substitute("[ts=$0 conn_id=$1 tcls=$2 dir=$3 ssl=$4 seq=$5 size=$6]",
+                          attr.timestamp_ns, ToString(attr.conn_id), ToString(attr.traffic_class),
+                          magic_enum::enum_name(attr.direction), attr.ssl, attr.seq_num,
+                          attr.msg_size);
+}
+
+inline std::string ToString(const close_event_t& event) {
+  return absl::Substitute("[ts=$0 conn_id=$1 wr_seq_num=$2 rd_seq_num=$3]", event.timestamp_ns,
+                          ToString(event.conn_id), event.wr_seq_num, event.rd_seq_num);
+}
+
+inline std::string ToString(const conn_event_t& event) {
+  return absl::Substitute("[ts=$0 conn_id=$1 addr=$2]", event.timestamp_ns, ToString(event.conn_id),
+                          ::pl::ToString(event.addr));
+}
+
+inline std::string ToString(const socket_control_event_t& event) {
+  return absl::Substitute("[type=$0 $1]", magic_enum::enum_name(event.type),
+                          event.type == kConnOpen ? ToString(event.open) : ToString(event.close));
+}
+
+#endif
