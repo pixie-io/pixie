@@ -265,7 +265,7 @@ export const ClusterDetailsPage = () => {
           <div className={classes.titleText}>Cluster View</div>
           <Breadcrumbs classes={{ separator: classes.breadcrumbText }}>
             <Link className={classes.breadcrumbLink} to='/admin'>Admin</Link>
-            <Typography className={classes.breadcrumbText}>Cluster</Typography>
+            <Link className={classes.breadcrumbLink} to='/admin'>Cluster</Link>
             <Typography className={classes.breadcrumbText}>{name}</Typography>
           </Breadcrumbs>
         </div>
