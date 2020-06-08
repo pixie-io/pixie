@@ -200,6 +200,7 @@ const AgentsTable = () => {
 const LIST_CLUSTERS = gql`
 {
   clusters {
+    id
     status
     clusterName
     vizierConfig {
