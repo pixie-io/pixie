@@ -347,8 +347,9 @@ StatusOr<absl::flat_hash_map<int64_t, std::unique_ptr<IR>>> GetCarnotPlans(
 }
 
 StatusOr<std::unique_ptr<DistributedPlan>> CoordinatorImpl::CoordinateImpl(const IR* logical_plan) {
+  DistributedSplitter splitter;
   PL_ASSIGN_OR_RETURN(std::unique_ptr<BlockingSplitPlan> split_plan,
-                      DistributedSplitter::SplitKelvinAndAgents(logical_plan));
+                      splitter.SplitKelvinAndAgents(logical_plan));
   auto physical_plan = std::make_unique<DistributedPlan>();
   PL_ASSIGN_OR_RETURN(int64_t remote_node_id, physical_plan->AddCarnot(GetRemoteProcessor()));
   // TODO(philkuz) Need to update the Blocking Split Plan to better represent what we expect.

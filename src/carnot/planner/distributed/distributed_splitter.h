@@ -51,14 +51,8 @@ struct BlockingSplitNodeIDGroups {
  * two new IR graphs -> one that is run on Carnot instances that pull up data from Stirling and the
  * other that is run on Carnot instances which accumulate data and run blocking operations.
  */
-// TODO(philkuz) refactor DistributedSplitter to be an NVI and remove the static methods to clean up
-// the headers.
 class DistributedSplitter : public NotCopyable {
  public:
-  /**
-   * @brief The logical plan is split into two different pieces along blocking nodes lines.
-   *
-   */
   /**
    * @brief Inserts a GRPCBridge in front of blocking operators in a graph.
    * Inserts a GRPCBridge (GRPCSink -> GRPCSourceGroup) between the parent_op
@@ -93,7 +87,7 @@ class DistributedSplitter : public NotCopyable {
    * @param logical_plan: the input logical_plan
    * @return StatusOr<std::unique_ptr<BlockingSplitPLan>>: the plan split along blocking lines.
    */
-  static StatusOr<std::unique_ptr<BlockingSplitPlan>> SplitKelvinAndAgents(const IR* logical_plan);
+  StatusOr<std::unique_ptr<BlockingSplitPlan>> SplitKelvinAndAgents(const IR* logical_plan);
 
  private:
   /**
@@ -107,25 +101,25 @@ class DistributedSplitter : public NotCopyable {
    * @param on_kelvin
    * @return BlockingSplitNodeIDGroups
    */
-  static BlockingSplitNodeIDGroups GetSplitGroups(
-      const IR* logical_plan, const absl::flat_hash_map<int64_t, bool>& on_kelvin);
+  BlockingSplitNodeIDGroups GetSplitGroups(const IR* logical_plan,
+                                           const absl::flat_hash_map<int64_t, bool>& on_kelvin);
 
-  static absl::flat_hash_map<int64_t, bool> GetKelvinNodes(const std::vector<OperatorIR*>& sources);
-  static absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>> GetEdgesToBreak(
+  absl::flat_hash_map<int64_t, bool> GetKelvinNodes(const std::vector<OperatorIR*>& sources);
+  absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>> GetEdgesToBreak(
       const IR* logical_plan, const absl::flat_hash_map<int64_t, bool>& on_kelvin,
       const std::vector<int64_t>& sources);
 
-  static bool ExecutesOnDataStores(const udfspb::UDTFSourceExecutor& executor);
-  static bool ExecutesOnRemoteProcessors(const udfspb::UDTFSourceExecutor& executor);
-  static bool RunsOnDataStores(const std::vector<OperatorIR*> sources);
-  static bool RunsOnRemoteProcessors(const std::vector<OperatorIR*> sources);
-  static bool IsSourceOnKelvin(OperatorIR* source_op);
-  static bool IsChildOpOnKelvin(bool is_parent_on_kelvin, OperatorIR* source_op);
-  static StatusOr<std::unique_ptr<IR>> CreateGRPCBridge(
+  bool ExecutesOnDataStores(const udfspb::UDTFSourceExecutor& executor);
+  bool ExecutesOnRemoteProcessors(const udfspb::UDTFSourceExecutor& executor);
+  bool RunsOnDataStores(const std::vector<OperatorIR*> sources);
+  bool RunsOnRemoteProcessors(const std::vector<OperatorIR*> sources);
+  bool IsSourceOnKelvin(OperatorIR* source_op);
+  bool IsChildOpOnKelvin(bool is_parent_on_kelvin, OperatorIR* source_op);
+  StatusOr<std::unique_ptr<IR>> CreateGRPCBridge(
       const IR* logical_plan, const absl::flat_hash_map<int64_t, bool>& on_kelvin,
       const std::vector<int64_t>& sources);
-  static StatusOr<GRPCSinkIR*> CreateGRPCSink(OperatorIR* parent_op, int64_t grpc_id);
-  static StatusOr<GRPCSourceGroupIR*> CreateGRPCSourceGroup(OperatorIR* parent_op, int64_t grpc_id);
+  StatusOr<GRPCSinkIR*> CreateGRPCSink(OperatorIR* parent_op, int64_t grpc_id);
+  StatusOr<GRPCSourceGroupIR*> CreateGRPCSourceGroup(OperatorIR* parent_op, int64_t grpc_id);
 };
 }  // namespace distributed
 }  // namespace planner
