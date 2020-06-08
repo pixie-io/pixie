@@ -53,7 +53,7 @@ func (c *Checker) run() {
 		ctx := context.Background()
 		ctx = metadata.AppendToOutgoingContext(context.Background(), "authorization",
 			fmt.Sprintf("bearer %s", token))
-		ctx, cancel := context.WithCancel(ctx)
+		ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
 		defer cancel()
 
 		resp, err := c.vzClient.HealthCheck(ctx, &pl_api_vizierpb.HealthCheckRequest{})
