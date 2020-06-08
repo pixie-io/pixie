@@ -116,7 +116,7 @@ export const StyledTableCell = withStyles((theme: Theme) =>
       fontSize: '14px',
       color: '#748790',
       backgroundColor: theme.palette.foreground.grey3,
-      borderWidth: 8,
+      borderWidth: theme.spacing(1),
       borderColor: theme.palette.background.default,
     },
   }),

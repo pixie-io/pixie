@@ -3,6 +3,7 @@ import ProfileMenu from 'containers/live/profile-menu';
 import history from 'utils/pl-history';
 import {ClusterDetailsPage} from './cluster-details';
 import {ClustersTable} from './clusters-list';
+import {DeploymentKeysTable} from './deployment-keys';
 import {StyledTab, StyledTabs} from './utils';
 
 import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
@@ -77,8 +78,10 @@ const AdminOverview = () => {
           onChange={(event, newTab) => setTab(newTab)}
         >
           <StyledTab value='clusters' label='Clusters' />
+          <StyledTab value='deployment-keys' label='Deployment Keys' />
         </StyledTabs>
         {tab == 'clusters' && <ClustersTable/>}
+        {tab == 'deployment-keys' && <DeploymentKeysTable/>}
       </div>
     </div>
   );
