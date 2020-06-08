@@ -36,13 +36,16 @@ const StyledButton = withStyles((theme) => ({
     textTransform: 'none',
     color: theme.palette.text.primary,
   },
-}))((props: ButtonProps) => (
-  <Button
-    variant='outlined'
-    color='primary'
-    {...props}
-  />
-));
+}))(React.forwardRef(function ButtonWithRef(props: ButtonProps, ref: React.Ref<HTMLButtonElement>) {
+  return (
+    <Button
+      ref={ref}
+      variant='outlined'
+      color='primary'
+      {...props}
+    />
+  );
+}));
 
 const LIST_CLUSTERS = gql`
 {
