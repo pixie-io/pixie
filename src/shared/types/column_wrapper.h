@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "src/shared/types/arrow_adapter.h"
@@ -67,6 +68,9 @@ class ColumnWrapper {
 
   template <class TValueType>
   void AppendFromVector(const std::vector<TValueType>& value_vector);
+
+  virtual std::vector<size_t> SortedIndexes() const = 0;
+  virtual void Reorder(const std::vector<size_t>& order) = 0;
 };
 
 /**
@@ -113,6 +117,38 @@ class ColumnWrapperTmpl : public ColumnWrapper {
     for (const auto& value : value_vector) {
       Append(value);
     }
+  }
+
+  // Computes a reorder vector that specifies the sorted order.
+  // Note 1: ColumnWrapper itself is not modified.
+  // Note 2: There are different ways to define the reorder indexes.
+  // Here we use the form where the result, idx, is used to sort x according to:
+  //    { x[idx[0]], x[idx[1]], x[idx[2]], ... }
+  // From https://stackoverflow.com/questions/1577475/c-sorting-and-keeping-track-of-indexes
+  std::vector<size_t> SortedIndexes() const override {
+    // initialize original index locations
+    std::vector<size_t> idx(data_.size());
+    std::iota(idx.begin(), idx.end(), 0);
+
+    // sort indexes based on comparing values in v using std::stable_sort instead of std::sort
+    // to avoid unnecessary index re-orderings when v contains elements of equal values
+    std::stable_sort(idx.begin(), idx.end(),
+                     [this](size_t i1, size_t i2) { return data_[i1] < data_[i2]; });
+
+    return idx;
+  }
+
+  // Reorder the ColumnWrapper values according to the spec:
+  //    { data[idx[0]], data[idx[1]], data[idx[2]], ... }
+  // Behavior is undefined if idx.size() is different than data.size().
+  void Reorder(const std::vector<size_t>& idx) override {
+    DCHECK_EQ(data_.size(), idx.size());
+    std::vector<T> data;
+    data.resize(data_.size());
+    for (size_t i = 0; i < idx.size(); ++i) {
+      data[i] = data_[idx[i]];
+    }
+    data_ = std::move(data);
   }
 
  private:
@@ -267,31 +303,31 @@ inline void ColumnWrapper::Append(TValueType val) {
 
 template <class TValueType>
 inline TValueType& ColumnWrapper::Get(size_t idx) {
-  CHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
+  CHECK_EQ(data_type(), ValueTypeTraits<TValueType>::data_type);
   return static_cast<ColumnWrapperTmpl<TValueType>*>(this)->operator[](idx);
 }
 
 template <class TValueType>
 inline TValueType ColumnWrapper::Get(size_t idx) const {
-  CHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
+  CHECK_EQ(data_type(), ValueTypeTraits<TValueType>::data_type);
   return static_cast<const ColumnWrapperTmpl<TValueType>*>(this)->operator[](idx);
 }
 
 template <class TValueType>
 inline void ColumnWrapper::AppendNoTypeCheck(TValueType val) {
-  DCHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
+  DCHECK_EQ(data_type(), ValueTypeTraits<TValueType>::data_type);
   static_cast<ColumnWrapperTmpl<TValueType>*>(this)->Append(val);
 }
 
 template <class TValueType>
 inline TValueType& ColumnWrapper::GetNoTypeCheck(size_t idx) {
-  DCHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
+  DCHECK_EQ(data_type(), ValueTypeTraits<TValueType>::data_type);
   return static_cast<ColumnWrapperTmpl<TValueType>*>(this)->operator[](idx);
 }
 
 template <class TValueType>
 inline TValueType ColumnWrapper::GetNoTypeCheck(size_t idx) const {
-  DCHECK(data_type() == ValueTypeTraits<TValueType>::data_type);
+  DCHECK_EQ(data_type(), ValueTypeTraits<TValueType>::data_type);
   return static_cast<ColumnWrapperTmpl<TValueType>*>(this)->operator[](idx);
 }
 

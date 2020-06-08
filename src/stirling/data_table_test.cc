@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <random>
+#include <string>
 
 #include "src/stirling/data_table.h"
 #include "src/stirling/info_class_manager.h"
@@ -8,7 +9,41 @@
 namespace pl {
 namespace stirling {
 
-class DataTableTest : public ::testing::Test {
+TEST(DataTableTest, ResultIsSorted) {
+  // The test uses a pre-defined schema.
+  static constexpr DataElement kElements[] = {
+      {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER, "time"},
+      {"x", types::DataType::INT64, types::PatternType::GENERAL, "an int value"},
+      {"s", types::DataType::STRING, types::PatternType::GENERAL, "a string"},
+  };
+  static constexpr auto kSchema = DataTableSchema("test_table", kElements);
+
+  std::unique_ptr<DataTable> data_table = std::make_unique<DataTable>(kSchema);
+  auto& columns = *(data_table->ActiveRecordBatch());
+
+  std::vector<int> time_vals = {0, 10, 40, 20, 30, 50, 90, 70, 60, 80};
+  std::vector<int> x_vals = {0, 1, 4, 2, 3, 5, 9, 7, 6, 8};
+  std::vector<std::string> s_vals = {"a", "b", "e", "c", "d", "f", "j", "h", "g", "i"};
+
+  for (size_t i = 0; i < time_vals.size(); ++i) {
+    columns[kSchema.ColIndex("time_")]->Append<types::Time64NSValue>(time_vals[i]);
+    columns[kSchema.ColIndex("x")]->Append<types::Int64Value>(x_vals[i]);
+    columns[kSchema.ColIndex("s")]->Append<types::StringValue>(s_vals[i]);
+  }
+
+  std::vector<TaggedRecordBatch> record_batches = data_table->ConsumeRecordBatches();
+
+  ASSERT_EQ(record_batches.size(), 1);
+  types::ColumnWrapperRecordBatch& rb = *record_batches[0].records_uptr;
+
+  for (size_t i = 0; i < time_vals.size(); ++i) {
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(i), 10 * static_cast<int>(i));
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(i), static_cast<int>(i));
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(i), std::string(1, 'a' + i));
+  }
+}
+
+class DataTableStressTest : public ::testing::Test {
  private:
   std::default_random_engine rng_;
 
@@ -33,7 +68,7 @@ class DataTableTest : public ::testing::Test {
   std::unique_ptr<DataTable> data_table_;
 
  public:
-  DataTableTest() : f0_seq_(1, 100), f1_seq_(3.14159, 3.14159), f2_seq_(10) {}
+  DataTableStressTest() : f0_seq_(1, 100), f1_seq_(3.14159, 3.14159), f2_seq_(10) {}
 
   /**
    * @brief Sets up the test environment, by initializing the Schema for the test.
@@ -183,7 +218,7 @@ constexpr std::array<size_t, 3> kMaxAppendSize = {20, 200, 2000};
  * On every flush, the data is checked to see if it matches the known data pattern that was being
  * generated.
  */
-TEST_F(DataTableTest, column_wrapper_read_write) {
+TEST_F(DataTableStressTest, column_wrapper_read_write) {
   SetSeed(kRNGSeed);
 
   for (auto push_probability : kPushProbability) {

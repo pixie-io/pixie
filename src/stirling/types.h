@@ -125,10 +125,6 @@ class DataTableSchema {
     // This prevents compilation during constexpr evaluation (which is awesome!).
     COMPILE_TIME_ASSERT(i != elements_.size(), "Could not find key");
 
-    // Alternative form, but this one checks at run-time as well as compile-time.
-    // TODO(oazizi): Remove this line once function is converted to consteval (C++20).
-    CHECK(i != elements_.size()) << "Could not find key";
-
     return i;
   }
 

@@ -1,6 +1,7 @@
 #include <arrow/array.h>
 #include <arrow/buffer.h>
 #include <arrow/builder.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <iostream>
@@ -179,6 +180,31 @@ TEST(ColumnWrapperTest, FromVectorString) {
   PL_CHECK_OK(builder.Finish(&expected_arr));
 
   EXPECT_TRUE(actual_arr->Equals(expected_arr));
+}
+
+TEST(ColumnWrapperTest, SortedIndexes) {
+  using ::testing::ElementsAreArray;
+
+  auto col = ColumnWrapper::Make(DataType::TIME64NS, 0);
+  col->AppendFromVector(std::vector<Time64NSValue>{5, 8, 1, 9, 0, 6, 3, 7, 2, 4});
+
+  std::vector<size_t> reorder_idx = col->SortedIndexes();
+  EXPECT_THAT(reorder_idx, ElementsAreArray({4, 2, 8, 6, 9, 0, 5, 7, 1, 3}));
+}
+
+TEST(ColumnWrapperTest, Reorder) {
+  using ::testing::ElementsAreArray;
+
+  auto col = ColumnWrapper::Make(DataType::TIME64NS, 0);
+  col->AppendFromVector(std::vector<Time64NSValue>{5, 8, 1, 9, 0, 6, 3, 7, 2, 4});
+
+  // This reorder sequence should cause the values above to become sorted.
+  std::vector<size_t> reorder_idx = {4, 2, 8, 6, 9, 0, 5, 7, 1, 3};
+
+  col->Reorder(reorder_idx);
+  for (int i = 0; i < 10; ++i) {
+    EXPECT_EQ(col->Get<Time64NSValue>(i), i);
+  }
 }
 
 }  // namespace types

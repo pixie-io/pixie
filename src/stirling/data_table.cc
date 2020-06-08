@@ -45,9 +45,19 @@ std::vector<TaggedRecordBatch> DataTable::ConsumeRecordBatches() {
   std::vector<TaggedRecordBatch> tablets_out;
 
   for (auto& [tablet_id, tablet] : tablets_) {
-    PL_UNUSED(tablet_id);
+    // Sort based on time_ column, if it exists.
+    std::vector<size_t> sort_indexes;
+    size_t time_col_idx = table_schema_.ColIndex("time_");
+    if (time_col_idx != table_schema_.elements().size()) {
+      auto& time_col = (*tablet)[time_col_idx];
+      sort_indexes = time_col->SortedIndexes();
+    }
+
     for (size_t j = 0; j < table_schema_.elements().size(); ++j) {
       auto col = (*tablet)[j];
+      if (!sort_indexes.empty()) {
+        col->Reorder(sort_indexes);
+      }
       col->ShrinkToFit();
     }
     tablets_out.push_back(TaggedRecordBatch{tablet_id, std::move(tablet)});
