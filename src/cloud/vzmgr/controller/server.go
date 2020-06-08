@@ -967,7 +967,7 @@ func setClusterNameIfNull(ctx context.Context, tx *sqlx.Tx, clusterID uuid.UUID,
 }
 
 // ProvisionOrClaimVizier provisions a given cluster or returns the ID if it already exists,
-func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, userID uuid.UUID, clusterUID string, clusterName string) (uuid.UUID, error) {
+func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, userID uuid.UUID, clusterUID string, clusterName string, clusterVersion string) (uuid.UUID, error) {
 	// TODO(zasgar): This duplicates some functionality in the Create function. Will deprecate that Create function soon.
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -1005,6 +1005,16 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 		return clusterID, nil
 	}
 
+	assignClusterVersion := func(clusterID uuid.UUID) error {
+		query := `UPDATE vizier_cluster_info SET cluster_version=$1 WHERE vizier_cluster_id=$2`
+		rows, err := tx.QueryxContext(ctx, query, clusterVersion, clusterID)
+		if err != nil {
+			return err
+		}
+		rows.Close()
+		return nil
+	}
+
 	clusterID, status, err := findVizierWithUID(ctx, tx, orgID, clusterUID)
 	if err != nil {
 		return uuid.Nil, err
@@ -1013,6 +1023,12 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 		if status != vizierStatus(cvmsgspb.VZ_ST_DISCONNECTED) {
 			return uuid.Nil, vzerrors.ErrProvisionFailedVizierIsActive
 		}
+		// Update cluster version.
+		err = assignClusterVersion(clusterID)
+		if err != nil {
+			return uuid.Nil, err
+		}
+
 		return assignNameAndCommit()
 	}
 
@@ -1028,6 +1044,11 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 			return uuid.Nil, err
 		}
 		rows.Close()
+
+		err = assignClusterVersion(clusterID)
+		if err != nil {
+			return uuid.Nil, err
+		}
 		return assignNameAndCommit()
 	}
 
@@ -1036,8 +1057,8 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
     	WITH ins AS (
       		INSERT INTO vizier_cluster (org_id, project_name) VALUES($1, $2) RETURNING id
 		)
-		INSERT INTO vizier_cluster_info(vizier_cluster_id, status, cluster_uid) SELECT id, 'DISCONNECTED', $3  FROM ins RETURNING vizier_cluster_id`
-	err = tx.QueryRowContext(ctx, query, orgID, DefaultProjectName, clusterUID).Scan(&clusterID)
+		INSERT INTO vizier_cluster_info(vizier_cluster_id, status, cluster_uid, cluster_version) SELECT id, 'DISCONNECTED', $3, $4  FROM ins RETURNING vizier_cluster_id`
+	err = tx.QueryRowContext(ctx, query, orgID, DefaultProjectName, clusterUID, clusterVersion).Scan(&clusterID)
 	if err != nil {
 		return uuid.Nil, err
 	}

@@ -123,23 +123,18 @@ func createCloudConfigYAML(cloudAddr string, namespace string, devCloudNamespace
 	}
 
 	clusterName := ""
-	clusterVersion := ""
-	var err error
 
-	if kubeConfig != nil { // Only record cluster name/version if we are deploying directly to the current cluster.
+	if kubeConfig != nil { // Only record cluster name if we are deploying directly to the current cluster.
 		clusterName = getCurrentCluster()
-
-		clusterVersion, err = getK8sVersion(kubeConfig)
-		if err != nil {
-			return "", errors.New("Could not get cluster version")
-		}
 	}
 
 	cm, err := k8s.CreateConfigMapFromLiterals(namespace, "pl-cloud-config", map[string]string{
-		"PL_CLOUD_ADDR":      cloudAddr,
-		"PL_CLUSTER_NAME":    clusterName,
-		"PL_CLUSTER_VERSION": clusterVersion,
+		"PL_CLOUD_ADDR":   cloudAddr,
+		"PL_CLUSTER_NAME": clusterName,
 	})
+	if err != nil {
+		return "", err
+	}
 	return k8s.ConvertResourceToYAML(cm)
 }
 

@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,6 +16,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 
 	// Blank import necessary for kubeConfig to work.
+	"k8s.io/client-go/discovery"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
@@ -42,7 +44,7 @@ type K8sVizierInfo struct {
 }
 
 // NewK8sVizierInfo creates a new K8sVizierInfo.
-func NewK8sVizierInfo(clusterVersion string, clusterName string) (*K8sVizierInfo, error) {
+func NewK8sVizierInfo(clusterName string) (*K8sVizierInfo, error) {
 	// There is a specific config for services running in the cluster.
 	kubeConfig, err := rest.InClusterConfig()
 	if err != nil {
@@ -53,6 +55,20 @@ func NewK8sVizierInfo(clusterVersion string, clusterName string) (*K8sVizierInfo
 	clientset, err := kubernetes.NewForConfig(kubeConfig)
 	if err != nil {
 		return nil, err
+	}
+
+	clusterVersion := ""
+
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(kubeConfig)
+	if err != nil {
+		log.WithError(err).Error("Failed to get discovery client from kubeConfig")
+	}
+
+	version, err := discoveryClient.ServerVersion()
+	if err != nil {
+		log.WithError(err).Error("Failed to get server version from discovery client")
+	} else {
+		clusterVersion = version.GitVersion
 	}
 
 	vzInfo := &K8sVizierInfo{

@@ -225,8 +225,9 @@ func (s *Bridge) RegisterDeployment() error {
 		return err
 	}
 	resp, err := s.vzConnClient.RegisterVizierDeployment(ctx, &vzconnpb.RegisterVizierDeploymentRequest{
-		K8sClusterUID:  clusterInfo.ClusterUID,
-		K8sClusterName: clusterInfo.ClusterName,
+		K8sClusterUID:     clusterInfo.ClusterUID,
+		K8sClusterName:    clusterInfo.ClusterName,
+		K8sClusterVersion: clusterInfo.ClusterVersion,
 	})
 	if err != nil {
 		return err

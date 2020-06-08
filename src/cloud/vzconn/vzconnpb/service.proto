@@ -46,6 +46,10 @@ message RegisterVizierDeploymentRequest {
     string k8s_cluster_name = 2 [
                                (gogoproto.customname) = "K8sClusterName"
                                ];
+    // The K8s version of the cluster.
+    string k8s_cluster_version = 3 [
+                               (gogoproto.customname) = "K8sClusterVersion"
+                               ];
 }
 // RegisterVizierDeploymentResponse returns the registration status. It either will include the
 // assigned vizier_id or a GRPC error will be returned.

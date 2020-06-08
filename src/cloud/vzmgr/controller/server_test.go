@@ -1030,7 +1030,7 @@ func TestServer_ProvisionOrClaimVizier(t *testing.T) {
 	userID := uuid.NewV4()
 
 	// This should select the first cluster with an empty UID that is disconnected.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my cluster", "")
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my cluster", "", "1.1")
 	assert.Nil(t, err)
 	// Should select the disconnected cluster.
 	assert.Equal(t, testDisconnectedClusterEmptyUID, clusterID.String())
@@ -1045,7 +1045,7 @@ func TestServer_ProvisionOrClaimVizier_WithExistingUID(t *testing.T) {
 	userID := uuid.NewV4()
 
 	// This should select the existing cluster with the same UID.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "existing_cluster", "")
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "existing_cluster", "", "1.1")
 	assert.Nil(t, err)
 	// Should select the disconnected cluster.
 	assert.Equal(t, testExistingCluster, clusterID.String())
@@ -1059,7 +1059,7 @@ func TestServer_ProvisionOrClaimVizier_WithExistingActiveUID(t *testing.T) {
 	s := controller.New(db, "test", nil, nil, nil)
 	userID := uuid.NewV4()
 	// This should select cause an error b/c we are trying to provision a cluster that is not disconnected.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my_other_cluster", "")
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "my_other_cluster", "", "1.1")
 	assert.NotNil(t, err)
 	assert.Equal(t, vzerrors.ErrProvisionFailedVizierIsActive, err)
 	assert.Equal(t, uuid.Nil, clusterID)
@@ -1073,7 +1073,7 @@ func TestServer_ProvisionOrClaimVizier_WithNewCluster(t *testing.T) {
 	s := controller.New(db, "test", nil, nil, nil)
 	userID := uuid.NewV4()
 	// This should select cause an error b/c we are trying to provision a cluster that is not disconnected.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testNonAuthOrgID), userID, "my_other_cluster", "")
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testNonAuthOrgID), userID, "my_other_cluster", "", "1.1")
 	assert.Nil(t, err)
 	assert.NotEqual(t, uuid.Nil, clusterID)
 }
@@ -1087,14 +1087,18 @@ func TestServer_ProvisionOrClaimVizier_WithExistingName(t *testing.T) {
 	userID := uuid.NewV4()
 
 	// This should select the existing cluster with the same UID.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "some_cluster", "test-cluster")
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "some_cluster", "test-cluster", "1.1")
 	assert.Nil(t, err)
 	// Should select the disconnected cluster.
 	assert.Equal(t, testDisconnectedClusterEmptyUID, clusterID.String())
 	// Check cluster name.
-	var clusterName *string
-	nameQuery := `SELECT cluster_name from vizier_cluster_info WHERE vizier_cluster_id=$1`
-	err = db.Get(&clusterName, nameQuery, clusterID)
+	var clusterInfo struct {
+		ClusterName    *string `db:"cluster_name"`
+		ClusterVersion *string `db:"cluster_version"`
+	}
+	nameQuery := `SELECT cluster_name, cluster_version from vizier_cluster_info WHERE vizier_cluster_id=$1`
+	err = db.Get(&clusterInfo, nameQuery, clusterID)
 	assert.Nil(t, err)
-	assert.Equal(t, "test-cluster_1", *clusterName)
+	assert.Equal(t, "test-cluster_1", *clusterInfo.ClusterName)
+	assert.Equal(t, "1.1", *clusterInfo.ClusterVersion)
 }

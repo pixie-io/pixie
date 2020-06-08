@@ -71,6 +71,7 @@ func handleMsg(srv vzconnpb.VZConnService_NATSBridgeServer, msg *vzconnpb.V2CBri
 // NATSBridge is the endpoint that all viziers connect to.
 func (fs *FakeVZConnServer) RegisterVizierDeployment(ctx context.Context, req *vzconnpb.RegisterVizierDeploymentRequest) (*vzconnpb.RegisterVizierDeploymentResponse, error) {
 	assert.Equal(fs.t, "084cb5f0-ff69-11e9-a63e-42010a8a0193", req.K8sClusterUID)
+	assert.Equal(fs.t, "v1.14.10-gke.27", req.K8sClusterVersion)
 	newID := uuid.NewV4()
 	return &vzconnpb.RegisterVizierDeploymentResponse{
 		VizierID: utils.ProtoFromUUID(&newID),

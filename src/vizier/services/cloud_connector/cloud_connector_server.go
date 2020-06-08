@@ -32,7 +32,6 @@ func init() {
 	pflag.String("pod_namespace", "pl", "The namespace this pod runs in. Used for leader elections")
 	pflag.String("qb_service", "vizier-query-broker.pl.svc:50300", "The querybroker service url (load balancer/list is ok)")
 	pflag.String("cluster_name", "", "The name of the user's K8s cluster")
-	pflag.String("cluster_version", "", "The version of the user's K8s cluster")
 	pflag.String("deploy_key", "", "The deploy key for the cluster")
 }
 func newVzServiceClient() (pl_api_vizierpb.VizierServiceClient, error) {
@@ -69,7 +68,7 @@ func main() {
 
 	deployKey := viper.GetString("deploy_key")
 
-	vzInfo, err := controllers.NewK8sVizierInfo(viper.GetString("cluster_version"), viper.GetString("cluster_name"))
+	vzInfo, err := controllers.NewK8sVizierInfo(viper.GetString("cluster_name"))
 	if err != nil {
 		log.WithError(err).Fatal("Could not get k8s info")
 	}
