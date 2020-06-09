@@ -9,8 +9,6 @@ homebrew_package 'python3'
 
 homebrew_package 'pyenv-virtualenv'
 
-homebrew_cask 'docker-edge'
-
 execute "install pip" do
   command "/usr/bin/easy_install pip"
   creates "/usr/local/bin/pip"
