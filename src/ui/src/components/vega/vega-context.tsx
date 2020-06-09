@@ -15,6 +15,7 @@ export const VegaContext = React.createContext<VegaContextProps>(null);
 export const VegaContextProvider = (props) => {
   const [hoverTime, setHoverTime] = React.useState<number | null>(null);
   const [timeseriesDomain, setTimeseriesDomain] = React.useState<Domain | null>(null);
+
   const context = React.useMemo(() => ({
     hoverTime,
     setHoverTime,
