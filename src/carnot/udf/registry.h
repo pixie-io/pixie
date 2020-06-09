@@ -7,11 +7,12 @@
 #include <vector>
 
 #include <absl/strings/str_format.h>
-#include <magic_enum.hpp>
 
+#include "src/carnot/udf/type_inference.h"
 #include "src/carnot/udf/udf_definition.h"
 #include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/base/base.h"
+#include "src/shared/types/magic_enum.h"
 #include "src/shared/types/types.h"
 
 namespace pl {
@@ -103,7 +104,33 @@ class Registry {
           key.DebugString());
     }
     map_[key] = std::move(udf_def);
+    RegisterSemanticTypes<T>(name);
     return Status::OK();
+  }
+
+  /**
+   * Registers all semantic inference rules declared in T::SemanticInferenceRules or none if the
+   * function isn't defined on T.
+   *
+   * @param name name to register the rules under.
+   */
+  template <typename T>
+  void RegisterSemanticTypes(const std::string& name) {
+    auto rules = SemanticInferenceTraits<T>::SemanticInferenceRules();
+    auto it = semantic_type_rules_.find(name);
+    if (it == semantic_type_rules_.end()) {
+      semantic_type_rules_[name] = ExplicitRuleSet();
+    }
+    for (auto& rule : rules) {
+      for (auto& explicit_rule : rule->explicit_rules()) {
+        if (semantic_type_rules_[name].find(explicit_rule) != semantic_type_rules_[name].end()) {
+          // We have to deduplicate the rules since there could be overloaded primitive data types,
+          // causing multiple of the same semantic type rules to be registered.
+          continue;
+        }
+        semantic_type_rules_[name].insert(explicit_rule);
+      }
+    }
   }
 
   /**
@@ -183,6 +210,7 @@ class Registry {
 
   std::string name_;
   RegistryMap map_;
+  std::map<std::string, ExplicitRuleSet> semantic_type_rules_;
 };
 
 }  // namespace udf

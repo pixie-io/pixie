@@ -26,6 +26,7 @@ inline ::testing::AssertionResult IsOK(const Status& status) {
 #define EXPECT_NOT_OK(value) EXPECT_FALSE(IsOK(::pl::StatusAdapter(value)))
 #define ASSERT_OK(value) ASSERT_TRUE(IsOK(::pl::StatusAdapter(value)))
 #define ASSERT_NOT_OK(value) ASSERT_FALSE(IsOK(::pl::StatusAdapter(value)))
+#define EXPECT_PTR_VAL_EQ(val1, val2) EXPECT_EQ(*val1, *val2)
 
 #define ASSERT_OK_AND_ASSIGN_IMPL(statusor, lhs, rexpr) \
   auto statusor = rexpr;                                \
@@ -57,6 +58,7 @@ inline ::testing::AssertionResult IsOK(const Status& status) {
 #define EXPECT_OK_AND_GE(expr, value) EXPECT_OK_AND(EXPECT_GE, expr, value)
 #define EXPECT_OK_AND_GT(expr, value) EXPECT_OK_AND(EXPECT_GT, expr, value)
 #define EXPECT_OK_AND_THAT(expr, value) EXPECT_OK_AND(EXPECT_THAT, expr, value)
+#define EXPECT_OK_AND_PTR_VAL_EQ(expr, value) EXPECT_OK_AND(EXPECT_PTR_VAL_EQ, expr, value)
 
 #define ASSERT_OK_AND_EQ(expr, value) ASSERT_OK_AND(ASSERT_EQ, expr, value)
 #define ASSERT_OK_AND_NE(expr, value) ASSERT_OK_AND(ASSERT_NE, expr, value)

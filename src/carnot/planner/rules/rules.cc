@@ -36,14 +36,14 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(CompilerState* compiler_state, FuncIR*
     children_data_types.push_back(t);
   }
 
-  auto udftype_or_s = compiler_state->registry_info()->GetUDFType(func->func_name());
+  auto udftype_or_s = compiler_state->registry_info()->GetUDFExecType(func->func_name());
   if (!udftype_or_s.ok()) {
     return func->CreateIRNodeError(udftype_or_s.status().msg());
   }
   switch (udftype_or_s.ConsumeValueOrDie()) {
-    case UDFType::kUDF: {
+    case UDFExecType::kUDF: {
       auto data_type_or_s =
-          compiler_state->registry_info()->GetUDF(func->func_name(), children_data_types);
+          compiler_state->registry_info()->GetUDFDataType(func->func_name(), children_data_types);
       if (!data_type_or_s.status().ok()) {
         return func->CreateIRNodeError(data_type_or_s.status().msg());
       }
@@ -53,16 +53,17 @@ StatusOr<bool> DataTypeRule::EvaluateFunc(CompilerState* compiler_state, FuncIR*
       func->SetOutputDataType(data_type);
       break;
     }
-    case UDFType::kUDA: {
-      PL_ASSIGN_OR_RETURN(types::DataType data_type, compiler_state->registry_info()->GetUDA(
-                                                         func->func_name(), children_data_types));
+    case UDFExecType::kUDA: {
+      PL_ASSIGN_OR_RETURN(
+          types::DataType data_type,
+          compiler_state->registry_info()->GetUDADataType(func->func_name(), children_data_types));
       func->set_func_id(
           compiler_state->GetUDAID(RegistryKey(func->func_name(), children_data_types)));
       func->SetOutputDataType(data_type);
       break;
     }
     default: {
-      return error::Internal("Unsupported UDFType");
+      return error::Internal("Unsupported UDFExecType");
     }
   }
 

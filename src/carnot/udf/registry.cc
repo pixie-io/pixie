@@ -35,6 +35,11 @@ udfspb::UDFInfo Registry::ToProto() {
         break;
     }
   }
+  for (const auto& [name, explicit_rule_set] : semantic_type_rules_) {
+    for (const auto& explicit_rule : explicit_rule_set) {
+      explicit_rule->ToProto(name, info.add_semantic_type_rules());
+    }
+  }
   return info;
 }
 

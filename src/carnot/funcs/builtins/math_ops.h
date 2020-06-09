@@ -4,6 +4,7 @@
 #include <limits>
 
 #include "src/carnot/udf/registry.h"
+#include "src/carnot/udf/type_inference.h"
 #include "src/shared/types/types.h"
 
 namespace pl {
@@ -14,6 +15,11 @@ template <typename TReturn, typename TArg1, typename TArg2>
 class AddUDF : public udf::ScalarUDF {
  public:
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val + b2.val; }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {
+        udf::InheritTypeFromArgs<AddUDF>::Create({types::ST_BYTES}),
+    };
+  }
 };
 
 template <typename TReturn, typename TArg1, typename TArg2>
@@ -148,6 +154,10 @@ class MeanUDA : public udf::UDA {
     count_ += other.count_;
   }
   Float64Value Finalize(FunctionContext*) { return count_ / size_; }
+
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::InheritTypeFromArgs<MeanUDA>::Create({types::ST_BYTES, types::ST_PERCENT})};
+  }
 
  protected:
   uint64_t size_ = 0;

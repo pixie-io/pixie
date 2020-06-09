@@ -54,6 +54,19 @@ udtfs {
     }
   }
 }
+semantic_type_rules {
+  name: "add"
+  udf_exec_type: SCALAR_UDF
+  exec_arg_types: ST_BYTES
+  exec_arg_types: ST_BYTES
+  output_type: ST_BYTES
+}
+semantic_type_rules {
+  name: "uda1"
+  udf_exec_type: UDA
+  update_arg_types: ST_BYTES
+  output_type: ST_BYTES
+}
 )";
 
 TEST(RegistryInfo, basic) {
@@ -62,26 +75,76 @@ TEST(RegistryInfo, basic) {
   google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
   EXPECT_OK(info.Init(info_pb));
 
-  EXPECT_EQ(UDFType::kUDA, info.GetUDFType("uda1").ConsumeValueOrDie());
-  EXPECT_EQ(UDFType::kUDF, info.GetUDFType("scalar1").ConsumeValueOrDie());
-  EXPECT_NOT_OK(info.GetUDFType("dne"));
+  EXPECT_EQ(UDFExecType::kUDA, info.GetUDFExecType("uda1").ConsumeValueOrDie());
+  EXPECT_EQ(UDFExecType::kUDF, info.GetUDFExecType("scalar1").ConsumeValueOrDie());
+  EXPECT_NOT_OK(info.GetUDFExecType("dne"));
 
-  EXPECT_EQ(types::INT64,
-            info.GetUDA("uda1", std::vector<types::DataType>({types::INT64})).ConsumeValueOrDie());
-  EXPECT_NOT_OK(info.GetUDA("uda2", std::vector<types::DataType>({types::INT64})));
-  EXPECT_EQ(types::INT64,
-            info.GetUDF("scalar1", std::vector<types::DataType>({types::BOOLEAN, types::INT64}))
-                .ConsumeValueOrDie());
+  EXPECT_EQ(types::INT64, info.GetUDADataType("uda1", std::vector<types::DataType>({types::INT64}))
+                              .ConsumeValueOrDie());
+  EXPECT_NOT_OK(info.GetUDADataType("uda2", std::vector<types::DataType>({types::INT64})));
+  EXPECT_EQ(
+      types::INT64,
+      info.GetUDFDataType("scalar1", std::vector<types::DataType>({types::BOOLEAN, types::INT64}))
+          .ConsumeValueOrDie());
   EXPECT_FALSE(
-      info.GetUDF("scalar1", std::vector<types::DataType>({types::BOOLEAN, types::FLOAT64})).ok());
-  EXPECT_EQ(types::FLOAT64,
-            info.GetUDF("add", std::vector<types::DataType>({types::FLOAT64, types::FLOAT64}))
-                .ConsumeValueOrDie());
+      info.GetUDFDataType("scalar1", std::vector<types::DataType>({types::BOOLEAN, types::FLOAT64}))
+          .ok());
+  EXPECT_EQ(
+      types::FLOAT64,
+      info.GetUDFDataType("add", std::vector<types::DataType>({types::FLOAT64, types::FLOAT64}))
+          .ConsumeValueOrDie());
 
   EXPECT_THAT(info.func_names(), UnorderedElementsAre("uda1", "add", "scalar1"));
 
   ASSERT_EQ(info.udtfs().size(), 1);
   EXPECT_EQ(info.udtfs()[0].name(), "OpenNetworkConnections");
+}
+
+TEST(RegistryInfo, semantic_types) {
+  auto info = RegistryInfo();
+  udfspb::UDFInfo info_pb;
+  google::protobuf::TextFormat::MergeFromString(kExpectedUDFInfo, &info_pb);
+  EXPECT_OK(info.Init(info_pb));
+
+  EXPECT_OK_AND_PTR_VAL_EQ(
+      info.ResolveUDFType("add", {ValueType::Create(types::FLOAT64, types::ST_BYTES),
+                                  ValueType::Create(types::FLOAT64, types::ST_BYTES)}),
+      ValueType::Create(types::FLOAT64, types::ST_BYTES));
+  EXPECT_OK_AND_PTR_VAL_EQ(
+      info.ResolveUDFType("add", {ValueType::Create(types::FLOAT64, types::ST_BYTES),
+                                  ValueType::Create(types::FLOAT64, types::ST_BYTES)}),
+      ValueType::Create(types::FLOAT64, types::ST_BYTES));
+
+  EXPECT_OK_AND_PTR_VAL_EQ(
+      info.ResolveUDFType("uda1", {ValueType::Create(types::INT64, types::ST_BYTES)}),
+      ValueType::Create(types::INT64, types::ST_BYTES));
+  EXPECT_OK_AND_PTR_VAL_EQ(
+      info.ResolveUDFType("uda1", {ValueType::Create(types::INT64, types::ST_UPID)}),
+      ValueType::Create(types::INT64, types::ST_UNSPECIFIED));
+}
+
+TEST(SemanticRuleRegistry, semantic_lookup) {
+  std::vector<types::SemanticType> arg_types1(
+      {types::ST_UNSPECIFIED, types::ST_UNSPECIFIED, types::ST_BYTES});
+  std::vector<types::SemanticType> arg_types2(
+      {types::ST_UPID, types::ST_UNSPECIFIED, types::ST_BYTES});
+
+  std::vector<types::SemanticType> arg_types3(
+      {types::ST_UPID, types::ST_SERVICE_NAME, types::ST_BYTES});
+  std::vector<types::SemanticType> arg_types4(
+      {types::ST_UNSPECIFIED, types::ST_SERVICE_NAME, types::ST_BYTES});
+
+  SemanticRuleRegistry map_;
+  map_.Insert("test", arg_types1, types::ST_POD_NAME);
+  map_.Insert("test", arg_types2, types::ST_BYTES);
+
+  auto out_type_or_s = map_.Lookup("test", arg_types3);
+  ASSERT_OK(out_type_or_s);
+  EXPECT_EQ(types::ST_BYTES, out_type_or_s.ConsumeValueOrDie());
+
+  out_type_or_s = map_.Lookup("test", arg_types4);
+  ASSERT_OK(out_type_or_s);
+  EXPECT_EQ(types::ST_POD_NAME, out_type_or_s.ConsumeValueOrDie());
 }
 
 }  // namespace planner

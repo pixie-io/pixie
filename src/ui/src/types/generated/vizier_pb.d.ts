@@ -747,4 +747,6 @@ export enum SemanticType {
   ST_NODE_NAME = 500,
   ST_CONTAINER_NAME = 600,
   ST_NAMESPACE_NAME = 700,
+  ST_BYTES = 800,
+  ST_PERCENT = 900,
 }

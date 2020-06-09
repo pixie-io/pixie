@@ -9,6 +9,7 @@
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 #include <absl/strings/str_format.h>
+#include "src/carnot/planner/types/types.h"
 #include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/base/base.h"
 #include "src/shared/types/proto/types.pb.h"
@@ -17,7 +18,7 @@ namespace pl {
 namespace carnot {
 namespace planner {
 
-enum class UDFType { kUDA = 0, kUDF = 1 };
+enum class UDFExecType { kUDA = 0, kUDF = 1 };
 
 /**
  * RegistryKey is the class used to uniquely refer to UDFs/UDAs in the registry.
@@ -59,13 +60,57 @@ class RegistryKey {
   std::vector<types::DataType> registry_arg_types_;
 };
 
+class SemanticRuleRegistry {
+  /**
+   * SemanticRuleRegistry stores a set of semantic inference rules and provides functionality to
+   * lookup a rule based on the input types to a udf/uda.
+   *
+   * If there are ST_UNSPECIFIED semantic types in the rule then they are treated as a catch all
+   * (i.e. they will match any semantic type).
+   *
+   * If there are multiple matching rules, it will pick the most specific rule, i.e. the rule with
+   * the least number of ST_UNSPECIFIED types that matched other types as above.
+   */
+  using ArgTypes = std::vector<types::SemanticType>;
+  using TypeSet = std::vector<std::pair<ArgTypes, types::SemanticType>>;
+
+ public:
+  /**
+   * @brief insert a semantic inference rule into the registry.
+   *
+   * @param name name of udf/uda the rule applies to.
+   * @param arg_types argument semantic types to match to.
+   * @param out_type output semantic type of the udf/uda if the argument types are matched.
+   */
+  void Insert(std::string name, const ArgTypes& arg_types, types::SemanticType out_type);
+
+  /**
+   * @brief lookup any matching semantic inference rules.
+   *
+   * @param name name of udf/uda to lookup rules for.
+   * @param arg_types semantic types of the arguments of the func being called.
+   * @return if the arg_types match a rule for this function, then it returns the output semantic
+   * type of that rule, otherwise it returns an error.
+   */
+  StatusOr<types::SemanticType> Lookup(std::string name, const ArgTypes& arg_types) const;
+
+ protected:
+  std::pair<bool, int> MatchesCandidateAtDist(const ArgTypes& arg_types,
+                                              const ArgTypes& arg_types_candidate) const;
+
+ private:
+  std::map<std::string, TypeSet> map_;
+};
+
 class RegistryInfo {
  public:
   Status Init(const udfspb::UDFInfo& info);
-  StatusOr<types::DataType> GetUDA(std::string name, std::vector<types::DataType> update_arg_types);
-  StatusOr<types::DataType> GetUDF(std::string name, std::vector<types::DataType> exec_arg_types);
+  StatusOr<types::DataType> GetUDADataType(std::string name,
+                                           std::vector<types::DataType> update_arg_types);
+  StatusOr<types::DataType> GetUDFDataType(std::string name,
+                                           std::vector<types::DataType> exec_arg_types);
 
-  StatusOr<UDFType> GetUDFType(std::string_view name);
+  StatusOr<UDFExecType> GetUDFExecType(std::string_view name);
   absl::flat_hash_set<std::string> func_names() const;
 
   std::vector<udfspb::UDTFSourceSpec> udtfs() const { return udtfs_; }
@@ -75,15 +120,34 @@ class RegistryInfo {
 
   const udfspb::UDFInfo& info_pb() { return info_pb_; }
 
+  /**
+   * @brief Resolves the semantic and data types of the UDF/UDA.
+   *
+   * If no semantic inference rule is found in the SemanticRuleRegistry, then
+   * ST_UNSPECIFIED is returned.
+   * @param name name of udf/uda to resolve type for.
+   * @param arg_types list of ValueTypes for each arg to the udf/uda.
+   * @return A ValueType representing the type of the output of the udf/uda.
+   */
+  StatusOr<std::shared_ptr<ValueType>> ResolveUDFType(
+      std::string name, const std::vector<std::shared_ptr<ValueType>>& arg_types);
+
+  template <typename TType>
+  StatusOr<TType> ResolveUDFSubType(std::string name, std::vector<TType> arg_types);
+
  protected:
+  void AddSemanticInferenceRule(const udfspb::SemanticInferenceRule& rule);
+
   std::map<RegistryKey, types::DataType> udf_map_;
   std::map<RegistryKey, types::DataType> uda_map_;
   // Union of udf and uda names.
-  absl::flat_hash_map<std::string, UDFType> funcs_;
+  absl::flat_hash_map<std::string, UDFExecType> funcs_;
   // The vector containing udtfs.
   std::vector<udfspb::UDTFSourceSpec> udtfs_;
 
   udfspb::UDFInfo info_pb_;
+
+  SemanticRuleRegistry semantic_rule_registry_;
 };
 
 }  // namespace planner

@@ -20,6 +20,7 @@ pl_cc_library(
     deps = [
         "//src/carnot/plan:cc_library",
         "//src/carnot/udf:cc_library",
+        "//src/carnot/planner/types:cc_library",
     ],
 )
 

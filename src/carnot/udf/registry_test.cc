@@ -12,6 +12,8 @@ namespace pl {
 namespace carnot {
 namespace udf {
 
+using ::pl::testing::proto::EqualsProto;
+
 class ScalarUDF1 : public ScalarUDF {
  public:
   types::Int64Value Exec(FunctionContext* ctx, types::BoolValue b1, types::Int64Value b2) {
@@ -366,6 +368,178 @@ TEST(Registry, udtf_to_proto) {
   udfspb::UDFInfo expected_udf_info;
   ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(kExpectedUDTFInfo, &expected_udf_info));
   EXPECT_TRUE(google::protobuf::util::MessageDifferencer::Equals(expected_udf_info, udf_info));
+}
+
+constexpr char kExpectedUDFInfoWithTypes[] = R"pbtxt(
+udas {
+  name: "uda1"
+  update_arg_types: INT64
+  finalize_type: INT64
+}
+scalar_udfs {
+  name: "scalar1"
+  exec_arg_types: BOOLEAN
+  exec_arg_types: INT64
+  return_type: INT64
+}
+semantic_type_rules {
+  name: "scalar1"
+  udf_exec_type: SCALAR_UDF
+  exec_arg_types: ST_UNSPECIFIED
+  exec_arg_types: ST_BYTES
+  output_type: ST_BYTES
+}
+semantic_type_rules {
+  name: "uda1"
+  udf_exec_type: UDA
+  update_arg_types: ST_BYTES
+  output_type: ST_BYTES
+}
+)pbtxt";
+
+class TypedUDA1 : public UDA {
+ public:
+  Status Init(FunctionContext*) { return Status::OK(); }
+  void Update(FunctionContext*, types::Int64Value) {}
+  void Merge(FunctionContext*, const TypedUDA1&) {}
+  types::Int64Value Finalize(FunctionContext*) { return 0; }
+
+  static InfRuleVec SemanticInferenceRules() {
+    return {
+        InheritTypeFromArgs<TypedUDA1>::Create({types::ST_BYTES}),
+    };
+  }
+};
+
+class TypedScalarUDF1 : public ScalarUDF {
+ public:
+  types::Int64Value Exec(FunctionContext* ctx, types::BoolValue b1, types::Int64Value b2) {
+    PL_UNUSED(ctx);
+    return b1.val && (b2.val != 0) ? b2.val : 0;
+  }
+  static InfRuleVec SemanticInferenceRules() {
+    return {
+        InheritTypeFromArgs<TypedScalarUDF1>::Create({types::ST_BYTES}, {1}),
+    };
+  }
+};
+
+TEST(Registry, semantic_type_rules) {
+  Registry registry("test_registry");
+  registry.RegisterOrDie<TypedUDA1>("uda1");
+  registry.RegisterOrDie<TypedScalarUDF1>("scalar1");
+  auto udf_info = registry.ToProto();
+
+  udfspb::UDFInfo expected_udf_info;
+  EXPECT_THAT(udf_info, EqualsProto(kExpectedUDFInfoWithTypes));
+}
+
+class TypedOverloadUDA1 : public UDA {
+ public:
+  Status Init(FunctionContext*) { return Status::OK(); }
+  void Update(FunctionContext*, types::Float64Value) {}
+  void Merge(FunctionContext*, const TypedOverloadUDA1&) {}
+  types::Int64Value Finalize(FunctionContext*) { return 0; }
+
+  static InfRuleVec SemanticInferenceRules() {
+    return {
+        InheritTypeFromArgs<TypedOverloadUDA1>::Create({types::ST_BYTES}),
+    };
+  }
+};
+
+constexpr char kExpectedUDFInfoWithOverloadedTypes[] = R"pbtxt(
+udas {
+  name: "uda1"
+  update_arg_types: INT64
+  finalize_type: INT64
+}
+udas {
+  name: "uda1"
+  update_arg_types: FLOAT64
+  finalize_type: INT64
+}
+semantic_type_rules {
+  name: "uda1"
+  udf_exec_type: UDA
+  update_arg_types: ST_BYTES
+  output_type: ST_BYTES
+}
+)pbtxt";
+
+TEST(Registry, semantic_type_rules_shouldnt_be_duped_for_overloaded_raw_types) {
+  Registry registry("test_registry");
+  registry.RegisterOrDie<TypedUDA1>("uda1");
+  registry.RegisterOrDie<TypedOverloadUDA1>("uda1");
+  auto udf_info = registry.ToProto();
+
+  udfspb::UDFInfo expected_udf_info;
+  EXPECT_THAT(udf_info, EqualsProto(kExpectedUDFInfoWithOverloadedTypes));
+}
+
+class TypedUDA2 : public UDA {
+ public:
+  Status Init(FunctionContext*) { return Status::OK(); }
+  void Update(FunctionContext*, types::Int64Value) {}
+  void Merge(FunctionContext*, const TypedUDA2&) {}
+  types::Int64Value Finalize(FunctionContext*) { return 0; }
+
+  static InfRuleVec SemanticInferenceRules() {
+    return {
+        InheritTypeFromArgs<TypedUDA2>::Create({types::ST_BYTES}),
+    };
+  }
+};
+
+class TypedOverloadUDA2 : public UDA {
+ public:
+  Status Init(FunctionContext*) { return Status::OK(); }
+  void Update(FunctionContext*, types::Float64Value, types::Int64Value) {}
+  void Merge(FunctionContext*, const TypedOverloadUDA2&) {}
+  types::Int64Value Finalize(FunctionContext*) { return 0; }
+
+  static InfRuleVec SemanticInferenceRules() {
+    return {
+        InheritTypeFromArgs<TypedOverloadUDA2>::Create({types::ST_BYTES}, {1}),
+    };
+  }
+};
+
+constexpr char kExpectedUDFInfoWithOverloadedTypes2[] = R"pbtxt(
+udas {
+  name: "uda2"
+  update_arg_types: INT64
+  finalize_type: INT64
+}
+udas {
+  name: "uda2"
+  update_arg_types: FLOAT64
+  update_arg_types: INT64
+  finalize_type: INT64
+}
+semantic_type_rules {
+  name: "uda2"
+  udf_exec_type: UDA
+  update_arg_types: ST_UNSPECIFIED
+  update_arg_types: ST_BYTES
+  output_type: ST_BYTES
+}
+semantic_type_rules {
+  name: "uda2"
+  udf_exec_type: UDA
+  update_arg_types: ST_BYTES
+  output_type: ST_BYTES
+}
+)pbtxt";
+
+TEST(Registry, semantic_type_rules_should_have_both_rules_if_overloaded_and_different) {
+  Registry registry("test_registry");
+  registry.RegisterOrDie<TypedUDA2>("uda2");
+  registry.RegisterOrDie<TypedOverloadUDA2>("uda2");
+  auto udf_info = registry.ToProto();
+
+  udfspb::UDFInfo expected_udf_info;
+  EXPECT_THAT(udf_info, EqualsProto(kExpectedUDFInfoWithOverloadedTypes2));
 }
 
 }  // namespace udf
