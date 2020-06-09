@@ -1,0 +1,5 @@
+---
+short: Service Communication Map
+long: >
+  Shows map of internal traffic between k8s services
+org_name: pixielabs.ai
