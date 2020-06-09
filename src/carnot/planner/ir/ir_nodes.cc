@@ -173,6 +173,7 @@ Status IRNode::CopyFromNode(const IRNode* node,
   col_ = node->col_;
   line_col_set_ = node->line_col_set_;
   ast_ = node->ast_;
+  resolved_type_ = node->resolved_type_;
   return CopyFromNodeImpl(node, copied_nodes_map);
 }
 
@@ -262,6 +263,17 @@ Status OperatorIR::PruneOutputColumnsTo(const absl::flat_hash_set<std::string>& 
       updated_relation.AddColumn(relation_.GetColumnType(colname), colname,
                                  relation_.GetColumnDesc(colname));
     }
+  }
+
+  // TODO(james): Once relation is removed we should turn this into a DCHECK.
+  if (is_type_resolved()) {
+    auto new_table = TableType::Create();
+    for (const auto& [col_name, col_type] : *std::static_pointer_cast<TableType>(resolved_type())) {
+      if (required_columns.contains(col_name)) {
+        new_table->AddColumn(col_name, col_type->Copy());
+      }
+    }
+    PL_RETURN_IF_ERROR(SetResolvedType(new_table));
   }
   return SetRelation(updated_relation);
 }
@@ -1967,6 +1979,43 @@ StatusOr<IRNodeType> DataTypeToIRNodeType(types::DataType type) {
       return error::InvalidArgument("data type: '$0' cannot be converted into an IRNodeType",
                                     magic_enum::enum_name(type));
     }
+  }
+}
+
+Status ResolveOperatorType(OperatorIR* op, CompilerState* compiler_state) {
+  if (op->is_type_resolved()) {
+    return Status::OK();
+  }
+  op->PullParentTypes();
+  switch (op->type()) {
+#undef PL_IR_NODE
+#define PL_IR_NODE(NAME)    \
+  case IRNodeType::k##NAME: \
+    return OperatorTraits<NAME##IR>::ResolveType(static_cast<NAME##IR*>(op), compiler_state);
+#include "src/carnot/planner/ir/operators.inl"
+#undef PL_IR_NODE
+    default:
+      return error::Internal(
+          absl::Substitute("cannot resolve operator type for non-operator: $0", op->type_string()));
+  }
+}
+
+Status ResolveExpressionType(ExpressionIR* expr, CompilerState* compiler_state,
+                             const std::vector<TypePtr>& parent_types) {
+  if (expr->is_type_resolved()) {
+    return Status::OK();
+  }
+  switch (expr->type()) {
+#undef PL_IR_NODE
+#define PL_IR_NODE(NAME)                                                                         \
+  case IRNodeType::k##NAME:                                                                      \
+    return ExpressionTraits<NAME##IR>::ResolveType(static_cast<NAME##IR*>(expr), compiler_state, \
+                                                   parent_types);
+#include "src/carnot/planner/ir/expressions.inl"
+#undef PL_IR_NODE
+    default:
+      return error::Internal(absl::Substitute(
+          "cannot resolve expression type for non-expression: $0", expr->type_string()));
   }
 }
 

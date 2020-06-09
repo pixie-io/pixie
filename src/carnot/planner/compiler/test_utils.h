@@ -581,6 +581,12 @@ class OperatorTests : public ::testing::Test {
                              std::vector<ExpressionIR*>{})
         .ConsumeValueOrDie();
   }
+  FuncIR* MakeCountFunc(ExpressionIR* value) {
+    return graph
+        ->CreateNode<FuncIR>(ast, FuncIR::Op{FuncIR::Opcode::non_op, "", "count"},
+                             std::vector<ExpressionIR*>({value}))
+        .ConsumeValueOrDie();
+  }
 
   std::shared_ptr<IR> SwapGraphBeingBuilt(std::shared_ptr<IR> new_graph) {
     std::shared_ptr<IR> old_graph = graph;
@@ -1216,6 +1222,11 @@ void CompareClone(IRNode* new_ir, IRNode* old_ir, const std::string& err_string)
                                              new_ir->DebugString());
   }
 }
+
+#define EXPECT_TableHasColumnWithType(table_type, col_name, expected_basic_type) \
+  ASSERT_TRUE(table_type->HasColumn(col_name));                                  \
+  EXPECT_EQ(*expected_basic_type, *std::static_pointer_cast<ValueType>(          \
+                                      table_type->GetColumnType(col_name).ConsumeValueOrDie()));
 
 }  // namespace planner
 }  // namespace carnot

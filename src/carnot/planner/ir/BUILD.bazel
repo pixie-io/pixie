@@ -11,6 +11,8 @@ pl_cc_library(
             "*.cc",
             "*.h",
             "ir_nodes.inl",
+            "expressions.inl",
+            "operators.inl",
         ],
         exclude = [
             "**/*_test.cc",
@@ -27,6 +29,8 @@ pl_cc_library(
         "//src/carnot/udf:cc_library",
         "//third_party:libpypa",
         "//src/carnot/planner/compiler_error_context:cc_library",
+        "//src/carnot/planner/types:cc_library",
+        "//src/carnot/planner/compiler_state:cc_library",
     ],
 )
 
@@ -44,5 +48,15 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/carnot/planner/compiler:test_utils",
+    ],
+)
+
+pl_cc_test(
+    name = "type_resolution_test",
+    srcs = ["type_resolution_test.cc"],
+    deps = [
+        ":cc_library",
+        "//src/carnot/planner/compiler:test_utils",
+        "//src/carnot/udf_exporter:cc_library",
     ],
 )

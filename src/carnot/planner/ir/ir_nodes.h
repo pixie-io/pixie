@@ -4,6 +4,7 @@
 #include <memory>
 #include <queue>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -14,7 +15,10 @@
 #include "src/carnot/plan/dag.h"
 #include "src/carnot/plan/operators.h"
 #include "src/carnot/planner/compiler_error_context/compiler_error_context.h"
+#include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/compilerpb/compiler_status.pb.h"
+#include "src/carnot/planner/ir/ir_node_traits.h"
+#include "src/carnot/planner/types/types.h"
 #include "src/carnot/udfspb/udfs.pb.h"
 #include "src/common/base/base.h"
 #include "src/shared/metadatapb/metadata.pb.h"
@@ -145,6 +149,13 @@ class IRNode {
   void SetLineCol(int64_t line, int64_t col);
   void SetLineCol(const pypa::AstPtr& ast);
 
+  TypePtr resolved_type() { return resolved_type_; }
+  bool is_type_resolved() { return resolved_type_ != nullptr; }
+  Status SetResolvedType(TypePtr resolved_type) {
+    resolved_type_ = resolved_type;
+    return Status::OK();
+  }
+
  protected:
   explicit IRNode(int64_t id, IRNodeType type) : type_(type), id_(id) {}
   virtual Status CopyFromNodeImpl(
@@ -161,6 +172,7 @@ class IRNode {
   IR* graph_;
   bool line_col_set_ = false;
   pypa::AstPtr ast_;
+  TypePtr resolved_type_;
 };
 
 inline std::ostream& operator<<(std::ostream& out, IRNode* node) {
@@ -464,6 +476,27 @@ class OperatorIR : public IRNode {
   // match an "Operator" generally, when any "leaf" type of Operator would have been a match.
   static std::string class_type_string() { return "Operator"; }
 
+  static StatusOr<TypePtr> DefaultResolveType(const std::vector<TypePtr>& parent_types);
+
+  const std::vector<TypePtr>& parent_types() const {
+    DCHECK(parent_types_set_);
+    return parent_types_;
+  }
+
+  void PullParentTypes() {
+    DCHECK(!parent_types_set_);
+    for (const auto& parent : parents()) {
+      DCHECK(parent->is_type_resolved());
+      parent_types_.push_back(parent->resolved_type());
+    }
+    parent_types_set_ = true;
+  }
+
+  // Some operators don't need to resolve type. For example, some ops only occur at
+  // the distributed level eg GRPC*, and type information shouldn't be needed at the distributed
+  // stage.
+  static constexpr bool FailOnResolveType() { return false; }
+
  protected:
   explicit OperatorIR(int64_t id, IRNodeType type) : IRNode(id, type) {}
 
@@ -486,6 +519,8 @@ class OperatorIR : public IRNode {
   bool relation_init_ = false;
   std::vector<OperatorIR*> parents_;
   table_store::schema::Relation relation_;
+  std::vector<TypePtr> parent_types_;
+  bool parent_types_set_ = false;
 };
 
 class ExpressionIR : public IRNode {
@@ -506,6 +541,7 @@ class ExpressionIR : public IRNode {
   static std::string class_type_string() { return "Expression"; }
   StatusOr<absl::flat_hash_set<ColumnIR*>> InputColumns();
   StatusOr<absl::flat_hash_set<std::string>> InputColumnNames();
+  static constexpr bool FailOnResolveType() { return false; }
 
   /**
    * @brief Override of CopyFromNode that adds special handling for ExpressionIR.
@@ -863,6 +899,8 @@ class ColumnIR : public ExpressionIR {
     col_name_ = col_name;
   }
 
+  Status ResolveType(CompilerState* compiler_state, const std::vector<TypePtr>& parent_types);
+
  protected:
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
@@ -1069,6 +1107,8 @@ class FuncIR : public ExpressionIR {
     return true;
   }
 
+  Status ResolveType(CompilerState* compiler_state, const std::vector<TypePtr>& parent_types);
+
  private:
   std::string func_prefix_ = kPLFuncPrefix;
   Op op_;
@@ -1210,6 +1250,8 @@ class MetadataIR : public ColumnIR {
 
   std::string DebugString() const override;
 
+  static constexpr bool FailOnResolveType() { return true; }
+
  private:
   std::string metadata_name_;
   MetadataProperty* property_ = nullptr;
@@ -1293,6 +1335,8 @@ class MemorySourceIR : public OperatorIR {
 
   bool IsSource() const override { return true; }
 
+  Status ResolveType(CompilerState* compiler_state);
+
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
       const absl::flat_hash_set<std::string>& output_colnames) override;
@@ -1351,6 +1395,8 @@ class MemorySinkIR : public OperatorIR {
     return std::vector<absl::flat_hash_set<std::string>>{outputs};
   }
 
+  Status ResolveType(CompilerState* compiler_state);
+
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
       const absl::flat_hash_set<std::string>& /*output_colnames*/) override {
@@ -1387,6 +1433,8 @@ class MapIR : public OperatorIR {
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
 
+  Status ResolveType(CompilerState* compiler_state);
+
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
       const absl::flat_hash_set<std::string>& output_colnames) override;
@@ -1417,6 +1465,8 @@ class DropIR : public OperatorIR {
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override {
     return error::Unimplemented("Unexpected call to DropIR::RequiredInputColumns");
   }
+
+  Status ResolveType(CompilerState* compiler_state);
 
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
@@ -1473,6 +1523,8 @@ class BlockingAggIR : public GroupAcceptorIR {
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
 
   Status SetAggExprs(const ColExpressionVector& agg_expr);
+
+  Status ResolveType(CompilerState* compiler_state);
 
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
@@ -1608,6 +1660,8 @@ class GRPCSinkIR : public OperatorIR {
     return error::Unimplemented("Unexpected call to GRPCSinkIR::RequiredInputColumns");
   }
 
+  static constexpr bool FailOnResolveType() { return true; }
+
  protected:
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
@@ -1644,6 +1698,8 @@ class GRPCSourceIR : public OperatorIR {
   }
 
   bool IsSource() const override { return true; }
+
+  static constexpr bool FailOnResolveType() { return true; }
 
  protected:
   Status CopyFromNodeImpl(const IRNode* node,
@@ -1700,6 +1756,8 @@ class GRPCSourceGroupIR : public OperatorIR {
 
   bool IsSource() const override { return true; }
 
+  static constexpr bool FailOnResolveType() { return true; }
+
  protected:
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
@@ -1736,6 +1794,8 @@ class UnionIR : public OperatorIR {
   const std::vector<InputColumnMapping>& column_mappings() const { return column_mappings_; }
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
+
+  Status ResolveType(CompilerState* compiler_state);
 
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
@@ -1810,6 +1870,31 @@ class JoinIR : public OperatorIR {
   bool specified_as_right() const { return specified_as_right_; }
 
   StatusOr<std::vector<absl::flat_hash_set<std::string>>> RequiredInputColumns() const override;
+
+  const std::tuple<std::shared_ptr<TableType>, std::shared_ptr<TableType>> left_right_table_types()
+      const {
+    auto left_idx = 0;
+    auto right_idx = 1;
+    if (specified_as_right()) {
+      left_idx = 1;
+      right_idx = 0;
+    }
+    auto left_type = std::static_pointer_cast<TableType>(parent_types()[left_idx]);
+    auto right_type = std::static_pointer_cast<TableType>(parent_types()[right_idx]);
+    return std::make_tuple(left_type, right_type);
+  }
+
+  const std::tuple<std::string, std::string> left_right_suffixs() const {
+    auto left_idx = 0;
+    auto right_idx = 1;
+    if (specified_as_right()) {
+      left_idx = 1;
+      right_idx = 0;
+    }
+    return std::make_tuple(suffix_strs_[left_idx], suffix_strs_[right_idx]);
+  }
+
+  Status ResolveType(CompilerState* compiler_state);
 
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
@@ -1903,6 +1988,8 @@ class TabletSourceGroupIR : public OperatorIR {
   bool IsBlocking() const override { return false; }
   bool IsSource() const override { return true; }
 
+  static constexpr bool FailOnResolveType() { return true; }
+
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
       const absl::flat_hash_set<std::string>& /*kept_columns*/) override {
@@ -1951,6 +2038,8 @@ class UDTFSourceIR : public OperatorIR {
   }
 
   bool IsSource() const override { return true; }
+
+  Status ResolveType(CompilerState* compiler_state);
 
  protected:
   // We currently don't support materializing a subset of UDTF output columns.
@@ -2017,6 +2106,10 @@ class RollingIR : public GroupAcceptorIR {
   ExpressionIR* window_size_;
 };
 
+Status ResolveOperatorType(OperatorIR* op, CompilerState* compiler_state);
+
+Status ResolveExpressionType(ExpressionIR* expr, CompilerState* compiler_state,
+                             const std::vector<TypePtr>& parent_types);
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl

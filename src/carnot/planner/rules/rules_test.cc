@@ -2640,6 +2640,54 @@ TEST_F(RulesTest, ConvertMetadataRuleTest_missing_conversion_column) {
   skip_check_stray_nodes_ = true;
 }
 
+TEST_F(RulesTest, PruneUnusedColumnsRule_updates_resolved_type) {
+  MemorySourceIR* mem_src = MakeMemSource(MakeRelation());
+  auto mem_src_type = TableType::Create(mem_src->relation());
+  ASSERT_OK(mem_src->SetResolvedType(mem_src_type));
+
+  ColumnExpression expr1{"count_1", MakeColumn("count", 0)};
+  ColumnExpression expr2{"cpu0_1", MakeColumn("cpu0", 0)};
+
+  auto map = MakeMap(mem_src, {expr1, expr2}, false);
+  Relation map_relation{{types::DataType::INT64, types::DataType::FLOAT64}, {"count_1", "cpu0_1"}};
+  ASSERT_OK(map->SetRelation(map_relation));
+  ASSERT_OK(ResolveOperatorType(map, compiler_state_.get()));
+
+  auto sink = MakeMemSink(map, "abc", {"cpu0_1"});
+  Relation sink_relation{{types::DataType::FLOAT64}, {"cpu0_1"}};
+  ASSERT_OK(sink->SetRelation(sink_relation));
+  ASSERT_OK(ResolveOperatorType(sink, compiler_state_.get()));
+
+  PruneUnusedColumnsRule rule;
+  auto result = rule.Execute(graph.get());
+  ASSERT_OK(result);
+  ASSERT_TRUE(result.ConsumeValueOrDie());
+
+  EXPECT_EQ(mem_src->relation(), Relation({types::DataType::FLOAT64}, {"cpu0"}));
+  EXPECT_THAT(mem_src->column_names(), ElementsAre("cpu0"));
+  auto new_src_table_type = std::static_pointer_cast<TableType>(mem_src->resolved_type());
+  EXPECT_TRUE(new_src_table_type->HasColumn("cpu0"));
+  EXPECT_FALSE(new_src_table_type->HasColumn("count"));
+  EXPECT_EQ(*ValueType::Create(types::FLOAT64, types::ST_UNSPECIFIED),
+            *std::static_pointer_cast<ValueType>(
+                new_src_table_type->GetColumnType("cpu0").ConsumeValueOrDie()));
+
+  EXPECT_EQ(map->relation(), sink_relation);
+  EXPECT_EQ(1, map->col_exprs().size());
+  EXPECT_EQ(expr2.name, map->col_exprs()[0].name);
+  EXPECT_EQ(expr2.node, map->col_exprs()[0].node);
+
+  auto new_map_table_type = std::static_pointer_cast<TableType>(map->resolved_type());
+  EXPECT_TRUE(new_map_table_type->HasColumn("cpu0_1"));
+  EXPECT_EQ(*ValueType::Create(types::DataType::FLOAT64, types::ST_UNSPECIFIED),
+            *std::static_pointer_cast<ValueType>(
+                new_map_table_type->GetColumnType("cpu0_1").ConsumeValueOrDie()));
+  EXPECT_FALSE(new_map_table_type->HasColumn("count_1"));
+
+  // Should be unchanged
+  EXPECT_EQ(sink_relation, sink->relation());
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl
