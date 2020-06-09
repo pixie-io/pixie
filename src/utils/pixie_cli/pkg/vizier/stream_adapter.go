@@ -42,6 +42,7 @@ type VizierExecData struct {
 // VizierStreamOutputAdapter adapts the vizier output to the StreamWriters.
 type VizierStreamOutputAdapter struct {
 	tableNameToInfo     map[string]*TableInfo
+	execStats           *pl_api_vizierpb.QueryExecutionStats
 	streamWriterFactory StreamWriterFactorFunc
 	wg                  sync.WaitGroup
 	enableFormat        bool
@@ -113,6 +114,14 @@ func (v *VizierStreamOutputAdapter) Finish() error {
 		ti.w.Finish()
 	}
 	return nil
+}
+
+// ExecStats returns the reported execution stats. This function is only valid with format = inmemory and after Finish.
+func (v *VizierStreamOutputAdapter) ExecStats() (*pl_api_vizierpb.QueryExecutionStats, error) {
+	if v.execStats == nil {
+		return nil, fmt.Errorf("ExecStats not found")
+	}
+	return v.execStats, nil
 }
 
 // Views gets all the accumulated views. This function is only valid with format = inmemory and after Finish.
@@ -291,7 +300,18 @@ func (v *VizierStreamOutputAdapter) getFormattedValue(tableInfo *TableInfo, colI
 	return val
 }
 
+func (v *VizierStreamOutputAdapter) handleExecutionStats(ctx context.Context, es *pl_api_vizierpb.QueryExecutionStats) error {
+	v.execStats = es
+	return nil
+}
+
 func (v *VizierStreamOutputAdapter) handleData(ctx context.Context, cid string, d *pl_api_vizierpb.ExecuteScriptResponse_Data) error {
+	if d.Data.ExecutionStats != nil {
+		err := v.handleExecutionStats(ctx, d.Data.ExecutionStats)
+		if err != nil {
+			return err
+		}
+	}
 
 	if d.Data.Batch == nil {
 		return nil
