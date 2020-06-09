@@ -497,6 +497,10 @@ class OperatorTests : public ::testing::Test {
 
   IntIR* MakeInt(int64_t val) { return graph->CreateNode<IntIR>(ast, val).ConsumeValueOrDie(); }
 
+  FloatIR* MakeFloat(double val) {
+    return graph->CreateNode<FloatIR>(ast, val).ConsumeValueOrDie();
+  }
+
   FuncIR* MakeAddFunc(ExpressionIR* left, ExpressionIR* right) {
     return graph
         ->CreateNode<FuncIR>(ast, FuncIR::op_map.find("+")->second,
@@ -609,6 +613,15 @@ class OperatorTests : public ::testing::Test {
         .ConsumeValueOrDie();
   }
 
+  JoinIR* MakeJoin(const std::vector<OperatorIR*>& parents, const std::string& join_type,
+                   const std::vector<ColumnIR*>& left_on_cols,
+                   const std::vector<ColumnIR*>& right_on_cols,
+                   const std::vector<std::string>& suffix_strs = std::vector<std::string>{}) {
+    return graph
+        ->CreateNode<JoinIR>(ast, parents, join_type, left_on_cols, right_on_cols, suffix_strs)
+        .ConsumeValueOrDie();
+  }
+
   // Use this if you need a relation but don't care about the contents.
   table_store::schema::Relation MakeRelation() {
     return table_store::schema::Relation(
@@ -654,6 +667,11 @@ class OperatorTests : public ::testing::Test {
       arg_value_map[arg_names[i]] = arg_values[i];
     }
     return MakeUDTFSource(udtf_spec, arg_value_map);
+  }
+
+  DropIR* MakeDrop(OperatorIR* parent, const std::vector<std::string>& drop_cols) {
+    DropIR* drop = graph->CreateNode<DropIR>(ast, parent, drop_cols).ConsumeValueOrDie();
+    return drop;
   }
 
   TimeIR* MakeTime(int64_t t) { return graph->CreateNode<TimeIR>(ast, t).ConsumeValueOrDie(); }
