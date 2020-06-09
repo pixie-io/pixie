@@ -839,8 +839,6 @@ template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          const ConnectionTracker& conn_tracker, http::Record record,
                                          DataTable* data_table) {
-  DCHECK_EQ(kHTTPTable.elements().size(), data_table->ActiveRecordBatch()->size());
-
   http::Message& req_message = record.req;
   http::Message& resp_message = record.resp;
 
@@ -1001,8 +999,6 @@ template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          const ConnectionTracker& conn_tracker, mysql::Record entry,
                                          DataTable* data_table) {
-  DCHECK_EQ(kMySQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
-
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
@@ -1027,8 +1023,6 @@ template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          const ConnectionTracker& conn_tracker, cass::Record entry,
                                          DataTable* data_table) {
-  DCHECK_EQ(kCQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
-
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
@@ -1053,8 +1047,6 @@ template <>
 void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                                          const ConnectionTracker& conn_tracker, pgsql::Record entry,
                                          DataTable* data_table) {
-  DCHECK_EQ(kPGSQLTable.elements().size(), data_table->ActiveRecordBatch()->size());
-
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
@@ -1193,8 +1185,6 @@ void SocketTraceConnector::TransferStream(ConnectorContext* ctx, ConnectionTrack
 }
 
 void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTable* data_table) {
-  DCHECK_EQ(kConnStatsTable.elements().size(), data_table->ActiveRecordBatch()->size());
-
   namespace idx = ::pl::stirling::conn_stats_idx;
 
   absl::flat_hash_set<md::UPID> upids = ctx->GetUPIDs();

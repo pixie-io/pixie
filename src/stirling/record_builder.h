@@ -89,7 +89,9 @@ class RecordBuilder {
 
  private:
   explicit RecordBuilder(types::ColumnWrapperRecordBatch* active_record_batch)
-      : record_batch_(*active_record_batch) {}
+      : record_batch_(*active_record_batch) {
+    DCHECK_EQ(schema->elements().size(), active_record_batch->size());
+  }
 
   types::ColumnWrapperRecordBatch& record_batch_;
   std::bitset<schema->elements().size()> signature_;
