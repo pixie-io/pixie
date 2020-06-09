@@ -114,6 +114,10 @@ func main() {
 			if err != nil {
 				log.WithError(err).Fatal("Could not delete existing etcd")
 			}
+			_, err = od.DeleteByLabel("app=pl-monitoring", "PersistentVolumeClaim")
+			if err != nil {
+				log.WithError(err).Fatal("Could not delete etcd pvc")
+			}
 		}
 
 		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[etcdYAMLPath])
