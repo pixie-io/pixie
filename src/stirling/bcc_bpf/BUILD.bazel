@@ -34,7 +34,7 @@ pl_bpf_cc_resource(
     hdrs = [
         "go_grpc.c",
         "openssl_trace.c",
-        "pgsql.h",
+        "protocol_inference.h",
         "utils.h",
         "//src/stirling/bcc_bpf_interface:headers",
     ],
@@ -50,7 +50,7 @@ pl_bpf_preprocess(
     hdrs = [
         "go_grpc.c",
         "openssl_trace.c",
-        "pgsql.h",
+        "protocol_inference.h",
         "utils.h",
         "//src/stirling/bcc_bpf_interface:headers",
     ],
@@ -102,12 +102,12 @@ pl_bpf_preprocess(
 )
 
 pl_cc_test(
-    name = "pgsql_test",
+    name = "protocol_inference_test",
     srcs = [
-        "pgsql.h",
-        "utils.h",
         "stubs.h",
-        "pgsql_test.cc",
+        "utils.h",
+        "protocol_inference.h",
+        "protocol_inference_test.cc",
     ],
     deps = [
         "//src/stirling/common:cc_library",

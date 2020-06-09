@@ -55,7 +55,7 @@ static __inline uint64_t get_tgid_start_time() {
   return pl_nsec_to_clock_t(start_boottime);
 }
 
-static __inline int32_t read_big_endian_int32(const uint8_t* buf) {
+static __inline int32_t read_big_endian_int32(const char* buf) {
   int32_t length;
   bpf_probe_read(&length, 4, buf);
   return bpf_ntohl(length);

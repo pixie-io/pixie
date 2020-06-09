@@ -4,10 +4,10 @@
 #include <linux/sched.h>  // NOLINT
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/bcc_bpf/pgsql.h"
+#include "src/stirling/bcc_bpf/protocol_inference.h"
 
 TEST(PGSQLTest, InferMessage) {
-  constexpr uint8_t kStartupMessage[] =
+  constexpr char kStartupMessage[] =
       "\x00\x00\x00\x54\x00\x03\x00\x00\x75\x73\x65\x72\x00\x70\x6f\x73"
       "\x74\x67\x72\x65\x73\x00\x64\x61\x74\x61\x62\x61\x73\x65\x00\x70"
       "\x6f\x73\x74\x67\x72\x65\x73\x00\x61\x70\x70\x6c\x69\x63\x61\x74"
@@ -18,7 +18,7 @@ TEST(PGSQLTest, InferMessage) {
   EXPECT_EQ(kRequest, infer_pgsql_startup_message(kStartupMessage, sizeof(kStartupMessage)));
   EXPECT_EQ(kRequest, infer_pgsql_message(kStartupMessage, sizeof(kStartupMessage)));
 
-  constexpr uint8_t kQueryMessage[] =
+  constexpr char kQueryMessage[] =
       "\x51\x00\x00\x00\x22\x63\x72\x65\x61\x74\x65\x20\x74\x61\x62\x6c"
       "\x65\x20\x66\x6f\x6f\x20\x28\x66\x31\x20\x73\x65\x72\x69\x61\x6c"
       "\x29\x3b\x00";
