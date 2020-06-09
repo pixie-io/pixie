@@ -22,13 +22,14 @@
 namespace pl {
 namespace stirling {
 
-using ::pl::stirling::testing::ColWrapperSizeIs;
 using ::testing::Each;
 using ::testing::ElementsAre;
 
-using testing::kFD;
-using testing::kPID;
-using testing::kPIDStartTimeTicks;
+using ::pl::stirling::testing::ColWrapperSizeIs;
+
+using ::pl::stirling::testing::kFD;
+using ::pl::stirling::testing::kPID;
+using ::pl::stirling::testing::kPIDStartTimeTicks;
 
 using RecordBatch = types::ColumnWrapperRecordBatch;
 
@@ -168,6 +169,15 @@ class SocketTraceConnectorTest : public ::testing::Test {
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
 };
 
+types::ColumnWrapperRecordBatch ConsumeRecords(DataTable* data_table) {
+  // This call to ActiveRecordBatch ensures that the table has been set-up properly,
+  // before calling ConsumeRecordBatches.
+  data_table->ActiveRecordBatch();
+  auto tagged_record_batches = data_table->ConsumeRecordBatches();
+  CHECK(!tagged_record_batches.empty());
+  return *(tagged_record_batches[0].records_uptr);
+}
+
 auto ToStringVector(const types::SharedColumnWrapper& col) {
   std::vector<std::string> result;
   for (size_t i = 0; i < col->Size(); ++i) {
@@ -203,7 +213,6 @@ TEST_F(SocketTraceConnectorTest, HTTPContentType) {
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   DataTable data_table(kHTTPTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   EXPECT_NE(0, source_->ClockRealTimeOffset());
 
@@ -220,6 +229,9 @@ TEST_F(SocketTraceConnectorTest, HTTPContentType) {
   source_->AcceptControlEvent(close_event);
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+
+  RecordBatch record_batch = ConsumeRecords(&data_table);
+
   EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(4)))
       << "The filter is changed to require 'application/json' in Content-Type header, "
          "and event_json Content-Type matches, and is selected";
@@ -240,7 +252,6 @@ TEST_F(SocketTraceConnectorTest, UPIDCheck) {
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   DataTable data_table(kHTTPTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   // Registers a new connection.
   source_->AcceptControlEvent(conn);
@@ -251,6 +262,8 @@ TEST_F(SocketTraceConnectorTest, UPIDCheck) {
   source_->AcceptControlEvent(close_event);
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+
+  RecordBatch record_batch = ConsumeRecords(&data_table);
 
   for (const auto& column : record_batch) {
     ASSERT_EQ(2, column->Size());
@@ -281,7 +294,7 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   DataTable data_table(kHTTPTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch;
 
   source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(event0));
@@ -292,12 +305,16 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   source_->AcceptDataEvent(std::move(event6));
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+
+  record_batch = ConsumeRecords(&data_table);
   EXPECT_EQ(2, record_batch[0]->Size());
 
   source_->AcceptDataEvent(std::move(event3));
   source_->AcceptControlEvent(close_event);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  EXPECT_EQ(2, record_batch[0]->Size()) << "Late events won't get processed.";
+
+  record_batch = ConsumeRecords(&data_table);
+  EXPECT_EQ(0, record_batch[0]->Size()) << "Late events won't get processed.";
 }
 
 TEST_F(SocketTraceConnectorTest, NoEvents) {
@@ -308,25 +325,32 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   DataTable data_table(kHTTPTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch;
 
   source_->AcceptControlEvent(conn);
 
   // Check empty transfer.
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  record_batch = ConsumeRecords(&data_table);
   EXPECT_EQ(0, record_batch[0]->Size());
 
   // Check empty transfer following a successful transfer.
   source_->AcceptDataEvent(std::move(event0));
   source_->AcceptDataEvent(std::move(event1));
+
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  EXPECT_EQ(1, record_batch[0]->Size());
-  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  record_batch = ConsumeRecords(&data_table);
   EXPECT_EQ(1, record_batch[0]->Size());
 
+  source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  record_batch = ConsumeRecords(&data_table);
+  EXPECT_EQ(0, record_batch[0]->Size());
   EXPECT_EQ(1, source_->NumActiveConnections());
+
   source_->AcceptControlEvent(close_event);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  record_batch = ConsumeRecords(&data_table);
+  EXPECT_EQ(0, record_batch[0]->Size());
 }
 
 TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
@@ -341,7 +365,6 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
   struct socket_control_event_t close_event = event_gen.InitClose();
 
   DataTable data_table(kHTTPTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
 
   source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(req_event0));
@@ -352,6 +375,8 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
   source_->AcceptDataEvent(std::move(resp_event2));
   source_->AcceptControlEvent(close_event);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+
+  RecordBatch record_batch = ConsumeRecords(&data_table);
   EXPECT_EQ(3, record_batch[0]->Size());
 
   EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]), ElementsAre("foo", "bar", "doe"));
@@ -374,7 +399,7 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
   // No Close event (connection still active).
 
   DataTable data_table(kHTTPTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch;
 
   source_->AcceptControlEvent(conn);
   source_->AcceptDataEvent(std::move(req_event0));
@@ -385,6 +410,7 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
   source_->AcceptDataEvent(std::move(resp_event2));
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  record_batch = ConsumeRecords(&data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
   EXPECT_EQ(2, record_batch[0]->Size());
 
@@ -394,8 +420,9 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
   // Processing of resp_event3 will result in one more record.
   // TODO(oazizi): Update this when req-resp matching algorithm is updated.
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  record_batch = ConsumeRecords(&data_table);
   EXPECT_EQ(1, source_->NumActiveConnections());
-  EXPECT_EQ(3, record_batch[0]->Size());
+  EXPECT_EQ(1, record_batch[0]->Size());
 }
 
 TEST_F(SocketTraceConnectorTest, ConnectionCleanupInOrder) {
@@ -660,7 +687,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   conn0_req_event->attr.conn_id.fd = real_fd;
 
   DataTable data_table(kHTTPTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch;
 
   // Simulating events being emitted from BPF perf buffer.
   source_->AcceptControlEvent(conn0);
@@ -688,6 +715,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   EXPECT_EQ(1, source_->NumActiveConnections());
 
   // Should not have transferred any data.
+  record_batch = ConsumeRecords(&data_table);
   EXPECT_EQ(0, record_batch[0]->Size());
 
   // Events should have been flushed.
@@ -728,11 +756,11 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   }
 
   DataTable data_table(kMySQLTable);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch;
+
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-  for (const auto& column : record_batch) {
-    EXPECT_EQ(2, column->Size());
-  }
+  record_batch = ConsumeRecords(&data_table);
+  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
   std::string expected_entry0 =
       "SELECT sock.sock_id AS id, GROUP_CONCAT(tag.name) AS tag_name FROM sock "
@@ -752,6 +780,10 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
               ElementsAre(expected_entry0, expected_entry1));
   EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]),
               ElementsAre("", "Resultset rows = 2"));
+  // In test environment, latencies are simply the number of packets in the response.
+  // StmtPrepare resp has 7 response packets: 1 header + 2 col defs + 1 EOF + 2 param defs + 1 EOF.
+  // StmtExecute resp has 7 response packets: 1 header + 2 col defs + 1 EOF + 2 rows + 1 EOF.
+  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMySQLLatencyIdx]), ElementsAre(7, 7));
 
   // Test execute fail after close. It should create an entry with the Error.
   std::unique_ptr<SocketDataEvent> close_req_event =
@@ -766,18 +798,16 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   source_->AcceptDataEvent(std::move(execute_resp_event2));
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
 
-  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
+  record_batch = ConsumeRecords(&data_table);
+  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
   EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]),
-              ElementsAre(expected_entry0, expected_entry1, "", "Execute stmt_id=2."));
+              ElementsAre("", "Execute stmt_id=2."));
   EXPECT_THAT(ToStringVector(record_batch[kMySQLRespBodyIdx]),
-              ElementsAre("", "Resultset rows = 2", "", "This is an error."));
+              ElementsAre("", "This is an error."));
   // In test environment, latencies are simply the number of packets in the response.
-  // StmtPrepare resp has 7 response packets: 1 header + 2 col defs + 1 EOF + 2 param defs + 1 EOF.
-  // StmtExecute resp has 7 response packets: 1 header + 2 col defs + 1 EOF + 2 rows + 1 EOF.
   // StmtClose resp has 0 response packets.
   // StmtExecute resp has 1 response packet: 1 error.
-  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMySQLLatencyIdx]),
-              ElementsAre(7, 7, 0, 1));
+  EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kMySQLLatencyIdx]), ElementsAre(0, 1));
 }
 
 TEST_F(SocketTraceConnectorTest, MySQLQuery) {
@@ -801,7 +831,7 @@ TEST_F(SocketTraceConnectorTest, MySQLQuery) {
 
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
 
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch = ConsumeRecords(&data_table);
   EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
 
   EXPECT_THAT(ToStringVector(record_batch[kMySQLReqBodyIdx]), ElementsAre("SELECT name FROM tag;"));
@@ -912,7 +942,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
 
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
 
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch = ConsumeRecords(&data_table);
   EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(9)));
 
   // In this test environment, latencies are the number of events.
@@ -1043,7 +1073,7 @@ TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
 
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
 
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch = ConsumeRecords(&data_table);
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   int idx = 0;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx),
@@ -1132,7 +1162,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
 
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
 
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch = ConsumeRecords(&data_table);
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   int idx = 0;
   EXPECT_EQ(record_batch[kMySQLReqBodyIdx]->Get<types::StringValue>(idx), "CALL multi()");
@@ -1197,7 +1227,7 @@ TEST_F(SocketTraceConnectorTest, CQLQuery) {
 
   source_->TransferData(ctx_.get(), SocketTraceConnector::kCQLTableNum, &data_table);
 
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch = ConsumeRecords(&data_table);
   EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
 
   EXPECT_THAT(ToIntVector<types::Int64Value>(record_batch[kCQLReqOpIdx]),
@@ -1251,7 +1281,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch = ConsumeRecords(&data_table);
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
@@ -1293,7 +1323,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch = ConsumeRecords(&data_table);
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
@@ -1331,7 +1361,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2PartialStream) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch = ConsumeRecords(&data_table);
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "uest");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
@@ -1356,7 +1386,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ResponseOnly) {
   source_->AcceptControlEvent(event_gen.InitClose());
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch = ConsumeRecords(&data_table);
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(0)));
 
   // TODO(oazizi): Someday we will need to capture response only streams properly.
@@ -1368,6 +1398,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ResponseOnly) {
 // This test models capturing data mid-stream, where we may have missed the request entirely.
 TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
   DataTable data_table(kHTTPTable);
+  RecordBatch record_batch;
 
   testing::EventGenerator event_gen(&real_clock_);
 
@@ -1387,7 +1418,8 @@ TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
   // TransferData should not have pushed data to the tables, because HTTP2 stream is still active.
-  ASSERT_THAT(*data_table.ActiveRecordBatch(), Each(ColWrapperSizeIs(0)));
+  record_batch = ConsumeRecords(&data_table);
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(0)));
 
   source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
   source_->AcceptHTTP2Header(frame_generator.GenHeader<kHeaderEventRead>(":status", "200"));
@@ -1397,7 +1429,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
   // TransferData should now have pushed data to the tables, because HTTP2 stream has ended.
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  record_batch = ConsumeRecords(&data_table);
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response");
@@ -1436,7 +1468,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SequentialStreams) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch = ConsumeRecords(&data_table);
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request7");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response7");
@@ -1502,7 +1534,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ParallelStreams) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch = ConsumeRecords(&data_table);
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request7");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response7");
@@ -1571,14 +1603,14 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamSandwich) {
   // a long-running stream does not block other shorter streams from being recorded.
   // Notice, however, that this causes stream_id 9 to appear before stream_id 7.
 
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch = ConsumeRecords(&data_table);
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
-  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request9");
-  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response9");
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request7");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response7");
   EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
 
-  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(1), "Request7");
-  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(1), "Response7");
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(1), "Request9");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(1), "Response9");
   EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(1), 0);
 }
 
@@ -1614,24 +1646,21 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamIDRace) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch = ConsumeRecords(&data_table);
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
 
-  // Note that the order in which the events are emitted are actually ordered by stream ID,
-  // even though the events of stream ID 5 came late.
-  // This would not necessary have been the case if the late-arriving stream had been after
-  // a call to TransferData().
+  // Note that results are sorted by time of request. See stream_ids vector above.
 
-  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request5");
-  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response5");
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request7");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response7");
   EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(0), 0);
 
-  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(1), "Request7");
-  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(1), "Response7");
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(1), "Request9");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(1), "Response9");
   EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(1), 0);
 
-  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(2), "Request9");
-  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(2), "Response9");
+  EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(2), "Request5");
+  EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(2), "Response5");
   EXPECT_GT(record_batch[kHTTPLatencyIdx]->Get<types::Int64Value>(2), 0);
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(3), "Request11");
@@ -1672,7 +1701,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2OldStream) {
 
   source_->AcceptControlEvent(event_gen.InitClose());
 
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  RecordBatch record_batch = ConsumeRecords(&data_table);
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request117");
