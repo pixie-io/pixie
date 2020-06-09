@@ -55,6 +55,16 @@ export function parseVis(json: string): Vis {
   try {
     const parsed = JSON.parse(json);
     if (typeof parsed === 'object') {
+      // TODO(nserrino): Do actual validation that this object matches the vis.proto json schema.
+      if (!parsed.variables) {
+        parsed.variables = [];
+      }
+      if (!parsed.widgets) {
+        parsed.widgets = [];
+      }
+      if (!parsed.globalFuncs) {
+        parsed.globalFuncs = [];
+      }
       return parsed as Vis;
     }
   } catch (e) {
