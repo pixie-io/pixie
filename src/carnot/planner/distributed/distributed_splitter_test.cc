@@ -58,7 +58,7 @@ class SplitterTest : public OperatorTests {
 
   template <typename TIR>
   TIR* GetEquivalentInNewPlan(IR* new_graph, TIR* old_node) {
-    DCHECK(new_graph->HasNode(old_node->id()));
+    DCHECK(new_graph->HasNode(old_node->id())) << old_node->DebugString() << " not found";
     IRNode* new_node = new_graph->Get(old_node->id());
     DCHECK_EQ(new_node->type(), old_node->type());
     return static_cast<TIR*>(new_node);
@@ -118,7 +118,7 @@ TEST_F(SplitterTest, limit_test) {
 
   // Verify the resultant graph.
   MemorySourceIR* new_mem_src = GetEquivalentInNewPlan(before_blocking, mem_src);
-  ASSERT_EQ(new_mem_src->Children().size(), 1UL);
+  ASSERT_EQ(new_mem_src->Children().size(), 1UL) << new_mem_src->ChildrenDebugString();
   OperatorIR* mem_src_child = new_mem_src->Children()[0];
 
   ASSERT_TRUE(Match(mem_src_child, Limit()))

@@ -140,7 +140,7 @@ absl::flat_hash_map<int64_t, bool> DistributedSplitter::GetKelvinNodes(
 StatusOr<std::unique_ptr<BlockingSplitPlan>> DistributedSplitter::SplitKelvinAndAgents(
     const IR* logical_plan) {
   // TODO(philkuz) redo the GetKelvinNodes and everything else to copy the plan before the
-  // CreateGRPCBridge call.
+  // CreateGRPCBridgePlan call.
   std::vector<OperatorIR*> sources = logical_plan->GetSources();
   absl::flat_hash_map<int64_t, bool> on_kelvin = GetKelvinNodes(sources);
   // Source_ids are necessary because we will make a clone of the plan at which point we will no
@@ -151,7 +151,7 @@ StatusOr<std::unique_ptr<BlockingSplitPlan>> DistributedSplitter::SplitKelvinAnd
     source_ids.push_back(src->id());
   }
   PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> grpc_bridge_plan,
-                      CreateGRPCBridge(logical_plan, on_kelvin, source_ids));
+                      CreateGRPCBridgePlan(logical_plan, on_kelvin, source_ids));
 
   PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> pem_plan, grpc_bridge_plan->Clone());
   PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> kelvin_plan, grpc_bridge_plan->Clone());
@@ -213,34 +213,88 @@ absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>> DistributedSplitter::
   return edges_to_break;
 }
 
-StatusOr<std::unique_ptr<IR>> DistributedSplitter::CreateGRPCBridge(
+PartialOperatorMgr* DistributedSplitter::GetPartialOperatorMgr(OperatorIR* op) const {
+  for (const auto& mgr : partial_operator_mgrs_) {
+    if (mgr->Matches(op)) {
+      return mgr.get();
+    }
+  }
+  return nullptr;
+}
+
+bool DistributedSplitter::AllHavePartialMgr(std::vector<OperatorIR*> children) const {
+  for (OperatorIR* c : children) {
+    PartialOperatorMgr* mgr = GetPartialOperatorMgr(c);
+    // mgr is nullptr if no mgr matches the Operator.
+    if (!mgr) {
+      return false;
+    }
+  }
+  return true;
+}
+
+Status DistributedSplitter::InsertGRPCBridge(IR* plan, OperatorIR* parent,
+                                             const std::vector<OperatorIR*>& blocking_children) {
+  // Possible results of this execution:
+  // 1. Some of the blocking_children do not have a partial implementation and we output 1 bridge.
+  // 2. All of the blocking_children have partial implementations and we output one bridge per.
+  // 3. All of the blocking nodes have partial implementations but the sum cost of GRPC Bridge per
+  // operator is greater than outputting a single Bridge for the parent as in case #1 (NOTE: not
+  // implemented yet).
+
+  // Handle case where some of the blocking_children dont have partial implementations. This assumes
+  // that network costs are greater than processing costs, so we just minimize network costs here.
+  if (!AllHavePartialMgr(blocking_children)) {
+    PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink, CreateGRPCSink(parent, grpc_id_counter_));
+    PL_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
+                        CreateGRPCSourceGroup(parent, grpc_id_counter_));
+    DCHECK_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
+    // Go through the blocking_children and replace the parent with the new child.
+    for (auto child : blocking_children) {
+      DCHECK(child->IsBlocking());
+      PL_RETURN_IF_ERROR(child->ReplaceParent(parent, grpc_source_group));
+    }
+    ++grpc_id_counter_;
+    return Status::OK();
+  }
+
+  // Handle case where each child has a partial implementation.
+  for (OperatorIR* c : blocking_children) {
+    // Create the prepare version of the operator.
+    PartialOperatorMgr* mgr = GetPartialOperatorMgr(c);
+    DCHECK(mgr) << "mgr not found for " << c->DebugString();
+    PL_ASSIGN_OR_RETURN(OperatorIR * prepare_op, mgr->CreatePrepareOperator(plan, c));
+    DCHECK(prepare_op->IsChildOf(parent)) << absl::Substitute(
+        "'$0' is not a child of '$1'", prepare_op->DebugString(), parent->DebugString());
+
+    // Create the GRPC Bridge from the prepare_op.
+    PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink, CreateGRPCSink(prepare_op, grpc_id_counter_));
+    PL_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
+                        CreateGRPCSourceGroup(prepare_op, grpc_id_counter_));
+    DCHECK_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
+
+    // Create the finalize version of the operator, getting input from the grpc_source_group.
+    PL_ASSIGN_OR_RETURN(OperatorIR * finalize_op,
+                        mgr->CreateMergeOperator(plan, grpc_source_group, c));
+    // Replace this child's children with the new parent.
+    for (auto grandchild : c->Children()) {
+      PL_RETURN_IF_ERROR(grandchild->ReplaceParent(c, finalize_op));
+    }
+    PL_RETURN_IF_ERROR(plan->DeleteNode(c->id()));
+    ++grpc_id_counter_;
+  }
+  return Status::OK();
+}
+
+StatusOr<std::unique_ptr<IR>> DistributedSplitter::CreateGRPCBridgePlan(
     const IR* logical_plan, const absl::flat_hash_map<int64_t, bool>& on_kelvin,
     const std::vector<int64_t>& sources) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<IR> grpc_bridge_plan, logical_plan->Clone());
   absl::flat_hash_map<OperatorIR*, std::vector<OperatorIR*>> edges_to_break =
       GetEdgesToBreak(grpc_bridge_plan.get(), on_kelvin, sources);
-  int64_t grpc_id_counter = 0;
   for (const auto& [parent, children] : edges_to_break) {
-    OperatorIR* grpc_sink_parent = parent;
-    // If there is one child and it is a Limit, then just limit before the GRPCBridge.
-    if (children.size() == 1 && Match(children[0], Limit())) {
-      LimitIR* limit = static_cast<LimitIR*>(children[0]);
-      PL_ASSIGN_OR_RETURN(LimitIR * new_limit, grpc_bridge_plan->CopyNode(limit));
-      PL_RETURN_IF_ERROR(new_limit->CopyParentsFrom(limit));
-      grpc_sink_parent = new_limit;
-    }
-    PL_ASSIGN_OR_RETURN(GRPCSinkIR * grpc_sink, CreateGRPCSink(grpc_sink_parent, grpc_id_counter));
-    PL_ASSIGN_OR_RETURN(GRPCSourceGroupIR * grpc_source_group,
-                        CreateGRPCSourceGroup(parent, grpc_id_counter));
-    DCHECK_EQ(grpc_sink->destination_id(), grpc_source_group->source_id());
-    // Go through the children and replace the parent with the new child.
-    for (auto child : children) {
-      DCHECK(child->IsBlocking());
-      PL_RETURN_IF_ERROR(child->ReplaceParent(parent, grpc_source_group));
-    }
-    ++grpc_id_counter;
+    PL_RETURN_IF_ERROR(InsertGRPCBridge(grpc_bridge_plan.get(), parent, children));
   }
-
   return grpc_bridge_plan;
 }
 

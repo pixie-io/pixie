@@ -1,0 +1,67 @@
+#pragma once
+#include "src/carnot/planner/ir/ir_nodes.h"
+#include "src/carnot/planner/ir/pattern_match.h"
+namespace pl {
+namespace carnot {
+namespace planner {
+namespace distributed {
+/**
+ * @brief PartialOperatorMgr is the interface to managed splitting Blocking Operators into portions
+ * that can run local to the original data and portions that merge those local resutls into a single
+ * result.
+ *
+ * For aggregates, an implementation will have a prepare statement that creates a partial aggregate,
+ * then the Merge will be the Finalize Aggregate.
+ */
+class PartialOperatorMgr : public NotCopyable {
+ public:
+  virtual ~PartialOperatorMgr() = default;
+  /**
+   * @brief Returns true if this Mgr can split up the pasesd in operator.
+   *
+   * @param op
+   * @return true
+   * @return false
+   */
+  virtual bool Matches(OperatorIR* op) const = 0;
+  /**
+   * @brief Create the Prepare Operator that does the "local" portion of the operator. For
+   * aggregates, this would be the partial aggregate.
+   *
+   * @param plan
+   * @param op
+   * @return OperatorIR*
+   */
+  virtual StatusOr<OperatorIR*> CreatePrepareOperator(IR* plan, OperatorIR* op) const = 0;
+
+  /**
+   * @brief Create the Merge version of this operator. This takes in results of PrepareOperators
+   * from several different sources and merges them to match the expected output of the original
+   * operator.
+   *
+   * @param plan
+   * @param new_parent
+   * @param op
+   * @return OperatorIR*
+   */
+  virtual StatusOr<OperatorIR*> CreateMergeOperator(IR* plan, OperatorIR* new_parent,
+                                                    OperatorIR* op) const = 0;
+};
+
+/**
+ * @brief LimitOperatorMgr manages splitting limits over the boundary. Prepare Limits are the same
+ * as the Merge operators, but it's a nice optimization because it removes a very unnecessary
+ * network transfer.
+ *
+ */
+class LimitOperatorMgr : public PartialOperatorMgr {
+ public:
+  bool Matches(OperatorIR* op) const override { return Match(op, Limit()); }
+  StatusOr<OperatorIR*> CreatePrepareOperator(IR* plan, OperatorIR* op) const override;
+  StatusOr<OperatorIR*> CreateMergeOperator(IR* plan, OperatorIR* new_parent,
+                                            OperatorIR* op) const override;
+};
+}  // namespace distributed
+}  // namespace planner
+}  // namespace carnot
+}  // namespace pl

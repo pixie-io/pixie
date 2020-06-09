@@ -119,3 +119,13 @@ pl_cc_test(
         ":cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "partial_op_mgr_test",
+    srcs = ["partial_op_mgr_test.cc"],
+    deps = [
+        "//src/carnot/planner/rules:test_utils",
+        "//src/carnot/planner:test_utils",
+        ":cc_library",
+    ],
+)

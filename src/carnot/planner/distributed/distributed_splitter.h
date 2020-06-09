@@ -9,6 +9,7 @@
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/compiler_state/registry_info.h"
 #include "src/carnot/planner/distributed/distributed_plan.h"
+#include "src/carnot/planner/distributed/partial_op_mgr.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/carnot/planner/rules/rule_executor.h"
@@ -89,6 +90,8 @@ class DistributedSplitter : public NotCopyable {
    */
   StatusOr<std::unique_ptr<BlockingSplitPlan>> SplitKelvinAndAgents(const IR* logical_plan);
 
+  DistributedSplitter() { partial_operator_mgrs_.push_back(std::make_unique<LimitOperatorMgr>()); }
+
  private:
   /**
    * @brief Returns the list of operator ids from the graph that occur before the blocking node and
@@ -115,11 +118,35 @@ class DistributedSplitter : public NotCopyable {
   bool RunsOnRemoteProcessors(const std::vector<OperatorIR*> sources);
   bool IsSourceOnKelvin(OperatorIR* source_op);
   bool IsChildOpOnKelvin(bool is_parent_on_kelvin, OperatorIR* source_op);
-  StatusOr<std::unique_ptr<IR>> CreateGRPCBridge(
+  StatusOr<std::unique_ptr<IR>> CreateGRPCBridgePlan(
       const IR* logical_plan, const absl::flat_hash_map<int64_t, bool>& on_kelvin,
       const std::vector<int64_t>& sources);
   StatusOr<GRPCSinkIR*> CreateGRPCSink(OperatorIR* parent_op, int64_t grpc_id);
   StatusOr<GRPCSourceGroupIR*> CreateGRPCSourceGroup(OperatorIR* parent_op, int64_t grpc_id);
+  Status InsertGRPCBridge(IR* plan, OperatorIR* parent, const std::vector<OperatorIR*>& parents);
+  PartialOperatorMgr* GetPartialOperatorMgr(OperatorIR* op) const;
+
+  /**
+   * @brief Returns true if each child has a partial operator version. If each child does, then we
+   * can convert them to their partial aggregate forms which will reduce the data sent over the
+   * network.
+   *
+   * If it's the case that any of the children lack a partial implementation, that means the parent
+   * operator has to send over all of it's data. For the children that do have a partial
+   * implementation that means we now not only send over the original full data but we also send
+   * over the partial results so our network usage has acutally increased rather than decreased.
+   *
+   * Instead we opt to just perform the original operation after the GRPCBridge, assuming that the
+   * operation is much cheaper than the network costs.
+   *
+   * @param children
+   * @return true
+   * @return false
+   */
+  bool AllHavePartialMgr(std::vector<OperatorIR*> children) const;
+
+  int64_t grpc_id_counter_ = 0;
+  std::vector<std::unique_ptr<PartialOperatorMgr>> partial_operator_mgrs_;
 };
 }  // namespace distributed
 }  // namespace planner
