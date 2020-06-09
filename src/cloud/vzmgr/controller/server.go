@@ -924,9 +924,9 @@ func (s *Server) ProvisionOrClaimVizier(ctx context.Context, orgID uuid.UUID, us
 		return namesgenerator.GetRandomName(i)
 	}
 	generateFromGivenName := func(i int) string {
-		name := clusterName
+		name := strings.TrimSpace(clusterName)
 		if i > 0 {
-			name = fmt.Sprintf("%s_%d", clusterName, i)
+			name = fmt.Sprintf("%s_%d", name, i)
 		}
 		return name
 	}

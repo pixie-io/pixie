@@ -30,6 +30,8 @@
 // 000014_add_unique_org_name_constraint.up.sql
 // 000015_move_cluster_info_columns.down.sql
 // 000015_move_cluster_info_columns.up.sql
+// 000016_trim_cluster_name.down.sql
+// 000016_trim_cluster_name.up.sql
 package schema
 
 import (
@@ -561,7 +563,7 @@ func _000012_add_deployment_keysDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000012_add_deployment_keys.down.sql", size: 45, mode: os.FileMode(436), modTime: time.Unix(1591309864, 0)}
+	info := bindataFileInfo{name: "000012_add_deployment_keys.down.sql", size: 45, mode: os.FileMode(436), modTime: time.Unix(1591723704, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -581,7 +583,7 @@ func _000012_add_deployment_keysUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000012_add_deployment_keys.up.sql", size: 532, mode: os.FileMode(436), modTime: time.Unix(1591309864, 0)}
+	info := bindataFileInfo{name: "000012_add_deployment_keys.up.sql", size: 532, mode: os.FileMode(436), modTime: time.Unix(1591723704, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -601,7 +603,7 @@ func _000013_add_desc_to_deploy_keyDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000013_add_desc_to_deploy_key.down.sql", size: 60, mode: os.FileMode(436), modTime: time.Unix(1591390962, 0)}
+	info := bindataFileInfo{name: "000013_add_desc_to_deploy_key.down.sql", size: 60, mode: os.FileMode(436), modTime: time.Unix(1591723704, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -621,7 +623,7 @@ func _000013_add_desc_to_deploy_keyUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000013_add_desc_to_deploy_key.up.sql", size: 73, mode: os.FileMode(436), modTime: time.Unix(1591390962, 0)}
+	info := bindataFileInfo{name: "000013_add_desc_to_deploy_key.up.sql", size: 73, mode: os.FileMode(436), modTime: time.Unix(1591723704, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -641,7 +643,7 @@ func _000014_add_unique_org_name_constraintDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000014_add_unique_org_name_constraint.down.sql", size: 71, mode: os.FileMode(436), modTime: time.Unix(1591402425, 0)}
+	info := bindataFileInfo{name: "000014_add_unique_org_name_constraint.down.sql", size: 71, mode: os.FileMode(436), modTime: time.Unix(1591723704, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -661,7 +663,7 @@ func _000014_add_unique_org_name_constraintUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000014_add_unique_org_name_constraint.up.sql", size: 181, mode: os.FileMode(436), modTime: time.Unix(1591402425, 0)}
+	info := bindataFileInfo{name: "000014_add_unique_org_name_constraint.up.sql", size: 181, mode: os.FileMode(436), modTime: time.Unix(1591723704, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -681,12 +683,12 @@ func _000015_move_cluster_info_columnsDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000015_move_cluster_info_columns.down.sql", size: 107, mode: os.FileMode(436), modTime: time.Unix(1591658107, 0)}
+	info := bindataFileInfo{name: "000015_move_cluster_info_columns.down.sql", size: 107, mode: os.FileMode(436), modTime: time.Unix(1591731159, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
 
-var __000015_move_cluster_info_columnsUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x8c\x8f\xbd\x0a\xc2\x30\x14\x46\xf7\x3c\xc5\x1d\x2b\x84\x52\xe7\xe2\x10\x6d\x44\xa1\x3f\x5a\x13\x1c\x43\x69\xa2\x5e\xd0\x16\x52\xdb\xc1\xa7\x17\xa1\x43\xff\xac\xae\x97\x73\x2e\xdf\x61\xa1\xe0\x29\x08\xb6\x0e\x39\x34\xf8\x42\x63\x55\x7e\xaf\xab\xa7\xb1\x84\x05\x01\x6c\x92\x50\x46\x31\xb4\x27\x55\x64\x0f\x03\x4d\x66\xf3\x5b\x66\x9d\xa5\xe7\x79\x0b\x3a\x85\x35\xc6\x56\x58\x16\x7f\x90\x35\xea\x3e\xe5\x13\xf2\x63\x92\x8c\xf7\x47\xc9\xc1\x29\xed\x55\xa1\xa6\xbd\x6d\x1f\x5d\x1e\x02\x26\x46\xe6\x89\x8b\x7e\xc5\x6a\x40\x28\x2c\x2e\xa5\xdb\x45\xe8\xa8\x67\xde\x69\x29\x4a\xba\x71\xf3\x4a\x8d\x9a\x6c\xd3\x24\x9a\x82\xe0\xbc\xe3\xe9\xb0\xc3\xfd\xfa\x72\x78\xd3\xfe\x3b\x00\x00\xff\xff\xa5\xb9\x70\xa7\xdb\x01\x00\x00")
+var __000015_move_cluster_info_columnsUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x8c\x8f\xbd\x0a\xc2\x30\x14\x46\xf7\x3c\xc5\x1d\x2b\x84\x52\xe7\xe2\x10\x6d\x44\xa1\x3f\x5a\x13\x1c\x43\x69\xa2\x5e\xd0\x16\x52\xdb\xc1\xa7\x17\xa1\x43\xff\xac\xae\x97\x73\x2e\xdf\x61\xa1\xe0\x29\x08\xb6\x0e\x39\x34\xf8\x42\x63\x55\x7e\xaf\xab\xa7\xb1\x84\x05\x01\x6c\x92\x50\x46\x31\xb4\x27\x55\x64\x0f\x03\x4d\x66\xf3\x5b\x66\x9d\xa5\xe7\x79\x0b\x3a\x85\x35\xc6\x56\x58\x16\x7f\x90\x35\xea\x3e\xe5\x13\xf2\x63\x92\x8c\xf7\x47\xc9\xc1\x29\xed\x55\xa1\xa6\xbd\x6d\x1f\x5d\x1e\x02\x26\x46\xe6\x89\x8b\x7e\xc5\x6a\x40\x28\x2c\x2e\xa5\xdb\x45\xe8\xa8\x67\xde\x69\x29\x4a\xba\x71\xf3\x4a\x8d\x9a\x6c\xd3\x24\x9a\x82\xe0\xbc\xe3\xe9\xb0\xc3\xfd\xfa\x72\x78\xd3\x3e\x79\x07\x00\x00\xff\xff\x4d\x21\xcc\x94\xdc\x01\x00\x00")
 
 func _000015_move_cluster_info_columnsUpSqlBytes() ([]byte, error) {
 	return bindataRead(
@@ -701,7 +703,47 @@ func _000015_move_cluster_info_columnsUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000015_move_cluster_info_columns.up.sql", size: 475, mode: os.FileMode(436), modTime: time.Unix(1591658110, 0)}
+	info := bindataFileInfo{name: "000015_move_cluster_info_columns.up.sql", size: 476, mode: os.FileMode(436), modTime: time.Unix(1591731159, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000016_trim_cluster_nameDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x01\x00\x00\xff\xff\x00\x00\x00\x00\x00\x00\x00\x00")
+
+func _000016_trim_cluster_nameDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000016_trim_cluster_nameDownSql,
+		"000016_trim_cluster_name.down.sql",
+	)
+}
+
+func _000016_trim_cluster_nameDownSql() (*asset, error) {
+	bytes, err := _000016_trim_cluster_nameDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000016_trim_cluster_name.down.sql", size: 0, mode: os.FileMode(436), modTime: time.Unix(1591745112, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000016_trim_cluster_nameUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x0a\x0d\x70\x71\x0c\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\xe2\x0a\x76\x0d\x51\x80\xb2\xe3\xf3\x12\x73\x53\x15\x6c\x15\x8a\x52\xd3\x53\x2b\x0a\xe2\x8b\x52\x0b\x72\x12\x93\x53\x35\x90\x65\x75\x14\x5c\xd5\xa3\x63\x62\xf2\x62\x62\x8a\x62\xb5\xd5\x75\x14\xd4\x15\x40\x44\xba\xba\x82\xa6\x35\x20\x00\x00\xff\xff\xac\x0c\x43\x0f\x5f\x00\x00\x00")
+
+func _000016_trim_cluster_nameUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000016_trim_cluster_nameUpSql,
+		"000016_trim_cluster_name.up.sql",
+	)
+}
+
+func _000016_trim_cluster_nameUpSql() (*asset, error) {
+	bytes, err := _000016_trim_cluster_nameUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000016_trim_cluster_name.up.sql", size: 95, mode: os.FileMode(436), modTime: time.Unix(1591745128, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -788,6 +830,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000014_add_unique_org_name_constraint.up.sql":      _000014_add_unique_org_name_constraintUpSql,
 	"000015_move_cluster_info_columns.down.sql":         _000015_move_cluster_info_columnsDownSql,
 	"000015_move_cluster_info_columns.up.sql":           _000015_move_cluster_info_columnsUpSql,
+	"000016_trim_cluster_name.down.sql":                 _000016_trim_cluster_nameDownSql,
+	"000016_trim_cluster_name.up.sql":                   _000016_trim_cluster_nameUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -861,6 +905,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000014_add_unique_org_name_constraint.up.sql":      &bintree{_000014_add_unique_org_name_constraintUpSql, map[string]*bintree{}},
 	"000015_move_cluster_info_columns.down.sql":         &bintree{_000015_move_cluster_info_columnsDownSql, map[string]*bintree{}},
 	"000015_move_cluster_info_columns.up.sql":           &bintree{_000015_move_cluster_info_columnsUpSql, map[string]*bintree{}},
+	"000016_trim_cluster_name.down.sql":                 &bintree{_000016_trim_cluster_nameDownSql, map[string]*bintree{}},
+	"000016_trim_cluster_name.up.sql":                   &bintree{_000016_trim_cluster_nameUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

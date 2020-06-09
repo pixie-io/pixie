@@ -968,7 +968,7 @@ func TestServer_ProvisionOrClaimVizier_WithExistingName(t *testing.T) {
 	userID := uuid.NewV4()
 
 	// This should select the existing cluster with the same UID.
-	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "some_cluster", "test-cluster", "1.1")
+	clusterID, err := s.ProvisionOrClaimVizier(context.Background(), uuid.FromStringOrNil(testAuthOrgID), userID, "some_cluster", "test-cluster\n", "1.1")
 	assert.Nil(t, err)
 	// Should select the disconnected cluster.
 	assert.Equal(t, testDisconnectedClusterEmptyUID, clusterID.String())
