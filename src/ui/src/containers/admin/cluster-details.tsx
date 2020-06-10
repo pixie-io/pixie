@@ -249,6 +249,8 @@ const ClusterDetailsContents = ({name}) => {
 export const ClusterDetailsPage = () => {
   const classes = useStyles();
   const { name } = useParams();
+  const decodedName = decodeURIComponent(name);
+
   return (
     <div className={classes.root}>
       <div className={classes.topBar}>
@@ -257,14 +259,14 @@ export const ClusterDetailsPage = () => {
           <Breadcrumbs classes={{ separator: classes.breadcrumbText }}>
             <Link className={classes.breadcrumbLink} to='/admin'>Admin</Link>
             <Link className={classes.breadcrumbLink} to='/admin'>Cluster</Link>
-            <Typography className={classes.breadcrumbText}>{name}</Typography>
+            <Typography className={classes.breadcrumbText}>{decodedName}</Typography>
           </Breadcrumbs>
         </div>
         <Link className={classes.link} to='/live'>Live View</Link>
         <ProfileMenu />
       </div>
       <div className={classes.main}>
-        <ClusterDetailsContents name={name}/>
+        <ClusterDetailsContents name={decodedName}/>
       </div>
     </div>
   );

@@ -93,7 +93,7 @@ export const ClustersTable = () => {
               </StyledLeftTableCell>
             </AdminTooltip>
             <StyledTableCell>
-              <Link to={`/admin/clusters/${cluster.name}`}>{cluster.name}</Link>
+              <Link to={`/admin/clusters/${encodeURIComponent(cluster.name)}`}>{cluster.name}</Link>
             </StyledTableCell>
             <AdminTooltip title={cluster.id}>
               <StyledTableCell>{cluster.idShort}</StyledTableCell>
