@@ -66,7 +66,9 @@ spec:
             --trusted-ca-file /servercerts/server-ca.crt \
             --client-cert-auth \
             --max-wals 2 \
-            --max-snapshots 2
+            --max-snapshots 2 \
+            --quota-backend-bytes 8589934592 \
+            --auto-compaction-retention 3
       volumes:
       - name: client-certs
         secret:
