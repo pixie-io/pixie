@@ -80,7 +80,6 @@ class Analyzer : public RuleExecutor<IR> {
     metadata_conversion_batch->AddRule<PropagateExpressionAnnotationsRule>();
   }
 
-
   void CreateResolutionVerificationBatch() {
     RuleBatch* resolution_verification_batch =
         CreateRuleBatch<FailOnMax>("ResolutionVerification", 1);
@@ -90,6 +89,11 @@ class Analyzer : public RuleExecutor<IR> {
   void CreateRemoveIROnlyNodesBatch() {
     RuleBatch* remove_ir_only_nodes_batch = CreateRuleBatch<FailOnMax>("RemoveIROnlyNodes", 2);
     remove_ir_only_nodes_batch->AddRule<RemoveGroupByRule>();
+  }
+
+  void CreateTypeResolutionBatch() {
+    RuleBatch* type_resolution_batch = CreateRuleBatch<FailOnMax>("TypeResolution", 2);
+    type_resolution_batch->AddRule<ResolveTypesRule>(compiler_state_);
   }
 
   Status Init() {
@@ -103,6 +107,9 @@ class Analyzer : public RuleExecutor<IR> {
     CreateMetadataConversionBatch();
     CreateResolutionVerificationBatch();
     CreateRemoveIROnlyNodesBatch();
+    // TODO(james): once the old relation rules are removed this will probably have to move closer
+    // to the top.
+    CreateTypeResolutionBatch();
     return Status::OK();
   }
 

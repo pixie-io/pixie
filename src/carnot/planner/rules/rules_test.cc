@@ -36,7 +36,10 @@ class RulesTest : public OperatorTests {
         std::vector<types::DataType>({types::DataType::INT64, types::DataType::FLOAT64,
                                       types::DataType::FLOAT64, types::DataType::FLOAT64}),
         std::vector<std::string>({"count", "cpu0", "cpu1", "cpu2"}));
+    auto semantic_rel = Relation({types::INT64, types::FLOAT64}, {"bytes", "cpu"},
+                                 {types::ST_BYTES, types::ST_PERCENT});
     rel_map->emplace("cpu", cpu_relation);
+    rel_map->emplace("semantic_table", semantic_rel);
 
     compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
     md_handler = MetadataHandler::Create();
@@ -2686,6 +2689,47 @@ TEST_F(RulesTest, PruneUnusedColumnsRule_updates_resolved_type) {
 
   // Should be unchanged
   EXPECT_EQ(sink_relation, sink->relation());
+}
+
+TEST_F(RulesTest, map_then_agg) {
+  auto mem_src = MakeMemSource("semantic_table", {"cpu", "bytes"});
+  auto map = MakeMap(
+      mem_src,
+      {
+          ColumnExpression("cpu_sum", MakeAddFunc(MakeColumn("cpu", 0), MakeColumn("cpu", 0))),
+          ColumnExpression("bytes_sum",
+                           MakeAddFunc(MakeColumn("bytes", 0), MakeColumn("bytes", 0))),
+      });
+  auto agg = MakeBlockingAgg(
+      map, /* groups */ {},
+      {
+          ColumnExpression("cpu_sum_mean", MakeMeanFunc(MakeColumn("cpu_sum", 0))),
+          ColumnExpression("bytes_sum_mean", MakeMeanFunc(MakeColumn("bytes_sum", 0))),
+      });
+
+  ResolveTypesRule types_rule(compiler_state_.get());
+  auto result = types_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  auto map_type = std::static_pointer_cast<TableType>(map->resolved_type());
+  auto agg_type = std::static_pointer_cast<TableType>(agg->resolved_type());
+
+  // Add gets rid of ST_PERCENT but not ST_BYTES
+  EXPECT_TableHasColumnWithType(map_type, "cpu_sum",
+                                ValueType::Create(types::FLOAT64, types::ST_UNSPECIFIED))
+      EXPECT_TableHasColumnWithType(map_type, "bytes_sum",
+                                    ValueType::Create(types::INT64, types::ST_BYTES));
+  EXPECT_TableHasColumnWithType(agg_type, "cpu_sum_mean",
+                                ValueType::Create(types::FLOAT64, types::ST_UNSPECIFIED));
+  // Note that mean turns Int->Float.
+  EXPECT_TableHasColumnWithType(agg_type, "bytes_sum_mean",
+                                ValueType::Create(types::FLOAT64, types::ST_BYTES));
+
+  // The types rule shouldn't change anything after the first pass.
+  result = types_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_FALSE(result.ValueOrDie());
 }
 
 }  // namespace planner

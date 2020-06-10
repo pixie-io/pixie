@@ -552,6 +552,19 @@ class ConvertMetadataRule : public Rule {
                                       MetadataProperty* property, IRNode* node_for_error) const;
 };
 
+class ResolveTypesRule : public Rule {
+  /**
+   * @brief Resolves the types of operators.
+   * It requires that group bys have already been merged into Aggs, and that metadataIR's have
+   * already been converted into funcs.
+   */
+ public:
+  explicit ResolveTypesRule(CompilerState* compiler_state) : Rule(compiler_state) {}
+
+ protected:
+  StatusOr<bool> Apply(IRNode* ir_node) override;
+};
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl

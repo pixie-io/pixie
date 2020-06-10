@@ -1387,6 +1387,18 @@ StatusOr<bool> ConvertMetadataRule::Apply(IRNode* ir_node) {
   return true;
 }
 
+StatusOr<bool> ResolveTypesRule::Apply(IRNode* ir_node) {
+  if (!Match(ir_node, Operator())) {
+    return false;
+  }
+  auto op = static_cast<OperatorIR*>(ir_node);
+  if (op->is_type_resolved()) {
+    return false;
+  }
+  PL_RETURN_IF_ERROR(ResolveOperatorType(op, compiler_state_));
+  return true;
+}
+
 }  // namespace planner
 }  // namespace carnot
 }  // namespace pl
