@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	etcdYAMLPath   = "./yamls/vizier_deps/etcd_prod.yaml"
-	vizierYAMLPath = "./yamls/vizier/vizier_prod.yaml"
-	deleteTimeout  = 5 * time.Minute
+	etcdYAMLPath            = "./yamls/vizier_deps/etcd_prod.yaml"
+	vizierYAMLPath          = "./yamls/vizier/vizier_prod.yaml"
+	vizierBootstrapYAMLPath = "./yamls/vizier/vizier_bootstrap_prod.yaml"
+	deleteTimeout           = 5 * time.Minute
 )
 
 func init() {
@@ -95,9 +96,10 @@ func main() {
 		log.WithError(err).Fatal("Failed to delete old components")
 	}
 
-	err = k8s.ApplyYAML(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierYAMLPath]))
+	// Update update role first.
+	err = k8s.ApplyYAML(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierBootstrapYAMLPath]))
 	if err != nil {
-		log.WithError(err).Fatalf("Failed to install vizier")
+		log.WithError(err).Fatalf("Failed to install vizier bootstrap for updater roles")
 	}
 
 	// Always attempt to delete old version of etcd operator.
@@ -124,6 +126,11 @@ func main() {
 		if err != nil {
 			log.WithError(err).Fatalf("Failed to redeploy etcd")
 		}
+	}
+
+	err = k8s.ApplyYAML(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierYAMLPath]))
+	if err != nil {
+		log.WithError(err).Fatalf("Failed to install vizier")
 	}
 
 	log.Info("Done with update/install!")
