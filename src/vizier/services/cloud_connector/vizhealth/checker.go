@@ -4,12 +4,18 @@ import (
 	"context"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/metadata"
 	utils2 "pixielabs.ai/pixielabs/src/shared/services/utils"
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
+)
+
+const (
+	hcRetryInterval    = 2 * time.Second
+	hcWatchDogInterval = 10 * time.Second
 )
 
 // Checker runs a remote health check to make sure that Vizier is in a queryable state.
@@ -39,7 +45,43 @@ func NewChecker(signingKey string, vzClient pl_api_vizierpb.VizierServiceClient)
 
 func (c *Checker) run() {
 	defer c.wg.Done()
+
+	hcCount := int64(0)
+	lastHCCount := int64(-1)
+	// We run a watchdog to make sure the health checks are not getting blocked.
+	go func() {
+		t := time.NewTicker(hcWatchDogInterval)
+		defer t.Stop()
+		for {
+			select {
+			case <-c.quitCh:
+				log.Trace("Quitting health check watchdog")
+				return
+			case <-t.C:
+				current := atomic.LoadInt64(&hcCount)
+				if lastHCCount == current {
+					log.Error("watchdog timeout on healthcheck")
+					// Write nil b/c health check has hung.
+					c.updateHCResp(nil)
+				}
+				lastHCCount = current
+			}
+		}
+	}()
+
+	failCount := 0
+	handleFailure := func(err error) {
+		log.WithError(err).Error("failed vizier health check, will restart healthcheck")
+		failCount++
+		if failCount > 1 {
+			// If it fails more than once then update the response to nil.
+			// This provides some hysteresis for transient failures.
+			c.updateHCResp(nil)
+		}
+	}
+
 	for {
+		failCount++
 		select {
 		case <-c.quitCh:
 			log.Trace("Quitting health monitor")
@@ -53,34 +95,25 @@ func (c *Checker) run() {
 		ctx := context.Background()
 		ctx = metadata.AppendToOutgoingContext(context.Background(), "authorization",
 			fmt.Sprintf("bearer %s", token))
-		ctx, cancel := context.WithTimeout(ctx, 1*time.Second)
+		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 
 		resp, err := c.vzClient.HealthCheck(ctx, &pl_api_vizierpb.HealthCheckRequest{})
 		if err != nil {
-			c.updateHCResp(nil)
-			// Try again a bit later.
-			log.Error("Failed to run health check, will retry in a bit")
-			time.Sleep(5 * time.Second)
+			handleFailure(err)
+			time.Sleep(hcRetryInterval)
 			continue
 		}
-
+		failCount = 0
 		go func() {
 			defer cancel()
 			for {
 				hc, err := resp.Recv()
-				if err != nil {
-					// Got an error. Return and wait for restart logic.
-					log.WithError(err).Error("Got error during Vizier Health Check, will retry")
-					c.updateHCResp(nil)
+				if err != nil || hc == nil {
+					handleFailure(err)
 					return
 				}
-				if hc == nil {
-					// Channel closed.
-					c.updateHCResp(nil)
-					log.Error("Got empty health check response, will retry")
-					return
-				}
+				atomic.AddInt64(&hcCount, 1)
 				c.updateHCResp(hc)
 			}
 		}()
@@ -91,11 +124,8 @@ func (c *Checker) run() {
 			cancel()
 			return
 		case <-resp.Context().Done():
-			if resp.Context().Err() != nil {
-				log.WithError(resp.Context().Err()).Error("Got context close, will try to resume ...")
-			} else {
-				log.Info("Got context close, will try to resume ...")
-			}
+			handleFailure(resp.Context().Err())
+			time.Sleep(hcRetryInterval)
 			continue
 		}
 	}
