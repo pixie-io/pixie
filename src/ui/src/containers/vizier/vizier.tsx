@@ -2,10 +2,11 @@ import './vizier.scss';
 
 import ClusterContext from 'common/cluster-context';
 import * as storage from 'common/storage';
-import { CLUSTER_STATUS_UNKNOWN, CLUSTER_STATUS_HEALTHY, CLUSTER_STATUS_UNHEALTHY,
-         CLUSTER_STATUS_DISCONNECTED, CLUSTER_STATUS_UPDATING, CLUSTER_STATUS_CONNECTED,
-         CLUSTER_STATUS_UPDATE_FAILED, ClusterStatus,
-         VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
+import {
+    CLUSTER_STATUS_CONNECTED, CLUSTER_STATUS_DISCONNECTED, CLUSTER_STATUS_HEALTHY,
+    CLUSTER_STATUS_UNHEALTHY, CLUSTER_STATUS_UNKNOWN, CLUSTER_STATUS_UPDATE_FAILED,
+    CLUSTER_STATUS_UPDATING, ClusterStatus, VizierGRPCClientProvider,
+} from 'common/vizier-grpc-client-context';
 import { useSnackbar } from 'components/snackbar/snackbar';
 import AdminView from 'containers/admin/admin';
 import { ScriptsContextProvider } from 'containers/App/scripts-context';
@@ -108,6 +109,9 @@ interface ClusterInfo {
 // Selects a default cluster if one hasn't already been selected by the user.
 // Selects based on cluster status and tiebreaks by cluster name.
 export function selectCluster(clusters: ClusterInfo[]): ClusterInfo {
+  if (clusters.length === 0) {
+    return null;
+  }
   // Buckets cluster states by desirability for selection.
   // 0 = most prioritized.
   const clusterStatusMap = {
@@ -123,9 +127,9 @@ export function selectCluster(clusters: ClusterInfo[]): ClusterInfo {
 
   clusters.sort((cluster1, cluster2) => {
     const status1 = clusterStatusMap[cluster1.status] === undefined ?
-      defaultStatusValue :  clusterStatusMap[cluster1.status];
+      defaultStatusValue : clusterStatusMap[cluster1.status];
     const status2 = clusterStatusMap[cluster2.status] === undefined ?
-      defaultStatusValue :  clusterStatusMap[cluster2.status];
+      defaultStatusValue : clusterStatusMap[cluster2.status];
     if (status1 < status2) {
       return -1;
     }
@@ -143,13 +147,20 @@ const Vizier = () => {
 
   const [clusterId, setClusterId] = storage.useSessionStorage(storage.CLUSTER_ID_KEY, '');
   const { loading, error, data } = useQuery(LIST_CLUSTERS, { pollInterval: 2500, fetchPolicy: 'network-only' });
+  const clusters = data?.clusters || [];
+  const cluster = (clusterId && clusters.find((c) => c.id === clusterId)) || selectCluster(clusters);
 
   const context = React.useMemo(() => {
     return {
       selectedCluster: clusterId,
+      selectedClusterName: cluster?.clusterName,
       setCluster: setClusterId,
+      setClusterByName: (name: string) => {
+        const newClusterId = name && clusters.find((c) => c.clusterName === name)?.id || clusterId;
+        setClusterId(newClusterId);
+      },
     };
-  }, [clusterId, setClusterId]);
+  }, [clusterId, setClusterId, cluster?.clusterName, clusters.length]);
 
   if (loading) { return <div>Loading...</div>; }
 
@@ -165,10 +176,9 @@ const Vizier = () => {
     return <DeployInstructions />;
   }
 
-  const cluster = (clusterId && data.clusters.find((c) => c.id === clusterId)) || selectCluster(data.clusters);
-  const status: ClusterStatus = cluster.status || 'CS_UNKNOWN';
+  const status: ClusterStatus = cluster?.status || 'CS_UNKNOWN';
 
-  if (clusterId !== cluster.id) {
+  if (cluster?.id && clusterId !== cluster?.id) {
     setClusterId(cluster.id);
   }
 

@@ -23,6 +23,7 @@ import { DataDrawerSplitPanel } from './data-drawer/data-drawer';
 import { EditorSplitPanel } from './editor';
 import ExecuteScriptButton from './execute-button';
 import ProfileMenu from './profile-menu';
+import LiveViewRoutes from './routes';
 import { ScriptLoader } from './script-loader';
 import LiveViewShortcuts from './shortcuts';
 import LiveViewTitle from './title';
@@ -108,6 +109,7 @@ const LiveView = () => {
   return (
     <div className={classes.root}>
       <LiveViewShortcuts handlers={hotkeyHandlers} />
+      <LiveViewRoutes />
       <div className={classes.topBar}>
         <LiveViewTitle className={classes.title} />
         <ClusterSelector className={classes.clusterSelector} />
