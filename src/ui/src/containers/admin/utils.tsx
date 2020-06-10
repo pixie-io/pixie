@@ -54,6 +54,26 @@ export function convertHeartbeatMS(lastHeartbeatMs: number): string {
 
 export type VizierStatusGroup = 'healthy' | 'unhealthy' | 'unknown';
 
+export function agentStatusGroup(status: string): VizierStatusGroup {
+  if (['AGENT_STATE_HEALTHY'].indexOf(status) != -1) {
+    return 'healthy';
+  } else if (['AGENT_STATE_UNRESPONSIVE'].indexOf(status) != -1) {
+    return 'unhealthy';
+  } else {
+    return 'unknown';
+  }
+}
+
+export function clusterStatusGroup(status: string): VizierStatusGroup {
+  if (['CS_HEALTHY', 'CS_UPDATING', 'CS_CONNECTED'].indexOf(status) != -1) {
+    return 'healthy';
+  } else if (['CS_UNHEALTHY', 'CS_UPDATE_FAILED'].indexOf(status) != -1) {
+    return 'unhealthy';
+  } else {
+    return 'unknown';
+  }
+}
+
 export const StatusCell = ({statusGroup}) => {
   const classes = useStyles();
   switch (statusGroup) {

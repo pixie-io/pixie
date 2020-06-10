@@ -20,8 +20,9 @@ import Tooltip from '@material-ui/core/Tooltip';
 import Typography from '@material-ui/core/Typography';
 
 import {
-    AdminTooltip, convertHeartbeatMS, StatusCell, StyledLeftTableCell, StyledRightTableCell,
-    StyledTab, StyledTableCell, StyledTableHeaderCell, StyledTabs, VizierStatusGroup,
+    AdminTooltip, agentStatusGroup, convertHeartbeatMS, StatusCell,
+    StyledLeftTableCell, StyledRightTableCell, StyledTab, StyledTableCell,
+    StyledTableHeaderCell, StyledTabs, VizierStatusGroup
 } from './utils';
 
 const useStyles = makeStyles((theme: Theme) => {
@@ -91,16 +92,6 @@ interface AgentDisplay {
   uptime: string;
 }
 
-function getAgentStatusGroup(status: string): VizierStatusGroup {
-  if (['AGENT_STATE_HEALTHY'].indexOf(status) != -1) {
-    return 'healthy';
-  } else if (['AGENT_STATE_UNRESPONSIVE'].indexOf(status) != -1) {
-    return 'unhealthy';
-  } else {
-    return 'unknown';
-  }
-}
-
 export function formatAgent(agentInfo): AgentDisplay {
   const now = new Date();
 
@@ -108,7 +99,7 @@ export function formatAgent(agentInfo): AgentDisplay {
     id: agentInfo.agent_id,
     idShort: agentInfo.agent_id.split('-').pop(),
     status: agentInfo.agent_state.replace('AGENT_STATE_', ''),
-    statusGroup: getAgentStatusGroup(agentInfo.agent_state),
+    statusGroup: agentStatusGroup(agentInfo.agent_state),
     hostname: agentInfo.hostname,
     lastHeartbeat: convertHeartbeatMS(agentInfo.last_heartbeat_ns / (1000 * 1000)),
     uptime: distanceInWords(new Date(agentInfo.create_time), now, { addSuffix: false }),

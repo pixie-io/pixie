@@ -1,5 +1,6 @@
-import {AdminTooltip, convertHeartbeatMS, StatusCell, StyledTableCell, StyledTableHeaderCell,
-        StyledLeftTableCell, StyledRightTableCell, VizierStatusGroup} from './utils';
+import {AdminTooltip, clusterStatusGroup, convertHeartbeatMS, StatusCell,
+        StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell,
+        StyledRightTableCell, VizierStatusGroup} from './utils';
 
 import { useQuery } from '@apollo/react-hooks';
 import Table from '@material-ui/core/Table';
@@ -41,16 +42,6 @@ interface ClusterDisplay {
   mode: VizierConnectionMode;
 }
 
-function getClusterStatusGroup(status: string): VizierStatusGroup {
-  if (['CS_HEALTHY', 'CS_UPDATING', 'CS_CONNECTED'].indexOf(status) != -1) {
-    return 'healthy';
-  } else if (['CS_UNHEALTHY', 'CS_UPDATE_FAILED'].indexOf(status) != -1) {
-    return 'unhealthy';
-  } else {
-    return 'unknown';
-  }
-}
-
 export function formatCluster(clusterInfo): ClusterDisplay {
   let shortVersion = clusterInfo.vizierVersion;
   // Dashes occur in internal Vizier versions and not public release ones.
@@ -66,7 +57,7 @@ export function formatCluster(clusterInfo): ClusterDisplay {
     vizierVersionShort: shortVersion,
     vizierVersion: clusterInfo.vizierVersion,
     status: clusterInfo.status.replace('CS_', ''),
-    statusGroup: getClusterStatusGroup(clusterInfo.status),
+    statusGroup: clusterStatusGroup(clusterInfo.status),
     mode: clusterInfo.vizierConfig.passthroughEnabled ? 'Passthrough' : 'Direct',
     lastHeartbeat: convertHeartbeatMS(clusterInfo.lastHeartbeatMs),
   }

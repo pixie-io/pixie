@@ -1,7 +1,10 @@
 import ClusterContext from 'common/cluster-context';
+import { CLUSTER_STATUS_DISCONNECTED,
+         CLUSTER_STATUS_HEALTHY } from 'common/vizier-grpc-client-context';
 import { Spinner } from 'components/spinner/spinner';
 // TODO(malthus): Move this to a common location.
-import { StatusCell } from 'containers/admin/utils';
+import { clusterStatusGroup, StatusCell } from 'containers/admin/utils';
+
 import gql from 'graphql-tag';
 import * as React from 'react';
 
@@ -90,23 +93,26 @@ export default function ClusterSelector(props: { className: string }) {
         onClose={handleClose}
       >
         {
-          data.clusters.map((c) => {
-            const status = c.status === 'CS_HEALTHY' ? 'healthy' : 'unhealthy';
-            return (
-              <MenuItem
-                key={c.id}
-                dense={true}
-                onClick={() => {
-                  setCluster(c.id);
-                  handleClose();
-                }}>
-                <ListItemIcon>
-                  <StatusCell statusGroup={status} />
-                </ListItemIcon>
-                <ListItemText primary={c.clusterName} />
-              </MenuItem>
-            );
-          })
+          data.clusters
+            .filter((c) => c.status !== CLUSTER_STATUS_DISCONNECTED)
+            .map((c) => {
+              const statusGroup = clusterStatusGroup(c.status);
+              return (
+                <MenuItem
+                  disabled={c.status !== CLUSTER_STATUS_HEALTHY}
+                  key={c.id}
+                  dense={true}
+                  onClick={() => {
+                    setCluster(c.id);
+                    handleClose();
+                  }}>
+                  <ListItemIcon>
+                    <StatusCell statusGroup={statusGroup} />
+                  </ListItemIcon>
+                  <ListItemText primary={c.clusterName} />
+                </MenuItem>
+              );
+            })
         }
       </StyledMenu>
     </div>
