@@ -89,8 +89,8 @@ export function toLayout(widgets: Widget[], isMobile: boolean): Layout[] {
     return {
       ...widget.position,
       i: widgetName(widget, i),
-      x: widget.position.x || 0,
-      y: widget.position.y || 0,
+      x: widget.position?.x || 0,
+      y: widget.position?.y || 0,
       minH: 2,
       minW: 2,
     };
