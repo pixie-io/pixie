@@ -5,3 +5,4 @@ commonLabels:
 namespace: pl
 resources:
 - etcd.yaml
+- etcd-defrag-job.yaml
