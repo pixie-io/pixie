@@ -232,8 +232,8 @@ const Vega = React.memo((props: VegaProps) => {
             className={classes.reactVega}
             signalListeners={signalListeners}
           />
-          <div className={classes.legends}>
-            {!hasLegend ? null :
+          {!hasLegend ? null :
+            <div className={classes.legends}>
               <Legend
                 data={legendData}
                 vegaOrigin={vegaOrigin}
@@ -242,8 +242,8 @@ const Vega = React.memo((props: VegaProps) => {
                 interactState={legendInteractState}
                 setInteractState={setLegendInteractState}
               />
-            }
-          </div>
+            </div>
+          }
         </div>
       }
     </div>
