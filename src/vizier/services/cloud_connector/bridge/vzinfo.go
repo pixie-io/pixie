@@ -180,7 +180,10 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 	if err != nil {
 		return
 	}
-	podsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{})
+	// Get only control-plane pods.
+	podsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: "plane=control",
+	})
 	if err != nil {
 		return
 	}

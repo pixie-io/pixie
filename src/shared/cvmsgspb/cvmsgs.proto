@@ -91,9 +91,11 @@ message VizierHeartbeat {
     string address = 4;
     // Port of the proxy service.
     int32 port = 5;
-    // Map of pod name to pod status.
+    // Map of pod name to pod status. This only includes pods that are part of the
+    // vizier control plane. Data-plane pods, such as PEMs or Kelvin can be fetched
+    // by running the agents script.
     // Ex: {
-    //   vizier-pem-z26d8: { name: vizier-pem-z26d8, status: RUNNING },
+    //   vizier-query-broker-z26d8: { name: vizier-query-broker-z26d8, status: RUNNING },
     //   vizier-metadata-7b668797b9-bjsvd: { name: vizier-metadata-7b668797b9-bjsvd, status: FAILED }
     // }
     map<string, PodStatus> pod_statuses = 6;

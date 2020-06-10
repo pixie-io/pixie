@@ -26,6 +26,7 @@ spec:
     metadata:
       name: etcd
       labels:
+        plane: control
         app: etcd
         vizier-dep: etcd
     spec:

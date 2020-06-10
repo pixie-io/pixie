@@ -13,6 +13,7 @@ spec:
   template:
     metadata:
       labels:
+        plane: control
         name: nats-operator
     spec:
       serviceAccountName: nats-operator

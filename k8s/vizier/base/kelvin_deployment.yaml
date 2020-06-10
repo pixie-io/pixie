@@ -11,6 +11,7 @@ spec:
     metadata:
       labels:
         name: kelvin
+        plane: data
       annotations:
         fluentbit.io/parser: glog
     spec:
