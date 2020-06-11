@@ -44,6 +44,12 @@ types::ColumnWrapperRecordBatch* DataTable::ActiveRecordBatch(types::TabletIDVie
 std::vector<TaggedRecordBatch> DataTable::ConsumeRecordBatches() {
   std::vector<TaggedRecordBatch> tablets_out;
 
+  //  // Make sure there is always at least one tablet, even if it is empty.
+  //  if (tablets_.empty()) {
+  //    tablets_[0] = std::make_unique<types::ColumnWrapperRecordBatch>();
+  //    InitBuffers(tablets_[0].get());
+  //  }
+
   for (auto& [tablet_id, tablet] : tablets_) {
     // Sort based on time_ column, if it exists.
     std::vector<size_t> sort_indexes;

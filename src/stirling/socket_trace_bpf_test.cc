@@ -91,7 +91,8 @@ class NonVecSyscallTests : public SocketTraceBPFTest,
 
 TEST_P(NonVecSyscallTests, NonVecSyscalls) {
   SocketTraceBPFTestParams p = GetParam();
-  LOG(INFO) << absl::Substitute("$0 $1", magic_enum::enum_name(p.syscall_pair),
+  LOG(INFO) << absl::Substitute("Test parameters: syscall_pair=$0 trace_role=$1",
+                                magic_enum::enum_name(p.syscall_pair),
                                 magic_enum::enum_name(p.trace_role));
   ConfigureBPFCapture(kProtocolHTTP, p.trace_role);
 

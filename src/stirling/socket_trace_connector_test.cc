@@ -205,7 +205,7 @@ TEST_F(SocketTraceConnectorTest, HTTPContentType) {
   std::unique_ptr<SocketDataEvent> event1_resp_text =
       event_gen.InitRecvEvent<kProtocolHTTP>(kTextResp);
   std::unique_ptr<SocketDataEvent> event2_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq1);
-  std::unique_ptr<SocketDataEvent> event2_resp_text =
+  std::unique_ptr<SocketDataEvent> event2_resp_bin =
       event_gen.InitRecvEvent<kProtocolHTTP>(kAppOctetResp);
   std::unique_ptr<SocketDataEvent> event3_req = event_gen.InitSendEvent<kProtocolHTTP>(kReq0);
   std::unique_ptr<SocketDataEvent> event3_resp_json =
@@ -223,7 +223,7 @@ TEST_F(SocketTraceConnectorTest, HTTPContentType) {
   source_->AcceptDataEvent(std::move(event1_req));
   source_->AcceptDataEvent(std::move(event1_resp_text));
   source_->AcceptDataEvent(std::move(event2_req));
-  source_->AcceptDataEvent(std::move(event2_resp_text));
+  source_->AcceptDataEvent(std::move(event2_resp_bin));
   source_->AcceptDataEvent(std::move(event3_req));
   source_->AcceptDataEvent(std::move(event3_resp_json));
   source_->AcceptControlEvent(close_event);
@@ -238,8 +238,56 @@ TEST_F(SocketTraceConnectorTest, HTTPContentType) {
   EXPECT_THAT(ToStringVector(record_batch[kHTTPRespBodyIdx]),
               ElementsAre("foo", "bar", "<removed: non-text content-type>", "foo"));
   EXPECT_THAT(ToIntVector<types::Time64NSValue>(record_batch[kHTTPTimeIdx]),
-              ElementsAre(2 + source_->ClockRealTimeOffset(), 4 + source_->ClockRealTimeOffset(),
-                          6 + source_->ClockRealTimeOffset(), 8 + source_->ClockRealTimeOffset()));
+              ElementsAre(3 + source_->ClockRealTimeOffset(), 5 + source_->ClockRealTimeOffset(),
+                          7 + source_->ClockRealTimeOffset(), 9 + source_->ClockRealTimeOffset()));
+}
+
+// Use CQL protocol to check sorting, because it supports parallel request-response streams.
+TEST_F(SocketTraceConnectorTest, SortedByResponseTime) {
+  using cass::testutils::CreateCQLEmptyEvent;
+  using cass::testutils::CreateCQLEvent;
+
+  testing::EventGenerator event_gen(&mock_clock_);
+
+  // A CQL request with CQL_VERSION=3.0.0.
+  constexpr uint8_t kStartupReq1[] = {0x00, 0x01, 0x00, 0x0b, 0x43, 0x51, 0x4c, 0x5f,
+                                      0x56, 0x45, 0x52, 0x53, 0x49, 0x4f, 0x4e, 0x00,
+                                      0x05, 0x33, 0x2e, 0x30, 0x2e, 0x30};
+
+  // A CQL request with CQL_VERSION=3.0.1
+  // Note that last byte is different than request above.
+  constexpr uint8_t kStartupReq2[] = {0x00, 0x01, 0x00, 0x0b, 0x43, 0x51, 0x4c, 0x5f,
+                                      0x56, 0x45, 0x52, 0x53, 0x49, 0x4f, 0x4e, 0x00,
+                                      0x05, 0x33, 0x2e, 0x30, 0x2e, 0x31};
+
+  DataTable data_table(kCQLTable);
+
+  struct socket_control_event_t conn = event_gen.InitConn();
+  std::unique_ptr<SocketDataEvent> req1 =
+      event_gen.InitSendEvent<kProtocolCQL>(CreateCQLEvent(cass::ReqOp::kStartup, kStartupReq1, 1));
+  std::unique_ptr<SocketDataEvent> req2 =
+      event_gen.InitSendEvent<kProtocolCQL>(CreateCQLEvent(cass::ReqOp::kStartup, kStartupReq2, 2));
+  std::unique_ptr<SocketDataEvent> resp2 =
+      event_gen.InitRecvEvent<kProtocolCQL>(CreateCQLEmptyEvent(cass::RespOp::kReady, 2));
+  std::unique_ptr<SocketDataEvent> resp1 =
+      event_gen.InitRecvEvent<kProtocolCQL>(CreateCQLEmptyEvent(cass::RespOp::kReady, 1));
+  struct socket_control_event_t close_event = event_gen.InitClose();
+
+  source_->AcceptControlEvent(conn);
+  source_->AcceptDataEvent(std::move(req1));
+  source_->AcceptDataEvent(std::move(req2));
+  source_->AcceptDataEvent(std::move(resp2));
+  source_->AcceptDataEvent(std::move(resp1));
+  source_->AcceptControlEvent(close_event);
+
+  source_->TransferData(ctx_.get(), SocketTraceConnector::kCQLTableNum, &data_table);
+
+  RecordBatch record_batch = ConsumeRecords(&data_table);
+  EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
+
+  // Note that results are sorted by response time, not request time.
+  EXPECT_THAT(ToStringVector(record_batch[kCQLReqBody]),
+              ElementsAre(R"({"CQL_VERSION":"3.0.1"})", R"({"CQL_VERSION":"3.0.0"})"));
 }
 
 TEST_F(SocketTraceConnectorTest, UPIDCheck) {
@@ -1649,7 +1697,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamIDRace) {
   RecordBatch record_batch = ConsumeRecords(&data_table);
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
 
-  // Note that results are sorted by time of request. See stream_ids vector above.
+  // Note that results are sorted by time of request/response pair. See stream_ids vector above.
 
   EXPECT_EQ(record_batch[kHTTPReqBodyIdx]->Get<types::StringValue>(0), "Request7");
   EXPECT_EQ(record_batch[kHTTPRespBodyIdx]->Get<types::StringValue>(0), "Response7");

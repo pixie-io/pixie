@@ -855,7 +855,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   }
 
   RecordBuilder<&kHTTPTable> r(data_table);
-  r.Append<r.ColIndex("time_")>(req_message.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
   // Note that there is a string copy here,
   // But std::move is not allowed because we re-use conn object.
@@ -906,7 +906,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   }
 
   RecordBuilder<&kHTTPTable> r(data_table);
-  r.Append<r.ColIndex("time_")>(req_message.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
@@ -969,7 +969,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   }
 
   RecordBuilder<&kHTTPTable> r(data_table);
-  r.Append<r.ColIndex("time_")>(req_stream->timestamp_ns);
+  r.Append<r.ColIndex("time_")>(resp_stream->timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
@@ -1003,7 +1003,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
   RecordBuilder<&kMySQLTable> r(data_table);
-  r.Append<r.ColIndex("time_")>(entry.req.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
@@ -1027,7 +1027,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
   RecordBuilder<&kCQLTable> r(data_table);
-  r.Append<r.ColIndex("time_")>(entry.req.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);
@@ -1051,7 +1051,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
   RecordBuilder<&kPGSQLTable> r(data_table);
-  r.Append<r.ColIndex("time_")>(entry.req.timestamp_ns);
+  r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port);

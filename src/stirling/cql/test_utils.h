@@ -7,12 +7,9 @@ namespace stirling {
 namespace cass {
 namespace testutils {
 
-template <typename TOpType, size_t N>
-std::string CreateCQLEvent(TOpType op, const uint8_t (&a)[N], uint16_t stream) {
+template <typename TOpType>
+inline std::string CreateCQLHeader(TOpType op, uint16_t stream, size_t length) {
   static_assert(std::is_same_v<TOpType, cass::ReqOp> || std::is_same_v<TOpType, cass::RespOp>);
-
-  std::string_view body = CreateCharArrayView<char>(a);
-  size_t length = body.length();
 
   std::string hdr;
   hdr.resize(9);
@@ -30,6 +27,20 @@ std::string CreateCQLEvent(TOpType op, const uint8_t (&a)[N], uint16_t stream) {
     hdr[0] = hdr[0] | kDirectionMask;
   }
 
+  return hdr;
+}
+
+template <typename TOpType, size_t N>
+inline std::string CreateCQLEvent(TOpType op, const uint8_t (&a)[N], uint16_t stream) {
+  std::string_view body = CreateCharArrayView<char>(a);
+  std::string hdr = CreateCQLHeader(op, stream, body.length());
+  return absl::StrCat(hdr, body);
+}
+
+template <typename TOpType>
+inline std::string CreateCQLEmptyEvent(TOpType op, uint16_t stream) {
+  std::string_view body = "";
+  std::string hdr = CreateCQLHeader(op, stream, body.length());
   return absl::StrCat(hdr, body);
 }
 
