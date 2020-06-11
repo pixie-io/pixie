@@ -543,6 +543,10 @@ class ExpressionIR : public IRNode {
   StatusOr<absl::flat_hash_set<std::string>> InputColumnNames();
   static constexpr bool FailOnResolveType() { return false; }
 
+  bool HasTypeCast() const { return type_cast_ != nullptr; }
+  std::shared_ptr<ValueType> type_cast() const { return type_cast_; }
+  void SetTypeCast(std::shared_ptr<ValueType> type_cast) { type_cast_ = type_cast; }
+
   /**
    * @brief Override of CopyFromNode that adds special handling for ExpressionIR.
    */
@@ -596,6 +600,7 @@ class ExpressionIR : public IRNode {
   ExpressionIR(int64_t id, IRNodeType type, const Annotations& annotations)
       : IRNode(id, type), annotations_(annotations) {}
   Annotations annotations_;
+  std::shared_ptr<ValueType> type_cast_ = nullptr;
 };
 
 class MetadataProperty : public NotCopyable {

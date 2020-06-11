@@ -2000,23 +2000,43 @@ Status ResolveOperatorType(OperatorIR* op, CompilerState* compiler_state) {
   }
 }
 
+Status CheckTypeCast(ExpressionIR* expr, std::shared_ptr<ValueType> from_type,
+                     std::shared_ptr<ValueType> to_type) {
+  if (from_type->data_type() != to_type->data_type()) {
+    return expr->CreateIRNodeError(
+        "Cannot cast from '$0' to '$1'. Only semantic type casts are allowed.",
+        magic_enum::enum_name(from_type->data_type()), magic_enum::enum_name(to_type->data_type()));
+  }
+  // TODO(james): Add check that semantic type cast is valid. For now, all semantic type casts are
+  // treated as valid.
+  return Status::OK();
+}
+
 Status ResolveExpressionType(ExpressionIR* expr, CompilerState* compiler_state,
                              const std::vector<TypePtr>& parent_types) {
   if (expr->is_type_resolved()) {
     return Status::OK();
   }
+  Status status;
   switch (expr->type()) {
 #undef PL_IR_NODE
-#define PL_IR_NODE(NAME)                                                                         \
-  case IRNodeType::k##NAME:                                                                      \
-    return ExpressionTraits<NAME##IR>::ResolveType(static_cast<NAME##IR*>(expr), compiler_state, \
-                                                   parent_types);
+#define PL_IR_NODE(NAME)                                                                           \
+  case IRNodeType::k##NAME:                                                                        \
+    status = ExpressionTraits<NAME##IR>::ResolveType(static_cast<NAME##IR*>(expr), compiler_state, \
+                                                     parent_types);                                \
+    break;
 #include "src/carnot/planner/ir/expressions.inl"
 #undef PL_IR_NODE
     default:
       return error::Internal(absl::Substitute(
           "cannot resolve expression type for non-expression: $0", expr->type_string()));
   }
+  if (!status.ok() || !expr->HasTypeCast()) {
+    return status;
+  }
+  PL_RETURN_IF_ERROR(CheckTypeCast(expr, std::static_pointer_cast<ValueType>(expr->resolved_type()),
+                                   expr->type_cast()));
+  return expr->SetResolvedType(expr->type_cast());
 }
 
 }  // namespace planner

@@ -2785,6 +2785,70 @@ TEST_F(CompilerTest, pod_and_node_types) {
   auto graph_or_s = compiler_.CompileToIR(kPodNodeTypesQuery, compiler_state_.get(), exec_funcs);
   ASSERT_OK(graph_or_s);
 }
+
+constexpr char kCastQuery[] = R"pxl(
+import px
+df = px.DataFrame(table='process_stats', select=['vsize_bytes'])
+df.vsize_bytes = px.Bytes(df.vsize_bytes)
+px.display(df)
+)pxl";
+
+TEST_F(CompilerTest, casting) {
+  auto graph_or_s = compiler_.CompileToIR(kCastQuery, compiler_state_.get());
+  ASSERT_OK(graph_or_s);
+
+  auto ir = graph_or_s.ConsumeValueOrDie();
+  auto sinks = ir->FindNodesThatMatch(MemorySink());
+  ASSERT_EQ(1, sinks.size());
+  auto sink = static_cast<MemorySinkIR*>(sinks[0]);
+  auto type_table = std::static_pointer_cast<TableType>(sink->resolved_type());
+  EXPECT_TRUE(type_table->HasColumn("vsize_bytes"));
+  auto col_type_or_s = type_table->GetColumnType("vsize_bytes");
+  ASSERT_OK(col_type_or_s);
+  EXPECT_PTR_VAL_EQ(ValueType::Create(types::INT64, types::ST_BYTES),
+                    std::static_pointer_cast<ValueType>(col_type_or_s.ConsumeValueOrDie()));
+}
+
+constexpr char kBadCastQuery[] = R"pxl(
+import px
+df = px.DataFrame(table='process_stats', select=['vsize_bytes'])
+df.vsize_bytes = px.Service(df.vsize_bytes)
+px.display(df)
+)pxl";
+
+TEST_F(CompilerTest, bad_cast) {
+  auto graph_or_s = compiler_.CompileToIR(kBadCastQuery, compiler_state_.get());
+  ASSERT_NOT_OK(graph_or_s);
+
+  EXPECT_THAT(graph_or_s.status(),
+              HasCompilerError("Cannot cast from 'INT64' to 'STRING'. Only semantic type casts "
+                               "are allowed."));
+}
+
+constexpr char kTimeIntCastQuery[] = R"pxl(
+import px
+df = px.DataFrame(table='sequences', select=['time_'])
+df.time_ = px.Time(df.time_)
+px.display(df)
+)pxl";
+
+TEST_F(CompilerTest, time_casting) {
+  auto graph_or_s = compiler_.CompileToIR(kTimeIntCastQuery, compiler_state_.get());
+  ASSERT_OK(graph_or_s);
+
+  auto ir = graph_or_s.ConsumeValueOrDie();
+  auto sinks = ir->FindNodesThatMatch(MemorySink());
+  ASSERT_EQ(1, sinks.size());
+  auto sink = static_cast<MemorySinkIR*>(sinks[0]);
+  auto type_table = std::static_pointer_cast<TableType>(sink->resolved_type());
+  EXPECT_TRUE(type_table->HasColumn("time_"));
+  auto col_type_or_s = type_table->GetColumnType("time_");
+  ASSERT_OK(col_type_or_s);
+  // Time cast is currently a noop since Time is treated as a data type. We should move time to be a
+  // semantic type and then update this test.
+  EXPECT_PTR_VAL_EQ(ValueType::Create(types::TIME64NS, types::ST_UNSPECIFIED),
+                    std::static_pointer_cast<ValueType>(col_type_or_s.ConsumeValueOrDie()));
+}
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

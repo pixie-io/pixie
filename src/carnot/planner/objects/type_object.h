@@ -5,8 +5,10 @@
 
 #include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
+#include <absl/strings/str_join.h>
 #include <pypa/ast/ast.hh>
 
+#include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/objects/qlobject.h"
 
 namespace pl {
@@ -31,17 +33,19 @@ class TypeObject : public QLObject {
     PL_ASSIGN_OR_RETURN(types::DataType data_type, IRNodeTypeToDataType(node_type));
     return Create(data_type, ast_visitor);
   }
-
   static StatusOr<std::shared_ptr<TypeObject>> Create(types::DataType data_type,
                                                       ASTVisitor* ast_visitor) {
-    return Create(data_type, types::ST_NONE, ast_visitor);
+    return Create(data_type, types::ST_UNSPECIFIED, ast_visitor);
   }
-
   static StatusOr<std::shared_ptr<TypeObject>> Create(types::DataType data_type,
                                                       types::SemanticType semantic_type,
                                                       ASTVisitor* ast_visitor) {
-    return std::shared_ptr<TypeObject>(new TypeObject(data_type, semantic_type, ast_visitor));
+    auto type = std::shared_ptr<TypeObject>(new TypeObject(data_type, semantic_type, ast_visitor));
+    PL_RETURN_IF_ERROR(type->Init());
+    return type;
   }
+
+  Status Init();
 
   Status NodeMatches(ExpressionIR* node) {
     // TODO(philkuz) make this nvi and expand it more.
@@ -78,8 +82,19 @@ class TypeObject : public QLObject {
  private:
   types::DataType data_type_;
   types::SemanticType semantic_type_;
-};
+};  // namespace compiler
 
+class ParsedArgs;
+
+/**
+ * @brief Implements the cast logic
+ */
+class CastHandler {
+ public:
+  static StatusOr<QLObjectPtr> Eval(types::DataType data_type, types::SemanticType semantic_type,
+                                    const pypa::AstPtr& ast, const ParsedArgs& args,
+                                    ASTVisitor* visitor);
+};
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

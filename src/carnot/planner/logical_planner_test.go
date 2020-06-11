@@ -227,7 +227,6 @@ def main(foo : str):
 const mainFuncArgsPBStr = `
 	args {
 		data_type: STRING
-		semantic_type: ST_NONE
 		name: "foo"
 	}
 `
@@ -328,17 +327,14 @@ fn_args_map {
   value {
     args {
       data_type: TIME64NS
-			semantic_type: ST_NONE
       name: "start_time"
     }
     args {
       data_type: TIME64NS
-			semantic_type: ST_NONE
       name: "end_time"
     }
     args {
       data_type: STRING
-			semantic_type: ST_NONE
       name: "svc"
     }
   }
@@ -348,12 +344,10 @@ fn_args_map {
   value {
     args {
       data_type: INT64
-			semantic_type: ST_NONE
 			name: "a"
     }
     args {
       data_type: FLOAT64
-			semantic_type: ST_NONE
       name: "b"
     }
   }
