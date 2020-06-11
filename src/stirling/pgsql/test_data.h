@@ -119,6 +119,14 @@ D(kDataRowTestData,
   "\000\000\000\nen_US.utf8"
   "\377\377\377\377");
 
+D(kSelectQueryMsg,
+  "Q\x00\x00\x00\x19"
+  "select * from table;\x00");
+
+D(kDropTableQueryMsg,
+  "Q\x00\x00\x00\x14"
+  "drop table foo;\x00");
+
 D(kDropTableCmplMsg, "C\000\000\000\017DROP TABLE\000");
 
 }  // namespace pgsql

@@ -83,11 +83,14 @@ class ProcessFramesTest : public ::testing::Test {
 TEST_F(ProcessFramesTest, VerifySingleOutputMessage) {
   ASSERT_OK_AND_ASSIGN(
       std::deque<RegularMessage> reqs,
-      ParseRegularMessages(absl::StrCat(kParseData1, kDescData, kBindData, kExecData)));
+      ParseRegularMessages(absl::StrCat(kParseData1, kDescData, kBindData, kExecData,
+                                        kSelectQueryMsg, kDropTableQueryMsg, kRollbackMsg)));
+
   ASSERT_OK_AND_ASSIGN(
       std::deque<RegularMessage> resps,
-      ParseRegularMessages(absl::StrCat(kParseCmplData, kParamDescData, kRowDescData, kBindCmplData,
-                                        kDataRowData, kCmdCmplData)));
+      ParseRegularMessages(absl::StrCat(
+          kParseCmplData, kParamDescData, kRowDescData, kBindCmplData, kDataRowData, kCmdCmplData,
+          kRowDescTestData, kDataRowTestData, kCmdCmplData, kDropTableCmplMsg, kRollbackCmplMsg)));
 
   for (auto& resp : resps) {
     // Increment response timestamp_ns, so they all start after requests, which makes the test more
@@ -115,12 +118,16 @@ TEST_F(ProcessFramesTest, VerifySingleOutputMessage) {
     resp_msgs.push_back(record.resp.payload);
   }
 
+  EXPECT_THAT(req_tses, ElementsAre(100, 101, 102, 103, 104, 105, 106));
   EXPECT_THAT(
       req_msgs,
       ElementsAre(
           "SELECT * FROM person WHERE first_name=$1", "DESCRIBE [type=kStatement name=]",
           "BIND [portal= statement= parameters=[[formt=kText value=Jason]] result_format_codes=[]]",
-          "EXECUTE [SELECT * FROM person WHERE first_name=Jason]"));
+          "EXECUTE [SELECT * FROM person WHERE first_name=Jason]", "QUERY [select * from table;]",
+          "QUERY [drop table foo;]", "QUERY [ROLLBACK]"));
+
+  EXPECT_THAT(resp_tses, ElementsAre(110, 111, 113, 115, 118, 119, 120));
   EXPECT_THAT(resp_msgs,
               ElementsAre("PARSE COMPLETE",
                           "ROW DESCRIPTION "
@@ -130,87 +137,12 @@ TEST_F(ProcessFramesTest, VerifySingleOutputMessage) {
                           "type_modifier=-1 fmt_code=kText] "
                           "[name=email table_oid=16384 attr_num=3 type_oid=25 type_size=-1 "
                           "type_modifier=-1 fmt_code=kText]",
-                          "BIND COMPLETE", "Jason,Moiron,jmoiron@jmoiron.net\nSELECT 238"));
+                          "BIND COMPLETE", "Jason,Moiron,jmoiron@jmoiron.net\nSELECT 238",
+                          "Name,Owner,Encoding,Collate,Ctype,Access privileges\n"
+                          "postgres,postgres,UTF8,en_US.utf8,en_US.utf8,[NULL]\n"
+                          "SELECT 238",
+                          "DROP TABLE", "ROLLBACK"));
 
-  EXPECT_EQ(0, records_and_err_count.error_count);
-}
-
-// TODO(yzhao): Parameterize the following tests.
-TEST_F(ProcessFramesTest, SimpleQuery) {
-  constexpr char kQueryText[] = "select * from table;";
-  RegularMessage q = {};
-  q.tag = Tag::kQuery;
-  q.len = sizeof(kQueryText) + sizeof(int32_t);
-  q.payload = kQueryText;
-
-  std::string_view data = kRowDescTestData;
-  RegularMessage t = {};
-  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &t));
-
-  data = kDataRowTestData;
-  RegularMessage d = {};
-  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &d));
-
-  data = kCmdCmplData;
-  RegularMessage c = {};
-  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &c));
-
-  std::deque<RegularMessage> reqs = {std::move(q)};
-  std::deque<RegularMessage> resps = {std::move(t), std::move(d), std::move(c)};
-  RecordsWithErrorCount<pgsql::Record> records_and_err_count =
-      ProcessFrames(&reqs, &resps, &state_);
-  EXPECT_THAT(reqs, IsEmpty());
-  EXPECT_THAT(resps, IsEmpty());
-  EXPECT_THAT(records_and_err_count.records,
-              ElementsAre(HasPayloads("QUERY [select * from table;]",
-                                      "Name,Owner,Encoding,Collate,Ctype,Access privileges\n"
-                                      "postgres,postgres,UTF8,en_US.utf8,en_US.utf8,[NULL]\n"
-                                      "SELECT 238")));
-  EXPECT_EQ(0, records_and_err_count.error_count);
-}
-
-TEST_F(ProcessFramesTest, DropTable) {
-  constexpr char kQueryText[] = "drop table foo;";
-  RegularMessage q = {};
-  q.tag = Tag::kQuery;
-  q.len = sizeof(kQueryText) + sizeof(int32_t);
-  q.payload = kQueryText;
-
-  std::string_view data = kDropTableCmplMsg;
-  RegularMessage c = {};
-  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &c));
-
-  std::deque<RegularMessage> reqs = {std::move(q)};
-  std::deque<RegularMessage> resps = {std::move(c)};
-
-  RecordsWithErrorCount<pgsql::Record> records_and_err_count =
-      ProcessFrames(&reqs, &resps, &state_);
-
-  EXPECT_THAT(reqs, IsEmpty());
-  EXPECT_THAT(resps, IsEmpty());
-
-  EXPECT_THAT(records_and_err_count.records,
-              ElementsAre(HasPayloads("QUERY [drop table foo;]", "DROP TABLE")));
-  EXPECT_EQ(0, records_and_err_count.error_count);
-}
-
-TEST_F(ProcessFramesTest, Rollback) {
-  RegularMessage rollback_msg = {};
-  std::string_view data = kRollbackMsg;
-  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &rollback_msg));
-
-  RegularMessage cmpl_msg = {};
-  data = kRollbackCmplMsg;
-  EXPECT_EQ(ParseState::kSuccess, ParseRegularMessage(&data, &cmpl_msg));
-
-  std::deque<RegularMessage> reqs = {std::move(rollback_msg)};
-  std::deque<RegularMessage> resps = {std::move(cmpl_msg)};
-  RecordsWithErrorCount<pgsql::Record> records_and_err_count =
-      ProcessFrames(&reqs, &resps, &state_);
-  EXPECT_THAT(reqs, IsEmpty());
-  EXPECT_THAT(resps, IsEmpty());
-  EXPECT_THAT(records_and_err_count.records,
-              ElementsAre(HasPayloads("QUERY [ROLLBACK]", "ROLLBACK")));
   EXPECT_EQ(0, records_and_err_count.error_count);
 }
 

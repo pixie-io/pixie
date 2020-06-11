@@ -135,12 +135,14 @@ Status HandleQuery(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
     if (iter->tag == Tag::kCmdComplete) {
       found_cmd_cmpl = true;
       PL_RETURN_IF_ERROR(ParseCmdCmpl(*iter, &req_resp->resp.cmd_cmpl));
+      req_resp->resp.timestamp_ns = req_resp->resp.cmd_cmpl.timestamp_ns;
       break;
     }
 
     if (iter->tag == Tag::kErrResp) {
       found_err_resp = true;
       PL_RETURN_IF_ERROR(ParseErrResp(*iter, &req_resp->resp.err_resp));
+      req_resp->resp.timestamp_ns = req_resp->resp.err_resp.timestamp_ns;
       break;
     }
 
@@ -148,11 +150,15 @@ Status HandleQuery(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
       found_row_desc = true;
       req_resp->resp.cmd_cmpl.timestamp_ns = iter->timestamp_ns;
       PL_RETURN_IF_ERROR(ParseRowDesc(*iter, &req_resp->resp.row_desc));
+
+      req_resp->resp.timestamp_ns = req_resp->resp.row_desc.timestamp_ns;
     }
 
     if (iter->tag == Tag::kDataRow) {
       DataRow data_row;
       PL_RETURN_IF_ERROR(ParseDataRow(*iter, &data_row));
+
+      req_resp->resp.timestamp_ns = data_row.timestamp_ns;
       req_resp->resp.data_rows.push_back(std::move(data_row));
     }
   }
@@ -184,6 +190,7 @@ Status HandleParse(const RegularMessage& msg, MsgDeqIter* resp_iter, const MsgDe
   // Update the iterator for response messages.
   *resp_iter = iter + 1;
   req_resp->req = parse;
+  req_resp->resp.timestamp_ns = iter->timestamp_ns;
 
   if (iter->tag == Tag::kParseComplete) {
     if (parse.stmt_name.empty()) {
@@ -345,9 +352,11 @@ Status HandleExecute(const RegularMessage& msg, MsgDeqIter* resps_begin,
   if (status.ok()) {                                      \
     RegularMessage req;                                   \
     req.timestamp_ns = req_resp.req.timestamp_ns;         \
+    DCHECK_NE(req.timestamp_ns, 0);                       \
     req.payload = req_resp.req.ToString();                \
     RegularMessage resp;                                  \
     resp.timestamp_ns = req_resp.resp.timestamp_ns;       \
+    DCHECK_NE(resp.timestamp_ns, 0);                      \
     resp.payload = req_resp.resp.ToString();              \
     records.push_back({std::move(req), std::move(resp)}); \
   } else {                                                \
