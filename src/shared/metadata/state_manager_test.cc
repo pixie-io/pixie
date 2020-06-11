@@ -20,6 +20,14 @@ using ::testing::Pair;
 using ::testing::Return;
 using ::testing::UnorderedElementsAre;
 
+constexpr char kUpdate0_0Pbtxt[] = R"(
+  namespace_update {
+    name: "pl"
+    uid: "namespace_1"
+    start_timestamp_ns: 999
+  }
+)";
+
 constexpr char kUpdate1_0Pbtxt[] = R"(
   container_update {
     name: "container_name1"
@@ -105,6 +113,10 @@ class FakePIDData : public MockCGroupMetadataReader {
 // This set include a pod, its container and a corresponding service.
 void GenerateTestUpdateEvents(
     moodycamel::BlockingConcurrentQueue<std::unique_ptr<ResourceUpdate>>* updates) {
+  auto update0_0 = std::make_unique<ResourceUpdate>();
+  CHECK(google::protobuf::TextFormat::MergeFromString(kUpdate0_0Pbtxt, update0_0.get()));
+  updates->enqueue(std::move(update0_0));
+
   auto update1_0 = std::make_unique<ResourceUpdate>();
   CHECK(google::protobuf::TextFormat::MergeFromString(kUpdate1_0Pbtxt, update1_0.get()));
   updates->enqueue(std::move(update1_0));
@@ -188,6 +200,19 @@ TEST_F(AgentMetadataStateTest, initialize_md_state) {
   EXPECT_EQ("service_id1", service_info->uid());
   EXPECT_EQ("service1", service_info->name());
   EXPECT_EQ("pl", service_info->ns());
+
+  EXPECT_THAT(state->namespaces_by_name(),
+              UnorderedElementsAre(Pair(Pair("pl", "pl"), "namespace_1")));
+  EXPECT_EQ("namespace_1", state->NamespaceIDByName({"pl", "pl"}));
+
+  auto* ns_info = state->NamespaceInfoByID("namespace_1");
+  ASSERT_NE(nullptr, ns_info);
+  EXPECT_EQ(999, ns_info->start_time_ns());
+  EXPECT_EQ("namespace_1", ns_info->uid());
+  EXPECT_EQ("pl", ns_info->name());
+  EXPECT_EQ("pl", ns_info->ns());
+
+  EXPECT_EQ(1, ns_info->pods().size());
 }
 
 TEST_F(AgentMetadataStateTest, remove_dead_pods) {

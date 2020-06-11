@@ -24,5 +24,11 @@ std::string ServiceInfo::DebugString(int indent) const {
                           uid(), state);
 }
 
+std::string NamespaceInfo::DebugString(int indent) const {
+  std::string state = stop_time_ns() != 0 ? "S" : "R";
+  return absl::Substitute("$0<Namespace:ns=$1:name=$2:uid=$3:state=$4>", Indent(indent), ns(),
+                          name(), uid(), state);
+}
+
 }  // namespace md
 }  // namespace pl

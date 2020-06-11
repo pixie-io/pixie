@@ -119,6 +119,10 @@ Status AgentMetadataStateManager::ApplyK8sUpdates(
       case ResourceUpdate::kServiceUpdate:
         PL_RETURN_IF_ERROR(HandleServiceUpdate(update->service_update(), state, metadata_filter));
         break;
+      case ResourceUpdate::kNamespaceUpdate:
+        PL_RETURN_IF_ERROR(
+            HandleNamespaceUpdate(update->namespace_update(), state, metadata_filter));
+        break;
       default:
         LOG(ERROR) << "Unhandled Update Type: " << update->update_case() << " (ignoring)";
     }
@@ -309,6 +313,14 @@ Status AgentMetadataStateManager::HandleContainerUpdate(const ContainerUpdate& u
   VLOG(2) << "Container Update: " << update.DebugString();
   PL_RETURN_IF_ERROR(md_filter->InsertEntity(MetadataType::CONTAINER_ID, update.cid()));
   return state->k8s_metadata_state()->HandleContainerUpdate(update);
+}
+
+Status AgentMetadataStateManager::HandleNamespaceUpdate(const NamespaceUpdate& update,
+                                                        AgentMetadataState* state,
+                                                        AgentMetadataFilter*) {
+  VLOG(2) << "Namespace Update: " << update.DebugString();
+
+  return state->k8s_metadata_state()->HandleNamespaceUpdate(update);
 }
 
 }  // namespace md

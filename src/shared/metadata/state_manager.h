@@ -39,6 +39,7 @@ class AgentMetadataStateManager {
   using PodUpdate = pl::shared::k8s::metadatapb::PodUpdate;
   using ContainerUpdate = pl::shared::k8s::metadatapb::ContainerUpdate;
   using ServiceUpdate = pl::shared::k8s::metadatapb::ServiceUpdate;
+  using NamespaceUpdate = pl::shared::k8s::metadatapb::NamespaceUpdate;
 
   explicit AgentMetadataStateManager(std::string_view hostname, uint32_t asid, sole::uuid agent_id,
                                      bool collects_data, const pl::system::Config& config,
@@ -145,6 +146,8 @@ class AgentMetadataStateManager {
                                       AgentMetadataFilter* metadata_filter);
   static Status HandleServiceUpdate(const ServiceUpdate& update, AgentMetadataState* state,
                                     AgentMetadataFilter* metadata_filter);
+  static Status HandleNamespaceUpdate(const NamespaceUpdate& update, AgentMetadataState* state,
+                                      AgentMetadataFilter* metadata_filter);
 };
 
 }  // namespace md

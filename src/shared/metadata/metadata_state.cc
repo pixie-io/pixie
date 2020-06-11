@@ -33,6 +33,18 @@ const ServiceInfo* K8sMetadataState::ServiceInfoByID(UIDView service_id) const {
              : static_cast<ServiceInfo*>(it->second.get());
 }
 
+const NamespaceInfo* K8sMetadataState::NamespaceInfoByID(UIDView ns_id) const {
+  auto it = k8s_objects_.find(ns_id);
+
+  if (it == k8s_objects_.end()) {
+    return nullptr;
+  }
+
+  return (it->second->type() != K8sObjectType::kNamespace)
+             ? nullptr
+             : static_cast<NamespaceInfo*>(it->second.get());
+}
+
 UID K8sMetadataState::PodIDByName(K8sNameIdentView pod_name) const {
   auto it = pods_by_name_.find(pod_name);
   return (it == pods_by_name_.end()) ? "" : it->second;
@@ -46,6 +58,11 @@ UID K8sMetadataState::PodIDByIP(std::string_view pod_ip) const {
 UID K8sMetadataState::ServiceIDByName(K8sNameIdentView service_name) const {
   auto it = services_by_name_.find(service_name);
   return (it == services_by_name_.end()) ? "" : it->second;
+}
+
+UID K8sMetadataState::NamespaceIDByName(K8sNameIdentView namespace_name) const {
+  auto it = namespaces_by_name_.find(namespace_name);
+  return (it == namespaces_by_name_.end()) ? "" : it->second;
 }
 
 const ContainerInfo* K8sMetadataState::ContainerInfoByID(CIDView id) const {
@@ -82,6 +99,11 @@ std::unique_ptr<K8sMetadataState> K8sMetadataState::Clone() const {
   other->services_by_name_.reserve(services_by_name_.size());
   for (const auto& [k, v] : services_by_name_) {
     other->services_by_name_[k] = v;
+  }
+
+  other->namespaces_by_name_.reserve(namespaces_by_name_.size());
+  for (const auto& [k, v] : namespaces_by_name_) {
+    other->namespaces_by_name_[k] = v;
   }
   return other;
 }
@@ -151,6 +173,16 @@ Status K8sMetadataState::HandlePodUpdate(const PodUpdate& update) {
       update.pod_ip()) {  // Filter out daemonset which don't have their own, unique podIP.
     pods_by_ip_[update.pod_ip()] = object_uid;
   }
+
+  // Add pod to namespace, if namespace exists.
+  auto ns_it = namespaces_by_name_.find({ns, ns});
+
+  if (!(ns_it == namespaces_by_name_.end())) {
+    auto ns_uid = ns_it->second;
+    NamespaceInfo* ns_info = static_cast<NamespaceInfo*>(k8s_objects_[ns_uid].get());
+    ns_info->AddPod(object_uid);
+  }
+
   return Status::OK();
 }
 
@@ -202,6 +234,29 @@ Status K8sMetadataState::HandleServiceUpdate(const ServiceUpdate& update) {
   VLOG(1) << "service update: " << update.name();
 
   services_by_name_[{ns, name}] = service_uid;
+  return Status::OK();
+}
+
+Status K8sMetadataState::HandleNamespaceUpdate(const NamespaceUpdate& update) {
+  const auto& namespace_uid = update.uid();
+  const std::string& name = update.name();
+  const std::string& ns = update.name();
+
+  auto it = k8s_objects_.find(namespace_uid);
+  if (it == k8s_objects_.end()) {
+    auto ns_obj = std::make_unique<NamespaceInfo>(namespace_uid, ns, name);
+    VLOG(1) << "Adding Namespace: " << ns_obj->DebugString();
+    it = k8s_objects_.try_emplace(namespace_uid, std::move(ns_obj)).first;
+  }
+
+  auto ns_info = static_cast<NamespaceInfo*>(it->second.get());
+
+  ns_info->set_start_time_ns(update.start_timestamp_ns());
+  ns_info->set_stop_time_ns(update.stop_timestamp_ns());
+
+  VLOG(1) << "namespace update: " << update.name();
+
+  namespaces_by_name_[{ns, name}] = namespace_uid;
   return Status::OK();
 }
 

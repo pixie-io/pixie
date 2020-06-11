@@ -16,7 +16,7 @@ namespace md {
 /**
  * Enum with all the different metadata types.
  */
-enum class K8sObjectType { kUnknown, kPod, kService };
+enum class K8sObjectType { kUnknown, kPod, kService, kNamespace };
 
 /**
  * Base class for all K8s metadata objects.
@@ -321,6 +321,40 @@ class ServiceInfo : public K8sMetadataObject {
  private:
   /**
    * Set of pods that are running on this pod.
+   *
+   * The PodInfo is located in pods in the K8s state.
+   */
+  absl::flat_hash_set<UID> pods_;
+};
+
+/**
+ * NamespaceInfo contains information about K8s namespaces.
+ */
+class NamespaceInfo : public K8sMetadataObject {
+ public:
+  NamespaceInfo(UID uid, std::string_view ns, std::string_view name)
+      : K8sMetadataObject(K8sObjectType::kNamespace, std::move(uid), std::move(ns),
+                          std::move(name)) {}
+  virtual ~NamespaceInfo() = default;
+
+  void AddPod(UIDView uid) { pods_.emplace(uid); }
+  void RmPod(UIDView uid) { pods_.erase(uid); }
+
+  const absl::flat_hash_set<std::string>& pods() const { return pods_; }
+
+  std::unique_ptr<K8sMetadataObject> Clone() const override {
+    return std::unique_ptr<NamespaceInfo>(new NamespaceInfo(*this));
+  }
+
+  std::string DebugString(int indent = 0) const override;
+
+ protected:
+  NamespaceInfo(const NamespaceInfo& other) = default;
+  NamespaceInfo& operator=(const NamespaceInfo& other) = delete;
+
+ private:
+  /**
+   * Set of pods that are running on this namespace.
    *
    * The PodInfo is located in pods in the K8s state.
    */

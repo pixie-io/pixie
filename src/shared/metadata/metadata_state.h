@@ -30,6 +30,7 @@ class K8sMetadataState : NotCopyable {
   using PodUpdate = pl::shared::k8s::metadatapb::PodUpdate;
   using ContainerUpdate = pl::shared::k8s::metadatapb::ContainerUpdate;
   using ServiceUpdate = pl::shared::k8s::metadatapb::ServiceUpdate;
+  using NamespaceUpdate = pl::shared::k8s::metadatapb::NamespaceUpdate;
 
   // K8s names consist of both a namespace and name : <ns, name>.
   using K8sNameIdent = std::pair<std::string, std::string>;
@@ -75,6 +76,7 @@ class K8sMetadataState : NotCopyable {
       absl::flat_hash_map<K8sNameIdent, UID, K8sIdentHashEq::Hash, K8sIdentHashEq::Eq>;
 
   using ServicesByNameMap = PodsByNameMap;
+  using NamespacesByNameMap = PodsByNameMap;
   using PodsByPodIpMap = absl::flat_hash_map<std::string, UID>;
 
   void set_service_cidr(const CIDRBlock& cidr) {
@@ -122,6 +124,8 @@ class K8sMetadataState : NotCopyable {
 
   const ServicesByNameMap& services_by_name() const { return services_by_name_; }
 
+  const NamespacesByNameMap& namespaces_by_name() const { return namespaces_by_name_; }
+
   /**
    * ServiceInfoByID gets an unowned pointer to the Service. This pointer will remain active
    * for the lifetime of this metadata state instance.
@@ -137,11 +141,27 @@ class K8sMetadataState : NotCopyable {
    */
   UID ServiceIDByName(K8sNameIdentView service_name) const;
 
+  /**
+   * NamespaceInfoByID gets an unowned pointer to the Namespace. This pointer will remain active
+   * for the lifetime of this metadata state instance.
+   * @param ns_id the id of the Namespace.
+   * @return Pointer to the NamespaceInfo.
+   */
+  const NamespaceInfo* NamespaceInfoByID(UIDView ns_id) const;
+
+  /**
+   * NamespaceIDByName returns the NamespaceID for the namespace of the given name.
+   * @param namespace_name the namespace name
+   * @return the namespace id or empty string if the namespace does not exist.
+   */
+  UID NamespaceIDByName(K8sNameIdentView namespace_name) const;
+
   std::unique_ptr<K8sMetadataState> Clone() const;
 
   Status HandlePodUpdate(const PodUpdate& update);
   Status HandleContainerUpdate(const ContainerUpdate& update);
   Status HandleServiceUpdate(const ServiceUpdate& update);
+  Status HandleNamespaceUpdate(const NamespaceUpdate& update);
 
   absl::flat_hash_map<CID, ContainerInfoUPtr>& containers_by_id() { return containers_by_id_; }
   std::string DebugString(int indent_level = 0) const;
@@ -166,6 +186,11 @@ class K8sMetadataState : NotCopyable {
    * Mapping of services by name.
    */
   ServicesByNameMap services_by_name_;
+
+  /**
+   * Mapping of namespaces by name.
+   */
+  NamespacesByNameMap namespaces_by_name_;
 
   /**
    * Mapping of Pods by host ip.
