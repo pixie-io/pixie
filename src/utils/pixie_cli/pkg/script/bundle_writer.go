@@ -20,7 +20,7 @@ type BundleWriter struct {
 	searchPaths []string
 }
 
-type docSpec struct {
+type manifestSpec struct {
 	Short   string  `yaml:"short"`
 	Long    string  `yaml:"long"`
 	OrgName *string `yaml:"org_name"`
@@ -65,7 +65,7 @@ func (b BundleWriter) parseBundleScripts(basePath string) (*pixieScript, error) 
 
 	visFile := path.Join(basePath, "vis.json")
 	placementFile := path.Join(basePath, "placement.json")
-	docFile := path.Join(basePath, "doc.yaml")
+	manifestFile := path.Join(basePath, "manifest.yaml")
 
 	visFileExists := fileExists(visFile)
 	placementFileExists := fileExists(placementFile)
@@ -91,25 +91,25 @@ func (b BundleWriter) parseBundleScripts(basePath string) (*pixieScript, error) 
 		ps.Placement = string(data)
 	}
 
-	f, err := os.Open(docFile)
+	f, err := os.Open(manifestFile)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
 
-	var doc docSpec
-	err = yaml.NewDecoder(f).Decode(&doc)
+	var manifest manifestSpec
+	err = yaml.NewDecoder(f).Decode(&manifest)
 	if err != nil {
 		return nil, err
 	}
 
-	ps.ShortDoc = doc.Short
-	ps.LongDoc = doc.Long
-	if doc.OrgName != nil {
-		ps.OrgName = *doc.OrgName
+	ps.ShortDoc = manifest.Short
+	ps.LongDoc = manifest.Long
+	if manifest.OrgName != nil {
+		ps.OrgName = *manifest.OrgName
 	}
-	if doc.Hidden != nil {
-		ps.Hidden = *doc.Hidden
+	if manifest.Hidden != nil {
+		ps.Hidden = *manifest.Hidden
 	}
 	return ps, nil
 }
