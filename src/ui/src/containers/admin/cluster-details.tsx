@@ -211,7 +211,7 @@ const ClusterDetailsContents = ({name}) => {
     return <div className={classes.error}>Loading...</div>;
   }
   if (error) {
-    return <div className={classes.error}>{error}</div>;
+    return <div className={classes.error}>{error.toString()}</div>;
   }
   if (!data || !data.clusters) {
     return <div className={classes.error}>No clusters found.</div>;

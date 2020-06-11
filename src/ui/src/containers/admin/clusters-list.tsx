@@ -3,6 +3,7 @@ import {AdminTooltip, clusterStatusGroup, convertHeartbeatMS, StatusCell,
         StyledRightTableCell, VizierStatusGroup} from './utils';
 
 import { useQuery } from '@apollo/react-hooks';
+import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableHead from '@material-ui/core/TableHead';
@@ -11,6 +12,14 @@ import Tooltip from '@material-ui/core/Tooltip';
 import gql from 'graphql-tag';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
+
+const useStyles = makeStyles((theme: Theme) => {
+  return createStyles({
+    error: {
+      padding: theme.spacing(1),
+    },
+  });
+});
 
 const GET_CLUSTERS = gql`
 {
@@ -66,10 +75,18 @@ export function formatCluster(clusterInfo): ClusterDisplay {
 const CLUSTERS_POLL_INTERVAL = 2500;
 
 export const ClustersTable = () => {
+  const classes = useStyles();
   const { loading, error, data } = useQuery(GET_CLUSTERS, { pollInterval: CLUSTERS_POLL_INTERVAL });
-  if (loading || error || !data.clusters) {
-    return null;
+  if (loading) {
+    return <div className={classes.error}>Loading...</div>;
   }
+  if (error) {
+    return <div className={classes.error}>{error.toString()}</div>;
+  }
+  if (!data || !data.clusters) {
+    return <div className={classes.error}>No clusters found.</div>;
+  }
+
   const clusters = data.clusters.map((cluster) => formatCluster(cluster));
   return (
     <Table>

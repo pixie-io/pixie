@@ -172,7 +172,7 @@ const Vizier = () => {
     console.error(errMsg);
   }
 
-  if (data.clusters.length === 0) {
+  if (clusters.length === 0) {
     return <DeployInstructions />;
   }
 

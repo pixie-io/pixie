@@ -70,6 +70,9 @@ const useStyles = makeStyles((theme: Theme) => {
     copyBtn: {
       minWidth: '30px',
     },
+    error: {
+      padding: theme.spacing(1),
+    }
   });
 });
 
@@ -184,11 +187,16 @@ export const DeploymentKeyRow = ({deploymentKey}) => {
 }
 
 export const DeploymentKeysTable = () => {
-  const { loading, error, data } = useQuery(LIST_DEPLOYMENT_KEYS, { pollInterval: 2500 });
-  if (loading || error || !data.deploymentKeys) {
-    return null;
+  const classes = useStyles();
+  const { loading, error, data } = useQuery(LIST_DEPLOYMENT_KEYS, { pollInterval: 2000 });
+  if (loading) {
+    return <div className={classes.error}>Loading...</div>;
   }
-  const deploymentKeys = data.deploymentKeys.map((key) => formatDeploymentKey(key));
+  if (error) {
+    return <div className={classes.error}>{error.toString()}</div>;
+  }
+
+  const deploymentKeys = (data?.deploymentKeys || []).map((key) => formatDeploymentKey(key));
   return (
     <>
       <Table>
