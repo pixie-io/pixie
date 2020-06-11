@@ -9,14 +9,14 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/spf13/viper"
 
+	"github.com/gorilla/handlers"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/pflag"
 	"pixielabs.ai/pixielabs/src/cloud/api/ptproxy"
 	"pixielabs.ai/pixielabs/src/cloud/autocomplete"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 	"pixielabs.ai/pixielabs/src/cloud/shared/vzshard"
 	pl_api_vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
-
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/pflag"
 
 	"pixielabs.ai/pixielabs/src/cloud/api/apienv"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller"
@@ -126,7 +126,7 @@ func main() {
 			return controller.GetAugmentedTokenGRPC(ctx, apiEnv)
 		},
 	}
-	s := services.NewPLServerWithOptions(env, mux, serverOpts)
+	s := services.NewPLServerWithOptions(env, handlers.CORS(services.DefaultCORSConfig()...)(mux), serverOpts)
 
 	imageAuthServer := &controller.VizierImageAuthServer{}
 	cloudapipb.RegisterVizierImageAuthorizationServer(s.GRPCServer(), imageAuthServer)
@@ -177,6 +177,8 @@ func main() {
 	}
 
 	mux.Handle("/api/graphql", controller.WithAugmentedAuthMiddleware(env, controller.NewGraphQLHandler(gqlEnv)))
+
+	mux.Handle("/api/unauthenticated/graphql", controller.NewUnauthenticatedGraphQLHandler(gqlEnv))
 
 	s.Start()
 	s.StopOnInterrupt()

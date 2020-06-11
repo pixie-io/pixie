@@ -1,0 +1,11 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "bindata.gen.go",
+        "schema.go",
+    ],
+    importpath = "pixielabs.ai/pixielabs/src/cloud/api/controller/unauthenticated_schema",
+    visibility = ["//visibility:public"],
+)
