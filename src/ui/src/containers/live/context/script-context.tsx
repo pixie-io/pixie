@@ -22,11 +22,8 @@ export const ScriptContextProvider = (props) => {
   const setIdAndTitle = (newId: string, newTitle: string) => {
     setTitle(newTitle);
     setId(newId);
+    urlParams.setScript(newId, '' /* diff */);
   };
-
-  React.useEffect(() => {
-    urlParams.setScript(id, '');
-  }, [id]);
 
   return (
     <ScriptContext.Provider value={{
