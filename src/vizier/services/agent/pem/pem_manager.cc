@@ -25,9 +25,6 @@ Status PEMManager::PostRegisterHook() {
       dispatcher_.get(), info(), nats_connector(), /*qb_stub_*/ nullptr, carnot_.get());
   PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kExecuteQueryRequest,
                                             execute_query_handler));
-
-  return Status::OK();
-
   return Status::OK();
 }
 
