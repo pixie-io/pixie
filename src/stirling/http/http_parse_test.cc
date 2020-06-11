@@ -274,7 +274,11 @@ TEST_F(HTTPParserTest, CompleteMessages) {
   EXPECT_EQ(ParseState::kSuccess, result.state);
   EXPECT_EQ(msg_a.size() + msg_b.size() + msg_c.size(), result.end_position);
   EXPECT_THAT(parsed_messages, ElementsAre(HasBody("a"), HasBody("b"), HasBody("c")));
-  EXPECT_THAT(result.start_positions, ElementsAre(0, msg_a.size(), msg_a.size() + msg_b.size()));
+  EXPECT_THAT(result.frame_positions,
+              ElementsAre(StartEndPos<size_t>{0, msg_a.size() - 1},
+                          StartEndPos<size_t>{msg_a.size(), msg_a.size() + msg_b.size() - 1},
+                          StartEndPos<size_t>{msg_a.size() + msg_b.size(),
+                                              msg_a.size() + msg_b.size() + msg_c.size() - 1}));
 }
 
 TEST_F(HTTPParserTest, PartialHeader) {

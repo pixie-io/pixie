@@ -112,22 +112,33 @@ class HTTP2ParserTest : public ::testing::Test {
 };
 
 TEST_F(HTTP2ParserTest, UnpackFrames) {
-  std::string input{NGHTTP2_CLIENT_MAGIC
-                    "\x0\x0\x3\x1\x4\x0\x0\x0\x1"
-                    "a:b"  // HEADERS
-                    "\x0\x0\x3\x9\x4\x0\x0\x0\x1"
-                    "c:d"  // CONTINUATION
-                    "\x0\x0\x4\x0\x1\x0\x0\x0\x2"
-                    "abcd"  // DATA
-                    "\x0\x0\x1\x1\x1\x0\x0\x0\x3",
-                    24 + 4 * NGHTTP2_FRAME_HDLEN + 3 + 3 + 4};
-  std::string_view buf = input;
+  constexpr std::string_view kMagic = ConstStringView(NGHTTP2_CLIENT_MAGIC);
+  constexpr std::string_view kHdrFrame = ConstStringView(
+      "\x0\x0\x3\x1\x4\x0\x0\x0\x1"
+      "a:b");
+  constexpr std::string_view kContFrame = ConstStringView(
+      "\x0\x0\x3\x9\x4\x0\x0\x0\x1"
+      "c:d");
+  constexpr std::string_view kDataFrame = ConstStringView(
+      "\x0\x0\x4\x0\x1\x0\x0\x0\x2"
+      "abcd");
+  constexpr std::string_view kIncompleteFrame = ConstStringView("\x0\x0\x1\x1\x1\x0\x0\x0\x3");
+
+  const std::string kBuf =
+      absl::StrCat(kMagic, kHdrFrame, kContFrame, kDataFrame, kIncompleteFrame);
+
+  const size_t kFrame1Pos = kMagic.size();
+  const size_t kFrame2Pos = kFrame1Pos + kHdrFrame.size();
+  const size_t kFrame3Pos = kFrame2Pos + kContFrame.size();
+  const size_t kFrame4Pos = kFrame3Pos + kDataFrame.size();
 
   std::deque<Frame> frames;
-  ParseResult<size_t> res = parser_.ParseFramesLoop(MessageType::kUnknown, buf, &frames);
+  ParseResult<size_t> res = parser_.ParseFramesLoop(MessageType::kUnknown, kBuf, &frames);
   EXPECT_THAT(res.state, Eq(ParseState::kNeedsMoreData));
-  EXPECT_THAT(res.start_positions, ElementsAre(24, 36, 48));
-  EXPECT_THAT(res.end_position, Eq(24 + 3 * NGHTTP2_FRAME_HDLEN + 3 + 3 + 4))
+  EXPECT_THAT(res.frame_positions, ElementsAre(StartEndPos<size_t>{kFrame1Pos, kFrame2Pos - 1},
+                                               StartEndPos<size_t>{kFrame2Pos, kFrame3Pos - 1},
+                                               StartEndPos<size_t>{kFrame3Pos, kFrame4Pos - 1}));
+  EXPECT_THAT(res.end_position, Eq(kFrame4Pos))
       << "End position does not go into the incomplete frame";
   EXPECT_THAT(frames, ElementsAre(MatchesTypePayload(NGHTTP2_HEADERS, "a:b"),
                                   MatchesTypePayload(NGHTTP2_CONTINUATION, "c:d"),

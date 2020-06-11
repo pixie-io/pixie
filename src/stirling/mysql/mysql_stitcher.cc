@@ -308,7 +308,7 @@ StatusOr<ParseState> ProcessStmtSendLongData(const Packet& req_packet,
   // Response
   //----------------
 
-  PL_RETURN_IF_NOT_SUCCESS(HandleNoResponse(resp_packets, entry));
+  PL_RETURN_IF_NOT_SUCCESS(HandleNoResponse(req_packet, resp_packets, entry));
 
   return ParseState::kSuccess;
 }
@@ -365,7 +365,7 @@ StatusOr<ParseState> ProcessStmtClose(const Packet& req_packet, DequeView<Packet
   // Response
   //----------------
 
-  PL_RETURN_IF_NOT_SUCCESS(HandleNoResponse(resp_packets, entry));
+  PL_RETURN_IF_NOT_SUCCESS(HandleNoResponse(req_packet, resp_packets, entry));
   return ParseState::kSuccess;
 }
 

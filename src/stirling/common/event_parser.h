@@ -32,10 +32,28 @@ struct BufferPosition {
   size_t offset;
 };
 
+template <typename PositionType>
+struct StartEndPos {
+  // Start position is the location of the first byte of the frame.
+  PositionType start;
+  // End position is the location of the last byte of the frame.
+  // Unlike STL container end, this is not 1 byte passed the end.
+  PositionType end;
+};
+
+inline bool operator==(const BufferPosition& lhs, const BufferPosition& rhs) {
+  return lhs.seq_num == rhs.seq_num && lhs.offset == rhs.offset;
+}
+
+template <typename TPosType>
+inline bool operator==(const StartEndPos<TPosType>& lhs, const StartEndPos<TPosType>& rhs) {
+  return lhs.start == rhs.start && lhs.end == rhs.end;
+}
+
 // A ParseResult returns a vector of parsed frames, and also some position markers.
 //
 // It is templated based on the position type, because we have two concepts of position:
-//    Position in a contiguous buffer: PositionType is uint64_t.
+//    Position in a contiguous buffer: PositionType is size_t.
 //    Position in a set of disjoint buffers: PositionType is BufferPosition.
 //
 // The two concepts are used by two different parse functions we have:
@@ -44,8 +62,8 @@ struct BufferPosition {
 // ParseResult<BufferPosition> ParseFrames(MessageType type);
 template <typename PositionType>
 struct ParseResult {
-  // Positions of frame start positions in the source buffer.
-  std::vector<PositionType> start_positions;
+  // Positions of frame start and end positions in the source buffer.
+  std::vector<StartEndPos<PositionType>> frame_positions;
   // Position of where parsing ended consuming the source buffer.
   // When PositionType is bytes, this is total bytes successfully consumed.
   PositionType end_position;
@@ -197,19 +215,23 @@ class EventParser {
 
     VLOG(3) << absl::Substitute("Parsed $0 new frames", frames->size() - prev_size);
 
-    std::vector<BufferPosition> positions;
+    std::vector<StartEndPos<BufferPosition>> frame_positions;
 
     PositionConverter converter;
 
     // Match timestamps with the parsed frames.
-    for (size_t i = 0; i < result.start_positions.size(); ++i) {
-      BufferPosition position = converter.Convert(msgs_, start_pos + result.start_positions[i]);
-      DCHECK(position.seq_num < msgs_.size()) << absl::Substitute(
+    for (size_t i = 0; i < result.frame_positions.size(); ++i) {
+      StartEndPos<BufferPosition> frame_position = {
+          converter.Convert(msgs_, start_pos + result.frame_positions[i].start),
+          converter.Convert(msgs_, start_pos + result.frame_positions[i].end)};
+      DCHECK(frame_position.start.seq_num < msgs_.size()) << absl::Substitute(
           "The sequence number must be in valid range of [0, $0)", msgs_.size());
-      positions.push_back(position);
+      DCHECK(frame_position.end.seq_num < msgs_.size()) << absl::Substitute(
+          "The sequence number must be in valid range of [0, $0)", msgs_.size());
+      frame_positions.push_back(frame_position);
 
       auto& msg = (*frames)[prev_size + i];
-      msg.timestamp_ns = ts_nses_[position.seq_num];
+      msg.timestamp_ns = ts_nses_[frame_position.end.seq_num];
     }
 
     BufferPosition end_position = converter.Convert(msgs_, start_pos + result.end_position);
@@ -219,7 +241,7 @@ class EventParser {
     ts_nses_.clear();
     msgs_size_ = 0;
 
-    return {std::move(positions), end_position, result.state, result.invalid_frames};
+    return {std::move(frame_positions), end_position, result.state, result.invalid_frames};
   }
 
   /**
@@ -239,7 +261,7 @@ class EventParser {
   template <typename TFrameType>
   ParseResult<size_t> ParseFramesLoop(MessageType type, std::string_view buf,
                                       std::deque<TFrameType>* frames) {
-    std::vector<size_t> start_positions;
+    std::vector<StartEndPos<size_t>> frame_positions;
     const size_t buf_size = buf.size();
     ParseState s = ParseState::kSuccess;
     size_t bytes_processed = 0;
@@ -291,13 +313,16 @@ class EventParser {
         break;
       }
 
+      size_t start_position = bytes_processed;
+      bytes_processed = (buf_size - buf.size());
+      size_t end_position = bytes_processed - 1;
+
       if (push) {
-        start_positions.push_back(bytes_processed);
+        frame_positions.push_back({start_position, end_position});
         frames->push_back(std::move(frame));
       }
-      bytes_processed = (buf_size - buf.size());
     }
-    return ParseResult<size_t>{std::move(start_positions), bytes_processed, s, invalid_count};
+    return ParseResult<size_t>{std::move(frame_positions), bytes_processed, s, invalid_count};
   }
 
  private:

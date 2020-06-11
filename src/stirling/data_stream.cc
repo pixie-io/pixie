@@ -190,7 +190,7 @@ void DataStream::ProcessBytesToFrames(MessageType type) {
       keep_processing = false;
     }
 
-    stat_valid_frames_ += parse_result.start_positions.size();
+    stat_valid_frames_ += parse_result.frame_positions.size();
     stat_invalid_frames_ += parse_result.invalid_frames;
     stat_raw_data_gaps_ += keep_processing;
   }

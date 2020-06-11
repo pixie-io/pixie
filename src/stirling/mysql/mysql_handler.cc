@@ -24,14 +24,15 @@ namespace mysql {
     return ParseState::kNeedsMoreData;                \
   }
 
-StatusOr<ParseState> HandleNoResponse(DequeView<Packet> resp_packets, Record* entry) {
+StatusOr<ParseState> HandleNoResponse(const Packet& req_packet, DequeView<Packet> resp_packets,
+                                      Record* entry) {
   if (!resp_packets.empty()) {
     return error::Internal("Did not expect any response packets [num_extra_packets=$0].",
                            resp_packets.size());
   }
 
   entry->resp.status = RespStatus::kNone;
-  entry->resp.timestamp_ns = 0;
+  entry->resp.timestamp_ns = req_packet.timestamp_ns;
 
   return ParseState::kSuccess;
 }
@@ -87,7 +88,7 @@ StatusOr<ParseState> HandleOKMessage(DequeView<Packet> resp_packets, Record* ent
   }
 
   entry->resp.status = RespStatus::kOK;
-  entry->resp.timestamp_ns = resp_packets.front().timestamp_ns;
+  entry->resp.timestamp_ns = packet.timestamp_ns;
 
   if (resp_packets.size() > 1) {
     return error::Internal(
