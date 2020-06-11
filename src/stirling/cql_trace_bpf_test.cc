@@ -21,6 +21,7 @@
 namespace pl {
 namespace stirling {
 
+using ::pl::stirling::testing::ConsumeRecords;
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::types::ColumnWrapper;
@@ -404,7 +405,7 @@ TEST_F(CQLTraceTest, cqlsh_capture) {
   // Grab the data from Stirling.
   DataTable data_table(kCQLTable);
   source_->TransferData(ctx_.get(), SocketTraceConnector::kCQLTableNum, &data_table);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  types::ColumnWrapperRecordBatch record_batch = ConsumeRecords(&data_table);
 
   // Check client-side tracing results.
   {

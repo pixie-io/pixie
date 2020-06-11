@@ -22,6 +22,7 @@ namespace stirling {
 
 using ::pl::stirling::testing::ColWrapperIsEmpty;
 using ::pl::stirling::testing::ColWrapperSizeIs;
+using ::pl::stirling::testing::ConsumeRecords;
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::FindRecordsMatchingPID;
 using ::pl::system::TCPSocket;
@@ -116,10 +117,11 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
 
   DataTable data_table(kHTTPTable);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  types::ColumnWrapperRecordBatch all_records = ConsumeRecords(&data_table);
 
   if (p.trace_role & kRoleClient) {
     types::ColumnWrapperRecordBatch record_batch =
-        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system.ClientPID());
+        FindRecordsMatchingPID(all_records, kHTTPUPIDIdx, system.ClientPID());
 
     ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
@@ -138,7 +140,7 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
 
   if (p.trace_role & kRoleServer) {
     types::ColumnWrapperRecordBatch record_batch =
-        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system.ServerPID());
+        FindRecordsMatchingPID(all_records, kHTTPUPIDIdx, system.ServerPID());
 
     ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
@@ -183,16 +185,17 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
   {
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+    types::ColumnWrapperRecordBatch all_records = ConsumeRecords(&data_table);
 
     {
       types::ColumnWrapperRecordBatch record_batch =
-          FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system.ClientPID());
+          FindRecordsMatchingPID(all_records, kHTTPUPIDIdx, system.ClientPID());
       ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
     }
 
     {
       types::ColumnWrapperRecordBatch record_batch =
-          FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system.ServerPID());
+          FindRecordsMatchingPID(all_records, kHTTPUPIDIdx, system.ServerPID());
       ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
     }
   }
@@ -201,16 +204,17 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
   {
     DataTable data_table(kMySQLTable);
     source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
+    types::ColumnWrapperRecordBatch all_records = ConsumeRecords(&data_table);
 
     {
-      types::ColumnWrapperRecordBatch record_batch = FindRecordsMatchingPID(
-          *data_table.ActiveRecordBatch(), kMySQLUPIDIdx, system.ClientPID());
+      types::ColumnWrapperRecordBatch record_batch =
+          FindRecordsMatchingPID(all_records, kMySQLUPIDIdx, system.ClientPID());
       ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
     }
 
     {
-      types::ColumnWrapperRecordBatch record_batch = FindRecordsMatchingPID(
-          *data_table.ActiveRecordBatch(), kMySQLUPIDIdx, system.ServerPID());
+      types::ColumnWrapperRecordBatch record_batch =
+          FindRecordsMatchingPID(all_records, kMySQLUPIDIdx, system.ServerPID());
 
       ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
     }
@@ -237,18 +241,19 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
   {
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+    types::ColumnWrapperRecordBatch all_records = ConsumeRecords(&data_table);
 
     {
-      types::ColumnWrapperRecordBatch record_batch = FindRecordsMatchingPID(
-          *data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system1.ClientPID());
+      types::ColumnWrapperRecordBatch record_batch =
+          FindRecordsMatchingPID(all_records, kHTTPUPIDIdx, system1.ClientPID());
 
       ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
       EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
     }
 
     {
-      types::ColumnWrapperRecordBatch record_batch = FindRecordsMatchingPID(
-          *data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system2.ClientPID());
+      types::ColumnWrapperRecordBatch record_batch =
+          FindRecordsMatchingPID(all_records, kHTTPUPIDIdx, system2.ClientPID());
 
       ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
       EXPECT_THAT(record_batch[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg2"));
@@ -285,8 +290,9 @@ TEST_F(SocketTraceBPFTest, StartTime) {
 
   DataTable data_table(kHTTPTable);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  types::ColumnWrapperRecordBatch all_records = ConsumeRecords(&data_table);
   types::ColumnWrapperRecordBatch record_batch =
-      FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system.ClientPID());
+      FindRecordsMatchingPID(all_records, kHTTPUPIDIdx, system.ClientPID());
 
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
@@ -332,10 +338,11 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
 
   DataTable data_table(kHTTPTable);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
+  types::ColumnWrapperRecordBatch all_records = ConsumeRecords(&data_table);
 
   if (p.trace_role & kRoleServer) {
     types::ColumnWrapperRecordBatch record_batch =
-        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system.ServerPID());
+        FindRecordsMatchingPID(all_records, kHTTPUPIDIdx, system.ServerPID());
 
     ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 
@@ -354,7 +361,7 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
 
   if (p.trace_role & kRoleClient) {
     types::ColumnWrapperRecordBatch record_batch =
-        FindRecordsMatchingPID(*data_table.ActiveRecordBatch(), kHTTPUPIDIdx, system.ClientPID());
+        FindRecordsMatchingPID(all_records, kHTTPUPIDIdx, system.ClientPID());
 
     ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
 

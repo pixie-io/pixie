@@ -12,6 +12,7 @@
 namespace pl {
 namespace stirling {
 
+using ::pl::stirling::testing::ConsumeRecords;
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::testing::BazelBinTestFilePath;
 
@@ -128,7 +129,7 @@ TEST_F(HTTP2TraceTest, Basic) {
   // Grab the data from Stirling.
   DataTable data_table(kHTTPTable);
   source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  types::ColumnWrapperRecordBatch record_batch = ConsumeRecords(&data_table);
 
   {
     const std::vector<size_t> target_record_indices =

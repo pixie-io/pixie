@@ -42,6 +42,7 @@ static constexpr auto kMySQLTable =
     DataTableSchema("mysql_events", kMySQLElements, std::chrono::milliseconds{100},
                     std::chrono::milliseconds{1000});
 
+constexpr int kMySQLTimeIdx = kMySQLTable.ColIndex("time_");
 constexpr int kMySQLUPIDIdx = kMySQLTable.ColIndex("upid");
 constexpr int kMySQLReqCmdIdx = kMySQLTable.ColIndex("req_cmd");
 constexpr int kMySQLReqBodyIdx = kMySQLTable.ColIndex("req_body");

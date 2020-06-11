@@ -6,6 +6,7 @@
 namespace pl {
 namespace stirling {
 
+using ::pl::stirling::testing::ConsumeRecords;
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::stirling::testing::TCPSocket;
@@ -54,7 +55,7 @@ TEST_F(MySQLTraceBPFTest, MySQLStmtPrepareExecuteClose) {
   {
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    types::ColumnWrapperRecordBatch record_batch = ConsumeRecords(&data_table);
 
     EXPECT_THAT(FindRecordIdxMatchesPID(record_batch, kMySQLUPIDIdx, getpid()), IsEmpty());
   }
@@ -63,7 +64,7 @@ TEST_F(MySQLTraceBPFTest, MySQLStmtPrepareExecuteClose) {
   {
     DataTable data_table(kMySQLTable);
     source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    types::ColumnWrapperRecordBatch record_batch = ConsumeRecords(&data_table);
 
     const std::vector<size_t> target_record_indices =
         FindRecordIdxMatchesPID(record_batch, kMySQLUPIDIdx, system.ClientPID());
@@ -101,7 +102,7 @@ TEST_F(MySQLTraceBPFTest, MySQLQuery) {
   {
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    types::ColumnWrapperRecordBatch record_batch = ConsumeRecords(&data_table);
 
     EXPECT_THAT(FindRecordIdxMatchesPID(record_batch, kMySQLUPIDIdx, getpid()), IsEmpty());
   }
@@ -110,7 +111,7 @@ TEST_F(MySQLTraceBPFTest, MySQLQuery) {
   {
     DataTable data_table(kMySQLTable);
     source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-    types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+    types::ColumnWrapperRecordBatch record_batch = ConsumeRecords(&data_table);
 
     const std::vector<size_t> target_record_indices =
         FindRecordIdxMatchesPID(record_batch, kMySQLUPIDIdx, system.ClientPID());

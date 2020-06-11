@@ -26,6 +26,7 @@ using ::testing::Each;
 using ::testing::ElementsAre;
 
 using ::pl::stirling::testing::ColWrapperSizeIs;
+using ::pl::stirling::testing::ConsumeRecords;
 
 using ::pl::stirling::testing::kFD;
 using ::pl::stirling::testing::kPID;
@@ -168,15 +169,6 @@ class SocketTraceConnectorTest : public ::testing::Test {
   static constexpr int kHTTPTableNum = SocketTraceConnector::kHTTPTableNum;
   static constexpr int kMySQLTableNum = SocketTraceConnector::kMySQLTableNum;
 };
-
-types::ColumnWrapperRecordBatch ConsumeRecords(DataTable* data_table) {
-  // This call to ActiveRecordBatch ensures that the table has been set-up properly,
-  // before calling ConsumeRecordBatches.
-  data_table->ActiveRecordBatch();
-  auto tagged_record_batches = data_table->ConsumeRecordBatches();
-  CHECK(!tagged_record_batches.empty());
-  return *(tagged_record_batches[0].records_uptr);
-}
 
 auto ToStringVector(const types::SharedColumnWrapper& col) {
   std::vector<std::string> result;

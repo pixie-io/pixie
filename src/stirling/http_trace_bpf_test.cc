@@ -17,6 +17,7 @@ namespace pl {
 namespace stirling {
 
 using ::pl::stirling::testing::ColWrapperSizeIs;
+using ::pl::stirling::testing::ConsumeRecords;
 using ::pl::types::ColumnWrapperRecordBatch;
 using ::testing::AllOf;
 using ::testing::AnyOf;
@@ -85,7 +86,7 @@ TEST_F(GoHTTPTraceTest, RequestAndResponse) {
   EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
-  const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
+  types::ColumnWrapperRecordBatch record_batch = ConsumeRecords(&data_table_);
 
   // By default, we do not trace the client.
   EXPECT_THAT(testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, c_.child_pid()),
@@ -140,7 +141,7 @@ TEST_P(TraceRoleTest, VerifyRecordsCount) {
   EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
-  const types::ColumnWrapperRecordBatch& record_batch = *data_table_.ActiveRecordBatch();
+  types::ColumnWrapperRecordBatch record_batch = ConsumeRecords(&data_table_);
 
   const std::vector<size_t> client_record_ids =
       testing::FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, c_.child_pid());
