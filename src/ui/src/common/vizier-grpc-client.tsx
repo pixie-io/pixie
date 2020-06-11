@@ -210,7 +210,7 @@ export class VizierGRPCClient {
         const argValPb = new ExecuteScriptRequest.FuncToExecute.ArgValue();
         argValPb.setName(arg.name);
         if (typeof arg.value !== 'string') {
-          errors.push(`No value provided for arg ${arg.name}.`);
+          errors.push(new VizierQueryError('vis', `No value provided for arg ${arg.name}.`));
           continue;
         }
         argValPb.setValue(arg.value);

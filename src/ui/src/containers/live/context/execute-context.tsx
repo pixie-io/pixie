@@ -100,9 +100,13 @@ export const ExeucteContextProvider = (props) => {
         }
         setResults({ tables: newTables, stats: queryResults.executionStats });
       }).catch((error) => {
+        if (Array.isArray(error) && error.length) {
+          error = error[0];
+        }
+
         const errType = (error as VizierQueryError).errType;
         errMsg = error.message;
-        if (errType === 'execution') {
+        if (errType === 'execution' || !errType) {
           showSnackbar({
             message: errMsg,
             action: () => openDrawerTab('errors'),
