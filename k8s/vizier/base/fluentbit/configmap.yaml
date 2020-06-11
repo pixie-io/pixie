@@ -16,9 +16,7 @@ data:
         Log_Level     info
         Daemon        off
         Parsers_File  parsers.conf
-        HTTP_Server   On
-        HTTP_Listen   0.0.0.0
-        HTTP_Port     2020
+        HTTP_Server   Off
 
     @INCLUDE input.conf
     @INCLUDE filters.conf

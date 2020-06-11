@@ -10,8 +10,6 @@ spec:
       - name: fluent-bit
         image: gcr.io/pl-dev-infra/vizier/fluent-bit-image
         imagePullPolicy: Always
-        ports:
-        - containerPort: 2020
         volumeMounts:
         - name: varlog
           mountPath: /var/log
