@@ -11,6 +11,7 @@ import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/s
 import Button from '@material-ui/core/Button';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
+import TableContainer from '@material-ui/core/TableContainer';
 import Add from '@material-ui/icons/Add';
 import * as React from 'react';
 import { Link, Route, Router, Switch } from 'react-router-dom';
@@ -61,6 +62,12 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     createButton: {
       margin: theme.spacing(1),
+    },
+    tabContents: {
+      margin: theme.spacing(1),
+    },
+    container: {
+      maxHeight: 800
     }
   });
 });
@@ -93,9 +100,11 @@ const AdminOverview = () => {
              className={classes.createButton} variant='outlined'
              startIcon={<Add/>} color='primary'>New key</Button>}
         </div>
-        <div style={{margin:'10px'}}>
-          {tab === 'clusters' && <ClustersTable/>}
-          {tab === 'deployment-keys' && <DeploymentKeysTable/>}
+        <div className={classes.tabContents}>
+          <TableContainer className={classes.container}>
+            {tab === 'clusters' &&  <ClustersTable/>}
+            {tab === 'deployment-keys' &&  <DeploymentKeysTable/>}
+          </TableContainer>
         </div>
       </div>
     </div>

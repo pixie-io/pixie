@@ -13,6 +13,7 @@ import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/s
 import Tab from '@material-ui/core/Tab';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
+import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
 import Tabs from '@material-ui/core/Tabs';
@@ -72,8 +73,11 @@ const useStyles = makeStyles((theme: Theme) => {
       ...theme.typography.subtitle2,
     },
     tabContents: {
-      margin: theme.spacing(2),
+      margin: theme.spacing(1),
     },
+    container: {
+      maxHeight: 800,
+    }
   });
 });
 
@@ -230,18 +234,22 @@ const ClusterDetailsContents = ({name}) => {
       >
         <StyledTab value='agents' label='Agents' />
       </StyledTabs>
-      {
-        tab === 'agents' &&
-        (
-          <VizierGRPCClientProvider
-            clusterID={cluster.id}
-            passthroughEnabled={cluster.vizierConfig.passthroughEnabled}
-            clusterStatus={cluster.status}
-          >
-            <AgentsTable />
-          </VizierGRPCClientProvider>
-        )
-      }
+      <div className={classes.tabContents}>
+        {
+          tab === 'agents' &&
+          (
+            <VizierGRPCClientProvider
+              clusterID={cluster.id}
+              passthroughEnabled={cluster.vizierConfig.passthroughEnabled}
+              clusterStatus={cluster.status}
+            >
+              <TableContainer className={classes.container}>
+                <AgentsTable />
+              </TableContainer>
+            </VizierGRPCClientProvider>
+          )
+        }
+      </div>
     </div>
   );
 }
