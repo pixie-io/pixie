@@ -3,6 +3,7 @@ import { CodeEditor } from 'components/code-editor';
 import LazyPanel from 'components/lazy-panel';
 import * as React from 'react';
 import Split from 'react-split';
+import { triggerResize } from 'utils/resize';
 
 import IconButton from '@material-ui/core/IconButton';
 import { createStyles, makeStyles, Theme, useTheme, withStyles } from '@material-ui/core/styles';
@@ -162,7 +163,7 @@ export const EditorSplitPanel = (props) => {
       setCollapsedPanel(null);
       ref.current.split.setSizes(editorSplitsSizes);
     }
-    window.dispatchEvent(new Event('resize'));
+    triggerResize();
   }, [editorPanelOpen, editorSplitsSizes]);
 
   return (

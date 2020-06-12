@@ -32,7 +32,7 @@ export function getGridWidth(isMobile: boolean) {
 
 // Tiles a grid in a default way based on the number of widgets, number of columns, etc.
 function widgetPositions(numWidgets: number, gridWidth: number, numCols: number,
-                         elemHeight: number): Array<ChartPosition> {
+  elemHeight: number): Array<ChartPosition> {
   let curX = 0;
   let curY = 0;
   const elemWidth = gridWidth / numCols;
@@ -102,7 +102,7 @@ export function toLayout(widgets: Widget[], isMobile: boolean): Layout[] {
 
   // Find out the row-major order in which the widgets would be displayed in the non-mobile view,
   // and match it for the mobile view.
-  nonMobileLayout.sort(function(a: Layout, b: Layout) {
+  nonMobileLayout.sort(function (a: Layout, b: Layout) {
     if (a.y < b.y) {
       return -1;
     }
@@ -153,16 +153,34 @@ export function updatePositions(visSpec: Vis, positions: ChartPosition[]): Vis {
 // Helper function to generate a default layout for tables without vis specs.
 // TODO(malthus): Refactor this whole file to do this better. We probably need to
 // decouple the positioning of widgets with the vis spec for more flexible manipulation.
-export function addTableLayout(tables: string[], layout: Layout[], isMobile: boolean): Layout[] {
+export function addTableLayout(tables: string[], layout: Layout[], isMobile: boolean, height: number): {
+  layout: Layout[];
+  numCols: number;
+  rowHeight: number;
+} {
+  if (tables.length === 0) {
+    return {
+      layout: [],
+      numCols: 0,
+      rowHeight: 0,
+    };
+  }
+  const numCols = isMobile ? 1 : Math.floor(Math.sqrt(tables.length));
+  const numRows = Math.floor(tables.length / numCols);
+  const rowHeight = Math.floor(height / numRows);
   const layoutSet = new Set(layout.map((l) => l.i));
   if (tables.every((table) => layoutSet.has(table))) {
-    return layout;
+    return { numCols, rowHeight, layout };
   }
-  const positions = isMobile ? mobileWidgetPositions(tables.length) : defaultWidgetPositions(tables.length);
-  return tables.map((table, idx) => {
-    return {
-      ...positions[idx],
-      i: table,
-    }
-  });
+  const positions = widgetPositions(tables.length, numCols, numCols, 1);
+  return {
+    layout: tables.map((table, idx) => {
+      return {
+        ...positions[idx],
+        i: table,
+      }
+    }),
+    numCols,
+    rowHeight,
+  };
 }

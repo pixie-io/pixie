@@ -8,6 +8,7 @@ import { VegaContext, withVegaContextProvider } from 'components/vega/vega-conte
 import { QueryResultTable } from 'containers/vizier/query-result-viewer';
 import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
+import { resizeEvent, triggerResize } from 'utils/resize';
 import { dataFromProto } from 'utils/result-data-utils';
 
 import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/styles';
@@ -15,7 +16,9 @@ import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/sty
 import { LayoutContext } from './context/layout-context';
 import { ResultsContext } from './context/results-context';
 import { VisContext } from './context/vis-context';
-import { addLayout, addTableLayout, getGridWidth, Layout, toLayout, updatePositions } from './layout';
+import {
+    addLayout, addTableLayout, getGridWidth, Layout, toLayout, updatePositions,
+} from './layout';
 import { DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, TABLE_DISPLAY_TYPE, widgetTableName } from './vis';
 
 const Vega = React.lazy(() => import(
@@ -104,6 +107,7 @@ const Grid = GridLayout.WidthProvider(GridLayout);
 
 interface CanvasProps {
   editable: boolean;
+  parentRef: React.RefObject<HTMLElement>;
 }
 
 const Canvas = (props: CanvasProps) => {
@@ -116,6 +120,22 @@ const Canvas = (props: CanvasProps) => {
 
   // Default layout used when there is no vis defining widgets.
   const [defaultLayout, setDefaultLayout] = React.useState<Layout[]>([]);
+  const [defaultHeight, setDefaultHeight] = React.useState<number>(0);
+
+  if (props.parentRef.current && !defaultHeight) {
+    setDefaultHeight(props.parentRef.current.getBoundingClientRect().height);
+  }
+
+  React.useEffect(() => {
+    const handler = (event) => {
+      if (event === resizeEvent || !props.parentRef.current) {
+        return;
+      }
+      setDefaultHeight(props.parentRef.current.getBoundingClientRect().height);
+    };
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
 
   React.useEffect(() => {
     const newVis = addLayout(vis);
@@ -124,26 +144,29 @@ const Canvas = (props: CanvasProps) => {
     }
   }, [vis]);
 
+  React.useEffect(() => {
+    setTimeseriesDomain(null);
+  }, [tables]);
+
+  const updateLayoutInVis = React.useCallback((newLayout) => {
+    setVis((vis) => updatePositions(vis, newLayout));
+    triggerResize();
+  }, []);
+
+  const updateDefaultLayout = React.useCallback((newLayout) => {
+    setDefaultLayout(newLayout);
+    triggerResize();
+  }, []);
+
+
+  const className = clsx(
+    'fs-exclude',
+    classes.gridItem,
+    props.editable && classes.editable,
+    loading && classes.loading,
+  );
+
   const charts = React.useMemo(() => {
-    const className = clsx(
-      'fs-exclude',
-      classes.gridItem,
-      props.editable && classes.editable,
-      loading && classes.loading,
-    );
-
-    if (vis.widgets.length === 0) {
-      const layoutMap = new Map(addTableLayout(Object.keys(tables), defaultLayout, isMobile).map((layout) => {
-        return [layout.i, layout];
-      }));
-      return Object.entries(tables).map(([tableName, table]) => (
-        <div key={tableName} className={className} data-grid={layoutMap.get(tableName)}>
-          <div className={classes.widgetTitle}>{tableName}</div>
-          <QueryResultTable className={classes.table} data={table} />
-        </div>
-      ));
-    }
-
     const widgets = [];
     const layout = toLayout(vis.widgets, isMobile);
 
@@ -192,26 +215,7 @@ const Canvas = (props: CanvasProps) => {
       );
     });
     return widgets;
-  }, [tables, vis, props.editable, defaultLayout, loading, isMobile]);
-
-  React.useEffect(() => {
-    setTimeseriesDomain(null);
-  }, [charts]);
-
-  const resize = React.useCallback(() => {
-    // Dispatch a window resize event to signal the chart to redraw. As suggested in:
-    // https://vega.github.io/vega-lite/docs/size.html#specifying-responsive-width-and-height
-    window.dispatchEvent(new Event('resize'));
-  }, []);
-
-  const handleLayoutChange = React.useCallback((newLayout) => {
-    if (vis.widgets.length > 0) {
-      setVis(updatePositions(vis, newLayout));
-    } else {
-      setDefaultLayout(newLayout);
-    }
-    resize();
-  }, [vis]);
+  }, [tables, vis, props.editable, loading, isMobile]);
 
   if (loading && charts.length === 0) {
     return (
@@ -219,11 +223,38 @@ const Canvas = (props: CanvasProps) => {
     );
   }
 
+  if (charts.length === 0) {
+    const { layout, numCols, rowHeight } = addTableLayout(Object.keys(tables), defaultLayout, isMobile, defaultHeight);
+    const layoutMap = new Map(layout.map((l) => {
+      return [l.i, l];
+    }));
+    return (
+      <Grid
+        rowHeight={rowHeight - theme.spacing(5)}
+        cols={numCols}
+        className={classes.grid}
+        onLayoutChange={updateDefaultLayout}
+        isDraggable={props.editable}
+        isResizable={props.editable}
+        margin={[theme.spacing(2.5), theme.spacing(2.5)]}
+      >
+        {
+          Object.entries(tables).map(([tableName, table]) => (
+            <div key={tableName} className={className} data-grid={layoutMap.get(tableName)}>
+              <div className={classes.widgetTitle}>{tableName}</div>
+              <QueryResultTable className={classes.table} data={table} />
+            </div>
+          ))
+        }
+      </Grid >
+    );
+  }
+
   return (
     <Grid
       cols={getGridWidth(isMobile)}
       className={classes.grid}
-      onLayoutChange={handleLayoutChange}
+      onLayoutChange={updateLayoutInVis}
       isDraggable={props.editable}
       isResizable={props.editable}
       margin={[theme.spacing(2.5), theme.spacing(2.5)]}

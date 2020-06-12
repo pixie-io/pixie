@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import * as React from 'react';
+import { triggerResize } from 'utils/resize';
 
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 
@@ -25,7 +26,7 @@ const LazyPanel = (props: LazyPanelProps) => {
   const classes = useStyles();
 
   React.useEffect(() => {
-    setTimeout(() => window.dispatchEvent(new Event('resize')), 0);
+    setTimeout(triggerResize, 0);
   }, [show]);
 
   if (!show && !rendered) {

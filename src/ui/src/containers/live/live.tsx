@@ -106,6 +106,8 @@ const LiveView = () => {
     }
   }, []);
 
+  const canvasRef = React.useRef<HTMLDivElement>(null);
+
   return (
     <div className={classes.root}>
       <LiveViewShortcuts handlers={hotkeyHandlers} />
@@ -138,8 +140,8 @@ const LiveView = () => {
             <ScriptLoader />
             <DataDrawerSplitPanel className={classes.main}>
               <EditorSplitPanel className={classes.editorPanel}>
-                <div className={classes.canvas}>
-                  <Canvas editable={editorPanelOpen} />
+                <div className={classes.canvas} ref={canvasRef}>
+                  <Canvas editable={editorPanelOpen} parentRef={canvasRef} />
                 </div>
               </EditorSplitPanel>
             </DataDrawerSplitPanel>
