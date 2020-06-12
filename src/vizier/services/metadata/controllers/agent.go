@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"math"
 	"sync"
 
 	uuid "github.com/satori/go.uuid"
@@ -18,6 +19,9 @@ import (
 const AgentExpirationTimeout int64 = 1e9 * 60 // 60 seconds in nano-seconds.
 // MaxAgentUpdates is the total number of updates each agent can have on its queue.
 const MaxAgentUpdates int = 10000
+
+// MaxUpdatesToDequeue is the maximum number of updates we should dequeue at a time.
+const MaxUpdatesToDequeue int = 200
 
 // AgentUpdate describes the update info for a given agent.
 type AgentUpdate struct {
@@ -363,8 +367,8 @@ func (m *AgentManagerImpl) GetFromAgentQueue(agentID string) ([]*metadatapb.Reso
 	defer currQueue.Mu.Unlock()
 
 	var updates []*metadatapb.ResourceUpdate
-	fQLen := len(currQueue.FailedQueue)
-	qLen := len(currQueue.Queue)
+	fQLen := int(math.Min(float64(len(currQueue.FailedQueue)), float64(MaxUpdatesToDequeue)))
+	qLen := int(math.Min(float64(len(currQueue.Queue)), float64(MaxUpdatesToDequeue-fQLen)))
 	for i := 0; i < fQLen; i++ {
 		update := <-currQueue.FailedQueue
 		updates = append(updates, update)
