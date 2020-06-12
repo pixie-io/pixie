@@ -1209,7 +1209,7 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
 
     RecordBuilder<&kConnStatsTable> r(data_table);
 
-    r.Append<idx::kTime>(AdjustedSteadyClockNow());
+    r.Append<idx::kTime>(AdjustedSteadyClockNowNS());
     md::UPID upid(ctx->GetASID(), key.upid.tgid, key.upid.start_time_ticks);
     r.Append<idx::kUPID>(upid.value());
     r.Append<idx::kRemoteAddr>(key.remote_addr);
