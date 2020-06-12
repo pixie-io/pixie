@@ -69,6 +69,7 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 
 	status := v1.PodStatus{
 		Message:  "this is message",
+		Reason:   "this is reason",
 		Phase:    v1.PodRunning,
 		QOSClass: v1.PodQOSBurstable,
 	}
@@ -102,6 +103,8 @@ func TestMetadataTopicListener_MetadataSubscriber(t *testing.T) {
 				Phase:            2,
 				NodeName:         "test",
 				Hostname:         "hostname",
+				Message:          "this is message",
+				Reason:           "this is reason",
 			},
 		},
 	}

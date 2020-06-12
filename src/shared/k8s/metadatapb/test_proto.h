@@ -38,6 +38,8 @@ node_name: "test_node"
 hostname: "test_host"
 pod_ip: "1.1.1.1"
 phase: RUNNING
+message: "Running message"
+reason: "Running reason"
 )";
 
 const char* kToBeTerminatedPodUpdatePbTxt = R"(
@@ -50,6 +52,8 @@ qos_class: QOS_CLASS_BEST_EFFORT
 node_name: "test_node_tbt"
 hostname: "test_host_tbt"
 phase: FAILED
+message: "Failed message unterminated"
+reason: "Failed reason unterminated"
 )";
 
 const char* kTerminatedPodUpdatePbTxt = R"(
@@ -61,6 +65,8 @@ stop_timestamp_ns: 15
 container_ids: "pod2_container_1"
 qos_class: QOS_CLASS_BEST_EFFORT
 phase: FAILED
+message: "Failed message terminated"
+reason: "Failed reason terminated"
 )";
 
 /*
@@ -70,12 +76,18 @@ const char* kRunningContainerUpdatePbTxt = R"(
 cid: "pod1_container_1"
 name: "running_container"
 start_timestamp_ns: 6
+container_state: CONTAINER_STATE_RUNNING
+message: "Running message"
+reason: "Running reason"
 )";
 
 const char* kTerminatingContainerUpdatePbTxt = R"(
 cid: "pod2_container_1"
 name: "terminating_container"
 start_timestamp_ns: 7
+container_state: CONTAINER_STATE_TERMINATED
+message: "Terminating message pending"
+reason: "Terminating reason pending"
 )";
 
 const char* kTerminatedContainerUpdatePbTxt = R"(
@@ -83,6 +95,9 @@ cid: "pod2_container_1"
 name: "terminating_container"
 start_timestamp_ns: 7
 stop_timestamp_ns: 14
+container_state: CONTAINER_STATE_TERMINATED
+message: "Terminating message complete"
+reason: "Terminating reason complete"
 )";
 
 /*

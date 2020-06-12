@@ -523,6 +523,11 @@ message PodUpdate {
   string host_ip = 13 [
                       (gogoproto.customname) = "HostIP"
                       ];
+
+  // The message for why the pod is in its current status.
+  string message = 14;
+  // A brief CamelCase message indicating details about why the pod is in this state.
+  string reason = 15;
 }
 
 // ContainerUpdate contains information about running containers.
@@ -549,6 +554,11 @@ message ContainerUpdate {
                               ];
   string pod_name = 7;
 
+  ContainerState container_state = 8;
+  // The message for why the container is in its current status.
+  string message = 9;
+  // A brief CamelCase message indicating details about why the container is in this state.
+  string reason = 10;
 }
 
 // ServiceUpdate contains information about running services.

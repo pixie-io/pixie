@@ -33,6 +33,9 @@ constexpr char kUpdate1_0Pbtxt[] = R"(
     name: "container_name1"
     cid: "container_id1"
     start_timestamp_ns: 1001
+    container_state: CONTAINER_STATE_RUNNING
+    message: "running message"
+    reason: "running reason"
   }
 )";
 
@@ -44,6 +47,9 @@ constexpr char kUpdate1_1Pbtxt[] = R"(
     start_timestamp_ns: 1000
     container_ids: "container_id1"
     qos_class: QOS_CLASS_BURSTABLE
+    phase: RUNNING
+    message: "running message"
+    reason: "running reason"
   }
 )";
 
@@ -62,6 +68,9 @@ constexpr char kUpdate2_0Pbtxt[] = R"(
     name: "container_name2"
     cid: "container_id2"
     start_timestamp_ns: 1201
+    container_state: CONTAINER_STATE_WAITING
+    message: "waiting message"
+    reason: "waiting reason"
   }
 )";
 
@@ -74,6 +83,9 @@ constexpr char kUpdate2_1Pbtxt[] = R"(
     container_ids: "container_id2"
     qos_class: QOS_CLASS_BURSTABLE
     pod_ip: "1.1.1.1"
+    phase: RUNNING
+    message: "running message 2"
+    reason: "running reason 2"
   }
 )";
 
@@ -85,6 +97,8 @@ constexpr char kUpdate2_2Pbtxt[] = R"(
     start_timestamp_ns: 1200
     qos_class: QOS_CLASS_UNKNOWN
     phase: FAILED
+    message: "failed message"
+    reason: "failed reason"
   }
 )";
 
@@ -184,11 +198,17 @@ TEST_F(AgentMetadataStateTest, initialize_md_state) {
   EXPECT_EQ("pl", pod_info->ns());
   EXPECT_EQ(PodQOSClass::kBurstable, pod_info->qos_class());
   EXPECT_THAT(pod_info->containers(), UnorderedElementsAre("container_id1"));
+  EXPECT_EQ(PodPhase::kRunning, pod_info->phase());
+  EXPECT_EQ("running message", pod_info->phase_message());
+  EXPECT_EQ("running reason", pod_info->phase_reason());
 
   auto* container_info = state->ContainerInfoByID("container_id1");
   ASSERT_NE(nullptr, container_info);
   EXPECT_EQ("container_id1", container_info->cid());
   EXPECT_EQ("pod_id1", container_info->pod_id());
+  EXPECT_EQ(ContainerState::kRunning, container_info->state());
+  EXPECT_EQ("running message", container_info->state_message());
+  EXPECT_EQ("running reason", container_info->state_reason());
 
   EXPECT_THAT(state->services_by_name(),
               UnorderedElementsAre(Pair(Pair("pl", "service1"), "service_id1")));
@@ -235,14 +255,23 @@ TEST_F(AgentMetadataStateTest, remove_dead_pods) {
   pod_info = state->PodInfoByID("pod_id1");
   ASSERT_NE(nullptr, pod_info);
   EXPECT_EQ(0, pod_info->stop_time_ns());
+  EXPECT_EQ(PodPhase::kRunning, pod_info->phase());
+  EXPECT_EQ("running message", pod_info->phase_message());
+  EXPECT_EQ("running reason", pod_info->phase_reason());
 
   pod_info = state->PodInfoByID("pod_id2");
   ASSERT_NE(nullptr, pod_info);
   EXPECT_EQ(0, pod_info->stop_time_ns());
+  EXPECT_EQ(PodPhase::kRunning, pod_info->phase());
+  EXPECT_EQ("running message 2", pod_info->phase_message());
+  EXPECT_EQ("running reason 2", pod_info->phase_reason());
 
   pod_info = state->PodInfoByID("pod_id3");
   ASSERT_NE(nullptr, pod_info);
   EXPECT_EQ(0, pod_info->stop_time_ns());
+  EXPECT_EQ(PodPhase::kFailed, pod_info->phase());
+  EXPECT_EQ("failed message", pod_info->phase_message());
+  EXPECT_EQ("failed reason", pod_info->phase_reason());
 
   AgentMetadataStateManager::RemoveDeadPods(/*ts*/ 100, &metadata_state_, &md_reader);
 

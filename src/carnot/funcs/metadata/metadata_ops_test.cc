@@ -337,14 +337,42 @@ TEST_F(MetadataOpsTest, pod_name_to_start_time) {
 }
 
 TEST_F(MetadataOpsTest, pod_name_to_pod_status) {
-  PodNameToPodStatusUDF udf;
+  PodNameToPodStatusUDF status_udf;
+  PodNameToPodStatusMessageUDF msg_udf;
+  PodNameToPodStatusReasonUDF reason_udf;
+
   updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());
   EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
                                                                &md_filter_, updates_.get()));
   auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
   // 1_uid is the Pod id for the currently running pod.
-  EXPECT_EQ(udf.Exec(function_ctx.get(), "pl/running_pod"), "Running");
-  EXPECT_EQ(std::string(udf.Exec(function_ctx.get(), "pl/terminating_pod")), "Terminated");
+  EXPECT_EQ(status_udf.Exec(function_ctx.get(), "pl/running_pod"), "Running");
+  EXPECT_EQ(status_udf.Exec(function_ctx.get(), "pl/terminating_pod"), "Failed");
+
+  EXPECT_EQ(msg_udf.Exec(function_ctx.get(), "pl/running_pod"), "Running message");
+  EXPECT_EQ(msg_udf.Exec(function_ctx.get(), "pl/terminating_pod"), "Failed message terminated");
+
+  EXPECT_EQ(reason_udf.Exec(function_ctx.get(), "pl/running_pod"), "Running reason");
+  EXPECT_EQ(reason_udf.Exec(function_ctx.get(), "pl/terminating_pod"), "Failed reason terminated");
+}
+
+TEST_F(MetadataOpsTest, container_id_to_container_status) {
+  ContainerIDToContainerStatusUDF status_udf;
+  ContainerIDToContainerStatusMessageUDF msg_udf;
+  ContainerIDToContainerStatusReasonUDF reason_udf;
+
+  EXPECT_OK(pl::md::AgentMetadataStateManager::ApplyK8sUpdates(11, metadata_state_.get(),
+                                                               &md_filter_, updates_.get()));
+  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
+  // 1_uid is the Pod id for the currently running pod.
+  EXPECT_EQ(status_udf.Exec(function_ctx.get(), "pod1_container_1"), "Running");
+  EXPECT_EQ(status_udf.Exec(function_ctx.get(), "pod2_container_1"), "Terminated");
+
+  EXPECT_EQ(msg_udf.Exec(function_ctx.get(), "pod1_container_1"), "Running message");
+  EXPECT_EQ(msg_udf.Exec(function_ctx.get(), "pod2_container_1"), "Terminating message pending");
+
+  EXPECT_EQ(reason_udf.Exec(function_ctx.get(), "pod1_container_1"), "Running reason");
+  EXPECT_EQ(reason_udf.Exec(function_ctx.get(), "pod2_container_1"), "Terminating reason pending");
 }
 
 TEST_F(MetadataOpsTest, upid_to_cmdline) {
@@ -403,7 +431,7 @@ TEST_F(MetadataOpsTest, upid_to_pod_status) {
   auto upid1 = types::UInt128Value(528280977975, 89101);
   EXPECT_EQ(udf.Exec(function_ctx.get(), upid1), "Running");
   auto upid2 = types::UInt128Value(528280977975, 468);
-  EXPECT_EQ(std::string(udf.Exec(function_ctx.get(), upid2)), "Terminated");
+  EXPECT_EQ(std::string(udf.Exec(function_ctx.get(), upid2)), "Failed");
 }
 
 }  // namespace metadata

@@ -548,12 +548,15 @@ metadata {
 }
 status {
   message: "this is message"
-  phase: 2
+  reason: "this is reason"
+  phase: RUNNING
   conditions: 2
   container_statuses {
     name: "container1"
-    container_state: 3
     container_id: "docker://test"
+    container_state: CONTAINER_STATE_WAITING
+    message: "container state message"
+    reason: "container state reason"
   }
   qos_class: QOS_CLASS_BURSTABLE
   host_ip: "127.0.0.5"
@@ -582,6 +585,7 @@ metadata {
 }
 status {
   message: "this is message"
+  reason: "this is reason"
   phase: 1
   conditions: 2
   container_statuses {

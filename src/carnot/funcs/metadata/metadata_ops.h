@@ -479,10 +479,19 @@ inline std::string PodInfoToPodStatus(const pl::md::PodInfo* pod_info) {
   if (pod_info == nullptr) {
     return "";
   }
-  if (pod_info->stop_time_ns() != 0) {
-    return "Terminated";
+  switch (pod_info->phase()) {
+    case md::PodPhase::kRunning:
+      return "Running";
+    case md::PodPhase::kPending:
+      return "Pending";
+    case md::PodPhase::kSucceeded:
+      return "Succeeded";
+    case md::PodPhase::kFailed:
+      return "Failed";
+    case md::PodPhase::kUnknown:
+    default:
+      return "Unknown";
   }
-  return "Running";
 }
 
 class PodNameToPodStatusUDF : public ScalarUDF {
@@ -498,6 +507,117 @@ class PodNameToPodStatusUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
     StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
     return PodInfoToPodStatus(md->k8s_metadata_state().PodInfoByID(pod_id));
+  }
+};
+
+class PodNameToPodStatusMessageUDF : public ScalarUDF {
+ public:
+  /**
+   * @brief Gets the Pod status message for a passed in pod.
+   *
+   * @param ctx: the function context
+   * @param pod_name: the Value containing a pod name.
+   * @return StringValue: the status message of the pod.
+   */
+  StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
+    auto md = GetMetadataState(ctx);
+    StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
+    auto pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+    return pod_info->phase_message();
+  }
+};
+
+class PodNameToPodStatusReasonUDF : public ScalarUDF {
+ public:
+  /**
+   * @brief Gets the Pod status reason for a passed in pod.
+   *
+   * @param ctx: the function context
+   * @param pod_name: the Value containing a pod name.
+   * @return StringValue: the status reason of the pod.
+   */
+  StringValue Exec(FunctionContext* ctx, StringValue pod_name) {
+    auto md = GetMetadataState(ctx);
+    StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
+    auto pod_info = md->k8s_metadata_state().PodInfoByID(pod_id);
+    if (pod_info == nullptr) {
+      return "";
+    }
+    return pod_info->phase_reason();
+  }
+};
+
+inline std::string ContainerInfoToContainerStatus(const pl::md::ContainerInfo* container_info) {
+  if (container_info == nullptr) {
+    return "";
+  }
+  switch (container_info->state()) {
+    case md::ContainerState::kRunning:
+      return "Running";
+    case md::ContainerState::kWaiting:
+      return "Waiting";
+    case md::ContainerState::kTerminated:
+      return "Terminated";
+    case md::ContainerState::kUnknown:
+    default:
+      return "Unknown";
+  }
+}
+
+class ContainerIDToContainerStatusUDF : public ScalarUDF {
+ public:
+  /**
+   * @brief Gets the Container status for a passed in container.
+   *
+   * @param ctx: the function context
+   * @param container_id: the Value containing a container ID.
+   * @return StringValue: the status of the container.
+   */
+  StringValue Exec(FunctionContext* ctx, StringValue container_id) {
+    auto md = GetMetadataState(ctx);
+    auto container_info = md->k8s_metadata_state().ContainerInfoByID(container_id);
+    return ContainerInfoToContainerStatus(container_info);
+  }
+};
+
+class ContainerIDToContainerStatusMessageUDF : public ScalarUDF {
+ public:
+  /**
+   * @brief Gets the Container status message for a passed in container.
+   *
+   * @param ctx: the function context
+   * @param container_id: the Value containing a container id.
+   * @return StringValue: the status message of the container.
+   */
+  StringValue Exec(FunctionContext* ctx, StringValue container_id) {
+    auto md = GetMetadataState(ctx);
+    auto container_info = md->k8s_metadata_state().ContainerInfoByID(container_id);
+    if (container_info == nullptr) {
+      return "";
+    }
+    return container_info->state_message();
+  }
+};
+
+class ContainerIDToContainerStatusReasonUDF : public ScalarUDF {
+ public:
+  /**
+   * @brief Gets the Container status reason for a passed in container.
+   *
+   * @param ctx: the function context
+   * @param container_id: the Value containing a container id.
+   * @return StringValue: the status reason of the container.
+   */
+  StringValue Exec(FunctionContext* ctx, StringValue container_id) {
+    auto md = GetMetadataState(ctx);
+    auto container_info = md->k8s_metadata_state().ContainerInfoByID(container_id);
+    if (container_info == nullptr) {
+      return "";
+    }
+    return container_info->state_reason();
   }
 };
 

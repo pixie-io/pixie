@@ -39,6 +39,11 @@ void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<PodIDToPodStartTimeUDF>("pod_id_to_start_time");
   registry->RegisterOrDie<PodNameToPodStartTimeUDF>("pod_name_to_start_time");
   registry->RegisterOrDie<PodNameToPodStatusUDF>("pod_name_to_status");
+  registry->RegisterOrDie<PodNameToPodStatusMessageUDF>("pod_name_to_status_message");
+  registry->RegisterOrDie<PodNameToPodStatusReasonUDF>("pod_name_to_status_reason");
+  registry->RegisterOrDie<ContainerIDToContainerStatusUDF>("container_id_to_status");
+  registry->RegisterOrDie<ContainerIDToContainerStatusMessageUDF>("container_id_to_status_message");
+  registry->RegisterOrDie<ContainerIDToContainerStatusReasonUDF>("container_id_to_status_reason");
   registry->RegisterOrDie<UPIDToCmdLineUDF>("upid_to_cmdline");
   registry->RegisterOrDie<UPIDToPodQoSUDF>("upid_to_pod_qos");
   registry->RegisterOrDie<UPIDToPodPhaseUDF>("upid_to_pod_phase");

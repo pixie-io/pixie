@@ -7,8 +7,8 @@ namespace pl {
 namespace md {
 
 TEST(PodInfo, basic_accessors) {
-  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed, PodPhase::kSucceeded, "testnode",
-                   "testhost", "1.2.3.4");
+  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed, PodPhase::kSucceeded,
+                   "pod phase message", "pod phase reason", "testnode", "testhost", "1.2.3.4");
   pod_info.set_start_time_ns(123);
   pod_info.set_stop_time_ns(256);
 
@@ -17,6 +17,9 @@ TEST(PodInfo, basic_accessors) {
   EXPECT_EQ("pod1", pod_info.name());
   EXPECT_EQ(PodQOSClass::kGuaranteed, pod_info.qos_class());
   EXPECT_EQ(PodPhase::kSucceeded, pod_info.phase());
+  EXPECT_EQ("pod phase message", pod_info.phase_message());
+  EXPECT_EQ("pod phase reason", pod_info.phase_reason());
+
   EXPECT_EQ("testnode", pod_info.node_name());
   EXPECT_EQ("testhost", pod_info.hostname());
 
@@ -27,8 +30,8 @@ TEST(PodInfo, basic_accessors) {
 }
 
 TEST(PodInfo, debug_string) {
-  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed, PodPhase::kRunning, "testnode",
-                   "testhost", "1.1.1.1");
+  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed, PodPhase::kRunning,
+                   "pod phase message", "pod phase reason", "testnode", "testhost", "1.1.1.1");
   for (int i = 0; i < 5; ++i) {
     EXPECT_EQ(absl::Substitute("$0<Pod:ns=pl:name=pod1:uid=123:state=R>", Indent(i)),
               pod_info.DebugString(i));
@@ -39,8 +42,8 @@ TEST(PodInfo, debug_string) {
 }
 
 TEST(PodInfo, add_delete_containers) {
-  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed, PodPhase::kRunning, "testnode",
-                   "testhost", "1.2.3.4");
+  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kGuaranteed, PodPhase::kRunning,
+                   "pod phase message", "pod phase reason", "testnode", "testhost", "1.2.3.4");
   pod_info.AddContainer("ABCD");
   pod_info.AddContainer("ABCD2");
   pod_info.AddContainer("ABCD3");
@@ -53,8 +56,8 @@ TEST(PodInfo, add_delete_containers) {
 }
 
 TEST(PodInfo, clone) {
-  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kBurstable, PodPhase::kRunning, "testnode",
-                   "testhost", "1.2.3.4");
+  PodInfo pod_info("123", "pl", "pod1", PodQOSClass::kBurstable, PodPhase::kRunning,
+                   "pod phase message", "pod phase reason", "testnode", "testhost", "1.2.3.4");
   pod_info.set_start_time_ns(123);
   pod_info.set_stop_time_ns(256);
   pod_info.AddContainer("ABCD");
@@ -73,10 +76,14 @@ TEST(PodInfo, clone) {
 
   EXPECT_EQ(cloned->type(), pod_info.type());
   EXPECT_EQ(cloned->containers(), pod_info.containers());
+  EXPECT_EQ(cloned->phase(), pod_info.phase());
+  EXPECT_EQ(cloned->phase_message(), pod_info.phase_message());
+  EXPECT_EQ(cloned->phase_reason(), pod_info.phase_reason());
 }
 
 TEST(ContainerInfo, pod_id) {
-  ContainerInfo cinfo("container1", "containername", 128 /*start_time*/);
+  ContainerInfo cinfo("container1", "containername", ContainerState::kRunning,
+                      "container state message", "container state reason", 128 /*start_time*/);
 
   EXPECT_EQ("", cinfo.pod_id());
   cinfo.set_pod_id("pod1");
@@ -84,7 +91,8 @@ TEST(ContainerInfo, pod_id) {
 }
 
 TEST(ContainerInfo, debug_string) {
-  ContainerInfo cinfo("container1", "containername", 128);
+  ContainerInfo cinfo("container1", "containername", ContainerState::kRunning,
+                      "container state message", "container state reason", 128);
   for (int i = 0; i < 5; ++i) {
     EXPECT_EQ(absl::Substitute("$0<Container:cid=container1:pod_id=:state=R>", Indent(i)),
               cinfo.DebugString(i));
@@ -95,7 +103,8 @@ TEST(ContainerInfo, debug_string) {
 }
 
 TEST(ContainerInfo, add_delete_pids) {
-  ContainerInfo cinfo("container1", "containername", 128 /*start_time*/);
+  ContainerInfo cinfo("container1", "containername", ContainerState::kRunning,
+                      "container state message", "container state reason", 128 /*start_time*/);
   cinfo.set_pod_id("pod1");
 
   cinfo.AddUPID(UPID(1, 1, 123));
@@ -114,7 +123,8 @@ TEST(ContainerInfo, add_delete_pids) {
 }
 
 TEST(ContainerInfo, deactive_non_existing_pid_ignored) {
-  ContainerInfo cinfo("container1", "containername", 128 /*start_time*/);
+  ContainerInfo cinfo("container1", "containername", ContainerState::kRunning,
+                      "container state message", "container state reason", 128 /*start_time*/);
   cinfo.set_pod_id("pod1");
   cinfo.DeactivateUPID(UPID(1, 3, 123));
 
@@ -123,7 +133,8 @@ TEST(ContainerInfo, deactive_non_existing_pid_ignored) {
 }
 
 TEST(ContainerInfo, clone) {
-  ContainerInfo orig("container1", "containername", 128 /*start_time*/);
+  ContainerInfo orig("container1", "containername", ContainerState::kRunning,
+                     "container state message", "container state reason", 128 /*start_time*/);
   orig.set_pod_id("pod1");
 
   orig.AddUPID(UPID(1, 0, 123));
@@ -137,6 +148,9 @@ TEST(ContainerInfo, clone) {
   EXPECT_EQ(cloned->active_upids(), orig.active_upids());
   EXPECT_EQ(cloned->start_time_ns(), orig.start_time_ns());
   EXPECT_EQ(cloned->stop_time_ns(), orig.stop_time_ns());
+  EXPECT_EQ(cloned->state(), orig.state());
+  EXPECT_EQ(cloned->state_message(), orig.state_message());
+  EXPECT_EQ(cloned->state_reason(), orig.state_reason());
 }
 
 TEST(ServiceInfo, basic_accessors) {

@@ -162,11 +162,15 @@ Status K8sMetadataState::HandlePodUpdate(const PodUpdate& update) {
 
     containers_by_id_[cid]->set_pod_id(object_uid);
   }
+
   pod_info->set_start_time_ns(update.start_timestamp_ns());
   pod_info->set_stop_time_ns(update.stop_timestamp_ns());
   pod_info->set_node_name(update.node_name());
   pod_info->set_hostname(update.hostname());
   pod_info->set_pod_ip(update.pod_ip());
+  pod_info->set_phase(ConvertToPodPhase(update.phase()));
+  pod_info->set_phase_message(update.message());
+  pod_info->set_phase_reason(update.reason());
 
   pods_by_name_[{ns, name}] = object_uid;
   if (update.host_ip() !=
@@ -199,6 +203,9 @@ Status K8sMetadataState::HandleContainerUpdate(const ContainerUpdate& update) {
 
   auto* container_info = it->second.get();
   container_info->set_stop_time_ns(update.stop_timestamp_ns());
+  container_info->set_state(ConvertToContainerState(update.container_state()));
+  container_info->set_state_message(update.message());
+  container_info->set_state_reason(update.reason());
 
   return Status::OK();
 }

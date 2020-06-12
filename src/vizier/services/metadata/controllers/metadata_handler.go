@@ -486,6 +486,8 @@ func GetResourceUpdateFromPod(pod *metadatapb.Pod) *metadatapb.ResourceUpdate {
 				Hostname:         hostname,
 				PodIP:            pod.Status.PodIP,
 				HostIP:           pod.Status.HostIP,
+				Message:          pod.Status.Message,
+				Reason:           pod.Status.Reason,
 			},
 		},
 	}
@@ -565,6 +567,9 @@ func GetContainerResourceUpdatesFromPod(pod *metadatapb.Pod) []*metadatapb.Resou
 					PodID:            pod.Metadata.UID,
 					PodName:          pod.Metadata.Name,
 					Namespace:        pod.Metadata.Namespace,
+					ContainerState:   s.ContainerState,
+					Message:          s.Message,
+					Reason:           s.Reason,
 				},
 			},
 		}

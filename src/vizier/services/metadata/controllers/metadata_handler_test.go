@@ -388,17 +388,20 @@ func TestObjectToPodProto(t *testing.T) {
 
 	expectedPb := &metadatapb.Pod{}
 	if err := proto.UnmarshalText(testutils.PodPbWithContainers, expectedPb); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
+		t.Fatalf("Cannot Unmarshal protobuf: %+v", err)
 	}
 
 	updatePb := &metadatapb.ResourceUpdate{
 		ResourceVersion: "1_0",
 		Update: &metadatapb.ResourceUpdate_ContainerUpdate{
 			ContainerUpdate: &metadatapb.ContainerUpdate{
-				CID:     "test",
-				Name:    "container1",
-				PodID:   "ijkl",
-				PodName: "object_md",
+				CID:            "test",
+				Name:           "container1",
+				PodID:          "ijkl",
+				PodName:        "object_md",
+				ContainerState: metadatapb.CONTAINER_STATE_WAITING,
+				Message:        "container state message",
+				Reason:         "container state reason",
 			},
 		},
 	}
@@ -454,7 +457,10 @@ func TestObjectToPodProto(t *testing.T) {
 	}
 
 	containers := make([]v1.ContainerStatus, 1)
-	waitingState := v1.ContainerStateWaiting{}
+	waitingState := v1.ContainerStateWaiting{
+		Message: "container state message",
+		Reason:  "container state reason",
+	}
 
 	containers[0] = v1.ContainerStatus{
 		Name:        "container1",
@@ -466,6 +472,7 @@ func TestObjectToPodProto(t *testing.T) {
 
 	status := v1.PodStatus{
 		Message:           "this is message",
+		Reason:            "this is reason",
 		Phase:             v1.PodRunning,
 		Conditions:        conditions,
 		ContainerStatuses: containers,
@@ -540,6 +547,8 @@ func TestGetResourceUpdateFromPod(t *testing.T) {
 	assert.Equal(t, "container1", podUpdate.ContainerNames[0])
 	assert.Equal(t, metadatapb.QOS_CLASS_BURSTABLE, podUpdate.QOSClass)
 	assert.Equal(t, metadatapb.RUNNING, podUpdate.Phase)
+	assert.Equal(t, "this is message", podUpdate.Message)
+	assert.Equal(t, "this is reason", podUpdate.Reason)
 	assert.Equal(t, "test", podUpdate.NodeName)
 	assert.Equal(t, "hostname", podUpdate.Hostname)
 	assert.Equal(t, "127.0.0.1", podUpdate.PodIP)
@@ -585,6 +594,9 @@ func TestGetContainerResourceUpdatesFromPod(t *testing.T) {
 	assert.Equal(t, "ijkl", cUpdate.PodID)
 	assert.Equal(t, "object_md", cUpdate.PodName)
 	assert.Equal(t, "ns", cUpdate.Namespace)
+	assert.Equal(t, metadatapb.CONTAINER_STATE_WAITING, cUpdate.ContainerState)
+	assert.Equal(t, "container state message", cUpdate.Message)
+	assert.Equal(t, "container state reason", cUpdate.Reason)
 }
 
 func TestSyncPodData(t *testing.T) {

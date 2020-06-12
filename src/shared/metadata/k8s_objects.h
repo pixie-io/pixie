@@ -123,18 +123,38 @@ inline PodPhase ConvertToPodPhase(pl::shared::k8s::metadatapb::PodPhase pb_enum)
   }
 }
 
+enum class ContainerState : uint8_t { kUnknown = 0, kRunning, kTerminated, kWaiting };
+
+inline ContainerState ConvertToContainerState(pl::shared::k8s::metadatapb::ContainerState pb_enum) {
+  using state_pb = pl::shared::k8s::metadatapb::ContainerState;
+  switch (pb_enum) {
+    case state_pb::CONTAINER_STATE_RUNNING:
+      return ContainerState::kRunning;
+    case state_pb::CONTAINER_STATE_TERMINATED:
+      return ContainerState::kTerminated;
+    case state_pb::CONTAINER_STATE_WAITING:
+      return ContainerState::kWaiting;
+    case state_pb::CONTAINER_STATE_UNKNOWN:
+    default:
+      return ContainerState::kUnknown;
+  }
+}
+
 /**
  * PodInfo contains information about K8s pods.
  */
 class PodInfo : public K8sMetadataObject {
  public:
   PodInfo(UID uid, std::string_view ns, std::string_view name, PodQOSClass qos_class,
-          PodPhase phase, std::string_view node_name, std::string_view hostname,
-          std::string_view pod_ip, int64_t start_timestamp_ns = 0, int64_t stop_timestamp_ns = 0)
+          PodPhase phase, std::string_view phase_message, std::string_view phase_reason,
+          std::string_view node_name, std::string_view hostname, std::string_view pod_ip,
+          int64_t start_timestamp_ns = 0, int64_t stop_timestamp_ns = 0)
       : K8sMetadataObject(K8sObjectType::kPod, uid, ns, name, start_timestamp_ns,
                           stop_timestamp_ns),
         qos_class_(qos_class),
         phase_(phase),
+        phase_message_(phase_message),
+        phase_reason_(phase_reason),
         node_name_(node_name),
         hostname_(hostname),
         pod_ip_(pod_ip) {}
@@ -142,9 +162,10 @@ class PodInfo : public K8sMetadataObject {
   explicit PodInfo(const pl::shared::k8s::metadatapb::PodUpdate& pod_update_info)
       : PodInfo(pod_update_info.uid(), pod_update_info.namespace_(), pod_update_info.name(),
                 ConvertToPodQOsClass(pod_update_info.qos_class()),
-                ConvertToPodPhase(pod_update_info.phase()), pod_update_info.node_name(),
-                pod_update_info.hostname(), pod_update_info.pod_ip(),
-                pod_update_info.start_timestamp_ns(), pod_update_info.stop_timestamp_ns()) {}
+                ConvertToPodPhase(pod_update_info.phase()), pod_update_info.message(),
+                pod_update_info.reason(), pod_update_info.node_name(), pod_update_info.hostname(),
+                pod_update_info.pod_ip(), pod_update_info.start_timestamp_ns(),
+                pod_update_info.stop_timestamp_ns()) {}
 
   virtual ~PodInfo() = default;
 
@@ -155,6 +176,13 @@ class PodInfo : public K8sMetadataObject {
   void RmService(UIDView uid) { services_.erase(uid); }
   PodQOSClass qos_class() const { return qos_class_; }
   PodPhase phase() const { return phase_; }
+  void set_phase(PodPhase phase) { phase_ = phase; }
+
+  const std::string& phase_message() const { return phase_message_; }
+  void set_phase_message(std::string_view phase_message) { phase_message_ = phase_message; }
+
+  const std::string& phase_reason() const { return phase_reason_; }
+  void set_phase_reason(std::string_view phase_reason) { phase_reason_ = phase_reason; }
 
   void set_node_name(std::string_view node_name) { node_name_ = node_name; }
   void set_hostname(std::string_view hostname) { hostname_ = hostname; }
@@ -179,6 +207,10 @@ class PodInfo : public K8sMetadataObject {
  private:
   PodQOSClass qos_class_;
   PodPhase phase_;
+  // The message for why the pod is in its current status.
+  std::string phase_message_;
+  // A brief CamelCase message indicating details about why the pod is in this state.
+  std::string phase_reason_;
   /**
    * Set of containers that are running on this pod.
    *
@@ -207,14 +239,21 @@ class PodInfo : public K8sMetadataObject {
 class ContainerInfo {
  public:
   ContainerInfo() = delete;
-  ContainerInfo(CID cid, std::string_view name, int64_t start_time_ns, int64_t stop_time_ns = 0)
+  ContainerInfo(CID cid, std::string_view name, ContainerState state,
+                std::string_view state_message, std::string_view state_reason,
+                int64_t start_time_ns, int64_t stop_time_ns = 0)
       : cid_(std::move(cid)),
         name_(std::string(name)),
+        state_(state),
+        state_message_(state_message),
+        state_reason_(state_reason),
         start_time_ns_(start_time_ns),
         stop_time_ns_(stop_time_ns) {}
 
   explicit ContainerInfo(const pl::shared::k8s::metadatapb::ContainerUpdate& container_update_info)
       : ContainerInfo(container_update_info.cid(), container_update_info.name(),
+                      ConvertToContainerState(container_update_info.container_state()),
+                      container_update_info.message(), container_update_info.reason(),
                       container_update_info.start_timestamp_ns(),
                       container_update_info.stop_timestamp_ns()) {}
 
@@ -255,6 +294,15 @@ class ContainerInfo {
   int64_t stop_time_ns() const { return stop_time_ns_; }
   void set_stop_time_ns(int64_t stop_time_ns) { stop_time_ns_ = stop_time_ns; }
 
+  ContainerState state() const { return state_; }
+  void set_state(ContainerState state) { state_ = state; }
+
+  const std::string& state_message() const { return state_message_; }
+  void set_state_message(std::string_view state_message) { state_message_ = state_message; }
+
+  const std::string& state_reason() const { return state_reason_; }
+  void set_state_reason(std::string_view state_reason) { state_reason_ = state_reason; }
+
   std::unique_ptr<ContainerInfo> Clone() const {
     return std::unique_ptr<ContainerInfo>(new ContainerInfo(*this));
   }
@@ -280,6 +328,15 @@ class ContainerInfo {
    * We maintain them for a while so that they remain queryable.
    */
   absl::flat_hash_set<UPID> inactive_upids_;
+
+  /**
+   * Current state of the container, such as RUNNING, WAITING.
+   */
+  ContainerState state_;
+  // The message for why the container is in its current state.
+  std::string state_message_;
+  // A more detailed message for why the container is in its current state.
+  std::string state_reason_;
 
   /**
    * Start time of this K8s object.
