@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cert-provisioner-job
+spec:
+  template:
+    metadata:
+      name: cert-provisioner-job
+    spec:
+      serviceAccountName: updater-service-account
+      containers:
+      - name: provisioner
+        image: gcr.io/pl-dev-infra/vizier/cert_provisioner_image:latest
+        envFrom:
+        - configMapRef:
+            name: pl-cloud-config
+      imagePullSecrets:
+      - name: pl-image-secret
+      restartPolicy: "Never"
+  backoffLimit: 1
+  parallelism: 1
+  completions: 1

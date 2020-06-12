@@ -13,7 +13,7 @@ go_library(
         "secrets.go",
         "watcher.go",
     ],
-    importpath = "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s",
+    importpath = "pixielabs.ai/pixielabs/src/utils/shared/k8s",
     visibility = ["//visibility:public"],
     deps = [
         "//src/utils/pixie_cli/pkg/utils:go_default_library",

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/alecthomas/assert"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s"
+	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
 
 func TestVersionCompatible(t *testing.T) {

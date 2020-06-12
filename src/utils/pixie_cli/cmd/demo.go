@@ -25,10 +25,10 @@ import (
 
 	k8s_errors "k8s.io/apimachinery/pkg/api/errors"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxanalytics"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/pxconfig"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
+	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
 
 const manifestFile = "manifest.json"

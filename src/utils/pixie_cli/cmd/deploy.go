@@ -37,10 +37,9 @@ import (
 	"k8s.io/client-go/rest"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
 
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/certs"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/components"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
+	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
 
 const (
@@ -312,16 +311,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		yamlIdx++
 		return nil
 	})
-	certsYamlJob := newTaskWrapper("Generating cert YAMLs", func() error {
-		certYAMLs, err := certs.DefaultGenerateCertYAMLs(namespace)
-		if err != nil {
-			return err
-		}
-		yamlMap[fmt.Sprintf("./pixie_yamls/01_secrets/%02d_cert.yaml", yamlIdx)] = certYAMLs
-
-		yamlIdx++
-		return nil
-	})
 	secretsYamlJob := newTaskWrapper("Generating secret YAMLs", func() error {
 		var credsData string
 		if credsFile == "" {
@@ -368,7 +357,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		return nil
 	})
 
-	yamlJobs := []utils.Task{nsYamlJob, certsYamlJob, secretsYamlJob, vzYamlJob}
+	yamlJobs := []utils.Task{nsYamlJob, secretsYamlJob, vzYamlJob}
 	jr := utils.NewSerialTaskRunner(yamlJobs)
 	err = jr.RunAndMonitor()
 	if err != nil {
@@ -488,7 +477,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		return err
 	})
 
-	certJob := newTaskWrapper("Deploying certs, secrets, and configmaps", func() error {
+	certJob := newTaskWrapper("Deploying secrets and configmaps", func() error {
 		for k, v := range yamlMap {
 			if k == nsYAMLPath {
 				continue

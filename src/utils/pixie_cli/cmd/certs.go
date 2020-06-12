@@ -4,7 +4,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/certs"
+	"pixielabs.ai/pixielabs/src/utils/shared/certs"
 )
 
 // InstallCertsCmd is the "install-certs" command.

@@ -14,6 +14,7 @@ VIZIER_IMAGE_MAP = {
     "gcr.io/pl-dev-infra/vizier/certmgr_server_image": "//src/vizier/services/certmgr:certmgr_server_image",
     "gcr.io/pl-dev-infra/vizier/fluent-bit-image": "//src/vizier/utils/fluent_bit_nats_plugin:fluentbit_nats_plugin_image",
     "gcr.io/pl-dev-infra/vizier/vizier_updater_image": "//src/utils/pixie_updater:vizier_updater_image",
+    "gcr.io/pl-dev-infra/vizier/cert_provisioner_image": "//src/utils/cert_provisioner:cert_provisioner_image",
 }
 
 generate_vizier_yamls(

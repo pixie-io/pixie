@@ -13,7 +13,7 @@ import (
 	"k8s.io/client-go/rest"
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/artifacts"
-	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/k8s"
+	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
 
 const (
