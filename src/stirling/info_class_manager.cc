@@ -40,8 +40,10 @@ void InfoClassManager::SampleData(ConnectorContext* ctx) {
 void InfoClassManager::PushData(DataPushCallback agent_callback) {
   auto record_batches = data_table_->ConsumeRecordBatches();
   for (auto& record_batch : record_batches) {
-    if (!record_batch.records_uptr->empty()) {
-      agent_callback(id(), record_batch.tablet_id, std::move(record_batch.records_uptr));
+    if (!record_batch.records.empty()) {
+      agent_callback(
+          id(), record_batch.tablet_id,
+          std::make_unique<types::ColumnWrapperRecordBatch>(std::move(record_batch.records)));
     }
   }
 

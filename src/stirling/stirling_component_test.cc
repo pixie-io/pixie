@@ -64,9 +64,7 @@ TEST_F(SourceToTableTest, source_to_table) {
   fake_proc_stat_->TransferData(&ctx, table_num, table_.get());
   auto record_batches = table_->ConsumeRecordBatches();
   for (const auto& record_batch : record_batches) {
-    auto col_arrays = record_batch.records_uptr.get();
-    ASSERT_TRUE(col_arrays != nullptr);
-    auto& columns = *col_arrays;
+    auto& columns = record_batch.records;
 
     ASSERT_EQ(types::DataType::TIME64NS, columns[0]->data_type());
     auto col0_val = columns[0]->Get<types::Time64NSValue>(0).val;

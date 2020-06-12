@@ -33,34 +33,27 @@ void DataTable::InitBuffers(types::ColumnWrapperRecordBatch* record_batch_ptr) {
 }
 
 types::ColumnWrapperRecordBatch* DataTable::ActiveRecordBatch(types::TabletIDView tablet_id) {
-  auto& tablet_ptr = tablets_[tablet_id];
-  if (tablet_ptr == nullptr) {
-    tablet_ptr = std::make_unique<types::ColumnWrapperRecordBatch>();
-    InitBuffers(tablet_ptr.get());
+  auto& tablet = tablets_[tablet_id];
+  if (tablet.empty()) {
+    InitBuffers(&tablet);
   }
-  return tablet_ptr.get();
+  return &tablet;
 }
 
 std::vector<TaggedRecordBatch> DataTable::ConsumeRecordBatches() {
   std::vector<TaggedRecordBatch> tablets_out;
-
-  //  // Make sure there is always at least one tablet, even if it is empty.
-  //  if (tablets_.empty()) {
-  //    tablets_[0] = std::make_unique<types::ColumnWrapperRecordBatch>();
-  //    InitBuffers(tablets_[0].get());
-  //  }
 
   for (auto& [tablet_id, tablet] : tablets_) {
     // Sort based on time_ column, if it exists.
     std::vector<size_t> sort_indexes;
     size_t time_col_idx = table_schema_.ColIndex("time_");
     if (time_col_idx != table_schema_.elements().size()) {
-      auto& time_col = (*tablet)[time_col_idx];
+      types::SharedColumnWrapper& time_col = tablet[time_col_idx];
       sort_indexes = time_col->SortedIndexes();
     }
 
     for (size_t j = 0; j < table_schema_.elements().size(); ++j) {
-      auto col = (*tablet)[j];
+      types::SharedColumnWrapper& col = tablet[j];
       if (!sort_indexes.empty()) {
         col->Reorder(sort_indexes);
       }

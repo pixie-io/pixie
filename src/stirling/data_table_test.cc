@@ -34,7 +34,7 @@ TEST(DataTableTest, ResultIsSorted) {
   std::vector<TaggedRecordBatch> record_batches = data_table->ConsumeRecordBatches();
 
   ASSERT_EQ(record_batches.size(), 1);
-  types::ColumnWrapperRecordBatch& rb = *record_batches[0].records_uptr;
+  types::ColumnWrapperRecordBatch& rb = record_batches[0].records;
 
   for (size_t i = 0; i < time_vals.size(); ++i) {
     EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(i), 10 * static_cast<int>(i));
@@ -128,10 +128,8 @@ class DataTableStressTest : public ::testing::Test {
   /**
    * Check that the output data matches the input functions.
    */
-  void CheckColumnWrapperResult(types::ColumnWrapperRecordBatch* col_arrays, size_t start_record,
+  void CheckColumnWrapperResult(const types::ColumnWrapperRecordBatch& columns, size_t start_record,
                                 size_t end_record) {
-    types::ColumnWrapperRecordBatch& columns = *col_arrays;
-
     size_t f_idx;
     size_t i;
     for (f_idx = start_record, i = 0; f_idx < end_record; ++f_idx, ++i) {
@@ -196,7 +194,7 @@ class DataTableStressTest : public ::testing::Test {
       if ((probability_dist(rng_) < push_probability_) || last_pass) {
         auto data_batches = data_table_->ConsumeRecordBatches();
         for (const auto& data_batch : data_batches) {
-          CheckColumnWrapperResult(data_batch.records_uptr.get(), check_record, current_record);
+          CheckColumnWrapperResult(data_batch.records, check_record, current_record);
         }
         check_record = current_record;
       }

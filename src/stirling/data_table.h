@@ -19,7 +19,7 @@ namespace stirling {
  */
 struct TaggedRecordBatch {
   types::TabletID tablet_id;
-  std::unique_ptr<types::ColumnWrapperRecordBatch> records_uptr;
+  types::ColumnWrapperRecordBatch records;
 };
 
 class DataTable : public NotCopyable {
@@ -54,8 +54,7 @@ class DataTable : public NotCopyable {
     size_t occupancy = 0;
     for (auto& [tablet_id, tablet] : tablets_) {
       PL_UNUSED(tablet_id);
-      DCHECK(tablet != nullptr);
-      occupancy += tablet->at(0)->Size();
+      occupancy += tablet[0]->Size();
     }
     return occupancy;
   }
@@ -79,7 +78,7 @@ class DataTable : public NotCopyable {
 
   // Active record batch.
   // Key is tablet id, value is tablet active record batch.
-  absl::flat_hash_map<types::TabletID, std::unique_ptr<types::ColumnWrapperRecordBatch>> tablets_;
+  absl::flat_hash_map<types::TabletID, types::ColumnWrapperRecordBatch> tablets_;
 };
 
 namespace testing {
@@ -93,7 +92,7 @@ inline types::ColumnWrapperRecordBatch ConsumeRecords(DataTable* data_table) {
   CHECK(!tagged_record_batches.empty());
   // TODO(oazizi): Support tabletization.
   CHECK(tagged_record_batches.size() == 1) << "Tabletized DataTables not currently supported.";
-  return *(tagged_record_batches[0].records_uptr);
+  return tagged_record_batches[0].records;
 }
 
 }  // namespace testing
