@@ -76,9 +76,11 @@ TEST_F(SplitterTest, blocking_agg_test) {
                              {{"mean", MakeMeanFunc(MakeColumn("count", 0))}});
   auto sink = MakeMemSink(agg, "out");
 
-  DistributedSplitter splitter;
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
-      splitter.SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
 
   auto before_blocking = split_plan->before_blocking.get();
   auto after_blocking = split_plan->after_blocking.get();
@@ -102,6 +104,61 @@ TEST_F(SplitterTest, blocking_agg_test) {
   EXPECT_MATCH(sink_parent, BlockingAgg());
 }
 
+TEST_F(SplitterTest, partial_agg_test) {
+  auto mem_src = MakeMemSource(MakeRelation());
+  auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
+                             {{"mean", MakeMeanFunc(MakeColumn("count", 0))}});
+
+  table_store::schema::Relation relation({types::INT64, types::FLOAT64}, {"count", "mean"});
+  EXPECT_OK(agg->SetRelation(relation));
+  MakeMemSink(agg, "out");
+
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ true);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
+  std::unique_ptr<BlockingSplitPlan> split_plan =
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+
+  auto before_blocking = split_plan->before_blocking.get();
+  auto after_blocking = split_plan->after_blocking.get();
+
+  // Verify the resultant graph.
+  MemorySourceIR* new_mem_src = GetEquivalentInNewPlan(before_blocking, mem_src);
+  ASSERT_EQ(new_mem_src->Children().size(), 1UL);
+  EXPECT_MATCH(new_mem_src->Children()[0], PartialAgg());
+
+  auto partial_agg = static_cast<BlockingAggIR*>(new_mem_src->Children()[0]);
+  ASSERT_EQ(partial_agg->Children().size(), 1UL);
+  ASSERT_MATCH(partial_agg->Children()[0], GRPCSink());
+
+  GRPCSinkIR* grpc_sink = static_cast<GRPCSinkIR*>(partial_agg->Children()[0]);
+
+  auto grpc_source_groups = after_blocking->FindNodesThatMatch(GRPCSourceGroup());
+  ASSERT_EQ(grpc_source_groups.size(), 1);
+  GRPCSourceGroupIR* grpc_source = static_cast<GRPCSourceGroupIR*>(grpc_source_groups[0]);
+  ASSERT_EQ(grpc_source->Children().size(), 1);
+  ASSERT_MATCH(grpc_source->Children()[0], FinalizeAgg());
+
+  BlockingAggIR* finalize_agg = static_cast<BlockingAggIR*>(grpc_source->Children()[0]);
+
+  EXPECT_EQ(grpc_sink->destination_id(), grpc_source->source_id());
+
+  // Verify that the aggregate connects back into the original group.
+  ASSERT_EQ(finalize_agg->Children().size(), 1);
+  EXPECT_MATCH(finalize_agg->Children()[0], MemorySink());
+
+  ASSERT_EQ(partial_agg->aggregate_expressions().size(),
+            finalize_agg->aggregate_expressions().size());
+  for (int64_t i = 0; i < static_cast<int64_t>(partial_agg->aggregate_expressions().size()); ++i) {
+    auto prep_expr = partial_agg->aggregate_expressions()[i];
+    auto finalize_expr = finalize_agg->aggregate_expressions()[i];
+    EXPECT_EQ(prep_expr.name, finalize_expr.name);
+    EXPECT_TRUE(prep_expr.node->Equals(finalize_expr.node))
+        << absl::Substitute("prep expr $0 finalize expr $1", prep_expr.node->DebugString(),
+                            finalize_expr.node->DebugString());
+  }
+}
+
 TEST_F(SplitterTest, limit_test) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto limit = MakeLimit(mem_src, 10);
@@ -109,9 +166,11 @@ TEST_F(SplitterTest, limit_test) {
   auto sink = MakeMemSink(limit, "out");
   EXPECT_TRUE(limit->IsRelationInit());
 
-  DistributedSplitter splitter;
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
-      splitter.SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
 
   auto before_blocking = split_plan->before_blocking.get();
   auto after_blocking = split_plan->after_blocking.get();
@@ -152,9 +211,11 @@ TEST_F(SplitterTest, sink_only_test) {
   EXPECT_OK(map2->SetRelation(MakeRelation()));
   auto sink = MakeMemSink(map2, "out");
 
-  DistributedSplitter splitter;
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
-      splitter.SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
 
   auto before_blocking = split_plan->before_blocking.get();
   auto after_blocking = split_plan->after_blocking.get();
@@ -183,9 +244,11 @@ TEST_F(SplitterTest, sandwich_test) {
   auto map2 = MakeMap(agg, {{"count", MakeColumn("count", 0)}});
   MakeMemSink(map2, "out");
 
-  DistributedSplitter splitter;
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
-      splitter.SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
 
   auto before_blocking = split_plan->before_blocking.get();
   auto after_blocking = split_plan->after_blocking.get();
@@ -214,9 +277,11 @@ TEST_F(SplitterTest, first_blocking_node_test) {
                               {{"mean2", MakeMeanFunc(MakeColumn("mean", 0))}});
   MakeMemSink(agg2, "out");
 
-  DistributedSplitter splitter;
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
-      splitter.SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
 
   auto before_blocking = split_plan->before_blocking.get();
   auto after_blocking = split_plan->after_blocking.get();
@@ -253,9 +318,11 @@ TEST_F(SplitterTest, union_operator) {
     EXPECT_MATCH(union_parent, MemorySource());
   }
 
-  DistributedSplitter splitter;
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
-      splitter.SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
 
   auto before_blocking = split_plan->before_blocking.get();
   auto after_blocking = split_plan->after_blocking.get();
@@ -310,9 +377,11 @@ TEST_F(SplitterTest, two_blocking_children) {
 
   EXPECT_EQ(mem_src->Children().size(), 2);
 
-  DistributedSplitter splitter;
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
-      splitter.SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
 
   auto before_blocking = split_plan->before_blocking.get();
   auto after_blocking = split_plan->after_blocking.get();
@@ -368,9 +437,12 @@ TEST_F(SplitterTest, agg_join_children) {
 
   EXPECT_EQ(mem_src->Children().size(), 2);
 
-  DistributedSplitter splitter;
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
+
   std::unique_ptr<BlockingSplitPlan> split_plan =
-      splitter.SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
 
   auto before_blocking = split_plan->before_blocking.get();
   auto after_blocking = split_plan->after_blocking.get();
@@ -405,9 +477,11 @@ TEST_F(SplitterTest, simple_split_test) {
   EXPECT_OK(map1->SetRelation(MakeRelation()));
   auto mem_sink = MakeMemSink(map1, "out");
 
-  DistributedSplitter splitter;
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
-      splitter.SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
   auto before_blocking = split_plan->before_blocking.get();
   auto after_blocking = split_plan->after_blocking.get();
   for (auto id : before_blocking->dag().TopologicalSort()) {
@@ -435,9 +509,11 @@ TEST_F(SplitterTest, two_paths) {
   EXPECT_OK(map2->SetRelation(MakeRelation()));
   auto mem_sink2 = MakeMemSink(map2, "out");
 
-  DistributedSplitter splitter;
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
-      splitter.SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
 
   auto before_blocking = split_plan->before_blocking.get();
   auto after_blocking = split_plan->after_blocking.get();
@@ -493,9 +569,11 @@ TEST_F(SplitterTest, UDTFOnSubsetOfPEMs) {
   auto udtf = MakeUDTFSource(udtf_spec, {{"upid", MakeString(upid_value)}});
   auto sink = MakeMemSink(udtf, "out");
 
-  DistributedSplitter splitter;
+  auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ false);
+  ASSERT_OK(splitter_or_s);
+  std::unique_ptr<DistributedSplitter> splitter = splitter_or_s.ConsumeValueOrDie();
   std::unique_ptr<BlockingSplitPlan> split_plan =
-      splitter.SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
+      splitter->SplitKelvinAndAgents(graph.get()).ConsumeValueOrDie();
   auto before_blocking = split_plan->before_blocking.get();
   auto after_blocking = split_plan->after_blocking.get();
 

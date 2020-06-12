@@ -90,9 +90,22 @@ class DistributedSplitter : public NotCopyable {
    */
   StatusOr<std::unique_ptr<BlockingSplitPlan>> SplitKelvinAndAgents(const IR* logical_plan);
 
-  DistributedSplitter() { partial_operator_mgrs_.push_back(std::make_unique<LimitOperatorMgr>()); }
+  static StatusOr<std::unique_ptr<DistributedSplitter>> Create(bool support_partial_agg) {
+    std::unique_ptr<DistributedSplitter> splitter =
+        std::unique_ptr<DistributedSplitter>(new DistributedSplitter());
+    PL_RETURN_IF_ERROR(splitter->Init(support_partial_agg));
+    return splitter;
+  }
 
  private:
+  DistributedSplitter() {}
+  Status Init(bool support_partial_agg) {
+    if (support_partial_agg) {
+      partial_operator_mgrs_.push_back(std::make_unique<AggOperatorMgr>());
+    }
+    partial_operator_mgrs_.push_back(std::make_unique<LimitOperatorMgr>());
+    return Status::OK();
+  }
   /**
    * @brief Returns the list of operator ids from the graph that occur before the blocking node and
    * after the blocking node.

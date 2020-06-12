@@ -1537,6 +1537,9 @@ class BlockingAggIR : public GroupAcceptorIR {
 
   void SetPartialAgg(bool partial_agg) { partial_agg_ = partial_agg; }
 
+  bool partial_agg() const { return partial_agg_; }
+  bool finalize_results() const { return finalize_results_; }
+
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
       const absl::flat_hash_set<std::string>& output_colnames) override;

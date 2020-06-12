@@ -61,6 +61,18 @@ class LimitOperatorMgr : public PartialOperatorMgr {
   StatusOr<OperatorIR*> CreateMergeOperator(IR* plan, OperatorIR* new_parent,
                                             OperatorIR* op) const override;
 };
+
+/**
+ * @brief AggOperatorMgr manages splitting aggregates into partial aggregate and the merging node
+ * over a network boundary.
+ */
+class AggOperatorMgr : public PartialOperatorMgr {
+ public:
+  bool Matches(OperatorIR* op) const override { return Match(op, BlockingAgg()); }
+  StatusOr<OperatorIR*> CreatePrepareOperator(IR* plan, OperatorIR* op) const override;
+  StatusOr<OperatorIR*> CreateMergeOperator(IR* plan, OperatorIR* new_parent,
+                                            OperatorIR* op) const override;
+};
 }  // namespace distributed
 }  // namespace planner
 }  // namespace carnot

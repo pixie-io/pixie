@@ -825,6 +825,39 @@ inline ClassMatch<IRNodeType::kBlockingAgg> BlockingAgg() {
   return ClassMatch<IRNodeType::kBlockingAgg>();
 }
 
+template <bool PartialAgg, bool FinalizeAgg>
+struct DistributedAggMatcher : public ParentMatch {
+  DistributedAggMatcher() : ParentMatch(IRNodeType::kBlockingAgg) {}
+  bool Match(const IRNode* node) const override {
+    if (!BlockingAgg().Match(node)) {
+      return false;
+    }
+    auto blocking_agg = static_cast<const BlockingAggIR*>(node);
+    return blocking_agg->partial_agg() == PartialAgg &&
+           blocking_agg->finalize_results() == FinalizeAgg;
+  }
+};
+
+/**
+ * @brief Operator that takes partial aggregates and merges them into a final result.
+ */
+inline DistributedAggMatcher<false, true> FinalizeAgg() {
+  return DistributedAggMatcher<false, true>();
+}
+
+/**
+ * @brief Node that performs a partial aggregate but does not merge it into a final result.
+ */
+inline DistributedAggMatcher<true, false> PartialAgg() {
+  return DistributedAggMatcher<true, false>();
+}
+
+/**
+ * @brief Normal logical aggregate.
+ *
+ */
+inline DistributedAggMatcher<true, true> FullAgg() { return DistributedAggMatcher<true, true>(); }
+
 /**
  * @brief Match Filter operator.
  */
