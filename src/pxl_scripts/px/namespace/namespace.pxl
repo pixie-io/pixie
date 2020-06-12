@@ -1,0 +1,133 @@
+''' Namespace Overview
+
+This view gives a top-level summary of the pods and services in a given namespace,
+as well as a service map.
+
+'''
+
+import px
+
+# Nanoseconds per second.
+ns_per_ms = 1.0E6
+# Flag to filter out requests that come from an unresolvable IP.
+filter_unresolved_inbound = True
+# Flag to filter out health checks from the data.
+filter_health_checks = True
+# Flag to filter out ready checks from the data.
+filter_ready_checks = True
+# Window size to use on time_ column for bucketing.
+window_s = 10
+
+
+def pods_for_namespace(start_time: str, namespace: px.Namespace):
+    ''' Gets a list of pods running per node.
+
+    Args:
+    @start: Starting time of the data to examine.
+    @namespace: The namespace to filter on.
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df = df[df.ctx['namespace'] == namespace]
+    df.pod = df.ctx['pod_name']
+    df = df.groupby(['pod']).agg()
+    df.pod_status = px.pod_name_to_status(df.pod)
+    df.pod_create_time = px.pod_name_to_start_time(df.pod)
+    return df
+
+
+def services_for_namespace(start_time: str, namespace: px.Namespace):
+    ''' Gets a list of services that are part of `namespace`.
+
+    Args:
+    @start: Starting time of the data to examine.
+    @namespace: The namespace to filter on.
+    '''
+    df = px.DataFrame(table='http_events', start_time=start_time)
+    df = df[df.ctx['namespace'] == namespace]
+    df.service = df.ctx['service']
+    df.http_resp_latency_ms = df.http_resp_latency_ns / ns_per_ms
+    df.failure = df.http_resp_status >= 400
+    df.timestamp = px.bin(df.time_, px.seconds(window_s))
+
+    quantiles_agg = df.groupby('service').agg(
+        latency_quantiles=('http_resp_latency_ms', px.quantiles),
+        total_request_count=('http_resp_status', px.count)
+    )
+
+    quantiles_agg.latency_ms_p50 = px.pluck(quantiles_agg.latency_quantiles, 'p50')
+    quantiles_agg.latency_ms_p90 = px.pluck(quantiles_agg.latency_quantiles, 'p90')
+    quantiles_agg.latency_ms_p99 = px.pluck(quantiles_agg.latency_quantiles, 'p99')
+    quantiles_table = quantiles_agg[['service', 'latency_ms_p50', 'latency_ms_p90',
+                                     'latency_ms_p99', 'total_request_count']]
+
+    range_agg = df.groupby(['service', 'timestamp']).agg(
+        requests_per_window=('time_', px.count),
+        error_rate=('failure', px.mean)
+    )
+
+    rps_table = range_agg.groupby('service').agg(
+        requests_per_window=('requests_per_window', px.mean),
+        error_rate=('error_rate', px.mean)
+    )
+
+    joined_table = quantiles_table.merge(rps_table,
+                                         how='inner',
+                                         left_on=['service'],
+                                         right_on=['service'],
+                                         suffixes=['', '_x'])
+
+    joined_table.error_rate_pct = 100 * joined_table.error_rate
+    joined_table.requests_per_s = joined_table.requests_per_window / (1.0 * window_s)
+
+    return joined_table[['service', 'latency_ms_p50', 'latency_ms_p90', 'latency_ms_p99',
+                         'error_rate_pct', 'requests_per_s']]
+
+
+def service_graph(start_time: str, namespace: px.Namespace):
+    ''' Gets a map of the traffic between services in `namespace`.
+
+    Args:
+    @start: Starting time of the data to examine.
+    @namespace: The namespace to filter on.
+    '''
+    df = px.DataFrame(table='http_events', start_time=start_time)
+    df = df[df.ctx['namespace'] == namespace]
+    df.latency_ms = df.http_resp_latency_ns / 1.0E6
+    df = df[df['latency_ms'] < 10000.0]
+    df.timestamp = px.bin(df.time_, px.seconds(window_s))
+    df.service = df.ctx['service']
+
+    df.resp_size = px.length(df.http_resp_body)
+    df.failure = df.http_resp_status >= 400
+    filter_out_conds = ((df.http_req_path != '/health' or not filter_health_checks) and (
+        df.http_req_path != '/readyz' or not filter_ready_checks)) and (
+        df['remote_addr'] != '-' or not filter_unresolved_inbound)
+
+    df = df[filter_out_conds]
+    # Calculate LET for each svc edge in the svc graph over each time window.
+    # Each edge starts at a requester ('remote_addr') and ends at a
+    # responder service.
+
+    df = df.groupby(['remote_addr', 'service', 'timestamp']).agg(
+        error_rate_per_window=('failure', px.mean),
+        throughput_total=('latency_ms', px.count),
+        bytes_total=('resp_size', px.sum)
+    )
+
+    # Format the result of LET aggregates into proper scalar formats and
+    # time series.
+    window_size = window_s * 1.0
+    df.requests_per_s = df.throughput_total / window_size
+    df.error_rate_pct = df.error_rate_per_window * 100
+    df.bytes_per_s = df.bytes_total / window_size
+
+    df.requestor = px.pod_id_to_service_name(px.ip_to_pod_id(df.remote_addr))
+    df.responder = df.service
+
+    # Group incoming traffic by (src, dest) to get all incoming edges.
+    df = df.groupby(['requestor', 'responder']).agg(
+        requests_per_s=('requests_per_s', px.mean),
+        error_rate_pct=('error_rate_pct', px.mean),
+        bytes_per_s=('bytes_per_s', px.mean),
+    )
+    return df[df.requestor != '' and df.responder != '']
