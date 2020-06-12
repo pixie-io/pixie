@@ -76,7 +76,6 @@ const Vega = React.memo((props: VegaProps) => {
     setVegaOrigin(currentView.origin());
   }, [currentView]);
 
-  // eslint-disable @typescript-eslint/no-unused-vars
   const hoverListener = React.useCallback((name, value) => {
     if (!currentView || !hoverDataCache) {
       return;
@@ -88,6 +87,20 @@ const Vega = React.memo((props: VegaProps) => {
       }
     }
   }, [currentView, hoverDataCache]);
+
+  const updateView = React.useMemo(() => {
+    let called = false;
+    return () => {
+      if (called) {
+        return;
+      }
+      called = true;
+      setTimeout(() => {
+        currentView.runAsync();
+        called = false;
+      });
+    };
+  }, [currentView]);
 
   const signalListeners = React.useMemo(() => {
     if (!currentView) {
@@ -188,27 +201,27 @@ const Vega = React.memo((props: VegaProps) => {
   }, [hoverDataCache, currentView]);
 
   React.useEffect(() => {
-    if (currentView) {
-      currentView.signal(EXTERNAL_TS_DOMAIN_SIGNAL, externalTSDomain);
-      currentView.runAsync();
+    if (!currentView) {
+      return;
     }
+    currentView.signal(EXTERNAL_TS_DOMAIN_SIGNAL, externalTSDomain);
+    updateView();
   }, [externalTSDomain, currentView]);
 
   // Inject the selected series into the corresponding vega signal for this chart.
   React.useEffect(() => {
-    if (currentView) {
-      if (externalHoverTime && hoverDataCache) {
-        let time = externalHoverTime;
-        // Handle cases where externalHoverTime is not contained within the limits of this chart.
-        if (externalHoverTime < hoverDataCache.minTime) {
-          time = hoverDataCache.minTime;
-        } else if (externalHoverTime > hoverDataCache.maxTime) {
-          time = hoverDataCache.maxTime;
-        }
-        currentView.signal(EXTERNAL_HOVER_SIGNAL, { time_: time });
-      }
-      currentView.runAsync();
+    if (!currentView || !externalHoverTime || !hoverDataCache) {
+      return;
     }
+    let time = externalHoverTime;
+    // Handle cases where externalHoverTime is not contained within the limits of this chart.
+    if (externalHoverTime < hoverDataCache.minTime) {
+      time = hoverDataCache.minTime;
+    } else if (externalHoverTime > hoverDataCache.maxTime) {
+      time = hoverDataCache.maxTime;
+    }
+    currentView.signal(EXTERNAL_HOVER_SIGNAL, { time_: time });
+    updateView();
   }, [externalHoverTime, currentView, hoverDataCache]);
 
   React.useEffect(() => {
@@ -217,7 +230,7 @@ const Vega = React.memo((props: VegaProps) => {
     }
     currentView.signal(LEGEND_HOVER_SIGNAL, legendInteractState.hoveredSeries);
     currentView.signal(LEGEND_SELECT_SIGNAL, legendInteractState.selectedSeries);
-    currentView.runAsync();
+    updateView();
   }, [currentView, legendInteractState.hoveredSeries, legendInteractState.selectedSeries.length]);
 
   return (
