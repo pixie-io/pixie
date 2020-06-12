@@ -40,6 +40,7 @@ class PixieModule : public QLObject {
   inline static constexpr char kPodTypeName[] = "Pod";
   inline static constexpr char kServiceTypeName[] = "Service";
   inline static constexpr char kBytesTypeName[] = "Bytes";
+  inline static constexpr char kUPIDTypeName[] = "UPID";
   inline static constexpr char kDebugTablePrefix[] = "_";
   static const constexpr char* const kTimeFuncs[] = {"minutes", "hours",        "seconds",
                                                      "days",    "microseconds", "milliseconds"};

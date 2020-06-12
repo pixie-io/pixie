@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "src/carnot/udf/registry.h"
+#include "src/carnot/udf/type_inference.h"
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/types.h"
 
@@ -48,6 +49,10 @@ class PodIDToPodNameUDF : public ScalarUDF {
     }
 
     return "";
+  }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {
+        udf::ExplicitRule::Create<PodIDToPodNameUDF>(types::ST_POD_NAME, {types::ST_UNSPECIFIED})};
   }
 };
 
@@ -171,6 +176,10 @@ class UPIDToPodNameUDF : public ScalarUDF {
     }
     return absl::Substitute("$0/$1", pod_info->ns(), pod_info->name());
   }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {
+        udf::ExplicitRule::Create<UPIDToPodNameUDF>(types::ST_POD_NAME, {types::ST_UNSPECIFIED})};
+  }
 };
 
 class ServiceIDToServiceNameUDF : public ScalarUDF {
@@ -184,6 +193,10 @@ class ServiceIDToServiceNameUDF : public ScalarUDF {
     }
 
     return "";
+  }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<ServiceIDToServiceNameUDF>(types::ST_SERVICE_NAME,
+                                                                 {types::ST_UNSPECIFIED})};
   }
 };
 
@@ -254,6 +267,10 @@ class UPIDToServiceNameUDF : public ScalarUDF {
     }
     return StringifyVector(running_service_names);
   }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<UPIDToServiceNameUDF>(types::ST_SERVICE_NAME,
+                                                            {types::ST_UNSPECIFIED})};
+  }
 };
 
 /**
@@ -269,6 +286,10 @@ class UPIDToNodeNameUDF : public ScalarUDF {
     }
     std::string foo = std::string(pod_info->node_name());
     return foo;
+  }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {
+        udf::ExplicitRule::Create<UPIDToNodeNameUDF>(types::ST_NODE_NAME, {types::ST_UNSPECIFIED})};
   }
 };
 
@@ -312,6 +333,10 @@ class PodIDToServiceNameUDF : public ScalarUDF {
       }
     }
     return StringifyVector(running_service_names);
+  }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<PodIDToServiceNameUDF>(types::ST_SERVICE_NAME,
+                                                             {types::ST_UNSPECIFIED})};
   }
 };
 
@@ -357,6 +382,10 @@ class PodIDToNodeNameUDF : public ScalarUDF {
     std::string foo = std::string(pod_info->node_name());
     return foo;
   }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<PodIDToNodeNameUDF>(types::ST_NODE_NAME,
+                                                          {types::ST_UNSPECIFIED})};
+  }
 };
 
 /**
@@ -393,6 +422,10 @@ class PodNameToServiceNameUDF : public ScalarUDF {
       }
     }
     return StringifyVector(running_service_names);
+  }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<PodNameToServiceNameUDF>(types::ST_SERVICE_NAME,
+                                                               {types::ST_POD_NAME})};
   }
 };
 

@@ -1081,6 +1081,7 @@ Status ExpressionIR::CopyFromNode(const IRNode* node,
                                   absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) {
   PL_RETURN_IF_ERROR(IRNode::CopyFromNode(node, copied_nodes_map));
   annotations_ = static_cast<const ExpressionIR*>(node)->annotations();
+  type_cast_ = static_cast<const ExpressionIR*>(node)->type_cast();
   return Status::OK();
 }
 

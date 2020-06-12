@@ -2849,6 +2849,33 @@ TEST_F(CompilerTest, time_casting) {
   EXPECT_PTR_VAL_EQ(ValueType::Create(types::TIME64NS, types::ST_UNSPECIFIED),
                     std::static_pointer_cast<ValueType>(col_type_or_s.ConsumeValueOrDie()));
 }
+
+constexpr char kMetadataSTQuery[] = R"pxl(
+import px
+df = px.DataFrame(table='process_stats', select=['upid'])
+df.svc = df.ctx['service']
+df.pod_name = df.ctx['pod']
+df.node_name = df.ctx['node']
+px.display(df)
+)pxl";
+
+TEST_F(CompilerTest, metadata_types) {
+  auto graph_or_s = compiler_.CompileToIR(kMetadataSTQuery, compiler_state_.get());
+  ASSERT_OK(graph_or_s);
+
+  auto ir = graph_or_s.ConsumeValueOrDie();
+  auto sinks = ir->FindNodesThatMatch(MemorySink());
+  ASSERT_EQ(1, sinks.size());
+  auto sink = static_cast<MemorySinkIR*>(sinks[0]);
+  auto type_table = std::static_pointer_cast<TableType>(sink->resolved_type());
+
+  EXPECT_TableHasColumnWithType(type_table, "svc",
+                                ValueType::Create(types::STRING, types::ST_SERVICE_NAME));
+  EXPECT_TableHasColumnWithType(type_table, "pod_name",
+                                ValueType::Create(types::STRING, types::ST_POD_NAME));
+  EXPECT_TableHasColumnWithType(type_table, "node_name",
+                                ValueType::Create(types::STRING, types::ST_NODE_NAME));
+}
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

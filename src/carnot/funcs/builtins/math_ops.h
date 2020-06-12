@@ -26,6 +26,11 @@ template <typename TReturn, typename TArg1, typename TArg2>
 class SubtractUDF : public udf::ScalarUDF {
  public:
   TReturn Exec(FunctionContext*, TArg1 b1, TArg2 b2) { return b1.val - b2.val; }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {
+        udf::InheritTypeFromArgs<SubtractUDF>::Create({types::ST_BYTES}),
+    };
+  }
 };
 
 template <typename TReturn, typename TArg1, typename TArg2>
@@ -170,6 +175,9 @@ class SumUDA : public udf::UDA {
   void Update(FunctionContext*, TArg arg) { sum_ = sum_.val + arg.val; }
   void Merge(FunctionContext*, const SumUDA& other) { sum_ = sum_.val + other.sum_.val; }
   TArg Finalize(FunctionContext*) { return sum_; }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::InheritTypeFromArgs<SumUDA>::Create({types::ST_BYTES})};
+  }
 
  protected:
   TArg sum_ = 0;
@@ -190,6 +198,10 @@ class MaxUDA : public udf::UDA {
   }
   TArg Finalize(FunctionContext*) { return max_; }
 
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::InheritTypeFromArgs<MaxUDA>::Create({types::ST_BYTES, types::ST_PERCENT})};
+  }
+
  protected:
   TArg max_ = std::numeric_limits<typename types::ValueTypeTraits<TArg>::native_type>::min();
 };
@@ -208,6 +220,10 @@ class MinUDA : public udf::UDA {
     }
   }
   TArg Finalize(FunctionContext*) { return min_; }
+
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::InheritTypeFromArgs<MinUDA>::Create({types::ST_BYTES, types::ST_PERCENT})};
+  }
 
  protected:
   TArg min_ = std::numeric_limits<typename types::ValueTypeTraits<TArg>::native_type>::max();

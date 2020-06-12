@@ -107,7 +107,10 @@ class ExplicitRule : public InferenceRule {
   void ToProto(const std::string& name, udfspb::SemanticInferenceRule* rule) const;
   size_t Hash() const;
   bool Equals(const ExplicitRulePtr& other) const;
-  std::vector<ExplicitRulePtr> explicit_rules() { return {std::shared_ptr<ExplicitRule>(this)}; }
+  std::vector<ExplicitRulePtr> explicit_rules() {
+    return {std::make_shared<ExplicitRule>(udf_exec_type_, out_type_, init_arg_types_,
+                                           exec_or_update_types_)};
+  }
 
  private:
   udfspb::UDFExecType udf_exec_type_;
