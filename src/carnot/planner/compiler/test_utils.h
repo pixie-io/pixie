@@ -25,18 +25,35 @@ namespace pl {
 namespace carnot {
 namespace planner {
 
+#define _MATCH_FAIL_IMPL(value, matcher) \
+  absl::Substitute("Matcher '$1' didn't match '$0'", v->DebugString(), #matcher)
+
+#define _NOT_MATCH_FAIL_IMPL(value, matcher) \
+  absl::Substitute("Matcher '$1' unexpectedly matched '$0'", v->DebugString(), #matcher)
+
 // Macros to better support match tests.
-#define EXPECT_MATCH(value, matcher)                                        \
-  do {                                                                      \
-    auto v = value;                                                         \
-    EXPECT_TRUE(Match(v, matcher))                                          \
-        << absl::Substitute("Matcher didn't match '$0'", v->DebugString()); \
+#define EXPECT_MATCH(value, matcher)                                    \
+  do {                                                                  \
+    auto v = value;                                                     \
+    EXPECT_TRUE(Match(v, matcher)) << _MATCH_FAIL_IMPL(value, matcher); \
   } while (false)
-#define ASSERT_MATCH(value, matcher)                                        \
-  do {                                                                      \
-    auto v = value;                                                         \
-    ASSERT_TRUE(Match(v, matcher))                                          \
-        << absl::Substitute("Matcher didn't match '$0'", v->DebugString()); \
+
+#define ASSERT_MATCH(value, matcher)                                    \
+  do {                                                                  \
+    auto v = value;                                                     \
+    ASSERT_TRUE(Match(v, matcher)) << _MATCH_FAIL_IMPL(value, matcher); \
+  } while (false)
+
+#define EXPECT_NOT_MATCH(value, matcher)                                     \
+  do {                                                                       \
+    auto v = value;                                                          \
+    EXPECT_FALSE(Match(v, matcher)) << _NOT_MATCH_FAIL_IMPL(value, matcher); \
+  } while (false)
+
+#define ASSERT_NOT_MATCH(value, matcher)                                     \
+  do {                                                                       \
+    auto v = value;                                                          \
+    ASSERT_FALSE(Match(v, matcher)) << _NOT_MATCH_FAIL_IMPL(value, matcher); \
   } while (false)
 
 using table_store::schema::Relation;
