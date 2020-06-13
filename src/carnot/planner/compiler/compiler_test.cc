@@ -305,6 +305,8 @@ nodes {
         column_types: FLOAT64
         column_names: "time_"
         column_names: "xmod10"
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
       }
     }
   }
@@ -726,6 +728,11 @@ nodes {
         column_names: "cpu1"
         column_names: "cpu2"
         column_names: "upid"
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
       }
     }
   }
@@ -1978,6 +1985,11 @@ nodes {
         column_names: "http_resp_latency_ns"
         column_names: "cpu0"
         column_names: "cpu1"
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
       }
     }
   }
@@ -2162,6 +2174,11 @@ nodes {
         column_names: "http_resp_latency_ns"
         column_names: "cpu0"
         column_names: "cpu1"
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
       }
     }
   }
@@ -2308,6 +2325,12 @@ nodes {
         column_names: "cpu0_x"
         column_names: "upid_x"
         column_names: "cpu1_x"
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_UNSPECIFIED
       }
     }
   }

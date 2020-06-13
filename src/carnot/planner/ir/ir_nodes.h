@@ -150,7 +150,8 @@ class IRNode {
   void SetLineCol(const pypa::AstPtr& ast);
 
   TypePtr resolved_type() { return resolved_type_; }
-  bool is_type_resolved() { return resolved_type_ != nullptr; }
+  const TypePtr resolved_type() const { return resolved_type_; }
+  bool is_type_resolved() const { return resolved_type_ != nullptr; }
   Status SetResolvedType(TypePtr resolved_type) {
     resolved_type_ = resolved_type;
     return Status::OK();

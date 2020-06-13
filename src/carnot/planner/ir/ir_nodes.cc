@@ -422,6 +422,20 @@ Status MemorySinkIR::ToProto(planpb::Operator* op) const {
     pb->add_column_names(names[i]);
   }
 
+  if (is_type_resolved()) {
+    auto table_type = std::static_pointer_cast<TableType>(resolved_type());
+    for (const auto& col_name : names) {
+      if (table_type->HasColumn(col_name)) {
+        PL_ASSIGN_OR_RETURN(auto col_type, table_type->GetColumnType(col_name));
+        if (!col_type->IsValueType()) {
+          return error::Internal("Attempting to create MemorySource with a non-columnar type.");
+        }
+        auto val_type = std::static_pointer_cast<ValueType>(col_type);
+        pb->add_column_semantic_types(val_type->semantic_type());
+      }
+    }
+  }
+
   return Status::OK();
 }
 

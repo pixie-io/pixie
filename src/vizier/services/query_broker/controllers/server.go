@@ -311,7 +311,40 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 	if queryResult != nil {
 		queryResult.TimingInfo.CompilationTimeNs = compilationCompleteTime.Sub(execStartTime).Nanoseconds()
 	}
+
+	if queryResult != nil {
+		if err := annotateResultWithSemanticTypes(queryResult, planMap); err != nil {
+			return nil, nil, err
+		}
+	}
+
 	return queryResult, nil, nil
+}
+
+func annotateResultWithSemanticTypes(result *queryresultspb.QueryResult, planMap map[uuid.UUID]*planpb.Plan) error {
+	memSinks := make(map[string]*planpb.MemorySinkOperator)
+
+	for _, plan := range planMap {
+		for _, fragment := range plan.Nodes {
+			for _, node := range fragment.Nodes {
+				if node.Op.OpType == planpb.MEMORY_SINK_OPERATOR {
+					memSinks[node.Op.GetMemSinkOp().Name] = node.Op.GetMemSinkOp()
+				}
+			}
+		}
+	}
+
+	for _, table := range result.Tables {
+		memSinkOp, ok := memSinks[table.Name]
+		if !ok {
+			return fmt.Errorf("Table '%s' has no corresponding MemSinkOp",
+				table.Name)
+		}
+		for i, col := range table.Relation.Columns {
+			col.ColumnSemanticType = memSinkOp.ColumnSemanticTypes[i]
+		}
+	}
+	return nil
 }
 
 func loadUDFInfo(udfInfoPb *udfspb.UDFInfo) error {

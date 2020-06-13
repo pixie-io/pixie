@@ -143,6 +143,8 @@ message MemorySinkOperator {
   repeated pl.types.DataType column_types = 2;
   // The names of the columns.
   repeated string column_names = 3;
+  // The semantic types of the columns.
+  repeated pl.types.SemanticType column_semantic_types = 4;
 }
 
 // Reads from a GRPC service that other machines send RowBatches to.
