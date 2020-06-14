@@ -18,6 +18,9 @@ rules:
   - secrets
   verbs:
   - "*"
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
 ---
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
