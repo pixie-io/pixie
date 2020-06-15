@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -58,7 +59,7 @@ func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, deplo
 	_ = k8s.DeleteConfigMap(clientset, "pl-cloud-config", "pl")
 	k8s.DeleteSecret(clientset, namespace, "pl-cluster-secrets")
 
-	yamls, err := GenerateClusterSecretYAMLs(cloudAddr, deployKey, namespace, devCloudNamespace, kubeConfig, sentryDSN, "")
+	yamls, err := GenerateClusterSecretYAMLs(cloudAddr, deployKey, namespace, devCloudNamespace, kubeConfig, sentryDSN, "", false)
 	if err != nil {
 		return err
 	}
@@ -67,31 +68,37 @@ func LoadClusterSecrets(clientset *kubernetes.Clientset, cloudAddr string, deplo
 }
 
 // GenerateClusterSecretYAMLs generates YAMLs for the cluster secrets.
-func GenerateClusterSecretYAMLs(cloudAddr string, deployKey string, namespace string, devCloudNamespace string, kubeConfig *rest.Config, sentryDSN string, version string) (string, error) {
-	yamls := make([]string, 4)
+func GenerateClusterSecretYAMLs(cloudAddr string, deployKey string, namespace string, devCloudNamespace string, kubeConfig *rest.Config, sentryDSN string, version string, useEtcdOperator bool) (string, error) {
+	yamls := make([]string, 5)
 	ccYaml, err := createCloudConfigYAML(cloudAddr, namespace, devCloudNamespace, kubeConfig)
 	if err != nil {
 		return "", err
 	}
 	yamls[0] = ccYaml
 
+	clusterYaml, err := createClusterConfigYAML(namespace, useEtcdOperator)
+	if err != nil {
+		return "", err
+	}
+	yamls[1] = clusterYaml
+
 	csYaml, err := createClusterSecretsYAML(sentryDSN, namespace)
 	if err != nil {
 		return "", err
 	}
-	yamls[1] = csYaml
+	yamls[2] = csYaml
 
 	bYaml, err := createBootstrapConfigMapYAML(namespace, version)
 	if err != nil {
 		return "", err
 	}
-	yamls[2] = bYaml
+	yamls[3] = bYaml
 
 	dYaml, err := createDeploySecretsYAML(namespace, deployKey)
 	if err != nil {
 		return "", err
 	}
-	yamls[3] = dYaml
+	yamls[4] = dYaml
 
 	return "---\n" + strings.Join(yamls, "\n---\n"), nil
 }
@@ -108,6 +115,22 @@ func getK8sVersion(kubeConfig *rest.Config) (string, error) {
 func createDeploySecretsYAML(namespace string, deployKey string) (string, error) {
 	cm, err := k8s.CreateGenericSecretFromLiterals(namespace, "pl-deploy-secrets", map[string]string{
 		"deploy-key": deployKey,
+	})
+	if err != nil {
+		return "", err
+	}
+	return k8s.ConvertResourceToYAML(cm)
+}
+
+func createClusterConfigYAML(namespace string, useEtcdOperator bool) (string, error) {
+	etcdAddr := "https://etcd.pl.svc:2379"
+	if useEtcdOperator {
+		etcdAddr = "https://pl-etcd-client.pl.svc:2379"
+	}
+
+	cm, err := k8s.CreateConfigMapFromLiterals(namespace, "pl-cluster-config", map[string]string{
+		"PL_ETCD_OPERATOR_ENABLED": strconv.FormatBool(useEtcdOperator),
+		"PL_MD_ETCD_SERVER":        etcdAddr,
 	})
 	if err != nil {
 		return "", err

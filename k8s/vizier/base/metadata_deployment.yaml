@@ -47,6 +47,9 @@ spec:
         envFrom:
         - configMapRef:
             name: pl-tls-config
+        - configMapRef:
+            name: pl-cluster-config
+            optional: true
         volumeMounts:
         - mountPath: /certs
           name: certs

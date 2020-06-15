@@ -21,3 +21,14 @@ genrule(
       kustomize build $$T/etcd -o $@
     """,
 )
+
+genrule(
+    name = "etcd_operator_prod",
+    srcs = glob(["**/*.yaml"]),
+    outs = ["etcd_operator_prod.yaml"],
+    cmd = """
+      T=`mktemp -d`
+      cp -aL k8s/vizier_deps/base/etcd_operator $$T
+      kustomize build $$T/etcd_operator -o $@
+    """,
+)

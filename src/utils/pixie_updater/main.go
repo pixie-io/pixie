@@ -18,6 +18,7 @@ import (
 
 const (
 	etcdYAMLPath            = "./yamls/vizier_deps/etcd_prod.yaml"
+	etcdOperatorYAMLPath    = "./yamls/vizier_deps/etcd_operator_prod.yaml"
 	vizierYAMLPath          = "./yamls/vizier/vizier_prod.yaml"
 	vizierBootstrapYAMLPath = "./yamls/vizier/vizier_bootstrap_prod.yaml"
 	deleteTimeout           = 5 * time.Minute
@@ -28,6 +29,7 @@ func init() {
 	pflag.String("namespace", "pl", "The namespace used by Pixie")
 	pflag.String("vizier_version", "", "The version to install or upgrade to")
 	pflag.String("cloud_addr", "withpixie.ai:443", "The pixie cloud address to use.")
+	pflag.Bool("etcd_operator_enabled", false, "Whether the etcd operator should be used instead of the statefulset")
 }
 
 func getCloudClientConnection(cloudAddr string) (*grpc.ClientConn, error) {
@@ -102,16 +104,18 @@ func main() {
 		log.WithError(err).Fatalf("Failed to install vizier bootstrap for updater roles")
 	}
 
-	// Always attempt to delete old version of etcd operator.
-	oldEtcdExists, err := od.DeleteByLabel("app=pl-monitoring", "etcdclusters.etcd.database.coreos.com")
-	if err != nil {
-		log.WithError(err).Error("Failed to delete old etcd")
-	}
-
 	// Redeploy etcd.
-	if viper.GetBool("redeploy_etcd") || oldEtcdExists > 0 {
+	if viper.GetBool("redeploy_etcd") {
 		log.Info("Redeploying etcd")
-		if oldEtcdExists == 0 {
+		etcdPath := etcdYAMLPath
+
+		if viper.GetBool("etcd_operator_enabled") {
+			_, err = od.DeleteByLabel("app=pl-monitoring", "etcdclusters.etcd.database.coreos.com")
+			if err != nil {
+				log.WithError(err).Error("Failed to delete old etcd")
+			}
+			etcdPath = etcdOperatorYAMLPath
+		} else {
 			_, err = od.DeleteByLabel("app=pl-monitoring", "StatefulSet")
 			if err != nil {
 				log.WithError(err).Fatal("Could not delete existing etcd")
@@ -122,7 +126,7 @@ func main() {
 			}
 		}
 
-		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[etcdYAMLPath])
+		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[etcdPath])
 		if err != nil {
 			log.WithError(err).Fatalf("Failed to redeploy etcd")
 		}

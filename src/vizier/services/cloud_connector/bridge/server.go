@@ -45,6 +45,9 @@ spec:
         envFrom:
         - configMapRef:
             name: pl-cloud-config
+        - configMapRef:
+            name: pl-cluster-config
+            optional: true
         env:
         - name: PL_CLOUD_TOKEN
           valueFrom:

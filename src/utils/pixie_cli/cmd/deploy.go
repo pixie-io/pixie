@@ -47,6 +47,7 @@ const (
 	etcdYAMLPath            = "./yamls/vizier_deps/etcd_prod.yaml"
 	natsYAMLPath            = "./yamls/vizier_deps/nats_prod.yaml"
 	vizierBootstrapYAMLPath = "./yamls/vizier/vizier_bootstrap_prod.yaml"
+	etcdOperatorYAMLPath    = "./yamls/vizier_deps/etcd_operator_prod.yaml"
 )
 
 // Sentry configs are not actually secret and safe to check in.
@@ -153,6 +154,9 @@ func init() {
 	DeployCmd.Flags().StringP("deploy_key", "k", "", "The deploy key to use to deploy Pixie")
 	viper.BindPFlag("deploy_key", DeployCmd.Flags().Lookup("deploy_key"))
 
+	DeployCmd.Flags().BoolP("use_etcd_operator", "o", false, "Whether to use the operator for etcd instead of the statefulset")
+	viper.BindPFlag("use_etcd_operator", DeployCmd.Flags().Lookup("use_etcd_operator"))
+
 	// Super secret flags for Pixies.
 	DeployCmd.Flags().MarkHidden("namespace")
 	DeployCmd.Flags().MarkHidden("dev_cloud_namespace")
@@ -225,6 +229,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	checkOnly, _ := cmd.Flags().GetBool("check_only")
 	extractPath, _ := cmd.Flags().GetString("extract_yaml")
 	deployKey, _ := cmd.Flags().GetString("deploy_key")
+	useEtcdOperator, _ := cmd.Flags().GetBool("use_etcd_operator")
 
 	if deployKey == "" && extractPath != "" {
 		log.Fatal("--deploy_key must be specified when running with --extract_yaml. Please run px deploy-key create.")
@@ -341,7 +346,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			kConfig = nil
 		}
 
-		csYAMLs, err := GenerateClusterSecretYAMLs(cloudAddr, deployKey, namespace, devCloudNS, kConfig, getSentryDSN(versionString), inputVersionStr)
+		csYAMLs, err := GenerateClusterSecretYAMLs(cloudAddr, deployKey, namespace, devCloudNS, kConfig, getSentryDSN(versionString), inputVersionStr, useEtcdOperator)
 		if err != nil {
 			return err
 		}
@@ -405,7 +410,12 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		}
 
 		// Write etcd + nats before bootstrap YAML.
-		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/02_manifests/%02d_etcd.yaml", yamlIdx), vzYamlMap[etcdYAMLPath])
+		etcdPath := etcdYAMLPath
+		if useEtcdOperator {
+			etcdPath = etcdOperatorYAMLPath
+		}
+
+		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/02_manifests/%02d_etcd.yaml", yamlIdx), vzYamlMap[etcdPath])
 		if err != nil {
 			log.WithError(err).Fatal("Failed to write YAMLs")
 		}
@@ -507,7 +517,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	depsOnly, _ := cmd.Flags().GetBool("deps_only")
 
-	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, vzYamlMap, namespace, depsOnly)
+	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, vzYamlMap, namespace, depsOnly, useEtcdOperator)
 
 	waitForHealthCheck(cloudAddr, clusterID, clientset, namespace, numNodes)
 }
@@ -692,7 +702,7 @@ func initiateUpdate(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.
 	return nil
 }
 
-func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Clientset, config *rest.Config, yamlMap map[string]string, namespace string, depsOnly bool) uuid.UUID {
+func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Clientset, config *rest.Config, yamlMap map[string]string, namespace string, depsOnly bool, useEtcdOperator bool) uuid.UUID {
 	// NATS and etcd deploys depend on timing, so may sometimes fail. Include some retry behavior.
 	// TODO(zasgar/michelle): This logic is flaky and we should make smarter to actually detect and wait
 	// based on the message.
@@ -700,8 +710,13 @@ func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Cl
 		return retryDeploy(clientset, config, namespace, yamlMap[natsYAMLPath])
 	})
 
+	etcdPath := etcdYAMLPath
+	if useEtcdOperator {
+		etcdPath = etcdOperatorYAMLPath
+	}
+
 	etcdJob := newTaskWrapper("Deploying etcd", func() error {
-		return retryDeploy(clientset, config, namespace, yamlMap[etcdYAMLPath])
+		return retryDeploy(clientset, config, namespace, yamlMap[etcdPath])
 	})
 
 	deployDepsJobs := []utils.Task{natsJob, etcdJob}
