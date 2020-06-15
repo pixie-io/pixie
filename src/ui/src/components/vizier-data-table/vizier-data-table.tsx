@@ -134,6 +134,7 @@ const useStyles = makeStyles((theme: Theme) =>
       padding: theme.spacing(2),
       borderLeft: `solid 1px ${theme.palette.background.three}`,
       minWidth: 0,
+      overflow: 'auto',
     },
     close: {
       position: 'absolute',
