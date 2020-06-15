@@ -155,6 +155,8 @@ type Bridge struct {
 
 	updateRunning bool // True if an update is running.
 	updateFailed  bool // True if an update has failed (sticky).
+
+	droppedMessagesBeforeResume int64 // Number of messages dropped before successful resume.
 }
 
 // New creates a cloud connector to cloud bridge.
@@ -705,8 +707,19 @@ func (s *Bridge) publishBridgeCh(topic string, msg *types.Any) error {
 	// Don't stall the queue for regular message.
 	select {
 	case s.grpcOutCh <- wrappedReq:
+		if s.droppedMessagesBeforeResume > 0 {
+			log.WithField("Topic", wrappedReq.Topic).
+				WithField("droppedCount", s.droppedMessagesBeforeResume).
+				Error("Resuming messages again...")
+		}
+		s.droppedMessagesBeforeResume = 0
 	default:
-		log.WithField("Topic", wrappedReq.Topic).Error("Dropping message because of queue backoff")
+		if (s.droppedMessagesBeforeResume % 100) == 0 {
+			log.WithField("Topic", wrappedReq.Topic).
+				WithField("droppedCount", s.droppedMessagesBeforeResume).
+				Error("Dropping message because of queue backoff")
+		}
+		s.droppedMessagesBeforeResume++
 	}
 	return nil
 }
