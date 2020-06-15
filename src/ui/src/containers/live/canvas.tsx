@@ -149,9 +149,9 @@ const Canvas = (props: CanvasProps) => {
   }, [tables]);
 
   const updateLayoutInVis = React.useCallback((newLayout) => {
-    setVis((vis) => updatePositions(vis, newLayout));
+    setVis(updatePositions(vis, newLayout));
     triggerResize();
-  }, []);
+  }, [vis]);
 
   const updateDefaultLayout = React.useCallback((newLayout) => {
     setDefaultLayout(newLayout);

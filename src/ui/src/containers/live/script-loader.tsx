@@ -8,7 +8,6 @@ import { ScriptContext } from './context/script-context';
 import { VisContext } from './context/vis-context';
 import { parseVis } from './vis';
 
-
 type LoadScriptState = 'unloaded' | 'url-loaded' | 'url-skipped' | 'context-loaded';
 
 export function ScriptLoader() {

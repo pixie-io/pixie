@@ -84,8 +84,10 @@ describe('url params', () => {
       const instance = new URLParams(mockWindow as Window);
       instance.onChange
         .pipe(take(1))
-        .subscribe((self) => {
-          expect(self).toBe(instance);
+        .subscribe((newParams) => {
+          expect(newParams.scriptId).toBe(instance.scriptId);
+          expect(newParams.scriptDiff).toBe(instance.scriptDiff);
+          expect(newParams.args).toEqual(instance.args);
         }, done.fail, done);
     });
 
@@ -93,8 +95,10 @@ describe('url params', () => {
       const instance = new URLParams(mockWindow as Window);
       instance.onChange
         .pipe(take(2)) // completes after the first 2 values are emitted.
-        .subscribe((self) => {
-          expect(self).toBe(instance);
+        .subscribe((newParams) => {
+          expect(newParams.scriptId).toBe(instance.scriptId);
+          expect(newParams.scriptDiff).toBe(instance.scriptDiff);
+          expect(newParams.args).toEqual(instance.args);
         }, done.fail, done);
 
       expect(mockWindow.addEventListener).toHaveBeenCalledTimes(1);

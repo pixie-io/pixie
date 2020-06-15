@@ -11,13 +11,13 @@ export class LiveViewURLParams {
 
     if (clusterMatch && this.clusterName !== clusterMatch.params.cluster) {
       changed = true;
-      this.clusterName = clusterMatch.params.cluster;
+      this.clusterName = decodeURIComponent(clusterMatch.params.cluster);
     }
 
     return changed;
   }
 
   toURL(): string {
-    return `/live/clusters/${this.clusterName}`;
+    return `/live/clusters/${encodeURIComponent(this.clusterName)}`;
   }
 }

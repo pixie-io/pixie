@@ -23,30 +23,36 @@ export interface Window {
   removeEventListener: typeof window.removeEventListener;
 }
 
+interface Params {
+  args: Args;
+  scriptId: string;
+  scriptDiff: string;
+}
 // Exported for testing
 export class URLParams {
   args: Args;
   scriptId: string;
   scriptDiff: string;
-  onChange: Observable<URLParams>;
+  onChange: Observable<Params>;
 
-  private prevParams: {
-    args: Args;
-    scriptId: string;
-    scriptDiff: string;
-  };
+  private prevParams: Params;
 
   constructor(private readonly privateWindow: Window) {
     this.syncWithQueryParams();
-    this.prevParams = {
-      args: this.args,
+    const params = {
+      args: { ...this.args },
       scriptDiff: this.scriptDiff,
       scriptId: this.scriptId,
     };
-    const subject = new BehaviorSubject(this);
+    this.prevParams = params;
+    const subject = new BehaviorSubject(params);
     this.privateWindow.addEventListener('popstate', () => {
       this.syncWithQueryParams();
-      subject.next(this);
+      subject.next({
+        args: { ...this.args },
+        scriptDiff: this.scriptDiff,
+        scriptId: this.scriptId,
+      });
     });
     this.onChange = subject;
   }
