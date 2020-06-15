@@ -1,0 +1,105 @@
+''' Services Overview
+
+ This script gets an overview all of the services in `namespace`.
+'''
+
+import px
+
+# Window in seconds within which to aggregate metrics.
+window_s = 10
+# Flag to filter out requests that come from an unresolvable IP.
+filter_unresolved_inbound = True
+# Flag to filter out health checks from the data.
+filter_health_checks = True
+# Flag to filter out ready checks from the data.
+filter_ready_checks = True
+
+
+def services(start_time: str, namespace: px.Namespace):
+    ''' Get a list of the services in `namespace`.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @namespace: The namespace to filter on.
+
+    '''
+    df = px.DataFrame(table='process_stats', start_time=start_time)
+    df.service = df.ctx['service']
+    df = df[df.ctx['namespace'] == namespace and df.service != '']
+    df.pod = df.ctx['pod']
+    df = df.groupby(['service', 'pod']).agg()
+    return df.groupby('service').agg(pod_count=('pod', px.count))
+
+
+def inbound_service_let(start_time: str, namespace: px.Namespace):
+    ''' Compute the let as a timeseries for requests received or by services in `namespace`.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @namespace: The namespace to filter on.
+
+    '''
+    df = px.DataFrame(table='http_events', start_time=start_time)
+    df.service = df.ctx['service']
+    df = df[df.ctx['namespace'] == namespace and df.service != '']
+    df.latency_ms = df.http_resp_latency_ns / 1.0E6
+    df = df[df['latency_ms'] < 10000.0]
+    window_s = 1
+    df.timestamp = px.bin(df.time_, px.seconds(window_s))
+
+    df.resp_size = px.length(df.http_resp_body)
+    df.failure = df.http_resp_status >= 400
+    filter_out_conds = ((df.http_req_path != '/health' or not filter_health_checks) and (
+        df.http_req_path != '/readyz' or not filter_ready_checks)) and (
+        df['remote_addr'] != '-' or not filter_unresolved_inbound)
+
+    df = df[filter_out_conds]
+    # Calculate LET for each svc edge in the svc graph over each time window.
+    # Each edge starts at a requester ('remote_addr') and ends at a
+    # responder service.
+
+    df = df.groupby(['remote_addr', 'service', 'timestamp']).agg(
+        latency_quantiles=('latency_ms', px.quantiles),
+        error_rate_per_window=('failure', px.mean),
+        throughput_total=('latency_ms', px.count),
+        bytes_total=('resp_size', px.sum)
+    )
+
+    df.requestor = px.pod_id_to_service_name(px.ip_to_pod_id(df.remote_addr))
+    df.responder = df.service
+
+    # Format the result of LET aggregates into proper scalar formats and
+    # time series.
+    window_size = window_s * 1.0
+    df.latency_p50 = px.pluck_float64(df.latency_quantiles, 'p50')
+    df.latency_p90 = px.pluck_float64(df.latency_quantiles, 'p90')
+    df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
+    df.requests_per_s = df.throughput_total / window_size
+    df.error_rate_pct = df.error_rate_per_window * 100
+    df.bytes_per_s = df.bytes_total / window_size
+    df.time_ = df.timestamp
+
+    return df[['time_', 'requestor', 'responder', 'latency_p50', 'latency_p90',
+               'latency_p99', 'requests_per_s', 'error_rate_pct', 'bytes_per_s']]
+
+
+def inbound_let_summary(start_time: str, namespace: px.Namespace):
+    ''' Compute a summary of traffic by requesting service, for requests on services in `namespace`.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @namespace: The namespace to filter on.
+    @inbound: Whether or not to include inbound traffic to this service.
+    @outbound: Whether or not to include outbound traffic to this service.
+
+    '''
+    df = inbound_service_let(start_time, namespace)
+    df = df[df.requestor != '']
+    return df.groupby(['requestor', 'responder']).agg(
+        latency_p50=('latency_p50', px.mean),
+        latency_p90=('latency_p90', px.mean),
+        latency_p99=('latency_p99', px.mean),
+        requests_per_s=('requests_per_s', px.mean),
+        error_rate_pct=('error_rate_pct', px.mean),
+        bytes_per_s=('bytes_per_s', px.mean)
+    )

@@ -1,0 +1,237 @@
+{
+  "variables": [
+    {
+      "name": "start_time",
+      "type": "PX_STRING",
+      "description": "The relative start time of the window. Current time is assumed to be now",
+      "defaultValue": "-10m"
+    },
+    {
+      "name": "namespace",
+      "type": "PX_NAMESPACE",
+      "description": "The name of the namespace to get stats for.",
+      "defaultValue": ""
+    }
+  ],
+  "globalFuncs": [
+    {
+      "outputName": "inbound_service_let",
+      "func": {
+        "name": "inbound_service_let",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "namespace",
+            "variable": "namespace"
+          }
+        ]
+      }
+    },
+    {
+      "outputName": "inbound_let_summary",
+      "func": {
+        "name": "inbound_let_summary",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "namespace",
+            "variable": "namespace"
+          }
+        ]
+      }
+    }
+  ],
+  "widgets": [
+    {
+      "name": "Services",
+      "position": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "func": {
+        "name": "services",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "namespace",
+            "variable": "namespace"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    },
+    {
+      "name": "Request Throughput",
+      "position": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "inbound_service_let",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "requests_per_s",
+            "mode": "MODE_LINE",
+            "series": "responder",
+            "stackBySeries": false
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "requests per second"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Request Error Rate",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "inbound_service_let",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "error_rate_pct",
+            "mode": "MODE_LINE",
+            "series": "responder",
+            "stackBySeries": false
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "error rate (%)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "P50 Latency (ms)",
+      "position": {
+        "x": 0,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "inbound_service_let",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p50",
+            "mode": "MODE_LINE",
+            "series": "responder",
+            "stackBySeries": false
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Mean latency (ms)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "P90 Latency (ms)",
+      "position": {
+        "x": 4,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "inbound_service_let",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p90",
+            "mode": "MODE_LINE",
+            "series": "responder",
+            "stackBySeries": false
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Mean latency (ms)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "P99 Latency (ms)",
+      "position": {
+        "x": 8,
+        "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "inbound_service_let",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "latency_p99",
+            "mode": "MODE_LINE",
+            "series": "responder",
+            "stackBySeries": false
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "Mean latency (ms)"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Inbound Traffic to Namespace",
+      "position": {
+        "x": 6,
+        "y": 6,
+        "w": 6,
+        "h": 3
+      },
+      "globalFuncOutputName": "inbound_let_summary",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    },
+    {
+      "name": "Service Map",
+      "position": {
+        "x": 0,
+        "y": 6,
+        "w": 6,
+        "h": 3
+      },
+      "globalFuncOutputName": "inbound_let_summary",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Graph",
+        "adjacencyList": {
+          "fromColumn": "requestor",
+          "toColumn": "responder"
+        }
+      }
+    }
+  ]
+}
