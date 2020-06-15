@@ -1,0 +1,5 @@
+---
+short: Pods Overview
+long: >-
+  List of Pods monitored by Pixie in a given Namespace with their high level application metrics
+  (latency, error-rate & rps) and resource usage (cpu, writes, reads).
