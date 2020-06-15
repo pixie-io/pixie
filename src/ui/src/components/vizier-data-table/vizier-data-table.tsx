@@ -1,6 +1,7 @@
 import { Table } from 'common/vizier-grpc-client';
 import { CellAlignment, DataTable, SortState } from 'components/data-table';
 import * as React from 'react';
+import { SortDirection, SortDirectionType } from 'react-virtualized';
 import { DataType } from 'types/generated/vizier_pb';
 import { formatFloat64Data, formatInt64Data, JSONData } from 'utils/format-data';
 import noop from 'utils/noop';
@@ -37,8 +38,8 @@ function getDataRenderer(type: DataType) {
   }
 }
 
-function getSortFunc(dataKey: string, type: DataType, direction: 'asc' | 'desc') {
-  const dir = direction === 'asc' ? -1 : 1;
+function getSortFunc(dataKey: string, type: DataType, direction: SortDirectionType) {
+  const dir = direction === SortDirection.ASC ? -1 : 1;
   return (a, b) => {
     return a[dataKey] < b[dataKey] ? dir : -dir;
   };

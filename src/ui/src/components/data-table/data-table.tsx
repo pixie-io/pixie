@@ -1,10 +1,14 @@
 import clsx from 'clsx';
 import * as React from 'react';
-import { CellMeasurer, CellMeasurerCache, GridCellRenderer, MultiGrid } from 'react-virtualized';
+import {
+    Column, SortDirection, SortDirectionType, Table, TableCellProps, TableCellRenderer,
+    TableHeaderProps, TableHeaderRenderer,
+} from 'react-virtualized';
 import withAutoSizer, { WithAutoSizerProps } from 'utils/autosizer';
 import noop from 'utils/noop';
 
 import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/styles';
+import Tooltip from '@material-ui/core/Tooltip';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 
@@ -12,30 +16,37 @@ const useStyles = makeStyles((theme: Theme) =>
   createStyles({
     table: {
       color: theme.palette.text.primary,
+      '& > .ReactVirtualized__Table__headerRow': {
+        ...theme.typography.caption,
+        border: `solid 1px ${theme.palette.background.three}`,
+        backgroundColor: theme.palette.background.default,
+      },
+    },
+    row: {
+      borderBottom: `solid 1px ${theme.palette.background.three}`,
     },
     cell: {
       paddingLeft: theme.spacing(3),
       paddingRight: theme.spacing(3),
-      backgroundColor: theme.palette.background.default,
-      whiteSpace: 'nowrap',
+      backgroundColor: 'transparent',
       display: 'flex',
       alignItems: 'center',
-      borderBottom: `solid 1px ${theme.palette.background.three}`,
-      maxWidth: '100%',
+      maxWidth: '33%',
+      height: theme.spacing(6),
+      margin: '0 !important',
+    },
+    cellText: {
+      overflow: 'hidden',
+      whiteSpace: 'nowrap',
+      textOverflow: 'ellipsis',
     },
     compact: {
-      paddingLeft: theme.spacing(2),
-      paddingRight: theme.spacing(2),
-    },
-    header: {
-      ...theme.typography.caption,
-      borderTop: `solid 1px ${theme.palette.background.three}`,
+      paddingLeft: theme.spacing(1.5),
+      paddingRight: 0,
       '&:last-of-type': {
-        borderRight: `solid 1px ${theme.palette.background.three}`,
+        paddingRight: theme.spacing(1.5),
       },
-      '&:first-of-type': {
-        borderLeft: `solid 1px ${theme.palette.background.three}`,
-      },
+      height: theme.spacing(4),
     },
     clickable: {
       cursor: 'pointer',
@@ -73,6 +84,7 @@ export interface ColumnProps {
   label: string;
   width?: number;
   align?: CellAlignment;
+  cellRenderer?: (data: any) => React.ReactNode;
 }
 
 interface DataTableProps {
@@ -85,59 +97,14 @@ interface DataTableProps {
   highlightedRow?: number;
 }
 
-type SortDirection = 'asc' | 'desc';
-
 export interface SortState {
-  prevDataKey?: string;
-  prevDirection?: SortDirection;
   dataKey: string;
-  direction: SortDirection;
+  direction: SortDirectionType;
 }
-
-function sortReducer(state: SortState, dataKey: string): SortState {
-  if (dataKey === state.dataKey) {
-    return {
-      prevDataKey: state.dataKey,
-      prevDirection: state.direction,
-      direction: state.direction === 'asc' ? 'desc' : 'asc',
-      dataKey,
-    };
-  }
-  return {
-    prevDataKey: state.dataKey,
-    prevDirection: state.direction,
-    direction: 'desc',
-    dataKey,
-  };
-}
-
-interface HeaderProps extends ColumnProps {
-  sort: SortDirection | '';
-}
-
-const Header = (props: HeaderProps) => {
-  const classes = useStyles();
-  let sortIcon = <div className={classes.sortPlaceholder} />;
-  if (props.sort === 'asc') {
-    sortIcon = <UpIcon className={classes.sortIcon} />;
-  } else if (props.sort === 'desc') {
-    sortIcon = <DownIcon className={classes.sortIcon} />;
-  }
-  if (props.align === 'end') {
-    return <>
-      {sortIcon}
-      {props.label}
-    </>;
-  }
-  return <>
-    {props.label}
-    {sortIcon}
-  </>;
-};
 
 export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerProps<DataTableProps>>(({
   columns,
-  onRowClick,
+  onRowClick = noop,
   rowCount,
   width,
   height,
@@ -150,106 +117,126 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
   const theme = useTheme();
   const rowHeight = compact ? theme.spacing(4) : theme.spacing(6);
 
-  // Header row offset
-  highlightedRow = highlightedRow + 1;
-
-  const gridRef = React.useRef(null);
-  const sizeCache = React.useMemo(() => new CellMeasurerCache({
-    defaultWidth: 100,
-    defaultHeight: rowHeight,
-    fixedHeight: true,
-  }), []);
-
-  const [sortState, dispatchSortState] = React.useReducer(sortReducer, { dataKey: '', direction: 'desc' });
-  React.useEffect(() => {
-    if (sortState.dataKey) {
-      onSort(sortState);
-      gridRef.current.forceUpdateGrids();
+  const headerRenderer: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => {
+    let sortIcon = <div className={classes.sortPlaceholder} />;
+    if (props.sortBy === props.dataKey && props.sortDirection === SortDirection.ASC) {
+      sortIcon = <UpIcon className={classes.sortIcon} />;
+    } else if (props.sortBy === props.dataKey && props.sortDirection === SortDirection.DESC) {
+      sortIcon = <DownIcon className={classes.sortIcon} />;
     }
-  }, [sortState]);
-
-  React.useEffect(() => {
-    if (highlightedRow !== 0) {
-      gridRef.current.forceUpdateGrids();
+    if (props.columnData.align === 'end') {
+      return <>
+        {sortIcon}
+        <Tooltip title={props.label}>
+          <span className={classes.cellText}>{props.label}</span>
+        </Tooltip>
+      </>;
     }
+    return <>
+      <Tooltip title={props.label}>
+        <span className={classes.cellText}>{props.label}</span>
+      </Tooltip>
+      {sortIcon}
+    </>;
+  }, []);
+
+  const cellRenderer: TableCellRenderer = React.useCallback((props: TableCellProps) => {
+    if (props.columnData.cellRenderer) {
+      return props.columnData.cellRenderer(props.cellData);
+    }
+    return <span className={classes.cellText}>{String(props.cellData)}</span>;
+  }, []);
+
+  const widthRatio = React.useMemo<number[]>(() => {
+    // Randomly sample 10 rows to figure out the width basis of each row.
+    const sampleCount = Math.min(10, rowCount);
+    const ratio = columns.map((col) =>
+      col.label.length + 2 /* sort icon space */
+    );
+    for (let i = 0; i < sampleCount; i++) {
+      const rowIndex = Math.floor(Math.random() * Math.floor(rowCount));
+      const row = rowGetter(rowIndex);
+      columns.forEach((col, i) => {
+        ratio[i] = Math.max(ratio[i], String(row[col.dataKey]).length);
+      });
+    }
+    return ratio;
+  }, [columns, rowGetter, rowCount]);
+
+  const tableRef = React.useRef(null);
+
+  const [sortState, setSortState] = React.useState<SortState>({ dataKey: '', direction: SortDirection.DESC });
+
+  const rowGetterWrapper = React.useCallback(({ index }) => rowGetter(index), [rowGetter]);
+
+  const onSortWrapper = React.useCallback(({ sortBy, sortDirection }) => {
+    if (sortBy) {
+      const nextSortState = { dataKey: sortBy, direction: sortDirection };
+      setSortState(nextSortState);
+      onSort(nextSortState);
+      tableRef.current.forceUpdateGrid();
+    }
+  }, [onSort]);
+
+  const onRowClickWrapper = React.useCallback(({ index }) => {
+    onRowClick(index)
+  }, [onRowClick]);
+
+  const getRowClass = React.useCallback(({ index }) => {
+    if (index === -1) {
+      return;
+    }
+    return clsx(
+      classes.row,
+      onRowClick && classes.clickable,
+      onRowClick && classes.highlightable,
+      index === highlightedRow && classes.highlighted
+    );
   }, [highlightedRow]);
-
-  const cellRenderer: GridCellRenderer = React.useCallback(({
-    columnIndex,
-    rowIndex,
-    key,
-    parent,
-    style,
-  }) => {
-    const column = columns[columnIndex];
-    const isHeader = rowIndex === 0;
-    let onClick = noop;
-    if (isHeader) {
-      onClick = () => {
-        dispatchSortState(column.dataKey);
-      };
-    } else if (onRowClick) {
-      onClick = () => onRowClick(rowIndex - 1);
-    }
-
-    const className = clsx(
-      classes.cell,
-      isHeader && classes.header,
-      column.align && classes[column.align],
-      compact && classes.compact,
-      onClick !== noop && classes.clickable,
-      !isHeader && rowIndex === highlightedRow && classes.highlighted,
-      !isHeader && onClick !== noop && classes.highlightable,
-    );
-    const content = isHeader ?
-      <Header {...column} sort={sortState.dataKey === column.dataKey ? sortState.direction : ''} /> :
-      rowGetter(rowIndex - 1)[column.dataKey];
-
-    return (
-      <CellMeasurer
-        cache={sizeCache}
-        columnIndex={columnIndex}
-        rowIndex={rowIndex}
-        key={key}
-        parent={parent}
-      >
-        {({ registerChild }) => (
-          <div
-            className={className}
-            ref={registerChild}
-            onClick={onClick}
-            style={{ height: rowHeight, ...style }}
-          >
-            {content}
-          </div>
-        )}
-      </CellMeasurer>
-    );
-  }, [sortState, highlightedRow]);
 
   if (width === 0 || height === 0) {
     return null;
   }
 
   return (
-    <MultiGrid
-      ref={gridRef}
+    <Table
+      headerHeight={rowHeight}
+      ref={tableRef}
       className={classes.table}
-      columnCount={columns.length}
-      columnWidth={sizeCache.columnWidth}
-      deferredMeasurementCache={sizeCache}
-      fixedColumnCount={0}
-      fixedRowCount={1}
-      height={height}
-      overscanColumnCount={0}
       overscanRowCount={2}
-      cellRenderer={cellRenderer}
-      /* One extra row for the headers. */
-      rowCount={rowCount + 1}
+      rowGetter={rowGetterWrapper}
+      rowCount={rowCount}
       rowHeight={rowHeight}
+      onRowClick={onRowClickWrapper}
+      rowClassName={getRowClass}
+      height={height}
       width={width}
-      sortBy={sortState.dataKey}
+      sort={onSortWrapper}
       sortDirection={sortState.direction}
-    />
+      sortBy={sortState.dataKey}
+    >
+      {
+        columns.map((col, i) => {
+          const className = clsx(
+            classes.cell,
+            classes[col.align],
+            compact && classes.compact,
+          );
+          return <Column
+            key={col.dataKey}
+            dataKey={col.dataKey}
+            label={col.label}
+            headerClassName={className}
+            className={className}
+            headerRenderer={headerRenderer}
+            cellRenderer={cellRenderer}
+            width={col.width || widthRatio[i]}
+            flexGrow={1}
+            flexShrink={1}
+            columnData={col}
+          />;
+        })
+      }
+    </Table>
   );
 }));
