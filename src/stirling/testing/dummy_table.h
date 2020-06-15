@@ -1,6 +1,10 @@
 #pragma once
 
+#include <utility>
+#include <vector>
+
 #include "src/stirling/canonical_types.h"
+#include "src/stirling/data_table.h"
 #include "src/stirling/types.h"
 
 namespace pl {
@@ -20,7 +24,12 @@ template <const DataTableSchema* schema>
 struct TableFixture {
   TableFixture() : data_table(*schema) {}
 
-  const types::ColumnWrapperRecordBatch& record_batch() { return *data_table.ActiveRecordBatch(); }
+  types::ColumnWrapperRecordBatch record_batch() {
+    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+    // Tabletization not yet supported, so expect only one tablet.
+    CHECK_EQ(tablets.size(), 1);
+    return std::move(tablets.front().records);
+  }
   ArrayView<DataElement> elements() const { return kDummyTable.elements(); }
   RecordBuilder<schema> record_builder() { return RecordBuilder<schema>(&data_table); }
 

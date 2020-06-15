@@ -4,6 +4,7 @@
 #include <gtest/gtest.h>
 
 #include <string>
+#include <vector>
 
 #include "src/common/base/test_utils.h"
 #include "src/common/exec/subprocess.h"
@@ -15,7 +16,6 @@ namespace pl {
 namespace stirling {
 
 using ::pl::stirling::testing::ColWrapperSizeIs;
-using ::pl::stirling::testing::ConsumeRecords;
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::testing::TestFilePath;
 using ::testing::Each;
@@ -66,10 +66,13 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   JavaHelloWorld hello_world1;
   ASSERT_OK(hello_world1.Start());
 
+  std::vector<TaggedRecordBatch> tablets;
   types::ColumnWrapperRecordBatch record_batch;
 
   connector_->TransferData(ctx_.get(), JVMStatsConnector::kTableNum, &data_table_);
-  record_batch = ConsumeRecords(&data_table_);
+  tablets = data_table_.ConsumeRecordBatches();
+  ASSERT_FALSE(tablets.empty());
+  record_batch = tablets[0].records;
   auto idxes = FindRecordIdxMatchesPID(record_batch, kUPIDIdx, hello_world1.child_pid());
   ASSERT_THAT(idxes, SizeIs(1));
 
@@ -94,7 +97,9 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   std::this_thread::sleep_for(std::chrono::seconds(2));
 
   connector_->TransferData(ctx_.get(), JVMStatsConnector::kTableNum, &data_table_);
-  record_batch = ConsumeRecords(&data_table_);
+  tablets = data_table_.ConsumeRecordBatches();
+  ASSERT_FALSE(tablets.empty());
+  record_batch = tablets[0].records;
   EXPECT_THAT(FindRecordIdxMatchesPID(record_batch, kUPIDIdx, hello_world2.child_pid()), SizeIs(1));
   // Make sure the previous processes were scanned as well.
   EXPECT_THAT(FindRecordIdxMatchesPID(record_batch, kUPIDIdx, hello_world1.child_pid()), SizeIs(1));

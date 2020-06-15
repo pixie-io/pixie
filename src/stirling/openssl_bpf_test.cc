@@ -22,7 +22,6 @@
 namespace pl {
 namespace stirling {
 
-using ::pl::stirling::testing::ConsumeRecords;
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::testing::BazelBinTestFilePath;
@@ -128,7 +127,9 @@ TEST_F(OpenSSLTraceTest, ssl_capture) {
     // Grab the data from Stirling.
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch record_batch = ConsumeRecords(&data_table);
+    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+    ASSERT_FALSE(tablets.empty());
+    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
     for (size_t i = 0; i < record_batch[0]->Size(); ++i) {
       uint32_t pid = record_batch[kHTTPUPIDIdx]->Get<types::UInt128Value>(i).High64();

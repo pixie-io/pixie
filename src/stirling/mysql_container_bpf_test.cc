@@ -23,7 +23,6 @@
 namespace pl {
 namespace stirling {
 
-using ::pl::stirling::testing::ConsumeRecords;
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::SocketTraceBPFTest;
 using ::pl::testing::TestFilePath;
@@ -384,7 +383,9 @@ TEST_F(MySQLTraceTest, mysql_capture) {
     // Grab the data from Stirling.
     DataTable data_table(kMySQLTable);
     source_->TransferData(ctx_.get(), SocketTraceConnector::kMySQLTableNum, &data_table);
-    types::ColumnWrapperRecordBatch record_batch = ConsumeRecords(&data_table);
+    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+    ASSERT_FALSE(tablets.empty());
+    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
     // Check client-side tracing results.
     if (!FLAGS_tracing_mode) {
@@ -407,7 +408,9 @@ TEST_F(MySQLTraceTest, mysql_capture) {
     // Grab the data from Stirling.
     DataTable data_table(kMySQLTable);
     source_->TransferData(ctx_.get(), SocketTraceConnector::kMySQLTableNum, &data_table);
-    types::ColumnWrapperRecordBatch record_batch = ConsumeRecords(&data_table);
+    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+    ASSERT_FALSE(tablets.empty());
+    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
     // Check client-side tracing results.
     if (!FLAGS_tracing_mode) {
@@ -434,7 +437,9 @@ TEST_F(MySQLTraceTest, mysql_capture) {
     // Grab the data from Stirling.
     DataTable data_table(kMySQLTable);
     source_->TransferData(ctx_.get(), SocketTraceConnector::kMySQLTableNum, &data_table);
-    types::ColumnWrapperRecordBatch record_batch = ConsumeRecords(&data_table);
+    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+    ASSERT_FALSE(tablets.empty());
+    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
     // Check client-side tracing results.
     if (!FLAGS_tracing_mode) {

@@ -81,21 +81,5 @@ class DataTable : public NotCopyable {
   absl::flat_hash_map<types::TabletID, types::ColumnWrapperRecordBatch> tablets_;
 };
 
-namespace testing {
-
-// Can't currently put this function into test_utils.h because of circular dependency.
-inline types::ColumnWrapperRecordBatch ConsumeRecords(DataTable* data_table) {
-  // This call to ActiveRecordBatch ensures that the table has been set-up properly,
-  // before calling ConsumeRecordBatches.
-  data_table->ActiveRecordBatch();
-  auto tagged_record_batches = data_table->ConsumeRecordBatches();
-  CHECK(!tagged_record_batches.empty());
-  // TODO(oazizi): Support tabletization.
-  CHECK(tagged_record_batches.size() == 1) << "Tabletized DataTables not currently supported.";
-  return tagged_record_batches[0].records;
-}
-
-}  // namespace testing
-
 }  // namespace stirling
 }  // namespace pl

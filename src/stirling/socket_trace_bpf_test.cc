@@ -22,7 +22,6 @@ namespace stirling {
 
 using ::pl::stirling::testing::ColWrapperIsEmpty;
 using ::pl::stirling::testing::ColWrapperSizeIs;
-using ::pl::stirling::testing::ConsumeRecords;
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::FindRecordsMatchingPID;
 using ::pl::system::TCPSocket;
@@ -117,7 +116,9 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
 
   DataTable data_table(kHTTPTable);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  types::ColumnWrapperRecordBatch all_records = ConsumeRecords(&data_table);
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  ASSERT_FALSE(tablets.empty());
+  types::ColumnWrapperRecordBatch all_records = tablets[0].records;
 
   if (p.trace_role & kRoleClient) {
     types::ColumnWrapperRecordBatch record_batch =
@@ -185,18 +186,21 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
   {
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch all_records = ConsumeRecords(&data_table);
+    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+    if (!tablets.empty()) {
+      types::ColumnWrapperRecordBatch all_records = tablets[0].records;
 
-    {
-      types::ColumnWrapperRecordBatch record_batch =
-          FindRecordsMatchingPID(all_records, kHTTPUPIDIdx, system.ClientPID());
-      ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
-    }
+      {
+        types::ColumnWrapperRecordBatch record_batch =
+            FindRecordsMatchingPID(all_records, kHTTPUPIDIdx, system.ClientPID());
+        ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
+      }
 
-    {
-      types::ColumnWrapperRecordBatch record_batch =
-          FindRecordsMatchingPID(all_records, kHTTPUPIDIdx, system.ServerPID());
-      ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
+      {
+        types::ColumnWrapperRecordBatch record_batch =
+            FindRecordsMatchingPID(all_records, kHTTPUPIDIdx, system.ServerPID());
+        ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
+      }
     }
   }
 
@@ -204,19 +208,22 @@ TEST_F(SocketTraceBPFTest, NoProtocolWritesNotCaptured) {
   {
     DataTable data_table(kMySQLTable);
     source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-    types::ColumnWrapperRecordBatch all_records = ConsumeRecords(&data_table);
+    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+    if (!tablets.empty()) {
+      types::ColumnWrapperRecordBatch all_records = tablets[0].records;
 
-    {
-      types::ColumnWrapperRecordBatch record_batch =
-          FindRecordsMatchingPID(all_records, kMySQLUPIDIdx, system.ClientPID());
-      ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
-    }
+      {
+        types::ColumnWrapperRecordBatch record_batch =
+            FindRecordsMatchingPID(all_records, kMySQLUPIDIdx, system.ClientPID());
+        ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
+      }
 
-    {
-      types::ColumnWrapperRecordBatch record_batch =
-          FindRecordsMatchingPID(all_records, kMySQLUPIDIdx, system.ServerPID());
+      {
+        types::ColumnWrapperRecordBatch record_batch =
+            FindRecordsMatchingPID(all_records, kMySQLUPIDIdx, system.ServerPID());
 
-      ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
+        ASSERT_THAT(record_batch, Each(ColWrapperIsEmpty()));
+      }
     }
   }
 }
@@ -241,7 +248,9 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
   {
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-    types::ColumnWrapperRecordBatch all_records = ConsumeRecords(&data_table);
+    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+    ASSERT_FALSE(tablets.empty());
+    types::ColumnWrapperRecordBatch all_records = tablets[0].records;
 
     {
       types::ColumnWrapperRecordBatch record_batch =
@@ -290,7 +299,9 @@ TEST_F(SocketTraceBPFTest, StartTime) {
 
   DataTable data_table(kHTTPTable);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  types::ColumnWrapperRecordBatch all_records = ConsumeRecords(&data_table);
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  ASSERT_FALSE(tablets.empty());
+  types::ColumnWrapperRecordBatch all_records = tablets[0].records;
   types::ColumnWrapperRecordBatch record_batch =
       FindRecordsMatchingPID(all_records, kHTTPUPIDIdx, system.ClientPID());
 
@@ -338,7 +349,9 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
 
   DataTable data_table(kHTTPTable);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  types::ColumnWrapperRecordBatch all_records = ConsumeRecords(&data_table);
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  ASSERT_FALSE(tablets.empty());
+  types::ColumnWrapperRecordBatch all_records = tablets[0].records;
 
   if (p.trace_role & kRoleServer) {
     types::ColumnWrapperRecordBatch record_batch =

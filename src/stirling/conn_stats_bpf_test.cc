@@ -11,7 +11,6 @@ namespace stirling {
 
 using ::pl::stirling::testing::AccessRecordBatch;
 using ::pl::stirling::testing::ClientServerSystem;
-using ::pl::stirling::testing::ConsumeRecords;
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::stirling::testing::SendRecvScript;
 using ::pl::stirling::testing::TCPSocket;
@@ -33,7 +32,9 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
   cs.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script);
 
   source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table_);
-  types::ColumnWrapperRecordBatch record_batch = ConsumeRecords(&data_table_);
+  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecordBatches();
+  ASSERT_FALSE(tablets.empty());
+  types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
   PrintRecordBatch("test", kConnStatsTable.elements(), record_batch);
 
   {
@@ -110,10 +111,13 @@ TEST_F(ConnStatsMidConnBPFTest, DidNotSeeConnEstablishment) {
   EXPECT_EQ(test_msg.size(), client_.Write(test_msg));
 
   source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table_);
-  types::ColumnWrapperRecordBatch record_batch = ConsumeRecords(&data_table_);
+  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecordBatches();
+  if (!tablets.empty()) {
+    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
-  auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, getpid());
-  ASSERT_THAT(indices, IsEmpty());
+    auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, getpid());
+    ASSERT_THAT(indices, IsEmpty());
+  }
 }
 
 }  // namespace stirling
