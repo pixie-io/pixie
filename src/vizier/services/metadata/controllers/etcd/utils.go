@@ -15,16 +15,16 @@ var maxTxnOps = 128
 func BatchOps(client *v3.Client, ops []v3.Op) ([]*etcdpb.ResponseOp, error) {
 	batch := 0
 	var totalOutput []*etcdpb.ResponseOp
-	var err error
 	for batch*maxTxnOps < len(ops) {
 
 		batchSlice := ops[batch*maxTxnOps : int(math.Min(float64((batch+1)*maxTxnOps), float64(len(ops))))]
-		output, e := client.Txn(context.TODO()).If().Then(batchSlice...).Commit()
-		totalOutput = append(totalOutput, output.Responses...)
-		if e != nil {
-			err = e
+		output, err := client.Txn(context.TODO()).If().Then(batchSlice...).Commit()
+		if err != nil {
+			return nil, err
 		}
+		totalOutput = append(totalOutput, output.Responses...)
+
 		batch++
 	}
-	return totalOutput, err
+	return totalOutput, nil
 }
