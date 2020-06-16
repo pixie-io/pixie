@@ -10,7 +10,7 @@
       "name": "namespace",
       "type": "PX_NAMESPACE",
       "description": "The namespace to filter on",
-      "defaultValue": ""
+      "defaultValue": "default"
     }
   ],
   "globalFuncs": [

@@ -44,7 +44,6 @@ def inbound_service_let(start_time: str, namespace: px.Namespace):
     df = df[df.ctx['namespace'] == namespace and df.service != '']
     df.latency_ms = df.http_resp_latency_ns / 1.0E6
     df = df[df['latency_ms'] < 10000.0]
-    window_s = 1
     df.timestamp = px.bin(df.time_, px.seconds(window_s))
 
     df.resp_size = px.length(df.http_resp_body)

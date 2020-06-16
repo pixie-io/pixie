@@ -10,7 +10,7 @@
       "name": "namespace",
       "type": "PX_NAMESPACE",
       "description": "The name of the namespace to get stats for.",
-      "defaultValue": ""
+      "defaultValue": "default"
     }
   ],
   "globalFuncs": [
