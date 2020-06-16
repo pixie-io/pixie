@@ -149,9 +149,11 @@ const Canvas = (props: CanvasProps) => {
   }, [tables]);
 
   const updateLayoutInVis = React.useCallback((newLayout) => {
-    setVis(updatePositions(vis, newLayout));
+    if (!isMobile) {
+      setVis(updatePositions(vis, newLayout));
+    }
     triggerResize();
-  }, [vis]);
+  }, [vis, isMobile]);
 
   const updateDefaultLayout = React.useCallback((newLayout) => {
     setDefaultLayout(newLayout);
@@ -166,9 +168,12 @@ const Canvas = (props: CanvasProps) => {
     loading && classes.loading,
   );
 
+  const layout = React.useMemo(() => {
+    return toLayout(vis.widgets, isMobile);
+  }, [vis, isMobile]);
+
   const charts = React.useMemo(() => {
     const widgets = [];
-    const layout = toLayout(vis.widgets, isMobile);
 
     vis.widgets.forEach((widget, i) => {
       const widgetLayout = layout[i];
@@ -208,14 +213,14 @@ const Canvas = (props: CanvasProps) => {
         }
       }
       widgets.push(
-        <div key={widgetName} className={className} data-grid={widgetLayout}>
+        <div key={widgetName} className={className}>
           {content}
           {loading ? <div className={classes.spinner}><Spinner /></div> : null}
         </div>,
       );
     });
     return widgets;
-  }, [tables, vis, props.editable, loading, isMobile]);
+  }, [tables, vis, props.editable, loading, layout]);
 
   if (loading && charts.length === 0) {
     return (
@@ -225,11 +230,9 @@ const Canvas = (props: CanvasProps) => {
 
   if (charts.length === 0) {
     const { layout, numCols, rowHeight } = addTableLayout(Object.keys(tables), defaultLayout, isMobile, defaultHeight);
-    const layoutMap = new Map(layout.map((l) => {
-      return [l.i, l];
-    }));
     return (
       <Grid
+        layout={layout}
         rowHeight={rowHeight - theme.spacing(5)}
         cols={numCols}
         className={classes.grid}
@@ -240,7 +243,7 @@ const Canvas = (props: CanvasProps) => {
       >
         {
           Object.entries(tables).map(([tableName, table]) => (
-            <div key={tableName} className={className} data-grid={layoutMap.get(tableName)}>
+            <div key={tableName} className={className}>
               <div className={classes.widgetTitle}>{tableName}</div>
               <QueryResultTable className={classes.table} data={table} />
             </div>
@@ -252,6 +255,7 @@ const Canvas = (props: CanvasProps) => {
 
   return (
     <Grid
+      layout={layout}
       cols={getGridWidth(isMobile)}
       className={classes.grid}
       onLayoutChange={updateLayoutInVis}
