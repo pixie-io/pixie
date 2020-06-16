@@ -197,6 +197,18 @@ class RowBatchBuilder {
   std::unique_ptr<table_store::schema::RowBatch> rb_;
 };
 
+class FakePlanNode : public plan::Operator {
+ public:
+  explicit FakePlanNode(int64_t id) : Operator(id, planpb::OPERATOR_TYPE_UNKNOWN) {}
+  StatusOr<table_store::schema::Relation> OutputRelation(
+      const table_store::schema::Schema&, const plan::PlanState&,
+      const std::vector<int64_t>&) const override {
+    // There are no outputs.
+    return table_store::schema::Relation();
+  }
+  std::string DebugString() const override { return "FakePlanNode"; }
+};
+
 /*
  * Test wrapper for testing execution nodes.
  * Example usage:
@@ -230,12 +242,18 @@ class ExecNodeTester {
       exec_node_->AddChild(&mock_child_, 0);
     }
 
-    auto s = exec_node_->Init(*plan_node_, output_descriptor, input_descriptors);
-    EXPECT_OK(s) << s.msg();
-    s = exec_node_->Prepare(exec_state_);
-    EXPECT_OK(s) << s.msg();
-    s = exec_node_->Open(exec_state_);
-    EXPECT_OK(s) << s.msg();
+    EXPECT_OK(exec_node_->Init(*plan_node_, output_descriptor, input_descriptors));
+    EXPECT_OK(exec_node_->Prepare(exec_state_));
+    EXPECT_OK(exec_node_->Open(exec_state_));
+    FakePlanNode fake_plan(123);
+    EXPECT_CALL(mock_child_, InitImpl(::testing::_));
+    EXPECT_CALL(mock_child_, PrepareImpl(::testing::_));
+    EXPECT_CALL(mock_child_, OpenImpl(::testing::_));
+    // Setting up mock child.
+    EXPECT_OK(
+        mock_child_.Init(fake_plan, table_store::schema::RowDescriptor({}), {output_descriptor}));
+    EXPECT_OK(mock_child_.Prepare(exec_state_));
+    EXPECT_OK(mock_child_.Open(exec_state_));
   }
 
   /**

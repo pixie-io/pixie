@@ -135,16 +135,100 @@ func (m *QueryExecutionStats) GetRecordsProcessed() int64 {
 	return 0
 }
 
+type OperatorExecutionStats struct {
+	PlanFragmentId       int64 `protobuf:"varint,1,opt,name=plan_fragment_id,json=planFragmentId,proto3" json:"plan_fragment_id,omitempty"`
+	NodeId               int64 `protobuf:"varint,2,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
+	BytesOutput          int64 `protobuf:"varint,3,opt,name=bytes_output,json=bytesOutput,proto3" json:"bytes_output,omitempty"`
+	RecordsOutput        int64 `protobuf:"varint,4,opt,name=records_output,json=recordsOutput,proto3" json:"records_output,omitempty"`
+	TotalExecutionTimeNs int64 `protobuf:"varint,5,opt,name=total_execution_time_ns,json=totalExecutionTimeNs,proto3" json:"total_execution_time_ns,omitempty"`
+	SelfExecutionTimeNs  int64 `protobuf:"varint,6,opt,name=self_execution_time_ns,json=selfExecutionTimeNs,proto3" json:"self_execution_time_ns,omitempty"`
+}
+
+func (m *OperatorExecutionStats) Reset()      { *m = OperatorExecutionStats{} }
+func (*OperatorExecutionStats) ProtoMessage() {}
+func (*OperatorExecutionStats) Descriptor() ([]byte, []int) {
+	return fileDescriptor_9ab3e12aa52e3568, []int{2}
+}
+func (m *OperatorExecutionStats) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *OperatorExecutionStats) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_OperatorExecutionStats.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *OperatorExecutionStats) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_OperatorExecutionStats.Merge(m, src)
+}
+func (m *OperatorExecutionStats) XXX_Size() int {
+	return m.Size()
+}
+func (m *OperatorExecutionStats) XXX_DiscardUnknown() {
+	xxx_messageInfo_OperatorExecutionStats.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_OperatorExecutionStats proto.InternalMessageInfo
+
+func (m *OperatorExecutionStats) GetPlanFragmentId() int64 {
+	if m != nil {
+		return m.PlanFragmentId
+	}
+	return 0
+}
+
+func (m *OperatorExecutionStats) GetNodeId() int64 {
+	if m != nil {
+		return m.NodeId
+	}
+	return 0
+}
+
+func (m *OperatorExecutionStats) GetBytesOutput() int64 {
+	if m != nil {
+		return m.BytesOutput
+	}
+	return 0
+}
+
+func (m *OperatorExecutionStats) GetRecordsOutput() int64 {
+	if m != nil {
+		return m.RecordsOutput
+	}
+	return 0
+}
+
+func (m *OperatorExecutionStats) GetTotalExecutionTimeNs() int64 {
+	if m != nil {
+		return m.TotalExecutionTimeNs
+	}
+	return 0
+}
+
+func (m *OperatorExecutionStats) GetSelfExecutionTimeNs() int64 {
+	if m != nil {
+		return m.SelfExecutionTimeNs
+	}
+	return 0
+}
+
 type QueryResult struct {
-	Tables         []*proto1.Table      `protobuf:"bytes,1,rep,name=tables,proto3" json:"tables,omitempty"`
-	TimingInfo     *QueryTimingInfo     `protobuf:"bytes,2,opt,name=timing_info,json=timingInfo,proto3" json:"timing_info,omitempty"`
-	ExecutionStats *QueryExecutionStats `protobuf:"bytes,3,opt,name=execution_stats,json=executionStats,proto3" json:"execution_stats,omitempty"`
+	Tables                 []*proto1.Table           `protobuf:"bytes,1,rep,name=tables,proto3" json:"tables,omitempty"`
+	TimingInfo             *QueryTimingInfo          `protobuf:"bytes,2,opt,name=timing_info,json=timingInfo,proto3" json:"timing_info,omitempty"`
+	ExecutionStats         *QueryExecutionStats      `protobuf:"bytes,3,opt,name=execution_stats,json=executionStats,proto3" json:"execution_stats,omitempty"`
+	OperatorExecutionStats []*OperatorExecutionStats `protobuf:"bytes,4,rep,name=operator_execution_stats,json=operatorExecutionStats,proto3" json:"operator_execution_stats,omitempty"`
 }
 
 func (m *QueryResult) Reset()      { *m = QueryResult{} }
 func (*QueryResult) ProtoMessage() {}
 func (*QueryResult) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9ab3e12aa52e3568, []int{2}
+	return fileDescriptor_9ab3e12aa52e3568, []int{3}
 }
 func (m *QueryResult) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -194,9 +278,17 @@ func (m *QueryResult) GetExecutionStats() *QueryExecutionStats {
 	return nil
 }
 
+func (m *QueryResult) GetOperatorExecutionStats() []*OperatorExecutionStats {
+	if m != nil {
+		return m.OperatorExecutionStats
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*QueryTimingInfo)(nil), "pl.carnot.queryresultspb.QueryTimingInfo")
 	proto.RegisterType((*QueryExecutionStats)(nil), "pl.carnot.queryresultspb.QueryExecutionStats")
+	proto.RegisterType((*OperatorExecutionStats)(nil), "pl.carnot.queryresultspb.OperatorExecutionStats")
 	proto.RegisterType((*QueryResult)(nil), "pl.carnot.queryresultspb.QueryResult")
 }
 
@@ -205,32 +297,41 @@ func init() {
 }
 
 var fileDescriptor_9ab3e12aa52e3568 = []byte{
-	// 398 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x92, 0xbf, 0x4e, 0xe3, 0x40,
-	0x10, 0xc6, 0xbd, 0x17, 0x29, 0xc5, 0x5a, 0x4a, 0x2e, 0x9b, 0x26, 0xba, 0x62, 0x75, 0x72, 0x73,
-	0x39, 0x50, 0xd6, 0x52, 0x90, 0xe8, 0x41, 0x50, 0x40, 0x81, 0xc0, 0x44, 0x14, 0x34, 0x96, 0xed,
-	0x4c, 0xc0, 0x92, 0xed, 0x35, 0xbb, 0x1b, 0x89, 0x74, 0x3c, 0x02, 0x8f, 0x41, 0xc5, 0x73, 0x50,
-	0xa6, 0x4c, 0x49, 0x9c, 0x06, 0xba, 0x3c, 0x02, 0xf2, 0xda, 0xf9, 0x63, 0x24, 0x84, 0x28, 0x67,
-	0xe6, 0x37, 0x33, 0xdf, 0x7e, 0xb3, 0xb8, 0x27, 0x45, 0x60, 0x07, 0x9e, 0x48, 0xb8, 0xb2, 0xef,
-	0xc6, 0x20, 0x26, 0x02, 0xe4, 0x38, 0x52, 0x32, 0xf5, 0x8b, 0xd0, 0x2d, 0x63, 0x96, 0x0a, 0xae,
-	0x38, 0xe9, 0xa4, 0x11, 0x2b, 0x68, 0x56, 0xa5, 0xff, 0x58, 0xf9, 0x20, 0xe5, 0xf9, 0x11, 0xb8,
-	0x52, 0x71, 0x01, 0xb6, 0x6e, 0xb0, 0x65, 0x70, 0x0b, 0xb1, 0x57, 0x74, 0x5b, 0x31, 0x6e, 0x5e,
-	0xe4, 0x5d, 0x83, 0x30, 0x0e, 0x93, 0x9b, 0x93, 0x64, 0xc4, 0xc9, 0x0e, 0x6e, 0xc1, 0x3d, 0x04,
-	0x63, 0x15, 0xf2, 0xc4, 0x55, 0x61, 0x0c, 0x6e, 0x22, 0x3b, 0xe8, 0x2f, 0xea, 0xd6, 0x9c, 0xe6,
-	0xba, 0x30, 0x08, 0x63, 0x38, 0x93, 0x84, 0xe1, 0x76, 0xc0, 0xe3, 0x34, 0x8c, 0xbc, 0x0a, 0xfd,
-	0x4b, 0xd3, 0xad, 0xad, 0x52, 0xc1, 0x5b, 0xcf, 0x08, 0xb7, 0xf5, 0xbe, 0xe3, 0xd5, 0xa0, 0x4b,
-	0xe5, 0x29, 0x49, 0x0e, 0x70, 0x5d, 0x69, 0x05, 0x7a, 0x91, 0xd9, 0xff, 0xcf, 0xbe, 0x7a, 0x15,
-	0xfb, 0x24, 0xd7, 0x29, 0x1b, 0xc9, 0x3f, 0xdc, 0xf4, 0x27, 0x0a, 0xa4, 0x9b, 0x0a, 0x1e, 0x80,
-	0x94, 0x30, 0x2c, 0x65, 0x34, 0x74, 0xfa, 0x7c, 0x95, 0x25, 0xbb, 0xb8, 0x25, 0x20, 0xe0, 0x62,
-	0xb8, 0x8d, 0xd6, 0x34, 0xfa, 0xbb, 0x2c, 0xac, 0x61, 0xeb, 0x1d, 0x61, 0x53, 0x6f, 0x74, 0xb4,
-	0x00, 0xb2, 0x8f, 0xeb, 0xda, 0xd1, 0xdc, 0x91, 0x5a, 0xd7, 0xec, 0xd3, 0x5c, 0xe8, 0x96, 0xc7,
-	0xac, 0x70, 0x37, 0xf5, 0xd9, 0x20, 0x4f, 0x3a, 0x25, 0x4d, 0x4e, 0xb1, 0x59, 0xe8, 0x74, 0xc3,
-	0x64, 0xc4, 0xb5, 0xb2, 0x1f, 0xbd, 0x12, 0xab, 0xcd, 0x81, 0xae, 0xf0, 0xe6, 0x0e, 0xae, 0xcc,
-	0xfd, 0xd3, 0xf2, 0xcd, 0x7e, 0xef, 0x9b, 0x79, 0x55, 0xd3, 0x9d, 0x06, 0x54, 0xe2, 0xc3, 0xa3,
-	0xe9, 0x9c, 0x1a, 0xb3, 0x39, 0x35, 0x96, 0x73, 0x8a, 0x1e, 0x32, 0x8a, 0x9e, 0x32, 0x8a, 0x5e,
-	0x32, 0x8a, 0xa6, 0x19, 0x45, 0xaf, 0x19, 0x45, 0x6f, 0x19, 0x35, 0x96, 0x19, 0x45, 0x8f, 0x0b,
-	0x6a, 0x4c, 0x17, 0xd4, 0x98, 0x2d, 0xa8, 0x71, 0xdd, 0xa8, 0x6e, 0xf2, 0xeb, 0xfa, 0x63, 0xed,
-	0x7d, 0x04, 0x00, 0x00, 0xff, 0xff, 0x10, 0x5d, 0xff, 0xb9, 0xc7, 0x02, 0x00, 0x00,
+	// 539 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x93, 0xc1, 0x6e, 0xd3, 0x40,
+	0x10, 0x86, 0xed, 0xa4, 0x04, 0x69, 0x0c, 0x49, 0xb3, 0x41, 0x69, 0xc4, 0x61, 0x05, 0x91, 0x10,
+	0x01, 0x54, 0x07, 0xa5, 0x82, 0x3b, 0x88, 0x22, 0x85, 0x03, 0x05, 0x13, 0x71, 0xe0, 0xb2, 0x72,
+	0xec, 0x4d, 0x31, 0xb2, 0xbd, 0x66, 0x77, 0x23, 0xd1, 0x1b, 0x8f, 0x00, 0x6f, 0xc1, 0x89, 0xe7,
+	0xe0, 0x98, 0x0b, 0x52, 0x8f, 0xc4, 0xb9, 0x70, 0xec, 0x23, 0x20, 0x8f, 0x37, 0x6d, 0x12, 0x52,
+	0x21, 0x8e, 0xfb, 0xcf, 0x37, 0x3b, 0xbf, 0xf7, 0x1f, 0xc3, 0xbe, 0x92, 0x41, 0x3f, 0xf0, 0x65,
+	0x2a, 0x74, 0xff, 0xe3, 0x94, 0xcb, 0x13, 0xc9, 0xd5, 0x34, 0xd6, 0x2a, 0x1b, 0x97, 0x47, 0x66,
+	0xce, 0x6e, 0x26, 0x85, 0x16, 0xa4, 0x93, 0xc5, 0x6e, 0x49, 0xbb, 0xeb, 0xf4, 0xcd, 0x6e, 0x71,
+	0x91, 0xf6, 0xc7, 0x31, 0x67, 0x4a, 0x0b, 0xc9, 0xfb, 0xd8, 0xd0, 0x57, 0xc1, 0x7b, 0x9e, 0xf8,
+	0x65, 0x77, 0x37, 0x81, 0xc6, 0xeb, 0xa2, 0x6b, 0x14, 0x25, 0x51, 0x7a, 0x3c, 0x4c, 0x27, 0x82,
+	0xdc, 0x87, 0x26, 0xff, 0xc4, 0x83, 0xa9, 0x8e, 0x44, 0xca, 0x74, 0x94, 0x70, 0x96, 0xaa, 0x8e,
+	0x7d, 0xcb, 0xee, 0x55, 0xbd, 0xc6, 0x79, 0x61, 0x14, 0x25, 0xfc, 0xa5, 0x22, 0x2e, 0xb4, 0x02,
+	0x91, 0x64, 0x51, 0xec, 0xaf, 0xd1, 0x15, 0xa4, 0x9b, 0x2b, 0xa5, 0x92, 0xef, 0x7e, 0xb7, 0xa1,
+	0x85, 0xf3, 0x0e, 0x97, 0x17, 0xbd, 0xd1, 0xbe, 0x56, 0xe4, 0x09, 0xd4, 0x34, 0x3a, 0xc0, 0x41,
+	0xce, 0xe0, 0x9e, 0x7b, 0xd9, 0x57, 0xb9, 0x1b, 0x76, 0x3d, 0xd3, 0x48, 0xee, 0x42, 0x63, 0x7c,
+	0xa2, 0xb9, 0x62, 0x99, 0x14, 0x01, 0x57, 0x8a, 0x87, 0xc6, 0x46, 0x1d, 0xe5, 0x57, 0x4b, 0x95,
+	0x3c, 0x80, 0xa6, 0xe4, 0x81, 0x90, 0xe1, 0x2a, 0x5a, 0x45, 0x74, 0xd7, 0x14, 0xce, 0xe1, 0xee,
+	0xd7, 0x0a, 0xb4, 0x8f, 0x32, 0x2e, 0x7d, 0x2d, 0xe4, 0x86, 0xe7, 0x1e, 0xec, 0x66, 0xb1, 0x9f,
+	0xb2, 0x89, 0xf4, 0x8f, 0x13, 0x9e, 0x6a, 0x16, 0x85, 0xe6, 0x99, 0xea, 0x85, 0xfe, 0xdc, 0xc8,
+	0xc3, 0x90, 0xec, 0xc1, 0xd5, 0x54, 0x84, 0xbc, 0x00, 0x4a, 0x4b, 0xb5, 0xe2, 0x38, 0x0c, 0xc9,
+	0x6d, 0xb8, 0x56, 0x7a, 0x16, 0x53, 0x9d, 0x4d, 0xb5, 0x71, 0xe1, 0xa0, 0x76, 0x84, 0x12, 0xb9,
+	0x03, 0xf5, 0xa5, 0x5b, 0x03, 0xed, 0x20, 0x74, 0xdd, 0xa8, 0x06, 0x7b, 0x04, 0x7b, 0x5a, 0x68,
+	0x3f, 0x66, 0x7f, 0x47, 0x77, 0x05, 0xf9, 0x1b, 0x58, 0x3e, 0xdc, 0xc8, 0xef, 0x00, 0xda, 0x8a,
+	0xc7, 0x93, 0x2d, 0x5d, 0x35, 0xec, 0x6a, 0x15, 0xd5, 0x8d, 0xa6, 0xee, 0xcf, 0x0a, 0x38, 0x98,
+	0x82, 0x87, 0xa1, 0x90, 0xc7, 0x50, 0xc3, 0x2d, 0x2b, 0xb6, 0xa4, 0xda, 0x73, 0x06, 0xb4, 0x08,
+	0x6f, 0x65, 0xef, 0xdc, 0x72, 0xe3, 0xb2, 0xb1, 0x3b, 0x2a, 0x44, 0xcf, 0xd0, 0xe4, 0x05, 0x38,
+	0x65, 0x76, 0x2c, 0x4a, 0x27, 0x02, 0x9f, 0xe6, 0xbf, 0x92, 0x07, 0x7d, 0xb1, 0xb4, 0x6f, 0xe1,
+	0x62, 0x37, 0x99, 0x2a, 0xf2, 0xc1, 0xc7, 0x74, 0x06, 0xfb, 0xff, 0xb8, 0x6f, 0x3d, 0x54, 0xaf,
+	0xce, 0xd7, 0x43, 0xfe, 0x00, 0x1d, 0x61, 0xe2, 0x67, 0x9b, 0x03, 0x76, 0xf0, 0x6b, 0x1f, 0x5e,
+	0x3e, 0x60, 0xfb, 0xe2, 0x78, 0x6d, 0xb1, 0x55, 0x7f, 0xfa, 0x6c, 0x36, 0xa7, 0xd6, 0xe9, 0x9c,
+	0x5a, 0x67, 0x73, 0x6a, 0x7f, 0xce, 0xa9, 0xfd, 0x2d, 0xa7, 0xf6, 0x8f, 0x9c, 0xda, 0xb3, 0x9c,
+	0xda, 0xbf, 0x72, 0x6a, 0xff, 0xce, 0xa9, 0x75, 0x96, 0x53, 0xfb, 0xcb, 0x82, 0x5a, 0xb3, 0x05,
+	0xb5, 0x4e, 0x17, 0xd4, 0x7a, 0x57, 0x5f, 0x1f, 0x3a, 0xae, 0xe1, 0x8f, 0x7d, 0xf0, 0x27, 0x00,
+	0x00, 0xff, 0xff, 0xbe, 0xa0, 0x06, 0x4e, 0x47, 0x04, 0x00, 0x00,
 }
 
 func (this *QueryTimingInfo) Equal(that interface{}) bool {
@@ -290,6 +391,45 @@ func (this *QueryExecutionStats) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *OperatorExecutionStats) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*OperatorExecutionStats)
+	if !ok {
+		that2, ok := that.(OperatorExecutionStats)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.PlanFragmentId != that1.PlanFragmentId {
+		return false
+	}
+	if this.NodeId != that1.NodeId {
+		return false
+	}
+	if this.BytesOutput != that1.BytesOutput {
+		return false
+	}
+	if this.RecordsOutput != that1.RecordsOutput {
+		return false
+	}
+	if this.TotalExecutionTimeNs != that1.TotalExecutionTimeNs {
+		return false
+	}
+	if this.SelfExecutionTimeNs != that1.SelfExecutionTimeNs {
+		return false
+	}
+	return true
+}
 func (this *QueryResult) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -323,6 +463,14 @@ func (this *QueryResult) Equal(that interface{}) bool {
 	if !this.ExecutionStats.Equal(that1.ExecutionStats) {
 		return false
 	}
+	if len(this.OperatorExecutionStats) != len(that1.OperatorExecutionStats) {
+		return false
+	}
+	for i := range this.OperatorExecutionStats {
+		if !this.OperatorExecutionStats[i].Equal(that1.OperatorExecutionStats[i]) {
+			return false
+		}
+	}
 	return true
 }
 func (this *QueryTimingInfo) GoString() string {
@@ -350,11 +498,26 @@ func (this *QueryExecutionStats) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *OperatorExecutionStats) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 10)
+	s = append(s, "&queryresultspb.OperatorExecutionStats{")
+	s = append(s, "PlanFragmentId: "+fmt.Sprintf("%#v", this.PlanFragmentId)+",\n")
+	s = append(s, "NodeId: "+fmt.Sprintf("%#v", this.NodeId)+",\n")
+	s = append(s, "BytesOutput: "+fmt.Sprintf("%#v", this.BytesOutput)+",\n")
+	s = append(s, "RecordsOutput: "+fmt.Sprintf("%#v", this.RecordsOutput)+",\n")
+	s = append(s, "TotalExecutionTimeNs: "+fmt.Sprintf("%#v", this.TotalExecutionTimeNs)+",\n")
+	s = append(s, "SelfExecutionTimeNs: "+fmt.Sprintf("%#v", this.SelfExecutionTimeNs)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *QueryResult) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 7)
+	s := make([]string, 0, 8)
 	s = append(s, "&queryresultspb.QueryResult{")
 	if this.Tables != nil {
 		s = append(s, "Tables: "+fmt.Sprintf("%#v", this.Tables)+",\n")
@@ -364,6 +527,9 @@ func (this *QueryResult) GoString() string {
 	}
 	if this.ExecutionStats != nil {
 		s = append(s, "ExecutionStats: "+fmt.Sprintf("%#v", this.ExecutionStats)+",\n")
+	}
+	if this.OperatorExecutionStats != nil {
+		s = append(s, "OperatorExecutionStats: "+fmt.Sprintf("%#v", this.OperatorExecutionStats)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -454,6 +620,59 @@ func (m *QueryExecutionStats) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *OperatorExecutionStats) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *OperatorExecutionStats) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *OperatorExecutionStats) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.SelfExecutionTimeNs != 0 {
+		i = encodeVarintQueryResults(dAtA, i, uint64(m.SelfExecutionTimeNs))
+		i--
+		dAtA[i] = 0x30
+	}
+	if m.TotalExecutionTimeNs != 0 {
+		i = encodeVarintQueryResults(dAtA, i, uint64(m.TotalExecutionTimeNs))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.RecordsOutput != 0 {
+		i = encodeVarintQueryResults(dAtA, i, uint64(m.RecordsOutput))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.BytesOutput != 0 {
+		i = encodeVarintQueryResults(dAtA, i, uint64(m.BytesOutput))
+		i--
+		dAtA[i] = 0x18
+	}
+	if m.NodeId != 0 {
+		i = encodeVarintQueryResults(dAtA, i, uint64(m.NodeId))
+		i--
+		dAtA[i] = 0x10
+	}
+	if m.PlanFragmentId != 0 {
+		i = encodeVarintQueryResults(dAtA, i, uint64(m.PlanFragmentId))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *QueryResult) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -474,6 +693,20 @@ func (m *QueryResult) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.OperatorExecutionStats) > 0 {
+		for iNdEx := len(m.OperatorExecutionStats) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.OperatorExecutionStats[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQueryResults(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x22
+		}
+	}
 	if m.ExecutionStats != nil {
 		{
 			size, err := m.ExecutionStats.MarshalToSizedBuffer(dAtA[:i])
@@ -560,6 +793,33 @@ func (m *QueryExecutionStats) Size() (n int) {
 	return n
 }
 
+func (m *OperatorExecutionStats) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.PlanFragmentId != 0 {
+		n += 1 + sovQueryResults(uint64(m.PlanFragmentId))
+	}
+	if m.NodeId != 0 {
+		n += 1 + sovQueryResults(uint64(m.NodeId))
+	}
+	if m.BytesOutput != 0 {
+		n += 1 + sovQueryResults(uint64(m.BytesOutput))
+	}
+	if m.RecordsOutput != 0 {
+		n += 1 + sovQueryResults(uint64(m.RecordsOutput))
+	}
+	if m.TotalExecutionTimeNs != 0 {
+		n += 1 + sovQueryResults(uint64(m.TotalExecutionTimeNs))
+	}
+	if m.SelfExecutionTimeNs != 0 {
+		n += 1 + sovQueryResults(uint64(m.SelfExecutionTimeNs))
+	}
+	return n
+}
+
 func (m *QueryResult) Size() (n int) {
 	if m == nil {
 		return 0
@@ -579,6 +839,12 @@ func (m *QueryResult) Size() (n int) {
 	if m.ExecutionStats != nil {
 		l = m.ExecutionStats.Size()
 		n += 1 + l + sovQueryResults(uint64(l))
+	}
+	if len(m.OperatorExecutionStats) > 0 {
+		for _, e := range m.OperatorExecutionStats {
+			l = e.Size()
+			n += 1 + l + sovQueryResults(uint64(l))
+		}
 	}
 	return n
 }
@@ -612,6 +878,21 @@ func (this *QueryExecutionStats) String() string {
 	}, "")
 	return s
 }
+func (this *OperatorExecutionStats) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&OperatorExecutionStats{`,
+		`PlanFragmentId:` + fmt.Sprintf("%v", this.PlanFragmentId) + `,`,
+		`NodeId:` + fmt.Sprintf("%v", this.NodeId) + `,`,
+		`BytesOutput:` + fmt.Sprintf("%v", this.BytesOutput) + `,`,
+		`RecordsOutput:` + fmt.Sprintf("%v", this.RecordsOutput) + `,`,
+		`TotalExecutionTimeNs:` + fmt.Sprintf("%v", this.TotalExecutionTimeNs) + `,`,
+		`SelfExecutionTimeNs:` + fmt.Sprintf("%v", this.SelfExecutionTimeNs) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *QueryResult) String() string {
 	if this == nil {
 		return "nil"
@@ -621,10 +902,16 @@ func (this *QueryResult) String() string {
 		repeatedStringForTables += strings.Replace(fmt.Sprintf("%v", f), "Table", "proto1.Table", 1) + ","
 	}
 	repeatedStringForTables += "}"
+	repeatedStringForOperatorExecutionStats := "[]*OperatorExecutionStats{"
+	for _, f := range this.OperatorExecutionStats {
+		repeatedStringForOperatorExecutionStats += strings.Replace(f.String(), "OperatorExecutionStats", "OperatorExecutionStats", 1) + ","
+	}
+	repeatedStringForOperatorExecutionStats += "}"
 	s := strings.Join([]string{`&QueryResult{`,
 		`Tables:` + repeatedStringForTables + `,`,
 		`TimingInfo:` + strings.Replace(this.TimingInfo.String(), "QueryTimingInfo", "QueryTimingInfo", 1) + `,`,
 		`ExecutionStats:` + strings.Replace(this.ExecutionStats.String(), "QueryExecutionStats", "QueryExecutionStats", 1) + `,`,
+		`OperatorExecutionStats:` + repeatedStringForOperatorExecutionStats + `,`,
 		`}`,
 	}, "")
 	return s
@@ -855,6 +1142,173 @@ func (m *QueryExecutionStats) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
+func (m *OperatorExecutionStats) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQueryResults
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: OperatorExecutionStats: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: OperatorExecutionStats: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field PlanFragmentId", wireType)
+			}
+			m.PlanFragmentId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQueryResults
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.PlanFragmentId |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field NodeId", wireType)
+			}
+			m.NodeId = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQueryResults
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.NodeId |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BytesOutput", wireType)
+			}
+			m.BytesOutput = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQueryResults
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BytesOutput |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RecordsOutput", wireType)
+			}
+			m.RecordsOutput = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQueryResults
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RecordsOutput |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field TotalExecutionTimeNs", wireType)
+			}
+			m.TotalExecutionTimeNs = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQueryResults
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.TotalExecutionTimeNs |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 6:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SelfExecutionTimeNs", wireType)
+			}
+			m.SelfExecutionTimeNs = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQueryResults
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.SelfExecutionTimeNs |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQueryResults(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthQueryResults
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthQueryResults
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
 func (m *QueryResult) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -987,6 +1441,40 @@ func (m *QueryResult) Unmarshal(dAtA []byte) error {
 				m.ExecutionStats = &QueryExecutionStats{}
 			}
 			if err := m.ExecutionStats.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OperatorExecutionStats", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQueryResults
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQueryResults
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQueryResults
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OperatorExecutionStats = append(m.OperatorExecutionStats, &OperatorExecutionStats{})
+			if err := m.OperatorExecutionStats[len(m.OperatorExecutionStats)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

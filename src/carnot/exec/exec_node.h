@@ -7,6 +7,7 @@
 #include "src/carnot/exec/exec_state.h"
 #include "src/carnot/plan/operators.h"
 #include "src/common/base/base.h"
+#include "src/common/perf/elapsed_timer.h"
 #include "src/table_store/table_store.h"
 
 namespace pl {
@@ -17,6 +18,69 @@ enum class ExecNodeType : int8_t {
   kSourceNode = 0,
   kSinkNode = 1,
   kProcessingNode = 2,
+};
+
+struct ExecNodeStats {
+  explicit ExecNodeStats(bool collect_stats) : collect_exec_stats(collect_stats) {}
+  void AddOutputStats(const table_store::schema::RowBatch& rb) {
+    if (!collect_exec_stats) {
+      return;
+    }
+    bytes_output += rb.NumBytes();
+    rows_output += rb.num_rows();
+  }
+
+  void AddInputStats(const table_store::schema::RowBatch& rb) {
+    if (!collect_exec_stats) {
+      return;
+    }
+    bytes_input += rb.NumBytes();
+    rows_input += rb.num_rows();
+  }
+
+  void ResumeChildTimer() {
+    if (!collect_exec_stats) {
+      return;
+    }
+    children_timer.Resume();
+  }
+  void StopChildTimer() {
+    if (!collect_exec_stats) {
+      return;
+    }
+    children_timer.Stop();
+  }
+  void ResumeTotalTimer() {
+    if (!collect_exec_stats) {
+      return;
+    }
+    total_timer.Resume();
+  }
+  void StopTotalTimer() {
+    if (!collect_exec_stats) {
+      return;
+    }
+    total_timer.Stop();
+  }
+
+  int64_t ChildExecTime() const { return children_timer.ElapsedTime_us() * 1000; }
+  int64_t TotalExecTime() const { return total_timer.ElapsedTime_us() * 1000; }
+  int64_t SelfExecTime() const { return TotalExecTime() - ChildExecTime(); }
+
+  // Total bytes input to this exec node.
+  int64_t bytes_input;
+  // Total rows input to this exec node.
+  int64_t rows_input;
+  // Total bytes output by this exec node.
+  int64_t bytes_output;
+  // Total rows output by this exec node.
+  int64_t rows_output;
+  // Total timer for the node = children_time + self_time.
+  ElapsedTimer total_timer;
+  // Total timer for the children of the ndoe.
+  ElapsedTimer children_timer;
+  // Flag to determine whether to collect stats or not.
+  bool collect_exec_stats;
 };
 
 /**
@@ -36,9 +100,12 @@ class ExecNode {
    */
   Status Init(const plan::Operator& plan_node,
               const table_store::schema::RowDescriptor& output_descriptor,
-              std::vector<table_store::schema::RowDescriptor> input_descriptors) {
+              std::vector<table_store::schema::RowDescriptor> input_descriptors,
+              bool collect_exec_stats = false) {
+    is_initialized_ = true;
     output_descriptor_ = std::make_unique<table_store::schema::RowDescriptor>(output_descriptor);
     input_descriptors_ = input_descriptors;
+    stats_ = std::make_unique<ExecNodeStats>(collect_exec_stats);
     return InitImpl(plan_node);
   }
 
@@ -47,14 +114,20 @@ class ExecNode {
    * @param exec_state The execution state.
    * @return The status of the prepare.
    */
-  Status Prepare(ExecState* exec_state) { return PrepareImpl(exec_state); }
+  Status Prepare(ExecState* exec_state) {
+    DCHECK(is_initialized_);
+    return PrepareImpl(exec_state);
+  }
 
   /**
    * Acquire memory resources, etc.
    * @param exec_state The execution state.
    * @return
    */
-  Status Open(ExecState* exec_state) { return OpenImpl(exec_state); }
+  Status Open(ExecState* exec_state) {
+    DCHECK(is_initialized_);
+    return OpenImpl(exec_state);
+  }
 
   /**
    * Close is where cleanup should take place. This includes cleaning up objects.
@@ -63,7 +136,10 @@ class ExecNode {
    * @param exec_state The execution state.
    * @return The status of the Finalize.axs
    */
-  Status Close(ExecState* exec_state) { return CloseImpl(exec_state); }
+  Status Close(ExecState* exec_state) {
+    DCHECK(is_initialized_);
+    return CloseImpl(exec_state);
+  }
 
   /**
    * GenerateNext is called to produce the next row batch. This is only valid
@@ -72,8 +148,12 @@ class ExecNode {
    * @return The status of the execution.
    */
   Status GenerateNext(ExecState* exec_state) {
+    DCHECK(is_initialized_);
     DCHECK(type() == ExecNodeType::kSourceNode);
-    return GenerateNextImpl(exec_state);
+    stats_->ResumeTotalTimer();
+    PL_RETURN_IF_ERROR(GenerateNextImpl(exec_state));
+    stats_->StopTotalTimer();
+    return Status::OK();
   }
 
   /**
@@ -88,13 +168,17 @@ class ExecNode {
    */
   Status ConsumeNext(ExecState* exec_state, const table_store::schema::RowBatch& rb,
                      size_t parent_index) {
+    DCHECK(is_initialized_);
     DCHECK(type() == ExecNodeType::kSinkNode || type() == ExecNodeType::kProcessingNode);
-
     if (rb.eos() && !rb.eow()) {
       return error::Internal(
           "ConsumeNext received row batch with end of stream set but not end of window.");
     }
-    return ConsumeNextImpl(exec_state, rb, parent_index);
+    stats_->AddInputStats(rb);
+    stats_->ResumeTotalTimer();
+    PL_RETURN_IF_ERROR(ConsumeNextImpl(exec_state, rb, parent_index));
+    stats_->StopTotalTimer();
+    return Status::OK();
   }
 
   /**
@@ -145,6 +229,8 @@ class ExecNode {
    */
   std::vector<ExecNode*> children() { return children_; }
 
+  ExecNodeStats* stats() const { return stats_.get(); }
+
  protected:
   /**
    * Send data to children row batches.
@@ -153,9 +239,12 @@ class ExecNode {
    * @return Status of children execution.
    */
   Status SendRowBatchToChildren(ExecState* exec_state, const table_store::schema::RowBatch& rb) {
+    stats_->ResumeChildTimer();
     for (size_t i = 0; i < children_.size(); ++i) {
       PL_RETURN_IF_ERROR(children_[i]->ConsumeNext(exec_state, rb, parent_ids_for_children_[i]));
     }
+    stats_->StopChildTimer();
+    stats_->AddOutputStats(rb);
     if (rb.eos()) {
       DCHECK(!sent_eos_);
       sent_eos_ = true;
@@ -188,14 +277,19 @@ class ExecNode {
   bool sent_eos_ = false;
 
  private:
+  // The stats of this exec node.
+  std::unique_ptr<ExecNodeStats> stats_;
   // Unowned reference to the children. Must remain valid for the duration of query.
   std::vector<ExecNode*> children_;
   // For each of the children (which may have multiple parents) which parent is this node?
   // Parents 0, 1, and 2 would exist for a node with 3 parents.
   std::vector<size_t> parent_ids_for_children_;
+  // Whether Close() has been called on this ExecNode.
   bool is_closed_ = false;
   // The type of execution node.
   ExecNodeType type_;
+  // Whether this node has been initialized.
+  bool is_initialized_ = false;
 };
 
 /**
@@ -219,6 +313,8 @@ class SourceNode : public ExecNode {
   int64_t BytesProcessed() const { return bytes_processed_; }
   int64_t RowsProcessed() const { return rows_processed_; }
   Status SendEndOfStream(ExecState* exec_state) {
+    // TODO(philkuz) this part is not tracked w/ the timer. Need to include this in NVI or cut
+    // losses.
     PL_ASSIGN_OR_RETURN(auto rb, table_store::schema::RowBatch::WithZeroRows(
                                      *output_descriptor_, /*eow*/ true, /*eos*/ true));
     return SendRowBatchToChildren(exec_state, *rb);

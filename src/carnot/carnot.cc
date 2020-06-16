@@ -33,6 +33,10 @@ Status CarnotQueryResult::ToProto(queryresultspb::QueryResult* query_result) con
     PL_RETURN_IF_ERROR(output_tables_[i]->ToProto(table));
     table->set_name(table_names_[i]);
   }
+
+  for (const auto& stats : exec_node_stats) {
+    (*query_result->add_operator_execution_stats()) = stats;
+  }
   return Status::OK();
 }
 
@@ -56,10 +60,10 @@ class CarnotImpl final : public Carnot {
               std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
 
   StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query, const sole::uuid& query_id,
-                                           types::Time64NSValue time_now) override;
+                                           types::Time64NSValue time_now, bool analyze) override;
 
-  StatusOr<CarnotQueryResult> ExecutePlan(const planpb::Plan& plan,
-                                          const sole::uuid& query_id) override;
+  StatusOr<CarnotQueryResult> ExecutePlan(const planpb::Plan& plan, const sole::uuid& query_id,
+                                          bool analyze) override;
 
   void RegisterAgentMetadataCallback(AgentMetadataCallbackFunc func) override {
     agent_md_callback_ = func;
@@ -131,7 +135,7 @@ Status CarnotImpl::Init(std::unique_ptr<udf::Registry> func_registry,
 
 StatusOr<CarnotQueryResult> CarnotImpl::ExecuteQuery(const std::string& query,
                                                      const sole::uuid& query_id,
-                                                     types::Time64NSValue time_now) {
+                                                     types::Time64NSValue time_now, bool analyze) {
   // Compile the query.
   auto timer = ElapsedTimer();
   timer.Start();
@@ -140,7 +144,7 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecuteQuery(const std::string& query,
   timer.Stop();
   int64_t compile_time_ns = timer.ElapsedTime_us() * 1000;
   // Get the output table names from the plan.
-  PL_ASSIGN_OR_RETURN(CarnotQueryResult plan_result, ExecutePlan(logical_plan, query_id));
+  PL_ASSIGN_OR_RETURN(CarnotQueryResult plan_result, ExecutePlan(logical_plan, query_id, analyze));
   plan_result.compile_time_ns = compile_time_ns;
   return plan_result;
 }
@@ -249,7 +253,7 @@ void CarnotImpl::GRPCServerFunc() {
 }
 
 StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan,
-                                                    const sole::uuid& query_id) {
+                                                    const sole::uuid& query_id, bool analyze) {
   auto timer = ElapsedTimer();
   plan::Plan plan;
 
@@ -276,19 +280,43 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
   auto plan_state = engine_state_->CreatePlanState();
   int64_t bytes_processed = 0;
   int64_t rows_processed = 0;
+  std::vector<queryresultspb::OperatorExecutionStats> exec_node_stats;
   timer.Start();
   auto s =
       plan::PlanWalker()
           .OnPlanFragment([&](auto* pf) {
             auto exec_graph = exec::ExecutionGraph();
-            PL_RETURN_IF_ERROR(
-                exec_graph.Init(engine_state_->schema(), plan_state.get(), exec_state.get(), pf));
+            PL_RETURN_IF_ERROR(exec_graph.Init(engine_state_->schema(), plan_state.get(),
+                                               exec_state.get(), pf,
+                                               /* collect_exec_node_stats */ analyze));
             PL_RETURN_IF_ERROR(exec_graph.Execute());
             std::vector<std::string> frag_sinks = exec_graph.OutputTables();
             output_table_strs.insert(output_table_strs.end(), frag_sinks.begin(), frag_sinks.end());
             auto exec_stats = exec_graph.GetStats();
             bytes_processed += exec_stats.bytes_processed;
             rows_processed += exec_stats.rows_processed;
+            if (analyze) {
+              for (int64_t node_id : pf->dag().TopologicalSort()) {
+                PL_ASSIGN_OR_RETURN(auto exec_node, exec_graph.node(node_id));
+                std::string node_name =
+                    absl::Substitute("$0 (id=$1)", pf->nodes()[node_id]->DebugString(), node_id);
+                exec::ExecNodeStats* stats = exec_node->stats();
+                int64_t total_time_ns = stats->TotalExecTime();
+                int64_t self_time_ns = stats->SelfExecTime();
+                LOG(INFO) << absl::Substitute("self_time:$1\ttotal_time: $2\tnode_id:$0", node_name,
+                                              PrettyDuration(self_time_ns),
+                                              PrettyDuration(total_time_ns));
+
+                queryresultspb::OperatorExecutionStats stats_pb;
+                stats_pb.set_plan_fragment_id(pf->id());
+                stats_pb.set_node_id(node_id);
+                stats_pb.set_bytes_output(stats->bytes_output);
+                stats_pb.set_records_output(stats->rows_output);
+                stats_pb.set_total_execution_time_ns(total_time_ns);
+                stats_pb.set_self_execution_time_ns(self_time_ns);
+                exec_node_stats.push_back(stats_pb);
+              }
+            }
             return Status::OK();
           })
           .Walk(&plan);
@@ -314,7 +342,7 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
   // Compile time is not set for ExecutePlan.
   int64_t compile_time_ns = 0;
   // Get the output table names from the plan.
-  return CarnotQueryResult{output_tables,   output_table_names, rows_processed,
+  return CarnotQueryResult{output_tables,   output_table_names, exec_node_stats, rows_processed,
                            bytes_processed, compile_time_ns,    exec_time_ns};
 }
 

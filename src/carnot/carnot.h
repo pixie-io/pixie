@@ -26,6 +26,8 @@ struct CarnotQueryResult {
   Status ToProto(queryresultspb::QueryResult* query_result) const;
   std::vector<table_store::Table*> output_tables_;
   std::vector<std::string> table_names_;
+  std::vector<queryresultspb::OperatorExecutionStats> exec_node_stats;
+
   int64_t rows_processed = 0;
   int64_t bytes_processed = 0;
   int64_t compile_time_ns = 0;
@@ -58,7 +60,8 @@ class Carnot : public NotCopyable {
    */
   virtual StatusOr<CarnotQueryResult> ExecuteQuery(const std::string& query,
                                                    const sole::uuid& query_id,
-                                                   types::Time64NSValue time_now) = 0;
+                                                   types::Time64NSValue time_now,
+                                                   bool analyze = false) = 0;
   /**
    * Executes the given logical plan.
    *
@@ -66,7 +69,8 @@ class Carnot : public NotCopyable {
    * @return a Carnot Return with output_tables if successful. Error status otherwise.
    */
   virtual StatusOr<CarnotQueryResult> ExecutePlan(const planpb::Plan& plan,
-                                                  const sole::uuid& query_id) = 0;
+                                                  const sole::uuid& query_id,
+                                                  bool analyze = false) = 0;
 
   /**
    * Registers the callback for updating the agents metadata state.

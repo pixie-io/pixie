@@ -5,6 +5,8 @@
 package mock_controllers
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	go_uuid "github.com/satori/go.uuid"
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
@@ -12,7 +14,6 @@ import (
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	queryresultspb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	querybrokerpb "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
-	reflect "reflect"
 )
 
 // MockPlanner is a mock of Planner interface
@@ -85,8 +86,8 @@ func (m *MockExecutor) EXPECT() *MockExecutorMockRecorder {
 }
 
 // ExecuteQuery mocks base method
-func (m *MockExecutor) ExecuteQuery(planMap map[go_uuid.UUID]*planpb.Plan) error {
-	ret := m.ctrl.Call(m, "ExecuteQuery", planMap)
+func (m *MockExecutor) ExecuteQuery(planMap map[go_uuid.UUID]*planpb.Plan, analyze bool) error {
+	ret := m.ctrl.Call(m, "ExecuteQuery", planMap, analyze)
 	ret0, _ := ret[0].(error)
 	return ret0
 }

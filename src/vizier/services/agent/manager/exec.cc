@@ -101,9 +101,10 @@ class ExecuteQueryMessageHandler::ExecuteQueryTask : public AsyncTask {
       ScopedTimer query_timer(absl::Substitute("query timer: id=$0", query_id_.str()));
       StatusOr<carnot::CarnotQueryResult> result_or_s;
       if (req_.has_plan()) {
-        result_or_s = carnot_->ExecutePlan(req_.plan(), query_id_);
+        result_or_s = carnot_->ExecutePlan(req_.plan(), query_id_, req_.analyze());
       } else {
-        result_or_s = carnot_->ExecuteQuery(req_.query_str(), query_id_, CurrentTimeNS());
+        result_or_s =
+            carnot_->ExecuteQuery(req_.query_str(), query_id_, CurrentTimeNS(), req_.analyze());
       }
       if (resp == nullptr) {
         return result_or_s.status();

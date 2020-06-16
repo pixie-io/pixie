@@ -51,7 +51,7 @@ type Planner interface {
 
 // Executor is the interface for a query executor.
 type Executor interface {
-	ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan) error
+	ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan, analyze bool) error
 	AddQueryPlanToResult(*distributedpb.DistributedPlan, map[uuid.UUID]*planpb.Plan) error
 	WaitForCompletion() (*queryresultspb.QueryResult, error)
 	AddResult(res *querybrokerpb.AgentQueryResultRequest)
@@ -297,7 +297,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 		}
 	}
 
-	if err := queryExecutor.ExecuteQuery(planMap); err != nil {
+	if err := queryExecutor.ExecuteQuery(planMap, planOpts.Analyze); err != nil {
 		return nil, nil, err
 	}
 

@@ -31,11 +31,12 @@ using table_store::schema::RowDescriptor;
 
 Status ExecutionGraph::Init(std::shared_ptr<table_store::schema::Schema> schema,
                             plan::PlanState* plan_state, ExecState* exec_state,
-                            plan::PlanFragment* pf) {
+                            plan::PlanFragment* pf, bool collect_exec_node_stats) {
   plan_state_ = plan_state;
   schema_ = schema;
   pf_ = pf;
   exec_state_ = exec_state;
+  collect_exec_node_stats_ = collect_exec_node_stats;
 
   std::unordered_map<int64_t, ExecNode*> nodes;
   std::unordered_map<int64_t, RowDescriptor> descriptors;

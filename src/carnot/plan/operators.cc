@@ -72,7 +72,7 @@ std::unique_ptr<Operator> Operator::FromProto(const planpb::Operator& pb, int64_
  * Memory Source Operator Implementation.
  */
 
-std::string MemorySourceOperator::DebugString() const { return "Operator: MemorySource"; }
+std::string MemorySourceOperator::DebugString() const { return "Op:MemorySource"; }
 
 Status MemorySourceOperator::Init(const planpb::MemorySourceOperator& pb) {
   pb_ = pb;
@@ -240,7 +240,7 @@ StatusOr<table_store::schema::Relation> AggregateOperator::OutputRelation(
  * Memory Sink Operator Implementation.
  */
 
-std::string MemorySinkOperator::DebugString() const { return "Operator: MemorySink"; }
+std::string MemorySinkOperator::DebugString() const { return "Op:MemorySink"; }
 
 Status MemorySinkOperator::Init(const planpb::MemorySinkOperator& pb) {
   pb_ = pb;
@@ -349,9 +349,9 @@ StatusOr<table_store::schema::Relation> FilterOperator::OutputRelation(
   PL_ASSIGN_OR_RETURN(auto input_relation, schema.GetRelation(input_ids[0]));
   table_store::schema::Relation output_relation;
   for (auto selected_col_idx : selected_cols_) {
-    CHECK_LT(selected_col_idx, static_cast<int64_t>(input_relation.NumColumns())) << 
-      absl::Substitute("Column index $0 is out of bounds, number of columns is $1",
-                                    selected_col_idx, input_relation.NumColumns());
+    CHECK_LT(selected_col_idx, static_cast<int64_t>(input_relation.NumColumns()))
+        << absl::Substitute("Column index $0 is out of bounds, number of columns is $1",
+                            selected_col_idx, input_relation.NumColumns());
 
     output_relation.AddColumn(input_relation.GetColumnType(selected_col_idx),
                               input_relation.GetColumnName(selected_col_idx),
@@ -395,12 +395,13 @@ StatusOr<table_store::schema::Relation> LimitOperator::OutputRelation(
     return error::NotFound("Missing relation ($0) for input of FilterOperator", input_ids[0]);
   }
 
-  PL_ASSIGN_OR_RETURN(const table_store::schema::Relation& input_relation , schema.GetRelation(input_ids[0]));
+  PL_ASSIGN_OR_RETURN(const table_store::schema::Relation& input_relation,
+                      schema.GetRelation(input_ids[0]));
   table_store::schema::Relation output_relation;
   for (auto selected_col_idx : selected_cols_) {
-    CHECK_LT(selected_col_idx, static_cast<int64_t>(input_relation.NumColumns())) << 
-      absl::Substitute("Column index $0 is out of bounds, number of columns is $1",
-                                    selected_col_idx, input_relation.NumColumns());
+    CHECK_LT(selected_col_idx, static_cast<int64_t>(input_relation.NumColumns()))
+        << absl::Substitute("Column index $0 is out of bounds, number of columns is $1",
+                            selected_col_idx, input_relation.NumColumns());
 
     output_relation.AddColumn(input_relation.GetColumnType(selected_col_idx),
                               input_relation.GetColumnName(selected_col_idx),

@@ -364,7 +364,7 @@ TEST_F(UnionNodeTest, many_empty_rbs) {
       .Close();
 }
 
-TEST_F(UnionNodeTest, all_empty_rbs) {
+TEST_F(UnionNodeTest, all_multiple_empty_rbs) {
   auto op_proto = planpb::testutils::CreateTestUnionOrderedPB();
   plan_node_ = plan::UnionOperator::FromProto(op_proto, /*id*/ 1);
 
@@ -407,6 +407,16 @@ TEST_F(UnionNodeTest, all_empty_rbs) {
                           .AddColumn<types::Time64NSValue>({})
                           .get())
       .Close();
+}
+
+TEST_F(UnionNodeTest, all_single_empty_rbs) {
+  auto op_proto = planpb::testutils::CreateTestUnionOrderedPB();
+  plan_node_ = plan::UnionOperator::FromProto(op_proto, /*id*/ 1);
+
+  RowDescriptor input_rd_0({types::DataType::STRING, types::DataType::TIME64NS});
+  RowDescriptor input_rd_1({types::DataType::TIME64NS, types::DataType::STRING});
+
+  RowDescriptor output_rd({types::DataType::STRING, types::DataType::TIME64NS});
 
   // One from each
   auto tester2 = exec::ExecNodeTester<UnionNode, plan::UnionOperator>(

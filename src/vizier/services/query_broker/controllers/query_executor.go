@@ -92,7 +92,7 @@ func (e *QueryExecutor) AddQueryPlanToResult(plan *distributedpb.DistributedPlan
 }
 
 // ExecuteQuery executes a query by sending query fragments to relevant agents.
-func (e *QueryExecutor) ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan) error {
+func (e *QueryExecutor) ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan, analyze bool) error {
 	queryIDPB := utils.ProtoFromUUID(&e.queryID)
 	// Accumulate failures.
 	errs := make(chan error)
@@ -108,6 +108,7 @@ func (e *QueryExecutor) ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan) error {
 				ExecuteQueryRequest: &messages.ExecuteQueryRequest{
 					QueryID: queryIDPB,
 					Plan:    logicalPlan,
+					Analyze: analyze,
 				},
 			},
 		}

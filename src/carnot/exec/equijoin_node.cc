@@ -250,7 +250,6 @@ Status EquijoinNode::NextOutputBatch(ExecState* exec_state) {
   if (pending_output_batch_ != nullptr) {
     PL_RETURN_IF_ERROR(SendRowBatchToChildren(exec_state, *pending_output_batch_));
   }
-
   pending_output_batch_.swap(output_batch);
 
   return InitializeColumnBuilders();

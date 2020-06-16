@@ -227,6 +227,17 @@ TEST_F(GRPCRouterTest, threaded_router_test) {
   auto source_node = GRPCSourceNode();
   ASSERT_OK(source_node.Init(*plan_node, input_rd, {}));
   source_node.AddChild(&mock_child, 0);
+  ASSERT_OK(source_node.Open(exec_state.get()));
+  ASSERT_OK(source_node.Prepare(exec_state.get()));
+
+  FakePlanNode fake_plan_node(111);
+  // Silence GMOCK warnings.
+  EXPECT_CALL(mock_child, InitImpl(::testing::_));
+  EXPECT_CALL(mock_child, PrepareImpl(::testing::_));
+  EXPECT_CALL(mock_child, OpenImpl(::testing::_));
+  ASSERT_OK(mock_child.Init(fake_plan_node, RowDescriptor({}), {}));
+  ASSERT_OK(mock_child.Open(exec_state.get()));
+  ASSERT_OK(mock_child.Prepare(exec_state.get()));
 
   ::pl::carnotpb::RowBatchResponse response;
   grpc::ClientContext context;

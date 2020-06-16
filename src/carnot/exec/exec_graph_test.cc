@@ -86,7 +86,8 @@ TEST_F(ExecGraphTest, basic) {
                                          std::vector<std::string>({"test"}));
   schema->AddRelation(1, relation);
 
-  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get());
+  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get(),
+                  /* collect_exec_node_stats */ false);
 
   // Check that the structure of the exec graph is correct.
   auto sources = e.sources();
@@ -155,7 +156,8 @@ TEST_F(ExecGraphTest, execute) {
       std::vector<types::DataType>({types::DataType::FLOAT64, types::DataType::INT64})));
 
   ExecutionGraph e;
-  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get());
+  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get(),
+                  /* collect_exec_node_stats */ false);
 
   EXPECT_OK(e.Execute());
 
@@ -229,7 +231,8 @@ TEST_F(ExecGraphTest, execute_time) {
       std::vector<types::DataType>({types::DataType::FLOAT64, types::DataType::INT64})));
 
   ExecutionGraph e;
-  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get());
+  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get(),
+                  /* collect_exec_node_stats */ false);
 
   EXPECT_OK(e.Execute());
 
@@ -259,6 +262,16 @@ TEST_F(YieldingExecGraphTest, yield) {
   RowDescriptor output_rd({types::DataType::INT64});
   MockSourceNode yielding_source(output_rd);
   MockSourceNode non_yielding_source(output_rd);
+
+  FakePlanNode yielding_plan_node(1);
+  FakePlanNode non_yielding_plan_node(2);
+
+  EXPECT_CALL(yielding_source, InitImpl(::testing::_));
+  EXPECT_CALL(non_yielding_source, InitImpl(::testing::_));
+
+  ASSERT_OK(yielding_source.Init(yielding_plan_node, output_rd, {}));
+  ASSERT_OK(non_yielding_source.Init(non_yielding_plan_node, output_rd, {}));
+
   e.AddNode(1, &yielding_source);
   e.AddNode(2, &non_yielding_source);
 
@@ -289,6 +302,12 @@ TEST_F(YieldingExecGraphTest, yield) {
       .Times(2)
       .WillOnce(::testing::Return(Status::OK()))
       .WillOnce(::testing::DoAll(::testing::Invoke(set_eos), ::testing::Return(Status::OK())));
+
+  // YieldingSource still gets NextBatchReady calls.
+  EXPECT_CALL(yielding_source, NextBatchReady())
+      .Times(2)
+      .WillOnce(::testing::Return(false))
+      .WillOnce(::testing::Return(false));
 
   // We don't set expectations on GenerateNextImpl for the yielding source, because
   // in TSAN the timeout may or may not occur resulting in different outputs.
@@ -354,7 +373,8 @@ TEST_F(ExecGraphTest, execute_with_two_limits) {
                                                  MockKelvinStubGenerator, sole::uuid4());
 
   ExecutionGraph e;
-  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get());
+  auto s = e.Init(schema, plan_state.get(), exec_state_.get(), plan_fragment_.get(),
+                  /* collect_exec_node_stats */ false);
 
   EXPECT_OK(e.Execute());
 

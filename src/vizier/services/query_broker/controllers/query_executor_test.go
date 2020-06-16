@@ -96,7 +96,7 @@ func TestExecuteQuery(t *testing.T) {
 	planMap[agentUUIDs[1]] = planPB2
 
 	// Execute a query.
-	err = e.ExecuteQuery(planMap)
+	err = e.ExecuteQuery(planMap, false)
 	if !assert.NoError(t, err) {
 		t.Fatal("Query couldn't execute properly.")
 	}

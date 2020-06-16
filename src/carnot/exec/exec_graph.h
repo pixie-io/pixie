@@ -45,7 +45,7 @@ class ExecutionGraph {
    * @return The status of whether initialization succeeded.
    */
   Status Init(std::shared_ptr<table_store::schema::Schema> schema, plan::PlanState* plan_state,
-              ExecState* exec_state, plan::PlanFragment* pf);
+              ExecState* exec_state, plan::PlanFragment* pf, bool collect_exec_node_stats);
 
   ~ExecutionGraph() {
     // We need to remove these GRPC source nodes from the GRPC router because the exec graph
@@ -135,7 +135,7 @@ class ExecutionGraph {
 
     // Create ExecNode.
     auto execNode = pool_.Add(new TNode());
-    auto s = execNode->Init(node, output_descriptor, input_descriptors);
+    auto s = execNode->Init(node, output_descriptor, input_descriptors, collect_exec_node_stats_);
 
     AddNode(node.id(), execNode);
 
@@ -169,6 +169,8 @@ class ExecutionGraph {
   bool continue_ = false;
   std::mutex execution_mutex_;
   std::condition_variable execution_cv_;
+  // Whether to collect stats on exec nodes.
+  bool collect_exec_node_stats_;
 };
 
 }  // namespace exec
