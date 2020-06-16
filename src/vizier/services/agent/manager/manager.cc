@@ -135,7 +135,7 @@ Status Manager::Init() {
     // metadata service all at the same time when Vizier first starts up.
     std::random_device rnd_device;
     std::mt19937_64 eng{rnd_device()};
-    std::uniform_int_distribution<> dist{10, 500};
+    std::uniform_int_distribution<> dist{10, 5000};
     std::this_thread::sleep_for(std::chrono::milliseconds{dist(eng)});
 
     PL_RETURN_IF_ERROR(RegisterAgent());

@@ -4,23 +4,20 @@ import (
 	"context"
 	"crypto/tls"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/coreos/etcd/clientv3"
-	"github.com/coreos/etcd/clientv3/concurrency"
 	"github.com/coreos/etcd/pkg/transport"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+
 	"pixielabs.ai/pixielabs/src/shared/services"
+	"pixielabs.ai/pixielabs/src/shared/services/election"
 	"pixielabs.ai/pixielabs/src/shared/services/healthz"
 	"pixielabs.ai/pixielabs/src/shared/services/httpmiddleware"
 	"pixielabs.ai/pixielabs/src/shared/version"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/etcd"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
@@ -34,6 +31,9 @@ const (
 func init() {
 	pflag.String("md_etcd_server", "https://etcd.pl.svc:2379", "The address to metadata etcd server.")
 	pflag.String("cluster_id", "", "The Cluster ID to use for Pixie Cloud")
+	pflag.Duration("max_expected_clock_skew", 750, "Duration in ms of expected maximum clock skew in a cluster")
+	pflag.Duration("renew_period", 500, "Duration in ms of the time to wait to renew lease")
+	pflag.String("pod_namespace", "pl", "The namespace this pod runs in. Used for leader elections")
 }
 
 func etcdTLSConfig() (*tls.Config, error) {
@@ -86,31 +86,34 @@ func main() {
 	defer etcdClient.Close()
 
 	// Set up leader election.
-	leaseResp, err := etcdClient.Grant(context.TODO(), int64(10))
-	if err != nil {
-		log.Fatal("Could not get grant for leader election session")
-	}
-	leaseID := leaseResp.ID
-	session, err := concurrency.NewSession(etcdClient, concurrency.WithLease(leaseID))
-	if err != nil {
-		log.WithError(err).Fatal("Could not create new session for etcd")
-	}
-	defer session.Close()
-
-	leaderElection := etcd.NewLeaderElection(session)
 	isLeader := false
-	// MDS should block on its first attempt to become leader, so that it won't
-	// skip syncing if it is supposed to be the leader.
-	err = leaderElection.Campaign()
-	if err == nil {
-		isLeader = true
+	leaderMgr, err := election.NewK8sLeaderElectionMgr(
+		viper.GetString("pod_namespace"),
+		viper.GetDuration("max_expected_clock_skew"),
+		viper.GetDuration("renew_period"),
+		"metadata-election",
+	)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to connect to leader election manager.")
 	}
-	go leaderElection.RunElection(&isLeader)
+
+	// Cancel callback causes leader to resign.
+	leaderCtx, cancel := context.WithCancel(context.Background())
 	go func() {
-		ch := make(chan os.Signal)
-		signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
-		<-ch
-		leaderElection.Stop()
+		// Campaign in background. Metadata replicas that are not the leader should
+		// do everything that the leader does, except write to the metadata store
+		err = leaderMgr.Campaign(leaderCtx)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to become leader")
+		}
+		log.Info("Gained leadership")
+		isLeader = true
+	}()
+
+	// Resign leadership after the server stops.
+	defer func() {
+		log.Info("Resigning leadership")
+		cancel()
 	}()
 
 	etcdDS := kvstore.NewEtcdStore(etcdClient)

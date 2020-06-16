@@ -90,6 +90,7 @@ func main() {
 		viper.GetString("pod_namespace"),
 		viper.GetDuration("max_expected_clock_skew"),
 		viper.GetDuration("renew_period"),
+		"cloud-conn-election",
 	)
 
 	if err != nil {

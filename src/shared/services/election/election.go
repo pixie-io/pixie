@@ -37,14 +37,14 @@ type K8sLeaderElectionMgr struct {
 }
 
 // NewK8sLeaderElectionMgr creates a K8sLeaderElectionMgr.
-func NewK8sLeaderElectionMgr(electionNamespace string, expectedMaxSkewMS, renewDeadlineMS time.Duration) (*K8sLeaderElectionMgr, error) {
+func NewK8sLeaderElectionMgr(electionNamespace string, expectedMaxSkewMS, renewDeadlineMS time.Duration, electionName string) (*K8sLeaderElectionMgr, error) {
 	if electionNamespace == "" {
 		return nil, errors.New("namespace must be specified for leader election")
 	}
 	// Might add more complex logic that necessitates errors, but for now not included.
 	return &K8sLeaderElectionMgr{
 		namespace:     electionNamespace,
-		name:          "cloud-conn-election",
+		name:          electionName,
 		leaseDuration: expectedMaxSkewMS + renewDeadlineMS,
 		renewDeadline: renewDeadlineMS,
 		retryPeriod:   renewDeadlineMS / 4,
