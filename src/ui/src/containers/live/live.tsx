@@ -10,6 +10,7 @@ import Drawer from '@material-ui/core/Drawer';
 import IconButton from '@material-ui/core/IconButton';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
+import ChevronRight from '@material-ui/icons/ChevronRight';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 
 import Canvas from './canvas';
@@ -48,7 +49,7 @@ const useStyles = makeStyles((theme: Theme) => {
       marginLeft: theme.spacing(2),
       flexGrow: 1,
     },
-    main: {
+    mainPanel: {
       flex: 1,
       minHeight: 0,
     },
@@ -63,6 +64,7 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     canvas: {
       overflow: 'auto',
+      marginLeft: theme.spacing(0.5),
     },
     pixieLogo: {
       opacity: 0.5,
@@ -74,8 +76,36 @@ const useStyles = makeStyles((theme: Theme) => {
     clusterSelector: {
       marginRight: theme.spacing(2),
     },
+    opener: {
+      position: 'absolute',
+      top: theme.spacing(10) + 2, // Topbar height + border
+      height: theme.spacing(6),
+      width: theme.spacing(3),
+      display: 'flex',
+      alignItems: 'center',
+      background: theme.palette.background.three,
+      cursor: 'pointer',
+    },
   });
 });
+
+export const EditorOpener = () => {
+  const { setEditorPanelOpen, editorPanelOpen } = React.useContext(LayoutContext);
+  const openEditor = () => setEditorPanelOpen(true);
+  const classes = useStyles();
+
+  if (editorPanelOpen) {
+    return null;
+  }
+
+  return (
+    <Tooltip title='Open Editor'>
+      <div className={classes.opener} onClick={openEditor}>
+        <ChevronRight />
+      </div>
+    </Tooltip>
+  );
+};
 
 const LiveView = () => {
   const classes = useStyles();
@@ -83,7 +113,12 @@ const LiveView = () => {
   const { execute } = React.useContext(ExecuteContext);
   const { loading } = React.useContext(VizierGRPCClientContext);
   const { setDataDrawerOpen, setEditorPanelOpen, editorPanelOpen, isMobile } = React.useContext(LayoutContext);
-  const toggleEditor = React.useCallback(() => setEditorPanelOpen((open) => !open), [setEditorPanelOpen]);
+  const [canvasEditable, setCanvasEditable] = React.useState(editorPanelOpen);
+  const toggleEdit = React.useCallback(() => {
+    const editing = editorPanelOpen || canvasEditable;
+    setEditorPanelOpen(!editing);
+    setCanvasEditable(!editing);
+  }, [editorPanelOpen, setEditorPanelOpen, canvasEditable, setCanvasEditable]);
 
   const [drawerOpen, setDrawerOpen] = React.useState<boolean>(false);
   const toggleDrawer = React.useCallback(() => setDrawerOpen((opened) => !opened), []);
@@ -93,7 +128,7 @@ const LiveView = () => {
 
   const hotkeyHandlers = {
     'pixie-command': toggleCommandOpen,
-    'toggle-editor': toggleEditor,
+    'toggle-editor': toggleEdit,
     'toggle-data-drawer': () => setDataDrawerOpen((open) => !open),
     execute,
   };
@@ -119,12 +154,12 @@ const LiveView = () => {
           </IconButton>
         </Tooltip>
         <ExecuteScriptButton />
-        <Tooltip title={editorPanelOpen ? 'Close editor' : 'Open editor'}>
+        <Tooltip title='Edit View'>
           <ToggleButton
             disabled={isMobile}
             className={classes.editorToggle}
-            selected={editorPanelOpen}
-            onChange={toggleEditor}
+            selected={editorPanelOpen || canvasEditable}
+            onChange={toggleEdit}
             value='editorOpened'
           >
             <EditIcon />
@@ -136,10 +171,10 @@ const LiveView = () => {
         loading ? <div className='center-content'><ClusterInstructions message='Connecting to cluster...' /></div> :
           <>
             <ScriptLoader />
-            <DataDrawerSplitPanel className={classes.main}>
+            <DataDrawerSplitPanel className={classes.mainPanel}>
               <EditorSplitPanel className={classes.editorPanel}>
                 <div className={classes.canvas} ref={canvasRef}>
-                  <Canvas editable={editorPanelOpen} parentRef={canvasRef} />
+                  <Canvas editable={canvasEditable} parentRef={canvasRef} />
                 </div>
               </EditorSplitPanel>
             </DataDrawerSplitPanel>
@@ -148,6 +183,7 @@ const LiveView = () => {
             </Drawer>
             <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
             <PixieLogo className={classes.pixieLogo} />
+            {canvasEditable ? <EditorOpener /> : null}
           </>
       }
     </div>

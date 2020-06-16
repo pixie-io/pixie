@@ -5,11 +5,10 @@ import * as React from 'react';
 import Split from 'react-split';
 import { triggerResize } from 'utils/resize';
 
-import IconButton from '@material-ui/core/IconButton';
 import { createStyles, makeStyles, Theme, useTheme, withStyles } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
-import CloseIcon from '@material-ui/icons/Close';
+import ChevronLeft from '@material-ui/icons/ChevronLeft';
 
 import { ExecuteContext } from './context/execute-context';
 import { LayoutContext } from './context/layout-context';
@@ -51,6 +50,11 @@ const useStyles = makeStyles((theme: Theme) =>
       '&.pl-code-editor .CodeMirror .CodeMirror-linenumber': {
         paddingRight: theme.spacing(1.5),
       },
+    },
+    closer: {
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
     },
   }));
 
@@ -113,9 +117,8 @@ const StyledTab = withStyles((theme: Theme) =>
 const LiveViewEditor = () => {
   const classes = useStyles();
   const [tab, setTab] = React.useState('pixie');
-  const { setEditorPanelOpen } = React.useContext(LayoutContext);
+  const { setEditorPanelOpen, editorPanelOpen } = React.useContext(LayoutContext);
   const closeEditor = () => setEditorPanelOpen(false);
-  const { editorPanelOpen } = React.useContext(LayoutContext);
 
   return (
     <div className={classes.root}>
@@ -128,9 +131,9 @@ const LiveViewEditor = () => {
             <StyledTab value='pixie' label='PXL Script' />
             <StyledTab value='vis' label='Vis Spec' />
           </StyledTabs>
-          <IconButton onClick={closeEditor}>
-            <CloseIcon />
-          </IconButton>
+          <div className={classes.closer} onClick={closeEditor}>
+            <ChevronLeft />
+          </div>
         </div>
         <LazyPanel className={classes.panel} show={tab === 'pixie'}>
           <ScriptEditor />
