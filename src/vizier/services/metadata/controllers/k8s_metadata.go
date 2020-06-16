@@ -146,7 +146,7 @@ func (mc *K8sMetadataController) startWatcher(resource string, resourceVersion i
 		select {
 		case <-mc.quitCh:
 			return
-		case <-time.After(time.Second):
+		case <-time.After(5 * time.Minute):
 			continue
 		}
 	}

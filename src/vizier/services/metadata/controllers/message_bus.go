@@ -40,7 +40,7 @@ func NewMessageBusController(natsURL string, agentTopic string, agentManager Age
 		return nil, err
 	}
 
-	ch := make(chan *nats.Msg, 64)
+	ch := make(chan *nats.Msg, 4096)
 	listeners := make(map[string]TopicListener)
 	subscriptions := make([]*nats.Subscription, 0)
 	mc := &MessageBusController{conn: conn, isLeader: isLeader, ch: ch, listeners: listeners, subscriptions: subscriptions}

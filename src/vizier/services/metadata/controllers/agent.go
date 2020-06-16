@@ -21,7 +21,7 @@ const AgentExpirationTimeout int64 = 1e9 * 60 // 60 seconds in nano-seconds.
 const MaxAgentUpdates int = 10000
 
 // MaxUpdatesToDequeue is the maximum number of updates we should dequeue at a time.
-const MaxUpdatesToDequeue int = 200
+const MaxUpdatesToDequeue int = 100
 
 // AgentUpdate describes the update info for a given agent.
 type AgentUpdate struct {
