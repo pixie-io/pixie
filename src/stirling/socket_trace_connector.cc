@@ -853,7 +853,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
     content_type = HTTPContentType::kJSON;
   }
 
-  DataTable::RecordBuilder<&kHTTPTable> r(data_table);
+  DataTable::RecordBuilder<&kHTTPTable> r(data_table, resp_message.timestamp_ns);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
   // Note that there is a string copy here,
@@ -902,7 +902,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
     resp_message.message = ParsePB(resp_message.message, rpc.output.get());
   }
 
-  DataTable::RecordBuilder<&kHTTPTable> r(data_table);
+  DataTable::RecordBuilder<&kHTTPTable> r(data_table, resp_message.timestamp_ns);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
@@ -963,7 +963,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
     resp_stream->data = ParsePB(resp_stream->data, rpc.output.get());
   }
 
-  DataTable::RecordBuilder<&kHTTPTable> r(data_table);
+  DataTable::RecordBuilder<&kHTTPTable> r(data_table, resp_stream->timestamp_ns);
   r.Append<r.ColIndex("time_")>(resp_stream->timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
@@ -997,7 +997,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
-  DataTable::RecordBuilder<&kMySQLTable> r(data_table);
+  DataTable::RecordBuilder<&kMySQLTable> r(data_table, entry.resp.timestamp_ns);
   r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
@@ -1021,7 +1021,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
-  DataTable::RecordBuilder<&kCQLTable> r(data_table);
+  DataTable::RecordBuilder<&kCQLTable> r(data_table, entry.resp.timestamp_ns);
   r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
@@ -1045,7 +1045,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx,
   md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
                 conn_tracker.conn_id().upid.start_time_ticks);
 
-  DataTable::RecordBuilder<&kPGSQLTable> r(data_table);
+  DataTable::RecordBuilder<&kPGSQLTable> r(data_table, entry.resp.timestamp_ns);
   r.Append<r.ColIndex("time_")>(entry.resp.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
@@ -1202,9 +1202,11 @@ void SocketTraceConnector::TransferConnectionStats(ConnectorContext* ctx, DataTa
       LOG_FIRST_N(WARNING, 10) << "Connection open should not be smaller than connection close.";
     }
 
-    DataTable::RecordBuilder<&kConnStatsTable> r(data_table);
+    uint64_t time = AdjustedSteadyClockNowNS();
 
-    r.Append<idx::kTime>(AdjustedSteadyClockNowNS());
+    DataTable::RecordBuilder<&kConnStatsTable> r(data_table, time);
+
+    r.Append<idx::kTime>(time);
     md::UPID upid(ctx->GetASID(), key.upid.tgid, key.upid.start_time_ticks);
     r.Append<idx::kUPID>(upid.value());
     r.Append<idx::kRemoteAddr>(key.remote_addr);

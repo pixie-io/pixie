@@ -70,7 +70,7 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   types::ColumnWrapperRecordBatch record_batch;
 
   connector_->TransferData(ctx_.get(), JVMStatsConnector::kTableNum, &data_table_);
-  tablets = data_table_.ConsumeRecordBatches();
+  tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
   auto idxes = FindRecordIdxMatchesPID(record_batch, kUPIDIdx, hello_world1.child_pid());
@@ -97,7 +97,7 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
   std::this_thread::sleep_for(std::chrono::seconds(2));
 
   connector_->TransferData(ctx_.get(), JVMStatsConnector::kTableNum, &data_table_);
-  tablets = data_table_.ConsumeRecordBatches();
+  tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
   EXPECT_THAT(FindRecordIdxMatchesPID(record_batch, kUPIDIdx, hello_world2.child_pid()), SizeIs(1));

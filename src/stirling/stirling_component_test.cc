@@ -62,7 +62,7 @@ TEST_F(SourceToTableTest, source_to_table) {
 
   StandaloneContext ctx;
   fake_proc_stat_->TransferData(&ctx, table_num, table_.get());
-  auto record_batches = table_->ConsumeRecordBatches();
+  auto record_batches = table_->ConsumeRecords();
   for (const auto& record_batch : record_batches) {
     auto& columns = record_batch.records;
 

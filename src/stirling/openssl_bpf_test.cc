@@ -127,7 +127,7 @@ TEST_F(OpenSSLTraceTest, ssl_capture) {
     // Grab the data from Stirling.
     DataTable data_table(kHTTPTable);
     source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
-    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 

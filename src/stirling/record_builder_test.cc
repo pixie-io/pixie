@@ -33,7 +33,7 @@ TEST(RecordBuilder, StringMaxSize) {
   r.Append<r.ColIndex("b")>("foo");
   r.Append<r.ColIndex("c")>(kLargeString);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_EQ(tablets.size(), 1);
   types::ColumnWrapperRecordBatch& record_batch = tablets[0].records;
 

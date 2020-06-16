@@ -156,7 +156,7 @@ TEST_F(GoGRPCKProbeTraceTest, TestGolangGrpcService) {
   EXPECT_EQ(0, c.Wait()) << "Client should exit normally.";
 
   connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
-  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -224,7 +224,7 @@ TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
 
   connector_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
 
-  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
   const std::vector<size_t> target_record_indices =
@@ -354,7 +354,7 @@ TEST_F(GRPCCppTest, ParseTextProtoSimpleUnaryRPCCall) {
   CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs"});
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
-  std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
   std::vector<size_t> indices = FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
@@ -375,7 +375,7 @@ TEST_F(GRPCCppTest, MixedGRPCServicesOnSameGRPCChannel) {
           {"pixielabs", "pixielabs", "pixielabs"});
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
-  std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
   std::vector<size_t> indices = FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
@@ -427,7 +427,7 @@ TEST_F(GRPCCppTest, ServerStreamingRPC) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
-  std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
   std::vector<size_t> indices = FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
@@ -462,7 +462,7 @@ TEST_F(GRPCCppTest, BidirStreamingRPC) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
-  std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
   std::vector<size_t> indices = FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
@@ -495,7 +495,7 @@ TEST_F(GRPCCppMiddleInterceptTest, InterceptMiddleOfTheConnection) {
   CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"});
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
 
-  std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
   std::vector<size_t> indices = FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());
@@ -531,7 +531,7 @@ class GRPCCppCallingNonRegisteredServiceTest : public GRPCCppTest {
 TEST_F(GRPCCppCallingNonRegisteredServiceTest, ResultsAreAsExpected) {
   CallRPC(greeter_stub_.get(), &Greeter::Stub::SayHello, {"pixielabs", "pixielabs", "pixielabs"});
   source_->TransferData(ctx_.get(), kHTTPTableNum, data_table_.get());
-  std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
   std::vector<size_t> indices = FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, getpid());

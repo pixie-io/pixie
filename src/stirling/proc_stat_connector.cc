@@ -89,7 +89,7 @@ void ProcStatConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t t
   auto parsed_str = GetProcParams();
   ECHECK(GetProcStat(parsed_str).ok());
 
-  DataTable::RecordBuilder<&kTable> r(data_table);
+  DataTable::RecordBuilder<&kTable> r(data_table, cpu_usage_.timestamp);
   r.Append<r.ColIndex("time_")>(cpu_usage_.timestamp);
   r.Append<r.ColIndex("system_percent")>(cpu_usage_.system_percent);
   r.Append<r.ColIndex("user_percent")>(cpu_usage_.user_percent);

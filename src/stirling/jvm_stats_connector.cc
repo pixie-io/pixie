@@ -82,8 +82,11 @@ Status JVMStatsConnector::ExportStats(const md::UPID& upid,
     // Assumes this is a transient failure.
     return Status::OK();
   }
-  DataTable::RecordBuilder<&kJVMStatsTable> r(data_table);
-  r.Append<kTimeIdx>(AdjustedSteadyClockNowNS());
+
+  uint64_t time = AdjustedSteadyClockNowNS();
+
+  DataTable::RecordBuilder<&kJVMStatsTable> r(data_table, time);
+  r.Append<kTimeIdx>(time);
   r.Append<kUPIDIdx>(upid.value());
   r.Append<kYoungGCTimeIdx>(stats.YoungGCTimeNanos());
   r.Append<kFullGCTimeIdx>(stats.FullGCTimeNanos());

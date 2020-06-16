@@ -182,28 +182,41 @@ TEST(ColumnWrapperTest, FromVectorString) {
   EXPECT_TRUE(actual_arr->Equals(expected_arr));
 }
 
-TEST(ColumnWrapperTest, SortedIndexes) {
+TEST(ColumnWrapperTest, CopyIndexes) {
   using ::testing::ElementsAreArray;
 
   auto col = ColumnWrapper::Make(DataType::TIME64NS, 0);
   col->AppendFromVector(std::vector<Time64NSValue>{5, 8, 1, 9, 0, 6, 3, 7, 2, 4});
 
-  std::vector<size_t> reorder_idx = col->SortedIndexes();
-  EXPECT_THAT(reorder_idx, ElementsAreArray({4, 2, 8, 6, 9, 0, 5, 7, 1, 3}));
-}
+  // Test reordering all indexes.
+  {
+    // This reorder sequence should cause the values above to become sorted.
+    std::vector<size_t> indexes = {4, 2, 8, 6, 9, 0, 5, 7, 1, 3};
 
-TEST(ColumnWrapperTest, Reorder) {
-  using ::testing::ElementsAreArray;
+    auto new_col = col->CopyIndexes(indexes);
+    for (int i = 0; i < 10; ++i) {
+      EXPECT_EQ(new_col->Get<Time64NSValue>(i), i);
+    }
+  }
 
-  auto col = ColumnWrapper::Make(DataType::TIME64NS, 0);
-  col->AppendFromVector(std::vector<Time64NSValue>{5, 8, 1, 9, 0, 6, 3, 7, 2, 4});
+  // Test subset selection, with replication.
+  {
+    std::vector<size_t> indexes = {6, 2, 7, 6};
 
-  // This reorder sequence should cause the values above to become sorted.
-  std::vector<size_t> reorder_idx = {4, 2, 8, 6, 9, 0, 5, 7, 1, 3};
+    auto new_col = col->CopyIndexes(indexes);
+    ASSERT_EQ(new_col->Size(), indexes.size());
+    EXPECT_EQ(new_col->Get<Time64NSValue>(0), 3);
+    EXPECT_EQ(new_col->Get<Time64NSValue>(1), 1);
+    EXPECT_EQ(new_col->Get<Time64NSValue>(2), 7);
+    EXPECT_EQ(new_col->Get<Time64NSValue>(3), 3);
+  }
 
-  col->Reorder(reorder_idx);
-  for (int i = 0; i < 10; ++i) {
-    EXPECT_EQ(col->Get<Time64NSValue>(i), i);
+  // Test empty reorder index.
+  {
+    std::vector<size_t> indexes = {};
+
+    auto new_col = col->CopyIndexes(indexes);
+    ASSERT_EQ(new_col->Size(), 0);
   }
 }
 

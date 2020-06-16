@@ -221,7 +221,7 @@ TEST_F(SocketTraceConnectorTest, HTTPContentType) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
 
@@ -275,7 +275,7 @@ TEST_F(SocketTraceConnectorTest, SortedByResponseTime) {
 
   source_->TransferData(ctx_.get(), SocketTraceConnector::kCQLTableNum, &data_table);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
   EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
@@ -306,7 +306,7 @@ TEST_F(SocketTraceConnectorTest, UPIDCheck) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
 
@@ -352,7 +352,7 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  tablets = data_table.ConsumeRecordBatches();
+  tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
   EXPECT_EQ(2, record_batch[0]->Size());
@@ -361,7 +361,7 @@ TEST_F(SocketTraceConnectorTest, AppendNonContiguousEvents) {
   source_->AcceptControlEvent(close_event);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  tablets = data_table.ConsumeRecordBatches();
+  tablets = data_table.ConsumeRecords();
   ASSERT_TRUE(tablets.empty()) << "Late events won't get processed.";
 }
 
@@ -380,7 +380,7 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
 
   // Check empty transfer.
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  tablets = data_table.ConsumeRecordBatches();
+  tablets = data_table.ConsumeRecords();
   ASSERT_TRUE(tablets.empty());
 
   // Check empty transfer following a successful transfer.
@@ -388,19 +388,19 @@ TEST_F(SocketTraceConnectorTest, NoEvents) {
   source_->AcceptDataEvent(std::move(event1));
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  tablets = data_table.ConsumeRecordBatches();
+  tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
   EXPECT_EQ(1, record_batch[0]->Size());
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  tablets = data_table.ConsumeRecordBatches();
+  tablets = data_table.ConsumeRecords();
   ASSERT_TRUE(tablets.empty());
   EXPECT_EQ(1, source_->NumActiveConnections());
 
   source_->AcceptControlEvent(close_event);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  tablets = data_table.ConsumeRecordBatches();
+  tablets = data_table.ConsumeRecords();
   ASSERT_TRUE(tablets.empty());
 }
 
@@ -427,7 +427,7 @@ TEST_F(SocketTraceConnectorTest, RequestResponseMatching) {
   source_->AcceptControlEvent(close_event);
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
   EXPECT_EQ(3, record_batch[0]->Size());
@@ -464,7 +464,7 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
   source_->AcceptDataEvent(std::move(resp_event2));
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  tablets = data_table.ConsumeRecordBatches();
+  tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
   EXPECT_EQ(2, record_batch[0]->Size());
@@ -476,7 +476,7 @@ TEST_F(SocketTraceConnectorTest, MissingEventInStream) {
   // Processing of resp_event3 will result in one more record.
   // TODO(oazizi): Update this when req-resp matching algorithm is updated.
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  tablets = data_table.ConsumeRecordBatches();
+  tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
   EXPECT_EQ(1, record_batch[0]->Size());
@@ -774,7 +774,7 @@ TEST_F(SocketTraceConnectorTest, ConnectionCleanupInactiveAlive) {
   EXPECT_EQ(1, source_->NumActiveConnections());
 
   // Should not have transferred any data.
-  tablets = data_table.ConsumeRecordBatches();
+  tablets = data_table.ConsumeRecords();
   ASSERT_TRUE(tablets.empty());
 
   // Events should have been flushed.
@@ -819,7 +819,7 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   RecordBatch record_batch;
 
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-  tablets = data_table.ConsumeRecordBatches();
+  tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
   EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
@@ -860,7 +860,7 @@ TEST_F(SocketTraceConnectorTest, MySQLPrepareExecuteClose) {
   source_->AcceptDataEvent(std::move(execute_resp_event2));
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
 
-  tablets = data_table.ConsumeRecordBatches();
+  tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
   EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
@@ -895,7 +895,7 @@ TEST_F(SocketTraceConnectorTest, MySQLQuery) {
 
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
   EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
@@ -1008,7 +1008,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultipleCommands) {
 
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
   EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(9)));
@@ -1141,7 +1141,7 @@ TEST_F(SocketTraceConnectorTest, MySQLQueryWithLargeResultset) {
 
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
@@ -1232,7 +1232,7 @@ TEST_F(SocketTraceConnectorTest, MySQLMultiResultset) {
 
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
@@ -1299,7 +1299,7 @@ TEST_F(SocketTraceConnectorTest, CQLQuery) {
 
   source_->TransferData(ctx_.get(), SocketTraceConnector::kCQLTableNum, &data_table);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
   EXPECT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
@@ -1355,7 +1355,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ClientTest) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
@@ -1399,7 +1399,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ServerTest) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
@@ -1439,7 +1439,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2PartialStream) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
@@ -1466,7 +1466,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ResponseOnly) {
   source_->AcceptControlEvent(event_gen.InitClose());
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_TRUE(tablets.empty());
 
   // TODO(oazizi): Someday we will need to capture response only streams properly.
@@ -1499,7 +1499,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
   // TransferData should not have pushed data to the tables, because HTTP2 stream is still active.
-  tablets = data_table.ConsumeRecordBatches();
+  tablets = data_table.ConsumeRecords();
   ASSERT_TRUE(tablets.empty());
 
   source_->AcceptHTTP2Data(frame_generator.GenDataFrame<kDataFrameEventRead>("onse"));
@@ -1510,7 +1510,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SpanAcrossTransferData) {
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
   // TransferData should now have pushed data to the tables, because HTTP2 stream has ended.
-  tablets = data_table.ConsumeRecordBatches();
+  tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   record_batch = tablets[0].records;
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
@@ -1551,7 +1551,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2SequentialStreams) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
@@ -1619,7 +1619,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2ParallelStreams) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
@@ -1690,7 +1690,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamSandwich) {
   // a long-running stream does not block other shorter streams from being recorded.
   // Notice, however, that this causes stream_id 9 to appear before stream_id 7.
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(2)));
@@ -1735,7 +1735,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2StreamIDRace) {
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table);
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));
@@ -1792,7 +1792,7 @@ TEST_F(SocketTraceConnectorTest, HTTP2OldStream) {
 
   source_->AcceptControlEvent(event_gen.InitClose());
 
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   RecordBatch record_batch = tablets[0].records;
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(4)));

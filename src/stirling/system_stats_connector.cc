@@ -49,9 +49,9 @@ void SystemStatsConnector::TransferProcessStatsTable(ConnectorContext* ctx, Data
       continue;
     }
 
-    DataTable::RecordBuilder<&kProcessStatsTable> r(data_table);
+    DataTable::RecordBuilder<&kProcessStatsTable> r(data_table, timestamp);
     // TODO(oazizi): Enable version below, once rest of the agent supports tabletization.
-    //  DataTable::RecordBuilder<&kProcessStatsTable> r(data_table, upid.value());
+    //  DataTable::RecordBuilder<&kProcessStatsTable> r(data_table, upid.value(), timestamp);
     r.Append<r.ColIndex("time_")>(timestamp);
     // Tabletization key must also be appended as a column value.
     // See note in RecordBuilder class.
@@ -92,7 +92,7 @@ void SystemStatsConnector::TransferNetworkStatsTable(ConnectorContext* ctx, Data
       continue;
     }
 
-    DataTable::RecordBuilder<&kNetworkStatsTable> r(data_table);
+    DataTable::RecordBuilder<&kNetworkStatsTable> r(data_table, timestamp);
 
     r.Append<r.ColIndex("time_")>(timestamp);
     r.Append<r.ColIndex("pod_id")>(std::string(pod_id));

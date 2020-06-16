@@ -32,7 +32,7 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
   cs.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script);
 
   source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table_);
-  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
   PrintRecordBatch("test", kConnStatsTable.elements(), record_batch);
@@ -111,7 +111,7 @@ TEST_F(ConnStatsMidConnBPFTest, DidNotSeeConnEstablishment) {
   EXPECT_EQ(test_msg.size(), client_.Write(test_msg));
 
   source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table_);
-  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
   if (!tablets.empty()) {
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 

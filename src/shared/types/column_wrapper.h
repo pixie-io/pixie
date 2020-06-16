@@ -69,8 +69,7 @@ class ColumnWrapper {
   template <class TValueType>
   void AppendFromVector(const std::vector<TValueType>& value_vector);
 
-  virtual std::vector<size_t> SortedIndexes() const = 0;
-  virtual void Reorder(const std::vector<size_t>& order) = 0;
+  virtual SharedColumnWrapper CopyIndexes(const std::vector<size_t>& indexes) = 0;
 };
 
 /**
@@ -119,36 +118,15 @@ class ColumnWrapperTmpl : public ColumnWrapper {
     }
   }
 
-  // Computes a reorder vector that specifies the sorted order.
-  // Note 1: ColumnWrapper itself is not modified.
-  // Note 2: There are different ways to define the reorder indexes.
-  // Here we use the form where the result, idx, is used to sort x according to:
-  //    { x[idx[0]], x[idx[1]], x[idx[2]], ... }
-  // From https://stackoverflow.com/questions/1577475/c-sorting-and-keeping-track-of-indexes
-  std::vector<size_t> SortedIndexes() const override {
-    // initialize original index locations
-    std::vector<size_t> idx(data_.size());
-    std::iota(idx.begin(), idx.end(), 0);
-
-    // sort indexes based on comparing values in v using std::stable_sort instead of std::sort
-    // to avoid unnecessary index re-orderings when v contains elements of equal values
-    std::stable_sort(idx.begin(), idx.end(),
-                     [this](size_t i1, size_t i2) { return data_[i1] < data_[i2]; });
-
-    return idx;
-  }
-
-  // Reorder the ColumnWrapper values according to the spec:
+  // Return a new SharedColumnWrapper with values according to the spec:
   //    { data[idx[0]], data[idx[1]], data[idx[2]], ... }
-  // Behavior is undefined if idx.size() is different than data.size().
-  void Reorder(const std::vector<size_t>& idx) override {
-    DCHECK_EQ(data_.size(), idx.size());
-    std::vector<T> data;
-    data.resize(data_.size());
-    for (size_t i = 0; i < idx.size(); ++i) {
-      data[i] = data_[idx[i]];
+  SharedColumnWrapper CopyIndexes(const std::vector<size_t>& indexes) override {
+    DCHECK_LE(indexes.size(), data_.size());
+    auto copy = std::make_shared<ColumnWrapperTmpl<T>>(indexes.size());
+    for (size_t i = 0; i < indexes.size(); ++i) {
+      copy->data_[i] = data_[indexes[i]];
     }
-    data_ = std::move(data);
+    return copy;
   }
 
  private:

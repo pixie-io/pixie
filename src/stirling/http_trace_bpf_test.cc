@@ -85,7 +85,7 @@ TEST_F(GoHTTPTraceTest, RequestAndResponse) {
   EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
-  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -142,7 +142,7 @@ TEST_P(TraceRoleTest, VerifyRecordsCount) {
   EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
 
   source_->TransferData(ctx_.get(), kHTTPTableNum, &data_table_);
-  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
 
   std::vector<size_t> client_record_ids;
   std::vector<size_t> server_record_ids;

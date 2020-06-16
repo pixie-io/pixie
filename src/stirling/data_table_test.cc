@@ -3,13 +3,13 @@
 #include <string>
 
 #include "src/stirling/data_table.h"
-#include "src/stirling/info_class_manager.h"
 #include "src/stirling/sequence_generator.h"
 
 namespace pl {
 namespace stirling {
 
-TEST(DataTableTest, ResultIsSorted) {
+class DataTableTest : public ::testing::Test {
+ protected:
   // The test uses a pre-defined schema.
   static constexpr DataElement kElements[] = {
       {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER, "time"},
@@ -18,20 +18,24 @@ TEST(DataTableTest, ResultIsSorted) {
   };
   static constexpr auto kSchema = DataTableSchema("test_table", kElements);
 
-  std::unique_ptr<DataTable> data_table = std::make_unique<DataTable>(kSchema);
+  DataTableTest() : data_table_(std::make_unique<DataTable>(kSchema)) {}
 
+  std::unique_ptr<DataTable> data_table_;
+};
+
+TEST_F(DataTableTest, ResultIsSorted) {
   std::vector<int> time_vals = {0, 10, 40, 20, 30, 50, 90, 70, 60, 80};
   std::vector<int> x_vals = {0, 1, 4, 2, 3, 5, 9, 7, 6, 8};
   std::vector<std::string> s_vals = {"a", "b", "e", "c", "d", "f", "j", "h", "g", "i"};
 
   for (size_t i = 0; i < time_vals.size(); ++i) {
-    DataTable::RecordBuilder<&kSchema> r(data_table.get());
+    DataTable::RecordBuilder<&kSchema> r(data_table_.get(), time_vals[i]);
     r.Append<r.ColIndex("time_")>(time_vals[i]);
     r.Append<r.ColIndex("x")>(x_vals[i]);
     r.Append<r.ColIndex("s")>(s_vals[i]);
   }
 
-  std::vector<TaggedRecordBatch> record_batches = data_table->ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> record_batches = data_table_->ConsumeRecords();
 
   ASSERT_EQ(record_batches.size(), 1);
   types::ColumnWrapperRecordBatch& rb = record_batches[0].records;
@@ -40,6 +44,247 @@ TEST(DataTableTest, ResultIsSorted) {
     EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(i), 10 * static_cast<int>(i));
     EXPECT_EQ(rb[1]->Get<types::Int64Value>(i), static_cast<int>(i));
     EXPECT_EQ(rb[2]->Get<types::StringValue>(i), std::string(1, 'a' + i));
+  }
+}
+
+// No time passed to RecordBuilder, so all timestamps should be zero.
+// That means there should never be any expired or carry-over records.
+// Also, nothing should be sorted in any way.
+TEST_F(DataTableTest, FixedTimeMode) {
+  std::vector<int> time_vals = {0, 10, 40, 20, 30, 50, 90, 70, 60, 80};
+  std::vector<int> x_vals = {0, 1, 4, 2, 3, 5, 9, 7, 6, 8};
+  std::vector<std::string> s_vals = {"a", "b", "e", "c", "d", "f", "j", "h", "g", "i"};
+
+  for (size_t i = 0; i < time_vals.size(); ++i) {
+    DataTable::RecordBuilder<&kSchema> r(data_table_.get());
+    r.Append<r.ColIndex("time_")>(time_vals[i]);
+    r.Append<r.ColIndex("x")>(x_vals[i]);
+    r.Append<r.ColIndex("s")>(s_vals[i]);
+
+    std::vector<TaggedRecordBatch> record_batches = data_table_->ConsumeRecords();
+
+    ASSERT_EQ(record_batches.size(), 1);
+    types::ColumnWrapperRecordBatch& rb = record_batches[0].records;
+
+    ASSERT_EQ(rb[0]->Size(), 1);
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(0), time_vals[i]);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(0), x_vals[i]);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(0), s_vals[i]);
+  }
+}
+
+TEST_F(DataTableTest, FixedTimeModeV2) {
+  std::vector<int> time_vals = {0, 10, 40, 20, 30, 50, 90, 70, 60, 80};
+  std::vector<int> x_vals = {0, 1, 4, 2, 3, 5, 9, 7, 6, 8};
+  std::vector<std::string> s_vals = {"a", "b", "e", "c", "d", "f", "j", "h", "g", "i"};
+
+  for (size_t i = 0; i < time_vals.size(); ++i) {
+    DataTable::RecordBuilder<&kSchema> r(data_table_.get());
+    r.Append<r.ColIndex("time_")>(time_vals[i]);
+    r.Append<r.ColIndex("x")>(x_vals[i]);
+    r.Append<r.ColIndex("s")>(s_vals[i]);
+  }
+
+  std::vector<TaggedRecordBatch> record_batches = data_table_->ConsumeRecords();
+
+  ASSERT_EQ(record_batches.size(), 1);
+  types::ColumnWrapperRecordBatch& rb = record_batches[0].records;
+
+  ASSERT_EQ(rb[0]->Size(), 10);
+
+  for (size_t i = 0; i < time_vals.size(); ++i) {
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(i), time_vals[i]);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(i), x_vals[i]);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(i), s_vals[i]);
+  }
+}
+
+TEST_F(DataTableTest, Expiry) {
+  std::vector<int> time_vals = {0, 10, 40, 20, 30, 50, 90, 70, 60, 80};
+  std::vector<int> x_vals = {0, 1, 4, 2, 3, 5, 9, 7, 6, 8};
+  std::vector<std::string> s_vals = {"a", "b", "e", "c", "d", "f", "j", "h", "g", "i"};
+
+  // Process the first four entries. None should be expired.
+  {
+    for (size_t i = 0; i < 4; ++i) {
+      DataTable::RecordBuilder<&kSchema> r(data_table_.get(), time_vals[i]);
+      r.Append<r.ColIndex("time_")>(time_vals[i]);
+      r.Append<r.ColIndex("x")>(x_vals[i]);
+      r.Append<r.ColIndex("s")>(s_vals[i]);
+    }
+
+    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
+
+    ASSERT_EQ(tablets.size(), 1);
+    types::ColumnWrapperRecordBatch& rb = tablets[0].records;
+
+    ASSERT_EQ(rb[0]->Size(), 4);
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(0), 0);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(0), 0);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(0), "a");
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(1), 10);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(1), 1);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(1), "b");
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(2), 20);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(2), 2);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(2), "c");
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(3), 40);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(3), 4);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(3), "e");
+  }
+
+  // Process the next three entries. Time 30 should be expired.
+  {
+    for (size_t i = 4; i < 7; ++i) {
+      DataTable::RecordBuilder<&kSchema> r(data_table_.get(), time_vals[i]);
+      r.Append<r.ColIndex("time_")>(time_vals[i]);
+      r.Append<r.ColIndex("x")>(x_vals[i]);
+      r.Append<r.ColIndex("s")>(s_vals[i]);
+    }
+
+    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
+
+    ASSERT_EQ(tablets.size(), 1);
+    types::ColumnWrapperRecordBatch& rb = tablets[0].records;
+
+    // Only expect 2 out of 3 records, because one should have been expired.
+    ASSERT_EQ(rb[0]->Size(), 2);
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(0), 50);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(0), 5);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(0), "f");
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(1), 90);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(1), 9);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(1), "j");
+  }
+
+  // Process the next three entries. Time 30 should be expired.
+  {
+    for (size_t i = 7; i < 10; ++i) {
+      DataTable::RecordBuilder<&kSchema> r(data_table_.get(), time_vals[i]);
+      r.Append<r.ColIndex("time_")>(time_vals[i]);
+      r.Append<r.ColIndex("x")>(x_vals[i]);
+      r.Append<r.ColIndex("s")>(s_vals[i]);
+    }
+
+    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
+
+    ASSERT_EQ(tablets.size(), 0);
+  }
+}
+
+// This test has scrambled entries, but ConsumeRecords is called with end times
+// that should cause carryover. This test also causes no expirations for simplicity.
+TEST_F(DataTableTest, Carryover) {
+  std::vector<int> time_vals = {0, 10, 40, 20, 30, 50, 90, 70, 60, 80};
+  std::vector<int> x_vals = {0, 1, 4, 2, 3, 5, 9, 7, 6, 8};
+  std::vector<std::string> s_vals = {"a", "b", "e", "c", "d", "f", "j", "h", "g", "i"};
+
+  // Process the first four entries. None should be expired.
+  {
+    for (size_t i = 0; i < 4; ++i) {
+      DataTable::RecordBuilder<&kSchema> r(data_table_.get(), time_vals[i]);
+      r.Append<r.ColIndex("time_")>(time_vals[i]);
+      r.Append<r.ColIndex("x")>(x_vals[i]);
+      r.Append<r.ColIndex("s")>(s_vals[i]);
+    }
+
+    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords(20);
+
+    ASSERT_EQ(tablets.size(), 1);
+    types::ColumnWrapperRecordBatch& rb = tablets[0].records;
+
+    ASSERT_EQ(rb[0]->Size(), 3);
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(0), 0);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(0), 0);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(0), "a");
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(1), 10);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(1), 1);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(1), "b");
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(2), 20);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(2), 2);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(2), "c");
+  }
+
+  // Process the next three entries. Time 30 should be expired.
+  {
+    for (size_t i = 4; i < 7; ++i) {
+      DataTable::RecordBuilder<&kSchema> r(data_table_.get(), time_vals[i]);
+      r.Append<r.ColIndex("time_")>(time_vals[i]);
+      r.Append<r.ColIndex("x")>(x_vals[i]);
+      r.Append<r.ColIndex("s")>(s_vals[i]);
+    }
+
+    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords(40);
+
+    ASSERT_EQ(tablets.size(), 1);
+    types::ColumnWrapperRecordBatch& rb = tablets[0].records;
+
+    // Only expect 2 out of 3 records, because one should have been expired.
+    ASSERT_EQ(rb[0]->Size(), 2);
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(0), 30);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(0), 3);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(0), "d");
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(1), 40);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(1), 4);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(1), "e");
+  }
+
+  // Process the next three entries. Time 30 should be expired.
+  {
+    for (size_t i = 7; i < 10; ++i) {
+      DataTable::RecordBuilder<&kSchema> r(data_table_.get(), time_vals[i]);
+      r.Append<r.ColIndex("time_")>(time_vals[i]);
+      r.Append<r.ColIndex("x")>(x_vals[i]);
+      r.Append<r.ColIndex("s")>(s_vals[i]);
+    }
+
+    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords(70);
+
+    ASSERT_EQ(tablets.size(), 1);
+    types::ColumnWrapperRecordBatch& rb = tablets[0].records;
+
+    ASSERT_EQ(rb[0]->Size(), 3);
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(0), 50);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(0), 5);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(0), "f");
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(1), 60);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(1), 6);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(1), "g");
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(2), 70);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(2), 7);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(2), "h");
+  }
+
+  {
+    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords(100);
+
+    ASSERT_EQ(tablets.size(), 1);
+    types::ColumnWrapperRecordBatch& rb = tablets[0].records;
+
+    ASSERT_EQ(rb[0]->Size(), 2);
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(0), 80);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(0), 8);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(0), "i");
+
+    EXPECT_EQ(rb[0]->Get<types::Time64NSValue>(1), 90);
+    EXPECT_EQ(rb[1]->Get<types::Int64Value>(1), 9);
+    EXPECT_EQ(rb[2]->Get<types::StringValue>(1), "j");
   }
 }
 
@@ -191,7 +436,7 @@ class DataTableStressTest : public ::testing::Test {
 
       // Periodically consume the data
       if ((probability_dist(rng_) < push_probability_) || last_pass) {
-        auto data_batches = data_table_->ConsumeRecordBatches();
+        auto data_batches = data_table_->ConsumeRecords();
         for (const auto& data_batch : data_batches) {
           CheckColumnWrapperResult(data_batch.records, check_record, current_record);
         }

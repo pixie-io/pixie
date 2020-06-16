@@ -38,7 +38,7 @@ void InfoClassManager::SampleData(ConnectorContext* ctx) {
 }
 
 void InfoClassManager::PushData(DataPushCallback agent_callback) {
-  auto record_batches = data_table_->ConsumeRecordBatches();
+  auto record_batches = data_table_->ConsumeRecords();
   for (auto& record_batch : record_batches) {
     if (!record_batch.records.empty()) {
       agent_callback(

@@ -54,7 +54,7 @@ TEST_F(MySQLTraceBPFTest, MySQLStmtPrepareExecuteClose) {
 
   DataTable data_table(kMySQLTable);
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -90,7 +90,7 @@ TEST_F(MySQLTraceBPFTest, MySQLQuery) {
 
   DataTable data_table(kMySQLTable);
   source_->TransferData(ctx_.get(), kMySQLTableNum, &data_table);
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 

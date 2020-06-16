@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <limits>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -22,20 +24,37 @@ struct TaggedRecordBatch {
   types::ColumnWrapperRecordBatch records;
 };
 
+struct Tablet {
+  types::TabletID tablet_id;
+  // TODO(oazizi): Convert his vector into a heap of {time, index} objects.
+  std::vector<uint64_t> times;
+  types::ColumnWrapperRecordBatch records;
+};
+
 class DataTable : public NotCopyable {
  public:
   explicit DataTable(const DataTableSchema& schema);
   virtual ~DataTable() = default;
 
   /**
-   * @brief Get the data collected so far and relinquish ownership.
+   * Consume the data buffered in the data table, up to the specified time.
+   * Any records beyond the specified time will remain buffered in the table.
    *
-   * @return pointer to a vector of ColumnWrapperRecordBatch pointers.
+   * Note that this function also internally tracks the largest timestamp pushed
+   * across all previous calls to the function. Any records that have a timestamp
+   * that would cause the appearance of records going backwards in time are dropped.
+   * A warning message is printed in such cases.
+   *
+   * @param end_time Threshold time up until which records are pushed out.
+   * @return vector of Tablets (without tabletization, vector size is <=1).
+   *         Empty record batches are not pushed into the vector, so all
+   *         TaggedRecordBatch objects will have at least one record.
    */
-  std::vector<TaggedRecordBatch> ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> ConsumeRecords(
+      uint64_t end_time = std::numeric_limits<uint64_t>::max());
 
   /**
-   * @brief Return current occupancy of the Data Table.
+   * Return current occupancy of the Data Table.
    *
    * @return size_t occupancy
    */
@@ -43,20 +62,20 @@ class DataTable : public NotCopyable {
     size_t occupancy = 0;
     for (auto& [tablet_id, tablet] : tablets_) {
       PL_UNUSED(tablet_id);
-      occupancy += tablet[0]->Size();
+      occupancy += tablet.records[0]->Size();
     }
     return occupancy;
   }
 
   /**
-   * @brief Occupancy of the Data Table as a percentage of size.
+   * Occupancy of the Data Table as a percentage of size.
    *
    * @return double percent occupancy
    */
   double OccupancyPct() const { return 1.0 * Occupancy() / kTargetCapacity; }
 
   // Example usage:
-  // DataTable::RecordBuilder<&kTable> r(data_table);
+  // DataTable::RecordBuilder<&kTable> r(data_table, time);
   // r.Append<r.ColIndex("field0")>(val0);
   // r.Append<r.ColIndex("field1")>(val1);
   // r.Append<r.ColIndex("field2")>(val2);
@@ -77,14 +96,19 @@ class DataTable : public NotCopyable {
     static constexpr int kMaxStringBytes = 512;
     static constexpr char kTruncatedMsg[] = "... [TRUNCATED]";
 
-    explicit RecordBuilder(DataTable* data_table, types::TabletIDView tablet_id)
-        : RecordBuilder(data_table->ActiveRecordBatch(tablet_id)) {
+    RecordBuilder(DataTable* data_table, types::TabletIDView tablet_id, uint64_t time = 0)
+        : tablet_(*data_table->GetTablet(tablet_id)), time_(time) {
       static_assert(schema->tabletized());
+      DCHECK_EQ(schema->elements().size(), tablet_.records.size());
       tablet_id_ = tablet_id;
+      tablet_.times.push_back(time);
     }
 
-    explicit RecordBuilder(DataTable* data_table) : RecordBuilder(data_table->ActiveRecordBatch()) {
+    explicit RecordBuilder(DataTable* data_table, uint64_t time = 0)
+        : tablet_(*data_table->GetTablet("")), time_(time) {
       static_assert(!schema->tabletized());
+      DCHECK_EQ(schema->elements().size(), tablet_.records.size());
+      tablet_.times.push_back(time);
     }
 
     // For convenience, a wrapper around ColIndex() in the DataTableSchema class.
@@ -108,7 +132,7 @@ class DataTable : public NotCopyable {
         }
       }
 
-      record_batch_[index]->Append(std::move(val));
+      tablet_.records[index]->Append(std::move(val));
       DCHECK(!signature_[index]) << absl::Substitute(
           "Attempt to Append() to column $0 (name=$1) multiple times", index,
           schema->ColName(index));
@@ -132,14 +156,10 @@ class DataTable : public NotCopyable {
     }
 
    private:
-    explicit RecordBuilder(types::ColumnWrapperRecordBatch* active_record_batch)
-        : record_batch_(*active_record_batch) {
-      DCHECK_EQ(schema->elements().size(), active_record_batch->size());
-    }
-
-    types::ColumnWrapperRecordBatch& record_batch_;
+    Tablet& tablet_;
     std::bitset<schema->elements().size()> signature_;
     types::TabletIDView tablet_id_ = "";
+    uint64_t time_;
   };
 
  protected:
@@ -149,16 +169,16 @@ class DataTable : public NotCopyable {
   // Initialize a new Active record batch.
   void InitBuffers(types::ColumnWrapperRecordBatch* record_batch_ptr);
 
-  // Get a pointer to the active record batch, for appending.
-  // Used by RecordBuilder.
-  types::ColumnWrapperRecordBatch* ActiveRecordBatch(types::TabletIDView tablet_id = "");
+  // Get a pointer to the Tablet, for appending. Used by RecordBuilder.
+  Tablet* GetTablet(types::TabletIDView tablet_id);
 
   // Table schema: a DataElement to describe each column.
   const DataTableSchema& table_schema_;
 
-  // Active record batch.
-  // Key is tablet id, value is tablet active record batch.
-  absl::flat_hash_map<types::TabletID, types::ColumnWrapperRecordBatch> tablets_;
+  // Key is tablet id, value is tablet records.
+  absl::flat_hash_map<types::TabletID, Tablet> tablets_;
+
+  uint64_t start_time_ = 0;
 };
 
 }  // namespace stirling

@@ -44,8 +44,10 @@ void PIDRuntimeConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t
       prev_run_time = it->second;
     }
 
-    DataTable::RecordBuilder<&kTable> r(data_table);
-    r.Append<r.ColIndex("time_")>(item.second.timestamp + ClockRealTimeOffset());
+    uint64_t time = item.second.timestamp + ClockRealTimeOffset();
+
+    DataTable::RecordBuilder<&kTable> r(data_table, time);
+    r.Append<r.ColIndex("time_")>(time);
     r.Append<r.ColIndex("pid")>(item.first);
     r.Append<r.ColIndex("runtime_ns")>(item.second.run_time - prev_run_time);
     r.Append<r.ColIndex("cmd")>(item.second.name);

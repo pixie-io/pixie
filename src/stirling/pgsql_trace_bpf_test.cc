@@ -86,7 +86,7 @@ TEST_F(PostgreSQLTraceTest, SelectQuery) {
 
   source_->TransferData(ctx_.get(), SocketTraceConnector::kPGSQLTableNum, &data_table_);
 
-  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
   auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, client_pid);
@@ -130,7 +130,7 @@ TEST_F(PostgreSQLTraceGoSQLxTest, GolangSqlxDemo) {
 
   source_->TransferData(ctx_.get(), SocketTraceConnector::kPGSQLTableNum, &data_table_);
 
-  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecordBatches();
+  std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -193,7 +193,7 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
 
     source_->TransferData(ctx_.get(), SocketTraceConnector::kPGSQLTableNum, &data_table_);
 
-    std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecordBatches();
+    std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
@@ -220,7 +220,7 @@ TEST_F(PostgreSQLTraceTest, FunctionCall) {
 
     source_->TransferData(ctx_.get(), SocketTraceConnector::kPGSQLTableNum, &data_table_);
 
-    std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecordBatches();
+    std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
     ASSERT_FALSE(tablets.empty());
     types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
 
