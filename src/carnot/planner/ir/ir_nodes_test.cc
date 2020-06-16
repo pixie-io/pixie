@@ -371,6 +371,8 @@ constexpr char kExpectedAggPb[] = R"(
     }
     group_names: "group1"
     value_names: "mean"
+    partial_agg: true
+    finalize_results: true
   }
 )";
 

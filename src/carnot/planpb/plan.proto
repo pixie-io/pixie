@@ -188,6 +188,14 @@ message AggregateOperator {
   repeated string value_names = 4;
   // Whether to do a windowed (streaming) aggregate or a blocking aggregate.
   bool windowed = 5;
+  // The following two flags are used to support partial aggs.
+  // 1. partial_agg -> perform a partial aggregate.
+  // 2. finalize_results -> merge partial aggregate results.
+  // 3. partial_agg && finalize_results -> do a single full aggregate.
+  // Whether this aggregate partially aggregates the input.
+  bool partial_agg = 6;
+  // Whether this merges the results of partial aggregates.
+  bool finalize_results = 7;
 }
 
 // Performs a compacting filter

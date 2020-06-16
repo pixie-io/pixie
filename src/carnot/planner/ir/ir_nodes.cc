@@ -741,6 +741,9 @@ Status BlockingAggIR::ToProto(planpb::Operator* op) const {
   // TODO(nserrino/philkuz): Add support for streaming aggregates in the compiler.
   pb->set_windowed(false);
 
+  pb->set_partial_agg(partial_agg_);
+  pb->set_finalize_results(finalize_results_);
+
   op->set_op_type(planpb::AGGREGATE_OPERATOR);
   return Status::OK();
 }
@@ -1305,6 +1308,9 @@ Status BlockingAggIR::CopyFromNodeImpl(
 
   PL_RETURN_IF_ERROR(SetAggExprs(new_agg_exprs));
   PL_RETURN_IF_ERROR(SetGroups(new_groups));
+
+  finalize_results_ = blocking_agg->finalize_results_;
+  partial_agg_ = blocking_agg->partial_agg_;
 
   return Status::OK();
 }

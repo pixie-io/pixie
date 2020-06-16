@@ -1513,13 +1513,12 @@ class BlockingAggIR : public GroupAcceptorIR {
   BlockingAggIR() = delete;
   explicit BlockingAggIR(int64_t id) : GroupAcceptorIR(id, IRNodeType::kBlockingAgg) {}
 
-  ColExpressionVector aggregate_expressions() const { return aggregate_expressions_; }
+  Status Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups,
+              const ColExpressionVector& agg_expr);
+
   Status ToProto(planpb::Operator*) const override;
   Status EvaluateAggregateExpression(planpb::AggregateExpression* expr,
                                      const ExpressionIR& ir_node) const;
-
-  Status Init(OperatorIR* parent, const std::vector<ColumnIR*>& groups,
-              const ColExpressionVector& agg_expr);
 
   Status CopyFromNodeImpl(const IRNode* node,
                           absl::flat_hash_map<const IRNode*, IRNode*>* copied_nodes_map) override;
@@ -1532,13 +1531,23 @@ class BlockingAggIR : public GroupAcceptorIR {
 
   Status ResolveType(CompilerState* compiler_state);
 
+  ColExpressionVector aggregate_expressions() const { return aggregate_expressions_; }
+
+  void SetFinalizeResults(bool finalize_results) { finalize_results_ = finalize_results; }
+
+  void SetPartialAgg(bool partial_agg) { partial_agg_ = partial_agg; }
+
  protected:
   StatusOr<absl::flat_hash_set<std::string>> PruneOutputColumnsToImpl(
       const absl::flat_hash_set<std::string>& output_colnames) override;
 
  private:
-  // The map from value_names to values
+  // The map from value_names to values.
   ColExpressionVector aggregate_expressions_;
+  // Whether this performs a partial aggregate.
+  bool partial_agg_ = true;
+  // Whether this finalizes the result of a partial aggregate.
+  bool finalize_results_ = true;
 };
 
 class GroupByIR : public OperatorIR {
