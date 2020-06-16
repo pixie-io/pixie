@@ -15,7 +15,6 @@ export const ArgsContext = React.createContext<ArgsContextProps>(null);
 
 export const ArgsContextProvider = (props) => {
   const { vis } = React.useContext(VisContext);
-
   const [args, setArgsBase] = useSessionStorage<Arguments | null>(LIVE_VIEW_SCRIPT_ARGS_KEY, null);
 
   const setArgs = (newArgs: Arguments) => {

@@ -11,6 +11,7 @@ import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import CloseIcon from '@material-ui/icons/Close';
 
+import { ExecuteContext } from './context/execute-context';
 import { LayoutContext } from './context/layout-context';
 import { ScriptContext } from './context/script-context';
 import { VisContext } from './context/vis-context';
@@ -56,12 +57,16 @@ const useStyles = makeStyles((theme: Theme) =>
 const VisEditor = () => {
   const classes = useStyles();
   const { visJSON, setVisJSON } = React.useContext(VisContext);
+  const { resetDefaultLiveViewPage } = React.useContext(ExecuteContext);
 
   return (
     <CodeEditor
       className={classes.editor}
       code={visJSON}
-      onChange={setVisJSON}
+      onChange={(val) => {
+        setVisJSON(val);
+        resetDefaultLiveViewPage();
+      }}
     />
   );
 };
@@ -69,12 +74,16 @@ const VisEditor = () => {
 const ScriptEditor = () => {
   const classes = useStyles();
   const { setScript, script } = React.useContext(ScriptContext);
+  const { resetDefaultLiveViewPage } = React.useContext(ExecuteContext);
 
   return (
     <CodeEditor
       className={classes.editor}
       code={script}
-      onChange={setScript}
+      onChange={(val) => {
+        setScript(val);
+        resetDefaultLiveViewPage();
+      }}
     />
   );
 };

@@ -25,11 +25,13 @@ export interface Window {
 
 interface Params {
   args: Args;
+  pathname: string;
   scriptId: string;
   scriptDiff: string;
 }
 // Exported for testing
 export class URLParams {
+  pathname: string;
   args: Args;
   scriptId: string;
   scriptDiff: string;
@@ -38,18 +40,22 @@ export class URLParams {
   private prevParams: Params;
 
   constructor(private readonly privateWindow: Window) {
+    this.syncWithPathname();
     this.syncWithQueryParams();
     const params = {
       args: { ...this.args },
+      pathname: this.pathname,
       scriptDiff: this.scriptDiff,
       scriptId: this.scriptId,
     };
     this.prevParams = params;
     const subject = new BehaviorSubject(params);
     this.privateWindow.addEventListener('popstate', () => {
+      this.syncWithPathname();
       this.syncWithQueryParams();
       subject.next({
         args: { ...this.args },
+        pathname: this.pathname,
         scriptDiff: this.scriptDiff,
         scriptId: this.scriptId,
       });
@@ -57,13 +63,13 @@ export class URLParams {
     this.onChange = subject;
   }
 
-  private toURL(id: string, diff: string, args: Args) {
+  private toURL(pathname: string, id: string, diff: string, args: Args) {
     const params = {
       ...(id ? { script: id } : {}),
       ...(diff ? { diff } : {}),
       ...args,
     };
-    const { protocol, host, pathname } = this.privateWindow.location;
+    const { protocol, host } = this.privateWindow.location;
     const newQueryString = QueryString.stringify(params);
     const search = newQueryString ? `?${newQueryString}` : '';
     return `${protocol}//${host}${pathname}${search}`;
@@ -87,28 +93,45 @@ export class URLParams {
     return params;
   }
 
+  private syncWithPathname() {
+    this.pathname = this.getPathname();
+  }
+
+  getPathname(): string {
+    return this.privateWindow.location.pathname;
+  }
+
   private updateURL() {
-    const newurl = this.toURL(this.scriptId, this.scriptDiff, this.args);
+    const newurl = this.toURL(this.pathname, this.scriptId, this.scriptDiff, this.args);
     this.privateWindow.history.replaceState({ path: newurl }, '', newurl);
   }
 
   private commitURL() {
     // Don't push the state if the params haven't changed.
-    if (this.scriptId === this.prevParams.scriptId &&
+    if (
+      this.pathname && this.prevParams.pathname &&
+      this.scriptId === this.prevParams.scriptId &&
       this.scriptDiff === this.prevParams.scriptDiff &&
       argsEquals(this.args, this.prevParams.args)) {
       return;
     }
-    const newurl = this.toURL(this.scriptId, this.scriptDiff, this.args);
-    const oldurl = this.toURL(this.prevParams.scriptId, this.prevParams.scriptDiff, this.prevParams.args);
+    const newurl = this.toURL(this.pathname, this.scriptId, this.scriptDiff, this.args);
+    const oldurl = this.toURL(this.prevParams.pathname, this.prevParams.scriptId, this.prevParams.scriptDiff,
+                              this.prevParams.args);
     // Restore the current history state to the previous one, otherwise we would just be pushing the same state again.
     this.privateWindow.history.replaceState({ path: oldurl }, '', oldurl);
     this.privateWindow.history.pushState({ path: newurl }, '', newurl);
     this.prevParams = {
+      pathname: this.pathname,
       scriptId: this.scriptId,
       scriptDiff: this.scriptDiff,
       args: this.args,
     };
+  }
+
+  setPathname(pathname: string) {
+    this.pathname = pathname;
+    this.updateURL();
   }
 
   setArgs(newArgs: Args) {

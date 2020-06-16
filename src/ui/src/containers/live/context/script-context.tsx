@@ -3,6 +3,8 @@ import * as React from 'react';
 import urlParams from 'utils/url-params';
 
 import { SetStateFunc } from './common';
+import { RouteContext } from './route-context';
+import { LiveViewPage } from '../utils/live-view-params';
 
 interface ScriptContextProps {
   script: string;
@@ -18,11 +20,14 @@ export const ScriptContextProvider = (props) => {
   const [script, setScript] = storage.useSessionStorage(storage.LIVE_VIEW_PIXIE_SCRIPT_KEY, '');
   const [title, setTitle] = storage.useSessionStorage(storage.LIVE_VIEW_SCRIPT_TITLE_KEY, '');
   const [id, setId] = storage.useSessionStorage(storage.LIVE_VIEW_SCRIPT_ID_KEY, '');
+  const {liveViewPage} = React.useContext(RouteContext);
 
   const setIdAndTitle = (newId: string, newTitle: string) => {
     setTitle(newTitle);
     setId(newId);
-    urlParams.setScript(newId, '' /* diff */);
+    if (liveViewPage === LiveViewPage.Default) {
+      urlParams.setScript(newId, '' /* diff */);
+    }
   };
 
   return (

@@ -4,9 +4,11 @@ import { argsForVis } from 'utils/args-utils';
 import urlParams from 'utils/url-params';
 
 import { ExecuteContext } from './context/execute-context';
+import { RouteContext } from './context/route-context';
 import { ScriptContext } from './context/script-context';
 import { VisContext } from './context/vis-context';
 import { parseVis } from './vis';
+import { LiveViewPage, LiveViewPageScriptIds } from './utils/live-view-params';
 
 type LoadScriptState = 'unloaded' | 'url-loaded' | 'url-skipped' | 'context-loaded';
 
@@ -18,6 +20,8 @@ export function ScriptLoader() {
     scriptId: urlParams.scriptId,
     args: urlParams.args,
   });
+
+  const { liveViewPage } = React.useContext(RouteContext);
   const { execute } = React.useContext(ExecuteContext);
   const visSpec = React.useContext(VisContext);
   const ref = React.useRef({
@@ -40,32 +44,35 @@ export function ScriptLoader() {
   React.useEffect(() => {
     const subscription = urlParams.onChange.subscribe(({ scriptId, args }) => {
       scriptPromise.then((scripts) => {
-        for (const { title, vis, code, id } of scripts) {
-          if (id === scriptId && code) {
-            const parsedVis = parseVis(vis);
-            const parsedArgs = argsForVis(parsedVis, args, id);
-            ref.current.execute({
-              script: code,
-              vis: parsedVis,
-              args: parsedArgs,
-              title,
-              id,
-              skipURLUpdate: true,
-            });
-            setLoadState((state) => {
-              if (state !== 'unloaded') {
-                return state;
-              }
-              return 'url-loaded';
-            })
-            return;
-          }
+        const id = liveViewPage === LiveViewPage.Default ? scriptId : LiveViewPageScriptIds[liveViewPage];
+
+        if (!scripts.has(id)) {
+          setLoadState((state) => {
+            if (state !== 'unloaded') {
+              return state;
+            }
+            return 'url-skipped';
+          });
+          return;
         }
+
+        const { title, vis, code } = scripts.get(id);
+
+        const parsedVis = parseVis(vis);
+        const parsedArgs = argsForVis(parsedVis, args, id);
+        ref.current.execute({
+          script: code,
+          vis: parsedVis,
+          args: parsedArgs,
+          title,
+          id,
+          skipURLUpdate: true,
+        });
         setLoadState((state) => {
           if (state !== 'unloaded') {
             return state;
           }
-          return 'url-skipped';
+          return 'url-loaded';
         });
       });
     });

@@ -40,21 +40,22 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
   const classes = useStyles();
 
   const { scripts } = React.useContext(ScriptsContext);
-  const [scriptsMap, setScriptsMap] = React.useState<Map<string, Script>>(null);
   const [completions, setCompletions] = React.useState<CompletionItem[]>([]);
 
   React.useEffect(() => {
-    const visibleScripts = scripts.filter((s) => !s.hidden);
-    setCompletions(visibleScripts.map((s) => ({
+    const visibleScripts = [...scripts.entries()]
+      .filter(([, s]) => !s.hidden)
+      .map(([, s]) => s);
+
+    setCompletions(visibleScripts.map((script) => ({
       type: 'item',
-      id: s.id,
-      title: s.id,
-      description: s.description,
+      id: script.id,
+      title: script.id,
+      description: script.description,
     })));
-    setScriptsMap(new Map(visibleScripts.map((s) => [s.id, s])));
   }, [scripts]);
 
-  const { execute } = React.useContext(ExecuteContext);
+  const { execute, resetDefaultLiveViewPage } = React.useContext(ExecuteContext);
 
   const getCompletions = React.useCallback((input) => {
     if (!input) {
@@ -64,7 +65,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
   }, [completions]);
 
   const selectScript = (id) => {
-    const script = scriptsMap.get(id);
+    const script = scripts.get(id);
     const vis = parseVis(script.vis);
     if (script) {
       execute({
@@ -73,8 +74,9 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
         title: script.title,
         id: script.id,
         // Fill the default args for now. This will go away once the autocomplete is implemented.
-        args: argsForVis(vis, {}),
+        args: argsForVis(vis, {})
       });
+      resetDefaultLiveViewPage(script.id);
     }
     onClose();
   };

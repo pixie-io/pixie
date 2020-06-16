@@ -11,8 +11,10 @@ import urlParams from 'utils/url-params';
 import { ArgsContext } from './args-context';
 import { DataDrawerContext } from './data-drawer-context';
 import { ResultsContext } from './results-context';
+import { RouteContext } from './route-context';
 import { ScriptContext } from './script-context';
 import { VisContext } from './vis-context';
+import { LiveViewPage } from '../utils/live-view-params';
 
 interface ExecuteArguments {
   script: string;
@@ -25,11 +27,13 @@ interface ExecuteArguments {
 
 interface ExecuteContextProps {
   execute: (execArgs?: ExecuteArguments) => void;
+  // Resets the entity page to the default page, not an entity-centric URL.
+  resetDefaultLiveViewPage: (scriptId?: string) => void;
 }
 
 export const ExecuteContext = React.createContext<ExecuteContextProps>(null);
 
-export const ExeucteContextProvider = (props) => {
+export const ExecuteContextProvider = (props) => {
   const { id, script, setIdAndTitle, setScript } = React.useContext(ScriptContext);
   const { vis, setVis } = React.useContext(VisContext);
   const { args, setArgs } = React.useContext(ArgsContext);
@@ -37,6 +41,13 @@ export const ExeucteContextProvider = (props) => {
   const { clearResults, setResults, setLoading, loading } = React.useContext(ResultsContext);
   const showSnackbar = useSnackbar();
   const { openDrawerTab } = React.useContext(DataDrawerContext);
+  const { liveViewPage, setEntityParams, setLiveViewPage } = React.useContext(RouteContext);
+
+  const resetDefaultLiveViewPage = (scriptID?: string) => {
+    setEntityParams({});
+    setLiveViewPage(LiveViewPage.Default);
+    urlParams.setScript(scriptID || id, /* diff */'');
+  }
 
   const execute = (execArgs?: ExecuteArguments) => {
     if (loading) {
@@ -81,7 +92,9 @@ export const ExeucteContextProvider = (props) => {
     let queryId: string;
 
     if (!execArgs.skipURLUpdate) {
-      urlParams.commitAll(execArgs.id || '', '', execArgs.args);
+      // Only show the script as a query arg when we are not on an entity page.
+      const scriptId = liveViewPage === LiveViewPage.Default ? (execArgs.id || '') : '';
+      urlParams.commitAll(scriptId, '', execArgs.args);
     }
 
     new Promise((resolve, reject) => {
@@ -135,7 +148,7 @@ export const ExeucteContextProvider = (props) => {
   };
 
   return (
-    <ExecuteContext.Provider value={{ execute }}>
+    <ExecuteContext.Provider value={{ execute, resetDefaultLiveViewPage }}>
       {props.children}
     </ExecuteContext.Provider>
   );

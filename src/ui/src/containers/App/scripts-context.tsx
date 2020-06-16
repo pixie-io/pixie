@@ -13,21 +13,24 @@ const GET_USER_ORG = gql`
 `;
 
 interface ScriptsContextProps {
-  scripts: Script[];
-  promise: Promise<Script[]>;
+  scripts: Map<string, Script>;
+  promise: Promise<Map<string, Script>>;
 }
 
 export const ScriptsContext = React.createContext<ScriptsContextProps>(null);
 
 export const ScriptsContextProvider = (props) => {
   const client = useApolloClient();
-  const [scripts, setScripts] = React.useState<Script[]>([]);
+  const [scripts, setScripts] = React.useState<Map<string, Script>>(null);
 
   const promise = React.useMemo(() => {
     return client.query({ query: GET_USER_ORG, fetchPolicy: 'network-only' })
       .then((result) => {
         const orgName = result?.data?.user.orgName;
         return GetPxScripts(orgName);
+      })
+      .then((scriptsList) => {
+        return new Map<string, Script>(scriptsList.map((script) => [script.id, script]));
       });
   }, []);
 
