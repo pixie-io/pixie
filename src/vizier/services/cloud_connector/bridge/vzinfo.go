@@ -32,6 +32,13 @@ const plNamespace = "pl"
 
 const k8sStateUpdatePeriod = 10 * time.Second
 
+// K8sJobHandler manages k8s jobs.
+// TODO(michelle): Refactor and move job-related operations from the VizierInfo
+// interface here.
+type K8sJobHandler interface {
+	CleanupCronJob(string, time.Duration, chan bool)
+}
+
 // K8sVizierInfo is responsible for fetching Vizier information through K8s.
 type K8sVizierInfo struct {
 	clientset           *kubernetes.Clientset
@@ -313,6 +320,35 @@ func (v *K8sVizierInfo) DeleteJob(name string) error {
 // GetJob gets the job with the specified name.
 func (v *K8sVizierInfo) GetJob(name string) (*batchv1.Job, error) {
 	return v.clientset.BatchV1().Jobs(plNamespace).Get(context.Background(), name, metav1.GetOptions{})
+}
+
+// CleanupCronJob periodically cleans up any completed jobs that were run by the specified cronjob.
+func (v *K8sVizierInfo) CleanupCronJob(cronJob string, duration time.Duration, quitCh chan bool) {
+	policy := metav1.DeletePropagationBackground
+	ticker := time.NewTicker(duration)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			jobs, err := v.clientset.BatchV1().Jobs(plNamespace).List(context.Background(), metav1.ListOptions{})
+			if err != nil {
+				log.WithError(err).Error("Could not list jobs")
+				continue
+			}
+			for _, j := range jobs.Items {
+				if len(j.ObjectMeta.OwnerReferences) > 0 && j.ObjectMeta.OwnerReferences[0].Name == cronJob && j.Status.Succeeded == 1 {
+					err = v.clientset.BatchV1().Jobs(plNamespace).Delete(context.Background(), j.ObjectMeta.Name, metav1.DeleteOptions{
+						PropagationPolicy: &policy,
+					})
+					if err != nil {
+						log.WithError(err).Error("Could not delete job")
+					}
+				}
+			}
+		case <-quitCh:
+			return
+		}
+	}
 }
 
 // WaitForJobCompletion waits for the job with given name to complete.

@@ -115,6 +115,12 @@ func main() {
 	}
 	checker := vizhealth.NewChecker(viper.GetString("jwt_signing_key"), qbVzClient)
 	defer checker.Stop()
+
+	// Periodically clean up any completed jobs.
+	quitCh := make(chan bool)
+	go vzInfo.CleanupCronJob("etcd-defrag-job", 2*time.Hour, quitCh)
+	defer close(quitCh)
+
 	// We just use the current time in nanoseconds to mark the session ID. This will let the cloud side know that
 	// the cloud connector restarted. Clock skew might make this incorrect, but we mostly want this for debugging.
 	sessionID := time.Now().UnixNano()
