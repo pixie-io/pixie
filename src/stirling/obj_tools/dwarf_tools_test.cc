@@ -20,17 +20,17 @@ TEST(DwarfReaderTest, NonExistentPath) {
 
 TEST(DwarfReaderTest, Basic) {
   const std::string path = pl::testing::TestFilePath(kBinary);
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader, DwarfReader::Create(path));
 
   std::vector<llvm::DWARFDie> dies;
 
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader, DwarfReader::Create(path));
-  ASSERT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("foo"), IsEmpty());
+  EXPECT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("foo"), IsEmpty());
 
   ASSERT_OK_AND_ASSIGN(dies, dwarf_reader->GetMatchingDIEs("PairStruct"));
   ASSERT_THAT(dies, SizeIs(1));
-  ASSERT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_structure_type);
+  EXPECT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_structure_type);
 
-  ASSERT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("PairStruct", llvm::dwarf::DW_TAG_member),
+  EXPECT_OK_AND_THAT(dwarf_reader->GetMatchingDIEs("PairStruct", llvm::dwarf::DW_TAG_member),
                      IsEmpty());
 
   ASSERT_OK_AND_ASSIGN(
@@ -38,9 +38,9 @@ TEST(DwarfReaderTest, Basic) {
   ASSERT_THAT(dies, SizeIs(1));
   ASSERT_EQ(dies[0].getTag(), llvm::dwarf::DW_TAG_structure_type);
 
-  ASSERT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "a"), 0);
-  ASSERT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "b"), 4);
-  ASSERT_NOT_OK(dwarf_reader->GetStructMemberOffset("PairStruct", "bogus"));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "a"), 0);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "b"), 4);
+  EXPECT_NOT_OK(dwarf_reader->GetStructMemberOffset("PairStruct", "bogus"));
 }
 
 TEST(DwarfReaderTest, WithoutIndex) {
@@ -49,9 +49,21 @@ TEST(DwarfReaderTest, WithoutIndex) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        DwarfReader::Create(path, /* index */ false));
 
-  ASSERT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "a"), 0);
-  ASSERT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "b"), 4);
-  ASSERT_NOT_OK(dwarf_reader->GetStructMemberOffset("PairStruct", "bogus"));
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "a"), 0);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "b"), 4);
+  EXPECT_NOT_OK(dwarf_reader->GetStructMemberOffset("PairStruct", "bogus"));
+}
+
+TEST(DwarfReaderTest, ArgumentTypeByteSize) {
+  const std::string path = pl::testing::TestFilePath(kBinary);
+
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(path, /* index */ false));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("CanYouFindThis", "a"), 4);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("SomeFunction", "x"), 12);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("SomeFunctionWithPointerArgs", "a"), 8);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("SomeFunctionWithPointerArgs", "x"), 8);
 }
 
 }  // namespace dwarf_tools

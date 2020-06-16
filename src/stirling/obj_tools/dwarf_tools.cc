@@ -139,8 +139,8 @@ StatusOr<std::vector<DWARFDie>> DwarfReader::GetMatchingDIEs(std::string_view na
   return dies;
 }
 
-StatusOr<int> DwarfReader::GetStructMemberOffset(std::string_view struct_name,
-                                                 std::string member_name) {
+StatusOr<uint64_t> DwarfReader::GetStructMemberOffset(std::string_view struct_name,
+                                                      std::string_view member_name) {
   PL_ASSIGN_OR_RETURN(std::vector<DWARFDie> dies,
                       GetMatchingDIEs(struct_name, llvm::dwarf::DW_TAG_structure_type));
   if (dies.empty()) {
@@ -167,7 +167,82 @@ StatusOr<int> DwarfReader::GetStructMemberOffset(std::string_view struct_name,
     }
   }
 
-  return error::Internal("Could not find member");
+  return error::Internal("Could not find member.");
+}
+
+namespace {
+StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
+  if (die.getTag() == llvm::dwarf::DW_TAG_pointer_type) {
+    // TODO(oazizi): This will break on 32-bit binary.
+    // Use ELF to get the correct value.
+    // https://superuser.com/questions/791506/how-to-determine-if-a-linux-binary-file-is-32-bit-or-64-bit
+    return sizeof(void*);
+  }
+
+  if ((die.getTag() != llvm::dwarf::DW_TAG_base_type) &&
+      (die.getTag() != llvm::dwarf::DW_TAG_structure_type)) {
+    return error::Internal(
+        absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
+  }
+
+  llvm::Optional<llvm::DWARFFormValue> byte_size_attr = die.find(llvm::dwarf::DW_AT_byte_size);
+  if (!byte_size_attr.hasValue()) {
+    return error::Internal("Could not find DW_AT_byte_size.");
+  }
+
+  llvm::Optional<uint64_t> byte_size = byte_size_attr.getValue().getAsUnsignedConstant();
+  if (!byte_size.hasValue()) {
+    return error::Internal("Could not extract byte_size.");
+  }
+
+  return byte_size.getValue();
+}
+}  // namespace
+
+StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view symbol_name,
+                                                        std::string_view arg_name) {
+  PL_ASSIGN_OR_RETURN(std::vector<DWARFDie> dies,
+                      GetMatchingDIEs(symbol_name, llvm::dwarf::DW_TAG_subprogram));
+  if (dies.empty()) {
+    return error::Internal("Could not locate structure");
+  }
+  if (dies.size() > 1) {
+    return error::Internal("Found too many DIE matches");
+  }
+
+  DWARFDie& function_die = dies.front();
+
+  for (const auto& die : function_die.children()) {
+    if ((die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) &&
+        (die.getName(llvm::DINameKind::ShortName) == arg_name)) {
+      llvm::Optional<llvm::DWARFFormValue> type_attr = die.find(llvm::dwarf::DW_AT_type);
+      if (!type_attr.hasValue()) {
+        return error::Internal("Found argument, but could not determine its type.");
+      }
+      llvm::Optional<uint64_t> type = type_attr.getValue().getAsReference();
+      if (!type.hasValue()) {
+        return error::Internal("Could not extract type.");
+      }
+
+      return GetTypeByteSize(die.getAttributeValueAsReferencedDie(type_attr.getValue()));
+
+      // TODO(oazizi): Extract location information directly, using something like the following:
+      //
+      // llvm::Optional<llvm::DWARFFormValue> loc_attr = die.find(llvm::dwarf::DW_AT_location);
+      // if (!loc_attr.hasValue()) {
+      //   return error::Internal("Found argument, but could not determine its location.");
+      // }
+      //
+      // LOG(INFO) << magic_enum::enum_name(loc_attr.getValue().getForm());
+      // llvm::Optional<uint64_t> loc = loc_attr.getValue().getAsReference();
+      // if (!loc.hasValue()) {
+      //   return error::Internal("Could not extract location.");
+      // }
+      //
+      // loc.getValue()
+    }
+  }
+  return error::Internal("Could not find argument.");
 }
 
 }  // namespace dwarf_tools

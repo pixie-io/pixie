@@ -47,7 +47,11 @@ class DwarfReader {
    * @param member_name Name of member within the struct.
    * @return Error if offset could not be found; otherwise, offset in bytes.
    */
-  StatusOr<int> GetStructMemberOffset(std::string_view struct_name, std::string member_name);
+  StatusOr<uint64_t> GetStructMemberOffset(std::string_view struct_name,
+                                           std::string_view member_name);
+
+  StatusOr<uint64_t> GetArgumentTypeByteSize(std::string_view symbol_name,
+                                             std::string_view arg_name);
 
   bool IsValid() { return dwarf_context_->getNumCompileUnits() != 0; }
 

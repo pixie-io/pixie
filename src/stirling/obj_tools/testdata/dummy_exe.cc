@@ -4,12 +4,14 @@
 struct PairStruct {
   int a;
   int b;
+  int c;
 };
 
 // Using extern C to avoid name mangling (which just keeps the test a bit more readable).
 extern "C" {
 int CanYouFindThis(int a, int b) { return a + b; }
-int SomeFunction(PairStruct x) { return x.a + x.b; }
+int SomeFunction(PairStruct x) { return x.a + x.b + x.c; }
+void SomeFunctionWithPointerArgs(int* a, PairStruct* x) { x->a = *a; a++; }
 }
 
 int main() {
