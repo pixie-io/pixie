@@ -5,7 +5,6 @@
 #include <string>
 
 #include "src/common/base/base.h"
-#include "src/stirling/record_builder.h"
 
 BCC_SRC_STRVIEW(pidruntime_bcc_script, pidruntime);
 
@@ -45,7 +44,7 @@ void PIDRuntimeConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t
       prev_run_time = it->second;
     }
 
-    RecordBuilder<&kTable> r(data_table);
+    DataTable::RecordBuilder<&kTable> r(data_table);
     r.Append<r.ColIndex("time_")>(item.second.timestamp + ClockRealTimeOffset());
     r.Append<r.ColIndex("pid")>(item.first);
     r.Append<r.ColIndex("runtime_ns")>(item.second.run_time - prev_run_time);

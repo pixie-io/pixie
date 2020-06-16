@@ -1,7 +1,5 @@
 #include "src/stirling/seq_gen_connector.h"
 
-#include "src/stirling/record_builder.h"
-
 namespace pl {
 namespace stirling {
 
@@ -24,7 +22,7 @@ void SeqGenConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t tab
 
 void SeqGenConnector::TransferDataTable0(uint32_t num_records, DataTable* data_table) {
   for (uint32_t irecord = 0; irecord < num_records; ++irecord) {
-    RecordBuilder<&kSeq0Table> r(data_table);
+    DataTable::RecordBuilder<&kSeq0Table> r(data_table);
     r.Append<r.ColIndex("time_")>(table0_time_seq_());
     r.Append<r.ColIndex("x")>(table0_lin_seq_());
     r.Append<r.ColIndex("xmod10")>(table0_mod10_seq_());
@@ -43,7 +41,7 @@ void SeqGenConnector::TransferDataTable1(uint32_t num_records, DataTable* data_t
     // Same pattern will arise when tabletizing other tables.
     types::TabletID tablet_id = std::to_string(table1_mode8_seq_val);
 
-    RecordBuilder<&kSeq1Table> r(data_table, tablet_id);
+    DataTable::RecordBuilder<&kSeq1Table> r(data_table, tablet_id);
     r.Append<r.ColIndex("time_")>(table1_time_seq_());
     r.Append<r.ColIndex("x")>(table1_lin_seq_());
     // Tabletization key must also be appended as a column value.

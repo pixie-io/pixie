@@ -31,7 +31,9 @@ struct TableFixture {
     return std::move(tablets.front().records);
   }
   ArrayView<DataElement> elements() const { return kDummyTable.elements(); }
-  RecordBuilder<schema> record_builder() { return RecordBuilder<schema>(&data_table); }
+  DataTable::RecordBuilder<schema> record_builder() {
+    return DataTable::RecordBuilder<schema>(&data_table);
+  }
 
   DataTable data_table;
 };

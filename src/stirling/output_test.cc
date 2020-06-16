@@ -1,8 +1,6 @@
 #include "src/stirling/output.h"
 
 #include "src/common/testing/testing.h"
-#include "src/stirling/data_table.h"
-#include "src/stirling/record_builder.h"
 #include "src/stirling/testing/dummy_table.h"
 
 namespace pl {

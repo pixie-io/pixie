@@ -9,7 +9,6 @@
 #include "src/common/base/base.h"
 #include "src/common/system/proc_parser.h"
 #include "src/shared/metadata/metadata.h"
-#include "src/stirling/record_builder.h"
 
 namespace pl {
 namespace stirling {
@@ -50,9 +49,9 @@ void SystemStatsConnector::TransferProcessStatsTable(ConnectorContext* ctx, Data
       continue;
     }
 
-    RecordBuilder<&kProcessStatsTable> r(data_table);
+    DataTable::RecordBuilder<&kProcessStatsTable> r(data_table);
     // TODO(oazizi): Enable version below, once rest of the agent supports tabletization.
-    //  RecordBuilder<&kProcessStatsTable> r(data_table, upid.value());
+    //  DataTable::RecordBuilder<&kProcessStatsTable> r(data_table, upid.value());
     r.Append<r.ColIndex("time_")>(timestamp);
     // Tabletization key must also be appended as a column value.
     // See note in RecordBuilder class.
@@ -93,7 +92,7 @@ void SystemStatsConnector::TransferNetworkStatsTable(ConnectorContext* ctx, Data
       continue;
     }
 
-    RecordBuilder<&kNetworkStatsTable> r(data_table);
+    DataTable::RecordBuilder<&kNetworkStatsTable> r(data_table);
 
     r.Append<r.ColIndex("time_")>(timestamp);
     r.Append<r.ColIndex("pod_id")>(std::string(pod_id));

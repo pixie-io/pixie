@@ -2,7 +2,6 @@
 
 #include "src/common/testing/testing.h"
 #include "src/stirling/data_table.h"
-#include "src/stirling/record_builder.h"
 #include "src/stirling/testing/common.h"
 #include "src/stirling/types.h"
 
@@ -26,15 +25,17 @@ static constexpr auto kTableSchema = DataTableSchema("abc_table", kElements);
 TEST(RecordBuilder, StringMaxSize) {
   DataTable data_table(kTableSchema);
 
-  std::string kLargeString(RecordBuilder<&kTableSchema>::kMaxStringBytes + 100, 'c');
-  std::string kExpectedString(RecordBuilder<&kTableSchema>::kMaxStringBytes, 'c');
+  std::string kLargeString(DataTable::RecordBuilder<&kTableSchema>::kMaxStringBytes + 100, 'c');
+  std::string kExpectedString(DataTable::RecordBuilder<&kTableSchema>::kMaxStringBytes, 'c');
 
-  RecordBuilder<&kTableSchema> r(&data_table);
+  DataTable::RecordBuilder<&kTableSchema> r(&data_table);
   r.Append<r.ColIndex("a")>(1);
   r.Append<r.ColIndex("b")>("foo");
   r.Append<r.ColIndex("c")>(kLargeString);
 
-  types::ColumnWrapperRecordBatch& record_batch = *data_table.ActiveRecordBatch();
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecordBatches();
+  ASSERT_EQ(tablets.size(), 1);
+  types::ColumnWrapperRecordBatch& record_batch = tablets[0].records;
 
   ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
 
@@ -45,7 +46,7 @@ TEST(RecordBuilder, StringMaxSize) {
 TEST(RecordBuilder, UnfilledColNames) {
   DataTable data_table(kTableSchema);
 
-  RecordBuilder<&kTableSchema> r(&data_table);
+  DataTable::RecordBuilder<&kTableSchema> r(&data_table);
   EXPECT_THAT(r.UnfilledColNames(), ElementsAre("a", "b", "c"));
 
   r.Append<r.ColIndex("a")>(1);

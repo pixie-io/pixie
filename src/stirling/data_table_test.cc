@@ -19,16 +19,16 @@ TEST(DataTableTest, ResultIsSorted) {
   static constexpr auto kSchema = DataTableSchema("test_table", kElements);
 
   std::unique_ptr<DataTable> data_table = std::make_unique<DataTable>(kSchema);
-  auto& columns = *(data_table->ActiveRecordBatch());
 
   std::vector<int> time_vals = {0, 10, 40, 20, 30, 50, 90, 70, 60, 80};
   std::vector<int> x_vals = {0, 1, 4, 2, 3, 5, 9, 7, 6, 8};
   std::vector<std::string> s_vals = {"a", "b", "e", "c", "d", "f", "j", "h", "g", "i"};
 
   for (size_t i = 0; i < time_vals.size(); ++i) {
-    columns[kSchema.ColIndex("time_")]->Append<types::Time64NSValue>(time_vals[i]);
-    columns[kSchema.ColIndex("x")]->Append<types::Int64Value>(x_vals[i]);
-    columns[kSchema.ColIndex("s")]->Append<types::StringValue>(s_vals[i]);
+    DataTable::RecordBuilder<&kSchema> r(data_table.get());
+    r.Append<r.ColIndex("time_")>(time_vals[i]);
+    r.Append<r.ColIndex("x")>(x_vals[i]);
+    r.Append<r.ColIndex("s")>(s_vals[i]);
   }
 
   std::vector<TaggedRecordBatch> record_batches = data_table->ConsumeRecordBatches();
@@ -180,12 +180,11 @@ class DataTableStressTest : public ::testing::Test {
         last_pass = true;
       }
 
-      auto& columns = *(data_table_->ActiveRecordBatch());
-
       for (size_t i = 0; i < num_rows; ++i) {
-        columns[0]->Append<types::Int64Value>(f0_vals_[current_record + i]);
-        columns[1]->Append<types::Float64Value>(f1_vals_[current_record + i]);
-        columns[2]->Append<types::Int64Value>(f2_vals_[current_record + i]);
+        DataTable::RecordBuilder<&kSchema> r(data_table_.get());
+        r.Append<r.ColIndex("f0")>(f0_vals_[current_record + i]);
+        r.Append<r.ColIndex("f1")>(f1_vals_[current_record + i]);
+        r.Append<r.ColIndex("f2")>(f2_vals_[current_record + i]);
       }
 
       current_record += num_rows;
