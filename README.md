@@ -17,7 +17,7 @@
 
 <img src="./assets/live_7apr20.gif" alt="Pixie" width="425" align="right">
 
-Pixie is an edge intelligence platform to help you debug in minutes and avoid wasting months instrumenting your entire codebase.
+Pixie gives you instant visibility by giving access to metrics, events, traces and logs without changing code.
 
 We're building up Pixie for broad use by the end of 2020. If you are interested, feel free to try our [community beta](https://work.withpixie.ai/signup) and join our community on [slack](https://slackin.withpixie.ai/).
 
@@ -63,7 +63,7 @@ If you don't already have a K8s cluster available you can:
   - Deploy [Weaveworks'](https://www.weave.works/) [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by running `px demo deploy px-sock-shop`
  
 
-#### 🚀Deploy Pixie
+#### 🚀 Deploy Pixie
 
 Deploy the Pixie Platform in your K8s cluster by runnning: 
 
