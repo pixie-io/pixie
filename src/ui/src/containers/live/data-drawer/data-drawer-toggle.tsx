@@ -95,8 +95,8 @@ const DataDrawerToggle = (props: DataDrawerToggleProps) => {
         <StyledTab value='data' label='Underlying Data' />
         {error ? <StyledTab value='errors' label='Errors' /> : null}
         {stats ? <StyledTab value='stats' label='Execution Stats' /> : null}
-        <PixieLogo className={classes.pixieLogo} />
       </StyledTabs>
+      <PixieLogo className={classes.pixieLogo} />
     </div >
   );
 };
