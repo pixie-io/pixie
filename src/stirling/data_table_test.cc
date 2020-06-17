@@ -195,7 +195,8 @@ TEST_F(DataTableTest, Carryover) {
       r.Append<r.ColIndex("s")>(s_vals[i]);
     }
 
-    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords(20);
+    data_table_->SetConsumeRecordsCutoffTime(20);
+    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
 
     ASSERT_EQ(tablets.size(), 1);
     types::ColumnWrapperRecordBatch& rb = tablets[0].records;
@@ -224,7 +225,8 @@ TEST_F(DataTableTest, Carryover) {
       r.Append<r.ColIndex("s")>(s_vals[i]);
     }
 
-    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords(40);
+    data_table_->SetConsumeRecordsCutoffTime(40);
+    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
 
     ASSERT_EQ(tablets.size(), 1);
     types::ColumnWrapperRecordBatch& rb = tablets[0].records;
@@ -250,7 +252,8 @@ TEST_F(DataTableTest, Carryover) {
       r.Append<r.ColIndex("s")>(s_vals[i]);
     }
 
-    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords(70);
+    data_table_->SetConsumeRecordsCutoffTime(70);
+    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
 
     ASSERT_EQ(tablets.size(), 1);
     types::ColumnWrapperRecordBatch& rb = tablets[0].records;
@@ -271,7 +274,8 @@ TEST_F(DataTableTest, Carryover) {
   }
 
   {
-    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords(100);
+    data_table_->SetConsumeRecordsCutoffTime(100);
+    std::vector<TaggedRecordBatch> tablets = data_table_->ConsumeRecords();
 
     ASSERT_EQ(tablets.size(), 1);
     types::ColumnWrapperRecordBatch& rb = tablets[0].records;

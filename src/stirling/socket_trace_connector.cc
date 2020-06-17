@@ -230,6 +230,12 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
       << absl::Substitute("Trying to access unexpected table: table_num=$0", table_num);
   DCHECK(data_table != nullptr);
 
+  // Since events may be pushed into the perf buffer while reading it,
+  // we establish a cutoff time before draining the perf buffer.
+  if (table_num != kConnStatsTableNum) {
+    data_table->SetConsumeRecordsCutoffTime(AdjustedSteadyClockNowNS());
+  }
+
   // This drains all perf buffers, and causes Handle() callback functions to get called.
   // Note that it drains *all* perf buffers, not just those that are required for this table,
   // so raw data will be pushed to connection trackers more aggressively.

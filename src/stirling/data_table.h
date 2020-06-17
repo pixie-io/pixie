@@ -50,8 +50,21 @@ class DataTable : public NotCopyable {
    *         Empty record batches are not pushed into the vector, so all
    *         TaggedRecordBatch objects will have at least one record.
    */
-  std::vector<TaggedRecordBatch> ConsumeRecords(
-      uint64_t end_time = std::numeric_limits<uint64_t>::max());
+  std::vector<TaggedRecordBatch> ConsumeRecords();
+
+  /**
+   * Sets a cutoff time for the table. Any records that appear after this time
+   * will not be pushed out on a call to ConsumeRecords(). Instead, they will
+   * remain buffered until the cutoff time is advanced.
+   *
+   * @param cutoff_time The time up to which records will be pushed out.
+   */
+  void SetConsumeRecordsCutoffTime(uint64_t cutoff_time) {
+    if (cutoff_time_.has_value()) {
+      DCHECK(cutoff_time >= cutoff_time_);
+    }
+    cutoff_time_ = cutoff_time;
+  }
 
   /**
    * Return current occupancy of the Data Table.
@@ -179,6 +192,12 @@ class DataTable : public NotCopyable {
   absl::flat_hash_map<types::TabletID, Tablet> tablets_;
 
   uint64_t start_time_ = 0;
+
+  // The cutoff time is an optional field that sets up to which time
+  // data source can guarantee that all events have been observed.
+  // Used particularly by the socket tracer which receives asynchronous
+  // events from BPF.
+  std::optional<uint64_t> cutoff_time_;
 };
 
 }  // namespace stirling

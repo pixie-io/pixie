@@ -181,74 +181,46 @@ class InfoClassManager final : public NotCopyable {
  private:
   inline static std::atomic<uint64_t> global_id_ = 0;
 
-  /**
-   * Unique ID of the InfoClassManager instance. ID must never repeat, even after destruction.
-   */
+  // Unique ID of the InfoClassManager instance. ID must never repeat, even after destruction.
   uint64_t id_;
 
-  /**
-   * The schema of table associated with this Info Class manager.
-   */
+  // The schema of table associated with this Info Class manager.
   const DataTableSchema& schema_;
 
-  /**
-   * Boolean indicating whether an agent has subscribed to the Info Class.
-   */
+  // Boolean indicating whether an agent has subscribed to the Info Class.
   bool subscribed_ = false;
 
-  /**
-   * Pointer back to the source connector providing the data.
-   */
+  // Pointer back to the source connector providing the data.
   SourceConnector* source_ = nullptr;
 
-  /**
-   * Table number within source connector for this info class.
-   */
+  // Table number within source connector for this info class.
   uint32_t source_table_num_;
 
-  /**
-   * Pointer to the data table where the data is stored.
-   */
+  // Pointer to the data table where the data is stored.
   DataTable* data_table_ = nullptr;
 
-  /**
-   * Sampling period.
-   */
+  // Sampling period.
   std::chrono::milliseconds sampling_period_;
 
-  /**
-   * Keep track of when the source was last sampled.
-   */
+  // Keep track of when the source was last sampled.
   std::chrono::steady_clock::time_point last_sampled_;
 
-  /**
-   * Statistics: count number of samples.
-   */
+  // Statistics: count number of samples.
   uint32_t sampling_count_ = 0;
 
-  /**
-   * Sampling period.
-   */
+  // Sampling period.
   std::chrono::milliseconds push_period_;
 
-  /**
-   * Keep track of when the source was last sampled.
-   */
+  // Keep track of when the source was last sampled.
   std::chrono::steady_clock::time_point last_pushed_;
 
-  /**
-   * Data push threshold, based number of records after which a push.
-   */
+  // Data push threshold, based number of records after which a push.
   uint32_t occupancy_threshold_ = kDefaultOccupancyThreshold;
 
-  /**
-   * Data push threshold, based on percentage of buffer that is filled.
-   */
+  // Data push threshold, based on percentage of buffer that is filled.
   uint32_t occupancy_pct_threshold_ = kDefaultOccupancyPctThreshold;
 
-  /**
-   * Statistics: count number of pushes.
-   */
+  // Statistics: count number of pushes.
   uint32_t push_count_ = 0;
 
  public:

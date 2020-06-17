@@ -60,7 +60,7 @@ std::vector<size_t> SortedIndexes(const std::vector<uint64_t> v) {
 }
 }  // namespace
 
-std::vector<TaggedRecordBatch> DataTable::ConsumeRecords(uint64_t end_time) {
+std::vector<TaggedRecordBatch> DataTable::ConsumeRecords() {
   std::vector<TaggedRecordBatch> tablets_out;
   absl::flat_hash_map<types::TabletID, Tablet> carryover_tablets;
   uint64_t next_start_time = start_time_;
@@ -70,6 +70,8 @@ std::vector<TaggedRecordBatch> DataTable::ConsumeRecords(uint64_t end_time) {
     // TODO(oazizi): Could keep track of whether tablet is already sorted to avoid some work.
     //               Many tables will naturally be in sorted order.
     std::vector<size_t> sort_indexes = SortedIndexes(tablet.times);
+
+    uint64_t end_time = cutoff_time_.value_or(std::numeric_limits<uint64_t>::max());
 
     // Split the indexes into three groups:
     // 1) Expired indexes: these are too old to return.
