@@ -21,7 +21,7 @@ export function ScriptLoader() {
     args: urlParams.args,
   });
 
-  const { liveViewPage } = React.useContext(RouteContext);
+  const { entityParams, liveViewPage } = React.useContext(RouteContext);
   const { execute } = React.useContext(ExecuteContext);
   const visSpec = React.useContext(VisContext);
   const ref = React.useRef({
@@ -59,7 +59,7 @@ export function ScriptLoader() {
         const { title, vis, code } = scripts.get(id);
 
         const parsedVis = parseVis(vis);
-        const parsedArgs = argsForVis(parsedVis, args, id);
+        const parsedArgs = argsForVis(parsedVis, args, Object.keys(entityParams), id);
         ref.current.execute({
           script: code,
           vis: parsedVis,

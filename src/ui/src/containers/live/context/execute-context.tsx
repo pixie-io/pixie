@@ -41,10 +41,11 @@ export const ExecuteContextProvider = (props) => {
   const { clearResults, setResults, setLoading, loading } = React.useContext(ResultsContext);
   const showSnackbar = useSnackbar();
   const { openDrawerTab } = React.useContext(DataDrawerContext);
-  const { liveViewPage, setEntityParams, setLiveViewPage } = React.useContext(RouteContext);
+  const { entityParams, liveViewPage, setEntityParams, setLiveViewPage } = React.useContext(RouteContext);
 
   const resetDefaultLiveViewPage = (scriptID?: string) => {
     setEntityParams({});
+    setArgs({...args, ...entityParams}, []);
     setLiveViewPage(LiveViewPage.Default);
     urlParams.setScript(scriptID || id, /* diff */'');
   }
@@ -80,7 +81,7 @@ export const ExecuteContextProvider = (props) => {
       }
 
       if (execArgs.args) {
-        setArgs(execArgs.args);
+        setArgs(execArgs.args, Object.keys(entityParams));
       } else {
         // If args were not specified when running the script,
         // use the existing args from the context.
@@ -99,12 +100,14 @@ export const ExecuteContextProvider = (props) => {
 
     new Promise((resolve, reject) => {
       try {
-        resolve(getQueryFuncs(execArgs.vis, execArgs.args));
+        resolve(getQueryFuncs(execArgs.vis, {...entityParams, ...execArgs.args}));
       } catch (error) {
         reject(error);
       }
     })
-      .then((funcs: VizierQueryFunc[]) => client.executeScript(execArgs.script, funcs))
+      .then((funcs: VizierQueryFunc[]) => {
+        return client.executeScript(execArgs.script, funcs);
+      })
       .then((queryResults) => {
         const newTables = {};
         queryId = queryResults.queryId;

@@ -10,6 +10,17 @@ describe('matchLiveViewEntity test', () => {
     });
   });
 
+  it('should correctly match namespace entity page', () => {
+    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop')
+    expect(entity).toStrictEqual({
+      page: LiveViewPage.Namespace,
+      params: {
+        namespace: 'px-sock-shop',
+      },
+      clusterName: 'gke:foobar',
+    });
+  });
+
   it('should correctly match a default view with no cluster', () => {
     const entity = matchLiveViewEntity('/live')
     expect(entity).toStrictEqual({
@@ -36,6 +47,17 @@ describe('toEntityPathname test', () => {
       clusterName: 'gke:foobar',
     };
     expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar/namespaces');
+  });
+
+  it('should generate the url for the namespace page', () => {
+    const entity = {
+      page: LiveViewPage.Namespace,
+      params: {
+        namespace: 'px-sock-shop'
+      },
+      clusterName: 'gke:foobar',
+    };
+    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop');
   });
 
   it('should generate the url for the default page', () => {

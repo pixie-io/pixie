@@ -74,7 +74,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
         title: script.title,
         id: script.id,
         // Fill the default args for now. This will go away once the autocomplete is implemented.
-        args: argsForVis(vis, {})
+        args: argsForVis(vis, {}, [])
       });
       resetDefaultLiveViewPage(script.id);
     }

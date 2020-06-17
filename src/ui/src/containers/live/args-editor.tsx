@@ -4,24 +4,37 @@ import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 
 import { ArgsContext } from './context/args-context';
+import { RouteContext } from './context/route-context';
 
 const ArgsEditor = () => {
   const { args, setArgs } = React.useContext(ArgsContext);
+  const { entityParams, setEntityParams } = React.useContext(RouteContext);
 
   if (!args) {
     return null;
   }
 
-  const argsList = Object.entries(args).filter(([argName]) => argName !== 'script');
+  const allArgs = {
+    ...args,
+    ...entityParams,
+  };
+
+  const argsList = Object.entries(allArgs).filter(([argName]) => argName !== 'script');
   return (
     <>
       {
-        argsList.map(([argName, argVal]) => (
+        argsList.map(([argName, argVal]: [string, string]) => (
           <ArgumentField
             key={argName}
             name={argName}
             value={argVal}
-            onValueChange={(newVal) => { setArgs({ ...args, [argName]: newVal }); }}
+            onValueChange={(newVal) => {
+              if (typeof entityParams[argName] === 'string') {
+                setEntityParams({...entityParams, [argName]: newVal});
+              } else {
+                setArgs({ ...args, [argName]: newVal }, Object.keys(entityParams));
+              }
+            }}
           />
         ))
       }
