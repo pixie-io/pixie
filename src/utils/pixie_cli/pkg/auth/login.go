@@ -179,6 +179,16 @@ func (p *PixieCloudLogin) Run() (*RefreshToken, error) {
 	return p.getRefreshToken(accessToken)
 }
 
+func addCORSHeaders(res http.ResponseWriter) {
+	headers := res.Header()
+	headers.Add("Access-Control-Allow-Origin", "*")
+	headers.Add("Vary", "Origin")
+	headers.Add("Vary", "Access-Control-Request-Method")
+	headers.Add("Vary", "Access-Control-Request-Headers")
+	headers.Add("Access-Control-Allow-Headers", "Content-Type, Origin, Accept, token")
+	headers.Add("Access-Control-Allow-Methods", "GET, POST,OPTIONS")
+}
+
 func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 	// Browser auth starts up a server on localhost to do the user challenge
 	// and get the authentication token.
@@ -204,7 +214,11 @@ func (p *PixieCloudLogin) tryBrowserAuth() (*RefreshToken, error) {
 	mux := http.DefaultServeMux
 	// Start up HTTP server to intercept the browser data.
 	mux.HandleFunc("/auth_complete", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
+		addCORSHeaders(w)
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		} else if r.Method != http.MethodPost {
 			results <- result{nil, errors.New("wrong method on HTTP request, assuming auth failed")}
 			close(results)
 			return

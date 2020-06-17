@@ -185,6 +185,21 @@ interface LoginState {
   token: string;
 }
 
+function redirectPost(url, data) {
+    const form = document.createElement('form');
+    document.body.appendChild(form);
+    form.method = 'post';
+    form.action = url;
+    for (const name in data) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = name;
+        input.value = data[name];
+        form.appendChild(input);
+    }
+    form.submit();
+}
+
 function onLoginAuthenticated(authResult, profile, /* error */) {
   // TODO(malthus): Handle the error.
   const traits = {
@@ -198,6 +213,11 @@ function onLoginAuthenticated(authResult, profile, /* error */) {
       token: authResult.accessToken,
     });
     return;
+  }
+
+  if (this.tokenPostPath) {
+    redirectPost(this.tokenPostPath, {'access_token': authResult.accessToken, 'user_email': profile.email});
+    return
   }
 
   return Axios({
@@ -245,7 +265,18 @@ function onCreateAuthenticated(authResult, profile, /* error */) {
     analytics.identify(response.data.userInfo.userID, traits);
     analytics.track('User signed up');
   }).then(() => {
-    RedirectUtils.redirect(this.redirectPath || '/', {});
+    if (this.tokenPostPath) {
+      redirectPost(this.tokenPostPath, {'access_token': authResult.accessToken, 'user_email': profile.email});
+      return
+    }
+
+    if (this.cliAuthMode !== 'manual') {
+      RedirectUtils.redirect(this.redirectPath || '/', {});
+    } else {
+      this.setState({
+        token: authResult.accessToken,
+      });
+    }
   }).catch((err) => {
     analytics.track('User signup failed', { error: err.response.data });
     this.setState({
@@ -260,6 +291,7 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
   private cliAuthMode: '' | 'auto' | 'manual' = '';
   private auth0Redirect: string;
   private redirectPath: string;
+  private tokenPostPath: string;
   private authenticating: boolean;
   private orgName: string;
 
@@ -299,8 +331,8 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
     // If localMode is on, redirect to the given location.
     if (localMode === 'true' && localModeRedirect !== '') {
       this.cliAuthMode = 'auto';
-      this.auth0Redirect = localModeRedirect;
-      this.responseMode = 'form_post';
+      this.tokenPostPath = localModeRedirect;
+      this.auth0Redirect = this.auth0Redirect + '?local_mode=true&redirect_uri=' + localModeRedirect;
     } else if (localMode === 'true') {
       this.cliAuthMode = 'manual';
       this.auth0Redirect = this.auth0Redirect + '?local_mode=true';
