@@ -290,19 +290,19 @@
       }
     },
     {
-      "name": "Resident Set Size",
+      "name": "Virtual Memory Size",
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "rss_mb",
+            "value": "vsize_mb",
             "mode": "MODE_LINE"
           }
         ],
         "title": "",
         "yAxis": {
-          "label": "RSS Size (MB)"
+          "label": "Virtual Memory Size (MB)"
         },
         "xAxis": null
       },

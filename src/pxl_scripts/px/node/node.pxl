@@ -12,15 +12,15 @@ window_s = 10
 bytes_per_mb = 1024.0 * 1024.0
 
 
-def pods_for_node(start_time: str, node_name: px.Node):
+def pods_for_node(start_time: str, node: px.Node):
     ''' Gets a list of pods running on the input node.
 
     Args:
     @start: Starting time of the data to examine.
-    @node_name: The full name of the node to filter on.
+    @node: The full name of the node to filter on.
     '''
     df = px.DataFrame(table='process_stats', start_time=start_time)
-    df = df[df.ctx['node_name'] == node_name]
+    df = df[df.ctx['node_name'] == node]
     df.pod = df.ctx['pod_name']
     df = df.groupby('pod').agg()
     df.pod_status = px.pod_name_to_status(df.pod)
@@ -28,15 +28,15 @@ def pods_for_node(start_time: str, node_name: px.Node):
     return df
 
 
-def process_stats(start_time: str, node_name: px.Node):
+def process_stats(start_time: str, node: px.Node):
     ''' Gets the windowed process stats (CPU, memory, etc) for the input node.
 
     Args:
     @start: Starting time of the data to examine.
-    @node_name: The full name of the node to filter on.
+    @node: The full name of the node to filter on.
     '''
     df = px.DataFrame(table='process_stats', start_time=start_time)
-    df = df[df.ctx['node_name'] == node_name]
+    df = df[df.ctx['node_name'] == node]
     df.timestamp = px.bin(df.time_, px.seconds(window_s))
 
     # Convert bytes to MB.
@@ -99,16 +99,15 @@ def process_stats(start_time: str, node_name: px.Node):
     return df.drop(['cpu_ktime_ms', 'cpu_utime_ms', 'timestamp'])
 
 
-def network_stats(start_time: str, node_name: px.Node):
+def network_stats(start_time: str, node: px.Node):
     ''' Gets the network stats (transmitted/received traffic) for the input node.
 
     Args:
     @start: Starting time of the data to examine.
-    @node_name: The full name of the node to filter on.
+    @node: The full name of the node to filter on.
     '''
     df = px.DataFrame(table='network_stats', start_time=start_time)
-    df.node = px.pod_id_to_node_name(df.pod_id)
-    df = df[df.node == node_name]
+    df = df[px.pod_id_to_node_name(df.pod_id) == node]
     df.timestamp = px.bin(df.time_, px.seconds(window_s))
 
     df.rx_mb = df.rx_bytes / bytes_per_mb

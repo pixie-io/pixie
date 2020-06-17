@@ -7,7 +7,7 @@
       "defaultValue": "-10m"
     },
     {
-      "name": "node_name",
+      "name": "node",
       "type": "PX_NODE",
       "description": "The node name to filter on",
       "defaultValue": ""
@@ -24,8 +24,8 @@
             "variable": "start_time"
           },
           {
-            "name": "node_name",
-            "variable": "node_name"
+            "name": "node",
+            "variable": "node"
           }
         ]
       }
@@ -40,8 +40,8 @@
             "variable": "start_time"
           },
           {
-            "name": "node_name",
-            "variable": "node_name"
+            "name": "node",
+            "variable": "node"
           }
         ]
       }
@@ -88,8 +88,8 @@
             "variable": "start_time"
           },
           {
-            "name": "node_name",
-            "variable": "node_name"
+            "name": "node",
+            "variable": "node"
           }
         ]
       },
