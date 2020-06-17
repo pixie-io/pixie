@@ -21,7 +21,7 @@ export const ScriptsContext = React.createContext<ScriptsContextProps>(null);
 
 export const ScriptsContextProvider = (props) => {
   const client = useApolloClient();
-  const [scripts, setScripts] = React.useState<Map<string, Script>>(null);
+  const [scripts, setScripts] = React.useState<Map<string, Script>>(new Map());
 
   const promise = React.useMemo(() => {
     return client.query({ query: GET_USER_ORG, fetchPolicy: 'network-only' })
