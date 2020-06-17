@@ -1,3 +1,4 @@
+import PixieLogo from 'components/icons/pixie-logo';
 import { ResultsContext } from 'containers/live/context/results-context';
 import * as React from 'react';
 
@@ -32,6 +33,13 @@ const useStyles = makeStyles((theme: Theme) => {
       ...theme.typography.subtitle2,
       color: theme.palette.foreground.one,
       marginLeft: theme.spacing(2),
+    },
+    pixieLogo: {
+      opacity: 0.5,
+      width: '48px',
+      marginLeft: 'auto',
+      alignSelf: 'center',
+      marginRight: theme.spacing(2),
     },
   });
 });
@@ -87,6 +95,7 @@ const DataDrawerToggle = (props: DataDrawerToggleProps) => {
         <StyledTab value='data' label='Underlying Data' />
         {error ? <StyledTab value='errors' label='Errors' /> : null}
         {stats ? <StyledTab value='stats' label='Execution Stats' /> : null}
+        <PixieLogo className={classes.pixieLogo} />
       </StyledTabs>
     </div >
   );

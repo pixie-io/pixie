@@ -2,7 +2,6 @@ import { scrollbarStyles } from 'common/mui-theme';
 import VizierGRPCClientContext from 'common/vizier-grpc-client-context';
 import EditIcon from 'components/icons/edit';
 import PixieCommandIcon from 'components/icons/pixie-command';
-import PixieLogo from 'components/icons/pixie-logo';
 import { ClusterInstructions } from 'containers/vizier/deploy-instructions';
 import * as React from 'react';
 
@@ -65,13 +64,6 @@ const useStyles = makeStyles((theme: Theme) => {
     canvas: {
       overflow: 'auto',
       marginLeft: theme.spacing(0.5),
-    },
-    pixieLogo: {
-      opacity: 0.5,
-      position: 'fixed',
-      bottom: theme.spacing(1),
-      right: theme.spacing(2),
-      width: '48px',
     },
     clusterSelector: {
       marginRight: theme.spacing(2),
@@ -182,7 +174,6 @@ const LiveView = () => {
               <div>drawer content</div>
             </Drawer>
             <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
-            <PixieLogo className={classes.pixieLogo} />
             {canvasEditable ? <EditorOpener /> : null}
           </>
       }
