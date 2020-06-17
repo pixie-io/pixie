@@ -13,10 +13,10 @@ enum BPFHelper {
 enum ScalarType {
   INT32 = 0;
   INT64 = 1;
-  FLOAT = 2;
-  DOUBLE = 3;
-  STRING = 4;
-  POINTER = 5;
+  DOUBLE = 2;
+  // Same as char pointer.
+  STRING = 3;
+  VOID_POINTER = 4;
 }
 
 enum Register {
@@ -25,8 +25,8 @@ enum Register {
 
 message ValueType {
   oneof type_oneof {
-    ScalarType scaler = 2;
-    string struct = 3;
+    ScalarType scalar = 2;
+    string struct_type = 3;
   }
 }
 

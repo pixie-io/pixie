@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include "src/stirling/bcc_bpf_interface/go_grpc_types.h"
+#include "src/stirling/common/go_grpc_types.h"
 #include "src/stirling/testing/clock.h"
 
 namespace pl {
