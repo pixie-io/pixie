@@ -1,13 +1,18 @@
 package main
 
 import (
+	"context"
+	"crypto/rand"
+	"fmt"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
 	"pixielabs.ai/pixielabs/src/utils/shared/certs"
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
@@ -42,6 +47,23 @@ func main() {
 	if s != nil {
 		log.Info("Certs already exist... Exiting job")
 		return
+	}
+
+	// Assign JWT signing key.
+	jwtSigningKey := make([]byte, 64)
+	_, err = rand.Read(jwtSigningKey)
+	if err != nil {
+		log.WithError(err).Fatal("Could not generate JWT signing key")
+	}
+	s = k8s.GetSecret(clientset, ns, "pl-cluster-secrets")
+	if s == nil {
+		log.Fatal("pl-cluster-secrets does not exist")
+	}
+	s.Data["jwt-signing-key"] = []byte(fmt.Sprintf("%x", jwtSigningKey))
+
+	s, err = clientset.CoreV1().Secrets(ns).Update(context.Background(), s, metav1.UpdateOptions{})
+	if err != nil {
+		log.WithError(err).Fatal("Could not update cluster secrets")
 	}
 
 	certYAMLs, err := certs.DefaultGenerateCertYAMLs(ns)

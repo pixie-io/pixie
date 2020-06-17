@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"strconv"
@@ -162,17 +161,12 @@ func createCloudConfigYAML(cloudAddr string, namespace string, devCloudNamespace
 }
 
 func createClusterSecretsYAML(sentryDSN, namespace string) (string, error) {
-	jwtSigningKey := make([]byte, 64)
-	_, err := rand.Read(jwtSigningKey)
-	if err != nil {
-		return "", errors.New("Could not generate JWT signing key")
-	}
-
-	// Load JWT signing key as a secret.
 	s, err := k8s.CreateGenericSecretFromLiterals(namespace, "pl-cluster-secrets", map[string]string{
-		"sentry-dsn":      sentryDSN,
-		"jwt-signing-key": fmt.Sprintf("%x", jwtSigningKey),
+		"sentry-dsn": sentryDSN,
 	})
+	if err != nil {
+		return "", err
+	}
 	return k8s.ConvertResourceToYAML(s)
 }
 
