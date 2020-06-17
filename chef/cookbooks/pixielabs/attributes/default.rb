@@ -35,9 +35,9 @@ if node[:platform] == 'ubuntu'
     '0567734d558aef19112f2b2873caa0c600f1b4a5827930eb5a7f35235219e9d8'
 
   default['skaffold']['download_path'] =
-    'https://storage.googleapis.com/pl-infra-dev-artifacts/skaffold/84eafe1c/skaffold-linux-amd64'
+    'https://storage.googleapis.com/skaffold/releases/v1.11.0/skaffold-linux-amd64'
   default['skaffold']['sha256']        =
-    '40b678384fb26c5b429160bf9d4b5cf60a619ce3f6b5d771335bde74df123024'
+    'cb23d5c984b8da74112409c4fc959e2b8078ab69dc68d2a2c3d8ff900b28f964'
 
   default['kubectl']['download_path'] =
     'https://storage.googleapis.com/kubernetes-release/release/v1.14.6/bin/linux/amd64/kubectl'
@@ -97,8 +97,8 @@ elsif node[:platform] == 'mac_os_x'
     'e7bad54950e1d18c716ac9202b5406e7d4aca9aa4ca9e334a9742f75c2167a9c'
 
   default['skaffold']['download_path'] =
-    'https://storage.googleapis.com/skaffold/releases/v1.3.1/skaffold-darwin-amd64'
-  default['skaffold']['sha256']        = 'e2f9eb8277e95db95384e2093afbb5bd571347ea065689d8cfd54bae2b301b9a'
+    'https://storage.googleapis.com/skaffold/releases/v1.11.0/skaffold-darwin-amd64'
+  default['skaffold']['sha256']        = '886ff5414af00c210210332786e038db58af0c636b17ebe5d89383d083936f4d'
 
   default['kubectl']['download_path'] =
     'https://storage.googleapis.com/kubernetes-release/release/v1.14.6/bin/darwin/amd64/kubectl'
