@@ -132,6 +132,12 @@ const LiveView = () => {
     }
   }, []);
 
+  React.useEffect(() => {
+    if (isMobile) {
+      setCanvasEditable(false);
+    }
+  }, [isMobile]);
+
   const canvasRef = React.useRef<HTMLDivElement>(null);
 
   return (
