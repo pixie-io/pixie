@@ -72,7 +72,8 @@ const webpackConfig = {
     https: true,
     disableHostCheck: true,
     hot: true,
-    publicPath: '/',
+    writeToDisk: true,
+    publicPath: '/static',
     historyApiFallback: true,
     proxy: [],
   },
@@ -100,7 +101,7 @@ const webpackConfig = {
         loader: require.resolve('url-loader'),
         options: {
           limit: 100,
-          name: 'assets/[name].[hash:8].[ext]',
+          name: 'assets/[name].[contenthash].[ext]',
         },
       },
       {
@@ -150,10 +151,10 @@ const webpackConfig = {
     ],
   },
   output: {
-    filename: '[name].js',
-    chunkFilename: '[name].chunk.js',
+    filename: '[name].[hash].js',
+    chunkFilename: '[name].[hash].chunk.js',
     path: resolve(__dirname, 'dist'),
-    publicPath: '/',
+    publicPath: '/static/',
   },
   plugins,
   resolve: {
@@ -181,11 +182,10 @@ const webpackConfig = {
           minSize: 0, // This is example is too small to create commons chunks
         },
         vendor: {
-          test: /node_modules/,
+          test: /[\\/]node_modules[\\/]/,
           chunks: 'initial',
           name: 'vendor',
           priority: 10,
-          enforce: true,
         },
       },
     },
