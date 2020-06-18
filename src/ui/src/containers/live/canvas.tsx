@@ -174,7 +174,6 @@ const Canvas = (props: CanvasProps) => {
 
   const charts = React.useMemo(() => {
     const widgets = [];
-
     vis.widgets.forEach((widget, i) => {
       const widgetLayout = layout[i];
       const display = widget.displaySpec;
@@ -184,6 +183,16 @@ const Canvas = (props: CanvasProps) => {
       const widgetName = widgetLayout.i;
       const table = tables[tableName];
       let content = null;
+
+      if (loading) {
+        widgets.push(
+            <div key={widgetName} className={className}>
+              <div className={classes.spinner}><Spinner /></div>
+            </div>,
+        );
+        return;
+      }
+
       if (!table) {
         return;
       } else if (display[DISPLAY_TYPE_KEY] === TABLE_DISPLAY_TYPE) {
@@ -215,12 +224,11 @@ const Canvas = (props: CanvasProps) => {
       widgets.push(
         <div key={widgetName} className={className}>
           {content}
-          {loading ? <div className={classes.spinner}><Spinner /></div> : null}
         </div>,
       );
     });
     return widgets;
-  }, [tables, vis, props.editable, loading, layout]);
+  }, [tables, vis, loading, layout]);
 
   if (loading && charts.length === 0) {
     return (

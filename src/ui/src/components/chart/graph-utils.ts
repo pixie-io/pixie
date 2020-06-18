@@ -27,6 +27,6 @@ export function centerFit(parent: DOMRect, child: DOMRect): d3.ZoomTransform {
     x: direction === 'x' ? 0 : parent.width / 2 - child.width * scale / 2,
     y: direction === 'y' ? 0 : parent.height / 2 - child.height * scale / 2,
   };
-  console.log({ translate, parent, child });
+
   return d3.zoomIdentity.translate(translate.x, translate.y).scale(scale);
 }

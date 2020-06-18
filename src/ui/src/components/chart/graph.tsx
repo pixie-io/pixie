@@ -58,12 +58,18 @@ export const Graph = (props: GraphProps) => {
     data.forEach((rb) => {
       // Filter out empty columns, because this will cause dagre to crash.
       if (toCol !== '' && fromCol !== '') {
-        graph.setNode(rb[toCol], { label: rb[toCol] });
-        graph.setNode(rb[fromCol], { label: rb[fromCol] });
-        graph.setEdge(rb[fromCol], rb[toCol]);
+        const nt = rb[toCol];
+        const nf = rb[fromCol];
+        if (!graph.hasNode(nt)) {
+          graph.setNode(nt, {label: nt})
+        }
+        if (!graph.hasNode(nf)) {
+          graph.setNode(nf, {label: nf})
+        }
+
+        graph.setEdge(nf, nt);
       }
     });
-
     return graph;
   };
 
