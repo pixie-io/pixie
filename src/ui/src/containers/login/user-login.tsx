@@ -1,6 +1,6 @@
 import Auth0Lock from 'auth0-lock';
 import Axios from 'axios';
-import { CodeSnippet } from 'components/code-snippet/code-snippet';
+import CodeRenderer from 'components/code-renderer/code-renderer';
 import { DialogBox } from 'components/dialog-box/dialog-box';
 import { AUTH0_CLIENT_ID, AUTH0_DOMAIN } from 'containers/constants';
 import * as check from 'images/icons/check.svg';
@@ -379,9 +379,9 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
       loginBody = (
         <DialogBox width={480}>
           Please copy this code, switch to the CLI and paste it there:
-          <CodeSnippet showCopy={true} language=''>
-            {this.state.token}
-          </CodeSnippet>
+          <CodeRenderer
+            code={this.state.token}
+          />
         </DialogBox>
       );
     } else if (this.state.error !== '') {
