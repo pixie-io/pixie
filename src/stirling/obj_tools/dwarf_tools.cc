@@ -171,19 +171,9 @@ StatusOr<uint64_t> DwarfReader::GetStructMemberOffset(std::string_view struct_na
 }
 
 namespace {
-StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
-  if (die.getTag() == llvm::dwarf::DW_TAG_pointer_type) {
-    // TODO(oazizi): This will break on 32-bit binary.
-    // Use ELF to get the correct value.
-    // https://superuser.com/questions/791506/how-to-determine-if-a-linux-binary-file-is-32-bit-or-64-bit
-    return sizeof(void*);
-  }
-
-  if ((die.getTag() != llvm::dwarf::DW_TAG_base_type) &&
-      (die.getTag() != llvm::dwarf::DW_TAG_structure_type)) {
-    return error::Internal(
-        absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
-  }
+StatusOr<uint64_t> GetBaseOrStructTypeByteSize(const DWARFDie& die) {
+  DCHECK((die.getTag() == llvm::dwarf::DW_TAG_base_type) ||
+         (die.getTag() == llvm::dwarf::DW_TAG_structure_type));
 
   llvm::Optional<llvm::DWARFFormValue> byte_size_attr = die.find(llvm::dwarf::DW_AT_byte_size);
   if (!byte_size_attr.hasValue()) {
@@ -196,6 +186,35 @@ StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
   }
 
   return byte_size.getValue();
+}
+
+StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
+  if (!die.isValid()) {
+    return error::Internal("Encountered an invalid DIE.");
+  }
+
+  // If the type is a typedef, then follow the type and recursively call this function.
+  switch (die.getTag()) {
+    case llvm::dwarf::DW_TAG_typedef: {
+      llvm::Optional<llvm::DWARFFormValue> type_attr = die.find(llvm::dwarf::DW_AT_type);
+      if (!type_attr.hasValue()) {
+        return error::Internal("Found argument, but could not determine its type.");
+      }
+      return GetTypeByteSize(die.getAttributeValueAsReferencedDie(type_attr.getValue()));
+    }
+    case llvm::dwarf::DW_TAG_pointer_type: {
+      // TODO(oazizi): This will break on 32-bit binaries.
+      // Use ELF to get the correct value.
+      // https://superuser.com/questions/791506/how-to-determine-if-a-linux-binary-file-is-32-bit-or-64-bit
+      return sizeof(void*);
+    }
+    case llvm::dwarf::DW_TAG_base_type:
+    case llvm::dwarf::DW_TAG_structure_type:
+      return GetBaseOrStructTypeByteSize(die);
+    default:
+      return error::Internal(
+          absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
+  }
 }
 }  // namespace
 
@@ -218,10 +237,6 @@ StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view symbol_
       llvm::Optional<llvm::DWARFFormValue> type_attr = die.find(llvm::dwarf::DW_AT_type);
       if (!type_attr.hasValue()) {
         return error::Internal("Found argument, but could not determine its type.");
-      }
-      llvm::Optional<uint64_t> type = type_attr.getValue().getAsReference();
-      if (!type.hasValue()) {
-        return error::Internal("Could not extract type.");
       }
 
       return GetTypeByteSize(die.getAttributeValueAsReferencedDie(type_attr.getValue()));

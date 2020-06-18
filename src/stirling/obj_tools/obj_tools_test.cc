@@ -3,8 +3,6 @@
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
 
-DEFINE_string(go_grpc_client_path, "", "The path to the go greeter client executable.");
-
 namespace pl {
 namespace stirling {
 namespace obj_tools {

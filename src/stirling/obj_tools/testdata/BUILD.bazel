@@ -1,5 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
 cc_binary(
     name = "dummy_exe",
     srcs = ["dummy_exe.cc"],
@@ -9,6 +11,21 @@ cc_binary(
     # This tells the linker to include a build-id, which is useful for locating external debug symbols.
     linkopts = [
         "-Wl,--build-id",
+    ],
+)
+
+go_library(
+    name = "go_default_library",
+    srcs = ["dummy_go_binary.go"],
+    importpath = "pixielabs.ai/pixielabs/src/stirling/obj_tools/testdata",
+)
+
+go_binary(
+    name = "dummy_go_binary",
+    embed = [":go_default_library"],
+    gc_goopts = [
+        "-N",
+        "-l",
     ],
 )
 

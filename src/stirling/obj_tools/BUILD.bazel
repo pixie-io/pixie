@@ -32,6 +32,7 @@ pl_cc_test(
     srcs = ["elf_tools_test.cc"],
     data = [
         "//src/stirling/obj_tools/testdata:dummy_exe",
+        "//src/stirling/obj_tools/testdata:dummy_go_binary",
         "//src/stirling/obj_tools/testdata:prebuilt_exe",
         "//src/stirling/obj_tools/testdata:stripped_exe",
     ],
@@ -44,7 +45,11 @@ pl_cc_test(
 pl_cc_test(
     name = "dwarf_tools_test",
     srcs = ["dwarf_tools_test.cc"],
+    args = [
+        "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
+    ],
     data = [
+        "//src/stirling/obj_tools/testdata:dummy_go_binary",
         "//src/stirling/obj_tools/testdata:prebuilt_exe",
     ],
     deps = [
@@ -56,9 +61,6 @@ pl_cc_test(
 pl_cc_test(
     name = "obj_tools_test",
     srcs = ["obj_tools_test.cc"],
-    args = [
-        "--go_grpc_client_path=$(location //src/stirling/http2/testing/go_grpc_client)",
-    ],
     data = [
         "//src/stirling/http2/testing/go_grpc_client",
     ],
