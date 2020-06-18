@@ -189,6 +189,7 @@ export default function withClusterBanner() {
       <Switch>
         <Route path='/admin' component={AdminView} />
         <Route path='/live' component={Vizier} />
+        <Redirect from='/*' to='/live' />
       </Switch>
     </>
   );
