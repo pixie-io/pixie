@@ -6,7 +6,7 @@
 // The go binary location cannot be hard-coded because its location changes based on
 // -c opt/dbg/fastbuild.
 DEFINE_string(dummy_go_binary, "", "The path to dummy_go_binary.");
-const std::string_view kCCBinary = "src/stirling/obj_tools/testdata/prebuilt_dummy_exe";
+const std::string_view kCppBinary = "src/stirling/obj_tools/testdata/prebuilt_dummy_exe";
 
 namespace pl {
 namespace stirling {
@@ -23,9 +23,9 @@ struct DwarfReaderTestParam {
 class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
  protected:
   DwarfReaderTest()
-      : kCCBinaryPath(pl::testing::TestFilePath(kCCBinary)),
+      : kCppBinaryPath(pl::testing::TestFilePath(kCppBinary)),
         kGoBinaryPath(pl::testing::TestFilePath(FLAGS_dummy_go_binary)) {}
-  const std::string kCCBinaryPath;
+  const std::string kCppBinaryPath;
   const std::string kGoBinaryPath;
 };
 
@@ -36,7 +36,7 @@ TEST_F(DwarfReaderTest, NonExistentPath) {
 
 TEST_F(DwarfReaderTest, GetMatchingDIEs) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCCBinaryPath));
+                       DwarfReader::Create(kCppBinaryPath));
 
   std::vector<llvm::DWARFDie> dies;
 
@@ -58,17 +58,17 @@ TEST_F(DwarfReaderTest, GetMatchingDIEs) {
 TEST_P(DwarfReaderTest, GetStructMemberOffset) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCCBinaryPath, p.index));
+                       DwarfReader::Create(kCppBinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "a"), 0);
   EXPECT_OK_AND_EQ(dwarf_reader->GetStructMemberOffset("PairStruct", "b"), 4);
   EXPECT_NOT_OK(dwarf_reader->GetStructMemberOffset("PairStruct", "bogus"));
 }
 
-TEST_P(DwarfReaderTest, CCArgumentTypeByteSize) {
+TEST_P(DwarfReaderTest, CppArgumentTypeByteSize) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
-                       DwarfReader::Create(kCCBinaryPath, p.index));
+                       DwarfReader::Create(kCppBinaryPath, p.index));
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("CanYouFindThis", "a"), 4);
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("SomeFunction", "x"), 12);
@@ -87,6 +87,30 @@ TEST_P(DwarfReaderTest, GolangArgumentTypeByteSize) {
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("main.(*Vertex).Scale", "f"), 8);
   // v is of type Vertex.
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentTypeByteSize("main.Vertex.Abs", "v"), 16);
+}
+
+TEST_P(DwarfReaderTest, CppArgumentStackPointerOffset) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kCppBinaryPath, p.index));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("SomeFunction", "x"), -16);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("CanYouFindThis", "a"), -4);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("CanYouFindThis", "b"), -8);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("SomeFunctionWithPointerArgs", "a"),
+                   -8);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("SomeFunctionWithPointerArgs", "x"),
+                   -16);
+}
+
+TEST_P(DwarfReaderTest, DISABLED_GolangArgumentStackPointerOffset) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kGoBinaryPath, p.index));
+
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.(*Vertex).Scale", "v"), -16);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.(*Vertex).Scale", "f"), -4);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.Vertex.Abs", "v"), -8);
 }
 
 INSTANTIATE_TEST_SUITE_P(DwarfReaderParameterizedTest, DwarfReaderTest,

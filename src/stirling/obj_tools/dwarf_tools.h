@@ -53,6 +53,9 @@ class DwarfReader {
   StatusOr<uint64_t> GetArgumentTypeByteSize(std::string_view symbol_name,
                                              std::string_view arg_name);
 
+  StatusOr<int64_t> GetArgumentStackPointerOffset(std::string_view symbol_name,
+                                                  std::string_view arg_name);
+
   bool IsValid() { return dwarf_context_->getNumCompileUnits() != 0; }
 
  private:

@@ -12,6 +12,11 @@ namespace dwarf_tools {
 using llvm::DWARFContext;
 using llvm::DWARFDie;
 
+// TODO(oazizi): This will break on 32-bit binaries.
+// Use ELF to get the correct value.
+// https://superuser.com/questions/791506/how-to-determine-if-a-linux-binary-file-is-32-bit-or-64-bit
+uint8_t kAddressSize = sizeof(void*);
+
 StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(std::string_view obj_filename,
                                                            bool index) {
   using llvm::MemoryBuffer;
@@ -203,10 +208,7 @@ StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
       return GetTypeByteSize(die.getAttributeValueAsReferencedDie(type_attr.getValue()));
     }
     case llvm::dwarf::DW_TAG_pointer_type: {
-      // TODO(oazizi): This will break on 32-bit binaries.
-      // Use ELF to get the correct value.
-      // https://superuser.com/questions/791506/how-to-determine-if-a-linux-binary-file-is-32-bit-or-64-bit
-      return sizeof(void*);
+      return kAddressSize;
     }
     case llvm::dwarf::DW_TAG_base_type:
     case llvm::dwarf::DW_TAG_structure_type:
@@ -218,15 +220,15 @@ StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
 }
 }  // namespace
 
-StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view symbol_name,
+StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view function_symbol_name,
                                                         std::string_view arg_name) {
   PL_ASSIGN_OR_RETURN(std::vector<DWARFDie> dies,
-                      GetMatchingDIEs(symbol_name, llvm::dwarf::DW_TAG_subprogram));
+                      GetMatchingDIEs(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
   if (dies.empty()) {
-    return error::Internal("Could not locate structure");
+    return error::Internal("Could not locate function symbol name.");
   }
   if (dies.size() > 1) {
-    return error::Internal("Found too many DIE matches");
+    return error::Internal("Found too many DIE matches.");
   }
 
   DWARFDie& function_die = dies.front();
@@ -236,25 +238,72 @@ StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view symbol_
         (die.getName(llvm::DINameKind::ShortName) == arg_name)) {
       llvm::Optional<llvm::DWARFFormValue> type_attr = die.find(llvm::dwarf::DW_AT_type);
       if (!type_attr.hasValue()) {
-        return error::Internal("Found argument, but could not determine its type.");
+        return error::Internal("Could not find DW_AT_type for function argument.");
       }
 
       return GetTypeByteSize(die.getAttributeValueAsReferencedDie(type_attr.getValue()));
+    }
+  }
+  return error::Internal("Could not find argument.");
+}
 
-      // TODO(oazizi): Extract location information directly, using something like the following:
-      //
-      // llvm::Optional<llvm::DWARFFormValue> loc_attr = die.find(llvm::dwarf::DW_AT_location);
-      // if (!loc_attr.hasValue()) {
-      //   return error::Internal("Found argument, but could not determine its location.");
-      // }
-      //
-      // LOG(INFO) << magic_enum::enum_name(loc_attr.getValue().getForm());
-      // llvm::Optional<uint64_t> loc = loc_attr.getValue().getAsReference();
-      // if (!loc.hasValue()) {
-      //   return error::Internal("Could not extract location.");
-      // }
-      //
-      // loc.getValue()
+// TODO(oazizi): Consider refactoring portions in common with GetArgumentTypeByteSize().
+StatusOr<int64_t> DwarfReader::GetArgumentStackPointerOffset(std::string_view function_symbol_name,
+                                                             std::string_view arg_name) {
+  PL_ASSIGN_OR_RETURN(std::vector<DWARFDie> dies,
+                      GetMatchingDIEs(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
+  if (dies.empty()) {
+    return error::Internal("Could not locate function symbol name.");
+  }
+  if (dies.size() > 1) {
+    return error::Internal("Found too many DIE matches.");
+  }
+
+  DWARFDie& function_die = dies.front();
+
+  for (const auto& die : function_die.children()) {
+    if ((die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) &&
+        (die.getName(llvm::DINameKind::ShortName) == arg_name)) {
+      llvm::Optional<llvm::DWARFFormValue> loc_attr = die.find(llvm::dwarf::DW_AT_location);
+      if (!loc_attr.hasValue()) {
+        return error::Internal("Could not find DW_AT_location for function argument..");
+      }
+
+      if (!loc_attr.getValue().isFormClass(llvm::DWARFFormValue::FC_Block) &&
+          !loc_attr.getValue().isFormClass(llvm::DWARFFormValue::FC_Exprloc)) {
+        return error::Internal("Unexpected Form: $0",
+                               magic_enum::enum_name(loc_attr.getValue().getForm()));
+      }
+
+      llvm::Optional<llvm::ArrayRef<uint8_t>> loc = loc_attr.getValue().getAsBlock();
+      if (!loc.hasValue()) {
+        return error::Internal("Could not extract location.");
+      }
+
+      llvm::DataExtractor data(llvm::StringRef(reinterpret_cast<const char*>(loc.getValue().data()),
+                                               loc.getValue().size()),
+                               true, 0);
+      llvm::DWARFExpression expr(data, llvm::DWARFExpression::Operation::Dwarf4, kAddressSize);
+
+      auto iter = expr.begin();
+      auto& operation = *iter;
+      ++iter;
+      if (iter != expr.end()) {
+        return error::Internal("Operation include more than one component. Not yet supported.");
+      }
+
+      auto code = static_cast<llvm::dwarf::LocationAtom>(operation.getCode());
+      int64_t operand = operation.getRawOperand(0);
+      VLOG(1) << absl::Substitute("code=$0 operand=$1", magic_enum::enum_name(code), operand);
+
+      if (code == llvm::dwarf::LocationAtom::DW_OP_fbreg) {
+        return operand;
+      }
+      if (code == llvm::dwarf::LocationAtom::DW_OP_call_frame_cfa) {
+        return 0;
+      }
+
+      return error::Internal("Unsupported operand: $0", magic_enum::enum_name(code));
     }
   }
   return error::Internal("Could not find argument.");
