@@ -3,7 +3,7 @@ import { CellAlignment, DataTable, SortState } from 'components/data-table';
 import * as React from 'react';
 import { SortDirection, SortDirectionType } from 'react-virtualized';
 import { DataType } from 'types/generated/vizier_pb';
-import { formatFloat64Data, formatInt64Data, JSONData } from 'utils/format-data';
+import { getDataRenderer, JSONData } from 'utils/format-data';
 import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';
 
@@ -20,23 +20,6 @@ const AlignmentMap = new Map<DataType, CellAlignment>(
     [DataType.DURATION64NS, 'start'],
   ],
 );
-
-function getDataRenderer(type: DataType) {
-  switch (type) {
-    case DataType.FLOAT64:
-      return formatFloat64Data;
-    case DataType.TIME64NS:
-      return (d) => new Date(d).toLocaleString();
-    case DataType.INT64:
-      return formatInt64Data;
-    case DataType.DURATION64NS:
-    case DataType.UINT128:
-    case DataType.STRING:
-    case DataType.BOOLEAN:
-    default:
-      return (d) => d.toString();
-  }
-}
 
 function getSortFunc(dataKey: string, type: DataType, direction: SortDirectionType) {
   const dir = direction === SortDirection.ASC ? -1 : 1;
@@ -146,7 +129,6 @@ export const VizierDataTableWithDetails = (props: { table: Table }) => {
   const [details, setDetails] = React.useState(null);
 
   const classes = useStyles();
-
   return (
     <div className={classes.root}>
       <div className={classes.table}>

@@ -1,6 +1,7 @@
 import * as _ from 'lodash';
 import { Column, DataType, Relation, RowBatchData } from 'types/generated/vizier_pb';
 
+import { getDataRenderer } from 'utils/format-data';
 import { formatUInt128 } from './format-data';
 import { nanoToMilliSeconds } from './time';
 
@@ -54,10 +55,6 @@ export function columnFromProto(column: Column): any[] {
   throw (new Error('Unsupported data type: ' + column.getColDataCase()));
 }
 
-function defaultRenderers() {
-  return (d) => d;
-}
-
 type rendererFunc = (d: any) => any;
 
 type getRendererFunc = (type: DataType) => rendererFunc;
@@ -65,7 +62,7 @@ type getRendererFunc = (type: DataType) => rendererFunc;
 export function dataFromProto(
   relation: Relation,
   data: RowBatchData[],
-  getRenderer: getRendererFunc = defaultRenderers,
+  getRenderer: getRendererFunc = getDataRenderer,
 ) {
   const results = [];
 

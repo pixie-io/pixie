@@ -166,3 +166,20 @@ export function formatUInt128(high: string, low: string): string {
   uuidStr += hexStrLow.substr(4);
   return uuidStr;
 }
+
+export function getDataRenderer(type: DataType) {
+  switch (type) {
+    case DataType.FLOAT64:
+      return formatFloat64Data;
+    case DataType.TIME64NS:
+      return (d) => new Date(d).toLocaleString();
+    case DataType.INT64:
+      return formatInt64Data;
+    case DataType.DURATION64NS:
+    case DataType.UINT128:
+    case DataType.STRING:
+    case DataType.BOOLEAN:
+    default:
+      return (d) => d.toString();
+  }
+}
