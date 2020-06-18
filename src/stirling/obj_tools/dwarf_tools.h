@@ -37,9 +37,14 @@ class DwarfReader {
    * @return Error if DIEs could not be searched, otherwise a vector of DIEs that match the search
    * string.
    */
-  StatusOr<std::vector<llvm::DWARFDie>> GetMatchingDIEs(
-      std::string_view name,
-      llvm::dwarf::Tag type = static_cast<llvm::dwarf::Tag>(llvm::dwarf::DW_TAG_invalid));
+  StatusOr<std::vector<llvm::DWARFDie>> GetMatchingDIEs(std::string_view name,
+                                                        std::optional<llvm::dwarf::Tag> type = {});
+
+  /**
+   * Like GetMatchingDIEs, but returns error if there is not exactly one match.
+   */
+  StatusOr<llvm::DWARFDie> GetMatchingDIE(std::string_view name,
+                                          std::optional<llvm::dwarf::Tag> type = {});
 
   /**
    * Returns the offset of a member within a struct.
@@ -67,7 +72,8 @@ class DwarfReader {
   void IndexStructs();
 
   static Status GetMatchingDIEs(llvm::DWARFContext::unit_iterator_range CUs, std::string_view name,
-                                llvm::dwarf::Tag tag, std::vector<llvm::DWARFDie>* dies_out);
+                                std::optional<llvm::dwarf::Tag> tag,
+                                std::vector<llvm::DWARFDie>* dies_out);
 
   std::unique_ptr<llvm::MemoryBuffer> memory_buffer_;
   std::unique_ptr<llvm::DWARFContext> dwarf_context_;

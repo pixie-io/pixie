@@ -72,12 +72,12 @@ DwarfReader::DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
 
 namespace {
 
-bool IsMatchingTag(llvm::dwarf::Tag tag, const DWARFDie& die) {
-  llvm::dwarf::Tag die_tag = die.getTag();
-  return (tag == static_cast<llvm::dwarf::Tag>(llvm::dwarf::DW_TAG_invalid) || (tag == die_tag));
+bool IsMatchingTag(std::optional<llvm::dwarf::Tag> tag, const DWARFDie& die) {
+  return (!tag.has_value() || (tag == die.getTag()));
 }
 
-bool IsMatchingDIE(std::string_view name, llvm::dwarf::Tag tag, const DWARFDie& die) {
+bool IsMatchingDIE(std::string_view name, std::optional<llvm::dwarf::Tag> tag,
+                   const DWARFDie& die) {
   if (!IsMatchingTag(tag, die)) {
     // Not the right type.
     return false;
@@ -95,7 +95,8 @@ bool IsMatchingDIE(std::string_view name, llvm::dwarf::Tag tag, const DWARFDie& 
 }  // namespace
 
 Status DwarfReader::GetMatchingDIEs(DWARFContext::unit_iterator_range CUs, std::string_view name,
-                                    llvm::dwarf::Tag tag, std::vector<DWARFDie>* dies_out) {
+                                    std::optional<llvm::dwarf::Tag> tag,
+                                    std::vector<DWARFDie>* dies_out) {
   for (const auto& CU : CUs) {
     for (const auto& Entry : CU->dies()) {
       DWARFDie die = {CU.get(), &Entry};
@@ -136,12 +137,12 @@ void DwarfReader::IndexStructs() {
 }
 
 StatusOr<std::vector<DWARFDie>> DwarfReader::GetMatchingDIEs(std::string_view name,
-                                                             llvm::dwarf::Tag type) {
+                                                             std::optional<llvm::dwarf::Tag> type) {
   DCHECK(dwarf_context_ != nullptr);
   std::vector<DWARFDie> dies;
 
   // Special case for types that are indexed (currently only struct types);
-  if (type == llvm::dwarf::DW_TAG_structure_type && !die_struct_map_.empty()) {
+  if (type.has_value() && type == llvm::dwarf::DW_TAG_structure_type && !die_struct_map_.empty()) {
     auto iter = die_struct_map_.find(name);
     if (iter != die_struct_map_.end()) {
       return std::vector<DWARFDie>{iter->second};
@@ -155,18 +156,23 @@ StatusOr<std::vector<DWARFDie>> DwarfReader::GetMatchingDIEs(std::string_view na
   return dies;
 }
 
-StatusOr<uint64_t> DwarfReader::GetStructMemberOffset(std::string_view struct_name,
-                                                      std::string_view member_name) {
-  PL_ASSIGN_OR_RETURN(std::vector<DWARFDie> dies,
-                      GetMatchingDIEs(struct_name, llvm::dwarf::DW_TAG_structure_type));
+StatusOr<DWARFDie> DwarfReader::GetMatchingDIE(std::string_view name,
+                                               std::optional<llvm::dwarf::Tag> type) {
+  PL_ASSIGN_OR_RETURN(std::vector<DWARFDie> dies, GetMatchingDIEs(name, type));
   if (dies.empty()) {
-    return error::Internal("Could not locate structure");
+    return error::Internal("Could not locate symbol name.");
   }
   if (dies.size() > 1) {
-    return error::Internal("Found too many DIE matches");
+    return error::Internal("Found too many DIE matches.");
   }
 
-  DWARFDie& struct_die = dies.front();
+  return dies.front();
+}
+
+StatusOr<uint64_t> DwarfReader::GetStructMemberOffset(std::string_view struct_name,
+                                                      std::string_view member_name) {
+  PL_ASSIGN_OR_RETURN(const DWARFDie& struct_die,
+                      GetMatchingDIE(struct_name, llvm::dwarf::DW_TAG_structure_type));
 
   for (const auto& die : struct_die.children()) {
     if ((die.getTag() == llvm::dwarf::DW_TAG_member) &&
@@ -224,16 +230,8 @@ StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
 
 StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view function_symbol_name,
                                                         std::string_view arg_name) {
-  PL_ASSIGN_OR_RETURN(std::vector<DWARFDie> dies,
-                      GetMatchingDIEs(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
-  if (dies.empty()) {
-    return error::Internal("Could not locate function symbol name.");
-  }
-  if (dies.size() > 1) {
-    return error::Internal("Found too many DIE matches.");
-  }
-
-  DWARFDie& function_die = dies.front();
+  PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
+                      GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
   for (const auto& die : function_die.children()) {
     if ((die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) &&
@@ -249,16 +247,8 @@ StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view functio
 // TODO(oazizi): Consider refactoring portions in common with GetArgumentTypeByteSize().
 StatusOr<int64_t> DwarfReader::GetArgumentStackPointerOffset(std::string_view function_symbol_name,
                                                              std::string_view arg_name) {
-  PL_ASSIGN_OR_RETURN(std::vector<DWARFDie> dies,
-                      GetMatchingDIEs(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
-  if (dies.empty()) {
-    return error::Internal("Could not locate function symbol name.");
-  }
-  if (dies.size() > 1) {
-    return error::Internal("Found too many DIE matches.");
-  }
-
-  DWARFDie& function_die = dies.front();
+  PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
+                      GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
 
   for (const auto& die : function_die.children()) {
     if ((die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) &&
