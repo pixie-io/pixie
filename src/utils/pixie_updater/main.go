@@ -29,8 +29,9 @@ func init() {
 	pflag.String("cloud_token", "", "The token to use for cloud connection")
 	pflag.String("namespace", "pl", "The namespace used by Pixie")
 	pflag.String("vizier_version", "", "The version to install or upgrade to")
-	pflag.String("update_cloud_addr", "withpixie.ai:443", "The pixie cloud address to use.")
+	pflag.String("update_cloud_addr", "", "The pixie cloud address to use.")
 	pflag.Bool("etcd_operator_enabled", false, "Whether the etcd operator should be used instead of the statefulset")
+	pflag.String("cloud_addr", "withpixie.ai:443", "The pixie cloud address to use.")
 }
 
 func getCloudClientConnection(cloudAddr string) (*grpc.ClientConn, error) {
@@ -70,6 +71,9 @@ func main() {
 	}
 
 	cloudAddr := viper.GetString("update_cloud_addr")
+	if cloudAddr == "" {
+		cloudAddr = viper.GetString("cloud_addr")
+	}
 	fmt.Printf("Using CLOUD: %s\n", cloudAddr)
 	conn, err := getCloudClientConnection(cloudAddr)
 	if err != nil {
@@ -91,6 +95,12 @@ func main() {
 		Clientset:  clientset,
 		RestConfig: kubeConfig,
 		Timeout:    deleteTimeout,
+	}
+
+	// Update update role first.
+	err = k8s.ApplyYAML(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierBootstrapYAMLPath]))
+	if err != nil {
+		log.WithError(err).Fatalf("Failed to install vizier bootstrap for updater roles")
 	}
 
 	// Delete everything but updater dependencies.
@@ -118,12 +128,6 @@ func main() {
 		if err != nil {
 			log.WithError(err).Fatalf("Failed to deploy etcd")
 		}
-	}
-
-	// Update update role first.
-	err = k8s.ApplyYAML(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierBootstrapYAMLPath]))
-	if err != nil {
-		log.WithError(err).Fatalf("Failed to install vizier bootstrap for updater roles")
 	}
 
 	// Redeploy etcd.
