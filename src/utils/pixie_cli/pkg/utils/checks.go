@@ -1,4 +1,4 @@
-package k8s
+package utils
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v2"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
 
 const (
@@ -20,8 +20,8 @@ const (
 
 var (
 	kernelVersionCheck = NamedCheck(fmt.Sprintf("Kernel version > %s", kernelMinVersion), func() error {
-		kubeConfig := GetConfig()
-		clientset := GetClientset(kubeConfig)
+		kubeConfig := k8s.GetConfig()
+		clientset := k8s.GetClientset(kubeConfig)
 		nodes, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
 		if err != nil {
 			return err
@@ -39,9 +39,9 @@ var (
 		return nil
 	})
 	k8sVersionCheck = NamedCheck(fmt.Sprintf("K8s version > %s", k8sMinVersion), func() error {
-		kubeConfig := GetConfig()
+		kubeConfig := k8s.GetConfig()
 
-		discoveryClient := GetDiscoveryClient(kubeConfig)
+		discoveryClient := k8s.GetDiscoveryClient(kubeConfig)
 		version, err := discoveryClient.ServerVersion()
 		if err != nil {
 			return err

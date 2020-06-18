@@ -237,7 +237,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			Event:  "Cluster Check Run",
 		})
 
-		err := k8s.RunDefaultClusterChecks()
+		err := utils.RunDefaultClusterChecks()
 		if err != nil {
 			_ = pxanalytics.Client().Enqueue(&analytics.Track{
 				UserId: pxconfig.Cfg().UniqueClientID,

@@ -1,4 +1,4 @@
-package k8s
+package utils
 
 import (
 	"errors"
@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	cliutils "pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
 // Contains utilities to check the K8s cluster.
@@ -77,11 +76,11 @@ func (j jobAdapter) Run() error {
 // The first error is returned, but we continue to run all checks.
 func RunClusterChecks(checks []Checker) error {
 	fmt.Printf("\nRunning Cluster Checks:\n")
-	jobs := make([]cliutils.Task, len(checks))
+	jobs := make([]Task, len(checks))
 	for i, check := range checks {
 		jobs[i] = checkWrapper(check)
 	}
-	jr := cliutils.NewSerialTaskRunner(jobs)
+	jr := NewSerialTaskRunner(jobs)
 	return jr.RunAndMonitor()
 }
 

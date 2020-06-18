@@ -1,11 +1,11 @@
-package k8s_test
+package utils_test
 
 import (
 	"fmt"
 	"testing"
 
 	"github.com/alecthomas/assert"
-	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
+	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 )
 
 func TestVersionCompatible(t *testing.T) {
@@ -40,7 +40,7 @@ func TestVersionCompatible(t *testing.T) {
 	for _, test := range tests {
 		name := fmt.Sprintf("Check %s < %s", test.minVersion, test.testVersion)
 		t.Run(name, func(t *testing.T) {
-			ok, err := k8s.VersionCompatible(test.testVersion, test.minVersion)
+			ok, err := utils.VersionCompatible(test.testVersion, test.minVersion)
 			if test.expectErr {
 				assert.NotNil(t, err)
 				return
