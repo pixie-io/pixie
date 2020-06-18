@@ -83,7 +83,7 @@ export const SplitContainer = (props: React.PropsWithChildren<SplitContainerProp
 
   const context = React.useMemo(() => ({
     togglePane: (id) => {
-      const i = children.findIndex((child) => child.props.id === id);
+      const i = children.findIndex((child: any) => child.props.id === id);
       if (i === -1) {
         return;
       }

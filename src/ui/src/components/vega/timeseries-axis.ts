@@ -3,7 +3,7 @@ declare module 'vega-scale' {
   export function tickValues(scale: any, count: number);
 }
 import * as vega from 'vega';
-import { timeFormat } from 'vega-functions';
+import { timeFormat } from 'd3-time-format';
 import { scale, tickValues } from 'vega-scale';
 import { textMetrics } from 'vega-scenegraph';
 
@@ -86,7 +86,7 @@ export function formatTime(tick: Date, showAmPm = false,
       fmtStr = '%b %d, %Y ' + fmtStr;
     }
   }
-  return timeFormat(tick, fmtStr);
+  return timeFormat(fmtStr)(tick);
 }
 
 function AmPmFormatter(): LabelsFormatter {
