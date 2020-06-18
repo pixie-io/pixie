@@ -5,7 +5,7 @@ import { useSnackbar } from 'components/snackbar/snackbar';
 import { getQueryFuncs, Vis } from 'containers/live/vis';
 import * as React from 'react';
 import analytics from 'utils/analytics';
-import { Arguments } from 'utils/args-utils';
+import { argsForVis, Arguments } from 'utils/args-utils';
 import urlParams from 'utils/url-params';
 
 import { ArgsContext } from './args-context';
@@ -14,7 +14,7 @@ import { ResultsContext } from './results-context';
 import { RouteContext } from './route-context';
 import { ScriptContext } from './script-context';
 import { VisContext } from './vis-context';
-import { LiveViewPage } from '../utils/live-view-params';
+import { EntityURLParams, LiveViewPage } from '../utils/live-view-params';
 
 interface ExecuteArguments {
   script: string;
@@ -23,6 +23,8 @@ interface ExecuteArguments {
   id?: string;
   title?: string;
   skipURLUpdate?: boolean;
+  liveViewPage?: LiveViewPage;
+  entityParams?: EntityURLParams;
 }
 
 interface ExecuteContextProps {
@@ -70,7 +72,7 @@ export const ExecuteContextProvider = (props) => {
     setLoading(true);
 
     if (!execArgs) {
-      execArgs = { script, vis, args, id };
+      execArgs = { script, vis, args, id, entityParams, liveViewPage };
     } else {
       clearResults();
       setVis(execArgs.vis);
@@ -81,12 +83,14 @@ export const ExecuteContextProvider = (props) => {
       }
 
       if (execArgs.args) {
-        setArgs(execArgs.args, Object.keys(entityParams));
+        setArgs(execArgs.args, Object.keys(execArgs.entityParams));
       } else {
         // If args were not specified when running the script,
         // use the existing args from the context.
-        execArgs.args = args;
+        execArgs.args = argsForVis(execArgs.vis, execArgs.args, Object.keys(execArgs.entityParams));
       }
+      setEntityParams(execArgs.entityParams);
+      setLiveViewPage(execArgs.liveViewPage);
     }
 
     let errMsg: string;
@@ -100,7 +104,7 @@ export const ExecuteContextProvider = (props) => {
 
     new Promise((resolve, reject) => {
       try {
-        resolve(getQueryFuncs(execArgs.vis, {...entityParams, ...execArgs.args}));
+        resolve(getQueryFuncs(execArgs.vis, {...execArgs.entityParams, ...execArgs.args}));
       } catch (error) {
         reject(error);
       }

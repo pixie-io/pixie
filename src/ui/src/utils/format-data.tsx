@@ -3,6 +3,7 @@ import './format-data.scss';
 import clsx from 'clsx';
 import * as numeral from 'numeral';
 import * as React from 'react';
+import { DataType } from 'types/generated/vizier_pb';
 
 const JSON_INDENT_PX = 16;
 
@@ -34,8 +35,8 @@ export function formatFloat64Data(val: number, formatStr = '0[.]00'): string {
   return num;
 }
 
-export function looksLikeLatencyCol(colName: string, colType: string) {
-  if (colType !== 'FLOAT64') {
+export function looksLikeLatencyCol(colName: string, colType: DataType) {
+  if (colType !== DataType.FLOAT64) {
     return false;
   }
   const colNameLC = colName.toLowerCase();
@@ -48,8 +49,8 @@ export function looksLikeLatencyCol(colName: string, colType: string) {
   return false;
 }
 
-export function looksLikeAlertCol(colName: string, colType: string) {
-  if (colType !== 'BOOLEAN') {
+export function looksLikeAlertCol(colName: string, colType: DataType) {
+  if (colType !== DataType.BOOLEAN) {
     return false;
   }
   const colNameLC = colName.toLowerCase();

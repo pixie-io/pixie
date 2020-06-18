@@ -8,7 +8,7 @@ import { RouteContext } from './context/route-context';
 import { ScriptContext } from './context/script-context';
 import { VisContext } from './context/vis-context';
 import { parseVis } from './vis';
-import { LiveViewPage, LiveViewPageScriptIds } from './utils/live-view-params';
+import { LiveViewPage, LiveViewPageScriptIds, matchLiveViewEntity } from './utils/live-view-params';
 
 type LoadScriptState = 'unloaded' | 'url-loaded' | 'url-skipped' | 'context-loaded';
 
@@ -42,9 +42,10 @@ export function ScriptLoader() {
   }, [loadState, script, visSpec]);
 
   React.useEffect(() => {
-    const subscription = urlParams.onChange.subscribe(({ scriptId, args }) => {
+    const subscription = urlParams.onChange.subscribe(({ scriptId, pathname, args }) => {
       scriptPromise.then((scripts) => {
-        const id = liveViewPage === LiveViewPage.Default ? scriptId : LiveViewPageScriptIds[liveViewPage];
+        const entity = matchLiveViewEntity(pathname);
+        const id = entity.page === LiveViewPage.Default ? scriptId : LiveViewPageScriptIds[entity.page];
 
         if (!scripts.has(id)) {
           setLoadState((state) => {
@@ -59,11 +60,13 @@ export function ScriptLoader() {
         const { title, vis, code } = scripts.get(id);
 
         const parsedVis = parseVis(vis);
-        const parsedArgs = argsForVis(parsedVis, args, Object.keys(entityParams), id);
+        const parsedArgs = argsForVis(parsedVis, args, Object.keys(entity.params), id);
         ref.current.execute({
           script: code,
           vis: parsedVis,
           args: parsedArgs,
+          entityParams: entity.params,
+          liveViewPage: entity.page,
           title,
           id,
           skipURLUpdate: true,

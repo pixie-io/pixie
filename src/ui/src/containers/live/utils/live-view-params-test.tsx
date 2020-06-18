@@ -1,4 +1,6 @@
-import {LiveViewPage, matchLiveViewEntity, toEntityPathname} from './live-view-params';
+import { LiveViewPage, matchLiveViewEntity, toEntityPathname,
+         toSingleEntityPage } from './live-view-params';
+import { SemanticType } from 'types/generated/vizier_pb';
 
 describe('matchLiveViewEntity test', () => {
   it('should correctly match namespaces entity page', () => {
@@ -195,5 +197,51 @@ describe('toEntityPathname test', () => {
       clusterName: 'gke:foobar',
     };
     expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar');
+  });
+});
+
+describe('toSingleEntityPage test', () => {
+  it('should generate the entity for a namespace', () => {
+    const entity = toSingleEntityPage('px-sock-shop', SemanticType.ST_NAMESPACE_NAME, 'gke:foobar');
+    expect(entity).toStrictEqual({
+      page: LiveViewPage.Namespace,
+      params: {
+        namespace: 'px-sock-shop',
+      },
+      clusterName: 'gke:foobar',
+    });
+  });
+
+  it('should generate the entity for a node', () => {
+    const entity = toSingleEntityPage('node-123', SemanticType.ST_NODE_NAME, 'gke:foobar');
+    expect(entity).toStrictEqual({
+      page: LiveViewPage.Node,
+      params: {
+        node: 'node-123',
+      },
+      clusterName: 'gke:foobar',
+    });
+  });
+
+  it('should generate the entity for a pod', () => {
+    const entity = toSingleEntityPage('px-sock-shop/orders-123', SemanticType.ST_POD_NAME, 'gke:foobar');
+    expect(entity).toStrictEqual({
+      page: LiveViewPage.Pod,
+      params: {
+        pod: 'px-sock-shop/orders-123',
+      },
+      clusterName: 'gke:foobar',
+    });
+  });
+
+  it('should generate the entity for a service', () => {
+    const entity = toSingleEntityPage('px-sock-shop/orders', SemanticType.ST_SERVICE_NAME, 'gke:foobar');
+    expect(entity).toStrictEqual({
+      page: LiveViewPage.Service,
+      params: {
+        service: 'px-sock-shop/orders',
+      },
+      clusterName: 'gke:foobar',
+    });
   });
 });

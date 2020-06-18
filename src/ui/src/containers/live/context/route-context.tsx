@@ -30,6 +30,12 @@ const RouteContextProvider = (props) => {
   }, []);
 
   React.useEffect(() => {
+    if (location.pathname !== '/live') {
+      urlParams.triggerOnChange();
+    }
+  }, [location]);
+
+  React.useEffect(() => {
     const entityURL = {
       clusterName: selectedClusterName,
       page: liveViewPage,

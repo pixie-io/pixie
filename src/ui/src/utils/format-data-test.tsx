@@ -2,32 +2,33 @@ import {mount, shallow} from 'enzyme';
 import * as React from 'react';
 
 import * as FormatData from './format-data';
+import { DataType } from 'types/generated/vizier_pb';
 
 describe('looksLikeLatencyCol test', () => {
   it('should not accept non-float latency columns', () => {
-    expect(FormatData.looksLikeLatencyCol('latency', 'STRING')).toEqual(false);
+    expect(FormatData.looksLikeLatencyCol('latency', DataType.STRING)).toEqual(false);
   });
 
   it('should not accept incorrectly named columns', () => {
-    expect(FormatData.looksLikeLatencyCol('CPU', 'FLOAT64')).toEqual(false);
+    expect(FormatData.looksLikeLatencyCol('CPU', DataType.FLOAT64)).toEqual(false);
   });
 
   it('should accept FLOAT64 columns with correct naming', () => {
-    expect(FormatData.looksLikeLatencyCol('latency', 'FLOAT64')).toEqual(true);
+    expect(FormatData.looksLikeLatencyCol('latency', DataType.FLOAT64)).toEqual(true);
   });
 });
 
 describe('looksLikeAlertCol test', () => {
   it('should not accept non-boolean alert columns', () => {
-    expect(FormatData.looksLikeAlertCol('alert', 'STRING')).toEqual(false);
+    expect(FormatData.looksLikeAlertCol('alert', DataType.STRING)).toEqual(false);
   });
 
   it('should not accept incorrectly named columns', () => {
-    expect(FormatData.looksLikeAlertCol('CPU', 'BOOLEAN')).toEqual(false);
+    expect(FormatData.looksLikeAlertCol('CPU', DataType.BOOLEAN)).toEqual(false);
   });
 
   it('should accept BOOLEAN columns with correct naming', () => {
-    expect(FormatData.looksLikeAlertCol('alert', 'BOOLEAN')).toEqual(true);
+    expect(FormatData.looksLikeAlertCol('alert', DataType.BOOLEAN)).toEqual(true);
   });
 });
 

@@ -37,6 +37,7 @@ export class URLParams {
   scriptDiff: string;
   onChange: Observable<Params>;
 
+  private subject: BehaviorSubject<Params>;
   private prevParams: Params;
 
   constructor(private readonly privateWindow: Window) {
@@ -49,18 +50,8 @@ export class URLParams {
       scriptId: this.scriptId,
     };
     this.prevParams = params;
-    const subject = new BehaviorSubject(params);
-    this.privateWindow.addEventListener('popstate', () => {
-      this.syncWithPathname();
-      this.syncWithQueryParams();
-      subject.next({
-        args: { ...this.args },
-        pathname: this.pathname,
-        scriptDiff: this.scriptDiff,
-        scriptId: this.scriptId,
-      });
-    });
-    this.onChange = subject;
+    this.subject = new BehaviorSubject(params);
+    this.onChange = this.subject;
   }
 
   private toURL(pathname: string, id: string, diff: string, args: Args) {
@@ -154,6 +145,17 @@ export class URLParams {
     this.scriptDiff = newDiff;
     this.args = args;
     this.commitURL();
+  }
+
+  triggerOnChange() {
+    this.syncWithPathname();
+    this.syncWithQueryParams();
+    this.subject.next({
+      args: { ...this.args },
+      pathname: this.pathname,
+      scriptDiff: this.scriptDiff,
+      scriptId: this.scriptId,
+    });
   }
 }
 

@@ -1,13 +1,16 @@
 import './query-result-viewer.scss';
 
 import clsx from 'clsx';
+import ClusterContext from 'common/cluster-context';
 import { Table } from 'common/vizier-grpc-client';
 import {
     AutoSizedScrollableTable, AutoSizedScrollableTableProps, TableColumnInfo,
 } from 'components/table/scrollable-table';
+import { isEntityType, toEntityPathname, toSingleEntityPage } from 'containers/live/utils/live-view-params';
 import numeral from 'numeral';
 import * as React from 'react';
-import { DataType, Relation, Status } from 'types/generated/vizier_pb';
+import { Link } from 'react-router-dom';
+import { DataType, Relation, SemanticType, Status } from 'types/generated/vizier_pb';
 import * as FormatData from 'utils/format-data';
 import { ParseCompilerErrors } from 'utils/parse-compiler-errors';
 import { dataFromProto } from 'utils/result-data-utils';
@@ -18,45 +21,22 @@ function formatInt64Data(val: string): string {
   return numeral(val).format('0,0');
 }
 
-// Function to get the enum name of the column, this is a temporary solution to make
-// the results view compatible with the new proto format.
-function getColumnTypeName(type: DataType): string {
-  switch (type) {
-    case DataType.STRING:
-      return 'STRING';
-    case DataType.TIME64NS:
-      return 'TIME64NS';
-    case DataType.BOOLEAN:
-      return 'BOOLEAN';
-    case DataType.DURATION64NS:
-      return 'DURATION64NS';
-    case DataType.FLOAT64:
-      return 'FLOAT64';
-    case DataType.INT64:
-      return 'INT64';
-    case DataType.UINT128:
-      return 'UINT128';
-    default:
-      return 'UNKNOWN';
-  }
-}
-
-function formatData(colType: string, data): string {
+function formatData(colType: DataType, data): string {
   // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
   switch (colType) {
-    case 'STRING':
+    case DataType.STRING:
       return data;
-    case 'TIME64NS':
+    case DataType.TIME64NS:
       return new Date(data).toLocaleString();
-    case 'DURATION64NS':
+    case DataType.DURATION64NS:
       return formatInt64Data(data);
-    case 'INT64':
+    case DataType.INT64:
       return formatInt64Data(data);
-    case 'UINT128':
+    case DataType.UINT128:
       return data;
-    case 'FLOAT64':
+    case DataType.FLOAT64:
       return FormatData.formatFloat64Data(data);
-    case 'BOOLEAN':
+    case DataType.BOOLEAN:
       return data ? 'true' : 'false';
     default:
       throw (new Error('Unknown data type: ' + colType));
@@ -83,20 +63,55 @@ function computeColumnWidthRatios(relation: Relation, parsedTable: any): any {
   return colWidthRatio;
 }
 
-function ResultCellRenderer(cellData: any, columnInfo: TableColumnInfo) {
-  const colType = columnInfo.type;
-  const colName = columnInfo.label;
-  const data = formatData(colType, cellData);
+function toEntityLink(entity: string, semanticType: SemanticType, clusterName: string) {
+  const page = toSingleEntityPage(entity, semanticType, clusterName);
+  const pathname = toEntityPathname(page);
+  return <Link to={pathname}>{entity}</Link>;
+}
 
-  if (FormatData.looksLikeLatencyCol(colName, colType)) {
+function ResultCellRenderer(cellData: any, columnInfo: TableColumnInfo) {
+  const dataType = columnInfo.dataType;
+  const colName = columnInfo.label;
+
+  if (isEntityType(columnInfo.semanticType)) {
+    // Hack to handle cases like "['pl/service1', 'pl/service2']" which show up for pods that are part of 2 services.
+    if (columnInfo.semanticType === SemanticType.ST_SERVICE_NAME) {
+      try {
+        const parsedArray = JSON.parse(cellData);
+        if (Array.isArray(parsedArray)) {
+          return (
+            <>
+              {
+                parsedArray.map((entity, i) => {
+                  return (
+                    <span key={i}>
+                      {i > 0 && ', '}
+                      {toEntityLink(entity, columnInfo.semanticType, columnInfo.clusterName)}
+                    </span>
+                  );
+                })
+              }
+            </>
+          );
+        }
+      } catch (e) {
+        //
+      }
+    }
+    return toEntityLink(cellData, columnInfo.semanticType, columnInfo.clusterName);
+  }
+
+  const data = formatData(dataType, cellData);
+
+  if (FormatData.looksLikeLatencyCol(colName, dataType)) {
     return FormatData.LatencyData(data);
   }
 
-  if (FormatData.looksLikeAlertCol(colName, colType)) {
+  if (FormatData.looksLikeAlertCol(colName, dataType)) {
     return FormatData.AlertData(data);
   }
 
-  if (colType !== 'STRING') {
+  if (dataType !== DataType.STRING) {
     return data;
   }
 
@@ -124,19 +139,22 @@ export const QueryResultErrors: React.FC<{ status: Status }> = ({ status }) => {
     {
       dataKey: 'line',
       label: 'Line',
-      type: 'INT64',
+      dataType: DataType.INT64,
+      semanticType: SemanticType.ST_UNSPECIFIED,
       flexGrow: 8,
       width: 10,
     }, {
       dataKey: 'column',
       label: 'Column',
-      type: 'INT64',
+      dataType: DataType.INT64,
+      semanticType: SemanticType.ST_UNSPECIFIED,
       flexGrow: 8,
       width: 10,
     }, {
       dataKey: 'message',
       label: 'Message',
-      type: 'STRING',
+      dataType: DataType.STRING,
+      semanticType: SemanticType.ST_UNSPECIFIED,
       flexGrow: 8,
       width: 600,
     },
@@ -155,7 +173,7 @@ export const QueryResultErrors: React.FC<{ status: Status }> = ({ status }) => {
     </div>);
 };
 
-function parseTable(table: Table): AutoSizedScrollableTableProps {
+function parseTable(table: Table, clusterName: string): AutoSizedScrollableTableProps {
   const parsedTable = dataFromProto(table.relation, table.data);
   const colWidthRatio = computeColumnWidthRatios(table.relation, parsedTable);
 
@@ -168,7 +186,9 @@ function parseTable(table: Table): AutoSizedScrollableTableProps {
     return {
       dataKey: colName,
       label: colName,
-      type: getColumnTypeName(col.getColumnType()),
+      clusterName: clusterName,
+      dataType: col.getColumnType(),
+      semanticType: col.getColumnSemanticType(),
       flexGrow: 8,
       width: Math.max(minColWidth, colWidthRatio[colName] * colWidth),
     };
@@ -189,11 +209,12 @@ export interface QueryResultTableProps {
 }
 
 export const QueryResultTable = React.memo<QueryResultTableProps>(({ data, className }) => {
-  const tableData = parseTable(data);
+  const { selectedClusterName } = React.useContext(ClusterContext);
+  const props = parseTable(data, selectedClusterName);
   return (
     <div className={clsx('query-results', className)}>
       <AutoSizedScrollableTable
-        {...tableData}
+        {...props}
       />
     </div>
   );

@@ -1,5 +1,7 @@
 import { matchPath } from 'react-router';
 
+import { SemanticType } from 'types/generated/vizier_pb';
+
 export enum LiveViewPage {
   Default,
   Namespace,
@@ -30,7 +32,7 @@ interface ServiceURLParams {
 
 export type EntityURLParams = {} | NamespaceURLParams | NodeURLParams | PodURLParams | ServiceURLParams;
 
-export interface EntityURL {
+export interface EntityPage {
   clusterName?: string;
   page: LiveViewPage;
   params: EntityURLParams;
@@ -79,7 +81,7 @@ function matchAndExtractEntity<T>(path: string, page: LiveViewPage) {
   }
 }
 
-export function matchLiveViewEntity(path: string): EntityURL {
+export function matchLiveViewEntity(path: string): EntityPage {
   // namespaces
   const namespaceMatch = matchAndExtractEntity<NamespaceURLParams>(
     path, LiveViewPage.Namespace
@@ -162,7 +164,7 @@ export function matchLiveViewEntity(path: string): EntityURL {
   };
 }
 
-export function toEntityPathname(entity: EntityURL): string {
+export function toEntityPathname(entity: EntityPage): string {
   const encodedCluster = encodeURIComponent(entity.clusterName);
   switch (entity.page) {
     case LiveViewPage.Namespace: {
@@ -181,7 +183,7 @@ export function toEntityPathname(entity: EntityURL): string {
     }
     case LiveViewPage.Pod: {
       const { pod } = entity.params as PodURLParams;
-      const [ namespace, podName ] = pod.split('/');
+      const [ namespace, podName ] = (pod || 'unknown/unknown').split('/');
       return `/live/clusters/${encodedCluster}/namespaces/${namespace}/pods/${podName}`;
     }
     case LiveViewPage.Pods: {
@@ -190,7 +192,7 @@ export function toEntityPathname(entity: EntityURL): string {
     }
     case LiveViewPage.Service: {
       const { service } = entity.params as ServiceURLParams;
-      const [ namespace, serviceName ] = service.split('/');
+      const [ namespace, serviceName ] = (service || 'unknown/unknown').split('/');
       return `/live/clusters/${encodedCluster}/namespaces/${namespace}/services/${serviceName}`;
     }
     case LiveViewPage.Services: {
@@ -200,5 +202,56 @@ export function toEntityPathname(entity: EntityURL): string {
     case LiveViewPage.Default:
     default:
       return `/live/clusters/${encodedCluster}`;
+  }
+}
+
+export function isEntityType(semanticType: SemanticType): boolean {
+  switch (semanticType) {
+    case SemanticType.ST_SERVICE_NAME:
+    case SemanticType.ST_POD_NAME:
+    case SemanticType.ST_NODE_NAME:
+    case SemanticType.ST_NAMESPACE_NAME:
+      return true;
+    default:
+      return false;
+  }
+}
+
+export function toSingleEntityPage(entityName: string, semanticType: SemanticType, clusterName: string): EntityPage {
+  switch (semanticType) {
+    case SemanticType.ST_SERVICE_NAME:
+      return {
+        clusterName,
+        page: LiveViewPage.Service,
+        params: {
+          service: entityName,
+        },
+      };
+    case SemanticType.ST_POD_NAME:
+      return {
+        clusterName,
+        page: LiveViewPage.Pod,
+        params: {
+          pod: entityName,
+        },
+      };
+    case SemanticType.ST_NODE_NAME:
+      return {
+        clusterName,
+        page: LiveViewPage.Node,
+        params: {
+          node: entityName,
+        },
+      };
+    case SemanticType.ST_NAMESPACE_NAME:
+      return {
+        clusterName,
+        page: LiveViewPage.Namespace,
+        params: {
+          namespace: entityName,
+        },
+      };
+    default:
+      return null;
   }
 }

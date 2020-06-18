@@ -10,6 +10,8 @@ import { DraggableCore } from 'react-draggable';
 import {
     AutoSizer, Column, defaultTableRowRenderer, Table, TableRowProps,
 } from 'react-virtualized';
+import { DataType, SemanticType } from 'types/generated/vizier_pb';
+
 
 import { IconButton } from '@material-ui/core';
 import OpenInNewIcon from '@material-ui/icons/OpenInNew';
@@ -24,7 +26,9 @@ export interface TableColumnInfo {
   flexGrow?: number;  // The factor that this column width can grow by.
   width: number;     // The width of the column.
   resizable?: boolean;
-  type?: string;
+  clusterName?: string;
+  dataType?: DataType;
+  semanticType?: SemanticType;
 }
 
 export interface ScrollableTableProps {

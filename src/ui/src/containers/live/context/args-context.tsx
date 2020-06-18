@@ -39,7 +39,7 @@ export const ArgsContextProvider = (props) => {
     if (!argsEquals(args, parsed)) {
       setArgsBase(parsed);
     }
-  }, [args, vis]);
+  }, [args, entityParams, vis]);
 
   return (
     <ArgsContext.Provider

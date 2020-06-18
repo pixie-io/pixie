@@ -91,7 +91,7 @@ describe('url params', () => {
         }, done.fail, done);
     });
 
-    it('emits itself when popstate is fired', (done) => {
+    it('emits itself when triggerOnChange is executed', (done) => {
       const instance = new URLParams(mockWindow as Window);
       instance.onChange
         .pipe(take(2)) // completes after the first 2 values are emitted.
@@ -100,10 +100,7 @@ describe('url params', () => {
           expect(newParams.scriptDiff).toBe(instance.scriptDiff);
           expect(newParams.args).toEqual(instance.args);
         }, done.fail, done);
-
-      expect(mockWindow.addEventListener).toHaveBeenCalledTimes(1);
-      const handler = mockWindow.addEventListener.mock.calls[0][1];
-      handler();
+      instance.triggerOnChange();
     });
   });
 });

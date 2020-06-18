@@ -11,6 +11,7 @@ import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 
 import { ExecuteContext } from './context/execute-context';
+import { LiveViewPage } from './utils/live-view-params';
 import { parseVis } from './vis';
 
 interface CommandInputProps {
@@ -55,7 +56,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
     })));
   }, [scripts]);
 
-  const { execute, resetDefaultLiveViewPage } = React.useContext(ExecuteContext);
+  const { execute } = React.useContext(ExecuteContext);
 
   const getCompletions = React.useCallback((input) => {
     if (!input) {
@@ -69,6 +70,8 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
     const vis = parseVis(script.vis);
     if (script) {
       execute({
+        liveViewPage: LiveViewPage.Default,
+        entityParams: {},
         script: script.code,
         vis,
         title: script.title,
@@ -76,7 +79,6 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
         // Fill the default args for now. This will go away once the autocomplete is implemented.
         args: argsForVis(vis, {}, [])
       });
-      resetDefaultLiveViewPage(script.id);
     }
     onClose();
   };
