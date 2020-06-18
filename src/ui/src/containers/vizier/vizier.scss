@@ -1,59 +1,5 @@
 @import "../../theme.scss";
 
-
-.query-executor {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    width: 0;
-}
-
-.query-executor .code-editor .CodeMirror {
-    height: 100%;
-}
-
-.code-editor {
-    margin-top: 25px;
-    display: flex;
-    flex: 1;
-    min-height: 0;
-}
-
-.hotkey-container {
-    flex: 1;
-    display: flex;
-}
-
-.query-executor .code-editor .CodeMirror {
-    background: $content-bg;
-}
-
-.query-executor .code-editor .CodeMirror-gutters {
-    background: $content-bg;
-}
-
-.query-executor .code-editor .CodeMirror-linenumber {
-    color: $white;
-}
-
-.query-executor .ReactCodeMirror .CodeMirror-vscrollbar,
-.query-executor .ReactCodeMirror .CodeMirror-scrollbar-filler {
-    display: none !important;
-}
-
-.query-executor .ReactCodeMirror {
-    width: 100%;
-}
-
-.agent-display-table {
-    display: flex;
-    flex: 1;
-}
-
-.query-executor--footer {
-    display: flex;
-}
-
 .query-executor .content-box .content-box--content {
     overflow-x: hidden;
     overflow-y: hidden;

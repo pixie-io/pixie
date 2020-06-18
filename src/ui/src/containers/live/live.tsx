@@ -62,7 +62,8 @@ const useStyles = makeStyles((theme: Theme) => {
       flexDirection: 'row',
     },
     canvas: {
-      overflow: 'auto',
+      overflowY: 'auto',
+      overflowX: 'hidden',
       marginLeft: theme.spacing(0.5),
     },
     clusterSelector: {

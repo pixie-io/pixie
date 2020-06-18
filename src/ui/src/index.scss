@@ -59,4 +59,8 @@ body {
   outline: none !important;
 }
 
-@import "~bootstrap/scss/bootstrap.scss";
+a {
+  color: #748790;
+  text-decoration: none;
+  background-color: transparent;
+}

@@ -75,11 +75,11 @@ const useStyles = makeStyles((theme: Theme) => {
       },
       '& .scrollable-table--row-odd': {
         backgroundColor: theme.palette.background.default,
-        borderBottom: [['solid', theme.spacing(0.25), theme.palette.background.three]],
+        outline: [['solid', theme.spacing(0.25), theme.palette.background.three]],
       },
       '& .scrollable-table--row-even': {
         backgroundColor: theme.palette.background.default,
-        borderBottom: [['solid', theme.spacing(0.25), theme.palette.background.three]],
+        outline: [['solid', theme.spacing(0.25), theme.palette.background.three]],
       },
       '& .ReactVirtualized__Table__headerRow': {
         borderBottom: [['solid', theme.spacing(0.25), theme.palette.background.three]],

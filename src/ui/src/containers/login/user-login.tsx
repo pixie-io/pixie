@@ -10,7 +10,7 @@ import * as backgroundTop from 'images/login-background-top.svg';
 import * as logo from 'images/new-logo.svg';
 import * as QueryString from 'query-string';
 import * as React from 'react';
-import { Button } from 'react-bootstrap';
+import Button from '@material-ui/core/Button';
 import { Link } from 'react-router-dom';
 import analytics from 'utils/analytics';
 import * as RedirectUtils from 'utils/redirect-utils';
@@ -392,7 +392,7 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
             <div className='error-message--icon'><img src={criticalImage} /></div>
             {this.state.error}
           </div>
-          <Button variant='danger' onClick={() => {
+          <Button variant='contained' color='secondary' onClick={() => {
             // Just reload page to clear state and allow them to retry login.
             document.location.reload();
           }}>
