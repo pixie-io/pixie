@@ -9,9 +9,8 @@ spec:
   connectionDraining:
     drainingTimeoutSec: 60
   cdn:
-    # TODO(zasgar): enable CDN (it currently does not work with cloud armor).
-    enabled: false
+    enabled: true
     cachePolicy:
-      includeHost: true
-      includeProtocol: true
-      includeQueryString: true
+      includeHost: false
+      includeProtocol: false
+      includeQueryString: false
