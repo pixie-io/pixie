@@ -5,12 +5,23 @@
 
 #include "src/stirling/obj_tools/init.h"
 
+#define LLVM_ASSIGN_OR_RETURN_IMPL(var, tmpvar, expr, err) \
+  auto tmpvar = expr;                                      \
+  if (!tmpvar.hasValue()) {                                \
+    return error::Internal(err);                           \
+  }                                                        \
+  var = tmpvar.getValue();
+
+#define LLVM_ASSIGN_OR_RETURN(var, expr, err) \
+  LLVM_ASSIGN_OR_RETURN_IMPL(var, PL_CONCAT_NAME(__t__, __COUNTER__), expr, err)
+
 namespace pl {
 namespace stirling {
 namespace dwarf_tools {
 
 using llvm::DWARFContext;
 using llvm::DWARFDie;
+using llvm::DWARFFormValue;
 
 // TODO(oazizi): This will break on 32-bit binaries.
 // Use ELF to get the correct value.
@@ -160,15 +171,12 @@ StatusOr<uint64_t> DwarfReader::GetStructMemberOffset(std::string_view struct_na
   for (const auto& die : struct_die.children()) {
     if ((die.getTag() == llvm::dwarf::DW_TAG_member) &&
         (die.getName(llvm::DINameKind::ShortName) == member_name)) {
-      llvm::Optional<llvm::DWARFFormValue> attr = die.find(llvm::dwarf::DW_AT_data_member_location);
-      if (!attr.hasValue()) {
-        return error::Internal("Found member, but could not find data_member_location attribute.");
-      }
-      llvm::Optional<uint64_t> offset = attr.getValue().getAsUnsignedConstant();
-      if (!offset.hasValue()) {
-        return error::Internal("Could not extract offset.");
-      }
-      return offset.getValue();
+      LLVM_ASSIGN_OR_RETURN(DWARFFormValue & attr,
+                            die.find(llvm::dwarf::DW_AT_data_member_location),
+                            "Found member, but could not find data_member_location attribute.");
+      LLVM_ASSIGN_OR_RETURN(uint64_t offset, attr.getAsUnsignedConstant(),
+                            "Could not extract offset.");
+      return offset;
     }
   }
 
@@ -180,17 +188,13 @@ StatusOr<uint64_t> GetBaseOrStructTypeByteSize(const DWARFDie& die) {
   DCHECK((die.getTag() == llvm::dwarf::DW_TAG_base_type) ||
          (die.getTag() == llvm::dwarf::DW_TAG_structure_type));
 
-  llvm::Optional<llvm::DWARFFormValue> byte_size_attr = die.find(llvm::dwarf::DW_AT_byte_size);
-  if (!byte_size_attr.hasValue()) {
-    return error::Internal("Could not find DW_AT_byte_size.");
-  }
+  LLVM_ASSIGN_OR_RETURN(DWARFFormValue & byte_size_attr, die.find(llvm::dwarf::DW_AT_byte_size),
+                        "Could not find DW_AT_byte_size.");
 
-  llvm::Optional<uint64_t> byte_size = byte_size_attr.getValue().getAsUnsignedConstant();
-  if (!byte_size.hasValue()) {
-    return error::Internal("Could not extract byte_size.");
-  }
+  LLVM_ASSIGN_OR_RETURN(uint64_t byte_size, byte_size_attr.getAsUnsignedConstant(),
+                        "Could not extract byte_size.");
 
-  return byte_size.getValue();
+  return byte_size;
 }
 
 StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
@@ -201,15 +205,13 @@ StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
   // If the type is a typedef, then follow the type and recursively call this function.
   switch (die.getTag()) {
     case llvm::dwarf::DW_TAG_typedef: {
-      llvm::Optional<llvm::DWARFFormValue> type_attr = die.find(llvm::dwarf::DW_AT_type);
-      if (!type_attr.hasValue()) {
-        return error::Internal("Found argument, but could not determine its type.");
-      }
-      return GetTypeByteSize(die.getAttributeValueAsReferencedDie(type_attr.getValue()));
+      LLVM_ASSIGN_OR_RETURN(DWARFFormValue & type_attr, die.find(llvm::dwarf::DW_AT_type),
+                            "Could not find DW_AT_type for function argument.");
+      const auto& referenced_die = die.getAttributeValueAsReferencedDie(type_attr);
+      return GetTypeByteSize(referenced_die);
     }
-    case llvm::dwarf::DW_TAG_pointer_type: {
+    case llvm::dwarf::DW_TAG_pointer_type:
       return kAddressSize;
-    }
     case llvm::dwarf::DW_TAG_base_type:
     case llvm::dwarf::DW_TAG_structure_type:
       return GetBaseOrStructTypeByteSize(die);
@@ -236,12 +238,9 @@ StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view functio
   for (const auto& die : function_die.children()) {
     if ((die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) &&
         (die.getName(llvm::DINameKind::ShortName) == arg_name)) {
-      llvm::Optional<llvm::DWARFFormValue> type_attr = die.find(llvm::dwarf::DW_AT_type);
-      if (!type_attr.hasValue()) {
-        return error::Internal("Could not find DW_AT_type for function argument.");
-      }
-
-      return GetTypeByteSize(die.getAttributeValueAsReferencedDie(type_attr.getValue()));
+      LLVM_ASSIGN_OR_RETURN(DWARFFormValue & type_attr, die.find(llvm::dwarf::DW_AT_type),
+                            "Could not find DW_AT_type for function argument.");
+      return GetTypeByteSize(die.getAttributeValueAsReferencedDie(type_attr));
     }
   }
   return error::Internal("Could not find argument.");
@@ -264,25 +263,19 @@ StatusOr<int64_t> DwarfReader::GetArgumentStackPointerOffset(std::string_view fu
   for (const auto& die : function_die.children()) {
     if ((die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) &&
         (die.getName(llvm::DINameKind::ShortName) == arg_name)) {
-      llvm::Optional<llvm::DWARFFormValue> loc_attr = die.find(llvm::dwarf::DW_AT_location);
-      if (!loc_attr.hasValue()) {
-        return error::Internal("Could not find DW_AT_location for function argument..");
+      LLVM_ASSIGN_OR_RETURN(DWARFFormValue & loc_attr, die.find(llvm::dwarf::DW_AT_location),
+                            "Could not find DW_AT_location for function argument.");
+
+      if (!loc_attr.isFormClass(DWARFFormValue::FC_Block) &&
+          !loc_attr.isFormClass(DWARFFormValue::FC_Exprloc)) {
+        return error::Internal("Unexpected Form: $0", magic_enum::enum_name(loc_attr.getForm()));
       }
 
-      if (!loc_attr.getValue().isFormClass(llvm::DWARFFormValue::FC_Block) &&
-          !loc_attr.getValue().isFormClass(llvm::DWARFFormValue::FC_Exprloc)) {
-        return error::Internal("Unexpected Form: $0",
-                               magic_enum::enum_name(loc_attr.getValue().getForm()));
-      }
+      LLVM_ASSIGN_OR_RETURN(llvm::ArrayRef<uint8_t> loc, loc_attr.getAsBlock(),
+                            "Could not extract location.");
 
-      llvm::Optional<llvm::ArrayRef<uint8_t>> loc = loc_attr.getValue().getAsBlock();
-      if (!loc.hasValue()) {
-        return error::Internal("Could not extract location.");
-      }
-
-      llvm::DataExtractor data(llvm::StringRef(reinterpret_cast<const char*>(loc.getValue().data()),
-                                               loc.getValue().size()),
-                               true, 0);
+      llvm::DataExtractor data(
+          llvm::StringRef(reinterpret_cast<const char*>(loc.data()), loc.size()), true, 0);
       llvm::DWARFExpression expr(data, llvm::DWARFExpression::Operation::Dwarf4, kAddressSize);
 
       auto iter = expr.begin();
