@@ -140,8 +140,10 @@ func createClusterConfigYAML(namespace string, useEtcdOperator bool) (string, er
 func createCloudConfigYAML(cloudAddr string, namespace string, devCloudNamespace string, kubeConfig *rest.Config) (string, error) {
 	// devCloudNamespace implies we are running in a dev enivironment and we should attach to
 	// vzconn in that namespace.
+	updateCloudAddr := cloudAddr
 	if devCloudNamespace != "" {
 		cloudAddr = fmt.Sprintf("vzconn-service.%s.svc.cluster.local:51600", devCloudNamespace)
+		updateCloudAddr = fmt.Sprintf("api-service.%s.svc.cluster.local:51200", devCloudNamespace)
 	}
 
 	clusterName := ""
@@ -151,8 +153,9 @@ func createCloudConfigYAML(cloudAddr string, namespace string, devCloudNamespace
 	}
 
 	cm, err := k8s.CreateConfigMapFromLiterals(namespace, "pl-cloud-config", map[string]string{
-		"PL_CLOUD_ADDR":   cloudAddr,
-		"PL_CLUSTER_NAME": clusterName,
+		"PL_CLOUD_ADDR":        cloudAddr,
+		"PL_CLUSTER_NAME":      clusterName,
+		"PL_UPDATE_CLOUD_ADDR": updateCloudAddr,
 	})
 	if err != nil {
 		return "", err

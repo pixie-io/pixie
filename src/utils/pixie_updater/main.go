@@ -29,7 +29,7 @@ func init() {
 	pflag.String("cloud_token", "", "The token to use for cloud connection")
 	pflag.String("namespace", "pl", "The namespace used by Pixie")
 	pflag.String("vizier_version", "", "The version to install or upgrade to")
-	pflag.String("cloud_addr", "withpixie.ai:443", "The pixie cloud address to use.")
+	pflag.String("update_cloud_addr", "withpixie.ai:443", "The pixie cloud address to use.")
 	pflag.Bool("etcd_operator_enabled", false, "Whether the etcd operator should be used instead of the statefulset")
 }
 
@@ -69,7 +69,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to create in cluster client set")
 	}
 
-	cloudAddr := viper.GetString("cloud_addr")
+	cloudAddr := viper.GetString("update_cloud_addr")
 	fmt.Printf("Using CLOUD: %s\n", cloudAddr)
 	conn, err := getCloudClientConnection(cloudAddr)
 	if err != nil {
