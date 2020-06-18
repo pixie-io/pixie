@@ -4,7 +4,7 @@ import './code-snippet.scss';
 import * as copyImage from 'images/icons/copy.svg';
 import * as React from 'react';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
-import Highlight from 'react-highlight';
+import Highlight from 'react-highlight/lib/optimized';
 
 interface CodeSnippetProps {
   showCopy: boolean;

@@ -81,6 +81,7 @@
     "url-loader": "^1.1.1",
     "webpack": "^4.42.0",
     "webpack-archive-plugin": "^3.0.0",
+    "webpack-bundle-analyzer": "^3.8.0",
     "webpack-cli": "^3.1.0",
     "webpack-dev-server": "3.11.0",
     "webpack-plugin-replace": "^1.2.0"
@@ -125,8 +126,6 @@
     "history": "^4.10.1",
     "immutable-tuple": "^0.4.8",
     "license-checker": "^25.0.1",
-    "lodash": "^4.17.15",
-    "moment": "^2.24.0",
     "numeral": "^2.0.6",
     "pixie-components": "1.0.0",
     "prism-react-renderer": "^1.0.2",
@@ -145,7 +144,6 @@
     "react-transition-group": "^2.5.0",
     "react-vega": "^7.3.0",
     "react-virtualized": "^9.21.2",
-    "react-vis": "^1.11.7",
     "retry": "^0.12.0",
     "rxjs": "^6.5.4",
     "semver": "^7.3.2",
@@ -168,5 +166,9 @@
     "storybook_static": "./node_modules/.bin/build-storybook -c .storybook -o storybook_static",
     "license_check": "./node_modules/license-checker/bin/license-checker",
     "lint": "tsc --noEmit && eslint '*/**/*.{js,ts,tsx}'"
+  },
+  "resolutions": {
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0"
   }
 }

@@ -37,6 +37,10 @@ const plugins = [
     'BUILD_SCM_STATUS',
     'BUILD_TIMESTAMP',
   ]),
+  new webpack.ContextReplacementPlugin(
+    /highlight.js[/\\]lib[/\\]languages$/, /javascript|bash|python/),
+  // Uncomment to enabled bundle analysis.
+  // new (require('webpack-bundle-analyzer').BundleAnalyzerPlugin),
 ];
 
 if (isDevServer) {

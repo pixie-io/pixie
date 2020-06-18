@@ -1,6 +1,6 @@
 import { mount } from 'enzyme';
 import * as React from 'react';
-import Highlight from 'react-highlight';
+import Highlight from 'react-highlight/lib/optimized';
 
 import { CodeSnippet } from './code-snippet';
 

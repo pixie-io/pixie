@@ -1,5 +1,5 @@
 import { DOMAIN_NAME } from 'containers/constants';
-import * as moment from 'moment';
+import { format } from 'date-fns'
 
 const BUILD_NUMBER = process.env.BUILD_NUMBER;
 const BUILD_SCM_REVISION = process.env.BUILD_SCM_REVISION;
@@ -8,7 +8,7 @@ const BUILD_TIMESTAMP = process.env.BUILD_TIMESTAMP;
 
 const timestampSec = Number.parseInt(BUILD_TIMESTAMP, 10);
 const date = isNaN(timestampSec) ? new Date() : new Date(timestampSec * 1000);
-const dateStr = moment(date).utc().format('YYYY.MM.DD.hh.mm');
+const dateStr = format(date, 'YYYY.MM.DD.hh.mm');
 const parts = [];
 if (typeof BUILD_SCM_REVISION === 'string') {
   parts.push(BUILD_SCM_REVISION.substr(0, 7));
