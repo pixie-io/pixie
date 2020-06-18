@@ -10,7 +10,6 @@ import {
 import { useSnackbar } from 'components/snackbar/snackbar';
 import AdminView from 'containers/admin/admin';
 import { ScriptsContextProvider } from 'containers/App/scripts-context';
-import { Editor } from 'containers/editor';
 import LiveView from 'containers/live/live';
 import gql from 'graphql-tag';
 import * as React from 'react';
@@ -19,9 +18,7 @@ import { Redirect, Route, Switch } from 'react-router-dom';
 import { useQuery } from '@apollo/react-hooks';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 
-import { AgentDisplay } from './agent-display';
-import { ClusterInstructions, DeployInstructions } from './deploy-instructions';
-import { VizierTopNav } from './top-nav';
+import { DeployInstructions } from './deploy-instructions';
 
 export const LIST_CLUSTERS = gql`
 {
@@ -66,18 +63,6 @@ const useStyles = makeStyles(() => {
     },
   });
 });
-
-export const VizierMain = () => {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%' }}>
-      <VizierTopNav />
-      <Switch>
-        <Route path='/agents' component={AgentDisplay} />
-        <Route path='/console' component={Editor} />
-      </Switch>
-    </div>
-  );
-};
 
 const ClusterBanner = () => {
   const classes = useStyles();
@@ -190,11 +175,7 @@ const Vizier = () => {
         clusterStatus={errMsg ? 'CS_UNKNOWN' : status}
       >
         <ScriptsContextProvider>
-          <Switch>
-            <Route path='/live' component={LiveView} />
-            <Route path={['/console', '/agents']} component={VizierMain} />
-            <Redirect from='/*' to='/live' />
-          </Switch>
+          <LiveView />
         </ScriptsContextProvider>
       </VizierGRPCClientProvider>
     </ClusterContext.Provider>
@@ -207,7 +188,7 @@ export default function withClusterBanner() {
       <ClusterBanner />
       <Switch>
         <Route path='/admin' component={AdminView} />
-        <Route component={Vizier} />
+        <Route path='/live' component={Vizier} />
       </Switch>
     </>
   );
