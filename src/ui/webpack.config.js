@@ -12,6 +12,7 @@ const YAML = require('yaml');
 const fs = require('fs');
 const utils = require('./webpack-utils');
 const CompressionPlugin = require('compression-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 const isDevServer = process.argv.find((v) => v.includes('webpack-dev-server'));
 let topLevelDir = '';
@@ -39,6 +40,10 @@ const plugins = [
   ]),
   new webpack.ContextReplacementPlugin(
     /highlight.js[/\\]lib[/\\]languages$/, /javascript|bash|python/),
+  new MiniCssExtractPlugin({
+    filename: '[name].[hash].css',
+    chunkFilename: '[id].[hash].css',
+  }),
   // Uncomment to enabled bundle analysis.
   // new (require('webpack-bundle-analyzer').BundleAnalyzerPlugin),
 ];
@@ -109,10 +114,13 @@ const webpackConfig = {
         },
       },
       {
-        test: /\.scss$/,
+        test: /\.(sc|c)ss$/,
         use: [
           {
-            loader: 'style-loader',
+            loader: MiniCssExtractPlugin.loader,
+            options: {
+              hmr: isDevServer,
+            },
           },
           {
             loader: 'css-loader',
@@ -121,21 +129,6 @@ const webpackConfig = {
             loader: 'sass-loader',
             options: {
               includePaths: ['node_modules'],
-            },
-          },
-        ],
-      },
-      {
-        test: /\.css$/,
-        use: ['style-loader', 'css-loader'],
-      },
-      {
-        test: /\.toml$/i,
-        use: [
-          {
-            loader: 'raw-loader',
-            options: {
-              esModule: false,
             },
           },
         ],
