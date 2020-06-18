@@ -75,6 +75,15 @@ func (t *IndexTemplate) FromJSONString(templJSONStr string) *IndexTemplate {
 	return t
 }
 
+// AddIndexMappings populates the mappings of the index template from the map passed.
+// Although, elastic supposedly copies the mappings over when there is an index rollover,
+// there seem to be some cases where this doesn't happen,
+// so we add the index mappings to the index template to make sure it happens.
+func (t *IndexTemplate) AddIndexMappings(mappings map[string]interface{}) *IndexTemplate {
+	t.template.Mappings = mappings
+	return t
+}
+
 func (t *IndexTemplate) validate() error {
 	if len(t.template.IndexPatterns) == 0 {
 		return fmt.Errorf("must specify at least 1 index pattern to create an index template")
