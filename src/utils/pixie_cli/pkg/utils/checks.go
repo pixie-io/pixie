@@ -72,7 +72,8 @@ var (
 			return err
 		}
 
-		kubectlVersion := fmt.Sprintf("%s.%s.0", version.ClientVersion.Major, version.ClientVersion.Minor)
+		minorVersion := strings.TrimSuffix(version.ClientVersion.Minor, "+")
+		kubectlVersion := fmt.Sprintf("%s.%s.0", version.ClientVersion.Major, minorVersion)
 		compatible, err := VersionCompatible(kubectlVersion, kubectlMinVersion)
 		if err != nil {
 			return err
