@@ -17,7 +17,7 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/vizier"
 )
 
-var scriptBlacklist = []string{
+var scriptDisableList = []string{
 	"px/http2_data",
 }
 
@@ -89,8 +89,8 @@ func exec(v []*vizier.Connector, execScript *script.ExecutableScript) (*execResu
 
 }
 
-func isBlacklist(script string) bool {
-	for _, t := range scriptBlacklist {
+func isDisabled(script string) bool {
+	for _, t := range scriptDisableList {
 		if script == t {
 			return true
 		}
@@ -205,7 +205,7 @@ func main() {
 	}
 
 	for i, s := range scripts {
-		if isBlacklist(s.ScriptName) {
+		if isDisabled(s.ScriptName) {
 			continue
 		}
 		log.WithField("script", s.ScriptName).WithField("idx", i).Infof("Executing new script")

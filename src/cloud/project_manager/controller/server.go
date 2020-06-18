@@ -37,7 +37,7 @@ func NewServer(datastore ProjectDatastore) *Server {
 	}
 }
 
-var projectNameBlacklist = map[string]bool{}
+var projectNameBlockList = map[string]bool{}
 
 func validProject(s string) bool {
 	return projectRegex.MatchString(s)
@@ -47,7 +47,7 @@ func validProject(s string) bool {
 func (s *Server) IsProjectAvailable(ctx context.Context, req *projectmanagerpb.IsProjectAvailableRequest) (*projectmanagerpb.IsProjectAvailableResponse, error) {
 	resp := &projectmanagerpb.IsProjectAvailableResponse{}
 	pn := strings.ToLower(req.ProjectName)
-	if _, exists := projectNameBlacklist[pn]; exists {
+	if _, exists := projectNameBlockList[pn]; exists {
 		resp.Available = false
 		return resp, nil
 	}

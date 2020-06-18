@@ -20,8 +20,8 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
-var emailDomainBlacklist = map[string]bool{
-	"blacklist.com": true,
+var emailDomainBlockedList = map[string]bool{
+	"blocklist.com": true,
 }
 
 // DefaultProjectName is the name of the default project we automatically assign to every org.
@@ -94,7 +94,7 @@ func checkValidEmail(email string) error {
 	}
 	_, domain := components[0], components[1]
 
-	if _, exists := emailDomainBlacklist[domain]; exists {
+	if _, exists := emailDomainBlockedList[domain]; exists {
 		return errors.New("disallowed email domain")
 	}
 	return nil

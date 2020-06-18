@@ -102,7 +102,7 @@ func TestServer_IsProjectAvailable(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name:        "Blacklisted projects are not available",
+			name:        "Blocked projects are not available",
 			projectName: "cloud",
 			isAvailable: false,
 			expectError: false,
@@ -144,8 +144,8 @@ func TestServer_IsProjectAvailable(t *testing.T) {
 	}
 }
 
-// TODO(nserrino): Re-enable when we have a project name in the blacklist.
-// func TestServer_RegisterProjectBlacklist(t *testing.T) {
+// TODO(nserrino): Re-enable when we have a project name in the blockedlist.
+// func TestServer_RegisterProjectBlockList(t *testing.T) {
 // 	server := SetupServerTest(t)
 
 // 	req := &projectmanagerpb.RegisterProjectRequest{

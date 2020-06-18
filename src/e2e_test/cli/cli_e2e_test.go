@@ -15,11 +15,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var testBlacklist = []string{
+var testDisableList = []string{
 	"px/http2_data",
 }
 
-var stressTestBlacklist = []string{
+var stressTestDisableList = []string{
 	"px/http2_data",
 }
 
@@ -97,7 +97,7 @@ func TestCLIE2E_AllScripts(t *testing.T) {
 	// Run each script once.
 	for _, s := range scripts {
 		t.Run(s.Name, func(t *testing.T) {
-			if containsStr(testBlacklist, s.Name) {
+			if containsStr(testDisableList, s.Name) {
 				t.Skip()
 				return
 			}
@@ -117,7 +117,7 @@ func TestCLIE2E_AllScriptsRepeat10(t *testing.T) {
 	// Run each script once.
 	for _, s := range scripts {
 		t.Run(s.Name, func(t *testing.T) {
-			if containsStr(stressTestBlacklist, s.Name) {
+			if containsStr(stressTestDisableList, s.Name) {
 				t.Skip()
 				return
 			}

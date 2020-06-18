@@ -8,7 +8,7 @@ import (
 )
 
 // Email domains from this list will create individual orgs.
-var emailDomainBlacklist = map[string]bool{
+var emailDomainExcludeOrgGroupList = map[string]bool{
 	"gmail.com": true,
 }
 
@@ -18,9 +18,9 @@ func GetDomainNameFromEmail(email string) (string, error) {
 	if len(emailComponents) != 2 {
 		return "", handler.NewStatusError(http.StatusBadRequest, "failed to parse request")
 	}
-	// If the user is part of a blacklisted org, they should have an individual org.
+	// If the user is part of a excluded org, they should have an individual org.
 	domainName := email
-	if _, exists := emailDomainBlacklist[emailComponents[1]]; !exists {
+	if _, exists := emailDomainExcludeOrgGroupList[emailComponents[1]]; !exists {
 		domainName = emailComponents[1]
 	}
 	return domainName, nil
