@@ -43,10 +43,7 @@ import (
 )
 
 const (
-	etcdYAMLPath            = "./yamls/vizier_deps/etcd_prod.yaml"
-	natsYAMLPath            = "./yamls/vizier_deps/nats_prod.yaml"
 	vizierBootstrapYAMLPath = "./yamls/vizier/vizier_bootstrap_prod.yaml"
-	etcdOperatorYAMLPath    = "./yamls/vizier_deps/etcd_operator_prod.yaml"
 )
 
 // Sentry configs are not actually secret and safe to check in.
@@ -398,24 +395,6 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 			}
 		}
 
-		// Write etcd + nats before bootstrap YAML.
-		etcdPath := etcdYAMLPath
-		if useEtcdOperator {
-			etcdPath = etcdOperatorYAMLPath
-		}
-
-		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/02_manifests/%02d_etcd.yaml", yamlIdx), vzYamlMap[etcdPath])
-		if err != nil {
-			log.WithError(err).Fatal("Failed to write YAMLs")
-		}
-		yamlIdx++
-
-		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/02_manifests/%02d_nats.yaml", yamlIdx), vzYamlMap[natsYAMLPath])
-		if err != nil {
-			log.WithError(err).Fatal("Failed to write YAMLs")
-		}
-		yamlIdx++
-
 		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/02_manifests/%02d_bootstrap.yaml", yamlIdx), vzYamlMap[vizierBootstrapYAMLPath])
 		if err != nil {
 			log.WithError(err).Fatal("Failed to write YAMLs")
@@ -506,7 +485,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	depsOnly, _ := cmd.Flags().GetBool("deps_only")
 
-	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, vzYamlMap, namespace, depsOnly, useEtcdOperator)
+	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, vzYamlMap, namespace, depsOnly)
 
 	waitForHealthCheck(cloudAddr, clusterID, clientset, namespace, numNodes)
 }
@@ -691,31 +670,7 @@ func initiateUpdate(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.
 	return nil
 }
 
-func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Clientset, config *rest.Config, yamlMap map[string]string, namespace string, depsOnly bool, useEtcdOperator bool) uuid.UUID {
-	// NATS and etcd deploys depend on timing, so may sometimes fail. Include some retry behavior.
-	// TODO(zasgar/michelle): This logic is flaky and we should make smarter to actually detect and wait
-	// based on the message.
-	natsJob := newTaskWrapper("Deploying NATS", func() error {
-		return retryDeploy(clientset, config, namespace, yamlMap[natsYAMLPath])
-	})
-
-	etcdPath := etcdYAMLPath
-	if useEtcdOperator {
-		etcdPath = etcdOperatorYAMLPath
-	}
-
-	etcdJob := newTaskWrapper("Deploying etcd", func() error {
-		return retryDeploy(clientset, config, namespace, yamlMap[etcdPath])
-	})
-
-	deployDepsJobs := []utils.Task{natsJob, etcdJob}
-
-	jr := utils.NewParallelTaskRunner(deployDepsJobs)
-	err := jr.RunAndMonitor()
-	if err != nil {
-		log.Fatal("Failed to deploy Vizier deps")
-	}
-
+func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Clientset, config *rest.Config, yamlMap map[string]string, namespace string, depsOnly bool) uuid.UUID {
 	if depsOnly {
 		return uuid.Nil
 	}
@@ -750,7 +705,7 @@ func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Cl
 	}
 
 	vzJr := utils.NewSerialTaskRunner(deployJob)
-	err = vzJr.RunAndMonitor()
+	err := vzJr.RunAndMonitor()
 	if err != nil {
 		log.Fatal("Failed to deploy Vizier")
 	}

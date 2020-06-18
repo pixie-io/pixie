@@ -48,6 +48,9 @@ spec:
         - configMapRef:
             name: pl-cluster-config
             optional: true
+        - configMapRef:
+            name: pl-cloud-connector-bootstrap-config
+            optional: true
         env:
         - name: PL_CLOUD_TOKEN
           valueFrom:
@@ -271,18 +274,20 @@ func (s *Bridge) RunStream() {
 		s.vzConnClient = vzClient
 	}
 
-	natsTopic := messagebus.V2CTopic("*")
-	log.WithField("topic", natsTopic).Trace("Subscribing to NATS")
-	natsSub, err := s.nc.ChanSubscribe(natsTopic, s.natsCh)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to subscribe to NATS.")
+	if s.nc != nil {
+		natsTopic := messagebus.V2CTopic("*")
+		log.WithField("topic", natsTopic).Trace("Subscribing to NATS")
+		natsSub, err := s.nc.ChanSubscribe(natsTopic, s.natsCh)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to subscribe to NATS.")
+		}
+		defer natsSub.Unsubscribe()
+		// Set large limits on message size and count.
+		natsSub.SetPendingLimits(1e7, 1e7)
 	}
-	defer natsSub.Unsubscribe()
-	// Set large limits on message size and count.
-	natsSub.SetPendingLimits(1e7, 1e7)
 
 	// Check if there is an existing update job. If so, then set the status to "UPDATING".
-	_, err = s.vzInfo.GetJob(upgradeJobName)
+	_, err := s.vzInfo.GetJob(upgradeJobName)
 	if err != nil && !k8sErrors.IsNotFound(err) {
 		log.WithError(err).Fatal("Could not check for upgrade job")
 	}

@@ -35,6 +35,7 @@ rules:
   - extensions
   - etcd.database.coreos.com
   - batch
+  - nats.io
   resources:
   - clusterroles
   - clusterrolebindings
@@ -54,4 +55,5 @@ rules:
   - statefulsets
   - cronjobs
   - jobs
+  - natsclusters
   verbs: ["*"]

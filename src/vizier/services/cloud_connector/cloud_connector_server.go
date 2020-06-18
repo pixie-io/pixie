@@ -77,14 +77,14 @@ func main() {
 		nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
 		nats.RootCAs(viper.GetString("tls_ca_cert")))
 	if err != nil {
-		log.WithError(err).Fatal("Failed to connect to NATS.")
+		log.WithError(err).Error("Failed to connect to NATS. This is OK if the cluster is in bootstrap mode.")
+	} else {
+		nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
+			log.WithField("Sub", subscription.Subject).
+				WithError(err).
+				Error("Error with NATS handler")
+		})
 	}
-
-	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
-		log.WithField("Sub", subscription.Subject).
-			WithError(err).
-			Error("Error with NATS handler")
-	})
 
 	leaderMgr, err := election.NewK8sLeaderElectionMgr(
 		viper.GetString("pod_namespace"),

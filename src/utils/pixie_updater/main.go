@@ -21,6 +21,7 @@ const (
 	etcdOperatorYAMLPath    = "./yamls/vizier_deps/etcd_operator_prod.yaml"
 	vizierYAMLPath          = "./yamls/vizier/vizier_prod.yaml"
 	vizierBootstrapYAMLPath = "./yamls/vizier/vizier_bootstrap_prod.yaml"
+	natsYAMLPath            = "./yamls/vizier_deps/nats_prod.yaml"
 	deleteTimeout           = 5 * time.Minute
 )
 
@@ -98,6 +99,27 @@ func main() {
 		log.WithError(err).Fatal("Failed to delete old components")
 	}
 
+	etcdPath := etcdYAMLPath
+	if viper.GetBool("etcd_operator_enabled") {
+		etcdPath = etcdOperatorYAMLPath
+	}
+
+	// If in bootstrap mode, deploy NATS and etcd.
+	if viper.GetBool("bootstrap_mode") {
+		log.Info("Deploying NATS")
+
+		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[natsYAMLPath])
+		if err != nil {
+			log.WithError(err).Fatalf("Failed to deploy NATS")
+		}
+
+		log.Info("Deploying etcd")
+		err = retryDeploy(clientset, kubeConfig, "pl", yamlMap[etcdPath])
+		if err != nil {
+			log.WithError(err).Fatalf("Failed to deploy etcd")
+		}
+	}
+
 	// Update update role first.
 	err = k8s.ApplyYAML(clientset, kubeConfig, "pl", strings.NewReader(yamlMap[vizierBootstrapYAMLPath]))
 	if err != nil {
@@ -114,7 +136,7 @@ func main() {
 			if err != nil {
 				log.WithError(err).Error("Failed to delete old etcd")
 			}
-			etcdPath = etcdOperatorYAMLPath
+
 		} else {
 			_, err = od.DeleteByLabel("app=pl-monitoring", "StatefulSet")
 			if err != nil {
