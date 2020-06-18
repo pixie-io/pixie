@@ -113,6 +113,10 @@ class UPIDToContainerNameUDF : public ScalarUDF {
     }
     return std::string(container_info->name());
   }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<UPIDToContainerNameUDF>(types::ST_CONTAINER_NAME,
+                                                              {types::ST_UNSPECIFIED})};
+  }
 };
 
 inline const pl::md::PodInfo* UPIDtoPod(const pl::md::AgentMetadataState* md,
@@ -151,6 +155,10 @@ class UPIDToNamespaceUDF : public ScalarUDF {
       return "";
     }
     return pod_info->ns();
+  }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<UPIDToNamespaceUDF>(types::ST_NAMESPACE_NAME,
+                                                          {types::ST_UNSPECIFIED})};
   }
 };
 
