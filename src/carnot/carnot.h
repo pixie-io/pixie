@@ -26,7 +26,7 @@ struct CarnotQueryResult {
   Status ToProto(queryresultspb::QueryResult* query_result) const;
   std::vector<table_store::Table*> output_tables_;
   std::vector<std::string> table_names_;
-  std::vector<queryresultspb::OperatorExecutionStats> exec_node_stats;
+  std::vector<queryresultspb::AgentExecutionStats> agent_operator_exec_stats;
 
   int64_t rows_processed = 0;
   int64_t bytes_processed = 0;

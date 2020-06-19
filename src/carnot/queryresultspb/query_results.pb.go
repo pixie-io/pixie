@@ -5,11 +5,14 @@ package queryresultspb
 
 import (
 	fmt "fmt"
+	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	types "github.com/gogo/protobuf/types"
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	proto1 "pixielabs.ai/pixielabs/src/table_store/proto"
+	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	proto2 "pixielabs.ai/pixielabs/src/table_store/proto"
 	reflect "reflect"
 	strings "strings"
 )
@@ -136,12 +139,13 @@ func (m *QueryExecutionStats) GetRecordsProcessed() int64 {
 }
 
 type OperatorExecutionStats struct {
-	PlanFragmentId       int64 `protobuf:"varint,1,opt,name=plan_fragment_id,json=planFragmentId,proto3" json:"plan_fragment_id,omitempty"`
-	NodeId               int64 `protobuf:"varint,2,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
-	BytesOutput          int64 `protobuf:"varint,3,opt,name=bytes_output,json=bytesOutput,proto3" json:"bytes_output,omitempty"`
-	RecordsOutput        int64 `protobuf:"varint,4,opt,name=records_output,json=recordsOutput,proto3" json:"records_output,omitempty"`
-	TotalExecutionTimeNs int64 `protobuf:"varint,5,opt,name=total_execution_time_ns,json=totalExecutionTimeNs,proto3" json:"total_execution_time_ns,omitempty"`
-	SelfExecutionTimeNs  int64 `protobuf:"varint,6,opt,name=self_execution_time_ns,json=selfExecutionTimeNs,proto3" json:"self_execution_time_ns,omitempty"`
+	PlanFragmentId       int64      `protobuf:"varint,1,opt,name=plan_fragment_id,json=planFragmentId,proto3" json:"plan_fragment_id,omitempty"`
+	NodeId               int64      `protobuf:"varint,2,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
+	BytesOutput          int64      `protobuf:"varint,3,opt,name=bytes_output,json=bytesOutput,proto3" json:"bytes_output,omitempty"`
+	RecordsOutput        int64      `protobuf:"varint,4,opt,name=records_output,json=recordsOutput,proto3" json:"records_output,omitempty"`
+	TotalExecutionTimeNs int64      `protobuf:"varint,5,opt,name=total_execution_time_ns,json=totalExecutionTimeNs,proto3" json:"total_execution_time_ns,omitempty"`
+	SelfExecutionTimeNs  int64      `protobuf:"varint,6,opt,name=self_execution_time_ns,json=selfExecutionTimeNs,proto3" json:"self_execution_time_ns,omitempty"`
+	OperatorStats        *types.Any `protobuf:"bytes,7,opt,name=operator_stats,json=operatorStats,proto3" json:"operator_stats,omitempty"`
 }
 
 func (m *OperatorExecutionStats) Reset()      { *m = OperatorExecutionStats{} }
@@ -218,17 +222,99 @@ func (m *OperatorExecutionStats) GetSelfExecutionTimeNs() int64 {
 	return 0
 }
 
+func (m *OperatorExecutionStats) GetOperatorStats() *types.Any {
+	if m != nil {
+		return m.OperatorStats
+	}
+	return nil
+}
+
+type AgentExecutionStats struct {
+	AgentID                *proto1.UUID              `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	OperatorExecutionStats []*OperatorExecutionStats `protobuf:"bytes,2,rep,name=operator_execution_stats,json=operatorExecutionStats,proto3" json:"operator_execution_stats,omitempty"`
+	ExecutionTimeNs        int64                     `protobuf:"varint,3,opt,name=execution_time_ns,json=executionTimeNs,proto3" json:"execution_time_ns,omitempty"`
+	BytesProcessed         int64                     `protobuf:"varint,4,opt,name=bytes_processed,json=bytesProcessed,proto3" json:"bytes_processed,omitempty"`
+	RecordsProcessed       int64                     `protobuf:"varint,5,opt,name=records_processed,json=recordsProcessed,proto3" json:"records_processed,omitempty"`
+}
+
+func (m *AgentExecutionStats) Reset()      { *m = AgentExecutionStats{} }
+func (*AgentExecutionStats) ProtoMessage() {}
+func (*AgentExecutionStats) Descriptor() ([]byte, []int) {
+	return fileDescriptor_9ab3e12aa52e3568, []int{3}
+}
+func (m *AgentExecutionStats) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *AgentExecutionStats) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_AgentExecutionStats.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *AgentExecutionStats) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AgentExecutionStats.Merge(m, src)
+}
+func (m *AgentExecutionStats) XXX_Size() int {
+	return m.Size()
+}
+func (m *AgentExecutionStats) XXX_DiscardUnknown() {
+	xxx_messageInfo_AgentExecutionStats.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AgentExecutionStats proto.InternalMessageInfo
+
+func (m *AgentExecutionStats) GetAgentID() *proto1.UUID {
+	if m != nil {
+		return m.AgentID
+	}
+	return nil
+}
+
+func (m *AgentExecutionStats) GetOperatorExecutionStats() []*OperatorExecutionStats {
+	if m != nil {
+		return m.OperatorExecutionStats
+	}
+	return nil
+}
+
+func (m *AgentExecutionStats) GetExecutionTimeNs() int64 {
+	if m != nil {
+		return m.ExecutionTimeNs
+	}
+	return 0
+}
+
+func (m *AgentExecutionStats) GetBytesProcessed() int64 {
+	if m != nil {
+		return m.BytesProcessed
+	}
+	return 0
+}
+
+func (m *AgentExecutionStats) GetRecordsProcessed() int64 {
+	if m != nil {
+		return m.RecordsProcessed
+	}
+	return 0
+}
+
 type QueryResult struct {
-	Tables                 []*proto1.Table           `protobuf:"bytes,1,rep,name=tables,proto3" json:"tables,omitempty"`
-	TimingInfo             *QueryTimingInfo          `protobuf:"bytes,2,opt,name=timing_info,json=timingInfo,proto3" json:"timing_info,omitempty"`
-	ExecutionStats         *QueryExecutionStats      `protobuf:"bytes,3,opt,name=execution_stats,json=executionStats,proto3" json:"execution_stats,omitempty"`
-	OperatorExecutionStats []*OperatorExecutionStats `protobuf:"bytes,4,rep,name=operator_execution_stats,json=operatorExecutionStats,proto3" json:"operator_execution_stats,omitempty"`
+	Tables              []*proto2.Table        `protobuf:"bytes,1,rep,name=tables,proto3" json:"tables,omitempty"`
+	TimingInfo          *QueryTimingInfo       `protobuf:"bytes,2,opt,name=timing_info,json=timingInfo,proto3" json:"timing_info,omitempty"`
+	ExecutionStats      *QueryExecutionStats   `protobuf:"bytes,3,opt,name=execution_stats,json=executionStats,proto3" json:"execution_stats,omitempty"`
+	AgentExecutionStats []*AgentExecutionStats `protobuf:"bytes,4,rep,name=agent_execution_stats,json=agentExecutionStats,proto3" json:"agent_execution_stats,omitempty"`
 }
 
 func (m *QueryResult) Reset()      { *m = QueryResult{} }
 func (*QueryResult) ProtoMessage() {}
 func (*QueryResult) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9ab3e12aa52e3568, []int{3}
+	return fileDescriptor_9ab3e12aa52e3568, []int{4}
 }
 func (m *QueryResult) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -257,7 +343,7 @@ func (m *QueryResult) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_QueryResult proto.InternalMessageInfo
 
-func (m *QueryResult) GetTables() []*proto1.Table {
+func (m *QueryResult) GetTables() []*proto2.Table {
 	if m != nil {
 		return m.Tables
 	}
@@ -278,9 +364,9 @@ func (m *QueryResult) GetExecutionStats() *QueryExecutionStats {
 	return nil
 }
 
-func (m *QueryResult) GetOperatorExecutionStats() []*OperatorExecutionStats {
+func (m *QueryResult) GetAgentExecutionStats() []*AgentExecutionStats {
 	if m != nil {
-		return m.OperatorExecutionStats
+		return m.AgentExecutionStats
 	}
 	return nil
 }
@@ -289,6 +375,7 @@ func init() {
 	proto.RegisterType((*QueryTimingInfo)(nil), "pl.carnot.queryresultspb.QueryTimingInfo")
 	proto.RegisterType((*QueryExecutionStats)(nil), "pl.carnot.queryresultspb.QueryExecutionStats")
 	proto.RegisterType((*OperatorExecutionStats)(nil), "pl.carnot.queryresultspb.OperatorExecutionStats")
+	proto.RegisterType((*AgentExecutionStats)(nil), "pl.carnot.queryresultspb.AgentExecutionStats")
 	proto.RegisterType((*QueryResult)(nil), "pl.carnot.queryresultspb.QueryResult")
 }
 
@@ -297,41 +384,52 @@ func init() {
 }
 
 var fileDescriptor_9ab3e12aa52e3568 = []byte{
-	// 539 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x93, 0xc1, 0x6e, 0xd3, 0x40,
-	0x10, 0x86, 0xed, 0xa4, 0x04, 0x69, 0x0c, 0x49, 0xb3, 0x41, 0x69, 0xc4, 0x61, 0x05, 0x91, 0x10,
-	0x01, 0x54, 0x07, 0xa5, 0x82, 0x3b, 0x88, 0x22, 0x85, 0x03, 0x05, 0x13, 0x71, 0xe0, 0xb2, 0x72,
-	0xec, 0x4d, 0x31, 0xb2, 0xbd, 0x66, 0x77, 0x23, 0xd1, 0x1b, 0x8f, 0x00, 0x6f, 0xc1, 0x89, 0xe7,
-	0xe0, 0x98, 0x0b, 0x52, 0x8f, 0xc4, 0xb9, 0x70, 0xec, 0x23, 0x20, 0x8f, 0x37, 0x6d, 0x12, 0x52,
-	0x21, 0x8e, 0xfb, 0xcf, 0x37, 0x3b, 0xbf, 0xf7, 0x1f, 0xc3, 0xbe, 0x92, 0x41, 0x3f, 0xf0, 0x65,
-	0x2a, 0x74, 0xff, 0xe3, 0x94, 0xcb, 0x13, 0xc9, 0xd5, 0x34, 0xd6, 0x2a, 0x1b, 0x97, 0x47, 0x66,
-	0xce, 0x6e, 0x26, 0x85, 0x16, 0xa4, 0x93, 0xc5, 0x6e, 0x49, 0xbb, 0xeb, 0xf4, 0xcd, 0x6e, 0x71,
-	0x91, 0xf6, 0xc7, 0x31, 0x67, 0x4a, 0x0b, 0xc9, 0xfb, 0xd8, 0xd0, 0x57, 0xc1, 0x7b, 0x9e, 0xf8,
-	0x65, 0x77, 0x37, 0x81, 0xc6, 0xeb, 0xa2, 0x6b, 0x14, 0x25, 0x51, 0x7a, 0x3c, 0x4c, 0x27, 0x82,
-	0xdc, 0x87, 0x26, 0xff, 0xc4, 0x83, 0xa9, 0x8e, 0x44, 0xca, 0x74, 0x94, 0x70, 0x96, 0xaa, 0x8e,
-	0x7d, 0xcb, 0xee, 0x55, 0xbd, 0xc6, 0x79, 0x61, 0x14, 0x25, 0xfc, 0xa5, 0x22, 0x2e, 0xb4, 0x02,
-	0x91, 0x64, 0x51, 0xec, 0xaf, 0xd1, 0x15, 0xa4, 0x9b, 0x2b, 0xa5, 0x92, 0xef, 0x7e, 0xb7, 0xa1,
-	0x85, 0xf3, 0x0e, 0x97, 0x17, 0xbd, 0xd1, 0xbe, 0x56, 0xe4, 0x09, 0xd4, 0x34, 0x3a, 0xc0, 0x41,
-	0xce, 0xe0, 0x9e, 0x7b, 0xd9, 0x57, 0xb9, 0x1b, 0x76, 0x3d, 0xd3, 0x48, 0xee, 0x42, 0x63, 0x7c,
-	0xa2, 0xb9, 0x62, 0x99, 0x14, 0x01, 0x57, 0x8a, 0x87, 0xc6, 0x46, 0x1d, 0xe5, 0x57, 0x4b, 0x95,
-	0x3c, 0x80, 0xa6, 0xe4, 0x81, 0x90, 0xe1, 0x2a, 0x5a, 0x45, 0x74, 0xd7, 0x14, 0xce, 0xe1, 0xee,
-	0xd7, 0x0a, 0xb4, 0x8f, 0x32, 0x2e, 0x7d, 0x2d, 0xe4, 0x86, 0xe7, 0x1e, 0xec, 0x66, 0xb1, 0x9f,
-	0xb2, 0x89, 0xf4, 0x8f, 0x13, 0x9e, 0x6a, 0x16, 0x85, 0xe6, 0x99, 0xea, 0x85, 0xfe, 0xdc, 0xc8,
-	0xc3, 0x90, 0xec, 0xc1, 0xd5, 0x54, 0x84, 0xbc, 0x00, 0x4a, 0x4b, 0xb5, 0xe2, 0x38, 0x0c, 0xc9,
-	0x6d, 0xb8, 0x56, 0x7a, 0x16, 0x53, 0x9d, 0x4d, 0xb5, 0x71, 0xe1, 0xa0, 0x76, 0x84, 0x12, 0xb9,
-	0x03, 0xf5, 0xa5, 0x5b, 0x03, 0xed, 0x20, 0x74, 0xdd, 0xa8, 0x06, 0x7b, 0x04, 0x7b, 0x5a, 0x68,
-	0x3f, 0x66, 0x7f, 0x47, 0x77, 0x05, 0xf9, 0x1b, 0x58, 0x3e, 0xdc, 0xc8, 0xef, 0x00, 0xda, 0x8a,
-	0xc7, 0x93, 0x2d, 0x5d, 0x35, 0xec, 0x6a, 0x15, 0xd5, 0x8d, 0xa6, 0xee, 0xcf, 0x0a, 0x38, 0x98,
-	0x82, 0x87, 0xa1, 0x90, 0xc7, 0x50, 0xc3, 0x2d, 0x2b, 0xb6, 0xa4, 0xda, 0x73, 0x06, 0xb4, 0x08,
-	0x6f, 0x65, 0xef, 0xdc, 0x72, 0xe3, 0xb2, 0xb1, 0x3b, 0x2a, 0x44, 0xcf, 0xd0, 0xe4, 0x05, 0x38,
-	0x65, 0x76, 0x2c, 0x4a, 0x27, 0x02, 0x9f, 0xe6, 0xbf, 0x92, 0x07, 0x7d, 0xb1, 0xb4, 0x6f, 0xe1,
-	0x62, 0x37, 0x99, 0x2a, 0xf2, 0xc1, 0xc7, 0x74, 0x06, 0xfb, 0xff, 0xb8, 0x6f, 0x3d, 0x54, 0xaf,
-	0xce, 0xd7, 0x43, 0xfe, 0x00, 0x1d, 0x61, 0xe2, 0x67, 0x9b, 0x03, 0x76, 0xf0, 0x6b, 0x1f, 0x5e,
-	0x3e, 0x60, 0xfb, 0xe2, 0x78, 0x6d, 0xb1, 0x55, 0x7f, 0xfa, 0x6c, 0x36, 0xa7, 0xd6, 0xe9, 0x9c,
-	0x5a, 0x67, 0x73, 0x6a, 0x7f, 0xce, 0xa9, 0xfd, 0x2d, 0xa7, 0xf6, 0x8f, 0x9c, 0xda, 0xb3, 0x9c,
-	0xda, 0xbf, 0x72, 0x6a, 0xff, 0xce, 0xa9, 0x75, 0x96, 0x53, 0xfb, 0xcb, 0x82, 0x5a, 0xb3, 0x05,
-	0xb5, 0x4e, 0x17, 0xd4, 0x7a, 0x57, 0x5f, 0x1f, 0x3a, 0xae, 0xe1, 0x8f, 0x7d, 0xf0, 0x27, 0x00,
-	0x00, 0xff, 0xff, 0xbe, 0xa0, 0x06, 0x4e, 0x47, 0x04, 0x00, 0x00,
+	// 707 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0xcd, 0x6e, 0xd3, 0x4c,
+	0x14, 0x8d, 0x93, 0x36, 0xf9, 0x34, 0xf9, 0x9a, 0xb4, 0x4e, 0x69, 0x43, 0x17, 0x43, 0x89, 0x84,
+	0x28, 0xa0, 0x3a, 0xa8, 0x15, 0xb0, 0x60, 0xd5, 0xaa, 0x45, 0x0a, 0x0b, 0x0a, 0xa6, 0x65, 0xc1,
+	0xc6, 0xf2, 0xcf, 0xc4, 0x35, 0xb2, 0x3d, 0xc6, 0x33, 0x96, 0xc8, 0x8e, 0x47, 0xe0, 0x31, 0x58,
+	0xf1, 0x04, 0x3c, 0x00, 0x0b, 0x84, 0xba, 0xec, 0x0a, 0x51, 0x77, 0xc3, 0xb2, 0x8f, 0x80, 0xe6,
+	0xce, 0xa4, 0x4d, 0x5c, 0x97, 0x9f, 0xdd, 0xcc, 0xbd, 0xe7, 0xde, 0x39, 0x73, 0xe6, 0xdc, 0x41,
+	0xeb, 0x2c, 0x75, 0xfb, 0xae, 0x9d, 0xc6, 0x94, 0xf7, 0xdf, 0x66, 0x24, 0x1d, 0xa5, 0x84, 0x65,
+	0x21, 0x67, 0x89, 0x23, 0xb7, 0x96, 0xda, 0x1b, 0x49, 0x4a, 0x39, 0xd5, 0xbb, 0x49, 0x68, 0x48,
+	0xb4, 0x31, 0x8d, 0x5e, 0x59, 0xf7, 0x03, 0x7e, 0x98, 0x39, 0x86, 0x4b, 0xa3, 0xbe, 0x4f, 0x7d,
+	0xda, 0x87, 0x02, 0x27, 0x1b, 0xc2, 0x0e, 0x36, 0xb0, 0x92, 0x8d, 0x56, 0x7a, 0xe2, 0x5c, 0x6e,
+	0x3b, 0x21, 0xb1, 0x18, 0xa7, 0x29, 0x91, 0xf0, 0x3e, 0x73, 0x0f, 0x49, 0x64, 0x2b, 0xcc, 0x2a,
+	0x70, 0xa3, 0x51, 0x44, 0xe3, 0x7e, 0x96, 0x05, 0x9e, 0xc2, 0x88, 0xa5, 0x42, 0x5c, 0xf7, 0x29,
+	0xf5, 0x43, 0x72, 0x71, 0x96, 0x1d, 0x8f, 0x64, 0xaa, 0x17, 0xa1, 0xf6, 0x0b, 0xc1, 0x70, 0x3f,
+	0x88, 0x82, 0xd8, 0x1f, 0xc4, 0x43, 0xaa, 0xdf, 0x45, 0x0b, 0xe4, 0x1d, 0x71, 0x33, 0x1e, 0xd0,
+	0xd8, 0xe2, 0x41, 0x44, 0xac, 0x98, 0x75, 0xb5, 0x55, 0x6d, 0xad, 0x66, 0xb6, 0xcf, 0x13, 0xfb,
+	0x41, 0x44, 0x9e, 0x31, 0xdd, 0x40, 0x1d, 0x97, 0x46, 0x49, 0x10, 0xda, 0x53, 0xe8, 0x2a, 0xa0,
+	0x17, 0x26, 0x52, 0x12, 0xdf, 0xfb, 0xa4, 0xa1, 0x0e, 0x9c, 0xb7, 0x3b, 0x6e, 0xf4, 0x92, 0xdb,
+	0x9c, 0xe9, 0x5b, 0xa8, 0xce, 0x81, 0x01, 0x1c, 0xd4, 0xdc, 0xb8, 0x63, 0x5c, 0xa5, 0xa0, 0x51,
+	0xa0, 0x6b, 0xaa, 0x42, 0xfd, 0x36, 0x6a, 0x3b, 0x23, 0x4e, 0x98, 0x95, 0xa4, 0xd4, 0x25, 0x8c,
+	0x11, 0x4f, 0xd1, 0x68, 0x41, 0xf8, 0xf9, 0x38, 0xaa, 0xdf, 0x43, 0x0b, 0x29, 0x71, 0x69, 0xea,
+	0x4d, 0x42, 0x6b, 0x00, 0x9d, 0x57, 0x89, 0x73, 0x70, 0xef, 0x5b, 0x15, 0x2d, 0xed, 0x25, 0x24,
+	0xb5, 0x39, 0x4d, 0x0b, 0x9c, 0xd7, 0xd0, 0x7c, 0x12, 0xda, 0xb1, 0x35, 0x4c, 0x6d, 0x3f, 0x22,
+	0x31, 0xb7, 0x02, 0x4f, 0xc9, 0xd4, 0x12, 0xf1, 0x27, 0x2a, 0x3c, 0xf0, 0xf4, 0x65, 0xd4, 0x88,
+	0xa9, 0x47, 0x04, 0x40, 0x52, 0xaa, 0x8b, 0xed, 0xc0, 0xd3, 0x6f, 0xa2, 0xff, 0x25, 0x67, 0x9a,
+	0xf1, 0x24, 0xe3, 0x8a, 0x45, 0x13, 0x62, 0x7b, 0x10, 0xd2, 0x6f, 0xa1, 0xd6, 0x98, 0xad, 0x02,
+	0xcd, 0x00, 0x68, 0x4e, 0x45, 0x15, 0xec, 0x01, 0x5a, 0xe6, 0x94, 0xdb, 0xa1, 0x75, 0xf9, 0xe9,
+	0x66, 0x01, 0xbf, 0x08, 0xe9, 0xdd, 0xc2, 0xfb, 0x6d, 0xa2, 0x25, 0x46, 0xc2, 0x61, 0x49, 0x55,
+	0x1d, 0xaa, 0x3a, 0x22, 0x5b, 0x2c, 0x7a, 0x8c, 0x5a, 0x54, 0x49, 0x62, 0x31, 0x21, 0x45, 0xb7,
+	0x01, 0x8f, 0xb6, 0x68, 0x48, 0x9f, 0x19, 0x63, 0x9f, 0x19, 0x5b, 0xf1, 0xc8, 0x9c, 0x1b, 0x63,
+	0x41, 0xb5, 0xde, 0xe7, 0x2a, 0xea, 0x6c, 0xf9, 0x24, 0xe6, 0x05, 0x35, 0x1f, 0xa1, 0xff, 0x6c,
+	0x7f, 0x42, 0xc5, 0xe6, 0x46, 0x5b, 0x78, 0x40, 0xb8, 0x38, 0x71, 0x8c, 0x83, 0x83, 0xc1, 0xce,
+	0x76, 0x33, 0xff, 0x7e, 0xa3, 0x01, 0xb5, 0x83, 0x1d, 0xb3, 0x01, 0xe8, 0x81, 0xa7, 0xbf, 0x41,
+	0xdd, 0x73, 0x36, 0x17, 0xd7, 0x90, 0xbc, 0xaa, 0xab, 0xb5, 0xb5, 0xe6, 0xc6, 0xfd, 0xab, 0xcd,
+	0x54, 0xfe, 0xb4, 0xe6, 0x12, 0x2d, 0x7f, 0xf2, 0xd2, 0xd1, 0xa8, 0x95, 0x8f, 0x46, 0x89, 0x1f,
+	0x67, 0xfe, 0xde, 0x8f, 0xb3, 0x57, 0xf8, 0xf1, 0x6b, 0x15, 0x35, 0x61, 0x02, 0x4c, 0xb8, 0x83,
+	0xfe, 0x10, 0xd5, 0xe1, 0x7b, 0x10, 0x13, 0x2a, 0xee, 0x8a, 0xc5, 0x5d, 0x27, 0x3e, 0x0c, 0x43,
+	0x7e, 0x15, 0x89, 0x63, 0xec, 0x8b, 0xa0, 0xa9, 0xd0, 0xfa, 0x53, 0xd4, 0x94, 0x73, 0x63, 0x05,
+	0xf1, 0x90, 0x82, 0x2d, 0xff, 0x69, 0xea, 0x10, 0xbf, 0xf8, 0x30, 0x5e, 0xa1, 0x76, 0x51, 0xf8,
+	0x1a, 0xf4, 0x5b, 0xff, 0x43, 0xbf, 0x82, 0xea, 0x2d, 0x32, 0xad, 0xb6, 0x8d, 0xae, 0x49, 0x4b,
+	0x14, 0xbb, 0xcf, 0xc0, 0x55, 0x7f, 0xd3, 0xbd, 0xc4, 0x60, 0x66, 0xc7, 0xbe, 0x1c, 0xdc, 0xde,
+	0x39, 0x3a, 0xc1, 0x95, 0xe3, 0x13, 0x5c, 0x39, 0x3b, 0xc1, 0xda, 0xfb, 0x1c, 0x6b, 0x1f, 0x73,
+	0xac, 0x7d, 0xc9, 0xb1, 0x76, 0x94, 0x63, 0xed, 0x47, 0x8e, 0xb5, 0x9f, 0x39, 0xae, 0x9c, 0xe5,
+	0x58, 0xfb, 0x70, 0x8a, 0x2b, 0x47, 0xa7, 0xb8, 0x72, 0x7c, 0x8a, 0x2b, 0xaf, 0x5b, 0xd3, 0xc7,
+	0x39, 0x75, 0x30, 0xfc, 0xe6, 0xaf, 0x00, 0x00, 0x00, 0xff, 0xff, 0x62, 0xd5, 0xdd, 0x30, 0x26,
+	0x06, 0x00, 0x00,
 }
 
 func (this *QueryTimingInfo) Equal(that interface{}) bool {
@@ -428,6 +526,50 @@ func (this *OperatorExecutionStats) Equal(that interface{}) bool {
 	if this.SelfExecutionTimeNs != that1.SelfExecutionTimeNs {
 		return false
 	}
+	if !this.OperatorStats.Equal(that1.OperatorStats) {
+		return false
+	}
+	return true
+}
+func (this *AgentExecutionStats) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*AgentExecutionStats)
+	if !ok {
+		that2, ok := that.(AgentExecutionStats)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.AgentID.Equal(that1.AgentID) {
+		return false
+	}
+	if len(this.OperatorExecutionStats) != len(that1.OperatorExecutionStats) {
+		return false
+	}
+	for i := range this.OperatorExecutionStats {
+		if !this.OperatorExecutionStats[i].Equal(that1.OperatorExecutionStats[i]) {
+			return false
+		}
+	}
+	if this.ExecutionTimeNs != that1.ExecutionTimeNs {
+		return false
+	}
+	if this.BytesProcessed != that1.BytesProcessed {
+		return false
+	}
+	if this.RecordsProcessed != that1.RecordsProcessed {
+		return false
+	}
 	return true
 }
 func (this *QueryResult) Equal(that interface{}) bool {
@@ -463,11 +605,11 @@ func (this *QueryResult) Equal(that interface{}) bool {
 	if !this.ExecutionStats.Equal(that1.ExecutionStats) {
 		return false
 	}
-	if len(this.OperatorExecutionStats) != len(that1.OperatorExecutionStats) {
+	if len(this.AgentExecutionStats) != len(that1.AgentExecutionStats) {
 		return false
 	}
-	for i := range this.OperatorExecutionStats {
-		if !this.OperatorExecutionStats[i].Equal(that1.OperatorExecutionStats[i]) {
+	for i := range this.AgentExecutionStats {
+		if !this.AgentExecutionStats[i].Equal(that1.AgentExecutionStats[i]) {
 			return false
 		}
 	}
@@ -502,7 +644,7 @@ func (this *OperatorExecutionStats) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 10)
+	s := make([]string, 0, 11)
 	s = append(s, "&queryresultspb.OperatorExecutionStats{")
 	s = append(s, "PlanFragmentId: "+fmt.Sprintf("%#v", this.PlanFragmentId)+",\n")
 	s = append(s, "NodeId: "+fmt.Sprintf("%#v", this.NodeId)+",\n")
@@ -510,6 +652,27 @@ func (this *OperatorExecutionStats) GoString() string {
 	s = append(s, "RecordsOutput: "+fmt.Sprintf("%#v", this.RecordsOutput)+",\n")
 	s = append(s, "TotalExecutionTimeNs: "+fmt.Sprintf("%#v", this.TotalExecutionTimeNs)+",\n")
 	s = append(s, "SelfExecutionTimeNs: "+fmt.Sprintf("%#v", this.SelfExecutionTimeNs)+",\n")
+	if this.OperatorStats != nil {
+		s = append(s, "OperatorStats: "+fmt.Sprintf("%#v", this.OperatorStats)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *AgentExecutionStats) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 9)
+	s = append(s, "&queryresultspb.AgentExecutionStats{")
+	if this.AgentID != nil {
+		s = append(s, "AgentID: "+fmt.Sprintf("%#v", this.AgentID)+",\n")
+	}
+	if this.OperatorExecutionStats != nil {
+		s = append(s, "OperatorExecutionStats: "+fmt.Sprintf("%#v", this.OperatorExecutionStats)+",\n")
+	}
+	s = append(s, "ExecutionTimeNs: "+fmt.Sprintf("%#v", this.ExecutionTimeNs)+",\n")
+	s = append(s, "BytesProcessed: "+fmt.Sprintf("%#v", this.BytesProcessed)+",\n")
+	s = append(s, "RecordsProcessed: "+fmt.Sprintf("%#v", this.RecordsProcessed)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -528,8 +691,8 @@ func (this *QueryResult) GoString() string {
 	if this.ExecutionStats != nil {
 		s = append(s, "ExecutionStats: "+fmt.Sprintf("%#v", this.ExecutionStats)+",\n")
 	}
-	if this.OperatorExecutionStats != nil {
-		s = append(s, "OperatorExecutionStats: "+fmt.Sprintf("%#v", this.OperatorExecutionStats)+",\n")
+	if this.AgentExecutionStats != nil {
+		s = append(s, "AgentExecutionStats: "+fmt.Sprintf("%#v", this.AgentExecutionStats)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
@@ -640,6 +803,18 @@ func (m *OperatorExecutionStats) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	_ = i
 	var l int
 	_ = l
+	if m.OperatorStats != nil {
+		{
+			size, err := m.OperatorStats.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQueryResults(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x3a
+	}
 	if m.SelfExecutionTimeNs != 0 {
 		i = encodeVarintQueryResults(dAtA, i, uint64(m.SelfExecutionTimeNs))
 		i--
@@ -673,6 +848,70 @@ func (m *OperatorExecutionStats) MarshalToSizedBuffer(dAtA []byte) (int, error) 
 	return len(dAtA) - i, nil
 }
 
+func (m *AgentExecutionStats) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *AgentExecutionStats) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *AgentExecutionStats) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.RecordsProcessed != 0 {
+		i = encodeVarintQueryResults(dAtA, i, uint64(m.RecordsProcessed))
+		i--
+		dAtA[i] = 0x28
+	}
+	if m.BytesProcessed != 0 {
+		i = encodeVarintQueryResults(dAtA, i, uint64(m.BytesProcessed))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.ExecutionTimeNs != 0 {
+		i = encodeVarintQueryResults(dAtA, i, uint64(m.ExecutionTimeNs))
+		i--
+		dAtA[i] = 0x18
+	}
+	if len(m.OperatorExecutionStats) > 0 {
+		for iNdEx := len(m.OperatorExecutionStats) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.OperatorExecutionStats[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintQueryResults(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if m.AgentID != nil {
+		{
+			size, err := m.AgentID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintQueryResults(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *QueryResult) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -693,10 +932,10 @@ func (m *QueryResult) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if len(m.OperatorExecutionStats) > 0 {
-		for iNdEx := len(m.OperatorExecutionStats) - 1; iNdEx >= 0; iNdEx-- {
+	if len(m.AgentExecutionStats) > 0 {
+		for iNdEx := len(m.AgentExecutionStats) - 1; iNdEx >= 0; iNdEx-- {
 			{
-				size, err := m.OperatorExecutionStats[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				size, err := m.AgentExecutionStats[iNdEx].MarshalToSizedBuffer(dAtA[:i])
 				if err != nil {
 					return 0, err
 				}
@@ -817,6 +1056,38 @@ func (m *OperatorExecutionStats) Size() (n int) {
 	if m.SelfExecutionTimeNs != 0 {
 		n += 1 + sovQueryResults(uint64(m.SelfExecutionTimeNs))
 	}
+	if m.OperatorStats != nil {
+		l = m.OperatorStats.Size()
+		n += 1 + l + sovQueryResults(uint64(l))
+	}
+	return n
+}
+
+func (m *AgentExecutionStats) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.AgentID != nil {
+		l = m.AgentID.Size()
+		n += 1 + l + sovQueryResults(uint64(l))
+	}
+	if len(m.OperatorExecutionStats) > 0 {
+		for _, e := range m.OperatorExecutionStats {
+			l = e.Size()
+			n += 1 + l + sovQueryResults(uint64(l))
+		}
+	}
+	if m.ExecutionTimeNs != 0 {
+		n += 1 + sovQueryResults(uint64(m.ExecutionTimeNs))
+	}
+	if m.BytesProcessed != 0 {
+		n += 1 + sovQueryResults(uint64(m.BytesProcessed))
+	}
+	if m.RecordsProcessed != 0 {
+		n += 1 + sovQueryResults(uint64(m.RecordsProcessed))
+	}
 	return n
 }
 
@@ -840,8 +1111,8 @@ func (m *QueryResult) Size() (n int) {
 		l = m.ExecutionStats.Size()
 		n += 1 + l + sovQueryResults(uint64(l))
 	}
-	if len(m.OperatorExecutionStats) > 0 {
-		for _, e := range m.OperatorExecutionStats {
+	if len(m.AgentExecutionStats) > 0 {
+		for _, e := range m.AgentExecutionStats {
 			l = e.Size()
 			n += 1 + l + sovQueryResults(uint64(l))
 		}
@@ -889,6 +1160,26 @@ func (this *OperatorExecutionStats) String() string {
 		`RecordsOutput:` + fmt.Sprintf("%v", this.RecordsOutput) + `,`,
 		`TotalExecutionTimeNs:` + fmt.Sprintf("%v", this.TotalExecutionTimeNs) + `,`,
 		`SelfExecutionTimeNs:` + fmt.Sprintf("%v", this.SelfExecutionTimeNs) + `,`,
+		`OperatorStats:` + strings.Replace(fmt.Sprintf("%v", this.OperatorStats), "Any", "types.Any", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *AgentExecutionStats) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForOperatorExecutionStats := "[]*OperatorExecutionStats{"
+	for _, f := range this.OperatorExecutionStats {
+		repeatedStringForOperatorExecutionStats += strings.Replace(f.String(), "OperatorExecutionStats", "OperatorExecutionStats", 1) + ","
+	}
+	repeatedStringForOperatorExecutionStats += "}"
+	s := strings.Join([]string{`&AgentExecutionStats{`,
+		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
+		`OperatorExecutionStats:` + repeatedStringForOperatorExecutionStats + `,`,
+		`ExecutionTimeNs:` + fmt.Sprintf("%v", this.ExecutionTimeNs) + `,`,
+		`BytesProcessed:` + fmt.Sprintf("%v", this.BytesProcessed) + `,`,
+		`RecordsProcessed:` + fmt.Sprintf("%v", this.RecordsProcessed) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -899,19 +1190,19 @@ func (this *QueryResult) String() string {
 	}
 	repeatedStringForTables := "[]*Table{"
 	for _, f := range this.Tables {
-		repeatedStringForTables += strings.Replace(fmt.Sprintf("%v", f), "Table", "proto1.Table", 1) + ","
+		repeatedStringForTables += strings.Replace(fmt.Sprintf("%v", f), "Table", "proto2.Table", 1) + ","
 	}
 	repeatedStringForTables += "}"
-	repeatedStringForOperatorExecutionStats := "[]*OperatorExecutionStats{"
-	for _, f := range this.OperatorExecutionStats {
-		repeatedStringForOperatorExecutionStats += strings.Replace(f.String(), "OperatorExecutionStats", "OperatorExecutionStats", 1) + ","
+	repeatedStringForAgentExecutionStats := "[]*AgentExecutionStats{"
+	for _, f := range this.AgentExecutionStats {
+		repeatedStringForAgentExecutionStats += strings.Replace(f.String(), "AgentExecutionStats", "AgentExecutionStats", 1) + ","
 	}
-	repeatedStringForOperatorExecutionStats += "}"
+	repeatedStringForAgentExecutionStats += "}"
 	s := strings.Join([]string{`&QueryResult{`,
 		`Tables:` + repeatedStringForTables + `,`,
 		`TimingInfo:` + strings.Replace(this.TimingInfo.String(), "QueryTimingInfo", "QueryTimingInfo", 1) + `,`,
 		`ExecutionStats:` + strings.Replace(this.ExecutionStats.String(), "QueryExecutionStats", "QueryExecutionStats", 1) + `,`,
-		`OperatorExecutionStats:` + repeatedStringForOperatorExecutionStats + `,`,
+		`AgentExecutionStats:` + repeatedStringForAgentExecutionStats + `,`,
 		`}`,
 	}, "")
 	return s
@@ -1285,6 +1576,222 @@ func (m *OperatorExecutionStats) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
+		case 7:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OperatorStats", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQueryResults
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQueryResults
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQueryResults
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.OperatorStats == nil {
+				m.OperatorStats = &types.Any{}
+			}
+			if err := m.OperatorStats.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipQueryResults(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthQueryResults
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthQueryResults
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *AgentExecutionStats) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowQueryResults
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: AgentExecutionStats: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: AgentExecutionStats: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AgentID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQueryResults
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQueryResults
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQueryResults
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.AgentID == nil {
+				m.AgentID = &proto1.UUID{}
+			}
+			if err := m.AgentID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field OperatorExecutionStats", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQueryResults
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthQueryResults
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthQueryResults
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.OperatorExecutionStats = append(m.OperatorExecutionStats, &OperatorExecutionStats{})
+			if err := m.OperatorExecutionStats[len(m.OperatorExecutionStats)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ExecutionTimeNs", wireType)
+			}
+			m.ExecutionTimeNs = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQueryResults
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ExecutionTimeNs |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field BytesProcessed", wireType)
+			}
+			m.BytesProcessed = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQueryResults
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.BytesProcessed |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 5:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RecordsProcessed", wireType)
+			}
+			m.RecordsProcessed = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowQueryResults
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.RecordsProcessed |= int64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
 		default:
 			iNdEx = preIndex
 			skippy, err := skipQueryResults(dAtA[iNdEx:])
@@ -1367,7 +1874,7 @@ func (m *QueryResult) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Tables = append(m.Tables, &proto1.Table{})
+			m.Tables = append(m.Tables, &proto2.Table{})
 			if err := m.Tables[len(m.Tables)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -1446,7 +1953,7 @@ func (m *QueryResult) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field OperatorExecutionStats", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field AgentExecutionStats", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -1473,8 +1980,8 @@ func (m *QueryResult) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.OperatorExecutionStats = append(m.OperatorExecutionStats, &OperatorExecutionStats{})
-			if err := m.OperatorExecutionStats[len(m.OperatorExecutionStats)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+			m.AgentExecutionStats = append(m.AgentExecutionStats, &AgentExecutionStats{})
+			if err := m.AgentExecutionStats[len(m.AgentExecutionStats)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex

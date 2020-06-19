@@ -34,8 +34,8 @@ Status CarnotQueryResult::ToProto(queryresultspb::QueryResult* query_result) con
     table->set_name(table_names_[i]);
   }
 
-  for (const auto& stats : exec_node_stats) {
-    (*query_result->add_operator_execution_stats()) = stats;
+  for (const auto& stats : agent_operator_exec_stats) {
+    (*query_result->add_agent_execution_stats()) = stats;
   }
   return Status::OK();
 }
@@ -280,7 +280,8 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
   auto plan_state = engine_state_->CreatePlanState();
   int64_t bytes_processed = 0;
   int64_t rows_processed = 0;
-  std::vector<queryresultspb::OperatorExecutionStats> exec_node_stats;
+  queryresultspb::AgentExecutionStats agent_operator_exec_stats;
+  // ToProto(agent_id_, agent_operator_exec_stats.mutable_agent_id());
   timer.Start();
   auto s =
       plan::PlanWalker()
@@ -307,14 +308,14 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
                                               PrettyDuration(self_time_ns),
                                               PrettyDuration(total_time_ns));
 
-                queryresultspb::OperatorExecutionStats stats_pb;
-                stats_pb.set_plan_fragment_id(pf->id());
-                stats_pb.set_node_id(node_id);
-                stats_pb.set_bytes_output(stats->bytes_output);
-                stats_pb.set_records_output(stats->rows_output);
-                stats_pb.set_total_execution_time_ns(total_time_ns);
-                stats_pb.set_self_execution_time_ns(self_time_ns);
-                exec_node_stats.push_back(stats_pb);
+                queryresultspb::OperatorExecutionStats* stats_pb =
+                    agent_operator_exec_stats.add_operator_execution_stats();
+                stats_pb->set_plan_fragment_id(pf->id());
+                stats_pb->set_node_id(node_id);
+                stats_pb->set_bytes_output(stats->bytes_output);
+                stats_pb->set_records_output(stats->rows_output);
+                stats_pb->set_total_execution_time_ns(total_time_ns);
+                stats_pb->set_self_execution_time_ns(self_time_ns);
               }
             }
             return Status::OK();
@@ -342,8 +343,9 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
   // Compile time is not set for ExecutePlan.
   int64_t compile_time_ns = 0;
   // Get the output table names from the plan.
-  return CarnotQueryResult{output_tables,   output_table_names, exec_node_stats, rows_processed,
-                           bytes_processed, compile_time_ns,    exec_time_ns};
+  return CarnotQueryResult{output_tables,  output_table_names, {agent_operator_exec_stats},
+                           rows_processed, bytes_processed,    compile_time_ns,
+                           exec_time_ns};
 }
 
 CarnotImpl::~CarnotImpl() {

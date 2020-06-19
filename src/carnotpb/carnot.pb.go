@@ -14,6 +14,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	queryresultspb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	proto2 "pixielabs.ai/pixielabs/src/table_store/proto"
 	reflect "reflect"
@@ -149,42 +150,161 @@ func (m *RowBatchResponse) GetMessage() string {
 	return ""
 }
 
+type DoneRequest struct {
+	QueryID             *proto1.UUID                          `protobuf:"bytes,1,opt,name=query_id,json=queryId,proto3" json:"query_id,omitempty"`
+	AgentID             *proto1.UUID                          `protobuf:"bytes,2,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+	AgentExecutionStats []*queryresultspb.AgentExecutionStats `protobuf:"bytes,3,rep,name=agent_execution_stats,json=agentExecutionStats,proto3" json:"agent_execution_stats,omitempty"`
+}
+
+func (m *DoneRequest) Reset()      { *m = DoneRequest{} }
+func (*DoneRequest) ProtoMessage() {}
+func (*DoneRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_9054907422204f4e, []int{2}
+}
+func (m *DoneRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DoneRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DoneRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DoneRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DoneRequest.Merge(m, src)
+}
+func (m *DoneRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *DoneRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DoneRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DoneRequest proto.InternalMessageInfo
+
+func (m *DoneRequest) GetQueryID() *proto1.UUID {
+	if m != nil {
+		return m.QueryID
+	}
+	return nil
+}
+
+func (m *DoneRequest) GetAgentID() *proto1.UUID {
+	if m != nil {
+		return m.AgentID
+	}
+	return nil
+}
+
+func (m *DoneRequest) GetAgentExecutionStats() []*queryresultspb.AgentExecutionStats {
+	if m != nil {
+		return m.AgentExecutionStats
+	}
+	return nil
+}
+
+type DoneResponse struct {
+	Success bool   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message string `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+}
+
+func (m *DoneResponse) Reset()      { *m = DoneResponse{} }
+func (*DoneResponse) ProtoMessage() {}
+func (*DoneResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_9054907422204f4e, []int{3}
+}
+func (m *DoneResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *DoneResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_DoneResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *DoneResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DoneResponse.Merge(m, src)
+}
+func (m *DoneResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *DoneResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_DoneResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DoneResponse proto.InternalMessageInfo
+
+func (m *DoneResponse) GetSuccess() bool {
+	if m != nil {
+		return m.Success
+	}
+	return false
+}
+
+func (m *DoneResponse) GetMessage() string {
+	if m != nil {
+		return m.Message
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*RowBatchRequest)(nil), "pl.carnotpb.RowBatchRequest")
 	proto.RegisterType((*RowBatchResponse)(nil), "pl.carnotpb.RowBatchResponse")
+	proto.RegisterType((*DoneRequest)(nil), "pl.carnotpb.DoneRequest")
+	proto.RegisterType((*DoneResponse)(nil), "pl.carnotpb.DoneResponse")
 }
 
 func init() { proto.RegisterFile("src/carnotpb/carnot.proto", fileDescriptor_9054907422204f4e) }
 
 var fileDescriptor_9054907422204f4e = []byte{
-	// 418 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x91, 0x3f, 0x6f, 0x13, 0x31,
-	0x18, 0xc6, 0xcf, 0x50, 0x91, 0xc4, 0x51, 0x69, 0x75, 0x53, 0x88, 0xc0, 0x44, 0x91, 0x2a, 0x65,
-	0xc1, 0x91, 0xca, 0xc0, 0xc6, 0x10, 0x45, 0x48, 0x11, 0x13, 0x2e, 0x5d, 0x58, 0x22, 0xff, 0xeb,
-	0xe5, 0xa4, 0xbb, 0xf3, 0xd5, 0xf6, 0xb5, 0x62, 0xe3, 0x23, 0xf0, 0x31, 0xf8, 0x28, 0x6c, 0x64,
-	0xec, 0x84, 0x88, 0xb3, 0x30, 0xe6, 0x23, 0x20, 0xfb, 0xce, 0x22, 0x42, 0x62, 0x7b, 0x9f, 0x7b,
-	0x7f, 0xf6, 0xf3, 0x3c, 0x67, 0xf8, 0xcc, 0x68, 0x3e, 0xe7, 0x54, 0x57, 0xca, 0xd6, 0xac, 0x1b,
-	0x70, 0xad, 0x95, 0x55, 0xe9, 0xb0, 0x2e, 0x70, 0xdc, 0x8c, 0x5f, 0x65, 0xb9, 0xdd, 0x34, 0x0c,
-	0x73, 0x55, 0xce, 0x33, 0x95, 0xa9, 0x79, 0x60, 0x58, 0x73, 0x13, 0x54, 0x10, 0x61, 0x6a, 0xcf,
-	0x8e, 0x27, 0xe1, 0x5a, 0x55, 0x96, 0xaa, 0x9a, 0x37, 0x4d, 0x2e, 0x5a, 0x3c, 0x8c, 0x1d, 0x31,
-	0xf5, 0x84, 0xa5, 0xac, 0x90, 0x6b, 0x63, 0x95, 0x96, 0x1d, 0x61, 0xf8, 0x46, 0x96, 0xb4, 0x65,
-	0xa6, 0x3f, 0x00, 0x3c, 0x23, 0xea, 0x7e, 0x41, 0x2d, 0xdf, 0x10, 0x79, 0xdb, 0x48, 0x63, 0xd3,
-	0x11, 0xec, 0x51, 0x21, 0xb4, 0x34, 0x66, 0x04, 0x26, 0x60, 0x36, 0x20, 0x51, 0xa6, 0x6f, 0x60,
-	0xff, 0xb6, 0x91, 0xfa, 0xf3, 0x3a, 0x17, 0xa3, 0x47, 0x13, 0x30, 0x1b, 0x5e, 0x9e, 0xe1, 0xba,
-	0xc0, 0xde, 0xb3, 0x66, 0xf8, 0xfa, 0x7a, 0xb5, 0x5c, 0x0c, 0xdd, 0xcf, 0x97, 0xbd, 0x0f, 0x1e,
-	0x5a, 0x2d, 0x49, 0x2f, 0xd0, 0x2b, 0x91, 0x5e, 0xc0, 0xa7, 0x42, 0x1a, 0x9b, 0x57, 0xd4, 0xe6,
-	0xaa, 0xf2, 0xc7, 0x1f, 0x4f, 0xc0, 0xec, 0x84, 0x9c, 0x1e, 0x7d, 0x5d, 0x89, 0x74, 0x01, 0x07,
-	0x5a, 0xdd, 0xaf, 0x99, 0x4f, 0x33, 0x3a, 0x09, 0x06, 0x17, 0xde, 0xe0, 0xa8, 0x04, 0x6e, 0xe3,
-	0xd7, 0x0c, 0xc7, 0xd8, 0x4b, 0x6a, 0x29, 0xe9, 0xeb, 0x4e, 0x4d, 0xdf, 0xc1, 0xf3, 0xbf, 0x85,
-	0x4c, 0xad, 0x2a, 0x23, 0x7d, 0x23, 0xd3, 0x70, 0x1e, 0x1b, 0xf5, 0x49, 0x94, 0x7e, 0x53, 0x4a,
-	0x63, 0x68, 0x26, 0x43, 0xa1, 0x01, 0x89, 0xf2, 0x52, 0xc0, 0xd3, 0xf7, 0xb2, 0xb8, 0xcb, 0xab,
-	0x2b, 0xa9, 0xef, 0x72, 0x2e, 0xd3, 0x2b, 0x78, 0xfe, 0x51, 0xd3, 0xca, 0xdc, 0x48, 0x1d, 0x0d,
-	0xd2, 0xe7, 0xf8, 0xe8, 0x05, 0xf1, 0x3f, 0x3f, 0x72, 0xfc, 0xe2, 0x3f, 0xdb, 0x36, 0xd5, 0x34,
-	0x99, 0x81, 0xc5, 0xdb, 0xed, 0x0e, 0x25, 0x0f, 0x3b, 0x94, 0x1c, 0x76, 0x08, 0x7c, 0x71, 0x08,
-	0x7c, 0x73, 0x08, 0x7c, 0x77, 0x08, 0x6c, 0x1d, 0x02, 0xbf, 0x1c, 0x02, 0xbf, 0x1d, 0x4a, 0x0e,
-	0x0e, 0x81, 0xaf, 0x7b, 0x94, 0x6c, 0xf7, 0x28, 0x79, 0xd8, 0xa3, 0xe4, 0x53, 0x3f, 0x5e, 0xca,
-	0x9e, 0x84, 0x67, 0x7c, 0xfd, 0x27, 0x00, 0x00, 0xff, 0xff, 0x56, 0xd7, 0x28, 0x14, 0x65, 0x02,
-	0x00, 0x00,
+	// 542 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x93, 0xcf, 0x6e, 0x13, 0x3f,
+	0x10, 0xc7, 0xd7, 0xbf, 0x44, 0xbf, 0x24, 0x0e, 0xa5, 0xd5, 0x22, 0xa4, 0x6d, 0x04, 0x26, 0x5a,
+	0xa9, 0x52, 0x2e, 0x71, 0xa4, 0x70, 0xe8, 0x09, 0x24, 0xa2, 0x80, 0x14, 0x71, 0x62, 0x43, 0x2f,
+	0x5c, 0x22, 0xef, 0xee, 0x34, 0x59, 0x29, 0x59, 0x6f, 0x6d, 0x6f, 0x0b, 0x37, 0x1e, 0x81, 0x77,
+	0xe0, 0xc2, 0xa3, 0x70, 0x23, 0xc7, 0x9e, 0x10, 0xd9, 0x5c, 0x38, 0xf6, 0x11, 0x90, 0xbd, 0x6b,
+	0x9a, 0xf2, 0x47, 0x08, 0x6e, 0xfe, 0x7a, 0x3e, 0x33, 0x9e, 0xef, 0xd8, 0xc6, 0x87, 0x52, 0x44,
+	0x83, 0x88, 0x89, 0x94, 0xab, 0x2c, 0xac, 0x16, 0x34, 0x13, 0x5c, 0x71, 0xb7, 0x9d, 0x2d, 0xa9,
+	0x8d, 0x74, 0xfa, 0xf3, 0x44, 0x2d, 0xf2, 0x90, 0x46, 0x7c, 0x35, 0x98, 0xf3, 0x39, 0x1f, 0x18,
+	0x26, 0xcc, 0x4f, 0x8d, 0x32, 0xc2, 0xac, 0xca, 0xdc, 0x4e, 0xd7, 0x94, 0xe5, 0xab, 0x15, 0x4f,
+	0x07, 0x79, 0x9e, 0xc4, 0x25, 0x6e, 0x96, 0x15, 0xe1, 0x6b, 0x42, 0xb1, 0x70, 0x09, 0x33, 0xa9,
+	0xb8, 0x80, 0x8a, 0x90, 0xd1, 0x02, 0x56, 0xac, 0x62, 0xfa, 0xd7, 0xcd, 0x0d, 0xce, 0x72, 0x10,
+	0x6f, 0x04, 0xc8, 0x7c, 0xa9, 0x64, 0x16, 0x96, 0x72, 0x56, 0xe9, 0x12, 0xf7, 0x3f, 0x21, 0xbc,
+	0x1f, 0xf0, 0x8b, 0x11, 0x53, 0xd1, 0x22, 0x80, 0xb3, 0x1c, 0xa4, 0x72, 0x3d, 0xdc, 0x60, 0x71,
+	0x2c, 0x40, 0x4a, 0x0f, 0x75, 0x51, 0xaf, 0x15, 0x58, 0xe9, 0x1e, 0xe3, 0x66, 0x59, 0x24, 0x89,
+	0xbd, 0xff, 0xba, 0xa8, 0xd7, 0x1e, 0xee, 0xd3, 0x6c, 0x49, 0x75, 0x8b, 0x59, 0x48, 0x4f, 0x4e,
+	0x26, 0xe3, 0x51, 0xbb, 0xf8, 0xfc, 0xa0, 0xf1, 0x42, 0x43, 0x93, 0x71, 0xd0, 0x30, 0xf4, 0x24,
+	0x76, 0x8f, 0xf0, 0xed, 0x18, 0xa4, 0x4a, 0x52, 0xa6, 0x12, 0x9e, 0xea, 0xf4, 0x5a, 0x17, 0xf5,
+	0xea, 0xc1, 0xde, 0xce, 0xee, 0x24, 0x76, 0x47, 0xb8, 0x25, 0xf8, 0xc5, 0x2c, 0xd4, 0xdd, 0x78,
+	0x75, 0x73, 0xc0, 0x91, 0x3e, 0x60, 0xc7, 0x33, 0x2d, 0xdd, 0x66, 0x21, 0xb5, 0x6d, 0x8f, 0x99,
+	0x62, 0x41, 0x53, 0x54, 0xca, 0x7f, 0x86, 0x0f, 0xae, 0x0d, 0xc9, 0x8c, 0xa7, 0x12, 0xb4, 0x23,
+	0x99, 0x47, 0x91, 0x75, 0xd4, 0x0c, 0xac, 0xd4, 0x91, 0x15, 0x48, 0xc9, 0xe6, 0x60, 0x0c, 0xb5,
+	0x02, 0x2b, 0xfd, 0x02, 0xe1, 0xf6, 0x98, 0xa7, 0x60, 0xa7, 0xb2, 0xeb, 0x1d, 0xfd, 0x8d, 0xf7,
+	0x63, 0xdc, 0x64, 0x73, 0x48, 0xd5, 0x9f, 0x86, 0xf6, 0x44, 0x43, 0x3a, 0xd1, 0xd0, 0x93, 0xd8,
+	0x65, 0xf8, 0x6e, 0x99, 0x08, 0xaf, 0x21, 0xca, 0xcd, 0xe0, 0xa4, 0x62, 0x4a, 0x7a, 0xb5, 0x6e,
+	0xad, 0xd7, 0x1e, 0xf6, 0xe9, 0xf7, 0xc7, 0x46, 0x6f, 0xde, 0x34, 0x35, 0xa5, 0x9e, 0xda, 0xac,
+	0xa9, 0x4e, 0x0a, 0xee, 0xb0, 0x9f, 0x37, 0xfd, 0x11, 0xbe, 0x55, 0x7a, 0xfc, 0xf7, 0x41, 0x0d,
+	0xdf, 0x23, 0xbc, 0xf7, 0x1c, 0x96, 0xe7, 0x49, 0x3a, 0x05, 0x71, 0x9e, 0x44, 0xe0, 0x4e, 0xf1,
+	0xc1, 0x4b, 0xc1, 0x52, 0x79, 0x0a, 0xc2, 0x5e, 0x85, 0x7b, 0x8f, 0xee, 0x7c, 0x0d, 0xfa, 0xc3,
+	0x93, 0xeb, 0xdc, 0xff, 0x4d, 0xb4, 0x6c, 0xcb, 0x77, 0x7a, 0xc8, 0x7d, 0x84, 0xeb, 0xba, 0x55,
+	0xd7, 0xbb, 0x81, 0xee, 0xdc, 0x50, 0xe7, 0xf0, 0x17, 0x11, 0x5b, 0x60, 0xf4, 0x78, 0xbd, 0x21,
+	0xce, 0xe5, 0x86, 0x38, 0x57, 0x1b, 0x82, 0xde, 0x16, 0x04, 0x7d, 0x28, 0x08, 0xfa, 0x58, 0x10,
+	0xb4, 0x2e, 0x08, 0xfa, 0x52, 0x10, 0xf4, 0xb5, 0x20, 0xce, 0x55, 0x41, 0xd0, 0xbb, 0x2d, 0x71,
+	0xd6, 0x5b, 0xe2, 0x5c, 0x6e, 0x89, 0xf3, 0xaa, 0x69, 0xcb, 0x85, 0xff, 0x9b, 0xff, 0xf2, 0xf0,
+	0x5b, 0x00, 0x00, 0x00, 0xff, 0xff, 0x2f, 0xa5, 0x33, 0x64, 0xfd, 0x03, 0x00, 0x00,
 }
 
 func (this *RowBatchRequest) Equal(that interface{}) bool {
@@ -247,6 +367,68 @@ func (this *RowBatchResponse) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *DoneRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DoneRequest)
+	if !ok {
+		that2, ok := that.(DoneRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.QueryID.Equal(that1.QueryID) {
+		return false
+	}
+	if !this.AgentID.Equal(that1.AgentID) {
+		return false
+	}
+	if len(this.AgentExecutionStats) != len(that1.AgentExecutionStats) {
+		return false
+	}
+	for i := range this.AgentExecutionStats {
+		if !this.AgentExecutionStats[i].Equal(that1.AgentExecutionStats[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *DoneResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DoneResponse)
+	if !ok {
+		that2, ok := that.(DoneResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Success != that1.Success {
+		return false
+	}
+	if this.Message != that1.Message {
+		return false
+	}
+	return true
+}
 func (this *RowBatchRequest) GoString() string {
 	if this == nil {
 		return "nil"
@@ -275,6 +457,35 @@ func (this *RowBatchResponse) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
+func (this *DoneRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&carnotpb.DoneRequest{")
+	if this.QueryID != nil {
+		s = append(s, "QueryID: "+fmt.Sprintf("%#v", this.QueryID)+",\n")
+	}
+	if this.AgentID != nil {
+		s = append(s, "AgentID: "+fmt.Sprintf("%#v", this.AgentID)+",\n")
+	}
+	if this.AgentExecutionStats != nil {
+		s = append(s, "AgentExecutionStats: "+fmt.Sprintf("%#v", this.AgentExecutionStats)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *DoneResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&carnotpb.DoneResponse{")
+	s = append(s, "Success: "+fmt.Sprintf("%#v", this.Success)+",\n")
+	s = append(s, "Message: "+fmt.Sprintf("%#v", this.Message)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func valueToGoStringCarnot(v interface{}, typ string) string {
 	rv := reflect.ValueOf(v)
 	if rv.IsNil() {
@@ -297,6 +508,7 @@ const _ = grpc.SupportPackageIsVersion4
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type KelvinServiceClient interface {
 	TransferRowBatch(ctx context.Context, opts ...grpc.CallOption) (KelvinService_TransferRowBatchClient, error)
+	Done(ctx context.Context, in *DoneRequest, opts ...grpc.CallOption) (*DoneResponse, error)
 }
 
 type kelvinServiceClient struct {
@@ -341,9 +553,19 @@ func (x *kelvinServiceTransferRowBatchClient) CloseAndRecv() (*RowBatchResponse,
 	return m, nil
 }
 
+func (c *kelvinServiceClient) Done(ctx context.Context, in *DoneRequest, opts ...grpc.CallOption) (*DoneResponse, error) {
+	out := new(DoneResponse)
+	err := c.cc.Invoke(ctx, "/pl.carnotpb.KelvinService/Done", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // KelvinServiceServer is the server API for KelvinService service.
 type KelvinServiceServer interface {
 	TransferRowBatch(KelvinService_TransferRowBatchServer) error
+	Done(context.Context, *DoneRequest) (*DoneResponse, error)
 }
 
 // UnimplementedKelvinServiceServer can be embedded to have forward compatible implementations.
@@ -352,6 +574,9 @@ type UnimplementedKelvinServiceServer struct {
 
 func (*UnimplementedKelvinServiceServer) TransferRowBatch(srv KelvinService_TransferRowBatchServer) error {
 	return status.Errorf(codes.Unimplemented, "method TransferRowBatch not implemented")
+}
+func (*UnimplementedKelvinServiceServer) Done(ctx context.Context, req *DoneRequest) (*DoneResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Done not implemented")
 }
 
 func RegisterKelvinServiceServer(s *grpc.Server, srv KelvinServiceServer) {
@@ -384,10 +609,33 @@ func (x *kelvinServiceTransferRowBatchServer) Recv() (*RowBatchRequest, error) {
 	return m, nil
 }
 
+func _KelvinService_Done_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DoneRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(KelvinServiceServer).Done(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.carnotpb.KelvinService/Done",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(KelvinServiceServer).Done(ctx, req.(*DoneRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _KelvinService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "pl.carnotpb.KelvinService",
 	HandlerType: (*KelvinServiceServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "Done",
+			Handler:    _KelvinService_Done_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "TransferRowBatch",
@@ -497,6 +745,107 @@ func (m *RowBatchResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *DoneRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DoneRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DoneRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.AgentExecutionStats) > 0 {
+		for iNdEx := len(m.AgentExecutionStats) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.AgentExecutionStats[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintCarnot(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x1a
+		}
+	}
+	if m.AgentID != nil {
+		{
+			size, err := m.AgentID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCarnot(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.QueryID != nil {
+		{
+			size, err := m.QueryID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintCarnot(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *DoneResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *DoneResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *DoneResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Message) > 0 {
+		i -= len(m.Message)
+		copy(dAtA[i:], m.Message)
+		i = encodeVarintCarnot(dAtA, i, uint64(len(m.Message)))
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Success {
+		i--
+		if m.Success {
+			dAtA[i] = 1
+		} else {
+			dAtA[i] = 0
+		}
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintCarnot(dAtA []byte, offset int, v uint64) int {
 	offset -= sovCarnot(v)
 	base := offset
@@ -548,6 +897,45 @@ func (m *RowBatchResponse) Size() (n int) {
 	return n
 }
 
+func (m *DoneRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.QueryID != nil {
+		l = m.QueryID.Size()
+		n += 1 + l + sovCarnot(uint64(l))
+	}
+	if m.AgentID != nil {
+		l = m.AgentID.Size()
+		n += 1 + l + sovCarnot(uint64(l))
+	}
+	if len(m.AgentExecutionStats) > 0 {
+		for _, e := range m.AgentExecutionStats {
+			l = e.Size()
+			n += 1 + l + sovCarnot(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *DoneResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Success {
+		n += 2
+	}
+	l = len(m.Message)
+	if l > 0 {
+		n += 1 + l + sovCarnot(uint64(l))
+	}
+	return n
+}
+
 func sovCarnot(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -572,6 +960,34 @@ func (this *RowBatchResponse) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&RowBatchResponse{`,
+		`Success:` + fmt.Sprintf("%v", this.Success) + `,`,
+		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DoneRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForAgentExecutionStats := "[]*AgentExecutionStats{"
+	for _, f := range this.AgentExecutionStats {
+		repeatedStringForAgentExecutionStats += strings.Replace(fmt.Sprintf("%v", f), "AgentExecutionStats", "queryresultspb.AgentExecutionStats", 1) + ","
+	}
+	repeatedStringForAgentExecutionStats += "}"
+	s := strings.Join([]string{`&DoneRequest{`,
+		`QueryID:` + strings.Replace(fmt.Sprintf("%v", this.QueryID), "UUID", "proto1.UUID", 1) + `,`,
+		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
+		`AgentExecutionStats:` + repeatedStringForAgentExecutionStats + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *DoneResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&DoneResponse{`,
 		`Success:` + fmt.Sprintf("%v", this.Success) + `,`,
 		`Message:` + fmt.Sprintf("%v", this.Message) + `,`,
 		`}`,
@@ -789,6 +1205,270 @@ func (m *RowBatchResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: RowBatchResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Success", wireType)
+			}
+			var v int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCarnot
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Success = bool(v != 0)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Message", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCarnot
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthCarnot
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarnot
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Message = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCarnot(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCarnot
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCarnot
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DoneRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCarnot
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DoneRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DoneRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field QueryID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCarnot
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCarnot
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarnot
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.QueryID == nil {
+				m.QueryID = &proto1.UUID{}
+			}
+			if err := m.QueryID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AgentID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCarnot
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCarnot
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarnot
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.AgentID == nil {
+				m.AgentID = &proto1.UUID{}
+			}
+			if err := m.AgentID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AgentExecutionStats", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowCarnot
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthCarnot
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthCarnot
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AgentExecutionStats = append(m.AgentExecutionStats, &queryresultspb.AgentExecutionStats{})
+			if err := m.AgentExecutionStats[len(m.AgentExecutionStats)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipCarnot(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthCarnot
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthCarnot
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *DoneResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowCarnot
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: DoneResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: DoneResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
