@@ -177,9 +177,9 @@ def let_summary_helper(start_time: str):
         total_request_count=('latency_ms', px.count)
     )
 
-    quantiles_agg.latency_ms_p50 = px.pluck(quantiles_agg.latency_quantiles, 'p50')
-    quantiles_agg.latency_ms_p90 = px.pluck(quantiles_agg.latency_quantiles, 'p90')
-    quantiles_agg.latency_ms_p99 = px.pluck(quantiles_agg.latency_quantiles, 'p99')
+    quantiles_agg.latency_ms_p50 = px.pluck_float64(quantiles_agg.latency_quantiles, 'p50')
+    quantiles_agg.latency_ms_p90 = px.pluck_float64(quantiles_agg.latency_quantiles, 'p90')
+    quantiles_agg.latency_ms_p99 = px.pluck_float64(quantiles_agg.latency_quantiles, 'p99')
     quantiles_table = quantiles_agg[['pod', 'remote_addr', 'latency_ms_p50', 'latency_ms_p90',
                                      'latency_ms_p99', 'total_request_count']]
 

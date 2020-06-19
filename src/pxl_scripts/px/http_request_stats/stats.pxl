@@ -13,9 +13,9 @@ quantiles_agg = t1.groupby('service').agg(
     throughput_total=('http_resp_status', px.count),
 )
 
-quantiles_agg.latency_p50 = px.pluck(quantiles_agg.latency_quantiles, 'p50')
-quantiles_agg.latency_p90 = px.pluck(quantiles_agg.latency_quantiles, 'p90')
-quantiles_agg.latency_p99 = px.pluck(quantiles_agg.latency_quantiles, 'p99')
+quantiles_agg.latency_p50 = px.pluck_float64(quantiles_agg.latency_quantiles, 'p50')
+quantiles_agg.latency_p90 = px.pluck_float64(quantiles_agg.latency_quantiles, 'p90')
+quantiles_agg.latency_p99 = px.pluck_float64(quantiles_agg.latency_quantiles, 'p99')
 quantiles_table = quantiles_agg[['service', 'latency_p50',
                                  'latency_p90', 'latency_p99', 'errors', 'throughput_total']]
 
