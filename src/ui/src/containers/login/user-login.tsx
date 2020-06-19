@@ -30,7 +30,6 @@ const useStyles = makeStyles((theme: Theme) => {
       width: '14rem',
     },
     background: {
-      padding: theme.spacing(1),
       position: 'absolute',
       zIndex: 1,
       width: '45%',

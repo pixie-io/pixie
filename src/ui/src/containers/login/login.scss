@@ -21,6 +21,34 @@
     color: $gray-700;
   }
 
+  .auth0-lock.auth0-lock .auth0-lock-social-button[data-provider^=google].auth0-lock-social-big-button {
+    background-color: #4285f4;
+    border: 2px solid #4285f4;
+  }
+
+  .auth0-lock.auth0-lock .auth0-lock-social-button[data-provider^=google].auth0-lock-social-big-button:hover {
+    border: 2px solid #3367d6;
+  }
+
+  .auth0-lock.auth0-lock .auth0-lock-social-button[data-provider^=google]:hover:not([disabled])
+  .auth0-lock-social-button-icon  {
+    background-color: white !important;
+  }
+
+  .auth0-lock.auth0-lock .auth0-lock-social-button-icon {
+    background-color: white;
+  }
+
+  .auth0-lock.auth0-lock .auth0-lock-social-button[data-provider^=google] .auth0-lock-social-button-text {
+    color: white !important;
+    line-height: 38px;
+  }
+
+  .auth0-lock.auth0-lock .auth0-lock-social-button[data-provider^=google]:hover:not([disabled])
+  .auth0-lock-social-button-text  {
+    background-color: #3367d6 !important;
+  }
+
   .dialog-box--content {
     padding: 40px 80px 60px 80px;
   }
