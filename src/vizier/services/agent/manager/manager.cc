@@ -65,7 +65,7 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
 
   // TODO(zasgar/nserrino): abstract away the stub generator.
   carnot_ = pl::carnot::Carnot::Create(
-                std::move(func_registry), table_store_,
+                agent_id, std::move(func_registry), table_store_,
                 [&](const std::string& remote_addr)
                     -> std::unique_ptr<pl::carnotpb::KelvinService::StubInterface> {
                   auto chan = chan_cache_->GetChan(remote_addr);

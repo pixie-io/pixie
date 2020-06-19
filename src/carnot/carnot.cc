@@ -50,11 +50,11 @@ class CarnotImpl final : public Carnot {
    * grpc_server_port of 0 disables the GRPC server.
    * @return a status of whether initialization was successful.
    */
-  Status Init(std::shared_ptr<table_store::TableStore> table_store,
+  Status Init(const sole::uuid& agent_id, std::shared_ptr<table_store::TableStore> table_store,
               const exec::KelvinStubGenerator& stub_generator, int grpc_server_port = 0,
               std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
 
-  Status Init(std::unique_ptr<udf::Registry> func_registry,
+  Status Init(const sole::uuid& agent_id, std::unique_ptr<udf::Registry> func_registry,
               std::shared_ptr<table_store::TableStore> table_store,
               const exec::KelvinStubGenerator& stub_generator, int grpc_server_port = 0,
               std::shared_ptr<grpc::ServerCredentials> grpc_server_creds = nullptr);
@@ -114,12 +114,16 @@ class CarnotImpl final : public Carnot {
   std::unique_ptr<grpc::Server> grpc_server_;
   std::unique_ptr<exec::GRPCRouter> grpc_router_;
   int grpc_server_port_;
+
+  // The id of the agent that owns this Carnot instance.
+  sole::uuid agent_id_;
 };
 
-Status CarnotImpl::Init(std::unique_ptr<udf::Registry> func_registry,
+Status CarnotImpl::Init(const sole::uuid& agent_id, std::unique_ptr<udf::Registry> func_registry,
                         std::shared_ptr<table_store::TableStore> table_store,
                         const exec::KelvinStubGenerator& stub_generator, int grpc_server_port,
                         std::shared_ptr<grpc::ServerCredentials> grpc_server_creds) {
+  agent_id_ = agent_id;
   grpc_server_creds_ = grpc_server_creds;
   grpc_server_port_ = grpc_server_port;
   grpc_router_ = std::make_unique<exec::GRPCRouter>();
@@ -281,7 +285,7 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
   int64_t bytes_processed = 0;
   int64_t rows_processed = 0;
   queryresultspb::AgentExecutionStats agent_operator_exec_stats;
-  // ToProto(agent_id_, agent_operator_exec_stats.mutable_agent_id());
+  ToProto(agent_id_, agent_operator_exec_stats.mutable_agent_id());
   timer.Start();
   auto s =
       plan::PlanWalker()
@@ -358,25 +362,25 @@ CarnotImpl::~CarnotImpl() {
 }
 
 StatusOr<std::unique_ptr<Carnot>> Carnot::Create(
-    std::unique_ptr<udf::Registry> func_registry,
+    const sole::uuid& agent_id, std::unique_ptr<udf::Registry> func_registry,
     std::shared_ptr<table_store::TableStore> table_store,
     const exec::KelvinStubGenerator& stub_generator, int grpc_server_port,
     std::shared_ptr<grpc::ServerCredentials> grpc_server_creds) {
   std::unique_ptr<Carnot> carnot_impl(new CarnotImpl());
   PL_RETURN_IF_ERROR(static_cast<CarnotImpl*>(carnot_impl.get())
-                         ->Init(std::move(func_registry), table_store, stub_generator,
+                         ->Init(agent_id, std::move(func_registry), table_store, stub_generator,
                                 grpc_server_port, grpc_server_creds));
   return carnot_impl;
 }
 
 StatusOr<std::unique_ptr<Carnot>> Carnot::Create(
-    std::shared_ptr<table_store::TableStore> table_store,
+    const sole::uuid& agent_id, std::shared_ptr<table_store::TableStore> table_store,
     const exec::KelvinStubGenerator& stub_generator, int grpc_server_port,
     std::shared_ptr<grpc::ServerCredentials> grpc_server_creds) {
   auto func_registry = std::make_unique<pl::carnot::udf::Registry>("default_registry");
   pl::carnot::funcs::RegisterFuncsOrDie(func_registry.get());
 
-  return Create(std::move(func_registry), table_store, stub_generator, grpc_server_port,
+  return Create(agent_id, std::move(func_registry), table_store, stub_generator, grpc_server_port,
                 grpc_server_creds);
 }
 

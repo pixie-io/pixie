@@ -24,7 +24,8 @@ class JoinTest : public ::testing::Test {
   void SetUp() override {
     Test::SetUp();
     table_store_ = std::make_shared<table_store::TableStore>();
-    carnot_ = Carnot::Create(table_store_, exec::MockKelvinStubGenerator).ConsumeValueOrDie();
+    carnot_ = Carnot::Create(sole::uuid4(), table_store_, exec::MockKelvinStubGenerator)
+                  .ConsumeValueOrDie();
     auto left_table = CarnotTestUtils::TestTable();
     table_store_->AddTable("left_table", left_table);
     auto right_table = CarnotTestUtils::TestTable();

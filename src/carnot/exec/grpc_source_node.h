@@ -39,7 +39,6 @@ class GRPCSourceNode : public SourceNode {
  private:
   Status PopRowBatch();
 
-  static constexpr std::chrono::microseconds grpc_timeout_us_{1000 * 1000};
   std::unique_ptr<table_store::schema::RowBatch> rb_;
   moodycamel::BlockingConcurrentQueue<std::unique_ptr<carnotpb::RowBatchRequest>> row_batch_queue_;
 
