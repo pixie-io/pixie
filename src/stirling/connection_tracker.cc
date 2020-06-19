@@ -125,7 +125,8 @@ void ConnectionTracker::AddDataEvent(std::unique_ptr<SocketDataEvent> event) {
   }
 
   CONN_TRACE(1) << absl::Substitute(
-      "data $0 ...", BytesToString<bytes_format::HexAsciiMix>(event->msg.substr(0, 10)));
+      "data=$0 [length=$1]", BytesToString<bytes_format::HexAsciiMix>(event->msg.substr(0, 10)),
+      event->msg.size());
 
   // A disabled tracker doesn't collect data events.
   if (state() == State::kDisabled) {
@@ -237,6 +238,9 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
   SetConnID(hdr->attr.conn_id);
   traffic_class_.protocol = kProtocolHTTP2U;
 
+  CONN_TRACE(1) << absl::Substitute("stream_id=$0 end_stream=$1 header=$2:$3", hdr->attr.stream_id,
+                                    hdr->attr.end_stream, hdr->name, hdr->value);
+
   if (conn_id_.fd == 0) {
     Disable(
         "FD of zero is usually not valid. One reason for could be that net.Conn could not be "
@@ -317,6 +321,10 @@ void ConnectionTracker::AddHTTP2Header(std::unique_ptr<HTTP2HeaderEvent> hdr) {
 void ConnectionTracker::AddHTTP2Data(std::unique_ptr<HTTP2DataEvent> data) {
   SetConnID(data->attr.conn_id);
   traffic_class_.protocol = kProtocolHTTP2U;
+
+  CONN_TRACE(1) << absl::Substitute(
+      "stream_id=$0 end_stream=$1 data=$2 ...", data->attr.stream_id, data->attr.end_stream,
+      BytesToString<bytes_format::HexAsciiMix>(data->payload.substr(0, 10)));
 
   if (conn_id_.fd == 0) {
     Disable(

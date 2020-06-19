@@ -231,6 +231,8 @@ class ClientServerSystem {
     RunClient<TRecvFn, TSendFn>(script, client_); \
     client_.Close();                              \
     exit(0);                                      \
+  } else {                                        \
+    LOG(INFO) << "Client PID: " << client_pid_;   \
   }
 
   template <bool (TCPSocket::*TRecvFn)(std::string*) const,
@@ -258,6 +260,7 @@ class ClientServerSystem {
    */
 #define SpawnServerImpl(script)                         \
   server_pid_ = getpid();                               \
+  LOG(INFO) << "Server PID: " << server_pid_;           \
   server_thread_ = std::thread([this, script]() {       \
     std::unique_ptr<TCPSocket> conn = server_.Accept(); \
     RunServer<TRecvFn, TSendFn>(script, *conn);         \
