@@ -36,7 +36,7 @@ export const LayoutContextProvider = (props) => {
     storage.useLocalStorage<boolean>(storage.LIVE_VIEW_DATA_DRAWER_OPENED_KEY, false);
 
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // width < 960px
+  const isMobile = useMediaQuery(theme.breakpoints.down('xs')); // width < 600px
   React.useEffect(() => {
     if (isMobile) {
       setEditorPanelOpen(false);
