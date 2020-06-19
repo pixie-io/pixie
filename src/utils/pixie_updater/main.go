@@ -133,7 +133,6 @@ func main() {
 	// Redeploy etcd.
 	if viper.GetBool("redeploy_etcd") {
 		log.Info("Redeploying etcd")
-		etcdPath := etcdYAMLPath
 
 		if viper.GetBool("etcd_operator_enabled") {
 			_, err = od.DeleteByLabel("app=pl-monitoring", "etcdclusters.etcd.database.coreos.com")
