@@ -13,6 +13,7 @@ const fs = require('fs');
 const utils = require('./webpack-utils');
 const CompressionPlugin = require('compression-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const FaviconsWebpackPlugin = require('favicons-webpack-plugin');
 
 const isDevServer = process.argv.find((v) => v.includes('webpack-dev-server'));
 let topLevelDir = '';
@@ -23,6 +24,7 @@ if (isDevServer) {
 const plugins = [
   new CheckerPlugin(),
   new CaseSensitivePathsPlugin(),
+  new FaviconsWebpackPlugin('../assets/favicon-base.png'),
   new HtmlWebpackPlugin({
     alwaysWriteToDisk: true,
     chunks: ['config', 'manifest', 'commons', 'vendor', 'main', 'auth0'],
