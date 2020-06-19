@@ -360,19 +360,13 @@ class ConnectionTracker {
   double StitchFailureRate() const;
 
   enum class CountStats {
-    // The number of sent data events.
+    // The number of sent/received data events.
     kDataEventSent = 0,
-
-    // The number of received data events.
     kDataEventRecv,
 
-    // The number of sent bytes.
+    // The number of sent/received bytes.
     kBytesSent,
-
-    // The number of received bytes.
     kBytesRecv,
-
-    kNumCountStats,
   };
 
   /**
@@ -572,8 +566,7 @@ class ConnectionTracker {
 
   ConnectionStats* conn_stats_ = nullptr;
   bool data_stats_exported_ = false;
-  std::vector<uint64_t> stats_ =
-      std::vector<uint64_t>(static_cast<int>(CountStats::kNumCountStats));
+  std::vector<uint64_t> stats_ = std::vector<uint64_t>(magic_enum::enum_count<CountStats>());
 
   // Connection trackers need to keep a state because there can be information between
   // needed from previous requests/responses needed to parse or render current request.
