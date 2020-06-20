@@ -28,17 +28,19 @@ var dataTypeToVizierDataType = map[typespb.DataType]vizierpb.DataType{
 }
 
 var semanticTypeToVizierSemanticType = map[typespb.SemanticType]vizierpb.SemanticType{
-	typespb.ST_UNSPECIFIED:    vizierpb.ST_UNSPECIFIED,
-	typespb.ST_NONE:           vizierpb.ST_NONE,
-	typespb.ST_AGENT_UID:      vizierpb.ST_AGENT_UID,
-	typespb.ST_UPID:           vizierpb.ST_UPID,
-	typespb.ST_SERVICE_NAME:   vizierpb.ST_SERVICE_NAME,
-	typespb.ST_POD_NAME:       vizierpb.ST_POD_NAME,
-	typespb.ST_NODE_NAME:      vizierpb.ST_NODE_NAME,
-	typespb.ST_CONTAINER_NAME: vizierpb.ST_CONTAINER_NAME,
-	typespb.ST_NAMESPACE_NAME: vizierpb.ST_NAMESPACE_NAME,
-	typespb.ST_BYTES:          vizierpb.ST_BYTES,
-	typespb.ST_PERCENT:        vizierpb.ST_PERCENT,
+	typespb.ST_UNSPECIFIED:     vizierpb.ST_UNSPECIFIED,
+	typespb.ST_NONE:            vizierpb.ST_NONE,
+	typespb.ST_AGENT_UID:       vizierpb.ST_AGENT_UID,
+	typespb.ST_UPID:            vizierpb.ST_UPID,
+	typespb.ST_SERVICE_NAME:    vizierpb.ST_SERVICE_NAME,
+	typespb.ST_POD_NAME:        vizierpb.ST_POD_NAME,
+	typespb.ST_POD_PHASE:       vizierpb.ST_POD_PHASE,
+	typespb.ST_NODE_NAME:       vizierpb.ST_NODE_NAME,
+	typespb.ST_CONTAINER_NAME:  vizierpb.ST_CONTAINER_NAME,
+	typespb.ST_CONTAINER_STATE: vizierpb.ST_CONTAINER_STATE,
+	typespb.ST_NAMESPACE_NAME:  vizierpb.ST_NAMESPACE_NAME,
+	typespb.ST_BYTES:           vizierpb.ST_BYTES,
+	typespb.ST_PERCENT:         vizierpb.ST_PERCENT,
 }
 
 // These codes are taken from https://godoc.org/google.golang.org/grpc/codes#Code.

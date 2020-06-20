@@ -46,7 +46,6 @@ void RegisterMetadataOpsOrDie(pl::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<ContainerIDToContainerStatusReasonUDF>("container_id_to_status_reason");
   registry->RegisterOrDie<UPIDToCmdLineUDF>("upid_to_cmdline");
   registry->RegisterOrDie<UPIDToPodQoSUDF>("upid_to_pod_qos");
-  registry->RegisterOrDie<UPIDToPodPhaseUDF>("upid_to_pod_phase");
   registry->RegisterOrDie<UPIDToPodStatusUDF>("upid_to_pod_status");
   registry->RegisterOrDie<HostnameUDF>("_exec_hostname");
   registry->RegisterOrDie<PodIPToPodIDUDF>("ip_to_pod_id");

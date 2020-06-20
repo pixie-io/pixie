@@ -410,17 +410,6 @@ TEST_F(MetadataOpsTest, upid_to_qos) {
   udf_tester.ForInput(upid3).Expect("");
 }
 
-TEST_F(MetadataOpsTest, upid_to_pod_phase) {
-  auto function_ctx = std::make_unique<FunctionContext>(metadata_state_);
-  auto udf_tester = pl::carnot::udf::UDFTester<UPIDToPodPhaseUDF>(std::move(function_ctx));
-  auto upid1 = types::UInt128Value(528280977975, 89101);
-  udf_tester.ForInput(upid1).Expect("kRunning");
-  auto upid2 = types::UInt128Value(528280977975, 468);
-  udf_tester.ForInput(upid2).Expect("kFailed");
-  auto upid3 = types::UInt128Value(528280977975, 123);
-  udf_tester.ForInput(upid3).Expect("");
-}
-
 TEST_F(MetadataOpsTest, upid_to_pod_status) {
   UPIDToPodStatusUDF udf;
   updates_->enqueue(pl::metadatapb::testutils::CreateTerminatedPodUpdatePB());

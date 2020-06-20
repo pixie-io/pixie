@@ -549,6 +549,10 @@ class PodNameToPodStatusUDF : public ScalarUDF {
     StringValue pod_id = PodNameToPodIDUDF::GetPodID(md, pod_name);
     return PodInfoToPodStatus(md->k8s_metadata_state().PodInfoByID(pod_id));
   }
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<PodNameToPodStatusUDF>(types::ST_POD_PHASE,
+                                                             {types::ST_UNSPECIFIED})};
+  }
 };
 
 class PodNameToPodStatusMessageUDF : public ScalarUDF {
@@ -622,6 +626,11 @@ class ContainerIDToContainerStatusUDF : public ScalarUDF {
     auto container_info = md->k8s_metadata_state().ContainerInfoByID(container_id);
     return ContainerInfoToContainerStatus(container_info);
   }
+
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<ContainerIDToContainerStatusUDF>(types::ST_CONTAINER_STATE,
+                                                                       {types::ST_UNSPECIFIED})};
+  }
 };
 
 class ContainerIDToContainerStatusMessageUDF : public ScalarUDF {
@@ -675,6 +684,11 @@ class UPIDToPodStatusUDF : public ScalarUDF {
     auto md = GetMetadataState(ctx);
     return PodInfoToPodStatus(UPIDtoPod(md, upid_value));
   }
+
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<PodNameToPodStatusUDF>(types::ST_POD_PHASE,
+                                                             {types::ST_UNSPECIFIED})};
+  }
 };
 
 class UPIDToCmdLineUDF : public ScalarUDF {
@@ -717,25 +731,6 @@ class UPIDToPodQoSUDF : public ScalarUDF {
   StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
     auto md = GetMetadataState(ctx);
     return PodInfoToPodQoS(UPIDtoPod(md, upid_value));
-  }
-};
-
-class UPIDToPodPhaseUDF : public ScalarUDF {
- public:
-  /**
-   * @brief Gets the phase of the pod.
-   *
-   * @param ctx: The function context.
-   * @param upid_value: The UPID value
-   * @return StringValue: the cmdline for the UPID.
-   */
-  StringValue Exec(FunctionContext* ctx, UInt128Value upid_value) {
-    auto md = GetMetadataState(ctx);
-    auto pod_info = UPIDtoPod(md, upid_value);
-    if (pod_info == nullptr) {
-      return "";
-    }
-    return std::string(magic_enum::enum_name(pod_info->phase()));
   }
 };
 
