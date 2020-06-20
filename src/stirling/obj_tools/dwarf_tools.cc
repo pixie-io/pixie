@@ -292,6 +292,29 @@ StatusOr<int64_t> DwarfReader::GetArgumentStackPointerOffset(std::string_view fu
   return error::Internal("Could not find argument.");
 }
 
+StatusOr<std::vector<FunctionArgLocation>> DwarfReader::GetFunctionArgOffsets(
+    std::string_view function_symbol_name) {
+  std::vector<FunctionArgLocation> arg_locations;
+  uint64_t current_offset = 0;
+
+  PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
+                      GetMatchingDIE(function_symbol_name, llvm::dwarf::DW_TAG_subprogram));
+
+  for (const auto& die : function_die.children()) {
+    if (die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) {
+      LLVM_ASSIGN_OR_RETURN(DWARFFormValue & type_attr, die.find(llvm::dwarf::DW_AT_type),
+                            "Could not find DW_AT_type for function argument.");
+
+      arg_locations.push_back({die.getName(llvm::DINameKind::ShortName), current_offset});
+      PL_ASSIGN_OR_RETURN(int64_t type_size,
+                          GetTypeByteSize(die.getAttributeValueAsReferencedDie(type_attr)));
+      current_offset += type_size;
+    }
+  }
+
+  return arg_locations;
+}
+
 }  // namespace dwarf_tools
 }  // namespace stirling
 }  // namespace pl

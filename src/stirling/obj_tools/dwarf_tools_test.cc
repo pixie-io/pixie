@@ -13,6 +13,7 @@ namespace stirling {
 namespace dwarf_tools {
 
 using ::pl::stirling::dwarf_tools::DwarfReader;
+using ::testing::ElementsAre;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
 
@@ -94,7 +95,8 @@ TEST_P(DwarfReaderTest, CppArgumentStackPointerOffset) {
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        DwarfReader::Create(kCppBinaryPath, p.index));
 
-  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("SomeFunction", "x"), -16);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("SomeFunction", "x"), -32);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("SomeFunction", "y"), -64);
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("CanYouFindThis", "a"), -4);
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("CanYouFindThis", "b"), -8);
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("SomeFunctionWithPointerArgs", "a"),
@@ -110,7 +112,47 @@ TEST_P(DwarfReaderTest, GolangArgumentStackPointerOffset) {
 
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.(*Vertex).Scale", "v"), 0);
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.(*Vertex).Scale", "f"), 8);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.(*Vertex).CrossScale", "v"),
+                   0);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.(*Vertex).CrossScale", "v2"),
+                   8);
+  EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.(*Vertex).CrossScale", "f"),
+                   24);
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.Vertex.Abs", "v"), 0);
+}
+
+bool operator==(const FunctionArgLocation& a, const FunctionArgLocation& b) {
+  return a.name == b.name && a.offset == b.offset;
+}
+
+// Note the differences here and the results in CppArgumentStackPointerOffset.
+// This needs more investigation. Appears as though there are issues with alignment and
+// also the reference point of the offset.
+TEST_P(DwarfReaderTest, CppFunctionArgOffsets) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kCppBinaryPath, p.index));
+
+  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("SomeFunction"),
+                     ElementsAre(FunctionArgLocation{"x", 0}, FunctionArgLocation{"y", 12}));
+  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("CanYouFindThis"),
+                     ElementsAre(FunctionArgLocation{"a", 0}, FunctionArgLocation{"b", 4}));
+  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("SomeFunctionWithPointerArgs"),
+                     ElementsAre(FunctionArgLocation{"a", 0}, FunctionArgLocation{"x", 8}));
+}
+
+TEST_P(DwarfReaderTest, GoFunctionArgOffsets) {
+  DwarfReaderTestParam p = GetParam();
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                       DwarfReader::Create(kGoBinaryPath, p.index));
+
+  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("main.(*Vertex).Scale"),
+                     ElementsAre(FunctionArgLocation{"v", 0}, FunctionArgLocation{"f", 8}));
+  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("main.(*Vertex).CrossScale"),
+                     ElementsAre(FunctionArgLocation{"v", 0}, FunctionArgLocation{"v2", 8},
+                                 FunctionArgLocation{"f", 24}));
+  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("main.Vertex.Abs"),
+                     ElementsAre(FunctionArgLocation{"v", 0}, FunctionArgLocation{"~r0", 16}));
 }
 
 INSTANTIATE_TEST_SUITE_P(DwarfReaderParameterizedTest, DwarfReaderTest,

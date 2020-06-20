@@ -16,6 +16,11 @@ namespace pl {
 namespace stirling {
 namespace dwarf_tools {
 
+struct FunctionArgLocation {
+  std::string name;
+  uint64_t offset;
+};
+
 class DwarfReader {
  public:
   /**
@@ -60,6 +65,9 @@ class DwarfReader {
 
   StatusOr<int64_t> GetArgumentStackPointerOffset(std::string_view symbol_name,
                                                   std::string_view arg_name);
+
+  StatusOr<std::vector<FunctionArgLocation>> GetFunctionArgOffsets(
+      std::string_view function_symbol_name);
 
   bool IsValid() { return dwarf_context_->getNumCompileUnits() != 0; }
 
