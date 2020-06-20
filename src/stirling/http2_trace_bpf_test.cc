@@ -163,6 +163,9 @@ TEST_F(HTTP2TraceTest, Basic) {
 
     EXPECT_THAT(records, Contains(EqHTTPRecord(expected_record)));
   }
+
+  EXPECT_THAT(FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, client_.process_pid()),
+              IsEmpty());
 }
 
 }  // namespace stirling
