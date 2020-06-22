@@ -72,6 +72,9 @@ const useStyles = makeStyles((theme: Theme) =>
         margin: 'auto',
       },
     },
+    highlight: {
+      fontWeight: 600,
+    },
   }),
 );
 
@@ -158,6 +161,7 @@ const AutocompleteInputField = (props: AutocompleteArgumentFieldProps) => {
                     onHover={() => highlightById(completion.id)}
                     onClick={(event) => onCompletionClicked(event, completion)}
                     value={completion.title}
+                    highlightedIndexes={completion.highlights}
                   />
                 );
               })
@@ -173,11 +177,12 @@ interface FieldCompletionProps {
   onClick: (event: React.MouseEvent) => void;
   onHover: () => void;
   value: string;
+  highlightedIndexes: Array<number>;
 }
 
 const FieldCompletion = (props: FieldCompletionProps) => {
   const ref = React.useRef(null);
-  const { active, onClick, onHover, value } = props;
+  const { active, onClick, onHover, value, highlightedIndexes } = props;
   const classes = useStyles();
 
   const className = clsx(
@@ -190,6 +195,14 @@ const FieldCompletion = (props: FieldCompletionProps) => {
       ref.current.scrollIntoView();
     }
   }, [active]);
+
+  const highlightedString = [];
+  for (let i = 0; i < value.length; i++) {
+    highlightedString.push(<span className={highlightedIndexes.includes(i) ? classes.highlight : ''}>
+      {value.charAt(i)}
+    </span>);
+  }
+
   return (
     <div
       ref={ref}
@@ -198,7 +211,7 @@ const FieldCompletion = (props: FieldCompletionProps) => {
       // use mousedown instead of click because the blur handler occurs before the click handler.
       onMouseDown={(event) => onClick(event)}
     >
-      {value}
+      {highlightedString}
     </div>
   );
 };

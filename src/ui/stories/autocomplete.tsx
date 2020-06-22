@@ -65,16 +65,16 @@ storiesOf('AutoComplete', module)
         items={[
           { type: 'header', header: 'Recently used' },
           {
-            type: 'item', title: 'px/script1', id: 'px-0', highlights: [[3, 5]],
+            type: 'item', title: 'px/script1', id: 'px-0', highlights: [3, 4, 5],
           },
           {
-            type: 'item', title: 'px/script2', id: 'px-1', highlights: [[3, 5]],
+            type: 'item', title: 'px/script2', id: 'px-1', highlights: [3, 4, 5],
           },
           {
-            type: 'item', title: 'px/script3', id: 'px-2', highlights: [[3, 5]],
+            type: 'item', title: 'px/script3', id: 'px-2', highlights: [3, 4, 5],
           },
           {
-            type: 'item', title: 'px/script4', id: 'px-3', highlights: [[3, 5]],
+            type: 'item', title: 'px/script4', id: 'px-3', highlights: [3, 4, 5],
           },
           { type: 'header', header: 'Org scripts' },
           {
@@ -139,22 +139,20 @@ storiesOf('AutoComplete', module)
           if (!input) {
             return [];
           }
-          const resp = await Axios({
-            method: 'get',
-            url: 'https://api.datamuse.com/sug',
-            params: { s: input },
-          });
-
-          if (resp.status !== 200) {
-            return [];
-          }
           return [
             { type: 'header', header: 'suggestions' },
-            ...resp.data.map((suggestion, i) => ({
+            {
               type: 'item',
-              title: suggestion.word,
-              id: i,
-            })),
+              title: 'some suggestion',
+              id: '1',
+              highlights: [0, 1]
+            },
+            {
+              type: 'item',
+              title: 'awesome',
+              id: '2',
+              highlights: [3, 4]
+            },
           ];
         }}
       />

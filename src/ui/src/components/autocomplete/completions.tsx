@@ -27,7 +27,7 @@ export interface CompletionItem {
   id: CompletionId;
   title: CompletionTitle;
   description?: string;
-  highlights?: Array<[number, number]>;
+  highlights?: Array<number>;
 }
 
 const useStyles = makeStyles((theme: Theme) => {
@@ -149,16 +149,16 @@ export const Completion = (props: CompletionProps) => {
   }
   const ref = React.createRef<HTMLDivElement>();
   let remainingIdx = 0;
-  for (const [start, end] of highlights) {
+  for (const start of highlights) {
     const prev = title.substring(remainingIdx, start);
     if (prev) {
       parts.push(<span key={`title-${remainingIdx}`}>{prev}</span>);
     }
-    const highlight = title.substring(start, end);
+    const highlight = title.substring(start, start+1);
     if (highlight) {
       parts.push(<span key={`title-${start}`} className={classes.highlight}>{highlight}</span>);
     }
-    remainingIdx = end;
+    remainingIdx = start +1 ;
   }
   if (remainingIdx < title.length) {
     parts.push(
