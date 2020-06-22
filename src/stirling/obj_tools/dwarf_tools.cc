@@ -1,5 +1,7 @@
 #include "src/stirling/obj_tools/dwarf_tools.h"
 
+#include <algorithm>
+
 #include <llvm/DebugInfo/DIContext.h>
 #include <llvm/Object/ObjectFile.h>
 
@@ -190,6 +192,13 @@ StatusOr<uint64_t> DwarfReader::GetStructMemberOffset(std::string_view struct_na
 }
 
 namespace {
+
+StatusOr<DWARFDie> GetTypeDie(const DWARFDie& die) {
+  LLVM_ASSIGN_OR_RETURN(DWARFFormValue & type_attr, die.find(llvm::dwarf::DW_AT_type),
+                        "Could not find DW_AT_type.");
+  return die.getAttributeValueAsReferencedDie(type_attr);
+}
+
 StatusOr<uint64_t> GetBaseOrStructTypeByteSize(const DWARFDie& die) {
   DCHECK((die.getTag() == llvm::dwarf::DW_TAG_base_type) ||
          (die.getTag() == llvm::dwarf::DW_TAG_structure_type));
@@ -208,13 +217,11 @@ StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
     return error::Internal("Encountered an invalid DIE.");
   }
 
-  // If the type is a typedef, then follow the type and recursively call this function.
   switch (die.getTag()) {
     case llvm::dwarf::DW_TAG_typedef: {
-      LLVM_ASSIGN_OR_RETURN(DWARFFormValue & type_attr, die.find(llvm::dwarf::DW_AT_type),
-                            "Could not find DW_AT_type for function argument.");
-      const auto& referenced_die = die.getAttributeValueAsReferencedDie(type_attr);
-      return GetTypeByteSize(referenced_die);
+      // If the type is a typedef, then follow the type and recursively call this function.
+      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+      return GetTypeByteSize(type_die);
     }
     case llvm::dwarf::DW_TAG_pointer_type:
       return kAddressSize;
@@ -226,6 +233,38 @@ StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
           absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
   }
 }
+
+StatusOr<uint64_t> GetAlignmentByteSize(const DWARFDie& die) {
+  if (!die.isValid()) {
+    return error::Internal("Encountered an invalid DIE.");
+  }
+
+  switch (die.getTag()) {
+    case llvm::dwarf::DW_TAG_typedef: {
+      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+      return GetAlignmentByteSize(type_die);
+    }
+    case llvm::dwarf::DW_TAG_pointer_type:
+      return kAddressSize;
+    case llvm::dwarf::DW_TAG_base_type:
+      return GetBaseOrStructTypeByteSize(die);
+    case llvm::dwarf::DW_TAG_structure_type: {
+      uint64_t max_size = 1;
+      for (const auto& member_die : die.children()) {
+        if ((member_die.getTag() == llvm::dwarf::DW_TAG_member)) {
+          PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(member_die));
+          PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
+          max_size = std::max(alignment_size, max_size);
+        }
+      }
+      return max_size;
+    }
+    default:
+      return error::Internal(
+          absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
+  }
+}
+
 }  // namespace
 
 StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view function_symbol_name,
@@ -236,9 +275,8 @@ StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view functio
   for (const auto& die : function_die.children()) {
     if ((die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) &&
         (die.getName(llvm::DINameKind::ShortName) == arg_name)) {
-      LLVM_ASSIGN_OR_RETURN(DWARFFormValue & type_attr, die.find(llvm::dwarf::DW_AT_type),
-                            "Could not find DW_AT_type for function argument.");
-      return GetTypeByteSize(die.getAttributeValueAsReferencedDie(type_attr));
+      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+      return GetTypeByteSize(type_die);
     }
   }
   return error::Internal("Could not find argument.");
@@ -292,6 +330,18 @@ StatusOr<int64_t> DwarfReader::GetArgumentStackPointerOffset(std::string_view fu
   return error::Internal("Could not find argument.");
 }
 
+namespace {
+// This function takes an address, and if it is not a multiple of the `size` parameter,
+// it rounds it up to so that it is aligned to the given `size`.
+// Examples:
+//   Align(64, 8) = 64
+//   Align(66, 8) = 70
+uint64_t Align(uint64_t addr, uint64_t size) {
+  uint64_t remainder = addr % size;
+  return (remainder == 0) ? addr : (addr + size - remainder);
+}
+}  // namespace
+
 StatusOr<std::vector<FunctionArgLocation>> DwarfReader::GetFunctionArgOffsets(
     std::string_view function_symbol_name) {
   std::vector<FunctionArgLocation> arg_locations;
@@ -302,12 +352,12 @@ StatusOr<std::vector<FunctionArgLocation>> DwarfReader::GetFunctionArgOffsets(
 
   for (const auto& die : function_die.children()) {
     if (die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) {
-      LLVM_ASSIGN_OR_RETURN(DWARFFormValue & type_attr, die.find(llvm::dwarf::DW_AT_type),
-                            "Could not find DW_AT_type for function argument.");
+      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+      PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
+      PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
 
+      current_offset = Align(current_offset, alignment_size);
       arg_locations.push_back({die.getName(llvm::DINameKind::ShortName), current_offset});
-      PL_ASSIGN_OR_RETURN(int64_t type_size,
-                          GetTypeByteSize(die.getAttributeValueAsReferencedDie(type_attr)));
       current_offset += type_size;
     }
   }

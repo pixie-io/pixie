@@ -60,12 +60,34 @@ class DwarfReader {
   StatusOr<uint64_t> GetStructMemberOffset(std::string_view struct_name,
                                            std::string_view member_name);
 
-  StatusOr<uint64_t> GetArgumentTypeByteSize(std::string_view symbol_name,
+  /**
+   * Returns the size (in bytes) for the type of a function argument.
+   */
+  StatusOr<uint64_t> GetArgumentTypeByteSize(std::string_view function_symbol_name,
                                              std::string_view arg_name);
 
-  StatusOr<int64_t> GetArgumentStackPointerOffset(std::string_view symbol_name,
+  /**
+   * Returns the location of a function argument relative to the stack pointer.
+   * Note that there are differences in what different languages consider to be the stack pointer.
+   * Golang returns positive numbers (i.e. considers the offset relative to the frame base,
+   * or, in other words, the stack pointer before the frame has been created).
+   * C++ functions return negative numbers (i.e. offset relative to the stack pointer
+   * after the frame has been created).
+   * NOTE: This function currently uses the DW_AT_location. It is NOT yet robust,
+   * and may fail for certain functions. Compare this function to GetFunctionArgOffsets().
+   */
+  StatusOr<int64_t> GetArgumentStackPointerOffset(std::string_view function_symbol_name,
                                                   std::string_view arg_name);
 
+  /**
+   * Returns the location of all the arguments of a function.
+   * NOTE: Currently, the method used by this function differs from the method used by
+   * GetArgumentStackPointerOffset(), which uses the DW_AT_location attribute.
+   * This function infers the location based on type sizes, and an implicit understanding
+   * of the calling convention.
+   * It is currently more robust for our uses cases, but eventually we should use the DW_AT_location
+   * approach, which should be more generally robust (once we implement processing it correctly).
+   */
   StatusOr<std::vector<FunctionArgLocation>> GetFunctionArgOffsets(
       std::string_view function_symbol_name);
 

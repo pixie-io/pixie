@@ -25,7 +25,7 @@ class StatusOr {
 
   StatusOr(const T& value);  // NOLINT
 
-  // Conversion copy constructor, T must be copy constructible from U
+  // Conversion copy constructor, T must be copy constructable from U
   template <typename U>
   explicit StatusOr(const StatusOr<U>& other) : status_(other.status_), value_(other.value_) {}
 

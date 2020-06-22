@@ -6,6 +6,7 @@
 // The go binary location cannot be hard-coded because its location changes based on
 // -c opt/dbg/fastbuild.
 DEFINE_string(dummy_go_binary, "", "The path to dummy_go_binary.");
+DEFINE_string(go_grpc_server, "", "The path to server.");
 const std::string_view kCppBinary = "src/stirling/obj_tools/testdata/prebuilt_dummy_exe";
 
 namespace pl {
@@ -25,9 +26,11 @@ class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
  protected:
   DwarfReaderTest()
       : kCppBinaryPath(pl::testing::TestFilePath(kCppBinary)),
-        kGoBinaryPath(pl::testing::TestFilePath(FLAGS_dummy_go_binary)) {}
+        kGoBinaryPath(pl::testing::TestFilePath(FLAGS_dummy_go_binary)),
+        kGoServerBinaryPath(pl::testing::TestFilePath(FLAGS_go_grpc_server)) {}
   const std::string kCppBinaryPath;
   const std::string kGoBinaryPath;
+  const std::string kGoServerBinaryPath;
 };
 
 TEST_F(DwarfReaderTest, NonExistentPath) {
@@ -143,16 +146,54 @@ TEST_P(DwarfReaderTest, CppFunctionArgOffsets) {
 
 TEST_P(DwarfReaderTest, GoFunctionArgOffsets) {
   DwarfReaderTestParam p = GetParam();
+
+  {
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                         DwarfReader::Create(kGoBinaryPath, p.index));
+
+    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("main.(*Vertex).Scale"),
+                       ElementsAre(FunctionArgLocation{"v", 0}, FunctionArgLocation{"f", 8}));
+    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("main.(*Vertex).CrossScale"),
+                       ElementsAre(FunctionArgLocation{"v", 0}, FunctionArgLocation{"v2", 8},
+                                   FunctionArgLocation{"f", 24}));
+    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("main.Vertex.Abs"),
+                       ElementsAre(FunctionArgLocation{"v", 0}, FunctionArgLocation{"~r0", 16}));
+  }
+
+  {
+    ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
+                         DwarfReader::Create(kGoServerBinaryPath, p.index));
+
+    //   func (f *http2Framer) WriteDataPadded(streamID uint32, endStream bool, data, pad []byte)
+    //   error
+    EXPECT_OK_AND_THAT(
+        dwarf_reader->GetFunctionArgOffsets("net/http.(*http2Framer).WriteDataPadded"),
+        ElementsAre(FunctionArgLocation{"f", 0}, FunctionArgLocation{"streamID", 8},
+                    FunctionArgLocation{"endStream", 12}, FunctionArgLocation{"data", 16},
+                    FunctionArgLocation{"pad", 40}, FunctionArgLocation{"~r4", 64}));
+  }
+}
+
+TEST_P(DwarfReaderTest, GoFunctionArgConsistency) {
+  DwarfReaderTestParam p = GetParam();
+
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        DwarfReader::Create(kGoBinaryPath, p.index));
 
-  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("main.(*Vertex).Scale"),
-                     ElementsAre(FunctionArgLocation{"v", 0}, FunctionArgLocation{"f", 8}));
-  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("main.(*Vertex).CrossScale"),
-                     ElementsAre(FunctionArgLocation{"v", 0}, FunctionArgLocation{"v2", 8},
-                                 FunctionArgLocation{"f", 24}));
-  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("main.Vertex.Abs"),
-                     ElementsAre(FunctionArgLocation{"v", 0}, FunctionArgLocation{"~r0", 16}));
+  // First run GetFunctionArgOffsets to automatically get all arguments.
+  ASSERT_OK_AND_ASSIGN(auto function_arg_locations,
+                       dwarf_reader->GetFunctionArgOffsets("main.MixedArgTypes"));
+
+  // This is required so the test doesn't pass if GetFunctionArgOffsets returns nothing.
+  ASSERT_THAT(function_arg_locations, SizeIs(7));
+
+  // Finally, run a consistency check between the two methods.
+  for (auto& arg : function_arg_locations) {
+    ASSERT_OK_AND_ASSIGN(uint64_t offset, dwarf_reader->GetArgumentStackPointerOffset(
+                                              "main.MixedArgTypes", arg.name));
+    EXPECT_EQ(offset, arg.offset) << absl::Substitute("Argument $0 failed consistency check",
+                                                      arg.name);
+  }
 }
 
 INSTANTIATE_TEST_SUITE_P(DwarfReaderParameterizedTest, DwarfReaderTest,
