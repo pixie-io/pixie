@@ -1,5 +1,6 @@
 import { scrollbarStyles } from 'common/mui-theme';
 import ClientContext, { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
+import { StatusCell, StatusGroup } from 'components/status/status';
 import ProfileMenu from 'containers/live/profile-menu';
 import { distanceInWords } from 'date-fns';
 import gql from 'graphql-tag';
@@ -21,9 +22,9 @@ import Tooltip from '@material-ui/core/Tooltip';
 import Typography from '@material-ui/core/Typography';
 
 import {
-    AdminTooltip, agentStatusGroup, convertHeartbeatMS, StatusCell,
-    StyledLeftTableCell, StyledRightTableCell, StyledTab, StyledTableCell,
-    StyledTableHeaderCell, StyledTabs, VizierStatusGroup
+    AdminTooltip, agentStatusGroup, convertHeartbeatMS, StyledLeftTableCell,
+    StyledRightTableCell, StyledTab, StyledTableCell, StyledTableHeaderCell,
+    StyledTabs
 } from './utils';
 
 const useStyles = makeStyles((theme: Theme) => {
@@ -90,7 +91,7 @@ interface AgentDisplay {
   id: string;
   idShort: string;
   status: string;
-  statusGroup: VizierStatusGroup;
+  statusGroup: StatusGroup;
   hostname: string;
   lastHeartbeat: string;
   uptime: string;

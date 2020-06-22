@@ -1,7 +1,6 @@
-import {AdminTooltip, clusterStatusGroup, convertHeartbeatMS, StatusCell,
-        StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell,
-        StyledRightTableCell, VizierStatusGroup} from './utils';
-
+import { StatusCell, StatusGroup } from 'components/status/status';
+import {AdminTooltip, clusterStatusGroup, convertHeartbeatMS, StyledTableCell,
+        StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell} from './utils';
 import { useQuery } from '@apollo/react-hooks';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Table from '@material-ui/core/Table';
@@ -43,7 +42,7 @@ interface ClusterDisplay {
   idShort: string;
   name: string;
   status: string;
-  statusGroup: VizierStatusGroup;
+  statusGroup: StatusGroup;
   clusterVersion: string;
   vizierVersionShort: string;
   vizierVersion: string;

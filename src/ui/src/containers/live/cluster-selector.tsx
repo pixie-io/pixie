@@ -1,9 +1,10 @@
 import ClusterContext from 'common/cluster-context';
 import { CLUSTER_STATUS_DISCONNECTED,
          CLUSTER_STATUS_HEALTHY } from 'common/vizier-grpc-client-context';
+import { StatusCell } from 'components/status/status';
 import { Spinner } from 'components/spinner/spinner';
 // TODO(malthus): Move this to a common location.
-import { clusterStatusGroup, StatusCell } from 'containers/admin/utils';
+import { clusterStatusGroup } from 'containers/admin/utils';
 
 import gql from 'graphql-tag';
 import * as React from 'react';

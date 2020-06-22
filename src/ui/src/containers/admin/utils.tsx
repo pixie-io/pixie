@@ -1,26 +1,10 @@
-import UnknownIcon from '@material-ui/icons/Brightness1';
-import HealthyIcon from '@material-ui/icons/CheckCircle';
-import UnhealthyIcon from '@material-ui/icons/Error';
+import { StatusGroup } from 'components/status/status';
 import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import TableCell from '@material-ui/core/TableCell';
 import Tooltip from '@material-ui/core/Tooltip';
 import * as React from 'react';
-
-const useStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    unhealthy: {
-      color: theme.palette.error.main,
-    },
-    healthy: {
-      color: theme.palette.success.main,
-    },
-    unknown: {
-      color: theme.palette.foreground.grey1,
-    },
-  });
-});
 
 const tooltipStyles = makeStyles(() => {
   return createStyles({
@@ -52,9 +36,8 @@ export function convertHeartbeatMS(lastHeartbeatMs: number): string {
   return `${result.join(' ')} ago`;
 }
 
-export type VizierStatusGroup = 'healthy' | 'unhealthy' | 'unknown';
 
-export function agentStatusGroup(status: string): VizierStatusGroup {
+export function agentStatusGroup(status: string): StatusGroup {
   if (['AGENT_STATE_HEALTHY'].indexOf(status) != -1) {
     return 'healthy';
   } else if (['AGENT_STATE_UNRESPONSIVE'].indexOf(status) != -1) {
@@ -64,25 +47,13 @@ export function agentStatusGroup(status: string): VizierStatusGroup {
   }
 }
 
-export function clusterStatusGroup(status: string): VizierStatusGroup {
+export function clusterStatusGroup(status: string): StatusGroup {
   if (['CS_HEALTHY', 'CS_UPDATING', 'CS_CONNECTED'].indexOf(status) != -1) {
     return 'healthy';
   } else if (['CS_UNHEALTHY', 'CS_UPDATE_FAILED'].indexOf(status) != -1) {
     return 'unhealthy';
   } else {
     return 'unknown';
-  }
-}
-
-export const StatusCell = ({statusGroup}) => {
-  const classes = useStyles();
-  switch (statusGroup) {
-    case 'healthy':
-      return (<HealthyIcon fontSize='small' className={classes.healthy}/>);
-    case 'unhealthy':
-      return (<UnhealthyIcon fontSize='small' className={classes.unhealthy}/>);
-    default:
-      return (<UnknownIcon fontSize='small' className={classes.unknown}/>);
   }
 }
 

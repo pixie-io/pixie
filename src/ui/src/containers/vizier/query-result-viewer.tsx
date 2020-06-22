@@ -1,8 +1,10 @@
 import './query-result-viewer.scss';
 
+import Tooltip from '@material-ui/core/Tooltip';
 import clsx from 'clsx';
 import ClusterContext from 'common/cluster-context';
 import { Table } from 'common/vizier-grpc-client';
+import { StatusCell, StatusGroup } from 'components/status/status';
 import {
     AutoSizedScrollableTable, AutoSizedScrollableTableProps, TableColumnInfo,
 } from 'components/table/scrollable-table';
@@ -14,6 +16,12 @@ import { DataType, Relation, SemanticType, Status } from 'types/generated/vizier
 import * as FormatData from 'utils/format-data';
 import { ParseCompilerErrors } from 'utils/parse-compiler-errors';
 import { dataFromProto } from 'utils/result-data-utils';
+
+// STATUS_TYPES contains types that should be displayed as a status indicator.
+const STATUS_TYPES = new Set<SemanticType>([
+  SemanticType.ST_POD_PHASE,
+  SemanticType.ST_CONTAINER_STATE,
+]);
 
 // Formats int64 data, the input type is a string because JS does not
 // natively support 64-bit data.
@@ -69,6 +77,53 @@ function toEntityLink(entity: string, semanticType: SemanticType, clusterName: s
   return <Link to={pathname} className={'query-results--entity-link'}>{entity}</Link>;
 }
 
+function containerStateToStatusGroup(status: string): StatusGroup {
+  switch (status) {
+    case 'Running':
+      return 'healthy';
+    case 'Terminated':
+      return 'unhealthy';
+    case 'Waiting':
+      return 'pending';
+    case 'Unknown':
+    default:
+      return 'unknown';
+  }
+}
+
+function podPhaseToStatusgroup(status: string): StatusGroup {
+  switch (status) {
+    case 'Running':
+    case 'Succeeded':
+      return 'healthy';
+    case 'Failed':
+      return 'unhealthy';
+    case 'Pending':
+      return 'pending';
+    case 'Unknown':
+    default:
+      return 'unknown';
+  }
+}
+
+function toStatusIndicator(status: string, semanticType: SemanticType) {
+  let statusGroup;
+  if (semanticType === SemanticType.ST_CONTAINER_STATE) {
+    statusGroup = containerStateToStatusGroup(status);
+  } else if (semanticType === SemanticType.ST_POD_PHASE) {
+    statusGroup = podPhaseToStatusgroup(status);
+  } else {
+    return status;
+  }
+  return (
+    <Tooltip title={status} interactive>
+      <div>
+        <StatusCell statusGroup={statusGroup}/>
+      </div>
+    </Tooltip>
+  );
+}
+
 function ResultCellRenderer(cellData: any, columnInfo: TableColumnInfo) {
   const dataType = columnInfo.dataType;
   const colName = columnInfo.label;
@@ -99,6 +154,10 @@ function ResultCellRenderer(cellData: any, columnInfo: TableColumnInfo) {
       }
     }
     return toEntityLink(cellData, columnInfo.semanticType, columnInfo.clusterName);
+  }
+
+  if (STATUS_TYPES.has(columnInfo.semanticType)) {
+    return toStatusIndicator(cellData, columnInfo.semanticType);
   }
 
   const data = formatData(dataType, cellData);
