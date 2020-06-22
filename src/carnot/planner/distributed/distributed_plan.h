@@ -38,7 +38,7 @@ class CarnotInstance {
 
   StatusOr<planpb::Plan> PlanProto() const { return plan_->ToProto(); }
 
-  distributedpb::CarnotInfo carnot_info() const { return carnot_info_; }
+  const distributedpb::CarnotInfo& carnot_info() const { return carnot_info_; }
 
   IR* plan() const { return plan_.get(); }
   DistributedPlan* distributed_plan() const { return distributed_plan_; }

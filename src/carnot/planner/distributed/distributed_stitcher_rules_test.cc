@@ -28,9 +28,9 @@ using ::testing::HasSubstr;
 using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
 using testutils::DistributedRulesTest;
-using testutils::kOneAgentOneKelvinDistributedState;
-using testutils::kOneAgentThreeKelvinsDistributedState;
-using testutils::kThreeAgentsOneKelvinDistributedState;
+using testutils::kOnePEMOneKelvinDistributedState;
+using testutils::kOnePEMThreeKelvinsDistributedState;
+using testutils::kThreePEMsOneKelvinDistributedState;
 
 class StitcherTest : public DistributedRulesTest {
  protected:
@@ -166,7 +166,7 @@ class StitcherTest : public DistributedRulesTest {
 };
 
 TEST_F(StitcherTest, one_pem_one_kelvin) {
-  auto ps = LoadDistributedStatePb(kOneAgentOneKelvinDistributedState);
+  auto ps = LoadDistributedStatePb(kOnePEMOneKelvinDistributedState);
   auto physical_plan = MakeDistributedPlan(ps);
 
   EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(1, 0));
@@ -215,7 +215,7 @@ TEST_F(StitcherTest, one_pem_one_kelvin) {
 }
 
 TEST_F(StitcherTest, three_pems_one_kelvin) {
-  auto ps = LoadDistributedStatePb(kThreeAgentsOneKelvinDistributedState);
+  auto ps = LoadDistributedStatePb(kThreePEMsOneKelvinDistributedState);
   auto physical_plan = MakeDistributedPlan(ps);
 
   EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(3, 2, 1, 0));
@@ -228,7 +228,7 @@ TEST_F(StitcherTest, three_pems_one_kelvin) {
   for (int64_t agent_id = 1; agent_id <= 3; ++agent_id) {
     CarnotInstance* agent = physical_plan->Get(agent_id);
     // Quick check to make sure agents are valid.
-    ASSERT_THAT(agent->carnot_info().query_broker_address(), HasSubstr("agent"));
+    ASSERT_THAT(agent->carnot_info().query_broker_address(), HasSubstr("pem"));
     data_sources.push_back(agent);
   }
   // Kelvin can be a data source sometimes.
@@ -273,7 +273,7 @@ TEST_F(StitcherTest, three_pems_one_kelvin) {
 
 // Test to see whether we can stitch a graph to itself.
 TEST_F(StitcherTest, stitch_self_together_with_udtf) {
-  auto ps = LoadDistributedStatePb(kOneAgentOneKelvinDistributedState);
+  auto ps = LoadDistributedStatePb(kOnePEMOneKelvinDistributedState);
   // px.ServiceUpTime() is a Kelvin-Only UDTF, so it should only run on Kelvin.
   auto physical_plan = PlanQuery("import px\npx.display(px.ServiceUpTime())", ps);
 
@@ -284,7 +284,7 @@ TEST_F(StitcherTest, stitch_self_together_with_udtf) {
   ASSERT_EQ(kelvin->carnot_info().query_broker_address(), kelvin_qb_address);
 
   CarnotInstance* pem = physical_plan->Get(1);
-  ASSERT_EQ(pem->carnot_info().query_broker_address(), "agent");
+  ASSERT_EQ(pem->carnot_info().query_broker_address(), "pem");
   // Remove the pem instance as if we were a rule that would remove the PEM because it doens't run
   // the UDTF.
   EXPECT_OK(physical_plan->DeleteNode(1));
@@ -318,7 +318,7 @@ TEST_F(StitcherTest, stitch_self_together_with_udtf) {
 
 // Test to see whether we can stitch a graph to itself.
 TEST_F(StitcherTest, stitch_all_togther_with_udtf) {
-  auto ps = LoadDistributedStatePb(kOneAgentOneKelvinDistributedState);
+  auto ps = LoadDistributedStatePb(kOnePEMOneKelvinDistributedState);
   // px._Test_MDState() is an all agent so it should run on every pem and kelvin.
   auto physical_plan = PlanQuery("import px\npx.display(px._Test_MD_State())", ps);
 
@@ -329,7 +329,7 @@ TEST_F(StitcherTest, stitch_all_togther_with_udtf) {
   ASSERT_EQ(kelvin->carnot_info().query_broker_address(), kelvin_qb_address);
 
   CarnotInstance* pem = physical_plan->Get(1);
-  ASSERT_EQ(pem->carnot_info().query_broker_address(), "agent");
+  ASSERT_EQ(pem->carnot_info().query_broker_address(), "pem");
   {
     SCOPED_TRACE("stitch_all_together");
     TestBeforeSetSourceGroupGRPCAddress({kelvin, pem}, {kelvin});

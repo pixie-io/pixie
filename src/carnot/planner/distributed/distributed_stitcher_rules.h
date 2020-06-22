@@ -23,14 +23,12 @@ using distributedpb::CarnotInfo;
  */
 class SetSourceGroupGRPCAddressRule : public Rule {
  public:
-  explicit SetSourceGroupGRPCAddressRule(const std::string& grpc_address,
-                                         const std::string& query_broker_address)
-      : Rule(nullptr), grpc_address_(grpc_address), query_broker_address_(query_broker_address) {}
+  explicit SetSourceGroupGRPCAddressRule(const std::string& grpc_address)
+      : Rule(nullptr), grpc_address_(grpc_address) {}
 
  private:
   StatusOr<bool> Apply(IRNode* node) override;
   std::string grpc_address_;
-  std::string query_broker_address_;
 };
 
 /**
@@ -43,8 +41,7 @@ class DistributedSetSourceGroupGRPCAddressRule : public DistributedRule {
 
  protected:
   StatusOr<bool> Apply(CarnotInstance* carnot_instance) override {
-    SetSourceGroupGRPCAddressRule rule(carnot_instance->carnot_info().grpc_address(),
-                                       carnot_instance->carnot_info().query_broker_address());
+    SetSourceGroupGRPCAddressRule rule(carnot_instance->carnot_info().grpc_address());
     return rule.Execute(carnot_instance->plan());
   }
 };

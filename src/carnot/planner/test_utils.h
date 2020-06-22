@@ -238,7 +238,7 @@ relation_map {
 }
 )proto";
 
-constexpr char kAgentCarnotInfoTpl[] = R"proto(
+constexpr char kPEMCarnotInfoTpl[] = R"proto(
 query_broker_address: "$0"
 has_grpc_server: false
 has_data_store: true
@@ -270,7 +270,7 @@ constexpr char kTabletValueTpl[] = R"proto(
 tablets: "$0"
 )proto";
 
-constexpr char kQueryForTwoAgents[] =
+constexpr char kQueryForTwoPEMs[] =
     "import px\ndf = px.DataFrame(table = 'table1')\npx.display(df, 'out')";
 
 constexpr char kHttpRequestStats[] = R"pxl(
@@ -362,9 +362,9 @@ std::string MakeTableInfoStr(const std::string& table_name, const std::string& t
                           absl::StrJoin(formatted_tablets, "\n"));
 }
 
-std::string MakeAgentCarnotInfo(const std::string& agent_name, uint32_t asid,
-                                const std::vector<std::string>& table_info) {
-  return absl::Substitute(kAgentCarnotInfoTpl, agent_name, asid, absl::StrJoin(table_info, "\n"));
+std::string MakePEMCarnotInfo(const std::string& agent_name, uint32_t asid,
+                              const std::vector<std::string>& table_info) {
+  return absl::Substitute(kPEMCarnotInfoTpl, agent_name, asid, absl::StrJoin(table_info, "\n"));
 }
 
 std::string MakeKelvinCarnotInfo(const std::string& kelvin_name, const std::string& grpc_address,
@@ -383,75 +383,73 @@ std::string MakeDistributedState(const std::vector<std::string>& carnot_info_str
   return absl::StrJoin(carnot_info_proto_strs, "\n");
 }
 
-distributedpb::LogicalPlannerState CreateTwoAgentsPlannerState(
-    table_store::schemapb::Schema schema) {
+distributedpb::LogicalPlannerState CreateTwoPEMsPlannerState(table_store::schemapb::Schema schema) {
   distributedpb::LogicalPlannerState plan;
   std::string table_name = "table1";
   std::string tabletization_key = "upid";
   std::string table_info1 = MakeTableInfoStr(table_name, tabletization_key, {"1", "2"});
   std::string table_info2 = MakeTableInfoStr(table_name, tabletization_key, {"3", "4"});
   std::string distributed_state_proto =
-      MakeDistributedState({MakeAgentCarnotInfo("agent1", 123, {table_info1}),
-                            MakeAgentCarnotInfo("agent2", 456, {table_info2})});
+      MakeDistributedState({MakePEMCarnotInfo("pem1", 123, {table_info1}),
+                            MakePEMCarnotInfo("pem2", 456, {table_info2})});
 
   return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
 }
 
-distributedpb::LogicalPlannerState CreateTwoAgentsPlannerState(std::string_view schema) {
-  return CreateTwoAgentsPlannerState(LoadSchemaPb(schema));
+distributedpb::LogicalPlannerState CreateTwoPEMsPlannerState(std::string_view schema) {
+  return CreateTwoPEMsPlannerState(LoadSchemaPb(schema));
 }
 
-distributedpb::LogicalPlannerState CreateTwoAgentsPlannerState() {
-  return CreateTwoAgentsPlannerState(kSchema);
+distributedpb::LogicalPlannerState CreateTwoPEMsPlannerState() {
+  return CreateTwoPEMsPlannerState(kSchema);
 }
 
-distributedpb::LogicalPlannerState CreateOneAgentOneKelvinPlannerState(
+distributedpb::LogicalPlannerState CreateOnePEMOneKelvinPlannerState(
     table_store::schemapb::Schema schema) {
   distributedpb::LogicalPlannerState plan;
   std::string table_info1 = MakeTableInfoStr("table1", "upid", {"1", "2"});
-  std::string distributed_state_proto =
-      MakeDistributedState({MakeAgentCarnotInfo("agent", 123, {table_info1}),
-                            MakeKelvinCarnotInfo("agent", "1111", 456)});
+  std::string distributed_state_proto = MakeDistributedState(
+      {MakePEMCarnotInfo("agent", 123, {table_info1}), MakeKelvinCarnotInfo("agent", "1111", 456)});
 
   return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
 }
 
-distributedpb::LogicalPlannerState CreateOneAgentOneKelvinPlannerState(std::string_view schema) {
-  return CreateOneAgentOneKelvinPlannerState(LoadSchemaPb(schema));
+distributedpb::LogicalPlannerState CreateOnePEMOneKelvinPlannerState(std::string_view schema) {
+  return CreateOnePEMOneKelvinPlannerState(LoadSchemaPb(schema));
 }
 
-distributedpb::LogicalPlannerState CreateOneAgentOneKelvinPlannerState() {
-  return CreateOneAgentOneKelvinPlannerState(kSchema);
+distributedpb::LogicalPlannerState CreateOnePEMOneKelvinPlannerState() {
+  return CreateOnePEMOneKelvinPlannerState(kSchema);
 }
 
-std::string TwoAgentsOneKelvinDistributedState() {
+std::string TwoPEMsOneKelvinDistributedState() {
   std::string table_name = "table1";
   std::string tabletization_key = "upid";
   std::string table_info1 = MakeTableInfoStr(table_name, tabletization_key, {"1", "2"});
   std::string table_info2 = MakeTableInfoStr(table_name, tabletization_key, {"3", "4"});
-  return MakeDistributedState({MakeAgentCarnotInfo("agent1", 123, {table_info1}),
-                               MakeAgentCarnotInfo("agent2", 456, {table_info2}),
+  return MakeDistributedState({MakePEMCarnotInfo("pem1", 123, {table_info1}),
+                               MakePEMCarnotInfo("pem2", 456, {table_info2}),
                                MakeKelvinCarnotInfo("kelvin", "1111", 789)});
 }
 
-distributedpb::LogicalPlannerState CreateTwoAgentsOneKelvinPlannerState(const std::string& schema) {
-  std::string distributed_state_proto = TwoAgentsOneKelvinDistributedState();
+distributedpb::LogicalPlannerState CreateTwoPEMsOneKelvinPlannerState(const std::string& schema) {
+  std::string distributed_state_proto = TwoPEMsOneKelvinDistributedState();
   return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
 }
 
-distributedpb::LogicalPlannerState CreateTwoAgentsOneKelvinPlannerState(
+distributedpb::LogicalPlannerState CreateTwoPEMsOneKelvinPlannerState(
     table_store::schemapb::Schema schema) {
-  auto distributed_state_proto = TwoAgentsOneKelvinDistributedState();
+  auto distributed_state_proto = TwoPEMsOneKelvinDistributedState();
   return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
 }
 
-distributedpb::LogicalPlannerState CreateTwoAgentsOneKelvinPlannerState() {
-  return CreateTwoAgentsOneKelvinPlannerState(kSchema);
+distributedpb::LogicalPlannerState CreateTwoPEMsOneKelvinPlannerState() {
+  return CreateTwoPEMsOneKelvinPlannerState(kSchema);
 }
 
-constexpr char kExpectedPlanTwoAgents[] = R"proto(
+constexpr char kExpectedPlanTwoPEMs[] = R"proto(
 qb_address_to_plan {
-  key: "agent1"
+  key: "pem1"
   value {
     nodes {
       id: 1
@@ -529,7 +527,7 @@ qb_address_to_plan {
   }
 }
 qb_address_to_plan {
-  key: "agent2"
+  key: "pem2"
   value {
     nodes {
       id: 1
@@ -607,11 +605,11 @@ qb_address_to_plan {
   }
 }
 qb_address_to_dag_id {
-  key: "agent1"
+  key: "pem1"
   value: 0
 }
 qb_address_to_dag_id {
-  key: "agent2"
+  key: "pem2"
   value: 1
 }
 dag {
@@ -623,9 +621,9 @@ dag {
 }
 )proto";
 
-constexpr char kExpectedPlanTwoAgentOneKelvin[] = R"proto(
+constexpr char kExpectedPlanTwoPEMOneKelvin[] = R"proto(
   qb_address_to_plan {
-  key: "agent1"
+  key: "pem1"
   value {
     dag {
       nodes {
@@ -729,7 +727,7 @@ constexpr char kExpectedPlanTwoAgentOneKelvin[] = R"proto(
   }
 }
 qb_address_to_plan {
-  key: "agent2"
+  key: "pem2"
   value {
     dag {
       nodes {
@@ -935,11 +933,11 @@ qb_address_to_plan {
   }
 }
 qb_address_to_dag_id {
-  key: "agent1"
+  key: "pem1"
   value: 1
 }
 qb_address_to_dag_id {
-  key: "agent2"
+  key: "pem2"
   value: 2
 }
 qb_address_to_dag_id {
@@ -963,9 +961,9 @@ dag {
 
 )proto";
 
-constexpr char kThreeAgentsOneKelvinDistributedState[] = R"proto(
+constexpr char kThreePEMsOneKelvinDistributedState[] = R"proto(
 carnot_info {
-  query_broker_address: "agent1"
+  query_broker_address: "pem1"
   has_grpc_server: false
   has_data_store: true
   processes_data: true
@@ -973,7 +971,7 @@ carnot_info {
   asid: 123
 }
 carnot_info {
-  query_broker_address: "agent2"
+  query_broker_address: "pem2"
   has_grpc_server: false
   has_data_store: true
   processes_data: true
@@ -981,7 +979,7 @@ carnot_info {
   asid: 789
 }
 carnot_info {
-  query_broker_address: "agent3"
+  query_broker_address: "pem3"
   has_grpc_server: false
   has_data_store: true
   processes_data: true
@@ -999,9 +997,9 @@ carnot_info {
 }
 )proto";
 
-constexpr char kOneAgentOneKelvinDistributedState[] = R"proto(
+constexpr char kOnePEMOneKelvinDistributedState[] = R"proto(
 carnot_info {
-  query_broker_address: "agent"
+  query_broker_address: "pem"
   has_grpc_server: false
   has_data_store: true
   processes_data: true
@@ -1019,9 +1017,9 @@ carnot_info {
 }
 )proto";
 
-constexpr char kOneAgentThreeKelvinsDistributedState[] = R"proto(
+constexpr char kOnePEMThreeKelvinsDistributedState[] = R"proto(
 carnot_info {
-  query_broker_address: "agent"
+  query_broker_address: "pem"
   has_grpc_server: false
   has_data_store: true
   processes_data: true
@@ -1061,7 +1059,7 @@ class DistributedRulesTest : public OperatorTests {
  protected:
   void SetUpImpl() override {
     registry_info_ = std::make_unique<RegistryInfo>();
-    logical_state_ = CreateTwoAgentsOneKelvinPlannerState(kHttpEventsSchema);
+    logical_state_ = CreateTwoPEMsOneKelvinPlannerState(kHttpEventsSchema);
     auto udf_info = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb();
     ASSERT_TRUE(google::protobuf::TextFormat::MergeFromString(
         absl::Substitute("udtfs{$0}", kUDTFAllAgents), &udf_info));

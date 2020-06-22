@@ -15,8 +15,7 @@ namespace logical_planner {
 void BM_Query(benchmark::State& state) {
   auto info = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb();
   auto planner = LogicalPlanner::Create(info).ConsumeValueOrDie();
-  auto planner_state =
-      testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  auto planner_state = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
   plannerpb::QueryRequest query_request;
   query_request.set_query_str(testutils::kHttpRequestStats);
   for (auto _ : state) {
@@ -29,8 +28,7 @@ void BM_Query(benchmark::State& state) {
 void BM_GetMainFuncArgs(benchmark::State& state) {
   auto info = udfexporter::ExportUDFInfo().ConsumeValueOrDie()->info_pb();
   auto planner = LogicalPlanner::Create(info).ConsumeValueOrDie();
-  auto planner_state =
-      testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  auto planner_state = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
   plannerpb::QueryRequest query_request;
   query_request.set_query_str(testutils::kHttpRequestStats);
   for (auto _ : state) {

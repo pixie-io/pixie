@@ -251,12 +251,12 @@ TEST_F(PresetQueriesTest, PresetQueries) {
   for (const auto& [path, script] : preset_scripts_) {
     SCOPED_TRACE(absl::Substitute("Single agent for '$0'", path));
     auto planner = LogicalPlanner::Create(udf_info_).ConsumeValueOrDie();
-    auto single_agent_state = testutils::CreateOneAgentOneKelvinPlannerState(schema_);
-    single_agent_state.mutable_plan_options()->set_max_output_rows_per_table(10000);
+    auto single_pem_state = testutils::CreateOnePEMOneKelvinPlannerState(schema_);
+    single_pem_state.mutable_plan_options()->set_max_output_rows_per_table(10000);
     plannerpb::QueryRequest query_request;
     query_request.set_query_str(script.pxl_script);
     SetExecFuncs(script, &query_request);
-    auto plan_or_s = planner->Plan(single_agent_state, query_request);
+    auto plan_or_s = planner->Plan(single_pem_state, query_request);
     EXPECT_OK(plan_or_s) << "Query failed";
     auto plan = plan_or_s.ConsumeValueOrDie();
     EXPECT_OK(plan->ToProto()) << "Query failed to compile to proto";
@@ -266,12 +266,12 @@ TEST_F(PresetQueriesTest, PresetQueries) {
   for (const auto& [path, script] : preset_scripts_) {
     SCOPED_TRACE(absl::Substitute("Single agent for '$0'", path));
     auto planner = LogicalPlanner::Create(udf_info_).ConsumeValueOrDie();
-    auto multi_agent_state = testutils::CreateTwoAgentsOneKelvinPlannerState(schema_);
-    multi_agent_state.mutable_plan_options()->set_max_output_rows_per_table(10000);
+    auto multi_pem_state = testutils::CreateTwoPEMsOneKelvinPlannerState(schema_);
+    multi_pem_state.mutable_plan_options()->set_max_output_rows_per_table(10000);
     plannerpb::QueryRequest query_request;
     query_request.set_query_str(script.pxl_script);
     SetExecFuncs(script, &query_request);
-    auto plan_or_s = planner->Plan(multi_agent_state, query_request);
+    auto plan_or_s = planner->Plan(multi_pem_state, query_request);
     EXPECT_OK(plan_or_s) << "Query failed";
     auto plan = plan_or_s.ConsumeValueOrDie();
     EXPECT_OK(plan->ToProto()) << "Query failed to compile to proto";

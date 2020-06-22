@@ -26,7 +26,7 @@ using table_store::schema::Relation;
 using table_store::schemapb::Schema;
 using ::testing::_;
 using ::testing::Return;
-using testutils::CreateTwoAgentsOneKelvinPlannerState;
+using testutils::CreateTwoPEMsOneKelvinPlannerState;
 using testutils::DistributedRulesTest;
 using testutils::kHttpEventsSchema;
 

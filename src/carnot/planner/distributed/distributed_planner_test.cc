@@ -23,11 +23,11 @@ using pl::testing::proto::EqualsProto;
 using ::testing::ContainsRegex;
 using ::testing::ElementsAre;
 using ::testing::UnorderedElementsAreArray;
-using testutils::kThreeAgentsOneKelvinDistributedState;
+using testutils::kThreePEMsOneKelvinDistributedState;
 
-constexpr char kOneAgentOneKelvinDistributedState[] = R"proto(
+constexpr char kOnePEMOneKelvinDistributedState[] = R"proto(
 carnot_info {
-  query_broker_address: "agent"
+  query_broker_address: "pem"
   has_grpc_server: false
   has_data_store: true
   processes_data: true
@@ -55,13 +55,12 @@ class DistributedPlannerTest : public OperatorTests {
   std::unique_ptr<CompilerState> compiler_state_;
 };
 
-TEST_F(DistributedPlannerTest, one_agent_one_kelvin) {
+TEST_F(DistributedPlannerTest, one_pem_one_kelvin) {
   auto mem_src = MakeMemSource(MakeRelation());
   auto mem_sink = MakeMemSink(mem_src, "out");
   PL_CHECK_OK(mem_sink->SetRelation(MakeRelation()));
 
-  distributedpb::DistributedState ps_pb =
-      LoadDistributedStatePb(kOneAgentOneKelvinDistributedState);
+  distributedpb::DistributedState ps_pb = LoadDistributedStatePb(kOnePEMOneKelvinDistributedState);
   std::unique_ptr<DistributedPlanner> physical_planner =
       DistributedPlanner::Create().ConsumeValueOrDie();
   // TODO(philkuz) fix nullptr for compiler_state.
@@ -72,7 +71,7 @@ TEST_F(DistributedPlannerTest, one_agent_one_kelvin) {
 
   // Agent should be plan 1.
   auto agent_instance = physical_plan->Get(1);
-  EXPECT_THAT(agent_instance->carnot_info().query_broker_address(), ContainsRegex("agent"));
+  EXPECT_THAT(agent_instance->carnot_info().query_broker_address(), ContainsRegex("pem"));
 
   std::vector<IRNode*> grpc_sinks = agent_instance->plan()->FindNodesOfType(IRNodeType::kGRPCSink);
   ASSERT_EQ(grpc_sinks.size(), 1);
@@ -97,7 +96,7 @@ TEST_F(DistributedPlannerTest, three_agents_one_kelvin) {
   PL_CHECK_OK(mem_sink->SetRelation(MakeRelation()));
 
   distributedpb::DistributedState ps_pb =
-      LoadDistributedStatePb(kThreeAgentsOneKelvinDistributedState);
+      LoadDistributedStatePb(kThreePEMsOneKelvinDistributedState);
   std::unique_ptr<DistributedPlanner> physical_planner =
       DistributedPlanner::Create().ConsumeValueOrDie();
   std::unique_ptr<DistributedPlan> physical_plan =
@@ -110,7 +109,7 @@ TEST_F(DistributedPlannerTest, three_agents_one_kelvin) {
   for (int64_t i = 1; i <= 3; ++i) {
     SCOPED_TRACE(absl::Substitute("agent id = $0", i));
     auto agent_instance = physical_plan->Get(i);
-    EXPECT_THAT(agent_instance->carnot_info().query_broker_address(), ContainsRegex("agent"));
+    EXPECT_THAT(agent_instance->carnot_info().query_broker_address(), ContainsRegex("pem"));
 
     std::vector<IRNode*> grpc_sinks =
         agent_instance->plan()->FindNodesOfType(IRNodeType::kGRPCSink);

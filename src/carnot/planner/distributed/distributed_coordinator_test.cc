@@ -26,9 +26,9 @@ using ::pl::testing::proto::EqualsProto;
 using ::pl::testing::proto::Partially;
 using ::testing::ContainsRegex;
 using ::testing::ElementsAre;
-using testutils::kOneAgentOneKelvinDistributedState;
-using testutils::kOneAgentThreeKelvinsDistributedState;
-using testutils::kThreeAgentsOneKelvinDistributedState;
+using testutils::kOnePEMOneKelvinDistributedState;
+using testutils::kOnePEMThreeKelvinsDistributedState;
+using testutils::kThreePEMsOneKelvinDistributedState;
 
 class CoordinatorTest : public testutils::DistributedRulesTest {
  protected:
@@ -82,7 +82,7 @@ class CoordinatorTest : public testutils::DistributedRulesTest {
   }
 
   distributedpb::DistributedState ThreeAgentOneKelvinStateWithMetadataInfo() {
-    auto ps = LoadDistributedStatePb(kThreeAgentsOneKelvinDistributedState);
+    auto ps = LoadDistributedStatePb(kThreePEMsOneKelvinDistributedState);
     auto agent1_filter =
         AgentMetadataFilter::Create(100, 0.01, {MetadataType::POD_ID, MetadataType::SERVICE_ID})
             .ConsumeValueOrDie();
@@ -97,9 +97,9 @@ class CoordinatorTest : public testutils::DistributedRulesTest {
     PL_CHECK_OK(agent2_filter->InsertEntity(MetadataType::SERVICE_ID, "agent2_service"));
 
     absl::flat_hash_map<std::string, distributedpb::MetadataInfo> mds;
-    mds["agent1"] = agent1_filter->ToProto();
-    mds["agent2"] = agent2_filter->ToProto();
-    mds["agent3"] = agent3_filter->ToProto();
+    mds["pem1"] = agent1_filter->ToProto();
+    mds["pem2"] = agent2_filter->ToProto();
+    mds["pem3"] = agent3_filter->ToProto();
 
     for (auto i = 0; i < ps.carnot_info_size(); ++i) {
       if (ps.carnot_info(i).query_broker_address() == "kelvin") {
@@ -124,7 +124,7 @@ class CoordinatorTest : public testutils::DistributedRulesTest {
 };
 
 TEST_F(CoordinatorTest, one_pem_one_kelvin) {
-  auto ps = LoadDistributedStatePb(kOneAgentOneKelvinDistributedState);
+  auto ps = LoadDistributedStatePb(kOnePEMOneKelvinDistributedState);
   auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
 
   MakeGraph();
@@ -140,7 +140,7 @@ TEST_F(CoordinatorTest, one_pem_one_kelvin) {
   }
 
   auto pem_instance = physical_plan->Get(1);
-  EXPECT_THAT(pem_instance->carnot_info().query_broker_address(), ContainsRegex("agent"));
+  EXPECT_THAT(pem_instance->carnot_info().query_broker_address(), ContainsRegex("pem"));
   {
     SCOPED_TRACE("one agent one kelvin -> pem plan");
     VerifyPEMPlan(pem_instance->plan());
@@ -148,7 +148,7 @@ TEST_F(CoordinatorTest, one_pem_one_kelvin) {
 }
 
 TEST_F(CoordinatorTest, three_pems_one_kelvin) {
-  auto ps = LoadDistributedStatePb(kThreeAgentsOneKelvinDistributedState);
+  auto ps = LoadDistributedStatePb(kThreePEMsOneKelvinDistributedState);
   auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
 
   MakeGraph();
@@ -167,13 +167,13 @@ TEST_F(CoordinatorTest, three_pems_one_kelvin) {
   for (int64_t i = 1; i <= 3; ++i) {
     auto pem_instance = physical_plan->Get(i);
     SCOPED_TRACE("three pems one kelvin -> " + pem_instance->carnot_info().query_broker_address());
-    EXPECT_THAT(pem_instance->carnot_info().query_broker_address(), ContainsRegex("agent"));
+    EXPECT_THAT(pem_instance->carnot_info().query_broker_address(), ContainsRegex("pem"));
     VerifyPEMPlan(pem_instance->plan());
   }
 }
 
 TEST_F(CoordinatorTest, one_pem_three_kelvin) {
-  auto ps = LoadDistributedStatePb(kOneAgentThreeKelvinsDistributedState);
+  auto ps = LoadDistributedStatePb(kOnePEMThreeKelvinsDistributedState);
   auto coordinator = Coordinator::Create(ps).ConsumeValueOrDie();
 
   MakeGraph();
@@ -185,21 +185,21 @@ TEST_F(CoordinatorTest, one_pem_three_kelvin) {
   auto kelvin_instance = physical_plan->Get(0);
   EXPECT_THAT(kelvin_instance->carnot_info().query_broker_address(), ContainsRegex("kelvin"));
   {
-    SCOPED_TRACE("one agent one kelvin -> kelvin plan");
+    SCOPED_TRACE("one pem one kelvin -> kelvin plan");
     VerifyKelvinMergerPlan(kelvin_instance->plan());
   }
 
   auto pem_instance = physical_plan->Get(1);
-  EXPECT_THAT(pem_instance->carnot_info().query_broker_address(), ContainsRegex("agent"));
+  EXPECT_THAT(pem_instance->carnot_info().query_broker_address(), ContainsRegex("pem"));
   {
-    SCOPED_TRACE("one agent one kelvin -> pem plan");
+    SCOPED_TRACE("one pem one kelvin -> pem plan");
     VerifyPEMPlan(pem_instance->plan());
   }
 }
 
 constexpr char kBadAgentSpecificationState[] = R"proto(
 carnot_info {
-  query_broker_address: "agent"
+  query_broker_address: "pem"
   has_grpc_server: false
   has_data_store: true
   processes_data: false
@@ -217,7 +217,7 @@ carnot_info {
 }
 )proto";
 
-TEST_F(CoordinatorTest, bad_agent_spec) {
+TEST_F(CoordinatorTest, bad_pem_spec) {
   auto ps = LoadDistributedStatePb(kBadAgentSpecificationState);
   auto coordinator_status = Coordinator::Create(ps);
 
@@ -229,7 +229,7 @@ TEST_F(CoordinatorTest, bad_agent_spec) {
 
 constexpr char kBadKelvinSpecificationState[] = R"proto(
 carnot_info {
-  query_broker_address: "agent"
+  query_broker_address: "pem"
   has_grpc_server: false
   has_data_store: true
   processes_data: true
@@ -281,21 +281,21 @@ TEST_F(CoordinatorTest, prune_agents_simple) {
     plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
   }
 
-  auto agent1_sinks = plan_by_qb_addr["agent1"]->FindNodesThatMatch(GRPCSink());
+  auto agent1_sinks = plan_by_qb_addr["pem1"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent1_sinks.size());
   auto agent1_sink_parents = static_cast<OperatorIR*>(agent1_sinks[0])->parents();
   EXPECT_EQ(1, agent1_sink_parents.size());
   EXPECT_MATCH(agent1_sink_parents[0],
                Filter(Equals(MetadataExpression(MetadataType::POD_ID), String("agent1_pod"))));
 
-  auto agent2_sinks = plan_by_qb_addr["agent2"]->FindNodesThatMatch(GRPCSink());
+  auto agent2_sinks = plan_by_qb_addr["pem2"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent2_sinks.size());
   auto agent2_sink_parents = static_cast<OperatorIR*>(agent2_sinks[0])->parents();
   EXPECT_EQ(1, agent2_sink_parents.size());
   EXPECT_MATCH(agent2_sink_parents[0], Filter(Equals(MetadataExpression(MetadataType::SERVICE_ID),
                                                      String("agent2_service"))));
 
-  auto agent3_sinks = plan_by_qb_addr["agent3"]->FindNodesThatMatch(GRPCSink());
+  auto agent3_sinks = plan_by_qb_addr["pem3"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(0, agent3_sinks.size());
   auto kelvin_sources = plan_by_qb_addr["kelvin"]->FindNodesThatMatch(GRPCSourceGroup());
   EXPECT_EQ(2, kelvin_sources.size());
@@ -321,10 +321,10 @@ TEST_F(CoordinatorTest, prune_agents_nonexistent) {
     plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
   }
 
-  EXPECT_EQ(0, plan_by_qb_addr["agent1"]->FindNodesThatMatch(GRPCSink()).size());
-  EXPECT_EQ(0, plan_by_qb_addr["agent2"]->FindNodesThatMatch(GRPCSink()).size());
+  EXPECT_EQ(0, plan_by_qb_addr["pem1"]->FindNodesThatMatch(GRPCSink()).size());
+  EXPECT_EQ(0, plan_by_qb_addr["pem2"]->FindNodesThatMatch(GRPCSink()).size());
 
-  auto agent3_sinks = plan_by_qb_addr["agent3"]->FindNodesThatMatch(GRPCSink());
+  auto agent3_sinks = plan_by_qb_addr["pem3"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent3_sinks.size());
   auto agent3_sink_parents = static_cast<OperatorIR*>(agent3_sinks[0])->parents();
   EXPECT_EQ(1, agent3_sink_parents.size());
@@ -354,7 +354,7 @@ TEST_F(CoordinatorTest, prune_agents_unsupported_metadata_type) {
     plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
   }
 
-  for (const auto& str : {"agent1", "agent2", "agent3"}) {
+  for (const auto& str : {"pem1", "pem2", "pem3"}) {
     auto agent_sinks = plan_by_qb_addr[str]->FindNodesThatMatch(GRPCSink());
     EXPECT_EQ(1, agent_sinks.size());
     auto agent_sink_parents = static_cast<OperatorIR*>(agent_sinks[0])->parents();
@@ -386,10 +386,10 @@ TEST_F(CoordinatorTest, prune_agents_rename_metadata_column) {
     plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
   }
 
-  EXPECT_EQ(0, plan_by_qb_addr["agent2"]->FindNodesThatMatch(GRPCSink()).size());
-  EXPECT_EQ(0, plan_by_qb_addr["agent3"]->FindNodesThatMatch(GRPCSink()).size());
+  EXPECT_EQ(0, plan_by_qb_addr["pem2"]->FindNodesThatMatch(GRPCSink()).size());
+  EXPECT_EQ(0, plan_by_qb_addr["pem3"]->FindNodesThatMatch(GRPCSink()).size());
 
-  auto agent3_sinks = plan_by_qb_addr["agent1"]->FindNodesThatMatch(GRPCSink());
+  auto agent3_sinks = plan_by_qb_addr["pem1"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent3_sinks.size());
   auto agent3_sink_parents = static_cast<OperatorIR*>(agent3_sinks[0])->parents();
   EXPECT_EQ(1, agent3_sink_parents.size());
@@ -420,7 +420,7 @@ TEST_F(CoordinatorTest, prune_agents_multiparent) {
     plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
   }
 
-  auto agent1_sinks = plan_by_qb_addr["agent1"]->FindNodesThatMatch(GRPCSink());
+  auto agent1_sinks = plan_by_qb_addr["pem1"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(2, agent1_sinks.size());
   auto agent1_sink0_parents = static_cast<OperatorIR*>(agent1_sinks[0])->parents();
   EXPECT_EQ(1, agent1_sink0_parents.size());
@@ -430,13 +430,13 @@ TEST_F(CoordinatorTest, prune_agents_multiparent) {
   EXPECT_MATCH(agent1_sink1_parents[0],
                Filter(Equals(MetadataExpression(MetadataType::POD_ID), String("agent1_pod"))));
 
-  auto agent2_sinks = plan_by_qb_addr["agent2"]->FindNodesThatMatch(GRPCSink());
+  auto agent2_sinks = plan_by_qb_addr["pem2"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent2_sinks.size());
   auto agent2_sink_parents = static_cast<OperatorIR*>(agent2_sinks[0])->parents();
   EXPECT_EQ(1, agent2_sink_parents.size());
   EXPECT_MATCH(agent2_sink_parents[0], MemorySource());
 
-  auto agent3_sinks = plan_by_qb_addr["agent3"]->FindNodesThatMatch(GRPCSink());
+  auto agent3_sinks = plan_by_qb_addr["pem3"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent3_sinks.size());
   auto agent3_sink_parents = static_cast<OperatorIR*>(agent3_sinks[0])->parents();
   EXPECT_EQ(1, agent3_sink_parents.size());
@@ -466,13 +466,13 @@ TEST_F(CoordinatorTest, prune_agents_multichild) {
     plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
   }
 
-  auto agent1_sinks = plan_by_qb_addr["agent1"]->FindNodesThatMatch(GRPCSink());
+  auto agent1_sinks = plan_by_qb_addr["pem1"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent1_sinks.size());
   auto agent1_sink_parents = static_cast<OperatorIR*>(agent1_sinks[0])->parents();
   EXPECT_EQ(1, agent1_sink_parents.size());
   EXPECT_MATCH(agent1_sink_parents[0], MemorySource());
 
-  auto agent2_sinks = plan_by_qb_addr["agent2"]->FindNodesThatMatch(GRPCSink());
+  auto agent2_sinks = plan_by_qb_addr["pem2"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(2, agent2_sinks.size());
   auto agent2_sink0_parents = static_cast<OperatorIR*>(agent2_sinks[0])->parents();
   EXPECT_EQ(1, agent2_sink0_parents.size());
@@ -482,7 +482,7 @@ TEST_F(CoordinatorTest, prune_agents_multichild) {
   EXPECT_MATCH(agent2_sink1_parents[0], Filter(Equals(MetadataExpression(MetadataType::SERVICE_ID),
                                                       String("agent2_service"))));
 
-  auto agent3_sinks = plan_by_qb_addr["agent3"]->FindNodesThatMatch(GRPCSink());
+  auto agent3_sinks = plan_by_qb_addr["pem3"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent3_sinks.size());
   auto agent3_sink_parents = static_cast<OperatorIR*>(agent3_sinks[0])->parents();
   EXPECT_EQ(1, agent3_sink_parents.size());
@@ -519,7 +519,7 @@ TEST_F(CoordinatorTest, prune_agents_logical_conjunctions) {
     plan_by_qb_addr[carnot->QueryBrokerAddress()] = carnot->plan();
   }
 
-  auto agent1_sinks = plan_by_qb_addr["agent1"]->FindNodesThatMatch(GRPCSink());
+  auto agent1_sinks = plan_by_qb_addr["pem1"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent1_sinks.size());
   auto agent1_sink_parents = static_cast<OperatorIR*>(agent1_sinks[0])->parents();
   EXPECT_EQ(1, agent1_sink_parents.size());
@@ -528,7 +528,7 @@ TEST_F(CoordinatorTest, prune_agents_logical_conjunctions) {
                    Equals(MetadataExpression(MetadataType::POD_ID), String("agent1_pod")),
                    Equals(MetadataExpression(MetadataType::POD_ID), String("does_not_exist")))));
 
-  auto agent2_sinks = plan_by_qb_addr["agent2"]->FindNodesThatMatch(GRPCSink());
+  auto agent2_sinks = plan_by_qb_addr["pem2"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent2_sinks.size());
   auto agent2_sink_parents = static_cast<OperatorIR*>(agent2_sinks[0])->parents();
   EXPECT_EQ(1, agent2_sink_parents.size());
@@ -537,7 +537,7 @@ TEST_F(CoordinatorTest, prune_agents_logical_conjunctions) {
                    Equals(MetadataExpression(MetadataType::SERVICE_ID), String("agent2_service")),
                    LogicalOr(Value(), Value()))));
 
-  auto agent3_sinks = plan_by_qb_addr["agent3"]->FindNodesThatMatch(GRPCSink());
+  auto agent3_sinks = plan_by_qb_addr["pem3"]->FindNodesThatMatch(GRPCSink());
   EXPECT_EQ(1, agent3_sinks.size());
   auto agent3_sink_parents = static_cast<OperatorIR*>(agent3_sinks[0])->parents();
   EXPECT_EQ(1, agent3_sink_parents.size());

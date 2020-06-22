@@ -96,13 +96,13 @@ StatusOr<std::string> PlannerVisFuncsInfoGoStr(PlannerPtr planner_ptr, std::stri
 }
 
 // TODO(philkuz/nserrino): Fix test broken with clang-9/gcc-9.
-TEST_F(PlannerExportTest, DISABLED_one_agent_one_kelvin_query_test) {
+TEST_F(PlannerExportTest, DISABLED_one_pem_one_kelvin_query_test) {
   planner_ = MakePlanner();
   int result_len;
   std::string query = "import px\ndf = px.DataFrame(table='table1')\npx.display(df, 'out')";
   auto query_request = MakeQueryRequest(query);
 
-  auto logical_planner_state = testutils::CreateTwoAgentsOneKelvinPlannerState();
+  auto logical_planner_state = testutils::CreateTwoPEMsOneKelvinPlannerState();
   auto interface_result = PlannerPlanGoStr(planner_, logical_planner_state.DebugString(),
                                            query_request.DebugString(), &result_len);
   ASSERT_OK(interface_result);
@@ -111,7 +111,7 @@ TEST_F(PlannerExportTest, DISABLED_one_agent_one_kelvin_query_test) {
   ASSERT_TRUE(planner_result.ParseFromString(interface_result.ConsumeValueOrDie()));
   ASSERT_OK(planner_result.status());
   std::string expected_planner_result_str =
-      absl::Substitute("plan {$0}", testutils::kExpectedPlanTwoAgentOneKelvin);
+      absl::Substitute("plan {$0}", testutils::kExpectedPlanTwoPEMOneKelvin);
   EXPECT_THAT(planner_result, Partially(EqualsProto(expected_planner_result_str)))
       << planner_result.DebugString();
 }
@@ -124,7 +124,7 @@ TEST_F(PlannerExportTest, bad_queries) {
       "import px\n"
       "df = px.DataFrame(table='bad_table_name')\n"
       "px.display(df, 'out')";
-  auto logical_planner_state = testutils::CreateTwoAgentsPlannerState();
+  auto logical_planner_state = testutils::CreateTwoPEMsPlannerState();
   auto query_request = MakeQueryRequest(bad_table_query);
   auto interface_result = PlannerPlanGoStr(planner_, logical_planner_state.DebugString(),
                                            query_request.DebugString(), &result_len);
@@ -147,7 +147,7 @@ px.display(t1)
 // would cause a segfault. If this unit test passes, then that bug should be gone.
 TEST_F(PlannerExportTest, udf_in_query) {
   planner_ = MakePlanner();
-  auto logical_planner_state = testutils::CreateTwoAgentsOneKelvinPlannerState();
+  auto logical_planner_state = testutils::CreateTwoPEMsOneKelvinPlannerState();
   int result_len;
   auto query_request = MakeQueryRequest(kUDFQuery);
   auto interface_result = PlannerPlanGoStr(planner_, logical_planner_state.DebugString(),
@@ -161,7 +161,7 @@ TEST_F(PlannerExportTest, udf_in_query) {
 
 TEST_F(PlannerExportTest, pass_query_string_instead_of_req_should_fail) {
   planner_ = MakePlanner();
-  auto logical_planner_state = testutils::CreateTwoAgentsOneKelvinPlannerState();
+  auto logical_planner_state = testutils::CreateTwoPEMsOneKelvinPlannerState();
   int result_len;
   // Pass in kUDFQuery instead of query_request object here.
   auto interface_result =

@@ -32,20 +32,20 @@ class LogicalPlannerTest : public ::testing::Test {
   udfspb::UDFInfo info_;
 };
 
-TEST_F(LogicalPlannerTest, two_agents_one_kelvin) {
+TEST_F(LogicalPlannerTest, two_pems_one_kelvin) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan = planner
-                  ->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(),
-                         MakeQueryRequest(testutils::kQueryForTwoAgents))
+                  ->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(),
+                         MakeQueryRequest(testutils::kQueryForTwoPEMs))
                   .ConsumeValueOrDie();
   auto out_pb = plan->ToProto().ConsumeValueOrDie();
-  EXPECT_THAT(out_pb, Partially(EqualsProto(testutils::kExpectedPlanTwoAgentOneKelvin)))
+  EXPECT_THAT(out_pb, Partially(EqualsProto(testutils::kExpectedPlanTwoPEMOneKelvin)))
       << out_pb.DebugString();
 }
 
 TEST_F(LogicalPlannerTest, distributed_plan_test_basic_queries) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  auto ps = testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  auto ps = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
   auto plan_or_s = planner->Plan(ps, MakeQueryRequest(testutils::kHttpRequestStats));
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
@@ -60,7 +60,7 @@ px.display(t1)
 
 TEST_F(LogicalPlannerTest, max_output_rows) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
-  auto state = testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema);
+  auto state = testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema);
   state.mutable_plan_options()->set_max_output_rows_per_table(100);
   auto plan_or_s = planner->Plan(state, MakeQueryRequest(kSimpleQueryDefaultLimit));
   EXPECT_OK(plan_or_s);
@@ -133,7 +133,7 @@ px.display(joined_table)
 TEST_F(LogicalPlannerTest, duplicate_int) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan_or_s =
-      planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+      planner->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
                     MakeQueryRequest(kCompileTimeQuery));
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
@@ -174,7 +174,7 @@ px.display(df)
 TEST_F(LogicalPlannerTest, NestedCompileTime) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan_or_s =
-      planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+      planner->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
                     MakeQueryRequest(kTwoWindowQuery));
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
@@ -192,7 +192,7 @@ px.display(df1.append(df2))
 TEST_F(LogicalPlannerTest, AppendTest) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan_or_s =
-      planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+      planner->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
                     MakeQueryRequest(kAppendQuery));
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
@@ -210,7 +210,7 @@ px.display(df1.append(df2))
 TEST_F(LogicalPlannerTest, AppendSelfTest) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan_or_s =
-      planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+      planner->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
                     MakeQueryRequest(kAppendSelfQuery));
   EXPECT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
@@ -393,7 +393,7 @@ px.display(rcv[[src_name, dest_name]], 'talks_to')
 TEST_F(LogicalPlannerTest, BrokenQueryTest) {
   auto planner = LogicalPlanner::Create(info_).ConsumeValueOrDie();
   auto plan_or_s =
-      planner->Plan(testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema),
+      planner->Plan(testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema),
                     MakeQueryRequest(kPlannerQueryError));
   ASSERT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
@@ -417,7 +417,7 @@ TEST_F(LogicalPlannerTest, PlanWithExecFuncs) {
   a->set_name("a");
   a->set_value("1");
   auto plan_or_s = planner->Plan(
-      testutils::CreateTwoAgentsOneKelvinPlannerState(testutils::kHttpEventsSchema), req);
+      testutils::CreateTwoPEMsOneKelvinPlannerState(testutils::kHttpEventsSchema), req);
   ASSERT_OK(plan_or_s);
   auto plan = plan_or_s.ConsumeValueOrDie();
   EXPECT_OK(plan->ToProto());

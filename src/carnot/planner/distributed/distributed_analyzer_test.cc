@@ -23,7 +23,7 @@ namespace planner {
 namespace distributed {
 
 using table_store::schema::Relation;
-using testutils::CreateTwoAgentsOneKelvinPlannerState;
+using testutils::CreateTwoPEMsOneKelvinPlannerState;
 using testutils::DistributedRulesTest;
 using testutils::kHttpEventsSchema;
 
@@ -38,12 +38,12 @@ TEST_F(DistributedAnalyzerTest, UDTFOnlyOnPEMsDoesntRunOnKelvin) {
   // The plan starts with 3 agents -> 2 pems and 1 kelvin
   ASSERT_EQ(physical_plan->dag().nodes().size(), 3UL);
   // Find the appropriate agents.
-  CarnotInstance* pem_instance;
-  CarnotInstance* kelvin_instance;
+  CarnotInstance* pem_instance = nullptr;
+  CarnotInstance* kelvin_instance = nullptr;
   for (int64_t plan_id : physical_plan->dag().nodes()) {
     auto instance = physical_plan->Get(plan_id);
     if (IsPEM(instance->carnot_info())) {
-      if (instance->carnot_info().query_broker_address() == "agent1") {
+      if (instance->carnot_info().query_broker_address() == "pem1") {
         pem_instance = instance;
       }
     } else {
@@ -53,7 +53,7 @@ TEST_F(DistributedAnalyzerTest, UDTFOnlyOnPEMsDoesntRunOnKelvin) {
   ASSERT_NE(kelvin_instance, nullptr);
   ASSERT_NE(pem_instance, nullptr);
   // Make sure that the asid of this matches the UDTF specified one before we run it.
-  ASSERT_EQ(pem_instance->carnot_info().query_broker_address(), "agent1");
+  ASSERT_EQ(pem_instance->carnot_info().query_broker_address(), "pem1");
   ASSERT_EQ(pem_instance->carnot_info().asid(), asid);
 
   ASSERT_EQ(kelvin_instance->carnot_info().query_broker_address(), "kelvin");
@@ -70,7 +70,7 @@ TEST_F(DistributedAnalyzerTest, UDTFOnlyOnPEMsDoesntRunOnKelvin) {
   ASSERT_OK(distributed_analyzer->Execute(physical_plan.get()));
 
   // Analyzer should:
-  // 1. Remove one agent entirely (agent2) and keep agent1 and kelvin.
+  // 1. Remove one agent entirely (pem2) and keep pem1 and kelvin.
   // 2. Remove UDTFSources on Kelvin but keep the rest of the Kelvin plan.
   ASSERT_EQ(physical_plan->dag().nodes().size(), 2UL);
   // Has pem.
@@ -102,12 +102,12 @@ TEST_F(DistributedAnalyzerTest, UDTFOnKelvinOnlyOnKelvin) {
   // The plan starts with 3 agents -> 2 pems and 1 kelvin
   ASSERT_EQ(physical_plan->dag().nodes().size(), 3UL);
   // Find the appropriate agents.
-  CarnotInstance* pem_instance;
-  CarnotInstance* kelvin_instance;
+  CarnotInstance* pem_instance = nullptr;
+  CarnotInstance* kelvin_instance = nullptr;
   for (int64_t plan_id : physical_plan->dag().nodes()) {
     auto instance = physical_plan->Get(plan_id);
     if (IsPEM(instance->carnot_info())) {
-      if (instance->carnot_info().query_broker_address() == "agent1") {
+      if (instance->carnot_info().query_broker_address() == "pem1") {
         pem_instance = instance;
       }
     } else {
@@ -117,7 +117,7 @@ TEST_F(DistributedAnalyzerTest, UDTFOnKelvinOnlyOnKelvin) {
   ASSERT_NE(kelvin_instance, nullptr);
   ASSERT_NE(pem_instance, nullptr);
   // Make sure that the asid of this matches the UDTF specified one before we run it.
-  ASSERT_EQ(pem_instance->carnot_info().query_broker_address(), "agent1");
+  ASSERT_EQ(pem_instance->carnot_info().query_broker_address(), "pem1");
 
   ASSERT_EQ(kelvin_instance->carnot_info().query_broker_address(), "kelvin");
   auto kelvin_plan = kelvin_instance->plan();
@@ -135,7 +135,7 @@ TEST_F(DistributedAnalyzerTest, UDTFOnKelvinOnlyOnKelvin) {
   ASSERT_OK(distributed_analyzer->Execute(physical_plan.get()));
 
   // Analyzer should:
-  // 1. Remove one agent entirely (agent2) and keep agent1 and kelvin.
+  // 1. Remove one agent entirely (pem2) and keep pem1 and kelvin.
   // 2. Remove UDTFSources on Kelvin but keep the rest of the Kelvin plan.
   ASSERT_EQ(physical_plan->dag().nodes().size(), 1UL);
   // Does not have pem.
@@ -180,12 +180,12 @@ TEST_F(DistributedAnalyzerTest, UDTFOnKelvinJoinWithUDTFOnPEM) {
   ASSERT_EQ(physical_plan->dag().nodes().size(), 3UL);
 
   // Find the appropriate agents.
-  CarnotInstance* pem_instance;
-  CarnotInstance* kelvin_instance;
+  CarnotInstance* pem_instance = nullptr;
+  CarnotInstance* kelvin_instance = nullptr;
   for (int64_t plan_id : physical_plan->dag().nodes()) {
     auto instance = physical_plan->Get(plan_id);
     if (IsPEM(instance->carnot_info())) {
-      if (instance->carnot_info().query_broker_address() == "agent1") {
+      if (instance->carnot_info().query_broker_address() == "pem1") {
         pem_instance = instance;
       }
     } else {
@@ -196,7 +196,7 @@ TEST_F(DistributedAnalyzerTest, UDTFOnKelvinJoinWithUDTFOnPEM) {
   ASSERT_NE(pem_instance, nullptr);
 
   // Make sure that the asid of this matches the UDTF specified one before we run it.
-  ASSERT_EQ(pem_instance->carnot_info().query_broker_address(), "agent1");
+  ASSERT_EQ(pem_instance->carnot_info().query_broker_address(), "pem1");
   ASSERT_EQ(pem_instance->carnot_info().asid(), upid.asid());
   ASSERT_EQ(kelvin_instance->carnot_info().query_broker_address(), "kelvin");
 
