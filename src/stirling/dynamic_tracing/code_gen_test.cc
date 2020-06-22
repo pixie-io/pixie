@@ -7,9 +7,11 @@ namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
 
+using ::pl::stirling::dynamictracingpb::Register;
 using ::pl::stirling::dynamictracingpb::ScalarType;
 using ::pl::stirling::dynamictracingpb::Struct;
 using ::pl::stirling::dynamictracingpb::ValueType;
+using ::pl::stirling::dynamictracingpb::Variable;
 using ::testing::StrEq;
 
 TEST(GenStructTest, Output) {
@@ -50,6 +52,31 @@ TEST(GenStructTest, Output) {
                                                              "    char* str;\n"
                                                              "    struct attr_t attr;\n"
                                                              "};\n"));
+}
+
+TEST(GenVariableTest, Register) {
+  Variable var;
+
+  var.set_name("var");
+  var.set_val_type(ScalarType::VOID_POINTER);
+  var.set_reg(Register::SP);
+
+  ASSERT_OK_AND_THAT(GenVariable(var), StrEq("void* var = PT_REGS_SP(ctx);"));
+}
+
+TEST(GenVariableTest, Variable) {
+  Variable var;
+
+  var.set_name("var");
+  var.set_val_type(ScalarType::INT32);
+
+  auto* mem_var = var.mutable_memory();
+
+  mem_var->set_base("sp");
+  mem_var->set_offset(123);
+
+  ASSERT_OK_AND_THAT(GenVariable(var), StrEq("int32_t var;\n"
+                                             "bpf_probe_read(&var, sizeof(int32_t), sp + 123);\n"));
 }
 
 }  // namespace dynamic_tracing
