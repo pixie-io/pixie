@@ -24,7 +24,8 @@ const GRID_WIDTH = (
 );
 const GRID_GAP_SIZE = 20;
 
-const calcGridWidth = (numGrids: number) => (numGrids - 1) * GRID_GAP_SIZE + numGrids * GRID_WIDTH;
+const PAGE_ARROWS_SIZE = 2 * 30;
+const calcGridWidth = (numGrids: number) => (numGrids - 1) * GRID_GAP_SIZE + numGrids * GRID_WIDTH + PAGE_ARROWS_SIZE;
 
 const ROW_HEIGHT = 25;
 const HEADER_HEIGHT = 25;
@@ -90,7 +91,7 @@ const useStyles = makeStyles((theme: Theme) => {
     iconContainer: {
       display: 'flex',
       flexDirection: 'row',
-      justifyContent: 'flex-end',
+      justifyContent: 'center',
       flex: '1',
     },
   });
@@ -240,6 +241,7 @@ const Legend = React.memo((props: LegendProps) => {
 
   const containerStyles: CSSProperties = {
     paddingLeft: `${leftPadding}px`,
+    width: `${props.chartWidth - leftPadding}px`,
   };
 
   const handlePageBack = () => {
