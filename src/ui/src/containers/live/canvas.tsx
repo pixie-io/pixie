@@ -227,7 +227,7 @@ const Canvas = (props: CanvasProps) => {
       );
     });
     return widgets;
-  }, [tables, vis, loading, layout]);
+  }, [tables, vis, loading, layout, className]);
 
   if (loading && charts.length === 0) {
     return (
