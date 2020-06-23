@@ -407,6 +407,11 @@ export namespace VegaChart {
 }
 
 export class Table extends jspb.Message {
+  getDisplayColumnsList(): Array<Table.ColumnDisplay>;
+  setDisplayColumnsList(value: Array<Table.ColumnDisplay>): void;
+  clearDisplayColumnsList(): void;
+  addDisplayColumns(value?: Table.ColumnDisplay, index?: number): Table.ColumnDisplay;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): Table.AsObject;
   static toObject(includeInstance: boolean, msg: Table): Table.AsObject;
@@ -417,7 +422,72 @@ export class Table extends jspb.Message {
 
 export namespace Table {
   export type AsObject = {
+    displayColumnsList: Array<Table.ColumnDisplay.AsObject>,
   }
+
+  export class LatencyBoxPlot extends jspb.Message {
+    getP50Column(): number;
+    setP50Column(value: number): void;
+
+    getP90Column(): number;
+    setP90Column(value: number): void;
+
+    getP99Column(): number;
+    setP99Column(value: number): void;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): LatencyBoxPlot.AsObject;
+    static toObject(includeInstance: boolean, msg: LatencyBoxPlot): LatencyBoxPlot.AsObject;
+    static serializeBinaryToWriter(message: LatencyBoxPlot, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): LatencyBoxPlot;
+    static deserializeBinaryFromReader(message: LatencyBoxPlot, reader: jspb.BinaryReader): LatencyBoxPlot;
+  }
+
+  export namespace LatencyBoxPlot {
+    export type AsObject = {
+      p50Column: number,
+      p90Column: number,
+      p99Column: number,
+    }
+  }
+
+
+  export class ColumnDisplay extends jspb.Message {
+    getName(): string;
+    setName(value: string): void;
+
+    getDisplaySpec(): google_protobuf_any_pb.Any | undefined;
+    setDisplaySpec(value?: google_protobuf_any_pb.Any): void;
+    hasDisplaySpec(): boolean;
+    clearDisplaySpec(): void;
+
+    getDisplayTitle(): string;
+    setDisplayTitle(value: string): void;
+
+    getColumnCase(): ColumnDisplay.ColumnCase;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): ColumnDisplay.AsObject;
+    static toObject(includeInstance: boolean, msg: ColumnDisplay): ColumnDisplay.AsObject;
+    static serializeBinaryToWriter(message: ColumnDisplay, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ColumnDisplay;
+    static deserializeBinaryFromReader(message: ColumnDisplay, reader: jspb.BinaryReader): ColumnDisplay;
+  }
+
+  export namespace ColumnDisplay {
+    export type AsObject = {
+      name: string,
+      displaySpec?: google_protobuf_any_pb.Any.AsObject,
+      displayTitle: string,
+    }
+
+    export enum ColumnCase { 
+      COLUMN_NOT_SET = 0,
+      NAME = 1,
+      DISPLAY_SPEC = 2,
+    }
+  }
+
 }
 
 export class Graph extends jspb.Message {
