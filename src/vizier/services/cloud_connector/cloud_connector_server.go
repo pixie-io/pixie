@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -73,19 +72,6 @@ func main() {
 		log.WithError(err).Fatal("Could not get k8s info")
 	}
 
-	nc, err := nats.Connect(viper.GetString("nats_url"),
-		nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
-		nats.RootCAs(viper.GetString("tls_ca_cert")))
-	if err != nil {
-		log.WithError(err).Error("Failed to connect to NATS. This is OK if the cluster is in bootstrap mode.")
-	} else {
-		nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
-			log.WithField("Sub", subscription.Subject).
-				WithError(err).
-				Error("Error with NATS handler")
-		})
-	}
-
 	leaderMgr, err := election.NewK8sLeaderElectionMgr(
 		viper.GetString("pod_namespace"),
 		viper.GetDuration("max_expected_clock_skew"),
@@ -125,7 +111,7 @@ func main() {
 	// We just use the current time in nanoseconds to mark the session ID. This will let the cloud side know that
 	// the cloud connector restarted. Clock skew might make this incorrect, but we mostly want this for debugging.
 	sessionID := time.Now().UnixNano()
-	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), deployKey, sessionID, nil, vzInfo, nc, checker)
+	server := controllers.New(vizierID, viper.GetString("jwt_signing_key"), deployKey, sessionID, nil, vzInfo, nil, checker)
 	go server.RunStream()
 	defer server.Stop()
 

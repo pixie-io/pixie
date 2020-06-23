@@ -27,6 +27,15 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/utils/messagebus"
 )
 
+const (
+	// NATSBackoffInitialInterval is the initial interval at which to start the backoff retry.
+	NATSBackoffInitialInterval = 30 * time.Second
+	// NATSBackoffMultipler is the multiplier for the backoff interval.
+	NATSBackoffMultipler = 2
+	// NATSBackoffMaxElapsedTime is the maximum elapsed time that we should retry.
+	NATSBackoffMaxElapsedTime = 10 * time.Minute
+)
+
 // UpdaterJobYAML is the YAML that should be applied for the updater job.
 const UpdaterJobYAML string = `---
 apiVersion: batch/v1
@@ -274,7 +283,40 @@ func (s *Bridge) RunStream() {
 		s.vzConnClient = vzClient
 	}
 
+	if !viper.GetBool("bootstrap_mode") && s.nc == nil {
+		var nc *nats.Conn
+		var err error
+
+		connectNats := func() error {
+			log.Info("Connecting to NATS...")
+			nc, err = nats.Connect(viper.GetString("nats_url"),
+				nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
+				nats.RootCAs(viper.GetString("tls_ca_cert")))
+			if err != nil {
+				log.WithError(err).Error("Failed to connect to NATS")
+			}
+			return err
+		}
+
+		backOffOpts := backoff.NewExponentialBackOff()
+		backOffOpts.InitialInterval = NATSBackoffInitialInterval
+		backOffOpts.Multiplier = NATSBackoffMultipler
+		backOffOpts.MaxElapsedTime = 10 * time.Minute
+		err = backoff.Retry(connectNats, backOffOpts)
+		if err != nil {
+			log.WithError(err).Fatal("Could not connect to NATS")
+		}
+		log.Info("Successfully connected to NATS")
+		s.nc = nc
+	}
+
 	if s.nc != nil {
+		s.nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
+			log.WithField("Sub", subscription.Subject).
+				WithError(err).
+				Error("Error with NATS handler")
+		})
+
 		natsTopic := messagebus.V2CTopic("*")
 		log.WithField("topic", natsTopic).Trace("Subscribing to NATS")
 		natsSub, err := s.nc.ChanSubscribe(natsTopic, s.natsCh)
