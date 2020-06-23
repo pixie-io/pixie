@@ -3,6 +3,7 @@ import {AdminTooltip, clusterStatusGroup, convertHeartbeatMS, StyledTableCell,
         StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell} from './utils';
 import { useQuery } from '@apollo/react-hooks';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import Button from '@material-ui/core/Button';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableHead from '@material-ui/core/TableHead';
@@ -109,7 +110,10 @@ export const ClustersTable = () => {
               </StyledLeftTableCell>
             </AdminTooltip>
             <StyledTableCell>
-              <Link to={`/admin/clusters/${encodeURIComponent(cluster.name)}`}>{cluster.name}</Link>
+            <Button component={Link} to={`/admin/clusters/${encodeURIComponent(cluster.name)}`}
+             color='secondary' variant='text'>
+              {cluster.name}
+            </Button>
             </StyledTableCell>
             <AdminTooltip title={cluster.id}>
               <StyledTableCell>{cluster.idShort}</StyledTableCell>

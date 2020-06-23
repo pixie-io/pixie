@@ -46,6 +46,7 @@ const useStyles = makeStyles((theme: Theme) => {
     link: {
       ...theme.typography.subtitle1,
       margin: theme.spacing(1),
+      color: theme.palette.text.primary,
     },
     titleText: {
       ...theme.typography.h6,
@@ -83,7 +84,9 @@ const AdminOverview = () => {
         <div className={classes.title}>
           <div className={classes.titleText}>Admin View</div>
         </div>
-        <Link className={classes.link} to='/live'>Live View</Link>
+        <Button component={Link} to='/live' color='primary'>
+          Live View
+        </Button>
         <ProfileMenu/>
       </div>
       <div className={classes.main}>
