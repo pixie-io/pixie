@@ -3,7 +3,7 @@
 #include <string>
 
 #include "src/common/base/base.h"
-#include "src/stirling/proto/ir.pb.h"
+#include "src/stirling/proto/physical_ir.pb.h"
 
 namespace pl {
 namespace stirling {

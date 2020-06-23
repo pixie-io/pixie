@@ -67,3 +67,24 @@ pl_go_proto_library(
     proto = ":ir_pl_proto",
     importpath = "pixielabs.ai/pixielabs/src/stirling/proto",
 )
+
+pl_proto_library(
+    name = "physical_ir_pl_proto",
+    srcs = ["physical_ir.proto"],
+    deps = [":ir_pl_proto"],
+)
+
+pl_cc_proto_library(
+    name = "physical_ir_pl_cc_proto",
+    proto = ":physical_ir_pl_proto",
+    deps = [":ir_pl_cc_proto"],
+)
+
+pl_go_proto_library(
+    name = "physical_ir_pl_go_proto",
+    proto = ":physical_ir_pl_proto",
+    # This different import path is required to avoid:
+    # https://github.com/bazelbuild/rules_go/issues/1841
+    importpath = "pixielabs.ai/pixielabs/src/stirling/proto;physical_ir",
+    deps = [":ir_pl_go_proto"],
+)

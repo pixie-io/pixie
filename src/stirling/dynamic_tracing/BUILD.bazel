@@ -15,7 +15,7 @@ pl_cc_library(
             "*.h",
         ],
     ),
-    deps = ["//src/stirling/proto:ir_pl_cc_proto"],
+    deps = ["//src/stirling/proto:physical_ir_pl_cc_proto"],
 )
 
 pl_cc_test(

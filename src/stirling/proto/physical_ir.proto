@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package pl.stirling.dynamictracingpb;
+
+import "src/stirling/proto/ir.proto";
+
+option go_package = "dynamictracingpb";
+
+// TODO(yzhao): It seems we might need to encode other registers in addition to SP, for example,
+// X86 calling convention uses registers as function argument addresses.
+enum Register {
+  SP = 0;
+}
+
+// Describes a C struct. This is directly converted to a C struct in BCC code.
+message Struct {
+  // The name of this struct.
+  string name = 1;
+
+  message Field {
+    string name = 1;
+    ValueType type = 2;
+  }
+
+  repeated Field fields = 2;
+}
+
+// Describes how to access variable in register or memory from inside BCC code.
+message Variable {
+  // Name must be unique in the scope of a Probe.
+  string name = 1;
+
+  // Describes type of the value held by this Variable.
+  //
+  // When this is VOID_POINTER, this Variable describes an intermediate variable used to access
+  // a scalar variable.
+  ScalarType val_type = 2;
+
+  // Describes a variable that resides in memory, in comparison to a Register variable.
+  message MemoryVariable {
+    // This must points to a Variable with VOID_POINTER type, which specifies the base address
+    // to access this variable.
+    string base = 1;
+
+    // The offset off the base address.
+    uint32 offset = 2;
+  }
+
+  oneof address_oneof {
+    // Address is stored in a register.
+    // NOTE: 'reg' is used to avoid name collision with C++ keyword 'register'.
+    Register reg = 3;
+
+    // Address is in memory (either stack or heap).
+    MemoryVariable memory = 4;
+  }
+}
+
+// Corresponds to a logical probe.
+message PhysicalProbe {
+  // Where to attach this probe.
+  TracePoint trace_point = 1;
+
+  // Must not be LOGICAL.
+  ProbeType type = 2;
+
+  // C data structures used by BCC code, for example, as perf buffer's output type.
+  repeated Struct structs = 3;
+
+  // Defines how to access variables from inside BCC code..
+  repeated Variable vars = 4;
+
+  // Inserts key and value into a map.
+  repeated StashMapAction stash_map_actions = 5;
+
+  // Writes a value to perf buffer.
+  repeated OutputAction output_actions = 6;
+}
