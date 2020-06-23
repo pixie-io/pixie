@@ -71,7 +71,6 @@ const useStyles = makeStyles((theme: Theme) => {
     table: {
       '& *': {
         ...theme.typography.body2,
-        color: `${theme.palette.text.primary} !important`,
       },
       '& .scrollable-table--row-odd': {
         backgroundColor: theme.palette.background.default,

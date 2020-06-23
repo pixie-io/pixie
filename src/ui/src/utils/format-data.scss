@@ -1,17 +1,17 @@
 .formatted_data--latency-low {
-    color: #a6e22e;
-}
-
-.formatted_data--latency-high {
-    color: red;
+    color: #00bd8f;
 }
 
 .formatted_data--latency-med {
-    color: orange;
+    color: #dc9406;
+}
+
+.formatted_data--latency-high {
+    color: #e54e5c;
 }
 
 .formatted_data--alert-true {
-    color: red;
+    color: #e54e5c;
 }
 
 .formatted_data--json-number {
@@ -31,7 +31,7 @@
 }
 
 .formatted_data--json-string {
-    color: #e6db74;
+    color: #fff48f;
     word-break: break-all;
 }
 

@@ -1,4 +1,6 @@
-.query-results .ReactVirtualized__Table__row {
+@import "../../theme.scss";
+
+query-results .ReactVirtualized__Table__row {
     font-size: 0.8rem;
 }
 
@@ -20,4 +22,17 @@
 .query-results-expanded-row {
   white-space: pre-wrap;
   word-break: break-all;
+}
+
+.query-results--entity-link {
+  color: $link-color;
+  text-decoration: none;
+  background-color: transparent;
+  opacity: 0.7;
+}
+
+
+.query-results--entity-link:hover {
+  text-decoration: underline;
+  opacity: 0.7;
 }

@@ -66,7 +66,7 @@ function computeColumnWidthRatios(relation: Relation, parsedTable: any): any {
 function toEntityLink(entity: string, semanticType: SemanticType, clusterName: string) {
   const page = toSingleEntityPage(entity, semanticType, clusterName);
   const pathname = toEntityPathname(page);
-  return <Link to={pathname}>{entity}</Link>;
+  return <Link to={pathname} className={'query-results--entity-link'}>{entity}</Link>;
 }
 
 function ResultCellRenderer(cellData: any, columnInfo: TableColumnInfo) {
