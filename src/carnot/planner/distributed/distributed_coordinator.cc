@@ -10,6 +10,7 @@
 #include "src/carnot/planner/distributed/distributed_splitter.h"
 #include "src/carnot/planner/rules/rules.h"
 #include "src/carnot/udfspb/udfs.pb.h"
+#include "src/common/uuid/uuid.h"
 #include "src/shared/metadata/base_types.h"
 
 namespace pl {
@@ -112,7 +113,8 @@ bool CoordinatorImpl::UDTFMatchesFilters(UDTFSourceIR* source,
         DCHECK_EQ(arg.arg_type(), types::STRING);
         DCHECK_EQ(data->type(), IRNodeType::kString);
         StringIR* str = static_cast<StringIR*>(data);
-        if (carnot_info.query_broker_address() != str->str()) {
+        auto uuid = ParseUUID(carnot_info.agent_id()).ConsumeValueOrDie();
+        if (uuid.str() != str->str()) {
           return false;
         }
         continue;

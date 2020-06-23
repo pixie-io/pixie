@@ -326,6 +326,11 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
           })
           .Walk(&plan);
   PL_RETURN_IF_ERROR(s);
+
+  std::vector<uuidpb::UUID> incoming_agents;
+  for (const auto& id : logical_plan.incoming_agent_ids()) {
+    incoming_agents.push_back(id);
+  }
   timer.Stop();
   int64_t exec_time_ns = timer.ElapsedTime_us() * 1000;
 

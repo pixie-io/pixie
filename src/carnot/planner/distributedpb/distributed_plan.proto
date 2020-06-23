@@ -6,6 +6,7 @@ import "src/shared/bloomfilterpb/bloomfilter.proto";
 import "src/shared/metadatapb/metadata.proto";
 import "src/table_store/proto/schema.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/common/uuid/proto/uuid.proto";
 
 package pl.carnot.planner.distributedpb;
 
@@ -31,6 +32,8 @@ message MetadataInfo {
 message CarnotInfo {
   // The unique address used by the query broker to contact this instance.
   string query_broker_address = 1;
+  // The unique ID of this agent.
+  uuidpb.UUID agent_id = 10 [ (gogoproto.customname) = "AgentID" ];
   // Flag if the Carnot instance hosts a GRPC server.
   bool has_grpc_server = 2 [ (gogoproto.customname) = "HasGRPCServer" ];
   // The address of the GRPC server hosted by the Carnot instance, it has a GRPC

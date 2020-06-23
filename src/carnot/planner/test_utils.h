@@ -240,6 +240,9 @@ relation_map {
 
 constexpr char kPEMCarnotInfoTpl[] = R"proto(
 query_broker_address: "$0"
+agent_id: {
+  data: "$3"
+}
 has_grpc_server: false
 has_data_store: true
 processes_data: true
@@ -250,6 +253,9 @@ $2
 
 constexpr char kKelvinCarnotInfoTpl[] = R"proto(
 query_broker_address: "$0"
+agent_id: {
+  data: "$3"
+}
 grpc_address: "$1"
 has_grpc_server: true
 has_data_store: false
@@ -362,14 +368,15 @@ std::string MakeTableInfoStr(const std::string& table_name, const std::string& t
                           absl::StrJoin(formatted_tablets, "\n"));
 }
 
-std::string MakePEMCarnotInfo(const std::string& agent_name, uint32_t asid,
-                              const std::vector<std::string>& table_info) {
-  return absl::Substitute(kPEMCarnotInfoTpl, agent_name, asid, absl::StrJoin(table_info, "\n"));
+std::string MakePEMCarnotInfo(const std::string& agent_name, const std::string& agent_id,
+                              uint32_t asid, const std::vector<std::string>& table_info) {
+  return absl::Substitute(kPEMCarnotInfoTpl, agent_name, asid, absl::StrJoin(table_info, "\n"),
+                          agent_id);
 }
 
-std::string MakeKelvinCarnotInfo(const std::string& kelvin_name, const std::string& grpc_address,
-                                 uint32_t asid) {
-  return absl::Substitute(kKelvinCarnotInfoTpl, kelvin_name, grpc_address, asid);
+std::string MakeKelvinCarnotInfo(const std::string& kelvin_name, const std::string& agent_id,
+                                 const std::string& grpc_address, uint32_t asid) {
+  return absl::Substitute(kKelvinCarnotInfoTpl, kelvin_name, grpc_address, asid, agent_id);
 }
 
 std::string MakeDistributedState(const std::vector<std::string>& carnot_info_strs) {
@@ -389,9 +396,9 @@ distributedpb::LogicalPlannerState CreateTwoPEMsPlannerState(table_store::schema
   std::string tabletization_key = "upid";
   std::string table_info1 = MakeTableInfoStr(table_name, tabletization_key, {"1", "2"});
   std::string table_info2 = MakeTableInfoStr(table_name, tabletization_key, {"3", "4"});
-  std::string distributed_state_proto =
-      MakeDistributedState({MakePEMCarnotInfo("pem1", 123, {table_info1}),
-                            MakePEMCarnotInfo("pem2", 456, {table_info2})});
+  std::string distributed_state_proto = MakeDistributedState(
+      {MakePEMCarnotInfo("pem1", "00000001-0000-0000-0000-000000000001", 123, {table_info1}),
+       MakePEMCarnotInfo("pem2", "00000001-0000-0000-0000-000000000002", 456, {table_info2})});
 
   return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
 }
@@ -409,7 +416,8 @@ distributedpb::LogicalPlannerState CreateOnePEMOneKelvinPlannerState(
   distributedpb::LogicalPlannerState plan;
   std::string table_info1 = MakeTableInfoStr("table1", "upid", {"1", "2"});
   std::string distributed_state_proto = MakeDistributedState(
-      {MakePEMCarnotInfo("agent", 123, {table_info1}), MakeKelvinCarnotInfo("agent", "1111", 456)});
+      {MakePEMCarnotInfo("pem", "00000001-0000-0000-0000-000000000001", 123, {table_info1}),
+       MakeKelvinCarnotInfo("kelvin", "00000001-0000-0000-0000-000000000002", "1111", 456)});
 
   return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
 }
@@ -427,9 +435,10 @@ std::string TwoPEMsOneKelvinDistributedState() {
   std::string tabletization_key = "upid";
   std::string table_info1 = MakeTableInfoStr(table_name, tabletization_key, {"1", "2"});
   std::string table_info2 = MakeTableInfoStr(table_name, tabletization_key, {"3", "4"});
-  return MakeDistributedState({MakePEMCarnotInfo("pem1", 123, {table_info1}),
-                               MakePEMCarnotInfo("pem2", 456, {table_info2}),
-                               MakeKelvinCarnotInfo("kelvin", "1111", 789)});
+  return MakeDistributedState(
+      {MakePEMCarnotInfo("pem1", "00000001-0000-0000-0000-000000000001", 123, {table_info1}),
+       MakePEMCarnotInfo("pem2", "00000001-0000-0000-0000-000000000002", 456, {table_info2}),
+       MakeKelvinCarnotInfo("kelvin", "00000001-0000-0000-0000-000000000003", "1111", 789)});
 }
 
 distributedpb::LogicalPlannerState CreateTwoPEMsOneKelvinPlannerState(const std::string& schema) {
@@ -999,6 +1008,9 @@ carnot_info {
 
 constexpr char kOnePEMOneKelvinDistributedState[] = R"proto(
 carnot_info {
+  agent_id {
+    data: "00000001-0000-0000-0000-000000000001"
+  }
   query_broker_address: "pem"
   has_grpc_server: false
   has_data_store: true
@@ -1007,6 +1019,9 @@ carnot_info {
   asid: 123
 }
 carnot_info {
+  agent_id {
+    data: "00000001-0000-0000-0000-000000000002"
+  }
   query_broker_address: "kelvin"
   grpc_address: "1111"
   has_grpc_server: true
@@ -1019,6 +1034,9 @@ carnot_info {
 
 constexpr char kOnePEMThreeKelvinsDistributedState[] = R"proto(
 carnot_info {
+  agent_id {
+    data: "00000001-0000-0000-0000-000000000001"
+  }
   query_broker_address: "pem"
   has_grpc_server: false
   has_data_store: true
@@ -1027,6 +1045,9 @@ carnot_info {
   asid: 123
 }
 carnot_info {
+  agent_id {
+    data: "00000001-0000-0000-0000-000000000002"
+  }
   query_broker_address: "kelvin1"
   grpc_address: "1111"
   has_grpc_server: true
@@ -1036,6 +1057,9 @@ carnot_info {
   asid: 456
 }
 carnot_info {
+  agent_id {
+    data: "00000001-0000-0000-0000-000000000003"
+  }
   query_broker_address: "kelvin2"
   grpc_address: "1112"
   has_grpc_server: true
@@ -1045,6 +1069,9 @@ carnot_info {
   asid: 222
 }
 carnot_info {
+  agent_id {
+    data: "00000001-0000-0000-0000-000000000004"
+  }
   query_broker_address: "kelvin3"
   grpc_address: "1113"
   has_grpc_server: true

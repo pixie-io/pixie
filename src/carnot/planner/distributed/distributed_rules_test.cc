@@ -319,7 +319,7 @@ TEST_F(PruneUnavailableSourcesRuleTest, UDTFOnAllAgentsFilterOnAgentUIDKeepAgent
 
   // Sub-plan 1 should not be deleted.
   auto udtf_src =
-      MakeUDTFSource(udtf_spec, {{"agent_uid", MakeString(carnot_info.query_broker_address())}});
+      MakeUDTFSource(udtf_spec, {{"agent_uid", MakeString(carnot_info.agent_id().data())}});
   auto grpc_sink = MakeGRPCSink(udtf_src, 123);
   auto udtf_src_id = udtf_src->id();
   auto grpc_sink_id = grpc_sink->id();

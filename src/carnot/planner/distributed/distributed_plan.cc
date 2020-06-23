@@ -17,8 +17,11 @@ StatusOr<distributedpb::DistributedPlan> DistributedPlan::ToProto() const {
                                                   carnot->id());
     DCHECK(carnot->plan()) << absl::Substitute("$0 doesn't have a plan set.",
                                                carnot->DebugString());
-    PL_ASSIGN_OR_RETURN((*qb_address_to_plan_pb)[carnot->QueryBrokerAddress()],
-                        carnot->PlanProto());
+    PL_ASSIGN_OR_RETURN(auto plan_proto, carnot->PlanProto());
+    for (int64_t parent_i : dag_.ParentsOf(i)) {
+      *(plan_proto.add_incoming_agent_ids()) = Get(parent_i)->carnot_info().agent_id();
+    }
+    (*qb_address_to_plan_pb)[carnot->QueryBrokerAddress()] = plan_proto;
     (*qb_address_to_dag_id_pb)[carnot->QueryBrokerAddress()] = i;
 
     auto plan_opts = (*qb_address_to_plan_pb)[carnot->QueryBrokerAddress()].mutable_plan_options();

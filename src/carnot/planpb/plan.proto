@@ -2,6 +2,7 @@ syntax = "proto3";
 import "google/protobuf/wrappers.proto";
 import "src/shared/types/proto/types.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/common/uuid/proto/uuid.proto";
 
 package pl.carnot.planpb;
 
@@ -32,6 +33,8 @@ message Plan {
   bool distributed = 3 [deprecated=true];
   // Options about how the plan should be executed.
   PlanOptions plan_options = 4;
+  // The incoming connections to this node.
+  repeated uuidpb.UUID incoming_agent_ids = 5 [ (gogoproto.customname) = "IncomingAgentIDs" ];
 }
 
 // Each plan fragment is a DAG represented in a format similar to an adjacency

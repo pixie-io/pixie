@@ -17,6 +17,7 @@
 #include "src/carnot/planner/rules/rules.h"
 #include "src/carnot/planner/test_utils.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
+#include "src/common/uuid/uuid_utils.h"
 
 namespace pl {
 namespace carnot {
@@ -325,11 +326,14 @@ TEST_F(StitcherTest, stitch_all_togther_with_udtf) {
   EXPECT_THAT(physical_plan->dag().TopologicalSort(), ElementsAre(1, 0));
   CarnotInstance* kelvin = physical_plan->Get(0);
 
-  std::string kelvin_qb_address = "kelvin";
-  ASSERT_EQ(kelvin->carnot_info().query_broker_address(), kelvin_qb_address);
+  std::string kelvin_id = "00000001-0000-0000-0000-000000000002";
+  ASSERT_EQ(ParseUUID(kelvin->carnot_info().agent_id()).ConsumeValueOrDie().str(), kelvin_id);
 
   CarnotInstance* pem = physical_plan->Get(1);
   ASSERT_EQ(pem->carnot_info().query_broker_address(), "pem");
+
+  std::string pem_id = "00000001-0000-0000-0000-000000000001";
+  ASSERT_EQ(ParseUUID(pem->carnot_info().agent_id()).ConsumeValueOrDie().str(), pem_id);
   {
     SCOPED_TRACE("stitch_all_together");
     TestBeforeSetSourceGroupGRPCAddress({kelvin, pem}, {kelvin});
