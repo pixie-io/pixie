@@ -15,6 +15,7 @@
 #include "src/shared/metadata/metadata.h"
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/messages/messagespb/messages.pb.h"
+#include "src/vizier/services/agent/manager/chan_cache.h"
 #include "src/vizier/services/agent/manager/relation_info_manager.h"
 
 #include "src/vizier/services/metadata/metadatapb/service.grpc.pb.h"
@@ -29,6 +30,16 @@ namespace agent {
  */
 constexpr int64_t kMetadataFilterMaxEntries = 10000;
 constexpr double kMetadataFilterMaxErrorRate = 0.01;
+
+/**
+ * The length of time to wait in between channel cache garbage collection events
+ */
+constexpr auto kChanCacheCleanupChansionPeriod = std::chrono::minutes(5);
+/**
+ * The length of time to allow a channel to be idle before we delete the channel. See more
+ * documentation in chan_cache.h.
+ */
+constexpr auto kChanIdleGracePeriod = std::chrono::minutes(1);
 
 /**
  * Info tracks basic information about and agent such as:
@@ -176,14 +187,20 @@ class Manager : public pl::NotCopyable {
   pl::event::TimerUPtr metadata_update_timer_;
 
   bool stop_called_ = false;
+
+  // The data structure recording the metadata stored on this agent.
+  std::unique_ptr<md::AgentMetadataFilter> agent_metadata_filter_;
+  // Chan caches active connections to other Agents. Methods are all threadsafe.
+  std::unique_ptr<ChanCache> chan_cache_;
+  // The timer that runs the garbage collection routine.
+  pl::event::TimerUPtr chan_cache_garbage_collect_timer_;
+
   // ************************************************************
   // Static constants used in this class
   // ************************************************************
 
   // Timeout for registration ACK.
   static constexpr std::chrono::seconds kRegistrationPeriod{30};
-
-  std::unique_ptr<md::AgentMetadataFilter> agent_metadata_filter_;
 };
 
 /**

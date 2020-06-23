@@ -13,6 +13,7 @@
 #include "src/common/perf/perf.h"
 #include "src/vizier/funcs/context/vizier_context.h"
 #include "src/vizier/funcs/funcs.h"
+#include "src/vizier/services/agent/manager/chan_cache.h"
 #include "src/vizier/services/agent/manager/exec.h"
 #include "src/vizier/services/agent/manager/heartbeat.h"
 #include "src/vizier/services/agent/manager/ssl.h"
@@ -67,10 +68,22 @@ Manager::Manager(sole::uuid agent_id, std::string_view pod_name, std::string_vie
                 std::move(func_registry), table_store_,
                 [&](const std::string& remote_addr)
                     -> std::unique_ptr<pl::carnotpb::KelvinService::StubInterface> {
+                  auto chan = chan_cache_->GetChan(remote_addr);
+                  if (chan != nullptr) {
+                    return pl::carnotpb::KelvinService::NewStub(chan);
+                  }
+
                   grpc::ChannelArguments args;
                   args.SetSslTargetNameOverride("kelvin.pl.svc");
+                  args.SetInt(GRPC_ARG_KEEPALIVE_TIME_MS, 100000);
+                  args.SetInt(GRPC_ARG_KEEPALIVE_TIMEOUT_MS, 100000);
+                  args.SetInt(GRPC_ARG_KEEPALIVE_PERMIT_WITHOUT_CALLS, 1);
+                  args.SetInt(GRPC_ARG_HTTP2_BDP_PROBE, 1);
+                  args.SetInt(GRPC_ARG_HTTP2_MIN_RECV_PING_INTERVAL_WITHOUT_DATA_MS, 50000);
+                  args.SetInt(GRPC_ARG_HTTP2_MIN_SENT_PING_INTERVAL_WITHOUT_DATA_MS, 100000);
 
-                  auto chan = grpc::CreateCustomChannel(remote_addr, grpc_channel_creds_, args);
+                  chan = grpc::CreateCustomChannel(remote_addr, grpc_channel_creds_, args);
+                  chan_cache_->Add(remote_addr, chan);
                   return pl::carnotpb::KelvinService::NewStub(chan);
                 },
                 grpc_server_port, SSL::DefaultGRPCServerCreds())
@@ -100,7 +113,7 @@ Status Manager::Init() {
       agent_metadata_filter_,
       md::AgentMetadataFilter::Create(kMetadataFilterMaxEntries, kMetadataFilterMaxErrorRate,
                                       md::AgentMetadataStateManager::MetadataFilterEntities()));
-
+  chan_cache_ = std::make_unique<ChanCache>(kChanIdleGracePeriod);
   auto hostname_or_s = GetHostname();
   if (!hostname_or_s.ok()) {
     return hostname_or_s.status();
@@ -180,6 +193,15 @@ Status Manager::RegisterBackgroundHelpers() {
     }
   });
   metadata_update_timer_->EnableTimer(std::chrono::seconds(5));
+
+  chan_cache_garbage_collect_timer_ = dispatcher_->CreateTimer([this]() {
+    VLOG(1) << "GRPC channel cache garbage collection";
+    ECHECK_OK(chan_cache_->CleanupChans());
+    if (metadata_update_timer_) {
+      chan_cache_garbage_collect_timer_->EnableTimer(kChanCacheCleanupChansionPeriod);
+    }
+  });
+  chan_cache_garbage_collect_timer_->EnableTimer(kChanCacheCleanupChansionPeriod);
 
   // Add Heartbeat and execute query handlers.
   auto heartbeat_handler = std::make_shared<HeartbeatMessageHandler>(
