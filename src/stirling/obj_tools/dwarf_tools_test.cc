@@ -16,7 +16,9 @@ namespace dwarf_tools {
 using ::pl::stirling::dwarf_tools::DwarfReader;
 using ::testing::ElementsAre;
 using ::testing::IsEmpty;
+using ::testing::Pair;
 using ::testing::SizeIs;
+using ::testing::UnorderedElementsAre;
 
 struct DwarfReaderTestParam {
   bool index;
@@ -124,10 +126,6 @@ TEST_P(DwarfReaderTest, GolangArgumentStackPointerOffset) {
   EXPECT_OK_AND_EQ(dwarf_reader->GetArgumentStackPointerOffset("main.Vertex.Abs", "v"), 0);
 }
 
-bool operator==(const FunctionArgLocation& a, const FunctionArgLocation& b) {
-  return a.name == b.name && a.offset == b.offset;
-}
-
 // Note the differences here and the results in CppArgumentStackPointerOffset.
 // This needs more investigation. Appears as though there are issues with alignment and
 // also the reference point of the offset.
@@ -137,11 +135,11 @@ TEST_P(DwarfReaderTest, CppFunctionArgOffsets) {
                        DwarfReader::Create(kCppBinaryPath, p.index));
 
   EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("SomeFunction"),
-                     ElementsAre(FunctionArgLocation{"x", 0}, FunctionArgLocation{"y", 12}));
+                     UnorderedElementsAre(Pair("x", 0), Pair("y", 12)));
   EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("CanYouFindThis"),
-                     ElementsAre(FunctionArgLocation{"a", 0}, FunctionArgLocation{"b", 4}));
+                     UnorderedElementsAre(Pair("a", 0), Pair("b", 4)));
   EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("SomeFunctionWithPointerArgs"),
-                     ElementsAre(FunctionArgLocation{"a", 0}, FunctionArgLocation{"x", 8}));
+                     UnorderedElementsAre(Pair("a", 0), Pair("x", 8)));
 }
 
 TEST_P(DwarfReaderTest, GoFunctionArgOffsets) {
@@ -152,12 +150,11 @@ TEST_P(DwarfReaderTest, GoFunctionArgOffsets) {
                          DwarfReader::Create(kGoBinaryPath, p.index));
 
     EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("main.(*Vertex).Scale"),
-                       ElementsAre(FunctionArgLocation{"v", 0}, FunctionArgLocation{"f", 8}));
+                       UnorderedElementsAre(Pair("v", 0), Pair("f", 8)));
     EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("main.(*Vertex).CrossScale"),
-                       ElementsAre(FunctionArgLocation{"v", 0}, FunctionArgLocation{"v2", 8},
-                                   FunctionArgLocation{"f", 24}));
+                       UnorderedElementsAre(Pair("v", 0), Pair("v2", 8), Pair("f", 24)));
     EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("main.Vertex.Abs"),
-                       ElementsAre(FunctionArgLocation{"v", 0}, FunctionArgLocation{"~r0", 16}));
+                       UnorderedElementsAre(Pair("v", 0), Pair("~r0", 16)));
   }
 
   {
@@ -168,9 +165,8 @@ TEST_P(DwarfReaderTest, GoFunctionArgOffsets) {
     //   error
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgOffsets("net/http.(*http2Framer).WriteDataPadded"),
-        ElementsAre(FunctionArgLocation{"f", 0}, FunctionArgLocation{"streamID", 8},
-                    FunctionArgLocation{"endStream", 12}, FunctionArgLocation{"data", 16},
-                    FunctionArgLocation{"pad", 40}, FunctionArgLocation{"~r4", 64}));
+        UnorderedElementsAre(Pair("f", 0), Pair("streamID", 8), Pair("endStream", 12),
+                             Pair("data", 16), Pair("pad", 40), Pair("~r4", 64)));
   }
 }
 
@@ -188,11 +184,11 @@ TEST_P(DwarfReaderTest, GoFunctionArgConsistency) {
   ASSERT_THAT(function_arg_locations, SizeIs(7));
 
   // Finally, run a consistency check between the two methods.
-  for (auto& arg : function_arg_locations) {
+  for (auto& [arg_name, arg_offset] : function_arg_locations) {
     ASSERT_OK_AND_ASSIGN(uint64_t offset, dwarf_reader->GetArgumentStackPointerOffset(
-                                              "main.MixedArgTypes", arg.name));
-    EXPECT_EQ(offset, arg.offset) << absl::Substitute("Argument $0 failed consistency check",
-                                                      arg.name);
+                                              "main.MixedArgTypes", arg_name));
+    EXPECT_EQ(offset, arg_offset) << absl::Substitute("Argument $0 failed consistency check",
+                                                      arg_name);
   }
 }
 

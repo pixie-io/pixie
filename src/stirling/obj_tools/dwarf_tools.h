@@ -5,6 +5,7 @@
 
 #include <absl/container/flat_hash_map.h>
 
+#include <map>
 #include <memory>
 #include <string>
 #include <utility>
@@ -15,11 +16,6 @@
 namespace pl {
 namespace stirling {
 namespace dwarf_tools {
-
-struct FunctionArgLocation {
-  std::string name;
-  uint64_t offset;
-};
 
 class DwarfReader {
  public:
@@ -88,7 +84,7 @@ class DwarfReader {
    * It is currently more robust for our uses cases, but eventually we should use the DW_AT_location
    * approach, which should be more generally robust (once we implement processing it correctly).
    */
-  StatusOr<std::vector<FunctionArgLocation>> GetFunctionArgOffsets(
+  StatusOr<std::map<std::string, uint64_t>> GetFunctionArgOffsets(
       std::string_view function_symbol_name);
 
   bool IsValid() { return dwarf_context_->getNumCompileUnits() != 0; }

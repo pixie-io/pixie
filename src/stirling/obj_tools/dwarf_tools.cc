@@ -224,13 +224,14 @@ StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
       return GetTypeByteSize(type_die);
     }
     case llvm::dwarf::DW_TAG_pointer_type:
+    case llvm::dwarf::DW_TAG_subroutine_type:
       return kAddressSize;
     case llvm::dwarf::DW_TAG_base_type:
     case llvm::dwarf::DW_TAG_structure_type:
       return GetBaseOrStructTypeByteSize(die);
     default:
-      return error::Internal(
-          absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
+      return error::Internal(absl::Substitute("GetTypeByteSize - Unexpected DIE type: $0",
+                                              magic_enum::enum_name(die.getTag())));
   }
 }
 
@@ -245,6 +246,7 @@ StatusOr<uint64_t> GetAlignmentByteSize(const DWARFDie& die) {
       return GetAlignmentByteSize(type_die);
     }
     case llvm::dwarf::DW_TAG_pointer_type:
+    case llvm::dwarf::DW_TAG_subroutine_type:
       return kAddressSize;
     case llvm::dwarf::DW_TAG_base_type:
       return GetBaseOrStructTypeByteSize(die);
@@ -282,7 +284,6 @@ StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view functio
   return error::Internal("Could not find argument.");
 }
 
-// TODO(oazizi): Consider refactoring portions in common with GetArgumentTypeByteSize().
 StatusOr<int64_t> DwarfReader::GetArgumentStackPointerOffset(std::string_view function_symbol_name,
                                                              std::string_view arg_name) {
   PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
@@ -342,9 +343,9 @@ uint64_t Align(uint64_t addr, uint64_t size) {
 }
 }  // namespace
 
-StatusOr<std::vector<FunctionArgLocation>> DwarfReader::GetFunctionArgOffsets(
+StatusOr<std::map<std::string, uint64_t>> DwarfReader::GetFunctionArgOffsets(
     std::string_view function_symbol_name) {
-  std::vector<FunctionArgLocation> arg_locations;
+  std::map<std::string, uint64_t> arg_locations;
   uint64_t current_offset = 0;
 
   PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
@@ -352,12 +353,13 @@ StatusOr<std::vector<FunctionArgLocation>> DwarfReader::GetFunctionArgOffsets(
 
   for (const auto& die : function_die.children()) {
     if (die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) {
+      VLOG(1) << die.getName(llvm::DINameKind::ShortName);
       PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
       PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
       PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
 
       current_offset = Align(current_offset, alignment_size);
-      arg_locations.push_back({die.getName(llvm::DINameKind::ShortName), current_offset});
+      arg_locations[die.getName(llvm::DINameKind::ShortName)] = current_offset;
       current_offset += type_size;
     }
   }

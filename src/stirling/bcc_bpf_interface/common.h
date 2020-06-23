@@ -113,6 +113,55 @@ struct conn_symaddrs_t {
   int64_t http_http2bufferedWriter;  // "go.itab.*net/http.http2bufferedWriter,io.Writer
   int64_t transport_bufWriter;  // "google.golang.org/grpc/internal/transport.bufWriter,io.Writer
 
+  // Argument offsets.
+  // Naming maintains golang style <library>_<function>_<argument>_offset
+
+  // Arguments of net/http.(*http2Framer).WriteDataPadded.
+  int32_t http2Framer_WriteDataPadded_f_offset;          // 8
+  int32_t http2Framer_WriteDataPadded_streamID_offset;   // 16
+  int32_t http2Framer_WriteDataPadded_endStream_offset;  // 20
+  int32_t http2Framer_WriteDataPadded_data_offset;       // 24
+
+  // Arguments of golang.org/x/net/http2.(*Framer).WriteDataPadded.
+  int32_t http2_WriteDataPadded_f_offset;          // 8
+  int32_t http2_WriteDataPadded_streamID_offset;   // 16
+  int32_t http2_WriteDataPadded_endStream_offset;  // 20
+  int32_t http2_WriteDataPadded_data_offset;       // 24
+
+  // Arguments of net/http.(*http2Framer).checkFrameOrder.
+  int32_t http2Framer_checkFrameOrder_fr_offset;  // 8
+  int32_t http2Framer_checkFrameOrder_f_offset;   // 16
+
+  // Arguments of golang.org/x/net/http2.(*Framer).checkFrameOrder.
+  int32_t http2_checkFrameOrder_fr_offset;  // 8
+  int32_t http2_checkFrameOrder_f_offset;   // 16
+
+  // Arguments of net/http.(*http2writeResHeaders).writeFrame.
+  int32_t writeFrame_w_offset;    // 8
+  int32_t writeFrame_ctx_offset;  // 16
+
+  // Arguments of golang.org/x/net/http2/hpack.(*Encoder).WriteField.
+  int32_t WriteField_e_offset;  // 8
+  int32_t WriteField_f_offset;  // 16
+
+  // Arguments of net/http.(*http2serverConn).processHeaders.
+  int32_t processHeaders_sc_offset;  // 8
+  int32_t processHeaders_f_offset;   // 16
+
+  // Arguments of google.golang.org/grpc/internal/transport.(*http2Server).operateHeaders.
+  int32_t http2Server_operateHeaders_t_offset;      // 8
+  int32_t http2Server_operateHeaders_frame_offset;  // 16
+
+  // Arguments of google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders.
+  int32_t http2Client_operateHeaders_t_offset;      // 8
+  int32_t http2Client_operateHeaders_frame_offset;  // 16
+
+  // Arguments of google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader.
+  int32_t writeHeader_l_offset;          // 8
+  int32_t writeHeader_streamID_offset;   // 16
+  int32_t writeHeader_endStream_offset;  // 20
+  int32_t writeHeader_hf_offset;         // 24
+
   // Struct member offsets.
   // Naming maintains golang style: <struct>_<member>_offset
   // Note: values in comments represent known offsets, in case we need to fall back.
@@ -181,7 +230,7 @@ struct conn_symaddrs_t {
   int32_t http2writeResHeaders_endStream_offset;  // 48
 
   // Members of net/http.http2MetaHeadersFrame.
-  int32_t http2MetaHeadersFrame_http2HeadersFrame_offset;  // 0;
+  int32_t http2MetaHeadersFrame_http2HeadersFrame_offset;  // 0
   int32_t http2MetaHeadersFrame_Fields_offset;             // 8
 
   // Members of net/http.http2Framer.

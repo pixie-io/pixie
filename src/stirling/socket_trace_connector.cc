@@ -348,74 +348,175 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   // because these multiple probes for multiple HTTP2/GRPC libraries. Even if a symbol for one
   // is missing it doesn't mean the other library's probes should not be deployed.
 
-#define GET_SYMADDR(symaddr, type, member)                                              \
+#define GET_MEMBER_OFFSET(symaddr, type, member)                                        \
   PL_ASSIGN_OR(symaddr, dwarf_reader->GetStructMemberOffset(type, member), __s__ = -1); \
   VLOG(1) << absl::Substitute(#symaddr " = $0", symaddr);
 
   // clang-format off
-  GET_SYMADDR(symaddrs->FD_Sysfd_offset,
-              "internal/poll.FD", "Sysfd");
-  GET_SYMADDR(symaddrs->tlsConn_conn_offset,
-              "crypto/tls.Conn", "conn");
-  GET_SYMADDR(symaddrs->syscallConn_conn_offset,
-              "google.golang.org/grpc/credentials/internal.syscallConn", "conn");
-  GET_SYMADDR(symaddrs->HeaderField_Name_offset,
-              "golang.org/x/net/http2/hpack.HeaderField", "Name");
-  GET_SYMADDR(symaddrs->HeaderField_Value_offset,
-              "golang.org/x/net/http2/hpack.HeaderField", "Value");
-  GET_SYMADDR(symaddrs->http2Server_conn_offset,
-              "google.golang.org/grpc/internal/transport.http2Server", "conn");
-  GET_SYMADDR(symaddrs->http2Client_conn_offset,
-              "google.golang.org/grpc/internal/transport.http2Client", "conn");
-  GET_SYMADDR(symaddrs->loopyWriter_framer_offset,
-              "google.golang.org/grpc/internal/transport.loopyWriter", "framer");
-  GET_SYMADDR(symaddrs->Framer_w_offset,
-              "golang.org/x/net/http2.Framer", "w");
-  GET_SYMADDR(symaddrs->MetaHeadersFrame_HeadersFrame_offset,
-              "golang.org/x/net/http2.MetaHeadersFrame", "HeadersFrame");
-  GET_SYMADDR(symaddrs->MetaHeadersFrame_Fields_offset,
-              "golang.org/x/net/http2.MetaHeadersFrame", "Fields");
-  GET_SYMADDR(symaddrs->HeadersFrame_FrameHeader_offset,
-              "golang.org/x/net/http2.HeadersFrame", "FrameHeader");
-  GET_SYMADDR(symaddrs->FrameHeader_Type_offset,
-              "golang.org/x/net/http2.FrameHeader", "Type");
-  GET_SYMADDR(symaddrs->FrameHeader_Flags_offset,
-              "golang.org/x/net/http2.FrameHeader", "Flags");
-  GET_SYMADDR(symaddrs->FrameHeader_StreamID_offset,
-              "golang.org/x/net/http2.FrameHeader", "StreamID");
-  GET_SYMADDR(symaddrs->DataFrame_data_offset,
-              "golang.org/x/net/http2.DataFrame", "data");
-  GET_SYMADDR(symaddrs->bufWriter_conn_offset,
-              "google.golang.org/grpc/internal/transport.bufWriter", "conn");
-  GET_SYMADDR(symaddrs->http2serverConn_conn_offset,
-              "net/http.http2serverConn", "conn");
-  GET_SYMADDR(symaddrs->http2serverConn_hpackEncoder_offset,
-              "net/http.http2serverConn", "hpackEncoder");
-  GET_SYMADDR(symaddrs->http2HeadersFrame_http2FrameHeader_offset,
-              "net/http.http2HeadersFrame", "http2FrameHeader");
-  GET_SYMADDR(symaddrs->http2FrameHeader_Type_offset,
-              "net/http.http2FrameHeader", "Type");
-  GET_SYMADDR(symaddrs->http2FrameHeader_Flags_offset,
-              "net/http.http2FrameHeader", "Flags");
-  GET_SYMADDR(symaddrs->http2FrameHeader_StreamID_offset,
-              "net/http.http2FrameHeader", "StreamID");
-  GET_SYMADDR(symaddrs->http2DataFrame_data_offset,
-              "net/http.http2DataFrame", "data");
-  GET_SYMADDR(symaddrs->http2writeResHeaders_streamID_offset,
-              "net/http.http2writeResHeaders", "streamID");
-  GET_SYMADDR(symaddrs->http2writeResHeaders_endStream_offset,
-              "net/http.http2writeResHeaders", "endStream");
-  GET_SYMADDR(symaddrs->http2MetaHeadersFrame_http2HeadersFrame_offset,
-              "net/http.http2MetaHeadersFrame", "http2HeadersFrame");
-  GET_SYMADDR(symaddrs->http2MetaHeadersFrame_Fields_offset,
-              "net/http.http2MetaHeadersFrame", "Fields");
-  GET_SYMADDR(symaddrs->http2Framer_w_offset,
-              "net/http.http2Framer", "w");
-  GET_SYMADDR(symaddrs->http2bufferedWriter_w_offset,
-              "net/http.http2bufferedWriter", "w");
+  GET_MEMBER_OFFSET(symaddrs->FD_Sysfd_offset,
+                    "internal/poll.FD", "Sysfd");
+  GET_MEMBER_OFFSET(symaddrs->tlsConn_conn_offset,
+                    "crypto/tls.Conn", "conn");
+  GET_MEMBER_OFFSET(symaddrs->syscallConn_conn_offset,
+                    "google.golang.org/grpc/credentials/internal.syscallConn", "conn");
+  GET_MEMBER_OFFSET(symaddrs->HeaderField_Name_offset,
+                    "golang.org/x/net/http2/hpack.HeaderField", "Name");
+  GET_MEMBER_OFFSET(symaddrs->HeaderField_Value_offset,
+                    "golang.org/x/net/http2/hpack.HeaderField", "Value");
+  GET_MEMBER_OFFSET(symaddrs->http2Server_conn_offset,
+                    "google.golang.org/grpc/internal/transport.http2Server", "conn");
+  GET_MEMBER_OFFSET(symaddrs->http2Client_conn_offset,
+                    "google.golang.org/grpc/internal/transport.http2Client", "conn");
+  GET_MEMBER_OFFSET(symaddrs->loopyWriter_framer_offset,
+                    "google.golang.org/grpc/internal/transport.loopyWriter", "framer");
+  GET_MEMBER_OFFSET(symaddrs->Framer_w_offset,
+                    "golang.org/x/net/http2.Framer", "w");
+  GET_MEMBER_OFFSET(symaddrs->MetaHeadersFrame_HeadersFrame_offset,
+                    "golang.org/x/net/http2.MetaHeadersFrame", "HeadersFrame");
+  GET_MEMBER_OFFSET(symaddrs->MetaHeadersFrame_Fields_offset,
+                    "golang.org/x/net/http2.MetaHeadersFrame", "Fields");
+  GET_MEMBER_OFFSET(symaddrs->HeadersFrame_FrameHeader_offset,
+                    "golang.org/x/net/http2.HeadersFrame", "FrameHeader");
+  GET_MEMBER_OFFSET(symaddrs->FrameHeader_Type_offset,
+                    "golang.org/x/net/http2.FrameHeader", "Type");
+  GET_MEMBER_OFFSET(symaddrs->FrameHeader_Flags_offset,
+                    "golang.org/x/net/http2.FrameHeader", "Flags");
+  GET_MEMBER_OFFSET(symaddrs->FrameHeader_StreamID_offset,
+                    "golang.org/x/net/http2.FrameHeader", "StreamID");
+  GET_MEMBER_OFFSET(symaddrs->DataFrame_data_offset,
+                    "golang.org/x/net/http2.DataFrame", "data");
+  GET_MEMBER_OFFSET(symaddrs->bufWriter_conn_offset,
+                    "google.golang.org/grpc/internal/transport.bufWriter", "conn");
+  GET_MEMBER_OFFSET(symaddrs->http2serverConn_conn_offset,
+                    "net/http.http2serverConn", "conn");
+  GET_MEMBER_OFFSET(symaddrs->http2serverConn_hpackEncoder_offset,
+                    "net/http.http2serverConn", "hpackEncoder");
+  GET_MEMBER_OFFSET(symaddrs->http2HeadersFrame_http2FrameHeader_offset,
+                    "net/http.http2HeadersFrame", "http2FrameHeader");
+  GET_MEMBER_OFFSET(symaddrs->http2FrameHeader_Type_offset,
+                    "net/http.http2FrameHeader", "Type");
+  GET_MEMBER_OFFSET(symaddrs->http2FrameHeader_Flags_offset,
+                    "net/http.http2FrameHeader", "Flags");
+  GET_MEMBER_OFFSET(symaddrs->http2FrameHeader_StreamID_offset,
+                    "net/http.http2FrameHeader", "StreamID");
+  GET_MEMBER_OFFSET(symaddrs->http2DataFrame_data_offset,
+                    "net/http.http2DataFrame", "data");
+  GET_MEMBER_OFFSET(symaddrs->http2writeResHeaders_streamID_offset,
+                    "net/http.http2writeResHeaders", "streamID");
+  GET_MEMBER_OFFSET(symaddrs->http2writeResHeaders_endStream_offset,
+                    "net/http.http2writeResHeaders", "endStream");
+  GET_MEMBER_OFFSET(symaddrs->http2MetaHeadersFrame_http2HeadersFrame_offset,
+                    "net/http.http2MetaHeadersFrame", "http2HeadersFrame");
+  GET_MEMBER_OFFSET(symaddrs->http2MetaHeadersFrame_Fields_offset,
+                    "net/http.http2MetaHeadersFrame", "Fields");
+  GET_MEMBER_OFFSET(symaddrs->http2Framer_w_offset,
+                    "net/http.http2Framer", "w");
+  GET_MEMBER_OFFSET(symaddrs->http2bufferedWriter_w_offset,
+                    "net/http.http2bufferedWriter", "w");
   // clang-format on
 
-#undef GET_SYMADDR
+#undef GET_MEMBER_OFFSET
+
+  // The information from DWARF assumes SP is 8 bytes larger than the SP
+  // we get from BPF code, so add the correction factor here.
+  constexpr int32_t kSPOffset = 8;
+  const std::map<std::string, uint64_t> kEmptyMap;
+
+#define GET_ARG_OFFSET(symaddr, fn_args_map, arg)                        \
+  {                                                                      \
+    auto it = fn_args_map.find(arg);                                     \
+    symaddr = (it != fn_args_map.end()) ? (it->second + kSPOffset) : -1; \
+    LOG(INFO) << absl::Substitute(#symaddr " = $0", symaddr);            \
+  }
+
+  // Arguments of net/http.(*http2Framer).WriteDataPadded.
+  {
+    constexpr std::string_view fn = "net/http.(*http2Framer).WriteDataPadded";
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap);
+    GET_ARG_OFFSET(symaddrs->http2Framer_WriteDataPadded_f_offset, args_map, "f");
+    GET_ARG_OFFSET(symaddrs->http2Framer_WriteDataPadded_streamID_offset, args_map, "streamID");
+    GET_ARG_OFFSET(symaddrs->http2Framer_WriteDataPadded_endStream_offset, args_map, "endStream");
+    GET_ARG_OFFSET(symaddrs->http2Framer_WriteDataPadded_data_offset, args_map, "data");
+  }
+
+  // Arguments of golang.org/x/net/http2.(*Framer).WriteDataPadded.
+  {
+    std::string_view fn = "golang.org/x/net/http2.(*Framer).WriteDataPadded";
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    GET_ARG_OFFSET(symaddrs->http2_WriteDataPadded_f_offset, args_map, "f");
+    GET_ARG_OFFSET(symaddrs->http2_WriteDataPadded_streamID_offset, args_map, "streamID");
+    GET_ARG_OFFSET(symaddrs->http2_WriteDataPadded_endStream_offset, args_map, "endStream");
+    GET_ARG_OFFSET(symaddrs->http2_WriteDataPadded_data_offset, args_map, "data");
+  }
+
+  // Arguments of net/http.(*http2Framer).checkFrameOrder.
+  {
+    std::string_view fn = "net/http.(*http2Framer).checkFrameOrder";
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    GET_ARG_OFFSET(symaddrs->http2Framer_checkFrameOrder_fr_offset, args_map, "fr");
+    GET_ARG_OFFSET(symaddrs->http2Framer_checkFrameOrder_f_offset, args_map, "f");
+  }
+
+  // Arguments of golang.org/x/net/http2.(*Framer).checkFrameOrder.
+  {
+    std::string_view fn = "golang.org/x/net/http2.(*Framer).checkFrameOrder";
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    GET_ARG_OFFSET(symaddrs->http2_checkFrameOrder_fr_offset, args_map, "fr");
+    GET_ARG_OFFSET(symaddrs->http2_checkFrameOrder_f_offset, args_map, "f");
+  }
+
+  // Arguments of net/http.(*http2writeResHeaders).writeFrame.
+  {
+    std::string_view fn = "net/http.(*http2writeResHeaders).writeFrame";
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), LOG(INFO) << __s__.msg();
+                 __s__ = kEmptyMap;);
+    GET_ARG_OFFSET(symaddrs->writeFrame_w_offset, args_map, "w");
+    GET_ARG_OFFSET(symaddrs->writeFrame_ctx_offset, args_map, "ctx");
+  }
+
+  // Arguments of golang.org/x/net/http2/hpack.(*Encoder).WriteField.
+  {
+    std::string_view fn = "golang.org/x/net/http2/hpack.(*Encoder).WriteField";
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    GET_ARG_OFFSET(symaddrs->WriteField_e_offset, args_map, "e");
+    GET_ARG_OFFSET(symaddrs->WriteField_f_offset, args_map, "f");
+  }
+
+  // Arguments of net/http.(*http2serverConn).processHeaders.
+  {
+    std::string_view fn = "net/http.(*http2serverConn).processHeaders";
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    GET_ARG_OFFSET(symaddrs->processHeaders_sc_offset, args_map, "sc");
+    GET_ARG_OFFSET(symaddrs->processHeaders_f_offset, args_map, "f");
+  }
+
+  // Arguments of google.golang.org/grpc/internal/transport.(*http2Server).operateHeaders.
+  {
+    std::string_view fn = "google.golang.org/grpc/internal/transport.(*http2Server).operateHeaders";
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    GET_ARG_OFFSET(symaddrs->http2Server_operateHeaders_t_offset, args_map, "t");
+    GET_ARG_OFFSET(symaddrs->http2Server_operateHeaders_frame_offset, args_map, "frame");
+  }
+
+  // Arguments of google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders.
+  {
+    std::string_view fn = "google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders";
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    GET_ARG_OFFSET(symaddrs->http2Client_operateHeaders_t_offset, args_map, "t");
+    GET_ARG_OFFSET(symaddrs->http2Client_operateHeaders_frame_offset, args_map, "frame");
+  }
+
+  // Arguments of google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader.
+  {
+    std::string_view fn = "google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader";
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    GET_ARG_OFFSET(symaddrs->writeHeader_l_offset, args_map, "l");
+    GET_ARG_OFFSET(symaddrs->writeHeader_streamID_offset, args_map, "streamID");
+    GET_ARG_OFFSET(symaddrs->writeHeader_endStream_offset, args_map, "endStream");
+    GET_ARG_OFFSET(symaddrs->writeHeader_hf_offset, args_map, "hf");
+  }
+
+#undef GET_ARG_OFFSET
 
   // List mandatory symaddrs here (symaddrs without which all probes become useless).
   // Returning an error will prevent the probes from deploying.
