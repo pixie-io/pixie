@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	cacheFlushPeriod = 1 * time.Second
-	cacheClearPeriod = 2 * time.Second
+	cacheFlushPeriod = 30 * time.Second
+	cacheClearPeriod = 1 * time.Minute
 )
 
 func init() {
