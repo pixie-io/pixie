@@ -305,8 +305,8 @@ nodes {
         column_types: FLOAT64
         column_names: "time_"
         column_names: "xmod10"
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
       }
     }
   }
@@ -728,11 +728,11 @@ nodes {
         column_names: "cpu1"
         column_names: "cpu2"
         column_names: "upid"
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
       }
     }
   }
@@ -1985,11 +1985,11 @@ nodes {
         column_names: "http_resp_latency_ns"
         column_names: "cpu0"
         column_names: "cpu1"
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
       }
     }
   }
@@ -2174,11 +2174,11 @@ nodes {
         column_names: "http_resp_latency_ns"
         column_names: "cpu0"
         column_names: "cpu1"
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
       }
     }
   }
@@ -2325,12 +2325,12 @@ nodes {
         column_names: "cpu0_x"
         column_names: "upid_x"
         column_names: "cpu1_x"
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
-        column_semantic_types: ST_UNSPECIFIED
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
+        column_semantic_types: ST_NONE
       }
     }
   }
@@ -2869,7 +2869,7 @@ TEST_F(CompilerTest, time_casting) {
   ASSERT_OK(col_type_or_s);
   // Time cast is currently a noop since Time is treated as a data type. We should move time to be a
   // semantic type and then update this test.
-  EXPECT_PTR_VAL_EQ(ValueType::Create(types::TIME64NS, types::ST_UNSPECIFIED),
+  EXPECT_PTR_VAL_EQ(ValueType::Create(types::TIME64NS, types::ST_NONE),
                     std::static_pointer_cast<ValueType>(col_type_or_s.ConsumeValueOrDie()));
 }
 

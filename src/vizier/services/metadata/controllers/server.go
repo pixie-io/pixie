@@ -53,9 +53,10 @@ func (s *Server) getSchemas() (*schemapb.Schema, error) {
 		columnPbs := make([]*schemapb.Relation_ColumnInfo, len(schema.Columns))
 		for j, column := range schema.Columns {
 			columnPbs[j] = &schemapb.Relation_ColumnInfo{
-				ColumnName: column.Name,
-				ColumnType: column.DataType,
-				ColumnDesc: column.Desc,
+				ColumnName:         column.Name,
+				ColumnType:         column.DataType,
+				ColumnDesc:         column.Desc,
+				ColumnSemanticType: column.SemanticType,
 			}
 		}
 		schemaPb := &schemapb.Relation{

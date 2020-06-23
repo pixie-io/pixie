@@ -65,11 +65,11 @@ class SemanticRuleRegistry {
    * SemanticRuleRegistry stores a set of semantic inference rules and provides functionality to
    * lookup a rule based on the input types to a udf/uda.
    *
-   * If there are ST_UNSPECIFIED semantic types in the rule then they are treated as a catch all
+   * If there are ST_NONE semantic types in the rule then they are treated as a catch all
    * (i.e. they will match any semantic type).
    *
    * If there are multiple matching rules, it will pick the most specific rule, i.e. the rule with
-   * the least number of ST_UNSPECIFIED types that matched other types as above.
+   * the least number of ST_NONE types that matched other types as above.
    */
   using ArgTypes = std::vector<types::SemanticType>;
   using TypeSet = std::vector<std::pair<ArgTypes, types::SemanticType>>;
@@ -124,7 +124,7 @@ class RegistryInfo {
    * @brief Resolves the semantic and data types of the UDF/UDA.
    *
    * If no semantic inference rule is found in the SemanticRuleRegistry, then
-   * ST_UNSPECIFIED is returned.
+   * ST_NONE is returned.
    * @param name name of udf/uda to resolve type for.
    * @param arg_types list of ValueTypes for each arg to the udf/uda.
    * @return A ValueType representing the type of the output of the udf/uda.

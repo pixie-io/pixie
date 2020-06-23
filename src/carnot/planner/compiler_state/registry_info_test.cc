@@ -120,19 +120,17 @@ TEST(RegistryInfo, semantic_types) {
       ValueType::Create(types::INT64, types::ST_BYTES));
   EXPECT_OK_AND_PTR_VAL_EQ(
       info.ResolveUDFType("uda1", {ValueType::Create(types::INT64, types::ST_UPID)}),
-      ValueType::Create(types::INT64, types::ST_UNSPECIFIED));
+      ValueType::Create(types::INT64, types::ST_NONE));
 }
 
 TEST(SemanticRuleRegistry, semantic_lookup) {
-  std::vector<types::SemanticType> arg_types1(
-      {types::ST_UNSPECIFIED, types::ST_UNSPECIFIED, types::ST_BYTES});
-  std::vector<types::SemanticType> arg_types2(
-      {types::ST_UPID, types::ST_UNSPECIFIED, types::ST_BYTES});
+  std::vector<types::SemanticType> arg_types1({types::ST_NONE, types::ST_NONE, types::ST_BYTES});
+  std::vector<types::SemanticType> arg_types2({types::ST_UPID, types::ST_NONE, types::ST_BYTES});
 
   std::vector<types::SemanticType> arg_types3(
       {types::ST_UPID, types::ST_SERVICE_NAME, types::ST_BYTES});
   std::vector<types::SemanticType> arg_types4(
-      {types::ST_UNSPECIFIED, types::ST_SERVICE_NAME, types::ST_BYTES});
+      {types::ST_NONE, types::ST_SERVICE_NAME, types::ST_BYTES});
 
   SemanticRuleRegistry map_;
   map_.Insert("test", arg_types1, types::ST_POD_NAME);

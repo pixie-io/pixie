@@ -29,10 +29,12 @@ schema {
   columns {
     name: "time_"
     data_type: TIME64NS
+    semantic_type: ST_NONE
   }
   columns {
     name: "count"
     data_type: INT64
+    semantic_type: ST_NONE
   }
 }
 schema {
@@ -40,10 +42,12 @@ schema {
   columns {
     name: "time_"
     data_type: TIME64NS
+    semantic_type: ST_NONE
   }
   columns {
     name: "gauge"
     data_type: FLOAT64
+    semantic_type: ST_NONE
   }
 })proto";
 
@@ -73,10 +77,12 @@ schema {
   columns {
     name: "time_"
     data_type: TIME64NS
+    semantic_type: ST_NONE
   }
   columns {
     name: "count"
     data_type: INT64
+    semantic_type: ST_NONE
   }
 }
 schema {
@@ -84,14 +90,17 @@ schema {
   columns {
     name: "time_"
     data_type: TIME64NS
+    semantic_type: ST_NONE
   }
   columns {
     name: "upid"
     data_type: UINT128
+    semantic_type: ST_NONE
   }
   columns {
     name: "count"
     data_type: INT64
+    semantic_type: ST_NONE
   }
   tabletized: true
   tabletization_key: "upid"

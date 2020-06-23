@@ -126,6 +126,7 @@ void Registry::ToProto(const UDTFDefinition& def, udfspb::UDTFSourceSpec* spec) 
     auto new_c = spec->mutable_relation()->add_columns();
     new_c->set_column_name(std::string(c.name()));
     new_c->set_column_type(c.type());
+    new_c->set_column_semantic_type(c.stype());
   }
 }
 

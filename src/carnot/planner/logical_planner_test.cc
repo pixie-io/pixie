@@ -230,6 +230,7 @@ constexpr char kMainFuncArgs[] = R"(
 args {
   data_type: STRING
   name: "foo"
+  semantic_type: ST_NONE
 }
 )";
 
@@ -282,14 +283,17 @@ fn_args_map {
     args {
       data_type: TIME64NS
       name: "start_time"
+      semantic_type: ST_NONE
     }
     args {
       data_type: TIME64NS
       name: "end_time"
+      semantic_type: ST_NONE
     }
     args {
       data_type: STRING
       name: "svc"
+      semantic_type: ST_NONE
     }
   }
 }
@@ -299,10 +303,12 @@ fn_args_map {
     args {
       data_type: INT64
       name: "a"
+      semantic_type: ST_NONE
     }
     args {
       data_type: FLOAT64
       name: "b"
+      semantic_type: ST_NONE
     }
   }
 })";

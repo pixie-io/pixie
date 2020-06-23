@@ -355,6 +355,7 @@ udtfs {
     columns {
       column_name: "out_str"
       column_type: STRING
+      column_semantic_type: ST_NONE
     }
   }
 }
@@ -385,7 +386,7 @@ scalar_udfs {
 semantic_type_rules {
   name: "scalar1"
   udf_exec_type: SCALAR_UDF
-  exec_arg_types: ST_UNSPECIFIED
+  exec_arg_types: ST_NONE
   exec_arg_types: ST_BYTES
   output_type: ST_BYTES
 }
@@ -520,7 +521,7 @@ udas {
 semantic_type_rules {
   name: "uda2"
   udf_exec_type: UDA
-  update_arg_types: ST_UNSPECIFIED
+  update_arg_types: ST_NONE
   update_arg_types: ST_BYTES
   output_type: ST_BYTES
 }

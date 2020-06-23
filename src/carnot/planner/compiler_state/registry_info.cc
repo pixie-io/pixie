@@ -34,7 +34,7 @@ StatusOr<types::SemanticType> RegistryInfo::ResolveUDFSubType<types::SemanticTyp
     std::string name, std::vector<types::SemanticType> arg_types) {
   auto type_or_s = semantic_rule_registry_.Lookup(name, arg_types);
   if (!type_or_s.ok()) {
-    return types::ST_UNSPECIFIED;
+    return types::ST_NONE;
   }
   return type_or_s.ConsumeValueOrDie();
 }
@@ -206,10 +206,10 @@ std::pair<bool, int> SemanticRuleRegistry::MatchesCandidateAtDist(
   }
   int dist = 0;
   for (const auto& [idx, candidate_type] : Enumerate(arg_types_candidate)) {
-    if (candidate_type != arg_types[idx] && candidate_type != types::ST_UNSPECIFIED) {
+    if (candidate_type != arg_types[idx] && candidate_type != types::ST_NONE) {
       return std::make_pair(false, 0);
     }
-    if (candidate_type != arg_types[idx] && candidate_type == types::ST_UNSPECIFIED) {
+    if (candidate_type != arg_types[idx] && candidate_type == types::ST_NONE) {
       dist++;
     }
   }

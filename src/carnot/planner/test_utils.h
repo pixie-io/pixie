@@ -40,14 +40,17 @@ relation_map {
     columns {
       column_name: "time_"
       column_type: TIME64NS
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "cpu_cycles"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "upid"
       column_type: UINT128
+      column_semantic_type: ST_NONE
     }
   }
 }
@@ -61,66 +64,82 @@ relation_map {
     columns {
       column_name: "time_"
       column_type: TIME64NS
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "upid"
       column_type: UINT128
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "remote_addr"
       column_type: STRING
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "remote_port"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "http_major_version"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "http_minor_version"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "http_content_type"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "http_req_headers"
       column_type: STRING
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "http_req_method"
       column_type: STRING
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "http_req_path"
       column_type: STRING
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "http_req_body"
       column_type: STRING
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "http_resp_headers"
       column_type: STRING
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "http_resp_status"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "http_resp_message"
       column_type: STRING
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "http_resp_body"
       column_type: STRING
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "http_resp_latency_ns"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
   }
 }
@@ -130,18 +149,22 @@ relation_map {
     columns {
       column_name: "count"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "cpu0"
       column_type: FLOAT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "cpu1"
       column_type: FLOAT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "cpu2"
       column_type: FLOAT64
+      column_semantic_type: ST_NONE
     }
   }
 }
@@ -154,50 +177,62 @@ relation_map {
     columns {
       column_name: "time_"
       column_type: TIME64NS
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "upid"
       column_type: UINT128
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "remote_addr"
       column_type: STRING
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "remote_port"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "protocol"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "role"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "conn_open"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "conn_close"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "conn_active"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "bytes_sent"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "bytes_recv"
       column_type: INT64
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "px_info_"
       column_type: STRING
+      column_semantic_type: ST_NONE
     }
   }
 }
@@ -888,6 +923,9 @@ qb_address_to_plan {
             column_names: "time_"
             column_names: "cpu_cycles"
             column_names: "upid"
+            column_semantic_types: ST_NONE
+            column_semantic_types: ST_NONE
+            column_semantic_types: ST_NONE
           }
         }
       }

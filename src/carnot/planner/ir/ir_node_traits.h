@@ -93,7 +93,7 @@ class ExpressionTraits {
                              std::nullptr_t> = nullptr>
   static auto ResolveType(TExprIR* inst, CompilerState* /* compiler_state */,
                           const std::vector<TypePtr>& /* parent_types */) {
-    auto type_ = ValueType::Create(inst->EvaluatedDataType(), types::ST_UNSPECIFIED);
+    auto type_ = ValueType::Create(inst->EvaluatedDataType(), types::ST_NONE);
     return inst->SetResolvedType(type_);
   }
 

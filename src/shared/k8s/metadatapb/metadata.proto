@@ -458,6 +458,7 @@ message SchemaInfo {
     pl.types.PatternType pattern_type = 3;
     // The description of this column.
     string desc = 4;
+    pl.types.SemanticType semantic_type = 5;
   }
   // The column info of the schema.
   repeated ColumnInfo columns = 4;

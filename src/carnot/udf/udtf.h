@@ -108,19 +108,25 @@ class ColInfo {
    */
   constexpr ColInfo(std::string_view name, types::DataType type, types::PatternType ptype,
                     std::string_view desc)
-      : name_(name), type_(type), ptype_(ptype), desc_(desc) {
+      : ColInfo(name, type, ptype, desc, types::ST_NONE) {}
+  constexpr ColInfo(std::string_view name, types::DataType type, types::PatternType ptype,
+                    std::string_view desc, types::SemanticType stype)
+      : name_(name), type_(type), ptype_(ptype), desc_(desc), stype_(stype) {
     for (auto c : name) {
       COMPILE_TIME_ASSERT(c != ' ', "Col name can't contain spaces");
     }
     COMPILE_TIME_ASSERT(type != types::DataType::DATA_TYPE_UNKNOWN, "Col type cannot be unknown");
     COMPILE_TIME_ASSERT(ptype != types::PatternType::UNSPECIFIED, "Pattern type must be specified");
     COMPILE_TIME_ASSERT(desc.size() != 0, "Description must be specified");
+    COMPILE_TIME_ASSERT(stype != types::SemanticType::ST_UNSPECIFIED,
+                        "Semantic type must not be ST_UNSPECIFIED");
   }
 
   constexpr const std::string_view name() const { return name_; }
   constexpr types::DataType type() const { return type_; }
   constexpr types::PatternType ptype() const { return ptype_; }
   constexpr const std::string_view desc() const { return desc_; }
+  constexpr types::SemanticType stype() const { return stype_; }
 
   std::string DebugString() const {
     return absl::Substitute("$0:$1:$2:$3", name(), magic_enum::enum_name(type()),
@@ -132,6 +138,7 @@ class ColInfo {
   const types::DataType type_;
   const types::PatternType ptype_;
   const std::string_view desc_;
+  const types::SemanticType stype_;
 };
 
 template <typename T>

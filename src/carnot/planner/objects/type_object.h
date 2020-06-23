@@ -35,7 +35,7 @@ class TypeObject : public QLObject {
   }
   static StatusOr<std::shared_ptr<TypeObject>> Create(types::DataType data_type,
                                                       ASTVisitor* ast_visitor) {
-    return Create(data_type, types::ST_UNSPECIFIED, ast_visitor);
+    return Create(data_type, types::ST_NONE, ast_visitor);
   }
   static StatusOr<std::shared_ptr<TypeObject>> Create(types::DataType data_type,
                                                       types::SemanticType semantic_type,

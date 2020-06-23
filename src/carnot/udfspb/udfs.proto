@@ -85,7 +85,7 @@ enum UDFExecType {
 message SemanticInferenceRule {
   string name = 1;
   UDFExecType udf_exec_type = 2;
-  // Note that for all arg types (init, update or exec), ST_UNSPECIFIED will match any semantic type.
+  // Note that for all arg types (init, update or exec), ST_NONE will match any semantic type.
   repeated pl.types.SemanticType init_arg_types = 3;
   // If this applies to a UDA then this will only have update_arg_types.
   // If it applies to a UDF then this will only have exec_arg_types.

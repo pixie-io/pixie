@@ -764,14 +764,17 @@ relation {
   columns {
     column_name: "time_"
     column_type: TIME64NS
+    column_semantic_type: ST_NONE
   }
   columns {
     column_name: "fd"
     column_type: INT64
+    column_semantic_type: ST_NONE
   }
   columns {
     column_name: "name"
     column_type: STRING
+    column_semantic_type: ST_NONE
   }
 }
 )proto";
@@ -788,10 +791,12 @@ relation {
   columns {
     column_name: "asid"
     column_type: INT64
+    column_semantic_type: ST_NONE
   }
   columns {
     column_name: "name"
     column_type: STRING
+    column_semantic_type: ST_NONE
   }
 }
 )proto";
@@ -803,10 +808,12 @@ relation {
   columns {
     column_name: "asid"
     column_type: INT64
+    column_semantic_type: ST_NONE
   }
   columns {
     column_name: "debug_state"
     column_type: STRING
+    column_semantic_type: ST_NONE
   }
 }
 )proto";
@@ -818,10 +825,12 @@ relation {
   columns {
     column_name: "service"
     column_type: STRING
+    column_semantic_type: ST_NONE
   }
   columns {
     column_name: "up_time"
     column_type: INT64
+    column_semantic_type: ST_NONE
   }
 }
 )proto";

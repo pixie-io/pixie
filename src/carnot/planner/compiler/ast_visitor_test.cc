@@ -1551,7 +1551,7 @@ TEST_F(ASTVisitorTest, get_main_func_arg_spec_info) {
 
   EXPECT_EQ(start_time_arg.name(), "start_time");
   EXPECT_EQ(start_time_arg.data_type(), types::TIME64NS);
-  EXPECT_EQ(start_time_arg.semantic_type(), types::SemanticType::ST_UNSPECIFIED);
+  EXPECT_EQ(start_time_arg.semantic_type(), types::SemanticType::ST_NONE);
   // EXPECT_FALSE(start_time_arg.has_default_value());
 }
 

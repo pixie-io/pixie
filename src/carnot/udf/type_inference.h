@@ -167,7 +167,7 @@ class InheritTypeFromArgs : public InferenceRule {
    * ```
    *  then this is saying that, if you pass a ST_SERVICE_NAME or ST_POD_NAME as the second argument
    * of this udf then it produces that same type in the output. For instance,
-   * CustomUDF::Exec(ST_UNSPECIFIED, ST_SERVICE_NAME) will have semantic type ST_SERVICE_NAME, even
+   * CustomUDF::Exec(ST_NONE, ST_SERVICE_NAME) will have semantic type ST_SERVICE_NAME, even
    * though the first arg is unspecified, since in creating the rule, the arg_indices were set to
    * {1}, meaning only the 2nd arg matters.
    */
@@ -187,7 +187,7 @@ class InheritTypeFromArgs : public InferenceRule {
         if (arg_indices.size() == 0 || arg_indices.contains(i)) {
           arg_types.push_back(type);
         } else {
-          arg_types.push_back(types::ST_UNSPECIFIED);
+          arg_types.push_back(types::ST_NONE);
         }
       }
       rules_.push_back(ExplicitRule::Create<TUDF>(type, arg_types));

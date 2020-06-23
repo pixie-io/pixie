@@ -34,7 +34,7 @@ TEST(TableType, basic) {
 
 TEST(TableType, from_relation) {
   auto rel = Relation({types::STRING, types::FLOAT64}, {"col1", "col2"},
-                      {types::ST_SERVICE_NAME, types::ST_UNSPECIFIED});
+                      {types::ST_SERVICE_NAME, types::ST_NONE});
   auto table = TableType::Create(rel);
   ASSERT_TRUE(table->HasColumn("col1"));
   ASSERT_TRUE(table->HasColumn("col2"));
@@ -42,13 +42,13 @@ TEST(TableType, from_relation) {
   auto col2_type = table->GetColumnType("col2").ValueOrDie();
   EXPECT_EQ(*ValueType::Create(types::STRING, types::ST_SERVICE_NAME),
             *std::static_pointer_cast<ValueType>(col1_type));
-  EXPECT_EQ(*ValueType::Create(types::FLOAT64, types::ST_UNSPECIFIED),
+  EXPECT_EQ(*ValueType::Create(types::FLOAT64, types::ST_NONE),
             *std::static_pointer_cast<ValueType>(col2_type));
 }
 
 TEST(TableType, to_relation) {
   auto rel = Relation({types::INT64, types::STRING}, {"col1", "col2"},
-                      {types::ST_UNSPECIFIED, types::ST_POD_NAME});
+                      {types::ST_NONE, types::ST_POD_NAME});
   auto table = TableType::Create(rel);
   auto rel2 = table->ToRelation().ValueOrDie();
   EXPECT_EQ(rel, rel2);
@@ -67,7 +67,7 @@ TEST(TableType, debug_string) {
 TEST(TableType, iterator) {
   auto table = TableType::Create();
   table->AddColumn("col1", ValueType::Create(types::STRING, types::ST_SERVICE_NAME));
-  table->AddColumn("col2", ValueType::Create(types::INT64, types::ST_UNSPECIFIED));
+  table->AddColumn("col2", ValueType::Create(types::INT64, types::ST_NONE));
   table->AddColumn("col3", ValueType::Create(types::UINT128, types::ST_UPID));
   EXPECT_TRUE(table->RemoveColumn("col2"));
   EXPECT_TRUE(table->RenameColumn("col3", "aaa"));

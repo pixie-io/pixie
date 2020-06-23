@@ -29,7 +29,7 @@ class TypeResolutionTest : public OperatorTests {
     rel_map->emplace("cpu", Relation({types::INT64, types::FLOAT64, types::FLOAT64, types::FLOAT64,
                                       types::UINT128, types::INT64},
                                      {"count", "cpu0", "cpu1", "cpu2", "upid", "bytes"},
-                                     {types::ST_UNSPECIFIED, types::ST_PERCENT, types::ST_PERCENT,
+                                     {types::ST_NONE, types::ST_PERCENT, types::ST_PERCENT,
                                       types::ST_PERCENT, types::ST_UPID, types::ST_BYTES}));
 
     compiler_state_ = std::make_unique<CompilerState>(std::move(rel_map), info_.get(), time_now);
@@ -130,8 +130,7 @@ TEST_F(TypeResolutionTest, agg_removes_semantics) {
   auto mem_src_type = std::static_pointer_cast<TableType>(mem_src->resolved_type());
   auto agg_type = std::static_pointer_cast<TableType>(agg->resolved_type());
 
-  EXPECT_TableHasColumnWithType(agg_type, "count",
-                                ValueType::Create(types::INT64, types::ST_UNSPECIFIED));
+  EXPECT_TableHasColumnWithType(agg_type, "count", ValueType::Create(types::INT64, types::ST_NONE));
   EXPECT_FALSE(agg_type->HasColumn("cpu0"));
   EXPECT_FALSE(agg_type->HasColumn("cpu1"));
   EXPECT_FALSE(agg_type->HasColumn("upid"));
@@ -168,7 +167,7 @@ TEST_F(TypeResolutionTest, map_removes_semantics) {
 
   auto map_type = std::static_pointer_cast<TableType>(map->resolved_type());
 
-  auto cpu_type_no_semantics = ValueType::Create(types::FLOAT64, types::ST_UNSPECIFIED);
+  auto cpu_type_no_semantics = ValueType::Create(types::FLOAT64, types::ST_NONE);
 
   // Addition of 2 percents doesn't have a registered semantic type output b/c it doesn't make
   // sense.
@@ -242,7 +241,7 @@ TEST_F(TypeResolutionTest, udtf_src) {
   udtf_spec.set_name("test_udtf");
   udtf_spec.set_executor(udfspb::UDTF_ALL_AGENTS);
   Relation rel({types::INT64, types::FLOAT64}, {"latency_ns", "cpu_usage"},
-               {types::ST_UNSPECIFIED, types::ST_PERCENT});
+               {types::ST_NONE, types::ST_PERCENT});
   EXPECT_OK(rel.ToProto(udtf_spec.mutable_relation()));
   auto udtf_src = MakeUDTFSource(udtf_spec, {}, {});
 
@@ -251,7 +250,7 @@ TEST_F(TypeResolutionTest, udtf_src) {
 
   auto udtf_type = std::static_pointer_cast<TableType>(udtf_src->resolved_type());
 
-  auto latency_type = ValueType::Create(types::INT64, types::ST_UNSPECIFIED);
+  auto latency_type = ValueType::Create(types::INT64, types::ST_NONE);
 
   EXPECT_TableHasColumnWithType(udtf_type, "cpu_usage", cpu_type_);
   EXPECT_TableHasColumnWithType(udtf_type, "latency_ns", latency_type);
@@ -267,7 +266,7 @@ TEST_F(TypeResolutionTest, func_ir_no_types) {
   EXPECT_TRUE(func_ir->is_type_resolved());
 
   auto func_type = std::static_pointer_cast<ValueType>(func_ir->resolved_type());
-  auto expected_type = ValueType::Create(types::FLOAT64, types::ST_UNSPECIFIED);
+  auto expected_type = ValueType::Create(types::FLOAT64, types::ST_NONE);
   EXPECT_EQ(*expected_type, *func_type);
 }
 
@@ -303,11 +302,11 @@ TEST_F(TypeResolutionTest, data_ir) {
   auto time_type = std::static_pointer_cast<ValueType>(time_ir->resolved_type());
   auto uint128_type = std::static_pointer_cast<ValueType>(uint128_ir->resolved_type());
 
-  EXPECT_EQ(*ValueType::Create(types::STRING, types::ST_UNSPECIFIED), *string_type);
-  EXPECT_EQ(*ValueType::Create(types::FLOAT64, types::ST_UNSPECIFIED), *float_type);
-  EXPECT_EQ(*ValueType::Create(types::INT64, types::ST_UNSPECIFIED), *int_type);
-  EXPECT_EQ(*ValueType::Create(types::TIME64NS, types::ST_UNSPECIFIED), *time_type);
-  EXPECT_EQ(*ValueType::Create(types::UINT128, types::ST_UNSPECIFIED), *uint128_type);
+  EXPECT_EQ(*ValueType::Create(types::STRING, types::ST_NONE), *string_type);
+  EXPECT_EQ(*ValueType::Create(types::FLOAT64, types::ST_NONE), *float_type);
+  EXPECT_EQ(*ValueType::Create(types::INT64, types::ST_NONE), *int_type);
+  EXPECT_EQ(*ValueType::Create(types::TIME64NS, types::ST_NONE), *time_type);
+  EXPECT_EQ(*ValueType::Create(types::UINT128, types::ST_NONE), *uint128_type);
 }
 
 }  // namespace planner

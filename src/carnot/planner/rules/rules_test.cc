@@ -2671,7 +2671,7 @@ TEST_F(RulesTest, PruneUnusedColumnsRule_updates_resolved_type) {
   auto new_src_table_type = std::static_pointer_cast<TableType>(mem_src->resolved_type());
   EXPECT_TRUE(new_src_table_type->HasColumn("cpu0"));
   EXPECT_FALSE(new_src_table_type->HasColumn("count"));
-  EXPECT_EQ(*ValueType::Create(types::FLOAT64, types::ST_UNSPECIFIED),
+  EXPECT_EQ(*ValueType::Create(types::FLOAT64, types::ST_NONE),
             *std::static_pointer_cast<ValueType>(
                 new_src_table_type->GetColumnType("cpu0").ConsumeValueOrDie()));
 
@@ -2682,7 +2682,7 @@ TEST_F(RulesTest, PruneUnusedColumnsRule_updates_resolved_type) {
 
   auto new_map_table_type = std::static_pointer_cast<TableType>(map->resolved_type());
   EXPECT_TRUE(new_map_table_type->HasColumn("cpu0_1"));
-  EXPECT_EQ(*ValueType::Create(types::DataType::FLOAT64, types::ST_UNSPECIFIED),
+  EXPECT_EQ(*ValueType::Create(types::DataType::FLOAT64, types::ST_NONE),
             *std::static_pointer_cast<ValueType>(
                 new_map_table_type->GetColumnType("cpu0_1").ConsumeValueOrDie()));
   EXPECT_FALSE(new_map_table_type->HasColumn("count_1"));
@@ -2717,11 +2717,11 @@ TEST_F(RulesTest, map_then_agg) {
 
   // Add gets rid of ST_PERCENT but not ST_BYTES
   EXPECT_TableHasColumnWithType(map_type, "cpu_sum",
-                                ValueType::Create(types::FLOAT64, types::ST_UNSPECIFIED))
+                                ValueType::Create(types::FLOAT64, types::ST_NONE))
       EXPECT_TableHasColumnWithType(map_type, "bytes_sum",
                                     ValueType::Create(types::INT64, types::ST_BYTES));
   EXPECT_TableHasColumnWithType(agg_type, "cpu_sum_mean",
-                                ValueType::Create(types::FLOAT64, types::ST_UNSPECIFIED));
+                                ValueType::Create(types::FLOAT64, types::ST_NONE));
   // Note that mean turns Int->Float.
   EXPECT_TableHasColumnWithType(agg_type, "bytes_sum_mean",
                                 ValueType::Create(types::FLOAT64, types::ST_BYTES));

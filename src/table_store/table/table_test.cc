@@ -453,10 +453,12 @@ relation {
   columns {
     column_name: "col1"
     column_type: FLOAT64
+    column_semantic_type: ST_NONE
   }
   columns {
     column_name: "col2"
     column_type: INT64
+    column_semantic_type: ST_NONE
   }
 }
 row_batches {

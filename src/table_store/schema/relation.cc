@@ -22,7 +22,7 @@ Relation::Relation(ColTypeArray col_types, ColNameArray col_names)
 
 Relation::Relation(ColTypeArray col_types, ColNameArray col_names, ColDescArray col_desc)
     : Relation(col_types, col_names, col_desc,
-               ColSemanticTypeArray(col_types.size(), types::ST_UNSPECIFIED)) {}
+               ColSemanticTypeArray(col_types.size(), types::ST_NONE)) {}
 
 Relation::Relation(ColTypeArray col_types, ColNameArray col_names,
                    ColSemanticTypeArray col_semantic_types)
@@ -50,7 +50,7 @@ size_t Relation::NumColumns() const { return col_types_.size(); }
 
 void Relation::AddColumn(const types::DataType& col_type, const std::string& col_name,
                          std::string_view col_desc) {
-  AddColumn(col_type, col_name, types::SemanticType::ST_UNSPECIFIED, col_desc);
+  AddColumn(col_type, col_name, types::SemanticType::ST_NONE, col_desc);
 }
 
 void Relation::AddColumn(const types::DataType& col_type, const std::string& col_name,

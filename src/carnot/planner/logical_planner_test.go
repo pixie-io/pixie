@@ -27,14 +27,17 @@ schema {
       columns {
         column_name: "time_"
         column_type: TIME64NS
+      	column_semantic_type: ST_NONE
       }
       columns {
         column_name: "cpu_cycles"
         column_type: INT64
+      	column_semantic_type: ST_NONE
       }
       columns {
         column_name: "upid"
         column_type: UINT128
+      	column_semantic_type: ST_NONE
       }
     }
   }
@@ -228,6 +231,7 @@ const mainFuncArgsPBStr = `
 	args {
 		data_type: STRING
 		name: "foo"
+    semantic_type: ST_NONE
 	}
 `
 
@@ -328,14 +332,17 @@ fn_args_map {
     args {
       data_type: TIME64NS
       name: "start_time"
+    	semantic_type: ST_NONE
     }
     args {
       data_type: TIME64NS
       name: "end_time"
+    	semantic_type: ST_NONE
     }
     args {
       data_type: STRING
       name: "svc"
+   		semantic_type: ST_NONE
     }
   }
 }
@@ -345,10 +352,12 @@ fn_args_map {
     args {
       data_type: INT64
 			name: "a"
+    	semantic_type: ST_NONE
     }
     args {
       data_type: FLOAT64
       name: "b"
+    	semantic_type: ST_NONE
     }
   }
 }

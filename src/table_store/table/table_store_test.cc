@@ -83,10 +83,12 @@ relation_map {
     columns {
       column_name: "table1col1"
       column_type: BOOLEAN
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "table1col2"
       column_type: FLOAT64
+      column_semantic_type: ST_NONE
     }
   }
 }
@@ -96,10 +98,12 @@ relation_map {
     columns {
       column_name: "table1col1"
       column_type: BOOLEAN
+      column_semantic_type: ST_NONE
     }
     columns {
       column_name: "table1col2"
       column_type: FLOAT64
+      column_semantic_type: ST_NONE
     }
   }
 }
