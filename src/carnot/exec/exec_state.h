@@ -76,9 +76,16 @@ class ExecState {
   }
 
   // This function returns a stub to the Kelvin GRPC Service.
-  std::unique_ptr<carnotpb::KelvinService::StubInterface> KelvinServiceStub(
-      const std::string& remote_address) {
-    return stub_generator_(remote_address);
+  carnotpb::KelvinService::StubInterface* KelvinServiceStub(const std::string& remote_address) {
+    if (kelvin_stub_map_.contains(remote_address)) {
+      return kelvin_stub_map_[remote_address];
+    }
+    std::unique_ptr<carnotpb::KelvinService::StubInterface> stub_ = stub_generator_(remote_address);
+    carnotpb::KelvinService::StubInterface* raw = stub_.get();
+    kelvin_stub_map_[remote_address] = raw;
+    // Push to the pool.
+    kelvin_stubs_pool_.push_back(std::move(stub_));
+    return raw;
   }
 
   udf::ScalarUDFDefinition* GetScalarUDFDefinition(int64_t id) { return id_to_scalar_udf_map_[id]; }
@@ -121,6 +128,11 @@ class ExecState {
 
   GRPCRouter* grpc_router() { return grpc_router_; }
 
+  const absl::flat_hash_map<std::string, carnotpb::KelvinService::StubInterface*>& OutgoingServers()
+      const {
+    return kelvin_stub_map_;
+  }
+
  private:
   udf::Registry* func_registry_;
   std::shared_ptr<table_store::TableStore> table_store_;
@@ -134,6 +146,10 @@ class ExecState {
   int64_t current_source_ = 0;
   bool current_source_set_ = false;
   std::map<int64_t, bool> source_id_to_keep_running_map_;
+
+  std::vector<std::unique_ptr<carnotpb::KelvinService::StubInterface>> kelvin_stubs_pool_;
+  // Mapping of remote address to stub that serves that address.
+  absl::flat_hash_map<std::string, carnotpb::KelvinService::StubInterface*> kelvin_stub_map_;
 };
 
 }  // namespace exec

@@ -34,6 +34,8 @@ struct CarnotQueryResult {
   int64_t exec_time_ns = 0;
 };
 
+constexpr auto kRPCResultTimeout = std::chrono::seconds(2);
+
 class Carnot : public NotCopyable {
  public:
   static StatusOr<std::unique_ptr<Carnot>> Create(

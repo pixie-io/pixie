@@ -88,6 +88,8 @@ class CarnotImpl final : public Carnot {
     return agent_md_callback_();
   }
 
+  bool HasGRPCServer() { return grpc_server_ != nullptr; }
+
   void GRPCServerFunc();
 
   /**
@@ -256,6 +258,32 @@ void CarnotImpl::GRPCServerFunc() {
   grpc_server_->Wait();
 }
 
+Status SendDoneToOutgoingConns(
+    const sole::uuid& agent_id, const sole::uuid& query_id,
+    const absl::flat_hash_map<std::string, carnotpb::KelvinService::StubInterface*>&
+        outgoing_servers,
+    const std::vector<queryresultspb::AgentExecutionStats>& all_agent_stats) {
+  // Only run this if there are outgoing_servers.
+  if (outgoing_servers.size()) {
+    ::pl::carnotpb::DoneRequest done_req;
+    ToProto(agent_id, done_req.mutable_agent_id());
+    ToProto(query_id, done_req.mutable_query_id());
+    for (const auto& agent_stats : all_agent_stats) {
+      *(done_req.add_agent_execution_stats()) = agent_stats;
+    }
+    for (const auto& [addr, server] : outgoing_servers) {
+      ::pl::carnotpb::DoneResponse done_resp;
+      grpc::ClientContext context;
+      context.set_deadline(std::chrono::system_clock::now() + kRPCResultTimeout);
+      auto status = server->Done(&context, done_req, &done_resp);
+      if (!status.ok()) {
+        LOG(ERROR) << status.error_message() << "resp " << done_resp.DebugString();
+      }
+    }
+  }
+  return Status::OK();
+}
+
 StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_plan,
                                                     const sole::uuid& query_id, bool analyze) {
   auto timer = ElapsedTimer();
@@ -333,6 +361,19 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
   }
   timer.Stop();
   int64_t exec_time_ns = timer.ElapsedTime_us() * 1000;
+  std::vector<queryresultspb::AgentExecutionStats> all_agent_stats;
+  if (HasGRPCServer() && analyze) {
+    PL_ASSIGN_OR_RETURN(all_agent_stats,
+                        grpc_router_->GetIncomingWorkerExecStats(query_id, incoming_agents));
+  }
+
+  agent_operator_exec_stats.set_execution_time_ns(exec_time_ns);
+  agent_operator_exec_stats.set_bytes_processed(bytes_processed);
+  agent_operator_exec_stats.set_records_processed(rows_processed);
+  all_agent_stats.push_back(agent_operator_exec_stats);
+
+  PL_RETURN_IF_ERROR(
+      SendDoneToOutgoingConns(agent_id_, query_id, exec_state->OutgoingServers(), all_agent_stats));
 
   std::vector<table_store::Table*> output_tables;
   output_tables.reserve(output_table_strs.size());
@@ -352,9 +393,8 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
   // Compile time is not set for ExecutePlan.
   int64_t compile_time_ns = 0;
   // Get the output table names from the plan.
-  return CarnotQueryResult{output_tables,  output_table_names, {agent_operator_exec_stats},
-                           rows_processed, bytes_processed,    compile_time_ns,
-                           exec_time_ns};
+  return CarnotQueryResult{output_tables,   output_table_names, all_agent_stats, rows_processed,
+                           bytes_processed, compile_time_ns,    exec_time_ns};
 }
 
 CarnotImpl::~CarnotImpl() {

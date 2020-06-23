@@ -53,6 +53,37 @@ Status GRPCRouter::EnqueueRowBatch(sole::uuid query_id,
   return ::grpc::Status::OK;
 }
 
+::grpc::Status GRPCRouter::Done(::grpc::ServerContext*, const ::pl::carnotpb::DoneRequest* req,
+                                ::pl::carnotpb::DoneResponse* resp) {
+  auto query_id = pl::ParseUUID(req->query_id()).ConsumeValueOrDie();
+  auto s = RecordStats(query_id, req);
+  if (!s.ok()) {
+    return ::grpc::Status(grpc::StatusCode::INTERNAL,
+                          absl::Substitute("Failed to record stats w/ err: $0", s.msg()));
+  }
+  resp->set_success(true);
+  return ::grpc::Status::OK;
+}
+
+Status GRPCRouter::RecordStats(const sole::uuid& query_id,
+                               const ::pl::carnotpb::DoneRequest* resp) {
+  absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
+  auto it = query_node_map_.find(query_id);
+  if (it == query_node_map_.end()) {
+    return error::Internal("No query ID $0 found in the GRPCRouter");
+  }
+  auto tracker = &it->second;
+  for (const auto& agent : resp->agent_execution_stats()) {
+    auto agent_id = pl::ParseUUID(agent.agent_id()).ConsumeValueOrDie();
+    // There are some cases where we get duplicate exec stats.
+    if (tracker->seen_agents.contains(agent_id)) {
+      continue;
+    }
+    tracker->agent_exec_stats.push_back(agent);
+  }
+  return Status::OK();
+}
+
 Status GRPCRouter::AddGRPCSourceNode(sole::uuid query_id, int64_t source_id,
                                      GRPCSourceNode* source_node,
                                      std::function<void()> restart_execution) {
@@ -72,6 +103,25 @@ Status GRPCRouter::AddGRPCSourceNode(sole::uuid query_id, int64_t source_id,
     snt->response_backlog.clear();
   }
   return Status::OK();
+}
+
+StatusOr<std::vector<queryresultspb::AgentExecutionStats>> GRPCRouter::GetIncomingWorkerExecStats(
+    const sole::uuid& query_id, const std::vector<uuidpb::UUID>& expected_agent_ids) {
+  std::vector<queryresultspb::AgentExecutionStats> agent_exec_stats;
+  {
+    absl::base_internal::SpinLockHolder lock(&query_node_map_lock_);
+    auto it = query_node_map_.find(query_id);
+    if (it == query_node_map_.end()) {
+      return error::Internal("No query ID $0 found in the GRPCRouter");
+    }
+    auto tracker = &it->second;
+    agent_exec_stats = tracker->agent_exec_stats;
+    if (agent_exec_stats.size() != expected_agent_ids.size()) {
+      LOG(ERROR) << absl::Substitute("Agent ids are not the same size. Got $0 and expected $1",
+                                     agent_exec_stats.size(), expected_agent_ids.size());
+    }
+  }
+  return agent_exec_stats;
 }
 
 Status GRPCRouter::DeleteGRPCSourceNode(sole::uuid query_id, int64_t source_id) {

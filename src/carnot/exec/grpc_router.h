@@ -9,6 +9,7 @@
 #include <absl/base/internal/spinlock.h>
 #include <absl/base/thread_annotations.h>
 #include <absl/container/flat_hash_map.h>
+#include <absl/container/flat_hash_set.h>
 #include <absl/container/node_hash_map.h>
 #include <absl/hash/hash.h>
 #include <grpcpp/grpcpp.h>
@@ -38,6 +39,19 @@ class GRPCRouter final : public carnotpb::KelvinService::Service {
   ::grpc::Status TransferRowBatch(::grpc::ServerContext* context,
                                   ::grpc::ServerReader<::pl::carnotpb::RowBatchRequest>* reader,
                                   ::pl::carnotpb::RowBatchResponse* response) override;
+
+  /**
+   * @brief Done implements the RPC method to control sending over misc. messages after execution is
+   * done. Currently used to send over exec stats.
+   *
+   * @param context
+   * @param request
+   * @param response
+   * @return ::grpc::Status
+   */
+  ::grpc::Status Done(::grpc::ServerContext* context, const ::pl::carnotpb::DoneRequest* request,
+                      ::pl::carnotpb::DoneResponse* response) override;
+
   /**
    * Adds the specified source node to the router. Includes a function that should be called to
    * retrigger execution of the graph if currently yielded.
@@ -57,6 +71,24 @@ class GRPCRouter final : public carnotpb::KelvinService::Service {
    * @param query_id
    */
   Status DeleteGRPCSourceNode(sole::uuid query_id, int64_t source_id);
+
+  /**
+   * @brief Get the Exec stats from the agents that are clients to this GRPC and the query_id.
+   *
+   * @param query_id
+   * @return StatusOr<std::vector<queryresultspb::AgentExecutionStats>>
+   */
+  StatusOr<std::vector<queryresultspb::AgentExecutionStats>> GetIncomingWorkerExecStats(
+      const sole::uuid& query_id, const std::vector<uuidpb::UUID>& expected_agent_ids);
+
+  /**
+   * @brief Records the execution statistics from the passed in request.
+   *
+   * @param query_id the query_id which to record the statistics.
+   * @param req the request holding the exec stats.
+   * @return Status
+   */
+  Status RecordStats(const sole::uuid& query_id, const ::pl::carnotpb::DoneRequest* req);
 
  private:
   Status EnqueueRowBatch(sole::uuid query_id, std::unique_ptr<carnotpb::RowBatchRequest> req);
@@ -81,6 +113,10 @@ class GRPCRouter final : public carnotpb::KelvinService::Service {
     absl::node_hash_map<int64_t, SourceNodeTracker> source_node_trackers;
     std::chrono::steady_clock::time_point create_time;
     std::function<void()> restart_execution_func_;
+    // The set of agents we've seen for the query.
+    absl::flat_hash_set<sole::uuid> seen_agents;
+    // The execution stats for agents that are clients to this service.
+    std::vector<queryresultspb::AgentExecutionStats> agent_exec_stats;
   };
 
   // TODO(zasgar/michelle): We should periodically delete stale queries as part of garbage

@@ -41,7 +41,7 @@ class GRPCSinkNode : public SinkNode {
   grpc::ClientContext context_;
   carnotpb::RowBatchResponse response_;
 
-  std::unique_ptr<carnotpb::KelvinService::StubInterface> stub_;
+  carnotpb::KelvinService::StubInterface* stub_;
   std::unique_ptr<grpc::ClientWriterInterface<carnotpb::RowBatchRequest>> writer_;
 
   std::unique_ptr<plan::GRPCSinkOperator> plan_node_;
