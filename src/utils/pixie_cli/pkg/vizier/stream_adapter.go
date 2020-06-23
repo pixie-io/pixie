@@ -59,6 +59,8 @@ type VizierStreamOutputAdapter struct {
 	// Internally used functions.
 	redSprintf    func(format string, a ...interface{}) string
 	yellowSprintf func(format string, a ...interface{}) string
+
+	totalBytes int
 }
 
 var (
@@ -184,6 +186,7 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 				v.err = newScriptExecutionError(CodeUnknown, "Got empty response")
 				return
 			}
+			v.totalBytes += msg.Resp.Size()
 			var err error
 			switch res := msg.Resp.Result.(type) {
 			case *pl_api_vizierpb.ExecuteScriptResponse_MetaData:
@@ -199,6 +202,11 @@ func (v *VizierStreamOutputAdapter) handleStream(ctx context.Context, stream cha
 			}
 		}
 	}
+}
+
+// TotalBytes returns the total bytes of messages passed to this adapter.
+func (v *VizierStreamOutputAdapter) TotalBytes() int {
+	return v.totalBytes
 }
 
 // getNumRows returns the number of rows in the input column.
