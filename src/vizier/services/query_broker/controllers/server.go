@@ -18,6 +18,7 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
+	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 
 	logicalplanner "pixielabs.ai/pixielabs/src/carnot/planner"
@@ -337,8 +338,11 @@ func annotateResultWithSemanticTypes(result *queryresultspb.QueryResult, planMap
 	for _, table := range result.Tables {
 		memSinkOp, ok := memSinks[table.Name]
 		if !ok {
-			return fmt.Errorf("Table '%s' has no corresponding MemSinkOp",
-				table.Name)
+			for _, col := range table.Relation.Columns {
+				col.ColumnSemanticType = typespb.ST_NONE
+			}
+			log.Infof("Table '%s' has no corresponding MemSinkOp", table.Name)
+			return nil
 		}
 		for i, col := range table.Relation.Columns {
 			col.ColumnSemanticType = memSinkOp.ColumnSemanticTypes[i]
