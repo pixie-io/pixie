@@ -75,12 +75,14 @@ const useStyles = makeStyles((theme: Theme) => {
       textAlign: 'center',
     },
     key: {
+      ...theme.typography.caption,
       textAlign: 'left',
       textOverflow: 'ellipsis',
       overflow: 'hidden',
       whiteSpace: 'nowrap',
     },
     val: {
+      ...theme.typography.caption,
       textAlign: 'right',
     },
     gridGap: {
