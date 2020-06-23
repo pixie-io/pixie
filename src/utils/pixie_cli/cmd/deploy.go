@@ -287,7 +287,11 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		defer deleteDeployKey(cloudAddr, uuid.FromStringOrNil(deployKeyID))
 	}
 
-	kubeConfig := k8s.GetConfig()
+	var kubeConfig *rest.Config
+	kubeConfig = nil
+	if extractPath == "" { // Only require kubeconfig when directly deploying from CLI.
+		kubeConfig = k8s.GetConfig()
+	}
 
 	fmt.Printf("Generating YAMLs for Pixie\n")
 
@@ -327,12 +331,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		yamlMap[fmt.Sprintf("./pixie_yamls/01_secrets/%02d_secret.yaml", yamlIdx)] = dYaml
 		yamlIdx++
 
-		kConfig := kubeConfig
-		if extractPath != "" {
-			kConfig = nil
-		}
-
-		csYAMLs, err := GenerateClusterSecretYAMLs(cloudAddr, deployKey, namespace, devCloudNS, kConfig, getSentryDSN(versionString), inputVersionStr, useEtcdOperator)
+		csYAMLs, err := GenerateClusterSecretYAMLs(cloudAddr, deployKey, namespace, devCloudNS, kubeConfig, getSentryDSN(versionString), inputVersionStr, useEtcdOperator)
 		if err != nil {
 			return err
 		}
