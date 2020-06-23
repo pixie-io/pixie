@@ -204,7 +204,10 @@ const Vega = React.memo((props: VegaProps) => {
     if (!currentView) {
       return;
     }
-    currentView.signal(EXTERNAL_TS_DOMAIN_SIGNAL, externalTSDomain);
+    if (externalTSDomain && externalTSDomain.length === 2 &&
+      !isNaN(externalTSDomain[0]) && !isNaN(externalTSDomain[1])) {
+      currentView.signal(EXTERNAL_TS_DOMAIN_SIGNAL, externalTSDomain);
+    }
     updateView();
   }, [externalTSDomain, currentView]);
 
