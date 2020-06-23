@@ -39,6 +39,53 @@ def inbound_service_let(start_time: str, namespace: px.Namespace):
     @namespace: The namespace to filter on.
 
     '''
+    df = inbound_service_let_helper(start_time, namespace, ['timestamp', 'service'])
+
+    window_size = 1.0 * window_s
+    df.requests_per_s = df.throughput_total / window_size
+    df.bytes_per_s = df.bytes_total / window_size
+    df.time_ = df.timestamp
+
+    return df[['time_', 'service', 'latency_p50', 'latency_p90',
+               'latency_p99', 'requests_per_s', 'error_rate_pct', 'bytes_per_s']]
+
+
+def inbound_let_summary(start_time: str, namespace: px.Namespace):
+    ''' Compute a summary of traffic by requesting service, for requests on services in `namespace`.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @namespace: The namespace to filter on.
+
+    '''
+    df = inbound_service_let_helper(start_time, namespace, ['timestamp', 'service', 'remote_addr'])
+    df = df[df.remote_addr != '']
+    df.responder = df.service
+    df.requestor = px.pod_id_to_service_name(px.ip_to_pod_id(df.remote_addr))
+
+    window_size = 1.0 * window_s
+    df.requests_per_s = df.throughput_total / window_size
+    df.bytes_per_s = df.bytes_total / window_size
+
+    return df.groupby(['requestor', 'responder']).agg(
+        latency_p50=('latency_p50', px.mean),
+        latency_p90=('latency_p90', px.mean),
+        latency_p99=('latency_p99', px.mean),
+        requests_per_s=('requests_per_s', px.mean),
+        error_rate_pct=('error_rate_pct', px.mean),
+        bytes_per_s=('bytes_per_s', px.mean)
+    )
+
+
+def inbound_service_let_helper(start_time: str, namespace: px.Namespace, groupby_cols):
+    ''' Compute the let as a timeseries for requests received or by services in `namespace`.
+
+    Args:
+    @start_time: The timestamp of data to start at.
+    @namespace: The namespace to filter on.
+    @groupby_cols: The columns to group on.
+
+    '''
     df = px.DataFrame(table='http_events', start_time=start_time)
     df.service = df.ctx['service']
     df = df[df.ctx['namespace'] == namespace and df.service != '']
@@ -57,48 +104,15 @@ def inbound_service_let(start_time: str, namespace: px.Namespace):
     # Each edge starts at a requester ('remote_addr') and ends at a
     # responder service.
 
-    df = df.groupby(['remote_addr', 'service', 'timestamp']).agg(
+    df = df.groupby(groupby_cols).agg(
         latency_quantiles=('latency_ms', px.quantiles),
-        error_rate_per_window=('failure', px.mean),
+        error_rate=('failure', px.mean),
         throughput_total=('latency_ms', px.count),
         bytes_total=('resp_size', px.sum)
     )
 
-    df.requestor = px.pod_id_to_service_name(px.ip_to_pod_id(df.remote_addr))
-    df.responder = df.service
-
-    # Format the result of LET aggregates into proper scalar formats and
-    # time series.
-    window_size = window_s * 1.0
     df.latency_p50 = px.pluck_float64(df.latency_quantiles, 'p50')
     df.latency_p90 = px.pluck_float64(df.latency_quantiles, 'p90')
     df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
-    df.requests_per_s = df.throughput_total / window_size
-    df.error_rate_pct = df.error_rate_per_window * 100
-    df.bytes_per_s = df.bytes_total / window_size
-    df.time_ = df.timestamp
-
-    return df[['time_', 'requestor', 'responder', 'latency_p50', 'latency_p90',
-               'latency_p99', 'requests_per_s', 'error_rate_pct', 'bytes_per_s']]
-
-
-def inbound_let_summary(start_time: str, namespace: px.Namespace):
-    ''' Compute a summary of traffic by requesting service, for requests on services in `namespace`.
-
-    Args:
-    @start_time: The timestamp of data to start at.
-    @namespace: The namespace to filter on.
-    @inbound: Whether or not to include inbound traffic to this service.
-    @outbound: Whether or not to include outbound traffic to this service.
-
-    '''
-    df = inbound_service_let(start_time, namespace)
-    df = df[df.requestor != '']
-    return df.groupby(['requestor', 'responder']).agg(
-        latency_p50=('latency_p50', px.mean),
-        latency_p90=('latency_p90', px.mean),
-        latency_p99=('latency_p99', px.mean),
-        requests_per_s=('requests_per_s', px.mean),
-        error_rate_pct=('error_rate_pct', px.mean),
-        bytes_per_s=('bytes_per_s', px.mean)
-    )
+    df.error_rate_pct = df.error_rate * 100
+    return df
