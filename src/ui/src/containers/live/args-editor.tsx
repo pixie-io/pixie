@@ -5,10 +5,16 @@ import Tooltip from '@material-ui/core/Tooltip';
 
 import { ArgsContext } from './context/args-context';
 import { RouteContext } from './context/route-context';
+import {ExecuteContext} from './context/execute-context';
+import {ScriptContext} from './context/script-context';
+import {VisContext} from './context/vis-context';
 
 const ArgsEditor = () => {
   const { args, setArgs } = React.useContext(ArgsContext);
-  const { entityParams, setEntityParams } = React.useContext(RouteContext);
+  const { entityParams, setEntityParams, liveViewPage } = React.useContext(RouteContext);
+  const { script, title, id } = React.useContext(ScriptContext);
+  const {vis} = React.useContext(VisContext);
+  const { execute } = React.useContext(ExecuteContext);
 
   if (!args) {
     return null;
@@ -34,6 +40,9 @@ const ArgsEditor = () => {
               } else {
                 setArgs({ ...args, [argName]: newVal }, Object.keys(entityParams));
               }
+            }}
+            onEnterKey={() => {
+              execute({script, vis, args, id, title, entityParams, liveViewPage});
             }}
           />
         ))
@@ -81,11 +90,14 @@ interface ArgumentInputFieldProps {
   name: string;
   value: string;
   onValueChange: (val: string) => void;
+  onEnterKey: () => void;
 }
+
+const ENTER_KEY_CODE = 13;
 
 const ArgumentField = (props: ArgumentInputFieldProps) => {
   const classes = useStyles();
-  const { name, value, onValueChange } = props;
+  const { name, value, onValueChange, onEnterKey } = props;
   const ref = React.useRef(null);
   return (
     <Tooltip title='Edit arg'>
@@ -98,6 +110,11 @@ const ArgumentField = (props: ArgumentInputFieldProps) => {
             className={classes.input}
             value={value}
             onChange={(event) => onValueChange(event.target.value)}
+            onKeyPress={(event) => {
+              if (event.which === ENTER_KEY_CODE) {
+                onEnterKey();
+              }
+            }}
           />
         </div>
       </div >
