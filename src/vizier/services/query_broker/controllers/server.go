@@ -53,7 +53,6 @@ type Planner interface {
 // Executor is the interface for a query executor.
 type Executor interface {
 	ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan, analyze bool) error
-	AddQueryPlanToResult(*distributedpb.DistributedPlan, map[uuid.UUID]*planpb.Plan) error
 	WaitForCompletion() (*queryresultspb.QueryResult, error)
 	AddResult(res *querybrokerpb.AgentQueryResultRequest)
 	GetQueryID() uuid.UUID
@@ -290,13 +289,6 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 
 	s.trackExecutorForQuery(queryExecutor)
 	defer s.deleteExecutorForQuery(queryID)
-	// TODO(zasgar): Cleanup this code to push the distrbuted plan into
-	// ExecuteQuery directly and do the mapping in there.
-	if plannerState.PlanOptions.Explain {
-		if err := queryExecutor.AddQueryPlanToResult(plan, planMap); err != nil {
-			log.WithError(err).Error("Failed to add query plan to result")
-		}
-	}
 
 	if err := queryExecutor.ExecuteQuery(planMap, planOpts.Analyze); err != nil {
 		return nil, nil, err
@@ -305,6 +297,14 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 	queryResult, err := queryExecutor.WaitForCompletion()
 	if err != nil {
 		return nil, nil, err
+	}
+
+	// TODO(zasgar): Cleanup this code to push the distrbuted plan into
+	// ExecuteQuery directly and do the mapping in there.
+	if plannerState.PlanOptions.Explain {
+		if err := AddQueryPlanToResult(queryResult, plan, planMap, &queryResult.AgentExecutionStats); err != nil {
+			log.WithError(err).Error("Failed to add query plan to result")
+		}
 	}
 
 	execStartTime := ctx.Value(execStartKey).(time.Time)

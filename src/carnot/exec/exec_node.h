@@ -68,13 +68,13 @@ struct ExecNodeStats {
   int64_t SelfExecTime() const { return TotalExecTime() - ChildExecTime(); }
 
   // Total bytes input to this exec node.
-  int64_t bytes_input;
+  int64_t bytes_input = 0;
   // Total rows input to this exec node.
-  int64_t rows_input;
+  int64_t rows_input = 0;
   // Total bytes output by this exec node.
-  int64_t bytes_output;
+  int64_t bytes_output = 0;
   // Total rows output by this exec node.
-  int64_t rows_output;
+  int64_t rows_output = 0;
   // Total timer for the node = children_time + self_time.
   ElapsedTimer total_timer;
   // Total timer for the children of the ndoe.

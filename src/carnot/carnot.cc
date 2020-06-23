@@ -336,9 +336,10 @@ StatusOr<CarnotQueryResult> CarnotImpl::ExecutePlan(const planpb::Plan& logical_
                 exec::ExecNodeStats* stats = exec_node->stats();
                 int64_t total_time_ns = stats->TotalExecTime();
                 int64_t self_time_ns = stats->SelfExecTime();
-                LOG(INFO) << absl::Substitute("self_time:$1\ttotal_time: $2\tnode_id:$0", node_name,
-                                              PrettyDuration(self_time_ns),
-                                              PrettyDuration(total_time_ns));
+                LOG(INFO) << absl::Substitute(
+                    "self_time:$1\ttotal_time: $2\tbytes_output: $3\trows_output: $4\tnode_id:$0",
+                    node_name, PrettyDuration(self_time_ns), PrettyDuration(total_time_ns),
+                    stats->bytes_output, stats->rows_output);
 
                 queryresultspb::OperatorExecutionStats* stats_pb =
                     agent_operator_exec_stats.add_operator_execution_stats();

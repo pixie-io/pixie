@@ -52,14 +52,14 @@ func (e *QueryExecutor) GetQueryID() uuid.UUID {
 }
 
 // AddQueryPlanToResult adds the query plan to the list of output tables.
-func (e *QueryExecutor) AddQueryPlanToResult(plan *distributedpb.DistributedPlan, planMap map[uuid.UUID]*planpb.Plan) error {
-
-	queryPlan, err := getQueryPlanAsDotString(plan, planMap)
+func AddQueryPlanToResult(queryResult *queryresultspb.QueryResult, plan *distributedpb.DistributedPlan, planMap map[uuid.UUID]*planpb.Plan, execStats *[]*queryresultspb.AgentExecutionStats) error {
+	queryPlan, err := getQueryPlanAsDotString(plan, planMap, execStats)
 	if err != nil {
 		log.WithError(err).Error("error with query plan")
 	}
 
-	e.extraTables = append(e.extraTables, &schemapb.Table{
+	var extraTables []*schemapb.Table
+	extraTables = append(extraTables, &schemapb.Table{
 		Relation: &schemapb.Relation{Columns: []*schemapb.Relation_ColumnInfo{
 			{
 				ColumnName: "query_plan",
@@ -88,6 +88,7 @@ func (e *QueryExecutor) AddQueryPlanToResult(plan *distributedpb.DistributedPlan
 		},
 	})
 
+	queryResult.Tables = append(queryResult.Tables, extraTables...)
 	return nil
 }
 

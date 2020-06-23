@@ -5,8 +5,6 @@
 package mock_controllers
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	go_uuid "github.com/satori/go.uuid"
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
@@ -14,6 +12,7 @@ import (
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
 	queryresultspb "pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	querybrokerpb "pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
+	reflect "reflect"
 )
 
 // MockPlanner is a mock of Planner interface
@@ -93,20 +92,20 @@ func (m *MockExecutor) ExecuteQuery(planMap map[go_uuid.UUID]*planpb.Plan, analy
 }
 
 // ExecuteQuery indicates an expected call of ExecuteQuery
-func (mr *MockExecutorMockRecorder) ExecuteQuery(planMap interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteQuery", reflect.TypeOf((*MockExecutor)(nil).ExecuteQuery), planMap)
+func (mr *MockExecutorMockRecorder) ExecuteQuery(planMap, analyze interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecuteQuery", reflect.TypeOf((*MockExecutor)(nil).ExecuteQuery), planMap, analyze)
 }
 
 // AddQueryPlanToResult mocks base method
-func (m *MockExecutor) AddQueryPlanToResult(arg0 *distributedpb.DistributedPlan, arg1 map[go_uuid.UUID]*planpb.Plan) error {
-	ret := m.ctrl.Call(m, "AddQueryPlanToResult", arg0, arg1)
+func (m *MockExecutor) AddQueryPlanToResult(arg0 *distributedpb.DistributedPlan, arg1 map[go_uuid.UUID]*planpb.Plan, arg2 *[]*queryresultspb.AgentExecutionStats) error {
+	ret := m.ctrl.Call(m, "AddQueryPlanToResult", arg0, arg1, arg2)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddQueryPlanToResult indicates an expected call of AddQueryPlanToResult
-func (mr *MockExecutorMockRecorder) AddQueryPlanToResult(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddQueryPlanToResult", reflect.TypeOf((*MockExecutor)(nil).AddQueryPlanToResult), arg0, arg1)
+func (mr *MockExecutorMockRecorder) AddQueryPlanToResult(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddQueryPlanToResult", reflect.TypeOf((*MockExecutor)(nil).AddQueryPlanToResult), arg0, arg1, arg2)
 }
 
 // WaitForCompletion mocks base method
