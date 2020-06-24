@@ -48,8 +48,7 @@ const char* kInfoClassManager = R"(
 )";
 
 /**
- * @brief This is a test source connector to be used for testing.
- *
+ * This is a test source connector to be used for testing.
  */
 class TestSourceConnector : public SourceConnector {
  public:

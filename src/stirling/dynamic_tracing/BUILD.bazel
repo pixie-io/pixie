@@ -15,7 +15,10 @@ pl_cc_library(
             "*.h",
         ],
     ),
-    deps = ["//src/stirling/proto:physical_ir_pl_cc_proto"],
+    deps = [
+        "//src/stirling/obj_tools:cc_library",
+        "//src/stirling/proto:physical_ir_pl_cc_proto",
+    ],
 )
 
 pl_cc_test(
@@ -24,5 +27,19 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/stirling/testing:cc_library",
+    ],
+)
+
+pl_cc_test(
+    name = "dwarf_info_test",
+    srcs = ["dwarf_info_test.cc"],
+    args = [
+        "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
+    ],
+    data = [
+        "//src/stirling/obj_tools/testdata:dummy_go_binary",
+    ],
+    deps = [
+        ":cc_library",
     ],
 )
