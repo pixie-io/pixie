@@ -72,12 +72,12 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     sortIcon: {
       width: theme.spacing(2),
-      padding: theme.spacing(1),
+      paddingLeft: theme.spacing(1),
     },
     sortIconHidden: {
       width: theme.spacing(2),
       opacity: '0.2',
-      padding: theme.spacing(1),
+      paddingLeft: theme.spacing(1),
     },
     headerTitle: {
       display: 'flex',
@@ -255,11 +255,10 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
     }
     return <>
       <div className={classes.headerTitle}>
-        {props.columnData.align === 'end'? sortIcon: null}
         <Tooltip title={props.label}>
           <span className={classes.cellText}>{props.label}</span>
         </Tooltip>
-        {props.columnData.align !== 'end'? sortIcon: null}
+        {sortIcon}
       </div>
     </>;
   };
