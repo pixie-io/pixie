@@ -545,6 +545,68 @@ export namespace Graph {
   }
 }
 
+export class RequestGraph extends jspb.Message {
+  getRequestorPodColumn(): string;
+  setRequestorPodColumn(value: string): void;
+
+  getResponderPodColumn(): string;
+  setResponderPodColumn(value: string): void;
+
+  getRequestorServiceColumn(): string;
+  setRequestorServiceColumn(value: string): void;
+
+  getResponderServiceColumn(): string;
+  setResponderServiceColumn(value: string): void;
+
+  getP50Column(): string;
+  setP50Column(value: string): void;
+
+  getP90Column(): string;
+  setP90Column(value: string): void;
+
+  getP99Column(): string;
+  setP99Column(value: string): void;
+
+  getErrorRateColumn(): string;
+  setErrorRateColumn(value: string): void;
+
+  getRequestsPerSecondColumn(): string;
+  setRequestsPerSecondColumn(value: string): void;
+
+  getInboundBytesPerSecondColumn(): string;
+  setInboundBytesPerSecondColumn(value: string): void;
+
+  getOutboundBytesPerSecondColumn(): string;
+  setOutboundBytesPerSecondColumn(value: string): void;
+
+  getTotalRequestCount(): string;
+  setTotalRequestCount(value: string): void;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): RequestGraph.AsObject;
+  static toObject(includeInstance: boolean, msg: RequestGraph): RequestGraph.AsObject;
+  static serializeBinaryToWriter(message: RequestGraph, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): RequestGraph;
+  static deserializeBinaryFromReader(message: RequestGraph, reader: jspb.BinaryReader): RequestGraph;
+}
+
+export namespace RequestGraph {
+  export type AsObject = {
+    requestorPodColumn: string,
+    responderPodColumn: string,
+    requestorServiceColumn: string,
+    responderServiceColumn: string,
+    p50Column: string,
+    p90Column: string,
+    p99Column: string,
+    errorRateColumn: string,
+    requestsPerSecondColumn: string,
+    inboundBytesPerSecondColumn: string,
+    outboundBytesPerSecondColumn: string,
+    totalRequestCount: string,
+  }
+}
+
 export enum PXType { 
   PX_UNKNOWN = 0,
   PX_BOOLEAN = 1,

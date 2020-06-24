@@ -249,3 +249,32 @@ message Graph {
     AdjacencyList adjacency_list = 2;
   }
 }
+
+// Display traffic between pods or services as a graph.
+message RequestGraph {
+  // The column name containing the requesting pod.
+  string requestor_pod_column = 1;
+  // The column name containing the responding pod.
+  string responder_pod_column = 2;
+  // The column name containing the requesting service.
+  string requestor_service_column = 3;
+  // The column name containing the responding service.
+  string responder_service_column = 4;
+  // The column name containing the p50 latency for this requestor/responder combination.
+  string p50_column = 5;
+  // The column name containing the p90 latency for this requestor/responder combination.
+  string p90_column = 6;
+  // The column name containing the p99 latency for this requestor/responder combination.
+  string p99_column = 7;
+  // The column name containing the error rate for this requestor/responder combination.
+  string error_rate_column = 8;
+  // The column name containing the requests per second for this requestor/responder combination.
+  string requests_per_second_column = 9;
+  // The column name containing the received bytes per second by the responder from the requestor.
+  string inbound_bytes_per_second_column = 10;
+  // The column name containing the sent bytes per second by the responder to the requestor.
+  string outbound_bytes_per_second_column = 11;
+  // The column name containing the total number of requests that occurred for this
+  // requestor/responder combination.
+  string total_request_count = 12;
+}
