@@ -14,11 +14,11 @@ import { Vega as ReactVega } from 'react-vega';
 import noop from 'utils/noop';
 import { View } from 'vega-typings';
 
-import { createStyles, makeStyles, useTheme } from '@material-ui/core/styles';
+import { createStyles, makeStyles, useTheme, Theme } from '@material-ui/core/styles';
 
 import { VegaContext } from './vega-context';
 
-const useStyles = makeStyles(() => {
+const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
     flexbox: {
       height: '100%',
@@ -32,6 +32,16 @@ const useStyles = makeStyles(() => {
     },
     legends: {
       height: '15%',
+    },
+    noDataMsgContainer: {
+      height: '100%',
+      display: 'flex',
+      justifyContent: 'center',
+      justifyItems: 'center',
+      alignItems: 'center',
+    },
+    noDataMessage: {
+      ...theme.typography.body1,
     },
   });
 });
@@ -235,6 +245,16 @@ const Vega = React.memo((props: VegaProps) => {
     currentView.signal(LEGEND_SELECT_SIGNAL, legendInteractState.selectedSeries);
     updateView();
   }, [currentView, legendInteractState.hoveredSeries, legendInteractState.selectedSeries.length]);
+
+  if (inputData.length === 0) {
+    return (
+      <div className={props.className}>
+        <div className={classes.noDataMsgContainer}>
+          <span className={classes.noDataMessage}>{`No data available for ${tableName} table`}</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={props.className}>
