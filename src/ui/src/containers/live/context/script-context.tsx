@@ -107,7 +107,10 @@ const ScriptContextProvider = (props) => {
 
   // TODO(nserrino): Add unit test for this function.
   const setArgs = (inputArgs: Arguments, newVis?: Vis, entityParamNames?: string[]) => {
-    const parsedArgs = argsForVis(newVis || vis, inputArgs);
+    // newVis can correctly be null for scripts that have no vis spec,
+    // so we check to see if newVis is undefined or not to figure out whether or not
+    // it has been passed in as an argument to setArgs.
+    const parsedArgs = argsForVis(newVis !== undefined ? newVis : vis, inputArgs);
     let entityNames: Set<string>;
 
     if (entityParamNames == null) {
