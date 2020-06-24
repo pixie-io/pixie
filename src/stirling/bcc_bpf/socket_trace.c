@@ -599,23 +599,6 @@ static __inline void process_data(struct pt_regs* ctx, uint64_t id,
     return;
   }
 
-  // Convert Tracker to an SSL tracker.
-  if (!conn_info->ssl && ssl) {
-    conn_info->ssl = true;
-
-    // Update with new TSID.
-    // This will cause this connection to be handled by a new ConnectionTracker in Stirling.
-    conn_info->conn_id.tsid = bpf_ktime_get_ns();
-
-    // Reset all other fields (except for addr, which is still useful).
-    conn_info->rd_seq_num = 0;
-    conn_info->wr_seq_num = 0;
-    conn_info->protocol_match_count = 0;
-    conn_info->protocol_total_count = 0;
-    conn_info->traffic_class.role = kRoleNone;
-    conn_info->traffic_class.protocol = kProtocolUnknown;
-  }
-
   // TODO(yzhao): Split the interface such that the singular buf case and multiple bufs in msghdr
   // are handled separately without mixed interface. The plan is to factor out helper functions for
   // lower-level functionalities, and call them separately for each case.

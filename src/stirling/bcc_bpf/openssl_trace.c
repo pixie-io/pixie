@@ -10,6 +10,16 @@ static __inline void process_openssl_data(struct pt_regs* ctx, uint64_t id,
   process_data(ctx, id, direction, args, /* ssl */ true);
 }
 
+static __inline void set_conn_as_ssl(uint64_t id, uint32_t fd) {
+  uint32_t tgid = id >> 32;
+  // Update conn_info, so that encrypted data data can be filtered out.
+  struct conn_info_t* conn_info = get_conn_info(tgid, fd);
+  if (conn_info == NULL) {
+    return;
+  }
+  conn_info->ssl = true;
+}
+
 /***********************************************************
  * Argument parsing helpers
  ***********************************************************/
@@ -90,6 +100,9 @@ int probe_entry_SSL_write(struct pt_regs* ctx) {
   write_args.buf = buf;
   active_ssl_write_args_map.update(&id, &write_args);
 
+  // Mark connection as SSL right away, so encrypted traffic does not get traced.
+  set_conn_as_ssl(id >> 32, write_args.fd);
+
   return 0;
 }
 
@@ -117,6 +130,9 @@ int probe_entry_SSL_read(struct pt_regs* ctx) {
   read_args.fd = get_fd(ssl);
   read_args.buf = buf;
   active_ssl_read_args_map.update(&id, &read_args);
+
+  // Mark connection as SSL right away, so encrypted traffic does not get traced.
+  set_conn_as_ssl(id >> 32, read_args.fd);
 
   return 0;
 }
