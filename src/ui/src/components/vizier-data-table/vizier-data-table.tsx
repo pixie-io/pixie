@@ -1,31 +1,17 @@
 import { Table } from 'common/vizier-grpc-client';
-import { CellAlignment, DataTable, SortState } from 'components/data-table';
+import { DataTable, SortState } from 'components/data-table';
 import * as React from 'react';
 import { SortDirection, SortDirectionType } from 'react-virtualized';
 import { DataType } from 'types/generated/vizier_pb';
-import { JSONData } from 'utils/format-data';
+import { DataAlignmentMap, GetDataSortFunc, JSONData } from 'utils/format-data';
 import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
-const AlignmentMap = new Map<DataType, CellAlignment>(
-  [
-    [DataType.BOOLEAN, 'center'],
-    [DataType.INT64, 'end'],
-    [DataType.UINT128, 'start'],
-    [DataType.FLOAT64, 'end'],
-    [DataType.STRING, 'start'],
-    [DataType.TIME64NS, 'start'],
-    [DataType.DURATION64NS, 'start'],
-  ],
-);
-
 function getSortFunc(dataKey: string, type: DataType, direction: SortDirectionType) {
-  const dir = direction === SortDirection.ASC ? -1 : 1;
-  return (a, b) => {
-    return a[dataKey] < b[dataKey] ? dir : -dir;
-  };
+  const f = GetDataSortFunc(type, direction === SortDirection.ASC);
+  return (a, b) => f(a[dataKey], b[dataKey]);
 }
 
 interface VizierDataTableProps {
@@ -50,7 +36,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
         type: col.getColumnType(),
         dataKey: col.getColumnName(),
         label: col.getColumnName(),
-        align: AlignmentMap.get(col.getColumnType()) || 'start',
+        align: DataAlignmentMap.get(col.getColumnType()) || 'start',
       });
     }
     return map;

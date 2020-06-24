@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import * as numeral from 'numeral';
 import * as React from 'react';
 import { DataType, UInt128 } from 'types/generated/vizier_pb';
+import { CellAlignment } from '../components/data-table';
 
 const JSON_INDENT_PX = 16;
 
@@ -190,4 +191,63 @@ export function getDataRenderer(type: DataType): (any) => string {
     default:
       return (d) => d.toString();
   }
+}
+
+export const DataAlignmentMap = new Map<DataType, CellAlignment>(
+  [
+    [DataType.BOOLEAN, 'center'],
+    [DataType.INT64, 'end'],
+    [DataType.UINT128, 'start'],
+    [DataType.FLOAT64, 'end'],
+    [DataType.STRING, 'start'],
+    [DataType.TIME64NS, 'start'],
+    [DataType.DURATION64NS, 'start'],
+  ],
+);
+
+const stringSortFunc = (a, b) => {
+  return Number(a < b);
+}
+
+const intSortFunc = (a, b) => {
+  // We send integers as string to make sure we don't have lossy 64-bit integers.
+  return Number(a) - Number(b);
+}
+
+const numberSortFunc = (a, b) => {
+  return Number(a) - Number(b);
+}
+
+const uint128SortFunc = (a, b) => {
+  return Number(formatUInt128(a) < formatUInt128(b));
+}
+
+const boolSortFunc = (a, b) => {
+  return  (a === b)? 0 : Number(a)? -1 : 1;
+}
+
+const sortFuncForType = (type: DataType) => {
+  switch (type) {
+    case DataType.FLOAT64:
+      return numberSortFunc;
+    case DataType.TIME64NS:
+      return intSortFunc;
+    case DataType.INT64:
+      return intSortFunc;
+    case DataType.BOOLEAN:
+      return boolSortFunc;
+    case DataType.UINT128:
+      return  uint128SortFunc;
+    case DataType.DURATION64NS:
+      return intSortFunc;
+    case DataType.STRING:
+    default:
+      return stringSortFunc;
+  }
+}
+export const GetDataSortFunc = (type: DataType, ascending: boolean) => {
+  const f = sortFuncForType(type);
+  return (a: any, b: any) => {
+    return ascending ? f(a, b) : - f(a,b);
+  };
 }
