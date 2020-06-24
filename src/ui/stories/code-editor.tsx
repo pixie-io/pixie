@@ -5,7 +5,7 @@ import { storiesOf } from '@storybook/react';
 
 import { CodeEditor } from '../src/components/code-editor/code-editor';
 
-class EditorWrapper extends React.Component<{ onSubmit?: () => void }, { code: string }> {
+class EditorWrapper extends React.Component<{}, { code: string }> {
   constructor(props) {
     super(props);
     this.state = {
@@ -15,12 +15,10 @@ class EditorWrapper extends React.Component<{ onSubmit?: () => void }, { code: s
 
   render() {
     const { code } = this.state;
-    const { onSubmit } = this.props;
     return (
       <CodeEditor
         code={code}
         onChange={(newCode) => { this.setState({ code: newCode }); }}
-        onSubmit={onSubmit}
       />
     );
   }
@@ -40,12 +38,4 @@ storiesOf('CodeEditor', module)
   .add('With Wrapper', () => <EditorWrapper />, {
     info: { inline: true },
     notes: 'Example with a wrapper component that binds the code changes to the state.',
-  })
-  .add('shortcut', () => (
-    <EditorWrapper
-      onSubmit={action('code submitted')}
-    />
-  ), {
-    info: { inline: true },
-    notes: 'Example with submit shortcut: cmd+enter or ctrl+enter.',
   });

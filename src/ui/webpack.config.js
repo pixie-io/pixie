@@ -14,6 +14,7 @@ const utils = require('./webpack-utils');
 const CompressionPlugin = require('compression-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const FaviconsWebpackPlugin = require('favicons-webpack-plugin');
+const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 
 const isDevServer = process.argv.find((v) => v.includes('webpack-dev-server'));
 let topLevelDir = '';
@@ -48,6 +49,9 @@ const plugins = [
   }),
   // Uncomment to enabled bundle analysis.
   // new (require('webpack-bundle-analyzer').BundleAnalyzerPlugin),
+  new MonacoWebpackPlugin({
+    languages: ['json', 'python'],
+  }),
 ];
 
 if (isDevServer) {

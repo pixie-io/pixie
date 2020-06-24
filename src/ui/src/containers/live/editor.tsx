@@ -20,7 +20,7 @@ const useStyles = makeStyles((theme: Theme) =>
       height: '100%',
       color: theme.palette.foreground.one,
       minWidth: 0,
-      overflowX: 'hidden',
+      overflow: 'hidden',
     },
     rootPanel: {
       height: '100%',
@@ -43,12 +43,6 @@ const useStyles = makeStyles((theme: Theme) =>
     },
     editor: {
       height: '100%',
-      '&.pl-code-editor .CodeMirror, & .CodeMirror-scrollbar-filler': {
-        backgroundColor: theme.palette.background.default,
-      },
-      '&.pl-code-editor .CodeMirror .CodeMirror-linenumber': {
-        paddingRight: theme.spacing(1.5),
-      },
     },
     closer: {
       cursor: 'pointer',
@@ -69,6 +63,7 @@ const VisEditor = () => {
         setVisJSON(val);
         resetDefaultLiveViewPage();
       }}
+      language='json'
     />
   );
 };
@@ -85,6 +80,7 @@ const ScriptEditor = () => {
         setPxl(val);
         resetDefaultLiveViewPage();
       }}
+      language='python'
     />
   );
 };

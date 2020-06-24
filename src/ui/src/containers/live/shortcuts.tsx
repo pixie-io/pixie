@@ -29,7 +29,7 @@ interface LiveViewShortcutsProps {
   handlers: Handlers;
 }
 
-function getKeyMap(): KeyMap {
+export function getKeyMap(): KeyMap {
   const seqPrefix = isMac() ? 'Meta' : 'Control';
   const displayPrefix = isMac() ? 'Cmd' : 'Ctrl';
   const withPrefix = (key: string) => ({

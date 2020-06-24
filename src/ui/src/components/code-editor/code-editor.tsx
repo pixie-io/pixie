@@ -1,74 +1,75 @@
-// Import code mirror dependencies.
-import 'codemirror/lib/codemirror.css';
-import 'codemirror/mode/python/python';
-import 'codemirror/theme/monokai.css';
-
 import clsx from 'clsx';
-import * as codemirror from 'codemirror';
+import * as _ from 'lodash';
 import * as React from 'react';
-import {Controlled as CodeMirror} from 'react-codemirror2';
+import MonacoEditor from 'react-monaco-editor';
+
+import { getKeyMap } from 'containers/live/shortcuts';
 
 interface CodeEditorProps {
   code?: string;
   onChange?: (code: string) => void;
-  onSubmit?: () => void;
   disabled?: boolean;
   className?: string;
+  language?: string;
+}
+
+function removeKeybindings(editor, keys: string[]) {
+    // Only way to disable default keybindings is through this private api according to:
+    // https://github.com/microsoft/monaco-editor/issues/287.
+  const bindings = editor._standaloneKeybindingService._getResolver()._defaultKeybindings;
+  for (const bind of bindings) {
+    for (const key of keys) {
+      if (bind.keypressParts && bind.keypressParts[0].toLowerCase().includes(key.toLowerCase())) {
+        editor._standaloneKeybindingService.addDynamicKeybinding(`-${bind.command}`);
+      }
+    }
+  }
 }
 
 export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
-  private editorRef: codemirror.Editor;
+  private editorRef;
 
   constructor(props) {
     super(props);
-    const submitFunc = (editor) => {
-      const { disabled, onSubmit } = this.props;
-      if (disabled || !onSubmit) {
-        return;
-      }
-      onSubmit();
-
-      // For some reason after submitting code, you cannot type in the editor
-      // unless the the textarea is refocused.
-      const activeElem = document.activeElement as HTMLElement;
-      if (activeElem && activeElem.blur) {
-        activeElem.blur();
-        editor.focus();
-      }
-    };
     this.state = {
       lineNumbers: true,
-      mode: 'python',
-      theme: 'monokai',
-      extraKeys: {
-        'Cmd-Enter': submitFunc,
-        'Ctrl-Enter': submitFunc,
-      },
+      extraEditorClassName: clsx('pl-code-editor', this.props.className),
+      lineDecorationsWidth: 0,
+      scrollBeyondLastColumn: 0,
+      scrollBeyondLastLine: 0,
     };
     this.onChange = this.onChange.bind(this);
     this.onEditorMount = this.onEditorMount.bind(this);
+
+    window.addEventListener('resize', () => {
+      if (this.editorRef) {
+        this.editorRef.layout();
+      }
+    });
   }
 
-  onChange(editor, data, code) {
+  onChange(code) {
     if (this.props.onChange) {
       this.props.onChange(code);
     }
   }
 
-  onEditorMount(editor: codemirror.Editor) {
+  onEditorMount(editor) {
     this.editorRef = editor;
-    editor.setSize('100%', '100%');
-    editor.refresh();
+    const shortcutKeys = _.flatMap(Object.values(getKeyMap()), (keybinding) => keybinding.sequence)
+      .map((key) => key.toLowerCase().replace('control', 'ctrl'));
+    removeKeybindings(editor, shortcutKeys);
   }
 
   render() {
     return (
-      <CodeMirror
+      <MonacoEditor
         value={this.props.code}
-        onBeforeChange={this.onChange}
-        options={this.state}
-        className={clsx('pl-code-editor', this.props.className)}
+        onChange={this.onChange}
         editorDidMount={this.onEditorMount}
+        language={this.props.language ? this.props.language : 'python'}
+        theme='vs-dark'
+        options={this.state}
       />
     );
   }
