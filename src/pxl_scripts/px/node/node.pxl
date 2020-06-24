@@ -22,10 +22,12 @@ def pods_for_node(start_time: str, node: px.Node):
     df = px.DataFrame(table='process_stats', start_time=start_time)
     df = df[df.ctx['node_name'] == node]
     df.pod = df.ctx['pod_name']
-    df = df.groupby('pod').agg()
-    df.pod_status = px.pod_name_to_status(df.pod)
-    df.pod_create_time = px.pod_name_to_start_time(df.pod)
-    return df
+    df.container = df.ctx['container_name']
+    df = df.groupby(['pod', 'container']).agg()
+    df = df.groupby('pod').agg(containers=('container', px.count))
+    df.start_time = px.pod_name_to_start_time(df.pod)
+    df.status = px.pod_name_to_status(df.pod)
+    return df[['pod', 'start_time', 'containers', 'status']]
 
 
 def process_stats(start_time: str, node: px.Node):

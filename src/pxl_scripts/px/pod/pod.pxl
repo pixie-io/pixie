@@ -29,9 +29,11 @@ def containers(start_time: str, pod: px.Pod):
     '''
     df = px.DataFrame(table='process_stats', start_time=start_time)
     df = df[df.ctx['pod'] == pod]
-    df.container_name = df.ctx['container_name']
-    df.container_id = df.ctx['container_id']
-    return df.groupby(['container_name', 'container_id']).agg()
+    df.name = df.ctx['container_name']
+    df.id = df.ctx['container_id']
+    df = df.groupby(['name', 'id']).agg()
+    df.status = px.container_id_to_status(df.id)
+    return df
 
 
 def resource_timeseries(start_time: str, pod: px.Pod):

@@ -28,8 +28,8 @@ def pods_by_node(start_time: str):
     df.node = df.ctx['node_name']
     df.pod = df.ctx['pod_name']
     df = df.groupby(['node', 'pod']).agg()
-    df.pod_status = px.pod_name_to_status(df.pod)
     df.pod_create_time = px.pod_name_to_start_time(df.pod)
+    df.pod_status = px.pod_name_to_status(df.pod)
     return df
 
 

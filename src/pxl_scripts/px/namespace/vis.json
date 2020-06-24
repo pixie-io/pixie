@@ -4,7 +4,7 @@
       "name": "start_time",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now",
-      "defaultValue": "-10m"
+      "defaultValue": "-5m"
     },
     {
       "name": "namespace",
@@ -44,7 +44,7 @@
       }
     },
     {
-      "name": "Pod List",
+      "name": "Service List",
       "position": {
         "x": 0,
         "y": 3,
@@ -52,7 +52,7 @@
         "h": 3
       },
       "func": {
-        "name": "pods_for_namespace",
+        "name": "services_for_namespace",
         "args": [
           {
             "name": "start_time",
@@ -69,7 +69,7 @@
       }
     },
     {
-      "name": "Service List",
+      "name": "Pod List",
       "position": {
         "x": 0,
         "y": 6,
@@ -77,7 +77,7 @@
         "h": 3
       },
       "func": {
-        "name": "services_for_namespace",
+        "name": "pods_for_namespace",
         "args": [
           {
             "name": "start_time",

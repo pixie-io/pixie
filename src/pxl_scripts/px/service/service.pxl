@@ -20,8 +20,8 @@ def pods_for_service(start_time: str, service: px.Service):
     df = df[df.ctx['service'] == service]
     df.pod = df.ctx['pod_name']
     df = df.groupby('pod').agg()
-    df.pod_status = px.pod_name_to_status(df.pod)
     df.pod_create_time = px.pod_name_to_start_time(df.pod)
+    df.pod_status = px.pod_name_to_status(df.pod)
     return df
 
 

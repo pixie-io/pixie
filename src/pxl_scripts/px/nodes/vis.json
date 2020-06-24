@@ -4,7 +4,7 @@
       "name": "start_time",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now",
-      "defaultValue": "-10m"
+      "defaultValue": "-5m"
     }
   ],
   "globalFuncs": [
@@ -39,7 +39,7 @@
       "position": {
         "x": 0,
         "y": 0,
-        "w": 6,
+        "w": 4,
         "h": 3
       },
       "func": {
@@ -58,9 +58,9 @@
     {
       "name": "CPU %",
       "position": {
-        "x": 6,
+        "x": 4,
         "y": 0,
-        "w": 6,
+        "w": 4,
         "h": 3
       },
       "globalFuncOutputName": "process_stats",
@@ -84,9 +84,9 @@
     {
       "name": "Sent Network Traffic",
       "position": {
-        "x": 6,
-        "y": 3,
-        "w": 6,
+        "x": 8,
+        "y": 0,
+        "w": 4,
         "h": 3
       },
       "globalFuncOutputName": "network_stats",
@@ -112,7 +112,7 @@
       "position": {
         "x": 0,
         "y": 3,
-        "w": 6,
+        "w": 4,
         "h": 3
       },
       "globalFuncOutputName": "network_stats",
@@ -136,9 +136,9 @@
     {
       "name": "Bytes read (MB/s)",
       "position": {
-        "x": 0,
-        "y": 6,
-        "w": 6,
+        "x": 4,
+        "y": 3,
+        "w": 4,
         "h": 3
       },
       "globalFuncOutputName": "process_stats",
@@ -162,9 +162,9 @@
     {
       "name": "Bytes written (MB/s)",
       "position": {
-        "x": 6,
-        "y": 6,
-        "w": 6,
+        "x": 8,
+        "y": 3,
+        "w": 4,
         "h": 3
       },
       "globalFuncOutputName": "process_stats",
@@ -189,7 +189,7 @@
       "name": "Pods",
       "position": {
         "x": 0,
-        "y": 9,
+        "y": 6,
         "w": 12,
         "h": 3
       },

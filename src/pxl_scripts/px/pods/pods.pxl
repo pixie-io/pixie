@@ -32,10 +32,10 @@ def pods(start_time: str, namespace: px.Namespace):
     df.pod = df.ctx['pod_name']
     df.container = df.ctx['container_name']
     df = df.groupby(['pod', 'container']).agg()
-    df = df.groupby('pod').agg(container_count=('container', px.count))
-    df.status = px.pod_name_to_status(df.pod)
+    df = df.groupby('pod').agg(containers=('container', px.count))
     df.start_time = px.pod_name_to_start_time(df.pod)
-    return df[['pod', 'status', 'container_count', 'start_time']]
+    df.status = px.pod_name_to_status(df.pod)
+    return df[['pod', 'start_time', 'containers', 'status']]
 
 
 def resource_timeseries(start_time: str, namespace: px.Namespace):

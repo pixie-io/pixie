@@ -4,7 +4,7 @@
       "name": "start_time",
       "type": "PX_STRING",
       "description": "The relative start time of the window. Current time is assumed to be now",
-      "defaultValue": "-10m"
+      "defaultValue": "-5m"
     },
     {
       "name": "node",
@@ -49,35 +49,11 @@
   ],
   "widgets": [
     {
-      "name": "CPU %",
+      "name": "Pods",
       "position": {
         "x": 0,
         "y": 0,
-        "w": 6,
-        "h": 3
-      },
-      "globalFuncOutputName": "process_stats",
-      "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
-        "timeseries": [
-          {
-            "value": "cpu_pct",
-            "mode": "MODE_LINE"
-          }
-        ],
-        "title": "",
-        "yAxis": {
-          "label": "CPU usage (%)"
-        },
-        "xAxis": null
-      }
-    },
-    {
-      "name": "Pods",
-      "position": {
-        "x": 6,
-        "y": 0,
-        "w": 6,
+        "w": 8,
         "h": 3
       },
       "func": {
@@ -98,11 +74,35 @@
       }
     },
     {
+      "name": "CPU %",
+      "position": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "process_stats",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "cpu_pct",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "CPU usage (%)"
+        },
+        "xAxis": null
+      }
+    },
+    {
       "name": "Bytes read (MB/s)",
       "position": {
         "x": 0,
         "y": 3,
-        "w": 6,
+        "w": 4,
         "h": 3
       },
       "globalFuncOutputName": "process_stats",
@@ -124,9 +124,9 @@
     {
       "name": "Bytes written (MB/s)",
       "position": {
-        "x": 6,
+        "x": 4,
         "y": 3,
-        "w": 6,
+        "w": 4,
         "h": 3
       },
       "globalFuncOutputName": "process_stats",
@@ -148,9 +148,9 @@
     {
       "name": "Sent Network Traffic",
       "position": {
-        "x": 0,
-        "y": 6,
-        "w": 6,
+        "x": 8,
+        "y": 3,
+        "w": 4,
         "h": 3
       },
       "globalFuncOutputName": "network_stats",
@@ -172,9 +172,9 @@
     {
       "name": "Received Network Traffic",
       "position": {
-        "x": 6,
+        "x": 0,
         "y": 6,
-        "w": 6,
+        "w": 4,
         "h": 3
       },
       "globalFuncOutputName": "network_stats",
@@ -196,9 +196,9 @@
     {
       "name": "Resident Set Size (MB)",
       "position": {
-        "x": 0,
-        "y": 9,
-        "w": 6,
+        "x": 4,
+        "y": 6,
+        "w": 4,
         "h": 3
       },
       "globalFuncOutputName": "process_stats",
@@ -220,9 +220,9 @@
     {
       "name": "Virtual Memory Size (MB)",
       "position": {
-        "x": 6,
-        "y": 9,
-        "w": 6,
+        "x": 8,
+        "y": 6,
+        "w": 4,
         "h": 3
       },
       "globalFuncOutputName": "process_stats",
