@@ -9,7 +9,9 @@ import { Link, useParams } from 'react-router-dom';
 import { dataFromProto } from 'utils/result-data-utils';
 
 import { useQuery } from '@apollo/react-hooks';
+
 import Breadcrumbs from '@material-ui/core/Breadcrumbs';
+import Button from '@material-ui/core/Button';
 import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Table from '@material-ui/core/Table';
@@ -72,6 +74,7 @@ const useStyles = makeStyles((theme: Theme) => {
     },
     breadcrumbLink: {
       ...theme.typography.subtitle2,
+      color: '#748790',
     },
     tabContents: {
       margin: theme.spacing(1),
@@ -265,13 +268,17 @@ export const ClusterDetailsPage = () => {
       <div className={classes.topBar}>
         <div className={classes.title}>
           <div className={classes.titleText}>Cluster View</div>
-          <Breadcrumbs classes={{ separator: classes.breadcrumbText }}>
-            <Link className={classes.breadcrumbLink} to='/admin'>Admin</Link>
-            <Link className={classes.breadcrumbLink} to='/admin'>Cluster</Link>
+          <Breadcrumbs classes={{ separator: classes.breadcrumbText, li: classes.breadcrumbLink}}>
+            <Button classes={{label: classes.breadcrumbLink}}
+                    component={Link} to='/admin' color='secondary'>Admin</Button>
+            <Button classes={{label: classes.breadcrumbLink}}
+                    component={Link} to='/admin' color='secondary'>Cluster</Button>
             <Typography className={classes.breadcrumbText}>{decodedName}</Typography>
           </Breadcrumbs>
         </div>
-        <Link className={classes.link} to='/live'>Live View</Link>
+        <Button component={Link} to='/live' color='primary'>
+        Live View
+        </Button>
         <ProfileMenu />
       </div>
       <div className={classes.main}>
