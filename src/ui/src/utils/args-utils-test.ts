@@ -81,23 +81,13 @@ describe('argsForVis', () => {
     };
     const args = { foo: 'foo', bar: 'bar' };
 
-    expect(argsForVis(vis, args, [])).toEqual({ foo: 'foo' });
-  });
-
-  it('filters out the args that in the omit list', () => {
-    const vis = {
-      widgets: [], globalFuncs: [], variables: [
-        { name: 'foo', type: 'foo' },
-      ],
-    };
-    const args = { foo: 'foo', bar: 'bar', baz: 'baz' };
-    expect(argsForVis(vis, args, ['baz'])).toEqual({ foo: 'foo' });
+    expect(argsForVis(vis, args)).toEqual({ foo: 'foo' });
   });
 
   it('handles null vis correctly', () => {
     const args = { foo: 'foo', bar: 'bar' };
 
-    expect(argsForVis(null, args, [])).toEqual({});
+    expect(argsForVis(null, args)).toEqual({});
   });
 
   it('fills the arg with default value if it wasn\'t specified', () => {
@@ -109,7 +99,7 @@ describe('argsForVis', () => {
     };
     const args = { bar: 'bar' };
 
-    expect(argsForVis(vis, args, [])).toEqual({ foo: 'default foo', bar: 'bar' });
+    expect(argsForVis(vis, args)).toEqual({ foo: 'default foo', bar: 'bar' });
   });
 
   it('fills the arg with the original script ID if one wasn\'t provided', () => {
@@ -120,7 +110,7 @@ describe('argsForVis', () => {
     };
     const args = { foo: 'foo', script: 'original' };
 
-    expect(argsForVis(vis, args, [])).toEqual({ foo: 'foo', script: 'original' });
+    expect(argsForVis(vis, args)).toEqual({ foo: 'foo', script: 'original' });
   });
 
   it('it uses the provided script ID', () => {
@@ -131,6 +121,6 @@ describe('argsForVis', () => {
     };
     const args = { foo: 'foo', script: 'original' };
 
-    expect(argsForVis(vis, args, [], 'newScript')).toEqual({ foo: 'foo', script: 'newScript' });
+    expect(argsForVis(vis, args, 'newScript')).toEqual({ foo: 'foo', script: 'newScript' });
   });
 });

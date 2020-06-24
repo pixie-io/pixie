@@ -3,29 +3,18 @@ import * as React from 'react';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 
-import { ArgsContext } from './context/args-context';
-import { RouteContext } from './context/route-context';
 import {ExecuteContext} from './context/execute-context';
 import {ScriptContext} from './context/script-context';
-import {VisContext} from './context/vis-context';
 
 const ArgsEditor = () => {
-  const { args, setArgs } = React.useContext(ArgsContext);
-  const { entityParams, setEntityParams, liveViewPage } = React.useContext(RouteContext);
-  const { script, title, id } = React.useContext(ScriptContext);
-  const {vis} = React.useContext(VisContext);
+  const { vis, pxl, args, title, id, setArgs } = React.useContext(ScriptContext);
   const { execute } = React.useContext(ExecuteContext);
 
   if (!args) {
     return null;
   }
 
-  const allArgs = {
-    ...args,
-    ...entityParams,
-  };
-
-  const argsList = Object.entries(allArgs).filter(([argName]) => argName !== 'script');
+  const argsList = Object.entries(args).filter(([argName]) => argName !== 'script');
   return (
     <>
       {
@@ -35,14 +24,10 @@ const ArgsEditor = () => {
             name={argName}
             value={argVal}
             onValueChange={(newVal) => {
-              if (typeof entityParams[argName] === 'string') {
-                setEntityParams({...entityParams, [argName]: newVal});
-              } else {
-                setArgs({ ...args, [argName]: newVal }, Object.keys(entityParams));
-              }
+              setArgs({ ...args, [argName]: newVal });
             }}
             onEnterKey={() => {
-              execute({script, vis, args, id, title, entityParams, liveViewPage});
+              execute({pxl, vis, args, id, title});
             }}
           />
         ))

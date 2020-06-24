@@ -30,8 +30,7 @@ export function argsEquals(args1: Arguments, args2: Arguments): boolean {
 }
 
 // Populate arguments either from defaultValues or from the input args.
-// omitList is used to filter out args that are passed in via entityParams.
-export function argsForVis(vis: Vis, args: Arguments, omitList: string[], scriptId?: string): Arguments {
+export function argsForVis(vis: Vis, args: Arguments, scriptId?: string): Arguments {
   const outArgs: Arguments = {};
   if (!vis) {
     return {};
@@ -40,9 +39,6 @@ export function argsForVis(vis: Vis, args: Arguments, omitList: string[], script
     args = {};
   }
   for (const variable of vis.variables) {
-    if (omitList.indexOf(variable.name) >= 0) {
-      continue;
-    }
     const val = typeof args[variable.name] !== 'undefined' ? args[variable.name] : variable.defaultValue;
     outArgs[variable.name] = val;
   }

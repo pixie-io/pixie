@@ -126,9 +126,9 @@ const LiveView = () => {
     execute,
   };
 
-  const { script, id } = React.useContext(ScriptContext);
+  const { pxl, id } = React.useContext(ScriptContext);
   React.useEffect(() => {
-    if (!script && !id) {
+    if (!pxl && !id) {
       setCommandOpen(true);
     }
   }, []);

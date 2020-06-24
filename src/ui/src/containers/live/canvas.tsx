@@ -15,7 +15,7 @@ import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/sty
 
 import { LayoutContext } from './context/layout-context';
 import { ResultsContext } from './context/results-context';
-import { VisContext } from './context/vis-context';
+import { ScriptContext } from './context/script-context';
 import {
     addLayout, addTableLayout, getGridWidth, Layout, toLayout, updatePositions,
 } from './layout';
@@ -113,7 +113,7 @@ const Canvas = (props: CanvasProps) => {
   const classes = useStyles();
   const theme = useTheme();
   const { tables, loading } = React.useContext(ResultsContext);
-  const { vis, setVis } = React.useContext(VisContext);
+  const { vis, setVis } = React.useContext(ScriptContext);
   const { isMobile } = React.useContext(LayoutContext);
   const { setTimeseriesDomain } = React.useContext(VegaContext);
 
@@ -158,7 +158,6 @@ const Canvas = (props: CanvasProps) => {
     setDefaultLayout(newLayout);
     triggerResize();
   }, []);
-
 
   const className = clsx(
     'fs-exclude',

@@ -14,19 +14,20 @@ export enum LiveViewPage {
   Services,
 }
 
-interface NamespaceURLParams {
+// Use type not interface here so that these params are compatible with Arguments.
+type NamespaceURLParams = {
   namespace: string;
 }
 
-interface NodeURLParams {
+type NodeURLParams = {
   node: string;
 }
 
-interface PodURLParams {
+type PodURLParams = {
   pod: string;
 }
 
-interface ServiceURLParams {
+type ServiceURLParams = {
   service: string;
 }
 

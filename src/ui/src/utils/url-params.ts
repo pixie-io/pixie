@@ -147,6 +147,7 @@ export class URLParams {
     this.commitURL();
   }
 
+  // TODO(nserrino): deprecate this.
   triggerOnChange() {
     this.syncWithPathname();
     this.syncWithQueryParams();

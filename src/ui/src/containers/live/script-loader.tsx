@@ -4,9 +4,7 @@ import { argsForVis } from 'utils/args-utils';
 import urlParams from 'utils/url-params';
 
 import { ExecuteContext } from './context/execute-context';
-import { RouteContext } from './context/route-context';
 import { ScriptContext } from './context/script-context';
-import { VisContext } from './context/vis-context';
 import { parseVis } from './vis';
 import { LiveViewPage, LiveViewPageScriptIds, matchLiveViewEntity } from './utils/live-view-params';
 
@@ -15,15 +13,9 @@ type LoadScriptState = 'unloaded' | 'url-loaded' | 'url-skipped' | 'context-load
 export function ScriptLoader() {
   const [loadState, setLoadState] = React.useState<LoadScriptState>('unloaded');
   const { promise: scriptPromise } = React.useContext(ScriptsContext);
-  const { script } = React.useContext(ScriptContext);
-  const [params, setParams] = React.useState({
-    scriptId: urlParams.scriptId,
-    args: urlParams.args,
-  });
+  const { pxl, vis } = React.useContext(ScriptContext);
 
-  const { entityParams, liveViewPage } = React.useContext(RouteContext);
   const { execute } = React.useContext(ExecuteContext);
-  const visSpec = React.useContext(VisContext);
   const ref = React.useRef({
     urlLoaded: false,
     execute,
@@ -34,14 +26,16 @@ export function ScriptLoader() {
   // Execute the default scripts if script was not loaded from the URL.
   React.useEffect(() => {
     if (loadState === 'url-skipped') {
-      if (script && visSpec) {
+      if (pxl && vis) {
         execute();
         setLoadState('context-loaded');
       }
     }
-  }, [loadState, script, visSpec]);
+  }, [loadState, pxl, vis]);
 
   React.useEffect(() => {
+    // TODO(nserrino): refactor this legacy code to reduce duplication with ScriptContext.
+    // (matchLiveViewEntity et al).
     const subscription = urlParams.onChange.subscribe(({ scriptId, pathname, args }) => {
       scriptPromise.then((scripts) => {
         const entity = matchLiveViewEntity(pathname);
@@ -60,13 +54,14 @@ export function ScriptLoader() {
         const { title, vis, code } = scripts.get(id);
 
         const parsedVis = parseVis(vis);
-        const parsedArgs = argsForVis(parsedVis, args, Object.keys(entity.params), id);
+        const parsedArgs = argsForVis(parsedVis, {...args, ...entity.params}, id);
         ref.current.execute({
-          script: code,
+          liveViewPage: entity.page,
+          // TODO(nserrino): refactor this to be a bit more clean.
+          entityParamNames: Object.keys(entity.params),
+          pxl: code,
           vis: parsedVis,
           args: parsedArgs,
-          entityParams: entity.params,
-          liveViewPage: entity.page,
           title,
           id,
           skipURLUpdate: true,

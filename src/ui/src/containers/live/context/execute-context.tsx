@@ -5,52 +5,37 @@ import { useSnackbar } from 'components/snackbar/snackbar';
 import { getQueryFuncs, Vis } from 'containers/live/vis';
 import * as React from 'react';
 import analytics from 'utils/analytics';
-import { argsForVis, Arguments } from 'utils/args-utils';
+import { Arguments } from 'utils/args-utils';
 import urlParams from 'utils/url-params';
+import { LiveViewPage } from 'containers/live/utils/live-view-params';
 
-import { ArgsContext } from './args-context';
 import { DataDrawerContext } from './data-drawer-context';
 import { ResultsContext } from './results-context';
-import { RouteContext } from './route-context';
 import { ScriptContext } from './script-context';
-import { VisContext } from './vis-context';
-import { EntityURLParams, LiveViewPage } from '../utils/live-view-params';
 
 interface ExecuteArguments {
-  script: string;
+  pxl: string;
   vis: Vis;
   args: Arguments;
-  id?: string;
-  title?: string;
-  skipURLUpdate?: boolean;
+  id: string;
+  title: string;
   liveViewPage?: LiveViewPage;
-  entityParams?: EntityURLParams;
+  entityParamNames?: string[];
+  skipURLUpdate?: boolean;
 }
 
 interface ExecuteContextProps {
   execute: (execArgs?: ExecuteArguments) => void;
-  // Resets the entity page to the default page, not an entity-centric URL.
-  resetDefaultLiveViewPage: (scriptId?: string) => void;
 }
 
 export const ExecuteContext = React.createContext<ExecuteContextProps>(null);
 
 export const ExecuteContextProvider = (props) => {
-  const { id, script, setIdAndTitle, setScript } = React.useContext(ScriptContext);
-  const { vis, setVis } = React.useContext(VisContext);
-  const { args, setArgs } = React.useContext(ArgsContext);
+  const { args, vis, pxl, title, id, setScript, commitURL } = React.useContext(ScriptContext);
   const { client, healthy } = React.useContext(ClientContext);
   const { clearResults, setResults, setLoading, loading } = React.useContext(ResultsContext);
   const showSnackbar = useSnackbar();
   const { openDrawerTab } = React.useContext(DataDrawerContext);
-  const { entityParams, liveViewPage, setEntityParams, setLiveViewPage } = React.useContext(RouteContext);
-
-  const resetDefaultLiveViewPage = (scriptID?: string) => {
-    setEntityParams({});
-    setArgs({...args, ...entityParams}, []);
-    setLiveViewPage(LiveViewPage.Default);
-    urlParams.setScript(scriptID || id, /* diff */'');
-  }
 
   const execute = (execArgs?: ExecuteArguments) => {
     if (loading) {
@@ -72,45 +57,34 @@ export const ExecuteContextProvider = (props) => {
     setLoading(true);
 
     if (!execArgs) {
-      execArgs = { script, vis, args, id, entityParams, liveViewPage };
+      execArgs = { pxl, vis, args, title, id };
     } else {
       clearResults();
-      setVis(execArgs.vis);
-      setScript(execArgs.script);
 
-      if (execArgs.id && execArgs.title) {
-        setIdAndTitle(execArgs.id, execArgs.title);
-      }
-
-      if (execArgs.args) {
-        setArgs(execArgs.args, Object.keys(execArgs.entityParams));
+      if (execArgs.liveViewPage != null && execArgs.entityParamNames != null) {
+        setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.title,
+                  execArgs.liveViewPage, execArgs.entityParamNames);
       } else {
-        // If args were not specified when running the script,
-        // use the existing args from the context.
-        execArgs.args = argsForVis(execArgs.vis, execArgs.args, Object.keys(execArgs.entityParams));
+        setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.title);
       }
-      setEntityParams(execArgs.entityParams);
-      setLiveViewPage(execArgs.liveViewPage);
     }
 
     let errMsg: string;
     let queryId: string;
 
     if (!execArgs.skipURLUpdate) {
-      // Only show the script as a query arg when we are not on an entity page.
-      const scriptId = liveViewPage === LiveViewPage.Default ? (execArgs.id || '') : '';
-      urlParams.commitAll(scriptId, '', execArgs.args);
+      commitURL();
     }
 
     new Promise((resolve, reject) => {
       try {
-        resolve(getQueryFuncs(execArgs.vis, {...execArgs.entityParams, ...execArgs.args}));
+        resolve(getQueryFuncs(execArgs.vis, execArgs.args));
       } catch (error) {
         reject(error);
       }
     })
       .then((funcs: VizierQueryFunc[]) => {
-        return client.executeScript(execArgs.script, funcs);
+        return client.executeScript(execArgs.pxl, funcs);
       })
       .then((queryResults) => {
         const newTables = {};
@@ -146,7 +120,7 @@ export const ExecuteContextProvider = (props) => {
         setLoading(false);
         analytics.track('Query Execution', {
           status: errMsg ? 'success' : 'failed',
-          query: script,
+          query: pxl,
           queryID: queryId,
           error: errMsg,
           title: id,
@@ -155,7 +129,7 @@ export const ExecuteContextProvider = (props) => {
   };
 
   return (
-    <ExecuteContext.Provider value={{ execute, resetDefaultLiveViewPage }}>
+    <ExecuteContext.Provider value={{ execute }}>
       {props.children}
     </ExecuteContext.Provider>
   );

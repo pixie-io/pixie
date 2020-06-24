@@ -13,7 +13,6 @@ import ChevronLeft from '@material-ui/icons/ChevronLeft';
 import { ExecuteContext } from './context/execute-context';
 import { LayoutContext } from './context/layout-context';
 import { ScriptContext } from './context/script-context';
-import { VisContext } from './context/vis-context';
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -60,8 +59,7 @@ const useStyles = makeStyles((theme: Theme) =>
 
 const VisEditor = () => {
   const classes = useStyles();
-  const { visJSON, setVisJSON } = React.useContext(VisContext);
-  const { resetDefaultLiveViewPage } = React.useContext(ExecuteContext);
+  const { visJSON, setVisJSON, resetDefaultLiveViewPage } = React.useContext(ScriptContext);
 
   return (
     <CodeEditor
@@ -77,15 +75,14 @@ const VisEditor = () => {
 
 const ScriptEditor = () => {
   const classes = useStyles();
-  const { setScript, script } = React.useContext(ScriptContext);
-  const { resetDefaultLiveViewPage } = React.useContext(ExecuteContext);
+  const { setPxl, pxl, resetDefaultLiveViewPage } = React.useContext(ScriptContext);
 
   return (
     <CodeEditor
       className={classes.editor}
-      code={script}
+      code={pxl}
       onChange={(val) => {
-        setScript(val);
+        setPxl(val);
         resetDefaultLiveViewPage();
       }}
     />
