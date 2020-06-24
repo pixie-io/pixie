@@ -1,5 +1,7 @@
 import clsx from 'clsx';
 import * as React from 'react';
+import { DraggableCore } from 'react-draggable';
+
 import {
     Column, SortDirection, SortDirectionType, Table, TableCellProps, TableCellRenderer,
     TableHeaderProps, TableHeaderRenderer,
@@ -68,11 +70,20 @@ const useStyles = makeStyles((theme: Theme) =>
     end: {
       justifyContent: 'flex-end',
     },
-    sortPlaceholder: {
-      paddingRight: theme.spacing(2),
-    },
     sortIcon: {
       width: theme.spacing(2),
+      padding: theme.spacing(1),
+    },
+    sortIconHidden: {
+      width: theme.spacing(2),
+      opacity: '0.2',
+      padding: theme.spacing(1),
+    },
+    headerTitle: {
+      display: 'flex',
+      alignItems: 'center',
+      flexGrow: 1,
+      overflow: 'hidden',
     },
   }),
 );
@@ -94,12 +105,17 @@ interface DataTableProps {
   onSort?: (sort: SortState) => void;
   rowCount: number;
   compact?: boolean;
+  resizableColumns?: boolean;
   highlightedRow?: number;
 }
 
 export interface SortState {
   dataKey: string;
   direction: SortDirectionType;
+}
+
+export interface ColWidthOverrides {
+  [dataKey: string]: number;
 }
 
 export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerProps<DataTableProps>>(({
@@ -110,35 +126,43 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
   height,
   rowGetter,
   compact = false,
+  resizableColumns= false,
   onSort = noop,
   highlightedRow = -1,
 }) => {
+  if (width === 0 || height === 0) {
+    return null;
+  }
+
   const classes = useStyles();
   const theme = useTheme();
   const rowHeight = compact ? theme.spacing(4) : theme.spacing(6);
 
-  const headerRenderer: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => {
-    let sortIcon = <div className={classes.sortPlaceholder} />;
-    if (props.sortBy === props.dataKey && props.sortDirection === SortDirection.ASC) {
-      sortIcon = <UpIcon className={classes.sortIcon} />;
-    } else if (props.sortBy === props.dataKey && props.sortDirection === SortDirection.DESC) {
-      sortIcon = <DownIcon className={classes.sortIcon} />;
-    }
-    if (props.columnData.align === 'end') {
-      return <>
-        {sortIcon}
-        <Tooltip title={props.label}>
-          <span className={classes.cellText}>{props.label}</span>
-        </Tooltip>
-      </>;
-    }
-    return <>
-      <Tooltip title={props.label}>
-        <span className={classes.cellText}>{props.label}</span>
-      </Tooltip>
-      {sortIcon}
-    </>;
-  }, []);
+  let maxColTextWidth = 0;
+  const colTextWidths = React.useMemo<{[dataKey: string]: number}>(() => {
+    const colsWidth: {[dataKey: string]: number} = {};
+    // Randomly sample 10 rows to figure out the width basis of each row.
+    const sampleCount = Math.min(10, rowCount);
+    let max = 0;
+    columns.forEach((col) => {
+      let w = col.width || null;
+      if (!w) {
+        // Try to compute the column width based on the col sizes.
+        w = col.label.length + 2 /* sort icon space */;
+        for (let i = 0; i < sampleCount; i++) {
+          const rowIndex = Math.floor(Math.random() * Math.floor(rowCount));
+          const row = rowGetter(rowIndex);
+          w = Math.max(w, String(row[col.dataKey]).length);
+        }
+      }
+      max = Math.max(max, w);
+      colsWidth[col.dataKey] = w;
+    });
+    maxColTextWidth = max;
+    return colsWidth;
+  }, [columns, rowGetter, rowCount]);
+
+  const [widthOverrides, setColumnWidthOverride] = React.useState<ColWidthOverrides>({});
 
   const cellRenderer: TableCellRenderer = React.useCallback((props: TableCellProps) => {
     if (props.columnData.cellRenderer) {
@@ -146,22 +170,6 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
     }
     return <span className={classes.cellText}>{String(props.cellData)}</span>;
   }, []);
-
-  const widthRatio = React.useMemo<number[]>(() => {
-    // Randomly sample 10 rows to figure out the width basis of each row.
-    const sampleCount = Math.min(10, rowCount);
-    const ratio = columns.map((col) =>
-      col.label.length + 2 /* sort icon space */
-    );
-    for (let i = 0; i < sampleCount; i++) {
-      const rowIndex = Math.floor(Math.random() * Math.floor(rowCount));
-      const row = rowGetter(rowIndex);
-      columns.forEach((col, i) => {
-        ratio[i] = Math.max(ratio[i], String(row[col.dataKey]).length);
-      });
-    }
-    return ratio;
-  }, [columns, rowGetter, rowCount]);
 
   const tableRef = React.useRef(null);
 
@@ -194,9 +202,93 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
     );
   }, [highlightedRow]);
 
-  if (width === 0 || height === 0) {
-    return null;
-  }
+  const resizeColumn = React.useCallback(({dataKey, deltaX}) => {
+    setColumnWidthOverride((state) => {
+      const colIdx = columns.findIndex((col) => col.dataKey == dataKey);
+      if (colIdx == -1) {
+        return state;
+      }
+
+      const nextColKey = columns[colIdx+1].dataKey;
+
+
+      let newWidth = state[dataKey] || (colTextWidths[dataKey]);
+      let nextColWidth = state[nextColKey] || (colTextWidths[nextColKey]);
+
+      // Make sure the delta does not cause widths to become negative.
+      let d = deltaX;
+      if (newWidth + d < 0) {
+        d = newWidth;
+      }
+      if (nextColWidth - d < 0) {
+        d = nextColWidth;
+      }
+
+      newWidth += d;
+      nextColWidth -= d;
+
+      return {
+        ...state,
+        [dataKey]: newWidth,
+        [nextColKey]: nextColWidth,
+      };
+    });
+
+  }, [width, colTextWidths, maxColTextWidth]);
+
+  const colIsResizable = (idx: number): boolean => {
+    return (resizableColumns||true) && (idx != columns.length - 1);
+  };
+
+  const headerRendererCommon: TableHeaderRenderer = (props) =>{
+    let sortIcon = <UpIcon className={classes.sortIconHidden} onClick={() => {
+        onSortWrapper({sortBy: props.dataKey, sortDirection: SortDirection.ASC});
+    }}/>;
+    if (props.sortBy === props.dataKey && props.sortDirection === SortDirection.ASC) {
+      sortIcon = <UpIcon className={classes.sortIcon} onClick={() => {
+        onSortWrapper({sortBy: props.dataKey, sortDirection: SortDirection.DESC});
+      }}/>;
+    } else if (props.sortBy === props.dataKey && props.sortDirection === SortDirection.DESC) {
+      sortIcon = <DownIcon className={classes.sortIcon} onClick={() => {
+        onSortWrapper({sortBy: props.dataKey, sortDirection: SortDirection.ASC});
+      }}/>;
+    }
+    return <>
+      <div className={classes.headerTitle}>
+        {props.columnData.align === 'end'? sortIcon: null}
+        <Tooltip title={props.label}>
+          <span className={classes.cellText}>{props.label}</span>
+        </Tooltip>
+        {props.columnData.align !== 'end'? sortIcon: null}
+      </div>
+    </>;
+  };
+
+  const headerRenderer: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => {
+    return <>
+    <React.Fragment key={props.dataKey}>
+      {headerRendererCommon(props)}
+    </React.Fragment>
+    </>;
+  }, []);
+
+  const headerRendererWithDrag: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => {
+    const dataKey = props.dataKey;
+    return <>
+      <React.Fragment key={dataKey}>
+        {headerRendererCommon(props)}
+        <DraggableCore
+            onDrag={(event, { deltaX }) => {
+              resizeColumn({
+                dataKey,
+                deltaX,
+              });
+            }}>
+          <span className='scrollable-table--drag-handle'>&#8942;</span>
+        </DraggableCore>
+      </React.Fragment>
+    </>;
+  }, []);
 
   return (
     <Table
@@ -211,7 +303,6 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       rowClassName={getRowClass}
       height={height}
       width={width}
-      sort={onSortWrapper}
       sortDirection={sortState.direction}
       sortBy={sortState.dataKey}
     >
@@ -228,9 +319,9 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
             label={col.label}
             headerClassName={className}
             className={className}
-            headerRenderer={headerRenderer}
+            headerRenderer={colIsResizable(i) ? headerRendererWithDrag : headerRenderer}
             cellRenderer={cellRenderer}
-            width={col.width || widthRatio[i]}
+            width={(widthOverrides[col.dataKey]) || colTextWidths[col.dataKey]}
             flexGrow={1}
             flexShrink={1}
             columnData={col}
