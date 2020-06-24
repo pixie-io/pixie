@@ -253,8 +253,13 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
         onSortWrapper({sortBy: props.dataKey, sortDirection: SortDirection.ASC});
       }}/>;
     }
+    const headerStyle = clsx(
+      [classes.headerTitle],
+      [classes[props.columnData.align]],
+    );
+
     return <>
-      <div className={classes.headerTitle}>
+      <div className={headerStyle}>
         <Tooltip title={props.label}>
           <span className={classes.cellText}>{props.label}</span>
         </Tooltip>
