@@ -12,9 +12,8 @@ import { isEntityType, toEntityPathname, toSingleEntityPage } from 'containers/l
 import numeral from 'numeral';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
-import { DataType, Relation, SemanticType, Status } from 'types/generated/vizier_pb';
+import { DataType, Relation, SemanticType} from 'types/generated/vizier_pb';
 import * as FormatData from 'utils/format-data';
-import { ParseCompilerErrors } from 'utils/parse-compiler-errors';
 import { dataFromProto } from 'utils/result-data-utils';
 
 // STATUS_TYPES contains types that should be displayed as a status indicator.
@@ -191,46 +190,6 @@ function ExpandedRowRenderer(rowData) {
     multiline={true}
   />;
 }
-
-export const QueryResultErrors: React.FC<{ status: Status }> = ({ status }) => {
-  const parsedErrors = ParseCompilerErrors(status);
-  const colInfo: TableColumnInfo[] = [
-    {
-      dataKey: 'line',
-      label: 'Line',
-      dataType: DataType.INT64,
-      semanticType: SemanticType.ST_UNSPECIFIED,
-      flexGrow: 8,
-      width: 10,
-    }, {
-      dataKey: 'column',
-      label: 'Column',
-      dataType: DataType.INT64,
-      semanticType: SemanticType.ST_UNSPECIFIED,
-      flexGrow: 8,
-      width: 10,
-    }, {
-      dataKey: 'message',
-      label: 'Message',
-      dataType: DataType.STRING,
-      semanticType: SemanticType.ST_UNSPECIFIED,
-      flexGrow: 8,
-      width: 600,
-    },
-  ];
-
-  return (
-    <div className='query-results--compiler-error'>
-      <AutoSizedScrollableTable
-        data={parsedErrors}
-        columnInfo={colInfo}
-        cellRenderer={ResultCellRenderer}
-        expandable={true}
-        expandRenderer={ExpandedRowRenderer}
-        resizableCols={false}
-      />
-    </div>);
-};
 
 function parseTable(table: Table, clusterName: string): AutoSizedScrollableTableProps {
   const parsedTable = dataFromProto(table.relation, table.data);
