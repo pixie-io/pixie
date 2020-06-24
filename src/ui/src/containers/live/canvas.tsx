@@ -203,7 +203,8 @@ const Canvas = (props: CanvasProps) => {
         content = displayToGraph(display as GraphDisplay, parsedTable);
       } else {
         try {
-          const data = dataFromProto(table.relation, table.data);
+          const identityRenderer = (d) => d;
+          const data = dataFromProto(table.relation, table.data, () => identityRenderer);
           content = <>
             <div className={classes.widgetTitle}>{widgetName}</div>
             <React.Suspense fallback={<div className={classes.spinner}><Spinner /></div>}>
