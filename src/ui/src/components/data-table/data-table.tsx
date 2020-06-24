@@ -4,7 +4,7 @@ import { DraggableCore } from 'react-draggable';
 
 import {
     Column, SortDirection, SortDirectionType, Table, TableCellProps, TableCellRenderer,
-    TableHeaderProps, TableHeaderRenderer,
+    TableHeaderProps, TableHeaderRenderer, TableRowRenderer, TableRowProps, defaultTableRowRenderer
 } from 'react-virtualized';
 import withAutoSizer, { WithAutoSizerProps } from 'utils/autosizer';
 import noop from 'utils/noop';
@@ -13,6 +13,10 @@ import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/sty
 import Tooltip from '@material-ui/core/Tooltip';
 import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
+import * as expanded from 'images/icons/expanded.svg';
+import * as unexpanded from 'images/icons/unexpanded.svg';
+
+const EXPANDED_ROW_HEIGHT = 300;
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -25,6 +29,16 @@ const useStyles = makeStyles((theme: Theme) =>
       },
     },
     row: {
+      borderBottom: `solid 1px ${theme.palette.background.three}`,
+      '& > .ReactVirtualized__Table__rowColumn:first-of-type' : {
+        marginLeft: 0,
+        marginRight: 0,
+      },
+      '&:hover $hidden': {
+        display: 'flex',
+      }
+    },
+    rowContainer: {
       borderBottom: `solid 1px ${theme.palette.background.three}`,
     },
     cell: {
@@ -85,6 +99,16 @@ const useStyles = makeStyles((theme: Theme) =>
       flex: 'auto',
       overflow: 'hidden',
     },
+    gutterCell: {
+      paddingLeft: '0px',
+      flex: 'auto',
+      alignItems: 'center',
+      // TODO(michelle/zasgar): Fix this.
+      overflow: 'visible',
+      minWidth: theme.spacing(2.5),
+      display: 'flex',
+      height: '100%',
+    },
     dragHandle: {
       flex: '0 0 12px',
       display: 'flex',
@@ -95,9 +119,22 @@ const useStyles = makeStyles((theme: Theme) =>
       '&:hover': {
         color: theme.palette.foreground.white,
       },
+
+    },
+    expandedCell: {
+      overflow: 'auto',
+      flex: 1,
+      paddingLeft: '20px',
+    },
+    hidden: {
+      display: 'none',
     }
   }),
 );
+
+export interface ExpandedRows {
+  [key: number]: boolean;
+}
 
 export type CellAlignment = 'center' | 'start' | 'end';
 
@@ -117,6 +154,8 @@ interface DataTableProps {
   rowCount: number;
   compact?: boolean;
   resizableColumns?: boolean;
+  expandable?: boolean;
+  expandedRenderer?: (rowIndex: number) => JSX.Element;
   highlightedRow?: number;
 }
 
@@ -138,6 +177,8 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
   rowGetter,
   compact = false,
   resizableColumns= false,
+  expandable = true,
+  expandedRenderer = () => <></>,
   onSort = noop,
   highlightedRow = -1,
 }) => {
@@ -147,7 +188,6 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
 
   const classes = useStyles();
   const theme = useTheme();
-  const rowHeight = compact ? theme.spacing(4) : theme.spacing(6);
 
   const colTextWidthRatio = React.useMemo<{[dataKey: string]: number}>(() => {
     const colsWidth: {[dataKey: string]: number} = {};
@@ -172,24 +212,33 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
     const ratio: {[dataKey: string]: number} = {};
     for (const colsWidthKey in colsWidth) {
       ratio[colsWidthKey] = colsWidth[colsWidthKey] / totalWidth;
+      // Enforce max-width.
+      if (ratio[colsWidthKey] > 1/3) {
+        ratio[colsWidthKey] = 1/3;
+      }
     }
     return ratio;
   }, [columns, rowGetter, rowCount]);
 
   const [widthOverrides, setColumnWidthOverride] = React.useState<ColWidthOverrides>({});
-
-  const cellRenderer: TableCellRenderer = React.useCallback((props: TableCellProps) => {
-    if (props.columnData.cellRenderer) {
-      return props.columnData.cellRenderer(props.cellData);
-    }
-    return <span className={classes.cellText}>{String(props.cellData)}</span>;
-  }, []);
-
   const tableRef = React.useRef(null);
 
   const [sortState, setSortState] = React.useState<SortState>({ dataKey: '', direction: SortDirection.DESC });
+  const [expandedRowState, setExpandedRowstate] = React.useState<ExpandedRows>({});
 
   const rowGetterWrapper = React.useCallback(({ index }) => rowGetter(index), [rowGetter]);
+
+  const cellRenderer: TableCellRenderer = React.useCallback((props: TableCellProps) => {
+    return <>
+      {props.columnData.cellRenderer && props.columnData.cellRenderer(props.cellData)}
+      {!props.columnData.cellRenderer && <span className={classes.cellText}>{String(props.cellData)}</span>}
+    </>;
+  }, [expandedRowState, expandedRenderer]);
+
+  const defaultCellHeight = compact ? theme.spacing(4) : theme.spacing(6);
+  const computeRowHeight = React.useCallback(({index}) => {
+    return expandedRowState[index] ? EXPANDED_ROW_HEIGHT : defaultCellHeight;
+  }, [defaultCellHeight, expandedRowState]);
 
   const onSortWrapper = React.useCallback(({ sortBy, sortDirection }) => {
     if (sortBy) {
@@ -201,7 +250,18 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
   }, [onSort]);
 
   const onRowClickWrapper = React.useCallback(({ index }) => {
-    onRowClick(index)
+    setExpandedRowstate((state) => {
+      const expandedRows = {...state};
+      if (expandedRows[index]) {
+        delete expandedRows[index];
+      } else {
+        expandedRows[index] = true;
+      }
+      return expandedRows;
+    });
+    tableRef.current.recomputeRowHeights();
+    tableRef.current.forceUpdate();
+    onRowClick(index);
   }, [onRowClick]);
 
   const getRowClass = React.useCallback(({ index }) => {
@@ -230,6 +290,13 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       const percentDelta = deltaX / width;
       newWidth += percentDelta;
       nextColWidth -= percentDelta;
+
+      // Enforce max-width.
+      if (newWidth > 1/3) {
+        const d = newWidth - 1/3;
+        newWidth = 1/3;
+        nextColWidth += d;
+      }
 
       return {
         ...state,
@@ -280,6 +347,45 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
     </>;
   }, []);
 
+  const gutterHeaderRenderer: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => {
+    return <>
+      <React.Fragment key={props.dataKey}>
+      </React.Fragment>
+    </>;
+  }, []);
+
+  const gutterCellRenderer: TableCellRenderer = React.useCallback((props: TableCellProps) => {
+    // Hide the icon by default unless:
+    //  1. It's been expanded.
+    //  2. The row has been highlighted.
+    const cls = clsx(
+      classes.gutterCell,
+      !(highlightedRow == props.rowIndex || expandedRowState[props.rowIndex]) && classes.hidden,
+    )
+    const icon = expandedRowState[props.rowIndex] ? expanded : unexpanded;
+    return <>
+      <div className={cls}>
+        <img src={icon} />
+      </div>
+    </>;
+  }, [highlightedRow, expandedRowState]);
+
+  const rowRenderer: TableRowRenderer = React.useCallback((props: TableRowProps) => {
+    return <div
+        className={classes.rowContainer}
+        key={props.key}
+        style={props.style}
+      >
+      {defaultTableRowRenderer({ ...props, key: '', style: {height: defaultCellHeight} })}
+
+      {expandedRowState[props.index] &&
+         <div className={classes.expandedCell}>
+           {expandedRenderer(props.index)}
+         </div>
+      }
+    </div>;
+  }, [expandedRowState]);
+
   const headerRendererWithDrag: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => {
     const dataKey = props.dataKey;
     return <>
@@ -297,22 +403,43 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       </React.Fragment>
     </>;
   }, []);
+
+  const gutterClass = clsx(
+    compact && classes.compact,
+    classes.gutterCell,
+  );
+
   return (
     <Table
-      headerHeight={rowHeight}
+      headerHeight={defaultCellHeight}
       ref={tableRef}
       className={classes.table}
       overscanRowCount={2}
       rowGetter={rowGetterWrapper}
       rowCount={rowCount}
-      rowHeight={rowHeight}
+      rowHeight={computeRowHeight}
       onRowClick={onRowClickWrapper}
       rowClassName={getRowClass}
+      rowRenderer={rowRenderer}
       height={height}
       width={width}
       sortDirection={sortState.direction}
       sortBy={sortState.dataKey}
     >
+      {
+        expandable &&
+        <Column
+          key='gutter'
+          dataKey={'gutter'}
+          label={''}
+          headerClassName={gutterClass}
+          className={gutterClass}
+          headerRenderer={gutterHeaderRenderer}
+          cellRenderer={gutterCellRenderer}
+          width={4 /*width for chevron */}
+          columnData={null}
+        />
+      }
       {
         columns.map((col, i) => {
           const className = clsx(
