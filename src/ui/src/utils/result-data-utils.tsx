@@ -53,14 +53,9 @@ export function columnFromProto(column: Column): any[] {
   throw (new Error('Unsupported data type: ' + column.getColDataCase()));
 }
 
-type rendererFunc = (d: any) => any;
-
-type getRendererFunc = (type: DataType) => rendererFunc;
-
 export function dataFromProto(
   relation: Relation,
   data: RowBatchData[],
-  getRenderer: getRendererFunc = getDataRenderer,
 ) {
   const results = [];
 
@@ -74,9 +69,8 @@ export function dataFromProto(
     const cols = batch.getColsList();
     cols.forEach((col, i) => {
       const name = colRelations[i].getColumnName();
-      const renderer = getRenderer(colRelations[i].getColumnType());
       columnFromProto(col).forEach((d, j) => {
-        rows[j][name] = renderer(d);
+        rows[j][name] = d;
       });
     });
     results.push(...rows);

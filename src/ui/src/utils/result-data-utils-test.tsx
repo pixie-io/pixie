@@ -23,10 +23,6 @@ describe('ResultsToCsv test', () => {
   });
 });
 
-function identityRenderer() {
-  return (d) => d;
-}
-
 describe('dataFromProto', () => {
   const expected = [
     {
@@ -94,12 +90,12 @@ describe('dataFromProto', () => {
   rowBatch2.setNumRows(1);
 
   it('handles multiple rowbatches correctly', () => {
-    expect(ResultDataUtils.dataFromProto(relationsProto, [rowBatch1, rowBatch2], identityRenderer))
+    expect(ResultDataUtils.dataFromProto(relationsProto, [rowBatch1, rowBatch2]))
       .toEqual(expected);
   });
 
   it('handles single rowbatch correctly', () => {
-    expect(ResultDataUtils.dataFromProto(relationsProto, [rowBatch1], identityRenderer))
+    expect(ResultDataUtils.dataFromProto(relationsProto, [rowBatch1]))
       .toEqual(expected.slice(0, 2));
   });
 });
