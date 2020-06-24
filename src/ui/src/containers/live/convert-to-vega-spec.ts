@@ -263,12 +263,31 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
   if (!display.timeseries) {
     throw new Error('TimeseriesChart must have one timeseries entry');
   }
+  let valueField = display.timeseries[0].value;
+  let colorField = '';
   if (display.timeseries.length > 1) {
-    throw new Error('More than one timeseries in TimeseriesChart not yet supported');
+    const mode = display.timeseries[0].mode;
+    const valueFields: string[] = [];
+    for (const ts of display.timeseries) {
+      if (ts.mode !== mode) {
+        throw new Error('More than one timeseries in TimeseriesChart not supported if there are different mark types.');
+      }
+      if (ts.series) {
+        throw new Error('Subseries are not supported for multiple timeseries within a TimeseriesChart');
+      }
+      if (!ts.value) {
+        throw new Error('Each timeseries in a TimeseriesChart must have a value.');
+      }
+      valueFields.push(ts.value);
+    }
+    colorField = randStr(10);
+    valueField = randStr(10);
+    spec = extendTransforms(spec, [
+      { fold: valueFields, as: [colorField, valueField] },
+    ]);
   }
 
   const timeseries = display.timeseries[0];
-
   let mark = '';
   switch (timeseries.mode) {
     case 'MODE_POINT':
@@ -283,22 +302,21 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
       mark = 'line';
   }
 
-  if (!timeseries.value) {
+  if (!valueField) {
     throw new Error('No value provided for TimeseriesChart timeseries');
   }
 
   const layers = [];
-  layers.push(timeseriesDataLayer(timeseries.value, mark));
+  layers.push(timeseriesDataLayer(valueField, mark));
 
   if (display.yAxis && display.yAxis.label) {
     layers[0] = extendYEncoding(layers[0], { title: display.yAxis.label });
   }
   layers[0] = extendYEncoding(layers[0], { scale: { zero: false } });
 
-  let colorField: string;
-  if (timeseries.series) {
+  if (colorField === '' && timeseries.series) {
     colorField = timeseries.series;
-  } else {
+  } else if (colorField === '') {
     // If there is no series provided, then we generate a series column,
     // by using the fold transform.
     // To avoid collisions, we generate a random name for the fields
@@ -306,9 +324,9 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
 
     // create random alphanumeric strings of length 10.
     colorField = randStr(10);
-    const valueField = randStr(10);
+    const newValueField = randStr(10);
     spec = extendTransforms(spec, [
-      { fold: [timeseries.value], as: [colorField, valueField] },
+      { fold: [valueField], as: [colorField, newValueField] },
     ]);
   }
   layers[0] = extendColorEncoding(layers[0], { field: colorField, type: 'nominal', legend: null });
@@ -434,10 +452,27 @@ function extractPivotField(vegaSpec: VgSpec, display: TimeseriesDisplay): string
   return null;
 }
 
+function extractValueField(vegaSpec: VgSpec, display: TimeseriesDisplay): string | null {
+  if (display.timeseries.length == 1) {
+    return display.timeseries[0].value;
+  }
+  for (const data of vegaSpec.data) {
+    if (!data.transform) {
+      continue;
+    }
+    for (const transform of data.transform) {
+      if (transform.type === 'fold') {
+        return transform.as[1];
+      }
+    }
+  }
+}
+
 function addExtrasForTimeseries(vegaSpec, display: TimeseriesDisplay, source: string): VegaSpecWithProps {
   const isStacked: boolean = display.timeseries[0].stackBySeries;
   const pivotField: string = extractPivotField(vegaSpec, display);
-  if (!pivotField) {
+  const valueField: string = extractValueField(vegaSpec, display);
+  if (!pivotField || !valueField) {
     return {
       spec: vegaSpec,
       hasLegend: false,
@@ -445,7 +480,6 @@ function addExtrasForTimeseries(vegaSpec, display: TimeseriesDisplay, source: st
       isStacked,
     };
   }
-  const valueField: string = display.timeseries[0].value;
   let newSpec = addHoverHandlersToVgSpec(vegaSpec, source, pivotField, valueField);
   newSpec = addLegendSelectHandlersToVgSpec(newSpec, pivotField, valueField);
   return {

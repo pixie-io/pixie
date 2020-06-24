@@ -74,7 +74,7 @@
       }
     },
     {
-      "name": "P50 Latency",
+      "name": "Latency",
       "globalFuncOutputName": "inbound_let_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
@@ -82,51 +82,11 @@
           {
             "value": "latency_p50",
             "mode": "MODE_LINE"
-          }
-        ],
-        "title": "",
-        "yAxis": {
-          "label": "P50 Latency (ms)"
-        },
-        "xAxis": null
-      },
-      "position": {
-        "x": 4,
-        "y": 0,
-        "w": 4,
-        "h": 3
-      }
-    },
-    {
-      "name": "P90 Latency",
-      "globalFuncOutputName": "inbound_let_timeseries",
-      "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
-        "timeseries": [
+          },
           {
             "value": "latency_p90",
             "mode": "MODE_LINE"
-          }
-        ],
-        "title": "",
-        "yAxis": {
-          "label": "P90 Latency (ms)"
-        },
-        "xAxis": null
-      },
-      "position": {
-        "x": 8,
-        "y": 0,
-        "w": 4,
-        "h": 3
-      }
-    },
-    {
-      "name": "P99 Latency",
-      "globalFuncOutputName": "inbound_let_timeseries",
-      "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
-        "timeseries": [
+          },
           {
             "value": "latency_p99",
             "mode": "MODE_LINE"
@@ -134,13 +94,13 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "P99 Latency (ms)"
+          "label": "Latency (ms)"
         },
         "xAxis": null
       },
       "position": {
-        "x": 0,
-        "y": 3,
+        "x": 4,
+        "y": 0,
         "w": 4,
         "h": 3
       }
