@@ -32,15 +32,6 @@ export const LIST_CLUSTERS = gql`
   }
 }`;
 
-export const CHECK_VIZIER = gql`
-{
-  vizier {
-    agents {
-      state
-    }
-  }
-}`;
-
 const GET_USER = gql`
 {
   user {

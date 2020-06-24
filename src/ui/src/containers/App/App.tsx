@@ -7,7 +7,7 @@ import { SnackbarProvider } from 'components/snackbar/snackbar';
 import { VersionInfo } from 'components/version-info/version-info';
 import { AuthComplete } from 'containers/login/auth-complete';
 import { Login } from 'containers/login/login';
-import Vizier from 'containers/vizier/vizier';
+import Vizier from 'containers/App/vizier';
 import * as React from 'react';
 import { Redirect, Route, Router, Switch } from 'react-router-dom';
 import { isProd } from 'utils/env';

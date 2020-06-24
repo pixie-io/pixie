@@ -2,7 +2,7 @@ import { scrollbarStyles } from 'common/mui-theme';
 import VizierGRPCClientContext from 'common/vizier-grpc-client-context';
 import EditIcon from 'components/icons/edit';
 import PixieCommandIcon from 'components/icons/pixie-command';
-import { ClusterInstructions } from 'containers/vizier/deploy-instructions';
+import { ClusterInstructions } from 'containers/App/deploy-instructions';
 import * as React from 'react';
 
 import Drawer from '@material-ui/core/Drawer';
