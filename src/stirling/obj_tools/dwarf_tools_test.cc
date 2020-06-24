@@ -129,32 +129,39 @@ TEST_P(DwarfReaderTest, GolangArgumentStackPointerOffset) {
 // Note the differences here and the results in CppArgumentStackPointerOffset.
 // This needs more investigation. Appears as though there are issues with alignment and
 // also the reference point of the offset.
-TEST_P(DwarfReaderTest, CppFunctionArgOffsets) {
+TEST_P(DwarfReaderTest, CppFunctionArgInfo) {
   DwarfReaderTestParam p = GetParam();
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        DwarfReader::Create(kCppBinaryPath, p.index));
 
-  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("SomeFunction"),
-                     UnorderedElementsAre(Pair("x", 0), Pair("y", 12)));
-  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("CanYouFindThis"),
-                     UnorderedElementsAre(Pair("a", 0), Pair("b", 4)));
-  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("SomeFunctionWithPointerArgs"),
-                     UnorderedElementsAre(Pair("a", 0), Pair("x", 8)));
+  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("CanYouFindThis"),
+                     UnorderedElementsAre(Pair("a", ArgInfo{0, ArgType::kInt}),
+                                          Pair("b", ArgInfo{4, ArgType::kInt})));
+  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("SomeFunction"),
+                     UnorderedElementsAre(Pair("x", ArgInfo{0, ArgType::kStruct}),
+                                          Pair("y", ArgInfo{12, ArgType::kStruct})));
+  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("SomeFunctionWithPointerArgs"),
+                     UnorderedElementsAre(Pair("a", ArgInfo{0, ArgType::kPointer}),
+                                          Pair("x", ArgInfo{8, ArgType::kPointer})));
 }
 
-TEST_P(DwarfReaderTest, GoFunctionArgOffsets) {
+TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
   DwarfReaderTestParam p = GetParam();
 
   {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                          DwarfReader::Create(kGoBinaryPath, p.index));
 
-    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("main.(*Vertex).Scale"),
-                       UnorderedElementsAre(Pair("v", 0), Pair("f", 8)));
-    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("main.(*Vertex).CrossScale"),
-                       UnorderedElementsAre(Pair("v", 0), Pair("v2", 8), Pair("f", 24)));
-    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgOffsets("main.Vertex.Abs"),
-                       UnorderedElementsAre(Pair("v", 0), Pair("~r0", 16)));
+    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("main.(*Vertex).Scale"),
+                       UnorderedElementsAre(Pair("v", ArgInfo{0, ArgType::kPointer}),
+                                            Pair("f", ArgInfo{8, ArgType::kFloat64})));
+    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("main.(*Vertex).CrossScale"),
+                       UnorderedElementsAre(Pair("v", ArgInfo{0, ArgType::kPointer}),
+                                            Pair("v2", ArgInfo{8, ArgType::kStruct}),
+                                            Pair("f", ArgInfo{24, ArgType::kFloat64})));
+    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("main.Vertex.Abs"),
+                       UnorderedElementsAre(Pair("v", ArgInfo{0, ArgType::kStruct}),
+                                            Pair("~r0", ArgInfo{16, ArgType::kFloat64})));
   }
 
   {
@@ -163,32 +170,35 @@ TEST_P(DwarfReaderTest, GoFunctionArgOffsets) {
 
     //   func (f *http2Framer) WriteDataPadded(streamID uint32, endStream bool, data, pad []byte)
     //   error
-    EXPECT_OK_AND_THAT(
-        dwarf_reader->GetFunctionArgOffsets("net/http.(*http2Framer).WriteDataPadded"),
-        UnorderedElementsAre(Pair("f", 0), Pair("streamID", 8), Pair("endStream", 12),
-                             Pair("data", 16), Pair("pad", 40), Pair("~r4", 64)));
+    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("net/http.(*http2Framer).WriteDataPadded"),
+                       UnorderedElementsAre(Pair("f", ArgInfo{0, ArgType::kPointer}),
+                                            Pair("streamID", ArgInfo{8, ArgType::kUInt32}),
+                                            Pair("endStream", ArgInfo{12, ArgType::kBool}),
+                                            Pair("data", ArgInfo{16, ArgType::kStruct}),
+                                            Pair("pad", ArgInfo{40, ArgType::kStruct}),
+                                            Pair("~r4", ArgInfo{64, ArgType::kStruct})));
   }
 }
 
-TEST_P(DwarfReaderTest, GoFunctionArgConsistency) {
+TEST_P(DwarfReaderTest, GoFunctionArgLocationConsistency) {
   DwarfReaderTestParam p = GetParam();
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                        DwarfReader::Create(kGoBinaryPath, p.index));
 
-  // First run GetFunctionArgOffsets to automatically get all arguments.
+  // First run GetFunctionArgInfo to automatically get all arguments.
   ASSERT_OK_AND_ASSIGN(auto function_arg_locations,
-                       dwarf_reader->GetFunctionArgOffsets("main.MixedArgTypes"));
+                       dwarf_reader->GetFunctionArgInfo("main.MixedArgTypes"));
 
-  // This is required so the test doesn't pass if GetFunctionArgOffsets returns nothing.
+  // This is required so the test doesn't pass if GetFunctionArgInfo returns nothing.
   ASSERT_THAT(function_arg_locations, SizeIs(7));
 
   // Finally, run a consistency check between the two methods.
-  for (auto& [arg_name, arg_offset] : function_arg_locations) {
+  for (auto& [arg_name, arg_info] : function_arg_locations) {
     ASSERT_OK_AND_ASSIGN(uint64_t offset, dwarf_reader->GetArgumentStackPointerOffset(
                                               "main.MixedArgTypes", arg_name));
-    EXPECT_EQ(offset, arg_offset) << absl::Substitute("Argument $0 failed consistency check",
-                                                      arg_name);
+    EXPECT_EQ(offset, arg_info.offset)
+        << absl::Substitute("Argument $0 failed consistency check", arg_name);
   }
 }
 

@@ -287,6 +287,37 @@ StatusOr<uint64_t> GetAlignmentByteSize(const DWARFDie& die) {
   }
 }
 
+StatusOr<ArgType> GetArgType(const DWARFDie& die) {
+  if (!die.isValid()) {
+    return error::Internal("Encountered an invalid DIE.");
+  }
+
+  switch (die.getTag()) {
+    case llvm::dwarf::DW_TAG_typedef: {
+      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+      return GetArgType(type_die);
+    }
+    case llvm::dwarf::DW_TAG_pointer_type:
+      return ArgType::kPointer;
+    case llvm::dwarf::DW_TAG_subroutine_type:
+      return ArgType::kSubroutine;
+    case llvm::dwarf::DW_TAG_base_type: {
+      std::string_view type_name(die.getName(llvm::DINameKind::ShortName));
+      auto it = kGoTypesMap.find(type_name);
+      if (it == kGoTypesMap.end()) {
+        return error::Internal("Unrecognized base type: $0",
+                               die.getName(llvm::DINameKind::ShortName));
+      }
+      return it->second;
+    }
+    case llvm::dwarf::DW_TAG_structure_type:
+      return ArgType::kStruct;
+    default:
+      return error::Internal(
+          absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
+  }
+}
+
 }  // namespace
 
 StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view function_symbol_name,
@@ -363,9 +394,9 @@ uint64_t Align(uint64_t addr, uint64_t size) {
 }
 }  // namespace
 
-StatusOr<std::map<std::string, uint64_t>> DwarfReader::GetFunctionArgOffsets(
+StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
     std::string_view function_symbol_name) {
-  std::map<std::string, uint64_t> arg_locations;
+  std::map<std::string, ArgInfo> arg_info;
   uint64_t current_offset = 0;
 
   PL_ASSIGN_OR_RETURN(const DWARFDie& function_die,
@@ -374,17 +405,21 @@ StatusOr<std::map<std::string, uint64_t>> DwarfReader::GetFunctionArgOffsets(
   for (const auto& die : function_die.children()) {
     if (die.getTag() == llvm::dwarf::DW_TAG_formal_parameter) {
       VLOG(1) << die.getName(llvm::DINameKind::ShortName);
+      auto& arg = arg_info[die.getName(llvm::DINameKind::ShortName)];
+
       PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
       PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
       PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
 
       current_offset = Align(current_offset, alignment_size);
-      arg_locations[die.getName(llvm::DINameKind::ShortName)] = current_offset;
+      arg.offset = current_offset;
       current_offset += type_size;
+
+      PL_ASSIGN_OR_RETURN(arg.type, GetArgType(type_die));
     }
   }
 
-  return arg_locations;
+  return arg_info;
 }
 
 }  // namespace dwarf_tools

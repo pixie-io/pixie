@@ -5,6 +5,7 @@
 
 #include <absl/container/flat_hash_map.h>
 
+#include <limits>
 #include <map>
 #include <memory>
 #include <string>
@@ -16,6 +17,59 @@
 namespace pl {
 namespace stirling {
 namespace dwarf_tools {
+
+enum class ArgType {
+  kUnspecified = 0,
+
+  kBool,
+
+  kInt,
+  kInt8,
+  kInt16,
+  kInt32,
+  kInt64,
+
+  kUInt,
+  kUInt8,
+  kUInt16,
+  kUInt32,
+  kUInt64,
+
+  kFloat32,
+  kFloat64,
+
+  kPointer,
+  kStruct,
+  kSubroutine,
+};
+
+// Map to convert Go Base types to ArgType.
+// clang-format off
+const std::map<std::string_view, ArgType> kGoTypesMap = {
+    {"bool", ArgType::kBool},
+    {"int", ArgType::kInt},
+    {"int8", ArgType::kInt8},
+    {"int16", ArgType::kInt16},
+    {"int32", ArgType::kInt32},
+    {"int64", ArgType::kInt64},
+    {"uint", ArgType::kUInt},
+    {"uint8", ArgType::kUInt8},
+    {"uint16", ArgType::kUInt16},
+    {"uint32", ArgType::kUInt32},
+    {"uint64", ArgType::kUInt64},
+    {"float32", ArgType::kFloat32},
+    {"float64", ArgType::kFloat64},
+};
+// clang-format on
+
+struct ArgInfo {
+  uint64_t offset = std::numeric_limits<uint64_t>::max();
+  ArgType type = ArgType::kUnspecified;
+};
+
+inline bool operator==(const ArgInfo& a, const ArgInfo& b) {
+  return a.offset == b.offset && a.type == b.type;
+}
 
 class DwarfReader {
  public:
@@ -70,21 +124,22 @@ class DwarfReader {
    * C++ functions return negative numbers (i.e. offset relative to the stack pointer
    * after the frame has been created).
    * NOTE: This function currently uses the DW_AT_location. It is NOT yet robust,
-   * and may fail for certain functions. Compare this function to GetFunctionArgOffsets().
+   * and may fail for certain functions. Compare this function to GetFunctionArgInfo().
    */
   StatusOr<int64_t> GetArgumentStackPointerOffset(std::string_view function_symbol_name,
                                                   std::string_view arg_name);
 
   /**
-   * Returns the location of all the arguments of a function.
-   * NOTE: Currently, the method used by this function differs from the method used by
-   * GetArgumentStackPointerOffset(), which uses the DW_AT_location attribute.
-   * This function infers the location based on type sizes, and an implicit understanding
+   * Returns information on the arguments of a function, including location and type.
+   *
+   * NOTE: Currently, the method used by this function to determine the argument offset
+   * differs from the method used by GetArgumentStackPointerOffset(), which uses the DW_AT_location
+   * attribute. This function infers the location based on type sizes, and an implicit understanding
    * of the calling convention.
    * It is currently more robust for our uses cases, but eventually we should use the DW_AT_location
    * approach, which should be more generally robust (once we implement processing it correctly).
    */
-  StatusOr<std::map<std::string, uint64_t>> GetFunctionArgOffsets(
+  StatusOr<std::map<std::string, ArgInfo>> GetFunctionArgInfo(
       std::string_view function_symbol_name);
 
   bool IsValid() { return dwarf_context_->getNumCompileUnits() != 0; }

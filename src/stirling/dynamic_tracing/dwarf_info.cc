@@ -17,7 +17,7 @@ StatusOr<dynamictracingpb::PhysicalProbe> AddDwarves(const dynamictracingpb::Pro
 
   PL_ASSIGN_OR_RETURN(std::unique_ptr<DwarfReader> dwarf_reader, DwarfReader::Create(binary_path));
 
-  PL_ASSIGN_OR_RETURN(auto args_map, dwarf_reader->GetFunctionArgOffsets(function_symbol));
+  PL_ASSIGN_OR_RETURN(auto args_map, dwarf_reader->GetFunctionArgInfo(function_symbol));
 
   dynamictracingpb::PhysicalProbe out;
 
@@ -34,13 +34,16 @@ StatusOr<dynamictracingpb::PhysicalProbe> AddDwarves(const dynamictracingpb::Pro
 
   for (auto& arg : input_probe.args()) {
     auto it = args_map.find(arg.expr());
-    uint32_t offset = (it == args_map.end()) ? -1 : it->second;
+    if (it == args_map.end()) {
+      return error::Internal("Could not find argument $0", arg.expr());
+    }
+    dwarf_tools::ArgInfo& arg_info = it->second;
 
     auto* var = out.add_vars();
     var->set_name(arg.id());
     var->set_val_type(dynamictracingpb::INT32);
     var->mutable_memory()->set_base("sp");
-    var->mutable_memory()->set_offset(offset + 8);
+    var->mutable_memory()->set_offset(arg_info.offset + 8);
   }
 
   return out;

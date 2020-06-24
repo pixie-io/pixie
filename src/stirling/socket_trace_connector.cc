@@ -420,19 +420,19 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   // The information from DWARF assumes SP is 8 bytes larger than the SP
   // we get from BPF code, so add the correction factor here.
   constexpr int32_t kSPOffset = 8;
-  const std::map<std::string, uint64_t> kEmptyMap;
+  const std::map<std::string, dwarf_tools::ArgInfo> kEmptyMap;
 
-#define GET_ARG_OFFSET(symaddr, fn_args_map, arg)                        \
-  {                                                                      \
-    auto it = fn_args_map.find(arg);                                     \
-    symaddr = (it != fn_args_map.end()) ? (it->second + kSPOffset) : -1; \
-    LOG(INFO) << absl::Substitute(#symaddr " = $0", symaddr);            \
+#define GET_ARG_OFFSET(symaddr, fn_args_map, arg)                               \
+  {                                                                             \
+    auto it = fn_args_map.find(arg);                                            \
+    symaddr = (it != fn_args_map.end()) ? (it->second.offset + kSPOffset) : -1; \
+    LOG(INFO) << absl::Substitute(#symaddr " = $0", symaddr);                   \
   }
 
   // Arguments of net/http.(*http2Framer).WriteDataPadded.
   {
     constexpr std::string_view fn = "net/http.(*http2Framer).WriteDataPadded";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap);
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap);
     GET_ARG_OFFSET(symaddrs->http2Framer_WriteDataPadded_f_offset, args_map, "f");
     GET_ARG_OFFSET(symaddrs->http2Framer_WriteDataPadded_streamID_offset, args_map, "streamID");
     GET_ARG_OFFSET(symaddrs->http2Framer_WriteDataPadded_endStream_offset, args_map, "endStream");
@@ -442,7 +442,7 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   // Arguments of golang.org/x/net/http2.(*Framer).WriteDataPadded.
   {
     std::string_view fn = "golang.org/x/net/http2.(*Framer).WriteDataPadded";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
     GET_ARG_OFFSET(symaddrs->http2_WriteDataPadded_f_offset, args_map, "f");
     GET_ARG_OFFSET(symaddrs->http2_WriteDataPadded_streamID_offset, args_map, "streamID");
     GET_ARG_OFFSET(symaddrs->http2_WriteDataPadded_endStream_offset, args_map, "endStream");
@@ -452,7 +452,7 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   // Arguments of net/http.(*http2Framer).checkFrameOrder.
   {
     std::string_view fn = "net/http.(*http2Framer).checkFrameOrder";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
     GET_ARG_OFFSET(symaddrs->http2Framer_checkFrameOrder_fr_offset, args_map, "fr");
     GET_ARG_OFFSET(symaddrs->http2Framer_checkFrameOrder_f_offset, args_map, "f");
   }
@@ -460,7 +460,7 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   // Arguments of golang.org/x/net/http2.(*Framer).checkFrameOrder.
   {
     std::string_view fn = "golang.org/x/net/http2.(*Framer).checkFrameOrder";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
     GET_ARG_OFFSET(symaddrs->http2_checkFrameOrder_fr_offset, args_map, "fr");
     GET_ARG_OFFSET(symaddrs->http2_checkFrameOrder_f_offset, args_map, "f");
   }
@@ -468,7 +468,7 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   // Arguments of net/http.(*http2writeResHeaders).writeFrame.
   {
     std::string_view fn = "net/http.(*http2writeResHeaders).writeFrame";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), LOG(INFO) << __s__.msg();
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), LOG(INFO) << __s__.msg();
                  __s__ = kEmptyMap;);
     GET_ARG_OFFSET(symaddrs->writeFrame_w_offset, args_map, "w");
     GET_ARG_OFFSET(symaddrs->writeFrame_ctx_offset, args_map, "ctx");
@@ -477,7 +477,7 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   // Arguments of golang.org/x/net/http2/hpack.(*Encoder).WriteField.
   {
     std::string_view fn = "golang.org/x/net/http2/hpack.(*Encoder).WriteField";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
     GET_ARG_OFFSET(symaddrs->WriteField_e_offset, args_map, "e");
     GET_ARG_OFFSET(symaddrs->WriteField_f_offset, args_map, "f");
   }
@@ -485,7 +485,7 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   // Arguments of net/http.(*http2serverConn).processHeaders.
   {
     std::string_view fn = "net/http.(*http2serverConn).processHeaders";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
     GET_ARG_OFFSET(symaddrs->processHeaders_sc_offset, args_map, "sc");
     GET_ARG_OFFSET(symaddrs->processHeaders_f_offset, args_map, "f");
   }
@@ -493,7 +493,7 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   // Arguments of google.golang.org/grpc/internal/transport.(*http2Server).operateHeaders.
   {
     std::string_view fn = "google.golang.org/grpc/internal/transport.(*http2Server).operateHeaders";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
     GET_ARG_OFFSET(symaddrs->http2Server_operateHeaders_t_offset, args_map, "t");
     GET_ARG_OFFSET(symaddrs->http2Server_operateHeaders_frame_offset, args_map, "frame");
   }
@@ -501,7 +501,7 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   // Arguments of google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders.
   {
     std::string_view fn = "google.golang.org/grpc/internal/transport.(*http2Client).operateHeaders";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
     GET_ARG_OFFSET(symaddrs->http2Client_operateHeaders_t_offset, args_map, "t");
     GET_ARG_OFFSET(symaddrs->http2Client_operateHeaders_frame_offset, args_map, "frame");
   }
@@ -509,7 +509,7 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   // Arguments of google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader.
   {
     std::string_view fn = "google.golang.org/grpc/internal/transport.(*loopyWriter).writeHeader";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgOffsets(fn), __s__ = kEmptyMap;);
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), __s__ = kEmptyMap;);
     GET_ARG_OFFSET(symaddrs->writeHeader_l_offset, args_map, "l");
     GET_ARG_OFFSET(symaddrs->writeHeader_streamID_offset, args_map, "streamID");
     GET_ARG_OFFSET(symaddrs->writeHeader_endStream_offset, args_map, "endStream");
