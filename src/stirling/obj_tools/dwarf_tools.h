@@ -93,9 +93,9 @@ class DwarfReader {
   DwarfReader(std::unique_ptr<llvm::MemoryBuffer> buffer,
               std::unique_ptr<llvm::DWARFContext> dwarf_context);
 
-  // Builds an index for struct types. If making multiple calls to GetStructMemberOffset,
-  // this should speed up the process at the cost of some more memory.
-  void IndexStructs();
+  // Builds an index for certain commonly used DIE types (e.g. structs and functions).
+  // When making multiple DwarfReader calls, this speeds up the process at the cost of some memory.
+  void IndexDIEs();
 
   static Status GetMatchingDIEs(llvm::DWARFContext::unit_iterator_range CUs, std::string_view name,
                                 std::optional<llvm::dwarf::Tag> tag,
@@ -104,7 +104,8 @@ class DwarfReader {
   std::unique_ptr<llvm::MemoryBuffer> memory_buffer_;
   std::unique_ptr<llvm::DWARFContext> dwarf_context_;
 
-  absl::flat_hash_map<std::string, llvm::DWARFDie> die_struct_map_;
+  // Nested map: [tag][symbol_name] -> DWARFDie
+  absl::flat_hash_map<llvm::dwarf::Tag, absl::flat_hash_map<std::string, llvm::DWARFDie>> die_map_;
 };
 
 }  // namespace dwarf_tools

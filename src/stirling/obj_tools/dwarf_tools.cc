@@ -59,7 +59,7 @@ StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(std::string_view obj_
   auto dwarf_reader = std::unique_ptr<DwarfReader>(
       new DwarfReader(std::move(buffer), DWARFContext::create(*obj_file)));
   if (index) {
-    dwarf_reader->IndexStructs();
+    dwarf_reader->IndexDIEs();
   }
 
   return dwarf_reader;
@@ -111,27 +111,40 @@ Status DwarfReader::GetMatchingDIEs(DWARFContext::unit_iterator_range CUs, std::
   return Status::OK();
 }
 
-void DwarfReader::IndexStructs() {
-  // For now, we only index structure types.
-  // TODO(oazizi): Expand to cover other types, when needed.
-  llvm::dwarf::Tag tag = llvm::dwarf::DW_TAG_structure_type;
+namespace {
+bool IsIndexedType(llvm::dwarf::Tag tag) {
+  switch (tag) {
+    // To index more DW_TAG types, simply add the type here.
+    case llvm::dwarf::DW_TAG_structure_type:
+    case llvm::dwarf::DW_TAG_subprogram:
+      return true;
+    default:
+      return false;
+  }
+}
+}  // namespace
 
+void DwarfReader::IndexDIEs() {
   DWARFContext::unit_iterator_range CUs = dwarf_context_->normal_units();
 
   for (const auto& CU : CUs) {
     for (const auto& Entry : CU->dies()) {
       DWARFDie die = {CU.get(), &Entry};
-      if (IsMatchingTag(tag, die)) {
+      llvm::dwarf::Tag tag = die.getTag();
+
+      if (IsIndexedType(tag)) {
         const char* die_short_name = die.getName(llvm::DINameKind::ShortName);
         if (die_short_name != nullptr) {
+          auto& die_type_map = die_map_[tag];
+
           // TODO(oazizi): What's the right way to deal with duplicate names?
           // Only appears to happen with structs like the following:
           //  ThreadStart, _IO_FILE, _IO_marker, G, in6_addr
           // So probably okay for now. But need to be wary of this.
-          if (die_struct_map_.find(die_short_name) != die_struct_map_.end()) {
+          if (die_type_map.find(die_short_name) != die_type_map.end()) {
             VLOG(1) << "Duplicate name: " << die_short_name;
           }
-          die_struct_map_[die_short_name] = die;
+          die_type_map[die_short_name] = die;
         }
       }
     }
@@ -144,14 +157,21 @@ StatusOr<std::vector<DWARFDie>> DwarfReader::GetMatchingDIEs(std::string_view na
   std::vector<DWARFDie> dies;
 
   // Special case for types that are indexed (currently only struct types);
-  if (type.has_value() && type == llvm::dwarf::DW_TAG_structure_type && !die_struct_map_.empty()) {
-    auto iter = die_struct_map_.find(name);
-    if (iter != die_struct_map_.end()) {
-      return std::vector<DWARFDie>{iter->second};
+  if (type.has_value() && !die_map_.empty()) {
+    llvm::dwarf::Tag tag = type.value();
+    if (IsIndexedType(tag)) {
+      auto& die_type_map = die_map_[tag];
+      auto iter = die_type_map.find(name);
+      if (iter != die_type_map.end()) {
+        return std::vector<DWARFDie>{iter->second};
+      }
+
+      // Indexing was on, but nothing was found, so return empty vector.
+      return {};
     }
-    return {};
   }
 
+  // When there is no index, fall-back to manual search.
   PL_RETURN_IF_ERROR(GetMatchingDIEs(dwarf_context_->normal_units(), name, type, &dies));
   // TODO(oazizi): Might want to consider dwarf_context_->dwo_units() as well.
 
