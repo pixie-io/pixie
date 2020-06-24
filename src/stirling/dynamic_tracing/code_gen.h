@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 
 #include "src/common/base/base.h"
 #include "src/stirling/proto/physical_ir.pb.h"
@@ -19,6 +20,9 @@ StatusOr<std::string> GenStruct(const ::pl::stirling::dynamictracingpb::Struct& 
 // Returns the definition of the input Variable.
 // TODO(yzhao): This probably need to handle indentation.
 StatusOr<std::string> GenVariable(const ::pl::stirling::dynamictracingpb::Variable& var);
+
+std::vector<std::string> GenMapStashAction(
+    const ::pl::stirling::dynamictracingpb::MapStashAction& action);
 
 }  // namespace dynamic_tracing
 }  // namespace stirling

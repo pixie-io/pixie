@@ -1,5 +1,7 @@
 #include "src/stirling/dynamic_tracing/code_gen.h"
 
+#include <utility>
+
 #include <absl/strings/str_cat.h>
 #include <absl/strings/substitute.h>
 
@@ -9,11 +11,13 @@ namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
 
+using ::pl::stirling::dynamictracingpb::BPFHelper;
+using ::pl::stirling::dynamictracingpb::MapStashAction;
 using ::pl::stirling::dynamictracingpb::Register;
 using ::pl::stirling::dynamictracingpb::ScalarType;
 using ::pl::stirling::dynamictracingpb::Struct;
-using ::pl::stirling::dynamictracingpb::ValueType;
 using ::pl::stirling::dynamictracingpb::Variable;
+using ::pl::stirling::dynamictracingpb::VariableType;
 
 namespace {
 
@@ -39,11 +43,11 @@ StatusOr<std::string> GenScalarField(const Struct::Field& field) {
 
 StatusOr<std::string> GenField(const Struct::Field& field) {
   switch (field.type().type_oneof_case()) {
-    case ValueType::TypeOneofCase::kScalar:
+    case VariableType::TypeOneofCase::kScalar:
       return GenScalarField(field);
-    case ValueType::TypeOneofCase::kStructType:
+    case VariableType::TypeOneofCase::kStructType:
       return absl::Substitute("struct $0 $1;", field.type().struct_type(), field.name());
-    case ValueType::TypeOneofCase::TYPE_ONEOF_NOT_SET:
+    case VariableType::TypeOneofCase::TYPE_ONEOF_NOT_SET:
       return error::InvalidArgument("Field type must be set");
   }
   return error::InvalidArgument("Should never happen");
@@ -80,7 +84,8 @@ namespace {
   return {}
 
 std::string_view GenScalarType(ScalarType type) {
-  constexpr const char* kCTypes[] = {"int32_t", "int64_t", "double", "char*", "void*"};
+  constexpr auto kCTypes =
+      MakeArray<std::string_view>("int32_t", "int64_t", "double", "char*", "void*");
   return kCTypes[static_cast<int>(type)];
 }
 
@@ -116,6 +121,45 @@ StatusOr<std::string> GenVariable(const Variable& var) {
       return error::InvalidArgument("address_oneof must be set");
   }
   GCC_SWITCH_RETURN;
+}
+
+namespace {
+
+struct VarNameAndCode {
+  std::string_view var_name;
+  std::string_view code;
+};
+
+VarNameAndCode GenBPFHelper(BPFHelper builtin) {
+  constexpr auto kBPFHelpers = MakeArray<std::string_view>(
+      // TODO(yzhao): Implement GOID.
+      "uint64_t goid = goid();\n", "uint32_t tgid = bpf_get_current_pid_tgid() >> 32;\n",
+      "uint64_t tgid_pid = bpf_get_current_pid_tgid();\n");
+
+  constexpr auto kVarNames = MakeArray<std::string_view>("goid", "tgid", "tgid_pid");
+
+  auto idx = static_cast<size_t>(builtin);
+
+  return VarNameAndCode{kVarNames[idx], kBPFHelpers[idx]};
+}
+
+}  // namespace
+
+// TODO(yzhao): Wrap map stash action inside "{}" to avoid variable naming conflict.
+//
+// TODO(yzhao): Alternatively, leave map key as another Variable message (would be pre-generated
+// as part of the physical IR).
+std::vector<std::string> GenMapStashAction(const MapStashAction& action) {
+  std::vector<std::string> code_lines;
+
+  VarNameAndCode map_key = GenBPFHelper(action.builtin());
+  code_lines.push_back(std::string(map_key.code));
+
+  std::string map_update_code = absl::Substitute("$0.update(&$1, &$2);\n", action.map_name(),
+                                                 map_key.var_name, action.variable_name());
+  code_lines.push_back(std::move(map_update_code));
+
+  return code_lines;
 }
 
 }  // namespace dynamic_tracing

@@ -7,11 +7,14 @@ namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
 
+using ::pl::stirling::dynamictracingpb::BPFHelper;
+using ::pl::stirling::dynamictracingpb::MapStashAction;
 using ::pl::stirling::dynamictracingpb::Register;
 using ::pl::stirling::dynamictracingpb::ScalarType;
 using ::pl::stirling::dynamictracingpb::Struct;
-using ::pl::stirling::dynamictracingpb::ValueType;
 using ::pl::stirling::dynamictracingpb::Variable;
+using ::pl::stirling::dynamictracingpb::VariableType;
+using ::testing::ElementsAre;
 using ::testing::StrEq;
 
 TEST(GenStructTest, Output) {
@@ -77,6 +80,18 @@ TEST(GenVariableTest, Variable) {
 
   ASSERT_OK_AND_THAT(GenVariable(var), StrEq("int32_t var;\n"
                                              "bpf_probe_read(&var, sizeof(int32_t), sp + 123);\n"));
+}
+
+TEST(GenMapStashActionTest, StashMap) {
+  MapStashAction action;
+
+  action.set_map_name("test");
+  action.set_builtin(BPFHelper::TGID);
+  action.set_variable_name("foo");
+
+  EXPECT_THAT(GenMapStashAction(action),
+              ElementsAre("uint32_t tgid = bpf_get_current_pid_tgid() >> 32;\n",
+                          "test.update(&tgid, &foo);\n"));
 }
 
 }  // namespace dynamic_tracing

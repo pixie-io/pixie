@@ -19,7 +19,7 @@ message Struct {
 
   message Field {
     string name = 1;
-    ValueType type = 2;
+    VariableType type = 2;
   }
 
   repeated Field fields = 2;
@@ -68,10 +68,15 @@ message PhysicalProbe {
   repeated Struct structs = 3;
 
   // Defines how to access variables from inside BCC code..
+  //
+  // Variable names must be unique, as BCC codegen does not apply additional modifications
+  // to them.
   repeated Variable vars = 4;
 
   // Inserts key and value into a map.
-  repeated StashMapAction stash_map_actions = 5;
+  //
+  // The variable to be inserted into the map must be one of the above vars.
+  repeated MapStashAction stash_map_actions = 5;
 
   // Writes a value to perf buffer.
   repeated OutputAction output_actions = 6;
