@@ -44,6 +44,7 @@ def inbound_service_let(start_time: str, namespace: px.Namespace):
     window_size = 1.0 * window_s
     df.requests_per_s = df.throughput_total / window_size
     df.bytes_per_s = df.bytes_total / window_size
+    df.error_rate_pct = df.error_rate * 100 / window_size
     df.time_ = df.timestamp
 
     return df[['time_', 'service', 'latency_p50', 'latency_p90',
@@ -66,6 +67,7 @@ def inbound_let_summary(start_time: str, namespace: px.Namespace):
     window_size = 1.0 * window_s
     df.requests_per_s = df.throughput_total / window_size
     df.bytes_per_s = df.bytes_total / window_size
+    df.error_rate_pct = df.error_rate * 100 / window_size
 
     return df.groupby(['requestor', 'responder']).agg(
         latency_p50=('latency_p50', px.mean),
@@ -114,5 +116,4 @@ def inbound_service_let_helper(start_time: str, namespace: px.Namespace, groupby
     df.latency_p50 = px.pluck_float64(df.latency_quantiles, 'p50')
     df.latency_p90 = px.pluck_float64(df.latency_quantiles, 'p90')
     df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
-    df.error_rate_pct = df.error_rate * 100
     return df
