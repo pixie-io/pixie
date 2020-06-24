@@ -82,9 +82,20 @@ const useStyles = makeStyles((theme: Theme) =>
     headerTitle: {
       display: 'flex',
       alignItems: 'center',
-      flexGrow: 1,
+      flex: 'auto',
       overflow: 'hidden',
     },
+    dragHandle: {
+      flex: '0 0 12px',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      cursor: 'col-resize',
+      '&:hover': {
+        color: theme.palette.foreground.white,
+      },
+    }
   }),
 );
 
@@ -138,12 +149,11 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
   const theme = useTheme();
   const rowHeight = compact ? theme.spacing(4) : theme.spacing(6);
 
-  let maxColTextWidth = 0;
-  const colTextWidths = React.useMemo<{[dataKey: string]: number}>(() => {
+  const colTextWidthRatio = React.useMemo<{[dataKey: string]: number}>(() => {
     const colsWidth: {[dataKey: string]: number} = {};
     // Randomly sample 10 rows to figure out the width basis of each row.
     const sampleCount = Math.min(10, rowCount);
-    let max = 0;
+    let totalWidth = 0;
     columns.forEach((col) => {
       let w = col.width || null;
       if (!w) {
@@ -155,11 +165,15 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
           w = Math.max(w, String(row[col.dataKey]).length);
         }
       }
-      max = Math.max(max, w);
+      totalWidth += w;
       colsWidth[col.dataKey] = w;
     });
-    maxColTextWidth = max;
-    return colsWidth;
+
+    const ratio: {[dataKey: string]: number} = {};
+    for (const colsWidthKey in colsWidth) {
+      ratio[colsWidthKey] = colsWidth[colsWidthKey] / totalWidth;
+    }
+    return ratio;
   }, [columns, rowGetter, rowCount]);
 
   const [widthOverrides, setColumnWidthOverride] = React.useState<ColWidthOverrides>({});
@@ -210,22 +224,12 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       }
 
       const nextColKey = columns[colIdx+1].dataKey;
+      let newWidth = state[dataKey] || (colTextWidthRatio[dataKey]);
+      let nextColWidth = state[nextColKey] || (colTextWidthRatio[nextColKey]);
 
-
-      let newWidth = state[dataKey] || (colTextWidths[dataKey]);
-      let nextColWidth = state[nextColKey] || (colTextWidths[nextColKey]);
-
-      // Make sure the delta does not cause widths to become negative.
-      let d = deltaX;
-      if (newWidth + d < 0) {
-        d = newWidth;
-      }
-      if (nextColWidth - d < 0) {
-        d = nextColWidth;
-      }
-
-      newWidth += d;
-      nextColWidth -= d;
+      const percentDelta = deltaX / width;
+      newWidth += percentDelta;
+      nextColWidth -= percentDelta;
 
       return {
         ...state,
@@ -234,7 +238,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       };
     });
 
-  }, [width, colTextWidths, maxColTextWidth]);
+  }, [width, colTextWidthRatio]);
 
   const colIsResizable = (idx: number): boolean => {
     return (resizableColumns||true) && (idx != columns.length - 1);
@@ -288,12 +292,11 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
                 deltaX,
               });
             }}>
-          <span className='scrollable-table--drag-handle'>&#8942;</span>
+          <span className={classes.dragHandle}>&#8942;</span>
         </DraggableCore>
       </React.Fragment>
     </>;
   }, []);
-
   return (
     <Table
       headerHeight={rowHeight}
@@ -325,9 +328,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
             className={className}
             headerRenderer={colIsResizable(i) ? headerRendererWithDrag : headerRenderer}
             cellRenderer={cellRenderer}
-            width={(widthOverrides[col.dataKey]) || colTextWidths[col.dataKey]}
-            flexGrow={1}
-            flexShrink={1}
+            width={(widthOverrides[col.dataKey] || colTextWidthRatio[col.dataKey]) * width}
             columnData={col}
           />;
         })
