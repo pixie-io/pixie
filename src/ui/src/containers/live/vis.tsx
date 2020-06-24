@@ -119,7 +119,7 @@ function getFuncArgs(defaults: { [key: string]: string }, func: Func): VizierQue
   return args;
 }
 
-// This should only be called by vizier grpc client, and it will reject the returned promise
+// This should only be called by table grpc client, and it will reject the returned promise
 // when executeScript() is called with an invalid Vis spec.
 export function getQueryFuncs(vis: Vis, variableValues: { [key: string]: string }): VizierQueryFunc[] {
   const defaults = {};

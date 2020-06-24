@@ -5,7 +5,7 @@ import clsx from 'clsx';
 import { displayToGraph, GraphDisplay } from 'components/chart/graph';
 import { Spinner } from 'components/spinner/spinner';
 import { VegaContext, withVegaContextProvider } from 'components/vega/vega-context';
-import { QueryResultTable } from 'containers/vizier/query-result-viewer';
+import { QueryResultTable } from 'components/live-widgets/table/query-result-viewer';
 import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
 import { resizeEvent, triggerResize } from 'utils/resize';

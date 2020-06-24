@@ -1,25 +1,18 @@
 import './query-result-viewer.scss';
-
-import Tooltip from '@material-ui/core/Tooltip';
 import clsx from 'clsx';
 import ClusterContext from 'common/cluster-context';
 import { Table } from 'common/vizier-grpc-client';
-import { StatusCell, StatusGroup } from 'components/status/status';
 import {
-    AutoSizedScrollableTable, AutoSizedScrollableTableProps, TableColumnInfo,
+  AutoSizedScrollableTable,
+  AutoSizedScrollableTableProps,
+  TableColumnInfo,
 } from 'components/table/scrollable-table';
-import { isEntityType, toEntityPathname, toSingleEntityPage } from 'containers/live/utils/live-view-params';
+import { isEntityType } from 'containers/live/utils/live-view-params';
 import * as React from 'react';
-import { Link } from 'react-router-dom';
-import { DataType, Relation, SemanticType} from 'types/generated/vizier_pb';
+import { DataType, Relation, SemanticType } from 'types/generated/vizier_pb';
 import * as FormatData from 'utils/format-data';
 import { dataFromProto } from 'utils/result-data-utils';
-
-// STATUS_TYPES contains types that should be displayed as a status indicator.
-const STATUS_TYPES = new Set<SemanticType>([
-  SemanticType.ST_POD_PHASE,
-  SemanticType.ST_CONTAINER_STATE,
-]);
+import { STATUS_TYPES, toStatusIndicator, ToEntityLink} from '../utils';
 
 function computeColumnWidthRatios(relation: Relation, parsedTable: any): any {
   // Compute the average data width of a column (by name).
@@ -41,59 +34,6 @@ function computeColumnWidthRatios(relation: Relation, parsedTable: any): any {
   return colWidthRatio;
 }
 
-function toEntityLink(entity: string, semanticType: SemanticType, clusterName: string) {
-  const page = toSingleEntityPage(entity, semanticType, clusterName);
-  const pathname = toEntityPathname(page);
-  return <Link to={pathname} className={'query-results--entity-link'}>{entity}</Link>;
-}
-
-function containerStateToStatusGroup(status: string): StatusGroup {
-  switch (status) {
-    case 'Running':
-      return 'healthy';
-    case 'Terminated':
-      return 'unhealthy';
-    case 'Waiting':
-      return 'pending';
-    case 'Unknown':
-    default:
-      return 'unknown';
-  }
-}
-
-function podPhaseToStatusGroup(status: string): StatusGroup {
-  switch (status) {
-    case 'Running':
-    case 'Succeeded':
-      return 'healthy';
-    case 'Failed':
-      return 'unhealthy';
-    case 'Pending':
-      return 'pending';
-    case 'Unknown':
-    default:
-      return 'unknown';
-  }
-}
-
-function toStatusIndicator(status: string, semanticType: SemanticType) {
-  let statusGroup: StatusGroup;
-  if (semanticType === SemanticType.ST_CONTAINER_STATE) {
-    statusGroup = containerStateToStatusGroup(status);
-  } else if (semanticType === SemanticType.ST_POD_PHASE) {
-    statusGroup = podPhaseToStatusGroup(status);
-  } else {
-    return status;
-  }
-  return (
-    <Tooltip title={status} interactive>
-      <div>
-        <StatusCell statusGroup={statusGroup}/>
-      </div>
-    </Tooltip>
-  );
-}
-
 function ResultCellRenderer(cellData: any, columnInfo: TableColumnInfo) {
   const dataType = columnInfo.dataType;
   const colName = columnInfo.label;
@@ -111,7 +51,7 @@ function ResultCellRenderer(cellData: any, columnInfo: TableColumnInfo) {
                   return (
                     <span key={i}>
                       {i > 0 && ', '}
-                      {toEntityLink(entity, columnInfo.semanticType, columnInfo.clusterName)}
+                      {ToEntityLink(entity, columnInfo.semanticType, columnInfo.clusterName)}
                     </span>
                   );
                 })
@@ -123,7 +63,7 @@ function ResultCellRenderer(cellData: any, columnInfo: TableColumnInfo) {
         //
       }
     }
-    return toEntityLink(cellData, columnInfo.semanticType, columnInfo.clusterName);
+    return ToEntityLink(cellData, columnInfo.semanticType, columnInfo.clusterName);
   }
 
   if (STATUS_TYPES.has(columnInfo.semanticType)) {
