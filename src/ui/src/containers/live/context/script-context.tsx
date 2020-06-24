@@ -124,7 +124,7 @@ const ScriptContextProvider = (props) => {
     const inputEntityArgs = Object.keys(parsedArgs).filter((argName) => {
       return entityNames.has(argName);
     }).reduce((obj, argName) => {
-      obj[argName] = inputArgs[argName];
+      obj[argName] = parsedArgs[argName];
       return obj;
     }, {});
 
@@ -135,7 +135,7 @@ const ScriptContextProvider = (props) => {
     const inputNonEntityArgs = Object.keys(parsedArgs).filter((argName) => {
       return !(entityNames.has(argName));
     }).reduce((obj, argName) => {
-      obj[argName] = inputArgs[argName];
+      obj[argName] = parsedArgs[argName];
       return obj;
     }, {});
 
@@ -153,6 +153,8 @@ const ScriptContextProvider = (props) => {
 
   // Logic to update vis spec.
 
+  // Note that this function does not update args, so it should only be called
+  // when variables will not be modified (such as for layouts).
   const setVis = (newVis: Vis) => {
     if (!newVis) {
       newVis = emptyVis();
@@ -165,6 +167,7 @@ const ScriptContextProvider = (props) => {
     const parsed = parseVis(newJSON);
     if (parsed) {
       setVisBase(parsed);
+      setArgs(args, parsed);
     }
   }, 2000));
 
