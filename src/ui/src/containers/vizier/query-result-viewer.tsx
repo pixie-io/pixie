@@ -9,7 +9,6 @@ import {
     AutoSizedScrollableTable, AutoSizedScrollableTableProps, TableColumnInfo,
 } from 'components/table/scrollable-table';
 import { isEntityType, toEntityPathname, toSingleEntityPage } from 'containers/live/utils/live-view-params';
-import numeral from 'numeral';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import { DataType, Relation, SemanticType} from 'types/generated/vizier_pb';
@@ -21,34 +20,6 @@ const STATUS_TYPES = new Set<SemanticType>([
   SemanticType.ST_POD_PHASE,
   SemanticType.ST_CONTAINER_STATE,
 ]);
-
-// Formats int64 data, the input type is a string because JS does not
-// natively support 64-bit data.
-function formatInt64Data(val: string): string {
-  return numeral(val).format('0,0');
-}
-
-function formatData(colType: DataType, data): string {
-  // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
-  switch (colType) {
-    case DataType.STRING:
-      return data;
-    case DataType.TIME64NS:
-      return new Date(data).toLocaleString();
-    case DataType.DURATION64NS:
-      return formatInt64Data(data);
-    case DataType.INT64:
-      return formatInt64Data(data);
-    case DataType.UINT128:
-      return data;
-    case DataType.FLOAT64:
-      return FormatData.formatFloat64Data(data);
-    case DataType.BOOLEAN:
-      return data ? 'true' : 'false';
-    default:
-      throw (new Error('Unknown data type: ' + colType));
-  }
-}
 
 function computeColumnWidthRatios(relation: Relation, parsedTable: any): any {
   // Compute the average data width of a column (by name).
@@ -90,7 +61,7 @@ function containerStateToStatusGroup(status: string): StatusGroup {
   }
 }
 
-function podPhaseToStatusgroup(status: string): StatusGroup {
+function podPhaseToStatusGroup(status: string): StatusGroup {
   switch (status) {
     case 'Running':
     case 'Succeeded':
@@ -106,11 +77,11 @@ function podPhaseToStatusgroup(status: string): StatusGroup {
 }
 
 function toStatusIndicator(status: string, semanticType: SemanticType) {
-  let statusGroup;
+  let statusGroup: StatusGroup;
   if (semanticType === SemanticType.ST_CONTAINER_STATE) {
     statusGroup = containerStateToStatusGroup(status);
   } else if (semanticType === SemanticType.ST_POD_PHASE) {
-    statusGroup = podPhaseToStatusgroup(status);
+    statusGroup = podPhaseToStatusGroup(status);
   } else {
     return status;
   }
@@ -159,7 +130,7 @@ function ResultCellRenderer(cellData: any, columnInfo: TableColumnInfo) {
     return toStatusIndicator(cellData, columnInfo.semanticType);
   }
 
-  const data = formatData(dataType, cellData);
+  const data = cellData;
 
   if (FormatData.looksLikeLatencyCol(colName, dataType)) {
     return FormatData.LatencyData(data);

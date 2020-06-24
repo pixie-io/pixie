@@ -2,7 +2,7 @@ import {mount, shallow} from 'enzyme';
 import * as React from 'react';
 
 import * as FormatData from './format-data';
-import { DataType } from 'types/generated/vizier_pb';
+import { DataType, UInt128 } from 'types/generated/vizier_pb';
 
 describe('looksLikeLatencyCol test', () => {
   it('should not accept non-float latency columns', () => {
@@ -174,6 +174,9 @@ describe('formatFloat64Data test', () => {
 
 describe('formatUint128 test', () => {
   it('should format to an uuid string', () => {
-    expect(FormatData.formatUInt128('77311094061', '34858981')).toEqual('00000012-0019-ad2d-0000-00000213e7e5');
+    const val = new UInt128()
+    val.setHigh(77311094061);
+    val.setLow(34858981);
+    expect(FormatData.formatUInt128(val)).toEqual('00000012-0019-ad2d-0000-00000213e7e5');
   });
 });

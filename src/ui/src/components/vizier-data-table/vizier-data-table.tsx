@@ -3,7 +3,7 @@ import { CellAlignment, DataTable, SortState } from 'components/data-table';
 import * as React from 'react';
 import { SortDirection, SortDirectionType } from 'react-virtualized';
 import { DataType } from 'types/generated/vizier_pb';
-import { getDataRenderer, JSONData } from 'utils/format-data';
+import { JSONData } from 'utils/format-data';
 import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';
 
@@ -26,16 +26,6 @@ function getSortFunc(dataKey: string, type: DataType, direction: SortDirectionTy
   return (a, b) => {
     return a[dataKey] < b[dataKey] ? dir : -dir;
   };
-}
-
-function formatRow(row, columnsMap) {
-  const out = {};
-  for (const key of Object.keys(row)) {
-    const column = columnsMap.get(key);
-    const renderer = getDataRenderer(column.type);
-    out[key] = renderer(row[key]);
-  }
-  return out;
 }
 
 interface VizierDataTableProps {
@@ -67,7 +57,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
   }, [table.relation]);
 
   const rowGetter = React.useCallback(
-    (i) => formatRow(rows[i], columnsMap),
+    (i) => rows[i],
     [rows, columnsMap]);
 
   const onSort = (sortState: SortState) => {

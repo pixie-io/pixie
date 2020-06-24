@@ -2,7 +2,6 @@ import * as _ from 'lodash';
 import { Column, DataType, Relation, RowBatchData } from 'types/generated/vizier_pb';
 
 import { getDataRenderer } from 'utils/format-data';
-import { formatUInt128 } from './format-data';
 import { nanoToMilliSeconds } from './time';
 
 export function ResultsToCsv(results) {
@@ -40,8 +39,7 @@ export function columnFromProto(column: Column): any[] {
   } else if (column.hasInt64Data()) {
     return column.getInt64Data().getDataList();
   } else if (column.hasUint128Data()) {
-    const data = column.getUint128Data().getDataList();
-    return data.map((d) => formatUInt128(String(d.getHigh()), String(d.getLow())));
+    return column.getUint128Data().getDataList();
   } else if (column.hasFloat64Data()) {
     return column.getFloat64Data().getDataList();
   } else if (column.hasStringData()) {

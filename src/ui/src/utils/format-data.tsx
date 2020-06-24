@@ -3,7 +3,7 @@ import './format-data.scss';
 import clsx from 'clsx';
 import * as numeral from 'numeral';
 import * as React from 'react';
-import { DataType } from 'types/generated/vizier_pb';
+import { DataType, UInt128 } from 'types/generated/vizier_pb';
 
 const JSON_INDENT_PX = 16;
 
@@ -19,6 +19,10 @@ interface JSONDataProps {
 
 export function formatInt64Data(val: string): string {
   return numeral(val).format('0,0');
+}
+
+export function formatBoolData(val: boolean): string {
+  return val ? 'true' : 'false';
 }
 
 export function formatFloat64Data(val: number, formatStr = '0[.]00'): string {
@@ -145,12 +149,12 @@ export function AlertData(data: string) {
 }
 
 // Converts UInt128 to UUID formatted string.
-export function formatUInt128(high: string, low: string): string {
+export function formatUInt128(val: UInt128): string {
   // TODO(zasgar/michelle): Revisit this to check and make sure endianness is correct.
   // Each segment of the UUID is a hex value of 16 nibbles.
   // Note: BigInt support only available in Chrome > 67, FF > 68.
-  const hexStrHigh = BigInt(high).toString(16).padStart(16, '0');
-  const hexStrLow = BigInt(low).toString(16).padStart(16, '0');
+  const hexStrHigh = BigInt(val.getHigh()).toString(16).padStart(16, '0');
+  const hexStrLow = BigInt(val.getLow()).toString(16).padStart(16, '0');
 
   // Sample UUID: 123e4567-e89b-12d3-a456-426655440000.
   // Format is 8-4-4-4-12.
@@ -167,7 +171,8 @@ export function formatUInt128(high: string, low: string): string {
   return uuidStr;
 }
 
-export function getDataRenderer(type: DataType) {
+export function getDataRenderer(type: DataType): (any) => string {
+  // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
   switch (type) {
     case DataType.FLOAT64:
       return formatFloat64Data;
@@ -175,10 +180,13 @@ export function getDataRenderer(type: DataType) {
       return (d) => new Date(d).toLocaleString();
     case DataType.INT64:
       return formatInt64Data;
-    case DataType.DURATION64NS:
-    case DataType.UINT128:
-    case DataType.STRING:
     case DataType.BOOLEAN:
+      return formatBoolData;
+    case DataType.UINT128:
+      return formatUInt128;
+    case DataType.DURATION64NS:
+      return formatInt64Data;
+    case DataType.STRING:
     default:
       return (d) => d.toString();
   }
