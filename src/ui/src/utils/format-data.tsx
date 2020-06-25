@@ -206,7 +206,7 @@ export const DataAlignmentMap = new Map<DataType, CellAlignment>(
 );
 
 const stringSortFunc = (a, b) => {
-  return Number(a < b);
+  return a.localeCompare(b)
 }
 
 const intSortFunc = (a, b) => {
@@ -219,7 +219,7 @@ const numberSortFunc = (a, b) => {
 }
 
 const uint128SortFunc = (a, b) => {
-  return Number(formatUInt128(a) < formatUInt128(b));
+  return formatUInt128(a).localeCompare(formatUInt128(b));
 }
 
 const boolSortFunc = (a, b) => {
@@ -248,6 +248,6 @@ const sortFuncForType = (type: DataType) => {
 export const GetDataSortFunc = (type: DataType, ascending: boolean) => {
   const f = sortFuncForType(type);
   return (a: any, b: any) => {
-    return ascending ? f(a, b) : - f(a,b);
+    return ascending ? f(a, b) : -f(a,b);
   };
 }
