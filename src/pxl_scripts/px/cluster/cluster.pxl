@@ -18,11 +18,17 @@ def namespaces_for_cluster(start_time: str):
     df.pod = df.ctx['pod_name']
     df.namespace = df.ctx['namespace']
     agg = df.groupby(['service', 'pod', 'namespace']).agg()
-    namespaces = agg.groupby('namespace').agg(
-        pod_count=('pod', px.count),
-        service_count=('service', px.count)
-    )
-    return namespaces
+
+    pod_count = agg.groupby(['namespace', 'pod']).agg()
+    pod_count = pod_count.groupby('namespace').agg(pod_count=('pod', px.count))
+
+    service_count = agg.groupby(['namespace', 'service']).agg()
+    service_count = service_count.groupby('namespace').agg(service_count=('service', px.count))
+
+    joined = pod_count.merge(service_count, how='inner',
+                             left_on='namespace', right_on='namespace',
+                             suffixes=['', '_x'])
+    return joined[['namespace', 'pod_count', 'service_count']]
 
 
 def nodes_for_cluster(start_time: str):
