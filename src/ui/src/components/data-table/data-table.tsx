@@ -17,6 +17,7 @@ import * as expanded from 'images/icons/expanded.svg';
 import * as unexpanded from 'images/icons/unexpanded.svg';
 
 const EXPANDED_ROW_HEIGHT = 300;
+const MIN_COL_RATIO = 1/1000;
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -26,6 +27,8 @@ const useStyles = makeStyles((theme: Theme) =>
         ...theme.typography.caption,
         border: `solid 1px ${theme.palette.background.three}`,
         backgroundColor: theme.palette.background.default,
+        paddingRight: '0 !important',
+        display: 'flex',
       },
     },
     row: {
@@ -36,10 +39,14 @@ const useStyles = makeStyles((theme: Theme) =>
       },
       '&:hover $hidden': {
         display: 'flex',
-      }
+      },
+      display: 'flex',
+      fontSize: '0.875rem',
     },
     rowContainer: {
       borderBottom: `solid 1px ${theme.palette.background.three}`,
+      display: 'flex',
+      flexDirection: 'column',
     },
     cell: {
       paddingLeft: theme.spacing(3),
@@ -50,6 +57,8 @@ const useStyles = makeStyles((theme: Theme) =>
       maxWidth: '33%',
       height: theme.spacing(6),
       margin: '0 !important',
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
     },
     cellText: {
       overflow: 'hidden',
@@ -155,7 +164,7 @@ interface DataTableProps {
   compact?: boolean;
   resizableColumns?: boolean;
   expandable?: boolean;
-  expandedRenderer?: (rowIndex: number) => JSX.Element;
+  expandedRenderer?: (rowData: any) => JSX.Element;
   highlightedRow?: number;
 }
 
@@ -177,7 +186,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
   rowGetter,
   compact = false,
   resizableColumns= false,
-  expandable = true,
+  expandable = false,
   expandedRenderer = () => <></>,
   onSort = noop,
   highlightedRow = -1,
@@ -250,15 +259,17 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
   }, [onSort]);
 
   const onRowClickWrapper = React.useCallback(({ index }) => {
-    setExpandedRowstate((state) => {
-      const expandedRows = {...state};
-      if (expandedRows[index]) {
-        delete expandedRows[index];
-      } else {
-        expandedRows[index] = true;
-      }
-      return expandedRows;
-    });
+    if (expandable) {
+      setExpandedRowstate((state) => {
+        const expandedRows = { ...state };
+        if (expandedRows[index]) {
+          delete expandedRows[index];
+        } else {
+          expandedRows[index] = true;
+        }
+        return expandedRows;
+      });
+    }
     tableRef.current.recomputeRowHeights();
     tableRef.current.forceUpdate();
     onRowClick(index);
@@ -288,14 +299,24 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       let nextColWidth = state[nextColKey] || (colTextWidthRatio[nextColKey]);
 
       const percentDelta = deltaX / width;
-      newWidth += percentDelta;
-      nextColWidth -= percentDelta;
-
-      // Enforce max-width.
-      if (newWidth > 1/3) {
-        const d = newWidth - 1/3;
+      // Enforce min and max width.
+      if (newWidth + percentDelta > 1/3) {
+        const delta = 1/3 - newWidth;
         newWidth = 1/3;
-        nextColWidth += d;
+        nextColWidth -= delta;
+      } else if (newWidth + percentDelta < MIN_COL_RATIO) {
+        const delta = newWidth - MIN_COL_RATIO;
+        newWidth = MIN_COL_RATIO
+        nextColWidth += delta;
+      } else {
+        newWidth += percentDelta;
+        nextColWidth -= percentDelta;
+      }
+
+      if (nextColWidth > 1/3) {
+        nextColWidth = 1/3;
+      } else if (nextColWidth < MIN_COL_RATIO) {
+        nextColWidth = MIN_COL_RATIO;
       }
 
       return {
@@ -371,20 +392,22 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
   }, [highlightedRow, expandedRowState]);
 
   const rowRenderer: TableRowRenderer = React.useCallback((props: TableRowProps) => {
+    const style = props.style;
+    style.width = '100%';
     return <div
         className={classes.rowContainer}
         key={props.key}
-        style={props.style}
+        style={style}
       >
       {defaultTableRowRenderer({ ...props, key: '', style: {height: defaultCellHeight} })}
 
-      {expandedRowState[props.index] &&
+      {expandable && expandedRowState[props.index] &&
          <div className={classes.expandedCell}>
-           {expandedRenderer(props.index)}
+           {expandedRenderer(rowGetter(props.index))}
          </div>
       }
     </div>;
-  }, [expandedRowState]);
+  }, [expandedRowState, expandable, rowGetter]);
 
   const headerRendererWithDrag: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => {
     const dataKey = props.dataKey;
@@ -403,12 +426,10 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       </React.Fragment>
     </>;
   }, []);
-
   const gutterClass = clsx(
     compact && classes.compact,
     classes.gutterCell,
   );
-
   return (
     <Table
       headerHeight={defaultCellHeight}

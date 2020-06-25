@@ -206,18 +206,6 @@ export function toEntityPathname(entity: EntityPage): string {
   }
 }
 
-export function isEntityType(semanticType: SemanticType): boolean {
-  switch (semanticType) {
-    case SemanticType.ST_SERVICE_NAME:
-    case SemanticType.ST_POD_NAME:
-    case SemanticType.ST_NODE_NAME:
-    case SemanticType.ST_NAMESPACE_NAME:
-      return true;
-    default:
-      return false;
-  }
-}
-
 export function toSingleEntityPage(entityName: string, semanticType: SemanticType, clusterName: string): EntityPage {
   switch (semanticType) {
     case SemanticType.ST_SERVICE_NAME:

@@ -142,11 +142,11 @@ export function LatencyData(data: string) {
   } else if (floatVal > LATENCY_MEDIUM_THRESHOLD) {
     latency = 'med';
   }
-  return <div className={'formatted_data--latency-' + latency}>{data}</div>;
+  return <div className={'formatted_data--latency-' + latency}>{formatFloat64Data(floatVal)}</div>;
 }
 
-export function AlertData(data: string) {
-  return <div className={'formatted_data--alert-' + data}>{data}</div>;
+export function AlertData(data: boolean) {
+  return <div className={'formatted_data--alert-' + data}>{formatBoolData(data)}</div>;
 }
 
 // Converts UInt128 to UUID formatted string.

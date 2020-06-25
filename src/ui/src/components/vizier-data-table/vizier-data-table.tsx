@@ -2,12 +2,14 @@ import { Table } from 'common/vizier-grpc-client';
 import { DataTable, SortState } from 'components/data-table';
 import * as React from 'react';
 import { SortDirection, SortDirectionType } from 'react-virtualized';
-import { DataType } from 'types/generated/vizier_pb';
+import { DataType, Relation, SemanticType } from 'types/generated/vizier_pb';
+import * as FormatData from 'utils/format-data';
 import { DataAlignmentMap, getDataRenderer, GetDataSortFunc, JSONData } from 'utils/format-data';
 import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';
-
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { isEntityType, STATUS_TYPES, ToEntityLink, toStatusIndicator } from '../live-widgets/utils';
+import ColumnInfo = Relation.ColumnInfo;
 
 function getSortFunc(dataKey: string, type: DataType, direction: SortDirectionType) {
   const f = GetDataSortFunc(type, direction === SortDirection.ASC);
@@ -16,11 +18,99 @@ function getSortFunc(dataKey: string, type: DataType, direction: SortDirectionTy
 
 interface VizierDataTableProps {
   table: Table;
+  prettyRender?: boolean;
+  expandable?: boolean;
+  expandedRenderer?: (rowIndex: number) => JSX.Element;
+  // TODO(michelle/zasgar/nserrino): Remove this.
+  clusterName?: string;
   onRowSelectionChanged?: (row: any) => void;
 }
 
+const statusRenderer = (st: SemanticType) => {
+  return (v: string) => {
+    return toStatusIndicator(v, st);
+  }
+}
+
+const serviceRendererFuncGen = (clusterName: string) => {
+  return (v) => {
+    try {
+      // Hack to handle cases like "['pl/service1', 'pl/service2']" which show up for pods that are part of 2 services.
+      const parsedArray = JSON.parse(v);
+      if (Array.isArray(parsedArray)) {
+        return (
+          <>
+            {
+              parsedArray.map((entity, i) => {
+                return (
+                  <span key={i}>
+                    {i > 0 && ', '}
+                    {ToEntityLink(entity, SemanticType.ST_SERVICE_NAME, clusterName)}
+                  </span>
+                );
+              })
+            }
+          </>
+        );
+      }
+    } catch (e) {
+      // noop.
+    }
+    return ToEntityLink(v, SemanticType.ST_SERVICE_NAME, clusterName)
+  };
+}
+
+const entityRenderer = (st: SemanticType, clusterName: string) => {
+  if (st == SemanticType.ST_SERVICE_NAME) {
+    return serviceRendererFuncGen(clusterName);
+  }
+  return (v) => {
+    return ToEntityLink(v, st, clusterName)
+  }
+}
+
+const prettyCellRenderer = (colInfo: ColumnInfo, clusterName: string) => {
+  const dt = colInfo.getColumnType();
+  const st = colInfo.getColumnSemanticType();
+  const name = colInfo.getColumnName();
+  const renderer = getDataRenderer(dt);
+
+  if (isEntityType(st)) {
+    return entityRenderer(st, clusterName)
+  }
+
+  if (STATUS_TYPES.has(st)) {
+    return statusRenderer(st);
+  }
+
+  if (FormatData.looksLikeLatencyCol(name, dt)) {
+    return FormatData.LatencyData;
+  }
+
+  if (FormatData.looksLikeAlertCol(name, dt)) {
+    return FormatData.AlertData;
+  }
+
+  if (dt !== DataType.STRING) {
+    return renderer;
+  }
+
+  return (v) => {
+    try {
+      const jsonObj = JSON.parse(v);
+      return <FormatData.JSONData
+        data={jsonObj}
+      />;
+    } catch {
+      return v;
+    }
+  }
+}
+
 export const VizierDataTable = (props: VizierDataTableProps) => {
-  const { table, onRowSelectionChanged = noop } = props;
+  const { table, prettyRender = false, expandable = false, expandedRenderer,
+    clusterName = null,
+    onRowSelectionChanged = noop } = props;
   const [rows, setRows] = React.useState([]);
   const [selectedRow, setSelectedRow] = React.useState(-1);
 
@@ -37,7 +127,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
         dataKey: col.getColumnName(),
         label: col.getColumnName(),
         align: DataAlignmentMap.get(col.getColumnType()) || 'start',
-        cellRenderer: getDataRenderer(col.getColumnType()),
+        cellRenderer: prettyRender ? prettyCellRenderer(col, clusterName) : getDataRenderer(col.getColumnType()),
       });
     }
     return map;
@@ -75,6 +165,8 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
       onSort={onSort}
       onRowClick={onRowSelect}
       highlightedRow={selectedRow}
+      expandable={expandable}
+      expandedRenderer={expandedRenderer}
     />
   );
 };
@@ -109,7 +201,7 @@ export const VizierDataTableWithDetails = (props: { table: Table }) => {
   return (
     <div className={classes.root}>
       <div className={classes.table}>
-        <VizierDataTable table={props.table} onRowSelectionChanged={(row) => { setDetails(row); }} />
+        <VizierDataTable expandable={false} table={props.table} onRowSelectionChanged={(row) => { setDetails(row); }} />
       </div>
       <VizierDataRowDetails className={classes.details} data={details} />
     </div>

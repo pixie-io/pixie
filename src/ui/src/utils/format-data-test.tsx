@@ -57,14 +57,14 @@ describe('<LatencyData/> test', () => {
 
 describe('<AlertData/> test', () => {
   it('should render correctly for true alert', () => {
-    const wrapper = shallow(FormatData.AlertData('true'));
+    const wrapper = shallow(FormatData.AlertData(true));
 
     expect(wrapper.find('div').hasClass('formatted_data--alert-true')).toEqual(true);
     expect(wrapper.find('div').text()).toEqual('true');
   });
 
   it('should render correctly for false alert', () => {
-    const wrapper = shallow(FormatData.AlertData('false'));
+    const wrapper = shallow(FormatData.AlertData(false));
 
     expect(wrapper.find('div').hasClass('formatted_data--alert-false')).toEqual(true);
     expect(wrapper.find('div').text()).toEqual('false');
