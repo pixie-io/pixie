@@ -79,24 +79,6 @@ func (ScalarType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_7def418e304cd30c, []int{1}
 }
 
-type Register int32
-
-const (
-	SP Register = 0
-)
-
-var Register_name = map[int32]string{
-	0: "SP",
-}
-
-var Register_value = map[string]int32{
-	"SP": 0,
-}
-
-func (Register) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_7def418e304cd30c, []int{2}
-}
-
 type ProbeType int32
 
 const (
@@ -118,27 +100,27 @@ var ProbeType_value = map[string]int32{
 }
 
 func (ProbeType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_7def418e304cd30c, []int{3}
+	return fileDescriptor_7def418e304cd30c, []int{2}
 }
 
-type ValueType struct {
+type VariableType struct {
 	// Types that are valid to be assigned to TypeOneof:
-	//	*ValueType_Scalar
-	//	*ValueType_StructType
-	TypeOneof isValueType_TypeOneof `protobuf_oneof:"type_oneof"`
+	//	*VariableType_Scalar
+	//	*VariableType_StructType
+	TypeOneof isVariableType_TypeOneof `protobuf_oneof:"type_oneof"`
 }
 
-func (m *ValueType) Reset()      { *m = ValueType{} }
-func (*ValueType) ProtoMessage() {}
-func (*ValueType) Descriptor() ([]byte, []int) {
+func (m *VariableType) Reset()      { *m = VariableType{} }
+func (*VariableType) ProtoMessage() {}
+func (*VariableType) Descriptor() ([]byte, []int) {
 	return fileDescriptor_7def418e304cd30c, []int{0}
 }
-func (m *ValueType) XXX_Unmarshal(b []byte) error {
+func (m *VariableType) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ValueType) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *VariableType) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ValueType.Marshal(b, m, deterministic)
+		return xxx_messageInfo_VariableType.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -148,68 +130,68 @@ func (m *ValueType) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *ValueType) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ValueType.Merge(m, src)
+func (m *VariableType) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_VariableType.Merge(m, src)
 }
-func (m *ValueType) XXX_Size() int {
+func (m *VariableType) XXX_Size() int {
 	return m.Size()
 }
-func (m *ValueType) XXX_DiscardUnknown() {
-	xxx_messageInfo_ValueType.DiscardUnknown(m)
+func (m *VariableType) XXX_DiscardUnknown() {
+	xxx_messageInfo_VariableType.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ValueType proto.InternalMessageInfo
+var xxx_messageInfo_VariableType proto.InternalMessageInfo
 
-type isValueType_TypeOneof interface {
-	isValueType_TypeOneof()
+type isVariableType_TypeOneof interface {
+	isVariableType_TypeOneof()
 	Equal(interface{}) bool
 	MarshalTo([]byte) (int, error)
 	Size() int
 }
 
-type ValueType_Scalar struct {
+type VariableType_Scalar struct {
 	Scalar ScalarType `protobuf:"varint,2,opt,name=scalar,proto3,enum=pl.stirling.dynamictracingpb.ScalarType,oneof" json:"scalar,omitempty"`
 }
-type ValueType_StructType struct {
+type VariableType_StructType struct {
 	StructType string `protobuf:"bytes,3,opt,name=struct_type,json=structType,proto3,oneof" json:"struct_type,omitempty"`
 }
 
-func (*ValueType_Scalar) isValueType_TypeOneof()     {}
-func (*ValueType_StructType) isValueType_TypeOneof() {}
+func (*VariableType_Scalar) isVariableType_TypeOneof()     {}
+func (*VariableType_StructType) isVariableType_TypeOneof() {}
 
-func (m *ValueType) GetTypeOneof() isValueType_TypeOneof {
+func (m *VariableType) GetTypeOneof() isVariableType_TypeOneof {
 	if m != nil {
 		return m.TypeOneof
 	}
 	return nil
 }
 
-func (m *ValueType) GetScalar() ScalarType {
-	if x, ok := m.GetTypeOneof().(*ValueType_Scalar); ok {
+func (m *VariableType) GetScalar() ScalarType {
+	if x, ok := m.GetTypeOneof().(*VariableType_Scalar); ok {
 		return x.Scalar
 	}
 	return INT32
 }
 
-func (m *ValueType) GetStructType() string {
-	if x, ok := m.GetTypeOneof().(*ValueType_StructType); ok {
+func (m *VariableType) GetStructType() string {
+	if x, ok := m.GetTypeOneof().(*VariableType_StructType); ok {
 		return x.StructType
 	}
 	return ""
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*ValueType) XXX_OneofWrappers() []interface{} {
+func (*VariableType) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
-		(*ValueType_Scalar)(nil),
-		(*ValueType_StructType)(nil),
+		(*VariableType_Scalar)(nil),
+		(*VariableType_StructType)(nil),
 	}
 }
 
 type Map struct {
-	Name      string     `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	KeyType   *ValueType `protobuf:"bytes,2,opt,name=key_type,json=keyType,proto3" json:"key_type,omitempty"`
-	ValueType *ValueType `protobuf:"bytes,3,opt,name=value_type,json=valueType,proto3" json:"value_type,omitempty"`
+	Name      string        `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	KeyType   *VariableType `protobuf:"bytes,2,opt,name=key_type,json=keyType,proto3" json:"key_type,omitempty"`
+	ValueType *VariableType `protobuf:"bytes,3,opt,name=value_type,json=valueType,proto3" json:"value_type,omitempty"`
 }
 
 func (m *Map) Reset()      { *m = Map{} }
@@ -251,14 +233,14 @@ func (m *Map) GetName() string {
 	return ""
 }
 
-func (m *Map) GetKeyType() *ValueType {
+func (m *Map) GetKeyType() *VariableType {
 	if m != nil {
 		return m.KeyType
 	}
 	return nil
 }
 
-func (m *Map) GetValueType() *ValueType {
+func (m *Map) GetValueType() *VariableType {
 	if m != nil {
 		return m.ValueType
 	}
@@ -266,8 +248,8 @@ func (m *Map) GetValueType() *ValueType {
 }
 
 type Output struct {
-	Name string     `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Type *ValueType `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+	Name string        `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Type *VariableType `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
 }
 
 func (m *Output) Reset()      { *m = Output{} }
@@ -309,33 +291,30 @@ func (m *Output) GetName() string {
 	return ""
 }
 
-func (m *Output) GetType() *ValueType {
+func (m *Output) GetType() *VariableType {
 	if m != nil {
 		return m.Type
 	}
 	return nil
 }
 
-type StashMapAction struct {
-	MapName string `protobuf:"bytes,1,opt,name=map_name,json=mapName,proto3" json:"map_name,omitempty"`
-	// Types that are valid to be assigned to KeyOneof:
-	//	*StashMapAction_Str
-	//	*StashMapAction_Builtin
-	KeyOneof isStashMapAction_KeyOneof `protobuf_oneof:"key_oneof"`
-	ValueIds []string                  `protobuf:"bytes,4,rep,name=value_ids,json=valueIds,proto3" json:"value_ids,omitempty"`
+type MapStashAction struct {
+	MapName      string    `protobuf:"bytes,1,opt,name=map_name,json=mapName,proto3" json:"map_name,omitempty"`
+	Builtin      BPFHelper `protobuf:"varint,2,opt,name=builtin,proto3,enum=pl.stirling.dynamictracingpb.BPFHelper" json:"builtin,omitempty"`
+	VariableName string    `protobuf:"bytes,3,opt,name=variable_name,json=variableName,proto3" json:"variable_name,omitempty"`
 }
 
-func (m *StashMapAction) Reset()      { *m = StashMapAction{} }
-func (*StashMapAction) ProtoMessage() {}
-func (*StashMapAction) Descriptor() ([]byte, []int) {
+func (m *MapStashAction) Reset()      { *m = MapStashAction{} }
+func (*MapStashAction) ProtoMessage() {}
+func (*MapStashAction) Descriptor() ([]byte, []int) {
 	return fileDescriptor_7def418e304cd30c, []int{3}
 }
-func (m *StashMapAction) XXX_Unmarshal(b []byte) error {
+func (m *MapStashAction) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *StashMapAction) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *MapStashAction) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_StashMapAction.Marshal(b, m, deterministic)
+		return xxx_messageInfo_MapStashAction.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -345,76 +324,37 @@ func (m *StashMapAction) XXX_Marshal(b []byte, deterministic bool) ([]byte, erro
 		return b[:n], nil
 	}
 }
-func (m *StashMapAction) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_StashMapAction.Merge(m, src)
+func (m *MapStashAction) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MapStashAction.Merge(m, src)
 }
-func (m *StashMapAction) XXX_Size() int {
+func (m *MapStashAction) XXX_Size() int {
 	return m.Size()
 }
-func (m *StashMapAction) XXX_DiscardUnknown() {
-	xxx_messageInfo_StashMapAction.DiscardUnknown(m)
+func (m *MapStashAction) XXX_DiscardUnknown() {
+	xxx_messageInfo_MapStashAction.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_StashMapAction proto.InternalMessageInfo
+var xxx_messageInfo_MapStashAction proto.InternalMessageInfo
 
-type isStashMapAction_KeyOneof interface {
-	isStashMapAction_KeyOneof()
-	Equal(interface{}) bool
-	MarshalTo([]byte) (int, error)
-	Size() int
-}
-
-type StashMapAction_Str struct {
-	Str string `protobuf:"bytes,2,opt,name=str,proto3,oneof" json:"str,omitempty"`
-}
-type StashMapAction_Builtin struct {
-	Builtin BPFHelper `protobuf:"varint,3,opt,name=builtin,proto3,enum=pl.stirling.dynamictracingpb.BPFHelper,oneof" json:"builtin,omitempty"`
-}
-
-func (*StashMapAction_Str) isStashMapAction_KeyOneof()     {}
-func (*StashMapAction_Builtin) isStashMapAction_KeyOneof() {}
-
-func (m *StashMapAction) GetKeyOneof() isStashMapAction_KeyOneof {
-	if m != nil {
-		return m.KeyOneof
-	}
-	return nil
-}
-
-func (m *StashMapAction) GetMapName() string {
+func (m *MapStashAction) GetMapName() string {
 	if m != nil {
 		return m.MapName
 	}
 	return ""
 }
 
-func (m *StashMapAction) GetStr() string {
-	if x, ok := m.GetKeyOneof().(*StashMapAction_Str); ok {
-		return x.Str
-	}
-	return ""
-}
-
-func (m *StashMapAction) GetBuiltin() BPFHelper {
-	if x, ok := m.GetKeyOneof().(*StashMapAction_Builtin); ok {
-		return x.Builtin
+func (m *MapStashAction) GetBuiltin() BPFHelper {
+	if m != nil {
+		return m.Builtin
 	}
 	return GOID
 }
 
-func (m *StashMapAction) GetValueIds() []string {
+func (m *MapStashAction) GetVariableName() string {
 	if m != nil {
-		return m.ValueIds
+		return m.VariableName
 	}
-	return nil
-}
-
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*StashMapAction) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
-		(*StashMapAction_Str)(nil),
-		(*StashMapAction_Builtin)(nil),
-	}
+	return ""
 }
 
 type OutputAction struct {
@@ -664,274 +604,20 @@ func (m *TracePoint) GetFunctionSymbol() string {
 	return ""
 }
 
-type Struct struct {
-	Name   string          `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Fields []*Struct_Field `protobuf:"bytes,2,rep,name=fields,proto3" json:"fields,omitempty"`
-}
-
-func (m *Struct) Reset()      { *m = Struct{} }
-func (*Struct) ProtoMessage() {}
-func (*Struct) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7def418e304cd30c, []int{9}
-}
-func (m *Struct) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Struct) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Struct.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *Struct) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Struct.Merge(m, src)
-}
-func (m *Struct) XXX_Size() int {
-	return m.Size()
-}
-func (m *Struct) XXX_DiscardUnknown() {
-	xxx_messageInfo_Struct.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Struct proto.InternalMessageInfo
-
-func (m *Struct) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *Struct) GetFields() []*Struct_Field {
-	if m != nil {
-		return m.Fields
-	}
-	return nil
-}
-
-type Struct_Field struct {
-	Name string     `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Type *ValueType `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
-}
-
-func (m *Struct_Field) Reset()      { *m = Struct_Field{} }
-func (*Struct_Field) ProtoMessage() {}
-func (*Struct_Field) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7def418e304cd30c, []int{9, 0}
-}
-func (m *Struct_Field) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Struct_Field) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Struct_Field.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *Struct_Field) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Struct_Field.Merge(m, src)
-}
-func (m *Struct_Field) XXX_Size() int {
-	return m.Size()
-}
-func (m *Struct_Field) XXX_DiscardUnknown() {
-	xxx_messageInfo_Struct_Field.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Struct_Field proto.InternalMessageInfo
-
-func (m *Struct_Field) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *Struct_Field) GetType() *ValueType {
-	if m != nil {
-		return m.Type
-	}
-	return nil
-}
-
-type Variable struct {
-	Name    string     `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	ValType ScalarType `protobuf:"varint,2,opt,name=val_type,json=valType,proto3,enum=pl.stirling.dynamictracingpb.ScalarType" json:"val_type,omitempty"`
-	// Types that are valid to be assigned to AddressOneof:
-	//	*Variable_Reg
-	//	*Variable_Memory
-	AddressOneof isVariable_AddressOneof `protobuf_oneof:"address_oneof"`
-}
-
-func (m *Variable) Reset()      { *m = Variable{} }
-func (*Variable) ProtoMessage() {}
-func (*Variable) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7def418e304cd30c, []int{10}
-}
-func (m *Variable) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Variable) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Variable.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *Variable) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Variable.Merge(m, src)
-}
-func (m *Variable) XXX_Size() int {
-	return m.Size()
-}
-func (m *Variable) XXX_DiscardUnknown() {
-	xxx_messageInfo_Variable.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Variable proto.InternalMessageInfo
-
-type isVariable_AddressOneof interface {
-	isVariable_AddressOneof()
-	Equal(interface{}) bool
-	MarshalTo([]byte) (int, error)
-	Size() int
-}
-
-type Variable_Reg struct {
-	Reg Register `protobuf:"varint,3,opt,name=reg,proto3,enum=pl.stirling.dynamictracingpb.Register,oneof" json:"reg,omitempty"`
-}
-type Variable_Memory struct {
-	Memory *Variable_MemoryVariable `protobuf:"bytes,4,opt,name=memory,proto3,oneof" json:"memory,omitempty"`
-}
-
-func (*Variable_Reg) isVariable_AddressOneof()    {}
-func (*Variable_Memory) isVariable_AddressOneof() {}
-
-func (m *Variable) GetAddressOneof() isVariable_AddressOneof {
-	if m != nil {
-		return m.AddressOneof
-	}
-	return nil
-}
-
-func (m *Variable) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
-func (m *Variable) GetValType() ScalarType {
-	if m != nil {
-		return m.ValType
-	}
-	return INT32
-}
-
-func (m *Variable) GetReg() Register {
-	if x, ok := m.GetAddressOneof().(*Variable_Reg); ok {
-		return x.Reg
-	}
-	return SP
-}
-
-func (m *Variable) GetMemory() *Variable_MemoryVariable {
-	if x, ok := m.GetAddressOneof().(*Variable_Memory); ok {
-		return x.Memory
-	}
-	return nil
-}
-
-// XXX_OneofWrappers is for the internal use of the proto package.
-func (*Variable) XXX_OneofWrappers() []interface{} {
-	return []interface{}{
-		(*Variable_Reg)(nil),
-		(*Variable_Memory)(nil),
-	}
-}
-
-type Variable_MemoryVariable struct {
-	Base   string `protobuf:"bytes,1,opt,name=base,proto3" json:"base,omitempty"`
-	Offset uint32 `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
-}
-
-func (m *Variable_MemoryVariable) Reset()      { *m = Variable_MemoryVariable{} }
-func (*Variable_MemoryVariable) ProtoMessage() {}
-func (*Variable_MemoryVariable) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7def418e304cd30c, []int{10, 0}
-}
-func (m *Variable_MemoryVariable) XXX_Unmarshal(b []byte) error {
-	return m.Unmarshal(b)
-}
-func (m *Variable_MemoryVariable) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	if deterministic {
-		return xxx_messageInfo_Variable_MemoryVariable.Marshal(b, m, deterministic)
-	} else {
-		b = b[:cap(b)]
-		n, err := m.MarshalToSizedBuffer(b)
-		if err != nil {
-			return nil, err
-		}
-		return b[:n], nil
-	}
-}
-func (m *Variable_MemoryVariable) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Variable_MemoryVariable.Merge(m, src)
-}
-func (m *Variable_MemoryVariable) XXX_Size() int {
-	return m.Size()
-}
-func (m *Variable_MemoryVariable) XXX_DiscardUnknown() {
-	xxx_messageInfo_Variable_MemoryVariable.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Variable_MemoryVariable proto.InternalMessageInfo
-
-func (m *Variable_MemoryVariable) GetBase() string {
-	if m != nil {
-		return m.Base
-	}
-	return ""
-}
-
-func (m *Variable_MemoryVariable) GetOffset() uint32 {
-	if m != nil {
-		return m.Offset
-	}
-	return 0
-}
-
 type Probe struct {
-	Type            ProbeType         `protobuf:"varint,1,opt,name=type,proto3,enum=pl.stirling.dynamictracingpb.ProbeType" json:"type,omitempty"`
-	TracePoint      *TracePoint       `protobuf:"bytes,2,opt,name=trace_point,json=tracePoint,proto3" json:"trace_point,omitempty"`
-	Args            []*Argument       `protobuf:"bytes,3,rep,name=args,proto3" json:"args,omitempty"`
-	RetVals         []*ReturnValue    `protobuf:"bytes,4,rep,name=ret_vals,json=retVals,proto3" json:"ret_vals,omitempty"`
-	FunctionLatency *FunctionLatency  `protobuf:"bytes,5,opt,name=function_latency,json=functionLatency,proto3" json:"function_latency,omitempty"`
-	StashMapActions []*StashMapAction `protobuf:"bytes,8,rep,name=stash_map_actions,json=stashMapActions,proto3" json:"stash_map_actions,omitempty"`
-	OutputActions   []*OutputAction   `protobuf:"bytes,9,rep,name=output_actions,json=outputActions,proto3" json:"output_actions,omitempty"`
+	TracePoint      *TracePoint       `protobuf:"bytes,1,opt,name=trace_point,json=tracePoint,proto3" json:"trace_point,omitempty"`
+	Type            ProbeType         `protobuf:"varint,2,opt,name=type,proto3,enum=pl.stirling.dynamictracingpb.ProbeType" json:"type,omitempty"`
+	Args            []*Argument       `protobuf:"bytes,4,rep,name=args,proto3" json:"args,omitempty"`
+	RetVals         []*ReturnValue    `protobuf:"bytes,5,rep,name=ret_vals,json=retVals,proto3" json:"ret_vals,omitempty"`
+	FunctionLatency *FunctionLatency  `protobuf:"bytes,6,opt,name=function_latency,json=functionLatency,proto3" json:"function_latency,omitempty"`
+	StashMapActions []*MapStashAction `protobuf:"bytes,7,rep,name=stash_map_actions,json=stashMapActions,proto3" json:"stash_map_actions,omitempty"`
+	OutputActions   []*OutputAction   `protobuf:"bytes,8,rep,name=output_actions,json=outputActions,proto3" json:"output_actions,omitempty"`
 }
 
 func (m *Probe) Reset()      { *m = Probe{} }
 func (*Probe) ProtoMessage() {}
 func (*Probe) Descriptor() ([]byte, []int) {
-	return fileDescriptor_7def418e304cd30c, []int{11}
+	return fileDescriptor_7def418e304cd30c, []int{9}
 }
 func (m *Probe) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -960,18 +646,18 @@ func (m *Probe) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Probe proto.InternalMessageInfo
 
-func (m *Probe) GetType() ProbeType {
-	if m != nil {
-		return m.Type
-	}
-	return LOGICAL
-}
-
 func (m *Probe) GetTracePoint() *TracePoint {
 	if m != nil {
 		return m.TracePoint
 	}
 	return nil
+}
+
+func (m *Probe) GetType() ProbeType {
+	if m != nil {
+		return m.Type
+	}
+	return LOGICAL
 }
 
 func (m *Probe) GetArgs() []*Argument {
@@ -995,7 +681,7 @@ func (m *Probe) GetFunctionLatency() *FunctionLatency {
 	return nil
 }
 
-func (m *Probe) GetStashMapActions() []*StashMapAction {
+func (m *Probe) GetStashMapActions() []*MapStashAction {
 	if m != nil {
 		return m.StashMapActions
 	}
@@ -1012,90 +698,75 @@ func (m *Probe) GetOutputActions() []*OutputAction {
 func init() {
 	proto.RegisterEnum("pl.stirling.dynamictracingpb.BPFHelper", BPFHelper_name, BPFHelper_value)
 	proto.RegisterEnum("pl.stirling.dynamictracingpb.ScalarType", ScalarType_name, ScalarType_value)
-	proto.RegisterEnum("pl.stirling.dynamictracingpb.Register", Register_name, Register_value)
 	proto.RegisterEnum("pl.stirling.dynamictracingpb.ProbeType", ProbeType_name, ProbeType_value)
-	proto.RegisterType((*ValueType)(nil), "pl.stirling.dynamictracingpb.ValueType")
+	proto.RegisterType((*VariableType)(nil), "pl.stirling.dynamictracingpb.VariableType")
 	proto.RegisterType((*Map)(nil), "pl.stirling.dynamictracingpb.Map")
 	proto.RegisterType((*Output)(nil), "pl.stirling.dynamictracingpb.Output")
-	proto.RegisterType((*StashMapAction)(nil), "pl.stirling.dynamictracingpb.StashMapAction")
+	proto.RegisterType((*MapStashAction)(nil), "pl.stirling.dynamictracingpb.MapStashAction")
 	proto.RegisterType((*OutputAction)(nil), "pl.stirling.dynamictracingpb.OutputAction")
 	proto.RegisterType((*Argument)(nil), "pl.stirling.dynamictracingpb.Argument")
 	proto.RegisterType((*ReturnValue)(nil), "pl.stirling.dynamictracingpb.ReturnValue")
 	proto.RegisterType((*FunctionLatency)(nil), "pl.stirling.dynamictracingpb.FunctionLatency")
 	proto.RegisterType((*TracePoint)(nil), "pl.stirling.dynamictracingpb.TracePoint")
-	proto.RegisterType((*Struct)(nil), "pl.stirling.dynamictracingpb.Struct")
-	proto.RegisterType((*Struct_Field)(nil), "pl.stirling.dynamictracingpb.Struct.Field")
-	proto.RegisterType((*Variable)(nil), "pl.stirling.dynamictracingpb.Variable")
-	proto.RegisterType((*Variable_MemoryVariable)(nil), "pl.stirling.dynamictracingpb.Variable.MemoryVariable")
 	proto.RegisterType((*Probe)(nil), "pl.stirling.dynamictracingpb.Probe")
 }
 
 func init() { proto.RegisterFile("src/stirling/proto/ir.proto", fileDescriptor_7def418e304cd30c) }
 
 var fileDescriptor_7def418e304cd30c = []byte{
-	// 979 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x56, 0x41, 0x6f, 0x1a, 0x47,
-	0x14, 0xde, 0x05, 0x0c, 0xcb, 0xc3, 0xc6, 0xdb, 0x51, 0x55, 0xd1, 0xa4, 0xda, 0x3a, 0x1c, 0x1a,
-	0xd7, 0x6a, 0xb0, 0x84, 0xdb, 0x1e, 0xd2, 0x5e, 0x8c, 0x31, 0x36, 0x12, 0x06, 0x3a, 0x10, 0xe4,
-	0xf4, 0xb2, 0x1a, 0x60, 0xc0, 0xab, 0x2c, 0xbb, 0xab, 0x99, 0xc1, 0x0a, 0xb7, 0xfc, 0x84, 0x1e,
-	0xfb, 0x07, 0x2a, 0xf5, 0xd4, 0x1f, 0xd0, 0x4b, 0xaf, 0x3d, 0xfa, 0x98, 0x63, 0x8d, 0x2f, 0x3d,
-	0xe6, 0x27, 0x54, 0x33, 0xbb, 0x0b, 0xd8, 0x4d, 0x4d, 0x52, 0xe5, 0xf6, 0xde, 0x1b, 0xbe, 0xb7,
-	0xef, 0x7b, 0xef, 0x7d, 0x4f, 0xc0, 0x43, 0xce, 0x06, 0xfb, 0x5c, 0x38, 0xcc, 0x75, 0xbc, 0xf1,
-	0x7e, 0xc0, 0x7c, 0xe1, 0xef, 0x3b, 0xac, 0xa4, 0x0c, 0xf4, 0x59, 0xe0, 0x96, 0xe2, 0xb7, 0xd2,
-	0x70, 0xe6, 0x91, 0x89, 0x33, 0x10, 0x8c, 0x0c, 0x1c, 0x6f, 0x1c, 0xf4, 0x8b, 0xaf, 0x74, 0xc8,
-	0xf6, 0x88, 0x3b, 0xa5, 0xdd, 0x59, 0x40, 0x51, 0x05, 0xd2, 0x7c, 0x40, 0x5c, 0xc2, 0x0a, 0x89,
-	0x1d, 0x7d, 0x37, 0x5f, 0xde, 0x2d, 0xdd, 0x07, 0x2e, 0x75, 0xd4, 0x6f, 0x25, 0xf2, 0x54, 0xc3,
-	0x11, 0x12, 0x3d, 0x82, 0x1c, 0x17, 0x6c, 0x3a, 0x10, 0xb6, 0x98, 0x05, 0xb4, 0x90, 0xdc, 0xd1,
-	0x77, 0xb3, 0xa7, 0x1a, 0x86, 0x30, 0x28, 0x7f, 0x5c, 0xd9, 0x04, 0x90, 0x6f, 0xb6, 0xef, 0x51,
-	0x7f, 0x54, 0xfc, 0x45, 0x87, 0xe4, 0x19, 0x09, 0x10, 0x82, 0x94, 0x47, 0x26, 0xb4, 0xa0, 0x4b,
-	0x04, 0x56, 0x36, 0xaa, 0x80, 0xf1, 0x82, 0xce, 0xc2, 0x4c, 0xb2, 0xa4, 0x5c, 0xf9, 0xf1, 0xfd,
-	0x25, 0x2d, 0xb8, 0xe0, 0xcc, 0x0b, 0x3a, 0x53, 0xa4, 0x6a, 0x00, 0x97, 0x32, 0xba, 0xac, 0xe7,
-	0x3d, 0xb2, 0x64, 0x2f, 0x63, 0xb3, 0xf8, 0x1c, 0xd2, 0xad, 0xa9, 0x08, 0xa6, 0xe2, 0xad, 0x95,
-	0x7e, 0x07, 0xa9, 0xff, 0x53, 0xa5, 0x02, 0x15, 0x7f, 0xd3, 0x21, 0xdf, 0x11, 0x84, 0x5f, 0x9c,
-	0x91, 0xe0, 0x70, 0x20, 0x1c, 0xdf, 0x43, 0x9f, 0x82, 0x31, 0x21, 0x81, 0xbd, 0xf2, 0x9d, 0xcc,
-	0x84, 0x04, 0x4d, 0xf9, 0x29, 0x04, 0x49, 0x2e, 0xc2, 0x11, 0xc9, 0xce, 0x4a, 0x07, 0x1d, 0x41,
-	0xa6, 0x3f, 0x75, 0x5c, 0xe1, 0x78, 0x8a, 0x61, 0x7e, 0x5d, 0x05, 0x95, 0x76, 0xed, 0x94, 0xba,
-	0x01, 0x65, 0xa7, 0x1a, 0x8e, 0x91, 0xe8, 0x21, 0x84, 0x74, 0x6d, 0x67, 0xc8, 0x0b, 0xa9, 0x9d,
-	0xe4, 0x6e, 0x16, 0x1b, 0x2a, 0x50, 0x1f, 0xf2, 0x4a, 0x0e, 0xb2, 0x72, 0x14, 0xe1, 0xcc, 0x1a,
-	0xb0, 0x19, 0xf6, 0x22, 0xaa, 0xf6, 0x73, 0xc8, 0xf9, 0xca, 0x5f, 0x2d, 0x18, 0xc2, 0x90, 0xaa,
-	0xf9, 0x56, 0xea, 0xc4, 0xed, 0xd4, 0xc5, 0x12, 0x18, 0x87, 0x6c, 0x3c, 0x9d, 0x50, 0x4f, 0xa0,
-	0x3c, 0x24, 0x9c, 0x61, 0x94, 0x20, 0xe1, 0x0c, 0x65, 0xaf, 0xe9, 0xcb, 0x20, 0x62, 0x8b, 0x95,
-	0x5d, 0x3c, 0x80, 0x1c, 0xa6, 0x62, 0xca, 0x3c, 0xd5, 0xc7, 0x7f, 0x41, 0x3e, 0x86, 0x0d, 0xc7,
-	0x1b, 0xd2, 0x97, 0x0a, 0xb3, 0x85, 0x43, 0xa7, 0xf8, 0x08, 0xb6, 0x6b, 0x53, 0x4f, 0x95, 0xdb,
-	0x20, 0x82, 0x7a, 0x83, 0xd9, 0x5d, 0x60, 0xb1, 0x07, 0xd0, 0x65, 0x64, 0x40, 0xdb, 0xbe, 0xe3,
-	0x09, 0xc9, 0xa9, 0xef, 0x78, 0x84, 0xcd, 0xec, 0x80, 0x88, 0x8b, 0x98, 0x53, 0x18, 0x6a, 0x13,
-	0x71, 0x81, 0x1e, 0xc3, 0xf6, 0x28, 0xca, 0x68, 0xf3, 0xd9, 0xa4, 0xef, 0xbb, 0x51, 0x95, 0xf9,
-	0x38, 0xdc, 0x51, 0xd1, 0xe2, 0xef, 0x3a, 0xa4, 0x3b, 0x6a, 0xfd, 0xff, 0x63, 0xc9, 0xd3, 0x23,
-	0x87, 0xba, 0x51, 0x63, 0x72, 0xe5, 0xbd, 0x35, 0xaa, 0x53, 0x99, 0x4a, 0x35, 0x09, 0xc1, 0x11,
-	0xf2, 0xc1, 0x39, 0x6c, 0xa8, 0xc0, 0x87, 0xdf, 0xcd, 0x3f, 0x12, 0x60, 0xf4, 0x08, 0x73, 0x48,
-	0xdf, 0xa5, 0x6f, 0xcd, 0x7e, 0x04, 0x72, 0x92, 0x4b, 0x8d, 0xbe, 0xc7, 0xd9, 0xc0, 0x99, 0x4b,
-	0xe2, 0x2a, 0x91, 0x3e, 0x85, 0x24, 0xa3, 0xe3, 0x68, 0x77, 0xbf, 0xb8, 0x1f, 0x8f, 0xe9, 0xd8,
-	0xe1, 0x42, 0xad, 0xae, 0x04, 0xa1, 0x16, 0xa4, 0x27, 0x74, 0xe2, 0xb3, 0x59, 0x21, 0xa5, 0x08,
-	0x7e, 0xb3, 0x8e, 0x60, 0x48, 0xa6, 0x74, 0xa6, 0x40, 0xb1, 0x2b, 0x4f, 0x58, 0x98, 0xe6, 0xc1,
-	0xf7, 0x90, 0xbf, 0xfd, 0x26, 0x79, 0xf7, 0x09, 0x5f, 0xf0, 0x96, 0x36, 0xfa, 0x04, 0xd2, 0xfe,
-	0x68, 0xc4, 0xa9, 0x88, 0xf6, 0x2c, 0xf2, 0x2a, 0xdb, 0xb0, 0x45, 0x86, 0x43, 0x46, 0x39, 0x8f,
-	0xc4, 0xf2, 0x73, 0x0a, 0x36, 0xda, 0xcc, 0xef, 0x2f, 0x07, 0xa1, 0xbf, 0x8b, 0x44, 0x15, 0x64,
-	0x39, 0x08, 0x54, 0x87, 0x9c, 0x7c, 0xa4, 0x76, 0x20, 0xd7, 0x33, 0x1a, 0xe6, 0x9a, 0x56, 0x2f,
-	0xd7, 0x19, 0x83, 0x58, 0xae, 0xf6, 0x53, 0x48, 0x11, 0x36, 0xe6, 0x85, 0xa4, 0xda, 0xb7, 0x35,
-	0xed, 0x8e, 0xa5, 0x89, 0x15, 0x06, 0x55, 0xc1, 0x60, 0x54, 0xd8, 0x97, 0xc4, 0x0d, 0x6f, 0x44,
-	0xae, 0xfc, 0xe5, 0xba, 0x71, 0x2d, 0xa4, 0x8a, 0x33, 0x8c, 0x8a, 0x1e, 0x71, 0x39, 0x3a, 0x07,
-	0x73, 0xa1, 0x1d, 0x37, 0x94, 0x63, 0x61, 0x43, 0x31, 0x7a, 0x72, 0x7f, 0xb6, 0x3b, 0x1a, 0xc6,
-	0x0b, 0x09, 0xc6, 0xa2, 0x3e, 0x87, 0x8f, 0xb8, 0x3c, 0xa5, 0xb6, 0x3c, 0x9f, 0x44, 0x3d, 0xf1,
-	0x82, 0xa1, 0x0a, 0xfd, 0x6a, 0x9d, 0xb0, 0x56, 0x2f, 0x30, 0xde, 0xe6, 0xb7, 0x7c, 0x8e, 0x7e,
-	0x80, 0x7c, 0x74, 0xe4, 0xe2, 0xb4, 0xd9, 0x77, 0xd1, 0xeb, 0xea, 0xa1, 0xc4, 0x5b, 0xfe, 0x8a,
-	0xc7, 0xf7, 0x9e, 0x40, 0x76, 0x71, 0x89, 0x91, 0x01, 0xa9, 0x93, 0x56, 0xbd, 0x6a, 0x6a, 0xd2,
-	0xea, 0x9e, 0xd4, 0xab, 0xa6, 0x8e, 0x36, 0xc1, 0x90, 0x96, 0xdd, 0xae, 0x57, 0xcd, 0xc4, 0x5e,
-	0x03, 0x60, 0x29, 0x1e, 0x94, 0x85, 0x8d, 0x7a, 0xb3, 0x7b, 0x50, 0x36, 0xb5, 0xc8, 0xfc, 0xf6,
-	0x6b, 0x53, 0x47, 0x00, 0xe9, 0x6a, 0xeb, 0x59, 0xa5, 0x71, 0x6c, 0x26, 0xa4, 0xdd, 0xe9, 0xe2,
-	0x7a, 0xf3, 0xc4, 0x4c, 0x22, 0x13, 0x36, 0x7b, 0x2d, 0x99, 0xa9, 0x55, 0x6f, 0x76, 0x8f, 0xb1,
-	0x99, 0xda, 0x43, 0x60, 0xc4, 0x52, 0x42, 0x69, 0x48, 0x74, 0xda, 0xa6, 0xb6, 0xb7, 0x0f, 0xd9,
-	0xc5, 0xde, 0xa1, 0x1c, 0x64, 0x1a, 0xad, 0x93, 0xfa, 0xd1, 0x61, 0x23, 0xfc, 0xc4, 0x71, 0xb3,
-	0x8b, 0x9f, 0x87, 0x9f, 0xc0, 0xc7, 0xdd, 0x67, 0xb8, 0x69, 0x26, 0x2a, 0xb5, 0xab, 0x6b, 0x4b,
-	0x7b, 0x7d, 0x6d, 0x69, 0x6f, 0xae, 0x2d, 0xfd, 0xd5, 0xdc, 0xd2, 0x7f, 0x9d, 0x5b, 0xfa, 0x9f,
-	0x73, 0x4b, 0xbf, 0x9a, 0x5b, 0xfa, 0x5f, 0x73, 0x4b, 0xff, 0x7b, 0x6e, 0x69, 0x6f, 0xe6, 0x96,
-	0xfe, 0xd3, 0x8d, 0xa5, 0x5d, 0xdd, 0x58, 0xda, 0xeb, 0x1b, 0x4b, 0xfb, 0xd1, 0xbc, 0xdb, 0xa5,
-	0x7e, 0x5a, 0xfd, 0x5b, 0x39, 0xf8, 0x27, 0x00, 0x00, 0xff, 0xff, 0xeb, 0xb9, 0x4c, 0xd3, 0xcc,
-	0x08, 0x00, 0x00,
+	// 827 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x55, 0x4f, 0x6f, 0xe3, 0x44,
+	0x14, 0xb7, 0x93, 0x34, 0x7f, 0x5e, 0xd2, 0xd4, 0x8c, 0x38, 0x18, 0x2d, 0x32, 0x5d, 0x23, 0xb1,
+	0xa1, 0x62, 0x53, 0xa9, 0x45, 0x1c, 0x40, 0x42, 0x6a, 0x48, 0xda, 0x5a, 0x4a, 0x93, 0x30, 0xf5,
+	0x46, 0x0b, 0x42, 0xb2, 0x26, 0xce, 0x6c, 0x6b, 0xad, 0x63, 0x5b, 0xe3, 0x71, 0xb5, 0xbe, 0x21,
+	0xf1, 0x05, 0x90, 0xb8, 0xf0, 0x11, 0x90, 0xf8, 0x22, 0x1c, 0x7b, 0xdc, 0x23, 0x4d, 0x2f, 0x1c,
+	0xfb, 0x11, 0xd0, 0x8c, 0xed, 0x26, 0x14, 0x94, 0x8a, 0xbd, 0xbd, 0x79, 0xe3, 0xdf, 0xef, 0xfd,
+	0xe6, 0xfd, 0xde, 0x4b, 0xe0, 0x49, 0xcc, 0xdc, 0xfd, 0x98, 0x7b, 0xcc, 0xf7, 0x82, 0x8b, 0xfd,
+	0x88, 0x85, 0x3c, 0xdc, 0xf7, 0x58, 0x57, 0x06, 0xe8, 0xc3, 0xc8, 0xef, 0x16, 0x77, 0xdd, 0x79,
+	0x1a, 0x90, 0x85, 0xe7, 0x72, 0x46, 0x5c, 0x2f, 0xb8, 0x88, 0x66, 0xe6, 0x4f, 0x2a, 0xb4, 0xa6,
+	0x84, 0x79, 0x64, 0xe6, 0x53, 0x3b, 0x8d, 0x28, 0xea, 0x41, 0x35, 0x76, 0x89, 0x4f, 0x98, 0x5e,
+	0xda, 0x55, 0x3b, 0xed, 0x83, 0x4e, 0x77, 0x13, 0xbe, 0x7b, 0x2e, 0xbf, 0x15, 0xc8, 0x53, 0x05,
+	0xe7, 0x48, 0xf4, 0x14, 0x9a, 0x31, 0x67, 0x89, 0xcb, 0x1d, 0x9e, 0x46, 0x54, 0x2f, 0xef, 0xaa,
+	0x9d, 0xc6, 0xa9, 0x82, 0x21, 0x4b, 0x8a, 0x8f, 0x7b, 0x2d, 0x00, 0x71, 0xe7, 0x84, 0x01, 0x0d,
+	0x5f, 0x99, 0xbf, 0xab, 0x50, 0x3e, 0x23, 0x11, 0x42, 0x50, 0x09, 0xc8, 0x82, 0xea, 0xaa, 0x40,
+	0x60, 0x19, 0xa3, 0x01, 0xd4, 0x5f, 0xd3, 0x34, 0x63, 0x12, 0x92, 0x9a, 0x07, 0x7b, 0x9b, 0x25,
+	0xad, 0x3f, 0x07, 0xd7, 0x5e, 0xd3, 0x54, 0xbe, 0xcb, 0x02, 0xb8, 0x22, 0x7e, 0x42, 0x57, 0x92,
+	0xfe, 0x1f, 0x51, 0x43, 0xa2, 0x45, 0x68, 0xfe, 0x00, 0xd5, 0x71, 0xc2, 0xa3, 0x84, 0xff, 0xa7,
+	0xde, 0xaf, 0xa1, 0xf2, 0x8e, 0x5a, 0x25, 0xce, 0xfc, 0x45, 0x85, 0xf6, 0x19, 0x89, 0xce, 0x39,
+	0x89, 0x2f, 0x8f, 0x5c, 0xee, 0x85, 0x01, 0xfa, 0x00, 0xea, 0x0b, 0x12, 0x39, 0x6b, 0xa5, 0x6a,
+	0x0b, 0x12, 0x8d, 0x44, 0xb5, 0x23, 0xa8, 0xcd, 0x12, 0xcf, 0xe7, 0x5e, 0x90, 0xfb, 0xf5, 0x6c,
+	0x73, 0xc1, 0xde, 0xe4, 0xf8, 0x94, 0xfa, 0x11, 0x65, 0xb8, 0xc0, 0xa1, 0x8f, 0x61, 0xfb, 0x2a,
+	0x97, 0x91, 0x95, 0x90, 0x7e, 0xe1, 0x56, 0x91, 0x14, 0x75, 0xcc, 0x21, 0xb4, 0xb2, 0x37, 0xe7,
+	0x92, 0x3e, 0x82, 0x66, 0x28, 0xcf, 0xeb, 0xaa, 0x20, 0x4b, 0x49, 0x61, 0x4f, 0x20, 0xeb, 0x98,
+	0xe3, 0xcd, 0x63, 0xbd, 0xb4, 0x5b, 0xee, 0x34, 0x70, 0x5d, 0x26, 0xac, 0x79, 0x6c, 0x76, 0xa1,
+	0x7e, 0xc4, 0x2e, 0x92, 0x05, 0x0d, 0x38, 0x6a, 0x43, 0xc9, 0x9b, 0xe7, 0x04, 0x25, 0x6f, 0x2e,
+	0x7a, 0x4a, 0xdf, 0x44, 0xd9, 0xf8, 0x35, 0xb0, 0x8c, 0xcd, 0x43, 0x68, 0x62, 0xca, 0x13, 0x16,
+	0x4c, 0x05, 0xc3, 0xbf, 0x20, 0xef, 0xc3, 0x96, 0x17, 0xcc, 0xe9, 0x1b, 0x89, 0xd9, 0xc6, 0xd9,
+	0xc1, 0x7c, 0x0a, 0x3b, 0xc7, 0x49, 0x20, 0xe5, 0x0e, 0x09, 0xa7, 0x81, 0x9b, 0x3e, 0x04, 0x9a,
+	0x53, 0x00, 0x9b, 0x11, 0x97, 0x4e, 0x42, 0x2f, 0xe0, 0xe2, 0x4d, 0x33, 0x2f, 0x20, 0x2c, 0x75,
+	0x22, 0xc2, 0x2f, 0x8b, 0x37, 0x65, 0xa9, 0x09, 0xe1, 0x97, 0xe8, 0x19, 0xec, 0xbc, 0xca, 0x19,
+	0x9d, 0x38, 0x5d, 0xcc, 0x42, 0x3f, 0x57, 0xd9, 0x2e, 0xd2, 0xe7, 0x32, 0x6b, 0xfe, 0x5a, 0x81,
+	0xad, 0x09, 0x0b, 0x67, 0x62, 0xec, 0x9a, 0xa2, 0xf9, 0xd4, 0x89, 0x44, 0x09, 0xc9, 0xd9, 0x7c,
+	0x6c, 0xa7, 0x56, 0x92, 0x30, 0xf0, 0x95, 0xbc, 0xaf, 0xd6, 0x06, 0xeb, 0x51, 0x9f, 0x65, 0xf5,
+	0xd5, 0x54, 0xa1, 0x2f, 0xa1, 0x42, 0xd8, 0x45, 0xac, 0x57, 0x76, 0xcb, 0x9d, 0xe6, 0xc1, 0x27,
+	0x9b, 0xc1, 0x85, 0x37, 0x58, 0x62, 0x50, 0x1f, 0xea, 0x8c, 0x72, 0xe7, 0x8a, 0xf8, 0xb1, 0xbe,
+	0x25, 0xf1, 0x9f, 0x6e, 0xc6, 0xaf, 0x79, 0x85, 0x6b, 0x8c, 0xf2, 0x29, 0xf1, 0x63, 0xf4, 0x12,
+	0xb4, 0xfb, 0xe6, 0xf9, 0x99, 0x1f, 0x7a, 0x55, 0xb6, 0xe3, 0xf9, 0x66, 0xb6, 0x07, 0x26, 0xe2,
+	0x7b, 0x0f, 0x0a, 0x57, 0x5f, 0xc2, 0x7b, 0xb1, 0xd8, 0x16, 0x47, 0x2c, 0x09, 0x91, 0x57, 0xb1,
+	0x5e, 0x93, 0x42, 0x3f, 0xdb, 0x4c, 0xfd, 0xcf, 0x3d, 0xc3, 0x3b, 0x92, 0xe6, 0x8c, 0x44, 0xd9,
+	0x39, 0x46, 0xdf, 0x42, 0x3b, 0x9f, 0xf2, 0x82, 0xb6, 0x2e, 0x69, 0x1f, 0xd9, 0xea, 0xf5, 0x4d,
+	0xc1, 0xdb, 0xe1, 0xda, 0x29, 0xde, 0x7b, 0x0e, 0x8d, 0xfb, 0x1d, 0x44, 0x75, 0xa8, 0x9c, 0x8c,
+	0xad, 0xbe, 0xa6, 0x88, 0xc8, 0x3e, 0xb1, 0xfa, 0x9a, 0x8a, 0x5a, 0x50, 0x17, 0x91, 0x33, 0xb1,
+	0xfa, 0x5a, 0x69, 0x6f, 0x08, 0xb0, 0xfa, 0x89, 0x45, 0x0d, 0xd8, 0xb2, 0x46, 0xf6, 0xe1, 0x81,
+	0xa6, 0xe4, 0xe1, 0x17, 0x9f, 0x6b, 0x2a, 0x02, 0xa8, 0xf6, 0xc7, 0x2f, 0x7a, 0xc3, 0x81, 0x56,
+	0x12, 0xf1, 0xb9, 0x8d, 0xad, 0xd1, 0x89, 0x56, 0x46, 0x1a, 0xb4, 0xa6, 0x63, 0xc1, 0x34, 0xb6,
+	0x46, 0xf6, 0x00, 0x6b, 0x95, 0xbd, 0x7d, 0x68, 0xdc, 0x0f, 0x06, 0x6a, 0x42, 0x6d, 0x38, 0x3e,
+	0xb1, 0xbe, 0x39, 0x1a, 0x66, 0x74, 0x83, 0x91, 0x8d, 0xbf, 0xcb, 0xe8, 0xf0, 0xc0, 0x7e, 0x81,
+	0x47, 0x5a, 0xa9, 0x77, 0x7c, 0x7d, 0x63, 0x28, 0x6f, 0x6f, 0x0c, 0xe5, 0xee, 0xc6, 0x50, 0x7f,
+	0x5c, 0x1a, 0xea, 0x6f, 0x4b, 0x43, 0xfd, 0x63, 0x69, 0xa8, 0xd7, 0x4b, 0x43, 0xfd, 0x73, 0x69,
+	0xa8, 0x7f, 0x2d, 0x0d, 0xe5, 0x6e, 0x69, 0xa8, 0x3f, 0xdf, 0x1a, 0xca, 0xf5, 0xad, 0xa1, 0xbc,
+	0xbd, 0x35, 0x94, 0xef, 0xb5, 0x87, 0x1d, 0x99, 0x55, 0xe5, 0x7f, 0xd1, 0xe1, 0xdf, 0x01, 0x00,
+	0x00, 0xff, 0xff, 0x0a, 0x42, 0xeb, 0x0e, 0xaa, 0x06, 0x00, 0x00,
 }
 
 func (x BPFHelper) String() string {
@@ -1112,13 +783,6 @@ func (x ScalarType) String() string {
 	}
 	return strconv.Itoa(int(x))
 }
-func (x Register) String() string {
-	s, ok := Register_name[int32(x)]
-	if ok {
-		return s
-	}
-	return strconv.Itoa(int(x))
-}
 func (x ProbeType) String() string {
 	s, ok := ProbeType_name[int32(x)]
 	if ok {
@@ -1126,14 +790,14 @@ func (x ProbeType) String() string {
 	}
 	return strconv.Itoa(int(x))
 }
-func (this *ValueType) Equal(that interface{}) bool {
+func (this *VariableType) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*ValueType)
+	that1, ok := that.(*VariableType)
 	if !ok {
-		that2, ok := that.(ValueType)
+		that2, ok := that.(VariableType)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1156,14 +820,14 @@ func (this *ValueType) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *ValueType_Scalar) Equal(that interface{}) bool {
+func (this *VariableType_Scalar) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*ValueType_Scalar)
+	that1, ok := that.(*VariableType_Scalar)
 	if !ok {
-		that2, ok := that.(ValueType_Scalar)
+		that2, ok := that.(VariableType_Scalar)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1180,14 +844,14 @@ func (this *ValueType_Scalar) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *ValueType_StructType) Equal(that interface{}) bool {
+func (this *VariableType_StructType) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*ValueType_StructType)
+	that1, ok := that.(*VariableType_StructType)
 	if !ok {
-		that2, ok := that.(ValueType_StructType)
+		that2, ok := that.(VariableType_StructType)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1261,14 +925,14 @@ func (this *Output) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *StashMapAction) Equal(that interface{}) bool {
+func (this *MapStashAction) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*StashMapAction)
+	that1, ok := that.(*MapStashAction)
 	if !ok {
-		that2, ok := that.(StashMapAction)
+		that2, ok := that.(MapStashAction)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1283,69 +947,10 @@ func (this *StashMapAction) Equal(that interface{}) bool {
 	if this.MapName != that1.MapName {
 		return false
 	}
-	if that1.KeyOneof == nil {
-		if this.KeyOneof != nil {
-			return false
-		}
-	} else if this.KeyOneof == nil {
-		return false
-	} else if !this.KeyOneof.Equal(that1.KeyOneof) {
-		return false
-	}
-	if len(this.ValueIds) != len(that1.ValueIds) {
-		return false
-	}
-	for i := range this.ValueIds {
-		if this.ValueIds[i] != that1.ValueIds[i] {
-			return false
-		}
-	}
-	return true
-}
-func (this *StashMapAction_Str) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*StashMapAction_Str)
-	if !ok {
-		that2, ok := that.(StashMapAction_Str)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Str != that1.Str {
-		return false
-	}
-	return true
-}
-func (this *StashMapAction_Builtin) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*StashMapAction_Builtin)
-	if !ok {
-		that2, ok := that.(StashMapAction_Builtin)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
 	if this.Builtin != that1.Builtin {
+		return false
+	}
+	if this.VariableName != that1.VariableName {
 		return false
 	}
 	return true
@@ -1487,176 +1092,6 @@ func (this *TracePoint) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *Struct) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Struct)
-	if !ok {
-		that2, ok := that.(Struct)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Name != that1.Name {
-		return false
-	}
-	if len(this.Fields) != len(that1.Fields) {
-		return false
-	}
-	for i := range this.Fields {
-		if !this.Fields[i].Equal(that1.Fields[i]) {
-			return false
-		}
-	}
-	return true
-}
-func (this *Struct_Field) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Struct_Field)
-	if !ok {
-		that2, ok := that.(Struct_Field)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Name != that1.Name {
-		return false
-	}
-	if !this.Type.Equal(that1.Type) {
-		return false
-	}
-	return true
-}
-func (this *Variable) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Variable)
-	if !ok {
-		that2, ok := that.(Variable)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Name != that1.Name {
-		return false
-	}
-	if this.ValType != that1.ValType {
-		return false
-	}
-	if that1.AddressOneof == nil {
-		if this.AddressOneof != nil {
-			return false
-		}
-	} else if this.AddressOneof == nil {
-		return false
-	} else if !this.AddressOneof.Equal(that1.AddressOneof) {
-		return false
-	}
-	return true
-}
-func (this *Variable_Reg) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Variable_Reg)
-	if !ok {
-		that2, ok := that.(Variable_Reg)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Reg != that1.Reg {
-		return false
-	}
-	return true
-}
-func (this *Variable_Memory) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Variable_Memory)
-	if !ok {
-		that2, ok := that.(Variable_Memory)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.Memory.Equal(that1.Memory) {
-		return false
-	}
-	return true
-}
-func (this *Variable_MemoryVariable) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*Variable_MemoryVariable)
-	if !ok {
-		that2, ok := that.(Variable_MemoryVariable)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if this.Base != that1.Base {
-		return false
-	}
-	if this.Offset != that1.Offset {
-		return false
-	}
-	return true
-}
 func (this *Probe) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -1676,10 +1111,10 @@ func (this *Probe) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Type != that1.Type {
+	if !this.TracePoint.Equal(that1.TracePoint) {
 		return false
 	}
-	if !this.TracePoint.Equal(that1.TracePoint) {
+	if this.Type != that1.Type {
 		return false
 	}
 	if len(this.Args) != len(that1.Args) {
@@ -1719,31 +1154,31 @@ func (this *Probe) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *ValueType) GoString() string {
+func (this *VariableType) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 6)
-	s = append(s, "&dynamictracingpb.ValueType{")
+	s = append(s, "&dynamictracingpb.VariableType{")
 	if this.TypeOneof != nil {
 		s = append(s, "TypeOneof: "+fmt.Sprintf("%#v", this.TypeOneof)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *ValueType_Scalar) GoString() string {
+func (this *VariableType_Scalar) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&dynamictracingpb.ValueType_Scalar{` +
+	s := strings.Join([]string{`&dynamictracingpb.VariableType_Scalar{` +
 		`Scalar:` + fmt.Sprintf("%#v", this.Scalar) + `}`}, ", ")
 	return s
 }
-func (this *ValueType_StructType) GoString() string {
+func (this *VariableType_StructType) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&dynamictracingpb.ValueType_StructType{` +
+	s := strings.Join([]string{`&dynamictracingpb.VariableType_StructType{` +
 		`StructType:` + fmt.Sprintf("%#v", this.StructType) + `}`}, ", ")
 	return s
 }
@@ -1776,35 +1211,17 @@ func (this *Output) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *StashMapAction) GoString() string {
+func (this *MapStashAction) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 8)
-	s = append(s, "&dynamictracingpb.StashMapAction{")
+	s := make([]string, 0, 7)
+	s = append(s, "&dynamictracingpb.MapStashAction{")
 	s = append(s, "MapName: "+fmt.Sprintf("%#v", this.MapName)+",\n")
-	if this.KeyOneof != nil {
-		s = append(s, "KeyOneof: "+fmt.Sprintf("%#v", this.KeyOneof)+",\n")
-	}
-	s = append(s, "ValueIds: "+fmt.Sprintf("%#v", this.ValueIds)+",\n")
+	s = append(s, "Builtin: "+fmt.Sprintf("%#v", this.Builtin)+",\n")
+	s = append(s, "VariableName: "+fmt.Sprintf("%#v", this.VariableName)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
-}
-func (this *StashMapAction_Str) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&dynamictracingpb.StashMapAction_Str{` +
-		`Str:` + fmt.Sprintf("%#v", this.Str) + `}`}, ", ")
-	return s
-}
-func (this *StashMapAction_Builtin) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&dynamictracingpb.StashMapAction_Builtin{` +
-		`Builtin:` + fmt.Sprintf("%#v", this.Builtin) + `}`}, ", ")
-	return s
 }
 func (this *OutputAction) GoString() string {
 	if this == nil {
@@ -1860,83 +1277,16 @@ func (this *TracePoint) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *Struct) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&dynamictracingpb.Struct{")
-	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
-	if this.Fields != nil {
-		s = append(s, "Fields: "+fmt.Sprintf("%#v", this.Fields)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Struct_Field) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&dynamictracingpb.Struct_Field{")
-	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
-	if this.Type != nil {
-		s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Variable) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 8)
-	s = append(s, "&dynamictracingpb.Variable{")
-	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
-	s = append(s, "ValType: "+fmt.Sprintf("%#v", this.ValType)+",\n")
-	if this.AddressOneof != nil {
-		s = append(s, "AddressOneof: "+fmt.Sprintf("%#v", this.AddressOneof)+",\n")
-	}
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
-func (this *Variable_Reg) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&dynamictracingpb.Variable_Reg{` +
-		`Reg:` + fmt.Sprintf("%#v", this.Reg) + `}`}, ", ")
-	return s
-}
-func (this *Variable_Memory) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&dynamictracingpb.Variable_Memory{` +
-		`Memory:` + fmt.Sprintf("%#v", this.Memory) + `}`}, ", ")
-	return s
-}
-func (this *Variable_MemoryVariable) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&dynamictracingpb.Variable_MemoryVariable{")
-	s = append(s, "Base: "+fmt.Sprintf("%#v", this.Base)+",\n")
-	s = append(s, "Offset: "+fmt.Sprintf("%#v", this.Offset)+",\n")
-	s = append(s, "}")
-	return strings.Join(s, "")
-}
 func (this *Probe) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 11)
 	s = append(s, "&dynamictracingpb.Probe{")
-	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	if this.TracePoint != nil {
 		s = append(s, "TracePoint: "+fmt.Sprintf("%#v", this.TracePoint)+",\n")
 	}
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	if this.Args != nil {
 		s = append(s, "Args: "+fmt.Sprintf("%#v", this.Args)+",\n")
 	}
@@ -1963,7 +1313,7 @@ func valueToGoStringIr(v interface{}, typ string) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("func(v %v) *%v { return &v } ( %#v )", typ, typ, pv)
 }
-func (m *ValueType) Marshal() (dAtA []byte, err error) {
+func (m *VariableType) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -1973,12 +1323,12 @@ func (m *ValueType) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ValueType) MarshalTo(dAtA []byte) (int, error) {
+func (m *VariableType) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ValueType) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *VariableType) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -1995,24 +1345,24 @@ func (m *ValueType) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ValueType_Scalar) MarshalTo(dAtA []byte) (int, error) {
+func (m *VariableType_Scalar) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ValueType_Scalar) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *VariableType_Scalar) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	i = encodeVarintIr(dAtA, i, uint64(m.Scalar))
 	i--
 	dAtA[i] = 0x10
 	return len(dAtA) - i, nil
 }
-func (m *ValueType_StructType) MarshalTo(dAtA []byte) (int, error) {
+func (m *VariableType_StructType) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ValueType_StructType) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *VariableType_StructType) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	i -= len(m.StructType)
 	copy(dAtA[i:], m.StructType)
@@ -2117,7 +1467,7 @@ func (m *Output) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *StashMapAction) Marshal() (dAtA []byte, err error) {
+func (m *MapStashAction) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -2127,33 +1477,27 @@ func (m *StashMapAction) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *StashMapAction) MarshalTo(dAtA []byte) (int, error) {
+func (m *MapStashAction) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *StashMapAction) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *MapStashAction) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.ValueIds) > 0 {
-		for iNdEx := len(m.ValueIds) - 1; iNdEx >= 0; iNdEx-- {
-			i -= len(m.ValueIds[iNdEx])
-			copy(dAtA[i:], m.ValueIds[iNdEx])
-			i = encodeVarintIr(dAtA, i, uint64(len(m.ValueIds[iNdEx])))
-			i--
-			dAtA[i] = 0x22
-		}
+	if len(m.VariableName) > 0 {
+		i -= len(m.VariableName)
+		copy(dAtA[i:], m.VariableName)
+		i = encodeVarintIr(dAtA, i, uint64(len(m.VariableName)))
+		i--
+		dAtA[i] = 0x1a
 	}
-	if m.KeyOneof != nil {
-		{
-			size := m.KeyOneof.Size()
-			i -= size
-			if _, err := m.KeyOneof.MarshalTo(dAtA[i:]); err != nil {
-				return 0, err
-			}
-		}
+	if m.Builtin != 0 {
+		i = encodeVarintIr(dAtA, i, uint64(m.Builtin))
+		i--
+		dAtA[i] = 0x10
 	}
 	if len(m.MapName) > 0 {
 		i -= len(m.MapName)
@@ -2165,32 +1509,6 @@ func (m *StashMapAction) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *StashMapAction_Str) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *StashMapAction_Str) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	i -= len(m.Str)
-	copy(dAtA[i:], m.Str)
-	i = encodeVarintIr(dAtA, i, uint64(len(m.Str)))
-	i--
-	dAtA[i] = 0x12
-	return len(dAtA) - i, nil
-}
-func (m *StashMapAction_Builtin) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *StashMapAction_Builtin) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	i = encodeVarintIr(dAtA, i, uint64(m.Builtin))
-	i--
-	dAtA[i] = 0x18
-	return len(dAtA) - i, nil
-}
 func (m *OutputAction) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -2369,204 +1687,6 @@ func (m *TracePoint) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *Struct) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Struct) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Struct) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if len(m.Fields) > 0 {
-		for iNdEx := len(m.Fields) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.Fields[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintIr(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-		}
-	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintIr(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *Struct_Field) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Struct_Field) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Struct_Field) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Type != nil {
-		{
-			size, err := m.Type.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintIr(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x12
-	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintIr(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *Variable) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Variable) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Variable) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.AddressOneof != nil {
-		{
-			size := m.AddressOneof.Size()
-			i -= size
-			if _, err := m.AddressOneof.MarshalTo(dAtA[i:]); err != nil {
-				return 0, err
-			}
-		}
-	}
-	if m.ValType != 0 {
-		i = encodeVarintIr(dAtA, i, uint64(m.ValType))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.Name) > 0 {
-		i -= len(m.Name)
-		copy(dAtA[i:], m.Name)
-		i = encodeVarintIr(dAtA, i, uint64(len(m.Name)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
-func (m *Variable_Reg) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Variable_Reg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	i = encodeVarintIr(dAtA, i, uint64(m.Reg))
-	i--
-	dAtA[i] = 0x18
-	return len(dAtA) - i, nil
-}
-func (m *Variable_Memory) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Variable_Memory) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.Memory != nil {
-		{
-			size, err := m.Memory.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintIr(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x22
-	}
-	return len(dAtA) - i, nil
-}
-func (m *Variable_MemoryVariable) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalToSizedBuffer(dAtA[:size])
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *Variable_MemoryVariable) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *Variable_MemoryVariable) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	_ = i
-	var l int
-	_ = l
-	if m.Offset != 0 {
-		i = encodeVarintIr(dAtA, i, uint64(m.Offset))
-		i--
-		dAtA[i] = 0x10
-	}
-	if len(m.Base) > 0 {
-		i -= len(m.Base)
-		copy(dAtA[i:], m.Base)
-		i = encodeVarintIr(dAtA, i, uint64(len(m.Base)))
-		i--
-		dAtA[i] = 0xa
-	}
-	return len(dAtA) - i, nil
-}
-
 func (m *Probe) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -2598,7 +1718,7 @@ func (m *Probe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintIr(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x4a
+			dAtA[i] = 0x42
 		}
 	}
 	if len(m.StashMapActions) > 0 {
@@ -2612,7 +1732,7 @@ func (m *Probe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintIr(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x42
+			dAtA[i] = 0x3a
 		}
 	}
 	if m.FunctionLatency != nil {
@@ -2625,7 +1745,7 @@ func (m *Probe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintIr(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x2a
+		dAtA[i] = 0x32
 	}
 	if len(m.RetVals) > 0 {
 		for iNdEx := len(m.RetVals) - 1; iNdEx >= 0; iNdEx-- {
@@ -2638,7 +1758,7 @@ func (m *Probe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintIr(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x22
+			dAtA[i] = 0x2a
 		}
 	}
 	if len(m.Args) > 0 {
@@ -2652,8 +1772,13 @@ func (m *Probe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintIr(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x1a
+			dAtA[i] = 0x22
 		}
+	}
+	if m.Type != 0 {
+		i = encodeVarintIr(dAtA, i, uint64(m.Type))
+		i--
+		dAtA[i] = 0x10
 	}
 	if m.TracePoint != nil {
 		{
@@ -2665,12 +1790,7 @@ func (m *Probe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintIr(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x12
-	}
-	if m.Type != 0 {
-		i = encodeVarintIr(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x8
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -2686,7 +1806,7 @@ func encodeVarintIr(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *ValueType) Size() (n int) {
+func (m *VariableType) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -2698,7 +1818,7 @@ func (m *ValueType) Size() (n int) {
 	return n
 }
 
-func (m *ValueType_Scalar) Size() (n int) {
+func (m *VariableType_Scalar) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -2707,7 +1827,7 @@ func (m *ValueType_Scalar) Size() (n int) {
 	n += 1 + sovIr(uint64(m.Scalar))
 	return n
 }
-func (m *ValueType_StructType) Size() (n int) {
+func (m *VariableType_StructType) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -2755,7 +1875,7 @@ func (m *Output) Size() (n int) {
 	return n
 }
 
-func (m *StashMapAction) Size() (n int) {
+func (m *MapStashAction) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -2765,37 +1885,16 @@ func (m *StashMapAction) Size() (n int) {
 	if l > 0 {
 		n += 1 + l + sovIr(uint64(l))
 	}
-	if m.KeyOneof != nil {
-		n += m.KeyOneof.Size()
+	if m.Builtin != 0 {
+		n += 1 + sovIr(uint64(m.Builtin))
 	}
-	if len(m.ValueIds) > 0 {
-		for _, s := range m.ValueIds {
-			l = len(s)
-			n += 1 + l + sovIr(uint64(l))
-		}
+	l = len(m.VariableName)
+	if l > 0 {
+		n += 1 + l + sovIr(uint64(l))
 	}
 	return n
 }
 
-func (m *StashMapAction_Str) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Str)
-	n += 1 + l + sovIr(uint64(l))
-	return n
-}
-func (m *StashMapAction_Builtin) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	n += 1 + sovIr(uint64(m.Builtin))
-	return n
-}
 func (m *OutputAction) Size() (n int) {
 	if m == nil {
 		return 0
@@ -2878,110 +1977,18 @@ func (m *TracePoint) Size() (n int) {
 	return n
 }
 
-func (m *Struct) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Name)
-	if l > 0 {
-		n += 1 + l + sovIr(uint64(l))
-	}
-	if len(m.Fields) > 0 {
-		for _, e := range m.Fields {
-			l = e.Size()
-			n += 1 + l + sovIr(uint64(l))
-		}
-	}
-	return n
-}
-
-func (m *Struct_Field) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Name)
-	if l > 0 {
-		n += 1 + l + sovIr(uint64(l))
-	}
-	if m.Type != nil {
-		l = m.Type.Size()
-		n += 1 + l + sovIr(uint64(l))
-	}
-	return n
-}
-
-func (m *Variable) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Name)
-	if l > 0 {
-		n += 1 + l + sovIr(uint64(l))
-	}
-	if m.ValType != 0 {
-		n += 1 + sovIr(uint64(m.ValType))
-	}
-	if m.AddressOneof != nil {
-		n += m.AddressOneof.Size()
-	}
-	return n
-}
-
-func (m *Variable_Reg) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	n += 1 + sovIr(uint64(m.Reg))
-	return n
-}
-func (m *Variable_Memory) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.Memory != nil {
-		l = m.Memory.Size()
-		n += 1 + l + sovIr(uint64(l))
-	}
-	return n
-}
-func (m *Variable_MemoryVariable) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	l = len(m.Base)
-	if l > 0 {
-		n += 1 + l + sovIr(uint64(l))
-	}
-	if m.Offset != 0 {
-		n += 1 + sovIr(uint64(m.Offset))
-	}
-	return n
-}
-
 func (m *Probe) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.Type != 0 {
-		n += 1 + sovIr(uint64(m.Type))
-	}
 	if m.TracePoint != nil {
 		l = m.TracePoint.Size()
 		n += 1 + l + sovIr(uint64(l))
+	}
+	if m.Type != 0 {
+		n += 1 + sovIr(uint64(m.Type))
 	}
 	if len(m.Args) > 0 {
 		for _, e := range m.Args {
@@ -3020,31 +2027,31 @@ func sovIr(x uint64) (n int) {
 func sozIr(x uint64) (n int) {
 	return sovIr(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (this *ValueType) String() string {
+func (this *VariableType) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&ValueType{`,
+	s := strings.Join([]string{`&VariableType{`,
 		`TypeOneof:` + fmt.Sprintf("%v", this.TypeOneof) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *ValueType_Scalar) String() string {
+func (this *VariableType_Scalar) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&ValueType_Scalar{`,
+	s := strings.Join([]string{`&VariableType_Scalar{`,
 		`Scalar:` + fmt.Sprintf("%v", this.Scalar) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *ValueType_StructType) String() string {
+func (this *VariableType_StructType) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&ValueType_StructType{`,
+	s := strings.Join([]string{`&VariableType_StructType{`,
 		`StructType:` + fmt.Sprintf("%v", this.StructType) + `,`,
 		`}`,
 	}, "")
@@ -3056,8 +2063,8 @@ func (this *Map) String() string {
 	}
 	s := strings.Join([]string{`&Map{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`KeyType:` + strings.Replace(this.KeyType.String(), "ValueType", "ValueType", 1) + `,`,
-		`ValueType:` + strings.Replace(this.ValueType.String(), "ValueType", "ValueType", 1) + `,`,
+		`KeyType:` + strings.Replace(this.KeyType.String(), "VariableType", "VariableType", 1) + `,`,
+		`ValueType:` + strings.Replace(this.ValueType.String(), "VariableType", "VariableType", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3068,39 +2075,19 @@ func (this *Output) String() string {
 	}
 	s := strings.Join([]string{`&Output{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`Type:` + strings.Replace(this.Type.String(), "ValueType", "ValueType", 1) + `,`,
+		`Type:` + strings.Replace(this.Type.String(), "VariableType", "VariableType", 1) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *StashMapAction) String() string {
+func (this *MapStashAction) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&StashMapAction{`,
+	s := strings.Join([]string{`&MapStashAction{`,
 		`MapName:` + fmt.Sprintf("%v", this.MapName) + `,`,
-		`KeyOneof:` + fmt.Sprintf("%v", this.KeyOneof) + `,`,
-		`ValueIds:` + fmt.Sprintf("%v", this.ValueIds) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *StashMapAction_Str) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&StashMapAction_Str{`,
-		`Str:` + fmt.Sprintf("%v", this.Str) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *StashMapAction_Builtin) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&StashMapAction_Builtin{`,
 		`Builtin:` + fmt.Sprintf("%v", this.Builtin) + `,`,
+		`VariableName:` + fmt.Sprintf("%v", this.VariableName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3159,76 +2146,6 @@ func (this *TracePoint) String() string {
 	}, "")
 	return s
 }
-func (this *Struct) String() string {
-	if this == nil {
-		return "nil"
-	}
-	repeatedStringForFields := "[]*Struct_Field{"
-	for _, f := range this.Fields {
-		repeatedStringForFields += strings.Replace(fmt.Sprintf("%v", f), "Struct_Field", "Struct_Field", 1) + ","
-	}
-	repeatedStringForFields += "}"
-	s := strings.Join([]string{`&Struct{`,
-		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`Fields:` + repeatedStringForFields + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Struct_Field) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Struct_Field{`,
-		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`Type:` + strings.Replace(this.Type.String(), "ValueType", "ValueType", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Variable) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Variable{`,
-		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`ValType:` + fmt.Sprintf("%v", this.ValType) + `,`,
-		`AddressOneof:` + fmt.Sprintf("%v", this.AddressOneof) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Variable_Reg) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Variable_Reg{`,
-		`Reg:` + fmt.Sprintf("%v", this.Reg) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Variable_Memory) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Variable_Memory{`,
-		`Memory:` + strings.Replace(fmt.Sprintf("%v", this.Memory), "Variable_MemoryVariable", "Variable_MemoryVariable", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *Variable_MemoryVariable) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&Variable_MemoryVariable{`,
-		`Base:` + fmt.Sprintf("%v", this.Base) + `,`,
-		`Offset:` + fmt.Sprintf("%v", this.Offset) + `,`,
-		`}`,
-	}, "")
-	return s
-}
 func (this *Probe) String() string {
 	if this == nil {
 		return "nil"
@@ -3243,9 +2160,9 @@ func (this *Probe) String() string {
 		repeatedStringForRetVals += strings.Replace(f.String(), "ReturnValue", "ReturnValue", 1) + ","
 	}
 	repeatedStringForRetVals += "}"
-	repeatedStringForStashMapActions := "[]*StashMapAction{"
+	repeatedStringForStashMapActions := "[]*MapStashAction{"
 	for _, f := range this.StashMapActions {
-		repeatedStringForStashMapActions += strings.Replace(f.String(), "StashMapAction", "StashMapAction", 1) + ","
+		repeatedStringForStashMapActions += strings.Replace(f.String(), "MapStashAction", "MapStashAction", 1) + ","
 	}
 	repeatedStringForStashMapActions += "}"
 	repeatedStringForOutputActions := "[]*OutputAction{"
@@ -3254,8 +2171,8 @@ func (this *Probe) String() string {
 	}
 	repeatedStringForOutputActions += "}"
 	s := strings.Join([]string{`&Probe{`,
-		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`TracePoint:` + strings.Replace(this.TracePoint.String(), "TracePoint", "TracePoint", 1) + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`Args:` + repeatedStringForArgs + `,`,
 		`RetVals:` + repeatedStringForRetVals + `,`,
 		`FunctionLatency:` + strings.Replace(this.FunctionLatency.String(), "FunctionLatency", "FunctionLatency", 1) + `,`,
@@ -3273,7 +2190,7 @@ func valueToStringIr(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *ValueType) Unmarshal(dAtA []byte) error {
+func (m *VariableType) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3296,10 +2213,10 @@ func (m *ValueType) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ValueType: wiretype end group for non-group")
+			return fmt.Errorf("proto: VariableType: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ValueType: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: VariableType: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 2:
@@ -3321,7 +2238,7 @@ func (m *ValueType) Unmarshal(dAtA []byte) error {
 					break
 				}
 			}
-			m.TypeOneof = &ValueType_Scalar{v}
+			m.TypeOneof = &VariableType_Scalar{v}
 		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field StructType", wireType)
@@ -3352,7 +2269,7 @@ func (m *ValueType) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.TypeOneof = &ValueType_StructType{string(dAtA[iNdEx:postIndex])}
+			m.TypeOneof = &VariableType_StructType{string(dAtA[iNdEx:postIndex])}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -3469,7 +2386,7 @@ func (m *Map) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.KeyType == nil {
-				m.KeyType = &ValueType{}
+				m.KeyType = &VariableType{}
 			}
 			if err := m.KeyType.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -3505,7 +2422,7 @@ func (m *Map) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.ValueType == nil {
-				m.ValueType = &ValueType{}
+				m.ValueType = &VariableType{}
 			}
 			if err := m.ValueType.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -3626,7 +2543,7 @@ func (m *Output) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Type == nil {
-				m.Type = &ValueType{}
+				m.Type = &VariableType{}
 			}
 			if err := m.Type.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -3656,7 +2573,7 @@ func (m *Output) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *StashMapAction) Unmarshal(dAtA []byte) error {
+func (m *MapStashAction) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -3679,10 +2596,10 @@ func (m *StashMapAction) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: StashMapAction: wiretype end group for non-group")
+			return fmt.Errorf("proto: MapStashAction: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: StashMapAction: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: MapStashAction: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -3718,42 +2635,10 @@ func (m *StashMapAction) Unmarshal(dAtA []byte) error {
 			m.MapName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Str", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowIr
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthIr
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthIr
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.KeyOneof = &StashMapAction_Str{string(dAtA[iNdEx:postIndex])}
-			iNdEx = postIndex
-		case 3:
 			if wireType != 0 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Builtin", wireType)
 			}
-			var v BPFHelper
+			m.Builtin = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowIr
@@ -3763,15 +2648,14 @@ func (m *StashMapAction) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				v |= BPFHelper(b&0x7F) << shift
+				m.Builtin |= BPFHelper(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			m.KeyOneof = &StashMapAction_Builtin{v}
-		case 4:
+		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ValueIds", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field VariableName", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -3799,7 +2683,7 @@ func (m *StashMapAction) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ValueIds = append(m.ValueIds, string(dAtA[iNdEx:postIndex]))
+			m.VariableName = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4365,509 +3249,6 @@ func (m *TracePoint) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *Struct) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowIr
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Struct: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Struct: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowIr
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthIr
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthIr
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Name = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Fields", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowIr
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthIr
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthIr
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Fields = append(m.Fields, &Struct_Field{})
-			if err := m.Fields[len(m.Fields)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipIr(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthIr
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthIr
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Struct_Field) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowIr
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Field: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Field: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowIr
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthIr
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthIr
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Name = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowIr
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthIr
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthIr
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.Type == nil {
-				m.Type = &ValueType{}
-			}
-			if err := m.Type.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipIr(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthIr
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthIr
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Variable) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowIr
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Variable: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Variable: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowIr
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthIr
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthIr
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Name = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ValType", wireType)
-			}
-			m.ValType = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowIr
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.ValType |= ScalarType(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 3:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Reg", wireType)
-			}
-			var v Register
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowIr
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= Register(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.AddressOneof = &Variable_Reg{v}
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Memory", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowIr
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthIr
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthIr
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &Variable_MemoryVariable{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.AddressOneof = &Variable_Memory{v}
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipIr(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthIr
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthIr
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *Variable_MemoryVariable) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowIr
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= uint64(b&0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: MemoryVariable: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: MemoryVariable: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Base", wireType)
-			}
-			var stringLen uint64
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowIr
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
-				return ErrInvalidLengthIr
-			}
-			postIndex := iNdEx + intStringLen
-			if postIndex < 0 {
-				return ErrInvalidLengthIr
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Base = string(dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		case 2:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Offset", wireType)
-			}
-			m.Offset = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowIr
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Offset |= uint32(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		default:
-			iNdEx = preIndex
-			skippy, err := skipIr(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthIr
-			}
-			if (iNdEx + skippy) < 0 {
-				return ErrInvalidLengthIr
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
 func (m *Probe) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
@@ -4898,25 +3279,6 @@ func (m *Probe) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
-			}
-			m.Type = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowIr
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Type |= ProbeType(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TracePoint", wireType)
 			}
@@ -4952,7 +3314,26 @@ func (m *Probe) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 3:
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowIr
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Type |= ProbeType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Args", wireType)
 			}
@@ -4986,7 +3367,7 @@ func (m *Probe) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 4:
+		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field RetVals", wireType)
 			}
@@ -5020,7 +3401,7 @@ func (m *Probe) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 5:
+		case 6:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field FunctionLatency", wireType)
 			}
@@ -5056,7 +3437,7 @@ func (m *Probe) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 8:
+		case 7:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field StashMapActions", wireType)
 			}
@@ -5085,12 +3466,12 @@ func (m *Probe) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.StashMapActions = append(m.StashMapActions, &StashMapAction{})
+			m.StashMapActions = append(m.StashMapActions, &MapStashAction{})
 			if err := m.StashMapActions[len(m.StashMapActions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
-		case 9:
+		case 8:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field OutputActions", wireType)
 			}

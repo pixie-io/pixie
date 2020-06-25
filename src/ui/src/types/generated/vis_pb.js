@@ -4442,7 +4442,7 @@ proto.pl.vispb.RequestGraph.toObject = function(includeInstance, msg) {
     requestsPerSecondColumn: jspb.Message.getFieldWithDefault(msg, 9, ""),
     inboundBytesPerSecondColumn: jspb.Message.getFieldWithDefault(msg, 10, ""),
     outboundBytesPerSecondColumn: jspb.Message.getFieldWithDefault(msg, 11, ""),
-    totalRequestCount: jspb.Message.getFieldWithDefault(msg, 12, "")
+    totalRequestCountColumn: jspb.Message.getFieldWithDefault(msg, 12, "")
   };
 
   if (includeInstance) {
@@ -4525,7 +4525,7 @@ proto.pl.vispb.RequestGraph.deserializeBinaryFromReader = function(msg, reader) 
       break;
     case 12:
       var value = /** @type {string} */ (reader.readString());
-      msg.setTotalRequestCount(value);
+      msg.setTotalRequestCountColumn(value);
       break;
     default:
       reader.skipField();
@@ -4633,7 +4633,7 @@ proto.pl.vispb.RequestGraph.serializeBinaryToWriter = function(message, writer) 
       f
     );
   }
-  f = message.getTotalRequestCount();
+  f = message.getTotalRequestCountColumn();
   if (f.length > 0) {
     writer.writeString(
       12,
@@ -4842,10 +4842,10 @@ proto.pl.vispb.RequestGraph.prototype.setOutboundBytesPerSecondColumn = function
 
 
 /**
- * optional string total_request_count = 12;
+ * optional string total_request_count_column = 12;
  * @return {string}
  */
-proto.pl.vispb.RequestGraph.prototype.getTotalRequestCount = function() {
+proto.pl.vispb.RequestGraph.prototype.getTotalRequestCountColumn = function() {
   return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 12, ""));
 };
 
@@ -4854,7 +4854,7 @@ proto.pl.vispb.RequestGraph.prototype.getTotalRequestCount = function() {
  * @param {string} value
  * @return {!proto.pl.vispb.RequestGraph} returns this
  */
-proto.pl.vispb.RequestGraph.prototype.setTotalRequestCount = function(value) {
+proto.pl.vispb.RequestGraph.prototype.setTotalRequestCountColumn = function(value) {
   return jspb.Message.setProto3StringField(this, 12, value);
 };
 

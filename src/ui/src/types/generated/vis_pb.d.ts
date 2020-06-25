@@ -579,8 +579,8 @@ export class RequestGraph extends jspb.Message {
   getOutboundBytesPerSecondColumn(): string;
   setOutboundBytesPerSecondColumn(value: string): void;
 
-  getTotalRequestCount(): string;
-  setTotalRequestCount(value: string): void;
+  getTotalRequestCountColumn(): string;
+  setTotalRequestCountColumn(value: string): void;
 
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): RequestGraph.AsObject;
@@ -603,7 +603,7 @@ export namespace RequestGraph {
     requestsPerSecondColumn: string,
     inboundBytesPerSecondColumn: string,
     outboundBytesPerSecondColumn: string,
-    totalRequestCount: string,
+    totalRequestCountColumn: string,
   }
 }
 

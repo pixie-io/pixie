@@ -276,5 +276,5 @@ message RequestGraph {
   string outbound_bytes_per_second_column = 11;
   // The column name containing the total number of requests that occurred for this
   // requestor/responder combination.
-  string total_request_count = 12;
+  string total_request_count_column = 12;
 }

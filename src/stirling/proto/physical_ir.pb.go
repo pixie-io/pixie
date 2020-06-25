@@ -11,6 +11,7 @@ import (
 	math_bits "math/bits"
 	proto1 "pixielabs.ai/pixielabs/src/stirling/proto"
 	reflect "reflect"
+	strconv "strconv"
 	strings "strings"
 )
 
@@ -25,19 +26,291 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+type Register int32
+
+const (
+	SP Register = 0
+)
+
+var Register_name = map[int32]string{
+	0: "SP",
+}
+
+var Register_value = map[string]int32{
+	"SP": 0,
+}
+
+func (Register) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_4ced47f6dcbd64c2, []int{0}
+}
+
+type Struct struct {
+	Name   string          `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Fields []*Struct_Field `protobuf:"bytes,2,rep,name=fields,proto3" json:"fields,omitempty"`
+}
+
+func (m *Struct) Reset()      { *m = Struct{} }
+func (*Struct) ProtoMessage() {}
+func (*Struct) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4ced47f6dcbd64c2, []int{0}
+}
+func (m *Struct) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Struct) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Struct.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Struct) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Struct.Merge(m, src)
+}
+func (m *Struct) XXX_Size() int {
+	return m.Size()
+}
+func (m *Struct) XXX_DiscardUnknown() {
+	xxx_messageInfo_Struct.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Struct proto.InternalMessageInfo
+
+func (m *Struct) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Struct) GetFields() []*Struct_Field {
+	if m != nil {
+		return m.Fields
+	}
+	return nil
+}
+
+type Struct_Field struct {
+	Name string               `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Type *proto1.VariableType `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
+}
+
+func (m *Struct_Field) Reset()      { *m = Struct_Field{} }
+func (*Struct_Field) ProtoMessage() {}
+func (*Struct_Field) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4ced47f6dcbd64c2, []int{0, 0}
+}
+func (m *Struct_Field) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Struct_Field) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Struct_Field.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Struct_Field) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Struct_Field.Merge(m, src)
+}
+func (m *Struct_Field) XXX_Size() int {
+	return m.Size()
+}
+func (m *Struct_Field) XXX_DiscardUnknown() {
+	xxx_messageInfo_Struct_Field.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Struct_Field proto.InternalMessageInfo
+
+func (m *Struct_Field) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Struct_Field) GetType() *proto1.VariableType {
+	if m != nil {
+		return m.Type
+	}
+	return nil
+}
+
+type Variable struct {
+	Name    string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	ValType proto1.ScalarType `protobuf:"varint,2,opt,name=val_type,json=valType,proto3,enum=pl.stirling.dynamictracingpb.ScalarType" json:"val_type,omitempty"`
+	// Types that are valid to be assigned to AddressOneof:
+	//	*Variable_Reg
+	//	*Variable_Memory
+	AddressOneof isVariable_AddressOneof `protobuf_oneof:"address_oneof"`
+}
+
+func (m *Variable) Reset()      { *m = Variable{} }
+func (*Variable) ProtoMessage() {}
+func (*Variable) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4ced47f6dcbd64c2, []int{1}
+}
+func (m *Variable) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Variable) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Variable.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Variable) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Variable.Merge(m, src)
+}
+func (m *Variable) XXX_Size() int {
+	return m.Size()
+}
+func (m *Variable) XXX_DiscardUnknown() {
+	xxx_messageInfo_Variable.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Variable proto.InternalMessageInfo
+
+type isVariable_AddressOneof interface {
+	isVariable_AddressOneof()
+	Equal(interface{}) bool
+	MarshalTo([]byte) (int, error)
+	Size() int
+}
+
+type Variable_Reg struct {
+	Reg Register `protobuf:"varint,3,opt,name=reg,proto3,enum=pl.stirling.dynamictracingpb.Register,oneof" json:"reg,omitempty"`
+}
+type Variable_Memory struct {
+	Memory *Variable_MemoryVariable `protobuf:"bytes,4,opt,name=memory,proto3,oneof" json:"memory,omitempty"`
+}
+
+func (*Variable_Reg) isVariable_AddressOneof()    {}
+func (*Variable_Memory) isVariable_AddressOneof() {}
+
+func (m *Variable) GetAddressOneof() isVariable_AddressOneof {
+	if m != nil {
+		return m.AddressOneof
+	}
+	return nil
+}
+
+func (m *Variable) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *Variable) GetValType() proto1.ScalarType {
+	if m != nil {
+		return m.ValType
+	}
+	return proto1.INT32
+}
+
+func (m *Variable) GetReg() Register {
+	if x, ok := m.GetAddressOneof().(*Variable_Reg); ok {
+		return x.Reg
+	}
+	return SP
+}
+
+func (m *Variable) GetMemory() *Variable_MemoryVariable {
+	if x, ok := m.GetAddressOneof().(*Variable_Memory); ok {
+		return x.Memory
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*Variable) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*Variable_Reg)(nil),
+		(*Variable_Memory)(nil),
+	}
+}
+
+type Variable_MemoryVariable struct {
+	Base   string `protobuf:"bytes,1,opt,name=base,proto3" json:"base,omitempty"`
+	Offset uint32 `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
+}
+
+func (m *Variable_MemoryVariable) Reset()      { *m = Variable_MemoryVariable{} }
+func (*Variable_MemoryVariable) ProtoMessage() {}
+func (*Variable_MemoryVariable) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4ced47f6dcbd64c2, []int{1, 0}
+}
+func (m *Variable_MemoryVariable) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *Variable_MemoryVariable) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_Variable_MemoryVariable.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *Variable_MemoryVariable) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Variable_MemoryVariable.Merge(m, src)
+}
+func (m *Variable_MemoryVariable) XXX_Size() int {
+	return m.Size()
+}
+func (m *Variable_MemoryVariable) XXX_DiscardUnknown() {
+	xxx_messageInfo_Variable_MemoryVariable.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_Variable_MemoryVariable proto.InternalMessageInfo
+
+func (m *Variable_MemoryVariable) GetBase() string {
+	if m != nil {
+		return m.Base
+	}
+	return ""
+}
+
+func (m *Variable_MemoryVariable) GetOffset() uint32 {
+	if m != nil {
+		return m.Offset
+	}
+	return 0
+}
+
 type PhysicalProbe struct {
-	Type            proto1.ProbeType         `protobuf:"varint,1,opt,name=type,proto3,enum=pl.stirling.dynamictracingpb.ProbeType" json:"type,omitempty"`
-	TracePoint      *proto1.TracePoint       `protobuf:"bytes,2,opt,name=trace_point,json=tracePoint,proto3" json:"trace_point,omitempty"`
-	Structs         []*proto1.Struct         `protobuf:"bytes,6,rep,name=structs,proto3" json:"structs,omitempty"`
-	Vars            []*proto1.Variable       `protobuf:"bytes,7,rep,name=vars,proto3" json:"vars,omitempty"`
-	StashMapActions []*proto1.StashMapAction `protobuf:"bytes,8,rep,name=stash_map_actions,json=stashMapActions,proto3" json:"stash_map_actions,omitempty"`
-	OutputActions   []*proto1.OutputAction   `protobuf:"bytes,9,rep,name=output_actions,json=outputActions,proto3" json:"output_actions,omitempty"`
+	TracePoint      *proto1.TracePoint       `protobuf:"bytes,1,opt,name=trace_point,json=tracePoint,proto3" json:"trace_point,omitempty"`
+	Type            proto1.ProbeType         `protobuf:"varint,2,opt,name=type,proto3,enum=pl.stirling.dynamictracingpb.ProbeType" json:"type,omitempty"`
+	Structs         []*Struct                `protobuf:"bytes,3,rep,name=structs,proto3" json:"structs,omitempty"`
+	Vars            []*Variable              `protobuf:"bytes,4,rep,name=vars,proto3" json:"vars,omitempty"`
+	StashMapActions []*proto1.MapStashAction `protobuf:"bytes,5,rep,name=stash_map_actions,json=stashMapActions,proto3" json:"stash_map_actions,omitempty"`
+	OutputActions   []*proto1.OutputAction   `protobuf:"bytes,6,rep,name=output_actions,json=outputActions,proto3" json:"output_actions,omitempty"`
 }
 
 func (m *PhysicalProbe) Reset()      { *m = PhysicalProbe{} }
 func (*PhysicalProbe) ProtoMessage() {}
 func (*PhysicalProbe) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4ced47f6dcbd64c2, []int{0}
+	return fileDescriptor_4ced47f6dcbd64c2, []int{2}
 }
 func (m *PhysicalProbe) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -66,13 +339,6 @@ func (m *PhysicalProbe) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_PhysicalProbe proto.InternalMessageInfo
 
-func (m *PhysicalProbe) GetType() proto1.ProbeType {
-	if m != nil {
-		return m.Type
-	}
-	return proto1.LOGICAL
-}
-
 func (m *PhysicalProbe) GetTracePoint() *proto1.TracePoint {
 	if m != nil {
 		return m.TracePoint
@@ -80,21 +346,28 @@ func (m *PhysicalProbe) GetTracePoint() *proto1.TracePoint {
 	return nil
 }
 
-func (m *PhysicalProbe) GetStructs() []*proto1.Struct {
+func (m *PhysicalProbe) GetType() proto1.ProbeType {
+	if m != nil {
+		return m.Type
+	}
+	return proto1.LOGICAL
+}
+
+func (m *PhysicalProbe) GetStructs() []*Struct {
 	if m != nil {
 		return m.Structs
 	}
 	return nil
 }
 
-func (m *PhysicalProbe) GetVars() []*proto1.Variable {
+func (m *PhysicalProbe) GetVars() []*Variable {
 	if m != nil {
 		return m.Vars
 	}
 	return nil
 }
 
-func (m *PhysicalProbe) GetStashMapActions() []*proto1.StashMapAction {
+func (m *PhysicalProbe) GetStashMapActions() []*proto1.MapStashAction {
 	if m != nil {
 		return m.StashMapActions
 	}
@@ -109,6 +382,11 @@ func (m *PhysicalProbe) GetOutputActions() []*proto1.OutputAction {
 }
 
 func init() {
+	proto.RegisterEnum("pl.stirling.dynamictracingpb.Register", Register_name, Register_value)
+	proto.RegisterType((*Struct)(nil), "pl.stirling.dynamictracingpb.Struct")
+	proto.RegisterType((*Struct_Field)(nil), "pl.stirling.dynamictracingpb.Struct.Field")
+	proto.RegisterType((*Variable)(nil), "pl.stirling.dynamictracingpb.Variable")
+	proto.RegisterType((*Variable_MemoryVariable)(nil), "pl.stirling.dynamictracingpb.Variable.MemoryVariable")
 	proto.RegisterType((*PhysicalProbe)(nil), "pl.stirling.dynamictracingpb.PhysicalProbe")
 }
 
@@ -117,31 +395,221 @@ func init() {
 }
 
 var fileDescriptor_4ced47f6dcbd64c2 = []byte{
-	// 350 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0xb1, 0x4a, 0x03, 0x31,
-	0x18, 0xc7, 0x2f, 0xb6, 0xb4, 0x9a, 0xd2, 0xaa, 0x37, 0x1d, 0x2a, 0xa1, 0x48, 0xd1, 0x43, 0xe4,
-	0x0a, 0x75, 0x53, 0x10, 0x74, 0x10, 0x1c, 0xc4, 0x7a, 0x16, 0x11, 0x97, 0x23, 0x77, 0x1e, 0x6d,
-	0xe0, 0x7a, 0x09, 0xf9, 0x52, 0xe1, 0x36, 0x1f, 0xc1, 0xc7, 0xf0, 0x31, 0x1c, 0x1d, 0x3b, 0x76,
-	0xb4, 0xe9, 0xe2, 0xd8, 0x47, 0x90, 0x86, 0xb6, 0xa8, 0xc8, 0xb9, 0xe5, 0x9f, 0xfc, 0x7f, 0xbf,
-	0x7c, 0xc3, 0x87, 0x1b, 0x20, 0xa3, 0x26, 0x28, 0x26, 0x13, 0x96, 0x76, 0x9b, 0x42, 0x72, 0xc5,
-	0x9b, 0xa2, 0x97, 0x01, 0x8b, 0x68, 0x12, 0x30, 0xe9, 0x99, 0x1b, 0x7b, 0x47, 0x24, 0xde, 0xa2,
-	0xe4, 0x3d, 0x66, 0x29, 0xed, 0xb3, 0x48, 0x49, 0x1a, 0xb1, 0xb4, 0x2b, 0xc2, 0xad, 0xed, 0x3f,
-	0x1c, 0x0b, 0x74, 0xf7, 0xad, 0x80, 0xab, 0xed, 0xb9, 0xb0, 0x2d, 0x79, 0x18, 0xdb, 0x27, 0xb8,
-	0xa8, 0x32, 0x11, 0x3b, 0xa8, 0x8e, 0xdc, 0x5a, 0x6b, 0xdf, 0xcb, 0x73, 0x7b, 0x06, 0xe9, 0x64,
-	0x22, 0xf6, 0x0d, 0x64, 0x5f, 0xe2, 0xca, 0xec, 0x31, 0x0e, 0x04, 0x67, 0xa9, 0x72, 0x56, 0xea,
-	0xc8, 0xad, 0xb4, 0xdc, 0x7c, 0x47, 0x67, 0x06, 0xb4, 0x67, 0x7d, 0x1f, 0xab, 0xe5, 0xd9, 0x3e,
-	0xc5, 0x65, 0x50, 0x72, 0x10, 0x29, 0x70, 0x4a, 0xf5, 0x82, 0x5b, 0x69, 0x35, 0xf2, 0x35, 0xb7,
-	0xa6, 0xec, 0x2f, 0x20, 0xfb, 0x18, 0x17, 0x9f, 0xa8, 0x04, 0xa7, 0x6c, 0xe0, 0xbd, 0x7c, 0xf8,
-	0x8e, 0x4a, 0x46, 0xc3, 0x24, 0xf6, 0x0d, 0x63, 0xdf, 0xe3, 0x4d, 0x50, 0x14, 0x7a, 0x41, 0x9f,
-	0x8a, 0x80, 0x46, 0x8a, 0xf1, 0x14, 0x9c, 0x55, 0x23, 0x3a, 0xfc, 0x6f, 0x0a, 0x0a, 0xbd, 0x2b,
-	0x2a, 0xce, 0x0c, 0xe4, 0xaf, 0xc3, 0x8f, 0x0c, 0xf6, 0x0d, 0xae, 0xf1, 0x81, 0x12, 0x03, 0xb5,
-	0xd4, 0xae, 0x19, 0xed, 0x41, 0xbe, 0xf6, 0xda, 0x30, 0x73, 0x69, 0x95, 0x7f, 0x4b, 0x70, 0x7e,
-	0x31, 0x1c, 0x13, 0x6b, 0x34, 0x26, 0xd6, 0x74, 0x4c, 0xd0, 0xb3, 0x26, 0xe8, 0x55, 0x13, 0xf4,
-	0xae, 0x09, 0x1a, 0x6a, 0x82, 0x3e, 0x34, 0x41, 0x9f, 0x9a, 0x58, 0x53, 0x4d, 0xd0, 0xcb, 0x84,
-	0x58, 0xc3, 0x09, 0xb1, 0x46, 0x13, 0x62, 0x3d, 0x6c, 0xfc, 0xfe, 0x23, 0x2c, 0x99, 0x8d, 0x38,
-	0xfa, 0x0a, 0x00, 0x00, 0xff, 0xff, 0x13, 0xc5, 0x9e, 0x6c, 0x74, 0x02, 0x00, 0x00,
+	// 546 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x94, 0xc1, 0x6a, 0x13, 0x41,
+	0x18, 0xc7, 0x77, 0x93, 0x74, 0x5b, 0xbf, 0x92, 0xb4, 0xce, 0x41, 0x96, 0x28, 0x43, 0x08, 0xa5,
+	0x86, 0x22, 0x1b, 0x88, 0x78, 0xa9, 0x52, 0x30, 0x42, 0xa9, 0x87, 0xd0, 0xb8, 0x29, 0x22, 0x7a,
+	0x58, 0x26, 0x9b, 0x49, 0x3a, 0xb0, 0xd9, 0x19, 0x66, 0x26, 0x81, 0xdc, 0x7c, 0x04, 0x1f, 0xc3,
+	0x97, 0x10, 0x3d, 0x7a, 0xcc, 0xb1, 0x47, 0xb3, 0xb9, 0x78, 0xec, 0x23, 0xc8, 0x4e, 0xb3, 0xb1,
+	0x4a, 0x48, 0x72, 0xfb, 0xbe, 0xd9, 0xf9, 0xfd, 0xff, 0xfb, 0x9f, 0xf9, 0x76, 0xe1, 0x48, 0xc9,
+	0xb0, 0xae, 0x34, 0x93, 0x11, 0x8b, 0x07, 0x75, 0x21, 0xb9, 0xe6, 0x75, 0x71, 0x3d, 0x51, 0x2c,
+	0x24, 0x51, 0xc0, 0xa4, 0x67, 0x56, 0xd0, 0x13, 0x11, 0x79, 0xd9, 0x26, 0xaf, 0x37, 0x89, 0xc9,
+	0x90, 0x85, 0x5a, 0x92, 0x90, 0xc5, 0x03, 0xd1, 0x2d, 0x3f, 0x5e, 0xa1, 0x91, 0xa1, 0xd5, 0x6f,
+	0x36, 0x38, 0x1d, 0x2d, 0x47, 0xa1, 0x46, 0x08, 0x0a, 0x31, 0x19, 0x52, 0xd7, 0xae, 0xd8, 0xb5,
+	0x07, 0xbe, 0xa9, 0x51, 0x13, 0x9c, 0x3e, 0xa3, 0x51, 0x4f, 0xb9, 0xb9, 0x4a, 0xbe, 0xb6, 0xdf,
+	0x38, 0xf1, 0xd6, 0x59, 0x79, 0x77, 0x4a, 0xde, 0x79, 0x8a, 0xf8, 0x0b, 0xb2, 0xfc, 0x09, 0x76,
+	0xcc, 0xc2, 0x4a, 0x83, 0x33, 0x28, 0xe8, 0x89, 0xa0, 0x6e, 0xae, 0x62, 0x6f, 0x96, 0x7f, 0x4f,
+	0x24, 0x23, 0xdd, 0x88, 0x5e, 0x4d, 0x04, 0xf5, 0x0d, 0x57, 0xfd, 0x9e, 0x83, 0xbd, 0x6c, 0x79,
+	0xa5, 0xc1, 0x1b, 0xd8, 0x1b, 0x93, 0x28, 0x58, 0x9a, 0x94, 0x1a, 0xb5, 0x0d, 0x19, 0x42, 0x12,
+	0x11, 0x69, 0x2c, 0x76, 0xc7, 0x24, 0x4a, 0x0b, 0x74, 0x0a, 0x79, 0x49, 0x07, 0x6e, 0xde, 0xf0,
+	0xc7, 0xeb, 0x79, 0x9f, 0x0e, 0x98, 0xd2, 0x54, 0x5e, 0x58, 0x7e, 0x0a, 0xa1, 0x4b, 0x70, 0x86,
+	0x74, 0xc8, 0xe5, 0xc4, 0x2d, 0x98, 0x8c, 0x2f, 0xb6, 0xcb, 0xe8, 0xb5, 0x0c, 0x94, 0xb5, 0x17,
+	0x96, 0xbf, 0x90, 0x29, 0xbf, 0x82, 0xd2, 0xbf, 0xcf, 0xd2, 0xdc, 0x5d, 0xa2, 0x96, 0xb9, 0xd3,
+	0x1a, 0x3d, 0x02, 0x87, 0xf7, 0xfb, 0x8a, 0x6a, 0x93, 0xba, 0xe8, 0x2f, 0xba, 0xe6, 0x01, 0x14,
+	0x49, 0xaf, 0x27, 0xa9, 0x52, 0x01, 0x8f, 0x29, 0xef, 0x57, 0x7f, 0xe4, 0xa1, 0xd8, 0x5e, 0x8c,
+	0x54, 0x5b, 0xf2, 0x2e, 0x45, 0x6f, 0x61, 0x3f, 0x7d, 0x1f, 0x1a, 0x08, 0xce, 0x62, 0x6d, 0x54,
+	0xf7, 0x37, 0x9d, 0xda, 0x55, 0x0a, 0xb4, 0xd3, 0xfd, 0x3e, 0xe8, 0x65, 0x8d, 0x5e, 0xde, 0xbb,
+	0xde, 0x52, 0xe3, 0xe9, 0x7a, 0x0d, 0xe3, 0xfe, 0xf7, 0x6e, 0xd1, 0x19, 0xec, 0x2a, 0x33, 0x50,
+	0xca, 0xcd, 0x9b, 0xe9, 0x3b, 0xda, 0x66, 0xfa, 0xfc, 0x0c, 0x42, 0xa7, 0x50, 0x18, 0x13, 0xa9,
+	0xdc, 0x82, 0x81, 0x8f, 0xb7, 0x3b, 0x77, 0xdf, 0x30, 0xe8, 0x03, 0x3c, 0x54, 0x9a, 0xa8, 0xeb,
+	0x60, 0x48, 0x44, 0x40, 0x42, 0xcd, 0x78, 0xac, 0xdc, 0x1d, 0x23, 0xf4, 0x6c, 0xbd, 0x50, 0x8b,
+	0x88, 0x4e, 0x4a, 0xbe, 0x36, 0x90, 0x7f, 0x60, 0x64, 0x5a, 0x44, 0xdc, 0xf5, 0x0a, 0xbd, 0x83,
+	0x12, 0x1f, 0x69, 0x31, 0xd2, 0x4b, 0x59, 0x67, 0x9b, 0x4f, 0xeb, 0xd2, 0x30, 0x0b, 0xd1, 0x22,
+	0xbf, 0xd7, 0xa9, 0x13, 0x04, 0x7b, 0xd9, 0xd4, 0x21, 0x07, 0x72, 0x9d, 0xf6, 0xa1, 0xd5, 0x3c,
+	0x9f, 0xce, 0xb0, 0x75, 0x33, 0xc3, 0xd6, 0xed, 0x0c, 0xdb, 0x9f, 0x13, 0x6c, 0x7f, 0x4d, 0xb0,
+	0xfd, 0x33, 0xc1, 0xf6, 0x34, 0xc1, 0xf6, 0xaf, 0x04, 0xdb, 0xbf, 0x13, 0x6c, 0xdd, 0x26, 0xd8,
+	0xfe, 0x32, 0xc7, 0xd6, 0x74, 0x8e, 0xad, 0x9b, 0x39, 0xb6, 0x3e, 0x1e, 0xfe, 0xef, 0xdb, 0x75,
+	0xcc, 0x7f, 0xe2, 0xf9, 0x9f, 0x00, 0x00, 0x00, 0xff, 0xff, 0xbf, 0xa5, 0xf2, 0x5c, 0x8a, 0x04,
+	0x00, 0x00,
 }
 
+func (x Register) String() string {
+	s, ok := Register_name[int32(x)]
+	if ok {
+		return s
+	}
+	return strconv.Itoa(int(x))
+}
+func (this *Struct) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Struct)
+	if !ok {
+		that2, ok := that.(Struct)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if len(this.Fields) != len(that1.Fields) {
+		return false
+	}
+	for i := range this.Fields {
+		if !this.Fields[i].Equal(that1.Fields[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *Struct_Field) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Struct_Field)
+	if !ok {
+		that2, ok := that.(Struct_Field)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if !this.Type.Equal(that1.Type) {
+		return false
+	}
+	return true
+}
+func (this *Variable) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Variable)
+	if !ok {
+		that2, ok := that.(Variable)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.ValType != that1.ValType {
+		return false
+	}
+	if that1.AddressOneof == nil {
+		if this.AddressOneof != nil {
+			return false
+		}
+	} else if this.AddressOneof == nil {
+		return false
+	} else if !this.AddressOneof.Equal(that1.AddressOneof) {
+		return false
+	}
+	return true
+}
+func (this *Variable_Reg) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Variable_Reg)
+	if !ok {
+		that2, ok := that.(Variable_Reg)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Reg != that1.Reg {
+		return false
+	}
+	return true
+}
+func (this *Variable_Memory) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Variable_Memory)
+	if !ok {
+		that2, ok := that.(Variable_Memory)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Memory.Equal(that1.Memory) {
+		return false
+	}
+	return true
+}
+func (this *Variable_MemoryVariable) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*Variable_MemoryVariable)
+	if !ok {
+		that2, ok := that.(Variable_MemoryVariable)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Base != that1.Base {
+		return false
+	}
+	if this.Offset != that1.Offset {
+		return false
+	}
+	return true
+}
 func (this *PhysicalProbe) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -161,10 +629,10 @@ func (this *PhysicalProbe) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Type != that1.Type {
+	if !this.TracePoint.Equal(that1.TracePoint) {
 		return false
 	}
-	if !this.TracePoint.Equal(that1.TracePoint) {
+	if this.Type != that1.Type {
 		return false
 	}
 	if len(this.Structs) != len(that1.Structs) {
@@ -201,16 +669,83 @@ func (this *PhysicalProbe) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *Struct) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&dynamictracingpb.Struct{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	if this.Fields != nil {
+		s = append(s, "Fields: "+fmt.Sprintf("%#v", this.Fields)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *Struct_Field) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&dynamictracingpb.Struct_Field{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	if this.Type != nil {
+		s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *Variable) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 8)
+	s = append(s, "&dynamictracingpb.Variable{")
+	s = append(s, "Name: "+fmt.Sprintf("%#v", this.Name)+",\n")
+	s = append(s, "ValType: "+fmt.Sprintf("%#v", this.ValType)+",\n")
+	if this.AddressOneof != nil {
+		s = append(s, "AddressOneof: "+fmt.Sprintf("%#v", this.AddressOneof)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *Variable_Reg) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&dynamictracingpb.Variable_Reg{` +
+		`Reg:` + fmt.Sprintf("%#v", this.Reg) + `}`}, ", ")
+	return s
+}
+func (this *Variable_Memory) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&dynamictracingpb.Variable_Memory{` +
+		`Memory:` + fmt.Sprintf("%#v", this.Memory) + `}`}, ", ")
+	return s
+}
+func (this *Variable_MemoryVariable) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&dynamictracingpb.Variable_MemoryVariable{")
+	s = append(s, "Base: "+fmt.Sprintf("%#v", this.Base)+",\n")
+	s = append(s, "Offset: "+fmt.Sprintf("%#v", this.Offset)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
 func (this *PhysicalProbe) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 10)
 	s = append(s, "&dynamictracingpb.PhysicalProbe{")
-	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	if this.TracePoint != nil {
 		s = append(s, "TracePoint: "+fmt.Sprintf("%#v", this.TracePoint)+",\n")
 	}
+	s = append(s, "Type: "+fmt.Sprintf("%#v", this.Type)+",\n")
 	if this.Structs != nil {
 		s = append(s, "Structs: "+fmt.Sprintf("%#v", this.Structs)+",\n")
 	}
@@ -234,6 +769,204 @@ func valueToGoStringPhysicalIr(v interface{}, typ string) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("func(v %v) *%v { return &v } ( %#v )", typ, typ, pv)
 }
+func (m *Struct) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Struct) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Struct) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Fields) > 0 {
+		for iNdEx := len(m.Fields) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Fields[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintPhysicalIr(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintPhysicalIr(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *Struct_Field) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Struct_Field) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Struct_Field) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Type != nil {
+		{
+			size, err := m.Type.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPhysicalIr(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintPhysicalIr(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *Variable) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Variable) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Variable) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.AddressOneof != nil {
+		{
+			size := m.AddressOneof.Size()
+			i -= size
+			if _, err := m.AddressOneof.MarshalTo(dAtA[i:]); err != nil {
+				return 0, err
+			}
+		}
+	}
+	if m.ValType != 0 {
+		i = encodeVarintPhysicalIr(dAtA, i, uint64(m.ValType))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Name) > 0 {
+		i -= len(m.Name)
+		copy(dAtA[i:], m.Name)
+		i = encodeVarintPhysicalIr(dAtA, i, uint64(len(m.Name)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *Variable_Reg) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Variable_Reg) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	i = encodeVarintPhysicalIr(dAtA, i, uint64(m.Reg))
+	i--
+	dAtA[i] = 0x18
+	return len(dAtA) - i, nil
+}
+func (m *Variable_Memory) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Variable_Memory) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.Memory != nil {
+		{
+			size, err := m.Memory.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintPhysicalIr(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x22
+	}
+	return len(dAtA) - i, nil
+}
+func (m *Variable_MemoryVariable) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *Variable_MemoryVariable) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *Variable_MemoryVariable) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Offset != 0 {
+		i = encodeVarintPhysicalIr(dAtA, i, uint64(m.Offset))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.Base) > 0 {
+		i -= len(m.Base)
+		copy(dAtA[i:], m.Base)
+		i = encodeVarintPhysicalIr(dAtA, i, uint64(len(m.Base)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func (m *PhysicalProbe) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
@@ -265,7 +998,7 @@ func (m *PhysicalProbe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintPhysicalIr(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x4a
+			dAtA[i] = 0x32
 		}
 	}
 	if len(m.StashMapActions) > 0 {
@@ -279,7 +1012,7 @@ func (m *PhysicalProbe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintPhysicalIr(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x42
+			dAtA[i] = 0x2a
 		}
 	}
 	if len(m.Vars) > 0 {
@@ -293,7 +1026,7 @@ func (m *PhysicalProbe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintPhysicalIr(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x3a
+			dAtA[i] = 0x22
 		}
 	}
 	if len(m.Structs) > 0 {
@@ -307,8 +1040,13 @@ func (m *PhysicalProbe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 				i = encodeVarintPhysicalIr(dAtA, i, uint64(size))
 			}
 			i--
-			dAtA[i] = 0x32
+			dAtA[i] = 0x1a
 		}
+	}
+	if m.Type != 0 {
+		i = encodeVarintPhysicalIr(dAtA, i, uint64(m.Type))
+		i--
+		dAtA[i] = 0x10
 	}
 	if m.TracePoint != nil {
 		{
@@ -320,12 +1058,7 @@ func (m *PhysicalProbe) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintPhysicalIr(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x12
-	}
-	if m.Type != 0 {
-		i = encodeVarintPhysicalIr(dAtA, i, uint64(m.Type))
-		i--
-		dAtA[i] = 0x8
+		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -341,18 +1074,110 @@ func encodeVarintPhysicalIr(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
+func (m *Struct) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovPhysicalIr(uint64(l))
+	}
+	if len(m.Fields) > 0 {
+		for _, e := range m.Fields {
+			l = e.Size()
+			n += 1 + l + sovPhysicalIr(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *Struct_Field) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovPhysicalIr(uint64(l))
+	}
+	if m.Type != nil {
+		l = m.Type.Size()
+		n += 1 + l + sovPhysicalIr(uint64(l))
+	}
+	return n
+}
+
+func (m *Variable) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Name)
+	if l > 0 {
+		n += 1 + l + sovPhysicalIr(uint64(l))
+	}
+	if m.ValType != 0 {
+		n += 1 + sovPhysicalIr(uint64(m.ValType))
+	}
+	if m.AddressOneof != nil {
+		n += m.AddressOneof.Size()
+	}
+	return n
+}
+
+func (m *Variable_Reg) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	n += 1 + sovPhysicalIr(uint64(m.Reg))
+	return n
+}
+func (m *Variable_Memory) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Memory != nil {
+		l = m.Memory.Size()
+		n += 1 + l + sovPhysicalIr(uint64(l))
+	}
+	return n
+}
+func (m *Variable_MemoryVariable) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.Base)
+	if l > 0 {
+		n += 1 + l + sovPhysicalIr(uint64(l))
+	}
+	if m.Offset != 0 {
+		n += 1 + sovPhysicalIr(uint64(m.Offset))
+	}
+	return n
+}
+
 func (m *PhysicalProbe) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.Type != 0 {
-		n += 1 + sovPhysicalIr(uint64(m.Type))
-	}
 	if m.TracePoint != nil {
 		l = m.TracePoint.Size()
 		n += 1 + l + sovPhysicalIr(uint64(l))
+	}
+	if m.Type != 0 {
+		n += 1 + sovPhysicalIr(uint64(m.Type))
 	}
 	if len(m.Structs) > 0 {
 		for _, e := range m.Structs {
@@ -387,23 +1212,93 @@ func sovPhysicalIr(x uint64) (n int) {
 func sozPhysicalIr(x uint64) (n int) {
 	return sovPhysicalIr(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
+func (this *Struct) String() string {
+	if this == nil {
+		return "nil"
+	}
+	repeatedStringForFields := "[]*Struct_Field{"
+	for _, f := range this.Fields {
+		repeatedStringForFields += strings.Replace(fmt.Sprintf("%v", f), "Struct_Field", "Struct_Field", 1) + ","
+	}
+	repeatedStringForFields += "}"
+	s := strings.Join([]string{`&Struct{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Fields:` + repeatedStringForFields + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Struct_Field) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Struct_Field{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`Type:` + strings.Replace(fmt.Sprintf("%v", this.Type), "VariableType", "proto1.VariableType", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Variable) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Variable{`,
+		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
+		`ValType:` + fmt.Sprintf("%v", this.ValType) + `,`,
+		`AddressOneof:` + fmt.Sprintf("%v", this.AddressOneof) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Variable_Reg) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Variable_Reg{`,
+		`Reg:` + fmt.Sprintf("%v", this.Reg) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Variable_Memory) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Variable_Memory{`,
+		`Memory:` + strings.Replace(fmt.Sprintf("%v", this.Memory), "Variable_MemoryVariable", "Variable_MemoryVariable", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *Variable_MemoryVariable) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&Variable_MemoryVariable{`,
+		`Base:` + fmt.Sprintf("%v", this.Base) + `,`,
+		`Offset:` + fmt.Sprintf("%v", this.Offset) + `,`,
+		`}`,
+	}, "")
+	return s
+}
 func (this *PhysicalProbe) String() string {
 	if this == nil {
 		return "nil"
 	}
 	repeatedStringForStructs := "[]*Struct{"
 	for _, f := range this.Structs {
-		repeatedStringForStructs += strings.Replace(fmt.Sprintf("%v", f), "Struct", "proto1.Struct", 1) + ","
+		repeatedStringForStructs += strings.Replace(f.String(), "Struct", "Struct", 1) + ","
 	}
 	repeatedStringForStructs += "}"
 	repeatedStringForVars := "[]*Variable{"
 	for _, f := range this.Vars {
-		repeatedStringForVars += strings.Replace(fmt.Sprintf("%v", f), "Variable", "proto1.Variable", 1) + ","
+		repeatedStringForVars += strings.Replace(f.String(), "Variable", "Variable", 1) + ","
 	}
 	repeatedStringForVars += "}"
-	repeatedStringForStashMapActions := "[]*StashMapAction{"
+	repeatedStringForStashMapActions := "[]*MapStashAction{"
 	for _, f := range this.StashMapActions {
-		repeatedStringForStashMapActions += strings.Replace(fmt.Sprintf("%v", f), "StashMapAction", "proto1.StashMapAction", 1) + ","
+		repeatedStringForStashMapActions += strings.Replace(fmt.Sprintf("%v", f), "MapStashAction", "proto1.MapStashAction", 1) + ","
 	}
 	repeatedStringForStashMapActions += "}"
 	repeatedStringForOutputActions := "[]*OutputAction{"
@@ -412,8 +1307,8 @@ func (this *PhysicalProbe) String() string {
 	}
 	repeatedStringForOutputActions += "}"
 	s := strings.Join([]string{`&PhysicalProbe{`,
-		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`TracePoint:` + strings.Replace(fmt.Sprintf("%v", this.TracePoint), "TracePoint", "proto1.TracePoint", 1) + `,`,
+		`Type:` + fmt.Sprintf("%v", this.Type) + `,`,
 		`Structs:` + repeatedStringForStructs + `,`,
 		`Vars:` + repeatedStringForVars + `,`,
 		`StashMapActions:` + repeatedStringForStashMapActions + `,`,
@@ -429,6 +1324,509 @@ func valueToStringPhysicalIr(v interface{}) string {
 	}
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
+}
+func (m *Struct) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPhysicalIr
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Struct: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Struct: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPhysicalIr
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Fields", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPhysicalIr
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Fields = append(m.Fields, &Struct_Field{})
+			if err := m.Fields[len(m.Fields)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPhysicalIr(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Struct_Field) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPhysicalIr
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Field: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Field: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPhysicalIr
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPhysicalIr
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Type == nil {
+				m.Type = &proto1.VariableType{}
+			}
+			if err := m.Type.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPhysicalIr(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Variable) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPhysicalIr
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Variable: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Variable: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Name", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPhysicalIr
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Name = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ValType", wireType)
+			}
+			m.ValType = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPhysicalIr
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.ValType |= proto1.ScalarType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Reg", wireType)
+			}
+			var v Register
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPhysicalIr
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= Register(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.AddressOneof = &Variable_Reg{v}
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Memory", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPhysicalIr
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &Variable_MemoryVariable{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.AddressOneof = &Variable_Memory{v}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPhysicalIr(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *Variable_MemoryVariable) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowPhysicalIr
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: MemoryVariable: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: MemoryVariable: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Base", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPhysicalIr
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Base = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Offset", wireType)
+			}
+			m.Offset = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPhysicalIr
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Offset |= uint32(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		default:
+			iNdEx = preIndex
+			skippy, err := skipPhysicalIr(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthPhysicalIr
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
 }
 func (m *PhysicalProbe) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
@@ -460,25 +1858,6 @@ func (m *PhysicalProbe) Unmarshal(dAtA []byte) error {
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
-			}
-			m.Type = 0
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowPhysicalIr
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				m.Type |= proto1.ProbeType(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field TracePoint", wireType)
 			}
@@ -514,7 +1893,26 @@ func (m *PhysicalProbe) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
-		case 6:
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			m.Type = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowPhysicalIr
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.Type |= proto1.ProbeType(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Structs", wireType)
 			}
@@ -543,12 +1941,12 @@ func (m *PhysicalProbe) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Structs = append(m.Structs, &proto1.Struct{})
+			m.Structs = append(m.Structs, &Struct{})
 			if err := m.Structs[len(m.Structs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
-		case 7:
+		case 4:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Vars", wireType)
 			}
@@ -577,12 +1975,12 @@ func (m *PhysicalProbe) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Vars = append(m.Vars, &proto1.Variable{})
+			m.Vars = append(m.Vars, &Variable{})
 			if err := m.Vars[len(m.Vars)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
-		case 8:
+		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field StashMapActions", wireType)
 			}
@@ -611,12 +2009,12 @@ func (m *PhysicalProbe) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.StashMapActions = append(m.StashMapActions, &proto1.StashMapAction{})
+			m.StashMapActions = append(m.StashMapActions, &proto1.MapStashAction{})
 			if err := m.StashMapActions[len(m.StashMapActions)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
 			iNdEx = postIndex
-		case 9:
+		case 6:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field OutputActions", wireType)
 			}
