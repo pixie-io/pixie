@@ -2,8 +2,8 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
 import clsx from 'clsx';
-import { GraphDisplay, GraphWidget } from 'components/chart/graph';
-import { RequestGraphDisplay, RequestGraphWidget } from 'components/chart/request-graph';
+import { GraphDisplay, GraphWidget } from 'components/live-widgets/graph/graph';
+import { RequestGraphDisplay, RequestGraphWidget } from 'components/live-widgets/graph/request-graph';
 import { Spinner } from 'components/spinner/spinner';
 import { VegaContext, withVegaContextProvider } from 'components/vega/vega-context';
 import { QueryResultTable } from 'components/live-widgets/table/query-result-viewer';
