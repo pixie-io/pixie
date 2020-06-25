@@ -12,11 +12,15 @@ enum BPFHelper {
 
 enum ScalarType {
   INT32 = 0;
-  INT64 = 1;
-  DOUBLE = 2;
+  UINT32 = 1;
+
+  INT64 = 2;
+  UINT64 = 3;
+
+  DOUBLE = 4;
   // Same as char pointer.
-  STRING = 3;
-  VOID_POINTER = 4;
+  STRING = 5;
+  VOID_POINTER = 6;
 }
 
 // Wraps an oneof field which can be either scalar or struct.
@@ -50,18 +54,19 @@ message MapStashAction {
   string map_name = 1;
 
   // The builtin to generate the key value.
-  BPFHelper builtin = 2;
+  string key_variable_name = 2;
 
   // The name of the variable to be inserted into this map.
-  string variable_name = 3;
+  string value_variable_name = 3;
 }
 
 message OutputAction {
-  // The name of the output sink.
-  string output_name = 1;
+  // The name of the perf buffer..
+  // TODO(yzhao): Might add another message in addition to OutputAction, for physical IR.
+  string perf_buffer_name = 1;
 
-  // The IDs of the values to be submitted to output sink specified by the name.
-  repeated string value_ids = 2;
+  // The names of the variables to be submitted to the perf buffer.
+  string variable_name = 2;
 }
 
 message Argument {
@@ -125,10 +130,11 @@ message Probe {
 
   // Inserts key and value into a map.
   //
-  // The variable to be inserted into the map must be one of the above args, ret_vals,
-  // and function_latency.
+  // The variable to be inserted into the map must be one of the above args, ret_vals, and function_latency.
   repeated MapStashAction stash_map_actions = 7;
 
   // Writes a value to perf buffer.
+  //
+  // The variable to be inserted into the perf buffer must be one of the above args, ret_vals, and function_latency.
   repeated OutputAction output_actions = 8;
 }
