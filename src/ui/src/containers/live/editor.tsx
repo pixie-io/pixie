@@ -55,10 +55,18 @@ const VisEditor = () => {
   const classes = useStyles();
   const { visJSON, setVisJSON, resetDefaultLiveViewPage } = React.useContext(ScriptContext);
 
+  const editorRef = React.createRef<CodeEditor>();
+  // We useEffect instead of relying on the prop because of an issue where a cursor
+  // in the field causes onChange to be triggered partway through, leading to a
+  // partial state being set.
+  React.useEffect(() => {
+    editorRef.current.changeEditorValue(visJSON);
+  }, [visJSON])
+
   return (
     <CodeEditor
+      ref={editorRef}
       className={classes.editor}
-      code={visJSON}
       onChange={(val) => {
         setVisJSON(val);
         resetDefaultLiveViewPage();
@@ -71,11 +79,18 @@ const VisEditor = () => {
 const ScriptEditor = () => {
   const classes = useStyles();
   const { setPxl, pxl, resetDefaultLiveViewPage } = React.useContext(ScriptContext);
+  const editorRef = React.createRef<CodeEditor>();
+  // We useEffect instead of relying on the prop because of an issue where a cursor
+  // in the field causes onChange to be triggered partway through, leading to a
+  // partial state being set.
+  React.useEffect(() => {
+    editorRef.current.changeEditorValue(pxl);
+  }, [pxl])
 
   return (
     <CodeEditor
+      ref={editorRef}
       className={classes.editor}
-      code={pxl}
       onChange={(val) => {
         setPxl(val);
         resetDefaultLiveViewPage();

@@ -6,7 +6,6 @@ import MonacoEditor from 'react-monaco-editor';
 import { getKeyMap } from 'containers/live/shortcuts';
 
 interface CodeEditorProps {
-  code?: string;
   onChange?: (code: string) => void;
   disabled?: boolean;
   className?: string;
@@ -48,6 +47,12 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
     });
   }
 
+  changeEditorValue = (code) => {
+    if (this.editorRef) {
+      this.editorRef.setValue(code);
+    }
+  };
+
   onChange(code) {
     if (this.props.onChange) {
       this.props.onChange(code);
@@ -64,7 +69,6 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
   render() {
     return (
       <MonacoEditor
-        value={this.props.code}
         onChange={this.onChange}
         editorDidMount={this.onEditorMount}
         language={this.props.language ? this.props.language : 'python'}
