@@ -154,6 +154,7 @@
     "vega": "5.13.0",
     "vega-lite": "4.13.1",
     "vega-util": "^1.13.2",
+    "vis-network": "^7.7.1",
     "whatwg-fetch": "^3.0.0",
     "yaml": "^1.6.0"
   },

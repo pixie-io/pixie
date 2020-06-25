@@ -1,4 +1,4 @@
-import {selectCluster} from './vizier';
+import { selectCluster } from './cluster-info';
 
 describe('selectCluster', () => {
   it('should select the right default cluster', () => {
