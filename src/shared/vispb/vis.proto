@@ -214,9 +214,7 @@ message VegaChart {
 message Table {
   // LatencyBoxPlot tells the UI to display the latencies as a box whisker plot.
   message LatencyBoxPlot {
-    float p50_column = 1;
-    float p90_column = 2;
-    float p99_column = 3;
+    string quantiles_column = 1;
   }
   // ColumnDisplay gives the display options for a given column.
   message ColumnDisplay {

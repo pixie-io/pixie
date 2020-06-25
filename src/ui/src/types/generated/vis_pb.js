@@ -3563,9 +3563,7 @@ proto.pl.vispb.Table.LatencyBoxPlot.prototype.toObject = function(opt_includeIns
  */
 proto.pl.vispb.Table.LatencyBoxPlot.toObject = function(includeInstance, msg) {
   var f, obj = {
-    p50Column: jspb.Message.getFloatingPointFieldWithDefault(msg, 1, 0.0),
-    p90Column: jspb.Message.getFloatingPointFieldWithDefault(msg, 2, 0.0),
-    p99Column: jspb.Message.getFloatingPointFieldWithDefault(msg, 3, 0.0)
+    quantilesColumn: jspb.Message.getFieldWithDefault(msg, 1, "")
   };
 
   if (includeInstance) {
@@ -3603,16 +3601,8 @@ proto.pl.vispb.Table.LatencyBoxPlot.deserializeBinaryFromReader = function(msg, 
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {number} */ (reader.readFloat());
-      msg.setP50Column(value);
-      break;
-    case 2:
-      var value = /** @type {number} */ (reader.readFloat());
-      msg.setP90Column(value);
-      break;
-    case 3:
-      var value = /** @type {number} */ (reader.readFloat());
-      msg.setP99Column(value);
+      var value = /** @type {string} */ (reader.readString());
+      msg.setQuantilesColumn(value);
       break;
     default:
       reader.skipField();
@@ -3643,81 +3633,31 @@ proto.pl.vispb.Table.LatencyBoxPlot.prototype.serializeBinary = function() {
  */
 proto.pl.vispb.Table.LatencyBoxPlot.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getP50Column();
-  if (f !== 0.0) {
-    writer.writeFloat(
+  f = message.getQuantilesColumn();
+  if (f.length > 0) {
+    writer.writeString(
       1,
       f
     );
   }
-  f = message.getP90Column();
-  if (f !== 0.0) {
-    writer.writeFloat(
-      2,
-      f
-    );
-  }
-  f = message.getP99Column();
-  if (f !== 0.0) {
-    writer.writeFloat(
-      3,
-      f
-    );
-  }
 };
 
 
 /**
- * optional float p50_column = 1;
- * @return {number}
+ * optional string quantiles_column = 1;
+ * @return {string}
  */
-proto.pl.vispb.Table.LatencyBoxPlot.prototype.getP50Column = function() {
-  return /** @type {number} */ (jspb.Message.getFloatingPointFieldWithDefault(this, 1, 0.0));
+proto.pl.vispb.Table.LatencyBoxPlot.prototype.getQuantilesColumn = function() {
+  return /** @type {string} */ (jspb.Message.getFieldWithDefault(this, 1, ""));
 };
 
 
 /**
- * @param {number} value
+ * @param {string} value
  * @return {!proto.pl.vispb.Table.LatencyBoxPlot} returns this
  */
-proto.pl.vispb.Table.LatencyBoxPlot.prototype.setP50Column = function(value) {
-  return jspb.Message.setProto3FloatField(this, 1, value);
-};
-
-
-/**
- * optional float p90_column = 2;
- * @return {number}
- */
-proto.pl.vispb.Table.LatencyBoxPlot.prototype.getP90Column = function() {
-  return /** @type {number} */ (jspb.Message.getFloatingPointFieldWithDefault(this, 2, 0.0));
-};
-
-
-/**
- * @param {number} value
- * @return {!proto.pl.vispb.Table.LatencyBoxPlot} returns this
- */
-proto.pl.vispb.Table.LatencyBoxPlot.prototype.setP90Column = function(value) {
-  return jspb.Message.setProto3FloatField(this, 2, value);
-};
-
-
-/**
- * optional float p99_column = 3;
- * @return {number}
- */
-proto.pl.vispb.Table.LatencyBoxPlot.prototype.getP99Column = function() {
-  return /** @type {number} */ (jspb.Message.getFloatingPointFieldWithDefault(this, 3, 0.0));
-};
-
-
-/**
- * @param {number} value
- * @return {!proto.pl.vispb.Table.LatencyBoxPlot} returns this
- */
-proto.pl.vispb.Table.LatencyBoxPlot.prototype.setP99Column = function(value) {
-  return jspb.Message.setProto3FloatField(this, 3, value);
+proto.pl.vispb.Table.LatencyBoxPlot.prototype.setQuantilesColumn = function(value) {
+  return jspb.Message.setProto3StringField(this, 1, value);
 };
 
 

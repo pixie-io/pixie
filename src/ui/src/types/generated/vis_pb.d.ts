@@ -426,14 +426,8 @@ export namespace Table {
   }
 
   export class LatencyBoxPlot extends jspb.Message {
-    getP50Column(): number;
-    setP50Column(value: number): void;
-
-    getP90Column(): number;
-    setP90Column(value: number): void;
-
-    getP99Column(): number;
-    setP99Column(value: number): void;
+    getQuantilesColumn(): string;
+    setQuantilesColumn(value: string): void;
 
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): LatencyBoxPlot.AsObject;
@@ -445,9 +439,7 @@ export namespace Table {
 
   export namespace LatencyBoxPlot {
     export type AsObject = {
-      p50Column: number,
-      p90Column: number,
-      p99Column: number,
+      quantilesColumn: string,
     }
   }
 
