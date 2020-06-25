@@ -215,8 +215,8 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
       const title = `${formatFloat64Data(bps)} B/s <br />
                      ${formatFloat64Data(rps)} req/s <br >
                      Error: ${formatFloat64Data(errRate) + '%'} <br>
-                     p50: ${latencyP50}s <br>
-                     p99: ${latencyP99}s`;
+                     p50: ${latencyP50} ms <br>
+                     p99: ${latencyP99} ms`;
       const latency = value[display.p99Column];
 
       edges.push({
@@ -295,6 +295,10 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
             })
             clusterOptions.value = totalValue;
             clusterOptions.id = svc;
+            if (svc === '') {
+              clusterOptions.hidden = true;
+              clusterOptions.physics = false;
+            }
 
             return clusterOptions;
           },
