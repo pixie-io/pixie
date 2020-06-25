@@ -56,7 +56,7 @@ export function columnFromProto(column: Column): any[] {
 export function dataFromProto(
   relation: Relation,
   data: RowBatchData[],
-) {
+): any[] {
   const results = [];
 
   const colRelations = relation.getColumnsList();

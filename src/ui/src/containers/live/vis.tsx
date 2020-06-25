@@ -20,6 +20,7 @@ interface Func {
 export const DISPLAY_TYPE_KEY = '@type';
 export const TABLE_DISPLAY_TYPE = 'pixielabs.ai/pl.vispb.Table';
 export const GRAPH_DISPLAY_TYPE = 'pixielabs.ai/pl.vispb.Graph';
+export const REQUEST_GRAPH_DISPLAY_TYPE = 'pixielabs.ai/pl.vispb.RequestGraph';
 
 export interface WidgetDisplay {
   readonly '@type': string;

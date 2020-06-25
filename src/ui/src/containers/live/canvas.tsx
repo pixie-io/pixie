@@ -2,7 +2,8 @@ import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
 import clsx from 'clsx';
-import { displayToGraph, GraphDisplay } from 'components/chart/graph';
+import { GraphDisplay, GraphWidget } from 'components/chart/graph';
+import { RequestGraphDisplay, RequestGraphWidget } from 'components/chart/request-graph';
 import { Spinner } from 'components/spinner/spinner';
 import { VegaContext, withVegaContextProvider } from 'components/vega/vega-context';
 import { QueryResultTable } from 'components/live-widgets/table/query-result-viewer';
@@ -19,7 +20,8 @@ import { ScriptContext } from './context/script-context';
 import {
     addLayout, addTableLayout, getGridWidth, Layout, toLayout, updatePositions,
 } from './layout';
-import { DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, TABLE_DISPLAY_TYPE, widgetTableName } from './vis';
+import { DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, REQUEST_GRAPH_DISPLAY_TYPE,
+         TABLE_DISPLAY_TYPE, widgetTableName } from './vis';
 
 const Vega = React.lazy(() => import(
   /* webpackPreload: true */
@@ -102,6 +104,47 @@ const useStyles = makeStyles((theme: Theme) => {
   });
 });
 
+const WidgetDisplay = ({display, table, tableName, widgetName}) => {
+  const classes = useStyles();
+
+  if (display[DISPLAY_TYPE_KEY] === TABLE_DISPLAY_TYPE) {
+    return (
+      <>
+        <div className={classes.widgetTitle}>{widgetName}</div>
+        <QueryResultTable className={classes.table} data={table} />
+      </>
+    );
+  }
+
+  const parsedTable = dataFromProto(table.relation, table.data);
+
+  if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
+    return <GraphWidget display={display as GraphDisplay} data={parsedTable}/>;
+  }
+
+  if (display[DISPLAY_TYPE_KEY] === REQUEST_GRAPH_DISPLAY_TYPE) {
+    return <RequestGraphWidget display={display as RequestGraphDisplay} data={parsedTable}/>
+  }
+
+  try {
+    return (
+      <>
+        <div className={classes.widgetTitle}>{widgetName}</div>
+        <React.Suspense fallback={<div className={classes.spinner}><Spinner /></div>}>
+          <Vega
+            className={classes.chart}
+            data={parsedTable}
+            display={display as React.ComponentProps<typeof Vega>['display']}
+            tableName={tableName}
+          />
+        </React.Suspense>
+      </>
+    );
+  } catch (e) {
+    return <div>Error in displaySpec: {e.message}</div>;
+  }
+}
+
 const Grid = GridLayout.WidthProvider(GridLayout);
 
 interface CanvasProps {
@@ -180,7 +223,6 @@ const Canvas = (props: CanvasProps) => {
       const tableName = widgetTableName(widget, i);
       const widgetName = widgetLayout.i;
       const table = tables[tableName];
-      let content = null;
 
       if (loading) {
         widgets.push(
@@ -193,35 +235,12 @@ const Canvas = (props: CanvasProps) => {
 
       if (!table) {
         return;
-      } else if (display[DISPLAY_TYPE_KEY] === TABLE_DISPLAY_TYPE) {
-        content = <>
-          <div className={classes.widgetTitle}>{widgetName}</div>
-          <QueryResultTable className={classes.table} data={table} />
-        </>;
-      } else if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
-        const parsedTable = dataFromProto(table.relation, table.data);
-        content = displayToGraph(display as GraphDisplay, parsedTable);
-      } else {
-        try {
-          const data = dataFromProto(table.relation, table.data);
-          content = <>
-            <div className={classes.widgetTitle}>{widgetName}</div>
-            <React.Suspense fallback={<div className={classes.spinner}><Spinner /></div>}>
-              <Vega
-                className={classes.chart}
-                data={data}
-                display={display as React.ComponentProps<typeof Vega>['display']}
-                tableName={tableName}
-              />
-            </React.Suspense>
-          </>;
-        } catch (e) {
-          content = <div>Error in displaySpec: {e.message}</div>;
-        }
       }
+
       widgets.push(
         <div key={widgetName} className={className}>
-          {content}
+          <WidgetDisplay display={display} table={table}
+           tableName={tableName} widgetName={widgetName}/>
         </div>,
       );
     });

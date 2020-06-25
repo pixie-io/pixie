@@ -16,10 +16,16 @@ interface AdjacencyList {
 export interface GraphDisplay extends WidgetDisplay {
   readonly dotColumn?: string;
   readonly adjacencyList?: AdjacencyList;
-  readonly data?: any;
+  readonly data?: any[];
 }
 
-export function displayToGraph(display: GraphDisplay, data) {
+interface GraphWidgetProps {
+  display: GraphDisplay;
+  data: any[];
+}
+
+export const GraphWidget = (props: GraphWidgetProps) => {
+  const { display, data } = props;
   if (display.dotColumn && data.length > 0) {
     return (
       <Graph dot={data[0][display.dotColumn]} />
@@ -34,7 +40,7 @@ export function displayToGraph(display: GraphDisplay, data) {
 
 interface GraphProps {
   dot?: any;
-  data?: any;
+  data?: any[];
   toCol?: string;
   fromCol?: string;
 }
