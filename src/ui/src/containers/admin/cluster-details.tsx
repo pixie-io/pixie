@@ -28,6 +28,7 @@ import {
     StyledRightTableCell, StyledTab, StyledTableCell, StyledTableHeaderCell,
     StyledTabs
 } from './utils';
+import { formatUInt128 } from '../../utils/format-data';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -102,10 +103,10 @@ interface AgentDisplay {
 
 export function formatAgent(agentInfo): AgentDisplay {
   const now = new Date();
-
+  const agentID = formatUInt128(agentInfo.agent_id);
   return {
-    id: agentInfo.agent_id,
-    idShort: agentInfo.agent_id.split('-').pop(),
+    id: agentID,
+    idShort: agentID.split('-').pop(),
     status: agentInfo.agent_state.replace('AGENT_STATE_', ''),
     statusGroup: agentStatusGroup(agentInfo.agent_state),
     hostname: agentInfo.hostname,
