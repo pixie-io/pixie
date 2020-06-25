@@ -67,7 +67,7 @@
         "@type": "pixielabs.ai/pl.vispb.Table"
       },
       "position": {
-        "x": 0,
+        "x": 8,
         "y": 0,
         "w": 4,
         "h": 3
@@ -99,20 +99,24 @@
         "xAxis": null
       },
       "position": {
-        "x": 4,
+        "x": 0,
         "y": 0,
         "w": 4,
         "h": 3
       }
     },
     {
-      "name": "Request Throughput",
+      "name": "Requests and Errors per Second",
       "globalFuncOutputName": "inbound_let_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
             "value": "requests_per_s",
+            "mode": "MODE_LINE"
+          },
+          {
+            "value": "errors_per_s",
             "mode": "MODE_LINE"
           }
         ],
@@ -124,31 +128,7 @@
       },
       "position": {
         "x": 4,
-        "y": 3,
-        "w": 4,
-        "h": 3
-      }
-    },
-    {
-      "name": "Request Error Rate (%)",
-      "globalFuncOutputName": "inbound_let_timeseries",
-      "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
-        "timeseries": [
-          {
-            "value": "error_rate_pct",
-            "mode": "MODE_LINE"
-          }
-        ],
-        "title": "",
-        "yAxis": {
-          "label": "error rate (%)"
-        },
-        "xAxis": null
-      },
-      "position": {
-        "x": 8,
-        "y": 3,
+        "y": 0,
         "w": 4,
         "h": 3
       }
@@ -172,13 +152,13 @@
       },
       "position": {
         "x": 0,
-        "y": 6,
+        "y": 3,
         "w": 4,
         "h": 3
       }
     },
     {
-      "name": "Bytes Read from Storage",
+      "name": "Bytes Read and Written",
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
@@ -186,27 +166,7 @@
           {
             "value": "rchar_mb",
             "mode": "MODE_LINE"
-          }
-        ],
-        "title": "",
-        "yAxis": {
-          "label": "bytes (MB/s)"
-        },
-        "xAxis": null
-      },
-      "position": {
-        "x": 4,
-        "y": 6,
-        "w": 4,
-        "h": 3
-      }
-    },
-    {
-      "name": "Bytes Written to Storage",
-      "globalFuncOutputName": "resource_timeseries",
-      "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
-        "timeseries": [
+          },
           {
             "value": "wchar_mb",
             "mode": "MODE_LINE"
@@ -219,14 +179,14 @@
         "xAxis": null
       },
       "position": {
-        "x": 8,
-        "y": 6,
+        "x": 4,
+        "y": 3,
         "w": 4,
         "h": 3
       }
     },
     {
-      "name": "Resident Set Size",
+      "name": "Memory Usage",
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
@@ -234,27 +194,7 @@
           {
             "value": "rss_mb",
             "mode": "MODE_LINE"
-          }
-        ],
-        "title": "",
-        "yAxis": {
-          "label": "RSS Size (MB)"
-        },
-        "xAxis": null
-      },
-      "position": {
-        "x": 0,
-        "y": 9,
-        "w": 4,
-        "h": 3
-      }
-    },
-    {
-      "name": "Virtual Memory Size",
-      "globalFuncOutputName": "resource_timeseries",
-      "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
-        "timeseries": [
+          },
           {
             "value": "vsize_mb",
             "mode": "MODE_LINE"
@@ -262,13 +202,13 @@
         ],
         "title": "",
         "yAxis": {
-          "label": "Virtual Memory Size (MB)"
+          "label": "MB"
         },
         "xAxis": null
       },
       "position": {
-        "x": 4,
-        "y": 9,
+        "x": 8,
+        "y": 3,
         "w": 4,
         "h": 3
       }
@@ -293,7 +233,7 @@
       },
       "position": {
         "x": 0,
-        "y": 12,
+        "y": 6,
         "w": 12,
         "h": 3
       }
@@ -318,7 +258,7 @@
       },
       "position": {
         "x": 0,
-        "y": 15,
+        "y": 9,
         "w": 12,
         "h": 3
       }

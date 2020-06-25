@@ -35,7 +35,7 @@
     {
       "name": "Pod List",
       "position": {
-        "x": 0,
+        "x": 8,
         "y": 0,
         "w": 4,
         "h": 3
@@ -58,9 +58,9 @@
       }
     },
     {
-      "name": "Request Throughput",
+      "name": "Requests and Errors per Second",
       "position": {
-        "x": 4,
+        "x": 0,
         "y": 0,
         "w": 4,
         "h": 3
@@ -72,6 +72,10 @@
           {
             "value": "requests_per_s",
             "mode": "MODE_LINE"
+          },
+          {
+            "value": "errors_per_s",
+            "mode": "MODE_LINE"
           }
         ],
         "title": "",
@@ -82,34 +86,10 @@
       }
     },
     {
-      "name": "Request Error Rate",
-      "position": {
-        "x": 8,
-        "y": 0,
-        "w": 4,
-        "h": 3
-      },
-      "globalFuncOutputName": "inbound_let_timeseries",
-      "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
-        "timeseries": [
-          {
-            "value": "error_rate_pct",
-            "mode": "MODE_LINE"
-          }
-        ],
-        "title": "",
-        "yAxis": {
-          "label": "error rate (%)"
-        },
-        "xAxis": null
-      }
-    },
-    {
       "name": "Latency (ms)",
       "position": {
-        "x": 0,
-        "y": 3,
+        "x": 4,
+        "y": 0,
         "w": 4,
         "h": 3
       },
@@ -141,7 +121,7 @@
       "name": "Inbound Traffic By Requesting Service",
       "position": {
         "x": 0,
-        "y": 6,
+        "y": 3,
         "w": 6,
         "h": 3
       },
@@ -166,7 +146,7 @@
       "name": "Outbound Traffic By Responding Service",
       "position": {
         "x": 6,
-        "y": 6,
+        "y": 3,
         "w": 6,
         "h": 3
       },
