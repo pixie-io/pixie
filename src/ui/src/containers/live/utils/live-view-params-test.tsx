@@ -1,4 +1,4 @@
-import { LiveViewPage, matchLiveViewEntity, toEntityPathname,
+import { getLiveViewTitle, LiveViewPage, matchLiveViewEntity, toEntityPathname,
          toSingleEntityPage } from './live-view-params';
 import { SemanticType } from 'types/generated/vizier_pb';
 
@@ -243,5 +243,84 @@ describe('toSingleEntityPage test', () => {
       },
       clusterName: 'gke:foobar',
     });
+  });
+});
+
+describe('getLiveViewTitle test', () => {
+  it('should generate the title for the namespaces page', () => {
+    const page = LiveViewPage.Namespaces;
+    const params = {};
+    const defaultTitle = 'my default title';
+    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('namespaces');
+  });
+
+  it('should generate the title for the namespace page', () => {
+    const page = LiveViewPage.Namespace;
+    const params = {
+      namespace: 'px-sock-shop'
+    };
+    const defaultTitle = 'my default title';
+    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('px-sock-shop');
+  });
+
+  it('should generate the title for the nodes page', () => {
+    const page = LiveViewPage.Nodes;
+    const params = {};
+    const defaultTitle = 'my default title';
+    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('nodes');
+  });
+
+  it('should generate the title for the node page', () => {
+    const page = LiveViewPage.Node;
+    const params = {
+      node: 'node-123'
+    };
+    const defaultTitle = 'my default title';
+    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('node-123');
+  });
+
+  it('should generate the title for the pods page', () => {
+    const page = LiveViewPage.Pods;
+    const params = {
+      namespace: 'px-sock-shop'
+    };
+    const defaultTitle = 'my default title';
+    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('px-sock-shop/pods');
+  });
+
+  it('should generate the title for the pod page', () => {
+    const page = LiveViewPage.Pod;
+    const params = {
+      pod: 'px-sock-shop/orders-123'
+    };
+    const defaultTitle = 'my default title';
+    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('px-sock-shop/orders-123');
+  });
+
+  it('should generate the title for the services page', () => {
+    const page = LiveViewPage.Services;
+    const params = {
+      namespace: 'px-sock-shop'
+    };
+    const defaultTitle = 'my default title';
+    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('px-sock-shop/services');
+  });
+
+  it('should generate the title for the service page', () => {
+    const page = LiveViewPage.Service;
+    const params = {
+      service: 'px-sock-shop/orders'
+    };
+    const defaultTitle = 'my default title';
+    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('px-sock-shop/orders');
+  });
+
+  it('should generate the title for the default page', () => {
+    const page = LiveViewPage.Default;
+    const params = {
+      namespace: 'do-not-use'
+    };
+    const defaultTitle = 'my default title';
+    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('my default title');
   });
 });

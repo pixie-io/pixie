@@ -9,8 +9,8 @@ import { parseVis, toJSON, Vis } from 'containers/live/vis';
 import { argsEquals, argsForVis, Arguments } from 'utils/args-utils';
 import { debounce } from 'utils/debounce';
 import urlParams from 'utils/url-params';
-import { EntityURLParams, LiveViewPage, LiveViewPageScriptIds, matchLiveViewEntity,
-         toEntityPathname } from '../utils/live-view-params';
+import { EntityURLParams, getLiveViewTitle, LiveViewPage, LiveViewPageScriptIds,
+         matchLiveViewEntity, toEntityPathname } from '../utils/live-view-params';
 
 interface ScriptContextProps {
   args: Arguments;
@@ -51,7 +51,7 @@ const ScriptContextProvider = (props) => {
   const [nonEntityArgs, setNonEntityArgs] = useSessionStorage<Arguments | null>(LIVE_VIEW_SCRIPT_ARGS_KEY, null);
 
   const [pxl, setPxl] = useSessionStorage(LIVE_VIEW_PIXIE_SCRIPT_KEY, '');
-  const [title, setTitle] = useSessionStorage(LIVE_VIEW_SCRIPT_TITLE_KEY, '');
+  const [titleBase, setTitleBase] = useSessionStorage(LIVE_VIEW_SCRIPT_TITLE_KEY, '');
   const [id, setId] = useSessionStorage(LIVE_VIEW_SCRIPT_ID_KEY,
     entity.page === LiveViewPage.Default ? '' : LiveViewPageScriptIds[entity.page]);
 
@@ -64,9 +64,15 @@ const ScriptContextProvider = (props) => {
     return emptyVis();
   });
 
+  // args are the combination of entity and not enetity params.
   const args = React.useMemo(() => {
     return {...nonEntityArgs, ...entityParams};
   }, [nonEntityArgs, entityParams]);
+
+  // title is dependent on whether or not we are in an entity page.
+  const title = React.useMemo(() => {
+    return getLiveViewTitle(titleBase, liveViewPage, entityParams);
+  }, [liveViewPage, titleBase, entityParams]);
 
   // Logic to set cluster
 
@@ -188,7 +194,7 @@ const ScriptContextProvider = (props) => {
       setArgs(args, vis)
     }
     setId(id);
-    setTitle(title);
+    setTitleBase(title);
     if (liveViewPage != null) {
       setLiveViewPage(liveViewPage);
     }

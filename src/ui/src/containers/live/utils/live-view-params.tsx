@@ -165,6 +165,44 @@ export function matchLiveViewEntity(path: string): EntityPage {
   };
 }
 
+export function getLiveViewTitle(defaultTitle: string, page: LiveViewPage, params: EntityURLParams): string {
+  switch (page) {
+    case LiveViewPage.Namespace: {
+      const { namespace } = params as NamespaceURLParams;
+      return `${namespace}`;
+    }
+    case LiveViewPage.Namespaces: {
+      return 'namespaces';
+    }
+    case LiveViewPage.Node: {
+      const { node } = params as NodeURLParams;
+      return `${node}`;
+    }
+    case LiveViewPage.Nodes: {
+      return 'nodes';
+    }
+    case LiveViewPage.Pod: {
+      const { pod } = params as PodURLParams;
+      return `${pod}`;
+    }
+    case LiveViewPage.Pods: {
+      const { namespace } = params as NamespaceURLParams;
+      return `${namespace}/pods`;
+    }
+    case LiveViewPage.Service: {
+      const { service } = params as ServiceURLParams;
+      return `${service}`;
+    }
+    case LiveViewPage.Services: {
+      const { namespace } = params as NamespaceURLParams;
+      return `${namespace}/services`;
+    }
+    case LiveViewPage.Default:
+    default:
+      return defaultTitle;
+  }
+}
+
 export function toEntityPathname(entity: EntityPage): string {
   const encodedCluster = encodeURIComponent(entity.clusterName);
   switch (entity.page) {
