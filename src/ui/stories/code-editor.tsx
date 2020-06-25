@@ -17,7 +17,6 @@ class EditorWrapper extends React.Component<{}, { code: string }> {
     const { code } = this.state;
     return (
       <CodeEditor
-        code={code}
         onChange={(newCode) => { this.setState({ code: newCode }); }}
       />
     );
@@ -27,7 +26,6 @@ class EditorWrapper extends React.Component<{}, { code: string }> {
 storiesOf('CodeEditor', module)
   .add('Basic', () => (
     <CodeEditor
-      code='print("Something that provides mirth or amusement")'
     />
   ), {
     info: { inline: true },
