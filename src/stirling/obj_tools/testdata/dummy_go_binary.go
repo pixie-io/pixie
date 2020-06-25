@@ -37,11 +37,15 @@ func (v *Vertex) CrossScale(v2 Vertex, f float64) {
 	v.Scale(f)
 }
 
-func MixedArgTypes(i1 int, b1 bool, b2 BoolWrapper, i2 int, i3 int, b3 bool) int {
+func MixedArgTypes(i1 int, b1 bool, b2 BoolWrapper, i2 int, i3 int, b3 bool) (int, bool) {
 	if (b1 && (b2.B0 || b2.B3) && b3) {
-	    return 0
+	    return 7, false
 	}
-	return i1*i2*i3
+	return i1*i2*i3, true
+}
+
+func GoHasNamedReturns() (retfoo int, retbar bool) {
+	return 12, true
 }
 
 func main() {
@@ -50,4 +54,5 @@ func main() {
 	v.CrossScale(v2, 10)
 	fmt.Println(v.Abs())
 	fmt.Println(MixedArgTypes(1, true, BoolWrapper{false, true, false, true}, 4, 5, false));
+	fmt.Println(GoHasNamedReturns())
 }

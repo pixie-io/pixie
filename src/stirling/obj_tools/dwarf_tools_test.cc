@@ -162,6 +162,16 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
     EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("main.Vertex.Abs"),
                        UnorderedElementsAre(Pair("v", ArgInfo{0, ArgType::kStruct}),
                                             Pair("~r0", ArgInfo{16, ArgType::kFloat64})));
+    EXPECT_OK_AND_THAT(
+        dwarf_reader->GetFunctionArgInfo("main.MixedArgTypes"),
+        UnorderedElementsAre(
+            Pair("i1", ArgInfo{0, ArgType::kInt}), Pair("b1", ArgInfo{8, ArgType::kBool}),
+            Pair("b2", ArgInfo{9, ArgType::kStruct}), Pair("i2", ArgInfo{16, ArgType::kInt}),
+            Pair("i3", ArgInfo{24, ArgType::kInt}), Pair("b3", ArgInfo{32, ArgType::kBool}),
+            Pair("~r6", ArgInfo{40, ArgType::kInt}), Pair("~r7", ArgInfo{48, ArgType::kBool})));
+    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("main.GoHasNamedReturns"),
+                       UnorderedElementsAre(Pair("retfoo", ArgInfo{0, ArgType::kInt}),
+                                            Pair("retbar", ArgInfo{8, ArgType::kBool})));
   }
 
   {
@@ -191,7 +201,7 @@ TEST_P(DwarfReaderTest, GoFunctionArgLocationConsistency) {
                        dwarf_reader->GetFunctionArgInfo("main.MixedArgTypes"));
 
   // This is required so the test doesn't pass if GetFunctionArgInfo returns nothing.
-  ASSERT_THAT(function_arg_locations, SizeIs(7));
+  ASSERT_THAT(function_arg_locations, SizeIs(8));
 
   // Finally, run a consistency check between the two methods.
   for (auto& [arg_name, arg_info] : function_arg_locations) {
