@@ -11,7 +11,6 @@ import { debounce } from 'utils/debounce';
 import urlParams from 'utils/url-params';
 import { EntityURLParams, getLiveViewTitle, LiveViewPage, LiveViewPageScriptIds,
          matchLiveViewEntity, toEntityPathname } from '../utils/live-view-params';
-
 interface ScriptContextProps {
   args: Arguments;
   setArgs: (inputArgs: Arguments, newVis?: Vis, entityParamNames?: string[]) => void;
@@ -22,6 +21,12 @@ interface ScriptContextProps {
   vis: Vis;
   setVis: SetStateFunc<Vis>;
   setVisJSON: SetStateFunc<string>;
+
+  pxlCallback: ScriptCallbackWrapper;
+  setPxlCallback: SetStateFunc<ScriptCallbackWrapper>;
+
+  visCallback: ScriptCallbackWrapper;
+  setVisCallback: SetStateFunc<ScriptCallbackWrapper>;
 
   pxl: string;
   setPxl: SetStateFunc<string>;
@@ -39,6 +44,12 @@ function emptyVis(): Vis {
   return { variables: [], widgets: [], globalFuncs: [] };
 }
 
+type stringCallback = () => string;
+
+// ScriptCallbackWrapper is necessary because functions get evaluated by setState.
+export interface ScriptCallbackWrapper {
+  cb: stringCallback|null;
+}
 const ScriptContextProvider = (props) => {
   const { location } = props;
   const { selectedClusterName, setClusterByName } = React.useContext(ClusterContext);
@@ -46,6 +57,8 @@ const ScriptContextProvider = (props) => {
   const entity = matchLiveViewEntity(location.pathname);
   const [ liveViewPage, setLiveViewPage ] = React.useState<LiveViewPage>(entity.page);
   const [ entityParams, setEntityParams ] = React.useState<EntityURLParams>(entity.params);
+  const [ pxlCallback, setPxlCallback] = React.useState<ScriptCallbackWrapper>({cb: null});
+  const [ visCallback, setVisCallback] = React.useState<ScriptCallbackWrapper>({cb: null});
 
   // Args that are not part of an entity.
   const [nonEntityArgs, setNonEntityArgs] = useSessionStorage<Arguments | null>(LIVE_VIEW_SCRIPT_ARGS_KEY, null);
@@ -223,6 +236,10 @@ const ScriptContextProvider = (props) => {
         setVisJSON,
         pxl,
         setPxl,
+        pxlCallback,
+        setPxlCallback,
+        visCallback,
+        setVisCallback,
         title,
         id,
         setScript,

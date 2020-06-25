@@ -53,7 +53,7 @@ const useStyles = makeStyles((theme: Theme) =>
 
 const VisEditor = () => {
   const classes = useStyles();
-  const { visJSON, setVisJSON, resetDefaultLiveViewPage } = React.useContext(ScriptContext);
+  const { visJSON, setVisCallback} = React.useContext(ScriptContext);
 
   const editorRef = React.createRef<CodeEditor>();
   // We useEffect instead of relying on the prop because of an issue where a cursor
@@ -65,12 +65,9 @@ const VisEditor = () => {
 
   return (
     <CodeEditor
+      callback={setVisCallback}
       ref={editorRef}
       className={classes.editor}
-      onChange={(val) => {
-        setVisJSON(val);
-        resetDefaultLiveViewPage();
-      }}
       language='json'
     />
   );
@@ -78,7 +75,7 @@ const VisEditor = () => {
 
 const ScriptEditor = () => {
   const classes = useStyles();
-  const { setPxl, pxl, resetDefaultLiveViewPage } = React.useContext(ScriptContext);
+  const { pxl, setPxlCallback } = React.useContext(ScriptContext);
   const editorRef = React.createRef<CodeEditor>();
   // We useEffect instead of relying on the prop because of an issue where a cursor
   // in the field causes onChange to be triggered partway through, leading to a
@@ -89,12 +86,9 @@ const ScriptEditor = () => {
 
   return (
     <CodeEditor
+      callback={setPxlCallback}
       ref={editorRef}
       className={classes.editor}
-      onChange={(val) => {
-        setPxl(val);
-        resetDefaultLiveViewPage();
-      }}
       language='python'
     />
   );

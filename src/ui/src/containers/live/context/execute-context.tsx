@@ -2,7 +2,7 @@ import { VizierQueryError } from 'common/errors';
 import { VizierQueryFunc } from 'common/vizier-grpc-client';
 import ClientContext from 'common/vizier-grpc-client-context';
 import { useSnackbar } from 'components/snackbar/snackbar';
-import { getQueryFuncs, Vis } from 'containers/live/vis';
+import { getQueryFuncs, Vis, parseVis } from 'containers/live/vis';
 import * as React from 'react';
 import analytics from 'utils/analytics';
 import { Arguments } from 'utils/args-utils';
@@ -30,7 +30,18 @@ interface ExecuteContextProps {
 export const ExecuteContext = React.createContext<ExecuteContextProps>(null);
 
 export const ExecuteContextProvider = (props) => {
-  const { args, vis, pxl, title, id, setScript, commitURL } = React.useContext(ScriptContext);
+  const {
+    args,
+    vis,
+    pxl,
+    title,
+    id,
+    setScript,
+    pxlCallback,
+    visCallback,
+    commitURL
+  } = React.useContext(ScriptContext);
+
   const { client, healthy } = React.useContext(ClientContext);
   const { clearResults, setResults, setLoading, loading } = React.useContext(ResultsContext);
   const showSnackbar = useSnackbar();
@@ -55,9 +66,19 @@ export const ExecuteContextProvider = (props) => {
 
     setLoading(true);
 
+    // Having exec arguments means we are changing the script so we must also reset the view.
     if (!execArgs) {
-      execArgs = { pxl, vis, args, title, id };
+      let newVis = vis;
+      let newPxl= pxl;
+      if (visCallback.cb) {
+        newVis = parseVis(visCallback.cb());
+      }
+      if (pxlCallback.cb) {
+        newPxl = pxlCallback.cb();
+      }
+      execArgs = { pxl: newPxl, vis: newVis, args, title, id };
     } else {
+
       clearResults();
 
       if (execArgs.liveViewPage != null && execArgs.entityParamNames != null) {
