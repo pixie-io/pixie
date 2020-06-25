@@ -29,22 +29,6 @@
           }
         ]
       }
-    },
-    {
-      "outputName": "inbound_let_summary",
-      "func": {
-        "name": "inbound_let_summary",
-        "args": [
-          {
-            "name": "start_time",
-            "variable": "start_time"
-          },
-          {
-            "name": "namespace",
-            "variable": "namespace"
-          }
-        ]
-      }
     }
   ],
   "widgets": [
@@ -211,7 +195,19 @@
         "w": 6,
         "h": 3
       },
-      "globalFuncOutputName": "inbound_let_summary",
+      "func": {
+        "name": "inbound_let_summary",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "namespace",
+            "variable": "namespace"
+          }
+        ]
+      },
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.Table"
       }
@@ -224,13 +220,33 @@
         "w": 6,
         "h": 3
       },
-      "globalFuncOutputName": "inbound_let_summary",
+      "func": {
+        "name": "inbound_let_service_graph",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "namespace",
+            "variable": "namespace"
+          }
+        ]
+      },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Graph",
-        "adjacencyList": {
-          "fromColumn": "requestor",
-          "toColumn": "responder"
-        }
+        "@type": "pixielabs.ai/pl.vispb.RequestGraph",
+        "requestorPodColumn": "requestor_pod",
+        "responderPodColumn": "responder_pod",
+        "requestorServiceColumn": "requestor_service",
+        "responderServiceColumn": "responder_service",
+        "p50Column": "latency_p50",
+        "p90Column": "latency_p90",
+        "p99Column": "latency_p99",
+        "errorRateColumn": "error_rate_pct",
+        "requestsPerSecondColumn": "requests_per_s",
+        "inboundBytesPerSecondColumn": "inbound_bytes_per_s",
+        "outboundBytesPerSecondColumn": "outbound_bytes_per_s",
+        "totalRequestCountColumn": "throughput_total"
       }
     }
   ]

@@ -23,7 +23,7 @@
         "h": 3
       },
       "func": {
-        "name": "service_graph",
+        "name": "inbound_service_let_graph",
         "args": [
           {
             "name": "start_time",
@@ -36,11 +36,19 @@
         ]
       },
       "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Graph",
-        "adjacencyList": {
-          "fromColumn": "requestor",
-          "toColumn": "responder"
-        }
+        "@type": "pixielabs.ai/pl.vispb.RequestGraph",
+        "requestorPodColumn": "requestor_pod",
+        "responderPodColumn": "responder_pod",
+        "requestorServiceColumn": "requestor_service",
+        "responderServiceColumn": "responder_service",
+        "p50Column": "latency_p50",
+        "p90Column": "latency_p90",
+        "p99Column": "latency_p99",
+        "errorRateColumn": "error_rate_pct",
+        "requestsPerSecondColumn": "requests_per_s",
+        "inboundBytesPerSecondColumn": "inbound_bytes_per_s",
+        "outboundBytesPerSecondColumn": "outbound_bytes_per_s",
+        "totalRequestCountColumn": "throughput_total"
       }
     },
     {
@@ -52,7 +60,7 @@
         "h": 3
       },
       "func": {
-        "name": "services_for_namespace",
+        "name": "inbound_service_let_summary",
         "args": [
           {
             "name": "start_time",
