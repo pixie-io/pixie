@@ -52,7 +52,7 @@ constexpr std::string_view kEntryProbePhysIRTmpl = R"(
   }
   vars {
     name: "arg0"
-    val_type: INT32
+    val_type: INT
     memory: {
       base: "sp"
       offset: 8
@@ -60,7 +60,7 @@ constexpr std::string_view kEntryProbePhysIRTmpl = R"(
   }
   vars {
     name: "arg1"
-    val_type: INT32
+    val_type: INT
     memory: {
       base: "sp"
       offset: 24
@@ -68,7 +68,7 @@ constexpr std::string_view kEntryProbePhysIRTmpl = R"(
   }
   vars {
     name: "arg2"
-    val_type: INT32
+    val_type: INT
     memory: {
       base: "sp"
       offset: 32
@@ -76,7 +76,7 @@ constexpr std::string_view kEntryProbePhysIRTmpl = R"(
   }
   vars {
     name: "arg3"
-    val_type: INT32
+    val_type: BOOL
     memory: {
       base: "sp"
       offset: 16

@@ -43,25 +43,6 @@ enum class ArgType {
   kSubroutine,
 };
 
-// Map to convert Go Base types to ArgType.
-// clang-format off
-const std::map<std::string_view, ArgType> kGoTypesMap = {
-    {"bool", ArgType::kBool},
-    {"int", ArgType::kInt},
-    {"int8", ArgType::kInt8},
-    {"int16", ArgType::kInt16},
-    {"int32", ArgType::kInt32},
-    {"int64", ArgType::kInt64},
-    {"uint", ArgType::kUInt},
-    {"uint8", ArgType::kUInt8},
-    {"uint16", ArgType::kUInt16},
-    {"uint32", ArgType::kUInt32},
-    {"uint64", ArgType::kUInt64},
-    {"float32", ArgType::kFloat32},
-    {"float64", ArgType::kFloat64},
-};
-// clang-format on
-
 struct ArgInfo {
   uint64_t offset = std::numeric_limits<uint64_t>::max();
   ArgType type = ArgType::kUnspecified;

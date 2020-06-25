@@ -30,6 +30,25 @@ using llvm::DWARFFormValue;
 // https://superuser.com/questions/791506/how-to-determine-if-a-linux-binary-file-is-32-bit-or-64-bit
 uint8_t kAddressSize = sizeof(void*);
 
+// Map to convert Go Base types to ArgType.
+// clang-format off
+const std::map<std::string_view, ArgType> kGoTypesMap = {
+        {"bool", ArgType::kBool},
+        {"int", ArgType::kInt},
+        {"int8", ArgType::kInt8},
+        {"int16", ArgType::kInt16},
+        {"int32", ArgType::kInt32},
+        {"int64", ArgType::kInt64},
+        {"uint", ArgType::kUInt},
+        {"uint8", ArgType::kUInt8},
+        {"uint16", ArgType::kUInt16},
+        {"uint32", ArgType::kUInt32},
+        {"uint64", ArgType::kUInt64},
+        {"float32", ArgType::kFloat32},
+        {"float64", ArgType::kFloat64},
+};
+// clang-format on
+
 StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(std::string_view obj_filename,
                                                            bool index) {
   using llvm::MemoryBuffer;
@@ -43,7 +62,7 @@ StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(std::string_view obj_
     return error::Internal(ec.message());
   }
 
-  std::unique_ptr<llvm::MemoryBuffer> buffer = std::move(buff_or_err.get());
+  std::unique_ptr<MemoryBuffer> buffer = std::move(buff_or_err.get());
   llvm::Expected<std::unique_ptr<llvm::object::Binary>> bin_or_err =
       llvm::object::createBinary(*buffer);
   ec = errorToErrorCode(bin_or_err.takeError());

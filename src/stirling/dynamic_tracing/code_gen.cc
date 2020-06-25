@@ -25,11 +25,35 @@ using ::pl::stirling::dynamictracingpb::VariableType;
 
 namespace {
 
+// clang-format off
+const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypeToCType = {
+    {ScalarType::BOOL, "bool"},
+    {ScalarType::INT, "int"},
+    {ScalarType::INT8, "int8_t"},
+    {ScalarType::INT16, "int16_t"},
+    {ScalarType::INT32, "int32_t"},
+    {ScalarType::INT64, "int64_t"},
+    {ScalarType::UINT, "uint"},
+    {ScalarType::UINT8, "uint8_t"},
+    {ScalarType::UINT16, "uint16_t"},
+    {ScalarType::UINT32, "uint32_t"},
+    {ScalarType::UINT64, "uint64_t"},
+    {ScalarType::FLOAT, "float"},
+    {ScalarType::DOUBLE, "double"},
+    {ScalarType::STRING, "char*"},
+    {ScalarType::VOID_POINTER, "void*"},
+};
+// clang-format on
+
 std::string_view GenScalarType(ScalarType type) {
-  constexpr auto kCTypes = MakeArray<std::string_view>("int32_t", "uint32_t", "int64_t", "uint64_t",
-                                                       "double", "char*", "void*");
-  DCHECK_LT(static_cast<size_t>(type), kCTypes.size());
-  return kCTypes[static_cast<size_t>(type)];
+  auto iter = kScalarTypeToCType.find(type);
+  if (iter == kScalarTypeToCType.end()) {
+    LOG(DFATAL) << absl::Substitute("Mapping to C-type not present for $0",
+                                    magic_enum::enum_name(type));
+    // Should never get here, but return "int" just in case.
+    return "int";
+  }
+  return iter->second;
 }
 
 StatusOr<std::string> GenField(const Struct::Field& field) {
