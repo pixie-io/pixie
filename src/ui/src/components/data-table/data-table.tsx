@@ -54,7 +54,6 @@ const useStyles = makeStyles((theme: Theme) =>
       backgroundColor: 'transparent',
       display: 'flex',
       alignItems: 'center',
-      maxWidth: '33%',
       height: theme.spacing(6),
       margin: '0 !important',
       whiteSpace: 'nowrap',
@@ -221,10 +220,6 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
     const ratio: {[dataKey: string]: number} = {};
     for (const colsWidthKey in colsWidth) {
       ratio[colsWidthKey] = colsWidth[colsWidthKey] / totalWidth;
-      // Enforce max-width.
-      if (ratio[colsWidthKey] > 1/3) {
-        ratio[colsWidthKey] = 1/3;
-      }
     }
     return ratio;
   }, [columns, rowGetter, rowCount]);
@@ -299,25 +294,9 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       let nextColWidth = state[nextColKey] || (colTextWidthRatio[nextColKey]);
 
       const percentDelta = deltaX / width;
-      // Enforce min and max width.
-      if (newWidth + percentDelta > 1/3) {
-        const delta = 1/3 - newWidth;
-        newWidth = 1/3;
-        nextColWidth -= delta;
-      } else if (newWidth + percentDelta < MIN_COL_RATIO) {
-        const delta = newWidth - MIN_COL_RATIO;
-        newWidth = MIN_COL_RATIO
-        nextColWidth += delta;
-      } else {
-        newWidth += percentDelta;
-        nextColWidth -= percentDelta;
-      }
 
-      if (nextColWidth > 1/3) {
-        nextColWidth = 1/3;
-      } else if (nextColWidth < MIN_COL_RATIO) {
-        nextColWidth = MIN_COL_RATIO;
-      }
+      newWidth += percentDelta;
+      nextColWidth -= percentDelta;
 
       return {
         ...state,
