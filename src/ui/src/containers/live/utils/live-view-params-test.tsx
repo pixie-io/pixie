@@ -3,6 +3,15 @@ import { getLiveViewTitle, LiveViewPage, matchLiveViewEntity, toEntityPathname,
 import { SemanticType } from 'types/generated/vizier_pb';
 
 describe('matchLiveViewEntity test', () => {
+  it('should correctly match the cluster page', () => {
+    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar')
+    expect(entity).toStrictEqual({
+      page: LiveViewPage.Cluster,
+      params: {},
+      clusterName: 'gke:foobar',
+    });
+  });
+
   it('should correctly match namespaces entity page', () => {
     const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/namespaces')
     expect(entity).toStrictEqual({
@@ -96,7 +105,7 @@ describe('matchLiveViewEntity test', () => {
   });
 
   it('should correctly match a default view with a cluster', () => {
-    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar')
+    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/script')
     expect(entity).toStrictEqual({
       page: LiveViewPage.Default,
       params: {},
@@ -106,6 +115,15 @@ describe('matchLiveViewEntity test', () => {
 });
 
 describe('toEntityPathname test', () => {
+  it('should generate the url for the cluster page', () => {
+    const entity = {
+      page: LiveViewPage.Cluster,
+      params: {},
+      clusterName: 'gke:foobar',
+    };
+    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar');
+  });
+
   it('should generate the url for the namespaces page', () => {
     const entity = {
       page: LiveViewPage.Namespaces,
@@ -196,7 +214,7 @@ describe('toEntityPathname test', () => {
       params: {},
       clusterName: 'gke:foobar',
     };
-    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar');
+    expect(toEntityPathname(entity)).toEqual('/live/clusters/gke%3Afoobar/script');
   });
 });
 
@@ -247,6 +265,13 @@ describe('toSingleEntityPage test', () => {
 });
 
 describe('getLiveViewTitle test', () => {
+  it('should generate the title for the cluster page', () => {
+    const page = LiveViewPage.Cluster;
+    const params = {};
+    const defaultTitle = 'my default title';
+    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('my default title');
+  });
+
   it('should generate the title for the namespaces page', () => {
     const page = LiveViewPage.Namespaces;
     const params = {};

@@ -6,7 +6,6 @@ import { getQueryFuncs, Vis } from 'containers/live/vis';
 import * as React from 'react';
 import analytics from 'utils/analytics';
 import { Arguments } from 'utils/args-utils';
-import urlParams from 'utils/url-params';
 import { LiveViewPage } from 'containers/live/utils/live-view-params';
 
 import { DataDrawerContext } from './data-drawer-context';

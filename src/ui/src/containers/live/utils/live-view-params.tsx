@@ -4,6 +4,7 @@ import { SemanticType } from 'types/generated/vizier_pb';
 
 export enum LiveViewPage {
   Default,
+  Cluster,
   Namespace,
   Namespaces,
   Node,
@@ -39,8 +40,9 @@ export interface EntityPage {
   params: EntityURLParams;
 }
 
+// For live view entity routes.
 export const LiveViewPageRoutes = {
-  [LiveViewPage.Default]: '/live',
+  [LiveViewPage.Cluster]: '/live/clusters/:cluster',
   [LiveViewPage.Namespace]: '/live/clusters/:cluster/namespaces/:namespace',
   [LiveViewPage.Namespaces]: '/live/clusters/:cluster/namespaces',
   [LiveViewPage.Node]: '/live/clusters/:cluster/nodes/:node',
@@ -52,6 +54,7 @@ export const LiveViewPageRoutes = {
 };
 
 export const LiveViewPageScriptIds = {
+  [LiveViewPage.Cluster]: 'px/cluster',
   [LiveViewPage.Namespace]: 'px/namespace',
   [LiveViewPage.Namespaces]: 'px/namespaces',
   [LiveViewPage.Node]: 'px/node',
@@ -83,6 +86,14 @@ function matchAndExtractEntity<T>(path: string, page: LiveViewPage) {
 }
 
 export function matchLiveViewEntity(path: string): EntityPage {
+  // cluster
+  const clusterMatch = matchAndExtractEntity<{}>(
+    path, LiveViewPage.Cluster
+  );
+  if (clusterMatch) {
+    return clusterMatch;
+  }
+
   // namespaces
   const namespaceMatch = matchAndExtractEntity<NamespaceURLParams>(
     path, LiveViewPage.Namespace
@@ -147,18 +158,20 @@ export function matchLiveViewEntity(path: string): EntityPage {
   if (servicesMatch) {
     return servicesMatch;
   }
-  // non-exact cluster match.
-  const clusterMatch = matchPath<WithCluster>(path, {
-    path: '/live/clusters/:cluster',
+
+  // cluster script match.
+  const scriptMatch = matchPath<WithCluster>(path, {
+    path: '/live/clusters/:cluster/script',
     exact: false,
   });
-  if (clusterMatch) {
+  if (scriptMatch) {
     return {
-      clusterName: decodeURIComponent(clusterMatch.params.cluster),
+      clusterName: decodeURIComponent(scriptMatch.params.cluster),
       page: LiveViewPage.Default,
       params: {},
     }
   }
+
   return {
     page: LiveViewPage.Default,
     params: {},
@@ -167,6 +180,9 @@ export function matchLiveViewEntity(path: string): EntityPage {
 
 export function getLiveViewTitle(defaultTitle: string, page: LiveViewPage, params: EntityURLParams): string {
   switch (page) {
+    case LiveViewPage.Cluster: {
+      return defaultTitle;
+    }
     case LiveViewPage.Namespace: {
       const { namespace } = params as NamespaceURLParams;
       return `${namespace}`;
@@ -206,6 +222,9 @@ export function getLiveViewTitle(defaultTitle: string, page: LiveViewPage, param
 export function toEntityPathname(entity: EntityPage): string {
   const encodedCluster = encodeURIComponent(entity.clusterName);
   switch (entity.page) {
+    case LiveViewPage.Cluster: {
+      return `/live/clusters/${encodedCluster}`;
+    }
     case LiveViewPage.Namespace: {
       const { namespace } = entity.params as NamespaceURLParams;
       return `/live/clusters/${encodedCluster}/namespaces/${namespace}`;
@@ -240,7 +259,7 @@ export function toEntityPathname(entity: EntityPage): string {
     }
     case LiveViewPage.Default:
     default:
-      return `/live/clusters/${encodedCluster}`;
+      return `/live/clusters/${encodedCluster}/script`;
   }
 }
 

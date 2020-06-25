@@ -16,7 +16,7 @@ interface ScriptContextProps {
   args: Arguments;
   setArgs: (inputArgs: Arguments, newVis?: Vis, entityParamNames?: string[]) => void;
   // Resets the entity page to the default page, not an entity-centric URL.
-  resetDefaultLiveViewPage: (scriptId?: string) => void;
+  resetDefaultLiveViewPage: () => void;
 
   visJSON: string;
   vis: Vis;
@@ -66,8 +66,8 @@ const ScriptContextProvider = (props) => {
 
   // args are the combination of entity and not enetity params.
   const args = React.useMemo(() => {
-    return {...nonEntityArgs, ...entityParams};
-  }, [nonEntityArgs, entityParams]);
+    return argsForVis(vis, {...nonEntityArgs, ...entityParams});
+  }, [vis, nonEntityArgs, entityParams]);
 
   // title is dependent on whether or not we are in an entity page.
   const title = React.useMemo(() => {
@@ -101,12 +101,16 @@ const ScriptContextProvider = (props) => {
     urlParams.setPathname(toEntityPathname(entityURL));
   }, [selectedClusterName, liveViewPage, entityParams]);
 
+  React.useEffect(() => {
+    const scriptID = liveViewPage === LiveViewPage.Default ? id : '';
+    urlParams.setScript(scriptID, /* diff */'');
+  }, [liveViewPage, id]);
+
   // Used to reset to the "default" page if the script is edited.
-  const resetDefaultLiveViewPage = (scriptID?: string) => {
+  const resetDefaultLiveViewPage = () => {
     setNonEntityArgs(argsForVis(vis, {...nonEntityArgs, ...entityParams}));
     setEntityParams({});
     setLiveViewPage(LiveViewPage.Default);
-    urlParams.setScript(scriptID || id, /* diff */'');
   }
 
   // Logic to update arguments (which are a combo of entity params and normal args)
@@ -184,19 +188,19 @@ const ScriptContextProvider = (props) => {
 
   // Logic to update the full script
 
-  const setScript = (vis: Vis, pxl: string, args: Arguments, id: string, title: string,
-                     liveViewPage?: LiveViewPage, entityParamNames?: string[]) => {
-    setVis(vis);
-    setPxl(pxl);
+  const setScript = (newVis: Vis, newPxl: string, newArgs: Arguments, newID: string, newTitle: string,
+                     newLiveViewPage?: LiveViewPage, entityParamNames?: string[]) => {
+    setVis(newVis);
+    setPxl(newPxl);
     if (entityParamNames) {
-      setArgs(args, vis, entityParamNames);
+      setArgs(newArgs, newVis, entityParamNames);
     } else {
-      setArgs(args, vis)
+      setArgs(newArgs, newVis)
     }
-    setId(id);
-    setTitleBase(title);
-    if (liveViewPage != null) {
-      setLiveViewPage(liveViewPage);
+    setId(newID);
+    setTitleBase(newTitle);
+    if (newLiveViewPage != null) {
+      setLiveViewPage(newLiveViewPage);
     }
   }
 
