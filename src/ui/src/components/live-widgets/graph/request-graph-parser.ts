@@ -1,0 +1,129 @@
+import { getNamespaceFromEntityName } from './graph-options';
+import { RequestGraphDisplay} from './request-graph';
+import { data as visData } from 'vis-network/standalone';
+
+export interface Entity {
+  id: string;
+  label: string;
+  namespace?: string;
+  service?: string;
+  pod?: string;
+
+  // Determines how to size this node.
+  value?: number;
+}
+
+export interface Edge {
+  id?: string;
+  // These are inherent properies of the edge that we capture from
+  // the underlying data.
+  from: string;
+  to: string;
+  p50?: number;
+  p90?: number;
+  p99?: number;
+  errorRate?: number;
+  rps?: number;
+  inboundBPS?: number;
+  outputBPS?: number;
+
+  // These are properties of the edge that we determine based on visualization
+  // parameters.
+  value?: number;
+  title?: string;
+  color?: string;
+}
+
+export interface RequestGraph {
+  nodes: visData.DataSet<any>;
+  edges: visData.DataSet<any>;
+  services: string[];
+}
+
+/**
+ * Parses the data passed in on the request graph.
+ */
+export class RequestGraphParser {
+  private readonly entities = new Array<Entity>();
+  private readonly edges = new Array<Edge>();
+
+  // Keeps a mapping from pod to node. We use the pod name as identifier
+  // since it's the lowest level and guaranteed to be unique.
+  private readonly pods = {};
+
+  // We use this map to store if we already have this service in the
+  // entity array;
+  private hasSvc = {};
+
+  constructor(data: any[], display: RequestGraphDisplay) {
+    this.parseInputData(data, display);
+  }
+
+  public getEdges() {
+    return this.edges;
+  }
+
+  public getEntities() {
+    return this.entities;
+  }
+
+  public getServiceList() {
+    return Object.keys(this.hasSvc);
+  }
+
+  private parseInputData(data: any[], display: RequestGraphDisplay) {
+    // Loop through all the data and create/update pods and edges.
+    data.forEach(value => {
+      const req = this.upsertPod(
+        value[display.requestorServiceColumn],
+        value[display.requestorPodColumn],
+        value[display.outboundBytesPerSecondColumn]);
+      const resp = this.upsertPod(
+        value[display.responderServiceColumn],
+        value[display.responderPodColumn],
+        value[display.inboundBytesPerSecondColumn]);
+
+      this.edges.push({
+        from: req.id,
+        to: resp.id,
+        p50: value[display.p50Column],
+        p90: value[display.p90Column],
+        p99: value[display.p99Column],
+        errorRate: value[display.errorRateColumn],
+        rps: value[display.requestsPerSecondColumn],
+        inboundBPS: value[display.inboundBytesPerSecondColumn],
+        outputBPS: value[display.outboundBytesPerSecondColumn],
+      });
+    });
+  }
+
+  /**
+   * Upsert pod creates or updates the existing pod.
+   *
+   * The only value we accumulate is the BPS which is used as a proxy to
+   * size the pods.
+   * @param svc The name of the service.
+   * @param pod The name of the Pod.
+   * @param bps The bytes/second of traffic to this pod.
+   */
+  private upsertPod(svc: string, pod: string, bps: number): Entity {
+    if (this.pods[pod]) {
+      this.pods[pod].value += bps;
+      return this.pods[pod];
+    }
+
+    const newPod = {
+      id: pod,
+      label: pod,
+      namespace: getNamespaceFromEntityName(pod),
+      service: svc,
+      pod: pod,
+      value: bps,
+    };
+
+    this.hasSvc[svc] = true;
+    this.pods[pod] = newPod;
+    this.entities.push(newPod);
+    return newPod;
+  }
+}
