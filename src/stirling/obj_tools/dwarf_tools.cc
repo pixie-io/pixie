@@ -336,6 +336,19 @@ StatusOr<ArgType> GetArgType(const DWARFDie& die) {
           absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
   }
 }
+// This function calls out any die with DW_AT_variable_parameter == 0x1 to be a return value..
+// The documentation on how Golang sets this field is sparse, so not sure if this is the
+// right flag to look at.
+// From examining a few cases, this interpretation of the flag seems to work, but it might
+// also be completely wrong.
+// TODO(oazizi): Find a better way to determine return values.
+StatusOr<bool> IsGolangRetArg(const DWARFDie& die) {
+  LLVM_ASSIGN_OR_RETURN(DWARFFormValue & attr, die.find(llvm::dwarf::DW_AT_variable_parameter),
+                        "Found member, but could not find DW_AT_variable_parameter attribute.");
+  LLVM_ASSIGN_OR_RETURN(uint64_t val, attr.getAsUnsignedConstant(), "Could not extract offset.");
+
+  return (val == 0x01);
+}
 
 }  // namespace
 
@@ -435,6 +448,10 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
       current_offset += type_size;
 
       PL_ASSIGN_OR_RETURN(arg.type, GetArgType(type_die));
+
+      // TODO(oazizi): This is specific for Golang.
+      //               Put into if statement once we know what language we are analyzing.
+      PL_ASSIGN_OR(arg.retarg, IsGolangRetArg(die), __s__ = false;);
     }
   }
 

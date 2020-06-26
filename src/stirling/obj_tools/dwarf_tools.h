@@ -46,10 +46,13 @@ enum class ArgType {
 struct ArgInfo {
   uint64_t offset = std::numeric_limits<uint64_t>::max();
   ArgType type = ArgType::kUnspecified;
+
+  // If true, this argument is really a return value.
+  bool retarg = false;
 };
 
 inline bool operator==(const ArgInfo& a, const ArgInfo& b) {
-  return a.offset == b.offset && a.type == b.type;
+  return a.offset == b.offset && a.type == b.type && a.retarg == b.retarg;
 }
 
 class DwarfReader {

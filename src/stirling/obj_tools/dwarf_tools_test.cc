@@ -161,17 +161,18 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
                                             Pair("f", ArgInfo{24, ArgType::kFloat64})));
     EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("main.Vertex.Abs"),
                        UnorderedElementsAre(Pair("v", ArgInfo{0, ArgType::kStruct}),
-                                            Pair("~r0", ArgInfo{16, ArgType::kFloat64})));
+                                            Pair("~r0", ArgInfo{16, ArgType::kFloat64, true})));
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.MixedArgTypes"),
         UnorderedElementsAre(
             Pair("i1", ArgInfo{0, ArgType::kInt}), Pair("b1", ArgInfo{8, ArgType::kBool}),
             Pair("b2", ArgInfo{9, ArgType::kStruct}), Pair("i2", ArgInfo{16, ArgType::kInt}),
             Pair("i3", ArgInfo{24, ArgType::kInt}), Pair("b3", ArgInfo{32, ArgType::kBool}),
-            Pair("~r6", ArgInfo{40, ArgType::kInt}), Pair("~r7", ArgInfo{48, ArgType::kBool})));
+            Pair("~r6", ArgInfo{40, ArgType::kInt, true}),
+            Pair("~r7", ArgInfo{48, ArgType::kBool, true})));
     EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("main.GoHasNamedReturns"),
-                       UnorderedElementsAre(Pair("retfoo", ArgInfo{0, ArgType::kInt}),
-                                            Pair("retbar", ArgInfo{8, ArgType::kBool})));
+                       UnorderedElementsAre(Pair("retfoo", ArgInfo{0, ArgType::kInt, true}),
+                                            Pair("retbar", ArgInfo{8, ArgType::kBool, true})));
   }
 
   {
@@ -186,7 +187,7 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
                                             Pair("endStream", ArgInfo{12, ArgType::kBool}),
                                             Pair("data", ArgInfo{16, ArgType::kStruct}),
                                             Pair("pad", ArgInfo{40, ArgType::kStruct}),
-                                            Pair("~r4", ArgInfo{64, ArgType::kStruct})));
+                                            Pair("~r4", ArgInfo{64, ArgType::kStruct, true})));
   }
 }
 
