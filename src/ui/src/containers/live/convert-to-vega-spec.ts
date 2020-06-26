@@ -2,7 +2,9 @@
 
 import { addPxTimeFormatExpression } from 'components/live-widgets/vega/timeseries-axis';
 import * as _ from 'lodash';
-import { Data, GroupMark, LineMark, Mark, Signal, Spec as VgSpec, TimeScale } from 'vega';
+import {
+  Data, GroupMark, LineMark, Mark, Signal, Spec as VgSpec, TimeScale,
+} from 'vega';
 import { VisualizationSpec } from 'vega-embed';
 import { compile, TopLevelSpec as VlSpec } from 'vega-lite';
 
@@ -92,7 +94,7 @@ export function convertWidgetDisplayToVegaLiteSpec(display: ChartDisplay, source
     case VEGA_CHART_TYPE:
       return convertToVegaChart(display as VegaDisplay, source);
     default:
-      throw new Error('Unsupported display type: ' + display[DISPLAY_TYPE_KEY]);
+      throw new Error(`Unsupported display type: ${display[DISPLAY_TYPE_KEY]}`);
   }
 }
 
@@ -108,7 +110,7 @@ export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: st
       legendColumnName: null,
       hasLegend: false,
       isStacked: false,
-      error: error,
+      error,
     };
   }
 }
@@ -266,7 +268,7 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
   let valueField = display.timeseries[0].value;
   let colorField = '';
   if (display.timeseries.length > 1) {
-    const mode = display.timeseries[0].mode;
+    const { mode } = display.timeseries[0];
     const valueFields: string[] = [];
     for (const ts of display.timeseries) {
       if (ts.mode !== mode) {
@@ -453,7 +455,7 @@ function extractPivotField(vegaSpec: VgSpec, display: TimeseriesDisplay): string
 }
 
 function extractValueField(vegaSpec: VgSpec, display: TimeseriesDisplay): string | null {
-  if (display.timeseries.length == 1) {
+  if (display.timeseries.length === 1) {
     return display.timeseries[0].value;
   }
   for (const data of vegaSpec.data) {
@@ -466,6 +468,7 @@ function extractValueField(vegaSpec: VgSpec, display: TimeseriesDisplay): string
       }
     }
   }
+  return '';
 }
 
 function addExtrasForTimeseries(vegaSpec, display: TimeseriesDisplay, source: string): VegaSpecWithProps {
@@ -573,7 +576,7 @@ function addLegendSignalsToVgSpec(vegaSpec: VgSpec, pivotField: string): VgSpec 
 }
 
 function isLineMark(mark: Mark, valueField: string) {
-  return mark.type == 'group'
+  return mark.type === 'group'
     && mark.marks
     && mark.marks.length > 0
     && mark.marks[0]
@@ -581,7 +584,7 @@ function isLineMark(mark: Mark, valueField: string) {
     && mark.marks[0].encode.update
     && mark.marks[0].encode.update.y
     && (mark.marks[0].encode.update.y as any).field
-    && (mark.marks[0].encode.update.y as any).field == valueField;
+    && (mark.marks[0].encode.update.y as any).field === valueField;
 }
 
 function addOpacityTestsToLine(vegaSpec: VgSpec, pivotField: string, valueField: string): VgSpec {
@@ -629,7 +632,7 @@ function addOpacityTestsToLine(vegaSpec: VgSpec, pivotField: string, valueField:
           strokeWidth: [{
             value: LINE_HOVER_HIT_BOX_WIDTH,
           }],
-        }
+        },
       },
       zindex: lineMark.zindex + 1,
     };
@@ -921,15 +924,6 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec): VgSpec {
   });
   vegaSpec.marks.push(...marks);
   return vegaSpec;
-}
-
-// We can get rid of this once we delete OldCanvas.
-export function hydrateSpecOld(input, theme: Theme, tableName = 'output'): VisualizationSpec {
-  return {
-    ...input,
-    ...specsFromTheme(theme),
-    data: { name: tableName },
-  };
 }
 
 function hydrateSpec(input, theme: Theme): VisualizationSpec {

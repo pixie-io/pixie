@@ -1,11 +1,14 @@
-declare module 'vega-scale' {
-  export function scale(type: string, scale?: any, metadata?: any);
-  export function tickValues(scale: any, count: number);
-}
 import * as vega from 'vega';
 import { timeFormat } from 'd3-time-format';
 import { scale, tickValues } from 'vega-scale';
 import { textMetrics } from 'vega-scenegraph';
+
+declare module 'vega-scale' {
+  // eslint-disable-next-line no-shadow
+  export function scale(type: string, scale?: any, metadata?: any);
+  // eslint-disable-next-line no-shadow
+  export function tickValues(scale: any, count: number);
+}
 
 interface TextConfig {
   font: string;
@@ -36,8 +39,10 @@ function overlap(l: Label, r: Label, overlapBuffer: number, textConfig: TextConf
 }
 
 function hasOverlap(textConfig: TextConfig, labels: Label[], overlapBuffer: number): boolean {
-  for (let i = 1, n = labels.length, a = labels[0], b; i < n; a = b, ++i) {
-    if (overlap(a, b = labels[i], overlapBuffer, textConfig)) {
+  let b: Label;
+  for (let i = 1, n = labels.length, a = labels[0]; i < n; a = b, i += 1) {
+    b = labels[i];
+    if (overlap(a, b, overlapBuffer, textConfig)) {
       return true;
     }
   }
@@ -83,7 +88,7 @@ export function formatTime(tick: Date, showAmPm = false,
   if (showAmPm) {
     fmtStr += ' %p';
     if (showDate) {
-      fmtStr = '%b %d, %Y ' + fmtStr;
+      fmtStr = `%b %d, %Y ${fmtStr}`;
     }
   }
   return timeFormat(fmtStr)(tick);
@@ -92,12 +97,8 @@ export function formatTime(tick: Date, showAmPm = false,
 function AmPmFormatter(): LabelsFormatter {
   // Add AM and PM to the first and last labels.
   return {
-    format: (label: Label): string => {
-      return formatTime(label.tick, true);
-    },
-    find: (labels: Label[]): Label[] => {
-      return [labels[0], labels[labels.length - 1]];
-    },
+    format: (label: Label): string => formatTime(label.tick, true),
+    find: (labels: Label[]): Label[] => [labels[0], labels[labels.length - 1]],
   };
 }
 
@@ -153,7 +154,7 @@ function combineInternalExternal(internal, external) {
 export function addPxTimeFormatExpression() {
   const domainFn = vega.expressionFunction('domain');
 
-  //let currentWidth = 0;
+  // let currentWidth = 0;
   let labels = [];
 
   // Function call by labelExpr in the vega-lite config.
@@ -161,8 +162,7 @@ export function addPxTimeFormatExpression() {
     if (datum.index === 0) {
       // Generate the labels on the first run of this function.
       // Subsequent calls of pxTimeFormat will use these results.
-      labels =
-        prepareLabels(domainFn('x', this), width, numTicks, separation, fontName, fontSize);
+      labels = prepareLabels(domainFn('x', this), width, numTicks, separation, fontName, fontSize);
       // currentWidth = width;
       // } else if (currentWidth !== width) {
       // TODO(philkuz) how should we warn when this happens?

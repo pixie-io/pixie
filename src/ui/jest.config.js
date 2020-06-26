@@ -3,7 +3,8 @@ module.exports = {
     window: true,
   },
   setupFiles: [
-    '<rootDir>/src/testing/enzyme-setup.js',
+    '<rootDir>/src/testing/enzyme-setup.ts',
+    'jest-canvas-mock',
   ],
   setupFilesAfterEnv: [
     '<rootDir>/src/testing/jest-test-setup.js',

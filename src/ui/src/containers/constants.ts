@@ -9,7 +9,11 @@ declare global {
   }
 }
 
-export const AUTH0_DOMAIN = window.__PIXIE_FLAGS__.AUTH0_DOMAIN;
-export const AUTH0_CLIENT_ID = window.__PIXIE_FLAGS__.AUTH0_CLIENT_ID;
-export const DOMAIN_NAME = window.__PIXIE_FLAGS__.DOMAIN_NAME;
-export const SEGMENT_UI_WRITE_KEY = window.__PIXIE_FLAGS__.SEGMENT_UI_WRITE_KEY;
+// eslint-disable-next-line no-underscore-dangle
+export const { AUTH0_DOMAIN } = window.__PIXIE_FLAGS__;
+// eslint-disable-next-line no-underscore-dangle
+export const { AUTH0_CLIENT_ID } = window.__PIXIE_FLAGS__;
+// eslint-disable-next-line no-underscore-dangle
+export const { DOMAIN_NAME } = window.__PIXIE_FLAGS__;
+// eslint-disable-next-line no-underscore-dangle
+export const { SEGMENT_UI_WRITE_KEY } = window.__PIXIE_FLAGS__;

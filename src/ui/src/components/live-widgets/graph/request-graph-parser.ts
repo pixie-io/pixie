@@ -1,6 +1,6 @@
-import { getNamespaceFromEntityName } from './graph-options';
-import { RequestGraphDisplay} from './request-graph';
 import { data as visData } from 'vis-network/standalone';
+import { getNamespaceFromEntityName } from './graph-options';
+import { RequestGraphDisplay } from './request-graph';
 
 export interface Entity {
   id: string;
@@ -45,6 +45,7 @@ export interface RequestGraph {
  */
 export class RequestGraphParser {
   private readonly entities = new Array<Entity>();
+
   private readonly edges = new Array<Edge>();
 
   // Keeps a mapping from pod to node. We use the pod name as identifier
@@ -73,15 +74,17 @@ export class RequestGraphParser {
 
   private parseInputData(data: any[], display: RequestGraphDisplay) {
     // Loop through all the data and create/update pods and edges.
-    data.forEach(value => {
+    data.forEach((value) => {
       const req = this.upsertPod(
         value[display.requestorServiceColumn],
         value[display.requestorPodColumn],
-        value[display.outboundBytesPerSecondColumn]);
+        value[display.outboundBytesPerSecondColumn],
+      );
       const resp = this.upsertPod(
         value[display.responderServiceColumn],
         value[display.responderPodColumn],
-        value[display.inboundBytesPerSecondColumn]);
+        value[display.inboundBytesPerSecondColumn],
+      );
 
       this.edges.push({
         from: req.id,
@@ -117,7 +120,7 @@ export class RequestGraphParser {
       label: pod,
       namespace: getNamespaceFromEntityName(pod),
       service: svc,
-      pod: pod,
+      pod,
       value: bps,
     };
 

@@ -1,4 +1,4 @@
-import {createBrowserHistory} from 'history';
+import { createBrowserHistory } from 'history';
 import analytics from 'utils/analytics';
 
 const history = createBrowserHistory();
@@ -9,14 +9,14 @@ function showIntercom(path: string): boolean {
 
 function sendPageEvent(path: string) {
   analytics.page(
-    '',   // category
+    '', // category
     path, // name
-    {},   // properties
+    {}, // properties
     {
       integrations: {
         Intercom: { hideDefaultLauncher: !showIntercom(path) },
       },
-    },    // options
+    }, // options
   );
 }
 

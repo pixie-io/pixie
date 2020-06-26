@@ -1,4 +1,4 @@
-import {convertWidgetDisplayToVegaLiteSpec} from './convert-to-vega-spec';
+import { convertWidgetDisplayToVegaLiteSpec } from './convert-to-vega-spec';
 
 // The output specs are all fully enumerated to make it easy to use https://vega.github.io/editor
 // to verify that they look right.
@@ -26,7 +26,7 @@ import {convertWidgetDisplayToVegaLiteSpec} from './convert-to-vega-spec';
 // so we need to extract that random name using this function.
 function extractRandomFieldNamessFromSpec(spec): {colorFieldName: string; valueFieldName: string} {
   if (!spec || !spec.transform || spec.transform.length === 0 || !spec.transform[0] || !spec.transform[0].as) {
-    return {colorFieldName: '', valueFieldName: ''};
+    return { colorFieldName: '', valueFieldName: '' };
   }
   return {
     colorFieldName: spec.transform[0].as[0],
@@ -38,329 +38,329 @@ describe('simple timeseries', () => {
   it('produces the expected spec for a simple case', () => {
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.TimeseriesChart',
-      'timeseries': [
+      timeseries: [
         {
-          'value': 'bytes_per_second',
-          'mode': 'MODE_LINE'
-        }
+          value: 'bytes_per_second',
+          mode: 'MODE_LINE',
+        },
       ],
     };
     const spec = convertWidgetDisplayToVegaLiteSpec(input, 'mysource');
-    const {colorFieldName, valueFieldName} = extractRandomFieldNamessFromSpec(spec);
+    const { colorFieldName, valueFieldName } = extractRandomFieldNamessFromSpec(spec);
     expect(colorFieldName).toBeTruthy();
     expect(valueFieldName).toBeTruthy();
     expect(spec).toStrictEqual({
-      '$schema': 'https://vega.github.io/schema/vega-lite/v4.json',
-      'data': {
-        'name': 'mysource',
+      $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+      data: {
+        name: 'mysource',
       },
-      'encoding': {
-       'x': {
-          'axis': {
-            'grid': false,
-            'labelExpr': "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
-            'labelFlush': true,
-            'tickCount': {
-              'signal': 'ceil(width/20)',
+      encoding: {
+        x: {
+          axis: {
+            grid: false,
+            labelExpr: "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
+            labelFlush: true,
+            tickCount: {
+              signal: 'ceil(width/20)',
             },
           },
-          'field': 'time_',
-          'title': null,
-          'type': 'temporal'
-        }
+          field: 'time_',
+          title: null,
+          type: 'temporal',
+        },
       },
-      'layer': [
+      layer: [
         {
-          'encoding': {
-            'color': {
-              'field': colorFieldName,
-              'legend': null,
-              'type': 'nominal'
+          encoding: {
+            color: {
+              field: colorFieldName,
+              legend: null,
+              type: 'nominal',
             },
-            'y': {
-              'field': 'bytes_per_second',
-              'scale': {
-                'zero': false
+            y: {
+              field: 'bytes_per_second',
+              scale: {
+                zero: false,
               },
-              'type': 'quantitative'
-            }
+              type: 'quantitative',
+            },
           },
-          'layer': [
-            {'mark': 'line'}
-          ]
+          layer: [
+            { mark: 'line' },
+          ],
         },
       ],
-      'transform': [
+      transform: [
         {
-          'as': [colorFieldName, valueFieldName],
-          'fold': ['bytes_per_second'],
+          as: [colorFieldName, valueFieldName],
+          fold: ['bytes_per_second'],
         },
         {
-          'joinaggregate' : [
+          joinaggregate: [
             {
-              'field' : 'time_',
-              'op' : 'max',
-              'as' : 'max_time',
+              field: 'time_',
+              op: 'max',
+              as: 'max_time',
             },
             {
-              'field' : 'time_',
-              'op' : 'min',
-              'as' : 'min_time',
+              field: 'time_',
+              op: 'min',
+              as: 'min_time',
             },
           ],
         },
         {
-          'filter' : 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
-        }
-      ]
+          filter: 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
+        },
+      ],
     });
   });
 
   it('produces a spec with a custom title and custom x/y axis titles', () => {
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.TimeseriesChart',
-      'title': 'My custom title',
-      'timeseries': [
+      title: 'My custom title',
+      timeseries: [
         {
-          'value': 'bytes_per_second',
-          'mode': 'MODE_LINE'
+          value: 'bytes_per_second',
+          mode: 'MODE_LINE',
         },
       ],
-      'xAxis': {'label': 'My custom x axis title'},
-      'yAxis': {'label': 'My custom y axis title'}
+      xAxis: { label: 'My custom x axis title' },
+      yAxis: { label: 'My custom y axis title' },
     };
     const spec = convertWidgetDisplayToVegaLiteSpec(input, 'mysource');
-    const {colorFieldName, valueFieldName} = extractRandomFieldNamessFromSpec(spec);
+    const { colorFieldName, valueFieldName } = extractRandomFieldNamessFromSpec(spec);
     expect(colorFieldName).toBeTruthy();
     expect(valueFieldName).toBeTruthy();
     expect(spec).toStrictEqual({
-      '$schema': 'https://vega.github.io/schema/vega-lite/v4.json',
-      'data': {
-        'name': 'mysource',
+      $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+      data: {
+        name: 'mysource',
       },
-      'encoding': {
-       'x': {
-          'axis': {
-            'grid': false,
-            'labelExpr': "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
-            'labelFlush': true,
-            'tickCount': {
-              'signal': 'ceil(width/20)',
+      encoding: {
+        x: {
+          axis: {
+            grid: false,
+            labelExpr: "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
+            labelFlush: true,
+            tickCount: {
+              signal: 'ceil(width/20)',
             },
           },
-          'field': 'time_',
-          'title': 'My custom x axis title',
-          'type': 'temporal'
-        }
+          field: 'time_',
+          title: 'My custom x axis title',
+          type: 'temporal',
+        },
       },
-      'title': 'My custom title',
-      'layer': [
+      title: 'My custom title',
+      layer: [
         {
-          'encoding': {
-            'y': {
-              'field': 'bytes_per_second',
-              'scale': {
-                'zero': false
+          encoding: {
+            y: {
+              field: 'bytes_per_second',
+              scale: {
+                zero: false,
               },
-              'title': 'My custom y axis title',
-              'type': 'quantitative'
+              title: 'My custom y axis title',
+              type: 'quantitative',
             },
-            'color': {
-              'field': colorFieldName,
-              'legend': null,
-              'type': 'nominal'
-            }
+            color: {
+              field: colorFieldName,
+              legend: null,
+              type: 'nominal',
+            },
           },
-          'layer': [
-            {'mark': 'line'}
-          ]
+          layer: [
+            { mark: 'line' },
+          ],
         },
       ],
-      'transform': [
+      transform: [
         {
-          'as': [colorFieldName, valueFieldName],
-          'fold': ['bytes_per_second'],
+          as: [colorFieldName, valueFieldName],
+          fold: ['bytes_per_second'],
         },
         {
-          'joinaggregate' : [
+          joinaggregate: [
             {
-              'field' : 'time_',
-              'op' : 'max',
-              'as' : 'max_time',
+              field: 'time_',
+              op: 'max',
+              as: 'max_time',
             },
             {
-              'field' : 'time_',
-              'op' : 'min',
-              'as' : 'min_time',
+              field: 'time_',
+              op: 'min',
+              as: 'min_time',
             },
           ],
         },
         {
-          'filter' : 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
-        }
-      ]
+          filter: 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
+        },
+      ],
     });
   });
 
   it('produces a spec with bars', () => {
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.TimeseriesChart',
-      'timeseries': [
+      timeseries: [
         {
-          'value': 'bytes_per_second',
-          'mode': 'MODE_BAR'
-        }
+          value: 'bytes_per_second',
+          mode: 'MODE_BAR',
+        },
       ],
     };
     const spec = convertWidgetDisplayToVegaLiteSpec(input, 'mysource');
-    const {colorFieldName, valueFieldName} = extractRandomFieldNamessFromSpec(spec);
+    const { colorFieldName, valueFieldName } = extractRandomFieldNamessFromSpec(spec);
     expect(colorFieldName).toBeTruthy();
     expect(valueFieldName).toBeTruthy();
     expect(spec).toStrictEqual({
-      '$schema': 'https://vega.github.io/schema/vega-lite/v4.json',
-      'data': {
-        'name': 'mysource',
+      $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+      data: {
+        name: 'mysource',
       },
-      'encoding': {
-       'x': {
-          'axis': {
-            'grid': false,
-            'labelExpr': "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
-            'labelFlush': true,
-            'tickCount': {
-              'signal': 'ceil(width/20)',
+      encoding: {
+        x: {
+          axis: {
+            grid: false,
+            labelExpr: "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
+            labelFlush: true,
+            tickCount: {
+              signal: 'ceil(width/20)',
             },
           },
-          'field': 'time_',
-          'title': null,
-          'type': 'temporal'
-        }
+          field: 'time_',
+          title: null,
+          type: 'temporal',
+        },
       },
-      'layer': [
+      layer: [
         {
-          'encoding': {
-            'y': {
-              'field': 'bytes_per_second',
-              'scale': {
-                'zero': false
+          encoding: {
+            y: {
+              field: 'bytes_per_second',
+              scale: {
+                zero: false,
               },
-              'type': 'quantitative'
+              type: 'quantitative',
             },
-            'color': {
-              'field': colorFieldName,
-              'legend': null,
-              'type': 'nominal'
-            }
+            color: {
+              field: colorFieldName,
+              legend: null,
+              type: 'nominal',
+            },
           },
-          'layer': [
-            {'mark': 'bar'}
-          ]
+          layer: [
+            { mark: 'bar' },
+          ],
         },
       ],
-      'transform': [
+      transform: [
         {
-          'as': [colorFieldName, valueFieldName],
-          'fold': ['bytes_per_second'],
+          as: [colorFieldName, valueFieldName],
+          fold: ['bytes_per_second'],
         },
         {
-          'joinaggregate' : [
+          joinaggregate: [
             {
-              'field' : 'time_',
-              'op' : 'max',
-              'as' : 'max_time',
+              field: 'time_',
+              op: 'max',
+              as: 'max_time',
             },
             {
-              'field' : 'time_',
-              'op' : 'min',
-              'as' : 'min_time',
+              field: 'time_',
+              op: 'min',
+              as: 'min_time',
             },
           ],
         },
         {
-          'filter' : 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
-        }
-      ]
+          filter: 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
+        },
+      ],
     });
   });
 
   it('produces a spec with points', () => {
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.TimeseriesChart',
-      'timeseries': [
+      timeseries: [
         {
-          'value': 'bytes_per_second',
-          'mode': 'MODE_POINT'
-        }
+          value: 'bytes_per_second',
+          mode: 'MODE_POINT',
+        },
       ],
     };
     const spec = convertWidgetDisplayToVegaLiteSpec(input, 'mysource');
-    const {colorFieldName, valueFieldName} = extractRandomFieldNamessFromSpec(spec);
+    const { colorFieldName, valueFieldName } = extractRandomFieldNamessFromSpec(spec);
     expect(colorFieldName).toBeTruthy();
     expect(valueFieldName).toBeTruthy();
     expect(spec).toStrictEqual({
-      '$schema': 'https://vega.github.io/schema/vega-lite/v4.json',
-      'data': {
-        'name': 'mysource',
+      $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+      data: {
+        name: 'mysource',
       },
-      'encoding': {
-       'x': {
-          'axis': {
-            'grid': false,
-            'labelExpr': "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
-            'labelFlush': true,
-            'tickCount': {
-              'signal': 'ceil(width/20)',
+      encoding: {
+        x: {
+          axis: {
+            grid: false,
+            labelExpr: "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
+            labelFlush: true,
+            tickCount: {
+              signal: 'ceil(width/20)',
             },
           },
-          'field': 'time_',
-          'title': null,
-          'type': 'temporal'
-        }
+          field: 'time_',
+          title: null,
+          type: 'temporal',
+        },
       },
-      'layer': [
+      layer: [
         {
-          'encoding': {
-            'y': {
-              'field': 'bytes_per_second',
-              'scale': {
-                'zero': false
+          encoding: {
+            y: {
+              field: 'bytes_per_second',
+              scale: {
+                zero: false,
               },
-              'type': 'quantitative'
+              type: 'quantitative',
             },
-            'color': {
-              'field': colorFieldName,
-              'legend': null,
-              'type': 'nominal'
-            }
+            color: {
+              field: colorFieldName,
+              legend: null,
+              type: 'nominal',
+            },
           },
-          'layer': [
-            {'mark': 'point'}
-          ]
+          layer: [
+            { mark: 'point' },
+          ],
         },
       ],
-      'transform': [
+      transform: [
         {
-          'as': [colorFieldName, valueFieldName],
-          'fold': ['bytes_per_second'],
+          as: [colorFieldName, valueFieldName],
+          fold: ['bytes_per_second'],
         },
         {
-          'joinaggregate' : [
+          joinaggregate: [
             {
-              'field' : 'time_',
-              'op' : 'max',
-              'as' : 'max_time',
+              field: 'time_',
+              op: 'max',
+              as: 'max_time',
             },
             {
-              'field' : 'time_',
-              'op' : 'min',
-              'as' : 'min_time',
+              field: 'time_',
+              op: 'min',
+              as: 'min_time',
             },
           ],
         },
         {
-          'filter' : 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
-        }
-      ]
+          filter: 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
+        },
+      ],
     });
   });
 });
@@ -369,151 +369,151 @@ describe('timeseries with series', () => {
   it('produces the expected spec', () => {
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.TimeseriesChart',
-      'timeseries': [
+      timeseries: [
         {
-          'value': 'bytes_per_second',
-          'mode': 'MODE_LINE',
-          'series': 'service'
-        }
+          value: 'bytes_per_second',
+          mode: 'MODE_LINE',
+          series: 'service',
+        },
       ],
     };
     expect(convertWidgetDisplayToVegaLiteSpec(input, 'mysource')).toStrictEqual({
-      '$schema': 'https://vega.github.io/schema/vega-lite/v4.json',
-      'data': {
-        'name': 'mysource',
+      $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+      data: {
+        name: 'mysource',
       },
-      'encoding': {
-       'x': {
-          'axis': {
-            'grid': false,
-            'labelExpr': "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
-            'labelFlush': true,
-            'tickCount': {
-              'signal': 'ceil(width/20)',
+      encoding: {
+        x: {
+          axis: {
+            grid: false,
+            labelExpr: "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
+            labelFlush: true,
+            tickCount: {
+              signal: 'ceil(width/20)',
             },
           },
-          'field': 'time_',
-          'title': null,
-          'type': 'temporal'
-        }
+          field: 'time_',
+          title: null,
+          type: 'temporal',
+        },
       },
-      'layer': [
+      layer: [
         {
-          'encoding': {
-            'y': {
-              'field': 'bytes_per_second',
-              'scale': {
-                'zero': false
+          encoding: {
+            y: {
+              field: 'bytes_per_second',
+              scale: {
+                zero: false,
               },
-              'type': 'quantitative'
+              type: 'quantitative',
             },
-            'color': {
-              'field': 'service',
-              'legend': null,
-              'type': 'nominal'
-            }
+            color: {
+              field: 'service',
+              legend: null,
+              type: 'nominal',
+            },
           },
-          'layer': [
-            {'mark': 'line'}
-          ]
+          layer: [
+            { mark: 'line' },
+          ],
         },
       ],
-      'transform': [
+      transform: [
         {
-          'joinaggregate' : [
+          joinaggregate: [
             {
-              'field' : 'time_',
-              'op' : 'max',
-              'as' : 'max_time',
+              field: 'time_',
+              op: 'max',
+              as: 'max_time',
             },
             {
-              'field' : 'time_',
-              'op' : 'min',
-              'as' : 'min_time',
+              field: 'time_',
+              op: 'min',
+              as: 'min_time',
             },
           ],
         },
         {
-          'filter' : 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
-        }
-      ]
+          filter: 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
+        },
+      ],
     });
   });
 
   it('produces the expected spec with a stacked series', () => {
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.TimeseriesChart',
-      'timeseries': [
+      timeseries: [
         {
-          'value': 'bytes_per_second',
-          'mode': 'MODE_LINE',
-          'series': 'service',
-          'stackBySeries': true
-        }
+          value: 'bytes_per_second',
+          mode: 'MODE_LINE',
+          series: 'service',
+          stackBySeries: true,
+        },
       ],
     };
     expect(convertWidgetDisplayToVegaLiteSpec(input, 'mysource')).toStrictEqual({
-      '$schema': 'https://vega.github.io/schema/vega-lite/v4.json',
-      'data': {
-        'name': 'mysource',
+      $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+      data: {
+        name: 'mysource',
       },
-      'encoding': {
-       'x': {
-          'axis': {
-            'grid': false,
-            'labelExpr': "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
-            'labelFlush': true,
-            'tickCount': {
-              'signal': 'ceil(width/20)',
+      encoding: {
+        x: {
+          axis: {
+            grid: false,
+            labelExpr: "pxTimeFormat(datum, ceil(width), ceil(width/20), 100, 'Roboto', 10)",
+            labelFlush: true,
+            tickCount: {
+              signal: 'ceil(width/20)',
             },
           },
-          'field': 'time_',
-          'title': null,
-          'type': 'temporal'
-        }
+          field: 'time_',
+          title: null,
+          type: 'temporal',
+        },
       },
-      'layer': [
+      layer: [
         {
-          'encoding': {
-            'y': {
-              'field': 'bytes_per_second',
-              'type': 'quantitative',
-              'stack': 'zero',
-              'scale': {
-                'zero': false
+          encoding: {
+            y: {
+              field: 'bytes_per_second',
+              type: 'quantitative',
+              stack: 'zero',
+              scale: {
+                zero: false,
               },
-              'aggregate': 'sum'
+              aggregate: 'sum',
             },
-            'color': {
-              'field': 'service',
-              'legend': null,
-              'type': 'nominal'
-            }
+            color: {
+              field: 'service',
+              legend: null,
+              type: 'nominal',
+            },
           },
-          'layer': [
-            {'mark': 'line'}
-          ]
+          layer: [
+            { mark: 'line' },
+          ],
         },
       ],
-      'transform': [
+      transform: [
         {
-          'joinaggregate' : [
+          joinaggregate: [
             {
-              'field' : 'time_',
-              'op' : 'max',
-              'as' : 'max_time',
+              field: 'time_',
+              op: 'max',
+              as: 'max_time',
             },
             {
-              'field' : 'time_',
-              'op' : 'min',
-              'as' : 'min_time',
+              field: 'time_',
+              op: 'min',
+              as: 'min_time',
             },
           ],
         },
         {
-          'filter' : 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
-        }
-      ]
+          filter: 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
+        },
+      ],
     });
   });
 });
@@ -555,93 +555,93 @@ describe('bar', () => {
   it('produces the expected spec for a simple case', () => {
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.BarChart',
-      'bar': {
-        'label': 'service',
-        'value': 'num_errors'
-      }
+      bar: {
+        label: 'service',
+        value: 'num_errors',
+      },
     };
     expect(convertWidgetDisplayToVegaLiteSpec(input, 'mysource')).toStrictEqual({
-      '$schema': 'https://vega.github.io/schema/vega-lite/v4.json',
-      'data': {
-        'name': 'mysource',
+      $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+      data: {
+        name: 'mysource',
       },
-      'encoding': {
-        'x': {
-          'field': 'service',
-          'type': 'ordinal'
+      encoding: {
+        x: {
+          field: 'service',
+          type: 'ordinal',
         },
-        'y': {
-          'field': 'num_errors',
-          'type': 'quantitative'
-        }
+        y: {
+          field: 'num_errors',
+          type: 'quantitative',
+        },
       },
-      'mark': 'bar'
+      mark: 'bar',
     });
   });
 
   it('produces a spec with a custom title and custom x/y axis titles', () => {
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.BarChart',
-      'bar': {
-        'label': 'service',
-        'value': 'num_errors'
+      bar: {
+        label: 'service',
+        value: 'num_errors',
       },
-      'title': 'My custom title',
-      'xAxis': {'label': 'My custom x axis'},
-      'yAxis': {'label': 'My custom y axis'}
+      title: 'My custom title',
+      xAxis: { label: 'My custom x axis' },
+      yAxis: { label: 'My custom y axis' },
     };
     expect(convertWidgetDisplayToVegaLiteSpec(input, 'mysource')).toStrictEqual({
-      '$schema': 'https://vega.github.io/schema/vega-lite/v4.json',
-      'title': 'My custom title',
-      'data': {
-        'name': 'mysource',
+      $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+      title: 'My custom title',
+      data: {
+        name: 'mysource',
       },
-      'encoding': {
-        'x': {
-          'field': 'service',
-          'type': 'ordinal',
-          'title': 'My custom x axis'
+      encoding: {
+        x: {
+          field: 'service',
+          type: 'ordinal',
+          title: 'My custom x axis',
         },
-        'y': {
-          'field': 'num_errors',
-          'type': 'quantitative',
-          'title': 'My custom y axis'
-        }
+        y: {
+          field: 'num_errors',
+          type: 'quantitative',
+          title: 'My custom y axis',
+        },
       },
-      'mark': 'bar'
+      mark: 'bar',
     });
   });
 
   it('produces a spec with a stack by series', () => {
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.BarChart',
-      'bar': {
-        'label': 'service',
-        'value': 'num_errors',
-        'stackBy': 'endpoint'
-      }
+      bar: {
+        label: 'service',
+        value: 'num_errors',
+        stackBy: 'endpoint',
+      },
     };
     expect(convertWidgetDisplayToVegaLiteSpec(input, 'mysource')).toStrictEqual({
-      '$schema': 'https://vega.github.io/schema/vega-lite/v4.json',
-      'data': {
-        'name': 'mysource',
+      $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+      data: {
+        name: 'mysource',
       },
-      'encoding': {
-        'color': {
-          'field': 'endpoint',
-          'type': 'nominal'
+      encoding: {
+        color: {
+          field: 'endpoint',
+          type: 'nominal',
         },
-        'x': {
-          'field': 'service',
-          'type': 'ordinal'
+        x: {
+          field: 'service',
+          type: 'ordinal',
         },
-        'y': {
-          'aggregate': 'sum',
-          'field': 'num_errors',
-          'type': 'quantitative'
-        }
+        y: {
+          aggregate: 'sum',
+          field: 'num_errors',
+          type: 'quantitative',
+        },
       },
-      'mark': 'bar'
+      mark: 'bar',
     });
   });
 });
@@ -650,292 +650,292 @@ describe('grouped bar', () => {
   it('produces the expected spec', () => {
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.BarChart',
-      'bar': {
-        'label': 'service',
-        'value': 'num_errors',
-        'groupBy': 'cluster'
-      }
+      bar: {
+        label: 'service',
+        value: 'num_errors',
+        groupBy: 'cluster',
+      },
     };
     expect(convertWidgetDisplayToVegaLiteSpec(input, 'mysource')).toStrictEqual({
-      '$schema': 'https://vega.github.io/schema/vega-lite/v4.json',
-      'data': {
-        'name': 'mysource',
+      $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+      data: {
+        name: 'mysource',
       },
-      'encoding': {
-        'column': {
-          'field': 'cluster',
-          'header': {
-            'labelOrient': 'bottom',
-            'title': 'cluster, service',
-            'titleOrient': 'bottom'
+      encoding: {
+        column: {
+          field: 'cluster',
+          header: {
+            labelOrient: 'bottom',
+            title: 'cluster, service',
+            titleOrient: 'bottom',
           },
-          'type': 'nominal'
+          type: 'nominal',
         },
-        'x': {
-          'title': null,
-          'field': 'service',
-          'type': 'ordinal'
+        x: {
+          title: null,
+          field: 'service',
+          type: 'ordinal',
         },
-        'y': {
-          'field': 'num_errors',
-          'type': 'quantitative'
-        }
+        y: {
+          field: 'num_errors',
+          type: 'quantitative',
+        },
       },
-      'mark': 'bar'
+      mark: 'bar',
     });
   });
 
   it('produces a spec with a title and custom x and y axis titles', () => {
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.BarChart',
-      'bar': {
-        'label': 'service',
-        'value': 'num_errors',
-        'groupBy': 'cluster',
+      bar: {
+        label: 'service',
+        value: 'num_errors',
+        groupBy: 'cluster',
       },
-      'title': 'My custom title',
-      'xAxis': {'label': 'My custom x axis'},
-      'yAxis': {'label': 'My custom y axis'}
+      title: 'My custom title',
+      xAxis: { label: 'My custom x axis' },
+      yAxis: { label: 'My custom y axis' },
     };
     expect(convertWidgetDisplayToVegaLiteSpec(input, 'mysource')).toStrictEqual({
-      '$schema': 'https://vega.github.io/schema/vega-lite/v4.json',
-      'data': {
-        'name': 'mysource',
+      $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+      data: {
+        name: 'mysource',
       },
-      'title': {
-        'anchor': 'middle',
-        'text': 'My custom title'
+      title: {
+        anchor: 'middle',
+        text: 'My custom title',
       },
-      'encoding': {
-        'column': {
-          'field': 'cluster',
-          'header': {
-            'labelOrient': 'bottom',
-            'title': 'My custom x axis',
-            'titleOrient': 'bottom'
+      encoding: {
+        column: {
+          field: 'cluster',
+          header: {
+            labelOrient: 'bottom',
+            title: 'My custom x axis',
+            titleOrient: 'bottom',
           },
-          'type': 'nominal'
+          type: 'nominal',
         },
-        'x': {
-          'field': 'service',
-          'type': 'ordinal',
-          'title': null
+        x: {
+          field: 'service',
+          type: 'ordinal',
+          title: null,
         },
-        'y': {
-          'field': 'num_errors',
-          'type': 'quantitative',
-          'title': 'My custom y axis'
-        }
+        y: {
+          field: 'num_errors',
+          type: 'quantitative',
+          title: 'My custom y axis',
+        },
       },
-      'mark': 'bar'
+      mark: 'bar',
     });
   });
 
   it('produces a spec with a stack by series', () => {
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.BarChart',
-      'bar': {
-        'label': 'service',
-        'value': 'num_errors',
-        'groupBy': 'cluster',
-        'stackBy': 'endpoint',
-      }
+      bar: {
+        label: 'service',
+        value: 'num_errors',
+        groupBy: 'cluster',
+        stackBy: 'endpoint',
+      },
     };
     expect(convertWidgetDisplayToVegaLiteSpec(input, 'mysource')).toStrictEqual({
-      '$schema': 'https://vega.github.io/schema/vega-lite/v4.json',
-      'data': {
-        'name': 'mysource',
+      $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+      data: {
+        name: 'mysource',
       },
-      'encoding': {
-        'column': {
-          'field': 'cluster',
-          'header': {
-            'labelOrient': 'bottom',
-            'title': 'cluster, service',
-            'titleOrient': 'bottom'
+      encoding: {
+        column: {
+          field: 'cluster',
+          header: {
+            labelOrient: 'bottom',
+            title: 'cluster, service',
+            titleOrient: 'bottom',
           },
-          'type': 'nominal'
+          type: 'nominal',
         },
-        'x': {
-          'title': null,
-          'field': 'service',
-          'type': 'ordinal'
+        x: {
+          title: null,
+          field: 'service',
+          type: 'ordinal',
         },
-        'y': {
-          'field': 'num_errors',
-          'type': 'quantitative',
-          'aggregate': 'sum'
+        y: {
+          field: 'num_errors',
+          type: 'quantitative',
+          aggregate: 'sum',
         },
-        'color': {
-          'field': 'endpoint',
-          'type': 'nominal'
-        }
+        color: {
+          field: 'endpoint',
+          type: 'nominal',
+        },
       },
-      'mark': 'bar'
+      mark: 'bar',
     });
   });
 
   it('produces a spec with a stack by series and custom x and y axis titles', () => {
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.BarChart',
-      'bar': {
-        'label': 'service',
-        'value': 'num_errors',
-        'stackBy': 'endpoint',
-        'groupBy': 'cluster'
+      bar: {
+        label: 'service',
+        value: 'num_errors',
+        stackBy: 'endpoint',
+        groupBy: 'cluster',
       },
-      'title': 'My custom title',
-      'xAxis': {'label': 'My custom x axis'},
-      'yAxis': {'label': 'My custom y axis'}
+      title: 'My custom title',
+      xAxis: { label: 'My custom x axis' },
+      yAxis: { label: 'My custom y axis' },
     };
     expect(convertWidgetDisplayToVegaLiteSpec(input, 'mysource')).toStrictEqual({
-      '$schema': 'https://vega.github.io/schema/vega-lite/v4.json',
-      'data': {
-        'name': 'mysource',
+      $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+      data: {
+        name: 'mysource',
       },
-      'title': {
-        'anchor': 'middle',
-        'text': 'My custom title'
+      title: {
+        anchor: 'middle',
+        text: 'My custom title',
       },
-      'encoding': {
-        'column': {
-          'field': 'cluster',
-          'header': {
-            'labelOrient': 'bottom',
-            'title': 'My custom x axis',
-            'titleOrient': 'bottom'
+      encoding: {
+        column: {
+          field: 'cluster',
+          header: {
+            labelOrient: 'bottom',
+            title: 'My custom x axis',
+            titleOrient: 'bottom',
           },
-          'type': 'nominal'
+          type: 'nominal',
         },
-        'x': {
-          'title': null,
-          'field': 'service',
-          'type': 'ordinal'
+        x: {
+          title: null,
+          field: 'service',
+          type: 'ordinal',
         },
-        'y': {
-          'field': 'num_errors',
-          'type': 'quantitative',
-          'title': 'My custom y axis',
-          'aggregate': 'sum'
+        y: {
+          field: 'num_errors',
+          type: 'quantitative',
+          title: 'My custom y axis',
+          aggregate: 'sum',
         },
-        'color': {
-          'field': 'endpoint',
-          'type': 'nominal'
-        }
+        color: {
+          field: 'endpoint',
+          type: 'nominal',
+        },
       },
-      'mark': 'bar'
+      mark: 'bar',
     });
   });
 });
 
 const testInputVega = {
-  '$schema': 'https://vega.github.io/schema/vega/v5.json',
-  'width': 400,
-  'height': 200,
-  'padding': 5,
-  'scales': [
+  $schema: 'https://vega.github.io/schema/vega/v5.json',
+  width: 400,
+  height: 200,
+  padding: 5,
+  scales: [
     {
-      'name': 'xscale',
-      'type': 'band',
-      'domain': {'data': 'table', 'field': 'category'},
-      'range': 'width',
-      'padding': 0.05,
-      'round': true
+      name: 'xscale',
+      type: 'band',
+      domain: { data: 'table', field: 'category' },
+      range: 'width',
+      padding: 0.05,
+      round: true,
     },
     {
-      'name': 'yscale',
-      'domain': {'data': 'table', 'field': 'amount'},
-      'nice': true,
-      'range': 'height'
-    }
+      name: 'yscale',
+      domain: { data: 'table', field: 'amount' },
+      nice: true,
+      range: 'height',
+    },
   ],
-  'axes': [
-    { 'orient': 'bottom', 'scale': 'xscale' },
-    { 'orient': 'left', 'scale': 'yscale' }
+  axes: [
+    { orient: 'bottom', scale: 'xscale' },
+    { orient: 'left', scale: 'yscale' },
   ],
-  'marks': [
+  marks: [
     {
-      'type': 'rect',
-      'from': {'data': 'table'},
-      'encode': {
-        'enter': {
-          'x': {'scale': 'xscale', 'field': 'category'},
-          'width': {'scale': 'xscale', 'band': 1},
-          'y': {'scale': 'yscale', 'field': 'amount'},
-          'y2': {'scale': 'yscale', 'value': 0}
-        }
-      }
-    }
-  ]
+      type: 'rect',
+      from: { data: 'table' },
+      encode: {
+        enter: {
+          x: { scale: 'xscale', field: 'category' },
+          width: { scale: 'xscale', band: 1 },
+          y: { scale: 'yscale', field: 'amount' },
+          y2: { scale: 'yscale', value: 0 },
+        },
+      },
+    },
+  ],
 };
 
 describe('vega spec', () => {
   it('produces the expected spec for vega lite', () => {
     const inputVegaLite = {
-      '$schema': 'https://vega.github.io/schema/vega-lite/v2.json',
-      'mark': 'bar',
-      'encoding': {
-        'x': {'field': 'a', 'type': 'ordinal', 'axis': {'labelAngle': 0}},
-        'y': {'field': 'b', 'type': 'quantitative'}
-      }
+      $schema: 'https://vega.github.io/schema/vega-lite/v2.json',
+      mark: 'bar',
+      encoding: {
+        x: { field: 'a', type: 'ordinal', axis: { labelAngle: 0 } },
+        y: { field: 'b', type: 'quantitative' },
+      },
     };
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.VegaChart',
-      'spec': JSON.stringify(inputVegaLite),
+      spec: JSON.stringify(inputVegaLite),
     };
     expect(convertWidgetDisplayToVegaLiteSpec(input, 'mysource')).toStrictEqual({
-      '$schema': 'https://vega.github.io/schema/vega-lite/v2.json',
-      'data': {
-        'name': 'mysource'
+      $schema: 'https://vega.github.io/schema/vega-lite/v2.json',
+      data: {
+        name: 'mysource',
       },
-      'encoding': {
-        'x': {
-          'axis': {
-            'labelAngle': 0
+      encoding: {
+        x: {
+          axis: {
+            labelAngle: 0,
           },
-          'field': 'a',
-          'type': 'ordinal'
+          field: 'a',
+          type: 'ordinal',
         },
-        'y': {
-          'field': 'b',
-          'type': 'quantitative'
-        }
+        y: {
+          field: 'b',
+          type: 'quantitative',
+        },
       },
-      'mark': 'bar'
+      mark: 'bar',
     });
   });
 
   it('produces the expected spec for vega lite (no $schema field)', () => {
     const inputVegaLite = {
-      'mark': 'bar',
-      'encoding': {
-        'x': {'field': 'a', 'type': 'ordinal', 'axis': {'labelAngle': 0}},
-        'y': {'field': 'b', 'type': 'quantitative'}
-      }
+      mark: 'bar',
+      encoding: {
+        x: { field: 'a', type: 'ordinal', axis: { labelAngle: 0 } },
+        y: { field: 'b', type: 'quantitative' },
+      },
     };
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.VegaChart',
-      'spec': JSON.stringify(inputVegaLite),
+      spec: JSON.stringify(inputVegaLite),
     };
     expect(convertWidgetDisplayToVegaLiteSpec(input, 'mysource')).toStrictEqual({
-      '$schema': 'https://vega.github.io/schema/vega-lite/v4.json',
-      'data': {
-        'name': 'mysource'
+      $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
+      data: {
+        name: 'mysource',
       },
-      'encoding': {
-        'x': {
-          'axis': {
-            'labelAngle': 0
+      encoding: {
+        x: {
+          axis: {
+            labelAngle: 0,
           },
-          'field': 'a',
-          'type': 'ordinal'
+          field: 'a',
+          type: 'ordinal',
         },
-        'y': {
-          'field': 'b',
-          'type': 'quantitative'
-        }
+        y: {
+          field: 'b',
+          type: 'quantitative',
+        },
       },
-      'mark': 'bar'
+      mark: 'bar',
     });
   });
 
@@ -946,30 +946,30 @@ describe('vega spec', () => {
     };
     expect(convertWidgetDisplayToVegaLiteSpec(input, 'mysource')).toStrictEqual({
       ...testInputVega,
-      'data': [
-        {'name': 'mysource'},
-      ]
+      data: [
+        { name: 'mysource' },
+      ],
     });
   });
 
   it('produces the expected spec for vega (not lite) with an existing source', () => {
     const existingData = {
-      'name': 'table',
-      'values': [
-        {'category': 'A', 'amount': 28},
-        {'category': 'B', 'amount': 55},
-        {'category': 'C', 'amount': 43},
-        {'category': 'D', 'amount': 91},
-        {'category': 'E', 'amount': 81},
-        {'category': 'F', 'amount': 53},
-        {'category': 'G', 'amount': 19},
-        {'category': 'H', 'amount': 87}
-      ]
+      name: 'table',
+      values: [
+        { category: 'A', amount: 28 },
+        { category: 'B', amount: 55 },
+        { category: 'C', amount: 43 },
+        { category: 'D', amount: 91 },
+        { category: 'E', amount: 81 },
+        { category: 'F', amount: 53 },
+        { category: 'G', amount: 19 },
+        { category: 'H', amount: 87 },
+      ],
     };
 
     const testVegaWithData = {
       ...testInputVega,
-      'data': [existingData],
+      data: [existingData],
     };
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.VegaChart',
@@ -977,7 +977,7 @@ describe('vega spec', () => {
     };
     expect(convertWidgetDisplayToVegaLiteSpec(input, 'mysource')).toStrictEqual({
       ...testInputVega,
-      'data': [existingData, {'name': 'mysource'}]
+      data: [existingData, { name: 'mysource' }],
     });
   });
 });

@@ -4,8 +4,12 @@
     "es6": true
   },
   "extends": [
-    "eslint:recommended"
+    "eslint:recommended",
+    "airbnb-typescript/base"
   ],
+  "settings": {
+    "import/extensions": [".js", ".jsx", ".ts", ".tsx", ".mjs"]
+  },
   "globals": {
     "BigInt": true,
     "Atomics": "readonly",
@@ -62,6 +66,12 @@
         "@typescript-eslint"
       ],
       "rules": {
+        "import/extensions": 0,
+        "no-param-reassign": 0,
+        "no-restricted-syntax": 0,
+        "no-continue": 0,
+        "no-plusplus": ["error", { "allowForLoopAfterthoughts": true }],
+        "import/prefer-default-export": 0,
         "react/jsx-filename-extension": [
           "warn",
           {
@@ -80,6 +90,7 @@
           "error",
           "prefer-single"
         ],
+
         "no-useless-escape": "off",
         "@typescript-eslint/camelcase": "off",
         "@typescript-eslint/explicit-function-return-type": "off",

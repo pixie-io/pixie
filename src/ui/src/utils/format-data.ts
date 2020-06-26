@@ -12,7 +12,7 @@ export function formatBoolData(val: boolean): string {
 
 export function formatFloat64Data(val: number, formatStr = '0[.]00'): string {
   // Numeral.js doesn't actually format NaNs, it ignores them.
-  if (isNaN(val)) {
+  if (Number.isNaN(val)) {
     return 'NaN';
   }
 
@@ -32,10 +32,7 @@ export function looksLikeLatencyCol(colName: string, colType: DataType) {
   if (colNameLC.match(/latency.*/)) {
     return true;
   }
-  if (colNameLC.match(/p\d{0,2}$/)) {
-    return true;
-  }
-  return false;
+  return !!colNameLC.match(/p\d{0,2}$/);
 }
 
 export function looksLikeAlertCol(colName: string, colType: DataType) {
@@ -43,10 +40,7 @@ export function looksLikeAlertCol(colName: string, colType: DataType) {
     return false;
   }
   const colNameLC = colName.toLowerCase();
-  if (colNameLC.match(/alert.*/)) {
-    return true;
-  }
-  return false;
+  return !!colNameLC.match(/alert.*/);
 }
 
 // Converts UInt128 to UUID formatted string.
@@ -93,26 +87,21 @@ export function getDataRenderer(type: DataType): (any) => string {
   }
 }
 
-const stringSortFunc = (a, b) => {
-  return a.localeCompare(b)
-}
+const stringSortFunc = (a, b) => a.localeCompare(b);
 
-const intSortFunc = (a, b) => {
-  // We send integers as string to make sure we don't have lossy 64-bit integers.
-  return Number(a) - Number(b);
-}
+// We send integers as string to make sure we don't have lossy 64-bit integers.
+const intSortFunc = (a, b) => Number(a) - Number(b);
 
-const numberSortFunc = (a, b) => {
-  return Number(a) - Number(b);
-}
+const numberSortFunc = (a, b) => Number(a) - Number(b);
 
-const uint128SortFunc = (a, b) => {
-  return formatUInt128(a).localeCompare(formatUInt128(b));
-}
+const uint128SortFunc = (a, b) => formatUInt128(a).localeCompare(formatUInt128(b));
 
 const boolSortFunc = (a, b) => {
-  return  (a === b)? 0 : Number(a)? -1 : 1;
-}
+  if (a === b) {
+    return 0;
+  }
+  return Number(a) ? -1 : 1;
+};
 
 const sortFuncForType = (type: DataType) => {
   switch (type) {
@@ -125,17 +114,16 @@ const sortFuncForType = (type: DataType) => {
     case DataType.BOOLEAN:
       return boolSortFunc;
     case DataType.UINT128:
-      return  uint128SortFunc;
+      return uint128SortFunc;
     case DataType.DURATION64NS:
       return intSortFunc;
     case DataType.STRING:
     default:
       return stringSortFunc;
   }
-}
+};
+
 export const getDataSortFunc = (type: DataType, ascending: boolean) => {
   const f = sortFuncForType(type);
-  return (a: any, b: any) => {
-    return ascending ? f(a, b) : -f(a,b);
-  };
-}
+  return (a: any, b: any) => (ascending ? f(a, b) : -f(a, b));
+};

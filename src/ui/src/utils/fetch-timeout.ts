@@ -1,4 +1,4 @@
-import {fetch} from 'whatwg-fetch';
+import { fetch } from 'whatwg-fetch';
 
 export default function fetchWithTimeout(ms: number) {
   return (uri, options) => {

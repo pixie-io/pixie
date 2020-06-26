@@ -24,11 +24,12 @@ describe('prepareLabels', () => {
     const stop = new Date(2020, 4, 1, 13, 21, 30);
     const labels = prepareLabels(
       [start, stop],
-      /*width*/ 1300,
-      /*numTicks*/ Math.ceil(1300 / 20),
-      /*overlapBuffer*/ 100,
+      /* width */ 1300,
+      /* numTicks */ Math.ceil(1300 / 20),
+      /* overlapBuffer */ 100,
       'Roboto',
-      /*fontSize*/ 10);
+      /* fontSize */ 10,
+    );
 
     const visibleLabels = [];
     labels.forEach((value) => {
@@ -43,11 +44,10 @@ describe('prepareLabels', () => {
     // First label should have PM.
     expect(visibleLabels[0]).toEqual('12:22:00 PM');
     // Second label should not have AM/PM.
-    expect(visibleLabels[1]).toEqual('12:38:00');
+    expect(visibleLabels[1]).toEqual('12:30:00');
     // Last label should have PM.
-    expect(visibleLabels[visibleLabels.length - 1]).toEqual('1:10:00 PM');
+    expect(visibleLabels[visibleLabels.length - 1]).toEqual('1:18:00 PM');
     // Second to last label should not have AM/PM.
-    expect(visibleLabels[visibleLabels.length - 2]).toEqual('12:54:00');
+    expect(visibleLabels[visibleLabels.length - 2]).toEqual('1:10:00');
   });
-
 });

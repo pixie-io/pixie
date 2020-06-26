@@ -37,7 +37,7 @@ export const GRAPH_OPTIONS: Options = {
     arrows: {
       to: {
         enabled: true,
-            type: 'arrow',
+        type: 'arrow',
         scaleFactor: 0.5,
       },
     },
@@ -63,9 +63,15 @@ export function getNamespaceFromEntityName(val: string): string {
 }
 
 export function getColorForLatency(val: number): string {
-  return val < 100 ? LOW_EDGE_COLOR : (val > 200 ? HIGH_EDGE_COLOR : MED_EDGE_COLOR);
+  if (val < 100) {
+    return LOW_EDGE_COLOR;
+  }
+  return val > 200 ? HIGH_EDGE_COLOR : MED_EDGE_COLOR;
 }
 
 export function getColorForErrorRate(val: number): string {
-  return val < 1 ? LOW_EDGE_COLOR : (val > 2 ? HIGH_EDGE_COLOR : MED_EDGE_COLOR);
+  if (val < 1) {
+    return LOW_EDGE_COLOR;
+  }
+  return val > 2 ? HIGH_EDGE_COLOR : MED_EDGE_COLOR;
 }

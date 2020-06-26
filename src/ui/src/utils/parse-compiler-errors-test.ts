@@ -1,6 +1,6 @@
-import {CompilerError, ErrorDetails, Status} from 'types/generated/vizier_pb';
+import { CompilerError, ErrorDetails, Status } from 'types/generated/vizier_pb';
 
-import {ParseCompilerErrors} from './parse-compiler-errors';
+import { ParseCompilerErrors } from './parse-compiler-errors';
 
 jest.mock('containers/constants', () => ({ DOMAIN_NAME: 'dev.withpixie.dev' }));
 

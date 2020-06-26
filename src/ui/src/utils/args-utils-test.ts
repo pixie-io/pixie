@@ -60,7 +60,7 @@ describe('argsEquals', () => {
 
   it('returns true if both inputs are null', () => {
     expect(argsEquals(null, null)).toBe(true);
-  })
+  });
 
   it('returns false if one of the args is null', () => {
     const arg = {
@@ -75,7 +75,9 @@ describe('argsEquals', () => {
 describe('argsForVis', () => {
   it('filters out the args that are not part of the vis', () => {
     const vis = {
-      widgets: [], globalFuncs: [], variables: [
+      widgets: [],
+      globalFuncs: [],
+      variables: [
         { name: 'foo', type: 'foo' },
       ],
     };
@@ -92,7 +94,9 @@ describe('argsForVis', () => {
 
   it('fills the arg with default value if it wasn\'t specified', () => {
     const vis = {
-      widgets: [], globalFuncs: [], variables: [
+      widgets: [],
+      globalFuncs: [],
+      variables: [
         { name: 'foo', type: 'foo', defaultValue: 'default foo' },
         { name: 'bar', type: 'bar', defaultValue: 'default bar' },
       ],
@@ -104,7 +108,9 @@ describe('argsForVis', () => {
 
   it('fills the arg with the original script ID if one wasn\'t provided', () => {
     const vis = {
-      widgets: [], globalFuncs: [], variables: [
+      widgets: [],
+      globalFuncs: [],
+      variables: [
         { name: 'foo', type: 'foo', defaultValue: 'default foo' },
       ],
     };
@@ -115,7 +121,9 @@ describe('argsForVis', () => {
 
   it('it uses the provided script ID', () => {
     const vis = {
-      widgets: [], globalFuncs: [], variables: [
+      widgets: [],
+      globalFuncs: [],
+      variables: [
         { name: 'foo', type: 'foo', defaultValue: 'default foo' },
       ],
     };

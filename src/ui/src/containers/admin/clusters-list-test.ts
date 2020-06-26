@@ -1,4 +1,4 @@
-import {formatCluster} from './clusters-list';
+import { formatCluster } from './clusters-list';
 
 describe('formatCluster', () => {
   it('correctly formats cluster info', () => {
@@ -24,9 +24,9 @@ describe('formatCluster', () => {
           passthroughEnabled: true,
         },
         lastHeartbeatMs: 24.92,
-      }
+      },
     ];
-    expect(clusterResults.map(cluster => formatCluster(cluster))).toStrictEqual([
+    expect(clusterResults.map((cluster) => formatCluster(cluster))).toStrictEqual([
       {
         id: '5b27f024-eccb-4d07-b28d-84ab8d88e6a3',
         idShort: '84ab8d88e6a3',
@@ -50,7 +50,7 @@ describe('formatCluster', () => {
         vizierVersionShort: '0.2.4',
         mode: 'Passthrough',
         lastHeartbeat: '0 sec ago',
-      }
+      },
     ]);
   });
 });

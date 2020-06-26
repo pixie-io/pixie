@@ -1,4 +1,4 @@
-import {Resolvers} from 'apollo-client';
+import { Resolvers } from 'apollo-client';
 import gql from 'graphql-tag';
 import * as uuid from 'uuid';
 

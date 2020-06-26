@@ -2,9 +2,7 @@
 const localStorageMock = (() => {
   let store = {};
   return {
-    getItem: (key) => {
-      return store[key];
-    },
+    getItem: (key) => store[key],
     setItem: (key, value) => {
       store[key] = value.toString();
     },
@@ -17,11 +15,9 @@ const localStorageMock = (() => {
   };
 })();
 
-const analyticsMock = (() => {
-  return {
-    page: () => { return; },
-  };
-})();
+const analyticsMock = (() => ({
+  page: () => { },
+}))();
 
 const mockPixieFlags = {
   AUTH0_DOMAIN: '', AUTH0_CLIENT_ID: '', DOMAIN_NAME: '', SEGMENT_UI_WRITE_KEY: '',

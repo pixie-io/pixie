@@ -1,4 +1,4 @@
-import {fetch} from 'whatwg-fetch';
+import { fetch } from 'whatwg-fetch';
 
 import fetchWithTimeout from './fetch-timeout';
 
@@ -24,6 +24,7 @@ describe('fetchWithTimeout test', () => {
     expect.assertions(1);
     fetch.mockImplementationOnce(() => new Promise((_, reject) => {
       setTimeout(() => {
+        // eslint-disable-next-line prefer-promise-reject-errors
         reject('failed');
       }, 5);
     }));

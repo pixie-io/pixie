@@ -1,5 +1,5 @@
-import * as FormatData from './format-data';
 import { DataType, UInt128 } from 'types/generated/vizier_pb';
+import * as FormatData from './format-data';
 
 describe('looksLikeLatencyCol test', () => {
   it('should not accept non-float latency columns', () => {
@@ -29,7 +29,6 @@ describe('looksLikeAlertCol test', () => {
   });
 });
 
-
 describe('formatFloat64Data test', () => {
   it('should accept decimal-rendered scientific notation', () => {
     // 1e-6 renders to "0.000001" in numeral.js internally
@@ -52,7 +51,7 @@ describe('formatFloat64Data test', () => {
 
 describe('formatUint128 test', () => {
   it('should format to an uuid string', () => {
-    const val = new UInt128()
+    const val = new UInt128();
     val.setHigh(77311094061);
     val.setLow(34858981);
     expect(FormatData.formatUInt128(val)).toEqual('00000012-0019-ad2d-0000-00000213e7e5');

@@ -32,12 +32,17 @@ interface Params {
 // Exported for testing
 export class URLParams {
   pathname: string;
+
   args: Args;
+
   scriptId: string;
+
   scriptDiff: string;
+
   onChange: Observable<Params>;
 
   private subject: BehaviorSubject<Params>;
+
   private prevParams: Params;
 
   constructor(private readonly privateWindow: Window) {
@@ -100,15 +105,15 @@ export class URLParams {
   private commitURL() {
     // Don't push the state if the params haven't changed.
     if (
-      this.pathname && this.prevParams.pathname &&
-      this.scriptId === this.prevParams.scriptId &&
-      this.scriptDiff === this.prevParams.scriptDiff &&
-      argsEquals(this.args, this.prevParams.args)) {
+      this.pathname && this.prevParams.pathname
+      && this.scriptId === this.prevParams.scriptId
+      && this.scriptDiff === this.prevParams.scriptDiff
+      && argsEquals(this.args, this.prevParams.args)) {
       return;
     }
     const newurl = this.toURL(this.pathname, this.scriptId, this.scriptDiff, this.args);
     const oldurl = this.toURL(this.prevParams.pathname, this.prevParams.scriptId, this.prevParams.scriptDiff,
-                              this.prevParams.args);
+      this.prevParams.args);
     // Restore the current history state to the previous one, otherwise we would just be pushing the same state again.
     this.privateWindow.history.replaceState({ path: oldurl }, '', oldurl);
     this.privateWindow.history.pushState({ path: newurl }, '', newurl);

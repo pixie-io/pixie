@@ -33,10 +33,10 @@ export function selectCluster(clusters: ClusterInfo[]): ClusterInfo {
   const defaultStatusValue = 3;
 
   clusters.sort((cluster1, cluster2) => {
-    const status1 = clusterStatusMap[cluster1.status] === undefined ?
-      defaultStatusValue : clusterStatusMap[cluster1.status];
-    const status2 = clusterStatusMap[cluster2.status] === undefined ?
-      defaultStatusValue : clusterStatusMap[cluster2.status];
+    const status1 = clusterStatusMap[cluster1.status] === undefined
+      ? defaultStatusValue : clusterStatusMap[cluster1.status];
+    const status2 = clusterStatusMap[cluster2.status] === undefined
+      ? defaultStatusValue : clusterStatusMap[cluster2.status];
     if (status1 < status2) {
       return -1;
     }
