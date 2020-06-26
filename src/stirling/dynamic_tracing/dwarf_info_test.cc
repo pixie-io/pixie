@@ -18,9 +18,9 @@ namespace dynamic_tracing {
 constexpr std::string_view kEntryProbeIRTmpl = R"(
   trace_point: {
     binary_path: "$0"
-    function_symbol: "main.MixedArgTypes"
+    symbol: "main.MixedArgTypes"
+    type: ENTRY
   }
-  type: ENTRY
   args {
     id: "arg0"
     expr: "i1"
@@ -42,9 +42,9 @@ constexpr std::string_view kEntryProbeIRTmpl = R"(
 constexpr std::string_view kEntryProbePhysIRTmpl = R"(
   trace_point: {
     binary_path: "$0"
-    function_symbol: "main.MixedArgTypes"
+    symbol: "main.MixedArgTypes"
+    type: ENTRY
   }
-  type: ENTRY
   vars {
     name: "sp"
     val_type: VOID_POINTER
@@ -87,9 +87,9 @@ constexpr std::string_view kEntryProbePhysIRTmpl = R"(
 constexpr std::string_view kReturnProbeIRTmpl = R"(
   trace_point: {
     binary_path: "$0"
-    function_symbol: "main.MixedArgTypes"
+    symbol: "main.MixedArgTypes"
+    type: RETURN
   }
-  type: RETURN
   ret_vals {
     id: "retval0"
     index: 6
@@ -103,9 +103,9 @@ constexpr std::string_view kReturnProbeIRTmpl = R"(
 constexpr std::string_view kReturnProbePhysIRTmpl = R"(
   trace_point: {
     binary_path: "$0"
-    function_symbol: "main.MixedArgTypes"
+    symbol: "main.MixedArgTypes"
+    type: RETURN
   }
-  type: RETURN
   vars {
     name: "sp"
     val_type: VOID_POINTER

@@ -66,7 +66,7 @@ message StructVariable {
   string name = 1;
 
   // The struct that holds all values defined below.
-  string struct_name = 2;
+  string type = 2;
 
   message VariableName {
     oneof name_oneof {
@@ -82,17 +82,11 @@ message StructVariable {
 
 // Corresponds to a logical probe.
 message PhysicalProbe {
-  // Where to attach this probe.
-  TracePoint trace_point = 1;
-
-  // Must not be LOGICAL.
-  ProbeType type = 2;
-
   // The name of the BCC probe function.
-  string name = 3;
+  string name = 1;
 
-  // C data structures used by BCC code, for example, as perf buffer's output type.
-  repeated Struct structs = 4;
+  // Where to attach this probe.
+  TracePoint trace_point = 2;
 
   // Defines how to access variables from inside BCC code..
   //
@@ -101,18 +95,33 @@ message PhysicalProbe {
   // StructVariables are for instances of Struct, which are custom defined, and are not based on
   // variables in DWARF. So ScalarVariable should not need to reference based off
   // any StructVariables.
-  repeated ScalarVariable vars = 5;
+  repeated ScalarVariable vars = 3;
 
   // Defines how to create struct variables from the above scalar variables from inside BCC code.
   //
   // StructVariable names must be unique, as BCC codegen does not modify them.
-  repeated StructVariable st_vars = 6;
+  repeated StructVariable st_vars = 4;
 
   // Inserts key and value into a map.
   //
   // The variable to be inserted into the map must be one of the above vars.
-  repeated MapStashAction map_stash_actions = 7;
+  repeated MapStashAction map_stash_actions = 5;
 
   // Writes a value to perf buffer.
-  repeated OutputAction output_actions = 8;
+  repeated OutputAction output_actions = 6;
+}
+
+// This describes a complete BPF program.
+message Program {
+  // Describes the global structs.
+  repeated Struct structs = 1;
+
+  // Describes BPF maps.
+  repeated Map maps = 2;
+
+  // Describes perf buffers.
+  repeated Output outputs = 3;
+
+  // Describes probe functions.
+  repeated PhysicalProbe probes = 4;
 }

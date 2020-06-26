@@ -122,7 +122,7 @@ TEST(GenStructVariableTest, Variables) {
   StructVariable st_var;
 
   st_var.set_name("st_var");
-  st_var.set_struct_name("socket_data_event_t");
+  st_var.set_type("socket_data_event_t");
 
   auto* var_name = st_var.add_variable_names();
   var_name->set_name("foo");
@@ -159,13 +159,6 @@ TEST(GenPhysicalProbeTest, EntryProbe) {
 
   probe.set_name("syscall__probe_connect");
 
-  Struct* st = probe.add_structs();
-  st->set_name("socket_data_event_t");
-
-  Struct::Field* field = st->add_fields();
-  field->set_name("i32");
-  field->mutable_type()->set_scalar(ScalarType::INT32);
-
   ScalarVariable* var = nullptr;
 
   var = probe.add_vars();
@@ -181,7 +174,7 @@ TEST(GenPhysicalProbeTest, EntryProbe) {
   StructVariable* st_var = probe.add_st_vars();
 
   st_var->set_name("st_var");
-  st_var->set_struct_name("socket_data_event_t");
+  st_var->set_type("socket_data_event_t");
   st_var->add_variable_names()->set_name("var");
 
   MapStashAction* map_stash_action = probe.add_map_stash_actions();
@@ -195,10 +188,7 @@ TEST(GenPhysicalProbeTest, EntryProbe) {
   output_action->set_perf_buffer_name("data_events");
   output_action->set_variable_name("st_var");
 
-  std::vector<std::string> expected = {"struct socket_data_event_t {",
-                                       "  int32_t i32;",
-                                       "};",
-                                       "int syscall__probe_connect(struct pt_regs* ctx) {",
+  std::vector<std::string> expected = {"int syscall__probe_connect(struct pt_regs* ctx) {",
                                        "uint32_t key = bpf_get_current_pid_tgid() >> 32;",
                                        "int32_t var = PT_REGS_SP(ctx);",
                                        "struct socket_data_event_t st_var = {};",
@@ -208,7 +198,15 @@ TEST(GenPhysicalProbeTest, EntryProbe) {
                                        "return 0;",
                                        "}"};
 
-  ASSERT_OK_AND_THAT(GenPhysicalProbe(probe), ElementsAreArray(expected));
+  Struct st;
+  st.set_name("socket_data_event_t");
+
+  Struct::Field* field = st.add_fields();
+  field->set_name("i32");
+  field->mutable_type()->set_scalar(ScalarType::INT32);
+
+  absl::flat_hash_map<std::string_view, const Struct*> structs = {{st.name(), &st}};
+  ASSERT_OK_AND_THAT(GenPhysicalProbe(structs, probe), ElementsAreArray(expected));
 }
 
 }  // namespace dynamic_tracing

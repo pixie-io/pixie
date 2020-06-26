@@ -53,7 +53,7 @@ StatusOr<dynamictracingpb::PhysicalProbe> AddDwarves(const dynamictracingpb::Pro
   using dwarf_tools::DwarfReader;
 
   const std::string& binary_path = input_probe.trace_point().binary_path();
-  const std::string& function_symbol = input_probe.trace_point().function_symbol();
+  const std::string& function_symbol = input_probe.trace_point().symbol();
 
   PL_ASSIGN_OR_RETURN(std::unique_ptr<DwarfReader> dwarf_reader, DwarfReader::Create(binary_path));
 
@@ -62,7 +62,6 @@ StatusOr<dynamictracingpb::PhysicalProbe> AddDwarves(const dynamictracingpb::Pro
   dynamictracingpb::PhysicalProbe out;
 
   out.mutable_trace_point()->CopyFrom(input_probe.trace_point());
-  out.set_type(input_probe.type());
 
   // Add SP variable.
   {

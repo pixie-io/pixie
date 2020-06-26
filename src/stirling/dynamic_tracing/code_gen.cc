@@ -2,7 +2,6 @@
 
 #include <utility>
 
-#include <absl/container/flat_hash_map.h>
 #include <absl/container/flat_hash_set.h>
 #include <absl/strings/str_cat.h>
 #include <absl/strings/substitute.h>
@@ -13,15 +12,29 @@ namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
 
+using ::pl::stirling::bpf_tools::BPFProbeAttachType;
+using ::pl::stirling::bpf_tools::UProbeSpec;
 using ::pl::stirling::dynamictracingpb::BPFHelper;
+using ::pl::stirling::dynamictracingpb::Map;
 using ::pl::stirling::dynamictracingpb::MapStashAction;
+using ::pl::stirling::dynamictracingpb::Output;
 using ::pl::stirling::dynamictracingpb::OutputAction;
+using ::pl::stirling::dynamictracingpb::Program;
 using ::pl::stirling::dynamictracingpb::Register;
 using ::pl::stirling::dynamictracingpb::ScalarType;
 using ::pl::stirling::dynamictracingpb::ScalarVariable;
 using ::pl::stirling::dynamictracingpb::Struct;
 using ::pl::stirling::dynamictracingpb::StructVariable;
+using ::pl::stirling::dynamictracingpb::TracePoint;
 using ::pl::stirling::dynamictracingpb::VariableType;
+
+#define PB_ENUM_SENTINEL_SWITCH_CLAUSE                             \
+  LOG(DFATAL) << "Cannot happen. Needed to avoid default clause."; \
+  break
+
+#define GCC_SWITCH_RETURN                                \
+  LOG(DFATAL) << "Cannot happen. Needed for GCC build."; \
+  return {}
 
 namespace {
 
@@ -56,16 +69,21 @@ std::string_view GenScalarType(ScalarType type) {
   return iter->second;
 }
 
-StatusOr<std::string> GenField(const Struct::Field& field) {
-  switch (field.type().type_oneof_case()) {
+StatusOr<std::string> GenVariableType(const VariableType& var_type) {
+  switch (var_type.type_oneof_case()) {
     case VariableType::TypeOneofCase::kScalar:
-      return absl::Substitute("$0 $1;", GenScalarType(field.type().scalar()), field.name());
+      return std::string(GenScalarType(var_type.scalar()));
     case VariableType::TypeOneofCase::kStructType:
-      return absl::Substitute("struct $0 $1;", field.type().struct_type(), field.name());
+      return absl::Substitute("struct $0", var_type.struct_type());
     case VariableType::TypeOneofCase::TYPE_ONEOF_NOT_SET:
       return error::InvalidArgument("Field type must be set");
   }
-  return error::InvalidArgument("Should never happen");
+  GCC_SWITCH_RETURN;
+}
+
+StatusOr<std::string> GenField(const Struct::Field& field) {
+  PL_ASSIGN_OR_RETURN(std::string type_code, GenVariableType(field.type()));
+  return absl::Substitute("$0 $1;", type_code, field.name());
 }
 
 }  // namespace
@@ -89,14 +107,6 @@ StatusOr<std::vector<std::string>> GenStruct(const Struct& st, int member_indent
 }
 
 namespace {
-
-#define PB_ENUM_SENTINEL_SWITCH_CLAUSE                             \
-  LOG(DFATAL) << "Cannot happen. Needed to avoid default clause."; \
-  break
-
-#define GCC_SWITCH_RETURN                                \
-  LOG(DFATAL) << "Cannot happen. Needed for GCC build."; \
-  return {}
 
 std::vector<std::string> GenRegister(const ScalarVariable& var) {
   switch (var.reg()) {
@@ -147,9 +157,9 @@ StatusOr<std::vector<std::string>> GenScalarVariable(const ScalarVariable& var) 
 StatusOr<std::vector<std::string>> GenStructVariable(
     const ::pl::stirling::dynamictracingpb::Struct& st,
     const ::pl::stirling::dynamictracingpb::StructVariable& st_var) {
-  if (st.name() != st_var.struct_name()) {
+  if (st.name() != st_var.type()) {
     return error::InvalidArgument("Names of the struct do not match, $0 vs. $1", st.name(),
-                                  st_var.struct_name());
+                                  st_var.type());
   }
   if (st.fields_size() != st_var.variable_names_size()) {
     return error::InvalidArgument(
@@ -182,6 +192,10 @@ std::vector<std::string> GenMapStashAction(const MapStashAction& action) {
                            action.value_variable_name())};
 }
 
+std::vector<std::string> GenOutput(const Output& output) {
+  return {absl::Substitute("BPF_PERF_OUTPUT($0);", output.name())};
+}
+
 std::vector<std::string> GenOutputAction(const OutputAction& action) {
   return {absl::Substitute("$0.perf_submit(ctx, &$1, sizeof($1));", action.perf_buffer_name(),
                            action.variable_name())};
@@ -196,6 +210,7 @@ void MoveBackStrVec(std::vector<std::string>&& src, std::vector<std::string>* ds
 }  // namespace
 
 StatusOr<std::vector<std::string>> GenPhysicalProbe(
+    const absl::flat_hash_map<std::string_view, const Struct*>& structs,
     const ::pl::stirling::dynamictracingpb::PhysicalProbe& probe) {
   if (probe.name().empty()) {
     return error::InvalidArgument("Probe's name cannot be empty");
@@ -207,17 +222,6 @@ StatusOr<std::vector<std::string>> GenPhysicalProbe(
   PL_ASSIGN_OR_RETURN(std::vector<std::string> str_vec, expr); \
   MoveBackStrVec(std::move(str_vec), dst);
 
-  absl::flat_hash_map<std::string_view, const Struct*> structs;
-
-  // Defines structs first before the probe function body.
-  //
-  // TODO(yzhao): Struct defs might be deduped between multiple PhysicalProbe messages, and being
-  // put before any probe function.
-  for (const auto& st : probe.structs()) {
-    MOVE_BACK_STR_VEC(&code_lines, GenStruct(st));
-    structs[st.name()] = &st;
-  }
-
   code_lines.push_back(absl::Substitute("int $0(struct pt_regs* ctx) {", probe.name()));
 
   absl::flat_hash_set<std::string_view> var_names;
@@ -228,11 +232,6 @@ StatusOr<std::vector<std::string>> GenPhysicalProbe(
   }
 
   for (const auto& var : probe.st_vars()) {
-    if (!structs.contains(var.struct_name())) {
-      return error::InvalidArgument("Struct name '$0' referenced in variable '$1' was not defined",
-                                    var.struct_name(), var.name());
-    }
-
     for (const auto& var_name : var.variable_names()) {
       if (var_name.name_oneof_case() != StructVariable::VariableName::NameOneofCase::kName) {
         continue;
@@ -250,7 +249,13 @@ StatusOr<std::vector<std::string>> GenPhysicalProbe(
     }
 
     var_names.insert(var.name());
-    MOVE_BACK_STR_VEC(&code_lines, GenStructVariable(*structs[var.struct_name()], var));
+
+    auto iter = structs.find(var.type());
+    if (iter == structs.end()) {
+      return error::InvalidArgument("Struct name '$0' referenced in variable '$1' was not defined",
+                                    var.type(), var.name());
+    }
+    MOVE_BACK_STR_VEC(&code_lines, GenStructVariable(*iter->second, var));
   }
 
   for (const auto& action : probe.map_stash_actions()) {
@@ -280,6 +285,88 @@ StatusOr<std::vector<std::string>> GenPhysicalProbe(
   code_lines.push_back("}");
 
   return code_lines;
+}
+
+namespace {
+
+UProbeSpec GetUProbeSpec(const ::pl::stirling::dynamictracingpb::PhysicalProbe& probe) {
+  UProbeSpec spec;
+
+  spec.binary_path = probe.trace_point().binary_path();
+  spec.symbol = probe.trace_point().symbol();
+  DCHECK(probe.trace_point().type() == TracePoint::ENTRY ||
+         probe.trace_point().type() == TracePoint::RETURN);
+  // TODO(yzhao): If the binary is go, needs to use kReturnInsts.
+  spec.attach_type = probe.trace_point().type() == TracePoint::ENTRY ? BPFProbeAttachType::kEntry
+                                                                     : BPFProbeAttachType::kReturn;
+  spec.probe_fn = probe.name();
+
+  return spec;
+}
+
+StatusOr<std::vector<std::string>> GenMap(const Map& map) {
+  PL_ASSIGN_OR_RETURN(std::string key_code, GenVariableType(map.key_type()));
+  PL_ASSIGN_OR_RETURN(std::string value_code, GenVariableType(map.value_type()));
+  std::vector<std::string> code_lines = {
+      absl::Substitute("BPF_HASH($0, $1, $2);", map.name(), key_code, value_code)};
+  return code_lines;
+}
+
+StatusOr<std::vector<std::string>> GenProgramCodeLines(const Program& program) {
+  std::vector<std::string> code_lines;
+
+  code_lines.push_back("#include <linux/ptrace.h>");
+
+  absl::flat_hash_map<std::string_view, const Struct*> structs;
+
+  for (const auto& st : program.structs()) {
+    MOVE_BACK_STR_VEC(&code_lines, GenStruct(st));
+    structs[st.name()] = &st;
+  }
+
+  for (const auto& map : program.maps()) {
+    if (map.key_type().type_oneof_case() == VariableType::TypeOneofCase::kStructType &&
+        !structs.contains(map.key_type().struct_type())) {
+      return error::InvalidArgument("Struct key type '$0' referenced in map '$1' was not defined",
+                                    map.key_type().struct_type(), map.name());
+    }
+    if (map.value_type().type_oneof_case() == VariableType::TypeOneofCase::kStructType &&
+        !structs.contains(map.value_type().struct_type())) {
+      return error::InvalidArgument("Struct key type '$0' referenced in map '$1' was not defined",
+                                    map.value_type().struct_type(), map.name());
+    }
+    MOVE_BACK_STR_VEC(&code_lines, GenMap(map));
+  }
+
+  for (const auto& output : program.outputs()) {
+    if (output.type().type_oneof_case() == VariableType::TypeOneofCase::kStructType &&
+        !structs.contains(output.type().struct_type())) {
+      return error::InvalidArgument(
+          "Struct key type '$0' referenced in output '$1' was not defined",
+          output.type().struct_type(), output.name());
+    }
+    MoveBackStrVec(GenOutput(output), &code_lines);
+  }
+
+  for (const auto& probe : program.probes()) {
+    MOVE_BACK_STR_VEC(&code_lines, GenPhysicalProbe(structs, probe));
+  }
+
+  return code_lines;
+}
+
+}  // namespace
+
+StatusOr<BCCProgram> GenProgram(const Program& program) {
+  BCCProgram res;
+
+  MOVE_BACK_STR_VEC(&res.code_lines, GenProgramCodeLines(program));
+
+  for (const auto& probe : program.probes()) {
+    res.uprobe_specs.push_back(GetUProbeSpec(probe));
+  }
+
+  return res;
 }
 
 }  // namespace dynamic_tracing

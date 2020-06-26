@@ -3,7 +3,10 @@
 #include <string>
 #include <vector>
 
+#include <absl/container/flat_hash_map.h>
+
 #include "src/common/base/base.h"
+#include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/proto/physical_ir.pb.h"
 
 namespace pl {
@@ -38,7 +41,17 @@ std::vector<std::string> GenOutputAction(
 
 // Returns the BCC probe function code.
 StatusOr<std::vector<std::string>> GenPhysicalProbe(
+    const absl::flat_hash_map<std::string_view, const ::pl::stirling::dynamictracingpb::Struct*>&
+        structs,
     const ::pl::stirling::dynamictracingpb::PhysicalProbe& probe);
+
+struct BCCProgram {
+  // TODO(yzhao): We probably need kprobe_specs as well.
+  std::vector<::pl::stirling::bpf_tools::UProbeSpec> uprobe_specs;
+  std::vector<std::string> code_lines;
+};
+
+StatusOr<BCCProgram> GenProgram(const ::pl::stirling::dynamictracingpb::Program& program);
 
 }  // namespace dynamic_tracing
 }  // namespace stirling

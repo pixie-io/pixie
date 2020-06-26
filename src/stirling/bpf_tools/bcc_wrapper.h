@@ -75,6 +75,12 @@ struct UProbeSpec {
   uint64_t address = 0;
   BPFProbeAttachType attach_type = BPFProbeAttachType::kEntry;
   std::string probe_fn;
+
+  std::string ToString() const {
+    return absl::Substitute("[binary=$0 symbol=$1 address=$2 type=$3 probe=$4]",
+                            binary_path.string(), symbol, address,
+                            magic_enum::enum_name(attach_type), probe_fn);
+  }
 };
 
 /**

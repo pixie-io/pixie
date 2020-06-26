@@ -106,25 +106,27 @@ message FunctionLatency {
 // Describes where to attach a probe.
 message TracePoint {
   string binary_path = 1;
-  string function_symbol = 2;
-}
+  string symbol = 2;
 
-enum ProbeType {
-  // Only for logical IR.
-  LOGICAL = 0;
+  enum Type {
+    // Only for logical IR.
+    LOGICAL = 0;
 
-  // Intermediate and physical IR uses this to specify a BPF entry probe.
-  ENTRY = 1;
-  // Intermediate and physical IR uses this to specify a BPF return probe.
-  RETURN = 2;
+    // Intermediate and physical IR uses this to specify a BPF entry probe.
+    ENTRY = 1;
+
+    // Intermediate and physical IR uses this to specify a BPF return probe.
+    RETURN = 2;
+  }
+
+  // This has to be LOGICAL for logical IR.
+  Type type = 3;
 }
 
 // Corresponds to a logical probe.
 message Probe {
   // Where to attach this probe.
   TracePoint trace_point = 1;
-
-  ProbeType type = 2;
 
   // Input arguments of a function.
   repeated Argument args = 4;
