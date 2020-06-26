@@ -5,6 +5,7 @@ import Completions from 'components/autocomplete/completions';
 import FormInput from 'components/autocomplete/form';
 import Input from 'components/autocomplete/input';
 import * as React from 'react';
+import { AutocompleteInput } from 'components/autocomplete/new-autocomplete-input'
 
 import { action } from '@storybook/addon-actions';
 import { storiesOf } from '@storybook/react';
@@ -160,4 +161,33 @@ storiesOf('AutoComplete', module)
   }, {
     info: { inline: true },
     notes: 'completions list with active item',
-  });
+  }).add('new autocomplete input component', () => {
+    const [cursor, setCursor] = React.useState(0);
+    return (
+      <AutocompleteInput
+        onKey={(key) => {
+          console.log(key);
+        }}
+        onChange={(input) => {
+          console.log(input);
+        }}
+        setCursor={(pos) => {
+          setCursor(pos);
+        }}
+        cursorPos={cursor}
+        value={
+          [{
+            type: 'key',
+            value: 'svc: ',
+          },
+          {
+            type: 'value',
+            value: 'pl/test',
+          }]
+        }
+      />
+    );
+  }, {
+  info: { inline: true },
+  notes: 'new autocomplete component',
+});
