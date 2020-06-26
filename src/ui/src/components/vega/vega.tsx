@@ -16,7 +16,7 @@ import { View } from 'vega-typings';
 
 import { createStyles, makeStyles, useTheme, Theme } from '@material-ui/core/styles';
 
-import { VegaContext } from './vega-context';
+import { TimeSeriesContext } from '../live-widgets/context/time-series-context';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
@@ -68,7 +68,7 @@ const Vega = React.memo((props: VegaProps) => {
     setTimeseriesDomain: setTSDomain,
     hoverTime: externalHoverTime,
     timeseriesDomain: externalTSDomain,
-  } = React.useContext(VegaContext);
+  } = React.useContext(TimeSeriesContext);
 
   const [currentView, setCurrentView] = React.useState<View>(null);
   const [vegaOrigin, setVegaOrigin] = React.useState<number[]>([]);

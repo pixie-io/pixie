@@ -3,16 +3,16 @@ import * as React from 'react';
 type Domain = [number, number];
 type DomainFn = ((domain: Domain) => Domain);
 
-interface VegaContextProps {
+interface TimeSeriesContextProps {
   hoverTime: number | null;
   setHoverTime: (time: number) => void;
   setTimeseriesDomain: (domain: Domain | DomainFn) => void;
   timeseriesDomain: Domain | null;
 }
 
-export const VegaContext = React.createContext<VegaContextProps>(null);
+export const TimeSeriesContext = React.createContext<TimeSeriesContextProps>(null);
 
-export const VegaContextProvider = (props) => {
+export const TimeSeriesContextProvider = (props) => {
   const [hoverTime, setHoverTime] = React.useState<number | null>(null);
   const [timeseriesDomain, setTimeseriesDomain] = React.useState<Domain | null>(null);
 
@@ -24,18 +24,18 @@ export const VegaContextProvider = (props) => {
   }), [hoverTime, setHoverTime, timeseriesDomain, setTimeseriesDomain]);
 
   return (
-    <VegaContext.Provider value={context}>
+    <TimeSeriesContext.Provider value={context}>
       {props.children}
-    </VegaContext.Provider>
+    </TimeSeriesContext.Provider>
   );
 };
 
-export function withVegaContextProvider<P>(Component: React.ComponentType<P>) {
-  return function VegaContextProviderHOC(props: P) {
+export function withTimeSeriesContextProvider<P>(Component: React.ComponentType<P>) {
+  return function TimeSeriesContextProviderHOC(props: P) {
     return (
-      <VegaContextProvider>
+      <TimeSeriesContextProvider>
         <Component {...props} />
-      </VegaContextProvider>
+      </TimeSeriesContextProvider>
     );
   };
 }

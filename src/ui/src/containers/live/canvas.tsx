@@ -5,7 +5,7 @@ import clsx from 'clsx';
 import { GraphDisplay, GraphWidget } from 'components/live-widgets/graph/graph';
 import { RequestGraphDisplay, RequestGraphWidget } from 'components/live-widgets/graph/request-graph';
 import { Spinner } from 'components/spinner/spinner';
-import { VegaContext, withVegaContextProvider } from 'components/vega/vega-context';
+import { TimeSeriesContext, withTimeSeriesContextProvider } from 'components/live-widgets/context/time-series-context';
 import { QueryResultTable } from 'components/live-widgets/table/query-result-viewer';
 import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
@@ -154,7 +154,7 @@ const Canvas = (props: CanvasProps) => {
   const { tables, loading } = React.useContext(ResultsContext);
   const { vis, setVis } = React.useContext(ScriptContext);
   const { isMobile } = React.useContext(LayoutContext);
-  const { setTimeseriesDomain } = React.useContext(VegaContext);
+  const { setTimeseriesDomain } = React.useContext(TimeSeriesContext);
 
   // Default layout used when there is no vis defining widgets.
   const [defaultLayout, setDefaultLayout] = React.useState<Layout[]>([]);
@@ -289,4 +289,4 @@ const Canvas = (props: CanvasProps) => {
   );
 };
 
-export default withVegaContextProvider(Canvas);
+export default withTimeSeriesContextProvider(Canvas);
