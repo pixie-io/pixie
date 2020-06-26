@@ -10,7 +10,6 @@ import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import ChevronLeft from '@material-ui/icons/ChevronLeft';
 
-import { ExecuteContext } from './context/execute-context';
 import { LayoutContext } from './context/layout-context';
 import { ScriptContext } from './context/script-context';
 
@@ -53,20 +52,26 @@ const useStyles = makeStyles((theme: Theme) =>
 
 const VisEditor = () => {
   const classes = useStyles();
-  const { visJSON, setVisCallback} = React.useContext(ScriptContext);
+  const { visJSON,  setVisEditorText} = React.useContext(ScriptContext);
 
   const editorRef = React.createRef<CodeEditor>();
   // We useEffect instead of relying on the prop because of an issue where a cursor
   // in the field causes onChange to be triggered partway through, leading to a
   // partial state being set.
   React.useEffect(() => {
+    if (!editorRef.current) {
+      return;
+    }
+
     editorRef.current.changeEditorValue(visJSON);
   }, [visJSON])
 
   return (
     <CodeEditor
-      callback={setVisCallback}
       ref={editorRef}
+      onChange={(code: string) => {
+        setVisEditorText(code);
+      }}
       className={classes.editor}
       language='json'
     />
@@ -75,19 +80,24 @@ const VisEditor = () => {
 
 const ScriptEditor = () => {
   const classes = useStyles();
-  const { pxl, setPxlCallback } = React.useContext(ScriptContext);
+  const { pxl, setPxlEditorText } = React.useContext(ScriptContext);
   const editorRef = React.createRef<CodeEditor>();
   // We useEffect instead of relying on the prop because of an issue where a cursor
   // in the field causes onChange to be triggered partway through, leading to a
   // partial state being set.
   React.useEffect(() => {
+    if (!editorRef.current) {
+      return;
+    }
     editorRef.current.changeEditorValue(pxl);
-  }, [pxl])
+  }, [pxl]);
 
   return (
     <CodeEditor
-      callback={setPxlCallback}
       ref={editorRef}
+      onChange={(code: string)=> {
+        setPxlEditorText(code);
+      }}
       className={classes.editor}
       language='python'
     />

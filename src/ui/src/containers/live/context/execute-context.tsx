@@ -5,7 +5,7 @@ import { useSnackbar } from 'components/snackbar/snackbar';
 import { getQueryFuncs, Vis, parseVis } from 'containers/live/vis';
 import * as React from 'react';
 import analytics from 'utils/analytics';
-import { Arguments } from 'utils/args-utils';
+import { Arguments, argsForVis } from 'utils/args-utils';
 import { LiveViewPage } from 'components/live-widgets/utils/live-view-params';
 
 import { DataDrawerContext } from './data-drawer-context';
@@ -37,9 +37,9 @@ export const ExecuteContextProvider = (props) => {
     title,
     id,
     setScript,
-    pxlCallback,
-    visCallback,
-    commitURL
+    pxlEditorText,
+    visEditorText,
+    commitURL,
   } = React.useContext(ScriptContext);
 
   const { client, healthy } = React.useContext(ClientContext);
@@ -68,26 +68,26 @@ export const ExecuteContextProvider = (props) => {
 
     // Having exec arguments means we are changing the script so we must also reset the view.
     if (!execArgs) {
-      let newVis = vis;
-      let newPxl= pxl;
-      if (visCallback.cb) {
-        newVis = parseVis(visCallback.cb());
+      let parsedVis = parseVis(visEditorText);
+      if (!parsedVis){
+          parsedVis = vis;
       }
-      if (pxlCallback.cb) {
-        newPxl = pxlCallback.cb();
-      }
-      execArgs = { pxl: newPxl, vis: newVis, args, title, id };
+      const parsedArgs = argsForVis(parsedVis, args, id);
+      execArgs = {
+        pxl: pxlEditorText,
+        vis: parsedVis,
+        args: parsedArgs,
+        title,
+        id,
+        liveViewPage: LiveViewPage.Default
+      };
     } else {
-
       clearResults();
-
-      if (execArgs.liveViewPage != null && execArgs.entityParamNames != null) {
-        setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.title,
-                  execArgs.liveViewPage, execArgs.entityParamNames);
-      } else {
-        setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.title);
-      }
     }
+
+    // Either we're switching to this script or we are reading it from the execArgs, etiher way should set it.
+    setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.title,
+              execArgs.liveViewPage, execArgs.entityParamNames);
 
     let errMsg: string;
     let queryId: string;

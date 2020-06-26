@@ -22,11 +22,10 @@ interface ScriptContextProps {
   setVis: SetStateFunc<Vis>;
   setVisJSON: SetStateFunc<string>;
 
-  pxlCallback: ScriptCallbackWrapper;
-  setPxlCallback: SetStateFunc<ScriptCallbackWrapper>;
-
-  visCallback: ScriptCallbackWrapper;
-  setVisCallback: SetStateFunc<ScriptCallbackWrapper>;
+  pxlEditorText: string;
+  visEditorText: string;
+  setVisEditorText: SetStateFunc<string>;
+  setPxlEditorText: SetStateFunc<string>;
 
   pxl: string;
   setPxl: SetStateFunc<string>;
@@ -44,12 +43,6 @@ function emptyVis(): Vis {
   return { variables: [], widgets: [], globalFuncs: [] };
 }
 
-type stringCallback = () => string;
-
-// ScriptCallbackWrapper is necessary because functions get evaluated by setState.
-export interface ScriptCallbackWrapper {
-  cb: stringCallback|null;
-}
 const ScriptContextProvider = (props) => {
   const { location } = props;
   const { selectedClusterName, setClusterByName } = React.useContext(ClusterContext);
@@ -57,8 +50,8 @@ const ScriptContextProvider = (props) => {
   const entity = matchLiveViewEntity(location.pathname);
   const [ liveViewPage, setLiveViewPage ] = React.useState<LiveViewPage>(entity.page);
   const [ entityParams, setEntityParams ] = React.useState<EntityURLParams>(entity.params);
-  const [ pxlCallback, setPxlCallback] = React.useState<ScriptCallbackWrapper>({cb: null});
-  const [ visCallback, setVisCallback] = React.useState<ScriptCallbackWrapper>({cb: null});
+  const [ visEditorText, setVisEditorText] = React.useState<string>();
+  const [ pxlEditorText, setPxlEditorText] = React.useState<string>();
 
   // Args that are not part of an entity.
   const [nonEntityArgs, setNonEntityArgs] = useSessionStorage<Arguments | null>(LIVE_VIEW_SCRIPT_ARGS_KEY, null);
@@ -68,6 +61,11 @@ const ScriptContextProvider = (props) => {
   const [id, setId] = useSessionStorage(LIVE_VIEW_SCRIPT_ID_KEY,
     entity.page === LiveViewPage.Default ? '' : LiveViewPageScriptIds[entity.page]);
 
+
+  // We use a separation of visJSON states to prevent infinite update loops from happening.
+  // Otherwise, an update in the editor could trigger an update to some other piece of the pie.
+  // visJSON should be the incoming state to the vis editor.
+  // Vis Raw is the outgoing state from the vis editor.
   const [visJSON, setVisJSONBase] = useSessionStorage<string>(LIVE_VIEW_VIS_SPEC_KEY);
   const [vis, setVisBase] = React.useState(() => {
     const parsed = parseVis(visJSON);
@@ -77,10 +75,11 @@ const ScriptContextProvider = (props) => {
     return emptyVis();
   });
 
-  // args are the combination of entity and not enetity params.
+  // args are the combination of entity and not entity params.
   const args = React.useMemo(() => {
     return argsForVis(vis, {...nonEntityArgs, ...entityParams});
   }, [vis, nonEntityArgs, entityParams]);
+
 
   // title is dependent on whether or not we are in an entity page.
   const title = React.useMemo(() => {
@@ -230,16 +229,16 @@ const ScriptContextProvider = (props) => {
         args,
         setArgs: setArgs,
         resetDefaultLiveViewPage,
+        pxlEditorText,
+        visEditorText,
+        setPxlEditorText,
+        setVisEditorText,
         vis,
         setVis,
         visJSON,
         setVisJSON,
         pxl,
         setPxl,
-        pxlCallback,
-        setPxlCallback,
-        visCallback,
-        setVisCallback,
         title,
         id,
         setScript,

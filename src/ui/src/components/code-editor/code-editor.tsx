@@ -4,8 +4,6 @@ import * as React from 'react';
 import MonacoEditor from 'react-monaco-editor';
 
 import { getKeyMap } from 'containers/live/shortcuts';
-import { ScriptCallbackWrapper } from 'containers/live/context/script-context';
-import { SetStateFunc } from 'containers/live/context/common';
 
 interface CodeEditorProps {
   code?: string;
@@ -13,7 +11,6 @@ interface CodeEditorProps {
   disabled?: boolean;
   className?: string;
   language?: string;
-  callback?: SetStateFunc<ScriptCallbackWrapper>;
 }
 
 function removeKeybindings(editor, keys: string[]) {
@@ -40,7 +37,6 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
       lineDecorationsWidth: 0,
       scrollBeyondLastColumn: 0,
       scrollBeyondLastLine: 0,
-      callback: this.props.callback,
     };
     this.onChange = this.onChange.bind(this);
     this.onEditorMount = this.onEditorMount.bind(this);
@@ -53,9 +49,19 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
   }
 
   changeEditorValue = (code) => {
-    if (this.editorRef) {
-      this.editorRef.setValue(code);
+    if (!this.editorRef) {
+      return;
     }
+    // Don't do anything if the code is the same.
+    if (this.editorRef.getValue() === code) {
+      return;
+    }
+    // Save state before setting the editor value.
+    const pos = this.editorRef.getPosition();
+    // Set the editor value.
+    this.editorRef.setValue(code);
+    // Return state to normal.
+    this.editorRef.setPosition(pos);
   };
 
   getEditorValue = (): string=> {
@@ -76,9 +82,6 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
     const shortcutKeys = _.flatMap(Object.values(getKeyMap()), (keybinding) => keybinding.sequence)
       .map((key) => key.toLowerCase().replace('control', 'ctrl'));
     removeKeybindings(editor, shortcutKeys);
-    if (this.state.callback){
-      this.state.callback({ cb: this.getEditorValue });
-    }
   }
 
   render() {
