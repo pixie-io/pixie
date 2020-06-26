@@ -1,20 +1,33 @@
 import { Table } from 'common/vizier-grpc-client';
-import { DataTable, SortState } from 'components/data-table';
+import { CellAlignment, DataTable, SortState } from 'components/data-table';
 import * as React from 'react';
 import { SortDirection, SortDirectionType } from 'react-virtualized';
 import { DataType, Relation, SemanticType } from 'types/generated/vizier_pb';
 import * as FormatData from 'utils/format-data';
-import { DataAlignmentMap, getDataRenderer, GetDataSortFunc, JSONData } from 'utils/format-data';
+import { getDataRenderer, getDataSortFunc, } from 'utils/format-data';
 import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import { isEntityType, STATUS_TYPES, ToEntityLink, toStatusIndicator } from '../live-widgets/utils';
+import { AlertData, JSONData, LatencyData } from '../format-data/format-data';
 import ColumnInfo = Relation.ColumnInfo;
 
 function getSortFunc(dataKey: string, type: DataType, direction: SortDirectionType) {
-  const f = GetDataSortFunc(type, direction === SortDirection.ASC);
+  const f = getDataSortFunc(type, direction === SortDirection.ASC);
   return (a, b) => f(a[dataKey], b[dataKey]);
 }
+
+const DataAlignmentMap = new Map<DataType, CellAlignment>(
+  [
+    [DataType.BOOLEAN, 'center'],
+    [DataType.INT64, 'end'],
+    [DataType.UINT128, 'start'],
+    [DataType.FLOAT64, 'end'],
+    [DataType.STRING, 'start'],
+    [DataType.TIME64NS, 'start'],
+    [DataType.DURATION64NS, 'start'],
+  ],
+);
 
 interface VizierDataTableProps {
   table: Table;
@@ -84,11 +97,11 @@ const prettyCellRenderer = (colInfo: ColumnInfo, clusterName: string) => {
   }
 
   if (FormatData.looksLikeLatencyCol(name, dt)) {
-    return FormatData.LatencyData;
+    return LatencyData;
   }
 
   if (FormatData.looksLikeAlertCol(name, dt)) {
-    return FormatData.AlertData;
+    return AlertData;
   }
 
   if (dt !== DataType.STRING) {
@@ -98,7 +111,7 @@ const prettyCellRenderer = (colInfo: ColumnInfo, clusterName: string) => {
   return (v) => {
     try {
       const jsonObj = JSON.parse(v);
-      return <FormatData.JSONData
+      return <JSONData
         data={jsonObj}
       />;
     } catch {

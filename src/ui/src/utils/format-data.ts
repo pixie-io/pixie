@@ -1,22 +1,6 @@
-import './format-data.scss';
-
-import clsx from 'clsx';
+import '../components/format-data/format-data.scss';
 import * as numeral from 'numeral';
-import * as React from 'react';
 import { DataType, UInt128 } from 'types/generated/vizier_pb';
-import { CellAlignment } from '../components/data-table';
-
-const JSON_INDENT_PX = 16;
-
-const LATENCY_HIGH_THRESHOLD = 300;
-const LATENCY_MEDIUM_THRESHOLD = 150;
-
-interface JSONDataProps {
-  data: any;
-  indentation?: number;
-  multiline?: boolean;
-  className?: string;
-}
 
 export function formatInt64Data(val: string): string {
   return numeral(val).format('0,0');
@@ -65,90 +49,6 @@ export function looksLikeAlertCol(colName: string, colType: DataType) {
   return false;
 }
 
-export const JSONData = React.memo<JSONDataProps>((props) => {
-  const indentation = props.indentation ? props.indentation : 0;
-  let data = props.data;
-  let cls = String(typeof data);
-
-  if (cls === 'string') {
-    try {
-      const parsedJson = JSON.parse(data);
-      data = parsedJson;
-    } catch {
-      // Do nothing.
-    }
-  }
-
-  if (data === null) {
-    cls = 'null';
-  }
-
-  if (Array.isArray(data)) {
-    return (
-      <span className={clsx('formatted_data--json', props.className)}>
-        {'[ '}
-        {props.multiline ? <br /> : null}
-        {
-          data.map((val, idx) => {
-            return (
-              <span
-                key={idx + '-' + indentation}
-                style={{ marginLeft: props.multiline ? (indentation + 1) * JSON_INDENT_PX : 0 }}
-              >
-                <JSONData data={val} multiline={props.multiline} indentation={indentation + 1} />
-                {idx !== Object.keys(data).length - 1 ? ', ' : ''}
-                {props.multiline ? <br /> : null}
-              </span>
-            );
-          })
-        }
-        <span style={{ marginLeft: props.multiline ? indentation * JSON_INDENT_PX : 0 }}>{' ]'}</span>
-      </span>);
-  }
-
-  if (typeof data === 'object' && data !== null) {
-    return (
-      <span className={clsx('formatted_data--json', props.className)}>
-        {'{ '}
-        {props.multiline ? <br /> : null}
-        {
-          Object.keys(data).map((key, idx) => {
-            return (
-              <span
-                key={key + '-' + indentation}
-                style={{ marginLeft: props.multiline ? (indentation + 1) * JSON_INDENT_PX : 0 }}
-              >
-                <span className='formatted_data--json-key'>{key + ': '}</span>
-                <JSONData data={data[key]} multiline={props.multiline} indentation={indentation + 1} />
-                {idx !== Object.keys(data).length - 1 ? ', ' : ''}
-                {props.multiline ? <br /> : null}
-              </span>
-            );
-          })
-        }
-        <span style={{ marginLeft: props.multiline ? indentation * JSON_INDENT_PX : 0 }}>{' }'}</span>
-      </span>);
-  }
-  return <span className={clsx(`formatted_data--json-${cls}`, props.className)}>{String(data)}</span>;
-});
-JSONData.displayName = 'JSONData';
-
-export function LatencyData(data: string) {
-  const floatVal = parseFloat(data);
-  let latency = 'low';
-
-  if (floatVal > LATENCY_HIGH_THRESHOLD) {
-    latency = 'high';
-  } else if (floatVal > LATENCY_MEDIUM_THRESHOLD) {
-    latency = 'med';
-  }
-  return <div className={'formatted_data--latency-' + latency}>{formatFloat64Data(floatVal)}</div>;
-}
-
-export function AlertData(data: boolean) {
-  return <div className={'formatted_data--alert-' + data}>{formatBoolData(data)}</div>;
-}
-
 // Converts UInt128 to UUID formatted string.
 export function formatUInt128(val: UInt128): string {
   // TODO(zasgar/michelle): Revisit this to check and make sure endianness is correct.
@@ -193,18 +93,6 @@ export function getDataRenderer(type: DataType): (any) => string {
   }
 }
 
-export const DataAlignmentMap = new Map<DataType, CellAlignment>(
-  [
-    [DataType.BOOLEAN, 'center'],
-    [DataType.INT64, 'end'],
-    [DataType.UINT128, 'start'],
-    [DataType.FLOAT64, 'end'],
-    [DataType.STRING, 'start'],
-    [DataType.TIME64NS, 'start'],
-    [DataType.DURATION64NS, 'start'],
-  ],
-);
-
 const stringSortFunc = (a, b) => {
   return a.localeCompare(b)
 }
@@ -245,7 +133,7 @@ const sortFuncForType = (type: DataType) => {
       return stringSortFunc;
   }
 }
-export const GetDataSortFunc = (type: DataType, ascending: boolean) => {
+export const getDataSortFunc = (type: DataType, ascending: boolean) => {
   const f = sortFuncForType(type);
   return (a: any, b: any) => {
     return ascending ? f(a, b) : -f(a,b);

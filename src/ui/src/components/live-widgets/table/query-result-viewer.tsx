@@ -3,8 +3,8 @@ import clsx from 'clsx';
 import ClusterContext from 'common/cluster-context';
 import { Table } from 'common/vizier-grpc-client';
 import * as React from 'react';
-import * as FormatData from 'utils/format-data';
 import { VizierDataTable } from '../../vizier-data-table/vizier-data-table';
+import { JSONData } from '../../format-data/format-data';
 
 export interface QueryResultTableProps {
   data: Table;
@@ -14,7 +14,7 @@ export interface QueryResultTableProps {
 export const QueryResultTable = React.memo<QueryResultTableProps>(({ data, className }) => {
   const { selectedClusterName } = React.useContext(ClusterContext);
   const ExpandedRowRenderer = (rowData: any) => {
-    return <FormatData.JSONData
+    return <JSONData
       className='query-results-expanded-row'
       data={rowData}
       multiline={true}
