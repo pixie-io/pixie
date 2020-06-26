@@ -22,7 +22,7 @@ import {
 } from './layout';
 import { DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, REQUEST_GRAPH_DISPLAY_TYPE,
          TABLE_DISPLAY_TYPE, widgetTableName } from './vis';
-import Vega from 'components/vega/vega';
+import Vega from 'components/live-widgets/vega/vega';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({

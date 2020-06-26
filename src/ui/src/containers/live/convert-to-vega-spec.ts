@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
 
-import { addPxTimeFormatExpression } from 'components/vega/timeseries-axis';
+import { addPxTimeFormatExpression } from 'components/live-widgets/vega/timeseries-axis';
 import * as _ from 'lodash';
 import { Data, GroupMark, LineMark, Mark, Signal, Spec as VgSpec, TimeScale } from 'vega';
 import { VisualizationSpec } from 'vega-embed';

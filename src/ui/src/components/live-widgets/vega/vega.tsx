@@ -16,7 +16,7 @@ import { View } from 'vega-typings';
 
 import { createStyles, makeStyles, useTheme, Theme } from '@material-ui/core/styles';
 
-import { TimeSeriesContext } from '../live-widgets/context/time-series-context';
+import { TimeSeriesContext } from '../context/time-series-context';
 
 const useStyles = makeStyles((theme: Theme) => {
   return createStyles({
