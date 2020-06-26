@@ -5,30 +5,28 @@ import * as React from 'react';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 import Completions, {
-    CompletionId, CompletionItem, CompletionItems, CompletionTitle,
+  CompletionId, CompletionItem, CompletionItems, CompletionTitle,
 } from './completions';
 import Input from './input';
 import { Key } from './key';
 
-const useStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    root: {
-      backgroundColor: theme.palette.background.three,
-      cursor: 'text',
-      display: 'flex',
-      flexDirection: 'column',
-      // TODO(malthus): remove this once the scrollbar theme is set at global level.
-      ...scrollbarStyles(theme),
-    },
-    input: {
-      backgroundColor: theme.palette.background.two,
-    },
-    completions: {
-      flex: 1,
-      minHeight: 0,
-    },
-  });
-});
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    backgroundColor: theme.palette.background.three,
+    cursor: 'text',
+    display: 'flex',
+    flexDirection: 'column',
+    // TODO(malthus): remove this once the scrollbar theme is set at global level.
+    ...scrollbarStyles(theme),
+  },
+  input: {
+    backgroundColor: theme.palette.background.two,
+  },
+  completions: {
+    flex: 1,
+    minHeight: 0,
+  },
+}));
 
 interface AutoCompleteProps {
   onSelection: (id: CompletionId) => void;
@@ -41,13 +39,12 @@ interface AutoCompleteProps {
 type ItemsMap = Map<CompletionId, { title: CompletionTitle; index: number }>;
 
 function findNextItem(activeItem: CompletionId, itemsMap: ItemsMap, completions: CompletionItems, direction = 1):
-  CompletionId {
-
+CompletionId {
   if (!activeItem || completions.length === 0) {
     return '';
   }
   const { index } = itemsMap.get(activeItem);
-  const length = completions.length;
+  const { length } = completions;
   for (let i = 1; i < length; i++) {
     const nextIndex = (index + (i * direction) + length) % length;
     const next = completions[nextIndex] as CompletionItem;
@@ -111,6 +108,8 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
         break;
       case 'ENTER':
         handleSelection(activeItem);
+        break;
+      default:
         break;
     }
   };

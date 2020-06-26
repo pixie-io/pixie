@@ -18,19 +18,19 @@ export enum LiveViewPage {
 // Use type not interface here so that these params are compatible with Arguments.
 type NamespaceURLParams = {
   namespace: string;
-}
+};
 
 type NodeURLParams = {
   node: string;
-}
+};
 
 type PodURLParams = {
   pod: string;
-}
+};
 
 type ServiceURLParams = {
   service: string;
-}
+};
 
 export type EntityURLParams = {} | NamespaceURLParams | NodeURLParams | PodURLParams | ServiceURLParams;
 
@@ -72,23 +72,23 @@ interface WithCluster {
 function matchAndExtractEntity<T>(path: string, page: LiveViewPage) {
   const match = matchPath<WithCluster & T>(path, {
     path: LiveViewPageRoutes[page],
-    exact: true
+    exact: true,
   });
   if (!match) {
     return null;
   }
-  const {cluster, ...params} = match.params as WithCluster & T;
+  const { cluster, ...params } = match.params as WithCluster & T;
   return {
     clusterName: decodeURIComponent(cluster),
     page,
     params,
-  }
+  };
 }
 
 export function matchLiveViewEntity(path: string): EntityPage {
   // cluster
   const clusterMatch = matchAndExtractEntity<{}>(
-    path, LiveViewPage.Cluster
+    path, LiveViewPage.Cluster,
   );
   if (clusterMatch) {
     return clusterMatch;
@@ -96,33 +96,33 @@ export function matchLiveViewEntity(path: string): EntityPage {
 
   // namespaces
   const namespaceMatch = matchAndExtractEntity<NamespaceURLParams>(
-    path, LiveViewPage.Namespace
+    path, LiveViewPage.Namespace,
   );
   if (namespaceMatch) {
     return namespaceMatch;
   }
   const namespacesMatch = matchAndExtractEntity<{}>(
-    path, LiveViewPage.Namespaces
+    path, LiveViewPage.Namespaces,
   );
   if (namespacesMatch) {
     return namespacesMatch;
   }
   // nodes
   const nodeMatch = matchAndExtractEntity<NodeURLParams>(
-    path, LiveViewPage.Node
+    path, LiveViewPage.Node,
   );
   if (nodeMatch) {
     return nodeMatch;
   }
   const nodesMatch = matchAndExtractEntity<{}>(
-    path, LiveViewPage.Nodes
+    path, LiveViewPage.Nodes,
   );
   if (nodesMatch) {
     return nodesMatch;
   }
   // pods
   const podMatch = matchAndExtractEntity<NamespaceURLParams & PodURLParams>(
-    path, LiveViewPage.Pod
+    path, LiveViewPage.Pod,
   );
   if (podMatch) {
     return {
@@ -134,14 +134,14 @@ export function matchLiveViewEntity(path: string): EntityPage {
     };
   }
   const podsMatch = matchAndExtractEntity<NamespaceURLParams>(
-    path, LiveViewPage.Pods
+    path, LiveViewPage.Pods,
   );
   if (podsMatch) {
     return podsMatch;
   }
   // services
   const serviceMatch = matchAndExtractEntity<NamespaceURLParams & ServiceURLParams>(
-    path, LiveViewPage.Service
+    path, LiveViewPage.Service,
   );
   if (serviceMatch) {
     return {
@@ -153,7 +153,7 @@ export function matchLiveViewEntity(path: string): EntityPage {
     };
   }
   const servicesMatch = matchAndExtractEntity<NamespaceURLParams>(
-    path, LiveViewPage.Services
+    path, LiveViewPage.Services,
   );
   if (servicesMatch) {
     return servicesMatch;
@@ -169,7 +169,7 @@ export function matchLiveViewEntity(path: string): EntityPage {
       clusterName: decodeURIComponent(scriptMatch.params.cluster),
       page: LiveViewPage.Default,
       params: {},
-    }
+    };
   }
 
   return {
@@ -241,7 +241,7 @@ export function toEntityPathname(entity: EntityPage): string {
     }
     case LiveViewPage.Pod: {
       const { pod } = entity.params as PodURLParams;
-      const [ namespace, podName ] = (pod || 'unknown/unknown').split('/');
+      const [namespace, podName] = (pod || 'unknown/unknown').split('/');
       return `/live/clusters/${encodedCluster}/namespaces/${namespace}/pods/${podName}`;
     }
     case LiveViewPage.Pods: {
@@ -250,7 +250,7 @@ export function toEntityPathname(entity: EntityPage): string {
     }
     case LiveViewPage.Service: {
       const { service } = entity.params as ServiceURLParams;
-      const [ namespace, serviceName ] = (service || 'unknown/unknown').split('/');
+      const [namespace, serviceName] = (service || 'unknown/unknown').split('/');
       return `/live/clusters/${encodedCluster}/namespaces/${namespace}/services/${serviceName}`;
     }
     case LiveViewPage.Services: {

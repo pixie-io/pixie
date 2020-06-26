@@ -2,7 +2,7 @@ import * as React from 'react';
 import './alert.scss';
 
 export interface AlertProps {
-    children: any;
+  children: any;
 }
 
 // TODO(michelle): Update the alert component to have more alert types.

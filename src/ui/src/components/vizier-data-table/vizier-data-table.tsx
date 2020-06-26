@@ -4,13 +4,14 @@ import * as React from 'react';
 import { SortDirection, SortDirectionType } from 'react-virtualized';
 import { DataType, Relation, SemanticType } from 'types/generated/vizier_pb';
 import * as FormatData from 'utils/format-data';
-import { getDataRenderer, getDataSortFunc, } from 'utils/format-data';
+import { getDataRenderer, getDataSortFunc } from 'utils/format-data';
 import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
-import { isEntityType, STATUS_TYPES, ToEntityLink, toStatusIndicator } from '../live-widgets/utils';
+import {
+  isEntityType, STATUS_TYPES, ToEntityLink, toStatusIndicator,
+} from '../live-widgets/utils';
 import { AlertData, JSONData, LatencyData } from '../format-data/format-data';
-import ColumnInfo = Relation.ColumnInfo;
 
 function getSortFunc(dataKey: string, type: DataType, direction: SortDirectionType) {
   const f = getDataSortFunc(type, direction === SortDirection.ASC);
@@ -39,57 +40,47 @@ interface VizierDataTableProps {
   onRowSelectionChanged?: (row: any) => void;
 }
 
-const statusRenderer = (st: SemanticType) => {
-  return (v: string) => {
-    return toStatusIndicator(v, st);
-  }
-}
+const statusRenderer = (st: SemanticType) => (v: string) => toStatusIndicator(v, st);
 
-const serviceRendererFuncGen = (clusterName: string) => {
-  return (v) => {
-    try {
-      // Hack to handle cases like "['pl/service1', 'pl/service2']" which show up for pods that are part of 2 services.
-      const parsedArray = JSON.parse(v);
-      if (Array.isArray(parsedArray)) {
-        return (
+const serviceRendererFuncGen = (clusterName: string) => (v) => {
+  try {
+    // Hack to handle cases like "['pl/service1', 'pl/service2']" which show up for pods that are part of 2 services.
+    const parsedArray = JSON.parse(v);
+    if (Array.isArray(parsedArray)) {
+      return (
           <>
             {
-              parsedArray.map((entity, i) => {
-                return (
+              parsedArray.map((entity, i) => (
                   <span key={i}>
                     {i > 0 && ', '}
                     {ToEntityLink(entity, SemanticType.ST_SERVICE_NAME, clusterName)}
                   </span>
-                );
-              })
+              ))
             }
           </>
-        );
-      }
-    } catch (e) {
-      // noop.
+      );
     }
-    return ToEntityLink(v, SemanticType.ST_SERVICE_NAME, clusterName)
-  };
-}
+  } catch (e) {
+    // noop.
+  }
+  return ToEntityLink(v, SemanticType.ST_SERVICE_NAME, clusterName);
+};
 
 const entityRenderer = (st: SemanticType, clusterName: string) => {
-  if (st == SemanticType.ST_SERVICE_NAME) {
+  if (st === SemanticType.ST_SERVICE_NAME) {
     return serviceRendererFuncGen(clusterName);
   }
-  return (v) => {
-    return ToEntityLink(v, st, clusterName)
-  }
-}
+  return (v) => ToEntityLink(v, st, clusterName);
+};
 
-const prettyCellRenderer = (colInfo: ColumnInfo, clusterName: string) => {
+const prettyCellRenderer = (colInfo: Relation.ColumnInfo, clusterName: string) => {
   const dt = colInfo.getColumnType();
   const st = colInfo.getColumnSemanticType();
   const name = colInfo.getColumnName();
   const renderer = getDataRenderer(dt);
 
   if (isEntityType(st)) {
-    return entityRenderer(st, clusterName)
+    return entityRenderer(st, clusterName);
   }
 
   if (STATUS_TYPES.has(st)) {
@@ -117,13 +108,15 @@ const prettyCellRenderer = (colInfo: ColumnInfo, clusterName: string) => {
     } catch {
       return v;
     }
-  }
-}
+  };
+};
 
 export const VizierDataTable = (props: VizierDataTableProps) => {
-  const { table, prettyRender = false, expandable = false, expandedRenderer,
+  const {
+    table, prettyRender = false, expandable = false, expandedRenderer,
     clusterName = null,
-    onRowSelectionChanged = noop } = props;
+    onRowSelectionChanged = noop,
+  } = props;
   const [rows, setRows] = React.useState([]);
   const [selectedRow, setSelectedRow] = React.useState(-1);
 
@@ -148,7 +141,8 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
 
   const rowGetter = React.useCallback(
     (i) => rows[i],
-    [rows, columnsMap]);
+    [rows, columnsMap],
+  );
 
   const onSort = (sortState: SortState) => {
     const column = columnsMap.get(sortState.dataKey);
@@ -184,28 +178,27 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
   );
 };
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      display: 'flex',
-      flexDirection: 'row',
-      height: '100%',
-      position: 'relative',
-    },
-    table: {
-      flex: 3,
-    },
-    details: {
-      flex: 1,
-      padding: theme.spacing(2),
-      borderLeft: `solid 1px ${theme.palette.background.three}`,
-      minWidth: 0,
-      overflow: 'auto',
-    },
-    close: {
-      position: 'absolute',
-    },
-  }));
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    display: 'flex',
+    flexDirection: 'row',
+    height: '100%',
+    position: 'relative',
+  },
+  table: {
+    flex: 3,
+  },
+  details: {
+    flex: 1,
+    padding: theme.spacing(2),
+    borderLeft: `solid 1px ${theme.palette.background.three}`,
+    minWidth: 0,
+    overflow: 'auto',
+  },
+  close: {
+    position: 'absolute',
+  },
+}));
 
 export const VizierDataTableWithDetails = (props: { table: Table }) => {
   const [details, setDetails] = React.useState(null);

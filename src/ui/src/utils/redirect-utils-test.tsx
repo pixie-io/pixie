@@ -10,7 +10,7 @@ describe('RedirectUtils test', () => {
   });
 
   it('should return correct url for params', () => {
-    expect(RedirectUtils.getRedirectPath('/vizier/query', {test: 'abc', param: 'def'})).toEqual(
+    expect(RedirectUtils.getRedirectPath('/vizier/query', { test: 'abc', param: 'def' })).toEqual(
       'http://dev.withpixie.dev/vizier/query?test=abc&param=def',
     );
   });

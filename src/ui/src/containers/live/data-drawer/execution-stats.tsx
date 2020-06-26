@@ -12,29 +12,27 @@ function nanoSecDisplay(ns: number) {
   return `${numeral(ns).format('0[.]00')} ns`;
 }
 
-const useStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    root: {
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-around',
-      overflow: 'auto',
-    },
-    metric: {
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-    },
-    name: {
-      ...theme.typography.subtitle2,
-    },
-    value: {
-      ...theme.typography.h4,
-    },
-  });
-});
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    overflow: 'auto',
+  },
+  metric: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  },
+  name: {
+    ...theme.typography.subtitle2,
+  },
+  value: {
+    ...theme.typography.h4,
+  },
+}));
 
 const ExecutionStats = () => {
   const { stats } = React.useContext(ResultsContext);

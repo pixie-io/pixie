@@ -40,8 +40,8 @@ interface Props {
 }
 
 async function newVizierClient(
-  cloudClient: CloudClient, clusterID: string, passthroughEnabled: boolean) {
-
+  cloudClient: CloudClient, clusterID: string, passthroughEnabled: boolean,
+) {
   const { ipAddress, token } = await cloudClient.getClusterConnection(clusterID, true);
   let address = ipAddress;
   if (passthroughEnabled) {
@@ -53,7 +53,9 @@ async function newVizierClient(
 }
 
 export const VizierGRPCClientProvider = (props: Props) => {
-  const { children, passthroughEnabled, clusterID, clusterStatus } = props;
+  const {
+    children, passthroughEnabled, clusterID, clusterStatus,
+  } = props;
   const cloudClient = React.useContext(CloudClientContext);
   const [client, setClient] = React.useState<VizierGRPCClient>(null);
   const [loading, setLoading] = React.useState(true);
@@ -109,7 +111,8 @@ export const VizierGRPCClientProvider = (props: Props) => {
                 retryRef.current.retry(error);
               },
             });
-          });
+          },
+        );
       });
     }
     return () => {
@@ -118,16 +121,13 @@ export const VizierGRPCClientProvider = (props: Props) => {
       }
       retryRef.current.stop();
     };
-
   }, [clusterID, passthroughEnabled, clusterStatus]);
 
-  const context = React.useMemo(() => {
-    return {
-      client,
-      healthy,
-      loading,
-    };
-  }, [client, healthy, loading])
+  const context = React.useMemo(() => ({
+    client,
+    healthy,
+    loading,
+  }), [client, healthy, loading]);
 
   return (
     <VizierGRPCClientContext.Provider value={context}>

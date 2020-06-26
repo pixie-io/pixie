@@ -17,13 +17,11 @@ export interface LegendData {
   entries: LegendEntry[];
 }
 
-const formatLegendEntry = (scale, key: string, val: number): LegendEntry => {
-  return {
-    color: scale(key),
-    key,
-    val: formatFloat64Data(val, NUMERAL_FORMAT_STRING),
-  };
-};
+const formatLegendEntry = (scale, key: string, val: number): LegendEntry => ({
+  color: scale(key),
+  key,
+  val: formatFloat64Data(val, NUMERAL_FORMAT_STRING),
+});
 
 export const formatLegendData = (view: View, time: number, entries: UnformattedLegendEntry[]): LegendData => {
   const legendData: LegendData = {
@@ -113,7 +111,6 @@ const keyAvgs = (hoverData: ValidHoverDatum[]): { [key: string]: number } => {
 };
 
 const buildTimeHashMap = (hoverData: ValidHoverDatum[], sortBy: (key: string) => number): TimeHashMap => {
-
   const timeHashMap: TimeHashMap = {};
   for (const datum of hoverData) {
     const rest: UnformattedLegendEntry[] = Object.entries(datum).map((entry) => ({ key: entry[0], val: entry[1] }))
@@ -129,6 +126,7 @@ export const buildHoverDataCache = (hoverData): HoverDataCache => {
     return null;
   }
   const validEntries = hoverData.map((entry) => {
+    // eslint-disable-next-line @typescript-eslint/naming-convention
     const { time_, ...rest } = entry;
     if (!time_ || !isNumber(time_)) {
       return null;

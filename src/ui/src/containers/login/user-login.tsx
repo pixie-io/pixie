@@ -1,3 +1,4 @@
+// eslint-disable-next-line max-classes-per-file
 import Auth0Lock from 'auth0-lock';
 import Axios from 'axios';
 import CodeRenderer from 'components/code-renderer/code-renderer';
@@ -17,96 +18,94 @@ import * as RedirectUtils from 'utils/redirect-utils';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
-const useStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    container: {
-      backgroundColor: theme.palette.background.four,
-      color: 'white',
-      width: '45%',
-      height: '100%',
-    },
-    logo: {
-      padding: theme.spacing(8),
-      width: '14rem',
-    },
-    background: {
-      position: 'absolute',
-      zIndex: 1,
-      width: '45%',
-      minHeight: '42rem',
-      height: '100%',
-    },
-    backgroundTop: {
-      height: '50%',
-      backgroundSize: '12rem',
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  container: {
+    backgroundColor: theme.palette.background.four,
+    color: 'white',
+    width: '45%',
+    height: '100%',
+  },
+  logo: {
+    padding: theme.spacing(8),
+    width: '14rem',
+  },
+  background: {
+    position: 'absolute',
+    zIndex: 1,
+    width: '45%',
+    minHeight: '42rem',
+    height: '100%',
+  },
+  backgroundTop: {
+    height: '50%',
+    backgroundSize: '12rem',
+    backgroundRepeat: 'no-repeat',
+    backgroundPositionX: 'right',
+    backgroundPositionY: 'top',
+    backgroundImage: `url(${backgroundTop})`,
+  },
+  backgroundBottom: {
+    height: '50%',
+    backgroundSize: '18rem',
+    backgroundRepeat: 'no-repeat',
+    backgroundPositionX: 'right',
+    backgroundPositionY: 'bottom',
+    backgroundImage: `url(${backgroundBottom})`,
+  },
+  contents: {
+    position: 'relative',
+    zIndex: 2,
+    paddingTop: theme.spacing(4.5),
+    paddingLeft: theme.spacing(12),
+    paddingRight: theme.spacing(25),
+  },
+  header: {
+    ...theme.typography.h4,
+  },
+  subheader: {
+    ...theme.typography.overline,
+    fontWeight: 500,
+    fontSize: '14px',
+    color: '#FF5E6D',
+    letterSpacing: '0.3em',
+  },
+  text: {
+    ...theme.typography.subtitle1,
+    fontSize: '22px',
+    paddingTop: theme.spacing(8),
+    paddingBottom: theme.spacing(3),
+  },
+  bullet: {
+    ...theme.typography.body1,
+    fontSize: '18px',
+    color: '#9696A5',
+    paddingTop: theme.spacing(3),
+    '&::before': {
+      content: '""',
+      display: 'inline-block',
+      height: '1.2rem',
+      width: '1.2rem',
+      backgroundImage: `url(${check})`,
+      backgroundSize: 'contain',
       backgroundRepeat: 'no-repeat',
-      backgroundPositionX: 'right',
-      backgroundPositionY: 'top',
-      backgroundImage: `url(${backgroundTop})`,
+      marginRight: theme.spacing(1),
     },
-    backgroundBottom: {
-      height: '50%',
-      backgroundSize: '18rem',
-      backgroundRepeat: 'no-repeat',
-      backgroundPositionX: 'right',
-      backgroundPositionY: 'bottom',
-      backgroundImage: `url(${backgroundBottom})`,
-    },
-    contents: {
-      position: 'relative',
-      zIndex: 2,
-      paddingTop: theme.spacing(4.5),
-      paddingLeft: theme.spacing(12),
-      paddingRight: theme.spacing(25),
-    },
-    header: {
-      ...theme.typography.h4,
-    },
-    subheader: {
-      ...theme.typography.overline,
-      fontWeight: 500,
-      fontSize: '14px',
-      color: '#FF5E6D',
-      letterSpacing: '0.3em',
-    },
-    text: {
-      ...theme.typography.subtitle1,
-      fontSize: '22px',
-      paddingTop: theme.spacing(8),
-      paddingBottom: theme.spacing(3),
-    },
-    bullet: {
-      ...theme.typography.body1,
-      fontSize: '18px',
-      color: '#9696A5',
-      paddingTop: theme.spacing(3),
-      '&::before': {
-        content: '""',
-        display: 'inline-block',
-        height: '1.2rem',
-        width: '1.2rem',
-        backgroundImage: `url(${check})`,
-        backgroundSize: 'contain',
-        backgroundRepeat: 'no-repeat',
-        marginRight: theme.spacing(1),
-      },
-    },
-    check: {
-      paddingRight: theme.spacing(1),
-      height: '1rem',
-    },
-    footer: {
-      ...theme.typography.body2,
-      position: 'absolute',
-      bottom: 0,
-      padding: theme.spacing(1),
-      color: '#596274',
-    },
-    list: {
-      listStyle: 'none',
-    },
-  });
-});
+  },
+  check: {
+    paddingRight: theme.spacing(1),
+    height: '1rem',
+  },
+  footer: {
+    ...theme.typography.body2,
+    position: 'absolute',
+    bottom: 0,
+    padding: theme.spacing(1),
+    color: '#596274',
+  },
+  list: {
+    listStyle: 'none',
+  },
+}));
 
 const CompanyInfo = () => {
   const classes = useStyles();
@@ -143,8 +142,7 @@ const CompanyInfo = () => {
   );
 };
 
-export const UserLogin = (props) => {
-  return (
+export const UserLogin = (props) => (
     <LoginContainer
       signUp={false}
       headerText={'Log-in to Pixie'}
@@ -152,11 +150,9 @@ export const UserLogin = (props) => {
       footerLink='/signup'
       {...props}
     />
-  );
-};
+);
 
-export const UserCreate = (props) => {
-  return (
+export const UserCreate = (props) => (
     <LoginContainer
       signUp={true}
       headerText={'Create your account'}
@@ -164,8 +160,7 @@ export const UserCreate = (props) => {
       footerLink='/login'
       {...props}
     />
-  );
-};
+);
 
 export interface RouterInfo {
   search: string;
@@ -185,21 +180,22 @@ interface LoginState {
 }
 
 function redirectPost(url, data) {
-    const form = document.createElement('form');
-    document.body.appendChild(form);
-    form.method = 'post';
-    form.action = url;
-    for (const name in data) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        input.value = data[name];
-        form.appendChild(input);
-    }
-    form.submit();
+  const form = document.createElement('form');
+  document.body.appendChild(form);
+  form.method = 'post';
+  form.action = url;
+  // eslint-disable-next-line guard-for-in
+  for (const name in data) {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = name;
+    input.value = data[name];
+    form.appendChild(input);
+  }
+  form.submit();
 }
 
-function onLoginAuthenticated(authResult, profile, /* error */) {
+function onLoginAuthenticated(authResult, profile /* error */) {
   // TODO(malthus): Handle the error.
   const traits = {
     email: profile.email,
@@ -215,10 +211,11 @@ function onLoginAuthenticated(authResult, profile, /* error */) {
   }
 
   if (this.tokenPostPath) {
-    redirectPost(this.tokenPostPath, {'access_token': authResult.accessToken, 'user_email': profile.email});
-    return
+    redirectPost(this.tokenPostPath, { access_token: authResult.accessToken, user_email: profile.email });
+    return;
   }
 
+  // eslint-disable-next-line consistent-return
   return Axios({
     method: 'post',
     url: '/api/auth/login',
@@ -244,7 +241,7 @@ function onLoginAuthenticated(authResult, profile, /* error */) {
   });
 }
 
-function onCreateAuthenticated(authResult, profile, /* error */) {
+function onCreateAuthenticated(authResult, profile /* error */) {
   // TODO(malthus): Handle the error.
   const traits = {
     email: profile.email,
@@ -265,8 +262,8 @@ function onCreateAuthenticated(authResult, profile, /* error */) {
     analytics.track('User signed up');
   }).then(() => {
     if (this.tokenPostPath) {
-      redirectPost(this.tokenPostPath, {'access_token': authResult.accessToken, 'user_email': profile.email});
-      return
+      redirectPost(this.tokenPostPath, { access_token: authResult.accessToken, user_email: profile.email });
+      return;
     }
 
     if (this.cliAuthMode !== 'manual') {
@@ -286,12 +283,19 @@ function onCreateAuthenticated(authResult, profile, /* error */) {
 
 export class LoginContainer extends React.Component<LoginProps, LoginState> {
   private noCache = false;
+
   private responseMode: '' | 'form_post';
+
   private cliAuthMode: '' | 'auto' | 'manual' = '';
+
   private auth0Redirect: string;
+
   private redirectPath: string;
+
   private tokenPostPath: string;
+
   private authenticating: boolean;
+
   private orgName: string;
 
   constructor(props) {
@@ -323,7 +327,7 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
     // Default redirect URL.
     this.auth0Redirect = window.location.origin + (this.props.signUp ? '/signup' : '/login');
     if (locationParam !== '') {
-      this.auth0Redirect = this.auth0Redirect + '?location=' + locationParam;
+      this.auth0Redirect = `${this.auth0Redirect}?location=${locationParam}`;
     }
     this.responseMode = '';
 
@@ -331,15 +335,15 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
     if (localMode === 'true' && localModeRedirect !== '') {
       this.cliAuthMode = 'auto';
       this.tokenPostPath = localModeRedirect;
-      this.auth0Redirect = this.auth0Redirect + '?local_mode=true&redirect_uri=' + localModeRedirect;
+      this.auth0Redirect = `${this.auth0Redirect}?local_mode=true&redirect_uri=${localModeRedirect}`;
     } else if (localMode === 'true') {
       this.cliAuthMode = 'manual';
-      this.auth0Redirect = this.auth0Redirect + '?local_mode=true';
+      this.auth0Redirect += '?local_mode=true';
     }
 
     if (this.orgName !== '') {
       const queryStr = this.auth0Redirect.includes('?') ? '&' : '?';
-      this.auth0Redirect = this.auth0Redirect + queryStr + 'org_name=' + this.orgName;
+      this.auth0Redirect = `${this.auth0Redirect + queryStr}org_name=${this.orgName}`;
     }
   }
 
@@ -357,11 +361,11 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
           allowSignUp={this.props.signUp}
           allowLogin={!this.props.signUp}
           responseMode={this.responseMode}
-          onAuthenticated={this.props.signUp ?
-            onCreateAuthenticated.bind(this) : onLoginAuthenticated.bind(this)}
+          onAuthenticated={this.props.signUp
+            ? onCreateAuthenticated.bind(this) : onLoginAuthenticated.bind(this)}
         />
-        {this.authenticating ? null :
-          <span className='login-footer'>
+        {this.authenticating ? null
+          : <span className='login-footer'>
             <hr />
             <Link to={{
               pathname: this.props.footerLink,
@@ -429,15 +433,15 @@ const TERMS_OF_USE_LINK = makeStyledLink('https://pixielabs.ai/terms', 'Terms of
 const PRIVACY_POLICY_LINK = makeStyledLink('https://pixielabs.ai/privacy', 'Privacy Policy');
 const COOKIE_POLICY_LINK = makeStyledLink('https://pixielabs.ai/cookies', 'Cookie Policy');
 
-class Auth0Login extends React.Component<Auth0LoginProps>  {
+class Auth0Login extends React.Component<Auth0LoginProps> {
   public static defaultProps: Partial<Auth0LoginProps> = {
     containerID: 'pl-auth0-lock-container',
   };
 
-  private _lock: Auth0LockStatic;
+  private lock: Auth0LockStatic;
 
   componentDidMount() {
-    this._lock = new Auth0Lock(AUTH0_CLIENT_ID, AUTH0_DOMAIN, {
+    this.lock = new Auth0Lock(AUTH0_CLIENT_ID, AUTH0_DOMAIN, {
       auth: {
         redirectUrl: this.props.redirectPath,
         responseType: 'token',
@@ -457,23 +461,22 @@ class Auth0Login extends React.Component<Auth0LoginProps>  {
       allowedConnections: ['google-oauth2'],
     });
 
-    const options =
-      { auth: { params: { prompt: 'select_account' } } } as Auth0LockShowOptions;
+    const options = { auth: { params: { prompt: 'select_account' } } } as Auth0LockShowOptions;
 
-    this._lock.show(options);
-    this._lock.on('authenticated', (auth) => {
+    this.lock.show(options);
+    this.lock.on('authenticated', (auth) => {
       analytics.track('Auth success');
-      this._lock.getUserInfo(auth.accessToken, (error, profile) => {
-        this._lock.hide();
+      this.lock.getUserInfo(auth.accessToken, (error, profile) => {
+        this.lock.hide();
         this.props.onAuthenticated(auth, profile, error);
       });
     });
-    this._lock.on('signin ready', () => analytics.track('Auth start'));
-    this._lock.on('authorization_error', (error) => analytics.track('Auth failed', { error }));
+    this.lock.on('signin ready', () => analytics.track('Auth start'));
+    this.lock.on('authorization_error', (error) => analytics.track('Auth failed', { error }));
   }
 
   componentWillUnmount() {
-    this._lock.hide();
+    this.lock.hide();
   }
 
   render() {

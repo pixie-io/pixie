@@ -2,7 +2,9 @@ import PixieLogo from 'components/icons/pixie-logo';
 import { ResultsContext } from 'containers/live/context/results-context';
 import * as React from 'react';
 
-import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
+import {
+  createStyles, makeStyles, Theme, withStyles,
+} from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import ExpandLessIcon from '@material-ui/icons/ExpandLess';
@@ -15,62 +17,58 @@ interface DataDrawerToggleProps {
   toggle: () => void;
 }
 
-const useStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    root: {
-      minHeight: theme.spacing(5),
-      display: 'flex',
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: theme.palette.background.three,
-      cursor: 'pointer',
-    },
-    icon: {
-      marginLeft: theme.spacing(2),
-      marginRight: theme.spacing(2),
-    },
-    title: {
-      ...theme.typography.subtitle2,
-      color: theme.palette.foreground.one,
-      marginLeft: theme.spacing(2),
-    },
-    pixieLogo: {
-      opacity: 0.5,
-      width: '48px',
-      marginLeft: 'auto',
-      alignSelf: 'center',
-      marginRight: theme.spacing(2),
-    },
-  });
-});
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    minHeight: theme.spacing(5),
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.palette.background.three,
+    cursor: 'pointer',
+  },
+  icon: {
+    marginLeft: theme.spacing(2),
+    marginRight: theme.spacing(2),
+  },
+  title: {
+    ...theme.typography.subtitle2,
+    color: theme.palette.foreground.one,
+    marginLeft: theme.spacing(2),
+  },
+  pixieLogo: {
+    opacity: 0.5,
+    width: '48px',
+    marginLeft: 'auto',
+    alignSelf: 'center',
+    marginRight: theme.spacing(2),
+  },
+}));
 
-const StyledTabs = withStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      flex: 1,
-      minHeight: theme.spacing(5),
-    },
-    indicator: {
-      backgroundColor: theme.palette.foreground.one,
-    },
-  }),
-)(Tabs);
+const StyledTabs = withStyles((theme: Theme) => createStyles({
+  root: {
+    flex: 1,
+    minHeight: theme.spacing(5),
+  },
+  indicator: {
+    backgroundColor: theme.palette.foreground.one,
+  },
+}))(Tabs);
 
-const StyledTab = withStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      minHeight: theme.spacing(5),
-      padding: 0,
-      textTransform: 'none',
-      '&:focus': {
-        color: theme.palette.foreground.two,
-      },
+const StyledTab = withStyles((theme: Theme) => createStyles({
+  root: {
+    minHeight: theme.spacing(5),
+    padding: 0,
+    textTransform: 'none',
+    '&:focus': {
+      color: theme.palette.foreground.two,
     },
-  }),
-)(Tab);
+  },
+}))(Tab);
 
 const DataDrawerToggle = (props: DataDrawerToggleProps) => {
-  const { opened, toggle, activeTab, setActiveTab } = props;
+  const {
+    opened, toggle, activeTab, setActiveTab,
+  } = props;
   const classes = useStyles();
   const onTabChange = (event, newTab) => {
     setActiveTab(newTab);
@@ -82,8 +80,8 @@ const DataDrawerToggle = (props: DataDrawerToggleProps) => {
   const { error, stats } = React.useContext(ResultsContext);
 
   React.useEffect(() => {
-    if ((!error && activeTab === 'errors') ||
-      (!stats && activeTab === 'stats')) {
+    if ((!error && activeTab === 'errors')
+      || (!stats && activeTab === 'stats')) {
       setActiveTab('data');
     }
   }, [activeTab, error, stats]);

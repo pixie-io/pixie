@@ -12,79 +12,76 @@ import { useQuery } from '@apollo/react-hooks';
 
 import Breadcrumbs from '@material-ui/core/Breadcrumbs';
 import Button from '@material-ui/core/Button';
-import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
-import Tab from '@material-ui/core/Tab';
+import {
+  createStyles, makeStyles, Theme,
+} from '@material-ui/core/styles';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
-import Tabs from '@material-ui/core/Tabs';
-import Tooltip from '@material-ui/core/Tooltip';
 import Typography from '@material-ui/core/Typography';
 
 import {
-    AdminTooltip, agentStatusGroup, convertHeartbeatMS, StyledLeftTableCell,
-    StyledRightTableCell, StyledTab, StyledTableCell, StyledTableHeaderCell,
-    StyledTabs
+  AdminTooltip, agentStatusGroup, convertHeartbeatMS, StyledLeftTableCell,
+  StyledRightTableCell, StyledTab, StyledTableCell, StyledTableHeaderCell,
+  StyledTabs,
 } from './utils';
 import { formatUInt128 } from '../../utils/format-data';
 
-const useStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    root: {
-      height: '100%',
-      width: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: theme.palette.background.default,
-      color: theme.palette.text.primary,
-      ...scrollbarStyles(theme),
-    },
-    topBar: {
-      display: 'flex',
-      margin: theme.spacing(1),
-      alignItems: 'center',
-    },
-    title: {
-      flexGrow: 1,
-      marginLeft: theme.spacing(2),
-    },
-    main: {
-      flex: 1,
-      minHeight: 0,
-      borderTopStyle: 'solid',
-      borderTopColor: theme.palette.background.three,
-      borderTopWidth: theme.spacing(0.25),
-    },
-    error: {
-      padding: 20,
-    },
-    link: {
-      ...theme.typography.subtitle1,
-      margin: theme.spacing(1),
-    },
-    titleText: {
-      ...theme.typography.h6,
-      fontWeight: theme.typography.fontWeightBold,
-    },
-    breadcrumbText: {
-      ...theme.typography.subtitle2,
-      fontWeight: theme.typography.fontWeightLight,
-      color: '#748790',
-    },
-    breadcrumbLink: {
-      ...theme.typography.subtitle2,
-      color: '#748790',
-    },
-    tabContents: {
-      margin: theme.spacing(1),
-    },
-    container: {
-      maxHeight: 800,
-    }
-  });
-});
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    height: '100%',
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    backgroundColor: theme.palette.background.default,
+    color: theme.palette.text.primary,
+    ...scrollbarStyles(theme),
+  },
+  topBar: {
+    display: 'flex',
+    margin: theme.spacing(1),
+    alignItems: 'center',
+  },
+  title: {
+    flexGrow: 1,
+    marginLeft: theme.spacing(2),
+  },
+  main: {
+    flex: 1,
+    minHeight: 0,
+    borderTopStyle: 'solid',
+    borderTopColor: theme.palette.background.three,
+    borderTopWidth: theme.spacing(0.25),
+  },
+  error: {
+    padding: 20,
+  },
+  link: {
+    ...theme.typography.subtitle1,
+    margin: theme.spacing(1),
+  },
+  titleText: {
+    ...theme.typography.h6,
+    fontWeight: theme.typography.fontWeightBold,
+  },
+  breadcrumbText: {
+    ...theme.typography.subtitle2,
+    fontWeight: theme.typography.fontWeightLight,
+    color: '#748790',
+  },
+  breadcrumbLink: {
+    ...theme.typography.subtitle2,
+    color: '#748790',
+  },
+  tabContents: {
+    margin: theme.spacing(1),
+  },
+  container: {
+    maxHeight: 800,
+  },
+}));
 
 const AGENT_STATUS_SCRIPT = `import px
 px.display(px.GetAgentStatus())`;
@@ -147,7 +144,7 @@ const AgentsTableContent = ({ agents }) => {
       </TableBody>
     </Table>
   );
-}
+};
 
 interface AgentDisplayState {
   error?: string;
@@ -195,7 +192,7 @@ const AgentsTable = () => {
     return <span>Error! {state.error}</span>;
   }
   return <AgentsTableContent agents={state.data} />;
-}
+};
 
 const LIST_CLUSTERS = gql`
 {
@@ -210,7 +207,7 @@ const LIST_CLUSTERS = gql`
 }
 `;
 
-const ClusterDetailsContents = ({name}) => {
+const ClusterDetailsContents = ({ name }) => {
   const classes = useStyles();
   const [tab, setTab] = React.useState('agents');
 
@@ -241,8 +238,8 @@ const ClusterDetailsContents = ({name}) => {
       </StyledTabs>
       <div className={classes.tabContents}>
         {
-          tab === 'agents' &&
-          (
+          tab === 'agents'
+          && (
             <VizierGRPCClientProvider
               clusterID={cluster.id}
               passthroughEnabled={cluster.vizierConfig.passthroughEnabled}
@@ -257,7 +254,7 @@ const ClusterDetailsContents = ({name}) => {
       </div>
     </div>
   );
-}
+};
 
 export const ClusterDetailsPage = () => {
   const classes = useStyles();
@@ -269,10 +266,10 @@ export const ClusterDetailsPage = () => {
       <div className={classes.topBar}>
         <div className={classes.title}>
           <div className={classes.titleText}>Cluster View</div>
-          <Breadcrumbs classes={{ separator: classes.breadcrumbText, li: classes.breadcrumbLink}}>
-            <Button classes={{label: classes.breadcrumbLink}}
+          <Breadcrumbs classes={{ separator: classes.breadcrumbText, li: classes.breadcrumbLink }}>
+            <Button classes={{ label: classes.breadcrumbLink }}
                     component={Link} to='/admin' color='secondary'>Admin</Button>
-            <Button classes={{label: classes.breadcrumbLink}}
+            <Button classes={{ label: classes.breadcrumbLink }}
                     component={Link} to='/admin' color='secondary'>Cluster</Button>
             <Typography className={classes.breadcrumbText}>{decodedName}</Typography>
           </Breadcrumbs>
@@ -287,4 +284,4 @@ export const ClusterDetailsPage = () => {
       </div>
     </div>
   );
-}
+};

@@ -13,13 +13,11 @@ export interface QueryResultTableProps {
 
 export const QueryResultTable = React.memo<QueryResultTableProps>(({ data, className }) => {
   const { selectedClusterName } = React.useContext(ClusterContext);
-  const ExpandedRowRenderer = (rowData: any) => {
-    return <JSONData
+  const ExpandedRowRenderer = (rowData: any) => <JSONData
       className='query-results-expanded-row'
       data={rowData}
       multiline={true}
     />;
-  };
 
   return (
     <div className={clsx('query-results', className)}>

@@ -1,8 +1,8 @@
-import {shallow} from 'enzyme';
+import { shallow } from 'enzyme';
 import * as React from 'react';
-import {Route} from 'react-router-dom';
+import { Route } from 'react-router-dom';
 
-import {Login} from './login';
+import { Login } from './login';
 
 describe('<Login/> test', () => {
   it('should have correct routes', () => {

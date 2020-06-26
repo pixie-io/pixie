@@ -2,7 +2,9 @@ import clsx from 'clsx';
 import * as React from 'react';
 import Split from 'react-split';
 
-import {createStyles, makeStyles, Theme, useTheme} from '@material-ui/core/styles';
+import {
+  createStyles, makeStyles, Theme, useTheme,
+} from '@material-ui/core/styles';
 
 interface SplitPaneContextProps {
   togglePane: (id: string) => void;
@@ -10,31 +12,30 @@ interface SplitPaneContextProps {
 
 const SplitPaneContext = React.createContext<Partial<SplitPaneContextProps>>({});
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      height: '100%',
-      '& .gutter': {
-        backgroundColor: theme.palette.background.three,
-      },
-    },
-    pane: {
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    header: {
-      ...theme.typography.subtitle1,
-      fontWeight: theme.typography.fontWeightMedium,
-      padding: theme.spacing(0.75, 3),
-      cursor: 'pointer',
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    height: '100%',
+    '& .gutter': {
       backgroundColor: theme.palette.background.three,
     },
-    paneContent: {
-      flex: '1',
-      minHeight: '0',
-      overflow: 'auto',
-    },
-  }));
+  },
+  pane: {
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  header: {
+    ...theme.typography.subtitle1,
+    fontWeight: theme.typography.fontWeightMedium,
+    padding: theme.spacing(0.75, 3),
+    cursor: 'pointer',
+    backgroundColor: theme.palette.background.three,
+  },
+  paneContent: {
+    flex: '1',
+    minHeight: '0',
+    overflow: 'auto',
+  },
+}));
 
 interface SplitContainerProps {
   initialSizes?: number[];

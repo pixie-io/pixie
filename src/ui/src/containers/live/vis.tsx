@@ -91,8 +91,8 @@ function getFuncArgs(defaults: { [key: string]: string }, func: Func): VizierQue
   const errors = [];
   func.args.forEach((arg: FuncArg) => {
     if ((arg.value == null) === (arg.variable == null)) {
-      errors.push(`Arg '${arg.name}' for function '${func.name}'` +
-        'must contain either a value or a reference to a variable');
+      errors.push(`Arg '${arg.name}' for function '${func.name}'`
+        + 'must contain either a value or a reference to a variable');
       return;
     }
 
@@ -141,25 +141,19 @@ export function getQueryFuncs(vis: Vis, variableValues: { [key: string]: string 
     vis.globalFuncs = [];
   }
 
-  const globalFuncs = vis.globalFuncs.map((globalFunc) => {
-    return {
-      name: globalFunc.func.name,
-      // There shouldn't be any confusion over this name, outputName is a required field
-      // and should be validated before reaching this point.
-      outputTablePrefix: globalFunc.outputName,
-      args: getFuncArgs(valsOrDefaults, globalFunc.func),
-    };
-  });
+  const globalFuncs = vis.globalFuncs.map((globalFunc) => ({
+    name: globalFunc.func.name,
+    // There shouldn't be any confusion over this name, outputName is a required field
+    // and should be validated before reaching this point.
+    outputTablePrefix: globalFunc.outputName,
+    args: getFuncArgs(valsOrDefaults, globalFunc.func),
+  }));
   // We filter out widgets that don't have function definitions.
-  const widgetFuncs = vis.widgets.filter((widget) => {
-    return widget.func;
-  }).map((widget, i) => {
-    return {
-      name: widget.func.name,
-      outputTablePrefix: widgetTableName(widget, i),
-      args: getFuncArgs(valsOrDefaults, widget.func),
-    };
-  });
+  const widgetFuncs = vis.widgets.filter((widget) => widget.func).map((widget, i) => ({
+    name: widget.func.name,
+    outputTablePrefix: widgetTableName(widget, i),
+    args: getFuncArgs(valsOrDefaults, widget.func),
+  }));
   return globalFuncs.concat(widgetFuncs);
 }
 

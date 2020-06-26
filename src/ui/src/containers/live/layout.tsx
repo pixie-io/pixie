@@ -43,7 +43,9 @@ function widgetPositions(numWidgets: number, gridWidth: number, numCols: number,
       curX = 0;
       curY += elemHeight;
     }
-    const position = { x: curX, y: curY, w: elemWidth, h: elemHeight };
+    const position = {
+      x: curX, y: curY, w: elemWidth, h: elemHeight,
+    };
     // Move the next position to the right.
     curX += elemWidth;
     return position;
@@ -65,12 +67,10 @@ export function addLayout(visSpec: Vis): Vis {
       const positions = defaultWidgetPositions(visSpec.widgets.length);
       return {
         ...visSpec,
-        widgets: visSpec.widgets.map((widget, i) => {
-          return {
-            ...widget,
-            position: positions[i],
-          }
-        }),
+        widgets: visSpec.widgets.map((widget, i) => ({
+          ...widget,
+          position: positions[i],
+        })),
       };
     }
   }
@@ -85,16 +85,14 @@ function widgetName(widget: Widget, widgetIndex: number): string {
 // Generates the layout of a Live View, with mobile-specific layout that follow the overall
 // order of the vis spec positions but tiles it differently.
 export function toLayout(widgets: Widget[], isMobile: boolean): Layout[] {
-  const nonMobileLayout = widgets.map((widget, i) => {
-    return {
-      ...widget.position,
-      i: widgetName(widget, i),
-      x: widget.position?.x || 0,
-      y: widget.position?.y || 0,
-      minH: 2,
-      minW: 2,
-    };
-  });
+  const nonMobileLayout = widgets.map((widget, i) => ({
+    ...widget.position,
+    i: widgetName(widget, i),
+    x: widget.position?.x || 0,
+    y: widget.position?.y || 0,
+    minH: 2,
+    minW: 2,
+  }));
 
   if (!isMobile) {
     return nonMobileLayout;
@@ -102,7 +100,7 @@ export function toLayout(widgets: Widget[], isMobile: boolean): Layout[] {
 
   // Find out the row-major order in which the widgets would be displayed in the non-mobile view,
   // and match it for the mobile view.
-  nonMobileLayout.sort(function (a: Layout, b: Layout) {
+  nonMobileLayout.sort((a: Layout, b: Layout) => {
     if (a.y < b.y) {
       return -1;
     }
@@ -117,9 +115,7 @@ export function toLayout(widgets: Widget[], isMobile: boolean): Layout[] {
     }
     return 0;
   });
-  const widgetOrderMap = new Map(nonMobileLayout.map((layout, idx) => {
-    return [layout.i, idx];
-  }));
+  const widgetOrderMap = new Map(nonMobileLayout.map((layout, idx) => [layout.i, idx]));
 
   const positions = mobileWidgetPositions(widgets.length);
   return widgets.map((widget, idx) => {
@@ -128,25 +124,23 @@ export function toLayout(widgets: Widget[], isMobile: boolean): Layout[] {
     return {
       ...positions[widgetOrderMap.get(name)],
       i: name,
-    }
-  })
+    };
+  });
 }
 
 export function updatePositions(visSpec: Vis, positions: ChartPosition[]): Vis {
   return {
     variables: visSpec.variables,
     globalFuncs: visSpec.globalFuncs,
-    widgets: positions.map((position, i) => {
-      return {
-        ...visSpec.widgets[i],
-        position: {
-          x: position.x,
-          y: position.y,
-          w: position.w,
-          h: position.h,
-        },
-      };
-    }),
+    widgets: positions.map((position, i) => ({
+      ...visSpec.widgets[i],
+      position: {
+        x: position.x,
+        y: position.y,
+        w: position.w,
+        h: position.h,
+      },
+    })),
   };
 }
 
@@ -174,12 +168,10 @@ export function addTableLayout(tables: string[], layout: Layout[], isMobile: boo
   }
   const positions = widgetPositions(tables.length, numCols, numCols, 1);
   return {
-    layout: tables.map((table, idx) => {
-      return {
-        ...positions[idx],
-        i: table,
-      }
-    }),
+    layout: tables.map((table, idx) => ({
+      ...positions[idx],
+      i: table,
+    })),
     numCols,
     rowHeight,
   };

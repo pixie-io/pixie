@@ -1,14 +1,15 @@
 import * as _ from 'lodash';
-import { Column, DataType, Relation, RowBatchData } from 'types/generated/vizier_pb';
+import {
+  Column, Relation, RowBatchData,
+} from 'types/generated/vizier_pb';
 
-import { getDataRenderer } from 'utils/format-data';
 import { nanoToMilliSeconds } from './time';
 
 export function ResultsToCsv(results) {
   const jsonResults = JSON.parse(results);
   let csvStr = '';
 
-  csvStr += _.map(jsonResults.relation.columns, 'columnName').join() + '\n';
+  csvStr += `${_.map(jsonResults.relation.columns, 'columnName').join()}\n`;
   _.each(jsonResults.rowBatches, (rowBatch) => {
     const numRows = parseInt(rowBatch.numRows, 10);
     const numCols = rowBatch.cols.length;
@@ -24,9 +25,9 @@ export function ResultsToCsv(results) {
           data = data.replace(/^\[/g, '""[');
           data = data.replace(/\[$/g, ']""');
         }
-        rowData.push('"' + data + '"');
+        rowData.push(`"${data}"`);
       }
-      csvStr += rowData.join() + '\n';
+      csvStr += `${rowData.join()}\n`;
     }
   });
 
@@ -36,21 +37,21 @@ export function ResultsToCsv(results) {
 export function columnFromProto(column: Column): any[] {
   if (column.hasBooleanData()) {
     return column.getBooleanData().getDataList();
-  } else if (column.hasInt64Data()) {
+  } if (column.hasInt64Data()) {
     return column.getInt64Data().getDataList();
-  } else if (column.hasUint128Data()) {
+  } if (column.hasUint128Data()) {
     return column.getUint128Data().getDataList();
-  } else if (column.hasFloat64Data()) {
+  } if (column.hasFloat64Data()) {
     return column.getFloat64Data().getDataList();
-  } else if (column.hasStringData()) {
+  } if (column.hasStringData()) {
     return column.getStringData().getDataList();
-  } else if (column.hasTime64nsData()) {
+  } if (column.hasTime64nsData()) {
     const data = column.getTime64nsData().getDataList();
     return data.map(nanoToMilliSeconds);
-  } else if (column.hasDuration64nsData()) {
+  } if (column.hasDuration64nsData()) {
     return column.getDuration64nsData().getDataList();
   }
-  throw (new Error('Unsupported data type: ' + column.getColDataCase()));
+  throw (new Error(`Unsupported data type: ${column.getColDataCase()}`));
 }
 
 export function dataFromProto(

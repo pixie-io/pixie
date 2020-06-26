@@ -28,13 +28,13 @@ export const GraphWidget = (props: GraphWidgetProps) => {
     return (
       <Graph dot={data[0][display.dotColumn]} />
     );
-  } else if (display.adjacencyList && display.adjacencyList.fromColumn && display.adjacencyList.toColumn) {
+  } if (display.adjacencyList && display.adjacencyList.fromColumn && display.adjacencyList.toColumn) {
     return (
       <Graph data={data} toCol={display.adjacencyList.toColumn} fromCol={display.adjacencyList.fromColumn} />
     );
   }
-  return <div key={name}>Invalid spec for graph</div>;
-}
+  return <div key={props.display.dotColumn}>Invalid spec for graph</div>;
+};
 
 interface GraphProps {
   dot?: any;
@@ -75,7 +75,9 @@ export function centerFit(parent: DOMRect, child: DOMRect): d3.ZoomTransform {
 }
 
 export const Graph = (props: GraphProps) => {
-  const { dot, toCol, fromCol, data } = props;
+  const {
+    dot, toCol, fromCol, data,
+  } = props;
   const [err, setErr] = React.useState('');
   const svgRef = React.useRef<SVGSVGElement>(null);
   const ref = React.useRef({
@@ -96,10 +98,10 @@ export const Graph = (props: GraphProps) => {
         const nt = rb[toCol];
         const nf = rb[fromCol];
         if (!graph.hasNode(nt)) {
-          graph.setNode(nt, {label: nt})
+          graph.setNode(nt, { label: nt });
         }
         if (!graph.hasNode(nf)) {
-          graph.setNode(nf, {label: nf})
+          graph.setNode(nf, { label: nf });
         }
 
         graph.setEdge(nf, nt);
@@ -113,14 +115,19 @@ export const Graph = (props: GraphProps) => {
     const baseSvg = d3.select<SVGGraphicsElement, any>(svgRef.current);
     const svgGroup = baseSvg.append('g');
     const zoom = d3.zoom().on('zoom', () => svgGroup.attr('transform', d3.event.transform));
+    // eslint-disable-next-line new-cap
     const renderer = new dagreD3.render();
     baseSvg.call(zoom);
-    ref.current = { svgGroup, baseSvg, zoom, renderer };
+    ref.current = {
+      svgGroup, baseSvg, zoom, renderer,
+    };
   }, []);
 
   React.useEffect(() => {
     const graph = dot ? graphlibDot.read(dot) : dataToGraph();
-    const { baseSvg, svgGroup, renderer, zoom } = ref.current;
+    const {
+      baseSvg, svgGroup, renderer, zoom,
+    } = ref.current;
     try {
       renderer(svgGroup, graph);
       setErr('');

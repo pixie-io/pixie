@@ -38,19 +38,17 @@ const GET_USER = gql`
 }
 `;
 
-const useStyles = makeStyles(() => {
-  return createStyles({
-    banner: {
-      position: 'absolute',
-      width: '100%',
-      textAlign: 'center',
-      top: 0,
-      zIndex: 1,
-      color: 'white',
-      background: 'rgba(220,0,0,0.5)',
-    },
-  });
-});
+const useStyles = makeStyles(() => createStyles({
+  banner: {
+    position: 'absolute',
+    width: '100%',
+    textAlign: 'center',
+    top: 0,
+    zIndex: 1,
+    color: 'white',
+    background: 'rgba(220,0,0,0.5)',
+  },
+}));
 
 const ClusterBanner = () => {
   const classes = useStyles();
@@ -64,7 +62,7 @@ const ClusterBanner = () => {
     return (
       <div className={classes.banner}>
         {
-          'You are viewing clusters for an external org: ' + data.user.orgName
+          `You are viewing clusters for an external org: ${data.user.orgName}`
         }
       </div>
     );
@@ -83,17 +81,15 @@ const Vizier = () => {
   const clusters = data?.clusters || [];
   const cluster = (clusterId && clusters.find((c) => c.id === clusterId)) || selectCluster(clusters);
 
-  const context = React.useMemo(() => {
-    return {
-      selectedCluster: clusterId,
-      selectedClusterName: cluster?.clusterName,
-      setCluster: setClusterId,
-      setClusterByName: (name: string) => {
-        const newClusterId = name && clusters.find((c) => c.clusterName === name)?.id || clusterId;
-        setClusterId(newClusterId);
-      },
-    };
-  }, [clusterId, setClusterId, cluster?.clusterName, clusters.length]);
+  const context = React.useMemo(() => ({
+    selectedCluster: clusterId,
+    selectedClusterName: cluster?.clusterName,
+    setCluster: setClusterId,
+    setClusterByName: (name: string) => {
+      const newClusterId = name && clusters.find((c) => c.clusterName === name)?.id || clusterId;
+      setClusterId(newClusterId);
+    },
+  }), [clusterId, setClusterId, cluster?.clusterName, clusters.length]);
 
   if (loading) { return <div>Loading...</div>; }
 
@@ -102,6 +98,7 @@ const Vizier = () => {
     // This is an error with pixie cloud, it is probably not relevant to the user.
     // Show a generic error message instead.
     showSnackbar({ message: 'There was a problem connecting to Pixie', autoHideDuration: 5000 });
+    // eslint-disable-next-line no-console
     console.error(errMsg);
   }
 

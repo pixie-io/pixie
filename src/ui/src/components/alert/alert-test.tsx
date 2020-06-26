@@ -1,6 +1,6 @@
-import {shallow} from 'enzyme';
+import { shallow } from 'enzyme';
 import * as React from 'react';
-import {Alert} from './alert';
+import { Alert } from './alert';
 
 describe('<Alert/> test', () => {
   it('should show correct text', () => {

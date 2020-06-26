@@ -23,16 +23,12 @@ export const ScriptsContextProvider = (props) => {
   const client = useApolloClient();
   const [scripts, setScripts] = React.useState<Map<string, Script>>(new Map());
 
-  const promise = React.useMemo(() => {
-    return client.query({ query: GET_USER_ORG, fetchPolicy: 'network-only' })
-      .then((result) => {
-        const orgName = result?.data?.user.orgName;
-        return GetPxScripts(orgName);
-      })
-      .then((scriptsList) => {
-        return new Map<string, Script>(scriptsList.map((script) => [script.id, script]));
-      });
-  }, []);
+  const promise = React.useMemo(() => client.query({ query: GET_USER_ORG, fetchPolicy: 'network-only' })
+    .then((result) => {
+      const orgName = result?.data?.user.orgName;
+      return GetPxScripts(orgName);
+    })
+    .then((scriptsList) => new Map<string, Script>(scriptsList.map((script) => [script.id, script]))), []);
 
   React.useEffect(() => {
     // Do this only once.

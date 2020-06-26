@@ -1,6 +1,6 @@
-import {shallow} from 'enzyme';
+import { shallow } from 'enzyme';
 import * as React from 'react';
-import {Header} from './header';
+import { Header } from './header';
 
 describe('<Header/> test', () => {
   it('should have correct header text', () => {

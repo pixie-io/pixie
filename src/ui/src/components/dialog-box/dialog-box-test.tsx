@@ -1,6 +1,6 @@
-import {shallow} from 'enzyme';
+import { shallow } from 'enzyme';
 import * as React from 'react';
-import {DialogBox} from './dialog-box';
+import { DialogBox } from './dialog-box';
 
 describe('<DialogBox/> test', () => {
   it('should properly nest children', () => {

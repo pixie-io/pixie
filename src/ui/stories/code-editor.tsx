@@ -1,6 +1,5 @@
 import * as React from 'react';
 
-import { action } from '@storybook/addon-actions';
 import { storiesOf } from '@storybook/react';
 
 import { CodeEditor } from '../src/components/code-editor/code-editor';
@@ -14,7 +13,6 @@ class EditorWrapper extends React.Component<{}, { code: string }> {
   }
 
   render() {
-    const { code } = this.state;
     return (
       <CodeEditor
         onChange={(newCode) => { this.setState({ code: newCode }); }}

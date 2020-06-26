@@ -15,13 +15,14 @@ export function ParseFormatStringToTabStops(input: string) {
 
   const parsedTS = [...input.match(tabStopRegex)]; // Tokenize into tabstops.
   parsedTS.forEach((ts) => {
-    const tabStop = {CursorPosition: -1} as TabStop;
+    const tabStop = { CursorPosition: -1 } as TabStop;
 
     const idx = ts.match(tabStopIndexRegex)[0].substring(1); // Parse tabstop index. This is always defined.
     tabStop.Index = parseInt(idx, 10);
 
     const label = ts.match(tabStopLabelRegex); // Parse tabstop label.
     if (label !== null && label[1].length > 0) {
+      // eslint-disable-next-line prefer-destructuring
       tabStop.Label = label[1];
     }
 
@@ -31,6 +32,7 @@ export function ParseFormatStringToTabStops(input: string) {
       if (tabStop.CursorPosition !== -1) { // Find cursor position.
         tabStop.Value = value[1].replace('$0', '');
       } else {
+        // eslint-disable-next-line prefer-destructuring
         tabStop.Value = value[1];
       }
     }

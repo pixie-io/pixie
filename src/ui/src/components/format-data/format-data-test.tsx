@@ -1,7 +1,6 @@
 import { mount, shallow } from 'enzyme';
-import { AlertData, JSONData, LatencyData } from './format-data';
 import * as React from 'react';
-
+import { AlertData, JSONData, LatencyData } from './format-data';
 
 describe('<LatencyData/> test', () => {
   it('should render correctly for low latency', () => {

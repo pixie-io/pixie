@@ -27,60 +27,58 @@ import { ScriptLoader } from './script-loader';
 import LiveViewShortcuts from './shortcuts';
 import LiveViewTitle from './title';
 
-const useStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    root: {
-      height: '100%',
-      width: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-      backgroundColor: theme.palette.background.default,
-      color: theme.palette.text.primary,
-      ...scrollbarStyles(theme),
-    },
-    topBar: {
-      display: 'flex',
-      padding: theme.spacing(1),
-      alignItems: 'center',
-      borderBottom: `solid 2px ${theme.palette.background.three}`,
-    },
-    title: {
-      marginLeft: theme.spacing(2),
-      flexGrow: 1,
-    },
-    mainPanel: {
-      flex: 1,
-      minHeight: 0,
-    },
-    editorToggle: {
-      border: 'none',
-      borderRadius: '50%',
-      color: theme.palette.action.active,
-    },
-    editorPanel: {
-      display: 'flex',
-      flexDirection: 'row',
-    },
-    canvas: {
-      overflowY: 'auto',
-      overflowX: 'hidden',
-      marginLeft: theme.spacing(0.5),
-    },
-    clusterSelector: {
-      marginRight: theme.spacing(2),
-    },
-    opener: {
-      position: 'absolute',
-      top: theme.spacing(10) + 2, // Topbar height + border
-      height: theme.spacing(6),
-      width: theme.spacing(3),
-      display: 'flex',
-      alignItems: 'center',
-      background: theme.palette.background.three,
-      cursor: 'pointer',
-    },
-  });
-});
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    height: '100%',
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    backgroundColor: theme.palette.background.default,
+    color: theme.palette.text.primary,
+    ...scrollbarStyles(theme),
+  },
+  topBar: {
+    display: 'flex',
+    padding: theme.spacing(1),
+    alignItems: 'center',
+    borderBottom: `solid 2px ${theme.palette.background.three}`,
+  },
+  title: {
+    marginLeft: theme.spacing(2),
+    flexGrow: 1,
+  },
+  mainPanel: {
+    flex: 1,
+    minHeight: 0,
+  },
+  editorToggle: {
+    border: 'none',
+    borderRadius: '50%',
+    color: theme.palette.action.active,
+  },
+  editorPanel: {
+    display: 'flex',
+    flexDirection: 'row',
+  },
+  canvas: {
+    overflowY: 'auto',
+    overflowX: 'hidden',
+    marginLeft: theme.spacing(0.5),
+  },
+  clusterSelector: {
+    marginRight: theme.spacing(2),
+  },
+  opener: {
+    position: 'absolute',
+    top: theme.spacing(10) + 2, // Topbar height + border
+    height: theme.spacing(6),
+    width: theme.spacing(3),
+    display: 'flex',
+    alignItems: 'center',
+    background: theme.palette.background.three,
+    cursor: 'pointer',
+  },
+}));
 
 export const EditorOpener = () => {
   const { setEditorPanelOpen, editorPanelOpen } = React.useContext(LayoutContext);
@@ -105,7 +103,9 @@ const LiveView = () => {
 
   const { execute } = React.useContext(ExecuteContext);
   const { loading } = React.useContext(VizierGRPCClientContext);
-  const { setDataDrawerOpen, setEditorPanelOpen, editorPanelOpen, isMobile } = React.useContext(LayoutContext);
+  const {
+    setDataDrawerOpen, setEditorPanelOpen, editorPanelOpen, isMobile,
+  } = React.useContext(LayoutContext);
   const [canvasEditable, setCanvasEditable] = React.useState(editorPanelOpen);
   const toggleEdit = React.useCallback(() => {
     const editing = editorPanelOpen || canvasEditable;
@@ -167,8 +167,8 @@ const LiveView = () => {
         <ProfileMenu />
       </div>
       {
-        loading ? <div className='center-content'><ClusterInstructions message='Connecting to cluster...' /></div> :
-          <>
+        loading ? <div className='center-content'><ClusterInstructions message='Connecting to cluster...' /></div>
+          : <>
             <ScriptLoader />
             <DataDrawerSplitPanel className={classes.mainPanel}>
               <EditorSplitPanel className={classes.editorPanel}>

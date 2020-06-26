@@ -1,15 +1,15 @@
-import {shallow} from 'enzyme';
+import { shallow } from 'enzyme';
 import * as React from 'react';
 
 import LazyPanel from './lazy-panel';
 
 describe('<LazyPanel/> test', () => {
-
   it('renders null when show is false', () => {
     const wrapper = shallow(
       <LazyPanel show={false}>
         <div className='content'>test content</div>
-      </LazyPanel>);
+      </LazyPanel>,
+    );
 
     expect(wrapper.getElement()).toBe(null);
     expect(wrapper.find('.visible')).toHaveLength(0);
@@ -19,7 +19,8 @@ describe('<LazyPanel/> test', () => {
     const wrapper = shallow(
       <LazyPanel show={true}>
         <div className='content'>test content</div>
-      </LazyPanel>);
+      </LazyPanel>,
+    );
 
     expect(wrapper.find('.content')).toHaveLength(1);
     expect(wrapper.find('.visible')).toHaveLength(1);
@@ -29,7 +30,8 @@ describe('<LazyPanel/> test', () => {
     const wrapper = shallow(
       <LazyPanel show={true}>
         <div className='content'>test content</div>
-      </LazyPanel>);
+      </LazyPanel>,
+    );
 
     wrapper.setProps({ show: false });
     expect(wrapper.find('.content')).toHaveLength(1);

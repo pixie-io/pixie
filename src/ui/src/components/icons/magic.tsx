@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import SvgIcon, {SvgIconProps} from '@material-ui/core/SvgIcon';
+import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
 const MagicIcon = (props: SvgIconProps) => (
   <SvgIcon {...props} viewBox='0 0 17.91 19.38'>

@@ -8,81 +8,79 @@ import Button from '@material-ui/core/Button';
 import Card from '@material-ui/core/Card';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
-const useStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    dialog: {
-      width: '700px',
-      height: '60%',
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  dialog: {
+    width: '700px',
+    height: '60%',
+  },
+  content: {
+    padding: theme.spacing(6),
+    color: '#B2B5BB',
+  },
+  container: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  header: {
+    ...theme.typography.h5,
+    color: theme.palette.foreground.two,
+  },
+  instructions: {
+    marginTop: theme.spacing(3),
+    ...theme.typography.body1,
+    fontFamily: 'monospace',
+  },
+  linksHeader: {
+    ...theme.typography.body1,
+    color: theme.palette.foreground.two,
+    marginTop: theme.spacing(5),
+    marginBottom: theme.spacing(2),
+  },
+  listItem: {
+    marginBottom: theme.spacing(1),
+    '&::before': {
+      content: '"-"',
+      marginRight: theme.spacing(0.5),
     },
-    content: {
-      padding: theme.spacing(6),
-      color: '#B2B5BB',
-    },
-    container: {
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      width: '100%',
-    },
-    header: {
-      ...theme.typography.h5,
-      color: theme.palette.foreground.two,
-    },
-    instructions: {
-      marginTop: theme.spacing(3),
-      ...theme.typography.body1,
-      fontFamily: 'monospace',
-    },
-    linksHeader: {
-      ...theme.typography.body1,
-      color: theme.palette.foreground.two,
-      marginTop: theme.spacing(5),
-      marginBottom: theme.spacing(2),
-    },
-    listItem: {
-      marginBottom: theme.spacing(1),
-      '&::before': {
-        content: '"-"',
-        marginRight: theme.spacing(0.5),
-      },
-    },
-    linkItem: {
-      ...theme.typography.body1,
-      fontFamily: 'monospace',
-      color: '#B2B5BB',
-      textDecoration: 'underline',
-    },
-    list: {
-      listStyle: 'none',
-      paddingLeft: 0,
-    },
-    buttons: {
-      display: 'flex',
-      flex: 1,
-      justifyContent: 'center',
-      marginTop: theme.spacing(6),
-      marginBottom: theme.spacing(1),
-    },
-    button: {
-      margin: theme.spacing(3),
-    },
-    logo: {
-      float: 'right',
-      marginRight: theme.spacing(2),
-      marginBottom: theme.spacing(2),
-    },
-    centered: {
-      display: 'flex',
-      alignItems: 'center',
-      flexDirection: 'column',
-    },
-    profileMenu: {
-      position: 'fixed',
-      top: theme.spacing(1),
-      right: theme.spacing(1),
-    },
-  });
-});
+  },
+  linkItem: {
+    ...theme.typography.body1,
+    fontFamily: 'monospace',
+    color: '#B2B5BB',
+    textDecoration: 'underline',
+  },
+  list: {
+    listStyle: 'none',
+    paddingLeft: 0,
+  },
+  buttons: {
+    display: 'flex',
+    flex: 1,
+    justifyContent: 'center',
+    marginTop: theme.spacing(6),
+    marginBottom: theme.spacing(1),
+  },
+  button: {
+    margin: theme.spacing(3),
+  },
+  logo: {
+    float: 'right',
+    marginRight: theme.spacing(2),
+    marginBottom: theme.spacing(2),
+  },
+  centered: {
+    display: 'flex',
+    alignItems: 'center',
+    flexDirection: 'column',
+  },
+  profileMenu: {
+    position: 'fixed',
+    top: theme.spacing(1),
+    right: theme.spacing(1),
+  },
+}));
 
 export const DeployInstructions = () => {
   const classes = useStyles();
@@ -93,7 +91,7 @@ export const DeployInstructions = () => {
       <div className={classes.content}>
         <span className={classes.header}>Install Pixie</span>
         <CodeRenderer
-          code={'bash -c "$(curl -fsSL ' + window.location.origin + '/install.sh)"'}
+          code={`bash -c "$(curl -fsSL ${window.location.origin}/install.sh)"`}
           language='bash'
         />
         <div className={classes.instructions}>
@@ -148,4 +146,4 @@ export const ClusterInstructions = (props: ClusterInstructionsProps) => {
       <img className={classes.logo} src={logoImage} style={{ width: '55px' }} />
     </Card>
   </div>);
-}
+};

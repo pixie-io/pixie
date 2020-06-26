@@ -1,5 +1,3 @@
-import {AdminTooltip, StyledTableCell, StyledTableHeaderCell,
-        StyledLeftTableCell, StyledRightTableCell} from './utils';
 import { useMutation, useQuery } from '@apollo/react-hooks';
 import Table from '@material-ui/core/Table';
 import IconButton from '@material-ui/core/IconButton';
@@ -8,7 +6,9 @@ import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
-import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
+import {
+  createStyles, makeStyles, Theme, withStyles,
+} from '@material-ui/core/styles';
 import TableBody from '@material-ui/core/TableBody';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
@@ -20,6 +20,10 @@ import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import gql from 'graphql-tag';
 import { distanceInWords } from 'date-fns';
 import * as React from 'react';
+import {
+  AdminTooltip, StyledTableCell, StyledTableHeaderCell,
+  StyledLeftTableCell, StyledRightTableCell,
+} from './utils';
 
 const LIST_DEPLOYMENT_KEYS = gql`
 {
@@ -53,57 +57,49 @@ interface DeploymentKeyDisplay {
   desc: string;
 }
 
-const useStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    deploymentKeyValue: {
-      padding: 0,
-      fontWeight: theme.typography.fontWeightLight,
-      fontSize: '14px',
-      color: '#748790',
-      backgroundColor: theme.palette.foreground.grey3,
-      borderWidth: 8,
-      borderColor: theme.palette.background.default,
-    },
-    actionsButton: {
-      padding: 0,
-    },
-    copyBtn: {
-      minWidth: '30px',
-    },
-    error: {
-      padding: theme.spacing(1),
-    }
-  });
-});
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  deploymentKeyValue: {
+    padding: 0,
+    fontWeight: theme.typography.fontWeightLight,
+    fontSize: '14px',
+    color: '#748790',
+    backgroundColor: theme.palette.foreground.grey3,
+    borderWidth: 8,
+    borderColor: theme.palette.background.default,
+  },
+  actionsButton: {
+    padding: 0,
+  },
+  copyBtn: {
+    minWidth: '30px',
+  },
+  error: {
+    padding: theme.spacing(1),
+  },
+}));
 
-export const StyledMenu = withStyles((theme: Theme) =>
-  createStyles({
-    paper: {
-      backgroundColor: theme.palette.foreground.grey3,
-      borderWidth: 8,
-      borderColor: theme.palette.background.default,
-    },
-  }),
-)(Menu);
+export const StyledMenu = withStyles((theme: Theme) => createStyles({
+  paper: {
+    backgroundColor: theme.palette.foreground.grey3,
+    borderWidth: 8,
+    borderColor: theme.palette.background.default,
+  },
+}))(Menu);
 
-const StyledListItemIcon = withStyles(() =>
-  createStyles({
-    root: {
-      minWidth: 30,
-      marginRight: 5,
-    },
-  }),
-)(ListItemIcon);
+const StyledListItemIcon = withStyles(() => createStyles({
+  root: {
+    minWidth: 30,
+    marginRight: 5,
+  },
+}))(ListItemIcon);
 
-const StyledListItemText = withStyles((theme: Theme) =>
-  createStyles({
-    primary: {
-      fontWeight: theme.typography.fontWeightLight,
-      fontSize: '14px',
-      color: '#748790',
-    },
-  }),
-)(ListItemText);
+const StyledListItemText = withStyles((theme: Theme) => createStyles({
+  primary: {
+    fontWeight: theme.typography.fontWeightLight,
+    fontSize: '14px',
+    color: '#748790',
+  },
+}))(ListItemText);
 
 export function formatDeploymentKey(depKey): DeploymentKeyDisplay {
   const now = new Date();
@@ -116,7 +112,7 @@ export function formatDeploymentKey(depKey): DeploymentKeyDisplay {
   };
 }
 
-export const DeploymentKeyRow = ({deploymentKey}) => {
+export const DeploymentKeyRow = ({ deploymentKey }) => {
   const classes = useStyles();
   const [showKey, setShowKey] = React.useState(false);
 
@@ -154,7 +150,7 @@ export const DeploymentKeyRow = ({deploymentKey}) => {
         />
       </StyledTableCell>
       <StyledRightTableCell>
-        <IconButton size='small' classes={{sizeSmall: classes.actionsButton}}
+        <IconButton size='small' classes={{ sizeSmall: classes.actionsButton }}
          onClick={openMenu}>
           <Actions/>
         </IconButton>
@@ -174,7 +170,7 @@ export const DeploymentKeyRow = ({deploymentKey}) => {
             <StyledListItemText primary='Copy value'/>
           </MenuItem>
           <MenuItem key='delete' alignItems='center'
-           onClick={() => deleteDeployKey({variables: {id: deploymentKey.id}})}>
+           onClick={() => deleteDeployKey({ variables: { id: deploymentKey.id } })}>
             <StyledListItemIcon className={classes.copyBtn}>
               <Delete/>
             </StyledListItemIcon>
@@ -184,7 +180,7 @@ export const DeploymentKeyRow = ({deploymentKey}) => {
       </StyledRightTableCell>
     </TableRow>
   );
-}
+};
 
 export const DeploymentKeysTable = () => {
   const classes = useStyles();
@@ -217,4 +213,4 @@ export const DeploymentKeysTable = () => {
       </Table>
     </>
   );
-}
+};

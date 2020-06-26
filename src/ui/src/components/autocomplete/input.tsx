@@ -5,9 +5,9 @@ import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 import { Key } from './key';
 
-const useStyles = makeStyles((theme: Theme) => {
+const useStyles = makeStyles((theme: Theme) => (
   // TODO(malthus): Make use of the theme styles.
-  return createStyles({
+  createStyles({
     root: {
       ...theme.typography.h6,
       position: 'relative',
@@ -40,8 +40,7 @@ const useStyles = makeStyles((theme: Theme) => {
     prefix: {
       paddingRight: theme.spacing(2),
     },
-  });
-});
+  })));
 
 interface InputProps {
   onChange: (val: string) => void;
@@ -112,8 +111,8 @@ const Input: React.FC<InputProps> = ({
     if (!value) {
       return placeholder;
     }
-    return suggestion && suggestion.startsWith(value) ?
-      suggestion.slice(value.length) : '';
+    return suggestion && suggestion.startsWith(value)
+      ? suggestion.slice(value.length) : '';
   }, [value, suggestion, placeholder]);
 
   return (
@@ -149,6 +148,7 @@ const Caret: React.FC<{ active: boolean }> = ({ active }) => {
       setVisible((show) => !show);
     }, BLINK_INTERVAL);
 
+    // eslint-disable-next-line consistent-return
     return () => {
       clearInterval(intervalSub);
     };

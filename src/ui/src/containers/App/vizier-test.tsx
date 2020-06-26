@@ -21,7 +21,7 @@ describe('selectCluster', () => {
     ];
 
     expect(selectCluster(clusters)).toStrictEqual({
-      'id': 'efffeb73-d19c-4630-af63-f75c3761bab4',
+      id: 'efffeb73-d19c-4630-af63-f75c3761bab4',
       clusterName: 'foobar2',
       status: 'CS_HEALTHY',
     });

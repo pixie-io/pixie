@@ -118,51 +118,49 @@ interface LiveViewShortcutsHelpProps {
   keyMap: KeyMap;
 }
 
-const useShortcutHelpStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    root: {
-      width: '500px',
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-    },
-    title: {
-      ...theme.typography.subtitle2,
-      padding: theme.spacing(2),
-    },
-    key: {
-      border: `solid 2px ${theme.palette.background.three}`,
-      borderRadius: '5px',
-      backgroundColor: theme.palette.background.two,
-      textTransform: 'capitalize',
-      height: theme.spacing(4),
-      minWidth: theme.spacing(4),
-      paddingLeft: theme.spacing(1),
-      paddingRight: theme.spacing(1),
-      textAlign: 'center',
-      ...theme.typography.caption,
-      lineHeight: '30px',
-    },
-    row: {
-      display: 'flex',
-      flexDirection: 'row',
-      borderBottom: `solid 1px ${theme.palette.background.three}`,
-      alignItems: 'center',
-    },
-    sequence: {
-      display: 'flex',
-      flexDirection: 'row',
-      alignItems: 'center',
-      flex: 1,
-      justifyContent: 'center',
-      padding: theme.spacing(1.5),
-    },
-    description: {
-      flex: 3,
-    },
-  });
-});
+const useShortcutHelpStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    width: '500px',
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+  },
+  title: {
+    ...theme.typography.subtitle2,
+    padding: theme.spacing(2),
+  },
+  key: {
+    border: `solid 2px ${theme.palette.background.three}`,
+    borderRadius: '5px',
+    backgroundColor: theme.palette.background.two,
+    textTransform: 'capitalize',
+    height: theme.spacing(4),
+    minWidth: theme.spacing(4),
+    paddingLeft: theme.spacing(1),
+    paddingRight: theme.spacing(1),
+    textAlign: 'center',
+    ...theme.typography.caption,
+    lineHeight: '30px',
+  },
+  row: {
+    display: 'flex',
+    flexDirection: 'row',
+    borderBottom: `solid 1px ${theme.palette.background.three}`,
+    alignItems: 'center',
+  },
+  sequence: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    padding: theme.spacing(1.5),
+  },
+  description: {
+    flex: 3,
+  },
+}));
 
 const LiveViewShortcutsHelp = (props: LiveViewShortcutsHelpProps) => {
   const classes = useShortcutHelpStyles();

@@ -8,75 +8,73 @@ import { isInView } from 'utils/bbox';
 import Card from '@material-ui/core/Card';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      marginLeft: theme.spacing(1),
-      display: 'flex',
-      flexDirection: 'row',
-      height: theme.spacing(3),
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    marginLeft: theme.spacing(1),
+    display: 'flex',
+    flexDirection: 'row',
+    height: theme.spacing(3),
+  },
+  input: {
+    backgroundColor: 'transparent',
+    border: 'none',
+    padding: 0,
+    color: theme.palette.foreground.two,
+    borderBottom: `1px solid ${theme.palette.foreground.one}`,
+    marginLeft: theme.spacing(0.5),
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    width: '100%',
+    ...theme.typography.subtitle2,
+    fontWeight: theme.typography.fontWeightLight,
+    '&:focus': {
+      outline: 'none',
+      borderBottom: `1px solid ${theme.palette.primary.main}`,
     },
-    input: {
-      backgroundColor: 'transparent',
-      border: 'none',
-      padding: 0,
-      color: theme.palette.foreground.two,
-      borderBottom: `1px solid ${theme.palette.foreground.one}`,
-      marginLeft: theme.spacing(0.5),
-      position: 'absolute',
-      left: 0,
-      top: 0,
-      width: '100%',
-      ...theme.typography.subtitle2,
-      fontWeight: theme.typography.fontWeightLight,
-      '&:focus': {
-        outline: 'none',
-        borderBottom: `1px solid ${theme.palette.primary.main}`,
-      },
+  },
+  measurer: {
+    position: 'relative',
+  },
+  measurerContent: {
+    opacity: 0,
+    minWidth: '120px',
+    paddingRight: theme.spacing(1),
+  },
+  completions: {
+    position: 'absolute',
+    zIndex: theme.zIndex.modal,
+    top: theme.spacing(3), // height of the input
+    left: theme.spacing(0.5),
+    width: 'max(100%, 120px)',
+    maxHeight: '200px',
+    overflow: 'auto',
+    display: 'none',
+    '&.visible': {
+      display: 'unset',
     },
-    measurer: {
-      position: 'relative',
+  },
+  completion: {
+    cursor: 'pointer',
+    padding: theme.spacing(0.5),
+  },
+  activeCompletion: {
+    color: 'white',
+    backgroundColor: theme.palette.action.active,
+  },
+  spinner: {
+    height: '100px',
+    display: 'flex',
+    flexDirection: 'row',
+    overflow: 'hidden',
+    '& > *': {
+      margin: 'auto',
     },
-    measurerContent: {
-      opacity: 0,
-      minWidth: '120px',
-      paddingRight: theme.spacing(1),
-    },
-    completions: {
-      position: 'absolute',
-      zIndex: theme.zIndex.modal,
-      top: theme.spacing(3), // height of the input
-      left: theme.spacing(0.5),
-      width: 'max(100%, 120px)',
-      maxHeight: '200px',
-      overflow: 'auto',
-      display: 'none',
-      '&.visible': {
-        display: 'unset',
-      },
-    },
-    completion: {
-      cursor: 'pointer',
-      padding: theme.spacing(0.5),
-    },
-    activeCompletion: {
-      color: 'white',
-      backgroundColor: theme.palette.action.active,
-    },
-    spinner: {
-      height: '100px',
-      display: 'flex',
-      flexDirection: 'row',
-      overflow: 'hidden',
-      '& > *': {
-        margin: 'auto',
-      },
-    },
-    highlight: {
-      fontWeight: 600,
-    },
-  }),
-);
+  },
+  highlight: {
+    fontWeight: 600,
+  },
+}));
 
 interface AutocompleteArgumentFieldProps {
   name: string;
@@ -86,7 +84,9 @@ interface AutocompleteArgumentFieldProps {
 }
 
 const AutocompleteInputField = (props: AutocompleteArgumentFieldProps) => {
-  const { name, value, onValueChange, getCompletions } = props;
+  const {
+    name, value, onValueChange, getCompletions,
+  } = props;
   const classes = useStyles();
   const ref = React.useRef<HTMLInputElement>(null);
   const [opened, setOpened] = React.useState<boolean>(false);
@@ -148,9 +148,9 @@ const AutocompleteInputField = (props: AutocompleteArgumentFieldProps) => {
         />
         <Card className={clsx(classes.completions, opened && 'visible')}>
           {
-            loading ?
-              <div className={classes.spinner}><Spinner /></div> :
-              completions.map((completion) => {
+            loading
+              ? <div className={classes.spinner}><Spinner /></div>
+              : completions.map((completion) => {
                 if (completion.type === 'header') {
                   return null;
                 }
@@ -182,7 +182,9 @@ interface FieldCompletionProps {
 
 const FieldCompletion = (props: FieldCompletionProps) => {
   const ref = React.useRef(null);
-  const { active, onClick, onHover, value, highlightedIndexes } = props;
+  const {
+    active, onClick, onHover, value, highlightedIndexes,
+  } = props;
   const classes = useStyles();
 
   const className = clsx(

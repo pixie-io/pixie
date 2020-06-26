@@ -25,23 +25,23 @@ export class VizierQueryError extends Error {
   constructor(
     public errType: VizierQueryErrorType,
     public details?: string | string[],
-    public status?: Status) {
+    public status?: Status,
+  ) {
     super(getUserFacingMessage(errType));
   }
 }
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    errorRow: {
-      padding: theme.spacing(2),
-      borderBottom: `solid 1px ${theme.palette.background.three}`,
-    },
-  }));
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  errorRow: {
+    padding: theme.spacing(2),
+    borderBottom: `solid 1px ${theme.palette.background.three}`,
+  },
+}));
 
 export const VizierErrorDetails = (props: { error: Error }) => {
   const { error } = props;
   const classes = useStyles();
-  const details = (error as VizierQueryError).details;
+  const { details } = error as VizierQueryError;
 
   if (typeof details === 'string') {
     return <div className={classes.errorRow}>{details}</div>;

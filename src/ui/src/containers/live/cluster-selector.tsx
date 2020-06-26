@@ -1,6 +1,8 @@
 import ClusterContext from 'common/cluster-context';
-import { CLUSTER_STATUS_DISCONNECTED,
-         CLUSTER_STATUS_HEALTHY } from 'common/vizier-grpc-client-context';
+import {
+  CLUSTER_STATUS_DISCONNECTED,
+  CLUSTER_STATUS_HEALTHY,
+} from 'common/vizier-grpc-client-context';
 import { StatusCell } from 'components/status/status';
 import { Spinner } from 'components/spinner/spinner';
 // TODO(malthus): Move this to a common location.
@@ -40,16 +42,16 @@ const StyledButton = withStyles((theme) => ({
     textTransform: 'none',
     color: theme.palette.text.primary,
   },
-}))(React.forwardRef(function ButtonWithRef(props: ButtonProps, ref: React.Ref<HTMLButtonElement>) {
-  return (
+// eslint-disable-next-line react/display-name
+}))(React.forwardRef((props: ButtonProps, ref: React.Ref<HTMLButtonElement>) => (
     <Button
       ref={ref}
       variant='outlined'
       color='primary'
       {...props}
     />
-  );
-}));
+)));
+StyledButton.displayName = 'StyledButton';
 
 const LIST_CLUSTERS = gql`
 {

@@ -12,9 +12,15 @@ describe('<Completions/> test', () => {
       <Completions
         items={[
           { type: 'header', header: 'Recently used' },
-          { type: 'item', title: 'px/script1', id: 'px-0', highlights: [3,4, 5] },
-          { type: 'item', title: 'px/script2', id: 'px-1', highlights: [3, 4, 5] },
-          { type: 'item', title: 'px/script3', id: 'px-2', highlights: [3, 4, 5] },
+          {
+            type: 'item', title: 'px/script1', id: 'px-0', highlights: [3, 4, 5],
+          },
+          {
+            type: 'item', title: 'px/script2', id: 'px-1', highlights: [3, 4, 5],
+          },
+          {
+            type: 'item', title: 'px/script3', id: 'px-2', highlights: [3, 4, 5],
+          },
           { type: 'header', header: 'Org scripts' },
           { type: 'item', title: 'hulu/script1', id: 'hulu-4' },
           { type: 'item', title: 'hulu/script2', id: 'hulu-5' },

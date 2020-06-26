@@ -12,6 +12,7 @@ export const LogoutHandler = () => {
 };
 
 export class Logout extends React.Component<{}, {}> {
+  // eslint-disable-next-line class-methods-use-this
   render() {
     Axios({
       method: 'post',

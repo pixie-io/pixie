@@ -2,25 +2,23 @@ import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
-const useStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    form: {
-      ...theme.typography.h6,
-      cursor: 'text',
-      display: 'flex',
-      flexWrap: 'wrap',
-      flexDirection: 'row',
-    },
-    label: {
-    },
-    input: {
-      background: 'transparent',
-      outline: 'none',
-      border: 'none',
-      color: 'inherit',
-    },
-  });
-});
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  form: {
+    ...theme.typography.h6,
+    cursor: 'text',
+    display: 'flex',
+    flexWrap: 'wrap',
+    flexDirection: 'row',
+  },
+  label: {
+  },
+  input: {
+    background: 'transparent',
+    outline: 'none',
+    border: 'none',
+    color: 'inherit',
+  },
+}));
 
 interface Form {
   [field: string]: string;

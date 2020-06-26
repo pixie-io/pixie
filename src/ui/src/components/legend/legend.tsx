@@ -18,9 +18,9 @@ const VAL_COLUMN_SIZE = 40;
 const COLUMN_GAP_SIZE = 5;
 const COLUMN_SIZES = `${COLOR_COLUMN_SIZE}px ${KEY_COLUMN_SIZE}px ${VAL_COLUMN_SIZE}px`;
 const GRID_WIDTH = (
-  COLOR_COLUMN_SIZE + COLUMN_GAP_SIZE +
-  KEY_COLUMN_SIZE + COLUMN_GAP_SIZE +
-  VAL_COLUMN_SIZE
+  COLOR_COLUMN_SIZE + COLUMN_GAP_SIZE
+  + KEY_COLUMN_SIZE + COLUMN_GAP_SIZE
+  + VAL_COLUMN_SIZE
 );
 const GRID_GAP_SIZE = 20;
 
@@ -50,54 +50,52 @@ interface LegendProps {
   setInteractState: (s: LegendInteractState) => void;
 }
 
-const useStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    gridsContainer: {
-      height: '100%',
-      width: '100%',
-      display: 'flex',
-      flexDirection: 'row',
-      justifyContent: 'flex-start',
-      overflow: 'hidden',
-      alignItems: 'center',
-    },
-    rowContainer: {
-      display: 'contents',
-    },
-    colorCircle: {
-      height: `${COLOR_COLUMN_SIZE}px`,
-      width: `${COLOR_COLUMN_SIZE}px`,
-      borderRadius: '50%',
-      marginRight: theme.spacing(1),
-      display: 'inline-block',
-    },
-    colorContainer: {
-      textAlign: 'center',
-    },
-    key: {
-      ...theme.typography.caption,
-      textAlign: 'left',
-      textOverflow: 'ellipsis',
-      overflow: 'hidden',
-      whiteSpace: 'nowrap',
-    },
-    val: {
-      ...theme.typography.caption,
-      textAlign: 'right',
-    },
-    gridGap: {
-      height: '100%',
-      width: `${GRID_GAP_SIZE}px`,
-      minWidth: `${GRID_GAP_SIZE}px`,
-    },
-    iconContainer: {
-      display: 'flex',
-      flexDirection: 'row',
-      justifyContent: 'center',
-      flex: '1',
-    },
-  });
-});
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  gridsContainer: {
+    height: '100%',
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    overflow: 'hidden',
+    alignItems: 'center',
+  },
+  rowContainer: {
+    display: 'contents',
+  },
+  colorCircle: {
+    height: `${COLOR_COLUMN_SIZE}px`,
+    width: `${COLOR_COLUMN_SIZE}px`,
+    borderRadius: '50%',
+    marginRight: theme.spacing(1),
+    display: 'inline-block',
+  },
+  colorContainer: {
+    textAlign: 'center',
+  },
+  key: {
+    ...theme.typography.caption,
+    textAlign: 'left',
+    textOverflow: 'ellipsis',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+  },
+  val: {
+    ...theme.typography.caption,
+    textAlign: 'right',
+  },
+  gridGap: {
+    height: '100%',
+    width: `${GRID_GAP_SIZE}px`,
+    minWidth: `${GRID_GAP_SIZE}px`,
+  },
+  iconContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    flex: '1',
+  },
+}));
 
 const toRowMajorOrder = (entries: LegendEntry[], numCols: number, numRows: number): LegendEntry[] => {
   const newEntries: LegendEntry[] = [];
@@ -220,7 +218,8 @@ const Legend = React.memo((props: LegendProps) => {
             <div style={styles} className={classes.key}>{entry.key}</div>
           </Tooltip>
           <div style={styles} className={classes.val}>{entry.val}</div>
-        </div>);
+        </div>,
+      );
     }
 
     const gridStyle: CSSProperties = {

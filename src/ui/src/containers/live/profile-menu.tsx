@@ -13,7 +13,9 @@ import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
-import { createStyles, makeStyles, Theme, withStyles } from '@material-ui/core/styles';
+import {
+  createStyles, makeStyles, Theme, withStyles,
+} from '@material-ui/core/styles';
 
 export const GET_USER_INFO = gql`
 {
@@ -64,22 +66,18 @@ const Avatar = (props: AvatarProps) => {
   return <BaseAvatar src={props.picture} alt={props.name} className={props.className} />;
 };
 
-const StyledListItemText = withStyles((theme: Theme) =>
-  createStyles({
-    primary: {
-      ...theme.typography.body2,
-      color: theme.palette.text.primary,
-    },
-  }),
-)(ListItemText);
+const StyledListItemText = withStyles((theme: Theme) => createStyles({
+  primary: {
+    ...theme.typography.body2,
+    color: theme.palette.text.primary,
+  },
+}))(ListItemText);
 
-const StyledListItemIcon = withStyles(() =>
-  createStyles({
-    root: {
-      minWidth: '30px',
-    },
-  }),
-)(ListItemIcon);
+const StyledListItemIcon = withStyles(() => createStyles({
+  root: {
+    minWidth: '30px',
+  },
+}))(ListItemIcon);
 
 const ProfileMenu = (props: { className?: string }) => {
   const classes = useStyles();
@@ -101,7 +99,7 @@ const ProfileMenu = (props: { className?: string }) => {
   if (loading || error || !data.user) {
     return null;
   }
-  const user = data.user;
+  const { user } = data;
   return (
     <>
       <IconButton onClick={openMenu} className={props.className || ''}>

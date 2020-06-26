@@ -1,10 +1,12 @@
-import { getLiveViewTitle, LiveViewPage, matchLiveViewEntity, toEntityPathname,
-         toSingleEntityPage } from './live-view-params';
 import { SemanticType } from 'types/generated/vizier_pb';
+import {
+  getLiveViewTitle, LiveViewPage, matchLiveViewEntity, toEntityPathname,
+  toSingleEntityPage,
+} from './live-view-params';
 
 describe('matchLiveViewEntity test', () => {
   it('should correctly match the cluster page', () => {
-    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar')
+    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar');
     expect(entity).toStrictEqual({
       page: LiveViewPage.Cluster,
       params: {},
@@ -13,7 +15,7 @@ describe('matchLiveViewEntity test', () => {
   });
 
   it('should correctly match namespaces entity page', () => {
-    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/namespaces')
+    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/namespaces');
     expect(entity).toStrictEqual({
       page: LiveViewPage.Namespaces,
       params: {},
@@ -22,7 +24,7 @@ describe('matchLiveViewEntity test', () => {
   });
 
   it('should correctly match namespace entity page', () => {
-    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop')
+    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop');
     expect(entity).toStrictEqual({
       page: LiveViewPage.Namespace,
       params: {
@@ -33,7 +35,7 @@ describe('matchLiveViewEntity test', () => {
   });
 
   it('should correctly match nodes entity page', () => {
-    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/nodes')
+    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/nodes');
     expect(entity).toStrictEqual({
       page: LiveViewPage.Nodes,
       params: {},
@@ -42,7 +44,7 @@ describe('matchLiveViewEntity test', () => {
   });
 
   it('should correctly match node entity page', () => {
-    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/nodes/node-123')
+    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/nodes/node-123');
     expect(entity).toStrictEqual({
       page: LiveViewPage.Node,
       params: {
@@ -53,7 +55,7 @@ describe('matchLiveViewEntity test', () => {
   });
 
   it('should correctly match pods entity page', () => {
-    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/pods')
+    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/pods');
     expect(entity).toStrictEqual({
       page: LiveViewPage.Pods,
       params: {
@@ -64,7 +66,7 @@ describe('matchLiveViewEntity test', () => {
   });
 
   it('should correctly match pod entity page', () => {
-    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/pods/orders-123')
+    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/pods/orders-123');
     expect(entity).toStrictEqual({
       page: LiveViewPage.Pod,
       params: {
@@ -75,7 +77,7 @@ describe('matchLiveViewEntity test', () => {
   });
 
   it('should correctly match services entity page', () => {
-    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/services')
+    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/services');
     expect(entity).toStrictEqual({
       page: LiveViewPage.Services,
       params: {
@@ -86,7 +88,7 @@ describe('matchLiveViewEntity test', () => {
   });
 
   it('should correctly match service entity page', () => {
-    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/services/orders')
+    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/namespaces/px-sock-shop/services/orders');
     expect(entity).toStrictEqual({
       page: LiveViewPage.Service,
       params: {
@@ -97,7 +99,7 @@ describe('matchLiveViewEntity test', () => {
   });
 
   it('should correctly match a default view with no cluster', () => {
-    const entity = matchLiveViewEntity('/live')
+    const entity = matchLiveViewEntity('/live');
     expect(entity).toStrictEqual({
       page: LiveViewPage.Default,
       params: {},
@@ -105,7 +107,7 @@ describe('matchLiveViewEntity test', () => {
   });
 
   it('should correctly match a default view with a cluster', () => {
-    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/script')
+    const entity = matchLiveViewEntity('/live/clusters/gke%3Afoobar/script');
     expect(entity).toStrictEqual({
       page: LiveViewPage.Default,
       params: {},
@@ -137,7 +139,7 @@ describe('toEntityPathname test', () => {
     const entity = {
       page: LiveViewPage.Namespace,
       params: {
-        namespace: 'px-sock-shop'
+        namespace: 'px-sock-shop',
       },
       clusterName: 'gke:foobar',
     };
@@ -157,7 +159,7 @@ describe('toEntityPathname test', () => {
     const entity = {
       page: LiveViewPage.Node,
       params: {
-        node: 'node-123'
+        node: 'node-123',
       },
       clusterName: 'gke:foobar',
     };
@@ -282,7 +284,7 @@ describe('getLiveViewTitle test', () => {
   it('should generate the title for the namespace page', () => {
     const page = LiveViewPage.Namespace;
     const params = {
-      namespace: 'px-sock-shop'
+      namespace: 'px-sock-shop',
     };
     const defaultTitle = 'my default title';
     expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('px-sock-shop');
@@ -298,7 +300,7 @@ describe('getLiveViewTitle test', () => {
   it('should generate the title for the node page', () => {
     const page = LiveViewPage.Node;
     const params = {
-      node: 'node-123'
+      node: 'node-123',
     };
     const defaultTitle = 'my default title';
     expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('node-123');
@@ -307,7 +309,7 @@ describe('getLiveViewTitle test', () => {
   it('should generate the title for the pods page', () => {
     const page = LiveViewPage.Pods;
     const params = {
-      namespace: 'px-sock-shop'
+      namespace: 'px-sock-shop',
     };
     const defaultTitle = 'my default title';
     expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('px-sock-shop/pods');
@@ -316,7 +318,7 @@ describe('getLiveViewTitle test', () => {
   it('should generate the title for the pod page', () => {
     const page = LiveViewPage.Pod;
     const params = {
-      pod: 'px-sock-shop/orders-123'
+      pod: 'px-sock-shop/orders-123',
     };
     const defaultTitle = 'my default title';
     expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('px-sock-shop/orders-123');
@@ -325,7 +327,7 @@ describe('getLiveViewTitle test', () => {
   it('should generate the title for the services page', () => {
     const page = LiveViewPage.Services;
     const params = {
-      namespace: 'px-sock-shop'
+      namespace: 'px-sock-shop',
     };
     const defaultTitle = 'my default title';
     expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('px-sock-shop/services');
@@ -334,7 +336,7 @@ describe('getLiveViewTitle test', () => {
   it('should generate the title for the service page', () => {
     const page = LiveViewPage.Service;
     const params = {
-      service: 'px-sock-shop/orders'
+      service: 'px-sock-shop/orders',
     };
     const defaultTitle = 'my default title';
     expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('px-sock-shop/orders');
@@ -343,7 +345,7 @@ describe('getLiveViewTitle test', () => {
   it('should generate the title for the default page', () => {
     const page = LiveViewPage.Default;
     const params = {
-      namespace: 'do-not-use'
+      namespace: 'do-not-use',
     };
     const defaultTitle = 'my default title';
     expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('my default title');

@@ -1,4 +1,4 @@
-import {getQueryFuncs, TABLE_DISPLAY_TYPE, Vis} from './vis';
+import { getQueryFuncs, TABLE_DISPLAY_TYPE, Vis } from './vis';
 
 const testVisNoVars: Vis = {
   variables: [],
@@ -40,7 +40,7 @@ const testVisWithVars: Vis = {
     defaultValue: 'def',
   }],
   globalFuncs: [],
-  widgets: [    {
+  widgets: [{
     name: 'latency',
     func: {
       name: 'get_latency',
@@ -96,12 +96,12 @@ describe('getQueryFuncs', () => {
       {
         name: 'get_latency',
         outputTablePrefix: 'widget_0',
-        args: [{name: 'foo', value: 'abc'}],
+        args: [{ name: 'foo', value: 'abc' }],
       },
       {
         name: 'get_error_rate',
         outputTablePrefix: 'widget_1',
-        args: [{name: 'bar', value: 'def'}],
+        args: [{ name: 'bar', value: 'def' }],
       },
     ]);
   });
@@ -112,8 +112,8 @@ describe('getQueryFuncs', () => {
         name: 'get_latency',
         outputTablePrefix: 'latency',
         args: [
-          {name: 'foo', value: 'abc'},
-          {name: 'bar', value: 'def'},
+          { name: 'foo', value: 'abc' },
+          { name: 'bar', value: 'def' },
         ],
       },
     ]);
@@ -127,8 +127,8 @@ describe('getQueryFuncs', () => {
         name: 'get_latency',
         outputTablePrefix: 'latency',
         args: [
-          {name: 'foo', value: 'abc'},
-          {name: 'bar', value: 'xyz'},
+          { name: 'foo', value: 'abc' },
+          { name: 'bar', value: 'xyz' },
         ],
       },
     ]);
@@ -142,8 +142,8 @@ describe('getQueryFuncs', () => {
         name: 'get_latency',
         outputTablePrefix: 'LET',
         args: [
-          {name: 'foo', value: 'abc'},
-          {name: 'bar', value: 'xyz'},
+          { name: 'foo', value: 'abc' },
+          { name: 'bar', value: 'xyz' },
         ],
       },
     ]);

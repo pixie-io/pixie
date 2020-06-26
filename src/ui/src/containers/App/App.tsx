@@ -9,7 +9,9 @@ import { AuthComplete } from 'containers/login/auth-complete';
 import { Login } from 'containers/login/login';
 import Vizier from 'containers/App/vizier';
 import * as React from 'react';
-import { Redirect, Route, Router, Switch } from 'react-router-dom';
+import {
+  Redirect, Route, Router, Switch,
+} from 'react-router-dom';
 import { isProd } from 'utils/env';
 import history from 'utils/pl-history';
 
@@ -45,10 +47,12 @@ export class App extends React.Component {
   }
 
   render() {
-    const { gqlClient, authenticated, loaded, cloudClient } = this.state;
-    return !gqlClient || !loaded ?
-      null :
-      (
+    const {
+      gqlClient, authenticated, loaded, cloudClient,
+    } = this.state;
+    return !gqlClient || !loaded
+      ? null
+      : (
         <CloudClientContext.Provider value={cloudClient}>
           <ThemeProvider theme={DARK_THEME}>
             <SnackbarProvider>
@@ -61,8 +65,8 @@ export class App extends React.Component {
                       <Route exact path='/logout' component={Login} />
                       <Route exact path='/signup' component={Login} />
                       {
-                        authenticated ? <Route component={Vizier} /> :
-                          <Redirect from='/*' to='/login' />
+                        authenticated ? <Route component={Vizier} />
+                          : <Redirect from='/*' to='/login' />
                       }
                     </Switch>
                   </div>

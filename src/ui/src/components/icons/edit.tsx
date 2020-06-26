@@ -1,6 +1,6 @@
 import * as React from 'react';
 
-import SvgIcon, {SvgIconProps} from '@material-ui/core/SvgIcon';
+import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
 const EditIcon = (props: SvgIconProps) => (
   <SvgIcon {...props} viewBox='0 0 21 21'>

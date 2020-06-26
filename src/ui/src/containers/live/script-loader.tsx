@@ -6,9 +6,10 @@ import urlParams from 'utils/url-params';
 import { ExecuteContext } from './context/execute-context';
 import { ScriptContext } from './context/script-context';
 import { parseVis } from './vis';
-import { LiveViewPage,
+import {
+  LiveViewPage,
   LiveViewPageScriptIds,
-  matchLiveViewEntity
+  matchLiveViewEntity,
 } from '../../components/live-widgets/utils/live-view-params';
 
 type LoadScriptState = 'unloaded' | 'url-loaded' | 'url-skipped' | 'context-loaded';
@@ -57,7 +58,7 @@ export function ScriptLoader() {
         const { title, vis, code } = scripts.get(id);
 
         const parsedVis = parseVis(vis);
-        const parsedArgs = argsForVis(parsedVis, {...args, ...entity.params}, id);
+        const parsedArgs = argsForVis(parsedVis, { ...args, ...entity.params }, id);
         ref.current.execute({
           liveViewPage: entity.page,
           // TODO(nserrino): refactor this to be a bit more clean.
@@ -80,6 +81,6 @@ export function ScriptLoader() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [])
+  }, []);
   return null;
 }

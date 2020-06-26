@@ -10,8 +10,8 @@ export class Header extends React.Component<HeaderProps, {}> {
   render() {
     // TODO(michelle): This is basically a breadcrumb. When we have more complicated breadcrumb
     // functionality, we should change this into a breadcrumbs component.
-    const primaryHeading = this.props.primaryHeading;
-    const secondaryHeading = this.props.secondaryHeading;
+    const { primaryHeading } = this.props;
+    const { secondaryHeading } = this.props;
     return (
       <div className='header'>
       <div className='header--text'>
@@ -20,6 +20,6 @@ export class Header extends React.Component<HeaderProps, {}> {
         <div className='header--secondary-text'>{secondaryHeading}</div>
         </div>
       </div>
-      );
+    );
   }
- }
+}

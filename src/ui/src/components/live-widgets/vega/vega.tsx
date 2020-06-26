@@ -1,12 +1,13 @@
+/* eslint-disable no-underscore-dangle */
 import Legend, { LegendInteractState } from 'components/legend/legend';
 import {
-    buildHoverDataCache, formatLegendData, HoverDataCache, LegendData,
+  buildHoverDataCache, formatLegendData, HoverDataCache, LegendData,
 } from 'components/legend/legend-data';
 import {
-    ChartDisplay, convertWidgetDisplayToVegaSpec, EXTERNAL_HOVER_SIGNAL, EXTERNAL_TS_DOMAIN_SIGNAL,
-    HOVER_PIVOT_TRANSFORM, HOVER_SIGNAL, INTERNAL_HOVER_SIGNAL, INTERNAL_TS_DOMAIN_SIGNAL,
-    LEGEND_HOVER_SIGNAL, LEGEND_SELECT_SIGNAL, REVERSE_HOVER_SIGNAL, REVERSE_SELECT_SIGNAL,
-    REVERSE_UNSELECT_SIGNAL,
+  ChartDisplay, convertWidgetDisplayToVegaSpec, EXTERNAL_HOVER_SIGNAL, EXTERNAL_TS_DOMAIN_SIGNAL,
+  HOVER_PIVOT_TRANSFORM, HOVER_SIGNAL, INTERNAL_HOVER_SIGNAL, INTERNAL_TS_DOMAIN_SIGNAL,
+  LEGEND_HOVER_SIGNAL, LEGEND_SELECT_SIGNAL, REVERSE_HOVER_SIGNAL, REVERSE_SELECT_SIGNAL,
+  REVERSE_UNSELECT_SIGNAL,
 } from 'containers/live/convert-to-vega-spec';
 import * as _ from 'lodash';
 import * as React from 'react';
@@ -14,37 +15,37 @@ import { Vega as ReactVega } from 'react-vega';
 import noop from 'utils/noop';
 import { View } from 'vega-typings';
 
-import { createStyles, makeStyles, useTheme, Theme } from '@material-ui/core/styles';
+import {
+  createStyles, makeStyles, useTheme, Theme,
+} from '@material-ui/core/styles';
 
 import { TimeSeriesContext } from '../context/time-series-context';
 
-const useStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    flexbox: {
-      height: '100%',
-      width: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    reactVega: {
-      flex: 1,
-      minHeight: 0,
-    },
-    legends: {
-      height: '15%',
-    },
-    noDataMsgContainer: {
-      height: '100%',
-      display: 'flex',
-      justifyContent: 'center',
-      justifyItems: 'center',
-      alignItems: 'center',
-    },
-    noDataMessage: {
-      ...theme.typography.body1,
-    },
-  });
-});
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  flexbox: {
+    height: '100%',
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  reactVega: {
+    flex: 1,
+    minHeight: 0,
+  },
+  legends: {
+    height: '15%',
+  },
+  noDataMsgContainer: {
+    height: '100%',
+    display: 'flex',
+    justifyContent: 'center',
+    justifyItems: 'center',
+    alignItems: 'center',
+  },
+  noDataMessage: {
+    ...theme.typography.body1,
+  },
+}));
 
 interface VegaProps {
   data: Array<{}>;
@@ -57,8 +58,9 @@ const Vega = React.memo((props: VegaProps) => {
   const classes = useStyles();
   const theme = useTheme();
   const { data: inputData, tableName, display } = props;
-  const { spec, hasLegend, legendColumnName, error } = React.useMemo(() =>
-    convertWidgetDisplayToVegaSpec(display, tableName, theme),
+  const {
+    spec, hasLegend, legendColumnName, error,
+  } = React.useMemo(() => convertWidgetDisplayToVegaSpec(display, tableName, theme),
     [display, tableName, theme]);
 
   const data = React.useMemo(() => ({ [tableName]: inputData }), [tableName, inputData]);
@@ -74,7 +76,8 @@ const Vega = React.memo((props: VegaProps) => {
   const [vegaOrigin, setVegaOrigin] = React.useState<number[]>([]);
   const [legendData, setLegendData] = React.useState<LegendData>({ time: '', entries: [] });
   const [legendInteractState, setLegendInteractState] = React.useState<LegendInteractState>(
-    { selectedSeries: [], hoveredSeries: '' });
+    { selectedSeries: [], hoveredSeries: '' },
+  );
   const [hoverDataCache, setHoverDataCache] = React.useState<HoverDataCache>(null);
 
   const chartRef = React.useRef(null);
@@ -152,12 +155,10 @@ const Vega = React.memo((props: VegaProps) => {
           setLegendInteractState((state) => ({ ...state, hoveredSeries: '' }));
           return;
         }
-        setLegendInteractState((state) => {
-          return {
-            ...state,
-            hoveredSeries: value,
-          };
-        });
+        setLegendInteractState((state) => ({
+          ...state,
+          hoveredSeries: value,
+        }));
       },
       [REVERSE_SELECT_SIGNAL]: (name, value) => {
         if (!value) {
@@ -166,18 +167,15 @@ const Vega = React.memo((props: VegaProps) => {
         setLegendInteractState((state) => {
           if (_.includes(state.selectedSeries, value)) {
             return { ...state, selectedSeries: state.selectedSeries.filter((s) => s !== value) };
-          } else {
-            return { ...state, selectedSeries: [...state.selectedSeries, value] };
           }
+          return { ...state, selectedSeries: [...state.selectedSeries, value] };
         });
       },
       [REVERSE_UNSELECT_SIGNAL]: (name, value) => {
         if (!value) {
           return;
         }
-        setLegendInteractState((state) => {
-          return { ...state, selectedSeries: [] };
-        });
+        setLegendInteractState((state) => ({ ...state, selectedSeries: [] }));
       },
     };
   }, [currentView, hoverListener, setHoverTime, setLegendInteractState]);
@@ -214,8 +212,8 @@ const Vega = React.memo((props: VegaProps) => {
     if (!currentView) {
       return;
     }
-    if (externalTSDomain && externalTSDomain.length === 2 &&
-      !isNaN(externalTSDomain[0]) && !isNaN(externalTSDomain[1])) {
+    if (externalTSDomain && externalTSDomain.length === 2
+      && !Number.isNaN(externalTSDomain[0]) && !Number.isNaN(externalTSDomain[1])) {
       currentView.signal(EXTERNAL_TS_DOMAIN_SIGNAL, externalTSDomain);
     }
     updateView();
@@ -253,13 +251,13 @@ const Vega = React.memo((props: VegaProps) => {
           <span className={classes.noDataMessage}>{`No data available for ${tableName} table`}</span>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className={props.className}>
-      {error ? <div>{error.toString()}</div> :
-        <div className={classes.flexbox} ref={chartRef}>
+      {error ? <div>{error.toString()}</div>
+        : <div className={classes.flexbox} ref={chartRef}>
           <ReactVega
             spec={spec}
             data={data}
@@ -268,8 +266,8 @@ const Vega = React.memo((props: VegaProps) => {
             className={classes.reactVega}
             signalListeners={signalListeners}
           />
-          {!hasLegend ? null :
-            <div className={classes.legends}>
+          {!hasLegend ? null
+            : <div className={classes.legends}>
               <Legend
                 data={legendData}
                 vegaOrigin={vegaOrigin}

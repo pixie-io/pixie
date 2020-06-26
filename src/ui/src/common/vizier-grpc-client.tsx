@@ -2,8 +2,8 @@ import { VizierQueryError } from 'common/errors';
 import { Observable, throwError } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
 import {
-    ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
-    RowBatchData, Status,
+  ErrorDetails, ExecuteScriptRequest, HealthCheckRequest, QueryExecutionStats, Relation,
+  RowBatchData, Status,
 } from 'types/generated/vizier_pb';
 import { VizierServiceClient } from 'types/generated/VizierServiceClientPb';
 import noop from 'utils/noop';
@@ -15,6 +15,7 @@ declare global {
 }
 
 function withDevTools(client) {
+  // eslint-disable-next-line no-underscore-dangle
   const enableDevTools = window.__GRPCWEB_DEVTOOLS__ || noop;
   enableDevTools([client]);
 }
@@ -68,7 +69,8 @@ export class VizierGRPCClient {
     addr: string,
     private token: string,
     readonly clusterID: string,
-    private attachCreds: boolean) {
+    private attachCreds: boolean,
+  ) {
     this.client = new VizierServiceClient(addr, null, attachCreds ? { withCredentials: 'true' } : {});
     withDevTools(this.client);
   }
@@ -149,7 +151,9 @@ export class VizierGRPCClient {
           const relation = resp.getMetaData().getRelation();
           const id = resp.getMetaData().getId();
           const name = resp.getMetaData().getName();
-          tablesMap.set(id, { relation, id, name, data: [] });
+          tablesMap.set(id, {
+            relation, id, name, data: [],
+          });
         } else if (resp.hasData()) {
           const data = resp.getData();
           if (data.hasBatch()) {
@@ -166,14 +170,12 @@ export class VizierGRPCClient {
             if (batch.getEos()) {
               results.tables.push(table);
               tablesMap.delete(id);
-              return;
             }
           } else if (data.hasExecutionStats()) {
             // The query finished executing, and all the data has been received.
             results.executionStats = data.getExecutionStats();
             resolve(results);
             resolved = true;
-            return;
           }
         }
       });
@@ -220,6 +222,7 @@ export class VizierGRPCClient {
     });
 
     if (errors.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-throw-literal
       throw errors;
     }
     return req;

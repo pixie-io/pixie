@@ -15,7 +15,7 @@ interface JSONDataProps {
 
 export const JSONData = React.memo<JSONDataProps>((props) => {
   const indentation = props.indentation ? props.indentation : 0;
-  let data = props.data;
+  let { data } = props;
   let cls = String(typeof data);
 
   if (cls === 'string') {
@@ -37,18 +37,16 @@ export const JSONData = React.memo<JSONDataProps>((props) => {
         {'[ '}
         {props.multiline ? <br/> : null}
         {
-          data.map((val, idx) => {
-            return (
+          data.map((val, idx) => (
               <span
-                key={idx + '-' + indentation}
+                key={`${idx}-${indentation}`}
                 style={{ marginLeft: props.multiline ? (indentation + 1) * JSON_INDENT_PX : 0 }}
               >
                 <JSONData data={val} multiline={props.multiline} indentation={indentation + 1}/>
                 {idx !== Object.keys(data).length - 1 ? ', ' : ''}
                 {props.multiline ? <br/> : null}
               </span>
-            );
-          })
+          ))
         }
         <span style={{ marginLeft: props.multiline ? indentation * JSON_INDENT_PX : 0 }}>{' ]'}</span>
       </span>);
@@ -60,19 +58,17 @@ export const JSONData = React.memo<JSONDataProps>((props) => {
         {'{ '}
         {props.multiline ? <br/> : null}
         {
-          Object.keys(data).map((key, idx) => {
-            return (
+          Object.keys(data).map((key, idx) => (
               <span
-                key={key + '-' + indentation}
+                key={`${key}-${indentation}`}
                 style={{ marginLeft: props.multiline ? (indentation + 1) * JSON_INDENT_PX : 0 }}
               >
-                <span className='formatted_data--json-key'>{key + ': '}</span>
+                <span className='formatted_data--json-key'>{`${key}: `}</span>
                 <JSONData data={data[key]} multiline={props.multiline} indentation={indentation + 1}/>
                 {idx !== Object.keys(data).length - 1 ? ', ' : ''}
                 {props.multiline ? <br/> : null}
               </span>
-            );
-          })
+          ))
         }
         <span style={{ marginLeft: props.multiline ? indentation * JSON_INDENT_PX : 0 }}>{' }'}</span>
       </span>);
@@ -90,9 +86,9 @@ export function LatencyData(data: string) {
   } else if (floatVal > LATENCY_MEDIUM_THRESHOLD) {
     latency = 'med';
   }
-  return <div className={'formatted_data--latency-' + latency}>{formatFloat64Data(floatVal)}</div>;
+  return <div className={`formatted_data--latency-${latency}`}>{formatFloat64Data(floatVal)}</div>;
 }
 
 export function AlertData(data: boolean) {
-  return <div className={'formatted_data--alert-' + data}>{formatBoolData(data)}</div>;
+  return <div className={`formatted_data--alert-${data}`}>{formatBoolData(data)}</div>;
 }

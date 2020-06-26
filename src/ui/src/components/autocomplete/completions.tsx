@@ -30,9 +30,9 @@ export interface CompletionItem {
   highlights?: Array<number>;
 }
 
-const useStyles = makeStyles((theme: Theme) => {
+const useStyles = makeStyles((theme: Theme) => (
   // TODO(malthus): Make use of the theme styles.
-  return createStyles({
+  createStyles({
     root: {
       display: 'flex',
       flexDirection: 'row',
@@ -76,11 +76,12 @@ const useStyles = makeStyles((theme: Theme) => {
     highlight: {
       fontWeight: 600,
     },
-  });
-});
+  })));
 
 const Completions: React.FC<CompletionsProps> = (props) => {
-  const { items, activeItem, onActiveChange, onSelection, className } = props;
+  const {
+    items, activeItem, onActiveChange, onSelection, className,
+  } = props;
   const classes = useStyles();
 
   const description = (() => {
@@ -117,8 +118,8 @@ const Completions: React.FC<CompletionsProps> = (props) => {
         }
       </div>
       {
-        description &&
-        <div className={classes.description}>
+        description
+        && <div className={classes.description}>
           <div className={classes.header}>Description</div>
           {description}
         </div>
@@ -154,11 +155,11 @@ export const Completion = (props: CompletionProps) => {
     if (prev) {
       parts.push(<span key={`title-${remainingIdx}`}>{prev}</span>);
     }
-    const highlight = title.substring(start, start+1);
+    const highlight = title.substring(start, start + 1);
     if (highlight) {
       parts.push(<span key={`title-${start}`} className={classes.highlight}>{highlight}</span>);
     }
-    remainingIdx = start +1 ;
+    remainingIdx = start + 1;
   }
   if (remainingIdx < title.length) {
     parts.push(

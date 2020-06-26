@@ -1,9 +1,8 @@
 import * as React from 'react';
 
-import SvgIcon, {SvgIconProps} from '@material-ui/core/SvgIcon';
+import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
-const PixieLogo = (props: SvgIconProps) => {
-  return <SvgIcon {...props} viewBox='0 0 47 13'>
+const PixieLogo = (props: SvgIconProps) => <SvgIcon {...props} viewBox='0 0 47 13'>
     <g>
       <path d={`M17.1401 1.97813C17.0109 1.84812 17.0109 1.63812 17.1401 1.50811L18.5419 0.098294C18.6723 -0.0327648
       18.8843 -0.0327646 19.0146 0.0982942L22.2887 3.39099C22.4179 3.521 22.4179 3.731 22.2887 3.86101L20.8868
@@ -33,6 +32,5 @@ const PixieLogo = (props: SvgIconProps) => {
       0.128204 35.2586 0.128204H33.0949Z`} />
     </g>
   </SvgIcon>;
-};
 
 export default PixieLogo;

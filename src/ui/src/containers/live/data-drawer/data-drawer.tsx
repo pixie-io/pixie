@@ -7,37 +7,37 @@ import { ResultsContext } from 'containers/live/context/results-context';
 import * as React from 'react';
 import Split from 'react-split';
 
-import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/styles';
+import {
+  createStyles, makeStyles, Theme, useTheme,
+} from '@material-ui/core/styles';
 
 import DataDrawerToggle from './data-drawer-toggle';
 import DataViewer from './data-viewer';
 import ErrorPanel from './error-panel';
 import ExecutionStats from './execution-stats';
 
-const useStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    splits: {
-      '& .gutter': {
-        backgroundColor: theme.palette.background.three,
-      },
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  splits: {
+    '& .gutter': {
+      backgroundColor: theme.palette.background.three,
     },
-    drawerRoot: {
-      position: 'relative',
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    content: {
-      flex: 1,
-      minHeight: 0,
-    },
-    spinner: {
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-    },
-  });
-});
+  },
+  drawerRoot: {
+    position: 'relative',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  content: {
+    flex: 1,
+    minHeight: 0,
+  },
+  spinner: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+  },
+}));
 
 const DataDrawer = () => {
   const { dataDrawerOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
@@ -55,9 +55,9 @@ const DataDrawer = () => {
         setActiveTab={(tab: DataDrawerTabsKey) => setActiveTab(tab)}
       />
       {
-        loading ?
-          (dataDrawerOpen ? <div className={classes.spinner}><Spinner /></div> : null) :
-          <>
+        loading
+          ? (dataDrawerOpen ? <div className={classes.spinner}><Spinner /></div> : null)
+          : <>
             <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'data'}>
               <DataViewer />
             </LazyPanel>

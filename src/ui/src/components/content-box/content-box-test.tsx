@@ -1,6 +1,6 @@
-import {shallow} from 'enzyme';
+import { shallow } from 'enzyme';
 import * as React from 'react';
-import {ContentBox} from './content-box';
+import { ContentBox } from './content-box';
 
 describe('<ContentBox/> test', () => {
   it('should correct set header texts', () => {

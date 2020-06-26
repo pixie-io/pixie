@@ -1,4 +1,4 @@
-import {createMuiTheme, Theme} from '@material-ui/core/styles';
+import { createMuiTheme, Theme } from '@material-ui/core/styles';
 
 declare module '@material-ui/core/styles/createPalette' {
   interface TypeBackground {

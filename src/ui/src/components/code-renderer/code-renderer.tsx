@@ -56,7 +56,7 @@ const CodeRenderer = withStyles(() => ({
                 </div>
               ))}
             </pre>
-          )}
+        )}
       </Highlight>
     </Box>
     <IconButton

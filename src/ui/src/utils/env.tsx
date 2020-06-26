@@ -1,13 +1,13 @@
 import { DOMAIN_NAME } from 'containers/constants';
-import { format } from 'date-fns'
+import { format } from 'date-fns';
 
-const BUILD_NUMBER = process.env.BUILD_NUMBER;
-const BUILD_SCM_REVISION = process.env.BUILD_SCM_REVISION;
-const BUILD_SCM_STATUS = process.env.BUILD_SCM_STATUS;
-const BUILD_TIMESTAMP = process.env.BUILD_TIMESTAMP;
+const { BUILD_NUMBER } = process.env;
+const { BUILD_SCM_REVISION } = process.env;
+const { BUILD_SCM_STATUS } = process.env;
+const { BUILD_TIMESTAMP } = process.env;
 
 const timestampSec = Number.parseInt(BUILD_TIMESTAMP, 10);
-const date = isNaN(timestampSec) ? new Date() : new Date(timestampSec * 1000);
+const date = Number.isNaN(timestampSec) ? new Date() : new Date(timestampSec * 1000);
 const dateStr = format(date, 'YYYY.MM.DD.hh.mm');
 const parts = [];
 if (typeof BUILD_SCM_REVISION === 'string') {
@@ -16,7 +16,7 @@ if (typeof BUILD_SCM_REVISION === 'string') {
 if (BUILD_SCM_STATUS) {
   parts.push(BUILD_SCM_STATUS);
 }
-parts.push(isNaN(timestampSec) ? Math.floor(date.valueOf() / 1000) : timestampSec);
+parts.push(Number.isNaN(timestampSec) ? Math.floor(date.valueOf() / 1000) : timestampSec);
 if (BUILD_NUMBER) {
   parts.push(BUILD_NUMBER);
 }

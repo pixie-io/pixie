@@ -12,95 +12,99 @@ import * as GridLayout from 'react-grid-layout';
 import { resizeEvent, triggerResize } from 'utils/resize';
 import { dataFromProto } from 'utils/result-data-utils';
 
-import { createStyles, makeStyles, Theme, useTheme } from '@material-ui/core/styles';
+import {
+  createStyles, makeStyles, Theme, useTheme,
+} from '@material-ui/core/styles';
 
+import Vega from 'components/live-widgets/vega/vega';
 import { LayoutContext } from './context/layout-context';
 import { ResultsContext } from './context/results-context';
 import { ScriptContext } from './context/script-context';
 import {
-    addLayout, addTableLayout, getGridWidth, Layout, toLayout, updatePositions,
+  addLayout, addTableLayout, getGridWidth, Layout, toLayout, updatePositions,
 } from './layout';
-import { DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, REQUEST_GRAPH_DISPLAY_TYPE,
-         TABLE_DISPLAY_TYPE, widgetTableName } from './vis';
-import Vega from 'components/live-widgets/vega/vega';
+import {
+  DISPLAY_TYPE_KEY, GRAPH_DISPLAY_TYPE, REQUEST_GRAPH_DISPLAY_TYPE,
+  TABLE_DISPLAY_TYPE, widgetTableName,
+} from './vis';
 
-const useStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    grid: {
-      '& .react-grid-item.react-grid-placeholder': {
-        backgroundColor: theme.palette.foreground.grey1,
-        borderRadius: theme.spacing(0.5),
-      },
-    },
-    gridItem: {
-      padding: theme.spacing(1),
-      backgroundColor: theme.palette.background.default,
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  grid: {
+    '& .react-grid-item.react-grid-placeholder': {
+      backgroundColor: theme.palette.foreground.grey1,
       borderRadius: theme.spacing(0.5),
-      border: `solid 1px ${theme.palette.background.three}`,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'stretch',
     },
-    editable: {
-      boxShadow: theme.shadows[10],
-      borderColor: theme.palette.foreground.grey2,
-      cursor: 'move',
-      '& > *': {
-        pointerEvents: 'none',
-      },
-      '& .react-resizable-handle': {
-        pointerEvents: 'all',
-        '&::after': {
-          borderColor: theme.palette.foreground.one,
-          width: theme.spacing(1),
-          height: theme.spacing(1),
-        },
-      },
-    },
-    widgetTitle: {
-      ...theme.typography.subtitle1,
-      padding: theme.spacing(1),
-      borderBottom: `solid 1px ${theme.palette.background.three}`,
-    },
-    chart: {
-      flex: 1,
-      minHeight: 0,
-    },
-    table: {
-      '& *': {
-        ...theme.typography.body2,
-      },
-      '& .scrollable-table--row-odd': {
-        backgroundColor: theme.palette.background.default,
-        outline: [['solid', theme.spacing(0.25), theme.palette.background.three]],
-      },
-      '& .scrollable-table--row-even': {
-        backgroundColor: theme.palette.background.default,
-        outline: [['solid', theme.spacing(0.25), theme.palette.background.three]],
-      },
-      '& .ReactVirtualized__Table__headerRow': {
-        borderBottom: [['solid', theme.spacing(0.25), theme.palette.background.three]],
-        backgroundColor: theme.palette.background.default,
-        '& *': {
-          ...theme.typography.caption,
-          fontWeight: theme.typography.fontWeightLight,
-        },
-      },
-    },
-    loading: {
-      opacity: 0.6,
+  },
+  gridItem: {
+    padding: theme.spacing(1),
+    backgroundColor: theme.palette.background.default,
+    borderRadius: theme.spacing(0.5),
+    border: `solid 1px ${theme.palette.background.three}`,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
+  editable: {
+    boxShadow: theme.shadows[10],
+    borderColor: theme.palette.foreground.grey2,
+    cursor: 'move',
+    '& > *': {
       pointerEvents: 'none',
     },
-    spinner: {
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
+    '& .react-resizable-handle': {
+      pointerEvents: 'all',
+      '&::after': {
+        borderColor: theme.palette.foreground.one,
+        width: theme.spacing(1),
+        height: theme.spacing(1),
+      },
     },
-  });
-});
+  },
+  widgetTitle: {
+    ...theme.typography.subtitle1,
+    padding: theme.spacing(1),
+    borderBottom: `solid 1px ${theme.palette.background.three}`,
+  },
+  chart: {
+    flex: 1,
+    minHeight: 0,
+  },
+  table: {
+    '& *': {
+      ...theme.typography.body2,
+    },
+    '& .scrollable-table--row-odd': {
+      backgroundColor: theme.palette.background.default,
+      outline: [['solid', theme.spacing(0.25), theme.palette.background.three]],
+    },
+    '& .scrollable-table--row-even': {
+      backgroundColor: theme.palette.background.default,
+      outline: [['solid', theme.spacing(0.25), theme.palette.background.three]],
+    },
+    '& .ReactVirtualized__Table__headerRow': {
+      borderBottom: [['solid', theme.spacing(0.25), theme.palette.background.three]],
+      backgroundColor: theme.palette.background.default,
+      '& *': {
+        ...theme.typography.caption,
+        fontWeight: theme.typography.fontWeightLight,
+      },
+    },
+  },
+  loading: {
+    opacity: 0.6,
+    pointerEvents: 'none',
+  },
+  spinner: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+  },
+}));
 
-const WidgetDisplay = ({display, table, tableName, widgetName}) => {
+const WidgetDisplay = ({
+  display, table, tableName, widgetName,
+}) => {
   const classes = useStyles();
 
   if (display[DISPLAY_TYPE_KEY] === TABLE_DISPLAY_TYPE) {
@@ -119,7 +123,7 @@ const WidgetDisplay = ({display, table, tableName, widgetName}) => {
   }
 
   if (display[DISPLAY_TYPE_KEY] === REQUEST_GRAPH_DISPLAY_TYPE) {
-    return <RequestGraphWidget display={display as RequestGraphDisplay} data={parsedTable}/>
+    return <RequestGraphWidget display={display as RequestGraphDisplay} data={parsedTable}/>;
   }
 
   try {
@@ -139,7 +143,7 @@ const WidgetDisplay = ({display, table, tableName, widgetName}) => {
   } catch (e) {
     return <div>Error in displaySpec: {e.message}</div>;
   }
-}
+};
 
 const Grid = GridLayout.WidthProvider(GridLayout);
 
@@ -205,9 +209,7 @@ const Canvas = (props: CanvasProps) => {
     loading && classes.loading,
   );
 
-  const layout = React.useMemo(() => {
-    return toLayout(vis.widgets, isMobile);
-  }, [vis, isMobile]);
+  const layout = React.useMemo(() => toLayout(vis.widgets, isMobile), [vis, isMobile]);
 
   const charts = React.useMemo(() => {
     const widgets = [];

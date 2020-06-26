@@ -13,19 +13,17 @@ import { fetch } from 'whatwg-fetch';
 import { localGQLResolvers, localGQLTypeDef } from './local-gql';
 
 // Apollo link that adds cookies in the request.
-const cloudAuthLink = setContext((_, { headers }) => {
-  return {
-    headers: {
-      ...headers,
-      withCredentials: true,
-    },
-  };
-});
+const cloudAuthLink = setContext((_, { headers }) => ({
+  headers: {
+    ...headers,
+    withCredentials: true,
+  },
+}));
 
 // Apollo link that redirects to login page on HTTP status 401.
 const loginRedirectLink = onError(({ networkError }) => {
   if (!!networkError && (networkError as ServerError).statusCode === 401) {
-    RedirectUtils.redirect('/login', { ['no_cache']: 'true' });
+    RedirectUtils.redirect('/login', { no_cache: 'true' });
   }
 });
 
@@ -50,7 +48,9 @@ export class CloudClient {
   graphQL: ApolloClient<NormalizedCacheObject>;
 
   private persistPromise: Promise<void>;
+
   private cache: InMemoryCache;
+
   private loaded = false;
 
   constructor() {

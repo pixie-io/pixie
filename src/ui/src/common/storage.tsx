@@ -30,7 +30,7 @@ interface KeyStore {
 }
 
 export function useStorage<T>(store: KeyStore, key: StorageKey, initialValue?: T):
-  [T, React.Dispatch<React.SetStateAction<T>>] {
+[T, React.Dispatch<React.SetStateAction<T>>] {
   const [state, setState] = React.useState<T>(() => {
     try {
       const stored = store.getItem(key);
@@ -52,7 +52,7 @@ export function useStorage<T>(store: KeyStore, key: StorageKey, initialValue?: T
 }
 
 export function useLocalStorage<T>(key: StorageKey, initialValue?: T):
-  [T, React.Dispatch<React.SetStateAction<T>>] {
+[T, React.Dispatch<React.SetStateAction<T>>] {
   return useStorage(localStorage, key, initialValue);
 }
 
@@ -60,7 +60,7 @@ export function useLocalStorage<T>(key: StorageKey, initialValue?: T):
 // and it attempts to restore from sessionStorage first, and defaults to localstorage
 // (on first load).
 export function useSessionStorage<T>(key: StorageKey, initialValue?: T):
-  [T, React.Dispatch<React.SetStateAction<T>>] {
+[T, React.Dispatch<React.SetStateAction<T>>] {
   const setItem = (key: string, value: string) => {
     localStorage.setItem(key, value);
     sessionStorage.setItem(key, value);

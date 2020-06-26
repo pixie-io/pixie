@@ -1,6 +1,4 @@
 import { StatusCell, StatusGroup } from 'components/status/status';
-import {AdminTooltip, clusterStatusGroup, convertHeartbeatMS, StyledTableCell,
-        StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell} from './utils';
 import { useQuery } from '@apollo/react-hooks';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
@@ -8,18 +6,19 @@ import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
-import Tooltip from '@material-ui/core/Tooltip';
 import gql from 'graphql-tag';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
+import {
+  AdminTooltip, clusterStatusGroup, convertHeartbeatMS, StyledTableCell,
+  StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell,
+} from './utils';
 
-const useStyles = makeStyles((theme: Theme) => {
-  return createStyles({
-    error: {
-      padding: theme.spacing(1),
-    },
-  });
-});
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  error: {
+    padding: theme.spacing(1),
+  },
+}));
 
 const GET_CLUSTERS = gql`
 {
@@ -54,8 +53,8 @@ interface ClusterDisplay {
 export function formatCluster(clusterInfo): ClusterDisplay {
   let shortVersion = clusterInfo.vizierVersion;
   // Dashes occur in internal Vizier versions and not public release ones.
-  if (clusterInfo.vizierVersion.indexOf('-') == -1) {
-    shortVersion = clusterInfo.vizierVersion.split('+')[0];
+  if (clusterInfo.vizierVersion.indexOf('-') === -1) {
+    [shortVersion] = clusterInfo.vizierVersion.split('+');
   }
 
   return {
@@ -69,7 +68,7 @@ export function formatCluster(clusterInfo): ClusterDisplay {
     statusGroup: clusterStatusGroup(clusterInfo.status),
     mode: clusterInfo.vizierConfig.passthroughEnabled ? 'Passthrough' : 'Direct',
     lastHeartbeat: convertHeartbeatMS(clusterInfo.lastHeartbeatMs),
-  }
+  };
 }
 
 const CLUSTERS_POLL_INTERVAL = 2500;
@@ -129,4 +128,4 @@ export const ClustersTable = () => {
       </TableBody>
     </Table>
   );
-}
+};

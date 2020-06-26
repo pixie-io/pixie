@@ -1,8 +1,8 @@
 import Axios from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import {shallow} from 'enzyme';
+import { shallow } from 'enzyme';
 import * as React from 'react';
-import {Logout} from './logout';
+import { Logout } from './logout';
 
 describe('<Logout/> test', () => {
   it('should logout', () => {

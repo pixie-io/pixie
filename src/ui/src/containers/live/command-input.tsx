@@ -4,7 +4,6 @@ import PixieCommandIcon from 'components/icons/pixie-command';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import * as React from 'react';
 import { argsForVis } from 'utils/args-utils';
-import { Script } from 'utils/script-bundle';
 
 import { createStyles, makeStyles } from '@material-ui/core';
 import Card from '@material-ui/core/Card';
@@ -19,20 +18,18 @@ interface CommandInputProps {
   onClose: () => void;
 }
 
-const useStyles = makeStyles(() =>
-  createStyles({
-    card: {
-      position: 'absolute',
-      width: '760px',
-      top: '40%',
-      left: '50%',
-      transform: 'translate(-50%, -20vh)',
-    },
-    input: {
-      maxHeight: '60vh',
-    },
-  }),
-);
+const useStyles = makeStyles(() => createStyles({
+  card: {
+    position: 'absolute',
+    width: '760px',
+    top: '40%',
+    left: '50%',
+    transform: 'translate(-50%, -20vh)',
+  },
+  input: {
+    maxHeight: '60vh',
+  },
+}));
 
 // TODO(malthus): Figure out the lifecycle of this component. When a command is selected,
 // should the component clear the input? What about when the input is dismised?
@@ -77,7 +74,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
         title: script.title,
         id: script.id,
         // Fill the default args for now. This will go away once the autocomplete is implemented.
-        args: argsForVis(vis, {})
+        args: argsForVis(vis, {}),
       });
     }
     onClose();

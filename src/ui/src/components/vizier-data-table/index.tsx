@@ -1,3 +1,3 @@
-import {VizierDataTable} from './vizier-data-table';
+import { VizierDataTable } from './vizier-data-table';
 
 export default VizierDataTable;
