@@ -1,5 +1,5 @@
 import { SemanticType } from '../../../types/generated/vizier_pb';
-import { toEntityPathname, toSingleEntityPage } from '../../../containers/live/utils/live-view-params';
+import { toEntityPathname, toSingleEntityPage } from './live-view-params';
 import * as React from 'react';
 import {Link} from 'react-router-dom';
 

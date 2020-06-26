@@ -3,7 +3,7 @@ import { WidgetDisplay } from 'containers/live/vis';
 
 import { Network, data as visData} from 'vis-network/standalone';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
-import { toEntityPathname, toSingleEntityPage } from 'containers/live/utils/live-view-params';
+import { toEntityPathname, toSingleEntityPage } from 'components/live-widgets/utils/live-view-params';
 import ClusterContext from 'common/cluster-context';
 import { SemanticType } from 'types/generated/vizier_pb';
 import Button from '@material-ui/core/Button';

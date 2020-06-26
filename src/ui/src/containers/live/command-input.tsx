@@ -11,7 +11,7 @@ import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 
 import { ExecuteContext } from './context/execute-context';
-import { LiveViewPage } from './utils/live-view-params';
+import { LiveViewPage } from '../../components/live-widgets/utils/live-view-params';
 import { parseVis } from './vis';
 
 interface CommandInputProps {

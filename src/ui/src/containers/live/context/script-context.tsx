@@ -10,7 +10,7 @@ import { argsEquals, argsForVis, Arguments } from 'utils/args-utils';
 import { debounce } from 'utils/debounce';
 import urlParams from 'utils/url-params';
 import { EntityURLParams, getLiveViewTitle, LiveViewPage, LiveViewPageScriptIds,
-         matchLiveViewEntity, toEntityPathname } from '../utils/live-view-params';
+         matchLiveViewEntity, toEntityPathname } from '../../../components/live-widgets/utils/live-view-params';
 interface ScriptContextProps {
   args: Arguments;
   setArgs: (inputArgs: Arguments, newVis?: Vis, entityParamNames?: string[]) => void;

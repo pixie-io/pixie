@@ -6,7 +6,10 @@ import urlParams from 'utils/url-params';
 import { ExecuteContext } from './context/execute-context';
 import { ScriptContext } from './context/script-context';
 import { parseVis } from './vis';
-import { LiveViewPage, LiveViewPageScriptIds, matchLiveViewEntity } from './utils/live-view-params';
+import { LiveViewPage,
+  LiveViewPageScriptIds,
+  matchLiveViewEntity
+} from '../../components/live-widgets/utils/live-view-params';
 
 type LoadScriptState = 'unloaded' | 'url-loaded' | 'url-skipped' | 'context-loaded';
 

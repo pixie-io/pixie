@@ -141,7 +141,7 @@
     "react-highlight": "^0.12.0",
     "react-hotkeys": "^2.0.0",
     "react-monaco-editor": "^0.36.0",
-    "react-router-dom": "^5.1.2",
+    "react-router-dom": "^5.2.0",
     "react-split": "^2.0.7",
     "react-transition-group": "^2.5.0",
     "react-vega": "^7.3.0",
