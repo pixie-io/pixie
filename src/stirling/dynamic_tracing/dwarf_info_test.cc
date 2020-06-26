@@ -92,7 +92,11 @@ constexpr std::string_view kReturnProbeIRTmpl = R"(
   type: RETURN
   ret_vals {
     id: "retval0"
-    index: 0
+    index: 6
+  }
+  ret_vals {
+    id: "retval1"
+    index: 7
   }
 )";
 
@@ -107,21 +111,44 @@ constexpr std::string_view kReturnProbePhysIRTmpl = R"(
     val_type: VOID_POINTER
     reg: SP
   }
+  vars {
+    name: "retval0"
+    val_type: INT
+    memory: {
+      base: "sp"
+      offset: 48
+    }
+  }
+vars {
+    name: "retval1"
+    val_type: BOOL
+    memory: {
+      base: "sp"
+      offset: 56
+    }
+  }
 )";
 
-class DwarfInfoTest : public ::testing::Test {
+struct DwarfInfoTestParam {
+  std::string_view input;
+  std::string_view expected_output;
+};
+
+class DwarfInfoTest : public ::testing::TestWithParam<DwarfInfoTestParam> {
  protected:
   DwarfInfoTest() : kGoBinaryPath(pl::testing::TestFilePath(FLAGS_dummy_go_binary)) {}
 
   std::string kGoBinaryPath;
 };
 
-TEST_F(DwarfInfoTest, ArgExpansion) {
-  std::string entry_probe_ir = absl::Substitute(kEntryProbeIRTmpl, kGoBinaryPath);
+TEST_P(DwarfInfoTest, Transform) {
+  DwarfInfoTestParam p = GetParam();
+
+  std::string entry_probe_ir = absl::Substitute(p.input, kGoBinaryPath);
   dynamictracingpb::Probe input_probe;
   TextFormat::ParseFromString(std::string(entry_probe_ir), &input_probe);
 
-  std::string entry_probe_phys_ir = absl::Substitute(kEntryProbePhysIRTmpl, kGoBinaryPath);
+  std::string entry_probe_phys_ir = absl::Substitute(p.expected_output, kGoBinaryPath);
   dynamictracingpb::PhysicalProbe expected_output_probe;
   TextFormat::ParseFromString(std::string(entry_probe_phys_ir), &expected_output_probe);
 
@@ -133,22 +160,10 @@ TEST_F(DwarfInfoTest, ArgExpansion) {
   EXPECT_TRUE(message_differencer.Compare(output_probe, expected_output_probe)) << diff_out;
 }
 
-TEST_F(DwarfInfoTest, RetvalExpansion) {
-  std::string return_probe_ir = absl::Substitute(kReturnProbeIRTmpl, kGoBinaryPath);
-  dynamictracingpb::Probe input_probe;
-  TextFormat::ParseFromString(std::string(return_probe_ir), &input_probe);
-
-  std::string return_probe_phys_ir = absl::Substitute(kReturnProbePhysIRTmpl, kGoBinaryPath);
-  dynamictracingpb::PhysicalProbe expected_output_probe;
-  TextFormat::ParseFromString(std::string(return_probe_phys_ir), &expected_output_probe);
-
-  ASSERT_OK_AND_ASSIGN(dynamictracingpb::PhysicalProbe output_probe, AddDwarves(input_probe));
-
-  MessageDifferencer message_differencer;
-  std::string diff_out;
-  message_differencer.ReportDifferencesToString(&diff_out);
-  EXPECT_TRUE(message_differencer.Compare(output_probe, expected_output_probe)) << diff_out;
-}
+INSTANTIATE_TEST_SUITE_P(
+    DwarfInfoTestSuite, DwarfInfoTest,
+    ::testing::Values(DwarfInfoTestParam{kEntryProbeIRTmpl, kEntryProbePhysIRTmpl},
+                      DwarfInfoTestParam{kReturnProbeIRTmpl, kReturnProbePhysIRTmpl}));
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
