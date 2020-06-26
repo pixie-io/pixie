@@ -1,6 +1,6 @@
 import {Resolvers} from 'apollo-client';
 import gql from 'graphql-tag';
-import * as uuid from 'uuid/v1';
+import * as uuid from 'uuid';
 
 export const localGQLTypeDef = gql`
   extend type Mutation {
