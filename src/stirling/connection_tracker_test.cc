@@ -867,6 +867,10 @@ TEST_P(ConnectionTrackerStatsTest, ConnOpenDataCloseSequence) {
   resp_frame0->attr.traffic_class.role = role;
   auto close_event = event_gen_.InitClose();
 
+  tracker_.IterationPreTick({}, nullptr, nullptr);
+  tracker_.IterationPreTick({}, nullptr, nullptr);
+  tracker_.IterationPreTick({}, nullptr, nullptr);
+
   tracker_.AddControlEvent(open_event);
 
   // No stats pushed for conn_open.
@@ -908,6 +912,10 @@ TEST_P(ConnectionTrackerStatsTest, NoConnOpen) {
   // No stats pushed for conn_open.
   EXPECT_THAT(conn_stats_.mutable_agg_stats(), IsEmpty());
 
+  tracker_.IterationPreTick({}, nullptr, nullptr);
+  tracker_.IterationPreTick({}, nullptr, nullptr);
+  tracker_.IterationPreTick({}, nullptr, nullptr);
+
   tracker_.AddDataEvent(std::move(req_frame0));
   tracker_.AddDataEvent(std::move(resp_frame0));
 
@@ -940,6 +948,10 @@ TEST_P(ConnectionTrackerStatsTest, OnlyDataEvents) {
   auto resp_frame0 = event_gen_.InitRecvEvent(protocol, "bbbb");
   resp_frame0->attr.traffic_class.role = role;
   // No close_event.
+
+  // Increment iteration count, and the next IterationPreTick() can export the cached data stats.
+  tracker_.IterationPreTick({}, nullptr, nullptr);
+  tracker_.IterationPreTick({}, nullptr, nullptr);
 
   // No stats pushed for conn_open.
   EXPECT_THAT(conn_stats_.mutable_agg_stats(), IsEmpty());

@@ -401,6 +401,20 @@ class ConnectionTracker {
   static constexpr int64_t kDeathCountdownIters = 3;
 
   /**
+   * The iterations given for protocol detection by uprobes. The value is given to the worst
+   * situation when the uprobe events are polled after the kprobe events.
+   *
+   * In the first iteration, the uprobe events are not polled at all. Because the uprobe
+   * events are not submitted to the perf buffer.
+   *
+   * In the 2nd iteration, the kprobe events are polled first, but the uprobe events are polled
+   * later.
+   *
+   * Here we do not consider event loss.
+   */
+  static constexpr int64_t kUProbeProtocolDetectionIters = 2;
+
+  /**
    * Initializes protocol state for a protocol.
    */
   template <typename TStateType>
@@ -479,10 +493,7 @@ class ConnectionTracker {
   void UpdateState(const std::vector<CIDRBlock>& cluster_cidrs);
 
   void UpdateDataStats(const SocketDataEvent& event);
-  bool ReadyToExportDataStats() const {
-    return remote_endpoint().family == SockAddrFamily::kIPv4 ||
-           remote_endpoint().family == SockAddrFamily::kIPv6 || conn_resolution_failed_;
-  }
+  bool ReadyToExportDataStats() const;
   void ExportDataStats();
   void ExportConnCloseStats();
 
@@ -583,6 +594,10 @@ class ConnectionTracker {
   // 2) We want something with some type safety. std::any does provide this, in the
   //    similar way as std::variant.
   std::any protocol_state_;
+
+  // Records how many transfer iterations has been performed on this ConnectionTracker.
+  // This is used to wait before exposing connections stats.
+  int64_t iteration_count_ = 0;
 
   template <typename TProtocolTraits>
   friend std::string DebugString(const ConnectionTracker& c, std::string_view prefix);

@@ -31,6 +31,14 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
   script.push_back({{"req2"}, {"resp2"}});
   cs.RunClientServer<&TCPSocket::Read, &TCPSocket::Write>(script);
 
+  {
+    DataTable data_table(kHTTPTable);
+    // Try to add 3 transfer iteration to go above the threshold.
+    source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
+    source_->TransferData(ctx_.get(), SocketTraceConnector::kHTTPTableNum, &data_table);
+  }
+
   source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table_);
   std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());

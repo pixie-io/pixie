@@ -613,6 +613,17 @@ void ConnectionTracker::UpdateDataStats(const SocketDataEvent& event) {
   }
 }
 
+bool ConnectionTracker::ReadyToExportDataStats() const {
+  const bool conn_resolution_finished = remote_endpoint().family == SockAddrFamily::kIPv4 ||
+                                        remote_endpoint().family == SockAddrFamily::kIPv6 ||
+                                        conn_resolution_failed_;
+
+  const bool protocol_detection_finished = iteration_count_ > kUProbeProtocolDetectionIters ||
+                                           traffic_class_.protocol != kProtocolUnknown;
+
+  return conn_resolution_finished && protocol_detection_finished;
+}
+
 void ConnectionTracker::ExportDataStats() {
   if (conn_stats_ == nullptr || data_stats_exported_) {
     return;
@@ -642,6 +653,9 @@ void ConnectionTracker::ExportConnCloseStats() {
 void ConnectionTracker::IterationPreTick(const std::vector<CIDRBlock>& cluster_cidrs,
                                          system::ProcParser* proc_parser,
                                          system::SocketInfoManager* socket_info_mgr) {
+  // Increase the iteration count which tells how many transfers have been attempted.
+  ++iteration_count_;
+
   // Might not always be true, but for now there's nothing IterationPreTick does that
   // should be applied to a disabled tracker. This is in contrast to IterationPostTick.
   if (state_ == State::kDisabled) {

@@ -6,18 +6,21 @@
 #include "src/common/testing/test_utils/container_runner.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/http_table.h"
+#include "src/stirling/output.h"
 #include "src/stirling/testing/common.h"
 #include "src/stirling/testing/socket_trace_bpf_test_fixture.h"
 
 namespace pl {
 namespace stirling {
 
+using ::pl::stirling::testing::AccessRecordBatch;
 using ::pl::stirling::testing::FindRecordIdxMatchesPID;
 using ::pl::testing::BazelBinTestFilePath;
 
 using ::testing::AllOf;
 using ::testing::Eq;
 using ::testing::Field;
+using ::testing::Gt;
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
 using ::testing::StrEq;
@@ -166,6 +169,41 @@ TEST_F(HTTP2TraceTest, Basic) {
 
   EXPECT_THAT(FindRecordIdxMatchesPID(record_batch, kHTTPUPIDIdx, client_.process_pid()),
               IsEmpty());
+
+  {
+    DataTable data_table(kConnStatsTable);
+    source_->TransferData(ctx_.get(), SocketTraceConnector::kConnStatsTableNum, &data_table);
+    std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+
+    types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
+
+    auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, server_.process_pid());
+    ASSERT_THAT(indices, SizeIs(1));
+
+    int conn_open =
+        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kConnOpen, indices[0])
+            .val;
+    int conn_close =
+        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kConnClose, indices[0])
+            .val;
+    int bytes_sent =
+        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kBytesSent, indices[0])
+            .val;
+    int bytes_rcvd =
+        AccessRecordBatch<types::Int64Value>(record_batch, conn_stats_idx::kBytesRecv, indices[0])
+            .val;
+    EXPECT_THAT(conn_open, 1);
+    // TODO(yzhao): This should be 1. This fails because:
+    // * SocketTraceConnector reads perf buffers in the order:
+    //   "socket_control_events" "socket_data_events".
+    // * conn_event_t is completely ignored, because its traffic_class cannot be resolved until
+    // socket_data_event_t is received.
+    // * When close_event_t is received, it is also ignored, as the conn_event_t is ignored,
+    // and the socket_data_event_t has not arrived yet,
+    EXPECT_THAT(conn_close, 0);
+    EXPECT_THAT(bytes_sent, Gt(2000));
+    EXPECT_THAT(bytes_rcvd, Gt(900));
+  }
 }
 
 }  // namespace stirling
