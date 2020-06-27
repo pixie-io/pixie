@@ -85,47 +85,59 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 export const DeployInstructions = () => {
   const classes = useStyles();
 
-  return (<div className={classes.container}>
-    <ProfileMenu className={classes.profileMenu} />
-    <Card className={classes.dialog}>
-      <div className={classes.content}>
-        <span className={classes.header}>Install Pixie</span>
-        <CodeRenderer
-          code={`bash -c "$(curl -fsSL ${window.location.origin}/install.sh)"`}
-          language='bash'
-        />
-        <div className={classes.instructions}>
-          Run this in a macOS Terminal or Linux shell to install Pixie in your K8s cluster.
-          Share with your admin if you don&apos;t have access.
+  return (
+    <div className={classes.container}>
+      <ProfileMenu className={classes.profileMenu} />
+      <Card className={classes.dialog}>
+        <div className={classes.content}>
+          <span className={classes.header}>Install Pixie</span>
+          <CodeRenderer
+            code={`bash -c "$(curl -fsSL ${window.location.origin}/install.sh)"`}
+            language='bash'
+          />
+          <div className={classes.instructions}>
+            Run this in a macOS Terminal or Linux shell to install Pixie in your K8s cluster.
+            Share with your admin if you don&apos;t have access.
+          </div>
+          <div className={classes.linksHeader}>Don&apos;t have K8s?</div>
+          <ul className={classes.list}>
+            <li className={classes.listItem}>
+              <a className={classes.linkItem} href='/docs/installing-pixie/install-guides'>
+                Set up a quick local K8s sandbox
+              </a>
+            </li>
+            <li className={classes.listItem}>
+              <a className={classes.linkItem} href='/docs/installing-pixie/quick-start'>Set up a demo app</a>
+            </li>
+          </ul>
+          <div className={classes.buttons}>
+            <Button
+              className={classes.button}
+              href='https://slackin.withpixie.ai/'
+              variant='outlined'
+              color='primary'
+              size='large'
+            >
+              Slack
+            </Button>
+            <Button className={classes.button} href='/docs' variant='outlined' color='primary' size='large'>
+              Docs
+            </Button>
+            <Button
+              className={classes.button}
+              href='https://github.com/pixie-labs/pixie'
+              variant='outlined'
+              color='primary'
+              size='large'
+            >
+              Github
+            </Button>
+          </div>
         </div>
-        <div className={classes.linksHeader}>Don&apos;t have K8s?</div>
-        <ul className={classes.list}>
-          <li className={classes.listItem}>
-            <a className={classes.linkItem} href='/docs/installing-pixie/install-guides'>
-              Set up a quick local K8s sandbox
-            </a>
-          </li>
-          <li className={classes.listItem}>
-            <a className={classes.linkItem} href='/docs/installing-pixie/quick-start'>Set up a demo app</a>
-          </li>
-        </ul>
-        <div className={classes.buttons}>
-          <Button className={classes.button} href='https://slackin.withpixie.ai/'
-            variant='outlined' color='primary' size='large'>
-            Slack
-          </Button>
-          <Button className={classes.button} href='/docs' variant='outlined' color='primary' size='large'>
-            Docs
-          </Button>
-          <Button className={classes.button} href='https://github.com/pixie-labs/pixie'
-            variant='outlined' color='primary' size='large'>
-            Github
-          </Button>
-        </div>
-      </div>
-      <img className={classes.logo} src={logoImage} style={{ width: '55px' }} />
-    </Card>
-  </div>);
+        <img className={classes.logo} src={logoImage} style={{ width: '55px' }} />
+      </Card>
+    </div>
+  );
 };
 
 interface ClusterInstructionsProps {
@@ -135,15 +147,17 @@ interface ClusterInstructionsProps {
 export const ClusterInstructions = (props: ClusterInstructionsProps) => {
   const classes = useStyles();
 
-  return (<div className={classes.container}>
-    <Card className={classes.dialog}>
-      <div className={classes.content}>
-        <div className={classes.centered}>
-          <p>{props.message}</p>
-          <Spinner variant='light' />
+  return (
+    <div className={classes.container}>
+      <Card className={classes.dialog}>
+        <div className={classes.content}>
+          <div className={classes.centered}>
+            <p>{props.message}</p>
+            <Spinner variant='light' />
+          </div>
         </div>
-      </div>
-      <img className={classes.logo} src={logoImage} style={{ width: '55px' }} />
-    </Card>
-  </div>);
+        <img className={classes.logo} src={logoImage} style={{ width: '55px' }} />
+      </Card>
+    </div>
+  );
 };

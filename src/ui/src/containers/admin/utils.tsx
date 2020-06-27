@@ -58,7 +58,7 @@ export const AdminTooltip = ({ children, title }) => {
   const classes = tooltipStyles();
   return (
     <Tooltip title={title} placement='bottom' interactive classes={classes}>
-    {children}
+      {children}
     </Tooltip>
   );
 };

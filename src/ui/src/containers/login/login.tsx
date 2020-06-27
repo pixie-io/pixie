@@ -7,7 +7,8 @@ import history from 'utils/pl-history';
 import { Logout } from './logout';
 import { UserCreate, UserLogin } from './user-login';
 
-export const Login = () => (<div className='pixie-login'>
+export const Login = () => (
+  <div className='pixie-login'>
     <Router history={history}>
       <Switch>
         <Route exact path='/login' component={UserLogin} />

@@ -134,7 +134,8 @@ const AutocompleteInputField = (props: AutocompleteArgumentFieldProps) => {
 
   return (
     <div className={classes.root}>
-      <span onClick={() => { ref.current.focus(); }}>{name}</span>:
+      <span onClick={() => { ref.current.focus(); }}>{name}</span>
+      :
       <div className={classes.measurer}>
         <div className={classes.measurerContent}>{value}</div>
         <input
@@ -168,7 +169,7 @@ const AutocompleteInputField = (props: AutocompleteArgumentFieldProps) => {
           }
         </Card>
       </div>
-    </div >
+    </div>
   );
 };
 
@@ -200,9 +201,10 @@ const FieldCompletion = (props: FieldCompletionProps) => {
 
   const highlightedString = [];
   for (let i = 0; i < value.length; i++) {
-    highlightedString.push(<span className={highlightedIndexes.includes(i) ? classes.highlight : ''}>
-      {value.charAt(i)}
-    </span>);
+    highlightedString.push(
+      <span className={highlightedIndexes.includes(i) ? classes.highlight : ''}>
+        {value.charAt(i)}
+      </span>);
   }
 
   return (

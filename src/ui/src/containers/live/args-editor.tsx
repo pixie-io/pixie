@@ -91,7 +91,8 @@ const ArgumentField = (props: ArgumentInputFieldProps) => {
   return (
     <Tooltip title='Edit arg'>
       <div className={classes.root}>
-        <span onClick={() => { ref.current.focus(); }}>{name}</span>:
+        <span onClick={() => { ref.current.focus(); }}>{name}</span>
+        :
         <div className={classes.measurer}>
           <div className={classes.measurerContent}>{value}</div>
           <input
@@ -106,8 +107,8 @@ const ArgumentField = (props: ArgumentInputFieldProps) => {
             }}
           />
         </div>
-      </div >
-    </Tooltip >
+      </div>
+    </Tooltip>
   );
 };
 

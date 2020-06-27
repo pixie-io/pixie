@@ -11,6 +11,7 @@ export const LogoutHandler = () => {
   });
 };
 
+// eslint-disable-next-line react/prefer-stateless-function
 export class Logout extends React.Component<{}, {}> {
   // eslint-disable-next-line class-methods-use-this
   render() {

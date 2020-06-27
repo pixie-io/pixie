@@ -18,5 +18,5 @@ export function isEntityType(semanticType: SemanticType): boolean {
 export function ToEntityLink(entity: string, semanticType: SemanticType, clusterName: string) {
   const page = toSingleEntityPage(entity, semanticType, clusterName);
   const pathname = toEntityPathname(page);
-  return <Link to={pathname} className={'query-results--entity-link'}>{entity}</Link>;
+  return <Link to={pathname} className='query-results--entity-link'>{entity}</Link>;
 }

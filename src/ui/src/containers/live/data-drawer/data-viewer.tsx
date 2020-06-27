@@ -17,13 +17,18 @@ const DataViewer = () => {
   })), [tables]);
 
   if (tabs.length === 0) {
-    return <div style={{
-      display: 'flex',
-      flexDirection: 'row',
-      height: '100%',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}>No data available to show</div>;
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      >
+        No data available to show
+      </div>
+    );
   }
   return <DataViewerTabs tabs={tabs} />;
 };
@@ -91,13 +96,13 @@ const DataViewerTabs = (props: DataViewerTabsProps) => {
       </StyledTabs>
       {
         tabs.map((tab, i) => (
-            <LazyPanel
-              show={activeTab === i}
-              key={tab.title}
-              className={classes.panel}
-            >
-              {tab.content}
-            </LazyPanel>
+          <LazyPanel
+            show={activeTab === i}
+            key={tab.title}
+            className={classes.panel}
+          >
+            {tab.content}
+          </LazyPanel>
         ))
       }
     </div>

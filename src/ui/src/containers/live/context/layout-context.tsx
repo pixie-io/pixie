@@ -61,8 +61,9 @@ export const LayoutContextProvider = (props) => {
         setDataDrawerSplitsSizes,
         setDataDrawerOpen,
         isMobile,
-      }}>
+      }}
+    >
       {props.children}
-    </LayoutContext.Provider >
+    </LayoutContext.Provider>
   );
 };

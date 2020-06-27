@@ -2,7 +2,7 @@ import { shallow } from 'enzyme';
 import * as React from 'react';
 import { noop } from 'utils/testing';
 
-import { AutocompleteInput } from 'components/autocomplete/new-autocomplete-input'
+import { AutocompleteInput } from 'components/autocomplete/new-autocomplete-input';
 
 describe('<AutcompleteInput/> test', () => {
   it('renders the correct spans', () => {
@@ -12,7 +12,7 @@ describe('<AutcompleteInput/> test', () => {
         onChange={noop}
         setCursor={noop}
         cursorPos={8}
-        placeholder={'test'}
+        placeholder='test'
         value={
           [{
             type: 'key',
@@ -39,7 +39,7 @@ describe('<AutcompleteInput/> test', () => {
         onChange={noop}
         setCursor={noop}
         cursorPos={0}
-        placeholder={'test'}
+        placeholder='test'
         value={[]}
       />,
     );

@@ -142,39 +142,53 @@ export const DeploymentKeyRow = ({ deploymentKey }) => {
         <Input
           className={classes.deploymentKeyValue}
           id='deployment-key'
-          fullWidth={true}
-          readOnly={true}
-          disableUnderline={true}
+          fullWidth
+          readOnly
+          disableUnderline
           type={showKey ? 'text' : 'password'}
           value={deploymentKey.key}
         />
       </StyledTableCell>
       <StyledRightTableCell>
-        <IconButton size='small' classes={{ sizeSmall: classes.actionsButton }}
-         onClick={openMenu}>
-          <Actions/>
+        <IconButton
+          size='small'
+          classes={{ sizeSmall: classes.actionsButton }}
+          onClick={openMenu}
+        >
+          <Actions />
         </IconButton>
-        <StyledMenu open={open} onClose={closeMenu} anchorEl={anchorEl} getContentAnchorEl={null}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+        <StyledMenu
+          open={open}
+          onClose={closeMenu}
+          anchorEl={anchorEl}
+          getContentAnchorEl={null}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
           <MenuItem key='show' alignItems='center' onClick={() => setShowKey(!showKey)}>
             <StyledListItemIcon>
-              {showKey ? <Visibility/> : <VisibilityOff/>}
+              {showKey ? <Visibility /> : <VisibilityOff />}
             </StyledListItemIcon>
-            <StyledListItemText primary={showKey ? 'Hide value' : 'Show value'}/>
+            <StyledListItemText primary={showKey ? 'Hide value' : 'Show value'} />
           </MenuItem>
-          <MenuItem key='copy' alignItems='center'
-           onClick={() => navigator.clipboard.writeText(deploymentKey.key)}>
+          <MenuItem
+            key='copy'
+            alignItems='center'
+            onClick={() => navigator.clipboard.writeText(deploymentKey.key)}
+          >
             <StyledListItemIcon className={classes.copyBtn}>
-              <Copy/>
+              <Copy />
             </StyledListItemIcon>
-            <StyledListItemText primary='Copy value'/>
+            <StyledListItemText primary='Copy value' />
           </MenuItem>
-          <MenuItem key='delete' alignItems='center'
-           onClick={() => deleteDeployKey({ variables: { id: deploymentKey.id } })}>
+          <MenuItem
+            key='delete'
+            alignItems='center'
+            onClick={() => deleteDeployKey({ variables: { id: deploymentKey.id } })}
+          >
             <StyledListItemIcon className={classes.copyBtn}>
-              <Delete/>
+              <Delete />
             </StyledListItemIcon>
-            <StyledListItemText primary='Delete'/>
+            <StyledListItemText primary='Delete' />
           </MenuItem>
         </StyledMenu>
       </StyledRightTableCell>
@@ -207,7 +221,7 @@ export const DeploymentKeysTable = () => {
         </TableHead>
         <TableBody>
           {deploymentKeys.map((deploymentKey: DeploymentKeyDisplay) => (
-            <DeploymentKeyRow key={deploymentKey.id} deploymentKey={deploymentKey}/>
+            <DeploymentKeyRow key={deploymentKey.id} deploymentKey={deploymentKey} />
           ))}
         </TableBody>
       </Table>

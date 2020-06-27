@@ -243,9 +243,10 @@ const ScriptContextProvider = (props) => {
         id,
         setScript,
         commitURL,
-      }}>
+      }}
+    >
       {props.children}
-    </ScriptContext.Provider >
+    </ScriptContext.Provider>
   );
 };
 

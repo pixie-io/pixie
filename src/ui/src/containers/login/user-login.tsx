@@ -122,44 +122,46 @@ const CompanyInfo = () => {
         <div className={classes.subheader}>Beta</div>
         <div className={classes.text}>
           Engineers use Pixie&apos;s auto-telemetry to debug distributed environments in real-time
-          </div>
+        </div>
         <ul className={classes.list}>
           <li className={classes.bullet}>
             Unlimited early access to core features
-            </li>
+          </li>
           <li className={classes.bullet}>
             Support via community Slack & Github
-            </li>
+          </li>
           <li className={classes.bullet}>
             No credit card needed
-            </li>
+          </li>
         </ul>
       </div>
       <div className={classes.footer}>
-        <span>&#169;</span> 2020, Pixie Labs Inc.
+        <span>&#169;</span>
+        {' '}
+        2020, Pixie Labs Inc.
       </div>
     </div>
   );
 };
 
 export const UserLogin = (props) => (
-    <LoginContainer
-      signUp={false}
-      headerText={'Log-in to Pixie'}
-      footerLinkText={'Sign up for a new account'}
-      footerLink='/signup'
-      {...props}
-    />
+  <LoginContainer
+    signUp={false}
+    headerText='Log-in to Pixie'
+    footerLinkText='Sign up for a new account'
+    footerLink='/signup'
+    {...props}
+  />
 );
 
 export const UserCreate = (props) => (
-    <LoginContainer
-      signUp={true}
-      headerText={'Create your account'}
-      footerLinkText={'Log into an existing account'}
-      footerLink='/login'
-      {...props}
-    />
+  <LoginContainer
+    signUp
+    headerText='Create your account'
+    footerLinkText='Log into an existing account'
+    footerLink='/login'
+    {...props}
+  />
 );
 
 export interface RouterInfo {
@@ -307,6 +309,10 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
     };
   }
 
+  UNSAFE_componentWillMount() {
+    this.parseQueryParams();
+  }
+
   parseQueryParams() {
     const queryParams = QueryString.parse(this.props.location.search);
 
@@ -347,10 +353,6 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
     }
   }
 
-  UNSAFE_componentWillMount() {
-    this.parseQueryParams();
-  }
-
   render() {
     let showCompanyInfo = !this.authenticating;
     let loginBody = (
@@ -361,19 +363,23 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
           allowSignUp={this.props.signUp}
           allowLogin={!this.props.signUp}
           responseMode={this.responseMode}
+          /* eslint-disable-next-line react/jsx-no-bind */
           onAuthenticated={this.props.signUp
             ? onCreateAuthenticated.bind(this) : onLoginAuthenticated.bind(this)}
         />
         {this.authenticating ? null
-          : <span className='login-footer'>
-            <hr />
-            <Link to={{
-              pathname: this.props.footerLink,
-              search: this.props.location.search,
-            }}>
-              {this.props.footerLinkText}
-            </Link>
-          </span>}
+          : (
+            <span className='login-footer'>
+              <hr />
+              <Link to={{
+                pathname: this.props.footerLink,
+                search: this.props.location.search,
+              }}
+              >
+                {this.props.footerLinkText}
+              </Link>
+            </span>
+          )}
       </>
     );
 
@@ -395,10 +401,14 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
             <div className='error-message--icon'><img src={criticalImage} /></div>
             {this.state.error}
           </div>
-          <Button variant='contained' color='secondary' onClick={() => {
-            // Just reload page to clear state and allow them to retry login.
-            document.location.reload();
-          }}>
+          <Button
+            variant='contained'
+            color='secondary'
+            onClick={() => {
+              // Just reload page to clear state and allow them to retry login.
+              document.location.reload();
+            }}
+          >
             Retry
           </Button>
         </DialogBox>
@@ -434,6 +444,7 @@ const PRIVACY_POLICY_LINK = makeStyledLink('https://pixielabs.ai/privacy', 'Priv
 const COOKIE_POLICY_LINK = makeStyledLink('https://pixielabs.ai/cookies', 'Cookie Policy');
 
 class Auth0Login extends React.Component<Auth0LoginProps> {
+  // eslint-disable-next-line react/static-property-placement
   public static defaultProps: Partial<Auth0LoginProps> = {
     containerID: 'pl-auth0-lock-container',
   };

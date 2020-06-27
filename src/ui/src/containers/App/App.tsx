@@ -21,6 +21,7 @@ import { ThemeProvider } from '@material-ui/core/styles';
 import { CloudClientContext } from './context';
 
 export class App extends React.Component {
+  // eslint-disable-next-line react/state-in-constructor
   state = {
     cloudClient: new CloudClient(),
     gqlClient: null,

@@ -115,7 +115,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
   };
 
   return (
-    <div className={clsx(classes.root, className)} >
+    <div className={clsx(classes.root, className)}>
       <Input
         className={classes.input}
         onChange={setInputValue}
@@ -132,7 +132,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
         onSelection={handleSelection}
         activeItem={activeItem}
       />
-    </div >
+    </div>
   );
 };
 

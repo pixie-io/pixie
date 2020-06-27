@@ -44,18 +44,18 @@ const CodeRenderer = withStyles(() => ({
         {({
           className, style, tokens, getLineProps, getTokenProps,
         }) => (
-            <pre
-              className={className}
-              style={{ ...style, backgroundColor: 'transparent' }}
-            >
-              {tokens.map((line, i) => (
-                <div key={i} {...getLineProps({ line, key: i })}>
-                  {line.map((token, key) => (
-                    <span key={key} {...getTokenProps({ token, key })} />
-                  ))}
-                </div>
-              ))}
-            </pre>
+          <pre
+            className={className}
+            style={{ ...style, backgroundColor: 'transparent' }}
+          >
+            {tokens.map((line, i) => (
+              <div key={i} {...getLineProps({ line, key: i })}>
+                {line.map((token, key) => (
+                  <span key={key} {...getTokenProps({ token, key })} />
+                ))}
+              </div>
+            ))}
+          </pre>
         )}
       </Highlight>
     </Box>

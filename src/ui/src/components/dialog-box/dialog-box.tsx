@@ -8,18 +8,16 @@ export interface DialogBoxProps {
   children: any;
 }
 
-export class DialogBox extends React.Component<DialogBoxProps, {}> {
-  render() {
-    const style = this.props.width ? { width: this.props.width } : null;
-    return (
-      <div className='dialog-box' style={style}>
-        <div className='dialog-box--header'>
-          <img src={infoImage} style={{ width: '55px' }} />
-        </div>
-        <div className='dialog-box--content'>
-          {this.props.children}
-        </div>
+export const DialogBox = ({ width, children }: DialogBoxProps) => {
+  const style = width ? { width } : null;
+  return (
+    <div className='dialog-box' style={style}>
+      <div className='dialog-box--header'>
+        <img src={infoImage} style={{ width: '55px' }} />
       </div>
-    );
-  }
-}
+      <div className='dialog-box--content'>
+        {children}
+      </div>
+    </div>
+  );
+};

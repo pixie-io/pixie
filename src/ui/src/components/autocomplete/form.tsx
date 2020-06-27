@@ -68,7 +68,8 @@ const FormInput: React.FC<FormInputProps> = ({
           value={value}
           onValueChange={onValueChange}
           dispatch={dispatch}
-          focus={focusIndex === i} />
+          focus={focusIndex === i}
+        />
       ))}
     </div>
   );
@@ -111,13 +112,17 @@ const FormField: React.FC<FormFieldProps> = ({
 
   return (
     <>
-      <span className={classes.label}>{field}:&nbsp;</span>
+      <span className={classes.label}>
+        {field}
+        :&nbsp;
+      </span>
       <input
         ref={ref}
         className={classes.input}
         value={value}
         onKeyDown={onKeyDown}
-        onChange={onChange} />
+        onChange={onChange}
+      />
     </>
   );
 };

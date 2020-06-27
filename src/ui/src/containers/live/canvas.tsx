@@ -119,11 +119,11 @@ const WidgetDisplay = ({
   const parsedTable = dataFromProto(table.relation, table.data);
 
   if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
-    return <GraphWidget display={display as GraphDisplay} data={parsedTable}/>;
+    return <GraphWidget display={display as GraphDisplay} data={parsedTable} />;
   }
 
   if (display[DISPLAY_TYPE_KEY] === REQUEST_GRAPH_DISPLAY_TYPE) {
-    return <RequestGraphWidget display={display as RequestGraphDisplay} data={parsedTable}/>;
+    return <RequestGraphWidget display={display as RequestGraphDisplay} data={parsedTable} />;
   }
 
   try {
@@ -141,7 +141,12 @@ const WidgetDisplay = ({
       </>
     );
   } catch (e) {
-    return <div>Error in displaySpec: {e.message}</div>;
+    return (
+      <div>
+        Error in displaySpec:
+        {e.message}
+      </div>
+    );
   }
 };
 
@@ -224,9 +229,9 @@ const Canvas = (props: CanvasProps) => {
 
       if (loading) {
         widgets.push(
-            <div key={widgetName} className={className}>
-              <div className={classes.spinner}><Spinner /></div>
-            </div>,
+          <div key={widgetName} className={className}>
+            <div className={classes.spinner}><Spinner /></div>
+          </div>,
         );
         return;
       }
@@ -237,8 +242,12 @@ const Canvas = (props: CanvasProps) => {
 
       widgets.push(
         <div key={widgetName} className={className}>
-          <WidgetDisplay display={display} table={table}
-           tableName={tableName} widgetName={widgetName}/>
+          <WidgetDisplay
+            display={display}
+            table={table}
+            tableName={tableName}
+            widgetName={widgetName}
+          />
         </div>,
       );
     });
@@ -272,7 +281,7 @@ const Canvas = (props: CanvasProps) => {
             </div>
           ))
         }
-      </Grid >
+      </Grid>
     );
   }
 
@@ -287,7 +296,7 @@ const Canvas = (props: CanvasProps) => {
       margin={[theme.spacing(2.5), theme.spacing(2.5)]}
     >
       {charts}
-    </Grid >
+    </Grid>
   );
 };
 

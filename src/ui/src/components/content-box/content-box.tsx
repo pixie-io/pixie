@@ -30,11 +30,11 @@ export class ContentBox extends React.Component<ContentBoxProps, ContentBoxState
     return (
       <DraggableCore
         onDrag={(event, { deltaY }) => {
-          this.setState({
-            height: this.state.height + deltaY,
-          });
-        }
-        }
+          this.setState((state) => ({
+            ...state,
+            height: state.height + deltaY,
+          }));
+        }}
       >
         <div
           className='content-box--resizer'
@@ -47,27 +47,29 @@ export class ContentBox extends React.Component<ContentBoxProps, ContentBoxState
 
   render() {
     const header = typeof this.props.headerText === 'string' ? _.toUpper(this.props.headerText) : this.props.headerText;
-    return (<div className='content-box--wrapper'>
-      <div className='content-box' data-resizable={this.props.resizable}>
-        <div className='content-box--header'>
-          <div className='content-box--header-text'>
-            {header}
+    return (
+      <div className='content-box--wrapper'>
+        <div className='content-box' data-resizable={this.props.resizable}>
+          <div className='content-box--header'>
+            <div className='content-box--header-text'>
+              {header}
+            </div>
+            <div className='content-box--subheader-text'>
+              {this.props.subheaderText ? '| ' : ''}
+              {this.props.subheaderText}
+            </div>
+            <div className='spacer' />
+            <div className='content-box--secondary-text'>
+              {this.props.secondaryText}
+            </div>
           </div>
-          <div className='content-box--subheader-text'>
-            {this.props.subheaderText ? '| ' : ''}
-            {this.props.subheaderText}
-          </div>
-          <div className='spacer' />
-          <div className='content-box--secondary-text'>
-            {this.props.secondaryText}
+          <div className='content-box--content' style={{ height: this.state.height }}>
+            {this.props.children}
           </div>
         </div>
-        <div className='content-box--content' style={{ height: this.state.height }}>
-          {this.props.children}
-        </div>
+        {this.props.resizable ? this.renderResizer() : null}
       </div>
-      {this.props.resizable ? this.renderResizer() : null}
-    </div>);
+    );
   }
 }
 //

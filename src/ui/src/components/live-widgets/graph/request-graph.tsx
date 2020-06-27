@@ -243,16 +243,23 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
       <div>
         <Button
           size='small'
-          onClick={toggleColor}>{colorByLatency ? 'Color by error rate' : 'Color by latency'}
+          onClick={toggleColor}
+        >
+          {colorByLatency ? 'Color by error rate' : 'Color by latency'}
         </Button>
         <Button
           size='small'
-          onClick={toggleHierarchy}>{hierarchyEnabled ? 'Disable hierarchy' : 'Enable hierarchy'}
+          onClick={toggleHierarchy}
+        >
+          {hierarchyEnabled ? 'Disable hierarchy' : 'Enable hierarchy'}
         </Button>
         <Button
           size='small'
-          onClick={toggleMode}>{clusteredMode ? 'Disable clustering' : 'Cluster by service'}
+          onClick={toggleMode}
+        >
+          {clusteredMode ? 'Disable clustering' : 'Cluster by service'}
         </Button>
       </div>
-    </div>);
+    </div>
+  );
 };

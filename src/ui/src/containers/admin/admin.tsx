@@ -87,7 +87,7 @@ const AdminOverview = () => {
         <Button component={Link} to='/live' color='primary'>
           Live View
         </Button>
-        <ProfileMenu/>
+        <ProfileMenu />
       </div>
       <div className={classes.main}>
         <div style={{ display: 'flex' }}>
@@ -99,14 +99,22 @@ const AdminOverview = () => {
             <StyledTab value='deployment-keys' label='Deployment Keys' />
           </StyledTabs>
           {tab === 'deployment-keys'
-            && <Button onClick={() => createDeployKey()}
-             className={classes.createButton} variant='outlined'
-             startIcon={<Add/>} color='primary'>New key</Button>}
+            && (
+            <Button
+              onClick={() => createDeployKey()}
+              className={classes.createButton}
+              variant='outlined'
+              startIcon={<Add />}
+              color='primary'
+            >
+              New key
+            </Button>
+            )}
         </div>
         <div className={classes.tabContents}>
           <TableContainer className={classes.container}>
-            {tab === 'clusters' && <ClustersTable/>}
-            {tab === 'deployment-keys' && <DeploymentKeysTable/>}
+            {tab === 'clusters' && <ClustersTable />}
+            {tab === 'deployment-keys' && <DeploymentKeysTable />}
           </TableContainer>
         </div>
       </div>

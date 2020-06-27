@@ -8,7 +8,8 @@ describe('<VizierErrorDetails/> test', () => {
     const wrapper = shallow(
       <VizierErrorDetails error={
         new VizierQueryError('server', 'a well formated server error')
-      } />,
+      }
+      />,
     );
     expect(wrapper.find('div').text()).toBe('a well formated server error');
   });
@@ -17,7 +18,8 @@ describe('<VizierErrorDetails/> test', () => {
     const wrapper = shallow(
       <VizierErrorDetails error={
         new VizierQueryError('script', ['error 1', 'error 2', 'error 3'])
-      } />,
+      }
+      />,
     );
     expect(wrapper.find('div').length).toBe(3);
   });
@@ -26,7 +28,8 @@ describe('<VizierErrorDetails/> test', () => {
     const wrapper = shallow(
       <VizierErrorDetails error={
         new Error('generic error')
-      } />,
+      }
+      />,
     );
     expect(wrapper.find('div').text()).toBe('generic error');
   });

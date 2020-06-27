@@ -38,7 +38,8 @@ export const ResultsContextProvider = (props) => {
       clearResults,
       loading,
       setLoading,
-    }}>
+    }}
+    >
       {props.children}
     </ResultsContext.Provider>
   );

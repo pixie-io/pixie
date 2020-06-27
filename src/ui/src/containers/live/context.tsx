@@ -8,16 +8,16 @@ import ScriptContextProvider from './context/script-context';
 
 export const withLiveViewContext = (Component) => function LiveViewContextProvider() {
   return (
-      <ScriptContextProvider>
-        <LayoutContextProvider>
-          <DataDrawerContextProvider>
-            <ResultsContextProvider>
-              <ExecuteContextProvider>
-                <Component />
-              </ExecuteContextProvider>
-            </ResultsContextProvider>
-          </DataDrawerContextProvider>
-        </LayoutContextProvider>
-      </ScriptContextProvider>
+    <ScriptContextProvider>
+      <LayoutContextProvider>
+        <DataDrawerContextProvider>
+          <ResultsContextProvider>
+            <ExecuteContextProvider>
+              <Component />
+            </ExecuteContextProvider>
+          </ResultsContextProvider>
+        </DataDrawerContextProvider>
+      </LayoutContextProvider>
+    </ScriptContextProvider>
   );
 };

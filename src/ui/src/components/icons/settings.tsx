@@ -4,7 +4,9 @@ import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
 const SettingsIcon = (props: SvgIconProps) => (
   <SvgIcon {...props} viewBox='0 0 24 24'>
-    <path fillRule='evenodd' clipRule='evenodd'
+    <path
+      fillRule='evenodd'
+      clipRule='evenodd'
       d={`M19.4301 12.98C19.4701 12.66 19.5001 12.34 19.5001 12C19.5001 11.66 19.4701 11.34
         19.4301 11.02L21.5401 9.37C21.7301 9.22 21.7801 8.95 21.6601 8.73L19.6601 5.27C19.5401
         5.05 19.2701 4.97 19.0501 5.05L16.5601 6.05C16.0401 5.65 15.4801 5.32 14.8701 5.07L14.4901
@@ -20,7 +22,7 @@ const SettingsIcon = (props: SvgIconProps) => (
         15.5C10.0701 15.5 8.50008 13.93 8.50008 12C8.50008 10.07 10.0701 8.5 12.0001 8.5C13.9301
         8.5 15.5001 10.07 15.5001 12C15.5001 13.93 13.9301 15.5 12.0001 15.5Z
     `}
-  />
+    />
   </SvgIcon>
 );
 

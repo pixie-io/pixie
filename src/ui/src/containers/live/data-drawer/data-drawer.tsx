@@ -57,19 +57,21 @@ const DataDrawer = () => {
       {
         loading
           ? (dataDrawerOpen ? <div className={classes.spinner}><Spinner /></div> : null)
-          : <>
-            <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'data'}>
-              <DataViewer />
-            </LazyPanel>
-            <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'errors'}>
-              <ErrorPanel />
-            </LazyPanel>
-            <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'stats'}>
-              <ExecutionStats />
-            </LazyPanel>
-          </>
+          : (
+            <>
+              <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'data'}>
+                <DataViewer />
+              </LazyPanel>
+              <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'errors'}>
+                <ErrorPanel />
+              </LazyPanel>
+              <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'stats'}>
+                <ExecutionStats />
+              </LazyPanel>
+            </>
+          )
       }
-    </div >
+    </div>
   );
 };
 

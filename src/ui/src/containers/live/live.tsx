@@ -12,6 +12,7 @@ import Tooltip from '@material-ui/core/Tooltip';
 import ChevronRight from '@material-ui/icons/ChevronRight';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 
+import clsx from 'clsx';
 import Canvas from './canvas';
 import ClusterSelector from './cluster-selector';
 import CommandInput from './command-input';
@@ -78,6 +79,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     background: theme.palette.background.three,
     cursor: 'pointer',
   },
+  hidden: {
+    display: 'none',
+  },
 }));
 
 export const EditorOpener = () => {
@@ -85,13 +89,13 @@ export const EditorOpener = () => {
   const openEditor = () => setEditorPanelOpen(true);
   const classes = useStyles();
 
-  if (editorPanelOpen || isMobile) {
+  if (isMobile) {
     return null;
   }
 
   return (
-    <Tooltip title='Open Editor'>
-      <IconButton disabled={isMobile} className={classes.opener} onClick={openEditor}>
+    <Tooltip title='Open Editor' className={clsx(editorPanelOpen && classes.hidden)}>
+      <IconButton disabled={isMobile || editorPanelOpen} className={classes.opener} onClick={openEditor}>
         <ChevronRight />
       </IconButton>
     </Tooltip>
@@ -104,7 +108,7 @@ const LiveView = () => {
   const { execute } = React.useContext(ExecuteContext);
   const { loading } = React.useContext(VizierGRPCClientContext);
   const {
-    setDataDrawerOpen, setEditorPanelOpen, editorPanelOpen, isMobile,
+    setDataDrawerOpen, setEditorPanelOpen, isMobile,
   } = React.useContext(LayoutContext);
 
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
@@ -151,7 +155,8 @@ const LiveView = () => {
         <ExecuteScriptButton />
         {
           !isMobile
-          && <Tooltip title='Edit View'>
+          && (
+          <Tooltip title='Edit View'>
             <ToggleButton
               className={classes.moveWidgetToggle}
               selected={widgetsMoveable}
@@ -161,26 +166,29 @@ const LiveView = () => {
               <MoveIcon />
             </ToggleButton>
           </Tooltip>
+          )
         }
         <ProfileMenu />
       </div>
       {
         loading ? <div className='center-content'><ClusterInstructions message='Connecting to cluster...' /></div>
-          : <>
-            <ScriptLoader />
-            <DataDrawerSplitPanel className={classes.mainPanel}>
-              <EditorSplitPanel className={classes.editorPanel}>
-                <div className={classes.canvas} ref={canvasRef}>
-                  <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
-                </div>
-              </EditorSplitPanel>
-            </DataDrawerSplitPanel>
-            <Drawer open={drawerOpen} onClose={toggleDrawer}>
-              <div>drawer content</div>
-            </Drawer>
-            <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
-            <EditorOpener />
-          </>
+          : (
+            <>
+              <ScriptLoader />
+              <DataDrawerSplitPanel className={classes.mainPanel}>
+                <EditorSplitPanel className={classes.editorPanel}>
+                  <div className={classes.canvas} ref={canvasRef}>
+                    <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
+                  </div>
+                </EditorSplitPanel>
+              </DataDrawerSplitPanel>
+              <Drawer open={drawerOpen} onClose={toggleDrawer}>
+                <div>drawer content</div>
+              </Drawer>
+              <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
+              <EditorOpener />
+            </>
+          )
       }
     </div>
   );

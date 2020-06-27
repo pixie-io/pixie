@@ -257,29 +257,31 @@ const Vega = React.memo((props: VegaProps) => {
   return (
     <div className={props.className}>
       {error ? <div>{error.toString()}</div>
-        : <div className={classes.flexbox} ref={chartRef}>
-          <ReactVega
-            spec={spec}
-            data={data}
-            actions={false}
-            onNewView={onNewView}
-            className={classes.reactVega}
-            signalListeners={signalListeners}
-          />
-          {!hasLegend ? null
-            : <div className={classes.legends}>
-              <Legend
-                data={legendData}
-                vegaOrigin={vegaOrigin}
-                chartWidth={chartRef.current ? chartRef.current.getBoundingClientRect().width : 0}
-                name={legendColumnName}
-                interactState={legendInteractState}
-                setInteractState={setLegendInteractState}
-              />
-            </div>
-          }
-        </div>
-      }
+        : (
+          <div className={classes.flexbox} ref={chartRef}>
+            <ReactVega
+              spec={spec}
+              data={data}
+              actions={false}
+              onNewView={onNewView}
+              className={classes.reactVega}
+              signalListeners={signalListeners}
+            />
+            {!hasLegend ? null
+              : (
+                <div className={classes.legends}>
+                  <Legend
+                    data={legendData}
+                    vegaOrigin={vegaOrigin}
+                    chartWidth={chartRef.current ? chartRef.current.getBoundingClientRect().width : 0}
+                    name={legendColumnName}
+                    interactState={legendInteractState}
+                    setInteractState={setLegendInteractState}
+                  />
+                </div>
+              )}
+          </div>
+        )}
     </div>
   );
 });

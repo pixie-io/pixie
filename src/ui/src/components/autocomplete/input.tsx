@@ -132,7 +132,7 @@ const Input: React.FC<InputProps> = ({
         <Caret active={focused} />
         <span className={classes.hint} tabIndex={-1}>{hint}</span>
       </div>
-    </div >
+    </div>
   );
 };
 

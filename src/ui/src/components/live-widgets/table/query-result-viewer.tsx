@@ -13,20 +13,23 @@ export interface QueryResultTableProps {
 
 export const QueryResultTable = React.memo<QueryResultTableProps>(({ data, className }) => {
   const { selectedClusterName } = React.useContext(ClusterContext);
-  const ExpandedRowRenderer = (rowData: any) => <JSONData
+  const ExpandedRowRenderer = (rowData: any) => (
+    <JSONData
       className='query-results-expanded-row'
       data={rowData}
-      multiline={true}
-    />;
+      multiline
+    />
+  );
 
   return (
     <div className={clsx('query-results', className)}>
       <VizierDataTable
         table={data}
-        expandable={true}
+        expandable
         expandedRenderer={ExpandedRowRenderer}
-        prettyRender={true}
-        clusterName={selectedClusterName}/>
+        prettyRender
+        clusterName={selectedClusterName}
+      />
     </div>
   );
 });

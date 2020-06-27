@@ -20,7 +20,7 @@ const ExecuteScriptButton = () => {
           <PlayIcon />
         </IconButton>
       </div>
-    </Tooltip >
+    </Tooltip>
   );
 };
 

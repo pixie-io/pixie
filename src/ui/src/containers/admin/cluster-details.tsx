@@ -118,7 +118,7 @@ const AgentsTableContent = ({ agents }) => {
     <Table>
       <TableHead>
         <TableRow>
-          <StyledTableHeaderCell></StyledTableHeaderCell>
+          <StyledTableHeaderCell />
           <StyledTableHeaderCell>ID</StyledTableHeaderCell>
           <StyledTableHeaderCell>Hostname</StyledTableHeaderCell>
           <StyledTableHeaderCell>Last Heartbeat</StyledTableHeaderCell>
@@ -189,7 +189,12 @@ const AgentsTable = () => {
   }, [client]);
 
   if (state.error) {
-    return <span>Error! {state.error}</span>;
+    return (
+      <span>
+        Error!
+        {state.error}
+      </span>
+    );
   }
   return <AgentsTableContent agents={state.data} />;
 };
@@ -225,7 +230,14 @@ const ClusterDetailsContents = ({ name }) => {
 
   const cluster = data.clusters.find((c) => c.clusterName === name);
   if (!cluster) {
-    return <div className={classes.error}>Cluster {name} not found.</div>;
+    return (
+      <div className={classes.error}>
+        Cluster
+        {name}
+        {' '}
+        not found.
+      </div>
+    );
   }
 
   return (
@@ -267,20 +279,32 @@ export const ClusterDetailsPage = () => {
         <div className={classes.title}>
           <div className={classes.titleText}>Cluster View</div>
           <Breadcrumbs classes={{ separator: classes.breadcrumbText, li: classes.breadcrumbLink }}>
-            <Button classes={{ label: classes.breadcrumbLink }}
-                    component={Link} to='/admin' color='secondary'>Admin</Button>
-            <Button classes={{ label: classes.breadcrumbLink }}
-                    component={Link} to='/admin' color='secondary'>Cluster</Button>
+            <Button
+              classes={{ label: classes.breadcrumbLink }}
+              component={Link}
+              to='/admin'
+              color='secondary'
+            >
+              Admin
+            </Button>
+            <Button
+              classes={{ label: classes.breadcrumbLink }}
+              component={Link}
+              to='/admin'
+              color='secondary'
+            >
+              Cluster
+            </Button>
             <Typography className={classes.breadcrumbText}>{decodedName}</Typography>
           </Breadcrumbs>
         </div>
         <Button component={Link} to='/live' color='primary'>
-        Live View
+          Live View
         </Button>
         <ProfileMenu />
       </div>
       <div className={classes.main}>
-        <ClusterDetailsContents name={decodedName}/>
+        <ClusterDetailsContents name={decodedName} />
       </div>
     </div>
   );

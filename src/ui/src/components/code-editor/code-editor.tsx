@@ -33,10 +33,13 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
   constructor(props) {
     super(props);
     this.state = {
-      lineNumbers: true,
+      // eslint-disable-next-line react/no-unused-state
       extraEditorClassName: clsx('pl-code-editor', this.props.className),
+      // eslint-disable-next-line react/no-unused-state
       lineDecorationsWidth: 0,
+      // eslint-disable-next-line react/no-unused-state
       scrollBeyondLastColumn: 0,
+      // eslint-disable-next-line react/no-unused-state
       scrollBeyondLastLine: 0,
     };
     this.onChange = this.onChange.bind(this);
@@ -48,6 +51,26 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
       }
     });
   }
+
+  onChange(code) {
+    if (this.props.onChange) {
+      this.props.onChange(code);
+    }
+  }
+
+  onEditorMount(editor) {
+    this.editorRef = editor;
+    const shortcutKeys = _.flatMap(Object.values(getKeyMap()), (keybinding) => keybinding.sequence)
+      .map((key) => key.toLowerCase().replace('control', 'ctrl'));
+    removeKeybindings(editor, shortcutKeys);
+  }
+
+  getEditorValue = (): string => {
+    if (this.editorRef) {
+      return this.editorRef.getValue();
+    }
+    return '';
+  };
 
   changeEditorValue = (code) => {
     if (!this.editorRef) {
@@ -64,26 +87,6 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
     // Return state to normal.
     this.editorRef.setPosition(pos);
   };
-
-  getEditorValue = (): string => {
-    if (this.editorRef) {
-      return this.editorRef.getValue();
-    }
-    return '';
-  };
-
-  onChange(code) {
-    if (this.props.onChange) {
-      this.props.onChange(code);
-    }
-  }
-
-  onEditorMount(editor) {
-    this.editorRef = editor;
-    const shortcutKeys = _.flatMap(Object.values(getKeyMap()), (keybinding) => keybinding.sequence)
-      .map((key) => key.toLowerCase().replace('control', 'ctrl'));
-    removeKeybindings(editor, shortcutKeys);
-  }
 
   render() {
     return (

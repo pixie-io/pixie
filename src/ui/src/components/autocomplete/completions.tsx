@@ -119,10 +119,12 @@ const Completions: React.FC<CompletionsProps> = (props) => {
       </div>
       {
         description
-        && <div className={classes.description}>
+        && (
+        <div className={classes.description}>
           <div className={classes.header}>Description</div>
           {description}
         </div>
+        )
       }
     </div>
   );

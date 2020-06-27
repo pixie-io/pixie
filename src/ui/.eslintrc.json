@@ -5,7 +5,8 @@
   },
   "extends": [
     "eslint:recommended",
-    "airbnb-typescript/base"
+    "airbnb-typescript/base",
+    "airbnb/rules/react"
   ],
   "settings": {
     "import/extensions": [".js", ".jsx", ".ts", ".tsx", ".mjs"]
@@ -77,6 +78,10 @@
         "prefer-destructuring": 0,
         "no-template-curly-in-string": 0,
         "no-shadow": 0,
+        "function-paren-newline": 0,
+        "react/jsx-props-no-spreading": 0,
+        "react/destructuring-assignment": 0,
+        "react/no-array-index-key": 0,
         "import/prefer-default-export": 0,
         "react/jsx-filename-extension": [
           "warn",

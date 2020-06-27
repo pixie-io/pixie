@@ -48,16 +48,16 @@ const serviceRendererFuncGen = (clusterName: string) => (v) => {
     const parsedArray = JSON.parse(v);
     if (Array.isArray(parsedArray)) {
       return (
-          <>
-            {
+        <>
+          {
               parsedArray.map((entity, i) => (
-                  <span key={i}>
-                    {i > 0 && ', '}
-                    {ToEntityLink(entity, SemanticType.ST_SERVICE_NAME, clusterName)}
-                  </span>
+                <span key={i}>
+                  {i > 0 && ', '}
+                  {ToEntityLink(entity, SemanticType.ST_SERVICE_NAME, clusterName)}
+                </span>
               ))
             }
-          </>
+        </>
       );
     }
   } catch (e) {
@@ -102,9 +102,11 @@ const prettyCellRenderer = (colInfo: Relation.ColumnInfo, clusterName: string) =
   return (v) => {
     try {
       const jsonObj = JSON.parse(v);
-      return <JSONData
-        data={jsonObj}
-      />;
+      return (
+        <JSONData
+          data={jsonObj}
+        />
+      );
     } catch {
       return v;
     }
@@ -168,7 +170,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
       rowGetter={rowGetter}
       rowCount={rows.length}
       columns={[...columnsMap.values()]}
-      compact={true}
+      compact
       onSort={onSort}
       onRowClick={onRowSelect}
       highlightedRow={selectedRow}
@@ -224,5 +226,5 @@ const VizierDataRowDetails = (props: VizierDataRowDetailsProps) => {
   if (!data) {
     return null;
   }
-  return <JSONData className={className} data={data} multiline={true} />;
+  return <JSONData className={className} data={data} multiline />;
 };

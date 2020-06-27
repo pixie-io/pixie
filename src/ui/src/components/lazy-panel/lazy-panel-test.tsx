@@ -17,7 +17,7 @@ describe('<LazyPanel/> test', () => {
 
   it('renders content when show is true', () => {
     const wrapper = shallow(
-      <LazyPanel show={true}>
+      <LazyPanel show>
         <div className='content'>test content</div>
       </LazyPanel>,
     );
@@ -28,7 +28,7 @@ describe('<LazyPanel/> test', () => {
 
   it('doesn\'t destroy the element if show becomes false', () => {
     const wrapper = shallow(
-      <LazyPanel show={true}>
+      <LazyPanel show>
         <div className='content'>test content</div>
       </LazyPanel>,
     );

@@ -50,7 +50,7 @@ export function toStatusIndicator(status: string, semanticType: SemanticType) {
   return (
     <Tooltip title={status} interactive>
       <div>
-        <StatusCell statusGroup={statusGroup}/>
+        <StatusCell statusGroup={statusGroup} />
       </div>
     </Tooltip>
   );

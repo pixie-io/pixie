@@ -236,7 +236,7 @@ const Legend = React.memo((props: LegendProps) => {
     grids.push(grid);
     // If this isn't the last grid, add a spacing div.
     if (i !== numGrids - 1) {
-      grids.push(<div className={classes.gridGap}></div>);
+      grids.push(<div className={classes.gridGap} />);
     }
   }
 
@@ -264,13 +264,15 @@ const Legend = React.memo((props: LegendProps) => {
         <IconButton
           onClick={handlePageBack}
           disabled={currentPage === 0}
-          size='small'>
+          size='small'
+        >
           <KeyboardArrowLeftIcon />
         </IconButton>
         <IconButton
           onClick={handlePageForward}
           disabled={currentPage === maxPages - 1}
-          size='small'>
+          size='small'
+        >
           <KeyboardArrowRightIcon />
         </IconButton>
       </div>

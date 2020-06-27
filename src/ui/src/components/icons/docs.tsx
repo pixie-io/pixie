@@ -4,12 +4,16 @@ import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
 const DocsIcon = (props: SvgIconProps) => (
   <SvgIcon {...props} viewBox='0 0 32 32'>
-    <path fillRule='evenodd' clipRule='evenodd'
+    <path
+      fillRule='evenodd'
+      clipRule='evenodd'
       d={`M6.8 5H24.4C25.3941 5 26.2 5.80589 26.2 6.8V26C26.2 26.9941 25.3941 27.8 24.4
         27.8H6.8C5.80589 27.8 5 26.9941 5 26V6.8C5 5.80589 5.80589 5 6.8 5ZM24.2 25.8V7H7V25.8H24.2Z
        `}
     />
-    <path fillRule='evenodd' clipRule='evenodd'
+    <path
+      fillRule='evenodd'
+      clipRule='evenodd'
       d={`M16.5082 12.5797C16.2594 12.8258 15.96 12.9488 15.61 12.9488C15.26 12.9488 14.9619 12.8258
         14.7158 12.5797C14.4697 12.3336 14.3467 12.0355 14.3467 11.6855C14.3467 11.3355 14.4697 11.0361
         14.7158 10.7873C14.9619 10.5385 15.26 10.4141 15.61 10.4141C15.9654 10.4141 16.2662 10.5385

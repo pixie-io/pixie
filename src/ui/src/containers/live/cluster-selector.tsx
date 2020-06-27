@@ -44,12 +44,12 @@ const StyledButton = withStyles((theme) => ({
   },
 // eslint-disable-next-line react/display-name
 }))(React.forwardRef((props: ButtonProps, ref: React.Ref<HTMLButtonElement>) => (
-    <Button
-      ref={ref}
-      variant='outlined'
-      color='primary'
-      {...props}
-    />
+  <Button
+    ref={ref}
+    variant='outlined'
+    color='primary'
+    {...props}
+  />
 )));
 StyledButton.displayName = 'StyledButton';
 
@@ -79,7 +79,7 @@ export default function ClusterSelector(props: { className: string }) {
   };
 
   if (loading) {
-    return <StyledButton className={props.className} disabled={true}><Spinner /></StyledButton>;
+    return <StyledButton className={props.className} disabled><Spinner /></StyledButton>;
   }
   const clusterName = data.clusters.find((c) => c.id === selectedCluster)?.clusterName || 'unknown cluster';
   return (
@@ -104,11 +104,12 @@ export default function ClusterSelector(props: { className: string }) {
                 <MenuItem
                   disabled={c.status !== CLUSTER_STATUS_HEALTHY}
                   key={c.id}
-                  dense={true}
+                  dense
                   onClick={() => {
                     setCluster(c.id);
                     handleClose();
-                  }}>
+                  }}
+                >
                   <ListItemIcon>
                     <StatusCell statusGroup={statusGroup} />
                   </ListItemIcon>

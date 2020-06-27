@@ -39,13 +39,18 @@ const ExecutionStats = () => {
   const classes = useStyles();
 
   if (!stats) {
-    return <div style={{
-      display: 'flex',
-      flexDirection: 'row',
-      height: '100%',
-      alignItems: 'center',
-      justifyContent: 'center',
-    }}>Execute script to see execution stats</div>;
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      >
+        Execute script to see execution stats
+      </div>
+    );
   }
 
   const numBytes = numeral(stats.getBytesProcessed()).format('0[.]00b');
@@ -71,14 +76,14 @@ interface ExecutionMetricProps {
 const ExecutionMetric = (props: ExecutionMetricProps) => {
   const classes = useStyles();
   return (
-    <div className={classes.metric} >
+    <div className={classes.metric}>
       <div className={classes.value}>
         {props.metricValue}
       </div>
       <div className={classes.name}>
         {props.metricName}
       </div>
-    </div >
+    </div>
   );
 };
 

@@ -105,13 +105,21 @@ const ProfileMenu = (props: { className?: string }) => {
       <IconButton onClick={openMenu} className={props.className || ''}>
         <Avatar name={user.name} picture={user.picture} className={classes.avatarSm} />
       </IconButton>
-      <Menu open={open} onClose={closeMenu} anchorEl={anchorEl} getContentAnchorEl={null}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+      <Menu
+        open={open}
+        onClose={closeMenu}
+        anchorEl={anchorEl}
+        getContentAnchorEl={null}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
         <MenuItem key='profile' alignItems='center' button={false} className={classes.centeredMenuItem}>
           <Avatar name={user.name} picture={user.picture} className={classes.avatarLg} />
-          <ListItemText primary={user.name} secondary={user.email}
+          <ListItemText
+            primary={user.name}
+            secondary={user.email}
             classes={{ primary: classes.listItemHeader, secondary: classes.listItemText }}
-            className={classes.centeredListItemText} />
+            className={classes.centeredListItemText}
+          />
         </MenuItem>
         <MenuItem key='admin' button component={Link} to='/admin'>
           <StyledListItemIcon>

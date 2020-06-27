@@ -232,10 +232,12 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
 
   const rowGetterWrapper = React.useCallback(({ index }) => rowGetter(index), [rowGetter]);
 
-  const cellRenderer: TableCellRenderer = React.useCallback((props: TableCellProps) => <>
+  const cellRenderer: TableCellRenderer = React.useCallback((props: TableCellProps) => (
+    <>
       {props.columnData.cellRenderer && props.columnData.cellRenderer(props.cellData)}
       {!props.columnData.cellRenderer && <span className={classes.cellText}>{String(props.cellData)}</span>}
-    </>, [expandedRowState, expandedRenderer]);
+    </>
+  ), [expandedRowState, expandedRenderer]);
 
   const defaultCellHeight = compact ? theme.spacing(4) : theme.spacing(6);
   const computeRowHeight = React.useCallback(({ index }) => (expandedRowState[index]
@@ -307,43 +309,63 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
   const colIsResizable = (idx: number): boolean => (resizableColumns || true) && (idx !== columns.length - 1);
 
   const headerRendererCommon: TableHeaderRenderer = (props) => {
-    let sortIcon = <UpIcon className={classes.sortIconHidden} onClick={() => {
-      onSortWrapper({ sortBy: props.dataKey, sortDirection: SortDirection.ASC });
-    }}/>;
+    let sortIcon = (
+      <UpIcon
+        className={classes.sortIconHidden}
+        onClick={() => {
+          onSortWrapper({ sortBy: props.dataKey, sortDirection: SortDirection.ASC });
+        }}
+      />
+    );
     if (props.sortBy === props.dataKey && props.sortDirection === SortDirection.ASC) {
-      sortIcon = <UpIcon className={classes.sortIcon} onClick={() => {
-        onSortWrapper({ sortBy: props.dataKey, sortDirection: SortDirection.DESC });
-      }}/>;
+      sortIcon = (
+        <UpIcon
+          className={classes.sortIcon}
+          onClick={() => {
+            onSortWrapper({ sortBy: props.dataKey, sortDirection: SortDirection.DESC });
+          }}
+        />
+      );
     } else if (props.sortBy === props.dataKey && props.sortDirection === SortDirection.DESC) {
-      sortIcon = <DownIcon className={classes.sortIcon} onClick={() => {
-        onSortWrapper({ sortBy: props.dataKey, sortDirection: SortDirection.ASC });
-      }}/>;
+      sortIcon = (
+        <DownIcon
+          className={classes.sortIcon}
+          onClick={() => {
+            onSortWrapper({ sortBy: props.dataKey, sortDirection: SortDirection.ASC });
+          }}
+        />
+      );
     }
     const headerStyle = clsx(
       [classes.headerTitle],
       [classes[props.columnData.align]],
     );
 
-    return <>
-      <div className={headerStyle}>
-        <Tooltip title={props.label}>
-          <span className={classes.cellText}>{props.label}</span>
-        </Tooltip>
-        {sortIcon}
-      </div>
-    </>;
+    return (
+      <>
+        <div className={headerStyle}>
+          <Tooltip title={props.label}>
+            <span className={classes.cellText}>{props.label}</span>
+          </Tooltip>
+          {sortIcon}
+        </div>
+      </>
+    );
   };
 
-  const headerRenderer: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => <>
-    <React.Fragment key={props.dataKey}>
-      {headerRendererCommon(props)}
-    </React.Fragment>
-    </>, []);
-
-  const gutterHeaderRenderer: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => <>
+  const headerRenderer: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => (
+    <>
       <React.Fragment key={props.dataKey}>
+        {headerRendererCommon(props)}
       </React.Fragment>
-    </>, []);
+    </>
+  ), []);
+
+  const gutterHeaderRenderer: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => (
+    <>
+      <React.Fragment key={props.dataKey} />
+    </>
+  ), []);
 
   const gutterCellRenderer: TableCellRenderer = React.useCallback((props: TableCellProps) => {
     // Hide the icon by default unless:
@@ -354,47 +376,55 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       !(highlightedRow === props.rowIndex || expandedRowState[props.rowIndex]) && classes.hidden,
     );
     const icon = expandedRowState[props.rowIndex] ? expanded : unexpanded;
-    return <>
-      <div className={cls}>
-        <img src={icon} />
-      </div>
-    </>;
+    return (
+      <>
+        <div className={cls}>
+          <img src={icon} />
+        </div>
+      </>
+    );
   }, [highlightedRow, expandedRowState]);
 
   const rowRenderer: TableRowRenderer = React.useCallback((props: TableRowProps) => {
     const { style } = props;
     style.width = '100%';
-    return <div
+    return (
+      <div
         className={classes.rowContainer}
         key={props.key}
         style={style}
       >
-      {defaultTableRowRenderer({ ...props, key: '', style: { height: defaultCellHeight } })}
+        {defaultTableRowRenderer({ ...props, key: '', style: { height: defaultCellHeight } })}
 
-      {expandable && expandedRowState[props.index]
-         && <div className={classes.expandedCell}>
+        {expandable && expandedRowState[props.index]
+         && (
+         <div className={classes.expandedCell}>
            {expandedRenderer(rowGetter(props.index))}
          </div>
-      }
-    </div>;
+         )}
+      </div>
+    );
   }, [expandedRowState, expandable, rowGetter]);
 
   const headerRendererWithDrag: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => {
     const { dataKey } = props;
-    return <>
-      <React.Fragment key={dataKey}>
-        {headerRendererCommon(props)}
-        <DraggableCore
+    return (
+      <>
+        <React.Fragment key={dataKey}>
+          {headerRendererCommon(props)}
+          <DraggableCore
             onDrag={(event, { deltaX }) => {
               resizeColumn({
                 dataKey,
                 deltaX,
               });
-            }}>
-          <span className={classes.dragHandle}>&#8942;</span>
-        </DraggableCore>
-      </React.Fragment>
-    </>;
+            }}
+          >
+            <span className={classes.dragHandle}>&#8942;</span>
+          </DraggableCore>
+        </React.Fragment>
+      </>
+    );
   }, []);
   const gutterClass = clsx(
     compact && classes.compact,
@@ -419,10 +449,11 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
     >
       {
         expandable
-        && <Column
+        && (
+        <Column
           key='gutter'
-          dataKey={'gutter'}
-          label={''}
+          dataKey='gutter'
+          label=''
           headerClassName={gutterClass}
           className={gutterClass}
           headerRenderer={gutterHeaderRenderer}
@@ -430,6 +461,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
           width={4 /* width for chevron */}
           columnData={null}
         />
+        )
       }
       {
         columns.map((col, i) => {
@@ -438,17 +470,19 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
             classes[col.align],
             compact && classes.compact,
           );
-          return <Column
-            key={col.dataKey}
-            dataKey={col.dataKey}
-            label={col.label}
-            headerClassName={className}
-            className={className}
-            headerRenderer={colIsResizable(i) ? headerRendererWithDrag : headerRenderer}
-            cellRenderer={cellRenderer}
-            width={(widthOverrides[col.dataKey] || colTextWidthRatio[col.dataKey]) * width}
-            columnData={col}
-          />;
+          return (
+            <Column
+              key={col.dataKey}
+              dataKey={col.dataKey}
+              label={col.label}
+              headerClassName={className}
+              className={className}
+              headerRenderer={colIsResizable(i) ? headerRendererWithDrag : headerRenderer}
+              cellRenderer={cellRenderer}
+              width={(widthOverrides[col.dataKey] || colTextWidthRatio[col.dataKey]) * width}
+              columnData={col}
+            />
+          );
         })
       }
     </Table>

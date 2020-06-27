@@ -78,7 +78,7 @@ describe('<JSONData/> test', () => {
           hello: 'world',
         },
       }}
-      multiline={true}
+      multiline
     />);
 
     expect(wrapper.text()).toEqual('{ testString: a, testNum: 10, testNull: null, testJSON: { hello: world } }');
@@ -114,7 +114,7 @@ describe('<JSONData/> test', () => {
         { a: 1, b: { c: 'foo' } },
         { a: 3, b: null },
       ]}
-      multiline={true}
+      multiline
     />);
 
     expect(wrapper.text()).toEqual('[ { a: 1, b: { c: foo } }, { a: 3, b: null } ]');

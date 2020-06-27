@@ -91,7 +91,7 @@ export const ClustersTable = () => {
     <Table>
       <TableHead>
         <TableRow>
-          <StyledTableHeaderCell></StyledTableHeaderCell>
+          <StyledTableHeaderCell />
           <StyledTableHeaderCell>Name</StyledTableHeaderCell>
           <StyledTableHeaderCell>ID</StyledTableHeaderCell>
           <StyledTableHeaderCell>Vizier</StyledTableHeaderCell>
@@ -105,14 +105,18 @@ export const ClustersTable = () => {
           <TableRow key={cluster.id}>
             <AdminTooltip title={cluster.status}>
               <StyledLeftTableCell>
-                <StatusCell statusGroup={cluster.statusGroup}/>
+                <StatusCell statusGroup={cluster.statusGroup} />
               </StyledLeftTableCell>
             </AdminTooltip>
             <StyledTableCell>
-            <Button component={Link} to={`/admin/clusters/${encodeURIComponent(cluster.name)}`}
-             color='secondary' variant='text'>
-              {cluster.name}
-            </Button>
+              <Button
+                component={Link}
+                to={`/admin/clusters/${encodeURIComponent(cluster.name)}`}
+                color='secondary'
+                variant='text'
+              >
+                {cluster.name}
+              </Button>
             </StyledTableCell>
             <AdminTooltip title={cluster.id}>
               <StyledTableCell>{cluster.idShort}</StyledTableCell>
