@@ -23,6 +23,7 @@ const cloudAuthLink = setContext((_, { headers }) => ({
 // Apollo link that redirects to login page on HTTP status 401.
 const loginRedirectLink = onError(({ networkError }) => {
   if (!!networkError && (networkError as ServerError).statusCode === 401) {
+    // eslint-disable-next-line @typescript-eslint/camelcase
     RedirectUtils.redirect('/login', { no_cache: 'true' });
   }
 });

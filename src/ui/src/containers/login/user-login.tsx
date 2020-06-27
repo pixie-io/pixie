@@ -213,6 +213,7 @@ function onLoginAuthenticated(authResult, profile /* error */) {
   }
 
   if (this.tokenPostPath) {
+    // eslint-disable-next-line @typescript-eslint/camelcase
     redirectPost(this.tokenPostPath, { access_token: authResult.accessToken, user_email: profile.email });
     return;
   }
@@ -264,6 +265,7 @@ function onCreateAuthenticated(authResult, profile /* error */) {
     analytics.track('User signed up');
   }).then(() => {
     if (this.tokenPostPath) {
+      // eslint-disable-next-line @typescript-eslint/camelcase
       redirectPost(this.tokenPostPath, { access_token: authResult.accessToken, user_email: profile.email });
       return;
     }

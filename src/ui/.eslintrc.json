@@ -75,14 +75,13 @@
         "no-plusplus": 0,
         "no-nested-ternary": 0,
         "consistent-return": 0,
-        "prefer-destructuring": 0,
-        "no-template-curly-in-string": 0,
         "no-shadow": 0,
         "function-paren-newline": 0,
         "react/jsx-props-no-spreading": 0,
         "react/destructuring-assignment": 0,
         "react/no-array-index-key": 0,
         "import/prefer-default-export": 0,
+        "prefer-destructuring": ["error", {"object": true, "array": false}],
         "react/jsx-filename-extension": [
           "warn",
           {
@@ -101,9 +100,6 @@
           "error",
           "prefer-single"
         ],
-
-        "no-useless-escape": "off",
-        "@typescript-eslint/camelcase": "off",
         "@typescript-eslint/explicit-function-return-type": "off",
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-unused-vars": [

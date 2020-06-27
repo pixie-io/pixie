@@ -2,6 +2,7 @@ import * as AutocompleteParser from './autocomplete-parser';
 
 describe('AutocompleteParser test', () => {
   it('should return correct tabstops for basic command', () => {
+    // eslint-disable-next-line no-template-curly-in-string
     const ts = AutocompleteParser.ParseFormatStringToTabStops('${1:run} ${2:svc_name:$0pl/test} ${3}');
     expect(ts).toEqual([
       { Index: 1, Value: 'run', CursorPosition: -1 },
@@ -13,6 +14,7 @@ describe('AutocompleteParser test', () => {
   });
 
   it('should return correct tabstops with empty label', () => {
+    // eslint-disable-next-line no-template-curly-in-string
     const ts = AutocompleteParser.ParseFormatStringToTabStops('${1:run$0} ${2:svc_name:} ${3}');
     expect(ts).toEqual([
       { Index: 1, Value: 'run', CursorPosition: 3 },

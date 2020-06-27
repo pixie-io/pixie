@@ -17,7 +17,7 @@ describe('ResultsToCsv test', () => {
 
     expect(ResultDataUtils.ResultsToCsv(results)).toEqual(
       'time_,http_request\n"1","a"\n"2","b"\n"3","c"\n"4","d"\n"5",'
-      + '"""{\\\\"\"req_id\\\\"\": \\\\"\"123\\\\"\", \\\\"\"req_id2\\\\"\": \\\\"\"{456}\\\\"\"}"""'
+      + '"""{\\\\""req_id\\\\"": \\\\""123\\\\"", \\\\""req_id2\\\\"": \\\\""{456}\\\\""}"""'
       + '\n"6","f"\n"7","g"\n"8","h"\n',
     );
   });

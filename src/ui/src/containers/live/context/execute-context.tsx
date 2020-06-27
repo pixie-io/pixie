@@ -108,7 +108,7 @@ export const ExecuteContextProvider = (props) => {
       .then((funcs: VizierQueryFunc[]) => client.executeScript(execArgs.pxl, funcs))
       .then((queryResults) => {
         const newTables = {};
-        queryId = queryResults.queryId;
+        ({ queryId } = queryResults);
         for (const table of queryResults.tables) {
           newTables[table.name] = table;
         }
@@ -118,7 +118,7 @@ export const ExecuteContextProvider = (props) => {
           error = error[0];
         }
 
-        const errType = (error as VizierQueryError).errType;
+        const { errType } = (error as VizierQueryError);
         errMsg = error.message;
         if (errType === 'execution' || !errType) {
           showSnackbar({
