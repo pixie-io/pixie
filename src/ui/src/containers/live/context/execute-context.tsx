@@ -43,7 +43,9 @@ export const ExecuteContextProvider = (props) => {
   } = React.useContext(ScriptContext);
 
   const { client, healthy } = React.useContext(ClientContext);
-  const { clearResults, setResults, setLoading, loading } = React.useContext(ResultsContext);
+  const {
+    clearResults, setResults, setLoading, loading,
+  } = React.useContext(ResultsContext);
   const showSnackbar = useSnackbar();
   const { openDrawerTab } = React.useContext(DataDrawerContext);
 
@@ -69,8 +71,8 @@ export const ExecuteContextProvider = (props) => {
     // Having exec arguments means we are changing the script so we must also reset the view.
     if (!execArgs) {
       let parsedVis = parseVis(visEditorText);
-      if (!parsedVis){
-          parsedVis = vis;
+      if (!parsedVis) {
+        parsedVis = vis;
       }
       const parsedArgs = argsForVis(parsedVis, args, id);
       execArgs = {
@@ -79,7 +81,7 @@ export const ExecuteContextProvider = (props) => {
         args: parsedArgs,
         title,
         id,
-        liveViewPage: LiveViewPage.Default
+        liveViewPage: LiveViewPage.Default,
       };
     } else {
       clearResults();
@@ -87,7 +89,7 @@ export const ExecuteContextProvider = (props) => {
 
     // Either we're switching to this script or we are reading it from the execArgs, etiher way should set it.
     setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.title,
-              execArgs.liveViewPage, execArgs.entityParamNames);
+      execArgs.liveViewPage, execArgs.entityParamNames);
 
     let errMsg: string;
     let queryId: string;
@@ -103,9 +105,7 @@ export const ExecuteContextProvider = (props) => {
         reject(error);
       }
     })
-      .then((funcs: VizierQueryFunc[]) => {
-        return client.executeScript(execArgs.pxl, funcs);
-      })
+      .then((funcs: VizierQueryFunc[]) => client.executeScript(execArgs.pxl, funcs))
       .then((queryResults) => {
         const newTables = {};
         queryId = queryResults.queryId;
@@ -136,7 +136,8 @@ export const ExecuteContextProvider = (props) => {
           });
         }
         setResults({ tables: {}, error });
-      }).finally(() => {
+      })
+      .finally(() => {
         setLoading(false);
         analytics.track('Query Execution', {
           status: errMsg ? 'success' : 'failed',

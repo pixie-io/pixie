@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 import clsx from 'clsx';
 import * as _ from 'lodash';
 import * as React from 'react';
@@ -14,8 +15,8 @@ interface CodeEditorProps {
 }
 
 function removeKeybindings(editor, keys: string[]) {
-    // Only way to disable default keybindings is through this private api according to:
-    // https://github.com/microsoft/monaco-editor/issues/287.
+  // Only way to disable default keybindings is through this private api according to:
+  // https://github.com/microsoft/monaco-editor/issues/287.
   const bindings = editor._standaloneKeybindingService._getResolver()._defaultKeybindings;
   for (const bind of bindings) {
     for (const key of keys) {
@@ -64,7 +65,7 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
     this.editorRef.setPosition(pos);
   };
 
-  getEditorValue = (): string=> {
+  getEditorValue = (): string => {
     if (this.editorRef) {
       return this.editorRef.getValue();
     }

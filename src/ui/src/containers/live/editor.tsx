@@ -5,7 +5,9 @@ import * as React from 'react';
 import Split from 'react-split';
 import { triggerResize } from 'utils/resize';
 
-import { createStyles, makeStyles, Theme, useTheme, withStyles } from '@material-ui/core/styles';
+import {
+  createStyles, makeStyles, Theme, useTheme, withStyles,
+} from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import ChevronLeft from '@material-ui/icons/ChevronLeft';
@@ -13,46 +15,45 @@ import ChevronLeft from '@material-ui/icons/ChevronLeft';
 import { LayoutContext } from './context/layout-context';
 import { ScriptContext } from './context/script-context';
 
-const useStyles = makeStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      height: '100%',
-      color: theme.palette.foreground.one,
-      minWidth: 0,
-      overflow: 'hidden',
+const useStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    height: '100%',
+    color: theme.palette.foreground.one,
+    minWidth: 0,
+    overflow: 'hidden',
+  },
+  rootPanel: {
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  splits: {
+    '& .gutter:hover': {
+      cursor: 'col-resize',
     },
-    rootPanel: {
-      height: '100%',
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    splits: {
-      '& .gutter:hover': {
-        cursor: 'col-resize',
-      },
-    },
-    tabs: {
-      display: 'flex',
-      flexDirection: 'row',
-      backgroundColor: theme.palette.background.three,
-    },
-    panel: {
-      flex: 1,
-      minHeight: 0,
-    },
-    editor: {
-      height: '100%',
-    },
-    closer: {
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-    },
-  }));
+  },
+  tabs: {
+    display: 'flex',
+    flexDirection: 'row',
+    backgroundColor: theme.palette.background.three,
+  },
+  panel: {
+    flex: 1,
+    minHeight: 0,
+  },
+  editor: {
+    height: '100%',
+  },
+  closer: {
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+  },
+}));
 
 const VisEditor = () => {
   const classes = useStyles();
-  const { visJSON,  setVisEditorText} = React.useContext(ScriptContext);
+  const { visJSON, setVisEditorText } = React.useContext(ScriptContext);
 
   const editorRef = React.createRef<CodeEditor>();
   // We useEffect instead of relying on the prop because of an issue where a cursor
@@ -64,7 +65,7 @@ const VisEditor = () => {
     }
 
     editorRef.current.changeEditorValue(visJSON);
-  }, [visJSON])
+  }, [visJSON]);
 
   return (
     <CodeEditor
@@ -95,7 +96,7 @@ const ScriptEditor = () => {
   return (
     <CodeEditor
       ref={editorRef}
-      onChange={(code: string)=> {
+      onChange={(code: string) => {
         setPxlEditorText(code);
       }}
       className={classes.editor}
@@ -104,27 +105,23 @@ const ScriptEditor = () => {
   );
 };
 
-const StyledTabs = withStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      flex: 1,
-    },
-    indicator: {
-      backgroundColor: theme.palette.foreground.one,
-    },
-  }),
-)(Tabs);
+const StyledTabs = withStyles((theme: Theme) => createStyles({
+  root: {
+    flex: 1,
+  },
+  indicator: {
+    backgroundColor: theme.palette.foreground.one,
+  },
+}))(Tabs);
 
-const StyledTab = withStyles((theme: Theme) =>
-  createStyles({
-    root: {
-      textTransform: 'none',
-      '&:focus': {
-        color: theme.palette.foreground.two,
-      },
+const StyledTab = withStyles((theme: Theme) => createStyles({
+  root: {
+    textTransform: 'none',
+    '&:focus': {
+      color: theme.palette.foreground.two,
     },
-  }),
-)(Tab);
+  },
+}))(Tab);
 
 const LiveViewEditor = () => {
   const classes = useStyles();
