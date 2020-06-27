@@ -1,6 +1,6 @@
 import { scrollbarStyles } from 'common/mui-theme';
 import VizierGRPCClientContext from 'common/vizier-grpc-client-context';
-import EditIcon from 'components/icons/edit';
+import MoveIcon from '@material-ui/icons/OpenWith';
 import PixieCommandIcon from 'components/icons/pixie-command';
 import { ClusterInstructions } from 'containers/App/deploy-instructions';
 import * as React from 'react';
@@ -51,7 +51,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flex: 1,
     minHeight: 0,
   },
-  editorToggle: {
+  moveWidgetToggle: {
     border: 'none',
     borderRadius: '50%',
     color: theme.palette.action.active,
@@ -81,19 +81,19 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 }));
 
 export const EditorOpener = () => {
-  const { setEditorPanelOpen, editorPanelOpen } = React.useContext(LayoutContext);
+  const { editorPanelOpen, isMobile, setEditorPanelOpen } = React.useContext(LayoutContext);
   const openEditor = () => setEditorPanelOpen(true);
   const classes = useStyles();
 
-  if (editorPanelOpen) {
+  if (editorPanelOpen || isMobile) {
     return null;
   }
 
   return (
     <Tooltip title='Open Editor'>
-      <div className={classes.opener} onClick={openEditor}>
+      <IconButton disabled={isMobile} className={classes.opener} onClick={openEditor}>
         <ChevronRight />
-      </div>
+      </IconButton>
     </Tooltip>
   );
 };
@@ -106,12 +106,8 @@ const LiveView = () => {
   const {
     setDataDrawerOpen, setEditorPanelOpen, editorPanelOpen, isMobile,
   } = React.useContext(LayoutContext);
-  const [canvasEditable, setCanvasEditable] = React.useState(editorPanelOpen);
-  const toggleEdit = React.useCallback(() => {
-    const editing = editorPanelOpen || canvasEditable;
-    setEditorPanelOpen(!editing);
-    setCanvasEditable(!editing);
-  }, [editorPanelOpen, setEditorPanelOpen, canvasEditable, setCanvasEditable]);
+
+  const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
 
   const [drawerOpen, setDrawerOpen] = React.useState<boolean>(false);
   const toggleDrawer = React.useCallback(() => setDrawerOpen((opened) => !opened), []);
@@ -121,7 +117,7 @@ const LiveView = () => {
 
   const hotkeyHandlers = {
     'pixie-command': toggleCommandOpen,
-    'toggle-editor': toggleEdit,
+    'toggle-editor': () => setEditorPanelOpen((editable) => !editable),
     'toggle-data-drawer': () => setDataDrawerOpen((open) => !open),
     execute,
   };
@@ -135,7 +131,7 @@ const LiveView = () => {
 
   React.useEffect(() => {
     if (isMobile) {
-      setCanvasEditable(false);
+      setWidgetsMoveable(false);
     }
   }, [isMobile]);
 
@@ -153,17 +149,19 @@ const LiveView = () => {
           </IconButton>
         </Tooltip>
         <ExecuteScriptButton />
-        <Tooltip title='Edit View'>
-          <ToggleButton
-            disabled={isMobile}
-            className={classes.editorToggle}
-            selected={editorPanelOpen || canvasEditable}
-            onChange={toggleEdit}
-            value='editorOpened'
-          >
-            <EditIcon />
-          </ToggleButton>
-        </Tooltip>
+        {
+          !isMobile
+          && <Tooltip title='Edit View'>
+            <ToggleButton
+              className={classes.moveWidgetToggle}
+              selected={widgetsMoveable}
+              onChange={() => setWidgetsMoveable(!widgetsMoveable)}
+              value='moveWidget'
+            >
+              <MoveIcon />
+            </ToggleButton>
+          </Tooltip>
+        }
         <ProfileMenu />
       </div>
       {
@@ -173,7 +171,7 @@ const LiveView = () => {
             <DataDrawerSplitPanel className={classes.mainPanel}>
               <EditorSplitPanel className={classes.editorPanel}>
                 <div className={classes.canvas} ref={canvasRef}>
-                  <Canvas editable={canvasEditable} parentRef={canvasRef} />
+                  <Canvas editable={widgetsMoveable} parentRef={canvasRef} />
                 </div>
               </EditorSplitPanel>
             </DataDrawerSplitPanel>
@@ -181,7 +179,7 @@ const LiveView = () => {
               <div>drawer content</div>
             </Drawer>
             <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
-            {canvasEditable ? <EditorOpener /> : null}
+            <EditorOpener />
           </>
       }
     </div>
