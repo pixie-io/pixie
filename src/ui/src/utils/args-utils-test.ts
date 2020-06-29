@@ -1,4 +1,4 @@
-import { argsEquals, argsForVis } from 'utils/args-utils';
+import { argsEquals, argsForVis, getArgTypesForVis } from 'utils/args-utils';
 
 describe('argsEquals', () => {
   it('returns true for objects with same keys and values', () => {
@@ -130,5 +130,18 @@ describe('argsForVis', () => {
     const args = { foo: 'foo', script: 'original' };
 
     expect(argsForVis(vis, args, 'newScript')).toEqual({ foo: 'foo', script: 'newScript' });
+  });
+});
+
+describe('getArgTypesForVis', () => {
+  it('returns a map with the correct arg types', () => {
+    const vis = {
+      widgets: [],
+      globalFuncs: [],
+      variables: [
+        { name: 'foo', type: 'foobar' },
+      ],
+    };
+    expect(getArgTypesForVis(vis)).toEqual({ foo: 'foobar' });
   });
 });

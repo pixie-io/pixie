@@ -50,3 +50,13 @@ export function argsForVis(vis: Vis, args: Arguments, scriptId?: string): Argume
   }
   return outArgs;
 }
+
+// Get the types of the given args, according to the provided vis spec.
+export function getArgTypesForVis(vis: Vis): {[arg: string]: string} {
+  const types: {[arg: string]: string} = {};
+
+  vis.variables.forEach((v) => {
+    types[v.name] = v.type;
+  });
+  return types;
+}

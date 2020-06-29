@@ -1,10 +1,15 @@
+import AutocompleteInputField from 'components/autocomplete/autocomplete-field';
+import gql from 'graphql-tag';
 import * as React from 'react';
 
+import { useApolloClient } from '@apollo/react-hooks';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 
+import { getArgTypesForVis } from 'utils/args-utils';
 import { ExecuteContext } from './context/execute-context';
 import { ScriptContext } from './context/script-context';
+import { EntityType, pxTypetoEntityType } from './utils/autocomplete-utils';
 
 const ArgsEditor = () => {
   const {
@@ -16,25 +21,43 @@ const ArgsEditor = () => {
     return null;
   }
 
+  const argTypes = getArgTypesForVis(vis);
+
   const argsList = Object.entries(args).filter(([argName]) => argName !== 'script');
   return (
     <>
       {
-        argsList.map(([argName, argVal]: [string, string]) => (
-          <ArgumentField
-            key={argName}
-            name={argName}
-            value={argVal}
-            onValueChange={(newVal) => {
+        argsList.map(([argName, argVal]) => {
+          const entityType = pxTypetoEntityType(argTypes[argName]);
+          const argProps = {
+            name: argName,
+            value: argVal,
+            onValueChange: (newVal) => {
               setArgs({ ...args, [argName]: newVal });
-            }}
-            onEnterKey={() => {
-              execute({
-                pxl, vis, args, id, title,
-              });
-            }}
-          />
-        ))
+            },
+          };
+          if (entityType !== 'AEK_UNKNOWN') {
+            // If the argument corresponds to a known entity type, we can autocomplete the field.
+            return (
+              <AutocompleteArgumentField
+                key={argName}
+                kind={entityType}
+                {...argProps}
+              />
+            );
+          }
+          return (
+            <ArgumentField
+              key={argName}
+              onEnterKey={() => {
+                execute({
+                  pxl, vis, args, id, title,
+                });
+              }}
+              {...argProps}
+            />
+          );
+        })
       }
     </>
   );
@@ -77,7 +100,7 @@ interface ArgumentInputFieldProps {
   name: string;
   value: string;
   onValueChange: (val: string) => void;
-  onEnterKey: () => void;
+  onEnterKey?: () => void;
 }
 
 const ENTER_KEY_CODE = 13;
@@ -107,6 +130,58 @@ const ArgumentField = (props: ArgumentInputFieldProps) => {
             }}
           />
         </div>
+      </div>
+    </Tooltip>
+  );
+};
+
+const AUTOCOMPLETE_FIELD_QUERY = gql`
+query getCompletions($input: String, $kind: AutocompleteEntityKind) {
+  autocompleteField(input: $input, fieldType: $kind) {
+    name
+    description
+    matchedIndexes
+  }
+}
+`;
+
+interface AutocompleteArgumentFieldProps extends ArgumentInputFieldProps {
+  kind: EntityType;
+}
+
+const AutocompleteArgumentField = (props: AutocompleteArgumentFieldProps) => {
+  const { name, value, onValueChange } = props;
+  const client = useApolloClient();
+  const getCompletions = React.useCallback((newInput: string) => (client.query({
+    query: AUTOCOMPLETE_FIELD_QUERY,
+    fetchPolicy: 'network-only',
+    variables: {
+      input: newInput,
+      kind: props.kind,
+    },
+  })
+    .then(({ data }) => {
+      const completions = data.autocompleteField.map((suggestion) => ({
+        type: 'item',
+        id: suggestion.name,
+        title: suggestion.name,
+        description: suggestion.description,
+        highlights: suggestion.matchedIndexes,
+      }));
+      completions.unshift({ type: 'header', header: props.kind });
+      return completions;
+    })
+  ), [client]);
+
+  return (
+    <Tooltip title='Edit arg'>
+      <div>
+        <AutocompleteInputField
+          name={name}
+          value={value}
+          onValueChange={onValueChange}
+          getCompletions={getCompletions}
+        />
       </div>
     </Tooltip>
   );
