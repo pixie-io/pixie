@@ -43,18 +43,14 @@ def inbound_service_let_summary(start_time: str, namespace: px.Namespace):
     @namespace: The namespace to filter on.
 
     '''
-    df = inbound_service_let_helper(start_time, namespace, ['timestamp', 'service', 'remote_addr'])
-    df = df[df.remote_addr != '']
-    df.responder = df.service
-    df.requestor = px.pod_id_to_service_name(px.ip_to_pod_id(df.remote_addr))
-
+    df = inbound_service_let_helper(start_time, namespace, ['timestamp', 'service'])
     window_size = 1.0 * window_s
     df.requests_per_s = df.throughput_total / window_size
     df.inbound_bytes_per_s = df.inbound_bytes_total / window_size
     df.outbound_bytes_per_s = df.outbound_bytes_total / window_size
     df.error_rate_pct = df.error_rate * 100 / window_size
 
-    return df.groupby(['requestor', 'responder']).agg(
+    return df.groupby(['service']).agg(
         latency_p50=('latency_p50', px.mean),
         latency_p90=('latency_p90', px.mean),
         latency_p99=('latency_p99', px.mean),
