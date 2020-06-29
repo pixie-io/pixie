@@ -38,7 +38,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   measurerContent: {
     opacity: 0,
-    minWidth: '120px',
+    minWidth: theme.spacing(2),
     paddingRight: theme.spacing(1),
   },
   completions: {
@@ -47,6 +47,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     top: theme.spacing(3), // height of the input
     left: theme.spacing(0.5),
     width: 'max(100%, 120px)',
+    minWidth: '120px',
     maxHeight: '200px',
     overflow: 'auto',
     display: 'none',
