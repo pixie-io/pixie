@@ -16,6 +16,7 @@ import clsx from 'clsx';
 import Canvas from './canvas';
 import ClusterSelector from './cluster-selector';
 import CommandInput from './command-input';
+import NewCommandInput from './new-command-input';
 import { withLiveViewContext } from './context';
 import { ExecuteContext } from './context/execute-context';
 import { LayoutContext } from './context/layout-context';
@@ -148,7 +149,7 @@ const LiveView = () => {
         <LiveViewTitle className={classes.title} />
         <ClusterSelector className={classes.clusterSelector} />
         <Tooltip title='Pixie Command'>
-          <IconButton onClick={toggleCommandOpen}>
+          <IconButton disabled={commandOpen} onClick={toggleCommandOpen}>
             <PixieCommandIcon color='primary' />
           </IconButton>
         </Tooltip>
@@ -185,7 +186,9 @@ const LiveView = () => {
               <Drawer open={drawerOpen} onClose={toggleDrawer}>
                 <div>drawer content</div>
               </Drawer>
-              <CommandInput open={commandOpen} onClose={toggleCommandOpen} />
+              { localStorage.getItem('px-new-autocomplete') === 'true'
+                ? <NewCommandInput open={commandOpen} onClose={toggleCommandOpen} />
+                : <CommandInput open={commandOpen} onClose={toggleCommandOpen} /> }
               <EditorOpener />
             </>
           )

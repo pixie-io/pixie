@@ -13,3 +13,18 @@ export function pxTypetoEntityType(pxType: string): EntityType {
       return 'AEK_UNKNOWN';
   }
 }
+
+export function entityTypeToString(entityType: EntityType): string {
+  switch (entityType) {
+    case 'AEK_SVC':
+      return 'svc';
+    case 'AEK_SCRIPT':
+      return 'script';
+    case 'AEK_POD':
+      return 'pod';
+    case 'AEK_NAMESPACE':
+      return 'ns';
+    default:
+      return '';
+  }
+}
