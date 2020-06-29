@@ -20,7 +20,10 @@ DEFINE_string(output_file, gflags::StringFromEnv("OUTPUT_FILE", ""),
 
 DEFINE_string(query, gflags::StringFromEnv("QUERY", ""), "The query to run.");
 
-DEFINE_int64(rowbatch_size, gflags::Int64FromEnv("ROWBATCH_SIZE", 0),
+DEFINE_string(table_name, gflags::StringFromEnv("TABLE_NAME", "csv_table"),
+              "The name of the table to store the csv data.");
+
+DEFINE_int64(rowbatch_size, gflags::Int64FromEnv("ROWBATCH_SIZE", 100),
              "The size of the rowbatches.");
 
 using pl::types::DataType;
@@ -50,7 +53,7 @@ pl::StatusOr<DataType> GetTypeFromHeaderString(const std::string& type) {
   if (type == "time64ns") {
     return DataType::TIME64NS;
   }
-  return pl::error::InvalidArgument("Could not recognize type from header.");
+  return pl::error::InvalidArgument("Could not recognize type '$0' from header.", type);
 }
 
 std::string ValueToString(int64_t val) { return absl::Substitute("$0", val); }
@@ -222,6 +225,7 @@ int main(int argc, char* argv[]) {
   auto output_filename = FLAGS_output_file;
   auto query = FLAGS_query;
   auto rb_size = FLAGS_rowbatch_size;
+  auto table_name = FLAGS_table_name;
 
   auto table = GetTableFromCsv(filename, rb_size);
 
@@ -236,7 +240,7 @@ int main(int argc, char* argv[]) {
     LOG(FATAL) << "Carnot failed to init.";
   }
   auto carnot = carnot_or_s.ConsumeValueOrDie();
-  table_store->AddTable("csv_table", table);
+  table_store->AddTable(table_name, table);
   auto exec_status = carnot->ExecuteQuery(query, sole::uuid4(), pl::CurrentTimeNS());
   auto res = exec_status.ConsumeValueOrDie();
 
