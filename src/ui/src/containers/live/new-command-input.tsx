@@ -119,7 +119,6 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
           entityParamNames: [],
           pxl: script.code,
           vis,
-          title: script.title,
           id: script.id,
           args: argsForVis(vis, args),
         });

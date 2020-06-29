@@ -11,6 +11,7 @@ import { LiveViewPage } from 'components/live-widgets/utils/live-view-params';
 import { DataDrawerContext } from './data-drawer-context';
 import { ResultsContext } from './results-context';
 import { ScriptContext } from './script-context';
+import { LayoutContext } from './layout-context';
 
 interface ExecuteArguments {
   pxl: string;
@@ -35,6 +36,7 @@ export const ExecuteContextProvider = (props) => {
     pxl,
     id,
     setScript,
+    liveViewPage,
     pxlEditorText,
     visEditorText,
     commitURL,
@@ -46,6 +48,9 @@ export const ExecuteContextProvider = (props) => {
   } = React.useContext(ResultsContext);
   const showSnackbar = useSnackbar();
   const { openDrawerTab } = React.useContext(DataDrawerContext);
+  const {
+    editorPanelOpen,
+  } = React.useContext(LayoutContext);
 
   const execute = (execArgs?: ExecuteArguments) => {
     if (loading) {
@@ -67,7 +72,7 @@ export const ExecuteContextProvider = (props) => {
     setLoading(true);
 
     // Having exec arguments means we are changing the script so we must also reset the view.
-    if (!execArgs) {
+    if (!execArgs && editorPanelOpen) {
       let parsedVis = parseVis(visEditorText);
       if (!parsedVis) {
         parsedVis = vis;
@@ -79,6 +84,14 @@ export const ExecuteContextProvider = (props) => {
         args: parsedArgs,
         id,
         liveViewPage: LiveViewPage.Default,
+      };
+    } else if (!execArgs && !editorPanelOpen) {
+      execArgs = {
+        pxl,
+        vis,
+        args,
+        id,
+        liveViewPage,
       };
     } else {
       clearResults();
