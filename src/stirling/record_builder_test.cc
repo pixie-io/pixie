@@ -16,9 +16,9 @@ using ::testing::IsEmpty;
 using ::testing::StartsWith;
 
 static constexpr DataElement kElements[] = {
-    {"a", types::DataType::INT64, types::PatternType::GENERAL, ""},
-    {"b", types::DataType::STRING, types::PatternType::GENERAL, ""},
-    {"c", types::DataType::STRING, types::PatternType::GENERAL, ""},
+    {"a", "", types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
+    {"b", "", types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
+    {"c", "", types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
 };
 static constexpr auto kTableSchema = DataTableSchema("abc_table", kElements);
 

@@ -23,11 +23,29 @@ class SeqGenConnector : public SourceConnector {
   // clang-format off
   static constexpr DataElement kElementsSeq0[] = {
       canonical_data_elements::kTime,
-      {"x", types::DataType::INT64, types::PatternType::GENERAL, "A sequence number."},
-      {"xmod10", types::DataType::INT64, types::PatternType::GENERAL_ENUM, "The value of x % 10."},
-      {"xsquared", types::DataType::INT64, types::PatternType::GENERAL, "The value of x^2."},
-      {"fibonnaci", types::DataType::INT64, types::PatternType::GENERAL, "Fibonnaci number"},
-      {"PIx", types::DataType::FLOAT64, types::PatternType::GENERAL, "PI * x"},
+      {"x",
+       "A sequence number.",
+       types::DataType::INT64,
+       types::SemanticType::ST_NONE,
+       types::PatternType::GENERAL},
+      {"xmod10",
+       "The value of x % 10.",
+       types::DataType::INT64,
+       types::SemanticType::ST_NONE,
+       types::PatternType::GENERAL_ENUM},
+      {"xsquared",
+       "The value of x^2.",
+       types::DataType::INT64,
+       types::SemanticType::ST_NONE,
+       types::PatternType::GENERAL},
+      {"fibonnaci", "Fibonnaci number",
+       types::DataType::INT64,
+       types::SemanticType::ST_NONE,
+       types::PatternType::GENERAL},
+      {"PIx", "PI * x",
+       types::DataType::FLOAT64,
+       types::SemanticType::ST_NONE,
+       types::PatternType::GENERAL},
   };
   // clang-format on
   static constexpr auto kSeq0Table =
@@ -37,8 +55,16 @@ class SeqGenConnector : public SourceConnector {
   // clang-format off
   static constexpr DataElement kElementsSeq1[] = {
       canonical_data_elements::kTime,
-      {"x", types::DataType::INT64, types::PatternType::GENERAL, "A sequence number."},
-      {"xmod8", types::DataType::INT64, types::PatternType::GENERAL, "The value of x % 8."}
+      {"x",
+       "A sequence number.",
+       types::DataType::INT64,
+       types::SemanticType::ST_NONE,
+       types::PatternType::GENERAL},
+      {"xmod8",
+       "The value of x % 8.",
+       types::DataType::INT64,
+       types::SemanticType::ST_NONE,
+       types::PatternType::GENERAL},
   };
   // clang-format on
   static constexpr std::string_view kSeq1TabletizationKey = "xmod8";

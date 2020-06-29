@@ -12,9 +12,12 @@ class DataTableTest : public ::testing::Test {
  protected:
   // The test uses a pre-defined schema.
   static constexpr DataElement kElements[] = {
-      {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER, "time"},
-      {"x", types::DataType::INT64, types::PatternType::GENERAL, "an int value"},
-      {"s", types::DataType::STRING, types::PatternType::GENERAL, "a string"},
+      {"time_", "time", types::DataType::TIME64NS, types::SemanticType::ST_NONE,
+       types::PatternType::METRIC_COUNTER},
+      {"x", "an int value", types::DataType::INT64, types::SemanticType::ST_NONE,
+       types::PatternType::GENERAL},
+      {"s", "a string", types::DataType::STRING, types::SemanticType::ST_NONE,
+       types::PatternType::GENERAL},
   };
   static constexpr auto kSchema = DataTableSchema("test_table", kElements);
 
@@ -298,9 +301,12 @@ class DataTableStressTest : public ::testing::Test {
 
   // The test uses a pre-defined schema.
   static constexpr DataElement kElements[] = {
-      {"f0", types::DataType::INT64, types::PatternType::GENERAL, "f(x) = x+100"},
-      {"f1", types::DataType::FLOAT64, types::PatternType::GENERAL, "f(x) = 3.14159*x+3.14159"},
-      {"f2", types::DataType::INT64, types::PatternType::GENERAL_ENUM, "f(x) = x % 10"},
+      {"f0", "f(x) = x+100", types::DataType::INT64, types::SemanticType::ST_NONE,
+       types::PatternType::GENERAL},
+      {"f1", "f(x) = 3.14159*x+3.14159", types::DataType::FLOAT64, types::SemanticType::ST_NONE,
+       types::PatternType::GENERAL},
+      {"f2", "f(x) = x % 10", types::DataType::INT64, types::SemanticType::ST_NONE,
+       types::PatternType::GENERAL_ENUM},
   };
   static constexpr auto kSchema = DataTableSchema("test_table", kElements);
 

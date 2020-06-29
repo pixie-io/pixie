@@ -2,7 +2,7 @@
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_proto_library")
 
 pl_proto_library(
     name = "stirling_pl_proto",
@@ -23,16 +23,6 @@ pl_cc_proto_library(
     ],
 )
 
-pl_go_proto_library(
-    name = "stirling_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/stirling/proto",
-    proto = ":stirling_pl_proto",
-    visibility = ["//visibility:public"],
-    deps = [
-        "//src/shared/types/proto:types_pl_go_proto",
-    ],
-)
-
 pl_proto_library(
     name = "sock_event_pl_proto",
     srcs = ["sock_event.proto"],
@@ -43,13 +33,6 @@ pl_cc_proto_library(
     name = "sock_event_pl_cc_proto",
     proto = ":sock_event_pl_proto",
     visibility = ["//visibility:public"],
-)
-
-pl_go_proto_library(
-    name = "sock_event_pl_go_proto",
-    importpath = "pixielabs.ai/pixielabs/src/sock_event/proto",
-    proto = ":sock_event_pl_proto",
-    visibility = ["//src/stirling:__pkg__"],
 )
 
 pl_proto_library(

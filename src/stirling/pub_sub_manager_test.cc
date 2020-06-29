@@ -17,6 +17,7 @@ using google::protobuf::util::MessageDifferencer;
 using stirlingpb::InfoClass;
 using types::DataType;
 using types::PatternType;
+using types::SemanticType;
 
 const char* kInfoClassManager = R"(
   name: "cpu"
@@ -25,18 +26,21 @@ const char* kInfoClassManager = R"(
     elements {
       name: "user_percentage"
       type: FLOAT64
+      stype: ST_NONE
       ptype: METRIC_GAUGE
       desc: "User percentage"
     }
     elements {
       name: "system_percentage"
       type: FLOAT64
+      stype: ST_NONE
       ptype: METRIC_GAUGE
       desc: "System percentage"
     }
     elements {
       name: "io_percentage"
       type: FLOAT64
+      stype: ST_NONE
       ptype: METRIC_GAUGE
       desc: "IO percentage"
     }
@@ -53,9 +57,12 @@ const char* kInfoClassManager = R"(
 class TestSourceConnector : public SourceConnector {
  public:
   static constexpr DataElement kElements[] = {
-      {"user_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE, "User percentage"},
-      {"system_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE, "System percentage"},
-      {"io_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE, "IO percentage"}};
+      {"user_percentage", "User percentage", DataType::FLOAT64, SemanticType::ST_NONE,
+       PatternType::METRIC_GAUGE},
+      {"system_percentage", "System percentage", DataType::FLOAT64, SemanticType::ST_NONE,
+       PatternType::METRIC_GAUGE},
+      {"io_percentage", "IO percentage", DataType::FLOAT64, SemanticType::ST_NONE,
+       PatternType::METRIC_GAUGE}};
 
   static constexpr auto kTable = DataTableSchema("cpu", kElements, std::chrono::milliseconds{100},
                                                  std::chrono::milliseconds{1000});

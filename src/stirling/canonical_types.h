@@ -13,21 +13,46 @@ namespace canonical_data_elements {
 static const std::map<int64_t, std::string_view> kTraceSideDecoder =
     pl::EnumDefToMap<EndpointRole>();
 
-constexpr DataElement kTime = {"time_", types::DataType::TIME64NS,
-                               types::PatternType::METRIC_COUNTER,
-                               "Timestamp when the data record was collected."};
+// clang-format off
+
+constexpr DataElement kTime = {
+    "time_",
+    "Timestamp when the data record was collected.",
+    types::DataType::TIME64NS,
+    types::SemanticType::ST_NONE,
+    types::PatternType::METRIC_COUNTER};
+
 constexpr DataElement kUPID = {
-    "upid", types::DataType::UINT128, types::PatternType::GENERAL,
-    "An opaque numeric ID that globally identify a running process inside the cluster."};
+    "upid",
+    "An opaque numeric ID that globally identify a running process inside the cluster.",
+    types::DataType::UINT128,
+    types::SemanticType::ST_UPID,
+    types::PatternType::GENERAL};
+
 // TODO(PL-519): Use uint128 to represent IP addresses.
-constexpr DataElement kRemoteAddr = {"remote_addr", types::DataType::STRING,
-                                     types::PatternType::GENERAL,
-                                     "IP address of the remote endpoint."};
-constexpr DataElement kRemotePort = {"remote_port", types::DataType::INT64,
-                                     types::PatternType::GENERAL, "Port of the remote endpoint."};
+constexpr DataElement kRemoteAddr = {
+    "remote_addr",
+    "IP address of the remote endpoint.",
+    types::DataType::STRING,
+    types::SemanticType::ST_NONE,
+    types::PatternType::GENERAL};
+
+constexpr DataElement kRemotePort = {
+    "remote_port",
+    "Port of the remote endpoint.",
+    types::DataType::INT64,
+    types::SemanticType::ST_NONE,
+    types::PatternType::GENERAL};
+
 constexpr DataElement kTraceRole = {
-    "trace_role", types::DataType::INT64, types::PatternType::GENERAL_ENUM,
-    "Side (client-or-server) where traffic was traced", &kTraceSideDecoder};
+    "trace_role",
+    "Side (client-or-server) where traffic was traced",
+    types::DataType::INT64,
+    types::SemanticType::ST_NONE,
+    types::PatternType::GENERAL_ENUM,
+    &kTraceSideDecoder};
+
+// clang-format on
 
 };  // namespace canonical_data_elements
 }  // namespace stirling

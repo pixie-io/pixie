@@ -14,7 +14,8 @@ namespace pl {
 namespace stirling {
 
 TEST(DataElementTest, data_element_proto_getters_test) {
-  DataElement element("user_percentage", DataType::FLOAT64, PatternType::METRIC_GAUGE, "");
+  DataElement element("user_percentage", "", DataType::FLOAT64, types::SemanticType::ST_NONE,
+                      PatternType::METRIC_GAUGE);
 
   EXPECT_EQ("user_percentage", std::string(element.name().data()));
   EXPECT_EQ(DataType::FLOAT64, element.type());
@@ -29,12 +30,15 @@ TEST(DataTableSchemaTest, table_schema_proto_getters_test) {
   enum class BEnum : int64_t { kLow, kMed, kHigh = 99 };
   const std::map<int64_t, std::string_view> enum_decoder = EnumDefToMap<BEnum>();
   DataElement elements[] = {
-      {"time_", types::DataType::TIME64NS, types::PatternType::METRIC_COUNTER, ""},
-      {"a", types::DataType::INT64, types::PatternType::GENERAL, ""},
-      {"b", types::DataType::INT64, types::PatternType::GENERAL_ENUM, "", &enum_decoder},
-      {"c", types::DataType::INT64, types::PatternType::GENERAL, ""},
-      {"d", types::DataType::INT64, types::PatternType::GENERAL, ""},
-      {"e", types::DataType::FLOAT64, types::PatternType::GENERAL, ""},
+      {"time_", "", types::DataType::TIME64NS, types::SemanticType::ST_NONE,
+       types::PatternType::METRIC_COUNTER},
+      {"a", "", types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
+      {"b", "", types::DataType::INT64, types::SemanticType::ST_NONE,
+       types::PatternType::GENERAL_ENUM, &enum_decoder},
+      {"c", "", types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
+      {"d", "", types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
+      {"e", "", types::DataType::FLOAT64, types::SemanticType::ST_NONE,
+       types::PatternType::GENERAL},
   };
   auto table_schema = DataTableSchema("table", elements);
 

@@ -35,13 +35,13 @@ class PIDRuntimeConnector : public SourceConnector, public bpf_tools::BCCWrapper
   static constexpr DataElement kElements[] = {
       canonical_data_elements::kTime,
       // TODO(yzhao): Change to upid.
-      {"pid", types::DataType::INT64, types::PatternType::GENERAL,
-      "Process PID"},
-      // TODO(chengruizhe): runtime_ns: Will be converted to counter
-      {"runtime_ns", types::DataType::INT64, types::PatternType::METRIC_GAUGE,
-      "Process runtime in nanoseconds"},
-      {"cmd", types::DataType::STRING, types::PatternType::GENERAL,
-      "Process command line"},
+      {"pid", "Process PID",
+       types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
+      // TODO(chengruizhe): Convert to counter.
+      {"runtime_ns", "Process runtime in nanoseconds",
+       types::DataType::INT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_GAUGE},
+      {"cmd", "Process command line",
+       types::DataType::STRING, types::SemanticType::ST_NONE, types::PatternType::GENERAL},
   };
   // clang-format on
   static constexpr auto kTable =

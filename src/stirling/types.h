@@ -28,10 +28,10 @@ using AgentMetadataCallback = std::function<AgentMetadataType()>;
 class DataElement {
  public:
   constexpr DataElement() = delete;
-  constexpr DataElement(std::string_view name, types::DataType type, types::PatternType ptype,
-                        std::string_view desc,
+  constexpr DataElement(std::string_view name, std::string_view desc, types::DataType type,
+                        types::SemanticType stype, types::PatternType ptype,
                         const std::map<int64_t, std::string_view>* decoder = {})
-      : name_(name), type_(type), ptype_(ptype), desc_(desc), decoder_(decoder) {
+      : name_(name), desc_(desc), type_(type), stype_(stype), ptype_(ptype), decoder_(decoder) {
     // Note: Ideally, we'd call CheckSchema() here because GCC chokes.
     // This is because we use initializers, in our table definitions (e.g. http_table.h),
     // for which GCC wants to call the default constructor before setting the values.
@@ -45,6 +45,7 @@ class DataElement {
   constexpr std::string_view name() const { return name_; }
   constexpr types::DataType type() const { return type_; }
   constexpr types::PatternType ptype() const { return ptype_; }
+  constexpr types::SemanticType stype() const { return stype_; }
   constexpr std::string_view desc() const { return desc_; }
   constexpr const std::map<int64_t, std::string_view>* decoder() const { return decoder_; }
   stirlingpb::Element ToProto() const;
@@ -65,9 +66,10 @@ class DataElement {
 
  protected:
   const std::string_view name_;
-  const types::DataType type_ = types::DataType::DATA_TYPE_UNKNOWN;
-  const types::PatternType ptype_ = types::PatternType::UNSPECIFIED;
   const std::string_view desc_;
+  const types::DataType type_ = types::DataType::DATA_TYPE_UNKNOWN;
+  const types::SemanticType stype_ = types::SemanticType::ST_NONE;
+  const types::PatternType ptype_ = types::PatternType::UNSPECIFIED;
   const std::map<int64_t, std::string_view>* decoder_ = nullptr;
 };
 

@@ -13,8 +13,14 @@ namespace testing {
 
 // clang-format off
 constexpr DataElement kDummyElements[] = {
-    {"int64", types::DataType::INT64, types::PatternType::METRIC_COUNTER, "int64"},
-    {"string", types::DataType::STRING, types::PatternType::STRUCTURED, "string"},
+    {"int64", "int64",
+     types::DataType::INT64,
+     types::SemanticType::ST_NONE,
+     types::PatternType::METRIC_COUNTER},
+    {"string", "string",
+     types::DataType::STRING,
+     types::SemanticType::ST_NONE,
+     types::PatternType::STRUCTURED},
 };
 // clang-format on
 

@@ -13,13 +13,14 @@ message Element {
   // name refers to the name of the Element such as user_percentage (Element)
   // for cpu usage (InfoClass).
   string name = 1;
-  types.DataType type = 2;
-  types.PatternType ptype = 3;
   // The description of the column.
-  string desc = 4;
+  string desc = 2;
+  types.DataType type = 3;
+  types.PatternType ptype = 4;
+  types.SemanticType stype = 5;
   // If the type is INT64, and ptype is GENERAL_ENUM,
   // then this map can convert values to human readable strings.
-  map<int64,string> decoder = 5;
+  map<int64,string> decoder = 6;
 }
 
 message TableSchema {

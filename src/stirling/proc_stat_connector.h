@@ -15,12 +15,12 @@ class ProcStatConnector : public SourceConnector {
   // clang-format off
   static constexpr DataElement kElements[] = {
       canonical_data_elements::kTime,
-      {"system_percent", types::DataType::FLOAT64, types::PatternType::METRIC_GAUGE,
-        "The percentage of time the CPU was executing in kernel-space"},
-      {"user_percent", types::DataType::FLOAT64, types::PatternType::METRIC_GAUGE,
-        "The percentage of time the CPU was executing in user-space"},
-      {"idle_percent", types::DataType::FLOAT64, types::PatternType::METRIC_GAUGE,
-        "The percentage of time the CPU was idle"}
+      {"system_percent", "The percentage of time the CPU was executing in kernel-space",
+       types::DataType::FLOAT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_GAUGE},
+      {"user_percent", "The percentage of time the CPU was executing in user-space",
+       types::DataType::FLOAT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_GAUGE},
+      {"idle_percent", "The percentage of time the CPU was idle",
+       types::DataType::FLOAT64, types::SemanticType::ST_NONE, types::PatternType::METRIC_GAUGE}
   };
   // clang-format on
   static constexpr auto kTable = DataTableSchema(
