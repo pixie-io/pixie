@@ -204,9 +204,15 @@ StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
 }
 
 StatusOr<DWARFDie> GetTypeDie(const DWARFDie& die) {
-  LLVM_ASSIGN_OR_RETURN(DWARFFormValue & type_attr, die.find(llvm::dwarf::DW_AT_type),
-                        "Could not find DW_AT_type.");
-  return die.getAttributeValueAsReferencedDie(type_attr);
+  DWARFDie type_die = die;
+  do {
+    LLVM_ASSIGN_OR_RETURN(DWARFFormValue & type_attr, type_die.find(llvm::dwarf::DW_AT_type),
+                          "Could not find DW_AT_type.");
+
+    type_die = die.getAttributeValueAsReferencedDie(type_attr);
+  } while (type_die.getTag() == llvm::dwarf::DW_TAG_typedef);
+
+  return type_die;
 }
 
 StatusOr<uint64_t> GetBaseOrStructTypeByteSize(const DWARFDie& die) {
@@ -223,16 +229,9 @@ StatusOr<uint64_t> GetBaseOrStructTypeByteSize(const DWARFDie& die) {
 }
 
 StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
-  if (!die.isValid()) {
-    return error::Internal("Encountered an invalid DIE.");
-  }
+  DCHECK(die.isValid());
 
   switch (die.getTag()) {
-    case llvm::dwarf::DW_TAG_typedef: {
-      // If the type is a typedef, then follow the type and recursively call this function.
-      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-      return GetTypeByteSize(type_die);
-    }
     case llvm::dwarf::DW_TAG_pointer_type:
     case llvm::dwarf::DW_TAG_subroutine_type:
       return kAddressSize;
@@ -246,15 +245,9 @@ StatusOr<uint64_t> GetTypeByteSize(const DWARFDie& die) {
 }
 
 StatusOr<uint64_t> GetAlignmentByteSize(const DWARFDie& die) {
-  if (!die.isValid()) {
-    return error::Internal("Encountered an invalid DIE.");
-  }
+  DCHECK(die.isValid());
 
   switch (die.getTag()) {
-    case llvm::dwarf::DW_TAG_typedef: {
-      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-      return GetAlignmentByteSize(type_die);
-    }
     case llvm::dwarf::DW_TAG_pointer_type:
     case llvm::dwarf::DW_TAG_subroutine_type:
       return kAddressSize;
@@ -278,15 +271,9 @@ StatusOr<uint64_t> GetAlignmentByteSize(const DWARFDie& die) {
 }
 
 StatusOr<VarType> GetType(const DWARFDie& die) {
-  if (!die.isValid()) {
-    return error::Internal("Encountered an invalid DIE.");
-  }
+  DCHECK(die.isValid());
 
   switch (die.getTag()) {
-    case llvm::dwarf::DW_TAG_typedef: {
-      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-      return GetType(type_die);
-    }
     case llvm::dwarf::DW_TAG_pointer_type:
       return VarType::kPointer;
     case llvm::dwarf::DW_TAG_subroutine_type:
@@ -302,15 +289,9 @@ StatusOr<VarType> GetType(const DWARFDie& die) {
 }
 
 StatusOr<std::string> GetTypeName(const DWARFDie& die) {
-  if (!die.isValid()) {
-    return error::Internal("Encountered an invalid DIE.");
-  }
+  DCHECK(die.isValid());
 
   switch (die.getTag()) {
-    case llvm::dwarf::DW_TAG_typedef: {
-      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-      return GetTypeName(type_die);
-    }
     case llvm::dwarf::DW_TAG_pointer_type:
       return std::string("void*");
     case llvm::dwarf::DW_TAG_subroutine_type:
@@ -355,7 +336,6 @@ StatusOr<VarInfo> DwarfReader::GetStructMemberInfo(std::string_view struct_name,
 
       PL_ASSIGN_OR_RETURN(member_info.offset, GetMemberOffset(die));
 
-      // TODO(oazizi): Combine the two functions below.
       PL_ASSIGN_OR_RETURN(member_info.type, GetType(type_die));
       PL_ASSIGN_OR_RETURN(member_info.type_name, GetTypeName(type_die));
       return member_info;
@@ -453,6 +433,7 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
       auto& arg = arg_info[die.getName(llvm::DINameKind::ShortName)];
 
       PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+
       PL_ASSIGN_OR_RETURN(uint64_t type_size, GetTypeByteSize(type_die));
       PL_ASSIGN_OR_RETURN(uint64_t alignment_size, GetAlignmentByteSize(type_die));
 
