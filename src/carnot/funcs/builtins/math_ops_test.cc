@@ -29,6 +29,12 @@ TEST(MathOps, basic_mixed_add_test) {
   udf_tester.ForInput(1, 2.6).Expect(3.6);
 }
 
+TEST(MathOps, basic_string_add_test) {
+  auto udf_tester =
+      udf::UDFTester<AddUDF<types::StringValue, types::StringValue, types::StringValue>>();
+  udf_tester.ForInput("a", "b").Expect("ab");
+}
+
 TEST(MathOps, basic_int64_subtract_test) {
   auto udf_tester =
       udf::UDFTester<SubtractUDF<types::Int64Value, types::Int64Value, types::Int64Value>>();

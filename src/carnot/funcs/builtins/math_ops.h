@@ -22,6 +22,14 @@ class AddUDF : public udf::ScalarUDF {
   }
 };
 
+template <>
+class AddUDF<types::StringValue, types::StringValue, types::StringValue> : public udf::ScalarUDF {
+ public:
+  types::StringValue Exec(FunctionContext*, types::StringValue b1, types::StringValue b2) {
+    return b1 + b2;
+  }
+};
+
 template <typename TReturn, typename TArg1, typename TArg2>
 class SubtractUDF : public udf::ScalarUDF {
  public:
