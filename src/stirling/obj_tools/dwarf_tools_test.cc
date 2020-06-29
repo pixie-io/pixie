@@ -135,14 +135,15 @@ TEST_P(DwarfReaderTest, CppFunctionArgInfo) {
                        DwarfReader::Create(kCppBinaryPath, p.index));
 
   EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("CanYouFindThis"),
-                     UnorderedElementsAre(Pair("a", ArgInfo{0, ArgType::kInt}),
-                                          Pair("b", ArgInfo{4, ArgType::kInt})));
-  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("SomeFunction"),
-                     UnorderedElementsAre(Pair("x", ArgInfo{0, ArgType::kStruct}),
-                                          Pair("y", ArgInfo{12, ArgType::kStruct})));
+                     UnorderedElementsAre(Pair("a", ArgInfo{{0, VarType::kBaseType, "int"}}),
+                                          Pair("b", ArgInfo{{4, VarType::kBaseType, "int"}})));
+  EXPECT_OK_AND_THAT(
+      dwarf_reader->GetFunctionArgInfo("SomeFunction"),
+      UnorderedElementsAre(Pair("x", ArgInfo{{0, VarType::kStruct, "PairStruct"}}),
+                           Pair("y", ArgInfo{{12, VarType::kStruct, "PairStruct"}})));
   EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("SomeFunctionWithPointerArgs"),
-                     UnorderedElementsAre(Pair("a", ArgInfo{0, ArgType::kPointer}),
-                                          Pair("x", ArgInfo{8, ArgType::kPointer})));
+                     UnorderedElementsAre(Pair("a", ArgInfo{{0, VarType::kPointer, "void*"}}),
+                                          Pair("x", ArgInfo{{8, VarType::kPointer, "void*"}})));
 }
 
 TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
@@ -152,27 +153,33 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
     ASSERT_OK_AND_ASSIGN(std::unique_ptr<DwarfReader> dwarf_reader,
                          DwarfReader::Create(kGoBinaryPath, p.index));
 
-    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("main.(*Vertex).Scale"),
-                       UnorderedElementsAre(Pair("v", ArgInfo{0, ArgType::kPointer}),
-                                            Pair("f", ArgInfo{8, ArgType::kFloat64})));
-    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("main.(*Vertex).CrossScale"),
-                       UnorderedElementsAre(Pair("v", ArgInfo{0, ArgType::kPointer}),
-                                            Pair("v2", ArgInfo{8, ArgType::kStruct}),
-                                            Pair("f", ArgInfo{24, ArgType::kFloat64})));
-    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("main.Vertex.Abs"),
-                       UnorderedElementsAre(Pair("v", ArgInfo{0, ArgType::kStruct}),
-                                            Pair("~r0", ArgInfo{16, ArgType::kFloat64, true})));
+    EXPECT_OK_AND_THAT(
+        dwarf_reader->GetFunctionArgInfo("main.(*Vertex).Scale"),
+        UnorderedElementsAre(Pair("v", ArgInfo{{0, VarType::kPointer, "void*"}}),
+                             Pair("f", ArgInfo{{8, VarType::kBaseType, "float64"}})));
+    EXPECT_OK_AND_THAT(
+        dwarf_reader->GetFunctionArgInfo("main.(*Vertex).CrossScale"),
+        UnorderedElementsAre(Pair("v", ArgInfo{{0, VarType::kPointer, "void*"}}),
+                             Pair("v2", ArgInfo{{8, VarType::kStruct, "main.Vertex"}}),
+                             Pair("f", ArgInfo{{24, VarType::kBaseType, "float64"}})));
+    EXPECT_OK_AND_THAT(
+        dwarf_reader->GetFunctionArgInfo("main.Vertex.Abs"),
+        UnorderedElementsAre(Pair("v", ArgInfo{{0, VarType::kStruct, "main.Vertex"}}),
+                             Pair("~r0", ArgInfo{{16, VarType::kBaseType, "float64"}, true})));
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.MixedArgTypes"),
-        UnorderedElementsAre(
-            Pair("i1", ArgInfo{0, ArgType::kInt}), Pair("b1", ArgInfo{8, ArgType::kBool}),
-            Pair("b2", ArgInfo{9, ArgType::kStruct}), Pair("i2", ArgInfo{16, ArgType::kInt}),
-            Pair("i3", ArgInfo{24, ArgType::kInt}), Pair("b3", ArgInfo{32, ArgType::kBool}),
-            Pair("~r6", ArgInfo{40, ArgType::kInt, true}),
-            Pair("~r7", ArgInfo{48, ArgType::kBool, true})));
-    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("main.GoHasNamedReturns"),
-                       UnorderedElementsAre(Pair("retfoo", ArgInfo{0, ArgType::kInt, true}),
-                                            Pair("retbar", ArgInfo{8, ArgType::kBool, true})));
+        UnorderedElementsAre(Pair("i1", ArgInfo{{0, VarType::kBaseType, "int"}}),
+                             Pair("b1", ArgInfo{{8, VarType::kBaseType, "bool"}}),
+                             Pair("b2", ArgInfo{{9, VarType::kStruct, "main.BoolWrapper"}}),
+                             Pair("i2", ArgInfo{{16, VarType::kBaseType, "int"}}),
+                             Pair("i3", ArgInfo{{24, VarType::kBaseType, "int"}}),
+                             Pair("b3", ArgInfo{{32, VarType::kBaseType, "bool"}}),
+                             Pair("~r6", ArgInfo{{40, VarType::kBaseType, "int"}, true}),
+                             Pair("~r7", ArgInfo{{48, VarType::kBaseType, "bool"}, true})));
+    EXPECT_OK_AND_THAT(
+        dwarf_reader->GetFunctionArgInfo("main.GoHasNamedReturns"),
+        UnorderedElementsAre(Pair("retfoo", ArgInfo{{0, VarType::kBaseType, "int"}, true}),
+                             Pair("retbar", ArgInfo{{8, VarType::kBaseType, "bool"}, true})));
   }
 
   {
@@ -181,13 +188,14 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
 
     //   func (f *http2Framer) WriteDataPadded(streamID uint32, endStream bool, data, pad []byte)
     //   error
-    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("net/http.(*http2Framer).WriteDataPadded"),
-                       UnorderedElementsAre(Pair("f", ArgInfo{0, ArgType::kPointer}),
-                                            Pair("streamID", ArgInfo{8, ArgType::kUInt32}),
-                                            Pair("endStream", ArgInfo{12, ArgType::kBool}),
-                                            Pair("data", ArgInfo{16, ArgType::kStruct}),
-                                            Pair("pad", ArgInfo{40, ArgType::kStruct}),
-                                            Pair("~r4", ArgInfo{64, ArgType::kStruct, true})));
+    EXPECT_OK_AND_THAT(
+        dwarf_reader->GetFunctionArgInfo("net/http.(*http2Framer).WriteDataPadded"),
+        UnorderedElementsAre(Pair("f", ArgInfo{{0, VarType::kPointer, "void*"}}),
+                             Pair("streamID", ArgInfo{{8, VarType::kBaseType, "uint32"}}),
+                             Pair("endStream", ArgInfo{{12, VarType::kBaseType, "bool"}}),
+                             Pair("data", ArgInfo{{16, VarType::kStruct, "[]uint8"}}),
+                             Pair("pad", ArgInfo{{40, VarType::kStruct, "[]uint8"}}),
+                             Pair("~r4", ArgInfo{{64, VarType::kStruct, "runtime.iface"}, true})));
   }
 }
 

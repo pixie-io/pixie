@@ -30,25 +30,6 @@ using llvm::DWARFFormValue;
 // https://superuser.com/questions/791506/how-to-determine-if-a-linux-binary-file-is-32-bit-or-64-bit
 uint8_t kAddressSize = sizeof(void*);
 
-// Map to convert Go Base types to ArgType.
-// clang-format off
-const std::map<std::string_view, ArgType> kGoTypesMap = {
-        {"bool", ArgType::kBool},
-        {"int", ArgType::kInt},
-        {"int8", ArgType::kInt8},
-        {"int16", ArgType::kInt16},
-        {"int32", ArgType::kInt32},
-        {"int64", ArgType::kInt64},
-        {"uint", ArgType::kUInt},
-        {"uint8", ArgType::kUInt8},
-        {"uint16", ArgType::kUInt16},
-        {"uint32", ArgType::kUInt32},
-        {"uint64", ArgType::kUInt64},
-        {"float32", ArgType::kFloat32},
-        {"float64", ArgType::kFloat64},
-};
-// clang-format on
-
 StatusOr<std::unique_ptr<DwarfReader>> DwarfReader::Create(std::string_view obj_filename,
                                                            bool index) {
   using llvm::MemoryBuffer;
@@ -210,27 +191,17 @@ StatusOr<DWARFDie> DwarfReader::GetMatchingDIE(std::string_view name,
   return dies.front();
 }
 
-StatusOr<uint64_t> DwarfReader::GetStructMemberOffset(std::string_view struct_name,
-                                                      std::string_view member_name) {
-  PL_ASSIGN_OR_RETURN(const DWARFDie& struct_die,
-                      GetMatchingDIE(struct_name, llvm::dwarf::DW_TAG_structure_type));
-
-  for (const auto& die : struct_die.children()) {
-    if ((die.getTag() == llvm::dwarf::DW_TAG_member) &&
-        (die.getName(llvm::DINameKind::ShortName) == member_name)) {
-      LLVM_ASSIGN_OR_RETURN(DWARFFormValue & attr,
-                            die.find(llvm::dwarf::DW_AT_data_member_location),
-                            "Found member, but could not find data_member_location attribute.");
-      LLVM_ASSIGN_OR_RETURN(uint64_t offset, attr.getAsUnsignedConstant(),
-                            "Could not extract offset.");
-      return offset;
-    }
-  }
-
-  return error::Internal("Could not find member.");
-}
-
 namespace {
+
+StatusOr<uint64_t> GetMemberOffset(const DWARFDie& die) {
+  DCHECK(die.getTag() == llvm::dwarf::DW_TAG_member);
+
+  LLVM_ASSIGN_OR_RETURN(DWARFFormValue & attr, die.find(llvm::dwarf::DW_AT_data_member_location),
+                        "Found member, but could not find data_member_location attribute.");
+  LLVM_ASSIGN_OR_RETURN(uint64_t offset, attr.getAsUnsignedConstant(), "Could not extract offset.");
+
+  return offset;
+}
 
 StatusOr<DWARFDie> GetTypeDie(const DWARFDie& die) {
   LLVM_ASSIGN_OR_RETURN(DWARFFormValue & type_attr, die.find(llvm::dwarf::DW_AT_type),
@@ -306,7 +277,7 @@ StatusOr<uint64_t> GetAlignmentByteSize(const DWARFDie& die) {
   }
 }
 
-StatusOr<ArgType> GetArgType(const DWARFDie& die) {
+StatusOr<VarType> GetType(const DWARFDie& die) {
   if (!die.isValid()) {
     return error::Internal("Encountered an invalid DIE.");
   }
@@ -314,28 +285,45 @@ StatusOr<ArgType> GetArgType(const DWARFDie& die) {
   switch (die.getTag()) {
     case llvm::dwarf::DW_TAG_typedef: {
       PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
-      return GetArgType(type_die);
+      return GetType(type_die);
     }
     case llvm::dwarf::DW_TAG_pointer_type:
-      return ArgType::kPointer;
+      return VarType::kPointer;
     case llvm::dwarf::DW_TAG_subroutine_type:
-      return ArgType::kSubroutine;
-    case llvm::dwarf::DW_TAG_base_type: {
-      std::string_view type_name(die.getName(llvm::DINameKind::ShortName));
-      auto it = kGoTypesMap.find(type_name);
-      if (it == kGoTypesMap.end()) {
-        return error::Internal("Unrecognized base type: $0",
-                               die.getName(llvm::DINameKind::ShortName));
-      }
-      return it->second;
-    }
+      return VarType::kSubroutine;
+    case llvm::dwarf::DW_TAG_base_type:
+      return VarType::kBaseType;
     case llvm::dwarf::DW_TAG_structure_type:
-      return ArgType::kStruct;
+      return VarType::kStruct;
     default:
       return error::Internal(
           absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
   }
 }
+
+StatusOr<std::string> GetTypeName(const DWARFDie& die) {
+  if (!die.isValid()) {
+    return error::Internal("Encountered an invalid DIE.");
+  }
+
+  switch (die.getTag()) {
+    case llvm::dwarf::DW_TAG_typedef: {
+      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+      return GetTypeName(type_die);
+    }
+    case llvm::dwarf::DW_TAG_pointer_type:
+      return std::string("void*");
+    case llvm::dwarf::DW_TAG_subroutine_type:
+      return std::string("func");
+    case llvm::dwarf::DW_TAG_base_type:
+    case llvm::dwarf::DW_TAG_structure_type:
+      return std::string(die.getName(llvm::DINameKind::ShortName));
+    default:
+      return error::Internal(
+          absl::Substitute("Unexpected DIE type: $0", magic_enum::enum_name(die.getTag())));
+  }
+}
+
 // This function calls out any die with DW_AT_variable_parameter == 0x1 to be a return value..
 // The documentation on how Golang sets this field is sparse, so not sure if this is the
 // right flag to look at.
@@ -351,6 +339,31 @@ StatusOr<bool> IsGolangRetArg(const DWARFDie& die) {
 }
 
 }  // namespace
+
+StatusOr<VarInfo> DwarfReader::GetStructMemberInfo(std::string_view struct_name,
+                                                   std::string_view member_name) {
+  VarInfo member_info;
+
+  PL_ASSIGN_OR_RETURN(const DWARFDie& struct_die,
+                      GetMatchingDIE(struct_name, llvm::dwarf::DW_TAG_structure_type));
+
+  // TODO(oazizi): This pattern repeats. Create a helper function to find the child.
+  for (const auto& die : struct_die.children()) {
+    if ((die.getTag() == llvm::dwarf::DW_TAG_member) &&
+        (die.getName(llvm::DINameKind::ShortName) == member_name)) {
+      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+
+      PL_ASSIGN_OR_RETURN(member_info.offset, GetMemberOffset(die));
+
+      // TODO(oazizi): Combine the two functions below.
+      PL_ASSIGN_OR_RETURN(member_info.type, GetType(type_die));
+      PL_ASSIGN_OR_RETURN(member_info.type_name, GetTypeName(type_die));
+      return member_info;
+    }
+  }
+
+  return error::Internal("Could not find member.");
+}
 
 StatusOr<uint64_t> DwarfReader::GetArgumentTypeByteSize(std::string_view function_symbol_name,
                                                         std::string_view arg_name) {
@@ -447,7 +460,8 @@ StatusOr<std::map<std::string, ArgInfo>> DwarfReader::GetFunctionArgInfo(
       arg.offset = current_offset;
       current_offset += type_size;
 
-      PL_ASSIGN_OR_RETURN(arg.type, GetArgType(type_die));
+      PL_ASSIGN_OR_RETURN(arg.type, GetType(type_die));
+      PL_ASSIGN_OR_RETURN(arg.type_name, GetTypeName(type_die));
 
       // TODO(oazizi): This is specific for Golang.
       //               Put into if statement once we know what language we are analyzing.

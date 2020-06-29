@@ -3,6 +3,8 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "src/stirling/obj_tools/dwarf_tools.h"
 
@@ -11,38 +13,48 @@ namespace stirling {
 namespace dynamic_tracing {
 
 using dwarf_tools::ArgInfo;
-using dwarf_tools::ArgType;
+using dwarf_tools::VarInfo;
+using dwarf_tools::VarType;
 
-// TODO(oazizi): Consider using dynamictracingpb::ScalarType directly in ArgInfo,
-//               to avoid this additional mapping.
-const std::map<ArgType, dynamictracingpb::ScalarType> kArgTypeToProtoScalarType = {
-    {ArgType::kBool, dynamictracingpb::ScalarType::BOOL},
-    {ArgType::kInt, dynamictracingpb::ScalarType::INT},
-    {ArgType::kInt8, dynamictracingpb::ScalarType::INT8},
-    {ArgType::kInt16, dynamictracingpb::ScalarType::INT16},
-    {ArgType::kInt32, dynamictracingpb::ScalarType::INT32},
-    {ArgType::kInt64, dynamictracingpb::ScalarType::INT64},
-    {ArgType::kUInt, dynamictracingpb::ScalarType::UINT},
-    {ArgType::kUInt8, dynamictracingpb::ScalarType::UINT8},
-    {ArgType::kUInt16, dynamictracingpb::ScalarType::UINT16},
-    {ArgType::kUInt32, dynamictracingpb::ScalarType::UINT32},
-    {ArgType::kUInt64, dynamictracingpb::ScalarType::UINT64},
-    {ArgType::kFloat32, dynamictracingpb::ScalarType::FLOAT},
-    {ArgType::kFloat64, dynamictracingpb::ScalarType::DOUBLE},
-    {ArgType::kPointer, dynamictracingpb::ScalarType::VOID_POINTER},
+// Map to convert Go Base types to ScalarType.
+// clang-format off
+const std::map<std::string_view, dynamictracingpb::ScalarType> kGoTypesMap = {
+        {"bool", dynamictracingpb::ScalarType::BOOL},
+        {"int", dynamictracingpb::ScalarType::INT},
+        {"int8", dynamictracingpb::ScalarType::INT8},
+        {"int16", dynamictracingpb::ScalarType::INT16},
+        {"int32", dynamictracingpb::ScalarType::INT32},
+        {"int64", dynamictracingpb::ScalarType::INT64},
+        {"uint", dynamictracingpb::ScalarType::UINT},
+        {"uint8", dynamictracingpb::ScalarType::UINT8},
+        {"uint16", dynamictracingpb::ScalarType::UINT16},
+        {"uint32", dynamictracingpb::ScalarType::UINT32},
+        {"uint64", dynamictracingpb::ScalarType::UINT64},
+        {"float32", dynamictracingpb::ScalarType::FLOAT},
+        {"float64", dynamictracingpb::ScalarType::DOUBLE},
 };
+// clang-format on
 
-StatusOr<dynamictracingpb::ScalarType> ArgTypeToProtoScalarType(const ArgType& type) {
-  auto arg_type_iter = kArgTypeToProtoScalarType.find(type);
-  if (arg_type_iter == kArgTypeToProtoScalarType.end()) {
-    return error::Internal("Could not convert type: $0", magic_enum::enum_name(type));
+StatusOr<dynamictracingpb::ScalarType> VarTypeToProtoScalarType(const VarType& type,
+                                                                std::string_view name) {
+  switch (type) {
+    case VarType::kBaseType: {
+      auto iter = kGoTypesMap.find(name);
+      if (iter == kGoTypesMap.end()) {
+        return error::Internal("Unrecognized base type: $0", name);
+      }
+      return iter->second;
+    }
+    case VarType::kPointer:
+      return dynamictracingpb::ScalarType::VOID_POINTER;
+    default:
+      return error::Internal("Unhandled type: $0", magic_enum::enum_name(type));
   }
-  return arg_type_iter->second;
 }
 
 StatusOr<const ArgInfo*> GetArgInfo(const std::map<std::string, ArgInfo>& args_map,
-                                    const std::string& arg_name) {
-  auto args_map_iter = args_map.find(arg_name);
+                                    std::string_view arg_name) {
+  auto args_map_iter = args_map.find(std::string(arg_name));
   if (args_map_iter == args_map.end()) {
     return error::Internal("Could not find argument $0", arg_name);
   }
@@ -80,17 +92,33 @@ StatusOr<dynamictracingpb::PhysicalProbe> AddDwarves(const dynamictracingpb::Pro
     // TODO(oazizi): Support expressions.
     std::string arg_name = arg.expr();
 
-    PL_ASSIGN_OR_RETURN(const ArgInfo* arg_info, GetArgInfo(args_map, arg_name));
+    std::vector<std::string_view> components = absl::StrSplit(arg_name, ".");
+
+    PL_ASSIGN_OR_RETURN(const ArgInfo* arg_info, GetArgInfo(args_map, components.front()));
     DCHECK(arg_info != nullptr);
 
-    PL_ASSIGN_OR_RETURN(dynamictracingpb::ScalarType type,
-                        ArgTypeToProtoScalarType(arg_info->type));
+    VarType type = arg_info->type;
+    std::string type_name = std::move(arg_info->type_name);
+    int offset = kSPOffset + arg_info->offset;
+
+    for (auto iter = components.begin() + 1; iter < components.end(); ++iter) {
+      std::string_view field_name = *iter;
+
+      PL_ASSIGN_OR_RETURN(VarInfo member_info,
+                          dwarf_reader->GetStructMemberInfo(type_name, field_name));
+      offset += member_info.offset;
+      type_name = std::move(member_info.type_name);
+      type = member_info.type;
+    }
+
+    PL_ASSIGN_OR_RETURN(dynamictracingpb::ScalarType pb_type,
+                        VarTypeToProtoScalarType(type, type_name));
 
     auto* var = out.add_vars();
     var->set_name(arg.id());
-    var->set_val_type(type);
+    var->set_val_type(pb_type);
     var->mutable_memory()->set_base("sp");
-    var->mutable_memory()->set_offset(arg_info->offset + kSPOffset);
+    var->mutable_memory()->set_offset(offset);
   }
 
   for (auto& ret_val : input_probe.ret_vals()) {
@@ -109,7 +137,7 @@ StatusOr<dynamictracingpb::PhysicalProbe> AddDwarves(const dynamictracingpb::Pro
     DCHECK(arg_info != nullptr);
 
     PL_ASSIGN_OR_RETURN(dynamictracingpb::ScalarType type,
-                        ArgTypeToProtoScalarType(arg_info->type));
+                        VarTypeToProtoScalarType(arg_info->type, arg_info->type_name));
 
     auto* var = out.add_vars();
     var->set_name(ret_val.id());

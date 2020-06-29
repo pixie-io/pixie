@@ -37,6 +37,14 @@ constexpr std::string_view kEntryProbeIRTmpl = R"(
     id: "arg3"
     expr: "b1"
   }
+  args {
+    id: "arg4"
+    expr: "b2.B0"
+  }
+  args {
+    id: "arg5"
+    expr: "b2.B3"
+  }
 )";
 
 constexpr std::string_view kEntryProbePhysIRTmpl = R"(
@@ -80,6 +88,22 @@ constexpr std::string_view kEntryProbePhysIRTmpl = R"(
     memory: {
       base: "sp"
       offset: 16
+    }
+  }
+  vars {
+    name: "arg4"
+    val_type: BOOL
+    memory: {
+      base: "sp"
+      offset: 17
+    }
+  }
+  vars {
+    name: "arg5"
+    val_type: BOOL
+    memory: {
+      base: "sp"
+      offset: 20
     }
   }
 )";

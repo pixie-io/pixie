@@ -18,41 +18,35 @@ namespace pl {
 namespace stirling {
 namespace dwarf_tools {
 
-enum class ArgType {
+enum class VarType {
   kUnspecified = 0,
-
-  kBool,
-
-  kInt,
-  kInt8,
-  kInt16,
-  kInt32,
-  kInt64,
-
-  kUInt,
-  kUInt8,
-  kUInt16,
-  kUInt32,
-  kUInt64,
-
-  kFloat32,
-  kFloat64,
-
+  kBaseType,
   kPointer,
   kStruct,
   kSubroutine,
 };
 
-struct ArgInfo {
+struct VarInfo {
+  // Offset to parent context:
+  // - For struct members: offset within the struct.
+  // - For function arguments: offset from the stack pointer.
   uint64_t offset = std::numeric_limits<uint64_t>::max();
-  ArgType type = ArgType::kUnspecified;
+  VarType type = VarType::kUnspecified;
+  std::string type_name = "";
+};
 
+struct ArgInfo : public VarInfo {
   // If true, this argument is really a return value.
   bool retarg = false;
 };
 
+inline bool operator==(const VarInfo& a, const VarInfo& b) {
+  return a.offset == b.offset && a.type == b.type && a.type_name == b.type_name;
+}
+
 inline bool operator==(const ArgInfo& a, const ArgInfo& b) {
-  return a.offset == b.offset && a.type == b.type && a.retarg == b.retarg;
+  return a.offset == b.offset && a.type == b.type && a.type_name == b.type_name &&
+         a.retarg == b.retarg;
 }
 
 class DwarfReader {
@@ -60,8 +54,7 @@ class DwarfReader {
   /**
    * Creates a DwarfReader that provides access to DWARF Debugging information entries (DIEs).
    * @param obj_filename The object file from which to read DWARF information.
-   * @param index If true, creates an index of struct tags, to speed up GetStructMemberOffset() when
-   * called more than once.
+   * @param index If true, creates an index to speed up accesses when called more than once.
    * @return error if file does not exist or is not a valid object file. Otherwise returns
    * a unique pointer to a DwarfReader.
    */
@@ -86,13 +79,24 @@ class DwarfReader {
                                           std::optional<llvm::dwarf::Tag> type = {});
 
   /**
+   * Returns information about a member within a struct.
+   * @param struct_name Full name of the struct.
+   * @param member_name Name of member within the struct.
+   * @return Error if member not found; otherwise a VarInfo struct.
+   */
+  StatusOr<VarInfo> GetStructMemberInfo(std::string_view struct_name, std::string_view member_name);
+
+  /**
    * Returns the offset of a member within a struct.
    * @param struct_name Full name of the struct.
    * @param member_name Name of member within the struct.
    * @return Error if offset could not be found; otherwise, offset in bytes.
    */
   StatusOr<uint64_t> GetStructMemberOffset(std::string_view struct_name,
-                                           std::string_view member_name);
+                                           std::string_view member_name) {
+    PL_ASSIGN_OR_RETURN(VarInfo member_info, GetStructMemberInfo(struct_name, member_name));
+    return member_info.offset;
+  }
 
   /**
    * Returns the size (in bytes) for the type of a function argument.
