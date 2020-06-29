@@ -5,8 +5,8 @@ import Completions from 'components/autocomplete/completions';
 import FormInput from 'components/autocomplete/form';
 import Input from 'components/autocomplete/input';
 import * as React from 'react';
-import { AutocompleteInput } from 'components/autocomplete/new-autocomplete-input'
-
+import { AutocompleteInput } from 'components/autocomplete/new-autocomplete-input';
+import { NewAutocomplete } from 'components/autocomplete/new-autocomplete';
 import { action } from '@storybook/addon-actions';
 import { storiesOf } from '@storybook/react';
 
@@ -146,13 +146,13 @@ storiesOf('AutoComplete', module)
               type: 'item',
               title: 'some suggestion',
               id: '1',
-              highlights: [0, 1]
+              highlights: [0, 1],
             },
             {
               type: 'item',
               title: 'awesome',
               id: '2',
-              highlights: [3, 4]
+              highlights: [3, 4],
             },
           ];
         }}
@@ -161,16 +161,15 @@ storiesOf('AutoComplete', module)
   }, {
     info: { inline: true },
     notes: 'completions list with active item',
-  }).add('new autocomplete input component', () => {
+  })
+  .add('new autocomplete input component', () => {
     const [cursor, setCursor] = React.useState(0);
     return (
       <AutocompleteInput
-        onKey={(key) => {
-          console.log(key);
-        }}
-        onChange={(input) => {
-          console.log(input);
-        }}
+        // eslint-disable-next-line
+        onKey={(key) => { }}
+        // eslint-disable-next-line
+        onChange={(val, cursor)=> { }}
         setCursor={(pos) => {
           setCursor(pos);
         }}
@@ -188,6 +187,61 @@ storiesOf('AutoComplete', module)
       />
     );
   }, {
-  info: { inline: true },
-  notes: 'new autocomplete component',
-});
+    info: { inline: true },
+    notes: 'new autocomplete input component',
+  })
+  .add('new autocomplete component', () => (
+    <NewAutocomplete
+      onSubmit={() => {}}
+      // eslint-disable-next-line
+      onChange={(input, cursor, action, updatedTabStops) => { }}
+      completions={[
+        {
+          index: 2,
+          executableAfterSelect: false,
+          suggestions: [
+            {
+              type: 'item', title: 'hulu/script3', id: 'hulu-6', itemType: 'script',
+            },
+            {
+              type: 'item', title: 'hulu/script5', id: 'hulu-5', itemType: 'script',
+            },
+          ],
+        },
+        {
+          index: 3,
+          executableAfterSelect: false,
+          suggestions: [
+            {
+              type: 'item', title: 'hulu/script4', id: 'hulu-4', itemType: 'script',
+            },
+          ],
+        },
+        {
+          index: 4,
+          executableAfterSelect: false,
+          suggestions: [
+            {
+              type: 'item', title: 'test', id: 'test-1', itemType: 'svc',
+            },
+          ],
+        },
+      ]}
+      tabStops={
+        [
+          {
+            Index: 2, Label: 'svc_name', Value: 'pl/test', CursorPosition: 0,
+          },
+          {
+            Index: 3, Label: 'pod', Value: 'pl/pod', CursorPosition: -1,
+          },
+          {
+            Index: 4, Value: 'test', CursorPosition: -1,
+          },
+        ]
+      }
+    />
+  ), {
+    info: { inline: true },
+    notes: 'new autocomplete component',
+  });

@@ -28,6 +28,7 @@ export interface CompletionItem {
   title: CompletionTitle;
   description?: string;
   highlights?: Array<number>;
+  itemType?: string;
 }
 
 const useStyles = makeStyles((theme: Theme) => (

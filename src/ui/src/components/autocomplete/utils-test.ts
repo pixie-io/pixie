@@ -1,0 +1,95 @@
+import * as utils from './utils';
+
+describe('GetDisplayStringFromTabStops', () => {
+  it('should return the correct string', () => {
+    const ts = [
+      {
+        Index: 2, Label: 'svc_name', Value: 'pl/test', CursorPosition: 0,
+      },
+      {
+        Index: 3, Label: 'pod', Value: 'pl/pod', CursorPosition: -1,
+      },
+      {
+        Index: 4, Value: 'test', CursorPosition: -1,
+      },
+    ];
+    expect(utils.getDisplayStringFromTabStops(ts)).toEqual(
+      'svc_name:pl/test pod:pl/pod test',
+    );
+  });
+});
+
+describe('TabStopParser', () => {
+  const ts = [
+    {
+      Index: 2, Label: 'svc_name', Value: 'pl/test', CursorPosition: 4,
+    },
+    {
+      Index: 3, Label: 'pod', Value: 'pl/pod', CursorPosition: -1,
+    },
+    {
+      Index: 4, Value: 'test', CursorPosition: -1,
+    },
+  ];
+  const parsedTS = new utils.TabStopParser(ts);
+
+  it('should parse correct info', () => {
+    expect(parsedTS.getInitialCursor()).toEqual(13);
+    expect(parsedTS.getTabBoundaries()).toEqual([[9, 17], [21, 28], [28, 33]]);
+    expect(parsedTS.getInput()).toEqual([
+      { type: 'key', value: 'svc_name:' },
+      { type: 'value', value: 'pl/test' },
+      { type: 'value', value: ' ' },
+      { type: 'key', value: 'pod:' },
+      { type: 'value', value: 'pl/pod' },
+      { type: 'value', value: ' ' },
+      { type: 'value', value: 'test' },
+    ]);
+  });
+
+  it('should getActiveTab', () => {
+    expect(parsedTS.getActiveTab(9)).toEqual(0);
+    expect(parsedTS.getActiveTab(10)).toEqual(0);
+    expect(parsedTS.getActiveTab(17)).toEqual(1);
+    expect(parsedTS.getActiveTab(24)).toEqual(1);
+  });
+
+  it('should handleCompletionSelection', () => {
+    expect(parsedTS.handleCompletionSelection(9, {
+      type: 'script', title: 'testScript',
+    })).toEqual(
+      ['svc_name:testScript pod:pl/pod test', 18],
+    );
+    expect(parsedTS.handleCompletionSelection(23, {
+      type: 'script', title: 'testScript',
+    })).toEqual(
+      ['svc_name:pl/test pod:testScript test', 31],
+    );
+    expect(parsedTS.handleCompletionSelection(29, {
+      type: 'script', title: 'testScript',
+    })).toEqual(
+      ['svc_name:pl/test pod:pl/pod script:testScript', 45],
+    );
+  });
+
+  it('should backspace', () => {
+    expect(parsedTS.handleBackspace(9)).toEqual(['pod:pl/pod test', 0]);
+    expect(parsedTS.handleBackspace(21)).toEqual(['svc_name:pl/test test', 16]);
+    expect(parsedTS.handleBackspace(10)).toEqual(['svc_name:l/test pod:pl/pod test', 9]);
+    expect(parsedTS.handleBackspace(28)).toEqual(['svc_name:pl/test pod:pl/pod', 27]);
+  });
+
+  it('should handleChange', () => {
+    expect(parsedTS.handleChange('svc_name:apl/test pod:pl/pod test', 10)).toEqual([
+      {
+        Index: 2, Label: 'svc_name', Value: 'apl/test', CursorPosition: 1,
+      },
+      {
+        Index: 3, Label: 'pod', Value: 'pl/pod', CursorPosition: -1,
+      },
+      {
+        Index: 4, Value: 'test', CursorPosition: -1,
+      },
+    ]);
+  });
+});
