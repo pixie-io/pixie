@@ -182,6 +182,8 @@
     "build_dev": "./node_modules/.bin/webpack",
     "build_prod": "./node_modules/.bin/webpack -p --progress --verbose",
     "dev": "./node_modules/.bin/webpack-dev-server",
+    "test": "./node_modules/.bin/jest",
+    "coverage": "./node_modules/.bin/jest --coverage",
     "storybook": "start-storybook -p 9001 -c .storybook",
     "storybook_static": "./node_modules/.bin/build-storybook -c .storybook -o storybook_static",
     "license_check": "./node_modules/license-checker/bin/license-checker",

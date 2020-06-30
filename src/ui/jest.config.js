@@ -37,4 +37,14 @@ module.exports = {
     'default',
     'jest-junit',
   ],
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    'src/**/*.tsx',
+    'src/**/*.js',
+    'src/**/*.jsx',
+    'src/*.ts',
+    'src/*.tsx',
+    'src/*.js',
+    'src/*.jsx',
+  ],
 };
