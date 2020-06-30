@@ -4,7 +4,7 @@ import ClusterContext from 'common/cluster-context';
 import * as storage from 'common/storage';
 import { ClusterStatus, VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import { useSnackbar } from 'components/snackbar/snackbar';
-import AdminView from 'containers/admin/admin';
+import AdminView from 'pages/admin/admin';
 import { ScriptsContextProvider } from 'containers/App/scripts-context';
 import LiveView from 'containers/live/live';
 import gql from 'graphql-tag';

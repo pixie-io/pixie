@@ -13,10 +13,10 @@ import * as React from 'react';
 import {
   Link, Route, Router, Switch,
 } from 'react-router-dom';
-import { StyledTab, StyledTabs } from './utils';
-import { CREATE_DEPLOYMENT_KEY, DeploymentKeysTable } from './deployment-keys';
-import { ClustersTable } from './clusters-list';
-import { ClusterDetailsPage } from './cluster-details';
+import { StyledTab, StyledTabs } from 'containers/admin/utils';
+import { CREATE_DEPLOYMENT_KEY, DeploymentKeysTable } from 'containers/admin/deployment-keys';
+import { ClustersTable } from 'containers/admin/clusters-list';
+import { ClusterDetailsPage } from 'containers/admin/cluster-details';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
