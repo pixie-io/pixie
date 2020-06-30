@@ -6,7 +6,8 @@
   "extends": [
     "eslint:recommended",
     "airbnb-typescript/base",
-    "airbnb/rules/react"
+    "airbnb/rules/react",
+    "plugin:react-hooks/recommended"
   ],
   "settings": {
     "import/extensions": [".js", ".jsx", ".ts", ".tsx", ".mjs"]
