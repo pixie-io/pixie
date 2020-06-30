@@ -34,7 +34,7 @@ message ScalarVariable {
   //
   // When this is VOID_POINTER, this ScalarVariable describes an intermediate variable used to access
   // a scalar variable.
-  ScalarType val_type = 2;
+  ScalarType type = 2;
 
   // Describes a variable that resides in memory, in comparison to a Register variable.
   message MemoryVariable {

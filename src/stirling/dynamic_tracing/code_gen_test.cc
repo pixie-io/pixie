@@ -61,7 +61,7 @@ TEST(GenVariableTest, Register) {
   ScalarVariable var;
 
   var.set_name("var");
-  var.set_val_type(ScalarType::VOID_POINTER);
+  var.set_type(ScalarType::VOID_POINTER);
   var.set_reg(Register::SP);
 
   ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("void* var = PT_REGS_SP(ctx);"));
@@ -71,7 +71,7 @@ TEST(GenVariableTest, MemoryVariable) {
   ScalarVariable var;
 
   var.set_name("var");
-  var.set_val_type(ScalarType::INT32);
+  var.set_type(ScalarType::INT32);
 
   auto* mem_var = var.mutable_memory();
 
@@ -87,7 +87,7 @@ TEST(GenVariableTest, Builtin) {
   ScalarVariable var;
 
   var.set_name("var");
-  var.set_val_type(ScalarType::VOID_POINTER);
+  var.set_type(ScalarType::VOID_POINTER);
 
   var.set_builtin(BPFHelper::GOID);
 
@@ -163,12 +163,12 @@ TEST(GenPhysicalProbeTest, EntryProbe) {
 
   var = probe.add_vars();
   var->set_name("key");
-  var->set_val_type(ScalarType::UINT32);
+  var->set_type(ScalarType::UINT32);
   var->set_builtin(BPFHelper::TGID);
 
   var = probe.add_vars();
   var->set_name("var");
-  var->set_val_type(ScalarType::INT32);
+  var->set_type(ScalarType::INT32);
   var->set_reg(Register::SP);
 
   StructVariable* st_var = probe.add_st_vars();

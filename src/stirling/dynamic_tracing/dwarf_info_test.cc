@@ -55,12 +55,12 @@ constexpr std::string_view kEntryProbePhysIRTmpl = R"(
   }
   vars {
     name: "sp"
-    val_type: VOID_POINTER
+    type: VOID_POINTER
     reg: SP
   }
   vars {
     name: "arg0"
-    val_type: INT
+    type: INT
     memory: {
       base: "sp"
       offset: 8
@@ -68,7 +68,7 @@ constexpr std::string_view kEntryProbePhysIRTmpl = R"(
   }
   vars {
     name: "arg1"
-    val_type: INT
+    type: INT
     memory: {
       base: "sp"
       offset: 24
@@ -76,7 +76,7 @@ constexpr std::string_view kEntryProbePhysIRTmpl = R"(
   }
   vars {
     name: "arg2"
-    val_type: INT
+    type: INT
     memory: {
       base: "sp"
       offset: 32
@@ -84,7 +84,7 @@ constexpr std::string_view kEntryProbePhysIRTmpl = R"(
   }
   vars {
     name: "arg3"
-    val_type: BOOL
+    type: BOOL
     memory: {
       base: "sp"
       offset: 16
@@ -92,7 +92,7 @@ constexpr std::string_view kEntryProbePhysIRTmpl = R"(
   }
   vars {
     name: "arg4"
-    val_type: BOOL
+    type: BOOL
     memory: {
       base: "sp"
       offset: 17
@@ -100,7 +100,7 @@ constexpr std::string_view kEntryProbePhysIRTmpl = R"(
   }
   vars {
     name: "arg5"
-    val_type: BOOL
+    type: BOOL
     memory: {
       base: "sp"
       offset: 20
@@ -132,12 +132,12 @@ constexpr std::string_view kReturnProbePhysIRTmpl = R"(
   }
   vars {
     name: "sp"
-    val_type: VOID_POINTER
+    type: VOID_POINTER
     reg: SP
   }
   vars {
     name: "retval0"
-    val_type: INT
+    type: INT
     memory: {
       base: "sp"
       offset: 48
@@ -145,7 +145,7 @@ constexpr std::string_view kReturnProbePhysIRTmpl = R"(
   }
 vars {
     name: "retval1"
-    val_type: BOOL
+    type: BOOL
     memory: {
       base: "sp"
       offset: 56
@@ -170,11 +170,12 @@ TEST_P(DwarfInfoTest, Transform) {
 
   std::string entry_probe_ir = absl::Substitute(p.input, kGoBinaryPath);
   dynamictracingpb::Probe input_probe;
-  TextFormat::ParseFromString(std::string(entry_probe_ir), &input_probe);
+  ASSERT_TRUE(TextFormat::ParseFromString(std::string(entry_probe_ir), &input_probe));
 
   std::string entry_probe_phys_ir = absl::Substitute(p.expected_output, kGoBinaryPath);
   dynamictracingpb::PhysicalProbe expected_output_probe;
-  TextFormat::ParseFromString(std::string(entry_probe_phys_ir), &expected_output_probe);
+  ASSERT_TRUE(
+      TextFormat::ParseFromString(std::string(entry_probe_phys_ir), &expected_output_probe));
 
   ASSERT_OK_AND_ASSIGN(dynamictracingpb::PhysicalProbe output_probe, AddDwarves(input_probe));
 

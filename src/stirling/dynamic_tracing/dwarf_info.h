@@ -10,6 +10,6 @@ namespace dynamic_tracing {
 
 StatusOr<dynamictracingpb::PhysicalProbe> AddDwarves(const dynamictracingpb::Probe& input_probe);
 
-}
+}  // namespace dynamic_tracing
 }  // namespace stirling
 }  // namespace pl

@@ -79,7 +79,7 @@ StatusOr<dynamictracingpb::PhysicalProbe> AddDwarves(const dynamictracingpb::Pro
   {
     auto* var = out.add_vars();
     var->set_name("sp");
-    var->set_val_type(dynamictracingpb::VOID_POINTER);
+    var->set_type(dynamictracingpb::VOID_POINTER);
     var->set_reg(dynamictracingpb::Register::SP);
   }
 
@@ -116,7 +116,7 @@ StatusOr<dynamictracingpb::PhysicalProbe> AddDwarves(const dynamictracingpb::Pro
 
     auto* var = out.add_vars();
     var->set_name(arg.id());
-    var->set_val_type(pb_type);
+    var->set_type(pb_type);
     var->mutable_memory()->set_base("sp");
     var->mutable_memory()->set_offset(offset);
   }
@@ -141,7 +141,7 @@ StatusOr<dynamictracingpb::PhysicalProbe> AddDwarves(const dynamictracingpb::Pro
 
     auto* var = out.add_vars();
     var->set_name(ret_val.id());
-    var->set_val_type(type);
+    var->set_type(type);
     var->mutable_memory()->set_base("sp");
     var->mutable_memory()->set_offset(arg_info->offset + 8);
   }

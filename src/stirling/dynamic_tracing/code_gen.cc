@@ -111,8 +111,7 @@ namespace {
 std::vector<std::string> GenRegister(const ScalarVariable& var) {
   switch (var.reg()) {
     case Register::SP:
-      return {
-          absl::Substitute("$0 $1 = PT_REGS_SP(ctx);", GenScalarType(var.val_type()), var.name())};
+      return {absl::Substitute("$0 $1 = PT_REGS_SP(ctx);", GenScalarType(var.type()), var.name())};
     case Register::Register_INT_MIN_SENTINEL_DO_NOT_USE_:
     case Register::Register_INT_MAX_SENTINEL_DO_NOT_USE_:
       PB_ENUM_SENTINEL_SWITCH_CLAUSE;
@@ -122,9 +121,9 @@ std::vector<std::string> GenRegister(const ScalarVariable& var) {
 
 std::vector<std::string> GenMemoryVariable(const ScalarVariable& var) {
   std::vector<std::string> code_lines;
-  code_lines.push_back(absl::Substitute("$0 $1;", GenScalarType(var.val_type()), var.name()));
+  code_lines.push_back(absl::Substitute("$0 $1;", GenScalarType(var.type()), var.name()));
   code_lines.push_back(absl::Substitute("bpf_probe_read(&$0, sizeof($1), $2 + $3);", var.name(),
-                                        GenScalarType(var.val_type()), var.memory().base(),
+                                        GenScalarType(var.type()), var.memory().base(),
                                         var.memory().offset()));
   return code_lines;
 }
@@ -134,8 +133,7 @@ std::vector<std::string> GenBPFHelper(const ScalarVariable& var) {
       // TODO(yzhao): Implement GOID.
       "goid()", "bpf_get_current_pid_tgid() >> 32", "bpf_get_current_pid_tgid()");
   int idx = static_cast<int>(var.builtin());
-  return {
-      absl::Substitute("$0 $1 = $2;", GenScalarType(var.val_type()), var.name(), kBPFHelpers[idx])};
+  return {absl::Substitute("$0 $1 = $2;", GenScalarType(var.type()), var.name(), kBPFHelpers[idx])};
 }
 
 }  // namespace

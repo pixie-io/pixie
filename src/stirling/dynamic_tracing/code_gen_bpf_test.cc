@@ -47,12 +47,12 @@ constexpr char kProgram[] = R"proto(
                               }
                               vars {
                                 name: "key"
-                                val_type: UINT32
+                                type: UINT32
                                 builtin: TGID
                               }
                               vars {
                                 name: "var"
-                                val_type: UINT32
+                                type: UINT32
                                 reg: SP
                               }
                               st_vars {
