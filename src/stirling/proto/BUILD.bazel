@@ -34,25 +34,3 @@ pl_cc_proto_library(
     proto = ":sock_event_pl_proto",
     visibility = ["//visibility:public"],
 )
-
-pl_proto_library(
-    name = "ir_pl_proto",
-    srcs = ["ir.proto"],
-)
-
-pl_cc_proto_library(
-    name = "ir_pl_cc_proto",
-    proto = ":ir_pl_proto",
-)
-
-pl_proto_library(
-    name = "physical_ir_pl_proto",
-    srcs = ["physical_ir.proto"],
-    deps = [":ir_pl_proto"],
-)
-
-pl_cc_proto_library(
-    name = "physical_ir_pl_cc_proto",
-    proto = ":physical_ir_pl_proto",
-    deps = [":ir_pl_cc_proto"],
-)

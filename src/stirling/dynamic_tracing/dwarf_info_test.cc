@@ -5,15 +5,15 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/dynamic_tracing/dwarf_info.h"
 
-using google::protobuf::TextFormat;
-using google::protobuf::util::MessageDifferencer;
-
 // The binary location cannot be hard-coded because its location depends on -c opt/dbg/fastbuild.
 DEFINE_string(dummy_go_binary, "", "The path to dummy_go_binary.");
 
 namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
+
+using ::google::protobuf::TextFormat;
+using ::google::protobuf::util::MessageDifferencer;
 
 constexpr std::string_view kEntryProbeIRTmpl = R"(
   trace_point: {
@@ -169,15 +169,15 @@ TEST_P(DwarfInfoTest, Transform) {
   DwarfInfoTestParam p = GetParam();
 
   std::string entry_probe_ir = absl::Substitute(p.input, kGoBinaryPath);
-  dynamictracingpb::Probe input_probe;
+  ir::logical::Probe input_probe;
   ASSERT_TRUE(TextFormat::ParseFromString(std::string(entry_probe_ir), &input_probe));
 
   std::string entry_probe_phys_ir = absl::Substitute(p.expected_output, kGoBinaryPath);
-  dynamictracingpb::PhysicalProbe expected_output_probe;
+  ir::physical::PhysicalProbe expected_output_probe;
   ASSERT_TRUE(
       TextFormat::ParseFromString(std::string(entry_probe_phys_ir), &expected_output_probe));
 
-  ASSERT_OK_AND_ASSIGN(dynamictracingpb::PhysicalProbe output_probe, AddDwarves(input_probe));
+  ASSERT_OK_AND_ASSIGN(ir::physical::PhysicalProbe output_probe, AddDwarves(input_probe));
 
   MessageDifferencer message_differencer;
   std::string diff_out;

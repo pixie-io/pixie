@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+package pl.stirling.dynamic_tracing.ir.logical;
+
+import "src/stirling/dynamic_tracing/ir/shared.proto";
+
+message Argument {
+  // Used to reference to this argument, and as the name of the column to hold the values of this
+  // argument when this is exported to a table.
+  string id = 1;
+
+  // An expression that accesses a subfield of this argument.
+  // For example, "foo" refers to an argument named "foo".
+  // And "foo.bar" refers to the "bar" field of argument named "foo".
+  //
+  // NOTE: This should only be a accessor expression started with the name of an argument.
+  string expr = 2;
+}
+
+message ReturnValue {
+  // Used to reference to this return value, and as the name of the column to hold the values of
+  // this argument when this is exported to a table.
+  string id = 1;
+
+  // The index to this return value. This is only meaningful for languages that support multiple
+  // return values, like Go.
+  uint32 index = 2;
+}
+
+message FunctionLatency {
+  string id = 1;
+}
+
+// Corresponds to a logical probe.
+message Probe {
+  // Where to attach this probe.
+  shared.TracePoint trace_point = 1;
+
+  // Input arguments of a function.
+  repeated Argument args = 4;
+
+  // Return values of a function.
+  repeated ReturnValue ret_vals = 5;
+
+  // Latency of a function.
+  FunctionLatency function_latency = 6;
+
+  // Inserts key and value into a map.
+  //
+  // The variable to be inserted into the map must be one of the above args, ret_vals, and function_latency.
+  repeated shared.MapStashAction stash_map_actions = 7;
+
+  // Writes a value to perf buffer.
+  //
+  // The variable to be inserted into the perf buffer must be one of the above args, ret_vals, and function_latency.
+  repeated shared.OutputAction output_actions = 8;
+}

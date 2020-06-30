@@ -3,7 +3,7 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/dynamic_tracing/code_gen.h"
-#include "src/stirling/proto/physical_ir.pb.h"
+#include "src/stirling/dynamic_tracing/ir/physical.pb.h"
 #include "src/stirling/utils/linux_headers.h"
 
 namespace pl {
@@ -14,7 +14,7 @@ using ::google::protobuf::TextFormat;
 using ::pl::stirling::bpf_tools::BCCWrapper;
 using ::pl::stirling::bpf_tools::BPFProbeAttachType;
 using ::pl::stirling::bpf_tools::UProbeSpec;
-using ::pl::stirling::dynamictracingpb::Program;
+using ::pl::stirling::dynamic_tracing::ir::physical::Program;
 using ::pl::stirling::utils::FindOrInstallLinuxHeaders;
 using ::pl::stirling::utils::kDefaultHeaderSearchOrder;
 using ::pl::testing::BazelBinTestFilePath;

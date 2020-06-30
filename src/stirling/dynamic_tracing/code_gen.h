@@ -7,7 +7,7 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
-#include "src/stirling/proto/physical_ir.pb.h"
+#include "src/stirling/dynamic_tracing/ir/physical.pb.h"
 
 namespace pl {
 namespace stirling {
@@ -17,41 +17,36 @@ namespace dynamic_tracing {
 // different nesting level, which translates into different indentation depth.
 
 // Returns the definition of the input struct.
-StatusOr<std::vector<std::string>> GenStruct(const ::pl::stirling::dynamictracingpb::Struct& st,
+StatusOr<std::vector<std::string>> GenStruct(const ir::physical::Struct& st,
                                              int member_indent_size = 2);
 
 // Returns the definition of the input ScalarVariable.
 // TODO(yzhao): This probably need to handle indentation.
-StatusOr<std::vector<std::string>> GenScalarVariable(
-    const ::pl::stirling::dynamictracingpb::ScalarVariable& var);
+StatusOr<std::vector<std::string>> GenScalarVariable(const ir::physical::ScalarVariable& var);
 
 // Returns the definition of the input StructVariable, with assignments of all fields.
-StatusOr<std::vector<std::string>> GenStructVariable(
-    const ::pl::stirling::dynamictracingpb::Struct& st,
-    const ::pl::stirling::dynamictracingpb::StructVariable& var);
+StatusOr<std::vector<std::string>> GenStructVariable(const ir::physical::Struct& st,
+                                                     const ir::physical::StructVariable& var);
 
 // Returns the code (in multiple lines) that perform the action to stash a key and variable pair
 // into a BPF map.
-std::vector<std::string> GenMapStashAction(
-    const ::pl::stirling::dynamictracingpb::MapStashAction& action);
+std::vector<std::string> GenMapStashAction(const ir::shared::MapStashAction& action);
 
 // Returns the code that submits variables to a perf buffer.
-std::vector<std::string> GenOutputAction(
-    const ::pl::stirling::dynamictracingpb::OutputAction& action);
+std::vector<std::string> GenOutputAction(const ir::shared::OutputAction& action);
 
 // Returns the BCC probe function code.
 StatusOr<std::vector<std::string>> GenPhysicalProbe(
-    const absl::flat_hash_map<std::string_view, const ::pl::stirling::dynamictracingpb::Struct*>&
-        structs,
-    const ::pl::stirling::dynamictracingpb::PhysicalProbe& probe);
+    const absl::flat_hash_map<std::string_view, const ir::physical::Struct*>& structs,
+    const ir::physical::PhysicalProbe& probe);
 
 struct BCCProgram {
   // TODO(yzhao): We probably need kprobe_specs as well.
-  std::vector<::pl::stirling::bpf_tools::UProbeSpec> uprobe_specs;
+  std::vector<bpf_tools::UProbeSpec> uprobe_specs;
   std::vector<std::string> code_lines;
 };
 
-StatusOr<BCCProgram> GenProgram(const ::pl::stirling::dynamictracingpb::Program& program);
+StatusOr<BCCProgram> GenProgram(const ir::physical::Program& program);
 
 }  // namespace dynamic_tracing
 }  // namespace stirling

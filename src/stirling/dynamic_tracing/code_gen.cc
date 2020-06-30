@@ -14,19 +14,20 @@ namespace dynamic_tracing {
 
 using ::pl::stirling::bpf_tools::BPFProbeAttachType;
 using ::pl::stirling::bpf_tools::UProbeSpec;
-using ::pl::stirling::dynamictracingpb::BPFHelper;
-using ::pl::stirling::dynamictracingpb::Map;
-using ::pl::stirling::dynamictracingpb::MapStashAction;
-using ::pl::stirling::dynamictracingpb::Output;
-using ::pl::stirling::dynamictracingpb::OutputAction;
-using ::pl::stirling::dynamictracingpb::Program;
-using ::pl::stirling::dynamictracingpb::Register;
-using ::pl::stirling::dynamictracingpb::ScalarType;
-using ::pl::stirling::dynamictracingpb::ScalarVariable;
-using ::pl::stirling::dynamictracingpb::Struct;
-using ::pl::stirling::dynamictracingpb::StructVariable;
-using ::pl::stirling::dynamictracingpb::TracePoint;
-using ::pl::stirling::dynamictracingpb::VariableType;
+using ::pl::stirling::dynamic_tracing::ir::physical::PhysicalProbe;
+using ::pl::stirling::dynamic_tracing::ir::physical::Program;
+using ::pl::stirling::dynamic_tracing::ir::physical::Register;
+using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
+using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
+using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
+using ::pl::stirling::dynamic_tracing::ir::shared::BPFHelper;
+using ::pl::stirling::dynamic_tracing::ir::shared::Map;
+using ::pl::stirling::dynamic_tracing::ir::shared::MapStashAction;
+using ::pl::stirling::dynamic_tracing::ir::shared::Output;
+using ::pl::stirling::dynamic_tracing::ir::shared::OutputAction;
+using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
+using ::pl::stirling::dynamic_tracing::ir::shared::TracePoint;
+using ::pl::stirling::dynamic_tracing::ir::shared::VariableType;
 
 #define PB_ENUM_SENTINEL_SWITCH_CLAUSE                             \
   LOG(DFATAL) << "Cannot happen. Needed to avoid default clause."; \
@@ -152,9 +153,8 @@ StatusOr<std::vector<std::string>> GenScalarVariable(const ScalarVariable& var) 
   GCC_SWITCH_RETURN;
 }
 
-StatusOr<std::vector<std::string>> GenStructVariable(
-    const ::pl::stirling::dynamictracingpb::Struct& st,
-    const ::pl::stirling::dynamictracingpb::StructVariable& st_var) {
+StatusOr<std::vector<std::string>> GenStructVariable(const Struct& st,
+                                                     const StructVariable& st_var) {
   if (st.name() != st_var.type()) {
     return error::InvalidArgument("Names of the struct do not match, $0 vs. $1", st.name(),
                                   st_var.type());
@@ -209,7 +209,7 @@ void MoveBackStrVec(std::vector<std::string>&& src, std::vector<std::string>* ds
 
 StatusOr<std::vector<std::string>> GenPhysicalProbe(
     const absl::flat_hash_map<std::string_view, const Struct*>& structs,
-    const ::pl::stirling::dynamictracingpb::PhysicalProbe& probe) {
+    const PhysicalProbe& probe) {
   if (probe.name().empty()) {
     return error::InvalidArgument("Probe's name cannot be empty");
   }
@@ -287,7 +287,7 @@ StatusOr<std::vector<std::string>> GenPhysicalProbe(
 
 namespace {
 
-UProbeSpec GetUProbeSpec(const ::pl::stirling::dynamictracingpb::PhysicalProbe& probe) {
+UProbeSpec GetUProbeSpec(const PhysicalProbe& probe) {
   UProbeSpec spec;
 
   spec.binary_path = probe.trace_point().binary_path();

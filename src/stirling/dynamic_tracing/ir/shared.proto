@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package pl.stirling.dynamic_tracing.ir.shared;
+
+// Describes where to attach a probe.
+message TracePoint {
+  string binary_path = 1;
+  string symbol = 2;
+
+  enum Type {
+    // Only for logical IR.
+    LOGICAL = 0;
+
+    // Intermediate and physical IR uses this to specify a BPF entry probe.
+    ENTRY = 1;
+
+    // Intermediate and physical IR uses this to specify a BPF return probe.
+    RETURN = 2;
+  }
+
+  // This has to be LOGICAL for logical IR.
+  Type type = 3;
+}
+
+enum BPFHelper {
+  GOID = 0;
+  TGID = 1;
+  TGID_PID = 2;
+}
+
+enum ScalarType {
+  BOOL = 0;
+  INT = 1;
+  INT8 = 2;
+  INT16 = 3;
+  INT32 = 4;
+  INT64 = 5;
+  UINT = 6;
+  UINT8 = 7;
+  UINT16 = 8;
+  UINT32 = 9;
+  UINT64 = 10;
+  FLOAT = 11;
+  DOUBLE = 12;
+
+  // Same as char pointer.
+  STRING = 13;
+  VOID_POINTER = 14;
+}
+
+// Wraps an oneof field which can be either scalar or struct.
+message VariableType {
+  oneof type_oneof {
+    ScalarType scalar = 2;
+    string struct_type = 3;
+  }
+}
+
+// Describe a BPF map.
+// Corresponds to px.Map().
+message Map {
+  string name = 1;
+
+  VariableType key_type = 2; // Exclusive to physical IR.
+  VariableType value_type = 3; // Exclusive to physical IR.
+}
+
+// Describes a perf buffer to hold output data from BPF.
+// Corresponds to px.Output().
+message Output {
+  string name = 1;
+
+  VariableType type = 2;  // Exclusive to physical IR.
+}
+
+// Corresponds to inserting value(s) with key to a map.
+// Multiple values are grouped together.
+message MapStashAction {
+  string map_name = 1;
+
+  // The builtin to generate the key value.
+  string key_variable_name = 2;
+
+  // The name of the variable to be inserted into this map.
+  string value_variable_name = 3;
+}
+
+message OutputAction {
+  // The name of the perf buffer..
+  // TODO(yzhao): Might add another message in addition to OutputAction, for physical IR.
+  string perf_buffer_name = 1;
+
+  // The names of the variables to be submitted to the perf buffer.
+  string variable_name = 2;
+}
+

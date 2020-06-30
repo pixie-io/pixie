@@ -18,25 +18,25 @@ using dwarf_tools::VarType;
 
 // Map to convert Go Base types to ScalarType.
 // clang-format off
-const std::map<std::string_view, dynamictracingpb::ScalarType> kGoTypesMap = {
-        {"bool", dynamictracingpb::ScalarType::BOOL},
-        {"int", dynamictracingpb::ScalarType::INT},
-        {"int8", dynamictracingpb::ScalarType::INT8},
-        {"int16", dynamictracingpb::ScalarType::INT16},
-        {"int32", dynamictracingpb::ScalarType::INT32},
-        {"int64", dynamictracingpb::ScalarType::INT64},
-        {"uint", dynamictracingpb::ScalarType::UINT},
-        {"uint8", dynamictracingpb::ScalarType::UINT8},
-        {"uint16", dynamictracingpb::ScalarType::UINT16},
-        {"uint32", dynamictracingpb::ScalarType::UINT32},
-        {"uint64", dynamictracingpb::ScalarType::UINT64},
-        {"float32", dynamictracingpb::ScalarType::FLOAT},
-        {"float64", dynamictracingpb::ScalarType::DOUBLE},
+const std::map<std::string_view, ir::shared::ScalarType> kGoTypesMap = {
+        {"bool", ir::shared::ScalarType::BOOL},
+        {"int", ir::shared::ScalarType::INT},
+        {"int8", ir::shared::ScalarType::INT8},
+        {"int16", ir::shared::ScalarType::INT16},
+        {"int32", ir::shared::ScalarType::INT32},
+        {"int64", ir::shared::ScalarType::INT64},
+        {"uint", ir::shared::ScalarType::UINT},
+        {"uint8", ir::shared::ScalarType::UINT8},
+        {"uint16", ir::shared::ScalarType::UINT16},
+        {"uint32", ir::shared::ScalarType::UINT32},
+        {"uint64", ir::shared::ScalarType::UINT64},
+        {"float32", ir::shared::ScalarType::FLOAT},
+        {"float64", ir::shared::ScalarType::DOUBLE},
 };
 // clang-format on
 
-StatusOr<dynamictracingpb::ScalarType> VarTypeToProtoScalarType(const VarType& type,
-                                                                std::string_view name) {
+StatusOr<ir::shared::ScalarType> VarTypeToProtoScalarType(const VarType& type,
+                                                          std::string_view name) {
   switch (type) {
     case VarType::kBaseType: {
       auto iter = kGoTypesMap.find(name);
@@ -46,7 +46,7 @@ StatusOr<dynamictracingpb::ScalarType> VarTypeToProtoScalarType(const VarType& t
       return iter->second;
     }
     case VarType::kPointer:
-      return dynamictracingpb::ScalarType::VOID_POINTER;
+      return ir::shared::ScalarType::VOID_POINTER;
     default:
       return error::Internal("Unhandled type: $0", magic_enum::enum_name(type));
   }
@@ -61,7 +61,7 @@ StatusOr<const ArgInfo*> GetArgInfo(const std::map<std::string, ArgInfo>& args_m
   return &args_map_iter->second;
 }
 
-StatusOr<dynamictracingpb::PhysicalProbe> AddDwarves(const dynamictracingpb::Probe& input_probe) {
+StatusOr<ir::physical::PhysicalProbe> AddDwarves(const ir::logical::Probe& input_probe) {
   using dwarf_tools::DwarfReader;
 
   const std::string& binary_path = input_probe.trace_point().binary_path();
@@ -71,7 +71,7 @@ StatusOr<dynamictracingpb::PhysicalProbe> AddDwarves(const dynamictracingpb::Pro
 
   PL_ASSIGN_OR_RETURN(auto args_map, dwarf_reader->GetFunctionArgInfo(function_symbol));
 
-  dynamictracingpb::PhysicalProbe out;
+  ir::physical::PhysicalProbe out;
 
   out.mutable_trace_point()->CopyFrom(input_probe.trace_point());
 
@@ -79,8 +79,8 @@ StatusOr<dynamictracingpb::PhysicalProbe> AddDwarves(const dynamictracingpb::Pro
   {
     auto* var = out.add_vars();
     var->set_name("sp");
-    var->set_type(dynamictracingpb::VOID_POINTER);
-    var->set_reg(dynamictracingpb::Register::SP);
+    var->set_type(ir::shared::VOID_POINTER);
+    var->set_reg(ir::physical::Register::SP);
   }
 
   // Dwarf and BCC have an 8 byte difference in where they believe the SP is.
@@ -111,8 +111,7 @@ StatusOr<dynamictracingpb::PhysicalProbe> AddDwarves(const dynamictracingpb::Pro
       type = member_info.type;
     }
 
-    PL_ASSIGN_OR_RETURN(dynamictracingpb::ScalarType pb_type,
-                        VarTypeToProtoScalarType(type, type_name));
+    PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type, VarTypeToProtoScalarType(type, type_name));
 
     auto* var = out.add_vars();
     var->set_name(arg.id());
@@ -136,7 +135,7 @@ StatusOr<dynamictracingpb::PhysicalProbe> AddDwarves(const dynamictracingpb::Pro
     PL_ASSIGN_OR_RETURN(const ArgInfo* arg_info, GetArgInfo(args_map, ret_val_name));
     DCHECK(arg_info != nullptr);
 
-    PL_ASSIGN_OR_RETURN(dynamictracingpb::ScalarType type,
+    PL_ASSIGN_OR_RETURN(ir::shared::ScalarType type,
                         VarTypeToProtoScalarType(arg_info->type, arg_info->type_name));
 
     auto* var = out.add_vars();

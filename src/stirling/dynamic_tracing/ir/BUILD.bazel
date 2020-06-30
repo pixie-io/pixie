@@ -1,0 +1,39 @@
+# gazelle:ignore
+
+package(default_visibility = ["//src/stirling:__subpackages__"])
+
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_proto_library")
+
+pl_proto_library(
+    name = "shared_pl_proto",
+    srcs = ["shared.proto"],
+)
+
+pl_cc_proto_library(
+    name = "shared_pl_cc_proto",
+    proto = ":shared_pl_proto",
+)
+
+pl_proto_library(
+    name = "logical_pl_proto",
+    srcs = ["logical.proto"],
+    deps = [":shared_pl_proto"],
+)
+
+pl_cc_proto_library(
+    name = "logical_pl_cc_proto",
+    proto = ":logical_pl_proto",
+    deps = [":shared_pl_cc_proto"],
+)
+
+pl_proto_library(
+    name = "physical_pl_proto",
+    srcs = ["physical.proto"],
+    deps = [":shared_pl_proto"],
+)
+
+pl_cc_proto_library(
+    name = "physical_pl_cc_proto",
+    proto = ":physical_pl_proto",
+    deps = [":shared_pl_cc_proto"],
+)

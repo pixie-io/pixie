@@ -7,16 +7,16 @@ namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
 
-using ::pl::stirling::dynamictracingpb::BPFHelper;
-using ::pl::stirling::dynamictracingpb::MapStashAction;
-using ::pl::stirling::dynamictracingpb::OutputAction;
-using ::pl::stirling::dynamictracingpb::PhysicalProbe;
-using ::pl::stirling::dynamictracingpb::Register;
-using ::pl::stirling::dynamictracingpb::ScalarType;
-using ::pl::stirling::dynamictracingpb::ScalarVariable;
-using ::pl::stirling::dynamictracingpb::Struct;
-using ::pl::stirling::dynamictracingpb::StructVariable;
-using ::pl::stirling::dynamictracingpb::VariableType;
+using ::pl::stirling::dynamic_tracing::ir::physical::PhysicalProbe;
+using ::pl::stirling::dynamic_tracing::ir::physical::Register;
+using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
+using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
+using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
+using ::pl::stirling::dynamic_tracing::ir::shared::BPFHelper;
+using ::pl::stirling::dynamic_tracing::ir::shared::MapStashAction;
+using ::pl::stirling::dynamic_tracing::ir::shared::OutputAction;
+using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
+using ::pl::stirling::dynamic_tracing::ir::shared::VariableType;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
 using ::testing::StrEq;

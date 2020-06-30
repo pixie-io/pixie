@@ -1,10 +1,8 @@
 syntax = "proto3";
 
-package pl.stirling.dynamictracingpb;
+package pl.stirling.dynamic_tracing.ir.physical;
 
-import "src/stirling/proto/ir.proto";
-
-option go_package = "dynamictracingpb";
+import "src/stirling/dynamic_tracing/ir/shared.proto";
 
 // TODO(yzhao): It seems we might need to encode other registers in addition to SP, for example,
 // X86 calling convention uses registers as function argument addresses.
@@ -19,7 +17,7 @@ message Struct {
 
   message Field {
     string name = 1;
-    VariableType type = 2;
+    shared.VariableType type = 2;
   }
 
   repeated Field fields = 2;
@@ -34,7 +32,7 @@ message ScalarVariable {
   //
   // When this is VOID_POINTER, this ScalarVariable describes an intermediate variable used to access
   // a scalar variable.
-  ScalarType type = 2;
+  shared.ScalarType type = 2;
 
   // Describes a variable that resides in memory, in comparison to a Register variable.
   message MemoryVariable {
@@ -55,7 +53,7 @@ message ScalarVariable {
     MemoryVariable memory = 4;
 
     // Return value from one of the BPF helper functions.
-    BPFHelper builtin = 5;
+    shared.BPFHelper builtin = 5;
   }
 }
 
@@ -86,7 +84,7 @@ message PhysicalProbe {
   string name = 1;
 
   // Where to attach this probe.
-  TracePoint trace_point = 2;
+  shared.TracePoint trace_point = 2;
 
   // Defines how to access variables from inside BCC code..
   //
@@ -105,10 +103,10 @@ message PhysicalProbe {
   // Inserts key and value into a map.
   //
   // The variable to be inserted into the map must be one of the above vars.
-  repeated MapStashAction map_stash_actions = 5;
+  repeated shared.MapStashAction map_stash_actions = 5;
 
   // Writes a value to perf buffer.
-  repeated OutputAction output_actions = 6;
+  repeated shared.OutputAction output_actions = 6;
 }
 
 // This describes a complete BPF program.
@@ -117,10 +115,10 @@ message Program {
   repeated Struct structs = 1;
 
   // Describes BPF maps.
-  repeated Map maps = 2;
+  repeated shared.Map maps = 2;
 
   // Describes perf buffers.
-  repeated Output outputs = 3;
+  repeated shared.Output outputs = 3;
 
   // Describes probe functions.
   repeated PhysicalProbe probes = 4;
