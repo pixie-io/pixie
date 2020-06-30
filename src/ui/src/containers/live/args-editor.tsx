@@ -13,7 +13,7 @@ import { EntityType, pxTypetoEntityType } from './utils/autocomplete-utils';
 
 const ArgsEditor = () => {
   const {
-    vis, pxl, args, title, id, setArgs,
+    vis, pxl, args, id, liveViewPage, setArgs,
   } = React.useContext(ScriptContext);
   const { execute } = React.useContext(ExecuteContext);
 
@@ -51,7 +51,7 @@ const ArgsEditor = () => {
               key={argName}
               onEnterKey={() => {
                 execute({
-                  pxl, vis, args, id, title,
+                  pxl, vis, args, id, liveViewPage,
                 });
               }}
               {...argProps}

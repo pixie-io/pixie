@@ -17,8 +17,7 @@ interface ExecuteArguments {
   vis: Vis;
   args: Arguments;
   id: string;
-  title: string;
-  liveViewPage?: LiveViewPage;
+  liveViewPage: LiveViewPage;
   entityParamNames?: string[];
   skipURLUpdate?: boolean;
 }
@@ -34,7 +33,6 @@ export const ExecuteContextProvider = (props) => {
     args,
     vis,
     pxl,
-    title,
     id,
     setScript,
     pxlEditorText,
@@ -79,7 +77,6 @@ export const ExecuteContextProvider = (props) => {
         pxl: pxlEditorText,
         vis: parsedVis,
         args: parsedArgs,
-        title,
         id,
         liveViewPage: LiveViewPage.Default,
       };
@@ -88,7 +85,7 @@ export const ExecuteContextProvider = (props) => {
     }
 
     // Either we're switching to this script or we are reading it from the execArgs, etiher way should set it.
-    setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.title,
+    setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id,
       execArgs.liveViewPage, execArgs.entityParamNames);
 
     let errMsg: string;

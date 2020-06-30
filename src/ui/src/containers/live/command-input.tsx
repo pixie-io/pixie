@@ -71,7 +71,6 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
         entityParamNames: [],
         pxl: script.code,
         vis,
-        title: script.title,
         id: script.id,
         // Fill the default args for now. This will go away once the autocomplete is implemented.
         args: argsForVis(vis, {}),

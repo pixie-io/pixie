@@ -55,7 +55,7 @@ export function ScriptLoader() {
           return;
         }
 
-        const { title, vis, code } = scripts.get(id);
+        const { vis, code } = scripts.get(id);
 
         const parsedVis = parseVis(vis);
         const parsedArgs = argsForVis(parsedVis, { ...args, ...entity.params }, id);
@@ -66,7 +66,6 @@ export function ScriptLoader() {
           pxl: code,
           vis: parsedVis,
           args: parsedArgs,
-          title,
           id,
           skipURLUpdate: true,
         });
