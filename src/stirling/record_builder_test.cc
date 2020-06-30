@@ -25,13 +25,15 @@ static constexpr auto kTableSchema = DataTableSchema("abc_table", kElements);
 TEST(RecordBuilder, StringMaxSize) {
   DataTable data_table(kTableSchema);
 
-  std::string kLargeString(DataTable::RecordBuilder<&kTableSchema>::kMaxStringBytes + 100, 'c');
-  std::string kExpectedString(DataTable::RecordBuilder<&kTableSchema>::kMaxStringBytes, 'c');
+  constexpr size_t kMaxStringBytes = 512;
+
+  std::string kLargeString(kMaxStringBytes + 100, 'c');
+  std::string kExpectedString(kMaxStringBytes, 'c');
 
   DataTable::RecordBuilder<&kTableSchema> r(&data_table);
-  r.Append<r.ColIndex("a")>(1);
-  r.Append<r.ColIndex("b")>("foo");
-  r.Append<r.ColIndex("c")>(kLargeString);
+  r.Append<r.ColIndex("a"), kMaxStringBytes>(1);
+  r.Append<r.ColIndex("b"), kMaxStringBytes>("foo");
+  r.Append<r.ColIndex("c"), kMaxStringBytes>(kLargeString);
 
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
   ASSERT_EQ(tablets.size(), 1);

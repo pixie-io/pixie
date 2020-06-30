@@ -105,10 +105,6 @@ class DataTable : public NotCopyable {
   template <const DataTableSchema* schema>
   class RecordBuilder {
    public:
-    // Any string larger than this size will be truncated before being placed in the record.
-    static constexpr int kMaxStringBytes = 512;
-    static constexpr char kTruncatedMsg[] = "... [TRUNCATED]";
-
     RecordBuilder(DataTable* data_table, types::TabletIDView tablet_id, uint64_t time = 0)
         : tablet_(*data_table->GetTablet(tablet_id)), time_(time) {
       static_assert(schema->tabletized());
@@ -128,28 +124,30 @@ class DataTable : public NotCopyable {
     constexpr uint32_t ColIndex(std::string_view name) { return schema->ColIndex(name); }
 
     // The argument type is inferred by the table schema and the column index.
-    template <const uint32_t index>
+    // Any string larger than TMaxStringBytes size will be truncated before being placed in the
+    // record.
+    template <const size_t TIndex, const size_t TMaxStringBytes = 1024>
     inline void Append(
-        typename types::DataTypeTraits<schema->elements()[index].type()>::value_type val) {
-      if constexpr (index == schema->tabletization_key()) {
+        typename types::DataTypeTraits<schema->elements()[TIndex].type()>::value_type val) {
+      if constexpr (TIndex == schema->tabletization_key()) {
         // TODO(oazizi): This will probably break if val is ever StringValue.
         DCHECK(std::to_string(val.val) == tablet_id_);
       }
 
       if constexpr (std::is_same_v<typename types::DataTypeTraits<
-                                       schema->elements()[index].type()>::value_type,
+                                       schema->elements()[TIndex].type()>::value_type,
                                    types::StringValue>) {
-        if (val.size() > kMaxStringBytes) {
-          val.resize(kMaxStringBytes);
+        if (val.size() > TMaxStringBytes) {
+          val.resize(TMaxStringBytes);
           val.append(kTruncatedMsg);
         }
       }
 
-      tablet_.records[index]->Append(std::move(val));
-      DCHECK(!signature_[index]) << absl::Substitute(
-          "Attempt to Append() to column $0 (name=$1) multiple times", index,
-          schema->ColName(index));
-      signature_.set(index);
+      tablet_.records[TIndex]->Append(std::move(val));
+      DCHECK(!signature_[TIndex]) << absl::Substitute(
+          "Attempt to Append() to column $0 (name=$1) multiple times", TIndex,
+          schema->ColName(TIndex));
+      signature_.set(TIndex);
     }
 
     ~RecordBuilder() {
@@ -173,6 +171,8 @@ class DataTable : public NotCopyable {
     std::bitset<schema->elements().size()> signature_;
     types::TabletIDView tablet_id_ = "";
     uint64_t time_;
+
+    static constexpr char kTruncatedMsg[] = "... [TRUNCATED]";
   };
 
  protected:

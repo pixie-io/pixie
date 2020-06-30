@@ -268,6 +268,13 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
       {"go_grpc_data_events", HandleHTTP2Data, HandleHTTP2DataLoss},
   });
 
+  // Most HTTP servers support 8K headers, so we truncate after that.
+  // https://stackoverflow.com/questions/686217/maximum-on-http-header-values
+  inline static constexpr size_t kMaxHTTPHeadersBytes = 8192;
+
+  // Only sample the head of the body, to save space.
+  inline static constexpr size_t kMaxBodyBytes = 512;
+
   // TODO(yzhao): We will remove this once finalized the mechanism of lazy protobuf parse.
   inline static ::pl::grpc::ServiceDescriptorDatabase grpc_desc_db_{
       demos::hipster_shop::GetFileDescriptorSet()};
