@@ -130,11 +130,15 @@ std::vector<std::string> GenMemoryVariable(const ScalarVariable& var) {
 }
 
 std::vector<std::string> GenBPFHelper(const ScalarVariable& var) {
-  constexpr auto kBPFHelpers = MakeArray<std::string_view>(
-      // TODO(yzhao): Implement GOID.
-      "goid()", "bpf_get_current_pid_tgid() >> 32", "bpf_get_current_pid_tgid()");
-  int idx = static_cast<int>(var.builtin());
-  return {absl::Substitute("$0 $1 = $2;", GenScalarType(var.type()), var.name(), kBPFHelpers[idx])};
+  static const absl::flat_hash_map<BPFHelper, std::string_view> kBPFHelpers = {
+      {BPFHelper::GOID, "goid()"},
+      {BPFHelper::TGID, "bpf_get_current_pid_tgid() >> 32"},
+      {BPFHelper::TGID_PID, "bpf_get_current_pid_tgid()"},
+      {BPFHelper::KTIME, "bpf_ktime_get_ns()"},
+  };
+  auto iter = kBPFHelpers.find(var.builtin());
+  DCHECK(iter != kBPFHelpers.end());
+  return {absl::Substitute("$0 $1 = $2;", GenScalarType(var.type()), var.name(), iter->second)};
 }
 
 }  // namespace

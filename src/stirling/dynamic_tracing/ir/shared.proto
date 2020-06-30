@@ -22,10 +22,14 @@ message TracePoint {
   Type type = 3;
 }
 
+// All enum values must be consecutive, as they are used as array index in codegen.
 enum BPFHelper {
   GOID = 0;
   TGID = 1;
   TGID_PID = 2;
+
+  // Return the kernel time in nanoseconds.
+  KTIME = 3;
 }
 
 enum ScalarType {

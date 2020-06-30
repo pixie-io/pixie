@@ -102,6 +102,11 @@ TEST(GenVariableTest, Builtin) {
 
   ASSERT_OK_AND_THAT(GenScalarVariable(var),
                      ElementsAre("void* var = bpf_get_current_pid_tgid();"));
+
+  var.set_builtin(BPFHelper::KTIME);
+  var.set_type(ScalarType::UINT64);
+
+  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("uint64_t var = bpf_ktime_get_ns();"));
 }
 
 TEST(GenStructVariableTest, Variables) {
