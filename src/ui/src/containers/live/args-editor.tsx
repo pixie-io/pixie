@@ -7,15 +7,13 @@ import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 
 import { getArgTypesForVis } from 'utils/args-utils';
-import { ExecuteContext } from '../../context/execute-context';
 import { ScriptContext } from '../../context/script-context';
 import { EntityType, pxTypetoEntityType } from '../new-command-input/autocomplete-utils';
 
 const ArgsEditor = () => {
   const {
-    vis, pxl, args, id, liveViewPage, setArgs,
+    vis, pxl, args, id, liveViewPage, setArgs, execute,
   } = React.useContext(ScriptContext);
-  const { execute } = React.useContext(ExecuteContext);
 
   if (!args) {
     return null;

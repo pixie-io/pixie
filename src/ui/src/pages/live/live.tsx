@@ -15,21 +15,20 @@ import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 
 import clsx from 'clsx';
-import Canvas from '../../containers/live/canvas';
-import ClusterSelector from '../../containers/live/cluster-selector';
-import CommandInput from '../../containers/command-input/command-input';
-import NewCommandInput from '../../containers/new-command-input/new-command-input';
-import { withLiveViewContext } from '../../containers/live/context';
-import { ExecuteContext } from '../../context/execute-context';
-import { LayoutContext } from '../../context/layout-context';
-import { ScriptContext } from '../../context/script-context';
-import { DataDrawerSplitPanel } from '../../containers/data-drawer/data-drawer';
-import { EditorSplitPanel } from '../../containers/editor/editor';
-import ExecuteScriptButton from '../../containers/live/execute-button';
-import ProfileMenu from '../../containers/profile-menu/profile-menu';
-import { ScriptLoader } from '../../containers/live/script-loader';
-import LiveViewShortcuts from '../../containers/live/shortcuts';
-import LiveViewTitle from '../../containers/live/title';
+import Canvas from 'containers/live/canvas';
+import ClusterSelector from 'containers/live/cluster-selector';
+import CommandInput from 'containers/command-input/command-input';
+import NewCommandInput from 'containers/new-command-input/new-command-input';
+import { withLiveViewContext } from 'containers/live/context';
+import { LayoutContext } from 'context/layout-context';
+import { ScriptContext } from 'context/script-context';
+import { DataDrawerSplitPanel } from 'containers/data-drawer/data-drawer';
+import { EditorSplitPanel } from 'containers/editor/editor';
+import ExecuteScriptButton from 'containers/live/execute-button';
+import ProfileMenu from 'containers/profile-menu/profile-menu';
+import { ScriptLoader } from 'containers/live/script-loader';
+import LiveViewShortcuts from 'containers/live/shortcuts';
+import LiveViewTitle from 'containers/live/title';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -104,7 +103,7 @@ export const EditorOpener = () => {
 const LiveView = () => {
   const classes = useStyles();
 
-  const { execute } = React.useContext(ExecuteContext);
+  const { pxl, id, saveEditorAndExecute } = React.useContext(ScriptContext);
   const { loading } = React.useContext(VizierGRPCClientContext);
   const {
     setDataDrawerOpen, setEditorPanelOpen, isMobile,
@@ -122,10 +121,9 @@ const LiveView = () => {
     'pixie-command': toggleCommandOpen,
     'toggle-editor': () => setEditorPanelOpen((editable) => !editable),
     'toggle-data-drawer': () => setDataDrawerOpen((open) => !open),
-    execute,
+    execute: () => saveEditorAndExecute(),
   };
 
-  const { pxl, id } = React.useContext(ScriptContext);
   React.useEffect(() => {
     if (!pxl && !id) {
       setCommandOpen(true);

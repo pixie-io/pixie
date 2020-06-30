@@ -9,8 +9,10 @@ import { createStyles, makeStyles } from '@material-ui/core';
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 
-import { ExecuteContext } from '../../context/execute-context';
-import { LiveViewPage } from '../../components/live-widgets/utils/live-view-params';
+import { ScriptContext, ExecuteArguments } from 'context/script-context';
+import { ResultsContext } from 'context/results-context';
+import { LiveViewPage } from 'components/live-widgets/utils/live-view-params';
+
 import { parseVis } from '../live/vis';
 
 interface CommandInputProps {
@@ -53,7 +55,8 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
     })));
   }, [scripts]);
 
-  const { execute } = React.useContext(ExecuteContext);
+  const { execute, setScript } = React.useContext(ScriptContext);
+  const { clearResults } = React.useContext(ResultsContext);
 
   const getCompletions = React.useCallback((input) => {
     if (!input) {
@@ -66,14 +69,17 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
     const script = scripts.get(id);
     const vis = parseVis(script.vis);
     if (script) {
-      execute({
+      const execArgs: ExecuteArguments = {
         liveViewPage: LiveViewPage.Default,
         pxl: script.code,
         vis,
         id: script.id,
         // Fill the default args for now. This will go away once the autocomplete is implemented.
         args: argsForVis(vis, {}),
-      });
+      };
+      clearResults();
+      setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
+      execute(execArgs);
     }
     onClose();
   };

@@ -11,7 +11,7 @@ import { createStyles, makeStyles } from '@material-ui/core';
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 
-import { ExecuteContext } from 'context/execute-context';
+import { ScriptContext } from 'context/script-context';
 import { ParseFormatStringToTabStops } from './autocomplete-parser';
 import { entityTypeToString } from './autocomplete-utils';
 import { LiveViewPage } from '../../components/live-widgets/utils/live-view-params';
@@ -60,7 +60,7 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
   const [tabSuggestions, setTabSuggestions] = React.useState<Array<TabSuggestion>>([]);
   const [isValid, setIsValid] = React.useState(false);
 
-  const { execute } = React.useContext(ExecuteContext);
+  const { execute } = React.useContext(ScriptContext);
   const { scripts } = React.useContext(ScriptsContext);
 
   const client = useApolloClient();

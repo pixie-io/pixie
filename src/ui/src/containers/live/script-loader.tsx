@@ -3,8 +3,8 @@ import * as React from 'react';
 import { argsForVis } from 'utils/args-utils';
 import urlParams from 'utils/url-params';
 
-import { ExecuteContext } from '../../context/execute-context';
-import { ScriptContext } from '../../context/script-context';
+import { ScriptContext } from 'context/script-context';
+import { ResultsContext } from 'context/results-context';
 import { parseVis } from './vis';
 import {
   LiveViewPage,
@@ -17,9 +17,11 @@ type LoadScriptState = 'unloaded' | 'url-loaded' | 'url-skipped' | 'context-load
 export function ScriptLoader() {
   const [loadState, setLoadState] = React.useState<LoadScriptState>('unloaded');
   const { promise: scriptPromise } = React.useContext(ScriptsContext);
-  const { pxl, vis } = React.useContext(ScriptContext);
+  const {
+    pxl, vis, args, id, liveViewPage, setScript, execute,
+  } = React.useContext(ScriptContext);
 
-  const { execute } = React.useContext(ExecuteContext);
+  const { clearResults } = React.useContext(ResultsContext);
   const ref = React.useRef({
     urlLoaded: false,
     execute,
@@ -31,7 +33,13 @@ export function ScriptLoader() {
   React.useEffect(() => {
     if (loadState === 'url-skipped') {
       if (pxl && vis) {
-        execute();
+        execute({
+          pxl,
+          vis,
+          args,
+          id,
+          liveViewPage,
+        });
         setLoadState('context-loaded');
       }
     }
@@ -59,14 +67,17 @@ export function ScriptLoader() {
 
         const parsedVis = parseVis(vis);
         const parsedArgs = argsForVis(parsedVis, { ...args, ...entity.params }, id);
-        ref.current.execute({
+        const execArgs = {
           liveViewPage: entity.page,
           pxl: code,
           vis: parsedVis,
           args: parsedArgs,
           id,
           skipURLUpdate: true,
-        });
+        };
+        clearResults();
+        setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
+        ref.current.execute(execArgs);
         setLoadState((state) => {
           if (state !== 'unloaded') {
             return state;
