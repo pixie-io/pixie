@@ -1,10 +1,24 @@
 import './graph.scss';
 
 import { WidgetDisplay } from 'containers/live/vis';
-import * as d3 from 'd3';
-import * as dagreD3 from 'dagre-d3';
-import * as graphlibDot from 'graphlib-dot';
+import {
+  data as visData, Edge, Network, Node, parseDOTNetwork,
+} from 'vis-network/standalone';
 import * as React from 'react';
+import { createStyles, makeStyles } from '@material-ui/core/styles';
+import { useHistory } from 'react-router';
+import ClusterContext from 'common/cluster-context';
+import { DataType, Relation, SemanticType } from '../../../types/generated/vizier_pb';
+import {
+  GRAPH_OPTIONS as graphOpts, semTypeToShapeConfig,
+} from './graph-options';
+import { toEntityPathname, toSingleEntityPage } from '../utils/live-view-params';
+
+interface ColInfo {
+  type: DataType;
+  semType: SemanticType;
+  name: string;
+}
 
 interface AdjacencyList {
   toColumn: string;
@@ -20,18 +34,37 @@ export interface GraphDisplay extends WidgetDisplay {
 interface GraphWidgetProps {
   display: GraphDisplay;
   data: any[];
+  relation: Relation;
 }
 
+const colInfoFromName = (relation: Relation, name: string): ColInfo => {
+  const cols = relation.getColumnsList();
+  for (let i = 0; i < cols.length; i++) {
+    if (cols[i].getColumnName() === name) {
+      return {
+        name,
+        type: cols[i].getColumnType(),
+        semType: cols[i].getColumnSemanticType(),
+      };
+    }
+  }
+  return undefined;
+};
+
 export const GraphWidget = (props: GraphWidgetProps) => {
-  const { display, data } = props;
+  const { display, data, relation } = props;
   if (display.dotColumn && data.length > 0) {
     return (
       <Graph dot={data[0][display.dotColumn]} />
     );
   } if (display.adjacencyList && display.adjacencyList.fromColumn && display.adjacencyList.toColumn) {
-    return (
-      <Graph data={data} toCol={display.adjacencyList.toColumn} fromCol={display.adjacencyList.fromColumn} />
-    );
+    const toColInfo = colInfoFromName(relation, display.adjacencyList.toColumn);
+    const fromColInfo = colInfoFromName(relation, display.adjacencyList.fromColumn);
+    if (toColInfo && fromColInfo) {
+      return (
+        <Graph data={data} toCol={toColInfo} fromCol={fromColInfo} />
+      );
+    }
   }
   return <div key={props.display.dotColumn}>Invalid spec for graph</div>;
 };
@@ -39,112 +72,121 @@ export const GraphWidget = (props: GraphWidgetProps) => {
 interface GraphProps {
   dot?: any;
   data?: any[];
-  toCol?: string;
-  fromCol?: string;
+  toCol?: ColInfo;
+  fromCol?: ColInfo;
 }
 
-export function overflows(parent: DOMRect, child: DOMRect): boolean {
-  return child.height > parent.height || child.width > parent.width;
-}
+const useStyles = makeStyles(() => createStyles({
+  root: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    border: '1px solid #161616',
+    '&.focus': {
+      border: '1px solid #353738',
+    },
+  },
+  container: {
+    width: '100%',
+    height: '95%',
+    '& > .vis-active': {
+      boxShadow: 'none',
+    },
+  },
+}));
 
-export function scaleToFit(parent: DOMRect, child: DOMRect): number {
-  if (!overflows(parent, child)) {
-    // Don't scale the child if it doesn't overflow.
-    return 1;
-  }
-  return Math.min(parent.height / child.height, parent.width / child.width);
-}
-
-export function fitDirection(parent: DOMRect, child: DOMRect): 'x' | 'y' {
-  return parent.width / child.width > parent.height / child.height ? 'y' : 'x';
-}
-
-export function centerFit(parent: DOMRect, child: DOMRect): d3.ZoomTransform {
-  if (!overflows(parent, child)) {
-    return d3.zoomIdentity.translate(parent.width / 2 - child.width / 2, parent.height / 2 - child.height / 2);
-  }
-
-  const scale = scaleToFit(parent, child);
-  const direction = fitDirection(parent, child);
-  const translate = {
-    x: direction === 'x' ? 0 : parent.width / 2 - child.width * scale / 2,
-    y: direction === 'y' ? 0 : parent.height / 2 - child.height * scale / 2,
-  };
-
-  return d3.zoomIdentity.translate(translate.x, translate.y).scale(scale);
+interface GraphData {
+  nodes: visData.DataSet<Node>;
+  edges: visData.DataSet<Edge>;
+  idToSemType: {[ key: string ]: SemanticType};
 }
 
 export const Graph = (props: GraphProps) => {
   const {
     dot, toCol, fromCol, data,
   } = props;
-  const [err, setErr] = React.useState('');
-  const svgRef = React.useRef<SVGSVGElement>(null);
-  const ref = React.useRef({
-    svgGroup: null,
-    renderer: null,
-    zoom: null,
-    baseSvg: null,
-  });
 
-  const dataToGraph = () => {
-    const graph = new dagreD3.graphlib.Graph()
-      .setGraph({})
-      .setDefaultEdgeLabel(() => ({}));
+  // TODO(zasgar/michelle/nserrino): Remove the context information from here and elsewhere.
+  const { selectedClusterName } = React.useContext(ClusterContext);
+  const history = useHistory();
 
-    data.forEach((rb) => {
-      // Filter out empty columns, because this will cause dagre to crash.
-      if (toCol !== '' && fromCol !== '') {
-        const nt = rb[toCol];
-        const nf = rb[fromCol];
-        if (!graph.hasNode(nt)) {
-          graph.setNode(nt, { label: nt });
-        }
-        if (!graph.hasNode(nf)) {
-          graph.setNode(nf, { label: nf });
-        }
-
-        graph.setEdge(nf, nt);
+  const [focused, setFocused] = React.useState<boolean>(false);
+  const toggleFocus = React.useCallback(() => setFocused((enabled) => !enabled), []);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [network, setNetwork] = React.useState<Network>(null);
+  const [graph, setGraph] = React.useState<GraphData>(null);
+  const doubleClickCallback = React.useCallback((params?: any) => {
+    if (params.nodes.length > 0) {
+      const nodeID = params.nodes[0];
+      const semType = graph.idToSemType[nodeID];
+      if (semType === SemanticType.ST_SERVICE_NAME
+        || semType === SemanticType.ST_POD_NAME
+        || semType === SemanticType.ST_NAMESPACE_NAME) {
+        const page = toSingleEntityPage(nodeID, semType, selectedClusterName);
+        const pathname = toEntityPathname(page);
+        history.push(pathname);
       }
-    });
-    return graph;
-  };
-
-  // Do this once to setup the component.
-  React.useLayoutEffect(() => {
-    const baseSvg = d3.select<SVGGraphicsElement, any>(svgRef.current);
-    const svgGroup = baseSvg.append('g');
-    const zoom = d3.zoom().on('zoom', () => svgGroup.attr('transform', d3.event.transform));
-    // eslint-disable-next-line new-cap
-    const renderer = new dagreD3.render();
-    baseSvg.call(zoom);
-    ref.current = {
-      svgGroup, baseSvg, zoom, renderer,
-    };
-  }, []);
-
-  React.useEffect(() => {
-    const graph = dot ? graphlibDot.read(dot) : dataToGraph();
-    const {
-      baseSvg, svgGroup, renderer, zoom,
-    } = ref.current;
-    try {
-      renderer(svgGroup, graph);
-      setErr('');
-    } catch (error) {
-      setErr('Error rendering graph. Graph may display incorrectly.');
     }
-    // Center the graph
-    const rootBbox = svgRef.current.getBoundingClientRect();
-    const groupBbox = svgGroup.node().getBBox();
+  }, [graph, history, selectedClusterName]);
 
-    baseSvg.call(zoom.transform, centerFit(rootBbox, groupBbox));
-  }, [dot, data]);
+  const ref = React.useRef<HTMLDivElement>();
 
+  // Load the graph.
+  React.useEffect(() => {
+    if (dot) {
+      const data = parseDOTNetwork(dot);
+      setGraph(data);
+      return;
+    }
+
+    const edges = new visData.DataSet<Edge>();
+    const nodes = new visData.DataSet<Node>();
+    const idToSemType = {};
+
+    const upsertNode = (label: string, st: SemanticType) => {
+      if (!idToSemType[label]) {
+        nodes.add({
+          ...semTypeToShapeConfig(st),
+          id: label,
+          label,
+        });
+        idToSemType[label] = st;
+      }
+    };
+    data.forEach((d) => {
+      const nt = d[toCol.name];
+      const nf = d[fromCol.name];
+
+      upsertNode(nt, toCol.semType);
+      upsertNode(nf, fromCol.semType);
+
+      edges.add({
+        from: nf,
+        to: nt,
+      });
+    });
+
+    setGraph({
+      nodes, edges, idToSemType,
+    });
+  }, [dot, data, toCol, fromCol]);
+
+  // Load the data.
+  React.useEffect(() => {
+    if (!graph) {
+      return;
+    }
+    const n = new Network(ref.current, graph, graphOpts);
+    n.on('doubleClick', doubleClickCallback);
+    setNetwork(n);
+  }, [graph, doubleClickCallback]);
+
+  const classes = useStyles();
   return (
-    <div className='pixie-graph-root'>
-      <svg className='pixie-graph-svg' ref={svgRef} />
-      {err !== '' ? <p>{err}</p> : null}
+    <div className={`${classes.root} ${focused ? 'focus' : ''}`} onFocus={toggleFocus} onBlur={toggleFocus}>
+      <div className={classes.container} ref={ref} />
     </div>
   );
 };

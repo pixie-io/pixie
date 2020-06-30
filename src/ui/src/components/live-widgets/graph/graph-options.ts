@@ -1,5 +1,7 @@
 import { Options } from 'vis-network/standalone';
 import * as podSVG from './pod.svg';
+import * as svcSVG from './svc.svg';
+import { SemanticType } from '../../../types/generated/vizier_pb';
 
 // TODO(michelle): Get these from MUI theme.
 const HIGH_EDGE_COLOR = '#e54e5c';
@@ -44,19 +46,35 @@ export const GRAPH_OPTIONS: Options = {
   },
   nodes: {
     borderWidth: 0.5,
-    shape: 'image',
     scaling: LABEL_OPTIONS,
     font: {
       face: 'Roboto',
       color: '#a6a8ae',
       align: 'left',
     },
-    image: {
-      selected: podSVG,
-      unselected: podSVG,
-    },
   },
 };
+
+const semTypeToIcon = {
+  [SemanticType.ST_SERVICE_NAME]: svcSVG,
+  [SemanticType.ST_POD_NAME]: podSVG,
+};
+
+export function semTypeToShapeConfig(st: SemanticType): any {
+  if (semTypeToIcon[st]) {
+    const icon = semTypeToIcon[st];
+    return {
+      shape: 'image',
+      image: {
+        selected: icon,
+        unselected: icon,
+      },
+    };
+  }
+  return {
+    shape: 'dot',
+  };
+}
 
 export function getNamespaceFromEntityName(val: string): string {
   return val.split('/')[0];

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { WidgetDisplay } from 'containers/live/vis';
 
-import { Network, data as visData } from 'vis-network/standalone';
+import { data as visData, Network } from 'vis-network/standalone';
 import { createStyles, makeStyles } from '@material-ui/core/styles';
 import { toEntityPathname, toSingleEntityPage } from 'components/live-widgets/utils/live-view-params';
 import ClusterContext from 'common/cluster-context';
@@ -14,8 +14,9 @@ import {
   getColorForLatency,
   GRAPH_OPTIONS as graphOpts,
   LABEL_OPTIONS as labelOpts,
+  semTypeToShapeConfig,
 } from './graph-options';
-import { RequestGraph, RequestGraphParser, Edge } from './request-graph-parser';
+import { Edge, RequestGraph, RequestGraphParser } from './request-graph-parser';
 
 import * as svcSVG from './svc.svg';
 
@@ -96,11 +97,7 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
             return childOptions.service === svc;
           },
           clusterNodeProperties: {
-            shape: 'image',
-            image: {
-              selected: svcSVG,
-              unselected: svcSVG,
-            },
+            ...semTypeToShapeConfig(SemanticType.ST_SERVICE_NAME),
             allowSingleNodeCluster: true,
             label: svc,
             scaling: labelOpts,

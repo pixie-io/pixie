@@ -119,7 +119,7 @@ const WidgetDisplay = ({
   const parsedTable = dataFromProto(table.relation, table.data);
 
   if (display[DISPLAY_TYPE_KEY] === GRAPH_DISPLAY_TYPE) {
-    return <GraphWidget display={display as GraphDisplay} data={parsedTable} />;
+    return <GraphWidget display={display as GraphDisplay} data={parsedTable} relation={table.relation} />;
   }
 
   if (display[DISPLAY_TYPE_KEY] === REQUEST_GRAPH_DISPLAY_TYPE) {

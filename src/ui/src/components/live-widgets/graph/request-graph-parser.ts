@@ -1,6 +1,7 @@
 import { data as visData } from 'vis-network/standalone';
-import { getNamespaceFromEntityName } from './graph-options';
+import { getNamespaceFromEntityName, semTypeToShapeConfig } from './graph-options';
 import { RequestGraphDisplay } from './request-graph';
+import { SemanticType } from '../../../types/generated/vizier_pb';
 
 export interface Entity {
   id: string;
@@ -11,6 +12,10 @@ export interface Entity {
 
   // Determines how to size this node.
   value?: number;
+
+  // Display configuration.
+  shape?: string;
+  image?: { selected?: string; unselected?: string};
 }
 
 export interface Edge {
@@ -116,6 +121,7 @@ export class RequestGraphParser {
     }
 
     const newPod = {
+      ...semTypeToShapeConfig(SemanticType.ST_POD_NAME),
       id: pod,
       label: pod,
       namespace: getNamespaceFromEntityName(pod),
