@@ -9,7 +9,7 @@ import Tooltip from '@material-ui/core/Tooltip';
 import { getArgTypesForVis } from 'utils/args-utils';
 import { ExecuteContext } from '../../context/execute-context';
 import { ScriptContext } from '../../context/script-context';
-import { EntityType, pxTypetoEntityType } from './utils/autocomplete-utils';
+import { EntityType, pxTypetoEntityType } from '../new-command-input/autocomplete-utils';
 
 const ArgsEditor = () => {
   const {

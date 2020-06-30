@@ -1,7 +1,7 @@
 import { scrollbarStyles } from 'common/mui-theme';
 import ClientContext, { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
 import { StatusCell, StatusGroup } from 'components/status/status';
-import ProfileMenu from 'containers/live/profile-menu';
+import ProfileMenu from 'containers/profile-menu/profile-menu';
 import { distanceInWords } from 'date-fns';
 import gql from 'graphql-tag';
 import * as React from 'react';

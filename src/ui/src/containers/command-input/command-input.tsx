@@ -11,7 +11,7 @@ import Modal from '@material-ui/core/Modal';
 
 import { ExecuteContext } from '../../context/execute-context';
 import { LiveViewPage } from '../../components/live-widgets/utils/live-view-params';
-import { parseVis } from './vis';
+import { parseVis } from '../live/vis';
 
 interface CommandInputProps {
   open: boolean;

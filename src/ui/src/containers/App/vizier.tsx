@@ -6,7 +6,7 @@ import { ClusterStatus, VizierGRPCClientProvider } from 'common/vizier-grpc-clie
 import { useSnackbar } from 'components/snackbar/snackbar';
 import AdminView from 'pages/admin/admin';
 import { ScriptsContextProvider } from 'containers/App/scripts-context';
-import LiveView from 'containers/live/live';
+import LiveView from 'pages/live/live';
 import gql from 'graphql-tag';
 import * as React from 'react';
 import { Redirect, Route, Switch } from 'react-router-dom';

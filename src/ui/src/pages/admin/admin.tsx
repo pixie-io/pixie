@@ -1,5 +1,5 @@
 import { scrollbarStyles } from 'common/mui-theme';
-import ProfileMenu from 'containers/live/profile-menu';
+import ProfileMenu from 'containers/profile-menu/profile-menu';
 import history from 'utils/pl-history';
 
 import { useMutation } from '@apollo/react-hooks';

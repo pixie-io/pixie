@@ -13,21 +13,21 @@ import ChevronRight from '@material-ui/icons/ChevronRight';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 
 import clsx from 'clsx';
-import Canvas from './canvas';
-import ClusterSelector from './cluster-selector';
-import CommandInput from './command-input';
-import NewCommandInput from './new-command-input';
-import { withLiveViewContext } from './context';
+import Canvas from '../../containers/live/canvas';
+import ClusterSelector from '../../containers/live/cluster-selector';
+import CommandInput from '../../containers/command-input/command-input';
+import NewCommandInput from '../../containers/new-command-input/new-command-input';
+import { withLiveViewContext } from '../../containers/live/context';
 import { ExecuteContext } from '../../context/execute-context';
 import { LayoutContext } from '../../context/layout-context';
 import { ScriptContext } from '../../context/script-context';
-import { DataDrawerSplitPanel } from '../data-drawer/data-drawer';
-import { EditorSplitPanel } from './editor';
-import ExecuteScriptButton from './execute-button';
-import ProfileMenu from './profile-menu';
-import { ScriptLoader } from './script-loader';
-import LiveViewShortcuts from './shortcuts';
-import LiveViewTitle from './title';
+import { DataDrawerSplitPanel } from '../../containers/data-drawer/data-drawer';
+import { EditorSplitPanel } from '../../containers/editor/editor';
+import ExecuteScriptButton from '../../containers/live/execute-button';
+import ProfileMenu from '../../containers/profile-menu/profile-menu';
+import { ScriptLoader } from '../../containers/live/script-loader';
+import LiveViewShortcuts from '../../containers/live/shortcuts';
+import LiveViewTitle from '../../containers/live/title';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {

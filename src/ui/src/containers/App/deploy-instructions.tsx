@@ -1,6 +1,6 @@
 import CodeRenderer from 'components/code-renderer/code-renderer';
 import { Spinner } from 'components/spinner/spinner';
-import ProfileMenu from 'containers/live/profile-menu';
+import ProfileMenu from 'containers/profile-menu/profile-menu';
 import * as logoImage from 'images/new-logo.svg';
 import * as React from 'react';
 
