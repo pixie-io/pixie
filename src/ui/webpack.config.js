@@ -10,11 +10,11 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ReplacePlugin = require('webpack-plugin-replace');
 const YAML = require('yaml');
 const fs = require('fs');
-const utils = require('./webpack-utils');
 const CompressionPlugin = require('compression-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const FaviconsWebpackPlugin = require('favicons-webpack-plugin');
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
+const utils = require('./webpack-utils');
 
 const isDevServer = process.argv.find((v) => v.includes('webpack-dev-server'));
 let topLevelDir = '';
@@ -42,7 +42,8 @@ const plugins = [
     'BUILD_TIMESTAMP',
   ]),
   new webpack.ContextReplacementPlugin(
-    /highlight.js[/\\]lib[/\\]languages$/, /javascript|bash|python/),
+    /highlight.js[/\\]lib[/\\]languages$/, /javascript|bash|python/,
+  ),
   new MiniCssExtractPlugin({
     filename: '[name].[hash].css',
     chunkFilename: '[id].[hash].css',
@@ -75,7 +76,7 @@ if (isDevServer) {
     new ArchivePlugin({
       output: join(resolve(__dirname, 'dist'), 'bundle'),
       format: ['tar'],
-    })
+    }),
   );
 }
 
@@ -93,7 +94,7 @@ const webpackConfig = {
     proxy: [],
   },
   entry: {
-    main: 'main.tsx',
+    main: 'app.tsx',
     config: ['flags.js', 'segment.js'],
   },
   mode: isDevServer ? 'development' : 'production',
@@ -191,7 +192,7 @@ const webpackConfig = {
           priority: 10,
         },
         auth0: {
-          test:  /[\\/]node_modules[\\/]auth0.*/,
+          test: /[\\/]node_modules[\\/]auth0.*/,
           chunks: 'initial',
           name: 'auth0',
           priority: 10,
@@ -248,7 +249,7 @@ module.exports = (env) => {
         __CONFIG_DOMAIN_NAME__: domainYAML.data.PL_DOMAIN_NAME,
         __SEGMENT_ANALYTICS_JS_DOMAIN__: `segment.${domainYAML.data.PL_DOMAIN_NAME}`,
       },
-    })
+    }),
   );
 
   if (process.env.SELFSIGN_CERT_FILE && process.env.SELFSIGN_CERT_KEY) {

@@ -1,3 +1,5 @@
+import './index.scss';
+
 import Axios from 'axios';
 import { CloudClient } from 'common/cloud-gql-client';
 import { DARK_THEME } from 'common/mui-theme';
@@ -6,7 +8,6 @@ import { VersionInfo } from 'components/version-info/version-info';
 import { AuthComplete } from 'containers/login/auth-complete';
 import { Login } from 'containers/login/login';
 import Vizier from 'containers/App/vizier';
-import * as React from 'react';
 import {
   Redirect, Route, Router, Switch,
 } from 'react-router-dom';
@@ -16,7 +17,9 @@ import history from 'utils/pl-history';
 import { ApolloProvider } from '@apollo/react-hooks';
 import { ThemeProvider } from '@material-ui/core/styles';
 
-import { CloudClientContext } from './context';
+import * as React from 'react';
+import * as ReactDOM from 'react-dom';
+import { CloudClientContext } from './context/app-context';
 
 export class App extends React.Component {
   // eslint-disable-next-line react/state-in-constructor
@@ -78,3 +81,5 @@ export class App extends React.Component {
       );
   }
 }
+
+ReactDOM.render(<App />, document.getElementById('root'));

@@ -1,4 +1,4 @@
-import { CloudClientContext } from 'containers/App/context';
+import { CloudClientContext } from 'context/app-context';
 import * as React from 'react';
 import { operation, RetryOperation } from 'retry';
 import { Subscription } from 'rxjs';
