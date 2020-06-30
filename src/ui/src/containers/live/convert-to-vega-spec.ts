@@ -14,12 +14,12 @@ import { DISPLAY_TYPE_KEY, WidgetDisplay } from './vis';
 
 addPxTimeFormatExpression();
 
-const BAR_CHART_TYPE = 'pixielabs.ai/pl.vispb.BarChart';
+export const BAR_CHART_TYPE = 'pixielabs.ai/pl.vispb.BarChart';
 const VEGA_CHART_TYPE = 'pixielabs.ai/pl.vispb.VegaChart';
 const VEGA_LITE_V4 = 'https://vega.github.io/schema/vega-lite/v4.json';
 const VEGA_SCHEMA_SUBSTRING = 'vega.github.io/schema/vega/';
 const VEGA_SCHEMA = '$schema';
-const TIMESERIES_CHART_TYPE = 'pixielabs.ai/pl.vispb.TimeseriesChart';
+export const TIMESERIES_CHART_TYPE = 'pixielabs.ai/pl.vispb.TimeseriesChart';
 export const COLOR_SCALE = 'color';
 const HOVER_LINE_COLOR = '#4dffd4';
 const HOVER_TIME_COLOR = '#121212';

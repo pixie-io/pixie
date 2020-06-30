@@ -161,6 +161,7 @@
     "rxjs": "^6.5.4",
     "semver": "^7.3.2",
     "timsort": "^0.3.0",
+    "ts-node": "^8.10.2",
     "unfetch": "^4.0.1",
     "uuid": "^8.0.0",
     "vega": "5.13.0",
@@ -188,7 +189,8 @@
     "storybook": "start-storybook -p 9001 -c .storybook",
     "storybook_static": "./node_modules/.bin/build-storybook -c .storybook -o storybook_static",
     "license_check": "./node_modules/license-checker/bin/license-checker",
-    "lint": "tsc --noEmit && eslint '*/**/*.{js,ts,tsx}'"
+    "lint": "tsc --noEmit && eslint '*/**/*.{js,ts,tsx}'",
+    "vgspec": "NODE_PATH=./src ts-node --compiler-options '{\"module\":\"commonjs\"}' src/utils/print-vgspec-cli.ts"
   },
   "resolutions": {
     "react": "^16.12.0",
