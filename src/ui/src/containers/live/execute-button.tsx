@@ -5,8 +5,8 @@ import * as React from 'react';
 import IconButton from '@material-ui/core/IconButton';
 import Tooltip from '@material-ui/core/Tooltip';
 
-import { ExecuteContext } from './context/execute-context';
-import { ResultsContext } from './context/results-context';
+import { ExecuteContext } from '../../context/execute-context';
+import { ResultsContext } from '../../context/results-context';
 
 const ExecuteScriptButton = () => {
   const { healthy } = React.useContext(ClientContext);

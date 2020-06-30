@@ -1,5 +1,5 @@
 import PixieLogo from 'components/icons/pixie-logo';
-import { ResultsContext } from 'containers/live/context/results-context';
+import { ResultsContext } from 'context/results-context';
 import * as React from 'react';
 
 import {

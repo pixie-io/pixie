@@ -11,7 +11,7 @@ import { createStyles, makeStyles } from '@material-ui/core';
 import Card from '@material-ui/core/Card';
 import Modal from '@material-ui/core/Modal';
 
-import { ExecuteContext } from './context/execute-context';
+import { ExecuteContext } from '../../context/execute-context';
 import { ParseFormatStringToTabStops } from './utils/autocomplete-parser';
 import { entityTypeToString } from './utils/autocomplete-utils';
 import { LiveViewPage } from '../../components/live-widgets/utils/live-view-params';

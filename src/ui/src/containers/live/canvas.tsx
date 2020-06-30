@@ -17,9 +17,9 @@ import {
 } from '@material-ui/core/styles';
 
 import Vega from 'components/live-widgets/vega/vega';
-import { LayoutContext } from './context/layout-context';
-import { ResultsContext } from './context/results-context';
-import { ScriptContext } from './context/script-context';
+import { LayoutContext } from '../../context/layout-context';
+import { ResultsContext } from '../../context/results-context';
+import { ScriptContext } from '../../context/script-context';
 import {
   addLayout, addTableLayout, getGridWidth, Layout, toLayout, updatePositions,
 } from './layout';

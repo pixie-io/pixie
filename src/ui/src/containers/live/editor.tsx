@@ -12,8 +12,8 @@ import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import ChevronLeft from '@material-ui/icons/ChevronLeft';
 
-import { LayoutContext } from './context/layout-context';
-import { ScriptContext } from './context/script-context';
+import { LayoutContext } from '../../context/layout-context';
+import { ScriptContext } from '../../context/script-context';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {

@@ -7,8 +7,8 @@ import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 
 import { getArgTypesForVis } from 'utils/args-utils';
-import { ExecuteContext } from './context/execute-context';
-import { ScriptContext } from './context/script-context';
+import { ExecuteContext } from '../../context/execute-context';
+import { ScriptContext } from '../../context/script-context';
 import { EntityType, pxTypetoEntityType } from './utils/autocomplete-utils';
 
 const ArgsEditor = () => {

@@ -4,7 +4,7 @@ import * as React from 'react';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
 import ArgsEditor from './args-editor';
-import { ScriptContext } from './context/script-context';
+import { ScriptContext } from '../../context/script-context';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {

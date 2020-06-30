@@ -1,6 +1,6 @@
 import LazyPanel from 'components/lazy-panel';
 import { VizierDataTableWithDetails } from 'components/vizier-data-table/vizier-data-table';
-import { ResultsContext } from 'containers/live/context/results-context';
+import { ResultsContext } from 'context/results-context';
 import * as React from 'react';
 
 import {

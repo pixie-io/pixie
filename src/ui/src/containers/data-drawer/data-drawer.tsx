@@ -1,9 +1,9 @@
 import clsx from 'clsx';
 import LazyPanel from 'components/lazy-panel';
 import { Spinner } from 'components/spinner/spinner';
-import { DataDrawerContext, DataDrawerTabsKey } from 'containers/live/context/data-drawer-context';
-import { LayoutContext } from 'containers/live/context/layout-context';
-import { ResultsContext } from 'containers/live/context/results-context';
+import { DataDrawerContext, DataDrawerTabsKey } from 'context/data-drawer-context';
+import { LayoutContext } from 'context/layout-context';
+import { ResultsContext } from 'context/results-context';
 import * as React from 'react';
 import Split from 'react-split';
 

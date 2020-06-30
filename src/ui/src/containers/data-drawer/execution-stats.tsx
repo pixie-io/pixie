@@ -1,4 +1,4 @@
-import { ResultsContext } from 'containers/live/context/results-context';
+import { ResultsContext } from 'context/results-context';
 import * as numeral from 'numeral';
 import * as React from 'react';
 

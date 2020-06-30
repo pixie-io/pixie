@@ -16,7 +16,7 @@ import { SetStateFunc } from './common';
 import {
   EntityURLParams, getLiveViewTitle, LiveViewPage, LiveViewPageScriptIds,
   matchLiveViewEntity, toEntityPathname,
-} from '../../../components/live-widgets/utils/live-view-params';
+} from '../components/live-widgets/utils/live-view-params';
 
 interface ScriptContextProps {
   liveViewPage: LiveViewPage;

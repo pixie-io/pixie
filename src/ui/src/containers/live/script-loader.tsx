@@ -3,8 +3,8 @@ import * as React from 'react';
 import { argsForVis } from 'utils/args-utils';
 import urlParams from 'utils/url-params';
 
-import { ExecuteContext } from './context/execute-context';
-import { ScriptContext } from './context/script-context';
+import { ExecuteContext } from '../../context/execute-context';
+import { ScriptContext } from '../../context/script-context';
 import { parseVis } from './vis';
 import {
   LiveViewPage,
