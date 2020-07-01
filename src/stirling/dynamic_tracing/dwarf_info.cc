@@ -49,13 +49,17 @@ class Dwarvifier {
   static constexpr int32_t kSPOffset = 8;
 
   static inline const std::string kSPVarName = "sp";
+  static inline const std::string kTGIDVarName = "tgid";
+  static inline const std::string kTGIDStartTimeVarName = "tgid_start_time";
+  static inline const std::string kGOIDVarName = "goid";
+  static inline const std::string kKTimeVarName = "ktime_ns";
 
   // We use these values as we build temporary variables for expressions.
 
   // String for . operator (eg. my_struct.field)
   static constexpr std::string_view kDotStr = "_D_";
 
-  // String for . operator (eg. my_struct.field)
+  // String for * operator (eg. (*my_struct).field)
   static constexpr std::string_view kDerefStr = "_X_";
 };
 
@@ -145,6 +149,9 @@ Status Dwarvifier::ProcessTracepoint(const ir::shared::TracePoint& trace_point) 
   return Status::OK();
 }
 
+// TODO(oazizi): Could selectively generate some of these variables, when they are not required.
+//               For example, if latency is not required, then there is no need for ktime.
+//               For now, include them all for simplicity.
 void Dwarvifier::ProcessSpecialVariables() {
   // Add SP variable.
   {
@@ -154,6 +161,46 @@ void Dwarvifier::ProcessSpecialVariables() {
     var->set_reg(ir::physical::Register::SP);
 
     vars_map_[kSPVarName] = var;
+  }
+
+  // Add tgid variable
+  {
+    auto* var = probe_.add_vars();
+    var->set_name(kTGIDVarName);
+    var->set_type(ir::shared::ScalarType::INT32);
+    var->set_builtin(ir::shared::BPFHelper::TGID);
+
+    vars_map_[kTGIDVarName] = var;
+  }
+
+  // Add TGID start time (required for UPID construction)
+  {
+    auto* var = probe_.add_vars();
+    var->set_name(kTGIDStartTimeVarName);
+    var->set_type(ir::shared::ScalarType::UINT64);
+    var->set_builtin(ir::shared::BPFHelper::TGID_START_TIME);
+
+    vars_map_[kTGIDStartTimeVarName] = var;
+  }
+
+  // Add goid variable
+  {
+    auto* var = probe_.add_vars();
+    var->set_name(kGOIDVarName);
+    var->set_type(ir::shared::ScalarType::INT32);
+    var->set_builtin(ir::shared::BPFHelper::GOID);
+
+    vars_map_[kGOIDVarName] = var;
+  }
+
+  // Add current time variable (for latency)
+  {
+    auto* var = probe_.add_vars();
+    var->set_name(kKTimeVarName);
+    var->set_type(ir::shared::ScalarType::UINT64);
+    var->set_builtin(ir::shared::BPFHelper::KTIME);
+
+    vars_map_[kKTimeVarName] = var;
   }
 }
 
@@ -317,6 +364,22 @@ Status Dwarvifier::ProcessOutputAction(const ir::shared::LogicalOutputAction& ou
 
   auto& struct_decl = structs_[struct_type_name];
   struct_decl.set_name(struct_type_name);
+
+  const std::vector<std::string> kImplicitColumns{kTGIDVarName, kTGIDStartTimeVarName, kGOIDVarName,
+                                                  kKTimeVarName};
+
+  for (auto& f : kImplicitColumns) {
+    auto* struct_field = struct_decl.add_fields();
+    struct_field->set_name(absl::StrCat(output_action_in.output_name(), "_", f));
+
+    auto iter = vars_map_.find(f);
+    if (iter == vars_map_.end()) {
+      return error::Internal("OutputAction: Reference to unknown variable $0", f);
+    }
+
+    struct_field->mutable_type()->set_scalar(iter->second->type());
+  }
+
   for (auto& f : output_action_in.variable_name()) {
     auto* struct_field = struct_decl.add_fields();
     struct_field->set_name(absl::StrCat(output_action_in.output_name(), "_", f));
@@ -331,6 +394,10 @@ Status Dwarvifier::ProcessOutputAction(const ir::shared::LogicalOutputAction& ou
   auto* struct_var = probe_.add_st_vars();
   struct_var->set_type(struct_type_name);
   struct_var->set_name(variable_name);
+  for (auto& f : kImplicitColumns) {
+    auto* field = struct_var->add_variable_names();
+    field->set_name(f);
+  }
   for (auto& f : output_action_in.variable_name()) {
     auto* field = struct_var->add_variable_names();
     field->set_name(f);

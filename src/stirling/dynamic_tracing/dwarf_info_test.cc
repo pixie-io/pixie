@@ -15,7 +15,7 @@ namespace dynamic_tracing {
 using ::google::protobuf::TextFormat;
 using ::google::protobuf::util::MessageDifferencer;
 
-constexpr std::string_view kEntryProbeIRTmpl = R"(
+constexpr std::string_view kEntryProbeIn = R"(
   trace_point: {
     binary_path: "$0"
     symbol: "main.MixedArgTypes"
@@ -47,7 +47,7 @@ constexpr std::string_view kEntryProbeIRTmpl = R"(
   }
 )";
 
-constexpr std::string_view kEntryProbePhysIRTmpl = R"(
+constexpr std::string_view kEntryProbeOut = R"(
 probes: {
   trace_point: {
     binary_path: "$0"
@@ -58,6 +58,26 @@ probes: {
     name: "sp"
     type: VOID_POINTER
     reg: SP
+  }
+  vars {
+    name: "tgid"
+    type: INT32
+    builtin: TGID
+  }
+  vars {
+    name: "tgid_start_time"
+    type: UINT64
+    builtin: TGID_START_TIME
+  }
+  vars {
+    name: "goid"
+    type: INT32
+    builtin: GOID
+  }
+  vars {
+    name: "ktime_ns"
+    type: UINT64
+    builtin: KTIME
   }
   vars {
     name: "arg0"
@@ -110,7 +130,7 @@ probes: {
 }
 )";
 
-constexpr std::string_view kReturnProbeIRTmpl = R"(
+constexpr std::string_view kReturnProbeIn = R"(
   trace_point: {
     binary_path: "$0"
     symbol: "main.MixedArgTypes"
@@ -126,7 +146,7 @@ constexpr std::string_view kReturnProbeIRTmpl = R"(
   }
 )";
 
-constexpr std::string_view kReturnProbePhysIRTmpl = R"(
+constexpr std::string_view kReturnProbeOut = R"(
 probes: {
   trace_point: {
     binary_path: "$0"
@@ -137,6 +157,26 @@ probes: {
     name: "sp"
     type: VOID_POINTER
     reg: SP
+  }
+  vars {
+    name: "tgid"
+    type: INT32
+    builtin: TGID
+  }
+  vars {
+    name: "tgid_start_time"
+    type: UINT64
+    builtin: TGID_START_TIME
+  }
+  vars {
+    name: "goid"
+    type: INT32
+    builtin: GOID
+  }
+  vars {
+    name: "ktime_ns"
+    type: UINT64
+    builtin: KTIME
   }
   vars {
     name: "retval0"
@@ -157,145 +197,7 @@ vars {
 }
 )";
 
-constexpr std::string_view kFooIn = R"(
-  trace_point: {
-    binary_path: "$0"
-    symbol: "main.MixedArgTypes"
-    type: ENTRY
-  }
-  args {
-    id: "arg0"
-    expr: "i1"
-  }
-  args {
-    id: "arg1"
-    expr: "b1"
-  }
-  args {
-    id: "arg2"
-    expr: "b2.B0"
-  }
-  stash_map_actions {
-    map_name: "my_stash"
-    key_expr: "goid"
-    value_variable_name: "arg0"
-    value_variable_name: "arg1"
-  }
-  output_actions {
-    output_name: "out_table"
-    variable_name: "arg0"
-    variable_name: "arg1"
-    variable_name: "arg2"
-  }
-)";
-
-constexpr std::string_view kFooProbeOut = R"(
-structs {
-  name: "my_stash_value_t"
-  fields {
-    name: "my_stash_arg0"
-    type { scalar: INT }
-  }
-  fields {
-    name: "my_stash_arg1"
-    type { scalar: BOOL }
-  }
-}
-structs {
-  name: "out_table_value_t"
-  fields {
-    name: "out_table_arg0"
-    type { scalar: INT }
-  }
-  fields {
-    name: "out_table_arg1"
-    type { scalar: BOOL }
-  }
-  fields {
-    name: "out_table_arg2"
-    type { scalar: BOOL }
-  }
-}
-maps {
-  name: "my_stash"
-  key_type { scalar: UINT64 }
-  value_type { struct_type: "my_stash_value_t" }
-}
-outputs {
-  name: "out_table"
-  type { struct_type: "out_table_value_t" }
-}
-probes: {
-  trace_point: {
-    binary_path: "$0"
-    symbol: "main.MixedArgTypes"
-    type: ENTRY
-  }
-  vars {
-    name: "sp"
-    type: VOID_POINTER
-    reg: SP
-  }
-  vars {
-    name: "arg0"
-    type: INT
-    memory: {
-      base: "sp"
-      offset: 8
-    }
-  }
-  vars {
-    name: "arg1"
-    type: BOOL
-    memory: {
-      base: "sp"
-      offset: 16
-    }
-  }
-  vars {
-    name: "arg2"
-    type: BOOL
-    memory: {
-      base: "sp"
-      offset: 17
-    }
-  }
-  st_vars {
-    name: "my_stash_value"
-    type: "my_stash_value_t"
-    variable_names {
-      name: "arg0"
-    }
-    variable_names {
-      name: "arg1"
-    }
-  }
-  st_vars {
-    name: "out_table_value"
-    type: "out_table_value_t"
-    variable_names {
-      name: "arg0"
-    }
-    variable_names {
-      name: "arg1"
-    }
-    variable_names {
-      name: "arg2"
-    }
-  }
-  map_stash_actions {
-    map_name: "my_stash"
-    key_variable_name: "goid"
-    value_variable_name: "my_stash_value"
-  }
-  output_actions {
-    perf_buffer_name: "out_table"
-    variable_name: "out_table_value"
-  }
-}
-)";
-
-constexpr std::string_view kNestedArgEntryProbeIRTmpl = R"(
+constexpr std::string_view kNestedArgProbeIn = R"(
   trace_point: {
     binary_path: "$0"
     symbol: "main.PointerWrapperWrapperWrapperFunc"
@@ -311,7 +213,7 @@ constexpr std::string_view kNestedArgEntryProbeIRTmpl = R"(
   }
 )";
 
-constexpr std::string_view kNestedArgEntryProbePhysIRTmpl = R"(
+constexpr std::string_view kNestedArgProbeOut = R"(
 probes: {
   trace_point: {
     binary_path: "$0"
@@ -322,6 +224,26 @@ probes: {
     name: "sp"
     type: VOID_POINTER
     reg: SP
+  }
+  vars {
+    name: "tgid"
+    type: INT32
+    builtin: TGID
+  }
+  vars {
+    name: "tgid_start_time"
+    type: UINT64
+    builtin: TGID_START_TIME
+  }
+  vars {
+    name: "goid"
+    type: INT32
+    builtin: GOID
+  }
+  vars {
+    name: "ktime_ns"
+    type: UINT64
+    builtin: KTIME
   }
   vars {
     name: "arg0_D_Ptr_X_"
@@ -366,6 +288,192 @@ probes: {
 }
 )";
 
+constexpr std::string_view kActionProbeIn = R"(
+  trace_point: {
+    binary_path: "$0"
+    symbol: "main.MixedArgTypes"
+    type: ENTRY
+  }
+  args {
+    id: "arg0"
+    expr: "i1"
+  }
+  args {
+    id: "arg1"
+    expr: "b1"
+  }
+  args {
+    id: "arg2"
+    expr: "b2.B0"
+  }
+  stash_map_actions {
+    map_name: "my_stash"
+    key_expr: "goid"
+    value_variable_name: "arg0"
+    value_variable_name: "arg1"
+  }
+  output_actions {
+    output_name: "out_table"
+    variable_name: "arg0"
+    variable_name: "arg1"
+    variable_name: "arg2"
+  }
+)";
+
+constexpr std::string_view kActionProbeOut = R"(
+structs {
+  name: "my_stash_value_t"
+  fields {
+    name: "my_stash_arg0"
+    type { scalar: INT }
+  }
+  fields {
+    name: "my_stash_arg1"
+    type { scalar: BOOL }
+  }
+}
+structs {
+  name: "out_table_value_t"
+  fields {
+    name: "out_table_tgid"
+    type { scalar: INT32 }
+  }
+  fields {
+    name: "out_table_tgid_start_time"
+    type { scalar: UINT64 }
+  }
+  fields {
+    name: "out_table_goid"
+    type { scalar: INT32 }
+  }
+  fields {
+    name: "out_table_ktime_ns"
+    type { scalar: UINT64 }
+  }
+  fields {
+    name: "out_table_arg0"
+    type { scalar: INT }
+  }
+  fields {
+    name: "out_table_arg1"
+    type { scalar: BOOL }
+  }
+  fields {
+    name: "out_table_arg2"
+    type { scalar: BOOL }
+  }
+}
+maps {
+  name: "my_stash"
+  key_type { scalar: UINT64 }
+  value_type { struct_type: "my_stash_value_t" }
+}
+outputs {
+  name: "out_table"
+  type { struct_type: "out_table_value_t" }
+}
+probes: {
+  trace_point: {
+    binary_path: "$0"
+    symbol: "main.MixedArgTypes"
+    type: ENTRY
+  }
+  vars {
+    name: "sp"
+    type: VOID_POINTER
+    reg: SP
+  }
+  vars {
+    name: "tgid"
+    type: INT32
+    builtin: TGID
+  }
+  vars {
+    name: "tgid_start_time"
+    type: UINT64
+    builtin: TGID_START_TIME
+  }
+  vars {
+    name: "goid"
+    type: INT32
+    builtin: GOID
+  }
+  vars {
+    name: "ktime_ns"
+    type: UINT64
+    builtin: KTIME
+  }
+  vars {
+    name: "arg0"
+    type: INT
+    memory: {
+      base: "sp"
+      offset: 8
+    }
+  }
+  vars {
+    name: "arg1"
+    type: BOOL
+    memory: {
+      base: "sp"
+      offset: 16
+    }
+  }
+  vars {
+    name: "arg2"
+    type: BOOL
+    memory: {
+      base: "sp"
+      offset: 17
+    }
+  }
+  st_vars {
+    name: "my_stash_value"
+    type: "my_stash_value_t"
+    variable_names {
+      name: "arg0"
+    }
+    variable_names {
+      name: "arg1"
+    }
+  }
+  st_vars {
+    name: "out_table_value"
+    type: "out_table_value_t"
+    variable_names {
+      name: "tgid"
+    }
+    variable_names {
+      name: "tgid_start_time"
+    }
+    variable_names {
+      name: "goid"
+    }
+    variable_names {
+      name: "ktime_ns"
+    }
+    variable_names {
+      name: "arg0"
+    }
+    variable_names {
+      name: "arg1"
+    }
+    variable_names {
+      name: "arg2"
+    }
+  }
+  map_stash_actions {
+    map_name: "my_stash"
+    key_variable_name: "goid"
+    value_variable_name: "my_stash_value"
+  }
+  output_actions {
+    perf_buffer_name: "out_table"
+    variable_name: "out_table_value"
+  }
+}
+)";
+
 struct DwarfInfoTestParam {
   std::string_view input;
   std::string_view expected_output;
@@ -397,13 +505,12 @@ TEST_P(DwarfInfoTest, Transform) {
   EXPECT_TRUE(message_differencer.Compare(program, expected_output)) << diff_out;
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    DwarfInfoTestSuite, DwarfInfoTest,
-    ::testing::Values(DwarfInfoTestParam{kEntryProbeIRTmpl, kEntryProbePhysIRTmpl},
-                      DwarfInfoTestParam{kReturnProbeIRTmpl, kReturnProbePhysIRTmpl},
-                      DwarfInfoTestParam{kNestedArgEntryProbeIRTmpl,
-                                         kNestedArgEntryProbePhysIRTmpl},
-                      DwarfInfoTestParam{kFooIn, kFooProbeOut}));
+INSTANTIATE_TEST_SUITE_P(DwarfInfoTestSuite, DwarfInfoTest,
+                         ::testing::Values(DwarfInfoTestParam{kEntryProbeIn, kEntryProbeOut},
+                                           DwarfInfoTestParam{kReturnProbeIn, kReturnProbeOut},
+                                           DwarfInfoTestParam{kNestedArgProbeIn,
+                                                              kNestedArgProbeOut},
+                                           DwarfInfoTestParam{kActionProbeIn, kActionProbeOut}));
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
