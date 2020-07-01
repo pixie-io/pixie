@@ -212,18 +212,11 @@ message VegaChart {
 
 // Table the spec for displaying the output as a table.
 message Table {
-  // LatencyBoxPlot tells the UI to display the latencies as a box whisker plot.
-  message LatencyBoxPlot {
-    string quantiles_column = 1;
-  }
   // ColumnDisplay gives the display options for a given column.
   message ColumnDisplay {
     oneof column {
       // name refers to the name of an output column.
       string name = 1;
-      // display_spec provides a display spec that does special visualization on top of a normal column.
-      // It can use multiple columns. LatencyBoxPlot is one such example of a field that could go here.
-      google.protobuf.Any display_spec = 2;
     }
     // display_title provides a pretty name to give the column in the UI.
     string display_title = 3;

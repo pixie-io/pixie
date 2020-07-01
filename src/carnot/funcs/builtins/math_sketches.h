@@ -33,6 +33,10 @@ class QuantilesUDA : public udf::UDA {
     return sb.GetString();
   }
 
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<QuantilesUDA>(types::ST_QUANTILES, {types::ST_NONE})};
+  }
+
  protected:
   tdigest::TDigest digest_;
 };

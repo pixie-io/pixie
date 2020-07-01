@@ -6084,7 +6084,8 @@ proto.pl.api.vizierpb.SemanticType = {
   ST_CONTAINER_STATE: 601,
   ST_NAMESPACE_NAME: 700,
   ST_BYTES: 800,
-  ST_PERCENT: 900
+  ST_PERCENT: 900,
+  ST_QUANTILES: 1000
 };
 
 goog.object.extend(exports, proto.pl.api.vizierpb);

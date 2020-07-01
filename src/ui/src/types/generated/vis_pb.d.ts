@@ -425,33 +425,9 @@ export namespace Table {
     displayColumnsList: Array<Table.ColumnDisplay.AsObject>,
   }
 
-  export class LatencyBoxPlot extends jspb.Message {
-    getQuantilesColumn(): string;
-    setQuantilesColumn(value: string): void;
-
-    serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): LatencyBoxPlot.AsObject;
-    static toObject(includeInstance: boolean, msg: LatencyBoxPlot): LatencyBoxPlot.AsObject;
-    static serializeBinaryToWriter(message: LatencyBoxPlot, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): LatencyBoxPlot;
-    static deserializeBinaryFromReader(message: LatencyBoxPlot, reader: jspb.BinaryReader): LatencyBoxPlot;
-  }
-
-  export namespace LatencyBoxPlot {
-    export type AsObject = {
-      quantilesColumn: string,
-    }
-  }
-
-
   export class ColumnDisplay extends jspb.Message {
     getName(): string;
     setName(value: string): void;
-
-    getDisplaySpec(): google_protobuf_any_pb.Any | undefined;
-    setDisplaySpec(value?: google_protobuf_any_pb.Any): void;
-    hasDisplaySpec(): boolean;
-    clearDisplaySpec(): void;
 
     getDisplayTitle(): string;
     setDisplayTitle(value: string): void;
@@ -469,14 +445,12 @@ export namespace Table {
   export namespace ColumnDisplay {
     export type AsObject = {
       name: string,
-      displaySpec?: google_protobuf_any_pb.Any.AsObject,
       displayTitle: string,
     }
 
     export enum ColumnCase { 
       COLUMN_NOT_SET = 0,
       NAME = 1,
-      DISPLAY_SPEC = 2,
     }
   }
 

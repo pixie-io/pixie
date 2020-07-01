@@ -751,4 +751,5 @@ export enum SemanticType {
   ST_NAMESPACE_NAME = 700,
   ST_BYTES = 800,
   ST_PERCENT = 900,
+  ST_QUANTILES = 1000,
 }
