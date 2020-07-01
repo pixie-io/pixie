@@ -58,6 +58,7 @@ const LIST_CLUSTERS = gql`
   clusters {
     id
     clusterName
+    prettyClusterName
     status
   }
 }
@@ -81,12 +82,12 @@ export default function ClusterSelector(props: { className: string }) {
   if (loading) {
     return <StyledButton className={props.className} disabled><Spinner /></StyledButton>;
   }
-  const clusterName = data.clusters.find((c) => c.id === selectedCluster)?.clusterName || 'unknown cluster';
+  const prettyClusterName = data.clusters.find((c) => c.id === selectedCluster)?.prettyClusterName || 'unknown cluster';
   return (
     <div className={props.className}>
       <Tooltip title='Select Cluster'>
         <StyledButton onClick={handleClick} endIcon={<ArrowDropDownIcon />}>
-          {clusterName}
+          {prettyClusterName}
         </StyledButton>
       </Tooltip>
       <StyledMenu
@@ -113,7 +114,7 @@ export default function ClusterSelector(props: { className: string }) {
                   <ListItemIcon>
                     <StatusCell statusGroup={statusGroup} />
                   </ListItemIcon>
-                  <ListItemText primary={c.clusterName} />
+                  <ListItemText primary={c.prettyClusterName} />
                 </MenuItem>
               );
             })

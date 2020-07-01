@@ -25,6 +25,7 @@ const GET_CLUSTERS = gql`
   clusters {
     id
     clusterName
+    prettyClusterName
     clusterVersion
     status
     lastHeartbeatMs
@@ -41,6 +42,7 @@ interface ClusterDisplay {
   id: string;
   idShort: string;
   name: string;
+  prettyName: string;
   status: string;
   statusGroup: StatusGroup;
   clusterVersion: string;
@@ -61,6 +63,7 @@ export function formatCluster(clusterInfo): ClusterDisplay {
     id: clusterInfo.id,
     idShort: clusterInfo.id.split('-').pop(),
     name: clusterInfo.clusterName,
+    prettyName: clusterInfo.prettyClusterName,
     clusterVersion: clusterInfo.clusterVersion,
     vizierVersionShort: shortVersion,
     vizierVersion: clusterInfo.vizierVersion,
@@ -108,16 +111,18 @@ export const ClustersTable = () => {
                 <StatusCell statusGroup={cluster.statusGroup} />
               </StyledLeftTableCell>
             </AdminTooltip>
-            <StyledTableCell>
-              <Button
-                component={Link}
-                to={`/admin/clusters/${encodeURIComponent(cluster.name)}`}
-                color='secondary'
-                variant='text'
-              >
-                {cluster.name}
-              </Button>
-            </StyledTableCell>
+            <AdminTooltip title={cluster.name}>
+              <StyledTableCell>
+                <Button
+                  component={Link}
+                  to={`/admin/clusters/${encodeURIComponent(cluster.name)}`}
+                  color='secondary'
+                  variant='text'
+                >
+                  {cluster.prettyName}
+                </Button>
+              </StyledTableCell>
+            </AdminTooltip>
             <AdminTooltip title={cluster.id}>
               <StyledTableCell>{cluster.idShort}</StyledTableCell>
             </AdminTooltip>
