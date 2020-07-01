@@ -141,9 +141,10 @@ TEST_P(DwarfReaderTest, CppFunctionArgInfo) {
       dwarf_reader->GetFunctionArgInfo("SomeFunction"),
       UnorderedElementsAre(Pair("x", ArgInfo{{0, VarType::kStruct, "PairStruct"}}),
                            Pair("y", ArgInfo{{12, VarType::kStruct, "PairStruct"}})));
-  EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("SomeFunctionWithPointerArgs"),
-                     UnorderedElementsAre(Pair("a", ArgInfo{{0, VarType::kPointer, "void*"}}),
-                                          Pair("x", ArgInfo{{8, VarType::kPointer, "void*"}})));
+  EXPECT_OK_AND_THAT(
+      dwarf_reader->GetFunctionArgInfo("SomeFunctionWithPointerArgs"),
+      UnorderedElementsAre(Pair("a", ArgInfo{{0, VarType::kPointer, "int"}}),
+                           Pair("x", ArgInfo{{8, VarType::kPointer, "PairStruct"}})));
 }
 
 TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
@@ -155,11 +156,11 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
 
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.(*Vertex).Scale"),
-        UnorderedElementsAre(Pair("v", ArgInfo{{0, VarType::kPointer, "void*"}}),
+        UnorderedElementsAre(Pair("v", ArgInfo{{0, VarType::kPointer, "main.Vertex"}}),
                              Pair("f", ArgInfo{{8, VarType::kBaseType, "float64"}})));
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.(*Vertex).CrossScale"),
-        UnorderedElementsAre(Pair("v", ArgInfo{{0, VarType::kPointer, "void*"}}),
+        UnorderedElementsAre(Pair("v", ArgInfo{{0, VarType::kPointer, "main.Vertex"}}),
                              Pair("v2", ArgInfo{{8, VarType::kStruct, "main.Vertex"}}),
                              Pair("f", ArgInfo{{24, VarType::kBaseType, "float64"}})));
     EXPECT_OK_AND_THAT(
@@ -190,7 +191,7 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
     //   error
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("net/http.(*http2Framer).WriteDataPadded"),
-        UnorderedElementsAre(Pair("f", ArgInfo{{0, VarType::kPointer, "void*"}}),
+        UnorderedElementsAre(Pair("f", ArgInfo{{0, VarType::kPointer, "net/http.http2Framer"}}),
                              Pair("streamID", ArgInfo{{8, VarType::kBaseType, "uint32"}}),
                              Pair("endStream", ArgInfo{{12, VarType::kBaseType, "bool"}}),
                              Pair("data", ArgInfo{{16, VarType::kStruct, "[]uint8"}}),

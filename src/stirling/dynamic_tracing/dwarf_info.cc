@@ -41,6 +41,14 @@ class Dwarvifier {
   // Dwarf and BCC have an 8 byte difference in where they believe the SP is.
   // This adjustment factor accounts for that difference.
   static constexpr int32_t kSPOffset = 8;
+
+  // We use these values as we build temporary variables for expressions.
+
+  // String for . operator (eg. my_struct.field)
+  static constexpr std::string_view kDotStr = "_D_";
+
+  // String for . operator (eg. my_struct.field)
+  static constexpr std::string_view kDerefStr = "_X_";
 };
 
 StatusOr<ir::physical::PhysicalProbe> AddDwarves(const ir::logical::Probe& input_probe) {
@@ -134,7 +142,7 @@ void Dwarvifier::ProcessSpecialVariables() {
 Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg) {
   const std::string& arg_name = arg.expr();
 
-  std::vector<std::string_view> components = absl::StrSplit(arg_name, absl::ByAnyChar(".-"));
+  std::vector<std::string_view> components = absl::StrSplit(arg_name, ".");
 
   PL_ASSIGN_OR_RETURN(const ArgInfo* arg_info, GetArgInfo(args_map_, components.front()));
   DCHECK(arg_info != nullptr);
@@ -142,23 +150,68 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg) {
   VarType type = arg_info->type;
   std::string type_name = std::move(arg_info->type_name);
   int offset = kSPOffset + arg_info->offset;
+  std::string base = "sp";
+  std::string name = arg.id();
 
+  // Note that we start processing at element [1], not [0], which was used to set the starting
+  // state in the lines above.
   for (auto iter = components.begin() + 1; iter < components.end(); ++iter) {
-    std::string_view field_name = *iter;
+    // If parent is a pointer, create a variable to dereference it.
+    if (type == VarType::kPointer) {
+      PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type,
+                          VarTypeToProtoScalarType(type, type_name));
 
+      absl::StrAppend(&name, kDerefStr);
+
+      auto* var = probe_.add_vars();
+      var->set_name(name);
+      var->set_type(pb_type);
+      var->mutable_memory()->set_base(base);
+      var->mutable_memory()->set_offset(offset);
+
+      // Reset base and offset.
+      base = name;
+      offset = 0;
+    }
+
+    std::string_view field_name = *iter;
     PL_ASSIGN_OR_RETURN(VarInfo member_info,
                         dwarf_reader_->GetStructMemberInfo(type_name, field_name));
     offset += member_info.offset;
     type_name = std::move(member_info.type_name);
     type = member_info.type;
+    absl::StrAppend(&name, kDotStr, field_name);
+  }
+
+  // If parent is a pointer, create a variable to dereference it.
+  if (type == VarType::kPointer) {
+    PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type, VarTypeToProtoScalarType(type, type_name));
+
+    absl::StrAppend(&name, kDerefStr);
+
+    auto* var = probe_.add_vars();
+    var->set_name(name);
+    var->set_type(pb_type);
+    var->mutable_memory()->set_base(base);
+    var->mutable_memory()->set_offset(offset);
+
+    // Reset base and offset.
+    base = name;
+    offset = 0;
+
+    // Since we are the leaf, also force the type to a BaseType.
+    // If we are not, in fact, at a base type, then VarTypeToProtoScalarType will error out,
+    // as it should--since we can't trace non-base types.
+    type = VarType::kBaseType;
+    absl::StrAppend(&name, kDerefStr);
   }
 
   PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type, VarTypeToProtoScalarType(type, type_name));
 
   auto* var = probe_.add_vars();
-  var->set_name(arg.id());
+  var->set_name(name);
   var->set_type(pb_type);
-  var->mutable_memory()->set_base("sp");
+  var->mutable_memory()->set_base(base);
   var->mutable_memory()->set_offset(offset);
 
   return Status::OK();

@@ -292,10 +292,12 @@ StatusOr<std::string> GetTypeName(const DWARFDie& die) {
   DCHECK(die.isValid());
 
   switch (die.getTag()) {
-    case llvm::dwarf::DW_TAG_pointer_type:
-      return std::string("void*");
     case llvm::dwarf::DW_TAG_subroutine_type:
       return std::string("func");
+    case llvm::dwarf::DW_TAG_pointer_type: {
+      PL_ASSIGN_OR_RETURN(DWARFDie type_die, GetTypeDie(die));
+      return std::string(type_die.getName(llvm::DINameKind::ShortName));
+    }
     case llvm::dwarf::DW_TAG_base_type:
     case llvm::dwarf::DW_TAG_structure_type:
       return std::string(die.getName(llvm::DINameKind::ShortName));

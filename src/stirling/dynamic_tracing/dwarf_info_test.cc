@@ -91,7 +91,7 @@ constexpr std::string_view kEntryProbePhysIRTmpl = R"(
     }
   }
   vars {
-    name: "arg4"
+    name: "arg4_D_B0"
     type: BOOL
     memory: {
       base: "sp"
@@ -99,7 +99,7 @@ constexpr std::string_view kEntryProbePhysIRTmpl = R"(
     }
   }
   vars {
-    name: "arg5"
+    name: "arg5_D_B3"
     type: BOOL
     memory: {
       base: "sp"
@@ -153,6 +153,75 @@ vars {
   }
 )";
 
+constexpr std::string_view kNestedArgEntryProbeIRTmpl = R"(
+  trace_point: {
+    binary_path: "$0"
+    symbol: "main.PointerWrapperWrapperWrapperFunc"
+    type: ENTRY
+  }
+  args {
+    id: "arg0"
+    expr: "p.Ptr.Val.Ptr"
+  }
+  args {
+    id: "arg1"
+    expr: "p.Ptr.Val.V0"
+  }
+)";
+
+constexpr std::string_view kNestedArgEntryProbePhysIRTmpl = R"(
+  trace_point: {
+    binary_path: "$0"
+    symbol: "main.PointerWrapperWrapperWrapperFunc"
+    type: ENTRY
+  }
+  vars {
+    name: "sp"
+    type: VOID_POINTER
+    reg: SP
+  }
+  vars {
+    name: "arg0_D_Ptr_X_"
+    type: VOID_POINTER
+    memory: {
+      base: "sp"
+      offset: 16
+    }
+  }
+  vars {
+    name: "arg0_D_Ptr_X__D_Val_D_Ptr_X_"
+    type: VOID_POINTER
+    memory: {
+      base: "arg0_D_Ptr_X_"
+      offset: 40
+    }
+  }
+  vars {
+    name: "arg0_D_Ptr_X__D_Val_D_Ptr_X__X_"
+    type: INT
+    memory: {
+      base: "arg0_D_Ptr_X__D_Val_D_Ptr_X_"
+      offset: 0
+    }
+  }
+  vars {
+    name: "arg1_D_Ptr_X_"
+    type: VOID_POINTER
+    memory: {
+      base: "sp"
+      offset: 16
+    }
+  }
+  vars {
+    name: "arg1_D_Ptr_X__D_Val_D_V0"
+    type: INT64
+    memory: {
+      base: "arg1_D_Ptr_X_"
+      offset: 16
+    }
+  }
+)";
+
 struct DwarfInfoTestParam {
   std::string_view input;
   std::string_view expected_output;
@@ -188,7 +257,9 @@ TEST_P(DwarfInfoTest, Transform) {
 INSTANTIATE_TEST_SUITE_P(
     DwarfInfoTestSuite, DwarfInfoTest,
     ::testing::Values(DwarfInfoTestParam{kEntryProbeIRTmpl, kEntryProbePhysIRTmpl},
-                      DwarfInfoTestParam{kReturnProbeIRTmpl, kReturnProbePhysIRTmpl}));
+                      DwarfInfoTestParam{kReturnProbeIRTmpl, kReturnProbePhysIRTmpl},
+                      DwarfInfoTestParam{kNestedArgEntryProbeIRTmpl,
+                                         kNestedArgEntryProbePhysIRTmpl}));
 
 }  // namespace dynamic_tracing
 }  // namespace stirling

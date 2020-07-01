@@ -22,6 +22,32 @@ type BoolWrapper struct {
     B3 bool
 }
 
+type PointerWrapper struct {
+    V0 int64
+    V1 int64
+    V2 int64
+    Ptr *int
+}
+
+type PointerWrapperWrapper struct {
+    V0 int64
+    V1 int64
+    Val PointerWrapper
+    V2 int64
+}
+
+type PointerWrapperWrapperWrapper struct {
+    V0 int64
+    Ptr *PointerWrapperWrapper;
+    V1 int64
+    V2 int64
+}
+
+func PointerWrapperWrapperWrapperFunc(p PointerWrapperWrapperWrapper) int {
+    return *p.Ptr.Val.Ptr; // *(p.Ptr->Val.Ptr)
+
+}
+
 func (v Vertex) Abs() float64 {
 	return math.Sqrt(float64(v.X*v.X) + v.Y*v.Y)
 }
@@ -55,4 +81,10 @@ func main() {
 	fmt.Println(v.Abs())
 	fmt.Println(MixedArgTypes(1, true, BoolWrapper{false, true, false, true}, 4, 5, false));
 	fmt.Println(GoHasNamedReturns())
+
+	a := 5
+    b := PointerWrapper{1, 2, 3, &a}
+    c := PointerWrapperWrapper{1, 2, b, 3}
+    d := PointerWrapperWrapperWrapper{1, &c, 2, 3}
+	fmt.Println(PointerWrapperWrapperWrapperFunc(d))
 }
