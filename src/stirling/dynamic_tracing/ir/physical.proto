@@ -78,6 +78,27 @@ message StructVariable {
   repeated VariableName variable_names = 3;
 }
 
+// Corresponds to inserting value(s) with key to a map.
+// Multiple values are grouped together.
+message MapStashAction {
+  string map_name = 1;
+
+  // The builtin to generate the key value.
+  string key_variable_name = 2;
+
+  // The name of the variable to be inserted into this map.
+  string value_variable_name = 3;
+}
+
+message OutputAction {
+  // The name of the perf buffer..
+  // TODO(yzhao): Might add another message in addition to OutputAction, for physical IR.
+  string perf_buffer_name = 1;
+
+  // The names of the variables to be submitted to the perf buffer.
+  string variable_name = 2;
+}
+
 // Corresponds to a logical probe.
 message PhysicalProbe {
   // The name of the BCC probe function.
@@ -103,10 +124,10 @@ message PhysicalProbe {
   // Inserts key and value into a map.
   //
   // The variable to be inserted into the map must be one of the above vars.
-  repeated shared.MapStashAction map_stash_actions = 5;
+  repeated MapStashAction map_stash_actions = 5;
 
   // Writes a value to perf buffer.
-  repeated shared.OutputAction output_actions = 6;
+  repeated OutputAction output_actions = 6;
 }
 
 // This describes a complete BPF program.

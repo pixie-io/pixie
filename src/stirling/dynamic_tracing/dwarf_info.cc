@@ -31,8 +31,8 @@ class Dwarvifier {
   void ProcessSpecialVariables();
   Status ProcessArgExpr(const ir::logical::Argument& arg);
   Status ProcessRetValExpr(const ir::logical::ReturnValue& ret_val);
-  Status ProcessStashAction(const ir::shared::LogicalMapStashAction& stash_action);
-  Status ProcessOutputAction(const ir::shared::LogicalOutputAction& output_action);
+  Status ProcessStashAction(const ir::logical::MapStashAction& stash_action);
+  Status ProcessOutputAction(const ir::logical::OutputAction& output_action);
   ir::physical::Program ConsumeResult();
 
  private:
@@ -319,7 +319,7 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val) {
   return Status::OK();
 }
 
-Status Dwarvifier::ProcessStashAction(const ir::shared::LogicalMapStashAction& stash_action_in) {
+Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_action_in) {
   std::string variable_name = stash_action_in.map_name() + "_value";
   std::string struct_type_name = stash_action_in.map_name() + "_value_t";
 
@@ -358,9 +358,9 @@ Status Dwarvifier::ProcessStashAction(const ir::shared::LogicalMapStashAction& s
   return Status::OK();
 }
 
-Status Dwarvifier::ProcessOutputAction(const ir::shared::LogicalOutputAction& output_action_in) {
-  std::string variable_name = absl::StrCat(output_action_in.output_name(), "_value");
-  std::string struct_type_name = absl::StrCat(output_action_in.output_name(), "_value_t");
+Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_action_in) {
+  std::string variable_name = output_action_in.output_name() + "_value";
+  std::string struct_type_name = output_action_in.output_name() + "_value_t";
 
   auto& struct_decl = structs_[struct_type_name];
   struct_decl.set_name(struct_type_name);
