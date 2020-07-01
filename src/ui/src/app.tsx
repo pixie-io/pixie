@@ -4,7 +4,7 @@ import Axios from 'axios';
 import { CloudClient } from 'common/cloud-gql-client';
 import { DARK_THEME } from 'common/mui-theme';
 import { SnackbarProvider } from 'components/snackbar/snackbar';
-import { VersionInfo } from 'components/version-info/version-info';
+import VersionInfo from 'components/version-info/version-info';
 import { AuthComplete } from 'pages/login/auth-complete';
 import Login from 'pages/login';
 import Vizier from 'containers/App/vizier';
