@@ -2,13 +2,15 @@
 excludes:
 - vendor
 - third_party
-- src/ui
 - chef
 - bazel-bin
 - bazel-out
 - bazel-pixielabs
 - bazel-testlogs
 - docs
+- src/ui
+# Exclude stirling IR, since it is not a public proto.
+- src/stirling/dynamic_tracing/ir
 protoc:
   version: 3.8.0
   includes:

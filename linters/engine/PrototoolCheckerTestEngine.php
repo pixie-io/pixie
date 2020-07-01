@@ -18,17 +18,8 @@ final class PrototoolCheckerTest {
 
         chdir($this->project_root);
 
-        # Check that .proto files have corresponding .pb.go files.
-        $protoFiles = array_filter($this->files, function($f) {
-            return substr($f, -6) == '.proto';
-        });
-
-        if (count($protoFiles) == 0) {
-            return $test_results; 
-        }
-
         // Build proto files.
-        exec('bazel query "kind(\'go_proto_library rule\', //...)"', $output, $return_var);
+        exec('bazel query "kind(\'go_proto_library rule\', //src/...)"', $output, $return_var);
 
         foreach ($output as $o) {
             exec('bazel build ' . $o . '> /dev/null 2>&1');

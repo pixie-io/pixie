@@ -15,11 +15,9 @@ final class FileCheckerTest {
     }
 
     private function checkFile($file, $fileToCheck, $res, $fileExt, $instructions) {
-        # Check that $fileToCheck exists.
-        $existRes = new ArcanistUnitTestResult();
-
-        $existRes->setName($fileToCheck . ' exists');
-
+        # Check that pb.go file is up-to-date.
+        # Note that this check is only enforced after first check-in.
+        # The initial check-in is not enforced, because generating a pb.go is optional.
         if (in_array($fileToCheck, $this->files) && file_exists($this->project_root . '/' . $fileToCheck)) {
             $existRes->setResult(ArcanistUnitTestResult::RESULT_PASS);
 
@@ -34,11 +32,7 @@ final class FileCheckerTest {
             }
             $res[] = $updatedRes;
 
-        } else {
-            $existRes->setResult(ArcanistUnitTestResult::RESULT_FAIL);
-            $existRes->setUserData($fileToCheck . ' has not been added to the diff.');
         }
-        $res[] = $existRes;
         return $res;
     }
 
@@ -104,11 +98,6 @@ final class FileCheckerTest {
             return substr($f, -6) == '.proto';
         });
 
-        # Check that .graphql files have corresponding .schema.d.ts files.
-        $gqlFiles = array_filter($this->files, function($f) {
-            return substr($f, -8) == '.graphql';
-        });        
-
         foreach ($protoFiles as &$file) {
             $pbFilename = substr($file,0,-6) . '.pb.go';
             $test_results = $this->checkFile($file, $pbFilename, $test_results, '.proto', 'To regenerate, run this command:' .
@@ -126,6 +115,11 @@ final class FileCheckerTest {
                 // $test_results = $this->checkFile($file, 'src/ui/src/types/generated/' . ucfirst($fname) . 'ServiceClientPb.ts', $test_results, '', 'To regenerate, build the grpc_web  target and move the files to the correct directory');
             }
         }
+
+        # Check that .graphql files have corresponding .schema.d.ts files.
+        $gqlFiles = array_filter($this->files, function($f) {
+            return substr($f, -8) == '.graphql';
+        });
 
         foreach ($gqlFiles as &$file) {
             $schemaFilename = substr($file,0,-8) . '.d.ts';
