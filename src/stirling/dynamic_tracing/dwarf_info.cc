@@ -16,6 +16,50 @@ using dwarf_tools::ArgInfo;
 using dwarf_tools::VarInfo;
 using dwarf_tools::VarType;
 
+/**
+ * The Dwarvifier generates a PhysicalProbe from an Intermediate Probe spec.
+ * It follows a builder model. The initial Dwarvifier is empty;
+ * Successive calls to Process functions builds the internal model of the new PhysicalProbe.
+ * When complete, a call to ConsumePhysicalProbe() emits the generated PhysicalProbe protobuf.
+ */
+class Dwarvifier {
+ public:
+  Dwarvifier() {}
+
+  // This must be the first call, as the dwarf info is extracted from the binary in the tracepoint.
+  Status ProcessTracepoint(const ir::shared::TracePoint& trace_point);
+  void ProcessSpecialVariables();
+  Status ProcessArgExpr(const ir::logical::Argument& arg);
+  Status ProcessRetValExpr(const ir::logical::ReturnValue& ret_val);
+  ir::physical::PhysicalProbe ConsumePhysicalProbe() { return std::move(probe_); }
+
+ private:
+  std::unique_ptr<dwarf_tools::DwarfReader> dwarf_reader_;
+  std::map<std::string, dwarf_tools::ArgInfo> args_map_;
+  ir::physical::PhysicalProbe probe_;
+
+  // Dwarf and BCC have an 8 byte difference in where they believe the SP is.
+  // This adjustment factor accounts for that difference.
+  static constexpr int32_t kSPOffset = 8;
+};
+
+StatusOr<ir::physical::PhysicalProbe> AddDwarves(const ir::logical::Probe& input_probe) {
+  Dwarvifier dwarvifier;
+  PL_RETURN_IF_ERROR(dwarvifier.ProcessTracepoint(input_probe.trace_point()));
+
+  dwarvifier.ProcessSpecialVariables();
+
+  for (auto& arg : input_probe.args()) {
+    PL_RETURN_IF_ERROR(dwarvifier.ProcessArgExpr(arg));
+  }
+
+  for (auto& ret_val : input_probe.ret_vals()) {
+    PL_RETURN_IF_ERROR(dwarvifier.ProcessRetValExpr(ret_val));
+  }
+
+  return dwarvifier.ConsumePhysicalProbe();
+}
+
 // Map to convert Go Base types to ScalarType.
 // clang-format off
 const std::map<std::string_view, ir::shared::ScalarType> kGoTypesMap = {
@@ -61,91 +105,90 @@ StatusOr<const ArgInfo*> GetArgInfo(const std::map<std::string, ArgInfo>& args_m
   return &args_map_iter->second;
 }
 
-StatusOr<ir::physical::PhysicalProbe> AddDwarves(const ir::logical::Probe& input_probe) {
+Status Dwarvifier::ProcessTracepoint(const ir::shared::TracePoint& trace_point) {
   using dwarf_tools::DwarfReader;
 
-  const std::string& binary_path = input_probe.trace_point().binary_path();
-  const std::string& function_symbol = input_probe.trace_point().symbol();
+  const std::string& binary_path = trace_point.binary_path();
+  const std::string& function_symbol = trace_point.symbol();
 
-  PL_ASSIGN_OR_RETURN(std::unique_ptr<DwarfReader> dwarf_reader, DwarfReader::Create(binary_path));
+  PL_ASSIGN_OR_RETURN(dwarf_reader_, DwarfReader::Create(binary_path));
+  PL_ASSIGN_OR_RETURN(args_map_, dwarf_reader_->GetFunctionArgInfo(function_symbol));
 
-  PL_ASSIGN_OR_RETURN(auto args_map, dwarf_reader->GetFunctionArgInfo(function_symbol));
+  auto* probe_trace_point = probe_.mutable_trace_point();
+  probe_trace_point->CopyFrom(trace_point);
+  probe_trace_point->set_type(trace_point.type());
 
-  ir::physical::PhysicalProbe out;
+  return Status::OK();
+}
 
-  out.mutable_trace_point()->CopyFrom(input_probe.trace_point());
-
+void Dwarvifier::ProcessSpecialVariables() {
   // Add SP variable.
   {
-    auto* var = out.add_vars();
+    auto* var = probe_.add_vars();
     var->set_name("sp");
     var->set_type(ir::shared::VOID_POINTER);
     var->set_reg(ir::physical::Register::SP);
   }
+}
 
-  // Dwarf and BCC have an 8 byte difference in where they believe the SP is.
-  // This adjustment factor accounts for that difference.
-  constexpr int32_t kSPOffset = 8;
+Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg) {
+  const std::string& arg_name = arg.expr();
 
-  for (auto& arg : input_probe.args()) {
-    // For now, just assume the expression is a simple arg name.
-    // TODO(oazizi): Support expressions.
-    std::string arg_name = arg.expr();
+  std::vector<std::string_view> components = absl::StrSplit(arg_name, absl::ByAnyChar(".-"));
 
-    std::vector<std::string_view> components = absl::StrSplit(arg_name, ".");
+  PL_ASSIGN_OR_RETURN(const ArgInfo* arg_info, GetArgInfo(args_map_, components.front()));
+  DCHECK(arg_info != nullptr);
 
-    PL_ASSIGN_OR_RETURN(const ArgInfo* arg_info, GetArgInfo(args_map, components.front()));
-    DCHECK(arg_info != nullptr);
+  VarType type = arg_info->type;
+  std::string type_name = std::move(arg_info->type_name);
+  int offset = kSPOffset + arg_info->offset;
 
-    VarType type = arg_info->type;
-    std::string type_name = std::move(arg_info->type_name);
-    int offset = kSPOffset + arg_info->offset;
+  for (auto iter = components.begin() + 1; iter < components.end(); ++iter) {
+    std::string_view field_name = *iter;
 
-    for (auto iter = components.begin() + 1; iter < components.end(); ++iter) {
-      std::string_view field_name = *iter;
-
-      PL_ASSIGN_OR_RETURN(VarInfo member_info,
-                          dwarf_reader->GetStructMemberInfo(type_name, field_name));
-      offset += member_info.offset;
-      type_name = std::move(member_info.type_name);
-      type = member_info.type;
-    }
-
-    PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type, VarTypeToProtoScalarType(type, type_name));
-
-    auto* var = out.add_vars();
-    var->set_name(arg.id());
-    var->set_type(pb_type);
-    var->mutable_memory()->set_base("sp");
-    var->mutable_memory()->set_offset(offset);
+    PL_ASSIGN_OR_RETURN(VarInfo member_info,
+                        dwarf_reader_->GetStructMemberInfo(type_name, field_name));
+    offset += member_info.offset;
+    type_name = std::move(member_info.type_name);
+    type = member_info.type;
   }
 
-  for (auto& ret_val : input_probe.ret_vals()) {
-    // TODO(oazizi): Support named return variables.
-    // Golang automatically names return variables ~r0, ~r1, etc.
-    // However, it should be noted that the indexing includes function arguments.
-    // For example Foo(a int, b int) (int, int) would have ~r2 and ~r3 as return variables.
-    // One additional nuance is that the receiver, although an argument for dwarf purposes,
-    // is not counted in the indexing.
-    // For now, we throw the burden of finding the index to the user,
-    // so if they want the first return argument above, they would have to specify and index of 2.
-    // TODO(oazizi): Make indexing of return value based on number of return arguments only.
-    std::string ret_val_name = absl::StrCat("~r", std::to_string(ret_val.index()));
+  PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type, VarTypeToProtoScalarType(type, type_name));
 
-    PL_ASSIGN_OR_RETURN(const ArgInfo* arg_info, GetArgInfo(args_map, ret_val_name));
-    DCHECK(arg_info != nullptr);
+  auto* var = probe_.add_vars();
+  var->set_name(arg.id());
+  var->set_type(pb_type);
+  var->mutable_memory()->set_base("sp");
+  var->mutable_memory()->set_offset(offset);
 
-    PL_ASSIGN_OR_RETURN(ir::shared::ScalarType type,
-                        VarTypeToProtoScalarType(arg_info->type, arg_info->type_name));
+  return Status::OK();
+}
 
-    auto* var = out.add_vars();
-    var->set_name(ret_val.id());
-    var->set_type(type);
-    var->mutable_memory()->set_base("sp");
-    var->mutable_memory()->set_offset(arg_info->offset + 8);
-  }
+Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val) {
+  // TODO(oazizi): Support named return variables.
+  // Golang automatically names return variables ~r0, ~r1, etc.
+  // However, it should be noted that the indexing includes function arguments.
+  // For example Foo(a int, b int) (int, int) would have ~r2 and ~r3 as return variables.
+  // One additional nuance is that the receiver, although an argument for dwarf purposes,
+  // is not counted in the indexing.
+  // For now, we throw the burden of finding the index to the user,
+  // so if they want the first return argument above, they would have to specify and index of 2.
+  // TODO(oazizi): Make indexing of return value based on number of return arguments only.
+  std::string ret_val_name = absl::StrCat("~r", std::to_string(ret_val.index()));
 
-  return out;
+  PL_ASSIGN_OR_RETURN(const ArgInfo* arg_info, GetArgInfo(args_map_, ret_val_name));
+  DCHECK(arg_info != nullptr);
+
+  PL_ASSIGN_OR_RETURN(ir::shared::ScalarType type,
+                      VarTypeToProtoScalarType(arg_info->type, arg_info->type_name));
+
+  auto* var = probe_.add_vars();
+  var->set_name(ret_val.id());
+  var->set_type(type);
+  var->mutable_memory()->set_base("sp");
+  var->mutable_memory()->set_offset(arg_info->offset + kSPOffset);
+
+  return Status::OK();
 }
 
 }  // namespace dynamic_tracing
