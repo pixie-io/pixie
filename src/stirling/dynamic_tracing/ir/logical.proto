@@ -53,5 +53,5 @@ message Probe {
   // Writes a value to perf buffer.
   //
   // The variable to be inserted into the perf buffer must be one of the above args, ret_vals, and function_latency.
-  repeated shared.OutputAction output_actions = 8;
+  repeated shared.LogicalOutputAction output_actions = 8;
 }

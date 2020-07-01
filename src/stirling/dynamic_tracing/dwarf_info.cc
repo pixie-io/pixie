@@ -32,6 +32,7 @@ class Dwarvifier {
   Status ProcessArgExpr(const ir::logical::Argument& arg);
   Status ProcessRetValExpr(const ir::logical::ReturnValue& ret_val);
   Status ProcessStashAction(const ir::shared::LogicalMapStashAction& stash_action);
+  Status ProcessOutputAction(const ir::shared::LogicalOutputAction& output_action);
   ir::physical::Program ConsumeResult();
 
  private:
@@ -39,12 +40,15 @@ class Dwarvifier {
   std::map<std::string, dwarf_tools::ArgInfo> args_map_;
   std::map<std::string, ir::physical::ScalarVariable*> vars_map_;
   ir::physical::PhysicalProbe probe_;
-  std::map<std::string, ir::shared::Map> maps_;
   std::map<std::string, ir::physical::Struct> structs_;
+  std::map<std::string, ir::shared::Map> maps_;
+  std::map<std::string, ir::shared::Output> outputs_;
 
   // Dwarf and BCC have an 8 byte difference in where they believe the SP is.
   // This adjustment factor accounts for that difference.
   static constexpr int32_t kSPOffset = 8;
+
+  static inline const std::string kSPVarName = "sp";
 
   // We use these values as we build temporary variables for expressions.
 
@@ -71,6 +75,10 @@ StatusOr<ir::physical::Program> AddDwarves(const ir::logical::Probe& input_probe
 
   for (auto& stash_action : input_probe.stash_map_actions()) {
     PL_RETURN_IF_ERROR(dwarvifier.ProcessStashAction(stash_action));
+  }
+
+  for (auto& output_action : input_probe.output_actions()) {
+    PL_RETURN_IF_ERROR(dwarvifier.ProcessOutputAction(output_action));
   }
 
   return dwarvifier.ConsumeResult();
@@ -141,11 +149,11 @@ void Dwarvifier::ProcessSpecialVariables() {
   // Add SP variable.
   {
     auto* var = probe_.add_vars();
-    var->set_name("sp");
+    var->set_name(kSPVarName);
     var->set_type(ir::shared::VOID_POINTER);
     var->set_reg(ir::physical::Register::SP);
 
-    vars_map_["sp"] = var;
+    vars_map_[kSPVarName] = var;
   }
 }
 
@@ -160,7 +168,7 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg) {
   VarType type = arg_info->type;
   std::string type_name = std::move(arg_info->type_name);
   int offset = kSPOffset + arg_info->offset;
-  std::string base = "sp";
+  std::string base = kSPVarName;
   std::string name = arg.id();
 
   // Note that we start processing at element [1], not [0], which was used to set the starting
@@ -221,6 +229,10 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg) {
   }
 
   PL_ASSIGN_OR_RETURN(ir::shared::ScalarType pb_type, VarTypeToProtoScalarType(type, type_name));
+
+  // The very last created variable uses the original id.
+  // This is important so that references in the original probe are maintained.
+  name = arg.id();
 
   auto* var = probe_.add_vars();
   var->set_name(name);
@@ -299,14 +311,56 @@ Status Dwarvifier::ProcessStashAction(const ir::shared::LogicalMapStashAction& s
   return Status::OK();
 }
 
+Status Dwarvifier::ProcessOutputAction(const ir::shared::LogicalOutputAction& output_action_in) {
+  std::string variable_name = absl::StrCat(output_action_in.output_name(), "_value");
+  std::string struct_type_name = absl::StrCat(output_action_in.output_name(), "_value_t");
+
+  auto& struct_decl = structs_[struct_type_name];
+  struct_decl.set_name(struct_type_name);
+  for (auto& f : output_action_in.variable_name()) {
+    auto* struct_field = struct_decl.add_fields();
+    struct_field->set_name(absl::StrCat(output_action_in.output_name(), "_", f));
+
+    auto iter = vars_map_.find(f);
+    if (iter == vars_map_.end()) {
+      return error::Internal("OutputAction: Reference to unknown variable $0", f);
+    }
+    struct_field->mutable_type()->set_scalar(iter->second->type());
+  }
+
+  auto* struct_var = probe_.add_st_vars();
+  struct_var->set_type(struct_type_name);
+  struct_var->set_name(variable_name);
+  for (auto& f : output_action_in.variable_name()) {
+    auto* field = struct_var->add_variable_names();
+    field->set_name(f);
+  }
+
+  auto& output = outputs_[output_action_in.output_name()];
+  output.set_name(output_action_in.output_name());
+  output.mutable_type()->set_struct_type(struct_type_name);
+
+  auto* output_action_out = probe_.add_output_actions();
+  output_action_out->set_perf_buffer_name(output_action_in.output_name());
+  output_action_out->set_variable_name(variable_name);
+
+  return Status::OK();
+}
+
 ir::physical::Program Dwarvifier::ConsumeResult() {
   ir::physical::Program out;
   out.add_probes()->CopyFrom(probe_);
+
   for (auto& [name, s] : structs_) {
     out.add_structs()->CopyFrom(s);
   }
+
   for (auto& [name, m] : maps_) {
     out.add_maps()->CopyFrom(m);
+  }
+
+  for (auto& [name, o] : outputs_) {
+    out.add_outputs()->CopyFrom(o);
   }
 
   return out;

@@ -92,7 +92,7 @@ probes: {
     }
   }
   vars {
-    name: "arg4_D_B0"
+    name: "arg4"
     type: BOOL
     memory: {
       base: "sp"
@@ -100,7 +100,7 @@ probes: {
     }
   }
   vars {
-    name: "arg5_D_B3"
+    name: "arg5"
     type: BOOL
     memory: {
       base: "sp"
@@ -171,30 +171,59 @@ constexpr std::string_view kFooIn = R"(
     id: "arg1"
     expr: "b1"
   }
+  args {
+    id: "arg2"
+    expr: "b2.B0"
+  }
   stash_map_actions {
-    map_name: "events"
+    map_name: "my_stash"
     key_expr: "goid"
     value_variable_name: "arg0"
     value_variable_name: "arg1"
+  }
+  output_actions {
+    output_name: "out_table"
+    variable_name: "arg0"
+    variable_name: "arg1"
+    variable_name: "arg2"
   }
 )";
 
 constexpr std::string_view kFooProbeOut = R"(
 structs {
-  name: "events_value_t"
+  name: "my_stash_value_t"
   fields {
-    name: "events_arg0"
+    name: "my_stash_arg0"
     type { scalar: INT }
   }
   fields {
-    name: "events_arg1"
+    name: "my_stash_arg1"
+    type { scalar: BOOL }
+  }
+}
+structs {
+  name: "out_table_value_t"
+  fields {
+    name: "out_table_arg0"
+    type { scalar: INT }
+  }
+  fields {
+    name: "out_table_arg1"
+    type { scalar: BOOL }
+  }
+  fields {
+    name: "out_table_arg2"
     type { scalar: BOOL }
   }
 }
 maps {
-  name: "events"
+  name: "my_stash"
   key_type { scalar: UINT64 }
-  value_type { struct_type: "events_value_t" }
+  value_type { struct_type: "my_stash_value_t" }
+}
+outputs {
+  name: "out_table"
+  type { struct_type: "out_table_value_t" }
 }
 probes: {
   trace_point: {
@@ -223,9 +252,17 @@ probes: {
       offset: 16
     }
   }
+  vars {
+    name: "arg2"
+    type: BOOL
+    memory: {
+      base: "sp"
+      offset: 17
+    }
+  }
   st_vars {
-    name: "events_value"
-    type: "events_value_t"
+    name: "my_stash_value"
+    type: "my_stash_value_t"
     variable_names {
       name: "arg0"
     }
@@ -233,10 +270,27 @@ probes: {
       name: "arg1"
     }
   }
+  st_vars {
+    name: "out_table_value"
+    type: "out_table_value_t"
+    variable_names {
+      name: "arg0"
+    }
+    variable_names {
+      name: "arg1"
+    }
+    variable_names {
+      name: "arg2"
+    }
+  }
   map_stash_actions {
-    map_name: "events"
+    map_name: "my_stash"
     key_variable_name: "goid"
-    value_variable_name: "events_value"
+    value_variable_name: "my_stash_value"
+  }
+  output_actions {
+    perf_buffer_name: "out_table"
+    variable_name: "out_table_value"
   }
 }
 )";
@@ -286,7 +340,7 @@ probes: {
     }
   }
   vars {
-    name: "arg0_D_Ptr_X__D_Val_D_Ptr_X__X_"
+    name: "arg0"
     type: INT
     memory: {
       base: "arg0_D_Ptr_X__D_Val_D_Ptr_X_"
@@ -302,7 +356,7 @@ probes: {
     }
   }
   vars {
-    name: "arg1_D_Ptr_X__D_Val_D_V0"
+    name: "arg1"
     type: INT64
     memory: {
       base: "arg1_D_Ptr_X_"
