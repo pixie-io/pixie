@@ -8,7 +8,7 @@ import * as check from 'images/icons/check.svg';
 import * as criticalImage from 'images/icons/critical.svg';
 import * as backgroundBottom from 'images/login-background-bottom.svg';
 import * as backgroundTop from 'images/login-background-top.svg';
-import * as logo from 'images/new-logo.svg';
+import * as logoImage from 'images/pixie-logo.svg';
 import * as QueryString from 'query-string';
 import * as React from 'react';
 import Button from '@material-ui/core/Button';
@@ -116,7 +116,7 @@ const CompanyInfo = () => {
         <div className={classes.backgroundTop} />
         <div className={classes.backgroundBottom} />
       </div>
-      <img className={classes.logo} src={logo} />
+      <img className={classes.logo} src={logoImage} />
       <div className={classes.contents}>
         <div className={classes.header}>Pixie Community</div>
         <div className={classes.subheader}>Beta</div>

@@ -1,7 +1,7 @@
 import CodeRenderer from 'components/code-renderer/code-renderer';
 import { Spinner } from 'components/spinner/spinner';
 import ProfileMenu from 'containers/profile-menu/profile-menu';
-import * as logoImage from 'images/new-logo.svg';
+import * as logoImage from 'images/pixie-logo.svg';
 import * as React from 'react';
 
 import Button from '@material-ui/core/Button';

@@ -1,4 +1,4 @@
-import * as infoImage from 'images/new-logo.svg';
+import * as logoImage from 'images/pixie-logo.svg';
 import * as React from 'react';
 import {
   createStyles, Theme, withStyles, WithStyles,
@@ -44,7 +44,7 @@ export const DialogBoxPlain = ({ classes, width, children }: DialogBoxProps) => 
   return (
     <div className={classes.root} style={style}>
       <div className={classes.header}>
-        <img src={infoImage} style={{ width: '55px' }} />
+        <img src={logoImage} style={{ width: '55px' }} />
       </div>
       <div className={classes.content}>
         {children}
