@@ -1,14 +1,27 @@
 /* eslint-disable @typescript-eslint/no-use-before-define */
-
+import { Theme } from '@material-ui/core/styles';
 import { addPxTimeFormatExpression } from 'components/live-widgets/vega/timeseries-axis';
 import * as _ from 'lodash';
 import {
-  Data, GroupMark, LineMark, Mark, Signal, Spec as VgSpec, TimeScale,
+  Axis,
+  Data,
+  EncodeEntryName,
+  GroupMark,
+  Legend,
+  LineMark,
+  Mark,
+  OnEvent,
+  Scale,
+  Signal,
+  Spec as VgSpec,
+  SymbolMark,
+  TrailEncodeEntry,
+  Transforms,
+  AreaMark,
+  ScaleMultiFieldsRef,
 } from 'vega';
-import { VisualizationSpec } from 'vega-embed';
-import { compile, TopLevelSpec as VlSpec } from 'vega-lite';
-
-import { Theme } from '@material-ui/core/styles';
+import { vegaLite, VisualizationSpec } from 'vega-embed';
+import { TopLevelSpec as VlSpec } from 'vega-lite';
 
 import { DISPLAY_TYPE_KEY, WidgetDisplay } from './vis';
 
@@ -17,7 +30,7 @@ addPxTimeFormatExpression();
 export const BAR_CHART_TYPE = 'pixielabs.ai/pl.vispb.BarChart';
 const VEGA_CHART_TYPE = 'pixielabs.ai/pl.vispb.VegaChart';
 const VEGA_LITE_V4 = 'https://vega.github.io/schema/vega-lite/v4.json';
-const VEGA_SCHEMA_SUBSTRING = 'vega.github.io/schema/vega/';
+const VEGA_V5 = 'https://vega.github.io/schema/vega/v5.json';
 const VEGA_SCHEMA = '$schema';
 export const TIMESERIES_CHART_TYPE = 'pixielabs.ai/pl.vispb.TimeseriesChart';
 export const COLOR_SCALE = 'color';
@@ -43,6 +56,12 @@ interface YAxis {
   readonly label: string;
 }
 
+interface DisplayWithLabels {
+  readonly title?: string;
+  readonly xAxis?: XAxis;
+  readonly yAxis?: YAxis;
+}
+
 interface Timeseries {
   readonly value: string;
   readonly mode?: string;
@@ -50,10 +69,7 @@ interface Timeseries {
   readonly stackBySeries?: boolean;
 }
 
-interface TimeseriesDisplay extends WidgetDisplay {
-  readonly title?: string;
-  readonly xAxis?: XAxis;
-  readonly yAxis?: YAxis;
+interface TimeseriesDisplay extends WidgetDisplay, DisplayWithLabels {
   readonly timeseries: Timeseries[];
 }
 
@@ -64,10 +80,7 @@ interface Bar {
   readonly groupBy?: string;
 }
 
-interface BarDisplay extends WidgetDisplay {
-  readonly title?: string;
-  readonly xAxis?: XAxis;
-  readonly yAxis?: YAxis;
+interface BarDisplay extends WidgetDisplay, DisplayWithLabels {
   readonly bar: Bar;
 }
 
@@ -75,297 +88,775 @@ interface VegaDisplay extends WidgetDisplay {
   readonly spec: string;
 }
 
+// Currently, only lines, points, and area are supported for timeseries.
+type TimeseriesMark = LineMark | SymbolMark | AreaMark;
+
 export interface VegaSpecWithProps {
-  spec: VisualizationSpec;
+  spec: VgSpec;
   hasLegend: boolean;
   legendColumnName: string;
-  isStacked: boolean;
   error?: Error;
 }
 
 export type ChartDisplay = TimeseriesDisplay | BarDisplay | VegaDisplay;
 
-export function convertWidgetDisplayToVegaLiteSpec(display: ChartDisplay, source: string): VisualizationSpec {
+function convertWidgetDisplayToSpecWithErrors(display: ChartDisplay, source: string): VegaSpecWithProps {
   switch (display[DISPLAY_TYPE_KEY]) {
     case BAR_CHART_TYPE:
       return convertToBarChart(display as BarDisplay, source);
     case TIMESERIES_CHART_TYPE:
       return convertToTimeseriesChart(display as TimeseriesDisplay, source);
     case VEGA_CHART_TYPE:
-      return convertToVegaChart(display as VegaDisplay, source);
+      return convertToVegaChart(display as VegaDisplay);
     default:
-      throw new Error(`Unsupported display type: ${display[DISPLAY_TYPE_KEY]}`);
+      return {
+        spec: {},
+        legendColumnName: null,
+        hasLegend: false,
+        error: new Error(`Unsupported display type: ${display[DISPLAY_TYPE_KEY]}`),
+      };
   }
 }
 
 export function convertWidgetDisplayToVegaSpec(display: ChartDisplay, source: string, theme: Theme): VegaSpecWithProps {
   try {
-    const vegaLiteSpec = convertWidgetDisplayToVegaLiteSpec(display, source);
-    const hydratedVegaLite = hydrateSpec(vegaLiteSpec, theme) as VlSpec;
-    const vegaSpec = compile(hydratedVegaLite).spec;
-    return addExtrasToVegaSpec(vegaSpec, display, source);
+    const specWithProps = convertWidgetDisplayToSpecWithErrors(display, source);
+    hydrateSpecWithTheme(specWithProps.spec, theme);
+    return specWithProps;
   } catch (error) {
     return {
       spec: {},
-      legendColumnName: null,
       hasLegend: false,
-      isStacked: false,
+      legendColumnName: '',
       error,
     };
   }
 }
 
-// Currently only supports a single input dataframe.
-// TODO(nserrino): Add support for the multi-dataframe case.
-function addSources(spec: VisualizationSpec, source: string): VisualizationSpec {
-  // Vega takes the data field as an array, whereas Vega-Lite takes it as a single object.
-  if (spec[VEGA_SCHEMA].includes(VEGA_SCHEMA_SUBSTRING)) {
-    const vgspec = spec as VgSpec;
-    return { ...vgspec, data: [...(vgspec.data || []), { name: source }] };
-  }
-  const vlspec = spec as VlSpec;
-  return { ...vlspec, data: { name: source } };
-}
-
-const TIMESERIES_TIME_COLUMN = 'time_';
-
-const BASE_TIMESERIES_SPEC: VisualizationSpec = {
-  [VEGA_SCHEMA]: VEGA_LITE_V4,
-  encoding: {
-    x: {
-      field: TIMESERIES_TIME_COLUMN,
-      type: 'temporal',
-      axis: {
-        grid: false,
-      },
-      title: null,
-    },
-  },
-  layer: [],
+const BASE_SPEC: VgSpec = {
+  [VEGA_SCHEMA]: VEGA_V5,
 };
 
-function timeseriesDataLayer(yField: string, mark: string) {
-  return {
-    encoding: {
-      y: { field: yField, type: 'quantitative' },
-    },
-    layer: [
-      { mark },
-    ],
+/* Vega Spec Functions */
+function addAutosize(spec: VgSpec) {
+  spec.autosize = {
+    type: 'fit',
+    contains: 'padding',
   };
 }
 
-function extendEncoding(spec, field, params) {
-  return {
-    ...spec,
-    encoding: {
-      ...spec.encoding,
-      [field]: {
-        ...(spec.encoding ? spec.encoding[field] : {}),
-        ...params,
-      },
-    },
+function addTitle(spec: VgSpec, title: string) {
+  spec.title = {
+    text: title,
   };
 }
 
-function extendXEncoding(spec, xEncoding) {
-  return extendEncoding(spec, 'x', xEncoding);
+function addDataSource(spec: VgSpec, dataSpec: Data): Data {
+  if (!spec.data) {
+    spec.data = [];
+  }
+  spec.data.push(dataSpec);
+  return dataSpec;
 }
 
-function extendYEncoding(spec, yEncoding) {
-  return extendEncoding(spec, 'y', yEncoding);
+function addMark(spec: VgSpec | GroupMark, markSpec: Mark): Mark {
+  if (!spec.marks) {
+    spec.marks = [];
+  }
+  spec.marks.push(markSpec);
+  return markSpec;
 }
 
-function extendColorEncoding(spec, colorEncoding) {
-  return extendEncoding(spec, 'color', colorEncoding);
+function addSignal(spec: VgSpec, sigSpec: Signal): Signal {
+  if (!spec.signals) {
+    spec.signals = [];
+  }
+  spec.signals.push(sigSpec);
+  return sigSpec;
 }
 
-function extendColumnEncoding(spec, columnEncoding) {
-  return extendEncoding(spec, 'column', columnEncoding);
+function addScale(spec: VgSpec, scaleSpec: Scale): Scale {
+  if (!spec.scales) {
+    spec.scales = [];
+  }
+  spec.scales.push(scaleSpec);
+  return scaleSpec;
 }
 
-function extendLayer(spec, layers) {
-  return {
-    ...spec,
-    layer: [...(spec.layer || []), ...layers],
-  };
+function addAxis(spec: VgSpec | GroupMark, axisSpec: Axis): Axis {
+  if (!spec.axes) {
+    spec.axes = [];
+  }
+  spec.axes.push(axisSpec);
+  return axisSpec;
 }
 
-function extendTransforms(spec, transforms) {
-  return {
-    ...spec,
-    transform: [...(spec.transform || []), ...transforms],
-  };
+function addLegend(spec: VgSpec, legendSpec: Legend): Legend {
+  if (!spec.legends) {
+    spec.legends = [];
+  }
+  spec.legends.push(legendSpec);
+  return legendSpec;
 }
 
-function randStr(length: number): string {
-  // Radix is 36 since there are 26 alphabetic chars, and 10 numbers.
-  const radix = 36;
-  return _.range(length).map(() => _.random(radix).toString(radix)).join('');
+/* Data Functions */
+function extendDataTransforms(data: Data, transforms: Transforms[]) {
+  if (!data.transform) {
+    data.transform = [];
+  }
+  data.transform.push(...transforms);
 }
 
-// Creates the time axis configuration. The label expression calls pxTimeFormat.
-function setupTimeXAxis(spec, numTicksExpr: string, separation: number, fontName: string,
-  fontSize: number) {
-  return extendXEncoding(spec, {
-    axis: {
-      grid: false,
-      tickCount: {
-        signal: `${numTicksExpr}`,
-      },
-      labelExpr: `pxTimeFormat(datum, ceil(width), ${numTicksExpr}, ${separation}, '${
-        fontName}', ${fontSize})`,
-      labelFlush: true,
-    },
-  });
+/* Data Transforms */
+function timeFormatTransform(timeField: string): Transforms[] {
+  return [{
+    type: 'formula',
+    expr: `toDate(datum["${timeField}"])`,
+    as: timeField,
+  }];
 }
 
-function trimFirstAndLastTimestep(spec) {
+function trimFirstAndLastTimestepTransform(timeField: string): Transforms[] {
   // NOTE(philkuz): These transforms are a hack to remove sampling artifacts created by our
   // range-agg. This should be fixed with the implementation of the window aggregate. A side-effect
   // of this hack is that any time-series created w/o range-agg will also have time-boundaries
   // removed. I'd argue that doesn't hurt the experience because those points would be missing if
   // they executed the live-view 1 sampling window earlier or later, where sampling windows
   // typically are 1-10s long.
-  return extendTransforms(spec, [
+  return [
     {
-      joinaggregate: [
-        {
-          field: 'time_',
-          op: 'max',
-          as: 'max_time',
-        },
-        {
-          field: 'time_',
-          op: 'min',
-          as: 'min_time',
-        },
+      type: 'joinaggregate',
+      as: [
+        'min_time',
+        'max_time',
+      ],
+      ops: [
+        'min',
+        'max',
+      ],
+      fields: [
+        timeField,
+        timeField,
       ],
     },
     {
-      filter: 'datum.time_ > datum.min_time && datum.time_ < datum.max_time',
+      type: 'filter',
+      expr: `datum.${timeField} > datum.min_time && datum.${timeField} < datum.max_time`,
+    },
+  ];
+}
+
+function legendDataTransform(display: TimeseriesDisplay): Transforms[] {
+  // If no series in any of the timeseries, we should copy the data from the main data source,
+  // and keep only the value fields + time_.
+  if (display.timeseries.map((ts) => ts.series).filter((series) => series).length === 0) {
+    return [{
+      type: 'project',
+      fields: [...display.timeseries.map((ts) => ts.value), TIME_FIELD],
+    }];
+  }
+  if (display.timeseries.length === 1 && display.timeseries[0].series) {
+    return [{
+      type: 'pivot',
+      field: display.timeseries[0].series,
+      value: display.timeseries[0].value,
+      groupby: [TIME_FIELD],
+    }];
+  }
+  throw new Error('Multiple timeseries with subseries are not supported.');
+}
+
+function stackBySeriesTransform(
+  timeField: string,
+  valueField: string,
+  seriesField: string,
+  stackedStartField: string,
+  stackedEndField: string): Transforms[] {
+  const meanValueField = 'meanOfValueField';
+  return [
+    // We do a join aggregate so that we can sort the stack by the mean value per series.
+    // So that the more "important" fields end up on the top of the stack.
+    {
+      type: 'joinaggregate',
+      groupby: [seriesField],
+      ops: ['mean'],
+      fields: [valueField],
+      as: [meanValueField],
+    },
+    {
+      type: 'stack',
+      groupby: [timeField],
+      sort: { field: meanValueField, order: 'ascending' },
+      field: valueField,
+      as: [stackedStartField, stackedEndField],
+    },
+  ];
+}
+
+/* Mark Functions */
+function extendMarkEncoding(mark: Mark, encodeEntryName: EncodeEntryName, entry: Partial<TrailEncodeEntry>) {
+  if (!mark.encode) {
+    mark.encode = {};
+  }
+  if (!mark.encode[encodeEntryName]) {
+    mark.encode[encodeEntryName] = {};
+  }
+  mark.encode[encodeEntryName] = { ...mark.encode[encodeEntryName], ...entry };
+}
+
+/* Signal Functions */
+function extendSignalHandlers(signal: Signal, on: OnEvent[]) {
+  if (!signal.on) {
+    signal.on = [];
+  }
+  signal.on.push(...on);
+}
+
+function getMarkType(mode: string): TimeseriesMark['type'] {
+  switch (mode) {
+    case 'MODE_POINT':
+      return 'symbol';
+    case 'MODE_AREA':
+      return 'area';
+    case 'MODE_UNKNOWN':
+    case 'MODE_LINE':
+    default:
+      return 'line';
+  }
+}
+
+function addWidthHeightSignals(spec: VgSpec, widthName = 'width', heightName = 'height') {
+  const widthUpdate = 'isFinite(containerSize()[0]) ? containerSize()[0] : 200';
+  const heightUpdate = 'isFinite(containerSize()[1]) ? containerSize()[1] : 200';
+  const widthSignal = addSignal(spec, {
+    name: widthName,
+    init: widthUpdate,
+    on: [{
+      events: 'window:resize',
+      update: widthUpdate,
+    }],
+  });
+  const heightSignal = addSignal(spec, {
+    name: heightName,
+    init: heightUpdate,
+    on: [{
+      events: 'window:resize',
+      update: heightUpdate,
+    }],
+  });
+  return { widthSignal, heightSignal };
+}
+
+interface ReverseSignals {
+  reverseSelectSignal: Signal;
+  reverseHoverSignal: Signal;
+  reverseUnselectSignal: Signal;
+}
+
+function addHoverSelectSignals(spec: VgSpec): ReverseSignals {
+  addSignal(spec, {
+    name: INTERNAL_HOVER_SIGNAL,
+    on: [
+      {
+        events: [{
+          source: 'scope',
+          type: 'mouseover',
+          markname: HOVER_VORONOI,
+        }],
+        update: `datum && datum.datum && {${TIME_FIELD}: datum.datum["${TIME_FIELD}"]}`,
+      },
+      {
+        events: [{
+          source: 'view',
+          type: 'mouseout',
+          filter: 'event.type === "mouseout"',
+        }],
+        update: 'null',
+      },
+    ],
+  });
+  addSignal(spec, { name: EXTERNAL_HOVER_SIGNAL, value: null });
+  addSignal(spec, {
+    name: HOVER_SIGNAL,
+    on: [
+      {
+        events: [
+          { signal: INTERNAL_HOVER_SIGNAL },
+          { signal: EXTERNAL_HOVER_SIGNAL },
+        ],
+        update: `${INTERNAL_HOVER_SIGNAL} || ${EXTERNAL_HOVER_SIGNAL}`,
+      },
+    ],
+  });
+
+  addSignal(spec, { name: LEGEND_SELECT_SIGNAL, value: [] });
+  addSignal(spec, { name: LEGEND_HOVER_SIGNAL, value: 'null' });
+  const reverseHoverSignal = addSignal(spec, { name: REVERSE_HOVER_SIGNAL });
+  const reverseSelectSignal = addSignal(spec, { name: REVERSE_SELECT_SIGNAL });
+  const reverseUnselectSignal = addSignal(spec, { name: REVERSE_UNSELECT_SIGNAL });
+  return { reverseHoverSignal, reverseSelectSignal, reverseUnselectSignal };
+}
+
+function addTimeseriesDomainSignals(spec: VgSpec, scaleName: string): Signal {
+  // Add signal to determine hover time value for current chart.
+  addSignal(spec, {
+    name: INTERNAL_TS_DOMAIN_SIGNAL,
+    on: [
+      {
+        events: { scale: scaleName },
+        update: `domain('${scaleName}')`,
+      },
+    ],
+  });
+  // Add signal for hover value from external chart.
+  addSignal(spec, { name: EXTERNAL_TS_DOMAIN_SIGNAL, value: null });
+  // Add signal for hover value that merges internal, and external hover values, with priority to internal.
+  return addSignal(spec, {
+    name: TS_DOMAIN_SIGNAL,
+    on: [
+      {
+        events: [{ signal: INTERNAL_TS_DOMAIN_SIGNAL }, { signal: EXTERNAL_TS_DOMAIN_SIGNAL }],
+        update: `combineInternalExternal(${INTERNAL_TS_DOMAIN_SIGNAL}, ${EXTERNAL_TS_DOMAIN_SIGNAL})`,
+      },
+    ],
+  });
+}
+
+function extendReverseSignalsWithHitBox(
+  { reverseHoverSignal, reverseSelectSignal, reverseUnselectSignal }: ReverseSignals,
+  hitBoxMarkName: string,
+  interactivitySelector: string) {
+  extendSignalHandlers(reverseHoverSignal, [
+    {
+      events: {
+        source: 'view',
+        type: 'mouseover',
+        markname: hitBoxMarkName,
+      },
+      update: `datum && ${interactivitySelector}`,
+    },
+    {
+      events: {
+        source: 'view',
+        type: 'mouseout',
+        markname: hitBoxMarkName,
+      },
+      update: 'null',
+    },
+  ]);
+  extendSignalHandlers(reverseSelectSignal, [
+    {
+      events: {
+        source: 'view',
+        type: 'click',
+        markname: hitBoxMarkName,
+      },
+      update: `datum && ${interactivitySelector}`,
+      force: true,
+    },
+  ]);
+  extendSignalHandlers(reverseUnselectSignal, [
+    {
+      events: {
+        source: 'view',
+        type: 'mousedown',
+        markname: hitBoxMarkName,
+        consume: true,
+        filter: `event.which === ${RIGHT_MOUSE_DOWN_CODE}`,
+      },
+      update: 'true',
+      force: true,
     },
   ]);
 }
 
-function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): VisualizationSpec {
-  let spec = BASE_TIMESERIES_SPEC;
-  // TODO(philkuz/reviewer) should this come from somewhere else?
-  const axisLabelSeparationPx = 100;
-  const axisLabelFontName = 'Roboto';
-  const axisLabelFontSize = 10;
+function addInteractivityHitBox(spec: VgSpec | GroupMark, lineMark: TimeseriesMark, name: string): Mark {
+  return addMark(spec, {
+    ...lineMark,
+    name,
+    type: lineMark.type,
+    encode: {
+      ...lineMark.encode,
+      update: {
+        ...lineMark.encode.update,
+        opacity: [{
+          value: 0,
+        }],
+        strokeWidth: [{
+          value: LINE_HOVER_HIT_BOX_WIDTH,
+        }],
+      },
+    },
+    zindex: lineMark.zindex + 1,
+  });
+}
 
-  if (display.title) {
-    spec = { ...spec, title: display.title };
-  }
+function addLegendInteractivityEncodings(mark: Mark, ts: Timeseries, interactivitySelector: string) {
+  extendMarkEncoding(mark, 'update', {
+    opacity: [
+      {
+        value: SELECTED_LINE_OPACITY,
+        test: `${LEGEND_HOVER_SIGNAL} && (${interactivitySelector} === ${LEGEND_HOVER_SIGNAL})`,
+      },
+      {
+        value: UNSELECTED_LINE_OPACITY,
+        test:
+        `${LEGEND_SELECT_SIGNAL}.length !== 0 && indexof(${LEGEND_SELECT_SIGNAL}, ${interactivitySelector}) === -1`,
+      },
+      { value: SELECTED_LINE_OPACITY },
+    ],
+    strokeWidth: [
+      {
+        value: HIGHLIGHTED_LINE_WIDTH,
+        test: `${LEGEND_HOVER_SIGNAL} && (${interactivitySelector} === ${LEGEND_HOVER_SIGNAL})`,
+      },
+      {
+        value: LINE_WIDTH,
+      },
+    ],
+  });
+}
+
+function createTSScales(
+  spec: VgSpec,
+  transformedDataSrc: Data,
+  tsDomainSignal: Signal,
+  timeseries: Timeseries[],
+  dupXScaleName: string): {xScale: Scale; yScale: Scale; colorScale: Scale} {
+  const xScale = addScale(spec, {
+    name: 'x',
+    type: 'time',
+    domain: {
+      data: transformedDataSrc.name,
+      field: TIME_FIELD,
+    },
+    range: [0, { signal: 'width' }],
+    domainRaw: { signal: tsDomainSignal.name },
+  });
+  // Duplicates the Xscale so that when we update the time domain to match other charts we don't create a feedback loop.
+  addScale(spec, {
+    ...xScale,
+    name: dupXScaleName,
+    domainRaw: undefined,
+  });
+  const yScale = addScale(spec, {
+    name: 'y',
+    type: 'linear',
+    domain: {
+      data: transformedDataSrc.name,
+      fields: _.uniq(timeseries.map((ts) => ts.value)),
+    },
+    range: [{ signal: 'height' }, 0],
+    zero: false,
+    nice: true,
+  });
+  // The Color scale's domain is filled out later.
+  const colorScale = addScale(spec, {
+    name: 'color',
+    type: 'ordinal',
+    range: 'category',
+  });
+  return { xScale, yScale, colorScale };
+}
+
+// TODO(philkuz/reviewer) should this come from somewhere else?
+const X_AXIS_LABEL_SEPARATION = 100; // px
+const X_AXIS_LABEL_FONT = 'Roboto';
+const X_AXIS_LABEL_FONT_SIZE = 10;
+const PX_BETWEEN_X_TICKS = 20;
+const PX_BETWEEN_Y_TICKS = 40;
+
+function addLabelsToAxes(xAxis: Axis, yAxis: Axis, display: DisplayWithLabels) {
   if (display.xAxis && display.xAxis.label) {
-    spec = extendXEncoding(spec, { title: display.xAxis.label });
+    xAxis.title = display.xAxis.label;
   }
+  if (display.yAxis && display.yAxis.label) {
+    yAxis.title = display.yAxis.label;
+  }
+}
 
+function createTSAxes(spec: VgSpec, xScale: Scale, yScale: Scale, display: DisplayWithLabels) {
+  const xAxis = addAxis(spec, {
+    scale: xScale.name,
+    orient: 'bottom',
+    grid: false,
+    labelFlush: true,
+    tickCount: {
+      signal: `ceil(width/${PX_BETWEEN_X_TICKS})`,
+    },
+    labelOverlap: true,
+    encode: {
+      labels: {
+        update: {
+          text: {
+            signal: `pxTimeFormat(datum, ceil(width), ceil(width/${PX_BETWEEN_X_TICKS}),`
+            + ` ${X_AXIS_LABEL_SEPARATION}, "${X_AXIS_LABEL_FONT}", ${X_AXIS_LABEL_FONT_SIZE})`,
+          },
+        },
+      },
+    },
+    zindex: 0,
+  });
+  const yAxis = addAxis(spec, {
+    scale: yScale.name,
+    orient: 'left',
+    gridScale: xScale.name,
+    grid: true,
+    tickCount: {
+      signal: `ceil(height/${PX_BETWEEN_Y_TICKS})`,
+    },
+    labelOverlap: true,
+    zindex: 0,
+  });
+  addLabelsToAxes(xAxis, yAxis, display);
+}
+
+// Z ordering
+const PLOT_GROUP_Z_LAYER = 100;
+const VORONOI_Z_LAYER = 99;
+
+function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): VegaSpecWithProps {
   if (!display.timeseries) {
     throw new Error('TimeseriesChart must have one timeseries entry');
   }
-  let valueField = display.timeseries[0].value;
-  let colorField = '';
-  if (display.timeseries.length > 1) {
-    const { mode } = display.timeseries[0];
-    const valueFields: string[] = [];
-    for (const ts of display.timeseries) {
-      if (ts.mode !== mode) {
-        throw new Error('More than one timeseries in TimeseriesChart not supported if there are different mark types.');
-      }
-      if (ts.series) {
-        throw new Error('Subseries are not supported for multiple timeseries within a TimeseriesChart');
-      }
-      if (!ts.value) {
-        throw new Error('Each timeseries in a TimeseriesChart must have a value.');
-      }
-      valueFields.push(ts.value);
+  const spec = { ...BASE_SPEC };
+  addAutosize(spec);
+  spec.style = 'cell';
+
+  // Create data sources.
+  const baseDataSrc = addDataSource(spec, { name: source });
+  const transformedDataSrc = addDataSource(spec, {
+    name: 'transformedData',
+    source: baseDataSrc.name,
+    transform: [
+      ...timeFormatTransform(TIME_FIELD),
+      ...trimFirstAndLastTimestepTransform(TIME_FIELD),
+    ],
+  });
+  const legendData = addDataSource(spec, {
+    name: HOVER_PIVOT_TRANSFORM,
+    source: transformedDataSrc.name,
+    transform: [
+      ...legendDataTransform(display),
+    ],
+  });
+
+  // Create signals.
+  addWidthHeightSignals(spec);
+  const reverseSignals = addHoverSelectSignals(spec);
+  const dupXScaleName = '_x_signal';
+  const tsDomainSignal = addTimeseriesDomainSignals(spec, dupXScaleName);
+
+  // Create scales/axes.
+  const { xScale, yScale, colorScale } = createTSScales(
+    spec, transformedDataSrc, tsDomainSignal, display.timeseries, dupXScaleName);
+  createTSAxes(spec, xScale, yScale, display);
+
+  // Create marks for ts lines.
+  let i = 0;
+  let legendColumnName = '';
+  for (const timeseries of display.timeseries) {
+    let group: VgSpec | GroupMark = spec;
+    let dataName = transformedDataSrc.name;
+    if (timeseries.series && display.timeseries.length > 1) {
+      throw new Error('Subseries are not supported for multiple timeseries within a TimeseriesChart');
     }
-    colorField = randStr(10);
-    valueField = randStr(10);
-    spec = extendTransforms(spec, [
-      { fold: valueFields, as: [colorField, valueField] },
-    ]);
-  }
-
-  const timeseries = display.timeseries[0];
-  let mark = '';
-  switch (timeseries.mode) {
-    case 'MODE_POINT':
-      mark = 'point';
-      break;
-    case 'MODE_BAR':
-      mark = 'bar';
-      break;
-    case 'MODE_UNKNOWN':
-    case 'MODE_LINE':
-    default:
-      mark = 'line';
-  }
-
-  if (!valueField) {
-    throw new Error('No value provided for TimeseriesChart timeseries');
-  }
-
-  const layers = [];
-  layers.push(timeseriesDataLayer(valueField, mark));
-
-  if (display.yAxis && display.yAxis.label) {
-    layers[0] = extendYEncoding(layers[0], { title: display.yAxis.label });
-  }
-  layers[0] = extendYEncoding(layers[0], { scale: { zero: false } });
-
-  if (colorField === '' && timeseries.series) {
-    colorField = timeseries.series;
-  } else if (colorField === '') {
-    // If there is no series provided, then we generate a series column,
-    // by using the fold transform.
-    // To avoid collisions, we generate a random name for the fields
-    // that the fold transform creates.
-
-    // create random alphanumeric strings of length 10.
-    colorField = randStr(10);
-    const newValueField = randStr(10);
-    spec = extendTransforms(spec, [
-      { fold: [valueField], as: [colorField, newValueField] },
-    ]);
-  }
-  layers[0] = extendColorEncoding(layers[0], { field: colorField, type: 'nominal', legend: null });
-
-  if (timeseries.stackBySeries) {
-    if (!timeseries.series) {
-      throw new Error('stackBySeries is invalid for TimeseriesChart when series is not specified');
+    if (timeseries.stackBySeries && !timeseries.series) {
+      throw new Error('Stack by series is not supported when series is not specified.');
     }
-    layers[0] = extendYEncoding(layers[0], { aggregate: 'sum', stack: 'zero' });
+    if (timeseries.series) {
+      dataName = `faceted_data_${i}`;
+      group = addMark(spec, {
+        name: `timeseries_group_${i}`,
+        type: 'group',
+        from: {
+          facet: {
+            name: dataName,
+            data: transformedDataSrc.name,
+            groupby: [timeseries.series],
+          },
+        },
+        encode: {
+          update: {
+            width: {
+              field: {
+                group: 'width',
+              },
+            },
+            height: {
+              field: {
+                group: 'height',
+              },
+            },
+          },
+        },
+        zindex: PLOT_GROUP_Z_LAYER,
+      });
+      colorScale.domain = {
+        data: transformedDataSrc.name,
+        field: timeseries.series,
+        sort: true,
+      };
+      legendColumnName = timeseries.series;
+    } else {
+      if (!colorScale.domain) {
+        colorScale.domain = [];
+      }
+      (colorScale.domain as string[]).push(timeseries.value);
+    }
+
+    const stackedValueStart = `${timeseries.value}_stacked_start`;
+    const stackedValueEnd = `${timeseries.value}_stacked_end`;
+    if (timeseries.stackBySeries) {
+      extendDataTransforms(transformedDataSrc,
+        stackBySeriesTransform(TIME_FIELD, timeseries.value, timeseries.series, stackedValueStart, stackedValueEnd));
+      // Adjust yScale to use new start/end stacked values.
+      (yScale.domain as ScaleMultiFieldsRef).fields = [stackedValueStart, stackedValueEnd];
+    }
+
+    const markType = getMarkType(timeseries.mode);
+    if (markType === 'area' && !timeseries.stackBySeries) {
+      throw new Error('Area charts not supported unless stacked by series.');
+    }
+    const yField = (timeseries.stackBySeries) ? stackedValueEnd : timeseries.value;
+    const lineMark = addMark(group, {
+      name: `timeseries_line_${i}`,
+      type: markType,
+      style: markType,
+      from: {
+        data: dataName,
+      },
+      sort: {
+        field: `datum["${TIME_FIELD}"]`,
+      },
+      encode: {
+        update: {
+          x: { scale: xScale.name, field: TIME_FIELD },
+          y: { scale: yScale.name, field: yField },
+          ...((markType === 'area') ? { y2: { scale: yScale.name, field: stackedValueStart } } : {}),
+        },
+      },
+      zindex: PLOT_GROUP_Z_LAYER,
+    }) as TimeseriesMark;
+
+    if (timeseries.series) {
+      extendMarkEncoding(lineMark, 'update', {
+        stroke: { scale: colorScale.name, field: timeseries.series },
+        ...((markType === 'area') ? { fill: { scale: colorScale.name, field: timeseries.series } } : {}),
+      });
+    } else {
+      extendMarkEncoding(lineMark, 'update', {
+        stroke: { scale: colorScale.name, value: timeseries.value },
+      });
+    }
+
+    // NOTE(james): if there is no series given, then the selector for interactivity with the legend
+    // is the name of the value field. Otherwise we use the value of the series field as the selector.
+    // This will cause problems if multiple timeseries are specified with the same value field, but until we
+    // support multiple tables in the same timeseries chart there isn't a problem.
+    const interactivitySelector = (timeseries.series) ? `datum["${timeseries.series}"]` : `"${timeseries.value}"`;
+    addLegendInteractivityEncodings(lineMark, timeseries, interactivitySelector);
+    const hitBoxMark = addInteractivityHitBox(group, lineMark, `${LINE_HIT_BOX_MARK_NAME}_${i}`);
+    extendReverseSignalsWithHitBox(reverseSignals, hitBoxMark.name, interactivitySelector);
+    i++;
   }
 
-  spec = extendLayer(spec, layers);
+  addHoverMarks(spec, legendData.name);
 
-  spec = setupTimeXAxis(spec, 'ceil(width/20)', axisLabelSeparationPx, axisLabelFontName,
-    axisLabelFontSize);
+  if (display.title) {
+    addTitle(spec, display.title);
+  }
 
-  // NOTE(philkuz): Hack to remove the sampling artifacts created by our range-agg.
-  spec = trimFirstAndLastTimestep(spec);
-
-  return addSources(spec, source);
+  return {
+    spec,
+    // At the moment, timeseries always have legends.
+    hasLegend: true,
+    legendColumnName,
+  };
 }
 
-const BASE_BAR_SPEC: VisualizationSpec = {
-  [VEGA_SCHEMA]: 'https://vega.github.io/schema/vega-lite/v4.json',
-  mark: 'bar',
-  encoding: {
-    y: {
-      type: 'quantitative',
+function addGridLayout(spec: VgSpec, columnDomainData: Data) {
+  spec.layout = {
+    // TODO(james): figure out the best way to get this from the theme.
+    padding: 20,
+    titleAnchor: {
+      column: 'end',
     },
-    x: {
-      field: 'service',
-      type: 'ordinal',
+    offset: {
+      columnTitle: 10,
     },
-  },
-};
+    columns: {
+      signal: `length(data("${columnDomainData.name}"))`,
+    },
+    bounds: 'full',
+    align: 'all',
+  };
+}
 
-function convertToBarChart(display: BarDisplay, source: string): VisualizationSpec {
+function addGridLayoutMarksForGroupedBars(
+  spec: VgSpec,
+  groupBy: string,
+  labelField: string,
+  columnDomainData: Data,
+  widthName: string,
+  heightName: string): {groupForXAxis: GroupMark; groupForYAxis: GroupMark} {
+  addMark(spec, {
+    name: 'column-title',
+    type: 'group',
+    role: 'column-title',
+    title: {
+      text: `${groupBy}, ${labelField}`,
+      orient: 'bottom',
+      offset: 10,
+      style: 'grouped-bar-x-title',
+    },
+  });
+
+  const groupForYAxis = addMark(spec, {
+    name: 'row-header',
+    type: 'group',
+    role: 'row-header',
+    encode: {
+      update: {
+        height: {
+          signal: heightName,
+        },
+      },
+    },
+  }) as GroupMark;
+
+  const groupForXAxis = addMark(spec, {
+    name: 'column-footer',
+    type: 'group',
+    role: 'column-footer',
+    from: {
+      data: columnDomainData.name,
+    },
+    sort: {
+      field: `datum["${groupBy}"]`,
+      order: 'ascending',
+    },
+    title: {
+      text: {
+        signal: `parent["${groupBy}"]`,
+      },
+      frame: 'group',
+      orient: 'bottom',
+      offset: 10,
+      style: 'grouped-bar-x-subtitle',
+    },
+    encode: {
+      update: {
+        width: {
+          signal: widthName,
+        },
+      },
+    },
+  }) as GroupMark;
+  return { groupForXAxis, groupForYAxis };
+}
+
+function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithProps {
   if (!display.bar) {
     throw new Error('BarChart must have an entry for property bar');
   }
@@ -376,120 +867,237 @@ function convertToBarChart(display: BarDisplay, source: string): VisualizationSp
     throw new Error('BarChart property bar must have an entry for property label');
   }
 
-  let spec = addSources(BASE_BAR_SPEC, source);
-  spec = extendXEncoding(spec, { field: display.bar.label });
-  spec = extendYEncoding(spec, { field: display.bar.value });
+  const spec = { ...BASE_SPEC };
+  if (!display.bar.groupBy) {
+    addAutosize(spec);
+    spec.style = 'cell';
+  }
+
+  // Add data and transforms.
+  const baseDataSrc = addDataSource(spec, { name: source });
+  const transformedDataSrc = addDataSource(spec, { name: 'transformedData', source: baseDataSrc.name, transform: [] });
+  let valueField = display.bar.value;
+  let valueStartField = '';
+  let valueEndField = valueField;
+  if (display.bar.stackBy) {
+    valueField = `sum_${display.bar.value}`;
+    valueStartField = `${valueField}_start`;
+    valueEndField = `${valueField}_end`;
+    const extraGroupBy = (display.bar.groupBy) ? [display.bar.groupBy] : [];
+    extendDataTransforms(transformedDataSrc, [
+      {
+        type: 'aggregate',
+        groupby: [display.bar.label, display.bar.stackBy, ...extraGroupBy],
+        ops: ['sum'],
+        fields: [display.bar.value],
+        as: [valueField],
+      },
+      {
+        type: 'stack',
+        groupby: [display.bar.label, ...extraGroupBy],
+        field: valueField,
+        sort: { field: [display.bar.stackBy], order: ['descending'] },
+        as: [valueStartField, valueEndField],
+        offset: 'zero',
+      },
+    ]);
+  }
+  let columnDomainData: Data;
+  if (display.bar.groupBy) {
+    columnDomainData = addDataSource(spec, {
+      name: 'column-domain',
+      source: transformedDataSrc.name,
+      transform: [
+        {
+          type: 'aggregate',
+          groupby: [display.bar.groupBy],
+        },
+      ],
+    });
+  }
+
+  // Add signals.
+  const widthName = (display.bar.groupBy) ? 'child_width' : 'width';
+  const heightName = (display.bar.groupBy) ? 'child_height' : 'height';
+  addWidthHeightSignals(spec, widthName, heightName);
+
+  // Add scales.
+  const xScale = addScale(spec, {
+    name: 'x',
+    type: 'band',
+    domain: {
+      data: transformedDataSrc.name,
+      field: display.bar.label,
+      sort: true,
+    },
+    range: [
+      0,
+      { signal: widthName },
+    ],
+  });
+
+  const yScale = addScale(spec, {
+    name: 'y',
+    type: 'linear',
+    domain: {
+      data: transformedDataSrc.name,
+      fields: (valueStartField) ? [valueStartField, valueEndField] : [valueField],
+    },
+    range: [
+      { signal: heightName },
+      0,
+    ],
+    nice: true,
+    zero: true,
+  });
+
+  const colorScale = addScale(spec, {
+    name: 'color',
+    type: 'ordinal',
+    range: 'category',
+    domain: (!display.bar.stackBy) ? [valueField] : {
+      data: transformedDataSrc.name,
+      field: display.bar.stackBy,
+      sort: true,
+    },
+  });
+
+  // Add marks.
+  let group: VgSpec | GroupMark = spec;
+  let dataName = transformedDataSrc.name;
+  let groupForXAxis: VgSpec | GroupMark = spec;
+  let groupForYAxis: VgSpec | GroupMark = spec;
+  if (display.bar.groupBy) {
+    // We use vega's grid layout functionality to plot grouped bars.
+    ({ groupForXAxis, groupForYAxis } = addGridLayoutMarksForGroupedBars(
+      spec, display.bar.groupBy, display.bar.label, columnDomainData, widthName, heightName));
+    addGridLayout(spec, columnDomainData);
+    dataName = 'facetedData';
+    group = addMark(spec, {
+      name: 'barGroup',
+      type: 'group',
+      style: 'cell',
+      from: {
+        facet: {
+          name: dataName,
+          data: transformedDataSrc.name,
+          groupby: [display.bar.groupBy],
+        },
+      },
+      sort: {
+        field: [`datum["${display.bar.groupBy}"]`],
+        order: ['ascending'],
+      },
+      encode: {
+        update: {
+          width: {
+            signal: widthName,
+          },
+          height: {
+            signal: heightName,
+          },
+        },
+      },
+    }) as GroupMark;
+  }
+
+  addMark(group, {
+    name: 'barMark',
+    type: 'rect',
+    style: 'bar',
+    from: {
+      data: dataName,
+    },
+    encode: {
+      update: {
+        fill: {
+          scale: colorScale.name,
+          ...((display.bar.stackBy) ? { field: display.bar.stackBy } : { value: valueField }),
+        },
+        x: {
+          scale: xScale.name,
+          field: display.bar.label,
+        },
+        y: {
+          scale: yScale.name,
+          field: valueEndField,
+        },
+        y2: {
+          scale: yScale.name,
+          ...((valueStartField) ? { field: valueStartField } : { value: 0 }),
+        },
+        width: {
+          scale: xScale.name,
+          band: 1,
+        },
+      },
+    },
+  });
+
+  const xAxis = addAxis(groupForXAxis, {
+    scale: xScale.name,
+    orient: 'bottom',
+    grid: false,
+    labelAlign: 'right',
+    labelAngle: 270,
+    labelBaseline: 'middle',
+    labelOverlap: true,
+  });
+  const yAxis = addAxis(groupForYAxis, {
+    scale: yScale.name,
+    orient: 'left',
+    gridScale: xScale.name,
+    grid: true,
+    labelOverlap: true,
+    tickCount: {
+      signal: `ceil(${heightName}/${PX_BETWEEN_Y_TICKS})`,
+    },
+  });
+  addLabelsToAxes(xAxis, yAxis, display);
 
   if (display.bar.stackBy) {
-    spec = extendColorEncoding(spec, { field: display.bar.stackBy, type: 'nominal' });
-    spec = extendYEncoding(spec, { aggregate: 'sum' });
-  }
-
-  if (display.yAxis && display.yAxis.label) {
-    spec = extendYEncoding(spec, { title: display.yAxis.label });
-  }
-
-  // Grouped bar charts need different formatting in the x axis and title.
-  if (!display.bar.groupBy) {
-    if (display.xAxis && display.xAxis.label) {
-      spec = extendXEncoding(spec, { title: display.xAxis.label });
-    }
-    if (display.title) {
-      spec = { ...spec, title: display.title };
-    }
-    return spec;
+    addLegend(spec, {
+      fill: colorScale.name,
+      symbolType: 'square',
+      title: display.bar.stackBy,
+      encode: {
+        symbols: {
+          update: {
+            stroke: {
+              value: null,
+            },
+          },
+        },
+      },
+    });
   }
 
   if (display.title) {
-    spec = { ...spec, title: { text: display.title, anchor: 'middle' } };
+    addTitle(spec, display.title);
   }
 
-  let xlabel = `${display.bar.groupBy}, ${display.bar.label}`;
-  if (display.xAxis && display.xAxis.label) {
-    xlabel = display.xAxis.label;
-  }
-  const header = { titleOrient: 'bottom', labelOrient: 'bottom', title: xlabel };
-
-  // Use the Column encoding header instead of an x axis title to avoid per-group repetition.
-  spec = extendXEncoding(spec, { title: null });
-  spec = extendColumnEncoding(spec, { field: display.bar.groupBy, type: 'nominal', header });
-
-  return spec;
-}
-
-function convertToVegaChart(display: VegaDisplay, source: string): VisualizationSpec {
-  const spec: VisualizationSpec = JSON.parse(display.spec);
-  if (!spec[VEGA_SCHEMA]) {
-    spec[VEGA_SCHEMA] = VEGA_LITE_V4;
-  }
-  return addSources(spec, source);
-}
-
-function addExtrasToVegaSpec(vegaSpec, display: ChartDisplay, source: string): VegaSpecWithProps {
-  switch (display[DISPLAY_TYPE_KEY]) {
-    case TIMESERIES_CHART_TYPE:
-      return addExtrasForTimeseries(vegaSpec, display as TimeseriesDisplay, source);
-    default:
-      return {
-        spec: vegaSpec,
-        hasLegend: false,
-        legendColumnName: '',
-        isStacked: false,
-      };
-  }
-}
-
-function extractPivotField(vegaSpec: VgSpec, display: TimeseriesDisplay): string | null {
-  if (display.timeseries[0].series) {
-    return display.timeseries[0].series;
-  }
-  if (!vegaSpec.scales) {
-    return null;
-  }
-  for (const scale of vegaSpec.scales) {
-    if (scale.name === COLOR_SCALE && scale.domain && (scale.domain as any).field) {
-      return (scale.domain as any).field;
-    }
-  }
-  return null;
-}
-
-function extractValueField(vegaSpec: VgSpec, display: TimeseriesDisplay): string | null {
-  if (display.timeseries.length === 1) {
-    return display.timeseries[0].value;
-  }
-  for (const data of vegaSpec.data) {
-    if (!data.transform) {
-      continue;
-    }
-    for (const transform of data.transform) {
-      if (transform.type === 'fold') {
-        return transform.as[1];
-      }
-    }
-  }
-  return '';
-}
-
-function addExtrasForTimeseries(vegaSpec, display: TimeseriesDisplay, source: string): VegaSpecWithProps {
-  const isStacked: boolean = display.timeseries[0].stackBySeries;
-  const pivotField: string = extractPivotField(vegaSpec, display);
-  const valueField: string = extractValueField(vegaSpec, display);
-  if (!pivotField || !valueField) {
-    return {
-      spec: vegaSpec,
-      hasLegend: false,
-      legendColumnName: '',
-      isStacked,
-    };
-  }
-  let newSpec = addHoverHandlersToVgSpec(vegaSpec, source, pivotField, valueField);
-  newSpec = addLegendSelectHandlersToVgSpec(newSpec, pivotField, valueField);
   return {
-    spec: newSpec,
-    hasLegend: true,
-    legendColumnName: display.timeseries[0].series || valueField,
-    isStacked,
+    spec,
+    hasLegend: false,
+    legendColumnName: '',
+  };
+}
+
+function convertToVegaChart(display: VegaDisplay): VegaSpecWithProps {
+  const spec: VisualizationSpec = JSON.parse(display.spec);
+  let vgSpec: VgSpec;
+  if (!spec[VEGA_SCHEMA]) {
+    spec[VEGA_SCHEMA] = VEGA_V5;
+  }
+  if (spec[VEGA_SCHEMA] === VEGA_LITE_V4) {
+    vgSpec = vegaLite.compile(spec as VlSpec).spec;
+  } else {
+    vgSpec = spec as VgSpec;
+  }
+  return {
+    spec: vgSpec,
+    hasLegend: false,
+    legendColumnName: '',
   };
 }
 
@@ -515,294 +1123,11 @@ export const LEGEND_HOVER_SIGNAL = 'legend_hovered_series';
 export const REVERSE_HOVER_SIGNAL = 'reverse_hovered_series';
 export const REVERSE_SELECT_SIGNAL = 'reverse_selected_series';
 export const REVERSE_UNSELECT_SIGNAL = 'reverse_unselect_signal';
-
-function addLegendSelectHandlersToVgSpec(vegaSpec: VgSpec, pivotField: string, valueField: string): VgSpec {
-  let spec = addLegendSignalsToVgSpec(vegaSpec, pivotField);
-  spec = addOpacityTestsToLine(spec, pivotField, valueField);
-  return spec;
-}
-
-function addLegendSignalsToVgSpec(vegaSpec: VgSpec, pivotField: string): VgSpec {
-  const signals: Signal[] = [];
-  signals.push({
-    name: LEGEND_SELECT_SIGNAL,
-    value: [],
-  });
-  signals.push({
-    name: LEGEND_HOVER_SIGNAL,
-    value: 'null',
-  });
-  signals.push({
-    name: REVERSE_HOVER_SIGNAL,
-    on: [
-      {
-        events: { source: 'view', type: 'mouseover', markname: LINE_HIT_BOX_MARK_NAME },
-        update: `datum && datum["${pivotField}"]`,
-      },
-      {
-        events: { source: 'view', type: 'mouseout', markname: LINE_HIT_BOX_MARK_NAME },
-        update: 'null',
-      },
-    ],
-  });
-  signals.push({
-    name: REVERSE_SELECT_SIGNAL,
-    on: [
-      {
-        events: { source: 'view', type: 'click', markname: LINE_HIT_BOX_MARK_NAME },
-        update: `datum && datum["${pivotField}"]`,
-        force: true,
-      },
-    ],
-  });
-  signals.push({
-    name: REVERSE_UNSELECT_SIGNAL,
-    on: [
-      {
-        events: {
-          source: 'view',
-          type: 'mousedown',
-          markname: LINE_HIT_BOX_MARK_NAME,
-          consume: true,
-          filter: `event.which === ${RIGHT_MOUSE_DOWN_CODE}`,
-        },
-        update: 'true',
-        force: true,
-      },
-    ],
-  });
-  vegaSpec.signals.push(...signals);
-  return vegaSpec;
-}
-
-function isLineMark(mark: Mark, valueField: string) {
-  return mark.type === 'group'
-    && mark.marks
-    && mark.marks.length > 0
-    && mark.marks[0]
-    && mark.marks[0].encode
-    && mark.marks[0].encode.update
-    && mark.marks[0].encode.update.y
-    && (mark.marks[0].encode.update.y as any).field
-    && (mark.marks[0].encode.update.y as any).field === valueField;
-}
-
-function addOpacityTestsToLine(vegaSpec: VgSpec, pivotField: string, valueField: string): VgSpec {
-  const newMarks = vegaSpec.marks.map((mark: Mark) => {
-    if (!isLineMark(mark, valueField)) {
-      return mark;
-    }
-    const groupMark = (mark as GroupMark);
-    // Force the lines to be above the voronoi layer.
-    groupMark.zindex = 200;
-    const lineMark = (groupMark.marks[0] as LineMark);
-    lineMark.encode.update.opacity = [
-      {
-        value: SELECTED_LINE_OPACITY,
-        test: `${LEGEND_HOVER_SIGNAL} && datum["${pivotField}"] === ${LEGEND_HOVER_SIGNAL}`,
-      },
-      {
-        value: UNSELECTED_LINE_OPACITY,
-        test: `${LEGEND_SELECT_SIGNAL}.length !== 0 && indexof(${LEGEND_SELECT_SIGNAL}, datum["${pivotField}"]) === -1`,
-      },
-      { value: SELECTED_LINE_OPACITY },
-    ];
-    lineMark.encode.update.strokeWidth = [
-      {
-        value: HIGHLIGHTED_LINE_WIDTH,
-        test: `${LEGEND_HOVER_SIGNAL} && datum["${pivotField}"] === ${LEGEND_HOVER_SIGNAL}`,
-      },
-      {
-        value: LINE_WIDTH,
-      },
-    ];
-    lineMark.zindex = 1;
-    // Deep copy the mark because there are several nested properties that we want to inherit
-    const newMark: Mark = {
-      ...lineMark,
-      name: LINE_HIT_BOX_MARK_NAME,
-      // Deep copy encode because we need to modify them.
-      encode: {
-        ...lineMark.encode,
-        update: {
-          ...lineMark.encode.update,
-          opacity: [{
-            value: 0,
-          }],
-          strokeWidth: [{
-            value: LINE_HOVER_HIT_BOX_WIDTH,
-          }],
-        },
-      },
-      zindex: lineMark.zindex + 1,
-    };
-
-    groupMark.marks.push(newMark);
-    return groupMark;
-  });
-
-  vegaSpec.marks = newMarks;
-  return vegaSpec;
-}
-
 export const TS_DOMAIN_SIGNAL = 'ts_domain_value';
 export const EXTERNAL_TS_DOMAIN_SIGNAL = 'external_ts_domain_value';
 export const INTERNAL_TS_DOMAIN_SIGNAL = 'internal_ts_domain_value';
 
-function getLineMarkDataName(vegaSpec: VgSpec, valueField: string) {
-  for (let i = 0; i < vegaSpec.marks.length; ++i) {
-    const mark = vegaSpec.marks[i];
-    if (isLineMark(mark, valueField)) {
-      return (mark as any).from.facet.data;
-    }
-  }
-  throw new Error('No data source found for Line Mark.');
-}
-
-function addHoverHandlersToVgSpec(vegaSpec: VgSpec, source: string, pivotField: string, valueField: string): VgSpec {
-  const signalName = '_x_signal';
-  vegaSpec = addTimeSeriesDomainBackupToVgSpec(vegaSpec, signalName);
-  vegaSpec = addTimeseriesDomainSignalsToVgSpec(vegaSpec, signalName);
-  // Get the data source used by marks.
-  const markDataName = getLineMarkDataName(vegaSpec, valueField);
-  vegaSpec = addHoverDataToVgSpec(vegaSpec, markDataName, pivotField, valueField);
-  vegaSpec = addHoverSignalsToVgSpec(vegaSpec);
-  vegaSpec = addHoverMarksToVgSpec(vegaSpec);
-  return vegaSpec;
-}
-
-function addHoverDataToVgSpec(vegaSpec: VgSpec, source: string, pivotField: string, valueField: string): VgSpec {
-  const data: Data[] = [];
-  data.push({
-    name: HOVER_PIVOT_TRANSFORM,
-    source,
-    transform: [
-      {
-        type: 'pivot',
-        field: pivotField,
-        value: valueField,
-        groupby: [TIME_FIELD],
-      },
-    ],
-  });
-  vegaSpec.data.push(...data);
-  return vegaSpec;
-}
-
-function addHoverSignalsToVgSpec(vegaSpec: VgSpec): VgSpec {
-  const signals: Signal[] = [];
-  // Add signal to determine hover time value for current chart.
-  signals.push({
-    name: INTERNAL_HOVER_SIGNAL,
-    on: [
-      {
-        events: [
-          {
-            source: 'scope',
-            type: 'mouseover',
-            markname: HOVER_VORONOI,
-          },
-        ],
-        // Voronoi layers store data in datum.datum instead of datum.
-        update: `datum && datum.datum && {${TIME_FIELD}: datum.datum["${TIME_FIELD}"]}`,
-      },
-      {
-        events: [
-          {
-            source: 'view',
-            type: 'mouseout',
-            // Seem to be hitting a bug in vega here where mouseout events also capture some mousemove events.
-            filter: 'event.type === "mouseout"',
-          },
-        ],
-        update: 'null',
-      },
-    ],
-  });
-  // Add signal for hover value from external chart.
-  signals.push({
-    name: EXTERNAL_HOVER_SIGNAL,
-    value: null,
-  });
-  // Add signal for hover value that merges internal, and external hover values, with priority to internal.
-  signals.push({
-    name: HOVER_SIGNAL,
-    on: [
-      {
-        events: [{ signal: EXTERNAL_HOVER_SIGNAL }, { signal: INTERNAL_HOVER_SIGNAL }],
-        update: `${INTERNAL_HOVER_SIGNAL} || ${EXTERNAL_HOVER_SIGNAL}`,
-      },
-    ],
-  });
-  vegaSpec.signals.push(...signals);
-  return vegaSpec;
-}
-
-function getXScaleFromConfig(vegaSpec: VgSpec): TimeScale {
-  if (!vegaSpec.scales) {
-    return null;
-  }
-  for (const scale of vegaSpec.scales) {
-    // TODO move x to a constant.
-    if (scale.name === 'x' && (scale.type === 'time' || scale.type === 'utc')) {
-      return (scale as TimeScale);
-    }
-  }
-  return null;
-}
-
-// Duplicates the Xscale so that when we update the time domain to match other charts we don't create a feedback loop.
-function addTimeSeriesDomainBackupToVgSpec(vegaSpec: VgSpec, signalName: string): VgSpec {
-  const xScale: TimeScale = getXScaleFromConfig(vegaSpec);
-
-  if (!xScale) {
-    return vegaSpec;
-  }
-
-  // Shallow copy so we don't interrupt the domain.
-  const newXScale = { ...xScale };
-
-  // Set the xScale domain to correspond to the TS_DOMAIN_SIGNAL.
-  xScale.domainRaw = { signal: TS_DOMAIN_SIGNAL };
-
-  newXScale.name = signalName;
-  vegaSpec.scales.push(newXScale);
-  return vegaSpec;
-}
-
-function addTimeseriesDomainSignalsToVgSpec(vegaSpec: VgSpec, signalName: string): VgSpec {
-  const signals: Signal[] = [];
-  // Add signal to determine hover time value for current chart.
-  signals.push({
-    name: INTERNAL_TS_DOMAIN_SIGNAL,
-    on: [
-      {
-        events: { scale: signalName },
-        update: `domain('${signalName}')`,
-      },
-    ],
-  });
-  // Add signal for hover value from external chart.
-  signals.push({
-    name: EXTERNAL_TS_DOMAIN_SIGNAL,
-    value: null,
-  });
-  // Add signal for hover value that merges internal, and external hover values, with priority to internal.
-  signals.push({
-    name: TS_DOMAIN_SIGNAL,
-    on: [
-      {
-        events: [{ signal: INTERNAL_TS_DOMAIN_SIGNAL }, { signal: EXTERNAL_TS_DOMAIN_SIGNAL }],
-        update: `combineInternalExternal(${INTERNAL_TS_DOMAIN_SIGNAL}, ${EXTERNAL_TS_DOMAIN_SIGNAL})`,
-      },
-    ],
-  });
-  vegaSpec.signals.push(...signals);
-  return vegaSpec;
-}
-
-function addHoverMarksToVgSpec(vegaSpec: VgSpec): VgSpec {
-  const marks: Mark[] = [];
+function addHoverMarks(spec: VgSpec, dataName: string) {
   // Used by both HOVER_RULE, HOVER_LINE_TIME and HOVER_BULB.
   const hoverOpacityEncoding = [
     {
@@ -815,12 +1140,12 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec): VgSpec {
   const bulbPositionSignal = { signal: `height + ${HOVER_BULB_OFFSET}` };
 
   // Add mark for vertical line where cursor is.
-  marks.push({
+  addMark(spec, {
     name: HOVER_RULE,
     type: 'rule',
     style: ['rule'],
     interactive: true,
-    from: { data: HOVER_PIVOT_TRANSFORM },
+    from: { data: dataName },
     encode: {
       enter: {
         stroke: { value: HOVER_LINE_COLOR },
@@ -836,11 +1161,11 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec): VgSpec {
     },
   });
   // Bulb mark.
-  marks.push({
+  addMark(spec, {
     name: HOVER_BULB,
     type: 'symbol',
     interactive: true,
-    from: { data: HOVER_PIVOT_TRANSFORM },
+    from: { data: dataName },
     encode: {
       enter: {
         fill: { value: HOVER_LINE_COLOR },
@@ -859,10 +1184,10 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec): VgSpec {
     },
   });
   // Add mark for the text of the time at the bottom of the rule.
-  marks.push({
+  const hoverLineTime = addMark(spec, {
     name: HOVER_LINE_TIME,
     type: 'text',
-    from: { data: HOVER_PIVOT_TRANSFORM },
+    from: { data: dataName },
     encode: {
       enter: {
         fill: { value: HOVER_TIME_COLOR },
@@ -878,11 +1203,9 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec): VgSpec {
         y: { signal: `height + ${HOVER_LINE_TEXT_OFFSET} + ${HOVER_LINE_TEXT_PADDING}` },
       },
     },
-    // Display text above text box.
-    zindex: 1,
   });
   // Add mark for fill box around time text.
-  marks.push({
+  const hoverTimeBox = addMark(spec, {
     name: HOVER_LINE_TEXT_BOX,
     type: 'rect',
     from: { data: HOVER_LINE_TIME },
@@ -896,9 +1219,14 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec): VgSpec {
         opacity: { signal: 'datum.opacity > 0 ? 1.0 : 0.0' },
       },
     },
+    zindex: 0,
   });
+
+  // Display text above text box.
+  hoverLineTime.zindex = hoverTimeBox.zindex + 1;
+
   // Add mark for voronoi layer.
-  marks.push({
+  addMark(spec, {
     name: HOVER_VORONOI,
     type: 'path',
     interactive: true,
@@ -919,134 +1247,126 @@ function addHoverMarksToVgSpec(vegaSpec: VgSpec): VgSpec {
         size: [{ signal: 'width' }, { signal: `height + ${AXIS_HEIGHT}` }],
       },
     ],
-    // Make sure voronoi layer is on top.
-    zindex: 100,
+    zindex: VORONOI_Z_LAYER,
   });
-  vegaSpec.marks.push(...marks);
-  return vegaSpec;
 }
 
-function hydrateSpec(input, theme: Theme): VisualizationSpec {
-  return {
-    ...input,
-    ...specsFromTheme(theme),
-  };
-}
-
-function specsFromTheme(theme: Theme) {
-  return {
-    $schema: 'https://vega.github.io/schema/vega-lite/v4.json',
-    width: 'container',
-    height: 'container',
-    background: theme.palette.background.default,
-    padding: theme.spacing(2),
-    config: {
+function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
+  spec.background = theme.palette.background.default;
+  spec.padding = theme.spacing(2);
+  spec.config = {
+    ...spec.config,
+    legend: {
+      // fillOpacity: 1,
+      labelColor: theme.palette.foreground.one,
+      labelFont: 'Roboto',
+      labelFontSize: 10,
+      padding: theme.spacing(1),
+      symbolSize: 100,
+      titleColor: theme.palette.foreground.one,
+      titleFontSize: 12,
+    },
+    style: {
+      bar: {
+        // binSpacing: 2,
+        fill: '#39A8F5',
+        stroke: null,
+      },
+      cell: {
+        stroke: 'transparent',
+      },
       arc: {
         fill: '#39A8F5',
       },
       area: {
         fill: '#39A8F5',
       },
-      axis: {
-        labelColor: theme.palette.foreground.one,
-        labelFont: 'Roboto',
-        labelFontSize: 10,
-        labelPadding: theme.spacing(0.5),
-        tickColor: theme.palette.foreground.grey4,
-        tickSize: 10,
-        tickWidth: 1,
-        titleColor: theme.palette.foreground.one,
-        titleFont: 'Roboto',
-        titleFontSize: 12,
-        titleFontWeight: theme.typography.fontWeightRegular,
-        titlePadding: theme.spacing(3),
-      },
-      axisY: {
-        grid: true,
-        domain: false,
-        gridColor: theme.palette.foreground.grey4,
-        gridWidth: 0.5,
-      },
-      axisX: {
-        grid: false,
-        domain: true,
-        domainColor: theme.palette.foreground.grey4,
-        tickOpacity: 0,
-        tickSize: theme.spacing(0.5),
-      },
-      axisBand: {
-        grid: false,
-      },
-      background: '#272822',
-      group: {
-        fill: '#f0f0f0',
-      },
-      legend: {
-        fillOpacity: 1,
-        labelColor: theme.palette.foreground.one,
-        labelFont: 'Roboto',
-        labelFontSize: 10,
-        padding: theme.spacing(1),
-        symbolSize: 100,
-        titleColor: theme.palette.foreground.one,
-        titleFontSize: 12,
-      },
-      view: {
-        stroke: 'transparent',
-      },
       line: {
         stroke: '#39A8F5',
         strokeWidth: 1,
       },
-      path: {
-        stroke: '#39A8F5',
-        strokeWidth: 0.5,
+      symbol: {
+        shape: 'circle',
       },
       rect: {
         fill: '#39A8F5',
       },
-      range: {
-        category: [
-          '#21a1e7',
-          '#2ca02c',
-          '#98df8a',
-          '#aec7e8',
-          '#ff7f0e',
-          '#ffbb78',
-        ],
-        diverging: [
-          '#cc0020',
-          '#e77866',
-          '#f6e7e1',
-          '#d6e8ed',
-          '#91bfd9',
-          '#1d78b5',
-        ],
-        heatmap: [
-          '#d6e8ed',
-          '#cee0e5',
-          '#91bfd9',
-          '#549cc6',
-          '#1d78b5',
-        ],
-      },
-      point: {
-        filled: true,
-        shape: 'circle',
-      },
-      shape: {
-        stroke: '#39A8F5',
-      },
-      style: {
-        bar: {
-          binSpacing: 2,
-          fill: '#39A8F5',
-          stroke: null,
-        },
-      },
-      title: {
+      'group-title': {
         fontSize: 0,
       },
+      'grouped-bar-x-title': {
+        fill: theme.palette.foreground.one,
+        fontSize: 12,
+      },
+      'grouped-bar-x-subtitle': {
+        fill: theme.palette.foreground.one,
+        fontSize: 10,
+      },
+    },
+    axis: {
+      labelColor: theme.palette.foreground.one,
+      labelFont: 'Roboto',
+      labelFontSize: 10,
+      labelPadding: theme.spacing(0.5),
+      tickColor: theme.palette.foreground.grey4,
+      tickSize: 10,
+      tickWidth: 1,
+      titleColor: theme.palette.foreground.one,
+      titleFont: 'Roboto',
+      titleFontSize: 12,
+      // titleFontWeight: theme.typography.fontWeightRegular,
+      titlePadding: theme.spacing(3),
+    },
+    axisY: {
+      grid: true,
+      domain: false,
+      gridColor: theme.palette.foreground.grey4,
+      gridWidth: 0.5,
+    },
+    axisX: {
+      grid: false,
+      domain: true,
+      domainColor: theme.palette.foreground.grey4,
+      tickOpacity: 0,
+      tickSize: theme.spacing(0.5),
+    },
+    axisBand: {
+      grid: false,
+    },
+    group: {
+      fill: '#f0f0f0',
+    },
+    path: {
+      stroke: '#39A8F5',
+      strokeWidth: 0.5,
+    },
+    range: {
+      category: [
+        '#21a1e7',
+        '#2ca02c',
+        '#98df8a',
+        '#aec7e8',
+        '#ff7f0e',
+        '#ffbb78',
+      ],
+      diverging: [
+        '#cc0020',
+        '#e77866',
+        '#f6e7e1',
+        '#d6e8ed',
+        '#91bfd9',
+        '#1d78b5',
+      ],
+      heatmap: [
+        '#d6e8ed',
+        '#cee0e5',
+        '#91bfd9',
+        '#549cc6',
+        '#1d78b5',
+      ],
+    },
+    shape: {
+      stroke: '#39A8F5',
     },
   };
 }

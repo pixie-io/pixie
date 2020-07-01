@@ -1,22 +1,42 @@
 import { DARK_THEME } from 'common/mui-theme';
+import { Spec } from 'vega';
 import { convertWidgetDisplayToVegaSpec } from './convert-to-vega-spec';
 
-function addHoverTests(spec, seriesFieldName: string, valueFieldName: string) {
-  it('produces expected hover_pivot_data', () => {
-    expect(spec.data).toEqual(expect.arrayContaining([
-      {
-        name: 'hover_pivot_data',
-        // TODO(james): match the name of the transformed data source instead of any string.
-        source: expect.any(String),
-        transform: [{
-          type: 'pivot',
-          field: seriesFieldName,
-          value: valueFieldName,
-          groupby: ['time_'],
-        }],
-      },
-    ]));
-  });
+function addHoverDataTest(spec: Spec, seriesFieldName: string | null, valueFieldNames: string[]) {
+  if (seriesFieldName) {
+    it('produces expected hover_data with pivot', () => {
+      expect(spec.data).toEqual(expect.arrayContaining([
+        {
+          name: 'hover_pivot_data',
+          // TODO(james): match the name of the transformed data source instead of any string.
+          source: expect.any(String),
+          transform: [{
+            type: 'pivot',
+            field: seriesFieldName,
+            value: valueFieldNames[0],
+            groupby: ['time_'],
+          }],
+        },
+      ]));
+    });
+  } else {
+    it('produces expected hover_data with projection', () => {
+      expect(spec.data).toEqual(expect.arrayContaining([
+        {
+          name: 'hover_pivot_data',
+          // TODO(james): match the name of the transformed data source instead of any string.
+          source: expect.any(String),
+          transform: [{
+            type: 'project',
+            fields: expect.arrayContaining([...valueFieldNames, 'time_']),
+          }],
+        },
+      ]));
+    });
+  }
+}
+
+function addHoverTests(spec: Spec) {
   it('produces expected hover layer marks', () => {
     expect(spec.marks).toEqual(expect.arrayContaining([
       expect.objectContaining({
@@ -122,14 +142,21 @@ function addHoverTests(spec, seriesFieldName: string, valueFieldName: string) {
         name: 'hover_value',
         on: [
           {
-            events: [
+            events: expect.arrayContaining([
               { signal: 'external_hover_value' },
               { signal: 'internal_hover_value' },
-            ],
+            ]),
             update: 'internal_hover_value || external_hover_value',
           },
         ],
       },
+    ]));
+  });
+}
+
+function addHoverReverseTests(spec: Spec, expectedInteractivitySelector: string) {
+  it('produces expected reverse hover signals', () => {
+    expect(spec.signals).toEqual(expect.arrayContaining([
       {
         name: 'reverse_hovered_series',
         on: expect.arrayContaining([
@@ -137,15 +164,15 @@ function addHoverTests(spec, seriesFieldName: string, valueFieldName: string) {
             events: {
               source: 'view',
               type: 'mouseover',
-              markname: 'hover_line_mark_layer',
+              markname: 'hover_line_mark_layer_0',
             },
-            update: `datum && datum["${seriesFieldName}"]`,
+            update: `datum && ${expectedInteractivitySelector}`,
           },
           {
             events: {
               source: 'view',
               type: 'mouseout',
-              markname: 'hover_line_mark_layer',
+              markname: 'hover_line_mark_layer_0',
             },
             update: 'null',
           },
@@ -158,9 +185,9 @@ function addHoverTests(spec, seriesFieldName: string, valueFieldName: string) {
             events: {
               source: 'view',
               type: 'click',
-              markname: 'hover_line_mark_layer',
+              markname: 'hover_line_mark_layer_0',
             },
-            update: `datum && datum["${seriesFieldName}"]`,
+            update: `datum && ${expectedInteractivitySelector}`,
             force: true,
           },
         ],
@@ -172,7 +199,7 @@ function addHoverTests(spec, seriesFieldName: string, valueFieldName: string) {
             events: {
               source: 'view',
               type: 'mousedown',
-              markname: 'hover_line_mark_layer',
+              markname: 'hover_line_mark_layer_0',
               consume: true,
               filter: 'event.which === 3',
             },
@@ -183,16 +210,6 @@ function addHoverTests(spec, seriesFieldName: string, valueFieldName: string) {
       },
     ]));
   });
-}
-
-function extractSeriesFieldName(spec): string {
-  const hoverPivotDataSpec = spec.data.filter((datum) => datum.name === 'hover_pivot_data')[0];
-  return hoverPivotDataSpec.transform[0].field;
-}
-
-function extractValueFieldName(spec): string {
-  const hoverPivotDataSpec = spec.data.filter((datum) => datum.name === 'hover_pivot_data')[0];
-  return hoverPivotDataSpec.transform[0].value;
 }
 
 describe('simple timeseries', () => {
@@ -207,25 +224,25 @@ describe('simple timeseries', () => {
     ],
   };
   const { spec } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
-  it('produces group mark for timeseries lines', () => {
-    expect((spec as any).marks).toEqual(expect.arrayContaining([expect.objectContaining({
-      type: 'group',
-      marks: expect.arrayContaining([
-        expect.objectContaining({
-          type: 'line',
-          encode: expect.objectContaining({
-            update: expect.objectContaining({
-              x: { scale: 'x', field: 'time_' },
-              y: { scale: 'y', field: valueFieldName },
-            }),
+  it('produces a line mark without a group', () => {
+    expect(spec.marks).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: 'line',
+        encode: expect.objectContaining({
+          update: expect.objectContaining({
+            x: { scale: 'x', field: 'time_' },
+            y: { scale: 'y', field: valueFieldName },
           }),
-          sort: { field: 'datum["time_"]' },
-          style: ['line'],
         }),
-      ]),
-    })]));
+        sort: { field: 'datum["time_"]' },
+        style: 'line',
+      }),
+    ]));
   });
-  addHoverTests(spec, extractSeriesFieldName(spec), valueFieldName);
+  addHoverTests(spec);
+  const expectedInteractivitySelector = `"${valueFieldName}"`;
+  addHoverReverseTests(spec, expectedInteractivitySelector);
+  addHoverDataTest(spec, null, [valueFieldName]);
 });
 
 describe('timeseries with series', () => {
@@ -243,7 +260,7 @@ describe('timeseries with series', () => {
   };
   const { spec } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
   it('produces group mark for timeseries lines', () => {
-    expect((spec as any).marks).toEqual(expect.arrayContaining([expect.objectContaining({
+    expect(spec.marks).toEqual(expect.arrayContaining([expect.objectContaining({
       type: 'group',
       from: {
         facet: expect.objectContaining({
@@ -260,16 +277,18 @@ describe('timeseries with series', () => {
             }),
           }),
           sort: { field: 'datum["time_"]' },
-          style: ['line'],
+          style: 'line',
         }),
       ]),
     })]));
   });
-  addHoverTests(spec, seriesFieldName, valueFieldName);
+  addHoverTests(spec);
+  const expectedInteractivitySelector = `datum["${seriesFieldName}"]`;
+  addHoverReverseTests(spec, expectedInteractivitySelector);
+  addHoverDataTest(spec, seriesFieldName, [valueFieldName]);
 });
 
-// TODO(james/nserrino/philkuz): stack by series is currently broken, renable test once fixed.
-describe.skip('timeseries with stacked series', () => {
+describe('timeseries with stacked series', () => {
   const valueFieldName = 'bytes_per_second';
   const seriesFieldName = 'service';
   const input = {
@@ -285,7 +304,7 @@ describe.skip('timeseries with stacked series', () => {
   };
   const { spec } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
   it('produces group mark for timeseries lines', () => {
-    expect((spec as any).marks).toEqual(expect.arrayContaining([expect.objectContaining({
+    expect(spec.marks).toEqual(expect.arrayContaining([expect.objectContaining({
       type: 'group',
       from: {
         facet: expect.objectContaining({
@@ -298,19 +317,22 @@ describe.skip('timeseries with stacked series', () => {
           encode: expect.objectContaining({
             update: expect.objectContaining({
               x: { scale: 'x', field: 'time_' },
-              y: { scale: 'y', field: valueFieldName },
+              y: { scale: 'y', field: `${valueFieldName}_stacked_end` },
             }),
           }),
           sort: { field: 'datum["time_"]' },
-          style: ['line'],
+          style: 'line',
         }),
       ]),
     })]));
   });
-  addHoverTests(spec, seriesFieldName, valueFieldName);
+  addHoverTests(spec);
+  const expectedInteractivitySelector = `datum["${seriesFieldName}"]`;
+  addHoverReverseTests(spec, expectedInteractivitySelector);
+  addHoverDataTest(spec, seriesFieldName, [valueFieldName]);
 });
 
-describe('timeseries chart with multiple timeseries', () => {
+describe('timeseries chart with multiple timeseries with different modes', () => {
   const firstValueField = 'bytes_per_second';
   const secondValueField = 'error_rate';
   const input = {
@@ -322,38 +344,131 @@ describe('timeseries chart with multiple timeseries', () => {
       },
       {
         value: secondValueField,
-        mode: 'MODE_LINE',
+        mode: 'MODE_POINT',
       },
     ],
   };
   const { spec } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
-  // multiple timeseries are folded under fake series and value names.
-  const seriesFieldName = extractSeriesFieldName(spec);
-  const valueFieldName = extractValueFieldName(spec);
-  it('produces expect group mark for both timeseries', () => {
-    expect((spec as any).marks).toEqual(expect.arrayContaining([expect.objectContaining({
-      type: 'group',
-      from: {
-        facet: expect.objectContaining({
-          groupby: [seriesFieldName],
-        }),
-      },
-      marks: expect.arrayContaining([
-        expect.objectContaining({
-          type: 'line',
-          encode: expect.objectContaining({
-            update: expect.objectContaining({
-              x: { scale: 'x', field: 'time_' },
-              y: { scale: 'y', field: valueFieldName },
-            }),
+  it('produces line mark for each timeseries', () => {
+    expect(spec.marks).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        type: 'line',
+        encode: expect.objectContaining({
+          update: expect.objectContaining({
+            x: { scale: 'x', field: 'time_' },
+            y: { scale: 'y', field: firstValueField },
           }),
-          sort: { field: 'datum["time_"]' },
-          style: ['line'],
         }),
-      ]),
-    })]));
+        sort: { field: 'datum["time_"]' },
+        style: 'line',
+      }),
+      expect.objectContaining({
+        type: 'symbol',
+        encode: expect.objectContaining({
+          update: expect.objectContaining({
+            x: { scale: 'x', field: 'time_' },
+            y: { scale: 'y', field: secondValueField },
+          }),
+        }),
+        sort: { field: 'datum["time_"]' },
+        style: 'symbol',
+      }),
+    ]));
   });
-  addHoverTests(spec, seriesFieldName, valueFieldName);
+
+  addHoverTests(spec);
+  addHoverDataTest(spec, null, [firstValueField, secondValueField]);
+  it('produces expected reverse hover signals for each timeseries', () => {
+    expect(spec.signals).toEqual(expect.arrayContaining([
+      {
+        name: 'reverse_hovered_series',
+        on: expect.arrayContaining([
+          {
+            events: {
+              source: 'view',
+              type: 'mouseover',
+              markname: 'hover_line_mark_layer_0',
+            },
+            update: `datum && "${firstValueField}"`,
+          },
+          {
+            events: {
+              source: 'view',
+              type: 'mouseout',
+              markname: 'hover_line_mark_layer_0',
+            },
+            update: 'null',
+          },
+          {
+            events: {
+              source: 'view',
+              type: 'mouseover',
+              markname: 'hover_line_mark_layer_1',
+            },
+            update: `datum && "${secondValueField}"`,
+          },
+          {
+            events: {
+              source: 'view',
+              type: 'mouseout',
+              markname: 'hover_line_mark_layer_1',
+            },
+            update: 'null',
+          },
+        ]),
+      },
+      {
+        name: 'reverse_selected_series',
+        on: [
+          {
+            events: {
+              source: 'view',
+              type: 'click',
+              markname: 'hover_line_mark_layer_0',
+            },
+            update: `datum && "${firstValueField}"`,
+            force: true,
+          },
+          {
+            events: {
+              source: 'view',
+              type: 'click',
+              markname: 'hover_line_mark_layer_1',
+            },
+            update: `datum && "${secondValueField}"`,
+            force: true,
+          },
+        ],
+      },
+      {
+        name: 'reverse_unselect_signal',
+        on: [
+          {
+            events: {
+              source: 'view',
+              type: 'mousedown',
+              markname: 'hover_line_mark_layer_0',
+              consume: true,
+              filter: 'event.which === 3',
+            },
+            update: 'true',
+            force: true,
+          },
+          {
+            events: {
+              source: 'view',
+              type: 'mousedown',
+              markname: 'hover_line_mark_layer_1',
+              consume: true,
+              filter: 'event.which === 3',
+            },
+            update: 'true',
+            force: true,
+          },
+        ],
+      },
+    ]));
+  });
 });
 
 describe('simple bar', () => {
@@ -368,7 +483,7 @@ describe('simple bar', () => {
   };
   const { spec } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
   it('produces expected mark for bars', () => {
-    expect((spec as any).marks).toEqual(expect.arrayContaining([expect.objectContaining({
+    expect(spec.marks).toEqual(expect.arrayContaining([expect.objectContaining({
       type: 'rect',
       encode: expect.objectContaining({
         update: expect.objectContaining({
@@ -378,7 +493,7 @@ describe('simple bar', () => {
           width: { scale: 'x', band: 1 },
         }),
       }),
-      style: ['bar'],
+      style: 'bar',
     })]));
   });
 });
@@ -397,7 +512,7 @@ describe('bar with stackby', () => {
   };
   const { spec } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
   it('produces expected mark for bars', () => {
-    expect((spec as any).marks).toEqual(expect.arrayContaining([expect.objectContaining({
+    expect(spec.marks).toEqual(expect.arrayContaining([expect.objectContaining({
       type: 'rect',
       encode: expect.objectContaining({
         update: expect.objectContaining({
@@ -408,7 +523,7 @@ describe('bar with stackby', () => {
           width: { scale: 'x', band: 1 },
         }),
       }),
-      style: ['bar'],
+      style: 'bar',
     })]));
   });
 });
@@ -428,28 +543,30 @@ describe('grouped bar', () => {
   const { spec } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
   // TODO(james): add checks for column headers/footers and row headers/footers.
   it('produces group mark for bars', () => {
-    expect((spec as any).marks).toEqual(expect.arrayContaining([expect.objectContaining({
+    expect(spec.marks).toEqual(expect.arrayContaining([expect.objectContaining({
       type: 'group',
       from: {
         facet: expect.objectContaining({
           groupby: [groupByFieldName],
         }),
       },
-      marks: [expect.objectContaining({
-        encode: expect.objectContaining({
-          update: expect.objectContaining({
-            x: { scale: 'x', field: labelFieldName },
-            y: { scale: 'y', field: valueFieldName },
-            y2: { scale: 'y', value: 0 },
-            width: { scale: 'x', band: 1 },
+      marks: [
+        expect.objectContaining({
+          encode: expect.objectContaining({
+            update: expect.objectContaining({
+              x: { scale: 'x', field: labelFieldName },
+              y: { scale: 'y', field: valueFieldName },
+              y2: { scale: 'y', value: 0 },
+              width: { scale: 'x', band: 1 },
+            }),
           }),
+          style: 'bar',
         }),
-        style: ['bar'],
-      })],
+      ],
     })]));
   });
   it('produces expected layout', () => {
-    expect((spec as any).layout).toEqual(expect.objectContaining({
+    expect(spec.layout).toEqual(expect.objectContaining({
       bounds: 'full',
       align: 'all',
     }));
@@ -473,7 +590,7 @@ describe('grouped bar with stackby', () => {
   const { spec } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
   // TODO(james): add checks for column headers/footers and row headers/footers.
   it('produces group mark for bars', () => {
-    expect((spec as any).marks).toEqual(expect.arrayContaining([expect.objectContaining({
+    expect(spec.marks).toEqual(expect.arrayContaining([expect.objectContaining({
       type: 'group',
       from: {
         facet: expect.objectContaining({
@@ -489,23 +606,22 @@ describe('grouped bar with stackby', () => {
             width: { scale: 'x', band: 1 },
           }),
         }),
-        style: ['bar'],
+        style: 'bar',
       })],
     })]));
   });
   it('produces expected layout', () => {
-    expect((spec as any).layout).toEqual(expect.objectContaining({
+    expect(spec.layout).toEqual(expect.objectContaining({
       bounds: 'full',
       align: 'all',
     }));
   });
 });
 
-const testInputVega = {
+const testInputVega: Spec = {
   $schema: 'https://vega.github.io/schema/vega/v5.json',
   width: 400,
   height: 200,
-  padding: 5,
   scales: [
     {
       name: 'xscale',
@@ -542,14 +658,15 @@ const testInputVega = {
   ],
 };
 
-// TODO(james): once I remove vega-lite, the VegaChart type will just pass through the inputted spec.
-describe.skip('vega chart', () => {
-  it('should output the inputted spec', () => {
+describe('vega chart', () => {
+  it('should output the inputted spec hydrated with the theme', () => {
     const input = {
       '@type': 'pixielabs.ai/pl.vispb.VegaChart',
       spec: JSON.stringify(testInputVega),
     };
     const { spec } = convertWidgetDisplayToVegaSpec(input, 'mysource', DARK_THEME);
-    expect(spec).toStrictEqual(testInputVega);
+    expect(spec).toEqual(
+      expect.objectContaining(testInputVega),
+    );
   });
 });

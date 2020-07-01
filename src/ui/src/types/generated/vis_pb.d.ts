@@ -380,9 +380,9 @@ export namespace TimeseriesChart {
 
     export enum Mode { 
       MODE_UNKNOWN = 0,
-      MODE_BAR = 1,
       MODE_LINE = 2,
       MODE_POINT = 3,
+      MODE_AREA = 4,
     }
   }
 

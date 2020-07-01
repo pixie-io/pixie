@@ -3050,9 +3050,9 @@ proto.pl.vispb.TimeseriesChart.Timeseries.serializeBinaryToWriter = function(mes
  */
 proto.pl.vispb.TimeseriesChart.Timeseries.Mode = {
   MODE_UNKNOWN: 0,
-  MODE_BAR: 1,
   MODE_LINE: 2,
-  MODE_POINT: 3
+  MODE_POINT: 3,
+  MODE_AREA: 4
 };
 
 /**

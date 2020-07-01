@@ -155,13 +155,12 @@ function printSpec(display: ChartDisplay) {
 // Example input, replace with what you want to print the spec for.
 const input = {
   '@type': TIMESERIES_CHART_TYPE,
-  timeseries: [
-    {
-      value: 'bytesPerSecond',
-      mode: 'MODE_LINE',
-      series: 'service',
-    },
-  ],
+  timeseries: [{
+    value: 'bytesPerSecond',
+    mode: 'MODE_AREA',
+    series: 'service',
+    stackBySeries: true,
+  }],
 };
 
 printSpec(input);
