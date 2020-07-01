@@ -116,7 +116,6 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
 
         execute({
           liveViewPage: LiveViewPage.Default,
-          entityParamNames: [],
           pxl: script.code,
           vis,
           id: script.id,

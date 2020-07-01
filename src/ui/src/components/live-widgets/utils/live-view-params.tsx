@@ -65,6 +65,20 @@ export const LiveViewPageScriptIds = {
   [LiveViewPage.Services]: 'px/services',
 };
 
+// List of all of the keys of the entity arguments for a given live view page.
+export const LiveViewEntityParams = {
+  [LiveViewPage.Default]: new Set(),
+  [LiveViewPage.Cluster]: new Set(),
+  [LiveViewPage.Namespace]: new Set(['namespace']),
+  [LiveViewPage.Namespaces]: new Set(),
+  [LiveViewPage.Node]: new Set(['node']),
+  [LiveViewPage.Nodes]: new Set(),
+  [LiveViewPage.Pod]: new Set(['pod']),
+  [LiveViewPage.Pods]: new Set(['namespace']),
+  [LiveViewPage.Service]: new Set(['service']),
+  [LiveViewPage.Services]: new Set(['namespace']),
+};
+
 interface WithCluster {
   cluster: string;
 }

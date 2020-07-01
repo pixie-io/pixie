@@ -61,8 +61,6 @@ export function ScriptLoader() {
         const parsedArgs = argsForVis(parsedVis, { ...args, ...entity.params }, id);
         ref.current.execute({
           liveViewPage: entity.page,
-          // TODO(nserrino): refactor this to be a bit more clean.
-          entityParamNames: Object.keys(entity.params),
           pxl: code,
           vis: parsedVis,
           args: parsedArgs,

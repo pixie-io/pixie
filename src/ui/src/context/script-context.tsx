@@ -14,17 +14,15 @@ import { debounce } from 'utils/debounce';
 import urlParams from 'utils/url-params';
 import { SetStateFunc } from './common';
 import {
-  EntityURLParams, getLiveViewTitle, LiveViewPage, LiveViewPageScriptIds,
-  matchLiveViewEntity, toEntityPathname,
+  EntityURLParams, getLiveViewTitle, LiveViewEntityParams, LiveViewPage,
+  LiveViewPageScriptIds, matchLiveViewEntity, toEntityPathname,
 } from '../components/live-widgets/utils/live-view-params';
 
 interface ScriptContextProps {
   liveViewPage: LiveViewPage;
 
   args: Arguments;
-  setArgs: (inputArgs: Arguments, newVis?: Vis, entityParamNames?: string[]) => void;
-  // Resets the entity page to the default page, not an entity-centric URL.
-  resetDefaultLiveViewPage: () => void;
+  setArgs: SetStateFunc<Arguments>;
 
   visJSON: string;
   vis: Vis;
@@ -42,7 +40,7 @@ interface ScriptContextProps {
   id: string;
 
   setScript: (vis: Vis, pxl: string, args: Arguments, id: string,
-    liveViewPage?: LiveViewPage, entityParamNames?: string[]) => void;
+    liveViewPage?: LiveViewPage) => void;
   commitURL: () => void;
 }
 
@@ -59,6 +57,28 @@ function getTitleOfScript(scriptId: string, scripts: Map<string, Script>): strin
   return scriptId;
 }
 
+function getEntityParams(liveViewPage: LiveViewPage, args: Arguments): EntityURLParams {
+  const entityParamNames = LiveViewEntityParams[liveViewPage] || new Set();
+  const entityParams = {};
+  entityParamNames.forEach((paramName: string) => {
+    if (args[paramName] != null) {
+      entityParams[paramName] = args[paramName];
+    }
+  });
+  return entityParams;
+}
+
+function getNonEntityParams(liveViewPage: LiveViewPage, args: Arguments): Arguments {
+  const entityParamNames = LiveViewEntityParams[liveViewPage] || new Set();
+  const nonEntityParams = {};
+  Object.keys(args).forEach((argName: string) => {
+    if (!entityParamNames.has(argName)) {
+      nonEntityParams[argName] = args[argName];
+    }
+  });
+  return nonEntityParams;
+}
+
 const ScriptContextProvider = (props) => {
   const { location } = props;
 
@@ -67,12 +87,11 @@ const ScriptContextProvider = (props) => {
 
   const entity = matchLiveViewEntity(location.pathname);
   const [liveViewPage, setLiveViewPage] = React.useState<LiveViewPage>(entity.page);
-  const [entityParams, setEntityParams] = React.useState<EntityURLParams>(entity.params);
   const [visEditorText, setVisEditorText] = React.useState<string>();
   const [pxlEditorText, setPxlEditorText] = React.useState<string>();
 
   // Args that are not part of an entity.
-  const [nonEntityArgs, setNonEntityArgs] = useSessionStorage<Arguments | null>(LIVE_VIEW_SCRIPT_ARGS_KEY, null);
+  const [args, setArgs] = useSessionStorage<Arguments | null>(LIVE_VIEW_SCRIPT_ARGS_KEY, entity.params);
 
   const [pxl, setPxl] = useSessionStorage(LIVE_VIEW_PIXIE_SCRIPT_KEY, '');
   const [id, setId] = useSessionStorage(LIVE_VIEW_SCRIPT_ID_KEY,
@@ -91,18 +110,21 @@ const ScriptContextProvider = (props) => {
     return emptyVis();
   });
 
-  // args are the combination of entity and not entity params.
-  const args = React.useMemo(
-    () => argsForVis(vis, { ...nonEntityArgs, ...entityParams }),
-    [vis, nonEntityArgs, entityParams],
-  );
+  React.useEffect(() => {
+    const newArgs = argsForVis(vis, args);
+    // Need this check in order to avoid infinite rerender on 'args' changing.
+    if (!argsEquals(newArgs, args)) {
+      setArgs(newArgs);
+    }
+  }, [vis, args, setArgs]);
 
   // title is dependent on whether or not we are in an entity page.
   const title = React.useMemo(() => {
+    const entityParams = getEntityParams(liveViewPage, args);
     const newTitle = getLiveViewTitle(getTitleOfScript(id, scripts), liveViewPage, entityParams);
     document.querySelector('title').textContent = newTitle;
     return newTitle;
-  }, [liveViewPage, scripts, id, entityParams]);
+  }, [liveViewPage, scripts, id, args]);
 
   // Logic to set cluster
 
@@ -123,71 +145,26 @@ const ScriptContextProvider = (props) => {
   // Logic to update entity paths when live view page or cluster changes.
 
   React.useEffect(() => {
+    const entityParams = getEntityParams(liveViewPage, args);
     const entityURL = {
       clusterName: selectedClusterName,
       page: liveViewPage,
       params: entityParams,
     };
     urlParams.setPathname(toEntityPathname(entityURL));
-  }, [selectedClusterName, liveViewPage, entityParams]);
+  }, [selectedClusterName, liveViewPage, args]);
 
   React.useEffect(() => {
     const scriptID = liveViewPage === LiveViewPage.Default ? id : '';
     urlParams.setScript(scriptID, /* diff */'');
   }, [liveViewPage, id]);
 
-  // Used to reset to the "default" page if the script is edited.
-  const resetDefaultLiveViewPage = () => {
-    setNonEntityArgs(argsForVis(vis, { ...nonEntityArgs, ...entityParams }));
-    setEntityParams({});
-    setLiveViewPage(LiveViewPage.Default);
-  };
-
   // Logic to update arguments (which are a combo of entity params and normal args)
 
-  // TODO(nserrino): Add unit test for this function.
-  const setArgs = (inputArgs: Arguments, newVis?: Vis, entityParamNames?: string[]) => {
-    // newVis can correctly be null for scripts that have no vis spec,
-    // so we check to see if newVis is undefined or not to figure out whether or not
-    // it has been passed in as an argument to setArgs.
-    const parsedArgs = argsForVis(newVis !== undefined ? newVis : vis, inputArgs);
-    let entityNames: Set<string>;
-
-    if (entityParamNames == null) {
-      entityNames = new Set(Object.keys(parsedArgs)
-        .filter((argName) => typeof entityParams[argName] === 'string'));
-    } else {
-      entityNames = new Set(entityParamNames);
-    }
-
-    const inputEntityArgs = Object.keys(parsedArgs)
-      .filter((argName) => entityNames.has(argName))
-      .reduce((obj, argName) => {
-        obj[argName] = parsedArgs[argName];
-        return obj;
-      }, {});
-
-    if (!argsEquals(entityParams, inputEntityArgs)) {
-      setEntityParams(inputEntityArgs);
-    }
-
-    const inputNonEntityArgs = Object.keys(parsedArgs)
-      .filter((argName) => !entityNames.has(argName))
-      .reduce((obj, argName) => {
-        obj[argName] = parsedArgs[argName];
-        return obj;
-      }, {});
-
-    if (!argsEquals(nonEntityArgs, inputNonEntityArgs)) {
-      setNonEntityArgs(inputNonEntityArgs);
-    }
-  };
-
   React.useEffect(() => {
-    if (nonEntityArgs) {
-      urlParams.setArgs(nonEntityArgs);
-    }
-  }, [nonEntityArgs]);
+    const nonEntityArgs = getNonEntityParams(liveViewPage, args);
+    urlParams.setArgs(nonEntityArgs);
+  }, [liveViewPage, args]);
 
   // Logic to update vis spec.
 
@@ -205,7 +182,6 @@ const ScriptContextProvider = (props) => {
     const parsed = parseVis(newJSON);
     if (parsed) {
       setVisBase(parsed);
-      setArgs(args, parsed);
     }
   }, 2000));
 
@@ -217,14 +193,10 @@ const ScriptContextProvider = (props) => {
   // Logic to update the full script
 
   const setScript = (newVis: Vis, newPxl: string, newArgs: Arguments, newID: string,
-    newLiveViewPage?: LiveViewPage, entityParamNames?: string[]) => {
+    newLiveViewPage?: LiveViewPage) => {
     setVis(newVis);
     setPxl(newPxl);
-    if (entityParamNames) {
-      setArgs(newArgs, newVis, entityParamNames);
-    } else {
-      setArgs(newArgs, newVis);
-    }
+    setArgs(newArgs);
     setId(newID);
     if (newLiveViewPage != null) {
       setLiveViewPage(newLiveViewPage);
@@ -235,6 +207,7 @@ const ScriptContextProvider = (props) => {
   const commitURL = () => {
     // Only show the script as a query arg when we are not on an entity page.
     const scriptId = liveViewPage === LiveViewPage.Default ? (id || '') : '';
+    const nonEntityArgs = getNonEntityParams(liveViewPage, args);
     urlParams.commitAll(scriptId, '', nonEntityArgs);
   };
 
@@ -244,7 +217,6 @@ const ScriptContextProvider = (props) => {
         liveViewPage,
         args,
         setArgs,
-        resetDefaultLiveViewPage,
         pxlEditorText,
         visEditorText,
         setPxlEditorText,

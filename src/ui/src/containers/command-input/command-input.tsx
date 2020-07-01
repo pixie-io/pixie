@@ -68,7 +68,6 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
     if (script) {
       execute({
         liveViewPage: LiveViewPage.Default,
-        entityParamNames: [],
         pxl: script.code,
         vis,
         id: script.id,

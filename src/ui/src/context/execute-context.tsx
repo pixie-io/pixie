@@ -19,7 +19,6 @@ interface ExecuteArguments {
   args: Arguments;
   id: string;
   liveViewPage: LiveViewPage;
-  entityParamNames?: string[];
   skipURLUpdate?: boolean;
 }
 
@@ -98,8 +97,7 @@ export const ExecuteContextProvider = (props) => {
     }
 
     // Either we're switching to this script or we are reading it from the execArgs, etiher way should set it.
-    setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id,
-      execArgs.liveViewPage, execArgs.entityParamNames);
+    setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
 
     let errMsg: string;
     let queryId: string;
