@@ -18,6 +18,15 @@ final class PrototoolCheckerTest {
 
         chdir($this->project_root);
 
+        # Skip prototool if no .proto files are present, since prototool is time-consuming.
+        $protoFiles = array_filter($this->files, function($f) {
+            return substr($f, -6) == '.proto';
+        });
+
+        if (count($protoFiles) == 0) {
+            return $test_results; 
+        }
+
         // Build proto files.
         exec('bazel query "kind(\'go_proto_library rule\', //src/...)"', $output, $return_var);
 

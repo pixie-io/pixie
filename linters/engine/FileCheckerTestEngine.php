@@ -18,10 +18,8 @@ final class FileCheckerTest {
         # Check that pb.go file is up-to-date.
         # Note that this check is only enforced after first check-in.
         # The initial check-in is not enforced, because generating a pb.go is optional.
-        if (in_array($fileToCheck, $this->files) && file_exists($this->project_root . '/' . $fileToCheck)) {
-            $existRes->setResult(ArcanistUnitTestResult::RESULT_PASS);
 
-            # Check that .pb.go is up-to-date.
+        if (in_array($fileToCheck, $this->files) && file_exists($this->project_root . '/' . $fileToCheck)) {   
             $updatedRes = new ArcanistUnitTestResult();
             $updatedRes->setName($fileToCheck . ' is older than the ' . $fileExt . ' file from which it was generated');
             if (filemtime($this->project_root . '/' . $fileToCheck) >= filemtime($this->project_root . '/' . $file)) {
@@ -31,8 +29,8 @@ final class FileCheckerTest {
                 $updatedRes->setResult(ArcanistUnitTestResult::RESULT_FAIL);
             }
             $res[] = $updatedRes;
-
         }
+        
         return $res;
     }
 
