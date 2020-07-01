@@ -69,27 +69,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flex: 1,
     minHeight: 0,
   },
-  table: {
-    '& *': {
-      ...theme.typography.body2,
-    },
-    '& .scrollable-table--row-odd': {
-      backgroundColor: theme.palette.background.default,
-      outline: [['solid', theme.spacing(0.25), theme.palette.background.three]],
-    },
-    '& .scrollable-table--row-even': {
-      backgroundColor: theme.palette.background.default,
-      outline: [['solid', theme.spacing(0.25), theme.palette.background.three]],
-    },
-    '& .ReactVirtualized__Table__headerRow': {
-      borderBottom: [['solid', theme.spacing(0.25), theme.palette.background.three]],
-      backgroundColor: theme.palette.background.default,
-      '& *': {
-        ...theme.typography.caption,
-        fontWeight: theme.typography.fontWeightLight,
-      },
-    },
-  },
   loading: {
     opacity: 0.6,
     pointerEvents: 'none',
@@ -111,7 +90,7 @@ const WidgetDisplay = ({
     return (
       <>
         <div className={classes.widgetTitle}>{widgetName}</div>
-        <QueryResultTable className={classes.table} data={table} />
+        <QueryResultTable data={table} />
       </>
     );
   }
@@ -277,7 +256,7 @@ const Canvas = (props: CanvasProps) => {
           Object.entries(tables).map(([tableName, table]) => (
             <div key={tableName} className={className}>
               <div className={classes.widgetTitle}>{tableName}</div>
-              <QueryResultTable className={classes.table} data={table} />
+              <QueryResultTable data={table} />
             </div>
           ))
         }

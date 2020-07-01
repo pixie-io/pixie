@@ -1,5 +1,3 @@
-import './vizier.scss';
-
 import ClusterContext from 'common/cluster-context';
 import * as storage from 'common/storage';
 import { ClusterStatus, VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';

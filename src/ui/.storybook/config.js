@@ -6,8 +6,6 @@ import * as React from 'react';
 import withTheme from './mui-theme-decorator';
 
 
-import './styles.scss';
-
 addDecorator(withInfo);
 addDecorator(withNotes);
 

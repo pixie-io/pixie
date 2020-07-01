@@ -153,7 +153,7 @@ export const ClusterInstructions = (props: ClusterInstructionsProps) => {
         <div className={classes.content}>
           <div className={classes.centered}>
             <p>{props.message}</p>
-            <Spinner variant='light' />
+            <Spinner />
           </div>
         </div>
         <img className={classes.logo} src={logoImage} style={{ width: '55px' }} />

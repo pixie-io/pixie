@@ -1,5 +1,3 @@
-import './index.scss';
-
 import Axios from 'axios';
 import { CloudClient } from 'common/cloud-gql-client';
 import { DARK_THEME } from 'common/mui-theme';
@@ -15,7 +13,9 @@ import { isProd } from 'utils/env';
 import history from 'utils/pl-history';
 
 import { ApolloProvider } from '@apollo/react-hooks';
-import { ThemeProvider } from '@material-ui/core/styles';
+import {
+  createStyles, ThemeProvider, withStyles,
+} from '@material-ui/core/styles';
 
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
@@ -56,30 +56,63 @@ export class App extends React.Component {
       ? null
       : (
         <CloudClientContext.Provider value={cloudClient}>
-          <ThemeProvider theme={DARK_THEME}>
-            <SnackbarProvider>
-              <Router history={history}>
-                <ApolloProvider client={gqlClient}>
-                  <div className='pixie-main-app center-content'>
-                    <Switch>
-                      <Route exact path='/auth-complete' component={AuthComplete} />
-                      <Route exact path='/login' component={Login} />
-                      <Route exact path='/logout' component={Login} />
-                      <Route exact path='/signup' component={Login} />
-                      {
-                        authenticated ? <Route component={Vizier} />
-                          : <Redirect from='/*' to='/login' />
-                      }
-                    </Switch>
-                  </div>
-                </ApolloProvider>
-              </Router>
-              {!isProd() ? <VersionInfo /> : null}
-            </SnackbarProvider>
-          </ThemeProvider>
+          <SnackbarProvider>
+            <Router history={history}>
+              <ApolloProvider client={gqlClient}>
+                <div className='center-content'>
+                  <Switch>
+                    <Route exact path='/auth-complete' component={AuthComplete} />
+                    <Route exact path='/login' component={Login} />
+                    <Route exact path='/logout' component={Login} />
+                    <Route exact path='/signup' component={Login} />
+                    {
+                      authenticated ? <Route component={Vizier} />
+                        : <Redirect from='/*' to='/login' />
+                    }
+                  </Switch>
+                </div>
+              </ApolloProvider>
+            </Router>
+            {!isProd() ? <VersionInfo /> : null}
+          </SnackbarProvider>
         </CloudClientContext.Provider>
       );
   }
 }
+const styles = () => createStyles({
+  '@global': {
+    '#root': {
+      fontFamily: 'Roboto',
+      height: '100%',
+      width: '100%',
+    },
+    html: {
+      fontFamily: 'Roboto',
+      height: '100%',
+    },
+    body: {
+      height: '100%',
+      overflow: 'hidden',
+      margin: 0,
+      boxSizing: 'border-box',
+    },
+    ':focus': {
+      outline: 'none !important',
+    },
+    // TODO(zasgar): remove this center content global.
+    '.center-content': {
+      height: '100%',
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  },
+});
 
-ReactDOM.render(<App />, document.getElementById('root'));
+const StyledApp = withStyles(styles)(App);
+
+ReactDOM.render(
+  <ThemeProvider theme={DARK_THEME}>
+    <StyledApp />
+  </ThemeProvider>, document.getElementById('root'));

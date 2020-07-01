@@ -1,5 +1,3 @@
-@import "theme.scss";
-
 .pixie-login {
   background-color: white;
   display: flex;
@@ -17,8 +15,8 @@
   }
 
   .auth0-lock.auth0-lock .auth0-lock-terms {
-    background: $white;
-    color: $gray-700;
+    background: white;
+    color: #52575C; // gray-700.
   }
 
   .auth0-lock.auth0-lock .auth0-lock-social-button[data-provider^=google].auth0-lock-social-big-button {

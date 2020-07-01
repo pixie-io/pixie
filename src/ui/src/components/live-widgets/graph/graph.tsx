@@ -1,5 +1,3 @@
-import './graph.scss';
-
 import { WidgetDisplay } from 'containers/live/vis';
 import {
   data as visData, Edge, Network, Node, parseDOTNetwork,
