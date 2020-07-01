@@ -48,7 +48,7 @@ message Probe {
   // Inserts key and value into a map.
   //
   // The variable to be inserted into the map must be one of the above args, ret_vals, and function_latency.
-  repeated shared.MapStashAction stash_map_actions = 7;
+  repeated shared.LogicalMapStashAction stash_map_actions = 7;
 
   // Writes a value to perf buffer.
   //

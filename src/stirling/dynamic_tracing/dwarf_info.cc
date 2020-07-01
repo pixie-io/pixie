@@ -20,7 +20,7 @@ using dwarf_tools::VarType;
  * The Dwarvifier generates a PhysicalProbe from an Intermediate Probe spec.
  * It follows a builder model. The initial Dwarvifier is empty;
  * Successive calls to Process functions builds the internal model of the new PhysicalProbe.
- * When complete, a call to ConsumePhysicalProbe() emits the generated PhysicalProbe protobuf.
+ * When complete, a call to ConsumeResult() emits the generated protobuf.
  */
 class Dwarvifier {
  public:
@@ -31,12 +31,16 @@ class Dwarvifier {
   void ProcessSpecialVariables();
   Status ProcessArgExpr(const ir::logical::Argument& arg);
   Status ProcessRetValExpr(const ir::logical::ReturnValue& ret_val);
-  ir::physical::PhysicalProbe ConsumePhysicalProbe() { return std::move(probe_); }
+  Status ProcessStashAction(const ir::shared::LogicalMapStashAction& stash_action);
+  ir::physical::Program ConsumeResult();
 
  private:
   std::unique_ptr<dwarf_tools::DwarfReader> dwarf_reader_;
   std::map<std::string, dwarf_tools::ArgInfo> args_map_;
+  std::map<std::string, ir::physical::ScalarVariable*> vars_map_;
   ir::physical::PhysicalProbe probe_;
+  std::map<std::string, ir::shared::Map> maps_;
+  std::map<std::string, ir::physical::Struct> structs_;
 
   // Dwarf and BCC have an 8 byte difference in where they believe the SP is.
   // This adjustment factor accounts for that difference.
@@ -51,7 +55,7 @@ class Dwarvifier {
   static constexpr std::string_view kDerefStr = "_X_";
 };
 
-StatusOr<ir::physical::PhysicalProbe> AddDwarves(const ir::logical::Probe& input_probe) {
+StatusOr<ir::physical::Program> AddDwarves(const ir::logical::Probe& input_probe) {
   Dwarvifier dwarvifier;
   PL_RETURN_IF_ERROR(dwarvifier.ProcessTracepoint(input_probe.trace_point()));
 
@@ -65,7 +69,11 @@ StatusOr<ir::physical::PhysicalProbe> AddDwarves(const ir::logical::Probe& input
     PL_RETURN_IF_ERROR(dwarvifier.ProcessRetValExpr(ret_val));
   }
 
-  return dwarvifier.ConsumePhysicalProbe();
+  for (auto& stash_action : input_probe.stash_map_actions()) {
+    PL_RETURN_IF_ERROR(dwarvifier.ProcessStashAction(stash_action));
+  }
+
+  return dwarvifier.ConsumeResult();
 }
 
 // Map to convert Go Base types to ScalarType.
@@ -136,6 +144,8 @@ void Dwarvifier::ProcessSpecialVariables() {
     var->set_name("sp");
     var->set_type(ir::shared::VOID_POINTER);
     var->set_reg(ir::physical::Register::SP);
+
+    vars_map_["sp"] = var;
   }
 }
 
@@ -169,6 +179,8 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg) {
       var->mutable_memory()->set_base(base);
       var->mutable_memory()->set_offset(offset);
 
+      vars_map_[name] = var;
+
       // Reset base and offset.
       base = name;
       offset = 0;
@@ -195,6 +207,8 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg) {
     var->mutable_memory()->set_base(base);
     var->mutable_memory()->set_offset(offset);
 
+    vars_map_[name] = var;
+
     // Reset base and offset.
     base = name;
     offset = 0;
@@ -213,6 +227,8 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg) {
   var->set_type(pb_type);
   var->mutable_memory()->set_base(base);
   var->mutable_memory()->set_offset(offset);
+
+  vars_map_[name] = var;
 
   return Status::OK();
 }
@@ -242,6 +258,58 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val) {
   var->mutable_memory()->set_offset(arg_info->offset + kSPOffset);
 
   return Status::OK();
+}
+
+Status Dwarvifier::ProcessStashAction(const ir::shared::LogicalMapStashAction& stash_action_in) {
+  std::string variable_name = stash_action_in.map_name() + "_value";
+  std::string struct_type_name = stash_action_in.map_name() + "_value_t";
+
+  auto& struct_decl = structs_[struct_type_name];
+  struct_decl.set_name(struct_type_name);
+  for (auto& f : stash_action_in.value_variable_name()) {
+    auto* struct_field = struct_decl.add_fields();
+    struct_field->set_name(absl::StrCat(stash_action_in.map_name(), "_", f));
+
+    auto iter = vars_map_.find(f);
+    if (iter == vars_map_.end()) {
+      return error::Internal("StashAction: Reference to unknown variable $0", f);
+    }
+    struct_field->mutable_type()->set_scalar(iter->second->type());
+  }
+
+  auto& map = maps_[stash_action_in.map_name()];
+  map.set_name(stash_action_in.map_name());
+  map.mutable_key_type()->set_scalar(ir::shared::ScalarType::UINT64);
+  map.mutable_value_type()->set_struct_type(struct_type_name);
+
+  auto* struct_var = probe_.add_st_vars();
+  struct_var->set_type(struct_type_name);
+  struct_var->set_name(variable_name);
+  for (auto& f : stash_action_in.value_variable_name()) {
+    auto* field = struct_var->add_variable_names();
+    field->set_name(f);
+  }
+
+  auto* stash_action_out = probe_.add_map_stash_actions();
+  stash_action_out->set_map_name(stash_action_in.map_name());
+  // TODO(oazizi): Temporarily hard-coded. Fix.
+  stash_action_out->set_key_variable_name("goid");
+  stash_action_out->set_value_variable_name(variable_name);
+
+  return Status::OK();
+}
+
+ir::physical::Program Dwarvifier::ConsumeResult() {
+  ir::physical::Program out;
+  out.add_probes()->CopyFrom(probe_);
+  for (auto& [name, s] : structs_) {
+    out.add_structs()->CopyFrom(s);
+  }
+  for (auto& [name, m] : maps_) {
+    out.add_maps()->CopyFrom(m);
+  }
+
+  return out;
 }
 
 }  // namespace dynamic_tracing

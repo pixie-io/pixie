@@ -48,6 +48,7 @@ constexpr std::string_view kEntryProbeIRTmpl = R"(
 )";
 
 constexpr std::string_view kEntryProbePhysIRTmpl = R"(
+probes: {
   trace_point: {
     binary_path: "$0"
     symbol: "main.MixedArgTypes"
@@ -106,6 +107,7 @@ constexpr std::string_view kEntryProbePhysIRTmpl = R"(
       offset: 20
     }
   }
+}
 )";
 
 constexpr std::string_view kReturnProbeIRTmpl = R"(
@@ -125,6 +127,7 @@ constexpr std::string_view kReturnProbeIRTmpl = R"(
 )";
 
 constexpr std::string_view kReturnProbePhysIRTmpl = R"(
+probes: {
   trace_point: {
     binary_path: "$0"
     symbol: "main.MixedArgTypes"
@@ -151,6 +154,91 @@ vars {
       offset: 56
     }
   }
+}
+)";
+
+constexpr std::string_view kFooIn = R"(
+  trace_point: {
+    binary_path: "$0"
+    symbol: "main.MixedArgTypes"
+    type: ENTRY
+  }
+  args {
+    id: "arg0"
+    expr: "i1"
+  }
+  args {
+    id: "arg1"
+    expr: "b1"
+  }
+  stash_map_actions {
+    map_name: "events"
+    key_expr: "goid"
+    value_variable_name: "arg0"
+    value_variable_name: "arg1"
+  }
+)";
+
+constexpr std::string_view kFooProbeOut = R"(
+structs {
+  name: "events_value_t"
+  fields {
+    name: "events_arg0"
+    type { scalar: INT }
+  }
+  fields {
+    name: "events_arg1"
+    type { scalar: BOOL }
+  }
+}
+maps {
+  name: "events"
+  key_type { scalar: UINT64 }
+  value_type { struct_type: "events_value_t" }
+}
+probes: {
+  trace_point: {
+    binary_path: "$0"
+    symbol: "main.MixedArgTypes"
+    type: ENTRY
+  }
+  vars {
+    name: "sp"
+    type: VOID_POINTER
+    reg: SP
+  }
+  vars {
+    name: "arg0"
+    type: INT
+    memory: {
+      base: "sp"
+      offset: 8
+    }
+  }
+  vars {
+    name: "arg1"
+    type: BOOL
+    memory: {
+      base: "sp"
+      offset: 16
+    }
+  }
+  st_vars {
+    name: "events_value"
+    type: "events_value_t"
+    variable_names {
+      name: "arg0"
+    }
+    variable_names {
+      name: "arg1"
+    }
+  }
+  map_stash_actions {
+    map_name: "events"
+    key_variable_name: "goid"
+    value_variable_name: "events_value"
+  }
+}
 )";
 
 constexpr std::string_view kNestedArgEntryProbeIRTmpl = R"(
@@ -170,6 +258,7 @@ constexpr std::string_view kNestedArgEntryProbeIRTmpl = R"(
 )";
 
 constexpr std::string_view kNestedArgEntryProbePhysIRTmpl = R"(
+probes: {
   trace_point: {
     binary_path: "$0"
     symbol: "main.PointerWrapperWrapperWrapperFunc"
@@ -220,6 +309,7 @@ constexpr std::string_view kNestedArgEntryProbePhysIRTmpl = R"(
       offset: 16
     }
   }
+}
 )";
 
 struct DwarfInfoTestParam {
@@ -242,16 +332,15 @@ TEST_P(DwarfInfoTest, Transform) {
   ASSERT_TRUE(TextFormat::ParseFromString(std::string(entry_probe_ir), &input_probe));
 
   std::string entry_probe_phys_ir = absl::Substitute(p.expected_output, kGoBinaryPath);
-  ir::physical::PhysicalProbe expected_output_probe;
-  ASSERT_TRUE(
-      TextFormat::ParseFromString(std::string(entry_probe_phys_ir), &expected_output_probe));
+  ir::physical::Program expected_output;
+  TextFormat::ParseFromString(std::string(entry_probe_phys_ir), &expected_output);
 
-  ASSERT_OK_AND_ASSIGN(ir::physical::PhysicalProbe output_probe, AddDwarves(input_probe));
+  ASSERT_OK_AND_ASSIGN(ir::physical::Program program, AddDwarves(input_probe));
 
   MessageDifferencer message_differencer;
   std::string diff_out;
   message_differencer.ReportDifferencesToString(&diff_out);
-  EXPECT_TRUE(message_differencer.Compare(output_probe, expected_output_probe)) << diff_out;
+  EXPECT_TRUE(message_differencer.Compare(program, expected_output)) << diff_out;
 }
 
 INSTANTIATE_TEST_SUITE_P(
@@ -259,7 +348,8 @@ INSTANTIATE_TEST_SUITE_P(
     ::testing::Values(DwarfInfoTestParam{kEntryProbeIRTmpl, kEntryProbePhysIRTmpl},
                       DwarfInfoTestParam{kReturnProbeIRTmpl, kReturnProbePhysIRTmpl},
                       DwarfInfoTestParam{kNestedArgEntryProbeIRTmpl,
-                                         kNestedArgEntryProbePhysIRTmpl}));
+                                         kNestedArgEntryProbePhysIRTmpl},
+                      DwarfInfoTestParam{kFooIn, kFooProbeOut}));
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
