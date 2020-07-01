@@ -30,6 +30,9 @@ enum BPFHelper {
 
   // Return the kernel time in nanoseconds.
   KTIME = 3;
+
+  // Return the start time of the process being traced in nanoseconds.
+  TGID_START_TIME = 4;
 }
 
 enum ScalarType {

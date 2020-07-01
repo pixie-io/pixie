@@ -131,10 +131,12 @@ std::vector<std::string> GenMemoryVariable(const ScalarVariable& var) {
 
 std::vector<std::string> GenBPFHelper(const ScalarVariable& var) {
   static const absl::flat_hash_map<BPFHelper, std::string_view> kBPFHelpers = {
+      // TODO(yzhao): Implement GOID.
       {BPFHelper::GOID, "goid()"},
       {BPFHelper::TGID, "bpf_get_current_pid_tgid() >> 32"},
       {BPFHelper::TGID_PID, "bpf_get_current_pid_tgid()"},
       {BPFHelper::KTIME, "bpf_ktime_get_ns()"},
+      {BPFHelper::TGID_START_TIME, "pl_get_tgid_start_time()"},
   };
   auto iter = kBPFHelpers.find(var.builtin());
   DCHECK(iter != kBPFHelpers.end());
@@ -314,10 +316,62 @@ StatusOr<std::vector<std::string>> GenMap(const Map& map) {
   return code_lines;
 }
 
+std::vector<std::string> GenIncludes() {
+  return {
+      "#include <linux/ptrace.h>",
+      // For struct task_struct.
+      "#include <linux/sched.h>",
+  };
+}
+
+std::vector<std::string> GenMacros() {
+  return {
+      "#ifndef __inline",
+      "#ifdef SUPPORT_BPF2BPF_CALL",
+      "#define __inline",
+      "#else",
+      "#define __inline inline __attribute__((__always_inline__))",
+      "#endif",
+      "#endif",
+  };
+}
+
+std::vector<std::string> GenNsecToClock() {
+  return {
+      "static __inline uint64_t pl_nsec_to_clock_t(uint64_t x) {",
+      "return div_u64(x, NSEC_PER_SEC / USER_HZ);",
+      "}",
+  };
+}
+
+std::vector<std::string> GenTGIDStartTime() {
+  return {
+      "static __inline uint64_t pl_get_tgid_start_time() {",
+      "struct task_struct* task_group_leader = "
+      "((struct task_struct*)bpf_get_current_task())->group_leader;",
+      // Linux 5.5 renames the variable to start_boottime.
+      "#if LINUX_VERSION_CODE >= 327680",
+      "return pl_nsec_to_clock_t(task_group_leader->start_boottime);",
+      "#else",
+      "return pl_nsec_to_clock_t(task_group_leader->real_start_time);",
+      "#endif",
+      "}",
+  };
+}
+
+std::vector<std::string> GenUtilFNs() {
+  std::vector<std::string> code_lines;
+  MoveBackStrVec(GenNsecToClock(), &code_lines);
+  MoveBackStrVec(GenTGIDStartTime(), &code_lines);
+  return code_lines;
+}
+
 StatusOr<std::vector<std::string>> GenProgramCodeLines(const Program& program) {
   std::vector<std::string> code_lines;
 
-  code_lines.push_back("#include <linux/ptrace.h>");
+  MoveBackStrVec(GenIncludes(), &code_lines);
+  MoveBackStrVec(GenMacros(), &code_lines);
+  MoveBackStrVec(GenUtilFNs(), &code_lines);
 
   absl::flat_hash_map<std::string_view, const Struct*> structs;
 

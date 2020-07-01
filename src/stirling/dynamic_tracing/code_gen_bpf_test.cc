@@ -26,6 +26,14 @@ constexpr char kProgram[] = R"proto(
                             structs {
                               name: "event_t"
                               fields {
+                                name: "time_ns",
+                                type { scalar: UINT64 }
+                              }
+                              fields {
+                                name: "pid_start_time_ns",
+                                type { scalar: UINT64 }
+                              }
+                              fields {
                                 name: "i32"
                                 type { scalar: INT32 }
                               }
@@ -55,9 +63,21 @@ constexpr char kProgram[] = R"proto(
                                 type: UINT32
                                 reg: SP
                               }
+                              vars {
+                                name: "time_ns"
+                                type: UINT64
+                                builtin: KTIME
+                              }
+                              vars {
+                                name: "pid_start_time_ns"
+                                type: UINT64
+                                builtin: TGID_START_TIME
+                              }
                               st_vars {
                                 name: "st_var"
                                 type: "event_t"
+                                variable_names { name: "time_ns" }
+                                variable_names { name: "pid_start_time_ns" }
                                 variable_names { name: "var" }
                               }
                               map_stash_actions {
