@@ -80,13 +80,14 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 interface AutocompleteArgumentFieldProps {
   name: string;
   value: string;
+  onEnterKey: () => void;
   onValueChange: (newVal: string) => void;
   getCompletions: GetCompletionsFunc;
 }
 
 const AutocompleteInputField = (props: AutocompleteArgumentFieldProps) => {
   const {
-    name, value, onValueChange, getCompletions,
+    name, value, onEnterKey, onValueChange, getCompletions,
   } = props;
   const classes = useStyles();
   const ref = React.useRef<HTMLInputElement>(null);
@@ -109,7 +110,11 @@ const AutocompleteInputField = (props: AutocompleteArgumentFieldProps) => {
   const keyHandler = (event: React.KeyboardEvent) => {
     switch (event.key) {
       case 'Enter':
-        onValueChange(activeCompletion?.title);
+        if (activeCompletion == null) {
+          onEnterKey();
+        } else {
+          onValueChange(activeCompletion?.title);
+        }
         setOpened(false);
         break;
       case 'ArrowUp':

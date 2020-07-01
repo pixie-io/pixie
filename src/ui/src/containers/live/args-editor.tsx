@@ -42,6 +42,11 @@ const ArgsEditor = () => {
               <AutocompleteArgumentField
                 key={argName}
                 kind={entityType}
+                onEnterKey={() => {
+                  execute({
+                    pxl, vis, args, id, liveViewPage,
+                  });
+                }}
                 {...argProps}
               />
             );
@@ -150,7 +155,9 @@ interface AutocompleteArgumentFieldProps extends ArgumentInputFieldProps {
 }
 
 const AutocompleteArgumentField = (props: AutocompleteArgumentFieldProps) => {
-  const { name, value, onValueChange } = props;
+  const {
+    name, value, onValueChange, onEnterKey,
+  } = props;
   const client = useApolloClient();
   const getCompletions = React.useCallback((newInput: string) => (client.query({
     query: AUTOCOMPLETE_FIELD_QUERY,
@@ -179,6 +186,7 @@ const AutocompleteArgumentField = (props: AutocompleteArgumentFieldProps) => {
         <AutocompleteInputField
           name={name}
           value={value}
+          onEnterKey={onEnterKey}
           onValueChange={onValueChange}
           getCompletions={getCompletions}
         />

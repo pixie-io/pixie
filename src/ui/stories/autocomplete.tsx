@@ -133,6 +133,7 @@ storiesOf('AutoComplete', module)
       <AutocompleteInputField
         name='An autocomplete input'
         value={value}
+        onEnterKey={() => { }}
         onValueChange={setValue}
         getCompletions={async (input) => {
           // Add some fake delay to the API call.
