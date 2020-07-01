@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"archive/tar"
 	"bytes"
 	"context"
 	"errors"
@@ -10,7 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
 	"strings"
 	"time"
 
@@ -18,7 +16,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"google.golang.org/grpc/metadata"
 	"gopkg.in/segmentio/analytics-go.v3"
-	"pixielabs.ai/pixielabs/src/shared/version"
 	utils2 "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/artifacts"
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/script"
@@ -41,29 +38,6 @@ import (
 	"pixielabs.ai/pixielabs/src/utils/pixie_cli/pkg/utils"
 	"pixielabs.ai/pixielabs/src/utils/shared/k8s"
 )
-
-const (
-	vizierBootstrapYAMLPath = "./yamls/vizier/vizier_bootstrap_prod.yaml"
-)
-
-// Sentry configs are not actually secret and safe to check in.
-const (
-	// We can't really distinguish between prod/dev, so we use some heuristics to decide.
-	prodSentryDSN = "https://a8a635734bb840799befb63190e904e0@o324879.ingest.sentry.io/5203506"
-	devSentryDSN  = "https://8e4acf22871543f1aa143a93a5216a16@o324879.ingest.sentry.io/5203508"
-)
-
-func getSentryDSN(vizierVersion string) string {
-	// Only we have dev CLI.
-	if version.GetVersion().IsDev() {
-		return devSentryDSN
-	}
-	// If it contains - it must be a pre-release Vizier.
-	if strings.Contains(vizierVersion, "-") {
-		return devSentryDSN
-	}
-	return prodSentryDSN
-}
 
 // DeployCmd is the "deploy" command.
 var DeployCmd = &cobra.Command{
@@ -293,118 +267,37 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		kubeConfig = k8s.GetConfig()
 	}
 
-	fmt.Printf("Generating YAMLs for Pixie\n")
-
-	yamlMap := make(map[string]string)
-	var vzYamlMap map[string]string
-	nsYAMLPath := ""
-
-	// Generate YAMLs.
-	yamlIdx := 0 // This is used to track the order in which YAMLs should be applied.
-	nsYamlJob := newTaskWrapper("Generating namespace YAML", func() error {
-		nsYAML, err := generateNamespaceYAML(namespace)
-		if err != nil {
-			return err
-		}
-		nsYAMLPath = fmt.Sprintf("./pixie_yamls/00_namespace/%02d_namespace.yaml", yamlIdx)
-		yamlMap[nsYAMLPath] = nsYAML
-
-		yamlIdx++
-		return nil
-	})
-	secretsYamlJob := newTaskWrapper("Generating secret YAMLs", func() error {
-		var credsData string
-		if credsFile == "" {
-			credsData = mustGetImagePullSecret(cloudConn)
-		} else {
-			credsData = mustReadCredsFile(credsFile)
-		}
-		secretName, _ := cmd.Flags().GetString("secret_name")
-		dockerSecret, err := k8s.CreateDockerConfigJSONSecret(namespace, secretName, credsData)
-		if err != nil {
-			return err
-		}
-		dYaml, err := k8s.ConvertResourceToYAML(dockerSecret)
-		if err != nil {
-			return err
-		}
-		yamlMap[fmt.Sprintf("./pixie_yamls/01_secrets/%02d_secret.yaml", yamlIdx)] = dYaml
-		yamlIdx++
-
-		csYAMLs, err := GenerateClusterSecretYAMLs(cloudAddr, deployKey, namespace, devCloudNS, kubeConfig, getSentryDSN(versionString), inputVersionStr, useEtcdOperator)
-		if err != nil {
-			return err
-		}
-		yamlMap[fmt.Sprintf("./pixie_yamls/01_secrets/%02d_secret.yaml", yamlIdx)] = csYAMLs
-
-		yamlIdx++
-
-		return nil
-	})
-	vzYamlJob := newTaskWrapper("Downloading Vizier YAMLs", func() error {
-		creds, err := auth.LoadDefaultCredentials()
-		if err != nil {
-			return err
-		}
-		vzYamlMap, err = artifacts.FetchVizierYAMLMap(cloudConn, creds.Token, versionString)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-
-	yamlJobs := []utils.Task{nsYamlJob, secretsYamlJob, vzYamlJob}
-	jr := utils.NewSerialTaskRunner(yamlJobs)
-	err = jr.RunAndMonitor()
+	var credsData string
+	if credsFile == "" {
+		credsData = mustGetImagePullSecret(cloudConn)
+	} else {
+		credsData = mustReadCredsFile(credsFile)
+	}
+	secretName, _ := cmd.Flags().GetString("secret_name")
+	creds, err := auth.LoadDefaultCredentials()
 	if err != nil {
-		_ = pxanalytics.Client().Enqueue(&analytics.Track{
-			UserId: pxconfig.Cfg().UniqueClientID,
-			Event:  "Deploy Failure",
-			Properties: analytics.NewProperties().
-				Set("err", err.Error()),
-		})
-		log.Fatal("Failed to generate YAMLs for deploy")
+		log.WithError(err).Fatal("Could not get auth token")
+	}
+	fmt.Printf("Generating YAMLs for Pixie\n")
+	yamlOpts := &artifacts.YAMLOptions{
+		NS:                  namespace,
+		CloudAddr:           cloudAddr,
+		ImagePullSecretName: secretName,
+		ImagePullCreds:      credsData,
+		DeployKey:           deployKey,
+		DevCloudNS:          devCloudNS,
+		KubeConfig:          kubeConfig,
+		UseEtcdOperator:     useEtcdOperator,
+	}
+
+	yamlGenerator, err := artifacts.NewYAMLGenerator(cloudConn, creds.Token, versionString, inputVersionStr, yamlOpts)
+	if err != nil {
+		log.WithError(err).Fatal("failed to generate deployment YAMLs")
 	}
 
 	// If extract_path is specified, write out yamls to file.
 	if extractPath != "" {
-
-		writeYAML := func(w *tar.Writer, name string, contents string) error {
-			if err = w.WriteHeader(&tar.Header{Name: name, Size: int64(len(contents)), Mode: 777}); err != nil {
-				return err
-			}
-			if _, err = w.Write([]byte(contents)); err != nil {
-				return err
-			}
-			return nil
-		}
-
-		filePath := path.Join(extractPath, "yamls.tar")
-		writer, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0755)
-		if err != nil {
-			log.WithError(err).Fatal("Failed to open file to write YAMLs")
-		}
-		defer writer.Close()
-		w := tar.NewWriter(writer)
-
-		for k, v := range yamlMap {
-			err := writeYAML(w, k, v)
-			if err != nil {
-				log.WithError(err).Fatal("Failed to write YAMLs")
-			}
-		}
-
-		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/02_manifests/%02d_bootstrap.yaml", yamlIdx), vzYamlMap[vizierBootstrapYAMLPath])
-		if err != nil {
-			log.WithError(err).Fatal("Failed to write YAMLs")
-		}
-
-		if err = w.Close(); err != nil {
-			if err != nil {
-				log.WithError(err).Fatal("Failed to write YAMLs")
-			}
-		}
-
+		yamlGenerator.ExtractYAMLs(extractPath, artifacts.MultiFileExtractYAMLFormat)
 		return
 	}
 
@@ -446,7 +339,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	fmt.Printf("Found %v nodes\n", numNodes)
 
 	namespaceJob := newTaskWrapper("Creating namespace", func() error {
-		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamlMap[nsYAMLPath]))
+		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamlGenerator.GetNamespaceYAML()))
 	})
 
 	clusterRoleJob := newTaskWrapper("Deleting stale Pixie objects, if any", func() error {
@@ -456,21 +349,12 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	})
 
 	certJob := newTaskWrapper("Deploying secrets and configmaps", func() error {
-		for k, v := range yamlMap {
-			if k == nsYAMLPath {
-				continue
-			}
-			err := k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(v))
-			if err != nil {
-				return err
-			}
-		}
-		return nil
+		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamlGenerator.GetSecretsYAML()))
 	})
 
 	setupJobs := []utils.Task{
 		namespaceJob, clusterRoleJob, certJob}
-	jr = utils.NewSerialTaskRunner(setupJobs)
+	jr := utils.NewSerialTaskRunner(setupJobs)
 	err = jr.RunAndMonitor()
 	if err != nil {
 		_ = pxanalytics.Client().Enqueue(&analytics.Track{
@@ -484,7 +368,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	depsOnly, _ := cmd.Flags().GetBool("deps_only")
 
-	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, vzYamlMap, namespace, depsOnly)
+	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, yamlGenerator.GetBootstrapYAML(), namespace, depsOnly)
 
 	waitForHealthCheck(cloudAddr, clusterID, clientset, namespace, numNodes)
 }
@@ -588,6 +472,7 @@ func waitForHealthCheck(cloudAddr string, clusterID uuid.UUID, clientset *kubern
 		Event:  "Deploy Healthcheck Passed",
 	})
 }
+
 func getCurrentCluster() string {
 	kcmd := exec.Command("kubectl", "config", "current-context")
 	var out bytes.Buffer
@@ -599,14 +484,6 @@ func getCurrentCluster() string {
 		log.WithError(err).Fatal("Error getting current kubernetes cluster")
 	}
 	return out.String()
-}
-
-func generateNamespaceYAML(namespace string) (string, error) {
-	ns := &v1.Namespace{}
-	ns.SetGroupVersionKind(v1.SchemeGroupVersion.WithKind("Namespace"))
-	ns.Name = namespace
-
-	return k8s.ConvertResourceToYAML(ns)
 }
 
 func waitForCluster(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.UUID) error {
@@ -669,14 +546,14 @@ func initiateUpdate(ctx context.Context, conn *grpc.ClientConn, clusterID *uuid.
 	return nil
 }
 
-func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Clientset, config *rest.Config, yamlMap map[string]string, namespace string, depsOnly bool) uuid.UUID {
+func deploy(cloudConn *grpc.ClientConn, version string, clientset *kubernetes.Clientset, config *rest.Config, yamlContents string, namespace string, depsOnly bool) uuid.UUID {
 	if depsOnly {
 		return uuid.Nil
 	}
 	var clusterID uuid.UUID
 	deployJob := []utils.Task{
 		newTaskWrapper("Deploying Cloud Connector", func() error {
-			return k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlMap[vizierBootstrapYAMLPath]))
+			return k8s.ApplyYAML(clientset, config, namespace, strings.NewReader(yamlContents))
 		}),
 		newTaskWrapper("Waiting for Cloud Connector to come online", func() error {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
