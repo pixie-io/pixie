@@ -79,6 +79,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     alignItems: 'center',
     background: theme.palette.background.three,
     cursor: 'pointer',
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
   },
   hidden: {
     display: 'none',
