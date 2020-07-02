@@ -58,7 +58,7 @@ If you don't already have a K8s cluster available you can:
 - Set-up a local K8s environment
   - [Install Kind](https://kind.sigs.k8s.io/docs/user/quick-start/) and run `kind create cluster`
   - [Install Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) and run `minikube start`
-  - Review our [docs](https://work.withpixie.ai/docs/getting-started) for alternate options.
+  - Review our [docs](https://docs.pixielabs.ai/installing-pixie/quick-start/) for alternate options.
 - Start a demo-app
   - Deploy [Weaveworks'](https://www.weave.works/) [sock-shop](https://github.com/microservices-demo/microservices-demo) demo app by running `px demo deploy px-sock-shop`
  
@@ -70,7 +70,7 @@ Deploy the Pixie Platform in your K8s cluster by runnning:
 `px deploy`
 <br>
 
-Check out our [install guides](https://docs.withpixie.ai/install-guides/) and [walkthrough videos](https://www.youtube.com/watch?v=iMh2f8abTYU) for alternate install schemes.
+Check out our [install guides](https://docs.pixielabs.ai/installing-pixie/install-guides/) and [walkthrough videos](https://www.youtube.com/watch?v=iMh2f8abTYU) for alternate install schemes.
 
 
 ## Get Instant Auto-Telemetry
