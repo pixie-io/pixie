@@ -2,6 +2,7 @@ package artifacts
 
 import (
 	"archive/tar"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"text/template"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
@@ -113,10 +115,19 @@ type YAMLOptions struct {
 	CloudAddr           string
 	ImagePullSecretName string
 	ImagePullCreds      string
-	DeployKey           string
 	DevCloudNS          string
 	KubeConfig          *rest.Config
 	UseEtcdOperator     bool
+}
+
+// YAMLTmplValues are the values we can substitue into our YAMLs.
+type YAMLTmplValues struct {
+	DeployKey string
+}
+
+// YAMLTmplArguments is a wrapper around YAMLTmplValues.
+type YAMLTmplArguments struct {
+	Values *YAMLTmplValues
 }
 
 // NewYAMLGenerator creates a new YAML generator.
@@ -161,8 +172,9 @@ func concatYAMLs(y1 string, y2 string) string {
 	return y1 + "---\n" + y2
 }
 
-// ExtractYAMLs writes the generated YAMLs to a tar at the given path in the given format.
-func (y *YAMLGenerator) ExtractYAMLs(extractPath string, format ExtractYAMLFormat) error {
+// ExtractYAMLs writes the generated YAMLs to a tar at the given path in the given format. If tmplValues is nil, it will not fill in the template
+// and just extract the template-formatted YAML.
+func (y *YAMLGenerator) ExtractYAMLs(extractPath string, format ExtractYAMLFormat, tmplValues *YAMLTmplArguments) error {
 	writeYAML := func(w *tar.Writer, name string, contents string) error {
 		if err := w.WriteHeader(&tar.Header{Name: name, Size: int64(len(contents)), Mode: 777}); err != nil {
 			return err
@@ -181,25 +193,40 @@ func (y *YAMLGenerator) ExtractYAMLs(extractPath string, format ExtractYAMLForma
 	defer writer.Close()
 	w := tar.NewWriter(writer)
 
+	nsYAML, err := y.GetNamespaceYAML(tmplValues)
+	if err != nil {
+		return err
+	}
+
+	secretsYAML, err := y.GetSecretsYAML(tmplValues)
+	if err != nil {
+		return err
+	}
+
+	bootstrapYAML, err := y.GetBootstrapYAML(tmplValues)
+	if err != nil {
+		return err
+	}
+
 	switch format {
 	case MultiFileExtractYAMLFormat:
-		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/%02d_namespace.yaml", 0), y.GetNamespaceYAML())
+		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/%02d_namespace.yaml", 0), nsYAML)
 		if err != nil {
 			return err
 		}
-		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/%02d_secrets.yaml", 1), y.GetSecretsYAML())
+		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/%02d_secrets.yaml", 1), secretsYAML)
 		if err != nil {
 			return err
 		}
-		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/%02d_bootstrap.yaml", 2), y.GetBootstrapYAML())
+		err = writeYAML(w, fmt.Sprintf("./pixie_yamls/%02d_bootstrap.yaml", 2), bootstrapYAML)
 		if err != nil {
 			return err
 		}
 		break
 	case SingleFileExtractYAMLFormat:
 		// Combine all YAMLs into a single file.
-		combinedYAML := concatYAMLs(y.GetNamespaceYAML(), y.GetSecretsYAML())
-		combinedYAML = concatYAMLs(combinedYAML, y.GetBootstrapYAML())
+		combinedYAML := concatYAMLs(nsYAML, secretsYAML)
+		combinedYAML = concatYAMLs(combinedYAML, bootstrapYAML)
 		err = writeYAML(w, "./pixie_yamls/manifest.yaml", combinedYAML)
 		if err != nil {
 			return err
@@ -235,7 +262,7 @@ func (y *YAMLGenerator) generateSecretYAML(versionStr string, inputVersion strin
 		return "", err
 	}
 
-	csYAMLs, err := GenerateClusterSecretYAMLs(y.yamlOpts.CloudAddr, y.yamlOpts.DeployKey,
+	csYAMLs, err := GenerateClusterSecretYAMLs(y.yamlOpts.CloudAddr, "",
 		y.yamlOpts.NS, y.yamlOpts.DevCloudNS, y.yamlOpts.KubeConfig, getSentryDSN(versionStr), inputVersion, y.yamlOpts.UseEtcdOperator)
 	if err != nil {
 		return "", err
@@ -244,17 +271,51 @@ func (y *YAMLGenerator) generateSecretYAML(versionStr string, inputVersion strin
 	return concatYAMLs(dYaml, csYAMLs), nil
 }
 
+func required(str string, value string) (string, error) {
+	if value != "" {
+		return value, nil
+	}
+	return "", errors.New("Value is required")
+}
+
+func executeTemplate(tmplValues *YAMLTmplArguments, tmplStr string) (string, error) {
+	funcMap := template.FuncMap{
+		"required": required,
+	}
+
+	tmpl, err := template.New("yaml").Funcs(funcMap).Parse(tmplStr)
+	if err != nil {
+		return "", err
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, tmplValues)
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
 // GetNamespaceYAML gets the namespace YAML.
-func (y *YAMLGenerator) GetNamespaceYAML() string {
-	return y.yamlMap["ns"]
+func (y *YAMLGenerator) GetNamespaceYAML(tmplValues *YAMLTmplArguments) (string, error) {
+	if tmplValues == nil {
+		return y.yamlMap["ns"], nil
+	}
+	return executeTemplate(tmplValues, y.yamlMap["ns"])
 }
 
 // GetSecretsYAML gets the secrets YAML.
-func (y *YAMLGenerator) GetSecretsYAML() string {
-	return y.yamlMap["secrets"]
+func (y *YAMLGenerator) GetSecretsYAML(tmplValues *YAMLTmplArguments) (string, error) {
+	if tmplValues == nil {
+		return y.yamlMap["secrets"], nil
+	}
+	return executeTemplate(tmplValues, y.yamlMap["secrets"])
 }
 
 // GetBootstrapYAML gets the bootstrap YAML.
-func (y *YAMLGenerator) GetBootstrapYAML() string {
-	return y.yamlMap["bootstrap"]
+func (y *YAMLGenerator) GetBootstrapYAML(tmplValues *YAMLTmplArguments) (string, error) {
+	if tmplValues == nil {
+		return y.yamlMap["bootstrap"], nil
+	}
+	return executeTemplate(tmplValues, y.yamlMap["bootstrap"])
 }

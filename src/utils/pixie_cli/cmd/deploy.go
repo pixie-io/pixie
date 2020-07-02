@@ -284,12 +284,16 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 		CloudAddr:           cloudAddr,
 		ImagePullSecretName: secretName,
 		ImagePullCreds:      credsData,
-		DeployKey:           deployKey,
 		DevCloudNS:          devCloudNS,
 		KubeConfig:          kubeConfig,
 		UseEtcdOperator:     useEtcdOperator,
 	}
 
+	yamlArgs := &artifacts.YAMLTmplArguments{
+		Values: &artifacts.YAMLTmplValues{
+			DeployKey: deployKey,
+		},
+	}
 	yamlGenerator, err := artifacts.NewYAMLGenerator(cloudConn, creds.Token, versionString, inputVersionStr, yamlOpts)
 	if err != nil {
 		log.WithError(err).Fatal("failed to generate deployment YAMLs")
@@ -297,7 +301,7 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	// If extract_path is specified, write out yamls to file.
 	if extractPath != "" {
-		yamlGenerator.ExtractYAMLs(extractPath, artifacts.MultiFileExtractYAMLFormat)
+		yamlGenerator.ExtractYAMLs(extractPath, artifacts.MultiFileExtractYAMLFormat, yamlArgs)
 		return
 	}
 
@@ -339,7 +343,11 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	fmt.Printf("Found %v nodes\n", numNodes)
 
 	namespaceJob := newTaskWrapper("Creating namespace", func() error {
-		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamlGenerator.GetNamespaceYAML()))
+		nsYAML, err := yamlGenerator.GetNamespaceYAML(yamlArgs)
+		if err != nil {
+			return err
+		}
+		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(nsYAML))
 	})
 
 	clusterRoleJob := newTaskWrapper("Deleting stale Pixie objects, if any", func() error {
@@ -349,7 +357,11 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 	})
 
 	certJob := newTaskWrapper("Deploying secrets and configmaps", func() error {
-		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(yamlGenerator.GetSecretsYAML()))
+		sYAML, err := yamlGenerator.GetSecretsYAML(yamlArgs)
+		if err != nil {
+			return err
+		}
+		return k8s.ApplyYAML(clientset, kubeConfig, namespace, strings.NewReader(sYAML))
 	})
 
 	setupJobs := []utils.Task{
@@ -368,7 +380,12 @@ func runDeployCmd(cmd *cobra.Command, args []string) {
 
 	depsOnly, _ := cmd.Flags().GetBool("deps_only")
 
-	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, yamlGenerator.GetBootstrapYAML(), namespace, depsOnly)
+	bootstrapYAML, err := yamlGenerator.GetBootstrapYAML(yamlArgs)
+	if err != nil {
+		log.WithError(err).Fatal("Could not get bootstrap yaml")
+	}
+
+	clusterID := deploy(cloudConn, versionString, clientset, kubeConfig, bootstrapYAML, namespace, depsOnly)
 
 	waitForHealthCheck(cloudAddr, clusterID, clientset, namespace, numNodes)
 }
