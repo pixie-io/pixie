@@ -437,7 +437,9 @@ func formatContainerID(cid string) string {
 	// Strip prefixes like docker:// or containerd://
 	tokens := strings.SplitN(cid, "://", 2)
 	if len(tokens) != 2 {
-		log.Error("Container ID is not in the expected format: " + cid)
+		if cid != "" {
+			log.Error("Container ID is not in the expected format: " + cid)
+		}
 		return cid
 	}
 	return tokens[1]
