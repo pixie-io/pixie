@@ -232,10 +232,11 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 			Config: &cloudapipb.VizierConfig{
 				PassthroughEnabled: vzInfo.Config.PassthroughEnabled,
 			},
-			ClusterUID:     vzInfo.ClusterUID,
-			ClusterName:    vzInfo.ClusterName,
-			ClusterVersion: vzInfo.ClusterVersion,
-			VizierVersion:  vzInfo.VizierVersion,
+			ClusterUID:        vzInfo.ClusterUID,
+			ClusterName:       vzInfo.ClusterName,
+			PrettyClusterName: PrettifyClusterName(vzInfo.ClusterName),
+			ClusterVersion:    vzInfo.ClusterVersion,
+			VizierVersion:     vzInfo.VizierVersion,
 		})
 	}
 	return resp, nil

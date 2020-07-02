@@ -198,6 +198,9 @@ message ClusterInfo {
     // The name of the cluster. The return value of "kubectl config current-context".
     // This could be empty if the user has not deployed through the CLI.
     string cluster_name = 6;
+    // This is the pretty name of the cluster. It is automatically generated from the cluster_name to remove
+    // redundancy in the name. In the future we might decide to presist this name and allow changing it.
+    string pretty_cluster_name = 9;
     // The version of the K8s cluster. For example: v1.14.10-gke.27. This could be empty if
     // the user has not deployed through the CLI.
     string cluster_version = 7;

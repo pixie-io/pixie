@@ -131,6 +131,7 @@ type ClusterInfo {
   vizierVersion: String
   clusterVersion: String
   clusterName: String
+  prettyClusterName: String
   clusterUID: String
 }
 

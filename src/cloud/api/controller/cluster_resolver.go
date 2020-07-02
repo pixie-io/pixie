@@ -36,6 +36,7 @@ func clusterInfoToResolver(cluster *cloudapipb.ClusterInfo) (*ClusterInfoResolve
 		&cluster.ClusterVersion,
 		&cluster.ClusterUID,
 		&cluster.ClusterName,
+		&cluster.PrettyClusterName,
 	}, nil
 }
 
@@ -125,14 +126,15 @@ func (q *QueryResolver) UpdateVizierConfig(ctx context.Context, args *updateVizi
 
 // ClusterInfoResolver is the resolver responsible for cluster info.
 type ClusterInfoResolver struct {
-	clusterID       uuid.UUID
-	status          cloudapipb.ClusterStatus
-	lastHeartbeatNs float64
-	vizierConfig    *VizierConfigResolver
-	vizierVersion   *string
-	clusterVersion  *string
-	clusterUID      *string
-	clusterName     *string
+	clusterID         uuid.UUID
+	status            cloudapipb.ClusterStatus
+	lastHeartbeatNs   float64
+	vizierConfig      *VizierConfigResolver
+	vizierVersion     *string
+	clusterVersion    *string
+	clusterUID        *string
+	clusterName       *string
+	prettyClusterName *string
 }
 
 // ID returns cluster ID.
@@ -168,6 +170,11 @@ func (c *ClusterInfoResolver) ClusterUID() *string {
 // ClusterName returns the k8s cluster name.
 func (c *ClusterInfoResolver) ClusterName() *string {
 	return c.clusterName
+}
+
+// PrettyClusterName returns the k8s cluster name prettified.
+func (c *ClusterInfoResolver) PrettyClusterName() *string {
+	return c.prettyClusterName
 }
 
 // VizierVersion returns the vizier's version.

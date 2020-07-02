@@ -124,7 +124,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 		},
 		VizierVersion:  "1.2.3",
 		ClusterUID:     "a UID",
-		ClusterName:    "some cluster",
+		ClusterName:    "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar-3",
 		ClusterVersion: "5.6.7",
 	}, nil)
 
@@ -143,7 +143,8 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 	assert.Equal(t, cluster.Config.PassthroughEnabled, false)
 	assert.Equal(t, "1.2.3", cluster.VizierVersion)
 	assert.Equal(t, "a UID", cluster.ClusterUID)
-	assert.Equal(t, "some cluster", cluster.ClusterName)
+	assert.Equal(t, "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar-3", cluster.ClusterName)
+	assert.Equal(t, "gke:dev-cluster-zasgar-3", cluster.PrettyClusterName)
 	assert.Equal(t, "5.6.7", cluster.ClusterVersion)
 }
 
