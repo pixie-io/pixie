@@ -19,6 +19,7 @@ import {
 
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
+import { CssBaseline } from '@material-ui/core';
 import { CloudClientContext } from './context/app-context';
 
 export class App extends React.Component {
@@ -79,15 +80,16 @@ export class App extends React.Component {
       );
   }
 }
+
+// TODO(zasgar): Cleanup these styles. We probably don't need them all after we
+// fix all of material styling.
 const styles = () => createStyles({
   '@global': {
     '#root': {
-      fontFamily: 'Roboto',
       height: '100%',
       width: '100%',
     },
     html: {
-      fontFamily: 'Roboto',
       height: '100%',
     },
     body: {
@@ -114,5 +116,6 @@ const StyledApp = withStyles(styles)(App);
 
 ReactDOM.render(
   <ThemeProvider theme={DARK_THEME}>
+    <CssBaseline />
     <StyledApp />
   </ThemeProvider>, document.getElementById('root'));
