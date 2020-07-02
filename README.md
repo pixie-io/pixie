@@ -27,7 +27,7 @@ We're building up Pixie for broad use by the end of 2020. If you are interested,
   <summary><strong>Table of contents</strong></summary>
 
 - [Quick Start](#quick-start)
-- [Demo](#demos)
+- [Demo](#get-instant-auto-telemetry)
 - [Contributing](#contributing)
 - [Open Source](#open-source)
 - [Platform Architecture](#under-the-hood)
