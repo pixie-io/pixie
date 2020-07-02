@@ -11,6 +11,8 @@ import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 import ChevronRight from '@material-ui/icons/ChevronRight';
 import ToggleButton from '@material-ui/lab/ToggleButton';
+import AppBar from '@material-ui/core/AppBar';
+import Toolbar from '@material-ui/core/Toolbar';
 
 import clsx from 'clsx';
 import Canvas from '../../containers/live/canvas';
@@ -38,12 +40,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     backgroundColor: theme.palette.background.default,
     color: theme.palette.text.primary,
     ...scrollbarStyles(theme),
-  },
-  topBar: {
-    display: 'flex',
-    padding: theme.spacing(1),
-    alignItems: 'center',
-    borderBottom: `solid 2px ${theme.palette.background.three}`,
   },
   title: {
     marginLeft: theme.spacing(2),
@@ -147,32 +143,34 @@ const LiveView = () => {
   return (
     <div className={classes.root}>
       <LiveViewShortcuts handlers={hotkeyHandlers} />
-      <div className={classes.topBar}>
-        <LiveViewTitle className={classes.title} />
-        <ClusterSelector className={classes.clusterSelector} />
-        <Tooltip title='Pixie Command'>
-          <IconButton disabled={commandOpen} onClick={toggleCommandOpen}>
-            <PixieCommandIcon color='primary' />
-          </IconButton>
-        </Tooltip>
-        <ExecuteScriptButton />
-        {
-          !isMobile
-          && (
-          <Tooltip title='Edit View'>
-            <ToggleButton
-              className={classes.moveWidgetToggle}
-              selected={widgetsMoveable}
-              onChange={() => setWidgetsMoveable(!widgetsMoveable)}
-              value='moveWidget'
-            >
-              <MoveIcon />
-            </ToggleButton>
+      <AppBar color='transparent' position='static'>
+        <Toolbar>
+          <LiveViewTitle className={classes.title} />
+          <ClusterSelector className={classes.clusterSelector} />
+          <Tooltip title='Pixie Command'>
+            <IconButton disabled={commandOpen} onClick={toggleCommandOpen}>
+              <PixieCommandIcon color='primary' />
+            </IconButton>
           </Tooltip>
-          )
-        }
-        <ProfileMenu />
-      </div>
+          <ExecuteScriptButton />
+          {
+            !isMobile
+            && (
+            <Tooltip title='Edit View'>
+              <ToggleButton
+                className={classes.moveWidgetToggle}
+                selected={widgetsMoveable}
+                onChange={() => setWidgetsMoveable(!widgetsMoveable)}
+                value='moveWidget'
+              >
+                <MoveIcon />
+              </ToggleButton>
+            </Tooltip>
+            )
+          }
+          <ProfileMenu />
+        </Toolbar>
+      </AppBar>
       {
         loading ? <div className='center-content'><ClusterInstructions message='Connecting to cluster...' /></div>
           : (
