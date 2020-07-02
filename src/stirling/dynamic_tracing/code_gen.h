@@ -30,10 +30,10 @@ StatusOr<std::vector<std::string>> GenStructVariable(const ir::physical::Struct&
 
 // Returns the code (in multiple lines) that perform the action to stash a key and variable pair
 // into a BPF map.
-std::vector<std::string> GenMapStashAction(const ir::physical::MapStashAction& action);
+std::string GenMapStashAction(const ir::physical::MapStashAction& action);
 
 // Returns the code that submits variables to a perf buffer.
-std::vector<std::string> GenOutputAction(const ir::physical::OutputAction& action);
+std::string GenOutputAction(const ir::physical::OutputAction& action);
 
 // Returns the BCC probe function code.
 StatusOr<std::vector<std::string>> GenPhysicalProbe(

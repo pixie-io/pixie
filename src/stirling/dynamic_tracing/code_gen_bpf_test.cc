@@ -1,5 +1,6 @@
 #include <google/protobuf/text_format.h>
 
+#include "src/common/exec/exec.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/dynamic_tracing/code_gen.h"
@@ -11,6 +12,7 @@ namespace stirling {
 namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
+using ::pl::Exec;
 using ::pl::stirling::bpf_tools::BCCWrapper;
 using ::pl::stirling::bpf_tools::BPFProbeAttachType;
 using ::pl::stirling::bpf_tools::UProbeSpec;
@@ -89,6 +91,7 @@ constexpr char kProgram[] = R"proto(
                                 perf_buffer_name: "output"
                                 variable_name: "st_var"
                               }
+                              printks { text: "hello world!" }
                             })proto";
 
 TEST(CodeGenBPFTest, AttachOnDummyExe) {
@@ -96,9 +99,11 @@ TEST(CodeGenBPFTest, AttachOnDummyExe) {
 
   ASSERT_TRUE(TextFormat::ParseFromString(kProgram, &program));
 
+  const std::filesystem::path dummy_exe_path =
+      BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe");
+
   // Reset the binary path.
-  program.mutable_probes(0)->mutable_trace_point()->set_binary_path(
-      BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe"));
+  program.mutable_probes(0)->mutable_trace_point()->set_binary_path(dummy_exe_path);
 
   PL_LOG_VAR(program.DebugString());
 
@@ -122,6 +127,8 @@ TEST(CodeGenBPFTest, AttachOnDummyExe) {
   ASSERT_OK(FindOrInstallLinuxHeaders({kDefaultHeaderSearchOrder}));
   ASSERT_OK(bcc_wrapper.InitBPFProgram(bcc));
   ASSERT_OK(bcc_wrapper.AttachUProbe(spec));
+
+  EXPECT_OK(Exec(dummy_exe_path));
 }
 
 }  // namespace dynamic_tracing

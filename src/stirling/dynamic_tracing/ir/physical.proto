@@ -99,6 +99,11 @@ message OutputAction {
   string variable_name = 2;
 }
 
+// bpf_trace_printk() on a text.
+message Printk {
+  string text = 1;
+}
+
 // Corresponds to a logical probe.
 message PhysicalProbe {
   // The name of the BCC probe function.
@@ -128,6 +133,9 @@ message PhysicalProbe {
 
   // Writes a value to perf buffer.
   repeated OutputAction output_actions = 6;
+
+  // Printk text.
+  repeated Printk printks = 7;
 }
 
 // This describes a complete BPF program.

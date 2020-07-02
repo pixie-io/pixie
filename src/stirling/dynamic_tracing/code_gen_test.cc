@@ -152,7 +152,7 @@ TEST(GenMapStashActionTest, StashMap) {
   action.set_key_variable_name("foo");
   action.set_value_variable_name("bar");
 
-  EXPECT_THAT(GenMapStashAction(action), ElementsAre("test.update(&foo, &bar);"));
+  EXPECT_THAT(GenMapStashAction(action), StrEq("test.update(&foo, &bar);"));
 }
 
 TEST(GenOutputActionTest, Variables) {
@@ -161,7 +161,7 @@ TEST(GenOutputActionTest, Variables) {
   action.set_perf_buffer_name("test");
   action.set_variable_name("foo");
 
-  EXPECT_THAT(GenOutputAction(action), ElementsAre("test.perf_submit(ctx, &foo, sizeof(foo));"));
+  EXPECT_THAT(GenOutputAction(action), StrEq("test.perf_submit(ctx, &foo, sizeof(foo));"));
 }
 
 TEST(GenPhysicalProbeTest, EntryProbe) {

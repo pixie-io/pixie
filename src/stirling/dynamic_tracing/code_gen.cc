@@ -17,6 +17,7 @@ using ::pl::stirling::bpf_tools::UProbeSpec;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::OutputAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::PhysicalProbe;
+using ::pl::stirling::dynamic_tracing::ir::physical::Printk;
 using ::pl::stirling::dynamic_tracing::ir::physical::Program;
 using ::pl::stirling::dynamic_tracing::ir::physical::Register;
 using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
@@ -109,10 +110,10 @@ StatusOr<std::vector<std::string>> GenStruct(const Struct& st, int member_indent
 
 namespace {
 
-std::vector<std::string> GenRegister(const ScalarVariable& var) {
+std::string GenRegister(const ScalarVariable& var) {
   switch (var.reg()) {
     case Register::SP:
-      return {absl::Substitute("$0 $1 = PT_REGS_SP(ctx);", GenScalarType(var.type()), var.name())};
+      return absl::Substitute("$0 $1 = PT_REGS_SP(ctx);", GenScalarType(var.type()), var.name());
     case Register::Register_INT_MIN_SENTINEL_DO_NOT_USE_:
     case Register::Register_INT_MAX_SENTINEL_DO_NOT_USE_:
       PB_ENUM_SENTINEL_SWITCH_CLAUSE;
@@ -129,7 +130,7 @@ std::vector<std::string> GenMemoryVariable(const ScalarVariable& var) {
   return code_lines;
 }
 
-std::vector<std::string> GenBPFHelper(const ScalarVariable& var) {
+std::string GenBPFHelper(const ScalarVariable& var) {
   static const absl::flat_hash_map<BPFHelper, std::string_view> kBPFHelpers = {
       // TODO(yzhao): Implement GOID.
       {BPFHelper::GOID, "goid()"},
@@ -140,19 +141,23 @@ std::vector<std::string> GenBPFHelper(const ScalarVariable& var) {
   };
   auto iter = kBPFHelpers.find(var.builtin());
   DCHECK(iter != kBPFHelpers.end());
-  return {absl::Substitute("$0 $1 = $2;", GenScalarType(var.type()), var.name(), iter->second)};
+  return absl::Substitute("$0 $1 = $2;", GenScalarType(var.type()), var.name(), iter->second);
 }
 
 }  // namespace
 
 StatusOr<std::vector<std::string>> GenScalarVariable(const ScalarVariable& var) {
   switch (var.address_oneof_case()) {
-    case ScalarVariable::AddressOneofCase::kReg:
-      return GenRegister(var);
+    case ScalarVariable::AddressOneofCase::kReg: {
+      std::vector<std::string> code_lines = {GenRegister(var)};
+      return code_lines;
+    }
+    case ScalarVariable::AddressOneofCase::kBuiltin: {
+      std::vector<std::string> code_lines = {GenBPFHelper(var)};
+      return code_lines;
+    }
     case ScalarVariable::AddressOneofCase::kMemory:
       return GenMemoryVariable(var);
-    case ScalarVariable::AddressOneofCase::kBuiltin:
-      return GenBPFHelper(var);
     case ScalarVariable::AddressOneofCase::ADDRESS_ONEOF_NOT_SET:
       return error::InvalidArgument("address_oneof must be set");
   }
@@ -191,24 +196,28 @@ StatusOr<std::vector<std::string>> GenStructVariable(const Struct& st,
 //
 // TODO(yzhao): Alternatively, leave map key as another Variable message (would be pre-generated
 // as part of the physical IR).
-std::vector<std::string> GenMapStashAction(const MapStashAction& action) {
-  return {absl::Substitute("$0.update(&$1, &$2);", action.map_name(), action.key_variable_name(),
-                           action.value_variable_name())};
+std::string GenMapStashAction(const MapStashAction& action) {
+  return absl::Substitute("$0.update(&$1, &$2);", action.map_name(), action.key_variable_name(),
+                          action.value_variable_name());
 }
 
-std::vector<std::string> GenOutput(const Output& output) {
-  return {absl::Substitute("BPF_PERF_OUTPUT($0);", output.name())};
+std::string GenOutput(const Output& output) {
+  return absl::Substitute("BPF_PERF_OUTPUT($0);", output.name());
 }
 
-std::vector<std::string> GenOutputAction(const OutputAction& action) {
-  return {absl::Substitute("$0.perf_submit(ctx, &$1, sizeof($1));", action.perf_buffer_name(),
-                           action.variable_name())};
+std::string GenOutputAction(const OutputAction& action) {
+  return absl::Substitute("$0.perf_submit(ctx, &$1, sizeof($1));", action.perf_buffer_name(),
+                          action.variable_name());
 }
 
 namespace {
 
 void MoveBackStrVec(std::vector<std::string>&& src, std::vector<std::string>* dst) {
   dst->insert(dst->end(), std::make_move_iterator(src.begin()), std::make_move_iterator(src.end()));
+}
+
+std::string GenPrintk(const Printk& printk) {
+  return absl::Substitute(R"(bpf_trace_printk("$0\n");)", printk.text());
 }
 
 }  // namespace
@@ -273,7 +282,7 @@ StatusOr<std::vector<std::string>> GenPhysicalProbe(
           "variable name '$0' as the value pushed to BPF map '$1' was not defined",
           action.value_variable_name(), action.map_name());
     }
-    MoveBackStrVec(GenMapStashAction(action), &code_lines);
+    code_lines.push_back(GenMapStashAction(action));
   }
 
   for (const auto& action : probe.output_actions()) {
@@ -282,7 +291,11 @@ StatusOr<std::vector<std::string>> GenPhysicalProbe(
           "variable name '$0' submitted to perf buffer '$1' was not defined",
           action.variable_name(), action.perf_buffer_name());
     }
-    MoveBackStrVec(GenOutputAction(action), &code_lines);
+    code_lines.push_back(GenOutputAction(action));
+  }
+
+  for (const auto& printk : probe.printks()) {
+    code_lines.push_back(GenPrintk(printk));
   }
 
   code_lines.push_back("return 0;");
@@ -401,7 +414,7 @@ StatusOr<std::vector<std::string>> GenProgramCodeLines(const Program& program) {
           "Struct key type '$0' referenced in output '$1' was not defined",
           output.type().struct_type(), output.name());
     }
-    MoveBackStrVec(GenOutput(output), &code_lines);
+    code_lines.push_back(GenOutput(output));
   }
 
   for (const auto& probe : program.probes()) {
