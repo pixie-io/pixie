@@ -111,16 +111,16 @@ devDockerImageExtrasWithTag = ''
 stashList = [];
 
 // Flag controlling if coverage job is enabled.
-isMasterCodeReviewRun =  (env.JOB_NAME == "pixielabs-master-phab-test")
-isMasterRun =  (env.JOB_NAME == "pixielabs-master")
-isNightlyTestRegressionRun = (env.JOB_NAME == "pixielabs-master-nightly-test-regression")
-isCLIBuildRun =  env.JOB_NAME.startsWith("pixielabs-master-cli-release-build/")
-isVizierBuildRun = env.JOB_NAME.startsWith("pixielabs-master-vizier-release-build/")
-isCloudStagingBuildRun = env.JOB_NAME.startsWith("pixielabs-master-cloud-staging-build/")
-isCloudProdBuildRun = env.JOB_NAME.startsWith("pixielabs-master-cloud-release-build/")
+isMainCodeReviewRun =  (env.JOB_NAME == "pixielabs-main-phab-test")
+isMainRun =  (env.JOB_NAME == "pixielabs-main")
+isNightlyTestRegressionRun = (env.JOB_NAME == "pixielabs-main-nightly-test-regression")
+isCLIBuildRun =  env.JOB_NAME.startsWith("pixielabs-main-cli-release-build/")
+isVizierBuildRun = env.JOB_NAME.startsWith("pixielabs-main-vizier-release-build/")
+isCloudStagingBuildRun = env.JOB_NAME.startsWith("pixielabs-main-cloud-staging-build/")
+isCloudProdBuildRun = env.JOB_NAME.startsWith("pixielabs-main-cloud-release-build/")
 
 // TODO(zasgar): Fix the coverage job which is broken due to GCC upgrade.
-runCoverageJob = false; // isMasterRun
+runCoverageJob = false; // isMainRun
 
 // Currently disabling TSAN on BPF builds because it runs too slow.
 // In particular, the uprobe deployment takes far too long. See issue:
@@ -178,7 +178,7 @@ def addBuildInfo = {
 
   def text = ""
   def link = ""
-  // Either a revision of a commit to master.
+  // Either a revision of a commit to main.
   if (params.REVISION) {
     def revisionId = "D${REVISION}"
     text = revisionId
@@ -197,7 +197,7 @@ def addBuildInfo = {
 
 /**
  * @brief Returns true if it's a phabricator triggered build.
- *  This could either be code review build or master commit.
+ *  This could either be code review build or main commit.
  */
 def isPhabricatorTriggeredBuild() {
   return params.PHID != null && params.PHID != ""
@@ -225,7 +225,7 @@ def writeBazelRCFile() {
 }
 
 def createBazelStash(String stashName) {
-  if (!isMasterCodeReviewRun || shFileExists("bazel-testlogs-archive")) {
+  if (!isMainCodeReviewRun || shFileExists("bazel-testlogs-archive")) {
     sh 'rm -rf bazel-testlogs-archive'
     sh 'cp -a bazel-testlogs/ bazel-testlogs-archive'
     stashOnGCS(stashName, 'bazel-testlogs-archive/**')
@@ -327,14 +327,14 @@ def bazelCCCICmd(String name, String targetConfig='clang', String targetCompilat
 }
 
 /**
-  * Runs bazel CI mode for master/phab builds.
+  * Runs bazel CI mode for main/phab builds.
   *
   * The targetFilter can either be a bazel filter clause, or bazel path (//..., etc.), but not a list of paths.
   */
 def bazelCICmd(String name, String targetConfig='clang', String targetCompilationMode='opt',
                String targetFilter=BAZEL_SRC_FILES_PATH) {
   warnError('Bazel command failed') {
-    if (isMasterCodeReviewRun) {
+    if (isMainCodeReviewRun) {
       def targetPattern = targetFilter
       sh """
         TARGET_PATTERN='${targetPattern}' CONFIG=${targetConfig} \
@@ -434,9 +434,9 @@ def postBuildActions = {
     codeReviewPostBuild()
   }
 
-  // Master runs are triggered by Phabricator, but we still want
+  // Main runs are triggered by Phabricator, but we still want
   // notifications on failure.
-  if (!isPhabricatorTriggeredBuild() || isMasterRun) {
+  if (!isPhabricatorTriggeredBuild() || isMainRun) {
     sendSlackNotification()
   }
 }
@@ -480,13 +480,13 @@ builders['Clang-tidy'] = {
   WithSourceCode {
     dockerStep {
       def stashName = 'build-clang-tidy-logs'
-      if (isMasterRun) {
-        // For master builds we run clang tidy on changes files in the past 10 revisions,
+      if (isMainRun) {
+        // For main builds we run clang tidy on changes files in the past 10 revisions,
         // this gives us a good balance of speed and coverage.
         sh 'scripts/run_clang_tidy.sh -f diff_head_cc'
       } else {
         // For code review builds only run on diff.
-        sh 'scripts/run_clang_tidy.sh -f diff_origin_master_cc'
+        sh 'scripts/run_clang_tidy.sh -f diff_origin_main_cc'
       }
       stashOnGCS(stashName, 'clang_tidy.log')
       stashList.add(stashName)
@@ -512,7 +512,7 @@ builders['Build & Test All (opt + UI)'] = {
       }
 
       // File might not always exist because of test run caching.
-      // TODO(zasgar): Make sure this file is fetched for master run, otherwise we
+      // TODO(zasgar): Make sure this file is fetched for main run, otherwise we
       // might have issues with coverage.
       def uiTestResults = 'bazel-testlogs-archive/src/ui/ui-tests/test.outputs/outputs.zip'
       if (shFileExists(uiTestResults)) {
@@ -569,12 +569,12 @@ if (runBPFWithTSAN) {
   }
 }
 
-// Only run coverage on master test.
+// Only run coverage on main test.
 if (runCoverageJob) {
   builders['Build & Test (gcc:coverage)'] = {
     WithSourceCode {
       dockerStep {
-        sh "scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b master -c `cat GIT_COMMIT`"
+        sh "scripts/collect_coverage.sh -u -t ${CODECOV_TOKEN} -b main -c `cat GIT_COMMIT`"
         createBazelStash('build-gcc-coverage-testlogs')
       }
     }
@@ -612,13 +612,13 @@ builders['Lint & Docs'] = {
  * The build script starts here.
  ********************************************/
 def buildScriptForCommits = {
-  if (isMasterRun) {
+  if (isMainRun) {
     // If there is a later build queued up, we want to stop the current build so
     // we can execute the later build instead.
     def q = Jenkins.instance.queue
     abortBuild = false
     q.items.each {
-      if (it.task.name == "pixielabs-master") {
+      if (it.task.name == "pixielabs-main") {
         abortBuild = true
       }
     }
@@ -644,8 +644,8 @@ def buildScriptForCommits = {
         parallel(builders)
       }
 
-      // Only run the cloud deploy build on master run.
-      if (isMasterRun) {
+      // Only run the cloud deploy build on main run.
+      if (isMainRun) {
         stage('Create cloud artifacts') {
           deleteDir()
           WithSourceCode {

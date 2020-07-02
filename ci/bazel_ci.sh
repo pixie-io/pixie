@@ -48,7 +48,7 @@
 # environment variable.
 set -x
 
-COMMIT_RANGE=${COMMIT_RANGE:-$(git merge-base origin/master HEAD)".."}
+COMMIT_RANGE=${COMMIT_RANGE:-$(git merge-base origin/main HEAD)".."}
 TARGET_PATTERN=${TARGET_PATTERN:-"//..."}
 BAZEL_RUN_EXTRA_ARGS=
 BAZEL_QUERY_EXTRA_ARGS=

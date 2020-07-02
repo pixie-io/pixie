@@ -7,7 +7,7 @@ build=true
 # Print out the usage information and exit.
 usage() {
   echo "Usage $0 [-d] [-h] [-f file_name] [-n]" 1>&2;
-  echo "   -d    Run only diff against master branch"
+  echo "   -d    Run only diff against main branch"
   echo "   -f    Use a diff file"
   echo "   -n    Don't run the build"
   echo "   -h    Print help and exit"
@@ -105,7 +105,7 @@ fi
 # Actually invoke clang-tidy.
 if [ "$diff_mode" = true ] ; then
     if [ -z "$diff_file" ] ; then
-        git diff -U0 origin/master -- src | "${clang_tidy_script}" -p1 2>&1 | tee clang_tidy.log
+        git diff -U0 origin/main -- src | "${clang_tidy_script}" -p1 2>&1 | tee clang_tidy.log
     else
         cat ${diff_file} | "${clang_tidy_script}" -p1 2>&1 | tee clang_tidy.log
     fi

@@ -13,8 +13,8 @@ else
     echo "0.0.${BUILD_NUMBER}-${JOB_NAME}-dev" > VERSION
 fi
 
-git diff -U0 origin/master > diff_origin_master
-git diff -U0 origin/master -- '***.cc' '***.h' '***.c' > diff_origin_master_cc
+git diff -U0 origin/main > diff_origin_main
+git diff -U0 origin/main -- '***.cc' '***.h' '***.c' > diff_origin_main_cc
 
 git diff -U0 HEAD~10 > diff_head
 git diff -U0 HEAD~10 -- '***.cc' '***.h' '***.c' > diff_head_cc

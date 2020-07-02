@@ -27,7 +27,7 @@ bazel run -c opt //src/utils/artifacts/versions_gen:versions_gen -- \
 bazel run -c opt //src/utils/artifacts/artifact_db_updater:artifact_db_updater -- \
     --versions_file "${versions_file}" --postgres_db "pl"
 
-git checkout master "$versions_file"
+git checkout main "$versions_file"
 
 # Update database with SSL certs.
 bazel run -c opt //src/cloud/dnsmgr/load_certs:load_certs -- \
