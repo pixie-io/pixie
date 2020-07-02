@@ -7,9 +7,9 @@ namespace stirling {
 
 using pl::types::ColumnWrapperRecordBatch;
 using pl::types::DataType;
-using pl::types::Duration64NSValue;
 using pl::types::Float64Value;
 using pl::types::Int64Value;
+using pl::types::SemanticType;
 using pl::types::StringValue;
 using pl::types::Time64NSValue;
 using pl::types::UInt128Value;
@@ -40,7 +40,13 @@ std::string ToString(const ArrayView<DataElement>& schema,
       } break;
       case DataType::INT64: {
         const auto val = col->Get<Int64Value>(index).val;
-        oss << "[" << val << "]";
+        if (col_schema.stype() == SemanticType::ST_DURATION_NS) {
+          const auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(
+              std::chrono::nanoseconds(val));
+          oss << absl::Substitute("[$0 seconds]", secs.count());
+        } else {
+          oss << "[" << val << "]";
+        }
       } break;
       case DataType::FLOAT64: {
         const auto val = col->Get<Float64Value>(index).val;
@@ -52,17 +58,12 @@ std::string ToString(const ArrayView<DataElement>& schema,
       } break;
       case DataType::UINT128: {
         const auto& val = col->Get<UInt128Value>(index);
-        if (col_schema.name() == "upid") {
+        if (col_schema.stype() == SemanticType::ST_UPID) {
           md::UPID upid(val.val);
           oss << "[" << absl::Substitute("{$0}", upid.String()) << "]";
         } else {
           oss << "[" << absl::Substitute("{$0,$1}", val.High64(), val.Low64()) << "]";
         }
-      } break;
-      case DataType::DURATION64NS: {
-        const auto secs = std::chrono::duration_cast<std::chrono::duration<double>>(
-            std::chrono::nanoseconds(col->Get<Duration64NSValue>(index).val));
-        oss << absl::Substitute("[$0 seconds]", secs.count());
       } break;
       default:
         LOG(DFATAL) << absl::Substitute("Unrecognized type: $0", ToString(col_schema.type()));

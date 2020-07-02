@@ -27,7 +27,6 @@ using pl::stirling::stirlingpb::Subscribe;
 
 using pl::types::ColumnWrapperRecordBatch;
 using pl::types::DataType;
-using pl::types::Duration64NSValue;
 using pl::types::Float64Value;
 using pl::types::Int64Value;
 using pl::types::SharedColumnWrapper;

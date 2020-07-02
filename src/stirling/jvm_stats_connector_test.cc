@@ -85,8 +85,8 @@ TEST_F(JVMStatsConnectorTest, CaptureData) {
                          system::GetPIDStartTimeTicks(proc_pid_path));
   EXPECT_EQ(upid, expected_upid);
 
-  EXPECT_GE(record_batch[kYoungGCTimeIdx]->Get<types::Duration64NSValue>(idx), 0);
-  EXPECT_GE(record_batch[kFullGCTimeIdx]->Get<types::Duration64NSValue>(idx), 0);
+  EXPECT_GE(record_batch[kYoungGCTimeIdx]->Get<types::Int64Value>(idx), 0);
+  EXPECT_GE(record_batch[kFullGCTimeIdx]->Get<types::Int64Value>(idx), 0);
   EXPECT_GE(record_batch[kUsedHeapSizeIdx]->Get<types::Int64Value>(idx).val, 0);
   EXPECT_GE(record_batch[kTotalHeapSizeIdx]->Get<types::Int64Value>(idx).val, 0);
   // This is derived from -Xmx4m. But we don't know how to control total_heap_size.

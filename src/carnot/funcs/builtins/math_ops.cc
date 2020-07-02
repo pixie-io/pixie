@@ -21,6 +21,8 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
       "add");
   registry->RegisterOrDie<AddUDF<types::Time64NSValue, types::Time64NSValue, types::Int64Value>>(
       "add");
+  registry->RegisterOrDie<AddUDF<types::Time64NSValue, types::Int64Value, types::Time64NSValue>>(
+      "add");
   registry->RegisterOrDie<AddUDF<types::StringValue, types::StringValue, types::StringValue>>(
       "add");
   registry
