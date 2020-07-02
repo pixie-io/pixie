@@ -50,8 +50,10 @@ message OutputAction {
 
 // Corresponds to a logical probe.
 message Probe {
+  string name = 1;
+
   // Where to attach this probe.
-  shared.TracePoint trace_point = 1;
+  shared.TracePoint trace_point = 2;
 
   // Input arguments of a function.
   repeated Argument args = 4;
@@ -67,8 +69,15 @@ message Probe {
   // The variable to be inserted into the map must be one of the above args, ret_vals, and function_latency.
   repeated MapStashAction stash_map_actions = 7;
 
-  // Writes a value to perf buffer.
+  // Writes a value to the output table.
   //
-  // The variable to be inserted into the perf buffer must be one of the above args, ret_vals, and function_latency.
+  // The variable to be inserted into the output table must be one of the above args, ret_vals, and function_latency.
   repeated OutputAction output_actions = 8;
+}
+
+// TODO(oazizi): Is this the right place for this?
+message Program {
+  repeated shared.Output outputs = 1;
+  repeated shared.Map maps = 2;
+  repeated Probe probes = 3;
 }
