@@ -2,13 +2,12 @@ import * as React from 'react';
 import { Vega as ReactVega } from 'react-vega';
 import { VisualizationSpec } from 'vega-embed';
 import { Handler } from 'vega-tooltip';
+import { GaugeLevel } from 'components/format-data/latency';
 import {
   createStyles, Theme, useTheme, withStyles, WithStyles,
 } from '@material-ui/core/styles';
 
-type QuantilesLevel = 'low' | 'med' | 'high' | 'none';
-
-function getColor(level: QuantilesLevel, theme: Theme): string {
+function getColor(level: GaugeLevel, theme: Theme): string {
   switch (level) {
     case 'low':
       return theme.palette.success.main;
@@ -268,7 +267,7 @@ interface QuantilesBoxWhiskerProps extends WithStyles<typeof styles> {
   p90: number;
   p99: number;
   max: number;
-  p99Level: QuantilesLevel;
+  p99Level: GaugeLevel;
 }
 
 const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {

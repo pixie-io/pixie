@@ -1,10 +1,9 @@
 import * as React from 'react';
 import clsx from 'clsx';
 import { formatBoolData, formatFloat64Data } from '../../utils/format-data';
+import { getLatencyLevel } from './latency';
 
 const JSON_INDENT_PX = 16;
-const LATENCY_HIGH_THRESHOLD = 300;
-const LATENCY_MEDIUM_THRESHOLD = 150;
 
 interface JSONDataProps {
   data: any;
@@ -81,13 +80,7 @@ JSONData.displayName = 'JSONData';
 
 export function LatencyData(data: string) {
   const floatVal = parseFloat(data);
-  let latency = 'low';
-
-  if (floatVal > LATENCY_HIGH_THRESHOLD) {
-    latency = 'high';
-  } else if (floatVal > LATENCY_MEDIUM_THRESHOLD) {
-    latency = 'med';
-  }
+  const latency = getLatencyLevel(floatVal);
   return <div className={`formatted_data--latency-${latency}`}>{formatFloat64Data(floatVal)}</div>;
 }
 
