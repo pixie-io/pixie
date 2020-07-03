@@ -420,10 +420,19 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
       );
     }
 
+    // TODO(zasgar/michelle): This is a temporary hack to fix the background color.
+    // We are going to change this component over the next couple of days so not making more extensive changes.
+    const extraStyles = {
+      background: undefined,
+    };
+    if (showCompanyInfo) {
+      extraStyles.background = 'white';
+    }
+
     return (
       <>
         {showCompanyInfo ? <CompanyInfo /> : null}
-        <div className='center-content' style={{ flexDirection: 'column', flex: 1 }}>
+        <div className='center-content' style={{ flexDirection: 'column', flex: 1, ...extraStyles }}>
           {loginBody}
         </div>
       </>

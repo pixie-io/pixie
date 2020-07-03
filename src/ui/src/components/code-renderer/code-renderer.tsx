@@ -20,7 +20,7 @@ const CodeRenderer = withStyles(() => ({
     display: 'block',
     width: '100%',
     overflowX: 'auto',
-    fontFamily: 'source code pro',
+    fontFamily: '"Roboto Mono", Monospace',
     marginTop: '1rem',
     marginLeft: '1rem',
   },
