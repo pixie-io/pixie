@@ -34,13 +34,15 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
     super(props);
     this.state = {
       // eslint-disable-next-line react/no-unused-state
-      extraEditorClassName: clsx('pl-code-editor', this.props.className),
+      extraEditorClassName: clsx(this.props.className),
       // eslint-disable-next-line react/no-unused-state
       lineDecorationsWidth: 0,
       // eslint-disable-next-line react/no-unused-state
       scrollBeyondLastColumn: 0,
       // eslint-disable-next-line react/no-unused-state
       scrollBeyondLastLine: 0,
+      // eslint-disable-next-line react/no-unused-state
+      fontFamily: 'Roboto Mono, monospace',
     };
     this.onChange = this.onChange.bind(this);
     this.onEditorMount = this.onEditorMount.bind(this);
