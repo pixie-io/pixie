@@ -115,55 +115,58 @@ const toRowMajorOrder = (entries: LegendEntry[], numCols: number, numRows: numbe
 const Legend = React.memo((props: LegendProps) => {
   const classes = useStyles();
   const [currentPage, setCurrentPage] = React.useState<number>(0);
+  const {
+    interactState, setInteractState, vegaOrigin, chartWidth, data,
+  } = props;
 
   const handleRowLeftClick = React.useCallback((key: string) => {
     // Toggle selected series.
-    if (_.includes(props.interactState.selectedSeries, key)) {
-      props.setInteractState({
-        ...props.interactState,
-        selectedSeries: props.interactState.selectedSeries.filter((s: string) => s !== key),
+    if (_.includes(interactState.selectedSeries, key)) {
+      setInteractState({
+        ...interactState,
+        selectedSeries: interactState.selectedSeries.filter((s: string) => s !== key),
       });
     } else {
-      props.setInteractState({
-        ...props.interactState,
-        selectedSeries: [...props.interactState.selectedSeries, key],
+      setInteractState({
+        ...interactState,
+        selectedSeries: [...interactState.selectedSeries, key],
       });
     }
-  }, [props.interactState]);
+  }, [interactState, setInteractState]);
 
   const handleRowRightClick = React.useCallback((e: React.SyntheticEvent) => {
     // Reset all selected series.
-    props.setInteractState({ ...props.interactState, selectedSeries: [] });
+    setInteractState({ ...interactState, selectedSeries: [] });
     // Prevent right click menu from showing up.
     e.preventDefault();
     return false;
-  }, [props.interactState]);
+  }, [interactState, setInteractState]);
 
   const handleRowHover = React.useCallback((key: string) => {
-    props.setInteractState({ ...props.interactState, hoveredSeries: key });
-  }, [props.interactState]);
+    setInteractState({ ...interactState, hoveredSeries: key });
+  }, [interactState, setInteractState]);
 
   const handleRowLeave = React.useCallback(() => {
-    props.setInteractState({ ...props.interactState, hoveredSeries: null });
-  }, [props.interactState]);
+    setInteractState({ ...interactState, hoveredSeries: null });
+  }, [interactState, setInteractState]);
 
-  if (props.vegaOrigin.length < 2) {
+  if (vegaOrigin.length < 2) {
     return <div />;
   }
 
-  const leftPadding = props.vegaOrigin[0];
+  const leftPadding = vegaOrigin[0];
 
   let numGrids = MAX_NUM_GRIDS;
   // Dynamically take out grids if theres no room for them.
-  while ((leftPadding + calcGridWidth(numGrids)) > props.chartWidth && numGrids > 1) {
+  while ((leftPadding + calcGridWidth(numGrids)) > chartWidth && numGrids > 1) {
     numGrids--;
   }
 
   const entriesPerPage = numGrids * NUM_ROWS;
-  const maxPages = Math.ceil(props.data.entries.length / entriesPerPage);
+  const maxPages = Math.ceil(data.entries.length / entriesPerPage);
   const pageEntriesStart = currentPage * entriesPerPage;
-  const pageEntriesEnd = Math.min((currentPage + 1) * entriesPerPage, props.data.entries.length);
-  let entries = props.data.entries.slice(pageEntriesStart, pageEntriesEnd);
+  const pageEntriesEnd = Math.min((currentPage + 1) * entriesPerPage, data.entries.length);
+  let entries = data.entries.slice(pageEntriesStart, pageEntriesEnd);
   entries = toRowMajorOrder(entries, numGrids, NUM_ROWS);
 
   let index = 0;
@@ -196,10 +199,10 @@ const Legend = React.memo((props: LegendProps) => {
       const styles: CSSProperties = {
         opacity: '1.0',
       };
-      if (props.interactState.selectedSeries.length > 0 && !_.includes(props.interactState.selectedSeries, entry.key)) {
+      if (interactState.selectedSeries.length > 0 && !_.includes(interactState.selectedSeries, entry.key)) {
         styles.opacity = '0.3';
       }
-      if (props.interactState.hoveredSeries === entry.key) {
+      if (interactState.hoveredSeries === entry.key) {
         styles.color = entry.color;
         styles.opacity = '1.0';
       }
@@ -242,7 +245,7 @@ const Legend = React.memo((props: LegendProps) => {
 
   const containerStyles: CSSProperties = {
     paddingLeft: `${leftPadding}px`,
-    width: `${props.chartWidth - leftPadding}px`,
+    width: `${chartWidth - leftPadding}px`,
   };
 
   const handlePageBack = () => {

@@ -143,11 +143,11 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
       });
     }
     return map;
-  }, [table.relation]);
+  }, [table.relation, clusterName, prettyRender]);
 
   const rowGetter = React.useCallback(
     (i) => rows[i],
-    [rows, columnsMap],
+    [rows],
   );
 
   const onSort = (sortState: SortState) => {
@@ -163,7 +163,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
     }
     setSelectedRow(rowIndex);
     onRowSelectionChanged(rows[rowIndex]);
-  }, [rows, selectedRow]);
+  }, [rows, selectedRow, onRowSelectionChanged]);
 
   if (rows.length === 0) {
     return null;

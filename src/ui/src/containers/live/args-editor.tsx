@@ -178,7 +178,7 @@ const AutocompleteArgumentField = (props: AutocompleteArgumentFieldProps) => {
       completions.unshift({ type: 'header', header: props.kind });
       return completions;
     })
-  ), [client]);
+  ), [client, props.kind]);
 
   return (
     <Tooltip title='Edit arg'>

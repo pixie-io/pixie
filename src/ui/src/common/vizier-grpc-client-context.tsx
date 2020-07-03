@@ -121,7 +121,7 @@ export const VizierGRPCClientProvider = (props: Props) => {
       }
       retryRef.current.stop();
     };
-  }, [clusterID, passthroughEnabled, clusterStatus]);
+  }, [clusterID, passthroughEnabled, clusterStatus, cloudClient]);
 
   const context = React.useMemo(() => ({
     client,

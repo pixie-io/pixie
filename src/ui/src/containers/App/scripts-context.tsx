@@ -28,14 +28,14 @@ export const ScriptsContextProvider = (props) => {
       const orgName = result?.data?.user.orgName;
       return GetPxScripts(orgName);
     })
-    .then((scriptsList) => new Map<string, Script>(scriptsList.map((script) => [script.id, script]))), []);
+    .then((scriptsList) => new Map<string, Script>(scriptsList.map((script) => [script.id, script]))), [client]);
 
   React.useEffect(() => {
     // Do this only once.
     promise.then(setScripts);
-  }, []);
+  }, [promise]);
 
-  const context = React.useMemo(() => ({ scripts, promise }), [scripts]);
+  const context = React.useMemo(() => ({ scripts, promise }), [scripts, promise]);
 
   return (
     <ScriptsContext.Provider value={context}>

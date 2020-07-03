@@ -69,7 +69,7 @@ export const SplitContainer = (props: React.PropsWithChildren<SplitContainerProp
       }
     }
     return Array(children.length).fill(100 / children.length);
-  }, [props.initialSizes]);
+  }, [props.initialSizes, children.length]);
 
   // TODO(malthus): Persist the state with localstorage or apollo client.
   const [state, setState] = React.useState<SplitContainerState>({
@@ -80,7 +80,7 @@ export const SplitContainer = (props: React.PropsWithChildren<SplitContainerProp
   const handleDrag = React.useCallback((sizes) => {
     onSizeChange(sizes);
     setState({ collapsed: -1, prevSizes: sizes });
-  }, []);
+  }, [onSizeChange]);
 
   const context = React.useMemo(() => ({
     togglePane: (id) => {
@@ -102,7 +102,7 @@ export const SplitContainer = (props: React.PropsWithChildren<SplitContainerProp
         };
       });
     },
-  }), []);
+  }), [children]);
 
   React.useEffect(() => {
     if (state.collapsed === -1) {
@@ -111,7 +111,7 @@ export const SplitContainer = (props: React.PropsWithChildren<SplitContainerProp
       splitRef.current.split.collapse(state.collapsed);
     }
     onSizeChange(splitRef.current.split.getSizes());
-  }, [state.collapsed]);
+  }, [state.collapsed, onSizeChange, state.prevSizes]);
 
   return (
     <SplitPaneContext.Provider value={context}>
@@ -141,7 +141,7 @@ export const SplitPane: React.FC<SplitPaneProps> = ({ title, id, children }) => 
   const { togglePane } = React.useContext(SplitPaneContext);
   const headerClickHandler = React.useCallback(() => {
     togglePane(id);
-  }, [id]);
+  }, [id, togglePane]);
 
   return (
     <div className={classes.pane}>

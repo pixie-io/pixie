@@ -65,6 +65,7 @@ const VisEditor = () => {
     }
 
     editorRef.current.changeEditorValue(visJSON);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visJSON]);
 
   return (
@@ -86,11 +87,13 @@ const ScriptEditor = () => {
   // We useEffect instead of relying on the prop because of an issue where a cursor
   // in the field causes onChange to be triggered partway through, leading to a
   // partial state being set.
+  // TODO(philkuz) need to update the props above so that we re-render the editor less often.
   React.useEffect(() => {
     if (!editorRef.current) {
       return;
     }
     editorRef.current.changeEditorValue(pxl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pxl]);
 
   return (

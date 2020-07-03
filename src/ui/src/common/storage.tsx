@@ -44,7 +44,7 @@ export function useStorage<T>(store: KeyStore, key: StorageKey, initialValue?: T
   // Update the state in the store on changes.
   React.useEffect(() => {
     store.setItem(key, JSON.stringify(state));
-  }, [state]);
+  }, [state, store, key]);
 
   return [state, setState];
 }

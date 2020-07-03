@@ -89,7 +89,7 @@ export const SnackbarProvider: React.FC = (props) => {
         )
       }
     </>
-  ), [state.dismissible, state.action, state.actionTitle]);
+  ), [state, hideSnackbar]);
   return (
     <>
       <SnackbarContext.Provider value={showSnackbar}>

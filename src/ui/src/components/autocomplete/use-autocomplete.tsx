@@ -38,7 +38,7 @@ const useAutocomplete = (getCompletions: GetCompletionsFunc, input: string): Aut
       .finally(() => {
         setLoading(false);
       });
-  }, [input]);
+  }, [input, getCompletions]);
 
   React.useEffect(() => {
     if (completionItems.length > 0) {

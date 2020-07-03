@@ -68,7 +68,7 @@ const Input: React.FC<InputProps> = ({
   const handleChange = React.useCallback((e) => {
     const val = e.target.value;
     onChange(val);
-  }, []);
+  }, [onChange]);
 
   const handleKey = React.useCallback((e) => {
     switch (e.key) {

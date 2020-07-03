@@ -57,7 +57,7 @@ const FormInput: React.FC<FormInputProps> = ({
       event.preventDefault();
       dispatch(event.shiftKey ? 'prev' : 'next');
     }
-  }, []);
+  }, [dispatch]);
 
   return (
     <div className={classes.form} onKeyDown={handleKeypress}>
@@ -100,7 +100,7 @@ const FormField: React.FC<FormFieldProps> = ({
 
   const onChange = React.useCallback((event) => {
     onValueChange([field, event.target.value]);
-  }, []);
+  }, [field, onValueChange]);
 
   const onKeyDown = React.useCallback((event) => {
     if (event.key === 'ArrowLeft' && ref.current.selectionStart === 0) {
@@ -108,7 +108,7 @@ const FormField: React.FC<FormFieldProps> = ({
     } else if (event.key === 'ArrowRight' && ref.current.selectionStart === ref.current.value.length) {
       dispatch('next');
     }
-  }, []);
+  }, [dispatch]);
 
   return (
     <>

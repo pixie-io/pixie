@@ -35,7 +35,7 @@ export function ScriptLoader() {
         setLoadState('context-loaded');
       }
     }
-  }, [loadState, pxl, vis]);
+  }, [execute, loadState, pxl, vis]);
 
   React.useEffect(() => {
     // TODO(nserrino): refactor this legacy code to reduce duplication with ScriptContext.
@@ -78,6 +78,6 @@ export function ScriptLoader() {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [scriptPromise]);
   return null;
 }

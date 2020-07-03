@@ -186,7 +186,7 @@ const AgentsTable = () => {
       clearInterval(interval);
       mounted = false;
     };
-  }, [client]);
+  }, [client, state]);
 
   if (state.error) {
     return (

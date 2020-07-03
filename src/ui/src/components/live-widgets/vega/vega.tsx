@@ -178,7 +178,7 @@ const Vega = React.memo((props: VegaProps) => {
         setLegendInteractState((state) => ({ ...state, selectedSeries: [] }));
       },
     };
-  }, [currentView, hoverListener, setHoverTime, setLegendInteractState]);
+  }, [currentView, hoverListener, setHoverTime, setLegendInteractState, setTSDomain, widthListener]);
 
   const onNewView = React.useCallback((view: View) => {
     // Disable default tooltip handling in vega.
@@ -206,7 +206,7 @@ const Vega = React.memo((props: VegaProps) => {
       const unformattedEntries = hoverDataCache.timeHashMap[hoverDataCache.maxTime];
       setLegendData(formatLegendData(currentView, hoverDataCache.maxTime, unformattedEntries));
     }
-  }, [hoverDataCache, currentView]);
+  }, [hoverDataCache, currentView, setHoverTime]);
 
   React.useEffect(() => {
     if (!currentView) {
@@ -217,7 +217,7 @@ const Vega = React.memo((props: VegaProps) => {
       currentView.signal(EXTERNAL_TS_DOMAIN_SIGNAL, externalTSDomain);
     }
     updateView();
-  }, [externalTSDomain, currentView]);
+  }, [externalTSDomain, currentView, updateView]);
 
   // Inject the selected series into the corresponding vega signal for this chart.
   React.useEffect(() => {
@@ -233,7 +233,7 @@ const Vega = React.memo((props: VegaProps) => {
     }
     currentView.signal(EXTERNAL_HOVER_SIGNAL, { time_: time });
     updateView();
-  }, [externalHoverTime, currentView, hoverDataCache]);
+  }, [externalHoverTime, currentView, hoverDataCache, updateView]);
 
   React.useEffect(() => {
     if (!currentView) {
@@ -242,7 +242,7 @@ const Vega = React.memo((props: VegaProps) => {
     currentView.signal(LEGEND_HOVER_SIGNAL, legendInteractState.hoveredSeries);
     currentView.signal(LEGEND_SELECT_SIGNAL, legendInteractState.selectedSeries);
     updateView();
-  }, [currentView, legendInteractState.hoveredSeries, legendInteractState.selectedSeries.length]);
+  }, [currentView, legendInteractState.hoveredSeries, updateView, legendInteractState.selectedSeries]);
 
   if (inputData.length === 0) {
     return (

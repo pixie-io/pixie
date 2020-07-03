@@ -175,7 +175,20 @@ export interface ColWidthOverrides {
   [dataKey: string]: number;
 }
 
-export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerProps<DataTableProps>>(({
+// eslint-disable-next-line react/display-name
+const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerProps<DataTableProps>>((props) => {
+  const { width, height } = props;
+  if (width === 0 || height === 0) {
+    return null;
+  }
+  return <InternalDataTable {...props} />;
+}));
+
+(DataTable as React.SFC).displayName = 'DataTable';
+
+export { DataTable };
+
+const InternalDataTable = ({
   columns,
   onRowClick = noop,
   rowCount,
@@ -188,11 +201,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
   expandedRenderer = () => <></>,
   onSort = noop,
   highlightedRow = -1,
-}) => {
-  if (width === 0 || height === 0) {
-    return null;
-  }
-
+}: WithAutoSizerProps<DataTableProps>) => {
   const classes = useStyles();
   const theme = useTheme();
 
@@ -237,7 +246,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       {props.columnData.cellRenderer && props.columnData.cellRenderer(props.cellData)}
       {!props.columnData.cellRenderer && <span className={classes.cellText}>{String(props.cellData)}</span>}
     </>
-  ), [expandedRowState, expandedRenderer]);
+  ), [classes.cellText]);
 
   const defaultCellHeight = compact ? theme.spacing(4) : theme.spacing(6);
   const computeRowHeight = React.useCallback(({ index }) => (expandedRowState[index]
@@ -268,7 +277,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
     tableRef.current.recomputeRowHeights();
     tableRef.current.forceUpdate();
     onRowClick(index);
-  }, [onRowClick]);
+  }, [onRowClick, expandable]);
 
   const getRowClass = React.useCallback(({ index }) => {
     if (index === -1) {
@@ -280,7 +289,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       onRowClick && classes.highlightable,
       index === highlightedRow && classes.highlighted,
     );
-  }, [highlightedRow]);
+  }, [highlightedRow, onRowClick, classes]);
 
   const resizeColumn = React.useCallback(({ dataKey, deltaX }) => {
     setColumnWidthOverride((state) => {
@@ -304,11 +313,11 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
         [nextColKey]: nextColWidth,
       };
     });
-  }, [width, colTextWidthRatio]);
+  }, [width, colTextWidthRatio, columns]);
 
   const colIsResizable = (idx: number): boolean => (resizableColumns || true) && (idx !== columns.length - 1);
 
-  const headerRendererCommon: TableHeaderRenderer = (props) => {
+  const headerRendererCommon: TableHeaderRenderer = React.useCallback((props) => {
     let sortIcon = (
       <UpIcon
         className={classes.sortIconHidden}
@@ -351,7 +360,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
         </div>
       </>
     );
-  };
+  }, [classes, onSortWrapper]);
 
   const headerRenderer: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => (
     <>
@@ -359,7 +368,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
         {headerRendererCommon(props)}
       </React.Fragment>
     </>
-  ), []);
+  ), [headerRendererCommon]);
 
   const gutterHeaderRenderer: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => (
     <>
@@ -383,7 +392,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
         </div>
       </>
     );
-  }, [highlightedRow, expandedRowState]);
+  }, [highlightedRow, expandedRowState, classes]);
 
   const rowRenderer: TableRowRenderer = React.useCallback((props: TableRowProps) => {
     const { style } = props;
@@ -404,7 +413,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
          )}
       </div>
     );
-  }, [expandedRowState, expandable, rowGetter]);
+  }, [classes, defaultCellHeight, expandedRowState, expandedRenderer, expandable, rowGetter]);
 
   const headerRendererWithDrag: TableHeaderRenderer = React.useCallback((props: TableHeaderProps) => {
     const { dataKey } = props;
@@ -425,7 +434,7 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
         </React.Fragment>
       </>
     );
-  }, []);
+  }, [classes, headerRendererCommon, resizeColumn]);
   const gutterClass = clsx(
     compact && classes.compact,
     classes.gutterCell,
@@ -487,4 +496,4 @@ export const DataTable = withAutoSizer<DataTableProps>(React.memo<WithAutoSizerP
       }
     </Table>
   );
-}));
+};

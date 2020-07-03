@@ -84,7 +84,7 @@ const DataDrawerToggle = (props: DataDrawerToggleProps) => {
       || (!stats && activeTab === 'stats')) {
       setActiveTab('data');
     }
-  }, [activeTab, error, stats]);
+  }, [activeTab, setActiveTab, error, stats]);
 
   return (
     <div className={classes.root} onClick={toggle}>

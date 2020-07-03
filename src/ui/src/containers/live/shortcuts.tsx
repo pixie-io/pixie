@@ -86,7 +86,7 @@ const LiveViewShortcuts = (props: LiveViewShortcutsProps) => {
       map[key] = keyMap[key].sequence;
     }
     return map;
-  }, []);
+  }, [keyMap]);
 
   const handlers = React.useMemo(() => {
     const handlerWrapper = (handler) => (e) => {
@@ -100,7 +100,7 @@ const LiveViewShortcuts = (props: LiveViewShortcutsProps) => {
       wrappedHandlers[action] = handlerWrapper(props.handlers[action]);
     }
     return wrappedHandlers;
-  }, [props.handlers]);
+  }, [props.handlers, toggleOpenHelp]);
 
   return (
     <>

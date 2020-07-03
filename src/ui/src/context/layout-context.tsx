@@ -47,7 +47,7 @@ export const LayoutContextProvider = (props) => {
     if (isMobile) {
       setEditorPanelOpen(false);
     }
-  }, [isMobile]);
+  }, [isMobile, setEditorPanelOpen]);
 
   return (
     <LayoutContext.Provider

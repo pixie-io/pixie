@@ -96,7 +96,7 @@ const Autocomplete: React.FC<AutoCompleteProps> = ({
     }
     onSelection(id);
     setInputValue(item.title);
-  }, [itemsMap, activeItem]);
+  }, [itemsMap, onSelection]);
 
   const handleKey = (key: Key) => {
     switch (key) {

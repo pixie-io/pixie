@@ -161,25 +161,25 @@ const Canvas = (props: CanvasProps) => {
     };
     window.addEventListener('resize', handler);
     return () => window.removeEventListener('resize', handler);
-  }, []);
+  }, [props.parentRef, setDefaultHeight]);
 
   React.useEffect(() => {
     const newVis = addLayout(vis);
     if (newVis !== vis) {
       setVis(newVis);
     }
-  }, [vis]);
+  }, [vis, setVis]);
 
   React.useEffect(() => {
     setTimeseriesDomain(null);
-  }, [tables]);
+  }, [tables, setTimeseriesDomain]);
 
   const updateLayoutInVis = React.useCallback((newLayout) => {
     if (!isMobile) {
       setVis(updatePositions(vis, newLayout));
     }
     triggerResize();
-  }, [vis, isMobile]);
+  }, [vis, setVis, isMobile]);
 
   const updateDefaultLayout = React.useCallback((newLayout) => {
     setDefaultLayout(newLayout);
@@ -231,7 +231,7 @@ const Canvas = (props: CanvasProps) => {
       );
     });
     return widgets;
-  }, [tables, vis, loading, layout, className]);
+  }, [tables, vis, loading, layout, className, classes.spinner]);
 
   if (loading && charts.length === 0) {
     return (

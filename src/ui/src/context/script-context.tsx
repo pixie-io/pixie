@@ -132,7 +132,7 @@ const ScriptContextProvider = (props) => {
     if (entity.clusterName && entity.clusterName !== selectedClusterName) {
       setClusterByName(entity.clusterName);
     }
-  }, []);
+  }, [entity.clusterName, selectedClusterName, setClusterByName]);
 
   // Logic to set url params when location changes
 

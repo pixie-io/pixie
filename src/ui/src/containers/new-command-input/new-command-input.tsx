@@ -124,7 +124,7 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
         onClose();
       }
     }
-  }, [tabStops, isValid]);
+  }, [tabStops, isValid, execute, onClose, scripts]);
 
   return (
     <Modal open={open} onClose={onClose} BackdropProps={{}}>

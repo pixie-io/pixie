@@ -87,7 +87,7 @@ const Vizier = () => {
       const newClusterId = name && clusters.find((c) => c.clusterName === name)?.id || clusterId;
       setClusterId(newClusterId);
     },
-  }), [clusterId, setClusterId, cluster?.clusterName, clusters.length]);
+  }), [clusterId, setClusterId, clusters, cluster?.clusterName]);
 
   if (loading) { return <div>Loading...</div>; }
 

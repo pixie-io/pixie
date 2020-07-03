@@ -138,6 +138,16 @@ type CompletionProps = Omit<CompletionItem, 'type'> & {
 };
 
 export const Completion = (props: CompletionProps) => {
+  const { title } = props;
+
+  if (!title) {
+    return null;
+  }
+  // Need an internal component because of useEffect.
+  return <CompletionInternal {...props} />;
+};
+
+const CompletionInternal = (props: CompletionProps) => {
   const {
     id,
     title,
@@ -146,11 +156,9 @@ export const Completion = (props: CompletionProps) => {
     onActiveChange,
     active,
   } = props;
+
   const classes = useStyles();
   const parts = [];
-  if (!title) {
-    return null;
-  }
   const ref = React.createRef<HTMLDivElement>();
   let remainingIdx = 0;
   for (const start of highlights) {
@@ -175,7 +183,7 @@ export const Completion = (props: CompletionProps) => {
     if (active && !isInView(ref.current.parentElement, ref.current)) {
       ref.current.scrollIntoView();
     }
-  }, [active]);
+  }, [active, ref]);
   return (
     <div
       ref={ref}
@@ -187,5 +195,6 @@ export const Completion = (props: CompletionProps) => {
     </div>
   );
 };
+CompletionInternal.displayName = "CompletionInternal";
 
 export default Completions;

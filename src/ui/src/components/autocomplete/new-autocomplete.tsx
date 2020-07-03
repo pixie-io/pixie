@@ -106,7 +106,7 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
       setActiveCompletions(completions[tabIdx].suggestions);
     }
     setActiveItem('');
-  }, [cursorPos, completions]);
+  }, [cursorPos, completions, tsInfo]);
 
   const handleSelection = React.useCallback((id) => {
     if (!itemsMap.has(id)) {
@@ -120,7 +120,7 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
   const handleBackspace = React.useCallback((cursorPos) => {
     const [newStr, newCursorPos] = tsInfo.handleBackspace(cursorPos);
     return onChange(newStr, newCursorPos, 'EDIT', null);
-  }, [tsInfo, cursorPos, onChange]);
+  }, [tsInfo, onChange]);
 
   const handleLeftKey = React.useCallback((cursorPos) => {
     const activeTab = tsInfo.getActiveTab(cursorPos);
@@ -145,7 +145,7 @@ export const NewAutocomplete: React.FC<NewAutoCompleteProps> = ({
       // Cursor should move to the next tabstop.
       setCursorPos(tabBoundaries[activeTab + 1][0]);
     }
-  }, [tsInfo]);
+  }, [tsInfo, tabStops.length]);
 
   const handleKey = (key: Key) => {
     switch (key) {

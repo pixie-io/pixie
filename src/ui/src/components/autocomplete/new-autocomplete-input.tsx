@@ -134,7 +134,7 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
     // update the cursor position accordingly.
     setCursor(inputRef.current.selectionStart);
     inputRef.current.focus();
-  }, []);
+  }, [setCursor]);
 
   // Focus the input element whenever the suggestion changes.
   React.useEffect(() => {

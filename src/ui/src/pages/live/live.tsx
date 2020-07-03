@@ -130,7 +130,7 @@ const LiveView = () => {
     if (!pxl && !id) {
       setCommandOpen(true);
     }
-  }, []);
+  }, [id, pxl]);
 
   React.useEffect(() => {
     if (isMobile) {

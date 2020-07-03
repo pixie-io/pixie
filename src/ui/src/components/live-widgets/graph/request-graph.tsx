@@ -18,8 +18,6 @@ import {
 } from './graph-options';
 import { Edge, RequestGraph, RequestGraphParser } from './request-graph-parser';
 
-import * as svcSVG from './svc.svg';
-
 export interface RequestGraphDisplay extends WidgetDisplay {
   readonly requestorPodColumn: string;
   readonly responderPodColumn: string;
@@ -185,7 +183,7 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
       const pathname = toEntityPathname(page);
       history.push(pathname);
     }
-  }, [clusteredMode, graph]);
+  }, [history, selectedClusterName, clusteredMode]);
 
   // Load the graph.
   React.useEffect(() => {
@@ -231,7 +229,7 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
       n.on('doubleClick', doubleClickCallback);
       setNetwork(n);
     }
-  }, [graph, ref, colorByLatency]);
+  }, [graph, ref, colorByLatency, doubleClickCallback]);
 
   const classes = useStyles();
   return (
