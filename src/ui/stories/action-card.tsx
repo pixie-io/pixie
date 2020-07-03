@@ -1,19 +1,16 @@
 import * as React from 'react';
 
 import { storiesOf } from '@storybook/react';
+import ActionCard from '../src/components/action-card/action-card';
 
-import { DialogBox } from '../src/components/dialog-box/dialog-box';
-
-storiesOf('DialogBox', module)
+storiesOf('ActionCard', module)
   .add('Basic', () => (
-    <DialogBox
-      width={480}
-    >
+    <ActionCard title='The Card Title'>
       <div>
         This is some content. It can be a string or more JSX.
       </div>
-    </DialogBox>
+    </ActionCard>
   ), {
     info: { inline: true },
-    notes: 'This is a dialog box.',
+    notes: 'This is the basic action card.',
   });

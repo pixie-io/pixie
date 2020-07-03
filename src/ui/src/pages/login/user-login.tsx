@@ -2,7 +2,6 @@
 import Auth0Lock from 'auth0-lock';
 import Axios from 'axios';
 import CodeRenderer from 'components/code-renderer/code-renderer';
-import { DialogBox } from 'components/dialog-box/dialog-box';
 import { AUTH0_CLIENT_ID, AUTH0_DOMAIN } from 'containers/constants';
 import * as check from 'images/icons/check.svg';
 import * as criticalImage from 'images/icons/critical.svg';
@@ -17,6 +16,8 @@ import analytics from 'utils/analytics';
 import * as RedirectUtils from 'utils/redirect-utils';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { Typography } from '@material-ui/core';
+import ActionCard from '../../components/action-card/action-card';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   container: {
@@ -388,17 +389,19 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
     if (this.state.token !== '') {
       showCompanyInfo = false;
       loginBody = (
-        <DialogBox width={480}>
-          Please copy this code, switch to the CLI and paste it there:
+        <ActionCard title='Pixie Auth Token' width='33%' minWidth='480px'>
+          <Typography variant='body1'>
+            Please copy this code, switch to the CLI and paste it there:
+          </Typography>
           <CodeRenderer
             code={this.state.token}
           />
-        </DialogBox>
+        </ActionCard>
       );
     } else if (this.state.error !== '') {
       showCompanyInfo = false;
       loginBody = (
-        <DialogBox width={480}>
+        <ActionCard title='Login Error' width='33%' minWidth='480'>
           <div className='error-message'>
             <div className='error-message--icon'><img src={criticalImage} /></div>
             {this.state.error}
@@ -413,7 +416,7 @@ export class LoginContainer extends React.Component<LoginProps, LoginState> {
           >
             Retry
           </Button>
-        </DialogBox>
+        </ActionCard>
       );
     }
 
