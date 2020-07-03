@@ -11,7 +11,7 @@ export interface QueryResultTableProps {
   className?: string;
 }
 
-export const QueryResultTable = React.memo<QueryResultTableProps>(({ data, className }) => {
+export const QueryResultTable = (({ data, className }: QueryResultTableProps) => {
   const { selectedClusterName } = React.useContext(ClusterContext);
   const ExpandedRowRenderer = (rowData: any) => (
     <JSONData
@@ -33,5 +33,3 @@ export const QueryResultTable = React.memo<QueryResultTableProps>(({ data, class
     </div>
   );
 });
-
-QueryResultTable.displayName = 'QueryResultTable';
