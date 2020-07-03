@@ -21,16 +21,3 @@ query-results .ReactVirtualized__Table__row {
   white-space: pre-wrap;
   word-break: break-all;
 }
-
-.query-results--entity-link {
-  color: #24B2FF; // $link-color;
-  text-decoration: none;
-  background-color: transparent;
-  opacity: 0.7;
-}
-
-
-.query-results--entity-link:hover {
-  text-decoration: underline;
-  opacity: 0.7;
-}

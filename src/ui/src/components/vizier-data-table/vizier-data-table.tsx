@@ -9,7 +9,8 @@ import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import {
-  isEntityType, STATUS_TYPES, ToEntityLink, toStatusIndicator,
+  EntityLink,
+  isEntityType, STATUS_TYPES, toStatusIndicator,
 } from '../live-widgets/utils';
 import { AlertData, JSONData, LatencyData } from '../format-data/format-data';
 
@@ -53,7 +54,7 @@ const serviceRendererFuncGen = (clusterName: string) => (v) => {
               parsedArray.map((entity, i) => (
                 <span key={i}>
                   {i > 0 && ', '}
-                  {ToEntityLink(entity, SemanticType.ST_SERVICE_NAME, clusterName)}
+                  <EntityLink entity={entity} semanticType={SemanticType.ST_SERVICE_NAME} clusterName={clusterName} />
                 </span>
               ))
             }
@@ -63,14 +64,17 @@ const serviceRendererFuncGen = (clusterName: string) => (v) => {
   } catch (e) {
     // noop.
   }
-  return ToEntityLink(v, SemanticType.ST_SERVICE_NAME, clusterName);
+  return <EntityLink entity={v} semanticType={SemanticType.ST_SERVICE_NAME} clusterName={clusterName} />;
 };
 
 const entityRenderer = (st: SemanticType, clusterName: string) => {
   if (st === SemanticType.ST_SERVICE_NAME) {
     return serviceRendererFuncGen(clusterName);
   }
-  return (v) => ToEntityLink(v, st, clusterName);
+  const entity = (v) => (
+    <EntityLink entity={v} semanticType={st} clusterName={clusterName} />
+  );
+  return entity;
 };
 
 const prettyCellRenderer = (colInfo: Relation.ColumnInfo, clusterName: string) => {
