@@ -9,11 +9,10 @@ namespace stirling {
 namespace dynamic_tracing {
 
 /**
- * Transforms a single probe of type LOGICAL into a program with
- * entry probes, return probes, maps and outputs.
+ * Transforms any logical probes inside a program into entry and return probes.
+ * Also automatically adds any required supporting maps and implicit outputs.
  */
-// TODO(oazizi): Support a mode that ir::logical::Program as input.
-StatusOr<ir::logical::Program> TransformLogicalProbe(const ir::logical::Probe& input_probe);
+StatusOr<ir::logical::Program> TransformLogicalProgram(const ir::logical::Program& input_program);
 
 }  // namespace dynamic_tracing
 }  // namespace stirling

@@ -17,6 +17,7 @@ using ::google::protobuf::util::MessageDifferencer;
 using ::pl::testing::proto::EqualsProto;
 
 constexpr std::string_view kLogicalProbe = R"(
+probes: {
   name: "probe0"
   trace_point: {
     binary_path: "$0"
@@ -55,6 +56,7 @@ constexpr std::string_view kLogicalProbe = R"(
     id: "retval1"
     index: 7
   }
+}
 )";
 
 constexpr std::string_view kProgram = R"(
@@ -151,12 +153,12 @@ TEST_P(ProbeGenTest, Transform) {
   ProbeGenTestParam p = GetParam();
 
   std::string entry_probe_ir = absl::Substitute(p.input, kGoBinaryPath);
-  ir::logical::Probe input_probe;
-  ASSERT_TRUE(TextFormat::ParseFromString(std::string(entry_probe_ir), &input_probe));
+  ir::logical::Program input_program;
+  ASSERT_TRUE(TextFormat::ParseFromString(std::string(entry_probe_ir), &input_program));
 
   std::string expected_output = absl::Substitute(p.expected_output, kGoBinaryPath);
 
-  ASSERT_OK_AND_THAT(TransformLogicalProbe(input_probe), EqualsProto(expected_output));
+  ASSERT_OK_AND_THAT(TransformLogicalProgram(input_program), EqualsProto(expected_output));
 }
 
 INSTANTIATE_TEST_SUITE_P(ProbeGenTestSuite, ProbeGenTest,

@@ -58,13 +58,44 @@ void CreateReturnProbe(const ir::logical::Probe& input_probe, ir::logical::Progr
   }
 }
 
-StatusOr<ir::logical::Program> TransformLogicalProbe(const ir::logical::Probe& input_probe) {
+void TransformLogicalProbe(const ir::logical::Probe& input_probe, ir::logical::Program* out) {
+  // A logical probe is allowed to implicitly access arguments and return values.
+  // Here we expand this out to be explicit. We break the logical probe into:
+  // 1) An entry probe - to grab any potential arguments.
+  // 2) A return probe - to grab any potential return values.
+  // 3) A map - to stash the arguments and transfer them to the return probe.
+  // 4) An output - to output the results from the return probe.
+  // TODO(oazizi): An optimization could be to determine whether both entry and return probes
+  //               are required. When not required, one probe and the stash map can be avoided.
+  CreateOutput(input_probe, out);
+  CreateMap(input_probe, out);
+  CreateEntryProbe(input_probe, out);
+  CreateReturnProbe(input_probe, out);
+}
+
+StatusOr<ir::logical::Program> TransformLogicalProgram(const ir::logical::Program& input_program) {
   ir::logical::Program out;
 
-  CreateOutput(input_probe, &out);
-  CreateMap(input_probe, &out);
-  CreateEntryProbe(input_probe, &out);
-  CreateReturnProbe(input_probe, &out);
+  // Copy all explicitly declared output buffers.
+  for (const auto& o : input_program.outputs()) {
+    auto* output = out.add_outputs();
+    output->CopyFrom(o);
+  }
+
+  // Copy all explicitly declared maps.
+  for (const auto& m : input_program.maps()) {
+    auto* map = out.add_maps();
+    map->CopyFrom(m);
+  }
+
+  for (const auto& p : input_program.probes()) {
+    if (p.trace_point().type() == ir::shared::TracePoint::LOGICAL) {
+      TransformLogicalProbe(p, &out);
+    } else {
+      auto* probe = out.add_probes();
+      probe->CopyFrom(p);
+    }
+  }
 
   // TODO(yzhao): Add GOID constructs here.
   // CreateGOIDMap(&out);
