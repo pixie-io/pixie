@@ -26,12 +26,14 @@ using dwarf_tools::VarType;
  */
 class Dwarvifier {
  public:
-  Dwarvifier() {}
+  Dwarvifier(const std::map<std::string, ir::shared::Map*>& maps,
+             const std::map<std::string, ir::shared::Output*>& outputs)
+      : maps_(maps), outputs_(outputs) {}
   Status GenerateProbe(const ir::logical::Probe input_probe, ir::physical::Program* output_program);
 
  private:
   Status Setup(const ir::shared::TracePoint& trace_point);
-  Status ProcessProbe(const ir::logical::Probe input_probe, ir::physical::Program* output_program);
+  Status ProcessProbe(const ir::logical::Probe& input_probe, ir::physical::Program* output_program);
   Status ProcessTracepoint(const ir::shared::TracePoint& trace_point,
                            ir::physical::PhysicalProbe* output_probe);
   Status ProcessSpecialVariables(ir::physical::PhysicalProbe* output_probe);
@@ -49,13 +51,12 @@ class Dwarvifier {
   Status GenerateMapValueStruct(const ir::logical::MapStashAction& stash_action_in,
                                 const std::string& struct_type_name,
                                 ir::physical::Program* output_program);
-  Status GenerateMap(const ir::logical::MapStashAction& stash_action_in,
-                     const std::string& struct_type_name, ir::physical::Program* output_program);
   Status GenerateOutputStruct(const ir::logical::OutputAction& output_action_in,
                               const std::string& struct_type_name,
                               ir::physical::Program* output_program);
-  Status GenerateOutput(const ir::logical::OutputAction& output_action_in,
-                        const std::string& struct_type_name, ir::physical::Program* output_program);
+
+  const std::map<std::string, ir::shared::Map*>& maps_;
+  const std::map<std::string, ir::shared::Output*>& outputs_;
 
   std::unique_ptr<dwarf_tools::DwarfReader> dwarf_reader_;
   std::map<std::string, dwarf_tools::ArgInfo> args_map_;
@@ -83,7 +84,7 @@ class Dwarvifier {
   static constexpr std::string_view kDerefStr = "_X_";
 };
 
-// AddDwarves
+// AddDwarves is the main entry point.
 StatusOr<ir::physical::Program> AddDwarves(const ir::logical::Program& input_program) {
   ir::physical::Program output_program;
 
@@ -105,10 +106,8 @@ StatusOr<ir::physical::Program> AddDwarves(const ir::logical::Program& input_pro
   }
 
   // Transform probes.
+  Dwarvifier dwarvifier(maps, outputs);
   for (const auto& probe : input_program.probes()) {
-    // TODO(oazizi): pass maps, outputs to GenerateProbe so it can look-up, rather than create such
-    // structures.
-    Dwarvifier dwarvifier;
     PL_RETURN_IF_ERROR(dwarvifier.GenerateProbe(probe, &output_program));
   }
 
@@ -188,7 +187,7 @@ Status Dwarvifier::ProcessTracepoint(const ir::shared::TracePoint& trace_point,
   return Status::OK();
 }
 
-Status Dwarvifier::ProcessProbe(const ir::logical::Probe input_probe,
+Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
                                 ir::physical::Program* output_program) {
   auto* p = output_program->add_probes();
 
@@ -410,20 +409,23 @@ Status Dwarvifier::GenerateMapValueStruct(const ir::logical::MapStashAction& sta
   return Status::OK();
 }
 
-Status Dwarvifier::GenerateMap(const ir::logical::MapStashAction& stash_action_in,
-                               const std::string& struct_type_name,
-                               ir::physical::Program* output_program) {
-  // TODO(oazizi): Check if map already exists. If it does, make sure it is the same.
+namespace {
+Status PopulateMapTypes(const std::map<std::string, ir::shared::Map*>& maps,
+                        const std::string& map_name, const std::string& struct_type_name) {
+  auto iter = maps.find(map_name);
+  if (iter == maps.end()) {
+    return error::Internal("Reference to undeclared map: $0", map_name);
+  }
 
-  auto* map = output_program->add_maps();
-  map->set_name(stash_action_in.map_name());
+  auto* map = iter->second;
 
-  // TODO(oazizi): Set key type based on Map key.
+  // TODO(oazizi): Check if values are already set. If they are check for consistency.
   map->mutable_key_type()->set_scalar(ir::shared::ScalarType::UINT64);
   map->mutable_value_type()->set_struct_type(struct_type_name);
 
   return Status::OK();
 }
+}  // namespace
 
 Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_action_in,
                                       ir::physical::PhysicalProbe* output_probe,
@@ -432,7 +434,7 @@ Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_a
   std::string struct_type_name = stash_action_in.map_name() + "_value_t";
 
   PL_RETURN_IF_ERROR(GenerateMapValueStruct(stash_action_in, struct_type_name, output_program));
-  PL_RETURN_IF_ERROR(GenerateMap(stash_action_in, struct_type_name, output_program));
+  PL_RETURN_IF_ERROR(PopulateMapTypes(maps_, stash_action_in.map_name(), struct_type_name));
 
   auto* struct_var = output_probe->add_st_vars();
   struct_var->set_type(struct_type_name);
@@ -485,18 +487,21 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
   return Status::OK();
 }
 
-Status Dwarvifier::GenerateOutput(const ir::logical::OutputAction& output_action_in,
-                                  const std::string& struct_type_name,
-                                  ir::physical::Program* output_program) {
-  // TODO(oazizi): Check if output buffer already exists. If it does, make sure the type matches or
-  // error.
+namespace {
+Status PopulateOutputTypes(const std::map<std::string, ir::shared::Output*>& outputs,
+                           const std::string& output_name, const std::string& struct_type_name) {
+  auto iter = outputs.find(output_name);
+  if (iter == outputs.end()) {
+    return error::Internal("Reference to undeclared map: $0", output_name);
+  }
 
-  auto* output = output_program->add_outputs();
-  output->set_name(output_action_in.output_name());
+  auto* output = iter->second;
+
   output->mutable_type()->set_struct_type(struct_type_name);
 
   return Status::OK();
 }
+}  // namespace
 
 Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_action_in,
                                        ir::physical::PhysicalProbe* output_probe,
@@ -508,7 +513,8 @@ Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_a
   PL_RETURN_IF_ERROR(GenerateOutputStruct(output_action_in, struct_type_name, output_program));
 
   // Generate an output definition.
-  PL_RETURN_IF_ERROR(GenerateOutput(output_action_in, struct_type_name, output_program));
+  PL_RETURN_IF_ERROR(
+      PopulateOutputTypes(outputs_, output_action_in.output_name(), struct_type_name));
 
   // Create and initialize a struct variable.
   auto* struct_var = output_probe->add_st_vars();

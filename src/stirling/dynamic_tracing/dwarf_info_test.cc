@@ -295,6 +295,12 @@ probes: {
 )";
 
 constexpr std::string_view kActionProbeIn = R"(
+maps {
+  name: "my_stash"
+}
+outputs {
+  name: "out_table"
+}
 probes: {
   trace_point: {
     binary_path: "$0"
