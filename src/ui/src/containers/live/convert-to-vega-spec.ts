@@ -615,19 +615,20 @@ function createTSAxes(spec: VgSpec, xScale: Scale, yScale: Scale, display: Displ
 const PLOT_GROUP_Z_LAYER = 100;
 const VORONOI_Z_LAYER = 99;
 
-function createExtent(data: string, timeseries: Timeseries[]): {
-  extentSignalNames: string[];
-  extentTransforms: Transforms[];
-} {
-  const extentSignalNames: string[] = [];
-  const extentTransforms: Transforms[] = [];
-  timeseries.forEach((ts) => {
-    const signalName = `${data}_${ts.value}_extent`;
-    extentSignalNames.push(signalName);
-    extentTransforms.push({ type: 'extent', field: ts.value, signal: signalName });
-  });
+interface DomainExtentSignals {
+  names: string[];
+  transforms: Transforms[];
+}
 
-  return { extentSignalNames, extentTransforms };
+function createExtentSignalsAndTransforms(data: string, valueFields: string[]): DomainExtentSignals {
+  const names: string[] = [];
+  const transforms: Transforms[] = [];
+  valueFields.forEach((v) => {
+    const signalName = `${data}_${v}_extent`;
+    names.push(signalName);
+    transforms.push({ type: 'extent', field: v, signal: signalName });
+  });
+  return { names, transforms };
 }
 
 function createYDomainSignal(extentSignalNames: string[],
@@ -667,15 +668,51 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
   addAutosize(spec);
   spec.style = 'cell';
 
+  // Determine if we need to add a stack transform.
+  let stackByParams: { value: string; series: string } | null = null;
+  const timeseriesValues: string[] = [];
+  // Do some error checks and process out values before hand.
+  display.timeseries.forEach((ts) => {
+    if (ts.series && display.timeseries.length > 1) {
+      throw new Error('Subseries are not supported for multiple timeseries within a TimeseriesChart');
+    }
+    if (ts.stackBySeries && !ts.series) {
+      throw new Error('Stack by series is not supported when series is not specified.');
+    }
+
+    if (ts.stackBySeries) {
+      stackByParams = { value: ts.value, series: ts.series };
+    }
+    timeseriesValues.push(ts.value);
+  });
+
   // Create data sources.
   const baseDataSrc = addDataSource(spec, { name: source });
-  const { extentSignalNames, extentTransforms } = createExtent(TRANSFORMED_DATA_SOURCE_NAME, display.timeseries);
+
+  // Create the transforms that
+  let domainExtents: DomainExtentSignals = createExtentSignalsAndTransforms(
+    TRANSFORMED_DATA_SOURCE_NAME, timeseriesValues);
+  const valueToStackBy = stackByParams ? stackByParams.value : '';
+  // TODO(philkuz) need to refactor to remove these definitions.
+  const stackedValueStart = `${valueToStackBy}_stacked_start`;
+  const stackedValueEnd = `${valueToStackBy}_stacked_end`;
+  let stackTransforms: Transforms[] = [];
+  // If stackByParams are set, then we need to create a stackByTransform and update the domain extents.
+  if (stackByParams) {
+    stackTransforms = stackBySeriesTransform(
+      TIME_FIELD, stackByParams.value, stackByParams.series, stackedValueStart, stackedValueEnd);
+    domainExtents = createExtentSignalsAndTransforms(
+      TRANSFORMED_DATA_SOURCE_NAME, [stackedValueStart, stackedValueEnd]);
+  }
+
+  const { names: extentSignalNames, transforms: extentTransforms } = domainExtents;
   const transformedDataSrc = addDataSource(spec, {
     name: TRANSFORMED_DATA_SOURCE_NAME,
     source: baseDataSrc.name,
     transform: [
       ...timeFormatTransform(TIME_FIELD),
       ...trimFirstAndLastTimestepTransform(TIME_FIELD),
+      ...stackTransforms,
       ...extentTransforms,
     ],
   });
@@ -706,12 +743,6 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
   for (const timeseries of display.timeseries) {
     let group: VgSpec | GroupMark = spec;
     let dataName = transformedDataSrc.name;
-    if (timeseries.series && display.timeseries.length > 1) {
-      throw new Error('Subseries are not supported for multiple timeseries within a TimeseriesChart');
-    }
-    if (timeseries.stackBySeries && !timeseries.series) {
-      throw new Error('Stack by series is not supported when series is not specified.');
-    }
     if (timeseries.series) {
       dataName = `faceted_data_${i}`;
       group = addMark(spec, {
@@ -751,19 +782,6 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
         colorScale.domain = [];
       }
       (colorScale.domain as string[]).push(timeseries.value);
-    }
-
-    const stackedValueStart = `${timeseries.value}_stacked_start`;
-    const stackedValueEnd = `${timeseries.value}_stacked_end`;
-    if (timeseries.stackBySeries) {
-      extendDataTransforms(transformedDataSrc,
-        stackBySeriesTransform(TIME_FIELD, timeseries.value, timeseries.series, stackedValueStart, stackedValueEnd));
-      // Adjust yScale to use new start/end stacked values.
-      const newDomain: ScaleMultiFieldsRef = {
-        data: transformedDataSrc.name,
-        fields: [stackedValueStart, stackedValueEnd],
-      };
-      yScale.domain = newDomain;
     }
 
     const markType = getMarkType(timeseries.mode);

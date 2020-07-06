@@ -377,8 +377,9 @@ describe('timeseries with stacked series', () => {
   const expectedInteractivitySelector = `datum["${seriesFieldName}"]`;
   addHoverReverseTests(spec, expectedInteractivitySelector);
   addHoverDataTest(spec, seriesFieldName, [valueFieldName]);
-  // Stack not yet handled
-  // addTimeseriesYDomainHoverTests(spec, TRANSFORMED_DATA_SOURCE_NAME, [valueFieldName]);
+  // Instead of value fields, we use the stack values instead.
+  addTimeseriesYDomainHoverTests(
+    spec, TRANSFORMED_DATA_SOURCE_NAME, [`${valueFieldName}_stacked_end`, `${valueFieldName}_stacked_start`]);
 });
 
 describe('timeseries chart with multiple timeseries with different modes', () => {
