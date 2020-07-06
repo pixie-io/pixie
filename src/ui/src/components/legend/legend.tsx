@@ -245,7 +245,7 @@ const Legend = React.memo((props: LegendProps) => {
 
   const containerStyles: CSSProperties = {
     paddingLeft: `${leftPadding}px`,
-    width: `${chartWidth - leftPadding}px`,
+    width: '100%',
   };
 
   const handlePageBack = () => {
