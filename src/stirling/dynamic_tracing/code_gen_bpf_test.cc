@@ -92,6 +92,7 @@ constexpr char kProgram[] = R"proto(
                                 variable_name: "st_var"
                               }
                               printks { text: "hello world!" }
+                              printks { scalar: "var" }
                             })proto";
 
 TEST(CodeGenBPFTest, AttachOnDummyExe) {

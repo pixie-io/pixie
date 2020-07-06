@@ -10,6 +10,7 @@ namespace dynamic_tracing {
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::OutputAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::PhysicalProbe;
+using ::pl::stirling::dynamic_tracing::ir::physical::Printk;
 using ::pl::stirling::dynamic_tracing::ir::physical::Register;
 using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
@@ -44,17 +45,13 @@ TEST(GenStructTest, Output) {
   field->mutable_type()->set_scalar(ScalarType::VOID_POINTER);
 
   field = st.add_fields();
-  field->set_name("str");
-  field->mutable_type()->set_scalar(ScalarType::STRING);
-
-  field = st.add_fields();
   field->set_name("attr");
   field->mutable_type()->set_struct_type("attr_t");
 
-  ASSERT_OK_AND_THAT(GenStruct(st, /*indent_size*/ 4),
-                     ElementsAre("struct socket_data_event_t {", "    int32_t i32;",
-                                 "    int64_t i64;", "    double double_val;", "    void* msg;",
-                                 "    char* str;", "    struct attr_t attr;", "};"));
+  ASSERT_OK_AND_THAT(
+      GenStruct(st, /*indent_size*/ 4),
+      ElementsAre("struct socket_data_event_t {", "    int32_t i32;", "    int64_t i64;",
+                  "    double double_val;", "    void* msg;", "    struct attr_t attr;", "};"));
 }
 
 TEST(GenVariableTest, Register) {
@@ -167,7 +164,7 @@ TEST(GenOutputActionTest, Variables) {
 TEST(GenPhysicalProbeTest, EntryProbe) {
   PhysicalProbe probe;
 
-  probe.set_name("syscall__probe_connect");
+  probe.set_name("probe_entry");
 
   ScalarVariable* var = nullptr;
 
@@ -198,15 +195,21 @@ TEST(GenPhysicalProbeTest, EntryProbe) {
   output_action->set_perf_buffer_name("data_events");
   output_action->set_variable_name("st_var");
 
-  std::vector<std::string> expected = {"int syscall__probe_connect(struct pt_regs* ctx) {",
-                                       "uint32_t key = bpf_get_current_pid_tgid() >> 32;",
-                                       "int32_t var = PT_REGS_SP(ctx);",
-                                       "struct socket_data_event_t st_var = {};",
-                                       "st_var.i32 = var;",
-                                       "test.update(&key, &var);",
-                                       "data_events.perf_submit(ctx, &st_var, sizeof(st_var));",
-                                       "return 0;",
-                                       "}"};
+  Printk* printk = probe.add_printks();
+  printk->set_scalar("var");
+
+  std::vector<std::string> expected = {
+      "int probe_entry(struct pt_regs* ctx) {",
+      "uint32_t key = bpf_get_current_pid_tgid() >> 32;",
+      "int32_t var = PT_REGS_SP(ctx);",
+      "struct socket_data_event_t st_var = {};",
+      "st_var.i32 = var;",
+      "test.update(&key, &var);",
+      "data_events.perf_submit(ctx, &st_var, sizeof(st_var));",
+      R"(bpf_trace_printk("var: %d\n", var);)",
+      "return 0;",
+      "}",
+  };
 
   Struct st;
   st.set_name("socket_data_event_t");

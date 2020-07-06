@@ -55,8 +55,24 @@ const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypeToCType = {
     {ScalarType::UINT64, "uint64_t"},
     {ScalarType::FLOAT, "float"},
     {ScalarType::DOUBLE, "double"},
-    {ScalarType::STRING, "char*"},
     {ScalarType::VOID_POINTER, "void*"},
+};
+
+const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypePrintfFormatCode = {
+    {ScalarType::BOOL, "d"},
+    {ScalarType::INT, "d"},
+    {ScalarType::INT8, "d"},
+    {ScalarType::INT16, "d"},
+    {ScalarType::INT32, "d"},
+    {ScalarType::INT64, "ld"},
+    {ScalarType::UINT, "d"},
+    {ScalarType::UINT8, "d"},
+    {ScalarType::UINT16, "d"},
+    {ScalarType::UINT32, "d"},
+    {ScalarType::UINT64, "ld"},
+    {ScalarType::FLOAT, "f"},
+    {ScalarType::DOUBLE, "lf"},
+    {ScalarType::VOID_POINTER, "x"},
 };
 // clang-format on
 
@@ -216,8 +232,35 @@ void MoveBackStrVec(std::vector<std::string>&& src, std::vector<std::string>* ds
   dst->insert(dst->end(), std::make_move_iterator(src.begin()), std::make_move_iterator(src.end()));
 }
 
-std::string GenPrintk(const Printk& printk) {
-  return absl::Substitute(R"(bpf_trace_printk("$0\n");)", printk.text());
+StatusOr<std::string> GenScalarVarPrintk(
+    const absl::flat_hash_map<std::string_view, const ScalarVariable*>& scalar_vars,
+    const Printk& printk) {
+  auto iter1 = scalar_vars.find(printk.scalar());
+  if (iter1 == scalar_vars.end()) {
+    return error::InvalidArgument("ScalarVariable '$0' is not defined", printk.scalar());
+  }
+  const ScalarVariable* var_def = iter1->second;
+  auto iter2 = kScalarTypePrintfFormatCode.find(var_def->type());
+  if (iter2 == kScalarTypePrintfFormatCode.end()) {
+    return error::InvalidArgument("ScalarVariable type '$0' does not have format code",
+                                  magic_enum::enum_name(var_def->type()));
+  }
+
+  return absl::Substitute(R"(bpf_trace_printk("$0: %$1\n", $0);)", printk.scalar(), iter2->second);
+}
+
+StatusOr<std::string> GenPrintk(
+    const absl::flat_hash_map<std::string_view, const ScalarVariable*>& scalar_vars,
+    const Printk& printk) {
+  switch (printk.content_oneof_case()) {
+    case Printk::ContentOneofCase::kText:
+      return absl::Substitute(R"(bpf_trace_printk("$0\n");)", printk.text());
+    case Printk::ContentOneofCase::kScalar:
+      return GenScalarVarPrintk(scalar_vars, printk);
+    case Printk::ContentOneofCase::CONTENT_ONEOF_NOT_SET:
+      PB_ENUM_SENTINEL_SWITCH_CLAUSE;
+  }
+  GCC_SWITCH_RETURN;
 }
 
 }  // namespace
@@ -238,9 +281,11 @@ StatusOr<std::vector<std::string>> GenPhysicalProbe(
   code_lines.push_back(absl::Substitute("int $0(struct pt_regs* ctx) {", probe.name()));
 
   absl::flat_hash_set<std::string_view> var_names;
+  absl::flat_hash_map<std::string_view, const ScalarVariable*> scalar_vars;
 
   for (const auto& var : probe.vars()) {
     var_names.insert(var.name());
+    scalar_vars[var.name()] = &var;
     MOVE_BACK_STR_VEC(&code_lines, GenScalarVariable(var));
   }
 
@@ -295,7 +340,8 @@ StatusOr<std::vector<std::string>> GenPhysicalProbe(
   }
 
   for (const auto& printk : probe.printks()) {
-    code_lines.push_back(GenPrintk(printk));
+    PL_ASSIGN_OR_RETURN(std::string code_line, GenPrintk(scalar_vars, printk));
+    code_lines.push_back(std::move(code_line));
   }
 
   code_lines.push_back("return 0;");

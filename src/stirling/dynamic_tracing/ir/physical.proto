@@ -101,7 +101,13 @@ message OutputAction {
 
 // bpf_trace_printk() on a text.
 message Printk {
-  string text = 1;
+  oneof content_oneof {
+    // A piece of hardcoded text.
+    string text = 1;
+
+    // Another ScalarVariable, cannot be StructVariable.
+    string scalar = 2;
+  }
 }
 
 // Corresponds to a logical probe.

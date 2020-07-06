@@ -47,10 +47,7 @@ enum ScalarType {
   UINT64 = 10;
   FLOAT = 11;
   DOUBLE = 12;
-
-  // Same as char pointer.
-  STRING = 13;
-  VOID_POINTER = 14;
+  VOID_POINTER = 13;
 }
 
 // Wraps an oneof field which can be either scalar or struct.
