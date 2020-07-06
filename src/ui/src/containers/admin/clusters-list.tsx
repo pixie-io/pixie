@@ -97,8 +97,8 @@ export const ClustersTable = () => {
           <StyledTableHeaderCell />
           <StyledTableHeaderCell>Name</StyledTableHeaderCell>
           <StyledTableHeaderCell>ID</StyledTableHeaderCell>
-          <StyledTableHeaderCell>Vizier</StyledTableHeaderCell>
-          <StyledTableHeaderCell>K8s</StyledTableHeaderCell>
+          <StyledTableHeaderCell>Vizier Version</StyledTableHeaderCell>
+          <StyledTableHeaderCell>K8s Version</StyledTableHeaderCell>
           <StyledTableHeaderCell>Heartbeat</StyledTableHeaderCell>
           <StyledTableHeaderCell>Mode</StyledTableHeaderCell>
         </TableRow>
@@ -118,6 +118,7 @@ export const ClustersTable = () => {
                   to={`/admin/clusters/${encodeURIComponent(cluster.name)}`}
                   color='secondary'
                   variant='text'
+                  disabled={cluster.statusGroup !== 'healthy'}
                 >
                   {cluster.prettyName}
                 </Button>
