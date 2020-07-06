@@ -4,6 +4,7 @@
 #include <google/protobuf/text_format.h>
 #include <google/protobuf/util/message_differencer.h>
 
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <ostream>
@@ -33,7 +34,7 @@ struct EqualsProtoMatcher {
       differencer.set_scope(optional_scope_.value());
     }
     if (!differencer.Compare(*expected_pb, pb)) {
-      (*listener) << diff_report << "result";
+      (*listener) << diff_report << "got:\n" << pb.DebugString();
       return false;
     }
     return true;
