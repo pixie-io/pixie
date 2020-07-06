@@ -16,6 +16,7 @@ using ::google::protobuf::TextFormat;
 using ::google::protobuf::util::MessageDifferencer;
 
 constexpr std::string_view kEntryProbeIn = R"(
+probes: {
   trace_point: {
     binary_path: "$0"
     symbol: "main.MixedArgTypes"
@@ -45,6 +46,7 @@ constexpr std::string_view kEntryProbeIn = R"(
     id: "arg5"
     expr: "b2.B3"
   }
+}
 )";
 
 constexpr std::string_view kEntryProbeOut = R"(
@@ -131,6 +133,7 @@ probes: {
 )";
 
 constexpr std::string_view kReturnProbeIn = R"(
+probes: {
   trace_point: {
     binary_path: "$0"
     symbol: "main.MixedArgTypes"
@@ -144,6 +147,7 @@ constexpr std::string_view kReturnProbeIn = R"(
     id: "retval1"
     index: 7
   }
+}
 )";
 
 constexpr std::string_view kReturnProbeOut = R"(
@@ -198,6 +202,7 @@ vars {
 )";
 
 constexpr std::string_view kNestedArgProbeIn = R"(
+probes: {
   trace_point: {
     binary_path: "$0"
     symbol: "main.PointerWrapperWrapperWrapperFunc"
@@ -211,6 +216,7 @@ constexpr std::string_view kNestedArgProbeIn = R"(
     id: "arg1"
     expr: "p.Ptr.Val.V0"
   }
+}
 )";
 
 constexpr std::string_view kNestedArgProbeOut = R"(
@@ -289,6 +295,7 @@ probes: {
 )";
 
 constexpr std::string_view kActionProbeIn = R"(
+probes: {
   trace_point: {
     binary_path: "$0"
     symbol: "main.MixedArgTypes"
@@ -318,6 +325,7 @@ constexpr std::string_view kActionProbeIn = R"(
     variable_name: "arg1"
     variable_name: "arg2"
   }
+}
 )";
 
 constexpr std::string_view kActionProbeOut = R"(
@@ -489,15 +497,15 @@ class DwarfInfoTest : public ::testing::TestWithParam<DwarfInfoTestParam> {
 TEST_P(DwarfInfoTest, Transform) {
   DwarfInfoTestParam p = GetParam();
 
-  std::string entry_probe_ir = absl::Substitute(p.input, kGoBinaryPath);
-  ir::logical::Probe input_probe;
-  ASSERT_TRUE(TextFormat::ParseFromString(std::string(entry_probe_ir), &input_probe));
+  std::string input_str = absl::Substitute(p.input, kGoBinaryPath);
+  ir::logical::Program input_program;
+  ASSERT_TRUE(TextFormat::ParseFromString(std::string(input_str), &input_program));
 
-  std::string entry_probe_phys_ir = absl::Substitute(p.expected_output, kGoBinaryPath);
+  std::string expected_output_str = absl::Substitute(p.expected_output, kGoBinaryPath);
   ir::physical::Program expected_output;
-  TextFormat::ParseFromString(std::string(entry_probe_phys_ir), &expected_output);
+  TextFormat::ParseFromString(std::string(expected_output_str), &expected_output);
 
-  ASSERT_OK_AND_ASSIGN(ir::physical::Program program, AddDwarves(input_probe));
+  ASSERT_OK_AND_ASSIGN(ir::physical::Program program, AddDwarves(input_program));
 
   MessageDifferencer message_differencer;
   std::string diff_out;

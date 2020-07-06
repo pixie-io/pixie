@@ -75,9 +75,17 @@ message Probe {
   repeated OutputAction output_actions = 8;
 }
 
-// TODO(oazizi): Is this the right place for this?
+// A logical program.
+// Represents a fully logical program, or one in intermediate state.
+// Example: The simplest logical program will have only a single probe (no outputs, no maps),
+// which will then get transformed into a program with multiple probes, maps and outputs.
 message Program {
+  // The programs outputs to a table.
   repeated shared.Output outputs = 1;
+
+  // Maps holding shared state across probes.
   repeated shared.Map maps = 2;
+
+  // All the probes of the program.
   repeated Probe probes = 3;
 }
