@@ -56,6 +56,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   editorPanel: {
     display: 'flex',
     flexDirection: 'row',
+    minHeight: 0,
   },
   canvas: {
     overflowY: 'auto',

@@ -1,14 +1,13 @@
-import clsx from 'clsx';
 import LazyPanel from 'components/lazy-panel';
 import { Spinner } from 'components/spinner/spinner';
 import { DataDrawerContext, DataDrawerTabsKey } from 'context/data-drawer-context';
 import { LayoutContext } from 'context/layout-context';
 import { ResultsContext } from 'context/results-context';
 import * as React from 'react';
-import Split from 'react-split';
+import FixedSizeDrawer from 'components/drawer/drawer';
 
 import {
-  createStyles, makeStyles, Theme, useTheme,
+  createStyles, makeStyles, Theme,
 } from '@material-ui/core/styles';
 
 import DataDrawerToggle from './data-drawer-toggle';
@@ -26,6 +25,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     position: 'relative',
     display: 'flex',
     flexDirection: 'column',
+    flex: 1,
+    backgroundColor: theme.palette.background.default,
   },
   content: {
     flex: 1,
@@ -37,35 +38,32 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     left: '50%',
     transform: 'translate(-50%, -50%)',
   },
+  otherContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    width: '100%',
+  },
 }));
 
-const DataDrawer = () => {
-  const { dataDrawerOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
-  const toggleDrawerOpen = () => setDataDrawerOpen((open) => !open);
+const DataDrawer = (props) => {
   const classes = useStyles();
-  const { activeTab, setActiveTab } = React.useContext(DataDrawerContext);
   const { loading } = React.useContext(ResultsContext);
 
   return (
     <div className={classes.drawerRoot}>
-      <DataDrawerToggle
-        opened={dataDrawerOpen}
-        toggle={toggleDrawerOpen}
-        activeTab={activeTab}
-        setActiveTab={(tab: DataDrawerTabsKey) => setActiveTab(tab)}
-      />
       {
         loading
-          ? (dataDrawerOpen ? <div className={classes.spinner}><Spinner /></div> : null)
+          ? (props.open ? <div className={classes.spinner}><Spinner /></div> : null)
           : (
             <>
-              <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'data'}>
+              <LazyPanel className={classes.content} show={props.open && props.activeTab === 'data'}>
                 <DataViewer />
               </LazyPanel>
-              <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'errors'}>
+              <LazyPanel className={classes.content} show={props.open && props.activeTab === 'errors'}>
                 <ErrorPanel />
               </LazyPanel>
-              <LazyPanel className={classes.content} show={dataDrawerOpen && activeTab === 'stats'}>
+              <LazyPanel className={classes.content} show={props.open && props.activeTab === 'stats'}>
                 <ExecutionStats />
               </LazyPanel>
             </>
@@ -76,49 +74,36 @@ const DataDrawer = () => {
 };
 
 export const DataDrawerSplitPanel = (props) => {
-  const ref = React.useRef(null);
-  const theme = useTheme();
   const classes = useStyles();
-  const {
-    dataDrawerSplitsSizes,
-    setDataDrawerSplitsSizes,
-    setDataDrawerOpen,
-    dataDrawerOpen,
-  } = React.useContext(LayoutContext);
 
-  const [collapsedPanel, setCollapsedPanel] = React.useState<null | 1>(null);
+  const { dataDrawerOpen, setDataDrawerOpen } = React.useContext(LayoutContext);
+  const { activeTab, setActiveTab } = React.useContext(DataDrawerContext);
 
-  const dragHandler = ((sizes) => {
-    if (sizes[1] <= 5) { // Snap the header close when it is less than 5%.
-      setDataDrawerOpen(false);
-    } else {
-      setDataDrawerOpen(true);
-      setDataDrawerSplitsSizes(sizes);
-    }
-  });
+  const toggleDrawerOpen = () => setDataDrawerOpen((open) => !open);
 
-  React.useEffect(() => {
-    if (!dataDrawerOpen) {
-      setCollapsedPanel(1);
-    } else {
-      setCollapsedPanel(null);
-      ref.current.split.setSizes(dataDrawerSplitsSizes);
-    }
-  }, [dataDrawerOpen, dataDrawerSplitsSizes]);
+  const contents = (
+    <div className={classes.otherContent}>
+      {props.children}
+      <DataDrawerToggle
+        opened={dataDrawerOpen}
+        toggle={toggleDrawerOpen}
+        activeTab={activeTab}
+        setActiveTab={(tab: DataDrawerTabsKey) => setActiveTab(tab)}
+      />
+    </div>
+  );
 
   return (
-    <Split
-      ref={ref}
-      direction='vertical'
-      sizes={dataDrawerSplitsSizes}
-      className={clsx(classes.splits, props.className)}
-      gutterSize={theme.spacing(0.5)}
-      minSize={theme.spacing(5)}
-      onDragEnd={dragHandler}
-      collapsed={collapsedPanel}
+    <FixedSizeDrawer
+      drawerDirection='bottom'
+      drawerSize='350px' // TODO(michelle): Update this to be resizable.
+      open={dataDrawerOpen}
+      otherContent={contents}
     >
-      {props.children}
-      <DataDrawer />
-    </Split>
+      <DataDrawer
+        open={dataDrawerOpen}
+        activeTab={activeTab}
+      />
+    </FixedSizeDrawer>
   );
 };
