@@ -43,22 +43,35 @@ def inbound_service_let_summary(start_time: str, namespace: px.Namespace):
     @namespace: The namespace to filter on.
 
     '''
-    df = inbound_service_let_helper(start_time, namespace, ['timestamp', 'service'])
-    window_size = 1.0 * window_s
-    df.requests_per_s = df.throughput_total / window_size
-    df.inbound_bytes_per_s = df.inbound_bytes_total / window_size
-    df.outbound_bytes_per_s = df.outbound_bytes_total / window_size
-    df.error_rate_pct = df.error_rate * 100 / window_size
+    df = inbound_service_let_helper(start_time, namespace)
 
-    return df.groupby(['service']).agg(
-        latency_p50=('latency_p50', px.mean),
-        latency_p90=('latency_p90', px.mean),
-        latency_p99=('latency_p99', px.mean),
+    per_s_df = df.groupby(['timestamp', 'service']).agg(
+        throughput_total=('latency_ms', px.count),
+        inbound_bytes_total=('req_size', px.sum),
+        outbound_bytes_total=('resp_size', px.sum)
+    )
+
+    window_size = 1.0 * window_s
+    per_s_df.requests_per_s = per_s_df.throughput_total / window_size
+    per_s_df.inbound_bytes_per_s = per_s_df.inbound_bytes_total / window_size
+    per_s_df.outbound_bytes_per_s = per_s_df.outbound_bytes_total / window_size
+
+    per_s_df = per_s_df.groupby(['service']).agg(
         requests_per_s=('requests_per_s', px.mean),
-        error_rate_pct=('error_rate_pct', px.mean),
         inbound_bytes_per_s=('inbound_bytes_per_s', px.mean),
         outbound_bytes_per_s=('outbound_bytes_per_s', px.mean)
     )
+
+    quantiles_df = df.groupby(['service']).agg(
+        latency_ms=('latency_ms', px.quantiles),
+        error_rate=('failure', px.mean)
+    )
+    quantiles_df.error_rate_pct = quantiles_df.error_rate * 100 / window_size
+
+    joined = per_s_df.merge(quantiles_df, left_on='service', right_on='service', how='inner',
+                            suffixes=['', '_x'])
+    return joined[['service', 'latency_ms', 'requests_per_s', 'error_rate_pct',
+                   'inbound_bytes_per_s', 'outbound_bytes_per_s']]
 
 
 def inbound_service_let_graph(start_time: str, namespace: px.Namespace):
@@ -70,8 +83,20 @@ def inbound_service_let_graph(start_time: str, namespace: px.Namespace):
     @namespace: The namespace to filter on.
 
     '''
-    df = inbound_service_let_helper(start_time, namespace, ['timestamp', 'service',
-                                                            'remote_addr', 'pod'])
+    df = inbound_service_let_helper(start_time, namespace)
+
+    df = df.groupby(['timestamp', 'service', 'remote_addr', 'pod']).agg(
+        latency_quantiles=('latency_ms', px.quantiles),
+        error_rate=('failure', px.mean),
+        throughput_total=('latency_ms', px.count),
+        inbound_bytes_total=('req_size', px.sum),
+        outbound_bytes_total=('resp_size', px.sum)
+    )
+
+    df.latency_p50 = px.pluck_float64(df.latency_quantiles, 'p50')
+    df.latency_p90 = px.pluck_float64(df.latency_quantiles, 'p90')
+    df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
+
     df = df[df.remote_addr != '']
     df.responder_pod = df.pod
     df.requestor_pod_id = px.ip_to_pod_id(df.remote_addr)
@@ -98,13 +123,12 @@ def inbound_service_let_graph(start_time: str, namespace: px.Namespace):
     )
 
 
-def inbound_service_let_helper(start_time: str, namespace: px.Namespace, groupby_cols):
+def inbound_service_let_helper(start_time: str, namespace: px.Namespace):
     ''' Compute the let as a timeseries for requests received or by services in `namespace`.
 
     Args:
     @start_time: The timestamp of data to start at.
     @namespace: The namespace to filter on.
-    @groupby_cols: The columns to group on.
 
     '''
     df = px.DataFrame(table='http_events', start_time=start_time)
@@ -123,19 +147,4 @@ def inbound_service_let_helper(start_time: str, namespace: px.Namespace, groupby
         df['remote_addr'] != '-' or not filter_unresolved_inbound)
 
     df = df[filter_out_conds]
-    # Calculate LET for each svc edge in the svc graph over each time window.
-    # Each edge starts at a requester ('remote_addr') and ends at a
-    # responder service.
-
-    df = df.groupby(groupby_cols).agg(
-        latency_quantiles=('latency_ms', px.quantiles),
-        error_rate=('failure', px.mean),
-        throughput_total=('latency_ms', px.count),
-        inbound_bytes_total=('req_size', px.sum),
-        outbound_bytes_total=('resp_size', px.sum)
-    )
-
-    df.latency_p50 = px.pluck_float64(df.latency_quantiles, 'p50')
-    df.latency_p90 = px.pluck_float64(df.latency_quantiles, 'p90')
-    df.latency_p99 = px.pluck_float64(df.latency_quantiles, 'p99')
     return df

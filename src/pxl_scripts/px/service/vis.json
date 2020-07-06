@@ -122,7 +122,7 @@
       "position": {
         "x": 0,
         "y": 3,
-        "w": 6,
+        "w": 12,
         "h": 3
       },
       "func": {
@@ -145,9 +145,9 @@
     {
       "name": "Outbound Traffic By Responding Service",
       "position": {
-        "x": 6,
-        "y": 3,
-        "w": 6,
+        "x": 0,
+        "y": 6,
+        "w": 12,
         "h": 3
       },
       "func": {

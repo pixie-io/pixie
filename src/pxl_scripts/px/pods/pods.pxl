@@ -153,15 +153,11 @@ def inbound_let_summary(start_time: str, namespace: px.Namespace):
     df = inbound_let_helper(start_time, namespace)
 
     quantiles_agg = df.groupby(['pod', 'remote_addr']).agg(
-        latency_quantiles=('latency_ms', px.quantiles),
+        latency_ms=('latency_ms', px.quantiles),
         total_request_count=('latency_ms', px.count)
     )
-
-    quantiles_agg.latency_ms_p50 = px.pluck_float64(quantiles_agg.latency_quantiles, 'p50')
-    quantiles_agg.latency_ms_p90 = px.pluck_float64(quantiles_agg.latency_quantiles, 'p90')
-    quantiles_agg.latency_ms_p99 = px.pluck_float64(quantiles_agg.latency_quantiles, 'p99')
-    quantiles_table = quantiles_agg[['pod', 'remote_addr', 'latency_ms_p50', 'latency_ms_p90',
-                                     'latency_ms_p99', 'total_request_count']]
+    quantiles_table = quantiles_agg[['pod', 'remote_addr', 'latency_ms',
+                                     'total_request_count']]
 
     range_agg = df.groupby(['pod', 'remote_addr', 'timestamp']).agg(
         requests_per_window=('time_', px.count),
@@ -185,8 +181,8 @@ def inbound_let_summary(start_time: str, namespace: px.Namespace):
     joined_table.responder = df.pod
     joined_table.requestor = px.pod_id_to_pod_name(px.ip_to_pod_id(df.remote_addr))
 
-    return joined_table[['responder', 'requestor', 'latency_ms_p50', 'latency_ms_p90',
-                         'latency_ms_p99', 'error_rate_pct', 'requests_per_s']]
+    return joined_table[['responder', 'requestor', 'latency_ms', 'error_rate_pct',
+                         'requests_per_s']]
 
 
 def inbound_let_helper(start_time: str, namespace: px.Namespace):

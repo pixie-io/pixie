@@ -188,36 +188,11 @@
       }
     },
     {
-      "name": "Inbound Traffic to Namespace",
-      "position": {
-        "x": 6,
-        "y": 6,
-        "w": 6,
-        "h": 3
-      },
-      "func": {
-        "name": "inbound_let_summary",
-        "args": [
-          {
-            "name": "start_time",
-            "variable": "start_time"
-          },
-          {
-            "name": "namespace",
-            "variable": "namespace"
-          }
-        ]
-      },
-      "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
-      }
-    },
-    {
       "name": "Service Map",
       "position": {
         "x": 0,
         "y": 6,
-        "w": 6,
+        "w": 12,
         "h": 3
       },
       "func": {
@@ -247,6 +222,31 @@
         "inboundBytesPerSecondColumn": "inbound_bytes_per_s",
         "outboundBytesPerSecondColumn": "outbound_bytes_per_s",
         "totalRequestCountColumn": "throughput_total"
+      }
+    },
+    {
+      "name": "Inbound Traffic to Namespace",
+      "position": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 3
+      },
+      "func": {
+        "name": "inbound_let_summary",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "namespace",
+            "variable": "namespace"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
       }
     }
   ]
