@@ -1,6 +1,10 @@
 import { DARK_THEME } from 'common/mui-theme';
 import { Spec } from 'vega';
-import { convertWidgetDisplayToVegaSpec } from './convert-to-vega-spec';
+import {
+  convertWidgetDisplayToVegaSpec,
+  TRANSFORMED_DATA_SOURCE_NAME,
+  VALUE_DOMAIN_SIGNAL,
+} from './convert-to-vega-spec';
 
 function addHoverDataTest(spec: Spec, seriesFieldName: string | null, valueFieldNames: string[]) {
   if (seriesFieldName) {
@@ -154,6 +158,47 @@ function addHoverTests(spec: Spec) {
   });
 }
 
+function addTimeseriesYDomainHoverTests(spec: Spec, dsName: string, tsValues: string[]) {
+  const makeSignalName = (data: string, tsValue: string) => (`${data}_${tsValue}_extent`);
+  it('adds extents for timeseries values (y axis)', () => {
+    expect(spec.data).toEqual(expect.arrayContaining([
+      {
+        name: dsName,
+        // TODO(james): match the name of the transformed data source instead of any string.
+        source: expect.any(String),
+        transform: expect.arrayContaining(tsValues.map((tsv) => ({
+          type: 'extent',
+          field: tsv,
+          signal: makeSignalName(dsName, tsv),
+        }))),
+      },
+    ]));
+  });
+  it('creates unified extent signal', () => {
+    const expr = expect.any(String);
+    expect(spec.signals).toEqual(expect.arrayContaining([
+      {
+        name: VALUE_DOMAIN_SIGNAL,
+        init: expr,
+        on: [
+          {
+            update: expr,
+            events: expect.arrayContaining(tsValues.map((tsv) => ({ signal: makeSignalName(dsName, tsv) }))),
+          },
+        ],
+      },
+    ]));
+  });
+  it('updates y scale to use unified extent', () => {
+    expect(spec.scales).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        name: 'y',
+        domain: { signal: VALUE_DOMAIN_SIGNAL },
+      }),
+    ]));
+  });
+}
+
 function addHoverReverseTests(spec: Spec, expectedInteractivitySelector: string) {
   it('produces expected reverse hover signals', () => {
     expect(spec.signals).toEqual(expect.arrayContaining([
@@ -243,6 +288,7 @@ describe('simple timeseries', () => {
   const expectedInteractivitySelector = `"${valueFieldName}"`;
   addHoverReverseTests(spec, expectedInteractivitySelector);
   addHoverDataTest(spec, null, [valueFieldName]);
+  addTimeseriesYDomainHoverTests(spec, TRANSFORMED_DATA_SOURCE_NAME, [valueFieldName]);
 });
 
 describe('timeseries with series', () => {
@@ -286,6 +332,7 @@ describe('timeseries with series', () => {
   const expectedInteractivitySelector = `datum["${seriesFieldName}"]`;
   addHoverReverseTests(spec, expectedInteractivitySelector);
   addHoverDataTest(spec, seriesFieldName, [valueFieldName]);
+  addTimeseriesYDomainHoverTests(spec, TRANSFORMED_DATA_SOURCE_NAME, [valueFieldName]);
 });
 
 describe('timeseries with stacked series', () => {
@@ -330,6 +377,8 @@ describe('timeseries with stacked series', () => {
   const expectedInteractivitySelector = `datum["${seriesFieldName}"]`;
   addHoverReverseTests(spec, expectedInteractivitySelector);
   addHoverDataTest(spec, seriesFieldName, [valueFieldName]);
+  // Stack not yet handled
+  // addTimeseriesYDomainHoverTests(spec, TRANSFORMED_DATA_SOURCE_NAME, [valueFieldName]);
 });
 
 describe('timeseries chart with multiple timeseries with different modes', () => {
@@ -378,6 +427,8 @@ describe('timeseries chart with multiple timeseries with different modes', () =>
 
   addHoverTests(spec);
   addHoverDataTest(spec, null, [firstValueField, secondValueField]);
+  addTimeseriesYDomainHoverTests(spec, TRANSFORMED_DATA_SOURCE_NAME, [firstValueField, secondValueField]);
+
   it('produces expected reverse hover signals for each timeseries', () => {
     expect(spec.signals).toEqual(expect.arrayContaining([
       {

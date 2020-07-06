@@ -13,6 +13,7 @@ import {
   OnEvent,
   Scale,
   Signal,
+  SignalRef,
   Spec as VgSpec,
   SymbolMark,
   TrailEncodeEntry,
@@ -47,6 +48,7 @@ const AXIS_HEIGHT = 25;
 
 const HOVER_BULB_OFFSET = 10;
 const HOVER_LINE_TEXT_OFFSET = 6;
+export const TRANSFORMED_DATA_SOURCE_NAME = 'transformed_data';
 
 interface XAxis {
   readonly label: string;
@@ -501,7 +503,7 @@ function addLegendInteractivityEncodings(mark: Mark, ts: Timeseries, interactivi
       {
         value: UNSELECTED_LINE_OPACITY,
         test:
-        `${LEGEND_SELECT_SIGNAL}.length !== 0 && indexof(${LEGEND_SELECT_SIGNAL}, ${interactivitySelector}) === -1`,
+          `${LEGEND_SELECT_SIGNAL}.length !== 0 && indexof(${LEGEND_SELECT_SIGNAL}, ${interactivitySelector}) === -1`,
       },
       { value: SELECTED_LINE_OPACITY },
     ],
@@ -521,8 +523,9 @@ function createTSScales(
   spec: VgSpec,
   transformedDataSrc: Data,
   tsDomainSignal: Signal,
+  yDomainSignal: Signal,
   timeseries: Timeseries[],
-  dupXScaleName: string): {xScale: Scale; yScale: Scale; colorScale: Scale} {
+  dupXScaleName: string): { xScale: Scale; yScale: Scale; colorScale: Scale } {
   const xScale = addScale(spec, {
     name: 'x',
     type: 'time',
@@ -542,10 +545,7 @@ function createTSScales(
   const yScale = addScale(spec, {
     name: 'y',
     type: 'linear',
-    domain: {
-      data: transformedDataSrc.name,
-      fields: _.uniq(timeseries.map((ts) => ts.value)),
-    },
+    domain: { signal: yDomainSignal.name },
     range: [{ signal: 'height' }, 0],
     zero: false,
     nice: true,
@@ -590,7 +590,7 @@ function createTSAxes(spec: VgSpec, xScale: Scale, yScale: Scale, display: Displ
         update: {
           text: {
             signal: `pxTimeFormat(datum, ceil(width), ceil(width/${PX_BETWEEN_X_TICKS}),`
-            + ` ${X_AXIS_LABEL_SEPARATION}, "${X_AXIS_LABEL_FONT}", ${X_AXIS_LABEL_FONT_SIZE})`,
+              + ` ${X_AXIS_LABEL_SEPARATION}, "${X_AXIS_LABEL_FONT}", ${X_AXIS_LABEL_FONT_SIZE})`,
           },
         },
       },
@@ -615,6 +615,50 @@ function createTSAxes(spec: VgSpec, xScale: Scale, yScale: Scale, display: Displ
 const PLOT_GROUP_Z_LAYER = 100;
 const VORONOI_Z_LAYER = 99;
 
+function createExtent(data: string, timeseries: Timeseries[]): {
+  extentSignalNames: string[];
+  extentTransforms: Transforms[];
+} {
+  const extentSignalNames: string[] = [];
+  const extentTransforms: Transforms[] = [];
+  timeseries.forEach((ts) => {
+    const signalName = `${data}_${ts.value}_extent`;
+    extentSignalNames.push(signalName);
+    extentTransforms.push({ type: 'extent', field: ts.value, signal: signalName });
+  });
+
+  return { extentSignalNames, extentTransforms };
+}
+
+function createYDomainSignal(extentSignalNames: string[],
+  minDomainUpperBound: number): Signal {
+  const domainOpen: string[] = [];
+  const domainClose: string[] = [`${minDomainUpperBound}`];
+  extentSignalNames.forEach((sn) => {
+    domainOpen.push(`${sn}[0]`);
+    domainClose.push(`${sn}[1]`);
+  });
+
+  // Minimum of all open endpoints and maximum of all closing endpoints makes the union interval.
+  const expr = `[min(${domainOpen.join(',')}), max(${domainClose.join(',')})]`;
+  return {
+    name: VALUE_DOMAIN_SIGNAL,
+    init: expr,
+    on: [
+      {
+        update: expr,
+        events: extentSignalNames.map((sn): SignalRef => ({ signal: sn })),
+      },
+    ],
+  };
+}
+
+function addYDomainSignal(
+  spec: VgSpec, extentSignalNames: string[], minDomainUpperBound: number): Signal {
+  const signal = createYDomainSignal(extentSignalNames, minDomainUpperBound);
+  return addSignal(spec, signal);
+}
+
 function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): VegaSpecWithProps {
   if (!display.timeseries) {
     throw new Error('TimeseriesChart must have one timeseries entry');
@@ -625,14 +669,17 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
 
   // Create data sources.
   const baseDataSrc = addDataSource(spec, { name: source });
+  const { extentSignalNames, extentTransforms } = createExtent(TRANSFORMED_DATA_SOURCE_NAME, display.timeseries);
   const transformedDataSrc = addDataSource(spec, {
-    name: 'transformedData',
+    name: TRANSFORMED_DATA_SOURCE_NAME,
     source: baseDataSrc.name,
     transform: [
       ...timeFormatTransform(TIME_FIELD),
       ...trimFirstAndLastTimestepTransform(TIME_FIELD),
+      ...extentTransforms,
     ],
   });
+
   const legendData = addDataSource(spec, {
     name: HOVER_PIVOT_TRANSFORM,
     source: transformedDataSrc.name,
@@ -646,10 +693,11 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
   const reverseSignals = addHoverSelectSignals(spec);
   const dupXScaleName = '_x_signal';
   const tsDomainSignal = addTimeseriesDomainSignals(spec, dupXScaleName);
+  const yDomainSignal = addYDomainSignal(spec, extentSignalNames, DOMAIN_MIN_UPPER_VALUE);
 
   // Create scales/axes.
   const { xScale, yScale, colorScale } = createTSScales(
-    spec, transformedDataSrc, tsDomainSignal, display.timeseries, dupXScaleName);
+    spec, transformedDataSrc, tsDomainSignal, yDomainSignal, display.timeseries, dupXScaleName);
   createTSAxes(spec, xScale, yScale, display);
 
   // Create marks for ts lines.
@@ -711,7 +759,11 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
       extendDataTransforms(transformedDataSrc,
         stackBySeriesTransform(TIME_FIELD, timeseries.value, timeseries.series, stackedValueStart, stackedValueEnd));
       // Adjust yScale to use new start/end stacked values.
-      (yScale.domain as ScaleMultiFieldsRef).fields = [stackedValueStart, stackedValueEnd];
+      const newDomain: ScaleMultiFieldsRef = {
+        data: transformedDataSrc.name,
+        fields: [stackedValueStart, stackedValueEnd],
+      };
+      yScale.domain = newDomain;
     }
 
     const markType = getMarkType(timeseries.mode);
@@ -799,7 +851,7 @@ function addGridLayoutMarksForGroupedBars(
   labelField: string,
   columnDomainData: Data,
   widthName: string,
-  heightName: string): {groupForXAxis: GroupMark; groupForYAxis: GroupMark} {
+  heightName: string): { groupForXAxis: GroupMark; groupForYAxis: GroupMark } {
   addMark(spec, {
     name: 'column-title',
     type: 'group',
@@ -875,7 +927,9 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
 
   // Add data and transforms.
   const baseDataSrc = addDataSource(spec, { name: source });
-  const transformedDataSrc = addDataSource(spec, { name: 'transformedData', source: baseDataSrc.name, transform: [] });
+  const transformedDataSrc = addDataSource(spec, {
+    name: TRANSFORMED_DATA_SOURCE_NAME, source: baseDataSrc.name, transform: [],
+  });
   let valueField = display.bar.value;
   let valueStartField = '';
   let valueEndField = valueField;
@@ -1126,6 +1180,10 @@ export const REVERSE_UNSELECT_SIGNAL = 'reverse_unselect_signal';
 export const TS_DOMAIN_SIGNAL = 'ts_domain_value';
 export const EXTERNAL_TS_DOMAIN_SIGNAL = 'external_ts_domain_value';
 export const INTERNAL_TS_DOMAIN_SIGNAL = 'internal_ts_domain_value';
+export const VALUE_DOMAIN_SIGNAL = 'y_domain';
+// The minimum upper bound of the Y axis domain. If the y domain upper bound is
+// less than this value, we set this as the upper bound.
+export const DOMAIN_MIN_UPPER_VALUE = 1;
 
 function addHoverMarks(spec: VgSpec, dataName: string) {
   // Used by both HOVER_RULE, HOVER_LINE_TIME and HOVER_BULB.
