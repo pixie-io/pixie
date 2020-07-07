@@ -1,3 +1,5 @@
+import { SemanticType } from 'types/generated/vizier_pb';
+
 export interface Quantile {
   p50: number;
   p90: number;
@@ -14,4 +16,29 @@ export function parseQuantile(val: any): Quantile {
   } catch (error) {
     return null;
   }
+}
+
+// Parses the rows based on their semantic type.
+export function parseRows(semanticTypeMap: Map<string, SemanticType>, rows: any[]): any[] {
+  const parsers = new Map();
+  semanticTypeMap.forEach((semanticType, dataKey) => {
+    if (semanticType === SemanticType.ST_QUANTILES) {
+      parsers.set(dataKey, parseQuantile);
+    }
+  });
+
+  if (parsers.size === 0) {
+    return rows;
+  }
+
+  return rows.map((row) => {
+    const newValues = {};
+    parsers.forEach((parser, dataKey) => {
+      newValues[dataKey] = parser(row[dataKey]);
+    });
+    return {
+      ...row,
+      ...newValues,
+    };
+  });
 }

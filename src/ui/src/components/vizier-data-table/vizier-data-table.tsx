@@ -1,23 +1,16 @@
 import { Table } from 'common/vizier-grpc-client';
-import { CellAlignment, DataTable, SortState } from 'components/data-table';
+import {
+  CellAlignment, ColumnProps, DataTable, SortState,
+} from 'components/data-table';
+import { JSONData } from 'components/format-data/format-data';
 import * as React from 'react';
-import { SortDirection, SortDirectionType } from 'react-virtualized';
 import { DataType, Relation, SemanticType } from 'types/generated/vizier_pb';
-import * as FormatData from 'utils/format-data';
-import { getDataRenderer, getDataSortFunc } from 'utils/format-data';
 import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
-import {
-  EntityLink,
-  isEntityType, STATUS_TYPES, toStatusIndicator,
-} from '../live-widgets/utils';
-import { AlertData, JSONData, LatencyData } from '../format-data/format-data';
-
-function getSortFunc(dataKey: string, type: DataType, direction: SortDirectionType) {
-  const f = getDataSortFunc(type, direction === SortDirection.ASC);
-  return (a, b) => f(a[dataKey], b[dataKey]);
-}
+import { parseRows } from './parsers';
+import { vizierCellRenderer } from './renderers';
+import { getSortFunc } from './sort-funcs';
 
 const DataAlignmentMap = new Map<DataType, CellAlignment>(
   [
@@ -31,6 +24,14 @@ const DataAlignmentMap = new Map<DataType, CellAlignment>(
   ],
 );
 
+// For certain semantic types, override the column width ratio based off of the rendering
+// we expect to do for that semantic type.
+const SemanticTypeWidthOverrideMap = new Map<SemanticType, number>(
+  [
+    [SemanticType.ST_QUANTILES, 40],
+  ],
+);
+
 interface VizierDataTableProps {
   table: Table;
   prettyRender?: boolean;
@@ -41,81 +42,10 @@ interface VizierDataTableProps {
   onRowSelectionChanged?: (row: any) => void;
 }
 
-const statusRenderer = (st: SemanticType) => (v: string) => toStatusIndicator(v, st);
-
-const serviceRendererFuncGen = (clusterName: string) => (v) => {
-  try {
-    // Hack to handle cases like "['pl/service1', 'pl/service2']" which show up for pods that are part of 2 services.
-    const parsedArray = JSON.parse(v);
-    if (Array.isArray(parsedArray)) {
-      return (
-        <>
-          {
-              parsedArray.map((entity, i) => (
-                <span key={i}>
-                  {i > 0 && ', '}
-                  <EntityLink entity={entity} semanticType={SemanticType.ST_SERVICE_NAME} clusterName={clusterName} />
-                </span>
-              ))
-            }
-        </>
-      );
-    }
-  } catch (e) {
-    // noop.
-  }
-  return <EntityLink entity={v} semanticType={SemanticType.ST_SERVICE_NAME} clusterName={clusterName} />;
-};
-
-const entityRenderer = (st: SemanticType, clusterName: string) => {
-  if (st === SemanticType.ST_SERVICE_NAME) {
-    return serviceRendererFuncGen(clusterName);
-  }
-  const entity = (v) => (
-    <EntityLink entity={v} semanticType={st} clusterName={clusterName} />
-  );
-  return entity;
-};
-
-const prettyCellRenderer = (colInfo: Relation.ColumnInfo, clusterName: string) => {
-  const dt = colInfo.getColumnType();
-  const st = colInfo.getColumnSemanticType();
-  const name = colInfo.getColumnName();
-  const renderer = getDataRenderer(dt);
-
-  if (isEntityType(st)) {
-    return entityRenderer(st, clusterName);
-  }
-
-  if (STATUS_TYPES.has(st)) {
-    return statusRenderer(st);
-  }
-
-  if (FormatData.looksLikeLatencyCol(name, dt)) {
-    return LatencyData;
-  }
-
-  if (FormatData.looksLikeAlertCol(name, dt)) {
-    return AlertData;
-  }
-
-  if (dt !== DataType.STRING) {
-    return renderer;
-  }
-
-  return (v) => {
-    try {
-      const jsonObj = JSON.parse(v);
-      return (
-        <JSONData
-          data={jsonObj}
-        />
-      );
-    } catch {
-      return v;
-    }
-  };
-};
+interface TypedColumnProps extends ColumnProps {
+  type: DataType;
+  semanticType: SemanticType;
+}
 
 export const VizierDataTable = (props: VizierDataTableProps) => {
   const {
@@ -125,25 +55,45 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
   } = props;
   const [rows, setRows] = React.useState([]);
   const [selectedRow, setSelectedRow] = React.useState(-1);
+  const [columnsMap, setColumnsMap] = React.useState<Map<string, TypedColumnProps>>(
+    new Map<string, TypedColumnProps>());
 
   React.useEffect(() => {
-    setRows(dataFromProto(table.relation, table.data));
-  }, [table.relation, table.data]);
+    // Map containing the display information for the column.
+    const newMap = new Map<string, TypedColumnProps>();
+    // Semantic type map which is used by parsers to parse certain semantic types with
+    // special handling.
+    const semanticTypeMap = new Map<string, SemanticType>();
 
-  const columnsMap = React.useMemo(() => {
-    const map = new Map();
-    for (const col of table.relation.getColumnsList()) {
+    table.relation.getColumnsList().forEach((col) => {
       const name = col.getColumnName();
-      map.set(name, {
+      semanticTypeMap.set(name, col.getColumnSemanticType());
+    });
+
+    const rawRows = dataFromProto(table.relation, table.data);
+    const parsedRows = parseRows(semanticTypeMap, rawRows);
+
+    table.relation.getColumnsList().forEach((col) => {
+      const name = col.getColumnName();
+      const columnProp: TypedColumnProps = {
         type: col.getColumnType(),
+        semanticType: col.getColumnSemanticType(),
         dataKey: col.getColumnName(),
         label: col.getColumnName(),
         align: DataAlignmentMap.get(col.getColumnType()) || 'start',
-        cellRenderer: prettyRender ? prettyCellRenderer(col, clusterName) : getDataRenderer(col.getColumnType()),
-      });
-    }
-    return map;
-  }, [table.relation, clusterName, prettyRender]);
+        cellRenderer: vizierCellRenderer(prettyRender, col, clusterName, parsedRows),
+      };
+      if (SemanticTypeWidthOverrideMap.has(columnProp.semanticType)) {
+        columnProp.width = SemanticTypeWidthOverrideMap.get(columnProp.semanticType);
+      }
+
+      newMap.set(name, columnProp);
+      semanticTypeMap.set(name, col.getColumnSemanticType());
+    });
+
+    setRows(parsedRows);
+    setColumnsMap(newMap);
+  }, [table.relation, table.data, clusterName, prettyRender]);
 
   const rowGetter = React.useCallback(
     (i) => rows[i],
@@ -152,7 +102,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
 
   const onSort = (sortState: SortState) => {
     const column = columnsMap.get(sortState.dataKey);
-    setRows(rows.sort(getSortFunc(sortState.dataKey, column.type, sortState.direction)));
+    setRows(rows.sort(getSortFunc(sortState.dataKey, column.type, column.semanticType, sortState.direction)));
     setSelectedRow(-1);
     onRowSelectionChanged(null);
   };

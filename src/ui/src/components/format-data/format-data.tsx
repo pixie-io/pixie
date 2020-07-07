@@ -1,7 +1,7 @@
 import * as React from 'react';
 import clsx from 'clsx';
-import { formatBoolData, formatFloat64Data } from '../../utils/format-data';
-import { getLatencyLevel } from './latency';
+import { formatBoolData, formatFloat64Data } from 'utils/format-data';
+import { getLatencyLevel } from 'utils/latency';
 
 const JSON_INDENT_PX = 16;
 

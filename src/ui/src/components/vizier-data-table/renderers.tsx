@@ -1,8 +1,14 @@
 import * as React from 'react';
+import { AlertData, JSONData, LatencyData } from 'components/format-data/format-data';
+import {
+  EntityLink,
+  isEntityType, STATUS_TYPES, toStatusIndicator,
+} from 'components/live-widgets/utils';
 import QuantilesBoxWhisker from 'components/quantiles-box-whisker/quantiles-box-whisker';
-import { getLatencyLevel, GaugeLevel } from 'components/format-data/latency';
-import { Relation } from 'types/generated/vizier_pb';
-import { looksLikeLatencyCol } from 'utils/format-data';
+import { DataType, Relation, SemanticType } from 'types/generated/vizier_pb';
+import { getDataRenderer, looksLikeAlertCol, looksLikeLatencyCol } from 'utils/format-data';
+
+import { getLatencyLevel, GaugeLevel } from 'utils/latency';
 
 // Expects a p99 field in colName.
 export function getMaxQuantile(rows: any[], colName: string): number {
@@ -31,9 +37,98 @@ export function quantilesRenderer(colInfo: Relation.ColumnInfo, rows: any[]) {
   return function renderer(val) {
     const { p50, p90, p99 } = val;
     let p99Level: GaugeLevel = 'none';
-    if (looksLikeLatencyCol(colName, colInfo.getColumnType())) {
+    // Can't pass in DataType here, which is STRING, but we know quantiles are floats.
+    if (looksLikeLatencyCol(colName, DataType.FLOAT64)) {
       p99Level = getLatencyLevel(p99);
     }
     return <QuantilesBoxWhisker p50={p50} p90={p90} p99={p99} max={max} p99Level={p99Level} />;
   };
 }
+
+const statusRenderer = (st: SemanticType) => (v: string) => toStatusIndicator(v, st);
+
+const serviceRendererFuncGen = (clusterName: string) => (v) => {
+  try {
+    // Hack to handle cases like "['pl/service1', 'pl/service2']" which show up for pods that are part of 2 services.
+    const parsedArray = JSON.parse(v);
+    if (Array.isArray(parsedArray)) {
+      return (
+        <>
+          {
+              parsedArray.map((entity, i) => (
+                <span key={i}>
+                  {i > 0 && ', '}
+                  <EntityLink entity={entity} semanticType={SemanticType.ST_SERVICE_NAME} clusterName={clusterName} />
+                </span>
+              ))
+            }
+        </>
+      );
+    }
+  } catch (e) {
+    // noop.
+  }
+  return <EntityLink entity={v} semanticType={SemanticType.ST_SERVICE_NAME} clusterName={clusterName} />;
+};
+
+const entityRenderer = (st: SemanticType, clusterName: string) => {
+  if (st === SemanticType.ST_SERVICE_NAME) {
+    return serviceRendererFuncGen(clusterName);
+  }
+  const entity = (v) => (
+    <EntityLink entity={v} semanticType={st} clusterName={clusterName} />
+  );
+  return entity;
+};
+
+export const prettyCellRenderer = (colInfo: Relation.ColumnInfo, clusterName: string, rows: any[]) => {
+  const dt = colInfo.getColumnType();
+  const st = colInfo.getColumnSemanticType();
+  const name = colInfo.getColumnName();
+  const renderer = getDataRenderer(dt);
+
+  if (isEntityType(st)) {
+    return entityRenderer(st, clusterName);
+  }
+
+  if (st === SemanticType.ST_QUANTILES) {
+    return quantilesRenderer(colInfo, rows);
+  }
+
+  if (STATUS_TYPES.has(st)) {
+    return statusRenderer(st);
+  }
+
+  if (looksLikeLatencyCol(name, dt)) {
+    return LatencyData;
+  }
+
+  if (looksLikeAlertCol(name, dt)) {
+    return AlertData;
+  }
+
+  if (dt !== DataType.STRING) {
+    return renderer;
+  }
+
+  return (v) => {
+    try {
+      const jsonObj = JSON.parse(v);
+      return (
+        <JSONData
+          data={jsonObj}
+        />
+      );
+    } catch {
+      return v;
+    }
+  };
+};
+
+export const vizierCellRenderer = (prettyRender: boolean, colInfo: Relation.ColumnInfo,
+  clusterName: string, rows: any[]) => {
+  if (prettyRender) {
+    return prettyCellRenderer(colInfo, clusterName, rows);
+  }
+  return getDataRenderer(colInfo.getColumnType());
+};
