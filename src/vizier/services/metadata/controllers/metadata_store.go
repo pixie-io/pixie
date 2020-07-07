@@ -279,6 +279,9 @@ func (mds *KVMetadataStore) GetAgentsForHostnamePairs(hostnames *[]*HostnameIPPa
 
 	agents := []string{}
 	for _, hn := range *hostnames {
+		if hn == nil {
+			continue
+		}
 		resp, err := mds.cache.Get(GetHostnamePairAgentKey(hn))
 		if err != nil {
 			continue

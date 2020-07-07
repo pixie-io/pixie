@@ -268,6 +268,12 @@ func (mh *MetadataHandler) handleEndpointsMetadata(o runtime.Object, eventType w
 			if err != nil {
 				continue
 			}
+
+			if hnPair == nil {
+				log.WithField("podName", addr.TargetRef.Name).WithField("namespace", addr.TargetRef.Namespace).Info("Could not find hostnameIPPair for pod")
+				continue
+			}
+
 			updatePb := GetNodeResourceUpdateFromEndpoints(pb, hnPair, mh.mds)
 			mh.subscriberUpdates <- &UpdateMessage{
 				Hostnames:    []*HostnameIPPair{hnPair},
