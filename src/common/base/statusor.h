@@ -19,7 +19,10 @@ class StatusOr {
 
  public:
   // Construct a new StatusOr with Status::UNKNOWN status
-  StatusOr() : status_(pl::statuspb::UNKNOWN, "") {}
+  StatusOr()
+      : status_(pl::statuspb::UNKNOWN,
+                "Default constructed StatusOr should not be used, "
+                "did you mistakenly return {}?") {}
 
   StatusOr(const Status& status);  // NOLINT
 
