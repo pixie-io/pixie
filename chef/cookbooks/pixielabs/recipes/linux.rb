@@ -15,11 +15,9 @@ apt_pkg_list = [
   'php',
   'php-curl',
   'php-xml',
-  'python',
-  'python-pip',
   'python3-pip',
-  'python3.6',
-  'python3.6-dev',
+  'python3.8',
+  'python3.8-dev',
   'systemd',
   'unzip',
   'virtualenvwrapper',
@@ -45,15 +43,15 @@ execute 'enable docker' do
   action :run
 end
 
-apt_repository 'gcc-9.2-ppa' do
-   uri         'ppa:jonathonf/gcc-9.2'
+apt_repository 'ubuntu-toolchain-ppa' do
+   uri         'ppa:ubuntu-toolchain-r/ppa'
 end
 
 apt_update 'update packages' do
   action :update
 end
 
-apt_package ['gcc-9','g++-9'] do
+apt_package ['gcc-10','g++-10'] do
   action :upgrade
 end
 

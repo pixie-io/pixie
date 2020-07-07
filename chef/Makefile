@@ -21,7 +21,7 @@ REPOSITORY := gcr.io/pl-dev-infra
 .PHONY: build_and_push_base_dev_image
 build_and_push_base_dev_image:
 	$(PACKER) build \
-		-var "base_image_and_tag=ubuntu:18.04" \
+		-var "base_image_and_tag=ubuntu:20.04" \
 		-var "generated_image_repository=$(REPOSITORY)/base_dev_image" \
 		-var "generated_image_tag=$(BASE_DEV_IMAGE_VERSION)" \
 		packer_docker_dev.json
