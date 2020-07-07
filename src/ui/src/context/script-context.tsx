@@ -284,24 +284,25 @@ const ScriptContextProvider = (props) => {
           error = error[0];
         }
 
+        setResults({ tables: {}, error });
         const { errType } = (error as VizierQueryError);
         errMsg = error.message;
-        if (errType === 'execution' || !errType) {
-          showSnackbar({
-            message: errMsg,
-            action: () => openDrawerTab('errors'),
-            actionTitle: 'details',
-            autoHideDuration: 5000,
-          });
-        } else {
+        if (errType === 'server' || !errType) {
           showSnackbar({
             message: errMsg,
             action: () => execute(execArgs),
             actionTitle: 'retry',
             autoHideDuration: 5000,
           });
+        } else {
+          openDrawerTab('errors');
+          showSnackbar({
+            message: errMsg,
+            action: () => openDrawerTab('errors'),
+            actionTitle: 'details',
+            autoHideDuration: 5000,
+          });
         }
-        setResults({ tables: {}, error });
       })
       .finally(() => {
         setLoading(false);
