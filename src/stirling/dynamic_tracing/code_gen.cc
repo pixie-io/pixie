@@ -475,7 +475,8 @@ StatusOr<std::vector<std::string>> GenProgramCodeLines(const Program& program) {
 StatusOr<BCCProgram> GenProgram(const Program& program) {
   BCCProgram res;
 
-  MOVE_BACK_STR_VEC(&res.code_lines, GenProgramCodeLines(program));
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> code_lines, GenProgramCodeLines(program));
+  res.code = absl::StrJoin(code_lines, "\n");
 
   for (const auto& probe : program.probes()) {
     res.uprobe_specs.push_back(GetUProbeSpec(probe));

@@ -43,7 +43,7 @@ StatusOr<std::vector<std::string>> GenPhysicalProbe(
 struct BCCProgram {
   // TODO(yzhao): We probably need kprobe_specs as well.
   std::vector<bpf_tools::UProbeSpec> uprobe_specs;
-  std::vector<std::string> code_lines;
+  std::string code;
 };
 
 StatusOr<BCCProgram> GenProgram(const ir::physical::Program& program);

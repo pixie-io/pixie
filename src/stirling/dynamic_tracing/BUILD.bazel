@@ -71,3 +71,17 @@ pl_cc_test(
         "//src/common/exec:cc_library",
     ],
 )
+
+pl_cc_test(
+    name = "dynamic_tracer_test",
+    srcs = ["dynamic_tracer_test.cc"],
+    args = [
+        "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
+    ],
+    data = [
+        "//src/stirling/obj_tools/testdata:dummy_go_binary",
+    ],
+    deps = [
+        ":cc_library",
+    ],
+)

@@ -119,14 +119,12 @@ TEST(CodeGenBPFTest, AttachOnDummyExe) {
   EXPECT_THAT(spec, Field(&UProbeSpec::attach_type, BPFProbeAttachType::kEntry));
   EXPECT_THAT(spec, Field(&UProbeSpec::probe_fn, "uprobe_canyoufindthis"));
 
-  std::string bcc = absl::StrJoin(bcc_program.code_lines, "\n");
-
-  PL_LOG_VAR(bcc);
+  PL_LOG_VAR(bcc_program.code);
 
   BCCWrapper bcc_wrapper;
 
   ASSERT_OK(FindOrInstallLinuxHeaders({kDefaultHeaderSearchOrder}));
-  ASSERT_OK(bcc_wrapper.InitBPFProgram(bcc));
+  ASSERT_OK(bcc_wrapper.InitBPFProgram(bcc_program.code));
   ASSERT_OK(bcc_wrapper.AttachUProbe(spec));
 
   EXPECT_OK(Exec(dummy_exe_path));

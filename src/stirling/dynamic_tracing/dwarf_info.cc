@@ -390,7 +390,7 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
 Status Dwarvifier::GenerateMapValueStruct(const ir::logical::MapStashAction& stash_action_in,
                                           const std::string& struct_type_name,
                                           ir::physical::Program* output_program) {
-  // TODO(oazizi): Check if map already exists. If it does, make sure it is the same.
+  // TODO(oazizi): Check if struct already exists. If it does, make sure it is the same.
 
   auto* struct_decl = output_program->add_structs();
   struct_decl->set_name(struct_type_name);
@@ -497,6 +497,7 @@ Status PopulateOutputTypes(const std::map<std::string, ir::shared::Output*>& out
 
   auto* output = iter->second;
 
+  // TODO(oazizi): Check if values are already set. If they are check for consistency.
   output->mutable_type()->set_struct_type(struct_type_name);
 
   return Status::OK();

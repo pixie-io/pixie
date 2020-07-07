@@ -1,7 +1,5 @@
 #include <string>
 
-#include <google/protobuf/util/message_differencer.h>
-
 #include "src/common/testing/testing.h"
 #include "src/stirling/dynamic_tracing/probe_transformer.h"
 
@@ -16,7 +14,7 @@ using ::google::protobuf::TextFormat;
 using ::google::protobuf::util::MessageDifferencer;
 using ::pl::testing::proto::EqualsProto;
 
-constexpr std::string_view kLogicalProbe = R"(
+constexpr std::string_view kLogicalProgram = R"(
 probes: {
   name: "probe0"
   trace_point: {
@@ -59,7 +57,7 @@ probes: {
 }
 )";
 
-constexpr std::string_view kProgram = R"(
+constexpr std::string_view kTransformedProgram = R"(
 outputs: {
   name: "probe0_table"
 }
@@ -152,9 +150,9 @@ class ProbeGenTest : public ::testing::TestWithParam<ProbeGenTestParam> {
 TEST_P(ProbeGenTest, Transform) {
   ProbeGenTestParam p = GetParam();
 
-  std::string entry_probe_ir = absl::Substitute(p.input, kGoBinaryPath);
+  std::string input_program_str = absl::Substitute(p.input, kGoBinaryPath);
   ir::logical::Program input_program;
-  ASSERT_TRUE(TextFormat::ParseFromString(std::string(entry_probe_ir), &input_program));
+  ASSERT_TRUE(TextFormat::ParseFromString(input_program_str, &input_program));
 
   std::string expected_output = absl::Substitute(p.expected_output, kGoBinaryPath);
 
@@ -162,7 +160,8 @@ TEST_P(ProbeGenTest, Transform) {
 }
 
 INSTANTIATE_TEST_SUITE_P(ProbeGenTestSuite, ProbeGenTest,
-                         ::testing::Values(ProbeGenTestParam{kLogicalProbe, kProgram}));
+                         ::testing::Values(ProbeGenTestParam{kLogicalProgram,
+                                                             kTransformedProgram}));
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
