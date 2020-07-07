@@ -12,13 +12,28 @@ const styles = () => createStyles({
     flex: 1,
     minHeight: 0,
     minWidth: 0,
+    position: 'relative',
   },
   otherContent: {
     flex: 1,
     display: 'flex',
+    width: '100%',
   },
   drawerContents: {
     display: 'flex',
+    width: '100%',
+    height: '100%',
+  },
+  drawerPaper: {
+    position: 'absolute',
+  },
+  dockedVertical: {
+    width: 0,
+    flex: 0,
+  },
+  dockedHorizontal: {
+    height: 0,
+    flex: 0,
   },
 });
 
@@ -54,7 +69,17 @@ const InternalFixedSizeDrawer = ({
       <div className={classes.otherContent} style={contentStyle}>
         {otherContent}
       </div>
-      <Drawer anchor={drawerDirection} style={drawerStyle} variant='persistent' open={open}>
+      <Drawer
+        anchor={drawerDirection}
+        style={drawerStyle}
+        variant='persistent'
+        open={open}
+        classes={{
+          paper: classes.drawerPaper,
+          docked: drawerDirection === 'top' || drawerDirection === 'bottom'
+            ? classes.dockedVertical : classes.dockedHorizontal,
+        }}
+      >
         <div className={classes.drawerContents} style={drawerStyle}>
           {children}
         </div>

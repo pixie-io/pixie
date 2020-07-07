@@ -4,6 +4,7 @@ import LazyPanel from 'components/lazy-panel';
 import * as React from 'react';
 import Split from 'react-split';
 import { triggerResize } from 'utils/resize';
+import ResizableDrawer from 'components/drawer/resizable-drawer';
 
 import {
   createStyles, makeStyles, Theme, useTheme, withStyles,
@@ -21,6 +22,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     color: theme.palette.foreground.one,
     minWidth: 0,
     overflow: 'hidden',
+    width: '100%',
   },
   rootPanel: {
     height: '100%',
@@ -159,8 +161,6 @@ const LiveViewEditor = () => {
 };
 
 export const EditorSplitPanel = (props) => {
-  const ref = React.useRef(null);
-  const theme = useTheme();
   const classes = useStyles();
   const {
     editorPanelOpen,
@@ -169,41 +169,14 @@ export const EditorSplitPanel = (props) => {
     setEditorSplitSizes,
   } = React.useContext(LayoutContext);
 
-  const [collapsedPanel, setCollapsedPanel] = React.useState<null | 0>(null);
-
-  const dragHandler = ((sizes) => {
-    if (sizes[0] <= 5) { // Snap the editor close when it is less than 5%.
-      setEditorPanelOpen(false);
-    } else {
-      setEditorPanelOpen(true);
-      setEditorSplitSizes(sizes);
-    }
-  });
-
-  React.useEffect(() => {
-    if (!editorPanelOpen) {
-      setCollapsedPanel(0);
-    } else {
-      setCollapsedPanel(null);
-      ref.current.split.setSizes(editorSplitsSizes);
-    }
-    triggerResize();
-  }, [editorPanelOpen, editorSplitsSizes]);
-
   return (
-    <Split
-      ref={ref}
-      direction='horizontal'
-      sizes={editorSplitsSizes}
-      className={clsx(props.className, classes.splits)}
-      gutterSize={theme.spacing(0.5)}
-      minSize={0}
-      onDragEnd={dragHandler}
-      collapsed={collapsedPanel}
-      cursor='col-resize'
+    <ResizableDrawer
+      drawerDirection='left'
+      initialSize={600}
+      open={editorPanelOpen}
+      otherContent={props.children}
     >
       <LiveViewEditor />
-      {props.children}
-    </Split>
+    </ResizableDrawer>
   );
 };

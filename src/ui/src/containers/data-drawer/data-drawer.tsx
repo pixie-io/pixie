@@ -4,7 +4,7 @@ import { DataDrawerContext, DataDrawerTabsKey } from 'context/data-drawer-contex
 import { LayoutContext } from 'context/layout-context';
 import { ResultsContext } from 'context/results-context';
 import * as React from 'react';
-import FixedSizeDrawer from 'components/drawer/drawer';
+import ResizableDrawer from 'components/drawer/resizable-drawer';
 
 import {
   createStyles, makeStyles, Theme,
@@ -94,9 +94,9 @@ export const DataDrawerSplitPanel = (props) => {
   );
 
   return (
-    <FixedSizeDrawer
+    <ResizableDrawer
       drawerDirection='bottom'
-      drawerSize='350px' // TODO(michelle): Update this to be resizable.
+      initialSize={350}
       open={dataDrawerOpen}
       otherContent={contents}
     >
@@ -104,6 +104,6 @@ export const DataDrawerSplitPanel = (props) => {
         open={dataDrawerOpen}
         activeTab={activeTab}
       />
-    </FixedSizeDrawer>
+    </ResizableDrawer>
   );
 };

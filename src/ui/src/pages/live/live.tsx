@@ -62,6 +62,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     overflowY: 'auto',
     overflowX: 'hidden',
     marginLeft: theme.spacing(0.5),
+    height: '100%',
+    width: '100%',
   },
   clusterSelector: {
     marginRight: theme.spacing(2),
