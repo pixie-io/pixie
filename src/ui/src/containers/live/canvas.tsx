@@ -86,6 +86,15 @@ const WidgetDisplay = ({
 }) => {
   const classes = useStyles();
 
+  if (!table) {
+    const msg = `"${tableName}" not found`;
+    return (
+      <div>
+        {msg}
+      </div>
+    );
+  }
+
   if (display[DISPLAY_TYPE_KEY] === TABLE_DISPLAY_TYPE) {
     return (
       <>
@@ -212,10 +221,6 @@ const Canvas = (props: CanvasProps) => {
             <div className={classes.spinner}><Spinner /></div>
           </div>,
         );
-        return;
-      }
-
-      if (!table) {
         return;
       }
 
