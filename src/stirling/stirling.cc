@@ -123,6 +123,8 @@ class StirlingImpl final : public Stirling {
   // symmetric with Stop().
   Status Init();
 
+  uint64_t RegisterDynamicTrace(const dynamic_tracing::ir::logical::Program& program) override;
+  Status CheckDynamicTraceStatus(uint64_t probe_id) override;
   void GetPublishProto(stirlingpb::Publish* publish_pb) override;
   Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) override;
   void RegisterDataPushCallback(DataPushCallback f) override { data_push_callback_ = f; }
@@ -200,6 +202,9 @@ class StirlingImpl final : public Stirling {
 
   AgentMetadataCallback agent_metadata_callback_ = nullptr;
   AgentMetadataType agent_metadata_;
+
+  // The index can be assigned to the next registered probe.
+  uint64_t probe_index_ = 0;
 };
 
 StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
@@ -283,6 +288,18 @@ Status StirlingImpl::AddSourceFromRegistry(
 
   sources_.push_back(std::move(source));
 
+  return Status::OK();
+}
+
+uint64_t StirlingImpl::RegisterDynamicTrace(const dynamic_tracing::ir::logical::Program& program) {
+  PL_UNUSED(program);
+  // TODO(yzhao): Need to add actual implementation.
+  return probe_index_++;
+}
+
+Status StirlingImpl::CheckDynamicTraceStatus(uint64_t probe_id) {
+  PL_UNUSED(probe_id);
+  // TODO(yzhao): Need to add actual implementation.
   return Status::OK();
 }
 

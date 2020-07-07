@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "src/common/base/base.h"
+#include "src/stirling/dynamic_tracing/ir/logical.pb.h"
 #include "src/stirling/proto/stirling.pb.h"
 #include "src/stirling/source_registry.h"
 
@@ -77,6 +78,16 @@ class Stirling : public NotCopyable {
    * @return std::unique_ptr<Stirling>
    */
   static std::unique_ptr<Stirling> Create(std::unique_ptr<SourceRegistry> registry);
+
+  /**
+   * @brief Registers probes defined inside a tracing program.
+   */
+  virtual uint64_t RegisterDynamicTrace(const dynamic_tracing::ir::logical::Program& program) = 0;
+
+  /**
+   * @brief Returns the status of the probe registration for the probe identified by the input ID.
+   */
+  virtual Status CheckDynamicTraceStatus(uint64_t probe_id) = 0;
 
   /**
    * @brief Populate the Publish Proto object. Agent calls this function to get the Publish

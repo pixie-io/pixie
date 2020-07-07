@@ -42,6 +42,7 @@ pl_cc_library(
         "//src/stirling/proto:sock_event_pl_cc_proto",
         "//src/stirling/bcc_bpf_interface:cc_library",
         "//src/stirling/bpf_tools:cc_library",
+        "//src/stirling/dynamic_tracing:cc_library",
         "//src/stirling/obj_tools:cc_library",
         "//demos/applications/hipster_shop:cc_library",
     ] + select({
