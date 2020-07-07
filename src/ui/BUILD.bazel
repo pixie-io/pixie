@@ -15,6 +15,7 @@ UI_DEP_PACKAGES = [
 ] + glob([
     "offline_package_cache/**",
     "pixie-components/**",
+    "patches/**",
 ])
 
 UI_SRCS = glob([

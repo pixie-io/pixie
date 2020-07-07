@@ -108,7 +108,11 @@ const barData = [
 
 function printSpec(display: ChartDisplay) {
   const sourceName = 'mysource';
-  const { spec } = convertWidgetDisplayToVegaSpec(display, sourceName, DARK_THEME);
+  const { spec, error } = convertWidgetDisplayToVegaSpec(display, sourceName, DARK_THEME);
+  if (error) {
+    console.log('Error compiling spec', error);
+    return;
+  }
   let data: Array<{}>;
 
   if (display[DISPLAY_TYPE_KEY] === BAR_CHART_TYPE) {

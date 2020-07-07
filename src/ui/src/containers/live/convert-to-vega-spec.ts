@@ -477,6 +477,7 @@ function addInteractivityHitBox(spec: VgSpec | GroupMark, lineMark: TimeseriesMa
     ...lineMark,
     name,
     type: lineMark.type,
+    propEventsToOverlapped: true,
     encode: {
       ...lineMark.encode,
       update: {
@@ -748,6 +749,7 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
       group = addMark(spec, {
         name: `timeseries_group_${i}`,
         type: 'group',
+        propEventsToOverlapped: true,
         from: {
           facet: {
             name: dataName,
@@ -791,6 +793,7 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
     const yField = (timeseries.stackBySeries) ? stackedValueEnd : timeseries.value;
     const lineMark = addMark(group, {
       name: `timeseries_line_${i}`,
+      propEventsToOverlapped: true,
       type: markType,
       style: markType,
       from: {

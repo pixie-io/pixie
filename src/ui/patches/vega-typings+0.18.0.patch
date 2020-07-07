@@ -1,0 +1,12 @@
+diff --git a/node_modules/vega-typings/types/spec/mark.d.ts b/node_modules/vega-typings/types/spec/mark.d.ts
+index 999daa38..fa13a650 100644
+--- a/node_modules/vega-typings/types/spec/mark.d.ts
++++ b/node_modules/vega-typings/types/spec/mark.d.ts
+@@ -58,6 +58,7 @@ export interface BaseMark {
+   zindex?: number;
+   on?: OnMarkTrigger[];
+   style?: string | string[];
++  propEventsToOverlapped?: boolean;
+ }
+ export interface ArcMark extends BaseMark, Encode.Encodable<Encode.ArcEncodeEntry> {
+   type: 'arc';

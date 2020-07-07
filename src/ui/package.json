@@ -137,6 +137,7 @@
     "monaco-editor": "0.20.0",
     "monaco-editor-webpack-plugin": "^1.9.0",
     "numeral": "^2.0.6",
+    "patch-package": "^6.2.2",
     "pixie-components": "1.0.0",
     "prism-react-renderer": "^1.0.2",
     "prop-types": "^15.5.4",
@@ -167,10 +168,13 @@
     "vega": "5.13.0",
     "vega-embed": "^6.9.0",
     "vega-lite": "4.13.1",
+    "vega-parser": "6.0.2",
     "vega-scale": "^7.0.0",
-    "vega-scenegraph": "^4.8.3",
+    "vega-scenegraph": "4.8.3",
+    "vega-schema": "5.13.0",
     "vega-tooltip": "^0.23.0",
     "vega-util": "^1.13.2",
+    "vega-view-transforms": "4.5.5",
     "vis-data": "^6.2.1",
     "vis-network": "^7.7.1",
     "vis-util": "^4.0.0",
@@ -190,7 +194,8 @@
     "storybook_static": "./node_modules/.bin/build-storybook -c .storybook -o storybook_static",
     "license_check": "./node_modules/license-checker/bin/license-checker",
     "lint": "tsc --noEmit && eslint '*/**/*.{js,ts,tsx}'",
-    "vgspec": "NODE_PATH=./src ts-node --compiler-options '{\"module\":\"commonjs\"}' src/utils/print-vgspec-cli.ts"
+    "vgspec": "NODE_PATH=./src ts-node --compiler-options '{\"module\":\"commonjs\"}' src/utils/print-vgspec-cli.ts",
+    "postinstall": "patch-package"
   },
   "resolutions": {
     "react": "^16.12.0",
