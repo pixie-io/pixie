@@ -13,7 +13,7 @@ import * as React from 'react';
 import { withRouter } from 'react-router';
 
 import {
-  parseVis, toJSON, Vis, getQueryFuncs,
+  parseVis, toJSON, Vis, getQueryFuncs, validateVis,
 } from 'containers/live/vis';
 import { argsEquals, argsForVis, Arguments } from 'utils/args-utils';
 import { debounce } from 'utils/debounce';
@@ -266,6 +266,11 @@ const ScriptContextProvider = (props) => {
 
     new Promise((resolve, reject) => {
       try {
+        // Make sure vis has proper references.
+        const visErr = validateVis(execArgs.vis, execArgs.args);
+        if (visErr) {
+          throw visErr;
+        }
         resolve(getQueryFuncs(execArgs.vis, execArgs.args));
       } catch (error) {
         reject(error);

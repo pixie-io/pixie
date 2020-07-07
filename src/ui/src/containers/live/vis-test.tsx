@@ -1,4 +1,6 @@
-import { getQueryFuncs, TABLE_DISPLAY_TYPE, Vis } from './vis';
+import {
+  getQueryFuncs, validateVis, TABLE_DISPLAY_TYPE, Vis,
+} from './vis';
 
 const testVisNoVars: Vis = {
   variables: [],
@@ -147,5 +149,122 @@ describe('getQueryFuncs', () => {
         ],
       },
     ]);
+  });
+});
+
+const testVisWithMissingGlobalFuncDef: Vis = {
+  variables: [],
+  globalFuncs: [],
+  widgets: [{
+    name: 'latency',
+    globalFuncOutputName: 'LET',
+    displaySpec: {
+      '@type': TABLE_DISPLAY_TYPE,
+    },
+  }],
+};
+
+// Note this is an erroneous vis -> you can't define a func and ref
+// a global func in the same widget.
+const testVisWithGlobalFuncAndDefinedFunc: Vis = {
+  variables: [],
+  globalFuncs: [{
+    outputName: 'LET',
+    func: {
+      name: 'get_latency',
+      args: [],
+    },
+  }],
+  widgets: [{
+    name: 'latency',
+    globalFuncOutputName: 'LET',
+    func: {
+      name: 'get_latency',
+      args: [],
+    },
+    displaySpec: {
+      '@type': TABLE_DISPLAY_TYPE,
+    },
+  }],
+};
+
+// Note this is an erroneous vis -> you can't reference a variable that doesn't exist.
+const testMissingVarVis: Vis = {
+  variables: [],
+  globalFuncs: [{
+    outputName: 'LET',
+    func: {
+      name: 'get_latency',
+      args: [{
+        name: 'foo',
+        variable: 'nonexistant',
+      }],
+    },
+  }],
+  widgets: [{
+    name: 'latency',
+    globalFuncOutputName: 'LET',
+    displaySpec: {
+      '@type': TABLE_DISPLAY_TYPE,
+    },
+  }],
+};
+
+// Note that arg "foo" is missing a value or a variable.
+const testMissingArgDef: Vis = {
+  variables: [],
+  globalFuncs: [{
+    outputName: 'LET',
+    func: {
+      name: 'get_latency',
+      args: [{
+        name: 'foo',
+      }],
+    },
+  }],
+  widgets: [{
+    name: 'latency',
+    globalFuncOutputName: 'LET',
+    displaySpec: {
+      '@type': TABLE_DISPLAY_TYPE,
+    },
+  }],
+};
+
+describe('validateVis', () => {
+  it('accepts valid vis', () => {
+    expect(validateVis(testVisNoVars, {})).toBeNull();
+    expect(validateVis(testVisWithGlobalFuncs, {})).toBeNull();
+    expect(validateVis(testVisWithVars, {})).toBeNull();
+  });
+  it('errors on missing global func', () => {
+    // Do object unpacking to make unexpected behavior render more informatively.
+    expect({ ...validateVis(testVisWithMissingGlobalFuncDef, {}) }).toEqual(expect.objectContaining({
+      errType: 'vis',
+      details: [expect.stringMatching(/globalFunc "LET" referenced by "latency" not found/)],
+    }));
+  });
+  it('errors on including global func and func def', () => {
+    // Do object unpacking to make unexpected behavior render more informatively.
+    expect({ ...validateVis(testVisWithGlobalFuncAndDefinedFunc, {}) }).toEqual(expect.objectContaining({
+      errType: 'vis',
+      details: [expect.stringMatching(/"latency" may only have one of "func" and "globalFuncOutputName"/)],
+    }));
+  });
+
+  it('errors on referencing a missing variable', () => {
+    // Do object unpacking to make unexpected behavior render more informatively.
+    expect({ ...validateVis(testMissingVarVis, {}) }).toEqual(expect.objectContaining({
+      errType: 'vis',
+      details: [expect.stringMatching(/Arg "foo" of "get_latency\(\)" references undefined variable "nonexistant"/)],
+    }));
+  });
+
+  it('errors when a func arg does not have a value or variable reference', () => {
+    // Do object unpacking to make unexpected behavior render more informatively.
+    expect({ ...validateVis(testMissingArgDef, {}) }).toEqual(expect.objectContaining({
+      errType: 'vis',
+      details: [expect.stringMatching(/Arg "foo" of "get_latency\(\)" needs either a value or a variable reference/)],
+    }));
   });
 });

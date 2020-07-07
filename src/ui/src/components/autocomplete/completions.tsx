@@ -195,6 +195,6 @@ const CompletionInternal = (props: CompletionProps) => {
     </div>
   );
 };
-CompletionInternal.displayName = "CompletionInternal";
+CompletionInternal.displayName = 'CompletionInternal';
 
 export default Completions;

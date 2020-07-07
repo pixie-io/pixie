@@ -86,13 +86,13 @@ export function widgetTableName(widget: Widget, widgetIndex: number): string {
   return `widget_${widgetIndex}`;
 }
 
-function getFuncArgs(defaults: { [key: string]: string }, func: Func): VizierQueryArg[] {
+function getFuncArgs(variableValues: { [key: string]: string }, func: Func): VizierQueryArg[] {
   const args = [];
   const errors = [];
   func.args.forEach((arg: FuncArg) => {
     if ((arg.value == null) === (arg.variable == null)) {
-      errors.push(`Arg '${arg.name}' for function '${func.name}'`
-        + 'must contain either a value or a reference to a variable');
+      errors.push(`Arg "${arg.name}" of "${func.name}()" `
+        + 'needs either a value or a variable reference');
       return;
     }
 
@@ -105,13 +105,13 @@ function getFuncArgs(defaults: { [key: string]: string }, func: Func): VizierQue
     }
     // For now, use the default value in the vis.json spec as the value to the function.
     // TODO(nserrino): Support actual variables from the command prompt, or other UI inputs.
-    if (!(arg.variable in defaults)) {
-      errors.push(`Variable ${arg.variable} does not contain a defaultValue.`);
+    if (!(arg.variable in variableValues)) {
+      errors.push(`Arg "${arg.name}" of "${func.name}()" references undefined variable "${arg.variable}"`);
       return;
     }
     args.push({
       name: arg.name,
-      value: defaults[arg.variable],
+      value: variableValues[arg.variable],
     });
   });
   if (errors.length > 0) {
@@ -159,4 +159,45 @@ export function getQueryFuncs(vis: Vis, variableValues: { [key: string]: string 
 
 export function toJSON(vis: Vis) {
   return JSON.stringify(vis, null, 2);
+}
+
+// Validate Vis makes sure vis is correctly specified or throws an error.
+export function validateVis(vis: Vis, variableValues: { [key: string]: string }): VizierQueryError {
+  const globalFuncNames = new Set();
+  vis.globalFuncs.forEach((globalFunc) => {
+    globalFuncNames.add(globalFunc.outputName);
+  });
+
+  // Verify that functions have only one of (globalFuncOutputName, func)
+  // and that globalFuncOutputNames are valid.
+  const errors = [];
+  vis.widgets.forEach((widget) => {
+    if (widget.globalFuncOutputName) {
+      if (widget.func) {
+        errors.push(`"${widget.name}" may only have one of "func" and "globalFuncOutputName"`);
+      }
+      if (!globalFuncNames.has(widget.globalFuncOutputName)) {
+        errors.push(`globalFunc "${widget.globalFuncOutputName}" referenced by "${widget.name}" not found`);
+      }
+    }
+  });
+
+  // TODO(philkuz) wondering if I should keep this or remove it because we typically call this afterwards.
+  // Alternatively, we could have getQueryFuncs call the above.
+  try {
+    getQueryFuncs(vis, variableValues);
+  } catch (error) {
+    const { details } = error as VizierQueryError;
+    if (Array.isArray(details)) {
+      errors.push(...details);
+    } else if (typeof details === 'string') {
+      errors.push(details);
+    }
+  }
+
+  if (errors.length > 0) {
+    return new VizierQueryError('vis', errors);
+  }
+
+  return null;
 }
