@@ -13,6 +13,7 @@ import ChevronRight from '@material-ui/icons/ChevronRight';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
+import Menu from '@material-ui/icons/Menu';
 
 import clsx from 'clsx';
 import Canvas from 'containers/live/canvas';
@@ -25,10 +26,10 @@ import { ScriptContext } from 'context/script-context';
 import { DataDrawerSplitPanel } from 'containers/data-drawer/data-drawer';
 import { EditorSplitPanel } from 'containers/editor/editor';
 import ExecuteScriptButton from 'containers/live/execute-button';
-import ProfileMenu from 'containers/profile-menu/profile-menu';
 import { ScriptLoader } from 'containers/live/script-loader';
 import LiveViewShortcuts from 'containers/live/shortcuts';
 import LiveViewTitle from 'containers/live/title';
+import SideBar from 'containers/App/sidebar';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -39,6 +40,13 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     backgroundColor: theme.palette.background.default,
     color: theme.palette.text.primary,
     ...scrollbarStyles(theme),
+  },
+  content: {
+    marginLeft: theme.spacing(8),
+    display: 'flex',
+    flex: 1,
+    minWidth: 0,
+    minHeight: 0,
   },
   title: {
     marginLeft: theme.spacing(2),
@@ -83,6 +91,18 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   hidden: {
     display: 'none',
   },
+  appBar: {
+    zIndex: 1300, // z-index must be larger than drawer's zIndex, which is 1200.
+    background: theme.palette.background.one,
+  },
+  sidebarToggle: {
+    position: 'absolute',
+    width: theme.spacing(8),
+    left: 0,
+  },
+  sidebarToggleSpacer: {
+    width: theme.spacing(8),
+  },
 }));
 
 export const EditorOpener = () => {
@@ -120,6 +140,9 @@ const LiveView = () => {
   const [commandOpen, setCommandOpen] = React.useState<boolean>(false);
   const toggleCommandOpen = React.useCallback(() => setCommandOpen((opened) => !opened), []);
 
+  const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(false);
+  const toggleSidebar = React.useCallback(() => setSidebarOpen((opened) => !opened), []);
+
   const hotkeyHandlers = {
     'pixie-command': toggleCommandOpen,
     'toggle-editor': () => setEditorPanelOpen((editable) => !editable),
@@ -144,8 +167,12 @@ const LiveView = () => {
   return (
     <div className={classes.root}>
       <LiveViewShortcuts handlers={hotkeyHandlers} />
-      <AppBar color='transparent' position='static'>
+      <AppBar className={classes.appBar} color='transparent' position='static'>
         <Toolbar>
+          <IconButton className={classes.sidebarToggle} onClick={toggleSidebar}>
+            <Menu />
+          </IconButton>
+          <div className={classes.sidebarToggleSpacer} />
           <LiveViewTitle className={classes.title} />
           <ClusterSelector className={classes.clusterSelector} />
           <Tooltip title='Pixie Command'>
@@ -169,13 +196,13 @@ const LiveView = () => {
             </Tooltip>
             )
           }
-          <ProfileMenu />
         </Toolbar>
       </AppBar>
+      <SideBar open={sidebarOpen} />
       {
         loading ? <div className='center-content'><ClusterInstructions message='Connecting to cluster...' /></div>
           : (
-            <>
+            <div className={classes.content}>
               <ScriptLoader />
               <DataDrawerSplitPanel className={classes.mainPanel}>
                 <EditorSplitPanel className={classes.editorPanel}>
@@ -184,14 +211,11 @@ const LiveView = () => {
                   </div>
                 </EditorSplitPanel>
               </DataDrawerSplitPanel>
-              <Drawer open={drawerOpen} onClose={toggleDrawer}>
-                <div>drawer content</div>
-              </Drawer>
               { localStorage.getItem('px-new-autocomplete') === 'true'
                 ? <NewCommandInput open={commandOpen} onClose={toggleCommandOpen} />
                 : <CommandInput open={commandOpen} onClose={toggleCommandOpen} /> }
               <EditorOpener />
-            </>
+            </div>
           )
       }
     </div>
