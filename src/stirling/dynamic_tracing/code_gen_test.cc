@@ -61,7 +61,7 @@ TEST(GenVariableTest, Register) {
   var.set_type(ScalarType::VOID_POINTER);
   var.set_reg(Register::SP);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("void* var = PT_REGS_SP(ctx);"));
+  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("void* var = (void*)PT_REGS_SP(ctx);"));
 }
 
 TEST(GenVariableTest, MemoryVariable) {
@@ -88,7 +88,7 @@ TEST(GenVariableTest, Builtin) {
 
   var.set_builtin(BPFHelper::GOID);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("void* var = goid();"));
+  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("void* var = pl_goid();"));
 
   var.set_builtin(BPFHelper::TGID);
 
@@ -107,8 +107,7 @@ TEST(GenVariableTest, Builtin) {
 
   var.set_builtin(BPFHelper::TGID_START_TIME);
   var.set_type(ScalarType::UINT64);
-  ASSERT_OK_AND_THAT(GenScalarVariable(var),
-                     ElementsAre("uint64_t var = pl_get_tgid_start_time();"));
+  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("uint64_t var = pl_tgid_start_time();"));
 }
 
 TEST(GenStructVariableTest, Variables) {
@@ -149,7 +148,12 @@ TEST(GenMapStashActionTest, StashMap) {
   action.set_key_variable_name("foo");
   action.set_value_variable_name("bar");
 
-  EXPECT_THAT(GenMapStashAction(action), StrEq("test.update(&foo, &bar);"));
+  action.mutable_cond()->set_op(ir::shared::Condition::EQUAL);
+  action.mutable_cond()->add_vars("foo");
+  action.mutable_cond()->add_vars("bar");
+
+  ASSERT_OK_AND_THAT(GenMapStashAction(action),
+                     ElementsAre("if (foo == bar) {", "test.update(&foo, &bar);", "}"));
 }
 
 TEST(GenOutputActionTest, Variables) {
@@ -201,7 +205,7 @@ TEST(GenPhysicalProbeTest, EntryProbe) {
   std::vector<std::string> expected = {
       "int probe_entry(struct pt_regs* ctx) {",
       "uint32_t key = bpf_get_current_pid_tgid() >> 32;",
-      "int32_t var = PT_REGS_SP(ctx);",
+      "int32_t var = (int32_t)PT_REGS_SP(ctx);",
       "struct socket_data_event_t st_var = {};",
       "st_var.i32 = var;",
       "test.update(&key, &var);",

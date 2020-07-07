@@ -14,6 +14,7 @@ namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
 using ::google::protobuf::util::MessageDifferencer;
+using ::pl::testing::proto::EqualsProto;
 
 constexpr std::string_view kEntryProbeIn = R"(
 probes: {
@@ -73,7 +74,7 @@ probes: {
   }
   vars {
     name: "goid"
-    type: INT32
+    type: INT64
     builtin: GOID
   }
   vars {
@@ -174,7 +175,7 @@ probes: {
   }
   vars {
     name: "goid"
-    type: INT32
+    type: INT64
     builtin: GOID
   }
   vars {
@@ -243,7 +244,7 @@ probes: {
   }
   vars {
     name: "goid"
-    type: INT32
+    type: INT64
     builtin: GOID
   }
   vars {
@@ -319,11 +320,12 @@ probes: {
     id: "arg2"
     expr: "b2.B0"
   }
-  stash_map_actions {
+  map_stash_actions {
     map_name: "my_stash"
     key_expr: "goid"
     value_variable_name: "arg0"
     value_variable_name: "arg1"
+    cond {}
   }
   output_actions {
     output_name: "out_table"
@@ -358,7 +360,7 @@ structs {
   }
   fields {
     name: "out_table_goid"
-    type { scalar: INT32 }
+    type { scalar: INT64 }
   }
   fields {
     name: "out_table_ktime_ns"
@@ -409,7 +411,7 @@ probes: {
   }
   vars {
     name: "goid"
-    type: INT32
+    type: INT64
     builtin: GOID
   }
   vars {
@@ -480,6 +482,7 @@ probes: {
     map_name: "my_stash"
     key_variable_name: "goid"
     value_variable_name: "my_stash_value"
+    cond {}
   }
   output_actions {
     perf_buffer_name: "out_table"
@@ -508,15 +511,7 @@ TEST_P(DwarfInfoTest, Transform) {
   ASSERT_TRUE(TextFormat::ParseFromString(std::string(input_str), &input_program));
 
   std::string expected_output_str = absl::Substitute(p.expected_output, kGoBinaryPath);
-  ir::physical::Program expected_output;
-  TextFormat::ParseFromString(std::string(expected_output_str), &expected_output);
-
-  ASSERT_OK_AND_ASSIGN(ir::physical::Program program, AddDwarves(input_program));
-
-  MessageDifferencer message_differencer;
-  std::string diff_out;
-  message_differencer.ReportDifferencesToString(&diff_out);
-  EXPECT_TRUE(message_differencer.Compare(program, expected_output)) << diff_out;
+  ASSERT_OK_AND_THAT(AddDwarves(input_program), EqualsProto(expected_output_str));
 }
 
 INSTANTIATE_TEST_SUITE_P(DwarfInfoTestSuite, DwarfInfoTest,

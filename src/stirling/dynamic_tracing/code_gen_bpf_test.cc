@@ -4,8 +4,12 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/dynamic_tracing/code_gen.h"
+#include "src/stirling/dynamic_tracing/dwarf_info.h"
+#include "src/stirling/dynamic_tracing/goid.h"
 #include "src/stirling/dynamic_tracing/ir/physical.pb.h"
 #include "src/stirling/utils/linux_headers.h"
+
+DEFINE_string(dummy_go_binary, "", "The path to dummy_go_binary.");
 
 namespace pl {
 namespace stirling {
@@ -40,10 +44,24 @@ constexpr char kProgram[] = R"proto(
                                 type { scalar: INT32 }
                               }
                             }
+                            structs {
+                              name: "pid_goid_map_value_t"
+                              fields {
+                                name: "pid_goid_map_goid_"
+                                type {
+                                  scalar: INT64
+                                }
+                              }
+                            }
                             maps {
                               name: "events"
                               key_type { scalar: INT32 }
                               value_type { struct_type: "event_t" }
+                            }
+                            maps {
+                              name: "pid_goid_map"
+                              key_type { scalar: UINT64 }
+                              value_type { struct_type: "pid_goid_map_value_t"  }
                             }
                             outputs {
                               name: "output"
@@ -106,8 +124,6 @@ TEST(CodeGenBPFTest, AttachOnDummyExe) {
   // Reset the binary path.
   program.mutable_probes(0)->mutable_trace_point()->set_binary_path(dummy_exe_path);
 
-  PL_LOG_VAR(program.DebugString());
-
   ASSERT_OK_AND_ASSIGN(BCCProgram bcc_program, GenProgram(program));
   ASSERT_THAT(bcc_program.uprobe_specs, SizeIs(1));
 
@@ -126,8 +142,34 @@ TEST(CodeGenBPFTest, AttachOnDummyExe) {
   ASSERT_OK(FindOrInstallLinuxHeaders({kDefaultHeaderSearchOrder}));
   ASSERT_OK(bcc_wrapper.InitBPFProgram(bcc_program.code));
   ASSERT_OK(bcc_wrapper.AttachUProbe(spec));
+}
 
-  EXPECT_OK(Exec(dummy_exe_path));
+TEST(CodeGenBPFTest, AttachGOIDProbe) {
+  ir::logical::Program intermediate_program;
+
+  GenGOIDEntryProbe(&intermediate_program);
+
+  intermediate_program.mutable_probes(0)->mutable_trace_point()->set_binary_path(
+      pl::testing::TestFilePath(FLAGS_dummy_go_binary));
+
+  ASSERT_OK_AND_ASSIGN(ir::physical::Program program, AddDwarves(intermediate_program));
+
+  ASSERT_OK_AND_ASSIGN(BCCProgram bcc_program, GenProgram(program));
+  ASSERT_THAT(bcc_program.uprobe_specs, SizeIs(1));
+
+  const auto& spec = bcc_program.uprobe_specs[0];
+
+  EXPECT_THAT(spec, Field(&UProbeSpec::binary_path, EndsWith(FLAGS_dummy_go_binary)));
+  EXPECT_THAT(spec, Field(&UProbeSpec::symbol, "runtime.casgstatus"));
+  EXPECT_THAT(spec, Field(&UProbeSpec::attach_type, BPFProbeAttachType::kEntry));
+  EXPECT_THAT(spec, Field(&UProbeSpec::probe_fn, "probe_entry_runtime_casgstatus"));
+
+  BCCWrapper bcc_wrapper;
+
+  // TODO(yzhao): Move this and any other common code into a test fixture.
+  ASSERT_OK(FindOrInstallLinuxHeaders({kDefaultHeaderSearchOrder}));
+  ASSERT_OK(bcc_wrapper.InitBPFProgram(bcc_program.code));
+  ASSERT_OK(bcc_wrapper.AttachUProbe(spec));
 }
 
 }  // namespace dynamic_tracing

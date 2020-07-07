@@ -24,6 +24,7 @@ using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
 using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
 using ::pl::stirling::dynamic_tracing::ir::shared::BPFHelper;
+using ::pl::stirling::dynamic_tracing::ir::shared::Condition;
 using ::pl::stirling::dynamic_tracing::ir::shared::Map;
 using ::pl::stirling::dynamic_tracing::ir::shared::Output;
 using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
@@ -129,7 +130,8 @@ namespace {
 std::string GenRegister(const ScalarVariable& var) {
   switch (var.reg()) {
     case Register::SP:
-      return absl::Substitute("$0 $1 = PT_REGS_SP(ctx);", GenScalarType(var.type()), var.name());
+      return absl::Substitute("$0 $1 = ($0)PT_REGS_SP(ctx);", GenScalarType(var.type()),
+                              var.name());
     case Register::Register_INT_MIN_SENTINEL_DO_NOT_USE_:
     case Register::Register_INT_MAX_SENTINEL_DO_NOT_USE_:
       PB_ENUM_SENTINEL_SWITCH_CLAUSE;
@@ -149,15 +151,20 @@ std::vector<std::string> GenMemoryVariable(const ScalarVariable& var) {
 std::string GenBPFHelper(const ScalarVariable& var) {
   static const absl::flat_hash_map<BPFHelper, std::string_view> kBPFHelpers = {
       // TODO(yzhao): Implement GOID.
-      {BPFHelper::GOID, "goid()"},
+      {BPFHelper::GOID, "pl_goid()"},
       {BPFHelper::TGID, "bpf_get_current_pid_tgid() >> 32"},
       {BPFHelper::TGID_PID, "bpf_get_current_pid_tgid()"},
       {BPFHelper::KTIME, "bpf_ktime_get_ns()"},
-      {BPFHelper::TGID_START_TIME, "pl_get_tgid_start_time()"},
+      {BPFHelper::TGID_START_TIME, "pl_tgid_start_time()"},
   };
   auto iter = kBPFHelpers.find(var.builtin());
   DCHECK(iter != kBPFHelpers.end());
   return absl::Substitute("$0 $1 = $2;", GenScalarType(var.type()), var.name(), iter->second);
+}
+
+std::string GenConstant(const ScalarVariable& var) {
+  return absl::Substitute("const $0 $1 = $2;", GenScalarType(var.type()), var.name(),
+                          var.constant());
 }
 
 }  // namespace
@@ -174,6 +181,10 @@ StatusOr<std::vector<std::string>> GenScalarVariable(const ScalarVariable& var) 
     }
     case ScalarVariable::AddressOneofCase::kMemory:
       return GenMemoryVariable(var);
+    case ScalarVariable::AddressOneofCase::kConstant: {
+      std::vector<std::string> code_lines = {GenConstant(var)};
+      return code_lines;
+    }
     case ScalarVariable::AddressOneofCase::ADDRESS_ONEOF_NOT_SET:
       return error::InvalidArgument("address_oneof must be set");
   }
@@ -208,13 +219,52 @@ StatusOr<std::vector<std::string>> GenStructVariable(const Struct& st,
   return code_lines;
 }
 
+StatusOr<std::vector<std::string>> GenCondition(const Condition& condition, std::string body) {
+  switch (condition.op()) {
+    case Condition::NIL: {
+      std::vector<std::string> code_lines = {std::move(body)};
+      return code_lines;
+    }
+    case Condition::EQUAL: {
+      if (condition.vars_size() != 2) {
+        return error::InvalidArgument("Expect 2 variables, got $0", condition.vars_size());
+      }
+      std::vector<std::string> code_lines = {
+          absl::Substitute("if ($0 == $1) {", condition.vars(0), condition.vars(1)),
+          std::move(body),
+          "}",
+      };
+      return code_lines;
+    }
+    case ir::shared::Condition_Op_Condition_Op_INT_MIN_SENTINEL_DO_NOT_USE_:
+    case ir::shared::Condition_Op_Condition_Op_INT_MAX_SENTINEL_DO_NOT_USE_:
+      PB_ENUM_SENTINEL_SWITCH_CLAUSE;
+  }
+  GCC_SWITCH_RETURN;
+}
+
+namespace {
+
+void MoveBackStrVec(std::vector<std::string>&& src, std::vector<std::string>* dst) {
+  dst->insert(dst->end(), std::make_move_iterator(src.begin()), std::make_move_iterator(src.end()));
+}
+
+}  // namespace
+
+// TODO(yzhao): Swap order of expr and dst, to be consistent with MoveBackStrVec().
+#define MOVE_BACK_STR_VEC(dst, expr)                           \
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> str_vec, expr); \
+  MoveBackStrVec(std::move(str_vec), dst);
+
 // TODO(yzhao): Wrap map stash action inside "{}" to avoid variable naming conflict.
 //
 // TODO(yzhao): Alternatively, leave map key as another Variable message (would be pre-generated
 // as part of the physical IR).
-std::string GenMapStashAction(const MapStashAction& action) {
-  return absl::Substitute("$0.update(&$1, &$2);", action.map_name(), action.key_variable_name(),
-                          action.value_variable_name());
+StatusOr<std::vector<std::string>> GenMapStashAction(const MapStashAction& action) {
+  std::string update_code_line =
+      absl::Substitute("$0.update(&$1, &$2);", action.map_name(), action.key_variable_name(),
+                       action.value_variable_name());
+  return GenCondition(action.cond(), std::move(update_code_line));
 }
 
 std::string GenOutput(const Output& output) {
@@ -227,10 +277,6 @@ std::string GenOutputAction(const OutputAction& action) {
 }
 
 namespace {
-
-void MoveBackStrVec(std::vector<std::string>&& src, std::vector<std::string>* dst) {
-  dst->insert(dst->end(), std::make_move_iterator(src.begin()), std::make_move_iterator(src.end()));
-}
 
 StatusOr<std::string> GenScalarVarPrintk(
     const absl::flat_hash_map<std::string_view, const ScalarVariable*>& scalar_vars,
@@ -273,10 +319,6 @@ StatusOr<std::vector<std::string>> GenPhysicalProbe(
   }
 
   std::vector<std::string> code_lines;
-
-#define MOVE_BACK_STR_VEC(dst, expr)                           \
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> str_vec, expr); \
-  MoveBackStrVec(std::move(str_vec), dst);
 
   code_lines.push_back(absl::Substitute("int $0(struct pt_regs* ctx) {", probe.name()));
 
@@ -327,7 +369,7 @@ StatusOr<std::vector<std::string>> GenPhysicalProbe(
           "variable name '$0' as the value pushed to BPF map '$1' was not defined",
           action.value_variable_name(), action.map_name());
     }
-    code_lines.push_back(GenMapStashAction(action));
+    MOVE_BACK_STR_VEC(&code_lines, GenMapStashAction(action));
   }
 
   for (const auto& action : probe.output_actions()) {
@@ -405,7 +447,7 @@ std::vector<std::string> GenNsecToClock() {
 
 std::vector<std::string> GenTGIDStartTime() {
   return {
-      "static __inline uint64_t pl_get_tgid_start_time() {",
+      "static __inline uint64_t pl_tgid_start_time() {",
       "struct task_struct* task_group_leader = "
       "((struct task_struct*)bpf_get_current_task())->group_leader;",
       // Linux 5.5 renames the variable to start_boottime.
@@ -414,6 +456,21 @@ std::vector<std::string> GenTGIDStartTime() {
       "#else",
       "return pl_nsec_to_clock_t(task_group_leader->real_start_time);",
       "#endif",
+      "}",
+  };
+}
+
+// This requires the presence of a probe for GOID, which defines the BPF map, and update the map
+// values.
+std::vector<std::string> GenGOID() {
+  // TODO(yzhao): This name should be hardcoded inside goid probe generation.
+  const char kGOIDMap[] = "pid_goid_map";
+  return {
+      "static __inline int64_t pl_goid() {",
+      "uint64_t current_pid_tgid = bpf_get_current_pid_tgid();",
+      absl::Substitute(
+          "const struct pid_goid_map_value_t* goid_ptr = $0.lookup(&current_pid_tgid);", kGOIDMap),
+      "return (goid_ptr == NULL) ? -1 : goid_ptr->pid_goid_map_goid_;",
       "}",
   };
 }
@@ -452,6 +509,9 @@ StatusOr<std::vector<std::string>> GenProgramCodeLines(const Program& program) {
     }
     MOVE_BACK_STR_VEC(&code_lines, GenMap(map));
   }
+
+  // goid() accesses BPF map.
+  MoveBackStrVec(GenGOID(), &code_lines);
 
   for (const auto& output : program.outputs()) {
     if (output.type().type_oneof_case() == VariableType::TypeOneofCase::kStructType &&

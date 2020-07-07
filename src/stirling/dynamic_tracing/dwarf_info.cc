@@ -37,6 +37,8 @@ class Dwarvifier {
   Status ProcessTracepoint(const ir::shared::TracePoint& trace_point,
                            ir::physical::PhysicalProbe* output_probe);
   Status ProcessSpecialVariables(ir::physical::PhysicalProbe* output_probe);
+  Status ProcessConst(const ir::logical::Constant& constant,
+                      ir::physical::PhysicalProbe* output_probe);
   Status ProcessArgExpr(const ir::logical::Argument& arg,
                         ir::physical::PhysicalProbe* output_probe);
   Status ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
@@ -191,8 +193,14 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
                                 ir::physical::Program* output_program) {
   auto* p = output_program->add_probes();
 
+  p->set_name(input_probe.name());
+
   PL_RETURN_IF_ERROR(ProcessTracepoint(input_probe.trace_point(), p));
   PL_RETURN_IF_ERROR(ProcessSpecialVariables(p));
+
+  for (auto& constant : input_probe.consts()) {
+    PL_RETURN_IF_ERROR(ProcessConst(constant, p));
+  }
 
   for (const auto& arg : input_probe.args()) {
     PL_RETURN_IF_ERROR(ProcessArgExpr(arg, p));
@@ -202,7 +210,7 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
     PL_RETURN_IF_ERROR(ProcessRetValExpr(ret_val, p));
   }
 
-  for (const auto& stash_action : input_probe.stash_map_actions()) {
+  for (const auto& stash_action : input_probe.map_stash_actions()) {
     PL_RETURN_IF_ERROR(ProcessStashAction(stash_action, p, output_program));
   }
 
@@ -251,7 +259,7 @@ Status Dwarvifier::ProcessSpecialVariables(ir::physical::PhysicalProbe* output_p
   {
     auto* var = output_probe->add_vars();
     var->set_name(kGOIDVarName);
-    var->set_type(ir::shared::ScalarType::INT32);
+    var->set_type(ir::shared::ScalarType::INT64);
     var->set_builtin(ir::shared::BPFHelper::GOID);
 
     vars_map_[kGOIDVarName] = var;
@@ -266,6 +274,17 @@ Status Dwarvifier::ProcessSpecialVariables(ir::physical::PhysicalProbe* output_p
 
     vars_map_[kKTimeVarName] = var;
   }
+
+  return Status::OK();
+}
+
+Status Dwarvifier::ProcessConst(const ir::logical::Constant& constant,
+                                ir::physical::PhysicalProbe* output_probe) {
+  auto* var = output_probe->add_vars();
+
+  var->set_name(constant.name());
+  var->set_type(constant.type());
+  var->set_constant(constant.constant());
 
   return Status::OK();
 }
@@ -449,6 +468,7 @@ Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_a
   // TODO(oazizi): Temporarily hard-coded. Fix.
   stash_action_out->set_key_variable_name("goid");
   stash_action_out->set_value_variable_name(variable_name);
+  stash_action_out->mutable_cond()->CopyFrom(stash_action_in.cond());
 
   return Status::OK();
 }

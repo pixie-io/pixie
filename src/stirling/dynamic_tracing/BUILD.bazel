@@ -35,7 +35,13 @@ pl_cc_test(
 pl_cc_test(
     name = "code_gen_bpf_test",
     srcs = ["code_gen_bpf_test.cc"],
-    data = ["//src/stirling/obj_tools/testdata:dummy_exe"],
+    args = [
+        "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
+    ],
+    data = [
+        "//src/stirling/obj_tools/testdata:dummy_exe",
+        "//src/stirling/obj_tools/testdata:dummy_go_binary",
+    ],
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
@@ -84,4 +90,14 @@ pl_cc_test(
     deps = [
         ":cc_library",
     ],
+)
+
+pl_cc_test(
+    name = "goid_test",
+    srcs = ["goid_test.cc"],
+    args = [
+        "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
+    ],
+    data = ["//src/stirling/obj_tools/testdata:dummy_go_binary"],
+    deps = [":cc_library"],
 )

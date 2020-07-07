@@ -74,3 +74,18 @@ message Output {
 
   VariableType type = 2;  // Exclusive to physical IR.
 }
+
+// Describes a condition to be checked.
+message Condition {
+  enum Op {
+    // NIL means this condition should be ignored.
+    NIL = 0;
+    EQUAL = 1;
+  }
+
+  // Describes the operation performed on the variables listed below.
+  Op op = 1;
+
+  // List variables used in the operation.
+  repeated string vars = 2;
+}

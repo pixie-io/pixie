@@ -26,7 +26,7 @@ void CreateEntryProbe(const ir::logical::Probe& input_probe, ir::logical::Progra
 
   // Generate argument stash.
   // For now, always stash all arguments.
-  auto* stash_action = entry_probe->add_stash_map_actions();
+  auto* stash_action = entry_probe->add_map_stash_actions();
   stash_action->set_map_name(input_probe.name() + "_argstash");
   // TODO(oazizi): goid is hard-coded. Fix based on language.
   stash_action->set_key_expr("goid");

@@ -4,6 +4,17 @@ package pl.stirling.dynamic_tracing.ir.logical;
 
 import "src/stirling/dynamic_tracing/ir/shared.proto";
 
+message Constant {
+  // Name must be unique in the scope of a Probe.
+  string name = 1;
+
+  // Describes type of the constant.
+  shared.ScalarType type = 2;
+
+  // This is directly assigned to the variable.
+  string constant = 3;
+}
+
 message Argument {
   // Used to reference to this argument, and as the name of the column to hold the values of this
   // argument when this is exported to a table.
@@ -39,6 +50,9 @@ message MapStashAction {
 
   // The name of the variable to be inserted into this map.
   repeated string value_variable_name = 3;
+
+  // If set, this decide the condition which this map stash should be executed.
+  shared.Condition cond = 4;
 }
 
 message OutputAction {
@@ -55,6 +69,9 @@ message Probe {
   // Where to attach this probe.
   shared.TracePoint trace_point = 2;
 
+  // This is only used by intermediate IR to implement if condition that compares with a constant.
+  repeated Constant consts = 3;
+
   // Input arguments of a function.
   repeated Argument args = 4;
 
@@ -67,7 +84,7 @@ message Probe {
   // Inserts key and value into a map.
   //
   // The variable to be inserted into the map must be one of the above args, ret_vals, and function_latency.
-  repeated MapStashAction stash_map_actions = 7;
+  repeated MapStashAction map_stash_actions = 7;
 
   // Writes a value to the output table.
   //

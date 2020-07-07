@@ -54,6 +54,9 @@ message ScalarVariable {
 
     // Return value from one of the BPF helper functions.
     shared.BPFHelper builtin = 5;
+
+    // This is directly assigned to the variable.
+    string constant = 6;
   }
 }
 
@@ -88,6 +91,9 @@ message MapStashAction {
 
   // The name of the variable to be inserted into this map.
   string value_variable_name = 3;
+
+  // If set, this decide the condition which this map stash should be executed.
+  shared.Condition cond = 4;
 }
 
 message OutputAction {
