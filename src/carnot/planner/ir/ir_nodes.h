@@ -2085,7 +2085,7 @@ class UDTFSourceIR : public OperatorIR {
 template <typename TIRNode>
 inline StatusOr<TIRNode*> AsNodeType(IRNode* node, std::string_view node_name) {
   if (!TIRNode::NodeMatches(node)) {
-    return node->CreateIRNodeError("Could not get $0 as type '$1', received '$2'", node_name,
+    return node->CreateIRNodeError("Expected arg '$0' as type '$1', received '$2'", node_name,
                                    TIRNode::class_type_string(), node->type_string());
   }
   return static_cast<TIRNode*>(node);

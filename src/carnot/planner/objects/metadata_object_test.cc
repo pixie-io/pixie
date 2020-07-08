@@ -45,7 +45,7 @@ TEST_F(MetadataObjectTest, ErrorsOnSubscriptWithNonString) {
   auto func_result_or_s = func->Call(MakeArgMap({}, {MakeInt(2)}), ast);
   ASSERT_NOT_OK(func_result_or_s);
   EXPECT_THAT(func_result_or_s.status(),
-              HasCompilerError("Could not get key as type 'String', received 'Int"));
+              HasCompilerError("Expected arg 'key' as type 'String', received 'Int"));
 }
 
 }  // namespace compiler

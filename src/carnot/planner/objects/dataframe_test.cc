@@ -161,7 +161,7 @@ TEST_F(DropHandlerTest, DropTestNonString) {
   ASSERT_NOT_OK(status);
   EXPECT_THAT(
       status.status(),
-      HasCompilerError("Could not get columns \\(index 0\\) as type 'String', received 'Int"));
+      HasCompilerError("Expected arg 'columns \\(index 0\\)' as type 'String', received 'Int"));
 }
 
 TEST_F(DropHandlerTest, DropTestStringWithoutList) {
@@ -304,7 +304,7 @@ TEST_F(AggHandlerTest, NonStrFirstTupleArg) {
   ASSERT_NOT_OK(status);
   EXPECT_THAT(
       status.status(),
-      HasCompilerError("Could not get first tuple argument as type 'String', received 'Int'"));
+      HasCompilerError("Expected arg 'first tuple argument' as type 'String', received 'Int'"));
 }
 
 TEST_F(AggHandlerTest, NonFuncSecondTupleArg) {
@@ -353,7 +353,7 @@ TEST_F(LimitTest, LimitNonIntArgument) {
   auto status = LimitHandler::Eval(graph.get(), src, ast, args, ast_visitor.get());
   ASSERT_NOT_OK(status);
   EXPECT_THAT(status.status(),
-              HasCompilerError("Could not get n as type 'Int', received 'String'"));
+              HasCompilerError("Expected arg 'n' as type 'Int', received 'String'"));
 }
 
 TEST_F(DataframeTest, LimitCall) {
@@ -553,7 +553,7 @@ TEST_F(GroupByTest, GroupByMixedListElementTypesCausesError) {
 
   ASSERT_NOT_OK(qlo_or_s);
   EXPECT_THAT(qlo_or_s.status(),
-              HasCompilerError("Could not get by \\(index 1\\) as type 'String', received 'Int'"));
+              HasCompilerError("Expected arg 'by \\(index 1\\)' as type 'String', received 'Int'"));
 }
 
 TEST_F(GroupByTest, GroupByInDataframe) {

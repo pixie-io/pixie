@@ -10,6 +10,8 @@ enum MetadataType {
   METADATA_TYPE_UNKNOWN = 0;
   UPID = 1;
   PID = 2;
+  // The incremental id assigned by the metadata service.
+  ASID = 3;
   // IDs are 1000-1999
   CONTAINER_ID = 1000;
   POD_ID = 1001;
@@ -23,4 +25,7 @@ enum MetadataType {
   NODE_NAME = 2005;
   HOSTNAME = 2006;
   CONTAINER_NAME = 2007;
+
+  // Misc soup.
+  CMDLINE = 3001;
 }

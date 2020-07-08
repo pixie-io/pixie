@@ -445,7 +445,7 @@ Status ASTVisitorImpl::ProcessSubscriptAssignment(const pypa::AstSubscriptPtr& s
   PL_ASSIGN_OR_RETURN(auto processed_target_table, Process(subscript->value, {{}, "", {}}));
 
   if (processed_target_table->type() != QLObjectType::kDataframe) {
-    return CreateAstError(subscript, "Can't assign to node via subscript of type $0",
+    return CreateAstError(subscript, "Subscript assignment not allowed for $0 objects",
                           processed_target_table->name());
   }
 

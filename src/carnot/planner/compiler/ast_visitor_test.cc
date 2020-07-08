@@ -536,7 +536,7 @@ TEST_F(AggTest, not_allowed_by_arguments) {
   ASSERT_NOT_OK(ir_graph_status);
 
   EXPECT_THAT(ir_graph_status.status(),
-              HasCompilerError("Could not get by as type 'String', received 'Func'"));
+              HasCompilerError("Expected arg 'by' as type 'String', received 'Func'"));
 }
 
 constexpr char kInnerJoinQuery[] = R"query(

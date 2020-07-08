@@ -38,6 +38,8 @@ std::unique_ptr<MetadataHandler> MetadataHandler::Create() {
   handler->AddObject<NameMetadataProperty>(MetadataType::HOSTNAME, {"host"}, {MetadataType::UPID});
   handler->AddObject<NameMetadataProperty>(MetadataType::CONTAINER_NAME, {"container"},
                                            {MetadataType::UPID});
+  handler->AddObject<NameMetadataProperty>(MetadataType::CMDLINE, {"cmd"}, {MetadataType::UPID});
+  handler->AddObject<NameMetadataProperty>(MetadataType::ASID, {}, {MetadataType::UPID});
   handler->AddObject<Int64MetadataProperty>(MetadataType::PID, {}, {MetadataType::UPID});
   return handler;
 }
