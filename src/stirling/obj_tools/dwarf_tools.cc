@@ -167,7 +167,7 @@ StatusOr<std::vector<DWARFDie>> DwarfReader::GetMatchingDIEs(std::string_view na
       }
 
       // Indexing was on, but nothing was found, so return empty vector.
-      return {};
+      return std::vector<DWARFDie>{};
     }
   }
 

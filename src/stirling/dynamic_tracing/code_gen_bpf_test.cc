@@ -1,6 +1,5 @@
 #include <google/protobuf/text_format.h>
 
-#include "src/common/exec/exec.h"
 #include "src/common/testing/testing.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/dynamic_tracing/code_gen.h"
@@ -16,7 +15,6 @@ namespace stirling {
 namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
-using ::pl::Exec;
 using ::pl::stirling::bpf_tools::BCCWrapper;
 using ::pl::stirling::bpf_tools::BPFProbeAttachType;
 using ::pl::stirling::bpf_tools::UProbeSpec;
@@ -146,12 +144,14 @@ TEST(CodeGenBPFTest, AttachOnDummyExe) {
 
 // TODO(oazizi): This test does not belong here, since it encompasses AddDwarves() and GenProgram().
 TEST(CodeGenBPFTest, AttachGOIDProbe) {
-  ir::logical::Program intermediate_program;
+  ir::logical::Probe goid_probe = GenGOIDProbe();
 
-  GenGOIDEntryProbe(&intermediate_program);
-
-  intermediate_program.mutable_probes(0)->mutable_trace_point()->set_binary_path(
+  goid_probe.mutable_trace_point()->set_binary_path(
       pl::testing::TestFilePath(FLAGS_dummy_go_binary));
+
+  ir::logical::Program intermediate_program;
+  intermediate_program.add_maps()->CopyFrom(GenGOIDMap());
+  intermediate_program.add_probes()->CopyFrom(std::move(goid_probe));
 
   ASSERT_OK_AND_ASSIGN(ir::physical::Program program, AddDwarves(intermediate_program));
 

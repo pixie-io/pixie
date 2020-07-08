@@ -56,16 +56,50 @@ probes: {
 }
 )";
 
-constexpr std::string_view kTransformedProgram = R"(
-outputs: {
+constexpr std::string_view kTransformedProgram = R"proto(
+outputs {
   name: "probe0_table"
 }
-maps: {
+maps {
+  name: "pid_goid_map"
+}
+maps {
   name: "probe0_argstash"
 }
-probes: {
+probes {
+  name: "probe_entry_runtime_casgstatus"
+  trace_point {
+    binary_path: "$0"
+    symbol: "runtime.casgstatus"
+    type: ENTRY
+  }
+  consts {
+    name: "kGRunningState"
+    type: INT64
+    constant: "2"
+  }
+  args {
+    id: "goid_"
+    expr: "gp.goid"
+  }
+  args {
+    id: "newval"
+    expr: "newval"
+  }
+  map_stash_actions {
+    map_name: "pid_goid_map"
+    key: TGID_PID
+    value_variable_name: "goid_"
+    cond {
+      op: EQUAL
+      vars: "newval"
+      vars: "kGRunningState"
+    }
+  }
+}
+probes {
   name: "probe0_entry"
-  trace_point: {
+  trace_point {
     binary_path: "$0"
     symbol: "main.MixedArgTypes"
     type: ENTRY
@@ -105,9 +139,9 @@ probes: {
     value_variable_name: "arg5"
   }
 }
-probes: {
+probes {
   name: "probe0_return"
-  trace_point: {
+  trace_point {
     binary_path: "$0"
     symbol: "main.MixedArgTypes"
     type: RETURN
@@ -142,7 +176,7 @@ probes: {
     variable_name: "retval1"
   }
 }
-)";
+)proto";
 
 struct ProbeGenTestParam {
   std::string_view input;

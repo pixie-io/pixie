@@ -14,41 +14,37 @@ using ::pl::testing::proto::EqualsProto;
 using ::testing::SizeIs;
 using ::testing::StrEq;
 
+TEST(GOIDTest, CheckMap) {
+  EXPECT_THAT(GenGOIDMap(), EqualsProto(R"proto(name: "pid_goid_map")proto"));
+}
+
 TEST(GOIDTest, CheckProbe) {
-  ir::logical::Program program;
-  GenGOIDEntryProbe(&program);
-  PL_LOG_VAR(program.DebugString());
-  EXPECT_THAT(program, Partially(EqualsProto(
-                           R"proto(
-                                       maps {
-                                         name: "pid_goid_map"
-                                       }
-                                       probes {
-                                         name: "probe_entry_runtime_casgstatus"
-                                         trace_point {
-                                           symbol: "runtime.casgstatus"
-                                           type: ENTRY
-                                         }
-                                         consts {
-                                           name: "kGRunningState"
-                                           type: INT64
-                                           constant: "2"
-                                         }
-                                         args {
-                                           id: "goid_"
-                                           expr: "gp.goid"
-                                         }
-                                         args {
-                                           id: "newval"
-                                           expr: "newval"
-                                         }
-                                         map_stash_actions {
-                                           map_name: "pid_goid_map"
-                                           key: TGID_PID
-                                           value_variable_name: "goid_"
-                                         }
-                                       }
-                                       )proto")));
+  EXPECT_THAT(GenGOIDProbe(), Partially(EqualsProto(
+                                  R"proto(
+                                        name: "probe_entry_runtime_casgstatus"
+                                        trace_point {
+                                          symbol: "runtime.casgstatus"
+                                          type: ENTRY
+                                        }
+                                        consts {
+                                          name: "kGRunningState"
+                                          type: INT64
+                                          constant: "2"
+                                        }
+                                        args {
+                                          id: "goid_"
+                                          expr: "gp.goid"
+                                        }
+                                        args {
+                                          id: "newval"
+                                          expr: "newval"
+                                        }
+                                        map_stash_actions {
+                                          map_name: "pid_goid_map"
+                                          key: TGID_PID
+                                          value_variable_name: "goid_"
+                                        }
+                                        )proto")));
 }
 
 }  // namespace dynamic_tracing

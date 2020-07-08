@@ -101,3 +101,18 @@ pl_cc_test(
     data = ["//src/stirling/obj_tools/testdata:dummy_go_binary"],
     deps = [":cc_library"],
 )
+
+pl_cc_test(
+    name = "dynamic_tracer_bpf_test",
+    srcs = ["dynamic_tracer_bpf_test.cc"],
+    args = [
+        "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
+    ],
+    data = [
+        "//src/stirling/obj_tools/testdata:dummy_go_binary",
+    ],
+    tags = ["requires_bpf"],
+    deps = [
+        ":cc_library",
+    ],
+)

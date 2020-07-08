@@ -1,5 +1,9 @@
 #include "src/stirling/dynamic_tracing/probe_transformer.h"
 
+#include <utility>
+
+#include "src/stirling/dynamic_tracing/goid.h"
+
 namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
@@ -101,6 +105,19 @@ StatusOr<ir::logical::Program> TransformLogicalProgram(const ir::logical::Progra
     map->CopyFrom(m);
   }
 
+  if (!input_program.probes().empty()) {
+    out.add_maps()->CopyFrom(GenGOIDMap());
+    ir::logical::Probe goid_probe = GenGOIDProbe();
+
+    // Specify the same binary path as the first probe's target binary.
+    //
+    // TODO(yzhao): binary_path will be moved to the top-level of Program message.
+    goid_probe.mutable_trace_point()->set_binary_path(
+        input_program.probes(0).trace_point().binary_path());
+
+    out.add_probes()->CopyFrom(std::move(goid_probe));
+  }
+
   for (const auto& p : input_program.probes()) {
     if (p.trace_point().type() == ir::shared::TracePoint::LOGICAL) {
       TransformLogicalProbe(p, &out);
@@ -109,10 +126,6 @@ StatusOr<ir::logical::Program> TransformLogicalProgram(const ir::logical::Progra
       probe->CopyFrom(p);
     }
   }
-
-  // TODO(yzhao): Add GOID constructs here.
-  // CreateGOIDMap(&out);
-  // CreateGOIDProbe(&out);
 
   return out;
 }

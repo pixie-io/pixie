@@ -10,9 +10,11 @@ namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
 
-// Generates a probe and its map for tracing goid.
-// TODO(yzhao): Call this in the process of intermediate to physical translation.
-void GenGOIDEntryProbe(ir::logical::Program* program);
+// Returns a map used to record the mapping from pid_tgid to goid.
+ir::shared::Map GenGOIDMap();
+
+// Generates a probe for tracing goid.
+ir::logical::Probe GenGOIDProbe();
 
 }  // namespace dynamic_tracing
 }  // namespace stirling
