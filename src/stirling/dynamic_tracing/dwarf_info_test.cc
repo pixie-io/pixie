@@ -68,6 +68,11 @@ probes: {
     builtin: TGID
   }
   vars {
+    name: "tgid_pid"
+    type: UINT64
+    builtin: TGID_PID
+  }
+  vars {
     name: "tgid_start_time"
     type: UINT64
     builtin: TGID_START_TIME
@@ -125,7 +130,7 @@ probes: {
   vars {
     name: "arg5"
     type: BOOL
-    memory: {
+    memory {
       base: "sp"
       offset: 20
     }
@@ -167,6 +172,11 @@ probes: {
     name: "tgid"
     type: INT32
     builtin: TGID
+  }
+  vars {
+    name: "tgid_pid"
+    type: UINT64
+    builtin: TGID_PID
   }
   vars {
     name: "tgid_start_time"
@@ -236,6 +246,11 @@ probes: {
     name: "tgid"
     type: INT32
     builtin: TGID
+  }
+  vars {
+    name: "tgid_pid"
+    type: UINT64
+    builtin: TGID_PID
   }
   vars {
     name: "tgid_start_time"
@@ -322,7 +337,7 @@ probes: {
   }
   map_stash_actions {
     map_name: "my_stash"
-    key_expr: "goid"
+    key: GOID
     value_variable_name: "arg0"
     value_variable_name: "arg1"
     cond {}
@@ -403,6 +418,11 @@ probes: {
     name: "tgid"
     type: INT32
     builtin: TGID
+  }
+  vars {
+    name: "tgid_pid"
+    type: UINT64
+    builtin: TGID_PID
   }
   vars {
     name: "tgid_start_time"

@@ -42,9 +42,7 @@ void GenGOIDEntryProbe(ir::logical::Program* program) {
   auto* map_stash_action = probe->add_map_stash_actions();
 
   map_stash_action->set_map_name("pid_goid_map");
-  // TODO(yzhao): This does not work yet, in dwarf_info.cc, ProcessStashAction() produces a
-  // hardcoded "goid" variable, but here we need tgid_pid instead.
-  map_stash_action->set_key_expr("tgid_pid()");
+  map_stash_action->set_key(ir::shared::BPFHelper::TGID_PID);
   // TODO(yzhao): goid_ avoids conflict with the "goid" special variable.
   map_stash_action->add_value_variable_name("goid_");
   map_stash_action->mutable_cond()->set_op(ir::shared::Condition::EQUAL);

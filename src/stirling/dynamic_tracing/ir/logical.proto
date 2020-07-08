@@ -45,8 +45,7 @@ message FunctionLatency {
 message MapStashAction {
   string map_name = 1;
 
-  // The builtin to generate the key value.
-  string key_expr = 2;
+  shared.BPFHelper key = 2;
 
   // The name of the variable to be inserted into this map.
   repeated string value_variable_name = 3;

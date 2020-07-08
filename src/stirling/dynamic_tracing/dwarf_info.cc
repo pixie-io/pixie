@@ -16,6 +16,17 @@ using dwarf_tools::ArgInfo;
 using dwarf_tools::VarInfo;
 using dwarf_tools::VarType;
 
+namespace {
+
+constexpr char kSPVarName[] = "sp";
+constexpr char kTGIDVarName[] = "tgid";
+constexpr char kTGIDPIDVarName[] = "tgid_pid";
+constexpr char kTGIDStartTimeVarName[] = "tgid_start_time";
+constexpr char kGOIDVarName[] = "goid";
+constexpr char kKTimeVarName[] = "ktime_ns";
+
+}  // namespace
+
 /**
  * The Dwarvifier generates a PhysicalProbe from a given LogicalProbe spec.
  * The Dwarvifier's job is to:
@@ -67,12 +78,6 @@ class Dwarvifier {
   // Dwarf and BCC have an 8 byte difference in where they believe the SP is.
   // This adjustment factor accounts for that difference.
   static constexpr int32_t kSPOffset = 8;
-
-  static inline const std::string kSPVarName = "sp";
-  static inline const std::string kTGIDVarName = "tgid";
-  static inline const std::string kTGIDStartTimeVarName = "tgid_start_time";
-  static inline const std::string kGOIDVarName = "goid";
-  static inline const std::string kKTimeVarName = "ktime_ns";
 
   static inline const std::vector<std::string> kImplicitColumns{kTGIDVarName, kTGIDStartTimeVarName,
                                                                 kGOIDVarName, kKTimeVarName};
@@ -243,6 +248,16 @@ Status Dwarvifier::ProcessSpecialVariables(ir::physical::PhysicalProbe* output_p
     var->set_builtin(ir::shared::BPFHelper::TGID);
 
     vars_map_[kTGIDVarName] = var;
+  }
+
+  // Add tgid_pid variable
+  {
+    auto* var = output_probe->add_vars();
+    var->set_name(kTGIDPIDVarName);
+    var->set_type(ir::shared::ScalarType::UINT64);
+    var->set_builtin(ir::shared::BPFHelper::TGID_PID);
+
+    vars_map_[kTGIDPIDVarName] = var;
   }
 
   // Add TGID start time (required for UPID construction)
@@ -444,6 +459,24 @@ Status PopulateMapTypes(const std::map<std::string, ir::shared::Map*>& maps,
 
   return Status::OK();
 }
+
+StatusOr<std::string_view> BPFHelperVariableName(ir::shared::BPFHelper builtin) {
+  static const absl::flat_hash_map<ir::shared::BPFHelper, std::string_view> kBuiltinVarNames = {
+      {ir::shared::BPFHelper::GOID, kGOIDVarName},
+      {ir::shared::BPFHelper::TGID, kTGIDVarName},
+      {ir::shared::BPFHelper::TGID_PID, kTGIDPIDVarName},
+      {ir::shared::BPFHelper::TGID_START_TIME, kTGIDStartTimeVarName},
+      {ir::shared::BPFHelper::KTIME, kKTimeVarName},
+  };
+  auto iter = kBuiltinVarNames.find(builtin);
+  if (iter == kBuiltinVarNames.end()) {
+    // TGID_PID was not defined.
+    return error::NotFound("BPFHelper '$0' does not have a predefined variable",
+                           magic_enum::enum_name(builtin));
+  }
+  return iter->second;
+}
+
 }  // namespace
 
 Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_action_in,
@@ -465,8 +498,9 @@ Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_a
 
   auto* stash_action_out = output_probe->add_map_stash_actions();
   stash_action_out->set_map_name(stash_action_in.map_name());
-  // TODO(oazizi): Temporarily hard-coded. Fix.
-  stash_action_out->set_key_variable_name("goid");
+
+  PL_ASSIGN_OR_RETURN(std::string_view key_var_name, BPFHelperVariableName(stash_action_in.key()));
+  stash_action_out->set_key_variable_name(std::string(key_var_name));
   stash_action_out->set_value_variable_name(variable_name);
   stash_action_out->mutable_cond()->CopyFrom(stash_action_in.cond());
 

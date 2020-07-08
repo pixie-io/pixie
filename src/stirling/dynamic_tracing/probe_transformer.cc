@@ -28,8 +28,9 @@ void CreateEntryProbe(const ir::logical::Probe& input_probe, ir::logical::Progra
   // For now, always stash all arguments.
   auto* stash_action = entry_probe->add_map_stash_actions();
   stash_action->set_map_name(input_probe.name() + "_argstash");
-  // TODO(oazizi): goid is hard-coded. Fix based on language.
-  stash_action->set_key_expr("goid");
+  // TODO(oazizi): goid is hard-coded. Fix based on language. Non-Golang languages probably should
+  // use TGID_PID.
+  stash_action->set_key(ir::shared::BPFHelper::GOID);
   for (auto& in_arg : input_probe.args()) {
     stash_action->add_value_variable_name(in_arg.id());
   }

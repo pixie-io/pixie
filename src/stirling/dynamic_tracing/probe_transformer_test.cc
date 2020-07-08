@@ -97,7 +97,7 @@ probes: {
   }
   map_stash_actions {
     map_name: "probe0_argstash"
-    key_expr: "goid"
+    key: GOID
     value_variable_name: "arg0"
     value_variable_name: "arg1"
     value_variable_name: "arg2"
