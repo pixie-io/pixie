@@ -11,20 +11,28 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import ProfileMenu from 'containers/profile-menu/profile-menu';
-import Divider from '@material-ui/core/Divider';
 import SettingsIcon from 'components/icons/settings';
 import { Link } from 'react-router-dom';
 import Tooltip from '@material-ui/core/Tooltip';
 
-const styles = ({ spacing, palette }: Theme) => createStyles({
+const styles = ({ spacing, palette, transitions }: Theme) => createStyles({
   drawerOpen: {
     width: spacing(28),
     zIndex: 1250,
     flexShrink: 0,
     whiteSpace: 'nowrap',
     paddingTop: spacing(8),
+    transition: transitions.create('width', {
+      easing: transitions.easing.sharp,
+      duration: transitions.duration.enteringScreen,
+    }),
+    overflowX: 'hidden',
   },
   drawerClose: {
+    transition: transitions.create('width', {
+      easing: transitions.easing.sharp,
+      duration: transitions.duration.leavingScreen,
+    }),
     width: spacing(8),
     zIndex: 1250,
     overflowX: 'hidden',
@@ -94,13 +102,12 @@ const SideBar = ({
         <SideBarItem key={text} classes={classes} icon={icon} link={link} text={text} />
       ))}
     </List>
-    <Divider className={classes.divider} />
+    <div className={classes.spacer} />
     <List>
       {profileItems.map(({ icon, link, text }) => (
         <SideBarItem key={text} classes={classes} icon={icon} link={link} text={text} />
       ))}
     </List>
-    <div className={classes.spacer} />
     <div>
       <ProfileMenu />
     </div>
