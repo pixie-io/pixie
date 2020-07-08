@@ -18,13 +18,15 @@ void InitEnvironmentOrDieImpl(int* argc, char** argv) {
   FLAGS_logtostderr = true;
   FLAGS_colorlogtostderr = true;
 
+  std::string cmd = absl::StrJoin(argv, argv + *argc, " ");
+
   absl::InitializeSymbolizer(argv[0]);
   google::ParseCommandLineFlags(argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
 
   ChDirPixieRoot();
 
-  LOG(INFO) << "Started: " << argv[0];
+  LOG(INFO) << "Started: " << cmd;
 }
 
 void ShutdownEnvironmentOrDieImpl() {
