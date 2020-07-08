@@ -451,7 +451,7 @@ std::vector<std::string> GenTGIDStartTime() {
       "struct task_struct* task_group_leader = "
       "((struct task_struct*)bpf_get_current_task())->group_leader;",
       // Linux 5.5 renames the variable to start_boottime.
-      "#if LINUX_VERSION_CODE >= 327680",
+      "#if LINUX_VERSION_CODE >= 328960",
       "return pl_nsec_to_clock_t(task_group_leader->start_boottime);",
       "#else",
       "return pl_nsec_to_clock_t(task_group_leader->real_start_time);",

@@ -46,7 +46,7 @@ static __inline uint64_t pl_nsec_to_clock_t(uint64_t x) {
 static __inline uint64_t get_tgid_start_time() {
   struct task_struct* task = (struct task_struct*)bpf_get_current_task();
   // Linux 5.5 renames the variable to start_boottime.
-#if LINUX_VERSION_CODE >= 327680
+#if LINUX_VERSION_CODE >= 328960
   uint64_t start_boottime = task->group_leader->start_boottime;
 #else
   uint64_t start_boottime = task->group_leader->real_start_time;
