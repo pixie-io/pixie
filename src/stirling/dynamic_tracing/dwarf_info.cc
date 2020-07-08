@@ -63,6 +63,9 @@ class Dwarvifier {
                              ir::physical::PhysicalProbe* output_probe,
                              ir::physical::Program* output_program);
 
+  ir::physical::ScalarVariable* AddVariable(ir::physical::PhysicalProbe* probe,
+                                            const std::string& name, ir::shared::ScalarType type);
+
   Status GenerateMapValueStruct(const ir::logical::MapStashAction& stash_action_in,
                                 const std::string& struct_type_name,
                                 ir::physical::Program* output_program);
@@ -169,6 +172,17 @@ StatusOr<const ArgInfo*> GetArgInfo(const std::map<std::string, ArgInfo>& args_m
   return &args_map_iter->second;
 }
 
+ir::physical::ScalarVariable* Dwarvifier::AddVariable(ir::physical::PhysicalProbe* probe,
+                                                      const std::string& name,
+                                                      ir::shared::ScalarType type) {
+  auto* var = probe->add_vars();
+  var->set_name(name);
+  var->set_type(type);
+
+  vars_map_[name] = var;
+  return var;
+}
+
 Status Dwarvifier::GenerateProbe(const ir::logical::Probe input_probe,
                                  ir::physical::Program* output_program) {
   PL_RETURN_IF_ERROR(Setup(input_probe.trace_point()));
@@ -238,24 +252,12 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
 //               For now, include them all for simplicity.
 Status Dwarvifier::ProcessSpecialVariables(ir::physical::PhysicalProbe* output_probe) {
   // Add SP variable.
-  {
-    auto* var = output_probe->add_vars();
-    var->set_name(kSPVarName);
-    var->set_type(ir::shared::VOID_POINTER);
-    var->set_reg(ir::physical::Register::SP);
-
-    vars_map_[kSPVarName] = var;
-  }
+  auto* sp_var = AddVariable(output_probe, kSPVarName, ir::shared::VOID_POINTER);
+  sp_var->set_reg(ir::physical::Register::SP);
 
   // Add tgid variable
-  {
-    auto* var = output_probe->add_vars();
-    var->set_name(kTGIDVarName);
-    var->set_type(ir::shared::ScalarType::INT32);
-    var->set_builtin(ir::shared::BPFHelper::TGID);
-
-    vars_map_[kTGIDVarName] = var;
-  }
+  auto* tgid_var = AddVariable(output_probe, kTGIDVarName, ir::shared::ScalarType::INT32);
+  tgid_var->set_builtin(ir::shared::BPFHelper::TGID);
 
   // Add tgid_pid variable
   {
@@ -268,34 +270,17 @@ Status Dwarvifier::ProcessSpecialVariables(ir::physical::PhysicalProbe* output_p
   }
 
   // Add TGID start time (required for UPID construction)
-  {
-    auto* var = output_probe->add_vars();
-    var->set_name(kTGIDStartTimeVarName);
-    var->set_type(ir::shared::ScalarType::UINT64);
-    var->set_builtin(ir::shared::BPFHelper::TGID_START_TIME);
-
-    vars_map_[kTGIDStartTimeVarName] = var;
-  }
+  auto* tgid_start_time_var =
+      AddVariable(output_probe, kTGIDStartTimeVarName, ir::shared::ScalarType::UINT64);
+  tgid_start_time_var->set_builtin(ir::shared::BPFHelper::TGID_START_TIME);
 
   // Add goid variable
-  {
-    auto* var = output_probe->add_vars();
-    var->set_name(kGOIDVarName);
-    var->set_type(ir::shared::ScalarType::INT64);
-    var->set_builtin(ir::shared::BPFHelper::GOID);
-
-    vars_map_[kGOIDVarName] = var;
-  }
+  auto* goid_var = AddVariable(output_probe, kGOIDVarName, ir::shared::ScalarType::INT64);
+  goid_var->set_builtin(ir::shared::BPFHelper::GOID);
 
   // Add current time variable (for latency)
-  {
-    auto* var = output_probe->add_vars();
-    var->set_name(kKTimeVarName);
-    var->set_type(ir::shared::ScalarType::UINT64);
-    var->set_builtin(ir::shared::BPFHelper::KTIME);
-
-    vars_map_[kKTimeVarName] = var;
-  }
+  auto* ktime_var = AddVariable(output_probe, kKTimeVarName, ir::shared::ScalarType::UINT64);
+  ktime_var->set_builtin(ir::shared::BPFHelper::KTIME);
 
   return Status::OK();
 }
@@ -336,13 +321,9 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
 
       absl::StrAppend(&name, kDerefStr);
 
-      auto* var = output_probe->add_vars();
-      var->set_name(name);
-      var->set_type(pb_type);
+      auto* var = AddVariable(output_probe, name, pb_type);
       var->mutable_memory()->set_base(base);
       var->mutable_memory()->set_offset(offset);
-
-      vars_map_[name] = var;
 
       // Reset base and offset.
       base = name;
@@ -364,13 +345,9 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
 
     absl::StrAppend(&name, kDerefStr);
 
-    auto* var = output_probe->add_vars();
-    var->set_name(name);
-    var->set_type(pb_type);
+    auto* var = AddVariable(output_probe, name, pb_type);
     var->mutable_memory()->set_base(base);
     var->mutable_memory()->set_offset(offset);
-
-    vars_map_[name] = var;
 
     // Reset base and offset.
     base = name;
@@ -389,13 +366,9 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
   // This is important so that references in the original probe are maintained.
   name = arg.id();
 
-  auto* var = output_probe->add_vars();
-  var->set_name(name);
-  var->set_type(pb_type);
+  auto* var = AddVariable(output_probe, name, pb_type);
   var->mutable_memory()->set_base(base);
   var->mutable_memory()->set_offset(offset);
-
-  vars_map_[name] = var;
 
   return Status::OK();
 }
@@ -419,9 +392,9 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
   PL_ASSIGN_OR_RETURN(ir::shared::ScalarType type,
                       VarTypeToProtoScalarType(arg_info->type, arg_info->type_name));
 
-  auto* var = output_probe->add_vars();
-  var->set_name(ret_val.id());
-  var->set_type(type);
+  std::string name = ret_val.id();
+
+  auto* var = AddVariable(output_probe, name, type);
   var->mutable_memory()->set_base("sp");
   var->mutable_memory()->set_offset(arg_info->offset + kSPOffset);
 
@@ -443,7 +416,7 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
   std::string struct_type_name = map_val.map_name() + "_value_t";
   auto struct_iter = structs_.find(struct_type_name);
   if (struct_iter == structs_.end()) {
-    return error::Internal("ProcessMapVal [probe=$0]: Reference to undeclared struct: $0",
+    return error::Internal("ProcessMapVal [probe=$0]: Reference to undeclared struct: $1",
                            output_probe->name(), struct_type_name);
   }
   auto* struct_decl = struct_iter->second;
