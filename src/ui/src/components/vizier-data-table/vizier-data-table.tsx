@@ -8,6 +8,7 @@ import { DataType, Relation, SemanticType } from 'types/generated/vizier_pb';
 import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { ColumnDisplayInfo, displayInfoFromColumn, titleFromInfo } from './column-display-info';
 import { parseRows } from './parsers';
 import { vizierCellRenderer } from './renderers';
 import { getSortFunc } from './sort-funcs';
@@ -42,11 +43,6 @@ interface VizierDataTableProps {
   onRowSelectionChanged?: (row: any) => void;
 }
 
-interface TypedColumnProps extends ColumnProps {
-  type: DataType;
-  semanticType: SemanticType;
-}
-
 export const VizierDataTable = (props: VizierDataTableProps) => {
   const {
     table, prettyRender = false, expandable = false, expandedRenderer,
@@ -55,45 +51,52 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
   } = props;
   const [rows, setRows] = React.useState([]);
   const [selectedRow, setSelectedRow] = React.useState(-1);
-  const [columnsMap, setColumnsMap] = React.useState<Map<string, TypedColumnProps>>(
-    new Map<string, TypedColumnProps>());
+  const [columnDisplayInfos, setColumnDisplayInfos] = React.useState<Map<string, ColumnDisplayInfo>>(
+    new Map<string, ColumnDisplayInfo>());
 
   React.useEffect(() => {
     // Map containing the display information for the column.
-    const newMap = new Map<string, TypedColumnProps>();
-    // Semantic type map which is used by parsers to parse certain semantic types with
-    // special handling.
-    const semanticTypeMap = new Map<string, SemanticType>();
+    const displayInfos = new Map<string, ColumnDisplayInfo>();
 
     table.relation.getColumnsList().forEach((col) => {
       const name = col.getColumnName();
-      semanticTypeMap.set(name, col.getColumnSemanticType());
+      const displayInfo = displayInfoFromColumn(col);
+      displayInfos.set(name, displayInfo);
     });
+
+    const semanticTypeMap = [...displayInfos.values()].reduce((acc, val) => {
+      acc.set(val.columnName, val.semanticType);
+      return acc;
+    }, new Map<string, SemanticType>());
 
     const rawRows = dataFromProto(table.relation, table.data);
     const parsedRows = parseRows(semanticTypeMap, rawRows);
-
-    table.relation.getColumnsList().forEach((col) => {
-      const name = col.getColumnName();
-      const columnProp: TypedColumnProps = {
-        type: col.getColumnType(),
-        semanticType: col.getColumnSemanticType(),
-        dataKey: col.getColumnName(),
-        label: col.getColumnName(),
-        align: DataAlignmentMap.get(col.getColumnType()) || 'start',
-        cellRenderer: vizierCellRenderer(prettyRender, col, clusterName, parsedRows),
-      };
-      if (SemanticTypeWidthOverrideMap.has(columnProp.semanticType)) {
-        columnProp.width = SemanticTypeWidthOverrideMap.get(columnProp.semanticType);
-      }
-
-      newMap.set(name, columnProp);
-      semanticTypeMap.set(name, col.getColumnSemanticType());
-    });
-
     setRows(parsedRows);
-    setColumnsMap(newMap);
+    setColumnDisplayInfos(displayInfos);
   }, [table.relation, table.data, clusterName, prettyRender]);
+
+  const dataTableCols = React.useMemo((): ColumnProps[] => (
+    [...columnDisplayInfos.values()].map((displayInfo: ColumnDisplayInfo) => {
+      // Some cells give the power to update the display state for the whole column.
+      // This function is the handle that allows them to do that.
+      const updateColumnDisplay = ((newColumnDisplay: ColumnDisplayInfo) => {
+        const newMap = new Map<string, ColumnDisplayInfo>(
+          columnDisplayInfos.set(displayInfo.columnName, newColumnDisplay));
+        setColumnDisplayInfos(newMap);
+      });
+
+      const colProps: ColumnProps = {
+        dataKey: displayInfo.columnName,
+        label: titleFromInfo(displayInfo),
+        align: DataAlignmentMap.get(displayInfo.type) || 'start',
+        cellRenderer: vizierCellRenderer(displayInfo, updateColumnDisplay, prettyRender, clusterName, rows),
+      };
+      if (SemanticTypeWidthOverrideMap.has(displayInfo.semanticType)) {
+        colProps.width = SemanticTypeWidthOverrideMap.get(displayInfo.semanticType);
+      }
+      return colProps;
+    })
+  ), [rows, columnDisplayInfos, clusterName, prettyRender]);
 
   const rowGetter = React.useCallback(
     (i) => rows[i],
@@ -101,8 +104,8 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
   );
 
   const onSort = (sortState: SortState) => {
-    const column = columnsMap.get(sortState.dataKey);
-    setRows(rows.sort(getSortFunc(sortState.dataKey, column.type, column.semanticType, sortState.direction)));
+    const column = columnDisplayInfos.get(sortState.dataKey);
+    setRows(rows.sort(getSortFunc(column, sortState.direction)));
     setSelectedRow(-1);
     onRowSelectionChanged(null);
   };
@@ -123,7 +126,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
     <DataTable
       rowGetter={rowGetter}
       rowCount={rows.length}
-      columns={[...columnsMap.values()]}
+      columns={dataTableCols}
       compact
       onSort={onSort}
       onRowClick={onRowSelect}

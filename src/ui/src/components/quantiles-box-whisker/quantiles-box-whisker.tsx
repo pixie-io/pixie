@@ -28,14 +28,17 @@ interface QuantilesBoxWhiskerFields {
   p50Fill: string;
   p90Fill: string;
   p99Fill: string;
+  p50HoverFill: string;
+  p90HoverFill: string;
+  p99HoverFill: string;
   barFill: string;
   whiskerFill: string;
-  hoverFill: string;
 }
 
 const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
   const {
-    p50, p90, p99, max, p50Fill, p90Fill, p99Fill, barFill, whiskerFill, hoverFill,
+    p50, p90, p99, max, p50Fill, p90Fill, p99Fill,
+    p50HoverFill, p90HoverFill, p99HoverFill, barFill, whiskerFill,
   } = fields;
 
   return {
@@ -129,7 +132,7 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
             width: { value: 2 },
           },
           hover: {
-            fill: { value: hoverFill },
+            fill: { value: p50HoverFill },
             fillOpacity: { value: 1 },
             tooltip: {
               signal: '"p50: " + format(datum["p50"], ".2f")',
@@ -156,7 +159,7 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
             width: { value: 2 },
           },
           hover: {
-            fill: { value: hoverFill },
+            fill: { value: p90HoverFill },
             fillOpacity: { value: 1 },
             tooltip: {
               signal: '"p90: " + format(datum["boxMax"], ".2f")',
@@ -183,7 +186,7 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
             width: { value: 2 },
           },
           hover: {
-            fill: { value: hoverFill },
+            fill: { value: p99HoverFill },
             fillOpacity: { value: 1 },
             tooltip: {
               signal: '"p99: " + format(datum["whiskerMax"], ".2f")',
@@ -211,6 +214,25 @@ const makeSpec = (fields: QuantilesBoxWhiskerFields): VisualizationSpec => {
         },
       },
     },
+    signals: [{
+      name: 'p50Click',
+      on: [{
+        events: { type: 'click', markname: 'p50' },
+        update: '{}',
+      }],
+    }, {
+      name: 'p90Click',
+      on: [{
+        events: { type: 'click', markname: 'p90' },
+        update: '{}',
+      }],
+    }, {
+      name: 'p99Click',
+      on: [{
+        events: { type: 'click', markname: 'p99' },
+        update: '{}',
+      }],
+    }],
   };
 };
 
@@ -262,23 +284,63 @@ const styles = (theme: Theme) => createStyles({
   },
 });
 
+export type SelectedPercentile = 'p50' | 'p90' | 'p99';
+
 interface QuantilesBoxWhiskerProps extends WithStyles<typeof styles> {
   p50: number;
   p90: number;
   p99: number;
   max: number;
+  p50Level: GaugeLevel;
+  p90Level: GaugeLevel;
   p99Level: GaugeLevel;
+  selectedPercentile: SelectedPercentile;
+  // Function to call when the selected percentile is updated.
+  onChangePercentile?: (percentile: SelectedPercentile) => void;
 }
 
 const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
   const {
-    classes, p50, p90, p99, max, p99Level,
+    classes, p50, p90, p99, max, p50Level, p90Level, p99Level,
+    selectedPercentile, onChangePercentile,
   } = props;
   const theme = useTheme();
-  // TODO(nserrino): make it possible in the UI to switch between p50, p90, p99 displayed.
-  const p50Fill = theme.palette.text.secondary;
-  const p90Fill = theme.palette.text.secondary;
-  const p99Fill = getColor(p99Level, theme);
+  const p50HoverFill = getColor(p50Level, theme);
+  const p90HoverFill = getColor(p90Level, theme);
+  const p99HoverFill = getColor(p99Level, theme);
+  let p50Fill = theme.palette.text.secondary;
+  let p90Fill = theme.palette.text.secondary;
+  let p99Fill = theme.palette.text.secondary;
+  let percentileValue;
+  let selectedPercentileLevel;
+
+  const changePercentileIfDifferent = (percentile: SelectedPercentile) => {
+    if (percentile !== selectedPercentile) {
+      onChangePercentile(percentile);
+    }
+  };
+
+  switch (selectedPercentile) {
+    case 'p50': {
+      p50Fill = p50HoverFill;
+      percentileValue = p50;
+      selectedPercentileLevel = p50Level;
+      break;
+    }
+    case 'p90': {
+      p90Fill = p90HoverFill;
+      percentileValue = p90;
+      selectedPercentileLevel = p90Level;
+      break;
+    }
+    case 'p99':
+    default: {
+      p99Fill = p99HoverFill;
+      percentileValue = p99;
+      selectedPercentileLevel = p99Level;
+    }
+  }
+
   const spec = makeSpec({
     p50,
     p90,
@@ -287,9 +349,11 @@ const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
     p50Fill,
     p90Fill,
     p99Fill,
-    barFill: theme.palette.primary.main,
+    p50HoverFill,
+    p90HoverFill,
+    p99HoverFill,
+    barFill: theme.palette.primary.dark,
     whiskerFill: theme.palette.text.primary,
-    hoverFill: theme.palette.secondary.dark,
   });
 
   const tooltipHandler = new Handler({
@@ -301,12 +365,17 @@ const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
     <>
       <ReactVega
         className={classes.vegaWrapper}
+        signalListeners={{
+          p50Click: () => changePercentileIfDifferent('p50'),
+          p90Click: () => changePercentileIfDifferent('p90'),
+          p99Click: () => changePercentileIfDifferent('p99'),
+        }}
         spec={spec}
         actions={false}
         tooltip={tooltipHandler}
       />
-      <span className={classes[p99Level]}>
-        {`${p99.toFixed(2)}`}
+      <span className={classes[selectedPercentileLevel]}>
+        {`${percentileValue.toFixed(2)}`}
       </span>
     </>
   );

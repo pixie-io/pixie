@@ -22,18 +22,15 @@ export interface EntityLinkProps extends WithStyles<typeof styles>{
   entity: string;
   semanticType: SemanticType;
   clusterName: string;
-  className?: string;
 }
 
 const EntityLinkPlain = ({
-  entity, semanticType, clusterName, className, classes,
+  entity, semanticType, clusterName, classes,
 }: EntityLinkProps) => {
   const page = toSingleEntityPage(entity, semanticType, clusterName);
   const pathname = toEntityPathname(page);
   return (
-    <div className={className}>
-      <Link to={pathname} className={classes.root}>{entity}</Link>
-    </div>
+    <Link to={pathname} className={classes.root}>{entity}</Link>
   );
 };
 

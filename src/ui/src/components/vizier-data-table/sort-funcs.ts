@@ -1,6 +1,7 @@
 import { SortDirection, SortDirectionType } from 'react-virtualized';
 import { getDataSortFunc } from 'utils/format-data';
 import { DataType, SemanticType } from 'types/generated/vizier_pb';
+import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';
 
 // Sort funcs for semnatic column types (when the pure data type alone doesn't produce
 // the sort result that we want.
@@ -21,15 +22,16 @@ export function quantilesSortFunc(percentile: string, ascending: boolean) {
   };
 }
 
-export function getSortFunc(dataKey: string, type: DataType, semanticType: SemanticType, direction: SortDirectionType) {
+export function getSortFunc(display: ColumnDisplayInfo, direction: SortDirectionType) {
   const ascending = direction === SortDirection.ASC;
 
   let f;
-  if (semanticType === SemanticType.ST_QUANTILES) {
-    // TODO(nserrino): Make this percentile configurable.
-    f = quantilesSortFunc('p99', ascending);
+  if (display.semanticType === SemanticType.ST_QUANTILES) {
+    const quantilesDisplay = display.displayState as QuantilesDisplayState;
+    const selectedPercentile = quantilesDisplay.selectedPercentile || 'p99';
+    f = quantilesSortFunc(selectedPercentile, ascending);
   } else {
-    f = getDataSortFunc(type, ascending);
+    f = getDataSortFunc(display.type, ascending);
   }
-  return (a, b) => f(a[dataKey], b[dataKey]);
+  return (a, b) => f(a[display.columnName], b[display.columnName]);
 }

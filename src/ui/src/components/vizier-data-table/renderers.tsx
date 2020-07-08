@@ -4,11 +4,13 @@ import {
   EntityLink,
   isEntityType, STATUS_TYPES, toStatusIndicator,
 } from 'components/live-widgets/utils';
-import QuantilesBoxWhisker from 'components/quantiles-box-whisker/quantiles-box-whisker';
+import QuantilesBoxWhisker, {
+  SelectedPercentile,
+} from 'components/quantiles-box-whisker/quantiles-box-whisker';
 import { DataType, Relation, SemanticType } from 'types/generated/vizier_pb';
 import { getDataRenderer, looksLikeAlertCol, looksLikeLatencyCol } from 'utils/format-data';
-
 import { getLatencyLevel, GaugeLevel } from 'utils/latency';
+import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';
 
 // Expects a p99 field in colName.
 export function getMaxQuantile(rows: any[], colName: string): number {
@@ -30,18 +32,41 @@ export function getMaxQuantile(rows: any[], colName: string): number {
 }
 
 // Expects data to contain p50, p90, and p99 fields.
-export function quantilesRenderer(colInfo: Relation.ColumnInfo, rows: any[]) {
-  const colName = colInfo.getColumnName();
+export function quantilesRenderer(display: ColumnDisplayInfo,
+  updateDisplay: (ColumnDisplayInfo) => void, rows: any[]) {
+  const max = getMaxQuantile(rows, display.columnName);
 
-  const max = getMaxQuantile(rows, colName);
   return function renderer(val) {
     const { p50, p90, p99 } = val;
+    const quantilesDisplay = display.displayState as QuantilesDisplayState;
+    const selectedPercentile = quantilesDisplay.selectedPercentile || 'p99';
+    let p50Level: GaugeLevel = 'none';
+    let p90Level: GaugeLevel = 'none';
     let p99Level: GaugeLevel = 'none';
     // Can't pass in DataType here, which is STRING, but we know quantiles are floats.
-    if (looksLikeLatencyCol(colName, DataType.FLOAT64)) {
+    if (looksLikeLatencyCol(display.columnName, DataType.FLOAT64)) {
+      p50Level = getLatencyLevel(p50);
+      p90Level = getLatencyLevel(p90);
       p99Level = getLatencyLevel(p99);
     }
-    return <QuantilesBoxWhisker p50={p50} p90={p90} p99={p99} max={max} p99Level={p99Level} />;
+    return (
+      <QuantilesBoxWhisker
+        p50={p50}
+        p90={p90}
+        p99={p99}
+        max={max}
+        p50Level={p50Level}
+        p90Level={p90Level}
+        p99Level={p99Level}
+        selectedPercentile={selectedPercentile}
+        onChangePercentile={(newPercentile: SelectedPercentile) => {
+          updateDisplay({
+            ...display,
+            displayState: { selectedPercentile: newPercentile },
+          });
+        }}
+      />
+    );
   };
 }
 
@@ -81,10 +106,11 @@ const entityRenderer = (st: SemanticType, clusterName: string) => {
   return entity;
 };
 
-export const prettyCellRenderer = (colInfo: Relation.ColumnInfo, clusterName: string, rows: any[]) => {
-  const dt = colInfo.getColumnType();
-  const st = colInfo.getColumnSemanticType();
-  const name = colInfo.getColumnName();
+export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (ColumnDisplayInfo) => void,
+  clusterName: string, rows: any[]) => {
+  const dt = display.type;
+  const st = display.semanticType;
+  const name = display.columnName;
   const renderer = getDataRenderer(dt);
 
   if (isEntityType(st)) {
@@ -92,7 +118,7 @@ export const prettyCellRenderer = (colInfo: Relation.ColumnInfo, clusterName: st
   }
 
   if (st === SemanticType.ST_QUANTILES) {
-    return quantilesRenderer(colInfo, rows);
+    return quantilesRenderer(display, updateDisplay, rows);
   }
 
   if (STATUS_TYPES.has(st)) {
@@ -125,10 +151,10 @@ export const prettyCellRenderer = (colInfo: Relation.ColumnInfo, clusterName: st
   };
 };
 
-export const vizierCellRenderer = (prettyRender: boolean, colInfo: Relation.ColumnInfo,
-  clusterName: string, rows: any[]) => {
+export const vizierCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (ColumnDisplayInfo) => void,
+  prettyRender: boolean, clusterName: string, rows: any[]) => {
   if (prettyRender) {
-    return prettyCellRenderer(colInfo, clusterName, rows);
+    return prettyCellRenderer(display, updateDisplay, clusterName, rows);
   }
-  return getDataRenderer(colInfo.getColumnType());
+  return getDataRenderer(display.type);
 };
