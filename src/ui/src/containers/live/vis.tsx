@@ -163,6 +163,9 @@ export function toJSON(vis: Vis) {
 
 // Validate Vis makes sure vis is correctly specified or throws an error.
 export function validateVis(vis: Vis, variableValues: { [key: string]: string }): VizierQueryError {
+  if (!vis) {
+    return new VizierQueryError('vis', 'null vis object unhandled');
+  }
   const globalFuncNames = new Set();
   vis.globalFuncs.forEach((globalFunc) => {
     globalFuncNames.add(globalFunc.outputName);

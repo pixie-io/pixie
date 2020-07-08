@@ -267,9 +267,12 @@ const ScriptContextProvider = (props) => {
     new Promise((resolve, reject) => {
       try {
         // Make sure vis has proper references.
-        const visErr = validateVis(execArgs.vis, execArgs.args);
-        if (visErr) {
-          throw visErr;
+        if (execArgs.vis) {
+          // validateVis errors out on null vis arguments.
+          const visErr = validateVis(execArgs.vis, execArgs.args);
+          if (visErr) {
+            throw visErr;
+          }
         }
         resolve(getQueryFuncs(execArgs.vis, execArgs.args));
       } catch (error) {
