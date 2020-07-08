@@ -54,6 +54,8 @@ class Dwarvifier {
                         ir::physical::PhysicalProbe* output_probe);
   Status ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
                            ir::physical::PhysicalProbe* output_probe);
+  Status ProcessMapVal(const ir::logical::MapValue& map_val,
+                       ir::physical::PhysicalProbe* output_probe);
   Status ProcessStashAction(const ir::logical::MapStashAction& stash_action,
                             ir::physical::PhysicalProbe* output_probe,
                             ir::physical::Program* output_program);
@@ -70,6 +72,7 @@ class Dwarvifier {
 
   const std::map<std::string, ir::shared::Map*>& maps_;
   const std::map<std::string, ir::shared::Output*>& outputs_;
+  std::map<std::string, ir::physical::Struct*> structs_;
 
   std::unique_ptr<dwarf_tools::DwarfReader> dwarf_reader_;
   std::map<std::string, dwarf_tools::ArgInfo> args_map_;
@@ -213,6 +216,10 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
 
   for (const auto& ret_val : input_probe.ret_vals()) {
     PL_RETURN_IF_ERROR(ProcessRetValExpr(ret_val, p));
+  }
+
+  for (const auto& map_val : input_probe.map_vals()) {
+    PL_RETURN_IF_ERROR(ProcessMapVal(map_val, p));
   }
 
   for (const auto& stash_action : input_probe.map_stash_actions()) {
@@ -421,6 +428,52 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
   return Status::OK();
 }
 
+Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
+                                 ir::physical::PhysicalProbe* output_probe) {
+  // Find the map.
+  auto map_iter = maps_.find(map_val.map_name());
+  if (map_iter == maps_.end()) {
+    return error::Internal("ProcessMapVal [probe=$0]: Reference to undeclared map: $1",
+                           output_probe->name(), map_val.map_name());
+  }
+  auto* map = map_iter->second;
+
+  // Find the map struct.
+  // TODO(oazizi): Make suffix a constexpr.
+  std::string struct_type_name = map_val.map_name() + "_value_t";
+  auto struct_iter = structs_.find(struct_type_name);
+  if (struct_iter == structs_.end()) {
+    return error::Internal("ProcessMapVal [probe=$0]: Reference to undeclared struct: $0",
+                           output_probe->name(), struct_type_name);
+  }
+  auto* struct_decl = struct_iter->second;
+
+  std::string map_var_name = absl::StrCat(map_val.map_name(), "_ptr");
+
+  // Create the map variable.
+  {
+    auto* var = output_probe->add_map_vars();
+    var->set_name(map_var_name);
+    var->set_type(map->value_type().struct_type());
+    var->set_map_name(map_val.map_name());
+    var->set_key_variable_name(map_val.key_expr());
+  }
+
+  // Unpack the map variable.
+  int i = 0;
+  for (const auto& value_id : map_val.value_ids()) {
+    const auto& field = struct_decl->fields(i++);
+
+    auto* var = output_probe->add_member_vars();
+    var->set_name(value_id);
+    var->set_type(field.type().scalar());
+    var->set_struct_base(map_var_name);
+    var->set_field(field.name());
+  }
+
+  return Status::OK();
+}
+
 Status Dwarvifier::GenerateMapValueStruct(const ir::logical::MapStashAction& stash_action_in,
                                           const std::string& struct_type_name,
                                           ir::physical::Program* output_program) {
@@ -431,15 +484,18 @@ Status Dwarvifier::GenerateMapValueStruct(const ir::logical::MapStashAction& sta
 
   for (const auto& f : stash_action_in.value_variable_name()) {
     auto* struct_field = struct_decl->add_fields();
-    struct_field->set_name(absl::StrCat(stash_action_in.map_name(), "_", f));
+    struct_field->set_name(f);
 
     auto iter = vars_map_.find(f);
     if (iter == vars_map_.end()) {
-      return error::Internal("StashAction: Reference to unknown variable $0", f);
+      return error::Internal(
+          "GenerateMapValueStruct [map_name=$0]: Reference to unknown variable: $1",
+          stash_action_in.map_name(), f);
     }
     struct_field->mutable_type()->set_scalar(iter->second->type());
   }
 
+  structs_[struct_type_name] = struct_decl;
   return Status::OK();
 }
 
@@ -517,11 +573,13 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
 
   for (const auto& f : kImplicitColumns) {
     auto* struct_field = struct_decl->add_fields();
-    struct_field->set_name(absl::StrCat(output_action_in.output_name(), "_", f));
+    // Add a suffix to avoid any potential name conflicts.
+    struct_field->set_name(absl::StrCat(f, "__"));
 
     auto iter = vars_map_.find(f);
     if (iter == vars_map_.end()) {
-      return error::Internal("OutputAction: Reference to unknown variable $0", f);
+      return error::Internal("GenerateOutputStruct [output=$0]: Reference to unknown variable $1",
+                             output_action_in.output_name(), f);
     }
 
     struct_field->mutable_type()->set_scalar(iter->second->type());
@@ -529,15 +587,17 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
 
   for (const auto& f : output_action_in.variable_name()) {
     auto* struct_field = struct_decl->add_fields();
-    struct_field->set_name(absl::StrCat(output_action_in.output_name(), "_", f));
+    struct_field->set_name(f);
 
     auto iter = vars_map_.find(f);
     if (iter == vars_map_.end()) {
-      return error::Internal("OutputAction: Reference to unknown variable $0", f);
+      return error::Internal("GenerateOutputStruct [output=$0]: Reference to unknown variable $1",
+                             output_action_in.output_name(), f);
     }
     struct_field->mutable_type()->set_scalar(iter->second->type());
   }
 
+  structs_[struct_type_name] = struct_decl;
   return Status::OK();
 }
 

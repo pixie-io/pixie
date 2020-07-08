@@ -470,7 +470,7 @@ std::vector<std::string> GenGOID() {
       "uint64_t current_pid_tgid = bpf_get_current_pid_tgid();",
       absl::Substitute(
           "const struct pid_goid_map_value_t* goid_ptr = $0.lookup(&current_pid_tgid);", kGOIDMap),
-      "return (goid_ptr == NULL) ? -1 : goid_ptr->pid_goid_map_goid_;",
+      "return (goid_ptr == NULL) ? -1 : goid_ptr->goid_;",
       "}",
   };
 }

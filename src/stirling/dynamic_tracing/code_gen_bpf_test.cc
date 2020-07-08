@@ -47,7 +47,7 @@ constexpr char kProgram[] = R"proto(
                             structs {
                               name: "pid_goid_map_value_t"
                               fields {
-                                name: "pid_goid_map_goid_"
+                                name: "goid_"
                                 type {
                                   scalar: INT64
                                 }
@@ -144,6 +144,7 @@ TEST(CodeGenBPFTest, AttachOnDummyExe) {
   ASSERT_OK(bcc_wrapper.AttachUProbe(spec));
 }
 
+// TODO(oazizi): This test does not belong here, since it encompasses AddDwarves() and GenProgram().
 TEST(CodeGenBPFTest, AttachGOIDProbe) {
   ir::logical::Program intermediate_program;
 

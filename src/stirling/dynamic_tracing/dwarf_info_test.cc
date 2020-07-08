@@ -317,6 +317,9 @@ maps {
 outputs {
   name: "out_table"
 }
+outputs {
+  name: "out_table2"
+}
 probes: {
   trace_point: {
     binary_path: "$0"
@@ -349,48 +352,93 @@ probes: {
     variable_name: "arg2"
   }
 }
+probes: {
+  trace_point: {
+    binary_path: "$0"
+    symbol: "main.MixedArgTypes"
+    type: RETURN
+  }
+  map_vals {
+    map_name: "my_stash"
+    key_expr: "goid"
+    value_ids: "arg0"
+    value_ids: "arg1"
+  }
+  output_actions {
+    output_name: "out_table2"
+    variable_name: "arg0"
+    variable_name: "arg1"
+  }
+}
 )";
 
 constexpr std::string_view kActionProbeOut = R"(
 structs {
   name: "my_stash_value_t"
   fields {
-    name: "my_stash_arg0"
+    name: "arg0"
     type { scalar: INT }
   }
   fields {
-    name: "my_stash_arg1"
+    name: "arg1"
     type { scalar: BOOL }
   }
 }
 structs {
   name: "out_table_value_t"
   fields {
-    name: "out_table_tgid"
+    name: "tgid__"
     type { scalar: INT32 }
   }
   fields {
-    name: "out_table_tgid_start_time"
+    name: "tgid_start_time__"
     type { scalar: UINT64 }
   }
   fields {
-    name: "out_table_goid"
+    name: "goid__"
     type { scalar: INT64 }
   }
   fields {
-    name: "out_table_ktime_ns"
+    name: "ktime_ns__"
     type { scalar: UINT64 }
   }
   fields {
-    name: "out_table_arg0"
+    name: "arg0"
     type { scalar: INT }
   }
   fields {
-    name: "out_table_arg1"
+    name: "arg1"
     type { scalar: BOOL }
   }
   fields {
-    name: "out_table_arg2"
+    name: "arg2"
+    type { scalar: BOOL }
+  }
+}
+structs {
+  name: "out_table2_value_t"
+  fields {
+    name: "tgid__"
+    type { scalar: INT32 }
+  }
+  fields {
+    name: "tgid_start_time__"
+    type { scalar: UINT64 }
+  }
+  fields {
+    name: "goid__"
+    type { scalar: INT64 }
+  }
+  fields {
+    name: "ktime_ns__"
+    type { scalar: UINT64 }
+  }
+  fields {
+    name: "arg0"
+    type { scalar: INT }
+  }
+  fields {
+    name: "arg1"
     type { scalar: BOOL }
   }
 }
@@ -402,6 +450,10 @@ maps {
 outputs {
   name: "out_table"
   type { struct_type: "out_table_value_t" }
+}
+outputs {
+  name: "out_table2"
+  type { struct_type: "out_table2_value_t" }
 }
 probes: {
   trace_point: {
@@ -507,6 +559,87 @@ probes: {
   output_actions {
     perf_buffer_name: "out_table"
     variable_name: "out_table_value"
+  }
+}
+probes: {
+  trace_point: {
+    binary_path: "$0"
+    symbol: "main.MixedArgTypes"
+    type: RETURN
+  }
+  vars {
+    name: "sp"
+    type: VOID_POINTER
+    reg: SP
+  }
+  vars {
+    name: "tgid"
+    type: INT32
+    builtin: TGID
+  }
+  vars {
+    name: "tgid_pid"
+    type: UINT64
+    builtin: TGID_PID
+  }
+  vars {
+    name: "tgid_start_time"
+    type: UINT64
+    builtin: TGID_START_TIME
+  }
+  vars {
+    name: "goid"
+    type: INT64
+    builtin: GOID
+  }
+  vars {
+    name: "ktime_ns"
+    type: UINT64
+    builtin: KTIME
+  }
+  map_vars {
+    name: "my_stash_ptr"
+    map_name: "my_stash"
+    key_variable_name: "goid"
+    type: "my_stash_value_t"
+  }
+  member_vars {
+    name: "arg0"
+    type: INT
+    struct_base: "my_stash_ptr"
+    field: "arg0"
+  }
+  member_vars {
+    name: "arg1"
+    type: BOOL
+    struct_base: "my_stash_ptr"
+    field: "arg1"
+  }
+  st_vars {
+    name: "out_table2_value"
+    type: "out_table2_value_t"
+    variable_names {
+      name: "tgid"
+    }
+    variable_names {
+      name: "tgid_start_time"
+    }
+    variable_names {
+      name: "goid"
+    }
+    variable_names {
+      name: "ktime_ns"
+    }
+    variable_names {
+      name: "arg0"
+    }
+    variable_names {
+      name: "arg1"
+    }
+  }
+  output_actions {
+    perf_buffer_name: "out_table2"
+    variable_name: "out_table2_value"
   }
 }
 )";

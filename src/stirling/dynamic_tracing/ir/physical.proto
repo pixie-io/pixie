@@ -60,6 +60,39 @@ message ScalarVariable {
   }
 }
 
+// Describes a variable returned from reading a map.
+// The variable is a pointer to the type held by the map.
+message MapVariable {
+  // Name must be unique in the scope of a Probe.
+  string name = 1;
+
+  // The type of the struct returned by the map.
+  string type = 2;
+
+  string map_name = 3;
+
+  // The builtin to generate the key value to access the map.
+  string key_variable_name = 4;
+}
+
+// Describes a variable returned from reading a member of a struct pointer.
+// NOTE: Could consider embedding this into MapVariable.
+//       The benefit is that the struct base would no longer be required.
+//       The downside is it breaks the model of ScalarVariable, StructVariable, etc.
+//       each mapping to a single variable declaration in the generated code.
+message MemberVariable {
+  // Name must be unique in the scope of a Probe.
+  string name = 1;
+
+  // Describes type of the value held by this ScalarVariable.
+  shared.ScalarType type = 2;
+
+  string struct_base = 3;
+
+  // The builtin to generate the key value to access the map.
+  string field = 4;
+}
+
 // Describes a struct variable whose fields are assigned values from other scalar variables.
 // A struct variable therefore cannot have nested struct variables.
 message StructVariable {
@@ -132,6 +165,9 @@ message PhysicalProbe {
   // variables in DWARF. So ScalarVariable should not need to reference based off
   // any StructVariables.
   repeated ScalarVariable vars = 3;
+
+  repeated MapVariable map_vars = 8;
+  repeated MemberVariable member_vars = 9;
 
   // Defines how to create struct variables from the above scalar variables from inside BCC code.
   //
