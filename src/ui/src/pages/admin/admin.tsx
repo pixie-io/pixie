@@ -9,6 +9,7 @@ import {
 import Button from '@material-ui/core/Button';
 import TableContainer from '@material-ui/core/TableContainer';
 import Add from '@material-ui/icons/Add';
+
 import * as React from 'react';
 import {
   Link, Route, Router, Switch,
@@ -17,6 +18,7 @@ import { StyledTab, StyledTabs } from 'containers/admin/utils';
 import { CREATE_DEPLOYMENT_KEY, DeploymentKeysTable } from 'containers/admin/deployment-keys';
 import { ClustersTable } from 'containers/admin/clusters-list';
 import { ClusterDetailsPage } from 'containers/admin/cluster-details';
+import NavBars from 'containers/App/nav-bars';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -28,21 +30,18 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     color: theme.palette.text.primary,
     ...scrollbarStyles(theme),
   },
-  topBar: {
-    display: 'flex',
-    margin: theme.spacing(1),
-    alignItems: 'center',
-  },
   title: {
     flexGrow: 1,
     marginLeft: theme.spacing(2),
   },
   main: {
+    marginLeft: theme.spacing(8),
     flex: 1,
     minHeight: 0,
     borderTopStyle: 'solid',
     borderTopColor: theme.palette.background.three,
     borderTopWidth: theme.spacing(0.25),
+    padding: theme.spacing(1),
   },
   link: {
     ...theme.typography.subtitle1,
@@ -51,6 +50,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   titleText: {
     ...theme.typography.h6,
+    color: theme.palette.foreground.one,
     fontWeight: theme.typography.fontWeightBold,
   },
   breadcrumbText: {
@@ -80,15 +80,14 @@ const AdminOverview = () => {
 
   return (
     <div className={classes.root}>
-      <div className={classes.topBar}>
+      <NavBars>
         <div className={classes.title}>
           <div className={classes.titleText}>Admin View</div>
         </div>
         <Button component={Link} to='/live' color='primary'>
           Live View
         </Button>
-        <ProfileMenu />
-      </div>
+      </NavBars>
       <div className={classes.main}>
         <div style={{ display: 'flex' }}>
           <StyledTabs

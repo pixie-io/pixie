@@ -5,15 +5,11 @@ import PixieCommandIcon from 'components/icons/pixie-command';
 import { ClusterInstructions } from 'containers/App/deploy-instructions';
 import * as React from 'react';
 
-import Drawer from '@material-ui/core/Drawer';
 import IconButton from '@material-ui/core/IconButton';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 import ChevronRight from '@material-ui/icons/ChevronRight';
 import ToggleButton from '@material-ui/lab/ToggleButton';
-import AppBar from '@material-ui/core/AppBar';
-import Toolbar from '@material-ui/core/Toolbar';
-import Menu from '@material-ui/icons/Menu';
 
 import clsx from 'clsx';
 import Canvas from 'containers/live/canvas';
@@ -29,7 +25,7 @@ import ExecuteScriptButton from 'containers/live/execute-button';
 import { ScriptLoader } from 'containers/live/script-loader';
 import LiveViewShortcuts from 'containers/live/shortcuts';
 import LiveViewTitle from 'containers/live/title';
-import SideBar from 'containers/App/sidebar';
+import NavBars from 'containers/App/nav-bars';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -91,18 +87,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   hidden: {
     display: 'none',
   },
-  appBar: {
-    zIndex: 1300, // z-index must be larger than drawer's zIndex, which is 1200.
-    background: theme.palette.background.one,
-  },
-  sidebarToggle: {
-    position: 'absolute',
-    width: theme.spacing(8),
-    left: 0,
-  },
-  sidebarToggleSpacer: {
-    width: theme.spacing(8),
-  },
 }));
 
 export const EditorOpener = () => {
@@ -134,14 +118,8 @@ const LiveView = () => {
 
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
 
-  const [drawerOpen, setDrawerOpen] = React.useState<boolean>(false);
-  const toggleDrawer = React.useCallback(() => setDrawerOpen((opened) => !opened), []);
-
   const [commandOpen, setCommandOpen] = React.useState<boolean>(false);
   const toggleCommandOpen = React.useCallback(() => setCommandOpen((opened) => !opened), []);
-
-  const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(false);
-  const toggleSidebar = React.useCallback(() => setSidebarOpen((opened) => !opened), []);
 
   const hotkeyHandlers = {
     'pixie-command': toggleCommandOpen,
@@ -167,38 +145,31 @@ const LiveView = () => {
   return (
     <div className={classes.root}>
       <LiveViewShortcuts handlers={hotkeyHandlers} />
-      <AppBar className={classes.appBar} color='transparent' position='static'>
-        <Toolbar>
-          <IconButton className={classes.sidebarToggle} onClick={toggleSidebar}>
-            <Menu />
+      <NavBars>
+        <LiveViewTitle className={classes.title} />
+        <ClusterSelector className={classes.clusterSelector} />
+        <Tooltip title='Pixie Command'>
+          <IconButton disabled={commandOpen} onClick={toggleCommandOpen}>
+            <PixieCommandIcon color='primary' />
           </IconButton>
-          <div className={classes.sidebarToggleSpacer} />
-          <LiveViewTitle className={classes.title} />
-          <ClusterSelector className={classes.clusterSelector} />
-          <Tooltip title='Pixie Command'>
-            <IconButton disabled={commandOpen} onClick={toggleCommandOpen}>
-              <PixieCommandIcon color='primary' />
-            </IconButton>
+        </Tooltip>
+        <ExecuteScriptButton />
+        {
+          !isMobile
+          && (
+          <Tooltip title='Edit View'>
+            <ToggleButton
+              className={classes.moveWidgetToggle}
+              selected={widgetsMoveable}
+              onChange={() => setWidgetsMoveable(!widgetsMoveable)}
+              value='moveWidget'
+            >
+              <MoveIcon />
+            </ToggleButton>
           </Tooltip>
-          <ExecuteScriptButton />
-          {
-            !isMobile
-            && (
-            <Tooltip title='Edit View'>
-              <ToggleButton
-                className={classes.moveWidgetToggle}
-                selected={widgetsMoveable}
-                onChange={() => setWidgetsMoveable(!widgetsMoveable)}
-                value='moveWidget'
-              >
-                <MoveIcon />
-              </ToggleButton>
-            </Tooltip>
-            )
-          }
-        </Toolbar>
-      </AppBar>
-      <SideBar open={sidebarOpen} />
+          )
+        }
+      </NavBars>
       {
         loading ? <div className='center-content'><ClusterInstructions message='Connecting to cluster...' /></div>
           : (
