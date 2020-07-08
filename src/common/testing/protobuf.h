@@ -34,7 +34,7 @@ struct EqualsProtoMatcher {
       differencer.set_scope(optional_scope_.value());
     }
     if (!differencer.Compare(*expected_pb, pb)) {
-      (*listener) << diff_report << "got:\n" << pb.DebugString();
+      (*listener) << "got:\n" << pb.DebugString() << "diff:\n" << diff_report;
       return false;
     }
     return true;

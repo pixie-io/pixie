@@ -11,7 +11,6 @@ namespace stirling {
 namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
-using ::google::protobuf::util::MessageDifferencer;
 using ::pl::testing::proto::EqualsProto;
 
 constexpr std::string_view kLogicalProgram = R"(
@@ -112,6 +111,16 @@ probes: {
     binary_path: "$0"
     symbol: "main.MixedArgTypes"
     type: RETURN
+  }
+  map_vals {
+    map_name: "probe0_argstash"
+    key_expr: "goid"
+    value_ids: "arg0"
+    value_ids: "arg1"
+    value_ids: "arg2"
+    value_ids: "arg3"
+    value_ids: "arg4"
+    value_ids: "arg5"
   }
   ret_vals {
     id: "retval0"

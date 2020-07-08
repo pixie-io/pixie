@@ -16,8 +16,7 @@ message Constant {
 }
 
 message Argument {
-  // Used to reference to this argument, and as the name of the column to hold the values of this
-  // argument when this is exported to a table.
+  // Used to reference this argument.
   string id = 1;
 
   // An expression that accesses a subfield of this argument.
@@ -29,13 +28,21 @@ message Argument {
 }
 
 message ReturnValue {
-  // Used to reference to this return value, and as the name of the column to hold the values of
-  // this argument when this is exported to a table.
+  // Used to reference this return value.
   string id = 1;
 
   // The index to this return value. This is only meaningful for languages that support multiple
   // return values, like Go.
   uint32 index = 2;
+}
+
+message MapValue {
+  string map_name = 1;
+
+  // The builtin to generate the key value.
+  string key_expr = 2;
+
+  repeated string value_ids = 3;
 }
 
 message FunctionLatency {
@@ -77,18 +84,21 @@ message Probe {
   // Return values of a function.
   repeated ReturnValue ret_vals = 5;
 
+  // Map variables to unstash.
+  repeated MapValue map_vals = 6;
+
   // Latency of a function.
-  FunctionLatency function_latency = 6;
+  FunctionLatency function_latency = 7;
 
   // Inserts key and value into a map.
   //
   // The variable to be inserted into the map must be one of the above args, ret_vals, and function_latency.
-  repeated MapStashAction map_stash_actions = 7;
+  repeated MapStashAction map_stash_actions = 8;
 
   // Writes a value to the output table.
   //
   // The variable to be inserted into the output table must be one of the above args, ret_vals, and function_latency.
-  repeated OutputAction output_actions = 8;
+  repeated OutputAction output_actions = 9;
 }
 
 // A logical program.

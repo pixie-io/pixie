@@ -11,7 +11,6 @@ namespace stirling {
 namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
-using ::google::protobuf::util::MessageDifferencer;
 using ::pl::testing::proto::EqualsProto;
 
 constexpr std::string_view kLogicalProgramSpec = R"(

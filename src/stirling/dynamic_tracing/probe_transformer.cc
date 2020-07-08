@@ -19,7 +19,9 @@ void CreateEntryProbe(const ir::logical::Probe& input_probe, ir::logical::Progra
   entry_probe->mutable_trace_point()->CopyFrom(input_probe.trace_point());
   entry_probe->mutable_trace_point()->set_type(ir::shared::TracePoint::ENTRY);
   entry_probe->set_name(input_probe.name() + "_entry");
-  for (auto& in_arg : input_probe.args()) {
+
+  // Access arguments.
+  for (const auto& in_arg : input_probe.args()) {
     auto* out_arg = entry_probe->add_args();
     out_arg->CopyFrom(in_arg);
   }
@@ -31,7 +33,7 @@ void CreateEntryProbe(const ir::logical::Probe& input_probe, ir::logical::Progra
   // TODO(oazizi): goid is hard-coded. Fix based on language. Non-Golang languages probably should
   // use TGID_PID.
   stash_action->set_key(ir::shared::BPFHelper::GOID);
-  for (auto& in_arg : input_probe.args()) {
+  for (const auto& in_arg : input_probe.args()) {
     stash_action->add_value_variable_name(in_arg.id());
   }
 }
@@ -41,7 +43,17 @@ void CreateReturnProbe(const ir::logical::Probe& input_probe, ir::logical::Progr
   return_probe->set_name(input_probe.name() + "_return");
   return_probe->mutable_trace_point()->CopyFrom(input_probe.trace_point());
   return_probe->mutable_trace_point()->set_type(ir::shared::TracePoint::RETURN);
-  for (auto& in_ret_val : input_probe.ret_vals()) {
+
+  auto* map_val = return_probe->add_map_vals();
+  map_val->set_map_name(input_probe.name() + "_argstash");
+  // TODO(oazizi): goid is hard-coded. Fix based on language.
+  map_val->set_key_expr("goid");
+  for (const auto& in_arg : input_probe.args()) {
+    map_val->add_value_ids(in_arg.id());
+  }
+
+  // Generate return values.
+  for (const auto& in_ret_val : input_probe.ret_vals()) {
     auto* out_ret_val = return_probe->add_ret_vals();
     out_ret_val->CopyFrom(in_ret_val);
   }
@@ -50,11 +62,11 @@ void CreateReturnProbe(const ir::logical::Probe& input_probe, ir::logical::Progr
   auto* output_action = return_probe->add_output_actions();
   output_action->set_output_name(input_probe.name() + "_table");
 
-  for (auto& in_arg : input_probe.args()) {
+  for (const auto& in_arg : input_probe.args()) {
     output_action->add_variable_name(in_arg.id());
   }
 
-  for (auto& in_ret_val : input_probe.ret_vals()) {
+  for (const auto& in_ret_val : input_probe.ret_vals()) {
     output_action->add_variable_name(in_ret_val.id());
   }
 }
