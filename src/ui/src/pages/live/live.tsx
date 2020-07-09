@@ -25,6 +25,7 @@ import ExecuteScriptButton from 'containers/live/execute-button';
 import { ScriptLoader } from 'containers/live/script-loader';
 import LiveViewShortcuts from 'containers/live/shortcuts';
 import LiveViewTitle from 'containers/live/title';
+import LiveViewBreadcrumbs from 'containers/live/breadcrumbs';
 import NavBars from 'containers/App/nav-bars';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -43,10 +44,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     flex: 1,
     minWidth: 0,
     minHeight: 0,
+    flexDirection: 'column',
   },
   title: {
     marginLeft: theme.spacing(2),
     flexGrow: 1,
+    color: theme.palette.foreground.grey5,
   },
   mainPanel: {
     flex: 1,
@@ -87,6 +90,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   hidden: {
     display: 'none',
+  },
+  icon: {
+    color: theme.palette.foreground.grey5,
   },
 }));
 
@@ -151,10 +157,12 @@ const LiveView = () => {
         <ClusterSelector className={classes.clusterSelector} />
         <Tooltip title='Pixie Command'>
           <IconButton disabled={commandOpen} onClick={toggleCommandOpen}>
-            <PixieCommandIcon color='primary' />
+            <PixieCommandIcon className={classes.icon} />
           </IconButton>
         </Tooltip>
-        <ExecuteScriptButton />
+        <ExecuteScriptButton
+          className={classes.icon}
+        />
         {
           !isMobile
           && (
@@ -165,7 +173,7 @@ const LiveView = () => {
               onChange={() => setWidgetsMoveable(!widgetsMoveable)}
               value='moveWidget'
             >
-              <MoveIcon />
+              <MoveIcon className={classes.icon} />
             </ToggleButton>
           </Tooltip>
           )
@@ -175,6 +183,7 @@ const LiveView = () => {
         loading ? <div className='center-content'><ClusterInstructions message='Connecting to cluster...' /></div>
           : (
             <div className={classes.content}>
+              <LiveViewBreadcrumbs />
               <ScriptLoader />
               <DataDrawerSplitPanel className={classes.mainPanel}>
                 <EditorSplitPanel className={classes.editorPanel}>

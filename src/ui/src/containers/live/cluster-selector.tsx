@@ -40,7 +40,7 @@ const StyledMenu = (props: MenuProps) => (
 const StyledButton = withStyles((theme) => ({
   root: {
     textTransform: 'none',
-    color: theme.palette.text.primary,
+    color: theme.palette.foreground.grey5,
   },
 // eslint-disable-next-line react/display-name
 }))(React.forwardRef((props: ButtonProps, ref: React.Ref<HTMLButtonElement>) => (

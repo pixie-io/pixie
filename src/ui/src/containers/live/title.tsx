@@ -3,7 +3,6 @@ import * as React from 'react';
 
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 
-import ArgsEditor from './args-editor';
 import { ScriptContext } from '../../context/script-context';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -24,21 +23,14 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 }));
 
 const LiveViewTitle = (props) => {
-  const { id, title } = React.useContext(ScriptContext);
+  const { title } = React.useContext(ScriptContext);
   const classes = useStyles();
 
-  const scriptId = id || 'unknown';
   const desc = title || 'untitled';
 
   return (
     <div className={clsx(props.className, classes.root)}>
       <div className={classes.title}>{desc}</div>
-      <div className={classes.scriptName}>
-        script:
-        {' '}
-        {scriptId}
-        <ArgsEditor />
-      </div>
     </div>
   );
 };

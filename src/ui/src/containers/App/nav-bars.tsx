@@ -13,7 +13,11 @@ import SideBar from 'containers/App/sidebar';
 const styles = ({ spacing, palette }: Theme) => createStyles({
   appBar: {
     zIndex: 1300, // z-index must be larger than drawer's zIndex, which is 1200.
-    background: palette.background.one,
+    background: 'linear-gradient(0deg, #129292, #129292)',
+    height: spacing(5.8),
+  },
+  toolbar: {
+    minHeight: spacing(5.8),
   },
   sidebarToggle: {
     position: 'absolute',
@@ -22,6 +26,9 @@ const styles = ({ spacing, palette }: Theme) => createStyles({
   },
   sidebarToggleSpacer: {
     width: spacing(8),
+  },
+  icon: {
+    color: palette.foreground.two,
   },
 });
 
@@ -39,9 +46,9 @@ const NavBars = ({
   return (
     <>
       <AppBar className={classes.appBar} color='transparent' position='static'>
-        <Toolbar>
+        <Toolbar className={classes.toolbar}>
           <IconButton className={classes.sidebarToggle} onClick={toggleSidebar}>
-            <Menu />
+            <Menu className={classes.icon} />
           </IconButton>
           <div className={classes.sidebarToggleSpacer} />
           {children}

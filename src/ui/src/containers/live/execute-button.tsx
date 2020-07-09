@@ -8,7 +8,7 @@ import Tooltip from '@material-ui/core/Tooltip';
 import { ResultsContext } from 'context/results-context';
 import { ScriptContext } from 'context/script-context';
 
-const ExecuteScriptButton = () => {
+const ExecuteScriptButton = ({ className }) => {
   const { healthy } = React.useContext(ClientContext);
   const { loading } = React.useContext(ResultsContext);
   const { saveEditorAndExecute } = React.useContext(ScriptContext);
@@ -17,7 +17,7 @@ const ExecuteScriptButton = () => {
     <Tooltip title={loading ? 'Executing' : !healthy ? 'Cluster Disconnected' : 'Execute script'}>
       <div>
         <IconButton disabled={!healthy || loading} onClick={saveEditorAndExecute}>
-          <PlayIcon />
+          <PlayIcon className={className} />
         </IconButton>
       </div>
     </Tooltip>
