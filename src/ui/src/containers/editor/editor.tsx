@@ -11,7 +11,7 @@ import {
 } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
-import ChevronLeft from '@material-ui/icons/ChevronLeft';
+import ChevronRight from '@material-ui/icons/ChevronRight';
 
 import { LayoutContext } from 'context/layout-context';
 import { ScriptContext } from 'context/script-context';
@@ -146,7 +146,7 @@ const LiveViewEditor = () => {
             <StyledTab value='vis' label='Vis Spec' />
           </StyledTabs>
           <div className={classes.closer} onClick={closeEditor}>
-            <ChevronLeft />
+            <ChevronRight />
           </div>
         </div>
         <LazyPanel className={classes.panel} show={tab === 'pixie'}>
@@ -171,10 +171,11 @@ export const EditorSplitPanel = (props) => {
 
   return (
     <ResizableDrawer
-      drawerDirection='left'
+      drawerDirection='right'
       initialSize={600}
       open={editorPanelOpen}
       otherContent={props.children}
+      overlay
     >
       <LiveViewEditor />
     </ResizableDrawer>

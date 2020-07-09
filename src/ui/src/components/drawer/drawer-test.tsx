@@ -19,6 +19,7 @@ xdescribe('<FixedSizeDrawer/>', () => {
           drawerSize='50px'
           open={false}
           otherContent={otherContent}
+          overlay={false}
         >
           <div>
             Drawer contents

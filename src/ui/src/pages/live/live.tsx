@@ -8,7 +8,7 @@ import * as React from 'react';
 import IconButton from '@material-ui/core/IconButton';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
-import ChevronRight from '@material-ui/icons/ChevronRight';
+import ChevronLeft from '@material-ui/icons/ChevronLeft';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 
 import clsx from 'clsx';
@@ -81,8 +81,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     alignItems: 'center',
     background: theme.palette.background.three,
     cursor: 'pointer',
-    borderTopLeftRadius: 0,
-    borderBottomLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    right: 0,
   },
   hidden: {
     display: 'none',
@@ -99,9 +100,9 @@ export const EditorOpener = () => {
   }
 
   return (
-    <Tooltip title='Open Editor' className={clsx(editorPanelOpen && classes.hidden)}>
+    <Tooltip title='Open Editor' placement='left'>
       <IconButton disabled={isMobile || editorPanelOpen} className={classes.opener} onClick={openEditor}>
-        <ChevronRight />
+        <ChevronLeft />
       </IconButton>
     </Tooltip>
   );

@@ -28,6 +28,7 @@ storiesOf('Drawer', module)
           drawerSize='50px'
           open={open}
           otherContent={otherContent}
+          overlay={false}
         >
           <div>
             Drawer contents
@@ -60,6 +61,7 @@ storiesOf('Drawer', module)
           open={open}
           otherContent={otherContent}
           initialSize={200}
+          overlay={false}
         >
           <div>
             Drawer contents

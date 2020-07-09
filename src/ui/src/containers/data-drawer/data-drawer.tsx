@@ -99,6 +99,7 @@ export const DataDrawerSplitPanel = (props) => {
       initialSize={350}
       open={dataDrawerOpen}
       otherContent={contents}
+      overlay={false}
     >
       <DataDrawer
         open={dataDrawerOpen}

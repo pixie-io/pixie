@@ -43,16 +43,17 @@ interface FixedSizeDrawerProps extends WithStyles<typeof styles> {
   drawerDirection: DrawerDirection;
   drawerSize: string; // A fixed size for the drawer.
   open: boolean;
+  overlay: boolean;
 }
 
 const InternalFixedSizeDrawer = ({
-  classes, children, otherContent, drawerDirection, drawerSize, open,
+  classes, children, otherContent, drawerDirection, drawerSize, open, overlay,
 }: FixedSizeDrawerProps) => {
   const drawerStyle = drawerDirection === 'top' || drawerDirection === 'bottom' ? { height: drawerSize }
     : { width: drawerSize };
 
   let contentStyle = {};
-  if (open) { // When the drawer is open, the other content should shrink by `drawerSize`.
+  if (open && !overlay) { // When the drawer is open, the other content should shrink by `drawerSize`.
     if (drawerDirection === 'top') {
       contentStyle = { marginTop: drawerSize };
     } else if (drawerDirection === 'bottom') {

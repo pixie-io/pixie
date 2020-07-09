@@ -34,10 +34,11 @@ interface ResizableDrawerProps extends WithStyles<typeof styles> {
   drawerDirection: DrawerDirection;
   open: boolean;
   initialSize: number;
+  overlay: boolean;
 }
 
 const ResizableDrawer = ({
-  classes, children, otherContent, drawerDirection, open, initialSize,
+  classes, children, otherContent, drawerDirection, open, overlay, initialSize,
 }: ResizableDrawerProps) => {
   const [drawerSize, setDrawerSize] = React.useState(initialSize);
 
@@ -60,6 +61,29 @@ const ResizableDrawer = ({
     }
   }, [drawerDirection, drawerSize]);
 
+  let dragHandleStyle = {};
+  // If the drawer is in overlay mode, we need additional styling to place the drag
+  // handle in the correct place, since we can't rely on the drawer being in the
+  // DOM anymore.
+  if (overlay) {
+    switch (drawerDirection) {
+      case 'top':
+        dragHandleStyle = { left: 0, marginTop: drawerSize };
+        break;
+      case 'bottom':
+        dragHandleStyle = { left: 0, bottom: 0, marginBottom: drawerSize };
+        break;
+      case 'left':
+        dragHandleStyle = { top: 0, marginLeft: drawerSize };
+        break;
+      case 'right':
+        dragHandleStyle = { top: 0, right: 0, marginRight: drawerSize };
+        break;
+      default:
+        break;
+    }
+  }
+
   const dragHandle = (
     <DraggableCore
       onDrag={(event, { deltaX, deltaY }) => {
@@ -69,8 +93,10 @@ const ResizableDrawer = ({
         });
       }}
     >
-      <div className={drawerDirection === 'top' || drawerDirection === 'bottom'
-        ? classes.verticalDragHandle : classes.horizontalDragHandle}
+      <div
+        style={dragHandleStyle}
+        className={drawerDirection === 'top' || drawerDirection === 'bottom'
+          ? classes.verticalDragHandle : classes.horizontalDragHandle}
       />
     </DraggableCore>
   );
@@ -95,6 +121,7 @@ const ResizableDrawer = ({
         otherContent={draggableContent}
         drawerDirection={drawerDirection}
         open={open}
+        overlay={overlay}
         drawerSize={`${drawerSize}px`}
       >
         {children}
