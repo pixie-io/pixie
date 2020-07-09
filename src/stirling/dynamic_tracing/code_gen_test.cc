@@ -130,11 +130,13 @@ TEST(GenStructVariableTest, Variables) {
   st_var.set_name("st_var");
   st_var.set_type("socket_data_event_t");
 
-  auto* var_name = st_var.add_variable_names();
-  var_name->set_name("foo");
+  auto* fa = st_var.add_field_assignments();
+  fa->set_field_name("i32");
+  fa->set_variable_name("foo");
 
-  var_name = st_var.add_variable_names();
-  var_name->set_name("bar");
+  fa = st_var.add_field_assignments();
+  fa->set_field_name("i64");
+  fa->set_variable_name("bar");
 
   ASSERT_OK_AND_THAT(GenStructVariable(st, st_var),
                      ElementsAre("struct socket_data_event_t st_var = {};", "st_var.i32 = foo;",
@@ -203,7 +205,10 @@ TEST(GenProbeTest, EntryProbe) {
 
   st_var->set_name("st_var");
   st_var->set_type("socket_data_event_t");
-  st_var->add_variable_names()->set_name("var");
+
+  auto* fa = st_var->add_field_assignments();
+  fa->set_field_name("i32");
+  fa->set_variable_name("var");
 
   MapStashAction* map_stash_action = probe.add_map_stash_actions();
 

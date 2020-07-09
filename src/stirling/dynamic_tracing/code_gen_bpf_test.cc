@@ -94,9 +94,18 @@ constexpr char kProgram[] = R"proto(
                               st_vars {
                                 name: "st_var"
                                 type: "event_t"
-                                variable_names { name: "time_ns" }
-                                variable_names { name: "pid_start_time_ns" }
-                                variable_names { name: "var" }
+                                field_assignments {
+                                  field_name: "time_ns"
+                                  variable_name: "time_ns"
+                                }
+                                field_assignments {
+                                  field_name: "pid_start_time_ns"
+                                  variable_name: "pid_start_time_ns"
+                                }
+                                field_assignments {
+                                  field_name: "i32"
+                                  variable_name: "var"
+                                }
                               }
                               map_vars {
                                 name: "events_map_var"

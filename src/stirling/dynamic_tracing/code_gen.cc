@@ -197,23 +197,14 @@ StatusOr<std::vector<std::string>> GenStructVariable(const Struct& st,
     return error::InvalidArgument("Names of the struct do not match, $0 vs. $1", st.name(),
                                   st_var.type());
   }
-  if (st.fields_size() != st_var.variable_names_size()) {
-    return error::InvalidArgument(
-        "The number of struct fields and variables do not match, $0 vs. $1", st.fields_size(),
-        st_var.variable_names_size());
-  }
 
   std::vector<std::string> code_lines;
 
   code_lines.push_back(absl::Substitute("struct $0 $1 = {};", st.name(), st_var.name()));
 
-  for (int i = 0; i < st.fields_size() && i < st_var.variable_names_size(); ++i) {
-    const auto& var_name = st_var.variable_names(i);
-    if (var_name.name_oneof_case() != StructVariable::VariableName::NameOneofCase::kName) {
-      continue;
-    }
-    code_lines.push_back(absl::Substitute("$0.$1 = $2;", st_var.name(), st.fields(i).name(),
-                                          st_var.variable_names(i).name()));
+  for (const auto& fa : st_var.field_assignments()) {
+    code_lines.push_back(
+        absl::Substitute("$0.$1 = $2;", st_var.name(), fa.field_name(), fa.variable_name()));
   }
 
   return code_lines;
@@ -372,13 +363,10 @@ StatusOr<std::vector<std::string>> GenProbe(
   for (const auto& var : probe.st_vars()) {
     PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.name(), "StructVariable"));
 
-    for (const auto& var_name : var.variable_names()) {
-      if (var_name.name_oneof_case() != StructVariable::VariableName::NameOneofCase::kName) {
-        continue;
-      }
-      if (!var_names.contains(var_name.name())) {
+    for (const auto& fa : var.field_assignments()) {
+      if (!var_names.contains(fa.variable_name())) {
         return error::InvalidArgument(
-            "variable name '$0' assigned to struct variable '$1' was not defined", var_name.name(),
+            "Variable '$0' assigned to StructVariable '$1' was not defined", fa.variable_name(),
             var.name());
       }
       // TODO(yzhao): Check variable types as well.

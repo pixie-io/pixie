@@ -518,36 +518,45 @@ probes: {
   st_vars {
     name: "my_stash_value"
     type: "my_stash_value_t"
-    variable_names {
-      name: "arg0"
+    field_assignments {
+      field_name: "arg0"
+      variable_name: "arg0"
     }
-    variable_names {
-      name: "arg1"
+    field_assignments {
+      field_name: "arg1"
+      variable_name: "arg1"
     }
   }
   st_vars {
     name: "out_table_value"
     type: "out_table_value_t"
-    variable_names {
-      name: "tgid"
+    field_assignments {
+      field_name: "tgid"
+      variable_name: "tgid"
     }
-    variable_names {
-      name: "tgid_start_time"
+    field_assignments {
+      field_name: "tgid_start_time"
+      variable_name: "tgid_start_time"
     }
-    variable_names {
-      name: "goid"
+    field_assignments {
+      field_name: "goid"
+      variable_name: "goid"
     }
-    variable_names {
-      name: "ktime_ns"
+    field_assignments {
+      field_name: "ktime_ns"
+      variable_name: "ktime_ns"
     }
-    variable_names {
-      name: "arg0"
+    field_assignments {
+      field_name: "arg0"
+      variable_name: "arg0"
     }
-    variable_names {
-      name: "arg1"
+    field_assignments {
+      field_name: "arg1"
+      variable_name: "arg1"
     }
-    variable_names {
-      name: "arg2"
+    field_assignments {
+      field_name: "arg2"
+      variable_name: "arg2"
     }
   }
   map_stash_actions {
@@ -620,23 +629,29 @@ probes: {
   st_vars {
     name: "out_table2_value"
     type: "out_table2_value_t"
-    variable_names {
-      name: "tgid"
+    field_assignments {
+      field_name: "tgid"
+      variable_name: "tgid"
     }
-    variable_names {
-      name: "tgid_start_time"
+    field_assignments {
+      field_name: "tgid_start_time"
+      variable_name: "tgid_start_time"
     }
-    variable_names {
-      name: "goid"
+    field_assignments {
+      field_name: "goid"
+      variable_name: "goid"
     }
-    variable_names {
-      name: "ktime_ns"
+    field_assignments {
+      field_name: "ktime_ns"
+      variable_name: "ktime_ns"
     }
-    variable_names {
-      name: "arg0"
+    field_assignments {
+      field_name: "arg0"
+      variable_name: "arg0"
     }
-    variable_names {
-      name: "arg1"
+    field_assignments {
+      field_name: "arg1"
+      variable_name: "arg1"
     }
   }
   output_actions {

@@ -521,11 +521,13 @@ Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_a
   PL_RETURN_IF_ERROR(PopulateMapTypes(maps_, stash_action_in.map_name(), struct_type_name));
 
   auto* struct_var = output_probe->add_st_vars();
-  struct_var->set_type(struct_type_name);
   struct_var->set_name(variable_name);
+  struct_var->set_type(struct_type_name);
+
   for (const auto& f : stash_action_in.value_variable_name()) {
-    auto* field = struct_var->add_variable_names();
-    field->set_name(f);
+    auto* fa = struct_var->add_field_assignments();
+    fa->set_field_name(f);
+    fa->set_variable_name(f);
   }
 
   auto* stash_action_out = output_probe->add_map_stash_actions();
@@ -611,13 +613,17 @@ Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_a
   auto* struct_var = output_probe->add_st_vars();
   struct_var->set_type(struct_type_name);
   struct_var->set_name(variable_name);
+
   for (const auto& f : kImplicitColumns) {
-    auto* field = struct_var->add_variable_names();
-    field->set_name(f);
+    auto* fa = struct_var->add_field_assignments();
+    fa->set_field_name(f);
+    fa->set_variable_name(f);
   }
+
   for (const auto& f : output_action_in.variable_name()) {
-    auto* field = struct_var->add_variable_names();
-    field->set_name(f);
+    auto* fa = struct_var->add_field_assignments();
+    fa->set_field_name(f);
+    fa->set_variable_name(f);
   }
 
   // Output data.

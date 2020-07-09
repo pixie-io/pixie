@@ -107,16 +107,16 @@ message StructVariable {
   // The struct that holds all values defined below.
   string type = 2;
 
-  message VariableName {
-    oneof name_oneof {
-      string name = 1;
-    }
+  // Describe an expression to assign variable_name to the specified field.
+  message FieldAssignment {
+    string field_name = 1;
+    string variable_name = 2;
   }
 
   // The names of the variables that are assigned to the fields in the above struct.
   // The variable count must be equal to the field count of the above struct.
   // If unset, the corresponding field is default constructed.
-  repeated VariableName variable_names = 3;
+  repeated FieldAssignment field_assignments = 3;
 }
 
 // Corresponds to inserting value(s) with key to a map.
