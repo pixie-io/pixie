@@ -190,6 +190,11 @@ Status Dwarvifier::GenerateProbe(const ir::logical::Probe input_probe,
   return Status::OK();
 }
 
+// Returns the struct name associated with an Output or Map declaration.
+std::string StructTypeName(const std::string& obj_name) {
+  return absl::StrCat(obj_name, "_value_t");
+}
+
 Status Dwarvifier::Setup(const ir::shared::TracePoint& trace_point) {
   using dwarf_tools::DwarfReader;
 
@@ -395,7 +400,7 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
   std::string name = ret_val.id();
 
   auto* var = AddVariable(output_probe, name, type);
-  var->mutable_memory()->set_base("sp");
+  var->mutable_memory()->set_base(kSPVarName);
   var->mutable_memory()->set_offset(arg_info->offset + kSPOffset);
 
   return Status::OK();
@@ -413,7 +418,7 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
 
   // Find the map struct.
   // TODO(oazizi): Make suffix a constexpr.
-  std::string struct_type_name = map_val.map_name() + "_value_t";
+  std::string struct_type_name = StructTypeName(map_val.map_name());
   auto struct_iter = structs_.find(struct_type_name);
   if (struct_iter == structs_.end()) {
     return error::Internal("ProcessMapVal [probe=$0]: Reference to undeclared struct: $1",
@@ -513,7 +518,7 @@ Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_a
                                       ir::physical::PhysicalProbe* output_probe,
                                       ir::physical::Program* output_program) {
   std::string variable_name = stash_action_in.map_name() + "_value";
-  std::string struct_type_name = stash_action_in.map_name() + "_value_t";
+  std::string struct_type_name = StructTypeName(stash_action_in.map_name());
 
   PL_RETURN_IF_ERROR(GenerateMapValueStruct(stash_action_in, struct_type_name, output_program));
   PL_RETURN_IF_ERROR(PopulateMapTypes(maps_, stash_action_in.map_name(), struct_type_name));
@@ -596,7 +601,7 @@ Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_a
                                        ir::physical::PhysicalProbe* output_probe,
                                        ir::physical::Program* output_program) {
   std::string variable_name = output_action_in.output_name() + "_value";
-  std::string struct_type_name = output_action_in.output_name() + "_value_t";
+  std::string struct_type_name = StructTypeName(output_action_in.output_name());
 
   // Generate struct definition.
   PL_RETURN_IF_ERROR(GenerateOutputStruct(output_action_in, struct_type_name, output_program));
