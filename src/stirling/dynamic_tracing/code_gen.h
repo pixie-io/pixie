@@ -36,9 +36,9 @@ StatusOr<std::vector<std::string>> GenMapStashAction(const ir::physical::MapStas
 std::string GenOutputAction(const ir::physical::OutputAction& action);
 
 // Returns the BCC probe function code.
-StatusOr<std::vector<std::string>> GenPhysicalProbe(
+StatusOr<std::vector<std::string>> GenProbe(
     const absl::flat_hash_map<std::string_view, const ir::physical::Struct*>& structs,
-    const ir::physical::PhysicalProbe& probe);
+    const ir::physical::Probe& probe);
 
 struct BCCProgram {
   // TODO(yzhao): We probably need kprobe_specs as well.

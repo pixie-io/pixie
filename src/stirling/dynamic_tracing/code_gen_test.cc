@@ -9,8 +9,8 @@ namespace dynamic_tracing {
 
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::OutputAction;
-using ::pl::stirling::dynamic_tracing::ir::physical::PhysicalProbe;
 using ::pl::stirling::dynamic_tracing::ir::physical::Printk;
+using ::pl::stirling::dynamic_tracing::ir::physical::Probe;
 using ::pl::stirling::dynamic_tracing::ir::physical::Register;
 using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
@@ -165,8 +165,8 @@ TEST(GenOutputActionTest, Variables) {
   EXPECT_THAT(GenOutputAction(action), StrEq("test.perf_submit(ctx, &foo, sizeof(foo));"));
 }
 
-TEST(GenPhysicalProbeTest, EntryProbe) {
-  PhysicalProbe probe;
+TEST(GenProbeTest, EntryProbe) {
+  Probe probe;
 
   probe.set_name("probe_entry");
 
@@ -243,7 +243,7 @@ TEST(GenPhysicalProbeTest, EntryProbe) {
   field->mutable_type()->set_scalar(ScalarType::INT32);
 
   absl::flat_hash_map<std::string_view, const Struct*> structs = {{st.name(), &st}};
-  ASSERT_OK_AND_THAT(GenPhysicalProbe(structs, probe), ElementsAreArray(expected));
+  ASSERT_OK_AND_THAT(GenProbe(structs, probe), ElementsAreArray(expected));
 }
 
 }  // namespace dynamic_tracing

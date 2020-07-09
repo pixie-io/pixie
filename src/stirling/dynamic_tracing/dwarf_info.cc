@@ -28,7 +28,7 @@ constexpr char kKTimeVarName[] = "ktime_ns";
 }  // namespace
 
 /**
- * The Dwarvifier generates a PhysicalProbe from a given LogicalProbe spec.
+ * The Dwarvifier generates a Probe from a given LogicalProbe spec.
  * The Dwarvifier's job is to:
  *  - To generate variables (with correct offsets) to access argument/return value expressions.
  *  - To add type information to maps and outputs.
@@ -46,25 +46,22 @@ class Dwarvifier {
   Status Setup(const ir::shared::TracePoint& trace_point);
   Status ProcessProbe(const ir::logical::Probe& input_probe, ir::physical::Program* output_program);
   Status ProcessTracepoint(const ir::shared::TracePoint& trace_point,
-                           ir::physical::PhysicalProbe* output_probe);
-  Status ProcessSpecialVariables(ir::physical::PhysicalProbe* output_probe);
-  Status ProcessConst(const ir::logical::Constant& constant,
-                      ir::physical::PhysicalProbe* output_probe);
-  Status ProcessArgExpr(const ir::logical::Argument& arg,
-                        ir::physical::PhysicalProbe* output_probe);
+                           ir::physical::Probe* output_probe);
+  Status ProcessSpecialVariables(ir::physical::Probe* output_probe);
+  Status ProcessConst(const ir::logical::Constant& constant, ir::physical::Probe* output_probe);
+  Status ProcessArgExpr(const ir::logical::Argument& arg, ir::physical::Probe* output_probe);
   Status ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
-                           ir::physical::PhysicalProbe* output_probe);
-  Status ProcessMapVal(const ir::logical::MapValue& map_val,
-                       ir::physical::PhysicalProbe* output_probe);
+                           ir::physical::Probe* output_probe);
+  Status ProcessMapVal(const ir::logical::MapValue& map_val, ir::physical::Probe* output_probe);
   Status ProcessStashAction(const ir::logical::MapStashAction& stash_action,
-                            ir::physical::PhysicalProbe* output_probe,
+                            ir::physical::Probe* output_probe,
                             ir::physical::Program* output_program);
   Status ProcessOutputAction(const ir::logical::OutputAction& output_action,
-                             ir::physical::PhysicalProbe* output_probe,
+                             ir::physical::Probe* output_probe,
                              ir::physical::Program* output_program);
 
-  ir::physical::ScalarVariable* AddVariable(ir::physical::PhysicalProbe* probe,
-                                            const std::string& name, ir::shared::ScalarType type);
+  ir::physical::ScalarVariable* AddVariable(ir::physical::Probe* probe, const std::string& name,
+                                            ir::shared::ScalarType type);
 
   Status GenerateMapValueStruct(const ir::logical::MapStashAction& stash_action_in,
                                 const std::string& struct_type_name,
@@ -172,7 +169,7 @@ StatusOr<const ArgInfo*> GetArgInfo(const std::map<std::string, ArgInfo>& args_m
   return &args_map_iter->second;
 }
 
-ir::physical::ScalarVariable* Dwarvifier::AddVariable(ir::physical::PhysicalProbe* probe,
+ir::physical::ScalarVariable* Dwarvifier::AddVariable(ir::physical::Probe* probe,
                                                       const std::string& name,
                                                       ir::shared::ScalarType type) {
   auto* var = probe->add_vars();
@@ -208,7 +205,7 @@ Status Dwarvifier::Setup(const ir::shared::TracePoint& trace_point) {
 }
 
 Status Dwarvifier::ProcessTracepoint(const ir::shared::TracePoint& trace_point,
-                                     ir::physical::PhysicalProbe* output_probe) {
+                                     ir::physical::Probe* output_probe) {
   auto* probe_trace_point = output_probe->mutable_trace_point();
   probe_trace_point->CopyFrom(trace_point);
   probe_trace_point->set_type(trace_point.type());
@@ -255,7 +252,7 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
 // TODO(oazizi): Could selectively generate some of these variables, when they are not required.
 //               For example, if latency is not required, then there is no need for ktime.
 //               For now, include them all for simplicity.
-Status Dwarvifier::ProcessSpecialVariables(ir::physical::PhysicalProbe* output_probe) {
+Status Dwarvifier::ProcessSpecialVariables(ir::physical::Probe* output_probe) {
   // Add SP variable.
   auto* sp_var = AddVariable(output_probe, kSPVarName, ir::shared::VOID_POINTER);
   sp_var->set_reg(ir::physical::Register::SP);
@@ -291,7 +288,7 @@ Status Dwarvifier::ProcessSpecialVariables(ir::physical::PhysicalProbe* output_p
 }
 
 Status Dwarvifier::ProcessConst(const ir::logical::Constant& constant,
-                                ir::physical::PhysicalProbe* output_probe) {
+                                ir::physical::Probe* output_probe) {
   auto* var = output_probe->add_vars();
 
   var->set_name(constant.name());
@@ -302,7 +299,7 @@ Status Dwarvifier::ProcessConst(const ir::logical::Constant& constant,
 }
 
 Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
-                                  ir::physical::PhysicalProbe* output_probe) {
+                                  ir::physical::Probe* output_probe) {
   const std::string& arg_name = arg.expr();
 
   std::vector<std::string_view> components = absl::StrSplit(arg_name, ".");
@@ -379,7 +376,7 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
 }
 
 Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
-                                     ir::physical::PhysicalProbe* output_probe) {
+                                     ir::physical::Probe* output_probe) {
   // TODO(oazizi): Support named return variables.
   // Golang automatically names return variables ~r0, ~r1, etc.
   // However, it should be noted that the indexing includes function arguments.
@@ -407,7 +404,7 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
 }
 
 Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
-                                 ir::physical::PhysicalProbe* output_probe) {
+                                 ir::physical::Probe* output_probe) {
   // Find the map.
   auto map_iter = maps_.find(map_val.map_name());
   if (map_iter == maps_.end()) {
@@ -515,7 +512,7 @@ StatusOr<std::string_view> BPFHelperVariableName(ir::shared::BPFHelper builtin) 
 }  // namespace
 
 Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_action_in,
-                                      ir::physical::PhysicalProbe* output_probe,
+                                      ir::physical::Probe* output_probe,
                                       ir::physical::Program* output_program) {
   std::string variable_name = stash_action_in.map_name() + "_value";
   std::string struct_type_name = StructTypeName(stash_action_in.map_name());
@@ -598,7 +595,7 @@ Status PopulateOutputTypes(const std::map<std::string, ir::shared::Output*>& out
 }  // namespace
 
 Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_action_in,
-                                       ir::physical::PhysicalProbe* output_probe,
+                                       ir::physical::Probe* output_probe,
                                        ir::physical::Program* output_program) {
   std::string variable_name = output_action_in.output_name() + "_value";
   std::string struct_type_name = StructTypeName(output_action_in.output_name());

@@ -16,8 +16,8 @@ using ::pl::stirling::bpf_tools::BPFProbeAttachType;
 using ::pl::stirling::bpf_tools::UProbeSpec;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::OutputAction;
-using ::pl::stirling::dynamic_tracing::ir::physical::PhysicalProbe;
 using ::pl::stirling::dynamic_tracing::ir::physical::Printk;
+using ::pl::stirling::dynamic_tracing::ir::physical::Probe;
 using ::pl::stirling::dynamic_tracing::ir::physical::Program;
 using ::pl::stirling::dynamic_tracing::ir::physical::Register;
 using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
@@ -340,9 +340,8 @@ Status CheckVarName(absl::flat_hash_set<std::string_view>* var_names, std::strin
 
 }  // namespace
 
-StatusOr<std::vector<std::string>> GenPhysicalProbe(
-    const absl::flat_hash_map<std::string_view, const Struct*>& structs,
-    const PhysicalProbe& probe) {
+StatusOr<std::vector<std::string>> GenProbe(
+    const absl::flat_hash_map<std::string_view, const Struct*>& structs, const Probe& probe) {
   if (probe.name().empty()) {
     return error::InvalidArgument("Probe's name cannot be empty");
   }
@@ -429,7 +428,7 @@ StatusOr<std::vector<std::string>> GenPhysicalProbe(
 
 namespace {
 
-UProbeSpec GetUProbeSpec(const PhysicalProbe& probe) {
+UProbeSpec GetUProbeSpec(const Probe& probe) {
   UProbeSpec spec;
 
   spec.binary_path = probe.trace_point().binary_path();
@@ -559,7 +558,7 @@ StatusOr<std::vector<std::string>> GenProgramCodeLines(const Program& program) {
   }
 
   for (const auto& probe : program.probes()) {
-    MOVE_BACK_STR_VEC(&code_lines, GenPhysicalProbe(structs, probe));
+    MOVE_BACK_STR_VEC(&code_lines, GenProbe(structs, probe));
   }
 
   return code_lines;

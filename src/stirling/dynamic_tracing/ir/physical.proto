@@ -155,7 +155,7 @@ message Printk {
 }
 
 // Corresponds to a logical probe.
-message PhysicalProbe {
+message Probe {
   // The name of the BCC probe function.
   string name = 1;
 
@@ -206,5 +206,5 @@ message Program {
   repeated shared.Output outputs = 3;
 
   // Describes probe functions.
-  repeated PhysicalProbe probes = 4;
+  repeated Probe probes = 4;
 }
