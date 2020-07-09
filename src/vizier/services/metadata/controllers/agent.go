@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"errors"
-	"math"
 	"sync"
 
 	uuid "github.com/satori/go.uuid"
@@ -22,6 +21,9 @@ const MaxAgentUpdates int = 10000
 
 // MaxUpdatesToDequeue is the maximum number of updates we should dequeue at a time.
 const MaxUpdatesToDequeue int = 100
+
+// MaxBytesToDequeue is the maximum number of bytes we should dequeue at a time. We can dequeue .9MB.
+const MaxBytesToDequeue int = 900000
 
 // AgentUpdate describes the update info for a given agent.
 type AgentUpdate struct {
@@ -367,15 +369,43 @@ func (m *AgentManagerImpl) GetFromAgentQueue(agentID string) ([]*metadatapb.Reso
 	defer currQueue.Mu.Unlock()
 
 	var updates []*metadatapb.ResourceUpdate
-	fQLen := int(math.Min(float64(len(currQueue.FailedQueue)), float64(MaxUpdatesToDequeue)))
-	qLen := int(math.Min(float64(len(currQueue.Queue)), float64(MaxUpdatesToDequeue-fQLen)))
+	dequeuedSize := 0
+
+	fQLen := len(currQueue.FailedQueue)
+	qLen := len(currQueue.Queue)
+
 	for i := 0; i < fQLen; i++ {
 		update := <-currQueue.FailedQueue
+
+		if update.Size()+dequeuedSize > MaxBytesToDequeue {
+			// We've dequeued the max # of bytes. Put this back on the agent queue.
+			log.Info("Dequeued max number of bytes from agent queue")
+			if update.Size() > MaxBytesToDequeue {
+				log.WithField("update", update).Info("Single update larger than MaxBytesToDequeue... Dropping")
+				return updates, nil
+			}
+			currQueue.FailedQueue <- update
+			return updates, nil
+		}
 		updates = append(updates, update)
+		dequeuedSize += update.Size()
 	}
+
 	for i := 0; i < qLen; i++ {
 		update := <-currQueue.Queue
+
+		if update.Size()+dequeuedSize > MaxBytesToDequeue {
+			// We've dequeued the max # of bytes. Put this back on the agent queue.
+			log.Info("Dequeued max number of bytes from agent queue")
+			if update.Size() > MaxBytesToDequeue {
+				log.WithField("update", update).Info("Single update larger than MaxBytesToDequeue... Dropping")
+				return updates, nil
+			}
+			currQueue.FailedQueue <- update
+			return updates, nil
+		}
 		updates = append(updates, update)
+		dequeuedSize += update.Size()
 	}
 	return updates, nil
 }
