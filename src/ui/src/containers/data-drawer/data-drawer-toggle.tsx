@@ -19,28 +19,24 @@ interface DataDrawerToggleProps {
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
-    minHeight: theme.spacing(5),
+    height: theme.spacing(4),
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.palette.background.three,
+    backgroundColor: theme.palette.foreground.grey3,
     cursor: 'pointer',
+    boxShadow: `inset 0 ${theme.spacing(0.3)}px ${theme.spacing(0.5)}px ${theme.palette.foreground.grey4}1A`,
   },
   icon: {
     marginLeft: theme.spacing(2),
     marginRight: theme.spacing(2),
   },
-  title: {
-    ...theme.typography.subtitle2,
-    color: theme.palette.foreground.one,
-    marginLeft: theme.spacing(2),
-  },
   pixieLogo: {
-    opacity: 0.5,
     width: '48px',
     marginLeft: 'auto',
     alignSelf: 'center',
     marginRight: theme.spacing(2),
+    fill: theme.palette.primary.main,
   },
 }));
 
@@ -62,6 +58,7 @@ const StyledTab = withStyles((theme: Theme) => createStyles({
     '&:focus': {
       color: theme.palette.foreground.two,
     },
+    ...theme.typography.body2,
   },
 }))(Tab);
 
@@ -88,7 +85,6 @@ const DataDrawerToggle = (props: DataDrawerToggleProps) => {
 
   return (
     <div className={classes.root} onClick={toggle}>
-      {opened ? <ExpandMoreIcon className={classes.icon} /> : <ExpandLessIcon className={classes.icon} />}
       <StyledTabs value={activeTab} onChange={onTabChange}>
         <StyledTab value='data' label='Underlying Data' />
         {error ? <StyledTab value='errors' label='Errors' /> : null}
