@@ -6,6 +6,9 @@ import {
 
 import { FixedSizeDrawer, DrawerDirection } from './drawer';
 
+// The amount of time elasped since a user has last resized the drawer.
+const RESIZE_WAIT_INTERVAL_MS = 100;
+
 const styles = ({ spacing }: Theme) => createStyles({
   draggableContent: {
     flex: 1,
@@ -41,8 +44,16 @@ const ResizableDrawer = ({
   classes, children, otherContent, drawerDirection, open, overlay, initialSize,
 }: ResizableDrawerProps) => {
   const [drawerSize, setDrawerSize] = React.useState(initialSize);
+  // State responsible for tracking whether the user is actively resizing. This is used for debouncing.
+  const [timer, setTimer] = React.useState(null);
 
   const resize = React.useCallback(({ deltaY, deltaX }) => {
+    clearTimeout(timer);
+    const newTimer = setTimeout(() => {
+      window.dispatchEvent(new Event('resize'));
+    }, RESIZE_WAIT_INTERVAL_MS);
+    setTimer(newTimer);
+
     switch (drawerDirection) {
       case 'top':
         setDrawerSize(drawerSize + deltaY);
@@ -59,7 +70,7 @@ const ResizableDrawer = ({
       default:
         break;
     }
-  }, [drawerDirection, drawerSize]);
+  }, [drawerDirection, drawerSize, timer]);
 
   let dragHandleStyle = {};
   // If the drawer is in overlay mode, we need additional styling to place the drag
