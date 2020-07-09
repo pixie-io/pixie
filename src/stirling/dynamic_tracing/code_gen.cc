@@ -309,6 +309,35 @@ StatusOr<std::string> GenPrintk(
   GCC_SWITCH_RETURN;
 }
 
+std::string GenMapVariable(const ir::physical::MapVariable& map_var) {
+  return absl::Substitute("struct $0* $1 = $2.lookup(&$3);", map_var.type(), map_var.name(),
+                          map_var.map_name(), map_var.key_variable_name());
+}
+
+std::vector<std::string> GenMemberVariable(const ir::physical::MemberVariable& var) {
+  if (var.is_struct_base_pointer()) {
+    // TODO(yzhao): We should set a correct default value here. Two options:
+    // * Set global default based on the type.
+    // * Let MemberVariable specify a default.
+    return {
+        absl::Substitute("if ($0 == NULL) { return 0; }", var.struct_base()),
+        absl::Substitute("$0 $1 = $2->$3;", GenScalarType(var.type()), var.name(),
+                         var.struct_base(), var.field()),
+    };
+  }
+  return {absl::Substitute("$0 $1 = $2.$3;", GenScalarType(var.type()), var.name(),
+                           var.struct_base(), var.field())};
+}
+
+Status CheckVarName(absl::flat_hash_set<std::string_view>* var_names, std::string_view var_name,
+                    std::string_view var_desc) {
+  if (var_names->contains(var_name)) {
+    return error::InvalidArgument("$0 '$1' was already defined", var_desc, var_name);
+  }
+  var_names->insert(var_name);
+  return Status::OK();
+}
+
 }  // namespace
 
 StatusOr<std::vector<std::string>> GenPhysicalProbe(
@@ -331,7 +360,19 @@ StatusOr<std::vector<std::string>> GenPhysicalProbe(
     MOVE_BACK_STR_VEC(&code_lines, GenScalarVariable(var));
   }
 
+  for (const auto& var : probe.map_vars()) {
+    PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.name(), "MapVariable"));
+    code_lines.push_back(GenMapVariable(var));
+  }
+
+  for (const auto& var : probe.member_vars()) {
+    PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.name(), "MemberVariable"));
+    MoveBackStrVec(GenMemberVariable(var), &code_lines);
+  }
+
   for (const auto& var : probe.st_vars()) {
+    PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.name(), "StructVariable"));
+
     for (const auto& var_name : var.variable_names()) {
       if (var_name.name_oneof_case() != StructVariable::VariableName::NameOneofCase::kName) {
         continue;
@@ -343,12 +384,6 @@ StatusOr<std::vector<std::string>> GenPhysicalProbe(
       }
       // TODO(yzhao): Check variable types as well.
     }
-
-    if (var_names.contains(var.name())) {
-      return error::InvalidArgument("variable name '$0' was redefined", var.name());
-    }
-
-    var_names.insert(var.name());
 
     auto iter = structs.find(var.type());
     if (iter == structs.end()) {

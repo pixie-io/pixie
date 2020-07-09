@@ -98,6 +98,19 @@ constexpr char kProgram[] = R"proto(
                                 variable_names { name: "pid_start_time_ns" }
                                 variable_names { name: "var" }
                               }
+                              map_vars {
+                                name: "events_map_var"
+                                type: "event_t"
+                                map_name: "events"
+                                key_variable_name: "key"
+                              }
+                              member_vars {
+                                name: "event_i32"
+                                type: INT32
+                                struct_base: "events_map_var"
+                                is_struct_base_pointer: true
+                                field: "i32"
+                              }
                               map_stash_actions {
                                 map_name: "events"
                                 key_variable_name: "key"
@@ -109,7 +122,8 @@ constexpr char kProgram[] = R"proto(
                               }
                               printks { text: "hello world!" }
                               printks { scalar: "var" }
-                            })proto";
+                            }
+)proto";
 
 TEST(CodeGenBPFTest, AttachOnDummyExe) {
   Program program;
@@ -142,7 +156,6 @@ TEST(CodeGenBPFTest, AttachOnDummyExe) {
   ASSERT_OK(bcc_wrapper.AttachUProbe(spec));
 }
 
-// TODO(oazizi): This test does not belong here, since it encompasses AddDwarves() and GenProgram().
 TEST(CodeGenBPFTest, AttachGOIDProbe) {
   ir::logical::Probe goid_probe = GenGOIDProbe();
 
@@ -166,6 +179,8 @@ TEST(CodeGenBPFTest, AttachGOIDProbe) {
   EXPECT_THAT(spec, Field(&UProbeSpec::probe_fn, "probe_entry_runtime_casgstatus"));
 
   BCCWrapper bcc_wrapper;
+
+  PL_LOG_VAR(bcc_program.code);
 
   // TODO(yzhao): Move this and any other common code into a test fixture.
   ASSERT_OK(FindOrInstallLinuxHeaders({kDefaultHeaderSearchOrder}));

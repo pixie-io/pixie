@@ -61,7 +61,7 @@ TEST(CodeGenBPFTest, AttachDummyProgram) {
   //     variable_name: "f"
   //   }
   // }
-  ASSERT_NOT_OK(CompileProgram(logical_program));
+  ASSERT_OK(CompileProgram(logical_program));
 }
 
 }  // namespace dynamic_tracing

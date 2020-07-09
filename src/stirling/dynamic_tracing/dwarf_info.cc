@@ -432,7 +432,7 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
     var->set_key_variable_name(map_val.key_expr());
   }
 
-  // Unpack the map variable.
+  // Unpack the map variable's members.
   int i = 0;
   for (const auto& value_id : map_val.value_ids()) {
     const auto& field = struct_decl->fields(i++);
@@ -441,6 +441,7 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
     var->set_name(value_id);
     var->set_type(field.type().scalar());
     var->set_struct_base(map_var_name);
+    var->set_is_struct_base_pointer(true);
     var->set_field(field.name());
   }
 

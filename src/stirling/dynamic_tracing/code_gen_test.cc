@@ -182,6 +182,23 @@ TEST(GenPhysicalProbeTest, EntryProbe) {
   var->set_type(ScalarType::INT32);
   var->set_reg(Register::SP);
 
+  {
+    auto* var = probe.add_map_vars();
+    var->set_name("map_var1");
+    var->set_type("map_value_t");
+    var->set_map_name("values");
+    var->set_key_variable_name("var");
+  }
+
+  {
+    auto* var = probe.add_member_vars();
+    var->set_name("member_var1");
+    var->set_type(ScalarType::INT32);
+    var->set_struct_base("map_var1");
+    var->set_is_struct_base_pointer(true);
+    var->set_field("val");
+  }
+
   StructVariable* st_var = probe.add_st_vars();
 
   st_var->set_name("st_var");
@@ -206,6 +223,9 @@ TEST(GenPhysicalProbeTest, EntryProbe) {
       "int probe_entry(struct pt_regs* ctx) {",
       "uint32_t key = bpf_get_current_pid_tgid() >> 32;",
       "int32_t var = (int32_t)PT_REGS_SP(ctx);",
+      "struct map_value_t* map_var1 = values.lookup(&var);",
+      "if (map_var1 == NULL) { return 0; }",
+      "int32_t member_var1 = map_var1->val;",
       "struct socket_data_event_t st_var = {};",
       "st_var.i32 = var;",
       "test.update(&key, &var);",

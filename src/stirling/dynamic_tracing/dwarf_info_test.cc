@@ -607,12 +607,14 @@ probes: {
     name: "arg0"
     type: INT
     struct_base: "my_stash_ptr"
+    is_struct_base_pointer: true
     field: "arg0"
   }
   member_vars {
     name: "arg1"
     type: BOOL
     struct_base: "my_stash_ptr"
+    is_struct_base_pointer: true
     field: "arg1"
   }
   st_vars {

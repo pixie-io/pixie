@@ -69,6 +69,7 @@ message MapVariable {
   // The type of the struct returned by the map.
   string type = 2;
 
+  // The name of the BPF map to retrieve the value.
   string map_name = 3;
 
   // The builtin to generate the key value to access the map.
@@ -87,10 +88,14 @@ message MemberVariable {
   // Describes type of the value held by this ScalarVariable.
   shared.ScalarType type = 2;
 
+  // The name of the StructVariable that contains the field.
   string struct_base = 3;
 
+  // Indicate if the struct_base is a pointer.
+  bool is_struct_base_pointer = 4;
+
   // The builtin to generate the key value to access the map.
-  string field = 4;
+  string field = 5;
 }
 
 // Describes a struct variable whose fields are assigned values from other scalar variables.
@@ -166,7 +171,10 @@ message PhysicalProbe {
   // any StructVariables.
   repeated ScalarVariable vars = 3;
 
+  // A struct variable looked up from a map.
   repeated MapVariable map_vars = 8;
+
+  // A scalar variable assigned from one of the above struct variables.
   repeated MemberVariable member_vars = 9;
 
   // Defines how to create struct variables from the above scalar variables from inside BCC code.
