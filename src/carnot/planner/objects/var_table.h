@@ -72,6 +72,8 @@ class VarTable : public std::enable_shared_from_this<VarTable> {
 
   std::shared_ptr<VarTable> parent_scope() { return parent_scope_; }
 
+  const absl::flat_hash_map<std::string, QLObjectPtr>& scope_table() { return scope_table_; }
+
  protected:
   explicit VarTable(std::shared_ptr<VarTable> parent_scope) : parent_scope_(parent_scope) {}
 

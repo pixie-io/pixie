@@ -126,3 +126,20 @@ pl_cc_test(
         ":test_utils",
     ],
 )
+
+pl_cc_test(
+    name = "module_test",
+    srcs = ["module_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)
+pl_cc_test(
+    name = "var_table_test",
+    srcs = ["var_table_test.cc"],
+    deps = [
+        ":cc_library",
+        ":test_utils",
+    ],
+)

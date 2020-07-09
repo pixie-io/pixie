@@ -1,8 +1,8 @@
 #include <utility>
 
-#include "src/carnot/planner/compiler/var_table.h"
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/objects/test_utils.h"
+#include "src/carnot/planner/objects/var_table.h"
 
 namespace pl {
 namespace carnot {

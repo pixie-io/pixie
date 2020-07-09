@@ -1,4 +1,4 @@
-#include "src/carnot/planner/compiler/var_table.h"
+#include "src/carnot/planner/objects/var_table.h"
 #include "src/carnot/planner/objects/funcobject.h"
 
 namespace pl {

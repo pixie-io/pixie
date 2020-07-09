@@ -49,6 +49,12 @@ std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChild() {
       ir_graph_, compiler_state_, var_table_->CreateChild(), func_based_exec_, {}));
 }
 
+std::shared_ptr<ASTVisitor> ASTVisitorImpl::CreateModuleVisitor(
+    std::shared_ptr<VarTable> var_table) {
+  return std::shared_ptr<ASTVisitor>(
+      new ASTVisitorImpl(ir_graph_, compiler_state_, var_table, func_based_exec_, {}));
+}
+
 Status ASTVisitorImpl::InitGlobals() {
   // Populate the type objects
   PL_ASSIGN_OR_RETURN(auto string_type_object, TypeObject::Create(IRNodeType::kString, this));

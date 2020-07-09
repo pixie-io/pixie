@@ -25,6 +25,7 @@ namespace compiler {
 // Forward declare;
 class QLObject;
 using QLObjectPtr = std::shared_ptr<QLObject>;
+class VarTable;
 
 class ASTVisitor {
  public:
@@ -82,6 +83,15 @@ class ASTVisitor {
    */
   virtual Status ProcessExecFuncs(
       const std::vector<plannerpb::QueryRequest::FuncToExecute>& exec_funcs) = 0;
+
+  /**
+   * @brief Creates a child of this visitor specifically for use to parse modules.
+   * Any internal state will be stored in var_table.
+   *
+   * @param var_table the var table to use for internal parsing.
+   * @return std::shared_ptr<ASTVisitor> The Child Module Visitor.
+   */
+  virtual std::shared_ptr<ASTVisitor> CreateModuleVisitor(std::shared_ptr<VarTable> var_table) = 0;
 };
 
 }  // namespace compiler

@@ -70,13 +70,3 @@ pl_cc_test(
     srcs = ["analyzer_test.cc"],
     deps = [":cc_library"],
 )
-
-pl_cc_test(
-    name = "var_table_test",
-    srcs = ["var_table_test.cc"],
-    deps = [
-        ":cc_library",
-        "//src/carnot/planner/objects:test_utils",
-        ":test_utils",
-    ],
-)

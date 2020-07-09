@@ -33,6 +33,8 @@ enum class QLObjectType {
   kVisualization,
   kType,
   kFlags,
+  // General module type.
+  kModule,
 };
 
 class TypeDescriptor {
@@ -221,6 +223,13 @@ class QLObject {
 
   void AddSubscriptMethod(std::shared_ptr<FuncObject> func_object);
 
+  /**
+   * @brief Returns true if this Object has an attribute that's not a method.
+   *
+   * @param name the attribute name.
+   * @return true if object does have attribute.
+   * @return false if object does not have attribute.
+   */
   virtual bool HasNonMethodAttribute(std::string_view name) const {
     return attributes_.contains(name);
   }

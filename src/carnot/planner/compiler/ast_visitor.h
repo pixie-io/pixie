@@ -13,12 +13,12 @@
 #include <pypa/ast/tree_walker.hh>
 
 #include "src/carnot/planner/ast/ast_visitor.h"
-#include "src/carnot/planner/compiler/var_table.h"
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/ir/ast_utils.h"
 #include "src/carnot/planner/ir/ir_nodes.h"
 #include "src/carnot/planner/objects/dataframe.h"
 #include "src/carnot/planner/objects/pixie_module.h"
+#include "src/carnot/planner/objects/var_table.h"
 #include "src/carnot/planner/plannerpb/func_args.pb.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
@@ -66,12 +66,20 @@ class ASTVisitorImpl : public ASTVisitor {
       const absl::flat_hash_set<std::string>& reserved_names = {});
 
   /**
-   * @brief Creates a child AST Visitor from the top-level AST Visitor, sharing the graph,
-   * compiler_state, and creating a child var table.
+   * @brief Creates a child of this visitor, sharing the graph,
+   * compiler_state, and creates a vartable that is a child of this visitor's var_table.
    *
    * @return std::shared_ptr<ASTVisitorImpl>
    */
   std::shared_ptr<ASTVisitorImpl> CreateChild();
+
+  /**
+   * @brief Creates a child of this visitor, sharing the graph,
+   * compiler_state, but takes in an outside var_table. Used to parse modules.
+   *
+   * @return std::shared_ptr<ASTVisitor> The Child Module Visitor.
+   */
+  std::shared_ptr<ASTVisitor> CreateModuleVisitor(std::shared_ptr<VarTable> var_table) override;
 
   Status AddPixieModule() { return AddPixieModule(PixieModule::kPixieModuleObjName); }
 

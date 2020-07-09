@@ -19,6 +19,77 @@ namespace carnot {
 namespace planner {
 namespace compiler {
 
+constexpr char kRegistryInfoProto[] = R"proto(
+udtfs {
+  name: "GetUDAList"
+  executor: UDTF_ONE_KELVIN
+  relation {
+    columns {
+      column_name: "name"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "return_type"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "args"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+  }
+}
+udtfs {
+  name: "GetUDFList"
+  executor: UDTF_ONE_KELVIN
+  relation {
+    columns {
+      column_name: "name"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "return_type"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "args"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+  }
+}
+udtfs {
+  name: "GetUDTFList"
+  executor: UDTF_ONE_KELVIN
+  relation {
+    columns {
+      column_name: "name"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "executor"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "init_args"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+    columns {
+      column_name: "output_relation"
+      column_type: STRING
+      column_semantic_type: ST_NONE
+    }
+  }
+}
+)proto";
+
 class QLObjectTest : public OperatorTests {
  protected:
   void SetUp() override {
@@ -26,6 +97,7 @@ class QLObjectTest : public OperatorTests {
 
     info = std::make_shared<RegistryInfo>();
     udfspb::UDFInfo info_pb;
+    CHECK(google::protobuf::TextFormat::MergeFromString(kRegistryInfoProto, &info_pb));
     PL_CHECK_OK(info->Init(info_pb));
     compiler_state =
         std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
