@@ -35,7 +35,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     marginLeft: theme.spacing(2),
   },
   main: {
-    marginLeft: theme.spacing(8),
+    marginLeft: theme.spacing(6),
     flex: 1,
     minHeight: 0,
     borderTopStyle: 'solid',

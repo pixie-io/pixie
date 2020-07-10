@@ -74,6 +74,44 @@ const ClusterBanner = () => {
 const Vizier = () => {
   const showSnackbar = useSnackbar();
 
+  const { selectedCluster } = React.useContext(ClusterContext);
+  const { loading, error, data } = useQuery(LIST_CLUSTERS, { pollInterval: 2500, fetchPolicy: 'network-only' });
+  const clusters = data?.clusters || [];
+  const cluster = clusters.find((c) => c.id === selectedCluster);
+
+  if (loading) { return <div>Loading...</div>; }
+
+  const errMsg = error?.message;
+  if (errMsg) {
+    // This is an error with pixie cloud, it is probably not relevant to the user.
+    // Show a generic error message instead.
+    showSnackbar({ message: 'There was a problem connecting to Pixie', autoHideDuration: 5000 });
+    // eslint-disable-next-line no-console
+    console.error(errMsg);
+  }
+
+  if (clusters.length === 0) {
+    return <DeployInstructions />;
+  }
+
+  const status: ClusterStatus = cluster?.status || 'CS_UNKNOWN';
+
+  return (
+    <VizierGRPCClientProvider
+      clusterID={selectedCluster}
+      passthroughEnabled={cluster.vizierConfig.passthroughEnabled}
+      clusterStatus={errMsg ? 'CS_UNKNOWN' : status}
+    >
+      <ScriptsContextProvider>
+        <LiveView />
+      </ScriptsContextProvider>
+    </VizierGRPCClientProvider>
+  );
+};
+
+export default function WithClusterBanner() {
+  const showSnackbar = useSnackbar();
+
   const [clusterId, setClusterId] = storage.useSessionStorage(storage.CLUSTER_ID_KEY, '');
   const { loading, error, data } = useQuery(LIST_CLUSTERS, { pollInterval: 2500, fetchPolicy: 'network-only' });
   const clusters = data?.clusters || [];
@@ -100,40 +138,20 @@ const Vizier = () => {
     console.error(errMsg);
   }
 
-  if (clusters.length === 0) {
-    return <DeployInstructions />;
-  }
-
-  const status: ClusterStatus = cluster?.status || 'CS_UNKNOWN';
-
-  if (cluster?.id && clusterId !== cluster?.id) {
-    setClusterId(cluster.id);
+  if (clusters.length > 0) {
+    if (cluster?.id && clusterId !== cluster?.id) {
+      setClusterId(cluster.id);
+    }
   }
 
   return (
     <ClusterContext.Provider value={context}>
-      <VizierGRPCClientProvider
-        clusterID={cluster.id}
-        passthroughEnabled={cluster.vizierConfig.passthroughEnabled}
-        clusterStatus={errMsg ? 'CS_UNKNOWN' : status}
-      >
-        <ScriptsContextProvider>
-          <LiveView />
-        </ScriptsContextProvider>
-      </VizierGRPCClientProvider>
-    </ClusterContext.Provider>
-  );
-};
-
-export default function withClusterBanner() {
-  return (
-    <>
       <ClusterBanner />
       <Switch>
         <Route path='/admin' component={AdminView} />
         <Route path='/live' component={Vizier} />
         <Redirect from='/*' to='/live' />
       </Switch>
-    </>
+    </ClusterContext.Provider>
   );
 }

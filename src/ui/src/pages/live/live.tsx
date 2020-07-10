@@ -39,7 +39,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     ...scrollbarStyles(theme),
   },
   content: {
-    marginLeft: theme.spacing(8),
+    marginLeft: theme.spacing(6),
     display: 'flex',
     flex: 1,
     minWidth: 0,

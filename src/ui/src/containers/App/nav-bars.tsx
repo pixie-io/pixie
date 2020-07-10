@@ -21,11 +21,11 @@ const styles = ({ spacing, palette }: Theme) => createStyles({
   },
   sidebarToggle: {
     position: 'absolute',
-    width: spacing(8),
+    width: spacing(6),
     left: 0,
   },
   sidebarToggleSpacer: {
-    width: spacing(8),
+    width: spacing(6),
   },
   icon: {
     color: palette.foreground.two,

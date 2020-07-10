@@ -3,10 +3,10 @@ import * as React from 'react';
 import SvgIcon, { SvgIconProps } from '@material-ui/core/SvgIcon';
 
 const NamespaceIcon = (props: SvgIconProps) => (
-  <SvgIcon {...props} viewBox='0 0 32 32'>
+  <SvgIcon {...props} viewBox='0 0 24 24'>
     <path
       fill='none'
-      d='M26.0002 7.04712H6.03516V24.4533H26.0002V7.04712Z'
+      d='M21.45 2H2V22H21.45V2Z'
       stroke='#B2B5BB'
       strokeWidth='1.04071'
       strokeMiterlimit='10'
