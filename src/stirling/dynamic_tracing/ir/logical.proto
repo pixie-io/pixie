@@ -106,12 +106,14 @@ message Probe {
 // Example: The simplest logical program will have only a single probe (no outputs, no maps),
 // which will then get transformed into a program with multiple probes, maps and outputs.
 message Program {
+  string binary_path = 1;
+
   // The programs outputs to a table.
-  repeated shared.Output outputs = 1;
+  repeated shared.Output outputs = 2;
 
   // Maps holding shared state across probes.
-  repeated shared.Map maps = 2;
+  repeated shared.Map maps = 3;
 
   // All the probes of the program.
-  repeated Probe probes = 3;
+  repeated Probe probes = 4;
 }

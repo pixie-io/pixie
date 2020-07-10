@@ -143,7 +143,7 @@ TEST(CodeGenBPFTest, AttachOnDummyExe) {
       BazelBinTestFilePath("src/stirling/obj_tools/testdata/dummy_exe");
 
   // Reset the binary path.
-  program.mutable_probes(0)->mutable_trace_point()->set_binary_path(dummy_exe_path);
+  program.set_binary_path(dummy_exe_path);
 
   ASSERT_OK_AND_ASSIGN(BCCProgram bcc_program, GenProgram(program));
   ASSERT_THAT(bcc_program.uprobe_specs, SizeIs(1));
@@ -166,14 +166,11 @@ TEST(CodeGenBPFTest, AttachOnDummyExe) {
 }
 
 TEST(CodeGenBPFTest, AttachGOIDProbe) {
-  ir::logical::Probe goid_probe = GenGOIDProbe();
-
-  goid_probe.mutable_trace_point()->set_binary_path(
-      pl::testing::TestFilePath(FLAGS_dummy_go_binary));
-
   ir::logical::Program intermediate_program;
+
+  intermediate_program.set_binary_path(pl::testing::TestFilePath(FLAGS_dummy_go_binary));
   intermediate_program.add_maps()->CopyFrom(GenGOIDMap());
-  intermediate_program.add_probes()->CopyFrom(std::move(goid_probe));
+  intermediate_program.add_probes()->CopyFrom(GenGOIDProbe());
 
   ASSERT_OK_AND_ASSIGN(ir::physical::Program program, AddDwarves(intermediate_program));
 

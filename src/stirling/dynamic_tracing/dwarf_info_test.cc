@@ -17,9 +17,9 @@ using ::google::protobuf::util::MessageDifferencer;
 using ::pl::testing::proto::EqualsProto;
 
 constexpr std::string_view kEntryProbeIn = R"(
+binary_path: "$0"
 probes: {
   trace_point: {
-    binary_path: "$0"
     symbol: "main.MixedArgTypes"
     type: ENTRY
   }
@@ -51,9 +51,9 @@ probes: {
 )";
 
 constexpr std::string_view kEntryProbeOut = R"(
+binary_path: "$0"
 probes: {
   trace_point: {
-    binary_path: "$0"
     symbol: "main.MixedArgTypes"
     type: ENTRY
   }
@@ -139,9 +139,9 @@ probes: {
 )";
 
 constexpr std::string_view kReturnProbeIn = R"(
+binary_path: "$0"
 probes: {
   trace_point: {
-    binary_path: "$0"
     symbol: "main.MixedArgTypes"
     type: RETURN
   }
@@ -157,9 +157,9 @@ probes: {
 )";
 
 constexpr std::string_view kReturnProbeOut = R"(
+binary_path: "$0"
 probes: {
   trace_point: {
-    binary_path: "$0"
     symbol: "main.MixedArgTypes"
     type: RETURN
   }
@@ -213,9 +213,9 @@ vars {
 )";
 
 constexpr std::string_view kNestedArgProbeIn = R"(
+binary_path: "$0"
 probes: {
   trace_point: {
-    binary_path: "$0"
     symbol: "main.PointerWrapperWrapperWrapperFunc"
     type: ENTRY
   }
@@ -231,9 +231,9 @@ probes: {
 )";
 
 constexpr std::string_view kNestedArgProbeOut = R"(
+binary_path: "$0"
 probes: {
   trace_point: {
-    binary_path: "$0"
     symbol: "main.PointerWrapperWrapperWrapperFunc"
     type: ENTRY
   }
@@ -311,6 +311,7 @@ probes: {
 )";
 
 constexpr std::string_view kActionProbeIn = R"(
+binary_path: "$0"
 maps {
   name: "my_stash"
 }
@@ -322,7 +323,6 @@ outputs {
 }
 probes: {
   trace_point: {
-    binary_path: "$0"
     symbol: "main.MixedArgTypes"
     type: ENTRY
   }
@@ -354,7 +354,6 @@ probes: {
 }
 probes: {
   trace_point: {
-    binary_path: "$0"
     symbol: "main.MixedArgTypes"
     type: RETURN
   }
@@ -373,6 +372,7 @@ probes: {
 )";
 
 constexpr std::string_view kActionProbeOut = R"(
+binary_path: "$0"
 structs {
   name: "my_stash_value_t"
   fields {
@@ -457,7 +457,6 @@ outputs {
 }
 probes: {
   trace_point: {
-    binary_path: "$0"
     symbol: "main.MixedArgTypes"
     type: ENTRY
   }
@@ -572,7 +571,6 @@ probes: {
 }
 probes: {
   trace_point: {
-    binary_path: "$0"
     symbol: "main.MixedArgTypes"
     type: RETURN
   }

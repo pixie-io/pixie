@@ -93,6 +93,9 @@ void TransformLogicalProbe(const ir::logical::Probe& input_probe, ir::logical::P
 StatusOr<ir::logical::Program> TransformLogicalProgram(const ir::logical::Program& input_program) {
   ir::logical::Program out;
 
+  // Copy the binary path.
+  out.set_binary_path(input_program.binary_path());
+
   // Copy all explicitly declared output buffers.
   for (const auto& o : input_program.outputs()) {
     auto* output = out.add_outputs();
@@ -107,15 +110,7 @@ StatusOr<ir::logical::Program> TransformLogicalProgram(const ir::logical::Progra
 
   if (!input_program.probes().empty()) {
     out.add_maps()->CopyFrom(GenGOIDMap());
-    ir::logical::Probe goid_probe = GenGOIDProbe();
-
-    // Specify the same binary path as the first probe's target binary.
-    //
-    // TODO(yzhao): binary_path will be moved to the top-level of Program message.
-    goid_probe.mutable_trace_point()->set_binary_path(
-        input_program.probes(0).trace_point().binary_path());
-
-    out.add_probes()->CopyFrom(std::move(goid_probe));
+    out.add_probes()->CopyFrom(GenGOIDProbe());
   }
 
   for (const auto& p : input_program.probes()) {

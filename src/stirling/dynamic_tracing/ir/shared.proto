@@ -4,8 +4,7 @@ package pl.stirling.dynamic_tracing.ir.shared;
 
 // Describes where to attach a probe.
 message TracePoint {
-  string binary_path = 1;
-  string symbol = 2;
+  string symbol = 1;
 
   enum Type {
     // Only for logical IR.
@@ -19,7 +18,7 @@ message TracePoint {
   }
 
   // This has to be LOGICAL for logical IR.
-  Type type = 3;
+  Type type = 2;
 }
 
 // All enum values must be consecutive, as they are used as array index in codegen.

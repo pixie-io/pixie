@@ -196,15 +196,17 @@ message Probe {
 
 // This describes a complete BPF program.
 message Program {
+  string binary_path = 1;
+
   // Describes the global structs.
-  repeated Struct structs = 1;
+  repeated Struct structs = 2;
 
   // Describes BPF maps.
-  repeated shared.Map maps = 2;
+  repeated shared.Map maps = 3;
 
   // Describes perf buffers.
-  repeated shared.Output outputs = 3;
+  repeated shared.Output outputs = 4;
 
   // Describes probe functions.
-  repeated Probe probes = 4;
+  repeated Probe probes = 5;
 }

@@ -14,10 +14,10 @@ using ::google::protobuf::TextFormat;
 using ::pl::testing::proto::EqualsProto;
 
 constexpr std::string_view kLogicalProgram = R"(
+binary_path: "$0"
 probes: {
   name: "probe0"
   trace_point: {
-    binary_path: "$0"
     symbol: "main.MixedArgTypes"
     type: LOGICAL
   }
@@ -57,6 +57,7 @@ probes: {
 )";
 
 constexpr std::string_view kTransformedProgram = R"proto(
+binary_path: "$0"
 outputs {
   name: "probe0_table"
 }
@@ -69,7 +70,6 @@ maps {
 probes {
   name: "probe_entry_runtime_casgstatus"
   trace_point {
-    binary_path: "$0"
     symbol: "runtime.casgstatus"
     type: ENTRY
   }
@@ -100,7 +100,6 @@ probes {
 probes {
   name: "probe0_entry"
   trace_point {
-    binary_path: "$0"
     symbol: "main.MixedArgTypes"
     type: ENTRY
   }
@@ -142,7 +141,6 @@ probes {
 probes {
   name: "probe0_return"
   trace_point {
-    binary_path: "$0"
     symbol: "main.MixedArgTypes"
     type: RETURN
   }

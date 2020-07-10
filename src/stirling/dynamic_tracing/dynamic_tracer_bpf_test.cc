@@ -22,10 +22,10 @@ using ::testing::EndsWith;
 using ::testing::Field;
 
 constexpr char kLogicalProgram[] = R"(
+binary_path: "$0"
 probes: {
   name: "dummy_probe_CrossScale"
   trace_point: {
-    binary_path: "$0"
     symbol: "main.(*Vertex).CrossScale"
     type: LOGICAL
   }

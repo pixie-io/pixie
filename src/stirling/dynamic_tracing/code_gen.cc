@@ -416,10 +416,10 @@ StatusOr<std::vector<std::string>> GenProbe(
 
 namespace {
 
-UProbeSpec GetUProbeSpec(const Probe& probe) {
+UProbeSpec GetUProbeSpec(const std::string& binary_path, const Probe& probe) {
   UProbeSpec spec;
 
-  spec.binary_path = probe.trace_point().binary_path();
+  spec.binary_path = binary_path;
   spec.symbol = probe.trace_point().symbol();
   DCHECK(probe.trace_point().type() == TracePoint::ENTRY ||
          probe.trace_point().type() == TracePoint::RETURN);
@@ -561,7 +561,7 @@ StatusOr<BCCProgram> GenProgram(const Program& program) {
   res.code = absl::StrJoin(code_lines, "\n");
 
   for (const auto& probe : program.probes()) {
-    res.uprobe_specs.push_back(GetUProbeSpec(probe));
+    res.uprobe_specs.push_back(GetUProbeSpec(program.binary_path(), probe));
   }
 
   return res;
