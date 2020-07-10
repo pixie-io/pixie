@@ -1,5 +1,7 @@
 #include "src/stirling/dynamic_tracing/code_gen.h"
 
+#include <google/protobuf/text_format.h>
+
 #include "src/common/testing/testing.h"
 #include "src/stirling/testing/testing.h"
 
@@ -7,6 +9,8 @@ namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
 
+using ::google::protobuf::TextFormat;
+using ::pl::stirling::bpf_tools::UProbeSpec;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::OutputAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::Printk;
@@ -18,8 +22,12 @@ using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
 using ::pl::stirling::dynamic_tracing::ir::shared::BPFHelper;
 using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
 using ::pl::stirling::dynamic_tracing::ir::shared::VariableType;
+using ::pl::testing::proto::EqualsProto;
 using ::testing::ElementsAre;
 using ::testing::ElementsAreArray;
+using ::testing::EndsWith;
+using ::testing::Field;
+using ::testing::SizeIs;
 using ::testing::StrEq;
 
 TEST(GenStructTest, Output) {
@@ -167,70 +175,118 @@ TEST(GenOutputActionTest, Variables) {
   EXPECT_THAT(GenOutputAction(action), StrEq("test.perf_submit(ctx, &foo, sizeof(foo));"));
 }
 
-TEST(GenProbeTest, EntryProbe) {
-  Probe probe;
+TEST(GenProgramTest, SpecsAndCode) {
+  const std::string program_protobuf = R"proto(
+                                       binary_path: "target_binary_path"
+                                       structs {
+                                         name: "socket_data_event_t"
+                                         fields {
+                                           name: "i32"
+                                           type { scalar: INT32 }
+                                         }
+                                       }
+                                       probes {
+                                         name: "probe_entry"
+                                         trace_point {
+                                           symbol: "target_symbol"
+                                           type: ENTRY
+                                         }
+                                         vars {
+                                           name: "key"
+                                           type: UINT32
+                                           builtin: TGID
+                                         }
+                                         vars {
+                                           name: "var"
+                                           type: INT32
+                                           reg: SP
+                                         }
+                                         st_vars {
+                                           name: "st_var"
+                                           type: "socket_data_event_t"
+                                           field_assignments {
+                                             field_name: "i32"
+                                             variable_name: "var"
+                                           }
+                                         }
+                                         map_stash_actions {
+                                           map_name: "test"
+                                           key_variable_name: "key"
+                                           value_variable_name: "var"
+                                         }
+                                         output_actions {
+                                           perf_buffer_name: "data_events"
+                                           variable_name: "st_var"
+                                         }
+                                         printks { scalar: "var" }
+                                       }
+                                       )proto";
 
-  probe.set_name("probe_entry");
+  ir::physical::Program program;
 
-  ScalarVariable* var = nullptr;
+  ASSERT_TRUE(TextFormat::ParseFromString(program_protobuf, &program));
 
-  var = probe.add_vars();
-  var->set_name("key");
-  var->set_type(ScalarType::UINT32);
-  var->set_builtin(BPFHelper::TGID);
+  ASSERT_OK_AND_ASSIGN(const BCCProgram bcc_program, GenProgram(program));
 
-  var = probe.add_vars();
-  var->set_name("var");
-  var->set_type(ScalarType::INT32);
-  var->set_reg(Register::SP);
+  ASSERT_THAT(bcc_program.uprobes, SizeIs(1));
 
-  {
-    auto* var = probe.add_map_vars();
-    var->set_name("map_var1");
-    var->set_type("map_value_t");
-    var->set_map_name("values");
-    var->set_key_variable_name("var");
-  }
+  const auto& spec = bcc_program.uprobes[0].spec;
 
-  {
-    auto* var = probe.add_member_vars();
-    var->set_name("member_var1");
-    var->set_type(ScalarType::INT32);
-    var->set_struct_base("map_var1");
-    var->set_is_struct_base_pointer(true);
-    var->set_field("val");
-  }
+  EXPECT_THAT(spec, Field(&UProbeSpec::binary_path, "target_binary_path"));
+  EXPECT_THAT(spec, Field(&UProbeSpec::symbol, "target_symbol"));
+  EXPECT_THAT(spec, Field(&UProbeSpec::attach_type, bpf_tools::BPFProbeAttachType::kEntry));
+  EXPECT_THAT(spec, Field(&UProbeSpec::probe_fn, "probe_entry"));
 
-  StructVariable* st_var = probe.add_st_vars();
+  ASSERT_THAT(bcc_program.uprobes[0].perf_buffer_specs, SizeIs(1));
 
-  st_var->set_name("st_var");
-  st_var->set_type("socket_data_event_t");
+  const auto& perf_buffer_name = bcc_program.uprobes[0].perf_buffer_specs[0].name;
+  const auto& perf_buffer_output = bcc_program.uprobes[0].perf_buffer_specs[0].output;
 
-  auto* fa = st_var->add_field_assignments();
-  fa->set_field_name("i32");
-  fa->set_variable_name("var");
+  EXPECT_THAT(perf_buffer_name, "data_events");
+  EXPECT_THAT(perf_buffer_output, EqualsProto(
+                                      R"proto(
+                                      name: "socket_data_event_t"
+                                      fields {
+                                        name: "i32"
+                                        type {
+                                          scalar: INT32
+                                        }
+                                      }
+                                      )proto"));
 
-  MapStashAction* map_stash_action = probe.add_map_stash_actions();
-
-  map_stash_action->set_map_name("test");
-  map_stash_action->set_key_variable_name("key");
-  map_stash_action->set_value_variable_name("var");
-
-  OutputAction* output_action = probe.add_output_actions();
-
-  output_action->set_perf_buffer_name("data_events");
-  output_action->set_variable_name("st_var");
-
-  Printk* printk = probe.add_printks();
-  printk->set_scalar("var");
-
-  std::vector<std::string> expected = {
+  const std::vector<std::string> expected_code_lines = {
+      "#include <linux/ptrace.h>",
+      "#include <linux/sched.h>",
+      "#ifndef __inline",
+      "#ifdef SUPPORT_BPF2BPF_CALL",
+      "#define __inline",
+      "#else",
+      "#define __inline inline __attribute__((__always_inline__))",
+      "#endif",
+      "#endif",
+      "static __inline uint64_t pl_nsec_to_clock_t(uint64_t x) {",
+      "return div_u64(x, NSEC_PER_SEC / USER_HZ);",
+      "}",
+      "static __inline uint64_t pl_tgid_start_time() {",
+      "struct task_struct* task_group_leader = ((struct "
+      "task_struct*)bpf_get_current_task())->group_leader;",
+      "#if LINUX_VERSION_CODE >= 328960",
+      "return pl_nsec_to_clock_t(task_group_leader->start_boottime);",
+      "#else",
+      "return pl_nsec_to_clock_t(task_group_leader->real_start_time);",
+      "#endif",
+      "}",
+      "struct socket_data_event_t {",
+      "  int32_t i32;",
+      "};",
+      "static __inline int64_t pl_goid() {",
+      "uint64_t current_pid_tgid = bpf_get_current_pid_tgid();",
+      "const struct pid_goid_map_value_t* goid_ptr = pid_goid_map.lookup(&current_pid_tgid);",
+      "return (goid_ptr == NULL) ? -1 : goid_ptr->goid_;",
+      "}",
       "int probe_entry(struct pt_regs* ctx) {",
       "uint32_t key = bpf_get_current_pid_tgid() >> 32;",
       "int32_t var = (int32_t)PT_REGS_SP(ctx);",
-      "struct map_value_t* map_var1 = values.lookup(&var);",
-      "if (map_var1 == NULL) { return 0; }",
-      "int32_t member_var1 = map_var1->val;",
       "struct socket_data_event_t st_var = {};",
       "st_var.i32 = var;",
       "test.update(&key, &var);",
@@ -240,15 +296,8 @@ TEST(GenProbeTest, EntryProbe) {
       "}",
   };
 
-  Struct st;
-  st.set_name("socket_data_event_t");
-
-  Struct::Field* field = st.add_fields();
-  field->set_name("i32");
-  field->mutable_type()->set_scalar(ScalarType::INT32);
-
-  absl::flat_hash_map<std::string_view, const Struct*> structs = {{st.name(), &st}};
-  ASSERT_OK_AND_THAT(GenProbe(structs, probe), ElementsAreArray(expected));
+  std::vector<std::string> code_lines = absl::StrSplit(bcc_program.code, "\n");
+  EXPECT_THAT(code_lines, ElementsAreArray(expected_code_lines));
 }
 
 }  // namespace dynamic_tracing

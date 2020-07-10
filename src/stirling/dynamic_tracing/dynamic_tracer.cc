@@ -18,8 +18,9 @@ Status DeployBCCProgram(const dynamic_tracing::BCCProgram& bcc_program,
                         bpf_tools::BCCWrapper* bcc_wrapper) {
   PL_RETURN_IF_ERROR(bcc_wrapper->InitBPFProgram(bcc_program.code));
 
-  for (const auto& spec : bcc_program.uprobe_specs) {
-    PL_RETURN_IF_ERROR(bcc_wrapper->AttachUProbe(spec));
+  for (const auto& uprobe : bcc_program.uprobes) {
+    PL_RETURN_IF_ERROR(bcc_wrapper->AttachUProbe(uprobe.spec));
+    // TODO(yzhao): Also open the perf buffers.
   }
 
   return Status::OK();

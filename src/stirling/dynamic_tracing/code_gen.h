@@ -35,14 +35,17 @@ StatusOr<std::vector<std::string>> GenMapStashAction(const ir::physical::MapStas
 // Returns the code that submits variables to a perf buffer.
 std::string GenOutputAction(const ir::physical::OutputAction& action);
 
-// Returns the BCC probe function code.
-StatusOr<std::vector<std::string>> GenProbe(
-    const absl::flat_hash_map<std::string_view, const ir::physical::Struct*>& structs,
-    const ir::physical::Probe& probe);
-
 struct BCCProgram {
+  struct UProbe {
+    bpf_tools::UProbeSpec spec;
+    struct PerfBufferSpec {
+      std::string name;
+      ir::physical::Struct output;
+    };
+    std::vector<PerfBufferSpec> perf_buffer_specs;
+  };
   // TODO(yzhao): We probably need kprobe_specs as well.
-  std::vector<bpf_tools::UProbeSpec> uprobe_specs;
+  std::vector<UProbe> uprobes;
   std::string code;
 };
 

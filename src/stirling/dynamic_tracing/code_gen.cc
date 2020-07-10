@@ -77,6 +77,35 @@ const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypePrintfFormatC
 };
 // clang-format on
 
+// Accepts a program of physical IR, and produces BCC code. Additionally, keeps a list of metadata
+// that can be used for other operations.
+class BCCCodeGenerator {
+ public:
+  explicit BCCCodeGenerator(const ir::physical::Program& program) : program_(program) {}
+
+  // Generates BCC code lines from the input program.
+  StatusOr<std::vector<std::string>> GenerateCodeLines();
+
+  // Returns the definition of a StructVariable, or null_opt if not found.
+  std::optional<const Struct*> FindStructVariable(std::string_view probe_name,
+                                                  std::string_view st_var_name) const;
+
+ private:
+  // Generates the code for a physical probe.
+  StatusOr<std::vector<std::string>> GenerateProbe(const Probe& probe);
+
+  const ir::physical::Program& program_;
+
+  // Map from Struct names to their definition.
+  absl::flat_hash_map<std::string_view, const ir::physical::Struct*> structs_;
+
+  // Map from StructVariable names to their definitions, for every probe.
+  // The top-level key is probe name.
+  absl::flat_hash_map<std::string_view,
+                      absl::flat_hash_map<std::string_view, const ir::physical::Struct*>>
+      struct_variables_;
+};
+
 std::string_view GenScalarType(ScalarType type) {
   auto iter = kScalarTypeToCType.find(type);
   if (iter == kScalarTypeToCType.end()) {
@@ -331,8 +360,7 @@ Status CheckVarName(absl::flat_hash_set<std::string_view>* var_names, std::strin
 
 }  // namespace
 
-StatusOr<std::vector<std::string>> GenProbe(
-    const absl::flat_hash_map<std::string_view, const Struct*>& structs, const Probe& probe) {
+StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& probe) {
   if (probe.name().empty()) {
     return error::InvalidArgument("Probe's name cannot be empty");
   }
@@ -372,11 +400,15 @@ StatusOr<std::vector<std::string>> GenProbe(
       // TODO(yzhao): Check variable types as well.
     }
 
-    auto iter = structs.find(var.type());
-    if (iter == structs.end()) {
-      return error::InvalidArgument("Struct name '$0' referenced in variable '$1' was not defined",
+    auto iter = structs_.find(var.type());
+    if (iter == structs_.end()) {
+      return error::InvalidArgument("Struct '$0' referenced in variable '$1' was not defined",
                                     var.type(), var.name());
     }
+
+    // Record variable and its type definition.
+    struct_variables_[probe.name()][var.name()] = iter->second;
+
     MOVE_BACK_STR_VEC(&code_lines, GenStructVariable(*iter->second, var));
   }
 
@@ -412,6 +444,21 @@ StatusOr<std::vector<std::string>> GenProbe(
   code_lines.push_back("}");
 
   return code_lines;
+}
+
+std::optional<const ir::physical::Struct*> BCCCodeGenerator::FindStructVariable(
+    std::string_view probe_name, std::string_view st_var_name) const {
+  auto probe_iter = struct_variables_.find(probe_name);
+  if (probe_iter == struct_variables_.end()) {
+    return std::nullopt;
+  }
+
+  auto st_iter = probe_iter->second.find(st_var_name);
+  if (st_iter == probe_iter->second.end()) {
+    return std::nullopt;
+  }
+
+  return st_iter->second;
 }
 
 namespace {
@@ -504,28 +551,26 @@ std::vector<std::string> GenUtilFNs() {
   return code_lines;
 }
 
-StatusOr<std::vector<std::string>> GenProgramCodeLines(const Program& program) {
+StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateCodeLines() {
   std::vector<std::string> code_lines;
 
   MoveBackStrVec(GenIncludes(), &code_lines);
   MoveBackStrVec(GenMacros(), &code_lines);
   MoveBackStrVec(GenUtilFNs(), &code_lines);
 
-  absl::flat_hash_map<std::string_view, const Struct*> structs;
-
-  for (const auto& st : program.structs()) {
+  for (const auto& st : program_.structs()) {
     MOVE_BACK_STR_VEC(&code_lines, GenStruct(st));
-    structs[st.name()] = &st;
+    structs_[st.name()] = &st;
   }
 
-  for (const auto& map : program.maps()) {
+  for (const auto& map : program_.maps()) {
     if (map.key_type().type_oneof_case() == VariableType::TypeOneofCase::kStructType &&
-        !structs.contains(map.key_type().struct_type())) {
+        !structs_.contains(map.key_type().struct_type())) {
       return error::InvalidArgument("Struct key type '$0' referenced in map '$1' was not defined",
                                     map.key_type().struct_type(), map.name());
     }
     if (map.value_type().type_oneof_case() == VariableType::TypeOneofCase::kStructType &&
-        !structs.contains(map.value_type().struct_type())) {
+        !structs_.contains(map.value_type().struct_type())) {
       return error::InvalidArgument("Struct key type '$0' referenced in map '$1' was not defined",
                                     map.value_type().struct_type(), map.name());
     }
@@ -535,9 +580,9 @@ StatusOr<std::vector<std::string>> GenProgramCodeLines(const Program& program) {
   // goid() accesses BPF map.
   MoveBackStrVec(GenGOID(), &code_lines);
 
-  for (const auto& output : program.outputs()) {
+  for (const auto& output : program_.outputs()) {
     if (output.type().type_oneof_case() == VariableType::TypeOneofCase::kStructType &&
-        !structs.contains(output.type().struct_type())) {
+        !structs_.contains(output.type().struct_type())) {
       return error::InvalidArgument(
           "Struct key type '$0' referenced in output '$1' was not defined",
           output.type().struct_type(), output.name());
@@ -545,8 +590,8 @@ StatusOr<std::vector<std::string>> GenProgramCodeLines(const Program& program) {
     code_lines.push_back(GenOutput(output));
   }
 
-  for (const auto& probe : program.probes()) {
-    MOVE_BACK_STR_VEC(&code_lines, GenProbe(structs, probe));
+  for (const auto& probe : program_.probes()) {
+    MOVE_BACK_STR_VEC(&code_lines, GenerateProbe(probe));
   }
 
   return code_lines;
@@ -557,11 +602,31 @@ StatusOr<std::vector<std::string>> GenProgramCodeLines(const Program& program) {
 StatusOr<BCCProgram> GenProgram(const Program& program) {
   BCCProgram res;
 
-  PL_ASSIGN_OR_RETURN(std::vector<std::string> code_lines, GenProgramCodeLines(program));
+  BCCCodeGenerator generator(program);
+  PL_ASSIGN_OR_RETURN(std::vector<std::string> code_lines, generator.GenerateCodeLines());
   res.code = absl::StrJoin(code_lines, "\n");
 
   for (const auto& probe : program.probes()) {
-    res.uprobe_specs.push_back(GetUProbeSpec(program.binary_path(), probe));
+    BCCProgram::UProbe uprobe;
+
+    uprobe.spec = GetUProbeSpec(program.binary_path(), probe);
+
+    for (const auto& output : probe.output_actions()) {
+      BCCProgram::UProbe::PerfBufferSpec pf_spec;
+
+      pf_spec.name = output.perf_buffer_name();
+
+      auto struct_opt = generator.FindStructVariable(probe.name(), output.variable_name());
+      if (!struct_opt.has_value()) {
+        return error::InvalidArgument("Probe '$0' does not define StructVariable '$1'",
+                                      probe.name(), output.variable_name());
+      }
+      pf_spec.output = *struct_opt.value();
+
+      uprobe.perf_buffer_specs.push_back(std::move(pf_spec));
+    }
+
+    res.uprobes.push_back(std::move(uprobe));
   }
 
   return res;
