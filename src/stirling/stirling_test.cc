@@ -36,6 +36,7 @@ using pl::types::TabletID;
 using pl::types::Time64NSValue;
 
 using pl::ArrayView;
+using pl::Status;
 
 // Test arguments, from the command line
 DEFINE_uint64(kRNGSeed, 377, "Random Seed");
@@ -44,6 +45,9 @@ DEFINE_uint32(kNumIterMin, 10, "Min number of iterations");
 DEFINE_uint32(kNumIterMax, 20, "Max number of iterations");
 DEFINE_uint64(kNumProcessedRequirement, 5000,
               "Number of records required to be processed before test is allowed to end");
+
+namespace pl {
+namespace stirling {
 
 // This is the duration for which a subscription will be valid.
 constexpr std::chrono::milliseconds kDurationPerIter{500};
@@ -355,3 +359,26 @@ TEST_F(StirlingTest, no_data_callback_defined) {
   run_thread.join();
 }
 
+TEST_F(StirlingTest, dynamic_trace_api) {
+  Stirling* stirling = GetStirling();
+  Status s;
+
+  // Checking status of non-existant trace should return NOT_FOUND.
+  s = stirling->CheckDynamicTraceStatus(/* trace_id */ 1);
+  EXPECT_EQ(s.code(), pl::statuspb::Code::NOT_FOUND);
+
+  // Checking status of existant trace should return OK.
+  dynamic_tracing::ir::logical::Program trace_program;
+  uint64_t trace_id = stirling->RegisterDynamicTrace(trace_program);
+  s = stirling->CheckDynamicTraceStatus(trace_id);
+  EXPECT_OK(s);
+
+  // OK state should persist.
+  s = stirling->CheckDynamicTraceStatus(trace_id);
+  EXPECT_OK(s);
+
+  // TODO(oazizi): Expand test when RegisterDynamicTrace produces other states.
+}
+
+}  // namespace stirling
+}  // namespace pl

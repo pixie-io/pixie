@@ -27,6 +27,8 @@
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/system_stats_connector.h"
 
+#include "src/stirling/dynamic_tracing/dynamic_tracer.h"
+
 namespace pl {
 namespace stirling {
 
@@ -124,7 +126,7 @@ class StirlingImpl final : public Stirling {
   Status Init();
 
   uint64_t RegisterDynamicTrace(const dynamic_tracing::ir::logical::Program& program) override;
-  Status CheckDynamicTraceStatus(uint64_t probe_id) override;
+  Status CheckDynamicTraceStatus(uint64_t trace_id) override;
   void GetPublishProto(stirlingpb::Publish* publish_pb) override;
   Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) override;
   void RegisterDataPushCallback(DataPushCallback f) override { data_push_callback_ = f; }
@@ -204,7 +206,9 @@ class StirlingImpl final : public Stirling {
   AgentMetadataType agent_metadata_;
 
   // The index can be assigned to the next registered probe.
-  uint64_t probe_index_ = 0;
+  int64_t dynamic_trace_index_ = 0;
+
+  absl::flat_hash_map<int64_t, Status> dynamic_trace_status_map_;
 };
 
 StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
@@ -292,15 +296,42 @@ Status StirlingImpl::AddSourceFromRegistry(
 }
 
 uint64_t StirlingImpl::RegisterDynamicTrace(const dynamic_tracing::ir::logical::Program& program) {
-  PL_UNUSED(program);
-  // TODO(yzhao): Need to add actual implementation.
-  return probe_index_++;
+  int64_t trace_id = dynamic_trace_index_++;
+
+  dynamic_trace_status_map_[trace_id] = error::ResourceUnavailable("Probe deployment in progress.");
+
+  // TODO(oazizi): This rest of this function should be run asynchronously (non-blocking).
+
+#define ASSIGN_OR_RETURN(lhs, rexpr) \
+  PL_ASSIGN_OR(lhs, rexpr, dynamic_trace_status_map_[trace_id] = __s__.status(); return trace_id;)
+
+  ASSIGN_OR_RETURN(dynamic_tracing::BCCProgram bcc_program,
+                   dynamic_tracing::CompileProgram(program));
+  PL_UNUSED(bcc_program);
+
+#undef ASSIGN_OR_RETURN
+
+  dynamic_trace_status_map_[trace_id] = Status::OK();
+
+  return trace_id;
 }
 
-Status StirlingImpl::CheckDynamicTraceStatus(uint64_t probe_id) {
-  PL_UNUSED(probe_id);
-  // TODO(yzhao): Need to add actual implementation.
-  return Status::OK();
+Status StirlingImpl::CheckDynamicTraceStatus(uint64_t trace_id) {
+  auto iter = dynamic_trace_status_map_.find(trace_id);
+  if (iter == dynamic_trace_status_map_.end()) {
+    return error::NotFound("");
+  }
+
+  Status s = iter->second;
+
+  // Destructive read of tracer state on errors, so that we don't leak the map.
+  // Only error that is excluded is RESOURCE_UNAVAILABLE, because that means
+  // the final state is not known and the caller should retry.
+  if (!s.ok() && s.code() != pl::statuspb::Code::RESOURCE_UNAVAILABLE) {
+    dynamic_trace_status_map_.erase(iter);
+  }
+
+  return s;
 }
 
 void StirlingImpl::GetPublishProto(stirlingpb::Publish* publish_pb) {
