@@ -13,7 +13,6 @@ import ToggleButton from '@material-ui/lab/ToggleButton';
 
 import clsx from 'clsx';
 import Canvas from 'containers/live/canvas';
-import ClusterSelector from 'containers/live/cluster-selector';
 import CommandInput from 'containers/command-input/command-input';
 import NewCommandInput from 'containers/new-command-input/new-command-input';
 import { withLiveViewContext } from 'containers/live/context';
@@ -71,9 +70,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     marginLeft: theme.spacing(0.5),
     height: '100%',
     width: '100%',
-  },
-  clusterSelector: {
-    marginRight: theme.spacing(2),
   },
   opener: {
     position: 'absolute',
@@ -154,7 +150,6 @@ const LiveView = () => {
       <LiveViewShortcuts handlers={hotkeyHandlers} />
       <NavBars>
         <LiveViewTitle className={classes.title} />
-        <ClusterSelector className={classes.clusterSelector} />
         <Tooltip title='Pixie Command'>
           <IconButton disabled={commandOpen} onClick={toggleCommandOpen}>
             <PixieCommandIcon className={classes.icon} />
