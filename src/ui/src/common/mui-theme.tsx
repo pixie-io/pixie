@@ -25,6 +25,8 @@ declare module '@material-ui/core/styles/createPalette' {
     foreground: {
       one?: string;
       two?: string;
+      three?: string;
+      four?: string;
       grey1?: string;
       grey2?: string;
       grey3?: string;
@@ -59,9 +61,9 @@ export const DARK_THEME = createMuiTheme({
   palette: {
     type: 'dark',
     primary: {
-      main: '#3fe7e7',
-      dark: '#3cd6d6',
-      light: '#89ffff',
+      main: '#12d6d6',
+      dark: '#17aaaa',
+      light: '#3ef3f3',
     },
     secondary: {
       main: '#24b2ff',
@@ -78,23 +80,29 @@ export const DARK_THEME = createMuiTheme({
       dark: '#dc9406',
       light: '#ffc656',
     },
+    error: {
+      main: '#ff5e6d',
+      dark: '#e54e5c',
+      light: '#ff9fa8',
+    },
     foreground: {
-      one: '#a6abae',
+      one: '#b2b5bb',
       two: '#ffffff',
+      three: '#9696a5',
       grey1: '#4a4c4f',
       grey2: '#353738',
       grey3: '#212324',
-      grey4: '#343434',
+      grey4: '#596274',
       grey5: '#dbdde0',
-      white: '#000000',
+      white: '#ffffff',
     },
     background: {
       default: '#161616',
       paper: '#292929',
       one: '#121212',
-      two: '#272822',
-      three: '#252525',
-      four: '#0C1714',
+      two: '#212324',
+      three: '#353535',
+      four: '#161616',
     },
     divider: '#272822',
     text: {
