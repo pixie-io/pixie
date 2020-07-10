@@ -32,5 +32,52 @@ stirlingpb::TableSchema DataTableSchema::ToProto() const {
   return table_schema_proto;
 }
 
+StatusOr<std::unique_ptr<DynamicDataTableSchema>> DynamicDataTableSchema::Create(
+    dynamic_tracing::ir::physical::Struct output_struct) {
+  using dynamic_tracing::ir::shared::ScalarType;
+
+  auto output_struct_ptr =
+      std::make_unique<dynamic_tracing::ir::physical::Struct>(std::move(output_struct));
+
+  // clang-format off
+  static const std::map<ScalarType, types::DataType> kTypeMap = {
+          {ScalarType::BOOL, types::DataType::BOOLEAN},
+          {ScalarType::INT, types::DataType::INT64},
+          {ScalarType::INT8, types::DataType::INT64},
+          {ScalarType::INT16, types::DataType::INT64},
+          {ScalarType::INT32, types::DataType::INT64},
+          {ScalarType::INT64, types::DataType::INT64},
+          {ScalarType::UINT, types::DataType::INT64},
+          {ScalarType::UINT8, types::DataType::INT64},
+          {ScalarType::UINT16, types::DataType::INT64},
+          {ScalarType::UINT32, types::DataType::INT64},
+          {ScalarType::UINT64, types::DataType::INT64},
+          {ScalarType::FLOAT, types::DataType::FLOAT64},
+          {ScalarType::DOUBLE, types::DataType::FLOAT64},
+  };
+  // clang-format on
+
+  std::vector<DataElement> elements;
+  for (const auto& field : output_struct_ptr->fields()) {
+    types::DataType data_type;
+
+    auto iter = kTypeMap.find(field.type().scalar());
+    if (iter == kTypeMap.end()) {
+      LOG(DFATAL) << absl::Substitute("Unrecognized base type: $0", field.type().scalar());
+      data_type = types::DataType::DATA_TYPE_UNKNOWN;
+    } else {
+      data_type = iter->second;
+    }
+
+    // TODO(oazizi): See if we need to find a way to define SemanticTypes and PatternTypes.
+    elements.emplace_back(field.name(), field.name(), data_type, types::SemanticType::ST_NONE,
+                          types::PatternType::UNSPECIFIED);
+  }
+
+  std::string_view name = output_struct_ptr->name();
+  return std::unique_ptr<DynamicDataTableSchema>(
+      new DynamicDataTableSchema(std::move(output_struct_ptr), name, elements));
+}
+
 }  // namespace stirling
 }  // namespace pl

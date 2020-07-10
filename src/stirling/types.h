@@ -10,6 +10,7 @@
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/type_utils.h"
+#include "src/stirling/dynamic_tracing/ir/physical.pb.h"
 #include "src/stirling/proto/stirling.pb.h"
 
 namespace pl {
@@ -104,6 +105,17 @@ class DataTableSchema {
     CheckSchema();
   }
 
+  DataTableSchema(std::string_view name, const std::vector<DataElement>& elements,
+                  std::chrono::milliseconds default_sampling_period = kDefaultSamplingPeriod,
+                  std::chrono::milliseconds default_push_period = kDefaultPushPeriod)
+      : name_(name),
+        elements_(elements.data(), elements.size()),
+        tabletized_(false),
+        default_sampling_period_(default_sampling_period),
+        default_push_period_(default_push_period) {
+    CheckSchema();
+  }
+
   constexpr std::string_view name() const { return name_; }
   constexpr bool tabletized() const { return tabletized_; }
   constexpr size_t tabletization_key() const { return tabletization_key_; }
@@ -165,6 +177,36 @@ class DataTableSchema {
 
   static constexpr std::chrono::milliseconds kDefaultSamplingPeriod{100};
   static constexpr std::chrono::milliseconds kDefaultPushPeriod{1000};
+};
+
+/**
+ * A wrapper around DataTableSchema that also holds storage for the elements.
+ * DataTableSchema itself does not hold elements, but rather has views into the elements.
+ * This normally works for static tables because the elements are constexpr.
+ * In the case of dynamic tables, however, we need to create and store the elements.
+ */
+class DynamicDataTableSchema {
+ public:
+  static StatusOr<std::unique_ptr<DynamicDataTableSchema>> Create(
+      dynamic_tracing::ir::physical::Struct output_struct);
+  const DataTableSchema& Get() { return table_schema_; }
+
+ private:
+  DynamicDataTableSchema(std::unique_ptr<dynamic_tracing::ir::physical::Struct> output_struct,
+                         std::string_view name, const std::vector<DataElement>& elements)
+      : output_struct_(std::move(output_struct)),
+        elements_(elements),
+        table_schema_(name, elements_) {}
+
+  // Keep the copy of the protobuf, because elements_ has views into this data structure.
+  std::unique_ptr<dynamic_tracing::ir::physical::Struct> output_struct_;
+
+  // Keep a copy of the passed elements, because table_schema_ has views into this data structure.
+  std::vector<DataElement> elements_;
+
+  // The main data structure, which mostly has views into elements_, and by extension
+  // output_struct_.
+  DataTableSchema table_schema_;
 };
 
 }  // namespace stirling

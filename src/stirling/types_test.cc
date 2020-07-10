@@ -62,5 +62,56 @@ TEST(DataTableSchemaTest, table_schema_proto_getters_test) {
               UnorderedElementsAre(Pair(0, "kLow"), Pair(1, "kMed"), Pair(99, "kHigh")));
 }
 
+TEST(DynamicDataTableSchemaTest, generate) {
+  constexpr std::string_view kOutputStruct = R"(
+  name: "out_table_value_t"
+  fields {
+    name: "tgid__"
+    type { scalar: INT32 }
+  }
+  fields {
+    name: "tgid_start_time__"
+    type { scalar: UINT64 }
+  }
+  fields {
+    name: "goid__"
+    type { scalar: INT64 }
+  }
+  fields {
+    name: "ktime_ns__"
+    type { scalar: UINT64 }
+  }
+  fields {
+    name: "arg0"
+    type { scalar: INT }
+  }
+  fields {
+    name: "arg1"
+    type { scalar: BOOL }
+  }
+  fields {
+    name: "arg2"
+    type { scalar: BOOL }
+  }
+)";
+
+  dynamic_tracing::ir::physical::Struct output_struct;
+  ASSERT_TRUE(
+      google::protobuf::TextFormat::ParseFromString(std::string(kOutputStruct), &output_struct));
+
+  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DynamicDataTableSchema> table_schema_ptr,
+                       DynamicDataTableSchema::Create(output_struct));
+
+  const DataTableSchema& table_schema = table_schema_ptr->Get();
+
+  EXPECT_EQ(table_schema.name(), "out_table_value_t");
+  ASSERT_EQ(table_schema.elements().size(), 7);
+  EXPECT_EQ(table_schema.tabletized(), false);
+  EXPECT_EQ(table_schema.ColIndex("tgid__"), 0);
+  EXPECT_EQ(table_schema.ColIndex("arg2"), 6);
+  EXPECT_EQ(table_schema.elements()[2].name(), "goid__");
+  EXPECT_EQ(table_schema.elements()[6].name(), "arg2");
+}
+
 }  // namespace stirling
 }  // namespace pl

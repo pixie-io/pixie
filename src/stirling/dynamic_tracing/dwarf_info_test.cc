@@ -1,7 +1,5 @@
 #include <string>
 
-#include <google/protobuf/util/message_differencer.h>
-
 #include "src/common/testing/testing.h"
 #include "src/stirling/dynamic_tracing/dwarf_info.h"
 
@@ -13,7 +11,6 @@ namespace stirling {
 namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
-using ::google::protobuf::util::MessageDifferencer;
 using ::pl::testing::proto::EqualsProto;
 
 constexpr std::string_view kEntryProbeIn = R"(
