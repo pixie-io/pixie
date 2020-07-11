@@ -41,13 +41,14 @@ type K8sJobHandler interface {
 
 // K8sVizierInfo is responsible for fetching Vizier information through K8s.
 type K8sVizierInfo struct {
-	clientset           *kubernetes.Clientset
-	clusterVersion      string
-	clusterName         string
-	currentPodStatus    map[string]*cvmsgspb.PodStatus
-	k8sStateLastUpdated time.Time
-	numNodes            int32
-	mu                  sync.Mutex
+	clientset            *kubernetes.Clientset
+	clusterVersion       string
+	clusterName          string
+	currentPodStatus     map[string]*cvmsgspb.PodStatus
+	k8sStateLastUpdated  time.Time
+	numNodes             int32
+	numInstrumentedNodes int32
+	mu                   sync.Mutex
 }
 
 // NewK8sVizierInfo creates a new K8sVizierInfo.
@@ -188,8 +189,15 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 		return
 	}
 	// Get only control-plane pods.
-	podsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{
+	cpPodsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{
 		LabelSelector: "plane=control",
+	})
+	if err != nil {
+		return
+	}
+	// Get only pem.
+	pemPodsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{
+		LabelSelector: "metadata.name=vizier-pem",
 	})
 	if err != nil {
 		return
@@ -198,7 +206,7 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 	now := time.Now()
 
 	podMap := make(map[string]*cvmsgspb.PodStatus)
-	for _, p := range podsList.Items {
+	for _, p := range cpPodsList.Items {
 		podPb, err := protoutils.PodToProto(&p)
 		if err != nil {
 			return
@@ -236,14 +244,15 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 	v.currentPodStatus = podMap
 	v.k8sStateLastUpdated = now
 	v.numNodes = int32(len(nodesList.Items))
+	v.numInstrumentedNodes = int32(len(pemPodsList.Items))
 }
 
 // GetPodStatuses gets the pod statuses and the last time they were updated.
-func (v *K8sVizierInfo) GetK8sState() (map[string]*cvmsgspb.PodStatus, int32, time.Time) {
+func (v *K8sVizierInfo) GetK8sState() (map[string]*cvmsgspb.PodStatus, int32, int32, time.Time) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 
-	return v.currentPodStatus, v.numNodes, v.k8sStateLastUpdated
+	return v.currentPodStatus, v.numNodes, v.numInstrumentedNodes, v.k8sStateLastUpdated
 }
 
 // ParseJobYAML parses the yaml string into a k8s job and applies the image tag and env subtitutions.
