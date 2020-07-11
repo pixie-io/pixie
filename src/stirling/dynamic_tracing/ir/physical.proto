@@ -143,17 +143,6 @@ message OutputAction {
   string variable_name = 2;
 }
 
-// bpf_trace_printk() on a text.
-message Printk {
-  oneof content_oneof {
-    // A piece of hardcoded text.
-    string text = 1;
-
-    // Another ScalarVariable, cannot be StructVariable.
-    string scalar = 2;
-  }
-}
-
 // Corresponds to a logical probe.
 message Probe {
   // The name of the BCC probe function.
@@ -191,7 +180,7 @@ message Probe {
   repeated OutputAction output_actions = 6;
 
   // Printk text.
-  repeated Printk printks = 7;
+  repeated shared.Printk printks = 7;
 }
 
 // This describes a complete BPF program.

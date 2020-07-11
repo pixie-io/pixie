@@ -90,3 +90,14 @@ message Condition {
   // List variables used in the operation.
   repeated string vars = 2;
 }
+
+// bpf_trace_printk() on a text.
+message Printk {
+  oneof content_oneof {
+    // A piece of hardcoded text.
+    string text = 1;
+
+    // Another ScalarVariable, cannot be StructVariable.
+    string scalar = 2;
+  }
+}

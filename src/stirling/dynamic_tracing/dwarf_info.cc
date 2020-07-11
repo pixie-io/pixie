@@ -252,6 +252,10 @@ Status Dwarvifier::ProcessProbe(const ir::logical::Probe& input_probe,
     PL_RETURN_IF_ERROR(ProcessOutputAction(output_action, p, output_program));
   }
 
+  for (const auto& printk : input_probe.printks()) {
+    p->add_printks()->CopyFrom(printk);
+  }
+
   return Status::OK();
 }
 
@@ -547,6 +551,8 @@ Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_a
   return Status::OK();
 }
 
+std::string GetImplicitColumnName(std::string_view name) { return absl::StrCat(name, "__"); }
+
 Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_action_in,
                                         const std::string& struct_type_name,
                                         ir::physical::Program* output_program) {
@@ -558,7 +564,7 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
   for (const auto& f : kImplicitColumns) {
     auto* struct_field = struct_decl->add_fields();
     // Add a suffix to avoid any potential name conflicts.
-    struct_field->set_name(absl::StrCat(f, "__"));
+    struct_field->set_name(GetImplicitColumnName(f));
 
     auto iter = vars_map_.find(f);
     if (iter == vars_map_.end()) {
@@ -622,7 +628,7 @@ Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_a
 
   for (const auto& f : kImplicitColumns) {
     auto* fa = struct_var->add_field_assignments();
-    fa->set_field_name(f);
+    fa->set_field_name(GetImplicitColumnName(f));
     fa->set_variable_name(f);
   }
 

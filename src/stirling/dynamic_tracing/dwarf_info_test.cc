@@ -527,19 +527,19 @@ probes: {
     name: "out_table_value"
     type: "out_table_value_t"
     field_assignments {
-      field_name: "tgid"
+      field_name: "tgid__"
       variable_name: "tgid"
     }
     field_assignments {
-      field_name: "tgid_start_time"
+      field_name: "tgid_start_time__"
       variable_name: "tgid_start_time"
     }
     field_assignments {
-      field_name: "goid"
+      field_name: "goid__"
       variable_name: "goid"
     }
     field_assignments {
-      field_name: "ktime_ns"
+      field_name: "ktime_ns__"
       variable_name: "ktime_ns"
     }
     field_assignments {
@@ -625,19 +625,19 @@ probes: {
     name: "out_table2_value"
     type: "out_table2_value_t"
     field_assignments {
-      field_name: "tgid"
+      field_name: "tgid__"
       variable_name: "tgid"
     }
     field_assignments {
-      field_name: "tgid_start_time"
+      field_name: "tgid_start_time__"
       variable_name: "tgid_start_time"
     }
     field_assignments {
-      field_name: "goid"
+      field_name: "goid__"
       variable_name: "goid"
     }
     field_assignments {
-      field_name: "ktime_ns"
+      field_name: "ktime_ns__"
       variable_name: "ktime_ns"
     }
     field_assignments {

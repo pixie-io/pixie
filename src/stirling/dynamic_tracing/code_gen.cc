@@ -15,8 +15,8 @@ namespace dynamic_tracing {
 using ::pl::stirling::bpf_tools::BPFProbeAttachType;
 using ::pl::stirling::bpf_tools::UProbeSpec;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
+using ::pl::stirling::dynamic_tracing::ir::physical::MemberVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::OutputAction;
-using ::pl::stirling::dynamic_tracing::ir::physical::Printk;
 using ::pl::stirling::dynamic_tracing::ir::physical::Probe;
 using ::pl::stirling::dynamic_tracing::ir::physical::Program;
 using ::pl::stirling::dynamic_tracing::ir::physical::Register;
@@ -27,6 +27,7 @@ using ::pl::stirling::dynamic_tracing::ir::shared::BPFHelper;
 using ::pl::stirling::dynamic_tracing::ir::shared::Condition;
 using ::pl::stirling::dynamic_tracing::ir::shared::Map;
 using ::pl::stirling::dynamic_tracing::ir::shared::Output;
+using ::pl::stirling::dynamic_tracing::ir::shared::Printk;
 using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
 using ::pl::stirling::dynamic_tracing::ir::shared::TracePoint;
 using ::pl::stirling::dynamic_tracing::ir::shared::VariableType;
@@ -58,24 +59,34 @@ const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypeToCType = {
     {ScalarType::DOUBLE, "double"},
     {ScalarType::VOID_POINTER, "void*"},
 };
-
-const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypePrintfFormatCode = {
-    {ScalarType::BOOL, "d"},
-    {ScalarType::INT, "d"},
-    {ScalarType::INT8, "d"},
-    {ScalarType::INT16, "d"},
-    {ScalarType::INT32, "d"},
-    {ScalarType::INT64, "ld"},
-    {ScalarType::UINT, "d"},
-    {ScalarType::UINT8, "d"},
-    {ScalarType::UINT16, "d"},
-    {ScalarType::UINT32, "d"},
-    {ScalarType::UINT64, "ld"},
-    {ScalarType::FLOAT, "f"},
-    {ScalarType::DOUBLE, "lf"},
-    {ScalarType::VOID_POINTER, "x"},
-};
 // clang-format on
+
+StatusOr<std::string_view> GetPrintFormatCode(ScalarType scalar_type) {
+  static const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypePrintfFormatCode = {
+      {ScalarType::BOOL, "d"},
+      {ScalarType::INT, "d"},
+      {ScalarType::INT8, "d"},
+      {ScalarType::INT16, "d"},
+      {ScalarType::INT32, "d"},
+      {ScalarType::INT64, "ld"},
+      {ScalarType::UINT, "d"},
+      {ScalarType::UINT8, "d"},
+      {ScalarType::UINT16, "d"},
+      {ScalarType::UINT32, "d"},
+      {ScalarType::UINT64, "ld"},
+      // BPF does not support %f or %lf, use llx to show hex representation.
+      {ScalarType::FLOAT, "lx"},
+      {ScalarType::DOUBLE, "llx"},
+      {ScalarType::VOID_POINTER, "llx"},
+  };
+
+  auto iter = kScalarTypePrintfFormatCode.find(scalar_type);
+  if (iter == kScalarTypePrintfFormatCode.end()) {
+    return error::InvalidArgument("ScalarVariable type '$0' does not have format code",
+                                  magic_enum::enum_name(scalar_type));
+  }
+  return iter->second;
+}
 
 // Accepts a program of physical IR, and produces BCC code. Additionally, keeps a list of metadata
 // that can be used for other operations.
@@ -300,29 +311,47 @@ namespace {
 
 StatusOr<std::string> GenScalarVarPrintk(
     const absl::flat_hash_map<std::string_view, const ScalarVariable*>& scalar_vars,
+    const absl::flat_hash_map<std::string_view, const MemberVariable*>& member_vars,
     const Printk& printk) {
   auto iter1 = scalar_vars.find(printk.scalar());
-  if (iter1 == scalar_vars.end()) {
-    return error::InvalidArgument("ScalarVariable '$0' is not defined", printk.scalar());
-  }
-  const ScalarVariable* var_def = iter1->second;
-  auto iter2 = kScalarTypePrintfFormatCode.find(var_def->type());
-  if (iter2 == kScalarTypePrintfFormatCode.end()) {
-    return error::InvalidArgument("ScalarVariable type '$0' does not have format code",
-                                  magic_enum::enum_name(var_def->type()));
+  auto iter2 = member_vars.find(printk.scalar());
+  if (iter1 == scalar_vars.end() && iter2 == member_vars.end()) {
+    return error::InvalidArgument("Variable '$0' is not defined", printk.scalar());
   }
 
-  return absl::Substitute(R"(bpf_trace_printk("$0: %$1\n", $0);)", printk.scalar(), iter2->second);
+  // This wont happen, as the previous steps rejects duplicate variable names.
+  // Added here for safety.
+  if (iter1 != scalar_vars.end() && iter2 != member_vars.end()) {
+    LOG(DFATAL) << absl::Substitute(
+        "ScalarVariable '$0' is defined as ScalarVariable and "
+        "MemberVariable",
+        printk.scalar());
+  }
+
+  ScalarType type;
+
+  if (iter1 != scalar_vars.end()) {
+    type = iter1->second->type();
+  }
+
+  if (iter2 != member_vars.end()) {
+    type = iter2->second->type();
+  }
+
+  PL_ASSIGN_OR_RETURN(std::string_view format_code, GetPrintFormatCode(type));
+
+  return absl::Substitute(R"(bpf_trace_printk("$0: %$1\n", $0);)", printk.scalar(), format_code);
 }
 
 StatusOr<std::string> GenPrintk(
     const absl::flat_hash_map<std::string_view, const ScalarVariable*>& scalar_vars,
+    const absl::flat_hash_map<std::string_view, const MemberVariable*>& member_vars,
     const Printk& printk) {
   switch (printk.content_oneof_case()) {
     case Printk::ContentOneofCase::kText:
       return absl::Substitute(R"(bpf_trace_printk("$0\n");)", printk.text());
     case Printk::ContentOneofCase::kScalar:
-      return GenScalarVarPrintk(scalar_vars, printk);
+      return GenScalarVarPrintk(scalar_vars, member_vars, printk);
     case Printk::ContentOneofCase::CONTENT_ONEOF_NOT_SET:
       PB_ENUM_SENTINEL_SWITCH_CLAUSE;
   }
@@ -371,6 +400,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
 
   absl::flat_hash_set<std::string_view> var_names;
   absl::flat_hash_map<std::string_view, const ScalarVariable*> scalar_vars;
+  absl::flat_hash_map<std::string_view, const MemberVariable*> member_vars;
 
   for (const auto& var : probe.vars()) {
     var_names.insert(var.name());
@@ -384,6 +414,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
   }
 
   for (const auto& var : probe.member_vars()) {
+    member_vars[var.name()] = &var;
     PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.name(), "MemberVariable"));
     MoveBackStrVec(GenMemberVariable(var), &code_lines);
   }
@@ -436,7 +467,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
   }
 
   for (const auto& printk : probe.printks()) {
-    PL_ASSIGN_OR_RETURN(std::string code_line, GenPrintk(scalar_vars, printk));
+    PL_ASSIGN_OR_RETURN(std::string code_line, GenPrintk(scalar_vars, member_vars, printk));
     code_lines.push_back(std::move(code_line));
   }
 

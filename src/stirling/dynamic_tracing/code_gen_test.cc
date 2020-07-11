@@ -13,7 +13,6 @@ using ::google::protobuf::TextFormat;
 using ::pl::stirling::bpf_tools::UProbeSpec;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::OutputAction;
-using ::pl::stirling::dynamic_tracing::ir::physical::Printk;
 using ::pl::stirling::dynamic_tracing::ir::physical::Probe;
 using ::pl::stirling::dynamic_tracing::ir::physical::Register;
 using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;

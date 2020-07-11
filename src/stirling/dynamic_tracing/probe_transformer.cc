@@ -73,6 +73,10 @@ void CreateReturnProbe(const ir::logical::Probe& input_probe, ir::logical::Progr
   for (const auto& in_ret_val : input_probe.ret_vals()) {
     output_action->add_variable_name(in_ret_val.id());
   }
+
+  for (const auto& printk : input_probe.printks()) {
+    return_probe->add_printks()->CopyFrom(printk);
+  }
 }
 
 void TransformLogicalProbe(const ir::logical::Probe& input_probe, ir::logical::Program* out) {

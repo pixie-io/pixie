@@ -106,13 +106,16 @@ pl_cc_test(
     name = "dynamic_tracer_bpf_test",
     srcs = ["dynamic_tracer_bpf_test.cc"],
     args = [
-        "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
+        "--go_grpc_client_path=$(location //src/stirling/http2/testing/go_grpc_client)",
+        "--go_grpc_server_path=$(location //src/stirling/http2/testing/go_grpc_server)",
     ],
     data = [
-        "//src/stirling/obj_tools/testdata:dummy_go_binary",
+        "//src/stirling/http2/testing/go_grpc_client",
+        "//src/stirling/http2/testing/go_grpc_server",
     ],
     tags = ["requires_bpf"],
     deps = [
         ":cc_library",
+        "//src/common/exec:cc_library",
     ],
 )

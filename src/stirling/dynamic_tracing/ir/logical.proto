@@ -99,6 +99,9 @@ message Probe {
   //
   // The variable to be inserted into the output table must be one of the above args, ret_vals, and function_latency.
   repeated OutputAction output_actions = 9;
+
+  // Used for debugging to print variable defined above.
+  repeated shared.Printk printks = 10;
 }
 
 // A logical program.
