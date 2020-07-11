@@ -296,17 +296,21 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 		return nil, err
 	}
 
-	query := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, c.cluster_version, i.vizier_version, i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
-              i.passthrough_enabled from vizier_cluster_info as i, vizier_cluster as c WHERE i.vizier_cluster_id=$1 AND i.vizier_cluster_id=c.id`
+	query := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, c.cluster_version, i.vizier_version,
+			  i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
+              i.passthrough_enabled, i.control_plane_pod_statuses
+              from vizier_cluster_info as i, vizier_cluster as c
+              WHERE i.vizier_cluster_id=$1 AND i.vizier_cluster_id=c.id`
 	var val struct {
-		ID                 uuid.UUID    `db:"vizier_cluster_id"`
-		Status             vizierStatus `db:"status"`
-		LastHeartbeat      *int64       `db:"last_heartbeat"`
-		PassthroughEnabled bool         `db:"passthrough_enabled"`
-		ClusterUID         *string      `db:"cluster_uid"`
-		ClusterName        *string      `db:"cluster_name"`
-		ClusterVersion     *string      `db:"cluster_version"`
-		VizierVersion      *string      `db:"vizier_version"`
+		ID                      uuid.UUID    `db:"vizier_cluster_id"`
+		Status                  vizierStatus `db:"status"`
+		LastHeartbeat           *int64       `db:"last_heartbeat"`
+		PassthroughEnabled      bool         `db:"passthrough_enabled"`
+		ClusterUID              *string      `db:"cluster_uid"`
+		ClusterName             *string      `db:"cluster_name"`
+		ClusterVersion          *string      `db:"cluster_version"`
+		VizierVersion           *string      `db:"vizier_version"`
+		ControlPlanePodStatuses PodStatuses  `db:"control_plane_pod_statuses"`
 	}
 	clusterID, err := utils.UUIDFromProto(req)
 	if err != nil {
@@ -347,6 +351,7 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 		if val.VizierVersion != nil {
 			vizierVersion = *val.VizierVersion
 		}
+
 		return &cvmsgspb.VizierInfo{
 			VizierID:        utils.ProtoFromUUID(&val.ID),
 			Status:          val.Status.ToProto(),
@@ -354,10 +359,11 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 			Config: &cvmsgspb.VizierConfig{
 				PassthroughEnabled: val.PassthroughEnabled,
 			},
-			ClusterUID:     clusterUID,
-			ClusterName:    clusterName,
-			ClusterVersion: clusterVersion,
-			VizierVersion:  vizierVersion,
+			ClusterUID:              clusterUID,
+			ClusterName:             clusterName,
+			ClusterVersion:          clusterVersion,
+			VizierVersion:           vizierVersion,
+			ControlPlanePodStatuses: val.ControlPlanePodStatuses,
 		}, nil
 	}
 	return nil, status.Error(codes.NotFound, "vizier not found")
@@ -587,10 +593,6 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 	}
 	vizierID := utils.UUIDFromProtoOrNil(req.VizierID)
 
-	// TODO(michelle): Instead of logging this information so that the pod statuses appears in our logs,
-	// we should be storing the pod status info in postgres.
-	log.WithField("vzID", vizierID.String()).WithField("hb", req.String()).Info("Got heartbeat message")
-
 	// Send DNS address.
 	serviceAuthToken, err := getServiceCredentials(viper.GetString("jwt_signing_key"))
 	if err != nil {
@@ -635,8 +637,8 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 
 	query := `
     UPDATE vizier_cluster_info
-    SET last_heartbeat = NOW(), status = $1, address= $2
-    WHERE vizier_cluster_id = $3`
+    SET last_heartbeat = NOW(), status = $1, address= $2, control_plane_pod_statuses= $3
+    WHERE vizier_cluster_id = $4`
 
 	vzStatus := "HEALTHY"
 	if req.Address == "" {
@@ -655,7 +657,7 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		vzStatus = s.(string)
 	}
 
-	_, err = s.db.Exec(query, vzStatus, addr, vizierID)
+	_, err = s.db.Exec(query, vzStatus, addr, PodStatuses(req.PodStatuses), vizierID)
 	if err != nil {
 		log.WithError(err).Error("Could not update vizier heartbeat")
 	}

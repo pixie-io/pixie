@@ -6,6 +6,7 @@ go_library(
         "metadata_reader.go",
         "server.go",
         "status_monitor.go",
+        "utils.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/cloud/vzmgr/controller",
     visibility = ["//visibility:public"],

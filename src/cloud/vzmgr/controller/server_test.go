@@ -32,6 +32,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/vzmgr/vzmgrpb"
 	"pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/shared/services/pgtest"
 	jwtutils "pixielabs.ai/pixielabs/src/shared/services/utils"
@@ -61,26 +62,42 @@ var (
 	testExistingClusterActive       = "923e4567-e89b-12d3-a456-426655440008"
 )
 
-func loadTestData(t *testing.T, db *sqlx.DB) {
-	insertVizierClusterQuery := `INSERT INTO vizier_cluster(org_id, id, project_name, cluster_uid, cluster_version, cluster_name) VALUES ($1, $2, $3, $4, $5, $6)`
-	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440000", testProjectName, "", "", "unknown_cluster")
-	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", testProjectName, "cUID", "cVers", "healthy_cluster")
-	db.MustExec(insertVizierClusterQuery, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440002", testProjectName, "", "", "unhealthy_cluster")
-	db.MustExec(insertVizierClusterQuery, testAuthOrgID, testDisconnectedClusterEmptyUID, testProjectName, "", "", "disconnected_cluster")
-	db.MustExec(insertVizierClusterQuery, testAuthOrgID, testExistingCluster, testProjectName, "existing_cluster", "", "test-cluster")
-	db.MustExec(insertVizierClusterQuery, testAuthOrgID, testExistingClusterActive, testProjectName, "my_other_cluster", "", "existing_cluster")
-	db.MustExec(insertVizierClusterQuery, testNonAuthOrgID, "223e4567-e89b-12d3-a456-426655440003", testProjectName, "", "", "non_auth_1")
-	db.MustExec(insertVizierClusterQuery, testNonAuthOrgID, "323e4567-e89b-12d3-a456-426655440003", testProjectName, "", "", "non_auth_2")
+var testPodStatuses controller.PodStatuses = map[string]*cvmsgspb.PodStatus{
+	"vizier-proxy": &cvmsgspb.PodStatus{
+		Name:   "vizier-proxy",
+		Status: metadatapb.RUNNING,
+	},
+	"vizier-query-broker": &cvmsgspb.PodStatus{
+		Name:   "vizier-query-broker",
+		Status: metadatapb.RUNNING,
+	},
+}
 
-	insertVizierClusterInfoQuery := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat, passthrough_enabled, vizier_version) VALUES($1, $2, $3, $4, $5, $6, $7)`
-	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN", "addr0", "key0", "2011-05-16 15:36:38", true, "")
-	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY", "addr1", "\\xc30d04070302c5374a5098262b6d7bd23f01822f741dbebaa680b922b55fd16eb985aeb09505f8fc4a36f0e11ebb8e18f01f684146c761e2234a81e50c21bca2907ea37736f2d9a5834997f4dd9e288c", "2011-05-17 15:36:38", false, "vzVers")
-	db.MustExec(insertVizierClusterInfoQuery, "123e4567-e89b-12d3-a456-426655440002", "UNHEALTHY", "addr2", "key2", "2011-05-18 15:36:38", true, "")
-	db.MustExec(insertVizierClusterInfoQuery, testDisconnectedClusterEmptyUID, "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38", false, "")
-	db.MustExec(insertVizierClusterInfoQuery, testExistingCluster, "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38", false, "")
-	db.MustExec(insertVizierClusterInfoQuery, testExistingClusterActive, "UNHEALTHY", "addr3", "key3", "2011-05-19 15:36:38", false, "")
-	db.MustExec(insertVizierClusterInfoQuery, "223e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38", true, "")
-	db.MustExec(insertVizierClusterInfoQuery, "323e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38", false, "")
+func loadTestData(t *testing.T, db *sqlx.DB) {
+	insertCluster := `INSERT INTO vizier_cluster(org_id, id, project_name, cluster_uid, cluster_version, cluster_name) VALUES ($1, $2, $3, $4, $5, $6)`
+	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440000", testProjectName, "", "", "unknown_cluster")
+	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440001", testProjectName, "cUID", "cVers", "healthy_cluster")
+	db.MustExec(insertCluster, testAuthOrgID, "123e4567-e89b-12d3-a456-426655440002", testProjectName, "", "", "unhealthy_cluster")
+	db.MustExec(insertCluster, testAuthOrgID, testDisconnectedClusterEmptyUID, testProjectName, "", "", "disconnected_cluster")
+	db.MustExec(insertCluster, testAuthOrgID, testExistingCluster, testProjectName, "existing_cluster", "", "test-cluster")
+	db.MustExec(insertCluster, testAuthOrgID, testExistingClusterActive, testProjectName, "my_other_cluster", "", "existing_cluster")
+	db.MustExec(insertCluster, testNonAuthOrgID, "223e4567-e89b-12d3-a456-426655440003", testProjectName, "", "", "non_auth_1")
+	db.MustExec(insertCluster, testNonAuthOrgID, "323e4567-e89b-12d3-a456-426655440003", testProjectName, "", "", "non_auth_2")
+
+	insertClusterInfo := `INSERT INTO vizier_cluster_info(vizier_cluster_id, status, address, jwt_signing_key, last_heartbeat,
+						  passthrough_enabled, vizier_version, control_plane_pod_statuses)
+						  VALUES($1, $2, $3, $4, $5, $6, $7, $8)`
+	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440000", "UNKNOWN", "addr0",
+		"key0", "2011-05-16 15:36:38", true, "", testPodStatuses)
+	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440001", "HEALTHY", "addr1",
+		"\\xc30d04070302c5374a5098262b6d7bd23f01822f741dbebaa680b922b55fd16eb985aeb09505f8fc4a36f0e11ebb8e18f01f684146c761e2234a81e50c21bca2907ea37736f2d9a5834997f4dd9e288c",
+		"2011-05-17 15:36:38", false, "vzVers", "{}")
+	db.MustExec(insertClusterInfo, "123e4567-e89b-12d3-a456-426655440002", "UNHEALTHY", "addr2", "key2", "2011-05-18 15:36:38", true, "", "{}")
+	db.MustExec(insertClusterInfo, testDisconnectedClusterEmptyUID, "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38", false, "", "{}")
+	db.MustExec(insertClusterInfo, testExistingCluster, "DISCONNECTED", "addr3", "key3", "2011-05-19 15:36:38", false, "", "{}")
+	db.MustExec(insertClusterInfo, testExistingClusterActive, "UNHEALTHY", "addr3", "key3", "2011-05-19 15:36:38", false, "", "{}")
+	db.MustExec(insertClusterInfo, "223e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38", true, "", "{}")
+	db.MustExec(insertClusterInfo, "323e4567-e89b-12d3-a456-426655440003", "HEALTHY", "addr3", "key3", "2011-05-19 15:36:38", false, "", "{}")
 
 	db.MustExec(`UPDATE vizier_cluster SET cluster_name=NULL WHERE id=$1`, testDisconnectedClusterEmptyUID)
 	insertVizierIndexQuery := `INSERT INTO vizier_index_state(cluster_id, resource_version) VALUES($1, $2)`
@@ -183,6 +200,14 @@ func TestServer_GetVizierInfo(t *testing.T) {
 	assert.Equal(t, "cVers", resp.ClusterVersion)
 	assert.Equal(t, "healthy_cluster", resp.ClusterName)
 	assert.Equal(t, "cUID", resp.ClusterUID)
+
+	// Test that the empty pods list case works.
+	assert.Equal(t, make(controller.PodStatuses), controller.PodStatuses(resp.ControlPlanePodStatuses))
+	// Test that the non-empty pods list case works.
+	resp, err = s.GetVizierInfo(CreateTestContext(), utils.ProtoFromUUIDStrOrNil("123e4567-e89b-12d3-a456-426655440000"))
+	require.Nil(t, err)
+	require.NotNil(t, resp)
+	assert.Equal(t, testPodStatuses, controller.PodStatuses(resp.ControlPlanePodStatuses))
 }
 
 func TestServer_UpdateVizierConfig(t *testing.T) {
@@ -442,6 +467,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 		bootstrapVersion           string
 		expectDeploy               bool
 		expectedFetchVizierVersion bool
+		controlPlanePodStatuses    controller.PodStatuses
 	}{
 		{
 			name:                      "valid vizier",
@@ -449,12 +475,13 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			dnsAddressResponse: &dnsmgrpb.GetDNSAddressResponse{
 				DNSAddress: "abc.clusters.dev.withpixie.dev",
 			},
-			dnsAddressError:        nil,
-			vizierID:               "123e4567-e89b-12d3-a456-426655440001",
-			hbAddress:              "127.0.0.1",
-			hbPort:                 123,
-			updatedClusterStatus:   "HEALTHY",
-			expectedClusterAddress: "abc.clusters.dev.withpixie.dev:123",
+			dnsAddressError:         nil,
+			vizierID:                "123e4567-e89b-12d3-a456-426655440001",
+			hbAddress:               "127.0.0.1",
+			hbPort:                  123,
+			updatedClusterStatus:    "HEALTHY",
+			expectedClusterAddress:  "abc.clusters.dev.withpixie.dev:123",
+			controlPlanePodStatuses: testPodStatuses,
 		},
 		{
 			name:                      "valid vizier dns failed",
@@ -574,6 +601,7 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 				Status:           tc.status,
 				BootstrapMode:    tc.bootstrap,
 				BootstrapVersion: tc.bootstrapVersion,
+				PodStatuses:      tc.controlPlanePodStatuses,
 			}
 			nestedAny, err := types.MarshalAny(nestedMsg)
 			if err != nil {
@@ -587,16 +615,20 @@ func TestServer_HandleVizierHeartbeat(t *testing.T) {
 			s.HandleVizierHeartbeat(req)
 
 			// Check database.
-			clusterQuery := `SELECT status, address from vizier_cluster_info WHERE vizier_cluster_id=$1`
+			clusterQuery := `SELECT status, address, control_plane_pod_statuses from vizier_cluster_info WHERE vizier_cluster_id=$1`
 			var clusterInfo struct {
-				Status  string `db:"status"`
-				Address string `db:"address"`
+				Status                  string                 `db:"status"`
+				Address                 string                 `db:"address"`
+				ControlPlanePodStatuses controller.PodStatuses `db:"control_plane_pod_statuses"`
 			}
 			clusterID, err := uuid.FromString(tc.vizierID)
 			assert.Nil(t, err)
 			err = db.Get(&clusterInfo, clusterQuery, clusterID)
 			assert.Equal(t, tc.updatedClusterStatus, clusterInfo.Status)
 			assert.Equal(t, tc.expectedClusterAddress, clusterInfo.Address)
+			if tc.controlPlanePodStatuses != nil {
+				assert.Equal(t, tc.controlPlanePodStatuses, clusterInfo.ControlPlanePodStatuses)
+			}
 		})
 	}
 }

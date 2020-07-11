@@ -187,6 +187,8 @@ message VizierInfo {
     string cluster_version = 7;
     // The version of the deployed Vizier.
     string vizier_version = 8;
+    // The status of the control plane pods.
+    map<string, PodStatus> control_plane_pod_statuses = 9;
 }
 
 message UpdateVizierConfigRequest {
