@@ -50,7 +50,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   titleText: {
     ...theme.typography.h6,
-    color: theme.palette.foreground.one,
+    color: theme.palette.foreground.grey5,
     fontWeight: theme.typography.fontWeightBold,
   },
   breadcrumbText: {
@@ -71,11 +71,19 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   container: {
     maxHeight: 800,
   },
+
+}));
+
+const useButtonStyles = makeStyles((theme: Theme) => createStyles({
+  root: {
+    color: theme.palette.foreground.grey5,
+  },
 }));
 
 const AdminOverview = () => {
   const [createDeployKey] = useMutation(CREATE_DEPLOYMENT_KEY);
   const classes = useStyles();
+  const buttonStyles = useButtonStyles();
   const [tab, setTab] = React.useState('clusters');
 
   return (
@@ -84,7 +92,7 @@ const AdminOverview = () => {
         <div className={classes.title}>
           <div className={classes.titleText}>Admin View</div>
         </div>
-        <Button component={Link} to='/live' color='primary'>
+        <Button classes={buttonStyles} component={Link} to='/live'>
           Live View
         </Button>
       </NavBars>
