@@ -148,7 +148,7 @@ TEST(CodeGenBPFTest, AttachOnDummyExe) {
   ASSERT_OK_AND_ASSIGN(BCCProgram bcc_program, GenProgram(program));
   ASSERT_THAT(bcc_program.uprobes, SizeIs(1));
 
-  const auto& spec = bcc_program.uprobes[0].spec;
+  const auto& spec = bcc_program.uprobes[0];
 
   EXPECT_THAT(
       spec, Field(&UProbeSpec::binary_path, EndsWith("src/stirling/obj_tools/testdata/dummy_exe")));
@@ -177,7 +177,7 @@ TEST(CodeGenBPFTest, AttachGOIDProbe) {
   ASSERT_OK_AND_ASSIGN(BCCProgram bcc_program, GenProgram(program));
   ASSERT_THAT(bcc_program.uprobes, SizeIs(1));
 
-  const auto& spec = bcc_program.uprobes[0].spec;
+  const auto& spec = bcc_program.uprobes[0];
 
   EXPECT_THAT(spec, Field(&UProbeSpec::binary_path, EndsWith(FLAGS_dummy_go_binary)));
   EXPECT_THAT(spec, Field(&UProbeSpec::symbol, "runtime.casgstatus"));

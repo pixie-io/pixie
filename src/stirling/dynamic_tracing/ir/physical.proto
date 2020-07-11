@@ -151,7 +151,7 @@ message Probe {
   // Where to attach this probe.
   shared.TracePoint trace_point = 2;
 
-  // Defines how to access variables from inside BCC code..
+  // Defines how to access variables from inside BCC code.
   //
   // StructVariable names must be unique, as BCC codegen does not modify them.
   //

@@ -638,12 +638,13 @@ StatusOr<BCCProgram> GenProgram(const Program& program) {
   res.code = absl::StrJoin(code_lines, "\n");
 
   for (const auto& probe : program.probes()) {
-    BCCProgram::UProbe uprobe;
+    res.uprobes.push_back(GetUProbeSpec(program.binary_path(), probe));
+  }
 
-    uprobe.spec = GetUProbeSpec(program.binary_path(), probe);
-
+  // TODO(yzhao): Convert this to operate off program.outputs().
+  for (const auto& probe : program.probes()) {
     for (const auto& output : probe.output_actions()) {
-      BCCProgram::UProbe::PerfBufferSpec pf_spec;
+      BCCProgram::PerfBufferSpec pf_spec;
 
       pf_spec.name = output.perf_buffer_name();
 
@@ -654,10 +655,8 @@ StatusOr<BCCProgram> GenProgram(const Program& program) {
       }
       pf_spec.output = *struct_opt.value();
 
-      uprobe.perf_buffer_specs.push_back(std::move(pf_spec));
+      res.perf_buffer_specs.push_back(std::move(pf_spec));
     }
-
-    res.uprobes.push_back(std::move(uprobe));
   }
 
   return res;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/dynamic_tracing/code_gen.h"

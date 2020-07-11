@@ -1,5 +1,8 @@
 #include "src/stirling/dynamic_tracing/dynamic_tracer.h"
 
+#include <string>
+#include <vector>
+
 namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
@@ -17,7 +20,7 @@ Status DeployBCCProgram(const dynamic_tracing::BCCProgram& bcc_program,
   PL_RETURN_IF_ERROR(bcc_wrapper->InitBPFProgram(bcc_program.code));
 
   for (const auto& uprobe : bcc_program.uprobes) {
-    PL_RETURN_IF_ERROR(bcc_wrapper->AttachUProbe(uprobe.spec));
+    PL_RETURN_IF_ERROR(bcc_wrapper->AttachUProbe(uprobe));
     // TODO(yzhao): Also open the perf buffers.
   }
 

@@ -1,6 +1,7 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <thread>
@@ -143,40 +144,26 @@ class StirlingImpl final : public Stirling {
   void WaitForThreadJoin() override;
 
  private:
-  /**
-   * Create data source connectors from the registered sources.
-   */
+  // Create data source connectors from the registered sources.
   Status CreateSourceConnectors();
 
-  /**
-   * Adds a source to Stirling, and updates all state accordingly.
-   */
+  // Adds a source to Stirling, and updates all state accordingly.
   Status AddSourceFromRegistry(const std::string& name,
                                const SourceRegistry::RegistryElement& registry_element);
 
-  /**
-   * Main run implementation.
-   */
+  // Main run implementation.
   void RunCore();
 
-  /**
-   * Wait for Stirling to stop its main loop.
-   */
+  // Wait for Stirling to stop its main loop.
   void WaitForStop();
 
-  /**
-   * Helper function to figure out how much to sleep between polling iterations.
-   */
+  // Helper function to figure out how much to sleep between polling iterations.
   std::chrono::milliseconds TimeUntilNextTick();
 
-  /**
-   * Sleeps for the specified duration, as long as it is above some threshold.
-   */
+  // Sleeps for the specified duration, as long as it is above some threshold.
   void SleepForDuration(std::chrono::milliseconds sleep_duration);
 
-  /**
-   * Main thread used to spawn off RunThread().
-   */
+  // Main thread used to spawn off RunThread().
   std::thread run_thread_;
 
   std::atomic<bool> run_enable_ = false;
@@ -186,6 +173,9 @@ class StirlingImpl final : public Stirling {
 
   InfoClassManagerVec info_class_mgrs_;
   absl::base_internal::SpinLock info_class_mgrs_lock_;
+
+  // Structure to hold dynamically generated data table schemas.
+  std::map<uint64_t, std::unique_ptr<DynamicDataTableSchema>> dynamic_table_schemas_;
 
   std::unique_ptr<PubSubManager> config_;
 
@@ -296,6 +286,10 @@ Status StirlingImpl::AddSourceFromRegistry(
 }
 
 uint64_t StirlingImpl::RegisterDynamicTrace(const dynamic_tracing::ir::logical::Program& program) {
+  using dynamic_tracing::BCCProgram;
+  using dynamic_tracing::ir::physical::Program;
+  using dynamic_tracing::ir::physical::Struct;
+
   int64_t trace_id = dynamic_trace_index_++;
 
   dynamic_trace_status_map_[trace_id] = error::ResourceUnavailable("Probe deployment in progress.");
@@ -305,9 +299,15 @@ uint64_t StirlingImpl::RegisterDynamicTrace(const dynamic_tracing::ir::logical::
 #define ASSIGN_OR_RETURN(lhs, rexpr) \
   PL_ASSIGN_OR(lhs, rexpr, dynamic_trace_status_map_[trace_id] = __s__.status(); return trace_id;)
 
-  ASSIGN_OR_RETURN(dynamic_tracing::BCCProgram bcc_program,
-                   dynamic_tracing::CompileProgram(program));
-  PL_UNUSED(bcc_program);
+  ASSIGN_OR_RETURN(BCCProgram bcc_program, dynamic_tracing::CompileProgram(program));
+
+  for (auto& output : bcc_program.perf_buffer_specs) {
+    ASSIGN_OR_RETURN(std::unique_ptr<DynamicDataTableSchema> table_schema,
+                     DynamicDataTableSchema::Create(std::move(output.output)));
+    dynamic_table_schemas_[trace_id] = std::move(table_schema);
+  }
+
+  PL_UNUSED(bcc_program);  // Run DeployBCCProgram(bcc_program) here.
 
 #undef ASSIGN_OR_RETURN
 

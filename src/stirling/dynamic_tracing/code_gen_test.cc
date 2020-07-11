@@ -229,17 +229,17 @@ TEST(GenProgramTest, SpecsAndCode) {
 
   ASSERT_THAT(bcc_program.uprobes, SizeIs(1));
 
-  const auto& spec = bcc_program.uprobes[0].spec;
+  const auto& spec = bcc_program.uprobes[0];
 
   EXPECT_THAT(spec, Field(&UProbeSpec::binary_path, "target_binary_path"));
   EXPECT_THAT(spec, Field(&UProbeSpec::symbol, "target_symbol"));
   EXPECT_THAT(spec, Field(&UProbeSpec::attach_type, bpf_tools::BPFProbeAttachType::kEntry));
   EXPECT_THAT(spec, Field(&UProbeSpec::probe_fn, "probe_entry"));
 
-  ASSERT_THAT(bcc_program.uprobes[0].perf_buffer_specs, SizeIs(1));
+  ASSERT_THAT(bcc_program.perf_buffer_specs, SizeIs(1));
 
-  const auto& perf_buffer_name = bcc_program.uprobes[0].perf_buffer_specs[0].name;
-  const auto& perf_buffer_output = bcc_program.uprobes[0].perf_buffer_specs[0].output;
+  const auto& perf_buffer_name = bcc_program.perf_buffer_specs[0].name;
+  const auto& perf_buffer_output = bcc_program.perf_buffer_specs[0].output;
 
   EXPECT_THAT(perf_buffer_name, "data_events");
   EXPECT_THAT(perf_buffer_output, EqualsProto(
