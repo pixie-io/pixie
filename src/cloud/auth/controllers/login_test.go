@@ -1131,36 +1131,6 @@ func TestServer_Signup_UserAlreadyExists(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
-func TestServer_Signup_MismatchedEmail(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	// Setup expectations for the mocks.
-	a := mock_controllers.NewMockAuth0Connector(ctrl)
-	a.EXPECT().GetUserIDFromToken("tokenabc").Return("userid", nil)
-
-	fakeUserInfo := &controllers.UserInfo{
-		AppMetadata: nil,
-		Email:       "not-the-saame@gmail.com",
-		FirstName:   "first",
-		LastName:    "last",
-	}
-
-	a.EXPECT().GetUserInfo("userid").Return(fakeUserInfo, nil)
-
-	mockProfile := mock_profile.NewMockProfileServiceClient(ctrl)
-
-	viper.Set("jwt_signing_key", "jwtkey")
-	env, err := authenv.New(mockProfile)
-	assert.Nil(t, err)
-	s, err := controllers.NewServer(env, a)
-	assert.Nil(t, err)
-
-	resp, err := doSignupRequest(getTestContext(), t, s)
-	assert.Nil(t, resp)
-	assert.NotNil(t, err)
-}
-
 func verifyToken(t *testing.T, token, expectedUserID string, expectedOrgID string, expectedExpiry int64, key string) {
 	claims := jwt.MapClaims{}
 	_, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
@@ -1192,7 +1162,6 @@ func doLoginRequestNoAutoCreate(ctx context.Context, t *testing.T, server *contr
 func doSignupRequest(ctx context.Context, t *testing.T, server *controllers.Server) (*pb.SignupReply, error) {
 	req := &pb.SignupRequest{
 		AccessToken: "tokenabc",
-		UserEmail:   "abc@gmail.com",
 	}
 	return server.Signup(ctx, req)
 }

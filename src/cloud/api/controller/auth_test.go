@@ -43,12 +43,11 @@ func TestAuthSignupHandler(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/signup",
-		strings.NewReader("{\"accessToken\": \"the-token\",\"userEmail\": \"user@hulu.com\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.SignupRequest{
 		AccessToken: "the-token",
-		UserEmail:   "user@hulu.com",
 	}
 	testReplyToken := testingutils.GenerateTestJWTToken(t, "jwt-key")
 	testTokenExpiry := time.Now().Add(1 * time.Minute).Unix()
@@ -108,7 +107,7 @@ func TestAuthLoginHandler(t *testing.T) {
 	defer cleanup()
 
 	req, err := http.NewRequest("POST", "/login",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"user@hulu.com\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
@@ -201,7 +200,7 @@ func TestAuthLoginHandler_FailedAuthServiceRequestFailed(t *testing.T) {
 	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/login",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"user@gmail.com\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{
@@ -223,7 +222,7 @@ func TestAuthLoginHandler_FailedAuthRequest(t *testing.T) {
 	env, mockClients, cleanup := testutils.CreateTestAPIEnv(t)
 	defer cleanup()
 	req, err := http.NewRequest("POST", "/login",
-		strings.NewReader("{\"accessToken\": \"the-token\", \"userEmail\": \"user@hulu.com\"}"))
+		strings.NewReader("{\"accessToken\": \"the-token\"}"))
 	assert.Nil(t, err)
 
 	expectedAuthServiceReq := &authpb.LoginRequest{

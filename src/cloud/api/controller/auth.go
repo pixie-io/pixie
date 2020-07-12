@@ -56,7 +56,6 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 	// Extract params from the body which consists of the Auth0 ID token.
 	var params struct {
 		AccessToken string
-		UserEmail   string
 	}
 
 	defer r.Body.Close()
@@ -72,7 +71,6 @@ func AuthSignupHandler(env commonenv.Env, w http.ResponseWriter, r *http.Request
 
 	rpcReq := &authpb.SignupRequest{
 		AccessToken: params.AccessToken,
-		UserEmail:   params.UserEmail,
 	}
 
 	resp, err := env.(apienv.APIEnv).AuthClient().Signup(ctxWithCreds, rpcReq)

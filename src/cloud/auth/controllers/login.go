@@ -190,10 +190,6 @@ func (s *Server) Signup(ctx context.Context, in *pb.SignupRequest) (*pb.SignupRe
 		return nil, err
 	}
 
-	if userInfo.Email != in.UserEmail {
-		return nil, status.Error(codes.InvalidArgument, "email addresses don't match")
-	}
-
 	md, _ := metadata.FromIncomingContext(ctx)
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
