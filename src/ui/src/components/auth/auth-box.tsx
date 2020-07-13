@@ -6,7 +6,7 @@ import {
   Container,
   createStyles,
   fade,
-  Grid,
+  Grid, Link,
   Theme,
   Typography,
   withStyles,
@@ -62,6 +62,7 @@ const styles = ({ spacing, palette }: Theme) => createStyles({
 export interface AuthBoxProps extends WithStyles<typeof styles> {
   variant: 'login' | 'signup';
   onPrimaryButtonClick?: () => void;
+  toggleURL?: string;
 }
 
 const textByVariant = {
@@ -82,47 +83,55 @@ const textByVariant = {
 };
 
 export
-const AuthBox = withStyles(styles)(({ onPrimaryButtonClick, variant, classes }: AuthBoxProps) => (
-  <Box maxWidth={0.95} maxHeight={550} className={classes.root}>
-    <Container maxWidth='sm'>
-      <Grid container direction='column' spacing={2}>
-        <Grid item className={clsx(classes.flex, classes.centerSelf)}>
-          <img src={pixienautBalloonSvg} alt='pixienaut' className={classes.pixienaut} />
-        </Grid>
-        <Grid item className={clsx(classes.flex, classes.centerSelf)}>
-          <Typography variant='h4' className={clsx(classes.title, classes.textCenter)}>
-            {textByVariant[variant].title}
-          </Typography>
-        </Grid>
-        <Grid item className={clsx(classes.flex, classes.title, classes.centerSelf)}>
-          <Typography variant='subtitle1' className={clsx(classes.title, classes.textCenter)}>
-            {textByVariant[variant].body}
-          </Typography>
-        </Grid>
-        <Grid item className={clsx(classes.flex, classes.centerSelf)}>
-          <Button
-            variant='contained'
-            color='primary'
-            className={classes.button}
-            startIcon={<GoogleIcon />}
-            onClick={() => onPrimaryButtonClick && onPrimaryButtonClick()}
-          >
-            {textByVariant[variant].googleButtonText}
-          </Button>
-        </Grid>
-        <Grid item className={clsx(classes.flex, classes.gutter)}>
-          <Grid container direction='row' justify='center' alignItems='center'>
-            <Grid item>
-              <Typography variant='subtitle2' className={clsx(classes.account, classes.textCenter)}>
-                {textByVariant[variant].buttonCaption}
-              </Typography>
-            </Grid>
-            <Grid item>
-              <Button color='secondary'>{textByVariant[variant].buttonText}</Button>
+const AuthBox = withStyles(styles)((props: AuthBoxProps) => {
+  const {
+    onPrimaryButtonClick,
+    toggleURL,
+    variant,
+    classes,
+  } = props;
+  return (
+    <Box maxWidth={0.95} maxHeight={550} className={classes.root}>
+      <Container maxWidth='sm'>
+        <Grid container direction='column' spacing={2}>
+          <Grid item className={clsx(classes.flex, classes.centerSelf)}>
+            <img src={pixienautBalloonSvg} alt='pixienaut' className={classes.pixienaut} />
+          </Grid>
+          <Grid item className={clsx(classes.flex, classes.centerSelf)}>
+            <Typography variant='h4' className={clsx(classes.title, classes.textCenter)}>
+              {textByVariant[variant].title}
+            </Typography>
+          </Grid>
+          <Grid item className={clsx(classes.flex, classes.title, classes.centerSelf)}>
+            <Typography variant='subtitle1' className={clsx(classes.title, classes.textCenter)}>
+              {textByVariant[variant].body}
+            </Typography>
+          </Grid>
+          <Grid item className={clsx(classes.flex, classes.centerSelf)}>
+            <Button
+              variant='contained'
+              color='primary'
+              className={classes.button}
+              startIcon={<GoogleIcon />}
+              onClick={() => onPrimaryButtonClick && onPrimaryButtonClick()}
+            >
+              {textByVariant[variant].googleButtonText}
+            </Button>
+          </Grid>
+          <Grid item className={clsx(classes.flex, classes.gutter)}>
+            <Grid container direction='row' justify='center' alignItems='center'>
+              <Grid item>
+                <Typography variant='subtitle2' className={clsx(classes.account, classes.textCenter)}>
+                  {textByVariant[variant].buttonCaption}
+                </Typography>
+              </Grid>
+              <Grid item>
+                <Button component={Link} color='secondary' href={toggleURL}>{textByVariant[variant].buttonText}</Button>
+              </Grid>
             </Grid>
           </Grid>
         </Grid>
-      </Grid>
-    </Container>
-  </Box>
-));
+      </Container>
+    </Box>
+  );
+});
