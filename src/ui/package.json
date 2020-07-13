@@ -109,7 +109,7 @@
     "apollo-link-error": "^1.1.12",
     "apollo-link-http": "^1.5.5",
     "apollo-link-http-common": "^0.2.16",
-    "auth0-lock": "^11.10.0",
+    "auth0-js": "^9.13.4",
     "axios": "0.19.0",
     "axios-mock-adapter": "^1.18.1",
     "clsx": "^1.0.4",

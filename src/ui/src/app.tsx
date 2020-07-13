@@ -3,8 +3,6 @@ import { CloudClient } from 'common/cloud-gql-client';
 import { DARK_THEME } from 'common/mui-theme';
 import { SnackbarProvider } from 'components/snackbar/snackbar';
 import VersionInfo from 'components/version-info/version-info';
-import { AuthComplete } from 'pages/login/auth-complete';
-import Login from 'pages/login';
 import Vizier from 'containers/App/vizier';
 import {
   Redirect, Route, Router, Switch,
@@ -21,6 +19,24 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { CssBaseline } from '@material-ui/core';
 import { CloudClientContext } from './context/app-context';
+import { AuthRouter } from './pages/auth/auth';
+
+const RedirectWithArgs = (props) => {
+  const {
+    from,
+    to,
+    exact,
+    location,
+  } = props;
+
+  return (
+    <Redirect
+      from={from}
+      exact={exact}
+      to={{ pathname: to, search: location.search }}
+    />
+  );
+};
 
 export class App extends React.Component {
   // eslint-disable-next-line react/state-in-constructor
@@ -62,10 +78,11 @@ export class App extends React.Component {
               <ApolloProvider client={gqlClient}>
                 <div className='center-content'>
                   <Switch>
-                    <Route exact path='/auth-complete' component={AuthComplete} />
-                    <Route exact path='/login' component={Login} />
-                    <Route exact path='/logout' component={Login} />
-                    <Route exact path='/signup' component={Login} />
+                    <Route path='/auth' component={AuthRouter} />
+                    <RedirectWithArgs exact from='/login' to='/auth/login' />
+                    <RedirectWithArgs exact from='/logout' to='/auth/logout' />
+                    <RedirectWithArgs exact from='/signup' to='/auth/signup' />
+                    <RedirectWithArgs exact from='/auth-complete' to='/auth/cli-auth-complete' />
                     {
                       authenticated ? <Route component={Vizier} />
                         : <Redirect from='/*' to='/login' />

@@ -28,7 +28,7 @@ const plugins = [
   new FaviconsWebpackPlugin('../assets/favicon-base.png'),
   new HtmlWebpackPlugin({
     alwaysWriteToDisk: true,
-    chunks: ['config', 'manifest', 'commons', 'vendor', 'main', 'auth0'],
+    chunks: ['config', 'manifest', 'commons', 'vendor', 'main'],
     chunksSortMode: 'manual',
     template: 'index.html',
     filename: 'index.html',
@@ -186,15 +186,9 @@ const webpackConfig = {
           minSize: 0, // This is example is too small to create commons chunks
         },
         vendor: {
-          test: /[\\/]node_modules[\\/](?!auth0.*)/,
+          test: /[\\/]node_modules[\\/]/,
           chunks: 'initial',
           name: 'vendor',
-          priority: 10,
-        },
-        auth0: {
-          test: /[\\/]node_modules[\\/]auth0.*/,
-          chunks: 'initial',
-          name: 'auth0',
           priority: 10,
         },
       },

@@ -21,7 +21,6 @@ const CodeRenderer = withStyles(() => ({
     width: '100%',
     overflowX: 'auto',
     fontFamily: '"Roboto Mono", Monospace',
-    marginTop: '1rem',
     marginLeft: '1rem',
   },
 
