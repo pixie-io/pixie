@@ -87,7 +87,7 @@ export const DARK_THEME = createMuiTheme({
     },
     foreground: {
       one: '#b2b5bb',
-      two: '#ffffff',
+      two: '#f2f2f2',
       three: '#9696a5',
       grey1: '#4a4c4f',
       grey2: '#353738',

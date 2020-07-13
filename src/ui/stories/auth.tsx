@@ -7,7 +7,7 @@ import { Footer } from 'components/auth/footer';
 import { MessageBox } from 'components/auth/message';
 import { FrameElement } from './frame-utils';
 
-storiesOf('Auth', module)
+storiesOf('Auth | AuthBox', module)
   .add('Login', () => (
     <FrameElement width={500}>
       <AuthBox variant='login' />
@@ -23,7 +23,9 @@ storiesOf('Auth', module)
   ), {
     info: { inline: false },
     notes: 'The signup box',
-  })
+  });
+
+storiesOf('Auth | Signup Marcom', module)
   .add('Signup Marcom message', () => (
     <FrameElement width={500}>
       <SignupMarcom />
@@ -31,7 +33,9 @@ storiesOf('Auth', module)
   ), {
     info: { inline: false },
     notes: 'The signup marcom message',
-  })
+  });
+
+storiesOf('Auth | Message Box', module)
   .add('Message box', () => (
     <FrameElement width={500}>
       <MessageBox
@@ -43,7 +47,34 @@ storiesOf('Auth', module)
     info: { inline: false },
     notes: 'Message boxes used on the auth pages',
   })
-  .add('Auth footer', () => (
+  .add('Message box with error', () => (
+    <FrameElement width={500}>
+      <MessageBox
+        error
+        title='Auth Failed'
+        message='Login to this org is not allowed.'
+      />
+    </FrameElement>
+  ), {
+    info: { inline: false },
+    notes: 'Message box with error',
+  })
+  .add('Message box with error & details', () => (
+    <FrameElement width={500}>
+      <MessageBox
+        error
+        errorDetails='Internal error: bad things happened'
+        title='Auth Failed'
+        message='Login to this org is not allowed.'
+      />
+    </FrameElement>
+  ), {
+    info: { inline: false },
+    notes: 'Message box with error',
+  });
+
+storiesOf('Auth | Footer', module)
+  .add('Basic', () => (
     <FrameElement width={500}>
       <Footer />
     </FrameElement>
