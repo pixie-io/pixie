@@ -39,7 +39,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     padding: theme.spacing(1),
     backgroundColor: theme.palette.background.default,
     borderRadius: theme.spacing(0.5),
-    border: `solid 1px ${theme.palette.background.three}`,
+    border: `solid 1px ${theme.palette.foreground.grey3}`,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'stretch',
@@ -63,7 +63,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   widgetTitle: {
     ...theme.typography.subtitle1,
     padding: theme.spacing(1),
-    borderBottom: `solid 1px ${theme.palette.background.three}`,
+    borderBottom: `solid 1px ${theme.palette.foreground.grey3}`,
+    color: theme.palette.foreground.white,
   },
   chart: {
     flex: 1,

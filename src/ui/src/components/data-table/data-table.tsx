@@ -25,14 +25,14 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     color: theme.palette.text.primary,
     '& > .ReactVirtualized__Table__headerRow': {
       ...theme.typography.caption,
-      border: `solid 1px ${theme.palette.background.three}`,
+      border: `solid 1px ${theme.palette.foreground.grey3}`,
       backgroundColor: theme.palette.background.default,
       paddingRight: '0 !important',
       display: 'flex',
     },
   },
   row: {
-    borderBottom: `solid 1px ${theme.palette.background.three}`,
+    borderBottom: `solid 1px ${theme.palette.foreground.grey3}`,
     '& > .ReactVirtualized__Table__rowColumn:first-of-type': {
       marginLeft: 0,
       marginRight: 0,
@@ -44,7 +44,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     fontSize: '0.875rem',
   },
   rowContainer: {
-    borderBottom: `solid 1px ${theme.palette.background.three}`,
+    borderBottom: `solid 1px ${theme.palette.foreground.grey3}`,
     display: 'flex',
     flexDirection: 'column',
   },
@@ -76,11 +76,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     cursor: 'pointer',
   },
   highlighted: {
-    backgroundColor: theme.palette.background.three,
+    backgroundColor: theme.palette.foreground.grey3,
   },
   highlightable: {
     '&:hover': {
-      backgroundColor: theme.palette.background.three,
+      backgroundColor: theme.palette.foreground.grey3,
     },
   },
   center: {
