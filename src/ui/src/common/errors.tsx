@@ -33,8 +33,10 @@ export class VizierQueryError extends Error {
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   errorRow: {
-    padding: theme.spacing(2),
-    borderBottom: `solid 1px ${theme.palette.background.three}`,
+    ...theme.typography.body2,
+    fontFamily: '"Roboto Mono", Monospace',
+    marginLeft: `-${theme.spacing(3.3)}px`,
+    paddingBottom: theme.spacing(0.5),
   },
 }));
 

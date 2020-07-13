@@ -12,7 +12,6 @@ import {
 
 import DataDrawerToggle from './data-drawer-toggle';
 import DataViewer from './data-viewer';
-import ErrorPanel from './error-panel';
 import ExecutionStats from './execution-stats';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -59,9 +58,6 @@ const DataDrawer = (props) => {
             <>
               <LazyPanel className={classes.content} show={props.open && props.activeTab === 'data'}>
                 <DataViewer />
-              </LazyPanel>
-              <LazyPanel className={classes.content} show={props.open && props.activeTab === 'errors'}>
-                <ErrorPanel />
               </LazyPanel>
               <LazyPanel className={classes.content} show={props.open && props.activeTab === 'stats'}>
                 <ExecutionStats />

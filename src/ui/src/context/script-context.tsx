@@ -303,13 +303,7 @@ const ScriptContextProvider = (props) => {
             autoHideDuration: 5000,
           });
         } else {
-          openDrawerTab('errors');
-          showSnackbar({
-            message: errMsg,
-            action: () => openDrawerTab('errors'),
-            actionTitle: 'details',
-            autoHideDuration: 5000,
-          });
+          // This appears as an error in the canvas now.
         }
       })
       .finally(() => {

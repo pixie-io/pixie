@@ -11,6 +11,8 @@ import * as React from 'react';
 import * as GridLayout from 'react-grid-layout';
 import { resizeEvent, triggerResize } from 'utils/resize';
 import { dataFromProto } from 'utils/result-data-utils';
+import { Alert, AlertTitle } from '@material-ui/lab';
+import { VizierErrorDetails, VizierQueryError } from 'common/errors';
 
 import {
   createStyles, makeStyles, Theme, useTheme,
@@ -80,6 +82,32 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     left: '50%',
     transform: 'translate(-50%, -50%)',
   },
+  error: {
+    position: 'absolute',
+    zIndex: 1, // Position on top of canvas.
+    padding: theme.spacing(3),
+    width: '50%',
+    '& .MuiAlert-root': {
+      padding: theme.spacing(3),
+    },
+    '& .MuiAlert-icon': {
+      paddingTop: theme.spacing(0.6),
+    },
+    '& .MuiAlert-action': {
+      display: 'block',
+      color: theme.palette.text.secondary,
+      opacity: 0.65,
+    },
+  },
+  errorTitle: {
+    ...theme.typography.body2,
+    fontFamily: '"Roboto Mono", Monospace',
+    color: theme.palette.error.dark,
+    paddingBottom: theme.spacing(3),
+  },
+  hidden: {
+    display: 'none',
+  },
 }));
 
 const WidgetDisplay = ({
@@ -139,6 +167,25 @@ const WidgetDisplay = ({
   }
 };
 
+const ErrorDisplay = (props) => {
+  const [open, setOpen] = React.useState(true);
+  const toggleOpen = React.useCallback(() => setOpen((opened) => !opened), []);
+
+  React.useEffect(() => {
+    setOpen(true);
+  }, [props.error]);
+
+  const vzError = props.error as VizierQueryError;
+  return (
+    <div className={open ? props.classes.error : props.classes.hidden}>
+      <Alert severity='error' onClose={toggleOpen}>
+        <AlertTitle className={props.classes.errorTitle}>{vzError?.message || props.error}</AlertTitle>
+        <VizierErrorDetails error={props.error} />
+      </Alert>
+    </div>
+  );
+};
+
 const Grid = GridLayout.WidthProvider(GridLayout);
 
 interface CanvasProps {
@@ -149,7 +196,7 @@ interface CanvasProps {
 const Canvas = (props: CanvasProps) => {
   const classes = useStyles();
   const theme = useTheme();
-  const { tables, loading } = React.useContext(ResultsContext);
+  const { tables, loading, error } = React.useContext(ResultsContext);
   const { vis, setVis } = React.useContext(ScriptContext);
   const { isMobile } = React.useContext(LayoutContext);
   const { setTimeseriesDomain } = React.useContext(TimeSeriesContext);
@@ -269,19 +316,22 @@ const Canvas = (props: CanvasProps) => {
       </Grid>
     );
   }
-
   return (
-    <Grid
-      layout={layout}
-      cols={getGridWidth(isMobile)}
-      className={classes.grid}
-      onLayoutChange={updateLayoutInVis}
-      isDraggable={props.editable}
-      isResizable={props.editable}
-      margin={[theme.spacing(2.5), theme.spacing(2.5)]}
-    >
-      {charts}
-    </Grid>
+    <>
+      { error
+        && <ErrorDisplay classes={classes} error={error} /> }
+      <Grid
+        layout={layout}
+        cols={getGridWidth(isMobile)}
+        className={classes.grid}
+        onLayoutChange={updateLayoutInVis}
+        isDraggable={props.editable}
+        isResizable={props.editable}
+        margin={[theme.spacing(2.5), theme.spacing(2.5)]}
+      >
+        {charts}
+      </Grid>
+    </>
   );
 };
 
