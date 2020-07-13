@@ -3,11 +3,17 @@
 #ifdef __linux__
 
 #include <bcc/BPF.h>
-// Including bcc/BPF.h creates some conflicts with later including llvm.
+// Including bcc/BPF.h creates some conflicts with llvm.
 // So must remove this stray define for things to work.
 #ifdef STT_GNU_IFUNC
 #undef STT_GNU_IFUNC
 #endif
+
+// Including bcc/BPF.h creates some conflicts with our own code.
+#ifdef DECLARE_ERROR
+#undef DECLARE_ERROR
+#endif
+
 #include <linux/perf_event.h>
 
 #include <gtest/gtest_prod.h>
