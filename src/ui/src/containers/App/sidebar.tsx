@@ -16,10 +16,22 @@ import { Link } from 'react-router-dom';
 import Tooltip from '@material-ui/core/Tooltip';
 import ClusterContext from 'common/cluster-context';
 import { toEntityPathname, LiveViewPage } from 'components/live-widgets/utils/live-view-params';
+import gql from 'graphql-tag';
+import { useQuery } from '@apollo/react-hooks';
+
+const GET_USER_INFO = gql`
+{
+  user {
+    email
+    name
+    picture
+  }
+}
+`;
 
 const styles = ({ spacing, palette, transitions }: Theme) => createStyles({
   drawerOpen: {
-    width: spacing(26),
+    width: spacing(29),
     zIndex: 1250,
     flexShrink: 0,
     whiteSpace: 'nowrap',
@@ -59,8 +71,15 @@ const styles = ({ spacing, palette, transitions }: Theme) => createStyles({
     backgroundColor: palette.foreground.grey2,
   },
   profile: {
-    padding: spacing(0.5),
-    paddingBottom: spacing(1),
+    padding: 0,
+    marginLeft: -1 * spacing(1.5),
+  },
+  profileText: {
+    whiteSpace: 'nowrap',
+    '& .MuiTypography-displayBlock': {
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+    },
   },
 });
 
@@ -105,6 +124,8 @@ const SideBar = ({
     }]
   ), [selectedClusterName]);
 
+  const { data } = useQuery(GET_USER_INFO, { fetchPolicy: 'network-only' });
+
   return (
     <Drawer
       variant='permanent'
@@ -120,14 +141,23 @@ const SideBar = ({
         ))}
       </List>
       <div className={classes.spacer} />
-      <List>
-        {profileItems.map(({ icon, link, text }) => (
-          <SideBarItem key={text} classes={classes} icon={icon} link={link} text={text} />
-        ))}
-      </List>
-      <div>
-        <ProfileMenu className={classes.profile} />
-      </div>
+      {
+        localStorage.getItem('px-profile-sidebar') === 'true'
+          && (
+            <List>
+              <ListItem>
+                <ListItemIcon>
+                  <ProfileMenu className={classes.profile} />
+                </ListItemIcon>
+                <ListItemText
+                  className={classes.profileText}
+                  primary={data && data.user && data.user.name}
+                  secondary={data && data.user && data.user.email}
+                />
+              </ListItem>
+            </List>
+          )
+      }
     </Drawer>
   );
 };

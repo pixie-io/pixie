@@ -26,6 +26,7 @@ import LiveViewShortcuts from 'containers/live/shortcuts';
 import LiveViewTitle from 'containers/live/title';
 import LiveViewBreadcrumbs from 'containers/live/breadcrumbs';
 import NavBars from 'containers/App/nav-bars';
+import ProfileMenu from 'containers/profile-menu/profile-menu';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -172,6 +173,12 @@ const LiveView = () => {
             </ToggleButton>
           </Tooltip>
           )
+        }
+        {
+          (localStorage.getItem('px-profile-sidebar') === 'false' || !localStorage.getItem('px-profile-sidebar'))
+            && (
+              <ProfileMenu />
+            )
         }
       </NavBars>
       {
