@@ -27,7 +27,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       ...theme.typography.caption,
       border: `solid 1px ${theme.palette.foreground.grey3}`,
       backgroundColor: theme.palette.background.default,
-      paddingRight: '0 !important',
       display: 'flex',
     },
   },
@@ -47,6 +46,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     borderBottom: `solid 1px ${theme.palette.foreground.grey3}`,
     display: 'flex',
     flexDirection: 'column',
+    paddingRight: '0 !important',
   },
   cell: {
     paddingLeft: theme.spacing(3),
@@ -67,9 +67,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   compact: {
     paddingLeft: theme.spacing(1.5),
     paddingRight: 0,
-    '&:last-of-type': {
-      paddingRight: theme.spacing(1.5),
-    },
     height: theme.spacing(4),
   },
   clickable: {
@@ -127,7 +124,6 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     '&:hover': {
       color: theme.palette.foreground.white,
     },
-
   },
   expandedCell: {
     overflow: 'auto',
@@ -136,6 +132,13 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   hidden: {
     display: 'none',
+  },
+  cellWrapper: {
+    paddingRight: theme.spacing(2.4),
+    width: '100%',
+  },
+  innerCell: {
+    overflow: 'hidden',
   },
 }));
 
@@ -242,10 +245,12 @@ const InternalDataTable = ({
   const rowGetterWrapper = React.useCallback(({ index }) => rowGetter(index), [rowGetter]);
 
   const cellRenderer: TableCellRenderer = React.useCallback((props: TableCellProps) => (
-    <>
-      {props.columnData.cellRenderer && props.columnData.cellRenderer(props.cellData)}
-      {!props.columnData.cellRenderer && <span className={classes.cellText}>{String(props.cellData)}</span>}
-    </>
+    <div className={classes.cellWrapper}>
+      <div className={classes.innerCell}>
+        {props.columnData.cellRenderer && props.columnData.cellRenderer(props.cellData)}
+        {!props.columnData.cellRenderer && <span className={classes.cellText}>{String(props.cellData)}</span>}
+      </div>
+    </div>
   ), [classes.cellText]);
 
   const defaultCellHeight = compact ? theme.spacing(4) : theme.spacing(6);
