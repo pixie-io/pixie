@@ -98,8 +98,7 @@ class BCCCodeGenerator {
   StatusOr<std::vector<std::string>> GenerateCodeLines();
 
   // Returns the definition of a StructVariable, or null_opt if not found.
-  std::optional<const Struct*> FindStructVariable(std::string_view probe_name,
-                                                  std::string_view st_var_name) const;
+  std::optional<const Struct*> FindStruct(std::string_view struct_name) const;
 
  private:
   // Generates the code for a physical probe.
@@ -109,12 +108,6 @@ class BCCCodeGenerator {
 
   // Map from Struct names to their definition.
   absl::flat_hash_map<std::string_view, const ir::physical::Struct*> structs_;
-
-  // Map from StructVariable names to their definitions, for every probe.
-  // The top-level key is probe name.
-  absl::flat_hash_map<std::string_view,
-                      absl::flat_hash_map<std::string_view, const ir::physical::Struct*>>
-      struct_variables_;
 };
 
 std::string_view GenScalarType(ScalarType type) {
@@ -437,9 +430,6 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
                                     var.type(), var.name());
     }
 
-    // Record variable and its type definition.
-    struct_variables_[probe.name()][var.name()] = iter->second;
-
     MOVE_BACK_STR_VEC(&code_lines, GenStructVariable(*iter->second, var));
   }
 
@@ -477,19 +467,13 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
   return code_lines;
 }
 
-std::optional<const ir::physical::Struct*> BCCCodeGenerator::FindStructVariable(
-    std::string_view probe_name, std::string_view st_var_name) const {
-  auto probe_iter = struct_variables_.find(probe_name);
-  if (probe_iter == struct_variables_.end()) {
+std::optional<const ir::physical::Struct*> BCCCodeGenerator::FindStruct(
+    std::string_view struct_name) const {
+  auto iter = structs_.find(struct_name);
+  if (iter == structs_.end()) {
     return std::nullopt;
   }
-
-  auto st_iter = probe_iter->second.find(st_var_name);
-  if (st_iter == probe_iter->second.end()) {
-    return std::nullopt;
-  }
-
-  return st_iter->second;
+  return iter->second;
 }
 
 namespace {
@@ -641,22 +625,23 @@ StatusOr<BCCProgram> GenProgram(const Program& program) {
     res.uprobes.push_back(GetUProbeSpec(program.binary_path(), probe));
   }
 
-  // TODO(yzhao): Convert this to operate off program.outputs().
-  for (const auto& probe : program.probes()) {
-    for (const auto& output : probe.output_actions()) {
-      BCCProgram::PerfBufferSpec pf_spec;
-
-      pf_spec.name = output.perf_buffer_name();
-
-      auto struct_opt = generator.FindStructVariable(probe.name(), output.variable_name());
-      if (!struct_opt.has_value()) {
-        return error::InvalidArgument("Probe '$0' does not define StructVariable '$1'",
-                                      probe.name(), output.variable_name());
-      }
-      pf_spec.output = *struct_opt.value();
-
-      res.perf_buffer_specs.push_back(std::move(pf_spec));
+  for (const auto& output : program.outputs()) {
+    if (output.type().type_oneof_case() != VariableType::TypeOneofCase::kStructType) {
+      return error::InvalidArgument("The output type of perf buffer '$0' must be struct, got '$1'",
+                                    output.name(),
+                                    magic_enum::enum_name(output.type().type_oneof_case()));
     }
+    auto struct_opt = generator.FindStruct(output.type().struct_type());
+    if (!struct_opt.has_value()) {
+      return error::InvalidArgument("Struct '$0' was not defined", output.type().struct_type());
+    }
+
+    BCCProgram::PerfBufferSpec pf_spec;
+
+    pf_spec.name = output.name();
+    pf_spec.output = *struct_opt.value();
+
+    res.perf_buffer_specs.push_back(std::move(pf_spec));
   }
 
   return res;

@@ -184,6 +184,14 @@ TEST(GenProgramTest, SpecsAndCode) {
                                            type { scalar: INT32 }
                                          }
                                        }
+                                       outputs {
+                                          name: "data_events"
+                                          type { struct_type: "socket_data_event_t" }
+                                       }
+                                       outputs {
+                                          name: "data_events2"
+                                          type { struct_type: "socket_data_event_t" }
+                                       }
                                        probes {
                                          name: "probe_entry"
                                          trace_point {
@@ -236,7 +244,7 @@ TEST(GenProgramTest, SpecsAndCode) {
   EXPECT_THAT(spec, Field(&UProbeSpec::attach_type, bpf_tools::BPFProbeAttachType::kEntry));
   EXPECT_THAT(spec, Field(&UProbeSpec::probe_fn, "probe_entry"));
 
-  ASSERT_THAT(bcc_program.perf_buffer_specs, SizeIs(1));
+  ASSERT_THAT(bcc_program.perf_buffer_specs, SizeIs(2));
 
   const auto& perf_buffer_name = bcc_program.perf_buffer_specs[0].name;
   const auto& perf_buffer_output = bcc_program.perf_buffer_specs[0].output;
@@ -283,6 +291,8 @@ TEST(GenProgramTest, SpecsAndCode) {
       "const struct pid_goid_map_value_t* goid_ptr = pid_goid_map.lookup(&current_pid_tgid);",
       "return (goid_ptr == NULL) ? -1 : goid_ptr->goid_;",
       "}",
+      "BPF_PERF_OUTPUT(data_events);",
+      "BPF_PERF_OUTPUT(data_events2);",
       "int probe_entry(struct pt_regs* ctx) {",
       "uint32_t key = bpf_get_current_pid_tgid() >> 32;",
       "int32_t var = (int32_t)PT_REGS_SP(ctx);",
