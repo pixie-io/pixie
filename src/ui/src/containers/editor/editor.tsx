@@ -46,6 +46,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   editor: {
     height: '100%',
   },
+  spinner: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+  },
   closer: {
     cursor: 'pointer',
     display: 'flex',
@@ -67,7 +73,7 @@ const VisEditor = () => {
     }
 
     editorRef.current.changeEditorValue(visJSON);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visJSON]);
 
   return (
@@ -77,6 +83,7 @@ const VisEditor = () => {
         setVisEditorText(code);
       }}
       className={classes.editor}
+      spinnerClass={classes.spinner}
       language='json'
     />
   );
@@ -105,6 +112,7 @@ const ScriptEditor = () => {
         setPxlEditorText(code);
       }}
       className={classes.editor}
+      spinnerClass={classes.spinner}
       language='python'
     />
   );

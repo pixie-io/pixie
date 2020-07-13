@@ -2,15 +2,16 @@
 import clsx from 'clsx';
 import * as _ from 'lodash';
 import * as React from 'react';
-import MonacoEditor from 'react-monaco-editor';
 
 import { getKeyMap } from 'containers/live/shortcuts';
+import { Spinner } from 'components/spinner/spinner';
 
 interface CodeEditorProps {
   code?: string;
   onChange?: (code: string) => void;
   disabled?: boolean;
   className?: string;
+  spinnerClass?: string;
   language?: string;
 }
 
@@ -30,6 +31,9 @@ function removeKeybindings(editor, keys: string[]) {
 export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
   private editorRef;
 
+  // Holder for code in the editor.
+  private code;
+
   constructor(props) {
     super(props);
     this.state = {
@@ -43,6 +47,8 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
       scrollBeyondLastLine: 0,
       // eslint-disable-next-line react/no-unused-state
       fontFamily: 'Roboto Mono, monospace',
+      // eslint-disable-next-line react/no-unused-state
+      editorModule: null, // editorModule is the object containing MonacoEditor.
     };
     this.onChange = this.onChange.bind(this);
     this.onEditorMount = this.onEditorMount.bind(this);
@@ -51,6 +57,12 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
       if (this.editorRef) {
         this.editorRef.layout();
       }
+    });
+  }
+
+  componentDidMount() {
+    return import(/* webpackPrefetch: true */ 'react-monaco-editor').then(({ default: MonacoEditor }) => {
+      this.setState({ editorModule: MonacoEditor });
     });
   }
 
@@ -65,6 +77,10 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
     const shortcutKeys = _.flatMap(Object.values(getKeyMap()), (keybinding) => keybinding.sequence)
       .map((key) => key.toLowerCase().replace('control', 'ctrl'));
     removeKeybindings(editor, shortcutKeys);
+    if (this.code) {
+      this.changeEditorValue(this.code);
+      this.onChange(this.code);
+    }
   }
 
   getEditorValue = (): string => {
@@ -75,6 +91,10 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
   };
 
   changeEditorValue = (code) => {
+    if (!code) {
+      return;
+    }
+    this.code = code;
     if (!this.editorRef) {
       return;
     }
@@ -91,8 +111,11 @@ export class CodeEditor extends React.PureComponent<CodeEditorProps, any> {
   };
 
   render() {
+    if (!this.state.editorModule) {
+      return <div className={this.props.spinnerClass}><Spinner /></div>;
+    }
     return (
-      <MonacoEditor
+      <this.state.editorModule
         onChange={this.onChange}
         editorDidMount={this.onEditorMount}
         language={this.props.language ? this.props.language : 'python'}
