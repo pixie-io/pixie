@@ -19,6 +19,10 @@ declare module '@material-ui/core/styles/createPalette' {
       grey5?: string;
       white: string;
     };
+    topBar: {
+      colorTop?: string;
+      colorBottom?: string;
+    };
   }
 
   interface PaletteOptions {
@@ -33,6 +37,10 @@ declare module '@material-ui/core/styles/createPalette' {
       grey4?: string;
       grey5?: string;
       white?: string;
+    };
+    topBar: {
+      colorTop?: string;
+      colorBottom?: string;
     };
   }
 }
@@ -60,6 +68,10 @@ export const scrollbarStyles = (theme: Theme) => {
 export const DARK_THEME = createMuiTheme({
   palette: {
     type: 'dark',
+    topBar: {
+      colorTop: '#000000',
+      colorBottom: '#000000',
+    },
     primary: {
       main: '#12d6d6',
       dark: '#17aaaa',

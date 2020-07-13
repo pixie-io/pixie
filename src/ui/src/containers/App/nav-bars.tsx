@@ -13,8 +13,9 @@ import SideBar from 'containers/App/sidebar';
 const styles = ({ spacing, palette }: Theme) => createStyles({
   appBar: {
     zIndex: 1300, // z-index must be larger than drawer's zIndex, which is 1200.
-    background: 'linear-gradient(0deg, #129292, #129292)',
-    height: spacing(5.8),
+    background: `linear-gradient(0deg, ${palette.topBar.colorTop}, ${palette.topBar.colorBottom})`,
+    boxShadow: `0 ${spacing(0.25)}px ${spacing(1.5)}px ${palette.background.two}`,
+    height: spacing(6.5),
   },
   toolbar: {
     minHeight: spacing(5.8),
@@ -33,13 +34,13 @@ const styles = ({ spacing, palette }: Theme) => createStyles({
 });
 
 interface NavBarsProps extends WithStyles<typeof styles> {
-  appBarContents: React.ReactNode;
+  appBarContents?: React.ReactNode;
   children?: React.ReactNode;
 }
 
 const NavBars = ({
   classes, children,
-}) => {
+}: NavBarsProps) => {
   const [sidebarOpen, setSidebarOpen] = React.useState<boolean>(false);
   const toggleSidebar = React.useCallback(() => setSidebarOpen((opened) => !opened), []);
 
