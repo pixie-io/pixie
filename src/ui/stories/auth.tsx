@@ -71,6 +71,18 @@ storiesOf('Auth | Message Box', module)
   ), {
     info: { inline: false },
     notes: 'Message box with error',
+  })
+  .add('Message box with code', () => (
+    <FrameElement width={500}>
+      <MessageBox
+        title='Code Box'
+        message='Please copy and paste this code!'
+        code='a9123sd12321asda-sd123213as-as12'
+      />
+    </FrameElement>
+  ), {
+    info: { inline: false },
+    notes: 'Message box with error',
   });
 
 storiesOf('Auth | Footer', module)
