@@ -7,8 +7,6 @@ import {
 } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
-import ExpandLessIcon from '@material-ui/icons/ExpandLess';
-import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
 interface DataDrawerToggleProps {
   opened: boolean;
@@ -27,6 +25,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     cursor: 'pointer',
     boxShadow: `inset 0 ${theme.spacing(0.3)}px ${theme.spacing(1)}px ${fade(theme.palette.foreground.grey5, 0.1)}`,
     paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
   },
   icon: {
     marginLeft: theme.spacing(2),
@@ -34,17 +33,47 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   pixieLogo: {
     width: '48px',
-    marginLeft: 'auto',
+    marginLeft: theme.spacing(1),
     alignSelf: 'center',
     marginRight: theme.spacing(2),
     fill: theme.palette.primary.main,
+  },
+  label: {
+    paddingLeft: theme.spacing(2),
+    paddingRight: theme.spacing(2),
+  },
+  dataTabLabel: {
+    color: theme.palette.secondary.light,
+    minWidth: 0,
+    paddingLeft: `${theme.spacing(1)}px !important`,
+    paddingRight: `${theme.spacing(1)}px !important`,
+    '&:focus': {
+      color: `${theme.palette.secondary.main} !important`,
+    },
+    '&:after': {
+      content: '""',
+      background: theme.palette.foreground.grey2,
+      position: 'absolute',
+      height: '75%',
+      width: theme.spacing(0.2),
+      right: 0,
+    },
+  },
+  statsTabLabel: {
+    color: theme.palette.secondary.main,
+    '&:focus': {
+      color: `${theme.palette.secondary.dark} !important`,
+    },
+  },
+  spacer: {
+    flex: 1,
   },
 }));
 
 const StyledTabs = withStyles((theme: Theme) => createStyles({
   root: {
     flex: 1,
-    minHeight: theme.spacing(5),
+    minHeight: theme.spacing(4),
   },
   indicator: {
     backgroundColor: theme.palette.foreground.one,
@@ -53,7 +82,7 @@ const StyledTabs = withStyles((theme: Theme) => createStyles({
 
 const StyledTab = withStyles((theme: Theme) => createStyles({
   root: {
-    minHeight: theme.spacing(5),
+    minHeight: theme.spacing(4),
     padding: 0,
     textTransform: 'none',
     '&:focus': {
@@ -75,20 +104,45 @@ const DataDrawerToggle = (props: DataDrawerToggleProps) => {
     }
   };
 
-  const { error, stats } = React.useContext(ResultsContext);
+  const { stats, tables } = React.useContext(ResultsContext);
+
+  const tabs = React.useMemo(() => Object.keys(tables).map((tableName) => ({
+    title: tableName,
+  })), [tables]);
 
   React.useEffect(() => {
-    if ((!error && activeTab === 'errors')
-      || (!stats && activeTab === 'stats')) {
-      setActiveTab('data');
+    if (tabs.length > 0 && activeTab === '') {
+      setActiveTab(tabs[0].title);
     }
-  }, [activeTab, setActiveTab, error, stats]);
+  }, [tabs, setActiveTab, activeTab]);
+
+  const handleClick = React.useCallback((event) => {
+    if (event.target.className.baseVal.includes('SvgIcon')) {
+      // Clicking the scroll icon should not trigger the drawer to open/close.
+      event.stopPropagation();
+    }
+  }, []);
 
   return (
     <div className={classes.root} onClick={toggle}>
-      <StyledTabs value={activeTab} onChange={onTabChange}>
-        <StyledTab value='data' label='Underlying Data' />
-        {stats ? <StyledTab value='stats' label='Execution Stats' /> : null}
+      <span className={classes.label}>Underlying Data:</span>
+      <StyledTabs
+        value={activeTab}
+        onChange={onTabChange}
+        variant='scrollable'
+        scrollButtons='auto'
+        onClick={handleClick}
+      >
+        {tabs.map((tab) => (
+          <StyledTab
+            key={tab.title}
+            className={classes.dataTabLabel}
+            value={tab.title}
+            label={tab.title}
+          />
+        ))}
+        <div className={classes.spacer} />
+        {stats ? <StyledTab className={classes.statsTabLabel} value='stats' label='Execution Stats' /> : null}
       </StyledTabs>
       <PixieLogo className={classes.pixieLogo} />
     </div>

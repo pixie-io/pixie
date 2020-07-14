@@ -1,17 +1,17 @@
 import LazyPanel from 'components/lazy-panel';
 import { Spinner } from 'components/spinner/spinner';
-import { DataDrawerContext, DataDrawerTabsKey } from 'context/data-drawer-context';
+import { DataDrawerContext } from 'context/data-drawer-context';
 import { LayoutContext } from 'context/layout-context';
 import { ResultsContext } from 'context/results-context';
 import * as React from 'react';
 import ResizableDrawer from 'components/drawer/resizable-drawer';
+import { VizierDataTableWithDetails } from 'components/vizier-data-table/vizier-data-table';
 
 import {
   createStyles, makeStyles, Theme,
 } from '@material-ui/core/styles';
 
 import DataDrawerToggle from './data-drawer-toggle';
-import DataViewer from './data-viewer';
 import ExecutionStats from './execution-stats';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -47,7 +47,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
 
 const DataDrawer = (props) => {
   const classes = useStyles();
-  const { loading } = React.useContext(ResultsContext);
+  const { loading, tables } = React.useContext(ResultsContext);
+
+  const tabs = React.useMemo(() => Object.keys(tables).map((tableName) => ({
+    title: tableName,
+    content: <VizierDataTableWithDetails table={tables[tableName]} />,
+  })), [tables]);
 
   return (
     <div className={classes.drawerRoot}>
@@ -56,9 +61,17 @@ const DataDrawer = (props) => {
           ? (props.open ? <div className={classes.spinner}><Spinner /></div> : null)
           : (
             <>
-              <LazyPanel className={classes.content} show={props.open && props.activeTab === 'data'}>
-                <DataViewer />
-              </LazyPanel>
+              {
+                tabs.map((tab) => (
+                  <LazyPanel
+                    key={tab.title}
+                    className={classes.content}
+                    show={props.open && props.activeTab === tab.title}
+                  >
+                    {tab.content}
+                  </LazyPanel>
+                ))
+              }
               <LazyPanel className={classes.content} show={props.open && props.activeTab === 'stats'}>
                 <ExecutionStats />
               </LazyPanel>
@@ -84,7 +97,7 @@ export const DataDrawerSplitPanel = (props) => {
         opened={dataDrawerOpen}
         toggle={toggleDrawerOpen}
         activeTab={activeTab}
-        setActiveTab={(tab: DataDrawerTabsKey) => setActiveTab(tab)}
+        setActiveTab={(tab: string) => setActiveTab(tab)}
       />
     </div>
   );
