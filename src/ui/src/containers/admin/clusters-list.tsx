@@ -10,8 +10,8 @@ import gql from 'graphql-tag';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  AdminTooltip, clusterStatusGroup, convertHeartbeatMS, StyledTableCell,
-  StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell,
+  AdminTooltip, clusterStatusGroup, convertHeartbeatMS, getClusterDetailsURL,
+  StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell,
 } from './utils';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
@@ -115,7 +115,7 @@ export const ClustersTable = () => {
               <StyledTableCell>
                 <Button
                   component={Link}
-                  to={`/admin/clusters/${encodeURIComponent(cluster.name)}`}
+                  to={getClusterDetailsURL(encodeURIComponent(cluster.name))}
                   color='secondary'
                   variant='text'
                   disabled={cluster.statusGroup !== 'healthy'}

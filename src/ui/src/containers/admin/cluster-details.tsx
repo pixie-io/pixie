@@ -1,79 +1,39 @@
-import { scrollbarStyles } from 'common/mui-theme';
-import ClientContext, { VizierGRPCClientProvider } from 'common/vizier-grpc-client-context';
+import * as React from 'react';
+
+import ClientContext, {
+  VizierGRPCClientProvider, CLUSTER_STATUS_DISCONNECTED,
+} from 'common/vizier-grpc-client-context';
+import PixieBreadcrumbs from 'components/breadcrumbs/breadcrumbs';
 import { StatusCell, StatusGroup } from 'components/status/status';
 import ProfileMenu from 'containers/profile-menu/profile-menu';
 import { distanceInWords } from 'date-fns';
 import gql from 'graphql-tag';
-import * as React from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useHistory, useParams } from 'react-router';
+import { Link } from 'react-router-dom';
 import { dataFromProto } from 'utils/result-data-utils';
 
 import { useQuery } from '@apollo/react-hooks';
 
-import Breadcrumbs from '@material-ui/core/Breadcrumbs';
-import Button from '@material-ui/core/Button';
 import {
-  createStyles, makeStyles, Theme,
+  createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
+import Breadcrumbs from '@material-ui/core/Breadcrumbs';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
 import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
-import Typography from '@material-ui/core/Typography';
 
 import {
-  AdminTooltip, agentStatusGroup, convertHeartbeatMS, StyledLeftTableCell,
-  StyledRightTableCell, StyledTab, StyledTableCell, StyledTableHeaderCell,
-  StyledTabs,
+  AdminTooltip, agentStatusGroup, convertHeartbeatMS, getClusterDetailsURL,
+  StyledLeftTableCell, StyledRightTableCell, StyledTab, StyledTableCell,
+  StyledTableHeaderCell, StyledTabs,
 } from './utils';
 import { formatUInt128 } from '../../utils/format-data';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
-  root: {
-    height: '100%',
-    width: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    backgroundColor: theme.palette.background.default,
-    color: theme.palette.text.primary,
-    ...scrollbarStyles(theme),
-  },
-  topBar: {
-    display: 'flex',
-    margin: theme.spacing(1),
-    alignItems: 'center',
-  },
-  title: {
-    flexGrow: 1,
-    marginLeft: theme.spacing(2),
-  },
-  main: {
-    flex: 1,
-    minHeight: 0,
-    borderTopStyle: 'solid',
-    borderTopColor: theme.palette.background.three,
-    borderTopWidth: theme.spacing(0.25),
-  },
   error: {
-    padding: 20,
-  },
-  link: {
-    ...theme.typography.subtitle1,
-    margin: theme.spacing(1),
-  },
-  titleText: {
-    ...theme.typography.h6,
-    fontWeight: theme.typography.fontWeightBold,
-  },
-  breadcrumbText: {
-    ...theme.typography.subtitle2,
-    fontWeight: theme.typography.fontWeightLight,
-    color: '#748790',
-  },
-  breadcrumbLink: {
-    ...theme.typography.subtitle2,
-    color: '#748790',
+    padding: theme.spacing(2.5),
   },
   tabContents: {
     margin: theme.spacing(1),
@@ -205,6 +165,7 @@ const LIST_CLUSTERS = gql`
     id
     status
     clusterName
+    prettyClusterName
     vizierConfig {
       passthroughEnabled
     }
@@ -212,10 +173,97 @@ const LIST_CLUSTERS = gql`
 }
 `;
 
-const ClusterDetailsContents = ({ name }) => {
-  const classes = useStyles();
-  const [tab, setTab] = React.useState('agents');
+const StyledBreadcrumbLink = withStyles((theme: Theme) => ({
+  root: {
+    ...theme.typography.body2,
+    display: 'flex',
+    alignItems: 'center',
+    paddingLeft: theme.spacing(1),
+    paddingRight: theme.spacing(1),
+    height: theme.spacing(3),
+    color: theme.palette.foreground.grey5,
+  },
+}))(({ classes, children, to }: any) => (
+  <Link className={classes.root} to={to}>{children}</Link>
+));
 
+const StyledBreadcrumbs = withStyles((theme: Theme) => ({
+  root: {
+    display: 'flex',
+    paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
+    marginRight: theme.spacing(4.5),
+    marginLeft: theme.spacing(3),
+    marginBottom: theme.spacing(1),
+  },
+  separator: {
+    display: 'flex',
+    alignItems: 'center',
+    color: theme.palette.foreground.one,
+    fontWeight: 1000,
+    width: theme.spacing(1),
+  },
+}))(({ classes, children }: any) => (
+  <Breadcrumbs classes={classes}>
+    {children}
+  </Breadcrumbs>
+));
+
+const ClusterDetailsNavigation = ({ selectedClusterName }) => {
+  const history = useHistory();
+  const { loading, data } = useQuery(LIST_CLUSTERS);
+
+  if (loading) {
+    return (<div>Loading...</div>);
+  }
+  // Cluster always goes first in breadcrumbs.
+  const clusterPrettyNameToFullName = {};
+  let selectedClusterPrettyName = 'unknown cluster';
+
+  data.clusters.forEach(({ prettyClusterName, clusterName }) => {
+    clusterPrettyNameToFullName[prettyClusterName] = clusterName;
+    if (clusterName === selectedClusterName) {
+      selectedClusterPrettyName = prettyClusterName;
+    }
+  });
+
+  const breadcrumbs = [{
+    title: 'clusterName',
+    value: selectedClusterPrettyName,
+    selectable: true,
+    omitKey: true,
+    // eslint-disable-next-line
+    getListItems: async (input) => (data.clusters.filter((c) => c.status !== CLUSTER_STATUS_DISCONNECTED)
+      .map((c) => ({ value: c.prettyClusterName }))
+    ),
+    onSelect: (input) => {
+      history.push(getClusterDetailsURL(clusterPrettyNameToFullName[input]));
+    },
+  }];
+  return (
+    <StyledBreadcrumbs>
+      <StyledBreadcrumbLink to='/admin'>Admin</StyledBreadcrumbLink>
+      <StyledBreadcrumbLink to='/admin'>Clusters</StyledBreadcrumbLink>
+      <PixieBreadcrumbs breadcrumbs={breadcrumbs} />
+    </StyledBreadcrumbs>
+  );
+};
+
+export const ClusterDetails = withStyles((theme: Theme) => ({
+  error: {
+    padding: 20,
+  },
+  tabContents: {
+    margin: theme.spacing(1),
+  },
+  container: {
+    maxHeight: 800,
+  },
+}))(({ classes }: any) => {
+  const { name } = useParams();
+  const clusterName = decodeURIComponent(name);
+
+  const [tab, setTab] = React.useState('agents');
   const { loading, error, data } = useQuery(LIST_CLUSTERS, { pollInterval: AGENTS_POLL_INTERVAL });
 
   if (loading) {
@@ -228,20 +276,25 @@ const ClusterDetailsContents = ({ name }) => {
     return <div className={classes.error}>No clusters found.</div>;
   }
 
-  const cluster = data.clusters.find((c) => c.clusterName === name);
+  const cluster = data.clusters.find((c) => c.clusterName === clusterName);
   if (!cluster) {
     return (
-      <div className={classes.error}>
-        Cluster
-        {name}
-        {' '}
-        not found.
-      </div>
+      <>
+        <ClusterDetailsNavigation selectedClusterName={clusterName} />
+        <div className={classes.error}>
+          Cluster
+          {' '}
+          {name}
+          {' '}
+          not found.
+        </div>
+      </>
     );
   }
 
   return (
     <div>
+      <ClusterDetailsNavigation selectedClusterName={clusterName} />
       <StyledTabs
         value={tab}
         onChange={(event, newTab) => setTab(newTab)}
@@ -266,46 +319,4 @@ const ClusterDetailsContents = ({ name }) => {
       </div>
     </div>
   );
-};
-
-export const ClusterDetailsPage = () => {
-  const classes = useStyles();
-  const { name } = useParams();
-  const decodedName = decodeURIComponent(name);
-
-  return (
-    <div className={classes.root}>
-      <div className={classes.topBar}>
-        <div className={classes.title}>
-          <div className={classes.titleText}>Cluster View</div>
-          <Breadcrumbs classes={{ separator: classes.breadcrumbText, li: classes.breadcrumbLink }}>
-            <Button
-              classes={{ label: classes.breadcrumbLink }}
-              component={Link}
-              to='/admin'
-              color='secondary'
-            >
-              Admin
-            </Button>
-            <Button
-              classes={{ label: classes.breadcrumbLink }}
-              component={Link}
-              to='/admin'
-              color='secondary'
-            >
-              Cluster
-            </Button>
-            <Typography className={classes.breadcrumbText}>{decodedName}</Typography>
-          </Breadcrumbs>
-        </div>
-        <Button component={Link} to='/live' color='primary'>
-          Live View
-        </Button>
-        <ProfileMenu />
-      </div>
-      <div className={classes.main}>
-        <ClusterDetailsContents name={decodedName} />
-      </div>
-    </div>
-  );
-};
+});

@@ -2,11 +2,13 @@ import { StatusGroup } from 'components/status/status';
 import {
   createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
+import Button from '@material-ui/core/Button';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
 import TableCell from '@material-ui/core/TableCell';
 import Tooltip from '@material-ui/core/Tooltip';
 import * as React from 'react';
+import { Link } from 'react-router-dom';
 
 const tooltipStyles = makeStyles(() => createStyles({
   tooltip: {
@@ -52,6 +54,10 @@ export function clusterStatusGroup(status: string): StatusGroup {
     return 'unhealthy';
   }
   return 'unknown';
+}
+
+export function getClusterDetailsURL(clusterName: string): string {
+  return `/admin/clusters/${clusterName}`;
 }
 
 export const AdminTooltip = ({ children, title }) => {
@@ -114,6 +120,16 @@ export const StyledRightTableCell = withStyles(() => createStyles({
     borderRadius: '0px 10px 10px 0px',
   },
 }))(StyledTableCell);
+
+export const LiveViewButton = withStyles((theme: Theme) => createStyles({
+  root: {
+    color: theme.palette.foreground.grey5,
+  },
+}))(({ classes }: any) => (
+  <Button classes={classes} component={Link} to='/live'>
+    Live View
+  </Button>
+));
 
 withStyles((theme: Theme) => createStyles({
   root: {

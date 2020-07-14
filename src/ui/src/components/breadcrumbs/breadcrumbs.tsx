@@ -237,12 +237,12 @@ interface BreadcrumbProps extends WithStyles<typeof styles> {
   selectable: boolean;
   allowTyping?: boolean;
   getListItems?: (input: string) => Promise<Array<BreadcrumbListItem>>;
-  first: boolean;
   onSelect?: (input: string) => void;
+  omitKey?: boolean;
 }
 
 const Breadcrumb = ({
-  classes, title, value, selectable, allowTyping, getListItems, onSelect,
+  classes, title, value, selectable, allowTyping, getListItems, onSelect, omitKey,
 }: BreadcrumbProps) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -258,9 +258,7 @@ const Breadcrumb = ({
     <div className={classes.breadcrumb}>
       <div className={classes.body}>
         <div className={classes.content}>
-          <span className={classes.title}>
-            {`${title}: `}
-          </span>
+          { !omitKey && <span className={classes.title}>{`${title}: `}</span> }
           <span className={classes.value}>{value}</span>
           { selectable && <div className={classes.dropdownArrow} onClick={handleClick}><ArrowDropDownIcon /></div> }
           { !selectable && <div className={classes.spacer} />}
@@ -296,6 +294,8 @@ interface BreadcrumbsProps extends WithStyles<typeof styles> {
   breadcrumbs: Array<BreadcrumbOptions>;
 }
 
+// TODO(nserrino/michelle): Support links (non-menu) as a type of breadcrumb,
+// replace breadcrumbs in cluster details page with that new type of breadcrumb.
 const Breadcrumbs = ({
   classes, breadcrumbs,
 }: BreadcrumbsProps) => (
@@ -305,7 +305,6 @@ const Breadcrumbs = ({
         <>
           <Breadcrumb
             key={i}
-            first={i === 0}
             classes={classes}
             {...breadcrumb}
           />
