@@ -1,5 +1,7 @@
 #include "src/stirling/dynamic_tracing/probe_transformer.h"
 
+#include <map>
+#include <string>
 #include <utility>
 
 #include "src/stirling/dynamic_tracing/goid.h"
@@ -7,11 +9,6 @@
 namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
-
-void CreateOutput(const ir::logical::Probe& input_probe, ir::logical::Program* out) {
-  auto* out_buffer = out->add_outputs();
-  out_buffer->set_name(input_probe.name() + "_table");
-}
 
 void CreateMap(const ir::logical::Probe& input_probe, ir::logical::Program* out) {
   auto* stash_map = out->add_maps();
@@ -42,7 +39,9 @@ void CreateEntryProbe(const ir::logical::Probe& input_probe, ir::logical::Progra
   }
 }
 
-void CreateReturnProbe(const ir::logical::Probe& input_probe, ir::logical::Program* out) {
+Status CreateReturnProbe(const ir::logical::Probe& input_probe,
+                         const std::map<std::string_view, ir::shared::Output*>& outputs,
+                         ir::logical::Program* out) {
   auto* return_probe = out->add_probes();
   return_probe->set_name(input_probe.name() + "_return");
   return_probe->mutable_trace_point()->CopyFrom(input_probe.trace_point());
@@ -63,6 +62,18 @@ void CreateReturnProbe(const ir::logical::Probe& input_probe, ir::logical::Progr
   }
 
   // Generate output on return probe.
+  std::string output_table_name = input_probe.name() + "_table";
+  auto iter = outputs.find(output_table_name);
+  if (iter == outputs.end()) {
+    return error::Internal("Reference to undefined table: $0", output_table_name);
+  }
+
+  int probe_output_num_fields = input_probe.args_size() + input_probe.ret_vals_size();
+  if (iter->second->fields_size() != probe_output_num_fields) {
+    return error::Internal("Probe output size $0 does not match Output definition size $1",
+                           probe_output_num_fields, iter->second->fields_size());
+  }
+
   auto* output_action = return_probe->add_output_actions();
   output_action->set_output_name(input_probe.name() + "_table");
 
@@ -77,25 +88,31 @@ void CreateReturnProbe(const ir::logical::Probe& input_probe, ir::logical::Progr
   for (const auto& printk : input_probe.printks()) {
     return_probe->add_printks()->CopyFrom(printk);
   }
+
+  return Status::OK();
 }
 
-void TransformLogicalProbe(const ir::logical::Probe& input_probe, ir::logical::Program* out) {
+Status TransformLogicalProbe(const ir::logical::Probe& input_probe,
+                             const std::map<std::string_view, ir::shared::Output*>& outputs,
+                             ir::logical::Program* out) {
   // A logical probe is allowed to implicitly access arguments and return values.
   // Here we expand this out to be explicit. We break the logical probe into:
   // 1) An entry probe - to grab any potential arguments.
   // 2) A return probe - to grab any potential return values.
   // 3) A map - to stash the arguments and transfer them to the return probe.
-  // 4) An output - to output the results from the return probe.
   // TODO(oazizi): An optimization could be to determine whether both entry and return probes
   //               are required. When not required, one probe and the stash map can be avoided.
-  CreateOutput(input_probe, out);
   CreateMap(input_probe, out);
   CreateEntryProbe(input_probe, out);
-  CreateReturnProbe(input_probe, out);
+  PL_RETURN_IF_ERROR(CreateReturnProbe(input_probe, outputs, out));
+
+  return Status::OK();
 }
 
 StatusOr<ir::logical::Program> TransformLogicalProgram(const ir::logical::Program& input_program) {
   ir::logical::Program out;
+
+  std::map<std::string_view, ir::shared::Output*> outputs;
 
   // Copy the binary path.
   out.set_binary_path(input_program.binary_path());
@@ -104,6 +121,7 @@ StatusOr<ir::logical::Program> TransformLogicalProgram(const ir::logical::Progra
   for (const auto& o : input_program.outputs()) {
     auto* output = out.add_outputs();
     output->CopyFrom(o);
+    outputs[output->name()] = output;
   }
 
   // Copy all explicitly declared maps.
@@ -119,7 +137,7 @@ StatusOr<ir::logical::Program> TransformLogicalProgram(const ir::logical::Progra
 
   for (const auto& p : input_program.probes()) {
     if (p.trace_point().type() == ir::shared::TracePoint::LOGICAL) {
-      TransformLogicalProbe(p, &out);
+      PL_RETURN_IF_ERROR(TransformLogicalProbe(p, outputs, &out));
     } else {
       auto* probe = out.add_probes();
       probe->CopyFrom(p);

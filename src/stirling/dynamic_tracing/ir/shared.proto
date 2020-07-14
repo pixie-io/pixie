@@ -67,13 +67,15 @@ message Map {
   VariableType value_type = 3; // Exclusive to physical IR.
 }
 
-// Describes a perf buffer to hold output data from BPF.
+// Describes the structure of the data Output.
 // Corresponds to px.Output().
 message Output {
   string name = 1;
 
+  repeated string fields = 2;
+
   // TODO(yzhao): Remove this and create PerfBuffer in physical.proto with it.
-  VariableType type = 2;  // Exclusive to physical IR.
+  VariableType type = 3;  // Exclusive to physical IR.
 }
 
 // Describes a condition to be checked.

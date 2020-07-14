@@ -15,9 +15,20 @@ using ::pl::testing::proto::EqualsProto;
 
 constexpr std::string_view kLogicalProgram = R"(
 binary_path: "$0"
-probes: {
+outputs {
+  name: "probe0_table"
+  fields: "arg0"
+  fields: "arg1"
+  fields: "arg2"
+  fields: "arg3"
+  fields: "arg4"
+  fields: "arg5"
+  fields: "retval0"
+  fields: "retval1"
+}
+probes {
   name: "probe0"
-  trace_point: {
+  trace_point {
     symbol: "main.MixedArgTypes"
     type: LOGICAL
   }
@@ -60,6 +71,14 @@ constexpr std::string_view kTransformedProgram = R"proto(
 binary_path: "$0"
 outputs {
   name: "probe0_table"
+  fields: "arg0"
+  fields: "arg1"
+  fields: "arg2"
+  fields: "arg3"
+  fields: "arg4"
+  fields: "arg5"
+  fields: "retval0"
+  fields: "retval1"
 }
 maps {
   name: "pid_goid_map"

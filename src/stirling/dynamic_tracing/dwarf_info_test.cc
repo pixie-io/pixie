@@ -314,9 +314,14 @@ maps {
 }
 outputs {
   name: "out_table"
+  fields: "arg0"
+  fields: "arg1"
+  fields: "arg2"
 }
 outputs {
   name: "out_table2"
+  fields: "arg0"
+  fields: "arg1"
 }
 probes: {
   trace_point: {
@@ -446,10 +451,15 @@ maps {
 }
 outputs {
   name: "out_table"
+  fields: "arg0"
+  fields: "arg1"
+  fields: "arg2"
   type { struct_type: "out_table_value_t" }
 }
 outputs {
   name: "out_table2"
+  fields: "arg0"
+  fields: "arg1"
   type { struct_type: "out_table2_value_t" }
 }
 probes: {
