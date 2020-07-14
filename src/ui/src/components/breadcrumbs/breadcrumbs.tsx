@@ -7,6 +7,7 @@ import TextField from '@material-ui/core/TextField';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import ListItemText from '@material-ui/core/ListItemText';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
 
 const styles = ({ spacing, typography, palette }: Theme) => createStyles({
   breadcrumbs: {
@@ -105,6 +106,9 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
     fontWeight: 1000,
     width: spacing(1),
   },
+  icon: {
+    minWidth: spacing(4),
+  },
 });
 
 interface DialogDropdownProps extends WithStyles<typeof styles> {
@@ -118,7 +122,7 @@ interface DialogDropdownProps extends WithStyles<typeof styles> {
 const DialogDropdown = ({
   classes, onSelect, onClose, getListItems, showInputfield, anchorEl,
 }) => {
-  const [listItems, setListItems] = React.useState<Array<string>>([]);
+  const [listItems, setListItems] = React.useState<Array<BreadcrumbListItem>>([]);
   const inputRef = React.useRef(null);
 
   const onEnter = React.useCallback(() => {
@@ -148,7 +152,7 @@ const DialogDropdown = ({
 
   const handleInput = React.useCallback((input) => {
     if (getListItems) {
-      getListItems(input).then((items) => {
+      getListItems(input.target.value).then((items) => {
         setListItems(items);
       });
     }
@@ -206,13 +210,20 @@ const DialogDropdown = ({
       {
         listItems.map((item) => (
           <MenuItem
-            key={item}
+            key={item.value}
             onClick={() => {
-              onSelect(item);
+              onSelect(item.value);
               handleClose();
             }}
           >
-            <ListItemText primary={item} />
+
+            {item.icon
+              && (
+                <ListItemIcon className={classes.icon}>
+                  {item.icon}
+                </ListItemIcon>
+              )}
+            <ListItemText primary={item.value} />
           </MenuItem>
         ))
       }
@@ -225,13 +236,13 @@ interface BreadcrumbProps extends WithStyles<typeof styles> {
   value: string;
   selectable: boolean;
   allowTyping?: boolean;
-  getListItems?: (input: string) => Promise<Array<string>>;
+  getListItems?: (input: string) => Promise<Array<BreadcrumbListItem>>;
   first: boolean;
   onSelect?: (input: string) => void;
 }
 
 const Breadcrumb = ({
-  classes, title, value, selectable, allowTyping, getListItems, first, onSelect,
+  classes, title, value, selectable, allowTyping, getListItems, onSelect,
 }: BreadcrumbProps) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -267,12 +278,17 @@ const Breadcrumb = ({
   );
 };
 
+interface BreadcrumbListItem {
+  value: string;
+  icon?: React.ReactNode;
+}
+
 interface BreadcrumbOptions {
   title: string;
   value: string;
   selectable: boolean;
   allowTyping?: boolean;
-  getListItems?: (input: string) => Promise<Array<string>>;
+  getListItems?: (input: string) => Promise<Array<BreadcrumbListItem>>;
   onSelect?: (input: string) => void;
 }
 

@@ -15,6 +15,8 @@ import { ScriptContext } from 'context/script-context';
 import { entityPageForScriptId } from 'components/live-widgets/utils/live-view-params';
 import { parseVis } from 'containers/live/vis';
 import { EntityType, pxTypetoEntityType } from 'containers/new-command-input/autocomplete-utils';
+import { StatusCell } from 'components/status/status';
+import { clusterStatusGroup } from 'containers/admin/utils';
 
 const LIST_CLUSTERS = gql`
 {
@@ -93,7 +95,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     selectable: true,
     // eslint-disable-next-line
     getListItems: async (input) => (data.clusters.filter((c) => c.status !== CLUSTER_STATUS_DISCONNECTED)
-      .map((c) => (c.prettyClusterName))
+      .map((c) => ({ value: c.prettyClusterName, icon: <StatusCell statusGroup={clusterStatusGroup(c.status)} /> }))
     ),
     onSelect: (input) => {
       setCluster(clusterNameToID[input]);
@@ -122,7 +124,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     const entityType = pxTypetoEntityType(argTypes[argName]);
     if (entityType !== 'AEK_UNKNOWN') {
       argProps.getListItems = async (input) => (getCompletions(input, entityType)
-        .then((results) => (results.data.autocompleteField.map((suggestion) => (suggestion.name)))));
+        .then((results) => (results.data.autocompleteField.map((suggestion) => ({ value: suggestion.name })))));
     }
 
     // TODO(michelle): Ideally we should just be able to use the entityType to determine whether the
@@ -144,11 +146,10 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     selectable: true,
     allowTyping: true,
     getListItems: async (input) => {
-      const value = input?.target?.value;
-      if (!value) {
-        return scriptIds;
+      if (!input) {
+        return scriptIds.map((scriptId) => ({ value: scriptId }));
       }
-      return scriptIds.filter((id) => id.indexOf(value) >= 0);
+      return scriptIds.filter((id) => id.indexOf(input) >= 0).map((scriptId) => ({ value: scriptId }));
     },
     onSelect: (newVal) => {
       const script = scripts.get(newVal);

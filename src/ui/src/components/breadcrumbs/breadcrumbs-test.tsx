@@ -17,9 +17,9 @@ xdescribe('<Breadcrumbs/>', () => {
         allowTyping: false,
         getListItems: async (input) => {
           if (input) {
-            return ['cluster1', 'cluster2', 'cluster3'];
+            return [{ value: 'cluster1' }, { value: 'cluster2' }, { value: 'cluster3' }];
           }
-          return ['cluster1', 'cluster2', 'cluster3'];
+          return [{ value: 'cluster1' }, { value: 'cluster2' }, { value: 'cluster3' }];
         },
       },
       {
@@ -29,9 +29,9 @@ xdescribe('<Breadcrumbs/>', () => {
         allowTyping: true,
         getListItems: async (input) => {
           if (input === '') {
-            return ['pod1', 'pod2'];
+            return [{ value: 'pod1' }, { value: 'pod2' }];
           }
-          return ['some pod', 'another pod', 'pod'];
+          return [{ value: 'some pod' }, { value: 'another pod' }, { value: 'pod' }];
         },
       },
       {

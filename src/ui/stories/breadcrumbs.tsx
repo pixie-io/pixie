@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import { storiesOf } from '@storybook/react';
+import { StatusCell } from 'components/status/status';
 import Breadcrumbs from '../src/components/breadcrumbs/breadcrumbs';
 
 storiesOf('Breadcrumbs', module)
@@ -13,7 +14,11 @@ storiesOf('Breadcrumbs', module)
         allowTyping: false,
         // eslint-disable-next-line
         getListItems: async (input) => (
-          ['cluster1', 'cluster2', 'cluster3']
+          [
+            { value: 'cluster1', icon: <StatusCell statusGroup='healthy' /> },
+            { value: 'cluster2', icon: <StatusCell statusGroup='unhealthy' /> },
+            { value: 'cluster3', icon: <StatusCell statusGroup='pending' /> },
+          ]
         ),
         onSelect: (input) => {
           // eslint-disable-next-line
@@ -27,9 +32,9 @@ storiesOf('Breadcrumbs', module)
         allowTyping: true,
         getListItems: async (input) => {
           if (input === '') {
-            return ['pod1', 'pod2'];
+            return [{ value: 'pod1' }, { value: 'pod2' }];
           }
-          return ['some pod', 'another pod', 'pod'];
+          return [{ value: 'some pod' }, { value: 'another pod' }, { value: 'pod' }];
         },
         onSelect: (input) => {
           // eslint-disable-next-line
