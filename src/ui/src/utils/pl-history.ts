@@ -4,7 +4,7 @@ import analytics from 'utils/analytics';
 const history = createBrowserHistory();
 
 function showIntercom(path: string): boolean {
-  return path === '/login' || path === '/signup';
+  return path === '/auth/login' || path === '/auth/signup';
 }
 
 function sendPageEvent(path: string) {
