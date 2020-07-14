@@ -25,7 +25,7 @@ TEST(PrintRecordBatchTest, AllRecordsToString) {
   EXPECT_EQ(
       "[test] int64:[0] string:[test]\n"
       "[test] int64:[0] string:[test]\n",
-      ToString("test", fixture.elements(), fixture.record_batch()));
+      ToString("test", fixture.SchemaProto(), fixture.record_batch()));
 }
 
 }  // namespace stirling

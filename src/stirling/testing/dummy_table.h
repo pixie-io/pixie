@@ -40,6 +40,7 @@ struct TableFixture {
   DataTable::RecordBuilder<schema> record_builder() {
     return DataTable::RecordBuilder<schema>(&data_table);
   }
+  stirlingpb::TableSchema SchemaProto() { return schema->ToProto(); }
 
   DataTable data_table;
 };

@@ -6,19 +6,19 @@
 #include <iomanip>
 #include <thread>
 
-#include "absl/strings/str_split.h"
+#include <absl/strings/str_split.h>
+
 #include "src/common/base/base.h"
-#include "src/stirling/jvm_stats_connector.h"
 #include "src/stirling/output.h"
-#include "src/stirling/pgsql_table.h"
-#include "src/stirling/pid_runtime_connector.h"
-#include "src/stirling/seq_gen_connector.h"
-#include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
-#include "src/stirling/system_stats_connector.h"
-#include "src/stirling/types.h"
 
+#include "src/stirling/cass_table.h"
+#include "src/stirling/http_table.h"
+#include "src/stirling/mysql_table.h"
+#include "src/stirling/pgsql_table.h"
+
+using pl::stirling::PrintRecordBatch;
 using pl::stirling::SourceRegistry;
 using pl::stirling::SourceRegistrySpecifier;
 using pl::stirling::Stirling;
@@ -26,30 +26,12 @@ using pl::stirling::stirlingpb::Publish;
 using pl::stirling::stirlingpb::Subscribe;
 
 using pl::types::ColumnWrapperRecordBatch;
-using pl::types::DataType;
-using pl::types::Float64Value;
-using pl::types::Int64Value;
-using pl::types::SharedColumnWrapper;
-using pl::types::StringValue;
 using pl::types::TabletID;
-using pl::types::Time64NSValue;
-using pl::types::UInt128Value;
 
-using pl::stirling::JVMStatsConnector;
-using pl::stirling::PIDRuntimeConnector;
-using pl::stirling::SeqGenConnector;
-using pl::stirling::SocketTraceConnector;
-using pl::stirling::SystemStatsConnector;
-
-using pl::stirling::DataElement;
-using pl::stirling::kConnStatsTable;
 using pl::stirling::kCQLTable;
 using pl::stirling::kHTTPTable;
-using pl::stirling::kJVMStatsTable;
 using pl::stirling::kMySQLTable;
 using pl::stirling::kPGSQLTable;
-
-using pl::ArrayView;
 
 DEFINE_string(sources, "kProd", "[kAll|kProd|kMetrics|kTracers] Choose sources to enable.");
 DEFINE_string(print_record_batches, "",
@@ -65,42 +47,29 @@ std::vector<std::string_view> table_print_enables = {kHTTPTable.name(), kMySQLTa
 
 absl::TimeZone tz;
 
+Publish* g_publication = nullptr;
+
 void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
                              std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
   std::string name = table_id_to_name_map[table_id];
 
+  // Only output enabled tables (lookup by name).
   if (std::find(table_print_enables.begin(), table_print_enables.end(), name) ==
       table_print_enables.end()) {
     return;
   }
 
-  // Use assigned names, from registry.
-  if (name == SeqGenConnector::kSeq0Table.name()) {
-    PrintRecordBatch("SeqGen-0", SeqGenConnector::kSeq0Table.elements(), *record_batch);
-  } else if (name == SeqGenConnector::kSeq1Table.name()) {
-    PrintRecordBatch("SeqGen-1", SeqGenConnector::kSeq1Table.elements(), *record_batch);
-  } else if (name == kMySQLTable.name()) {
-    PrintRecordBatch("MySQLTrace", kMySQLTable.elements(), *record_batch);
-  } else if (name == kCQLTable.name()) {
-    PrintRecordBatch("CQLTrace", kCQLTable.elements(), *record_batch);
-  } else if (name == PIDRuntimeConnector::kTable.name()) {
-    PrintRecordBatch("PIDStat-BCC", PIDRuntimeConnector::kTable.elements(), *record_batch);
-  } else if (name == kHTTPTable.name()) {
-    PrintRecordBatch("HTTPTrace", kHTTPTable.elements(), *record_batch);
-  } else if (name == SystemStatsConnector::kProcessStatsTable.name()) {
-    PrintRecordBatch("ProcessStats", SystemStatsConnector::kProcessStatsTable.elements(),
-                     *record_batch);
-  } else if (name == SystemStatsConnector::kNetworkStatsTable.name()) {
-    PrintRecordBatch("NetStats", SystemStatsConnector::kNetworkStatsTable.elements(),
-                     *record_batch);
-  } else if (name == kJVMStatsTable.name()) {
-    PrintRecordBatch("JVMStats", kJVMStatsTable.elements(), *record_batch);
-  } else if (name == kPGSQLTable.name()) {
-    PrintRecordBatch("PostgreSQL", kPGSQLTable.elements(), *record_batch);
-  } else if (name == kConnStatsTable.name()) {
-    PrintRecordBatch("ConnStats", kConnStatsTable.elements(), *record_batch);
+  // Get the table schema for the table.
+  DCHECK(g_publication != nullptr);
+  const auto& info_classes = g_publication->published_info_classes();
+  auto iter = std::find_if(
+      info_classes.begin(), info_classes.end(),
+      [&name](const pl::stirling::stirlingpb::InfoClass& x) { return x.name() == name; });
+  if (iter == info_classes.end()) {
+    return;
   }
-  // Can add other connectors, if desired, here.
+
+  PrintRecordBatch(name, iter->schema(), *record_batch);
 }
 
 // Put this in global space, so we can kill it in the signal handler.
@@ -152,13 +121,14 @@ int main(int argc, char** argv) {
   g_stirling = stirling.get();
 
   // Get a publish proto message to subscribe from.
-  Publish publish_proto;
-  stirling->GetPublishProto(&publish_proto);
+  Publish publication;
+  stirling->GetPublishProto(&publication);
+  g_publication = &publication;
 
   // Subscribe to all elements.
   // Stirling will update its schemas and sets up the data tables.
-  auto subscribe_proto = pl::stirling::SubscribeToAllInfoClasses(publish_proto);
-  PL_CHECK_OK(stirling->SetSubscription(subscribe_proto));
+  auto subscription = pl::stirling::SubscribeToAllInfoClasses(publication);
+  PL_CHECK_OK(stirling->SetSubscription(subscription));
 
   // Get a map from InfoClassManager names to Table IDs
   table_id_to_name_map = stirling->TableIDToNameMap();

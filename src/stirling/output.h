@@ -11,13 +11,13 @@ namespace pl {
 namespace stirling {
 
 // Returns a string representation of the row specified by index.
-std::string ToString(const ArrayView<DataElement>& schema,
+std::string ToString(const stirlingpb::TableSchema& schema,
                      const types::ColumnWrapperRecordBatch& record_batch, size_t index);
 
-std::string ToString(std::string_view prefix, const ArrayView<DataElement>& schema,
+std::string ToString(std::string_view prefix, const stirlingpb::TableSchema& schema,
                      const types::ColumnWrapperRecordBatch& record_batch);
 
-void PrintRecordBatch(std::string_view prefix, const ArrayView<DataElement>& schema,
+void PrintRecordBatch(std::string_view prefix, const stirlingpb::TableSchema& schema,
                       const types::ColumnWrapperRecordBatch& record_batch);
 
 }  // namespace stirling

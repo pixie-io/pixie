@@ -43,7 +43,7 @@ TEST_F(ConnStatsBPFTest, UnclassifiedEvents) {
   std::vector<TaggedRecordBatch> tablets = data_table_.ConsumeRecords();
   ASSERT_FALSE(tablets.empty());
   types::ColumnWrapperRecordBatch record_batch = tablets[0].records;
-  PrintRecordBatch("test", kConnStatsTable.elements(), record_batch);
+  PrintRecordBatch("test", kConnStatsTable.ToProto(), record_batch);
 
   {
     auto indices = FindRecordIdxMatchesPID(record_batch, kPGSQLUPIDIdx, cs.ServerPID());
