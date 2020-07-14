@@ -30,6 +30,7 @@ namespace compiler {
 using FuncToExecute = plannerpb::QueryRequest::FuncToExecute;
 using ExecFuncs = std::vector<FuncToExecute>;
 using ArgValues = std::vector<FuncToExecute::ArgValue>;
+using ModuleHandler = absl::flat_hash_map<std::string, QLObjectPtr>;
 
 #define PYPA_PTR_CAST(TYPE, VAL) \
   std::static_pointer_cast<typename pypa::AstTypeByID<pypa::AstType::TYPE>::Type>(VAL)
@@ -62,8 +63,9 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
    */
   static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(
-      IR* graph, CompilerState* compiler_state, bool func_based_exec = false,
-      const absl::flat_hash_set<std::string>& reserved_names = {});
+      IR* graph, CompilerState* compiler_state, ModuleHandler* module_handler,
+      bool func_based_exec = false, const absl::flat_hash_set<std::string>& reserved_names = {},
+      const absl::flat_hash_map<std::string, std::string>& module_map = {});
 
   /**
    * @brief Creates a child of this visitor, sharing the graph,
@@ -149,12 +151,14 @@ class ASTVisitorImpl : public ASTVisitor {
    * @param ir_graph
    */
   ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table,
-                 bool func_based_exec, const absl::flat_hash_set<std::string>& reserved_names)
+                 bool func_based_exec, const absl::flat_hash_set<std::string>& reserved_names,
+                 ModuleHandler* module_handler)
       : ir_graph_(ir_graph),
         compiler_state_(compiler_state),
         var_table_(var_table),
         func_based_exec_(func_based_exec),
-        reserved_names_(reserved_names) {}
+        reserved_names_(reserved_names),
+        module_handler_(module_handler) {}
 
   Status InitGlobals();
   Status CreateBoolLiterals();
@@ -527,11 +531,25 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<QLObjectPtr> ParseStringAsType(const pypa::AstPtr& ast, const std::string& value,
                                           std::shared_ptr<TypeObject> type);
 
+  Status SetupModules(const absl::flat_hash_map<std::string, std::string>& module_name_to_pxl_map);
+
+  /**
+   * @brief Creates a child of this visitor, sharing the graph,
+   * compiler_state, and creates a vartable that is a child of this visitor's var_table.
+   * Internal
+   *
+   * @return std::shared_ptr<ASTVisitorImpl>
+   */
+  std::shared_ptr<ASTVisitorImpl> CreateChildImpl(std::shared_ptr<VarTable> var_table);
+
   IR* ir_graph_;
   CompilerState* compiler_state_;
   std::shared_ptr<VarTable> var_table_;
   bool func_based_exec_;
   absl::flat_hash_set<std::string> reserved_names_;
+  // The object that holds onto modules. Added separately from VarTable to prevent re-compilation of
+  // modules.
+  ModuleHandler* module_handler_;
 };
 
 }  // namespace compiler

@@ -280,8 +280,9 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   PL_RETURN_IF_ERROR(info->Init(info_pb));
   auto compiler_state =
       std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
-  PL_ASSIGN_OR_RETURN(auto ast_walker,
-                      compiler::ASTVisitorImpl::Create(ir.get(), compiler_state.get()));
+  compiler::ModuleHandler module_handler;
+  PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
+                                           ir.get(), compiler_state.get(), &module_handler));
 
   pypa::AstModulePtr ast;
   pypa::SymbolTablePtr symbols;
@@ -896,12 +897,13 @@ class ASTVisitorTest : public OperatorTests {
   }
 
   StatusOr<std::shared_ptr<IR>> CompileGraph(const std::string& query) {
-    return CompileGraph(query, /* exec_funcs */ {});
+    return CompileGraph(query, /* exec_funcs */ {}, /* module_name_to_pxl */ {});
   }
 
   StatusOr<std::shared_ptr<IR>> CompileGraph(
       const std::string& query,
-      const std::vector<plannerpb::QueryRequest::FuncToExecute>& exec_funcs) {
+      const std::vector<plannerpb::QueryRequest::FuncToExecute>& exec_funcs,
+      const absl::flat_hash_map<std::string, std::string>& module_name_to_pxl = {}) {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
 
@@ -911,9 +913,10 @@ class ASTVisitorTest : public OperatorTests {
     for (const auto& fn : exec_funcs) {
       reserved_names.insert(fn.output_table_prefix());
     }
-    PL_ASSIGN_OR_RETURN(auto ast_walker,
-                        compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get(),
-                                                         func_based_exec, reserved_names));
+    compiler::ModuleHandler module_handler;
+    PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
+                                             ir.get(), compiler_state_.get(), &module_handler,
+                                             func_based_exec, reserved_names, module_name_to_pxl));
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     if (func_based_exec) {
@@ -926,8 +929,9 @@ class ASTVisitorTest : public OperatorTests {
     Parser parser;
     PL_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
-    PL_ASSIGN_OR_RETURN(auto ast_walker,
-                        compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get()));
+    compiler::ModuleHandler module_handler;
+    PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
+                                             ir.get(), compiler_state_.get(), &module_handler));
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     return ast_walker;
   }
@@ -936,8 +940,9 @@ class ASTVisitorTest : public OperatorTests {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
-    PL_ASSIGN_OR_RETURN(auto ast_walker,
-                        compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get()));
+    compiler::ModuleHandler module_handler;
+    PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
+                                             ir.get(), compiler_state_.get(), &module_handler));
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     return ast_walker->GetVisFuncsInfo();
@@ -947,8 +952,9 @@ class ASTVisitorTest : public OperatorTests {
     Parser parser;
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
-    PL_ASSIGN_OR_RETURN(auto ast_walker,
-                        compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get()));
+    compiler::ModuleHandler module_handler;
+    PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
+                                             ir.get(), compiler_state_.get(), &module_handler));
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     return ast_walker->GetMainFuncArgsSpec();

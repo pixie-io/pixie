@@ -65,7 +65,9 @@ StatusOr<shared::scriptspb::FuncArgsSpec> Compiler::GetMainFuncArgsSpec(
   PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
 
   std::shared_ptr<IR> ir = std::make_shared<IR>();
-  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state));
+  ModuleHandler module_handler;
+  PL_ASSIGN_OR_RETURN(auto ast_walker,
+                      ASTVisitorImpl::Create(ir.get(), compiler_state, &module_handler));
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
 
   return ast_walker->GetMainFuncArgsSpec();
@@ -83,9 +85,10 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
   for (const auto& func : exec_funcs) {
     reserved_names.insert(func.output_table_prefix());
   }
-
-  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state,
-                                                              func_based_exec, reserved_names));
+  ModuleHandler module_handler;
+  PL_ASSIGN_OR_RETURN(auto ast_walker,
+                      ASTVisitorImpl::Create(ir.get(), compiler_state, &module_handler,
+                                             func_based_exec, reserved_names));
 
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   if (func_based_exec) {
@@ -100,7 +103,9 @@ StatusOr<pl::shared::scriptspb::VisFuncsInfo> Compiler::GetVisFuncsInfo(
   PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
 
   std::shared_ptr<IR> ir = std::make_shared<IR>();
-  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), compiler_state));
+  ModuleHandler module_handler;
+  PL_ASSIGN_OR_RETURN(auto ast_walker,
+                      ASTVisitorImpl::Create(ir.get(), compiler_state, &module_handler));
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   return ast_walker->GetVisFuncsInfo();
 }

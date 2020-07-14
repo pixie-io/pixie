@@ -102,7 +102,9 @@ class QLObjectTest : public OperatorTests {
     compiler_state =
         std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
     // Graph is set in OperatorTests.
-    ast_visitor = ASTVisitorImpl::Create(graph.get(), compiler_state.get()).ConsumeValueOrDie();
+
+    ast_visitor = ASTVisitorImpl::Create(graph.get(), compiler_state.get(), &module_handler)
+                      .ConsumeValueOrDie();
   }
 
   ArgMap MakeArgMap(const std::vector<std::pair<std::string, IRNode*>>& kwargs,
@@ -144,6 +146,7 @@ class QLObjectTest : public OperatorTests {
   std::shared_ptr<CompilerState> compiler_state = nullptr;
   std::shared_ptr<RegistryInfo> info = nullptr;
   std::shared_ptr<ASTVisitor> ast_visitor = nullptr;
+  ModuleHandler module_handler;
 };
 
 StatusOr<QLObjectPtr> NoneObjectFunc(const pypa::AstPtr&, const ParsedArgs&, ASTVisitor* visitor) {

@@ -973,7 +973,7 @@ def func():
     a = 'bar'
 
 func()
-# a shoudl be 'foo'
+# `a` should be 'foo'
 df = px.DataFrame(a)
 px.display(df, "out_table")
 )query";
@@ -987,16 +987,6 @@ TEST_F(ASTVisitorTest, func_context_does_not_affect_global_context) {
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_EQ(mem_src->table_name(), "foo");
   ASSERT_EQ(mem_src->Children().size(), 1);
-  ASSERT_MATCH(mem_src->Children()[0], MemorySink());
-  std::vector<IRNode*> strings = ir_graph->FindNodesOfType(IRNodeType::kString);
-  ASSERT_EQ(strings.size(), 5);
-  // Note(james): __doc__ is set to the empty string for both the function and the whole module.
-  std::vector<std::string> expected_strings{"", "", "foo", "bar", "out_table"};
-  EXPECT_THAT(expected_strings, UnorderedElementsAre(static_cast<StringIR*>(strings[0])->str(),
-                                                     static_cast<StringIR*>(strings[1])->str(),
-                                                     static_cast<StringIR*>(strings[2])->str(),
-                                                     static_cast<StringIR*>(strings[3])->str(),
-                                                     static_cast<StringIR*>(strings[4])->str()));
 }
 
 constexpr char kNestedFuncsIndependentState[] = R"query(
@@ -1008,11 +998,11 @@ def func1():
 
 def func2():
   func1()
+  # `a` should be 'foo'
   df = px.DataFrame(a)
   px.display(df, "out_table")
 
 func2()
-# a shoudl be 'foo'
 )query";
 
 TEST_F(ASTVisitorTest, nested_func_calls) {
@@ -1023,19 +1013,6 @@ TEST_F(ASTVisitorTest, nested_func_calls) {
   ASSERT_EQ(mem_srcs.size(), 1);
   MemorySourceIR* mem_src = static_cast<MemorySourceIR*>(mem_srcs[0]);
   EXPECT_EQ(mem_src->table_name(), "foo");
-  ASSERT_EQ(mem_src->Children().size(), 1);
-  ASSERT_MATCH(mem_src->Children()[0], MemorySink());
-  std::vector<IRNode*> strings = ir_graph->FindNodesOfType(IRNodeType::kString);
-  ASSERT_EQ(strings.size(), 6);
-  // Note(james): before optimization there is an empty string representing __doc__ for each of
-  // func1, func2 and the whole module
-  std::vector<std::string> expected_strings{"", "", "", "foo", "bar", "out_table"};
-  EXPECT_THAT(expected_strings, UnorderedElementsAre(static_cast<StringIR*>(strings[0])->str(),
-                                                     static_cast<StringIR*>(strings[1])->str(),
-                                                     static_cast<StringIR*>(strings[2])->str(),
-                                                     static_cast<StringIR*>(strings[3])->str(),
-                                                     static_cast<StringIR*>(strings[4])->str(),
-                                                     static_cast<StringIR*>(strings[5])->str()));
 }
 
 constexpr char kFuncDefWithType[] = R"query(
@@ -1252,7 +1229,8 @@ TEST_F(ASTVisitorTest, func_def_doesnt_make_new_globals) {
   ASSERT_OK(ast_or_s);
   auto ast = ast_or_s.ConsumeValueOrDie();
   std::shared_ptr<IR> ir = std::make_shared<IR>();
-  auto ast_walker_or_s = ASTVisitorImpl::Create(ir.get(), compiler_state_.get());
+  ModuleHandler module_handler;
+  auto ast_walker_or_s = ASTVisitorImpl::Create(ir.get(), compiler_state_.get(), &module_handler);
   ASSERT_OK(ast_walker_or_s);
   auto ast_walker = ast_walker_or_s.ConsumeValueOrDie();
   ASSERT_OK(ast_walker->ProcessModuleNode(ast));
@@ -1309,14 +1287,27 @@ TEST_F(ASTVisitorTest, import_as) {
 }
 
 constexpr char kImportFromQuery[] = R"query(
+from px import DataFrame
+import px
+df = DataFrame("bar")
+df = df[df["service"] == "foo"]
+px.display(df, 'ld')
+)query";
+
+TEST_F(ASTVisitorTest, from_import) {
+  auto graph_or_s = CompileGraph(kImportFromQuery);
+  ASSERT_OK(graph_or_s);
+}
+
+constexpr char kImportFromQueryWithAlias[] = R"query(
 from px import DataFrame as DFrame, display
 df = DFrame("bar")
 df = df[df["service"] == "foo"]
 display(df, 'ld')
 )query";
 
-TEST_F(ASTVisitorTest, from_import) {
-  auto graph_or_s = CompileGraph(kImportFromQuery);
+TEST_F(ASTVisitorTest, from_import_with_alias) {
+  auto graph_or_s = CompileGraph(kImportFromQueryWithAlias);
   ASSERT_OK(graph_or_s);
 }
 
@@ -1333,8 +1324,10 @@ TEST_F(ASTVisitorTest, decorator_parsed) {
   Parser parser;
   pypa::AstModulePtr ast = parser.Parse(kDecoratorParsing).ConsumeValueOrDie();
   std::shared_ptr<IR> ir = std::make_shared<IR>();
+  ModuleHandler module_handler;
   auto ast_walker =
-      compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get()).ConsumeValueOrDie();
+      compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get(), &module_handler)
+          .ConsumeValueOrDie();
 
   ASSERT_OK(ast_walker->ProcessModuleNode(ast));
 
@@ -1934,6 +1927,49 @@ TEST_F(ASTVisitorTest, exec_funcs_func_not_a_function) {
   auto graph_or_s = CompileGraph(kExecFuncsFuncNotFunc, exec_funcs);
   ASSERT_NOT_OK(graph_or_s);
   EXPECT_THAT(graph_or_s.status(), HasCompilerError("'f' is a 'DataFrame' not a function."));
+}
+
+// The function definition Module.
+constexpr char kFuncsUtilsModule[] = R"pxl(
+import px
+def funcs():
+    '''
+    Merge the func helpers together
+    '''
+    return px.DataFrame('http_events')
+
+free_var = "imfree"
+)pxl";
+
+constexpr char kFuncsUtilsTest[] = R"pxl(
+import funcs_utils
+import px
+px.display(funcs_utils.funcs())
+)pxl";
+
+TEST_F(ASTVisitorTest, alt_imports_test_normal) {
+  PL_UNUSED(kFuncsUtilsModule);
+  auto graph_or_s = CompileGraph(kFuncsUtilsTest, {}, {{"funcs_utils", kFuncsUtilsModule}});
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  auto sinks = graph->FindNodesThatMatch(MemorySink());
+  auto sink = static_cast<MemorySinkIR*>(sinks[0]);
+  EXPECT_MATCH(sink->parents()[0], MemorySource());
+}
+
+constexpr char kFromFuncsUtilsTest[] = R"pxl(
+import px
+from funcs_utils import funcs
+px.display(funcs())
+)pxl";
+
+TEST_F(ASTVisitorTest, alt_imports_test_from) {
+  auto graph_or_s = CompileGraph(kFromFuncsUtilsTest, {}, {{"funcs_utils", kFuncsUtilsModule}});
+  ASSERT_OK(graph_or_s);
+  auto graph = graph_or_s.ConsumeValueOrDie();
+  auto sinks = graph->FindNodesThatMatch(MemorySink());
+  auto sink = static_cast<MemorySinkIR*>(sinks[0]);
+  EXPECT_MATCH(sink->parents()[0], MemorySource());
 }
 
 }  // namespace compiler

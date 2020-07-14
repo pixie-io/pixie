@@ -4,6 +4,7 @@
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/carnot/planner/objects/collection_object.h"
 #include "src/carnot/planner/objects/expr_object.h"
+#include "src/carnot/planner/objects/module.h"
 #include "src/carnot/planner/objects/none_object.h"
 #include "src/carnot/planner/objects/pixie_module.h"
 #include "src/carnot/planner/objects/type_object.h"
@@ -34,25 +35,44 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetUnaryOp(const std::string& python_op,
 }
 
 StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
-    IR* graph, CompilerState* compiler_state, bool func_based_exec,
-    const absl::flat_hash_set<std::string>& reserved_names) {
+    IR* graph, CompilerState* compiler_state, ModuleHandler* module_handler, bool func_based_exec,
+    const absl::flat_hash_set<std::string>& reserved_names,
+    const absl::flat_hash_map<std::string, std::string>& module_map) {
   std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(new ASTVisitorImpl(
-      graph, compiler_state, VarTable::Create(), func_based_exec, reserved_names));
+      graph, compiler_state, VarTable::Create(), func_based_exec, reserved_names, module_handler));
 
   PL_RETURN_IF_ERROR(ast_visitor->InitGlobals());
+  PL_RETURN_IF_ERROR(ast_visitor->SetupModules(module_map));
   return ast_visitor;
 }
 
 std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChild() {
-  // The flag values should come from the parent var table, not be copied here.
-  return std::shared_ptr<ASTVisitorImpl>(new ASTVisitorImpl(
-      ir_graph_, compiler_state_, var_table_->CreateChild(), func_based_exec_, {}));
+  return CreateChildImpl(var_table_->CreateChild());
 }
 
 std::shared_ptr<ASTVisitor> ASTVisitorImpl::CreateModuleVisitor(
     std::shared_ptr<VarTable> var_table) {
-  return std::shared_ptr<ASTVisitor>(
-      new ASTVisitorImpl(ir_graph_, compiler_state_, var_table, func_based_exec_, {}));
+  return std::static_pointer_cast<ASTVisitor>(CreateChildImpl(var_table));
+}
+
+std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChildImpl(
+    std::shared_ptr<VarTable> var_table) {
+  // The flag values should come from the parent var table, not be copied here.
+  auto visitor = std::shared_ptr<ASTVisitorImpl>(new ASTVisitorImpl(
+      ir_graph_, compiler_state_, var_table, func_based_exec_, {}, module_handler_));
+  return visitor;
+}
+
+Status ASTVisitorImpl::SetupModules(
+    const absl::flat_hash_map<std::string, std::string>& module_name_to_pxl_map) {
+  DCHECK(module_handler_);
+  PL_ASSIGN_OR_RETURN(
+      (*module_handler_)[PixieModule::kPixieModuleObjName],
+      PixieModule::Create(ir_graph_, compiler_state_, this, func_based_exec_, reserved_names_));
+  for (const auto& [module_name, module_text] : module_name_to_pxl_map) {
+    PL_ASSIGN_OR_RETURN((*module_handler_)[module_name], Module::Create(module_text, this));
+  }
+  return Status::OK();
 }
 
 Status ASTVisitorImpl::InitGlobals() {
@@ -117,7 +137,9 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ParseAndProcessSingleExpression(
     auto child_visitor = CreateChild();
     // Use a child of this ASTVisitor so that we can add px to its child var_table without affecting
     // top-level visitor state.
-    PL_RETURN_IF_ERROR(child_visitor->AddPixieModule());
+    child_visitor->var_table_->Add(
+        PixieModule::kPixieModuleObjName,
+        (*child_visitor->module_handler_)[PixieModule::kPixieModuleObjName]);
     return child_visitor->ProcessSingleExpressionModule(ast);
   }
 
@@ -211,8 +233,8 @@ StatusOr<ArgMap> ASTVisitorImpl::ProcessExecFuncArgs(const pypa::AstPtr& ast,
 Status ASTVisitorImpl::ProcessExecFuncs(const ExecFuncs& exec_funcs) {
   // TODO(James): handle errors here better. For now I have a fake ast ptr with -1 for line and col.
   auto ast = std::make_shared<pypa::AstExpressionStatement>();
-  ast->line = -1;
-  ast->column = -1;
+  ast->line = 0;
+  ast->column = 0;
   for (const auto& func : exec_funcs) {
     if (func.func_name() == "") {
       return CreateAstError(ast, "Must specify func_name for each FuncToExecute.");
@@ -372,13 +394,11 @@ Status ASTVisitorImpl::ProcessImport(const pypa::AstImportPtr& import) {
   std::string name = PYPA_PTR_CAST(Name, alias->name)->id;
   std::string as_name = AsNameFromAlias(alias);
 
-  if (name != PixieModule::kPixieModuleObjName) {
-    return error::Unimplemented(
-        "Imports of package other than '$0' are not yet supported, received $1",
-        PixieModule::kPixieModuleObjName, name);
+  if (!module_handler_->contains(name)) {
+    return CreateAstError(import, "ModuleNotFoundError: No module named '$0'", name);
   }
-
-  return AddPixieModule(as_name);
+  var_table_->Add(as_name, (*module_handler_)[name]);
+  return Status::OK();
 }
 
 Status ASTVisitorImpl::ProcessImportFrom(const pypa::AstImportFromPtr& from) {
@@ -387,28 +407,32 @@ Status ASTVisitorImpl::ProcessImportFrom(const pypa::AstImportFromPtr& from) {
   }
   std::string module = PYPA_PTR_CAST(Name, from->module)->id;
 
-  if (module != PixieModule::kPixieModuleObjName) {
-    return error::Unimplemented(
-        "Imports of package other than '$0' are not yet supported, received $1",
-        PixieModule::kPixieModuleObjName, module);
+  if (!module_handler_->contains(module)) {
+    return CreateAstError(from, "ModuleNotFoundError: No module named '$0'", module);
   }
+  auto obj = (*module_handler_)[module];
 
-  PL_ASSIGN_OR_RETURN(auto px, PixieModule::Create(ir_graph_, compiler_state_, this));
-
-  auto tup = PYPA_PTR_CAST(Tuple, from->names);
-  for (const auto& el : tup->elements) {
+  pypa::AstExprList aliases;
+  if (from->names->type == AstType::Tuple) {
+    auto tup = PYPA_PTR_CAST(Tuple, from->names);
+    aliases = tup->elements;
+  } else if (from->names->type == AstType::Alias) {
+    aliases = {from->names};
+  } else {
+    return CreateAstError(from->names, "Unexpected type in import statement '$0'",
+                          magic_enum::enum_name(from->names->type));
+  }
+  for (const auto& el : aliases) {
     auto alias = PYPA_PTR_CAST(Alias, el);
     std::string name = PYPA_PTR_CAST(Name, alias->name)->id;
     std::string as_name = AsNameFromAlias(alias);
 
-    if (!px->HasAttribute(name)) {
-      return CreateAstError(from, "'$0' module has no attribute '$1'",
-                            PixieModule::kPixieModuleObjName, name);
+    if (!obj->HasAttribute(name)) {
+      return CreateAstError(from, "cannot import name '$1' from '$0'", module, name);
     }
-    PL_ASSIGN_OR_RETURN(auto attr, px->GetAttribute(from, name));
+    PL_ASSIGN_OR_RETURN(auto attr, obj->GetAttribute(from, name));
     var_table_->Add(as_name, attr);
   }
-
   return Status::OK();
 }
 

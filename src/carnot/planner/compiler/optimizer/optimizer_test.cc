@@ -656,21 +656,20 @@ TEST_F(OptimizerTest, prune_unused_columns) {
   ASSERT_OK(Optimize(ir_graph));
 
   // Check source nodes.
-  auto source_nodes = ir_graph->FindNodesOfType(IRNodeType::kMemorySource);
-  ASSERT_EQ(2, source_nodes.size());
+  auto join_nodes = ir_graph->FindNodesOfType(IRNodeType::kJoin);
+  ASSERT_EQ(1, join_nodes.size());
+  auto join = static_cast<JoinIR*>(join_nodes[0]);
+  EXPECT_THAT(join->column_names(), ElementsAre("bytes_in"));
 
-  auto right_src = static_cast<MemorySourceIR*>(source_nodes[0]);
+  auto source_nodes = join->parents();
+
+  auto right_src = static_cast<MemorySourceIR*>(source_nodes[1]);
   ASSERT_EQ("network", right_src->table_name());
   EXPECT_THAT(right_src->column_names(), ElementsAre("upid", "bytes_in"));
 
-  auto left_src = static_cast<MemorySourceIR*>(source_nodes[1]);
+  auto left_src = static_cast<MemorySourceIR*>(source_nodes[0]);
   ASSERT_EQ("cpu", left_src->table_name());
   EXPECT_THAT(left_src->column_names(), ElementsAre("upid"));
-
-  // Check join node
-  auto join_nodes = ir_graph->FindNodesOfType(IRNodeType::kJoin);
-  ASSERT_EQ(1, join_nodes.size());
-  EXPECT_THAT(static_cast<JoinIR*>(join_nodes[0])->column_names(), ElementsAre("bytes_in"));
 
   // Check map nodes
   auto map_nodes = ir_graph->FindNodesOfType(IRNodeType::kMap);
