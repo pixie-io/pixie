@@ -43,7 +43,7 @@ const useStyles = makeStyles(() => createStyles({
     width: '100%',
     textAlign: 'center',
     top: 0,
-    zIndex: 1,
+    zIndex: 1500, // TopBar has a z-index of 1300.
     color: 'white',
     background: 'rgba(220,0,0,0.5)',
   },
