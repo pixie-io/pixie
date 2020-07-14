@@ -1,5 +1,7 @@
 import * as React from 'react';
-import { AlertData, JSONData, LatencyData } from 'components/format-data/format-data';
+import {
+  AlertData, CPUData, JSONData, LatencyData,
+} from 'components/format-data/format-data';
 import {
   EntityLink,
   isEntityType, STATUS_TYPES, toStatusIndicator,
@@ -8,8 +10,12 @@ import QuantilesBoxWhisker, {
   SelectedPercentile,
 } from 'components/quantiles-box-whisker/quantiles-box-whisker';
 import { DataType, Relation, SemanticType } from 'types/generated/vizier_pb';
-import { getDataRenderer, looksLikeAlertCol, looksLikeLatencyCol } from 'utils/format-data';
-import { getLatencyLevel, GaugeLevel } from 'utils/latency';
+import {
+  getDataRenderer, looksLikeAlertCol, looksLikeCPUCol, looksLikeLatencyCol,
+} from 'utils/format-data';
+import {
+  getCPULevel, getLatencyLevel, GaugeLevel,
+} from 'utils/metric-thresholds';
 import { ColumnDisplayInfo, QuantilesDisplayState } from './column-display-info';
 
 // Expects a p99 field in colName.
@@ -48,6 +54,11 @@ export function quantilesRenderer(display: ColumnDisplayInfo,
       p50Level = getLatencyLevel(p50);
       p90Level = getLatencyLevel(p90);
       p99Level = getLatencyLevel(p99);
+    }
+    if (looksLikeCPUCol(display.columnName, DataType.FLOAT64)) {
+      p50Level = getCPULevel(p50);
+      p90Level = getCPULevel(p90);
+      p99Level = getCPULevel(p99);
     }
     return (
       <QuantilesBoxWhisker
@@ -106,6 +117,10 @@ const entityRenderer = (st: SemanticType, clusterName: string) => {
   return entity;
 };
 
+const LatencyDataWrapper = (data: any) => <LatencyData data={data} />;
+const CPUDataWrapper = (data: any) => <CPUData data={data} />;
+const AlertDataWrapper = (data: any) => <AlertData data={data} />;
+
 export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (ColumnDisplayInfo) => void,
   clusterName: string, rows: any[]) => {
   const dt = display.type;
@@ -126,11 +141,15 @@ export const prettyCellRenderer = (display: ColumnDisplayInfo, updateDisplay: (C
   }
 
   if (looksLikeLatencyCol(name, dt)) {
-    return LatencyData;
+    return LatencyDataWrapper;
+  }
+
+  if (looksLikeCPUCol(name, dt)) {
+    return CPUDataWrapper;
   }
 
   if (looksLikeAlertCol(name, dt)) {
-    return AlertData;
+    return AlertDataWrapper;
   }
 
   if (dt !== DataType.STRING) {

@@ -1,9 +1,52 @@
 import * as React from 'react';
 import clsx from 'clsx';
+import { makeStyles, Theme } from '@material-ui/core/styles';
 import { formatBoolData, formatFloat64Data } from 'utils/format-data';
-import { getLatencyLevel } from 'utils/latency';
+import { getCPULevel, getLatencyLevel } from 'utils/metric-thresholds';
 
 const JSON_INDENT_PX = 16;
+
+const useAlertStyles = makeStyles((theme: Theme) => ({
+  true: {
+    color: theme.palette.error.dark,
+  },
+  false: {},
+}));
+
+const useGaugeStyles = makeStyles((theme: Theme) => ({
+  low: {
+    color: theme.palette.success.dark,
+  },
+  med: {
+    color: theme.palette.warning.dark,
+  },
+  high: {
+    color: theme.palette.error.dark,
+  },
+}));
+
+const useJSONStyles = makeStyles((theme: Theme) => ({
+  base: {
+    fontFamily: '"Roboto Mono", serif',
+    fontSize: 13,
+  },
+  jsonKey: {
+    color: theme.palette.foreground.white,
+  },
+  number: {
+    color: '#ae81ff',
+  },
+  null: {
+    color: '#f92672',
+  },
+  string: {
+    color: theme.palette.info.light,
+    wordBreak: 'break-all',
+  },
+  boolean: {
+    color: '#f92672',
+  },
+}));
 
 interface JSONDataProps {
   data: any;
@@ -13,6 +56,7 @@ interface JSONDataProps {
 }
 
 export const JSONData = React.memo<JSONDataProps>((props) => {
+  const classes = useJSONStyles();
   const indentation = props.indentation ? props.indentation : 0;
   let { data } = props;
   let cls = String(typeof data);
@@ -32,7 +76,7 @@ export const JSONData = React.memo<JSONDataProps>((props) => {
 
   if (Array.isArray(data)) {
     return (
-      <span className={clsx('formatted_data--json', props.className)}>
+      <span className={classes.base}>
         {'[ '}
         {props.multiline ? <br /> : null}
         {
@@ -54,7 +98,7 @@ export const JSONData = React.memo<JSONDataProps>((props) => {
 
   if (typeof data === 'object' && data !== null) {
     return (
-      <span className={clsx('formatted_data--json', props.className)}>
+      <span className={classes.base}>
         {'{ '}
         {props.multiline ? <br /> : null}
         {
@@ -63,7 +107,7 @@ export const JSONData = React.memo<JSONDataProps>((props) => {
               key={`${key}-${indentation}`}
               style={{ marginLeft: props.multiline ? (indentation + 1) * JSON_INDENT_PX : 0 }}
             >
-              <span className='formatted_data--json-key'>{`${key}: `}</span>
+              <span className={classes.jsonKey}>{`${key}: `}</span>
               <JSONData data={data[key]} multiline={props.multiline} indentation={indentation + 1} />
               {idx !== Object.keys(data).length - 1 ? ', ' : ''}
               {props.multiline ? <br /> : null}
@@ -74,16 +118,25 @@ export const JSONData = React.memo<JSONDataProps>((props) => {
       </span>
     );
   }
-  return <span className={clsx(`formatted_data--json-${cls}`, props.className)}>{String(data)}</span>;
+  return <span className={props.className || classes[cls]}>{String(data)}</span>;
 });
 JSONData.displayName = 'JSONData';
 
-export function LatencyData(data: string) {
+export const LatencyData = ({ data }) => {
+  const classes = useGaugeStyles();
   const floatVal = parseFloat(data);
-  const latency = getLatencyLevel(floatVal);
-  return <div className={`formatted_data--latency-${latency}`}>{formatFloat64Data(floatVal)}</div>;
-}
+  const level = getLatencyLevel(floatVal);
+  return <div className={classes[level]}>{formatFloat64Data(floatVal)}</div>;
+};
 
-export function AlertData(data: boolean) {
-  return <div className={`formatted_data--alert-${data}`}>{formatBoolData(data)}</div>;
-}
+export const CPUData = ({ data }) => {
+  const classes = useGaugeStyles();
+  const floatVal = parseFloat(data);
+  const level = getCPULevel(floatVal);
+  return <div className={classes[level]}>{formatFloat64Data(floatVal)}</div>;
+};
+
+export const AlertData = ({ data }) => {
+  const classes = useAlertStyles();
+  return <div className={classes[`${data}`]}>{formatBoolData(data)}</div>;
+};

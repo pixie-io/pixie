@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Vega as ReactVega } from 'react-vega';
 import { VisualizationSpec } from 'vega-embed';
 import { Handler } from 'vega-tooltip';
-import { GaugeLevel } from 'utils/latency';
+import { GaugeLevel } from 'utils/metric-thresholds';
 import {
   createStyles, Theme, useTheme, withStyles, WithStyles,
 } from '@material-ui/core/styles';

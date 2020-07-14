@@ -1,4 +1,3 @@
-import '../components/format-data/format-data.scss';
 import * as numeral from 'numeral';
 import { DataType, UInt128 } from 'types/generated/vizier_pb';
 
@@ -30,6 +29,17 @@ export function looksLikeLatencyCol(colName: string, colType: DataType) {
   }
   const colNameLC = colName.toLowerCase();
   if (colNameLC.match(/latency.*/)) {
+    return true;
+  }
+  return !!colNameLC.match(/p\d{0,2}$/);
+}
+
+export function looksLikeCPUCol(colName: string, colType: DataType) {
+  if (colType !== DataType.FLOAT64) {
+    return false;
+  }
+  const colNameLC = colName.toLowerCase();
+  if (colNameLC.match(/cpu.*/)) {
     return true;
   }
   return !!colNameLC.match(/p\d{0,2}$/);

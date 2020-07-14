@@ -98,6 +98,11 @@ export const DARK_THEME = createMuiTheme({
       dark: '#dc9406',
       light: '#ffc656',
     },
+    info: {
+      main: '#f0de3d',
+      dark: '#dac92f',
+      light: '#fff48f',
+    },
     error: {
       main: '#ff5e6d',
       dark: '#e54e5c',

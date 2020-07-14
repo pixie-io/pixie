@@ -32,6 +32,22 @@ const SemanticTypeWidthOverrideMap = new Map<SemanticType, number>(
     [SemanticType.ST_QUANTILES, 40],
   ],
 );
+const DataTypeWidthOverrideMap = new Map<DataType, number>(
+  [
+    [DataType.TIME64NS, 25],
+  ],
+);
+
+function hasWidthOverride(st: SemanticType, dt: DataType): boolean {
+  return SemanticTypeWidthOverrideMap.has(st) || DataTypeWidthOverrideMap.has(dt);
+}
+
+function getWidthOverride(st: SemanticType, dt: DataType): number {
+  if (SemanticTypeWidthOverrideMap.has(st)) {
+    return SemanticTypeWidthOverrideMap.get(st);
+  }
+  return DataTypeWidthOverrideMap.get(dt);
+}
 
 interface VizierDataTableProps {
   table: Table;
@@ -70,8 +86,12 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
     }, new Map<string, SemanticType>());
 
     const rawRows = dataFromProto(table.relation, table.data);
-    const parsedRows = parseRows(semanticTypeMap, rawRows);
-    setRows(parsedRows);
+    if (prettyRender) {
+      const parsedRows = parseRows(semanticTypeMap, rawRows);
+      setRows(parsedRows);
+    } else {
+      setRows(rawRows);
+    }
     setColumnDisplayInfos(displayInfos);
   }, [table.relation, table.data, clusterName, prettyRender]);
 
@@ -91,8 +111,8 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
         align: DataAlignmentMap.get(displayInfo.type) || 'start',
         cellRenderer: vizierCellRenderer(displayInfo, updateColumnDisplay, prettyRender, clusterName, rows),
       };
-      if (SemanticTypeWidthOverrideMap.has(displayInfo.semanticType)) {
-        colProps.width = SemanticTypeWidthOverrideMap.get(displayInfo.semanticType);
+      if (hasWidthOverride(displayInfo.semanticType, displayInfo.type)) {
+        colProps.width = getWidthOverride(displayInfo.semanticType, displayInfo.type);
       }
       return colProps;
     })
