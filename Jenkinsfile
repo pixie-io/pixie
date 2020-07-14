@@ -876,8 +876,8 @@ def deployWithSkaffold(String profile, String namespace, String skaffoldFile) {
     dockerStep('', devDockerImageExtrasWithTag) {
       withKubeConfig([credentialsId: K8S_PROD_CREDS,
                     serverUrl: K8S_PROD_CLUSTER, namespace: namespace]) {
-        sh "skaffold build -q -o '{{json .}}' -p ${profile} -f ${skaffoldFile} > manifest_internal.json"
-        sh "skaffold deploy -p ${profile} --build-artifacts=manifest_internal.json -f ${skaffoldFile}"
+        sh "skaffold build -q -o '{{json .}}' -p ${profile} -f ${skaffoldFile} --cache-artifacts=false > manifest.json"
+        sh "skaffold deploy -p ${profile} --build-artifacts=manifest.json -f ${skaffoldFile}"
       }
     }
   }
