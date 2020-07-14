@@ -58,6 +58,8 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       width: theme.spacing(0.2),
       right: 0,
     },
+    whiteSpace: 'nowrap',
+    textOverflow: 'ellipsis',
   },
   statsTabLabel: {
     color: theme.palette.secondary.main,
