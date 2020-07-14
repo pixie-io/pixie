@@ -11,7 +11,7 @@ import Modal from '@material-ui/core/Modal';
 
 import { ScriptContext, ExecuteArguments } from 'context/script-context';
 import { ResultsContext } from 'context/results-context';
-import { LiveViewPage } from 'components/live-widgets/utils/live-view-params';
+import { entityPageForScriptId } from 'components/live-widgets/utils/live-view-params';
 
 import { parseVis } from '../live/vis';
 
@@ -70,7 +70,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
     const vis = parseVis(script.vis);
     if (script) {
       const execArgs: ExecuteArguments = {
-        liveViewPage: LiveViewPage.Default,
+        liveViewPage: entityPageForScriptId(script.id),
         pxl: script.code,
         vis,
         id: script.id,

@@ -121,11 +121,13 @@ const DialogDropdown = ({
   const [listItems, setListItems] = React.useState<Array<string>>([]);
   const inputRef = React.useRef(null);
 
-  React.useEffect(() => {
+  const onEnter = React.useCallback(() => {
     if (getListItems) {
       getListItems('').then((items) => {
         setListItems(items);
       });
+    } else {
+      setListItems([]);
     }
   }, [getListItems]);
 
@@ -164,6 +166,7 @@ const DialogDropdown = ({
       anchorEl={anchorEl}
       keepMounted
       open={Boolean(anchorEl)}
+      onEnter={onEnter}
       onClose={handleClose}
       getContentAnchorEl={null}
       anchorOrigin={{
@@ -181,7 +184,10 @@ const DialogDropdown = ({
         && (
           <MenuItem
             onKeyDown={(e) => {
-              e.stopPropagation();
+              // Support keying up and down on the menu options.
+              if (e.key !== 'ArrowDown') {
+                e.stopPropagation();
+              }
             }}
             className={classes.inputItem}
           >

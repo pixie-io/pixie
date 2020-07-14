@@ -80,7 +80,7 @@ function getTitleOfScript(scriptId: string, scripts: Map<string, Script>): strin
 }
 
 function getEntityParams(liveViewPage: LiveViewPage, args: Arguments): EntityURLParams {
-  const entityParamNames = LiveViewEntityParams[liveViewPage] || new Set();
+  const entityParamNames = LiveViewEntityParams.get(liveViewPage) || new Set();
   const entityParams = {};
   entityParamNames.forEach((paramName: string) => {
     if (args[paramName] != null) {
@@ -91,7 +91,7 @@ function getEntityParams(liveViewPage: LiveViewPage, args: Arguments): EntityURL
 }
 
 function getNonEntityParams(liveViewPage: LiveViewPage, args: Arguments): Arguments {
-  const entityParamNames = LiveViewEntityParams[liveViewPage] || new Set();
+  const entityParamNames = LiveViewEntityParams.get(liveViewPage) || new Set();
   const nonEntityParams = {};
   Object.keys(args).forEach((argName: string) => {
     if (!entityParamNames.has(argName)) {
@@ -105,7 +105,7 @@ const ScriptContextProvider = (props) => {
   const { location } = props;
 
   const { scripts } = React.useContext(ScriptsContext);
-  const { selectedClusterName, setClusterByName } = React.useContext(ClusterContext);
+  const { selectedClusterName, setClusterByName, selectedClusterPrettyName } = React.useContext(ClusterContext);
   const { client, healthy } = React.useContext(ClientContext);
   const { setResults, setLoading, loading } = React.useContext(ResultsContext);
   const { openDrawerTab } = React.useContext(DataDrawerContext);
@@ -122,7 +122,7 @@ const ScriptContextProvider = (props) => {
 
   const [pxl, setPxl] = useSessionStorage(LIVE_VIEW_PIXIE_SCRIPT_KEY, '');
   const [id, setId] = useSessionStorage(LIVE_VIEW_SCRIPT_ID_KEY,
-    entity.page === LiveViewPage.Default ? '' : LiveViewPageScriptIds[entity.page]);
+    entity.page === LiveViewPage.Default ? '' : LiveViewPageScriptIds.get(entity.page));
 
   // We use a separation of visJSON states to prevent infinite update loops from happening.
   // Otherwise, an update in the editor could trigger an update to some other piece of the pie.
@@ -148,10 +148,11 @@ const ScriptContextProvider = (props) => {
   // title is dependent on whether or not we are in an entity page.
   const title = React.useMemo(() => {
     const entityParams = getEntityParams(liveViewPage, args);
-    const newTitle = getLiveViewTitle(getTitleOfScript(id, scripts), liveViewPage, entityParams);
+    const newTitle = getLiveViewTitle(getTitleOfScript(id, scripts), liveViewPage,
+      entityParams, selectedClusterPrettyName);
     document.querySelector('title').textContent = newTitle;
     return newTitle;
-  }, [liveViewPage, scripts, id, args]);
+  }, [liveViewPage, scripts, id, args, selectedClusterPrettyName]);
 
   // Logic to set cluster
 

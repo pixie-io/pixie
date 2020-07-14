@@ -41,43 +41,54 @@ export interface EntityPage {
 }
 
 // For live view entity routes.
-export const LiveViewPageRoutes = {
-  [LiveViewPage.Cluster]: '/live/clusters/:cluster',
-  [LiveViewPage.Namespace]: '/live/clusters/:cluster/namespaces/:namespace',
-  [LiveViewPage.Namespaces]: '/live/clusters/:cluster/namespaces',
-  [LiveViewPage.Node]: '/live/clusters/:cluster/nodes/:node',
-  [LiveViewPage.Nodes]: '/live/clusters/:cluster/nodes',
-  [LiveViewPage.Pod]: '/live/clusters/:cluster/namespaces/:namespace/pods/:pod',
-  [LiveViewPage.Pods]: '/live/clusters/:cluster/namespaces/:namespace/pods',
-  [LiveViewPage.Service]: '/live/clusters/:cluster/namespaces/:namespace/services/:service',
-  [LiveViewPage.Services]: '/live/clusters/:cluster/namespaces/:namespace/services',
-};
+export const LiveViewPageRoutes = new Map<LiveViewPage, string>([
+  [LiveViewPage.Cluster, '/live/clusters/:cluster'],
+  [LiveViewPage.Namespace, '/live/clusters/:cluster/namespaces/:namespace'],
+  [LiveViewPage.Namespaces, '/live/clusters/:cluster/namespaces'],
+  [LiveViewPage.Node, '/live/clusters/:cluster/nodes/:node'],
+  [LiveViewPage.Nodes, '/live/clusters/:cluster/nodes'],
+  [LiveViewPage.Pod, '/live/clusters/:cluster/namespaces/:namespace/pods/:pod'],
+  [LiveViewPage.Pods, '/live/clusters/:cluster/namespaces/:namespace/pods'],
+  [LiveViewPage.Service, '/live/clusters/:cluster/namespaces/:namespace/services/:service'],
+  [LiveViewPage.Services, '/live/clusters/:cluster/namespaces/:namespace/services'],
+]);
 
-export const LiveViewPageScriptIds = {
-  [LiveViewPage.Cluster]: 'px/cluster',
-  [LiveViewPage.Namespace]: 'px/namespace',
-  [LiveViewPage.Namespaces]: 'px/namespaces',
-  [LiveViewPage.Node]: 'px/node',
-  [LiveViewPage.Nodes]: 'px/nodes',
-  [LiveViewPage.Pod]: 'px/pod',
-  [LiveViewPage.Pods]: 'px/pods',
-  [LiveViewPage.Service]: 'px/service',
-  [LiveViewPage.Services]: 'px/services',
-};
+export const LiveViewPageScriptIds = new Map<LiveViewPage, string>([
+  [LiveViewPage.Cluster, 'px/cluster'],
+  [LiveViewPage.Namespace, 'px/namespace'],
+  [LiveViewPage.Namespaces, 'px/namespaces'],
+  [LiveViewPage.Node, 'px/node'],
+  [LiveViewPage.Nodes, 'px/nodes'],
+  [LiveViewPage.Pod, 'px/pod'],
+  [LiveViewPage.Pods, 'px/pods'],
+  [LiveViewPage.Service, 'px/service'],
+  [LiveViewPage.Services, 'px/services'],
+]);
+
+export function entityPageForScriptId(id: string): LiveViewPage {
+  const reverseMap = new Map<string, LiveViewPage>();
+  LiveViewPageScriptIds.forEach((scriptId: string, page: LiveViewPage) => {
+    reverseMap.set(scriptId, page);
+  });
+  if (reverseMap.has(id)) {
+    return reverseMap.get(id);
+  }
+  return LiveViewPage.Default;
+}
 
 // List of all of the keys of the entity arguments for a given live view page.
-export const LiveViewEntityParams = {
-  [LiveViewPage.Default]: new Set(),
-  [LiveViewPage.Cluster]: new Set(),
-  [LiveViewPage.Namespace]: new Set(['namespace']),
-  [LiveViewPage.Namespaces]: new Set(),
-  [LiveViewPage.Node]: new Set(['node']),
-  [LiveViewPage.Nodes]: new Set(),
-  [LiveViewPage.Pod]: new Set(['pod']),
-  [LiveViewPage.Pods]: new Set(['namespace']),
-  [LiveViewPage.Service]: new Set(['service']),
-  [LiveViewPage.Services]: new Set(['namespace']),
-};
+export const LiveViewEntityParams = new Map<LiveViewPage, Set<string>>([
+  [LiveViewPage.Default, new Set()],
+  [LiveViewPage.Cluster, new Set()],
+  [LiveViewPage.Namespace, new Set(['namespace'])],
+  [LiveViewPage.Namespaces, new Set()],
+  [LiveViewPage.Node, new Set(['node'])],
+  [LiveViewPage.Nodes, new Set()],
+  [LiveViewPage.Pod, new Set(['pod'])],
+  [LiveViewPage.Pods, new Set(['namespace'])],
+  [LiveViewPage.Service, new Set(['service'])],
+  [LiveViewPage.Services, new Set(['namespace'])],
+]);
 
 interface WithCluster {
   cluster: string;
@@ -85,7 +96,7 @@ interface WithCluster {
 
 function matchAndExtractEntity<T>(path: string, page: LiveViewPage) {
   const match = matchPath<WithCluster & T>(path, {
-    path: LiveViewPageRoutes[page],
+    path: LiveViewPageRoutes.get(page),
     exact: true,
   });
   if (!match) {
@@ -192,28 +203,29 @@ export function matchLiveViewEntity(path: string): EntityPage {
   };
 }
 
-export function getLiveViewTitle(defaultTitle: string, page: LiveViewPage, params: EntityURLParams): string {
+export function getLiveViewTitle(defaultTitle: string, page: LiveViewPage,
+  params: EntityURLParams, clusterPrettyName: string): string {
   switch (page) {
     case LiveViewPage.Cluster: {
-      return defaultTitle;
+      return clusterPrettyName;
     }
     case LiveViewPage.Namespace: {
       const { namespace } = params as NamespaceURLParams;
-      return `${namespace}`;
+      return `${namespace}` || defaultTitle;
     }
     case LiveViewPage.Namespaces: {
-      return 'namespaces';
+      return `${clusterPrettyName} namespaces`;
     }
     case LiveViewPage.Node: {
       const { node } = params as NodeURLParams;
-      return `${node}`;
+      return `${node}` || defaultTitle;
     }
     case LiveViewPage.Nodes: {
-      return 'nodes';
+      return `${clusterPrettyName} nodes`;
     }
     case LiveViewPage.Pod: {
       const { pod } = params as PodURLParams;
-      return `${pod}`;
+      return `${pod}` || defaultTitle;
     }
     case LiveViewPage.Pods: {
       const { namespace } = params as NamespaceURLParams;
@@ -221,7 +233,7 @@ export function getLiveViewTitle(defaultTitle: string, page: LiveViewPage, param
     }
     case LiveViewPage.Service: {
       const { service } = params as ServiceURLParams;
-      return `${service}`;
+      return `${service}` || defaultTitle;
     }
     case LiveViewPage.Services: {
       const { namespace } = params as NamespaceURLParams;

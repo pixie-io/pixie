@@ -51,7 +51,7 @@ export function ScriptLoader() {
     const subscription = urlParams.onChange.subscribe(({ scriptId, pathname, args }) => {
       scriptPromise.then((scripts) => {
         const entity = matchLiveViewEntity(pathname);
-        const id = entity.page === LiveViewPage.Default ? scriptId : LiveViewPageScriptIds[entity.page];
+        const id = entity.page === LiveViewPage.Default ? scriptId : LiveViewPageScriptIds.get(entity.page);
 
         if (!scripts.has(id)) {
           setLoadState((state) => {

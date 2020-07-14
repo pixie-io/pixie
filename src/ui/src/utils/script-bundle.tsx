@@ -5,7 +5,7 @@ const PROD_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script
 const STAGING_SCRIPTS = 'https://storage.googleapis.com/pixie-prod-artifacts/script-bundles/bundle-staging.json';
 
 export interface Script {
-  id?: string;
+  id: string;
   title: string;
   code: string;
   vis?: string;

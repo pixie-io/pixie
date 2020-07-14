@@ -20,6 +20,7 @@ export const LIST_CLUSTERS = gql`
   clusters {
     id
     clusterName
+    prettyClusterName
     status
     vizierConfig {
       passthroughEnabled
@@ -120,6 +121,7 @@ export default function WithClusterBanner() {
   const context = React.useMemo(() => ({
     selectedCluster: clusterId,
     selectedClusterName: cluster?.clusterName,
+    selectedClusterPrettyName: cluster?.prettyClusterName,
     setCluster: setClusterId,
     setClusterByName: (name: string) => {
       const newClusterId = name && clusters.find((c) => c.clusterName === name)?.id || clusterId;

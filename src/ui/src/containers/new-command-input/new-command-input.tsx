@@ -14,7 +14,7 @@ import Modal from '@material-ui/core/Modal';
 import { ScriptContext } from 'context/script-context';
 import { ParseFormatStringToTabStops } from './autocomplete-parser';
 import { entityTypeToString } from './autocomplete-utils';
-import { LiveViewPage } from '../../components/live-widgets/utils/live-view-params';
+import { entityPageForScriptId } from '../../components/live-widgets/utils/live-view-params';
 import { parseVis } from '../live/vis';
 
 const AUTOCOMPLETE_QUERY = gql`
@@ -115,7 +115,7 @@ const NewCommandInput: React.FC<NewCommandInputProps> = ({ open, onClose }) => {
         });
 
         execute({
-          liveViewPage: LiveViewPage.Default,
+          liveViewPage: entityPageForScriptId(script.id),
           pxl: script.code,
           vis,
           id: script.id,

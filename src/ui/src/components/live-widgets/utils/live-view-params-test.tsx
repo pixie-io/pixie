@@ -1,7 +1,7 @@
 import { SemanticType } from 'types/generated/vizier_pb';
 import {
-  getLiveViewTitle, LiveViewPage, matchLiveViewEntity, toEntityPathname,
-  toSingleEntityPage,
+  entityPageForScriptId, getLiveViewTitle, LiveViewPage, matchLiveViewEntity,
+  toEntityPathname, toSingleEntityPage,
 } from './live-view-params';
 
 describe('matchLiveViewEntity test', () => {
@@ -271,14 +271,14 @@ describe('getLiveViewTitle test', () => {
     const page = LiveViewPage.Cluster;
     const params = {};
     const defaultTitle = 'my default title';
-    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('my default title');
+    expect(getLiveViewTitle(defaultTitle, page, params, 'clusterA')).toEqual('clusterA');
   });
 
   it('should generate the title for the namespaces page', () => {
     const page = LiveViewPage.Namespaces;
     const params = {};
     const defaultTitle = 'my default title';
-    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('namespaces');
+    expect(getLiveViewTitle(defaultTitle, page, params, 'clusterA')).toEqual('clusterA namespaces');
   });
 
   it('should generate the title for the namespace page', () => {
@@ -287,14 +287,14 @@ describe('getLiveViewTitle test', () => {
       namespace: 'px-sock-shop',
     };
     const defaultTitle = 'my default title';
-    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('px-sock-shop');
+    expect(getLiveViewTitle(defaultTitle, page, params, 'clusterA')).toEqual('px-sock-shop');
   });
 
   it('should generate the title for the nodes page', () => {
     const page = LiveViewPage.Nodes;
     const params = {};
     const defaultTitle = 'my default title';
-    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('nodes');
+    expect(getLiveViewTitle(defaultTitle, page, params, 'clusterA')).toEqual('clusterA nodes');
   });
 
   it('should generate the title for the node page', () => {
@@ -303,7 +303,7 @@ describe('getLiveViewTitle test', () => {
       node: 'node-123',
     };
     const defaultTitle = 'my default title';
-    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('node-123');
+    expect(getLiveViewTitle(defaultTitle, page, params, 'clusterA')).toEqual('node-123');
   });
 
   it('should generate the title for the pods page', () => {
@@ -312,7 +312,7 @@ describe('getLiveViewTitle test', () => {
       namespace: 'px-sock-shop',
     };
     const defaultTitle = 'my default title';
-    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('px-sock-shop/pods');
+    expect(getLiveViewTitle(defaultTitle, page, params, 'clusterA')).toEqual('px-sock-shop/pods');
   });
 
   it('should generate the title for the pod page', () => {
@@ -321,7 +321,7 @@ describe('getLiveViewTitle test', () => {
       pod: 'px-sock-shop/orders-123',
     };
     const defaultTitle = 'my default title';
-    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('px-sock-shop/orders-123');
+    expect(getLiveViewTitle(defaultTitle, page, params, 'clusterA')).toEqual('px-sock-shop/orders-123');
   });
 
   it('should generate the title for the services page', () => {
@@ -330,7 +330,7 @@ describe('getLiveViewTitle test', () => {
       namespace: 'px-sock-shop',
     };
     const defaultTitle = 'my default title';
-    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('px-sock-shop/services');
+    expect(getLiveViewTitle(defaultTitle, page, params, 'clusterA')).toEqual('px-sock-shop/services');
   });
 
   it('should generate the title for the service page', () => {
@@ -339,7 +339,7 @@ describe('getLiveViewTitle test', () => {
       service: 'px-sock-shop/orders',
     };
     const defaultTitle = 'my default title';
-    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('px-sock-shop/orders');
+    expect(getLiveViewTitle(defaultTitle, page, params, 'clusterA')).toEqual('px-sock-shop/orders');
   });
 
   it('should generate the title for the default page', () => {
@@ -348,6 +348,25 @@ describe('getLiveViewTitle test', () => {
       namespace: 'do-not-use',
     };
     const defaultTitle = 'my default title';
-    expect(getLiveViewTitle(defaultTitle, page, params)).toEqual('my default title');
+    expect(getLiveViewTitle(defaultTitle, page, params, 'clusterA')).toEqual('my default title');
+  });
+
+  it('should generate the default title when the entity name is empty', () => {
+    const page = LiveViewPage.Node;
+    const params = {
+      node: '',
+    };
+    const defaultTitle = 'my default title';
+    expect(getLiveViewTitle(defaultTitle, page, params, 'clusterA')).toEqual(defaultTitle);
+  });
+});
+
+describe('entityPageForScriptId', () => {
+  it('should return the right enum for an entity script id', () => {
+    expect(entityPageForScriptId('px/cluster')).toEqual(LiveViewPage.Cluster);
+  });
+
+  it('should return the right enum for a non-entity script id', () => {
+    expect(entityPageForScriptId('px/http_data')).toEqual(LiveViewPage.Default);
   });
 });

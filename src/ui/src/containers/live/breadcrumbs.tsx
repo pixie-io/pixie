@@ -9,9 +9,12 @@ import { useQuery, useApolloClient } from '@apollo/react-hooks';
 import Breadcrumbs from 'components/breadcrumbs/breadcrumbs';
 import ClusterContext from 'common/cluster-context';
 import { CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
-import { getArgTypesForVis } from 'utils/args-utils';
-import { ScriptContext } from '../../context/script-context';
-import { EntityType, pxTypetoEntityType } from '../new-command-input/autocomplete-utils';
+import { argsForVis, getArgTypesForVis } from 'utils/args-utils';
+import { ScriptsContext } from 'containers/App/scripts-context';
+import { ScriptContext } from 'context/script-context';
+import { entityPageForScriptId } from 'components/live-widgets/utils/live-view-params';
+import { parseVis } from 'containers/live/vis';
+import { EntityType, pxTypetoEntityType } from 'containers/new-command-input/autocomplete-utils';
 
 const LIST_CLUSTERS = gql`
 {
@@ -47,8 +50,10 @@ const styles = ((theme: Theme) => createStyles({
 const LiveViewBreadcrumbs = ({ classes }) => {
   const { loading, data } = useQuery(LIST_CLUSTERS);
   const { selectedCluster, setCluster } = React.useContext(ClusterContext);
+  const { scripts } = React.useContext(ScriptsContext);
+
   const {
-    vis, pxl, args, id, liveViewPage, setArgs, execute,
+    vis, pxl, args, id, liveViewPage, setArgs, execute, setScript,
   } = React.useContext(ScriptContext);
 
   const client = useApolloClient();
@@ -61,6 +66,8 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     },
   })
   ), [client]);
+
+  const scriptIds = React.useMemo(() => [...scripts.keys()], [scripts]);
 
   if (loading) {
     return (<div>Loading...</div>);
@@ -96,6 +103,8 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     const argProps = {
       title: argName,
       value: argVal,
+      selectable: true,
+      allowTyping: true,
       onSelect: (newVal) => {
         const newArgs = { ...args, [argName]: newVal };
         setArgs(newArgs);
@@ -103,15 +112,12 @@ const LiveViewBreadcrumbs = ({ classes }) => {
           pxl, vis, args: newArgs, id, liveViewPage,
         });
       },
-      selectable: true,
-      allowTyping: true,
       getListItems: null,
     };
-
     const entityType = pxTypetoEntityType(argTypes[argName]);
     if (entityType !== 'AEK_UNKNOWN') {
-      argProps.getListItems = async (input) => (getCompletions(input, entityType).then((results) => (
-        results.data.autocompleteField.map((suggestion) => (suggestion.name)))));
+      argProps.getListItems = async (input) => (getCompletions(input, entityType)
+        .then((results) => (results.data.autocompleteField.map((suggestion) => (suggestion.name)))));
     }
 
     // TODO(michelle): Ideally we should just be able to use the entityType to determine whether the
@@ -129,8 +135,29 @@ const LiveViewBreadcrumbs = ({ classes }) => {
   // TODO(michelle): Make script editable.
   entityBreadcrumbs.push({
     title: 'script',
-    value: id || 'unknown',
-    selectable: false,
+    value: id,
+    selectable: true,
+    allowTyping: true,
+    getListItems: async (input) => {
+      const value = input?.target?.value;
+      if (!value) {
+        return scriptIds;
+      }
+      return scriptIds.filter((id) => id.indexOf(value) >= 0);
+    },
+    onSelect: (newVal) => {
+      const script = scripts.get(newVal);
+      const vis = parseVis(script.vis);
+      const execArgs = {
+        pxl: script.code,
+        id: newVal,
+        liveViewPage: entityPageForScriptId(newVal),
+        args: argsForVis(vis, args),
+        vis,
+      };
+      setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
+      execute(execArgs);
+    },
   });
 
   return (

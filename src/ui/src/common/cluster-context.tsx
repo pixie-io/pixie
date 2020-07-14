@@ -3,6 +3,7 @@ import * as React from 'react';
 interface ClusterContextProps {
   selectedCluster: string;
   selectedClusterName: string;
+  selectedClusterPrettyName: string;
   setCluster: (id: string) => void;
   setClusterByName: (name: string) => void;
 }
