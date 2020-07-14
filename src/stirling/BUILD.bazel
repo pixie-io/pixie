@@ -125,6 +125,18 @@ pl_cc_test(
 )
 
 pl_cc_test(
+    name = "dynamic_source_test",
+    srcs = ["dynamic_source_test.cc"],
+    args = [
+        "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
+    ],
+    data = [
+        "//src/stirling/obj_tools/testdata:dummy_go_binary",
+    ],
+    deps = [":cc_library"],
+)
+
+pl_cc_test(
     name = "stirling_bpf_test",
     timeout = "moderate",
     srcs = ["stirling_bpf_test.cc"],

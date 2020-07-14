@@ -21,6 +21,7 @@
 #include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
 
+#include "src/stirling/dynamic_source_connector.h"
 #include "src/stirling/jvm_stats_connector.h"
 #include "src/stirling/pid_runtime_connector.h"
 #include "src/stirling/proc_stat_connector.h"
@@ -174,7 +175,7 @@ class StirlingImpl final : public Stirling {
   absl::base_internal::SpinLock info_class_mgrs_lock_;
 
   // Structure to hold dynamically generated data table schemas.
-  std::map<uint64_t, std::unique_ptr<DynamicDataTableSchema>> dynamic_table_schemas_;
+  std::map<uint64_t, SourceConnector*> dynamic_sources_;
 
   std::unique_ptr<PubSubManager> config_;
 
@@ -299,12 +300,26 @@ uint64_t StirlingImpl::RegisterDynamicTrace(const dynamic_tracing::ir::logical::
 #define ASSIGN_OR_RETURN(lhs, rexpr) \
   PL_ASSIGN_OR(lhs, rexpr, dynamic_trace_status_map_[trace_id] = __s__.status(); return trace_id;)
 
+#define RETURN_IF_ERROR(s)                   \
+  if (!s.ok()) {                             \
+    dynamic_trace_status_map_[trace_id] = s; \
+    return trace_id;                         \
+  }
+
   ASSIGN_OR_RETURN(BCCProgram bcc_program, dynamic_tracing::CompileProgram(program));
 
   for (auto& output : bcc_program.perf_buffer_specs) {
     ASSIGN_OR_RETURN(std::unique_ptr<DynamicDataTableSchema> table_schema,
                      DynamicDataTableSchema::Create(std::move(output.output)));
-    dynamic_table_schemas_[trace_id] = std::move(table_schema);
+    // Make the source connector name the same as the table name.
+    // This should be okay so long as there is only one table per connector.
+    std::string source_name(table_schema->Get().name());
+    std::unique_ptr<SourceConnector> source =
+        DynamicSourceConnector::Create(source_name, std::move(table_schema));
+    SourceConnector* source_raw_ptr = source.get();
+    RETURN_IF_ERROR(AddSource(std::move(source)));
+
+    dynamic_sources_[trace_id] = source_raw_ptr;
   }
 
   PL_UNUSED(bcc_program);  // Run DeployBCCProgram(bcc_program) here.
