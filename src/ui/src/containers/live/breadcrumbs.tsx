@@ -37,6 +37,10 @@ query getCompletions($input: String, $kind: AutocompleteEntityKind) {
 const styles = ((theme: Theme) => createStyles({
   root: {
     color: theme.palette.foreground.one,
+    display: 'flex',
+  },
+  spacer: {
+    flex: 1,
   },
 }));
 
@@ -62,7 +66,8 @@ const LiveViewBreadcrumbs = ({ classes }) => {
     return (<div>Loading...</div>);
   }
 
-  const breadcrumbs = [];
+  const entityBreadcrumbs = [];
+  const argBreadcrumbs = [];
 
   // Cluster always goes first in breadcrumbs.
   const clusterName = data.clusters.find((c) => c.id === selectedCluster)?.prettyClusterName || 'unknown cluster';
@@ -70,7 +75,7 @@ const LiveViewBreadcrumbs = ({ classes }) => {
   data.clusters.forEach((c) => {
     clusterNameToID[c.prettyClusterName] = c.id;
   });
-  breadcrumbs.push({
+  entityBreadcrumbs.push({
     title: 'cluster',
     value: clusterName,
     selectable: true,
@@ -109,12 +114,20 @@ const LiveViewBreadcrumbs = ({ classes }) => {
         results.data.autocompleteField.map((suggestion) => (suggestion.name)))));
     }
 
-    breadcrumbs.push(argProps);
+    // TODO(michelle): Ideally we should just be able to use the entityType to determine whether the
+    // arg appears in the argBreadcrumbs. However, some entities still don't have a corresponding entity type
+    // (such as nodes), since they are not yet supported in autocomplete. Until that is fixed, this is hard-coded
+    // for now.
+    if (argName === 'start_time' || argName === 'start') {
+      argBreadcrumbs.push(argProps);
+    } else {
+      entityBreadcrumbs.push(argProps);
+    }
   });
 
   // Add script at end of breadcrumbs.
   // TODO(michelle): Make script editable.
-  breadcrumbs.push({
+  entityBreadcrumbs.push({
     title: 'script',
     value: id || 'unknown',
     selectable: false,
@@ -123,7 +136,11 @@ const LiveViewBreadcrumbs = ({ classes }) => {
   return (
     <div className={classes.root}>
       <Breadcrumbs
-        breadcrumbs={breadcrumbs}
+        breadcrumbs={entityBreadcrumbs}
+      />
+      <div className={classes.spacer} />
+      <Breadcrumbs
+        breadcrumbs={argBreadcrumbs}
       />
     </div>
   );
