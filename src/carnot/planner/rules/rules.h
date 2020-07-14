@@ -256,6 +256,7 @@ class ConvertStringTimesRule : public Rule {
    *
    */
  public:
+  inline static constexpr char kAbsTimeFormat[] = "%E4Y-%m-%d %H:%M:%E*S %z";
   explicit ConvertStringTimesRule(CompilerState* compiler_state) : Rule(compiler_state) {}
 
  protected:
@@ -264,6 +265,9 @@ class ConvertStringTimesRule : public Rule {
   StatusOr<bool> HandleRolling(RollingIR* rolling);
   bool HasStringTime(const ExpressionIR* expr);
   StatusOr<ExpressionIR*> ConvertStringTimes(ExpressionIR* expr, bool relative_time);
+  StatusOr<int64_t> ParseDurationFmt(const StringIR* node, bool relative_time);
+  StatusOr<int64_t> ParseAbsFmt(const StringIR* node);
+  StatusOr<ExpressionIR*> ParseStringToTime(const StringIR* node, bool relative_time);
 };
 
 class SetMemSourceNsTimesRule : public Rule {

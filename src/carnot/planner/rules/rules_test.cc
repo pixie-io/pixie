@@ -954,6 +954,29 @@ TEST_F(CompileTimeExpressionTest, mem_src_one_argument_string) {
   EXPECT_EQ(static_cast<IntIR*>(end_res)->val(), expected_time);
 }
 
+TEST_F(CompileTimeExpressionTest, mem_src_one_argument_string_absfmt) {
+  int64_t expected_time = absl::ToUnixNanos(
+      absl::FromCivil(absl::CivilSecond(2020, 7, 13, 18, 2, 5), absl::UTCTimeZone()));
+  std::string stop_str_repr = "2020-07-13 18:02:5.00 +0000";
+
+  auto stop = graph->CreateNode<StringIR>(ast, stop_str_repr).ValueOrDie();
+  auto start = graph->CreateNode<IntIR>(ast, 10).ValueOrDie();
+
+  EXPECT_OK(mem_src->SetTimeExpressions(start, stop));
+  ConvertStringTimesRule compiler_expr_rule(compiler_state_.get());
+
+  auto result = compiler_expr_rule.Execute(graph.get());
+  ASSERT_OK(result);
+  EXPECT_TRUE(result.ValueOrDie());
+
+  auto start_res = mem_src->start_time_expr();
+  auto end_res = mem_src->end_time_expr();
+  EXPECT_MATCH(start_res, Int());
+  EXPECT_MATCH(end_res, Int());
+  EXPECT_EQ(static_cast<IntIR*>(start_res)->val(), 10);
+  EXPECT_EQ(static_cast<IntIR*>(end_res)->val(), expected_time);
+}
+
 TEST_F(CompileTimeExpressionTest, mem_src_two_argument_string) {
   int64_t start_num_minutes_ago = 2;
   int64_t stop_num_minutes_ago = 1;
