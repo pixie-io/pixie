@@ -146,7 +146,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "read_mb",
+            "value": "rchar_mb",
             "mode": "MODE_LINE",
             "series": "node",
             "stackBySeries": false
@@ -172,7 +172,7 @@
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
         "timeseries": [
           {
-            "value": "write_mb",
+            "value": "wchar_mb",
             "mode": "MODE_LINE",
             "series": "node",
             "stackBySeries": false
