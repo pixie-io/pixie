@@ -199,21 +199,27 @@ TEST(GenProgramTest, SpecsAndCode) {
                                            type: ENTRY
                                          }
                                          vars {
-                                           name: "key"
-                                           type: UINT32
-                                           builtin: TGID
+                                           scalar_var {
+                                             name: "key"
+                                             type: UINT32
+                                             builtin: TGID
+                                           }
                                          }
                                          vars {
-                                           name: "var"
-                                           type: INT32
-                                           reg: SP
+                                           scalar_var {
+                                             name: "var"
+                                             type: INT32
+                                             reg: SP
+                                           }
                                          }
-                                         st_vars {
-                                           name: "st_var"
-                                           type: "socket_data_event_t"
-                                           field_assignments {
-                                             field_name: "i32"
-                                             variable_name: "var"
+                                         vars {
+                                           struct_var {
+                                             name: "st_var"
+                                             type: "socket_data_event_t"
+                                             field_assignments {
+                                               field_name: "i32"
+                                               variable_name: "var"
+                                             }
                                            }
                                          }
                                          map_stash_actions {

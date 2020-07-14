@@ -23,6 +23,7 @@ using ::pl::stirling::dynamic_tracing::ir::physical::Register;
 using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
 using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
+using ::pl::stirling::dynamic_tracing::ir::physical::Variable;
 using ::pl::stirling::dynamic_tracing::ir::shared::BPFHelper;
 using ::pl::stirling::dynamic_tracing::ir::shared::Condition;
 using ::pl::stirling::dynamic_tracing::ir::shared::Map;
@@ -321,7 +322,7 @@ StatusOr<std::string> GenScalarVarPrintk(
         printk.scalar());
   }
 
-  ScalarType type;
+  ScalarType type = ScalarType::BOOL;
 
   if (iter1 != scalar_vars.end()) {
     type = iter1->second->type();
@@ -396,41 +397,50 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
   absl::flat_hash_map<std::string_view, const MemberVariable*> member_vars;
 
   for (const auto& var : probe.vars()) {
-    var_names.insert(var.name());
-    scalar_vars[var.name()] = &var;
-    MOVE_BACK_STR_VEC(&code_lines, GenScalarVariable(var));
-  }
-
-  for (const auto& var : probe.map_vars()) {
-    PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.name(), "MapVariable"));
-    code_lines.push_back(GenMapVariable(var));
-  }
-
-  for (const auto& var : probe.member_vars()) {
-    member_vars[var.name()] = &var;
-    PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.name(), "MemberVariable"));
-    MoveBackStrVec(GenMemberVariable(var), &code_lines);
-  }
-
-  for (const auto& var : probe.st_vars()) {
-    PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.name(), "StructVariable"));
-
-    for (const auto& fa : var.field_assignments()) {
-      if (!var_names.contains(fa.variable_name())) {
-        return error::InvalidArgument(
-            "Variable '$0' assigned to StructVariable '$1' was not defined", fa.variable_name(),
-            var.name());
+    switch (var.var_oneof_case()) {
+      case Variable::VarOneofCase::kScalarVar: {
+        PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.scalar_var().name(), "ScalarVariable"));
+        scalar_vars[var.scalar_var().name()] = &var.scalar_var();
+        MOVE_BACK_STR_VEC(&code_lines, GenScalarVariable(var.scalar_var()));
+        break;
       }
-      // TODO(yzhao): Check variable types as well.
-    }
+      case Variable::VarOneofCase::kMapVar: {
+        PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.map_var().name(), "MapVariable"));
+        code_lines.push_back(GenMapVariable(var.map_var()));
+        break;
+      }
+      case Variable::VarOneofCase::kMemberVar: {
+        PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.member_var().name(), "MemberVariable"));
+        member_vars[var.member_var().name()] = &var.member_var();
+        MoveBackStrVec(GenMemberVariable(var.member_var()), &code_lines);
+        break;
+      }
+      case Variable::VarOneofCase::kStructVar: {
+        PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.struct_var().name(), "MapVariable"));
 
-    auto iter = structs_.find(var.type());
-    if (iter == structs_.end()) {
-      return error::InvalidArgument("Struct '$0' referenced in variable '$1' was not defined",
-                                    var.type(), var.name());
-    }
+        const auto& st_var = var.struct_var();
 
-    MOVE_BACK_STR_VEC(&code_lines, GenStructVariable(*iter->second, var));
+        for (const auto& fa : st_var.field_assignments()) {
+          if (!var_names.contains(fa.variable_name())) {
+            return error::InvalidArgument(
+                "Variable '$0' assigned to StructVariable '$1' was not defined", fa.variable_name(),
+                st_var.name());
+          }
+          // TODO(yzhao): Check variable types as well.
+        }
+
+        auto iter = structs_.find(st_var.type());
+        if (iter == structs_.end()) {
+          return error::InvalidArgument("Struct '$0' referenced in variable '$1' was not defined",
+                                        st_var.type(), st_var.name());
+        }
+
+        MOVE_BACK_STR_VEC(&code_lines, GenStructVariable(*iter->second, st_var));
+        break;
+      }
+      case Variable::VarOneofCase::VAR_ONEOF_NOT_SET:
+        return error::InvalidArgument("Variable is not set");
+    }
   }
 
   for (const auto& action : probe.map_stash_actions()) {

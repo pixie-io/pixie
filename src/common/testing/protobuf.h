@@ -24,7 +24,7 @@ struct EqualsProtoMatcher {
   bool MatchAndExplain(const PBType& pb, ::testing::MatchResultListener* listener) const {
     std::unique_ptr<PBType> expected_pb(pb.New());
     if (!google::protobuf::TextFormat::ParseFromString(expected_text_pb_, expected_pb.get())) {
-      (*listener) << "The input cannot be parsed as protobuf!";
+      (*listener) << "The input cannot be parsed as protobuf, got:\n" << pb.DebugString();
       return false;
     }
     google::protobuf::util::MessageDifferencer differencer;

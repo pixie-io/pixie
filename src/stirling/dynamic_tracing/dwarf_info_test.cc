@@ -49,87 +49,108 @@ probes: {
 
 constexpr std::string_view kEntryProbeOut = R"(
 binary_path: "$0"
-probes: {
-  trace_point: {
+probes {
+  trace_point {
     symbol: "main.MixedArgTypes"
     type: ENTRY
   }
   vars {
-    name: "sp"
-    type: VOID_POINTER
-    reg: SP
-  }
-  vars {
-    name: "tgid"
-    type: INT32
-    builtin: TGID
-  }
-  vars {
-    name: "tgid_pid"
-    type: UINT64
-    builtin: TGID_PID
-  }
-  vars {
-    name: "tgid_start_time"
-    type: UINT64
-    builtin: TGID_START_TIME
-  }
-  vars {
-    name: "goid"
-    type: INT64
-    builtin: GOID
-  }
-  vars {
-    name: "ktime_ns"
-    type: UINT64
-    builtin: KTIME
-  }
-  vars {
-    name: "arg0"
-    type: INT
-    memory: {
-      base: "sp"
-      offset: 8
+    scalar_var {
+      name: "sp"
+      type: VOID_POINTER
+      reg: SP
     }
   }
   vars {
-    name: "arg1"
-    type: INT
-    memory: {
-      base: "sp"
-      offset: 24
+    scalar_var {
+      name: "tgid"
+      type: INT32
+      builtin: TGID
     }
   }
   vars {
-    name: "arg2"
-    type: INT
-    memory: {
-      base: "sp"
-      offset: 32
+    scalar_var {
+      name: "tgid_pid"
+      type: UINT64
+      builtin: TGID_PID
     }
   }
   vars {
-    name: "arg3"
-    type: BOOL
-    memory: {
-      base: "sp"
-      offset: 16
+    scalar_var {
+      name: "tgid_start_time"
+      type: UINT64
+      builtin: TGID_START_TIME
     }
   }
   vars {
-    name: "arg4"
-    type: BOOL
-    memory: {
-      base: "sp"
-      offset: 17
+    scalar_var {
+      name: "goid"
+      type: INT64
+      builtin: GOID
     }
   }
   vars {
-    name: "arg5"
-    type: BOOL
-    memory {
-      base: "sp"
-      offset: 20
+    scalar_var {
+      name: "ktime_ns"
+      type: UINT64
+      builtin: KTIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg0"
+      type: INT
+      memory {
+        base: "sp"
+        offset: 8
+      }
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg1"
+      type: INT
+      memory {
+        base: "sp"
+        offset: 24
+      }
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg2"
+      type: INT
+      memory {
+        base: "sp"
+        offset: 32
+      }
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg3"
+      memory {
+        base: "sp"
+        offset: 16
+      }
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg4"
+      memory {
+        base: "sp"
+        offset: 17
+      }
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg5"
+      memory {
+        base: "sp"
+        offset: 20
+      }
     }
   }
 }
@@ -155,55 +176,70 @@ probes: {
 
 constexpr std::string_view kReturnProbeOut = R"(
 binary_path: "$0"
-probes: {
-  trace_point: {
+probes {
+  trace_point {
     symbol: "main.MixedArgTypes"
     type: RETURN
   }
   vars {
-    name: "sp"
-    type: VOID_POINTER
-    reg: SP
-  }
-  vars {
-    name: "tgid"
-    type: INT32
-    builtin: TGID
-  }
-  vars {
-    name: "tgid_pid"
-    type: UINT64
-    builtin: TGID_PID
-  }
-  vars {
-    name: "tgid_start_time"
-    type: UINT64
-    builtin: TGID_START_TIME
-  }
-  vars {
-    name: "goid"
-    type: INT64
-    builtin: GOID
-  }
-  vars {
-    name: "ktime_ns"
-    type: UINT64
-    builtin: KTIME
-  }
-  vars {
-    name: "retval0"
-    type: INT
-    memory: {
-      base: "sp"
-      offset: 48
+    scalar_var {
+      name: "sp"
+      type: VOID_POINTER
+      reg: SP
     }
   }
-vars {
-    name: "retval1"
-    type: BOOL
-    memory: {
-      base: "sp"
-      offset: 56
+  vars {
+    scalar_var {
+      name: "tgid"
+      type: INT32
+      builtin: TGID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_pid"
+      type: UINT64
+      builtin: TGID_PID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "tgid_start_time"
+      type: UINT64
+      builtin: TGID_START_TIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "goid"
+      type: INT64
+      builtin: GOID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "ktime_ns"
+      type: UINT64
+      builtin: KTIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "retval0"
+      type: INT
+      memory {
+        base: "sp"
+        offset: 48
+      }
+    }
+  }
+  vars {
+    scalar_var {
+      name: "retval1"
+      memory {
+        base: "sp"
+        offset: 56
+      }
     }
   }
 }
@@ -229,79 +265,100 @@ probes: {
 
 constexpr std::string_view kNestedArgProbeOut = R"(
 binary_path: "$0"
-probes: {
-  trace_point: {
+probes {
+  trace_point {
     symbol: "main.PointerWrapperWrapperWrapperFunc"
     type: ENTRY
   }
   vars {
-    name: "sp"
-    type: VOID_POINTER
-    reg: SP
-  }
-  vars {
-    name: "tgid"
-    type: INT32
-    builtin: TGID
-  }
-  vars {
-    name: "tgid_pid"
-    type: UINT64
-    builtin: TGID_PID
-  }
-  vars {
-    name: "tgid_start_time"
-    type: UINT64
-    builtin: TGID_START_TIME
-  }
-  vars {
-    name: "goid"
-    type: INT64
-    builtin: GOID
-  }
-  vars {
-    name: "ktime_ns"
-    type: UINT64
-    builtin: KTIME
-  }
-  vars {
-    name: "arg0_D_Ptr_X_"
-    type: VOID_POINTER
-    memory: {
-      base: "sp"
-      offset: 16
+    scalar_var {
+      name: "sp"
+      type: VOID_POINTER
+      reg: SP
     }
   }
   vars {
-    name: "arg0_D_Ptr_X__D_Val_D_Ptr_X_"
-    type: VOID_POINTER
-    memory: {
-      base: "arg0_D_Ptr_X_"
-      offset: 40
+    scalar_var {
+      name: "tgid"
+      type: INT32
+      builtin: TGID
     }
   }
   vars {
-    name: "arg0"
-    type: INT
-    memory: {
-      base: "arg0_D_Ptr_X__D_Val_D_Ptr_X_"
-      offset: 0
+    scalar_var {
+      name: "tgid_pid"
+      type: UINT64
+      builtin: TGID_PID
     }
   }
   vars {
-    name: "arg1_D_Ptr_X_"
-    type: VOID_POINTER
-    memory: {
-      base: "sp"
-      offset: 16
+    scalar_var {
+      name: "tgid_start_time"
+      type: UINT64
+      builtin: TGID_START_TIME
     }
   }
   vars {
-    name: "arg1"
-    type: INT64
-    memory: {
-      base: "arg1_D_Ptr_X_"
-      offset: 16
+    scalar_var {
+      name: "goid"
+      type: INT64
+      builtin: GOID
+    }
+  }
+  vars {
+    scalar_var {
+      name: "ktime_ns"
+      type: UINT64
+      builtin: KTIME
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg0_D_Ptr_X_"
+      type: VOID_POINTER
+      memory {
+        base: "sp"
+        offset: 16
+      }
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg0_D_Ptr_X__D_Val_D_Ptr_X_"
+      type: VOID_POINTER
+      memory {
+        base: "arg0_D_Ptr_X_"
+        offset: 40
+      }
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg0"
+      type: INT
+      memory {
+        base: "arg0_D_Ptr_X__D_Val_D_Ptr_X_"
+      }
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg1_D_Ptr_X_"
+      type: VOID_POINTER
+      memory {
+        base: "sp"
+        offset: 16
+      }
+    }
+  }
+  vars {
+    scalar_var {
+      name: "arg1"
+      type: INT64
+      memory {
+        base: "arg1_D_Ptr_X_"
+        offset: 16
+      }
     }
   }
 }
@@ -379,284 +436,362 @@ structs {
   name: "my_stash_value_t"
   fields {
     name: "arg0"
-    type { scalar: INT }
+    type {
+      scalar: INT
+    }
   }
   fields {
     name: "arg1"
-    type { scalar: BOOL }
+    type {
+      scalar: BOOL
+    }
   }
 }
 structs {
   name: "out_table_value_t"
   fields {
     name: "tgid__"
-    type { scalar: INT32 }
+    type {
+      scalar: INT32
+    }
   }
   fields {
     name: "tgid_start_time__"
-    type { scalar: UINT64 }
+    type {
+      scalar: UINT64
+    }
   }
   fields {
     name: "goid__"
-    type { scalar: INT64 }
+    type {
+      scalar: INT64
+    }
   }
   fields {
     name: "ktime_ns__"
-    type { scalar: UINT64 }
+    type {
+      scalar: UINT64
+    }
   }
   fields {
     name: "arg0"
-    type { scalar: INT }
+    type {
+      scalar: INT
+    }
   }
   fields {
     name: "arg1"
-    type { scalar: BOOL }
+    type {
+      scalar: BOOL
+    }
   }
   fields {
     name: "arg2"
-    type { scalar: BOOL }
+    type {
+      scalar: BOOL
+    }
   }
 }
 structs {
   name: "out_table2_value_t"
   fields {
     name: "tgid__"
-    type { scalar: INT32 }
+    type {
+      scalar: INT32
+    }
   }
   fields {
     name: "tgid_start_time__"
-    type { scalar: UINT64 }
+    type {
+      scalar: UINT64
+    }
   }
   fields {
     name: "goid__"
-    type { scalar: INT64 }
+    type {
+      scalar: INT64
+    }
   }
   fields {
     name: "ktime_ns__"
-    type { scalar: UINT64 }
+    type {
+      scalar: UINT64
+    }
   }
   fields {
     name: "arg0"
-    type { scalar: INT }
+    type {
+      scalar: INT
+    }
   }
   fields {
     name: "arg1"
-    type { scalar: BOOL }
+    type {
+      scalar: BOOL
+    }
   }
 }
 maps {
   name: "my_stash"
-  key_type { scalar: UINT64 }
-  value_type { struct_type: "my_stash_value_t" }
+  key_type {
+    scalar: UINT64
+  }
+  value_type {
+    struct_type: "my_stash_value_t"
+  }
 }
 outputs {
   name: "out_table"
   fields: "arg0"
   fields: "arg1"
   fields: "arg2"
-  type { struct_type: "out_table_value_t" }
+  type {
+    struct_type: "out_table_value_t"
+  }
 }
 outputs {
   name: "out_table2"
   fields: "arg0"
   fields: "arg1"
-  type { struct_type: "out_table2_value_t" }
+  type {
+    struct_type: "out_table2_value_t"
+  }
 }
-probes: {
-  trace_point: {
+probes {
+  trace_point {
     symbol: "main.MixedArgTypes"
     type: ENTRY
   }
   vars {
-    name: "sp"
-    type: VOID_POINTER
-    reg: SP
-  }
-  vars {
-    name: "tgid"
-    type: INT32
-    builtin: TGID
-  }
-  vars {
-    name: "tgid_pid"
-    type: UINT64
-    builtin: TGID_PID
-  }
-  vars {
-    name: "tgid_start_time"
-    type: UINT64
-    builtin: TGID_START_TIME
-  }
-  vars {
-    name: "goid"
-    type: INT64
-    builtin: GOID
-  }
-  vars {
-    name: "ktime_ns"
-    type: UINT64
-    builtin: KTIME
-  }
-  vars {
-    name: "arg0"
-    type: INT
-    memory: {
-      base: "sp"
-      offset: 8
+    scalar_var {
+      name: "sp"
+      type: VOID_POINTER
+      reg: SP
     }
   }
   vars {
-    name: "arg1"
-    type: BOOL
-    memory: {
-      base: "sp"
-      offset: 16
+    scalar_var {
+      name: "tgid"
+      type: INT32
+      builtin: TGID
     }
   }
   vars {
-    name: "arg2"
-    type: BOOL
-    memory: {
-      base: "sp"
-      offset: 17
+    scalar_var {
+      name: "tgid_pid"
+      type: UINT64
+      builtin: TGID_PID
     }
   }
-  st_vars {
-    name: "my_stash_value"
-    type: "my_stash_value_t"
-    field_assignments {
-      field_name: "arg0"
-      variable_name: "arg0"
-    }
-    field_assignments {
-      field_name: "arg1"
-      variable_name: "arg1"
+  vars {
+    scalar_var {
+      name: "tgid_start_time"
+      type: UINT64
+      builtin: TGID_START_TIME
     }
   }
-  st_vars {
-    name: "out_table_value"
-    type: "out_table_value_t"
-    field_assignments {
-      field_name: "tgid__"
-      variable_name: "tgid"
+  vars {
+    scalar_var {
+      name: "goid"
+      type: INT64
+      builtin: GOID
     }
-    field_assignments {
-      field_name: "tgid_start_time__"
-      variable_name: "tgid_start_time"
+  }
+  vars {
+    scalar_var {
+      name: "ktime_ns"
+      type: UINT64
+      builtin: KTIME
     }
-    field_assignments {
-      field_name: "goid__"
-      variable_name: "goid"
+  }
+  vars {
+    scalar_var {
+      name: "arg0"
+      type: INT
+      memory {
+        base: "sp"
+        offset: 8
+      }
     }
-    field_assignments {
-      field_name: "ktime_ns__"
-      variable_name: "ktime_ns"
+  }
+  vars {
+    scalar_var {
+      name: "arg1"
+      memory {
+        base: "sp"
+        offset: 16
+      }
     }
-    field_assignments {
-      field_name: "arg0"
-      variable_name: "arg0"
+  }
+  vars {
+    scalar_var {
+      name: "arg2"
+      memory {
+        base: "sp"
+        offset: 17
+      }
     }
-    field_assignments {
-      field_name: "arg1"
-      variable_name: "arg1"
+  }
+  vars {
+    struct_var {
+      name: "my_stash_value"
+      type: "my_stash_value_t"
+      field_assignments {
+        field_name: "arg0"
+        variable_name: "arg0"
+      }
+      field_assignments {
+        field_name: "arg1"
+        variable_name: "arg1"
+      }
     }
-    field_assignments {
-      field_name: "arg2"
-      variable_name: "arg2"
+  }
+  vars {
+    struct_var {
+      name: "out_table_value"
+      type: "out_table_value_t"
+      field_assignments {
+        field_name: "tgid__"
+        variable_name: "tgid"
+      }
+      field_assignments {
+        field_name: "tgid_start_time__"
+        variable_name: "tgid_start_time"
+      }
+      field_assignments {
+        field_name: "goid__"
+        variable_name: "goid"
+      }
+      field_assignments {
+        field_name: "ktime_ns__"
+        variable_name: "ktime_ns"
+      }
+      field_assignments {
+        field_name: "arg0"
+        variable_name: "arg0"
+      }
+      field_assignments {
+        field_name: "arg1"
+        variable_name: "arg1"
+      }
+      field_assignments {
+        field_name: "arg2"
+        variable_name: "arg2"
+      }
     }
   }
   map_stash_actions {
     map_name: "my_stash"
     key_variable_name: "goid"
     value_variable_name: "my_stash_value"
-    cond {}
+    cond {
+    }
   }
   output_actions {
     perf_buffer_name: "out_table"
     variable_name: "out_table_value"
   }
 }
-probes: {
-  trace_point: {
+probes {
+  trace_point {
     symbol: "main.MixedArgTypes"
     type: RETURN
   }
   vars {
-    name: "sp"
-    type: VOID_POINTER
-    reg: SP
+    scalar_var {
+      name: "sp"
+      type: VOID_POINTER
+      reg: SP
+    }
   }
   vars {
-    name: "tgid"
-    type: INT32
-    builtin: TGID
+    scalar_var {
+      name: "tgid"
+      type: INT32
+      builtin: TGID
+    }
   }
   vars {
-    name: "tgid_pid"
-    type: UINT64
-    builtin: TGID_PID
+    scalar_var {
+      name: "tgid_pid"
+      type: UINT64
+      builtin: TGID_PID
+    }
   }
   vars {
-    name: "tgid_start_time"
-    type: UINT64
-    builtin: TGID_START_TIME
+    scalar_var {
+      name: "tgid_start_time"
+      type: UINT64
+      builtin: TGID_START_TIME
+    }
   }
   vars {
-    name: "goid"
-    type: INT64
-    builtin: GOID
+    scalar_var {
+      name: "goid"
+      type: INT64
+      builtin: GOID
+    }
   }
   vars {
-    name: "ktime_ns"
-    type: UINT64
-    builtin: KTIME
+    scalar_var {
+      name: "ktime_ns"
+      type: UINT64
+      builtin: KTIME
+    }
   }
-  map_vars {
-    name: "my_stash_ptr"
-    map_name: "my_stash"
-    key_variable_name: "goid"
-    type: "my_stash_value_t"
+  vars {
+    map_var {
+      name: "my_stash_ptr"
+      type: "my_stash_value_t"
+      map_name: "my_stash"
+      key_variable_name: "goid"
+    }
   }
-  member_vars {
-    name: "arg0"
-    type: INT
-    struct_base: "my_stash_ptr"
-    is_struct_base_pointer: true
-    field: "arg0"
+  vars {
+    member_var {
+      name: "arg0"
+      type: INT
+      struct_base: "my_stash_ptr"
+      is_struct_base_pointer: true
+      field: "arg0"
+    }
   }
-  member_vars {
-    name: "arg1"
-    type: BOOL
-    struct_base: "my_stash_ptr"
-    is_struct_base_pointer: true
-    field: "arg1"
+  vars {
+    member_var {
+      name: "arg1"
+      struct_base: "my_stash_ptr"
+      is_struct_base_pointer: true
+      field: "arg1"
+    }
   }
-  st_vars {
-    name: "out_table2_value"
-    type: "out_table2_value_t"
-    field_assignments {
-      field_name: "tgid__"
-      variable_name: "tgid"
-    }
-    field_assignments {
-      field_name: "tgid_start_time__"
-      variable_name: "tgid_start_time"
-    }
-    field_assignments {
-      field_name: "goid__"
-      variable_name: "goid"
-    }
-    field_assignments {
-      field_name: "ktime_ns__"
-      variable_name: "ktime_ns"
-    }
-    field_assignments {
-      field_name: "arg0"
-      variable_name: "arg0"
-    }
-    field_assignments {
-      field_name: "arg1"
-      variable_name: "arg1"
+  vars {
+    struct_var {
+      name: "out_table2_value"
+      type: "out_table2_value_t"
+      field_assignments {
+        field_name: "tgid__"
+        variable_name: "tgid"
+      }
+      field_assignments {
+        field_name: "tgid_start_time__"
+        variable_name: "tgid_start_time"
+      }
+      field_assignments {
+        field_name: "goid__"
+        variable_name: "goid"
+      }
+      field_assignments {
+        field_name: "ktime_ns__"
+        variable_name: "ktime_ns"
+      }
+      field_assignments {
+        field_name: "arg0"
+        variable_name: "arg0"
+      }
+      field_assignments {
+        field_name: "arg1"
+        variable_name: "arg1"
+      }
     }
   }
   output_actions {

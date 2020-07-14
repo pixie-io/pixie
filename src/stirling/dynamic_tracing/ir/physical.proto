@@ -119,6 +119,17 @@ message StructVariable {
   repeated FieldAssignment field_assignments = 3;
 }
 
+// A container of different types of variables. Defines how to access them from inside BCC code..
+// Variable names must be unique.
+message Variable {
+  oneof var_oneof {
+    ScalarVariable scalar_var = 1;
+    StructVariable struct_var = 2;
+    MapVariable map_var = 3;
+    MemberVariable member_var = 4;
+  }
+}
+
 // Corresponds to inserting value(s) with key to a map.
 // Multiple values are grouped together.
 message MapStashAction {
@@ -151,25 +162,8 @@ message Probe {
   // Where to attach this probe.
   shared.TracePoint trace_point = 2;
 
-  // Defines how to access variables from inside BCC code.
-  //
-  // StructVariable names must be unique, as BCC codegen does not modify them.
-  //
-  // StructVariables are for instances of Struct, which are custom defined, and are not based on
-  // variables in DWARF. So ScalarVariable should not need to reference based off
-  // any StructVariables.
-  repeated ScalarVariable vars = 3;
-
-  // A struct variable looked up from a map.
-  repeated MapVariable map_vars = 8;
-
-  // A scalar variable assigned from one of the above struct variables.
-  repeated MemberVariable member_vars = 9;
-
-  // Defines how to create struct variables from the above scalar variables from inside BCC code.
-  //
-  // StructVariable names must be unique, as BCC codegen does not modify them.
-  repeated StructVariable st_vars = 4;
+  // All variables defined inside this probe.
+  repeated Variable vars = 3;
 
   // Inserts key and value into a map.
   //

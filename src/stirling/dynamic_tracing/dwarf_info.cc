@@ -177,7 +177,7 @@ StatusOr<const ArgInfo*> GetArgInfo(const std::map<std::string, ArgInfo>& args_m
 ir::physical::ScalarVariable* Dwarvifier::AddVariable(ir::physical::Probe* probe,
                                                       const std::string& name,
                                                       ir::shared::ScalarType type) {
-  auto* var = probe->add_vars();
+  auto* var = probe->add_vars()->mutable_scalar_var();
   var->set_name(name);
   var->set_type(type);
 
@@ -273,7 +273,7 @@ Status Dwarvifier::ProcessSpecialVariables(ir::physical::Probe* output_probe) {
 
   // Add tgid_pid variable
   {
-    auto* var = output_probe->add_vars();
+    auto* var = output_probe->add_vars()->mutable_scalar_var();
     var->set_name(kTGIDPIDVarName);
     var->set_type(ir::shared::ScalarType::UINT64);
     var->set_builtin(ir::shared::BPFHelper::TGID_PID);
@@ -299,7 +299,7 @@ Status Dwarvifier::ProcessSpecialVariables(ir::physical::Probe* output_probe) {
 
 Status Dwarvifier::ProcessConst(const ir::logical::Constant& constant,
                                 ir::physical::Probe* output_probe) {
-  auto* var = output_probe->add_vars();
+  auto* var = output_probe->add_vars()->mutable_scalar_var();
 
   var->set_name(constant.name());
   var->set_type(constant.type());
@@ -437,7 +437,7 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
 
   // Create the map variable.
   {
-    auto* var = output_probe->add_map_vars();
+    auto* var = output_probe->add_vars()->mutable_map_var();
     var->set_name(map_var_name);
     var->set_type(map->value_type().struct_type());
     var->set_map_name(map_val.map_name());
@@ -449,7 +449,7 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
   for (const auto& value_id : map_val.value_ids()) {
     const auto& field = struct_decl->fields(i++);
 
-    auto* var = output_probe->add_member_vars();
+    auto* var = output_probe->add_vars()->mutable_member_var();
     var->set_name(value_id);
     var->set_type(field.type().scalar());
     var->set_struct_base(map_var_name);
@@ -530,7 +530,7 @@ Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_a
   PL_RETURN_IF_ERROR(GenerateMapValueStruct(stash_action_in, struct_type_name, output_program));
   PL_RETURN_IF_ERROR(PopulateMapTypes(maps_, stash_action_in.map_name(), struct_type_name));
 
-  auto* struct_var = output_probe->add_st_vars();
+  auto* struct_var = output_probe->add_vars()->mutable_struct_var();
   struct_var->set_name(variable_name);
   struct_var->set_type(struct_type_name);
 
@@ -622,7 +622,7 @@ Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_a
       PopulateOutputTypes(outputs_, output_action_in.output_name(), struct_type_name));
 
   // Create and initialize a struct variable.
-  auto* struct_var = output_probe->add_st_vars();
+  auto* struct_var = output_probe->add_vars()->mutable_struct_var();
   struct_var->set_type(struct_type_name);
   struct_var->set_name(variable_name);
 
