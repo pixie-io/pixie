@@ -113,10 +113,29 @@ const webpackConfig = {
         loader: require.resolve('awesome-typescript-loader'),
       },
       {
-        test: /\.(jpe?g|png|gif|svg)$/i,
+        test: /\.(jpg|png|gif|svg)$/,
+        loader: 'image-webpack-loader',
+        // Specify enforce: 'pre' to apply the loader
+        // before url-loader/svg-url-loader
+        // and not duplicate it in rules with them
+        enforce: 'pre',
+      },
+      {
+        test: /\.(svg)$/i,
+        loader: require.resolve('svg-url-loader'),
+        options: {
+          // Images larger than 10 KB won't be inlined
+          limit: 10 * 1024,
+          name: 'assets/[name].[contenthash].[ext]',
+          noquotes: true,
+        },
+      },
+      {
+        test: /\.(jpe?g|png|gif)$/i,
         loader: require.resolve('url-loader'),
         options: {
-          limit: 100,
+          // Images larger than 10 KB won't be inlined
+          limit: 10 * 1024,
           name: 'assets/[name].[contenthash].[ext]',
         },
       },
