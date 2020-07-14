@@ -83,11 +83,14 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     left: '50%',
     transform: 'translate(-50%, -50%)',
   },
-  error: {
+  errorDisplay: {
     position: 'absolute',
     zIndex: 1, // Position on top of canvas.
-    padding: theme.spacing(3),
-    width: '50%',
+    height: '100%',
+    width: '100%',
+  },
+  error: {
+    position: 'absolute',
     '& .MuiAlert-root': {
       padding: theme.spacing(3),
     },
@@ -99,6 +102,13 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
       color: theme.palette.text.secondary,
       opacity: 0.65,
     },
+    marginTop: theme.spacing(5),
+    marginLeft: theme.spacing(5),
+  },
+  errorOverlay: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
   },
   errorTitle: {
     ...theme.typography.body2,
@@ -108,6 +118,9 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   hidden: {
     display: 'none',
+  },
+  blur: {
+    filter: `blur(${theme.spacing(0.2)}px)`,
   },
 }));
 
@@ -169,20 +182,22 @@ const WidgetDisplay = ({
 };
 
 const ErrorDisplay = (props) => {
-  const [open, setOpen] = React.useState(true);
-  const toggleOpen = React.useCallback(() => setOpen((opened) => !opened), []);
-
+  const { error, setOpen } = props;
+  const toggleOpen = React.useCallback(() => setOpen((opened) => !opened), [setOpen]);
   React.useEffect(() => {
     setOpen(true);
-  }, [props.error]);
+  }, [error, setOpen]);
 
   const vzError = props.error as VizierQueryError;
   return (
-    <div className={open ? props.classes.error : props.classes.hidden}>
-      <Alert severity='error' onClose={toggleOpen}>
-        <AlertTitle className={props.classes.errorTitle}>{vzError?.message || props.error}</AlertTitle>
-        <VizierErrorDetails error={props.error} />
-      </Alert>
+    <div className={props.open ? props.classes.errorDisplay : props.classes.hidden}>
+      <div className={props.classes.errorOverlay} />
+      <div className={props.classes.error}>
+        <Alert severity='error' onClose={toggleOpen}>
+          <AlertTitle className={props.classes.errorTitle}>{vzError?.message || props.error}</AlertTitle>
+          <VizierErrorDetails error={props.error} />
+        </Alert>
+      </div>
     </div>
   );
 };
@@ -252,6 +267,7 @@ const Canvas = (props: CanvasProps) => {
   );
 
   const layout = React.useMemo(() => toLayout(vis.widgets, isMobile), [vis, isMobile]);
+  const [errorOpen, setErrorOpen] = React.useState(false);
 
   const charts = React.useMemo(() => {
     const widgets = [];
@@ -320,11 +336,11 @@ const Canvas = (props: CanvasProps) => {
   return (
     <>
       { error
-        && <ErrorDisplay classes={classes} error={error} /> }
+        && <ErrorDisplay classes={classes} error={error} setOpen={setErrorOpen} open={errorOpen} /> }
       <Grid
         layout={layout}
         cols={getGridWidth(isMobile)}
-        className={classes.grid}
+        className={clsx(classes.grid, errorOpen && classes.blur)}
         onLayoutChange={updateLayoutInVis}
         isDraggable={props.editable}
         isResizable={props.editable}
