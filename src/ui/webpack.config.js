@@ -140,7 +140,7 @@ const webpackConfig = {
         },
       },
       {
-        test: /\.(sc|c)ss$/,
+        test: /\.css$/,
         use: [
           {
             loader: MiniCssExtractPlugin.loader,
@@ -150,12 +150,6 @@ const webpackConfig = {
           },
           {
             loader: 'css-loader',
-          },
-          {
-            loader: 'sass-loader',
-            options: {
-              includePaths: ['node_modules'],
-            },
           },
         ],
       },
