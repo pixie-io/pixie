@@ -98,6 +98,13 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
       backgroundColor: 'initial',
     },
   },
+  separator: {
+    display: 'flex',
+    alignItems: 'center',
+    color: palette.foreground.one,
+    fontWeight: 1000,
+    width: spacing(1),
+  },
 });
 
 interface DialogDropdownProps extends WithStyles<typeof styles> {
@@ -232,17 +239,6 @@ const Breadcrumb = ({
 
   return (
     <div className={classes.breadcrumb}>
-      {
-        !first
-        && (
-          <div className={classes.tail}>
-            <div className={classes.triangle}>
-              <div className={classes.topArrow} />
-              <div className={classes.bottomArrow} />
-            </div>
-          </div>
-        )
-      }
       <div className={classes.body}>
         <div className={classes.content}>
           <span className={classes.title}>
@@ -259,11 +255,6 @@ const Breadcrumb = ({
             showInputfield={allowTyping}
             anchorEl={anchorEl}
           />
-        </div>
-      </div>
-      <div className={classes.angle}>
-        <div className={classes.triangle}>
-          <div className={classes.arrow} />
         </div>
       </div>
     </div>
@@ -289,12 +280,16 @@ const Breadcrumbs = ({
   <div className={classes.breadcrumbs}>
     {
       breadcrumbs.map((breadcrumb, i) => (
-        <Breadcrumb
-          key={i}
-          first={i === 0}
-          classes={classes}
-          {...breadcrumb}
-        />
+        <>
+          <Breadcrumb
+            key={i}
+            first={i === 0}
+            classes={classes}
+            {...breadcrumb}
+          />
+          {(i !== breadcrumbs.length - 1)
+            && <div className={classes.separator}>/</div> }
+        </>
       ))
     }
   </div>

@@ -44,9 +44,11 @@ storiesOf('Breadcrumbs', module)
     ];
 
     return (
-      <Breadcrumbs
-        breadcrumbs={breadcrumbs}
-      />
+      <div style={{ backgroundColor: '#212324' }}>
+        <Breadcrumbs
+          breadcrumbs={breadcrumbs}
+        />
+      </div>
     );
   }, {
     info: { inline: true },
