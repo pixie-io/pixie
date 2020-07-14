@@ -148,8 +148,7 @@ class StirlingImpl final : public Stirling {
   Status CreateSourceConnectors();
 
   // Adds a source to Stirling, and updates all state accordingly.
-  Status AddSourceFromRegistry(const std::string& name,
-                               const SourceRegistry::RegistryElement& registry_element);
+  Status AddSource(std::unique_ptr<SourceConnector> source);
 
   // Main run implementation.
   void RunCore();
@@ -232,7 +231,7 @@ Status StirlingImpl::CreateSourceConnectors() {
   }
   auto sources = registry_->sources();
   for (const auto& [name, registry_element] : sources) {
-    Status s = AddSourceFromRegistry(name, registry_element);
+    Status s = AddSource(registry_element.create_source_fn(name));
 
     if (!s.ok()) {
       LOG(WARNING) << absl::Substitute("Source Connector (registry name=$0) not instantiated",
@@ -260,21 +259,22 @@ std::unordered_map<uint64_t, std::string> StirlingImpl::TableIDToNameMap() const
   return map;
 }
 
-Status StirlingImpl::AddSourceFromRegistry(
-    const std::string& name, const SourceRegistry::RegistryElement& registry_element) {
-  // Step 1: Create and init the source.
-  auto source = registry_element.create_source_fn(name);
+Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
+  // Step 1: Init the source.
   PL_RETURN_IF_ERROR(source->Init());
 
   for (uint32_t i = 0; i < source->num_tables(); ++i) {
+    const DataTableSchema& schema = source->TableSchema(i);
+    LOG(INFO) << "Adding info class " << schema.name();
+
     // Step 2: Create the info class manager.
-    auto mgr = std::make_unique<InfoClassManager>(source->TableSchema(i));
+    auto mgr = std::make_unique<InfoClassManager>(schema);
     auto mgr_ptr = mgr.get();
     mgr->SetSourceConnector(source.get(), i);
 
     // Step 3: Setup the manager.
-    mgr_ptr->SetSamplingPeriod(source->TableSchema(i).default_sampling_period());
-    mgr_ptr->SetPushPeriod(source->TableSchema(i).default_push_period());
+    mgr_ptr->SetSamplingPeriod(schema.default_sampling_period());
+    mgr_ptr->SetPushPeriod(schema.default_push_period());
 
     // Step 4: Keep pointers to all the objects
     info_class_mgrs_.push_back(std::move(mgr));

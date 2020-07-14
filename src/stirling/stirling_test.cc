@@ -284,12 +284,10 @@ TEST_F(StirlingTest, hammer_time_on_stirling_synchronized_subscriptions) {
   uint32_t i = 0;
   while (NumProcessed() < kNumProcessedRequirement || i < kNumIterMin) {
     // Process a subscription message.
-    s = stirling->SetSubscription(GenerateRandomSubscription());
-    ASSERT_TRUE(s.ok());
+    ASSERT_OK(stirling->SetSubscription(GenerateRandomSubscription()));
 
     // Run Stirling data collector.
-    s = stirling->RunAsThread();
-    ASSERT_TRUE(s.ok());
+    ASSERT_OK(stirling->RunAsThread());
 
     // Stay in this config for the specified amount of time.
     std::this_thread::sleep_for(kDurationPerIter);
@@ -326,8 +324,7 @@ TEST_F(StirlingTest, hammer_time_on_stirling_on_the_fly_subs) {
   uint32_t i = 0;
   while (NumProcessed() < kNumProcessedRequirement || i < kNumIterMin) {
     // Process a subscription message.
-    s = stirling->SetSubscription(GenerateRandomSubscription());
-    ASSERT_TRUE(s.ok());
+    ASSERT_OK(stirling->SetSubscription(GenerateRandomSubscription()));
 
     // Stay in this config for the specified amount of time..
     std::this_thread::sleep_for(kDurationPerIter);
@@ -361,21 +358,18 @@ TEST_F(StirlingTest, no_data_callback_defined) {
 
 TEST_F(StirlingTest, dynamic_trace_api) {
   Stirling* stirling = GetStirling();
-  Status s;
 
-  // Checking status of non-existant trace should return NOT_FOUND.
-  s = stirling->CheckDynamicTraceStatus(/* trace_id */ 1);
+  // Checking status of non-existent trace should return NOT_FOUND.
+  Status s = stirling->CheckDynamicTraceStatus(/* trace_id */ 1);
   EXPECT_EQ(s.code(), pl::statuspb::Code::NOT_FOUND);
 
-  // Checking status of existant trace should return OK.
+  // Checking status of existent trace should return OK.
   dynamic_tracing::ir::logical::Program trace_program;
   uint64_t trace_id = stirling->RegisterDynamicTrace(trace_program);
-  s = stirling->CheckDynamicTraceStatus(trace_id);
-  EXPECT_OK(s);
+  EXPECT_OK(stirling->CheckDynamicTraceStatus(trace_id));
 
   // OK state should persist.
-  s = stirling->CheckDynamicTraceStatus(trace_id);
-  EXPECT_OK(s);
+  EXPECT_OK(stirling->CheckDynamicTraceStatus(trace_id));
 
   // TODO(oazizi): Expand test when RegisterDynamicTrace produces other states.
 }
