@@ -37,10 +37,15 @@ query getCompletions($input: String, $kind: AutocompleteEntityKind) {
 }
 `;
 
-const styles = ((theme: Theme) => createStyles({
+const styles = (({ palette, spacing }: Theme) => createStyles({
   root: {
-    color: theme.palette.foreground.one,
     display: 'flex',
+    paddingTop: spacing(1),
+    paddingBottom: spacing(1),
+    marginRight: spacing(4.5),
+    marginLeft: spacing(3),
+    marginBottom: spacing(1),
+    borderBottom: `1px solid ${palette.foreground.grey2}`,
   },
   spacer: {
     flex: 1,

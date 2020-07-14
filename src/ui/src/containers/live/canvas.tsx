@@ -15,7 +15,7 @@ import { Alert, AlertTitle } from '@material-ui/lab';
 import { VizierErrorDetails, VizierQueryError } from 'common/errors';
 
 import {
-  createStyles, makeStyles, Theme, useTheme,
+  createStyles, fade, makeStyles, Theme, useTheme,
 } from '@material-ui/core/styles';
 
 import Vega from 'components/live-widgets/vega/vega';
@@ -40,15 +40,15 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   gridItem: {
     padding: theme.spacing(1),
     backgroundColor: theme.palette.background.default,
-    borderRadius: theme.spacing(0.5),
-    border: `solid 1px ${theme.palette.foreground.grey3}`,
+    border: `solid 0.5px ${fade(theme.palette.primary.main, 0.10)}`,
+    boxShadow: `0px 0px ${theme.spacing(0.5)}px ${theme.palette.background.five}`,
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'stretch',
   },
   editable: {
     boxShadow: theme.shadows[10],
-    borderColor: theme.palette.foreground.grey2,
+    borderColor: fade(theme.palette.primary.dark, 0.50),
     cursor: 'move',
     '& > *': {
       pointerEvents: 'none',
@@ -64,9 +64,10 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   },
   widgetTitle: {
     ...theme.typography.subtitle1,
-    padding: theme.spacing(1),
-    borderBottom: `solid 1px ${theme.palette.foreground.grey3}`,
-    color: theme.palette.foreground.white,
+    padding: theme.spacing(0.5),
+    color: theme.palette.foreground.two,
+    textAlign: 'center',
+    textTransform: 'capitalize',
   },
   chart: {
     flex: 1,

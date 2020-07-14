@@ -42,6 +42,7 @@ const styles = ({ spacing, palette }: Theme) => createStyles({
   button: {
     paddingTop: spacing(1),
     paddingBottom: spacing(1),
+    textTransform: 'capitalize',
   },
   pixienaut: {
     position: 'relative',
@@ -69,14 +70,14 @@ const textByVariant = {
   signup: {
     title: 'Get Started',
     body: 'Pixie Community is Free Forever. No Credit Card Needed',
-    googleButtonText: 'Sign-up using Google',
+    googleButtonText: 'Sign-up with Google',
     buttonCaption: 'Already have an account?',
     buttonText: 'Login',
   },
   login: {
-    title: 'Login to your account',
+    title: 'Login',
     body: 'Welcome back to Pixie!',
-    googleButtonText: 'Login using Google',
+    googleButtonText: 'Login with Google',
     buttonCaption: 'Don\'t have an account yet?',
     buttonText: 'Sign Up',
   },

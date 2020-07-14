@@ -3,7 +3,7 @@ import { ResultsContext } from 'context/results-context';
 import * as React from 'react';
 
 import {
-  createStyles, makeStyles, Theme, withStyles,
+  createStyles, fade, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
 import Tab from '@material-ui/core/Tab';
 import Tabs from '@material-ui/core/Tabs';
@@ -23,9 +23,10 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.palette.foreground.grey3,
+    backgroundColor: theme.palette.background.default,
     cursor: 'pointer',
-    boxShadow: `inset 0 ${theme.spacing(0.3)}px ${theme.spacing(0.5)}px ${theme.palette.foreground.grey4}1A`,
+    boxShadow: `inset 0 ${theme.spacing(0.3)}px ${theme.spacing(1)}px ${fade(theme.palette.foreground.grey5, 0.1)}`,
+    paddingTop: theme.spacing(1),
   },
   icon: {
     marginLeft: theme.spacing(2),

@@ -6,12 +6,14 @@ declare module '@material-ui/core/styles/createPalette' {
     two?: string;
     three?: string;
     four?: string;
+    five?: string;
   }
 
   interface Palette {
     foreground: {
       one?: string;
       two?: string;
+      three?: string;
       grey1?: string;
       grey2?: string;
       grey3?: string;
@@ -47,10 +49,10 @@ declare module '@material-ui/core/styles/createPalette' {
 
 export const scrollbarStyles = (theme: Theme) => {
   const commonStyle = (color) => ({
-    borderRadius: theme.spacing(1.5),
-    border: [['solid', theme.spacing(0.5), 'transparent']],
+    borderRadius: theme.spacing(1.0),
+    border: [['solid', theme.spacing(0.7), 'transparent']],
     backgroundColor: 'transparent',
-    boxShadow: [['inset', 0, 0, theme.spacing(1), theme.spacing(1), color]],
+    boxShadow: [['inset', 0, 0, theme.spacing(0.5), theme.spacing(1), color]],
   });
   return {
     '& ::-webkit-scrollbar': {
@@ -58,7 +60,7 @@ export const scrollbarStyles = (theme: Theme) => {
       height: theme.spacing(2),
     },
     '& ::-webkit-scrollbar-track': commonStyle(theme.palette.background.one),
-    '& ::-webkit-scrollbar-thumb': commonStyle(theme.palette.foreground.one),
+    '& ::-webkit-scrollbar-thumb': commonStyle(theme.palette.foreground.grey2),
     '& ::-webkit-scrollbar-corner': {
       backgroundColor: 'transparent',
     },
@@ -69,8 +71,12 @@ export const DARK_THEME = createMuiTheme({
   palette: {
     type: 'dark',
     topBar: {
-      colorTop: '#000000',
-      colorBottom: '#000000',
+      colorTop: '#212324',
+      colorBottom: '#212324',
+    },
+    common: {
+      black: '#000000',
+      white: '#ffffff',
     },
     primary: {
       main: '#12d6d6',
@@ -115,6 +121,7 @@ export const DARK_THEME = createMuiTheme({
       two: '#212324',
       three: '#353535',
       four: '#161616',
+      five: '#090909',
     },
     divider: '#272822',
     text: {
@@ -123,7 +130,14 @@ export const DARK_THEME = createMuiTheme({
       disabled: '#',
     },
     action: {
-      active: '#a6a8ae', // foreground 1
+      active: '#a6a8ae', // foreground 1.
+    },
+  },
+  overrides: {
+    MuiDivider: {
+      root: {
+        backgroundColor: '#353535', // background three.
+      },
     },
   },
 });

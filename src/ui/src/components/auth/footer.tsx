@@ -31,7 +31,7 @@ const styles = ({ spacing, breakpoints }: Theme) => createStyles({
 type FooterProps = WithStyles<typeof styles>;
 
 export const Footer = withStyles(styles)(({ classes }: FooterProps) => (
-  <Grid container direction='row'>
+  <Grid container direction='row' alignContent='flex-end'>
     <Grid item xs={false} sm={6} className={classes.gridItem}>
       <Typography variant='subtitle2' className={clsx(classes.paddingRight)}>
         <Button disabled size='small'>Terms & Conditions</Button>

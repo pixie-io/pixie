@@ -15,6 +15,7 @@ import { Link } from 'react-router-dom';
 import Tooltip from '@material-ui/core/Tooltip';
 import ClusterContext from 'common/cluster-context';
 import { toEntityPathname, LiveViewPage } from 'components/live-widgets/utils/live-view-params';
+import { Divider } from '@material-ui/core';
 
 const styles = ({ spacing, palette, transitions }: Theme) => createStyles({
   drawerOpen: {
@@ -29,7 +30,7 @@ const styles = ({ spacing, palette, transitions }: Theme) => createStyles({
     }),
     overflowX: 'hidden',
     backgroundColor: palette.foreground.grey3,
-    boxShadow: `0 ${spacing(0.5)}px ${spacing(0.5)}px ${palette.foreground.grey3}`,
+    boxShadow: `${spacing(0.25)}px 0px ${spacing(2)}px ${palette.background.five}`,
     paddingBottom: spacing(2),
   },
   drawerClose: {
@@ -42,7 +43,7 @@ const styles = ({ spacing, palette, transitions }: Theme) => createStyles({
     overflowX: 'hidden',
     paddingTop: spacing(8),
     backgroundColor: palette.foreground.grey3,
-    boxShadow: `0 ${spacing(0.5)}px ${spacing(0.5)}px ${palette.foreground.grey3}`,
+    boxShadow: `${spacing(0.25)}px 0px ${spacing(2)}px ${palette.background.five}`,
     paddingBottom: spacing(2),
   },
   docked: {
@@ -128,6 +129,7 @@ const SideBar = ({
         ))}
       </List>
       <div className={classes.spacer} />
+      <Divider />
       <List>
         {profileItems.map(({ icon, link, text }) => (
           <SideBarItem key={text} classes={classes} icon={icon} link={link} text={text} />

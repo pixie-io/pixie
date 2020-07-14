@@ -11,6 +11,7 @@ import ListItemText from '@material-ui/core/ListItemText';
 const styles = ({ spacing, typography, palette }: Theme) => createStyles({
   breadcrumbs: {
     display: 'inline-flex',
+    background: palette.background.four,
   },
   breadcrumb: {
     display: 'inline-flex',
@@ -26,7 +27,6 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
   },
   body: {
     ...typography.body2,
-    backgroundColor: palette.foreground.grey3,
     display: 'inline-block',
     color: palette.text.primary,
     height: spacing(3),

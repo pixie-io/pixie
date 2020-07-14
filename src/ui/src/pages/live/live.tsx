@@ -9,7 +9,6 @@ import IconButton from '@material-ui/core/IconButton';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 import ChevronLeft from '@material-ui/icons/ChevronLeft';
-import ToggleButton from '@material-ui/lab/ToggleButton';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 
 import clsx from 'clsx';
@@ -93,8 +92,11 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   hidden: {
     display: 'none',
   },
-  icon: {
-    color: theme.palette.foreground.grey5,
+  kabobIcon: {
+    color: theme.palette.foreground.three,
+  },
+  pixieIcon: {
+    color: theme.palette.primary.main,
   },
 }));
 
@@ -171,15 +173,13 @@ const LiveView = () => {
         <LiveViewTitle className={classes.title} />
         <Tooltip title='Pixie Command'>
           <IconButton disabled={commandOpen} onClick={toggleCommandOpen}>
-            <PixieCommandIcon className={classes.icon} />
+            <PixieCommandIcon fontSize='large' className={classes.pixieIcon} />
           </IconButton>
         </Tooltip>
-        <ExecuteScriptButton
-          className={classes.icon}
-        />
+        <ExecuteScriptButton />
         <Tooltip title='More' onClick={openMenu}>
           <IconButton>
-            <MoreVertIcon className={classes.icon} />
+            <MoreVertIcon className={classes.kabobIcon} />
           </IconButton>
         </Tooltip>
         <Menu
