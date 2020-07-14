@@ -10,8 +10,8 @@ import {
   createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
-import ChevronLeft from '@material-ui/icons/ChevronLeft';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
+import EditIcon from 'components/icons/edit';
 
 import Canvas from 'containers/live/canvas';
 import CommandInput from 'containers/command-input/command-input';
@@ -107,31 +107,13 @@ const StyledListItemIcon = withStyles(({ spacing }: Theme) => createStyles({
   },
 }))(ListItemIcon);
 
-export const EditorOpener = () => {
-  const { editorPanelOpen, isMobile, setEditorPanelOpen } = React.useContext(LayoutContext);
-  const openEditor = () => setEditorPanelOpen(true);
-  const classes = useStyles();
-
-  if (isMobile) {
-    return null;
-  }
-
-  return (
-    <Tooltip title='Open Editor' placement='left'>
-      <IconButton disabled={isMobile || editorPanelOpen} className={classes.opener} onClick={openEditor}>
-        <ChevronLeft />
-      </IconButton>
-    </Tooltip>
-  );
-};
-
 const LiveView = () => {
   const classes = useStyles();
 
   const { pxl, id, saveEditorAndExecute } = React.useContext(ScriptContext);
   const { loading } = React.useContext(VizierGRPCClientContext);
   const {
-    setDataDrawerOpen, setEditorPanelOpen, isMobile,
+    setDataDrawerOpen, editorPanelOpen, setEditorPanelOpen, isMobile,
   } = React.useContext(LayoutContext);
 
   const [widgetsMoveable, setWidgetsMoveable] = React.useState(false);
@@ -196,7 +178,13 @@ const LiveView = () => {
           getContentAnchorEl={null}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         >
-          <MenuItem dense key='edit' button onClick={() => setWidgetsMoveable(!widgetsMoveable)}>
+          <MenuItem key='edit' dense button onClick={() => setEditorPanelOpen(!editorPanelOpen)}>
+            <StyledListItemIcon>
+              <EditIcon />
+            </StyledListItemIcon>
+            <ListItemText primary={editorPanelOpen ? 'Close Editor' : 'Open Editor'} />
+          </MenuItem>
+          <MenuItem key='move-widget' dense button onClick={() => setWidgetsMoveable(!widgetsMoveable)}>
             <StyledListItemIcon>
               <MoveIcon />
             </StyledListItemIcon>
@@ -221,7 +209,6 @@ const LiveView = () => {
               { localStorage.getItem('px-new-autocomplete') === 'true'
                 ? <NewCommandInput open={commandOpen} onClose={toggleCommandOpen} />
                 : <CommandInput open={commandOpen} onClose={toggleCommandOpen} /> }
-              <EditorOpener />
             </div>
           )
       }
