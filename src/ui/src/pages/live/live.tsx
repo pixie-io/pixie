@@ -10,6 +10,7 @@ import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 import ChevronLeft from '@material-ui/icons/ChevronLeft';
 import ToggleButton from '@material-ui/lab/ToggleButton';
+import MoreVertIcon from '@material-ui/icons/MoreVert';
 
 import clsx from 'clsx';
 import Canvas from 'containers/live/canvas';
@@ -27,6 +28,10 @@ import LiveViewTitle from 'containers/live/title';
 import LiveViewBreadcrumbs from 'containers/live/breadcrumbs';
 import NavBars from 'containers/App/nav-bars';
 import ProfileMenu from 'containers/profile-menu/profile-menu';
+import Menu from '@material-ui/core/Menu';
+import MenuItem from '@material-ui/core/MenuItem';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ListItemText from '@material-ui/core/ListItemText';
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   root: {
@@ -125,6 +130,19 @@ const LiveView = () => {
   const [commandOpen, setCommandOpen] = React.useState<boolean>(false);
   const toggleCommandOpen = React.useCallback(() => setCommandOpen((opened) => !opened), []);
 
+  const [moreMenuOpen, setMoreMenuOpen] = React.useState<boolean>(false);
+  const [anchorEl, setAnchorEl] = React.useState(null);
+
+  const openMenu = React.useCallback((event) => {
+    setMoreMenuOpen(true);
+    setAnchorEl(event.currentTarget);
+  }, []);
+
+  const closeMenu = React.useCallback(() => {
+    setMoreMenuOpen(false);
+    setAnchorEl(null);
+  }, []);
+
   const hotkeyHandlers = {
     'pixie-command': toggleCommandOpen,
     'toggle-editor': () => setEditorPanelOpen((editable) => !editable),
@@ -159,21 +177,25 @@ const LiveView = () => {
         <ExecuteScriptButton
           className={classes.icon}
         />
-        {
-          !isMobile
-          && (
-          <Tooltip title='Edit View'>
-            <ToggleButton
-              className={classes.moveWidgetToggle}
-              selected={widgetsMoveable}
-              onChange={() => setWidgetsMoveable(!widgetsMoveable)}
-              value='moveWidget'
-            >
-              <MoveIcon className={classes.icon} />
-            </ToggleButton>
-          </Tooltip>
-          )
-        }
+        <Tooltip title='More' onClick={openMenu}>
+          <IconButton>
+            <MoreVertIcon className={classes.icon} />
+          </IconButton>
+        </Tooltip>
+        <Menu
+          open={moreMenuOpen}
+          onClose={closeMenu}
+          anchorEl={anchorEl}
+          getContentAnchorEl={null}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+          <MenuItem key='edit' button onClick={() => setWidgetsMoveable(!widgetsMoveable)}>
+            <ListItemIcon>
+              <MoveIcon />
+            </ListItemIcon>
+            <ListItemText primary={widgetsMoveable ? 'Disable Edit View' : 'Enable Edit View'} />
+          </MenuItem>
+        </Menu>
         <ProfileMenu />
       </NavBars>
       {
