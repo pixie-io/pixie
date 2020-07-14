@@ -10,24 +10,11 @@ import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
-import ProfileMenu from 'containers/profile-menu/profile-menu';
 import SettingsIcon from 'components/icons/settings';
 import { Link } from 'react-router-dom';
 import Tooltip from '@material-ui/core/Tooltip';
 import ClusterContext from 'common/cluster-context';
 import { toEntityPathname, LiveViewPage } from 'components/live-widgets/utils/live-view-params';
-import gql from 'graphql-tag';
-import { useQuery } from '@apollo/react-hooks';
-
-const GET_USER_INFO = gql`
-{
-  user {
-    email
-    name
-    picture
-  }
-}
-`;
 
 const styles = ({ spacing, palette, transitions }: Theme) => createStyles({
   drawerOpen: {
@@ -43,6 +30,7 @@ const styles = ({ spacing, palette, transitions }: Theme) => createStyles({
     overflowX: 'hidden',
     backgroundColor: palette.foreground.grey3,
     boxShadow: `0 ${spacing(0.5)}px ${spacing(0.5)}px ${palette.foreground.grey3}`,
+    paddingBottom: spacing(2),
   },
   drawerClose: {
     transition: transitions.create('width', {
@@ -55,6 +43,7 @@ const styles = ({ spacing, palette, transitions }: Theme) => createStyles({
     paddingTop: spacing(8),
     backgroundColor: palette.foreground.grey3,
     boxShadow: `0 ${spacing(0.5)}px ${spacing(0.5)}px ${palette.foreground.grey3}`,
+    paddingBottom: spacing(2),
   },
   docked: {
     position: 'absolute',
@@ -124,8 +113,6 @@ const SideBar = ({
     }]
   ), [selectedClusterName]);
 
-  const { data } = useQuery(GET_USER_INFO, { fetchPolicy: 'network-only' });
-
   return (
     <Drawer
       variant='permanent'
@@ -141,23 +128,11 @@ const SideBar = ({
         ))}
       </List>
       <div className={classes.spacer} />
-      {
-        localStorage.getItem('px-profile-sidebar') === 'true'
-          && (
-            <List>
-              <ListItem>
-                <ListItemIcon>
-                  <ProfileMenu className={classes.profile} />
-                </ListItemIcon>
-                <ListItemText
-                  className={classes.profileText}
-                  primary={data && data.user && data.user.name}
-                  secondary={data && data.user && data.user.email}
-                />
-              </ListItem>
-            </List>
-          )
-      }
+      <List>
+        {profileItems.map(({ icon, link, text }) => (
+          <SideBarItem key={text} classes={classes} icon={icon} link={link} text={text} />
+        ))}
+      </List>
     </Drawer>
   );
 };

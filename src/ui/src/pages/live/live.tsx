@@ -174,12 +174,7 @@ const LiveView = () => {
           </Tooltip>
           )
         }
-        {
-          (localStorage.getItem('px-profile-sidebar') === 'false' || !localStorage.getItem('px-profile-sidebar'))
-            && (
-              <ProfileMenu />
-            )
-        }
+        <ProfileMenu />
       </NavBars>
       {
         loading ? <div className='center-content'><ClusterInstructions message='Connecting to cluster...' /></div>

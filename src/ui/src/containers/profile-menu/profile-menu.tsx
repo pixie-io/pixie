@@ -30,6 +30,8 @@ export const GET_USER_INFO = gql`
 const useStyles = makeStyles((theme: Theme) => ({
   avatarSm: {
     backgroundColor: '#12D6D6',
+    width: theme.spacing(4),
+    height: theme.spacing(4),
   },
   avatarLg: {
     backgroundColor: '#12D6D6',
