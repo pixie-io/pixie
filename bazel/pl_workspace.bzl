@@ -18,11 +18,11 @@ def _package_manager_setup():
     package_manager_repositories()
 
     dpkg_src(
-        name = "debian_buster",
+        name = "debian_sid",
         arch = "amd64",
-        distro = "buster",
-        sha256 = "bd1bed6b19bf173d60ac130edee47087203e873f3b0981f5987f77a91a2cba85",
-        snapshot = "20190716T085419Z",
+        distro = "sid",
+        sha256 = "a093727908ebb7e46cc83643b21d5e81eadee49efaa3ecae7aa7ff1a62858396",
+        snapshot = "20200701T101354Z",
         url = "http://snapshot.debian.org/archive",
     )
 
@@ -38,7 +38,7 @@ def _package_manager_setup():
             "libssl1.1",
             "libgcc1",
         ],
-        sources = ["@debian_buster//file:Packages.json"],
+        sources = ["@debian_sid//file:Packages.json"],
     )
 
 def _docker_images_setup():
