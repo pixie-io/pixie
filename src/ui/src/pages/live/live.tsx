@@ -6,12 +6,13 @@ import { ClusterInstructions } from 'containers/App/deploy-instructions';
 import * as React from 'react';
 
 import IconButton from '@material-ui/core/IconButton';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import {
+  createStyles, makeStyles, Theme, withStyles,
+} from '@material-ui/core/styles';
 import Tooltip from '@material-ui/core/Tooltip';
 import ChevronLeft from '@material-ui/icons/ChevronLeft';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 
-import clsx from 'clsx';
 import Canvas from 'containers/live/canvas';
 import CommandInput from 'containers/command-input/command-input';
 import NewCommandInput from 'containers/new-command-input/new-command-input';
@@ -99,6 +100,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     color: theme.palette.primary.main,
   },
 }));
+
+const StyledListItemIcon = withStyles(({ spacing }: Theme) => createStyles({
+  root: {
+    minWidth: spacing(4),
+  },
+}))(ListItemIcon);
 
 export const EditorOpener = () => {
   const { editorPanelOpen, isMobile, setEditorPanelOpen } = React.useContext(LayoutContext);
@@ -189,10 +196,10 @@ const LiveView = () => {
           getContentAnchorEl={null}
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         >
-          <MenuItem key='edit' button onClick={() => setWidgetsMoveable(!widgetsMoveable)}>
-            <ListItemIcon>
+          <MenuItem dense key='edit' button onClick={() => setWidgetsMoveable(!widgetsMoveable)}>
+            <StyledListItemIcon>
               <MoveIcon />
-            </ListItemIcon>
+            </StyledListItemIcon>
             <ListItemText primary={widgetsMoveable ? 'Disable Edit View' : 'Enable Edit View'} />
           </MenuItem>
         </Menu>
