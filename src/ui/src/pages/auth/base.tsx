@@ -16,7 +16,6 @@ const styles = ({ spacing, breakpoints }: Theme) => createStyles({
     width: '100%',
     minWidth: '400px',
     backgroundImage: `url(${StarsSVG})`,
-    opacity: 0.7,
     display: 'flex',
   },
   flex: {
