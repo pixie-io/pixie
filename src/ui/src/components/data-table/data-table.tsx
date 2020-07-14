@@ -136,6 +136,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   cellWrapper: {
     paddingRight: theme.spacing(2.4),
     width: '100%',
+    display: 'flex',
   },
   innerCell: {
     overflow: 'hidden',
@@ -245,7 +246,7 @@ const InternalDataTable = ({
   const rowGetterWrapper = React.useCallback(({ index }) => rowGetter(index), [rowGetter]);
 
   const cellRenderer: TableCellRenderer = React.useCallback((props: TableCellProps) => (
-    <div className={classes.cellWrapper}>
+    <div className={clsx(classes.cellWrapper, classes[props.columnData.align])}>
       <div className={classes.innerCell}>
         {props.columnData.cellRenderer && props.columnData.cellRenderer(props.cellData)}
         {!props.columnData.cellRenderer && <span className={classes.cellText}>{String(props.cellData)}</span>}
