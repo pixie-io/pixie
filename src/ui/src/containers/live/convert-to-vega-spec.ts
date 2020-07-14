@@ -482,9 +482,8 @@ function addInteractivityHitBox(spec: VgSpec | GroupMark, lineMark: TimeseriesMa
       ...lineMark.encode,
       update: {
         ...lineMark.encode.update,
-        opacity: [{
-          value: 0,
-        }],
+        stroke: { value: 'transparent' },
+        fill: { value: 'transparent' },
         strokeWidth: [{
           value: LINE_HOVER_HIT_BOX_WIDTH,
         }],
