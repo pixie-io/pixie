@@ -82,7 +82,7 @@ pl_cc_base_packages = [
     packages["libc6"],
     packages["libelf1"],
     packages["liblzma5"],
-    packages["libtinfo5"],
+    packages["libtinfo6"],
     packages["zlib1g"],
 ]
 

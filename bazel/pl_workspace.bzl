@@ -32,7 +32,7 @@ def _package_manager_setup():
             "libc6",
             "libelf1",
             "liblzma5",
-            "libtinfo5",
+            "libtinfo6",
             "zlib1g",
             "libsasl2-2",
             "libssl1.1",
