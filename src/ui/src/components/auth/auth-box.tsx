@@ -32,6 +32,10 @@ const styles = ({ spacing, palette }: Theme) => createStyles({
   title: {
     color: palette.foreground.two,
     paddingBottom: spacing(2),
+    marginBottom: spacing(1.25),
+  },
+  bodyText: {
+    margin: 0,
   },
   account: {
     color: palette.foreground.grey4,
@@ -69,7 +73,7 @@ export interface AuthBoxProps extends WithStyles<typeof styles> {
 const textByVariant = {
   signup: {
     title: 'Get Started',
-    body: 'Pixie Community is Free Forever. No Credit Card Needed',
+    body: 'Pixie Community is Free Forever.\nNo Credit Card Needed',
     googleButtonText: 'Sign-up with Google',
     buttonCaption: 'Already have an account?',
     buttonText: 'Login',
@@ -92,7 +96,7 @@ const AuthBox = withStyles(styles)((props: AuthBoxProps) => {
     classes,
   } = props;
   return (
-    <Box maxWidth={0.95} maxHeight={550} className={classes.root}>
+    <Box minWidth={370} maxWidth={0.95} maxHeight={550} className={classes.root}>
       <Container maxWidth='sm'>
         <Grid container direction='column' spacing={2}>
           <Grid item className={clsx(classes.flex, classes.centerSelf)}>
@@ -105,7 +109,11 @@ const AuthBox = withStyles(styles)((props: AuthBoxProps) => {
           </Grid>
           <Grid item className={clsx(classes.flex, classes.title, classes.centerSelf)}>
             <Typography variant='subtitle1' className={clsx(classes.title, classes.textCenter)}>
-              {textByVariant[variant].body}
+              <span>
+                {textByVariant[variant].body.split('\n').map((s, i) => (
+                  <p className={classes.bodyText} key={i}>{s}</p>
+                ))}
+              </span>
             </Typography>
           </Grid>
           <Grid item className={clsx(classes.flex, classes.centerSelf)}>
