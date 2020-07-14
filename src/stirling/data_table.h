@@ -102,22 +102,25 @@ class DataTable : public NotCopyable {
   // TODO(oazizi): Look into the optimization of avoiding replication.
   // See https://phab.pixielabs.ai/D1428 for an abandoned implementation.
 
+  static constexpr char kTruncatedMsg[] = "... [TRUNCATED]";
+
+  // RecordBuilder is used to build records into the DataTable.
+  // It is to be preferred when the schema is known at compile-time, as it is more optimized.
+  // If the schema is not known at compile-time, see DynamicRecordBuilder.
   template <const DataTableSchema* schema>
   class RecordBuilder {
    public:
     RecordBuilder(DataTable* data_table, types::TabletIDView tablet_id, uint64_t time = 0)
-        : tablet_(*data_table->GetTablet(tablet_id)), time_(time) {
+        : tablet_(*data_table->GetTablet(tablet_id)) {
       static_assert(schema->tabletized());
-      DCHECK_EQ(schema->elements().size(), tablet_.records.size());
       tablet_id_ = tablet_id;
-      tablet_.times.push_back(time);
+      Init(time);
     }
 
     explicit RecordBuilder(DataTable* data_table, uint64_t time = 0)
-        : tablet_(*data_table->GetTablet("")), time_(time) {
+        : tablet_(*data_table->GetTablet("")) {
       static_assert(!schema->tabletized());
-      DCHECK_EQ(schema->elements().size(), tablet_.records.size());
-      tablet_.times.push_back(time);
+      Init(time);
     }
 
     // For convenience, a wrapper around ColIndex() in the DataTableSchema class.
@@ -167,12 +170,74 @@ class DataTable : public NotCopyable {
     }
 
    private:
+    void Init(uint64_t time) {
+      DCHECK_EQ(schema->elements().size(), tablet_.records.size());
+      tablet_.times.push_back(time);
+    }
+
     Tablet& tablet_;
     std::bitset<schema->elements().size()> signature_;
     types::TabletIDView tablet_id_ = "";
-    uint64_t time_;
+  };
 
-    static constexpr char kTruncatedMsg[] = "... [TRUNCATED]";
+  // DynamicRecordBuilder is used to build records into the DataTable.
+  // In contrast to RecordBuilder, it works even when the schema is not known at compile-time.
+  // This, however, comes at a performance and style cost.
+  // (e.g. easier to select columns by name with RecordBuilder).
+  // If the schema is known at compile-time, please use RecordBuilder.
+  // TODO(oazizi): Find a way to merge with RecordBuilder.
+  class DynamicRecordBuilder {
+   public:
+    DynamicRecordBuilder(DataTable* data_table, types::TabletIDView tablet_id, uint64_t time = 0)
+        : schema_(data_table->table_schema_), tablet_(*data_table->GetTablet(tablet_id)) {
+      DCHECK(schema_.tabletized());
+      tablet_id_ = tablet_id;
+      Init(time);
+    }
+
+    explicit DynamicRecordBuilder(DataTable* data_table, uint64_t time = 0)
+        : schema_(data_table->table_schema_), tablet_(*data_table->GetTablet("")) {
+      DCHECK(!schema_.tabletized());
+      Init(time);
+    }
+
+    // Any string larger than TMaxStringBytes size will be truncated.
+    template <typename TValueType, const size_t TMaxStringBytes = 1024>
+    inline void Append(size_t col_index, TValueType val) {
+      if constexpr (std::is_same_v<TValueType, types::StringValue>) {
+        if (val.size() > TMaxStringBytes) {
+          val.resize(TMaxStringBytes);
+          val.append(kTruncatedMsg);
+        }
+      }
+
+      tablet_.records[col_index]->Append(std::move(val));
+
+      DCHECK(!signature_[col_index])
+          << absl::Substitute("Attempt to Append() to column $0 (name=$1) multiple times",
+                              col_index, schema_.ColName(col_index));
+      signature_.set(col_index);
+    }
+
+    ~DynamicRecordBuilder() {
+      // Check that every column was populated.
+      DCHECK_EQ(signature_.count(), schema_.elements().size());
+      DCHECK((signature_ >> schema_.elements().size()).none());
+    }
+
+   private:
+    void Init(uint64_t time) {
+      DCHECK_EQ(schema_.elements().size(), tablet_.records.size());
+      tablet_.times.push_back(time);
+      LOG_IF(DFATAL, schema_.elements().size() > kMaxSupportedColumns) << absl::Substitute(
+          "Tables with more than $0 columns are not supported.", kMaxSupportedColumns);
+    }
+
+    static constexpr int kMaxSupportedColumns = 64;
+    const DataTableSchema& schema_;
+    std::bitset<kMaxSupportedColumns> signature_ = 0;
+    Tablet& tablet_;
+    types::TabletIDView tablet_id_ = "";
   };
 
  protected:

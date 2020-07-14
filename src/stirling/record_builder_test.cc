@@ -45,6 +45,32 @@ TEST(RecordBuilder, StringMaxSize) {
   EXPECT_THAT(record_batch[2]->Get<types::StringValue>(0), EndsWith("[TRUNCATED]"));
 }
 
+TEST(RecordBuilder, MissingColumn) {
+  DataTable data_table(kTableSchema);
+
+  auto r_ptr = std::make_unique<DataTable::RecordBuilder<&kTableSchema>>(&data_table);
+  r_ptr->Append<0>(types::Int64Value(1));
+  r_ptr->Append<2>(types::StringValue("bar"));
+  EXPECT_DEBUG_DEATH(r_ptr.reset(), "");
+
+  // Tricky: This is required because EXPECT_DEBUG_DEATH acts like a fork(),
+  // which means the main process will continue on, and will trigger the
+  // destructor a second time, which will cause the DCHECK to fire without this statement.
+#if DCHECK_IS_ON()
+  r_ptr->Append<1>(types::StringValue("foo"));
+#endif
+}
+
+TEST(RecordBuilder, Duplicate) {
+  DataTable data_table(kTableSchema);
+
+  auto r_ptr = std::make_unique<DataTable::RecordBuilder<&kTableSchema>>(&data_table);
+  r_ptr->Append<0>(types::Int64Value(1));
+  r_ptr->Append<1>(types::StringValue("foo"));
+  r_ptr->Append<2>(types::StringValue("bar"));
+  EXPECT_DEBUG_DEATH(r_ptr->Append<0>(types::Int64Value(1)), "");
+}
+
 TEST(RecordBuilder, UnfilledColNames) {
   DataTable data_table(kTableSchema);
 
@@ -56,6 +82,55 @@ TEST(RecordBuilder, UnfilledColNames) {
   r.Append<r.ColIndex("b")>("test");
   r.Append<r.ColIndex("c")>("test");
   EXPECT_THAT(r.UnfilledColNames(), IsEmpty());
+}
+
+TEST(DynamicRecordBuilder, StringMaxSize) {
+  DataTable data_table(kTableSchema);
+
+  constexpr size_t kMaxStringBytes = 512;
+
+  std::string kLargeString(kMaxStringBytes + 100, 'c');
+  std::string kExpectedString(kMaxStringBytes, 'c');
+
+  DataTable::DynamicRecordBuilder r(&data_table);
+  r.Append<types::Int64Value, kMaxStringBytes>(0, 1);
+  r.Append<types::StringValue, kMaxStringBytes>(1, "foo");
+  r.Append<types::StringValue, kMaxStringBytes>(2, kLargeString);
+
+  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
+  ASSERT_EQ(tablets.size(), 1);
+  types::ColumnWrapperRecordBatch& record_batch = tablets[0].records;
+
+  ASSERT_THAT(record_batch, Each(ColWrapperSizeIs(1)));
+
+  EXPECT_THAT(record_batch[2]->Get<types::StringValue>(0), StartsWith(kExpectedString));
+  EXPECT_THAT(record_batch[2]->Get<types::StringValue>(0), EndsWith("[TRUNCATED]"));
+}
+
+TEST(DynamicRecordBuilder, MissingColumn) {
+  DataTable data_table(kTableSchema);
+
+  auto r_ptr = std::make_unique<DataTable::DynamicRecordBuilder>(&data_table);
+  r_ptr->Append(0, types::Int64Value(1));
+  r_ptr->Append(2, types::StringValue("bar"));
+  EXPECT_DEBUG_DEATH(r_ptr.reset(), "");
+
+  // Tricky: This is required because EXPECT_DEBUG_DEATH acts like a fork(),
+  // which means the main process will continue on, and will trigger the
+  // destructor a second time, which will cause the DCHECK to fire without this statement.
+#if DCHECK_IS_ON()
+  r_ptr->Append(1, types::StringValue("foo"));
+#endif
+}
+
+TEST(DynamicRecordBuilder, Duplicate) {
+  DataTable data_table(kTableSchema);
+
+  auto r_ptr = std::make_unique<DataTable::DynamicRecordBuilder>(&data_table);
+  r_ptr->Append(0, types::Int64Value(1));
+  r_ptr->Append(1, types::StringValue("foo"));
+  r_ptr->Append(2, types::StringValue("bar"));
+  EXPECT_DEBUG_DEATH(r_ptr->Append(0, types::Int64Value(1)), "");
 }
 
 }  // namespace stirling

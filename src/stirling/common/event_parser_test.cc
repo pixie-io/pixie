@@ -67,10 +67,8 @@ TEST(PositionConverterTest, Basic) {
   bp = converter.Convert(msgs, 8);
   EXPECT_EQ(bp, (BufferPosition{4, 1}));
 
-#if DCHECK_IS_ON()
   // Cannot go backwards.
-  EXPECT_DEATH(converter.Convert(msgs, 7), "");
-#endif
+  EXPECT_DEBUG_DEATH(converter.Convert(msgs, 7), "");
 }
 
 // Use dummy protocol to test basics of EventParser and its position conversions.
