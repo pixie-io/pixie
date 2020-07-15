@@ -34,6 +34,8 @@
 // 000016_trim_cluster_name.up.sql
 // 000017_add_pod_status_to_vizier_cluster.down.sql
 // 000017_add_pod_status_to_vizier_cluster.up.sql
+// 000018_add_num_nodes_to_cluster_table.down.sql
+// 000018_add_num_nodes_to_cluster_table.up.sql
 package schema
 
 import (
@@ -765,7 +767,7 @@ func _000017_add_pod_status_to_vizier_clusterDownSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000017_add_pod_status_to_vizier_cluster.down.sql", size: 77, mode: os.FileMode(436), modTime: time.Unix(1592523000, 0)}
+	info := bindataFileInfo{name: "000017_add_pod_status_to_vizier_cluster.down.sql", size: 77, mode: os.FileMode(436), modTime: time.Unix(1594787897, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -785,7 +787,47 @@ func _000017_add_pod_status_to_vizier_clusterUpSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "000017_add_pod_status_to_vizier_cluster.up.sql", size: 98, mode: os.FileMode(436), modTime: time.Unix(1592523000, 0)}
+	info := bindataFileInfo{name: "000017_add_pod_status_to_vizier_cluster.up.sql", size: 98, mode: os.FileMode(436), modTime: time.Unix(1594787897, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000018_add_num_nodes_to_cluster_tableDownSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\xe7\x72\x09\xf2\x0f\x50\x70\xf6\xf7\x09\xf5\xf5\x53\xc8\x2b\xcd\x8d\xcf\xcb\x4f\x49\x2d\xb6\xe6\xe2\x22\x55\x5f\x66\x5e\x71\x49\x51\x69\x6e\x6a\x5e\x49\x6a\x0a\xcc\x10\x40\x00\x00\x00\xff\xff\x77\x03\x68\x45\x7c\x00\x00\x00")
+
+func _000018_add_num_nodes_to_cluster_tableDownSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000018_add_num_nodes_to_cluster_tableDownSql,
+		"000018_add_num_nodes_to_cluster_table.down.sql",
+	)
+}
+
+func _000018_add_num_nodes_to_cluster_tableDownSql() (*asset, error) {
+	bytes, err := _000018_add_num_nodes_to_cluster_tableDownSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000018_add_num_nodes_to_cluster_table.down.sql", size: 124, mode: os.FileMode(436), modTime: time.Unix(1594788543, 0)}
+	a := &asset{bytes: bytes, info: info}
+	return a, nil
+}
+
+var __000018_add_num_nodes_to_cluster_tableUpSql = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x72\xf4\x09\x71\x0d\x52\x08\x71\x74\xf2\x71\x55\x28\xcb\xac\xca\x4c\x2d\x8a\x4f\xce\x29\x2d\x2e\x49\x2d\x8a\xcf\xcc\x4b\xcb\xe7\x72\x74\x71\x51\x70\xf6\xf7\x09\xf5\xf5\x53\xc8\x2b\xcd\x8d\xcf\xcb\x4f\x49\x2d\x56\xf0\xf4\x0b\x51\xf0\xf3\x0f\x51\xf0\x0b\xf5\xf1\x51\x70\x71\x75\x73\x0c\xf5\x09\x51\x30\xb0\xe6\xe2\x22\xd1\xb4\xcc\xbc\xe2\x92\xa2\xd2\xdc\xd4\xbc\x92\xd4\x14\x02\x46\x03\x02\x00\x00\xff\xff\x68\x07\xd7\x8c\xa8\x00\x00\x00")
+
+func _000018_add_num_nodes_to_cluster_tableUpSqlBytes() ([]byte, error) {
+	return bindataRead(
+		__000018_add_num_nodes_to_cluster_tableUpSql,
+		"000018_add_num_nodes_to_cluster_table.up.sql",
+	)
+}
+
+func _000018_add_num_nodes_to_cluster_tableUpSql() (*asset, error) {
+	bytes, err := _000018_add_num_nodes_to_cluster_tableUpSqlBytes()
+	if err != nil {
+		return nil, err
+	}
+
+	info := bindataFileInfo{name: "000018_add_num_nodes_to_cluster_table.up.sql", size: 168, mode: os.FileMode(436), modTime: time.Unix(1594788403, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -876,6 +918,8 @@ var _bindata = map[string]func() (*asset, error){
 	"000016_trim_cluster_name.up.sql":                   _000016_trim_cluster_nameUpSql,
 	"000017_add_pod_status_to_vizier_cluster.down.sql":  _000017_add_pod_status_to_vizier_clusterDownSql,
 	"000017_add_pod_status_to_vizier_cluster.up.sql":    _000017_add_pod_status_to_vizier_clusterUpSql,
+	"000018_add_num_nodes_to_cluster_table.down.sql":    _000018_add_num_nodes_to_cluster_tableDownSql,
+	"000018_add_num_nodes_to_cluster_table.up.sql":      _000018_add_num_nodes_to_cluster_tableUpSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -953,6 +997,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"000016_trim_cluster_name.up.sql":                   &bintree{_000016_trim_cluster_nameUpSql, map[string]*bintree{}},
 	"000017_add_pod_status_to_vizier_cluster.down.sql":  &bintree{_000017_add_pod_status_to_vizier_clusterDownSql, map[string]*bintree{}},
 	"000017_add_pod_status_to_vizier_cluster.up.sql":    &bintree{_000017_add_pod_status_to_vizier_clusterUpSql, map[string]*bintree{}},
+	"000018_add_num_nodes_to_cluster_table.down.sql":    &bintree{_000018_add_num_nodes_to_cluster_tableDownSql, map[string]*bintree{}},
+	"000018_add_num_nodes_to_cluster_table.up.sql":      &bintree{_000018_add_num_nodes_to_cluster_tableUpSql, map[string]*bintree{}},
 }}
 
 // RestoreAsset restores an asset under the given directory

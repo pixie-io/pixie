@@ -298,7 +298,7 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 
 	query := `SELECT i.vizier_cluster_id, c.cluster_uid, c.cluster_name, c.cluster_version, i.vizier_version,
 			  i.status, (EXTRACT(EPOCH FROM age(now(), i.last_heartbeat))*1E9)::bigint as last_heartbeat,
-              i.passthrough_enabled, i.control_plane_pod_statuses
+              i.passthrough_enabled, i.control_plane_pod_statuses, num_nodes, num_instrumented_nodes
               from vizier_cluster_info as i, vizier_cluster as c
               WHERE i.vizier_cluster_id=$1 AND i.vizier_cluster_id=c.id`
 	var val struct {
@@ -311,6 +311,8 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 		ClusterVersion          *string      `db:"cluster_version"`
 		VizierVersion           *string      `db:"vizier_version"`
 		ControlPlanePodStatuses PodStatuses  `db:"control_plane_pod_statuses"`
+		NumNodes                int32        `db:"num_nodes"`
+		NumInstrumentedNodes    int32        `db:"num_instrumented_nodes"`
 	}
 	clusterID, err := utils.UUIDFromProto(req)
 	if err != nil {
@@ -364,6 +366,8 @@ func (s *Server) GetVizierInfo(ctx context.Context, req *uuidpb.UUID) (*cvmsgspb
 			ClusterVersion:          clusterVersion,
 			VizierVersion:           vizierVersion,
 			ControlPlanePodStatuses: val.ControlPlanePodStatuses,
+			NumNodes:                val.NumNodes,
+			NumInstrumentedNodes:    val.NumInstrumentedNodes,
 		}, nil
 	}
 	return nil, status.Error(codes.NotFound, "vizier not found")
@@ -637,8 +641,9 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 
 	query := `
     UPDATE vizier_cluster_info
-    SET last_heartbeat = NOW(), status = $1, address= $2, control_plane_pod_statuses= $3
-    WHERE vizier_cluster_id = $4`
+    SET last_heartbeat = NOW(), status = $1, address= $2, control_plane_pod_statuses= $3,
+    	num_nodes = $4, num_instrumented_nodes = $5
+    WHERE vizier_cluster_id = $6`
 
 	vzStatus := "HEALTHY"
 	if req.Address == "" {
@@ -657,7 +662,8 @@ func (s *Server) HandleVizierHeartbeat(v2cMsg *cvmsgspb.V2CMessage) {
 		vzStatus = s.(string)
 	}
 
-	_, err = s.db.Exec(query, vzStatus, addr, PodStatuses(req.PodStatuses), vizierID)
+	_, err = s.db.Exec(query, vzStatus, addr, PodStatuses(req.PodStatuses), req.NumNodes,
+		req.NumInstrumentedNodes, vizierID)
 	if err != nil {
 		log.WithError(err).Error("Could not update vizier heartbeat")
 	}

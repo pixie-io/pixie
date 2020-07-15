@@ -25,6 +25,7 @@ import (
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	versionspb "pixielabs.ai/pixielabs/src/shared/artifacts/versionspb"
 	"pixielabs.ai/pixielabs/src/shared/cvmsgspb"
+	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	pl_vispb "pixielabs.ai/pixielabs/src/shared/vispb"
 	pbutils "pixielabs.ai/pixielabs/src/utils"
 )
@@ -126,6 +127,28 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 		ClusterUID:     "a UID",
 		ClusterName:    "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar-3",
 		ClusterVersion: "5.6.7",
+		ControlPlanePodStatuses: map[string]*cvmsgspb.PodStatus{
+			"vizier-proxy": &cvmsgspb.PodStatus{
+				Name:   "vizier-proxy",
+				Status: metadatapb.RUNNING,
+				Containers: []*cvmsgspb.ContainerStatus{
+					&cvmsgspb.ContainerStatus{
+						Name:    "my-proxy-container",
+						State:   metadatapb.CONTAINER_STATE_RUNNING,
+						Message: "container message",
+						Reason:  "container reason",
+					},
+				},
+				StatusMessage: "pod message",
+				Reason:        "pod reason",
+			},
+			"vizier-query-broker": &cvmsgspb.PodStatus{
+				Name:   "vizier-query-broker",
+				Status: metadatapb.RUNNING,
+			},
+		},
+		NumNodes:             5,
+		NumInstrumentedNodes: 3,
 	}, nil)
 
 	vzClusterInfoServer := &controller.VizierClusterInfo{
@@ -133,6 +156,27 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 	}
 
 	resp, err := vzClusterInfoServer.GetClusterInfo(ctx, &cloudapipb.GetClusterInfoRequest{})
+
+	expectedPodStatuses := map[string]*cloudapipb.PodStatus{
+		"vizier-proxy": &cloudapipb.PodStatus{
+			Name:   "vizier-proxy",
+			Status: metadatapb.RUNNING,
+			Containers: []*cloudapipb.ContainerStatus{
+				&cloudapipb.ContainerStatus{
+					Name:    "my-proxy-container",
+					State:   metadatapb.CONTAINER_STATE_RUNNING,
+					Message: "container message",
+					Reason:  "container reason",
+				},
+			},
+			StatusMessage: "pod message",
+			Reason:        "pod reason",
+		},
+		"vizier-query-broker": &cloudapipb.PodStatus{
+			Name:   "vizier-query-broker",
+			Status: metadatapb.RUNNING,
+		},
+	}
 
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(resp.Clusters))
@@ -146,6 +190,9 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 	assert.Equal(t, "gke_pl-dev-infra_us-west1-a_dev-cluster-zasgar-3", cluster.ClusterName)
 	assert.Equal(t, "gke:dev-cluster-zasgar-3", cluster.PrettyClusterName)
 	assert.Equal(t, "5.6.7", cluster.ClusterVersion)
+	assert.Equal(t, expectedPodStatuses, cluster.ControlPlanePodStatuses)
+	assert.Equal(t, int32(5), cluster.NumNodes)
+	assert.Equal(t, int32(3), cluster.NumInstrumentedNodes)
 }
 
 func TestVizierClusterInfo_GetClusterInfoWithID(t *testing.T) {

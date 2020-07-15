@@ -123,6 +123,21 @@ type VizierConfig {
   passthroughEnabled: Boolean
 }
 
+type ContainerStatus {
+  name: String!
+  state: String!
+  message: String
+  reason: String
+}
+
+type PodStatus {
+  name: String!
+  status: String!
+  message: String
+  reason: String
+  containers: [ContainerStatus!]!
+}
+
 type ClusterInfo {
   id: ID!
   status: ClusterStatus!
@@ -133,6 +148,9 @@ type ClusterInfo {
   clusterName: String
   prettyClusterName: String
   clusterUID: String
+  controlPlanePodStatuses: [PodStatus!]!
+  numNodes: Int!
+  numInstrumentedNodes: Int!
 }
 
 type ClusterConnectionInfo {

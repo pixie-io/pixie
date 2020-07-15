@@ -14,6 +14,7 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/wrappers.proto";
 
 import "src/common/uuid/proto/uuid.proto";
+import "src/shared/k8s/metadatapb/metadata.proto";
 import "src/shared/vispb/vis.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/cloud/cloudapipb;cloudapipb";
@@ -184,6 +185,34 @@ enum ClusterStatus {
     CS_UPDATE_FAILED = 6;
 }
 
+// PodStatus represents a pod's status at a moment in time. Currently this message
+// only contains name and status, but could contain more information that could
+// help debug in the future.
+message PodStatus {
+    // The name of the pod. Ex: vizier-pem-z26d8
+    string name = 1;
+    // The status of the pod.
+    pl.shared.k8s.metadatapb.PodPhase status = 2;
+    // The message for why the pod is in its current status.
+    string status_message = 3;
+    // A brief CamelCase message indicating details about why the pod is in this state.
+    string reason = 4;
+    // The containers running in the pod.
+    repeated ContainerStatus containers = 5;
+}
+
+// ContainerStatus represents pa container's status at a moment in time.
+message ContainerStatus {
+    // The name of the container.
+    string name = 1;
+    // The current state of the container.
+    pl.shared.k8s.metadatapb.ContainerState state = 2;
+     // The message for why the container is in its current status.
+    string message = 3;
+    // A brief CamelCase message indicating details about why the container is in this state.
+    string reason = 4;
+}
+
 message ClusterInfo {
     pl.uuidpb.UUID id = 1 [
                           (gogoproto.customname) = "ID"
@@ -206,6 +235,18 @@ message ClusterInfo {
     string cluster_version = 7;
     // The version of the deployed Vizier.
     string vizier_version = 8;
+    // Map of pod name to pod status. This only includes pods that are part of the
+    // vizier control plane. Data-plane pods, such as PEMs or Kelvin can be fetched
+    // by running the agents script.
+    // Ex: {
+    //   vizier-query-broker-z26d8: { name: vizier-query-broker-z26d8, status: RUNNING },
+    //   vizier-metadata-7b668797b9-bjsvd: { name: vizier-metadata-7b668797b9-bjsvd, status: FAILED }
+    // }
+    map<string, PodStatus> control_plane_pod_statuses = 10;
+    // The total number of nodes (instrumented & non-instrumented) on the cluster this Vizier is on.
+    int32 num_nodes = 11;
+    // The total number of  nodes on the cluster that have pems.
+    int32 num_instrumented_nodes = 12;
 }
 
 message GetClusterInfoResponse {

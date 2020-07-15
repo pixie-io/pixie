@@ -14,6 +14,7 @@ import (
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/schema"
 	"pixielabs.ai/pixielabs/src/cloud/api/controller/testutils"
 	"pixielabs.ai/pixielabs/src/cloud/cloudapipb"
+	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	svcutils "pixielabs.ai/pixielabs/src/shared/services/utils"
 	"pixielabs.ai/pixielabs/src/utils"
@@ -38,6 +39,27 @@ func TestClusterInfoWithoutID(t *testing.T) {
 	defer cleanup()
 	ctx := CreateTestContext()
 
+	podStatuses := map[string]*cloudapipb.PodStatus{
+		"vizier-proxy": &cloudapipb.PodStatus{
+			Name:   "vizier-proxy",
+			Status: metadatapb.RUNNING,
+			Containers: []*cloudapipb.ContainerStatus{
+				&cloudapipb.ContainerStatus{
+					Name:    "my-proxy-container",
+					State:   metadatapb.CONTAINER_STATE_RUNNING,
+					Message: "container message",
+					Reason:  "container reason",
+				},
+			},
+			StatusMessage: "pod message",
+			Reason:        "pod reason",
+		},
+		"vizier-query-broker": &cloudapipb.PodStatus{
+			Name:   "vizier-query-broker",
+			Status: metadatapb.RUNNING,
+		},
+	}
+
 	clusterInfo := &cloudapipb.ClusterInfo{
 		ID:              utils.ProtoFromUUIDStrOrNil("7ba7b810-9dad-11d1-80b4-00c04fd430c8"),
 		Status:          cloudapipb.CS_HEALTHY,
@@ -45,10 +67,13 @@ func TestClusterInfoWithoutID(t *testing.T) {
 		Config: &cloudapipb.VizierConfig{
 			PassthroughEnabled: false,
 		},
-		VizierVersion:  "vzVersion",
-		ClusterVersion: "clusterVersion",
-		ClusterName:    "clusterName",
-		ClusterUID:     "clusterUID",
+		VizierVersion:           "vzVersion",
+		ClusterVersion:          "clusterVersion",
+		ClusterName:             "clusterName",
+		ClusterUID:              "clusterUID",
+		ControlPlanePodStatuses: podStatuses,
+		NumNodes:                3,
+		NumInstrumentedNodes:    2,
 	}
 
 	mockClients.MockVizierClusterInfo.EXPECT().
@@ -75,6 +100,20 @@ func TestClusterInfoWithoutID(t *testing.T) {
 						clusterVersion
 						clusterName
 						clusterUID
+						controlPlanePodStatuses {
+							name
+							status
+							reason
+							message
+							containers {
+								name
+								state
+								reason
+								message
+							}
+						}
+						numNodes
+						numInstrumentedNodes
 					}
 				}
 			`,
@@ -90,7 +129,27 @@ func TestClusterInfoWithoutID(t *testing.T) {
 						"vizierVersion": "vzVersion",
 						"clusterVersion": "clusterVersion",
 						"clusterName": "clusterName",
-						"clusterUID": "clusterUID"
+						"clusterUID": "clusterUID",
+						"controlPlanePodStatuses": [{
+							"containers": [{
+								"message": "container message",
+								"name": "my-proxy-container",
+								"reason": "container reason",
+								"state": "CONTAINER_STATE_RUNNING"
+							}],
+							"message": "pod message",
+							"name": "vizier-proxy",
+							"reason": "pod reason",
+							"status": "RUNNING"
+						}, {
+							"containers": [],
+							"message": "",
+							"name": "vizier-query-broker",
+							"reason": "",
+							"status": "RUNNING"
+						}],
+						"numNodes": 3,
+						"numInstrumentedNodes": 2
 					}
 				}
 			`,

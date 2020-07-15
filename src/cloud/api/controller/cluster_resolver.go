@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"errors"
+	"sort"
 
 	types "github.com/gogo/protobuf/types"
 	"github.com/graph-gophers/graphql-go"
@@ -22,21 +23,75 @@ type clusterArgs struct {
 	ID *graphql.ID
 }
 
+func containerStatusToResolver(containerStatus *cloudapipb.ContainerStatus) (*ContainerStatusResolver, error) {
+	if containerStatus == nil {
+		return nil, errors.New("got nil container status")
+	}
+
+	return &ContainerStatusResolver{
+		name:    containerStatus.Name,
+		state:   containerStatus.State.String(),
+		message: &containerStatus.Message,
+		reason:  &containerStatus.Reason,
+	}, nil
+}
+
+func podStatusToResolver(podStatus *cloudapipb.PodStatus) (*PodStatusResolver, error) {
+	if podStatus == nil {
+		return nil, errors.New("got nil pod status")
+	}
+
+	var containers []*ContainerStatusResolver
+	for _, containerStatus := range podStatus.Containers {
+		c, err := containerStatusToResolver(containerStatus)
+		if err != nil {
+			return nil, err
+		}
+		containers = append(containers, c)
+	}
+
+	return &PodStatusResolver{
+		name:       podStatus.Name,
+		status:     podStatus.Status.String(),
+		message:    &podStatus.StatusMessage,
+		reason:     &podStatus.Reason,
+		containers: containers,
+	}, nil
+}
+
 func clusterInfoToResolver(cluster *cloudapipb.ClusterInfo) (*ClusterInfoResolver, error) {
 	clusterID, err := utils.UUIDFromProto(cluster.ID)
 	if err != nil {
 		return nil, err
 	}
 
+	var podStatuses []*PodStatusResolver
+	for _, podStatus := range cluster.ControlPlanePodStatuses {
+		p, err := podStatusToResolver(podStatus)
+		if err != nil {
+			return nil, err
+		}
+		podStatuses = append(podStatuses, p)
+	}
+	sort.SliceStable(podStatuses, func(i, j int) bool {
+		return podStatuses[i].name < podStatuses[j].name
+	})
+
 	return &ClusterInfoResolver{
-		clusterID, cluster.Status, float64(cluster.LastHeartbeatNs), &VizierConfigResolver{
+		clusterID:       clusterID,
+		status:          cluster.Status,
+		lastHeartbeatNs: float64(cluster.LastHeartbeatNs),
+		vizierConfig: &VizierConfigResolver{
 			passthroughEnabled: &cluster.Config.PassthroughEnabled,
 		},
-		&cluster.VizierVersion,
-		&cluster.ClusterVersion,
-		&cluster.ClusterUID,
-		&cluster.ClusterName,
-		&cluster.PrettyClusterName,
+		vizierVersion:           &cluster.VizierVersion,
+		clusterVersion:          &cluster.ClusterVersion,
+		clusterUID:              &cluster.ClusterUID,
+		clusterName:             &cluster.ClusterName,
+		prettyClusterName:       &cluster.PrettyClusterName,
+		controlPlanePodStatuses: podStatuses,
+		numNodes:                cluster.NumNodes,
+		numInstrumentedNodes:    cluster.NumInstrumentedNodes,
 	}, nil
 }
 
@@ -124,17 +179,82 @@ func (q *QueryResolver) UpdateVizierConfig(ctx context.Context, args *updateVizi
 	return true, nil
 }
 
+// ContainerStatusResolver is the resolver responsible for container status info.
+type ContainerStatusResolver struct {
+	name    string
+	state   string
+	message *string
+	reason  *string
+}
+
+// Name returns container name.
+func (c *ContainerStatusResolver) Name() string {
+	return c.name
+}
+
+// State returns container state.
+func (c *ContainerStatusResolver) State() string {
+	return c.state
+}
+
+// Message returns container state message.
+func (c *ContainerStatusResolver) Message() *string {
+	return c.message
+}
+
+// Reason returns container state reason.
+func (c *ContainerStatusResolver) Reason() *string {
+	return c.reason
+}
+
+// PodStatusResolver is the resolver responsible for pod status info.
+type PodStatusResolver struct {
+	name       string
+	status     string
+	message    *string
+	reason     *string
+	containers []*ContainerStatusResolver
+}
+
+// Name returns pod name.
+func (p *PodStatusResolver) Name() string {
+	return p.name
+}
+
+// Status returns pod status.
+func (p *PodStatusResolver) Status() string {
+	return p.status
+}
+
+// Message returns pod message.
+func (p *PodStatusResolver) Message() *string {
+	return p.message
+}
+
+// Reason returns pod reason.
+func (p *PodStatusResolver) Reason() *string {
+	return p.reason
+}
+
+// Containers returns pod container states.
+func (p *PodStatusResolver) Containers() []*ContainerStatusResolver {
+	return p.containers
+}
+
 // ClusterInfoResolver is the resolver responsible for cluster info.
 type ClusterInfoResolver struct {
-	clusterID         uuid.UUID
-	status            cloudapipb.ClusterStatus
-	lastHeartbeatNs   float64
-	vizierConfig      *VizierConfigResolver
-	vizierVersion     *string
-	clusterVersion    *string
-	clusterUID        *string
-	clusterName       *string
-	prettyClusterName *string
+	clusterID               uuid.UUID
+	status                  cloudapipb.ClusterStatus
+	lastHeartbeatNs         float64
+	vizierConfig            *VizierConfigResolver
+	vizierVersion           *string
+	clusterVersion          *string
+	clusterUID              *string
+	clusterName             *string
+	prettyClusterName       *string
+	controlPlanePodStatuses []*PodStatusResolver
+	numNodes                int32
+	numInstrumentedNodes    int32
 }
 
 // ID returns cluster ID.
@@ -180,6 +300,21 @@ func (c *ClusterInfoResolver) PrettyClusterName() *string {
 // VizierVersion returns the vizier's version.
 func (c *ClusterInfoResolver) VizierVersion() *string {
 	return c.vizierVersion
+}
+
+// ControlPlanePodStatuses returns the control plane pod statuses.
+func (c *ClusterInfoResolver) ControlPlanePodStatuses() []*PodStatusResolver {
+	return c.controlPlanePodStatuses
+}
+
+// NumNodes returns the number of nodes on the cluster.
+func (c *ClusterInfoResolver) NumNodes() int32 {
+	return c.numNodes
+}
+
+// NumInstrumentedNodes returns the number of nodes with pems on the cluster.
+func (c *ClusterInfoResolver) NumInstrumentedNodes() int32 {
+	return c.numInstrumentedNodes
 }
 
 // ClusterConnection resolves cluster connection information.

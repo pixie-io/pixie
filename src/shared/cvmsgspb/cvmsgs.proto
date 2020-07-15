@@ -191,6 +191,10 @@ message VizierInfo {
     string vizier_version = 8;
     // The status of the control plane pods.
     map<string, PodStatus> control_plane_pod_statuses = 9;
+    // The total number of nodes (instrumented & non-instrumented) on the cluster this Vizier is on.
+    int32 num_nodes = 11;
+    // The total number of  nodes on the cluster that have pems.
+    int32 num_instrumented_nodes = 12;
 }
 
 message UpdateVizierConfigRequest {

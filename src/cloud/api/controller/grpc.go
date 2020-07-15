@@ -224,6 +224,26 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 			return nil, err
 		}
 
+		podStatuses := make(map[string]*cloudapipb.PodStatus)
+		for podName, status := range vzInfo.ControlPlanePodStatuses {
+			var containers []*cloudapipb.ContainerStatus
+			for _, container := range status.Containers {
+				containers = append(containers, &cloudapipb.ContainerStatus{
+					Name:    container.Name,
+					State:   container.State,
+					Message: container.Message,
+					Reason:  container.Reason,
+				})
+			}
+			podStatuses[podName] = &cloudapipb.PodStatus{
+				Name:          status.Name,
+				Status:        status.Status,
+				StatusMessage: status.StatusMessage,
+				Reason:        status.Reason,
+				Containers:    containers,
+			}
+		}
+
 		s := vzStatusToClusterStatus(vzInfo.Status)
 		resp.Clusters = append(resp.Clusters, &cloudapipb.ClusterInfo{
 			ID:              id,
@@ -232,11 +252,14 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 			Config: &cloudapipb.VizierConfig{
 				PassthroughEnabled: vzInfo.Config.PassthroughEnabled,
 			},
-			ClusterUID:        vzInfo.ClusterUID,
-			ClusterName:       vzInfo.ClusterName,
-			PrettyClusterName: PrettifyClusterName(vzInfo.ClusterName),
-			ClusterVersion:    vzInfo.ClusterVersion,
-			VizierVersion:     vzInfo.VizierVersion,
+			ClusterUID:              vzInfo.ClusterUID,
+			ClusterName:             vzInfo.ClusterName,
+			PrettyClusterName:       PrettifyClusterName(vzInfo.ClusterName),
+			ClusterVersion:          vzInfo.ClusterVersion,
+			VizierVersion:           vzInfo.VizierVersion,
+			ControlPlanePodStatuses: podStatuses,
+			NumNodes:                vzInfo.NumNodes,
+			NumInstrumentedNodes:    vzInfo.NumInstrumentedNodes,
 		})
 	}
 	return resp, nil
