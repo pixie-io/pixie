@@ -50,11 +50,18 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     minWidth: 0,
     minHeight: 0,
     flexDirection: 'column',
+    [theme.breakpoints.down('sm')]: {
+      // Sidebar is disabled.
+      marginLeft: 0,
+    },
   },
   title: {
     marginLeft: theme.spacing(2),
     flexGrow: 1,
     color: theme.palette.foreground.grey5,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
   mainPanel: {
     flex: 1,

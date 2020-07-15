@@ -48,6 +48,16 @@ const styles = (({ palette, spacing }: Theme) => createStyles({
     marginLeft: spacing(3),
     marginBottom: spacing(1),
     borderBottom: `1px solid ${palette.foreground.grey2}`,
+
+    // This adds a scroll to the breadcrumbs on overflow,
+    // but it's hard for the user to know it exists. Perhaps we can
+    // consider adding a scroll effect or something to make it easier to
+    // discover.
+    overflow: 'scroll',
+    scrollbarWidth: 'none', // Firefox
+    '&::-webkit-scrollbar': {
+      display: 'none',
+    },
   },
   spacer: {
     flex: 1,

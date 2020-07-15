@@ -25,6 +25,7 @@ const styles = ({ spacing, typography, palette }: Theme) => createStyles({
   },
   value: {
     color: palette.primary.main,
+    whiteSpace: 'nowrap',
   },
   body: {
     ...typography.body2,

@@ -17,7 +17,13 @@ import ClusterContext from 'common/cluster-context';
 import { toEntityPathname, LiveViewPage } from 'components/live-widgets/utils/live-view-params';
 import { Divider } from '@material-ui/core';
 
-const styles = ({ spacing, palette, transitions }: Theme) => createStyles({
+const styles = (
+  {
+    spacing,
+    palette,
+    transitions,
+    breakpoints,
+  }: Theme) => createStyles({
   drawerOpen: {
     width: spacing(29),
     zIndex: 1250,
@@ -45,6 +51,9 @@ const styles = ({ spacing, palette, transitions }: Theme) => createStyles({
     backgroundColor: palette.foreground.grey3,
     boxShadow: `${spacing(0.25)}px 0px ${spacing(2)}px ${palette.background.five}`,
     paddingBottom: spacing(2),
+    [breakpoints.down('sm')]: {
+      display: 'none',
+    },
   },
   docked: {
     position: 'absolute',
