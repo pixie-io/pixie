@@ -4,6 +4,12 @@
 namespace pl {
 namespace stirling {
 
+Status DynamicSourceConnector::InitImpl() {
+  PL_UNUSED(bcc_program_);
+  // Run DeployBCCProgram(bcc_program) here.
+  return Status::OK();
+}
+
 void DynamicSourceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
                                               DataTable* data_table) {
   const DataTableSchema& table_schema = TableSchema(table_num);

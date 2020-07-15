@@ -6,19 +6,21 @@
 #include <utility>
 
 #include "src/common/base/base.h"
+#include "src/stirling/dynamic_tracing/dynamic_tracer.h"
 #include "src/stirling/source_connector.h"
 
 namespace pl {
 namespace stirling {
 
-class DynamicSourceConnector : public SourceConnector {
+class DynamicSourceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
   ~DynamicSourceConnector() override = default;
 
   static std::unique_ptr<SourceConnector> Create(
-      std::string_view name, std::unique_ptr<DynamicDataTableSchema> table_schema) {
+      std::string_view name, std::unique_ptr<DynamicDataTableSchema> table_schema,
+      dynamic_tracing::BCCProgram bcc_program) {
     return std::unique_ptr<SourceConnector>(
-        new DynamicSourceConnector(name, std::move(table_schema)));
+        new DynamicSourceConnector(name, std::move(table_schema), std::move(bcc_program)));
   }
 
  protected:
@@ -26,12 +28,14 @@ class DynamicSourceConnector : public SourceConnector {
   //               since the ArrayView creation only works for a single schema.
   //               Consider how to expand to multiple tables if/when needed.
   DynamicSourceConnector(std::string_view name,
-                         std::unique_ptr<DynamicDataTableSchema> table_schema)
+                         std::unique_ptr<DynamicDataTableSchema> table_schema,
+                         dynamic_tracing::BCCProgram bcc_program)
       : SourceConnector(name, ArrayView<DataTableSchema>(&table_schema->Get(), 1)),
         table_schema_(std::move(table_schema)),
+        bcc_program_(std::move(bcc_program)),
         coin_flip_dist_(0, 1) {}
 
-  Status InitImpl() override { return Status::OK(); }
+  Status InitImpl() override;
 
   void TransferDataImpl(ConnectorContext* ctx, uint32_t table_num, DataTable* data_table) override;
 
@@ -39,6 +43,7 @@ class DynamicSourceConnector : public SourceConnector {
 
  private:
   std::unique_ptr<DynamicDataTableSchema> table_schema_;
+  dynamic_tracing::BCCProgram bcc_program_;
 
   // TODO(oazizi): Temporary remove.
   std::default_random_engine rng_;

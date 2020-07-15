@@ -314,15 +314,13 @@ uint64_t StirlingImpl::RegisterDynamicTrace(const dynamic_tracing::ir::logical::
     // Make the source connector name the same as the table name.
     // This should be okay so long as there is only one table per connector.
     std::string source_name(table_schema->Get().name());
-    std::unique_ptr<SourceConnector> source =
-        DynamicSourceConnector::Create(source_name, std::move(table_schema));
+    std::unique_ptr<SourceConnector> source = DynamicSourceConnector::Create(
+        source_name, std::move(table_schema), std::move(bcc_program));
     SourceConnector* source_raw_ptr = source.get();
     RETURN_IF_ERROR(AddSource(std::move(source)));
 
     dynamic_sources_[trace_id] = source_raw_ptr;
   }
-
-  PL_UNUSED(bcc_program);  // Run DeployBCCProgram(bcc_program) here.
 
 #undef ASSIGN_OR_RETURN
 
