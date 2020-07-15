@@ -13,8 +13,8 @@ const NUM_ROWS = 2;
 const MAX_NUM_GRIDS = 4;
 
 const COLOR_COLUMN_SIZE = 8;
-const KEY_COLUMN_SIZE = 160;
-const VAL_COLUMN_SIZE = 40;
+const KEY_COLUMN_SIZE = 140;
+const VAL_COLUMN_SIZE = 50;
 const COLUMN_GAP_SIZE = 5;
 const COLUMN_SIZES = `${COLOR_COLUMN_SIZE}px ${KEY_COLUMN_SIZE}px ${VAL_COLUMN_SIZE}px`;
 const GRID_WIDTH = (
@@ -59,6 +59,7 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     justifyContent: 'flex-start',
     overflow: 'hidden',
     alignItems: 'center',
+    paddingTop: '5px',
   },
   rowContainer: {
     display: 'contents',
@@ -154,12 +155,20 @@ const Legend = React.memo((props: LegendProps) => {
     return <div />;
   }
 
-  const leftPadding = vegaOrigin[0];
+  let leftPadding = vegaOrigin[0];
+  let rightPadding = 0;
 
   let numGrids = MAX_NUM_GRIDS;
   // Dynamically take out grids if theres no room for them.
   while ((leftPadding + calcGridWidth(numGrids)) > chartWidth && numGrids > 1) {
     numGrids--;
+  }
+
+  // If the legend can't be aligned to the origin of the chart, then center it.
+  if (leftPadding + calcGridWidth(numGrids) > chartWidth) {
+    const totalPadding = Math.max(0, chartWidth - calcGridWidth(numGrids));
+    leftPadding = totalPadding / 2;
+    rightPadding = totalPadding / 2;
   }
 
   const entriesPerPage = numGrids * NUM_ROWS;
@@ -245,6 +254,7 @@ const Legend = React.memo((props: LegendProps) => {
 
   const containerStyles: CSSProperties = {
     paddingLeft: `${leftPadding}px`,
+    paddingRight: `${rightPadding}px`,
     width: '100%',
   };
 
