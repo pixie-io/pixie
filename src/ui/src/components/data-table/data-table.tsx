@@ -17,6 +17,7 @@ import DownIcon from '@material-ui/icons/KeyboardArrowDown';
 import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 import * as expanded from 'images/icons/expanded.svg';
 import * as unexpanded from 'images/icons/unexpanded.svg';
+import * as seedrandom from 'seedrandom';
 
 const EXPANDED_ROW_HEIGHT = 300;
 // The maximum number of characters to use for each column in determining sizing.
@@ -221,8 +222,9 @@ const InternalDataTable = ({
     columns.forEach((col) => {
       let w = col.width || null;
       if (!w) {
+        const rng = seedrandom(1234);
         for (let i = 0; i < sampleCount; i++) {
-          const rowIndex = Math.floor(Math.random() * Math.floor(rowCount));
+          const rowIndex = Math.floor(rng() * Math.floor(rowCount));
           const row = rowGetter(rowIndex);
           w = Math.min(Math.max(w, String(row[col.dataKey]).length), MAX_COL_CHAR_WIDTH);
         }
