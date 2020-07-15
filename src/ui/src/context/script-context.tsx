@@ -160,7 +160,9 @@ const ScriptContextProvider = (props) => {
     if (entity.clusterName && entity.clusterName !== selectedClusterName) {
       setClusterByName(entity.clusterName);
     }
-  }, [entity.clusterName, selectedClusterName, setClusterByName]);
+  // We only want this useEffect to be called the first time the page is loaded.
+  // eslint-disable-next-line
+  }, []);
 
   // Logic to set url params when location changes
 
