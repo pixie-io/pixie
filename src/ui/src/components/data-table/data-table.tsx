@@ -19,6 +19,9 @@ import * as expanded from 'images/icons/expanded.svg';
 import * as unexpanded from 'images/icons/unexpanded.svg';
 
 const EXPANDED_ROW_HEIGHT = 300;
+// The maximum number of characters to use for each column in determining sizing.
+// This prevents cases where one really large column dominates the entire table.
+const MAX_COL_CHAR_WIDTH = 50;
 
 const useStyles = makeStyles((theme: Theme) => createStyles({
   table: {
@@ -217,16 +220,17 @@ const InternalDataTable = ({
     columns.forEach((col) => {
       let w = col.width || null;
       if (!w) {
-        // Try to compute the column width based on the col sizes.
-        w = col.label.length + 2;
         for (let i = 0; i < sampleCount; i++) {
           const rowIndex = Math.floor(Math.random() * Math.floor(rowCount));
           const row = rowGetter(rowIndex);
-          w = Math.max(w, String(row[col.dataKey]).length);
+          w = Math.min(Math.max(w, String(row[col.dataKey]).length), MAX_COL_CHAR_WIDTH);
         }
       }
-      totalWidth += w;
-      colsWidth[col.dataKey] = w;
+
+      // We add 2 to the header width to accommodate type/sort icons.
+      const headerWidth = col.label.length + 2;
+      colsWidth[col.dataKey] = Math.min(Math.max(headerWidth, w), MAX_COL_CHAR_WIDTH);
+      totalWidth += colsWidth[col.dataKey];
     });
 
     const ratio: {[dataKey: string]: number} = {};
