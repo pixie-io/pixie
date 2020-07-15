@@ -8,6 +8,7 @@ import { DataType, Relation, SemanticType } from 'types/generated/vizier_pb';
 import noop from 'utils/noop';
 import { dataFromProto } from 'utils/result-data-utils';
 import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { IndexRange } from 'react-virtualized';
 import { ColumnDisplayInfo, displayInfoFromColumn, titleFromInfo } from './column-display-info';
 import { parseRows } from './parsers';
 import { vizierCellRenderer } from './renderers';
@@ -57,6 +58,7 @@ interface VizierDataTableProps {
   // TODO(michelle/zasgar/nserrino): Remove this.
   clusterName?: string;
   onRowSelectionChanged?: (row: any) => void;
+  onRowsRendered?: (range: IndexRange) => void;
 }
 
 export const VizierDataTable = (props: VizierDataTableProps) => {
@@ -64,6 +66,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
     table, prettyRender = false, expandable = false, expandedRenderer,
     clusterName = null,
     onRowSelectionChanged = noop,
+    onRowsRendered = () => {},
   } = props;
   const [rows, setRows] = React.useState([]);
   const [selectedRow, setSelectedRow] = React.useState(-1);
@@ -153,6 +156,7 @@ export const VizierDataTable = (props: VizierDataTableProps) => {
       highlightedRow={selectedRow}
       expandable={expandable}
       expandedRenderer={expandedRenderer}
+      onRowsRendered={onRowsRendered}
     />
   );
 };

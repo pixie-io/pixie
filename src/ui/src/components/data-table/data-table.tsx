@@ -4,7 +4,7 @@ import { DraggableCore } from 'react-draggable';
 
 import {
   Column, SortDirection, SortDirectionType, Table, TableCellProps, TableCellRenderer,
-  TableHeaderProps, TableHeaderRenderer, TableRowRenderer, TableRowProps, defaultTableRowRenderer,
+  TableHeaderProps, TableHeaderRenderer, TableRowRenderer, TableRowProps, defaultTableRowRenderer, IndexRange,
 } from 'react-virtualized';
 import withAutoSizer, { WithAutoSizerProps } from 'utils/autosizer';
 import noop from 'utils/noop';
@@ -173,6 +173,7 @@ interface DataTableProps {
   expandable?: boolean;
   expandedRenderer?: (rowData: any) => JSX.Element;
   highlightedRow?: number;
+  onRowsRendered?: (range: IndexRange) => void;
 }
 
 export interface SortState {
@@ -210,6 +211,7 @@ const InternalDataTable = ({
   expandedRenderer = () => <></>,
   onSort = noop,
   highlightedRow = -1,
+  onRowsRendered = () => {},
 }: WithAutoSizerProps<DataTableProps>) => {
   const classes = useStyles();
   const theme = useTheme();
@@ -468,6 +470,7 @@ const InternalDataTable = ({
       width={width}
       sortDirection={sortState.direction}
       sortBy={sortState.dataKey}
+      onRowsRendered={onRowsRendered}
     >
       {
         expandable
