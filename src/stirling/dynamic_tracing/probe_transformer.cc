@@ -39,6 +39,22 @@ void CreateEntryProbe(const ir::logical::Probe& input_probe, ir::logical::Progra
   }
 }
 
+Status CheckOutputAction(const std::map<std::string_view, ir::shared::Output*>& outputs,
+                         const ir::logical::OutputAction& output_action) {
+  auto iter = outputs.find(output_action.output_name());
+  if (iter == outputs.end()) {
+    return error::Internal("Reference to unknown output $0", output_action.output_name());
+  }
+  const ir::shared::Output& output = *iter->second;
+
+  if (output_action.variable_name_size() != output.fields_size()) {
+    return error::Internal("Output action size $0 does not match Output definition size $1",
+                           output_action.variable_name_size(), output.fields_size());
+  }
+
+  return Status::OK();
+}
+
 Status CreateReturnProbe(const ir::logical::Probe& input_probe,
                          const std::map<std::string_view, ir::shared::Output*>& outputs,
                          ir::logical::Program* out) {
@@ -61,28 +77,11 @@ Status CreateReturnProbe(const ir::logical::Probe& input_probe,
     out_ret_val->CopyFrom(in_ret_val);
   }
 
-  // Generate output on return probe.
-  std::string output_table_name = input_probe.name() + "_table";
-  auto iter = outputs.find(output_table_name);
-  if (iter == outputs.end()) {
-    return error::Internal("Reference to undefined table: $0", output_table_name);
-  }
-
-  int probe_output_num_fields = input_probe.args_size() + input_probe.ret_vals_size();
-  if (iter->second->fields_size() != probe_output_num_fields) {
-    return error::Internal("Probe output size $0 does not match Output definition size $1",
-                           probe_output_num_fields, iter->second->fields_size());
-  }
-
-  auto* output_action = return_probe->add_output_actions();
-  output_action->set_output_name(input_probe.name() + "_table");
-
-  for (const auto& in_arg : input_probe.args()) {
-    output_action->add_variable_name(in_arg.id());
-  }
-
-  for (const auto& in_ret_val : input_probe.ret_vals()) {
-    output_action->add_variable_name(in_ret_val.id());
+  // Generate output action.
+  for (const auto& in_output_action : input_probe.output_actions()) {
+    auto* output_action = return_probe->add_output_actions();
+    output_action->CopyFrom(in_output_action);
+    PL_RETURN_IF_ERROR(CheckOutputAction(outputs, *output_action));
   }
 
   for (const auto& printk : input_probe.printks()) {

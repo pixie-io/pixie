@@ -64,6 +64,17 @@ probes {
     id: "retval1"
     index: 7
   }
+  output_actions {
+    output_name: "probe0_table"
+    variable_name: "arg0"
+    variable_name: "arg1"
+    variable_name: "arg2"
+    variable_name: "arg3"
+    variable_name: "arg4"
+    variable_name: "arg5"
+    variable_name: "retval0"
+    variable_name: "retval1"
+  }
 }
 )";
 
@@ -222,6 +233,21 @@ TEST_P(ProbeGenTest, Transform) {
 INSTANTIATE_TEST_SUITE_P(ProbeGenTestSuite, ProbeGenTest,
                          ::testing::Values(ProbeGenTestParam{kLogicalProgram,
                                                              kTransformedProgram}));
+
+TEST_F(ProbeGenTest, ErrorCases) {
+  std::string input_program_str = absl::Substitute(kLogicalProgram, kGoBinaryPath);
+  ir::logical::Program input_program;
+  ASSERT_TRUE(TextFormat::ParseFromString(input_program_str, &input_program));
+
+  {
+    // Output must be specified if an OutputAction exists.
+    ir::logical::Program p = input_program;
+    p.mutable_outputs()->Clear();
+    ASSERT_NOT_OK(TransformLogicalProgram(p));
+  }
+
+  // TODO(oazizi): Add more.
+}
 
 }  // namespace dynamic_tracing
 }  // namespace stirling

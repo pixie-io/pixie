@@ -73,7 +73,7 @@ class GoHTTPDynamicTraceTest : public ::testing::Test {
 
 constexpr char kGRPCTraceProgram[] = R"(
 outputs {
-  name: "probe_WriteDataPadded_table"
+  name: "WriteDataPaddedTrace"
   fields: "stream_id"
   fields: "end_stream"
 }
@@ -90,6 +90,11 @@ probes: {
   args {
     id: "end_stream"
     expr: "endStream"
+  }
+  output_actions {
+    output_name: "WriteDataPaddedTrace"
+    variable_name: "stream_id"
+    variable_name: "end_stream"
   }
   printks { scalar: "stream_id" }
   printks { scalar: "end_stream" }

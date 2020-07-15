@@ -77,6 +77,17 @@ probes: {
     id: "retval1"
     index: 7
   }
+  output_actions {
+    output_name: "probe0_table"
+    variable_name: "arg0"
+    variable_name: "arg1"
+    variable_name: "arg2"
+    variable_name: "arg3"
+    variable_name: "arg4"
+    variable_name: "arg5"
+    variable_name: "retval0"
+    variable_name: "retval1"
+  }
 }
 )";
 
