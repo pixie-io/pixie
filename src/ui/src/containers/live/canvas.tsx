@@ -309,14 +309,16 @@ const Canvas = (props: CanvasProps) => {
     );
   }
 
+  let displayGrid = null;
+
   if (charts.length === 0) {
     const { layout, numCols, rowHeight } = addTableLayout(Object.keys(tables), defaultLayout, isMobile, defaultHeight);
-    return (
+    displayGrid = (
       <Grid
         layout={layout}
         rowHeight={rowHeight - theme.spacing(5)}
         cols={numCols}
-        className={classes.grid}
+        className={clsx(classes.grid, errorOpen && error && classes.blur)}
         onLayoutChange={updateDefaultLayout}
         isDraggable={props.editable}
         isResizable={props.editable}
@@ -332,15 +334,12 @@ const Canvas = (props: CanvasProps) => {
         }
       </Grid>
     );
-  }
-  return (
-    <>
-      { error
-        && <ErrorDisplay classes={classes} error={error} setOpen={setErrorOpen} open={errorOpen} /> }
+  } else {
+    displayGrid = (
       <Grid
         layout={layout}
         cols={getGridWidth(isMobile)}
-        className={clsx(classes.grid, errorOpen && classes.blur)}
+        className={clsx(classes.grid, errorOpen && error && classes.blur)}
         onLayoutChange={updateLayoutInVis}
         isDraggable={props.editable}
         isResizable={props.editable}
@@ -348,6 +347,13 @@ const Canvas = (props: CanvasProps) => {
       >
         {charts}
       </Grid>
+    );
+  }
+  return (
+    <>
+      { error
+        && <ErrorDisplay classes={classes} error={error} setOpen={setErrorOpen} open={errorOpen} /> }
+      {displayGrid}
     </>
   );
 };
