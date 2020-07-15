@@ -20,6 +20,8 @@ import * as ReactDOM from 'react-dom';
 import { CssBaseline } from '@material-ui/core';
 import { CloudClientContext } from './context/app-context';
 import { AuthRouter } from './pages/auth/auth';
+import 'typeface-roboto';
+import 'typeface-roboto-mono';
 
 const RedirectWithArgs = (props) => {
   const {

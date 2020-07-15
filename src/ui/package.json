@@ -163,6 +163,8 @@
     "svg-url-loader": "^6.0.0",
     "timsort": "^0.3.0",
     "ts-node": "^8.10.2",
+    "typeface-roboto": "^0.0.75",
+    "typeface-roboto-mono": "^0.0.75",
     "unfetch": "^4.0.1",
     "uuid": "^8.0.0",
     "vega": "5.13.0",
