@@ -60,6 +60,21 @@ export function getClusterDetailsURL(clusterName: string): string {
   return `/admin/clusters/${clusterName}`;
 }
 
+export function podStatusGroup(status: string): StatusGroup {
+  switch (status) {
+    case 'RUNNING':
+    case 'SUCCEEDED':
+      return 'healthy';
+    case 'FAILED':
+      return 'unhealthy';
+    case 'PENDING':
+      return 'pending';
+    case 'UNKNOWN':
+    default:
+      return 'unknown';
+  }
+}
+
 export const AdminTooltip = ({ children, title }) => {
   const classes = tooltipStyles();
   return (

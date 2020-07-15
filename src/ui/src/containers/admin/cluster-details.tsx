@@ -26,22 +26,46 @@ import TableRow from '@material-ui/core/TableRow';
 
 import {
   AdminTooltip, agentStatusGroup, convertHeartbeatMS, getClusterDetailsURL,
-  StyledLeftTableCell, StyledRightTableCell, StyledTab, StyledTableCell,
+  podStatusGroup, StyledLeftTableCell, StyledRightTableCell, StyledTab, StyledTableCell,
   StyledTableHeaderCell, StyledTabs,
 } from './utils';
 import { formatUInt128 } from '../../utils/format-data';
 
-const useStyles = makeStyles((theme: Theme) => createStyles({
-  error: {
-    padding: theme.spacing(2.5),
+const StyledBreadcrumbLink = withStyles((theme: Theme) => ({
+  root: {
+    ...theme.typography.body2,
+    display: 'flex',
+    alignItems: 'center',
+    paddingLeft: theme.spacing(1),
+    paddingRight: theme.spacing(1),
+    height: theme.spacing(3),
+    color: theme.palette.foreground.grey5,
   },
-  tabContents: {
-    margin: theme.spacing(1),
+}))(({ classes, children, to }: any) => (
+  <Link className={classes.root} to={to}>{children}</Link>
+));
+
+const StyledBreadcrumbs = withStyles((theme: Theme) => ({
+  root: {
+    display: 'flex',
+    paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
+    marginRight: theme.spacing(4.5),
+    marginLeft: theme.spacing(3),
+    marginBottom: theme.spacing(1),
   },
-  container: {
-    maxHeight: 800,
+  separator: {
+    display: 'flex',
+    alignItems: 'center',
+    color: theme.palette.foreground.one,
+    fontWeight: 1000,
+    width: theme.spacing(1),
   },
-}));
+}))(({ classes, children }: any) => (
+  <Breadcrumbs classes={classes}>
+    {children}
+  </Breadcrumbs>
+));
 
 const AGENT_STATUS_SCRIPT = `import px
 px.display(px.GetAgentStatus())`;
@@ -159,6 +183,78 @@ const AgentsTable = () => {
   return <AgentsTableContent agents={state.data} />;
 };
 
+// TODO(nserrino): Update this to a filtered lookup on clusterName once that graphql
+// endpoint has landed. PC-471.
+const GET_CLUSTER_CONTROL_PLANE_PODS = gql`
+{
+  clusters {
+    clusterName
+    controlPlanePodStatuses {
+      name
+      status
+      message
+      reason
+    }
+  }
+}
+`;
+
+const formatPodStatus = ({
+  name, status, message, reason,
+}) => ({
+  name,
+  status,
+  message,
+  reason,
+  statusGroup: podStatusGroup(status),
+});
+
+const ControlPlanePodsTable = ({ selectedClusterName }) => {
+  const { loading, data } = useQuery(GET_CLUSTER_CONTROL_PLANE_PODS);
+  if (loading) {
+    return <div>Loading</div>;
+  }
+  const cluster = data?.clusters.find((cluster) => cluster.clusterName === selectedClusterName);
+  if (!cluster) {
+    return (
+      <div>
+        Cluster
+        {' '}
+        {selectedClusterName}
+        {' '}
+        not found.
+      </div>
+    );
+  }
+  const display = cluster.controlPlanePodStatuses.map((podStatus) => formatPodStatus(podStatus));
+  return (
+    <Table>
+      <TableHead>
+        <TableRow>
+          <StyledTableHeaderCell />
+          <StyledTableHeaderCell>Name</StyledTableHeaderCell>
+          <StyledTableHeaderCell>Message</StyledTableHeaderCell>
+          <StyledTableHeaderCell>Reason</StyledTableHeaderCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {display.map((podStatus) => (
+          <TableRow key={podStatus.name}>
+            <AdminTooltip title={podStatus.status}>
+              <StyledLeftTableCell>
+                <StatusCell statusGroup={podStatus.statusGroup} />
+              </StyledLeftTableCell>
+            </AdminTooltip>
+            <StyledTableCell>{podStatus.name}</StyledTableCell>
+            <StyledTableCell>{podStatus.message}</StyledTableCell>
+            <StyledRightTableCell>{podStatus.reason}</StyledRightTableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+};
+
 const LIST_CLUSTERS = gql`
 {
   clusters {
@@ -172,42 +268,6 @@ const LIST_CLUSTERS = gql`
   }
 }
 `;
-
-const StyledBreadcrumbLink = withStyles((theme: Theme) => ({
-  root: {
-    ...theme.typography.body2,
-    display: 'flex',
-    alignItems: 'center',
-    paddingLeft: theme.spacing(1),
-    paddingRight: theme.spacing(1),
-    height: theme.spacing(3),
-    color: theme.palette.foreground.grey5,
-  },
-}))(({ classes, children, to }: any) => (
-  <Link className={classes.root} to={to}>{children}</Link>
-));
-
-const StyledBreadcrumbs = withStyles((theme: Theme) => ({
-  root: {
-    display: 'flex',
-    paddingTop: theme.spacing(1),
-    paddingBottom: theme.spacing(1),
-    marginRight: theme.spacing(4.5),
-    marginLeft: theme.spacing(3),
-    marginBottom: theme.spacing(1),
-  },
-  separator: {
-    display: 'flex',
-    alignItems: 'center',
-    color: theme.palette.foreground.one,
-    fontWeight: 1000,
-    width: theme.spacing(1),
-  },
-}))(({ classes, children }: any) => (
-  <Breadcrumbs classes={classes}>
-    {children}
-  </Breadcrumbs>
-));
 
 const ClusterDetailsNavigation = ({ selectedClusterName }) => {
   const history = useHistory();
@@ -300,6 +360,7 @@ export const ClusterDetails = withStyles((theme: Theme) => ({
         onChange={(event, newTab) => setTab(newTab)}
       >
         <StyledTab value='agents' label='Agents' />
+        <StyledTab value='control-plane-pods' label='Control Plane Pods' />
       </StyledTabs>
       <div className={classes.tabContents}>
         {
@@ -314,6 +375,14 @@ export const ClusterDetails = withStyles((theme: Theme) => ({
                 <AgentsTable />
               </TableContainer>
             </VizierGRPCClientProvider>
+          )
+        }
+        {
+          tab === 'control-plane-pods'
+          && (
+            <TableContainer className={classes.container}>
+              <ControlPlanePodsTable selectedClusterName={clusterName} />
+            </TableContainer>
           )
         }
       </div>
