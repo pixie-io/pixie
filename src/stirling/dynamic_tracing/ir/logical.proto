@@ -109,7 +109,7 @@ message Probe {
 // Example: The simplest logical program will have only a single probe (no outputs, no maps),
 // which will then get transformed into a program with multiple probes, maps and outputs.
 message Program {
-  string binary_path = 1;
+  shared.BinarySpec binary_spec = 1;
 
   // The programs outputs to a table.
   repeated shared.Output outputs = 2;

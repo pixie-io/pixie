@@ -15,7 +15,18 @@ void CreateMap(const ir::logical::Probe& input_probe, ir::logical::Program* out)
   stash_map->set_name(input_probe.name() + "_argstash");
 }
 
-void CreateEntryProbe(const ir::logical::Probe& input_probe, ir::logical::Program* out) {
+ir::shared::BPFHelper GetLanguageThreadID(const ir::shared::BinarySpec::Language& language) {
+  switch (language) {
+    case ir::shared::BinarySpec_Language_GOLANG:
+      return ir::shared::BPFHelper::GOID;
+    default:
+      // Default (e.g. C/C++): assume no special runtime.
+      return ir::shared::BPFHelper::TGID_PID;
+  }
+}
+
+void CreateEntryProbe(const ir::shared::BinarySpec::Language& language,
+                      const ir::logical::Probe& input_probe, ir::logical::Program* out) {
   auto* entry_probe = out->add_probes();
   entry_probe->mutable_trace_point()->CopyFrom(input_probe.trace_point());
   entry_probe->mutable_trace_point()->set_type(ir::shared::TracePoint::ENTRY);
@@ -31,9 +42,7 @@ void CreateEntryProbe(const ir::logical::Probe& input_probe, ir::logical::Progra
   // For now, always stash all arguments.
   auto* stash_action = entry_probe->add_map_stash_actions();
   stash_action->set_map_name(input_probe.name() + "_argstash");
-  // TODO(oazizi): goid is hard-coded. Fix based on language. Non-Golang languages probably should
-  // use TGID_PID.
-  stash_action->set_key(ir::shared::BPFHelper::GOID);
+  stash_action->set_key(GetLanguageThreadID(language));
   for (const auto& in_arg : input_probe.args()) {
     stash_action->add_value_variable_name(in_arg.id());
   }
@@ -55,7 +64,8 @@ Status CheckOutputAction(const std::map<std::string_view, ir::shared::Output*>& 
   return Status::OK();
 }
 
-Status CreateReturnProbe(const ir::logical::Probe& input_probe,
+Status CreateReturnProbe(const ir::shared::BinarySpec::Language& language,
+                         const ir::logical::Probe& input_probe,
                          const std::map<std::string_view, ir::shared::Output*>& outputs,
                          ir::logical::Program* out) {
   auto* return_probe = out->add_probes();
@@ -66,6 +76,7 @@ Status CreateReturnProbe(const ir::logical::Probe& input_probe,
   auto* map_val = return_probe->add_map_vals();
   map_val->set_map_name(input_probe.name() + "_argstash");
   // TODO(oazizi): goid is hard-coded. Fix based on language.
+  PL_UNUSED(language);
   map_val->set_key_expr("goid");
   for (const auto& in_arg : input_probe.args()) {
     map_val->add_value_ids(in_arg.id());
@@ -91,7 +102,8 @@ Status CreateReturnProbe(const ir::logical::Probe& input_probe,
   return Status::OK();
 }
 
-Status TransformLogicalProbe(const ir::logical::Probe& input_probe,
+Status TransformLogicalProbe(const ir::shared::BinarySpec::Language& language,
+                             const ir::logical::Probe& input_probe,
                              const std::map<std::string_view, ir::shared::Output*>& outputs,
                              ir::logical::Program* out) {
   // A logical probe is allowed to implicitly access arguments and return values.
@@ -102,8 +114,8 @@ Status TransformLogicalProbe(const ir::logical::Probe& input_probe,
   // TODO(oazizi): An optimization could be to determine whether both entry and return probes
   //               are required. When not required, one probe and the stash map can be avoided.
   CreateMap(input_probe, out);
-  CreateEntryProbe(input_probe, out);
-  PL_RETURN_IF_ERROR(CreateReturnProbe(input_probe, outputs, out));
+  CreateEntryProbe(language, input_probe, out);
+  PL_RETURN_IF_ERROR(CreateReturnProbe(language, input_probe, outputs, out));
 
   return Status::OK();
 }
@@ -114,7 +126,7 @@ StatusOr<ir::logical::Program> TransformLogicalProgram(const ir::logical::Progra
   std::map<std::string_view, ir::shared::Output*> outputs;
 
   // Copy the binary path.
-  out.set_binary_path(input_program.binary_path());
+  out.mutable_binary_spec()->CopyFrom(input_program.binary_spec());
 
   // Copy all explicitly declared output buffers.
   for (const auto& o : input_program.outputs()) {
@@ -130,13 +142,16 @@ StatusOr<ir::logical::Program> TransformLogicalProgram(const ir::logical::Progra
   }
 
   if (!input_program.probes().empty()) {
-    out.add_maps()->CopyFrom(GenGOIDMap());
-    out.add_probes()->CopyFrom(GenGOIDProbe());
+    if (input_program.binary_spec().language() == ir::shared::BinarySpec_Language_GOLANG) {
+      out.add_maps()->CopyFrom(GenGOIDMap());
+      out.add_probes()->CopyFrom(GenGOIDProbe());
+    }
   }
 
   for (const auto& p : input_program.probes()) {
     if (p.trace_point().type() == ir::shared::TracePoint::LOGICAL) {
-      PL_RETURN_IF_ERROR(TransformLogicalProbe(p, outputs, &out));
+      PL_RETURN_IF_ERROR(
+          TransformLogicalProbe(input_program.binary_spec().language(), p, outputs, &out));
     } else {
       auto* probe = out.add_probes();
       probe->CopyFrom(p);

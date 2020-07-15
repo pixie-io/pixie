@@ -27,7 +27,10 @@ void StirlingCallback(uint64_t table_id, TabletID tablet_id,
 }
 
 constexpr std::string_view kProgramSpec = R"(
-binary_path: "$0"
+binary_spec {
+  path: "$0"
+  language: GOLANG
+}
 outputs {
   name: "probe0_table"
   fields: "arg0"

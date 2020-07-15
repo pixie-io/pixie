@@ -179,7 +179,7 @@ message Probe {
 
 // This describes a complete BPF program.
 message Program {
-  string binary_path = 1;
+  shared.BinarySpec binary_spec = 1;
 
   // Describes the global structs.
   repeated Struct structs = 2;

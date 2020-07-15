@@ -632,7 +632,7 @@ StatusOr<BCCProgram> GenProgram(const Program& program) {
   res.code = absl::StrJoin(code_lines, "\n");
 
   for (const auto& probe : program.probes()) {
-    res.uprobes.push_back(GetUProbeSpec(program.binary_path(), probe));
+    res.uprobes.push_back(GetUProbeSpec(program.binary_spec().path(), probe));
   }
 
   for (const auto& output : program.outputs()) {

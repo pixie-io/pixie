@@ -40,11 +40,12 @@ class Dwarvifier {
   Dwarvifier(const std::map<std::string, ir::shared::Map*>& maps,
              const std::map<std::string, ir::shared::Output*>& outputs)
       : maps_(maps), outputs_(outputs) {}
-  Status GenerateProbe(const std::string& binary_path, const ir::logical::Probe input_probe,
-                       ir::physical::Program* output_program);
+  Status GenerateProbe(const ir::shared::BinarySpec& binary_spec,
+                       const ir::logical::Probe input_probe, ir::physical::Program* output_program);
 
  private:
-  Status Setup(const std::string& binary_path, const ir::shared::TracePoint& trace_point);
+  Status Setup(const ir::shared::BinarySpec& binary_spec,
+               const ir::shared::TracePoint& trace_point);
   Status ProcessProbe(const ir::logical::Probe& input_probe, ir::physical::Program* output_program);
   Status ProcessTracepoint(const ir::shared::TracePoint& trace_point,
                            ir::physical::Probe* output_probe);
@@ -83,8 +84,8 @@ class Dwarvifier {
   // This adjustment factor accounts for that difference.
   static constexpr int32_t kSPOffset = 8;
 
-  static inline const std::vector<std::string> kImplicitColumns{kTGIDVarName, kTGIDStartTimeVarName,
-                                                                kGOIDVarName, kKTimeVarName};
+  ir::shared::BinarySpec::Language language_;
+  std::vector<std::string> implicit_columns_;
 
   // We use these values as we build temporary variables for expressions.
 
@@ -103,7 +104,7 @@ StatusOr<ir::physical::Program> AddDwarves(const ir::logical::Program& input_pro
 
   ir::physical::Program output_program;
 
-  output_program.set_binary_path(input_program.binary_path());
+  output_program.mutable_binary_spec()->CopyFrom(input_program.binary_spec());
 
   // Copy all maps.
   for (const auto& map : input_program.maps()) {
@@ -123,7 +124,7 @@ StatusOr<ir::physical::Program> AddDwarves(const ir::logical::Program& input_pro
   Dwarvifier dwarvifier(maps, outputs);
   for (const auto& probe : input_program.probes()) {
     PL_RETURN_IF_ERROR(
-        dwarvifier.GenerateProbe(input_program.binary_path(), probe, &output_program));
+        dwarvifier.GenerateProbe(input_program.binary_spec(), probe, &output_program));
   }
 
   return output_program;
@@ -185,10 +186,10 @@ ir::physical::ScalarVariable* Dwarvifier::AddVariable(ir::physical::Probe* probe
   return var;
 }
 
-Status Dwarvifier::GenerateProbe(const std::string& binary_path,
+Status Dwarvifier::GenerateProbe(const ir::shared::BinarySpec& binary_spec,
                                  const ir::logical::Probe input_probe,
                                  ir::physical::Program* output_program) {
-  PL_RETURN_IF_ERROR(Setup(binary_path, input_probe.trace_point()));
+  PL_RETURN_IF_ERROR(Setup(binary_spec, input_probe.trace_point()));
   PL_RETURN_IF_ERROR(ProcessProbe(input_probe, output_program));
   return Status::OK();
 }
@@ -198,14 +199,21 @@ std::string StructTypeName(const std::string& obj_name) {
   return absl::StrCat(obj_name, "_value_t");
 }
 
-Status Dwarvifier::Setup(const std::string& binary_path,
+Status Dwarvifier::Setup(const ir::shared::BinarySpec& binary_spec,
                          const ir::shared::TracePoint& trace_point) {
   using dwarf_tools::DwarfReader;
 
   const std::string& function_symbol = trace_point.symbol();
 
-  PL_ASSIGN_OR_RETURN(dwarf_reader_, DwarfReader::Create(binary_path));
+  PL_ASSIGN_OR_RETURN(dwarf_reader_, DwarfReader::Create(binary_spec.path()));
   PL_ASSIGN_OR_RETURN(args_map_, dwarf_reader_->GetFunctionArgInfo(function_symbol));
+
+  language_ = binary_spec.language();
+
+  implicit_columns_ = {kTGIDVarName, kTGIDStartTimeVarName, kKTimeVarName};
+  if (language_ == ir::shared::BinarySpec_Language_GOLANG) {
+    implicit_columns_.push_back(kGOIDVarName);
+  }
 
   return Status::OK();
 }
@@ -267,32 +275,28 @@ Status Dwarvifier::ProcessSpecialVariables(ir::physical::Probe* output_probe) {
   auto* sp_var = AddVariable(output_probe, kSPVarName, ir::shared::VOID_POINTER);
   sp_var->set_reg(ir::physical::Register::SP);
 
-  // Add tgid variable
+  // Add tgid variable.
   auto* tgid_var = AddVariable(output_probe, kTGIDVarName, ir::shared::ScalarType::INT32);
   tgid_var->set_builtin(ir::shared::BPFHelper::TGID);
 
-  // Add tgid_pid variable
-  {
-    auto* var = output_probe->add_vars()->mutable_scalar_var();
-    var->set_name(kTGIDPIDVarName);
-    var->set_type(ir::shared::ScalarType::UINT64);
-    var->set_builtin(ir::shared::BPFHelper::TGID_PID);
+  // Add tgid_pid variable.
+  auto* tgid_pid_var = AddVariable(output_probe, kTGIDPIDVarName, ir::shared::ScalarType::UINT64);
+  tgid_pid_var->set_builtin(ir::shared::BPFHelper::TGID_PID);
 
-    vars_map_[kTGIDPIDVarName] = var;
-  }
-
-  // Add TGID start time (required for UPID construction)
+  // Add TGID start time (required for UPID construction).
   auto* tgid_start_time_var =
       AddVariable(output_probe, kTGIDStartTimeVarName, ir::shared::ScalarType::UINT64);
   tgid_start_time_var->set_builtin(ir::shared::BPFHelper::TGID_START_TIME);
 
-  // Add goid variable
-  auto* goid_var = AddVariable(output_probe, kGOIDVarName, ir::shared::ScalarType::INT64);
-  goid_var->set_builtin(ir::shared::BPFHelper::GOID);
-
-  // Add current time variable (for latency)
+  // Add current time variable (for latency).
   auto* ktime_var = AddVariable(output_probe, kKTimeVarName, ir::shared::ScalarType::UINT64);
   ktime_var->set_builtin(ir::shared::BPFHelper::KTIME);
+
+  // Add goid variable (if this is a go binary).
+  if (language_ == ir::shared::BinarySpec_Language_GOLANG) {
+    auto* goid_var = AddVariable(output_probe, kGOIDVarName, ir::shared::ScalarType::INT64);
+    goid_var->set_builtin(ir::shared::BPFHelper::GOID);
+  }
 
   return Status::OK();
 }
@@ -561,7 +565,7 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
   auto* struct_decl = output_program->add_structs();
   struct_decl->set_name(struct_type_name);
 
-  for (const auto& f : kImplicitColumns) {
+  for (const auto& f : implicit_columns_) {
     auto* struct_field = struct_decl->add_fields();
     // Add a suffix to avoid any potential name conflicts.
     struct_field->set_name(GetImplicitColumnName(f));
@@ -626,7 +630,7 @@ Status Dwarvifier::ProcessOutputAction(const ir::logical::OutputAction& output_a
   struct_var->set_type(struct_type_name);
   struct_var->set_name(variable_name);
 
-  for (const auto& f : kImplicitColumns) {
+  for (const auto& f : implicit_columns_) {
     auto* fa = struct_var->add_field_assignments();
     fa->set_field_name(GetImplicitColumnName(f));
     fa->set_variable_name(f);

@@ -14,7 +14,10 @@ using ::google::protobuf::TextFormat;
 using ::pl::testing::proto::EqualsProto;
 
 constexpr std::string_view kEntryProbeIn = R"(
-binary_path: "$0"
+binary_spec {
+  path: "$0"
+  language: GOLANG
+}
 probes: {
   trace_point: {
     symbol: "main.MixedArgTypes"
@@ -48,7 +51,10 @@ probes: {
 )";
 
 constexpr std::string_view kEntryProbeOut = R"(
-binary_path: "$0"
+binary_spec {
+  path: "$0"
+  language: GOLANG
+}
 probes {
   trace_point {
     symbol: "main.MixedArgTypes"
@@ -84,16 +90,16 @@ probes {
   }
   vars {
     scalar_var {
-      name: "goid"
-      type: INT64
-      builtin: GOID
+      name: "ktime_ns"
+      type: UINT64
+      builtin: KTIME
     }
   }
   vars {
     scalar_var {
-      name: "ktime_ns"
-      type: UINT64
-      builtin: KTIME
+      name: "goid"
+      type: INT64
+      builtin: GOID
     }
   }
   vars {
@@ -157,7 +163,10 @@ probes {
 )";
 
 constexpr std::string_view kReturnProbeIn = R"(
-binary_path: "$0"
+binary_spec {
+  path: "$0"
+  language: GOLANG
+}
 probes: {
   trace_point: {
     symbol: "main.MixedArgTypes"
@@ -175,7 +184,10 @@ probes: {
 )";
 
 constexpr std::string_view kReturnProbeOut = R"(
-binary_path: "$0"
+binary_spec {
+  path: "$0"
+  language: GOLANG
+}
 probes {
   trace_point {
     symbol: "main.MixedArgTypes"
@@ -211,16 +223,16 @@ probes {
   }
   vars {
     scalar_var {
-      name: "goid"
-      type: INT64
-      builtin: GOID
+      name: "ktime_ns"
+      type: UINT64
+      builtin: KTIME
     }
   }
   vars {
     scalar_var {
-      name: "ktime_ns"
-      type: UINT64
-      builtin: KTIME
+      name: "goid"
+      type: INT64
+      builtin: GOID
     }
   }
   vars {
@@ -246,7 +258,10 @@ probes {
 )";
 
 constexpr std::string_view kNestedArgProbeIn = R"(
-binary_path: "$0"
+binary_spec {
+  path: "$0"
+  language: GOLANG
+}
 probes: {
   trace_point: {
     symbol: "main.PointerWrapperWrapperWrapperFunc"
@@ -264,7 +279,10 @@ probes: {
 )";
 
 constexpr std::string_view kNestedArgProbeOut = R"(
-binary_path: "$0"
+binary_spec {
+  path: "$0"
+  language: GOLANG
+}
 probes {
   trace_point {
     symbol: "main.PointerWrapperWrapperWrapperFunc"
@@ -300,16 +318,16 @@ probes {
   }
   vars {
     scalar_var {
-      name: "goid"
-      type: INT64
-      builtin: GOID
+      name: "ktime_ns"
+      type: UINT64
+      builtin: KTIME
     }
   }
   vars {
     scalar_var {
-      name: "ktime_ns"
-      type: UINT64
-      builtin: KTIME
+      name: "goid"
+      type: INT64
+      builtin: GOID
     }
   }
   vars {
@@ -365,7 +383,10 @@ probes {
 )";
 
 constexpr std::string_view kActionProbeIn = R"(
-binary_path: "$0"
+binary_spec {
+  path: "$0"
+  language: GOLANG
+}
 maps {
   name: "my_stash"
 }
@@ -431,7 +452,10 @@ probes: {
 )";
 
 constexpr std::string_view kActionProbeOut = R"(
-binary_path: "$0"
+binary_spec {
+  path: "$0"
+  language: GOLANG
+}
 structs {
   name: "my_stash_value_t"
   fields {
@@ -462,15 +486,15 @@ structs {
     }
   }
   fields {
-    name: "goid__"
-    type {
-      scalar: INT64
-    }
-  }
-  fields {
     name: "ktime_ns__"
     type {
       scalar: UINT64
+    }
+  }
+  fields {
+    name: "goid__"
+    type {
+      scalar: INT64
     }
   }
   fields {
@@ -507,15 +531,15 @@ structs {
     }
   }
   fields {
-    name: "goid__"
-    type {
-      scalar: INT64
-    }
-  }
-  fields {
     name: "ktime_ns__"
     type {
       scalar: UINT64
+    }
+  }
+  fields {
+    name: "goid__"
+    type {
+      scalar: INT64
     }
   }
   fields {
@@ -592,16 +616,16 @@ probes {
   }
   vars {
     scalar_var {
-      name: "goid"
-      type: INT64
-      builtin: GOID
+      name: "ktime_ns"
+      type: UINT64
+      builtin: KTIME
     }
   }
   vars {
     scalar_var {
-      name: "ktime_ns"
-      type: UINT64
-      builtin: KTIME
+      name: "goid"
+      type: INT64
+      builtin: GOID
     }
   }
   vars {
@@ -659,12 +683,12 @@ probes {
         variable_name: "tgid_start_time"
       }
       field_assignments {
-        field_name: "goid__"
-        variable_name: "goid"
-      }
-      field_assignments {
         field_name: "ktime_ns__"
         variable_name: "ktime_ns"
+      }
+      field_assignments {
+        field_name: "goid__"
+        variable_name: "goid"
       }
       field_assignments {
         field_name: "arg0"
@@ -727,16 +751,16 @@ probes {
   }
   vars {
     scalar_var {
-      name: "goid"
-      type: INT64
-      builtin: GOID
+      name: "ktime_ns"
+      type: UINT64
+      builtin: KTIME
     }
   }
   vars {
     scalar_var {
-      name: "ktime_ns"
-      type: UINT64
-      builtin: KTIME
+      name: "goid"
+      type: INT64
+      builtin: GOID
     }
   }
   vars {
@@ -777,12 +801,12 @@ probes {
         variable_name: "tgid_start_time"
       }
       field_assignments {
-        field_name: "goid__"
-        variable_name: "goid"
-      }
-      field_assignments {
         field_name: "ktime_ns__"
         variable_name: "ktime_ns"
+      }
+      field_assignments {
+        field_name: "goid__"
+        variable_name: "goid"
       }
       field_assignments {
         field_name: "arg0"

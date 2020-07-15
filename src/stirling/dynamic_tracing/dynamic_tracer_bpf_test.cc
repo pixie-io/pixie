@@ -24,7 +24,8 @@ ir::logical::Program ParseTextProgram(const std::string& text,
                                       const std::filesystem::path& binary_path) {
   ir::logical::Program logical_program;
   CHECK(TextFormat::ParseFromString(text, &logical_program));
-  logical_program.set_binary_path(binary_path);
+  logical_program.mutable_binary_spec()->set_path(binary_path);
+  logical_program.mutable_binary_spec()->set_language(ir::shared::BinarySpec_Language_GOLANG);
   return logical_program;
 }
 

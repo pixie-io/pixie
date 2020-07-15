@@ -176,7 +176,9 @@ TEST(GenOutputActionTest, Variables) {
 
 TEST(GenProgramTest, SpecsAndCode) {
   const std::string program_protobuf = R"proto(
-                                       binary_path: "target_binary_path"
+                                       binary_spec {
+                                         path: "target_binary_path"
+                                       }
                                        structs {
                                          name: "socket_data_event_t"
                                          fields {

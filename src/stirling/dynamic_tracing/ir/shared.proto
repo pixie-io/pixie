@@ -21,6 +21,24 @@ message TracePoint {
   Type type = 2;
 }
 
+message BinarySpec {
+  string path = 1;
+
+  enum Language {
+      // Automatically infer the language (default).
+      AUTO = 0;
+      C = 1;
+      CPP = 2;
+      GOLANG = 3;
+    }
+
+  // The language in which the binary was written.
+  // For now, must manually specify the language, so please avoid AUTO.
+  Language language = 2;
+}
+
+
+
 // All enum values must be consecutive, as they are used as array index in codegen.
 enum BPFHelper {
   GOID = 0;

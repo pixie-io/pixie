@@ -14,7 +14,10 @@ using ::google::protobuf::TextFormat;
 using ::pl::testing::proto::EqualsProto;
 
 constexpr std::string_view kLogicalProgram = R"(
-binary_path: "$0"
+binary_spec {
+  path: "$0"
+  language: GOLANG
+}
 outputs {
   name: "probe0_table"
   fields: "arg0"
@@ -79,7 +82,10 @@ probes {
 )";
 
 constexpr std::string_view kTransformedProgram = R"proto(
-binary_path: "$0"
+binary_spec {
+  path: "$0"
+  language: GOLANG
+}
 outputs {
   name: "probe0_table"
   fields: "arg0"
