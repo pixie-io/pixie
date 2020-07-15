@@ -137,12 +137,13 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     display: 'none',
   },
   cellWrapper: {
-    paddingRight: theme.spacing(2.4),
+    paddingRight: theme.spacing(1.5),
     width: '100%',
     display: 'flex',
   },
   innerCell: {
     overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
 }));
 

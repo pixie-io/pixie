@@ -6,6 +6,7 @@ import { GaugeLevel } from 'utils/metric-thresholds';
 import {
   createStyles, Theme, useTheme, withStyles, WithStyles,
 } from '@material-ui/core/styles';
+import clsx from 'clsx';
 
 function getColor(level: GaugeLevel, theme: Theme): string {
   switch (level) {
@@ -256,30 +257,29 @@ const styles = (theme: Theme) => createStyles({
       opacity: 0.9,
     },
   },
+  root: {
+    display: 'flex',
+    alignItems: 'center',
+  },
   vegaWrapper: {
     // It seems like ReactVega automatically inserts 5 px padding on the bottom of charts,
     // and there isn't a clear way to turn this off.
     marginTop: 5,
   },
-  low: {
+  label: {
     textAlign: 'right',
+    justifyContent: 'flex-end',
     width: 100,
     marginLeft: 5,
     marginRight: 10,
+  },
+  low: {
     color: getColor('low', theme),
   },
   med: {
-    textAlign: 'right',
-    width: 100,
-    marginLeft: 5,
-    marginRight: 10,
     color: getColor('med', theme),
   },
   high: {
-    textAlign: 'right',
-    width: 100,
-    marginLeft: 5,
-    marginRight: 10,
     color: getColor('high', theme),
   },
 });
@@ -362,7 +362,7 @@ const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
   }).call;
 
   return (
-    <>
+    <div className={classes.root}>
       <ReactVega
         className={classes.vegaWrapper}
         signalListeners={{
@@ -374,10 +374,10 @@ const QuantilesBoxWhisker = (props: QuantilesBoxWhiskerProps) => {
         actions={false}
         tooltip={tooltipHandler}
       />
-      <span className={classes[selectedPercentileLevel]}>
+      <span className={clsx(classes.label, classes[selectedPercentileLevel])}>
         {`${percentileValue.toFixed(2)}`}
       </span>
-    </>
+    </div>
   );
 };
 
