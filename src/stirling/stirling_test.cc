@@ -343,7 +343,8 @@ TEST_F(StirlingTest, no_data_callback_defined) {
   run_thread.join();
 }
 
-TEST_F(StirlingTest, dynamic_trace_api) {
+// TODO(oazizi): Re-enable. Coming in subsequent diff.
+TEST_F(StirlingTest, DISABLED_dynamic_trace_api) {
   // Checking status of non-existent trace should return NOT_FOUND.
   Status s = stirling_->CheckDynamicTraceStatus(/* trace_id */ 1);
   EXPECT_EQ(s.code(), pl::statuspb::Code::NOT_FOUND);

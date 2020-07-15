@@ -16,9 +16,23 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
  public:
   ~DynamicTraceConnector() override = default;
 
-  static std::unique_ptr<SourceConnector> Create(
-      std::string_view name, std::unique_ptr<DynamicDataTableSchema> table_schema,
-      dynamic_tracing::BCCProgram bcc_program) {
+  static StatusOr<std::unique_ptr<SourceConnector>> Create(
+      const dynamic_tracing::ir::logical::Program& program) {
+    PL_ASSIGN_OR_RETURN(dynamic_tracing::BCCProgram bcc_program,
+                        dynamic_tracing::CompileProgram(program));
+
+    if (bcc_program.perf_buffer_specs.size() != 1) {
+      return error::Internal("Only a single output table is allowed for now.");
+    }
+
+    auto& output = bcc_program.perf_buffer_specs[0];
+    PL_ASSIGN_OR_RETURN(std::unique_ptr<DynamicDataTableSchema> table_schema,
+                        DynamicDataTableSchema::Create(std::move(output.output)));
+
+    // Make the source connector name the same as the table name.
+    // This should be okay so long as there is only one table per connector.
+    std::string name(table_schema->Get().name());
+
     return std::unique_ptr<SourceConnector>(
         new DynamicTraceConnector(name, std::move(table_schema), std::move(bcc_program)));
   }

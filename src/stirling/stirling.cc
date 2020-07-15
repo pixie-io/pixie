@@ -174,9 +174,6 @@ class StirlingImpl final : public Stirling {
   InfoClassManagerVec info_class_mgrs_;
   absl::base_internal::SpinLock info_class_mgrs_lock_;
 
-  // Structure to hold dynamically generated data table schemas.
-  std::map<uint64_t, SourceConnector*> dynamic_trace_sources_;
-
   std::unique_ptr<PubSubManager> config_;
 
   std::unique_ptr<SourceRegistry> registry_;
@@ -287,10 +284,6 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
 }
 
 uint64_t StirlingImpl::RegisterDynamicTrace(const dynamic_tracing::ir::logical::Program& program) {
-  using dynamic_tracing::BCCProgram;
-  using dynamic_tracing::ir::physical::Program;
-  using dynamic_tracing::ir::physical::Struct;
-
   int64_t trace_id = dynamic_trace_index_++;
 
   dynamic_trace_status_map_[trace_id] = error::ResourceUnavailable("Probe deployment in progress.");
@@ -306,25 +299,14 @@ uint64_t StirlingImpl::RegisterDynamicTrace(const dynamic_tracing::ir::logical::
     return trace_id;                         \
   }
 
-  ASSIGN_OR_RETURN(BCCProgram bcc_program, dynamic_tracing::CompileProgram(program));
+  ASSIGN_OR_RETURN(std::unique_ptr<SourceConnector> source, DynamicTraceConnector::Create(program));
+  RETURN_IF_ERROR(AddSource(std::move(source)));
 
-  for (auto& output : bcc_program.perf_buffer_specs) {
-    ASSIGN_OR_RETURN(std::unique_ptr<DynamicDataTableSchema> table_schema,
-                     DynamicDataTableSchema::Create(std::move(output.output)));
-    // Make the source connector name the same as the table name.
-    // This should be okay so long as there is only one table per connector.
-    std::string source_name(table_schema->Get().name());
-    std::unique_ptr<SourceConnector> source =
-        DynamicTraceConnector::Create(source_name, std::move(table_schema), std::move(bcc_program));
-    SourceConnector* source_raw_ptr = source.get();
-    RETURN_IF_ERROR(AddSource(std::move(source)));
-
-    dynamic_trace_sources_[trace_id] = source_raw_ptr;
-  }
+  // If we got here, it means everything deployed properly. We can finally update the state to OK.
+  dynamic_trace_status_map_[trace_id] = Status::OK();
 
 #undef ASSIGN_OR_RETURN
-
-  dynamic_trace_status_map_[trace_id] = Status::OK();
+#undef RETURN_IF_ERROR
 
   return trace_id;
 }
