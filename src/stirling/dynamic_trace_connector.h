@@ -12,24 +12,23 @@
 namespace pl {
 namespace stirling {
 
-class DynamicSourceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
+class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
-  ~DynamicSourceConnector() override = default;
+  ~DynamicTraceConnector() override = default;
 
   static std::unique_ptr<SourceConnector> Create(
       std::string_view name, std::unique_ptr<DynamicDataTableSchema> table_schema,
       dynamic_tracing::BCCProgram bcc_program) {
     return std::unique_ptr<SourceConnector>(
-        new DynamicSourceConnector(name, std::move(table_schema), std::move(bcc_program)));
+        new DynamicTraceConnector(name, std::move(table_schema), std::move(bcc_program)));
   }
 
  protected:
   // TODO(oazizi): This constructor only works with a single table,
   //               since the ArrayView creation only works for a single schema.
   //               Consider how to expand to multiple tables if/when needed.
-  DynamicSourceConnector(std::string_view name,
-                         std::unique_ptr<DynamicDataTableSchema> table_schema,
-                         dynamic_tracing::BCCProgram bcc_program)
+  DynamicTraceConnector(std::string_view name, std::unique_ptr<DynamicDataTableSchema> table_schema,
+                        dynamic_tracing::BCCProgram bcc_program)
       : SourceConnector(name, ArrayView<DataTableSchema>(&table_schema->Get(), 1)),
         table_schema_(std::move(table_schema)),
         bcc_program_(std::move(bcc_program)),

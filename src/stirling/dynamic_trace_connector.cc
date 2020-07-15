@@ -1,17 +1,17 @@
-#include "src/stirling/dynamic_source_connector.h"
+#include "src/stirling/dynamic_trace_connector.h"
 #include "src/shared/types/proto/types.pb.h"
 
 namespace pl {
 namespace stirling {
 
-Status DynamicSourceConnector::InitImpl() {
+Status DynamicTraceConnector::InitImpl() {
   PL_UNUSED(bcc_program_);
   // Run DeployBCCProgram(bcc_program) here.
   return Status::OK();
 }
 
-void DynamicSourceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
-                                              DataTable* data_table) {
+void DynamicTraceConnector::TransferDataImpl(ConnectorContext* /* ctx */, uint32_t table_num,
+                                             DataTable* data_table) {
   const DataTableSchema& table_schema = TableSchema(table_num);
 
   DataTable::DynamicRecordBuilder r(data_table);

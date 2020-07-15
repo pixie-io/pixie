@@ -125,8 +125,8 @@ pl_cc_test(
 )
 
 pl_cc_test(
-    name = "dynamic_source_test",
-    srcs = ["dynamic_source_test.cc"],
+    name = "dynamic_trace_connector_test",
+    srcs = ["dynamic_trace_connector_test.cc"],
     args = [
         "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
     ],

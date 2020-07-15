@@ -21,7 +21,7 @@ const stirlingpb::TableSchema* g_table_schema;
 
 void StirlingCallback(uint64_t table_id, TabletID tablet_id,
                       std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
-  PrintRecordBatch("DynamicSource", *g_table_schema, *record_batch);
+  PrintRecordBatch("DynamicTraceSource", *g_table_schema, *record_batch);
   PL_UNUSED(table_id);
   PL_UNUSED(tablet_id);
 }
@@ -80,7 +80,7 @@ probes: {
 }
 )";
 
-TEST(DynamicSource, dynamic_source) {
+TEST(DynamicTraceSource, dynamic_trace_source) {
   std::unique_ptr<SourceRegistry> registry = std::make_unique<SourceRegistry>();
 
   // Make Stirling.
