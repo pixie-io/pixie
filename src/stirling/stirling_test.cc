@@ -18,9 +18,6 @@
 
 #include "src/stirling/proto/stirling.pb.h"
 
-using PubProto = pl::stirling::stirlingpb::Publish;
-using SubProto = pl::stirling::stirlingpb::Subscribe;
-
 using pl::stirling::DataElement;
 using pl::stirling::DataTableSchema;
 using pl::stirling::SeqGenConnector;
@@ -83,7 +80,7 @@ class TableTabletColHashFn {
 };
 
 /**
- * StringTest is an end-to-end test of Stirling. It uses the Sequence Generator connector
+ * StirlingTest is an end-to-end test of Stirling. It uses the Sequence Generator connector
  * as a deterministic data source. It then periodically samples this data source,
  * and also periodically pushes the data through the registered callback.
  *
@@ -92,9 +89,9 @@ class TableTabletColHashFn {
  * at all, then it means that something is busted.
  */
 class StirlingTest : public ::testing::Test {
- private:
+ protected:
   std::unique_ptr<Stirling> stirling_;
-  PubProto publish_proto_;
+  stirlingpb::Publish publish_proto_;
 
   // Schemas
   std::unordered_map<uint32_t, DataTableSchema> schemas_;
@@ -116,7 +113,6 @@ class StirlingTest : public ::testing::Test {
   std::uniform_int_distribution<uint32_t> push_period_millis_dist_;
   std::uniform_real_distribution<double> uniform_probability_dist_;
 
- public:
   inline static const uint64_t& kRNGSeed = FLAGS_kRNGSeed;
   inline static const uint32_t& kNumSources = FLAGS_kNumSources;
   inline static const uint32_t& kNumIterMin = FLAGS_kNumIterMin;
@@ -209,10 +205,8 @@ class StirlingTest : public ::testing::Test {
     }
   }
 
-  Stirling* GetStirling() { return stirling_.get(); }
-
-  SubProto GenerateRandomSubscription(const PubProto& publish_proto) {
-    SubProto subscribe_proto;
+  stirlingpb::Subscribe GenerateRandomSubscription(const stirlingpb::Publish& publish_proto) {
+    stirlingpb::Subscribe subscribe_proto;
 
     for (int i = 0; i < publish_proto.published_info_classes_size(); ++i) {
       auto sub_info_class = subscribe_proto.add_subscribed_info_classes();
@@ -225,7 +219,9 @@ class StirlingTest : public ::testing::Test {
     return subscribe_proto;
   }
 
-  SubProto GenerateRandomSubscription() { return GenerateRandomSubscription(publish_proto_); }
+  stirlingpb::Subscribe GenerateRandomSubscription() {
+    return GenerateRandomSubscription(publish_proto_);
+  }
 
   void AppendData(uint64_t table_id, TabletID tablet_id,
                   std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
@@ -277,22 +273,18 @@ class StirlingTest : public ::testing::Test {
 // A reference model checks the sequences are correct on the callback.
 // This version uses synchronized subscriptions that occur while Stirling is stopped.
 TEST_F(StirlingTest, hammer_time_on_stirling_synchronized_subscriptions) {
-  pl::Status s;
-
-  Stirling* stirling = GetStirling();
-
   uint32_t i = 0;
   while (NumProcessed() < kNumProcessedRequirement || i < kNumIterMin) {
     // Process a subscription message.
-    ASSERT_OK(stirling->SetSubscription(GenerateRandomSubscription()));
+    ASSERT_OK(stirling_->SetSubscription(GenerateRandomSubscription()));
 
     // Run Stirling data collector.
-    ASSERT_OK(stirling->RunAsThread());
+    ASSERT_OK(stirling_->RunAsThread());
 
     // Stay in this config for the specified amount of time.
     std::this_thread::sleep_for(kDurationPerIter);
 
-    stirling->Stop();
+    stirling_->Stop();
 
     i++;
 
@@ -309,12 +301,8 @@ TEST_F(StirlingTest, hammer_time_on_stirling_synchronized_subscriptions) {
 // A reference model checks the sequences are correct on the callback.
 // This version uses on-the-fly subscriptions that occur while Stirling is running.
 TEST_F(StirlingTest, hammer_time_on_stirling_on_the_fly_subs) {
-  pl::Status s;
-
-  Stirling* stirling = GetStirling();
-
   // Run Stirling data collector.
-  ASSERT_OK(stirling->RunAsThread());
+  ASSERT_OK(stirling_->RunAsThread());
 
   std::this_thread::sleep_for(kDurationPerIter);
 
@@ -324,7 +312,7 @@ TEST_F(StirlingTest, hammer_time_on_stirling_on_the_fly_subs) {
   uint32_t i = 0;
   while (NumProcessed() < kNumProcessedRequirement || i < kNumIterMin) {
     // Process a subscription message.
-    ASSERT_OK(stirling->SetSubscription(GenerateRandomSubscription()));
+    ASSERT_OK(stirling_->SetSubscription(GenerateRandomSubscription()));
 
     // Stay in this config for the specified amount of time..
     std::this_thread::sleep_for(kDurationPerIter);
@@ -337,39 +325,36 @@ TEST_F(StirlingTest, hammer_time_on_stirling_on_the_fly_subs) {
     }
   }
 
-  stirling->Stop();
+  stirling_->Stop();
 
   EXPECT_GT(NumProcessed(), 0);
 }
 
 TEST_F(StirlingTest, no_data_callback_defined) {
-  Stirling* stirling = GetStirling();
-  stirling->RegisterDataPushCallback(nullptr);
+  stirling_->RegisterDataPushCallback(nullptr);
 
   // Should fail to run as a Stirling-managed thread.
-  EXPECT_NOT_OK(stirling->RunAsThread());
+  EXPECT_NOT_OK(stirling_->RunAsThread());
 
   // Should also fail to run as a caller-managed thread,
   // which means it should be immediately joinable.
-  std::thread run_thread = std::thread(&Stirling::Run, stirling);
+  std::thread run_thread = std::thread(&Stirling::Run, stirling_.get());
   ASSERT_TRUE(run_thread.joinable());
   run_thread.join();
 }
 
 TEST_F(StirlingTest, dynamic_trace_api) {
-  Stirling* stirling = GetStirling();
-
   // Checking status of non-existent trace should return NOT_FOUND.
-  Status s = stirling->CheckDynamicTraceStatus(/* trace_id */ 1);
+  Status s = stirling_->CheckDynamicTraceStatus(/* trace_id */ 1);
   EXPECT_EQ(s.code(), pl::statuspb::Code::NOT_FOUND);
 
   // Checking status of existent trace should return OK.
   dynamic_tracing::ir::logical::Program trace_program;
-  uint64_t trace_id = stirling->RegisterDynamicTrace(trace_program);
-  EXPECT_OK(stirling->CheckDynamicTraceStatus(trace_id));
+  uint64_t trace_id = stirling_->RegisterDynamicTrace(trace_program);
+  EXPECT_OK(stirling_->CheckDynamicTraceStatus(trace_id));
 
   // OK state should persist.
-  EXPECT_OK(stirling->CheckDynamicTraceStatus(trace_id));
+  EXPECT_OK(stirling_->CheckDynamicTraceStatus(trace_id));
 
   // TODO(oazizi): Expand test when RegisterDynamicTrace produces other states.
 }
