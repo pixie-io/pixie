@@ -164,15 +164,16 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
     height: '100%',
     position: 'relative',
   },
-  table: {
-    flex: 3,
-  },
   details: {
     flex: 1,
     padding: theme.spacing(2),
     borderLeft: `solid 1px ${theme.palette.background.three}`,
     minWidth: 0,
     overflow: 'auto',
+    whiteSpace: 'pre-wrap',
+  },
+  table: {
+    flex: 3,
   },
   close: {
     position: 'absolute',
@@ -188,20 +189,23 @@ export const VizierDataTableWithDetails = (props: { table: Table }) => {
       <div className={classes.table}>
         <VizierDataTable expandable={false} table={props.table} onRowSelectionChanged={(row) => { setDetails(row); }} />
       </div>
-      <VizierDataRowDetails className={classes.details} data={details} />
+      <VizierDataRowDetails data={details} />
     </div>
   );
 };
 
 interface VizierDataRowDetailsProps {
   data?: any;
-  className?: string;
 }
 
-const VizierDataRowDetails = (props: VizierDataRowDetailsProps) => {
-  const { data, className } = props;
+const VizierDataRowDetails = ({ data }: VizierDataRowDetailsProps) => {
+  const classes = useStyles();
   if (!data) {
     return null;
   }
-  return <JSONData className={className} data={data} multiline />;
+  return (
+    <div className={classes.details}>
+      <JSONData data={data} multiline />
+    </div>
+  );
 };

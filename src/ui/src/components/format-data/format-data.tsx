@@ -1,37 +1,36 @@
 import * as React from 'react';
 import clsx from 'clsx';
-import { makeStyles, Theme } from '@material-ui/core/styles';
+import { createStyles, Theme, withStyles } from '@material-ui/core/styles';
 import { formatBoolData, formatFloat64Data } from 'utils/format-data';
-import { getCPULevel, getLatencyLevel } from 'utils/metric-thresholds';
+import { GaugeLevel, getCPULevel, getLatencyLevel } from 'utils/metric-thresholds';
 
 const JSON_INDENT_PX = 16;
 
-const useAlertStyles = makeStyles((theme: Theme) => ({
+export const AlertDataBase = ({ data, classes }) => (
+  <div className={classes[`${data}`]}>{formatBoolData(data)}</div>
+);
+
+export const AlertData = withStyles((theme: Theme) => ({
   true: {
     color: theme.palette.error.dark,
   },
   false: {},
-}));
+}))(AlertDataBase);
 
-const useGaugeStyles = makeStyles((theme: Theme) => ({
-  low: {
-    color: theme.palette.success.dark,
-  },
-  med: {
-    color: theme.palette.warning.dark,
-  },
-  high: {
-    color: theme.palette.error.dark,
-  },
-}));
+interface JSONDataProps {
+  data: any;
+  indentation?: number;
+  multiline?: boolean;
+  classes: any;
+}
 
-const useJSONStyles = makeStyles((theme: Theme) => ({
+const jsonStyles = (theme: Theme) => createStyles({
   base: {
     fontFamily: '"Roboto Mono", serif',
     fontSize: 13,
   },
   jsonKey: {
-    color: theme.palette.foreground.white,
+    color: theme.palette.foreground?.white,
   },
   number: {
     color: '#ae81ff',
@@ -46,18 +45,11 @@ const useJSONStyles = makeStyles((theme: Theme) => ({
   boolean: {
     color: '#f92672',
   },
-}));
+});
 
-interface JSONDataProps {
-  data: any;
-  indentation?: number;
-  multiline?: boolean;
-  className?: string;
-}
-
-export const JSONData = React.memo<JSONDataProps>((props) => {
-  const classes = useJSONStyles();
+const JSONBase = React.memo<JSONDataProps>((props) => {
   const indentation = props.indentation ? props.indentation : 0;
+  const { classes, multiline } = props;
   let { data } = props;
   let cls = String(typeof data);
 
@@ -83,15 +75,15 @@ export const JSONData = React.memo<JSONDataProps>((props) => {
           data.map((val, idx) => (
             <span
               key={`${idx}-${indentation}`}
-              style={{ marginLeft: props.multiline ? (indentation + 1) * JSON_INDENT_PX : 0 }}
+              style={{ marginLeft: multiline ? (indentation + 1) * JSON_INDENT_PX : 0 }}
             >
-              <JSONData data={val} multiline={props.multiline} indentation={indentation + 1} />
+              <JSONData data={val} multiline={multiline} indentation={indentation + 1} />
               {idx !== Object.keys(data).length - 1 ? ', ' : ''}
-              {props.multiline ? <br /> : null}
+              {multiline ? <br /> : null}
             </span>
           ))
         }
-        <span style={{ marginLeft: props.multiline ? indentation * JSON_INDENT_PX : 0 }}>{' ]'}</span>
+        <span style={{ marginLeft: multiline ? indentation * JSON_INDENT_PX : 0 }}>{' ]'}</span>
       </span>
     );
   }
@@ -114,29 +106,54 @@ export const JSONData = React.memo<JSONDataProps>((props) => {
             </span>
           ))
         }
-        <span style={{ marginLeft: props.multiline ? indentation * JSON_INDENT_PX : 0 }}>{' }'}</span>
+        <span style={{ marginLeft: multiline ? indentation * JSON_INDENT_PX : 0 }}>{' }'}</span>
       </span>
     );
   }
-  return <span className={props.className || classes[cls]}>{String(data)}</span>;
+  return <span className={classes[cls]}>{String(data)}</span>;
 });
-JSONData.displayName = 'JSONData';
+// linter needs this for React.memo components.
+JSONBase.displayName = 'JSONBase';
 
-export const LatencyData = ({ data }) => {
-  const classes = useGaugeStyles();
+export const JSONData = withStyles(jsonStyles, {
+  name: 'JSONData',
+})(JSONBase);
+
+interface GaugeDataProps {
+  classes: any;
+  data: any;
+  getLevel: (number) => GaugeLevel;
+}
+
+const GaugeDataBase = ({ getLevel, classes, data }: GaugeDataProps) => {
   const floatVal = parseFloat(data);
-  const level = getLatencyLevel(floatVal);
-  return <div className={classes[level]}>{formatFloat64Data(floatVal)}</div>;
+  return (
+    <div className={classes[getLevel(floatVal)]}>
+      {formatFloat64Data(floatVal)}
+    </div>
+  );
 };
 
-export const CPUData = ({ data }) => {
-  const classes = useGaugeStyles();
-  const floatVal = parseFloat(data);
-  const level = getCPULevel(floatVal);
-  return <div className={classes[level]}>{formatFloat64Data(floatVal)}</div>;
-};
+const gaugeStyles = (theme: Theme) => createStyles({
+  low: {
+    color: theme.palette.success.dark,
+  },
+  med: {
+    color: theme.palette.warning.dark,
+  },
+  high: {
+    color: theme.palette.error.dark,
+  },
+});
 
-export const AlertData = ({ data }) => {
-  const classes = useAlertStyles();
-  return <div className={classes[`${data}`]}>{formatBoolData(data)}</div>;
-};
+export const LatencyData = withStyles(gaugeStyles, {
+  name: 'LatencyData',
+})(({ classes, data }: any) => (
+  <GaugeDataBase classes={classes} data={data} getLevel={getLatencyLevel} />
+));
+
+export const CPUData = withStyles(gaugeStyles, {
+  name: 'CPUData',
+})(({ classes, data }: any) => (
+  <GaugeDataBase classes={classes} data={data} getLevel={getCPULevel} />
+));

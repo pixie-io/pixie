@@ -26,10 +26,9 @@ const styles = () => createStyles({
 
 export interface QueryResultTableProps extends WithStyles<typeof styles> {
   data: Table;
-  className?: string;
 }
 
-const QueryResultTableBare = (({ data, className, classes }: QueryResultTableProps) => {
+const QueryResultTableBare = (({ data, classes }: QueryResultTableProps) => {
   const { selectedClusterName } = React.useContext(ClusterContext);
   const ExpandedRowRenderer = (rowData: any) => (
     <JSONData
@@ -39,7 +38,7 @@ const QueryResultTableBare = (({ data, className, classes }: QueryResultTablePro
   );
 
   return (
-    <div className={clsx(classes.root, className)}>
+    <div className={classes.root}>
       <VizierDataTable
         table={data}
         expandable
