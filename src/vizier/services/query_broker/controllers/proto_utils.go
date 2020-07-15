@@ -43,6 +43,8 @@ var semanticTypeToVizierSemanticType = map[typespb.SemanticType]vizierpb.Semanti
 	typespb.ST_PERCENT:         vizierpb.ST_PERCENT,
 	typespb.ST_DURATION_NS:     vizierpb.ST_DURATION_NS,
 	typespb.ST_QUANTILES:       vizierpb.ST_QUANTILES,
+	typespb.ST_IP_ADDRESS:      vizierpb.ST_IP_ADDRESS,
+	typespb.ST_PORT:            vizierpb.ST_PORT,
 }
 
 // These codes are taken from https://godoc.org/google.golang.org/grpc/codes#Code.

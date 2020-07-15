@@ -34,14 +34,14 @@ constexpr DataElement kRemoteAddr = {
     "remote_addr",
     "IP address of the remote endpoint.",
     types::DataType::STRING,
-    types::SemanticType::ST_NONE,
+    types::SemanticType::ST_IP_ADDRESS,
     types::PatternType::GENERAL};
 
 constexpr DataElement kRemotePort = {
     "remote_port",
     "Port of the remote endpoint.",
     types::DataType::INT64,
-    types::SemanticType::ST_NONE,
+    types::SemanticType::ST_PORT,
     types::PatternType::GENERAL};
 
 constexpr DataElement kTraceRole = {
