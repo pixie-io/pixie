@@ -2,6 +2,7 @@ package controllers_test
 
 import (
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -56,6 +57,9 @@ func TestAgentRegisterRequest(t *testing.T) {
 
 	updates := []*metadatapb.ResourceUpdate{&updatePb}
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	mockAgtMgr.
 		EXPECT().
 		GetMetadataUpdates(&controllers.HostnameIPPair{"test-host", "127.0.0.1"}).
@@ -67,6 +71,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 		EXPECT().
 		AddUpdatesToAgentQueue(u.String(), updates).
 		DoAndReturn(func(string, []*metadatapb.ResourceUpdate) error {
+			wg.Done()
 			return nil
 		})
 
@@ -104,6 +109,8 @@ func TestAgentRegisterRequest(t *testing.T) {
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
 	assert.Nil(t, err)
+
+	defer wg.Wait()
 }
 
 func TestKelvinRegisterRequest(t *testing.T) {
@@ -145,6 +152,9 @@ func TestKelvinRegisterRequest(t *testing.T) {
 
 	updates := []*metadatapb.ResourceUpdate{&updatePb}
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	mockAgtMgr.
 		EXPECT().
 		GetMetadataUpdates(nil).
@@ -156,6 +166,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 		EXPECT().
 		AddUpdatesToAgentQueue(u.String(), updates).
 		DoAndReturn(func(string, []*metadatapb.ResourceUpdate) error {
+			wg.Done()
 			return nil
 		})
 
@@ -192,6 +203,8 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
 	assert.Nil(t, err)
+
+	defer wg.Wait()
 }
 
 func TestAgentMetadataUpdatesFailed(t *testing.T) {
@@ -233,10 +246,14 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 
 	updates := []*metadatapb.ResourceUpdate{&updatePb}
 
+	var wg sync.WaitGroup
+	wg.Add(1)
+
 	mockAgtMgr.
 		EXPECT().
 		GetMetadataUpdates(&controllers.HostnameIPPair{"test-host", "127.0.0.1"}).
 		DoAndReturn(func(hostname *controllers.HostnameIPPair) ([]*metadatapb.ResourceUpdate, error) {
+			wg.Done()
 			return updates, errors.New("Could not get metadata info")
 		})
 
@@ -266,6 +283,8 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	msg.Data = reqPb
 	err = atl.HandleMessage(&msg)
 	assert.Nil(t, err)
+
+	defer wg.Wait()
 }
 
 func TestAgentRegisterRequestInvalidUUID(t *testing.T) {

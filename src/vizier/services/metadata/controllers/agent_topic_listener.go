@@ -171,21 +171,25 @@ func (a *AgentTopicListener) onAgentRegisterRequest(m *messages.RegisterAgentReq
 		return
 	}
 
-	hostname := &HostnameIPPair{m.Info.HostInfo.Hostname, m.Info.HostInfo.HostIP}
-	if m.Info.Capabilities != nil && !m.Info.Capabilities.CollectsData {
-		hostname = nil
-	}
-	updates, err := a.agentManager.GetMetadataUpdates(hostname)
-	if err != nil {
-		log.WithError(err).Error("Could not get metadata updates.")
-		return
-	}
+	go func() {
+		// Fetch metadata updates for this agent in a separate goroutine, since
+		// accessing etcd for all metadata updates may take a while.
+		hostname := &HostnameIPPair{m.Info.HostInfo.Hostname, m.Info.HostInfo.HostIP}
+		if m.Info.Capabilities != nil && !m.Info.Capabilities.CollectsData {
+			hostname = nil
+		}
+		updates, err := a.agentManager.GetMetadataUpdates(hostname)
+		if err != nil {
+			log.WithError(err).Error("Could not get metadata updates.")
+			return
+		}
 
-	log.WithField("agent", agentID.String()).WithField("updates", updates).Trace("Queuing up initial updates for agent")
-	err = a.agentManager.AddUpdatesToAgentQueue(agentID.String(), updates)
-	if err != nil {
-		log.WithError(err).Error("Could not add initial metadata updates to agent's queue")
-	}
+		log.WithField("agent", agentID.String()).WithField("updates", updates).Trace("Queuing up initial updates for agent")
+		err = a.agentManager.AddUpdatesToAgentQueue(agentID.String(), updates)
+		if err != nil {
+			log.WithError(err).Error("Could not add initial metadata updates to agent's queue")
+		}
+	}()
 }
 
 func (a *AgentTopicListener) onAgentUpdateRequest(m *messages.UpdateAgentRequest) {
