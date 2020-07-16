@@ -165,10 +165,9 @@ def calc_LET(spans_df, groups):
     )
 
     # Convert the aggregated values into rates.
-    spans_df.error_rate = spans_df.error_rate_per_window * \
-        spans_df.throughput_total / window_s
-    spans_df.rps = spans_df.throughput_total / window_s
-    spans_df.bytes_per_s = spans_df.bytes_total / window_s
+    spans_df.error_rate = spans_df.error_rate_per_window * spans_df.throughput_total / window_s
+    spans_df.rps = spans_df.throughput_total / (window_s * 1.0)
+    spans_df.bytes_per_s = spans_df.bytes_total / (window_s * 1.0)
 
     # Rename timestamp to time_.
     spans_df['time_'] = spans_df['timestamp']
