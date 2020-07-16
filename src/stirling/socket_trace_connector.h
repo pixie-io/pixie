@@ -259,7 +259,7 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   //               (https://filippo.io/linux-syscall-table/), but are defined as SYSCALL_DEFINE4 in
   //               https://elixir.bootlin.com/linux/latest/source/net/socket.c.
 
-  static constexpr auto kPerfBufferSpecs = MakeArray<bpf_tools::PerfBufferSpec>({
+  inline static const auto kPerfBufferSpecs = MakeArray<bpf_tools::PerfBufferSpec>({
       // For data events. The order must be consistent with output tables.
       {"socket_data_events", HandleDataEvent, HandleDataEventsLoss},
       // For non-data events. Must not mix with the above perf buffers for data events.

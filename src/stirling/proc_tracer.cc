@@ -35,7 +35,7 @@ constexpr auto kKProbeSpecs = MakeArray<bpf_tools::KProbeSpec>({
 });
 
 constexpr char kProcCreationEventsName[] = "proc_creation_events";
-constexpr auto kPerfBufferSpecs = MakeArray<bpf_tools::PerfBufferSpec>({
+const auto kPerfBufferSpecs = MakeArray<bpf_tools::PerfBufferSpec>({
     {kProcCreationEventsName, HandleProcCreationEvent, HandleProcCreationEventLoss},
 });
 

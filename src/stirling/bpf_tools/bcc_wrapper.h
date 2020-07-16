@@ -111,7 +111,7 @@ struct UProbeTmpl {
 struct PerfBufferSpec {
   // Name of the perf buffer.
   // Must be the same as the perf buffer name declared in the probe code with BPF_PERF_OUTPUT.
-  std::string_view name;
+  std::string name;
 
   // Function that will be called for every event in the perf buffer,
   // when perf buffer read is triggered.
