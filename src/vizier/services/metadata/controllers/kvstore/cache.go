@@ -41,7 +41,7 @@ type TTLKeyValue struct {
 type Cache struct {
 	cacheMap   map[string]entry
 	datastore  KeyValueStore
-	mu         sync.Mutex
+	mu         sync.RWMutex
 	clock      utils.Clock
 	numRetries int64
 }
@@ -98,8 +98,8 @@ func (c *Cache) FlushToDatastore() {
 
 // Get gets the given key from the cache or the backing datastore.
 func (c *Cache) Get(key string) ([]byte, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	if val, ok := c.cacheMap[key]; ok {
 		if !val.ExpiresAt.IsZero() && val.ExpiresAt.Before(c.clock.Now()) {
@@ -146,8 +146,8 @@ func (c *Cache) DeleteAll(keys []string) {
 func (c *Cache) GetAll(keys []string) ([][]byte, error) {
 	vals := make([][]byte, len(keys))
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 	cacheHits := 0
 	for i, k := range keys {
 		if val, ok := c.cacheMap[k]; ok {
@@ -178,8 +178,8 @@ func (c *Cache) GetAll(keys []string) ([][]byte, error) {
 
 // GetWithRange gets all keys and values within the given range.
 func (c *Cache) GetWithRange(from string, to string) (keys []string, values [][]byte, err error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	keys = make([]string, 0)
 	values = make([][]byte, 0)
@@ -252,8 +252,8 @@ func (c *Cache) mergeCacheAndStore(cacheKeys []string, dsKeys []string, dsVals [
 
 // GetWithPrefix gets all keys and values with the given prefix.
 func (c *Cache) GetWithPrefix(prefix string) (keys []string, values [][]byte, err error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	keys = make([]string, 0)
 	values = make([][]byte, 0)

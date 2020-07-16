@@ -76,6 +76,7 @@ func main() {
 		log.WithError(err).Fatal("Could not get dial opts.")
 	}
 	dialOpts = append(dialOpts, grpc.WithBlock())
+	dialOpts = append(dialOpts, grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(8*1024*1024)))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -110,6 +111,7 @@ func main() {
 
 	// For query broker we bump up the max message size since resuls might be larger than 4mb.
 	maxMsgSize := grpc.MaxRecvMsgSize(8 * 1024 * 1024)
+
 	s := services.NewPLServer(env,
 		httpmiddleware.WithBearerAuthMiddleware(env, mux), maxMsgSize)
 	querybrokerpb.RegisterQueryBrokerServiceServer(s.GRPCServer(), server)
