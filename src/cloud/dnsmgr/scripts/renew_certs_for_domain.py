@@ -198,9 +198,11 @@ def main():
             args.original_certs_dir, args.parent_domain)
         cert_domains = [c for c in cert_domains if args.cname in c]
     else:
+        print("only doing unrenewed domains")
         cert_domains = get_unrenewed_domains(
             args.original_certs_dir, args.new_certs_dir, args.parent_domain)
 
+    print("renewing cert domains {}".format(len(cert_domains)))
     print(cert_domains)
 
     backup_dir_name = backup_dir(args.original_certs_dir)
