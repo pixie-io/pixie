@@ -1,5 +1,20 @@
 !function() {
   var analytics = window.analytics = window.analytics || [];
+  // The window.requestIdleCallback function is not available on all browsers
+  // so we polyfill it here.
+  idleCallback = window.requestIdleCallback ||
+    function (cb) {
+      var start = Date.now();
+      return setTimeout(function () {
+        cb({
+          didTimeout: false,
+          timeRemaining: function () {
+            return Math.max(0, 50 - (Date.now() - start));
+          }
+        });
+      }, 1);
+    };
+
   if (!analytics.initialize) {
     if (analytics.invoked) {
       window.console && console.error && console.error('Segment snippet included twice.');
@@ -25,7 +40,7 @@
       // followed by waiting another 5 seconds. This significantly helps with page performance
       // because it defers loading of external resources.
       analytics.load = function(t, e) {
-        window.requestIdleCallback(() => {
+        idleCallback(() => {
           setTimeout(() => {
             var n = document.createElement('script');
             n.type = 'text/javascript';
