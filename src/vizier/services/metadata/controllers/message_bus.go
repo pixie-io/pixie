@@ -40,7 +40,13 @@ func NewMessageBusController(natsURL string, agentTopic string, agentManager Age
 		return nil, err
 	}
 
-	ch := make(chan *nats.Msg, 4096)
+	conn.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
+		log.WithError(err).
+			WithField("sub", subscription.Subject).
+			Error("Got nats error")
+	})
+
+	ch := make(chan *nats.Msg, 8192)
 	listeners := make(map[string]TopicListener)
 	subscriptions := make([]*nats.Subscription, 0)
 	mc := &MessageBusController{conn: conn, isLeader: isLeader, ch: ch, listeners: listeners, subscriptions: subscriptions}
