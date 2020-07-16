@@ -23,20 +23,26 @@ type clusterArgs struct {
 	ID *graphql.ID
 }
 
+func timestampProtoToNanos(ts *types.Timestamp) int64 {
+	return ts.Seconds*NanosPerSecond + int64(ts.Nanos)
+}
+
 func containerStatusToResolver(containerStatus *cloudapipb.ContainerStatus) (*ContainerStatusResolver, error) {
 	if containerStatus == nil {
 		return nil, errors.New("got nil container status")
 	}
 
-	createTime := containerStatus.CreatedAt.Seconds*NanosPerSecond + int64(containerStatus.CreatedAt.Nanos)
+	resolver := &ContainerStatusResolver{
+		name:    containerStatus.Name,
+		state:   containerStatus.State.String(),
+		message: &containerStatus.Message,
+		reason:  &containerStatus.Reason,
+	}
 
-	return &ContainerStatusResolver{
-		name:        containerStatus.Name,
-		createdAtNS: createTime,
-		state:       containerStatus.State.String(),
-		message:     &containerStatus.Message,
-		reason:      &containerStatus.Reason,
-	}, nil
+	if containerStatus.CreatedAt != nil {
+		resolver.createdAtNS = timestampProtoToNanos(containerStatus.CreatedAt)
+	}
+	return resolver, nil
 }
 
 func podStatusToResolver(podStatus *cloudapipb.PodStatus) (*PodStatusResolver, error) {
@@ -53,16 +59,18 @@ func podStatusToResolver(podStatus *cloudapipb.PodStatus) (*PodStatusResolver, e
 		containers = append(containers, c)
 	}
 
-	createTime := podStatus.CreatedAt.Seconds*NanosPerSecond + int64(podStatus.CreatedAt.Nanos)
+	resolver := &PodStatusResolver{
+		name:       podStatus.Name,
+		status:     podStatus.Status.String(),
+		message:    &podStatus.StatusMessage,
+		reason:     &podStatus.Reason,
+		containers: containers,
+	}
 
-	return &PodStatusResolver{
-		name:        podStatus.Name,
-		createdAtNS: createTime,
-		status:      podStatus.Status.String(),
-		message:     &podStatus.StatusMessage,
-		reason:      &podStatus.Reason,
-		containers:  containers,
-	}, nil
+	if podStatus.CreatedAt != nil {
+		resolver.createdAtNS = timestampProtoToNanos(podStatus.CreatedAt)
+	}
+	return resolver, nil
 }
 
 func clusterInfoToResolver(cluster *cloudapipb.ClusterInfo) (*ClusterInfoResolver, error) {

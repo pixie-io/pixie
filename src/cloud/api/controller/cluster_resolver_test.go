@@ -59,7 +59,7 @@ func TestClusterInfoWithoutID(t *testing.T) {
 		"vizier-query-broker": &cloudapipb.PodStatus{
 			Name:      "vizier-query-broker",
 			Status:    metadatapb.RUNNING,
-			CreatedAt: &types.Timestamp{Seconds: 1561230622},
+			CreatedAt: nil,
 		},
 	}
 
@@ -150,7 +150,7 @@ func TestClusterInfoWithoutID(t *testing.T) {
 							"status": "RUNNING"
 						}, {
 							"containers": [],
-							"createdAtMs": 1561230622000,
+							"createdAtMs": 0,
 							"message": "",
 							"name": "vizier-query-broker",
 							"reason": "",

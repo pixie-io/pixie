@@ -145,9 +145,8 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 				CreatedAt:     &types.Timestamp{Seconds: 1561230621},
 			},
 			"vizier-query-broker": &cvmsgspb.PodStatus{
-				Name:      "vizier-query-broker",
-				Status:    metadatapb.RUNNING,
-				CreatedAt: &types.Timestamp{Seconds: 1561230622},
+				Name:   "vizier-query-broker",
+				Status: metadatapb.RUNNING,
 			},
 		},
 		NumNodes:             5,
@@ -180,7 +179,7 @@ func TestVizierClusterInfo_GetClusterInfo(t *testing.T) {
 		"vizier-query-broker": &cloudapipb.PodStatus{
 			Name:      "vizier-query-broker",
 			Status:    metadatapb.RUNNING,
-			CreatedAt: &types.Timestamp{Seconds: 1561230622},
+			CreatedAt: nil,
 		},
 	}
 
