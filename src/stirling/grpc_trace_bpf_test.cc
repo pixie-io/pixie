@@ -209,7 +209,7 @@ class GRPCTraceUprobingTest : public GRPCTraceGoTest, public ::testing::WithPara
 };
 
 // TODO(oazizi/yzhao): Looks broken with clang-10.
-TEST_P(GRPCTraceUprobingTest, DISABLED_CaptureRPCTraceRecord) {
+TEST_P(GRPCTraceUprobingTest, CaptureRPCTraceRecord) {
   // Server is launched after initializing socket tracer, which verifies that uprobes
   // are dynamically attached.
   GRPCTraceGoTest::LaunchServer(GetParam());

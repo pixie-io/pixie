@@ -119,7 +119,7 @@ class HTTP2TraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing 
 };
 
 // TODO(oazizi/yzhao): This test appears broken with clang-10. Please Fix.
-TEST_F(HTTP2TraceTest, DISABLED_Basic) {
+TEST_F(HTTP2TraceTest, Basic) {
   // Run the client in the network of the server, so they can connect to each other.
   PL_CHECK_OK(
       client_.Run(10, {absl::Substitute("--network=container:$0", server_.container_name())}));

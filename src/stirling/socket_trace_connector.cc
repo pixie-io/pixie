@@ -426,7 +426,7 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   {                                                                             \
     auto it = fn_args_map.find(arg);                                            \
     symaddr = (it != fn_args_map.end()) ? (it->second.offset + kSPOffset) : -1; \
-    LOG(INFO) << absl::Substitute(#symaddr " = $0", symaddr);                   \
+    VLOG(1) << absl::Substitute(#symaddr " = $0", symaddr);                     \
   }
 
   // Arguments of net/http.(*http2Framer).WriteDataPadded.

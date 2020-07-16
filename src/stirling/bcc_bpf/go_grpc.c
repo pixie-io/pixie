@@ -231,9 +231,11 @@ static __inline void submit_headers(struct pt_regs* ctx, enum http2_probe_type_t
   // TODO(oazizi): Replace this constant with information from DWARF.
   const int kSizeOfHeaderField = 40;
 #pragma unroll
-  for (unsigned int i = 0; i < MAX_HEADER_COUNT && i < fields.len; ++i) {
-    fill_header_field(&event, fields.ptr + i * kSizeOfHeaderField, symaddrs);
-    go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
+  for (unsigned int i = 0; i < MAX_HEADER_COUNT; ++i) {
+    if (i < fields.len) {
+      fill_header_field(&event, fields.ptr + i * kSizeOfHeaderField, symaddrs);
+      go_grpc_header_events.perf_submit(ctx, &event, sizeof(event));
+    }
   }
 
   // If end of stream, send one extra empty header with end-stream flag set.
