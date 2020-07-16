@@ -209,7 +209,7 @@ StatusOr<ArgMap> ASTVisitorImpl::ProcessExecFuncArgs(const pypa::AstPtr& ast,
                                                      const std::shared_ptr<FuncObject>& func,
                                                      const ArgValues& arg_values) {
   ArgMap args;
-  for (const auto arg : arg_values) {
+  for (const auto& arg : arg_values) {
     if (std::find(func->arguments().begin(), func->arguments().end(), arg.name()) ==
         func->arguments().end()) {
       return CreateAstError(ast, "Function '$0' does not have an argument called '$1'",
@@ -776,7 +776,7 @@ StatusOr<std::string> ASTVisitorImpl::GetFuncName(const pypa::AstCallPtr& node) 
 StatusOr<ArgMap> ASTVisitorImpl::ProcessArgs(const pypa::AstCallPtr& call_ast,
                                              const OperatorContext& op_context) {
   ArgMap arg_map;
-  for (const auto arg : call_ast->arguments) {
+  for (const auto& arg : call_ast->arguments) {
     PL_ASSIGN_OR_RETURN(auto value, Process(arg, op_context));
     arg_map.args.push_back(value);
   }

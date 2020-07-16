@@ -32,6 +32,10 @@ apt_pkg_list = [
   # Libtool/unwind, needed for perftools.
   'libltdl-dev',
   'libunwind-dev',
+
+  # Needed by Clang-10.
+  'libz3-4',
+  'libz3-dev',
 ]
 
 apt_package apt_pkg_list do
@@ -53,6 +57,13 @@ end
 
 apt_package ['gcc-10','g++-10'] do
   action :upgrade
+end
+
+alternatives 'python install' do
+  link_name 'python'
+  path '/usr/bin/python3'
+  priority 100
+  action :install
 end
 
 include_recipe 'pixielabs::linux_java'

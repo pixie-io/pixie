@@ -55,3 +55,6 @@
 [submodule "third_party/kuberesolver"]
 	path = third_party/kuberesolver
 	url = https://github.com/pixie-labs/kuberesolver
+[submodule "chef/site-cookbooks/alternatives"]
+	path = chef/site-cookbooks/alternatives
+	url = https://github.com/vkhatri/chef-alternatives

@@ -128,7 +128,7 @@ std::string K8sMetadataState::DebugString(int indent_level) const {
   }
 
   str += prefix + absl::Substitute("PodCIDRs($0): ", pod_cidrs_.size());
-  for (const auto cidr : pod_cidrs_) {
+  for (const auto& cidr : pod_cidrs_) {
     str += absl::Substitute("$0,", ToString(cidr));
   }
   str += "\n";

@@ -237,7 +237,7 @@ TEST(ProcessMySQLPacketsTest, NonMySQLTraffic3) {
 
   std::deque<Packet> requests = {p};
   std::deque<Packet> responses = {};
-  State state{std::map<int, PreparedStatement>(), .active = false};
+  State state{.prepared_statements = std::map<int, PreparedStatement>(), .active = false};
 
   RecordsWithErrorCount<Record> result = ProcessMySQLPackets(&requests, &responses, &state);
   EXPECT_EQ(result.records.size(), 0);

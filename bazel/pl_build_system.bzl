@@ -28,7 +28,10 @@ def pl_copts():
     # Leaving this here as an example of how to add compiler dependent_flags.
     compiler_dependent_flags = select({
         "@pl//bazel:gcc_build": [],
-        "//conditions:default": [],
+        "//conditions:default": [
+            # TODO(yzhao/oazizi): Please remove this after fixing warnings in stirling.
+            "-Wno-c99-designator",
+        ],
     })
 
     return posix_options + manual_system_includes + tcmalloc_flags + compiler_dependent_flags

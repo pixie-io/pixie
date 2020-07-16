@@ -41,7 +41,7 @@ Status MergeStatuses(const std::vector<Status>& statuses) {
   }
   std::vector<compilerpb::CompilerErrorGroup> error_group_pbs;
   std::vector<std::string> messages;
-  for (const auto s : statuses) {
+  for (const auto& s : statuses) {
     messages.push_back(s.msg());
     if (!s.has_context() || !s.context()->Is<compilerpb::CompilerErrorGroup>()) {
       continue;

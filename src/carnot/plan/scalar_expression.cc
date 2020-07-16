@@ -201,7 +201,7 @@ Status ScalarFunc::Init(const planpb::ScalarFunc& pb) {
   DCHECK_EQ(pb.args_size(), pb.args_data_types_size());
   name_ = pb.name();
   udf_id_ = pb.id();
-  for (const auto arg : pb.args()) {
+  for (const auto& arg : pb.args()) {
     auto s = ScalarExpression::FromProto(arg);
     if (!s.ok()) {
       return s.status();
@@ -280,7 +280,7 @@ std::string ScalarFunc::DebugString() const {
 Status AggregateExpression::Init(const planpb::AggregateExpression& pb) {
   name_ = pb.name();
   uda_id_ = pb.id();
-  for (const auto arg : pb.args()) {
+  for (const auto& arg : pb.args()) {
     // arg is of message type AggregateExpression.Arg. Needs to be casted to a ScalarExpression.
     planpb::ScalarExpression se;
 

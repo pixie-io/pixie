@@ -1,9 +1,9 @@
 default['clang']               = {}
 default['clang']['deb']        =
-  'https://storage.googleapis.com/pl-infra-dev-artifacts/clang-9.0-pl5.deb'
+  'https://storage.googleapis.com/pl-infra-dev-artifacts/clang-10.0-pl1.deb'
 default['clang']['deb_sha256'] =
-  '6f261139154d4ffff9b3b5b2f049ab5e729df8d4fee1f55ffdb716a5d23a7e22'
-default['clang']['version'] = "9.0-pl3"
+  'abd6e0e32379fb83b359ddeb38ecd35fffb8dbf17e8450312c66bc86037d01a8'
+default['clang']['version'] = "10.0-pl1"
 
 default['gperftools']               = {}
 default['gperftools']['deb']        =

@@ -127,7 +127,7 @@ Status ScalarExpressionEvaluator::Evaluate(ExecState* exec_state, const RowBatch
   CHECK(output != nullptr);
   CHECK_EQ(static_cast<size_t>(output->num_columns()), expressions_.size());
 
-  for (const auto expression : expressions_) {
+  for (const auto& expression : expressions_) {
     PL_RETURN_IF_ERROR(EvaluateSingleExpression(exec_state, input, *expression, output));
   }
   return Status::OK();
@@ -183,7 +183,7 @@ VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
           const std::vector<types::SharedColumnWrapper>& children) -> types::SharedColumnWrapper {
         std::vector<types::DataType> arg_types;
         arg_types.reserve(children.size());
-        for (const auto child : children) {
+        for (const auto& child : children) {
           arg_types.emplace_back(child->data_type());
         }
 
@@ -192,7 +192,7 @@ VectorNativeScalarExpressionEvaluator::EvaluateSingleExpression(
 
         std::vector<const types::ColumnWrapper*> raw_children;
         raw_children.reserve(children.size());
-        for (const auto child : children) {
+        for (const auto& child : children) {
           raw_children.emplace_back(child.get());
         }
         auto output = types::ColumnWrapper::Make(def->exec_return_type(), num_rows);
@@ -274,7 +274,7 @@ Status exec::ArrowNativeScalarExpressionEvaluator::EvaluateSingleExpression(
           -> std::shared_ptr<arrow::Array> {
         std::vector<types::DataType> arg_types;
         arg_types.reserve(children.size());
-        for (const auto child : children) {
+        for (const auto& child : children) {
           arg_types.emplace_back(ArrowToDataType(child->type_id()));
         }
 

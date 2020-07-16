@@ -1791,7 +1791,7 @@ TEST_F(OperatorTests, union_prune_outputs) {
   EXPECT_OK(union_op->PruneOutputColumnsTo({"cpu2", "count"}));
   EXPECT_EQ(2, union_op->column_mappings().size());
 
-  for (const auto column_mapping : union_op->column_mappings()) {
+  for (const auto& column_mapping : union_op->column_mappings()) {
     std::vector<std::string> colnames{column_mapping[0]->col_name(), column_mapping[1]->col_name()};
     EXPECT_THAT(colnames, ElementsAre("count", "cpu2"));
   }

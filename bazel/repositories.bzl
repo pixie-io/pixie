@@ -40,13 +40,13 @@ def _com_llvm_lib():
     native.new_local_repository(
         name = "com_llvm_lib",
         build_file = "third_party/llvm.BUILD",
-        path = "/opt/clang-9.0",
+        path = "/opt/clang-10.0",
     )
 
     native.new_local_repository(
         name = "com_llvm_lib_libcpp",
         build_file = "third_party/llvm.BUILD",
-        path = "/opt/clang-9.0-libc++",
+        path = "/opt/clang-10.0-libc++",
     )
 
 def _com_github_nghttp2_nghttp2():

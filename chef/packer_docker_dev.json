@@ -10,12 +10,12 @@
       "image": "{{ user `base_image_and_tag` }}",
       "commit": true,
       "changes": [
-        "ENV PATH /opt/golang/bin/:/opt/pixielabs/bin:/opt/clang-9.0/bin:/pl/bin:/opt/google-cloud-sdk/bin:/opt/node/bin:/opt/phab/arcanist/bin:/usr/lib/go-1.10/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
-        "ENV LD_LIBRARY_PATH /opt/clang-9.0/lib",
+        "ENV PATH /opt/golang/bin/:/opt/pixielabs/bin:/opt/clang-10.0/bin:/pl/bin:/opt/google-cloud-sdk/bin:/opt/node/bin:/opt/phab/arcanist/bin:/usr/lib/go-1.10/bin/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "ENV LD_LIBRARY_PATH /opt/clang-10.0/lib",
         "ENV GOPATH /pl",
         "ENV CC clang",
         "ENV CXX clang++",
-        "ENV ASAN_SYMBOLIZER_PATH /opt/clang-9.0/bin/llvm-symbolizer",
+        "ENV ASAN_SYMBOLIZER_PATH /opt/clang-10.0/bin/llvm-symbolizer",
         "WORKDIR /pl/src/pixielabs.ai/pixielabs"
       ]
     }
