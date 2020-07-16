@@ -449,6 +449,17 @@ class ASTVisitorImpl : public ASTVisitor {
   StatusOr<QLObjectPtr> ProcessDataUnaryOp(const pypa::AstUnaryOpPtr& node,
                                            const OperatorContext& op_context);
   /**
+   * @brief Processes a Dict AST object into a DictObject.
+   *
+   * @param node
+   * @param op_context
+   * @return StatusOr<QLObjectPtr> the dict object or error that occurred while processing the
+   * object.
+   */
+  StatusOr<QLObjectPtr> ProcessDict(const pypa::AstDictPtr& node,
+                                    const OperatorContext& op_context);
+  /**
+   *
    * @brief  Returns the variable specified by the name pointer.
    * @param node the ast node to run this on.
    * @param name the string to lookup.

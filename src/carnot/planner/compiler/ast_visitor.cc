@@ -3,6 +3,7 @@
 #include "src/carnot/planner/compiler_error_context/compiler_error_context.h"
 #include "src/carnot/planner/ir/pattern_match.h"
 #include "src/carnot/planner/objects/collection_object.h"
+#include "src/carnot/planner/objects/dict_object.h"
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/module.h"
 #include "src/carnot/planner/objects/none_object.h"
@@ -542,6 +543,9 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::Process(const pypa::AstExpr& node,
     case AstType::UnaryOp: {
       return ProcessDataUnaryOp(PYPA_PTR_CAST(UnaryOp, node), op_context);
     }
+    case AstType::Dict: {
+      return ProcessDict(PYPA_PTR_CAST(Dict, node), op_context);
+    }
     default:
       return CreateAstError(node, "Expression node '$0' not defined", GetAstTypeName(node->type));
   }
@@ -951,6 +955,20 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataCompare(const pypa::AstCompareP
   PL_ASSIGN_OR_RETURN(FuncIR::Op op, GetOp(op_str, node));
   PL_ASSIGN_OR_RETURN(FuncIR * ir_node, ir_graph_->CreateNode<FuncIR>(node, op, expressions));
   return ExprObject::Create(ir_node, this);
+}
+StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDict(const pypa::AstDictPtr& node,
+                                                  const OperatorContext& op_context) {
+  DCHECK_EQ(node->keys.size(), node->values.size());
+  std::vector<QLObjectPtr> keys;
+  std::vector<QLObjectPtr> values;
+  for (const auto& [i, key] : Enumerate(node->keys)) {
+    const auto& value = node->values[i];
+    PL_ASSIGN_OR_RETURN(auto key_obj, Process(key, op_context));
+    keys.push_back(key_obj);
+    PL_ASSIGN_OR_RETURN(auto value_obj, Process(value, op_context));
+    values.push_back(value_obj);
+  }
+  return DictObject::Create(keys, values, this);
 }
 
 StatusOr<QLObjectPtr> ASTVisitorImpl::ProcessDataUnaryOp(const pypa::AstUnaryOpPtr& node,

@@ -6,6 +6,7 @@
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/compilerpb/compiler_status.pb.h"
 #include "src/carnot/planner/ir/pattern_match.h"
+#include "src/carnot/planner/objects/dict_object.h"
 #include "src/common/base/base.h"
 #include "src/common/testing/testing.h"
 #include "src/shared/scriptspb/scripts.pb.h"

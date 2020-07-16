@@ -35,6 +35,7 @@ enum class QLObjectType {
   kFlags,
   // General module type.
   kModule,
+  kDict,
 };
 
 class TypeDescriptor {
