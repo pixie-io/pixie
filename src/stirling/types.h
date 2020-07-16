@@ -10,7 +10,7 @@
 #include "src/shared/metadata/metadata_state.h"
 #include "src/shared/types/column_wrapper.h"
 #include "src/shared/types/type_utils.h"
-#include "src/stirling/dynamic_tracing/ir/physical.pb.h"
+#include "src/stirling/dynamic_tracing/types.h"
 #include "src/stirling/proto/stirling.pb.h"
 
 namespace pl {
@@ -188,7 +188,7 @@ class DataTableSchema {
 class DynamicDataTableSchema {
  public:
   static StatusOr<std::unique_ptr<DynamicDataTableSchema>> Create(
-      dynamic_tracing::ir::physical::Struct output_struct);
+      const dynamic_tracing::BCCProgram::PerfBufferSpec& output_spec);
   const DataTableSchema& Get() { return table_schema_; }
 
  private:

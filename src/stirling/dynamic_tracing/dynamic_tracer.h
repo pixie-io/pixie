@@ -1,12 +1,10 @@
 #pragma once
 
-#include <vector>
-
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
-#include "src/stirling/dynamic_tracing/code_gen.h"
-#include "src/stirling/dynamic_tracing/dwarf_info.h"
-#include "src/stirling/dynamic_tracing/probe_transformer.h"
+#include "src/stirling/dynamic_tracing/ir/logical.pb.h"
+#include "src/stirling/dynamic_tracing/ir/physical.pb.h"
+#include "src/stirling/dynamic_tracing/types.h"
 
 namespace pl {
 namespace stirling {

@@ -25,9 +25,9 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
       return error::Internal("Only a single output table is allowed for now.");
     }
 
-    auto& output = bcc_program.perf_buffer_specs[0];
+    const auto& output = bcc_program.perf_buffer_specs[0];
     PL_ASSIGN_OR_RETURN(std::unique_ptr<DynamicDataTableSchema> table_schema,
-                        DynamicDataTableSchema::Create(std::move(output.output)));
+                        DynamicDataTableSchema::Create(output));
 
     // Make the source connector name the same as the table name.
     // This should be okay so long as there is only one table per connector.

@@ -8,6 +8,7 @@
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/dynamic_tracing/ir/physical.pb.h"
+#include "src/stirling/dynamic_tracing/types.h"
 
 namespace pl {
 namespace stirling {
@@ -34,18 +35,6 @@ StatusOr<std::vector<std::string>> GenMapStashAction(const ir::physical::MapStas
 
 // Returns the code that submits variables to a perf buffer.
 std::string GenOutputAction(const ir::physical::OutputAction& action);
-
-struct BCCProgram {
-  struct PerfBufferSpec {
-    std::string name;
-    ir::physical::Struct output;
-  };
-
-  // TODO(yzhao): We probably need kprobe_specs as well.
-  std::vector<bpf_tools::UProbeSpec> uprobes;
-  std::vector<PerfBufferSpec> perf_buffer_specs;
-  std::string code;
-};
 
 StatusOr<BCCProgram> GenProgram(const ir::physical::Program& program);
 

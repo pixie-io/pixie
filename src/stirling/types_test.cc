@@ -95,16 +95,17 @@ TEST(DynamicDataTableSchemaTest, generate) {
   }
 )";
 
-  dynamic_tracing::ir::physical::Struct output_struct;
-  ASSERT_TRUE(
-      google::protobuf::TextFormat::ParseFromString(std::string(kOutputStruct), &output_struct));
+  dynamic_tracing::BCCProgram::PerfBufferSpec output_spec;
+  output_spec.name = "out_table";
+  ASSERT_TRUE(google::protobuf::TextFormat::ParseFromString(std::string(kOutputStruct),
+                                                            &output_spec.output));
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DynamicDataTableSchema> table_schema_ptr,
-                       DynamicDataTableSchema::Create(output_struct));
+                       DynamicDataTableSchema::Create(output_spec));
 
   const DataTableSchema& table_schema = table_schema_ptr->Get();
 
-  EXPECT_EQ(table_schema.name(), "out_table_value_t");
+  EXPECT_EQ(table_schema.name(), "out_table");
   ASSERT_EQ(table_schema.elements().size(), 7);
   EXPECT_EQ(table_schema.tabletized(), false);
   EXPECT_EQ(table_schema.ColIndex("tgid__"), 0);

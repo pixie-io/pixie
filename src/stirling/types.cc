@@ -33,11 +33,8 @@ stirlingpb::TableSchema DataTableSchema::ToProto() const {
 }
 
 StatusOr<std::unique_ptr<DynamicDataTableSchema>> DynamicDataTableSchema::Create(
-    dynamic_tracing::ir::physical::Struct output_struct) {
+    const dynamic_tracing::BCCProgram::PerfBufferSpec& output_spec) {
   using dynamic_tracing::ir::shared::ScalarType;
-
-  auto output_struct_ptr =
-      std::make_unique<dynamic_tracing::ir::physical::Struct>(std::move(output_struct));
 
   // clang-format off
   static const std::map<ScalarType, types::DataType> kTypeMap = {
@@ -58,7 +55,7 @@ StatusOr<std::unique_ptr<DynamicDataTableSchema>> DynamicDataTableSchema::Create
   // clang-format on
 
   std::vector<DataElement> elements;
-  for (const auto& field : output_struct_ptr->fields()) {
+  for (const auto& field : output_spec.output.fields()) {
     types::DataType data_type;
 
     auto iter = kTypeMap.find(field.type().scalar());
@@ -74,9 +71,11 @@ StatusOr<std::unique_ptr<DynamicDataTableSchema>> DynamicDataTableSchema::Create
                           types::PatternType::UNSPECIFIED);
   }
 
-  std::string_view name = output_struct_ptr->name();
+  auto output_struct_ptr =
+      std::make_unique<dynamic_tracing::ir::physical::Struct>(output_spec.output);
+
   return std::unique_ptr<DynamicDataTableSchema>(
-      new DynamicDataTableSchema(std::move(output_struct_ptr), name, elements));
+      new DynamicDataTableSchema(std::move(output_struct_ptr), output_spec.name, elements));
 }
 
 }  // namespace stirling

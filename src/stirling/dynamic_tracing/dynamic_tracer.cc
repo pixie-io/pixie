@@ -1,7 +1,8 @@
 #include "src/stirling/dynamic_tracing/dynamic_tracer.h"
 
-#include <string>
-#include <vector>
+#include "src/stirling/dynamic_tracing/code_gen.h"
+#include "src/stirling/dynamic_tracing/dwarf_info.h"
+#include "src/stirling/dynamic_tracing/probe_transformer.h"
 
 namespace pl {
 namespace stirling {
