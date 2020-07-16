@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 
 	"pixielabs.ai/pixielabs/src/shared/services"
 	"pixielabs.ai/pixielabs/src/shared/services/election"
@@ -184,8 +185,12 @@ func main() {
 
 	log.Info("Metadata Server: " + version.GetVersion().ToString())
 
+	// We bump up the max message size because agent metadata may be larger than 4MB. This is a
+	// temporary change. In the future, we would like to page the agent metadata.
+	maxMsgSize := grpc.MaxSendMsgSize(8 * 1024 * 1024)
+
 	s := services.NewPLServer(env,
-		httpmiddleware.WithBearerAuthMiddleware(env, mux))
+		httpmiddleware.WithBearerAuthMiddleware(env, mux), maxMsgSize)
 	metadatapb.RegisterMetadataServiceServer(s.GRPCServer(), server)
 	s.Start()
 	s.StopOnInterrupt()
