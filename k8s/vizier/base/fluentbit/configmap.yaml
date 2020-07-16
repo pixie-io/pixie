@@ -51,17 +51,17 @@ data:
     [FILTER]
         Name grep
         Match *
-        Regex kubernetes namespace_name pl$
+        Regex $kubernetes['namespace_name'] pl$
     
     [FILTER]
         Name grep
         Match *
-        Exclude kubernetes container_name fluent-bit
+        Exclude $kubernetes['container_name'] fluent-bit
 
     [FILTER]
         Name grep
         Match *
-        Exclude kubernetes container_name nats-watcher
+        Exclude $kubernetes['container_name'] nats-watcher
 
     # NOTE(james): these two filters are necessary because query-broker uses both glog and logfmt formats
     # so we have to explicitly try to parse the lines that aren't logfmt in that case.
@@ -83,7 +83,7 @@ data:
     [FILTER]
         Name grep
         Match *
-        Exclude log_processed req_path /healthz
+        Exclude $log_processed['req_path'] /healthz
 
   output-stdout.conf: |
     [OUTPUT]

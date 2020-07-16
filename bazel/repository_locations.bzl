@@ -199,9 +199,9 @@ REPOSITORY_LOCATIONS = dict(
     ),
     # March 5, 2020.
     com_github_fluent_fluentbit = dict(
-        sha256 = "95dff0e536c6bdca0ae339f0570dccbb1094719446454aad81d906d335f111ec",
-        strip_prefix = "fluent-bit-1.3.9",
-        urls = ["https://github.com/fluent/fluent-bit/archive/v1.3.9.tar.gz"],
+        sha256 = "b67a1963ddef82c9fa3cc57867840813f1b261051fed5dbb3734267bc0b05cf9",
+        strip_prefix = "fluent-bit-1.5.0",
+        urls = ["https://github.com/fluent/fluent-bit/archive/v1.5.0.tar.gz"],
     ),
     # April 21, 2020.
     com_github_cyan4973_xxhash = dict(

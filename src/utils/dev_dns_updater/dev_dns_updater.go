@@ -79,6 +79,9 @@ func getClientset(config *rest.Config) *kubernetes.Clientset {
 }
 
 func homeDir() string {
+	if u := os.Getenv("SUDO_USER"); u != "" {
+		return fmt.Sprintf("/home/%s", u)
+	}
 	if h := os.Getenv("HOME"); h != "" {
 		return h
 	}
