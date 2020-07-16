@@ -40,12 +40,10 @@ class Dwarvifier {
   Dwarvifier(const std::map<std::string, ir::shared::Map*>& maps,
              const std::map<std::string, ir::shared::Output*>& outputs)
       : maps_(maps), outputs_(outputs) {}
-  Status GenerateProbe(const ir::shared::BinarySpec& binary_spec,
-                       const ir::logical::Probe input_probe, ir::physical::Program* output_program);
+  Status Setup(const ir::shared::BinarySpec& binary_spec);
+  Status GenerateProbe(const ir::logical::Probe input_probe, ir::physical::Program* output_program);
 
  private:
-  Status Setup(const ir::shared::BinarySpec& binary_spec,
-               const ir::shared::TracePoint& trace_point);
   Status ProcessProbe(const ir::logical::Probe& input_probe, ir::physical::Program* output_program);
   Status ProcessTracepoint(const ir::shared::TracePoint& trace_point,
                            ir::physical::Probe* output_probe);
@@ -122,9 +120,9 @@ StatusOr<ir::physical::Program> AddDwarves(const ir::logical::Program& input_pro
 
   // Transform probes.
   Dwarvifier dwarvifier(maps, outputs);
+  PL_RETURN_IF_ERROR(dwarvifier.Setup(input_program.binary_spec()));
   for (const auto& probe : input_program.probes()) {
-    PL_RETURN_IF_ERROR(
-        dwarvifier.GenerateProbe(input_program.binary_spec(), probe, &output_program));
+    PL_RETURN_IF_ERROR(dwarvifier.GenerateProbe(probe, &output_program));
   }
 
   return output_program;
@@ -186,10 +184,10 @@ ir::physical::ScalarVariable* Dwarvifier::AddVariable(ir::physical::Probe* probe
   return var;
 }
 
-Status Dwarvifier::GenerateProbe(const ir::shared::BinarySpec& binary_spec,
-                                 const ir::logical::Probe input_probe,
+Status Dwarvifier::GenerateProbe(const ir::logical::Probe input_probe,
                                  ir::physical::Program* output_program) {
-  PL_RETURN_IF_ERROR(Setup(binary_spec, input_probe.trace_point()));
+  PL_ASSIGN_OR_RETURN(args_map_,
+                      dwarf_reader_->GetFunctionArgInfo(input_probe.trace_point().symbol()));
   PL_RETURN_IF_ERROR(ProcessProbe(input_probe, output_program));
   return Status::OK();
 }
@@ -199,14 +197,10 @@ std::string StructTypeName(const std::string& obj_name) {
   return absl::StrCat(obj_name, "_value_t");
 }
 
-Status Dwarvifier::Setup(const ir::shared::BinarySpec& binary_spec,
-                         const ir::shared::TracePoint& trace_point) {
+Status Dwarvifier::Setup(const ir::shared::BinarySpec& binary_spec) {
   using dwarf_tools::DwarfReader;
 
-  const std::string& function_symbol = trace_point.symbol();
-
   PL_ASSIGN_OR_RETURN(dwarf_reader_, DwarfReader::Create(binary_spec.path()));
-  PL_ASSIGN_OR_RETURN(args_map_, dwarf_reader_->GetFunctionArgInfo(function_symbol));
 
   language_ = binary_spec.language();
 
