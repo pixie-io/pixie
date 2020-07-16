@@ -125,6 +125,7 @@ type VizierConfig {
 
 type ContainerStatus {
   name: String!
+  createdAtMs: Float!
   state: String!
   message: String
   reason: String
@@ -132,6 +133,7 @@ type ContainerStatus {
 
 type PodStatus {
   name: String!
+  createdAtMs: Float!
   status: String!
   message: String
   reason: String

@@ -45,18 +45,21 @@ func TestClusterInfoWithoutID(t *testing.T) {
 			Status: metadatapb.RUNNING,
 			Containers: []*cloudapipb.ContainerStatus{
 				&cloudapipb.ContainerStatus{
-					Name:    "my-proxy-container",
-					State:   metadatapb.CONTAINER_STATE_RUNNING,
-					Message: "container message",
-					Reason:  "container reason",
+					Name:      "my-proxy-container",
+					State:     metadatapb.CONTAINER_STATE_RUNNING,
+					Message:   "container message",
+					Reason:    "container reason",
+					CreatedAt: &types.Timestamp{Seconds: 1561230620},
 				},
 			},
 			StatusMessage: "pod message",
 			Reason:        "pod reason",
+			CreatedAt:     &types.Timestamp{Seconds: 1561230621},
 		},
 		"vizier-query-broker": &cloudapipb.PodStatus{
-			Name:   "vizier-query-broker",
-			Status: metadatapb.RUNNING,
+			Name:      "vizier-query-broker",
+			Status:    metadatapb.RUNNING,
+			CreatedAt: &types.Timestamp{Seconds: 1561230622},
 		},
 	}
 
@@ -102,11 +105,13 @@ func TestClusterInfoWithoutID(t *testing.T) {
 						clusterUID
 						controlPlanePodStatuses {
 							name
+							createdAtMs
 							status
 							reason
 							message
 							containers {
 								name
+								createdAtMs
 								state
 								reason
 								message
@@ -132,17 +137,20 @@ func TestClusterInfoWithoutID(t *testing.T) {
 						"clusterUID": "clusterUID",
 						"controlPlanePodStatuses": [{
 							"containers": [{
+								"createdAtMs": 1561230620000,
 								"message": "container message",
 								"name": "my-proxy-container",
 								"reason": "container reason",
 								"state": "CONTAINER_STATE_RUNNING"
 							}],
+							"createdAtMs": 1561230621000,
 							"message": "pod message",
 							"name": "vizier-proxy",
 							"reason": "pod reason",
 							"status": "RUNNING"
 						}, {
 							"containers": [],
+							"createdAtMs": 1561230622000,
 							"message": "",
 							"name": "vizier-query-broker",
 							"reason": "",

@@ -229,10 +229,11 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 			var containers []*cloudapipb.ContainerStatus
 			for _, container := range status.Containers {
 				containers = append(containers, &cloudapipb.ContainerStatus{
-					Name:    container.Name,
-					State:   container.State,
-					Message: container.Message,
-					Reason:  container.Reason,
+					Name:      container.Name,
+					State:     container.State,
+					Message:   container.Message,
+					Reason:    container.Reason,
+					CreatedAt: container.CreatedAt,
 				})
 			}
 			podStatuses[podName] = &cloudapipb.PodStatus{
@@ -241,6 +242,7 @@ func (v *VizierClusterInfo) getClusterInfoForViziers(ctx context.Context, ids []
 				StatusMessage: status.StatusMessage,
 				Reason:        status.Reason,
 				Containers:    containers,
+				CreatedAt:     status.CreatedAt,
 			}
 		}
 

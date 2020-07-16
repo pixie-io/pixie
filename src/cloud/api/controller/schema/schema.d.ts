@@ -67,6 +67,7 @@ export interface GQLVizierConfig {
 
 export interface GQLPodStatus {
   name: string;
+  createdAtMs: number;
   status: string;
   message?: string;
   reason?: string;
@@ -75,6 +76,7 @@ export interface GQLPodStatus {
 
 export interface GQLContainerStatus {
   name: string;
+  createdAtMs: number;
   state: string;
   message?: string;
   reason?: string;
@@ -420,6 +422,7 @@ export interface VizierConfigToPassthroughEnabledResolver<TParent = any, TResult
 
 export interface GQLPodStatusTypeResolver<TParent = any> {
   name?: PodStatusToNameResolver<TParent>;
+  createdAtMs?: PodStatusToCreatedAtMsResolver<TParent>;
   status?: PodStatusToStatusResolver<TParent>;
   message?: PodStatusToMessageResolver<TParent>;
   reason?: PodStatusToReasonResolver<TParent>;
@@ -427,6 +430,10 @@ export interface GQLPodStatusTypeResolver<TParent = any> {
 }
 
 export interface PodStatusToNameResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface PodStatusToCreatedAtMsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 
@@ -448,12 +455,17 @@ export interface PodStatusToContainersResolver<TParent = any, TResult = any> {
 
 export interface GQLContainerStatusTypeResolver<TParent = any> {
   name?: ContainerStatusToNameResolver<TParent>;
+  createdAtMs?: ContainerStatusToCreatedAtMsResolver<TParent>;
   state?: ContainerStatusToStateResolver<TParent>;
   message?: ContainerStatusToMessageResolver<TParent>;
   reason?: ContainerStatusToReasonResolver<TParent>;
 }
 
 export interface ContainerStatusToNameResolver<TParent = any, TResult = any> {
+  (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
+}
+
+export interface ContainerStatusToCreatedAtMsResolver<TParent = any, TResult = any> {
   (parent: TParent, args: {}, context: any, info: GraphQLResolveInfo): TResult;
 }
 

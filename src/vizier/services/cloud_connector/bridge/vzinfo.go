@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gogo/protobuf/types"
 	log "github.com/sirupsen/logrus"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -182,6 +183,17 @@ func (v *K8sVizierInfo) GetClusterUID() (string, error) {
 	return string(ksNS.UID), nil
 }
 
+const nanosPerSecond = int64(1000 * 1000)
+
+func nanosToTimestampProto(nanos int64) *types.Timestamp {
+	seconds := nanos / nanosPerSecond
+	remainderNanos := int32(nanos % nanosPerSecond)
+	return &types.Timestamp{
+		Seconds: seconds,
+		Nanos:   remainderNanos,
+	}
+}
+
 // UpdateK8sState gets the relevant state of the cluster, such as pod statuses, at the current moment in time.
 func (v *K8sVizierInfo) UpdateK8sState() {
 	nodesList, err := v.clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
@@ -220,10 +232,11 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 			msg = podPb.Status.Reason
 			for _, c := range podPb.Status.ContainerStatuses {
 				containers = append(containers, &cvmsgspb.ContainerStatus{
-					Name:    c.Name,
-					Message: c.Message,
-					Reason:  c.Reason,
-					State:   c.ContainerState,
+					Name:      c.Name,
+					Message:   c.Message,
+					Reason:    c.Reason,
+					State:     c.ContainerState,
+					CreatedAt: nanosToTimestampProto(c.StartTimestampNS),
 				})
 			}
 		}
@@ -234,6 +247,7 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 			Status:        status,
 			StatusMessage: msg,
 			Containers:    containers,
+			CreatedAt:     nanosToTimestampProto(podPb.Metadata.CreationTimestampNS),
 		}
 		podMap[name] = s
 	}

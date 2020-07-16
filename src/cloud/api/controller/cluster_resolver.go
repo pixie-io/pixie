@@ -28,11 +28,14 @@ func containerStatusToResolver(containerStatus *cloudapipb.ContainerStatus) (*Co
 		return nil, errors.New("got nil container status")
 	}
 
+	createTime := containerStatus.CreatedAt.Seconds*NanosPerSecond + int64(containerStatus.CreatedAt.Nanos)
+
 	return &ContainerStatusResolver{
-		name:    containerStatus.Name,
-		state:   containerStatus.State.String(),
-		message: &containerStatus.Message,
-		reason:  &containerStatus.Reason,
+		name:        containerStatus.Name,
+		createdAtNS: createTime,
+		state:       containerStatus.State.String(),
+		message:     &containerStatus.Message,
+		reason:      &containerStatus.Reason,
 	}, nil
 }
 
@@ -50,12 +53,15 @@ func podStatusToResolver(podStatus *cloudapipb.PodStatus) (*PodStatusResolver, e
 		containers = append(containers, c)
 	}
 
+	createTime := podStatus.CreatedAt.Seconds*NanosPerSecond + int64(podStatus.CreatedAt.Nanos)
+
 	return &PodStatusResolver{
-		name:       podStatus.Name,
-		status:     podStatus.Status.String(),
-		message:    &podStatus.StatusMessage,
-		reason:     &podStatus.Reason,
-		containers: containers,
+		name:        podStatus.Name,
+		createdAtNS: createTime,
+		status:      podStatus.Status.String(),
+		message:     &podStatus.StatusMessage,
+		reason:      &podStatus.Reason,
+		containers:  containers,
 	}, nil
 }
 
@@ -181,15 +187,21 @@ func (q *QueryResolver) UpdateVizierConfig(ctx context.Context, args *updateVizi
 
 // ContainerStatusResolver is the resolver responsible for container status info.
 type ContainerStatusResolver struct {
-	name    string
-	state   string
-	message *string
-	reason  *string
+	name        string
+	createdAtNS int64
+	state       string
+	message     *string
+	reason      *string
 }
 
 // Name returns container name.
 func (c *ContainerStatusResolver) Name() string {
 	return c.name
+}
+
+// CreatedAtMs returns the container create time.
+func (c *ContainerStatusResolver) CreatedAtMs() float64 {
+	return float64(c.createdAtNS) / 1e6
 }
 
 // State returns container state.
@@ -209,16 +221,22 @@ func (c *ContainerStatusResolver) Reason() *string {
 
 // PodStatusResolver is the resolver responsible for pod status info.
 type PodStatusResolver struct {
-	name       string
-	status     string
-	message    *string
-	reason     *string
-	containers []*ContainerStatusResolver
+	name        string
+	createdAtNS int64
+	status      string
+	message     *string
+	reason      *string
+	containers  []*ContainerStatusResolver
 }
 
 // Name returns pod name.
 func (p *PodStatusResolver) Name() string {
 	return p.name
+}
+
+// CreatedAtMs returns the pod create time.
+func (p *PodStatusResolver) CreatedAtMs() float64 {
+	return float64(p.createdAtNS) / 1e6
 }
 
 // Status returns pod status.

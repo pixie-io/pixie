@@ -199,6 +199,10 @@ message PodStatus {
     string reason = 4;
     // The containers running in the pod.
     repeated ContainerStatus containers = 5;
+    // The create time of the pod.
+    google.protobuf.Timestamp created_at = 6 [
+                                             (gogoproto.customname) = "CreatedAt"
+                                             ];
 }
 
 // ContainerStatus represents pa container's status at a moment in time.
@@ -211,6 +215,10 @@ message ContainerStatus {
     string message = 3;
     // A brief CamelCase message indicating details about why the container is in this state.
     string reason = 4;
+    // The create time of the container.
+    google.protobuf.Timestamp created_at = 6 [
+                                             (gogoproto.customname) = "CreatedAt"
+                                             ];
 }
 
 message ClusterInfo {

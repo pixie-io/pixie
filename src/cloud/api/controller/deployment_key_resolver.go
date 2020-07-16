@@ -10,7 +10,8 @@ import (
 	"pixielabs.ai/pixielabs/src/utils"
 )
 
-const nanosPerSecond int64 = 1000 * 1000 * 1000
+// NanosPerSecond is the number of nanoseconds per second.
+const NanosPerSecond int64 = 1000 * 1000 * 1000
 
 // DeploymentKeyResolver is the resolver responsible for cluster info.
 type DeploymentKeyResolver struct {
@@ -59,7 +60,7 @@ func deploymentKeyToResolver(key *cloudapipb.DeploymentKey) (*DeploymentKeyResol
 	return &DeploymentKeyResolver{
 		id:          keyID,
 		key:         key.Key,
-		createdAtNs: key.CreatedAt.Seconds*nanosPerSecond + int64(key.CreatedAt.Nanos),
+		createdAtNs: key.CreatedAt.Seconds*NanosPerSecond + int64(key.CreatedAt.Nanos),
 		desc:        key.Desc,
 	}, nil
 }

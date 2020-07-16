@@ -13,11 +13,12 @@ package pl.cvmsgspb;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
 import "src/vizier/vizierpb/vizier.proto";
 import "src/common/uuid/proto/uuid.proto";
 
-import "google/protobuf/wrappers.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/shared/cvmsgspb/messagespb;cvmsgspb";
 
@@ -128,6 +129,10 @@ message PodStatus {
     string reason = 4;
     // The containers running in the pod.
     repeated ContainerStatus containers = 5;
+    // The start time of the pod.
+    google.protobuf.Timestamp created_at = 6 [
+                                             (gogoproto.customname) = "CreatedAt"
+                                             ];
 }
 
 // ContainerStatus represents pa container's status at a moment in time.
@@ -140,6 +145,10 @@ message ContainerStatus {
     string message = 3;
     // A brief CamelCase message indicating details about why the container is in this state.
     string reason = 4;
+    // The create time of the container.
+    google.protobuf.Timestamp created_at = 6 [
+                                             (gogoproto.customname) = "CreatedAt"
+                                             ];
 }
 
 message VizierHeartbeatAck {
