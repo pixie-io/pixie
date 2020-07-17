@@ -54,6 +54,9 @@ pl_cc_test(
         ":cc_library",
         "//src/common/exec:cc_library",
     ],
+    tags = [
+        "no_coverage",
+    ],
 )
 
 pl_cc_test(

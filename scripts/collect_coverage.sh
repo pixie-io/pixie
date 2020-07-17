@@ -19,7 +19,7 @@ HTML_OUTPUT_DIR=""
 
 CC_COVERAGE_FILE="cc_coverage.info"
 GO_COVERAGE_FILE="coverage.txt"
-UI_COVERAGE_FILE="bazel-bin/src/ui/lcov.info"
+UI_COVERAGE_FILE="bazel-pixielabs/src/ui/coverage/lcov.info"
 
 # Print out the usage information and exit.
 usage() {

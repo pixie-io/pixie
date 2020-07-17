@@ -201,6 +201,9 @@ pl_cc_test(
         "//src/common/exec:cc_library",
         "//src/stirling/testing:cc_library",
     ],
+    tags = [
+        "no_coverage",
+    ],
 )
 
 pl_cc_test(

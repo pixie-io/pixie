@@ -142,6 +142,7 @@ coverage --cxxopt -fprofile-arcs
 coverage --cxxopt -ftest-coverage
 coverage --instrument_test_targets
 coverage --define PL_COVERAGE=true
+coverage --test_tag_filters=-requires_root,-requires_bpf,-no_coverage,-disabled
 
 # Use stable GIT build tag by default.
 build --define BUNDLE_VERSION={STABLE_BUILD_TAG}

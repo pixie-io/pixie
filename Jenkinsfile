@@ -119,8 +119,7 @@ isVizierBuildRun = env.JOB_NAME.startsWith("pixielabs-main-vizier-release-build/
 isCloudStagingBuildRun = env.JOB_NAME.startsWith("pixielabs-main-cloud-staging-build/")
 isCloudProdBuildRun = env.JOB_NAME.startsWith("pixielabs-main-cloud-release-build/")
 
-// TODO(zasgar): Fix the coverage job which is broken due to GCC upgrade.
-runCoverageJob = false; // isMainRun
+runCoverageJob = isMainRun
 
 // Currently disabling TSAN on BPF builds because it runs too slow.
 // In particular, the uprobe deployment takes far too long. See issue:
