@@ -643,19 +643,6 @@ def buildScriptForCommits = {
         parallel(builders)
       }
 
-      // Only run the cloud deploy build on main run.
-      if (isMainRun) {
-        stage('Create cloud artifacts') {
-          deleteDir()
-          WithSourceCode {
-            dockerStep('', devDockerImageExtrasWithTag) {
-                sh './ci/build_cloud_artifacts.sh'
-                archiveArtifacts 'manifest_cloud.json'
-            }
-          }
-        }
-      }
-
       stage('Archive') {
         deleteDir()
          // Unstash the build artifacts.
