@@ -1,6 +1,7 @@
 package kvstore
 
 import (
+	"errors"
 	"sort"
 	"strings"
 	"sync"
@@ -41,7 +42,8 @@ type TTLKeyValue struct {
 type Cache struct {
 	cacheMap   map[string]entry
 	datastore  KeyValueStore
-	mu         sync.RWMutex
+	cacheMu    sync.RWMutex
+	dsMu       sync.RWMutex
 	clock      utils.Clock
 	numRetries int64
 }
@@ -65,8 +67,10 @@ func NewCacheWithClock(datastore KeyValueStore, clock utils.Clock) *Cache {
 
 // FlushToDatastore flushes the entries in cache to the datastore.
 func (c *Cache) FlushToDatastore() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.cacheMu.Lock()
+	defer c.cacheMu.Unlock()
+	c.dsMu.Lock()
+	defer c.dsMu.Unlock()
 
 	entries := make([]TTLKeyValue, len(c.cacheMap))
 	// Process values in cache into TTLKeyValues.
@@ -98,14 +102,25 @@ func (c *Cache) FlushToDatastore() {
 
 // Get gets the given key from the cache or the backing datastore.
 func (c *Cache) Get(key string) ([]byte, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.cacheMu.RLock()
+	c.dsMu.RLock()
 
-	if val, ok := c.cacheMap[key]; ok {
-		if !val.ExpiresAt.IsZero() && val.ExpiresAt.Before(c.clock.Now()) {
-			return nil, nil
+	defer c.dsMu.RUnlock()
+
+	cacheVal, err := func() ([]byte, error) {
+		defer c.cacheMu.RUnlock()
+
+		if val, ok := c.cacheMap[key]; ok {
+			if !val.ExpiresAt.IsZero() && val.ExpiresAt.Before(c.clock.Now()) {
+				return nil, nil
+			}
+			return val.Value, nil
 		}
-		return val.Value, nil
+		return nil, errors.New("Did not find value in cache")
+	}()
+
+	if err == nil {
+		return cacheVal, err
 	}
 
 	return c.datastore.Get(key)
@@ -114,8 +129,8 @@ func (c *Cache) Get(key string) ([]byte, error) {
 // SetWithTTL puts the given key and value in the cache, which is later flushed to the backing datastore.
 // A TTL of 0 means that the key is deleted.
 func (c *Cache) SetWithTTL(key string, value string, ttl time.Duration) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.cacheMu.Lock()
+	defer c.cacheMu.Unlock()
 
 	c.cacheMap[key] = entry{
 		Value:     []byte(value),
@@ -125,8 +140,8 @@ func (c *Cache) SetWithTTL(key string, value string, ttl time.Duration) {
 
 // Set puts the given key and value in the cache, which is later flushed to the backing datastore.
 func (c *Cache) Set(key string, value string) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.cacheMu.Lock()
+	defer c.cacheMu.Unlock()
 
 	c.cacheMap[key] = entry{
 		Value:     []byte(value),
@@ -145,18 +160,24 @@ func (c *Cache) DeleteAll(keys []string) {
 // for the given key, it returns an empty string in that index.
 func (c *Cache) GetAll(keys []string) ([][]byte, error) {
 	vals := make([][]byte, len(keys))
-
-	c.mu.RLock()
-	defer c.mu.RUnlock()
 	cacheHits := 0
-	for i, k := range keys {
-		if val, ok := c.cacheMap[k]; ok {
-			if val.ExpiresAt.IsZero() || !val.ExpiresAt.Before(c.clock.Now()) {
-				vals[i] = val.Value
-				cacheHits++
+
+	c.cacheMu.RLock()
+	c.dsMu.RLock()
+
+	defer c.dsMu.RUnlock()
+
+	func() {
+		defer c.cacheMu.RUnlock()
+		for i, k := range keys {
+			if val, ok := c.cacheMap[k]; ok {
+				if val.ExpiresAt.IsZero() || !val.ExpiresAt.Before(c.clock.Now()) {
+					vals[i] = val.Value
+					cacheHits++
+				}
 			}
 		}
-	}
+	}()
 
 	if cacheHits == len(keys) {
 		return vals, nil
@@ -178,19 +199,26 @@ func (c *Cache) GetAll(keys []string) ([][]byte, error) {
 
 // GetWithRange gets all keys and values within the given range.
 func (c *Cache) GetWithRange(from string, to string) (keys []string, values [][]byte, err error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
 	keys = make([]string, 0)
 	values = make([][]byte, 0)
-
-	// Find all keys in cache within the given range.
+	cacheCopy := make(map[string]entry)
 	cacheKeys := make([]string, 0)
-	for key := range c.cacheMap {
-		if key >= from && key < to {
-			cacheKeys = append(cacheKeys, key)
+
+	c.cacheMu.RLock()
+	c.dsMu.RLock()
+
+	defer c.dsMu.RUnlock()
+
+	func() {
+		defer c.cacheMu.RUnlock()
+		for key := range c.cacheMap {
+			if key >= from && key < to {
+				cacheKeys = append(cacheKeys, key)
+				cacheCopy[key] = c.cacheMap[key]
+			}
 		}
-	}
+	}()
+
 	sort.Strings(cacheKeys)
 
 	// Get the keys/values with prefix from the backing datastore. This assumes
@@ -200,10 +228,10 @@ func (c *Cache) GetWithRange(from string, to string) (keys []string, values [][]
 		return keys, values, err
 	}
 
-	return c.mergeCacheAndStore(cacheKeys, dsKeys, dsVals)
+	return c.mergeCacheAndStore(cacheCopy, cacheKeys, dsKeys, dsVals)
 }
 
-func (c *Cache) mergeCacheAndStore(cacheKeys []string, dsKeys []string, dsVals [][]byte) (keys []string, values [][]byte, err error) {
+func (c *Cache) mergeCacheAndStore(cacheCopy map[string]entry, cacheKeys []string, dsKeys []string, dsVals [][]byte) (keys []string, values [][]byte, err error) {
 	keys = make([]string, 0)
 	values = make([][]byte, 0)
 
@@ -219,7 +247,7 @@ func (c *Cache) mergeCacheAndStore(cacheKeys []string, dsKeys []string, dsVals [
 		}
 
 		if dsIdx == len(dsKeys) || (cacheIdx != len(cacheKeys) && cacheKeys[cacheIdx] < dsKeys[dsIdx]) {
-			cacheEntry := c.cacheMap[cacheKeys[cacheIdx]]
+			cacheEntry := cacheCopy[cacheKeys[cacheIdx]]
 			if cacheEntry.ExpiresAt.IsZero() || !cacheEntry.ExpiresAt.Before(now) {
 				keys = append(keys, cacheKeys[cacheIdx])
 				values = append(values, cacheEntry.Value)
@@ -236,7 +264,7 @@ func (c *Cache) mergeCacheAndStore(cacheKeys []string, dsKeys []string, dsVals [
 		if dsKeys[dsIdx] == cacheKeys[cacheIdx] {
 			// If the key already exists in the backing datastore, the
 			// version in the cache is more recent.
-			cacheEntry := c.cacheMap[cacheKeys[cacheIdx]]
+			cacheEntry := cacheCopy[cacheKeys[cacheIdx]]
 			if cacheEntry.ExpiresAt.IsZero() || !cacheEntry.ExpiresAt.Before(now) {
 				keys = append(keys, cacheKeys[cacheIdx])
 				values = append(values, cacheEntry.Value)
@@ -252,19 +280,28 @@ func (c *Cache) mergeCacheAndStore(cacheKeys []string, dsKeys []string, dsVals [
 
 // GetWithPrefix gets all keys and values with the given prefix.
 func (c *Cache) GetWithPrefix(prefix string) (keys []string, values [][]byte, err error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-
 	keys = make([]string, 0)
 	values = make([][]byte, 0)
 
 	// Find all keys in cache beginning with prefix.
 	cacheKeys := make([]string, 0)
-	for key := range c.cacheMap {
-		if strings.HasPrefix(key, prefix) {
-			cacheKeys = append(cacheKeys, key)
+	cacheCopy := make(map[string]entry)
+
+	c.cacheMu.RLock()
+	c.dsMu.RLock()
+
+	defer c.dsMu.RUnlock()
+
+	func() {
+		defer c.cacheMu.RUnlock()
+		for key := range c.cacheMap {
+			if strings.HasPrefix(key, prefix) {
+				cacheKeys = append(cacheKeys, key)
+				cacheCopy[key] = c.cacheMap[key]
+			}
 		}
-	}
+	}()
+
 	sort.Strings(cacheKeys)
 
 	// Get the keys/values with prefix from the backing datastore. This assumes
@@ -274,13 +311,15 @@ func (c *Cache) GetWithPrefix(prefix string) (keys []string, values [][]byte, er
 		return keys, values, err
 	}
 
-	return c.mergeCacheAndStore(cacheKeys, dsKeys, dsVals)
+	return c.mergeCacheAndStore(cacheCopy, cacheKeys, dsKeys, dsVals)
 }
 
 // DeleteWithPrefix deletes all keys and values with the given prefix.
 func (c *Cache) DeleteWithPrefix(prefix string) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.cacheMu.Lock()
+	defer c.cacheMu.Unlock()
+	c.dsMu.Lock()
+	defer c.dsMu.Unlock()
 
 	for key := range c.cacheMap {
 		if strings.HasPrefix(key, prefix) {
@@ -293,8 +332,8 @@ func (c *Cache) DeleteWithPrefix(prefix string) error {
 
 // Clear deletes all keys and values from the cache.
 func (c *Cache) Clear() {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.cacheMu.Lock()
+	defer c.cacheMu.Unlock()
 
 	c.cacheMap = make(map[string]entry)
 }
