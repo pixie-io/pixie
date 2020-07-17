@@ -70,7 +70,12 @@ const useStyles = makeStyles((theme: Theme) => createStyles({
   spacer: {
     flex: 1,
   },
+  emptyLabel: {
+    display: 'none',
+  },
 }));
+
+const TabSpacer = (props) => (<div className={props.classes.spacer} />);
 
 const StyledTabs = withStyles((theme: Theme) => createStyles({
   root: {
@@ -119,7 +124,7 @@ const DataDrawerToggle = (props: DataDrawerToggleProps) => {
   }, [tabs, setActiveTab, activeTab]);
 
   const handleClick = React.useCallback((event) => {
-    if (event.target.className.baseVal.includes('SvgIcon')) {
+    if (event.target.className.baseVal?.includes('SvgIcon')) {
       // Clicking the scroll icon should not trigger the drawer to open/close.
       event.stopPropagation();
     }
@@ -135,6 +140,7 @@ const DataDrawerToggle = (props: DataDrawerToggleProps) => {
         scrollButtons='auto'
         onClick={handleClick}
       >
+        <StyledTab className={classes.emptyLabel} value='' />
         {tabs.map((tab) => (
           <StyledTab
             key={tab.title}
@@ -143,7 +149,7 @@ const DataDrawerToggle = (props: DataDrawerToggleProps) => {
             label={tab.title}
           />
         ))}
-        <div className={classes.spacer} />
+        <TabSpacer classes={classes} />
         {stats ? <StyledTab className={classes.statsTabLabel} value='stats' label='Execution Stats' /> : null}
       </StyledTabs>
       <PixieLogo className={classes.pixieLogo} />
