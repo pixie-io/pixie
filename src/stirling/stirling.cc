@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <functional>
@@ -162,21 +163,15 @@ class StirlingImpl final : public Stirling {
   // Wait for Stirling to stop its main loop.
   void WaitForStop();
 
-  // Helper function to figure out how much to sleep between polling iterations.
-  std::chrono::milliseconds TimeUntilNextTick();
-
-  // Sleeps for the specified duration, as long as it is above some threshold.
-  void SleepForDuration(std::chrono::milliseconds sleep_duration);
-
   // Main thread used to spawn off RunThread().
   std::thread run_thread_;
 
   std::atomic<bool> run_enable_ = false;
   std::atomic<bool> running_ = false;
-  std::vector<std::unique_ptr<SourceConnector>> sources_;
+  std::vector<std::unique_ptr<SourceConnector>> sources_ ABSL_GUARDED_BY(info_class_mgrs_lock_);
   std::vector<std::unique_ptr<DataTable>> tables_;
 
-  InfoClassManagerVec info_class_mgrs_;
+  InfoClassManagerVec info_class_mgrs_ ABSL_GUARDED_BY(info_class_mgrs_lock_);
 
   // Lock to protect both info_class_mgrs_ and sources_.
   absl::base_internal::SpinLock info_class_mgrs_lock_;
@@ -184,9 +179,6 @@ class StirlingImpl final : public Stirling {
   std::unique_ptr<PubSubManager> config_;
 
   std::unique_ptr<SourceRegistry> registry_;
-
-  static constexpr std::chrono::milliseconds kMinSleepDuration{1};
-  static constexpr std::chrono::milliseconds kMaxSleepDuration{1000};
 
   /**
    * Function to call to push data to the agent.
@@ -202,8 +194,9 @@ class StirlingImpl final : public Stirling {
   // The index can be assigned to the next registered probe.
   int64_t dynamic_trace_index_ = 0;
 
-  absl::flat_hash_map<int64_t, Status> dynamic_trace_status_map_;
   absl::base_internal::SpinLock dynamic_trace_status_map_lock_;
+  absl::flat_hash_map<int64_t, Status> dynamic_trace_status_map_
+      ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
 };
 
 StirlingImpl::StirlingImpl(std::unique_ptr<SourceRegistry> registry)
@@ -433,6 +426,41 @@ void StirlingImpl::Run() {
   RunCore();
 }
 
+namespace {
+
+static constexpr std::chrono::milliseconds kMinSleepDuration{1};
+static constexpr std::chrono::milliseconds kMaxSleepDuration{1000};
+
+// Helper function: Figure out when to wake up next.
+std::chrono::milliseconds TimeUntilNextTick(const InfoClassManagerVec& info_class_mgrs) {
+  // The amount to sleep depends on when the earliest Source needs to be sampled again.
+  // Do this to avoid burning CPU cycles unnecessarily
+
+  auto now = std::chrono::steady_clock::now();
+
+  // Worst case, wake-up every so often.
+  // This is important if there are no subscribed info classes, to avoid sleeping eternally.
+  auto wakeup_time = now + kMaxSleepDuration;
+
+  for (const auto& mgr : info_class_mgrs) {
+    // TODO(oazizi): Make implementation of NextPushTime/NextSamplingTime low cost.
+    if (mgr->subscribed()) {
+      wakeup_time = std::min(wakeup_time, mgr->NextPushTime());
+      wakeup_time = std::min(wakeup_time, mgr->NextSamplingTime());
+    }
+  }
+
+  return std::chrono::duration_cast<std::chrono::milliseconds>(wakeup_time - now);
+}
+
+void SleepForDuration(std::chrono::milliseconds sleep_duration) {
+  if (sleep_duration > kMinSleepDuration) {
+    std::this_thread::sleep_for(sleep_duration);
+  }
+}
+
+}  // namespace
+
 // Main Data Collector loop.
 // Poll on Data Source Through connectors, when appropriate, then go to sleep.
 // Must run as a thread, so only call from Run() as a thread.
@@ -482,7 +510,7 @@ void StirlingImpl::RunCore() {
       }
 
       // Figure out how long to sleep.
-      sleep_duration = TimeUntilNextTick();
+      sleep_duration = TimeUntilNextTick(info_class_mgrs_);
     }
 
     SleepForDuration(sleep_duration);
@@ -496,40 +524,13 @@ void StirlingImpl::Stop() {
 
   // Stop all sources.
   // This is important to release any BPF resources that were acquired.
+  absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
   for (auto& source : sources_) {
     Status s = source->Stop();
 
     // Forge on, because death is imminent!
     LOG_IF(ERROR, !s.ok()) << absl::Substitute("Failed to stop source connector '$0', error: $1",
                                                source->source_name(), s.ToString());
-  }
-}
-
-// Helper function: Figure out when to wake up next.
-std::chrono::milliseconds StirlingImpl::TimeUntilNextTick() {
-  // The amount to sleep depends on when the earliest Source needs to be sampled again.
-  // Do this to avoid burning CPU cycles unnecessarily
-
-  auto now = std::chrono::steady_clock::now();
-
-  // Worst case, wake-up every so often.
-  // This is important if there are no subscribed info classes, to avoid sleeping eternally.
-  auto wakeup_time = now + kMaxSleepDuration;
-
-  for (const auto& mgr : info_class_mgrs_) {
-    // TODO(oazizi): Make implementation of NextPushTime/NextSamplingTime low cost.
-    if (mgr->subscribed()) {
-      wakeup_time = std::min(wakeup_time, mgr->NextPushTime());
-      wakeup_time = std::min(wakeup_time, mgr->NextSamplingTime());
-    }
-  }
-
-  return std::chrono::duration_cast<std::chrono::milliseconds>(wakeup_time - now);
-}
-
-void StirlingImpl::SleepForDuration(std::chrono::milliseconds sleep_duration) {
-  if (sleep_duration > kMinSleepDuration) {
-    std::this_thread::sleep_for(sleep_duration);
   }
 }
 
