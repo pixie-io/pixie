@@ -1,6 +1,6 @@
 import { StatusCell, StatusGroup } from 'components/status/status';
 import { useQuery } from '@apollo/react-hooks';
-import { createStyles, makeStyles, Theme } from '@material-ui/core/styles';
+import { Theme, withStyles } from '@material-ui/core/styles';
 import Button from '@material-ui/core/Button';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
@@ -9,16 +9,11 @@ import TableRow from '@material-ui/core/TableRow';
 import gql from 'graphql-tag';
 import * as React from 'react';
 import { Link } from 'react-router-dom';
+import { GaugeLevel } from 'utils/metric-thresholds';
 import {
   AdminTooltip, clusterStatusGroup, convertHeartbeatMS, getClusterDetailsURL,
   StyledTableCell, StyledTableHeaderCell, StyledLeftTableCell, StyledRightTableCell,
 } from './utils';
-
-const useStyles = makeStyles((theme: Theme) => createStyles({
-  error: {
-    padding: theme.spacing(1),
-  },
-}));
 
 const GET_CLUSTERS = gql`
 {
@@ -33,6 +28,8 @@ const GET_CLUSTERS = gql`
     vizierConfig {
       passthroughEnabled
     }
+    numNodes
+    numInstrumentedNodes
   }
 }`;
 
@@ -50,34 +47,77 @@ interface ClusterDisplay {
   vizierVersion: string;
   lastHeartbeat: string;
   mode: VizierConnectionMode;
+  percentInstrumented: string;
+  percentInstrumentedLevel: GaugeLevel;
+}
+
+function getPercentInstrumentedLevel(instrumentedRatio: number): GaugeLevel {
+  if (instrumentedRatio > 0.9) {
+    return 'high';
+  }
+  if (instrumentedRatio > 0.6) {
+    return 'med';
+  }
+  return 'low';
 }
 
 export function formatCluster(clusterInfo): ClusterDisplay {
-  let shortVersion = clusterInfo.vizierVersion;
+  const {
+    id, clusterName, prettyClusterName, clusterVersion, vizierVersion, vizierConfig,
+    status, lastHeartbeatMs, numNodes, numInstrumentedNodes,
+  } = clusterInfo;
+
+  let vizierVersionShort = vizierVersion;
   // Dashes occur in internal Vizier versions and not public release ones.
-  if (clusterInfo.vizierVersion.indexOf('-') === -1) {
-    [shortVersion] = clusterInfo.vizierVersion.split('+');
+  if (vizierVersion.indexOf('-') === -1) {
+    [vizierVersionShort] = clusterInfo.vizierVersion.split('+');
+  }
+
+  let percentInstrumented;
+  let percentInstrumentedLevel;
+  const trimmedStatus = status.replace('CS_', '');
+  if (trimmedStatus !== 'DISCONNECTED') {
+    const instrumentedPerc = numNodes ? `${(numInstrumentedNodes / numNodes * 100).toFixed(0)}%` : 'N/A';
+    percentInstrumented = `${instrumentedPerc} (${numInstrumentedNodes} of ${numNodes})`;
+    percentInstrumentedLevel = numNodes ? getPercentInstrumentedLevel(numInstrumentedNodes / numNodes) : 'low';
+  } else {
+    percentInstrumented = 'N/A';
+    percentInstrumentedLevel = 'none';
   }
 
   return {
-    id: clusterInfo.id,
-    idShort: clusterInfo.id.split('-').pop(),
-    name: clusterInfo.clusterName,
-    prettyName: clusterInfo.prettyClusterName,
-    clusterVersion: clusterInfo.clusterVersion,
-    vizierVersionShort: shortVersion,
-    vizierVersion: clusterInfo.vizierVersion,
-    status: clusterInfo.status.replace('CS_', ''),
-    statusGroup: clusterStatusGroup(clusterInfo.status),
-    mode: clusterInfo.vizierConfig.passthroughEnabled ? 'Passthrough' : 'Direct',
-    lastHeartbeat: convertHeartbeatMS(clusterInfo.lastHeartbeatMs),
+    id,
+    clusterVersion,
+    vizierVersion,
+    vizierVersionShort,
+    percentInstrumented,
+    percentInstrumentedLevel,
+    idShort: id.split('-').pop(),
+    name: clusterName,
+    prettyName: prettyClusterName,
+    status: trimmedStatus,
+    statusGroup: clusterStatusGroup(status),
+    mode: vizierConfig.passthroughEnabled ? 'Passthrough' : 'Direct',
+    lastHeartbeat: convertHeartbeatMS(lastHeartbeatMs),
   };
 }
 
 const CLUSTERS_POLL_INTERVAL = 2500;
 
-export const ClustersTable = () => {
-  const classes = useStyles();
+export const ClustersTable = withStyles((theme: Theme) => ({
+  low: {
+    color: theme.palette.error.main,
+  },
+  med: {
+    color: theme.palette.warning.main,
+  },
+  high: {
+    color: theme.palette.success.main,
+  },
+  error: {
+    padding: theme.spacing(1),
+  },
+}))(({ classes }: any) => {
   const { loading, error, data } = useQuery(GET_CLUSTERS, { pollInterval: CLUSTERS_POLL_INTERVAL });
   if (loading) {
     return <div className={classes.error}>Loading...</div>;
@@ -97,6 +137,7 @@ export const ClustersTable = () => {
           <StyledTableHeaderCell />
           <StyledTableHeaderCell>Name</StyledTableHeaderCell>
           <StyledTableHeaderCell>ID</StyledTableHeaderCell>
+          <StyledTableHeaderCell>Instrumented Nodes</StyledTableHeaderCell>
           <StyledTableHeaderCell>Vizier Version</StyledTableHeaderCell>
           <StyledTableHeaderCell>K8s Version</StyledTableHeaderCell>
           <StyledTableHeaderCell>Heartbeat</StyledTableHeaderCell>
@@ -127,6 +168,9 @@ export const ClustersTable = () => {
             <AdminTooltip title={cluster.id}>
               <StyledTableCell>{cluster.idShort}</StyledTableCell>
             </AdminTooltip>
+            <StyledTableCell className={classes[cluster.percentInstrumentedLevel]}>
+              {cluster.percentInstrumented}
+            </StyledTableCell>
             <AdminTooltip title={cluster.vizierVersion}>
               <StyledTableCell>{cluster.vizierVersionShort}</StyledTableCell>
             </AdminTooltip>
@@ -138,4 +182,4 @@ export const ClustersTable = () => {
       </TableBody>
     </Table>
   );
-};
+});
