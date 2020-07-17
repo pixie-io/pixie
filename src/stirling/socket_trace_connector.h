@@ -61,11 +61,6 @@ namespace stirling {
 
 class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrapper {
  public:
-  // Used in ReadPerfBuffers to drain the relevant perf buffers.
-  static constexpr auto kPerfBuffers =
-      MakeArray<std::string_view>("socket_control_events", "socket_data_events",
-                                  "go_grpc_header_events", "go_grpc_data_events");
-
   static constexpr auto kTables =
       MakeArray(kConnStatsTable, kHTTPTable, kMySQLTable, kCQLTable, kPGSQLTable);
   static constexpr uint32_t kConnStatsTableNum =
@@ -305,9 +300,6 @@ class SocketTraceConnector : public SourceConnector, public bpf_tools::BCCWrappe
   // Deploys uprobes for all purposes (HTTP2, OpenSSL, etc.) on new processes.
   void DeployUProbes(const absl::flat_hash_set<md::UPID>& pids);
   std::thread RunDeployUProbesThread(const absl::flat_hash_set<md::UPID>& pids);
-
-  // This function causes the perf buffer to be read, and triggers callbacks per message.
-  void ReadPerfBuffers();
 
   // Events from BPF.
   // TODO(oazizi/yzhao): These all operate based on pass-by-value, which copies.

@@ -255,6 +255,12 @@ void BCCWrapper::PollPerfBuffer(std::string_view perf_buffer_name, int timeout_m
   }
 }
 
+void BCCWrapper::PollPerfBuffers(int timeout_ms) {
+  for (const auto& spec : perf_buffers_) {
+    PollPerfBuffer(spec.name, timeout_ms);
+  }
+}
+
 void BCCWrapper::Stop() {
   DetachPerfEvents();
   ClosePerfBuffers();

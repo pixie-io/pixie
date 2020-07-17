@@ -55,7 +55,15 @@ StatusOr<std::unique_ptr<DynamicDataTableSchema>> DynamicDataTableSchema::Create
   // clang-format on
 
   std::vector<DataElement> elements;
-  for (const auto& field : output_spec.output.fields()) {
+
+  // Insert the special upid column.
+  // TODO(yzhao): Make sure to have a structured way to let the IR to express the upid.
+  elements.emplace_back("upid", "upid", types::DataType::UINT128, types::SemanticType::ST_NONE,
+                        types::PatternType::UNSPECIFIED);
+
+  for (int i = 2; i < output_spec.output.fields_size(); ++i) {
+    const auto& field = output_spec.output.fields(i);
+
     types::DataType data_type;
 
     auto iter = kTypeMap.find(field.type().scalar());

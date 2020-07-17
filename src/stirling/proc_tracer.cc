@@ -59,7 +59,7 @@ void ProcTracer::AcceptProcCreationEvent(const proc_creation_event_t& event) {
 }
 
 std::vector<proc_creation_event_t> ProcTracer::ExtractProcCreationEvents() {
-  PollPerfBuffer(kProcCreationEventsName, /*timeout_ms*/ 10);
+  PollPerfBuffers(/*timeout_ms*/ 10);
   return std::move(events_);
 }
 

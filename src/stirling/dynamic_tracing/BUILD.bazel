@@ -20,6 +20,7 @@ pl_cc_library(
         "//src/stirling/dynamic_tracing/ir:logical_pl_cc_proto",
         "//src/stirling/dynamic_tracing/ir:physical_pl_cc_proto",
         "//src/stirling/obj_tools:cc_library",
+        "//src/shared/types:cc_library",
     ],
 )
 
@@ -83,22 +84,4 @@ pl_cc_test(
     ],
     data = ["//src/stirling/obj_tools/testdata:dummy_go_binary"],
     deps = [":cc_library"],
-)
-
-pl_cc_test(
-    name = "dynamic_tracer_bpf_test",
-    srcs = ["dynamic_tracer_bpf_test.cc"],
-    args = [
-        "--go_grpc_client_path=$(location //src/stirling/http2/testing/go_grpc_client)",
-        "--go_grpc_server_path=$(location //src/stirling/http2/testing/go_grpc_server)",
-    ],
-    data = [
-        "//src/stirling/http2/testing/go_grpc_client",
-        "//src/stirling/http2/testing/go_grpc_server",
-    ],
-    tags = ["requires_bpf"],
-    deps = [
-        ":cc_library",
-        "//src/common/exec:cc_library",
-    ],
 )

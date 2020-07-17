@@ -154,7 +154,10 @@ StatusOr<std::vector<std::string>> GenStruct(const Struct& st, int member_indent
     code_lines.push_back(absl::StrCat(std::string(member_indent_size, ' '), field_code));
   }
 
-  code_lines.push_back("};");
+  // TODO(yzhao): Consider only add this attribute to structs that are for perf buffer output.
+  // This is added for simplicity, to disable padding, so that the perf buffer polling code does
+  // not need to deal with padding.
+  code_lines.push_back("} __attribute__((packed, aligned(1)));");
 
   return code_lines;
 }

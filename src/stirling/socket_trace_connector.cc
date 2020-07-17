@@ -241,7 +241,7 @@ void SocketTraceConnector::TransferDataImpl(ConnectorContext* ctx, uint32_t tabl
   // so raw data will be pushed to connection trackers more aggressively.
   // No data is lost, but this is a side-effect of sorts that affects timing of transfers.
   // It may be worth noting during debug.
-  ReadPerfBuffers();
+  PollPerfBuffers();
 
   // Set-up current state for connection inference purposes.
   if (socket_info_mgr_ != nullptr) {
@@ -756,12 +756,6 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
 //-----------------------------------------------------------------------------
 // Perf Buffer Polling and Callback functions.
 //-----------------------------------------------------------------------------
-
-void SocketTraceConnector::ReadPerfBuffers() {
-  for (auto& buffer_name : kPerfBuffers) {
-    PollPerfBuffer(buffer_name);
-  }
-}
 
 void SocketTraceConnector::HandleDataEvent(void* cb_cookie, void* data, int /*data_size*/) {
   DCHECK(cb_cookie != nullptr) << "Perf buffer callback not set-up properly. Missing cb_cookie.";

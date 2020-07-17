@@ -1,7 +1,7 @@
 #pragma once
 
+#include <deque>
 #include <memory>
-#include <random>
 #include <string>
 #include <utility>
 
@@ -37,6 +37,9 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
         new DynamicTraceConnector(name, std::move(table_schema), std::move(bcc_program)));
   }
 
+  // Accepts a piece of data from the perf buffer.
+  void AcceptDataEvents(std::string data) { data_items_.push_back(std::move(data)); }
+
  protected:
   // TODO(oazizi): This constructor only works with a single table,
   //               since the ArrayView creation only works for a single schema.
@@ -45,8 +48,7 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
                         dynamic_tracing::BCCProgram bcc_program)
       : SourceConnector(name, ArrayView<DataTableSchema>(&table_schema->Get(), 1)),
         table_schema_(std::move(table_schema)),
-        bcc_program_(std::move(bcc_program)),
-        coin_flip_dist_(0, 1) {}
+        bcc_program_(std::move(bcc_program)) {}
 
   Status InitImpl() override;
 
@@ -55,12 +57,14 @@ class DynamicTraceConnector : public SourceConnector, public bpf_tools::BCCWrapp
   Status StopImpl() override { return Status::OK(); }
 
  private:
+  // Describes the output table column types.
   std::unique_ptr<DynamicDataTableSchema> table_schema_;
+
+  // The actual dynamic trace program.
   dynamic_tracing::BCCProgram bcc_program_;
 
-  // TODO(oazizi): Temporary remove.
-  std::default_random_engine rng_;
-  std::uniform_int_distribution<int> coin_flip_dist_;
+  // A buffer to hold raw data items from the perf buffer.
+  std::deque<std::string> data_items_;
 };
 
 }  // namespace stirling

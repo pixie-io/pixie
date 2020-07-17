@@ -58,7 +58,8 @@ TEST(GenStructTest, Output) {
   ASSERT_OK_AND_THAT(
       GenStruct(st, /*indent_size*/ 4),
       ElementsAre("struct socket_data_event_t {", "    int32_t i32;", "    int64_t i64;",
-                  "    double double_val;", "    void* msg;", "    struct attr_t attr;", "};"));
+                  "    double double_val;", "    void* msg;", "    struct attr_t attr;",
+                  "} __attribute__((packed, aligned(1)));"));
 }
 
 TEST(GenVariableTest, Register) {
@@ -293,7 +294,7 @@ TEST(GenProgramTest, SpecsAndCode) {
       "}",
       "struct socket_data_event_t {",
       "  int32_t i32;",
-      "};",
+      "} __attribute__((packed, aligned(1)));",
       "static __inline int64_t pl_goid() {",
       "uint64_t current_pid_tgid = bpf_get_current_pid_tgid();",
       "const struct pid_goid_map_value_t* goid_ptr = pid_goid_map.lookup(&current_pid_tgid);",

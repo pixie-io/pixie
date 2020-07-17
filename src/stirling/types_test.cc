@@ -106,12 +106,12 @@ TEST(DynamicDataTableSchemaTest, generate) {
   const DataTableSchema& table_schema = table_schema_ptr->Get();
 
   EXPECT_EQ(table_schema.name(), "out_table");
-  ASSERT_EQ(table_schema.elements().size(), 7);
+  ASSERT_EQ(table_schema.elements().size(), 6);
   EXPECT_EQ(table_schema.tabletized(), false);
-  EXPECT_EQ(table_schema.ColIndex("tgid__"), 0);
-  EXPECT_EQ(table_schema.ColIndex("arg2"), 6);
-  EXPECT_EQ(table_schema.elements()[2].name(), "goid__");
-  EXPECT_EQ(table_schema.elements()[6].name(), "arg2");
+  EXPECT_EQ(table_schema.ColIndex("upid"), 0);
+  EXPECT_EQ(table_schema.ColIndex("arg2"), 5);
+  EXPECT_EQ(table_schema.elements()[1].name(), "goid__");
+  EXPECT_EQ(table_schema.elements()[5].name(), "arg2");
 }
 
 }  // namespace stirling
