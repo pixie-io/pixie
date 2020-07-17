@@ -135,6 +135,7 @@ Status Manager::Init() {
     // Attach the message handler for nats:
     nats_connector_->RegisterMessageHandler(
         std::bind(&Manager::NATSMessageHandler, this, std::placeholders::_1));
+
     registration_timeout_ = dispatcher_->CreateTimer([this] {
       if (agent_registered_) {
         registration_timeout_.release();
@@ -142,17 +143,27 @@ Status Manager::Init() {
       }
       LOG(FATAL) << "Timeout waiting for registration ack";
     });
+
+    registration_wait_ = dispatcher_->CreateTimer([this] {
+      auto s = RegisterAgent();
+      if (!s.ok()) {
+        LOG(FATAL) << "Failed to register agent";
+      }
+
+      registration_timeout_->EnableTimer(kRegistrationPeriod);
+      registration_wait_.release();
+    });
+
     // Send the agent info.
 
     // Wait a random amount of time before registering. This is so the agents don't swarm the
     // metadata service all at the same time when Vizier first starts up.
     std::random_device rnd_device;
     std::mt19937_64 eng{rnd_device()};
-    std::uniform_int_distribution<> dist{10, 5000};
-    std::this_thread::sleep_for(std::chrono::milliseconds{dist(eng)});
+    std::uniform_int_distribution<> dist{
+        10, 60000};  // Wait a random amount of time between 10ms to 1min.
 
-    PL_RETURN_IF_ERROR(RegisterAgent());
-    registration_timeout_->EnableTimer(kRegistrationPeriod);
+    registration_wait_->EnableTimer(std::chrono::milliseconds{dist(eng)});
   }
 
   return InitImpl();

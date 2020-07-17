@@ -180,6 +180,9 @@ class Manager : public pl::NotCopyable {
   // Only accessed from the event loop. So they don't need to be guarded by a mutex.
   bool agent_registered_ = false;
   pl::event::TimerUPtr registration_timeout_;
+  // The agent waits a random amount of time before sending a register request, to
+  // avoid bombarding the metadata service with too many requests upon startup.
+  pl::event::TimerUPtr registration_wait_;
   void HandleMessage(std::unique_ptr<messages::VizierMessage> msg);
   void HandleRegisterAgentResponse(std::unique_ptr<messages::VizierMessage> msg);
 
