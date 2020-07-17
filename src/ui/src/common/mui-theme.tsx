@@ -47,6 +47,18 @@ declare module '@material-ui/core/styles/createPalette' {
   }
 }
 
+declare module '@material-ui/core/styles/shape' {
+  interface RoundedBorderRadius {
+    small: string;
+    large: string;
+  }
+
+  export interface Shape {
+    leftRoundedBorderRadius: RoundedBorderRadius;
+    rightRoundedBorderRadius: RoundedBorderRadius;
+  }
+}
+
 export const scrollbarStyles = (theme: Theme) => {
   const commonStyle = (color) => ({
     borderRadius: theme.spacing(1.0),
@@ -68,6 +80,16 @@ export const scrollbarStyles = (theme: Theme) => {
 };
 
 export const DARK_THEME = createMuiTheme({
+  shape: {
+    leftRoundedBorderRadius: {
+      large: '10px 0px 0px 10px',
+      small: '5px 0px 0px 5px',
+    },
+    rightRoundedBorderRadius: {
+      large: '0px 10px 10px 0px',
+      small: '0px 5px 5px 0px',
+    },
+  },
   palette: {
     type: 'dark',
     topBar: {

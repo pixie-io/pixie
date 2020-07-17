@@ -303,7 +303,10 @@ const Breadcrumbs = ({
   <div className={classes.breadcrumbs}>
     {
       breadcrumbs.map((breadcrumb, i) => (
-        <>
+        // Fragment shorthand syntax does not support key, which is needed to prevent
+        // the console error where a key is not present in a list element.
+        // eslint-disable-next-line react/jsx-fragments
+        <React.Fragment key={i}>
           <Breadcrumb
             key={i}
             classes={classes}
@@ -311,7 +314,7 @@ const Breadcrumbs = ({
           />
           {(i !== breadcrumbs.length - 1)
             && <div className={classes.separator}>/</div> }
-        </>
+        </React.Fragment>
       ))
     }
   </div>

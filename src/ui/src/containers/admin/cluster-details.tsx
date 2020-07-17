@@ -18,16 +18,21 @@ import {
   createStyles, makeStyles, Theme, withStyles,
 } from '@material-ui/core/styles';
 import Breadcrumbs from '@material-ui/core/Breadcrumbs';
+import IconButton from '@material-ui/core/IconButton';
 import Table from '@material-ui/core/Table';
 import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
 import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
+import DownIcon from '@material-ui/icons/KeyboardArrowDown';
+import UpIcon from '@material-ui/icons/KeyboardArrowUp';
 
 import {
-  AdminTooltip, agentStatusGroup, convertHeartbeatMS, getClusterDetailsURL,
-  podStatusGroup, StyledLeftTableCell, StyledRightTableCell, StyledTab, StyledTableCell,
-  StyledTableHeaderCell, StyledTabs,
+  AdminTooltip, agentStatusGroup, clusterStatusGroup, containerStatusGroup,
+  convertHeartbeatMS, getClusterDetailsURL, podStatusGroup, StyledLeftTableCell,
+  StyledRightTableCell, StyledSmallLeftTableCell, StyledSmallRightTableCell,
+  StyledTab, StyledTableCell, StyledTableHeaderCell, StyledTabs,
 } from './utils';
 import { formatUInt128 } from '../../utils/format-data';
 
@@ -194,19 +199,127 @@ const GET_CLUSTER_CONTROL_PLANE_PODS = gql`
       status
       message
       reason
+      containers {
+        name
+        state
+        reason
+        message
+      }
     }
   }
 }
 `;
 
 const formatPodStatus = ({
-  name, status, message, reason,
+  name, status, message, reason, containers,
 }) => ({
   name,
   status,
   message,
   reason,
   statusGroup: podStatusGroup(status),
+  containers: containers.map(({
+    name, state, message, reason,
+  }) => ({
+    name,
+    state,
+    message,
+    reason,
+    statusGroup: containerStatusGroup(state),
+  })),
+});
+
+const none = '<none>';
+
+const ExpandablePodRow = withStyles((theme: Theme) => ({
+  messageAndReason: {
+    ...theme.typography.body2,
+  },
+}))(({ podStatus, classes }: any) => {
+  const {
+    name, status, statusGroup, message, reason, containers,
+  } = podStatus;
+  const [open, setOpen] = React.useState(false);
+
+  return (
+    // Fragment shorthand syntax does not support key, which is needed to prevent
+    // the console error where a key is not present in a list element.
+    // eslint-disable-next-line react/jsx-fragments
+    <React.Fragment key={name}>
+      <TableRow key={name}>
+        <AdminTooltip title={status}>
+          <StyledLeftTableCell>
+            <StatusCell statusGroup={statusGroup} />
+          </StyledLeftTableCell>
+        </AdminTooltip>
+        <StyledTableCell>{name}</StyledTableCell>
+        <StyledRightTableCell align='right'>
+          <IconButton size='small' onClick={() => setOpen(!open)}>
+            {open ? <UpIcon /> : <DownIcon />}
+          </IconButton>
+        </StyledRightTableCell>
+      </TableRow>
+      {
+        open && (
+          <TableRow key={`${name}-details`}>
+            <TableCell style={{ border: 0 }} colSpan={6}>
+              <div className={classes.messageAndReason}>
+                Pod message:
+                {' '}
+                {message || none}
+              </div>
+              <div className={classes.messageAndReason}>
+                Pod reason:
+                {' '}
+                {reason || none}
+              </div>
+              <Table size='small'>
+                <TableHead>
+                  <TableRow key={name}>
+                    <StyledTableHeaderCell />
+                    <StyledTableHeaderCell>Container</StyledTableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {containers.map(({
+                    name, state, message, reason, statusGroup,
+                  }) => (
+                    // Fragment shorthand syntax does not support key, which is needed to prevent
+                    // the console error where a key is not present in a list element.
+                    // eslint-disable-next-line react/jsx-fragments
+                    <React.Fragment key={name}>
+                      <TableRow key={`${name}-info`}>
+                        <AdminTooltip title={state}>
+                          <StyledSmallLeftTableCell>
+                            <StatusCell statusGroup={statusGroup} />
+                          </StyledSmallLeftTableCell>
+                        </AdminTooltip>
+                        <StyledSmallRightTableCell>{name}</StyledSmallRightTableCell>
+                      </TableRow>
+                      <TableRow key={`${name}-details`}>
+                        <TableCell style={{ border: 0 }} colSpan={2}>
+                          <div className={classes.messageAndReason}>
+                            Container message:
+                            {' '}
+                            {message || none}
+                          </div>
+                          <div className={classes.messageAndReason}>
+                            Container reason:
+                            {' '}
+                            {reason || none}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    </React.Fragment>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableCell>
+          </TableRow>
+        )
+      }
+    </React.Fragment>
+  );
 });
 
 const ControlPlanePodsTable = ({ selectedClusterName }) => {
@@ -233,22 +346,12 @@ const ControlPlanePodsTable = ({ selectedClusterName }) => {
         <TableRow>
           <StyledTableHeaderCell />
           <StyledTableHeaderCell>Name</StyledTableHeaderCell>
-          <StyledTableHeaderCell>Message</StyledTableHeaderCell>
-          <StyledTableHeaderCell>Reason</StyledTableHeaderCell>
+          <StyledTableHeaderCell />
         </TableRow>
       </TableHead>
       <TableBody>
         {display.map((podStatus) => (
-          <TableRow key={podStatus.name}>
-            <AdminTooltip title={podStatus.status}>
-              <StyledLeftTableCell>
-                <StatusCell statusGroup={podStatus.statusGroup} />
-              </StyledLeftTableCell>
-            </AdminTooltip>
-            <StyledTableCell>{podStatus.name}</StyledTableCell>
-            <StyledTableCell>{podStatus.message}</StyledTableCell>
-            <StyledRightTableCell>{podStatus.reason}</StyledRightTableCell>
-          </TableRow>
+          <ExpandablePodRow key={podStatus.name} podStatus={podStatus} />
         ))}
       </TableBody>
     </Table>
@@ -311,6 +414,7 @@ const ClusterDetailsNavigation = ({ selectedClusterName }) => {
 
 export const ClusterDetails = withStyles((theme: Theme) => ({
   error: {
+    ...theme.typography.body1,
     padding: 20,
   },
   tabContents: {
@@ -352,6 +456,8 @@ export const ClusterDetails = withStyles((theme: Theme) => ({
     );
   }
 
+  const statusGroup = clusterStatusGroup(cluster.status);
+
   return (
     <div>
       <ClusterDetailsNavigation selectedClusterName={clusterName} />
@@ -364,17 +470,28 @@ export const ClusterDetails = withStyles((theme: Theme) => ({
       </StyledTabs>
       <div className={classes.tabContents}>
         {
-          tab === 'agents'
-          && (
-            <VizierGRPCClientProvider
-              clusterID={cluster.id}
-              passthroughEnabled={cluster.vizierConfig.passthroughEnabled}
-              clusterStatus={cluster.status}
-            >
-              <TableContainer className={classes.container}>
-                <AgentsTable />
-              </TableContainer>
-            </VizierGRPCClientProvider>
+          tab === 'agents' && (
+            statusGroup === 'healthy' ? (
+              <VizierGRPCClientProvider
+                clusterID={cluster.id}
+                passthroughEnabled={cluster.vizierConfig.passthroughEnabled}
+                clusterStatus={cluster.status}
+              >
+                <TableContainer className={classes.container}>
+                  <AgentsTable />
+                </TableContainer>
+              </VizierGRPCClientProvider>
+            ) : (
+              <div className={classes.error}>
+                Cannot get agents for cluster
+                {' '}
+                {clusterName}
+                {', '}
+                cluster is in state
+                {': '}
+                {cluster.status.replace('CS_', '')}
+              </div>
+            )
           )
         }
         {

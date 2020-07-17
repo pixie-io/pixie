@@ -75,6 +75,20 @@ export function podStatusGroup(status: string): StatusGroup {
   }
 }
 
+export function containerStatusGroup(status: string): StatusGroup {
+  switch (status) {
+    case 'CONTAINER_STATE_RUNNING':
+      return 'healthy';
+    case 'CONTAINER_STATE_TERMINATED':
+      return 'unhealthy';
+    case 'CONTAINER_STATE_WAITING':
+      return 'pending';
+    case 'CONTAINER_STATE_UNKNOWN':
+    default:
+      return 'unknown';
+  }
+}
+
 export const AdminTooltip = ({ children, title }) => {
   const classes = tooltipStyles();
   return (
@@ -124,17 +138,38 @@ export const StyledTableCell = withStyles((theme: Theme) => createStyles({
   },
 }))(TableCell);
 
-export const StyledLeftTableCell = withStyles(() => createStyles({
+export const StyledLeftTableCell = withStyles((theme: Theme) => createStyles({
   root: {
-    borderRadius: '10px 0px 0px 10px',
+    borderRadius: theme.shape.leftRoundedBorderRadius.large,
   },
 }))(StyledTableCell);
 
-export const StyledRightTableCell = withStyles(() => createStyles({
+export const StyledRightTableCell = withStyles((theme: Theme) => createStyles({
   root: {
-    borderRadius: '0px 10px 10px 0px',
+    borderRadius: theme.shape.rightRoundedBorderRadius.large,
   },
 }))(StyledTableCell);
+
+// These are for use in Tables that are children of other tables.
+export const StyledSmallTableCell = withStyles((theme: Theme) => createStyles({
+  root: {
+    fontWeight: theme.typography.fontWeightLight,
+    backgroundColor: theme.palette.foreground.grey2,
+    borderWidth: 0,
+  },
+}))(StyledTableCell);
+
+export const StyledSmallLeftTableCell = withStyles((theme: Theme) => createStyles({
+  root: {
+    borderRadius: theme.shape.leftRoundedBorderRadius.small,
+  },
+}))(StyledSmallTableCell);
+
+export const StyledSmallRightTableCell = withStyles((theme: Theme) => createStyles({
+  root: {
+    borderRadius: theme.shape.rightRoundedBorderRadius.small,
+  },
+}))(StyledSmallTableCell);
 
 export const LiveViewButton = withStyles((theme: Theme) => createStyles({
   root: {

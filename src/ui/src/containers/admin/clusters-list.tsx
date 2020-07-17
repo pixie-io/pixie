@@ -118,7 +118,7 @@ export const ClustersTable = () => {
                   to={getClusterDetailsURL(encodeURIComponent(cluster.name))}
                   color='secondary'
                   variant='text'
-                  disabled={cluster.statusGroup !== 'healthy'}
+                  disabled={cluster.status === 'DISCONNECTED'}
                 >
                   {cluster.prettyName}
                 </Button>
