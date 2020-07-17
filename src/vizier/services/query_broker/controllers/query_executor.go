@@ -159,7 +159,7 @@ func (e *QueryExecutor) WaitForCompletion() (*queryresultspb.QueryResult, error)
 	select {
 	case <-e.done:
 		break
-	case <-time.After(3 * time.Second):
+	case <-time.After(6 * time.Second):
 		timeout = true
 	}
 
