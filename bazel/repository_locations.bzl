@@ -43,9 +43,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/bazelbuild/bazel-skylib/archive/1.0.2.tar.gz"],
     ),
     io_bazel_rules_docker = dict(
-        sha256 = "df13123c44b4a4ff2c2f337b906763879d94871d16411bf82dcfeba892b58607",
-        strip_prefix = "rules_docker-0.13.0",
-        urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.13.0.tar.gz"],
+        sha256 = "4521794f0fba2e20f3bf15846ab5e01d5332e587e9ce81629c7f96c793bb7036",
+        strip_prefix = "rules_docker-0.14.4",
+        urls = ["https://github.com/bazelbuild/rules_docker/archive/v0.14.4.tar.gz"],
     ),
     io_bazel_toolchains = dict(
         sha256 = "e2126599d29f2028e6b267eba273dcc8e7f4a35ff323e9600cf42fb03875b7c6",

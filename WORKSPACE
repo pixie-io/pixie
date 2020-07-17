@@ -58,9 +58,19 @@ load("@build_bazel_apple_support//lib:repositories.bzl", "apple_support_dependen
 
 apple_support_dependencies()
 
-load("//bazel:pl_workspace.bzl", "pl_workspace_setup")
+load("//bazel:pl_workspace.bzl", "pl_docker_images", "pl_workspace_setup")
 
 pl_workspace_setup()
+
+# The pip_deps rule cannot be loaded until we load all the basic packages in the Pixie
+# workspace. Also, bazel requires that loads are done at the top level (not in a function), so
+# we need to pull it out over here.
+load("@io_bazel_rules_docker//repositories:pip_repositories.bzl", "pip_deps")
+
+pip_deps()
+
+# The docker images can't be loaded until all pip_deps are satisfied.
+pl_docker_images()
 
 load("@com_github_grpc_grpc//bazel:grpc_extra_deps.bzl", "grpc_extra_deps")
 

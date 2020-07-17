@@ -4,6 +4,7 @@ load(
     "@io_bazel_rules_docker//repositories:repositories.bzl",
     container_repositories = "repositories",
 )
+load("@io_bazel_rules_docker//repositories:deps.bzl", container_deps = "deps")
 load("@io_bazel_rules_docker//go:image.bzl", _go_image_repos = "repositories")
 load("@io_bazel_rules_docker//java:image.bzl", _java_image_repos = "repositories")
 load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
@@ -210,10 +211,12 @@ def pl_workspace_setup():
     )
 
     container_repositories()
+    container_deps()
 
     k8s_repositories()
     k8s_go_deps()
 
+def pl_docker_images():
     _package_manager_setup()
     _docker_images_setup()
     _artifacts_setup()
