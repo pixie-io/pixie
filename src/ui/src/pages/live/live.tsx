@@ -200,11 +200,15 @@ const LiveView = () => {
         </Menu>
         <ProfileMenu />
       </NavBars>
-      {
-        loading ? <div className='center-content'><ClusterInstructions message='Connecting to cluster...' /></div>
-          : (
-            <div className={classes.content}>
-              <LiveViewBreadcrumbs />
+      <div className={classes.content}>
+        <LiveViewBreadcrumbs />
+        {
+          loading ? (
+            <div className='center-content'>
+              <ClusterInstructions message='Connecting to cluster...' />
+            </div>
+          ) : (
+            <>
               <ScriptLoader />
               <DataDrawerSplitPanel className={classes.mainPanel}>
                 <EditorSplitPanel className={classes.editorPanel}>
@@ -216,9 +220,10 @@ const LiveView = () => {
               { localStorage.getItem('px-new-autocomplete') === 'true'
                 ? <NewCommandInput open={commandOpen} onClose={toggleCommandOpen} />
                 : <CommandInput open={commandOpen} onClose={toggleCommandOpen} /> }
-            </div>
+            </>
           )
-      }
+        }
+      </div>
     </div>
   );
 };
