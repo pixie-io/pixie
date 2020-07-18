@@ -34,11 +34,6 @@ message Time64NSColumn {
   repeated int64 data = 1;
 }
 
-// Duration64 column data.
-message Duration64NSColumn {
-  repeated int64 data = 1;
-}
-
 // String data column.
 message StringColumn {
   repeated bytes data = 1 [(gogoproto.customtype) = "pixielabs.ai/pixielabs/src/table_store/proto/types.StringData"];
@@ -53,7 +48,6 @@ message Column {
     Time64NSColumn time64ns_data = 4;
     Float64Column float64_data = 5;
     StringColumn string_data = 6;
-    Duration64NSColumn duration64ns_data = 7;
   }
 }
 

@@ -44,12 +44,6 @@ struct hash<Time64NSValue> {
   }
 };
 
-template <>
-struct hash<Duration64NSValue> {
-  uint64_t operator()(Duration64NSValue val) {
-    return ::util::Hash64(reinterpret_cast<const char*>(&(val)), sizeof(Duration64NSValue));
-  }
-};
 }  // namespace utils
 }  // namespace types
 }  // namespace pl

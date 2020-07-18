@@ -42,8 +42,7 @@ class UDTFArg {
   // PL_CARNOT_UPDATE_FOR_NEW_TYPES.
   using DefaultValue =
       std::variant<std::monostate, types::BoolValue, types::Int64Value, types::Float64Value,
-                   types::Time64NSValue, types::Duration64NSValue, types::UInt128Value,
-                   std::string_view>;
+                   types::Time64NSValue, types::UInt128Value, std::string_view>;
   template <types::DataType dt, types::SemanticType st = types::ST_NONE>
   static constexpr UDTFArg Make(
       std::string_view name, std::string_view desc,

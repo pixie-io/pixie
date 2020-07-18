@@ -25,11 +25,6 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
       "add");
   registry->RegisterOrDie<AddUDF<types::StringValue, types::StringValue, types::StringValue>>(
       "add");
-  registry
-      ->RegisterOrDie<AddUDF<types::Time64NSValue, types::Duration64NSValue, types::Time64NSValue>>(
-          "add");
-  registry->RegisterOrDie<
-      AddUDF<types::Duration64NSValue, types::Duration64NSValue, types::Duration64NSValue>>("add");
   // Subtraction
   registry->RegisterOrDie<SubtractUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
       "subtract");
@@ -47,12 +42,6 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
   registry
       ->RegisterOrDie<SubtractUDF<types::Float64Value, types::Float64Value, types::Float64Value>>(
           "subtract");
-  registry->RegisterOrDie<
-      SubtractUDF<types::Time64NSValue, types::Time64NSValue, types::Duration64NSValue>>(
-      "subtract");
-  registry->RegisterOrDie<
-      SubtractUDF<types::Duration64NSValue, types::Duration64NSValue, types::Duration64NSValue>>(
-      "subtract");
 
   // Division
   registry->RegisterOrDie<DivideUDF<types::Int64Value, types::Int64Value, types::Int64Value>>(
@@ -108,7 +97,6 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
   registry->RegisterOrDie<EqualUDF<types::Int64Value, types::Float64Value>>("equal");
   registry->RegisterOrDie<EqualUDF<types::Float64Value, types::Int64Value>>("equal");
   registry->RegisterOrDie<EqualUDF<types::UInt128Value, types::UInt128Value>>("equal");
-  registry->RegisterOrDie<EqualUDF<types::Duration64NSValue, types::Duration64NSValue>>("equal");
   registry->RegisterOrDie<EqualUDF<types::Time64NSValue, types::Time64NSValue>>("equal");
   registry->RegisterOrDie<ApproxEqualUDF<types::Float64Value, types::Float64Value>>("equal");
 
@@ -122,8 +110,6 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
   registry->RegisterOrDie<NotEqualUDF<types::Float64Value, types::Int64Value>>("notEqual");
   registry->RegisterOrDie<ApproxNotEqualUDF<types::Float64Value, types::Float64Value>>("notEqual");
   registry->RegisterOrDie<NotEqualUDF<types::Time64NSValue, types::Time64NSValue>>("notEqual");
-  registry->RegisterOrDie<NotEqualUDF<types::Duration64NSValue, types::Duration64NSValue>>(
-      "notEqual");
   // ~=
   registry->RegisterOrDie<ApproxEqualUDF<types::Float64Value, types::Float64Value>>("approxEqual");
   // >
@@ -140,8 +126,6 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
 
   registry->RegisterOrDie<GreaterThanUDF<types::Time64NSValue, types::Time64NSValue>>(
       "greaterThanEqual");
-  registry->RegisterOrDie<GreaterThanUDF<types::Duration64NSValue, types::Duration64NSValue>>(
-      "greaterThanEqual");
   // <
   registry->RegisterOrDie<LessThanUDF<types::Int64Value, types::Int64Value>>("lessThan");
   registry->RegisterOrDie<LessThanUDF<types::Float64Value, types::Float64Value>>("lessThan");
@@ -151,8 +135,6 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
   registry->RegisterOrDie<LessThanEqualUDF<types::Float64Value, types::Float64Value>>(
       "lessThanEqual");
   registry->RegisterOrDie<LessThanEqualUDF<types::Time64NSValue, types::Time64NSValue>>(
-      "lessThanEqual");
-  registry->RegisterOrDie<LessThanEqualUDF<types::Duration64NSValue, types::Duration64NSValue>>(
       "lessThanEqual");
   registry->RegisterOrDie<LessThanUDF<types::StringValue, types::StringValue>>("lessThanEqual");
 
@@ -174,28 +156,23 @@ void RegisterMathOpsOrDie(udf::Registry* registry) {
   // Mean
   registry->RegisterOrDie<MeanUDA<types::Float64Value>>("mean");
   registry->RegisterOrDie<MeanUDA<types::Int64Value>>("mean");
-  registry->RegisterOrDie<MeanUDA<types::Duration64NSValue>>("mean");
   registry->RegisterOrDie<MeanUDA<types::BoolValue>>("mean");
   // Sum
   registry->RegisterOrDie<SumUDA<types::Float64Value>>("sum");
   registry->RegisterOrDie<SumUDA<types::Int64Value>>("sum");
-  registry->RegisterOrDie<SumUDA<types::Duration64NSValue>>("sum");
   registry->RegisterOrDie<SumUDA<types::BoolValue>>("sum");
   // Max
   registry->RegisterOrDie<MaxUDA<types::Float64Value>>("max");
   registry->RegisterOrDie<MaxUDA<types::Int64Value>>("max");
   registry->RegisterOrDie<MaxUDA<types::Time64NSValue>>("max");
-  registry->RegisterOrDie<MaxUDA<types::Duration64NSValue>>("max");
   // Min
   registry->RegisterOrDie<MinUDA<types::Float64Value>>("min");
   registry->RegisterOrDie<MinUDA<types::Int64Value>>("min");
   registry->RegisterOrDie<MinUDA<types::Time64NSValue>>("min");
-  registry->RegisterOrDie<MinUDA<types::Duration64NSValue>>("min");
   // Count
   registry->RegisterOrDie<CountUDA<types::Float64Value>>("count");
   registry->RegisterOrDie<CountUDA<types::Int64Value>>("count");
   registry->RegisterOrDie<CountUDA<types::Time64NSValue>>("count");
-  registry->RegisterOrDie<CountUDA<types::Duration64NSValue>>("count");
   registry->RegisterOrDie<CountUDA<types::BoolValue>>("count");
   registry->RegisterOrDie<CountUDA<types::StringValue>>("count");
 }

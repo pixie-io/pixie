@@ -301,9 +301,9 @@ message ScalarValue {
     double float64_value = 4;
     string string_value = 5;
     int64 time64_ns_value = 6;
-    int64 duration64_ns_value = 8;
     pl.types.UInt128 uint128_value = 7;
   }
+  reserved 8;
 }
 
 // ScalarFuncs perform an operator on a set of arguments and produce a single

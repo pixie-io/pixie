@@ -32,7 +32,6 @@ using types::BoolValueColumnWrapper;
 using types::ColumnWrapper;
 using types::DataType;
 using types::DataTypeTraits;
-using types::Duration64NSValueColumnWrapper;
 using types::Float64ValueColumnWrapper;
 using types::Int64ValueColumnWrapper;
 using types::MakeArrowBuilder;
@@ -86,8 +85,6 @@ std::shared_ptr<arrow::Array> EvalScalarToArrow(ExecState* exec_state, const pla
       return EvalScalar<DataType::STRING>(mem_pool, val.StringValue(), count);
     case types::TIME64NS:
       return EvalScalar<DataType::TIME64NS>(mem_pool, val.Time64NSValue(), count);
-    case types::DURATION64NS:
-      return EvalScalar<DataType::DURATION64NS>(mem_pool, val.Duration64NSValue(), count);
     case types::UINT128:
       return EvalScalar<DataType::UINT128>(mem_pool, val.UInt128Value(), count);
     default:
@@ -111,9 +108,6 @@ std::shared_ptr<ColumnWrapper> EvalScalarToColumnWrapper(ExecState*, const plan:
     case types::TIME64NS:
       return std::make_shared<types::Time64NSValueColumnWrapper>(
           count, types::Time64NSValue(val.Time64NSValue()));
-    case types::DURATION64NS:
-      return std::make_shared<types::Duration64NSValueColumnWrapper>(
-          count, types::Duration64NSValue(val.Duration64NSValue()));
     case types::UINT128:
       return std::make_shared<types::UInt128ValueColumnWrapper>(count, val.UInt128Value());
     default:

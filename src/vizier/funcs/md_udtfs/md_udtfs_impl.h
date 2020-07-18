@@ -176,8 +176,8 @@ class GetAgentStatus final : public carnot::udf::UDTF<GetAgentStatus> {
                 "The current health status of the agent"),
         ColInfo("create_time", types::DataType::TIME64NS, types::PatternType::GENERAL,
                 "The creation time of the agent"),
-        ColInfo("last_heartbeat_ns", types::DataType::DURATION64NS, types::PatternType::GENERAL,
-                "Time since the last heartbeat"));
+        ColInfo("last_heartbeat_ns", types::DataType::INT64, types::PatternType::GENERAL,
+                "Time (in nanoseconds) since the last heartbeat"));
   }
 
   Status Init(FunctionContext*) {

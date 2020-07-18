@@ -22,7 +22,6 @@ const DataAlignmentMap = new Map<DataType, CellAlignment>(
     [DataType.FLOAT64, 'end'],
     [DataType.STRING, 'start'],
     [DataType.TIME64NS, 'end'],
-    [DataType.DURATION64NS, 'start'],
   ],
 );
 

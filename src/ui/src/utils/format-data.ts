@@ -89,8 +89,6 @@ export function getDataRenderer(type: DataType): (any) => string {
       return formatBoolData;
     case DataType.UINT128:
       return formatUInt128;
-    case DataType.DURATION64NS:
-      return formatInt64Data;
     case DataType.STRING:
     default:
       return (d) => d.toString();
@@ -125,8 +123,6 @@ const sortFuncForType = (type: DataType) => {
       return boolSortFunc;
     case DataType.UINT128:
       return uint128SortFunc;
-    case DataType.DURATION64NS:
-      return intSortFunc;
     case DataType.STRING:
     default:
       return stringSortFunc;

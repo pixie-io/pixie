@@ -139,7 +139,6 @@ class ScalarValue : public ScalarExpression {
   double Float64Value() const;
   std::string StringValue() const;
   int64_t Time64NSValue() const;
-  int64_t Duration64NSValue() const;
   absl::uint128 UInt128Value() const;
   bool IsNull() const;
 

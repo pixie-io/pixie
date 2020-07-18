@@ -123,26 +123,6 @@ export namespace Time64NSColumn {
   }
 }
 
-export class Duration64NSColumn extends jspb.Message {
-  getDataList(): Array<number>;
-  setDataList(value: Array<number>): void;
-  clearDataList(): void;
-  addData(value: number, index?: number): void;
-
-  serializeBinary(): Uint8Array;
-  toObject(includeInstance?: boolean): Duration64NSColumn.AsObject;
-  static toObject(includeInstance: boolean, msg: Duration64NSColumn): Duration64NSColumn.AsObject;
-  static serializeBinaryToWriter(message: Duration64NSColumn, writer: jspb.BinaryWriter): void;
-  static deserializeBinary(bytes: Uint8Array): Duration64NSColumn;
-  static deserializeBinaryFromReader(message: Duration64NSColumn, reader: jspb.BinaryReader): Duration64NSColumn;
-}
-
-export namespace Duration64NSColumn {
-  export type AsObject = {
-    dataList: Array<number>,
-  }
-}
-
 export class StringColumn extends jspb.Message {
   getDataList(): Array<string>;
   setDataList(value: Array<string>): void;
@@ -194,11 +174,6 @@ export class Column extends jspb.Message {
   hasStringData(): boolean;
   clearStringData(): void;
 
-  getDuration64nsData(): Duration64NSColumn | undefined;
-  setDuration64nsData(value?: Duration64NSColumn): void;
-  hasDuration64nsData(): boolean;
-  clearDuration64nsData(): void;
-
   getColDataCase(): Column.ColDataCase;
 
   serializeBinary(): Uint8Array;
@@ -217,7 +192,6 @@ export namespace Column {
     time64nsData?: Time64NSColumn.AsObject,
     float64Data?: Float64Column.AsObject,
     stringData?: StringColumn.AsObject,
-    duration64nsData?: Duration64NSColumn.AsObject,
   }
 
   export enum ColDataCase { 
@@ -228,7 +202,6 @@ export namespace Column {
     TIME64NS_DATA = 4,
     FLOAT64_DATA = 5,
     STRING_DATA = 6,
-    DURATION64NS_DATA = 7,
   }
 }
 
@@ -419,9 +392,6 @@ export class ScalarValue extends jspb.Message {
   getTime64NsValue(): number;
   setTime64NsValue(value: number): void;
 
-  getDuration64NsValue(): number;
-  setDuration64NsValue(value: number): void;
-
   getUint128Value(): UInt128 | undefined;
   setUint128Value(value?: UInt128): void;
   hasUint128Value(): boolean;
@@ -445,7 +415,6 @@ export namespace ScalarValue {
     float64Value: number,
     stringValue: string,
     time64NsValue: number,
-    duration64NsValue: number,
     uint128Value?: UInt128.AsObject,
   }
 
@@ -456,7 +425,6 @@ export namespace ScalarValue {
     FLOAT64_VALUE = 4,
     STRING_VALUE = 5,
     TIME64_NS_VALUE = 6,
-    DURATION64_NS_VALUE = 8,
     UINT128_VALUE = 7,
   }
 }
@@ -735,7 +703,6 @@ export enum DataType {
   FLOAT64 = 4,
   STRING = 5,
   TIME64NS = 6,
-  DURATION64NS = 7,
 }
 export enum SemanticType { 
   ST_UNSPECIFIED = 0,

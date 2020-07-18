@@ -220,8 +220,6 @@ func getNumRows(in *pl_api_vizierpb.Column) int {
 		return len(u.Int64Data.Data)
 	case *pl_api_vizierpb.Column_Time64NsData:
 		return len(u.Time64NsData.Data)
-	case *pl_api_vizierpb.Column_Duration64NsData:
-		return len(u.Duration64NsData.Data)
 	case *pl_api_vizierpb.Column_BooleanData:
 		return len(u.BooleanData.Data)
 	case *pl_api_vizierpb.Column_Uint128Data:
@@ -254,8 +252,6 @@ func (v *VizierStreamOutputAdapter) getNativeTypedValue(tableInfo *TableInfo, ro
 		}
 	case *pl_api_vizierpb.Column_Time64NsData:
 		return time.Unix(0, u.Time64NsData.Data[rowIdx])
-	case *pl_api_vizierpb.Column_Duration64NsData:
-		return u.Duration64NsData.Data[rowIdx]
 	case *pl_api_vizierpb.Column_BooleanData:
 		return u.BooleanData.Data[rowIdx]
 	case *pl_api_vizierpb.Column_Uint128Data:

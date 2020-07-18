@@ -73,8 +73,6 @@ constexpr auto GetMutablePBDataColumn(table_store::schemapb::Column* data_col) {
     return data_col->mutable_int64_data();
   } else if constexpr (T == DataType::TIME64NS) {
     return data_col->mutable_time64ns_data();
-  } else if constexpr (T == DataType::DURATION64NS) {
-    return data_col->mutable_duration64ns_data();
   } else if constexpr (T == DataType::UINT128) {
     return data_col->mutable_uint128_data();
   } else if constexpr (T == DataType::FLOAT64) {
@@ -94,8 +92,6 @@ constexpr const auto& GetPBDataColumn(const table_store::schemapb::Column& data_
     return data_col.int64_data();
   } else if constexpr (T == DataType::TIME64NS) {
     return data_col.time64ns_data();
-  } else if constexpr (T == DataType::DURATION64NS) {
-    return data_col.duration64ns_data();
   } else if constexpr (T == DataType::UINT128) {
     return data_col.uint128_data();
   } else if constexpr (T == DataType::FLOAT64) {
@@ -179,8 +175,6 @@ StatusOr<DataType> ProtoDataType(const table_store::schemapb::Column& proto) {
       return DataType::FLOAT64;
     case table_store::schemapb::Column::kStringData:
       return DataType::STRING;
-    case table_store::schemapb::Column::kDuration64NsData:
-      return DataType::DURATION64NS;
     default:
       return error::Internal("Received unknown column data type '$0' in ProtoDataType",
                              magic_enum::enum_name(proto.col_data_case()));

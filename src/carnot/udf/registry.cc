@@ -80,11 +80,6 @@ void DefaultToScalarValue<types::TIME64NS>(const UDTFArg& arg, planpb::ScalarVal
 }
 
 template <>
-void DefaultToScalarValue<types::DURATION64NS>(const UDTFArg& arg, planpb::ScalarValue* out) {
-  out->set_duration64_ns_value(arg.GetDefaultValue<types::DURATION64NS>().val);
-}
-
-template <>
 void DefaultToScalarValue<types::FLOAT64>(const UDTFArg& arg, planpb::ScalarValue* out) {
   out->set_float64_value(arg.GetDefaultValue<types::FLOAT64>().val);
 }

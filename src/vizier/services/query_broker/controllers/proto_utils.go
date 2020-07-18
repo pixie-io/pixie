@@ -24,7 +24,6 @@ var dataTypeToVizierDataType = map[typespb.DataType]vizierpb.DataType{
 	typespb.FLOAT64:           vizierpb.FLOAT64,
 	typespb.STRING:            vizierpb.STRING,
 	typespb.TIME64NS:          vizierpb.TIME64NS,
-	typespb.DURATION64NS:      vizierpb.DURATION64NS,
 }
 
 var semanticTypeToVizierSemanticType = map[typespb.SemanticType]vizierpb.SemanticType{
@@ -236,14 +235,6 @@ func colToVizierCol(col *schemapb.Column) (*vizierpb.Column, error) {
 			ColData: &vizierpb.Column_StringData{
 				StringData: &vizierpb.StringColumn{
 					Data: b,
-				},
-			},
-		}, nil
-	case *schemapb.Column_Duration64NsData:
-		return &vizierpb.Column{
-			ColData: &vizierpb.Column_Duration64NsData{
-				Duration64NsData: &vizierpb.Duration64NSColumn{
-					Data: c.Duration64NsData.Data,
 				},
 			},
 		}, nil

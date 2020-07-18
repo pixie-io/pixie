@@ -185,7 +185,6 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ParseStringAsType(const pypa::AstPtr& ast,
       PL_ASSIGN_OR_RETURN(node, ir_graph()->CreateNode<FloatIR>(ast, val));
       break;
     }
-    case types::DataType::DURATION64NS:
     case types::DataType::TIME64NS: {
       int64_t val;
       if (!absl::SimpleAtoi(value, &val)) {

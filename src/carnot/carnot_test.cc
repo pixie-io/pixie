@@ -87,8 +87,9 @@ TEST_F(CarnotTest, basic) {
   EXPECT_TRUE(rb2->ColumnAt(1)->Equals(types::ToArrow(col2_in2, arrow::default_memory_pool())));
 }
 
+// TODO(somebody): Is this test is needed now that DataType::DURATION64NS is removed?
 TEST_F(CarnotTest, basic_duration_test) {
-  std::vector<types::Duration64NSValue> col1_0_expected = {2, 4, 6};
+  std::vector<types::Int64Value> col1_0_expected = {2, 4, 6};
 
   auto query = absl::StrJoin(
       {

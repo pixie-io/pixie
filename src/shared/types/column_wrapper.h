@@ -154,7 +154,6 @@ using UInt128ValueColumnWrapper = ColumnWrapperTmpl<UInt128Value>;
 using Float64ValueColumnWrapper = ColumnWrapperTmpl<Float64Value>;
 using StringValueColumnWrapper = ColumnWrapperTmpl<StringValue>;
 using Time64NSValueColumnWrapper = ColumnWrapperTmpl<Time64NSValue>;
-using Duration64NSValueColumnWrapper = ColumnWrapperTmpl<Duration64NSValue>;
 
 template <typename TColumnWrapper, types::DataType DType>
 inline SharedColumnWrapper FromArrowImpl(const std::shared_ptr<arrow::Array>& arr) {
@@ -182,21 +181,6 @@ inline SharedColumnWrapper FromArrowImpl<Time64NSValueColumnWrapper, DataType::T
       static_cast<Time64NSValueColumnWrapper*>(wrapper.get())->UnsafeRawData();
   for (size_t i = 0; i < size; ++i) {
     out_data[i] = Time64NSValue(arr_casted->Value(i));
-  }
-  return wrapper;
-}
-
-template <>
-inline SharedColumnWrapper FromArrowImpl<Duration64NSValueColumnWrapper, DataType::TIME64NS>(
-    const std::shared_ptr<arrow::Array>& arr) {
-  CHECK_EQ(arr->type_id(), DataTypeTraits<types::DURATION64NS>::arrow_type_id);
-  size_t size = arr->length();
-  auto wrapper = StringValueColumnWrapper::Make(types::DURATION64NS, size);
-  auto arr_casted = static_cast<arrow::Int64Array*>(arr.get());
-  Duration64NSValue* out_data =
-      static_cast<Duration64NSValueColumnWrapper*>(wrapper.get())->UnsafeRawData();
-  for (size_t i = 0; i < size; ++i) {
-    out_data[i] = Duration64NSValue(arr_casted->Value(i));
   }
   return wrapper;
 }
@@ -264,8 +248,6 @@ inline SharedColumnWrapper ColumnWrapper::Make(DataType data_type, size_t size) 
       return std::make_shared<StringValueColumnWrapper>(size);
     case DataType::TIME64NS:
       return std::make_shared<Time64NSValueColumnWrapper>(size);
-    case DataType::DURATION64NS:
-      return std::make_shared<Duration64NSValueColumnWrapper>(size);
     default:
       CHECK(0) << "Unknown data type";
   }
@@ -345,10 +327,6 @@ struct ColumnWrapperType<DataType::TIME64NS> {
   using type = Time64NSValueColumnWrapper;
 };
 
-template <>
-struct ColumnWrapperType<DataType::DURATION64NS> {
-  using type = Duration64NSValueColumnWrapper;
-};
 template <>
 struct ColumnWrapperType<DataType::STRING> {
   using type = StringValueColumnWrapper;

@@ -48,8 +48,6 @@ export function columnFromProto(column: Column): any[] {
   } if (column.hasTime64nsData()) {
     const data = column.getTime64nsData().getDataList();
     return data.map(nanoToMilliSeconds);
-  } if (column.hasDuration64nsData()) {
-    return column.getDuration64nsData().getDataList();
   }
   throw (new Error(`Unsupported data type: ${column.getColDataCase()}`));
 }

@@ -13,7 +13,6 @@ enum DataType {
   FLOAT64 = 4;
   STRING = 5;
   TIME64NS = 6;
-  DURATION64NS = 7;
 }
 
 enum SemanticType {
@@ -66,11 +65,6 @@ message Time64NSColumn {
   repeated int64 data = 1;
 }
 
-// Duration64 column data.
-message Duration64NSColumn {
-  repeated int64 data = 1;
-}
-
 // String data column.
 message StringColumn {
   repeated string data = 1;
@@ -85,7 +79,6 @@ message Column {
     Time64NSColumn time64ns_data = 4;
     Float64Column float64_data = 5;
     StringColumn string_data = 6;
-    Duration64NSColumn duration64ns_data = 7;
   }
 }
 
@@ -148,7 +141,6 @@ message ScalarValue {
     double float64_value = 4;
     string string_value = 5;
     int64 time64_ns_value = 6;
-    int64 duration64_ns_value = 8;
     UInt128 uint128_value = 7;
   }
 }

@@ -146,14 +146,6 @@ struct Time64NSValue : public Int64Value {
   Time64NSValue(int64_t lhs) : Int64Value(lhs) {}
 };
 
-struct Duration64NSValue : public Int64Value {
-  using Int64Value::Int64Value;
-  // Allow implicit construction to make it easier/more natural to return values
-  // from functions and also in other code using int's for time.
-  // NOLINTNEXTLINE: implicit constructor.
-  Duration64NSValue(int64_t lhs) : Int64Value(lhs) {}
-};
-
 union FixedSizeValueUnion {
   // Don't construct values up creation of this union, this default constructor
   // prevents construction of sub types.
@@ -164,7 +156,6 @@ union FixedSizeValueUnion {
   UInt128Value uint128_value;
   Float64Value float64_value;
   Time64NSValue time64ns_value;
-  Duration64NSValue duration64ns_value;
 };
 
 const uint8_t kFixedSizeBytes = sizeof(FixedSizeValueUnion);
@@ -223,11 +214,6 @@ inline const Time64NSValue& Get<Time64NSValue>(const FixedSizeValueUnion& u) {
   return u.time64ns_value;
 }
 
-template <>
-inline const Duration64NSValue& Get<Duration64NSValue>(const FixedSizeValueUnion& u) {
-  return u.duration64ns_value;
-}
-
 template <typename T>
 inline void SetValue(FixedSizeValueUnion* u, T val) {
   PL_UNUSED(u);
@@ -265,12 +251,6 @@ inline void SetValue<Time64NSValue>(FixedSizeValueUnion* u, Time64NSValue val) {
   u->time64ns_value = val;
 }
 
-template <>
-inline void SetValue<Duration64NSValue>(FixedSizeValueUnion* u, Duration64NSValue val) {
-  DCHECK(u != nullptr);
-  u->duration64ns_value = val;
-}
-
 /**
  * Checks to see if a valid ValueType is being used.
  * @tparam T The type to check.
@@ -282,7 +262,7 @@ struct IsValidValueType {
       std::is_base_of_v<BaseValueType, T> &&
       (std::is_same_v<T, BoolValue> || std::is_same_v<T, Int64Value> ||
        std::is_same_v<T, Float64Value> || std::is_same_v<T, StringValue> ||
-       std::is_same_v<T, Time64NSValue> || std::is_same_v<T, Duration64NSValue>);
+       std::is_same_v<T, Time64NSValue>);
 };
 
 /**
@@ -339,16 +319,6 @@ template <>
 struct ValueTypeTraits<Time64NSValue> {
   static constexpr bool is_fixed_size = true;
   static constexpr DataType data_type = types::TIME64NS;
-  using arrow_type = arrow::Int64Type;
-  using arrow_builder_type = arrow::Int64Builder;
-  using arrow_array_type = arrow::Int64Array;
-  using native_type = int64_t;
-};
-
-template <>
-struct ValueTypeTraits<Duration64NSValue> {
-  static constexpr bool is_fixed_size = true;
-  static constexpr DataType data_type = types::DURATION64NS;
   using arrow_type = arrow::Int64Type;
   using arrow_builder_type = arrow::Int64Builder;
   using arrow_array_type = arrow::Int64Array;
@@ -425,16 +395,6 @@ struct DataTypeTraits<DataType::STRING> {
 template <>
 struct DataTypeTraits<DataType::TIME64NS> {
   using value_type = Time64NSValue;
-  using arrow_type = arrow::Int64Type;
-  using arrow_builder_type = arrow::Int64Builder;
-  using arrow_array_type = arrow::Int64Array;
-  using native_type = int64_t;
-  static constexpr arrow::Type::type arrow_type_id = arrow::Type::INT64;
-};
-
-template <>
-struct DataTypeTraits<DataType::DURATION64NS> {
-  using value_type = Duration64NSValue;
   using arrow_type = arrow::Int64Type;
   using arrow_builder_type = arrow::Int64Builder;
   using arrow_array_type = arrow::Int64Array;

@@ -13,7 +13,6 @@ enum DataType {
   FLOAT64 = 4;
   STRING = 5;
   TIME64NS = 6;
-  DURATION64NS = 7;
 }
 
 // The types of patterns for the different data elements.

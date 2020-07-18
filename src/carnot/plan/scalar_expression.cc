@@ -70,12 +70,6 @@ int64_t ScalarValue::Time64NSValue() const {
   return pb_.time64_ns_value();
 }
 
-int64_t ScalarValue::Duration64NSValue() const {
-  DCHECK(is_initialized_) << "Not initialized";
-  VLOG_IF(1, pb_.value_case() != planpb::ScalarValue::kDuration64NsValue)
-      << "Calling accessor on null/invalid value";
-  return pb_.duration64_ns_value();
-}
 absl::uint128 ScalarValue::UInt128Value() const {
   DCHECK(is_initialized_) << "Not initialized";
   VLOG_IF(1, pb_.value_case() != planpb::ScalarValue::kUint128Value)
@@ -105,8 +99,6 @@ std::string ScalarValue::DebugString() const {
       return absl::Substitute("\"$0\"", StringValue());
     case types::TIME64NS:
       return absl::Substitute("$0", Time64NSValue());
-    case types::DURATION64NS:
-      return absl::Substitute("$0", Duration64NSValue());
     case types::UINT128:
       return absl::Substitute("hi:$0,lo:$1", absl::Uint128High64(UInt128Value()),
                               absl::Uint128Low64(UInt128Value()));
