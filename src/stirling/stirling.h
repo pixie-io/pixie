@@ -13,7 +13,7 @@ namespace pl {
 namespace stirling {
 
 /**
- * @brief Convenience function to subscribe to all info classes of
+ * Convenience function to subscribe to all info classes of
  * a published proto message. This should actually be in an agent.
  * TODO(kgandhi): Move to agent or common utils for agent when available.
  *
@@ -23,7 +23,7 @@ namespace stirling {
 stirlingpb::Subscribe SubscribeToAllInfoClasses(const stirlingpb::Publish& publish_proto);
 
 /**
- * @brief Convenience function to subscribe to a single info classes of
+ * Convenience function to subscribe to a single info classes of
  * a published proto message. This should actually be in an agent.
  * TODO(kgandhi): Move to agent or common utils for agent when available.
  *
@@ -71,7 +71,7 @@ class Stirling : public NotCopyable {
   virtual ~Stirling() = default;
 
   /**
-   * @brief Create a Stirling object
+   * Create a Stirling object.
    * Factory method to create Stirling with a source registry.
    *
    * @param registry
@@ -80,18 +80,18 @@ class Stirling : public NotCopyable {
   static std::unique_ptr<Stirling> Create(std::unique_ptr<SourceRegistry> registry);
 
   /**
-   * @brief Registers probes defined inside a tracing program.
+   * Registers probes defined inside a tracing program.
    */
   virtual int64_t RegisterDynamicTrace(
       std::unique_ptr<dynamic_tracing::ir::logical::Program> program) = 0;
 
   /**
-   * @brief Returns the status of the probe registration for the probe identified by the input ID.
+   * Returns the status of the probe registration for the probe identified by the input ID.
    */
   virtual Status CheckDynamicTraceStatus(uint64_t probe_id) = 0;
 
   /**
-   * @brief Populate the Publish Proto object. Agent calls this function to get the Publish
+   * Populate the Publish Proto object. Agent calls this function to get the Publish
    * proto message. The proto publish message contains information (InfoClassSchema) on
    * all the Source Connectors that can be run to gather data and information on the types
    * for the data. The agent can then subscribe to a subset of the published message. The proto
@@ -101,7 +101,7 @@ class Stirling : public NotCopyable {
   virtual void GetPublishProto(stirlingpb::Publish* publish_pb) = 0;
 
   /**
-   * @brief Get the Subscription object. Receive a Subscribe proto message from the agent.
+   * Get the Subscription object. Receive a Subscribe proto message from the agent.
    * Update the schemas based on the subscription message. Generate the appropriate tables
    * that conform to subscription information.
    *
@@ -111,7 +111,7 @@ class Stirling : public NotCopyable {
   virtual Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) = 0;
 
   /**
-   * @brief Register call-back from Agent. Used to periodically send data.
+   * Register call-back from Agent. Used to periodically send data.
    *
    * Function signature is:
    *   uint64_t table_id
@@ -120,7 +120,7 @@ class Stirling : public NotCopyable {
   virtual void RegisterDataPushCallback(DataPushCallback f) = 0;
 
   /**
-   * @brief Register a callback from the agent to fetch the latest metadata state.
+   * Register a callback from the agent to fetch the latest metadata state.
    * This state is returned is constant and valid for the duration of the shared_ptr
    * lifetime. It should be periodically refreshed to update the metadata and release old
    * versions of the metadata to allow deletion of stale state.
@@ -128,27 +128,22 @@ class Stirling : public NotCopyable {
   virtual void RegisterAgentMetadataCallback(AgentMetadataCallback f) = 0;
 
   /**
-   * @brief Return a map of table ID to InfoClassManager names.
-   */
-  virtual std::unordered_map<uint64_t, std::string> TableIDToNameMap() const = 0;
-
-  /**
-   * @brief Main data collection call. This version blocks, so make sure to wrap a thread around it.
+   * Main data collection call. This version blocks, so make sure to wrap a thread around it.
    */
   virtual void Run() = 0;
 
   /**
-   * @brief Main data collection call. This version spawns off as an independent thread.
+   * Main data collection call. This version spawns off as an independent thread.
    */
   virtual Status RunAsThread() = 0;
 
   /**
-   * @brief Wait for the running thread to terminate. Assumes previous call to RunThread().
+   * Wait for the running thread to terminate. Assumes previous call to RunThread().
    */
   virtual void WaitForThreadJoin() = 0;
 
   /**
-   * @brief Stop Stirling data collection, and perform any final clean-up actions.
+   * Stop Stirling data collection, and perform any final clean-up actions.
    * Blocking, so will only return once the main loop has stopped.
    *
    * If Stirling is managing the thread, it will wait for thread to exit.

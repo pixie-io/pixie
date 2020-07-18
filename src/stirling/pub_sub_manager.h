@@ -19,7 +19,7 @@ class PubSubManager {
   ~PubSubManager() = default;
 
   /**
-   * @brief Create a proto message from InfoClassManagers (where each have a schema).
+   * Create a proto message from InfoClassManagers (where each have a schema).
    *
    * @param publish_pb pointer to a Publish proto message.
    * @param info_class_mgrs Reference to a vector of info class manager unique pointers.
@@ -28,7 +28,7 @@ class PubSubManager {
                             const InfoClassManagerVec& info_class_mgrs);
 
   /**
-   * @brief Update the ElementState for each InfoElement in the InfoClassManager
+   * Update the ElementState for each InfoElement in the InfoClassManager
    * in info_class_mgrs_ from a subscription message and notify the data collector
    * about the update to schemas. The data collector can then proceed to configure
    * SourceConnectors and DataTable with the subscribed information.
@@ -40,6 +40,18 @@ class PubSubManager {
   Status UpdateSchemaFromSubscribe(const stirlingpb::Subscribe& subscribe_proto,
                                    const InfoClassManagerVec& info_class_mgrs);
 };
+
+/**
+ * Utility function to index a publish message by ID, for quick access.
+ */
+inline absl::flat_hash_map<uint64_t, const stirlingpb::InfoClass*> IndexPublication(
+    const stirlingpb::Publish& pub) {
+  absl::flat_hash_map<uint64_t, const stirlingpb::InfoClass*> map;
+  for (const auto& info_class : pub.published_info_classes()) {
+    map[info_class.id()] = &info_class;
+  }
+  return map;
+}
 
 }  // namespace stirling
 }  // namespace pl

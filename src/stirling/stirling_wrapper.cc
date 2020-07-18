@@ -10,6 +10,7 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/output.h"
+#include "src/stirling/pub_sub_manager.h"
 #include "src/stirling/source_registry.h"
 #include "src/stirling/stirling.h"
 
@@ -18,6 +19,7 @@
 #include "src/stirling/mysql_table.h"
 #include "src/stirling/pgsql_table.h"
 
+using pl::stirling::IndexPublication;
 using pl::stirling::PrintRecordBatch;
 using pl::stirling::SourceRegistry;
 using pl::stirling::SourceRegistrySpecifier;
@@ -41,35 +43,30 @@ DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For 
 DEFINE_int32(timeout_secs, 0,
              "If greater than 0, only runs for the specified amount of time and exits.");
 
-std::unordered_map<uint64_t, std::string> table_id_to_name_map;
-std::vector<std::string_view> table_print_enables = {kHTTPTable.name(), kMySQLTable.name(),
-                                                     kCQLTable.name()};
+std::vector<std::string_view> g_table_print_enables = {kHTTPTable.name(), kMySQLTable.name(),
+                                                       kCQLTable.name()};
 
 absl::TimeZone tz;
 
-Publish* g_publication = nullptr;
+absl::flat_hash_map<uint64_t, const ::pl::stirling::stirlingpb::InfoClass*> g_table_info_map;
 
 void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
                              std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
-  std::string name = table_id_to_name_map[table_id];
+  // Find the table info from the publications.
+  auto iter = g_table_info_map.find(table_id);
+  if (iter == g_table_info_map.end()) {
+    LOG(DFATAL) << absl::Substitute("Encountered unknown table id $0", table_id);
+    return;
+  }
+  const pl::stirling::stirlingpb::InfoClass& table_info = *(iter->second);
 
   // Only output enabled tables (lookup by name).
-  if (std::find(table_print_enables.begin(), table_print_enables.end(), name) ==
-      table_print_enables.end()) {
+  if (std::find(g_table_print_enables.begin(), g_table_print_enables.end(), table_info.name()) ==
+      g_table_print_enables.end()) {
     return;
   }
 
-  // Get the table schema for the table.
-  DCHECK(g_publication != nullptr);
-  const auto& info_classes = g_publication->published_info_classes();
-  auto iter = std::find_if(
-      info_classes.begin(), info_classes.end(),
-      [&name](const pl::stirling::stirlingpb::InfoClass& x) { return x.name() == name; });
-  if (iter == info_classes.end()) {
-    return;
-  }
-
-  PrintRecordBatch(name, iter->schema(), *record_batch);
+  PrintRecordBatch(table_info.name(), table_info.schema(), *record_batch);
 }
 
 // Put this in global space, so we can kill it in the signal handler.
@@ -111,7 +108,7 @@ int main(int argc, char** argv) {
   }
 
   if (!FLAGS_print_record_batches.empty()) {
-    table_print_enables = absl::StrSplit(FLAGS_print_record_batches, ",", absl::SkipWhitespace());
+    g_table_print_enables = absl::StrSplit(FLAGS_print_record_batches, ",", absl::SkipWhitespace());
   }
 
   std::unique_ptr<SourceRegistry> registry = pl::stirling::CreateSourceRegistry(sources.value());
@@ -123,15 +120,12 @@ int main(int argc, char** argv) {
   // Get a publish proto message to subscribe from.
   Publish publication;
   stirling->GetPublishProto(&publication);
-  g_publication = &publication;
+  g_table_info_map = IndexPublication(publication);
 
   // Subscribe to all elements.
   // Stirling will update its schemas and sets up the data tables.
-  auto subscription = pl::stirling::SubscribeToAllInfoClasses(publication);
+  Subscribe subscription = pl::stirling::SubscribeToAllInfoClasses(publication);
   PL_CHECK_OK(stirling->SetSubscription(subscription));
-
-  // Get a map from InfoClassManager names to Table IDs
-  table_id_to_name_map = stirling->TableIDToNameMap();
 
   // Set a dummy callback function (normally this would be in the agent).
   stirling->RegisterDataPushCallback(StirlingWrapperCallback);
@@ -154,7 +148,7 @@ int main(int argc, char** argv) {
   if (FLAGS_timeout_secs > 0) {
     // Run for the specified amount of time, then terminate.
     LOG(INFO) << absl::Substitute("Running for $0 seconds.", FLAGS_timeout_secs);
-    sleep(FLAGS_timeout_secs);
+    std::this_thread::sleep_for(std::chrono::milliseconds(FLAGS_timeout_secs));
     stirling->Stop();
   }
 

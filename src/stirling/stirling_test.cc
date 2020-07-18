@@ -142,10 +142,10 @@ class StirlingTest : public ::testing::Test {
 
     stirling_->GetPublishProto(&publish_proto_);
 
-    const auto& id_to_name_map = stirling_->TableIDToNameMap();
-
     // Create reference model
-    for (const auto& [id, name] : id_to_name_map) {
+    for (const auto& info_class : publish_proto_.published_info_classes()) {
+      const uint64_t id = info_class.id();
+      const std::string& name = info_class.name();
       if (name[name.length() - 1] == '0') {
         // Table 0 is a simple (non-tabletized) table with multiple columns.
         // Here we append checkers that mimics the sequences from kSeq0Table from
@@ -198,10 +198,9 @@ class StirlingTest : public ::testing::Test {
   }
 
   void TearDown() override {
-    for (const auto& [id, name] : stirling_->TableIDToNameMap()) {
+    for (const auto& info_class : publish_proto_.published_info_classes()) {
       LOG(INFO) << absl::Substitute("Number of records processed: $0",
-                                    num_processed_per_table_[id]);
-      PL_UNUSED(name);
+                                    num_processed_per_table_[info_class.id()]);
     }
   }
 
@@ -355,7 +354,7 @@ TEST_F(StirlingTest, DISABLED_dynamic_trace_api) {
 
   // Checking status of existent trace should return OK.
   std::string path =
-      pl::testing::BazelBinTestFilePath("src/stirling/obj_tools/testdata/prebuilt_dummy_exe");
+      pl::testing::TestFilePath("src/stirling/obj_tools/testdata/prebuilt_dummy_exe");
   constexpr std::string_view kProgram = R"(
 binary_spec {
   path: "$0"

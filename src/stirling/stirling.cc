@@ -140,7 +140,6 @@ class StirlingImpl final : public Stirling {
   }
   std::unique_ptr<ConnectorContext> GetContext();
 
-  std::unordered_map<uint64_t, std::string> TableIDToNameMap() const override;
   void Run() override;
   Status RunAsThread() override;
   void Stop() override;
@@ -256,16 +255,6 @@ std::unique_ptr<ConnectorContext> StirlingImpl::GetContext() {
   return std::unique_ptr<ConnectorContext>(new StandaloneContext());
 }
 
-std::unordered_map<uint64_t, std::string> StirlingImpl::TableIDToNameMap() const {
-  std::unordered_map<uint64_t, std::string> map;
-
-  for (auto& mgr : info_class_mgrs_) {
-    map.insert({mgr->id(), std::string(mgr->name())});
-  }
-
-  return map;
-}
-
 Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
   // Step 1: Init the source.
   PL_RETURN_IF_ERROR(source->Init());
@@ -360,6 +349,7 @@ Status StirlingImpl::CheckDynamicTraceStatus(uint64_t trace_id) {
 }
 
 void StirlingImpl::GetPublishProto(stirlingpb::Publish* publish_pb) {
+  absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
   config_->GeneratePublishProto(publish_pb, info_class_mgrs_);
 }
 
