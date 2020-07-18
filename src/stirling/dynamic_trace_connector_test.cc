@@ -105,10 +105,16 @@ TEST(DynamicTraceSource, dynamic_trace_source) {
 
   std::string program_str =
       absl::Substitute(kProgramSpec, pl::testing::TestFilePath(FLAGS_dummy_go_binary).string());
-  dynamic_tracing::ir::logical::Program trace_program;
-  ASSERT_TRUE(google::protobuf::TextFormat::ParseFromString(program_str, &trace_program));
-  uint64_t trace_id = stirling->RegisterDynamicTrace(trace_program);
-  EXPECT_OK(stirling->CheckDynamicTraceStatus(trace_id));
+  auto trace_program = std::make_unique<dynamic_tracing::ir::logical::Program>();
+  ASSERT_TRUE(google::protobuf::TextFormat::ParseFromString(program_str, trace_program.get()));
+  int64_t trace_id = stirling->RegisterDynamicTrace(std::move(trace_program));
+
+  // Wait for the probe to deploy.
+  Status s;
+  do {
+    s = stirling->CheckDynamicTraceStatus(trace_id);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  } while (!s.ok() && s.code() == pl::statuspb::Code::RESOURCE_UNAVAILABLE);
 
   // OK state should persist.
   EXPECT_OK(stirling->CheckDynamicTraceStatus(trace_id));
@@ -122,7 +128,6 @@ TEST(DynamicTraceSource, dynamic_trace_source) {
     auto info_class = subscription.add_subscribed_info_classes();
     info_class->MergeFrom(publication.published_info_classes(i));
 
-    LOG(INFO) << publication.published_info_classes(i).name();
     bool subscribe = publication.published_info_classes(i).name() == "probe0_table_value_t";
 
     g_table_schema = &(info_class->schema());

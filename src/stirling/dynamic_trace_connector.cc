@@ -2,6 +2,7 @@
 
 #include "src/shared/types/proto/types.pb.h"
 #include "src/stirling/dynamic_tracing/dynamic_tracer.h"
+#include "src/stirling/utils/linux_headers.h"
 
 namespace pl {
 namespace stirling {
@@ -35,6 +36,8 @@ void GenericHandleEventLoss(void* cb_cookie, uint64_t lost) {
 }  // namespace
 
 Status DynamicTraceConnector::InitImpl() {
+  PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders(utils::kDefaultHeaderSearchOrder));
+
   PL_RETURN_IF_ERROR(InitBPFProgram(bcc_program_.code));
 
   for (const auto& uprobe : bcc_program_.uprobes) {

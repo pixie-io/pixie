@@ -82,7 +82,8 @@ class Stirling : public NotCopyable {
   /**
    * @brief Registers probes defined inside a tracing program.
    */
-  virtual uint64_t RegisterDynamicTrace(const dynamic_tracing::ir::logical::Program& program) = 0;
+  virtual int64_t RegisterDynamicTrace(
+      std::unique_ptr<dynamic_tracing::ir::logical::Program> program) = 0;
 
   /**
    * @brief Returns the status of the probe registration for the probe identified by the input ID.

@@ -121,6 +121,7 @@ pl_cc_test(
     name = "stirling_test",
     size = "medium",
     srcs = ["stirling_test.cc"],
+    data = ["//src/stirling/obj_tools/testdata:prebuilt_exe"],
     deps = [":cc_library"],
 )
 
