@@ -176,15 +176,6 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
 
   const toggleFocus = React.useCallback(() => setFocused((enabled) => !enabled), []);
 
-  const doubleClickCallback = React.useCallback((params?: any) => {
-    if (params.nodes.length > 0) {
-      const semType = !clusteredMode ? SemanticType.ST_POD_NAME : SemanticType.ST_SERVICE_NAME;
-      const page = toSingleEntityPage(params.nodes[0], semType, selectedClusterName);
-      const pathname = toEntityPathname(page);
-      history.push(pathname);
-    }
-  }, [history, selectedClusterName, clusteredMode]);
-
   // Load the graph.
   React.useEffect(() => {
     const p = new RequestGraphParser(data, display);
@@ -226,10 +217,26 @@ export const RequestGraphWidget = (props: RequestGraphProps) => {
         edges: graph.edges,
       };
       const n = new Network(ref.current, d, graphOpts);
-      n.on('doubleClick', doubleClickCallback);
       setNetwork(n);
     }
-  }, [graph, ref, colorByLatency, doubleClickCallback]);
+  }, [graph, ref, colorByLatency]);
+
+  const doubleClickCallback = React.useCallback((params?: any) => {
+    if (params.nodes.length > 0) {
+      const semType = !clusteredMode ? SemanticType.ST_POD_NAME : SemanticType.ST_SERVICE_NAME;
+      const page = toSingleEntityPage(params.nodes[0], semType, selectedClusterName);
+      const pathname = toEntityPathname(page);
+      history.push(pathname);
+    }
+  }, [history, selectedClusterName, clusteredMode]);
+
+  // This function needs to dynamically change on 'network' every time clusteredMode is updated,
+  // so we assign it separately from where Network is created.
+  React.useEffect(() => {
+    if (network) {
+      network.on('doubleClick', doubleClickCallback);
+    }
+  }, [network, doubleClickCallback]);
 
   const classes = useStyles();
   return (
