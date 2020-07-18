@@ -7,11 +7,13 @@ load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_proto_library")
 pl_proto_library(
     name = "shared_pl_proto",
     srcs = ["shared.proto"],
+    deps = ["//src/shared/types/proto:types_pl_proto"],
 )
 
 pl_cc_proto_library(
     name = "shared_pl_cc_proto",
     proto = ":shared_pl_proto",
+    deps = ["//src/shared/types/proto:types_pl_cc_proto"],
 )
 
 pl_proto_library(

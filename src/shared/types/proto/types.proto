@@ -62,3 +62,17 @@ enum SemanticType {
   ST_IP_ADDRESS = 1100;
   ST_PORT = 1200;
 }
+
+// TODO(yzhao): Change the class UPID in src/shared/metadata/base_types.h to be a wrapper of this
+// message, or replace it with this message.
+message UPID {
+  // A unique ID for a particular agent.
+  uint32 asid = 1;
+
+  // The PID of the running process on a particular node.
+  uint32 pid = 2;
+
+  // The start time stamp of the process, used to distinguish between processes having the same
+  // PID across different time frame.
+  uint64 ts_ns = 3;
+}

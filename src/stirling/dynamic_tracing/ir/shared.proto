@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package pl.stirling.dynamic_tracing.ir.shared;
 
+import "src/shared/types/proto/types.proto";
+
 // Describes where to attach a probe.
 message TracePoint {
   string symbol = 1;
@@ -22,22 +24,26 @@ message TracePoint {
 }
 
 message BinarySpec {
-  string path = 1;
+  oneof target_oneof {
+    // The path of the executable file.
+    string path = 1;
+
+    // The UPID of a running process.
+    pl.types.UPID upid = 3;
+  }
 
   enum Language {
-      // Automatically infer the language (default).
-      AUTO = 0;
-      C = 1;
-      CPP = 2;
-      GOLANG = 3;
-    }
+    // Automatically infer the language (default).
+    AUTO = 0;
+    C = 1;
+    CPP = 2;
+    GOLANG = 3;
+  }
 
   // The language in which the binary was written.
   // For now, must manually specify the language, so please avoid AUTO.
   Language language = 2;
 }
-
-
 
 // All enum values must be consecutive, as they are used as array index in codegen.
 enum BPFHelper {
