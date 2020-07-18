@@ -119,7 +119,7 @@ isVizierBuildRun = env.JOB_NAME.startsWith("pixielabs-main-vizier-release-build/
 isCloudStagingBuildRun = env.JOB_NAME.startsWith("pixielabs-main-cloud-staging-build/")
 isCloudProdBuildRun = env.JOB_NAME.startsWith("pixielabs-main-cloud-release-build/")
 
-runCoverageJob = isMainRun
+runCoverageJob = false; // isMainRun
 
 // Currently disabling TSAN on BPF builds because it runs too slow.
 // In particular, the uprobe deployment takes far too long. See issue:
