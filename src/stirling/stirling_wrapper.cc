@@ -6,9 +6,12 @@
 #include <iomanip>
 #include <thread>
 
+#include <absl/base/internal/spinlock.h>
 #include <absl/strings/str_split.h>
+#include <google/protobuf/text_format.h>
 
 #include "src/common/base/base.h"
+#include "src/stirling/dynamic_tracing/dynamic_tracer.h"
 #include "src/stirling/output.h"
 #include "src/stirling/pub_sub_manager.h"
 #include "src/stirling/source_registry.h"
@@ -26,6 +29,7 @@ using pl::stirling::SourceRegistrySpecifier;
 using pl::stirling::Stirling;
 using pl::stirling::stirlingpb::Publish;
 using pl::stirling::stirlingpb::Subscribe;
+using DynamicTracingProgram = pl::stirling::dynamic_tracing::ir::logical::Program;
 
 using pl::types::ColumnWrapperRecordBatch;
 using pl::types::TabletID;
@@ -36,6 +40,7 @@ using pl::stirling::kMySQLTable;
 using pl::stirling::kPGSQLTable;
 
 DEFINE_string(sources, "kProd", "[kAll|kProd|kMetrics|kTracers] Choose sources to enable.");
+DEFINE_string(trace, "", "Dynamic trace to deploy.");
 DEFINE_string(print_record_batches, "",
               "Comma-separated list of tables to print. Defaults to tracers if not specified. Use "
               "'None' for none.");
@@ -43,15 +48,19 @@ DEFINE_bool(init_only, false, "If true, only runs the init phase and exits. For 
 DEFINE_int32(timeout_secs, 0,
              "If greater than 0, only runs for the specified amount of time and exits.");
 
-std::vector<std::string_view> g_table_print_enables = {kHTTPTable.name(), kMySQLTable.name(),
-                                                       kCQLTable.name()};
+std::vector<std::string> g_table_print_enables = {
+    std::string(kHTTPTable.name()), std::string(kMySQLTable.name()), std::string(kCQLTable.name())};
 
-absl::TimeZone tz;
-
+// Put this in global space, so we can kill it in the signal handler.
+Stirling* g_stirling = nullptr;
+pl::ProcessStatsMonitor* g_process_stats_monitor = nullptr;
 absl::flat_hash_map<uint64_t, const ::pl::stirling::stirlingpb::InfoClass*> g_table_info_map;
+absl::base_internal::SpinLock g_callback_state_lock;
 
 void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
                              std::unique_ptr<ColumnWrapperRecordBatch> record_batch) {
+  absl::base_internal::SpinLockHolder lock(&g_callback_state_lock);
+
   // Find the table info from the publications.
   auto iter = g_table_info_map.find(table_id);
   if (iter == g_table_info_map.end()) {
@@ -69,10 +78,6 @@ void StirlingWrapperCallback(uint64_t table_id, TabletID /* tablet_id */,
   PrintRecordBatch(table_info.name(), table_info.schema(), *record_batch);
 }
 
-// Put this in global space, so we can kill it in the signal handler.
-Stirling* g_stirling = nullptr;
-pl::ProcessStatsMonitor* g_process_stats_monitor = nullptr;
-
 void SignalHandler(int signum) {
   // Important to call Stop(), because it releases BPF resources,
   // which would otherwise leak.
@@ -83,6 +88,54 @@ void SignalHandler(int signum) {
     g_process_stats_monitor->PrintCPUTime();
   }
   exit(signum);
+}
+
+void Subscribe(Stirling* stirling) {
+  // Declare as static, since g_table_info_map will point into this structure.
+  static Publish publication;
+
+  // Get the new publication.
+  // Do this under a lock to avoid races with any currently executing StirlingWrapperCallback().
+  {
+    absl::base_internal::SpinLockHolder lock(&g_callback_state_lock);
+    stirling->GetPublishProto(&publication);
+    g_table_info_map = IndexPublication(publication);
+  }
+
+  // Subscribe to all elements.
+  // Stirling will update its schemas and sets up the data tables.
+  PL_CHECK_OK(stirling->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(publication)));
+}
+
+void DeployTrace(Stirling* stirling) {
+  PL_ASSIGN_OR_EXIT(std::string trace_program_str, pl::ReadFileToString(FLAGS_trace));
+
+  auto trace_program = std::make_unique<DynamicTracingProgram>();
+  bool success =
+      google::protobuf::TextFormat::ParseFromString(trace_program_str, trace_program.get());
+  if (!success) {
+    LOG(ERROR) << "Unable to parse trace file";
+    return;
+  }
+
+  // Automatically enable printing of this table.
+  for (const auto& o : trace_program->outputs()) {
+    g_table_print_enables.push_back(o.name());
+  }
+
+  int64_t trace_id = stirling->RegisterDynamicTrace(std::move(trace_program));
+
+  pl::Status s;
+  do {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    s = stirling->CheckDynamicTraceStatus(trace_id);
+  } while (!s.ok() && s.code() == pl::statuspb::Code::RESOURCE_UNAVAILABLE);
+
+  if (s.ok()) {
+    LOG(INFO) << "Successfully deployed dynamic trace!";
+  } else {
+    LOG(WARNING) << s.ToString();
+  }
 }
 
 // A simple wrapper that shows how the data collector is to be hooked up
@@ -118,20 +171,10 @@ int main(int argc, char** argv) {
   g_stirling = stirling.get();
 
   // Get a publish proto message to subscribe from.
-  Publish publication;
-  stirling->GetPublishProto(&publication);
-  g_table_info_map = IndexPublication(publication);
-
-  // Subscribe to all elements.
-  // Stirling will update its schemas and sets up the data tables.
-  Subscribe subscription = pl::stirling::SubscribeToAllInfoClasses(publication);
-  PL_CHECK_OK(stirling->SetSubscription(subscription));
+  Subscribe(stirling.get());
 
   // Set a dummy callback function (normally this would be in the agent).
   stirling->RegisterDataPushCallback(StirlingWrapperCallback);
-
-  // Timezone used by the callback function to print timestamps.
-  CHECK(absl::LoadTimeZone("America/Los_Angeles", &tz));
 
   if (FLAGS_init_only) {
     LOG(INFO) << "Exiting after init.";
@@ -144,6 +187,18 @@ int main(int argc, char** argv) {
 
   // Run Data Collector.
   std::thread run_thread = std::thread(&Stirling::Run, stirling.get());
+
+  if (!FLAGS_trace.empty()) {
+    // Dynamic traces are sources that are enabled while Stirling is running.
+    // Deploy after a brief delay to emulate how it would be used in a PEM environment.
+    // Could also consider removing this altogether.
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    DeployTrace(stirling.get());
+
+    // Update the subscription to enable the new trace.
+    Subscribe(stirling.get());
+  }
 
   if (FLAGS_timeout_secs > 0) {
     // Run for the specified amount of time, then terminate.

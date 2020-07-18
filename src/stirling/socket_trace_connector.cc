@@ -459,7 +459,8 @@ Status SocketTraceConnector::UpdateHTTP2DebugSymbols(std::string_view binary,
   // Arguments of net/http.(*http2writeResHeaders).writeFrame.
   {
     std::string_view fn = "net/http.(*http2writeResHeaders).writeFrame";
-    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn), LOG(INFO) << __s__.msg();
+    PL_ASSIGN_OR(auto args_map, dwarf_reader->GetFunctionArgInfo(fn),
+                 LOG(WARNING) << absl::Substitute("GetFunctionArgInfo($0): $1", fn, __s__.msg());
                  __s__ = kEmptyMap;);
     GET_ARG_OFFSET(symaddrs->writeFrame_w_offset, args_map, "w");
     GET_ARG_OFFSET(symaddrs->writeFrame_ctx_offset, args_map, "ctx");
