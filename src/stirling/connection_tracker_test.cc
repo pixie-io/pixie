@@ -516,8 +516,6 @@ TEST_F(ConnectionTrackerTest, HTTPStuckEventsAreRemoved) {
   testing::EventGenerator event_gen(&real_clock_);
   auto data0 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(0, 10));
   auto data1 = event_gen.InitSendEvent<kProtocolHTTP>(kHTTPReq0.substr(10, 10));
-  auto data2 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPReq0.substr(20, 10));
-  auto data3 = event_gen.InitRecvEvent<kProtocolHTTP>(kHTTPReq0.substr(30, 10));
 
   ConnectionTracker tracker;
 

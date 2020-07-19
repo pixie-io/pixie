@@ -128,9 +128,9 @@ REPOSITORY_LOCATIONS = dict(
         urls = ["https://github.com/cpp-taskflow/cpp-taskflow/archive/3c996b520500e0694a26fca743046c54d8ac26cc.tar.gz"],
     ),
     com_github_tencent_rapidjson = dict(
-        sha256 = "fc22de09b56c68bf4e0463e33352f0d7622eb9500ba93af453b7d2d66b5d6be9",
-        strip_prefix = "rapidjson-7484e06c589873e1ed80382d262087e4fa80fb63",
-        urls = ["https://github.com/Tencent/rapidjson/archive/7484e06c589873e1ed80382d262087e4fa80fb63.tar.gz"],
+        sha256 = "4a34a0c21794f067afca6c9809971f0bd77a1d1834c4dc53bdd09e4ab4d05ce4",
+        strip_prefix = "rapidjson-f56928de85d56add3ca6ae7cf7f119a42ee1585b",
+        urls = ["https://github.com/Tencent/rapidjson/archive/f56928de85d56add3ca6ae7cf7f119a42ee1585b.tar.gz"],
     ),
     com_github_ariafallah_csv_parser = dict(
         sha256 = "c722047128c97b7a3f38d0c320888d905692945e4a96b6ebd6d208686764644a",

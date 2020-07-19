@@ -48,6 +48,7 @@ go_test(
         "status_monitor_test.go",
     ],
     embed = [":go_default_library"],
+    flaky = 1,
     deps = [
         "//src/cloud/artifact_tracker/artifacttrackerpb:artifact_tracker_pl_go_proto",
         "//src/cloud/artifact_tracker/artifacttrackerpb/mock:go_default_library",
@@ -81,5 +82,4 @@ go_test(
         "@org_golang_google_grpc//codes:go_default_library",
         "@org_golang_google_grpc//status:go_default_library",
     ],
-    flaky = 1,
 )

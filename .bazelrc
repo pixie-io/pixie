@@ -86,6 +86,7 @@ build:asan --define signal_trace=disabled
 build:asan --copt -DADDRESS_SANITIZER=1
 build:asan --test_env=ASAN_SYMBOLIZER_PATH
 build:asan --test_env=ASAN_OPTIONS=handle_abort=1:allow_addr2line=true
+build:asan --test_env=UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
 build:asan --define tcmalloc=disabled
 # Clang-10 requires additional linkopts to make sure ubsan is linked in correctly.
 build:asan --linkopt=-L/opt/clang-10.0/lib/clang/10.0.0/lib/linux

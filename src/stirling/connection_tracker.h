@@ -459,13 +459,18 @@ class ConnectionTracker {
       recv_data_.CleanupFrames<TFrameType>();
     }
 
+    auto* state = protocol_state<TStateType>();
     if (send_data_.CleanupEvents()) {
-      protocol_state<TStateType>()->global = {};
-      protocol_state<TStateType>()->send = {};
+      if (state != nullptr) {
+        state->global = {};
+        state->send = {};
+      }
     }
     if (recv_data_.CleanupEvents()) {
-      protocol_state<TStateType>()->global = {};
-      protocol_state<TStateType>()->recv = {};
+      if (state != nullptr) {
+        state->global = {};
+        state->recv = {};
+      }
     }
 
     // TODO(yzhao): For http2, it's likely the case that we'll want to preserve the inflater under
