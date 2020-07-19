@@ -7,7 +7,7 @@ export CXX=g++
 set -e
 
 # We can consider adding this file to our repo if needed.
-CODECOV_VERSION="4678d212cce2078bbaaf5027af0c0dafaad6a095"
+CODECOV_VERSION="db834f033a450a75a315e72ae8490393c9b19181"
 CODECOV_SCRIPT="https://raw.githubusercontent.com/codecov/codecov-bash/${CODECOV_VERSION}/codecov"
 
 GIT_COMMIT=""
