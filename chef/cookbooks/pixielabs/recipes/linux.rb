@@ -22,6 +22,7 @@ apt_pkg_list = [
   'unzip',
   'virtualenvwrapper',
   'zlib1g-dev',
+  'zip',
 
   'bison',
   'cmake',

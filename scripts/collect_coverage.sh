@@ -19,7 +19,7 @@ HTML_OUTPUT_DIR=""
 
 CC_COVERAGE_FILE="cc_coverage.info"
 GO_COVERAGE_FILE="coverage.txt"
-UI_COVERAGE_FILE="bazel-pixielabs/src/ui/coverage/lcov.info"
+UI_OUTPUTS=bazel-testlogs/src/ui/ui-tests/test.outputs/outputs.zip
 
 # Print out the usage information and exit.
 usage() {
@@ -167,8 +167,8 @@ done
 grep -v "_test.go" coverage.tmp > ${GO_COVERAGE_FILE}
 rm -f coverage.tmp
 
-# Copy the UI coverage files.
-cp "${UI_COVERAGE_FILE}" lcov.info
+# Extract the UI coverage files. They are part of the zip archive.
+unzip -o "${UI_OUTPUTS}"
 
 # Upload to codecov.io.
 if [ "${UPLOAD_TO_CODECOV}" = true ]; then
