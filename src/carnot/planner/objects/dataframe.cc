@@ -30,14 +30,8 @@ StatusOr<std::shared_ptr<Dataframe>> Dataframe::Create(IR* graph, ASTVisitor* vi
 template <typename TIRNodeType>
 StatusOr<std::vector<TIRNodeType*>> ParseAsListOf(QLObjectPtr obj, std::string_view arg_name) {
   std::vector<TIRNodeType*> result;
-  std::vector<QLObjectPtr> items;
   bool with_index = CollectionObject::IsCollection(obj);
-  if (CollectionObject::IsCollection(obj)) {
-    items = std::static_pointer_cast<CollectionObject>(obj)->items();
-  } else {
-    items.push_back(obj);
-  }
-  for (const auto& [idx, item] : Enumerate(items)) {
+  for (const auto& [idx, item] : Enumerate(ObjectAsCollection(obj))) {
     std::string name = std::string(arg_name);
     if (with_index) {
       name = absl::Substitute("$0 (index $1)", arg_name, idx);

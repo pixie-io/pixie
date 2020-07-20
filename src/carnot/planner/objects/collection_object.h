@@ -83,6 +83,17 @@ class ListObject : public CollectionObject {
       : CollectionObject(items, ListType, visitor) {}
 };
 
+/**
+ * @brief ObjectAsCollection will return a vector of objects that this object represents. If the
+ * object argument is a Collection, it'll return the children of the collection. Otherwise it will
+ * return a vector with that object as the only element.
+ *
+ * Used to support function arguments that can take in either a single object or a collection.
+ * @param obj The Collection or regular object.
+ * @return std::vector<QLObjectPtr>
+ */
+std::vector<QLObjectPtr> ObjectAsCollection(QLObjectPtr obj);
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

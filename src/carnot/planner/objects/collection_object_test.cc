@@ -86,6 +86,27 @@ TEST_F(CollectionTest, SaveSubscriptMethodToUseElsewhere) {
   auto str = static_cast<StringIR*>(element->node());
   EXPECT_EQ(str->str(), "b");
 }
+
+TEST_F(CollectionTest, ObjectAsCollectionWithCollection) {
+  auto list = MakeTupleObj(MakeString("a"), MakeString("b"), MakeString("c"));
+  std::vector<QLObjectPtr> objects = ObjectAsCollection(list);
+  EXPECT_EQ(objects.size(), 3);
+  std::vector<std::string> object_strings;
+  for (const auto& o : objects) {
+    object_strings.push_back(GetArgAs<StringIR>(o, "arg").ConsumeValueOrDie()->str());
+  }
+  EXPECT_THAT(object_strings, ElementsAre("a", "b", "c"));
+}
+
+TEST_F(CollectionTest, ObjectAsCollectionWithNonCollection) {
+  std::vector<QLObjectPtr> objects = ObjectAsCollection(ToQLObject(MakeString("a")));
+  EXPECT_EQ(objects.size(), 1);
+  std::vector<std::string> object_strings;
+  for (const auto& o : objects) {
+    object_strings.push_back(GetArgAs<StringIR>(o, "arg").ConsumeValueOrDie()->str());
+  }
+  EXPECT_THAT(object_strings, ElementsAre("a"));
+}
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

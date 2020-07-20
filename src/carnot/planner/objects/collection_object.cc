@@ -34,6 +34,16 @@ StatusOr<QLObjectPtr> CollectionObject::SubscriptHandler(
   return (*items)[index_node->val()];
 }
 
+std::vector<QLObjectPtr> ObjectAsCollection(QLObjectPtr obj) {
+  std::vector<QLObjectPtr> items;
+  if (CollectionObject::IsCollection(obj)) {
+    items = std::static_pointer_cast<CollectionObject>(obj)->items();
+  } else {
+    items.push_back(obj);
+  }
+  return items;
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot
