@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -148,4 +149,14 @@ func (s *Server) GetAgentTableMetadata(ctx context.Context, req *metadatapb.Agen
 	}
 
 	return &resp, nil
+}
+
+// RegisterProbe is a request to register the probes specified in the Program on all agents.
+func (s *Server) RegisterProbe(ctx context.Context, req *metadatapb.RegisterProbeRequest) (*metadatapb.RegisterProbeResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}
+
+// GetProbeInfo is a request to check the status for the given probe.
+func (s *Server) GetProbeInfo(ctx context.Context, req *metadatapb.GetProbeInfoRequest) (*metadatapb.GetProbeInfoResponse, error) {
+	return nil, errors.New("Not yet implemented")
 }

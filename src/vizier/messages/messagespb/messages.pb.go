@@ -12,8 +12,10 @@ import (
 	math_bits "math/bits"
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
+	proto2 "pixielabs.ai/pixielabs/src/common/base/proto"
 	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	logical "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 	reflect "reflect"
 	strings "strings"
@@ -40,6 +42,9 @@ type VizierMessage struct {
 	//	*VizierMessage_HeartbeatAck
 	//	*VizierMessage_HeartbeatNack
 	//	*VizierMessage_ExecuteQueryRequest
+	//	*VizierMessage_RegisterProbeRequest
+	//	*VizierMessage_RegisterProbeResponse
+	//	*VizierMessage_ProbeInfoUpdate
 	Msg isVizierMessage_Msg `protobuf_oneof:"msg"`
 }
 
@@ -106,6 +111,15 @@ type VizierMessage_HeartbeatNack struct {
 type VizierMessage_ExecuteQueryRequest struct {
 	ExecuteQueryRequest *ExecuteQueryRequest `protobuf:"bytes,8,opt,name=execute_query_request,json=executeQueryRequest,proto3,oneof" json:"execute_query_request,omitempty"`
 }
+type VizierMessage_RegisterProbeRequest struct {
+	RegisterProbeRequest *RegisterProbeRequest `protobuf:"bytes,9,opt,name=register_probe_request,json=registerProbeRequest,proto3,oneof" json:"register_probe_request,omitempty"`
+}
+type VizierMessage_RegisterProbeResponse struct {
+	RegisterProbeResponse *RegisterProbeResponse `protobuf:"bytes,10,opt,name=register_probe_response,json=registerProbeResponse,proto3,oneof" json:"register_probe_response,omitempty"`
+}
+type VizierMessage_ProbeInfoUpdate struct {
+	ProbeInfoUpdate *ProbeInfoUpdate `protobuf:"bytes,11,opt,name=probe_info_update,json=probeInfoUpdate,proto3,oneof" json:"probe_info_update,omitempty"`
+}
 
 func (*VizierMessage_RegisterAgentRequest) isVizierMessage_Msg()  {}
 func (*VizierMessage_RegisterAgentResponse) isVizierMessage_Msg() {}
@@ -115,6 +129,9 @@ func (*VizierMessage_Heartbeat) isVizierMessage_Msg()             {}
 func (*VizierMessage_HeartbeatAck) isVizierMessage_Msg()          {}
 func (*VizierMessage_HeartbeatNack) isVizierMessage_Msg()         {}
 func (*VizierMessage_ExecuteQueryRequest) isVizierMessage_Msg()   {}
+func (*VizierMessage_RegisterProbeRequest) isVizierMessage_Msg()  {}
+func (*VizierMessage_RegisterProbeResponse) isVizierMessage_Msg() {}
+func (*VizierMessage_ProbeInfoUpdate) isVizierMessage_Msg()       {}
 
 func (m *VizierMessage) GetMsg() isVizierMessage_Msg {
 	if m != nil {
@@ -179,6 +196,27 @@ func (m *VizierMessage) GetExecuteQueryRequest() *ExecuteQueryRequest {
 	return nil
 }
 
+func (m *VizierMessage) GetRegisterProbeRequest() *RegisterProbeRequest {
+	if x, ok := m.GetMsg().(*VizierMessage_RegisterProbeRequest); ok {
+		return x.RegisterProbeRequest
+	}
+	return nil
+}
+
+func (m *VizierMessage) GetRegisterProbeResponse() *RegisterProbeResponse {
+	if x, ok := m.GetMsg().(*VizierMessage_RegisterProbeResponse); ok {
+		return x.RegisterProbeResponse
+	}
+	return nil
+}
+
+func (m *VizierMessage) GetProbeInfoUpdate() *ProbeInfoUpdate {
+	if x, ok := m.GetMsg().(*VizierMessage_ProbeInfoUpdate); ok {
+		return x.ProbeInfoUpdate
+	}
+	return nil
+}
+
 // XXX_OneofWrappers is for the internal use of the proto package.
 func (*VizierMessage) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
@@ -190,6 +228,9 @@ func (*VizierMessage) XXX_OneofWrappers() []interface{} {
 		(*VizierMessage_HeartbeatAck)(nil),
 		(*VizierMessage_HeartbeatNack)(nil),
 		(*VizierMessage_ExecuteQueryRequest)(nil),
+		(*VizierMessage_RegisterProbeRequest)(nil),
+		(*VizierMessage_RegisterProbeResponse)(nil),
+		(*VizierMessage_ProbeInfoUpdate)(nil),
 	}
 }
 
@@ -786,6 +827,151 @@ func (m *ExecuteQueryRequest) GetAnalyze() bool {
 	return false
 }
 
+type RegisterProbeRequest struct {
+	Program *logical.Program `protobuf:"bytes,1,opt,name=program,proto3" json:"program,omitempty"`
+	ProbeID *proto1.UUID     `protobuf:"bytes,2,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
+}
+
+func (m *RegisterProbeRequest) Reset()      { *m = RegisterProbeRequest{} }
+func (*RegisterProbeRequest) ProtoMessage() {}
+func (*RegisterProbeRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0046fd1b9991f89c, []int{12}
+}
+func (m *RegisterProbeRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RegisterProbeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RegisterProbeRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RegisterProbeRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RegisterProbeRequest.Merge(m, src)
+}
+func (m *RegisterProbeRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *RegisterProbeRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RegisterProbeRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RegisterProbeRequest proto.InternalMessageInfo
+
+func (m *RegisterProbeRequest) GetProgram() *logical.Program {
+	if m != nil {
+		return m.Program
+	}
+	return nil
+}
+
+func (m *RegisterProbeRequest) GetProbeID() *proto1.UUID {
+	if m != nil {
+		return m.ProbeID
+	}
+	return nil
+}
+
+type RegisterProbeResponse struct {
+	Status *proto2.Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+}
+
+func (m *RegisterProbeResponse) Reset()      { *m = RegisterProbeResponse{} }
+func (*RegisterProbeResponse) ProtoMessage() {}
+func (*RegisterProbeResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0046fd1b9991f89c, []int{13}
+}
+func (m *RegisterProbeResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *RegisterProbeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_RegisterProbeResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *RegisterProbeResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RegisterProbeResponse.Merge(m, src)
+}
+func (m *RegisterProbeResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *RegisterProbeResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_RegisterProbeResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RegisterProbeResponse proto.InternalMessageInfo
+
+func (m *RegisterProbeResponse) GetStatus() *proto2.Status {
+	if m != nil {
+		return m.Status
+	}
+	return nil
+}
+
+type ProbeInfoUpdate struct {
+	ProbeID *proto1.UUID   `protobuf:"bytes,1,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
+	Status  *proto2.Status `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+}
+
+func (m *ProbeInfoUpdate) Reset()      { *m = ProbeInfoUpdate{} }
+func (*ProbeInfoUpdate) ProtoMessage() {}
+func (*ProbeInfoUpdate) Descriptor() ([]byte, []int) {
+	return fileDescriptor_0046fd1b9991f89c, []int{14}
+}
+func (m *ProbeInfoUpdate) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *ProbeInfoUpdate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_ProbeInfoUpdate.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *ProbeInfoUpdate) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ProbeInfoUpdate.Merge(m, src)
+}
+func (m *ProbeInfoUpdate) XXX_Size() int {
+	return m.Size()
+}
+func (m *ProbeInfoUpdate) XXX_DiscardUnknown() {
+	xxx_messageInfo_ProbeInfoUpdate.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ProbeInfoUpdate proto.InternalMessageInfo
+
+func (m *ProbeInfoUpdate) GetProbeID() *proto1.UUID {
+	if m != nil {
+		return m.ProbeID
+	}
+	return nil
+}
+
+func (m *ProbeInfoUpdate) GetStatus() *proto2.Status {
+	if m != nil {
+		return m.Status
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*VizierMessage)(nil), "pl.vizier.messages.VizierMessage")
 	proto.RegisterType((*RegisterAgentRequest)(nil), "pl.vizier.messages.RegisterAgentRequest")
@@ -799,6 +985,9 @@ func init() {
 	proto.RegisterType((*HeartbeatAck)(nil), "pl.vizier.messages.HeartbeatAck")
 	proto.RegisterType((*HeartbeatNack)(nil), "pl.vizier.messages.HeartbeatNack")
 	proto.RegisterType((*ExecuteQueryRequest)(nil), "pl.vizier.messages.ExecuteQueryRequest")
+	proto.RegisterType((*RegisterProbeRequest)(nil), "pl.vizier.messages.RegisterProbeRequest")
+	proto.RegisterType((*RegisterProbeResponse)(nil), "pl.vizier.messages.RegisterProbeResponse")
+	proto.RegisterType((*ProbeInfoUpdate)(nil), "pl.vizier.messages.ProbeInfoUpdate")
 }
 
 func init() {
@@ -806,77 +995,89 @@ func init() {
 }
 
 var fileDescriptor_0046fd1b9991f89c = []byte{
-	// 1109 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x56, 0xcf, 0x6f, 0x1b, 0xc5,
-	0x17, 0xf7, 0xc6, 0x4e, 0x6c, 0x8f, 0xe3, 0xb8, 0xdf, 0x49, 0xd2, 0xaf, 0x55, 0xca, 0x26, 0x98,
-	0x1f, 0x4d, 0x0b, 0xd9, 0x95, 0x82, 0x50, 0x2b, 0x15, 0x8a, 0xe2, 0x18, 0x35, 0xae, 0xd4, 0xaa,
-	0x9d, 0x10, 0x0e, 0x91, 0x90, 0x99, 0xdd, 0x9d, 0x38, 0xab, 0xc4, 0xbb, 0xdb, 0x99, 0xd9, 0xaa,
-	0xed, 0x89, 0x3f, 0x81, 0x03, 0x27, 0xc4, 0x91, 0x03, 0x57, 0x4e, 0xfc, 0x09, 0x20, 0x71, 0xc9,
-	0xb1, 0xa7, 0x88, 0x6c, 0x2e, 0x1c, 0xfb, 0x27, 0xa0, 0x79, 0xb3, 0xeb, 0x38, 0xf6, 0x36, 0x46,
-	0x9c, 0x38, 0xf9, 0xbd, 0xb7, 0x9f, 0xcf, 0xe7, 0xcd, 0xbc, 0x79, 0xf3, 0xc6, 0x68, 0x5d, 0x70,
-	0xd7, 0x7e, 0xe6, 0xbf, 0xf4, 0x19, 0xb7, 0x07, 0x4c, 0x08, 0xda, 0x67, 0x62, 0x68, 0x44, 0xce,
-	0xd0, 0xb4, 0x22, 0x1e, 0xca, 0x10, 0xe3, 0xe8, 0xc8, 0xd2, 0x68, 0x2b, 0xfb, 0x72, 0x6d, 0xbd,
-	0xef, 0xcb, 0x83, 0xd8, 0xb1, 0xdc, 0x70, 0x60, 0xf7, 0xc3, 0x7e, 0x68, 0x03, 0xd4, 0x89, 0xf7,
-	0xc1, 0x03, 0x07, 0x2c, 0x2d, 0x71, 0xed, 0xb6, 0xca, 0xe8, 0x52, 0x1e, 0x84, 0xd2, 0x8e, 0x8e,
-	0x68, 0x10, 0x30, 0x6e, 0x7b, 0xbe, 0x90, 0xdc, 0x77, 0x62, 0xc9, 0xbc, 0xc8, 0x19, 0xf5, 0x7a,
-	0x0a, 0x91, 0x12, 0xaf, 0x8f, 0x11, 0x23, 0xc7, 0x1e, 0xf9, 0xba, 0x0a, 0x5f, 0xc3, 0xc1, 0x20,
-	0x0c, 0xec, 0x38, 0xf6, 0x3d, 0xbd, 0x0a, 0x30, 0x53, 0xc4, 0x9a, 0x42, 0x88, 0x03, 0xca, 0x99,
-	0x67, 0x1f, 0xde, 0x51, 0xbb, 0x94, 0xd4, 0xa3, 0x92, 0xc2, 0x2e, 0xb5, 0x99, 0x22, 0xad, 0x91,
-	0xa2, 0x08, 0xc6, 0x9f, 0xf9, 0x2e, 0x13, 0x19, 0x93, 0xf6, 0x59, 0x20, 0x23, 0x47, 0xff, 0x6a,
-	0x7c, 0xeb, 0x8f, 0x59, 0x54, 0xff, 0x0a, 0xe0, 0x0f, 0x75, 0x51, 0xf0, 0x37, 0xe8, 0x2a, 0x67,
-	0x7d, 0x5f, 0x48, 0xc6, 0x7b, 0x80, 0xec, 0x71, 0xf6, 0x34, 0x66, 0x42, 0x36, 0x8d, 0x55, 0x63,
-	0xad, 0xb6, 0xb1, 0x66, 0x4d, 0x16, 0xd2, 0x22, 0x29, 0x63, 0x53, 0x11, 0x88, 0xc6, 0x6f, 0x17,
-	0xc8, 0x12, 0xcf, 0x89, 0x63, 0x17, 0xfd, 0x7f, 0x22, 0x83, 0x88, 0xc2, 0x40, 0xb0, 0xe6, 0x0c,
-	0xa4, 0xb8, 0xf9, 0x0f, 0x52, 0x68, 0xc2, 0x76, 0x81, 0x2c, 0xf3, 0xbc, 0x0f, 0x78, 0x0f, 0x2d,
-	0xc5, 0x91, 0x47, 0x25, 0x1b, 0xdb, 0x44, 0x11, 0x32, 0x7c, 0x90, 0x97, 0x61, 0x17, 0xf0, 0x63,
-	0x5b, 0xc0, 0xf1, 0x44, 0x14, 0x7f, 0x8d, 0x96, 0xc7, 0xb4, 0xd3, 0xe5, 0x97, 0x40, 0xfc, 0xc6,
-	0x54, 0xf1, 0xe1, 0xe2, 0x17, 0xe3, 0xc9, 0x30, 0xfe, 0x0c, 0x55, 0x0f, 0x18, 0xe5, 0xd2, 0x61,
-	0x54, 0x36, 0x67, 0x41, 0xf2, 0xed, 0x3c, 0xc9, 0xed, 0x0c, 0xb4, 0x5d, 0x20, 0xe7, 0x0c, 0x7c,
-	0x1f, 0xd5, 0x87, 0x4e, 0x8f, 0xba, 0x87, 0xcd, 0x39, 0x90, 0x58, 0xbd, 0x54, 0x62, 0xd3, 0x3d,
-	0xdc, 0x2e, 0x90, 0xf9, 0x83, 0x11, 0x1f, 0x3f, 0x40, 0x0b, 0xe7, 0x42, 0x81, 0x52, 0x2a, 0x83,
-	0xd2, 0x3b, 0x97, 0x2a, 0x3d, 0xa2, 0x20, 0x75, 0xbe, 0x06, 0x15, 0x50, 0x25, 0x63, 0xcf, 0x99,
-	0x1b, 0x4b, 0xd6, 0x7b, 0x1a, 0x33, 0xfe, 0x62, 0x78, 0x1e, 0x95, 0x37, 0x97, 0xec, 0x0b, 0x4d,
-	0x78, 0xa2, 0xf0, 0xe7, 0x07, 0xb2, 0xc8, 0x26, 0xc3, 0xed, 0x59, 0x54, 0x1c, 0x88, 0x7e, 0xeb,
-	0x47, 0x03, 0x2d, 0xe5, 0xb5, 0x22, 0xbe, 0x87, 0x4a, 0x7e, 0xb0, 0x1f, 0xa6, 0x2d, 0x7c, 0x6b,
-	0x24, 0x5b, 0x76, 0x49, 0x2c, 0x7d, 0x49, 0x2c, 0x7d, 0x39, 0x80, 0xdc, 0x0d, 0xf6, 0x43, 0x02,
-	0x3c, 0xdc, 0x41, 0xb5, 0xf4, 0xc4, 0x41, 0x46, 0xb7, 0xe9, 0xbb, 0x79, 0x8b, 0x06, 0xa6, 0x3e,
-	0x6c, 0xe0, 0xa3, 0x78, 0x68, 0xb7, 0xee, 0xa2, 0xe5, 0xdc, 0x2e, 0xc6, 0xd7, 0x51, 0x89, 0x0a,
-	0xdf, 0x83, 0xe5, 0xd5, 0xdb, 0x95, 0xe4, 0x64, 0xa5, 0xb4, 0xb9, 0xd3, 0xed, 0x10, 0x88, 0x3e,
-	0x28, 0x55, 0x66, 0xae, 0x14, 0x5b, 0x3f, 0x18, 0x08, 0x4f, 0x76, 0xe8, 0x7f, 0x64, 0x67, 0xcb,
-	0x68, 0x31, 0xa7, 0xc1, 0x5b, 0x2e, 0xaa, 0x43, 0xa0, 0x43, 0x25, 0x55, 0x38, 0x4c, 0x50, 0x3d,
-	0x1b, 0x58, 0xbd, 0x91, 0x65, 0xaf, 0xab, 0x7c, 0x7a, 0x3e, 0x5a, 0xe9, 0x60, 0xb5, 0x2e, 0x0c,
-	0x56, 0xeb, 0x61, 0xca, 0x82, 0xcc, 0xf3, 0x83, 0x11, 0xaf, 0xf5, 0x53, 0x11, 0x35, 0xc6, 0xd6,
-	0x86, 0x3f, 0x45, 0x73, 0xc2, 0x3d, 0x60, 0x03, 0xda, 0x9c, 0x59, 0x2d, 0xae, 0xd5, 0x36, 0xde,
-	0x53, 0x09, 0xd2, 0x3a, 0x1c, 0xde, 0x11, 0xd6, 0xf9, 0x00, 0xb5, 0x76, 0x00, 0x07, 0xba, 0x29,
-	0x07, 0x7f, 0x8e, 0xca, 0x11, 0x0f, 0x5d, 0x26, 0x44, 0xb3, 0x08, 0xf4, 0xf7, 0xdf, 0x4c, 0x7f,
-	0xac, 0x81, 0xc0, 0xcf, 0x58, 0xf8, 0x09, 0x6a, 0xa4, 0x66, 0xcf, 0xe5, 0x8c, 0x4a, 0xe6, 0x35,
-	0x4b, 0x20, 0xb4, 0x36, 0x55, 0x68, 0x4b, 0xe3, 0xc9, 0x42, 0x74, 0xc1, 0xc7, 0x7b, 0x08, 0x67,
-	0x92, 0x92, 0xf1, 0x81, 0x1f, 0x80, 0xea, 0x2c, 0xa8, 0x7e, 0x38, 0x55, 0xf5, 0xcb, 0x21, 0x85,
-	0xfc, 0x2f, 0x1a, 0x0f, 0xe1, 0x8f, 0x10, 0xf6, 0x42, 0x26, 0x7a, 0x69, 0x23, 0xa4, 0x95, 0x53,
-	0x63, 0xa3, 0x42, 0xae, 0xa8, 0x2f, 0xba, 0xb2, 0xba, 0x52, 0xf8, 0x13, 0x54, 0x52, 0xe2, 0x97,
-	0x0d, 0x83, 0x0b, 0x87, 0x4e, 0x00, 0xde, 0xfa, 0xcd, 0x40, 0xd5, 0xe1, 0x90, 0xc0, 0xb7, 0x51,
-	0x45, 0xcf, 0xce, 0xb4, 0xeb, 0x6b, 0x1b, 0x0d, 0x25, 0xa4, 0xde, 0xbc, 0xc8, 0xb1, 0x76, 0x77,
-	0xbb, 0x9d, 0x76, 0x2d, 0x39, 0x59, 0x29, 0xeb, 0x76, 0xed, 0x90, 0x32, 0xa0, 0xbb, 0x1e, 0xc6,
-	0xa8, 0x24, 0xfd, 0x81, 0x7e, 0x29, 0x8a, 0x04, 0xec, 0xf1, 0x1e, 0x2e, 0xfe, 0xab, 0x1e, 0xc6,
-	0x37, 0x50, 0x43, 0xa8, 0x4b, 0x15, 0xb8, 0xac, 0x17, 0xc4, 0x03, 0x87, 0x71, 0x98, 0xe7, 0x45,
-	0xb2, 0x90, 0x85, 0x1f, 0x41, 0xb4, 0xf5, 0xab, 0x81, 0x70, 0xd6, 0x8f, 0x23, 0x3d, 0xd7, 0x46,
-	0x65, 0xad, 0x26, 0x9a, 0xc6, 0xb4, 0xc3, 0x26, 0x4c, 0x84, 0x31, 0x77, 0x99, 0xa6, 0x93, 0x8c,
-	0x88, 0x37, 0xd0, 0x7c, 0x7a, 0x6d, 0x7b, 0xae, 0xef, 0x71, 0xd8, 0x65, 0xb5, 0xdd, 0x48, 0x4e,
-	0x56, 0x6a, 0x3b, 0x3a, 0xbe, 0xd5, 0xed, 0x10, 0x52, 0x4b, 0x41, 0x5b, 0xbe, 0xc7, 0xf1, 0x4d,
-	0x54, 0x8d, 0x42, 0x0f, 0xf0, 0xba, 0x5f, 0xab, 0xed, 0xf9, 0xe4, 0x64, 0xa5, 0xf2, 0x38, 0xf4,
-	0x14, 0x58, 0x90, 0x4a, 0x14, 0x7a, 0x0a, 0x29, 0x5a, 0xdf, 0x1b, 0x68, 0x7e, 0x74, 0xe4, 0x0f,
-	0xab, 0x69, 0x8c, 0x54, 0x33, 0xa7, 0x0e, 0x33, 0x79, 0x75, 0xc0, 0xf7, 0xf3, 0xca, 0x9e, 0xfb,
-	0xb2, 0x4e, 0x56, 0xeb, 0xc2, 0xf4, 0x68, 0xa0, 0xfa, 0x85, 0xe7, 0xa3, 0xf5, 0x8b, 0x81, 0x16,
-	0x73, 0xa6, 0xbf, 0xea, 0x1a, 0xfd, 0x7a, 0x4c, 0xe9, 0x1a, 0x20, 0xa9, 0xae, 0x01, 0x74, 0xd7,
-	0xc3, 0x6f, 0xa1, 0xaa, 0x26, 0x0a, 0x99, 0x16, 0x95, 0x68, 0xa5, 0x1d, 0xc9, 0xf1, 0x2d, 0x54,
-	0x52, 0x43, 0x27, 0xdd, 0xc0, 0xd5, 0xb1, 0x59, 0xa4, 0x2e, 0xd1, 0x11, 0x0d, 0x08, 0x60, 0x70,
-	0x13, 0x95, 0x69, 0x40, 0x8f, 0x5e, 0xbc, 0xd4, 0x8f, 0x7d, 0x85, 0x64, 0x6e, 0x5b, 0x1e, 0x9f,
-	0x9a, 0x85, 0x57, 0xa7, 0x66, 0xe1, 0xf5, 0xa9, 0x69, 0x7c, 0x9b, 0x98, 0xc6, 0xcf, 0x89, 0x69,
-	0xfc, 0x9e, 0x98, 0xc6, 0x71, 0x62, 0x1a, 0x7f, 0x26, 0xa6, 0xf1, 0x57, 0x62, 0x16, 0x5e, 0x27,
-	0xa6, 0xf1, 0xdd, 0x99, 0x59, 0x38, 0x3e, 0x33, 0x0b, 0xaf, 0xce, 0xcc, 0xc2, 0xde, 0xbd, 0xc8,
-	0x7f, 0xee, 0xb3, 0x23, 0xea, 0x08, 0x8b, 0xfa, 0xf6, 0xd0, 0xb1, 0x2f, 0xff, 0x6f, 0x7b, 0x37,
-	0x33, 0x9d, 0x39, 0xf8, 0x1b, 0xf7, 0xf1, 0xdf, 0x01, 0x00, 0x00, 0xff, 0xff, 0x1f, 0x02, 0xa4,
-	0xad, 0x0d, 0x0b, 0x00, 0x00,
+	// 1307 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x57, 0xcf, 0x8f, 0xd3, 0xc6,
+	0x17, 0x8f, 0x37, 0x61, 0x93, 0x4c, 0x76, 0x09, 0xcc, 0xee, 0xf2, 0x8d, 0xf8, 0x52, 0xef, 0xd6,
+	0xfd, 0xc1, 0x02, 0xc5, 0x96, 0xb6, 0xaa, 0x40, 0xa2, 0xa5, 0x22, 0xa4, 0x62, 0x83, 0x04, 0x5a,
+	0x66, 0x4b, 0x0f, 0x48, 0x55, 0x3a, 0xb6, 0x87, 0xac, 0xb5, 0x89, 0x6d, 0x66, 0x6c, 0x0a, 0x9c,
+	0xfa, 0x27, 0xf4, 0xd0, 0x53, 0xd5, 0x63, 0x0f, 0xbd, 0xf6, 0xd4, 0x3f, 0xa1, 0x3d, 0x72, 0xe4,
+	0xb4, 0x2a, 0x41, 0x95, 0x7a, 0xe4, 0x4f, 0xa8, 0xe6, 0xcd, 0x38, 0x71, 0x12, 0xb3, 0x69, 0x7b,
+	0xea, 0x29, 0x33, 0xcf, 0x9f, 0xcf, 0xe7, 0xbd, 0x79, 0x7e, 0xf3, 0x9e, 0x83, 0x2e, 0x0b, 0xee,
+	0x39, 0x8f, 0x83, 0x67, 0x01, 0xe3, 0xce, 0x90, 0x09, 0x41, 0xfb, 0x4c, 0x8c, 0x17, 0xb1, 0x3b,
+	0x5e, 0xda, 0x31, 0x8f, 0x92, 0x08, 0xe3, 0x78, 0x60, 0x2b, 0xb4, 0x9d, 0x3d, 0x39, 0x7b, 0xb9,
+	0x1f, 0x24, 0x07, 0xa9, 0x6b, 0x7b, 0xd1, 0xd0, 0xe9, 0x47, 0xfd, 0xc8, 0x01, 0xa8, 0x9b, 0x3e,
+	0x84, 0x1d, 0x6c, 0x60, 0xa5, 0x24, 0xce, 0x5e, 0x91, 0x1e, 0x3d, 0xca, 0xc3, 0x28, 0x71, 0xe2,
+	0x01, 0x0d, 0x43, 0xc6, 0x1d, 0x3f, 0x10, 0x09, 0x0f, 0xdc, 0x34, 0x61, 0x7e, 0xec, 0xe6, 0x77,
+	0x3d, 0x89, 0xd0, 0xc4, 0x73, 0x33, 0xc4, 0xd8, 0x75, 0x72, 0x4f, 0xb7, 0xe0, 0x69, 0x34, 0x1c,
+	0x46, 0xa1, 0x93, 0xa6, 0x81, 0xaf, 0xa2, 0x80, 0xa5, 0x46, 0x6c, 0x4b, 0x84, 0x38, 0xa0, 0x9c,
+	0xf9, 0xce, 0xe1, 0x55, 0x79, 0xca, 0x84, 0xfa, 0x34, 0xa1, 0x70, 0x4a, 0xb5, 0xd4, 0x48, 0x3b,
+	0x97, 0x14, 0xc1, 0xf8, 0xe3, 0xc0, 0x63, 0x22, 0x63, 0xd2, 0x3e, 0x0b, 0x93, 0xd8, 0x55, 0xbf,
+	0x1a, 0x0f, 0x49, 0x14, 0x49, 0xc0, 0x07, 0x41, 0xd8, 0x77, 0xfc, 0xa7, 0x21, 0x1d, 0x06, 0x5e,
+	0x2f, 0xe1, 0xd4, 0x93, 0xfb, 0x80, 0x3b, 0x83, 0xa8, 0x1f, 0x78, 0x74, 0xa0, 0xe1, 0x56, 0x2e,
+	0x54, 0x97, 0x0a, 0xa6, 0x43, 0x15, 0x09, 0x4d, 0x52, 0x9d, 0x68, 0xeb, 0x8f, 0x2a, 0x5a, 0xfd,
+	0x02, 0x22, 0xb8, 0xa3, 0xf2, 0x8c, 0xbf, 0x42, 0x67, 0x38, 0xeb, 0x07, 0x22, 0x61, 0xbc, 0x07,
+	0xce, 0x7b, 0x9c, 0x3d, 0x4a, 0x99, 0x48, 0x5a, 0xc6, 0x96, 0xb1, 0xdd, 0xd8, 0xd9, 0xb6, 0xe7,
+	0xdf, 0x8d, 0x4d, 0x34, 0xe3, 0x86, 0x24, 0x10, 0x85, 0xdf, 0x2d, 0x91, 0x75, 0x5e, 0x60, 0xc7,
+	0x1e, 0xfa, 0xdf, 0x9c, 0x07, 0x11, 0x47, 0xa1, 0x60, 0xad, 0x25, 0x70, 0x71, 0xe1, 0x6f, 0xb8,
+	0x50, 0x84, 0xdd, 0x12, 0xd9, 0xe0, 0x45, 0x0f, 0xf0, 0x03, 0xb4, 0x9e, 0xc6, 0x3e, 0x4d, 0xd8,
+	0xcc, 0x21, 0xca, 0xe0, 0xe1, 0xfd, 0x22, 0x0f, 0xf7, 0x01, 0x3f, 0x73, 0x04, 0x9c, 0xce, 0x59,
+	0xf1, 0x97, 0x68, 0x63, 0x46, 0x5b, 0x87, 0x5f, 0x01, 0xf1, 0xf3, 0x0b, 0xc5, 0xc7, 0xc1, 0xaf,
+	0xa5, 0xf3, 0x66, 0xfc, 0x09, 0xaa, 0x1f, 0x30, 0xca, 0x13, 0x97, 0xd1, 0xa4, 0x75, 0x02, 0x24,
+	0xdf, 0x2a, 0x92, 0xdc, 0xcd, 0x40, 0xbb, 0x25, 0x32, 0x61, 0xe0, 0x5b, 0x68, 0x75, 0xbc, 0xe9,
+	0x51, 0xef, 0xb0, 0xb5, 0x0c, 0x12, 0x5b, 0xc7, 0x4a, 0xdc, 0xf0, 0x0e, 0x77, 0x4b, 0x64, 0xe5,
+	0x20, 0xb7, 0xc7, 0xb7, 0xd1, 0xc9, 0x89, 0x50, 0x28, 0x95, 0xaa, 0xa0, 0xf4, 0xf6, 0xb1, 0x4a,
+	0x77, 0x29, 0x48, 0x4d, 0x62, 0x90, 0x06, 0x99, 0x32, 0xf6, 0x84, 0x79, 0x69, 0xc2, 0x7a, 0x8f,
+	0x52, 0xc6, 0x9f, 0x8e, 0xdf, 0x47, 0xed, 0xcd, 0x29, 0xfb, 0x4c, 0x11, 0xee, 0x49, 0xfc, 0xe4,
+	0x85, 0xac, 0xb1, 0x79, 0xf3, 0x54, 0xd1, 0xc6, 0x3c, 0x72, 0xd9, 0x58, 0xbf, 0xbe, 0xb8, 0x68,
+	0xf7, 0x24, 0xa1, 0xa0, 0x68, 0xf3, 0xf6, 0xa9, 0xa2, 0xcd, 0x3c, 0xe8, 0xb7, 0x8e, 0x16, 0x17,
+	0xad, 0x96, 0x9a, 0x2f, 0xda, 0xa9, 0x07, 0xf8, 0x1e, 0x3a, 0xad, 0xb4, 0x83, 0xf0, 0x61, 0xd4,
+	0x53, 0xb5, 0xd1, 0x6a, 0x80, 0xfc, 0x3b, 0x45, 0xf2, 0xc0, 0xee, 0x86, 0x0f, 0x23, 0x55, 0x5d,
+	0xbb, 0x25, 0xd2, 0x8c, 0xa7, 0x4d, 0xed, 0x13, 0xa8, 0x3c, 0x14, 0x7d, 0xeb, 0x07, 0x03, 0xad,
+	0x17, 0x5d, 0x52, 0x7c, 0x1d, 0x55, 0xa4, 0x33, 0x7d, 0xb9, 0x2f, 0xe6, 0xbc, 0x64, 0x1d, 0xc9,
+	0x56, 0x1d, 0xc9, 0x56, 0x9d, 0x08, 0xc8, 0x52, 0x9f, 0x00, 0x0f, 0x77, 0x50, 0x43, 0xdf, 0x05,
+	0x90, 0x59, 0x7a, 0x73, 0xb0, 0xc0, 0x54, 0x51, 0x01, 0x1f, 0xa5, 0xe3, 0xb5, 0x75, 0x0d, 0x6d,
+	0x14, 0xde, 0x6f, 0x7c, 0x0e, 0x55, 0xa8, 0x08, 0x7c, 0x08, 0x6f, 0xb5, 0x5d, 0x1b, 0x1d, 0x6d,
+	0x56, 0x6e, 0xec, 0x77, 0x3b, 0x04, 0xac, 0xb7, 0x2b, 0xb5, 0xa5, 0x53, 0x65, 0xeb, 0x7b, 0x03,
+	0xe1, 0xf9, 0xbb, 0xfb, 0x1f, 0x39, 0xd9, 0x06, 0x5a, 0x2b, 0xb8, 0xfa, 0x96, 0x87, 0x56, 0xc1,
+	0xd0, 0xa1, 0x09, 0x95, 0x38, 0x4c, 0xd0, 0x6a, 0x36, 0x1d, 0x7a, 0xb9, 0xb0, 0x2f, 0x4b, 0x7f,
+	0x6a, 0x18, 0xd9, 0x7a, 0x8a, 0xd9, 0x53, 0x53, 0xcc, 0xbe, 0xa3, 0x59, 0xe0, 0x79, 0x65, 0x98,
+	0xdb, 0x59, 0x3f, 0x96, 0x51, 0x73, 0x26, 0x36, 0xfc, 0x31, 0x5a, 0x16, 0xde, 0x01, 0x1b, 0xd2,
+	0xd6, 0xd2, 0x56, 0x79, 0xbb, 0xb1, 0xf3, 0xae, 0x74, 0xa0, 0xf3, 0x70, 0x78, 0x55, 0xd8, 0x93,
+	0x69, 0x65, 0xef, 0x03, 0x0e, 0x74, 0x35, 0x07, 0x7f, 0x8a, 0xaa, 0x31, 0x8f, 0x3c, 0x26, 0x44,
+	0xab, 0x0c, 0xf4, 0xf7, 0xde, 0x4c, 0xdf, 0x53, 0x40, 0xe0, 0x67, 0x2c, 0x7c, 0x0f, 0x35, 0xf5,
+	0xb2, 0xe7, 0x71, 0x46, 0x13, 0xe6, 0xb7, 0x2a, 0x20, 0xb4, 0xbd, 0x50, 0xe8, 0xa6, 0xc2, 0x93,
+	0x93, 0xf1, 0xd4, 0x1e, 0x3f, 0x40, 0x38, 0x93, 0x4c, 0x18, 0x1f, 0x06, 0x21, 0xa8, 0x9e, 0x00,
+	0xd5, 0x4b, 0x0b, 0x55, 0x3f, 0x1f, 0x53, 0xc8, 0xe9, 0x78, 0xd6, 0x84, 0x3f, 0x40, 0xd8, 0x8f,
+	0x98, 0xd0, 0x57, 0xb1, 0xa7, 0x33, 0x27, 0x1b, 0x6a, 0x8d, 0x9c, 0x92, 0x4f, 0x54, 0x66, 0x55,
+	0xa6, 0xf0, 0x47, 0xa8, 0x22, 0xc5, 0x8f, 0x6b, 0x93, 0x53, 0x2f, 0x9d, 0x00, 0xdc, 0xfa, 0xd5,
+	0x40, 0xf5, 0x71, 0xfb, 0xc4, 0x57, 0x50, 0x4d, 0x4d, 0x15, 0x5d, 0xf5, 0x8d, 0x9d, 0xa6, 0x14,
+	0x92, 0x1f, 0x18, 0xb1, 0x6b, 0xdf, 0xbf, 0xdf, 0xed, 0xb4, 0x1b, 0xa3, 0xa3, 0xcd, 0xaa, 0x2a,
+	0xd7, 0x0e, 0xa9, 0x02, 0xba, 0xeb, 0x63, 0x8c, 0x2a, 0x49, 0x30, 0x54, 0x33, 0xb4, 0x4c, 0x60,
+	0x3d, 0x5b, 0xc3, 0xe5, 0x7f, 0x55, 0xc3, 0xf8, 0x3c, 0x6a, 0x0a, 0x79, 0xa9, 0x42, 0x8f, 0xf5,
+	0xc2, 0x74, 0xe8, 0x32, 0x0e, 0x93, 0xae, 0x4c, 0x4e, 0x66, 0xe6, 0xbb, 0x60, 0xb5, 0x7e, 0x31,
+	0x10, 0xce, 0xea, 0x31, 0x57, 0x73, 0x6d, 0x54, 0x55, 0x6a, 0xa2, 0x65, 0x2c, 0x7a, 0xd9, 0x84,
+	0x89, 0x28, 0xe5, 0x1e, 0x53, 0x74, 0x92, 0x11, 0xf1, 0x0e, 0x5a, 0xd1, 0xd7, 0xb6, 0xe7, 0x05,
+	0x3e, 0x87, 0x53, 0xd6, 0xdb, 0xcd, 0xd1, 0xd1, 0x66, 0x63, 0x5f, 0xd9, 0x6f, 0x76, 0x3b, 0x84,
+	0x34, 0x34, 0xe8, 0x66, 0xe0, 0x73, 0x7c, 0x01, 0xd5, 0xe3, 0xc8, 0x07, 0xbc, 0xaa, 0xd7, 0x7a,
+	0x7b, 0x65, 0x74, 0xb4, 0x59, 0xdb, 0x8b, 0x7c, 0x09, 0x16, 0xa4, 0x16, 0x47, 0xbe, 0x44, 0x0a,
+	0xeb, 0x3b, 0x03, 0xad, 0xe4, 0x87, 0xe1, 0x38, 0x9b, 0x46, 0x2e, 0x9b, 0x05, 0x79, 0x58, 0x2a,
+	0xca, 0x03, 0xbe, 0x55, 0x94, 0xf6, 0xc2, 0x6f, 0x8e, 0xf9, 0x6c, 0x4d, 0x75, 0x8f, 0x26, 0x5a,
+	0x9d, 0x1a, 0xac, 0xd6, 0xcf, 0x06, 0x5a, 0x2b, 0x98, 0x8b, 0xb2, 0x6a, 0xd4, 0x5c, 0x5d, 0x50,
+	0x35, 0x40, 0x92, 0x55, 0x03, 0xe8, 0xae, 0x8f, 0xff, 0x8f, 0xea, 0x8a, 0x28, 0x12, 0x9d, 0x54,
+	0xa2, 0x94, 0xf6, 0x13, 0x8e, 0x2f, 0xa2, 0x8a, 0x6c, 0x3a, 0xfa, 0x00, 0x67, 0x66, 0x7a, 0x91,
+	0xbc, 0x44, 0x03, 0x1a, 0x12, 0xc0, 0xe0, 0x16, 0xaa, 0xd2, 0x90, 0x0e, 0x9e, 0x3e, 0x53, 0x9f,
+	0x41, 0x35, 0x92, 0x6d, 0x65, 0x7f, 0x5e, 0x2f, 0x9a, 0xb5, 0xb8, 0x0b, 0xdd, 0xa4, 0xcf, 0xe9,
+	0x50, 0xc7, 0xec, 0x40, 0x5d, 0xe8, 0x0f, 0x5c, 0x7b, 0xe6, 0x03, 0xd7, 0x0e, 0xb8, 0x9d, 0x7d,
+	0xe0, 0xee, 0x29, 0x1a, 0xc9, 0xf8, 0xf2, 0xfc, 0x7a, 0x72, 0xfa, 0xba, 0x53, 0x17, 0x9f, 0x5f,
+	0x4d, 0xcc, 0x0e, 0x10, 0x5d, 0xd6, 0xf5, 0xad, 0xce, 0x64, 0xf2, 0x4c, 0xcf, 0xe2, 0x4b, 0x68,
+	0x59, 0x7d, 0x29, 0xeb, 0xd8, 0xd6, 0x54, 0x6c, 0xd2, 0x22, 0x7b, 0x23, 0x2c, 0x88, 0x86, 0x58,
+	0x5f, 0xa3, 0xe6, 0xcc, 0x2c, 0x9e, 0x8a, 0xc8, 0xf8, 0x07, 0x11, 0xe5, 0x1c, 0x2f, 0x2d, 0x74,
+	0xdc, 0x4e, 0x9e, 0xbf, 0x34, 0x4b, 0x2f, 0x5e, 0x9a, 0xa5, 0xd7, 0x2f, 0x4d, 0xe3, 0x9b, 0x91,
+	0x69, 0xfc, 0x34, 0x32, 0x8d, 0xdf, 0x46, 0xa6, 0xf1, 0x7c, 0x64, 0x1a, 0xbf, 0x8f, 0x4c, 0xe3,
+	0xcf, 0x91, 0x59, 0x7a, 0x3d, 0x32, 0x8d, 0x6f, 0x5f, 0x99, 0xa5, 0xe7, 0xaf, 0xcc, 0xd2, 0x8b,
+	0x57, 0x66, 0xe9, 0xc1, 0xf5, 0x38, 0x78, 0x12, 0xb0, 0x01, 0x75, 0x85, 0x4d, 0x03, 0x67, 0xbc,
+	0x71, 0x8e, 0xff, 0x93, 0x76, 0x2d, 0x5b, 0xba, 0xcb, 0xf0, 0xe7, 0xe1, 0xc3, 0xbf, 0x02, 0x00,
+	0x00, 0xff, 0xff, 0x3b, 0x47, 0x5c, 0x1c, 0xd6, 0x0d, 0x00, 0x00,
 }
 
 func (this *VizierMessage) Equal(that interface{}) bool {
@@ -1097,6 +1298,78 @@ func (this *VizierMessage_ExecuteQueryRequest) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.ExecuteQueryRequest.Equal(that1.ExecuteQueryRequest) {
+		return false
+	}
+	return true
+}
+func (this *VizierMessage_RegisterProbeRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*VizierMessage_RegisterProbeRequest)
+	if !ok {
+		that2, ok := that.(VizierMessage_RegisterProbeRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.RegisterProbeRequest.Equal(that1.RegisterProbeRequest) {
+		return false
+	}
+	return true
+}
+func (this *VizierMessage_RegisterProbeResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*VizierMessage_RegisterProbeResponse)
+	if !ok {
+		that2, ok := that.(VizierMessage_RegisterProbeResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.RegisterProbeResponse.Equal(that1.RegisterProbeResponse) {
+		return false
+	}
+	return true
+}
+func (this *VizierMessage_ProbeInfoUpdate) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*VizierMessage_ProbeInfoUpdate)
+	if !ok {
+		that2, ok := that.(VizierMessage_ProbeInfoUpdate)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ProbeInfoUpdate.Equal(that1.ProbeInfoUpdate) {
 		return false
 	}
 	return true
@@ -1440,11 +1713,89 @@ func (this *ExecuteQueryRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *RegisterProbeRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RegisterProbeRequest)
+	if !ok {
+		that2, ok := that.(RegisterProbeRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Program.Equal(that1.Program) {
+		return false
+	}
+	if !this.ProbeID.Equal(that1.ProbeID) {
+		return false
+	}
+	return true
+}
+func (this *RegisterProbeResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RegisterProbeResponse)
+	if !ok {
+		that2, ok := that.(RegisterProbeResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Status.Equal(that1.Status) {
+		return false
+	}
+	return true
+}
+func (this *ProbeInfoUpdate) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ProbeInfoUpdate)
+	if !ok {
+		that2, ok := that.(ProbeInfoUpdate)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ProbeID.Equal(that1.ProbeID) {
+		return false
+	}
+	if !this.Status.Equal(that1.Status) {
+		return false
+	}
+	return true
+}
 func (this *VizierMessage) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 12)
+	s := make([]string, 0, 15)
 	s = append(s, "&messages.VizierMessage{")
 	if this.Msg != nil {
 		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
@@ -1514,6 +1865,30 @@ func (this *VizierMessage_ExecuteQueryRequest) GoString() string {
 	}
 	s := strings.Join([]string{`&messages.VizierMessage_ExecuteQueryRequest{` +
 		`ExecuteQueryRequest:` + fmt.Sprintf("%#v", this.ExecuteQueryRequest) + `}`}, ", ")
+	return s
+}
+func (this *VizierMessage_RegisterProbeRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&messages.VizierMessage_RegisterProbeRequest{` +
+		`RegisterProbeRequest:` + fmt.Sprintf("%#v", this.RegisterProbeRequest) + `}`}, ", ")
+	return s
+}
+func (this *VizierMessage_RegisterProbeResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&messages.VizierMessage_RegisterProbeResponse{` +
+		`RegisterProbeResponse:` + fmt.Sprintf("%#v", this.RegisterProbeResponse) + `}`}, ", ")
+	return s
+}
+func (this *VizierMessage_ProbeInfoUpdate) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&messages.VizierMessage_ProbeInfoUpdate{` +
+		`ProbeInfoUpdate:` + fmt.Sprintf("%#v", this.ProbeInfoUpdate) + `}`}, ", ")
 	return s
 }
 func (this *RegisterAgentRequest) GoString() string {
@@ -1670,6 +2045,48 @@ func (this *ExecuteQueryRequest) GoString() string {
 		s = append(s, "Plan: "+fmt.Sprintf("%#v", this.Plan)+",\n")
 	}
 	s = append(s, "Analyze: "+fmt.Sprintf("%#v", this.Analyze)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *RegisterProbeRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&messages.RegisterProbeRequest{")
+	if this.Program != nil {
+		s = append(s, "Program: "+fmt.Sprintf("%#v", this.Program)+",\n")
+	}
+	if this.ProbeID != nil {
+		s = append(s, "ProbeID: "+fmt.Sprintf("%#v", this.ProbeID)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *RegisterProbeResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&messages.RegisterProbeResponse{")
+	if this.Status != nil {
+		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *ProbeInfoUpdate) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 6)
+	s = append(s, "&messages.ProbeInfoUpdate{")
+	if this.ProbeID != nil {
+		s = append(s, "ProbeID: "+fmt.Sprintf("%#v", this.ProbeID)+",\n")
+	}
+	if this.Status != nil {
+		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
+	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1878,6 +2295,69 @@ func (m *VizierMessage_ExecuteQueryRequest) MarshalToSizedBuffer(dAtA []byte) (i
 		}
 		i--
 		dAtA[i] = 0x42
+	}
+	return len(dAtA) - i, nil
+}
+func (m *VizierMessage_RegisterProbeRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VizierMessage_RegisterProbeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.RegisterProbeRequest != nil {
+		{
+			size, err := m.RegisterProbeRequest.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x4a
+	}
+	return len(dAtA) - i, nil
+}
+func (m *VizierMessage_RegisterProbeResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VizierMessage_RegisterProbeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.RegisterProbeResponse != nil {
+		{
+			size, err := m.RegisterProbeResponse.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x52
+	}
+	return len(dAtA) - i, nil
+}
+func (m *VizierMessage_ProbeInfoUpdate) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *VizierMessage_ProbeInfoUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.ProbeInfoUpdate != nil {
+		{
+			size, err := m.ProbeInfoUpdate.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x5a
 	}
 	return len(dAtA) - i, nil
 }
@@ -2404,6 +2884,135 @@ func (m *ExecuteQueryRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
+func (m *RegisterProbeRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RegisterProbeRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterProbeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.ProbeID != nil {
+		{
+			size, err := m.ProbeID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Program != nil {
+		{
+			size, err := m.Program.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *RegisterProbeResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *RegisterProbeResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *RegisterProbeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Status != nil {
+		{
+			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *ProbeInfoUpdate) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *ProbeInfoUpdate) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *ProbeInfoUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Status != nil {
+		{
+			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.ProbeID != nil {
+		{
+			size, err := m.ProbeID.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
 func encodeVarintMessages(dAtA []byte, offset int, v uint64) int {
 	offset -= sovMessages(v)
 	base := offset
@@ -2519,6 +3128,42 @@ func (m *VizierMessage_ExecuteQueryRequest) Size() (n int) {
 	_ = l
 	if m.ExecuteQueryRequest != nil {
 		l = m.ExecuteQueryRequest.Size()
+		n += 1 + l + sovMessages(uint64(l))
+	}
+	return n
+}
+func (m *VizierMessage_RegisterProbeRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.RegisterProbeRequest != nil {
+		l = m.RegisterProbeRequest.Size()
+		n += 1 + l + sovMessages(uint64(l))
+	}
+	return n
+}
+func (m *VizierMessage_RegisterProbeResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.RegisterProbeResponse != nil {
+		l = m.RegisterProbeResponse.Size()
+		n += 1 + l + sovMessages(uint64(l))
+	}
+	return n
+}
+func (m *VizierMessage_ProbeInfoUpdate) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ProbeInfoUpdate != nil {
+		l = m.ProbeInfoUpdate.Size()
 		n += 1 + l + sovMessages(uint64(l))
 	}
 	return n
@@ -2731,6 +3376,53 @@ func (m *ExecuteQueryRequest) Size() (n int) {
 	return n
 }
 
+func (m *RegisterProbeRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Program != nil {
+		l = m.Program.Size()
+		n += 1 + l + sovMessages(uint64(l))
+	}
+	if m.ProbeID != nil {
+		l = m.ProbeID.Size()
+		n += 1 + l + sovMessages(uint64(l))
+	}
+	return n
+}
+
+func (m *RegisterProbeResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Status != nil {
+		l = m.Status.Size()
+		n += 1 + l + sovMessages(uint64(l))
+	}
+	return n
+}
+
+func (m *ProbeInfoUpdate) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.ProbeID != nil {
+		l = m.ProbeID.Size()
+		n += 1 + l + sovMessages(uint64(l))
+	}
+	if m.Status != nil {
+		l = m.Status.Size()
+		n += 1 + l + sovMessages(uint64(l))
+	}
+	return n
+}
+
 func sovMessages(x uint64) (n int) {
 	return (math_bits.Len64(x|1) + 6) / 7
 }
@@ -2823,6 +3515,36 @@ func (this *VizierMessage_ExecuteQueryRequest) String() string {
 	}
 	s := strings.Join([]string{`&VizierMessage_ExecuteQueryRequest{`,
 		`ExecuteQueryRequest:` + strings.Replace(fmt.Sprintf("%v", this.ExecuteQueryRequest), "ExecuteQueryRequest", "ExecuteQueryRequest", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VizierMessage_RegisterProbeRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VizierMessage_RegisterProbeRequest{`,
+		`RegisterProbeRequest:` + strings.Replace(fmt.Sprintf("%v", this.RegisterProbeRequest), "RegisterProbeRequest", "RegisterProbeRequest", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VizierMessage_RegisterProbeResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VizierMessage_RegisterProbeResponse{`,
+		`RegisterProbeResponse:` + strings.Replace(fmt.Sprintf("%v", this.RegisterProbeResponse), "RegisterProbeResponse", "RegisterProbeResponse", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *VizierMessage_ProbeInfoUpdate) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&VizierMessage_ProbeInfoUpdate{`,
+		`ProbeInfoUpdate:` + strings.Replace(fmt.Sprintf("%v", this.ProbeInfoUpdate), "ProbeInfoUpdate", "ProbeInfoUpdate", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2973,6 +3695,38 @@ func (this *ExecuteQueryRequest) String() string {
 		`QueryStr:` + fmt.Sprintf("%v", this.QueryStr) + `,`,
 		`Plan:` + strings.Replace(fmt.Sprintf("%v", this.Plan), "Plan", "planpb.Plan", 1) + `,`,
 		`Analyze:` + fmt.Sprintf("%v", this.Analyze) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *RegisterProbeRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&RegisterProbeRequest{`,
+		`Program:` + strings.Replace(fmt.Sprintf("%v", this.Program), "Program", "logical.Program", 1) + `,`,
+		`ProbeID:` + strings.Replace(fmt.Sprintf("%v", this.ProbeID), "UUID", "proto1.UUID", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *RegisterProbeResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&RegisterProbeResponse{`,
+		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto2.Status", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *ProbeInfoUpdate) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&ProbeInfoUpdate{`,
+		`ProbeID:` + strings.Replace(fmt.Sprintf("%v", this.ProbeID), "UUID", "proto1.UUID", 1) + `,`,
+		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto2.Status", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3293,6 +4047,111 @@ func (m *VizierMessage) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			m.Msg = &VizierMessage_ExecuteQueryRequest{v}
+			iNdEx = postIndex
+		case 9:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RegisterProbeRequest", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessages
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMessages
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &RegisterProbeRequest{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Msg = &VizierMessage_RegisterProbeRequest{v}
+			iNdEx = postIndex
+		case 10:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RegisterProbeResponse", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessages
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMessages
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &RegisterProbeResponse{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Msg = &VizierMessage_RegisterProbeResponse{v}
+			iNdEx = postIndex
+		case 11:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProbeInfoUpdate", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessages
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMessages
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &ProbeInfoUpdate{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Msg = &VizierMessage_ProbeInfoUpdate{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4674,6 +5533,345 @@ func (m *ExecuteQueryRequest) Unmarshal(dAtA []byte) error {
 				}
 			}
 			m.Analyze = bool(v != 0)
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMessages(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RegisterProbeRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMessages
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RegisterProbeRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RegisterProbeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Program", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessages
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMessages
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Program == nil {
+				m.Program = &logical.Program{}
+			}
+			if err := m.Program.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProbeID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessages
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMessages
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ProbeID == nil {
+				m.ProbeID = &proto1.UUID{}
+			}
+			if err := m.ProbeID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMessages(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *RegisterProbeResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMessages
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: RegisterProbeResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: RegisterProbeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessages
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMessages
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Status == nil {
+				m.Status = &proto2.Status{}
+			}
+			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipMessages(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *ProbeInfoUpdate) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowMessages
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ProbeInfoUpdate: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ProbeInfoUpdate: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProbeID", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessages
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMessages
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.ProbeID == nil {
+				m.ProbeID = &proto1.UUID{}
+			}
+			if err := m.ProbeID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessages
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMessages
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Status == nil {
+				m.Status = &proto2.Status{}
+			}
+			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipMessages(dAtA[iNdEx:])

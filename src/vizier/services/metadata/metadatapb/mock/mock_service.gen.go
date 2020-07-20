@@ -107,6 +107,42 @@ func (mr *MockMetadataServiceClientMockRecorder) GetAgentTableMetadata(ctx, in i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentTableMetadata", reflect.TypeOf((*MockMetadataServiceClient)(nil).GetAgentTableMetadata), varargs...)
 }
 
+// RegisterProbe mocks base method
+func (m *MockMetadataServiceClient) RegisterProbe(ctx context.Context, in *metadatapb.RegisterProbeRequest, opts ...grpc.CallOption) (*metadatapb.RegisterProbeResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RegisterProbe", varargs...)
+	ret0, _ := ret[0].(*metadatapb.RegisterProbeResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RegisterProbe indicates an expected call of RegisterProbe
+func (mr *MockMetadataServiceClientMockRecorder) RegisterProbe(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterProbe", reflect.TypeOf((*MockMetadataServiceClient)(nil).RegisterProbe), varargs...)
+}
+
+// GetProbeInfo mocks base method
+func (m *MockMetadataServiceClient) GetProbeInfo(ctx context.Context, in *metadatapb.GetProbeInfoRequest, opts ...grpc.CallOption) (*metadatapb.GetProbeInfoResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetProbeInfo", varargs...)
+	ret0, _ := ret[0].(*metadatapb.GetProbeInfoResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProbeInfo indicates an expected call of GetProbeInfo
+func (mr *MockMetadataServiceClientMockRecorder) GetProbeInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProbeInfo", reflect.TypeOf((*MockMetadataServiceClient)(nil).GetProbeInfo), varargs...)
+}
+
 // MockMetadataServiceServer is a mock of MetadataServiceServer interface
 type MockMetadataServiceServer struct {
 	ctrl     *gomock.Controller
@@ -180,4 +216,30 @@ func (m *MockMetadataServiceServer) GetAgentTableMetadata(arg0 context.Context, 
 // GetAgentTableMetadata indicates an expected call of GetAgentTableMetadata
 func (mr *MockMetadataServiceServerMockRecorder) GetAgentTableMetadata(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentTableMetadata", reflect.TypeOf((*MockMetadataServiceServer)(nil).GetAgentTableMetadata), arg0, arg1)
+}
+
+// RegisterProbe mocks base method
+func (m *MockMetadataServiceServer) RegisterProbe(arg0 context.Context, arg1 *metadatapb.RegisterProbeRequest) (*metadatapb.RegisterProbeResponse, error) {
+	ret := m.ctrl.Call(m, "RegisterProbe", arg0, arg1)
+	ret0, _ := ret[0].(*metadatapb.RegisterProbeResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RegisterProbe indicates an expected call of RegisterProbe
+func (mr *MockMetadataServiceServerMockRecorder) RegisterProbe(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterProbe", reflect.TypeOf((*MockMetadataServiceServer)(nil).RegisterProbe), arg0, arg1)
+}
+
+// GetProbeInfo mocks base method
+func (m *MockMetadataServiceServer) GetProbeInfo(arg0 context.Context, arg1 *metadatapb.GetProbeInfoRequest) (*metadatapb.GetProbeInfoResponse, error) {
+	ret := m.ctrl.Call(m, "GetProbeInfo", arg0, arg1)
+	ret0, _ := ret[0].(*metadatapb.GetProbeInfoResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProbeInfo indicates an expected call of GetProbeInfo
+func (mr *MockMetadataServiceServerMockRecorder) GetProbeInfo(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProbeInfo", reflect.TypeOf((*MockMetadataServiceServer)(nil).GetProbeInfo), arg0, arg1)
 }

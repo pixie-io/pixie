@@ -8,6 +8,8 @@ import "src/carnot/planpb/plan.proto";
 import "src/common/uuid/proto/uuid.proto";
 import "src/shared/k8s/metadatapb/metadata.proto";
 import "src/vizier/services/shared/agentpb/agent.proto";
+import "src/stirling/dynamic_tracing/ir/logical.proto";
+import "src/common/base/proto/status.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/messages/messagespb;messages";
 
@@ -22,6 +24,9 @@ message VizierMessage {
         HeartbeatAck heartbeat_ack = 6;
         HeartbeatNack heartbeat_nack = 7;
         ExecuteQueryRequest execute_query_request = 8;
+        RegisterProbeRequest register_probe_request = 9;
+        RegisterProbeResponse register_probe_response = 10;
+        ProbeInfoUpdate probe_info_update = 11;
     }
 }
 
@@ -103,4 +108,23 @@ message ExecuteQueryRequest {
     string query_str = 2;
     pl.carnot.planpb.Plan plan = 3;
     bool analyze = 4;
+}
+
+// The request to register probes on a PEM.
+message RegisterProbeRequest {
+  pl.stirling.dynamic_tracing.ir.logical.Program program = 1;
+  uuidpb.UUID probe_id = 2 [ (gogoproto.customname) = "ProbeID" ];
+}
+
+// The response to a RegisterProbeRequest.
+message RegisterProbeResponse {
+  // Status of whether the probe registration initiated successfully or not.
+  pl.statuspb.Status status = 1;
+}
+
+// An update message sent when a probe's status changes.
+message ProbeInfoUpdate {
+  uuidpb.UUID probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
+  // The status of the probe.
+  pl.statuspb.Status status = 2;
 }

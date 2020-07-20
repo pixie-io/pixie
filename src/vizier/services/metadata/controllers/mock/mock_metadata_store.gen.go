@@ -38,18 +38,6 @@ func (m *MockMetadataStore) EXPECT() *MockMetadataStoreMockRecorder {
 	return m.recorder
 }
 
-// GetClusterCIDR mocks base method
-func (m *MockMetadataStore) GetClusterCIDR() string {
-	ret := m.ctrl.Call(m, "GetClusterCIDR")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// GetClusterCIDR indicates an expected call of GetClusterCIDR
-func (mr *MockMetadataStoreMockRecorder) GetClusterCIDR() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterCIDR", reflect.TypeOf((*MockMetadataStore)(nil).GetClusterCIDR))
-}
-
 // GetServiceCIDR mocks base method
 func (m *MockMetadataStore) GetServiceCIDR() string {
 	ret := m.ctrl.Call(m, "GetServiceCIDR")

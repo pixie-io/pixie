@@ -2,7 +2,7 @@
 
 package(default_visibility = ["//src/stirling:__subpackages__"])
 
-load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_proto_library")
+load("//bazel:proto_compile.bzl", "pl_cc_proto_library", "pl_go_proto_library", "pl_proto_library")
 
 pl_proto_library(
     name = "shared_pl_proto",
@@ -16,16 +16,27 @@ pl_cc_proto_library(
     deps = ["//src/shared/types/proto:types_pl_cc_proto"],
 )
 
+pl_go_proto_library(
+    name = "shared_pl_go_proto",
+    proto = ":shared_pl_proto",
+    importpath = "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical/shared",
+    deps = [
+        "//src/shared/types/proto:types_pl_go_proto",
+    ],
+)
+
 pl_proto_library(
     name = "logical_pl_proto",
     srcs = ["logical.proto"],
     deps = [":shared_pl_proto"],
+    visibility = ["//visibility:public"],
 )
 
 pl_cc_proto_library(
     name = "logical_pl_cc_proto",
     proto = ":logical_pl_proto",
     deps = [":shared_pl_cc_proto"],
+    visibility = ["//visibility:public"],
 )
 
 pl_proto_library(
@@ -38,4 +49,14 @@ pl_cc_proto_library(
     name = "physical_pl_cc_proto",
     proto = ":physical_pl_proto",
     deps = [":shared_pl_cc_proto"],
+)
+
+pl_go_proto_library(
+    name = "logical_pl_go_proto",
+    importpath = "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical",
+    proto = ":logical_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":shared_pl_go_proto",
+    ],
 )

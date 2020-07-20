@@ -8,6 +8,8 @@ import "src/table_store/proto/schema.proto";
 import "src/carnot/planner/distributedpb/distributed_plan.proto";
 import "src/vizier/messages/messagespb/messages.proto";
 import "src/vizier/services/shared/agentpb/agent.proto";
+import "src/stirling/dynamic_tracing/ir/logical.proto";
+import "src/common/base/proto/status.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb;metadatapb";
 
@@ -20,6 +22,8 @@ service MetadataService {
   rpc GetSchemaByAgent(SchemaByAgentRequest) returns (SchemaByAgentResponse) {}
   rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
   rpc GetAgentTableMetadata(AgentTableMetadataRequest) returns (AgentTableMetadataResponse) {}
+  rpc RegisterProbe(RegisterProbeRequest) returns (RegisterProbeResponse) {}
+  rpc GetProbeInfo(GetProbeInfoRequest) returns (GetProbeInfoResponse) {}
 }
 
 // The schema request for each agent's schema.
@@ -69,4 +73,28 @@ message AgentTableMetadata {
 
 message AgentTableMetadataResponse {
   repeated AgentTableMetadata metadata_by_agent = 1;
+}
+
+// The request to register probes on all PEMs.
+message RegisterProbeRequest {
+  pl.stirling.dynamic_tracing.ir.logical.Program program = 1;
+}
+
+// The response to a RegisterProbeRequest.
+message RegisterProbeResponse {
+  // Status of whether the probe registration request was initiated with/without errors.
+  pl.statuspb.Status status = 1;
+  // The probe's assigned ID.
+  uuidpb.UUID probe_id = 2 [ (gogoproto.customname) = "ProbeID" ];
+}
+
+// The request to check the status for a probe with the given ID.
+message GetProbeInfoRequest {
+  uuidpb.UUID probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
+}
+
+// The status of whether the probe has successfully registered or not.
+message GetProbeInfoResponse {
+  // Status of the probe.
+  pl.statuspb.Status status = 1;
 }
