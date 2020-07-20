@@ -18,6 +18,7 @@ pl_cc_library(
     ),
     deps = [
         "//src/stirling/obj_tools:cc_library",
+        "//src/stirling/utils:cc_library",
     ] + select({
         "@bazel_tools//src/conditions:linux_x86_64": [
             "//third_party/foreign_cc:bcc",

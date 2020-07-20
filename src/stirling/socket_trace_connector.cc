@@ -67,8 +67,6 @@ DEFINE_string(stirling_role_to_trace, "kRoleAll",
               "Must be one of [kRoleClient|kRoleServer|kRoleAll]. Specifies which role(s) will be "
               "traced by BPF.");
 
-// This flag is for survivability only, in case the host's located headers don't work.
-DEFINE_bool(stirling_use_packaged_headers, false, "Force use of packaged kernel headers for BCC.");
 DEFINE_bool(stirling_bpf_allow_unknown_protocol, true,
             "If true, BPF filters out unclassified data events.");
 
@@ -128,13 +126,6 @@ void SocketTraceConnector::InitProtocols() {
 }
 
 Status SocketTraceConnector::InitImpl() {
-  std::vector<utils::LinuxHeaderStrategy> linux_header_search_order =
-      utils::kDefaultHeaderSearchOrder;
-  if (FLAGS_stirling_use_packaged_headers) {
-    linux_header_search_order = {utils::LinuxHeaderStrategy::kInstallPackagedHeaders};
-  }
-  PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders(linux_header_search_order));
-
   constexpr uint64_t kNanosPerSecond = 1000 * 1000 * 1000;
   if (kNanosPerSecond % sysconfig_.KernelTicksPerSecond() != 0) {
     return error::Internal(

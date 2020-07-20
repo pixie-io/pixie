@@ -1,6 +1,7 @@
 #ifdef __linux__
 
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
+#include "src/stirling/utils/linux_headers.h"
 
 #include <linux/perf_event.h>
 #include <linux/sched.h>
@@ -51,6 +52,15 @@ Status BCCWrapper::InitBPFProgram(std::string_view bpf_program,
   if (!IsRoot()) {
     return error::PermissionDenied("BCC currently only supported as the root user.");
   }
+
+  // This function will setup linux headers for BPF code deployment.
+  // If another BCCWrapper has already run this function, it will just return the same location
+  // as the previous one.
+  // Note: Could also put this in Stirling Init() function, but then some tests which use
+  //       BCCWrapper (e.g. connector_bpf_tests), would have to make sure to call this function.
+  //       Thus, it is deemed to be better here.
+  PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders({utils::kDefaultHeaderSearchOrder}));
+
   auto init_res = bpf_.init(std::string(bpf_program), cflags);
   if (init_res.code() != 0) {
     return error::Internal("Unable to initialize BCC BPF program: $0", init_res.msg());

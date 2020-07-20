@@ -4,7 +4,6 @@
 
 #include "src/common/fs/fs_wrapper.h"
 #include "src/common/testing/testing.h"
-#include "src/stirling/utils/linux_headers.h"
 
 namespace pl {
 namespace stirling {
@@ -24,8 +23,6 @@ class BCCWraperTest : public ::testing::Test {
   )BCC";
 
   void SetUp() override {
-    ASSERT_OK(utils::FindOrInstallLinuxHeaders({utils::kDefaultHeaderSearchOrder}));
-
     ASSERT_OK(bcc_wrapper_.InitBPFProgram(kBCC));
     // Copy to temp directory so we can remove it to simulate non-existent file.
     dummy_exe_path_ = temp_dir_.path() / "dummy_exe";

@@ -8,7 +8,6 @@
 #include "src/stirling/stirling.h"
 #include "src/stirling/testing/testing.h"
 #include "src/stirling/types.h"
-#include "src/stirling/utils/linux_headers.h"
 
 #include "src/stirling/proto/stirling.pb.h"
 
@@ -22,8 +21,6 @@ namespace stirling {
 using ::google::protobuf::TextFormat;
 using ::pl::stirling::testing::ColWrapperSizeIs;
 using ::pl::stirling::testing::FindRecordsMatchingPID;
-using ::pl::stirling::utils::FindOrInstallLinuxHeaders;
-using ::pl::stirling::utils::kDefaultHeaderSearchOrder;
 using ::testing::Each;
 using ::testing::Ge;
 using ::testing::SizeIs;
@@ -54,8 +51,6 @@ class GoHTTPDynamicTraceTest : public ::testing::Test {
 
     server_path_ = FLAGS_go_grpc_server_path;
     client_path_ = FLAGS_go_grpc_client_path;
-
-    ASSERT_OK(FindOrInstallLinuxHeaders({kDefaultHeaderSearchOrder}));
 
     ASSERT_OK(s_.Start({server_path_}));
 

@@ -53,7 +53,6 @@ DECLARE_bool(stirling_enable_grpc_kprobe_tracing);
 DECLARE_bool(stirling_enable_grpc_uprobe_tracing);
 DECLARE_bool(stirling_enable_mysql_tracing);
 DECLARE_bool(stirling_disable_self_tracing);
-DECLARE_bool(stirling_use_packaged_headers);
 DECLARE_string(stirling_role_to_trace);
 
 namespace pl {
