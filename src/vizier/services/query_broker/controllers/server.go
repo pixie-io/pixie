@@ -13,8 +13,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
 
-	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
 	"pixielabs.ai/pixielabs/src/carnot/queryresultspb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
@@ -26,13 +26,10 @@ import (
 	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/carnot/udfspb"
 	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
-	schemapb "pixielabs.ai/pixielabs/src/table_store/proto"
 	"pixielabs.ai/pixielabs/src/utils"
 	funcs "pixielabs.ai/pixielabs/src/vizier/funcs/export"
-	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
-	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
 const healthCheckInterval = 5 * time.Second
@@ -58,13 +55,18 @@ type Executor interface {
 	GetQueryID() uuid.UUID
 }
 
+// AgentsTracker is the interface for the background agent information tracker.
+type AgentsTracker interface {
+	GetAgentInfo() *tracker.AgentsInfo
+}
+
 // Server defines an gRPC server type.
 type Server struct {
-	env         querybrokerenv.QueryBrokerEnv
-	mdsClient   metadatapb.MetadataServiceClient
-	natsConn    *nats.Conn
-	newExecutor func(*nats.Conn, uuid.UUID, *[]uuid.UUID) Executor
-	executors   map[uuid.UUID]Executor
+	env           querybrokerenv.QueryBrokerEnv
+	agentsTracker AgentsTracker
+	natsConn      *nats.Conn
+	newExecutor   func(*nats.Conn, uuid.UUID) Executor
+	executors     map[uuid.UUID]Executor
 	// Mutex is used for managing query executor instances.
 	mux sync.Mutex
 
@@ -74,21 +76,21 @@ type Server struct {
 }
 
 // NewServer creates GRPC handlers.
-func NewServer(env querybrokerenv.QueryBrokerEnv, mdsClient metadatapb.MetadataServiceClient, natsConn *nats.Conn) (*Server, error) {
-	return newServer(env, mdsClient, natsConn, NewQueryExecutor)
+func NewServer(env querybrokerenv.QueryBrokerEnv, agentsTracker AgentsTracker, natsConn *nats.Conn) (*Server, error) {
+	return newServer(env, agentsTracker, natsConn, NewQueryExecutor)
 }
 
 func newServer(env querybrokerenv.QueryBrokerEnv,
-	mdsClient metadatapb.MetadataServiceClient,
+	agentsTracker AgentsTracker,
 	natsConn *nats.Conn,
-	newExecutor func(*nats.Conn, uuid.UUID, *[]uuid.UUID) Executor) (*Server, error) {
+	newExecutor func(*nats.Conn, uuid.UUID) Executor) (*Server, error) {
 
 	return &Server{
-		env:         env,
-		mdsClient:   mdsClient,
-		natsConn:    natsConn,
-		newExecutor: newExecutor,
-		executors:   make(map[uuid.UUID]Executor),
+		env:           env,
+		agentsTracker: agentsTracker,
+		natsConn:      natsConn,
+		newExecutor:   newExecutor,
+		executors:     make(map[uuid.UUID]Executor),
 	}, nil
 }
 
@@ -115,72 +117,6 @@ func failedStatusQueryResponse(queryID uuid.UUID, status *statuspb.Status) *quer
 	return queryResponse
 }
 
-func formatCompilerError(status *statuspb.Status) (string, error) {
-	var errorPB compilerpb.CompilerErrorGroup
-	err := logicalplanner.GetCompilerErrorContext(status, &errorPB)
-	if err != nil {
-		return "", err
-	}
-	return proto.MarshalTextString(&errorPB), nil
-}
-
-func makeAgentCarnotInfo(agentID uuid.UUID, asid uint32, agentMetadata *distributedpb.MetadataInfo) *distributedpb.CarnotInfo {
-	// TODO(philkuz) (PL-910) need to update this to also contain table info.
-	return &distributedpb.CarnotInfo{
-		QueryBrokerAddress:   agentID.String(),
-		ASID:                 asid,
-		HasGRPCServer:        false,
-		HasDataStore:         true,
-		ProcessesData:        true,
-		AcceptsRemoteSources: false,
-		MetadataInfo:         agentMetadata,
-	}
-}
-
-func makeKelvinCarnotInfo(agentID uuid.UUID, grpcAddress string, asid uint32) *distributedpb.CarnotInfo {
-	return &distributedpb.CarnotInfo{
-		QueryBrokerAddress:   agentID.String(),
-		ASID:                 asid,
-		HasGRPCServer:        true,
-		GRPCAddress:          grpcAddress,
-		HasDataStore:         false,
-		ProcessesData:        true,
-		AcceptsRemoteSources: true,
-		// When we support persistent backup, Kelvins will also have MetadataInfo.
-		MetadataInfo: nil,
-	}
-}
-
-func makePlannerState(pemInfo []*agentpb.Agent, kelvinList []*agentpb.Agent, agentMetadataMap map[uuid.UUID]*distributedpb.MetadataInfo,
-	schema *schemapb.Schema, planOpts *planpb.PlanOptions) (*distributedpb.LogicalPlannerState, error) {
-	// TODO(philkuz) (PL-910) need to update this to pass table info.
-	carnotInfoList := make([]*distributedpb.CarnotInfo, 0)
-	for _, pem := range pemInfo {
-		pemID := utils.UUIDFromProtoOrNil(pem.Info.AgentID)
-		var agentMetadata *distributedpb.MetadataInfo
-		if md, found := agentMetadataMap[pemID]; found {
-			agentMetadata = md
-		}
-		carnotInfoList = append(carnotInfoList, makeAgentCarnotInfo(pemID, pem.ASID, agentMetadata))
-	}
-
-	for _, kelvin := range kelvinList {
-		kelvinID := utils.UUIDFromProtoOrNil(kelvin.Info.AgentID)
-		kelvinGRPCAddress := kelvin.Info.IPAddress
-		carnotInfoList = append(carnotInfoList, makeKelvinCarnotInfo(kelvinID, kelvinGRPCAddress, kelvin.ASID))
-	}
-
-	plannerState := distributedpb.LogicalPlannerState{
-		Schema: schema,
-		DistributedState: &distributedpb.DistributedState{
-			CarnotInfo: carnotInfoList,
-		},
-		PlanOptions: planOpts,
-	}
-
-	return &plannerState, nil
-}
-
 // ExecuteQueryWithPlanner executes a query with the provided planner.
 func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.QueryRequest, queryID uuid.UUID, planner Planner, planOpts *planpb.PlanOptions) (*queryresultspb.QueryResult, *statuspb.Status, error) {
 	ctx = context.WithValue(ctx, execStartKey, time.Now())
@@ -190,63 +126,12 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 	}
 	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", aCtx.AuthToken))
 
-	// Get all available agents for now.
-	agentInfosReq := &metadatapb.AgentInfoRequest{}
-	agentInfosResp, err := s.mdsClient.GetAgentInfo(ctx, agentInfosReq)
-	if err != nil {
-		return nil, nil, err
+	info := s.agentsTracker.GetAgentInfo()
+	plannerState := &distributedpb.LogicalPlannerState{
+		Schema:           info.Schema(),
+		DistributedState: info.DistributedState(),
+		PlanOptions:      planOpts,
 	}
-
-	var kelvinList []*agentpb.Agent
-	var pemList []*agentpb.Agent
-
-	for _, m := range agentInfosResp.Info {
-		if m.Agent.Info.Capabilities == nil || m.Agent.Info.Capabilities.CollectsData {
-			pemList = append(pemList, m.Agent)
-		} else {
-			kelvinList = append(kelvinList, m.Agent)
-		}
-	}
-
-	mdsAgentMetadataResp, err := s.mdsClient.GetAgentTableMetadata(ctx, &metadatapb.AgentTableMetadataRequest{})
-	if err != nil {
-		log.WithError(err).Error("Failed to get agent metadata.")
-		return nil, nil, err
-	}
-
-	var schema *schemapb.Schema
-	// We currently assume the schema is shared across all agents.
-	// In the unusual case where there are no agents, we can still run Kelvin-only
-	// queries, so in that case we call out for the schemas directly.
-	if len(mdsAgentMetadataResp.MetadataByAgent) > 0 {
-		schema = mdsAgentMetadataResp.MetadataByAgent[0].Schema
-	} else {
-		// Get the table schema that is presumably shared across agents.
-		mdsSchemaReq := &metadatapb.SchemaRequest{}
-		mdsSchemaResp, err := s.mdsClient.GetSchemas(ctx, mdsSchemaReq)
-		if err != nil {
-			log.WithError(err).Error("Failed to get schemas.")
-		}
-		schema = mdsSchemaResp.Schema
-	}
-
-	var agentTableMetadata = make(map[uuid.UUID]*distributedpb.MetadataInfo)
-	for _, md := range mdsAgentMetadataResp.MetadataByAgent {
-		if md.DataInfo != nil && md.DataInfo.MetadataInfo != nil {
-			agentUUID, err := utils.UUIDFromProto(md.AgentID)
-			if err != nil {
-				log.WithError(err).Error("Failed to parse agent UUID: %+v", md.AgentID)
-				return nil, nil, err
-			}
-			agentTableMetadata[agentUUID] = md.DataInfo.MetadataInfo
-		}
-	}
-
-	plannerState, err := makePlannerState(pemList, kelvinList, agentTableMetadata, schema, planOpts)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	log.WithField("query_id", queryID).
 		Infof("Running script")
 	start := time.Now()
@@ -280,12 +165,7 @@ func (s *Server) ExecuteQueryWithPlanner(ctx context.Context, req *plannerpb.Que
 		planMap[u] = agentPlan
 	}
 
-	pemIDs := make([]uuid.UUID, len(pemList))
-	for i, p := range pemList {
-		pemIDs[i] = utils.UUIDFromProtoOrNil(p.Info.AgentID)
-	}
-
-	queryExecutor := s.newExecutor(s.natsConn, queryID, &pemIDs)
+	queryExecutor := s.newExecutor(s.natsConn, queryID)
 
 	s.trackExecutorForQuery(queryExecutor)
 	defer s.deleteExecutorForQuery(queryID)
@@ -398,42 +278,6 @@ func (s *Server) ExecuteQuery(ctx context.Context, req *plannerpb.QueryRequest) 
 		QueryID:     utils.ProtoFromUUID(&queryID),
 		QueryResult: qr,
 	}, nil
-}
-
-// GetSchemas returns the schemas in the system.
-func (s *Server) GetSchemas(ctx context.Context, req *querybrokerpb.SchemaRequest) (*querybrokerpb.SchemaResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "Not implemented yet")
-}
-
-// GetAgentInfo returns information about registered agents.
-func (s *Server) GetAgentInfo(ctx context.Context, req *querybrokerpb.AgentInfoRequest) (*querybrokerpb.AgentInfoResponse, error) {
-	mdsReq := &metadatapb.AgentInfoRequest{}
-	aCtx, err := authcontext.FromContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-	ctx = metadata.AppendToOutgoingContext(ctx, "authorization", fmt.Sprintf("bearer %s", aCtx.AuthToken))
-
-	mdsResp, err := s.mdsClient.GetAgentInfo(ctx, mdsReq)
-	if err != nil {
-		return nil, err
-	}
-
-	var agentStatuses []*querybrokerpb.AgentMetadata
-
-	for _, agentInfo := range mdsResp.Info {
-		agentStatuses = append(agentStatuses, &querybrokerpb.AgentMetadata{
-			Agent:  agentInfo.Agent,
-			Status: agentInfo.Status,
-		})
-	}
-
-	// Map the responses.
-	resp := &querybrokerpb.AgentInfoResponse{
-		Info: agentStatuses,
-	}
-
-	return resp, nil
 }
 
 // ReceiveAgentQueryResult gets the query result from an agent and stores the results until all

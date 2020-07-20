@@ -16,15 +16,9 @@ service QueryBrokerService {
   /**
    * These RPC calls are used by debug tools, etc, that connect to vizier.
    */
-
-  // Returns information about registered agents.
-  rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
   // This is an incoming request to Vizier to execute queries.
   rpc ExecuteQuery(pl.carnot.planner.plannerpb.QueryRequest)
       returns (VizierQueryResponse) {}
-  // This is an incoming request to Vizier for the schema available on each
-  // agent.
-  rpc GetSchemas(SchemaRequest) returns (SchemaResponse) {}
   // This is an incoming request from the agents, containing results for a
   // query.
   rpc ReceiveAgentQueryResult(AgentQueryResultRequest)

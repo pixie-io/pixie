@@ -9,17 +9,17 @@ import (
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
-	compilerpb "pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/compilerpb"
 	"pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
-	plannerpb "pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
-	planpb "pixielabs.ai/pixielabs/src/carnot/planpb"
+	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
+	"pixielabs.ai/pixielabs/src/carnot/planpb"
 	"pixielabs.ai/pixielabs/src/shared/services/authcontext"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
-	mock_metadatapb "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb/mock"
 	mock_controllers "pixielabs.ai/pixielabs/src/vizier/services/query_broker/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
+	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
 )
 
 const getAgentsResponse = `
@@ -357,6 +357,14 @@ errors {
 	}
 }`
 
+type fakeAgentsTracker struct {
+	agentsInfo *tracker.AgentsInfo
+}
+
+func (f *fakeAgentsTracker) GetAgentInfo() *tracker.AgentsInfo {
+	return f.agentsInfo
+}
+
 func TestServerExecuteQueryTimeout(t *testing.T) {
 	// Start NATS.
 	port, cleanup := testingutils.StartNATS(t)
@@ -371,29 +379,24 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
-
 	getAgentsPB := new(metadatapb.AgentInfoResponse)
 	if err := proto.UnmarshalText(getAgentsResponse, getAgentsPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-
-	mds.
-		EXPECT().
-		GetAgentInfo(gomock.Any(), &metadatapb.AgentInfoRequest{}).
-		Return(getAgentsPB, nil)
 
 	getAgentTableMetadataPB := new(metadatapb.AgentTableMetadataResponse)
 	if err := proto.UnmarshalText(getAgentTableMetadataResponse, getAgentTableMetadataPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	mds.
-		EXPECT().
-		GetAgentTableMetadata(gomock.Any(), &metadatapb.AgentTableMetadataRequest{}).
-		Return(getAgentTableMetadataPB, nil)
-
-		// Set up server.
+	agentsInfo, err := tracker.NewAgentsInfo(
+		getAgentTableMetadataPB.MetadataByAgent[0].Schema,
+		getAgentsPB, getAgentTableMetadataPB)
+	assert.Nil(t, err)
+	at := fakeAgentsTracker{
+		agentsInfo: agentsInfo,
+	}
+	// Set up server.
 	env, err := querybrokerenv.New()
 	if err != nil {
 		t.Fatal("Failed to create api environment.")
@@ -417,7 +420,7 @@ func TestServerExecuteQueryTimeout(t *testing.T) {
 		Plan(plannerStatePB, queryRequest).
 		Return(plannerResultPB, nil)
 
-	s, err := NewServer(env, mds, nc)
+	s, err := NewServer(env, &at, nc)
 	queryID := uuid.NewV4()
 
 	auth := authcontext.New()
@@ -444,9 +447,7 @@ func TestExecuteQueryInvalidFlags(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
-
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID) Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
 		return mc
 	}
@@ -457,7 +458,7 @@ func TestExecuteQueryInvalidFlags(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s, err := newServer(env, mds, nc, createExecutorMock)
+	s, err := newServer(env, nil, nc, createExecutorMock)
 
 	queryRequest := &plannerpb.QueryRequest{
 		QueryStr: invalidFlagQuery,
@@ -483,7 +484,6 @@ func TestReceiveAgentQueryResult(t *testing.T) {
 	defer ctrl.Finish()
 
 	m := mock_controllers.NewMockExecutor(ctrl)
-	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
 
 	req := new(querybrokerpb.AgentQueryResultRequest)
 	if err := proto.UnmarshalText(kelvinResponse, req); err != nil {
@@ -500,7 +500,7 @@ func TestReceiveAgentQueryResult(t *testing.T) {
 		t.Fatal("Failed to create api environment.")
 	}
 
-	s, err := NewServer(env, mds, nc)
+	s, err := NewServer(env, nil, nc)
 	if err != nil {
 		t.Fatal("Creating server failed.")
 	}
@@ -519,104 +519,6 @@ func TestReceiveAgentQueryResult(t *testing.T) {
 	assert.Equal(t, expectedResp, resp)
 }
 
-func TestGetAgentInfo(t *testing.T) {
-	// Start NATS.
-	port, cleanup := testingutils.StartNATS(t)
-	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
-
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
-	getAgentsPB := &metadatapb.AgentInfoResponse{}
-	if err := proto.UnmarshalText(getAgentsResponse, getAgentsPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	mds.
-		EXPECT().
-		GetAgentInfo(gomock.Any(), &metadatapb.AgentInfoRequest{}).
-		Return(getAgentsPB, nil)
-
-		// Set up server.
-	env, err := querybrokerenv.New()
-	if err != nil {
-		t.Fatal("Failed to create api environment.")
-	}
-
-	s, err := NewServer(env, mds, nc)
-
-	if err != nil {
-		t.Fatal("Creating server failed.")
-	}
-
-	getAgentsRespPB := &querybrokerpb.AgentInfoResponse{}
-	if err := proto.UnmarshalText(getAgentsResponse, getAgentsRespPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	aCtx := authcontext.New()
-	ctx := authcontext.NewContext(context.Background(), aCtx)
-
-	resp, err := s.GetAgentInfo(ctx, &querybrokerpb.AgentInfoRequest{})
-	assert.Equal(t, getAgentsRespPB, resp)
-}
-
-func TestGetMultipleAgentInfo(t *testing.T) {
-	// Start NATS.
-	port, cleanup := testingutils.StartNATS(t)
-	defer cleanup()
-
-	nc, err := nats.Connect(testingutils.GetNATSURL(port))
-	if err != nil {
-		t.Fatal("Could not connect to NATS.")
-	}
-
-	// Set up mocks.
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
-	getAgentsPB := &metadatapb.AgentInfoResponse{}
-	if err := proto.UnmarshalText(getMultipleAgentsResponse, getAgentsPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	mds.
-		EXPECT().
-		GetAgentInfo(gomock.Any(), &metadatapb.AgentInfoRequest{}).
-		Return(getAgentsPB, nil)
-
-		// Set up server.
-	env, err := querybrokerenv.New()
-	if err != nil {
-		t.Fatal("Failed to create api environment.")
-	}
-
-	s, err := NewServer(env, mds, nc)
-
-	if err != nil {
-		t.Fatal("Creating server failed.")
-	}
-
-	getAgentsRespPB := &querybrokerpb.AgentInfoResponse{}
-	if err := proto.UnmarshalText(getMultipleAgentsResponse, getAgentsRespPB); err != nil {
-		t.Fatal("Cannot Unmarshal protobuf.")
-	}
-
-	aCtx := authcontext.New()
-	ctx := authcontext.NewContext(context.Background(), aCtx)
-
-	resp, err := s.GetAgentInfo(ctx, &querybrokerpb.AgentInfoRequest{})
-	assert.Equal(t, getAgentsRespPB, resp)
-}
-
 // TestPlannerErrorResult makes sure that compiler error handling is done well.
 func TestPlannerErrorResult(t *testing.T) {
 	// Start NATS.
@@ -632,33 +534,28 @@ func TestPlannerErrorResult(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
-
 	getAgentsPB := new(metadatapb.AgentInfoResponse)
 	if err := proto.UnmarshalText(getAgentsResponse, getAgentsPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-
-	mds.
-		EXPECT().
-		GetAgentInfo(gomock.Any(), &metadatapb.AgentInfoRequest{}).
-		Return(getAgentsPB, nil)
 
 	getAgentTableMetadataPB := new(metadatapb.AgentTableMetadataResponse)
 	if err := proto.UnmarshalText(getAgentTableMetadataResponse, getAgentTableMetadataPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	mds.
-		EXPECT().
-		GetAgentTableMetadata(gomock.Any(), &metadatapb.AgentTableMetadataRequest{}).
-		Return(getAgentTableMetadataPB, nil)
-
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID) Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
 		return mc
 	}
 
+	agentsInfo, err := tracker.NewAgentsInfo(
+		getAgentTableMetadataPB.MetadataByAgent[0].Schema,
+		getAgentsPB, getAgentTableMetadataPB)
+	assert.Nil(t, err)
+	at := fakeAgentsTracker{
+		agentsInfo: agentsInfo,
+	}
 	// Set up server.
 	env, err := querybrokerenv.New()
 	if err != nil {
@@ -688,7 +585,7 @@ func TestPlannerErrorResult(t *testing.T) {
 		Plan(plannerStatePB, queryRequest).
 		Return(badPlannerResultPB, nil)
 
-	s, err := newServer(env, mds, nc, createExecutorMock)
+	s, err := newServer(env, &at, nc, createExecutorMock)
 	queryID := uuid.NewV4()
 	auth := authcontext.New()
 	ctx := authcontext.NewContext(context.Background(), auth)
@@ -720,29 +617,24 @@ func TestErrorInStatusResult(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mds := mock_metadatapb.NewMockMetadataServiceClient(ctrl)
-
 	getAgentsPB := new(metadatapb.AgentInfoResponse)
 	if err := proto.UnmarshalText(getAgentsResponse, getAgentsPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
-
-	mds.
-		EXPECT().
-		GetAgentInfo(gomock.Any(), &metadatapb.AgentInfoRequest{}).
-		Return(getAgentsPB, nil)
 
 	getAgentTableMetadataPB := new(metadatapb.AgentTableMetadataResponse)
 	if err := proto.UnmarshalText(getAgentTableMetadataResponse, getAgentTableMetadataPB); err != nil {
 		t.Fatal("Cannot Unmarshal protobuf.")
 	}
 
-	mds.
-		EXPECT().
-		GetAgentTableMetadata(gomock.Any(), &metadatapb.AgentTableMetadataRequest{}).
-		Return(getAgentTableMetadataPB, nil)
-
-	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID, agentList *[]uuid.UUID) Executor {
+	agentsInfo, err := tracker.NewAgentsInfo(
+		getAgentTableMetadataPB.MetadataByAgent[0].Schema,
+		getAgentsPB, getAgentTableMetadataPB)
+	assert.Nil(t, err)
+	at := fakeAgentsTracker{
+		agentsInfo: agentsInfo,
+	}
+	createExecutorMock := func(_ *nats.Conn, _ uuid.UUID) Executor {
 		mc := mock_controllers.NewMockExecutor(ctrl)
 		return mc
 	}
@@ -777,7 +669,7 @@ func TestErrorInStatusResult(t *testing.T) {
 		Plan(plannerStatePB, queryRequest).
 		Return(badPlannerResultPB, nil)
 
-	s, err := newServer(env, mds, nc, createExecutorMock)
+	s, err := newServer(env, &at, nc, createExecutorMock)
 
 	queryID := uuid.NewV4()
 	auth := authcontext.New()

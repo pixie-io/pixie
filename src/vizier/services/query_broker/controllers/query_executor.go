@@ -24,22 +24,18 @@ import (
 // tracking the responses.
 type QueryExecutor struct {
 	queryID     uuid.UUID
-	agentList   *[]uuid.UUID
 	queryResult *queryresultspb.QueryResult
 	// extraTables are tables get added to results as sidecars. For example, things like query plan.
 	extraTables []*schemapb.Table
-	// Store the compilation time so we can write it to the results later.
-	compilationTime time.Duration
-	conn            *nats.Conn
-	mux             sync.Mutex
-	done            chan bool
+	conn        *nats.Conn
+	mux         sync.Mutex
+	done        chan bool
 }
 
 // NewQueryExecutor creates a Query Executor for a specific query.
-func NewQueryExecutor(natsConn *nats.Conn, queryID uuid.UUID, agentList *[]uuid.UUID) Executor {
+func NewQueryExecutor(natsConn *nats.Conn, queryID uuid.UUID) Executor {
 	return &QueryExecutor{
 		queryID:     queryID,
-		agentList:   agentList,
 		conn:        natsConn,
 		extraTables: make([]*schemapb.Table, 0),
 		done:        make(chan bool, 1),
@@ -97,6 +93,7 @@ func (e *QueryExecutor) ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan, analyze
 	queryIDPB := utils.ProtoFromUUID(&e.queryID)
 	// Accumulate failures.
 	errs := make(chan error)
+	defer close(errs)
 	// Broadcast query to all the agents in parallel.
 	var wg sync.WaitGroup
 	wg.Add(len(planMap))
@@ -136,7 +133,7 @@ func (e *QueryExecutor) ExecuteQuery(planMap map[uuid.UUID]*planpb.Plan, analyze
 	errsList := make([]string, 0)
 
 	hasErrs := true
-	for ok := true; ok; ok = hasErrs {
+	for hasErrs {
 		select {
 		case err := <-errs:
 			errsList = append(errsList, err.Error())

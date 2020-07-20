@@ -68,7 +68,7 @@ func TestExecuteQuery(t *testing.T) {
 		agentUUIDs = append(agentUUIDs, u)
 	}
 
-	e := NewQueryExecutor(nc, queryUUID, &agentUUIDs)
+	e := NewQueryExecutor(nc, queryUUID)
 
 	// Subscribe to each agent channel.
 	sub1, err := nc.SubscribeSync(fmt.Sprintf("/agent/%s", agentUUIDStrs[0]))
@@ -133,22 +133,7 @@ func TestWaitForCompletion(t *testing.T) {
 		t.Fatal("Could not parse UUID.")
 	}
 
-	agentUUIDStrs := [3]string{
-		kelvinID,
-		agent1ID,
-		agent2ID,
-	}
-
-	agentUUIDs := make([]uuid.UUID, 0)
-	for _, uid := range agentUUIDStrs {
-		u, err := uuid.FromString(uid)
-		if err != nil {
-			t.Fatal("Could not parse UUID.")
-		}
-		agentUUIDs = append(agentUUIDs, u)
-	}
-
-	e := NewQueryExecutor(nc, queryUUID, &agentUUIDs)
+	e := NewQueryExecutor(nc, queryUUID)
 
 	// Add agent results.
 	res := new(querybrokerpb.AgentQueryResultRequest)
@@ -177,22 +162,7 @@ func TestWaitForCompletionTimeout(t *testing.T) {
 		t.Fatal("Could not parse UUID.")
 	}
 
-	agentUUIDStrs := [3]string{
-		kelvinID,
-		agent1ID,
-		agent2ID,
-	}
-
-	agentUUIDs := make([]uuid.UUID, 0)
-	for _, uid := range agentUUIDStrs {
-		u, err := uuid.FromString(uid)
-		if err != nil {
-			t.Fatal("Could not parse UUID.")
-		}
-		agentUUIDs = append(agentUUIDs, u)
-	}
-
-	e := NewQueryExecutor(nc, queryUUID, &agentUUIDs)
+	e := NewQueryExecutor(nc, queryUUID)
 
 	queryResult, err := e.WaitForCompletion()
 	assert.Nil(t, queryResult)

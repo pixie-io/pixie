@@ -20,6 +20,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/ptproxy"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/querybrokerpb"
+	"pixielabs.ai/pixielabs/src/vizier/services/query_broker/tracker"
 	vizierpb "pixielabs.ai/pixielabs/src/vizier/vizierpb"
 )
 
@@ -104,7 +105,10 @@ func main() {
 			Error("Got nats error")
 	})
 
-	server, err := controllers.NewServer(env, mdsClient, natsConn)
+	agentTracker := tracker.NewAgents(mdsClient, viper.GetString("jwt_signing_key"))
+	agentTracker.Start()
+	defer agentTracker.Stop()
+	server, err := controllers.NewServer(env, agentTracker, natsConn)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}
