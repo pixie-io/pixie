@@ -602,7 +602,7 @@ describe('grouped bar', () => {
           groupby: [groupByFieldName],
         }),
       },
-      marks: [
+      marks: expect.arrayContaining([
         expect.objectContaining({
           encode: expect.objectContaining({
             update: expect.objectContaining({
@@ -614,7 +614,7 @@ describe('grouped bar', () => {
           }),
           style: 'bar',
         }),
-      ],
+      ]),
     })]));
   });
   it('produces expected layout', () => {
@@ -649,7 +649,7 @@ describe('grouped bar with stackby', () => {
           groupby: [groupByFieldName],
         }),
       },
-      marks: [expect.objectContaining({
+      marks: expect.arrayContaining([expect.objectContaining({
         encode: expect.objectContaining({
           update: expect.objectContaining({
             x: { scale: 'x', field: labelFieldName },
@@ -659,7 +659,7 @@ describe('grouped bar with stackby', () => {
           }),
         }),
         style: 'bar',
-      })],
+      })]),
     })]));
   });
   it('produces expected layout', () => {

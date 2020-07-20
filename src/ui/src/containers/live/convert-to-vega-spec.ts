@@ -45,6 +45,11 @@ const HIGHLIGHTED_LINE_WIDTH = 3.0;
 const SELECTED_LINE_OPACITY = 1.0;
 const UNSELECTED_LINE_OPACITY = 0.2;
 const AXIS_HEIGHT = 25;
+// Padding between bars, specified as fraction of step size.
+const BAR_PADDING = 0.5;
+const SELECTED_BAR_OPACITY = 0.9;
+const UNSELECTED_BAR_OPACITY = 0.2;
+const BAR_TEXT_OFFSET = 5;
 
 const HOVER_BULB_OFFSET = 10;
 const HOVER_LINE_TEXT_OFFSET = 6;
@@ -956,6 +961,30 @@ function addGridLayoutMarksForGroupedBars(
   return { groupForValueAxis, groupForLabelAxis };
 }
 
+function addBarHoverSignal(spec: VgSpec, bar: Bar, barMarkName: string, groupTest: string, stackTest: string): Signal {
+  return addSignal(spec, {
+    name: 'hovered_bar',
+    on: [
+      {
+        events: [{
+          source: 'view',
+          type: 'mouseover',
+          markname: barMarkName,
+        }],
+        update: `datum && {label: datum["${bar.label}"], group: ${groupTest}, stack: ${stackTest}}`,
+      },
+      {
+        events: [{
+          source: 'view',
+          type: 'mouseout',
+          markname: barMarkName,
+        }],
+        update: 'null',
+      },
+    ],
+  });
+}
+
 function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithProps {
   if (!display.bar) {
     throw new Error('BarChart must have an entry for property bar');
@@ -1045,6 +1074,7 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
       sort: true,
     },
     range: (display.bar.horizontal) ? [{ signal: heightName }, 0] : [0, { signal: widthName }],
+    paddingInner: BAR_PADDING,
   });
 
   const valueScale = addScale(spec, {
@@ -1120,8 +1150,16 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
       ],
     }) as GroupMark;
   }
+
+  const barMarkName = 'bar-mark';
+  const groupTest = (datum: string) => ((display.bar.groupBy) ? `${datum}["${display.bar.groupBy}"]` : 'null');
+  const stackTest = (datum: string) => ((display.bar.stackBy) ? `${datum}["${display.bar.stackBy}"]` : 'null');
+  const hoverSignal = addBarHoverSignal(spec, display.bar, barMarkName, groupTest('datum'), stackTest('datum'));
+  const isHovered = (datum: string) => `${hoverSignal.name}.label === ${datum}["${display.bar.label}"] && `
+    + `${hoverSignal.name}.group === ${groupTest(datum)} && `
+    + `${hoverSignal.name}.stack === ${stackTest(datum)}`;
   const barMark = addMark(group, {
-    name: 'barMark',
+    name: barMarkName,
     type: 'rect',
     style: 'bar',
     from: {
@@ -1133,6 +1171,14 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
           scale: colorScale.name,
           ...((display.bar.stackBy) ? { field: display.bar.stackBy } : { value: valueField }),
         },
+        opacity: [
+          { test: `!${hoverSignal.name}`, value: SELECTED_BAR_OPACITY },
+          {
+            test: `${hoverSignal.name} && datum && ${isHovered('datum')}`,
+            value: SELECTED_BAR_OPACITY,
+          },
+          { value: UNSELECTED_BAR_OPACITY },
+        ],
       },
     },
   });
@@ -1175,23 +1221,64 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
       },
     });
   }
+  addMark(group, {
+    name: 'bar-value-text',
+    type: 'text',
+    style: 'bar-value-text',
+    from: {
+      data: barMarkName,
+    },
+    encode: {
+      enter: {
+        text: { field: `datum["${display.bar.value}"]` },
+        ...((display.bar.horizontal)
+          ? {
+            x: { field: 'x2', offset: BAR_TEXT_OFFSET },
+            y: { field: 'y', offset: { field: 'height', mult: 0.5 } },
+            baseline: { value: 'middle' },
+            align: { value: 'left' },
+          }
+          : {
+            x: { field: 'x', offset: { field: 'width', mult: 0.5 } },
+            y: { field: 'y', offset: -BAR_TEXT_OFFSET },
+            baseline: { value: 'bottom' },
+            align: { value: 'center' },
+          }),
+      },
+      update: {
+        opacity: [
+          { test: `${hoverSignal.name} && datum && datum.datum && ${isHovered('datum.datum')}`, value: 1.0 },
+          { value: 0.0 },
+        ],
+      },
+    },
+  });
+
+  const xHasGrid = !display.bar.groupBy && !!display.bar.horizontal;
+  const yHasGrid = !display.bar.groupBy && !display.bar.horizontal;
 
   const xAxis = addAxis((display.bar.horizontal) ? groupForValueAxis : groupForLabelAxis, {
     scale: (display.bar.horizontal) ? valueScale.name : labelScale.name,
     orient: 'bottom',
-    grid: (display.bar.groupBy) ? false : !!display.bar.horizontal,
-    gridScale: (display.bar.groupBy) ? null : (display.bar.horizontal) ? labelScale.name : null,
-    labelAlign: 'right',
-    labelAngle: 270,
+    grid: xHasGrid,
+    gridScale: (xHasGrid) ? labelScale.name : null,
+    labelAlign: (display.bar.horizontal) ? 'center' : 'right',
+    labelAngle: (display.bar.horizontal) ? 0 : 270,
     labelBaseline: 'middle',
     labelOverlap: true,
+    labelSeparation: 3,
+    // Tick count is only used if this is the valueAxis.
+    tickCount: {
+      signal: `ceil(${widthName}/${PX_BETWEEN_Y_TICKS})`,
+    },
   });
   const yAxis = addAxis((display.bar.horizontal) ? groupForLabelAxis : groupForValueAxis, {
     scale: (display.bar.horizontal) ? labelScale.name : valueScale.name,
     orient: 'left',
-    grid: (display.bar.groupBy) ? false : !display.bar.horizontal,
-    gridScale: (display.bar.groupBy) ? null : (display.bar.horizontal) ? null : labelScale.name,
+    grid: yHasGrid,
+    gridScale: yHasGrid ? labelScale.name : null,
     labelOverlap: true,
+    // Tick count is only used if this is the valueAxis.
     tickCount: {
       signal: `ceil(${heightName}/${PX_BETWEEN_Y_TICKS})`,
     },
@@ -1448,6 +1535,11 @@ function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
       'grouped-bar-label-subtitle': {
         fill: theme.palette.foreground.one,
         fontSize: 10,
+      },
+      'bar-value-text': {
+        font: 'Roboto',
+        fontSize: 10,
+        fill: theme.palette.foreground.one,
       },
     },
     axis: {
