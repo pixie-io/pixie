@@ -1,6 +1,6 @@
 package(default_visibility = ["//visibility:public"])
 
-load("//bazel:pl_build_system.bzl", "pl_cc_library", "pl_cc_test")
+load("//bazel:pl_build_system.bzl", "pl_cc_binary", "pl_cc_library", "pl_cc_test")
 
 pl_cc_library(
     name = "cc_library",
@@ -12,6 +12,7 @@ pl_cc_library(
         exclude = [
             "**/*_test.cc",
             "**/*_test_utils.h",
+            "probe_generator.cc",
         ],
     ),
     hdrs = ["probes.h"],
@@ -28,5 +29,14 @@ pl_cc_test(
     deps = [
         ":cc_library",
         "//src/carnot/planner/compiler:cc_library",
+    ],
+)
+
+pl_cc_binary(
+    name = "probe_generator",
+    srcs = ["probe_generator.cc"],
+    deps = [
+        "//src/carnot/planner/compiler:cc_library",
+        ":cc_library",
     ],
 )
