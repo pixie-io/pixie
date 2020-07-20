@@ -295,6 +295,9 @@ export namespace BarChart {
     getGroupBy(): string;
     setGroupBy(value: string): void;
 
+    getHorizontal(): boolean;
+    setHorizontal(value: boolean): void;
+
     serializeBinary(): Uint8Array;
     toObject(includeInstance?: boolean): Bar.AsObject;
     static toObject(includeInstance: boolean, msg: Bar): Bar.AsObject;
@@ -309,6 +312,7 @@ export namespace BarChart {
       label: string,
       stackBy: string,
       groupBy: string,
+      horizontal: boolean,
     }
   }
 

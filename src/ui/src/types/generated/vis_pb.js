@@ -2421,7 +2421,8 @@ proto.pl.vispb.BarChart.Bar.toObject = function(includeInstance, msg) {
     value: jspb.Message.getFieldWithDefault(msg, 1, ""),
     label: jspb.Message.getFieldWithDefault(msg, 2, ""),
     stackBy: jspb.Message.getFieldWithDefault(msg, 3, ""),
-    groupBy: jspb.Message.getFieldWithDefault(msg, 4, "")
+    groupBy: jspb.Message.getFieldWithDefault(msg, 4, ""),
+    horizontal: jspb.Message.getBooleanFieldWithDefault(msg, 5, false)
   };
 
   if (includeInstance) {
@@ -2473,6 +2474,10 @@ proto.pl.vispb.BarChart.Bar.deserializeBinaryFromReader = function(msg, reader) 
     case 4:
       var value = /** @type {string} */ (reader.readString());
       msg.setGroupBy(value);
+      break;
+    case 5:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setHorizontal(value);
       break;
     default:
       reader.skipField();
@@ -2528,6 +2533,13 @@ proto.pl.vispb.BarChart.Bar.serializeBinaryToWriter = function(message, writer) 
   if (f.length > 0) {
     writer.writeString(
       4,
+      f
+    );
+  }
+  f = message.getHorizontal();
+  if (f) {
+    writer.writeBool(
+      5,
       f
     );
   }
@@ -2603,6 +2615,24 @@ proto.pl.vispb.BarChart.Bar.prototype.getGroupBy = function() {
  */
 proto.pl.vispb.BarChart.Bar.prototype.setGroupBy = function(value) {
   return jspb.Message.setProto3StringField(this, 4, value);
+};
+
+
+/**
+ * optional bool horizontal = 5;
+ * @return {boolean}
+ */
+proto.pl.vispb.BarChart.Bar.prototype.getHorizontal = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 5, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.pl.vispb.BarChart.Bar} returns this
+ */
+proto.pl.vispb.BarChart.Bar.prototype.setHorizontal = function(value) {
+  return jspb.Message.setProto3BooleanField(this, 5, value);
 };
 
 

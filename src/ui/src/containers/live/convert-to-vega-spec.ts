@@ -80,6 +80,7 @@ interface Bar {
   readonly label: string;
   readonly stackBy?: string;
   readonly groupBy?: string;
+  readonly horizontal?: boolean;
 }
 
 interface BarDisplay extends WidgetDisplay, DisplayWithLabels {
@@ -847,7 +848,40 @@ function convertToTimeseriesChart(display: TimeseriesDisplay, source: string): V
   };
 }
 
-function addGridLayout(spec: VgSpec, columnDomainData: Data) {
+function addChildWidthHeightSignals(spec: VgSpec, widthName: string,
+  heightName: string, horizontal: boolean, groupScaleName: string) {
+  let widthExpr: string;
+  let heightExpr: string;
+  if (horizontal) {
+    widthExpr = 'width';
+    heightExpr = `height/domain("${groupScaleName}").length`;
+  } else {
+    widthExpr = `width/domain("${groupScaleName}").length`;
+    heightExpr = 'height';
+  }
+  addSignal(spec, {
+    name: widthName,
+    init: widthExpr,
+    on: [
+      {
+        events: { signal: 'width' },
+        update: widthExpr,
+      },
+    ],
+  });
+  addSignal(spec, {
+    name: heightName,
+    init: heightExpr,
+    on: [
+      {
+        events: { signal: 'height' },
+        update: heightExpr,
+      },
+    ],
+  });
+}
+
+function addGridLayout(spec: VgSpec, columnDomainData: Data, horizontal: boolean) {
   spec.layout = {
     // TODO(james): figure out the best way to get this from the theme.
     padding: 20,
@@ -857,9 +891,7 @@ function addGridLayout(spec: VgSpec, columnDomainData: Data) {
     offset: {
       columnTitle: 10,
     },
-    columns: {
-      signal: `length(data("${columnDomainData.name}"))`,
-    },
+    columns: (horizontal) ? 1 : { signal: `length(data("${columnDomainData.name}"))` },
     bounds: 'full',
     align: 'all',
   };
@@ -870,37 +902,37 @@ function addGridLayoutMarksForGroupedBars(
   groupBy: string,
   labelField: string,
   columnDomainData: Data,
+  horizontal: boolean,
   widthName: string,
-  heightName: string): { groupForXAxis: GroupMark; groupForYAxis: GroupMark } {
+  heightName: string): { groupForValueAxis: GroupMark; groupForLabelAxis: GroupMark } {
+  const groupByLabelRole = (horizontal) ? 'row-title' : 'column-title';
   addMark(spec, {
-    name: 'column-title',
+    name: groupByLabelRole,
     type: 'group',
-    role: 'column-title',
+    role: groupByLabelRole,
     title: {
       text: `${groupBy}, ${labelField}`,
-      orient: 'bottom',
+      orient: (horizontal) ? 'left' : 'bottom',
       offset: 10,
-      style: 'grouped-bar-x-title',
+      style: 'grouped-bar-label-title',
     },
   });
 
-  const groupForYAxis = addMark(spec, {
-    name: 'row-header',
+  const valueAxisRole = (horizontal) ? 'column-footer' : 'row-header';
+  const groupForValueAxis = addMark(spec, {
+    name: valueAxisRole,
     type: 'group',
-    role: 'row-header',
+    role: valueAxisRole,
     encode: {
-      update: {
-        height: {
-          signal: heightName,
-        },
-      },
+      update: (horizontal) ? { width: { signal: widthName } } : { height: { signal: heightName } },
     },
   }) as GroupMark;
 
-  const groupForXAxis = addMark(spec, {
-    name: 'column-footer',
+  const labelAxisRole = (horizontal) ? 'row-header' : 'column-footer';
+  const groupForLabelAxis = addMark(spec, {
+    name: labelAxisRole,
     type: 'group',
-    role: 'column-footer',
+    role: labelAxisRole,
     from: {
       data: columnDomainData.name,
     },
@@ -913,19 +945,15 @@ function addGridLayoutMarksForGroupedBars(
         signal: `parent["${groupBy}"]`,
       },
       frame: 'group',
-      orient: 'bottom',
+      orient: (horizontal) ? 'left' : 'bottom',
       offset: 10,
-      style: 'grouped-bar-x-subtitle',
+      style: 'grouped-bar-label-subtitle',
     },
     encode: {
-      update: {
-        width: {
-          signal: widthName,
-        },
-      },
+      update: (horizontal) ? { height: { signal: heightName } } : { width: { signal: widthName } },
     },
   }) as GroupMark;
-  return { groupForXAxis, groupForYAxis };
+  return { groupForValueAxis, groupForLabelAxis };
 }
 
 function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithProps {
@@ -939,10 +967,9 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
     throw new Error('BarChart property bar must have an entry for property label');
   }
 
-  const spec = { ...BASE_SPEC };
+  const spec = { ...BASE_SPEC, style: 'cell' };
   if (!display.bar.groupBy) {
     addAutosize(spec);
-    spec.style = 'cell';
   }
 
   // Add data and transforms.
@@ -991,36 +1018,43 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
   }
 
   // Add signals.
+  addWidthHeightSignals(spec);
   const widthName = (display.bar.groupBy) ? 'child_width' : 'width';
   const heightName = (display.bar.groupBy) ? 'child_height' : 'height';
-  addWidthHeightSignals(spec, widthName, heightName);
+  if (display.bar.groupBy) {
+    const groupScale = addScale(spec, {
+      name: 'group-scale',
+      type: 'band',
+      domain: {
+        data: transformedDataSrc.name,
+        field: display.bar.groupBy,
+        sort: true,
+      },
+      range: (display.bar.horizontal) ? 'height' : 'width',
+    });
+    addChildWidthHeightSignals(spec, widthName, heightName, display.bar.horizontal, groupScale.name);
+  }
 
   // Add scales.
-  const xScale = addScale(spec, {
-    name: 'x',
+  const labelScale = addScale(spec, {
+    name: (display.bar.horizontal) ? 'y' : 'x',
     type: 'band',
     domain: {
       data: transformedDataSrc.name,
       field: display.bar.label,
       sort: true,
     },
-    range: [
-      0,
-      { signal: widthName },
-    ],
+    range: (display.bar.horizontal) ? [{ signal: heightName }, 0] : [0, { signal: widthName }],
   });
 
-  const yScale = addScale(spec, {
-    name: 'y',
+  const valueScale = addScale(spec, {
+    name: (display.bar.horizontal) ? 'x' : 'y',
     type: 'linear',
     domain: {
       data: transformedDataSrc.name,
       fields: (valueStartField) ? [valueStartField, valueEndField] : [valueField],
     },
-    range: [
-      { signal: heightName },
-      0,
-    ],
+    range: (display.bar.horizontal) ? [0, { signal: widthName }] : [{ signal: heightName }, 0],
     nice: true,
     zero: true,
   });
@@ -1039,13 +1073,13 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
   // Add marks.
   let group: VgSpec | GroupMark = spec;
   let dataName = transformedDataSrc.name;
-  let groupForXAxis: VgSpec | GroupMark = spec;
-  let groupForYAxis: VgSpec | GroupMark = spec;
+  let groupForValueAxis: VgSpec | GroupMark = spec;
+  let groupForLabelAxis: VgSpec | GroupMark = spec;
   if (display.bar.groupBy) {
     // We use vega's grid layout functionality to plot grouped bars.
-    ({ groupForXAxis, groupForYAxis } = addGridLayoutMarksForGroupedBars(
-      spec, display.bar.groupBy, display.bar.label, columnDomainData, widthName, heightName));
-    addGridLayout(spec, columnDomainData);
+    ({ groupForValueAxis, groupForLabelAxis } = addGridLayoutMarksForGroupedBars(
+      spec, display.bar.groupBy, display.bar.label, columnDomainData, display.bar.horizontal, widthName, heightName));
+    addGridLayout(spec, columnDomainData, display.bar.horizontal);
     dataName = 'facetedData';
     group = addMark(spec, {
       name: 'barGroup',
@@ -1072,10 +1106,21 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
           },
         },
       },
+      axes: [
+        {
+          scale: valueScale.name,
+          orient: (display.bar.horizontal) ? 'bottom' : 'left',
+          grid: true,
+          gridScale: labelScale.name,
+          tickCount: { signal: `ceil(${heightName}/${PX_BETWEEN_Y_TICKS})` },
+          labelOverlap: true,
+          labels: false,
+          ticks: false,
+        },
+      ],
     }) as GroupMark;
   }
-
-  addMark(group, {
+  const barMark = addMark(group, {
     name: 'barMark',
     type: 'rect',
     style: 'bar',
@@ -1088,40 +1133,64 @@ function convertToBarChart(display: BarDisplay, source: string): VegaSpecWithPro
           scale: colorScale.name,
           ...((display.bar.stackBy) ? { field: display.bar.stackBy } : { value: valueField }),
         },
-        x: {
-          scale: xScale.name,
-          field: display.bar.label,
-        },
-        y: {
-          scale: yScale.name,
-          field: valueEndField,
-        },
-        y2: {
-          scale: yScale.name,
-          ...((valueStartField) ? { field: valueStartField } : { value: 0 }),
-        },
-        width: {
-          scale: xScale.name,
-          band: 1,
-        },
       },
     },
   });
+  if (display.bar.horizontal) {
+    extendMarkEncoding(barMark, 'update', {
+      x: {
+        scale: valueScale.name,
+        ...((valueStartField) ? { field: valueStartField } : { value: 0 }),
+      },
+      x2: {
+        scale: valueScale.name,
+        field: valueEndField,
+      },
+      y: {
+        scale: labelScale.name,
+        field: display.bar.label,
+      },
+      height: {
+        scale: labelScale.name,
+        band: 1,
+      },
+    });
+  } else {
+    extendMarkEncoding(barMark, 'update', {
+      x: {
+        scale: labelScale.name,
+        field: display.bar.label,
+      },
+      y: {
+        scale: valueScale.name,
+        field: valueEndField,
+      },
+      y2: {
+        scale: valueScale.name,
+        ...((valueStartField) ? { field: valueStartField } : { value: 0 }),
+      },
+      width: {
+        scale: labelScale.name,
+        band: 1,
+      },
+    });
+  }
 
-  const xAxis = addAxis(groupForXAxis, {
-    scale: xScale.name,
+  const xAxis = addAxis((display.bar.horizontal) ? groupForValueAxis : groupForLabelAxis, {
+    scale: (display.bar.horizontal) ? valueScale.name : labelScale.name,
     orient: 'bottom',
-    grid: false,
+    grid: (display.bar.groupBy) ? false : !!display.bar.horizontal,
+    gridScale: (display.bar.groupBy) ? null : (display.bar.horizontal) ? labelScale.name : null,
     labelAlign: 'right',
     labelAngle: 270,
     labelBaseline: 'middle',
     labelOverlap: true,
   });
-  const yAxis = addAxis(groupForYAxis, {
-    scale: yScale.name,
+  const yAxis = addAxis((display.bar.horizontal) ? groupForLabelAxis : groupForValueAxis, {
+    scale: (display.bar.horizontal) ? labelScale.name : valueScale.name,
     orient: 'left',
-    gridScale: xScale.name,
-    grid: true,
+    grid: (display.bar.groupBy) ? false : !display.bar.horizontal,
+    gridScale: (display.bar.groupBy) ? null : (display.bar.horizontal) ? null : labelScale.name,
     labelOverlap: true,
     tickCount: {
       signal: `ceil(${heightName}/${PX_BETWEEN_Y_TICKS})`,
@@ -1372,11 +1441,11 @@ function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
       'group-title': {
         fontSize: 0,
       },
-      'grouped-bar-x-title': {
+      'grouped-bar-label-title': {
         fill: theme.palette.foreground.one,
         fontSize: 12,
       },
-      'grouped-bar-x-subtitle': {
+      'grouped-bar-label-subtitle': {
         fill: theme.palette.foreground.one,
         fontSize: 10,
       },
@@ -1407,6 +1476,8 @@ function hydrateSpecWithTheme(spec: VgSpec, theme: Theme) {
       domainColor: theme.palette.foreground.grey4,
       tickOpacity: 0,
       tickSize: theme.spacing(0.5),
+      gridColor: theme.palette.foreground.grey4,
+      gridWidth: 0.5,
     },
     axisBand: {
       grid: false,

@@ -158,6 +158,8 @@ message BarChart {
     // Group columns When group_by is set, group by the provided column, for example "cluster".
     // (visual ex: https://vega.github.io/vega-lite/examples/bar_grouped.html)
     string group_by = 4;
+    // Whether the bars should be horizontal or not.
+    bool horizontal = 5;
   }
   Bar bar = 1;
   // title is the title string for the chart.
