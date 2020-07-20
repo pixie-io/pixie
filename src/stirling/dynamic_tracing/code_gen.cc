@@ -1,5 +1,6 @@
 #include "src/stirling/dynamic_tracing/code_gen.h"
 
+#include <memory>
 #include <utility>
 
 #include <absl/container/flat_hash_set.h>
@@ -7,6 +8,8 @@
 #include <absl/strings/substitute.h>
 
 #include "src/common/base/base.h"
+#include "src/stirling/bpf_tools/utils.h"
+#include "src/stirling/obj_tools/elf_tools.h"
 
 namespace pl {
 namespace stirling {
@@ -32,6 +35,7 @@ using ::pl::stirling::dynamic_tracing::ir::shared::Printk;
 using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
 using ::pl::stirling::dynamic_tracing::ir::shared::TracePoint;
 using ::pl::stirling::dynamic_tracing::ir::shared::VariableType;
+using ::pl::stirling::elf_tools::ElfReader;
 
 #define PB_ENUM_SENTINEL_SWITCH_CLAUSE                             \
   LOG(DFATAL) << "Cannot happen. Needed to avoid default clause."; \
@@ -491,10 +495,10 @@ std::optional<const ir::physical::Struct*> BCCCodeGenerator::FindStruct(
 
 namespace {
 
-UProbeSpec GetUProbeSpec(const std::string& binary_path, const Probe& probe) {
+UProbeSpec GetUProbeSpec(const ir::shared::BinarySpec& binary_spec, const Probe& probe) {
   UProbeSpec spec;
 
-  spec.binary_path = binary_path;
+  spec.binary_path = binary_spec.path();
   spec.symbol = probe.trace_point().symbol();
   DCHECK(probe.trace_point().type() == TracePoint::ENTRY ||
          probe.trace_point().type() == TracePoint::RETURN);
@@ -634,8 +638,24 @@ StatusOr<BCCProgram> GenProgram(const Program& program) {
   PL_ASSIGN_OR_RETURN(std::vector<std::string> code_lines, generator.GenerateCodeLines());
   res.code = absl::StrJoin(code_lines, "\n");
 
+  std::unique_ptr<elf_tools::ElfReader> elf_reader;
+
+  if (program.binary_spec().language() == ir::shared::BinarySpec::GOLANG) {
+    PL_ASSIGN_OR_RETURN(elf_reader, ElfReader::Create(program.binary_spec().path()));
+  }
+
   for (const auto& probe : program.probes()) {
-    res.uprobes.push_back(GetUProbeSpec(program.binary_spec().path(), probe));
+    UProbeSpec spec = GetUProbeSpec(program.binary_spec(), probe);
+    if (program.binary_spec().language() == ir::shared::BinarySpec::GOLANG &&
+        probe.trace_point().type() == ir::shared::TracePoint::RETURN) {
+      PL_ASSIGN_OR_RETURN(std::vector<UProbeSpec> ret_insts_specs,
+                          bpf_tools::TransformGolangReturnProbe(spec, elf_reader.get()));
+      for (auto& spec : ret_insts_specs) {
+        res.uprobes.push_back(std::move(spec));
+      }
+    } else {
+      res.uprobes.push_back(std::move(spec));
+    }
   }
 
   for (const auto& output : program.outputs()) {

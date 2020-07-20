@@ -30,6 +30,7 @@ using ::pl::stirling::testing::FindRecordsMatchingPID;
 using ::pl::stirling::utils::FindOrInstallLinuxHeaders;
 using ::pl::stirling::utils::kDefaultHeaderSearchOrder;
 using ::testing::Each;
+using ::testing::Ge;
 using ::testing::SizeIs;
 
 dynamic_tracing::ir::logical::Program ParseTextProgram(const std::string& text,
@@ -120,7 +121,7 @@ TEST_F(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
   ASSERT_OK_AND_ASSIGN(dynamic_tracing::BCCProgram bcc_program,
                        dynamic_tracing::CompileProgram(logical_program));
 
-  ASSERT_THAT(bcc_program.uprobes, SizeIs(3));
+  ASSERT_THAT(bcc_program.uprobes, SizeIs(6));
 
   ASSERT_OK_AND_ASSIGN(std::unique_ptr<DynamicDataTableSchema> table_schema,
                        DynamicDataTableSchema::Create(bcc_program.perf_buffer_specs.front()));
@@ -129,15 +130,12 @@ TEST_F(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
 
   ASSERT_OK_AND_ASSIGN(auto connector, DynamicTraceConnector::Create(logical_program));
   ASSERT_OK(connector->Init());
-  ASSERT_OK(c_.Start(
-      {client_path_, "-name=PixieLabs", "-once", absl::StrCat("-address=localhost:", s_port_)}));
+  ASSERT_OK(c_.Start({client_path_, "-name=PixieLabs", "-count=200",
+                      absl::StrCat("-address=localhost:", s_port_)}));
 
-  // It seems uprobe is somewhat slower in pushing data into the perf buffer; and this delay ensures
-  // that perf buffer gets the data.
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  EXPECT_EQ(0, c_.Wait()) << "Client should be killed";
 
   auto ctx = std::make_unique<StandaloneContext>();
-
   connector->TransferData(ctx.get(), /*table_num*/ 0, &data_table);
 
   std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
@@ -148,7 +146,7 @@ TEST_F(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
     types::ColumnWrapperRecordBatch records =
         FindRecordsMatchingPID(tablets[0].records, /*index*/ 0, s_.child_pid());
 
-    ASSERT_THAT(records, Each(ColWrapperSizeIs(1)));
+    ASSERT_THAT(records, Each(ColWrapperSizeIs(200)));
 
     constexpr size_t kStreamIDIdx = 3;
     constexpr size_t kEndStreamIdx = 4;
@@ -156,10 +154,6 @@ TEST_F(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
     EXPECT_EQ(records[kStreamIDIdx]->Get<types::Int64Value>(0).val, 1);
     EXPECT_EQ(records[kEndStreamIdx]->Get<types::BoolValue>(0).val, false);
   }
-
-  // TODO(yzhao): This fails because kReturnInsts were not supported by BCCWrapper yet.
-  // kReturn probe on golang program will crash the server and causes client to fail due to timeout.
-  // EXPECT_EQ(0, c_.Wait()) << "Client should exit normally.";
 }
 
 }  // namespace stirling

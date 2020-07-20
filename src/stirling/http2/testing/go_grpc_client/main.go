@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/tls"
 	"flag"
-	"fmt"
 	"io"
 	"log"
 	"time"
@@ -137,23 +136,6 @@ func connectAndGreet(address string, https bool, name string) {
 	}
 }
 
-func schedule(what func(), delay time.Duration) chan bool {
-	stop := make(chan bool)
-
-	go func() {
-		for {
-			what()
-			select {
-			case <-time.After(delay):
-			case <-stop:
-				return
-			}
-		}
-	}()
-
-	return stop
-}
-
 func main() {
 	address := flag.String("address", "localhost:50051", "Server end point.")
 	once := flag.Bool("once", false, "If true, send one request and wait for response and exit.")
@@ -162,6 +144,7 @@ func main() {
 	clientStreaming := flag.Bool("client_streaming", false, "Whether or not to call client streaming RPC")
 	serverStreaming := flag.Bool("server_streaming", false, "Whether or not to call server streaming RPC")
 	bidirStreaming := flag.Bool("bidir_streaming", false, "Whether or not to call server streaming RPC")
+	count := flag.Int("count", 1, "The count of requests to make.")
 
 	flag.Parse()
 
@@ -181,10 +164,8 @@ func main() {
 		return
 	}
 
-	stop := schedule(fn, 500*time.Millisecond)
-
-	time.Sleep(60 * time.Second)
-	stop <- true
-	time.Sleep(1 * time.Second)
-	fmt.Println("Test Done")
+	for i := 0; i < *count; i++ {
+		fn()
+		time.Sleep(10 * time.Millisecond)
+	}
 }
