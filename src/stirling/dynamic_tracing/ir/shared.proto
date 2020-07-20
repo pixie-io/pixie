@@ -23,13 +23,27 @@ message TracePoint {
   Type type = 2;
 }
 
+// This cannot replace class UPID in src/shared/metadata/base_types.h, because the C++ UPID is
+// created to be compatible with Arrow and uses uint128 for efficient processing.
+message UPID {
+  // A unique ID for a particular agent.
+  uint32 asid = 1;
+
+  // The PID of the running process on a particular node.
+  uint32 pid = 2;
+
+  // The start time stamp of the process, used to distinguish between processes having the same
+  // PID across different time frame.
+  uint64 ts_ns = 3;
+}
+
 message BinarySpec {
   oneof target_oneof {
     // The path of the executable file.
     string path = 1;
 
     // The UPID of a running process.
-    pl.types.UPID upid = 3;
+    UPID upid = 3;
   }
 
   enum Language {
