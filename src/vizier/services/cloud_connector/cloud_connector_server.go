@@ -72,6 +72,15 @@ func main() {
 		log.WithError(err).Fatal("Could not get k8s info")
 	}
 
+	// Clean up cert-provisioner-job, if exists.
+	certJob, err := vzInfo.GetJob("cert-provisioner-job")
+	if certJob != nil {
+		err = vzInfo.DeleteJob("cert-provisioner-job")
+		if err != nil {
+			log.WithError(err).Error("Error deleting cert-provisioner-job")
+		}
+	}
+
 	leaderMgr, err := election.NewK8sLeaderElectionMgr(
 		viper.GetString("pod_namespace"),
 		viper.GetDuration("max_expected_clock_skew"),
