@@ -538,6 +538,14 @@ StatusOr<int> SocketTraceConnector::AttachUProbeTmpl(
           break;
         }
         case BPFProbeAttachType::kReturnInsts: {
+          // TODO(yzhao): The following code that produces multiple UProbeSpec objects cannot be
+          // replaced by TransformGolangReturnProbe(), because LLVM and ELFIO defines conflicting
+          // symbol: EI_MAG0 appears as enum in include/llvm/BinaryFormat/ELF.h [1] and
+          // EI_MAG0 appears as a macro in elfio/elf_types.hpp [2]. And there are many other such
+          // symbols as well.
+          //
+          // [1] https://llvm.org/doxygen/BinaryFormat_2ELF_8h_source.html
+          // [2] https://github.com/eth-sri/debin/blob/master/cpp/elfio/elf_types.hpp
           PL_ASSIGN_OR_RETURN(std::vector<uint64_t> ret_inst_addrs,
                               elf_reader->FuncRetInstAddrs(symbol_info));
           for (const uint64_t& addr : ret_inst_addrs) {
