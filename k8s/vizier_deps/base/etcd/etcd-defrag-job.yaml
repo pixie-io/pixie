@@ -37,4 +37,4 @@ spec:
           - name: client-certs
             secret:
               secretName: etcd-client-tls-certs
-  schedule: "0 */3 * * *"
+  schedule: "0 */1 * * *"

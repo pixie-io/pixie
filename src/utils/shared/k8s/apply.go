@@ -110,7 +110,7 @@ func ApplyYAML(clientset *kubernetes.Clientset, config *rest.Config, namespace s
 		if err != nil {
 			if !errors.IsAlreadyExists(err) {
 				return err
-			} else if k8sRes.Resource == "clusterroles" { // Try to update the resource if it is a clusterrole.
+			} else if k8sRes.Resource == "clusterroles" || k8sRes.Resource == "cronjobs" { // Try to update the resource if it is a clusterrole or cronjob.
 				_, err = createRes.Update(context.Background(), &unstruct, metav1.UpdateOptions{})
 			}
 		}
