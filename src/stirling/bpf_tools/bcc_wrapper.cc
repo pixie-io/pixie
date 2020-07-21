@@ -95,9 +95,9 @@ Status BCCWrapper::AttachUProbe(const UProbeSpec& probe) {
   DCHECK((probe.symbol.empty() && probe.address != 0) ||
          (!probe.symbol.empty() && probe.address == 0))
       << "Exactly one of 'symbol' and 'address' must be specified.";
-  ebpf::StatusTuple attach_status =
-      bpf().attach_uprobe(probe.binary_path, probe.symbol, std::string(probe.probe_fn),
-                          probe.address, static_cast<bpf_probe_attach_type>(probe.attach_type));
+  ebpf::StatusTuple attach_status = bpf().attach_uprobe(
+      probe.binary_path, probe.symbol, std::string(probe.probe_fn), probe.address,
+      static_cast<bpf_probe_attach_type>(probe.attach_type), probe.pid);
   if (attach_status.code() != 0) {
     return error::Internal("Failed to attach uprobe to binary $0 at symbol $1, error message: $2",
                            probe.binary_path.string(), probe.symbol, attach_status.msg());

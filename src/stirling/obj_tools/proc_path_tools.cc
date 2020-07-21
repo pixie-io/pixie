@@ -98,6 +98,10 @@ pl::StatusOr<std::filesystem::path> ResolveProcExe(std::filesystem::path proc_pi
   return ResolveProcessPath(proc_pid, proc_exe);
 }
 
+pl::StatusOr<std::filesystem::path> ResolveProcExe(pid_t pid) {
+  return ResolveProcExe(system::Config::GetInstance().proc_path() / std::to_string(pid));
+}
+
 }  // namespace obj_tools
 }  // namespace stirling
 }  // namespace pl

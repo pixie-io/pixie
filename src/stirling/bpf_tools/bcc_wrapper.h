@@ -79,6 +79,12 @@ struct UProbeSpec {
   // Exact one of symbol and address must be specified.
   std::string symbol;
   uint64_t address = 0;
+
+  static constexpr pid_t kDefaultPID = -1;
+  // Specifies the target process to attach. This still requires setting binary_path, symbol or
+  // address.
+  pid_t pid = kDefaultPID;
+
   BPFProbeAttachType attach_type = BPFProbeAttachType::kEntry;
   std::string probe_fn;
 

@@ -36,6 +36,8 @@ StatusOr<std::vector<std::string>> GenMapStashAction(const ir::physical::MapStas
 // Returns the code that submits variables to a perf buffer.
 std::string GenOutputAction(const ir::physical::OutputAction& action);
 
+// TODO(yzhao): Considers move this out of this header and into
+// src/stirling/dynamic_trace_connector.h, because most of this part is not generating BCC code.
 StatusOr<BCCProgram> GenProgram(const ir::physical::Program& program);
 
 }  // namespace dynamic_tracing

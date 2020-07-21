@@ -25,18 +25,14 @@ using ::testing::Each;
 using ::testing::Ge;
 using ::testing::SizeIs;
 
-dynamic_tracing::ir::logical::Program ParseTextProgram(const std::string& text,
-                                                       const std::filesystem::path& binary_path) {
-  dynamic_tracing::ir::logical::Program logical_program;
-  CHECK(TextFormat::ParseFromString(text, &logical_program));
-  logical_program.mutable_binary_spec()->set_path(binary_path);
-  logical_program.mutable_binary_spec()->set_language(
-      dynamic_tracing::ir::shared::BinarySpec::GOLANG);
-  return logical_program;
-}
+enum class TargetKind {
+  kBinaryPath,
+  kPID,
+};
 
 // TODO(yzhao): Create test fixture that wraps the test binaries.
-class GoHTTPDynamicTraceTest : public ::testing::Test {
+class GoHTTPDynamicTraceTest : public ::testing::Test,
+                               public ::testing::WithParamInterface<TargetKind> {
  protected:
   void SetUp() override {
     CHECK(!FLAGS_go_grpc_client_path.empty())
@@ -104,9 +100,24 @@ probes: {
 }
 )";
 
-TEST_F(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
-  dynamic_tracing::ir::logical::Program logical_program =
-      ParseTextProgram(kGRPCTraceProgram, server_path_);
+TEST_P(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
+  dynamic_tracing::ir::logical::Program logical_program;
+
+  CHECK(TextFormat::ParseFromString(kGRPCTraceProgram, &logical_program));
+
+  logical_program.mutable_binary_spec()->set_language(
+      dynamic_tracing::ir::shared::BinarySpec::GOLANG);
+
+  switch (GetParam()) {
+    case TargetKind::kBinaryPath:
+      logical_program.mutable_binary_spec()->set_path(server_path_);
+      break;
+    case TargetKind::kPID:
+      logical_program.mutable_binary_spec()->mutable_upid()->set_pid(s_.child_pid());
+      break;
+  }
+
+  PL_LOG_VAR(logical_program.DebugString());
 
   ASSERT_OK_AND_ASSIGN(dynamic_tracing::BCCProgram bcc_program,
                        dynamic_tracing::CompileProgram(logical_program));
@@ -145,6 +156,9 @@ TEST_F(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
     EXPECT_EQ(records[kEndStreamIdx]->Get<types::BoolValue>(0).val, false);
   }
 }
+
+INSTANTIATE_TEST_SUITE_P(VaryingTracePrograms, GoHTTPDynamicTraceTest,
+                         ::testing::Values(TargetKind::kBinaryPath, TargetKind::kPID));
 
 }  // namespace stirling
 }  // namespace pl

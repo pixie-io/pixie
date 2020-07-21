@@ -84,6 +84,7 @@ pl::StatusOr<std::filesystem::path> ResolveProcessPath(std::filesystem::path pro
  * path to the host location if an overlay was found.
  */
 pl::StatusOr<std::filesystem::path> ResolveProcExe(std::filesystem::path proc_pid);
+pl::StatusOr<std::filesystem::path> ResolveProcExe(pid_t pid);
 
 /**
  * Returns the OverlayFS' merged base directory.
