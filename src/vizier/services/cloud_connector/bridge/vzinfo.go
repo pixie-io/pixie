@@ -209,7 +209,7 @@ func (v *K8sVizierInfo) UpdateK8sState() {
 	}
 	// Get only pem.
 	pemPodsList, err := v.clientset.CoreV1().Pods(plNamespace).List(context.Background(), metav1.ListOptions{
-		LabelSelector: "metadata.name=vizier-pem",
+		LabelSelector: "name=vizier-pem",
 	})
 	if err != nil {
 		return
