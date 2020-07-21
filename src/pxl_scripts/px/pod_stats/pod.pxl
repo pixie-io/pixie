@@ -131,6 +131,7 @@ def format_events_table(spans_df, latency_ns_col):
     spans_df = spans_df[spans_df['latency_ms'] < 10000.0]
     spans_df.timestamp = px.bin(spans_df.time_, px.seconds(window_s))
     spans_df[k8s_object] = spans_df.ctx[k8s_object]
+    spans_df = spans_df[spans_df[k8s_object] != '']
     return spans_df
 
 

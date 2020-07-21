@@ -196,6 +196,7 @@ def inbound_let_helper(start_time: str, namespace: px.Namespace):
     df = px.DataFrame(table='http_events', start_time=start_time)
     df = df[df.ctx['namespace'] == namespace]
     df.pod = df.ctx['pod']
+    df = df[df.pod != '']
     df.latency_ms = df.http_resp_latency_ns / 1.0E6
     df = df[df['latency_ms'] < 10000.0]
     df.timestamp = px.bin(df.time_, px.seconds(window_s))
