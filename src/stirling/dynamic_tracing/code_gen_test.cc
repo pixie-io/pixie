@@ -189,11 +189,11 @@ TEST(GenProgramTest, SpecsAndCode) {
                                        }
                                        outputs {
                                           name: "data_events"
-                                          type { struct_type: "socket_data_event_t" }
+                                          struct_type: "socket_data_event_t"
                                        }
                                        outputs {
                                           name: "data_events2"
-                                          type { struct_type: "socket_data_event_t" }
+                                          struct_type: "socket_data_event_t"
                                        }
                                        probes {
                                          name: "probe_entry"

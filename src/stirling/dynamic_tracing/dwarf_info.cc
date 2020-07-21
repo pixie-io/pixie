@@ -38,7 +38,7 @@ constexpr char kKTimeVarName[] = "ktime_ns";
 class Dwarvifier {
  public:
   Dwarvifier(const std::map<std::string, ir::shared::Map*>& maps,
-             const std::map<std::string, ir::shared::Output*>& outputs)
+             const std::map<std::string, ir::physical::PerfBufferOutput*>& outputs)
       : maps_(maps), outputs_(outputs) {}
   Status Setup(const ir::shared::BinarySpec& binary_spec);
   Status GenerateProbe(const ir::logical::Probe input_probe, ir::physical::Program* output_program);
@@ -71,7 +71,7 @@ class Dwarvifier {
                               ir::physical::Program* output_program);
 
   const std::map<std::string, ir::shared::Map*>& maps_;
-  const std::map<std::string, ir::shared::Output*>& outputs_;
+  const std::map<std::string, ir::physical::PerfBufferOutput*>& outputs_;
   std::map<std::string, ir::physical::Struct*> structs_;
 
   std::unique_ptr<dwarf_tools::DwarfReader> dwarf_reader_;
@@ -94,11 +94,16 @@ class Dwarvifier {
   static constexpr std::string_view kDerefStr = "_X_";
 };
 
+// Returns the struct name associated with an Output or Map declaration.
+std::string StructTypeName(const std::string& obj_name) {
+  return absl::StrCat(obj_name, "_value_t");
+}
+
 // AddDwarves is the main entry point.
 StatusOr<ir::physical::Program> AddDwarves(const ir::logical::Program& input_program) {
   // Index globals for quick lookups.
   std::map<std::string, ir::shared::Map*> maps;
-  std::map<std::string, ir::shared::Output*> outputs;
+  std::map<std::string, ir::physical::PerfBufferOutput*> outputs;
 
   ir::physical::Program output_program;
 
@@ -114,7 +119,12 @@ StatusOr<ir::physical::Program> AddDwarves(const ir::logical::Program& input_pro
   // Copy all outputs.
   for (const auto& output : input_program.outputs()) {
     auto* o = output_program.add_outputs();
-    o->CopyFrom(output);
+
+    o->set_name(output.name());
+    o->mutable_fields()->CopyFrom(output.fields());
+    // Also insert the name of the struct that holds the output variables.
+    o->set_struct_type(StructTypeName(output.name()));
+
     outputs[o->name()] = o;
   }
 
@@ -190,11 +200,6 @@ Status Dwarvifier::GenerateProbe(const ir::logical::Probe input_probe,
                       dwarf_reader_->GetFunctionArgInfo(input_probe.trace_point().symbol()));
   PL_RETURN_IF_ERROR(ProcessProbe(input_probe, output_program));
   return Status::OK();
-}
-
-// Returns the struct name associated with an Output or Map declaration.
-std::string StructTypeName(const std::string& obj_name) {
-  return absl::StrCat(obj_name, "_value_t");
 }
 
 Status Dwarvifier::Setup(const ir::shared::BinarySpec& binary_spec) {
@@ -590,7 +595,7 @@ Status Dwarvifier::GenerateOutputStruct(const ir::logical::OutputAction& output_
 }
 
 namespace {
-Status PopulateOutputTypes(const std::map<std::string, ir::shared::Output*>& outputs,
+Status PopulateOutputTypes(const std::map<std::string, ir::physical::PerfBufferOutput*>& outputs,
                            const std::string& output_name, const std::string& struct_type_name) {
   auto iter = outputs.find(output_name);
   if (iter == outputs.end()) {
@@ -599,8 +604,12 @@ Status PopulateOutputTypes(const std::map<std::string, ir::shared::Output*>& out
 
   auto* output = iter->second;
 
-  // TODO(oazizi): Check if values are already set. If they are check for consistency.
-  output->mutable_type()->set_struct_type(struct_type_name);
+  if (!output->struct_type().empty() && output->struct_type() != struct_type_name) {
+    return error::InvalidArgument("Output '$0' has output type '$1', which should be '$2'",
+                                  output_name, output->struct_type(), struct_type_name);
+  }
+
+  output->set_struct_type(struct_type_name);
 
   return Status::OK();
 }

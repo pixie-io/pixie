@@ -20,6 +20,7 @@ using ::pl::stirling::bpf_tools::UProbeSpec;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::MemberVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::OutputAction;
+using ::pl::stirling::dynamic_tracing::ir::physical::PerfBufferOutput;
 using ::pl::stirling::dynamic_tracing::ir::physical::Probe;
 using ::pl::stirling::dynamic_tracing::ir::physical::Program;
 using ::pl::stirling::dynamic_tracing::ir::physical::Register;
@@ -30,7 +31,6 @@ using ::pl::stirling::dynamic_tracing::ir::physical::Variable;
 using ::pl::stirling::dynamic_tracing::ir::shared::BPFHelper;
 using ::pl::stirling::dynamic_tracing::ir::shared::Condition;
 using ::pl::stirling::dynamic_tracing::ir::shared::Map;
-using ::pl::stirling::dynamic_tracing::ir::shared::Output;
 using ::pl::stirling::dynamic_tracing::ir::shared::Printk;
 using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
 using ::pl::stirling::dynamic_tracing::ir::shared::TracePoint;
@@ -299,7 +299,7 @@ StatusOr<std::vector<std::string>> GenMapStashAction(const MapStashAction& actio
   return GenCondition(action.cond(), std::move(update_code_line));
 }
 
-std::string GenOutput(const Output& output) {
+std::string GenOutput(const PerfBufferOutput& output) {
   return absl::Substitute("BPF_PERF_OUTPUT($0);", output.name());
 }
 
@@ -613,12 +613,6 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateCodeLines() {
   MoveBackStrVec(GenGOID(), &code_lines);
 
   for (const auto& output : program_.outputs()) {
-    if (output.type().type_oneof_case() == VariableType::TypeOneofCase::kStructType &&
-        !structs_.contains(output.type().struct_type())) {
-      return error::InvalidArgument(
-          "Struct key type '$0' referenced in output '$1' was not defined",
-          output.type().struct_type(), output.name());
-    }
     code_lines.push_back(GenOutput(output));
   }
 
@@ -659,14 +653,9 @@ StatusOr<BCCProgram> GenProgram(const Program& program) {
   }
 
   for (const auto& output : program.outputs()) {
-    if (output.type().type_oneof_case() != VariableType::TypeOneofCase::kStructType) {
-      return error::InvalidArgument("The output type of perf buffer '$0' must be struct, got '$1'",
-                                    output.name(),
-                                    magic_enum::enum_name(output.type().type_oneof_case()));
-    }
-    auto struct_opt = generator.FindStruct(output.type().struct_type());
+    auto struct_opt = generator.FindStruct(output.struct_type());
     if (!struct_opt.has_value()) {
-      return error::InvalidArgument("Struct '$0' was not defined", output.type().struct_type());
+      return error::InvalidArgument("Struct '$0' was not defined", output.struct_type());
     }
 
     BCCProgram::PerfBufferSpec pf_spec;

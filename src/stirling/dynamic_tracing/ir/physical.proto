@@ -179,6 +179,15 @@ message Probe {
   repeated shared.Printk printks = 7;
 }
 
+message PerfBufferOutput {
+  string name = 1;
+
+  repeated string fields = 2;
+
+  // Describe the name of the struct that holds the output variables.
+  string struct_type = 3;
+}
+
 // This describes a complete BPF program.
 message Program {
   shared.BinarySpec binary_spec = 1;
@@ -190,7 +199,7 @@ message Program {
   repeated shared.Map maps = 3;
 
   // Describes perf buffers.
-  repeated shared.Output outputs = 4;
+  repeated PerfBufferOutput outputs = 4;
 
   // Describes probe functions.
   repeated Probe probes = 5;

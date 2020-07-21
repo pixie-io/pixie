@@ -111,9 +111,6 @@ message Output {
   string name = 1;
 
   repeated string fields = 2;
-
-  // TODO(yzhao): Remove this and create PerfBuffer in physical.proto with it.
-  VariableType type = 3;  // Exclusive to physical IR.
 }
 
 // Describes a condition to be checked.
