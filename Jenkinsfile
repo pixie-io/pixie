@@ -88,12 +88,12 @@ class PhabConnector {
 phabConnector = PhabConnector.newInstance(this, 'https://phab.corp.pixielabs.ai' /*url*/,
                                           'PLM' /*repository*/, params.API_TOKEN, params.PHID)
 
-BAZEL_SRC_FILES_PATH = "//..."
+BAZEL_SRC_FILES_PATH = "//... -//experimental/..."
 // ASAN/TSAN only work for CC code. This will find all the CC code and exclude manual tags from the list.
 // TODO(zasgar): This query selects only cc binaries. After GO ASAN/TSAN works, we can update the ASAN/TSAN builds
 // to include all binaries.
 BAZEL_EXCEPT_CLAUSE='attr(\"tags\", \"manual\", //...)'
-BAZEL_CC_KIND_CLAUSE='kind(\"cc_(binary|test) rule\", //... -//third_party/...)'
+BAZEL_CC_KIND_CLAUSE='kind(\"cc_(binary|test) rule\", //... -//third_party/... -//experimental/...)'
 BAZEL_CC_QUERY = "`bazel query '${BAZEL_CC_KIND_CLAUSE} except ${BAZEL_EXCEPT_CLAUSE}'`"
 SRC_STASH_NAME = 'src'
 DEV_DOCKER_IMAGE = 'pl-dev-infra/dev_image'
