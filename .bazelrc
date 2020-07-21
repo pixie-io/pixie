@@ -58,8 +58,8 @@ build:gcc --action_env=BAZEL_LINKOPTS=-lm:-static-libgcc
 # have different behavior with C++17.
 build:gcc --action_env=BAZEL_CXXOPTS=-std=c++17
 build:gcc --action_env=BAZEL_COMPILER=gcc
-build:gcc --action_env=CC=/usr/bin/gcc-9
-build:gcc --action_env=CXX=/usr/bin/g++-9
+build:gcc --action_env=CC=/usr/bin/gcc-10
+build:gcc --action_env=CXX=/usr/bin/g++-10
 build:gcc --cxxopt -Wno-error=sign-compare
 
 # Default build opts:
