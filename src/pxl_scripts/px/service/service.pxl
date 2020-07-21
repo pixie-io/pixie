@@ -126,6 +126,22 @@ def let_summary_helper(start_time: str):
                          'error_rate_pct', 'requests_per_s']]
 
 
+def service_slow_requests(start_time: str, service: px.Service):
+    df = let_helper(start_time)
+    df = df[df.service == service]
+    quantiles = df.groupby('service').agg(
+        latency_quantiles=('latency_ms', px.quantiles)
+    )
+    quantiles.service_p99 = px.pluck_float64(quantiles.latency_quantiles, 'p99')
+    quantiles = quantiles.drop('latency_quantiles')
+    requests = df.merge(quantiles, left_on='service', right_on='service', how='inner',
+                        suffixes=['', '_x'])
+    requests = requests[requests.latency_ms >= requests.service_p99]
+    return requests[['time_', 'pod', 'latency_ms', 'http_req_method',
+                     'http_req_path', 'http_resp_status', 'remote_addr', 'remote_port',
+                     'http_resp_message', 'http_resp_body']].head(100)
+
+
 def let_helper(start_time: str):
     ''' Compute the initial part of the let for requests.
         Filtering to inbound/outbound traffic by service is done by the calling function.
@@ -136,6 +152,7 @@ def let_helper(start_time: str):
     '''
     df = px.DataFrame(table='http_events', start_time=start_time)
     df.service = df.ctx['service']
+    df.pod = df.ctx['pod']
     df.latency_ms = df.http_resp_latency_ns / 1.0E6
     df = df[df['latency_ms'] < 10000.0]
     df.timestamp = px.bin(df.time_, px.seconds(window_s))
