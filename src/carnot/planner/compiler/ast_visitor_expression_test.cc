@@ -50,10 +50,9 @@ class ASTExpressionTest : public ::testing::Test {
         std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info_.get(), time_now_);
     graph = std::make_shared<IR>();
 
-    ModuleHandler module_handler;
-    auto ast_visitor_impl =
-        ASTVisitorImpl::Create(graph.get(), compiler_state_.get(), &module_handler)
-            .ConsumeValueOrDie();
+    auto ast_visitor_impl = ASTVisitorImpl::Create(graph.get(), &dynamic_trace_,
+                                                   compiler_state_.get(), &module_handler_)
+                                .ConsumeValueOrDie();
     PL_CHECK_OK(ast_visitor_impl->AddPixieModule());
     ast_visitor = ast_visitor_impl;
   }
@@ -64,6 +63,8 @@ class ASTExpressionTest : public ::testing::Test {
 
   std::shared_ptr<CompilerState> compiler_state_;
   int64_t time_now_ = 1552607213931245000;
+  ModuleHandler module_handler_;
+  DynamicTraceIR dynamic_trace_;
 };
 
 TEST_F(ASTExpressionTest, String) {

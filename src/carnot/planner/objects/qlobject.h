@@ -35,7 +35,10 @@ enum class QLObjectType {
   kFlags,
   // General module type.
   kModule,
+  kTraceModule,
   kDict,
+  kTracingVariable,
+  kProbe,
 };
 
 class TypeDescriptor {

@@ -66,8 +66,9 @@ StatusOr<shared::scriptspb::FuncArgsSpec> Compiler::GetMainFuncArgsSpec(
 
   std::shared_ptr<IR> ir = std::make_shared<IR>();
   ModuleHandler module_handler;
-  PL_ASSIGN_OR_RETURN(auto ast_walker,
-                      ASTVisitorImpl::Create(ir.get(), compiler_state, &module_handler));
+  DynamicTraceIR dynamic_trace;
+  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
+                                                              compiler_state, &module_handler));
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
 
   return ast_walker->GetMainFuncArgsSpec();
@@ -85,10 +86,11 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
   for (const auto& func : exec_funcs) {
     reserved_names.insert(func.output_table_prefix());
   }
+  DynamicTraceIR dynamic_trace;
   ModuleHandler module_handler;
   PL_ASSIGN_OR_RETURN(auto ast_walker,
-                      ASTVisitorImpl::Create(ir.get(), compiler_state, &module_handler,
-                                             func_based_exec, reserved_names));
+                      ASTVisitorImpl::Create(ir.get(), &dynamic_trace, compiler_state,
+                                             &module_handler, func_based_exec, reserved_names));
 
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   if (func_based_exec) {
@@ -104,8 +106,9 @@ StatusOr<pl::shared::scriptspb::VisFuncsInfo> Compiler::GetVisFuncsInfo(
 
   std::shared_ptr<IR> ir = std::make_shared<IR>();
   ModuleHandler module_handler;
-  PL_ASSIGN_OR_RETURN(auto ast_walker,
-                      ASTVisitorImpl::Create(ir.get(), compiler_state, &module_handler));
+  DynamicTraceIR dynamic_trace;
+  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
+                                                              compiler_state, &module_handler));
   PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
   return ast_walker->GetVisFuncsInfo();
 }

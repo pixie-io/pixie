@@ -20,6 +20,8 @@
 #include "src/carnot/planner/objects/pixie_module.h"
 #include "src/carnot/planner/objects/var_table.h"
 #include "src/carnot/planner/plannerpb/func_args.pb.h"
+#include "src/carnot/planner/probes/probes.h"
+#include "src/carnot/planner/probes/tracing_module.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
 namespace pl {
@@ -63,8 +65,9 @@ class ASTVisitorImpl : public ASTVisitor {
    * @return StatusOr<std::shared_ptr<ASTVisitorImpl>>
    */
   static StatusOr<std::shared_ptr<ASTVisitorImpl>> Create(
-      IR* graph, CompilerState* compiler_state, ModuleHandler* module_handler,
-      bool func_based_exec = false, const absl::flat_hash_set<std::string>& reserved_names = {},
+      IR* graph, DynamicTraceIR* dynamic_trace, CompilerState* compiler_state,
+      ModuleHandler* module_handler, bool func_based_exec = false,
+      const absl::flat_hash_set<std::string>& reserved_names = {},
       const absl::flat_hash_map<std::string, std::string>& module_map = {});
 
   /**
@@ -150,15 +153,17 @@ class ASTVisitorImpl : public ASTVisitor {
    *
    * @param ir_graph
    */
-  ASTVisitorImpl(IR* ir_graph, CompilerState* compiler_state, std::shared_ptr<VarTable> var_table,
-                 bool func_based_exec, const absl::flat_hash_set<std::string>& reserved_names,
+  ASTVisitorImpl(IR* ir_graph, DynamicTraceIR* dynamic_trace, CompilerState* compiler_state,
+                 std::shared_ptr<VarTable> var_table, bool func_based_exec,
+                 const absl::flat_hash_set<std::string>& reserved_names,
                  ModuleHandler* module_handler)
       : ir_graph_(ir_graph),
         compiler_state_(compiler_state),
         var_table_(var_table),
         func_based_exec_(func_based_exec),
         reserved_names_(reserved_names),
-        module_handler_(module_handler) {}
+        module_handler_(module_handler),
+        dynamic_trace_(dynamic_trace) {}
 
   Status InitGlobals();
   Status CreateBoolLiterals();
@@ -561,6 +566,8 @@ class ASTVisitorImpl : public ASTVisitor {
   // The object that holds onto modules. Added separately from VarTable to prevent re-compilation of
   // modules.
   ModuleHandler* module_handler_;
+  // The Probe definition builder.
+  DynamicTraceIR* dynamic_trace_;
 };
 
 }  // namespace compiler

@@ -26,7 +26,7 @@ StatusOr<std::string> GetStrAstValue(const pypa::AstPtr& ast) {
 }
 
 Status WrapAstError(const pypa::AstPtr& ast, Status status) {
-  if (status.has_context()) {
+  if (status.ok() || status.has_context()) {
     return status;
   }
 

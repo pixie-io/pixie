@@ -77,6 +77,15 @@ StatusOr<std::string> GetStrAstValue(const pypa::AstPtr& ast);
  */
 Status WrapAstError(const pypa::AstPtr& ast, Status status);
 
+template <typename T>
+StatusOr<T> WrapError(StatusOr<T> status_or, const pypa::AstPtr& ast) {
+  if (status_or.ok() || status_or.status().has_context()) {
+    return status_or;
+  }
+  return CreateAstError(ast, status_or.msg());
+}
+
 }  // namespace planner
+
 }  // namespace carnot
 }  // namespace pl

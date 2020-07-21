@@ -52,7 +52,8 @@ class DefaultArgumentsTest : public OperatorTests {
     info_ = SetUpRegistryInfo();
     compiler_state_ = std::make_unique<CompilerState>(SetUpRelMap(), info_.get(), time_now_);
 
-    ast_visitor_ = ASTVisitorImpl::Create(graph.get(), compiler_state_.get(), &module_handler)
+    ast_visitor_ = ASTVisitorImpl::Create(graph.get(), &dynamic_trace_, compiler_state_.get(),
+                                          &module_handler_)
                        .ConsumeValueOrDie();
     module_ = PixieModule::Create(graph.get(), compiler_state_.get(), ast_visitor_.get())
                   .ConsumeValueOrDie();
@@ -92,7 +93,8 @@ class DefaultArgumentsTest : public OperatorTests {
   int64_t time_now_ = 1552607213931245000;
   std::unique_ptr<RegistryInfo> info_;
   std::shared_ptr<PixieModule> module_;
-  ModuleHandler module_handler;
+  ModuleHandler module_handler_;
+  DynamicTraceIR dynamic_trace_;
 };
 
 // This test is the unit to make sure we can get all of the defaults of any method for any object

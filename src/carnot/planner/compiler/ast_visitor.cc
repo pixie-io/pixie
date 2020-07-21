@@ -36,11 +36,13 @@ StatusOr<FuncIR::Op> ASTVisitorImpl::GetUnaryOp(const std::string& python_op,
 }
 
 StatusOr<std::shared_ptr<ASTVisitorImpl>> ASTVisitorImpl::Create(
-    IR* graph, CompilerState* compiler_state, ModuleHandler* module_handler, bool func_based_exec,
+    IR* graph, DynamicTraceIR* dynamic_trace, CompilerState* compiler_state,
+    ModuleHandler* module_handler, bool func_based_exec,
     const absl::flat_hash_set<std::string>& reserved_names,
     const absl::flat_hash_map<std::string, std::string>& module_map) {
-  std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(new ASTVisitorImpl(
-      graph, compiler_state, VarTable::Create(), func_based_exec, reserved_names, module_handler));
+  std::shared_ptr<ASTVisitorImpl> ast_visitor = std::shared_ptr<ASTVisitorImpl>(
+      new ASTVisitorImpl(graph, dynamic_trace, compiler_state, VarTable::Create(), func_based_exec,
+                         reserved_names, module_handler));
 
   PL_RETURN_IF_ERROR(ast_visitor->InitGlobals());
   PL_RETURN_IF_ERROR(ast_visitor->SetupModules(module_map));
@@ -59,8 +61,9 @@ std::shared_ptr<ASTVisitor> ASTVisitorImpl::CreateModuleVisitor(
 std::shared_ptr<ASTVisitorImpl> ASTVisitorImpl::CreateChildImpl(
     std::shared_ptr<VarTable> var_table) {
   // The flag values should come from the parent var table, not be copied here.
-  auto visitor = std::shared_ptr<ASTVisitorImpl>(new ASTVisitorImpl(
-      ir_graph_, compiler_state_, var_table, func_based_exec_, {}, module_handler_));
+  auto visitor = std::shared_ptr<ASTVisitorImpl>(
+      new ASTVisitorImpl(ir_graph_, dynamic_trace_, compiler_state_, var_table, func_based_exec_,
+                         {}, module_handler_));
   return visitor;
 }
 
@@ -70,6 +73,8 @@ Status ASTVisitorImpl::SetupModules(
   PL_ASSIGN_OR_RETURN(
       (*module_handler_)[PixieModule::kPixieModuleObjName],
       PixieModule::Create(ir_graph_, compiler_state_, this, func_based_exec_, reserved_names_));
+  PL_ASSIGN_OR_RETURN((*module_handler_)[TraceModule::kTraceModuleObjName],
+                      TraceModule::Create(dynamic_trace_, this));
   for (const auto& [module_name, module_text] : module_name_to_pxl_map) {
     PL_ASSIGN_OR_RETURN((*module_handler_)[module_name], Module::Create(module_text, this));
   }
@@ -136,8 +141,8 @@ StatusOr<QLObjectPtr> ASTVisitorImpl::ParseAndProcessSingleExpression(
                       parser.Parse(single_expr_str.data(), /* parse_doc_strings */ false));
   if (import_px) {
     auto child_visitor = CreateChild();
-    // Use a child of this ASTVisitor so that we can add px to its child var_table without affecting
-    // top-level visitor state.
+    // Use a child of this ASTVisitor so that we can add px to its child var_table without
+    // affecting top-level visitor state.
     child_visitor->var_table_->Add(
         PixieModule::kPixieModuleObjName,
         (*child_visitor->module_handler_)[PixieModule::kPixieModuleObjName]);
@@ -231,7 +236,8 @@ StatusOr<ArgMap> ASTVisitorImpl::ProcessExecFuncArgs(const pypa::AstPtr& ast,
 }
 
 Status ASTVisitorImpl::ProcessExecFuncs(const ExecFuncs& exec_funcs) {
-  // TODO(James): handle errors here better. For now I have a fake ast ptr with -1 for line and col.
+  // TODO(James): handle errors here better. For now I have a fake ast ptr with -1 for line and
+  // col.
   auto ast = std::make_shared<pypa::AstExpressionStatement>();
   ast->line = 0;
   ast->column = 0;

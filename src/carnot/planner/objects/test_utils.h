@@ -11,6 +11,7 @@
 #include "src/carnot/planner/compiler_state/compiler_state.h"
 #include "src/carnot/planner/objects/collection_object.h"
 #include "src/carnot/planner/objects/dataframe.h"
+#include "src/carnot/planner/objects/dict_object.h"
 #include "src/carnot/planner/objects/expr_object.h"
 #include "src/carnot/planner/objects/none_object.h"
 
@@ -103,8 +104,9 @@ class QLObjectTest : public OperatorTests {
         std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
     // Graph is set in OperatorTests.
 
-    ast_visitor = ASTVisitorImpl::Create(graph.get(), compiler_state.get(), &module_handler)
-                      .ConsumeValueOrDie();
+    ast_visitor =
+        ASTVisitorImpl::Create(graph.get(), &dynamic_trace_, compiler_state.get(), &module_handler)
+            .ConsumeValueOrDie();
   }
 
   ArgMap MakeArgMap(const std::vector<std::pair<std::string, IRNode*>>& kwargs,
@@ -147,10 +149,35 @@ class QLObjectTest : public OperatorTests {
   std::shared_ptr<RegistryInfo> info = nullptr;
   std::shared_ptr<ASTVisitor> ast_visitor = nullptr;
   ModuleHandler module_handler;
+  DynamicTraceIR dynamic_trace_;
 };
 
 StatusOr<QLObjectPtr> NoneObjectFunc(const pypa::AstPtr&, const ParsedArgs&, ASTVisitor* visitor) {
   return StatusOr<QLObjectPtr>(std::make_shared<NoneObject>(visitor));
+}
+
+std::string PrintObj(QLObjectPtr obj) {
+  switch (obj->type()) {
+    case QLObjectType::kList: {
+      auto list = std::static_pointer_cast<CollectionObject>(obj);
+      std::vector<std::string> items;
+      for (auto item : list->items()) {
+        items.push_back(PrintObj(item));
+      }
+      return absl::Substitute("[$0]", absl::StrJoin(items, ","));
+    }
+    case QLObjectType::kDict: {
+      auto dict = std::static_pointer_cast<DictObject>(obj);
+      std::vector<std::string> items;
+      for (const auto& [i, key] : Enumerate(dict->keys())) {
+        auto value = dict->values()[i];
+        items.push_back(absl::Substitute("'$0', $1", PrintObj(key), PrintObj(value)));
+      }
+      return absl::Substitute("[$0]", absl::StrJoin(items, ","));
+    }
+    default:
+      return std::string(obj->type_descriptor().name());
+  }
 }
 
 }  // namespace compiler

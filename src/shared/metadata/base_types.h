@@ -59,6 +59,9 @@ class UPID {
   int64_t start_ts() const { return static_cast<int64_t>(Uint128Low64(value_)); }
 
   absl::uint128 value() const { return value_; }
+  sole::uuid uuid() const {
+    return sole::rebuild(absl::Uint128High64(value_), absl::Uint128Low64(value_));
+  }
 
   std::string String() const { return absl::Substitute("$0:$1:$2", asid(), pid(), start_ts()); }
 

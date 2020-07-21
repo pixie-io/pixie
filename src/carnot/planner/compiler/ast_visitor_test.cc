@@ -1231,7 +1231,9 @@ TEST_F(ASTVisitorTest, func_def_doesnt_make_new_globals) {
   auto ast = ast_or_s.ConsumeValueOrDie();
   std::shared_ptr<IR> ir = std::make_shared<IR>();
   ModuleHandler module_handler;
-  auto ast_walker_or_s = ASTVisitorImpl::Create(ir.get(), compiler_state_.get(), &module_handler);
+  DynamicTraceIR dynamic_trace;
+  auto ast_walker_or_s =
+      ASTVisitorImpl::Create(ir.get(), &dynamic_trace, compiler_state_.get(), &module_handler);
   ASSERT_OK(ast_walker_or_s);
   auto ast_walker = ast_walker_or_s.ConsumeValueOrDie();
   ASSERT_OK(ast_walker->ProcessModuleNode(ast));
@@ -1326,9 +1328,10 @@ TEST_F(ASTVisitorTest, decorator_parsed) {
   pypa::AstModulePtr ast = parser.Parse(kDecoratorParsing).ConsumeValueOrDie();
   std::shared_ptr<IR> ir = std::make_shared<IR>();
   ModuleHandler module_handler;
-  auto ast_walker =
-      compiler::ASTVisitorImpl::Create(ir.get(), compiler_state_.get(), &module_handler)
-          .ConsumeValueOrDie();
+  DynamicTraceIR dynamic_trace;
+  auto ast_walker = compiler::ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
+                                                     compiler_state_.get(), &module_handler)
+                        .ConsumeValueOrDie();
 
   ASSERT_OK(ast_walker->ProcessModuleNode(ast));
 

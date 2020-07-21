@@ -19,6 +19,7 @@
 #include "src/carnot/planner/distributedpb/distributed_plan.pb.h"
 #include "src/carnot/planner/parser/parser.h"
 #include "src/carnot/planner/parser/string_reader.h"
+#include "src/carnot/planner/probes/tracing_module.h"
 #include "src/common/testing/testing.h"
 
 namespace pl {
@@ -281,8 +282,10 @@ StatusOr<std::shared_ptr<IR>> ParseQuery(const std::string& query) {
   auto compiler_state =
       std::make_shared<CompilerState>(std::make_unique<RelationMap>(), info.get(), 0);
   compiler::ModuleHandler module_handler;
-  PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
-                                           ir.get(), compiler_state.get(), &module_handler));
+  compiler::DynamicTraceIR dynamic_trace;
+  PL_ASSIGN_OR_RETURN(auto ast_walker,
+                      compiler::ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
+                                                       compiler_state.get(), &module_handler));
 
   pypa::AstModulePtr ast;
   pypa::SymbolTablePtr symbols;
@@ -313,7 +316,8 @@ struct CompilerErrorMatcher {
       (*listener) << "Status is ok, no compiler error found.";
     }
     if (!status.has_context()) {
-      (*listener) << "Status does not have a context.";
+      (*listener) << absl::Substitute("Status does not have a context, but has a message: '$0'",
+                                      status.msg());
       return false;
     }
     if (!status.context()->Is<compilerpb::CompilerErrorGroup>()) {
@@ -913,10 +917,13 @@ class ASTVisitorTest : public OperatorTests {
     for (const auto& fn : exec_funcs) {
       reserved_names.insert(fn.output_table_prefix());
     }
+
     compiler::ModuleHandler module_handler;
-    PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
-                                             ir.get(), compiler_state_.get(), &module_handler,
-                                             func_based_exec, reserved_names, module_name_to_pxl));
+    compiler::DynamicTraceIR probe_ir;
+    PL_ASSIGN_OR_RETURN(auto ast_walker,
+                        compiler::ASTVisitorImpl::Create(ir.get(), &probe_ir, compiler_state_.get(),
+                                                         &module_handler, func_based_exec,
+                                                         reserved_names, module_name_to_pxl));
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     if (func_based_exec) {
@@ -930,8 +937,10 @@ class ASTVisitorTest : public OperatorTests {
     PL_ASSIGN_OR_RETURN(auto ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
     compiler::ModuleHandler module_handler;
-    PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
-                                             ir.get(), compiler_state_.get(), &module_handler));
+    compiler::DynamicTraceIR dynamic_trace;
+    PL_ASSIGN_OR_RETURN(auto ast_walker,
+                        compiler::ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
+                                                         compiler_state_.get(), &module_handler));
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     return ast_walker;
   }
@@ -941,8 +950,10 @@ class ASTVisitorTest : public OperatorTests {
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
     compiler::ModuleHandler module_handler;
-    PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
-                                             ir.get(), compiler_state_.get(), &module_handler));
+    compiler::DynamicTraceIR dynamic_trace;
+    PL_ASSIGN_OR_RETURN(auto ast_walker,
+                        compiler::ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
+                                                         compiler_state_.get(), &module_handler));
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     return ast_walker->GetVisFuncsInfo();
@@ -953,8 +964,11 @@ class ASTVisitorTest : public OperatorTests {
     PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
     std::shared_ptr<IR> ir = std::make_shared<IR>();
     compiler::ModuleHandler module_handler;
-    PL_ASSIGN_OR_RETURN(auto ast_walker, compiler::ASTVisitorImpl::Create(
-                                             ir.get(), compiler_state_.get(), &module_handler));
+
+    compiler::DynamicTraceIR dynamic_trace;
+    PL_ASSIGN_OR_RETURN(auto ast_walker,
+                        compiler::ASTVisitorImpl::Create(ir.get(), &dynamic_trace,
+                                                         compiler_state_.get(), &module_handler));
 
     PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
     return ast_walker->GetMainFuncArgsSpec();
