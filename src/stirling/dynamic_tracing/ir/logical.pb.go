@@ -9,8 +9,8 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
+	shared "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical/shared"
 	reflect "reflect"
-	ir "src/stirling/dynamic_tracing/ir"
 	strings "strings"
 )
 
@@ -26,9 +26,9 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type Constant struct {
-	Name     string        `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Type     ir.ScalarType `protobuf:"varint,2,opt,name=type,proto3,enum=pl.stirling.dynamic_tracing.ir.shared.ScalarType" json:"type,omitempty"`
-	Constant string        `protobuf:"bytes,3,opt,name=constant,proto3" json:"constant,omitempty"`
+	Name     string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Type     shared.ScalarType `protobuf:"varint,2,opt,name=type,proto3,enum=pl.stirling.dynamic_tracing.ir.shared.ScalarType" json:"type,omitempty"`
+	Constant string            `protobuf:"bytes,3,opt,name=constant,proto3" json:"constant,omitempty"`
 }
 
 func (m *Constant) Reset()      { *m = Constant{} }
@@ -70,11 +70,11 @@ func (m *Constant) GetName() string {
 	return ""
 }
 
-func (m *Constant) GetType() ir.ScalarType {
+func (m *Constant) GetType() shared.ScalarType {
 	if m != nil {
 		return m.Type
 	}
-	return ir.BOOL
+	return shared.BOOL
 }
 
 func (m *Constant) GetConstant() string {
@@ -289,10 +289,10 @@ func (m *FunctionLatency) GetId() string {
 }
 
 type MapStashAction struct {
-	MapName           string        `protobuf:"bytes,1,opt,name=map_name,json=mapName,proto3" json:"map_name,omitempty"`
-	Key               ir.BPFHelper  `protobuf:"varint,2,opt,name=key,proto3,enum=pl.stirling.dynamic_tracing.ir.shared.BPFHelper" json:"key,omitempty"`
-	ValueVariableName []string      `protobuf:"bytes,3,rep,name=value_variable_name,json=valueVariableName,proto3" json:"value_variable_name,omitempty"`
-	Cond              *ir.Condition `protobuf:"bytes,4,opt,name=cond,proto3" json:"cond,omitempty"`
+	MapName           string            `protobuf:"bytes,1,opt,name=map_name,json=mapName,proto3" json:"map_name,omitempty"`
+	Key               shared.BPFHelper  `protobuf:"varint,2,opt,name=key,proto3,enum=pl.stirling.dynamic_tracing.ir.shared.BPFHelper" json:"key,omitempty"`
+	ValueVariableName []string          `protobuf:"bytes,3,rep,name=value_variable_name,json=valueVariableName,proto3" json:"value_variable_name,omitempty"`
+	Cond              *shared.Condition `protobuf:"bytes,4,opt,name=cond,proto3" json:"cond,omitempty"`
 }
 
 func (m *MapStashAction) Reset()      { *m = MapStashAction{} }
@@ -334,11 +334,11 @@ func (m *MapStashAction) GetMapName() string {
 	return ""
 }
 
-func (m *MapStashAction) GetKey() ir.BPFHelper {
+func (m *MapStashAction) GetKey() shared.BPFHelper {
 	if m != nil {
 		return m.Key
 	}
-	return ir.GOID
+	return shared.GOID
 }
 
 func (m *MapStashAction) GetValueVariableName() []string {
@@ -348,7 +348,7 @@ func (m *MapStashAction) GetValueVariableName() []string {
 	return nil
 }
 
-func (m *MapStashAction) GetCond() *ir.Condition {
+func (m *MapStashAction) GetCond() *shared.Condition {
 	if m != nil {
 		return m.Cond
 	}
@@ -407,16 +407,16 @@ func (m *OutputAction) GetVariableName() []string {
 }
 
 type Probe struct {
-	Name            string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	TracePoint      *ir.TracePoint    `protobuf:"bytes,2,opt,name=trace_point,json=tracePoint,proto3" json:"trace_point,omitempty"`
-	Consts          []*Constant       `protobuf:"bytes,3,rep,name=consts,proto3" json:"consts,omitempty"`
-	Args            []*Argument       `protobuf:"bytes,4,rep,name=args,proto3" json:"args,omitempty"`
-	RetVals         []*ReturnValue    `protobuf:"bytes,5,rep,name=ret_vals,json=retVals,proto3" json:"ret_vals,omitempty"`
-	MapVals         []*MapValue       `protobuf:"bytes,6,rep,name=map_vals,json=mapVals,proto3" json:"map_vals,omitempty"`
-	FunctionLatency *FunctionLatency  `protobuf:"bytes,7,opt,name=function_latency,json=functionLatency,proto3" json:"function_latency,omitempty"`
-	MapStashActions []*MapStashAction `protobuf:"bytes,8,rep,name=map_stash_actions,json=mapStashActions,proto3" json:"map_stash_actions,omitempty"`
-	OutputActions   []*OutputAction   `protobuf:"bytes,9,rep,name=output_actions,json=outputActions,proto3" json:"output_actions,omitempty"`
-	Printks         []*ir.Printk      `protobuf:"bytes,10,rep,name=printks,proto3" json:"printks,omitempty"`
+	Name            string             `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	TracePoint      *shared.TracePoint `protobuf:"bytes,2,opt,name=trace_point,json=tracePoint,proto3" json:"trace_point,omitempty"`
+	Consts          []*Constant        `protobuf:"bytes,3,rep,name=consts,proto3" json:"consts,omitempty"`
+	Args            []*Argument        `protobuf:"bytes,4,rep,name=args,proto3" json:"args,omitempty"`
+	RetVals         []*ReturnValue     `protobuf:"bytes,5,rep,name=ret_vals,json=retVals,proto3" json:"ret_vals,omitempty"`
+	MapVals         []*MapValue        `protobuf:"bytes,6,rep,name=map_vals,json=mapVals,proto3" json:"map_vals,omitempty"`
+	FunctionLatency *FunctionLatency   `protobuf:"bytes,7,opt,name=function_latency,json=functionLatency,proto3" json:"function_latency,omitempty"`
+	MapStashActions []*MapStashAction  `protobuf:"bytes,8,rep,name=map_stash_actions,json=mapStashActions,proto3" json:"map_stash_actions,omitempty"`
+	OutputActions   []*OutputAction    `protobuf:"bytes,9,rep,name=output_actions,json=outputActions,proto3" json:"output_actions,omitempty"`
+	Printks         []*shared.Printk   `protobuf:"bytes,10,rep,name=printks,proto3" json:"printks,omitempty"`
 }
 
 func (m *Probe) Reset()      { *m = Probe{} }
@@ -458,7 +458,7 @@ func (m *Probe) GetName() string {
 	return ""
 }
 
-func (m *Probe) GetTracePoint() *ir.TracePoint {
+func (m *Probe) GetTracePoint() *shared.TracePoint {
 	if m != nil {
 		return m.TracePoint
 	}
@@ -514,7 +514,7 @@ func (m *Probe) GetOutputActions() []*OutputAction {
 	return nil
 }
 
-func (m *Probe) GetPrintks() []*ir.Printk {
+func (m *Probe) GetPrintks() []*shared.Printk {
 	if m != nil {
 		return m.Printks
 	}
@@ -522,10 +522,10 @@ func (m *Probe) GetPrintks() []*ir.Printk {
 }
 
 type Program struct {
-	BinarySpec *ir.BinarySpec `protobuf:"bytes,1,opt,name=binary_spec,json=binarySpec,proto3" json:"binary_spec,omitempty"`
-	Outputs    []*ir.Output   `protobuf:"bytes,2,rep,name=outputs,proto3" json:"outputs,omitempty"`
-	Maps       []*ir.Map      `protobuf:"bytes,3,rep,name=maps,proto3" json:"maps,omitempty"`
-	Probes     []*Probe       `protobuf:"bytes,4,rep,name=probes,proto3" json:"probes,omitempty"`
+	BinarySpec *shared.BinarySpec `protobuf:"bytes,1,opt,name=binary_spec,json=binarySpec,proto3" json:"binary_spec,omitempty"`
+	Outputs    []*shared.Output   `protobuf:"bytes,2,rep,name=outputs,proto3" json:"outputs,omitempty"`
+	Maps       []*shared.Map      `protobuf:"bytes,3,rep,name=maps,proto3" json:"maps,omitempty"`
+	Probes     []*Probe           `protobuf:"bytes,4,rep,name=probes,proto3" json:"probes,omitempty"`
 }
 
 func (m *Program) Reset()      { *m = Program{} }
@@ -560,21 +560,21 @@ func (m *Program) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Program proto.InternalMessageInfo
 
-func (m *Program) GetBinarySpec() *ir.BinarySpec {
+func (m *Program) GetBinarySpec() *shared.BinarySpec {
 	if m != nil {
 		return m.BinarySpec
 	}
 	return nil
 }
 
-func (m *Program) GetOutputs() []*ir.Output {
+func (m *Program) GetOutputs() []*shared.Output {
 	if m != nil {
 		return m.Outputs
 	}
 	return nil
 }
 
-func (m *Program) GetMaps() []*ir.Map {
+func (m *Program) GetMaps() []*shared.Map {
 	if m != nil {
 		return m.Maps
 	}
@@ -1975,7 +1975,7 @@ func (this *MapStashAction) String() string {
 		`MapName:` + fmt.Sprintf("%v", this.MapName) + `,`,
 		`Key:` + fmt.Sprintf("%v", this.Key) + `,`,
 		`ValueVariableName:` + fmt.Sprintf("%v", this.ValueVariableName) + `,`,
-		`Cond:` + strings.Replace(fmt.Sprintf("%v", this.Cond), "Condition", "ir.Condition", 1) + `,`,
+		`Cond:` + strings.Replace(fmt.Sprintf("%v", this.Cond), "Condition", "shared.Condition", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2027,12 +2027,12 @@ func (this *Probe) String() string {
 	repeatedStringForOutputActions += "}"
 	repeatedStringForPrintks := "[]*Printk{"
 	for _, f := range this.Printks {
-		repeatedStringForPrintks += strings.Replace(fmt.Sprintf("%v", f), "Printk", "ir.Printk", 1) + ","
+		repeatedStringForPrintks += strings.Replace(fmt.Sprintf("%v", f), "Printk", "shared.Printk", 1) + ","
 	}
 	repeatedStringForPrintks += "}"
 	s := strings.Join([]string{`&Probe{`,
 		`Name:` + fmt.Sprintf("%v", this.Name) + `,`,
-		`TracePoint:` + strings.Replace(fmt.Sprintf("%v", this.TracePoint), "TracePoint", "ir.TracePoint", 1) + `,`,
+		`TracePoint:` + strings.Replace(fmt.Sprintf("%v", this.TracePoint), "TracePoint", "shared.TracePoint", 1) + `,`,
 		`Consts:` + repeatedStringForConsts + `,`,
 		`Args:` + repeatedStringForArgs + `,`,
 		`RetVals:` + repeatedStringForRetVals + `,`,
@@ -2051,12 +2051,12 @@ func (this *Program) String() string {
 	}
 	repeatedStringForOutputs := "[]*Output{"
 	for _, f := range this.Outputs {
-		repeatedStringForOutputs += strings.Replace(fmt.Sprintf("%v", f), "Output", "ir.Output", 1) + ","
+		repeatedStringForOutputs += strings.Replace(fmt.Sprintf("%v", f), "Output", "shared.Output", 1) + ","
 	}
 	repeatedStringForOutputs += "}"
 	repeatedStringForMaps := "[]*Map{"
 	for _, f := range this.Maps {
-		repeatedStringForMaps += strings.Replace(fmt.Sprintf("%v", f), "Map", "ir.Map", 1) + ","
+		repeatedStringForMaps += strings.Replace(fmt.Sprintf("%v", f), "Map", "shared.Map", 1) + ","
 	}
 	repeatedStringForMaps += "}"
 	repeatedStringForProbes := "[]*Probe{"
@@ -2065,7 +2065,7 @@ func (this *Program) String() string {
 	}
 	repeatedStringForProbes += "}"
 	s := strings.Join([]string{`&Program{`,
-		`BinarySpec:` + strings.Replace(fmt.Sprintf("%v", this.BinarySpec), "BinarySpec", "ir.BinarySpec", 1) + `,`,
+		`BinarySpec:` + strings.Replace(fmt.Sprintf("%v", this.BinarySpec), "BinarySpec", "shared.BinarySpec", 1) + `,`,
 		`Outputs:` + repeatedStringForOutputs + `,`,
 		`Maps:` + repeatedStringForMaps + `,`,
 		`Probes:` + repeatedStringForProbes + `,`,
@@ -2156,7 +2156,7 @@ func (m *Constant) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Type |= ir.ScalarType(b&0x7F) << shift
+				m.Type |= shared.ScalarType(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2747,7 +2747,7 @@ func (m *MapStashAction) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				m.Key |= ir.BPFHelper(b&0x7F) << shift
+				m.Key |= shared.BPFHelper(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
@@ -2814,7 +2814,7 @@ func (m *MapStashAction) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Cond == nil {
-				m.Cond = &ir.Condition{}
+				m.Cond = &shared.Condition{}
 			}
 			if err := m.Cond.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -3052,7 +3052,7 @@ func (m *Probe) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.TracePoint == nil {
-				m.TracePoint = &ir.TracePoint{}
+				m.TracePoint = &shared.TracePoint{}
 			}
 			if err := m.TracePoint.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -3327,7 +3327,7 @@ func (m *Probe) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Printks = append(m.Printks, &ir.Printk{})
+			m.Printks = append(m.Printks, &shared.Printk{})
 			if err := m.Printks[len(m.Printks)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -3415,7 +3415,7 @@ func (m *Program) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.BinarySpec == nil {
-				m.BinarySpec = &ir.BinarySpec{}
+				m.BinarySpec = &shared.BinarySpec{}
 			}
 			if err := m.BinarySpec.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
@@ -3450,7 +3450,7 @@ func (m *Program) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Outputs = append(m.Outputs, &ir.Output{})
+			m.Outputs = append(m.Outputs, &shared.Output{})
 			if err := m.Outputs[len(m.Outputs)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
@@ -3484,7 +3484,7 @@ func (m *Program) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Maps = append(m.Maps, &ir.Map{})
+			m.Maps = append(m.Maps, &shared.Map{})
 			if err := m.Maps[len(m.Maps)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}

@@ -32,7 +32,7 @@ function update_one_build_label() {
   # The omitted path component tolerates the host-dependent value by bazel's go rules.
   # Also the output pb.go would be identical between host OS, so there is no need to pick any
   # particular one.
-  abs_path=$(find bazel-bin/"${dir}"/*/"${name}"% -name '*.pb.go' | head -n 1)
+  abs_path=$(find "bazel-bin/${dir}/${name}_" -name '*.pb.go' | head -n 1)
   if [[ "${abs_path}" == "" ]]; then
     echo "Failed to located pb.go file at ${abs_path}"
     return 1
