@@ -2,6 +2,7 @@
 chef-client-running.pid
 chef-stacktrace.out
 chef_guid
+cinc_guid
 data_collector_metadata.json
 local-mode-cache/
 remote_file/
