@@ -1,25 +1,16 @@
 REPOSITORY_LOCATIONS = dict(
     bazel_gazelle = dict(
-        sha256 = "d8c45ee70ec39a57e7a05e5027c32b1576cc7f16d9dd37135b0eddde45cf1b10",
-        urls = ["https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.20.0/bazel-gazelle-v0.20.0.tar.gz"],
+        sha256 = "cdb02a887a7187ea4d5a27452311a75ed8637379a1287d8eeb952138ea485f7d",
+        urls = ["https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.21.1/bazel-gazelle-v0.21.1.tar.gz"],
     ),
     io_bazel_rules_go = dict(
-        sha256 = "af04c969321e8f428f63ceb73463d6ea817992698974abeff0161e069cd08bd6",
+        sha256 = "2d536797707dd1697441876b2e862c58839f975c8fc2f0f96636cbd428f45866",
         urls = [
-            "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/rules_go" +
-            "/releases/download/v0.21.3/rules_go-v0.21.3.tar.gz",
-            "https://github.com/bazelbuild/rules_go/releases/download/v0.21.3/rules_go-v0.21.3.tar.gz",
+            "https://mirror.bazel.build/github.com/bazelbuild/rules_go" +
+            "/releases/download/v0.23.5/rules_go-v0.23.5.tar.gz",
+            "https://github.com/bazelbuild/rules_go/releases/download/v0.23.5/rules_go-v0.23.5.tar.gz",
         ],
     ),
-    # TODO(oazizi): Update io_bazel_rules to the following. Still hitting some snags.
-    #    io_bazel_rules_go = dict(
-    #        sha256 = "6a68e269802911fa419abb940c850734086869d7fe9bc8e12aaf60a09641c818",
-    #        urls = [
-    #            "https://mirror.bazel.build/github.com/bazelbuild/rules_go" +
-    #            "/releases/download/v0.23.0/rules_go-v0.23.0.tar.gz",
-    #            "https://github.com/bazelbuild/rules_go/releases/download/v0.23.0/rules_go-v0.23.0.tar.gz",
-    #        ],
-    #    ),
     io_bazel_rules_k8s = dict(
         sha256 = "cc75cf0d86312e1327d226e980efd3599704e01099b58b3c2fc4efe5e321fcd9",
         strip_prefix = "rules_k8s-0.3.1",
