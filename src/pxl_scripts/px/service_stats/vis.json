@@ -161,13 +161,14 @@
         "@type": "pixielabs.ai/pl.vispb.BarChart",
         "bar": {
           "value": "count",
-          "label": "http_resp_status"
+          "label": "http_resp_status",
+          "horizontal": true
         },
         "xAxis": {
-          "label": "HTTP Status Code"
+          "label": "# of requests"
         },
         "yAxis": {
-          "label": "# of requests"
+          "label": "HTTP Status Code"
         }
       }
     },
