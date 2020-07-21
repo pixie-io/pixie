@@ -5,6 +5,7 @@ package pl.vizier.services.metadata;
 import "src/common/uuid/proto/uuid.proto";
 import "src/common/base/proto/status.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "src/stirling/dynamic_tracing/ir/logical.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb;storepb";
 
@@ -26,4 +27,6 @@ message ProbeInfo {
   repeated FailedProbeInfo failed_agents = 3;
   // A list of all agents who have received the register request.
   repeated uuidpb.UUID pending_agents = 4;
+  // The probe program.
+  pl.stirling.dynamic_tracing.ir.logical.Program program = 5;
 }

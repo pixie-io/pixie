@@ -120,6 +120,10 @@ message RegisterProbeRequest {
 message RegisterProbeResponse {
   // Status of whether the probe registration initiated successfully or not.
   pl.statuspb.Status status = 1;
+  // The ID of the probe that has just been registered.
+  uuidpb.UUID probe_id = 2 [ (gogoproto.customname) = "ProbeID" ];
+  // The ID of the agent sending the response.
+  uuidpb.UUID agent_id = 3 [ (gogoproto.customname) = "AgentID" ];
 }
 
 // An update message sent when a probe's status changes.
@@ -127,4 +131,6 @@ message ProbeInfoUpdate {
   uuidpb.UUID probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
   // The status of the probe.
   pl.statuspb.Status status = 2;
+  // The ID of the agent sending the update.
+  uuidpb.UUID agent_id = 3 [ (gogoproto.customname) = "AgentID" ];
 }
