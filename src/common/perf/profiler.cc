@@ -10,7 +10,7 @@
 namespace pl {
 namespace profiler {
 
-bool CPU::ProfilerAvailable() { return ProfilingIsEnabledForAllThreads() != 0; }
+bool CPU::ProfilerAvailable() { return ProfilingIsEnabledForAllThreads() == 0; }
 
 bool CPU::StartProfiler(const std::string& output_path) {
   return ProfilerStart(output_path.c_str()) != 0;
