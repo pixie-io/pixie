@@ -15,16 +15,10 @@ cc_binary(
 )
 
 # To force no optimizations and no inlining, we need to pass -N -l,
-# but we can't do this for debug builds because it would cause duplicate flags
-# (i.e. the one we pass and the one that go_rules adds). The go compiler doesn't
-# handle the duplicate flags well, and silently causes the inlining to be disabled.
-gcflags_no_opt_no_inline = select({
-    "@pl//bazel:debug_build": [],
-    "//conditions:default": [
-        "-N",
-        "-l",
-    ],
-})
+gcflags_no_opt_no_inline = [
+    "-N",
+    "-l",
+]
 
 go_library(
     name = "go_default_library",
