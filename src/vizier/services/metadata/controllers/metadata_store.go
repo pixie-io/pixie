@@ -19,6 +19,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/types"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
+	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
@@ -221,6 +222,14 @@ func getNodesKey() string {
 
 func getNodeKey(n *metadatapb.Node) string {
 	return path.Join(getNodesKey(), n.Metadata.UID)
+}
+
+func getProbesKey() string {
+	return path.Join("/", "probe") + "/"
+}
+
+func getProbeKey(probeID uuid.UUID) string {
+	return path.Join("/", "probe", probeID.String())
 }
 
 /* =============== Agent Operations ============== */
@@ -1153,4 +1162,51 @@ func (mds *KVMetadataStore) GetSubscriberResourceVersion(sub string) (string, er
 	}
 
 	return string(resp), nil
+}
+
+/* =============== Probe Operations ============== */
+
+// UpsertProbe updates or creates a new probe entry in the store.
+func (mds *KVMetadataStore) UpsertProbe(probeID uuid.UUID, probeInfo *storepb.ProbeInfo) error {
+	val, err := probeInfo.Marshal()
+	if err != nil {
+		return err
+	}
+
+	mds.cache.Set(getProbeKey(probeID), string(val))
+	return nil
+}
+
+// GetProbe gets the probe info from the store, if it exists.
+func (mds *KVMetadataStore) GetProbe(probeID uuid.UUID) (*storepb.ProbeInfo, error) {
+	resp, err := mds.cache.Get(getProbeKey(probeID))
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil {
+		return nil, nil
+	}
+
+	probePb := &storepb.ProbeInfo{}
+	err = proto.Unmarshal(resp, probePb)
+	if err != nil {
+		return nil, err
+	}
+	return probePb, nil
+}
+
+// GetProbes gets all of the probes in the store.
+func (mds *KVMetadataStore) GetProbes() ([]*storepb.ProbeInfo, error) {
+	_, vals, err := mds.cache.GetWithPrefix(getProbesKey())
+	if err != nil {
+		return nil, err
+	}
+
+	probes := make([]*storepb.ProbeInfo, len(vals))
+	for i, val := range vals {
+		pb := &storepb.ProbeInfo{}
+		proto.Unmarshal(val, pb)
+		probes[i] = pb
+	}
+	return probes, nil
 }

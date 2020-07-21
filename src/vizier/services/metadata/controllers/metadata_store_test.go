@@ -21,6 +21,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
+	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
@@ -1848,4 +1849,107 @@ func TestKVMetadataStore_GetMetadataUpdates(t *testing.T) {
 	update6 := updates[6].GetServiceUpdate()
 	assert.NotNil(t, update6)
 	assert.Equal(t, "object_md", update6.Name)
+}
+
+func TestKVMetadataStore_UpsertProbe(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	// Create probes.
+	p1ID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	s1 := &storepb.ProbeInfo{
+		ProbeID: utils.ProtoFromUUID(&p1ID),
+	}
+
+	err = mds.UpsertProbe(p1ID, s1)
+	assert.Nil(t, err)
+
+	savedProbe, err := c.Get("/probe/" + p1ID.String())
+	savedProbePb := &storepb.ProbeInfo{}
+	err = proto.Unmarshal(savedProbe, savedProbePb)
+	assert.Nil(t, err)
+	assert.Equal(t, s1, savedProbePb)
+}
+
+func TestKVMetadataStore_GetProbe(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	// Create probes.
+	p1ID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	s1 := &storepb.ProbeInfo{
+		ProbeID: utils.ProtoFromUUID(&p1ID),
+	}
+	s1Text, err := s1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal probe pb")
+	}
+
+	c.Set("/probe/"+p1ID.String(), string(s1Text))
+
+	probe, err := mds.GetProbe(p1ID)
+	assert.Nil(t, err)
+	assert.NotNil(t, probe)
+
+	assert.Equal(t, s1.ProbeID, probe.ProbeID)
+}
+
+func TestKVMetadataStore_GetProbes(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/probe/").
+		Return(nil, nil, nil).
+		Times(1)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	// Create probes.
+	p1ID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	s1 := &storepb.ProbeInfo{
+		ProbeID: utils.ProtoFromUUID(&p1ID),
+	}
+	s1Text, err := s1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal probe pb")
+	}
+
+	p2ID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
+	s2 := &storepb.ProbeInfo{
+		ProbeID: utils.ProtoFromUUID(&p2ID),
+	}
+	s2Text, err := s2.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal probe pb")
+	}
+
+	c.Set("/probe/"+p1ID.String(), string(s1Text))
+	c.Set("/probe/"+p2ID.String(), string(s2Text))
+
+	probes, err := mds.GetProbes()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(probes))
+
+	assert.Equal(t, s1.ProbeID, probes[0].ProbeID)
+	assert.Equal(t, s2.ProbeID, probes[1].ProbeID)
 }
