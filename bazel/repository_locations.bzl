@@ -51,10 +51,13 @@ REPOSITORY_LOCATIONS = dict(
         strip_prefix = "googletest-release-1.10.0",
         urls = ["https://github.com/google/googletest/archive/release-1.10.0.tar.gz"],
     ),
+    # Point to local copy until this is landed and released:
+    # https://github.com/grpc/grpc/pull/23561
     com_github_grpc_grpc = dict(
-        sha256 = "c0a6b40a222e51bea5c53090e9e65de46aee2d84c7fa7638f09cb68c3331b983",
-        strip_prefix = "grpc-1.29.0",
-        urls = ["https://github.com/grpc/grpc/archive/v1.29.0.tar.gz"],
+        sha256 = "39d9c14c44bdf97ceb30d1d3af44ab5a2f9982c2329e8a6018c6aa330017f56e",
+        strip_prefix = "grpc-f427e35d7a0163fd22be4a72aadb0d67fda0cd57",
+        urls = ["https://github.com/pixie-labs/grpc/archive/f427e35d7a0163fd22be4a72aadb0d67fda0cd57.zip"],
+        #https://github.com/pixie-labs/grpc/archive/PL_HEAD.zip"],
     ),
     com_google_boringssl = dict(
         sha256 = "781fa39693ec2984c71213cd633e9f6589eaaed75e3a9ac413237edec96fd3b9",

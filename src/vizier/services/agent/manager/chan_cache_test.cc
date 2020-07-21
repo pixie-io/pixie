@@ -6,6 +6,8 @@
 #include <gtest/gtest.h>
 
 #include "src/carnotpb/carnot.grpc.pb.h"
+#include "src/common/base/base.h"
+#include "src/common/base/test_utils.h"
 #include "src/common/testing/grpc_utils/grpc_utils.h"
 #include "src/vizier/services/agent/manager/chan_cache.h"
 

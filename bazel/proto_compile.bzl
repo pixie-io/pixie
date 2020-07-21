@@ -75,7 +75,7 @@ def pl_cc_proto_library(name, proto, deps = [], **kwargs):
         hdrs = [":" + codegen_cc_grpc_target, ":" + codegen_target],
         deps = deps + grpc_deps,
         # Disable warnings, this is not our code.
-        copts = ["-Wno-everything"],
+        copts = ["-Wno-everything", "-Wno-error=deprecated-declarations"],
         **kwargs
     )
 
