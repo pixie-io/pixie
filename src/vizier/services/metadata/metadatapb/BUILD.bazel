@@ -51,3 +51,36 @@ pl_go_proto_library(
         "//src/common/base/proto:status_pl_go_proto",
     ],
 )
+
+pl_proto_library(
+    name = "store_pl_proto",
+    srcs = ["store.proto"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/common/uuid/proto:uuid_pl_proto",
+        "//src/common/base/proto:status_pl_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_proto",
+    ],
+)
+
+pl_cc_proto_library(
+    name = "store_pl_cc_proto",
+    proto = ":store_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/common/uuid/proto:uuid_pl_cc_proto",
+        "//src/common/base/proto:status_pl_cc_proto",
+        "@gogo_grpc_proto//github.com/gogo/protobuf/gogoproto:gogo_pl_cc_proto",
+    ],
+)
+
+pl_go_proto_library(
+    name = "store_pl_go_proto",
+    importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb/store",
+    proto = ":store_pl_proto",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/common/uuid/proto:uuid_pl_go_proto",
+        "//src/common/base/proto:status_pl_go_proto",
+    ],
+)
