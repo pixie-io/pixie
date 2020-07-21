@@ -88,7 +88,7 @@ class PhabConnector {
 phabConnector = PhabConnector.newInstance(this, 'https://phab.corp.pixielabs.ai' /*url*/,
                                           'PLM' /*repository*/, params.API_TOKEN, params.PHID)
 
-BAZEL_SRC_FILES_PATH = "//... -//experimental/..."
+BAZEL_SRC_FILES_PATH = "//..."
 // ASAN/TSAN only work for CC code. This will find all the CC code and exclude manual tags from the list.
 // TODO(zasgar): This query selects only cc binaries. After GO ASAN/TSAN works, we can update the ASAN/TSAN builds
 // to include all binaries.
