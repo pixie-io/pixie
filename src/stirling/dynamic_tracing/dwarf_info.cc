@@ -25,6 +25,22 @@ constexpr char kTGIDStartTimeVarName[] = "tgid_start_time";
 constexpr char kGOIDVarName[] = "goid";
 constexpr char kKTimeVarName[] = "ktime_ns";
 
+StatusOr<std::string> BPFHelperVariableName(ir::shared::BPFHelper builtin) {
+  static const absl::flat_hash_map<ir::shared::BPFHelper, std::string_view> kBuiltinVarNames = {
+      {ir::shared::BPFHelper::GOID, kGOIDVarName},
+      {ir::shared::BPFHelper::TGID, kTGIDVarName},
+      {ir::shared::BPFHelper::TGID_PID, kTGIDPIDVarName},
+      {ir::shared::BPFHelper::TGID_START_TIME, kTGIDStartTimeVarName},
+      {ir::shared::BPFHelper::KTIME, kKTimeVarName},
+  };
+  auto iter = kBuiltinVarNames.find(builtin);
+  if (iter == kBuiltinVarNames.end()) {
+    return error::NotFound("BPFHelper '$0' does not have a predefined variable",
+                           magic_enum::enum_name(builtin));
+  }
+  return std::string(iter->second);
+}
+
 }  // namespace
 
 /**
@@ -427,7 +443,6 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
   auto* map = map_iter->second;
 
   // Find the map struct.
-  // TODO(oazizi): Make suffix a constexpr.
   std::string struct_type_name = StructTypeName(map_val.map_name());
   auto struct_iter = structs_.find(struct_type_name);
   if (struct_iter == structs_.end()) {
@@ -444,7 +459,8 @@ Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,
     var->set_name(map_var_name);
     var->set_type(map->value_type().struct_type());
     var->set_map_name(map_val.map_name());
-    var->set_key_variable_name(map_val.key_expr());
+    PL_ASSIGN_OR_RETURN(std::string key_var_name, BPFHelperVariableName(map_val.key()));
+    var->set_key_variable_name(key_var_name);
   }
 
   // Unpack the map variable's members.
@@ -505,23 +521,6 @@ Status PopulateMapTypes(const std::map<std::string, ir::shared::Map*>& maps,
   return Status::OK();
 }
 
-StatusOr<std::string_view> BPFHelperVariableName(ir::shared::BPFHelper builtin) {
-  static const absl::flat_hash_map<ir::shared::BPFHelper, std::string_view> kBuiltinVarNames = {
-      {ir::shared::BPFHelper::GOID, kGOIDVarName},
-      {ir::shared::BPFHelper::TGID, kTGIDVarName},
-      {ir::shared::BPFHelper::TGID_PID, kTGIDPIDVarName},
-      {ir::shared::BPFHelper::TGID_START_TIME, kTGIDStartTimeVarName},
-      {ir::shared::BPFHelper::KTIME, kKTimeVarName},
-  };
-  auto iter = kBuiltinVarNames.find(builtin);
-  if (iter == kBuiltinVarNames.end()) {
-    // TGID_PID was not defined.
-    return error::NotFound("BPFHelper '$0' does not have a predefined variable",
-                           magic_enum::enum_name(builtin));
-  }
-  return iter->second;
-}
-
 }  // namespace
 
 Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_action_in,
@@ -546,8 +545,8 @@ Status Dwarvifier::ProcessStashAction(const ir::logical::MapStashAction& stash_a
   auto* stash_action_out = output_probe->add_map_stash_actions();
   stash_action_out->set_map_name(stash_action_in.map_name());
 
-  PL_ASSIGN_OR_RETURN(std::string_view key_var_name, BPFHelperVariableName(stash_action_in.key()));
-  stash_action_out->set_key_variable_name(std::string(key_var_name));
+  PL_ASSIGN_OR_RETURN(std::string key_var_name, BPFHelperVariableName(stash_action_in.key()));
+  stash_action_out->set_key_variable_name(key_var_name);
   stash_action_out->set_value_variable_name(variable_name);
   stash_action_out->mutable_cond()->CopyFrom(stash_action_in.cond());
 

@@ -609,8 +609,10 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateCodeLines() {
     MOVE_BACK_STR_VEC(&code_lines, GenMap(map));
   }
 
-  // goid() accesses BPF map.
-  MoveBackStrVec(GenGOID(), &code_lines);
+  if (program_.binary_spec().language() == ir::shared::BinarySpec_Language_GOLANG) {
+    // goid() accesses BPF map.
+    MoveBackStrVec(GenGOID(), &code_lines);
+  }
 
   for (const auto& output : program_.outputs()) {
     code_lines.push_back(GenOutput(output));

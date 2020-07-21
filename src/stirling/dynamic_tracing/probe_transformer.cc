@@ -75,9 +75,7 @@ Status CreateReturnProbe(const ir::shared::BinarySpec::Language& language,
 
   auto* map_val = return_probe->add_map_vals();
   map_val->set_map_name(input_probe.name() + "_argstash");
-  // TODO(oazizi): goid is hard-coded. Fix based on language.
-  PL_UNUSED(language);
-  map_val->set_key_expr("goid");
+  map_val->set_key(GetLanguageThreadID(language));
   for (const auto& in_arg : input_probe.args()) {
     map_val->add_value_ids(in_arg.id());
   }

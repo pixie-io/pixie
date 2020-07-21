@@ -5,6 +5,9 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/testing/testing.h"
 
+// The binary location cannot be hard-coded because its location depends on -c opt/dbg/fastbuild.
+DEFINE_string(dummy_go_binary, "", "The path to dummy_go_binary.");
+
 namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
@@ -179,6 +182,7 @@ TEST(GenProgramTest, SpecsAndCode) {
   const std::string program_protobuf = R"proto(
                                        binary_spec {
                                          path: "target_binary_path"
+                                         language: GOLANG
                                        }
                                        structs {
                                          name: "socket_data_event_t"
@@ -241,6 +245,7 @@ TEST(GenProgramTest, SpecsAndCode) {
   ir::physical::Program program;
 
   ASSERT_TRUE(TextFormat::ParseFromString(program_protobuf, &program));
+  program.mutable_binary_spec()->set_path(pl::testing::TestFilePath(FLAGS_dummy_go_binary));
 
   ASSERT_OK_AND_ASSIGN(const BCCProgram bcc_program, GenProgram(program));
 
@@ -248,7 +253,7 @@ TEST(GenProgramTest, SpecsAndCode) {
 
   const auto& spec = bcc_program.uprobes[0];
 
-  EXPECT_THAT(spec, Field(&UProbeSpec::binary_path, "target_binary_path"));
+  EXPECT_THAT(spec, Field(&UProbeSpec::binary_path, ::testing::EndsWith("dummy_go_binary")));
   EXPECT_THAT(spec, Field(&UProbeSpec::symbol, "target_symbol"));
   EXPECT_THAT(spec, Field(&UProbeSpec::attach_type, bpf_tools::BPFProbeAttachType::kEntry));
   EXPECT_THAT(spec, Field(&UProbeSpec::probe_fn, "probe_entry"));

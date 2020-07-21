@@ -439,7 +439,7 @@ probes: {
   }
   map_vals {
     map_name: "my_stash"
-    key_expr: "goid"
+    key: GOID
     value_ids: "arg0"
     value_ids: "arg1"
   }

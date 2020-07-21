@@ -182,7 +182,7 @@ probes {
   }
   map_vals {
     map_name: "probe0_argstash"
-    key_expr: "goid"
+    key: GOID
     value_ids: "arg0"
     value_ids: "arg1"
     value_ids: "arg2"
