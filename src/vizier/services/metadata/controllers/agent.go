@@ -67,15 +67,37 @@ type AgentManager interface {
 
 	ApplyAgentUpdate(update *AgentUpdate) error
 	HandleUpdate(*UpdateMessage)
+
+	// GetAgentUpdates returns all of the updates that have occurred for agents since
+	// the last invocation of GetAgentUpdates.
+	GetAgentUpdates() ([]*agentpb.Agent, map[uuid.UUID]*messagespb.AgentDataInfo, []uuid.UUID, error)
+}
+
+// UpdatedAgentsList holds a list of agent IDs that have been updated or deleted recently.
+type UpdatedAgentsList struct {
+	deleted         map[uuid.UUID]bool
+	updated         map[uuid.UUID]bool
+	updatedDataInfo map[uuid.UUID]bool
+}
+
+// EmptyUpdatedAgentsList creates an empty list of the agents that have been updated recently.
+func EmptyUpdatedAgentsList() UpdatedAgentsList {
+	return UpdatedAgentsList{
+		deleted:         make(map[uuid.UUID]bool),
+		updated:         make(map[uuid.UUID]bool),
+		updatedDataInfo: make(map[uuid.UUID]bool),
+	}
 }
 
 // AgentManagerImpl is an implementation for AgentManager which talks to the metadata store.
 type AgentManagerImpl struct {
-	clock       utils.Clock
-	mds         MetadataStore
-	updateCh    chan *AgentUpdate
-	agentQueues map[string]AgentQueue
-	queueMu     sync.Mutex
+	clock              utils.Clock
+	mds                MetadataStore
+	updateCh           chan *AgentUpdate
+	agentQueues        map[string]AgentQueue
+	queueMu            sync.Mutex
+	updatedAgentsMutex sync.Mutex
+	updatedAgents      UpdatedAgentsList
 }
 
 // NewAgentManagerWithClock creates a new agent manager with a clock.
@@ -83,10 +105,11 @@ func NewAgentManagerWithClock(mds MetadataStore, clock utils.Clock) *AgentManage
 	c := make(chan *AgentUpdate)
 
 	agentManager := &AgentManagerImpl{
-		clock:       clock,
-		mds:         mds,
-		updateCh:    c,
-		agentQueues: make(map[string]AgentQueue),
+		clock:         clock,
+		mds:           mds,
+		updateCh:      c,
+		agentQueues:   make(map[string]AgentQueue),
+		updatedAgents: EmptyUpdatedAgentsList(),
 	}
 
 	go agentManager.processAgentUpdates()
@@ -121,7 +144,7 @@ func (m *AgentManagerImpl) ApplyAgentUpdate(update *AgentUpdate) error {
 		log.WithError(err).Error("Error when updating terminated processes")
 	}
 	if update.UpdateInfo.Data != nil {
-		err = m.mds.UpdateAgentDataInfo(update.AgentID, update.UpdateInfo.Data)
+		err = m.updateAgentDataInfoWrapper(update.AgentID, update.UpdateInfo.Data)
 		if err != nil {
 			return err
 		}
@@ -179,6 +202,58 @@ func (m *AgentManagerImpl) handleTerminatedProcesses(processes []*metadatapb.Pro
 	return m.mds.UpdateProcesses(updatedProcesses)
 }
 
+// A helper function for all cases where we call m.mds.DeleteAgent.
+// This should be called instead of mds.DeleteAgent in order to make sure that the agent
+// deletion is tracked in the our agent state change tracker (updatedAgents).
+func (m *AgentManagerImpl) deleteAgentWrapper(agentID uuid.UUID) error {
+	m.updatedAgentsMutex.Lock()
+	defer m.updatedAgentsMutex.Unlock()
+
+	// Track the deletion of this agent for the agent updates list.
+	m.updatedAgents.deleted[agentID] = true
+	// If we delete a recently updated agent, remove it from the updates list.
+	if _, present := m.updatedAgents.updated[agentID]; present {
+		delete(m.updatedAgents.updated, agentID)
+	}
+	if _, present := m.updatedAgents.updatedDataInfo[agentID]; present {
+		delete(m.updatedAgents.updatedDataInfo, agentID)
+	}
+	return m.mds.DeleteAgent(agentID)
+}
+
+// A helper function for all cases where we call m.mds.CreateAgent.
+// This should be called instead of mds.CreateAgent in order to make sure that the agent
+// creation is tracked in the our agent state change tracker (updatedAgents).
+func (m *AgentManagerImpl) createAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.Agent) error {
+	m.updatedAgentsMutex.Lock()
+	defer m.updatedAgentsMutex.Unlock()
+
+	m.updatedAgents.updated[agentID] = true
+	return m.mds.CreateAgent(agentID, agentInfo)
+}
+
+// A helper function for all cases where we call m.mds.CreateAgent.
+// This should be called instead of mds.CreateAgent in order to make sure that the agent
+// update is tracked in the our agent state change tracker (updatedAgents).
+func (m *AgentManagerImpl) updateAgentWrapper(agentID uuid.UUID, agentInfo *agentpb.Agent) error {
+	m.updatedAgentsMutex.Lock()
+	defer m.updatedAgentsMutex.Unlock()
+
+	m.updatedAgents.updated[agentID] = true
+	return m.mds.UpdateAgent(agentID, agentInfo)
+}
+
+// A helper function for all cases where we call m.mds.UpdateAgentDataInfo.
+// This should be called instead of mds.UpdateAgentDataInfo in order to make sure that the agent
+// update is tracked in the our agent state change tracker (updatedAgents).
+func (m *AgentManagerImpl) updateAgentDataInfoWrapper(agentID uuid.UUID, agentDataInfo *messagespb.AgentDataInfo) error {
+	m.updatedAgentsMutex.Lock()
+	defer m.updatedAgentsMutex.Unlock()
+
+	m.updatedAgents.updatedDataInfo[agentID] = true
+	return m.mds.UpdateAgentDataInfo(agentID, agentDataInfo)
+}
+
 // AddToUpdateQueue adds the container/schema update to a queue for updates to the metadata store.
 func (m *AgentManagerImpl) AddToUpdateQueue(agentID uuid.UUID, update *messagespb.AgentUpdateInfo) {
 	agentUpdate := &AgentUpdate{
@@ -220,7 +295,7 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 		if err != nil {
 			log.WithError(err).Fatal("Could not parse agent ID")
 		}
-		err = m.mds.DeleteAgent(delAgID)
+		err = m.deleteAgentWrapper(delAgID)
 		if err != nil {
 			log.WithError(err).Fatal("Could not delete agent for hostname")
 		}
@@ -239,7 +314,8 @@ func (m *AgentManagerImpl) RegisterAgent(agent *agentpb.Agent) (asid uint32, err
 		ASID:            asid,
 	}
 
-	err = m.mds.CreateAgent(aUUID, infoPb)
+	// Add this agent to the updated agents list.
+	err = m.createAgentWrapper(aUUID, infoPb)
 	if err != nil {
 		return 0, err
 	}
@@ -261,7 +337,7 @@ func (m *AgentManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
 	// Update LastHeartbeatNS in AgentData.
 	agent.LastHeartbeatNS = m.clock.Now().UnixNano()
 
-	err = m.mds.UpdateAgent(agentID, agent)
+	err = m.updateAgentWrapper(agentID, agent)
 	if err != nil {
 		return err
 	}
@@ -272,6 +348,7 @@ func (m *AgentManagerImpl) UpdateHeartbeat(agentID uuid.UUID) error {
 // UpdateAgent updates agent info, such as schema.
 func (m *AgentManagerImpl) UpdateAgent(info *agentpb.Agent) error {
 	// TODO(michelle): Implement once we figure out how the agent info (schemas, etc) looks.
+	// Make sure to add any updates to the agent updates list.
 	return nil
 }
 
@@ -291,7 +368,7 @@ func (m *AgentManagerImpl) UpdateAgentState() error {
 			if err != nil {
 				log.WithError(err).Fatal("Could not convert UUID to proto")
 			}
-			err = m.mds.DeleteAgent(uid)
+			err = m.deleteAgentWrapper(uid)
 			if err != nil {
 				log.WithError(err).Fatal("Failed to delete agent from etcd")
 			}
@@ -465,4 +542,37 @@ func (m *AgentManagerImpl) AddUpdatesToAgentQueue(agentID string, updates []*met
 // regardless of hostname.
 func (m *AgentManagerImpl) GetMetadataUpdates(hostname *HostnameIPPair) ([]*metadatapb.ResourceUpdate, error) {
 	return m.mds.GetMetadataUpdates(hostname)
+}
+
+// GetAgentUpdates returns the latest agent status since the last call to GetAgentUpdates().
+func (m *AgentManagerImpl) GetAgentUpdates() ([]*agentpb.Agent, map[uuid.UUID]*messagespb.AgentDataInfo, []uuid.UUID, error) {
+	m.updatedAgentsMutex.Lock()
+	defer m.updatedAgentsMutex.Unlock()
+
+	var updatedAgents []*agentpb.Agent
+	var updatedAgentsDataInfo = make(map[uuid.UUID]*messagespb.AgentDataInfo)
+	var deletedAgents []uuid.UUID
+
+	for updatedAgentID := range m.updatedAgents.updated {
+		log.Errorf("%+v", updatedAgentID)
+		agent, err := m.mds.GetAgent(updatedAgentID)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		updatedAgents = append(updatedAgents, agent)
+	}
+	for updatedAgentDataInfoID := range m.updatedAgents.updatedDataInfo {
+		agentDataInfo, err := m.mds.GetAgentDataInfo(updatedAgentDataInfoID)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		updatedAgentsDataInfo[updatedAgentDataInfoID] = agentDataInfo
+	}
+	for deletedAgentID := range m.updatedAgents.deleted {
+		deletedAgents = append(deletedAgents, deletedAgentID)
+	}
+
+	// Reset the state now that we have popped off the latest updates.
+	m.updatedAgents = EmptyUpdatedAgentsList()
+	return updatedAgents, updatedAgentsDataInfo, deletedAgents, nil
 }

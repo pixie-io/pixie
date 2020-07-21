@@ -25,44 +25,45 @@ const maxSubscriberUpdates = 10000
 
 // MetadataStore is the interface for our metadata store.
 type MetadataStore interface {
-	GetServiceCIDR() string
-	GetPodCIDRs() []string
+	AddResourceVersion(string, *metadatapb.MetadataObject) error
+	CreateAgent(agentID uuid.UUID, a *agentpb.Agent) error
+	DeleteAgent(agentID uuid.UUID) error
+	GetASID() (uint32, error)
 	GetAgent(agentID uuid.UUID) (*agentpb.Agent, error)
 	GetAgentIDForHostnamePair(hnPair *HostnameIPPair) (string, error)
-	DeleteAgent(agentID uuid.UUID) error
-	CreateAgent(agentID uuid.UUID, a *agentpb.Agent) error
-	UpdateAgent(agentID uuid.UUID, a *agentpb.Agent) error
 	GetAgents() ([]*agentpb.Agent, error)
 	GetAgentsDataInfo() (map[uuid.UUID]*messagespb.AgentDataInfo, error)
-	UpdateAgentDataInfo(agentID uuid.UUID, dataInfo *messagespb.AgentDataInfo) error
+	GetAgentDataInfo(agentID uuid.UUID) (*messagespb.AgentDataInfo, error)
 	GetAgentsForHostnamePairs(*[]*HostnameIPPair) ([]string, error)
-	GetASID() (uint32, error)
-	GetKelvinIDs() ([]string, error)
 	GetComputedSchemas() ([]*metadatapb.SchemaInfo, error)
-	UpdateSchemas(agentID uuid.UUID, schemas []*metadatapb.SchemaInfo) error
-	UpdateProcesses(processes []*metadatapb.ProcessInfo) error
-	GetProcesses(upids []*types.UInt128) ([]*metadatapb.ProcessInfo, error)
-	GetPods() ([]*metadatapb.Pod, error)
-	UpdatePod(*metadatapb.Pod, bool) error
-	GetNodePods(hostname *HostnameIPPair) ([]*metadatapb.Pod, error)
-	GetEndpoints() ([]*metadatapb.Endpoints, error)
-	UpdateEndpoints(*metadatapb.Endpoints, bool) error
-	GetNodeEndpoints(hostname *HostnameIPPair) ([]*metadatapb.Endpoints, error)
-	GetServices() ([]*metadatapb.Service, error)
-	UpdateService(*metadatapb.Service, bool) error
-	GetNodes() ([]*metadatapb.Node, error)
-	UpdateNode(*metadatapb.Node, bool) error
-	GetNamespaces() ([]*metadatapb.Namespace, error)
-	UpdateNamespace(*metadatapb.Namespace, bool) error
 	GetContainers() ([]*metadatapb.ContainerInfo, error)
+	GetEndpoints() ([]*metadatapb.Endpoints, error)
+	GetHostnameIPPairFromPodName(string, string) (*HostnameIPPair, error)
+	GetKelvinIDs() ([]string, error)
+	GetMetadataUpdates(hostname *HostnameIPPair) ([]*metadatapb.ResourceUpdate, error)
+	GetMetadataUpdatesForHostname(*HostnameIPPair, string, string) ([]*metadatapb.ResourceUpdate, error)
+	GetNamespaces() ([]*metadatapb.Namespace, error)
+	GetNodeEndpoints(hostname *HostnameIPPair) ([]*metadatapb.Endpoints, error)
+	GetNodePods(hostname *HostnameIPPair) ([]*metadatapb.Pod, error)
+	GetNodes() ([]*metadatapb.Node, error)
+	GetPodCIDRs() []string
+	GetPods() ([]*metadatapb.Pod, error)
+	GetProcesses(upids []*types.UInt128) ([]*metadatapb.ProcessInfo, error)
+	GetServiceCIDR() string
+	GetServices() ([]*metadatapb.Service, error)
+	GetSubscriberResourceVersion(string) (string, error)
+	UpdateAgent(agentID uuid.UUID, a *agentpb.Agent) error
+	UpdateAgentDataInfo(agentID uuid.UUID, dataInfo *messagespb.AgentDataInfo) error
 	UpdateContainer(*metadatapb.ContainerInfo) error
 	UpdateContainersFromPod(*metadatapb.Pod, bool) error
-	GetMetadataUpdates(hostname *HostnameIPPair) ([]*metadatapb.ResourceUpdate, error)
-	AddResourceVersion(string, *metadatapb.MetadataObject) error
+	UpdateEndpoints(*metadatapb.Endpoints, bool) error
+	UpdateNamespace(*metadatapb.Namespace, bool) error
+	UpdateNode(*metadatapb.Node, bool) error
+	UpdatePod(*metadatapb.Pod, bool) error
+	UpdateProcesses(processes []*metadatapb.ProcessInfo) error
+	UpdateSchemas(agentID uuid.UUID, schemas []*metadatapb.SchemaInfo) error
+	UpdateService(*metadatapb.Service, bool) error
 	UpdateSubscriberResourceVersion(string, string) error
-	GetSubscriberResourceVersion(string) (string, error)
-	GetMetadataUpdatesForHostname(*HostnameIPPair, string, string) ([]*metadatapb.ResourceUpdate, error)
-	GetHostnameIPPairFromPodName(string, string) (*HostnameIPPair, error)
 }
 
 // MetadataSubscriber is a consumer of metadata updates.

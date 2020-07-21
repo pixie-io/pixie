@@ -180,3 +180,18 @@ func (m *MockAgentManager) HandleUpdate(arg0 *controllers.UpdateMessage) {
 func (mr *MockAgentManagerMockRecorder) HandleUpdate(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleUpdate", reflect.TypeOf((*MockAgentManager)(nil).HandleUpdate), arg0)
 }
+
+// GetAgentUpdates mocks base method
+func (m *MockAgentManager) GetAgentUpdates() ([]*agentpb.Agent, map[go_uuid.UUID]*messagespb.AgentDataInfo, []go_uuid.UUID, error) {
+	ret := m.ctrl.Call(m, "GetAgentUpdates")
+	ret0, _ := ret[0].([]*agentpb.Agent)
+	ret1, _ := ret[1].(map[go_uuid.UUID]*messagespb.AgentDataInfo)
+	ret2, _ := ret[2].([]go_uuid.UUID)
+	ret3, _ := ret[3].(error)
+	return ret0, ret1, ret2, ret3
+}
+
+// GetAgentUpdates indicates an expected call of GetAgentUpdates
+func (mr *MockAgentManagerMockRecorder) GetAgentUpdates() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentUpdates", reflect.TypeOf((*MockAgentManager)(nil).GetAgentUpdates))
+}

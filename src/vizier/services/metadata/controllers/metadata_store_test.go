@@ -320,6 +320,43 @@ func TestKVMetadataStore_GetAgentsDataInfo(t *testing.T) {
 	assert.Equal(t, dataInfo[agUUID2], info2)
 }
 
+func TestKVMetadataStore_GetAgentDataInfo(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	agUUID, err := uuid.FromString(testutils.ExistingAgentUUID)
+	assert.Nil(t, err)
+
+	info := &messagespb.AgentDataInfo{
+		MetadataInfo: &distributedpb.MetadataInfo{
+			MetadataFields: []metadatapb.MetadataType{
+				metadatapb.CONTAINER_ID,
+				metadatapb.POD_NAME,
+			},
+			Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
+				XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
+					Data:      []byte("1234"),
+					NumHashes: 4,
+				},
+			},
+		},
+	}
+
+	err = mds.UpdateAgentDataInfo(agUUID, info)
+	assert.Nil(t, err)
+
+	dataInfo, err := mds.GetAgentDataInfo(agUUID)
+	assert.Nil(t, err)
+	assert.Equal(t, dataInfo, info)
+}
+
 func TestKVMetadataStore_GetASID(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

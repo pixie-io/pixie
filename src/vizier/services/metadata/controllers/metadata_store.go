@@ -373,6 +373,7 @@ func (mds *KVMetadataStore) CreateAgent(agentID uuid.UUID, a *agentpb.Agent) err
 		Hostname: hostname,
 		IP:       a.Info.HostInfo.HostIP,
 	}
+
 	mds.cache.Set(GetHostnamePairAgentKey(hnPair), agentID.String())
 	mds.cache.Set(getAgentKey(agentID), string(i))
 
@@ -450,6 +451,21 @@ func (mds *KVMetadataStore) GetAgentsDataInfo() (map[uuid.UUID]*messagespb.Agent
 		dataInfos[agentID] = pb
 	}
 	return dataInfos, nil
+}
+
+// GetAgentDataInfo returns the data info for a particular agent.
+func (mds *KVMetadataStore) GetAgentDataInfo(agentID uuid.UUID) (*messagespb.AgentDataInfo, error) {
+	dataInfoStr, err := mds.cache.Get(getAgentDataInfoKey(agentID))
+	if err != nil {
+		return nil, err
+	}
+
+	pb := &messagespb.AgentDataInfo{}
+	err = proto.Unmarshal(dataInfoStr, pb)
+	if err != nil {
+		return nil, err
+	}
+	return pb, nil
 }
 
 // UpdateAgentDataInfo updates the information about data tables that a particular agent has.

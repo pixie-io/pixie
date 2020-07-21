@@ -773,3 +773,127 @@ func TestAgent_HandleUpdate(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, 0, len(resp))
 }
+
+func TestAgent_GetAgentUpdate(t *testing.T) {
+	_, agtMgr := setupAgentManager(t)
+
+	agUUID0, err := uuid.FromString(testutils.UnhealthyKelvinAgentUUID)
+	assert.Nil(t, err)
+	agUUID1, err := uuid.FromString(testutils.UnhealthyAgentUUID)
+	assert.Nil(t, err)
+	agUUID2, err := uuid.FromString(testutils.ExistingAgentUUID)
+	assert.Nil(t, err)
+	agUUID3, err := uuid.FromString(testutils.NewAgentUUID)
+	assert.Nil(t, err)
+
+	newAgentInfo := &agentpb.Agent{
+		Info: &agentpb.AgentInfo{
+			HostInfo: &agentpb.HostInfo{
+				Hostname: "localhost",
+				HostIP:   "127.0.0.7",
+			},
+			AgentID: utils.ProtoFromUUID(&agUUID3),
+			Capabilities: &agentpb.AgentCapabilities{
+				CollectsData: true,
+			},
+		},
+		LastHeartbeatNS: 3,
+		CreateTimeNS:    4,
+	}
+
+	oldAgentDataInfo := &messagespb.AgentDataInfo{
+		MetadataInfo: &distributedpb.MetadataInfo{
+			MetadataFields: []metadatapb.MetadataType{
+				metadatapb.CONTAINER_ID,
+				metadatapb.POD_NAME,
+			},
+			Filter: &distributedpb.MetadataInfo_XXHash64BloomFilter{
+				XXHash64BloomFilter: &bloomfilterpb.XXHash64BloomFilter{
+					Data:      []byte("1234"),
+					NumHashes: 4,
+				},
+			},
+		},
+	}
+
+	// Register a new agent.
+	_, err = agtMgr.RegisterAgent(newAgentInfo)
+	assert.Equal(t, nil, err)
+
+	// Update data info on agent #2.
+	agentUpdate := controllers.AgentUpdate{
+		UpdateInfo: &messagespb.AgentUpdateInfo{
+			Schema:         []*k8s_metadatapb.SchemaInfo{},
+			ProcessCreated: []*k8s_metadatapb.ProcessCreated{},
+			Data:           oldAgentDataInfo,
+		},
+		AgentID: agUUID2,
+	}
+	agtMgr.ApplyAgentUpdate(&agentUpdate)
+
+	// Check results of first call to GetAgentUpdates.
+	agents, agentsDataInfo, deletedAgents, err := agtMgr.GetAgentUpdates()
+	assert.Nil(t, err)
+	assert.NotNil(t, agents)
+	assert.NotNil(t, agentsDataInfo)
+	assert.Nil(t, deletedAgents)
+
+	// agents array
+	assert.Equal(t, 1, len(agents))
+	assert.NotNil(t, agents[0].Info.AgentID)
+	assert.Equal(t, utils.ProtoFromUUID(&agUUID3), agents[0].Info.AgentID)
+
+	// agents data info
+	assert.Equal(t, 1, len(agentsDataInfo))
+	assert.Equal(t, oldAgentDataInfo, agentsDataInfo[agUUID2])
+
+	// Update the heartbeat of an agent.
+	err = agtMgr.UpdateHeartbeat(agUUID2)
+	assert.Nil(t, err)
+
+	// Update the data info on an agent that we are about to expire.
+	badAgentUpdate := controllers.AgentUpdate{
+		UpdateInfo: &messagespb.AgentUpdateInfo{
+			Schema:         []*k8s_metadatapb.SchemaInfo{},
+			ProcessCreated: []*k8s_metadatapb.ProcessCreated{},
+			Data:           oldAgentDataInfo,
+		},
+		AgentID: agUUID1,
+	}
+	agtMgr.ApplyAgentUpdate(&badAgentUpdate)
+	// Now expire it
+	err = agtMgr.UpdateAgentState()
+	assert.Nil(t, err)
+
+	// Check results of second call to GetAgentUpdates.
+	agents, agentsDataInfo, deletedAgents, err = agtMgr.GetAgentUpdates()
+	assert.Nil(t, err)
+	assert.NotNil(t, agents)
+	assert.NotNil(t, agentsDataInfo)
+	assert.NotNil(t, deletedAgents)
+
+	// agents array
+	ag2Info := &agentpb.Agent{}
+	err = proto.UnmarshalText(testutils.ExistingAgentInfo, ag2Info)
+	assert.Nil(t, err)
+	assert.Equal(t, 1, len(agents))
+	assert.Equal(t, int64(testutils.ClockNowNS), agents[0].LastHeartbeatNS)
+
+	// agents data info
+	assert.Equal(t, 0, len(agentsDataInfo))
+
+	// deleted agents array
+	assert.Equal(t, 2, len(deletedAgents))
+	hasUUID0 := false
+	hasUUID1 := false
+	for _, agUUID := range deletedAgents {
+		if agUUID == agUUID0 {
+			hasUUID0 = true
+		}
+		if agUUID == agUUID1 {
+			hasUUID1 = true
+		}
+	}
+	assert.True(t, hasUUID0)
+	assert.True(t, hasUUID1)
+}

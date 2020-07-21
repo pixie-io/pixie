@@ -156,6 +156,12 @@ func (s *Server) GetAgentTableMetadata(ctx context.Context, req *metadatapb.Agen
 	return &resp, nil
 }
 
+// GetAgentUpdates streams agent updates to the requestor periodically as they come in.
+func (s *Server) GetAgentUpdates(req *metadatapb.AgentUpdatesRequest, srv metadatapb.MetadataService_GetAgentUpdatesServer) error {
+	// TODO(nserrino): PP-2057 fill this in.
+	return nil
+}
+
 // RegisterProbe is a request to register the probes specified in the Program on all agents.
 func (s *Server) RegisterProbe(ctx context.Context, req *metadatapb.RegisterProbeRequest) (*metadatapb.RegisterProbeResponse, error) {
 	// Create probe.
