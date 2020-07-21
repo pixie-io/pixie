@@ -3843,7 +3843,8 @@ proto.pl.api.vizierpb.ExecuteScriptRequest.toObject = function(includeInstance, 
     queryStr: jspb.Message.getFieldWithDefault(msg, 1, ""),
     clusterId: jspb.Message.getFieldWithDefault(msg, 3, ""),
     execFuncsList: jspb.Message.toObjectList(msg.getExecFuncsList(),
-    proto.pl.api.vizierpb.ExecuteScriptRequest.FuncToExecute.toObject, includeInstance)
+    proto.pl.api.vizierpb.ExecuteScriptRequest.FuncToExecute.toObject, includeInstance),
+    mutation: jspb.Message.getBooleanFieldWithDefault(msg, 5, false)
   };
 
   if (includeInstance) {
@@ -3892,6 +3893,10 @@ proto.pl.api.vizierpb.ExecuteScriptRequest.deserializeBinaryFromReader = functio
       var value = new proto.pl.api.vizierpb.ExecuteScriptRequest.FuncToExecute;
       reader.readMessage(value,proto.pl.api.vizierpb.ExecuteScriptRequest.FuncToExecute.deserializeBinaryFromReader);
       msg.addExecFuncs(value);
+      break;
+    case 5:
+      var value = /** @type {boolean} */ (reader.readBool());
+      msg.setMutation(value);
       break;
     default:
       reader.skipField();
@@ -3942,6 +3947,13 @@ proto.pl.api.vizierpb.ExecuteScriptRequest.serializeBinaryToWriter = function(me
       4,
       f,
       proto.pl.api.vizierpb.ExecuteScriptRequest.FuncToExecute.serializeBinaryToWriter
+    );
+  }
+  f = message.getMutation();
+  if (f) {
+    writer.writeBool(
+      5,
+      f
     );
   }
 };
@@ -4398,6 +4410,24 @@ proto.pl.api.vizierpb.ExecuteScriptRequest.prototype.addExecFuncs = function(opt
  */
 proto.pl.api.vizierpb.ExecuteScriptRequest.prototype.clearExecFuncsList = function() {
   return this.setExecFuncsList([]);
+};
+
+
+/**
+ * optional bool mutation = 5;
+ * @return {boolean}
+ */
+proto.pl.api.vizierpb.ExecuteScriptRequest.prototype.getMutation = function() {
+  return /** @type {boolean} */ (jspb.Message.getBooleanFieldWithDefault(this, 5, false));
+};
+
+
+/**
+ * @param {boolean} value
+ * @return {!proto.pl.api.vizierpb.ExecuteScriptRequest} returns this
+ */
+proto.pl.api.vizierpb.ExecuteScriptRequest.prototype.setMutation = function(value) {
+  return jspb.Message.setProto3BooleanField(this, 5, value);
 };
 
 
@@ -5805,7 +5835,6 @@ proto.pl.api.vizierpb.SemanticType = {
   ST_NAMESPACE_NAME: 700,
   ST_BYTES: 800,
   ST_PERCENT: 900,
-  ST_DURATION_NS: 901,
   ST_DURATION_NS: 901,
   ST_QUANTILES: 1000,
   ST_IP_ADDRESS: 1100,

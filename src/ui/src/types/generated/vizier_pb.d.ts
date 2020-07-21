@@ -441,6 +441,9 @@ export class ExecuteScriptRequest extends jspb.Message {
   clearExecFuncsList(): void;
   addExecFuncs(value?: ExecuteScriptRequest.FuncToExecute, index?: number): ExecuteScriptRequest.FuncToExecute;
 
+  getMutation(): boolean;
+  setMutation(value: boolean): void;
+
   serializeBinary(): Uint8Array;
   toObject(includeInstance?: boolean): ExecuteScriptRequest.AsObject;
   static toObject(includeInstance: boolean, msg: ExecuteScriptRequest): ExecuteScriptRequest.AsObject;
@@ -454,6 +457,7 @@ export namespace ExecuteScriptRequest {
     queryStr: string,
     clusterId: string,
     execFuncsList: Array<ExecuteScriptRequest.FuncToExecute.AsObject>,
+    mutation: boolean,
   }
 
   export class FuncToExecute extends jspb.Message {

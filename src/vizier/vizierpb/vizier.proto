@@ -189,7 +189,12 @@ message ExecuteScriptRequest {
   // exec_funcs is a list of functions to execute.
   // If any functions specified cannot be found ExecuteScriptResponse will contain a compiler error
   repeated FuncToExecute exec_funcs = 4;
+
+  // If set to true, the execute script will only run the mutations (probe installs, etc.) and return.
+  // If unset any mutation will be ignored.
+  bool mutation = 5;
 }
+
 // Tracks information about query execution time.
 message QueryTimingInfo {
   // The total execution time for the query in nanoseconds.
