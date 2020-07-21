@@ -441,6 +441,19 @@ std::string TwoPEMsOneKelvinDistributedState() {
        MakeKelvinCarnotInfo("kelvin", "00000001-0000-0000-0000-000000000003", "1111", 789)});
 }
 
+std::string FourPEMsOneKelvinDistributedState() {
+  std::string table_name = "table1";
+  std::string tabletization_key = "upid";
+  std::string table_info1 = MakeTableInfoStr(table_name, tabletization_key, {"1", "2"});
+  std::string table_info2 = MakeTableInfoStr(table_name, tabletization_key, {"3", "4"});
+  return MakeDistributedState(
+      {MakePEMCarnotInfo("pem1", "00000001-0000-0000-0000-000000000001", 123, {table_info1}),
+       MakePEMCarnotInfo("pem2", "00000001-0000-0000-0000-000000000002", 456, {table_info2}),
+       MakePEMCarnotInfo("pem3", "00000001-0000-0000-0000-000000000003", 000, {table_info2}),
+       MakePEMCarnotInfo("pem4", "00000001-0000-0000-0000-000000000004", 111, {table_info2}),
+       MakeKelvinCarnotInfo("kelvin", "00000001-0000-0000-0000-000000000003", "1111", 789)});
+}
+
 distributedpb::LogicalPlannerState CreateTwoPEMsOneKelvinPlannerState(const std::string& schema) {
   std::string distributed_state_proto = TwoPEMsOneKelvinDistributedState();
   return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
@@ -449,6 +462,12 @@ distributedpb::LogicalPlannerState CreateTwoPEMsOneKelvinPlannerState(const std:
 distributedpb::LogicalPlannerState CreateTwoPEMsOneKelvinPlannerState(
     table_store::schemapb::Schema schema) {
   auto distributed_state_proto = TwoPEMsOneKelvinDistributedState();
+  return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
+}
+
+distributedpb::LogicalPlannerState CreateFourPEMsOneKelvinPlannerState(
+    table_store::schemapb::Schema schema) {
+  auto distributed_state_proto = FourPEMsOneKelvinDistributedState();
   return LoadLogicalPlannerStatePB(distributed_state_proto, schema);
 }
 

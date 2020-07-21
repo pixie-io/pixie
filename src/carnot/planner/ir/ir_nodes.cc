@@ -1154,9 +1154,8 @@ Status OperatorIR::CopyParentsFrom(const OperatorIR* source_op) {
 }
 
 std::vector<OperatorIR*> OperatorIR::Children() const {
-  plan::DAG dag = graph()->dag();
   std::vector<OperatorIR*> op_children;
-  for (int64_t d : dag.DependenciesOf(id())) {
+  for (int64_t d : graph()->dag().DependenciesOf(id())) {
     auto ir_node = graph()->Get(d);
     if (ir_node->IsOperator()) {
       op_children.push_back(static_cast<OperatorIR*>(ir_node));
