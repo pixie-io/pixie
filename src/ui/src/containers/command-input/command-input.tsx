@@ -55,7 +55,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
     })));
   }, [scripts]);
 
-  const { execute, setScript } = React.useContext(ScriptContext);
+  const { args, execute, setScript } = React.useContext(ScriptContext);
   const { clearResults } = React.useContext(ResultsContext);
 
   const getCompletions = React.useCallback((input) => {
@@ -75,7 +75,7 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
         vis,
         id: script.id,
         // Fill the default args for now. This will go away once the autocomplete is implemented.
-        args: argsForVis(vis, {}),
+        args: argsForVis(vis, args),
       };
       clearResults();
       setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);
