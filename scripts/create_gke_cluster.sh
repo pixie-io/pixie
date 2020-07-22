@@ -8,8 +8,8 @@
 
 set_default_values() {
   CLUSTER_NAME="dev-cluster-${USER}"
-  NUM_NODES=3
-  MACHINE_TYPE=n1-standard-4
+  NUM_NODES=2
+  MACHINE_TYPE=e2-standard-4
   IMAGE_NAME=UBUNTU
   DISK_SIZE=100
   ZONE=us-west1-a
@@ -135,7 +135,6 @@ gcloud beta container --project "${PROJECT}" clusters create ${CLUSTER_NAME} \
 "https://www.googleapis.com/auth/servicecontrol" \
  --num-nodes ${NUM_NODES} \
  --enable-ip-alias \
- --enable-stackdriver-kubernetes \
  --network "${NETWORK}" \
  --subnetwork "${SUBNETWORK}" \
  --addons HorizontalPodAutoscaling,HttpLoadBalancing \
