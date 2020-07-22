@@ -45,10 +45,6 @@ pl_cc_test(
 pl_cc_test(
     name = "dwarf_tools_test",
     srcs = ["dwarf_tools_test.cc"],
-    args = [
-        "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
-        "--go_grpc_server=$(location //demos/client_server_apps/go_grpc_tls_pl/server:server)",
-    ],
     data = [
         "//demos/client_server_apps/go_grpc_tls_pl/server",
         "//src/stirling/obj_tools/testdata:dummy_go_binary",

@@ -11,11 +11,10 @@
 
 #include "src/stirling/proto/stirling.pb.h"
 
-// These binary location cannot be hard-coded because their locations depend on -c
-// opt/dbg/fastbuild.
-DEFINE_string(go_grpc_client_path, "", "The path to the go greeter client executable.");
-DEFINE_string(go_grpc_server_path, "", "The path to the go greeter server executable.");
-DEFINE_string(dummy_go_binary, "", "The path to the go dummy_go_binary executable.");
+constexpr std::string_view kClientPath =
+    "src/stirling/http2/testing/go_grpc_client/go_grpc_client_/go_grpc_client";
+constexpr std::string_view kServerPath =
+    "src/stirling/http2/testing/go_grpc_server/go_grpc_server_/go_grpc_server";
 
 namespace pl {
 namespace stirling {
@@ -37,18 +36,11 @@ class GoHTTPDynamicTraceTest : public ::testing::Test,
                                public ::testing::WithParamInterface<TargetKind> {
  protected:
   void SetUp() override {
-    CHECK(!FLAGS_go_grpc_client_path.empty())
-        << "--go_grpc_client_path cannot be empty. You should run this test with bazel.";
-    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_grpc_client_path)))
-        << FLAGS_go_grpc_client_path;
+    client_path_ = pl::testing::BazelBinTestFilePath(kClientPath).string();
+    server_path_ = pl::testing::BazelBinTestFilePath(kServerPath).string();
 
-    CHECK(!FLAGS_go_grpc_server_path.empty())
-        << "--go_grpc_server_path cannot be empty. You should run this test with bazel.";
-    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_grpc_server_path)))
-        << FLAGS_go_grpc_server_path;
-
-    server_path_ = FLAGS_go_grpc_server_path;
-    client_path_ = FLAGS_go_grpc_client_path;
+    ASSERT_OK(fs::Exists(server_path_));
+    ASSERT_OK(fs::Exists(client_path_));
 
     ASSERT_OK(s_.Start({server_path_}));
 

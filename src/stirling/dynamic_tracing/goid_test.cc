@@ -3,8 +3,6 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/dynamic_tracing/code_gen.h"
 
-DEFINE_string(dummy_go_binary, "", "The path to dummy_go_binary.");
-
 namespace pl {
 namespace stirling {
 namespace dynamic_tracing {

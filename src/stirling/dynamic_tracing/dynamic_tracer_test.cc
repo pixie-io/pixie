@@ -3,8 +3,8 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/dynamic_tracing/dynamic_tracer.h"
 
-// The binary location cannot be hard-coded because its location depends on -c opt/dbg/fastbuild.
-DEFINE_string(dummy_go_binary, "", "The path to dummy_go_binary.");
+constexpr std::string_view kBinaryPath =
+    "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
 
 namespace pl {
 namespace stirling {
@@ -67,19 +67,19 @@ struct DynamicTracerTestParam {
 
 class DynamicTracerTest : public ::testing::TestWithParam<DynamicTracerTestParam> {
  protected:
-  DynamicTracerTest() : kGoBinaryPath(pl::testing::TestFilePath(FLAGS_dummy_go_binary)) {}
+  DynamicTracerTest() : binary_path_(pl::testing::BazelBinTestFilePath(kBinaryPath)) {}
 
-  std::string kGoBinaryPath;
+  std::string binary_path_;
 };
 
 TEST_P(DynamicTracerTest, DISABLED_Compile) {
   DynamicTracerTestParam p = GetParam();
 
-  std::string input_program_str = absl::Substitute(p.input, kGoBinaryPath);
+  std::string input_program_str = absl::Substitute(p.input, binary_path_);
   ir::logical::Program input_program;
   ASSERT_TRUE(TextFormat::ParseFromString(input_program_str, &input_program));
 
-  std::string expected_output = absl::Substitute(p.expected_output, kGoBinaryPath);
+  std::string expected_output = absl::Substitute(p.expected_output, binary_path_);
 
   ASSERT_OK_AND_ASSIGN(BCCProgram bcc_program, CompileProgram(input_program));
 

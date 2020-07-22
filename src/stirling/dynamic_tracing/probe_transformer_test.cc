@@ -3,8 +3,8 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/dynamic_tracing/probe_transformer.h"
 
-// The binary location cannot be hard-coded because its location depends on -c opt/dbg/fastbuild.
-DEFINE_string(dummy_go_binary, "", "The path to dummy_go_binary.");
+constexpr std::string_view kBinaryPath =
+    "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
 
 namespace pl {
 namespace stirling {
@@ -219,19 +219,19 @@ struct ProbeGenTestParam {
 
 class ProbeGenTest : public ::testing::TestWithParam<ProbeGenTestParam> {
  protected:
-  ProbeGenTest() : kGoBinaryPath(pl::testing::TestFilePath(FLAGS_dummy_go_binary)) {}
+  ProbeGenTest() : binary_path_(pl::testing::BazelBinTestFilePath(kBinaryPath)) {}
 
-  std::string kGoBinaryPath;
+  std::string binary_path_;
 };
 
 TEST_P(ProbeGenTest, Transform) {
   ProbeGenTestParam p = GetParam();
 
-  std::string input_program_str = absl::Substitute(p.input, kGoBinaryPath);
+  std::string input_program_str = absl::Substitute(p.input, binary_path_);
   ir::logical::Program input_program;
   ASSERT_TRUE(TextFormat::ParseFromString(input_program_str, &input_program));
 
-  std::string expected_output = absl::Substitute(p.expected_output, kGoBinaryPath);
+  std::string expected_output = absl::Substitute(p.expected_output, binary_path_);
 
   ASSERT_OK_AND_THAT(TransformLogicalProgram(input_program), EqualsProto(expected_output));
 }
@@ -241,7 +241,7 @@ INSTANTIATE_TEST_SUITE_P(ProbeGenTestSuite, ProbeGenTest,
                                                              kTransformedProgram}));
 
 TEST_F(ProbeGenTest, ErrorCases) {
-  std::string input_program_str = absl::Substitute(kLogicalProgram, kGoBinaryPath);
+  std::string input_program_str = absl::Substitute(kLogicalProgram, binary_path_);
   ir::logical::Program input_program;
   ASSERT_TRUE(TextFormat::ParseFromString(input_program_str, &input_program));
 

@@ -5,8 +5,8 @@
 #include "src/common/testing/testing.h"
 #include "src/stirling/testing/testing.h"
 
-// The binary location cannot be hard-coded because its location depends on -c opt/dbg/fastbuild.
-DEFINE_string(dummy_go_binary, "", "The path to dummy_go_binary.");
+constexpr std::string_view kBinaryPath =
+    "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
 
 namespace pl {
 namespace stirling {
@@ -249,7 +249,7 @@ TEST(GenProgramTest, SpecsAndCode) {
   ir::physical::Program program;
 
   ASSERT_TRUE(TextFormat::ParseFromString(program_protobuf, &program));
-  program.mutable_binary_spec()->set_path(pl::testing::TestFilePath(FLAGS_dummy_go_binary));
+  program.mutable_binary_spec()->set_path(pl::testing::BazelBinTestFilePath(kBinaryPath));
 
   ASSERT_OK_AND_ASSIGN(const BCCProgram bcc_program, GenProgram(program));
 

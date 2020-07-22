@@ -22,8 +22,10 @@ extern "C" {
 #include "src/stirling/socket_trace_connector.h"
 #include "src/stirling/testing/common.h"
 
-DEFINE_string(go_grpc_client_path, "", "The path to the go greeter client executable.");
-DEFINE_string(go_grpc_server_path, "", "The path to the go greeter server executable.");
+constexpr std::string_view kClientPath =
+    "src/stirling/http2/testing/go_grpc_client/go_grpc_client_/go_grpc_client";
+constexpr std::string_view kServerPath =
+    "src/stirling/http2/testing/go_grpc_server/go_grpc_server_/go_grpc_server";
 
 namespace pl {
 namespace stirling {
@@ -78,18 +80,11 @@ class GRPCTraceGoTest : public ::testing::Test {
   GRPCTraceGoTest() : data_table_(kHTTPTable), ctx_(std::make_unique<StandaloneContext>()) {}
 
   void LaunchServer(bool use_https) {
-    CHECK(!FLAGS_go_grpc_client_path.empty())
-        << "--go_grpc_client_path cannot be empty. You should run this test with bazel.";
-    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_grpc_client_path)))
-        << FLAGS_go_grpc_client_path;
+    client_path_ = pl::testing::BazelBinTestFilePath(kClientPath).string();
+    server_path_ = pl::testing::BazelBinTestFilePath(kServerPath).string();
 
-    CHECK(!FLAGS_go_grpc_server_path.empty())
-        << "--go_grpc_server_path cannot be empty. You should run this test with bazel.";
-    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_grpc_server_path)))
-        << FLAGS_go_grpc_server_path;
-
-    server_path_ = FLAGS_go_grpc_server_path;
-    client_path_ = FLAGS_go_grpc_client_path;
+    ASSERT_OK(fs::Exists(server_path_));
+    ASSERT_OK(fs::Exists(client_path_));
 
     std::string https_flag = use_https ? "--https=true" : "--https=false";
     ASSERT_OK(s_.Start({server_path_, https_flag}));

@@ -27,9 +27,6 @@ pl_cc_library(
 pl_cc_test(
     name = "code_gen_test",
     srcs = ["code_gen_test.cc"],
-    args = [
-        "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
-    ],
     data = [
         "//src/stirling/obj_tools/testdata:dummy_go_binary",
     ],
@@ -42,9 +39,6 @@ pl_cc_test(
 pl_cc_test(
     name = "dwarf_info_test",
     srcs = ["dwarf_info_test.cc"],
-    args = [
-        "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
-    ],
     data = [
         "//src/stirling/obj_tools/testdata:dummy_go_binary",
     ],
@@ -56,9 +50,6 @@ pl_cc_test(
 pl_cc_test(
     name = "probe_transformer_test",
     srcs = ["probe_transformer_test.cc"],
-    args = [
-        "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
-    ],
     data = [
         "//src/stirling/obj_tools/testdata:dummy_go_binary",
     ],
@@ -71,9 +62,6 @@ pl_cc_test(
 pl_cc_test(
     name = "dynamic_tracer_test",
     srcs = ["dynamic_tracer_test.cc"],
-    args = [
-        "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
-    ],
     data = [
         "//src/stirling/obj_tools/testdata:dummy_go_binary",
     ],
@@ -85,9 +73,5 @@ pl_cc_test(
 pl_cc_test(
     name = "goid_test",
     srcs = ["goid_test.cc"],
-    args = [
-        "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
-    ],
-    data = ["//src/stirling/obj_tools/testdata:dummy_go_binary"],
     deps = [":cc_library"],
 )

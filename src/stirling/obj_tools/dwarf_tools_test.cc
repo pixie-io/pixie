@@ -3,11 +3,11 @@
 #include "src/common/testing/test_environment.h"
 #include "src/common/testing/testing.h"
 
-// The go binary location cannot be hard-coded because its location changes based on
-// -c opt/dbg/fastbuild.
-DEFINE_string(dummy_go_binary, "", "The path to dummy_go_binary.");
-DEFINE_string(go_grpc_server, "", "The path to server.");
-const std::string_view kCppBinary = "src/stirling/obj_tools/testdata/prebuilt_dummy_exe";
+constexpr std::string_view kDummyGoBinary =
+    "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
+constexpr std::string_view kGoGRPCServer =
+    "demos/client_server_apps/go_grpc_tls_pl/server/server_/server";
+constexpr std::string_view kCppBinary = "src/stirling/obj_tools/testdata/prebuilt_dummy_exe";
 
 namespace pl {
 namespace stirling {
@@ -28,8 +28,8 @@ class DwarfReaderTest : public ::testing::TestWithParam<DwarfReaderTestParam> {
  protected:
   DwarfReaderTest()
       : kCppBinaryPath(pl::testing::TestFilePath(kCppBinary)),
-        kGoBinaryPath(pl::testing::TestFilePath(FLAGS_dummy_go_binary)),
-        kGoServerBinaryPath(pl::testing::TestFilePath(FLAGS_go_grpc_server)) {}
+        kGoBinaryPath(pl::testing::TestFilePath(kDummyGoBinary)),
+        kGoServerBinaryPath(pl::testing::TestFilePath(kGoGRPCServer)) {}
   const std::string kCppBinaryPath;
   const std::string kGoBinaryPath;
   const std::string kGoServerBinaryPath;

@@ -13,6 +13,11 @@
 DEFINE_string(go_http_client_path, "", "The path to the go greeter client executable.");
 DEFINE_string(go_http_server_path, "", "The path to the go greeter server executable.");
 
+constexpr std::string_view kClientPath =
+    "src/stirling/http/testing/go_http_client/go_http_client_/go_http_client";
+constexpr std::string_view kServerPath =
+    "src/stirling/http/testing/go_http_server/go_http_server_/go_http_server";
+
 namespace pl {
 namespace stirling {
 
@@ -36,18 +41,11 @@ class GoHTTPTraceTest : public testing::SocketTraceBPFTest</* TClientSideTracing
   void SetUp() override {
     SocketTraceBPFTest::SetUp();
 
-    CHECK(!FLAGS_go_http_client_path.empty())
-        << "--go_http_client_path cannot be empty. You should run this test with bazel.";
-    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_http_client_path)))
-        << FLAGS_go_http_client_path;
+    client_path_ = pl::testing::BazelBinTestFilePath(kClientPath).string();
+    server_path_ = pl::testing::BazelBinTestFilePath(kServerPath).string();
 
-    CHECK(!FLAGS_go_http_server_path.empty())
-        << "--go_http_server_path cannot be empty. You should run this test with bazel.";
-    CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_go_http_server_path)))
-        << FLAGS_go_http_server_path;
-
-    server_path_ = FLAGS_go_http_server_path;
-    client_path_ = FLAGS_go_http_client_path;
+    ASSERT_OK(fs::Exists(server_path_));
+    ASSERT_OK(fs::Exists(client_path_));
 
     ASSERT_OK(s_.Start({server_path_}));
 

@@ -8,8 +8,8 @@
 
 #include "src/stirling/proto/stirling.pb.h"
 
-// The binary location cannot be hard-coded because its location depends on -c opt/dbg/fastbuild.
-DEFINE_string(dummy_go_binary, "", "The path to dummy_go_binary.");
+constexpr std::string_view kBinaryPath =
+    "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
 
 namespace pl {
 namespace stirling {
@@ -104,7 +104,7 @@ TEST(DynamicTraceSource, dynamic_trace_source) {
   stirling->RegisterDataPushCallback(StirlingCallback);
 
   std::string program_str =
-      absl::Substitute(kProgramSpec, pl::testing::TestFilePath(FLAGS_dummy_go_binary).string());
+      absl::Substitute(kProgramSpec, pl::testing::BazelBinTestFilePath(kBinaryPath).string());
   auto trace_program = std::make_unique<dynamic_tracing::ir::logical::Program>();
   ASSERT_TRUE(google::protobuf::TextFormat::ParseFromString(program_str, trace_program.get()));
   int64_t trace_id = stirling->RegisterDynamicTrace(std::move(trace_program));
