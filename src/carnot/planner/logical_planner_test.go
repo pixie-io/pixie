@@ -1,13 +1,15 @@
 package logicalplanner_test
 
 import (
-	"log"
 	"os"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
 
 	"pixielabs.ai/pixielabs/src/shared/scriptspb"
 
 	"pixielabs.ai/pixielabs/src/carnot/planner/plannerpb"
+	logical "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/assert"
@@ -385,4 +387,104 @@ func TestPlanner_ExtractVisFuncsInfo(t *testing.T) {
 	}
 
 	assert.Equal(t, &expectedVisFuncsInfoPb, visFuncsResult.Info)
+}
+
+const probePxl = `
+import pxtrace
+import px
+
+@pxtrace.goprobe("MyFunc")
+def probe_func():
+		id = pxtrace.ArgExpr('id')
+		return "http_return_table", [{'id': id},
+						{'err': pxtrace.RetExpr('$0.a')},
+						{'latency': pxtrace.FunctionLatency()}]
+
+pxtrace.UpsertTrace('http_return',
+										probe_func,
+										px.uint128("123e4567-e89b-12d3-a456-426655440000"),
+										"5m")
+`
+
+const expectedDynamicTraceStr = `
+binary_spec {
+  upid {
+    asid: 306070887 pid: 3902477011 ts_ns: 11841725277501915136
+  }
+  language: GOLANG
+}
+outputs {
+  name: "http_return_table"
+  fields: "id"
+  fields: "err"
+  fields: "latency"
+}
+probes {
+  name: "http_return0"
+  trace_point {
+    symbol: "MyFunc"
+  }
+  args {
+    id: "arg0"
+    expr: "id"
+  }
+  ret_vals {
+    id: "ret0"
+  }
+  function_latency {
+    id: "lat0"
+  }
+  output_actions {
+    output_name: "http_return_table"
+    variable_name: "arg0"
+    variable_name: "ret0"
+    variable_name: "lat0"
+  }
+}
+`
+
+// TestPlanner_CompileRequest makes sure that we can actually pass in all the info needed
+// to create a PlannerState and can successfully compile to an expected result.
+func TestPlanner_CompileRequest(t *testing.T) {
+	// Create the compiler.
+	var udfInfoPb udfspb.UDFInfo
+	b, err := funcs.Asset("src/vizier/funcs/data/udf.pb")
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+	err = proto.Unmarshal(b, &udfInfoPb)
+	if !assert.Nil(t, err) {
+		t.FailNow()
+	}
+	c := logicalplanner.New(&udfInfoPb)
+	defer c.Free()
+	// Pass the relation proto, table and query to the compilation.
+	plannerStatePB := new(distributedpb.LogicalPlannerState)
+	proto.UnmarshalText(plannerStatePBStr, plannerStatePB)
+	compileRequestPB := &plannerpb.CompileMutationsRequest{
+		QueryStr: probePxl,
+	}
+	compileMutationResponse, err := c.CompileMutations(plannerStatePB, compileRequestPB)
+
+	if err != nil {
+		log.Fatalln("Failed to compile mutations:", err)
+		os.Exit(1)
+	}
+
+	status := compileMutationResponse.Status
+	if !assert.Equal(t, status.ErrCode, statuspb.OK) {
+		var errorPB compilerpb.CompilerErrorGroup
+		logicalplanner.GetCompilerErrorContext(status, &errorPB)
+		log.Infof("%v", errorPB)
+		log.Infof("%v", status)
+	}
+
+	var expectedDynamicTracePb logical.Program
+
+	if err = proto.UnmarshalText(expectedDynamicTraceStr, &expectedDynamicTracePb); err != nil {
+		log.Fatalf("Failed to unmarshal expected proto", err)
+		t.FailNow()
+	}
+
+	assert.Equal(t, &expectedDynamicTracePb, compileMutationResponse.Trace)
 }

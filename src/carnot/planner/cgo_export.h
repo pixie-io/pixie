@@ -52,6 +52,25 @@ char* PlannerGetMainFuncArgsSpec(PlannerPtr planner_ptr, const char* query_reque
  */
 char* PlannerVisFuncsInfo(PlannerPtr planner_ptr, const char* script_str_c, int script_str_len,
                           int* resultLen);
+
+/**
+ * @brief Compiles mutations into their executable form. Takes in a serialized
+ * CompileMutationsRequest and returns a serialiaed CompileMutationsResponse.
+ *
+ * @param planner Pointer to the Planner object
+ * @param planner_state_str_c     The serialized distributedpb.LogicalPlannerState.
+ * @param planner_state_str_len   Length of the serialized LogicalPlannerState.
+ * @param mutation_request_str_c The serialized pl.carnot.planner.plannerpb.CompileMutationsRequest
+ * message.
+ * @param mutation_request_str_len  The length of the serialized CompileMutationsRequest.
+ * @param resultLen Variable to store the length of the return value
+ * @return char* The serialized pl.carnot.planner.plannerpb.CompileMutationsResponse, where the
+ * length of the message is `resultLen`. If the request contains an erroneous format, the response
+ * stores the error information in the Message status field.
+ */
+char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* planner_state_str_c,
+                              int planner_state_str_len, const char* mutation_request_str_c,
+                              int mutation_request_str_len, int* resultLen);
 /**
  * @brief Frees up the memory handled by the planner.
  *

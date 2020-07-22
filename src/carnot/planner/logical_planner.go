@@ -36,6 +36,18 @@ package logicalplanner
 // 																	_GoStringLen(queryRequest),
 // 																	resultLen);
 // }
+//
+// char* PlannerCompileMutationsGoStr(PlannerPtr planner_ptr,
+// 						         							  _GoString_ planner_state,
+// 						         							  _GoString_ compile_mutation_request,
+// 						         							  int* result_len) {
+//   return PlannerCompileMutations(planner_ptr,
+//   									            	_GoStringPtr(planner_state),
+//   									            	_GoStringLen(planner_state),
+//   									            	_GoStringPtr(compile_mutation_request),
+//   									            	_GoStringLen(compile_mutation_request),
+//   									            	result_len);
+// }
 import "C"
 import (
 	"errors"
@@ -122,6 +134,26 @@ func (cm GoPlanner) ExtractVisFuncsInfo(script string) (*scriptspb.VisFuncsInfoR
 	}
 
 	return visFuncsPb, nil
+}
+
+// CompileMutations compiles the query into a mutation of Pixie Data Table.
+func (cm GoPlanner) CompileMutations(planState *distributedpb.LogicalPlannerState, request *plannerpb.CompileMutationsRequest) (*plannerpb.CompileMutationsResponse, error) {
+	var resultLen C.int
+	stateStr := proto.MarshalTextString(planState)
+	requestStr := proto.MarshalTextString(request)
+	res := C.PlannerCompileMutationsGoStr(cm.planner, stateStr, requestStr, &resultLen)
+	defer C.StrFree(res)
+	resultBytes := C.GoBytes(unsafe.Pointer(res), resultLen)
+	if resultLen == 0 {
+		return nil, errors.New("no result returned")
+	}
+
+	resultPB := &plannerpb.CompileMutationsResponse{}
+	if err := proto.Unmarshal(resultBytes, resultPB); err != nil {
+		return resultPB, fmt.Errorf("error: '%s'; string: '%s'", err, string(resultBytes))
+	}
+
+	return resultPB, nil
 }
 
 // Free the memory used by the planner.

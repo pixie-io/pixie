@@ -49,6 +49,12 @@ class PlannerExportTest : public ::testing::Test {
     return query_request;
   }
 
+  plannerpb::CompileMutationsRequest MakeCompileMutationsRequest(const std::string& query) {
+    plannerpb::CompileMutationsRequest mutations_request;
+    mutations_request.set_query_str(query);
+    return mutations_request;
+  }
+
   void TearDown() override { PlannerFree(planner_); }
   PlannerPtr MakePlanner() { return PlannerNew(udf_info_str_.c_str(), udf_info_str_.length()); }
   PlannerPtr planner_;
@@ -59,6 +65,22 @@ StatusOr<std::string> PlannerPlanGoStr(PlannerPtr planner_ptr, std::string plann
                                        std::string query_result, int* resultLen) {
   char* result = PlannerPlan(planner_ptr, planner_state.c_str(), planner_state.length(),
                              query_result.c_str(), query_result.length(), resultLen);
+  if (*resultLen == 0) {
+    return error::InvalidArgument("Planner failed to return.");
+  }
+
+  std::string lp_str(result, result + *resultLen);
+  delete[] result;
+  return lp_str;
+}
+
+StatusOr<std::string> PlannerCompileMutationsGoStr(PlannerPtr planner_ptr,
+                                                   std::string planner_state,
+                                                   std::string compile_mutation_request,
+                                                   int* resultLen) {
+  char* result = PlannerCompileMutations(planner_ptr, planner_state.c_str(), planner_state.length(),
+                                         compile_mutation_request.c_str(),
+                                         compile_mutation_request.length(), resultLen);
   if (*resultLen == 0) {
     return error::InvalidArgument("Planner failed to return.");
   }
@@ -287,6 +309,75 @@ TEST_F(PlannerExportTest, get_vis_funcs_info) {
   ASSERT_TRUE(vis_funcs_result.ParseFromString(interface_result.ConsumeValueOrDie()));
   EXPECT_OK(vis_funcs_result.status());
   EXPECT_THAT(vis_funcs_result.info(), EqualsProto(kExpectedVisFuncsInfoPb));
+}
+
+constexpr char kPxTraceQuery[] = R"pxl(
+import pxtrace
+import px
+
+@pxtrace.goprobe("MyFunc")
+def probe_func():
+    id = pxtrace.ArgExpr('id')
+    return "http_return_table", [{'id': id},
+            {'err': pxtrace.RetExpr('$0.a')},
+            {'latency': pxtrace.FunctionLatency()}]
+
+pxtrace.UpsertTrace('http_return',
+                    probe_func,
+                    px.uint128("123e4567-e89b-12d3-a456-426655440000"),
+                    "5m")
+)pxl";
+
+constexpr char kExpectedPxlTracePb[] = R"pxl(
+binary_spec {
+  upid {
+    asid: 306070887 pid: 3902477011 ts_ns: 11841725277501915136
+  }
+  language: GOLANG
+}
+outputs {
+  name: "http_return_table"
+  fields: "id"
+  fields: "err"
+  fields: "latency"
+}
+probes {
+  name: "http_return0"
+  trace_point {
+    symbol: "MyFunc"
+  }
+  args {
+    id: "arg0"
+    expr: "id"
+  }
+  ret_vals {
+    id: "ret0"
+  }
+  function_latency {
+    id: "lat0"
+  }
+  output_actions {
+    output_name: "http_return_table"
+    variable_name: "arg0"
+    variable_name: "ret0"
+    variable_name: "lat0"
+  }
+}
+)pxl";
+
+TEST_F(PlannerExportTest, compile_mutations) {
+  planner_ = MakePlanner();
+  auto logical_planner_state = testutils::CreateTwoPEMsOneKelvinPlannerState();
+  int result_len;
+  auto interface_result = PlannerCompileMutationsGoStr(
+      planner_, logical_planner_state.DebugString(),
+      MakeCompileMutationsRequest(kPxTraceQuery).DebugString(), &result_len);
+
+  ASSERT_OK(interface_result);
+  plannerpb::CompileMutationsResponse mutations_response_pb;
+  ASSERT_TRUE(mutations_response_pb.ParseFromString(interface_result.ConsumeValueOrDie()));
+  ASSERT_OK(mutations_response_pb.status());
+  EXPECT_THAT(mutations_response_pb.trace(), EqualsProto(kExpectedPxlTracePb));
 }
 
 }  // namespace planner

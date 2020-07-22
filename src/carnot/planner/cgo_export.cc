@@ -20,6 +20,7 @@
 #include "src/table_store/schema/relation.h"
 
 using pl::carnot::planner::distributedpb::LogicalPlannerResult;
+using pl::carnot::planner::plannerpb::CompileMutationsResponse;
 using pl::shared::scriptspb::MainFuncSpecResult;
 using pl::shared::scriptspb::VisFuncsInfoResult;
 
@@ -42,6 +43,26 @@ PlannerPtr PlannerNew(const char* udf_info_data, int udf_info_len) {
   return reinterpret_cast<PlannerPtr>(planner.release());
 }
 
+#define PLANNER_RETURN_IF_ERROR(__type, __output_len, __status) \
+  do {                                                          \
+    const auto& s = (__status);                                 \
+    if (!s.ok()) {                                              \
+      return ExitEarly<__type>(s, __output_len);                \
+    }                                                           \
+  } while (false)
+
+pl::Status LoadProto(const std::string& serialized_proto, google::protobuf::Message* output,
+                     const std::string& error_msg) {
+  // TODO(philkuz) convert this to read serialized calls instead of human readable.
+  bool merge_success = google::protobuf::TextFormat::MergeFromString(serialized_proto, output);
+  if (!merge_success) {
+    std::string err = absl::Substitute("$1, serialize_input: '$0'", serialized_proto, error_msg);
+    LOG(ERROR) << err;
+    return pl::Status(pl::statuspb::INVALID_ARGUMENT, err);
+  }
+  return pl::Status::OK();
+}
+
 char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
                   int planner_state_str_len, const char* query_request_str_c,
                   int query_request_str_len, int* resultLen) {
@@ -53,15 +74,9 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
 
   // Load in the planner state protobuf.
   pl::carnot::planner::distributedpb::LogicalPlannerState planner_state_pb;
-  // TODO(philkuz) convert this to read serialized calls instead of human readable.
-  bool planner_state_merge_success =
-      google::protobuf::TextFormat::MergeFromString(planner_state_pb_str, &planner_state_pb);
-  if (!planner_state_merge_success) {
-    std::string err =
-        absl::Substitute("Failed to process the logical planner state: $0.", planner_state_pb_str);
-    LOG(ERROR) << err;
-    return ExitEarly<LogicalPlannerResult>(err, resultLen);
-  }
+  PLANNER_RETURN_IF_ERROR(LogicalPlannerResult, resultLen,
+                          LoadProto(planner_state_pb_str, &planner_state_pb,
+                                    "Failed to process the logical planner state"));
 
   // Load in the query request protobuf.
   pl::carnot::planner::plannerpb::QueryRequest query_request_pb;
@@ -101,6 +116,47 @@ char* PlannerPlan(PlannerPtr planner_ptr, const char* planner_state_str_c,
 
   // Serialize the logical plan into bytes.
   return PrepareResult(&planner_result_pb, resultLen);
+}
+
+char* PlannerCompileMutations(PlannerPtr planner_ptr, const char* planner_state_str_c,
+                              int planner_state_str_len, const char* mutation_request_str_c,
+                              int mutation_request_str_len, int* resultLen) {
+  DCHECK(planner_state_str_c != nullptr);
+  std::string planner_state_pb_str(planner_state_str_c,
+                                   planner_state_str_c + planner_state_str_len);
+  std::string mutation_request_pb_str(mutation_request_str_c,
+                                      mutation_request_str_c + mutation_request_str_len);
+
+  // Load in the planner state protobuf.
+  pl::carnot::planner::distributedpb::LogicalPlannerState planner_state;
+  PLANNER_RETURN_IF_ERROR(
+      CompileMutationsResponse, resultLen,
+      LoadProto(planner_state_pb_str, &planner_state, "Failed to parse the logical planner state"));
+
+  // Load in the mutation request protobuf.
+  pl::carnot::planner::plannerpb::CompileMutationsRequest mutation_request;
+  PLANNER_RETURN_IF_ERROR(CompileMutationsResponse, resultLen,
+                          LoadProto(mutation_request_pb_str, &mutation_request,
+                                    "Failed to parse the mutation request"));
+
+  auto planner = reinterpret_cast<pl::carnot::planner::LogicalPlanner*>(planner_ptr);
+
+  auto dynamic_trace_or_s = planner->CompileTrace(planner_state, mutation_request);
+  if (!dynamic_trace_or_s.ok()) {
+    return ExitEarly<CompileMutationsResponse>(dynamic_trace_or_s.status(), resultLen);
+  }
+  std::unique_ptr<pl::carnot::planner::compiler::DynamicTraceIR> trace =
+      dynamic_trace_or_s.ConsumeValueOrDie();
+
+  // If the response is ok, then we can go ahead and set this up.
+  CompileMutationsResponse mutations_response_pb;
+  WrapStatus(&mutations_response_pb, dynamic_trace_or_s.status());
+
+  PLANNER_RETURN_IF_ERROR(CompileMutationsResponse, resultLen,
+                          trace->ToProto(mutations_response_pb.mutable_trace()));
+
+  // Serialize the tracing program into bytes.
+  return PrepareResult(&mutations_response_pb, resultLen);
 }
 
 char* PlannerGetMainFuncArgsSpec(PlannerPtr planner_ptr, const char* query_request_str_c,

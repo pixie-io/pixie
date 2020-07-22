@@ -68,6 +68,18 @@ StatusOr<std::unique_ptr<distributed::DistributedPlan>> LogicalPlanner::Plan(
                                     single_node_plan.get());
 }
 
+StatusOr<std::unique_ptr<compiler::DynamicTraceIR>> LogicalPlanner::CompileTrace(
+    const distributedpb::LogicalPlannerState& logical_state,
+    const plannerpb::CompileMutationsRequest& mutations_req) {
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());
+  // Compile into the IR.
+  auto ms = logical_state.plan_options().max_output_rows_per_table();
+  VLOG(1) << "Max output rows: " << ms;
+  PL_ASSIGN_OR_RETURN(std::unique_ptr<CompilerState> compiler_state,
+                      CreateCompilerState(logical_state.schema(), registry_info.get(), ms));
+  return compiler_.CompileTrace(mutations_req.query_str(), compiler_state.get());
+}
+
 StatusOr<shared::scriptspb::FuncArgsSpec> LogicalPlanner::GetMainFuncArgsSpec(
     const plannerpb::QueryRequest& query_request) {
   PL_ASSIGN_OR_RETURN(std::unique_ptr<RegistryInfo> registry_info, udfexporter::ExportUDFInfo());

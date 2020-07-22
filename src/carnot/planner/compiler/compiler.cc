@@ -99,6 +99,23 @@ StatusOr<std::shared_ptr<IR>> Compiler::QueryToIR(const std::string& query,
   return ir;
 }
 
+StatusOr<std::unique_ptr<DynamicTraceIR>> Compiler::CompileTrace(const std::string& query,
+                                                                 CompilerState* compiler_state) {
+  Parser parser;
+  PL_ASSIGN_OR_RETURN(pypa::AstModulePtr ast, parser.Parse(query));
+
+  IR ir;
+  std::unique_ptr<DynamicTraceIR> dynamic_trace = std::make_unique<DynamicTraceIR>();
+  ModuleHandler module_handler;
+  PL_ASSIGN_OR_RETURN(auto ast_walker, ASTVisitorImpl::Create(&ir, dynamic_trace.get(),
+                                                              compiler_state, &module_handler,
+                                                              /* func_based_exec */ false,
+                                                              /*reserved_names*/ {}));
+
+  PL_RETURN_IF_ERROR(ast_walker->ProcessModuleNode(ast));
+  return dynamic_trace;
+}
+
 StatusOr<pl::shared::scriptspb::VisFuncsInfo> Compiler::GetVisFuncsInfo(
     const std::string& query, CompilerState* compiler_state) {
   Parser parser;
@@ -116,8 +133,11 @@ StatusOr<pl::shared::scriptspb::VisFuncsInfo> Compiler::GetVisFuncsInfo(
 Status Compiler::VerifyGraphHasMemorySink(IR* ir) {
   auto sinks = ir->FindNodesThatMatch(MemorySink());
   if (sinks.size() == 0) {
-    return error::InvalidArgument("query does not output a result, please add a $0.$1() statement",
-                                  PixieModule::kPixieModuleObjName, PixieModule::kDisplayOpId);
+    return error::InvalidArgument(
+        "query does not output a "
+        "result, please add a "
+        "$0.$1() statement",
+        PixieModule::kPixieModuleObjName, PixieModule::kDisplayOpId);
   }
   return Status::OK();
 }

@@ -9,6 +9,7 @@
 #include "src/carnot/planner/distributed/distributed_planner.h"
 #include "src/carnot/planner/distributed/tablet_rules.h"
 #include "src/carnot/planner/plannerpb/func_args.pb.h"
+#include "src/carnot/planner/probes/probes.h"
 #include "src/shared/scriptspb/scripts.pb.h"
 
 namespace pl {
@@ -39,6 +40,10 @@ class LogicalPlanner : public NotCopyable {
   StatusOr<std::unique_ptr<distributed::DistributedPlan>> Plan(
       const distributedpb::LogicalPlannerState& logical_state,
       const plannerpb::QueryRequest& query);
+
+  StatusOr<std::unique_ptr<compiler::DynamicTraceIR>> CompileTrace(
+      const distributedpb::LogicalPlannerState& logical_state,
+      const plannerpb::CompileMutationsRequest& mutations_req);
 
   /**
    * @brief Get the Main Func Args Spec for a query. Must have a main function in the query or the
