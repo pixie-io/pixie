@@ -3,6 +3,7 @@ syntax = "proto3";
 import "src/common/base/proto/status.proto";
 import "src/shared/types/proto/types.proto";
 import "src/carnot/planpb/plan.proto";
+import "src/stirling/dynamic_tracing/ir/logical.proto";
 
 package pl.carnot.planner.plannerpb;
 
@@ -73,4 +74,22 @@ message GetAvailableFlagsResult {
   QueryFlagsSpec query_flags = 1;
   // The status from the compiler
   pl.statuspb.Status status = 2;
+}
+
+// CompileMutationRequest represents any request that compiles to a mutation of
+// Pixie internal data state.
+message CompileMutationsRequest {
+  // The pxl script to run that compiles into a mutation
+  string query_str = 1;
+}
+
+// CompileMutationsResponse holds the mutations compiled by the planner.
+message CompileMutationsResponse {
+  // The Status of the Mutation Compilation Request. Holds an error with debug
+  // information if the originating request had a bug, otherwise will be set to
+  // OK.
+  pl.statuspb.Status status = 1;
+  // Trace contains the compiled Dynamic Trace definition passed in by the
+  // request.
+  stirling.dynamic_tracing.ir.logical.Program trace = 2;
 }
