@@ -25,8 +25,8 @@ message VizierMessage {
         HeartbeatNack heartbeat_nack = 7;
         ExecuteQueryRequest execute_query_request = 8;
         RegisterProbeRequest register_probe_request = 9;
-        RegisterProbeResponse register_probe_response = 10;
         ProbeInfoUpdate probe_info_update = 11;
+        EvictProbeRequest evict_probe_request = 12;
     }
 }
 
@@ -113,24 +113,20 @@ message ExecuteQueryRequest {
 // The request to register probes on a PEM.
 message RegisterProbeRequest {
   pl.stirling.dynamic_tracing.ir.logical.Program program = 1;
-  uuidpb.UUID probe_id = 2 [ (gogoproto.customname) = "ProbeID" ];
-}
-
-// The response to a RegisterProbeRequest.
-message RegisterProbeResponse {
-  // Status of whether the probe registration initiated successfully or not.
-  pl.statuspb.Status status = 1;
-  // The ID of the probe that has just been registered.
-  uuidpb.UUID probe_id = 2 [ (gogoproto.customname) = "ProbeID" ];
-  // The ID of the agent sending the response.
-  uuidpb.UUID agent_id = 3 [ (gogoproto.customname) = "AgentID" ];
+  string probe_id = 2 [ (gogoproto.customname) = "ProbeID" ];
 }
 
 // An update message sent when a probe's status changes.
 message ProbeInfoUpdate {
-  uuidpb.UUID probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
-  // The status of the probe.
-  pl.statuspb.Status status = 2;
+  string probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
+  // The state of the probe.
+  pl.statuspb.LifeCycleState state = 2;
+  // The status of the probe, specified if the state of the probe is not healthy.
+  pl.statuspb.Status status = 3;
   // The ID of the agent sending the update.
-  uuidpb.UUID agent_id = 3 [ (gogoproto.customname) = "AgentID" ];
+  uuidpb.UUID agent_id = 4 [ (gogoproto.customname) = "AgentID" ];
+}
+
+message EvictProbeRequest {
+    string probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
 }

@@ -160,3 +160,8 @@ func (s *Server) RegisterProbe(ctx context.Context, req *metadatapb.RegisterProb
 func (s *Server) GetProbeInfo(ctx context.Context, req *metadatapb.GetProbeInfoRequest) (*metadatapb.GetProbeInfoResponse, error) {
 	return nil, errors.New("Not yet implemented")
 }
+
+// EvictProbe is a request to evict the given probe on all agents.
+func (s *Server) EvictProbe(ctx context.Context, req *metadatapb.EvictProbeRequest) (*metadatapb.EvictProbeResponse, error) {
+	return nil, errors.New("Not yet implemented")
+}

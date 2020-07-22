@@ -2,7 +2,6 @@ syntax = "proto3";
 
 package pl.vizier.services.metadata;
 
-import "src/common/uuid/proto/uuid.proto";
 import "src/common/base/proto/status.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/stirling/dynamic_tracing/ir/logical.proto";
@@ -14,19 +13,17 @@ option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb
 
 // Information about the status of a specific probe.
 message ProbeInfo {
-  message FailedProbeInfo {
-    // The ID of the agent who has failed to register the probe.
-    uuidpb.UUID agent_id = 1 [ (gogoproto.customname) = "AgentID" ];
-    // A status indicating why the registration has failed.
-    pl.statuspb.Status status = 2;
-  }
-  uuidpb.UUID probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
-  // A list of all of the agents who have successfully registered this probe.
-  repeated uuidpb.UUID healthy_agents = 2;
-  // A list of all agents who have failed to register this probe, along with the status.
-  repeated FailedProbeInfo failed_agents = 3;
-  // A list of all agents who have received the register request.
-  repeated uuidpb.UUID pending_agents = 4;
+  string probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
   // The probe program.
-  pl.stirling.dynamic_tracing.ir.logical.Program program = 5;
+  pl.stirling.dynamic_tracing.ir.logical.Program program = 2;
+}
+
+// The agent's registration status for a particular probe.
+message AgentProbeStatus {
+  // The state of the probe.
+  pl.statuspb.LifeCycleState state = 1;
+  // The status of the probe, specified if the state of the probe is not healthy.
+  pl.statuspb.Status status = 2;
+  string probe_id = 3 [ (gogoproto.customname) = "ProbeID" ];
+  string agent_id = 4 [ (gogoproto.customname) = "AgentID" ];
 }

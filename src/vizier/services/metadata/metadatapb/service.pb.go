@@ -526,7 +526,8 @@ func (m *AgentTableMetadataResponse) GetMetadataByAgent() []*AgentTableMetadata 
 }
 
 type RegisterProbeRequest struct {
-	Program *logical.Program `protobuf:"bytes,1,opt,name=program,proto3" json:"program,omitempty"`
+	Program   *logical.Program `protobuf:"bytes,1,opt,name=program,proto3" json:"program,omitempty"`
+	ProbeName string           `protobuf:"bytes,2,opt,name=probe_name,json=probeName,proto3" json:"probe_name,omitempty"`
 }
 
 func (m *RegisterProbeRequest) Reset()      { *m = RegisterProbeRequest{} }
@@ -568,9 +569,16 @@ func (m *RegisterProbeRequest) GetProgram() *logical.Program {
 	return nil
 }
 
+func (m *RegisterProbeRequest) GetProbeName() string {
+	if m != nil {
+		return m.ProbeName
+	}
+	return ""
+}
+
 type RegisterProbeResponse struct {
 	Status  *proto3.Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
-	ProbeID *proto1.UUID   `protobuf:"bytes,2,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
+	ProbeID string         `protobuf:"bytes,2,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
 }
 
 func (m *RegisterProbeResponse) Reset()      { *m = RegisterProbeResponse{} }
@@ -612,15 +620,15 @@ func (m *RegisterProbeResponse) GetStatus() *proto3.Status {
 	return nil
 }
 
-func (m *RegisterProbeResponse) GetProbeID() *proto1.UUID {
+func (m *RegisterProbeResponse) GetProbeID() string {
 	if m != nil {
 		return m.ProbeID
 	}
-	return nil
+	return ""
 }
 
 type GetProbeInfoRequest struct {
-	ProbeID *proto1.UUID `protobuf:"bytes,1,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
+	ProbeIDs []string `protobuf:"bytes,1,rep,name=probe_ids,json=probeIds,proto3" json:"probe_ids,omitempty"`
 }
 
 func (m *GetProbeInfoRequest) Reset()      { *m = GetProbeInfoRequest{} }
@@ -655,15 +663,15 @@ func (m *GetProbeInfoRequest) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetProbeInfoRequest proto.InternalMessageInfo
 
-func (m *GetProbeInfoRequest) GetProbeID() *proto1.UUID {
+func (m *GetProbeInfoRequest) GetProbeIDs() []string {
 	if m != nil {
-		return m.ProbeID
+		return m.ProbeIDs
 	}
 	return nil
 }
 
 type GetProbeInfoResponse struct {
-	Status *proto3.Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	Probes []*GetProbeInfoResponse_ProbeState `protobuf:"bytes,1,rep,name=probes,proto3" json:"probes,omitempty"`
 }
 
 func (m *GetProbeInfoResponse) Reset()      { *m = GetProbeInfoResponse{} }
@@ -698,7 +706,152 @@ func (m *GetProbeInfoResponse) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_GetProbeInfoResponse proto.InternalMessageInfo
 
-func (m *GetProbeInfoResponse) GetStatus() *proto3.Status {
+func (m *GetProbeInfoResponse) GetProbes() []*GetProbeInfoResponse_ProbeState {
+	if m != nil {
+		return m.Probes
+	}
+	return nil
+}
+
+type GetProbeInfoResponse_ProbeState struct {
+	ProbeIDs string                `protobuf:"bytes,1,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
+	State    proto3.LifeCycleState `protobuf:"varint,2,opt,name=state,proto3,enum=pl.statuspb.LifeCycleState" json:"state,omitempty"`
+	Status   *proto3.Status        `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+}
+
+func (m *GetProbeInfoResponse_ProbeState) Reset()      { *m = GetProbeInfoResponse_ProbeState{} }
+func (*GetProbeInfoResponse_ProbeState) ProtoMessage() {}
+func (*GetProbeInfoResponse_ProbeState) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bfe4468195647430, []int{13, 0}
+}
+func (m *GetProbeInfoResponse_ProbeState) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *GetProbeInfoResponse_ProbeState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_GetProbeInfoResponse_ProbeState.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *GetProbeInfoResponse_ProbeState) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetProbeInfoResponse_ProbeState.Merge(m, src)
+}
+func (m *GetProbeInfoResponse_ProbeState) XXX_Size() int {
+	return m.Size()
+}
+func (m *GetProbeInfoResponse_ProbeState) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetProbeInfoResponse_ProbeState.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetProbeInfoResponse_ProbeState proto.InternalMessageInfo
+
+func (m *GetProbeInfoResponse_ProbeState) GetProbeIDs() string {
+	if m != nil {
+		return m.ProbeIDs
+	}
+	return ""
+}
+
+func (m *GetProbeInfoResponse_ProbeState) GetState() proto3.LifeCycleState {
+	if m != nil {
+		return m.State
+	}
+	return proto3.UNKNOWN_STATE
+}
+
+func (m *GetProbeInfoResponse_ProbeState) GetStatus() *proto3.Status {
+	if m != nil {
+		return m.Status
+	}
+	return nil
+}
+
+type EvictProbeRequest struct {
+	ProbeID string `protobuf:"bytes,1,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
+}
+
+func (m *EvictProbeRequest) Reset()      { *m = EvictProbeRequest{} }
+func (*EvictProbeRequest) ProtoMessage() {}
+func (*EvictProbeRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bfe4468195647430, []int{14}
+}
+func (m *EvictProbeRequest) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *EvictProbeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_EvictProbeRequest.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *EvictProbeRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EvictProbeRequest.Merge(m, src)
+}
+func (m *EvictProbeRequest) XXX_Size() int {
+	return m.Size()
+}
+func (m *EvictProbeRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_EvictProbeRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EvictProbeRequest proto.InternalMessageInfo
+
+func (m *EvictProbeRequest) GetProbeID() string {
+	if m != nil {
+		return m.ProbeID
+	}
+	return ""
+}
+
+type EvictProbeResponse struct {
+	Status *proto3.Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+}
+
+func (m *EvictProbeResponse) Reset()      { *m = EvictProbeResponse{} }
+func (*EvictProbeResponse) ProtoMessage() {}
+func (*EvictProbeResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_bfe4468195647430, []int{15}
+}
+func (m *EvictProbeResponse) XXX_Unmarshal(b []byte) error {
+	return m.Unmarshal(b)
+}
+func (m *EvictProbeResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	if deterministic {
+		return xxx_messageInfo_EvictProbeResponse.Marshal(b, m, deterministic)
+	} else {
+		b = b[:cap(b)]
+		n, err := m.MarshalToSizedBuffer(b)
+		if err != nil {
+			return nil, err
+		}
+		return b[:n], nil
+	}
+}
+func (m *EvictProbeResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_EvictProbeResponse.Merge(m, src)
+}
+func (m *EvictProbeResponse) XXX_Size() int {
+	return m.Size()
+}
+func (m *EvictProbeResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_EvictProbeResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_EvictProbeResponse proto.InternalMessageInfo
+
+func (m *EvictProbeResponse) GetStatus() *proto3.Status {
 	if m != nil {
 		return m.Status
 	}
@@ -721,6 +874,9 @@ func init() {
 	proto.RegisterType((*RegisterProbeResponse)(nil), "pl.vizier.services.metadata.RegisterProbeResponse")
 	proto.RegisterType((*GetProbeInfoRequest)(nil), "pl.vizier.services.metadata.GetProbeInfoRequest")
 	proto.RegisterType((*GetProbeInfoResponse)(nil), "pl.vizier.services.metadata.GetProbeInfoResponse")
+	proto.RegisterType((*GetProbeInfoResponse_ProbeState)(nil), "pl.vizier.services.metadata.GetProbeInfoResponse.ProbeState")
+	proto.RegisterType((*EvictProbeRequest)(nil), "pl.vizier.services.metadata.EvictProbeRequest")
+	proto.RegisterType((*EvictProbeResponse)(nil), "pl.vizier.services.metadata.EvictProbeResponse")
 }
 
 func init() {
@@ -728,66 +884,74 @@ func init() {
 }
 
 var fileDescriptor_bfe4468195647430 = []byte{
-	// 932 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x56, 0x4f, 0x6f, 0x1b, 0x45,
-	0x14, 0xdf, 0x4d, 0x69, 0x92, 0xbe, 0x10, 0xdc, 0x4e, 0x13, 0x29, 0xb8, 0xd2, 0x36, 0xec, 0x01,
-	0xa1, 0xa6, 0x99, 0xa5, 0x41, 0xe0, 0x03, 0xa8, 0x82, 0xd4, 0x52, 0x64, 0x09, 0x50, 0xe5, 0xd0,
-	0x0b, 0x1c, 0xac, 0xd9, 0xdd, 0xc9, 0x66, 0x24, 0x7b, 0x77, 0x99, 0x19, 0x57, 0x0d, 0x08, 0x01,
-	0x07, 0x2e, 0x9c, 0xf8, 0x18, 0x7c, 0x12, 0xc4, 0x31, 0xc7, 0x9e, 0x10, 0x71, 0x24, 0xc4, 0xb1,
-	0x1f, 0x01, 0xcd, 0xbf, 0xed, 0xae, 0xb1, 0x62, 0xbb, 0x87, 0x9e, 0x32, 0x33, 0xfb, 0x7e, 0xbf,
-	0xf7, 0xde, 0xef, 0xfd, 0x89, 0xe1, 0x43, 0xc1, 0x93, 0xe8, 0x29, 0xfb, 0x8e, 0x51, 0x1e, 0x09,
-	0xca, 0x9f, 0xb2, 0x84, 0x8a, 0x68, 0x44, 0x25, 0x49, 0x89, 0x24, 0xd5, 0xa1, 0x8c, 0xdd, 0x47,
-	0x5c, 0xf2, 0x42, 0x16, 0xe8, 0x4e, 0x39, 0xc4, 0x06, 0x85, 0x1d, 0x0a, 0x3b, 0xe3, 0xf6, 0x7e,
-	0xc6, 0xe4, 0xe9, 0x38, 0xc6, 0x49, 0x31, 0x8a, 0xb2, 0x22, 0x2b, 0x22, 0x8d, 0x89, 0xc7, 0x27,
-	0xfa, 0xa6, 0x2f, 0xfa, 0x64, 0xb8, 0xda, 0xbb, 0x2a, 0x84, 0xa4, 0x18, 0x8d, 0x8a, 0x3c, 0x1a,
-	0x8f, 0x59, 0x6a, 0xcc, 0xf5, 0xd1, 0x5a, 0x84, 0xca, 0x42, 0x92, 0x78, 0x48, 0x07, 0x42, 0x16,
-	0x9c, 0x5a, 0x0b, 0x91, 0x9c, 0xd2, 0x11, 0xb1, 0x36, 0x1d, 0xcd, 0x42, 0x78, 0x5e, 0xc8, 0xa8,
-	0x1c, 0x92, 0x3c, 0xa7, 0x3c, 0x4a, 0x99, 0x90, 0x9c, 0xc5, 0x63, 0x49, 0xd3, 0x32, 0xae, 0xdf,
-	0x06, 0xca, 0xc2, 0x02, 0xf7, 0x6b, 0x0a, 0x8c, 0xa8, 0x10, 0x24, 0xd3, 0x0a, 0x98, 0x43, 0x19,
-	0x57, 0x47, 0x6b, 0x8e, 0x67, 0x09, 0x26, 0x4e, 0x09, 0xa7, 0x69, 0x44, 0x32, 0x9a, 0xcb, 0x32,
-	0x36, 0x7f, 0xeb, 0xf4, 0x42, 0x32, 0x3e, 0x64, 0x79, 0x16, 0xa5, 0x67, 0x39, 0x19, 0xb1, 0x64,
-	0x20, 0x39, 0x49, 0xd4, 0x9d, 0xf1, 0x68, 0x58, 0x64, 0x2c, 0x21, 0xc3, 0x7a, 0xaa, 0x56, 0x8c,
-	0x98, 0x88, 0x2a, 0x55, 0x49, 0xe4, 0xd8, 0x86, 0x10, 0x76, 0x61, 0xeb, 0x58, 0xa7, 0x7e, 0x78,
-	0xf6, 0x99, 0xf2, 0xd4, 0xa7, 0xdf, 0x8e, 0xa9, 0x90, 0xe8, 0x3e, 0xdc, 0xd0, 0x9e, 0x07, 0x2c,
-	0x15, 0x3b, 0xfe, 0xee, 0xb5, 0xf7, 0x36, 0x0e, 0x5a, 0xb8, 0x1c, 0x62, 0xa5, 0x64, 0x19, 0xe3,
-	0x27, 0x4f, 0x7a, 0xdd, 0xfe, 0xba, 0xb6, 0xe8, 0xa5, 0x22, 0xfc, 0x65, 0x05, 0xb6, 0xa7, 0x68,
-	0x44, 0x59, 0xe4, 0x82, 0xa2, 0x53, 0x68, 0x19, 0x69, 0x07, 0xf1, 0xd9, 0x40, 0xdb, 0x5b, 0xb6,
-	0x4f, 0xf1, 0x15, 0x65, 0xc7, 0x33, 0xc9, 0xa6, 0x5e, 0x37, 0x45, 0xfd, 0xda, 0xfe, 0xd9, 0x87,
-	0xcd, 0x86, 0x01, 0xea, 0xc0, 0xba, 0xcb, 0x61, 0xc7, 0xdf, 0xf5, 0x67, 0xa4, 0x70, 0xb8, 0x31,
-	0xf9, 0xeb, 0xee, 0x9a, 0xb6, 0xee, 0x75, 0xfb, 0x6b, 0x36, 0x1f, 0xd4, 0x81, 0x55, 0xc3, 0xbd,
-	0xb3, 0xa2, 0x61, 0x77, 0x15, 0xac, 0xd6, 0x33, 0xd8, 0x7c, 0x2d, 0x63, 0x1b, 0x51, 0xdf, 0x9a,
-	0x87, 0x2d, 0x17, 0x82, 0x95, 0x31, 0xec, 0xc1, 0x5b, 0xee, 0xc1, 0x0a, 0xf2, 0xca, 0xdc, 0x08,
-	0x6e, 0x9a, 0x40, 0xf3, 0x93, 0xc2, 0xd1, 0x1f, 0xc3, 0xad, 0xda, 0x9b, 0xf5, 0xf0, 0x10, 0xde,
-	0x60, 0xf9, 0x49, 0x61, 0x75, 0xbe, 0x77, 0xa5, 0xce, 0x1a, 0xfd, 0x85, 0xbd, 0xf5, 0x35, 0x2e,
-	0xbc, 0xf0, 0x61, 0xb3, 0xf1, 0x8e, 0x3e, 0x81, 0xeb, 0xae, 0x74, 0x2a, 0xe4, 0x77, 0x67, 0x51,
-	0x9a, 0xb6, 0xc5, 0xa6, 0x5d, 0x4d, 0x81, 0x0c, 0x08, 0x75, 0x61, 0xd5, 0xb4, 0x9c, 0xcd, 0xf8,
-	0xfe, 0x62, 0xf0, 0x63, 0x8d, 0xe9, 0x5b, 0x2c, 0xfa, 0x1c, 0x36, 0xcc, 0x44, 0x0e, 0x74, 0x72,
-	0xd7, 0x34, 0xd5, 0x9e, 0xa2, 0x32, 0xcf, 0xd8, 0x0e, 0x2a, 0x6e, 0x0c, 0x2a, 0x7e, 0xa4, 0x3f,
-	0x6a, 0x7d, 0x20, 0xa9, 0xce, 0xe1, 0x1d, 0x78, 0x5b, 0x3b, 0xf9, 0x4a, 0x09, 0x5f, 0xe5, 0x6f,
-	0x55, 0xfd, 0xc3, 0x07, 0xf4, 0xff, 0xaf, 0xaf, 0xbf, 0x9d, 0xd0, 0x43, 0xb8, 0xa1, 0x3c, 0xd7,
-	0x33, 0x7e, 0xa7, 0x26, 0x5e, 0xb5, 0x4d, 0xb4, 0xc7, 0x2e, 0x91, 0x44, 0xe7, 0xb9, 0x9e, 0xda,
-	0x53, 0x78, 0x06, 0xed, 0x59, 0x59, 0xda, 0x3e, 0xf9, 0x06, 0x6e, 0xb9, 0x3e, 0x98, 0x1e, 0xce,
-	0x68, 0x7e, 0xd3, 0x34, 0x39, 0x5b, 0xee, 0xa3, 0x9d, 0xbd, 0x90, 0xc0, 0x56, 0x9f, 0x66, 0x4c,
-	0x48, 0xca, 0x1f, 0xf3, 0x22, 0xa6, 0x6e, 0xaf, 0xf4, 0x60, 0xad, 0xe4, 0x45, 0xc6, 0xc9, 0xc8,
-	0x6a, 0xa8, 0x5d, 0xb9, 0x9d, 0x86, 0xa7, 0x76, 0x1a, 0x66, 0x1c, 0xbb, 0x9d, 0xf6, 0xd8, 0xc0,
-	0xfa, 0x0e, 0x1f, 0xfe, 0x00, 0xdb, 0x53, 0x2e, 0x6c, 0x62, 0x7b, 0x55, 0xc3, 0x19, 0x17, 0xb7,
-	0x8d, 0x0b, 0xf5, 0xa2, 0x34, 0x6e, 0xf6, 0x55, 0x07, 0xd6, 0x4b, 0x85, 0x56, 0x55, 0x5d, 0xb9,
-	0xa2, 0xaa, 0xda, 0x85, 0xaa, 0xaa, 0xb6, 0xee, 0xa5, 0xe1, 0x97, 0x70, 0xfb, 0x88, 0x4a, 0xf3,
-	0xfc, 0x72, 0x24, 0x1b, 0x7c, 0xfe, 0x32, 0x7c, 0x8f, 0x60, 0xab, 0xc9, 0xf7, 0x0a, 0xd9, 0x1c,
-	0xfc, 0x73, 0x1d, 0x5a, 0xae, 0x28, 0xc7, 0xa6, 0x70, 0x28, 0x03, 0x38, 0xa2, 0xd2, 0xb4, 0x96,
-	0x40, 0xf7, 0x16, 0xd8, 0xbb, 0x36, 0x97, 0xf6, 0xde, 0x42, 0xb6, 0x26, 0xce, 0xd0, 0x43, 0xdf,
-	0xc3, 0xcd, 0xca, 0x91, 0xdb, 0xc1, 0x0f, 0x96, 0x59, 0xf3, 0xc6, 0xeb, 0xc1, 0xf2, 0xff, 0x19,
-	0x42, 0x0f, 0x15, 0xf0, 0xe6, 0x11, 0x95, 0xd5, 0x36, 0x44, 0xfb, 0xf3, 0x5b, 0xb8, 0x56, 0xb6,
-	0x36, 0x5e, 0xd4, 0xbc, 0x72, 0xf8, 0xab, 0x0f, 0xdb, 0xce, 0x63, 0x73, 0x51, 0x7c, 0xb4, 0xec,
-	0xf4, 0xd8, 0x18, 0x3a, 0x4b, 0xe3, 0xaa, 0x60, 0x9e, 0xc1, 0x66, 0x63, 0x16, 0xe6, 0xe8, 0x3e,
-	0x6b, 0x34, 0xe7, 0xe8, 0x3e, 0x73, 0xd4, 0x42, 0x0f, 0x8d, 0xb5, 0xee, 0x55, 0xdb, 0xa2, 0xf7,
-	0xaf, 0x64, 0x99, 0x31, 0x31, 0xed, 0x07, 0x4b, 0x20, 0x9c, 0xdb, 0xc3, 0x1f, 0xcf, 0x2f, 0x02,
-	0xef, 0xf9, 0x45, 0xe0, 0xbd, 0xb8, 0x08, 0xfc, 0x9f, 0x26, 0x81, 0xff, 0xfb, 0x24, 0xf0, 0xff,
-	0x9c, 0x04, 0xfe, 0xf9, 0x24, 0xf0, 0xff, 0x9e, 0x04, 0xfe, 0xbf, 0x93, 0xc0, 0x7b, 0x31, 0x09,
-	0xfc, 0xdf, 0x2e, 0x03, 0xef, 0xfc, 0x32, 0xf0, 0x9e, 0x5f, 0x06, 0xde, 0xd7, 0xbd, 0x92, 0x3d,
-	0x63, 0x74, 0x48, 0x62, 0x81, 0x09, 0x8b, 0xaa, 0x4b, 0xb4, 0xe0, 0x0f, 0xd7, 0x8f, 0x5f, 0x1e,
-	0xe3, 0x55, 0xfd, 0xfb, 0xe9, 0x83, 0xff, 0x02, 0x00, 0x00, 0xff, 0xff, 0xb9, 0x82, 0xb0, 0x28,
-	0xf5, 0x0a, 0x00, 0x00,
+	// 1072 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xbc, 0x57, 0xcd, 0x4e, 0x1c, 0x47,
+	0x10, 0xde, 0x81, 0x18, 0x76, 0x0b, 0x63, 0x4c, 0x1b, 0x24, 0xb2, 0x28, 0x03, 0x99, 0x03, 0x49,
+	0x8c, 0xe9, 0x09, 0x44, 0x09, 0x07, 0x5b, 0x96, 0x8d, 0x89, 0xd0, 0x4a, 0x4e, 0x64, 0x0d, 0xf6,
+	0x25, 0x39, 0xac, 0x7a, 0x66, 0x9a, 0xa5, 0xa5, 0xf9, 0xcb, 0x74, 0x2f, 0x32, 0xc9, 0x21, 0x8e,
+	0x94, 0x5c, 0x72, 0xca, 0x25, 0xef, 0x90, 0x27, 0x89, 0x72, 0xe4, 0x16, 0x9f, 0xac, 0xb0, 0x5c,
+	0x72, 0xf4, 0x23, 0x44, 0xd3, 0x3f, 0xc3, 0x0c, 0xac, 0x60, 0xd7, 0x87, 0x9c, 0xe8, 0xae, 0xae,
+	0xfa, 0xaa, 0xea, 0xab, 0x9f, 0x61, 0xe1, 0x73, 0x9e, 0x07, 0xee, 0x11, 0xfb, 0x9e, 0xd1, 0xdc,
+	0xe5, 0x34, 0x3f, 0x62, 0x01, 0xe5, 0x6e, 0x4c, 0x05, 0x09, 0x89, 0x20, 0xe5, 0x21, 0xf3, 0xcd,
+	0x23, 0xce, 0xf2, 0x54, 0xa4, 0x68, 0x39, 0x8b, 0xb0, 0xb2, 0xc2, 0xc6, 0x0a, 0x1b, 0xe5, 0xf6,
+	0x46, 0x8f, 0x89, 0xc3, 0xbe, 0x8f, 0x83, 0x34, 0x76, 0x7b, 0x69, 0x2f, 0x75, 0xa5, 0x8d, 0xdf,
+	0x3f, 0x90, 0x37, 0x79, 0x91, 0x27, 0x85, 0xd5, 0x5e, 0x2d, 0x42, 0x08, 0xd2, 0x38, 0x4e, 0x13,
+	0xb7, 0xdf, 0x67, 0xa1, 0x52, 0x97, 0x47, 0xad, 0xe1, 0x14, 0x1a, 0x82, 0xf8, 0x11, 0xed, 0x72,
+	0x91, 0xe6, 0x54, 0x6b, 0xf0, 0xe0, 0x90, 0xc6, 0x44, 0xeb, 0x6c, 0x4b, 0x14, 0x92, 0x27, 0xa9,
+	0x70, 0xb3, 0x88, 0x24, 0x09, 0xcd, 0xdd, 0x90, 0x71, 0x91, 0x33, 0xbf, 0x2f, 0x68, 0x98, 0xf9,
+	0xd5, 0x5b, 0xb7, 0xd0, 0xd0, 0x86, 0x1b, 0x15, 0x06, 0x62, 0xca, 0x39, 0xe9, 0x49, 0x06, 0xd4,
+	0x21, 0xf3, 0xcb, 0xa3, 0x56, 0xc7, 0xc3, 0x08, 0xe3, 0x87, 0x24, 0xa7, 0xa1, 0x4b, 0x7a, 0x34,
+	0x11, 0x99, 0xaf, 0xfe, 0x56, 0xe1, 0xb9, 0x60, 0x79, 0xc4, 0x92, 0x9e, 0x1b, 0x1e, 0x27, 0x24,
+	0x66, 0x41, 0x57, 0xe4, 0x24, 0x28, 0xee, 0x2c, 0x77, 0xa3, 0xb4, 0xc7, 0x02, 0x12, 0x55, 0x53,
+	0xd5, 0x64, 0xf8, 0x84, 0x97, 0xa9, 0x0a, 0x22, 0xfa, 0x3a, 0x04, 0x67, 0x17, 0x16, 0xf6, 0x65,
+	0xea, 0x3b, 0xc7, 0x8f, 0x0b, 0x4f, 0x1e, 0xfd, 0xae, 0x4f, 0xb9, 0x40, 0xf7, 0xa0, 0x25, 0x3d,
+	0x77, 0x59, 0xc8, 0x97, 0xac, 0xd5, 0xc9, 0x8f, 0x67, 0xb6, 0xe6, 0x70, 0x16, 0xe1, 0x82, 0xc9,
+	0xcc, 0xc7, 0x2f, 0x5e, 0x74, 0x76, 0xbd, 0xa6, 0xd4, 0xe8, 0x84, 0xdc, 0xf9, 0x65, 0x02, 0x16,
+	0x2f, 0xc0, 0xf0, 0x2c, 0x4d, 0x38, 0x45, 0x87, 0x30, 0xa7, 0xa8, 0xed, 0xfa, 0xc7, 0x5d, 0xa9,
+	0xaf, 0xd1, 0x1e, 0xe1, 0x2b, 0xca, 0x8e, 0x87, 0x82, 0x5d, 0x90, 0xce, 0xf2, 0xea, 0xb5, 0xfd,
+	0x93, 0x05, 0xb3, 0x35, 0x05, 0xb4, 0x0d, 0x4d, 0x93, 0xc3, 0x92, 0xb5, 0x6a, 0x0d, 0x49, 0x61,
+	0x67, 0x66, 0xf0, 0x66, 0x65, 0x5a, 0x6a, 0x77, 0x76, 0xbd, 0x69, 0x9d, 0x0f, 0xda, 0x86, 0x29,
+	0x85, 0xbd, 0x34, 0x21, 0xcd, 0x56, 0x0a, 0xb3, 0x4a, 0xcf, 0x60, 0xf5, 0x9a, 0xf9, 0x3a, 0x22,
+	0x4f, 0xab, 0x3b, 0x73, 0x26, 0x04, 0x4d, 0xa3, 0xd3, 0x81, 0x5b, 0x46, 0xa0, 0x09, 0x79, 0x67,
+	0x6c, 0x04, 0xb7, 0x55, 0xa0, 0xc9, 0x41, 0x6a, 0xe0, 0xf7, 0x61, 0xbe, 0x22, 0xd3, 0x1e, 0x1e,
+	0xc2, 0x7b, 0x2c, 0x39, 0x48, 0x35, 0xcf, 0x77, 0xaf, 0xe4, 0x59, 0x5a, 0x7f, 0xa5, 0x6f, 0x9e,
+	0xb4, 0x73, 0x4e, 0x2d, 0x98, 0xad, 0xc9, 0xd1, 0x03, 0xb8, 0x61, 0x4a, 0x57, 0x84, 0xbc, 0x36,
+	0x0c, 0x52, 0xb5, 0x2d, 0x56, 0xed, 0xaa, 0x0a, 0xa4, 0x8c, 0xd0, 0x2e, 0x4c, 0xa9, 0x96, 0xd3,
+	0x19, 0xdf, 0x1b, 0xcd, 0x7c, 0x5f, 0xda, 0x78, 0xda, 0x16, 0x3d, 0x85, 0x19, 0x35, 0x91, 0x5d,
+	0x99, 0xdc, 0xa4, 0x84, 0x5a, 0x2f, 0xa0, 0x94, 0x18, 0xeb, 0x41, 0xc5, 0xb5, 0x41, 0xc5, 0x4f,
+	0xe4, 0xa3, 0xe4, 0x07, 0x82, 0xf2, 0xec, 0x2c, 0xc3, 0xfb, 0xd2, 0xc9, 0xf3, 0x82, 0xf8, 0x32,
+	0x7f, 0xcd, 0xea, 0x9f, 0x16, 0xa0, 0xcb, 0xaf, 0xff, 0x7f, 0x3b, 0xa1, 0x87, 0xd0, 0x2a, 0x3c,
+	0x57, 0x33, 0xfe, 0xb0, 0x42, 0x5e, 0xb9, 0x4d, 0xa4, 0xc7, 0x5d, 0x22, 0x88, 0xcc, 0xb3, 0x19,
+	0xea, 0x93, 0x73, 0x0c, 0xed, 0x61, 0x59, 0xea, 0x3e, 0xf9, 0x16, 0xe6, 0x4d, 0x1f, 0x5c, 0x1c,
+	0x4e, 0xf7, 0xfa, 0xa6, 0xa9, 0x63, 0xce, 0x99, 0x47, 0x3d, 0x7b, 0xce, 0x2b, 0x0b, 0x16, 0x3c,
+	0xda, 0x63, 0x5c, 0xd0, 0xfc, 0x59, 0x9e, 0xfa, 0xd4, 0x2c, 0x96, 0x0e, 0x4c, 0x67, 0x79, 0xda,
+	0xcb, 0x49, 0xac, 0x49, 0x94, 0xbe, 0xcc, 0x52, 0xc3, 0x17, 0x96, 0x1a, 0x66, 0x39, 0x36, 0x4b,
+	0xed, 0x99, 0x32, 0xf3, 0x8c, 0x3d, 0xfa, 0x00, 0x20, 0x2b, 0xa0, 0xbb, 0x09, 0x89, 0xa9, 0xe4,
+	0xb6, 0xe5, 0xb5, 0xa4, 0xe4, 0x6b, 0x12, 0x53, 0x27, 0x82, 0xc5, 0x0b, 0x11, 0xe8, 0xc4, 0xd7,
+	0xcb, 0x86, 0x54, 0x11, 0xdc, 0x51, 0x11, 0x14, 0x92, 0xa2, 0x06, 0xf5, 0xbe, 0x5b, 0x83, 0xa6,
+	0x72, 0xc2, 0x42, 0xe5, 0x42, 0x15, 0x59, 0x22, 0x16, 0x45, 0x96, 0x8f, 0x9d, 0xd0, 0x79, 0x04,
+	0x77, 0xf6, 0xa8, 0x50, 0xe2, 0xf3, 0x09, 0x45, 0x9f, 0x40, 0xcb, 0x98, 0xab, 0x3d, 0xda, 0xda,
+	0xb9, 0x39, 0x78, 0xb3, 0xd2, 0xd4, 0xf6, 0xdc, 0x6b, 0x6a, 0x00, 0xee, 0xfc, 0x3c, 0x01, 0x0b,
+	0x75, 0x08, 0x1d, 0xef, 0x73, 0x98, 0x92, 0x4a, 0x66, 0x11, 0x3f, 0xb8, 0xb2, 0x3a, 0xc3, 0x20,
+	0xb0, 0x94, 0x14, 0x99, 0x51, 0x4f, 0x63, 0xb5, 0x7f, 0xb7, 0x00, 0xce, 0xc5, 0xe8, 0xa3, 0x4a,
+	0x9e, 0x96, 0xcc, 0xb3, 0x1e, 0xa7, 0x49, 0x14, 0x6d, 0xc2, 0x8d, 0x82, 0x1a, 0x45, 0xf8, 0xad,
+	0xad, 0xe5, 0x1a, 0x79, 0x4f, 0xd9, 0x01, 0x7d, 0x72, 0x1c, 0x44, 0xda, 0x97, 0xd2, 0xac, 0x10,
+	0x3e, 0x79, 0x2d, 0xe1, 0xce, 0x7d, 0x98, 0xff, 0xf2, 0x88, 0x05, 0xa2, 0xd6, 0x35, 0x6b, 0x97,
+	0xa2, 0x1b, 0x5e, 0x85, 0xc7, 0x80, 0xaa, 0xc6, 0xef, 0x50, 0xf0, 0xad, 0xbf, 0xa7, 0x60, 0xce,
+	0xf4, 0xf5, 0xbe, 0x62, 0x17, 0xf5, 0x00, 0xf6, 0xa8, 0x50, 0xd3, 0xc9, 0xd1, 0xdd, 0x11, 0x3e,
+	0x5d, 0x3a, 0xf0, 0xf6, 0xfa, 0x48, 0xba, 0x2a, 0x4e, 0xa7, 0x81, 0x7e, 0x80, 0xdb, 0xa5, 0x23,
+	0xf3, 0x19, 0xdb, 0x1c, 0xe7, 0x4b, 0xa9, 0xbc, 0x6e, 0x8d, 0xff, 0x71, 0x75, 0x1a, 0x28, 0x85,
+	0x9b, 0x7b, 0x54, 0x94, 0x1f, 0x14, 0xb4, 0x71, 0xfd, 0x16, 0xa8, 0xb4, 0x7a, 0x1b, 0x8f, 0xaa,
+	0x5e, 0x3a, 0xfc, 0xd5, 0x82, 0x45, 0xe3, 0xb1, 0xbe, 0x6b, 0xbf, 0x18, 0x77, 0x01, 0xe9, 0x18,
+	0xb6, 0xc7, 0xb6, 0x2b, 0x83, 0x79, 0x09, 0xb3, 0xb5, 0x75, 0x71, 0x0d, 0xef, 0xc3, 0x96, 0xdb,
+	0x35, 0xbc, 0x0f, 0xdd, 0x46, 0x4e, 0x03, 0xf5, 0x25, 0xef, 0xe5, 0xd0, 0xa2, 0x4f, 0xc7, 0x98,
+	0x6f, 0xe5, 0x77, 0x73, 0xec, 0x8d, 0x20, 0xcb, 0x0d, 0xe7, 0xb3, 0x82, 0xae, 0xae, 0xde, 0xa5,
+	0x89, 0x6c, 0xbb, 0x23, 0xeb, 0x1b, 0x87, 0x3b, 0x3f, 0x9e, 0x9c, 0xda, 0x8d, 0xd7, 0xa7, 0x76,
+	0xe3, 0xed, 0xa9, 0x6d, 0xbd, 0x1a, 0xd8, 0xd6, 0x1f, 0x03, 0xdb, 0xfa, 0x6b, 0x60, 0x5b, 0x27,
+	0x03, 0xdb, 0xfa, 0x67, 0x60, 0x5b, 0xff, 0x0e, 0xec, 0xc6, 0xdb, 0x81, 0x6d, 0xfd, 0x76, 0x66,
+	0x37, 0x4e, 0xce, 0xec, 0xc6, 0xeb, 0x33, 0xbb, 0xf1, 0x4d, 0x27, 0x63, 0x2f, 0x19, 0x8d, 0x88,
+	0xcf, 0x31, 0x61, 0x6e, 0x79, 0x71, 0x47, 0xfc, 0xb1, 0x71, 0xff, 0xfc, 0xe8, 0x4f, 0xc9, 0xff,
+	0x79, 0x3f, 0xfb, 0x2f, 0x00, 0x00, 0xff, 0xff, 0x8e, 0x38, 0x26, 0x1f, 0xa9, 0x0c, 0x00, 0x00,
 }
 
 func (this *SchemaByAgentRequest) Equal(that interface{}) bool {
@@ -1102,6 +1266,9 @@ func (this *RegisterProbeRequest) Equal(that interface{}) bool {
 	if !this.Program.Equal(that1.Program) {
 		return false
 	}
+	if this.ProbeName != that1.ProbeName {
+		return false
+	}
 	return true
 }
 func (this *RegisterProbeResponse) Equal(that interface{}) bool {
@@ -1126,7 +1293,7 @@ func (this *RegisterProbeResponse) Equal(that interface{}) bool {
 	if !this.Status.Equal(that1.Status) {
 		return false
 	}
-	if !this.ProbeID.Equal(that1.ProbeID) {
+	if this.ProbeID != that1.ProbeID {
 		return false
 	}
 	return true
@@ -1150,8 +1317,13 @@ func (this *GetProbeInfoRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.ProbeID.Equal(that1.ProbeID) {
+	if len(this.ProbeIDs) != len(that1.ProbeIDs) {
 		return false
+	}
+	for i := range this.ProbeIDs {
+		if this.ProbeIDs[i] != that1.ProbeIDs[i] {
+			return false
+		}
 	}
 	return true
 }
@@ -1163,6 +1335,89 @@ func (this *GetProbeInfoResponse) Equal(that interface{}) bool {
 	that1, ok := that.(*GetProbeInfoResponse)
 	if !ok {
 		that2, ok := that.(GetProbeInfoResponse)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Probes) != len(that1.Probes) {
+		return false
+	}
+	for i := range this.Probes {
+		if !this.Probes[i].Equal(that1.Probes[i]) {
+			return false
+		}
+	}
+	return true
+}
+func (this *GetProbeInfoResponse_ProbeState) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*GetProbeInfoResponse_ProbeState)
+	if !ok {
+		that2, ok := that.(GetProbeInfoResponse_ProbeState)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.ProbeIDs != that1.ProbeIDs {
+		return false
+	}
+	if this.State != that1.State {
+		return false
+	}
+	if !this.Status.Equal(that1.Status) {
+		return false
+	}
+	return true
+}
+func (this *EvictProbeRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*EvictProbeRequest)
+	if !ok {
+		that2, ok := that.(EvictProbeRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.ProbeID != that1.ProbeID {
+		return false
+	}
+	return true
+}
+func (this *EvictProbeResponse) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*EvictProbeResponse)
+	if !ok {
+		that2, ok := that.(EvictProbeResponse)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1321,11 +1576,12 @@ func (this *RegisterProbeRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 5)
+	s := make([]string, 0, 6)
 	s = append(s, "&metadatapb.RegisterProbeRequest{")
 	if this.Program != nil {
 		s = append(s, "Program: "+fmt.Sprintf("%#v", this.Program)+",\n")
 	}
+	s = append(s, "ProbeName: "+fmt.Sprintf("%#v", this.ProbeName)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1338,9 +1594,7 @@ func (this *RegisterProbeResponse) GoString() string {
 	if this.Status != nil {
 		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
 	}
-	if this.ProbeID != nil {
-		s = append(s, "ProbeID: "+fmt.Sprintf("%#v", this.ProbeID)+",\n")
-	}
+	s = append(s, "ProbeID: "+fmt.Sprintf("%#v", this.ProbeID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1350,9 +1604,7 @@ func (this *GetProbeInfoRequest) GoString() string {
 	}
 	s := make([]string, 0, 5)
 	s = append(s, "&metadatapb.GetProbeInfoRequest{")
-	if this.ProbeID != nil {
-		s = append(s, "ProbeID: "+fmt.Sprintf("%#v", this.ProbeID)+",\n")
-	}
+	s = append(s, "ProbeIDs: "+fmt.Sprintf("%#v", this.ProbeIDs)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -1362,6 +1614,42 @@ func (this *GetProbeInfoResponse) GoString() string {
 	}
 	s := make([]string, 0, 5)
 	s = append(s, "&metadatapb.GetProbeInfoResponse{")
+	if this.Probes != nil {
+		s = append(s, "Probes: "+fmt.Sprintf("%#v", this.Probes)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *GetProbeInfoResponse_ProbeState) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 7)
+	s = append(s, "&metadatapb.GetProbeInfoResponse_ProbeState{")
+	s = append(s, "ProbeIDs: "+fmt.Sprintf("%#v", this.ProbeIDs)+",\n")
+	s = append(s, "State: "+fmt.Sprintf("%#v", this.State)+",\n")
+	if this.Status != nil {
+		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
+	}
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *EvictProbeRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&metadatapb.EvictProbeRequest{")
+	s = append(s, "ProbeID: "+fmt.Sprintf("%#v", this.ProbeID)+",\n")
+	s = append(s, "}")
+	return strings.Join(s, "")
+}
+func (this *EvictProbeResponse) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := make([]string, 0, 5)
+	s = append(s, "&metadatapb.EvictProbeResponse{")
 	if this.Status != nil {
 		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
 	}
@@ -1395,6 +1683,7 @@ type MetadataServiceClient interface {
 	GetAgentTableMetadata(ctx context.Context, in *AgentTableMetadataRequest, opts ...grpc.CallOption) (*AgentTableMetadataResponse, error)
 	RegisterProbe(ctx context.Context, in *RegisterProbeRequest, opts ...grpc.CallOption) (*RegisterProbeResponse, error)
 	GetProbeInfo(ctx context.Context, in *GetProbeInfoRequest, opts ...grpc.CallOption) (*GetProbeInfoResponse, error)
+	EvictProbe(ctx context.Context, in *EvictProbeRequest, opts ...grpc.CallOption) (*EvictProbeResponse, error)
 }
 
 type metadataServiceClient struct {
@@ -1459,6 +1748,15 @@ func (c *metadataServiceClient) GetProbeInfo(ctx context.Context, in *GetProbeIn
 	return out, nil
 }
 
+func (c *metadataServiceClient) EvictProbe(ctx context.Context, in *EvictProbeRequest, opts ...grpc.CallOption) (*EvictProbeResponse, error) {
+	out := new(EvictProbeResponse)
+	err := c.cc.Invoke(ctx, "/pl.vizier.services.metadata.MetadataService/EvictProbe", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // MetadataServiceServer is the server API for MetadataService service.
 type MetadataServiceServer interface {
 	GetSchemas(context.Context, *SchemaRequest) (*SchemaResponse, error)
@@ -1467,6 +1765,7 @@ type MetadataServiceServer interface {
 	GetAgentTableMetadata(context.Context, *AgentTableMetadataRequest) (*AgentTableMetadataResponse, error)
 	RegisterProbe(context.Context, *RegisterProbeRequest) (*RegisterProbeResponse, error)
 	GetProbeInfo(context.Context, *GetProbeInfoRequest) (*GetProbeInfoResponse, error)
+	EvictProbe(context.Context, *EvictProbeRequest) (*EvictProbeResponse, error)
 }
 
 // UnimplementedMetadataServiceServer can be embedded to have forward compatible implementations.
@@ -1490,6 +1789,9 @@ func (*UnimplementedMetadataServiceServer) RegisterProbe(ctx context.Context, re
 }
 func (*UnimplementedMetadataServiceServer) GetProbeInfo(ctx context.Context, req *GetProbeInfoRequest) (*GetProbeInfoResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetProbeInfo not implemented")
+}
+func (*UnimplementedMetadataServiceServer) EvictProbe(ctx context.Context, req *EvictProbeRequest) (*EvictProbeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EvictProbe not implemented")
 }
 
 func RegisterMetadataServiceServer(s *grpc.Server, srv MetadataServiceServer) {
@@ -1604,6 +1906,24 @@ func _MetadataService_GetProbeInfo_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _MetadataService_EvictProbe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EvictProbeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(MetadataServiceServer).EvictProbe(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pl.vizier.services.metadata.MetadataService/EvictProbe",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(MetadataServiceServer).EvictProbe(ctx, req.(*EvictProbeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _MetadataService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "pl.vizier.services.metadata.MetadataService",
 	HandlerType: (*MetadataServiceServer)(nil),
@@ -1631,6 +1951,10 @@ var _MetadataService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetProbeInfo",
 			Handler:    _MetadataService_GetProbeInfo_Handler,
+		},
+		{
+			MethodName: "EvictProbe",
+			Handler:    _MetadataService_EvictProbe_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -2074,6 +2398,13 @@ func (m *RegisterProbeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
+	if len(m.ProbeName) > 0 {
+		i -= len(m.ProbeName)
+		copy(dAtA[i:], m.ProbeName)
+		i = encodeVarintService(dAtA, i, uint64(len(m.ProbeName)))
+		i--
+		dAtA[i] = 0x12
+	}
 	if m.Program != nil {
 		{
 			size, err := m.Program.MarshalToSizedBuffer(dAtA[:i])
@@ -2109,15 +2440,10 @@ func (m *RegisterProbeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.ProbeID != nil {
-		{
-			size, err := m.ProbeID.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintService(dAtA, i, uint64(size))
-		}
+	if len(m.ProbeID) > 0 {
+		i -= len(m.ProbeID)
+		copy(dAtA[i:], m.ProbeID)
+		i = encodeVarintService(dAtA, i, uint64(len(m.ProbeID)))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -2156,17 +2482,14 @@ func (m *GetProbeInfoRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	_ = i
 	var l int
 	_ = l
-	if m.ProbeID != nil {
-		{
-			size, err := m.ProbeID.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintService(dAtA, i, uint64(size))
+	if len(m.ProbeIDs) > 0 {
+		for iNdEx := len(m.ProbeIDs) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.ProbeIDs[iNdEx])
+			copy(dAtA[i:], m.ProbeIDs[iNdEx])
+			i = encodeVarintService(dAtA, i, uint64(len(m.ProbeIDs[iNdEx])))
+			i--
+			dAtA[i] = 0xa
 		}
-		i--
-		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
@@ -2187,6 +2510,120 @@ func (m *GetProbeInfoResponse) MarshalTo(dAtA []byte) (int, error) {
 }
 
 func (m *GetProbeInfoResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.Probes) > 0 {
+		for iNdEx := len(m.Probes) - 1; iNdEx >= 0; iNdEx-- {
+			{
+				size, err := m.Probes[iNdEx].MarshalToSizedBuffer(dAtA[:i])
+				if err != nil {
+					return 0, err
+				}
+				i -= size
+				i = encodeVarintService(dAtA, i, uint64(size))
+			}
+			i--
+			dAtA[i] = 0xa
+		}
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *GetProbeInfoResponse_ProbeState) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *GetProbeInfoResponse_ProbeState) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *GetProbeInfoResponse_ProbeState) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.Status != nil {
+		{
+			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintService(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.State != 0 {
+		i = encodeVarintService(dAtA, i, uint64(m.State))
+		i--
+		dAtA[i] = 0x10
+	}
+	if len(m.ProbeIDs) > 0 {
+		i -= len(m.ProbeIDs)
+		copy(dAtA[i:], m.ProbeIDs)
+		i = encodeVarintService(dAtA, i, uint64(len(m.ProbeIDs)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *EvictProbeRequest) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *EvictProbeRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EvictProbeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if len(m.ProbeID) > 0 {
+		i -= len(m.ProbeID)
+		copy(dAtA[i:], m.ProbeID)
+		i = encodeVarintService(dAtA, i, uint64(len(m.ProbeID)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *EvictProbeResponse) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *EvictProbeResponse) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *EvictProbeResponse) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -2386,6 +2823,10 @@ func (m *RegisterProbeRequest) Size() (n int) {
 		l = m.Program.Size()
 		n += 1 + l + sovService(uint64(l))
 	}
+	l = len(m.ProbeName)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
 	return n
 }
 
@@ -2399,8 +2840,8 @@ func (m *RegisterProbeResponse) Size() (n int) {
 		l = m.Status.Size()
 		n += 1 + l + sovService(uint64(l))
 	}
-	if m.ProbeID != nil {
-		l = m.ProbeID.Size()
+	l = len(m.ProbeID)
+	if l > 0 {
 		n += 1 + l + sovService(uint64(l))
 	}
 	return n
@@ -2412,14 +2853,64 @@ func (m *GetProbeInfoRequest) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.ProbeID != nil {
-		l = m.ProbeID.Size()
-		n += 1 + l + sovService(uint64(l))
+	if len(m.ProbeIDs) > 0 {
+		for _, s := range m.ProbeIDs {
+			l = len(s)
+			n += 1 + l + sovService(uint64(l))
+		}
 	}
 	return n
 }
 
 func (m *GetProbeInfoResponse) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if len(m.Probes) > 0 {
+		for _, e := range m.Probes {
+			l = e.Size()
+			n += 1 + l + sovService(uint64(l))
+		}
+	}
+	return n
+}
+
+func (m *GetProbeInfoResponse_ProbeState) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ProbeIDs)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	if m.State != 0 {
+		n += 1 + sovService(uint64(m.State))
+	}
+	if m.Status != nil {
+		l = m.Status.Size()
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *EvictProbeRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	l = len(m.ProbeID)
+	if l > 0 {
+		n += 1 + l + sovService(uint64(l))
+	}
+	return n
+}
+
+func (m *EvictProbeResponse) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -2576,6 +3067,7 @@ func (this *RegisterProbeRequest) String() string {
 	}
 	s := strings.Join([]string{`&RegisterProbeRequest{`,
 		`Program:` + strings.Replace(fmt.Sprintf("%v", this.Program), "Program", "logical.Program", 1) + `,`,
+		`ProbeName:` + fmt.Sprintf("%v", this.ProbeName) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2586,7 +3078,7 @@ func (this *RegisterProbeResponse) String() string {
 	}
 	s := strings.Join([]string{`&RegisterProbeResponse{`,
 		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto3.Status", 1) + `,`,
-		`ProbeID:` + strings.Replace(fmt.Sprintf("%v", this.ProbeID), "UUID", "proto1.UUID", 1) + `,`,
+		`ProbeID:` + fmt.Sprintf("%v", this.ProbeID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2596,7 +3088,7 @@ func (this *GetProbeInfoRequest) String() string {
 		return "nil"
 	}
 	s := strings.Join([]string{`&GetProbeInfoRequest{`,
-		`ProbeID:` + strings.Replace(fmt.Sprintf("%v", this.ProbeID), "UUID", "proto1.UUID", 1) + `,`,
+		`ProbeIDs:` + fmt.Sprintf("%v", this.ProbeIDs) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -2605,7 +3097,44 @@ func (this *GetProbeInfoResponse) String() string {
 	if this == nil {
 		return "nil"
 	}
+	repeatedStringForProbes := "[]*GetProbeInfoResponse_ProbeState{"
+	for _, f := range this.Probes {
+		repeatedStringForProbes += strings.Replace(fmt.Sprintf("%v", f), "GetProbeInfoResponse_ProbeState", "GetProbeInfoResponse_ProbeState", 1) + ","
+	}
+	repeatedStringForProbes += "}"
 	s := strings.Join([]string{`&GetProbeInfoResponse{`,
+		`Probes:` + repeatedStringForProbes + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *GetProbeInfoResponse_ProbeState) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&GetProbeInfoResponse_ProbeState{`,
+		`ProbeIDs:` + fmt.Sprintf("%v", this.ProbeIDs) + `,`,
+		`State:` + fmt.Sprintf("%v", this.State) + `,`,
+		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto3.Status", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *EvictProbeRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EvictProbeRequest{`,
+		`ProbeID:` + fmt.Sprintf("%v", this.ProbeID) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *EvictProbeResponse) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&EvictProbeResponse{`,
 		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto3.Status", 1) + `,`,
 		`}`,
 	}, "")
@@ -3727,6 +4256,38 @@ func (m *RegisterProbeRequest) Unmarshal(dAtA []byte) error {
 				return err
 			}
 			iNdEx = postIndex
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProbeName", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProbeName = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
 			skippy, err := skipService(dAtA[iNdEx:])
@@ -3820,7 +4381,7 @@ func (m *RegisterProbeResponse) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ProbeID", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowService
@@ -3830,27 +4391,23 @@ func (m *RegisterProbeResponse) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthService
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthService
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ProbeID == nil {
-				m.ProbeID = &proto1.UUID{}
-			}
-			if err := m.ProbeID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.ProbeID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -3907,9 +4464,9 @@ func (m *GetProbeInfoRequest) Unmarshal(dAtA []byte) error {
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProbeID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field ProbeIDs", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowService
@@ -3919,27 +4476,23 @@ func (m *GetProbeInfoRequest) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthService
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthService
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ProbeID == nil {
-				m.ProbeID = &proto1.UUID{}
-			}
-			if err := m.ProbeID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.ProbeIDs = append(m.ProbeIDs, string(dAtA[iNdEx:postIndex]))
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -3992,6 +4545,318 @@ func (m *GetProbeInfoResponse) Unmarshal(dAtA []byte) error {
 		}
 		if fieldNum <= 0 {
 			return fmt.Errorf("proto: GetProbeInfoResponse: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Probes", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Probes = append(m.Probes, &GetProbeInfoResponse_ProbeState{})
+			if err := m.Probes[len(m.Probes)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *GetProbeInfoResponse_ProbeState) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: ProbeState: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: ProbeState: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProbeIDs", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProbeIDs = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 2:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field State", wireType)
+			}
+			m.State = 0
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				m.State |= proto3.LifeCycleState(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.Status == nil {
+				m.Status = &proto3.Status{}
+			}
+			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *EvictProbeRequest) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EvictProbeRequest: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EvictProbeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProbeID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowService
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthService
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthService
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProbeID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipService(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthService
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *EvictProbeResponse) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowService
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: EvictProbeResponse: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: EvictProbeResponse: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:

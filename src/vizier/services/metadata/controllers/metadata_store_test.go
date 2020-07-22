@@ -1863,15 +1863,14 @@ func TestKVMetadataStore_UpsertProbe(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create probes.
-	p1ID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	s1 := &storepb.ProbeInfo{
-		ProbeID: utils.ProtoFromUUID(&p1ID),
+		ProbeID: "test_probe",
 	}
 
-	err = mds.UpsertProbe(p1ID, s1)
+	err = mds.UpsertProbe("test_probe", s1)
 	assert.Nil(t, err)
 
-	savedProbe, err := c.Get("/probe/" + p1ID.String())
+	savedProbe, err := c.Get("/probe/test_probe")
 	savedProbePb := &storepb.ProbeInfo{}
 	err = proto.Unmarshal(savedProbe, savedProbePb)
 	assert.Nil(t, err)
@@ -1890,18 +1889,17 @@ func TestKVMetadataStore_GetProbe(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create probes.
-	p1ID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	s1 := &storepb.ProbeInfo{
-		ProbeID: utils.ProtoFromUUID(&p1ID),
+		ProbeID: "test_probe",
 	}
 	s1Text, err := s1.Marshal()
 	if err != nil {
 		t.Fatal("Unable to marshal probe pb")
 	}
 
-	c.Set("/probe/"+p1ID.String(), string(s1Text))
+	c.Set("/probe/test_probe", string(s1Text))
 
-	probe, err := mds.GetProbe(p1ID)
+	probe, err := mds.GetProbe("test_probe")
 	assert.Nil(t, err)
 	assert.NotNil(t, probe)
 
@@ -1925,26 +1923,24 @@ func TestKVMetadataStore_GetProbes(t *testing.T) {
 	assert.Nil(t, err)
 
 	// Create probes.
-	p1ID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	s1 := &storepb.ProbeInfo{
-		ProbeID: utils.ProtoFromUUID(&p1ID),
+		ProbeID: "test1",
 	}
 	s1Text, err := s1.Marshal()
 	if err != nil {
 		t.Fatal("Unable to marshal probe pb")
 	}
 
-	p2ID := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
 	s2 := &storepb.ProbeInfo{
-		ProbeID: utils.ProtoFromUUID(&p2ID),
+		ProbeID: "test2",
 	}
 	s2Text, err := s2.Marshal()
 	if err != nil {
 		t.Fatal("Unable to marshal probe pb")
 	}
 
-	c.Set("/probe/"+p1ID.String(), string(s1Text))
-	c.Set("/probe/"+p2ID.String(), string(s2Text))
+	c.Set("/probe/test1", string(s1Text))
+	c.Set("/probe/test2", string(s2Text))
 
 	probes, err := mds.GetProbes()
 	assert.Nil(t, err)

@@ -10,8 +10,7 @@ import (
 	io "io"
 	math "math"
 	math_bits "math/bits"
-	proto2 "pixielabs.ai/pixielabs/src/common/base/proto"
-	proto1 "pixielabs.ai/pixielabs/src/common/uuid/proto"
+	proto1 "pixielabs.ai/pixielabs/src/common/base/proto"
 	logical "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical"
 	reflect "reflect"
 	strings "strings"
@@ -29,11 +28,8 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type ProbeInfo struct {
-	ProbeID       *proto1.UUID                 `protobuf:"bytes,1,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
-	HealthyAgents []*proto1.UUID               `protobuf:"bytes,2,rep,name=healthy_agents,json=healthyAgents,proto3" json:"healthy_agents,omitempty"`
-	FailedAgents  []*ProbeInfo_FailedProbeInfo `protobuf:"bytes,3,rep,name=failed_agents,json=failedAgents,proto3" json:"failed_agents,omitempty"`
-	PendingAgents []*proto1.UUID               `protobuf:"bytes,4,rep,name=pending_agents,json=pendingAgents,proto3" json:"pending_agents,omitempty"`
-	Program       *logical.Program             `protobuf:"bytes,5,opt,name=program,proto3" json:"program,omitempty"`
+	ProbeID string           `protobuf:"bytes,1,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
+	Program *logical.Program `protobuf:"bytes,2,opt,name=program,proto3" json:"program,omitempty"`
 }
 
 func (m *ProbeInfo) Reset()      { *m = ProbeInfo{} }
@@ -68,32 +64,11 @@ func (m *ProbeInfo) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_ProbeInfo proto.InternalMessageInfo
 
-func (m *ProbeInfo) GetProbeID() *proto1.UUID {
+func (m *ProbeInfo) GetProbeID() string {
 	if m != nil {
 		return m.ProbeID
 	}
-	return nil
-}
-
-func (m *ProbeInfo) GetHealthyAgents() []*proto1.UUID {
-	if m != nil {
-		return m.HealthyAgents
-	}
-	return nil
-}
-
-func (m *ProbeInfo) GetFailedAgents() []*ProbeInfo_FailedProbeInfo {
-	if m != nil {
-		return m.FailedAgents
-	}
-	return nil
-}
-
-func (m *ProbeInfo) GetPendingAgents() []*proto1.UUID {
-	if m != nil {
-		return m.PendingAgents
-	}
-	return nil
+	return ""
 }
 
 func (m *ProbeInfo) GetProgram() *logical.Program {
@@ -103,22 +78,24 @@ func (m *ProbeInfo) GetProgram() *logical.Program {
 	return nil
 }
 
-type ProbeInfo_FailedProbeInfo struct {
-	AgentID *proto1.UUID   `protobuf:"bytes,1,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
-	Status  *proto2.Status `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+type AgentProbeStatus struct {
+	State   proto1.LifeCycleState `protobuf:"varint,1,opt,name=state,proto3,enum=pl.statuspb.LifeCycleState" json:"state,omitempty"`
+	Status  *proto1.Status        `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	ProbeID string                `protobuf:"bytes,3,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
+	AgentID string                `protobuf:"bytes,4,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 }
 
-func (m *ProbeInfo_FailedProbeInfo) Reset()      { *m = ProbeInfo_FailedProbeInfo{} }
-func (*ProbeInfo_FailedProbeInfo) ProtoMessage() {}
-func (*ProbeInfo_FailedProbeInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_27ea71ea705227d1, []int{0, 0}
+func (m *AgentProbeStatus) Reset()      { *m = AgentProbeStatus{} }
+func (*AgentProbeStatus) ProtoMessage() {}
+func (*AgentProbeStatus) Descriptor() ([]byte, []int) {
+	return fileDescriptor_27ea71ea705227d1, []int{1}
 }
-func (m *ProbeInfo_FailedProbeInfo) XXX_Unmarshal(b []byte) error {
+func (m *AgentProbeStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ProbeInfo_FailedProbeInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *AgentProbeStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ProbeInfo_FailedProbeInfo.Marshal(b, m, deterministic)
+		return xxx_messageInfo_AgentProbeStatus.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -128,35 +105,49 @@ func (m *ProbeInfo_FailedProbeInfo) XXX_Marshal(b []byte, deterministic bool) ([
 		return b[:n], nil
 	}
 }
-func (m *ProbeInfo_FailedProbeInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ProbeInfo_FailedProbeInfo.Merge(m, src)
+func (m *AgentProbeStatus) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AgentProbeStatus.Merge(m, src)
 }
-func (m *ProbeInfo_FailedProbeInfo) XXX_Size() int {
+func (m *AgentProbeStatus) XXX_Size() int {
 	return m.Size()
 }
-func (m *ProbeInfo_FailedProbeInfo) XXX_DiscardUnknown() {
-	xxx_messageInfo_ProbeInfo_FailedProbeInfo.DiscardUnknown(m)
+func (m *AgentProbeStatus) XXX_DiscardUnknown() {
+	xxx_messageInfo_AgentProbeStatus.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ProbeInfo_FailedProbeInfo proto.InternalMessageInfo
+var xxx_messageInfo_AgentProbeStatus proto.InternalMessageInfo
 
-func (m *ProbeInfo_FailedProbeInfo) GetAgentID() *proto1.UUID {
+func (m *AgentProbeStatus) GetState() proto1.LifeCycleState {
 	if m != nil {
-		return m.AgentID
+		return m.State
 	}
-	return nil
+	return proto1.UNKNOWN_STATE
 }
 
-func (m *ProbeInfo_FailedProbeInfo) GetStatus() *proto2.Status {
+func (m *AgentProbeStatus) GetStatus() *proto1.Status {
 	if m != nil {
 		return m.Status
 	}
 	return nil
 }
 
+func (m *AgentProbeStatus) GetProbeID() string {
+	if m != nil {
+		return m.ProbeID
+	}
+	return ""
+}
+
+func (m *AgentProbeStatus) GetAgentID() string {
+	if m != nil {
+		return m.AgentID
+	}
+	return ""
+}
+
 func init() {
 	proto.RegisterType((*ProbeInfo)(nil), "pl.vizier.services.metadata.ProbeInfo")
-	proto.RegisterType((*ProbeInfo_FailedProbeInfo)(nil), "pl.vizier.services.metadata.ProbeInfo.FailedProbeInfo")
+	proto.RegisterType((*AgentProbeStatus)(nil), "pl.vizier.services.metadata.AgentProbeStatus")
 }
 
 func init() {
@@ -164,37 +155,33 @@ func init() {
 }
 
 var fileDescriptor_27ea71ea705227d1 = []byte{
-	// 469 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x93, 0xcf, 0x6a, 0x14, 0x31,
-	0x1c, 0xc7, 0x27, 0x5d, 0x6d, 0x35, 0xb5, 0x2d, 0x8c, 0x97, 0x61, 0x85, 0xb8, 0xf4, 0x24, 0x88,
-	0x89, 0x28, 0xac, 0x07, 0x4f, 0xd6, 0x22, 0xcc, 0xad, 0x8c, 0xf4, 0xa2, 0x87, 0x25, 0x99, 0xc9,
-	0xce, 0x06, 0x66, 0x26, 0x21, 0xc9, 0x54, 0xd7, 0x93, 0x8f, 0xe0, 0x63, 0xf8, 0x28, 0x1e, 0xf7,
-	0x22, 0xf4, 0x24, 0xee, 0xec, 0xc5, 0x63, 0x1f, 0x41, 0x92, 0xcc, 0x2c, 0x52, 0xfc, 0x77, 0x4a,
-	0x7e, 0xcb, 0xe7, 0xf3, 0xe3, 0xbb, 0x5f, 0x32, 0xf0, 0xb1, 0xd1, 0x39, 0xb9, 0x10, 0x1f, 0x04,
-	0xd7, 0xc4, 0x70, 0x7d, 0x21, 0x72, 0x6e, 0x48, 0xcd, 0x2d, 0x2d, 0xa8, 0xa5, 0xc4, 0x58, 0xa9,
-	0xb9, 0x62, 0xe1, 0xc4, 0x4a, 0x4b, 0x2b, 0xe3, 0x7b, 0xaa, 0xc2, 0x41, 0xc0, 0x83, 0x80, 0x07,
-	0x61, 0x3c, 0x71, 0xeb, 0x72, 0x59, 0xd7, 0xb2, 0x21, 0x6d, 0x2b, 0x0a, 0xe2, 0x1d, 0x7f, 0x0d,
-	0xfa, 0xf8, 0xf8, 0x17, 0x82, 0x51, 0xc3, 0x7b, 0xc2, 0x58, 0x6a, 0x5b, 0xd3, 0x33, 0x8f, 0x4a,
-	0x61, 0x17, 0x2d, 0xc3, 0xb9, 0xac, 0x49, 0x29, 0x4b, 0x19, 0x18, 0xd6, 0xce, 0xfd, 0x14, 0x04,
-	0x77, 0x1b, 0x70, 0xb7, 0xd2, 0x58, 0xa1, 0x2b, 0xd1, 0x94, 0xa4, 0x58, 0x36, 0xb4, 0x16, 0xf9,
-	0xcc, 0x6a, 0x9a, 0xbb, 0x59, 0x68, 0x52, 0xc9, 0x52, 0xe4, 0xb4, 0x0a, 0xf8, 0xf1, 0xd7, 0x11,
-	0xbc, 0x7d, 0xa6, 0x25, 0xe3, 0x69, 0x33, 0x97, 0xf1, 0x33, 0x78, 0x4b, 0xb9, 0x61, 0x26, 0x8a,
-	0x04, 0x4c, 0xc0, 0x83, 0xfd, 0x27, 0x47, 0x58, 0x55, 0xd8, 0x25, 0x56, 0x0c, 0x9f, 0x9f, 0xa7,
-	0xa7, 0x27, 0xfb, 0xdd, 0xb7, 0xfb, 0x7b, 0xc1, 0x38, 0xcd, 0xf6, 0x3c, 0x9d, 0x16, 0xf1, 0x14,
-	0x1e, 0x2e, 0x38, 0xad, 0xec, 0x62, 0x39, 0xa3, 0x25, 0x6f, 0xac, 0x49, 0x76, 0x26, 0xa3, 0xdf,
-	0xe8, 0xd9, 0x41, 0x8f, 0xbd, 0xf0, 0x54, 0xfc, 0x16, 0x1e, 0xcc, 0xa9, 0xa8, 0x78, 0x31, 0x68,
-	0x23, 0xaf, 0x4d, 0xf1, 0x5f, 0x7a, 0xc5, 0xdb, 0xbc, 0xf8, 0x95, 0x77, 0xb7, 0x73, 0x76, 0x27,
-	0x2c, 0xeb, 0x97, 0x4f, 0xe1, 0xa1, 0xe2, 0x4d, 0x21, 0x9a, 0x72, 0xd8, 0x7e, 0xe3, 0x0f, 0xa1,
-	0x7a, 0xac, 0xf7, 0x52, 0xe8, 0xfe, 0x57, 0xa9, 0x69, 0x9d, 0xdc, 0xf4, 0x25, 0x10, 0x27, 0x0c,
-	0x9d, 0xe2, 0x6b, 0x9d, 0x62, 0xa1, 0xf1, 0xd0, 0xe9, 0x59, 0xd0, 0xb2, 0xc1, 0x1f, 0xbf, 0x83,
-	0x47, 0xd7, 0x32, 0xba, 0x8e, 0x7d, 0x9a, 0x7f, 0x75, 0xec, 0xc3, 0xb8, 0x8e, 0x3d, 0x9d, 0x16,
-	0xf1, 0x43, 0xb8, 0x1b, 0x1e, 0x46, 0xb2, 0xe3, 0xb5, 0xbb, 0x21, 0x95, 0xfb, 0x45, 0x31, 0xfc,
-	0xda, 0x5f, 0xb2, 0x1e, 0x39, 0x59, 0xae, 0xd6, 0x28, 0xba, 0x5c, 0xa3, 0xe8, 0x6a, 0x8d, 0xc0,
-	0xc7, 0x0e, 0x81, 0xcf, 0x1d, 0x02, 0x5f, 0x3a, 0x04, 0x56, 0x1d, 0x02, 0xdf, 0x3b, 0x04, 0x7e,
-	0x74, 0x28, 0xba, 0xea, 0x10, 0xf8, 0xb4, 0x41, 0xd1, 0x6a, 0x83, 0xa2, 0xcb, 0x0d, 0x8a, 0xde,
-	0xbc, 0x54, 0xe2, 0xbd, 0xe0, 0x15, 0x65, 0x06, 0x53, 0x41, 0xb6, 0x03, 0xf9, 0x9f, 0xef, 0xe2,
-	0x79, 0x7f, 0xb2, 0x5d, 0xff, 0xb2, 0x9e, 0xfe, 0x0c, 0x00, 0x00, 0xff, 0xff, 0x86, 0x6c, 0xc3,
-	0xe1, 0x4e, 0x03, 0x00, 0x00,
+	// 414 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0xbf, 0xae, 0xd3, 0x30,
+	0x14, 0xc6, 0x63, 0xfe, 0xdc, 0x3f, 0xbe, 0x12, 0x42, 0x61, 0xb9, 0xba, 0x95, 0x4c, 0xd5, 0xa1,
+	0xaa, 0x84, 0xb0, 0xa1, 0x8c, 0x4c, 0xb4, 0x2c, 0x91, 0x18, 0xaa, 0xb0, 0xb1, 0x54, 0xb6, 0xe3,
+	0x06, 0x4b, 0x49, 0x1c, 0xd9, 0x6e, 0x45, 0x19, 0x10, 0x8f, 0xc0, 0x63, 0xf0, 0x1c, 0x4c, 0x8c,
+	0x1d, 0x3b, 0x21, 0xea, 0x2e, 0x8c, 0x7d, 0x04, 0x64, 0xbb, 0x01, 0x95, 0x01, 0xdd, 0xc9, 0x3e,
+	0x3a, 0xbf, 0xef, 0x3b, 0xdf, 0x49, 0x0c, 0x9f, 0x19, 0xcd, 0xc9, 0x4a, 0x7e, 0x94, 0x42, 0x13,
+	0x23, 0xf4, 0x4a, 0x72, 0x61, 0x48, 0x2d, 0x2c, 0x2d, 0xa8, 0xa5, 0xc4, 0x58, 0xa5, 0x45, 0xcb,
+	0xe2, 0x89, 0x5b, 0xad, 0xac, 0x4a, 0x7b, 0x6d, 0x85, 0xa3, 0x00, 0x77, 0x02, 0xdc, 0x09, 0x6e,
+	0x06, 0xde, 0x8e, 0xab, 0xba, 0x56, 0x0d, 0x61, 0xd4, 0x08, 0x12, 0x34, 0xc4, 0x58, 0x6a, 0x97,
+	0x26, 0x1a, 0xdc, 0x3c, 0x2d, 0xa5, 0x7d, 0xbf, 0x64, 0x98, 0xab, 0x9a, 0x94, 0xaa, 0x54, 0x91,
+	0x61, 0xcb, 0x45, 0xa8, 0xa2, 0xc0, 0xdf, 0x3a, 0xdc, 0x5b, 0x1a, 0x2b, 0x75, 0x25, 0x9b, 0x92,
+	0x14, 0xeb, 0x86, 0xd6, 0x92, 0xcf, 0xad, 0xa6, 0xdc, 0xd7, 0x52, 0x93, 0x4a, 0x95, 0x92, 0xd3,
+	0x2a, 0xe2, 0x83, 0x4f, 0xf0, 0x72, 0xa6, 0x15, 0x13, 0x59, 0xb3, 0x50, 0xe9, 0x10, 0x5e, 0xb4,
+	0xbe, 0x98, 0xcb, 0xe2, 0x1a, 0xf4, 0xc1, 0xe8, 0x72, 0x72, 0xe5, 0x7e, 0x3c, 0x3e, 0x8f, 0xc0,
+	0xeb, 0xfc, 0x3c, 0x34, 0xb3, 0x22, 0xcd, 0xa0, 0xbf, 0x96, 0x9a, 0xd6, 0xd7, 0x77, 0xfa, 0x60,
+	0x74, 0x35, 0x26, 0xb8, 0xad, 0x70, 0x37, 0x14, 0xff, 0x33, 0x14, 0x4b, 0x8d, 0xbb, 0xa1, 0xb3,
+	0x28, 0xcb, 0x3b, 0xfd, 0xe0, 0x1b, 0x80, 0x0f, 0x5f, 0x95, 0xa2, 0xb1, 0x61, 0xc8, 0xdb, 0xb0,
+	0x78, 0xfa, 0x1c, 0xde, 0xf7, 0x9f, 0x40, 0x84, 0x10, 0x0f, 0xc6, 0xbd, 0xe8, 0xee, 0x5b, 0x2d,
+	0xc3, 0x6f, 0xe4, 0x42, 0x4c, 0xd7, 0xbc, 0x0a, 0xb0, 0xc8, 0x23, 0x99, 0x3e, 0x81, 0x67, 0x91,
+	0x38, 0x26, 0x7a, 0x74, 0xa2, 0x89, 0xbe, 0xf9, 0x11, 0x39, 0xd9, 0xf3, 0xee, 0x7f, 0xf6, 0x1c,
+	0xc2, 0x0b, 0xea, 0xb3, 0x79, 0xee, 0xde, 0x5f, 0x2e, 0xe4, 0xf5, 0x5c, 0x68, 0x66, 0xc5, 0x64,
+	0xbd, 0xd9, 0xa1, 0x64, 0xbb, 0x43, 0xc9, 0x61, 0x87, 0xc0, 0x67, 0x87, 0xc0, 0x57, 0x87, 0xc0,
+	0x77, 0x87, 0xc0, 0xc6, 0x21, 0xf0, 0xd3, 0x21, 0xf0, 0xcb, 0xa1, 0xe4, 0xe0, 0x10, 0xf8, 0xb2,
+	0x47, 0xc9, 0x66, 0x8f, 0x92, 0xed, 0x1e, 0x25, 0xef, 0xa6, 0xad, 0xfc, 0x20, 0x45, 0x45, 0x99,
+	0xc1, 0x54, 0x92, 0x3f, 0x05, 0xb9, 0xcd, 0x13, 0x7b, 0x79, 0x3c, 0xd9, 0x59, 0xf8, 0x8d, 0x2f,
+	0x7e, 0x07, 0x00, 0x00, 0xff, 0xff, 0xa4, 0x2b, 0xd8, 0x75, 0x99, 0x02, 0x00, 0x00,
 }
 
 func (this *ProbeInfo) Equal(that interface{}) bool {
@@ -216,46 +203,22 @@ func (this *ProbeInfo) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.ProbeID.Equal(that1.ProbeID) {
+	if this.ProbeID != that1.ProbeID {
 		return false
-	}
-	if len(this.HealthyAgents) != len(that1.HealthyAgents) {
-		return false
-	}
-	for i := range this.HealthyAgents {
-		if !this.HealthyAgents[i].Equal(that1.HealthyAgents[i]) {
-			return false
-		}
-	}
-	if len(this.FailedAgents) != len(that1.FailedAgents) {
-		return false
-	}
-	for i := range this.FailedAgents {
-		if !this.FailedAgents[i].Equal(that1.FailedAgents[i]) {
-			return false
-		}
-	}
-	if len(this.PendingAgents) != len(that1.PendingAgents) {
-		return false
-	}
-	for i := range this.PendingAgents {
-		if !this.PendingAgents[i].Equal(that1.PendingAgents[i]) {
-			return false
-		}
 	}
 	if !this.Program.Equal(that1.Program) {
 		return false
 	}
 	return true
 }
-func (this *ProbeInfo_FailedProbeInfo) Equal(that interface{}) bool {
+func (this *AgentProbeStatus) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*ProbeInfo_FailedProbeInfo)
+	that1, ok := that.(*AgentProbeStatus)
 	if !ok {
-		that2, ok := that.(ProbeInfo_FailedProbeInfo)
+		that2, ok := that.(AgentProbeStatus)
 		if ok {
 			that1 = &that2
 		} else {
@@ -267,10 +230,16 @@ func (this *ProbeInfo_FailedProbeInfo) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.AgentID.Equal(that1.AgentID) {
+	if this.State != that1.State {
 		return false
 	}
 	if !this.Status.Equal(that1.Status) {
+		return false
+	}
+	if this.ProbeID != that1.ProbeID {
+		return false
+	}
+	if this.AgentID != that1.AgentID {
 		return false
 	}
 	return true
@@ -279,38 +248,27 @@ func (this *ProbeInfo) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 9)
+	s := make([]string, 0, 6)
 	s = append(s, "&storepb.ProbeInfo{")
-	if this.ProbeID != nil {
-		s = append(s, "ProbeID: "+fmt.Sprintf("%#v", this.ProbeID)+",\n")
-	}
-	if this.HealthyAgents != nil {
-		s = append(s, "HealthyAgents: "+fmt.Sprintf("%#v", this.HealthyAgents)+",\n")
-	}
-	if this.FailedAgents != nil {
-		s = append(s, "FailedAgents: "+fmt.Sprintf("%#v", this.FailedAgents)+",\n")
-	}
-	if this.PendingAgents != nil {
-		s = append(s, "PendingAgents: "+fmt.Sprintf("%#v", this.PendingAgents)+",\n")
-	}
+	s = append(s, "ProbeID: "+fmt.Sprintf("%#v", this.ProbeID)+",\n")
 	if this.Program != nil {
 		s = append(s, "Program: "+fmt.Sprintf("%#v", this.Program)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *ProbeInfo_FailedProbeInfo) GoString() string {
+func (this *AgentProbeStatus) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 6)
-	s = append(s, "&storepb.ProbeInfo_FailedProbeInfo{")
-	if this.AgentID != nil {
-		s = append(s, "AgentID: "+fmt.Sprintf("%#v", this.AgentID)+",\n")
-	}
+	s := make([]string, 0, 8)
+	s = append(s, "&storepb.AgentProbeStatus{")
+	s = append(s, "State: "+fmt.Sprintf("%#v", this.State)+",\n")
 	if this.Status != nil {
 		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
 	}
+	s = append(s, "ProbeID: "+fmt.Sprintf("%#v", this.ProbeID)+",\n")
+	s = append(s, "AgentID: "+fmt.Sprintf("%#v", this.AgentID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -352,66 +310,19 @@ func (m *ProbeInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 			i = encodeVarintStore(dAtA, i, uint64(size))
 		}
 		i--
-		dAtA[i] = 0x2a
+		dAtA[i] = 0x12
 	}
-	if len(m.PendingAgents) > 0 {
-		for iNdEx := len(m.PendingAgents) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.PendingAgents[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintStore(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x22
-		}
-	}
-	if len(m.FailedAgents) > 0 {
-		for iNdEx := len(m.FailedAgents) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.FailedAgents[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintStore(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x1a
-		}
-	}
-	if len(m.HealthyAgents) > 0 {
-		for iNdEx := len(m.HealthyAgents) - 1; iNdEx >= 0; iNdEx-- {
-			{
-				size, err := m.HealthyAgents[iNdEx].MarshalToSizedBuffer(dAtA[:i])
-				if err != nil {
-					return 0, err
-				}
-				i -= size
-				i = encodeVarintStore(dAtA, i, uint64(size))
-			}
-			i--
-			dAtA[i] = 0x12
-		}
-	}
-	if m.ProbeID != nil {
-		{
-			size, err := m.ProbeID.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintStore(dAtA, i, uint64(size))
-		}
+	if len(m.ProbeID) > 0 {
+		i -= len(m.ProbeID)
+		copy(dAtA[i:], m.ProbeID)
+		i = encodeVarintStore(dAtA, i, uint64(len(m.ProbeID)))
 		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *ProbeInfo_FailedProbeInfo) Marshal() (dAtA []byte, err error) {
+func (m *AgentProbeStatus) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -421,16 +332,30 @@ func (m *ProbeInfo_FailedProbeInfo) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ProbeInfo_FailedProbeInfo) MarshalTo(dAtA []byte) (int, error) {
+func (m *AgentProbeStatus) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ProbeInfo_FailedProbeInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *AgentProbeStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
+	if len(m.AgentID) > 0 {
+		i -= len(m.AgentID)
+		copy(dAtA[i:], m.AgentID)
+		i = encodeVarintStore(dAtA, i, uint64(len(m.AgentID)))
+		i--
+		dAtA[i] = 0x22
+	}
+	if len(m.ProbeID) > 0 {
+		i -= len(m.ProbeID)
+		copy(dAtA[i:], m.ProbeID)
+		i = encodeVarintStore(dAtA, i, uint64(len(m.ProbeID)))
+		i--
+		dAtA[i] = 0x1a
+	}
 	if m.Status != nil {
 		{
 			size, err := m.Status.MarshalToSizedBuffer(dAtA[:i])
@@ -443,17 +368,10 @@ func (m *ProbeInfo_FailedProbeInfo) MarshalToSizedBuffer(dAtA []byte) (int, erro
 		i--
 		dAtA[i] = 0x12
 	}
-	if m.AgentID != nil {
-		{
-			size, err := m.AgentID.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintStore(dAtA, i, uint64(size))
-		}
+	if m.State != 0 {
+		i = encodeVarintStore(dAtA, i, uint64(m.State))
 		i--
-		dAtA[i] = 0xa
+		dAtA[i] = 0x8
 	}
 	return len(dAtA) - i, nil
 }
@@ -475,27 +393,9 @@ func (m *ProbeInfo) Size() (n int) {
 	}
 	var l int
 	_ = l
-	if m.ProbeID != nil {
-		l = m.ProbeID.Size()
+	l = len(m.ProbeID)
+	if l > 0 {
 		n += 1 + l + sovStore(uint64(l))
-	}
-	if len(m.HealthyAgents) > 0 {
-		for _, e := range m.HealthyAgents {
-			l = e.Size()
-			n += 1 + l + sovStore(uint64(l))
-		}
-	}
-	if len(m.FailedAgents) > 0 {
-		for _, e := range m.FailedAgents {
-			l = e.Size()
-			n += 1 + l + sovStore(uint64(l))
-		}
-	}
-	if len(m.PendingAgents) > 0 {
-		for _, e := range m.PendingAgents {
-			l = e.Size()
-			n += 1 + l + sovStore(uint64(l))
-		}
 	}
 	if m.Program != nil {
 		l = m.Program.Size()
@@ -504,18 +404,25 @@ func (m *ProbeInfo) Size() (n int) {
 	return n
 }
 
-func (m *ProbeInfo_FailedProbeInfo) Size() (n int) {
+func (m *AgentProbeStatus) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.AgentID != nil {
-		l = m.AgentID.Size()
-		n += 1 + l + sovStore(uint64(l))
+	if m.State != 0 {
+		n += 1 + sovStore(uint64(m.State))
 	}
 	if m.Status != nil {
 		l = m.Status.Size()
+		n += 1 + l + sovStore(uint64(l))
+	}
+	l = len(m.ProbeID)
+	if l > 0 {
+		n += 1 + l + sovStore(uint64(l))
+	}
+	l = len(m.AgentID)
+	if l > 0 {
 		n += 1 + l + sovStore(uint64(l))
 	}
 	return n
@@ -531,38 +438,22 @@ func (this *ProbeInfo) String() string {
 	if this == nil {
 		return "nil"
 	}
-	repeatedStringForHealthyAgents := "[]*UUID{"
-	for _, f := range this.HealthyAgents {
-		repeatedStringForHealthyAgents += strings.Replace(fmt.Sprintf("%v", f), "UUID", "proto1.UUID", 1) + ","
-	}
-	repeatedStringForHealthyAgents += "}"
-	repeatedStringForFailedAgents := "[]*ProbeInfo_FailedProbeInfo{"
-	for _, f := range this.FailedAgents {
-		repeatedStringForFailedAgents += strings.Replace(fmt.Sprintf("%v", f), "ProbeInfo_FailedProbeInfo", "ProbeInfo_FailedProbeInfo", 1) + ","
-	}
-	repeatedStringForFailedAgents += "}"
-	repeatedStringForPendingAgents := "[]*UUID{"
-	for _, f := range this.PendingAgents {
-		repeatedStringForPendingAgents += strings.Replace(fmt.Sprintf("%v", f), "UUID", "proto1.UUID", 1) + ","
-	}
-	repeatedStringForPendingAgents += "}"
 	s := strings.Join([]string{`&ProbeInfo{`,
-		`ProbeID:` + strings.Replace(fmt.Sprintf("%v", this.ProbeID), "UUID", "proto1.UUID", 1) + `,`,
-		`HealthyAgents:` + repeatedStringForHealthyAgents + `,`,
-		`FailedAgents:` + repeatedStringForFailedAgents + `,`,
-		`PendingAgents:` + repeatedStringForPendingAgents + `,`,
+		`ProbeID:` + fmt.Sprintf("%v", this.ProbeID) + `,`,
 		`Program:` + strings.Replace(fmt.Sprintf("%v", this.Program), "Program", "logical.Program", 1) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *ProbeInfo_FailedProbeInfo) String() string {
+func (this *AgentProbeStatus) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&ProbeInfo_FailedProbeInfo{`,
-		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
-		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto2.Status", 1) + `,`,
+	s := strings.Join([]string{`&AgentProbeStatus{`,
+		`State:` + fmt.Sprintf("%v", this.State) + `,`,
+		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto1.Status", 1) + `,`,
+		`ProbeID:` + fmt.Sprintf("%v", this.ProbeID) + `,`,
+		`AgentID:` + fmt.Sprintf("%v", this.AgentID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -608,7 +499,7 @@ func (m *ProbeInfo) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field ProbeID", wireType)
 			}
-			var msglen int
+			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowStore
@@ -618,131 +509,25 @@ func (m *ProbeInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				stringLen |= uint64(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
 				return ErrInvalidLengthStore
 			}
-			postIndex := iNdEx + msglen
+			postIndex := iNdEx + intStringLen
 			if postIndex < 0 {
 				return ErrInvalidLengthStore
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			if m.ProbeID == nil {
-				m.ProbeID = &proto1.UUID{}
-			}
-			if err := m.ProbeID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
+			m.ProbeID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field HealthyAgents", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthStore
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.HealthyAgents = append(m.HealthyAgents, &proto1.UUID{})
-			if err := m.HealthyAgents[len(m.HealthyAgents)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field FailedAgents", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthStore
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.FailedAgents = append(m.FailedAgents, &ProbeInfo_FailedProbeInfo{})
-			if err := m.FailedAgents[len(m.FailedAgents)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field PendingAgents", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowStore
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthStore
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.PendingAgents = append(m.PendingAgents, &proto1.UUID{})
-			if err := m.PendingAgents[len(m.PendingAgents)-1].Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 5:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Program", wireType)
 			}
@@ -802,7 +587,7 @@ func (m *ProbeInfo) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ProbeInfo_FailedProbeInfo) Unmarshal(dAtA []byte) error {
+func (m *AgentProbeStatus) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -825,17 +610,17 @@ func (m *ProbeInfo_FailedProbeInfo) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: FailedProbeInfo: wiretype end group for non-group")
+			return fmt.Errorf("proto: AgentProbeStatus: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: FailedProbeInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: AgentProbeStatus: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field AgentID", wireType)
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field State", wireType)
 			}
-			var msglen int
+			m.State = 0
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowStore
@@ -845,28 +630,11 @@ func (m *ProbeInfo_FailedProbeInfo) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				msglen |= int(b&0x7F) << shift
+				m.State |= proto1.LifeCycleState(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			if msglen < 0 {
-				return ErrInvalidLengthStore
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthStore
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.AgentID == nil {
-				m.AgentID = &proto1.UUID{}
-			}
-			if err := m.AgentID.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Status", wireType)
@@ -897,11 +665,75 @@ func (m *ProbeInfo_FailedProbeInfo) Unmarshal(dAtA []byte) error {
 				return io.ErrUnexpectedEOF
 			}
 			if m.Status == nil {
-				m.Status = &proto2.Status{}
+				m.Status = &proto1.Status{}
 			}
 			if err := m.Status.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field ProbeID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthStore
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.ProbeID = string(dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		case 4:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field AgentID", wireType)
+			}
+			var stringLen uint64
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowStore
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				stringLen |= uint64(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			intStringLen := int(stringLen)
+			if intStringLen < 0 {
+				return ErrInvalidLengthStore
+			}
+			postIndex := iNdEx + intStringLen
+			if postIndex < 0 {
+				return ErrInvalidLengthStore
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.AgentID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

@@ -228,8 +228,8 @@ func getProbesKey() string {
 	return path.Join("/", "probe") + "/"
 }
 
-func getProbeKey(probeID uuid.UUID) string {
-	return path.Join("/", "probe", probeID.String())
+func getProbeKey(probeID string) string {
+	return path.Join("/", "probe", probeID)
 }
 
 /* =============== Agent Operations ============== */
@@ -1167,7 +1167,7 @@ func (mds *KVMetadataStore) GetSubscriberResourceVersion(sub string) (string, er
 /* =============== Probe Operations ============== */
 
 // UpsertProbe updates or creates a new probe entry in the store.
-func (mds *KVMetadataStore) UpsertProbe(probeID uuid.UUID, probeInfo *storepb.ProbeInfo) error {
+func (mds *KVMetadataStore) UpsertProbe(probeID string, probeInfo *storepb.ProbeInfo) error {
 	val, err := probeInfo.Marshal()
 	if err != nil {
 		return err
@@ -1178,7 +1178,7 @@ func (mds *KVMetadataStore) UpsertProbe(probeID uuid.UUID, probeInfo *storepb.Pr
 }
 
 // GetProbe gets the probe info from the store, if it exists.
-func (mds *KVMetadataStore) GetProbe(probeID uuid.UUID) (*storepb.ProbeInfo, error) {
+func (mds *KVMetadataStore) GetProbe(probeID string) (*storepb.ProbeInfo, error) {
 	resp, err := mds.cache.Get(getProbeKey(probeID))
 	if err != nil {
 		return nil, err

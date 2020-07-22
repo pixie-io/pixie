@@ -43,3 +43,17 @@ message Status {
   string msg = 2;
   google.protobuf.Any context = 3;
 }
+
+// This is a proto representation for common lifecycle states.
+enum LifeCycleState {
+  // State of the resource is unknown.
+  UNKNOWN_STATE = 0;
+  // Resource is still in the start up process.
+  PENDING_STATE = 1;
+  // Resource is active and healthy.
+  RUNNING_STATE = 2;
+  // Resource is not running and has failed.
+  FAILED_STATE = 3;
+  // Resource has been terminated.
+  EVICTED_STATE = 4;
+}

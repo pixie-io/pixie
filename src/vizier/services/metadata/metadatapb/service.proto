@@ -24,6 +24,7 @@ service MetadataService {
   rpc GetAgentTableMetadata(AgentTableMetadataRequest) returns (AgentTableMetadataResponse) {}
   rpc RegisterProbe(RegisterProbeRequest) returns (RegisterProbeResponse) {}
   rpc GetProbeInfo(GetProbeInfoRequest) returns (GetProbeInfoResponse) {}
+  rpc EvictProbe(EvictProbeRequest) returns (EvictProbeResponse) {}
 }
 
 // The schema request for each agent's schema.
@@ -78,23 +79,46 @@ message AgentTableMetadataResponse {
 // The request to register probes on all PEMs.
 message RegisterProbeRequest {
   pl.stirling.dynamic_tracing.ir.logical.Program program = 1;
+  // The user-specified name for the probe.
+  string probe_name = 2;
 }
 
 // The response to a RegisterProbeRequest.
 message RegisterProbeResponse {
   // Status of whether the probe registration request was initiated with/without errors.
   pl.statuspb.Status status = 1;
-  // The probe's assigned ID.
-  uuidpb.UUID probe_id = 2 [ (gogoproto.customname) = "ProbeID" ];
+  // The ID of the probe. This should be the user-specified name for the probe.
+  string probe_id = 2 [ (gogoproto.customname) = "ProbeID" ];
 }
 
-// The request to check the status for a probe with the given ID.
+// The request to check the status for a probe with the given IDs.
 message GetProbeInfoRequest {
-  uuidpb.UUID probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
+  repeated string probe_ids = 1 [ (gogoproto.customname) = "ProbeIDs" ];
 }
 
 // The status of whether the probe has successfully registered or not.
 message GetProbeInfoResponse {
-  // Status of the probe.
+    message ProbeState {
+        // The probe ID.
+        string probe_id = 1 [ (gogoproto.customname) = "ProbeIDs" ];
+        // The state of the probe.
+        pl.statuspb.LifeCycleState state = 2;
+        // The status of the probe, specified if the state of the probe is not healthy.
+        pl.statuspb.Status status = 3;
+    }
+    // List of probe states.
+    repeated ProbeState probes = 1;
+}
+
+// The request to evict a probe. This will normally happen via the probe's TTL, but can be
+// initiated via request as well.
+message EvictProbeRequest {
+    // The ID of the probe to evict.
+    string probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
+}
+
+// The response to the probe eviction.
+message EvictProbeResponse {
+  // Status of whether the probe eviction request was initiated with/without errors.
   pl.statuspb.Status status = 1;
 }
