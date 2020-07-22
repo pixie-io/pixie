@@ -25,28 +25,28 @@ type BoolWrapper struct {
 }
 
 type PointerWrapper struct {
-	V0 int64
-	V1 int64
-	V2 int64
+	V0  int64
+	V1  int64
+	V2  int64
 	Ptr *int
 }
 
 type PointerWrapperWrapper struct {
-	V0 int64
-	V1 int64
+	V0  int64
+	V1  int64
 	Val PointerWrapper
-	V2 int64
+	V2  int64
 }
 
 type PointerWrapperWrapperWrapper struct {
-	V0 int64
-	Ptr *PointerWrapperWrapper;
-	V1 int64
-	V2 int64
+	V0  int64
+	Ptr *PointerWrapperWrapper
+	V1  int64
+	V2  int64
 }
 
 func PointerWrapperWrapperWrapperFunc(p PointerWrapperWrapperWrapper) int {
-	return *p.Ptr.Val.Ptr; // *(p.Ptr->Val.Ptr)
+	return *p.Ptr.Val.Ptr // *(p.Ptr->Val.Ptr)
 
 }
 
@@ -65,11 +65,11 @@ func (v *Vertex) CrossScale(v2 Vertex, f float64) {
 	v.Scale(f)
 }
 
-func MixedArgTypes(i1 int, b1 bool, b2 BoolWrapper, i2 int, i3 int, b3 bool) (int, bool) {
-	if (b1 && (b2.B0 || b2.B3) && b3) {
-		return 7, false
+func MixedArgTypes(i1 int, b1 bool, b2 BoolWrapper, i2 int, i3 int, b3 bool) (int, BoolWrapper) {
+	if b1 && (b2.B0 || b2.B3) && b3 {
+		return 7, BoolWrapper{true, false, true, false}
 	}
-	return i1*i2*i3, true
+	return i1 * i2 * i3, BoolWrapper{true, false, true, false}
 }
 
 func GoHasNamedReturns() (retfoo int, retbar bool) {
@@ -92,7 +92,7 @@ func main() {
 			BoolWrapper{rand.Intn(2) == 0, rand.Intn(2) == 0, rand.Intn(2) == 0, rand.Intn(2) == 0},
 			rand.Intn(100),
 			rand.Intn(100),
-			rand.Intn(2) == 0));
+			rand.Intn(2) == 0))
 		fmt.Println(GoHasNamedReturns())
 
 		a := 5

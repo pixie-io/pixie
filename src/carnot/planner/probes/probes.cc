@@ -66,9 +66,8 @@ void ProbeIR::AddArgument(const std::string& id, const std::string& expr) {
 void ProbeIR::AddReturnValue(const std::string& id, const std::string& expr) {
   stirling::dynamic_tracing::ir::logical::ReturnValue ret;
   ret.set_id(id);
-  // TODO(philkuz/oazizi) parse expr or wait for proto updates.
-  ret.set_index(0);
-  PL_UNUSED(expr);
+  // TODO(philkuz/oazizi) The expression needs to be in the form "$<index>.<field>.<...>".
+  ret.set_expr(expr);
   ret_vals_.push_back(ret);
 }
 

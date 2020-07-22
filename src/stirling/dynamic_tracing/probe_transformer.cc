@@ -11,6 +11,9 @@ namespace stirling {
 namespace dynamic_tracing {
 
 void CreateMap(const ir::logical::Probe& input_probe, ir::logical::Program* out) {
+  if (input_probe.args().empty()) {
+    return;
+  }
   auto* stash_map = out->add_maps();
   stash_map->set_name(input_probe.name() + "_argstash");
 }
@@ -40,11 +43,13 @@ void CreateEntryProbe(const ir::shared::BinarySpec::Language& language,
 
   // Generate argument stash.
   // For now, always stash all arguments.
-  auto* stash_action = entry_probe->add_map_stash_actions();
-  stash_action->set_map_name(input_probe.name() + "_argstash");
-  stash_action->set_key(GetLanguageThreadID(language));
-  for (const auto& in_arg : input_probe.args()) {
-    stash_action->add_value_variable_name(in_arg.id());
+  if (input_probe.args_size() > 0) {
+    auto* stash_action = entry_probe->add_map_stash_actions();
+    stash_action->set_map_name(input_probe.name() + "_argstash");
+    stash_action->set_key(GetLanguageThreadID(language));
+    for (const auto& in_arg : input_probe.args()) {
+      stash_action->add_value_variable_name(in_arg.id());
+    }
   }
 }
 
@@ -73,11 +78,13 @@ Status CreateReturnProbe(const ir::shared::BinarySpec::Language& language,
   return_probe->mutable_trace_point()->CopyFrom(input_probe.trace_point());
   return_probe->mutable_trace_point()->set_type(ir::shared::TracePoint::RETURN);
 
-  auto* map_val = return_probe->add_map_vals();
-  map_val->set_map_name(input_probe.name() + "_argstash");
-  map_val->set_key(GetLanguageThreadID(language));
-  for (const auto& in_arg : input_probe.args()) {
-    map_val->add_value_ids(in_arg.id());
+  if (input_probe.args_size() > 0) {
+    auto* map_val = return_probe->add_map_vals();
+    map_val->set_map_name(input_probe.name() + "_argstash");
+    map_val->set_key(GetLanguageThreadID(language));
+    for (const auto& in_arg : input_probe.args()) {
+      map_val->add_value_ids(in_arg.id());
+    }
   }
 
   // Generate return values.

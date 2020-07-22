@@ -69,6 +69,7 @@ probes {
   }
   ret_vals {
     id: "ret0"
+    expr: "$0.a"
   }
   function_latency {
     id: "lat0"
@@ -141,6 +142,7 @@ probes {
   }
   ret_vals {
     id: "ret0"
+    expr: "$0.a"
   }
   function_latency {
     id: "lat0"

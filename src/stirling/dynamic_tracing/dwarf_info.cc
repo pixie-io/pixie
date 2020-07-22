@@ -65,6 +65,14 @@ class Dwarvifier {
                            ir::physical::Probe* output_probe);
   Status ProcessSpecialVariables(ir::physical::Probe* output_probe);
   Status ProcessConst(const ir::logical::Constant& constant, ir::physical::Probe* output_probe);
+
+  // The input components describes a sequence of field of nesting structures. The first component
+  // is the name of an input argument of a function, or an expression to describe the index of an
+  // return value of the function.
+  Status ProcessVarExpr(const std::string& var_name,
+                        const std::vector<std::string_view>& components,
+                        ir::physical::Probe* output_probe);
+
   Status ProcessArgExpr(const ir::logical::Argument& arg, ir::physical::Probe* output_probe);
   Status ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
                            ir::physical::Probe* output_probe);
@@ -335,12 +343,9 @@ Status Dwarvifier::ProcessConst(const ir::logical::Constant& constant,
   return Status::OK();
 }
 
-Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
+Status Dwarvifier::ProcessVarExpr(const std::string& var_name,
+                                  const std::vector<std::string_view>& components,
                                   ir::physical::Probe* output_probe) {
-  const std::string& arg_name = arg.expr();
-
-  std::vector<std::string_view> components = absl::StrSplit(arg_name, ".");
-
   PL_ASSIGN_OR_RETURN(const ArgInfo* arg_info, GetArgInfo(args_map_, components.front()));
   DCHECK(arg_info != nullptr);
 
@@ -348,7 +353,7 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
   std::string type_name = std::move(arg_info->type_name);
   int offset = kSPOffset + arg_info->offset;
   std::string base = kSPVarName;
-  std::string name = arg.id();
+  std::string name = std::string(var_name);
 
   // Note that we start processing at element [1], not [0], which was used to set the starting
   // state in the lines above.
@@ -403,17 +408,40 @@ Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
 
   // The very last created variable uses the original id.
   // This is important so that references in the original probe are maintained.
-  name = arg.id();
 
-  auto* var = AddVariable(output_probe, name, pb_type);
+  auto* var = AddVariable(output_probe, std::string(var_name), pb_type);
   var->mutable_memory()->set_base(base);
   var->mutable_memory()->set_offset(offset);
 
   return Status::OK();
 }
 
+Status Dwarvifier::ProcessArgExpr(const ir::logical::Argument& arg,
+                                  ir::physical::Probe* output_probe) {
+  if (arg.expr().empty()) {
+    return error::InvalidArgument("Argument '$0' expression cannot be empty", arg.id());
+  }
+
+  std::vector<std::string_view> components = absl::StrSplit(arg.expr(), ".");
+
+  return ProcessVarExpr(arg.id(), components, output_probe);
+}
+
 Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
                                      ir::physical::Probe* output_probe) {
+  if (ret_val.expr().empty()) {
+    return error::InvalidArgument("ReturnValue '$0' expression cannot be empty", ret_val.id());
+  }
+
+  std::vector<std::string_view> components = absl::StrSplit(ret_val.expr(), ".");
+
+  int index = -1;
+
+  if (!absl::SimpleAtoi(components.front().substr(1), &index)) {
+    return error::InvalidArgument(
+        "ReturnValue '$0' expression invalid, first component must be `$$<index>`", ret_val.expr());
+  }
+
   // TODO(oazizi): Support named return variables.
   // Golang automatically names return variables ~r0, ~r1, etc.
   // However, it should be noted that the indexing includes function arguments.
@@ -423,21 +451,12 @@ Status Dwarvifier::ProcessRetValExpr(const ir::logical::ReturnValue& ret_val,
   // For now, we throw the burden of finding the index to the user,
   // so if they want the first return argument above, they would have to specify and index of 2.
   // TODO(oazizi): Make indexing of return value based on number of return arguments only.
-  std::string ret_val_name = absl::StrCat("~r", std::to_string(ret_val.index()));
+  std::string ret_val_name = absl::StrCat("~r", std::to_string(index));
 
-  PL_ASSIGN_OR_RETURN(const ArgInfo* arg_info, GetArgInfo(args_map_, ret_val_name));
-  DCHECK(arg_info != nullptr);
+  // Reset the first component.
+  components.front() = ret_val_name;
 
-  PL_ASSIGN_OR_RETURN(ir::shared::ScalarType type,
-                      VarTypeToProtoScalarType(arg_info->type, arg_info->type_name));
-
-  std::string name = ret_val.id();
-
-  auto* var = AddVariable(output_probe, name, type);
-  var->mutable_memory()->set_base(kSPVarName);
-  var->mutable_memory()->set_offset(arg_info->offset + kSPOffset);
-
-  return Status::OK();
+  return ProcessVarExpr(ret_val.id(), components, output_probe);
 }
 
 Status Dwarvifier::ProcessMapVal(const ir::logical::MapValue& map_val,

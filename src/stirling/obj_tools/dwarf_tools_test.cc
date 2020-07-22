@@ -147,6 +147,11 @@ TEST_P(DwarfReaderTest, CppFunctionArgInfo) {
                            Pair("x", ArgInfo{{8, VarType::kPointer, "PairStruct"}})));
 }
 
+std::ostream& operator<<(std::ostream& os, const ArgInfo& arg_info) {
+  os << arg_info.ToString();
+  return os;
+}
+
 TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
   DwarfReaderTestParam p = GetParam();
 
@@ -167,16 +172,16 @@ TEST_P(DwarfReaderTest, GoFunctionArgInfo) {
         dwarf_reader->GetFunctionArgInfo("main.Vertex.Abs"),
         UnorderedElementsAre(Pair("v", ArgInfo{{0, VarType::kStruct, "main.Vertex"}}),
                              Pair("~r0", ArgInfo{{16, VarType::kBaseType, "float64"}, true})));
-    EXPECT_OK_AND_THAT(
-        dwarf_reader->GetFunctionArgInfo("main.MixedArgTypes"),
-        UnorderedElementsAre(Pair("i1", ArgInfo{{0, VarType::kBaseType, "int"}}),
-                             Pair("b1", ArgInfo{{8, VarType::kBaseType, "bool"}}),
-                             Pair("b2", ArgInfo{{9, VarType::kStruct, "main.BoolWrapper"}}),
-                             Pair("i2", ArgInfo{{16, VarType::kBaseType, "int"}}),
-                             Pair("i3", ArgInfo{{24, VarType::kBaseType, "int"}}),
-                             Pair("b3", ArgInfo{{32, VarType::kBaseType, "bool"}}),
-                             Pair("~r6", ArgInfo{{40, VarType::kBaseType, "int"}, true}),
-                             Pair("~r7", ArgInfo{{48, VarType::kBaseType, "bool"}, true})));
+    EXPECT_OK_AND_THAT(dwarf_reader->GetFunctionArgInfo("main.MixedArgTypes"),
+                       UnorderedElementsAre(
+                           Pair("i1", ArgInfo{{0, VarType::kBaseType, "int"}}),
+                           Pair("b1", ArgInfo{{8, VarType::kBaseType, "bool"}}),
+                           Pair("b2", ArgInfo{{9, VarType::kStruct, "main.BoolWrapper"}}),
+                           Pair("i2", ArgInfo{{16, VarType::kBaseType, "int"}}),
+                           Pair("i3", ArgInfo{{24, VarType::kBaseType, "int"}}),
+                           Pair("b3", ArgInfo{{32, VarType::kBaseType, "bool"}}),
+                           Pair("~r6", ArgInfo{{40, VarType::kBaseType, "int"}, true}),
+                           Pair("~r7", ArgInfo{{48, VarType::kStruct, "main.BoolWrapper"}, true})));
     EXPECT_OK_AND_THAT(
         dwarf_reader->GetFunctionArgInfo("main.GoHasNamedReturns"),
         UnorderedElementsAre(Pair("retfoo", ArgInfo{{0, VarType::kBaseType, "int"}, true}),

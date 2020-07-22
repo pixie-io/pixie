@@ -61,11 +61,11 @@ probes {
   }
   ret_vals {
     id: "retval0"
-    index: 6
+    expr: "$$6"
   }
   ret_vals {
     id: "retval1"
-    index: 7
+    expr: "$$7"
   }
   output_actions {
     output_name: "probe0_table"
@@ -192,11 +192,11 @@ probes {
   }
   ret_vals {
     id: "retval0"
-    index: 6
+    expr: "$$6"
   }
   ret_vals {
     id: "retval1"
-    index: 7
+    expr: "$$7"
   }
   output_actions {
     output_name: "probe0_table"

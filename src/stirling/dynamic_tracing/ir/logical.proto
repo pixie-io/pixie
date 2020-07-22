@@ -31,9 +31,14 @@ message ReturnValue {
   // Used to reference this return value.
   string id = 1;
 
+  // The expression describes how to access this value.
+  // The expression is in the form of `$<return value index>.<field>.<field>`. For example,
+  // `$0.i32`, which is the first return value's field `i32` field.
+  //
   // The index to this return value. This is only meaningful for languages that support multiple
-  // return values, like Go.
-  uint32 index = 2;
+  // return values, like Go. Note that Golang index all return values along with the input arguments
+  // (excluding the receiver).
+  string expr = 2;
 }
 
 message MapValue {

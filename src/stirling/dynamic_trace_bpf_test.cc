@@ -26,6 +26,8 @@ using ::testing::Each;
 using ::testing::Ge;
 using ::testing::SizeIs;
 
+using LogicalProgram = ::pl::stirling::dynamic_tracing::ir::logical::Program;
+
 enum class TargetKind {
   kBinaryPath,
   kPID,
@@ -58,12 +60,57 @@ class GoHTTPDynamicTraceTest : public ::testing::Test,
     EXPECT_EQ(9, s_.Wait()) << "Server should have been killed.";
   }
 
+  void InitTestFixturesAndRunTestProgram(TargetKind target_kind, const std::string& text_pb) {
+    CHECK(TextFormat::ParseFromString(text_pb, &logical_program_));
+
+    logical_program_.mutable_binary_spec()->set_language(
+        dynamic_tracing::ir::shared::BinarySpec::GOLANG);
+
+    switch (target_kind) {
+      case TargetKind::kBinaryPath:
+        logical_program_.mutable_binary_spec()->set_path(server_path_);
+        break;
+      case TargetKind::kPID:
+        logical_program_.mutable_binary_spec()->mutable_upid()->set_pid(s_.child_pid());
+        break;
+    }
+
+    ASSERT_OK_AND_ASSIGN(bcc_program_, dynamic_tracing::CompileProgram(logical_program_));
+
+    ASSERT_OK_AND_ASSIGN(table_schema_,
+                         DynamicDataTableSchema::Create(bcc_program_.perf_buffer_specs.front()));
+
+    data_table_ = std::make_unique<DataTable>(table_schema_->Get());
+
+    ASSERT_OK_AND_ASSIGN(connector_, DynamicTraceConnector::Create(logical_program_));
+
+    ASSERT_OK(connector_->Init());
+
+    ctx_ = std::make_unique<StandaloneContext>();
+
+    ASSERT_OK(c_.Start({client_path_, "-name=PixieLabs", "-count=200",
+                        absl::StrCat("-address=localhost:", s_port_)}));
+    EXPECT_EQ(0, c_.Wait()) << "Client should be killed";
+
+    connector_->TransferData(ctx_.get(), /*table_num*/ 0, data_table_.get());
+
+    tablets_ = data_table_->ConsumeRecords();
+  }
+
   std::string server_path_;
   std::string client_path_;
 
   SubProcess c_;
   SubProcess s_;
   int s_port_ = 0;
+
+  LogicalProgram logical_program_;
+  dynamic_tracing::BCCProgram bcc_program_;
+  std::unique_ptr<DynamicDataTableSchema> table_schema_;
+  std::unique_ptr<DataTable> data_table_;
+  std::unique_ptr<SourceConnector> connector_;
+  std::unique_ptr<StandaloneContext> ctx_;
+  std::vector<TaggedRecordBatch> tablets_;
 };
 
 constexpr char kGRPCTraceProgram[] = R"(
@@ -94,52 +141,37 @@ probes: {
 }
 )";
 
-TEST_P(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
-  dynamic_tracing::ir::logical::Program logical_program;
-
-  CHECK(TextFormat::ParseFromString(kGRPCTraceProgram, &logical_program));
-
-  logical_program.mutable_binary_spec()->set_language(
-      dynamic_tracing::ir::shared::BinarySpec::GOLANG);
-
-  switch (GetParam()) {
-    case TargetKind::kBinaryPath:
-      logical_program.mutable_binary_spec()->set_path(server_path_);
-      break;
-    case TargetKind::kPID:
-      logical_program.mutable_binary_spec()->mutable_upid()->set_pid(s_.child_pid());
-      break;
+constexpr char kReturnValueTraceProgram[] = R"(
+outputs {
+  name: "probe_readFrameHeader"
+  fields: "frame_header_valid"
+}
+probes: {
+  name: "probe_StreamEnded"
+  trace_point: {
+    symbol: "golang.org/x/net/http2.readFrameHeader"
+    type: LOGICAL
   }
+  ret_vals {
+    id: "frame_header_valid"
+    expr: "$2.valid"
+  }
+  output_actions {
+    output_name: "probe_readFrameHeader"
+    variable_name: "frame_header_valid"
+  }
+}
+)";
 
-  PL_LOG_VAR(logical_program.DebugString());
+TEST_P(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
+  InitTestFixturesAndRunTestProgram(GetParam(), kGRPCTraceProgram);
 
-  ASSERT_OK_AND_ASSIGN(dynamic_tracing::BCCProgram bcc_program,
-                       dynamic_tracing::CompileProgram(logical_program));
-
-  ASSERT_THAT(bcc_program.uprobes, SizeIs(6));
-
-  ASSERT_OK_AND_ASSIGN(std::unique_ptr<DynamicDataTableSchema> table_schema,
-                       DynamicDataTableSchema::Create(bcc_program.perf_buffer_specs.front()));
-
-  DataTable data_table(table_schema->Get());
-
-  ASSERT_OK_AND_ASSIGN(auto connector, DynamicTraceConnector::Create(logical_program));
-  ASSERT_OK(connector->Init());
-  ASSERT_OK(c_.Start({client_path_, "-name=PixieLabs", "-count=200",
-                      absl::StrCat("-address=localhost:", s_port_)}));
-
-  EXPECT_EQ(0, c_.Wait()) << "Client should be killed";
-
-  auto ctx = std::make_unique<StandaloneContext>();
-  connector->TransferData(ctx.get(), /*table_num*/ 0, &data_table);
-
-  std::vector<TaggedRecordBatch> tablets = data_table.ConsumeRecords();
-
-  ASSERT_FALSE(tablets.empty());
+  ASSERT_THAT(bcc_program_.uprobes, SizeIs(6));
+  ASSERT_FALSE(tablets_.empty());
 
   {
     types::ColumnWrapperRecordBatch records =
-        FindRecordsMatchingPID(tablets[0].records, /*index*/ 0, s_.child_pid());
+        FindRecordsMatchingPID(tablets_[0].records, /*index*/ 0, s_.child_pid());
 
     ASSERT_THAT(records, Each(ColWrapperSizeIs(200)));
 
@@ -148,6 +180,24 @@ TEST_P(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
 
     EXPECT_EQ(records[kStreamIDIdx]->Get<types::Int64Value>(0).val, 1);
     EXPECT_EQ(records[kEndStreamIdx]->Get<types::BoolValue>(0).val, false);
+  }
+}
+
+TEST_P(GoHTTPDynamicTraceTest, TraceReturnValue) {
+  InitTestFixturesAndRunTestProgram(GetParam(), kReturnValueTraceProgram);
+
+  ASSERT_THAT(bcc_program_.uprobes, SizeIs(4));
+  ASSERT_FALSE(tablets_.empty());
+
+  {
+    types::ColumnWrapperRecordBatch records =
+        FindRecordsMatchingPID(tablets_[0].records, /*index*/ 0, s_.child_pid());
+
+    ASSERT_THAT(records, Each(ColWrapperSizeIs(1600)));
+
+    constexpr size_t kFrameHeaderValidIdx = 3;
+
+    EXPECT_EQ(records[kFrameHeaderValidIdx]->Get<types::BoolValue>(0).val, true);
   }
 }
 

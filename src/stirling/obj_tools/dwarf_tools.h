@@ -33,11 +33,20 @@ struct VarInfo {
   uint64_t offset = std::numeric_limits<uint64_t>::max();
   VarType type = VarType::kUnspecified;
   std::string type_name = "";
+
+  std::string ToString() const {
+    return absl::Substitute("offset=$0 type=$1 type_name=$2", offset, magic_enum::enum_name(type),
+                            type_name);
+  }
 };
 
 struct ArgInfo : public VarInfo {
   // If true, this argument is really a return value.
   bool retarg = false;
+
+  std::string ToString() const {
+    return absl::Substitute("retarg=$0 $1", retarg, VarInfo::ToString());
+  }
 };
 
 inline bool operator==(const VarInfo& a, const VarInfo& b) {

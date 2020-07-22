@@ -137,7 +137,7 @@ StatusOr<std::string> GenVariableType(const VariableType& var_type) {
     case VariableType::TypeOneofCase::kStructType:
       return absl::Substitute("struct $0", var_type.struct_type());
     case VariableType::TypeOneofCase::TYPE_ONEOF_NOT_SET:
-      return error::InvalidArgument("Field type must be set");
+      return error::InvalidArgument("Field type must be set, var_type: $0", var_type.DebugString());
   }
   GCC_SWITCH_RETURN;
 }
@@ -150,8 +150,6 @@ StatusOr<std::string> GenField(const Struct::Field& field) {
 }  // namespace
 
 StatusOr<std::vector<std::string>> GenStruct(const Struct& st, int member_indent_size) {
-  DCHECK_GT(st.fields_size(), 0);
-
   std::vector<std::string> code_lines;
 
   code_lines.push_back(absl::Substitute("struct $0 {", st.name()));
