@@ -202,7 +202,7 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	server, err := controllers.NewServer(env, agtMgr, mds)
+	server, err := controllers.NewServer(env, agtMgr, probeMgr, mds)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}

@@ -12,10 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
+	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	bloomfilterpb "pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
 	k8smetadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	sharedmetadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
 	typespb "pixielabs.ai/pixielabs/src/shared/types/proto"
+	logicalpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir"
+	irpb "pixielabs.ai/pixielabs/src/stirling/dynamic_tracing/ir/logical/shared"
 	utils "pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
@@ -24,6 +27,7 @@ import (
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadataenv"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/metadatapb"
+	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
@@ -88,7 +92,7 @@ func TestGetAgentInfo(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(30, 11))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, mockMds, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, mockMds, clock)
 
 	req := metadatapb.AgentInfoRequest{}
 
@@ -132,7 +136,7 @@ func TestGetAgentInfoGetActiveAgentsFailed(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, mockMds, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, mockMds, clock)
 
 	req := metadatapb.AgentInfoRequest{}
 
@@ -196,7 +200,7 @@ func TestGetSchemas(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, mockMds, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, mockMds, clock)
 
 	req := metadatapb.SchemaRequest{}
 
@@ -236,7 +240,7 @@ func TestGetSchemaByAgent(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, mockMds, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, mockMds, clock)
 
 	req := metadatapb.SchemaByAgentRequest{}
 
@@ -317,7 +321,7 @@ func TestGetAgentTableMetadata(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, mockMds, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, nil, mockMds, clock)
 
 	req := metadatapb.AgentTableMetadataRequest{}
 
@@ -342,4 +346,257 @@ func TestGetAgentTableMetadata(t *testing.T) {
 	assert.Equal(t, len(dataInfoMap), 2)
 	assert.Equal(t, dataInfoMap[agent1ID], expectedDataInfos[agent1ID])
 	assert.Equal(t, dataInfoMap[agent2ID], expectedDataInfos[agent2ID])
+}
+
+func Test_Server_RegisterProbe(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+	mockProbeStore := mock_controllers.NewMockProbeStore(ctrl)
+
+	probeMgr := controllers.NewProbeManager(nil, mockProbeStore)
+
+	program := &logicalpb.Program{
+		Probes: []*logicalpb.Probe{
+			&logicalpb.Probe{
+				Name: "test",
+			},
+			&logicalpb.Probe{
+				Name: "anotherProbe",
+			},
+		},
+	}
+
+	mockAgtMgr.
+		EXPECT().
+		GetActiveAgents().
+		Return([]*agentpb.Agent{}, nil)
+
+	mockProbeStore.
+		EXPECT().
+		GetProbe("test_probe").
+		Return(nil, nil)
+
+	mockProbeStore.
+		EXPECT().
+		UpsertProbe(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(probeID string, probeInfo *storepb.ProbeInfo) error {
+			assert.Equal(t, program, probeInfo.Program)
+			assert.Equal(t, "test_probe", probeInfo.ProbeID)
+			return nil
+		})
+
+	// Set up server.
+	env, err := metadataenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	clock := testingutils.NewTestClock(time.Unix(0, 70))
+
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, probeMgr, mockMds, clock)
+
+	req := metadatapb.RegisterProbeRequest{
+		Program:   program,
+		ProbeName: "test_probe",
+	}
+
+	resp, err := s.RegisterProbe(context.Background(), &req)
+
+	assert.NotNil(t, resp)
+	assert.Nil(t, err)
+
+	assert.Equal(t, "test_probe", resp.ProbeID)
+	assert.Equal(t, statuspb.OK, resp.Status.ErrCode)
+}
+
+func Test_Server_RegisterProbe_Exists(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+	mockProbeStore := mock_controllers.NewMockProbeStore(ctrl)
+
+	probeMgr := controllers.NewProbeManager(nil, mockProbeStore)
+
+	program := &logicalpb.Program{
+		Outputs: []*irpb.Output{
+			&irpb.Output{
+				Name:   "table1",
+				Fields: []string{"abc", "def"},
+			},
+		},
+	}
+
+	mockProbeStore.
+		EXPECT().
+		GetProbe("test_probe").
+		Return(&storepb.ProbeInfo{
+			Program: &logicalpb.Program{
+				Outputs: []*irpb.Output{
+					&irpb.Output{
+						Name:   "table1",
+						Fields: []string{"def"},
+					},
+				},
+			},
+		}, nil)
+
+	// Set up server.
+	env, err := metadataenv.New()
+	if err != nil {
+		t.Fatal("Failed to create api environment.")
+	}
+
+	clock := testingutils.NewTestClock(time.Unix(0, 70))
+
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, probeMgr, mockMds, clock)
+
+	req := metadatapb.RegisterProbeRequest{
+		Program:   program,
+		ProbeName: "test_probe",
+	}
+
+	resp, err := s.RegisterProbe(context.Background(), &req)
+
+	assert.NotNil(t, resp)
+	assert.Nil(t, err)
+
+	assert.Equal(t, "test_probe", resp.ProbeID)
+	assert.Equal(t, statuspb.ALREADY_EXISTS, resp.Status.ErrCode)
+}
+
+func Test_Server_GetProbeInfo(t *testing.T) {
+	tests := []struct {
+		name           string
+		expectedState  statuspb.LifeCycleState
+		expectedStatus *statuspb.Status
+		agentStates    []*storepb.AgentProbeStatus
+		probeExists    bool
+	}{
+		{
+			name:           "healthy probe",
+			expectedState:  statuspb.RUNNING_STATE,
+			expectedStatus: nil,
+			agentStates: []*storepb.AgentProbeStatus{
+				&storepb.AgentProbeStatus{
+					State: statuspb.FAILED_STATE,
+				},
+				&storepb.AgentProbeStatus{
+					State: statuspb.RUNNING_STATE,
+				},
+			},
+			probeExists: true,
+		},
+		{
+			name:           "evicted probe",
+			expectedState:  statuspb.EVICTED_STATE,
+			expectedStatus: nil,
+			agentStates: []*storepb.AgentProbeStatus{
+				&storepb.AgentProbeStatus{
+					State: statuspb.RUNNING_STATE,
+				},
+				&storepb.AgentProbeStatus{
+					State: statuspb.EVICTED_STATE,
+				},
+			},
+			probeExists: true,
+		},
+		{
+			name:          "nonexistent probe",
+			expectedState: statuspb.UNKNOWN_STATE,
+			expectedStatus: &statuspb.Status{
+				ErrCode: statuspb.NOT_FOUND,
+			},
+			agentStates: nil,
+			probeExists: false,
+		},
+		{
+			name:           "pending probe",
+			expectedState:  statuspb.PENDING_STATE,
+			expectedStatus: nil,
+			agentStates: []*storepb.AgentProbeStatus{
+				&storepb.AgentProbeStatus{
+					State: statuspb.FAILED_STATE,
+				},
+				&storepb.AgentProbeStatus{
+					State: statuspb.PENDING_STATE,
+				},
+			},
+			probeExists: true,
+		},
+		{
+			name:          "failed probe",
+			expectedState: statuspb.FAILED_STATE,
+			expectedStatus: &statuspb.Status{
+				ErrCode: statuspb.RESOURCE_UNAVAILABLE,
+			},
+			agentStates: []*storepb.AgentProbeStatus{
+				&storepb.AgentProbeStatus{
+					State: statuspb.FAILED_STATE,
+					Status: &statuspb.Status{
+						ErrCode: statuspb.RESOURCE_UNAVAILABLE,
+					},
+				},
+				&storepb.AgentProbeStatus{
+					State: statuspb.FAILED_STATE,
+				},
+			},
+			probeExists: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Set up mock.
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+			mockMds := mock_controllers.NewMockMetadataStore(ctrl)
+			mockProbeStore := mock_controllers.NewMockProbeStore(ctrl)
+
+			probeMgr := controllers.NewProbeManager(nil, mockProbeStore)
+
+			if !test.probeExists {
+				mockProbeStore.
+					EXPECT().
+					GetProbe("test_probe").
+					Return(nil, nil)
+			} else {
+				mockProbeStore.
+					EXPECT().
+					GetProbe("test_probe").
+					Return(&storepb.ProbeInfo{ProbeID: "test_probe"}, nil)
+
+				mockProbeStore.
+					EXPECT().
+					GetProbeStates("test_probe").
+					Return(test.agentStates, nil)
+			}
+
+			// Set up server.
+			env, err := metadataenv.New()
+			if err != nil {
+				t.Fatal("Failed to create api environment.")
+			}
+
+			clock := testingutils.NewTestClock(time.Unix(0, 70))
+
+			s, err := controllers.NewServerWithClock(env, mockAgtMgr, probeMgr, mockMds, clock)
+			req := metadatapb.GetProbeInfoRequest{
+				ProbeIDs: []string{"test_probe"},
+			}
+
+			resp, err := s.GetProbeInfo(context.Background(), &req)
+			assert.Nil(t, err)
+			assert.Equal(t, 1, len(resp.Probes))
+			assert.Equal(t, "test_probe", resp.Probes[0].ProbeID)
+			assert.Equal(t, test.expectedState, resp.Probes[0].State)
+			assert.Equal(t, test.expectedStatus, resp.Probes[0].Status)
+			assert.Equal(t, test.expectedStatus, resp.Probes[0].Status)
+		})
+	}
 }

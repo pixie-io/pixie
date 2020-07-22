@@ -100,7 +100,7 @@ message GetProbeInfoRequest {
 message GetProbeInfoResponse {
     message ProbeState {
         // The probe ID.
-        string probe_id = 1 [ (gogoproto.customname) = "ProbeIDs" ];
+        string probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
         // The state of the probe.
         pl.statuspb.LifeCycleState state = 2;
         // The status of the probe, specified if the state of the probe is not healthy.
