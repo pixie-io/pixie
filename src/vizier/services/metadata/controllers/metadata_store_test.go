@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	distributedpb "pixielabs.ai/pixielabs/src/carnot/planner/distributedpb"
+	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	bloomfilterpb "pixielabs.ai/pixielabs/src/shared/bloomfilterpb"
 	k8s_metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/metadatapb"
@@ -1948,4 +1949,84 @@ func TestKVMetadataStore_GetProbes(t *testing.T) {
 
 	assert.Equal(t, s1.ProbeID, probes[0].ProbeID)
 	assert.Equal(t, s2.ProbeID, probes[1].ProbeID)
+}
+
+func TestKVMetadataStore_UpdateProbeState(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	agentID := uuid.NewV4()
+	// Create probe state
+	s1 := &storepb.AgentProbeStatus{
+		ProbeID: "test_probe",
+		AgentID: utils.ProtoFromUUID(&agentID),
+		State:   statuspb.RUNNING_STATE,
+	}
+
+	err = mds.UpdateProbeState(s1)
+	assert.Nil(t, err)
+
+	savedProbe, err := c.Get("/probeStates/test_probe/" + agentID.String())
+	savedProbePb := &storepb.AgentProbeStatus{}
+	err = proto.Unmarshal(savedProbe, savedProbePb)
+	assert.Nil(t, err)
+	assert.Equal(t, s1, savedProbePb)
+}
+
+func TestKVMetadataStore_GetProbeStates(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
+	mockDs.
+		EXPECT().
+		GetWithPrefix("/probeStates/test_probe/").
+		Return(nil, nil, nil).
+		Times(1)
+
+	clock := testingutils.NewTestClock(time.Unix(2, 0))
+	c := kvstore.NewCacheWithClock(mockDs, clock)
+
+	mds, err := controllers.NewKVMetadataStore(c)
+	assert.Nil(t, err)
+
+	agentID1 := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
+	agentID2 := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
+
+	// Create probes.
+	s1 := &storepb.AgentProbeStatus{
+		ProbeID: "test_probe",
+		AgentID: utils.ProtoFromUUID(&agentID1),
+		State:   statuspb.RUNNING_STATE,
+	}
+	s1Text, err := s1.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal probe pb")
+	}
+
+	s2 := &storepb.AgentProbeStatus{
+		ProbeID: "test_probe",
+		AgentID: utils.ProtoFromUUID(&agentID2),
+		State:   statuspb.PENDING_STATE,
+	}
+	s2Text, err := s2.Marshal()
+	if err != nil {
+		t.Fatal("Unable to marshal probe pb")
+	}
+
+	c.Set("/probeStates/test_probe/"+agentID1.String(), string(s1Text))
+	c.Set("/probeStates/test_probe/"+agentID2.String(), string(s2Text))
+
+	probes, err := mds.GetProbeStates("test_probe")
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(probes))
+
+	assert.Equal(t, s1.AgentID, probes[0].AgentID)
+	assert.Equal(t, s2.AgentID, probes[1].AgentID)
 }

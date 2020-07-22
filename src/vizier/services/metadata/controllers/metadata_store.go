@@ -17,6 +17,7 @@ import (
 	"pixielabs.ai/pixielabs/src/shared/k8s"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
 	"pixielabs.ai/pixielabs/src/shared/types"
+	"pixielabs.ai/pixielabs/src/utils"
 	messagespb "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/kvstore"
 	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
@@ -230,6 +231,14 @@ func getProbesKey() string {
 
 func getProbeKey(probeID string) string {
 	return path.Join("/", "probe", probeID)
+}
+
+func getProbeStatesKey(probeID string) string {
+	return path.Join("/", "probeStates", probeID) + "/"
+}
+
+func getProbeStateKey(probeID string, agentID uuid.UUID) string {
+	return path.Join("/", "probeStates", probeID, agentID.String())
 }
 
 /* =============== Agent Operations ============== */
@@ -1205,6 +1214,33 @@ func (mds *KVMetadataStore) GetProbes() ([]*storepb.ProbeInfo, error) {
 	probes := make([]*storepb.ProbeInfo, len(vals))
 	for i, val := range vals {
 		pb := &storepb.ProbeInfo{}
+		proto.Unmarshal(val, pb)
+		probes[i] = pb
+	}
+	return probes, nil
+}
+
+// UpdateProbeState updates the agent probe state in the store.
+func (mds *KVMetadataStore) UpdateProbeState(state *storepb.AgentProbeStatus) error {
+	val, err := state.Marshal()
+	if err != nil {
+		return err
+	}
+
+	mds.cache.Set(getProbeStateKey(state.ProbeID, utils.UUIDFromProtoOrNil(state.AgentID)), string(val))
+	return nil
+}
+
+// GetProbeStates gets all the agentProbe states for the given probe.
+func (mds *KVMetadataStore) GetProbeStates(probeID string) ([]*storepb.AgentProbeStatus, error) {
+	_, vals, err := mds.cache.GetWithPrefix(getProbeStatesKey(probeID))
+	if err != nil {
+		return nil, err
+	}
+
+	probes := make([]*storepb.AgentProbeStatus, len(vals))
+	for i, val := range vals {
+		pb := &storepb.AgentProbeStatus{}
 		proto.Unmarshal(val, pb)
 		probes[i] = pb
 	}

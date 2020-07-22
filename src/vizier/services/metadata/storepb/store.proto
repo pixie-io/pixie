@@ -5,6 +5,7 @@ package pl.vizier.services.metadata;
 import "src/common/base/proto/status.proto";
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 import "src/stirling/dynamic_tracing/ir/logical.proto";
+import "src/common/uuid/proto/uuid.proto";
 
 option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb;storepb";
 
@@ -25,5 +26,5 @@ message AgentProbeStatus {
   // The status of the probe, specified if the state of the probe is not healthy.
   pl.statuspb.Status status = 2;
   string probe_id = 3 [ (gogoproto.customname) = "ProbeID" ];
-  string agent_id = 4 [ (gogoproto.customname) = "AgentID" ];
+  uuidpb.UUID agent_id = 4 [ (gogoproto.customname) = "AgentID" ];
 }

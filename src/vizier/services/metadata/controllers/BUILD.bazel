@@ -68,6 +68,7 @@ go_test(
     embed = [":go_default_library"],
     deps = [
         "//src/carnot/planner/distributedpb:distributed_plan_pl_go_proto",
+        "//src/common/base/proto:status_pl_go_proto",
         "//src/common/uuid/proto:uuid_pl_go_proto",
         "//src/shared/bloomfilterpb:bloomfilter_pl_go_proto",
         "//src/shared/cvmsgspb:cvmsgs_pl_go_proto",
