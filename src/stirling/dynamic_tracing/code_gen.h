@@ -23,7 +23,8 @@ StatusOr<std::vector<std::string>> GenStruct(const ir::physical::Struct& st,
 
 // Returns the definition of the input ScalarVariable.
 // TODO(yzhao): This probably need to handle indentation.
-StatusOr<std::vector<std::string>> GenScalarVariable(const ir::physical::ScalarVariable& var);
+StatusOr<std::vector<std::string>> GenScalarVariable(
+    const ir::physical::ScalarVariable& var, const ir::shared::BinarySpec::Language& language);
 
 // Returns the definition of the input StructVariable, with assignments of all fields.
 StatusOr<std::vector<std::string>> GenStructVariable(const ir::physical::Struct& st,

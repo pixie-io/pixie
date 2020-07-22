@@ -10,6 +10,8 @@ namespace pl {
 namespace stirling {
 namespace dynamic_tracing {
 
+constexpr size_t kStructStringSize = 64;
+
 struct BCCProgram {
   struct PerfBufferSpec {
     std::string name;

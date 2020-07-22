@@ -2,7 +2,6 @@
 
 #include "src/shared/types/proto/types.pb.h"
 #include "src/stirling/dynamic_tracing/dynamic_tracer.h"
-#include "src/stirling/utils/linux_headers.h"
 
 namespace pl {
 namespace stirling {
@@ -36,8 +35,6 @@ void GenericHandleEventLoss(void* cb_cookie, uint64_t lost) {
 }  // namespace
 
 Status DynamicTraceConnector::InitImpl() {
-  PL_RETURN_IF_ERROR(utils::FindOrInstallLinuxHeaders(utils::kDefaultHeaderSearchOrder));
-
   PL_RETURN_IF_ERROR(InitBPFProgram(bcc_program_.code));
 
   for (const auto& uprobe : bcc_program_.uprobes) {
@@ -72,6 +69,28 @@ class StructDecoder {
     std::memcpy(&val, buf_.data(), sizeof(NativeScalarType));
     buf_.remove_prefix(sizeof(NativeScalarType));
     return val;
+  }
+
+  StatusOr<std::string> ExtractString() {
+    // NOTE: This implementation must match "struct string" defined in code_gen.cc.
+    // A copy is provided here for reference:
+    //
+    // #define MAX_STR_LEN (kStructStringSize-sizeof(int64_t)-1)
+    // struct string {
+    //   uint64_t len;
+    //   char buf[MAX_STR_LEN];
+    //   // To keep 4.14 kernel verifier happy we copy an extra byte.
+    //   // Keep a dummy character to absorb this garbage.
+    //   char dummy;
+    // };
+    //
+    // TODO(oazizi): Find a better way to keep these in sync.
+    PL_ASSIGN_OR_RETURN(size_t len, ExtractField<size_t>());
+    std::string s;
+    s.resize(len);
+    std::memcpy(s.data(), buf_.data(), len);
+    buf_.remove_prefix(dynamic_tracing::kStructStringSize - sizeof(size_t));
+    return s;
   }
 
  private:
@@ -143,6 +162,13 @@ Status FillColumn(StructDecoder* struct_decoder, DataTable::DynamicRecordBuilder
       WRITE_COLUMN(uint64_t, types::Int64Value);
       break;
     }
+    case ScalarType::STRING: {
+      PL_ASSIGN_OR_RETURN(std::string val, struct_decoder->ExtractString());
+      r->Append(col_idx++, types::StringValue(val));
+      break;
+    }
+    case ScalarType::UNKNOWN:
+      return error::Internal("Unknown scalar type should not be used.");
     case ScalarType::ScalarType_INT_MIN_SENTINEL_DO_NOT_USE_:
     case ScalarType::ScalarType_INT_MAX_SENTINEL_DO_NOT_USE_:
       LOG(DFATAL) << "Impossible enum value";

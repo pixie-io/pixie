@@ -76,6 +76,10 @@ func GoHasNamedReturns() (retfoo int, retbar bool) {
 	return 12, true
 }
 
+func SaySomethingTo(something string, name string) string {
+	return something + ", " + name
+}
+
 func main() {
 	for true {
 		v := Vertex{3, 4}
@@ -96,6 +100,7 @@ func main() {
 		c := PointerWrapperWrapper{1, 2, b, 3}
 		d := PointerWrapperWrapperWrapper{1, &c, 2, 3}
 		fmt.Println(PointerWrapperWrapperWrapperFunc(d))
+		fmt.Println(SaySomethingTo("Hello", "pixienaut"));
 
 		time.Sleep(time.Second)
 	}

@@ -11,9 +11,11 @@
 
 #include "src/stirling/proto/stirling.pb.h"
 
-// The binary location cannot be hard-coded because its location depends on -c opt/dbg/fastbuild.
+// These binary location cannot be hard-coded because their locations depend on -c
+// opt/dbg/fastbuild.
 DEFINE_string(go_grpc_client_path, "", "The path to the go greeter client executable.");
 DEFINE_string(go_grpc_server_path, "", "The path to the go greeter server executable.");
+DEFINE_string(dummy_go_binary, "", "The path to the go dummy_go_binary executable.");
 
 namespace pl {
 namespace stirling {

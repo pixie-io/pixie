@@ -86,6 +86,9 @@ class Dwarvifier {
                               const std::string& struct_type_name,
                               ir::physical::Program* output_program);
 
+  StatusOr<ir::shared::ScalarType> VarTypeToProtoScalarType(const VarType& type,
+                                                            std::string_view name);
+
   const std::map<std::string, ir::shared::Map*>& maps_;
   const std::map<std::string, ir::physical::PerfBufferOutput*>& outputs_;
   std::map<std::string, ir::physical::Struct*> structs_;
@@ -173,8 +176,8 @@ const std::map<std::string_view, ir::shared::ScalarType> kGoTypesMap = {
 };
 // clang-format on
 
-StatusOr<ir::shared::ScalarType> VarTypeToProtoScalarType(const VarType& type,
-                                                          std::string_view name) {
+StatusOr<ir::shared::ScalarType> Dwarvifier::VarTypeToProtoScalarType(const VarType& type,
+                                                                      std::string_view name) {
   switch (type) {
     case VarType::kBaseType: {
       auto iter = kGoTypesMap.find(name);
@@ -185,8 +188,13 @@ StatusOr<ir::shared::ScalarType> VarTypeToProtoScalarType(const VarType& type,
     }
     case VarType::kPointer:
       return ir::shared::ScalarType::VOID_POINTER;
+    case VarType::kStruct:
+      if (language_ == ir::shared::BinarySpec_Language_GOLANG && name == "string") {
+        return ir::shared::ScalarType::STRING;
+      }
+      return error::Internal("Unhandled type: $0 (name=$1)", magic_enum::enum_name(type), name);
     default:
-      return error::Internal("Unhandled type: $0", magic_enum::enum_name(type));
+      return error::Internal("Unhandled type: $0 (name=$1)", magic_enum::enum_name(type), name);
   }
 }
 

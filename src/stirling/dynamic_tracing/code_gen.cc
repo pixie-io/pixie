@@ -49,6 +49,7 @@ namespace {
 
 // clang-format off
 const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypeToCType = {
+    {ScalarType::VOID_POINTER, "void*"},
     {ScalarType::BOOL, "bool"},
     {ScalarType::INT, "int"},
     {ScalarType::INT8, "int8_t"},
@@ -62,7 +63,8 @@ const absl::flat_hash_map<ScalarType, std::string_view> kScalarTypeToCType = {
     {ScalarType::UINT64, "uint64_t"},
     {ScalarType::FLOAT, "float"},
     {ScalarType::DOUBLE, "double"},
-    {ScalarType::VOID_POINTER, "void*"},
+
+    {ScalarType::STRING, "struct string"},
 };
 // clang-format on
 
@@ -97,7 +99,9 @@ StatusOr<std::string_view> GetPrintFormatCode(ScalarType scalar_type) {
 // that can be used for other operations.
 class BCCCodeGenerator {
  public:
-  explicit BCCCodeGenerator(const ir::physical::Program& program) : program_(program) {}
+  explicit BCCCodeGenerator(const ir::physical::Program& program) : program_(program) {
+    VLOG(1) << "BCCCodeGenerator input: " << program.DebugString();
+  }
 
   // Generates BCC code lines from the input program.
   StatusOr<std::vector<std::string>> GenerateCodeLines();
@@ -180,6 +184,46 @@ std::string GenRegister(const ScalarVariable& var) {
   GCC_SWITCH_RETURN;
 }
 
+// TODO(yzhao/oazizi): Consider making this a member variable to avoid passing language directly.
+//                     Currently deferring this because it will break the tests.
+StatusOr<std::vector<std::string>> GenStringMemoryVariable(
+    const ScalarVariable& var, const ir::shared::BinarySpec::Language& language) {
+  std::vector<std::string> code_lines;
+
+  // TODO(oazizi): Move string variable into a BPF map so that the size can be increased.
+  switch (language) {
+    case ir::shared::BinarySpec_Language_GOLANG:
+      code_lines.push_back(absl::Substitute("void* $0_ptr__;", var.name()));
+      code_lines.push_back(absl::Substitute("bpf_probe_read(&$0_ptr__, sizeof(void*), $1 + $2);",
+                                            var.name(), var.memory().base(),
+                                            var.memory().offset()));
+
+      code_lines.push_back(absl::Substitute("uint64_t $0_len__;", var.name()));
+      code_lines.push_back(absl::Substitute("bpf_probe_read(&$0_len__, sizeof(uint64_t), $1 + $2);",
+                                            var.name(), var.memory().base(),
+                                            var.memory().offset() + sizeof(char*)));
+
+      code_lines.push_back(absl::Substitute(
+          "$0_len__ = ($0_len__ > MAX_STR_LEN) ? MAX_STR_LEN : $0_len__;", var.name()));
+      code_lines.push_back(absl::Substitute(
+          "$0_len__ = $0_len__ & MAX_STR_MASK; // Keep verifier happy.", var.name()));
+
+      code_lines.push_back(absl::Substitute("$0 $1 = {};", GenScalarType(var.type()), var.name()));
+      code_lines.push_back(absl::Substitute("$0.len = $0_len__;", var.name()));
+
+      code_lines.push_back(
+          "// Read one extra byte to avoid passing a size of 0 to bpf_probe_read(), which causes "
+          "BPF verifier issues on kernel 4.14.");
+      code_lines.push_back(
+          absl::Substitute("bpf_probe_read($0.buf, $0.len + 1, $0_ptr__);", var.name()));
+
+      return code_lines;
+    default:
+      return error::Internal("Strings are not yet supported for this language ($0)",
+                             magic_enum::enum_name(language));
+  }
+}
+
 std::vector<std::string> GenMemoryVariable(const ScalarVariable& var) {
   std::vector<std::string> code_lines;
   code_lines.push_back(absl::Substitute("$0 $1;", GenScalarType(var.type()), var.name()));
@@ -210,7 +254,8 @@ std::string GenConstant(const ScalarVariable& var) {
 
 }  // namespace
 
-StatusOr<std::vector<std::string>> GenScalarVariable(const ScalarVariable& var) {
+StatusOr<std::vector<std::string>> GenScalarVariable(
+    const ScalarVariable& var, const ir::shared::BinarySpec::Language& language) {
   switch (var.address_oneof_case()) {
     case ScalarVariable::AddressOneofCase::kReg: {
       std::vector<std::string> code_lines = {GenRegister(var)};
@@ -221,7 +266,11 @@ StatusOr<std::vector<std::string>> GenScalarVariable(const ScalarVariable& var) 
       return code_lines;
     }
     case ScalarVariable::AddressOneofCase::kMemory:
-      return GenMemoryVariable(var);
+      if (var.type() == ir::shared::ScalarType::STRING) {
+        return GenStringMemoryVariable(var, language);
+      } else {
+        return GenMemoryVariable(var);
+      }
     case ScalarVariable::AddressOneofCase::kConstant: {
       std::vector<std::string> code_lines = {GenConstant(var)};
       return code_lines;
@@ -408,7 +457,8 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
       case Variable::VarOneofCase::kScalarVar: {
         PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.scalar_var().name(), "ScalarVariable"));
         scalar_vars[var.scalar_var().name()] = &var.scalar_var();
-        MOVE_BACK_STR_VEC(&code_lines, GenScalarVariable(var.scalar_var()));
+        MOVE_BACK_STR_VEC(&code_lines,
+                          GenScalarVariable(var.scalar_var(), program_.binary_spec().language()));
         break;
       }
       case Variable::VarOneofCase::kMapVar: {
@@ -583,12 +633,33 @@ std::vector<std::string> GenUtilFNs() {
   return code_lines;
 }
 
+std::vector<std::string> GenStringType() {
+  return {
+      absl::Substitute("#define MAX_STR_LEN ($0-sizeof(int64_t)-1)", kStructStringSize),
+      absl::Substitute("#define MAX_STR_MASK ($0-1)", kStructStringSize),
+      "struct string {",
+      "  uint64_t len;",
+      "  char buf[MAX_STR_LEN];",
+      "  // To keep 4.14 kernel verifier happy, we copy an extra byte.",
+      "  // Keep a dummy character to absorb this garbage.",
+      "  char dummy;",
+      "};",
+  };
+}
+
+std::vector<std::string> GenTypes() {
+  std::vector<std::string> code_lines;
+  MoveBackStrVec(GenStringType(), &code_lines);
+  return code_lines;
+}
+
 StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateCodeLines() {
   std::vector<std::string> code_lines;
 
   MoveBackStrVec(GenIncludes(), &code_lines);
   MoveBackStrVec(GenMacros(), &code_lines);
   MoveBackStrVec(GenUtilFNs(), &code_lines);
+  MoveBackStrVec(GenTypes(), &code_lines);
 
   for (const auto& st : program_.structs()) {
     MOVE_BACK_STR_VEC(&code_lines, GenStruct(st));

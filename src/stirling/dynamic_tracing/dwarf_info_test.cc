@@ -135,6 +135,7 @@ probes {
   vars {
     scalar_var {
       name: "arg3"
+      type: BOOL
       memory {
         base: "sp"
         offset: 16
@@ -144,6 +145,7 @@ probes {
   vars {
     scalar_var {
       name: "arg4"
+      type: BOOL
       memory {
         base: "sp"
         offset: 17
@@ -153,6 +155,7 @@ probes {
   vars {
     scalar_var {
       name: "arg5"
+      type: BOOL
       memory {
         base: "sp"
         offset: 20
@@ -248,6 +251,7 @@ probes {
   vars {
     scalar_var {
       name: "retval1"
+      type: BOOL
       memory {
         base: "sp"
         offset: 56
@@ -637,6 +641,7 @@ probes {
   vars {
     scalar_var {
       name: "arg1"
+      type: BOOL
       memory {
         base: "sp"
         offset: 16
@@ -646,6 +651,7 @@ probes {
   vars {
     scalar_var {
       name: "arg2"
+      type: BOOL
       memory {
         base: "sp"
         offset: 17
@@ -779,6 +785,7 @@ probes {
   vars {
     member_var {
       name: "arg1"
+      type: BOOL
       struct_base: "my_stash_ptr"
       is_struct_base_pointer: true
       field: "arg1"

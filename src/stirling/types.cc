@@ -51,6 +51,8 @@ StatusOr<std::unique_ptr<DynamicDataTableSchema>> DynamicDataTableSchema::Create
           {ScalarType::UINT64, types::DataType::INT64},
           {ScalarType::FLOAT, types::DataType::FLOAT64},
           {ScalarType::DOUBLE, types::DataType::FLOAT64},
+
+          {ScalarType::STRING, types::DataType::STRING},
   };
   // clang-format on
 

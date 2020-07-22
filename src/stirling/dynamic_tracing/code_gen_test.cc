@@ -72,7 +72,8 @@ TEST(GenVariableTest, Register) {
   var.set_type(ScalarType::VOID_POINTER);
   var.set_reg(Register::SP);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("void* var = (void*)PT_REGS_SP(ctx);"));
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::BinarySpec_Language_GOLANG),
+                     ElementsAre("void* var = (void*)PT_REGS_SP(ctx);"));
 }
 
 TEST(GenVariableTest, MemoryVariable) {
@@ -87,7 +88,7 @@ TEST(GenVariableTest, MemoryVariable) {
   mem_var->set_offset(123);
 
   ASSERT_OK_AND_THAT(
-      GenScalarVariable(var),
+      GenScalarVariable(var, ir::shared::BinarySpec_Language_GOLANG),
       ElementsAre("int32_t var;", "bpf_probe_read(&var, sizeof(int32_t), sp + 123);"));
 }
 
@@ -99,26 +100,29 @@ TEST(GenVariableTest, Builtin) {
 
   var.set_builtin(BPFHelper::GOID);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("void* var = pl_goid();"));
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::BinarySpec_Language_GOLANG),
+                     ElementsAre("void* var = pl_goid();"));
 
   var.set_builtin(BPFHelper::TGID);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var),
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::BinarySpec_Language_GOLANG),
                      ElementsAre("void* var = bpf_get_current_pid_tgid() >> 32;"));
 
   var.set_builtin(BPFHelper::TGID_PID);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var),
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::BinarySpec_Language_GOLANG),
                      ElementsAre("void* var = bpf_get_current_pid_tgid();"));
 
   var.set_builtin(BPFHelper::KTIME);
   var.set_type(ScalarType::UINT64);
 
-  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("uint64_t var = bpf_ktime_get_ns();"));
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::BinarySpec_Language_GOLANG),
+                     ElementsAre("uint64_t var = bpf_ktime_get_ns();"));
 
   var.set_builtin(BPFHelper::TGID_START_TIME);
   var.set_type(ScalarType::UINT64);
-  ASSERT_OK_AND_THAT(GenScalarVariable(var), ElementsAre("uint64_t var = pl_tgid_start_time();"));
+  ASSERT_OK_AND_THAT(GenScalarVariable(var, ir::shared::BinarySpec_Language_GOLANG),
+                     ElementsAre("uint64_t var = pl_tgid_start_time();"));
 }
 
 TEST(GenStructVariableTest, Variables) {
@@ -297,6 +301,15 @@ TEST(GenProgramTest, SpecsAndCode) {
       "return pl_nsec_to_clock_t(task_group_leader->real_start_time);",
       "#endif",
       "}",
+      "#define MAX_STR_LEN (64-sizeof(int64_t)-1)",
+      "#define MAX_STR_MASK (64-1)",
+      "struct string {",
+      "  uint64_t len;",
+      "  char buf[MAX_STR_LEN];",
+      "  // To keep 4.14 kernel verifier happy, we copy an extra byte.",
+      "  // Keep a dummy character to absorb this garbage.",
+      "  char dummy;",
+      "};",
       "struct socket_data_event_t {",
       "  int32_t i32;",
       "} __attribute__((packed, aligned(1)));",
@@ -319,8 +332,8 @@ TEST(GenProgramTest, SpecsAndCode) {
       "}",
   };
 
-  std::vector<std::string> code_lines = absl::StrSplit(bcc_program.code, "\n");
-  EXPECT_THAT(code_lines, ElementsAreArray(expected_code_lines));
+  std::string expected_code = absl::StrJoin(expected_code_lines, "\n");
+  EXPECT_EQ(bcc_program.code, expected_code);
 }
 
 }  // namespace dynamic_tracing

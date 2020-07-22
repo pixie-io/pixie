@@ -14,7 +14,7 @@ cc_binary(
     ],
 )
 
-# To force no optimizations and no inlining, we need to pass -N -l,
+# To force no optimizations and no inlining, we need to pass -N -l
 gcflags_no_opt_no_inline = [
     "-N",
     "-l",
