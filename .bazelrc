@@ -60,7 +60,12 @@ build:gcc --action_env=BAZEL_CXXOPTS=-std=c++17
 build:gcc --action_env=BAZEL_COMPILER=gcc
 build:gcc --action_env=CC=/usr/bin/gcc-10
 build:gcc --action_env=CXX=/usr/bin/g++-10
-build:gcc --cxxopt -Wno-error=sign-compare
+# These are copts because they apply to both c++ and c files.
+# In particular, upb is has issues with this that will hopefully be
+# fixed upstream soon.
+build:gcc --copt -Wno-error=sign-compare
+build:gcc --copt -Wno-error=stringop-truncation
+build:gcc --copt -Wno-error=maybe-uninitialized
 
 # Default build opts:
 build --config=clang

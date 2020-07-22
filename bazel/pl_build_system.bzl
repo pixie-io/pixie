@@ -27,7 +27,12 @@ def pl_copts():
 
     # Leaving this here as an example of how to add compiler dependent_flags.
     compiler_dependent_flags = select({
-        "@pl//bazel:gcc_build": [],
+        "@pl//bazel:gcc_build": [
+            # Since we globally disable these warnings in the .bazelrc file,
+            # we force them enabled for our own source code.
+            "-Werror=stringop-truncation",
+            "-Werror=maybe-uninitialized",
+        ],
         "//conditions:default": [
             # TODO(yzhao/oazizi): Please remove this after fixing warnings in stirling.
             "-Wno-c99-designator",
