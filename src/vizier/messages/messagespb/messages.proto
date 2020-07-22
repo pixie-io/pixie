@@ -25,8 +25,15 @@ message VizierMessage {
         HeartbeatNack heartbeat_nack = 7;
         ExecuteQueryRequest execute_query_request = 8;
         RegisterProbeRequest register_probe_request = 9;
-        ProbeInfoUpdate probe_info_update = 11;
-        EvictProbeRequest evict_probe_request = 12;
+        ProbeMessage probe_message = 10;
+    }
+}
+
+// A wrapper around all probe-related messages that can be sent over the message bus.
+message ProbeMessage {
+    oneof msg {
+        ProbeInfoUpdate probe_info_update = 1;
+        EvictProbeRequest evict_probe_request = 2;
     }
 }
 
