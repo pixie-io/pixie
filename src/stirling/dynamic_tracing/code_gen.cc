@@ -333,7 +333,7 @@ void MoveBackStrVec(std::vector<std::string>&& src, std::vector<std::string>* ds
 }  // namespace
 
 // TODO(yzhao): Swap order of expr and dst, to be consistent with MoveBackStrVec().
-#define MOVE_BACK_STR_VEC(dst, expr)                           \
+#define MOVE_BACK_STR_VEC(expr, dst)                           \
   PL_ASSIGN_OR_RETURN(std::vector<std::string> str_vec, expr); \
   MoveBackStrVec(std::move(str_vec), dst);
 
@@ -457,8 +457,8 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
       case Variable::VarOneofCase::kScalarVar: {
         PL_RETURN_IF_ERROR(CheckVarName(&var_names, var.scalar_var().name(), "ScalarVariable"));
         scalar_vars[var.scalar_var().name()] = &var.scalar_var();
-        MOVE_BACK_STR_VEC(&code_lines,
-                          GenScalarVariable(var.scalar_var(), program_.binary_spec().language()));
+        MOVE_BACK_STR_VEC(GenScalarVariable(var.scalar_var(), program_.binary_spec().language()),
+                          &code_lines);
         break;
       }
       case Variable::VarOneofCase::kMapVar: {
@@ -492,7 +492,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
                                         st_var.type(), st_var.name());
         }
 
-        MOVE_BACK_STR_VEC(&code_lines, GenStructVariable(*iter->second, st_var));
+        MOVE_BACK_STR_VEC(GenStructVariable(*iter->second, st_var), &code_lines);
         break;
       }
       case Variable::VarOneofCase::VAR_ONEOF_NOT_SET:
@@ -511,7 +511,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
           "variable name '$0' as the value pushed to BPF map '$1' was not defined",
           action.value_variable_name(), action.map_name());
     }
-    MOVE_BACK_STR_VEC(&code_lines, GenMapStashAction(action));
+    MOVE_BACK_STR_VEC(GenMapStashAction(action), &code_lines);
   }
 
   for (const auto& action : probe.output_actions()) {
@@ -662,7 +662,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateCodeLines() {
   MoveBackStrVec(GenTypes(), &code_lines);
 
   for (const auto& st : program_.structs()) {
-    MOVE_BACK_STR_VEC(&code_lines, GenStruct(st));
+    MOVE_BACK_STR_VEC(GenStruct(st), &code_lines);
     structs_[st.name()] = &st;
   }
 
@@ -677,7 +677,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateCodeLines() {
       return error::InvalidArgument("Struct key type '$0' referenced in map '$1' was not defined",
                                     map.value_type().struct_type(), map.name());
     }
-    MOVE_BACK_STR_VEC(&code_lines, GenMap(map));
+    MOVE_BACK_STR_VEC(GenMap(map), &code_lines);
   }
 
   if (program_.binary_spec().language() == ir::shared::BinarySpec_Language_GOLANG) {
@@ -690,7 +690,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateCodeLines() {
   }
 
   for (const auto& probe : program_.probes()) {
-    MOVE_BACK_STR_VEC(&code_lines, GenerateProbe(probe));
+    MOVE_BACK_STR_VEC(GenerateProbe(probe), &code_lines);
   }
 
   return code_lines;
