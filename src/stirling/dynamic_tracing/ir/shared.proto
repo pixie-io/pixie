@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package pl.stirling.dynamic_tracing.ir.shared;
 
-import "src/shared/types/proto/types.proto";
-
 // Describes where to attach a probe.
 message TracePoint {
   string symbol = 1;
