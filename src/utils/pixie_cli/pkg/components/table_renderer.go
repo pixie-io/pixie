@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/olekukonko/tablewriter"
@@ -32,6 +33,8 @@ func CreateStreamWriter(format string, w io.Writer) OutputStreamWriter {
 		return NewJSONStreamWriter(w)
 	case "table":
 		return NewTableStreamWriter(w)
+	case "csv":
+		return NewCSVStreamWriter(w)
 	case "null":
 		return &NullStreamWriter{}
 	case "inmemory":
@@ -51,6 +54,19 @@ type TableStreamWriter struct {
 
 type stringer interface {
 	String() string
+}
+
+func stringifyValue(val interface{}) string {
+	switch u := val.(type) {
+	case time.Time:
+		return u.Format(time.RFC3339)
+	case stringer:
+		return u.String()
+	case float64:
+		return fmt.Sprintf("%0.2f", u)
+	default:
+		return fmt.Sprintf("%+v", u)
+	}
 }
 
 // NewTableStreamWriter creates a table writer based on input stream.
@@ -79,16 +95,7 @@ func (t *TableStreamWriter) stringifyRow(row []interface{}) []string {
 	s := make([]string, len(row))
 
 	for i, val := range row {
-		switch u := val.(type) {
-		case time.Time:
-			s[i] = u.Format(time.RFC3339)
-		case stringer:
-			s[i] = u.String()
-		case float64:
-			s[i] = fmt.Sprintf("%0.2f", u)
-		default:
-			s[i] = fmt.Sprintf("%+v", u)
-		}
+		s[i] = stringifyValue(val)
 	}
 	return s
 }
@@ -248,4 +255,71 @@ func (t *TableAccumulator) Header() []string {
 // Data returns the underlying data table as slice of slices.
 func (t *TableAccumulator) Data() [][]interface{} {
 	return t.data
+}
+
+// CSVStreamWriter writes data in CSV format.
+type CSVStreamWriter struct {
+	w             io.Writer
+	delimiter     []byte
+	id            string
+	headerValues  []string
+	headerWritten bool
+}
+
+// NewCSVStreamWriter creates a CSVStreamWriter.
+func NewCSVStreamWriter(w io.Writer) *CSVStreamWriter {
+	return &CSVStreamWriter{w: w, delimiter: []byte{','}, headerWritten: false}
+}
+
+// SetHeader is called to set the key values for each of the data values. Must be called before Write is.
+func (c *CSVStreamWriter) SetHeader(id string, headerValues []string) {
+	c.id = id
+	c.headerValues = headerValues
+}
+
+func (c *CSVStreamWriter) writeHeader() error {
+	buf := &bytes.Buffer{}
+	buf.WriteString("table_id")
+	for _, headerVal := range c.headerValues {
+		buf.Write(c.delimiter)
+		buf.WriteString(headerVal)
+	}
+	buf.Write([]byte{'\n'})
+	_, err := c.w.Write(buf.Bytes())
+	return err
+}
+
+// Write is called for each record of data.
+func (c *CSVStreamWriter) Write(data []interface{}) error {
+	if !c.headerWritten {
+		if err := c.writeHeader(); err != nil {
+			return err
+		}
+		c.headerWritten = true
+	}
+
+	if len(data) != len(c.headerValues) {
+		return errors.New("header/data length mismatch")
+	}
+	buf := &bytes.Buffer{}
+	buf.WriteString(c.id)
+	for _, d := range data {
+		buf.Write(c.delimiter)
+		dataStr := stringifyValue(d)
+		// Add surrounding quotes to any fields that contain commas or newlines.
+		if strings.Contains(dataStr, ",") || strings.Contains(dataStr, "\n") {
+			// CSV escapes quotes by double quoting.
+			dataStr = strings.Replace(dataStr, "\"", "\"\"", -1)
+			dataStr = "\"" + dataStr + "\""
+		}
+		buf.WriteString(dataStr)
+	}
+	buf.Write([]byte{'\n'})
+	_, err := c.w.Write(buf.Bytes())
+	return err
+}
+
+// Finish is called to flush all the data.
+func (c *CSVStreamWriter) Finish() {
+	// Since CSV writer outputs records right away there is nothing to do here.
 }

@@ -20,7 +20,7 @@ import (
 )
 
 func init() {
-	RunCmd.Flags().StringP("output", "o", "", "Output format: one of: json|table")
+	RunCmd.Flags().StringP("output", "o", "", "Output format: one of: json|table|csv")
 	RunCmd.Flags().StringP("file", "f", "", "Script file, specify - for STDIN")
 	RunCmd.Flags().BoolP("list", "l", false, "List available scripts")
 	RunCmd.Flags().BoolP("all-clusters", "d", false, "Run script across all clusters")
