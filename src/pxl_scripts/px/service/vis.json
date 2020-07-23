@@ -33,32 +33,7 @@
   ],
   "widgets": [
     {
-      "name": "Pod List",
-      "position": {
-        "x": 8,
-        "y": 0,
-        "w": 4,
-        "h": 3
-      },
-      "func": {
-        "name": "pods_for_service",
-        "args": [
-          {
-            "name": "start_time",
-            "variable": "start_time"
-          },
-          {
-            "name": "service",
-            "variable": "service"
-          }
-        ]
-      },
-      "displaySpec": {
-        "@type": "pixielabs.ai/pl.vispb.Table"
-      }
-    },
-    {
-      "name": "Requests and Errors per Second",
+      "name": "HTTP Requests",
       "position": {
         "x": 0,
         "y": 0,
@@ -72,10 +47,6 @@
           {
             "value": "requests_per_s",
             "mode": "MODE_LINE"
-          },
-          {
-            "value": "errors_per_s",
-            "mode": "MODE_LINE"
           }
         ],
         "title": "",
@@ -86,9 +57,33 @@
       }
     },
     {
-      "name": "Latency (ms)",
+      "name": "HTTP Errors",
       "position": {
         "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "inbound_let_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "errors_per_s",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "errors per second"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "HTTP Latency",
+      "position": {
+        "x": 8,
         "y": 0,
         "w": 4,
         "h": 3
@@ -118,10 +113,59 @@
       }
     },
     {
-      "name": "Inbound Traffic By Requesting Service",
+      "name": "HTTP Response Size",
       "position": {
         "x": 0,
         "y": 3,
+        "w": 4,
+        "h": 3
+      },
+      "globalFuncOutputName": "inbound_let_timeseries",
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
+        "timeseries": [
+          {
+            "value": "mbytes_per_s",
+            "mode": "MODE_LINE"
+          }
+        ],
+        "title": "",
+        "yAxis": {
+          "label": "MB / s"
+        },
+        "xAxis": null
+      }
+    },
+    {
+      "name": "Pod List",
+      "position": {
+        "x": 4,
+        "y": 3,
+        "w": 8,
+        "h": 3
+      },
+      "func": {
+        "name": "pods_for_service",
+        "args": [
+          {
+            "name": "start_time",
+            "variable": "start_time"
+          },
+          {
+            "name": "service",
+            "variable": "service"
+          }
+        ]
+      },
+      "displaySpec": {
+        "@type": "pixielabs.ai/pl.vispb.Table"
+      }
+    },
+    {
+      "name": "Inbound Traffic By Requesting Service",
+      "position": {
+        "x": 0,
+        "y": 6,
         "w": 12,
         "h": 3
       },
@@ -146,7 +190,7 @@
       "name": "Outbound Traffic By Responding Service",
       "position": {
         "x": 0,
-        "y": 6,
+        "y": 9,
         "w": 12,
         "h": 3
       },
@@ -171,7 +215,7 @@
       "name": "Sample of Slow Requests",
       "position": {
         "x": 0,
-        "y": 9,
+        "y": 12,
         "w": 12,
         "h": 9
       },

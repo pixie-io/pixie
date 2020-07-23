@@ -74,7 +74,7 @@
       }
     },
     {
-      "name": "Request Throughput",
+      "name": "HTTP Requests",
       "globalFuncOutputName": "inbound_let_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
@@ -100,7 +100,7 @@
       }
     },
     {
-      "name": "P50 Latency",
+      "name": "HTTP P50 Latency",
       "globalFuncOutputName": "inbound_let_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
@@ -126,7 +126,7 @@
       }
     },
     {
-      "name": "P90 Latency",
+      "name": "HTTP P90 Latency",
       "globalFuncOutputName": "inbound_let_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
@@ -152,7 +152,7 @@
       }
     },
     {
-      "name": "P99 Latency",
+      "name": "HTTP P99 Latency",
       "globalFuncOutputName": "inbound_let_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
@@ -178,7 +178,7 @@
       }
     },
     {
-      "name": "Request Error Rate (%)",
+      "name": "HTTP Request Error Rate",
       "globalFuncOutputName": "inbound_let_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",
@@ -204,7 +204,7 @@
       }
     },
     {
-      "name": "CPU Usage (%)",
+      "name": "CPU Usage",
       "globalFuncOutputName": "resource_timeseries",
       "displaySpec": {
         "@type": "pixielabs.ai/pl.vispb.TimeseriesChart",

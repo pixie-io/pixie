@@ -58,7 +58,7 @@
       }
     },
     {
-      "name": "Request Throughput",
+      "name": "HTTP Request Throughput",
       "position": {
         "x": 4,
         "y": 0,
@@ -84,7 +84,7 @@
       }
     },
     {
-      "name": "Request Error Rate",
+      "name": "HTTP Request Error Rate",
       "position": {
         "x": 8,
         "y": 0,
@@ -110,7 +110,7 @@
       }
     },
     {
-      "name": "P50 Latency (ms)",
+      "name": "HTTP P50 Latency (ms)",
       "position": {
         "x": 0,
         "y": 3,
@@ -136,7 +136,7 @@
       }
     },
     {
-      "name": "P90 Latency (ms)",
+      "name": "HTTP P90 Latency (ms)",
       "position": {
         "x": 4,
         "y": 3,
@@ -162,7 +162,7 @@
       }
     },
     {
-      "name": "P99 Latency (ms)",
+      "name": "HTTP P99 Latency (ms)",
       "position": {
         "x": 8,
         "y": 3,

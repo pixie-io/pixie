@@ -108,6 +108,60 @@ def resource_timeseries(start_time: str, pod: px.Pod):
     return df.drop('timestamp')
 
 
+def network_timeseries(start_time: str, pod: px.Pod):
+    ''' Gets the network stats (transmitted/received traffic) for the input node.
+
+    Args:
+    @start: Starting time of the data to examine.
+    @node: The full name of the node to filter on.
+    '''
+    df = px.DataFrame(table='network_stats', start_time=start_time)
+    df = df[px.pod_id_to_pod_name(df.pod_id) == pod]
+    df.timestamp = px.bin(df.time_, px.seconds(window_s))
+
+    df.rx_mb = df.rx_bytes / bytes_per_mb
+    df.tx_mb = df.tx_bytes / bytes_per_mb
+
+    # First calculate network usage by node over all windows.
+    # Data is sharded by Pod in network_stats.
+    df = df.groupby(['timestamp', 'pod_id']).agg(
+        rx_mb_end=('rx_mb', px.max),
+        rx_mb_start=('rx_mb', px.min),
+        tx_mb_end=('tx_mb', px.max),
+        tx_mb_start=('tx_mb', px.min),
+        tx_errors_end=('tx_errors', px.max),
+        tx_errors_start=('tx_errors', px.min),
+        rx_errors_end=('rx_errors', px.max),
+        rx_errors_start=('rx_errors', px.min),
+        tx_drops_end=('tx_drops', px.max),
+        tx_drops_start=('tx_drops', px.min),
+        rx_drops_end=('rx_drops', px.max),
+        rx_drops_start=('rx_drops', px.min),
+    )
+
+    # Calculate the network statistics rate over the window.
+    # We subtract the counter value at the beginning ('_start')
+    # from the value at the end ('_end').
+    df.rx_mb_per_s = (df.rx_mb_end - df.rx_mb_start) / window_s
+    df.tx_mb_per_s = (df.tx_mb_end - df.tx_mb_start) / window_s
+    df.rx_drops_per_s = (df.rx_drops_end - df.rx_drops_start) / window_s
+    df.tx_drops_per_s = (df.tx_drops_end - df.tx_drops_start) / window_s
+    df.rx_errors_per_s = (df.rx_errors_end - df.rx_errors_start) / window_s
+    df.tx_errors_per_s = (df.tx_errors_end - df.tx_errors_start) / window_s
+
+    # Add up the network values per node.
+    df = df.groupby(['timestamp']).agg(
+        rx_mb_per_s=('rx_mb_per_s', px.sum),
+        tx_mb_per_s=('tx_mb_per_s', px.sum),
+        rx_drop_per_s=('rx_drops_per_s', px.sum),
+        tx_drops_per_s=('tx_drops_per_s', px.sum),
+        rx_errors_per_s=('rx_errors_per_s', px.sum),
+        tx_errors_per_s=('tx_errors_per_s', px.sum),
+    )
+    df['time_'] = df['timestamp']
+    return df
+
+
 def inbound_let_timeseries(start_time: str, pod: px.Pod):
     ''' Compute the let as a timeseries for requests received by `pod`.
 

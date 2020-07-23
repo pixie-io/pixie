@@ -52,11 +52,11 @@ def inbound_let_timeseries(start_time: str, service: px.Service):
     df.requests_per_s = df.throughput_total / window_size
     df.errors_per_s = df.error_rate_per_window * df.requests_per_s
     df.error_rate_pct = df.error_rate_per_window * 100
-    df.bytes_per_s = df.bytes_total / window_size
+    df.mbytes_per_s = df.bytes_total / (1024.0 * 1024.0 * window_size)
     df.time_ = df.timestamp
 
     return df[['time_', 'latency_p50', 'latency_p90', 'latency_p99',
-               'requests_per_s', 'errors_per_s', 'error_rate_pct', 'bytes_per_s']]
+               'requests_per_s', 'errors_per_s', 'error_rate_pct', 'mbytes_per_s']]
 
 
 def inbound_let_summary(start_time: str, service: px.Service):
