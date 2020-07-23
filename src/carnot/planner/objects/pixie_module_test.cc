@@ -305,6 +305,28 @@ TEST_F(PixieModuleTest, abs_time_test_expected_time_zone) {
             static_cast<IntIR*>(result2->node())->val());
 }
 
+TEST_F(PixieModuleTest, upid_constructor_test) {
+  auto make_upid_or_s = module_->GetMethod(PixieModule::kMakeUPIDId);
+  ASSERT_OK(make_upid_or_s);
+
+  std::shared_ptr<FuncObject> fn = make_upid_or_s.ConsumeValueOrDie();
+  // Test to show that our time zone is UTC.
+  auto result_or_s = fn->Call(
+      {{}, {ToQLObject(MakeInt(123)), ToQLObject(MakeInt(456)), ToQLObject(MakeInt(789))}}, ast);
+
+  ASSERT_OK(result_or_s);
+  QLObjectPtr result = result_or_s.ConsumeValueOrDie();
+  ASSERT_EQ(result->type(), QLObjectType::kExpr);
+  auto expr = static_cast<ExpressionIR*>(result->node());
+  ASSERT_EQ(expr->type(), IRNodeType::kUInt128);
+  ASSERT_EQ(expr->type_cast()->semantic_type(), types::ST_UPID);
+  auto uint128 = static_cast<UInt128IR*>(expr);
+  auto upid = md::UPID(uint128->val());
+  EXPECT_EQ(upid.asid(), 123);
+  EXPECT_EQ(upid.pid(), 456);
+  EXPECT_EQ(upid.start_ts(), 789);
+}
+
 }  // namespace compiler
 }  // namespace planner
 }  // namespace carnot

@@ -129,6 +129,16 @@ Status PixieModule::RegisterCompileTimeFuncs() {
   AddMethod(kUInt128ConversionId, uuid_str_fn);
 
   PL_ASSIGN_OR_RETURN(
+      std::shared_ptr<FuncObject> upid_constructor_fn,
+      FuncObject::Create(
+          kMakeUPIDId, {"asid", "pid", "ts_ns"}, {},
+          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
+          std::bind(&CompileTimeFuncHandler::UPIDConstructor, graph_, std::placeholders::_1,
+                    std::placeholders::_2, std::placeholders::_3),
+          ast_visitor()));
+  AddMethod(kMakeUPIDId, upid_constructor_fn);
+
+  PL_ASSIGN_OR_RETURN(
       std::shared_ptr<FuncObject> abs_time_fn,
       FuncObject::Create(kAbsTimeOpId, {"date_string", "format"}, {},
                          /* has_variable_len_args */ false, /* has_variable_len_kwargs */ false,
@@ -308,6 +318,33 @@ StatusOr<QLObjectPtr> CompileTimeFuncHandler::UInt128Conversion(IR* graph, const
   }
   PL_ASSIGN_OR_RETURN(UInt128IR * uint128_ir,
                       graph->CreateNode<UInt128IR>(ast, upid_or_s.ConsumeValueOrDie().value()));
+
+  return ExprObject::Create(uint128_ir, visitor);
+}
+
+StatusOr<QLObjectPtr> CompileTimeFuncHandler::UPIDConstructor(IR* graph, const pypa::AstPtr& ast,
+                                                              const ParsedArgs& args,
+                                                              ASTVisitor* visitor) {
+  PL_ASSIGN_OR_RETURN(IntIR * asid_ir, GetArgAs<IntIR>(args, "asid"));
+  PL_ASSIGN_OR_RETURN(IntIR * pid_ir, GetArgAs<IntIR>(args, "pid"));
+  PL_ASSIGN_OR_RETURN(IntIR * ts_ns_ir, GetArgAs<IntIR>(args, "ts_ns"));
+  // Check to make sure asid and pid values are within range of the uint32 values.
+
+  if (asid_ir->val() > UINT32_MAX || asid_ir->val() < 0) {
+    return asid_ir->CreateIRNodeError(
+        "asid value '$0' out of range for a 32-bit number (min is 0 and max is $1)", asid_ir->val(),
+        UINT32_MAX);
+  }
+
+  if (pid_ir->val() > UINT32_MAX || pid_ir->val() < 0) {
+    return pid_ir->CreateIRNodeError(
+        "pid value '$0' out of range for a 32-bit number (min is 0 and max is $1)", pid_ir->val(),
+        UINT32_MAX);
+  }
+
+  auto upid = md::UPID(asid_ir->val(), pid_ir->val(), ts_ns_ir->val());
+  PL_ASSIGN_OR_RETURN(UInt128IR * uint128_ir, graph->CreateNode<UInt128IR>(ast, upid.value()));
+  uint128_ir->SetTypeCast(ValueType::Create(uint128_ir->EvaluatedDataType(), types::ST_UPID));
 
   return ExprObject::Create(uint128_ir, visitor);
 }

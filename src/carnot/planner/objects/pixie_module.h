@@ -32,6 +32,7 @@ class PixieModule : public QLObject {
   inline static constexpr char kNowOpId[] = "now";
   inline static constexpr char kVisAttrId[] = "vis";
   inline static constexpr char kUInt128ConversionId[] = "uint128";
+  inline static constexpr char kMakeUPIDId[] = "make_upid";
   inline static constexpr char kAbsTimeOpId[] = "strptime";
   inline static constexpr char kTimeTypeName[] = "Time";
   inline static constexpr char kContainerTypeName[] = "Container";
@@ -110,6 +111,8 @@ class CompileTimeFuncHandler {
                                         const ParsedArgs& args, ASTVisitor* visitor);
   static StatusOr<QLObjectPtr> UInt128Conversion(IR* graph, const pypa::AstPtr& ast,
                                                  const ParsedArgs& args, ASTVisitor* visitor);
+  static StatusOr<QLObjectPtr> UPIDConstructor(IR* graph, const pypa::AstPtr& ast,
+                                               const ParsedArgs& args, ASTVisitor* visitor);
 
   static StatusOr<QLObjectPtr> AbsTime(IR* graph, const pypa::AstPtr& ast, const ParsedArgs& args,
                                        ASTVisitor* visitor);
