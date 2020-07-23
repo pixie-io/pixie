@@ -80,6 +80,7 @@ probes {
     variable_name: "ret0"
     variable_name: "lat0"
   }
+  ttl_ns: 300000000000
 }
 )pxl";
 
@@ -153,6 +154,7 @@ probes {
     variable_name: "ret0"
     variable_name: "lat0"
   }
+  ttl_ns: 300000000000
 }
 probes {
   name: "myfunc1"
@@ -172,6 +174,7 @@ probes {
     variable_name: "arg0"
     variable_name: "arg1"
   }
+  ttl_ns: 300000000000
 }
 )pxl";
 

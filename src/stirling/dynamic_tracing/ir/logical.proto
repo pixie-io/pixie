@@ -107,6 +107,10 @@ message Probe {
 
   // Used for debugging to print variable defined above.
   repeated shared.Printk printks = 10;
+
+  // The liveness time of the probe, represented in ns. After this time, the
+  // probe will be deleted.
+  uint64 ttl_ns = 11;
 }
 
 // A logical program.

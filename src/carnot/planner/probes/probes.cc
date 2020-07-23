@@ -126,8 +126,7 @@ Status TracingProgram::AddProbe(const std::string& name, ProbeIR* probe_ir, int6
   stirling::dynamic_tracing::ir::logical::Probe probe_pb;
   PL_CHECK_OK(probe_ir->ToProto(&probe_pb));
   probe_pb.set_name(name);
-  // TODO(zasgar) add ttl message to proto
-  PL_UNUSED(ttl_ns);
+  probe_pb.set_ttl_ns(ttl_ns);
   // probe_pb.set_ttl(ttl_ns);
   probes_.push_back(probe_pb);
 
