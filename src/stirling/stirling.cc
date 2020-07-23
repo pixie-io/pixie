@@ -343,7 +343,7 @@ Status StirlingImpl::CheckDynamicTraceStatus(uint64_t trace_id) {
 
 void StirlingImpl::GetPublishProto(stirlingpb::Publish* publish_pb) {
   absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
-  config_->GeneratePublishProto(publish_pb, info_class_mgrs_);
+  config_->PopulatePublishProto(publish_pb, info_class_mgrs_);
 }
 
 Status StirlingImpl::SetSubscription(const stirlingpb::Subscribe& subscribe_proto) {

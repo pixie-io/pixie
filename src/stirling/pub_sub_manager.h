@@ -23,9 +23,11 @@ class PubSubManager {
    *
    * @param publish_pb pointer to a Publish proto message.
    * @param info_class_mgrs Reference to a vector of info class manager unique pointers.
+   * @param filter Generate a publish proto for a single info class, specified by name.
    */
-  void GeneratePublishProto(stirlingpb::Publish* publish_pb,
-                            const InfoClassManagerVec& info_class_mgrs);
+  void PopulatePublishProto(stirlingpb::Publish* publish_pb,
+                            const InfoClassManagerVec& info_class_mgrs,
+                            std::optional<std::string_view> filter = {});
 
   /**
    * Update the ElementState for each InfoElement in the InfoClassManager

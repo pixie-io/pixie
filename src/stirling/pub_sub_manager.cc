@@ -10,13 +10,16 @@ using stirlingpb::InfoClass;
 using stirlingpb::Publish;
 using stirlingpb::Subscribe;
 
-void PubSubManager::GeneratePublishProto(Publish* publish_pb,
-                                         const InfoClassManagerVec& info_class_mgrs) {
+void PubSubManager::PopulatePublishProto(Publish* publish_pb,
+                                         const InfoClassManagerVec& info_class_mgrs,
+                                         std::optional<std::string_view> filter) {
   ECHECK(publish_pb != nullptr);
   // For each InfoClassManager get its proto and update publish_message.
   for (auto& schema : info_class_mgrs) {
-    InfoClass* info_class_proto = publish_pb->add_published_info_classes();
-    info_class_proto->MergeFrom(schema->ToProto());
+    if (!filter.has_value() || schema->name() == filter.value()) {
+      InfoClass* info_class_proto = publish_pb->add_published_info_classes();
+      info_class_proto->MergeFrom(schema->ToProto());
+    }
   }
 }
 
