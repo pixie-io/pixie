@@ -87,8 +87,20 @@ def process_stats_by_entity(start_time: str, entity: str):
     df.rchar_mb = df.rchar_mb_max - df.rchar_mb_min
     df.wchar_mb = df.wchar_mb_max - df.wchar_mb_min
 
-    # Then aggregate process individual process metrics.
-    df = df.groupby([entity]).agg(
+    # Sum by UPID.
+    df = df.groupby([entity, 'timestamp']).agg(
+        cpu_ktime_ms=('cpu_ktime_ms', px.sum),
+        cpu_utime_ms=('cpu_utime_ms', px.sum),
+        read_mb=('read_mb', px.sum),
+        write_mb=('write_mb', px.sum),
+        rchar_mb=('rchar_mb', px.sum),
+        wchar_mb=('wchar_mb', px.sum),
+        rss_mb=('rss_mb', px.sum),
+        vsize_mb=('vsize_mb', px.sum),
+    )
+
+    # Now take the mean value over the various timestamps.
+    df = df.groupby(entity).agg(
         cpu_ktime_ms=('cpu_ktime_ms', px.mean),
         cpu_utime_ms=('cpu_utime_ms', px.mean),
         read_mb=('read_mb', px.mean),
