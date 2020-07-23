@@ -106,11 +106,13 @@ TEST_F(SplitterTest, blocking_agg_test) {
 
 TEST_F(SplitterTest, partial_agg_test) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
-                             {{"mean", MakeMeanFunc(MakeColumn("count", 0))}});
+  auto count_col = MakeColumn("count", 0);
+  count_col->ResolveColumnType(types::INT64);
+  auto agg =
+      MakeBlockingAgg(mem_src, {count_col}, {{"mean", MakeMeanFunc(MakeColumn("count", 0))}});
 
   table_store::schema::Relation relation({types::INT64, types::FLOAT64}, {"count", "mean"});
-  EXPECT_OK(agg->SetRelation(relation));
+  ASSERT_OK(agg->SetRelation(relation));
   MakeMemSink(agg, "out");
 
   auto splitter_or_s = DistributedSplitter::Create(/* perform_partial_agg */ true);
@@ -142,6 +144,12 @@ TEST_F(SplitterTest, partial_agg_test) {
   BlockingAggIR* finalize_agg = static_cast<BlockingAggIR*>(grpc_source->Children()[0]);
 
   EXPECT_EQ(grpc_sink->destination_id(), grpc_source->source_id());
+
+  // Confirm that the relations have serialized in their relation.
+  EXPECT_EQ(grpc_sink->relation(),
+            Relation({types::INT64, types::STRING}, {"count", "serialized_expressions"}));
+  EXPECT_EQ(grpc_source->relation(),
+            Relation({types::INT64, types::STRING}, {"count", "serialized_expressions"}));
 
   // Verify that the aggregate connects back into the original group.
   ASSERT_EQ(finalize_agg->Children().size(), 1);

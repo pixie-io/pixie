@@ -9,6 +9,7 @@
 
 #include "src/carnot/planner/compiler/test_utils.h"
 #include "src/carnot/planner/distributed/partial_op_mgr.h"
+#include "src/carnot/planner/rules/rules.h"
 #include "src/carnot/udf_exporter/udf_exporter.h"
 
 namespace pl {
@@ -50,8 +51,15 @@ TEST_F(PartialOpMgrTest, limit_test) {
 
 TEST_F(PartialOpMgrTest, agg_test) {
   auto mem_src = MakeMemSource(MakeRelation());
-  auto agg = MakeBlockingAgg(mem_src, {MakeColumn("count", 0)},
+  auto count_col = MakeColumn("count", 0);
+  count_col->ResolveColumnType(types::INT64);
+  auto service_col = MakeColumn("service", 0);
+  service_col->ResolveColumnType(types::STRING);
+  auto agg = MakeBlockingAgg(mem_src, {count_col, service_col},
                              {{"mean", MakeMeanFunc(MakeColumn("count", 0))}});
+  Relation agg_relation({types::INT64, types::STRING, types::FLOAT64},
+                        {"count", "service", "mean"});
+  ASSERT_OK(agg->SetRelation(agg_relation));
   MakeMemSink(agg, "out");
 
   // Pre-checks to make sure things work.
@@ -84,6 +92,11 @@ TEST_F(PartialOpMgrTest, agg_test) {
         << absl::Substitute("prep expr $0 merge expr $1", prep_expr.node->DebugString(),
                             merge_expr.node->DebugString());
   }
+  // Confirm that the relations are good.
+  EXPECT_EQ(prepare_agg->relation(), Relation({types::INT64, types::STRING, types::STRING},
+                                              {"count", "service", "serialized_expressions"}));
+
+  EXPECT_EQ(merge_agg->relation(), agg_relation);
 }
 }  // namespace distributed
 }  // namespace planner

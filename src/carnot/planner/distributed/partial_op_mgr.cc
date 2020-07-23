@@ -1,4 +1,9 @@
 #include "src/carnot/planner/distributed/partial_op_mgr.h"
+
+#include <string>
+#include <utility>
+#include <vector>
+
 namespace pl {
 namespace carnot {
 namespace planner {
@@ -28,6 +33,22 @@ StatusOr<OperatorIR*> AggOperatorMgr::CreatePrepareOperator(IR* plan, OperatorIR
   PL_RETURN_IF_ERROR(new_agg->CopyParentsFrom(agg));
   new_agg->SetPartialAgg(true);
   new_agg->SetFinalizeResults(false);
+
+  // Add the columns for the groups.
+  std::vector<types::DataType> col_types;
+  std::vector<std::string> col_names;
+  for (ColumnIR* group : agg->groups()) {
+    DCHECK(group->IsDataTypeEvaluated());
+    col_types.push_back(group->EvaluatedDataType());
+    col_names.push_back(group->col_name());
+  }
+
+  // Add column for the serialized expression
+  col_names.push_back("serialized_expressions");
+  col_types.push_back(types::STRING);
+  PL_RETURN_IF_ERROR(new_agg->SetRelation(
+      table_store::schema::Relation(std::move(col_types), std::move(col_names))));
+
   DCHECK(Match(new_agg, PartialAgg()));
   return new_agg;
 }

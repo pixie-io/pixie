@@ -10,6 +10,7 @@ namespace pl {
 namespace carnot {
 namespace planner {
 namespace distributed {
+using table_store::schema::Relation;
 
 StatusOr<bool> GRPCSourceGroupConversionRule::Apply(IRNode* ir_node) {
   if (Match(ir_node, GRPCSourceGroup())) {

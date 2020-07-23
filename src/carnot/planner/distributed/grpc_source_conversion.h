@@ -11,7 +11,6 @@ namespace pl {
 namespace carnot {
 namespace planner {
 namespace distributed {
-using table_store::schema::Relation;
 
 class GRPCSourceGroupConversionRule : public Rule {
   /**
