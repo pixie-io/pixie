@@ -636,6 +636,11 @@ export class ExecuteScriptResponse extends jspb.Message {
   hasMetaData(): boolean;
   clearMetaData(): void;
 
+  getMutationInfo(): MutationInfo | undefined;
+  setMutationInfo(value?: MutationInfo): void;
+  hasMutationInfo(): boolean;
+  clearMutationInfo(): void;
+
   getResultCase(): ExecuteScriptResponse.ResultCase;
 
   serializeBinary(): Uint8Array;
@@ -652,6 +657,7 @@ export namespace ExecuteScriptResponse {
     queryId: string,
     data?: QueryData.AsObject,
     metaData?: QueryMetadata.AsObject,
+    mutationInfo?: MutationInfo.AsObject,
   }
 
   export enum ResultCase { 
@@ -659,6 +665,55 @@ export namespace ExecuteScriptResponse {
     DATA = 3,
     META_DATA = 4,
   }
+}
+
+export class MutationInfo extends jspb.Message {
+  getStatus(): Status | undefined;
+  setStatus(value?: Status): void;
+  hasStatus(): boolean;
+  clearStatus(): void;
+
+  getStatesList(): Array<MutationInfo.MutationState>;
+  setStatesList(value: Array<MutationInfo.MutationState>): void;
+  clearStatesList(): void;
+  addStates(value?: MutationInfo.MutationState, index?: number): MutationInfo.MutationState;
+
+  serializeBinary(): Uint8Array;
+  toObject(includeInstance?: boolean): MutationInfo.AsObject;
+  static toObject(includeInstance: boolean, msg: MutationInfo): MutationInfo.AsObject;
+  static serializeBinaryToWriter(message: MutationInfo, writer: jspb.BinaryWriter): void;
+  static deserializeBinary(bytes: Uint8Array): MutationInfo;
+  static deserializeBinaryFromReader(message: MutationInfo, reader: jspb.BinaryReader): MutationInfo;
+}
+
+export namespace MutationInfo {
+  export type AsObject = {
+    status?: Status.AsObject,
+    statesList: Array<MutationInfo.MutationState.AsObject>,
+  }
+
+  export class MutationState extends jspb.Message {
+    getId(): string;
+    setId(value: string): void;
+
+    getState(): LifeCycleState;
+    setState(value: LifeCycleState): void;
+
+    serializeBinary(): Uint8Array;
+    toObject(includeInstance?: boolean): MutationState.AsObject;
+    static toObject(includeInstance: boolean, msg: MutationState): MutationState.AsObject;
+    static serializeBinaryToWriter(message: MutationState, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): MutationState;
+    static deserializeBinaryFromReader(message: MutationState, reader: jspb.BinaryReader): MutationState;
+  }
+
+  export namespace MutationState {
+    export type AsObject = {
+      id: string,
+      state: LifeCycleState,
+    }
+  }
+
 }
 
 export class HealthCheckRequest extends jspb.Message {
@@ -726,4 +781,11 @@ export enum SemanticType {
   ST_QUANTILES = 1000,
   ST_IP_ADDRESS = 1100,
   ST_PORT = 1200,
+}
+export enum LifeCycleState { 
+  UNKNOWN_STATE = 0,
+  PENDING_STATE = 1,
+  RUNNING_STATE = 2,
+  FAILED_STATE = 3,
+  TERMINATED_STATE = 4,
 }
