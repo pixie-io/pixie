@@ -166,7 +166,7 @@ probes: {
 TEST_P(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
   InitTestFixturesAndRunTestProgram(GetParam(), kGRPCTraceProgram);
 
-  ASSERT_THAT(bcc_program_.uprobes, SizeIs(6));
+  ASSERT_THAT(bcc_program_.uprobe_specs, SizeIs(6));
   ASSERT_FALSE(tablets_.empty());
 
   {
@@ -186,7 +186,7 @@ TEST_P(GoHTTPDynamicTraceTest, TraceGolangHTTPClientAndServer) {
 TEST_P(GoHTTPDynamicTraceTest, TraceReturnValue) {
   InitTestFixturesAndRunTestProgram(GetParam(), kReturnValueTraceProgram);
 
-  ASSERT_THAT(bcc_program_.uprobes, SizeIs(4));
+  ASSERT_THAT(bcc_program_.uprobe_specs, SizeIs(4));
   ASSERT_FALSE(tablets_.empty());
 
   {

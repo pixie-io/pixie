@@ -8,7 +8,6 @@
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/bcc_wrapper.h"
 #include "src/stirling/dynamic_tracing/ir/physical.pb.h"
-#include "src/stirling/dynamic_tracing/types.h"
 
 namespace pl {
 namespace stirling {
@@ -39,7 +38,7 @@ std::string GenOutputAction(const ir::physical::OutputAction& action);
 
 // TODO(yzhao): Considers move this out of this header and into
 // src/stirling/dynamic_trace_connector.h, because most of this part is not generating BCC code.
-StatusOr<BCCProgram> GenProgram(const ir::physical::Program& program);
+StatusOr<std::string> GenProgram(const ir::physical::Program& program);
 
 }  // namespace dynamic_tracing
 }  // namespace stirling

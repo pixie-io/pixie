@@ -37,8 +37,8 @@ void GenericHandleEventLoss(void* cb_cookie, uint64_t lost) {
 Status DynamicTraceConnector::InitImpl() {
   PL_RETURN_IF_ERROR(InitBPFProgram(bcc_program_.code));
 
-  for (const auto& uprobe : bcc_program_.uprobes) {
-    PL_RETURN_IF_ERROR(AttachUProbe(uprobe));
+  for (const auto& uprobe_spec : bcc_program_.uprobe_specs) {
+    PL_RETURN_IF_ERROR(AttachUProbe(uprobe_spec));
   }
 
   // TODO(yzhao/oazizi): Might need to change this if we need to support multiple perf buffers.

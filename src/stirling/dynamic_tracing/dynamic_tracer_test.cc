@@ -11,13 +11,26 @@ namespace stirling {
 namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
+using ::pl::stirling::bpf_tools::UProbeSpec;
 using ::pl::testing::proto::EqualsProto;
+using ::testing::Field;
+using ::testing::SizeIs;
 
 constexpr std::string_view kLogicalProgramSpec = R"(
+binary_spec {
+  path: "$0"
+  language: GOLANG
+}
+outputs {
+  name: "probe_output"
+  fields: "f1"
+  fields: "f2"
+  fields: "f3"
+  fields: "f4"
+}
 probes: {
   name: "probe0"
   trace_point: {
-    binary_path: "$0"
     symbol: "main.MixedArgTypes"
     type: LOGICAL
   }
@@ -25,7 +38,7 @@ probes: {
     id: "arg0"
     expr: "i1"
   }
-  args {
+    args {
     id: "arg1"
     expr: "i2"
   }
@@ -33,62 +46,96 @@ probes: {
     id: "arg2"
     expr: "i3"
   }
-  args {
-    id: "arg3"
-    expr: "b1"
-  }
-  args {
-    id: "arg4"
-    expr: "b2.B0"
-  }
-  args {
-    id: "arg5"
-    expr: "b2.B3"
-  }
   ret_vals {
     id: "retval0"
-    index: 6
+    expr: "$$6"
   }
-  ret_vals {
-    id: "retval1"
-    index: 7
+  output_actions {
+    output_name: "probe_output"
+    variable_name: "arg0"
+    variable_name: "arg1"
+    variable_name: "arg2"
+    variable_name: "retval0"
   }
 }
 )";
 
-constexpr std::string_view kBCCProgram = R"(
-yo
-)";
-
-struct DynamicTracerTestParam {
-  std::string_view input;
-  std::string_view expected_output;
-};
-
-class DynamicTracerTest : public ::testing::TestWithParam<DynamicTracerTestParam> {
- protected:
-  DynamicTracerTest() : binary_path_(pl::testing::BazelBinTestFilePath(kBinaryPath)) {}
-
-  std::string binary_path_;
-};
-
-TEST_P(DynamicTracerTest, DISABLED_Compile) {
-  DynamicTracerTestParam p = GetParam();
-
-  std::string input_program_str = absl::Substitute(p.input, binary_path_);
+TEST(DynamicTracerTest, Compile) {
+  std::string input_program_str = absl::Substitute(
+      kLogicalProgramSpec, pl::testing::BazelBinTestFilePath(kBinaryPath).string());
   ir::logical::Program input_program;
   ASSERT_TRUE(TextFormat::ParseFromString(input_program_str, &input_program));
 
-  std::string expected_output = absl::Substitute(p.expected_output, binary_path_);
-
   ASSERT_OK_AND_ASSIGN(BCCProgram bcc_program, CompileProgram(input_program));
 
-  ASSERT_EQ(bcc_program.code, expected_output);
-}
+  ASSERT_THAT(bcc_program.uprobe_specs, SizeIs(4));
 
-INSTANTIATE_TEST_SUITE_P(DynamicTracerTestSuite, DynamicTracerTest,
-                         ::testing::Values(DynamicTracerTestParam{kLogicalProgramSpec,
-                                                                  kBCCProgram}));
+  const auto& spec = bcc_program.uprobe_specs[0];
+
+  EXPECT_THAT(spec, Field(&UProbeSpec::binary_path, ::testing::EndsWith("dummy_go_binary")));
+  EXPECT_THAT(spec, Field(&UProbeSpec::symbol, "runtime.casgstatus"));
+  EXPECT_THAT(spec, Field(&UProbeSpec::attach_type, bpf_tools::BPFProbeAttachType::kEntry));
+  EXPECT_THAT(spec, Field(&UProbeSpec::probe_fn, "probe_entry_runtime_casgstatus"));
+
+  ASSERT_THAT(bcc_program.perf_buffer_specs, SizeIs(1));
+
+  const auto& perf_buffer_name = bcc_program.perf_buffer_specs[0].name;
+  const auto& perf_buffer_output = bcc_program.perf_buffer_specs[0].output;
+
+  EXPECT_THAT(perf_buffer_name, "probe_output");
+  EXPECT_THAT(perf_buffer_output, EqualsProto(
+                                      R"proto(
+                                      name: "probe_output_value_t"
+                                      fields {
+                                        name: "tgid__"
+                                        type {
+                                          scalar: INT32
+                                        }
+                                      }
+                                      fields {
+                                        name: "tgid_start_time__"
+                                        type {
+                                          scalar: UINT64
+                                        }
+                                      }
+                                      fields {
+                                        name: "ktime_ns__"
+                                        type {
+                                          scalar: UINT64
+                                        }
+                                      }
+                                      fields {
+                                        name: "goid__"
+                                        type {
+                                          scalar: INT64
+                                        }
+                                      }
+                                      fields {
+                                        name: "arg0"
+                                        type {
+                                          scalar: INT
+                                        }
+                                      }
+                                      fields {
+                                        name: "arg1"
+                                        type {
+                                          scalar: INT
+                                        }
+                                      }
+                                      fields {
+                                        name: "arg2"
+                                        type {
+                                          scalar: INT
+                                        }
+                                      }
+                                      fields {
+                                        name: "retval0"
+                                        type {
+                                          scalar: INT
+                                        }
+                                      }
+                                      )proto"));
+}
 
 }  // namespace dynamic_tracing
 }  // namespace stirling

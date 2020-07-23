@@ -13,23 +13,16 @@ namespace stirling {
 namespace dynamic_tracing {
 
 using ::google::protobuf::TextFormat;
-using ::pl::stirling::bpf_tools::UProbeSpec;
 using ::pl::stirling::dynamic_tracing::ir::physical::MapStashAction;
 using ::pl::stirling::dynamic_tracing::ir::physical::OutputAction;
-using ::pl::stirling::dynamic_tracing::ir::physical::Probe;
 using ::pl::stirling::dynamic_tracing::ir::physical::Register;
 using ::pl::stirling::dynamic_tracing::ir::physical::ScalarVariable;
 using ::pl::stirling::dynamic_tracing::ir::physical::Struct;
 using ::pl::stirling::dynamic_tracing::ir::physical::StructVariable;
 using ::pl::stirling::dynamic_tracing::ir::shared::BPFHelper;
 using ::pl::stirling::dynamic_tracing::ir::shared::ScalarType;
-using ::pl::stirling::dynamic_tracing::ir::shared::VariableType;
-using ::pl::testing::proto::EqualsProto;
 using ::testing::ElementsAre;
-using ::testing::ElementsAreArray;
-using ::testing::EndsWith;
 using ::testing::Field;
-using ::testing::SizeIs;
 using ::testing::StrEq;
 
 TEST(GenStructTest, Output) {
@@ -251,33 +244,7 @@ TEST(GenProgramTest, SpecsAndCode) {
   ASSERT_TRUE(TextFormat::ParseFromString(program_protobuf, &program));
   program.mutable_binary_spec()->set_path(pl::testing::BazelBinTestFilePath(kBinaryPath));
 
-  ASSERT_OK_AND_ASSIGN(const BCCProgram bcc_program, GenProgram(program));
-
-  ASSERT_THAT(bcc_program.uprobes, SizeIs(1));
-
-  const auto& spec = bcc_program.uprobes[0];
-
-  EXPECT_THAT(spec, Field(&UProbeSpec::binary_path, ::testing::EndsWith("dummy_go_binary")));
-  EXPECT_THAT(spec, Field(&UProbeSpec::symbol, "target_symbol"));
-  EXPECT_THAT(spec, Field(&UProbeSpec::attach_type, bpf_tools::BPFProbeAttachType::kEntry));
-  EXPECT_THAT(spec, Field(&UProbeSpec::probe_fn, "probe_entry"));
-
-  ASSERT_THAT(bcc_program.perf_buffer_specs, SizeIs(2));
-
-  const auto& perf_buffer_name = bcc_program.perf_buffer_specs[0].name;
-  const auto& perf_buffer_output = bcc_program.perf_buffer_specs[0].output;
-
-  EXPECT_THAT(perf_buffer_name, "data_events");
-  EXPECT_THAT(perf_buffer_output, EqualsProto(
-                                      R"proto(
-                                      name: "socket_data_event_t"
-                                      fields {
-                                        name: "i32"
-                                        type {
-                                          scalar: INT32
-                                        }
-                                      }
-                                      )proto"));
+  ASSERT_OK_AND_ASSIGN(const std::string bcc_code, GenProgram(program));
 
   const std::vector<std::string> expected_code_lines = {
       "#include <linux/ptrace.h>",
@@ -333,7 +300,7 @@ TEST(GenProgramTest, SpecsAndCode) {
   };
 
   std::string expected_code = absl::StrJoin(expected_code_lines, "\n");
-  EXPECT_EQ(bcc_program.code, expected_code);
+  EXPECT_EQ(bcc_code, expected_code);
 }
 
 }  // namespace dynamic_tracing

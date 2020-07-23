@@ -9,6 +9,7 @@
 
 #include "src/common/base/base.h"
 #include "src/stirling/bpf_tools/utils.h"
+#include "src/stirling/dynamic_tracing/types.h"
 #include "src/stirling/obj_tools/elf_tools.h"
 
 namespace pl {
@@ -105,9 +106,6 @@ class BCCCodeGenerator {
 
   // Generates BCC code lines from the input program.
   StatusOr<std::vector<std::string>> GenerateCodeLines();
-
-  // Returns the definition of a StructVariable, or null_opt if not found.
-  std::optional<const Struct*> FindStruct(std::string_view struct_name) const;
 
  private:
   // Generates the code for a physical probe.
@@ -532,31 +530,7 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateProbe(const Probe& 
   return code_lines;
 }
 
-std::optional<const ir::physical::Struct*> BCCCodeGenerator::FindStruct(
-    std::string_view struct_name) const {
-  auto iter = structs_.find(struct_name);
-  if (iter == structs_.end()) {
-    return std::nullopt;
-  }
-  return iter->second;
-}
-
 namespace {
-
-UProbeSpec GetUProbeSpec(const ir::shared::BinarySpec& binary_spec, const Probe& probe) {
-  UProbeSpec spec;
-
-  spec.binary_path = binary_spec.path();
-  spec.symbol = probe.trace_point().symbol();
-  DCHECK(probe.trace_point().type() == TracePoint::ENTRY ||
-         probe.trace_point().type() == TracePoint::RETURN);
-  // TODO(yzhao): If the binary is go, needs to use kReturnInsts.
-  spec.attach_type = probe.trace_point().type() == TracePoint::ENTRY ? BPFProbeAttachType::kEntry
-                                                                     : BPFProbeAttachType::kReturn;
-  spec.probe_fn = probe.name();
-
-  return spec;
-}
 
 StatusOr<std::vector<std::string>> GenMap(const Map& map) {
   PL_ASSIGN_OR_RETURN(std::string key_code, GenVariableType(map.key_type()));
@@ -696,48 +670,10 @@ StatusOr<std::vector<std::string>> BCCCodeGenerator::GenerateCodeLines() {
 
 }  // namespace
 
-StatusOr<BCCProgram> GenProgram(const Program& program) {
-  BCCProgram res;
-
+StatusOr<std::string> GenProgram(const Program& program) {
   BCCCodeGenerator generator(program);
   PL_ASSIGN_OR_RETURN(std::vector<std::string> code_lines, generator.GenerateCodeLines());
-  res.code = absl::StrJoin(code_lines, "\n");
-
-  std::unique_ptr<elf_tools::ElfReader> elf_reader;
-
-  if (program.binary_spec().language() == ir::shared::BinarySpec::GOLANG) {
-    PL_ASSIGN_OR_RETURN(elf_reader, ElfReader::Create(program.binary_spec().path()));
-  }
-
-  for (const auto& probe : program.probes()) {
-    UProbeSpec spec = GetUProbeSpec(program.binary_spec(), probe);
-    if (program.binary_spec().language() == ir::shared::BinarySpec::GOLANG &&
-        probe.trace_point().type() == ir::shared::TracePoint::RETURN) {
-      PL_ASSIGN_OR_RETURN(std::vector<UProbeSpec> ret_insts_specs,
-                          bpf_tools::TransformGolangReturnProbe(spec, elf_reader.get()));
-      for (auto& spec : ret_insts_specs) {
-        res.uprobes.push_back(std::move(spec));
-      }
-    } else {
-      res.uprobes.push_back(std::move(spec));
-    }
-  }
-
-  for (const auto& output : program.outputs()) {
-    auto struct_opt = generator.FindStruct(output.struct_type());
-    if (!struct_opt.has_value()) {
-      return error::InvalidArgument("Struct '$0' was not defined", output.struct_type());
-    }
-
-    BCCProgram::PerfBufferSpec pf_spec;
-
-    pf_spec.name = output.name();
-    pf_spec.output = *struct_opt.value();
-
-    res.perf_buffer_specs.push_back(std::move(pf_spec));
-  }
-
-  return res;
+  return absl::StrJoin(code_lines, "\n");
 }
 
 }  // namespace dynamic_tracing
