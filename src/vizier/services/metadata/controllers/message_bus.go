@@ -3,7 +3,6 @@ package controllers
 import (
 	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
 )
 
 // TopicListener handles NATS messages for a specific topic.
@@ -25,38 +24,18 @@ type MessageBusController struct {
 }
 
 // NewMessageBusController creates a new controller for handling NATS messages.
-func NewMessageBusController(natsURL string, agentTopic string, agentManager AgentManager, mdStore MetadataStore, mdHandler *MetadataHandler, isLeader *bool) (*MessageBusController, error) {
-	var conn *nats.Conn
-	var err error
-	if viper.GetBool("disable_ssl") {
-		conn, err = nats.Connect(natsURL)
-	} else {
-		conn, err = nats.Connect(natsURL,
-			nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
-			nats.RootCAs(viper.GetString("tls_ca_cert")))
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	conn.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
-		log.WithError(err).
-			WithField("sub", subscription.Subject).
-			Error("Got nats error")
-	})
-
+func NewMessageBusController(conn *nats.Conn, agentTopic string, agentManager AgentManager, probeManager *ProbeManager, mdStore MetadataStore, mdHandler *MetadataHandler, isLeader *bool) (*MessageBusController, error) {
 	ch := make(chan *nats.Msg, 8192)
 	listeners := make(map[string]TopicListener)
 	subscriptions := make([]*nats.Subscription, 0)
 	mc := &MessageBusController{conn: conn, isLeader: isLeader, ch: ch, listeners: listeners, subscriptions: subscriptions}
 
-	mc.registerListeners(agentTopic, agentManager, mdStore, mdHandler)
+	mc.registerListeners(agentTopic, agentManager, probeManager, mdStore, mdHandler)
 
 	// Start listening to messages.
 	go mc.handleMessages()
 
-	return mc, err
+	return mc, nil
 }
 
 func (mc *MessageBusController) handleMessages() {
@@ -81,9 +60,9 @@ func (mc *MessageBusController) handleMessages() {
 	}
 }
 
-func (mc *MessageBusController) registerListeners(agentTopic string, agentManager AgentManager, mdStore MetadataStore, mdHandler *MetadataHandler) error {
+func (mc *MessageBusController) registerListeners(agentTopic string, agentManager AgentManager, probeManager *ProbeManager, mdStore MetadataStore, mdHandler *MetadataHandler) error {
 	// Register AgentTopicListener.
-	atl, err := NewAgentTopicListener(agentManager, mdStore, mc.sendMessage)
+	atl, err := NewAgentTopicListener(agentManager, probeManager, mdStore, mc.sendMessage)
 	if err != nil {
 		return err
 	}

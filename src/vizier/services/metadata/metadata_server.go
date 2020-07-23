@@ -8,6 +8,7 @@ import (
 
 	"github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/pkg/transport"
+	"github.com/nats-io/nats.go"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -35,6 +36,7 @@ func init() {
 	pflag.Duration("max_expected_clock_skew", 750, "Duration in ms of expected maximum clock skew in a cluster")
 	pflag.Duration("renew_period", 500, "Duration in ms of the time to wait to renew lease")
 	pflag.String("pod_namespace", "pl", "The namespace this pod runs in. Used for leader elections")
+	pflag.String("nats_url", "pl-nats", "The URL of NATS")
 }
 
 func etcdTLSConfig() (*tls.Config, error) {
@@ -86,6 +88,25 @@ func main() {
 	}
 	defer etcdClient.Close()
 
+	var nc *nats.Conn
+	if viper.GetBool("disable_ssl") {
+		nc, err = nats.Connect(viper.GetString("nats_url"))
+	} else {
+		nc, err = nats.Connect(viper.GetString("nats_url"),
+			nats.ClientCert(viper.GetString("client_tls_cert"), viper.GetString("client_tls_key")),
+			nats.RootCAs(viper.GetString("tls_ca_cert")))
+	}
+
+	if err != nil {
+		log.WithError(err).Fatal("Could not connect to NATS")
+	}
+
+	nc.SetErrorHandler(func(conn *nats.Conn, subscription *nats.Subscription, err error) {
+		log.WithError(err).
+			WithField("sub", subscription.Subject).
+			Error("Got nats error")
+	})
+
 	// Set up leader election.
 	isLeader := false
 	leaderMgr, err := election.NewK8sLeaderElectionMgr(
@@ -124,6 +145,9 @@ func main() {
 		log.WithError(err).Fatal("Could not create metadata store")
 	}
 
+	// Initialize probe handler.
+	probeMgr := controllers.NewProbeManager(nc, mds)
+
 	agtMgr := controllers.NewAgentManager(mds)
 	keepAlive := true
 	go func() {
@@ -160,7 +184,7 @@ func main() {
 
 	mdHandler.ProcessSubscriberUpdates()
 
-	mc, err := controllers.NewMessageBusController("pl-nats", "update_agent", agtMgr, mds, mdHandler, &isLeader)
+	mc, err := controllers.NewMessageBusController(nc, "update_agent", agtMgr, probeMgr, mds, mdHandler, &isLeader)
 
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to message bus")

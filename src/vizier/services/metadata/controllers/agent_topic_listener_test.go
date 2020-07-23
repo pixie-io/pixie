@@ -11,13 +11,16 @@ import (
 	"github.com/nats-io/nats.go"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
+	statuspb "pixielabs.ai/pixielabs/src/common/base/proto"
 	uuidpb "pixielabs.ai/pixielabs/src/common/uuid/proto"
 	metadatapb "pixielabs.ai/pixielabs/src/shared/k8s/metadatapb"
+	"pixielabs.ai/pixielabs/src/utils"
 	"pixielabs.ai/pixielabs/src/utils/testingutils"
 	messages "pixielabs.ai/pixielabs/src/vizier/messages/messagespb"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock"
 	"pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/testutils"
+	storepb "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb"
 	agentpb "pixielabs.ai/pixielabs/src/vizier/services/shared/agentpb"
 )
 
@@ -33,6 +36,9 @@ func TestAgentRegisterRequest(t *testing.T) {
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+	mockProbeStore := mock_controllers.NewMockProbeStore(ctrl)
+
+	probeMgr := controllers.NewProbeManager(nil, mockProbeStore)
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -59,6 +65,11 @@ func TestAgentRegisterRequest(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+
+	mockProbeStore.
+		EXPECT().
+		GetProbes().
+		Return(nil, nil)
 
 	mockAgtMgr.
 		EXPECT().
@@ -99,7 +110,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 
 	// Create Metadata Service controller.
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, mockMdStore, func(topic string, b []byte) error {
+	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, probeMgr, mockMdStore, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "/agent/"+uuidStr, topic)
 		return nil
@@ -125,7 +136,9 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+	mockProbeStore := mock_controllers.NewMockProbeStore(ctrl)
 
+	probeMgr := controllers.NewProbeManager(nil, mockProbeStore)
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
@@ -154,6 +167,11 @@ func TestKelvinRegisterRequest(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(1)
+
+	mockProbeStore.
+		EXPECT().
+		GetProbes().
+		Return(nil, nil)
 
 	mockAgtMgr.
 		EXPECT().
@@ -193,7 +211,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 		})
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, mockMdStore, func(topic string, b []byte) error {
+	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, probeMgr, mockMdStore, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "/agent/"+uuidStr, topic)
 		return nil
@@ -273,7 +291,7 @@ func TestAgentMetadataUpdatesFailed(t *testing.T) {
 	respPb, err := resp.Marshal()
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, mockMdStore, func(topic string, b []byte) error {
+	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "/agent/"+uuidStr, topic)
 		return nil
@@ -301,7 +319,7 @@ func TestAgentRegisterRequestInvalidUUID(t *testing.T) {
 	reqPb, err := req.Marshal()
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, mockMdStore, func(topic string, b []byte) error {
+	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
 		// This function should never be called.
 		assert.Equal(t, true, false)
 		return nil
@@ -346,7 +364,7 @@ func TestAgentCreateFailed(t *testing.T) {
 		})
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, mockMdStore, func(topic string, b []byte) error {
+	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
 		// This function should never be called.
 		assert.Equal(t, true, false)
 		return nil
@@ -380,7 +398,7 @@ func TestAgentUpdateRequest(t *testing.T) {
 	reqPb, err := req.Marshal()
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, mockMdStore, func(topic string, b []byte) error {
+	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "/agent/"+uuidStr, topic)
 		return nil
@@ -406,7 +424,7 @@ func TestAgentUpdateRequestInvalidUUID(t *testing.T) {
 	reqPb, err := req.Marshal()
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, mockMdStore, func(topic string, b []byte) error {
+	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
 		// This function should never be called.
 		assert.Equal(t, true, false)
 		return nil
@@ -502,7 +520,7 @@ func TestAgentHeartbeat(t *testing.T) {
 	respPb, err := resp.Marshal()
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, mockMdStore, func(topic string, b []byte) error {
+	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "/agent/"+uuidStr, topic)
 		return nil
@@ -549,7 +567,7 @@ func TestAgentHeartbeat_Failed(t *testing.T) {
 	respPb, err := resp.Marshal()
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, mockMdStore, func(topic string, b []byte) error {
+	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "/agent/"+uuidStr, topic)
 		return nil
@@ -572,7 +590,7 @@ func TestEmptyMessage(t *testing.T) {
 	reqPb, err := req.Marshal()
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, mockMdStore, func(topic string, b []byte) error {
+	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
 		// This function should never be called.
 		assert.Equal(t, true, false)
 		return nil
@@ -599,9 +617,57 @@ func TestUnhandledMessage(t *testing.T) {
 	// Send update.
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, mockMdStore, func(topic string, b []byte) error {
+	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, nil, mockMdStore, func(topic string, b []byte) error {
 		// This function should never be called.
 		assert.Equal(t, true, false)
+		return nil
+	}, clock)
+
+	msg := nats.Msg{}
+	msg.Data = reqPb
+	err = atl.HandleMessage(&msg)
+	assert.Nil(t, err)
+}
+
+func TestAgentProbeInfoUpdate(t *testing.T) {
+	// Set up mock.
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
+	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
+	mockProbeStore := mock_controllers.NewMockProbeStore(ctrl)
+
+	probeMgr := controllers.NewProbeManager(nil, mockProbeStore)
+
+	agentID := uuid.NewV4()
+
+	mockProbeStore.
+		EXPECT().
+		UpdateProbeState(&storepb.AgentProbeStatus{
+			ProbeID: "test_proto",
+			AgentID: utils.ProtoFromUUID(&agentID),
+			State:   statuspb.RUNNING_STATE,
+		}).
+		Return(nil)
+
+	req := &messages.VizierMessage{
+		Msg: &messages.VizierMessage_ProbeMessage{
+			ProbeMessage: &messages.ProbeMessage{
+				Msg: &messages.ProbeMessage_ProbeInfoUpdate{
+					ProbeInfoUpdate: &messages.ProbeInfoUpdate{
+						ProbeID: "test_proto",
+						AgentID: utils.ProtoFromUUID(&agentID),
+						State:   statuspb.RUNNING_STATE,
+					},
+				},
+			},
+		},
+	}
+	reqPb, err := req.Marshal()
+	assert.Nil(t, err)
+
+	clock := testingutils.NewTestClock(time.Unix(0, 10))
+	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, probeMgr, mockMdStore, func(topic string, b []byte) error {
 		return nil
 	}, clock)
 
