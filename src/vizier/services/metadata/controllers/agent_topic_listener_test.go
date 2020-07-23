@@ -36,9 +36,9 @@ func TestAgentRegisterRequest(t *testing.T) {
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
-	mockProbeStore := mock_controllers.NewMockProbeStore(ctrl)
+	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
-	probeMgr := controllers.NewProbeManager(nil, mockProbeStore)
+	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
@@ -66,9 +66,9 @@ func TestAgentRegisterRequest(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	mockProbeStore.
+	mockTracepointStore.
 		EXPECT().
-		GetProbes().
+		GetTracepoints().
 		Return(nil, nil)
 
 	mockAgtMgr.
@@ -110,7 +110,7 @@ func TestAgentRegisterRequest(t *testing.T) {
 
 	// Create Metadata Service controller.
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, probeMgr, mockMdStore, func(topic string, b []byte) error {
+	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, tracepointMgr, mockMdStore, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "/agent/"+uuidStr, topic)
 		return nil
@@ -136,9 +136,9 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
-	mockProbeStore := mock_controllers.NewMockProbeStore(ctrl)
+	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
-	probeMgr := controllers.NewProbeManager(nil, mockProbeStore)
+	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 	agentInfo := &agentpb.Agent{
 		Info: &agentpb.AgentInfo{
 			HostInfo: &agentpb.HostInfo{
@@ -168,9 +168,9 @@ func TestKelvinRegisterRequest(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
-	mockProbeStore.
+	mockTracepointStore.
 		EXPECT().
-		GetProbes().
+		GetTracepoints().
 		Return(nil, nil)
 
 	mockAgtMgr.
@@ -211,7 +211,7 @@ func TestKelvinRegisterRequest(t *testing.T) {
 		})
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, probeMgr, mockMdStore, func(topic string, b []byte) error {
+	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, tracepointMgr, mockMdStore, func(topic string, b []byte) error {
 		assert.Equal(t, respPb, b)
 		assert.Equal(t, "/agent/"+uuidStr, topic)
 		return nil
@@ -629,35 +629,35 @@ func TestUnhandledMessage(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestAgentProbeInfoUpdate(t *testing.T) {
+func TestAgentTracepointInfoUpdate(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 	mockMdStore := mock_controllers.NewMockMetadataStore(ctrl)
-	mockProbeStore := mock_controllers.NewMockProbeStore(ctrl)
+	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
-	probeMgr := controllers.NewProbeManager(nil, mockProbeStore)
+	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
 	agentID := uuid.NewV4()
 
-	mockProbeStore.
+	mockTracepointStore.
 		EXPECT().
-		UpdateProbeState(&storepb.AgentProbeStatus{
-			ProbeID: "test_proto",
-			AgentID: utils.ProtoFromUUID(&agentID),
-			State:   statuspb.RUNNING_STATE,
+		UpdateTracepointState(&storepb.AgentTracepointStatus{
+			TracepointID: "test_proto",
+			AgentID:      utils.ProtoFromUUID(&agentID),
+			State:        statuspb.RUNNING_STATE,
 		}).
 		Return(nil)
 
 	req := &messages.VizierMessage{
-		Msg: &messages.VizierMessage_ProbeMessage{
-			ProbeMessage: &messages.ProbeMessage{
-				Msg: &messages.ProbeMessage_ProbeInfoUpdate{
-					ProbeInfoUpdate: &messages.ProbeInfoUpdate{
-						ProbeID: "test_proto",
-						AgentID: utils.ProtoFromUUID(&agentID),
-						State:   statuspb.RUNNING_STATE,
+		Msg: &messages.VizierMessage_TracepointMessage{
+			TracepointMessage: &messages.TracepointMessage{
+				Msg: &messages.TracepointMessage_TracepointInfoUpdate{
+					TracepointInfoUpdate: &messages.TracepointInfoUpdate{
+						TracepointID: "test_proto",
+						AgentID:      utils.ProtoFromUUID(&agentID),
+						State:        statuspb.RUNNING_STATE,
 					},
 				},
 			},
@@ -667,7 +667,7 @@ func TestAgentProbeInfoUpdate(t *testing.T) {
 	assert.Nil(t, err)
 
 	clock := testingutils.NewTestClock(time.Unix(0, 10))
-	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, probeMgr, mockMdStore, func(topic string, b []byte) error {
+	atl, err := controllers.NewAgentTopicListenerWithClock(mockAgtMgr, tracepointMgr, mockMdStore, func(topic string, b []byte) error {
 		return nil
 	}, clock)
 

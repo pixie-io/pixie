@@ -225,20 +225,20 @@ func getNodeKey(n *metadatapb.Node) string {
 	return path.Join(getNodesKey(), n.Metadata.UID)
 }
 
-func getProbesKey() string {
-	return path.Join("/", "probe") + "/"
+func getTracepointsKey() string {
+	return path.Join("/", "tracepoint") + "/"
 }
 
-func getProbeKey(probeID string) string {
-	return path.Join("/", "probe", probeID)
+func getTracepointKey(tracepointID string) string {
+	return path.Join("/", "tracepoint", tracepointID)
 }
 
-func getProbeStatesKey(probeID string) string {
-	return path.Join("/", "probeStates", probeID) + "/"
+func getTracepointStatesKey(tracepointID string) string {
+	return path.Join("/", "tracepointStates", tracepointID) + "/"
 }
 
-func getProbeStateKey(probeID string, agentID uuid.UUID) string {
-	return path.Join("/", "probeStates", probeID, agentID.String())
+func getTracepointStateKey(tracepointID string, agentID uuid.UUID) string {
+	return path.Join("/", "tracepointStates", tracepointID, agentID.String())
 }
 
 /* =============== Agent Operations ============== */
@@ -1189,22 +1189,22 @@ func (mds *KVMetadataStore) GetSubscriberResourceVersion(sub string) (string, er
 	return string(resp), nil
 }
 
-/* =============== Probe Operations ============== */
+/* =============== Tracepoint Operations ============== */
 
-// UpsertProbe updates or creates a new probe entry in the store.
-func (mds *KVMetadataStore) UpsertProbe(probeID string, probeInfo *storepb.ProbeInfo) error {
-	val, err := probeInfo.Marshal()
+// UpsertTracepoint updates or creates a new tracepoint entry in the store.
+func (mds *KVMetadataStore) UpsertTracepoint(tracepointID string, tracepointInfo *storepb.TracepointInfo) error {
+	val, err := tracepointInfo.Marshal()
 	if err != nil {
 		return err
 	}
 
-	mds.cache.Set(getProbeKey(probeID), string(val))
+	mds.cache.Set(getTracepointKey(tracepointID), string(val))
 	return nil
 }
 
-// GetProbe gets the probe info from the store, if it exists.
-func (mds *KVMetadataStore) GetProbe(probeID string) (*storepb.ProbeInfo, error) {
-	resp, err := mds.cache.Get(getProbeKey(probeID))
+// GetTracepoint gets the tracepoint info from the store, if it exists.
+func (mds *KVMetadataStore) GetTracepoint(tracepointID string) (*storepb.TracepointInfo, error) {
+	resp, err := mds.cache.Get(getTracepointKey(tracepointID))
 	if err != nil {
 		return nil, err
 	}
@@ -1212,53 +1212,53 @@ func (mds *KVMetadataStore) GetProbe(probeID string) (*storepb.ProbeInfo, error)
 		return nil, nil
 	}
 
-	probePb := &storepb.ProbeInfo{}
-	err = proto.Unmarshal(resp, probePb)
+	tracepointPb := &storepb.TracepointInfo{}
+	err = proto.Unmarshal(resp, tracepointPb)
 	if err != nil {
 		return nil, err
 	}
-	return probePb, nil
+	return tracepointPb, nil
 }
 
-// GetProbes gets all of the probes in the store.
-func (mds *KVMetadataStore) GetProbes() ([]*storepb.ProbeInfo, error) {
-	_, vals, err := mds.cache.GetWithPrefix(getProbesKey())
+// GetTracepoints gets all of the tracepoints in the store.
+func (mds *KVMetadataStore) GetTracepoints() ([]*storepb.TracepointInfo, error) {
+	_, vals, err := mds.cache.GetWithPrefix(getTracepointsKey())
 	if err != nil {
 		return nil, err
 	}
 
-	probes := make([]*storepb.ProbeInfo, len(vals))
+	tracepoints := make([]*storepb.TracepointInfo, len(vals))
 	for i, val := range vals {
-		pb := &storepb.ProbeInfo{}
+		pb := &storepb.TracepointInfo{}
 		proto.Unmarshal(val, pb)
-		probes[i] = pb
+		tracepoints[i] = pb
 	}
-	return probes, nil
+	return tracepoints, nil
 }
 
-// UpdateProbeState updates the agent probe state in the store.
-func (mds *KVMetadataStore) UpdateProbeState(state *storepb.AgentProbeStatus) error {
+// UpdateTracepointState updates the agent tracepoint state in the store.
+func (mds *KVMetadataStore) UpdateTracepointState(state *storepb.AgentTracepointStatus) error {
 	val, err := state.Marshal()
 	if err != nil {
 		return err
 	}
 
-	mds.cache.Set(getProbeStateKey(state.ProbeID, utils.UUIDFromProtoOrNil(state.AgentID)), string(val))
+	mds.cache.Set(getTracepointStateKey(state.TracepointID, utils.UUIDFromProtoOrNil(state.AgentID)), string(val))
 	return nil
 }
 
-// GetProbeStates gets all the agentProbe states for the given probe.
-func (mds *KVMetadataStore) GetProbeStates(probeID string) ([]*storepb.AgentProbeStatus, error) {
-	_, vals, err := mds.cache.GetWithPrefix(getProbeStatesKey(probeID))
+// GetTracepointStates gets all the agentTracepoint states for the given tracepoint.
+func (mds *KVMetadataStore) GetTracepointStates(tracepointID string) ([]*storepb.AgentTracepointStatus, error) {
+	_, vals, err := mds.cache.GetWithPrefix(getTracepointStatesKey(tracepointID))
 	if err != nil {
 		return nil, err
 	}
 
-	probes := make([]*storepb.AgentProbeStatus, len(vals))
+	tracepoints := make([]*storepb.AgentTracepointStatus, len(vals))
 	for i, val := range vals {
-		pb := &storepb.AgentProbeStatus{}
+		pb := &storepb.AgentTracepointStatus{}
 		proto.Unmarshal(val, pb)
-		probes[i] = pb
+		tracepoints[i] = pb
 	}
-	return probes, nil
+	return tracepoints, nil
 }

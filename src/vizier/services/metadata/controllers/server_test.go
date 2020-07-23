@@ -348,15 +348,15 @@ func TestGetAgentTableMetadata(t *testing.T) {
 	assert.Equal(t, dataInfoMap[agent2ID], expectedDataInfos[agent2ID])
 }
 
-func Test_Server_RegisterProbe(t *testing.T) {
+func Test_Server_RegisterTracepoint(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
-	mockProbeStore := mock_controllers.NewMockProbeStore(ctrl)
+	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
-	probeMgr := controllers.NewProbeManager(nil, mockProbeStore)
+	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
 	program := &logicalpb.Program{
 		Probes: []*logicalpb.Probe{
@@ -364,7 +364,7 @@ func Test_Server_RegisterProbe(t *testing.T) {
 				Name: "test",
 			},
 			&logicalpb.Probe{
-				Name: "anotherProbe",
+				Name: "anotherTracepoint",
 			},
 		},
 	}
@@ -374,17 +374,17 @@ func Test_Server_RegisterProbe(t *testing.T) {
 		GetActiveAgents().
 		Return([]*agentpb.Agent{}, nil)
 
-	mockProbeStore.
+	mockTracepointStore.
 		EXPECT().
-		GetProbe("test_probe").
+		GetTracepoint("test_tracepoint").
 		Return(nil, nil)
 
-	mockProbeStore.
+	mockTracepointStore.
 		EXPECT().
-		UpsertProbe(gomock.Any(), gomock.Any()).
-		DoAndReturn(func(probeID string, probeInfo *storepb.ProbeInfo) error {
-			assert.Equal(t, program, probeInfo.Program)
-			assert.Equal(t, "test_probe", probeInfo.ProbeID)
+		UpsertTracepoint(gomock.Any(), gomock.Any()).
+		DoAndReturn(func(tracepointID string, tracepointInfo *storepb.TracepointInfo) error {
+			assert.Equal(t, program, tracepointInfo.Program)
+			assert.Equal(t, "test_tracepoint", tracepointInfo.TracepointID)
 			return nil
 		})
 
@@ -396,31 +396,31 @@ func Test_Server_RegisterProbe(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, probeMgr, mockMds, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
 
-	req := metadatapb.RegisterProbeRequest{
-		Program:   program,
-		ProbeName: "test_probe",
+	req := metadatapb.RegisterTracepointRequest{
+		Program:        program,
+		TracepointName: "test_tracepoint",
 	}
 
-	resp, err := s.RegisterProbe(context.Background(), &req)
+	resp, err := s.RegisterTracepoint(context.Background(), &req)
 
 	assert.NotNil(t, resp)
 	assert.Nil(t, err)
 
-	assert.Equal(t, "test_probe", resp.ProbeID)
+	assert.Equal(t, "test_tracepoint", resp.TracepointID)
 	assert.Equal(t, statuspb.OK, resp.Status.ErrCode)
 }
 
-func Test_Server_RegisterProbe_Exists(t *testing.T) {
+func Test_Server_RegisterTracepoint_Exists(t *testing.T) {
 	// Set up mock.
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 	mockMds := mock_controllers.NewMockMetadataStore(ctrl)
-	mockProbeStore := mock_controllers.NewMockProbeStore(ctrl)
+	mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
-	probeMgr := controllers.NewProbeManager(nil, mockProbeStore)
+	tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
 	program := &logicalpb.Program{
 		Outputs: []*irpb.Output{
@@ -431,10 +431,10 @@ func Test_Server_RegisterProbe_Exists(t *testing.T) {
 		},
 	}
 
-	mockProbeStore.
+	mockTracepointStore.
 		EXPECT().
-		GetProbe("test_probe").
-		Return(&storepb.ProbeInfo{
+		GetTracepoint("test_tracepoint").
+		Return(&storepb.TracepointInfo{
 			Program: &logicalpb.Program{
 				Outputs: []*irpb.Output{
 					&irpb.Output{
@@ -453,99 +453,99 @@ func Test_Server_RegisterProbe_Exists(t *testing.T) {
 
 	clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-	s, err := controllers.NewServerWithClock(env, mockAgtMgr, probeMgr, mockMds, clock)
+	s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
 
-	req := metadatapb.RegisterProbeRequest{
-		Program:   program,
-		ProbeName: "test_probe",
+	req := metadatapb.RegisterTracepointRequest{
+		Program:        program,
+		TracepointName: "test_tracepoint",
 	}
 
-	resp, err := s.RegisterProbe(context.Background(), &req)
+	resp, err := s.RegisterTracepoint(context.Background(), &req)
 
 	assert.NotNil(t, resp)
 	assert.Nil(t, err)
 
-	assert.Equal(t, "test_probe", resp.ProbeID)
+	assert.Equal(t, "test_tracepoint", resp.TracepointID)
 	assert.Equal(t, statuspb.ALREADY_EXISTS, resp.Status.ErrCode)
 }
 
-func Test_Server_GetProbeInfo(t *testing.T) {
+func Test_Server_GetTracepointInfo(t *testing.T) {
 	tests := []struct {
-		name           string
-		expectedState  statuspb.LifeCycleState
-		expectedStatus *statuspb.Status
-		agentStates    []*storepb.AgentProbeStatus
-		probeExists    bool
+		name             string
+		expectedState    statuspb.LifeCycleState
+		expectedStatus   *statuspb.Status
+		agentStates      []*storepb.AgentTracepointStatus
+		tracepointExists bool
 	}{
 		{
-			name:           "healthy probe",
+			name:           "healthy tracepoint",
 			expectedState:  statuspb.RUNNING_STATE,
 			expectedStatus: nil,
-			agentStates: []*storepb.AgentProbeStatus{
-				&storepb.AgentProbeStatus{
+			agentStates: []*storepb.AgentTracepointStatus{
+				&storepb.AgentTracepointStatus{
 					State: statuspb.FAILED_STATE,
 				},
-				&storepb.AgentProbeStatus{
+				&storepb.AgentTracepointStatus{
 					State: statuspb.RUNNING_STATE,
 				},
 			},
-			probeExists: true,
+			tracepointExists: true,
 		},
 		{
-			name:           "evicted probe",
-			expectedState:  statuspb.EVICTED_STATE,
+			name:           "terminated tracepoint",
+			expectedState:  statuspb.TERMINATED_STATE,
 			expectedStatus: nil,
-			agentStates: []*storepb.AgentProbeStatus{
-				&storepb.AgentProbeStatus{
+			agentStates: []*storepb.AgentTracepointStatus{
+				&storepb.AgentTracepointStatus{
 					State: statuspb.RUNNING_STATE,
 				},
-				&storepb.AgentProbeStatus{
-					State: statuspb.EVICTED_STATE,
+				&storepb.AgentTracepointStatus{
+					State: statuspb.TERMINATED_STATE,
 				},
 			},
-			probeExists: true,
+			tracepointExists: true,
 		},
 		{
-			name:          "nonexistent probe",
+			name:          "nonexistent tracepoint",
 			expectedState: statuspb.UNKNOWN_STATE,
 			expectedStatus: &statuspb.Status{
 				ErrCode: statuspb.NOT_FOUND,
 			},
-			agentStates: nil,
-			probeExists: false,
+			agentStates:      nil,
+			tracepointExists: false,
 		},
 		{
-			name:           "pending probe",
+			name:           "pending tracepoint",
 			expectedState:  statuspb.PENDING_STATE,
 			expectedStatus: nil,
-			agentStates: []*storepb.AgentProbeStatus{
-				&storepb.AgentProbeStatus{
+			agentStates: []*storepb.AgentTracepointStatus{
+				&storepb.AgentTracepointStatus{
 					State: statuspb.FAILED_STATE,
 				},
-				&storepb.AgentProbeStatus{
+				&storepb.AgentTracepointStatus{
 					State: statuspb.PENDING_STATE,
 				},
 			},
-			probeExists: true,
+			tracepointExists: true,
 		},
 		{
-			name:          "failed probe",
+			name:          "failed tracepoint",
 			expectedState: statuspb.FAILED_STATE,
 			expectedStatus: &statuspb.Status{
 				ErrCode: statuspb.RESOURCE_UNAVAILABLE,
 			},
-			agentStates: []*storepb.AgentProbeStatus{
-				&storepb.AgentProbeStatus{
+			agentStates: []*storepb.AgentTracepointStatus{
+				&storepb.AgentTracepointStatus{
 					State: statuspb.FAILED_STATE,
 					Status: &statuspb.Status{
 						ErrCode: statuspb.RESOURCE_UNAVAILABLE,
 					},
 				},
-				&storepb.AgentProbeStatus{
+				&storepb.AgentTracepointStatus{
 					State: statuspb.FAILED_STATE,
 				},
 			},
-			probeExists: true,
+			tracepointExists: true,
 		},
 	}
 
@@ -556,24 +556,24 @@ func Test_Server_GetProbeInfo(t *testing.T) {
 			defer ctrl.Finish()
 			mockAgtMgr := mock_controllers.NewMockAgentManager(ctrl)
 			mockMds := mock_controllers.NewMockMetadataStore(ctrl)
-			mockProbeStore := mock_controllers.NewMockProbeStore(ctrl)
+			mockTracepointStore := mock_controllers.NewMockTracepointStore(ctrl)
 
-			probeMgr := controllers.NewProbeManager(nil, mockProbeStore)
+			tracepointMgr := controllers.NewTracepointManager(nil, mockTracepointStore)
 
-			if !test.probeExists {
-				mockProbeStore.
+			if !test.tracepointExists {
+				mockTracepointStore.
 					EXPECT().
-					GetProbe("test_probe").
+					GetTracepoint("test_tracepoint").
 					Return(nil, nil)
 			} else {
-				mockProbeStore.
+				mockTracepointStore.
 					EXPECT().
-					GetProbe("test_probe").
-					Return(&storepb.ProbeInfo{ProbeID: "test_probe"}, nil)
+					GetTracepoint("test_tracepoint").
+					Return(&storepb.TracepointInfo{TracepointID: "test_tracepoint"}, nil)
 
-				mockProbeStore.
+				mockTracepointStore.
 					EXPECT().
-					GetProbeStates("test_probe").
+					GetTracepointStates("test_tracepoint").
 					Return(test.agentStates, nil)
 			}
 
@@ -585,18 +585,18 @@ func Test_Server_GetProbeInfo(t *testing.T) {
 
 			clock := testingutils.NewTestClock(time.Unix(0, 70))
 
-			s, err := controllers.NewServerWithClock(env, mockAgtMgr, probeMgr, mockMds, clock)
-			req := metadatapb.GetProbeInfoRequest{
-				ProbeIDs: []string{"test_probe"},
+			s, err := controllers.NewServerWithClock(env, mockAgtMgr, tracepointMgr, mockMds, clock)
+			req := metadatapb.GetTracepointInfoRequest{
+				TracepointIDs: []string{"test_tracepoint"},
 			}
 
-			resp, err := s.GetProbeInfo(context.Background(), &req)
+			resp, err := s.GetTracepointInfo(context.Background(), &req)
 			assert.Nil(t, err)
-			assert.Equal(t, 1, len(resp.Probes))
-			assert.Equal(t, "test_probe", resp.Probes[0].ProbeID)
-			assert.Equal(t, test.expectedState, resp.Probes[0].State)
-			assert.Equal(t, test.expectedStatus, resp.Probes[0].Status)
-			assert.Equal(t, test.expectedStatus, resp.Probes[0].Status)
+			assert.Equal(t, 1, len(resp.Tracepoints))
+			assert.Equal(t, "test_tracepoint", resp.Tracepoints[0].TracepointID)
+			assert.Equal(t, test.expectedState, resp.Tracepoints[0].State)
+			assert.Equal(t, test.expectedStatus, resp.Tracepoints[0].Status)
+			assert.Equal(t, test.expectedStatus, resp.Tracepoints[0].Status)
 		})
 	}
 }

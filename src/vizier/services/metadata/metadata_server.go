@@ -145,8 +145,8 @@ func main() {
 		log.WithError(err).Fatal("Could not create metadata store")
 	}
 
-	// Initialize probe handler.
-	probeMgr := controllers.NewProbeManager(nc, mds)
+	// Initialize tracepoint handler.
+	tracepointMgr := controllers.NewTracepointManager(nc, mds)
 
 	agtMgr := controllers.NewAgentManager(mds)
 	keepAlive := true
@@ -184,7 +184,7 @@ func main() {
 
 	mdHandler.ProcessSubscriberUpdates()
 
-	mc, err := controllers.NewMessageBusController(nc, "update_agent", agtMgr, probeMgr, mds, mdHandler, &isLeader)
+	mc, err := controllers.NewMessageBusController(nc, "update_agent", agtMgr, tracepointMgr, mds, mdHandler, &isLeader)
 
 	if err != nil {
 		log.WithError(err).Fatal("Failed to connect to message bus")
@@ -202,7 +202,7 @@ func main() {
 	mux := http.NewServeMux()
 	healthz.RegisterDefaultChecks(mux)
 
-	server, err := controllers.NewServer(env, agtMgr, probeMgr, mds)
+	server, err := controllers.NewServer(env, agtMgr, tracepointMgr, mds)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize GRPC server funcs")
 	}
@@ -216,6 +216,8 @@ func main() {
 	s := services.NewPLServer(env,
 		httpmiddleware.WithBearerAuthMiddleware(env, mux), maxMsgSize)
 	metadatapb.RegisterMetadataServiceServer(s.GRPCServer(), server)
+	metadatapb.RegisterMetadataTracepointServiceServer(s.GRPCServer(), server)
+
 	s.Start()
 	s.StopOnInterrupt()
 }

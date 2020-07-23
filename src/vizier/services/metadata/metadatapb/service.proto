@@ -23,9 +23,12 @@ service MetadataService {
   rpc GetAgentInfo(AgentInfoRequest) returns (AgentInfoResponse) {}
   rpc GetAgentTableMetadata(AgentTableMetadataRequest) returns (AgentTableMetadataResponse) {}
   rpc GetAgentUpdates(AgentUpdatesRequest) returns (stream AgentUpdatesResponse) {}
-  rpc RegisterProbe(RegisterProbeRequest) returns (RegisterProbeResponse) {}
-  rpc GetProbeInfo(GetProbeInfoRequest) returns (GetProbeInfoResponse) {}
-  rpc EvictProbe(EvictProbeRequest) returns (EvictProbeResponse) {}
+}
+
+service MetadataTracepointService {
+  rpc RegisterTracepoint(RegisterTracepointRequest) returns (RegisterTracepointResponse) {}
+  rpc GetTracepointInfo(GetTracepointInfoRequest) returns (GetTracepointInfoResponse) {}
+  rpc RemoveTracepoint(RemoveTracepointRequest) returns (RemoveTracepointResponse) {}
 }
 
 // The schema request for each agent's schema.
@@ -92,49 +95,49 @@ message AgentUpdatesResponse {
   repeated AgentTableMetadata agent_table_metadata_updates = 3;
 }
 
-// The request to register probes on all PEMs.
-message RegisterProbeRequest {
+// The request to register tracepoints on all PEMs.
+message RegisterTracepointRequest {
   pl.stirling.dynamic_tracing.ir.logical.Program program = 1;
-  // The user-specified name for the probe.
-  string probe_name = 2;
+  // The user-specified name for the tracepoint.
+  string tracepoint_name = 2;
 }
 
-// The response to a RegisterProbeRequest.
-message RegisterProbeResponse {
-  // Status of whether the probe registration request was initiated with/without errors.
+// The response to a RegisterTracepointRequest.
+message RegisterTracepointResponse {
+  // Status of whether the tracepoint registration request was initiated with/without errors.
   pl.statuspb.Status status = 1;
-  // The ID of the probe. This should be the user-specified name for the probe.
-  string probe_id = 2 [ (gogoproto.customname) = "ProbeID" ];
+  // The ID of the tracepoint. This should be the user-specified name for the tracepoint.
+  string tracepoint_id = 2 [ (gogoproto.customname) = "TracepointID" ];
 }
 
-// The request to check the status for a probe with the given IDs.
-message GetProbeInfoRequest {
-  repeated string probe_ids = 1 [ (gogoproto.customname) = "ProbeIDs" ];
+// The request to check the status for a tracepoint with the given IDs.
+message GetTracepointInfoRequest {
+  repeated string tracepoint_ids = 1 [ (gogoproto.customname) = "TracepointIDs" ];
 }
 
-// The status of whether the probe has successfully registered or not.
-message GetProbeInfoResponse {
-    message ProbeState {
-        // The probe ID.
-        string probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
-        // The state of the probe.
+// The status of whether the tracepoint has successfully registered or not.
+message GetTracepointInfoResponse {
+    message TracepointState {
+        // The tracepoint ID.
+        string tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
+        // The state of the tracepoint.
         pl.statuspb.LifeCycleState state = 2;
-        // The status of the probe, specified if the state of the probe is not healthy.
+        // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
         pl.statuspb.Status status = 3;
     }
-    // List of probe states.
-    repeated ProbeState probes = 1;
+    // List of tracepoint states.
+    repeated TracepointState tracepoints = 1;
 }
 
-// The request to evict a probe. This will normally happen via the probe's TTL, but can be
+// The request to evict a tracepoint. This will normally happen via the tracepoint's TTL, but can be
 // initiated via request as well.
-message EvictProbeRequest {
-    // The ID of the probe to evict.
-    string probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
+message RemoveTracepointRequest {
+    // The ID of the tracepoint to remove.
+    string tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
 }
 
-// The response to the probe eviction.
-message EvictProbeResponse {
-  // Status of whether the probe eviction request was initiated with/without errors.
+// The response to the tracepoint removal.
+message RemoveTracepointResponse {
+  // Status of whether the tracepoint removal request was initiated with/without errors.
   pl.statuspb.Status status = 1;
 }

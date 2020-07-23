@@ -42,8 +42,7 @@ type VizierMessage struct {
 	//	*VizierMessage_HeartbeatAck
 	//	*VizierMessage_HeartbeatNack
 	//	*VizierMessage_ExecuteQueryRequest
-	//	*VizierMessage_RegisterProbeRequest
-	//	*VizierMessage_ProbeMessage
+	//	*VizierMessage_TracepointMessage
 	Msg isVizierMessage_Msg `protobuf_oneof:"msg"`
 }
 
@@ -110,11 +109,8 @@ type VizierMessage_HeartbeatNack struct {
 type VizierMessage_ExecuteQueryRequest struct {
 	ExecuteQueryRequest *ExecuteQueryRequest `protobuf:"bytes,8,opt,name=execute_query_request,json=executeQueryRequest,proto3,oneof" json:"execute_query_request,omitempty"`
 }
-type VizierMessage_RegisterProbeRequest struct {
-	RegisterProbeRequest *RegisterProbeRequest `protobuf:"bytes,9,opt,name=register_probe_request,json=registerProbeRequest,proto3,oneof" json:"register_probe_request,omitempty"`
-}
-type VizierMessage_ProbeMessage struct {
-	ProbeMessage *ProbeMessage `protobuf:"bytes,10,opt,name=probe_message,json=probeMessage,proto3,oneof" json:"probe_message,omitempty"`
+type VizierMessage_TracepointMessage struct {
+	TracepointMessage *TracepointMessage `protobuf:"bytes,10,opt,name=tracepoint_message,json=tracepointMessage,proto3,oneof" json:"tracepoint_message,omitempty"`
 }
 
 func (*VizierMessage_RegisterAgentRequest) isVizierMessage_Msg()  {}
@@ -125,8 +121,7 @@ func (*VizierMessage_Heartbeat) isVizierMessage_Msg()             {}
 func (*VizierMessage_HeartbeatAck) isVizierMessage_Msg()          {}
 func (*VizierMessage_HeartbeatNack) isVizierMessage_Msg()         {}
 func (*VizierMessage_ExecuteQueryRequest) isVizierMessage_Msg()   {}
-func (*VizierMessage_RegisterProbeRequest) isVizierMessage_Msg()  {}
-func (*VizierMessage_ProbeMessage) isVizierMessage_Msg()          {}
+func (*VizierMessage_TracepointMessage) isVizierMessage_Msg()     {}
 
 func (m *VizierMessage) GetMsg() isVizierMessage_Msg {
 	if m != nil {
@@ -191,16 +186,9 @@ func (m *VizierMessage) GetExecuteQueryRequest() *ExecuteQueryRequest {
 	return nil
 }
 
-func (m *VizierMessage) GetRegisterProbeRequest() *RegisterProbeRequest {
-	if x, ok := m.GetMsg().(*VizierMessage_RegisterProbeRequest); ok {
-		return x.RegisterProbeRequest
-	}
-	return nil
-}
-
-func (m *VizierMessage) GetProbeMessage() *ProbeMessage {
-	if x, ok := m.GetMsg().(*VizierMessage_ProbeMessage); ok {
-		return x.ProbeMessage
+func (m *VizierMessage) GetTracepointMessage() *TracepointMessage {
+	if x, ok := m.GetMsg().(*VizierMessage_TracepointMessage); ok {
+		return x.TracepointMessage
 	}
 	return nil
 }
@@ -216,29 +204,29 @@ func (*VizierMessage) XXX_OneofWrappers() []interface{} {
 		(*VizierMessage_HeartbeatAck)(nil),
 		(*VizierMessage_HeartbeatNack)(nil),
 		(*VizierMessage_ExecuteQueryRequest)(nil),
-		(*VizierMessage_RegisterProbeRequest)(nil),
-		(*VizierMessage_ProbeMessage)(nil),
+		(*VizierMessage_TracepointMessage)(nil),
 	}
 }
 
-type ProbeMessage struct {
+type TracepointMessage struct {
 	// Types that are valid to be assigned to Msg:
-	//	*ProbeMessage_ProbeInfoUpdate
-	//	*ProbeMessage_EvictProbeRequest
-	Msg isProbeMessage_Msg `protobuf_oneof:"msg"`
+	//	*TracepointMessage_TracepointInfoUpdate
+	//	*TracepointMessage_RemoveTracepointRequest
+	//	*TracepointMessage_RegisterTracepointRequest
+	Msg isTracepointMessage_Msg `protobuf_oneof:"msg"`
 }
 
-func (m *ProbeMessage) Reset()      { *m = ProbeMessage{} }
-func (*ProbeMessage) ProtoMessage() {}
-func (*ProbeMessage) Descriptor() ([]byte, []int) {
+func (m *TracepointMessage) Reset()      { *m = TracepointMessage{} }
+func (*TracepointMessage) ProtoMessage() {}
+func (*TracepointMessage) Descriptor() ([]byte, []int) {
 	return fileDescriptor_0046fd1b9991f89c, []int{1}
 }
-func (m *ProbeMessage) XXX_Unmarshal(b []byte) error {
+func (m *TracepointMessage) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ProbeMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *TracepointMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ProbeMessage.Marshal(b, m, deterministic)
+		return xxx_messageInfo_TracepointMessage.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -248,61 +236,73 @@ func (m *ProbeMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return b[:n], nil
 	}
 }
-func (m *ProbeMessage) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ProbeMessage.Merge(m, src)
+func (m *TracepointMessage) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TracepointMessage.Merge(m, src)
 }
-func (m *ProbeMessage) XXX_Size() int {
+func (m *TracepointMessage) XXX_Size() int {
 	return m.Size()
 }
-func (m *ProbeMessage) XXX_DiscardUnknown() {
-	xxx_messageInfo_ProbeMessage.DiscardUnknown(m)
+func (m *TracepointMessage) XXX_DiscardUnknown() {
+	xxx_messageInfo_TracepointMessage.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ProbeMessage proto.InternalMessageInfo
+var xxx_messageInfo_TracepointMessage proto.InternalMessageInfo
 
-type isProbeMessage_Msg interface {
-	isProbeMessage_Msg()
+type isTracepointMessage_Msg interface {
+	isTracepointMessage_Msg()
 	Equal(interface{}) bool
 	MarshalTo([]byte) (int, error)
 	Size() int
 }
 
-type ProbeMessage_ProbeInfoUpdate struct {
-	ProbeInfoUpdate *ProbeInfoUpdate `protobuf:"bytes,1,opt,name=probe_info_update,json=probeInfoUpdate,proto3,oneof" json:"probe_info_update,omitempty"`
+type TracepointMessage_TracepointInfoUpdate struct {
+	TracepointInfoUpdate *TracepointInfoUpdate `protobuf:"bytes,1,opt,name=tracepoint_info_update,json=tracepointInfoUpdate,proto3,oneof" json:"tracepoint_info_update,omitempty"`
 }
-type ProbeMessage_EvictProbeRequest struct {
-	EvictProbeRequest *EvictProbeRequest `protobuf:"bytes,2,opt,name=evict_probe_request,json=evictProbeRequest,proto3,oneof" json:"evict_probe_request,omitempty"`
+type TracepointMessage_RemoveTracepointRequest struct {
+	RemoveTracepointRequest *RemoveTracepointRequest `protobuf:"bytes,2,opt,name=remove_tracepoint_request,json=removeTracepointRequest,proto3,oneof" json:"remove_tracepoint_request,omitempty"`
+}
+type TracepointMessage_RegisterTracepointRequest struct {
+	RegisterTracepointRequest *RegisterTracepointRequest `protobuf:"bytes,3,opt,name=register_tracepoint_request,json=registerTracepointRequest,proto3,oneof" json:"register_tracepoint_request,omitempty"`
 }
 
-func (*ProbeMessage_ProbeInfoUpdate) isProbeMessage_Msg()   {}
-func (*ProbeMessage_EvictProbeRequest) isProbeMessage_Msg() {}
+func (*TracepointMessage_TracepointInfoUpdate) isTracepointMessage_Msg()      {}
+func (*TracepointMessage_RemoveTracepointRequest) isTracepointMessage_Msg()   {}
+func (*TracepointMessage_RegisterTracepointRequest) isTracepointMessage_Msg() {}
 
-func (m *ProbeMessage) GetMsg() isProbeMessage_Msg {
+func (m *TracepointMessage) GetMsg() isTracepointMessage_Msg {
 	if m != nil {
 		return m.Msg
 	}
 	return nil
 }
 
-func (m *ProbeMessage) GetProbeInfoUpdate() *ProbeInfoUpdate {
-	if x, ok := m.GetMsg().(*ProbeMessage_ProbeInfoUpdate); ok {
-		return x.ProbeInfoUpdate
+func (m *TracepointMessage) GetTracepointInfoUpdate() *TracepointInfoUpdate {
+	if x, ok := m.GetMsg().(*TracepointMessage_TracepointInfoUpdate); ok {
+		return x.TracepointInfoUpdate
 	}
 	return nil
 }
 
-func (m *ProbeMessage) GetEvictProbeRequest() *EvictProbeRequest {
-	if x, ok := m.GetMsg().(*ProbeMessage_EvictProbeRequest); ok {
-		return x.EvictProbeRequest
+func (m *TracepointMessage) GetRemoveTracepointRequest() *RemoveTracepointRequest {
+	if x, ok := m.GetMsg().(*TracepointMessage_RemoveTracepointRequest); ok {
+		return x.RemoveTracepointRequest
+	}
+	return nil
+}
+
+func (m *TracepointMessage) GetRegisterTracepointRequest() *RegisterTracepointRequest {
+	if x, ok := m.GetMsg().(*TracepointMessage_RegisterTracepointRequest); ok {
+		return x.RegisterTracepointRequest
 	}
 	return nil
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
-func (*ProbeMessage) XXX_OneofWrappers() []interface{} {
+func (*TracepointMessage) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
-		(*ProbeMessage_ProbeInfoUpdate)(nil),
-		(*ProbeMessage_EvictProbeRequest)(nil),
+		(*TracepointMessage_TracepointInfoUpdate)(nil),
+		(*TracepointMessage_RemoveTracepointRequest)(nil),
+		(*TracepointMessage_RegisterTracepointRequest)(nil),
 	}
 }
 
@@ -899,22 +899,22 @@ func (m *ExecuteQueryRequest) GetAnalyze() bool {
 	return false
 }
 
-type RegisterProbeRequest struct {
-	Program *ir.Program `protobuf:"bytes,1,opt,name=program,proto3" json:"program,omitempty"`
-	ProbeID string      `protobuf:"bytes,2,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
+type RegisterTracepointRequest struct {
+	Program      *ir.Program `protobuf:"bytes,1,opt,name=program,proto3" json:"program,omitempty"`
+	TracepointID string      `protobuf:"bytes,2,opt,name=tracepoint_id,json=tracepointId,proto3" json:"tracepoint_id,omitempty"`
 }
 
-func (m *RegisterProbeRequest) Reset()      { *m = RegisterProbeRequest{} }
-func (*RegisterProbeRequest) ProtoMessage() {}
-func (*RegisterProbeRequest) Descriptor() ([]byte, []int) {
+func (m *RegisterTracepointRequest) Reset()      { *m = RegisterTracepointRequest{} }
+func (*RegisterTracepointRequest) ProtoMessage() {}
+func (*RegisterTracepointRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_0046fd1b9991f89c, []int{13}
 }
-func (m *RegisterProbeRequest) XXX_Unmarshal(b []byte) error {
+func (m *RegisterTracepointRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *RegisterProbeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *RegisterTracepointRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_RegisterProbeRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_RegisterTracepointRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -924,50 +924,50 @@ func (m *RegisterProbeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte
 		return b[:n], nil
 	}
 }
-func (m *RegisterProbeRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RegisterProbeRequest.Merge(m, src)
+func (m *RegisterTracepointRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RegisterTracepointRequest.Merge(m, src)
 }
-func (m *RegisterProbeRequest) XXX_Size() int {
+func (m *RegisterTracepointRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *RegisterProbeRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_RegisterProbeRequest.DiscardUnknown(m)
+func (m *RegisterTracepointRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RegisterTracepointRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_RegisterProbeRequest proto.InternalMessageInfo
+var xxx_messageInfo_RegisterTracepointRequest proto.InternalMessageInfo
 
-func (m *RegisterProbeRequest) GetProgram() *ir.Program {
+func (m *RegisterTracepointRequest) GetProgram() *ir.Program {
 	if m != nil {
 		return m.Program
 	}
 	return nil
 }
 
-func (m *RegisterProbeRequest) GetProbeID() string {
+func (m *RegisterTracepointRequest) GetTracepointID() string {
 	if m != nil {
-		return m.ProbeID
+		return m.TracepointID
 	}
 	return ""
 }
 
-type ProbeInfoUpdate struct {
-	ProbeID string                `protobuf:"bytes,1,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
-	State   proto2.LifeCycleState `protobuf:"varint,2,opt,name=state,proto3,enum=pl.statuspb.LifeCycleState" json:"state,omitempty"`
-	Status  *proto2.Status        `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
-	AgentID *proto1.UUID          `protobuf:"bytes,4,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+type TracepointInfoUpdate struct {
+	TracepointID string                `protobuf:"bytes,1,opt,name=tracepoint_id,json=tracepointId,proto3" json:"tracepoint_id,omitempty"`
+	State        proto2.LifeCycleState `protobuf:"varint,2,opt,name=state,proto3,enum=pl.statuspb.LifeCycleState" json:"state,omitempty"`
+	Status       *proto2.Status        `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	AgentID      *proto1.UUID          `protobuf:"bytes,4,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 }
 
-func (m *ProbeInfoUpdate) Reset()      { *m = ProbeInfoUpdate{} }
-func (*ProbeInfoUpdate) ProtoMessage() {}
-func (*ProbeInfoUpdate) Descriptor() ([]byte, []int) {
+func (m *TracepointInfoUpdate) Reset()      { *m = TracepointInfoUpdate{} }
+func (*TracepointInfoUpdate) ProtoMessage() {}
+func (*TracepointInfoUpdate) Descriptor() ([]byte, []int) {
 	return fileDescriptor_0046fd1b9991f89c, []int{14}
 }
-func (m *ProbeInfoUpdate) XXX_Unmarshal(b []byte) error {
+func (m *TracepointInfoUpdate) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ProbeInfoUpdate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *TracepointInfoUpdate) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ProbeInfoUpdate.Marshal(b, m, deterministic)
+		return xxx_messageInfo_TracepointInfoUpdate.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -977,61 +977,61 @@ func (m *ProbeInfoUpdate) XXX_Marshal(b []byte, deterministic bool) ([]byte, err
 		return b[:n], nil
 	}
 }
-func (m *ProbeInfoUpdate) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ProbeInfoUpdate.Merge(m, src)
+func (m *TracepointInfoUpdate) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TracepointInfoUpdate.Merge(m, src)
 }
-func (m *ProbeInfoUpdate) XXX_Size() int {
+func (m *TracepointInfoUpdate) XXX_Size() int {
 	return m.Size()
 }
-func (m *ProbeInfoUpdate) XXX_DiscardUnknown() {
-	xxx_messageInfo_ProbeInfoUpdate.DiscardUnknown(m)
+func (m *TracepointInfoUpdate) XXX_DiscardUnknown() {
+	xxx_messageInfo_TracepointInfoUpdate.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ProbeInfoUpdate proto.InternalMessageInfo
+var xxx_messageInfo_TracepointInfoUpdate proto.InternalMessageInfo
 
-func (m *ProbeInfoUpdate) GetProbeID() string {
+func (m *TracepointInfoUpdate) GetTracepointID() string {
 	if m != nil {
-		return m.ProbeID
+		return m.TracepointID
 	}
 	return ""
 }
 
-func (m *ProbeInfoUpdate) GetState() proto2.LifeCycleState {
+func (m *TracepointInfoUpdate) GetState() proto2.LifeCycleState {
 	if m != nil {
 		return m.State
 	}
 	return proto2.UNKNOWN_STATE
 }
 
-func (m *ProbeInfoUpdate) GetStatus() *proto2.Status {
+func (m *TracepointInfoUpdate) GetStatus() *proto2.Status {
 	if m != nil {
 		return m.Status
 	}
 	return nil
 }
 
-func (m *ProbeInfoUpdate) GetAgentID() *proto1.UUID {
+func (m *TracepointInfoUpdate) GetAgentID() *proto1.UUID {
 	if m != nil {
 		return m.AgentID
 	}
 	return nil
 }
 
-type EvictProbeRequest struct {
-	ProbeID string `protobuf:"bytes,1,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
+type RemoveTracepointRequest struct {
+	TracepointID string `protobuf:"bytes,1,opt,name=tracepoint_id,json=tracepointId,proto3" json:"tracepoint_id,omitempty"`
 }
 
-func (m *EvictProbeRequest) Reset()      { *m = EvictProbeRequest{} }
-func (*EvictProbeRequest) ProtoMessage() {}
-func (*EvictProbeRequest) Descriptor() ([]byte, []int) {
+func (m *RemoveTracepointRequest) Reset()      { *m = RemoveTracepointRequest{} }
+func (*RemoveTracepointRequest) ProtoMessage() {}
+func (*RemoveTracepointRequest) Descriptor() ([]byte, []int) {
 	return fileDescriptor_0046fd1b9991f89c, []int{15}
 }
-func (m *EvictProbeRequest) XXX_Unmarshal(b []byte) error {
+func (m *RemoveTracepointRequest) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *EvictProbeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *RemoveTracepointRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_EvictProbeRequest.Marshal(b, m, deterministic)
+		return xxx_messageInfo_RemoveTracepointRequest.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -1041,28 +1041,28 @@ func (m *EvictProbeRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return b[:n], nil
 	}
 }
-func (m *EvictProbeRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_EvictProbeRequest.Merge(m, src)
+func (m *RemoveTracepointRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RemoveTracepointRequest.Merge(m, src)
 }
-func (m *EvictProbeRequest) XXX_Size() int {
+func (m *RemoveTracepointRequest) XXX_Size() int {
 	return m.Size()
 }
-func (m *EvictProbeRequest) XXX_DiscardUnknown() {
-	xxx_messageInfo_EvictProbeRequest.DiscardUnknown(m)
+func (m *RemoveTracepointRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_RemoveTracepointRequest.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_EvictProbeRequest proto.InternalMessageInfo
+var xxx_messageInfo_RemoveTracepointRequest proto.InternalMessageInfo
 
-func (m *EvictProbeRequest) GetProbeID() string {
+func (m *RemoveTracepointRequest) GetTracepointID() string {
 	if m != nil {
-		return m.ProbeID
+		return m.TracepointID
 	}
 	return ""
 }
 
 func init() {
 	proto.RegisterType((*VizierMessage)(nil), "pl.vizier.messages.VizierMessage")
-	proto.RegisterType((*ProbeMessage)(nil), "pl.vizier.messages.ProbeMessage")
+	proto.RegisterType((*TracepointMessage)(nil), "pl.vizier.messages.TracepointMessage")
 	proto.RegisterType((*RegisterAgentRequest)(nil), "pl.vizier.messages.RegisterAgentRequest")
 	proto.RegisterType((*RegisterAgentResponse)(nil), "pl.vizier.messages.RegisterAgentResponse")
 	proto.RegisterType((*UpdateAgentRequest)(nil), "pl.vizier.messages.UpdateAgentRequest")
@@ -1074,9 +1074,9 @@ func init() {
 	proto.RegisterType((*HeartbeatAck)(nil), "pl.vizier.messages.HeartbeatAck")
 	proto.RegisterType((*HeartbeatNack)(nil), "pl.vizier.messages.HeartbeatNack")
 	proto.RegisterType((*ExecuteQueryRequest)(nil), "pl.vizier.messages.ExecuteQueryRequest")
-	proto.RegisterType((*RegisterProbeRequest)(nil), "pl.vizier.messages.RegisterProbeRequest")
-	proto.RegisterType((*ProbeInfoUpdate)(nil), "pl.vizier.messages.ProbeInfoUpdate")
-	proto.RegisterType((*EvictProbeRequest)(nil), "pl.vizier.messages.EvictProbeRequest")
+	proto.RegisterType((*RegisterTracepointRequest)(nil), "pl.vizier.messages.RegisterTracepointRequest")
+	proto.RegisterType((*TracepointInfoUpdate)(nil), "pl.vizier.messages.TracepointInfoUpdate")
+	proto.RegisterType((*RemoveTracepointRequest)(nil), "pl.vizier.messages.RemoveTracepointRequest")
 }
 
 func init() {
@@ -1084,93 +1084,95 @@ func init() {
 }
 
 var fileDescriptor_0046fd1b9991f89c = []byte{
-	// 1373 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x57, 0x3f, 0x6c, 0xdb, 0x46,
-	0x17, 0x17, 0x2d, 0xd9, 0x96, 0x4e, 0xb6, 0x15, 0x9f, 0xe3, 0x7c, 0x42, 0x92, 0x8f, 0xf6, 0xc7,
-	0xaf, 0x49, 0x9c, 0xa4, 0x21, 0x51, 0x17, 0x45, 0x02, 0xa4, 0x4d, 0x11, 0x59, 0x45, 0xac, 0xa0,
-	0x09, 0x9c, 0x73, 0xd3, 0x02, 0x01, 0x0a, 0xf5, 0x48, 0x9e, 0x65, 0xc2, 0x12, 0xc9, 0xdc, 0x1d,
-	0x83, 0x38, 0x53, 0xd7, 0x6e, 0x1d, 0x3a, 0x15, 0x1d, 0x3b, 0x74, 0xed, 0xd4, 0xb9, 0x53, 0x3b,
-	0x06, 0x9d, 0x32, 0x19, 0x8d, 0xb2, 0x74, 0xcc, 0xd4, 0xb9, 0xb8, 0x3f, 0x94, 0x29, 0x8a, 0xb6,
-	0xd3, 0x4e, 0x9d, 0x7c, 0xf7, 0xf4, 0xfb, 0xfd, 0xde, 0xbb, 0xc7, 0x77, 0xef, 0x9d, 0xc1, 0x35,
-	0x46, 0x3d, 0xe7, 0x49, 0xf0, 0x2c, 0x20, 0xd4, 0x19, 0x10, 0xc6, 0x70, 0x8f, 0xb0, 0xd1, 0x22,
-	0x76, 0x47, 0x4b, 0x3b, 0xa6, 0x11, 0x8f, 0x20, 0x8c, 0xfb, 0xb6, 0x42, 0xdb, 0xe9, 0x2f, 0x67,
-	0xaf, 0xf5, 0x02, 0xbe, 0x9b, 0xb8, 0xb6, 0x17, 0x0d, 0x9c, 0x5e, 0xd4, 0x8b, 0x1c, 0x09, 0x75,
-	0x93, 0x1d, 0xb9, 0x93, 0x1b, 0xb9, 0x52, 0x12, 0x67, 0xaf, 0x0b, 0x8f, 0x1e, 0xa6, 0x61, 0xc4,
-	0x9d, 0xb8, 0x8f, 0xc3, 0x90, 0x50, 0xc7, 0x0f, 0x18, 0xa7, 0x81, 0x9b, 0x70, 0xe2, 0xc7, 0x6e,
-	0x76, 0xd7, 0x15, 0x08, 0x4d, 0x3c, 0x9f, 0x23, 0xc6, 0xae, 0x93, 0xf9, 0x75, 0x55, 0xfe, 0x1a,
-	0x0d, 0x06, 0x51, 0xe8, 0x24, 0x49, 0xe0, 0xab, 0x28, 0xe4, 0x52, 0x23, 0xd6, 0x04, 0x82, 0xed,
-	0x62, 0x4a, 0x7c, 0x67, 0xef, 0x86, 0x38, 0x25, 0xc7, 0x3e, 0xe6, 0x58, 0x9e, 0x52, 0x2d, 0x35,
-	0xd2, 0xce, 0x24, 0x85, 0x11, 0xfa, 0x24, 0xf0, 0x08, 0x4b, 0x99, 0xb8, 0x47, 0x42, 0x1e, 0xbb,
-	0xea, 0xaf, 0xc6, 0xcb, 0x24, 0x32, 0x1e, 0xd0, 0x7e, 0x10, 0xf6, 0x1c, 0x7f, 0x3f, 0xc4, 0x83,
-	0xc0, 0xeb, 0x72, 0x8a, 0x3d, 0xb1, 0x0f, 0xa8, 0xd3, 0x8f, 0x7a, 0x81, 0x87, 0xfb, 0x1a, 0x6e,
-	0x65, 0x42, 0x75, 0x31, 0x23, 0x3a, 0x54, 0xc6, 0x31, 0x4f, 0x74, 0xa2, 0xad, 0x3f, 0x67, 0xc0,
-	0xfc, 0xa7, 0x32, 0x82, 0x7b, 0x2a, 0xcf, 0xf0, 0x0b, 0x70, 0x86, 0x92, 0x5e, 0xc0, 0x38, 0xa1,
-	0x5d, 0xe9, 0xbc, 0x4b, 0xc9, 0xe3, 0x84, 0x30, 0xde, 0x34, 0x56, 0x8d, 0xb5, 0xfa, 0xfa, 0x9a,
-	0x3d, 0xf9, 0x6d, 0x6c, 0xa4, 0x19, 0xb7, 0x05, 0x01, 0x29, 0xfc, 0x66, 0x09, 0x9d, 0xa6, 0x05,
-	0x76, 0xe8, 0x81, 0xff, 0x4c, 0x78, 0x60, 0x71, 0x14, 0x32, 0xd2, 0x9c, 0x92, 0x2e, 0x2e, 0xbf,
-	0x81, 0x0b, 0x45, 0xd8, 0x2c, 0xa1, 0x65, 0x5a, 0xf4, 0x03, 0x7c, 0x04, 0x4e, 0x27, 0xb1, 0x8f,
-	0x39, 0xc9, 0x1d, 0xa2, 0x2c, 0x3d, 0x5c, 0x2c, 0xf2, 0xf0, 0x50, 0xe2, 0x73, 0x47, 0x80, 0xc9,
-	0x84, 0x15, 0x7e, 0x0e, 0x96, 0x73, 0xda, 0x3a, 0xfc, 0x8a, 0x14, 0xbf, 0x74, 0xa2, 0xf8, 0x28,
-	0xf8, 0xa5, 0x64, 0xd2, 0x0c, 0x3f, 0x00, 0xb5, 0x5d, 0x82, 0x29, 0x77, 0x09, 0xe6, 0xcd, 0x69,
-	0x29, 0xf9, 0xdf, 0x22, 0xc9, 0xcd, 0x14, 0xb4, 0x59, 0x42, 0x87, 0x0c, 0x78, 0x07, 0xcc, 0x8f,
-	0x36, 0x5d, 0xec, 0xed, 0x35, 0x67, 0xa4, 0xc4, 0xea, 0xb1, 0x12, 0xb7, 0xbd, 0xbd, 0xcd, 0x12,
-	0x9a, 0xdb, 0xcd, 0xec, 0xe1, 0x5d, 0xb0, 0x70, 0x28, 0x14, 0x0a, 0xa5, 0x59, 0xa9, 0xf4, 0xbf,
-	0x63, 0x95, 0xee, 0x63, 0x29, 0x75, 0x18, 0x83, 0x30, 0x88, 0x94, 0x91, 0xa7, 0xc4, 0x4b, 0x38,
-	0xe9, 0x3e, 0x4e, 0x08, 0xdd, 0x1f, 0x7d, 0x8f, 0xea, 0xd1, 0x29, 0xfb, 0x48, 0x11, 0x1e, 0x08,
-	0xfc, 0xe1, 0x07, 0x59, 0x22, 0x93, 0xe6, 0xb1, 0xa2, 0x8d, 0x69, 0xe4, 0x92, 0x91, 0x7e, 0xed,
-	0xe4, 0xa2, 0xdd, 0x12, 0x84, 0x82, 0xa2, 0xcd, 0xda, 0x45, 0x56, 0x95, 0xb0, 0xa6, 0x37, 0xc1,
-	0xd1, 0x59, 0x95, 0x44, 0x7d, 0x9f, 0x44, 0x56, 0xe3, 0xcc, 0xbe, 0x35, 0x0d, 0xca, 0x03, 0xd6,
-	0xb3, 0x7e, 0x36, 0xc0, 0x5c, 0x16, 0x07, 0x1f, 0x80, 0x45, 0xe5, 0x20, 0x08, 0x77, 0xa2, 0xae,
-	0xaa, 0x0b, 0x7d, 0xe5, 0xfe, 0x7f, 0xa4, 0x93, 0x4e, 0xb8, 0x13, 0xa9, 0xca, 0xda, 0x2c, 0xa1,
-	0x46, 0x3c, 0x6e, 0x82, 0x9f, 0x81, 0x25, 0xf2, 0x24, 0xf0, 0x78, 0x2e, 0x25, 0xea, 0x92, 0x5d,
-	0x28, 0x4c, 0xb9, 0x80, 0xe7, 0xf2, 0xb1, 0x48, 0xf2, 0xc6, 0xf4, 0x0c, 0xdf, 0x19, 0xe0, 0x74,
-	0xd1, 0xcd, 0x87, 0xb7, 0x40, 0x45, 0x9c, 0x42, 0x87, 0x7f, 0x25, 0xe3, 0x29, 0x6d, 0x73, 0xb6,
-	0x6a, 0x73, 0xb6, 0x6a, 0x6f, 0x92, 0x2c, 0x02, 0x47, 0x92, 0x07, 0xdb, 0xa0, 0xae, 0x2f, 0x98,
-	0x94, 0x99, 0x3a, 0x3a, 0x0b, 0x92, 0xa9, 0x8e, 0x2b, 0xf9, 0x20, 0x19, 0xad, 0xad, 0x9b, 0x60,
-	0xb9, 0xb0, 0x69, 0xc0, 0xf3, 0xa0, 0x82, 0x59, 0xe0, 0xcb, 0xf0, 0xe6, 0x5b, 0xd5, 0xe1, 0xc1,
-	0x4a, 0xe5, 0xf6, 0x76, 0xa7, 0x8d, 0xa4, 0xf5, 0x6e, 0xa5, 0x3a, 0x75, 0xaa, 0x6c, 0x7d, 0x6b,
-	0x00, 0x38, 0xd9, 0x10, 0xfe, 0x25, 0x27, 0x5b, 0x06, 0x4b, 0x05, 0xfd, 0xc4, 0xf2, 0xc0, 0xbc,
-	0x34, 0xb4, 0x31, 0xc7, 0x02, 0x07, 0x11, 0x98, 0x4f, 0x47, 0x4e, 0x37, 0x13, 0xf6, 0x35, 0xe1,
-	0x4f, 0x4d, 0x38, 0x5b, 0x8f, 0x46, 0x7b, 0x6c, 0x34, 0xda, 0xf7, 0x34, 0x4b, 0x7a, 0x9e, 0x1b,
-	0x64, 0x76, 0xd6, 0xf7, 0x65, 0xd0, 0xc8, 0xc5, 0x06, 0xdf, 0x07, 0x33, 0xcc, 0xdb, 0x25, 0x03,
-	0xdc, 0x9c, 0x5a, 0x2d, 0xaf, 0xd5, 0xd7, 0xdf, 0x12, 0x0e, 0x74, 0x1e, 0xf6, 0x6e, 0x30, 0xfb,
-	0x70, 0x04, 0xda, 0xdb, 0x12, 0x27, 0x75, 0x35, 0x07, 0x7e, 0x08, 0x66, 0x63, 0x1a, 0x79, 0x84,
-	0xb1, 0x66, 0x59, 0xd2, 0x2f, 0x1c, 0x4d, 0xdf, 0x52, 0x40, 0xc9, 0x4f, 0x59, 0xf0, 0x01, 0x68,
-	0xe8, 0x65, 0xd7, 0xa3, 0x04, 0x73, 0xe2, 0x37, 0x2b, 0x52, 0x68, 0xed, 0x44, 0xa1, 0x0d, 0x85,
-	0x47, 0x0b, 0xf1, 0xd8, 0x1e, 0x3e, 0x02, 0x30, 0x95, 0xe4, 0x84, 0x0e, 0x82, 0x50, 0xaa, 0x4e,
-	0x4b, 0xd5, 0xab, 0x27, 0xaa, 0x7e, 0x32, 0xa2, 0xa0, 0xc5, 0x38, 0x6f, 0x82, 0x6f, 0x03, 0xe8,
-	0x47, 0x84, 0xe9, 0x3b, 0xde, 0xd5, 0x99, 0x13, 0x5d, 0xba, 0x8a, 0x4e, 0x89, 0x5f, 0x54, 0x66,
-	0x55, 0xa6, 0xe0, 0x7b, 0xa0, 0x22, 0xc4, 0x8f, 0xeb, 0xbd, 0x63, 0x1f, 0x1d, 0x49, 0xb8, 0xf5,
-	0x8b, 0x01, 0x6a, 0xa3, 0x9e, 0x0c, 0xaf, 0x83, 0xaa, 0x1a, 0x55, 0xba, 0xea, 0xeb, 0xeb, 0x0d,
-	0x21, 0x24, 0x5e, 0x2d, 0xb1, 0x6b, 0x3f, 0x7c, 0xd8, 0x69, 0xb7, 0xea, 0xc3, 0x83, 0x95, 0x59,
-	0x55, 0xae, 0x6d, 0x34, 0x2b, 0xd1, 0x1d, 0x1f, 0x42, 0x50, 0xe1, 0xc1, 0x40, 0x0d, 0xe6, 0x32,
-	0x92, 0xeb, 0x7c, 0x0d, 0x97, 0xff, 0x51, 0x0d, 0xc3, 0x4b, 0xa0, 0xc1, 0xc4, 0xa5, 0x0a, 0x3d,
-	0xd2, 0x0d, 0x93, 0x81, 0x4b, 0xa8, 0x1c, 0x9f, 0x65, 0xb4, 0x90, 0x9a, 0xef, 0x4b, 0xab, 0xf5,
-	0x93, 0x01, 0x60, 0x5a, 0x8f, 0x99, 0x9a, 0x6b, 0x81, 0x59, 0xa5, 0xc6, 0x9a, 0xc6, 0x49, 0x1f,
-	0x1b, 0x11, 0x16, 0x25, 0xd4, 0x23, 0x8a, 0x8e, 0x52, 0x22, 0x5c, 0x07, 0x73, 0xfa, 0xda, 0x76,
-	0xbd, 0xc0, 0xa7, 0xf2, 0x94, 0xb5, 0x56, 0x63, 0x78, 0xb0, 0x52, 0xdf, 0x56, 0xf6, 0x8d, 0x4e,
-	0x1b, 0xa1, 0xba, 0x06, 0x6d, 0x04, 0x3e, 0x85, 0x97, 0x41, 0x2d, 0x8e, 0x7c, 0x89, 0x57, 0xf5,
-	0x5a, 0x6b, 0xcd, 0x0d, 0x0f, 0x56, 0xaa, 0x5b, 0x91, 0x2f, 0xc0, 0x0c, 0x55, 0xe3, 0xc8, 0x17,
-	0x48, 0x66, 0x7d, 0x63, 0x80, 0xb9, 0xec, 0x84, 0x1d, 0x65, 0xd3, 0xc8, 0x64, 0xb3, 0x20, 0x0f,
-	0x53, 0x45, 0x79, 0x80, 0x77, 0x8a, 0xd2, 0x5e, 0xf8, 0x90, 0x99, 0xcc, 0xd6, 0x58, 0xf7, 0x68,
-	0x80, 0xf9, 0xb1, 0x69, 0x6d, 0xfd, 0x68, 0x80, 0xa5, 0x82, 0x61, 0x2b, 0xaa, 0x46, 0x0d, 0xeb,
-	0x13, 0xaa, 0x46, 0x92, 0x44, 0xd5, 0x48, 0x74, 0xc7, 0x87, 0xe7, 0x40, 0x4d, 0x11, 0x19, 0xd7,
-	0x49, 0x45, 0x4a, 0x69, 0x9b, 0x53, 0x78, 0x05, 0x54, 0x44, 0xd3, 0xd1, 0x07, 0x38, 0x93, 0xeb,
-	0x45, 0xe2, 0x12, 0xf5, 0x71, 0x88, 0x24, 0x06, 0x36, 0xc1, 0x2c, 0x0e, 0x71, 0x7f, 0xff, 0x99,
-	0x7a, 0x5b, 0x55, 0x51, 0xba, 0xb5, 0xbe, 0xca, 0xcc, 0x9e, 0xb1, 0x41, 0xdd, 0x91, 0xdd, 0xa4,
-	0x47, 0xf1, 0x40, 0xc7, 0xec, 0xc8, 0xba, 0xd0, 0xaf, 0x66, 0x3b, 0xf7, 0x6a, 0xb6, 0x03, 0x6a,
-	0xa7, 0xaf, 0xe6, 0x2d, 0x45, 0x43, 0x29, 0x1f, 0x5e, 0x04, 0x55, 0x3d, 0x92, 0x7d, 0x5d, 0x1a,
-	0xf2, 0xb8, 0x6a, 0xf2, 0xb6, 0x25, 0xce, 0x25, 0x1d, 0xdf, 0xfa, 0xcd, 0x00, 0x8d, 0xdc, 0x38,
-	0x1e, 0xe3, 0x1a, 0x47, 0x73, 0xe1, 0x3b, 0x60, 0x5a, 0x3c, 0xc8, 0xd5, 0x0d, 0x5b, 0x58, 0x3f,
-	0xa7, 0x82, 0x15, 0x2f, 0xf4, 0xd8, 0xb5, 0x3f, 0x0e, 0x76, 0xc8, 0xc6, 0xbe, 0xd7, 0x27, 0xdb,
-	0x02, 0x82, 0x14, 0x12, 0x5e, 0x05, 0x33, 0x0a, 0xa1, 0x53, 0xb8, 0x34, 0xc6, 0xd9, 0x96, 0x0b,
-	0xa4, 0x21, 0x63, 0x37, 0xbf, 0xf2, 0x37, 0x6e, 0xbe, 0x75, 0x13, 0x2c, 0x4e, 0xbc, 0x06, 0xde,
-	0xf4, 0x54, 0x2d, 0xfe, 0xfc, 0xa5, 0x59, 0x7a, 0xf1, 0xd2, 0x2c, 0xbd, 0x7e, 0x69, 0x1a, 0x5f,
-	0x0e, 0x4d, 0xe3, 0x87, 0xa1, 0x69, 0xfc, 0x3a, 0x34, 0x8d, 0xe7, 0x43, 0xd3, 0xf8, 0x7d, 0x68,
-	0x1a, 0x7f, 0x0c, 0xcd, 0xd2, 0xeb, 0xa1, 0x69, 0x7c, 0xfd, 0xca, 0x2c, 0x3d, 0x7f, 0x65, 0x96,
-	0x5e, 0xbc, 0x32, 0x4b, 0x8f, 0x6e, 0xc5, 0xc1, 0xd3, 0x80, 0xf4, 0xb1, 0xcb, 0x6c, 0x1c, 0x38,
-	0xa3, 0x8d, 0x73, 0xfc, 0xff, 0x8e, 0x37, 0xd3, 0xa5, 0x3b, 0x23, 0xff, 0xa7, 0x79, 0xf7, 0xaf,
-	0x00, 0x00, 0x00, 0xff, 0xff, 0xb1, 0x16, 0xa5, 0xcc, 0x6d, 0x0e, 0x00, 0x00,
+	// 1395 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x57, 0x4d, 0x6f, 0x13, 0x47,
+	0x1f, 0xf7, 0xc6, 0x4e, 0xe2, 0x8c, 0xed, 0x04, 0x26, 0x09, 0x98, 0x97, 0xc7, 0xc9, 0xb3, 0xcf,
+	0x43, 0x09, 0x50, 0x76, 0xd5, 0x54, 0x08, 0x24, 0x5a, 0x2a, 0x1c, 0x57, 0xc4, 0xa8, 0xa0, 0x30,
+	0x01, 0x0e, 0x48, 0xd5, 0x76, 0x76, 0x77, 0xe2, 0xac, 0x62, 0xef, 0x2e, 0x33, 0xb3, 0x88, 0x70,
+	0xea, 0x47, 0xe8, 0xa1, 0xa7, 0xaa, 0x3d, 0xb5, 0x87, 0x5e, 0x7b, 0xea, 0x47, 0x68, 0x8f, 0x1c,
+	0x39, 0x45, 0xc5, 0x48, 0x55, 0x8f, 0x7c, 0x84, 0x6a, 0x5e, 0xd6, 0x5e, 0xdb, 0x9b, 0x84, 0x72,
+	0xea, 0xc9, 0xf3, 0xf2, 0xfb, 0xfd, 0xfe, 0x33, 0xff, 0xfd, 0xbf, 0x8c, 0xc1, 0x55, 0x46, 0x3d,
+	0xfb, 0x59, 0xf0, 0x22, 0x20, 0xd4, 0xee, 0x11, 0xc6, 0x70, 0x87, 0xb0, 0xc1, 0x20, 0x76, 0x07,
+	0x43, 0x2b, 0xa6, 0x11, 0x8f, 0x20, 0x8c, 0xbb, 0x96, 0x42, 0x5b, 0xe9, 0xce, 0xd9, 0xab, 0x9d,
+	0x80, 0xef, 0x26, 0xae, 0xe5, 0x45, 0x3d, 0xbb, 0x13, 0x75, 0x22, 0x5b, 0x42, 0xdd, 0x64, 0x47,
+	0xce, 0xe4, 0x44, 0x8e, 0x94, 0xc4, 0xd9, 0xeb, 0xc2, 0xa2, 0x87, 0x69, 0x18, 0x71, 0x3b, 0xee,
+	0xe2, 0x30, 0x24, 0xd4, 0xf6, 0x03, 0xc6, 0x69, 0xe0, 0x26, 0x9c, 0xf8, 0xb1, 0x9b, 0x9d, 0x39,
+	0x02, 0xa1, 0x89, 0xe7, 0xc7, 0x88, 0xb1, 0x6b, 0x67, 0x76, 0x57, 0xe5, 0x6e, 0xd4, 0xeb, 0x45,
+	0xa1, 0x9d, 0x24, 0x81, 0xaf, 0x4e, 0x21, 0x87, 0x1a, 0xb1, 0x26, 0x10, 0x6c, 0x17, 0x53, 0xe2,
+	0xdb, 0x7b, 0x37, 0xc4, 0x2d, 0x39, 0xf6, 0x31, 0xc7, 0xf2, 0x96, 0x6a, 0xa8, 0x91, 0x56, 0xc6,
+	0x29, 0x8c, 0xd0, 0x67, 0x81, 0x47, 0x58, 0xca, 0xc4, 0x1d, 0x12, 0xf2, 0xd8, 0x55, 0xbf, 0x1a,
+	0x2f, 0x9d, 0xc8, 0x78, 0x40, 0xbb, 0x41, 0xd8, 0xb1, 0xfd, 0xfd, 0x10, 0xf7, 0x02, 0xcf, 0xe1,
+	0x14, 0x7b, 0x62, 0x1e, 0x50, 0xbb, 0x1b, 0x75, 0x02, 0x0f, 0x77, 0x35, 0xdc, 0xcc, 0x1c, 0xd5,
+	0xc5, 0x8c, 0xe8, 0xa3, 0x32, 0x8e, 0x79, 0xa2, 0x1d, 0x6d, 0xfe, 0x38, 0x03, 0x6a, 0x8f, 0xe5,
+	0x09, 0xee, 0x29, 0x3f, 0xc3, 0xaf, 0xc0, 0x29, 0x4a, 0x3a, 0x01, 0xe3, 0x84, 0x3a, 0xd2, 0xb8,
+	0x43, 0xc9, 0xd3, 0x84, 0x30, 0x5e, 0x37, 0x56, 0x8d, 0xb5, 0xca, 0xfa, 0x9a, 0x35, 0xf9, 0x6d,
+	0x2c, 0xa4, 0x19, 0xb7, 0x05, 0x01, 0x29, 0xfc, 0x66, 0x01, 0x2d, 0xd1, 0x9c, 0x75, 0xe8, 0x81,
+	0xd3, 0x13, 0x16, 0x58, 0x1c, 0x85, 0x8c, 0xd4, 0xa7, 0xa4, 0x89, 0x4b, 0xef, 0x60, 0x42, 0x11,
+	0x36, 0x0b, 0x68, 0x99, 0xe6, 0x6d, 0xc0, 0x27, 0x60, 0x29, 0x89, 0x7d, 0xcc, 0xc9, 0xd8, 0x25,
+	0x8a, 0xd2, 0xc2, 0x07, 0x79, 0x16, 0x1e, 0x49, 0xfc, 0xd8, 0x15, 0x60, 0x32, 0xb1, 0x0a, 0xbf,
+	0x04, 0xcb, 0x63, 0xda, 0xfa, 0xf8, 0x25, 0x29, 0x7e, 0xf1, 0x58, 0xf1, 0xc1, 0xe1, 0x17, 0x93,
+	0xc9, 0x65, 0xf8, 0x29, 0x98, 0xdb, 0x25, 0x98, 0x72, 0x97, 0x60, 0x5e, 0x9f, 0x96, 0x92, 0xff,
+	0xc9, 0x93, 0xdc, 0x4c, 0x41, 0x9b, 0x05, 0x34, 0x64, 0xc0, 0x3b, 0xa0, 0x36, 0x98, 0x38, 0xd8,
+	0xdb, 0xab, 0xcf, 0x48, 0x89, 0xd5, 0x23, 0x25, 0x6e, 0x7b, 0x7b, 0x9b, 0x05, 0x54, 0xdd, 0xcd,
+	0xcc, 0xe1, 0x5d, 0x30, 0x3f, 0x14, 0x0a, 0x85, 0xd2, 0xac, 0x54, 0xfa, 0xef, 0x91, 0x4a, 0xf7,
+	0xb1, 0x94, 0x1a, 0x9e, 0x41, 0x2c, 0x08, 0x97, 0x91, 0xe7, 0xc4, 0x4b, 0x38, 0x71, 0x9e, 0x26,
+	0x84, 0xee, 0x0f, 0xbe, 0x47, 0xf9, 0x70, 0x97, 0x7d, 0xae, 0x08, 0x0f, 0x04, 0x7e, 0xf8, 0x41,
+	0x16, 0xc9, 0xe4, 0x32, 0x7c, 0x0c, 0xa0, 0x48, 0x03, 0x12, 0x47, 0x41, 0xc8, 0x1d, 0xad, 0x50,
+	0x07, 0x52, 0xfb, 0x42, 0x9e, 0xf6, 0xc3, 0x01, 0x5a, 0xc7, 0xfd, 0x66, 0x01, 0x9d, 0xe4, 0xe3,
+	0x8b, 0xcd, 0x69, 0x50, 0xec, 0xb1, 0x8e, 0xf9, 0x6a, 0x0a, 0x9c, 0x9c, 0x60, 0x88, 0x4c, 0xc9,
+	0x18, 0x0d, 0xc2, 0x9d, 0xc8, 0x51, 0x9f, 0xf3, 0xa8, 0x4c, 0x19, 0xca, 0xb4, 0xc3, 0x9d, 0x48,
+	0x45, 0x85, 0xc8, 0x14, 0x9e, 0xb3, 0x0e, 0x03, 0x70, 0x86, 0x92, 0x5e, 0xf4, 0x8c, 0x38, 0x19,
+	0x43, 0xa9, 0xe7, 0x54, 0xae, 0x5c, 0xc9, 0xcf, 0x15, 0x41, 0x1a, 0x9a, 0x1a, 0x7a, 0xef, 0x34,
+	0xcd, 0xdf, 0x82, 0x11, 0x38, 0x37, 0x48, 0xca, 0x1c, 0x63, 0x2a, 0x6d, 0xae, 0x1e, 0x95, 0x98,
+	0x79, 0xe6, 0xce, 0xd0, 0xc3, 0x36, 0x53, 0xd7, 0x7e, 0x6f, 0x80, 0xa5, 0xbc, 0xea, 0x01, 0x6f,
+	0x81, 0x92, 0x70, 0xa9, 0xf6, 0xe5, 0xe5, 0x8c, 0xe5, 0xb4, 0x54, 0x5a, 0xaa, 0x54, 0x5a, 0xaa,
+	0x44, 0x4a, 0xb2, 0xf0, 0x1d, 0x92, 0x3c, 0xd8, 0x02, 0x15, 0x9d, 0xa4, 0x52, 0x46, 0x79, 0xeb,
+	0x7f, 0x79, 0x17, 0x90, 0x4c, 0xe5, 0x71, 0xc9, 0x07, 0xc9, 0x60, 0x6c, 0xde, 0x04, 0xcb, 0xb9,
+	0x85, 0x07, 0x9e, 0x07, 0x25, 0xcc, 0x02, 0x5f, 0x1e, 0xaf, 0xd6, 0x2c, 0xf7, 0x0f, 0x56, 0x4a,
+	0xb7, 0xb7, 0xdb, 0x2d, 0x24, 0x57, 0xef, 0x96, 0xca, 0x53, 0x27, 0x8a, 0xe6, 0x77, 0x06, 0x80,
+	0x93, 0x45, 0xe5, 0x5f, 0x72, 0xb3, 0x65, 0xb0, 0x98, 0x53, 0x93, 0x4c, 0x0f, 0xd4, 0xe4, 0x42,
+	0x0b, 0x73, 0x2c, 0x70, 0x10, 0x81, 0x5a, 0xda, 0xb6, 0x9c, 0xcc, 0xb1, 0x65, 0x28, 0xa8, 0x2e,
+	0x69, 0xe9, 0xf6, 0x6a, 0x8d, 0xb4, 0x57, 0xeb, 0x9e, 0x66, 0x49, 0xcb, 0xd5, 0x5e, 0x66, 0x66,
+	0xfe, 0x54, 0x04, 0x0b, 0x63, 0x67, 0x83, 0x9f, 0x80, 0x19, 0xe6, 0xed, 0x92, 0x1e, 0xae, 0x4f,
+	0xad, 0x16, 0xd7, 0x2a, 0xeb, 0xff, 0x17, 0x06, 0xb4, 0x1f, 0xf6, 0x6e, 0x30, 0x6b, 0xd8, 0x46,
+	0xad, 0x6d, 0x89, 0x93, 0xba, 0x9a, 0x03, 0x3f, 0x03, 0xb3, 0x31, 0x8d, 0x3c, 0xc2, 0x58, 0xbd,
+	0x28, 0xe9, 0x17, 0x0e, 0xa7, 0x6f, 0x29, 0xa0, 0xe4, 0xa7, 0x2c, 0xf8, 0x00, 0x2c, 0xe8, 0xa1,
+	0xe3, 0x51, 0x82, 0x39, 0xf1, 0xeb, 0x25, 0x29, 0xb4, 0x76, 0xac, 0xd0, 0x86, 0xc2, 0xa3, 0xf9,
+	0x78, 0x64, 0x0e, 0x9f, 0x00, 0x98, 0x4a, 0x72, 0x42, 0x7b, 0x41, 0x28, 0x55, 0xa7, 0xa5, 0xea,
+	0x95, 0x63, 0x55, 0x1f, 0x0e, 0x28, 0xe8, 0x64, 0x3c, 0xbe, 0x04, 0x3f, 0x04, 0xd0, 0x8f, 0x08,
+	0xd3, 0x05, 0xc7, 0xd1, 0x9e, 0x13, 0x95, 0xbe, 0x8c, 0x4e, 0x88, 0x1d, 0xe5, 0x59, 0xe5, 0x29,
+	0x78, 0x0d, 0x94, 0x84, 0xf8, 0x51, 0xf5, 0x7b, 0xe4, 0xa3, 0x23, 0x09, 0x37, 0x7f, 0x33, 0xc0,
+	0xdc, 0xa0, 0xae, 0xc3, 0xeb, 0xa0, 0xac, 0xda, 0x9d, 0x8e, 0xfa, 0xca, 0xfa, 0x82, 0x10, 0x12,
+	0x2f, 0x9f, 0xd8, 0xb5, 0x1e, 0x3d, 0x6a, 0xb7, 0x9a, 0x95, 0xfe, 0xc1, 0xca, 0xac, 0x0a, 0xd7,
+	0x16, 0x9a, 0x95, 0xe8, 0xb6, 0x0f, 0x21, 0x28, 0xf1, 0xa0, 0xa7, 0x9a, 0x7b, 0x11, 0xc9, 0xf1,
+	0x78, 0x0c, 0x17, 0xdf, 0x2b, 0x86, 0xe1, 0x45, 0xb0, 0xc0, 0x44, 0x52, 0x85, 0x1e, 0x71, 0xc2,
+	0xa4, 0xe7, 0x12, 0x2a, 0x5b, 0x70, 0x11, 0xcd, 0xa7, 0xcb, 0xf7, 0xe5, 0xaa, 0xf9, 0xab, 0x01,
+	0x60, 0x1a, 0x8f, 0x99, 0x98, 0x6b, 0x82, 0x59, 0xa5, 0xc6, 0xea, 0xc6, 0x71, 0x1f, 0x1b, 0x11,
+	0x16, 0x25, 0xd4, 0x23, 0x8a, 0x8e, 0x52, 0x22, 0x5c, 0x07, 0x55, 0x9d, 0xb6, 0x8e, 0x17, 0xf8,
+	0x54, 0xde, 0x72, 0xae, 0xb9, 0xd0, 0x3f, 0x58, 0xa9, 0x6c, 0xab, 0xf5, 0x8d, 0x76, 0x0b, 0xa1,
+	0x8a, 0x06, 0x6d, 0x04, 0x3e, 0x85, 0x97, 0xc0, 0x5c, 0x1c, 0xf9, 0x12, 0xaf, 0xe2, 0x75, 0xae,
+	0x59, 0xed, 0x1f, 0xac, 0x94, 0xb7, 0x22, 0x5f, 0x80, 0x19, 0x2a, 0xc7, 0x91, 0x2f, 0x90, 0xcc,
+	0xfc, 0xd6, 0x00, 0xd5, 0x6c, 0x97, 0x1e, 0x78, 0xd3, 0xc8, 0x78, 0x33, 0xc7, 0x0f, 0x53, 0x79,
+	0x7e, 0x80, 0x77, 0xf2, 0xdc, 0x9e, 0xfb, 0x18, 0x9a, 0xf4, 0xd6, 0x48, 0xf5, 0x58, 0x00, 0xb5,
+	0x91, 0x8e, 0x6f, 0xfe, 0x62, 0x80, 0xc5, 0x9c, 0x86, 0x2d, 0xa2, 0x46, 0x35, 0xfc, 0x63, 0xa2,
+	0x46, 0x92, 0x44, 0xd4, 0x48, 0x74, 0xdb, 0x87, 0xe7, 0xc0, 0x9c, 0x22, 0x32, 0xae, 0x9d, 0x8a,
+	0x94, 0xd2, 0x36, 0xa7, 0xf0, 0x32, 0x28, 0x89, 0xa2, 0xa3, 0x2f, 0x70, 0x6a, 0xac, 0x16, 0x89,
+	0x24, 0xea, 0xe2, 0x10, 0x49, 0x0c, 0xac, 0x83, 0x59, 0x1c, 0xe2, 0xee, 0xfe, 0x0b, 0xf5, 0x3e,
+	0x2b, 0xa3, 0x74, 0x6a, 0xfe, 0x60, 0x80, 0x33, 0x87, 0x76, 0x2f, 0xd8, 0x96, 0x25, 0xa5, 0x43,
+	0x71, 0x4f, 0x1f, 0xdc, 0x96, 0xc1, 0xa1, 0x9f, 0xdf, 0xd6, 0xd8, 0xf3, 0xdb, 0x0a, 0xa8, 0x95,
+	0x3e, 0xbf, 0xb7, 0x14, 0x0d, 0xa5, 0x7c, 0x78, 0x0d, 0xd4, 0xb2, 0x2f, 0x05, 0x5f, 0x07, 0xc9,
+	0x89, 0xfe, 0xc1, 0x4a, 0x35, 0xf3, 0x20, 0x68, 0xa1, 0x6a, 0xe6, 0x19, 0xe0, 0x9b, 0x7f, 0x1a,
+	0x60, 0x29, 0xef, 0xbd, 0x30, 0xa9, 0x67, 0xbc, 0x8b, 0x1e, 0xfc, 0x08, 0x4c, 0x8b, 0xc7, 0xbf,
+	0xca, 0xc4, 0xf9, 0xf5, 0x73, 0xea, 0x3e, 0xe2, 0xdf, 0x40, 0xec, 0x5a, 0x5f, 0x04, 0x3b, 0x64,
+	0x63, 0xdf, 0xeb, 0x92, 0x6d, 0x01, 0x41, 0x0a, 0x09, 0xaf, 0x80, 0x19, 0x85, 0xd0, 0xae, 0x5e,
+	0x1c, 0xe1, 0x6c, 0xcb, 0x01, 0xd2, 0x90, 0x91, 0x0a, 0x51, 0xfa, 0x07, 0x15, 0xc2, 0xdc, 0x02,
+	0xa7, 0x0f, 0x79, 0xb2, 0xbc, 0xe7, 0x55, 0x9b, 0xfc, 0xe5, 0xeb, 0x46, 0xe1, 0xd5, 0xeb, 0x46,
+	0xe1, 0xed, 0xeb, 0x86, 0xf1, 0x75, 0xbf, 0x61, 0xfc, 0xdc, 0x6f, 0x18, 0xbf, 0xf7, 0x1b, 0xc6,
+	0xcb, 0x7e, 0xc3, 0xf8, 0xa3, 0xdf, 0x30, 0xfe, 0xea, 0x37, 0x0a, 0x6f, 0xfb, 0x0d, 0xe3, 0x9b,
+	0x37, 0x8d, 0xc2, 0xcb, 0x37, 0x8d, 0xc2, 0xab, 0x37, 0x8d, 0xc2, 0x93, 0x5b, 0x71, 0xf0, 0x3c,
+	0x20, 0x5d, 0xec, 0x32, 0x0b, 0x07, 0xf6, 0x60, 0x62, 0x1f, 0xfd, 0xe7, 0xf5, 0x66, 0x3a, 0x74,
+	0x67, 0xe4, 0x9f, 0xaa, 0x8f, 0xff, 0x0e, 0x00, 0x00, 0xff, 0xff, 0x03, 0x5b, 0x28, 0x7b, 0xee,
+	0x0e, 0x00, 0x00,
 }
 
 func (this *VizierMessage) Equal(that interface{}) bool {
@@ -1395,14 +1397,14 @@ func (this *VizierMessage_ExecuteQueryRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *VizierMessage_RegisterProbeRequest) Equal(that interface{}) bool {
+func (this *VizierMessage_TracepointMessage) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*VizierMessage_RegisterProbeRequest)
+	that1, ok := that.(*VizierMessage_TracepointMessage)
 	if !ok {
-		that2, ok := that.(VizierMessage_RegisterProbeRequest)
+		that2, ok := that.(VizierMessage_TracepointMessage)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1414,43 +1416,19 @@ func (this *VizierMessage_RegisterProbeRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.RegisterProbeRequest.Equal(that1.RegisterProbeRequest) {
+	if !this.TracepointMessage.Equal(that1.TracepointMessage) {
 		return false
 	}
 	return true
 }
-func (this *VizierMessage_ProbeMessage) Equal(that interface{}) bool {
+func (this *TracepointMessage) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*VizierMessage_ProbeMessage)
+	that1, ok := that.(*TracepointMessage)
 	if !ok {
-		that2, ok := that.(VizierMessage_ProbeMessage)
-		if ok {
-			that1 = &that2
-		} else {
-			return false
-		}
-	}
-	if that1 == nil {
-		return this == nil
-	} else if this == nil {
-		return false
-	}
-	if !this.ProbeMessage.Equal(that1.ProbeMessage) {
-		return false
-	}
-	return true
-}
-func (this *ProbeMessage) Equal(that interface{}) bool {
-	if that == nil {
-		return this == nil
-	}
-
-	that1, ok := that.(*ProbeMessage)
-	if !ok {
-		that2, ok := that.(ProbeMessage)
+		that2, ok := that.(TracepointMessage)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1473,14 +1451,14 @@ func (this *ProbeMessage) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *ProbeMessage_ProbeInfoUpdate) Equal(that interface{}) bool {
+func (this *TracepointMessage_TracepointInfoUpdate) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*ProbeMessage_ProbeInfoUpdate)
+	that1, ok := that.(*TracepointMessage_TracepointInfoUpdate)
 	if !ok {
-		that2, ok := that.(ProbeMessage_ProbeInfoUpdate)
+		that2, ok := that.(TracepointMessage_TracepointInfoUpdate)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1492,19 +1470,19 @@ func (this *ProbeMessage_ProbeInfoUpdate) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.ProbeInfoUpdate.Equal(that1.ProbeInfoUpdate) {
+	if !this.TracepointInfoUpdate.Equal(that1.TracepointInfoUpdate) {
 		return false
 	}
 	return true
 }
-func (this *ProbeMessage_EvictProbeRequest) Equal(that interface{}) bool {
+func (this *TracepointMessage_RemoveTracepointRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*ProbeMessage_EvictProbeRequest)
+	that1, ok := that.(*TracepointMessage_RemoveTracepointRequest)
 	if !ok {
-		that2, ok := that.(ProbeMessage_EvictProbeRequest)
+		that2, ok := that.(TracepointMessage_RemoveTracepointRequest)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1516,7 +1494,31 @@ func (this *ProbeMessage_EvictProbeRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if !this.EvictProbeRequest.Equal(that1.EvictProbeRequest) {
+	if !this.RemoveTracepointRequest.Equal(that1.RemoveTracepointRequest) {
+		return false
+	}
+	return true
+}
+func (this *TracepointMessage_RegisterTracepointRequest) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*TracepointMessage_RegisterTracepointRequest)
+	if !ok {
+		that2, ok := that.(TracepointMessage_RegisterTracepointRequest)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.RegisterTracepointRequest.Equal(that1.RegisterTracepointRequest) {
 		return false
 	}
 	return true
@@ -1860,14 +1862,14 @@ func (this *ExecuteQueryRequest) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *RegisterProbeRequest) Equal(that interface{}) bool {
+func (this *RegisterTracepointRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*RegisterProbeRequest)
+	that1, ok := that.(*RegisterTracepointRequest)
 	if !ok {
-		that2, ok := that.(RegisterProbeRequest)
+		that2, ok := that.(RegisterTracepointRequest)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1882,19 +1884,19 @@ func (this *RegisterProbeRequest) Equal(that interface{}) bool {
 	if !this.Program.Equal(that1.Program) {
 		return false
 	}
-	if this.ProbeID != that1.ProbeID {
+	if this.TracepointID != that1.TracepointID {
 		return false
 	}
 	return true
 }
-func (this *ProbeInfoUpdate) Equal(that interface{}) bool {
+func (this *TracepointInfoUpdate) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*ProbeInfoUpdate)
+	that1, ok := that.(*TracepointInfoUpdate)
 	if !ok {
-		that2, ok := that.(ProbeInfoUpdate)
+		that2, ok := that.(TracepointInfoUpdate)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1906,7 +1908,7 @@ func (this *ProbeInfoUpdate) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.ProbeID != that1.ProbeID {
+	if this.TracepointID != that1.TracepointID {
 		return false
 	}
 	if this.State != that1.State {
@@ -1920,14 +1922,14 @@ func (this *ProbeInfoUpdate) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *EvictProbeRequest) Equal(that interface{}) bool {
+func (this *RemoveTracepointRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*EvictProbeRequest)
+	that1, ok := that.(*RemoveTracepointRequest)
 	if !ok {
-		that2, ok := that.(EvictProbeRequest)
+		that2, ok := that.(RemoveTracepointRequest)
 		if ok {
 			that1 = &that2
 		} else {
@@ -1939,7 +1941,7 @@ func (this *EvictProbeRequest) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.ProbeID != that1.ProbeID {
+	if this.TracepointID != that1.TracepointID {
 		return false
 	}
 	return true
@@ -1948,7 +1950,7 @@ func (this *VizierMessage) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := make([]string, 0, 14)
+	s := make([]string, 0, 13)
 	s = append(s, "&messages.VizierMessage{")
 	if this.Msg != nil {
 		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
@@ -2020,48 +2022,48 @@ func (this *VizierMessage_ExecuteQueryRequest) GoString() string {
 		`ExecuteQueryRequest:` + fmt.Sprintf("%#v", this.ExecuteQueryRequest) + `}`}, ", ")
 	return s
 }
-func (this *VizierMessage_RegisterProbeRequest) GoString() string {
+func (this *VizierMessage_TracepointMessage) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&messages.VizierMessage_RegisterProbeRequest{` +
-		`RegisterProbeRequest:` + fmt.Sprintf("%#v", this.RegisterProbeRequest) + `}`}, ", ")
+	s := strings.Join([]string{`&messages.VizierMessage_TracepointMessage{` +
+		`TracepointMessage:` + fmt.Sprintf("%#v", this.TracepointMessage) + `}`}, ", ")
 	return s
 }
-func (this *VizierMessage_ProbeMessage) GoString() string {
+func (this *TracepointMessage) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&messages.VizierMessage_ProbeMessage{` +
-		`ProbeMessage:` + fmt.Sprintf("%#v", this.ProbeMessage) + `}`}, ", ")
-	return s
-}
-func (this *ProbeMessage) GoString() string {
-	if this == nil {
-		return "nil"
-	}
-	s := make([]string, 0, 6)
-	s = append(s, "&messages.ProbeMessage{")
+	s := make([]string, 0, 7)
+	s = append(s, "&messages.TracepointMessage{")
 	if this.Msg != nil {
 		s = append(s, "Msg: "+fmt.Sprintf("%#v", this.Msg)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *ProbeMessage_ProbeInfoUpdate) GoString() string {
+func (this *TracepointMessage_TracepointInfoUpdate) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&messages.ProbeMessage_ProbeInfoUpdate{` +
-		`ProbeInfoUpdate:` + fmt.Sprintf("%#v", this.ProbeInfoUpdate) + `}`}, ", ")
+	s := strings.Join([]string{`&messages.TracepointMessage_TracepointInfoUpdate{` +
+		`TracepointInfoUpdate:` + fmt.Sprintf("%#v", this.TracepointInfoUpdate) + `}`}, ", ")
 	return s
 }
-func (this *ProbeMessage_EvictProbeRequest) GoString() string {
+func (this *TracepointMessage_RemoveTracepointRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&messages.ProbeMessage_EvictProbeRequest{` +
-		`EvictProbeRequest:` + fmt.Sprintf("%#v", this.EvictProbeRequest) + `}`}, ", ")
+	s := strings.Join([]string{`&messages.TracepointMessage_RemoveTracepointRequest{` +
+		`RemoveTracepointRequest:` + fmt.Sprintf("%#v", this.RemoveTracepointRequest) + `}`}, ", ")
+	return s
+}
+func (this *TracepointMessage_RegisterTracepointRequest) GoString() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&messages.TracepointMessage_RegisterTracepointRequest{` +
+		`RegisterTracepointRequest:` + fmt.Sprintf("%#v", this.RegisterTracepointRequest) + `}`}, ", ")
 	return s
 }
 func (this *RegisterAgentRequest) GoString() string {
@@ -2221,26 +2223,26 @@ func (this *ExecuteQueryRequest) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *RegisterProbeRequest) GoString() string {
+func (this *RegisterTracepointRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 6)
-	s = append(s, "&messages.RegisterProbeRequest{")
+	s = append(s, "&messages.RegisterTracepointRequest{")
 	if this.Program != nil {
 		s = append(s, "Program: "+fmt.Sprintf("%#v", this.Program)+",\n")
 	}
-	s = append(s, "ProbeID: "+fmt.Sprintf("%#v", this.ProbeID)+",\n")
+	s = append(s, "TracepointID: "+fmt.Sprintf("%#v", this.TracepointID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *ProbeInfoUpdate) GoString() string {
+func (this *TracepointInfoUpdate) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 8)
-	s = append(s, "&messages.ProbeInfoUpdate{")
-	s = append(s, "ProbeID: "+fmt.Sprintf("%#v", this.ProbeID)+",\n")
+	s = append(s, "&messages.TracepointInfoUpdate{")
+	s = append(s, "TracepointID: "+fmt.Sprintf("%#v", this.TracepointID)+",\n")
 	s = append(s, "State: "+fmt.Sprintf("%#v", this.State)+",\n")
 	if this.Status != nil {
 		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
@@ -2251,13 +2253,13 @@ func (this *ProbeInfoUpdate) GoString() string {
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *EvictProbeRequest) GoString() string {
+func (this *RemoveTracepointRequest) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 5)
-	s = append(s, "&messages.EvictProbeRequest{")
-	s = append(s, "ProbeID: "+fmt.Sprintf("%#v", this.ProbeID)+",\n")
+	s = append(s, "&messages.RemoveTracepointRequest{")
+	s = append(s, "TracepointID: "+fmt.Sprintf("%#v", this.TracepointID)+",\n")
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
@@ -2469,37 +2471,16 @@ func (m *VizierMessage_ExecuteQueryRequest) MarshalToSizedBuffer(dAtA []byte) (i
 	}
 	return len(dAtA) - i, nil
 }
-func (m *VizierMessage_RegisterProbeRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *VizierMessage_TracepointMessage) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *VizierMessage_RegisterProbeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *VizierMessage_TracepointMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
-	if m.RegisterProbeRequest != nil {
+	if m.TracepointMessage != nil {
 		{
-			size, err := m.RegisterProbeRequest.MarshalToSizedBuffer(dAtA[:i])
-			if err != nil {
-				return 0, err
-			}
-			i -= size
-			i = encodeVarintMessages(dAtA, i, uint64(size))
-		}
-		i--
-		dAtA[i] = 0x4a
-	}
-	return len(dAtA) - i, nil
-}
-func (m *VizierMessage_ProbeMessage) MarshalTo(dAtA []byte) (int, error) {
-	size := m.Size()
-	return m.MarshalToSizedBuffer(dAtA[:size])
-}
-
-func (m *VizierMessage_ProbeMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
-	i := len(dAtA)
-	if m.ProbeMessage != nil {
-		{
-			size, err := m.ProbeMessage.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.TracepointMessage.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -2511,7 +2492,7 @@ func (m *VizierMessage_ProbeMessage) MarshalToSizedBuffer(dAtA []byte) (int, err
 	}
 	return len(dAtA) - i, nil
 }
-func (m *ProbeMessage) Marshal() (dAtA []byte, err error) {
+func (m *TracepointMessage) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -2521,12 +2502,12 @@ func (m *ProbeMessage) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ProbeMessage) MarshalTo(dAtA []byte) (int, error) {
+func (m *TracepointMessage) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ProbeMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *TracepointMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -2543,16 +2524,16 @@ func (m *ProbeMessage) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ProbeMessage_ProbeInfoUpdate) MarshalTo(dAtA []byte) (int, error) {
+func (m *TracepointMessage_TracepointInfoUpdate) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ProbeMessage_ProbeInfoUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *TracepointMessage_TracepointInfoUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
-	if m.ProbeInfoUpdate != nil {
+	if m.TracepointInfoUpdate != nil {
 		{
-			size, err := m.ProbeInfoUpdate.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.TracepointInfoUpdate.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -2564,16 +2545,16 @@ func (m *ProbeMessage_ProbeInfoUpdate) MarshalToSizedBuffer(dAtA []byte) (int, e
 	}
 	return len(dAtA) - i, nil
 }
-func (m *ProbeMessage_EvictProbeRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *TracepointMessage_RemoveTracepointRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ProbeMessage_EvictProbeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *TracepointMessage_RemoveTracepointRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
-	if m.EvictProbeRequest != nil {
+	if m.RemoveTracepointRequest != nil {
 		{
-			size, err := m.EvictProbeRequest.MarshalToSizedBuffer(dAtA[:i])
+			size, err := m.RemoveTracepointRequest.MarshalToSizedBuffer(dAtA[:i])
 			if err != nil {
 				return 0, err
 			}
@@ -2582,6 +2563,27 @@ func (m *ProbeMessage_EvictProbeRequest) MarshalToSizedBuffer(dAtA []byte) (int,
 		}
 		i--
 		dAtA[i] = 0x12
+	}
+	return len(dAtA) - i, nil
+}
+func (m *TracepointMessage_RegisterTracepointRequest) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *TracepointMessage_RegisterTracepointRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	if m.RegisterTracepointRequest != nil {
+		{
+			size, err := m.RegisterTracepointRequest.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintMessages(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
 	}
 	return len(dAtA) - i, nil
 }
@@ -3108,7 +3110,7 @@ func (m *ExecuteQueryRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *RegisterProbeRequest) Marshal() (dAtA []byte, err error) {
+func (m *RegisterTracepointRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -3118,20 +3120,20 @@ func (m *RegisterProbeRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *RegisterProbeRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *RegisterTracepointRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *RegisterProbeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *RegisterTracepointRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.ProbeID) > 0 {
-		i -= len(m.ProbeID)
-		copy(dAtA[i:], m.ProbeID)
-		i = encodeVarintMessages(dAtA, i, uint64(len(m.ProbeID)))
+	if len(m.TracepointID) > 0 {
+		i -= len(m.TracepointID)
+		copy(dAtA[i:], m.TracepointID)
+		i = encodeVarintMessages(dAtA, i, uint64(len(m.TracepointID)))
 		i--
 		dAtA[i] = 0x12
 	}
@@ -3150,7 +3152,7 @@ func (m *RegisterProbeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	return len(dAtA) - i, nil
 }
 
-func (m *ProbeInfoUpdate) Marshal() (dAtA []byte, err error) {
+func (m *TracepointInfoUpdate) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -3160,12 +3162,12 @@ func (m *ProbeInfoUpdate) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ProbeInfoUpdate) MarshalTo(dAtA []byte) (int, error) {
+func (m *TracepointInfoUpdate) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ProbeInfoUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *TracepointInfoUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -3199,17 +3201,17 @@ func (m *ProbeInfoUpdate) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x10
 	}
-	if len(m.ProbeID) > 0 {
-		i -= len(m.ProbeID)
-		copy(dAtA[i:], m.ProbeID)
-		i = encodeVarintMessages(dAtA, i, uint64(len(m.ProbeID)))
+	if len(m.TracepointID) > 0 {
+		i -= len(m.TracepointID)
+		copy(dAtA[i:], m.TracepointID)
+		i = encodeVarintMessages(dAtA, i, uint64(len(m.TracepointID)))
 		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *EvictProbeRequest) Marshal() (dAtA []byte, err error) {
+func (m *RemoveTracepointRequest) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -3219,20 +3221,20 @@ func (m *EvictProbeRequest) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *EvictProbeRequest) MarshalTo(dAtA []byte) (int, error) {
+func (m *RemoveTracepointRequest) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *EvictProbeRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *RemoveTracepointRequest) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
 	_ = l
-	if len(m.ProbeID) > 0 {
-		i -= len(m.ProbeID)
-		copy(dAtA[i:], m.ProbeID)
-		i = encodeVarintMessages(dAtA, i, uint64(len(m.ProbeID)))
+	if len(m.TracepointID) > 0 {
+		i -= len(m.TracepointID)
+		copy(dAtA[i:], m.TracepointID)
+		i = encodeVarintMessages(dAtA, i, uint64(len(m.TracepointID)))
 		i--
 		dAtA[i] = 0xa
 	}
@@ -3358,31 +3360,19 @@ func (m *VizierMessage_ExecuteQueryRequest) Size() (n int) {
 	}
 	return n
 }
-func (m *VizierMessage_RegisterProbeRequest) Size() (n int) {
+func (m *VizierMessage_TracepointMessage) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.RegisterProbeRequest != nil {
-		l = m.RegisterProbeRequest.Size()
+	if m.TracepointMessage != nil {
+		l = m.TracepointMessage.Size()
 		n += 1 + l + sovMessages(uint64(l))
 	}
 	return n
 }
-func (m *VizierMessage_ProbeMessage) Size() (n int) {
-	if m == nil {
-		return 0
-	}
-	var l int
-	_ = l
-	if m.ProbeMessage != nil {
-		l = m.ProbeMessage.Size()
-		n += 1 + l + sovMessages(uint64(l))
-	}
-	return n
-}
-func (m *ProbeMessage) Size() (n int) {
+func (m *TracepointMessage) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -3394,26 +3384,38 @@ func (m *ProbeMessage) Size() (n int) {
 	return n
 }
 
-func (m *ProbeMessage_ProbeInfoUpdate) Size() (n int) {
+func (m *TracepointMessage_TracepointInfoUpdate) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.ProbeInfoUpdate != nil {
-		l = m.ProbeInfoUpdate.Size()
+	if m.TracepointInfoUpdate != nil {
+		l = m.TracepointInfoUpdate.Size()
 		n += 1 + l + sovMessages(uint64(l))
 	}
 	return n
 }
-func (m *ProbeMessage_EvictProbeRequest) Size() (n int) {
+func (m *TracepointMessage_RemoveTracepointRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	if m.EvictProbeRequest != nil {
-		l = m.EvictProbeRequest.Size()
+	if m.RemoveTracepointRequest != nil {
+		l = m.RemoveTracepointRequest.Size()
+		n += 1 + l + sovMessages(uint64(l))
+	}
+	return n
+}
+func (m *TracepointMessage_RegisterTracepointRequest) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.RegisterTracepointRequest != nil {
+		l = m.RegisterTracepointRequest.Size()
 		n += 1 + l + sovMessages(uint64(l))
 	}
 	return n
@@ -3626,7 +3628,7 @@ func (m *ExecuteQueryRequest) Size() (n int) {
 	return n
 }
 
-func (m *RegisterProbeRequest) Size() (n int) {
+func (m *RegisterTracepointRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -3636,20 +3638,20 @@ func (m *RegisterProbeRequest) Size() (n int) {
 		l = m.Program.Size()
 		n += 1 + l + sovMessages(uint64(l))
 	}
-	l = len(m.ProbeID)
+	l = len(m.TracepointID)
 	if l > 0 {
 		n += 1 + l + sovMessages(uint64(l))
 	}
 	return n
 }
 
-func (m *ProbeInfoUpdate) Size() (n int) {
+func (m *TracepointInfoUpdate) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.ProbeID)
+	l = len(m.TracepointID)
 	if l > 0 {
 		n += 1 + l + sovMessages(uint64(l))
 	}
@@ -3667,13 +3669,13 @@ func (m *ProbeInfoUpdate) Size() (n int) {
 	return n
 }
 
-func (m *EvictProbeRequest) Size() (n int) {
+func (m *RemoveTracepointRequest) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.ProbeID)
+	l = len(m.TracepointID)
 	if l > 0 {
 		n += 1 + l + sovMessages(uint64(l))
 	}
@@ -3776,52 +3778,52 @@ func (this *VizierMessage_ExecuteQueryRequest) String() string {
 	}, "")
 	return s
 }
-func (this *VizierMessage_RegisterProbeRequest) String() string {
+func (this *VizierMessage_TracepointMessage) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&VizierMessage_RegisterProbeRequest{`,
-		`RegisterProbeRequest:` + strings.Replace(fmt.Sprintf("%v", this.RegisterProbeRequest), "RegisterProbeRequest", "RegisterProbeRequest", 1) + `,`,
+	s := strings.Join([]string{`&VizierMessage_TracepointMessage{`,
+		`TracepointMessage:` + strings.Replace(fmt.Sprintf("%v", this.TracepointMessage), "TracepointMessage", "TracepointMessage", 1) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *VizierMessage_ProbeMessage) String() string {
+func (this *TracepointMessage) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&VizierMessage_ProbeMessage{`,
-		`ProbeMessage:` + strings.Replace(fmt.Sprintf("%v", this.ProbeMessage), "ProbeMessage", "ProbeMessage", 1) + `,`,
-		`}`,
-	}, "")
-	return s
-}
-func (this *ProbeMessage) String() string {
-	if this == nil {
-		return "nil"
-	}
-	s := strings.Join([]string{`&ProbeMessage{`,
+	s := strings.Join([]string{`&TracepointMessage{`,
 		`Msg:` + fmt.Sprintf("%v", this.Msg) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *ProbeMessage_ProbeInfoUpdate) String() string {
+func (this *TracepointMessage_TracepointInfoUpdate) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&ProbeMessage_ProbeInfoUpdate{`,
-		`ProbeInfoUpdate:` + strings.Replace(fmt.Sprintf("%v", this.ProbeInfoUpdate), "ProbeInfoUpdate", "ProbeInfoUpdate", 1) + `,`,
+	s := strings.Join([]string{`&TracepointMessage_TracepointInfoUpdate{`,
+		`TracepointInfoUpdate:` + strings.Replace(fmt.Sprintf("%v", this.TracepointInfoUpdate), "TracepointInfoUpdate", "TracepointInfoUpdate", 1) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *ProbeMessage_EvictProbeRequest) String() string {
+func (this *TracepointMessage_RemoveTracepointRequest) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&ProbeMessage_EvictProbeRequest{`,
-		`EvictProbeRequest:` + strings.Replace(fmt.Sprintf("%v", this.EvictProbeRequest), "EvictProbeRequest", "EvictProbeRequest", 1) + `,`,
+	s := strings.Join([]string{`&TracepointMessage_RemoveTracepointRequest{`,
+		`RemoveTracepointRequest:` + strings.Replace(fmt.Sprintf("%v", this.RemoveTracepointRequest), "RemoveTracepointRequest", "RemoveTracepointRequest", 1) + `,`,
+		`}`,
+	}, "")
+	return s
+}
+func (this *TracepointMessage_RegisterTracepointRequest) String() string {
+	if this == nil {
+		return "nil"
+	}
+	s := strings.Join([]string{`&TracepointMessage_RegisterTracepointRequest{`,
+		`RegisterTracepointRequest:` + strings.Replace(fmt.Sprintf("%v", this.RegisterTracepointRequest), "RegisterTracepointRequest", "RegisterTracepointRequest", 1) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -3976,23 +3978,23 @@ func (this *ExecuteQueryRequest) String() string {
 	}, "")
 	return s
 }
-func (this *RegisterProbeRequest) String() string {
+func (this *RegisterTracepointRequest) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&RegisterProbeRequest{`,
+	s := strings.Join([]string{`&RegisterTracepointRequest{`,
 		`Program:` + strings.Replace(fmt.Sprintf("%v", this.Program), "Program", "ir.Program", 1) + `,`,
-		`ProbeID:` + fmt.Sprintf("%v", this.ProbeID) + `,`,
+		`TracepointID:` + fmt.Sprintf("%v", this.TracepointID) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *ProbeInfoUpdate) String() string {
+func (this *TracepointInfoUpdate) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&ProbeInfoUpdate{`,
-		`ProbeID:` + fmt.Sprintf("%v", this.ProbeID) + `,`,
+	s := strings.Join([]string{`&TracepointInfoUpdate{`,
+		`TracepointID:` + fmt.Sprintf("%v", this.TracepointID) + `,`,
 		`State:` + fmt.Sprintf("%v", this.State) + `,`,
 		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto2.Status", 1) + `,`,
 		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto1.UUID", 1) + `,`,
@@ -4000,12 +4002,12 @@ func (this *ProbeInfoUpdate) String() string {
 	}, "")
 	return s
 }
-func (this *EvictProbeRequest) String() string {
+func (this *RemoveTracepointRequest) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&EvictProbeRequest{`,
-		`ProbeID:` + fmt.Sprintf("%v", this.ProbeID) + `,`,
+	s := strings.Join([]string{`&RemoveTracepointRequest{`,
+		`TracepointID:` + fmt.Sprintf("%v", this.TracepointID) + `,`,
 		`}`,
 	}, "")
 	return s
@@ -4327,44 +4329,9 @@ func (m *VizierMessage) Unmarshal(dAtA []byte) error {
 			}
 			m.Msg = &VizierMessage_ExecuteQueryRequest{v}
 			iNdEx = postIndex
-		case 9:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field RegisterProbeRequest", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowMessages
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= int(b&0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthMessages
-			}
-			postIndex := iNdEx + msglen
-			if postIndex < 0 {
-				return ErrInvalidLengthMessages
-			}
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			v := &RegisterProbeRequest{}
-			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			m.Msg = &VizierMessage_RegisterProbeRequest{v}
-			iNdEx = postIndex
 		case 10:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProbeMessage", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TracepointMessage", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -4391,11 +4358,11 @@ func (m *VizierMessage) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &ProbeMessage{}
+			v := &TracepointMessage{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Msg = &VizierMessage_ProbeMessage{v}
+			m.Msg = &VizierMessage_TracepointMessage{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -4421,7 +4388,7 @@ func (m *VizierMessage) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ProbeMessage) Unmarshal(dAtA []byte) error {
+func (m *TracepointMessage) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -4444,15 +4411,15 @@ func (m *ProbeMessage) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ProbeMessage: wiretype end group for non-group")
+			return fmt.Errorf("proto: TracepointMessage: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ProbeMessage: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: TracepointMessage: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProbeInfoUpdate", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TracepointInfoUpdate", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -4479,15 +4446,15 @@ func (m *ProbeMessage) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &ProbeInfoUpdate{}
+			v := &TracepointInfoUpdate{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Msg = &ProbeMessage_ProbeInfoUpdate{v}
+			m.Msg = &TracepointMessage_TracepointInfoUpdate{v}
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field EvictProbeRequest", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field RemoveTracepointRequest", wireType)
 			}
 			var msglen int
 			for shift := uint(0); ; shift += 7 {
@@ -4514,11 +4481,46 @@ func (m *ProbeMessage) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			v := &EvictProbeRequest{}
+			v := &RemoveTracepointRequest{}
 			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
 				return err
 			}
-			m.Msg = &ProbeMessage_EvictProbeRequest{v}
+			m.Msg = &TracepointMessage_RemoveTracepointRequest{v}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field RegisterTracepointRequest", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowMessages
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthMessages
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthMessages
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			v := &RegisterTracepointRequest{}
+			if err := v.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			m.Msg = &TracepointMessage_RegisterTracepointRequest{v}
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -5924,7 +5926,7 @@ func (m *ExecuteQueryRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *RegisterProbeRequest) Unmarshal(dAtA []byte) error {
+func (m *RegisterTracepointRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -5947,10 +5949,10 @@ func (m *RegisterProbeRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: RegisterProbeRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: RegisterTracepointRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: RegisterProbeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: RegisterTracepointRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -5991,7 +5993,7 @@ func (m *RegisterProbeRequest) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProbeID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TracepointID", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -6019,7 +6021,7 @@ func (m *RegisterProbeRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ProbeID = string(dAtA[iNdEx:postIndex])
+			m.TracepointID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex
@@ -6045,7 +6047,7 @@ func (m *RegisterProbeRequest) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *ProbeInfoUpdate) Unmarshal(dAtA []byte) error {
+func (m *TracepointInfoUpdate) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -6068,15 +6070,15 @@ func (m *ProbeInfoUpdate) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ProbeInfoUpdate: wiretype end group for non-group")
+			return fmt.Errorf("proto: TracepointInfoUpdate: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ProbeInfoUpdate: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: TracepointInfoUpdate: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProbeID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TracepointID", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -6104,7 +6106,7 @@ func (m *ProbeInfoUpdate) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ProbeID = string(dAtA[iNdEx:postIndex])
+			m.TracepointID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 0 {
@@ -6221,7 +6223,7 @@ func (m *ProbeInfoUpdate) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *EvictProbeRequest) Unmarshal(dAtA []byte) error {
+func (m *RemoveTracepointRequest) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -6244,15 +6246,15 @@ func (m *EvictProbeRequest) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: EvictProbeRequest: wiretype end group for non-group")
+			return fmt.Errorf("proto: RemoveTracepointRequest: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: EvictProbeRequest: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: RemoveTracepointRequest: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProbeID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TracepointID", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -6280,7 +6282,7 @@ func (m *EvictProbeRequest) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ProbeID = string(dAtA[iNdEx:postIndex])
+			m.TracepointID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		default:
 			iNdEx = preIndex

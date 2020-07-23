@@ -107,42 +107,6 @@ func (mr *MockMetadataServiceClientMockRecorder) GetAgentTableMetadata(ctx, in i
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentTableMetadata", reflect.TypeOf((*MockMetadataServiceClient)(nil).GetAgentTableMetadata), varargs...)
 }
 
-// RegisterProbe mocks base method
-func (m *MockMetadataServiceClient) RegisterProbe(ctx context.Context, in *metadatapb.RegisterProbeRequest, opts ...grpc.CallOption) (*metadatapb.RegisterProbeResponse, error) {
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "RegisterProbe", varargs...)
-	ret0, _ := ret[0].(*metadatapb.RegisterProbeResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// RegisterProbe indicates an expected call of RegisterProbe
-func (mr *MockMetadataServiceClientMockRecorder) RegisterProbe(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterProbe", reflect.TypeOf((*MockMetadataServiceClient)(nil).RegisterProbe), varargs...)
-}
-
-// GetProbeInfo mocks base method
-func (m *MockMetadataServiceClient) GetProbeInfo(ctx context.Context, in *metadatapb.GetProbeInfoRequest, opts ...grpc.CallOption) (*metadatapb.GetProbeInfoResponse, error) {
-	varargs := []interface{}{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetProbeInfo", varargs...)
-	ret0, _ := ret[0].(*metadatapb.GetProbeInfoResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetProbeInfo indicates an expected call of GetProbeInfo
-func (mr *MockMetadataServiceClientMockRecorder) GetProbeInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
-	varargs := append([]interface{}{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProbeInfo", reflect.TypeOf((*MockMetadataServiceClient)(nil).GetProbeInfo), varargs...)
-}
-
 // MockMetadataServiceServer is a mock of MetadataServiceServer interface
 type MockMetadataServiceServer struct {
 	ctrl     *gomock.Controller
@@ -218,28 +182,141 @@ func (mr *MockMetadataServiceServerMockRecorder) GetAgentTableMetadata(arg0, arg
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAgentTableMetadata", reflect.TypeOf((*MockMetadataServiceServer)(nil).GetAgentTableMetadata), arg0, arg1)
 }
 
-// RegisterProbe mocks base method
-func (m *MockMetadataServiceServer) RegisterProbe(arg0 context.Context, arg1 *metadatapb.RegisterProbeRequest) (*metadatapb.RegisterProbeResponse, error) {
-	ret := m.ctrl.Call(m, "RegisterProbe", arg0, arg1)
-	ret0, _ := ret[0].(*metadatapb.RegisterProbeResponse)
+// MockMetadataTracepointServiceClient is a mock of MetadataTracepointServiceClient interface
+type MockMetadataTracepointServiceClient struct {
+	ctrl     *gomock.Controller
+	recorder *MockMetadataTracepointServiceClientMockRecorder
+}
+
+// MockMetadataTracepointServiceClientMockRecorder is the mock recorder for MockMetadataTracepointServiceClient
+type MockMetadataTracepointServiceClientMockRecorder struct {
+	mock *MockMetadataTracepointServiceClient
+}
+
+// NewMockMetadataTracepointServiceClient creates a new mock instance
+func NewMockMetadataTracepointServiceClient(ctrl *gomock.Controller) *MockMetadataTracepointServiceClient {
+	mock := &MockMetadataTracepointServiceClient{ctrl: ctrl}
+	mock.recorder = &MockMetadataTracepointServiceClientMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockMetadataTracepointServiceClient) EXPECT() *MockMetadataTracepointServiceClientMockRecorder {
+	return m.recorder
+}
+
+// RegisterTracepoint mocks base method
+func (m *MockMetadataTracepointServiceClient) RegisterTracepoint(ctx context.Context, in *metadatapb.RegisterTracepointRequest, opts ...grpc.CallOption) (*metadatapb.RegisterTracepointResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RegisterTracepoint", varargs...)
+	ret0, _ := ret[0].(*metadatapb.RegisterTracepointResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// RegisterProbe indicates an expected call of RegisterProbe
-func (mr *MockMetadataServiceServerMockRecorder) RegisterProbe(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterProbe", reflect.TypeOf((*MockMetadataServiceServer)(nil).RegisterProbe), arg0, arg1)
+// RegisterTracepoint indicates an expected call of RegisterTracepoint
+func (mr *MockMetadataTracepointServiceClientMockRecorder) RegisterTracepoint(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterTracepoint", reflect.TypeOf((*MockMetadataTracepointServiceClient)(nil).RegisterTracepoint), varargs...)
 }
 
-// GetProbeInfo mocks base method
-func (m *MockMetadataServiceServer) GetProbeInfo(arg0 context.Context, arg1 *metadatapb.GetProbeInfoRequest) (*metadatapb.GetProbeInfoResponse, error) {
-	ret := m.ctrl.Call(m, "GetProbeInfo", arg0, arg1)
-	ret0, _ := ret[0].(*metadatapb.GetProbeInfoResponse)
+// GetTracepointInfo mocks base method
+func (m *MockMetadataTracepointServiceClient) GetTracepointInfo(ctx context.Context, in *metadatapb.GetTracepointInfoRequest, opts ...grpc.CallOption) (*metadatapb.GetTracepointInfoResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetTracepointInfo", varargs...)
+	ret0, _ := ret[0].(*metadatapb.GetTracepointInfoResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetProbeInfo indicates an expected call of GetProbeInfo
-func (mr *MockMetadataServiceServerMockRecorder) GetProbeInfo(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProbeInfo", reflect.TypeOf((*MockMetadataServiceServer)(nil).GetProbeInfo), arg0, arg1)
+// GetTracepointInfo indicates an expected call of GetTracepointInfo
+func (mr *MockMetadataTracepointServiceClientMockRecorder) GetTracepointInfo(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTracepointInfo", reflect.TypeOf((*MockMetadataTracepointServiceClient)(nil).GetTracepointInfo), varargs...)
+}
+
+// RemoveTracepoint mocks base method
+func (m *MockMetadataTracepointServiceClient) RemoveTracepoint(ctx context.Context, in *metadatapb.RemoveTracepointRequest, opts ...grpc.CallOption) (*metadatapb.RemoveTracepointResponse, error) {
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RemoveTracepoint", varargs...)
+	ret0, _ := ret[0].(*metadatapb.RemoveTracepointResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RemoveTracepoint indicates an expected call of RemoveTracepoint
+func (mr *MockMetadataTracepointServiceClientMockRecorder) RemoveTracepoint(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveTracepoint", reflect.TypeOf((*MockMetadataTracepointServiceClient)(nil).RemoveTracepoint), varargs...)
+}
+
+// MockMetadataTracepointServiceServer is a mock of MetadataTracepointServiceServer interface
+type MockMetadataTracepointServiceServer struct {
+	ctrl     *gomock.Controller
+	recorder *MockMetadataTracepointServiceServerMockRecorder
+}
+
+// MockMetadataTracepointServiceServerMockRecorder is the mock recorder for MockMetadataTracepointServiceServer
+type MockMetadataTracepointServiceServerMockRecorder struct {
+	mock *MockMetadataTracepointServiceServer
+}
+
+// NewMockMetadataTracepointServiceServer creates a new mock instance
+func NewMockMetadataTracepointServiceServer(ctrl *gomock.Controller) *MockMetadataTracepointServiceServer {
+	mock := &MockMetadataTracepointServiceServer{ctrl: ctrl}
+	mock.recorder = &MockMetadataTracepointServiceServerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockMetadataTracepointServiceServer) EXPECT() *MockMetadataTracepointServiceServerMockRecorder {
+	return m.recorder
+}
+
+// RegisterTracepoint mocks base method
+func (m *MockMetadataTracepointServiceServer) RegisterTracepoint(arg0 context.Context, arg1 *metadatapb.RegisterTracepointRequest) (*metadatapb.RegisterTracepointResponse, error) {
+	ret := m.ctrl.Call(m, "RegisterTracepoint", arg0, arg1)
+	ret0, _ := ret[0].(*metadatapb.RegisterTracepointResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RegisterTracepoint indicates an expected call of RegisterTracepoint
+func (mr *MockMetadataTracepointServiceServerMockRecorder) RegisterTracepoint(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterTracepoint", reflect.TypeOf((*MockMetadataTracepointServiceServer)(nil).RegisterTracepoint), arg0, arg1)
+}
+
+// GetTracepointInfo mocks base method
+func (m *MockMetadataTracepointServiceServer) GetTracepointInfo(arg0 context.Context, arg1 *metadatapb.GetTracepointInfoRequest) (*metadatapb.GetTracepointInfoResponse, error) {
+	ret := m.ctrl.Call(m, "GetTracepointInfo", arg0, arg1)
+	ret0, _ := ret[0].(*metadatapb.GetTracepointInfoResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTracepointInfo indicates an expected call of GetTracepointInfo
+func (mr *MockMetadataTracepointServiceServerMockRecorder) GetTracepointInfo(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTracepointInfo", reflect.TypeOf((*MockMetadataTracepointServiceServer)(nil).GetTracepointInfo), arg0, arg1)
+}
+
+// RemoveTracepoint mocks base method
+func (m *MockMetadataTracepointServiceServer) RemoveTracepoint(arg0 context.Context, arg1 *metadatapb.RemoveTracepointRequest) (*metadatapb.RemoveTracepointResponse, error) {
+	ret := m.ctrl.Call(m, "RemoveTracepoint", arg0, arg1)
+	ret0, _ := ret[0].(*metadatapb.RemoveTracepointResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RemoveTracepoint indicates an expected call of RemoveTracepoint
+func (mr *MockMetadataTracepointServiceServerMockRecorder) RemoveTracepoint(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RemoveTracepoint", reflect.TypeOf((*MockMetadataTracepointServiceServer)(nil).RemoveTracepoint), arg0, arg1)
 }

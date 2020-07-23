@@ -54,6 +54,6 @@ enum LifeCycleState {
   RUNNING_STATE = 2;
   // Resource is not running and has failed.
   FAILED_STATE = 3;
-  // Resource has been terminated.
-  EVICTED_STATE = 4;
+  // Resource has been terminated with no errors.
+  TERMINATED_STATE = 4;
 }

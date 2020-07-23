@@ -5,7 +5,7 @@ go_library(
     srcs = [
         "mock_agent.gen.go",
         "mock_metadata_store.gen.go",
-        "mock_probe_store.gen.go",
+        "mock_tracepoint_store.gen.go",
     ],
     importpath = "pixielabs.ai/pixielabs/src/vizier/services/metadata/controllers/mock",
     visibility = ["//visibility:public"],

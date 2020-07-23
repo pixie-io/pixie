@@ -28,22 +28,22 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type ProbeInfo struct {
-	ProbeID string      `protobuf:"bytes,1,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
-	Program *ir.Program `protobuf:"bytes,2,opt,name=program,proto3" json:"program,omitempty"`
+type TracepointInfo struct {
+	TracepointID string      `protobuf:"bytes,1,opt,name=tracepoint_id,json=tracepointId,proto3" json:"tracepoint_id,omitempty"`
+	Program      *ir.Program `protobuf:"bytes,2,opt,name=program,proto3" json:"program,omitempty"`
 }
 
-func (m *ProbeInfo) Reset()      { *m = ProbeInfo{} }
-func (*ProbeInfo) ProtoMessage() {}
-func (*ProbeInfo) Descriptor() ([]byte, []int) {
+func (m *TracepointInfo) Reset()      { *m = TracepointInfo{} }
+func (*TracepointInfo) ProtoMessage() {}
+func (*TracepointInfo) Descriptor() ([]byte, []int) {
 	return fileDescriptor_27ea71ea705227d1, []int{0}
 }
-func (m *ProbeInfo) XXX_Unmarshal(b []byte) error {
+func (m *TracepointInfo) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *ProbeInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *TracepointInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_ProbeInfo.Marshal(b, m, deterministic)
+		return xxx_messageInfo_TracepointInfo.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -53,50 +53,50 @@ func (m *ProbeInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 		return b[:n], nil
 	}
 }
-func (m *ProbeInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ProbeInfo.Merge(m, src)
+func (m *TracepointInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TracepointInfo.Merge(m, src)
 }
-func (m *ProbeInfo) XXX_Size() int {
+func (m *TracepointInfo) XXX_Size() int {
 	return m.Size()
 }
-func (m *ProbeInfo) XXX_DiscardUnknown() {
-	xxx_messageInfo_ProbeInfo.DiscardUnknown(m)
+func (m *TracepointInfo) XXX_DiscardUnknown() {
+	xxx_messageInfo_TracepointInfo.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_ProbeInfo proto.InternalMessageInfo
+var xxx_messageInfo_TracepointInfo proto.InternalMessageInfo
 
-func (m *ProbeInfo) GetProbeID() string {
+func (m *TracepointInfo) GetTracepointID() string {
 	if m != nil {
-		return m.ProbeID
+		return m.TracepointID
 	}
 	return ""
 }
 
-func (m *ProbeInfo) GetProgram() *ir.Program {
+func (m *TracepointInfo) GetProgram() *ir.Program {
 	if m != nil {
 		return m.Program
 	}
 	return nil
 }
 
-type AgentProbeStatus struct {
-	State   proto1.LifeCycleState `protobuf:"varint,1,opt,name=state,proto3,enum=pl.statuspb.LifeCycleState" json:"state,omitempty"`
-	Status  *proto1.Status        `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
-	ProbeID string                `protobuf:"bytes,3,opt,name=probe_id,json=probeId,proto3" json:"probe_id,omitempty"`
-	AgentID *proto2.UUID          `protobuf:"bytes,4,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
+type AgentTracepointStatus struct {
+	State        proto1.LifeCycleState `protobuf:"varint,1,opt,name=state,proto3,enum=pl.statuspb.LifeCycleState" json:"state,omitempty"`
+	Status       *proto1.Status        `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	TracepointID string                `protobuf:"bytes,3,opt,name=tracepoint_id,json=tracepointId,proto3" json:"tracepoint_id,omitempty"`
+	AgentID      *proto2.UUID          `protobuf:"bytes,4,opt,name=agent_id,json=agentId,proto3" json:"agent_id,omitempty"`
 }
 
-func (m *AgentProbeStatus) Reset()      { *m = AgentProbeStatus{} }
-func (*AgentProbeStatus) ProtoMessage() {}
-func (*AgentProbeStatus) Descriptor() ([]byte, []int) {
+func (m *AgentTracepointStatus) Reset()      { *m = AgentTracepointStatus{} }
+func (*AgentTracepointStatus) ProtoMessage() {}
+func (*AgentTracepointStatus) Descriptor() ([]byte, []int) {
 	return fileDescriptor_27ea71ea705227d1, []int{1}
 }
-func (m *AgentProbeStatus) XXX_Unmarshal(b []byte) error {
+func (m *AgentTracepointStatus) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
 }
-func (m *AgentProbeStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+func (m *AgentTracepointStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	if deterministic {
-		return xxx_messageInfo_AgentProbeStatus.Marshal(b, m, deterministic)
+		return xxx_messageInfo_AgentTracepointStatus.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
 		n, err := m.MarshalToSizedBuffer(b)
@@ -106,40 +106,40 @@ func (m *AgentProbeStatus) XXX_Marshal(b []byte, deterministic bool) ([]byte, er
 		return b[:n], nil
 	}
 }
-func (m *AgentProbeStatus) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AgentProbeStatus.Merge(m, src)
+func (m *AgentTracepointStatus) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AgentTracepointStatus.Merge(m, src)
 }
-func (m *AgentProbeStatus) XXX_Size() int {
+func (m *AgentTracepointStatus) XXX_Size() int {
 	return m.Size()
 }
-func (m *AgentProbeStatus) XXX_DiscardUnknown() {
-	xxx_messageInfo_AgentProbeStatus.DiscardUnknown(m)
+func (m *AgentTracepointStatus) XXX_DiscardUnknown() {
+	xxx_messageInfo_AgentTracepointStatus.DiscardUnknown(m)
 }
 
-var xxx_messageInfo_AgentProbeStatus proto.InternalMessageInfo
+var xxx_messageInfo_AgentTracepointStatus proto.InternalMessageInfo
 
-func (m *AgentProbeStatus) GetState() proto1.LifeCycleState {
+func (m *AgentTracepointStatus) GetState() proto1.LifeCycleState {
 	if m != nil {
 		return m.State
 	}
 	return proto1.UNKNOWN_STATE
 }
 
-func (m *AgentProbeStatus) GetStatus() *proto1.Status {
+func (m *AgentTracepointStatus) GetStatus() *proto1.Status {
 	if m != nil {
 		return m.Status
 	}
 	return nil
 }
 
-func (m *AgentProbeStatus) GetProbeID() string {
+func (m *AgentTracepointStatus) GetTracepointID() string {
 	if m != nil {
-		return m.ProbeID
+		return m.TracepointID
 	}
 	return ""
 }
 
-func (m *AgentProbeStatus) GetAgentID() *proto2.UUID {
+func (m *AgentTracepointStatus) GetAgentID() *proto2.UUID {
 	if m != nil {
 		return m.AgentID
 	}
@@ -147,8 +147,8 @@ func (m *AgentProbeStatus) GetAgentID() *proto2.UUID {
 }
 
 func init() {
-	proto.RegisterType((*ProbeInfo)(nil), "pl.vizier.services.metadata.ProbeInfo")
-	proto.RegisterType((*AgentProbeStatus)(nil), "pl.vizier.services.metadata.AgentProbeStatus")
+	proto.RegisterType((*TracepointInfo)(nil), "pl.vizier.services.metadata.TracepointInfo")
+	proto.RegisterType((*AgentTracepointStatus)(nil), "pl.vizier.services.metadata.AgentTracepointStatus")
 }
 
 func init() {
@@ -156,45 +156,46 @@ func init() {
 }
 
 var fileDescriptor_27ea71ea705227d1 = []byte{
-	// 440 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0xbf, 0x6e, 0xd5, 0x30,
-	0x14, 0xc6, 0x63, 0xfe, 0xf4, 0x4f, 0x2a, 0x01, 0x0a, 0x4b, 0xd5, 0x4a, 0xe6, 0xea, 0x0e, 0xa8,
-	0x12, 0xc2, 0x86, 0x32, 0x30, 0x30, 0xd1, 0x76, 0x89, 0xc4, 0x50, 0x5d, 0xd4, 0x85, 0xa5, 0xb2,
-	0x1d, 0xdf, 0x70, 0xa4, 0x24, 0xb6, 0x6c, 0xa7, 0xe2, 0x32, 0x20, 0x1e, 0x81, 0xc7, 0xe0, 0x51,
-	0x18, 0xaf, 0xc4, 0xd2, 0x09, 0x71, 0x7d, 0x17, 0xc6, 0x3e, 0x02, 0xb2, 0x9d, 0x20, 0xca, 0x80,
-	0x3a, 0xf9, 0x1c, 0xf9, 0xf7, 0x7d, 0xf9, 0xce, 0x89, 0xf3, 0x67, 0xd6, 0x08, 0x7a, 0x01, 0x1f,
-	0x41, 0x1a, 0x6a, 0xa5, 0xb9, 0x00, 0x21, 0x2d, 0x6d, 0xa5, 0x63, 0x15, 0x73, 0x8c, 0x5a, 0xa7,
-	0x8c, 0xd4, 0x3c, 0x9d, 0x44, 0x1b, 0xe5, 0x54, 0xb1, 0xaf, 0x1b, 0x92, 0x04, 0x64, 0x14, 0x90,
-	0x51, 0xb0, 0x37, 0x0d, 0x76, 0x42, 0xb5, 0xad, 0xea, 0x28, 0x67, 0x56, 0xd2, 0xa8, 0xa1, 0xd6,
-	0x31, 0xd7, 0xdb, 0x64, 0xb0, 0xf7, 0xb4, 0x06, 0xf7, 0xbe, 0xe7, 0x44, 0xa8, 0x96, 0xd6, 0xaa,
-	0x56, 0x89, 0xe1, 0xfd, 0x3c, 0x76, 0x49, 0x10, 0xaa, 0x11, 0x0f, 0x96, 0xd6, 0x81, 0x69, 0xa0,
-	0xab, 0x69, 0xb5, 0xe8, 0x58, 0x0b, 0xe2, 0xdc, 0x19, 0x26, 0x42, 0x0f, 0x86, 0x36, 0xaa, 0x06,
-	0xc1, 0x9a, 0x01, 0x9f, 0xfc, 0x95, 0xa0, 0xef, 0xa1, 0x1a, 0x12, 0x84, 0x32, 0x11, 0xd3, 0x4f,
-	0xf9, 0xf6, 0xa9, 0x51, 0x5c, 0x96, 0xdd, 0x5c, 0x15, 0x8f, 0xf3, 0x2d, 0x1d, 0x9a, 0x73, 0xa8,
-	0x76, 0xd1, 0x04, 0x1d, 0x6c, 0x1f, 0xed, 0xf8, 0x1f, 0x8f, 0x36, 0x13, 0x70, 0x32, 0xdb, 0x8c,
-	0x97, 0x65, 0x55, 0x94, 0x79, 0x28, 0x6b, 0xc3, 0xda, 0xdd, 0x5b, 0x13, 0x74, 0xb0, 0x73, 0x48,
-	0x89, 0x6e, 0xc8, 0x18, 0x8b, 0xfc, 0x13, 0x8b, 0x80, 0x21, 0x63, 0xac, 0xd3, 0x24, 0x9b, 0x8d,
-	0xfa, 0xe9, 0x77, 0x94, 0x3f, 0x78, 0x5d, 0xcb, 0xce, 0xc5, 0x8f, 0xbc, 0x8d, 0xab, 0x29, 0x9e,
-	0xe7, 0x77, 0xc3, 0x92, 0x64, 0x0c, 0x71, 0xef, 0x70, 0x3f, 0xb9, 0x87, 0x2b, 0xcd, 0xc9, 0x1b,
-	0x98, 0xcb, 0xe3, 0x85, 0x68, 0x22, 0x2c, 0x67, 0x89, 0x2c, 0x9e, 0xe4, 0x1b, 0x89, 0x18, 0x12,
-	0x3d, 0xbc, 0xa6, 0x49, 0xbe, 0xb3, 0x01, 0xb9, 0x36, 0xe7, 0xed, 0xff, 0xcc, 0xf9, 0x32, 0xdf,
-	0x62, 0x21, 0x5b, 0xe0, 0xee, 0x44, 0xdb, 0xfb, 0xc1, 0x36, 0xac, 0x4f, 0x73, 0x72, 0x76, 0x56,
-	0x9e, 0x24, 0x61, 0x1c, 0x20, 0x08, 0x23, 0x5d, 0x56, 0x47, 0x8b, 0xe5, 0x0a, 0x67, 0x97, 0x2b,
-	0x9c, 0x5d, 0xad, 0x30, 0xfa, 0xec, 0x31, 0xfa, 0xea, 0x31, 0xfa, 0xe6, 0x31, 0x5a, 0x7a, 0x8c,
-	0x7e, 0x7a, 0x8c, 0x7e, 0x79, 0x9c, 0x5d, 0x79, 0x8c, 0xbe, 0xac, 0x71, 0xb6, 0x5c, 0xe3, 0xec,
-	0x72, 0x8d, 0xb3, 0x77, 0xc7, 0x1a, 0x3e, 0x80, 0x6c, 0x18, 0xb7, 0x84, 0x01, 0xfd, 0xd3, 0xd0,
-	0x9b, 0xbc, 0xca, 0x57, 0xc3, 0xc9, 0x37, 0xe2, 0x7f, 0x7d, 0xf1, 0x3b, 0x00, 0x00, 0xff, 0xff,
-	0x11, 0xf0, 0x13, 0x8b, 0xcc, 0x02, 0x00, 0x00,
+	// 455 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0x3f, 0x6f, 0xd4, 0x30,
+	0x18, 0xc6, 0x63, 0xfe, 0xb4, 0x90, 0x96, 0x82, 0x82, 0x90, 0xaa, 0x56, 0x72, 0x4f, 0x37, 0x55,
+	0x42, 0xd8, 0x50, 0x84, 0x18, 0x98, 0xb8, 0xde, 0x12, 0x89, 0x01, 0x05, 0xba, 0xb0, 0x54, 0x8e,
+	0xe3, 0x0b, 0xaf, 0x94, 0xc4, 0x96, 0xed, 0x54, 0x1c, 0x13, 0x1f, 0x01, 0xf1, 0x29, 0xf8, 0x28,
+	0x8c, 0x37, 0x76, 0xaa, 0x38, 0xdf, 0x00, 0x63, 0x3f, 0x02, 0x72, 0x9c, 0xb4, 0x05, 0x96, 0x4e,
+	0xf6, 0x9b, 0xfc, 0x9e, 0xf7, 0x79, 0xde, 0x57, 0x8e, 0x9f, 0x1a, 0xcd, 0xe9, 0x09, 0x7c, 0x06,
+	0xa1, 0xa9, 0x11, 0xfa, 0x04, 0xb8, 0x30, 0xb4, 0x16, 0x96, 0x15, 0xcc, 0x32, 0x6a, 0xac, 0xd4,
+	0x42, 0xe5, 0xe1, 0x24, 0x4a, 0x4b, 0x2b, 0x93, 0x5d, 0x55, 0x91, 0x20, 0x20, 0x83, 0x80, 0x0c,
+	0x82, 0x9d, 0xb1, 0x6f, 0xc7, 0x65, 0x5d, 0xcb, 0x86, 0xe6, 0xcc, 0x08, 0xda, 0x69, 0xa8, 0xb1,
+	0xcc, 0xb6, 0x26, 0x34, 0xd8, 0x79, 0x52, 0x82, 0xfd, 0xd8, 0xe6, 0x84, 0xcb, 0x9a, 0x96, 0xb2,
+	0x94, 0x81, 0xc9, 0xdb, 0x59, 0x57, 0x05, 0x81, 0xbf, 0x0d, 0xb8, 0x6f, 0x69, 0x2c, 0xe8, 0x0a,
+	0x9a, 0x92, 0x16, 0xf3, 0x86, 0xd5, 0xc0, 0x8f, 0xad, 0x66, 0xdc, 0xd7, 0xa0, 0x69, 0x25, 0x4b,
+	0xe0, 0xac, 0xea, 0xf1, 0xd1, 0x95, 0x04, 0x6d, 0x0b, 0x45, 0x9f, 0xc0, 0x5f, 0x03, 0x31, 0xfe,
+	0x86, 0xe2, 0xad, 0xf7, 0x9a, 0x71, 0xa1, 0x24, 0x34, 0x36, 0x6d, 0x66, 0x32, 0x79, 0x11, 0xdf,
+	0xb3, 0x17, 0x5f, 0x8e, 0xa1, 0xd8, 0x46, 0x23, 0xb4, 0x7f, 0x77, 0xf2, 0xc0, 0x9d, 0xed, 0x6d,
+	0x5e, 0x41, 0xa7, 0xd9, 0xe6, 0x25, 0x96, 0x16, 0x49, 0x1a, 0xaf, 0x2b, 0x2d, 0x4b, 0xcd, 0xea,
+	0xed, 0x1b, 0x23, 0xb4, 0xbf, 0x71, 0x40, 0x89, 0xaa, 0xc8, 0x90, 0x95, 0xfc, 0x93, 0x95, 0x80,
+	0x26, 0x43, 0xd6, 0xb7, 0x41, 0x96, 0x0d, 0xfa, 0xf1, 0x2f, 0x14, 0x3f, 0x7a, 0x5d, 0x8a, 0xc6,
+	0x5e, 0xda, 0xbd, 0xeb, 0x96, 0x96, 0x3c, 0x8b, 0x6f, 0xfb, 0xf5, 0x89, 0x2e, 0xd3, 0xd6, 0xc1,
+	0x6e, 0xb0, 0xf0, 0xbf, 0x54, 0x4e, 0xde, 0xc0, 0x4c, 0x1c, 0xce, 0x79, 0x25, 0x3c, 0x2c, 0xb2,
+	0x40, 0x26, 0x8f, 0xe3, 0xb5, 0x40, 0xf4, 0xb1, 0x1e, 0xfe, 0xa5, 0x09, 0x7d, 0xb3, 0x1e, 0xf9,
+	0x7f, 0xf6, 0x9b, 0xd7, 0x9a, 0xfd, 0x65, 0x7c, 0x87, 0xf9, 0xbc, 0x5e, 0x71, 0xab, 0x73, 0xb9,
+	0xef, 0x5d, 0xfc, 0x9e, 0x55, 0x4e, 0x8e, 0x8e, 0xd2, 0xe9, 0x64, 0xc3, 0x9d, 0xed, 0xad, 0x77,
+	0x43, 0xa5, 0xd3, 0x6c, 0xbd, 0xa3, 0xd3, 0x62, 0x32, 0x5f, 0x2c, 0x71, 0x74, 0xba, 0xc4, 0xd1,
+	0xf9, 0x12, 0xa3, 0x2f, 0x0e, 0xa3, 0xef, 0x0e, 0xa3, 0x1f, 0x0e, 0xa3, 0x85, 0xc3, 0xe8, 0xa7,
+	0xc3, 0xe8, 0xb7, 0xc3, 0xd1, 0xb9, 0xc3, 0xe8, 0xeb, 0x0a, 0x47, 0x8b, 0x15, 0x8e, 0x4e, 0x57,
+	0x38, 0xfa, 0x70, 0xa8, 0xe0, 0x13, 0x88, 0x8a, 0xe5, 0x86, 0x30, 0xa0, 0x17, 0x05, 0xbd, 0xce,
+	0xf3, 0x7d, 0xd5, 0x9f, 0xf9, 0x5a, 0xf7, 0x00, 0x9e, 0xff, 0x09, 0x00, 0x00, 0xff, 0xff, 0x37,
+	0xe7, 0xb5, 0x02, 0xf5, 0x02, 0x00, 0x00,
 }
 
-func (this *ProbeInfo) Equal(that interface{}) bool {
+func (this *TracepointInfo) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*ProbeInfo)
+	that1, ok := that.(*TracepointInfo)
 	if !ok {
-		that2, ok := that.(ProbeInfo)
+		that2, ok := that.(TracepointInfo)
 		if ok {
 			that1 = &that2
 		} else {
@@ -206,7 +207,7 @@ func (this *ProbeInfo) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.ProbeID != that1.ProbeID {
+	if this.TracepointID != that1.TracepointID {
 		return false
 	}
 	if !this.Program.Equal(that1.Program) {
@@ -214,14 +215,14 @@ func (this *ProbeInfo) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *AgentProbeStatus) Equal(that interface{}) bool {
+func (this *AgentTracepointStatus) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	that1, ok := that.(*AgentProbeStatus)
+	that1, ok := that.(*AgentTracepointStatus)
 	if !ok {
-		that2, ok := that.(AgentProbeStatus)
+		that2, ok := that.(AgentTracepointStatus)
 		if ok {
 			that1 = &that2
 		} else {
@@ -239,7 +240,7 @@ func (this *AgentProbeStatus) Equal(that interface{}) bool {
 	if !this.Status.Equal(that1.Status) {
 		return false
 	}
-	if this.ProbeID != that1.ProbeID {
+	if this.TracepointID != that1.TracepointID {
 		return false
 	}
 	if !this.AgentID.Equal(that1.AgentID) {
@@ -247,30 +248,30 @@ func (this *AgentProbeStatus) Equal(that interface{}) bool {
 	}
 	return true
 }
-func (this *ProbeInfo) GoString() string {
+func (this *TracepointInfo) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 6)
-	s = append(s, "&storepb.ProbeInfo{")
-	s = append(s, "ProbeID: "+fmt.Sprintf("%#v", this.ProbeID)+",\n")
+	s = append(s, "&storepb.TracepointInfo{")
+	s = append(s, "TracepointID: "+fmt.Sprintf("%#v", this.TracepointID)+",\n")
 	if this.Program != nil {
 		s = append(s, "Program: "+fmt.Sprintf("%#v", this.Program)+",\n")
 	}
 	s = append(s, "}")
 	return strings.Join(s, "")
 }
-func (this *AgentProbeStatus) GoString() string {
+func (this *AgentTracepointStatus) GoString() string {
 	if this == nil {
 		return "nil"
 	}
 	s := make([]string, 0, 8)
-	s = append(s, "&storepb.AgentProbeStatus{")
+	s = append(s, "&storepb.AgentTracepointStatus{")
 	s = append(s, "State: "+fmt.Sprintf("%#v", this.State)+",\n")
 	if this.Status != nil {
 		s = append(s, "Status: "+fmt.Sprintf("%#v", this.Status)+",\n")
 	}
-	s = append(s, "ProbeID: "+fmt.Sprintf("%#v", this.ProbeID)+",\n")
+	s = append(s, "TracepointID: "+fmt.Sprintf("%#v", this.TracepointID)+",\n")
 	if this.AgentID != nil {
 		s = append(s, "AgentID: "+fmt.Sprintf("%#v", this.AgentID)+",\n")
 	}
@@ -285,7 +286,7 @@ func valueToGoStringStore(v interface{}, typ string) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("func(v %v) *%v { return &v } ( %#v )", typ, typ, pv)
 }
-func (m *ProbeInfo) Marshal() (dAtA []byte, err error) {
+func (m *TracepointInfo) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -295,12 +296,12 @@ func (m *ProbeInfo) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *ProbeInfo) MarshalTo(dAtA []byte) (int, error) {
+func (m *TracepointInfo) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *ProbeInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *TracepointInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -317,17 +318,17 @@ func (m *ProbeInfo) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x12
 	}
-	if len(m.ProbeID) > 0 {
-		i -= len(m.ProbeID)
-		copy(dAtA[i:], m.ProbeID)
-		i = encodeVarintStore(dAtA, i, uint64(len(m.ProbeID)))
+	if len(m.TracepointID) > 0 {
+		i -= len(m.TracepointID)
+		copy(dAtA[i:], m.TracepointID)
+		i = encodeVarintStore(dAtA, i, uint64(len(m.TracepointID)))
 		i--
 		dAtA[i] = 0xa
 	}
 	return len(dAtA) - i, nil
 }
 
-func (m *AgentProbeStatus) Marshal() (dAtA []byte, err error) {
+func (m *AgentTracepointStatus) Marshal() (dAtA []byte, err error) {
 	size := m.Size()
 	dAtA = make([]byte, size)
 	n, err := m.MarshalToSizedBuffer(dAtA[:size])
@@ -337,12 +338,12 @@ func (m *AgentProbeStatus) Marshal() (dAtA []byte, err error) {
 	return dAtA[:n], nil
 }
 
-func (m *AgentProbeStatus) MarshalTo(dAtA []byte) (int, error) {
+func (m *AgentTracepointStatus) MarshalTo(dAtA []byte) (int, error) {
 	size := m.Size()
 	return m.MarshalToSizedBuffer(dAtA[:size])
 }
 
-func (m *AgentProbeStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+func (m *AgentTracepointStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 	i := len(dAtA)
 	_ = i
 	var l int
@@ -359,10 +360,10 @@ func (m *AgentProbeStatus) MarshalToSizedBuffer(dAtA []byte) (int, error) {
 		i--
 		dAtA[i] = 0x22
 	}
-	if len(m.ProbeID) > 0 {
-		i -= len(m.ProbeID)
-		copy(dAtA[i:], m.ProbeID)
-		i = encodeVarintStore(dAtA, i, uint64(len(m.ProbeID)))
+	if len(m.TracepointID) > 0 {
+		i -= len(m.TracepointID)
+		copy(dAtA[i:], m.TracepointID)
+		i = encodeVarintStore(dAtA, i, uint64(len(m.TracepointID)))
 		i--
 		dAtA[i] = 0x1a
 	}
@@ -397,13 +398,13 @@ func encodeVarintStore(dAtA []byte, offset int, v uint64) int {
 	dAtA[offset] = uint8(v)
 	return base
 }
-func (m *ProbeInfo) Size() (n int) {
+func (m *TracepointInfo) Size() (n int) {
 	if m == nil {
 		return 0
 	}
 	var l int
 	_ = l
-	l = len(m.ProbeID)
+	l = len(m.TracepointID)
 	if l > 0 {
 		n += 1 + l + sovStore(uint64(l))
 	}
@@ -414,7 +415,7 @@ func (m *ProbeInfo) Size() (n int) {
 	return n
 }
 
-func (m *AgentProbeStatus) Size() (n int) {
+func (m *AgentTracepointStatus) Size() (n int) {
 	if m == nil {
 		return 0
 	}
@@ -427,7 +428,7 @@ func (m *AgentProbeStatus) Size() (n int) {
 		l = m.Status.Size()
 		n += 1 + l + sovStore(uint64(l))
 	}
-	l = len(m.ProbeID)
+	l = len(m.TracepointID)
 	if l > 0 {
 		n += 1 + l + sovStore(uint64(l))
 	}
@@ -444,25 +445,25 @@ func sovStore(x uint64) (n int) {
 func sozStore(x uint64) (n int) {
 	return sovStore(uint64((x << 1) ^ uint64((int64(x) >> 63))))
 }
-func (this *ProbeInfo) String() string {
+func (this *TracepointInfo) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&ProbeInfo{`,
-		`ProbeID:` + fmt.Sprintf("%v", this.ProbeID) + `,`,
+	s := strings.Join([]string{`&TracepointInfo{`,
+		`TracepointID:` + fmt.Sprintf("%v", this.TracepointID) + `,`,
 		`Program:` + strings.Replace(fmt.Sprintf("%v", this.Program), "Program", "ir.Program", 1) + `,`,
 		`}`,
 	}, "")
 	return s
 }
-func (this *AgentProbeStatus) String() string {
+func (this *AgentTracepointStatus) String() string {
 	if this == nil {
 		return "nil"
 	}
-	s := strings.Join([]string{`&AgentProbeStatus{`,
+	s := strings.Join([]string{`&AgentTracepointStatus{`,
 		`State:` + fmt.Sprintf("%v", this.State) + `,`,
 		`Status:` + strings.Replace(fmt.Sprintf("%v", this.Status), "Status", "proto1.Status", 1) + `,`,
-		`ProbeID:` + fmt.Sprintf("%v", this.ProbeID) + `,`,
+		`TracepointID:` + fmt.Sprintf("%v", this.TracepointID) + `,`,
 		`AgentID:` + strings.Replace(fmt.Sprintf("%v", this.AgentID), "UUID", "proto2.UUID", 1) + `,`,
 		`}`,
 	}, "")
@@ -476,7 +477,7 @@ func valueToStringStore(v interface{}) string {
 	pv := reflect.Indirect(rv).Interface()
 	return fmt.Sprintf("*%v", pv)
 }
-func (m *ProbeInfo) Unmarshal(dAtA []byte) error {
+func (m *TracepointInfo) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -499,15 +500,15 @@ func (m *ProbeInfo) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: ProbeInfo: wiretype end group for non-group")
+			return fmt.Errorf("proto: TracepointInfo: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: ProbeInfo: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: TracepointInfo: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProbeID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TracepointID", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -535,7 +536,7 @@ func (m *ProbeInfo) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ProbeID = string(dAtA[iNdEx:postIndex])
+			m.TracepointID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 2:
 			if wireType != 2 {
@@ -597,7 +598,7 @@ func (m *ProbeInfo) Unmarshal(dAtA []byte) error {
 	}
 	return nil
 }
-func (m *AgentProbeStatus) Unmarshal(dAtA []byte) error {
+func (m *AgentTracepointStatus) Unmarshal(dAtA []byte) error {
 	l := len(dAtA)
 	iNdEx := 0
 	for iNdEx < l {
@@ -620,10 +621,10 @@ func (m *AgentProbeStatus) Unmarshal(dAtA []byte) error {
 		fieldNum := int32(wire >> 3)
 		wireType := int(wire & 0x7)
 		if wireType == 4 {
-			return fmt.Errorf("proto: AgentProbeStatus: wiretype end group for non-group")
+			return fmt.Errorf("proto: AgentTracepointStatus: wiretype end group for non-group")
 		}
 		if fieldNum <= 0 {
-			return fmt.Errorf("proto: AgentProbeStatus: illegal tag %d (wire type %d)", fieldNum, wire)
+			return fmt.Errorf("proto: AgentTracepointStatus: illegal tag %d (wire type %d)", fieldNum, wire)
 		}
 		switch fieldNum {
 		case 1:
@@ -683,7 +684,7 @@ func (m *AgentProbeStatus) Unmarshal(dAtA []byte) error {
 			iNdEx = postIndex
 		case 3:
 			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field ProbeID", wireType)
+				return fmt.Errorf("proto: wrong wireType = %d for field TracepointID", wireType)
 			}
 			var stringLen uint64
 			for shift := uint(0); ; shift += 7 {
@@ -711,7 +712,7 @@ func (m *AgentProbeStatus) Unmarshal(dAtA []byte) error {
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.ProbeID = string(dAtA[iNdEx:postIndex])
+			m.TracepointID = string(dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 4:
 			if wireType != 2 {

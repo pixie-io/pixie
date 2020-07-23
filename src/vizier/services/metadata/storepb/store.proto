@@ -12,19 +12,19 @@ option go_package = "pixielabs.ai/pixielabs/src/vizier/services/metadata/storepb
 // This file contains protos for data that is stored in the metadata service's datastore.
 // Along with the protos in this file, the datastore also contains shared protos, such as from agentpb and metadatapb.
 
-// Information about the status of a specific probe.
-message ProbeInfo {
-  string probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
-  // The probe program.
+// Information about the status of a specific tracepoint.
+message TracepointInfo {
+  string tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
+  // The tracepoint program.
   pl.stirling.dynamic_tracing.ir.logical.Program program = 2;
 }
 
-// The agent's registration status for a particular probe.
-message AgentProbeStatus {
-  // The state of the probe.
+// The agent's registration status for a particular tracepoint.
+message AgentTracepointStatus {
+  // The state of the tracepoint.
   pl.statuspb.LifeCycleState state = 1;
-  // The status of the probe, specified if the state of the probe is not healthy.
+  // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
   pl.statuspb.Status status = 2;
-  string probe_id = 3 [ (gogoproto.customname) = "ProbeID" ];
+  string tracepoint_id = 3 [ (gogoproto.customname) = "TracepointID" ];
   uuidpb.UUID agent_id = 4 [ (gogoproto.customname) = "AgentID" ];
 }

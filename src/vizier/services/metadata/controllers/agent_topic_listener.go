@@ -15,27 +15,27 @@ import (
 
 // AgentTopicListener is responsible for listening to and handling messages on the agent topic.
 type AgentTopicListener struct {
-	clock        utils.Clock
-	agentManager AgentManager
-	probeManager *ProbeManager
-	sendMessage  SendMessageFn
-	mdStore      MetadataStore
+	clock             utils.Clock
+	agentManager      AgentManager
+	tracepointManager *TracepointManager
+	sendMessage       SendMessageFn
+	mdStore           MetadataStore
 }
 
 // NewAgentTopicListener creates a new agent topic listener.
-func NewAgentTopicListener(agentManager AgentManager, probeManager *ProbeManager, mdStore MetadataStore, sendMsgFn SendMessageFn) (*AgentTopicListener, error) {
+func NewAgentTopicListener(agentManager AgentManager, tracepointManager *TracepointManager, mdStore MetadataStore, sendMsgFn SendMessageFn) (*AgentTopicListener, error) {
 	clock := utils.SystemClock{}
-	return NewAgentTopicListenerWithClock(agentManager, probeManager, mdStore, sendMsgFn, clock)
+	return NewAgentTopicListenerWithClock(agentManager, tracepointManager, mdStore, sendMsgFn, clock)
 }
 
 // NewAgentTopicListenerWithClock creates a new agent topic listener with a clock.
-func NewAgentTopicListenerWithClock(agentManager AgentManager, probeManager *ProbeManager, mdStore MetadataStore, sendMsgFn SendMessageFn, clock utils.Clock) (*AgentTopicListener, error) {
+func NewAgentTopicListenerWithClock(agentManager AgentManager, tracepointManager *TracepointManager, mdStore MetadataStore, sendMsgFn SendMessageFn, clock utils.Clock) (*AgentTopicListener, error) {
 	return &AgentTopicListener{
-		clock:        clock,
-		agentManager: agentManager,
-		probeManager: probeManager,
-		sendMessage:  sendMsgFn,
-		mdStore:      mdStore,
+		clock:             clock,
+		agentManager:      agentManager,
+		tracepointManager: tracepointManager,
+		sendMessage:       sendMsgFn,
+		mdStore:           mdStore,
 	}, nil
 }
 
@@ -57,8 +57,8 @@ func (a *AgentTopicListener) HandleMessage(msg *nats.Msg) error {
 		a.onAgentRegisterRequest(m.RegisterAgentRequest)
 	case *messages.VizierMessage_UpdateAgentRequest:
 		a.onAgentUpdateRequest(m.UpdateAgentRequest)
-	case *messages.VizierMessage_ProbeMessage:
-		a.onAgentProbeMessage(m.ProbeMessage)
+	case *messages.VizierMessage_TracepointMessage:
+		a.onAgentTracepointMessage(m.TracepointMessage)
 	default:
 		log.WithField("message-type", reflect.TypeOf(pb.Msg).String()).
 			Error("Unhandled message.")
@@ -194,19 +194,19 @@ func (a *AgentTopicListener) onAgentRegisterRequest(m *messages.RegisterAgentReq
 			log.WithError(err).Error("Could not add initial metadata updates to agent's queue")
 		}
 
-		// Register all probes on new agent.
-		probes, err := a.probeManager.GetAllProbes()
+		// Register all tracepoints on new agent.
+		tracepoints, err := a.tracepointManager.GetAllTracepoints()
 		if err != nil {
-			log.WithError(err).Error("Could not get all probes")
+			log.WithError(err).Error("Could not get all tracepoints")
 			return
 		}
 
 		agentIDs := []uuid.UUID{agentID}
 
-		for _, probe := range probes {
-			err = a.probeManager.RegisterProbe(agentIDs, probe.ProbeID, probe.Program)
+		for _, tracepoint := range tracepoints {
+			err = a.tracepointManager.RegisterTracepoint(agentIDs, tracepoint.TracepointID, tracepoint.Program)
 			if err != nil {
-				log.WithError(err).Error("Failed to send RegisterProbe request")
+				log.WithError(err).Error("Failed to send RegisterTracepoint request")
 			}
 		}
 	}()
@@ -230,19 +230,19 @@ func (a *AgentTopicListener) onAgentUpdateRequest(m *messages.UpdateAgentRequest
 	// TODO(michelle): Update agent on etcd through agent manager.
 }
 
-func (a *AgentTopicListener) onAgentProbeMessage(pbMessage *messages.ProbeMessage) {
+func (a *AgentTopicListener) onAgentTracepointMessage(pbMessage *messages.TracepointMessage) {
 	switch m := pbMessage.Msg.(type) {
-	case *messages.ProbeMessage_ProbeInfoUpdate:
-		a.onAgentProbeInfoUpdate(m.ProbeInfoUpdate)
+	case *messages.TracepointMessage_TracepointInfoUpdate:
+		a.onAgentTracepointInfoUpdate(m.TracepointInfoUpdate)
 	default:
 		log.WithField("message-type", reflect.TypeOf(pbMessage.Msg).String()).
 			Error("Unhandled message.")
 	}
 }
 
-func (a *AgentTopicListener) onAgentProbeInfoUpdate(m *messages.ProbeInfoUpdate) {
-	err := a.probeManager.UpdateAgentProbeStatus(m.ProbeID, m.AgentID, m.State, m.Status)
+func (a *AgentTopicListener) onAgentTracepointInfoUpdate(m *messages.TracepointInfoUpdate) {
+	err := a.tracepointManager.UpdateAgentTracepointStatus(m.TracepointID, m.AgentID, m.State, m.Status)
 	if err != nil {
-		log.WithError(err).Error("Could not update agent probe status")
+		log.WithError(err).Error("Could not update agent tracepoint status")
 	}
 }

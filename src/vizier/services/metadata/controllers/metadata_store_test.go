@@ -1889,7 +1889,7 @@ func TestKVMetadataStore_GetMetadataUpdates(t *testing.T) {
 	assert.Equal(t, "object_md", update6.Name)
 }
 
-func TestKVMetadataStore_UpsertProbe(t *testing.T) {
+func TestKVMetadataStore_UpsertTracepoint(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
@@ -1900,22 +1900,22 @@ func TestKVMetadataStore_UpsertProbe(t *testing.T) {
 	mds, err := controllers.NewKVMetadataStore(c)
 	assert.Nil(t, err)
 
-	// Create probes.
-	s1 := &storepb.ProbeInfo{
-		ProbeID: "test_probe",
+	// Create tracepoints.
+	s1 := &storepb.TracepointInfo{
+		TracepointID: "test_tracepoint",
 	}
 
-	err = mds.UpsertProbe("test_probe", s1)
+	err = mds.UpsertTracepoint("test_tracepoint", s1)
 	assert.Nil(t, err)
 
-	savedProbe, err := c.Get("/probe/test_probe")
-	savedProbePb := &storepb.ProbeInfo{}
-	err = proto.Unmarshal(savedProbe, savedProbePb)
+	savedTracepoint, err := c.Get("/tracepoint/test_tracepoint")
+	savedTracepointPb := &storepb.TracepointInfo{}
+	err = proto.Unmarshal(savedTracepoint, savedTracepointPb)
 	assert.Nil(t, err)
-	assert.Equal(t, s1, savedProbePb)
+	assert.Equal(t, s1, savedTracepointPb)
 }
 
-func TestKVMetadataStore_GetProbe(t *testing.T) {
+func TestKVMetadataStore_GetTracepoint(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
@@ -1926,31 +1926,31 @@ func TestKVMetadataStore_GetProbe(t *testing.T) {
 	mds, err := controllers.NewKVMetadataStore(c)
 	assert.Nil(t, err)
 
-	// Create probes.
-	s1 := &storepb.ProbeInfo{
-		ProbeID: "test_probe",
+	// Create tracepoints.
+	s1 := &storepb.TracepointInfo{
+		TracepointID: "test_tracepoint",
 	}
 	s1Text, err := s1.Marshal()
 	if err != nil {
-		t.Fatal("Unable to marshal probe pb")
+		t.Fatal("Unable to marshal tracepoint pb")
 	}
 
-	c.Set("/probe/test_probe", string(s1Text))
+	c.Set("/tracepoint/test_tracepoint", string(s1Text))
 
-	probe, err := mds.GetProbe("test_probe")
+	tracepoint, err := mds.GetTracepoint("test_tracepoint")
 	assert.Nil(t, err)
-	assert.NotNil(t, probe)
+	assert.NotNil(t, tracepoint)
 
-	assert.Equal(t, s1.ProbeID, probe.ProbeID)
+	assert.Equal(t, s1.TracepointID, tracepoint.TracepointID)
 }
 
-func TestKVMetadataStore_GetProbes(t *testing.T) {
+func TestKVMetadataStore_GetTracepoints(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
 	mockDs.
 		EXPECT().
-		GetWithPrefix("/probe/").
+		GetWithPrefix("/tracepoint/").
 		Return(nil, nil, nil).
 		Times(1)
 
@@ -1960,35 +1960,35 @@ func TestKVMetadataStore_GetProbes(t *testing.T) {
 	mds, err := controllers.NewKVMetadataStore(c)
 	assert.Nil(t, err)
 
-	// Create probes.
-	s1 := &storepb.ProbeInfo{
-		ProbeID: "test1",
+	// Create tracepoints.
+	s1 := &storepb.TracepointInfo{
+		TracepointID: "test1",
 	}
 	s1Text, err := s1.Marshal()
 	if err != nil {
-		t.Fatal("Unable to marshal probe pb")
+		t.Fatal("Unable to marshal tracepoint pb")
 	}
 
-	s2 := &storepb.ProbeInfo{
-		ProbeID: "test2",
+	s2 := &storepb.TracepointInfo{
+		TracepointID: "test2",
 	}
 	s2Text, err := s2.Marshal()
 	if err != nil {
-		t.Fatal("Unable to marshal probe pb")
+		t.Fatal("Unable to marshal tracepoint pb")
 	}
 
-	c.Set("/probe/test1", string(s1Text))
-	c.Set("/probe/test2", string(s2Text))
+	c.Set("/tracepoint/test1", string(s1Text))
+	c.Set("/tracepoint/test2", string(s2Text))
 
-	probes, err := mds.GetProbes()
+	tracepoints, err := mds.GetTracepoints()
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(probes))
+	assert.Equal(t, 2, len(tracepoints))
 
-	assert.Equal(t, s1.ProbeID, probes[0].ProbeID)
-	assert.Equal(t, s2.ProbeID, probes[1].ProbeID)
+	assert.Equal(t, s1.TracepointID, tracepoints[0].TracepointID)
+	assert.Equal(t, s2.TracepointID, tracepoints[1].TracepointID)
 }
 
-func TestKVMetadataStore_UpdateProbeState(t *testing.T) {
+func TestKVMetadataStore_UpdateTracepointState(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
@@ -2000,30 +2000,30 @@ func TestKVMetadataStore_UpdateProbeState(t *testing.T) {
 	assert.Nil(t, err)
 
 	agentID := uuid.NewV4()
-	// Create probe state
-	s1 := &storepb.AgentProbeStatus{
-		ProbeID: "test_probe",
-		AgentID: utils.ProtoFromUUID(&agentID),
-		State:   statuspb.RUNNING_STATE,
+	// Create tracepoint state
+	s1 := &storepb.AgentTracepointStatus{
+		TracepointID: "test_tracepoint",
+		AgentID:      utils.ProtoFromUUID(&agentID),
+		State:        statuspb.RUNNING_STATE,
 	}
 
-	err = mds.UpdateProbeState(s1)
+	err = mds.UpdateTracepointState(s1)
 	assert.Nil(t, err)
 
-	savedProbe, err := c.Get("/probeStates/test_probe/" + agentID.String())
-	savedProbePb := &storepb.AgentProbeStatus{}
-	err = proto.Unmarshal(savedProbe, savedProbePb)
+	savedTracepoint, err := c.Get("/tracepointStates/test_tracepoint/" + agentID.String())
+	savedTracepointPb := &storepb.AgentTracepointStatus{}
+	err = proto.Unmarshal(savedTracepoint, savedTracepointPb)
 	assert.Nil(t, err)
-	assert.Equal(t, s1, savedProbePb)
+	assert.Equal(t, s1, savedTracepointPb)
 }
 
-func TestKVMetadataStore_GetProbeStates(t *testing.T) {
+func TestKVMetadataStore_GetTracepointStates(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 	mockDs := mock_kvstore.NewMockKeyValueStore(ctrl)
 	mockDs.
 		EXPECT().
-		GetWithPrefix("/probeStates/test_probe/").
+		GetWithPrefix("/tracepointStates/test_tracepoint/").
 		Return(nil, nil, nil).
 		Times(1)
 
@@ -2036,34 +2036,34 @@ func TestKVMetadataStore_GetProbeStates(t *testing.T) {
 	agentID1 := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
 	agentID2 := uuid.FromStringOrNil("6ba7b810-9dad-11d1-80b4-00c04fd430c9")
 
-	// Create probes.
-	s1 := &storepb.AgentProbeStatus{
-		ProbeID: "test_probe",
-		AgentID: utils.ProtoFromUUID(&agentID1),
-		State:   statuspb.RUNNING_STATE,
+	// Create tracepoints.
+	s1 := &storepb.AgentTracepointStatus{
+		TracepointID: "test_tracepoint",
+		AgentID:      utils.ProtoFromUUID(&agentID1),
+		State:        statuspb.RUNNING_STATE,
 	}
 	s1Text, err := s1.Marshal()
 	if err != nil {
-		t.Fatal("Unable to marshal probe pb")
+		t.Fatal("Unable to marshal tracepoint pb")
 	}
 
-	s2 := &storepb.AgentProbeStatus{
-		ProbeID: "test_probe",
-		AgentID: utils.ProtoFromUUID(&agentID2),
-		State:   statuspb.PENDING_STATE,
+	s2 := &storepb.AgentTracepointStatus{
+		TracepointID: "test_tracepoint",
+		AgentID:      utils.ProtoFromUUID(&agentID2),
+		State:        statuspb.PENDING_STATE,
 	}
 	s2Text, err := s2.Marshal()
 	if err != nil {
-		t.Fatal("Unable to marshal probe pb")
+		t.Fatal("Unable to marshal tracepoint pb")
 	}
 
-	c.Set("/probeStates/test_probe/"+agentID1.String(), string(s1Text))
-	c.Set("/probeStates/test_probe/"+agentID2.String(), string(s2Text))
+	c.Set("/tracepointStates/test_tracepoint/"+agentID1.String(), string(s1Text))
+	c.Set("/tracepointStates/test_tracepoint/"+agentID2.String(), string(s2Text))
 
-	probes, err := mds.GetProbeStates("test_probe")
+	tracepoints, err := mds.GetTracepointStates("test_tracepoint")
 	assert.Nil(t, err)
-	assert.Equal(t, 2, len(probes))
+	assert.Equal(t, 2, len(tracepoints))
 
-	assert.Equal(t, s1.AgentID, probes[0].AgentID)
-	assert.Equal(t, s2.AgentID, probes[1].AgentID)
+	assert.Equal(t, s1.AgentID, tracepoints[0].AgentID)
+	assert.Equal(t, s2.AgentID, tracepoints[1].AgentID)
 }

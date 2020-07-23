@@ -24,16 +24,16 @@ message VizierMessage {
         HeartbeatAck heartbeat_ack = 6;
         HeartbeatNack heartbeat_nack = 7;
         ExecuteQueryRequest execute_query_request = 8;
-        RegisterProbeRequest register_probe_request = 9;
-        ProbeMessage probe_message = 10;
+        TracepointMessage tracepoint_message = 10;
     }
 }
 
-// A wrapper around all probe-related messages that can be sent over the message bus.
-message ProbeMessage {
+// A wrapper around all tracepoint-related messages that can be sent over the message bus.
+message TracepointMessage {
     oneof msg {
-        ProbeInfoUpdate probe_info_update = 1;
-        EvictProbeRequest evict_probe_request = 2;
+        TracepointInfoUpdate tracepoint_info_update = 1;
+        RemoveTracepointRequest remove_tracepoint_request = 2;
+        RegisterTracepointRequest register_tracepoint_request = 3;
     }
 }
 
@@ -117,23 +117,23 @@ message ExecuteQueryRequest {
     bool analyze = 4;
 }
 
-// The request to register probes on a PEM.
-message RegisterProbeRequest {
+// The request to register tracepoints on a PEM.
+message RegisterTracepointRequest {
   pl.stirling.dynamic_tracing.ir.logical.Program program = 1;
-  string probe_id = 2 [ (gogoproto.customname) = "ProbeID" ];
+  string tracepoint_id = 2 [ (gogoproto.customname) = "TracepointID" ];
 }
 
-// An update message sent when a probe's status changes.
-message ProbeInfoUpdate {
-  string probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
-  // The state of the probe.
+// An update message sent when a tracepoint's status changes.
+message TracepointInfoUpdate {
+  string tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
+  // The state of the tracepoint.
   pl.statuspb.LifeCycleState state = 2;
-  // The status of the probe, specified if the state of the probe is not healthy.
+  // The status of the tracepoint, specified if the state of the tracepoint is not healthy.
   pl.statuspb.Status status = 3;
   // The ID of the agent sending the update.
   uuidpb.UUID agent_id = 4 [ (gogoproto.customname) = "AgentID" ];
 }
 
-message EvictProbeRequest {
-    string probe_id = 1 [ (gogoproto.customname) = "ProbeID" ];
+message RemoveTracepointRequest {
+    string tracepoint_id = 1 [ (gogoproto.customname) = "TracepointID" ];
 }

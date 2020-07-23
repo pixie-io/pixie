@@ -17,10 +17,10 @@ ProbeManager::ProbeManager(pl::event::Dispatcher* dispatcher, Info* agent_info,
 }
 
 Status ProbeManager::HandleMessage(std::unique_ptr<messages::VizierMessage> msg) {
-  if (!msg->has_probe_message()) {
-    return error::InvalidArgument("Can only handle probe requests");
+  if (!msg->has_tracepoint_message()) {
+    return error::InvalidArgument("Can only handle tracepoint requests");
   }
-  LOG(INFO) << "Got Probe Request: " << msg->probe_message().DebugString();
+  LOG(INFO) << "Got Tracepoint Request: " << msg->tracepoint_message().DebugString();
   return error::Unimplemented("Function is not yet implemented");
 }
 
