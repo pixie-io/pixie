@@ -1,7 +1,7 @@
 import { SemanticType } from 'types/generated/vizier_pb';
 import {
   entityPageForScriptId, getLiveViewTitle, LiveViewPage, matchLiveViewEntity,
-  toEntityPathname, toSingleEntityPage,
+  optionallyGetNamespace, toEntityPathname, toSingleEntityPage,
 } from './live-view-params';
 
 describe('matchLiveViewEntity test', () => {
@@ -368,5 +368,33 @@ describe('entityPageForScriptId', () => {
 
   it('should return the right enum for a non-entity script id', () => {
     expect(entityPageForScriptId('px/http_data')).toEqual(LiveViewPage.Default);
+  });
+});
+
+describe('optionallyGetNamespace', () => {
+  it('should return the namespace for a pod view', () => {
+    const result = optionallyGetNamespace({
+      pod: 'px-sock-shop/orders-123',
+    });
+    expect(result).toEqual('px-sock-shop');
+  });
+
+  it('should return the namespace for a service view', () => {
+    const result = optionallyGetNamespace({
+      service: 'px-sock-shop/orders',
+    });
+    expect(result).toEqual('px-sock-shop');
+  });
+
+  it('should return null for a malformed service', () => {
+    const result = optionallyGetNamespace({
+      service: 'not a service name',
+    });
+    expect(result).toEqual(null);
+  });
+
+  it('should return null for a nonexistent pod/service', () => {
+    const result = optionallyGetNamespace({ foo: 'bar' });
+    expect(result).toEqual(null);
   });
 });

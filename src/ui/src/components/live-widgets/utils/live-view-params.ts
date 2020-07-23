@@ -1,6 +1,7 @@
 import { matchPath } from 'react-router';
 
 import { SemanticType } from 'types/generated/vizier_pb';
+import { Arguments } from 'utils/args-utils';
 
 export enum LiveViewPage {
   Default,
@@ -326,4 +327,23 @@ export function toSingleEntityPage(entityName: string, semanticType: SemanticTyp
     default:
       return null;
   }
+}
+
+// If we are in a pod or a service view, this function extracts the namespace
+// from the entity params so that when we switch views, the namespace is maintained.
+export function optionallyGetNamespace(args: Arguments): string {
+  let valToSplit;
+  if (args.pod) {
+    valToSplit = args.pod;
+  }
+  if (args.service) {
+    valToSplit = args.service;
+  }
+  if (valToSplit) {
+    const split = valToSplit.split('/');
+    if (split.length >= 2) {
+      return split[0];
+    }
+  }
+  return null;
 }

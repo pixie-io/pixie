@@ -12,7 +12,7 @@ import { CLUSTER_STATUS_DISCONNECTED } from 'common/vizier-grpc-client-context';
 import { argsForVis, getArgTypesForVis } from 'utils/args-utils';
 import { ScriptsContext } from 'containers/App/scripts-context';
 import { ScriptContext } from 'context/script-context';
-import { entityPageForScriptId } from 'components/live-widgets/utils/live-view-params';
+import { entityPageForScriptId, optionallyGetNamespace } from 'components/live-widgets/utils/live-view-params';
 import { parseVis } from 'containers/live/vis';
 import { EntityType, pxTypetoEntityType } from 'containers/new-command-input/autocomplete-utils';
 import { StatusCell } from 'components/status/status';
@@ -165,10 +165,14 @@ const LiveViewBreadcrumbs = ({ classes }) => {
       const script = scripts.get(newVal);
       const vis = parseVis(script.vis);
       const execArgs = {
+        liveViewPage: entityPageForScriptId(newVal),
         pxl: script.code,
         id: newVal,
-        liveViewPage: entityPageForScriptId(newVal),
-        args: argsForVis(vis, args),
+        args: argsForVis(vis, {
+          // Grab the namespace if it exists on a service or pod argument.
+          namespace: optionallyGetNamespace(args),
+          ...args,
+        }),
         vis,
       };
       setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);

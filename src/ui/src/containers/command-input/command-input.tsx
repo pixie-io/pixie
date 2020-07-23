@@ -11,7 +11,7 @@ import Modal from '@material-ui/core/Modal';
 
 import { ScriptContext, ExecuteArguments } from 'context/script-context';
 import { ResultsContext } from 'context/results-context';
-import { entityPageForScriptId } from 'components/live-widgets/utils/live-view-params';
+import { entityPageForScriptId, optionallyGetNamespace } from 'components/live-widgets/utils/live-view-params';
 
 import { parseVis } from '../live/vis';
 
@@ -70,12 +70,16 @@ const CommandInput: React.FC<CommandInputProps> = ({ open, onClose }) => {
     const vis = parseVis(script.vis);
     if (script) {
       const execArgs: ExecuteArguments = {
+        vis,
         liveViewPage: entityPageForScriptId(script.id),
         pxl: script.code,
-        vis,
         id: script.id,
         // Fill the default args for now. This will go away once the autocomplete is implemented.
-        args: argsForVis(vis, args),
+        args: argsForVis(vis, {
+          // Grab the namespace if it exists on a service or pod argument.
+          namespace: optionallyGetNamespace(args),
+          ...args,
+        }),
       };
       clearResults();
       setScript(execArgs.vis, execArgs.pxl, execArgs.args, execArgs.id, execArgs.liveViewPage);

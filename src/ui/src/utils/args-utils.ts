@@ -39,7 +39,7 @@ export function argsForVis(vis: Vis, args: Arguments, scriptId?: string): Argume
     args = {};
   }
   for (const variable of vis.variables) {
-    const val = typeof args[variable.name] !== 'undefined' ? args[variable.name] : variable.defaultValue;
+    const val = args[variable.name] != null ? args[variable.name] : variable.defaultValue;
     outArgs[variable.name] = val;
   }
   if (args.script) {
