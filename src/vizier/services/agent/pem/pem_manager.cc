@@ -25,6 +25,11 @@ Status PEMManager::PostRegisterHook() {
       dispatcher_.get(), info(), nats_connector(), /*qb_stub_*/ nullptr, carnot_.get());
   PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kExecuteQueryRequest,
                                             execute_query_handler));
+
+  probe_manager_ =
+      std::make_shared<ProbeManager>(dispatcher_.get(), info(), nats_connector(), stirling_.get());
+  PL_RETURN_IF_ERROR(RegisterMessageHandler(messages::VizierMessage::MsgCase::kProbeMessage,
+                                            probe_manager_));
   return Status::OK();
 }
 

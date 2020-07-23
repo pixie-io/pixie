@@ -6,6 +6,7 @@
 
 #include "src/stirling/stirling.h"
 #include "src/vizier/services/agent/manager/manager.h"
+#include "src/vizier/services/agent/pem/probe_manager.h"
 
 namespace pl {
 namespace vizier {
@@ -49,6 +50,7 @@ class PEMManager : public Manager {
   }
 
   std::unique_ptr<stirling::Stirling> stirling_;
+  std::shared_ptr<ProbeManager> probe_manager_;
 };
 
 }  // namespace agent
