@@ -725,8 +725,8 @@ void SocketTraceConnector::DeployUProbes(const absl::flat_hash_set<md::UPID>& pi
         DwarfReader::Create(binary, /* index */ false);
     bool is_go_binary = elf_reader->SymbolAddress("runtime.buildVersion").has_value();
     bool has_dwarf = dwarf_reader_status.ok() && dwarf_reader_status.ValueOrDie()->IsValid();
-    LOG(INFO) << absl::Substitute("binary=$0 has_dwarf=$1 is_go_binary=$2", binary, has_dwarf,
-                                  is_go_binary);
+    VLOG(1) << absl::Substitute("binary=$0 has_dwarf=$1 is_go_binary=$2", binary, has_dwarf,
+                                is_go_binary);
     // Temporary end.
 
     // OpenSSL Probes.

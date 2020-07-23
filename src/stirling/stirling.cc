@@ -131,7 +131,7 @@ class StirlingImpl final : public Stirling {
 
   int64_t RegisterDynamicTrace(
       std::unique_ptr<dynamic_tracing::ir::logical::Program> program) override;
-  Status CheckDynamicTraceStatus(uint64_t trace_id) override;
+  StatusOr<stirlingpb::Publish> GetDynamicTraceInfo(uint64_t trace_id) override;
   void GetPublishProto(stirlingpb::Publish* publish_pb) override;
   Status SetSubscription(const stirlingpb::Subscribe& subscribe_proto) override;
   void RegisterDataPushCallback(DataPushCallback f) override { data_push_callback_ = f; }
@@ -195,7 +195,7 @@ class StirlingImpl final : public Stirling {
   int64_t dynamic_trace_index_ = 0;
 
   absl::base_internal::SpinLock dynamic_trace_status_map_lock_;
-  absl::flat_hash_map<int64_t, Status> dynamic_trace_status_map_
+  absl::flat_hash_map<int64_t, StatusOr<stirlingpb::Publish>> dynamic_trace_status_map_
       ABSL_GUARDED_BY(dynamic_trace_status_map_lock_);
 };
 
@@ -260,12 +260,11 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
 
     // Step 2: Create the info class manager.
     auto mgr = std::make_unique<InfoClassManager>(schema);
-    auto mgr_ptr = mgr.get();
     mgr->SetSourceConnector(source.get(), i);
 
     // Step 3: Setup the manager.
-    mgr_ptr->SetSamplingPeriod(schema.default_sampling_period());
-    mgr_ptr->SetPushPeriod(schema.default_push_period());
+    mgr->SetSamplingPeriod(schema.default_sampling_period());
+    mgr->SetPushPeriod(schema.default_push_period());
 
     // Step 4: Keep pointers to all the objects
     info_class_mgrs_.push_back(std::move(mgr));
@@ -278,14 +277,35 @@ Status StirlingImpl::AddSource(std::unique_ptr<SourceConnector> source) {
 
 void StirlingImpl::DeployDynamicTraceConnector(
     int64_t trace_id, std::unique_ptr<dynamic_tracing::ir::logical::Program> program) {
+#define RETURN_ERROR(s)                                                        \
+  {                                                                            \
+    Status ___s___ = s;                                                        \
+    absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_); \
+    dynamic_trace_status_map_[trace_id] = ___s___;                             \
+    LOG(INFO) << ___s___.ToString();                                           \
+    return;                                                                    \
+  }
+
+#define ASSIGN_OR_RETURN_ERROR(lhs, rexpr) PL_ASSIGN_OR(lhs, rexpr, RETURN_ERROR(__s__.status());)
+#define RETURN_IF_ERROR(s) \
+  if (!s.ok()) {           \
+    RETURN_ERROR(s);       \
+  }
+
+  if (program->outputs_size() == 0) {
+    RETURN_ERROR(error::Internal("Dynamic trace must define output tables."));
+  }
+  if (program->outputs_size() > 1) {
+    RETURN_ERROR(error::Internal("Only one output table is currently supported."));
+  }
+
   auto timer = ElapsedTimer();
   timer.Start();
 
   // Try creating the DynamicTraceConnector--which compiles BCC code.
   // On failure, set status and exit.
-  PL_ASSIGN_OR(std::unique_ptr<SourceConnector> source, DynamicTraceConnector::Create(*program),
-               absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
-               dynamic_trace_status_map_[trace_id] = __s__.status(); return;);
+  ASSIGN_OR_RETURN_ERROR(std::unique_ptr<SourceConnector> source,
+                         DynamicTraceConnector::Create(*program));
 
   LOG(INFO) << absl::Substitute("DynamicTrace: Program compiled to BCC code in $0 ms.",
                                 timer.ElapsedTime_us() / 1000.0);
@@ -293,12 +313,24 @@ void StirlingImpl::DeployDynamicTraceConnector(
   timer.Start();
   // Next, try adding the source (this actually tries to deploy BPF code).
   // On failure, set status and exit, but do this outside the lock for efficiency reasons.
-  Status s = AddSource(std::move(source));
-  LOG_IF(INFO, s.ok()) << absl::Substitute("DynamicTrace: Deployed BCC code in $0 ms.",
-                                           timer.ElapsedTime_us() / 1000.0);
+  RETURN_IF_ERROR(AddSource(std::move(source)));
+  LOG(INFO) << absl::Substitute("DynamicTrace: Deployed BCC code in $0 ms.",
+                                timer.ElapsedTime_us() / 1000.0);
+
+  stirlingpb::Publish publication;
+  {
+    absl::base_internal::SpinLockHolder lock(&info_class_mgrs_lock_);
+    for (const auto& output : program->outputs()) {
+      config_->PopulatePublishProto(&publication, info_class_mgrs_, output.name());
+    }
+  }
 
   absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
-  dynamic_trace_status_map_[trace_id] = s;
+  dynamic_trace_status_map_[trace_id] = publication;
+
+#undef RETURN_ERROR
+#undef RETURN_IF_ERROR
+#undef ASSIGN_OR_RETURN
 }
 
 int64_t StirlingImpl::RegisterDynamicTrace(
@@ -321,7 +353,7 @@ int64_t StirlingImpl::RegisterDynamicTrace(
 
 #undef ASSIGN_OR_RETURN
 
-Status StirlingImpl::CheckDynamicTraceStatus(uint64_t trace_id) {
+StatusOr<stirlingpb::Publish> StirlingImpl::GetDynamicTraceInfo(uint64_t trace_id) {
   absl::base_internal::SpinLockHolder lock(&dynamic_trace_status_map_lock_);
 
   auto iter = dynamic_trace_status_map_.find(trace_id);
@@ -329,7 +361,7 @@ Status StirlingImpl::CheckDynamicTraceStatus(uint64_t trace_id) {
     return error::NotFound("");
   }
 
-  Status s = iter->second;
+  StatusOr<stirlingpb::Publish> s = iter->second;
 
   // Destructive read of tracer state on errors, so that we don't leak the map.
   // Only error that is excluded is RESOURCE_UNAVAILABLE, because that means

@@ -110,34 +110,16 @@ TEST(DynamicTraceSource, dynamic_trace_source) {
   int64_t trace_id = stirling->RegisterDynamicTrace(std::move(trace_program));
 
   // Wait for the probe to deploy.
-  Status s;
+  StatusOr<stirlingpb::Publish> s;
   do {
-    s = stirling->CheckDynamicTraceStatus(trace_id);
+    s = stirling->GetDynamicTraceInfo(trace_id);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   } while (!s.ok() && s.code() == pl::statuspb::Code::RESOURCE_UNAVAILABLE);
 
   // OK state should persist.
-  EXPECT_OK(stirling->CheckDynamicTraceStatus(trace_id));
+  ASSERT_OK_AND_ASSIGN(stirlingpb::Publish trace_pub, stirling->GetDynamicTraceInfo(trace_id));
 
-  stirlingpb::Publish publication;
-  stirling->GetPublishProto(&publication);
-
-  stirlingpb::Subscribe subscription;
-
-  for (int i = 0; i < publication.published_info_classes_size(); ++i) {
-    auto info_class = subscription.add_subscribed_info_classes();
-    info_class->MergeFrom(publication.published_info_classes(i));
-
-    bool subscribe = publication.published_info_classes(i).name() == "probe0_table_value_t";
-
-    g_table_schema = &(info_class->schema());
-
-    info_class->set_subscribed(subscribe);
-    info_class->set_sampling_period_millis(100);
-    info_class->set_push_period_millis(100);
-  }
-
-  ASSERT_OK(stirling->SetSubscription(subscription));
+  ASSERT_OK(stirling->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(trace_pub)));
 
   // Run Stirling data collector.
   ASSERT_OK(stirling->RunAsThread());

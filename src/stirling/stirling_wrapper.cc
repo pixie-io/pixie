@@ -22,6 +22,8 @@
 #include "src/stirling/mysql_table.h"
 #include "src/stirling/pgsql_table.h"
 
+using pl::StatusOr;
+
 using pl::stirling::IndexPublication;
 using pl::stirling::PrintRecordBatch;
 using pl::stirling::SourceRegistry;
@@ -90,32 +92,14 @@ void SignalHandler(int signum) {
   exit(signum);
 }
 
-void Subscribe(Stirling* stirling) {
-  // Declare as static, since g_table_info_map will point into this structure.
-  static Publish publication;
-
-  // Get the new publication.
-  // Do this under a lock to avoid races with any currently executing StirlingWrapperCallback().
-  {
-    absl::base_internal::SpinLockHolder lock(&g_callback_state_lock);
-    stirling->GetPublishProto(&publication);
-    g_table_info_map = IndexPublication(publication);
-  }
-
-  // Subscribe to all elements.
-  // Stirling will update its schemas and sets up the data tables.
-  PL_CHECK_OK(stirling->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(publication)));
-}
-
-void DeployTrace(Stirling* stirling) {
-  PL_ASSIGN_OR_EXIT(std::string trace_program_str, pl::ReadFileToString(FLAGS_trace));
+StatusOr<Publish> DeployTrace(Stirling* stirling) {
+  PL_ASSIGN_OR_RETURN(std::string trace_program_str, pl::ReadFileToString(FLAGS_trace));
 
   auto trace_program = std::make_unique<DynamicTracingProgram>();
   bool success =
       google::protobuf::TextFormat::ParseFromString(trace_program_str, trace_program.get());
   if (!success) {
-    LOG(ERROR) << "Unable to parse trace file";
-    return;
+    return pl::error::Internal("Unable to parse trace file");
   }
 
   // Automatically enable printing of this table.
@@ -125,17 +109,13 @@ void DeployTrace(Stirling* stirling) {
 
   int64_t trace_id = stirling->RegisterDynamicTrace(std::move(trace_program));
 
-  pl::Status s;
+  StatusOr<Publish> s;
   do {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    s = stirling->CheckDynamicTraceStatus(trace_id);
+    s = stirling->GetDynamicTraceInfo(trace_id);
   } while (!s.ok() && s.code() == pl::statuspb::Code::RESOURCE_UNAVAILABLE);
 
-  if (s.ok()) {
-    LOG(INFO) << "Successfully deployed dynamic trace!";
-  } else {
-    LOG(WARNING) << s.ToString();
-  }
+  return s;
 }
 
 // A simple wrapper that shows how the data collector is to be hooked up
@@ -171,7 +151,13 @@ int main(int argc, char** argv) {
   g_stirling = stirling.get();
 
   // Get a publish proto message to subscribe from.
-  Subscribe(stirling.get());
+  Publish publication;
+  stirling->GetPublishProto(&publication);
+  IndexPublication(publication, &g_table_info_map);
+
+  // Subscribe to all elements.
+  // Stirling will update its schemas and sets up the data tables.
+  PL_CHECK_OK(stirling->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(publication)));
 
   // Set a dummy callback function (normally this would be in the agent).
   stirling->RegisterDataPushCallback(StirlingWrapperCallback);
@@ -194,10 +180,16 @@ int main(int argc, char** argv) {
     // Could also consider removing this altogether.
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
-    DeployTrace(stirling.get());
+    PL_ASSIGN_OR_EXIT(Publish trace_pub, DeployTrace(stirling.get()));
+    {
+      absl::base_internal::SpinLockHolder lock(&g_callback_state_lock);
+      IndexPublication(trace_pub, &g_table_info_map);
+    }
+
+    LOG(INFO) << "Successfully deployed dynamic trace!";
 
     // Update the subscription to enable the new trace.
-    Subscribe(stirling.get());
+    PL_CHECK_OK(stirling->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(trace_pub)));
   }
 
   if (FLAGS_timeout_secs > 0) {

@@ -10,8 +10,8 @@
 #include "src/stirling/stirling.h"
 #include "src/stirling/types.h"
 
-// The binary location cannot be hard-coded because its location depends on -c opt/dbg/fastbuild.
-DEFINE_string(dummy_go_binary, "", "The path to dummy_go_binary.");
+constexpr std::string_view kBinaryPath =
+    "src/stirling/obj_tools/testdata/dummy_go_binary_/dummy_go_binary";
 
 namespace pl {
 namespace stirling {
@@ -38,10 +38,10 @@ class StirlingBPFTest : public ::testing::Test {
     record_batches_.push_back(std::move(record_batch));
   }
 
-  Status WaitForStatus(uint64_t trace_id) {
-    Status s;
+  StatusOr<stirlingpb::Publish> WaitForStatus(uint64_t trace_id) {
+    StatusOr<stirlingpb::Publish> s;
     do {
-      s = stirling_->CheckDynamicTraceStatus(trace_id);
+      s = stirling_->GetDynamicTraceInfo(trace_id);
       std::this_thread::sleep_for(std::chrono::seconds(1));
     } while (!s.ok() && s.code() == pl::statuspb::Code::RESOURCE_UNAVAILABLE);
 
@@ -101,10 +101,10 @@ TEST_F(StirlingBPFTest, CleanupTest) {
 // TODO(oazizi): If we had a dynamic source that didn't use BPF,
 //               this test could be moved to stirling_test.
 TEST_F(StirlingBPFTest, DynamicTraceAPI) {
-  Status s;
+  StatusOr<stirlingpb::Publish> s;
 
   // Checking status of non-existent trace should return NOT_FOUND.
-  s = stirling_->CheckDynamicTraceStatus(/* trace_id */ 1);
+  s = stirling_->GetDynamicTraceInfo(/* trace_id */ 1);
   EXPECT_EQ(s.code(), pl::statuspb::Code::NOT_FOUND);
 
   // Checking status of existent trace should return OK.
@@ -148,7 +148,7 @@ probes {
 
   // Immediately after registering, state should be pending.
   // TODO(oazizi): How can we make sure this is not flaky?
-  s = stirling_->CheckDynamicTraceStatus(trace_id);
+  s = stirling_->GetDynamicTraceInfo(trace_id);
   EXPECT_EQ(s.code(), pl::statuspb::Code::RESOURCE_UNAVAILABLE) << s.ToString();
 
   // Should deploy.
@@ -160,13 +160,11 @@ probes {
 TEST_F(StirlingBPFTest, string_test) {
   // Run tracing target.
   SubProcess process;
-  CHECK(!FLAGS_dummy_go_binary.empty())
-      << "--dummy_go_binary cannot be empty. You should run this test with bazel.";
-  CHECK(std::filesystem::exists(std::filesystem::path(FLAGS_dummy_go_binary)))
-      << FLAGS_dummy_go_binary;
-  ASSERT_OK(process.Start({FLAGS_dummy_go_binary}));
 
-  std::string path = pl::testing::TestFilePath(FLAGS_dummy_go_binary);
+  std::string path = pl::testing::BazelBinTestFilePath(kBinaryPath);
+  ASSERT_OK(fs::Exists(path));
+  ASSERT_OK(process.Start({path}));
+
   constexpr std::string_view kProgram = R"(
 binary_spec {
   path: "$0"
@@ -204,29 +202,18 @@ probes {
   uint64_t trace_id = stirling_->RegisterDynamicTrace(std::move(trace_program));
 
   // Should deploy.
-  ASSERT_OK(WaitForStatus(trace_id));
+  ASSERT_OK_AND_ASSIGN(stirlingpb::Publish publication, WaitForStatus(trace_id));
 
-  stirlingpb::Publish publication;
-  stirling_->GetPublishProto(&publication);
+  // Check the incremental publication change.
+  ASSERT_EQ(publication.published_info_classes_size(), 1);
+  const auto& info_class = publication.published_info_classes(0);
 
-  const stirlingpb::TableSchema* schema;
-  stirlingpb::Subscribe subscription;
-
-  for (const auto& info_class : publication.published_info_classes()) {
-    auto sub_info_class = subscription.add_subscribed_info_classes();
-    sub_info_class->MergeFrom(info_class);
-    sub_info_class->set_subscribed(false);
-    if (info_class.name() == "output_table") {
-      sub_info_class->set_subscribed(true);
-      schema = &sub_info_class->schema();
-    }
-  }
-  ASSERT_OK(stirling_->SetSubscription(subscription));
+  // Subscribe to the new info class.
+  ASSERT_OK(stirling_->SetSubscription(pl::stirling::SubscribeToAllInfoClasses(publication)));
 
   // Get field indexes for the two columns we want.
-  ASSERT_NE(schema, nullptr);
-  int name_field_idx = FindFieldIndex(*schema, "name").value();
-  int something_field_idx = FindFieldIndex(*schema, "something").value();
+  int name_field_idx = FindFieldIndex(info_class.schema(), "name").value();
+  int something_field_idx = FindFieldIndex(info_class.schema(), "something").value();
 
   // Run Stirling data collector.
   ASSERT_OK(stirling_->RunAsThread());

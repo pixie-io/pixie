@@ -128,9 +128,6 @@ pl_cc_test(
     name = "stirling_bpf_test",
     timeout = "moderate",
     srcs = ["stirling_bpf_test.cc"],
-    args = [
-        "--dummy_go_binary=$(location //src/stirling/obj_tools/testdata:dummy_go_binary)",
-    ],
     data = [
         "//src/stirling/obj_tools/testdata:dummy_go_binary",
         "//src/stirling/obj_tools/testdata:prebuilt_exe",
